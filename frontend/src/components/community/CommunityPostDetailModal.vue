@@ -11,6 +11,7 @@ import { Download, Heart, MessageCircle, MoreVertical, Trash2, X } from '@lucide
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import UserAvatarGlyph from '@/components/common/UserAvatarGlyph.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
@@ -451,7 +452,7 @@ function formatDate(iso: string): string {
                 <div
                   class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-sm shrink-0"
                 >
-                  {{ c.author.avatar ?? '👤' }}
+                  <UserAvatarGlyph :value="c.author.avatar" />
                 </div>
                 <div class="min-w-0 flex-1">
                   <div class="flex items-baseline gap-2 mb-1">

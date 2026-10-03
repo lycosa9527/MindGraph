@@ -5,6 +5,7 @@ import type { InjectionKey } from 'vue'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import type { UserSettingsTab } from '@/components/settings/userSettingsTabs'
 import {
   DATA_CENTER_VIEWS,
   type DataCenterView,
@@ -44,7 +45,7 @@ import { getShowcasePendingCount } from '@/utils/apiClient'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { focusPersonalMindmateThread } from '@/utils/mindmateCollabLibrarySave'
 import { shouldExpandWorkshopOnNavClick } from '@/utils/sidebarWorkshopPanel'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
@@ -319,13 +320,14 @@ export function useAppSidebar() {
     return t('sidebar.orgEdition', { org: schoolName })
   })
   const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+  const userAvatarSrc = computed(() => userAvatarImageSrc(authStore.user?.avatar))
 
   const showLoginModal = ref(false)
-  const showAccountModal = ref(false)
+  const showUserSettingsModal = ref(false)
+  const userSettingsTab = ref<UserSettingsTab>('account')
   const showThinkingCoinsModal = ref(false)
   const thinkingCoinsModalTab = ref<'wallet' | 'subscription'>('wallet')
   const showUpdateLogModal = ref(false)
-  const showLanguageSettingsModal = ref(false)
   const thinkingCoinEarnTasks = ref<ThinkingCoinEarnTask[]>([])
   let thinkingCoinWalletFetchGeneration = 0
 
@@ -588,8 +590,13 @@ export function useAppSidebar() {
     void refreshThinkingCoinEarnTasks()
   }
 
+  function openUserSettings(tab: UserSettingsTab = 'account') {
+    userSettingsTab.value = tab
+    showUserSettingsModal.value = true
+  }
+
   function openAccountModal() {
-    showAccountModal.value = true
+    openUserSettings('account')
   }
 
   function openUpdateLogModal() {
@@ -597,7 +604,7 @@ export function useAppSidebar() {
   }
 
   function openLanguageSettingsModal() {
-    showLanguageSettingsModal.value = true
+    openUserSettings('language')
   }
 
   async function handleLogout() {
@@ -944,8 +951,10 @@ export function useAppSidebar() {
     orgEditionParams,
     orgEditionTooltip,
     userAvatar,
+    userAvatarSrc,
     showLoginModal,
-    showAccountModal,
+    showUserSettingsModal,
+    userSettingsTab,
     showThinkingCoinsModal,
     thinkingCoinsModalTab,
     thinkingCoinsEligible,
@@ -954,7 +963,6 @@ export function useAppSidebar() {
     thinkingCoinEarnTasks,
     refreshThinkingCoinEarnTasks,
     showUpdateLogModal,
-    showLanguageSettingsModal,
     toggleSidebar,
     setMode,
     openLoginModal,

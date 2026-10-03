@@ -12,17 +12,16 @@ import {
   Coins,
   Flame,
   Gift,
-  Languages,
   LayoutGrid,
   Link2,
   LogIn,
   LogOut,
   Presentation,
   ScrollText,
+  Settings,
   Share2,
   Star,
   Upload,
-  UserRound,
 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
@@ -231,6 +230,7 @@ function onUserMenuVisible(open: boolean): void {
             >
               <el-avatar
                 :size="40"
+                :src="s.userAvatarSrc || undefined"
                 class="bg-stone-200 text-2xl mg-user-avatar-emoji"
               >
                 {{ s.userAvatar }}
@@ -290,14 +290,10 @@ function onUserMenuVisible(open: boolean): void {
             </el-dropdown-item>
             <el-dropdown-item
               divided
-              @click="s.openLanguageSettingsModal"
+              @click="s.openAccountModal"
             >
-              <Languages class="w-4 h-4 mr-2" />
-              <I18nText k="sidebar.languageSettings" />
-            </el-dropdown-item>
-            <el-dropdown-item @click="s.openAccountModal">
-              <UserRound class="w-4 h-4 mr-2" />
-              <I18nText k="auth.accountInfo" />
+              <Settings class="w-4 h-4 mr-2" />
+              <I18nText k="sidebar.settings" />
             </el-dropdown-item>
             <el-dropdown-item @click="handleVoiceNotes">
               <AudioLines class="w-4 h-4 mr-2" />
@@ -354,6 +350,7 @@ function onUserMenuVisible(open: boolean): void {
           >
             <el-avatar
               :size="32"
+              :src="s.userAvatarSrc || undefined"
               class="bg-stone-200 text-xl mg-user-avatar-emoji"
             >
               {{ s.userAvatar }}
@@ -386,14 +383,10 @@ function onUserMenuVisible(open: boolean): void {
             </el-dropdown-item>
             <el-dropdown-item
               divided
-              @click="s.openLanguageSettingsModal"
+              @click="s.openAccountModal"
             >
-              <Languages class="w-4 h-4 mr-2" />
-              <I18nText k="sidebar.languageSettings" />
-            </el-dropdown-item>
-            <el-dropdown-item @click="s.openAccountModal">
-              <UserRound class="w-4 h-4 mr-2" />
-              <I18nText k="auth.accountInfo" />
+              <Settings class="w-4 h-4 mr-2" />
+              <I18nText k="sidebar.settings" />
             </el-dropdown-item>
             <el-dropdown-item @click="handleVoiceNotes">
               <AudioLines class="w-4 h-4 mr-2" />

@@ -5,8 +5,8 @@
  */
 import { provide } from 'vue'
 
-import { AccountInfoModal, LoginModal, UpdateLogModal } from '@/components/auth'
-import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
+import { LoginModal, UpdateLogModal } from '@/components/auth'
+import UserSettingsModal from '@/components/settings/UserSettingsModal.vue'
 import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
 
 import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
@@ -14,13 +14,8 @@ import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
 const sidebar = useAppSidebar()
 provide(appSidebarInjectionKey, sidebar)
 
-const {
-  showLanguageSettingsModal,
-  showLoginModal,
-  showAccountModal,
-  showUpdateLogModal,
-  authStore,
-} = sidebar
+const { showUserSettingsModal, userSettingsTab, showLoginModal, showUpdateLogModal, authStore } =
+  sidebar
 </script>
 
 <template>
@@ -29,12 +24,12 @@ const {
     data-testid="floating-account-menu"
   >
     <AppSidebarAccountFooter menu-only />
-    <LanguageSettingsModal v-model="showLanguageSettingsModal" />
-    <LoginModal v-model:visible="showLoginModal" />
-    <AccountInfoModal
-      v-model:visible="showAccountModal"
+    <UserSettingsModal
+      v-model:visible="showUserSettingsModal"
+      :initial-tab="userSettingsTab"
       @success="authStore.checkAuth()"
     />
+    <LoginModal v-model:visible="showLoginModal" />
     <UpdateLogModal v-model:visible="showUpdateLogModal" />
   </div>
 </template>

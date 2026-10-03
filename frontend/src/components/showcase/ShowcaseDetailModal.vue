@@ -16,6 +16,7 @@ import {
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
+import UserAvatarGlyph from '@/components/common/UserAvatarGlyph.vue'
 import ShowcaseDiagramPreview from '@/components/showcase/ShowcaseDiagramPreview.vue'
 import ShowcaseTeachingDocPreview from '@/components/showcase/ShowcaseTeachingDocPreview.vue'
 import {
@@ -179,7 +180,7 @@ const open = computed({
                 <div
                   class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-base"
                 >
-                  {{ post.author.avatar ?? '👤' }}
+                  <UserAvatarGlyph :value="post.author.avatar" />
                 </div>
                 <span class="ml-2 text-sm font-medium text-gray-900">{{ post.author.name }}</span>
                 <span
@@ -524,7 +525,7 @@ const open = computed({
                 <div
                   class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-base"
                 >
-                  {{ post.author.avatar ?? '👤' }}
+                  <UserAvatarGlyph :value="post.author.avatar" />
                 </div>
                 <span class="ml-2 text-sm font-medium text-gray-900">{{ post.author.name }}</span>
                 <span

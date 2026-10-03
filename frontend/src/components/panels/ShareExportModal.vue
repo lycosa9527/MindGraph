@@ -35,7 +35,7 @@ import {
 } from '@/utils/mindmateDiagramPreviewCache'
 import { replaceMindmatePreviewImageUrl } from '@/utils/mindmateDiagramPreviewDisplay'
 import { resolveMindmateDiagramPreviewBlob } from '@/utils/mindmateDiagramPreviewResolve'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
 const props = defineProps<{
   visible: boolean
@@ -48,6 +48,7 @@ const authStore = useAuthStore()
 
 const displayName = computed(() => authStore.user?.username || 'You')
 const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+const userAvatarSrc = computed(() => userAvatarImageSrc(authStore.user?.avatar))
 const { displayName: mindMateLabel, avatarUrl: mindMateAvatarUrl } = useMindMateBranding('md')
 
 const emit = defineEmits<{
@@ -383,8 +384,15 @@ async function exportAsPng() {
                 <span
                   v-if="message.role === 'user'"
                   class="avatar-emoji mg-user-avatar-emoji"
-                  >{{ userAvatar }}</span
                 >
+                  <img
+                    v-if="userAvatarSrc"
+                    :src="userAvatarSrc"
+                    alt=""
+                    class="avatar-photo"
+                  />
+                  <template v-else>{{ userAvatar }}</template>
+                </span>
                 <img
                   v-else
                   :src="mindMateAvatarUrl"
@@ -468,7 +476,13 @@ async function exportAsPng() {
                   </div>
                 </div>
                 <div class="export-avatar export-avatar-user mg-user-avatar-emoji">
-                  {{ userAvatar }}
+                  <img
+                    v-if="userAvatarSrc"
+                    :src="userAvatarSrc"
+                    alt=""
+                    class="avatar-photo"
+                  />
+                  <template v-else>{{ userAvatar }}</template>
                 </div>
               </template>
             </div>
@@ -674,6 +688,13 @@ async function exportAsPng() {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .avatar-emoji {

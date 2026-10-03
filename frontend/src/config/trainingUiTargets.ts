@@ -44,7 +44,7 @@ export const TRAINING_MODALS: TrainingModalDef[] = [
   },
   {
     key: 'language-settings',
-    labelKey: 'sidebar.languageSettings',
+    labelKey: 'settings.tabs.language',
     pages: LANDING_PAGES,
     focuses: [],
   },
@@ -136,9 +136,7 @@ export function trainingModalDef(key: string | null | undefined): TrainingModalD
   return TRAINING_MODALS.find((modal) => modal.key === key) ?? null
 }
 
-export function trainingModalsForPage(
-  pageKey: string | null | undefined
-): TrainingModalDef[] {
+export function trainingModalsForPage(pageKey: string | null | undefined): TrainingModalDef[] {
   if (!pageKey) return []
   return TRAINING_MODALS.filter((modal) => modal.pages.includes(pageKey as TrainingPageKey))
 }

@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'ప్యాకేజీ తొలగించబడింది',
   'sidebar.knowledgeSpaceHistory.empty': 'ఇంకా సమాచార ప్యాకేజీ లేదు',
   'sidebar.knowledgeSpaceHistory.title': 'సమాచార ప్యాకేజీ',
-  'sidebar.languageSettings': 'ఇంటర్‌ఫేస్ UI సెట్టింగ్‌లు',
   'sidebar.library': 'లైబ్రరీ',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

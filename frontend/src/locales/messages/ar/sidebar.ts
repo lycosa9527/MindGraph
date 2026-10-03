@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'تم حذف الحزمة',
   'sidebar.knowledgeSpaceHistory.empty': 'لا توجد حزمة معلومات حتى الآن',
   'sidebar.knowledgeSpaceHistory.title': 'حزمة المعلومات',
-  'sidebar.languageSettings': 'Language Settings',
   'sidebar.library': 'مكتبة',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

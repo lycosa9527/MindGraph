@@ -1,5 +1,5 @@
 /**
- * Language & prompts modal — light Swiss stone shell (user settings, not admin phosphor).
+ * Settings dialog — light Swiss stone shell (user settings, not admin phosphor).
  */
 
 .language-settings-swiss.el-dialog {
@@ -160,7 +160,7 @@
  * One full-width rectangle, equal segments, vertical dividers, no radio circles/icons.
  * Reuse for any binary setting in light-stone modals (e.g. classic vs new canvas).
  *
- * Markup (LanguageSettingsModal.vue):
+ * Markup (SettingsLanguagePanel.vue):
  *   .language-settings-canvas-segmented  role="radiogroup"
  *     button.language-settings-canvas-segment.is-active  role="radio" aria-checked
  *
@@ -235,5 +235,185 @@
 .dark .language-settings-canvas-segment.is-active {
   color: var(--lang-settings-ink);
   background: #f9fafb;
+}
+
+/*
+ * Settings dialog sits on the Swiss glass shell. Tabs, on/off segments, and
+ * action buttons use the same frost and ribbon as the dialog, not stone ink.
+ */
+.user-settings-tab-pad {
+  padding-bottom: 1.75rem;
+}
+
+.user-settings-dialog .change-password-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.user-settings-dialog .change-password-actions .mind-map-side-rail-btn {
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 6.5rem;
+  max-width: 9.5rem;
+  padding-inline: 0.75rem;
+}
+
+.user-settings-dialog .admin-swiss-segmented,
+.user-settings-dialog .language-settings-canvas-segmented {
+  gap: 3px;
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.8);
+  background: rgb(255 255 255 / 0.48);
+  backdrop-filter: blur(10px);
+}
+
+.user-settings-dialog .language-settings-canvas-segmented {
+  border: 1px solid #94a3b8;
+  box-shadow: 0 0 0 1px rgb(148 163 184 / 0.45);
+}
+
+.user-settings-dialog .admin-swiss-segment,
+.user-settings-dialog .language-settings-canvas-segment {
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ai-muted, #6b7280);
+}
+
+.user-settings-dialog .admin-swiss-segment + .admin-swiss-segment,
+.user-settings-dialog .language-settings-canvas-segment:not(:last-child) {
+  border-left: none;
+  border-right: none;
+}
+
+.user-settings-dialog .admin-swiss-segment:not(.is-active):hover,
+.user-settings-dialog .language-settings-canvas-segment:not(.is-active):hover {
+  color: var(--ai-ink, #1f2937);
+  background: rgb(255 255 255 / 0.55);
+}
+
+.user-settings-dialog .admin-swiss-segment.is-active,
+.user-settings-dialog .language-settings-canvas-segment.is-active {
+  color: #fff;
+  font-weight: 600;
+  background: var(--ai-ribbon-fill, linear-gradient(90deg, #3b82f6 0%, #7c5cbf 100%));
+  box-shadow: 0 4px 10px rgb(59 130 246 / 0.22);
+}
+
+.user-settings-dialog .admin-swiss-segment.is-active .i18n-label__secondary,
+.user-settings-dialog .language-settings-canvas-segment.is-active .i18n-label__secondary {
+  color: rgb(255 255 255 / 0.82);
+}
+
+.user-settings-dialog .swiss-glass-field__kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lang-settings-muted, #78716c);
+}
+
+.user-settings-dialog .swiss-glass-field__kicker::before {
+  content: '';
+  display: inline-block;
+  width: 0.35rem;
+  height: 0.35rem;
+  margin-inline-end: 0.1rem;
+  background: var(--lang-settings-subtle, #a8a29e);
+  border-radius: 1px;
+  transform: translateY(-0.05rem);
+}
+
+.user-settings-dialog .swiss-glass-field__input:disabled {
+  background: rgb(255 255 255 / 0.45);
+  color: var(--lang-settings-muted, #78716c);
+  cursor: not-allowed;
+}
+
+.user-settings-dialog .mind-map-side-rail-btn {
+  min-height: 2.75rem;
+  padding: 0.45rem 1rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.user-settings-dialog .mind-map-side-rail-btn .i18n-label {
+  align-items: center;
+  width: 100%;
+}
+
+.user-settings-dialog .mind-map-side-rail-btn .i18n-label__primary,
+.user-settings-dialog .mind-map-side-rail-btn .i18n-label__secondary {
+  text-align: center;
+}
+
+.ai-gen-shell.user-settings-dialog .mind-map-side-rail-btn--primary {
+  border: none;
+  background: var(--ai-ribbon-fill, linear-gradient(90deg, #3b82f6 0%, #7c5cbf 100%));
+  color: #fff;
+  box-shadow: 0 4px 10px rgb(59 130 246 / 0.22);
+}
+
+.ai-gen-shell.user-settings-dialog .mind-map-side-rail-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.user-settings-dialog .mind-map-side-rail-btn--secondary {
+  border: 1px solid rgb(255 255 255 / 0.9);
+  background: rgb(255 255 255 / 0.72);
+  color: var(--ai-ink, #1f2937);
+  box-shadow:
+    inset 0 0 0 1px rgb(226 232 240 / 0.9),
+    0 1px 2px rgb(15 23 42 / 0.05);
+}
+
+.user-settings-dialog .mind-map-side-rail-btn--secondary:hover:not(:disabled) {
+  border-color: #fff;
+  background: #fff;
+  color: var(--ai-ink, #1f2937);
+}
+
+.dark .user-settings-dialog .admin-swiss-segmented,
+.dark .user-settings-dialog .language-settings-canvas-segmented {
+  border-color: rgb(255 255 255 / 0.14);
+  background: rgb(15 23 42 / 0.35);
+}
+
+.dark .user-settings-dialog .language-settings-canvas-segmented {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 1px rgb(148 163 184 / 0.35);
+}
+
+.dark .user-settings-dialog .admin-swiss-segment.is-active,
+.dark .user-settings-dialog .language-settings-canvas-segment.is-active {
+  color: #fff;
+  background: var(--ai-ribbon-fill, linear-gradient(90deg, #3b82f6 0%, #7c5cbf 100%));
+}
+
+.dark .user-settings-dialog .swiss-glass-field__input:disabled {
+  background: rgb(15 23 42 / 0.35);
+  color: #94a3b8;
+}
+
+.dark .user-settings-dialog .mind-map-side-rail-btn--secondary {
+  border-color: rgb(255 255 255 / 0.16);
+  background: rgb(15 23 42 / 0.35);
+  color: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+.dark .user-settings-dialog .mind-map-side-rail-btn--secondary:hover:not(:disabled) {
+  border-color: rgb(255 255 255 / 0.28);
+  background: rgb(255 255 255 / 0.1);
+  color: #f8fafc;
 }
 

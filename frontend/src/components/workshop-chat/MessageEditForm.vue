@@ -5,6 +5,7 @@
 import { computed, onMounted, ref } from 'vue'
 
 import I18nText from '@/components/common/I18nText.vue'
+import UserAvatarGlyph from '@/components/common/UserAvatarGlyph.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopComposeDraft } from '@/composables/workshop/useWorkshopComposeDraft'
 import { useWorkshopImageLightbox } from '@/composables/workshop/useWorkshopImageLightbox'
@@ -122,7 +123,7 @@ defineExpose({ markSaveFailed })
         class="msg-edit__mention"
         @mousedown.prevent="insertMentionUser(member)"
       >
-        <span class="msg-edit__mention-avatar">{{ member.avatar || '👤' }}</span>
+        <span class="msg-edit__mention-avatar"><UserAvatarGlyph :value="member.avatar" /></span>
         <span class="msg-edit__mention-name">{{ member.name || `User ${member.id}` }}</span>
       </button>
     </div>

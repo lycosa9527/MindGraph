@@ -130,7 +130,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': '资料包已删除',
   'sidebar.knowledgeSpaceHistory.empty': '暂无资料包',
   'sidebar.knowledgeSpaceHistory.title': '资料包',
-  'sidebar.languageSettings': '界面UI设置',
+  'sidebar.settings': '设置',
   'sidebar.library': '图书馆',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

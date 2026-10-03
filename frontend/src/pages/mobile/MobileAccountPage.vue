@@ -35,7 +35,7 @@ import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { persistLanguagePreferencesIfAuthenticated } from '@/utils/persistLanguagePreferences'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
 
 const router = useRouter()
@@ -46,6 +46,7 @@ const { showPwaInstall, handlePwaInstall } = usePwaInstall(t)
 
 const user = computed(() => authStore.user)
 const userAvatar = computed(() => resolveUserAvatarEmoji(user.value?.avatar))
+const userAvatarSrc = computed(() => userAvatarImageSrc(user.value?.avatar))
 const displayName = computed(() => user.value?.username || '')
 const orgName = computed(() => user.value?.schoolName || '')
 const userRolePill = computed(() => {
@@ -169,7 +170,14 @@ async function handleLogout() {
     <div class="px-4 pt-6 pb-8 max-w-md mx-auto space-y-5 mobile-account-scroll">
       <!-- User profile header -->
       <div class="flex flex-col items-center gap-2 pb-4 border-b border-gray-100">
+        <img
+          v-if="userAvatarSrc"
+          :src="userAvatarSrc"
+          alt=""
+          class="w-16 h-16 rounded-full object-cover"
+        />
         <div
+          v-else
           class="flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-3xl mg-user-avatar-emoji"
         >
           {{ userAvatar }}

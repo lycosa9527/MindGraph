@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': '패키지가 삭제되었습니다',
   'sidebar.knowledgeSpaceHistory.empty': '아직 패키지가 없습니다',
   'sidebar.knowledgeSpaceHistory.title': '패키지',
-  'sidebar.languageSettings': '언어 설정',
   'sidebar.library': '라이브러리',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

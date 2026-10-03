@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'पैकेज हटाया गया',
   'sidebar.knowledgeSpaceHistory.empty': 'अभी कोई पैकेज नहीं',
   'sidebar.knowledgeSpaceHistory.title': 'पैकेज',
-  'sidebar.languageSettings': 'भाषा सेटिंग',
   'sidebar.library': 'पुस्तकालय',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

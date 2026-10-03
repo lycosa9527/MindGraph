@@ -8,6 +8,7 @@ from models.domain.auth import Organization, User
 from services.auth.thinking_coin.checkin_service import ensure_wallet_bootstrap
 from services.auth.thinking_coin.eligibility import user_eligible_for_thinking_coins
 from services.auth.thinking_coin.wallet_payload import build_wallet_payload
+from services.auth.user_avatar_image import avatar_for_client
 from services.llm.org_custom_config import session_custom_llm_fields_for_org_id
 from services.redis.cache.redis_org_cache import org_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -15,7 +16,6 @@ from utils.auth import get_user_role
 from utils.auth.bayi_mode import user_needs_display_name
 from utils.auth.thinking_coin_config import feature_thinking_coins_enabled
 from utils.auth.user_daily_token_quota import current_user_daily_token_payload
-from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 from .org_profile import organization_session_payload
 from .user_session_prefs import user_preference_fields
@@ -74,7 +74,7 @@ async def build_session_user_payload(
         "email": getattr(user, "email", None),
         "name": user.name,
         "needs_display_name": user_needs_display_name(user.name),
-        "avatar": user.avatar or DEFAULT_USER_AVATAR_EMOJI,
+        "avatar": avatar_for_client(user.avatar),
         "role": get_user_role(user),
         "login_password_set": getattr(user, "login_password_set", True),
         "must_change_password": bool(getattr(user, "must_change_password", False)),

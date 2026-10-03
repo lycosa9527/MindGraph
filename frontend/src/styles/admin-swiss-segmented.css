@@ -1,6 +1,6 @@
 /**
  * Stone segmented control — plain buttons (not ElSegmented / ElRadioButton).
- * Reference: LanguageSettingsModal canvas mode toggle; active segment uses ink fill.
+ * Reference: settings language on/off segmented control; active segment uses ink fill.
  * Imported globally (no :deep) — safe for unscoped style blocks and lightningcss minify.
  */
 

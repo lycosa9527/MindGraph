@@ -1,11 +1,8 @@
 <script setup lang="ts">
 /**
- * AvatarSelectModal - Modal for selecting user avatar from emoji collection
- *
- * Design: Swiss Design (Modern Minimalism)
- * Uses Element Plus el-scrollbar for infinite scroll
+ * AvatarSelectModal - Emoji picker, plus a photo crop that uploads to COS.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { Smile } from '@lucide/vue'
 
@@ -14,9 +11,19 @@ import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAuthStore } from '@/stores/auth'
-import { DEFAULT_USER_AVATAR_EMOJI, resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import {
+  photoAvatarsEnabled,
+  resolveUserAvatarEmoji,
+  userAvatarImageSrc,
+} from '@/utils/userAvatarEmoji'
+
+import AvatarCropModal from './AvatarCropModal.vue'
+import { AVATAR_EMOJI_CATALOG } from './avatarEmojiCatalog'
+
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024
 
 const notify = useNotifications()
+const allowPhotoAvatar = photoAvatarsEnabled()
 const { t } = useLanguage()
 
 const props = defineProps<{
@@ -35,583 +42,19 @@ const isVisible = computed({
   set: (value) => emit('update:visible', value),
 })
 
-// Curated emoji avatars collection (200+ interesting emojis - no signs/symbols)
-const allAvatars = [
-  // Smileys & Faces
-  DEFAULT_USER_AVATAR_EMOJI,
-  '😀',
-  '😃',
-  '😄',
-  '😁',
-  '😊',
-  '😉',
-  '😍',
-  '🤩',
-  '😎',
-  '🤗',
-  '🙂',
-  '😇',
-  '🤔',
-  '😋',
-  '😌',
-  '😏',
-  '😴',
-  '🤤',
-  '😪',
-  '😵',
-  '🤐',
-  '🤨',
-  '🧐',
-  '🤓',
-  '🥳',
-  '😮',
-  '😯',
-  '😲',
-  '😱',
-  '😭',
-  '😓',
-  '😤',
-  '😠',
-  '😡',
-  '🤬',
-  '🤯',
-  '😳',
-  '🥺',
-  '😞',
-  '😟',
-  '🙁',
-  '☹️',
-  '😣',
-  '😖',
-  '😫',
-  '😩',
-  '🥱',
-  '😑',
-  '😶',
-  '😐',
-  '🤢',
-  '🤮',
-  '🤧',
-  '😷',
-  '🤒',
-  '🤕',
-  '🤑',
-  '🤠',
-  '😈',
-  '👿',
-  '👹',
-  '👺',
-  '🤡',
-  '💩',
-  '👻',
-  '💀',
-  '☠️',
-  '👽',
-  '👾',
-  '🤖',
-  '🎃',
-  '😺',
-  '😸',
-  '😹',
-  '😻',
-  '😼',
-  '😽',
-  '🙀',
-  '😿',
-  '😾',
-  // People & Gestures
-  '👋',
-  '🤚',
-  '🖐️',
-  '✋',
-  '🖖',
-  '👌',
-  '🤏',
-  '✌️',
-  '🤞',
-  '🤟',
-  '🤘',
-  '🤙',
-  '👈',
-  '👉',
-  '👆',
-  '🖕',
-  '👇',
-  '☝️',
-  '👍',
-  '👎',
-  '✊',
-  '👊',
-  '🤛',
-  '🤜',
-  '👏',
-  '🙌',
-  '👐',
-  '🤲',
-  '🤝',
-  '🙏',
-  '✍️',
-  '💪',
-  '🦾',
-  '🦿',
-  '🦵',
-  '🦶',
-  '👂',
-  '🦻',
-  '👃',
-  '🧠',
-  '🫀',
-  '🫁',
-  '🦷',
-  '🦴',
-  '👀',
-  '👁️',
-  '👅',
-  '👄',
-  '💋',
-  '👶',
-  '👧',
-  '🧒',
-  '👦',
-  '👩',
-  '🧑',
-  '👨',
-  '👩‍🦱',
-  '👨‍🦱',
-  '👩‍🦰',
-  '👨‍🦰',
-  '👱‍♀️',
-  '👱',
-  '👩‍🦳',
-  '👨‍🦳',
-  '👩‍🦲',
-  '👨‍🦲',
-  '🧔',
-  '👵',
-  '🧓',
-  '👴',
-  // Animals & Nature
-  '🦁',
-  '🐯',
-  '🐅',
-  '🐆',
-  '🐴',
-  '🦄',
-  '🦓',
-  '🦌',
-  '🦬',
-  '🐮',
-  '🐂',
-  '🐃',
-  '🐄',
-  '🐷',
-  '🐖',
-  '🐗',
-  '🐽',
-  '🐏',
-  '🐑',
-  '🐐',
-  '🐪',
-  '🐫',
-  '🦙',
-  '🦒',
-  '🐘',
-  '🦣',
-  '🦏',
-  '🦛',
-  '🐭',
-  '🐁',
-  '🐀',
-  '🐹',
-  '🐰',
-  '🐇',
-  '🐿️',
-  '🦫',
-  '🦔',
-  '🦇',
-  '🐻',
-  '🐻‍❄️',
-  '🐨',
-  '🐼',
-  '🦥',
-  '🦦',
-  '🦨',
-  '🦘',
-  '🦡',
-  '🐾',
-  '🦃',
-  '🐔',
-  '🐓',
-  '🐣',
-  '🐤',
-  '🐥',
-  '🐦',
-  '🐧',
-  '🕊️',
-  '🦅',
-  '🦆',
-  '🦢',
-  '🦉',
-  '🦤',
-  '🪶',
-  '🦩',
-  '🦚',
-  '🦜',
-  '🐸',
-  '🐊',
-  '🐢',
-  '🦎',
-  '🐍',
-  '🐲',
-  '🐉',
-  '🦕',
-  '🦖',
-  '🐳',
-  '🐋',
-  '🐬',
-  '🦭',
-  '🐟',
-  '🐠',
-  '🐡',
-  '🦈',
-  '🐙',
-  '🐚',
-  '🐌',
-  '🦋',
-  '🐛',
-  '🐜',
-  '🐝',
-  '🪲',
-  '🐞',
-  '🦗',
-  '🪳',
-  '🕷️',
-  '🕸️',
-  '🦂',
-  '🦟',
-  '🪰',
-  '🪱',
-  '🦠',
-  '💐',
-  '🌸',
-  '💮',
-  '🪷',
-  '🏵️',
-  '🌹',
-  '🥀',
-  '🌺',
-  '🌻',
-  '🌼',
-  '🌷',
-  '🪻',
-  '🌱',
-  '🪴',
-  '🌲',
-  '🌳',
-  '🌴',
-  '🌵',
-  '🌶️',
-  '🫑',
-  '🌾',
-  '🌿',
-  '☘️',
-  '🍀',
-  '🍁',
-  '🍂',
-  '🍃',
-  '🪹',
-  '🪺',
-  // Food & Drink
-  '🍇',
-  '🍈',
-  '🍉',
-  '🍊',
-  '🍋',
-  '🍌',
-  '🍍',
-  '🥭',
-  '🍎',
-  '🍏',
-  '🍐',
-  '🍑',
-  '🍒',
-  '🍓',
-  '🫐',
-  '🥝',
-  '🍅',
-  '🫒',
-  '🥥',
-  '🥑',
-  '🍆',
-  '🥔',
-  '🥕',
-  '🌽',
-  '🥒',
-  '🥬',
-  '🥦',
-  '🧄',
-  '🧅',
-  '🍄',
-  '🥜',
-  '🫘',
-  '🌰',
-  '🍞',
-  '🥐',
-  '🥖',
-  '🫓',
-  '🥨',
-  '🥯',
-  '🥞',
-  '🧇',
-  '🧈',
-  '🍳',
-  '🥚',
-  '🧀',
-  '🥓',
-  '🥩',
-  '🍗',
-  '🍖',
-  '🦴',
-  '🌭',
-  '🍔',
-  '🍟',
-  '🍕',
-  '🥪',
-  '🥙',
-  '🧆',
-  '🌮',
-  '🌯',
-  '🫔',
-  '🥗',
-  '🥘',
-  '🫕',
-  '🥫',
-  '🍝',
-  '🍜',
-  '🍲',
-  '🍛',
-  '🍣',
-  '🍱',
-  '🥟',
-  '🦪',
-  '🍤',
-  '🍙',
-  '🍚',
-  '🍘',
-  '🍥',
-  '🥠',
-  '🥡',
-  '🍢',
-  '🍡',
-  '🍧',
-  '🍨',
-  '🍦',
-  '🥧',
-  '🧁',
-  '🍰',
-  '🎂',
-  '🍮',
-  '🍭',
-  '🍬',
-  '🍫',
-  '🍿',
-  '🍩',
-  '🍪',
-  '🍯',
-  '🥛',
-  '🍼',
-  '🫖',
-  '☕️',
-  '🍵',
-  '🧃',
-  '🥤',
-  '🧋',
-  '🍶',
-  '🍺',
-  '🍻',
-  '🥂',
-  '🍷',
-  '🥃',
-  '🍸',
-  '🍹',
-  '🧉',
-  '🍾',
-  '🧊',
-  // Travel & Places
-  '🗺️',
-  '🧭',
-  '🏔️',
-  '⛰️',
-  '🌋',
-  '🗻',
-  '🏕️',
-  '🏖️',
-  '🏜️',
-  '🏝️',
-  '🏞️',
-  '🏟️',
-  '🏛️',
-  '🏗️',
-  '🧱',
-  '🪨',
-  '🪵',
-  '🛖',
-  '🏘️',
-  '🏚️',
-  '🏠',
-  '🏡',
-  '🏢',
-  '🏣',
-  '🏤',
-  '🏥',
-  '🏦',
-  '🏨',
-  '🏩',
-  '🏪',
-  '🏫',
-  '🏬',
-  '🏭',
-  '🏯',
-  '🏰',
-  '💒',
-  '🗼',
-  '🗽',
-  '⛪',
-  '🕌',
-  '🛕',
-  '🕍',
-  '⛩️',
-  '🕋',
-  '⛲',
-  '⛺',
-  '🌁',
-  '🌃',
-  '🏙️',
-  '🌄',
-  '🌅',
-  '🌆',
-  '🌇',
-  '🌉',
-  '♨️',
-  '🎠',
-  '🎡',
-  '🎢',
-  '💈',
-  '🎪',
-  '🚂',
-  '🚃',
-  '🚄',
-  '🚅',
-  '🚆',
-  '🚇',
-  '🚈',
-  '🚉',
-  '🚊',
-  '🚝',
-  '🚞',
-  '🚋',
-  '🚌',
-  '🚍',
-  '🚎',
-  '🚐',
-  '🚑',
-  '🚒',
-  '🚓',
-  '🚔',
-  '🚕',
-  '🚖',
-  '🚗',
-  '🚘',
-  '🚙',
-  '🚚',
-  '🚛',
-  '🚜',
-  '🏎️',
-  '🏍️',
-  '🛵',
-  '🦽',
-  '🦼',
-  '🛴',
-  '🚲',
-  '🛺',
-  '🛸',
-  '🚁',
-  '✈️',
-  '🛩️',
-  '🛫',
-  '🛬',
-  '🪂',
-  '💺',
-  '🚀',
-  '🚠',
-  '🚡',
-  '🛰️',
-  '🚢',
-  '⛵',
-  '🛶',
-  '🛥️',
-  '🛳️',
-  '⛴️',
-  '🚤',
-  '🛟',
-  // Activities & Objects
-  '🎯',
-  '🎮',
-  '🎰',
-  '🎲',
-  '🃏',
-  '🀄',
-  '🎴',
-  '🎭',
-  '🖼️',
-  '🎨',
-  '🧩',
-  '🏸',
-  '🎬',
-  '🎤',
-  '🎧',
-  '🎼',
-  '🎹',
-  '🥁',
-  '🪘',
-  '🎷',
-  '🎺',
-  '🪗',
-  '🎸',
-  '🪕',
-  '🎻',
-  '🎳',
-  '🧸',
-  '🪅',
-  '🪩',
-  '🪆',
-  '🎁',
-  '🎀',
-  '🎊',
-  '🎉',
-  '🎈',
-  '🎂',
-  '🎃',
-  '🎄',
-  '🎆',
-  '🎇',
-  '🧨',
-  '✨',
-  '🎊',
-  '🎉',
-  '🎈',
-]
+const allAvatars = AVATAR_EMOJI_CATALOG
 
-const DISPLAY_COUNT = 50 // Number of avatars to show initially and load per scroll
-const isLoadingMore = ref(false) // Loading state for scrolling
-const isSaving = ref(false) // Loading state for saving avatar
+const DISPLAY_COUNT = 50
+const isLoadingMore = ref(false)
+const isSaving = ref(false)
 const displayedCount = ref(DISPLAY_COUNT)
-const selectedEmoji = ref<string>('')
+const selectedEmoji = ref('')
 const scrollbarRef = ref()
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const cropOpen = ref(false)
+const cropSrc = ref('')
 
 const displayedAvatars = computed(() => allAvatars.slice(0, displayedCount.value))
-
-const currentAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
 const hasMore = computed(() => displayedCount.value < allAvatars.length)
 
@@ -619,7 +62,8 @@ watch(
   () => props.visible,
   (newValue) => {
     if (newValue) {
-      selectedEmoji.value = currentAvatar.value
+      const stored = authStore.user?.avatar
+      selectedEmoji.value = userAvatarImageSrc(stored) ? '' : resolveUserAvatarEmoji(stored)
       displayedCount.value = DISPLAY_COUNT
     }
   }
@@ -640,8 +84,6 @@ function handleScroll() {
   if (!wrap) return
 
   const { scrollTop, scrollHeight, clientHeight } = wrap
-
-  // Load more when user scrolls to within 100px of the bottom
   const threshold = 100
   if (scrollTop + clientHeight >= scrollHeight - threshold) {
     loadMore()
@@ -651,12 +93,84 @@ function handleScroll() {
 function loadMore() {
   if (isLoadingMore.value || !hasMore.value) return
   isLoadingMore.value = true
-
-  // Simulate loading delay for smooth UX
   setTimeout(() => {
     displayedCount.value = Math.min(displayedCount.value + DISPLAY_COUNT, allAvatars.length)
     isLoadingMore.value = false
   }, 300)
+}
+
+function revokeCrop() {
+  if (cropSrc.value) {
+    URL.revokeObjectURL(cropSrc.value)
+    cropSrc.value = ''
+  }
+}
+
+function openCustomize() {
+  fileInputRef.value?.click()
+}
+
+function onCustomizeFile(event: Event) {
+  const input = event.target
+  if (!(input instanceof HTMLInputElement)) {
+    return
+  }
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) {
+    return
+  }
+  if (file.type && !file.type.startsWith('image/')) {
+    notify.errorKey('auth.avatarImageInvalid')
+    return
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    notify.errorKey('auth.avatarImageTooLarge')
+    return
+  }
+  revokeCrop()
+  cropSrc.value = URL.createObjectURL(file)
+  cropOpen.value = true
+}
+
+function onCropInvalid() {
+  cropOpen.value = false
+  revokeCrop()
+  notify.errorKey('auth.avatarImageInvalid')
+}
+
+async function uploadCroppedAvatar(blob: Blob) {
+  isSaving.value = true
+  try {
+    const body = new FormData()
+    body.append('file', blob, 'avatar.png')
+    const response = await fetch('/api/auth/avatar/image', {
+      method: 'POST',
+      credentials: 'same-origin',
+      body,
+    })
+    if (!response.ok) {
+      if (response.status === 413) {
+        notify.errorKey('auth.avatarImageTooLarge')
+      } else if (response.status === 400) {
+        notify.errorKey('auth.avatarImageInvalid')
+      } else {
+        notify.errorKey('auth.avatarUploadFailed')
+      }
+      return
+    }
+    notify.successKey('auth.avatarUploadSuccess')
+    cropOpen.value = false
+    revokeCrop()
+    await authStore.checkAuth()
+    emit('success')
+    closeModal()
+  } catch (error) {
+    console.error('Failed to upload avatar:', error)
+    notify.errorKey('auth.avatarUploadFailed')
+  } finally {
+    isSaving.value = false
+  }
 }
 
 async function saveAvatar() {
@@ -668,7 +182,6 @@ async function saveAvatar() {
   isSaving.value = true
 
   try {
-    // Use credentials (token in httpOnly cookie)
     const response = await fetch('/api/auth/avatar', {
       method: 'PUT',
       credentials: 'same-origin',
@@ -693,6 +206,8 @@ async function saveAvatar() {
     isSaving.value = false
   }
 }
+
+onBeforeUnmount(revokeCrop)
 </script>
 
 <template>
@@ -714,7 +229,6 @@ async function saveAvatar() {
       @scroll="handleScroll"
     >
       <div class="p-8">
-        <!-- Avatar grid (5 columns) -->
         <div class="grid grid-cols-5 gap-4">
           <button
             v-for="emoji in displayedAvatars"
@@ -731,7 +245,6 @@ async function saveAvatar() {
           </button>
         </div>
 
-        <!-- Loading indicator for scrolling -->
         <div
           v-if="isLoadingMore"
           class="flex justify-center items-center py-4"
@@ -739,7 +252,6 @@ async function saveAvatar() {
           <div class="text-sm text-stone-500">加载中...</div>
         </div>
 
-        <!-- No more indicator -->
         <div
           v-if="!hasMore && displayedAvatars.length > 0"
           class="flex justify-center items-center py-4"
@@ -750,29 +262,79 @@ async function saveAvatar() {
     </el-scrollbar>
 
     <template #footer>
-      <div class="swiss-glass-footer">
+      <div class="swiss-glass-footer avatar-select-footer">
         <button
+          v-if="allowPhotoAvatar"
           type="button"
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
-          @click="closeModal"
-        >
-          <I18nText k="common.cancel" />
-        </button>
-        <button
-          type="button"
-          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           :disabled="isSaving"
-          @click="saveAvatar"
+          @click="openCustomize"
         >
-          <I18nText k="common.save" />
+          <I18nText k="auth.avatarCustomize" />
         </button>
+        <div class="avatar-select-footer__actions">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            @click="closeModal"
+          >
+            <I18nText k="common.cancel" />
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="isSaving"
+            @click="saveAvatar"
+          >
+            <I18nText k="common.save" />
+          </button>
+        </div>
       </div>
     </template>
   </SwissGlassCard>
+
+  <input
+    ref="fileInputRef"
+    type="file"
+    class="avatar-file-input"
+    accept="image/png,image/jpeg,image/webp,image/gif"
+    @change="onCustomizeFile"
+  />
+  <AvatarCropModal
+    v-if="cropSrc"
+    v-model="cropOpen"
+    :src="cropSrc"
+    :saving="isSaving"
+    @confirm="uploadCroppedAvatar"
+    @invalid="onCropInvalid"
+  />
 </template>
 
 <style scoped>
-/* Scrollbar - Element Plus style with Swiss Design */
+.avatar-select-footer {
+  justify-content: space-between;
+  width: 100%;
+}
+
+.avatar-select-footer__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.avatar-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 :deep(.el-scrollbar__bar) {
   right: 2px;
   bottom: 2px;

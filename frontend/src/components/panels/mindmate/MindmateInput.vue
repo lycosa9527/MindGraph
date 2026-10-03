@@ -8,6 +8,7 @@ import { Close, VideoPause } from '@element-plus/icons-vue'
 import { Paperclip, Send } from '@lucide/vue'
 
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
+import UserAvatarGlyph from '@/components/common/UserAvatarGlyph.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import type { MindMateFile } from '@/composables/mindmate/useMindMate'
 import { useMindmateMentionPicker } from '@/composables/mindmate/useMindmateMentionPicker'
@@ -308,7 +309,9 @@ function handleSuggestionSelect(suggestion: string) {
             role="option"
             @mousedown.prevent="insertMention(row)"
           >
-            <span class="mindmate-mention-picker__avatar">{{ row.avatar || '👤' }}</span>
+            <span class="mindmate-mention-picker__avatar"
+              ><UserAvatarGlyph :value="row.avatar"
+            /></span>
             <span class="mindmate-mention-picker__name">{{ row.name }}</span>
           </button>
         </div>

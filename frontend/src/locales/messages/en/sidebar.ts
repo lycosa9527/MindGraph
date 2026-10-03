@@ -130,7 +130,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'Package deleted',
   'sidebar.knowledgeSpaceHistory.empty': 'No packages yet',
   'sidebar.knowledgeSpaceHistory.title': 'Packages',
-  'sidebar.languageSettings': 'UI settings',
+  'sidebar.settings': 'Settings',
   'sidebar.library': 'Library',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

@@ -32,7 +32,6 @@ import {
 } from '@/stores'
 import type { MindMateMessage } from '@/stores/mindmateActiveThread'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const router = useRouter()
 const { promptLanguage, t } = useLanguage()
@@ -79,7 +78,7 @@ const isLoading = computed(
   () => mindMateStore.isGenerating || mindMate.isLoading.value || mindMate.isStreaming.value
 )
 
-const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+const userAvatar = computed(() => authStore.user?.avatar?.trim() || '')
 
 const showWelcome = computed(
   () => !mindMate.hasMessages.value && !mindMate.isLoading.value && !mindMate.isStreaming.value

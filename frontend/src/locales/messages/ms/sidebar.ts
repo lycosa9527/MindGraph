@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'Paket dipadam',
   'sidebar.knowledgeSpaceHistory.empty': 'Tiada lagi paket',
   'sidebar.knowledgeSpaceHistory.title': 'Paket',
-  'sidebar.languageSettings': 'Tetapan Bahasa',
   'sidebar.library': 'Perpustakaan',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

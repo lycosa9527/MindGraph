@@ -10,12 +10,11 @@ import { ElButton } from 'element-plus'
 
 import { PanelLeftClose } from '@lucide/vue'
 
-import AccountInfoModal from '@/components/auth/AccountInfoModal.vue'
 import LoginModal from '@/components/auth/LoginModal.vue'
 import ThinkingCoinsModal from '@/components/auth/ThinkingCoinsModal.vue'
 import UpdateLogModal from '@/components/auth/UpdateLogModal.vue'
 import I18nText from '@/components/common/I18nText.vue'
-import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
+import UserSettingsModal from '@/components/settings/UserSettingsModal.vue'
 import { useThinkingCoinInsufficientListener } from '@/composables/auth/useThinkingCoinInsufficientListener'
 import { eventBus } from '@/composables/core/useEventBus'
 import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
@@ -33,9 +32,9 @@ useThinkingCoinInsufficientListener(() => sidebar.openThinkingCoinsUpgrade())
 
 const {
   isCollapsed,
-  showLanguageSettingsModal,
+  showUserSettingsModal,
+  userSettingsTab,
   showLoginModal,
-  showAccountModal,
   showThinkingCoinsModal,
   thinkingCoinsModalTab,
   showUpdateLogModal,
@@ -80,8 +79,7 @@ const TRAINING_HOST_MODALS = new Set<TrainingModalKey>([
 const TRAINING_MODAL_OWNER = 'AppSidebarTrainingModals'
 
 function closeTrainingHostModals(): void {
-  showLanguageSettingsModal.value = false
-  showAccountModal.value = false
+  showUserSettingsModal.value = false
   showThinkingCoinsModal.value = false
   showUpdateLogModal.value = false
   showLoginModal.value = false
@@ -215,12 +213,12 @@ onBeforeUnmount(() => {
     <AppSidebarAccountFooter />
 
     <!-- Modals -->
-    <LanguageSettingsModal v-model="showLanguageSettingsModal" />
-    <LoginModal v-model:visible="showLoginModal" />
-    <AccountInfoModal
-      v-model:visible="showAccountModal"
+    <UserSettingsModal
+      v-model:visible="showUserSettingsModal"
+      :initial-tab="userSettingsTab"
       @success="authStore.checkAuth()"
     />
+    <LoginModal v-model:visible="showLoginModal" />
     <UpdateLogModal v-model:visible="showUpdateLogModal" />
     <ThinkingCoinsModal
       v-model:visible="showThinkingCoinsModal"

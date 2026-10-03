@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'Pacote eliminado',
   'sidebar.knowledgeSpaceHistory.empty': 'Ainda não há pacotes',
   'sidebar.knowledgeSpaceHistory.title': 'Pacotes',
-  'sidebar.languageSettings': 'Definições de idioma',
   'sidebar.library': 'Biblioteca',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

@@ -18,4 +18,22 @@ describe('floating account menu', () => {
     const menu = readSrc('src/components/sidebar/FloatingAccountMenu.vue')
     expect(menu).toContain('Not used on canvas')
   })
+
+  it('opens one Settings dialog from the user chip', () => {
+    const footer = readSrc('src/components/sidebar/AppSidebarAccountFooter.vue')
+    expect(footer).toContain('k="sidebar.settings"')
+    expect(footer).not.toContain('k="sidebar.languageSettings"')
+    expect(footer).not.toContain('k="auth.accountInfo"')
+    expect(footer).toContain('openAccountModal')
+    expect(footer).not.toContain('openLanguageSettingsModal')
+
+    const tabs = readSrc('src/components/settings/userSettingsTabs.ts')
+    expect(tabs).toContain("'settings.tabs.account'")
+    expect(tabs).toContain("'settings.tabs.security'")
+    expect(tabs).toContain("'settings.tabs.language'")
+    expect(tabs).toContain("'settings.tabs.plugins'")
+    expect(readSrc('src/components/settings/UserSettingsModal.vue')).toContain(
+      'USER_SETTINGS_TAB_KEYS'
+    )
+  })
 })

@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'Пакет видалено',
   'sidebar.knowledgeSpaceHistory.empty': 'Пакетів ще немає',
   'sidebar.knowledgeSpaceHistory.title': 'Пакети',
-  'sidebar.languageSettings': 'Налаштування мови',
   'sidebar.library': 'Бібліотека',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

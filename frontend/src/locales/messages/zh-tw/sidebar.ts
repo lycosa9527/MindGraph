@@ -130,7 +130,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': '資料包已刪除',
   'sidebar.knowledgeSpaceHistory.empty': '暫無資料包',
   'sidebar.knowledgeSpaceHistory.title': '資料包',
-  'sidebar.languageSettings': '界面UI設置',
+  'sidebar.settings': '設置',
   'sidebar.library': '圖書館',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

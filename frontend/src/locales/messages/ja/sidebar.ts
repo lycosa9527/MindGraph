@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'パッケージを削除しました',
   'sidebar.knowledgeSpaceHistory.empty': 'パッケージはまだありません',
   'sidebar.knowledgeSpaceHistory.title': 'パッケージ',
-  'sidebar.languageSettings': '言語設定',
   'sidebar.library': 'ライブラリ',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

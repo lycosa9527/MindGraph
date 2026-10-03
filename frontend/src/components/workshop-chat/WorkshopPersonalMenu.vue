@@ -6,7 +6,7 @@ import { LayoutGrid, LogOut, ScrollText, User } from '@lucide/vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { toggleQuickAccessRemote } from '@/composables/sidebar/useQuickAccessRemote'
 import { useAuthStore } from '@/stores/auth'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
 const emit = defineEmits<{
   (e: 'navigate', page: string): void
@@ -20,6 +20,7 @@ const visible = ref(false)
 
 const displayName = computed(() => authStore.user?.username || authStore.user?.phone || 'User')
 const displayAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+const displayAvatarSrc = computed(() => userAvatarImageSrc(authStore.user?.avatar))
 
 function go(page: string): void {
   visible.value = false
@@ -62,7 +63,18 @@ function handleSignOut(): void {
 
     <div class="ws-popover-menu">
       <div class="ws-popover-user-info">
-        <div class="ws-popover-user-avatar mg-user-avatar-emoji">{{ displayAvatar }}</div>
+        <img
+          v-if="displayAvatarSrc"
+          :src="displayAvatarSrc"
+          alt=""
+          class="ws-popover-user-photo"
+        />
+        <div
+          v-else
+          class="ws-popover-user-avatar mg-user-avatar-emoji"
+        >
+          {{ displayAvatar }}
+        </div>
         <div class="ws-popover-user-meta">
           <div class="ws-popover-user-name">{{ displayName }}</div>
           <div class="ws-popover-user-phone">{{ authStore.user?.phone }}</div>
@@ -130,6 +142,15 @@ function handleSignOut(): void {
 .ws-popover-user-avatar {
   font-size: 22px;
   line-height: 1;
+  flex-shrink: 0;
+}
+
+.ws-popover-user-photo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
   flex-shrink: 0;
 }
 

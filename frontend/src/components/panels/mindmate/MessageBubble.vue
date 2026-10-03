@@ -33,6 +33,7 @@ import {
 import { extractMindmatePreviewCacheKey } from '@/utils/mindmateDiagramPreviewCache'
 import { notifyMindmateDiagramPreviewExpired } from '@/utils/mindmateDiagramPreviewExpiredNotify'
 import { isTeachingInstructionReply } from '@/utils/mindmateTeachingDesignFlag'
+import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
 import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
 
@@ -392,9 +393,10 @@ function handleMarkdownClick(event: MouseEvent) {
       <template v-if="message.role === 'user'">
         <ElAvatar
           :size="40"
+          :src="userAvatarImageSrc(userAvatar) || undefined"
           class="flex-shrink-0 bg-[#FAFAFA] border-2 border-[#303133] mg-user-avatar-emoji"
         >
-          {{ userAvatar }}
+          {{ resolveUserAvatarEmoji(userAvatar) }}
         </ElAvatar>
       </template>
       <template v-else>

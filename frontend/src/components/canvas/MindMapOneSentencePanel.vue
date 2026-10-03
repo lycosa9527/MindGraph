@@ -21,7 +21,7 @@ import {
 } from '@/config/oneSentenceNodeActionSuggestions'
 import { useAuthStore, useDiagramStore } from '@/stores'
 import type { OneSentenceChatMessage, OneSentenceClarifyChoice } from '@/stores/oneSentence'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -47,6 +47,7 @@ const {
 } = useMindMapOneSentenceChat()
 
 const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+const userAvatarSrc = computed(() => userAvatarImageSrc(authStore.user?.avatar))
 const photoInputRef = ref<HTMLInputElement | null>(null)
 const photoUploading = ref(false)
 
@@ -214,6 +215,7 @@ onUnmounted(() => {
           <ElAvatar
             v-else
             :size="32"
+            :src="userAvatarSrc || undefined"
             class="one-sentence-user-avatar shrink-0"
           >
             {{ userAvatar }}

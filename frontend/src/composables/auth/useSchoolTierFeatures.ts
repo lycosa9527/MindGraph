@@ -36,12 +36,6 @@ export function useSchoolTierFeatures() {
   const canUseChromeExtension = computed(() => features.value.chrome_extension)
   const canUseApiToken = computed(() => features.value.api_token)
 
-  /** Account plugin row: API token, Chrome extension, OpenClaw skill download. */
-  const showAccountPlugins = computed(
-    () =>
-      canUseApiToken.value || canUseChromeExtension.value
-  )
-
   return {
     schoolTier,
     features,
@@ -49,6 +43,5 @@ export function useSchoolTierFeatures() {
     canUsePresentationTools,
     canUseChromeExtension,
     canUseApiToken,
-    showAccountPlugins,
   }
 }

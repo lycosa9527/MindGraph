@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'ಪ್ಯಾಕೇಜ್ ಅಳಿಸಲಾಗಿದೆ',
   'sidebar.knowledgeSpaceHistory.empty': 'ಇನ್ನೂ ಮಾಹಿತಿ ಪ್ಯಾಕೇಜ್ ಇಲ್ಲ',
   'sidebar.knowledgeSpaceHistory.title': 'ಮಾಹಿತಿ ಪ್ಯಾಕೇಜ್',
-  'sidebar.languageSettings': 'ಇಂಟರ್ಫೇಸ್ UI ಸೆಟ್ಟಿಂಗ್‌ಗಳು',
   'sidebar.library': 'ಗ್ರಂಥಾಲಯ',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

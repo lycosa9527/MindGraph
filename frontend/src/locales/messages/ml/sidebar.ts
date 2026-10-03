@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'പാക്കേജ് ഇല്ലാതാക്കി',
   'sidebar.knowledgeSpaceHistory.empty': 'ഇതുവരെ വിവര പാക്കേജുകളൊന്നുമില്ല',
   'sidebar.knowledgeSpaceHistory.title': 'വിവര പാക്കേജ്',
-  'sidebar.languageSettings': 'ഇൻ്റർഫേസ് യുഐ ക്രമീകരണങ്ങൾ',
   'sidebar.library': 'ലൈബ്രറി',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

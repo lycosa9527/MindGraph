@@ -11,6 +11,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
 import logging
 from typing import List
 
@@ -22,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Language, Messages
+from services.auth.user_avatar_image import release_replaced_avatar
 from services.redis.cache.redis_user_cache import user_cache
 from services.utils.error_types import REDIS_ERRORS
 from utils.auth import get_current_user
@@ -646,6 +648,7 @@ async def update_avatar(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    previous_avatar = user.avatar
     user.avatar = request.avatar
 
     try:
@@ -662,5 +665,6 @@ async def update_avatar(
             detail="Failed to update avatar",
         ) from e
 
+    await asyncio.to_thread(release_replaced_avatar, previous_avatar, user.avatar)
     success_msg = Messages.success("avatar_update_success", lang)
     return {"message": success_msg, "avatar": user.avatar}

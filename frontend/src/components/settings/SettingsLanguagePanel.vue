@@ -1,17 +1,13 @@
 <script setup lang="ts">
 /**
- * UI settings: interface / prompt language and e-blackboard chrome.
- * The new canvas is the only canvas; classic is archived and not offered here.
- * Shell: light Swiss stone (user settings).
+ * Language tab inside UserSettingsModal: interface, prompt, bilingual UI, e-blackboard.
+ * Each change is applied immediately. Drafts exist so opening the dialog does not rewrite prefs.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { ElCheckbox } from 'element-plus'
 
-import { Settings } from '@lucide/vue'
-
 import I18nText from '@/components/common/I18nText.vue'
-import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import BilingualUiSettingsSection from '@/components/settings/BilingualUiSettingsSection.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
@@ -27,7 +23,13 @@ import { useUIStore } from '@/stores/ui'
 import '@/styles/settings-language-swiss.css'
 import { MULTISCRIPT_SANS_STACK } from '@/utils/diagramNodeFontStack'
 
-const visible = defineModel<boolean>({ required: true })
+const props = defineProps<{
+  /** True while the parent settings dialog is open. Reloads the current prefs on each open. */
+  open: boolean
+}>()
+
+/** True while copying store values into the controls, so that copy is not saved again. */
+let hydrating = false
 
 const uiStore = useUIStore()
 const authStore = useAuthStore()
@@ -115,47 +117,59 @@ const multiscriptFontFamily = MULTISCRIPT_SANS_STACK
  * Prompt-language dropdown lists ~149 native names; fonts load per selected code.
  * While browsing, OS fonts fill unsupported scripts (product tradeoff).
  */
-watch(visible, (v) => {
-  if (v) {
-    let ui = uiStore.language
-    let pr = uiStore.promptLanguage
-    if (!allowSimplifiedChinesePicker.value) {
-      if (ui === 'zh') {
-        ui = 'en'
-      }
-      if (pr === 'zh') {
-        pr = 'en'
-      }
+function loadDraftsFromStore(): void {
+  let ui = uiStore.language
+  let pr = uiStore.promptLanguage
+  if (!allowSimplifiedChinesePicker.value) {
+    if (ui === 'zh') {
+      ui = 'en'
     }
-    draftUi.value = ui
-    draftPrompt.value = pr
-    draftEBlackboardOptimize.value = uiStore.eBlackboardOptimize
-    draftBilingualUiEnabled.value = uiStore.bilingualUiEnabled
-    draftPresenterUiLocale.value =
-      !allowSimplifiedChinesePicker.value && uiStore.presenterUiLocale === 'zh'
-        ? 'en'
-        : uiStore.presenterUiLocale
-    matchPromptToInterface.value = uiStore.matchPromptToUi
+    if (pr === 'zh') {
+      pr = 'en'
+    }
+  }
+  draftUi.value = ui
+  draftPrompt.value = pr
+  draftEBlackboardOptimize.value = uiStore.eBlackboardOptimize
+  draftBilingualUiEnabled.value = uiStore.bilingualUiEnabled
+  const presenterLocale = uiStore.presenterUiLocale
+  draftPresenterUiLocale.value =
+    !allowSimplifiedChinesePicker.value && presenterLocale === 'zh' ? 'en' : presenterLocale
+  matchPromptToInterface.value = uiStore.matchPromptToUi
+}
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (!isOpen) {
+      return
+    }
+    hydrating = true
+    loadDraftsFromStore()
     void ensureFontsForLanguageCode(draftPresenterUiLocale.value)
     void ensureFontsForLanguageCode(draftPrompt.value)
     void ensureFontsForLanguageCode(draftUi.value)
-  }
-})
+    void nextTick(() => {
+      hydrating = false
+    })
+  },
+  { immediate: true }
+)
 
 watch(draftPrompt, (code) => {
-  if (visible.value) {
+  if (props.open) {
     void ensureFontsForLanguageCode(code)
   }
 })
 
 watch(draftUi, (code) => {
-  if (visible.value) {
+  if (props.open) {
     void ensureFontsForLanguageCode(code)
   }
 })
 
 watch(draftPresenterUiLocale, (code) => {
-  if (visible.value) {
+  if (props.open) {
     void ensureFontsForLanguageCode(code)
   }
 })
@@ -213,7 +227,7 @@ watch([draftUi, draftPresenterUiLocale], () => {
   ensureDistinctSecondaryLocale()
 })
 
-async function save(): Promise<void> {
+async function applyLanguageSettings(): Promise<boolean> {
   const ui = draftUi.value
   const promptForPersist: PromptLanguage = matchPromptToInterface.value
     ? (matchedPromptLanguageForUiLocale(ui) ?? draftPrompt.value)
@@ -225,7 +239,7 @@ async function save(): Promise<void> {
       presenterUiLocale: draftPresenterUiLocale.value,
     })
     if (!ok) {
-      return
+      return false
     }
   }
   uiStore.setBilingualUiEnabled(draftBilingualUiEnabled.value)
@@ -237,173 +251,194 @@ async function save(): Promise<void> {
   }
   uiStore.setEBlackboardOptimize(draftEBlackboardOptimize.value)
   uiStore.setUiLanguageExplicit(true)
-  visible.value = false
+  return true
 }
 
-function onClose(): void {
-  visible.value = false
+let applyQueued = false
+let applyRunning = false
+let applyAgain = false
+
+function scheduleApply(): void {
+  if (!props.open || hydrating) {
+    return
+  }
+  if (applyRunning) {
+    applyAgain = true
+    return
+  }
+  if (applyQueued) {
+    return
+  }
+  applyQueued = true
+  void nextTick(() => {
+    applyQueued = false
+    void runApply()
+  })
 }
+
+async function runApply(): Promise<void> {
+  if (!props.open || hydrating) {
+    return
+  }
+  applyRunning = true
+  const ok = await applyLanguageSettings()
+  applyRunning = false
+  if (!ok && props.open) {
+    applyAgain = false
+    hydrating = true
+    loadDraftsFromStore()
+    void nextTick(() => {
+      hydrating = false
+    })
+    return
+  }
+  if (applyAgain) {
+    applyAgain = false
+    scheduleApply()
+  }
+}
+
+watch(
+  [
+    draftUi,
+    draftPrompt,
+    draftEBlackboardOptimize,
+    draftBilingualUiEnabled,
+    draftPresenterUiLocale,
+    matchPromptToInterface,
+  ],
+  () => {
+    scheduleApply()
+  }
+)
 </script>
 
 <template>
-  <SwissGlassDialog
-    v-model="visible"
-    :ribbon="t('swissGlass.hero.settings.ribbon')"
-    ribbon-key="swissGlass.hero.settings.ribbon"
-    :title="t('swissGlass.hero.settings.title')"
-    title-key="swissGlass.hero.settings.title"
-    :line1="t('swissGlass.hero.settings.line1')"
-    line1-key="swissGlass.hero.settings.line1"
-    :icon="Settings"
-    width="min(480px, 92vw)"
-    dialog-class="language-settings-dialog language-settings-swiss"
-    @close="onClose"
-  >
-    <div class="language-settings-swiss__stack">
-      <ElCheckbox v-model="matchPromptToInterface">
-        <I18nText k="settings.language.matchPrompt" />
-      </ElCheckbox>
+  <div class="language-settings-swiss__stack user-settings-tab-pad">
+    <ElCheckbox v-model="matchPromptToInterface">
+      <I18nText k="settings.language.matchPrompt" />
+    </ElCheckbox>
 
-      <BilingualUiSettingsSection
-        v-model:enabled="draftBilingualUiEnabled"
-        v-model:primary="draftUi"
-        v-model:secondary="draftPresenterUiLocale"
-        :ui-language-options="uiLanguageOptions"
-        :option-count="interfaceLanguageOptionCount"
-      />
+    <BilingualUiSettingsSection
+      v-model:enabled="draftBilingualUiEnabled"
+      v-model:primary="draftUi"
+      v-model:secondary="draftPresenterUiLocale"
+      :ui-language-options="uiLanguageOptions"
+      :option-count="interfaceLanguageOptionCount"
+    />
 
-      <section v-if="!draftBilingualUiEnabled">
-        <div class="language-settings-swiss__kicker">
-          <span><I18nText k="settings.language.interface" /></span>
-          <span class="language-settings-swiss__kicker-count">
-            <I18nText
-              k="settings.language.supportsCount"
-              :params="{ n: interfaceLanguageOptionCount }"
-            />
-          </span>
-        </div>
-        <el-select
-          v-model="draftUi"
-          class="lang-settings-swiss-select interface-lang-select prompt-lang-select w-full"
-          filterable
-          :placeholder="t('settings.language.promptSelectPlaceholder')"
-          popper-class="prompt-lang-select-popper"
+    <section v-if="!draftBilingualUiEnabled">
+      <div class="language-settings-swiss__kicker">
+        <span><I18nText k="settings.language.interface" /></span>
+        <span class="language-settings-swiss__kicker-count">
+          <I18nText
+            k="settings.language.supportsCount"
+            :params="{ n: interfaceLanguageOptionCount }"
+          />
+        </span>
+      </div>
+      <el-select
+        v-model="draftUi"
+        class="lang-settings-swiss-select interface-lang-select prompt-lang-select w-full"
+        filterable
+        :placeholder="t('settings.language.promptSelectPlaceholder')"
+        popper-class="prompt-lang-select-popper"
+      >
+        <el-option
+          v-for="o in uiLanguageOptions"
+          :key="o.code"
+          :label="languageSelectDisplayLabel(o)"
+          :value="o.code"
         >
-          <el-option
-            v-for="o in uiLanguageOptions"
-            :key="o.code"
-            :label="languageSelectDisplayLabel(o)"
-            :value="o.code"
+          <span
+            class="prompt-option-row"
+            dir="auto"
+            :lang="o.code"
           >
-            <span
-              class="prompt-option-row"
-              dir="auto"
-              :lang="o.code"
-            >
-              <span class="prompt-option-code">{{ o.code }}</span>
-              <span class="prompt-option-text">
-                <span class="prompt-option-name">{{ o.label }}</span>
-                <span class="prompt-option-en">{{ o.englishName }}</span>
-              </span>
+            <span class="prompt-option-code">{{ o.code }}</span>
+            <span class="prompt-option-text">
+              <span class="prompt-option-name">{{ o.label }}</span>
+              <span class="prompt-option-en">{{ o.englishName }}</span>
             </span>
-          </el-option>
-        </el-select>
-      </section>
-
-      <section>
-        <div class="language-settings-swiss__kicker">
-          <span><I18nText k="settings.language.prompt" /></span>
-          <span class="language-settings-swiss__kicker-count">
-            <I18nText
-              k="settings.language.supportsCount"
-              :params="{ n: promptLanguageOptionCount }"
-            />
           </span>
-        </div>
-        <el-select
-          v-model="draftPrompt"
-          class="lang-settings-swiss-select prompt-lang-select w-full"
-          :disabled="matchPromptToInterface"
-          filterable
-          :placeholder="t('settings.language.promptSelectPlaceholder')"
-          popper-class="prompt-lang-select-popper"
+        </el-option>
+      </el-select>
+    </section>
+
+    <section>
+      <div class="language-settings-swiss__kicker">
+        <span><I18nText k="settings.language.prompt" /></span>
+        <span class="language-settings-swiss__kicker-count">
+          <I18nText
+            k="settings.language.supportsCount"
+            :params="{ n: promptLanguageOptionCount }"
+          />
+        </span>
+      </div>
+      <el-select
+        v-model="draftPrompt"
+        class="lang-settings-swiss-select prompt-lang-select w-full"
+        :disabled="matchPromptToInterface"
+        filterable
+        :placeholder="t('settings.language.promptSelectPlaceholder')"
+        popper-class="prompt-lang-select-popper"
+      >
+        <el-option
+          v-for="o in promptLangOptionsFiltered"
+          :key="o.code"
+          :label="languageSelectDisplayLabel(o)"
+          :value="o.code"
         >
-          <el-option
-            v-for="o in promptLangOptionsFiltered"
-            :key="o.code"
-            :label="languageSelectDisplayLabel(o)"
-            :value="o.code"
+          <span
+            class="prompt-option-row"
+            dir="auto"
+            :lang="o.code"
           >
-            <span
-              class="prompt-option-row"
-              dir="auto"
-              :lang="o.code"
-            >
-              <span class="prompt-option-code">{{ o.code }}</span>
-              <span class="prompt-option-text">
-                <span class="prompt-option-name">{{ o.label }}</span>
-                <span class="prompt-option-en">{{ o.englishName }}</span>
-              </span>
+            <span class="prompt-option-code">{{ o.code }}</span>
+            <span class="prompt-option-text">
+              <span class="prompt-option-name">{{ o.label }}</span>
+              <span class="prompt-option-en">{{ o.englishName }}</span>
             </span>
-          </el-option>
-        </el-select>
-      </section>
+          </span>
+        </el-option>
+      </el-select>
+    </section>
 
-      <section>
-        <div class="language-settings-swiss__kicker">
-          <span><I18nText k="settings.language.eBlackboardOptimize" /></span>
-        </div>
-        <div
-          class="language-settings-canvas-segmented"
-          role="radiogroup"
-          :aria-label="t('settings.language.eBlackboardOptimize')"
-        >
-          <button
-            type="button"
-            role="radio"
-            class="language-settings-canvas-segment"
-            :class="{ 'is-active': !draftEBlackboardOptimize }"
-            :aria-checked="!draftEBlackboardOptimize"
-            @click="draftEBlackboardOptimize = false"
-          >
-            <I18nText k="settings.language.eBlackboardOff" />
-          </button>
-          <button
-            type="button"
-            role="radio"
-            class="language-settings-canvas-segment"
-            :class="{ 'is-active': draftEBlackboardOptimize }"
-            :aria-checked="draftEBlackboardOptimize"
-            @click="draftEBlackboardOptimize = true"
-          >
-            <I18nText k="settings.language.eBlackboardOn" />
-          </button>
-        </div>
-        <p class="language-settings-swiss__hint">
-          <I18nText k="settings.language.eBlackboardHint" />
-        </p>
-      </section>
-    </div>
-
-    <template #footer>
-      <div class="swiss-glass-footer">
+    <section>
+      <div class="language-settings-swiss__kicker">
+        <span><I18nText k="settings.language.eBlackboardOptimize" /></span>
+      </div>
+      <div
+        class="language-settings-canvas-segmented"
+        role="radiogroup"
+        :aria-label="t('settings.language.eBlackboardOptimize')"
+      >
         <button
           type="button"
-          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
-          @click="onClose"
+          role="radio"
+          class="language-settings-canvas-segment"
+          :class="{ 'is-active': !draftEBlackboardOptimize }"
+          :aria-checked="!draftEBlackboardOptimize"
+          @click="draftEBlackboardOptimize = false"
         >
-          <I18nText k="common.cancel" />
+          <I18nText k="settings.language.eBlackboardOff" />
         </button>
         <button
           type="button"
-          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
-          @click="save"
+          role="radio"
+          class="language-settings-canvas-segment"
+          :class="{ 'is-active': draftEBlackboardOptimize }"
+          :aria-checked="draftEBlackboardOptimize"
+          @click="draftEBlackboardOptimize = true"
         >
-          <I18nText k="common.save" />
+          <I18nText k="settings.language.eBlackboardOn" />
         </button>
       </div>
-    </template>
-  </SwissGlassDialog>
+      <p class="language-settings-swiss__hint">
+        <I18nText k="settings.language.eBlackboardHint" />
+      </p>
+    </section>
+  </div>
 </template>
 
 <style scoped>

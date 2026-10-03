@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import { ChevronRight, X } from '@lucide/vue'
 
+import UserAvatarGlyph from '@/components/common/UserAvatarGlyph.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import { useWorkshopImageLightbox } from '@/composables/workshop/useWorkshopImageLightbox'
@@ -472,7 +473,7 @@ async function handleFileChange(event: Event): Promise<void> {
             class="mention-picker__item"
             @mousedown.prevent="insertMentionUser(m)"
           >
-            <span class="mention-picker__avatar">{{ m.avatar || '👤' }}</span>
+            <span class="mention-picker__avatar"><UserAvatarGlyph :value="m.avatar" /></span>
             <span class="mention-picker__name">{{ m.name || `User ${m.id}` }}</span>
           </button>
         </div>
@@ -489,8 +490,8 @@ async function handleFileChange(event: Event): Promise<void> {
           </p>
           <div
             v-else
-            v-html="previewHtml"
             @click="handleMarkdownImageClick"
+            v-html="previewHtml"
           />
         </div>
         <textarea

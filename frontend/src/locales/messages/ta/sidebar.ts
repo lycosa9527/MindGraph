@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'தொகுப்பு நீக்கப்பட்டது',
   'sidebar.knowledgeSpaceHistory.empty': 'இதுவரை தகவல் தொகுப்பு இல்லை',
   'sidebar.knowledgeSpaceHistory.title': 'தகவல் தொகுப்பு',
-  'sidebar.languageSettings': 'இடைமுக UI அமைப்புகள்',
   'sidebar.library': 'நூலகம்',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

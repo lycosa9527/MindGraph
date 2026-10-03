@@ -18,6 +18,7 @@ import {
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import UserAvatarGlyph from '@/components/common/UserAvatarGlyph.vue'
 import OrgContactsPanel from '@/components/social/OrgContactsPanel.vue'
 import {
   ChannelBrowser,
@@ -57,8 +58,8 @@ import {
 } from '@/utils/workshopChatRoute'
 import { orgMemberById } from '@/utils/workshopDmInbox'
 
-const AccountInfoModal = defineAsyncComponent(
-  () => import('@/components/auth/AccountInfoModal.vue')
+const UserSettingsModal = defineAsyncComponent(
+  () => import('@/components/settings/UserSettingsModal.vue')
 )
 const UpdateLogModal = defineAsyncComponent(() => import('@/components/auth/UpdateLogModal.vue'))
 const ChannelSettingsDialog = defineAsyncComponent(
@@ -1644,7 +1645,7 @@ function handleTopicMove(topicId: number): void {
             <div class="ws-center-header">
               <div class="ws-center-header__info">
                 <span class="ws-center-header__dm-icon">
-                  {{ currentDMPartner.partner_avatar || '👤' }}
+                  <UserAvatarGlyph :value="currentDMPartner.partner_avatar" />
                 </span>
                 <h2 class="ws-center-header__title">{{ currentDMPartner.partner_name }}</h2>
               </div>
@@ -1876,7 +1877,7 @@ function handleTopicMove(topicId: number): void {
         class="flex flex-col gap-3 text-sm text-stone-600"
       >
         <div class="flex items-center gap-3">
-          <span class="text-2xl">{{ contactProfileMember.avatar || '👤' }}</span>
+          <span class="text-2xl"><UserAvatarGlyph :value="contactProfileMember.avatar" /></span>
           <span class="font-medium text-stone-800">{{ contactProfileMember.name }}</span>
         </div>
         <p class="leading-relaxed">
@@ -1885,9 +1886,10 @@ function handleTopicMove(topicId: number): void {
       </div>
     </SwissGlassDialog>
 
-    <AccountInfoModal
+    <UserSettingsModal
       v-if="showAccountModal"
       v-model:visible="showAccountModal"
+      initial-tab="account"
     />
     <UpdateLogModal
       v-if="showUpdateLogModal"

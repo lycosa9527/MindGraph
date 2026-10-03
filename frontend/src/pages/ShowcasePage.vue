@@ -20,6 +20,7 @@ import {
   Star,
 } from '@lucide/vue'
 
+import UserAvatarGlyph from '@/components/common/UserAvatarGlyph.vue'
 import {
   MyFavoriteCasesModal,
   MyPublishedCasesModal,
@@ -634,7 +635,7 @@ watch(searchQuery, () => {
                     <div
                       class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[9px] leading-none"
                     >
-                      {{ post.author.avatar ?? '👤' }}
+                      <UserAvatarGlyph :value="post.author.avatar" />
                     </div>
                     <div class="min-w-0 flex-1">
                       <div class="truncate text-[11px] font-medium leading-[1.15] text-gray-700">

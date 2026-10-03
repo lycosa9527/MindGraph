@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'بسته حذف شد',
   'sidebar.knowledgeSpaceHistory.empty': 'هنوز بسته اطلاعاتی وجود ندارد',
   'sidebar.knowledgeSpaceHistory.title': 'بسته ها',
-  'sidebar.languageSettings': 'Language Settings',
   'sidebar.library': 'کتابخانه',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'Na-delete ang package',
   'sidebar.knowledgeSpaceHistory.empty': 'Wala pang mga package',
   'sidebar.knowledgeSpaceHistory.title': 'Mga Package',
-  'sidebar.languageSettings': 'Mga Setting ng Wika',
   'sidebar.library': 'Aklatan',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

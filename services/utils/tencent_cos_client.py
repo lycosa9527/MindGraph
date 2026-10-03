@@ -246,8 +246,13 @@ def upload_bytes(
     max_retries: int = 3,
     log_prefix: str = "[COS]",
     content_type: Optional[str] = None,
+    acl: Optional[str] = None,
 ) -> bool:
-    """Upload raw bytes to COS."""
+    """Upload raw bytes to COS.
+
+    ``acl`` is optional (for example ``public-read``). Callers that omit it
+    keep the bucket default.
+    """
     try:
         client = get_cos_client()
     except BACKGROUND_INFRA_ERRORS as exc:
@@ -260,6 +265,8 @@ def upload_bytes(
         params: Dict[str, Any] = {"Bucket": COS_BUCKET, "Body": data, "Key": object_key}
         if content_type:
             params["ContentType"] = content_type
+        if acl:
+            params["ACL"] = acl
         return client.put_object(**params)
 
     try:

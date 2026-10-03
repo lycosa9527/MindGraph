@@ -102,7 +102,6 @@ export default {
   'settings.language.prompt': 'AI assistant language',
   'settings.language.promptSelectPlaceholder': 'Search languages…',
   'settings.language.supportsCount': 'Supports {n} languages',
-  'settings.language.title': 'Lingua e istruzioni',
   'settings.version.title': "Versione dell'interfaccia utente",
   'settings.version.chinese': 'Modalità professionale',
   'settings.version.international': 'Modalità semplificata',

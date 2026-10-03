@@ -4,7 +4,6 @@
  */
 
 export default {
-  'auth.accountInfo': '賬戶信息',
   'auth.voiceNotes': '語音筆記',
   'auth.voiceNotes.pause': '暫停',
   'auth.voiceNotes.resume': '繼續',
@@ -146,6 +145,8 @@ export default {
   'auth.apiTokenExpires': '有效期至 {date}',
   'auth.downloadChromeExtension': 'Chrome 擴展',
   'auth.downloadWordAddin': 'Word 加載項',
+  'auth.downloadFileReader': '微信記錄讀取工具',
+  'auth.downloadFileReaderHint': 'Windows 工具，用於讀取微信或釘釘聊天記錄。',
   'auth.schoolTierFeatureUnavailable':
     '当前学校版本不支持此功能，请升级至标准教研版或校本共建版（基础教研版不含此功能）',
   'auth.schoolSubscriptionExpiredDowngraded':
@@ -193,6 +194,10 @@ export default {
   'auth.modal.networkSmsLoginError': '網絡錯誤，驗證碼登錄失敗',
   'auth.modal.networkEmailCodeError': '網絡錯誤，郵件驗證碼發送失敗',
   'auth.modal.networkEmailLoginError': '網絡錯誤，郵件登錄失敗',
+  'auth.modal.changingPassword': '修改中...',
+  'auth.modal.confirmChange': '確認修改',
+  'auth.modal.currentPassword': '當前密碼',
+  'auth.modal.currentPasswordPlaceholder': '請輸入當前密碼',
   'auth.modal.newPassword': '新密碼',
   'auth.modal.passwordMin8': '密碼至少需要8個字符',
   'auth.modal.passwordMinPlaceholder': '至少8位字符',
@@ -350,6 +355,15 @@ export default {
   'auth.setPasswordWithSmsSubmit': '設置密碼',
   'auth.setPasswordWithSmsSubmitting': '保存中…',
   'auth.accountAvatar': '頭像',
+  'auth.avatarCustomize': '自訂',
+  'auth.avatarCropRibbon': '頭像',
+  'auth.avatarCropTitle': '裁剪頭像',
+  'auth.avatarCropLine': '拖動調整位置，滾輪或滑桿縮放',
+  'auth.avatarCropZoom': '縮放',
+  'auth.avatarImageInvalid': '請選擇圖片檔案',
+  'auth.avatarImageTooLarge': '圖片不能超過 4 MB',
+  'auth.avatarUploadFailed': '頭像上傳失敗',
+  'auth.avatarUploadSuccess': '頭像已更新',
   'auth.notSet': '未設置',
   'auth.accountDisplayName': '顯示姓名',
   'auth.accountNamePlaceholder': '至少 2 個字符，不能含數字',

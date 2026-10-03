@@ -52,7 +52,6 @@ import {
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
 import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 import ShareExportModal from './ShareExportModal.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
@@ -195,7 +194,7 @@ const isLoading = computed(
 )
 
 // User avatar from auth store
-const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+const userAvatar = computed(() => authStore.user?.avatar?.trim() || '')
 
 // Check if welcome message should be shown
 const showWelcome = computed(() => {

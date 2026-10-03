@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'Paketa u fshi',
   'sidebar.knowledgeSpaceHistory.empty': 'Ende nuk ka paketa',
   'sidebar.knowledgeSpaceHistory.title': 'Paketat',
-  'sidebar.languageSettings': 'Cilësimet e gjuhës',
   'sidebar.library': 'Biblioteka',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

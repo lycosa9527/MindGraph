@@ -136,7 +136,7 @@ class User(Base):
     organization_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("organizations.id", ondelete="SET NULL"), index=True, nullable=True
     )
-    avatar: Mapped[str | None] = mapped_column(String(50), nullable=True, default=DEFAULT_USER_AVATAR_EMOJI)
+    avatar: Mapped[str | None] = mapped_column(String(512), nullable=True, default=DEFAULT_USER_AVATAR_EMOJI)
     role: Mapped[str] = mapped_column(String(30), nullable=False, default="teacher")
 
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)

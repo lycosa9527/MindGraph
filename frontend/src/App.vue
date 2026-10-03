@@ -52,8 +52,8 @@ useQuickAccessRemoteAccount()
 useTrainingFollow()
 useTrainingSessionEngine()
 
-const AccountInfoModal = defineAsyncComponent(
-  () => import('@/components/auth/AccountInfoModal.vue')
+const UserSettingsModal = defineAsyncComponent(
+  () => import('@/components/settings/UserSettingsModal.vue')
 )
 const SessionExpiredAuthCard = defineAsyncComponent(
   () => import('@/components/auth/SessionExpiredAuthCard.vue')
@@ -490,9 +490,10 @@ onUnmounted(() => {
       @success="handleSessionExpiredLoginSuccess"
     />
 
-    <AccountInfoModal
+    <UserSettingsModal
       v-if="showAccountInfo"
       v-model:visible="showAccountInfo"
+      initial-tab="account"
     />
 
     <BrowserLocaleHintDialog v-model="showBrowserLocaleHint" />

@@ -2,7 +2,7 @@
 /**
  * Stone segmented control — plain buttons with radiogroup semantics.
  * Styles: admin-swiss-segmented.css → .admin-swiss-segmented / .admin-swiss-segment
- * Reference: LanguageSettingsModal canvas mode toggle (classic / new).
+ * Reference: settings language on/off segmented control.
  */
 export type AdminSwissSegmentOption<T extends string | number = string | number> = {
   /** Pre-translated text. Used when there is no message key. */

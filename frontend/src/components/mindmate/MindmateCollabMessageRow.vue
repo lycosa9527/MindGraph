@@ -37,7 +37,7 @@ import {
 import type { CollabReadCursor } from '@/utils/mindmateCollabRead'
 import { extractMindmatePreviewUniqueId } from '@/utils/mindmateDiagramMeta'
 import { TEACHING_INSTRUCTION_KIND } from '@/utils/mindmateTeachingDesignFlag'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
 const props = defineProps<{
   message: MindmateCollabMessage
@@ -98,6 +98,7 @@ const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => displayText.val
 const isAssistant = computed(() => props.message.role === 'assistant')
 
 const ownAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+const ownAvatarSrc = computed(() => userAvatarImageSrc(authStore.user?.avatar))
 
 const peerInitial = computed(() => {
   const initial = (props.message.username || '?').trim().slice(0, 1).toUpperCase()
@@ -231,6 +232,12 @@ async function openInCanvas(): Promise<void> {
         v-if="isAssistant"
         :src="agentAvatarUrl"
         :alt="agentName"
+        class="mindmate-collab-room__avatar-img"
+      />
+      <img
+        v-else-if="isOwn && ownAvatarSrc"
+        :src="ownAvatarSrc"
+        alt=""
         class="mindmate-collab-room__avatar-img"
       />
       <span

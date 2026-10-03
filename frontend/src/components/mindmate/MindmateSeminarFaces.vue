@@ -11,7 +11,7 @@ import { useMindmateSeminarFaces } from '@/composables/mindmate/useMindmateSemin
 import { lockRingColorForUser } from '@/shared/collabPalette'
 import { useAuthStore } from '@/stores/auth'
 import { orderSeminarFaces, splitSeminarFaces } from '@/utils/mindmateSeminarFaces'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
@@ -48,7 +48,13 @@ const overflowLabel = computed(() => split.value.overflow.map((face) => face.nam
           class="seminar-faces__avatar mg-user-avatar-emoji"
           :style="{ boxShadow: `0 0 0 2px ${lockRingColorForUser(face.userId)}` }"
         >
-          {{ resolveUserAvatarEmoji(face.avatar) }}
+          <img
+            v-if="userAvatarImageSrc(face.avatar)"
+            :src="userAvatarImageSrc(face.avatar)"
+            alt=""
+            class="seminar-faces__photo"
+          />
+          <template v-else>{{ resolveUserAvatarEmoji(face.avatar) }}</template>
         </span>
       </ElTooltip>
     </span>
@@ -84,6 +90,13 @@ const overflowLabel = computed(() => split.value.overflow.map((face) => face.nam
 
 .seminar-faces__item:first-child {
   margin-left: 0;
+}
+
+.seminar-faces__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .seminar-faces__avatar {

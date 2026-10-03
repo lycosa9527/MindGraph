@@ -12,6 +12,7 @@ import { ElButton, ElEmpty, ElSkeleton } from 'element-plus'
 import { Heart, MessageCircle, Pencil, Search, Trash2 } from '@lucide/vue'
 
 import { ExportToCommunityModal } from '@/components/canvas'
+import UserAvatarGlyph from '@/components/common/UserAvatarGlyph.vue'
 import { CommunityPostDetailModal } from '@/components/community'
 import { useLanguage, useNotifications } from '@/composables'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
@@ -475,7 +476,7 @@ function getPlaceholderColor(id: string): string {
               <div
                 class="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-sm"
               >
-                {{ post.author.avatar ?? '👤' }}
+                <UserAvatarGlyph :value="post.author.avatar" />
               </div>
               <span class="text-sm text-stone-600">{{ post.author.name ?? 'Anonymous' }}</span>
               <span class="text-xs text-stone-400 ml-auto">{{ formatDate(post.created_at) }}</span>

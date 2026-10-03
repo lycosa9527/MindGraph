@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.142] - 2026-10-04
+
+> **Account, security, language, and plugins live in one settings dialog, and a custom avatar is a photo stored on COS.**
+
+### Changed
+
+- **设置** — The user menu opens one dialog with 账户, 安全, 语言, and 插件. Language choices apply immediately. The password form sits on the security tab. The plugin tab includes the WeChat history reader.
+- **头像** — Customize crops a circle at 512×512 and stores a public COS URL. Avatars load from that URL. Local development keeps the emoji and hides Customize, because this machine cannot reach COS.
+
+### Added
+
+- Migration `0143` widens `users.avatar` so the COS URL fits.
+
 ## [5.180.141] - 2026-10-04
 
 > **Learning Space keeps a student's chosen password off the roster, and missing card thumbnails can be filled in.**

@@ -53,7 +53,7 @@ export function resolveOAuthInviteCode(
 }
 
 /**
- * Whether AccountInfoModal should show the account bindings section.
+ * Whether the Settings security tab should show the account bindings section.
  * DingTalk / MindBot bind is live and stays off this screen.
  */
 export function shouldShowAccountBindingsSection(input: {

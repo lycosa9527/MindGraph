@@ -127,7 +127,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'Paket silindi',
   'sidebar.knowledgeSpaceHistory.empty': 'Hələ paket yoxdur',
   'sidebar.knowledgeSpaceHistory.title': 'Paketlər',
-  'sidebar.languageSettings': 'Dil parametrləri',
   'sidebar.library': 'Kitabxana',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -254,4 +253,5 @@ export default {
   'sidebar.demo.colorGreen': 'Green',
   'sidebar.demo.thumbsReady': 'Demo thumbnails are ready',
   'sidebar.demo.thumbsPartial': 'The list was saved. Some thumbnails could not be generated.',
+  'sidebar.settings': 'Settings',
 } as const

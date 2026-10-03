@@ -12,7 +12,7 @@ import { resolveMessageClarifyChoices } from '@/composables/canvasToolbar/oneSen
 import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
 import { useAuthStore } from '@/stores'
 import type { OneSentenceChatMessage, OneSentenceClarifyChoice } from '@/stores/oneSentence'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
 const props = defineProps<{
   messages: OneSentenceChatMessage[]
@@ -20,8 +20,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'select-choice', choice: OneSentenceClarifyChoice): void
-  (e: 'bind-scroll', el: HTMLElement | null): void
+  (e: 'selectChoice', choice: OneSentenceClarifyChoice): void
+  (e: 'bindScroll', el: HTMLElement | null): void
 }>()
 
 const { t } = useLanguage()
@@ -29,6 +29,7 @@ const authStore = useAuthStore()
 const scrollEl = ref<HTMLElement | null>(null)
 
 const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+const userAvatarSrc = computed(() => userAvatarImageSrc(authStore.user?.avatar))
 
 const showFallbackThinking = computed(
   () => props.agentState === 'thinking' && !props.messages.some((row) => row.thinking)
@@ -45,7 +46,7 @@ const choicesByMessageId = computed(() => {
 function setScrollEl(el: unknown): void {
   const node = el instanceof HTMLElement ? el : null
   scrollEl.value = node
-  emit('bind-scroll', node)
+  emit('bindScroll', node)
 }
 
 function messageChoices(msg: OneSentenceChatMessage): OneSentenceClarifyChoice[] {
@@ -102,6 +103,7 @@ onMounted(() => {
         <ElAvatar
           v-else
           :size="32"
+          :src="userAvatarSrc || undefined"
           class="kitty-mobile-chat__user-avatar mt-0.5 shrink-0"
         >
           {{ userAvatar }}
@@ -146,7 +148,7 @@ onMounted(() => {
               :key="`${msg.id}-${choice.index}`"
               type="button"
               class="kitty-mobile-chat__choice min-h-9 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 active:bg-violet-100"
-              @click="emit('select-choice', choice)"
+              @click="emit('selectChoice', choice)"
             >
               <span class="opacity-60 mr-1">{{ choice.index }}.</span>
               {{ choice.label }}
