@@ -137,6 +137,11 @@ export const FIT_PADDING = {
   TREE_MAP_ALTERNATIVE_DIMENSIONS_EXTRA_PX: 70,
   /** Export padding for tight fit (5%) */
   EXPORT: 0.05,
+  /**
+   * Embedded previews (learning-space homework tiles) have no editor chrome.
+   * Classic header + zoom insets would shrink the diagram to a speck.
+   */
+  EMBED_PREVIEW_PX: 8,
   /** Minimal padding (2%) */
   MINIMAL: 0.02,
   /**

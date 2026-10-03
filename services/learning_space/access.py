@@ -22,8 +22,13 @@ from models.domain.learning_space import (
     LearningClass,
     LearningPilotTeacher,
 )
-from services.learning_space.memberships import is_class_assistant, is_class_learner
-from utils.auth.roles import is_student
+from services.learning_space.memberships import (
+    MEMBERSHIP_ROLE_ASSISTANT,
+    class_ids_for_membership_role,
+    is_class_assistant,
+    is_class_learner,
+)
+from utils.auth.roles import is_student, is_superadmin
 
 AssignmentViewer = Literal["staff", "learner"]
 
@@ -73,6 +78,13 @@ async def get_class_for_teacher(
     return learning_class
 
 
+def _reject_unless_active(learning_class: LearningClass, *, allow_archived: bool) -> LearningClass:
+    """Return the class, or 400 when an archived class is not allowed."""
+    if not allow_archived and learning_class.status != CLASS_STATUS_ACTIVE:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Class is archived")
+    return learning_class
+
+
 async def get_class_for_staff(
     db: AsyncSession,
     class_id: int,
@@ -80,21 +92,48 @@ async def get_class_for_staff(
     *,
     allow_archived: bool = False,
     publish: bool = False,
+    actor: User | None = None,
 ) -> LearningClass:
-    """Enabled class owner, or assistant when publish is False."""
+    """Class owner, assistant, or superadmin. Publish stays with the owner pilot."""
     learning_class = await db.get(LearningClass, class_id)
     if learning_class is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
+    if actor is not None and is_superadmin(actor) and not publish:
+        return _reject_unless_active(learning_class, allow_archived=allow_archived)
     is_owner = int(learning_class.teacher_user_id) == int(user_id)
     if is_owner and await get_enabled_pilot(db, user_id) is not None:
-        if not allow_archived and learning_class.status != CLASS_STATUS_ACTIVE:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Class is archived")
-        return learning_class
+        return _reject_unless_active(learning_class, allow_archived=allow_archived)
     if not publish and await is_class_assistant(db, user_id, class_id):
-        if not allow_archived and learning_class.status != CLASS_STATUS_ACTIVE:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Class is archived")
-        return learning_class
+        return _reject_unless_active(learning_class, allow_archived=allow_archived)
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
+
+
+async def classes_visible_to_staff(db: AsyncSession, user: User) -> list[LearningClass]:
+    """Classes a teacher or assistant may open. Superadmins see every class."""
+    if is_superadmin(user):
+        result = await db.execute(select(LearningClass).order_by(LearningClass.id.desc()))
+        return list(result.scalars().all())
+    owned: list[LearningClass] = []
+    if await get_enabled_pilot(db, int(user.id)) is not None:
+        owned_result = await db.execute(
+            select(LearningClass).where(LearningClass.teacher_user_id == user.id).order_by(LearningClass.id.desc())
+        )
+        owned = list(owned_result.scalars().all())
+    assisted_ids = await class_ids_for_membership_role(db, int(user.id), MEMBERSHIP_ROLE_ASSISTANT)
+    assisted: list[LearningClass] = []
+    if assisted_ids:
+        assisted_result = await db.execute(
+            select(LearningClass).where(LearningClass.id.in_(tuple(assisted_ids))).order_by(LearningClass.id.desc())
+        )
+        assisted = list(assisted_result.scalars().all())
+    seen: set[int] = set()
+    classes: list[LearningClass] = []
+    for learning_class in owned + assisted:
+        if int(learning_class.id) in seen:
+            continue
+        seen.add(int(learning_class.id))
+        classes.append(learning_class)
+    return classes
 
 
 async def get_class_for_publisher(
@@ -117,7 +156,13 @@ async def resolve_assignment_viewer(
     """Who may see this assignment: class staff or a class learner."""
     if not is_student(user):
         try:
-            await get_class_for_staff(db, int(assignment.class_id), int(user.id), allow_archived=True)
+            await get_class_for_staff(
+                db,
+                int(assignment.class_id),
+                int(user.id),
+                allow_archived=True,
+                actor=user,
+            )
             return "staff"
         except HTTPException:
             pass

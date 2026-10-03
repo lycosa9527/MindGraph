@@ -9,10 +9,7 @@ import { ArrowLeft, ArrowRight, Paperclip, Plus, X } from '@lucide/vue'
 import ShowcaseHistoryDiagramPicker from '@/components/showcase/ShowcaseHistoryDiagramPicker.vue'
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import {
-  diagramTypeLabelKey,
-  type LsReferenceDiagram,
-} from '@/composables/learningSpace/lsHelpers'
+import { type LsReferenceDiagram, diagramTypeLabelKey } from '@/composables/learningSpace/lsHelpers'
 import {
   LS_MAX_INSTRUCTION_IMAGES,
   useLsInstructionImages,
@@ -808,6 +805,8 @@ function aiToolLabelKey(key: AiToolKey): string {
                 <div class="ls-modal__preview-frame">
                   <ShowcaseInlineDiagramPreview
                     v-if="form.template_spec"
+                    browse
+                    tight-fit
                     :spec="form.template_spec"
                     :diagram-type="previewDiagramType"
                     :thumbnail-url="form.template_thumbnail"
@@ -902,9 +901,12 @@ function aiToolLabelKey(key: AiToolKey): string {
                 <span><I18nText k="learningSpace.assign.stepScore" /></span>
               </div>
               <p class="ls-modal__hint">
-                <I18nText k="learningSpace.eval.diagramPresetHint" :params="{
+                <I18nText
+                  k="learningSpace.eval.diagramPresetHint"
+                  :params="{
                     type: scoringDiagramTypeLabel,
-                  }" />
+                  }"
+                />
               </p>
               <div class="ls-chip-grid">
                 <button

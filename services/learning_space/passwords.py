@@ -191,6 +191,9 @@ def merge_ai_permissions(raw: dict[str, Any] | None) -> dict[str, Any]:
     references = _reference_diagrams_from_raw(raw)
     if references:
         merged["reference_diagrams"] = references
+    thumb_ref = raw.get("template_thumbnail_ref")
+    if isinstance(thumb_ref, str) and thumb_ref.strip().startswith("lsimg:"):
+        merged["template_thumbnail_ref"] = thumb_ref.strip()
     return merged
 
 

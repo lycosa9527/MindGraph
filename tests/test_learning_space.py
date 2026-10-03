@@ -10,10 +10,10 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import cast
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
 from models.domain.auth import User
@@ -26,13 +26,19 @@ from models.domain.learning_space import (
     LearningClass,
     LearningSubmission,
 )
+from routers.features.learning_space.deps import (
+    bind_superadmin_learning_space_rls,
+    pin_superadmin_learning_space_rls,
+)
 from routers.features.learning_space.schemas import ClassUpdate
 from services.diagram.semantic_spec_validation import validate_semantic_spec
 from services.learning_space.access import (
     assert_assignment_visible_to_learner,
+    classes_visible_to_staff,
     get_class_for_staff,
     require_pilot_teacher,
 )
+from services.learning_space.staff_overview import assignment_metric_rows
 from services.learning_space.assignments import (
     assert_can_edit_submission,
     student_homework_diagram_title,
@@ -63,6 +69,9 @@ from services.learning_space.synthetic_email import (
 from services.learning_space.students import preview_student_names
 from tests.typing_helpers import as_type, as_user
 from utils.auth.admin_panel_permissions import can_manage_learning_space_classes
+from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
+from utils.db.rls_context import RlsContext
+from utils.db.rls_types import MODE_PANEL_SUPERADMIN
 
 
 def test_assert_teacher_eligible_rejects_student() -> None:
@@ -348,6 +357,19 @@ def test_merge_copies_reference_diagrams() -> None:
     ]
 
 
+def test_merge_keeps_template_thumbnail_ref() -> None:
+    """COS thumbnail refs survive permission merge; other strings do not."""
+    merged = merge_ai_permissions(
+        {
+            "ai_assist": False,
+            "template_thumbnail_ref": "lsimg:4/2026/10/thumb.png",
+        }
+    )
+    assert merged["template_thumbnail_ref"] == "lsimg:4/2026/10/thumb.png"
+    dropped = merge_ai_permissions({"template_thumbnail_ref": "data:image/png;base64,aaaa"})
+    assert "template_thumbnail_ref" not in dropped
+
+
 def test_merge_copies_template_role() -> None:
     """Preserve template role and start mode on merged permissions."""
     merged = merge_ai_permissions(
@@ -497,9 +519,110 @@ async def test_staff_owner_with_pilot_ok(monkeypatch: pytest.MonkeyPatch) -> Non
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("role", ["superadmin", "platform_bd", "expert", "school_admin"])
+async def test_learning_space_rls_bind_is_panel_for_superadmin() -> None:
+    """Product routes must open under panel global read before the session queries."""
+    request = MagicMock()
+    request.state = SimpleNamespace()
+    setattr(request.state, AUTH_CONTEXT_USER_ATTR, as_user(SimpleNamespace(id=1, role="superadmin")))
+    await bind_superadmin_learning_space_rls(request)
+    assert request.state.rls_context.mode == MODE_PANEL_SUPERADMIN
+    assert request.state.rls_context.panel_global_read is True
+
+
+@pytest.mark.asyncio
+async def test_learning_space_rls_bind_skips_teacher() -> None:
+    """A pilot stays on the authenticated session the middleware already set."""
+    request = MagicMock()
+    request.state = SimpleNamespace()
+    setattr(
+        request.state,
+        AUTH_CONTEXT_USER_ATTR,
+        as_user(SimpleNamespace(id=2, role="teacher", organization_id=9)),
+    )
+    await bind_superadmin_learning_space_rls(request)
+    assert getattr(request.state, "rls_context", None) is None
+
+
+@pytest.mark.asyncio
+async def test_learning_space_db_reapplies_panel_context(monkeypatch: pytest.MonkeyPatch) -> None:
+    """SET LOCAL runs on the open transaction so a stale authenticated GUC cannot hide other schools."""
+    applied: list[object] = []
+
+    async def _apply(db: object, ctx: object) -> None:
+        del db
+        applied.append(ctx)
+
+    monkeypatch.setattr("routers.features.learning_space.deps.apply_rls_context_async", _apply)
+    user = as_user(SimpleNamespace(id=1, role="superadmin"))
+    ctx = RlsContext.panel_superadmin(user)
+    request = cast(Request, SimpleNamespace(state=SimpleNamespace(rls_context=ctx)))
+    db = AsyncMock()
+    await pin_superadmin_learning_space_rls(request, db)
+    assert applied == [ctx]
+
+
+@pytest.mark.asyncio
+async def test_superadmin_observes_any_class() -> None:
+    """Superadmins may open any class in the teacher shell without being its pilot."""
+    learning_class = _staff_class()
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=learning_class)
+    actor = as_user(SimpleNamespace(id=2, role="superadmin"))
+    result = await get_class_for_staff(db, 1, 2, actor=actor)
+    assert result is learning_class
+
+
+@pytest.mark.asyncio
+async def test_assignment_metric_rows_do_not_load_diagrams() -> None:
+    """Overview counts stay in SQL so a superadmin dashboard does not fetch every diagram."""
+    due = datetime(2026, 10, 3, tzinfo=UTC)
+    db = AsyncMock()
+    db.execute = AsyncMock(
+        side_effect=[
+            SimpleNamespace(all=lambda: [(7, 3, "作业", "active", due)]),
+            SimpleNamespace(all=lambda: [(7, 2)]),
+            SimpleNamespace(all=lambda: [(3, 4)]),
+            SimpleNamespace(all=lambda: []),
+        ]
+    )
+    rows = await assignment_metric_rows(db, [3])
+    assert rows == [
+        {
+            "id": 7,
+            "class_id": 3,
+            "title": "作业",
+            "status": "active",
+            "due_at": due.isoformat(),
+            "submitted_count": 2,
+            "student_count": 4,
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_assignment_metric_rows_empty() -> None:
+    """No classes means no queries."""
+    db = AsyncMock()
+    assert await assignment_metric_rows(db, []) == []
+    db.execute.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_superadmin_lists_every_class() -> None:
+    """Superadmin class list is not limited to classes they teach or assist."""
+    rows = [SimpleNamespace(id=4), SimpleNamespace(id=5)]
+    scalars = SimpleNamespace(all=lambda: rows)
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=SimpleNamespace(scalars=lambda: scalars))
+    actor = as_user(SimpleNamespace(id=2, role="superadmin"))
+    listed = await classes_visible_to_staff(db, actor)
+    assert listed == rows
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["platform_bd", "expert", "school_admin"])
 async def test_staff_manager_is_not_class_staff(monkeypatch: pytest.MonkeyPatch, role: str) -> None:
-    """Panel roles create classes in admin; they are not teacher-API staff."""
+    """Other panel roles create classes in admin; they are not teacher-API staff."""
     manager = as_user(SimpleNamespace(id=2, role=role))
     assert can_manage_learning_space_classes(manager)
     learning_class = _staff_class()
@@ -508,7 +631,7 @@ async def test_staff_manager_is_not_class_staff(monkeypatch: pytest.MonkeyPatch,
     monkeypatch.setattr("services.learning_space.access.get_enabled_pilot", AsyncMock(return_value=None))
     monkeypatch.setattr("services.learning_space.access.is_class_assistant", AsyncMock(return_value=False))
     with pytest.raises(HTTPException) as exc:
-        await get_class_for_staff(db, 1, 2)
+        await get_class_for_staff(db, 1, 2, actor=manager)
     assert exc.value.status_code == 404
 
 

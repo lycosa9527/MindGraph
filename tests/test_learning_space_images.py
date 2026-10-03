@@ -12,6 +12,12 @@ from config.settings import config
 from models.domain.learning_space import LearningAssignment
 from routers.features.learning_space.schemas import AssignmentCreate
 from services.learning_space.assignments import assignment_public_dict
+from services.learning_space.passwords import merge_ai_permissions
+from services.learning_space.thumbnail_storage import (
+    assignment_thumbnail_promote_pending,
+    prepare_assignment_thumbnails_sync,
+    promote_snapshot_thumbnail_sync,
+)
 from services.learning_space.image_storage import (
     IMAGE_REF_PREFIX,
     assert_safe_logical_key,
@@ -275,3 +281,104 @@ def test_upload_bytes_cos_service_error_returns_false(monkeypatch: pytest.Monkey
     monkeypatch.setattr("services.utils.tencent_cos_client.get_cos_client", _fake_cos_client)
     monkeypatch.setattr("services.utils.tencent_cos_client._retry_cos_call", _retry_raises)
     assert upload_bytes(_PNG_1X1, "dev/learning-space/4/2026/09/aa.jpg") is False
+
+
+def _enable_cos_put(monkeypatch: pytest.MonkeyPatch) -> dict[str, bytes]:
+    """Force production COS put and capture uploaded objects."""
+    uploaded: dict[str, bytes] = {}
+
+    def _put(data: bytes, object_key: str, **_kwargs: object) -> bool:
+        uploaded[object_key] = data
+        return True
+
+    monkeypatch.setattr(
+        "services.learning_space.image_storage.cos_learning_space_enabled",
+        lambda: True,
+    )
+    monkeypatch.setattr("services.learning_space.image_storage.upload_bytes", _put)
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("DEBUG", "false")
+    config.refresh_env_cache()
+    return uploaded
+
+
+def test_prepare_assignment_thumbnails_uses_cos(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Template and reference card images become lsimg refs, including library fills."""
+    uploaded = _enable_cos_put(monkeypatch)
+    try:
+        prepared = prepare_assignment_thumbnails_sync(
+            {
+                "ai_assist": False,
+                "reference_diagrams": [
+                    {"id": "d-ref", "title": "对照", "thumbnail": ""},
+                ],
+            },
+            owner_id=4,
+            template_thumbnail=_PNG_DATA_URL,
+            reference_thumbnails={"d-ref": _PNG_DATA_URL},
+        )
+    finally:
+        config.refresh_env_cache()
+    template_ref = prepared["template_thumbnail_ref"]
+    reference_ref = prepared["reference_diagrams"][0]["thumbnail"]
+    assert template_ref.startswith(IMAGE_REF_PREFIX)
+    assert reference_ref.startswith(IMAGE_REF_PREFIX)
+    assert template_ref != reference_ref
+    assert len(uploaded) == 2
+    merged = merge_ai_permissions(prepared)
+    assert merged["template_thumbnail_ref"] == template_ref
+    assignment = LearningAssignment(
+        class_id=1,
+        title="t",
+        instructions="",
+        template_diagram_id="d1",
+        created_by=4,
+        ai_permissions=merged,
+    )
+    assignment.id = 15
+    payload = assignment_public_dict(assignment)
+    assert "template_thumbnail_ref" not in payload["ai_permissions"]
+    assert payload["template_thumbnail"] == "/api/learning-space/thumbnails/assignments/15?proxy=1"
+    assert payload["ai_permissions"]["reference_diagrams"][0]["thumbnail"] == (
+        "/api/learning-space/thumbnails/assignments/15/references/0?proxy=1"
+    )
+
+
+def test_settled_thumbnails_do_not_promote_again() -> None:
+    """A stored lsimg card does not ask the library for another copy."""
+    settled = {
+        "template_thumbnail_ref": f"{IMAGE_REF_PREFIX}4/2026/10/aaa.png",
+        "reference_diagrams": [
+            {"id": "d-ref", "title": "对照", "thumbnail": f"{IMAGE_REF_PREFIX}4/2026/10/bbb.png"},
+        ],
+    }
+    assert assignment_thumbnail_promote_pending(settled, _PNG_DATA_URL) is False
+    pending = {
+        "template_thumbnail_ref": f"{IMAGE_REF_PREFIX}4/2026/10/aaa.png",
+        "reference_diagrams": [{"id": "d-ref", "title": "对照", "thumbnail": ""}],
+    }
+    assert assignment_thumbnail_promote_pending(pending, None) is True
+
+
+def test_prepare_keeps_missing_reference_thumbnail() -> None:
+    """A reference row without bytes stays empty instead of being rewritten."""
+    raw = {"reference_diagrams": [{"id": "d-ref", "title": "对照"}]}
+    prepared = prepare_assignment_thumbnails_sync(
+        raw,
+        owner_id=4,
+        template_thumbnail=None,
+        reference_thumbnails={},
+    )
+    assert prepared == raw
+
+
+def test_promote_snapshot_thumbnail_uses_cos(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Submitted homework thumbnails leave Postgres as an lsimg ref."""
+    _enable_cos_put(monkeypatch)
+    snapshot = {"title": "作业", "thumbnail": _PNG_DATA_URL}
+    try:
+        changed = promote_snapshot_thumbnail_sync(snapshot, owner_id=9)
+    finally:
+        config.refresh_env_cache()
+    assert changed is True
+    assert str(snapshot["thumbnail"]).startswith(IMAGE_REF_PREFIX)

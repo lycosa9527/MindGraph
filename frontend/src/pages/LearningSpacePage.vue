@@ -11,11 +11,11 @@ import { AlertTriangle, ArrowLeft, ClipboardList, Clock3, FileText, Users } from
 import LearningSpaceAssignModal from '@/components/learningSpace/LearningSpaceAssignModal.vue'
 import LearningSpaceHeader from '@/components/learningSpace/LearningSpaceHeader.vue'
 import LearningSpaceRequirementsModal from '@/components/learningSpace/LearningSpaceRequirementsModal.vue'
-import LearningSpaceThumbCover from '@/components/learningSpace/LearningSpaceThumbCover.vue'
 import LearningSpaceReviewModal, {
   type ReviewDraft,
 } from '@/components/learningSpace/LearningSpaceReviewModal.vue'
 import LearningSpaceSubmissionStatusModal from '@/components/learningSpace/LearningSpaceSubmissionStatusModal.vue'
+import LearningSpaceThumbCover from '@/components/learningSpace/LearningSpaceThumbCover.vue'
 import { swissGlassConfirm, useLanguage, useNotifications } from '@/composables'
 import {
   type AssignmentFilter,
@@ -52,6 +52,7 @@ import {
   listTeacherClasses,
   listTeacherStudents,
   listTeacherSubmissions,
+  listVisibleTeacherAssignments,
   openStudentAssignment,
   saveTeacherReview,
   studentChangePassword,
@@ -116,9 +117,11 @@ const canLearn = computed(() => {
 const canReview = computed(
   () =>
     context.value?.can_review === true ||
+    context.value?.can_view_all === true ||
     context.value?.can_manage_classes === true ||
     context.value?.role === 'pilot_teacher' ||
-    context.value?.role === 'assistant'
+    context.value?.role === 'assistant' ||
+    context.value?.role === 'superadmin'
 )
 const canPublish = computed(() => context.value?.can_publish === true)
 const canOpenClassAdmin = computed(() => context.value?.can_manage_classes === true)
@@ -321,9 +324,11 @@ async function loadContext(): Promise<void> {
     context.value = await fetchLearningSpaceContext()
     preferTeacherShell.value =
       context.value.can_review === true ||
+      context.value.can_view_all === true ||
       context.value.can_manage_classes === true ||
       context.value.role === 'pilot_teacher' ||
-      context.value.role === 'assistant'
+      context.value.role === 'assistant' ||
+      context.value.role === 'superadmin'
     if (
       context.value.can_learn ||
       context.value.role === 'student' ||
@@ -333,9 +338,11 @@ async function loadContext(): Promise<void> {
     }
     if (
       context.value.can_review ||
+      context.value.can_view_all ||
       context.value.can_manage_classes ||
       context.value.role === 'pilot_teacher' ||
-      context.value.role === 'assistant'
+      context.value.role === 'assistant' ||
+      context.value.role === 'superadmin'
     ) {
       try {
         const res = await listTeacherClasses()
@@ -365,17 +372,16 @@ async function loadContext(): Promise<void> {
 }
 
 async function refreshAllClassAssignments(): Promise<void> {
-  const bags = await Promise.all(
-    classes.value.map(async (c) => {
-      try {
-        const res = await listTeacherAssignments(c.id)
-        return res.items
-      } catch {
-        return [] as LearningAssignment[]
-      }
-    })
-  )
-  allClassAssignments.value = bags.flat()
+  if (!classes.value.length) {
+    allClassAssignments.value = []
+    return
+  }
+  try {
+    const res = await listVisibleTeacherAssignments()
+    allClassAssignments.value = Array.isArray(res.items) ? res.items : []
+  } catch {
+    allClassAssignments.value = []
+  }
 }
 
 async function loadTeacherAssignments(): Promise<void> {
@@ -904,6 +910,11 @@ watch(
                     @click="selectedClassId = c.id"
                   >
                     {{ c.name }}
+                    <span
+                      v-if="c.organization_name"
+                      class="ls-pill__count"
+                      >{{ c.organization_name }}</span
+                    >
                     <span class="ls-pill__count">{{ c.student_count }}</span>
                     <span
                       v-if="c.status === 'archived'"
@@ -1090,11 +1101,7 @@ watch(
                   @keydown.enter.prevent="openReview(s)"
                 >
                   <div class="ls-thumb-card__cover">
-                    <LearningSpaceThumbCover
-                      :preview-spec="s.preview_spec"
-                      :preview-diagram-type="s.preview_diagram_type"
-                      :thumbnail-url="s.diagram_thumbnail"
-                    />
+                    <LearningSpaceThumbCover :thumbnail-url="s.diagram_thumbnail" />
                   </div>
                   <div class="ls-thumb-card__name">
                     {{ formatLsStudentLabel(s) }}
@@ -1154,6 +1161,9 @@ watch(
                 @click="selectedClassId = c.id"
               >
                 <h3>{{ c.name }}</h3>
+                <p v-if="c.organization_name || c.teacher_name">
+                  {{ [c.organization_name, c.teacher_name].filter(Boolean).join(' · ') }}
+                </p>
                 <p>
                   <I18nText
                     k="learningSpace.studentCount"
@@ -1392,7 +1402,13 @@ watch(
                     class="ls-btn ls-btn--primary ls-btn--sm"
                     @click="onOpenStudentAssignment(studentDetail)"
                   >
-                    <I18nText v-if="studentCanResubmitAssignment(studentDetail)" k="learningSpace.editAndResubmit" /><I18nText v-else k="learningSpace.doHomework" />
+                    <I18nText
+                      v-if="studentCanResubmitAssignment(studentDetail)"
+                      k="learningSpace.editAndResubmit"
+                    /><I18nText
+                      v-else
+                      k="learningSpace.doHomework"
+                    />
                   </button>
                   <button
                     v-else-if="!studentAssignmentDone(studentDetail)"
@@ -1452,11 +1468,7 @@ watch(
                     @keydown.enter.prevent="openReview(s, 'view')"
                   >
                     <div class="ls-thumb-card__cover">
-                      <LearningSpaceThumbCover
-                        :preview-spec="s.preview_spec"
-                        :preview-diagram-type="s.preview_diagram_type"
-                        :thumbnail-url="s.diagram_thumbnail"
-                      />
+                      <LearningSpaceThumbCover :thumbnail-url="s.diagram_thumbnail" />
                     </div>
                     <div class="ls-thumb-card__name">
                       {{ formatLsStudentLabel(s) }}
@@ -1506,11 +1518,7 @@ watch(
                 @keydown.enter.prevent="openReview(s, 'view')"
               >
                 <div class="ls-thumb-card__cover">
-                  <LearningSpaceThumbCover
-                    :preview-spec="s.preview_spec"
-                    :preview-diagram-type="s.preview_diagram_type"
-                    :thumbnail-url="s.diagram_thumbnail"
-                  />
+                  <LearningSpaceThumbCover :thumbnail-url="s.diagram_thumbnail" />
                 </div>
                 <div class="ls-thumb-card__name">
                   <template v-if="s.assignment_title">{{ s.assignment_title }}</template

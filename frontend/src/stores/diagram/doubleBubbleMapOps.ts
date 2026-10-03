@@ -28,8 +28,58 @@ function dropGlossSlots(spec: Record<string, unknown>, key: string, drop: Set<nu
   secondary[key] = secondary[key].filter((_, index) => !drop.has(index))
 }
 
+function dropSizeSlots(spec: Record<string, unknown>, key: string, drop: Set<number>): void {
+  const raw = spec._doubleBubbleMapNodeSizes
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw) || drop.size === 0) return
+  const sizes = raw as Record<string, unknown>
+  if (!Array.isArray(sizes[key])) return
+  sizes[key] = sizes[key].filter((_, index) => !drop.has(index))
+}
+
 function asItems(raw: unknown): SpecItem[] {
   return Array.isArray(raw) ? (raw as SpecItem[]) : []
+}
+
+export interface DoubleBubbleDeleteOutcome {
+  deleted: number
+  withheldSimilarity: boolean
+  withheldDifference: boolean
+}
+
+/** Smallest requested index stays when a delete would empty that column. */
+function dropIndicesKeepingOne(
+  total: number,
+  requested: Set<number>
+): { drop: Set<number>; withheld: boolean } {
+  const drop = new Set<number>()
+  for (const index of requested) {
+    if (index >= 0 && index < total) drop.add(index)
+  }
+  if (drop.size === 0 || total - drop.size >= 1) {
+    return { drop, withheld: false }
+  }
+  let keep = -1
+  for (const index of drop) {
+    if (keep < 0 || index < keep) keep = index
+  }
+  if (keep >= 0) drop.delete(keep)
+  return { drop, withheld: true }
+}
+
+export function doubleBubbleDeleteKeepWarningKey(outcome: {
+  withheldSimilarity: boolean
+  withheldDifference: boolean
+}):
+  | 'canvas.toolbar.keepOneSimilarity'
+  | 'canvas.toolbar.keepOneDifference'
+  | 'canvas.toolbar.keepOneSimilarityAndDifference'
+  | null {
+  if (outcome.withheldSimilarity && outcome.withheldDifference) {
+    return 'canvas.toolbar.keepOneSimilarityAndDifference'
+  }
+  if (outcome.withheldSimilarity) return 'canvas.toolbar.keepOneSimilarity'
+  if (outcome.withheldDifference) return 'canvas.toolbar.keepOneDifference'
+  return null
 }
 
 export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
@@ -58,14 +108,19 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
     return ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
   }
 
-  function removeDoubleBubbleMapNodes(nodeIds: string[]): number {
-    if (isDiagramPresentationReadOnly(ctx)) return 0
+  function removeDoubleBubbleMapNodes(nodeIds: string[]): DoubleBubbleDeleteOutcome {
+    const empty: DoubleBubbleDeleteOutcome = {
+      deleted: 0,
+      withheldSimilarity: false,
+      withheldDifference: false,
+    }
+    if (isDiagramPresentationReadOnly(ctx)) return empty
     const spec = ctx.getDoubleBubbleSpecFromData()
-    if (!spec) return 0
+    if (!spec) return empty
 
     if (collabForeignLockBlocksAnyId(ctx, nodeIds)) {
       emitCollabDeleteBlocked()
-      return 0
+      return empty
     }
 
     const nodes = ctx.data.value?.nodes ?? []
@@ -80,21 +135,32 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
       return indices
     }
 
-    const simIndices = removeByRole('similarity')
-    const leftDiffIndices = removeByRole('leftDiff')
-    const rightDiffIndices = removeByRole('rightDiff')
+    const similarities = asItems(spec.similarities)
+    const leftDifferences = asItems(spec.leftDifferences)
+    const rightDifferences = asItems(spec.rightDifferences)
+    const simDrop = dropIndicesKeepingOne(similarities.length, removeByRole('similarity'))
+    const leftDrop = dropIndicesKeepingOne(leftDifferences.length, removeByRole('leftDiff'))
+    const rightDrop = dropIndicesKeepingOne(rightDifferences.length, removeByRole('rightDiff'))
+    const deleted = simDrop.drop.size + leftDrop.drop.size + rightDrop.drop.size
+    const outcome: DoubleBubbleDeleteOutcome = {
+      deleted,
+      withheldSimilarity: simDrop.withheld,
+      withheldDifference: leftDrop.withheld || rightDrop.withheld,
+    }
+    if (deleted === 0) return outcome
 
-    spec.similarities = asItems(spec.similarities).filter((_, i) => !simIndices.has(i))
-    spec.leftDifferences = asItems(spec.leftDifferences).filter((_, i) => !leftDiffIndices.has(i))
-    spec.rightDifferences = asItems(spec.rightDifferences).filter(
-      (_, i) => !rightDiffIndices.has(i)
-    )
-    dropGlossSlots(spec, 'similarities', simIndices)
-    dropGlossSlots(spec, 'leftDifferences', leftDiffIndices)
-    dropGlossSlots(spec, 'rightDifferences', rightDiffIndices)
+    spec.similarities = similarities.filter((_, i) => !simDrop.drop.has(i))
+    spec.leftDifferences = leftDifferences.filter((_, i) => !leftDrop.drop.has(i))
+    spec.rightDifferences = rightDifferences.filter((_, i) => !rightDrop.drop.has(i))
+    dropGlossSlots(spec, 'similarities', simDrop.drop)
+    dropGlossSlots(spec, 'leftDifferences', leftDrop.drop)
+    dropGlossSlots(spec, 'rightDifferences', rightDrop.drop)
+    dropSizeSlots(spec, 'simRadii', simDrop.drop)
+    dropSizeSlots(spec, 'leftDiffRadii', leftDrop.drop)
+    dropSizeSlots(spec, 'rightDiffRadii', rightDrop.drop)
 
     ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
-    return simIndices.size + leftDiffIndices.size + rightDiffIndices.size
+    return outcome
   }
 
   return { addDoubleBubbleMapNode, removeDoubleBubbleMapNodes }

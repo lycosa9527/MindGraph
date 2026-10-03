@@ -52,6 +52,8 @@ export function useDiagramCanvasFit(options: {
   presentationSideToolbarVisible: Ref<boolean>
   presentationToolIsNotTimer: Ref<boolean>
   nodesLength: Ref<number>
+  /** Embedded preview: fit to the host box, without editor chrome insets. */
+  tightFit?: Ref<boolean>
 }): {
   isFittedForPanel: Ref<boolean>
   hasInitialFitDoneForDiagram: Ref<boolean>
@@ -93,6 +95,7 @@ export function useDiagramCanvasFit(options: {
     presentationSideToolbarVisible,
     presentationToolIsNotTimer,
     nodesLength,
+    tightFit = ref(false),
   } = options
 
   const viewBus = diagramStore.viewBus
@@ -234,6 +237,10 @@ export function useDiagramCanvasFit(options: {
   }
 
   function getFitChromeInsets(): DiagramFitChromeInsets {
+    if (tightFit.value) {
+      const pad = FIT_PADDING.EMBED_PREVIEW_PX
+      return { top: pad, right: pad, bottom: pad, left: pad }
+    }
     const railVisible =
       presentationRailOpen.value &&
       presentationToolIsNotTimer.value &&

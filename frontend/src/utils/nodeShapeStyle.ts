@@ -158,6 +158,38 @@ export function shapeRayHitDistance(
   return Number.isFinite(hit) ? hit : 0
 }
 
+/**
+ * Horizontal inset from the left or right of the node box to the visible outline
+ * at `topPercent`. A wide oval's end cap is a semicircle, so corners of the box
+ * sit outside the fill. Rounded boxes inset only inside the corner radius.
+ */
+export function sideOutlineInsetPx(
+  shape: NodeShape | undefined,
+  nodeWidthPx: number,
+  nodeHeightPx: number,
+  topPercent: number,
+  roundedCornerPx = 4.5
+): number {
+  if (nodeWidthPx <= 0 || nodeHeightPx <= 0) return 0
+  if (shape !== 'oval' && shape !== 'rounded') return 0
+  const y = (topPercent / 100) * nodeHeightPx
+  const radius =
+    shape === 'rounded'
+      ? Math.min(Math.max(0, roundedCornerPx), nodeWidthPx / 2, nodeHeightPx / 2)
+      : Math.min(nodeWidthPx, nodeHeightPx) / 2
+  return capSideInsetPx(nodeHeightPx, y, radius)
+}
+
+function capSideInsetPx(heightPx: number, yPx: number, radiusPx: number): number {
+  if (radiusPx <= 0 || heightPx <= 0) return 0
+  const dy = Math.abs(yPx - heightPx / 2)
+  const straightHalf = Math.max(0, heightPx / 2 - radiusPx)
+  if (dy <= straightHalf) return 0
+  const capDy = dy - straightHalf
+  if (capDy >= radiusPx) return radiusPx
+  return radiusPx - Math.sqrt(radiusPx * radiusPx - capDy * capDy)
+}
+
 export function paintNodeShape(
   base: CSSProperties,
   shape: NodeShape | undefined,

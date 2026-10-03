@@ -141,6 +141,10 @@ interface Props {
   enableTwoFingerSlideSwipe?: boolean
   presentationRailOpen?: boolean
   presentationSideToolbarVisible?: boolean
+  /** Fit the diagram to this host. Skips editor chrome insets. */
+  tightFit?: boolean
+  /** Select, pan, and zoom only. Nodes stay put and text stays locked. */
+  browseMode?: boolean
 }
 
 const { t } = useLanguage()
@@ -160,6 +164,8 @@ const props = withDefaults(defineProps<Props>(), {
   enableTwoFingerSlideSwipe: false,
   presentationRailOpen: false,
   presentationSideToolbarVisible: true,
+  tightFit: false,
+  browseMode: false,
 })
 
 const presentationHighlightStrokes = defineModel<PresentationHighlightStroke[]>(
@@ -270,6 +276,7 @@ const {
   handToolActive: toRef(props, 'handToolActive'),
   presentationPointerEditMode: toRef(props, 'presentationPointerEditMode'),
   presentationHandPanMode: toRef(props, 'presentationHandPanMode'),
+  browseMode: toRef(props, 'browseMode'),
   panOnDragButtons: toRef(props, 'panOnDragButtons'),
   enableTouchPanPinch: toRef(props, 'enableTouchPanPinch'),
   presentationTool,
@@ -496,6 +503,7 @@ const {
   presentationSideToolbarVisible: toRef(props, 'presentationSideToolbarVisible'),
   presentationToolIsNotTimer,
   nodesLength,
+  tightFit: toRef(props, 'tightFit'),
 })
 
 const {
@@ -652,6 +660,7 @@ const { setupMobileTouchZoom, mobileTouchCleanup, setupMouseSlash } = useDiagram
   canPageSwipe: () => props.enableTwoFingerSlideSwipe,
   canFitOnDoubleTap: () => diagramStore.type !== 'concept_map' && !props.enableTwoFingerSlideSwipe,
   allowMouseSlash: () =>
+    !props.browseMode &&
     !props.handToolActive &&
     !props.presentationHandPanMode &&
     !presentationStrokeToolActive.value &&
@@ -793,6 +802,7 @@ defineExpose({
       'mind-map-canvas': useMindMapV2,
       'canvas-touch': canvasTouchGesturesActive,
       'diagram-canvas--hand-tool': useHandToolPanClass,
+      'diagram-canvas--browse': props.browseMode,
       'diagram-canvas--learning-sheet-pick': isLearningSheetPickActive,
       'diagram-canvas--format-brush': formatBrushActive,
       'diagram-canvas--bulk-load': mindMapBulkLoading || layoutMeasureSettling,
@@ -832,7 +842,9 @@ defineExpose({
         :selection-mode="SelectionMode.Partial"
         :pan-on-scroll="false"
         :zoom-on-scroll="true"
+        :zoom-on-pinch="true"
         :zoom-on-double-click="false"
+        :delete-key-code="props.browseMode ? null : undefined"
         :pan-on-drag="effectivePanOnDrag"
         :class="vueFlowBackgroundClasses"
         :style="{ backgroundColor: uiStore.exportRasterCapture ? 'transparent' : backgroundColor }"

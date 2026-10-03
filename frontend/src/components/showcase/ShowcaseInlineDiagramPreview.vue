@@ -20,6 +20,10 @@ const props = defineProps<{
   diagramType?: string | null
   thumbnailUrl?: string | null
   emptyLabelKey?: string
+  /** Small host: fit the diagram to the box, without editor chrome insets. */
+  tightFit?: boolean
+  /** View only: select, pan, and zoom. No node drag or text edit. */
+  browse?: boolean
 }>()
 
 const { t } = useLanguage()
@@ -147,8 +151,10 @@ defineExpose({ captureThumbnail })
           class="relative z-1"
           :show-minimap="false"
           :fit-view-on-init="true"
-          :hand-tool-active="true"
-          :presentation-hand-pan-mode="true"
+          :tight-fit="props.tightFit === true"
+          :browse-mode="props.browse === true"
+          :hand-tool-active="props.browse !== true"
+          :presentation-hand-pan-mode="props.browse !== true"
         />
       </DiagramSessionProvider>
       <div

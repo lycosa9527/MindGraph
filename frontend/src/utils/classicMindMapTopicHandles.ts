@@ -4,6 +4,7 @@ import {
   mindMapNodeSide,
   mindMapSideToChar,
 } from '@/utils/mindMapLocation'
+import { sideOutlineInsetPx } from '@/utils/nodeShapeStyle'
 
 export function parseMindMapSideHandleIndex(sourceHandle: string | undefined): number {
   if (!sourceHandle) return 0
@@ -33,7 +34,9 @@ export function classicMindMapTopicSideConnections(
       const bY = nodeById.get(b.target)?.position?.y ?? 0
       if (aY !== bY) return aY - bY
 
-      return parseMindMapSideHandleIndex(a.sourceHandle) - parseMindMapSideHandleIndex(b.sourceHandle)
+      return (
+        parseMindMapSideHandleIndex(a.sourceHandle) - parseMindMapSideHandleIndex(b.sourceHandle)
+      )
     })
 }
 
@@ -50,12 +53,7 @@ export function classicMindMapSideHandleTopPercent(index: number, count: number)
  * Wide pill topics only expose a semicircular cap — bbox corners sit outside the fill.
  */
 export function classicMindMapPillHandleInsetPx(nodeHeightPx: number, topPercent: number): number {
-  if (nodeHeightPx <= 0) return 0
-  const radius = nodeHeightPx / 2
-  const y = (topPercent / 100) * nodeHeightPx
-  const dy = y - radius
-  if (Math.abs(dy) >= radius) return radius
-  return radius - Math.sqrt(radius * radius - dy * dy)
+  return sideOutlineInsetPx('oval', nodeHeightPx, nodeHeightPx, topPercent)
 }
 
 function classicMindMapTopicHandleTransform(

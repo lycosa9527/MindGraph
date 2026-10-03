@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useDiagramCanvasVueFlowUi } from '@/composables/diagramCanvas/useDiagramCanvasVueFlowUi'
@@ -14,6 +15,7 @@ function buildUiOptions(overrides: Partial<Parameters<typeof useDiagramCanvasVue
     handToolActive: ref(false),
     presentationPointerEditMode: ref(false),
     presentationHandPanMode: ref(false),
+    browseMode: ref(false),
     panOnDragButtons: ref<number[] | null>(null),
     enableTouchPanPinch: ref(false),
     presentationTool: ref<'pointer' | 'highlighter' | 'pen' | 'timer'>('pointer'),
@@ -66,6 +68,24 @@ describe('useDiagramCanvasVueFlowUi', () => {
     const ui = useDiagramCanvasVueFlowUi(buildUiOptions())
     expect(ui.selectNodesOnDrag.value).toBe(false)
     expect(ui.selectionKeyCode.value).toBe(null)
+  })
+
+  it('browse mode selects on click, pans on drag, and skips marquee', () => {
+    learningSheetPickActive.value = false
+    const ui = useDiagramCanvasVueFlowUi(
+      buildUiOptions({
+        diagramStore: { type: 'bubble_map' } as ReturnType<
+          typeof import('@/stores').useDiagramStore
+        >,
+        browseMode: ref(true),
+        handToolActive: ref(true),
+      })
+    )
+    expect(ui.effectivePanOnDrag.value).toEqual([0, 1, 2])
+    expect(ui.elementsSelectable.value).toBe(true)
+    expect(ui.selectNodesOnDrag.value).toBe(false)
+    expect(ui.selectionKeyCode.value).toBe(null)
+    expect(ui.nodesDraggable.value).toBe(false)
   })
 
   it('hand tool pans with all buttons and turns selection off', () => {

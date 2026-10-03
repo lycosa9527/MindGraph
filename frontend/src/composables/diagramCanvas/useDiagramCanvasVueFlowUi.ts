@@ -1,8 +1,8 @@
 import { type ComputedRef, type Ref, computed } from 'vue'
 
-import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
-import { learningSheetPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { learningSheetPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
 import type { PresentationToolId } from '@/types'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
@@ -12,6 +12,8 @@ export interface UseDiagramCanvasVueFlowUiOptions {
   handToolActive: Ref<boolean>
   presentationPointerEditMode: Ref<boolean>
   presentationHandPanMode: Ref<boolean>
+  /** Readonly viewer: click selects, drag pans, wheel zooms. */
+  browseMode: Ref<boolean>
   panOnDragButtons: Ref<number[] | null | undefined>
   /** Desktop e-blackboard: finger pan/pinch without taking over mouse VF pan. */
   enableTouchPanPinch: Ref<boolean>
@@ -42,6 +44,7 @@ export function useDiagramCanvasVueFlowUi(
     handToolActive,
     presentationPointerEditMode,
     presentationHandPanMode,
+    browseMode,
     panOnDragButtons,
     enableTouchPanPinch,
     presentationTool,
@@ -83,6 +86,9 @@ export function useDiagramCanvasVueFlowUi(
   )
 
   const effectivePanOnDrag = computed((): number[] | boolean => {
+    if (browseMode.value) {
+      return [0, 1, 2]
+    }
     if (presentationHandPanMode.value) {
       return panOnDragButtons.value ?? [0, 1, 2]
     }
@@ -107,6 +113,7 @@ export function useDiagramCanvasVueFlowUi(
 
   const nodesDraggable = computed(
     () =>
+      !browseMode.value &&
       !presentationDiagramEditLocked.value &&
       !handToolActive.value &&
       !presentationHandPanMode.value &&
@@ -119,6 +126,7 @@ export function useDiagramCanvasVueFlowUi(
   const elementsSelectable = computed(() => {
     if (isMindgraphHeadlessExportSession()) return false
     if (learningSheetPickActive.value) return false
+    if (browseMode.value) return true
     if (presentationStrokeToolActive.value) return false
     if (presentationPointerEditMode.value) return true
     if (presentationDiagramEditLocked.value) return false
@@ -127,6 +135,7 @@ export function useDiagramCanvasVueFlowUi(
   })
 
   const selectNodesOnDrag = computed(() => {
+    if (browseMode.value) return false
     if (learningSheetPickActive.value) return false
     // Finger pan/pinch (mobile page or e-blackboard) — never start rubber-band on touch.
     if (touchPanPinchActive.value) return false
@@ -139,9 +148,7 @@ export function useDiagramCanvasVueFlowUi(
 
   // Vue Flow 1.48 runtime prop check accepts boolean | null only (not key strings).
   // null keeps the library default (Shift) for hand-tool / pick / mobile where drag-select is off.
-  const selectionKeyCode = computed<boolean | null>(() =>
-    selectNodesOnDrag.value ? true : null
-  )
+  const selectionKeyCode = computed<boolean | null>(() => (selectNodesOnDrag.value ? true : null))
 
   const vueFlowBackgroundClasses = computed(() => {
     const classes = ['bg-gray-50', 'dark:bg-gray-900']

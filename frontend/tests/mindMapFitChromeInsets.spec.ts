@@ -110,6 +110,8 @@ describe('useDiagramCanvasFit chrome wiring', () => {
       'utf8'
     )
     expect(fit).toContain('resolveDiagramFitChromeInsetsPx')
+    expect(fit).toContain('FIT_PADDING.EMBED_PREVIEW_PX')
+    expect(fit).toContain('tightFit.value')
     expect(fit).not.toContain('resolveMindMapSideToolbarLeftReservePx')
     expect(fit).not.toContain('isMindMapSideToolbarAffectingFit')
     expect(fit).not.toContain('STANDARD_WITH_BOTTOM_UI')

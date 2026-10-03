@@ -46,6 +46,7 @@ import {
 } from '@/utils/thinkingMapChrome'
 import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
+import DoubleBubbleTopicHandles from './DoubleBubbleTopicHandles.vue'
 import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
@@ -498,7 +499,10 @@ function handleBranchMovePointerUp(): void {
     @touchstart.passive.capture="handleBranchMoveTouchStart"
   >
     <!-- Handles for double bubble map curved edges (connect at node boundary) -->
-    <template v-if="isDoubleBubbleMap && data.style?.nodeShape !== 'underline'">
+    <template v-if="isDoubleBubbleMap && isTopicNode && data.style?.nodeShape !== 'underline'">
+      <DoubleBubbleTopicHandles />
+    </template>
+    <template v-else-if="isDoubleBubbleMap && data.style?.nodeShape !== 'underline'">
       <Handle
         id="left"
         :position="Position.Left"
@@ -521,22 +525,25 @@ function handleBranchMovePointerUp(): void {
       :class="{ 'circle-node__text-wrapper--underline': data.style?.nodeShape === 'underline' }"
     >
       <template v-if="isDoubleBubbleMap && data.style?.nodeShape === 'underline'">
-        <Handle
-          id="left"
-          :position="Position.Left"
-        />
-        <Handle
-          id="right"
-          :position="Position.Right"
-        />
-        <Handle
-          id="top"
-          :position="Position.Top"
-        />
-        <Handle
-          id="bottom"
-          :position="Position.Bottom"
-        />
+        <DoubleBubbleTopicHandles v-if="isTopicNode" />
+        <template v-else>
+          <Handle
+            id="left"
+            :position="Position.Left"
+          />
+          <Handle
+            id="right"
+            :position="Position.Right"
+          />
+          <Handle
+            id="top"
+            :position="Position.Top"
+          />
+          <Handle
+            id="bottom"
+            :position="Position.Bottom"
+          />
+        </template>
       </template>
       <InlineEditableText
         :text="data.label || ''"

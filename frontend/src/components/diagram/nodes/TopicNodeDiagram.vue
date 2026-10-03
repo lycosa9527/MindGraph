@@ -4,7 +4,7 @@
  */
 import { computed, nextTick, onMounted, ref, toValue, watch } from 'vue'
 
-import { Handle, Position } from '@vue-flow/core'
+import { Handle, Position, useVueFlow } from '@vue-flow/core'
 
 import { storeToRefs } from 'pinia'
 
@@ -21,6 +21,7 @@ import { useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { buildMultiFlowTopicHandles } from '@/utils/multiFlowTopicHandles'
 import { type NodeShape, applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
 import {
   thinkingMapBorderWidth,
@@ -100,30 +101,17 @@ const effectCount = computed(() => {
   return (props.data.effectCount as number) || 4
 })
 
-const leftHandlePositions = computed(() => {
-  if (causeCount.value === 0) return []
-  const positions: Array<{ id: string; top: string }> = []
-  for (let i = 0; i < causeCount.value; i++) {
-    const topPercent = ((i + 1) * 100) / (causeCount.value + 1)
-    positions.push({
-      id: `left-${i}`,
-      top: `${topPercent}%`,
-    })
-  }
-  return positions
-})
+const leftHandlePositions = computed(() => buildMultiFlowTopicHandles('left', causeCount.value))
 
-const rightHandlePositions = computed(() => {
-  if (effectCount.value === 0) return []
-  const positions: Array<{ id: string; top: string }> = []
-  for (let i = 0; i < effectCount.value; i++) {
-    const topPercent = ((i + 1) * 100) / (effectCount.value + 1)
-    positions.push({
-      id: `right-${i}`,
-      top: `${topPercent}%`,
-    })
-  }
-  return positions
+const rightHandlePositions = computed(() => buildMultiFlowTopicHandles('right', effectCount.value))
+
+const { updateNodeInternals } = useVueFlow(diagramStore.vueFlowId)
+
+watch([causeCount, effectCount], () => {
+  if (!isMultiFlowMap.value) return
+  void nextTick(() => {
+    updateNodeInternals([props.id])
+  })
 })
 
 const themeNodePaint = computed(() => {
@@ -445,10 +433,10 @@ function handleWidthChange(width: number) {
         <Handle
           v-for="handle in leftHandlePositions"
           :id="handle.id"
-          :key="`${handle.id}-${handle.top}`"
+          :key="`${handle.id}-${handle.top}-${handle.transform}`"
           type="target"
           :position="Position.Left"
-          :style="{ top: handle.top }"
+          :style="{ top: handle.top, transform: handle.transform }"
           class="bg-blue-500!"
         />
       </template>
@@ -456,10 +444,10 @@ function handleWidthChange(width: number) {
         <Handle
           v-for="handle in rightHandlePositions"
           :id="handle.id"
-          :key="`${handle.id}-${handle.top}`"
+          :key="`${handle.id}-${handle.top}-${handle.transform}`"
           type="source"
           :position="Position.Right"
-          :style="{ top: handle.top }"
+          :style="{ top: handle.top, transform: handle.transform }"
           class="bg-blue-500!"
         />
       </template>

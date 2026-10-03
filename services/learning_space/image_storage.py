@@ -250,6 +250,31 @@ def decode_data_url(data_url: str) -> tuple[bytes, str] | None:
     return payload, mime
 
 
+def promote_data_url_sync(value: object, *, owner_id: int) -> str:
+    """Upload a data-URL image. Keep ``lsimg:`` refs and http(s) URLs. Empty when rejected."""
+    if not isinstance(value, str):
+        return ""
+    item = value.strip()
+    if not item:
+        return ""
+    if is_image_ref(item):
+        key = logical_key_from_ref(item)
+        return ref_for_key(key) if key else ""
+    if item.startswith("http://") or item.startswith("https://"):
+        return item if len(item) <= 2000 else ""
+    decoded = decode_data_url(item)
+    if decoded is None:
+        return ""
+    payload, mime = decoded
+    suffix = _ALLOWED_TYPES[mime]
+    key = build_logical_key(owner_id=owner_id, filename=f"thumb{suffix}")
+    try:
+        return put_image_bytes_sync(key, payload, mime)
+    except ValueError:
+        logger.warning("[LearningSpace] Thumbnail upload rejected owner=%s", owner_id)
+        return ""
+
+
 def persist_instruction_images_sync(raw_items: list[str], *, owner_id: int) -> list[str]:
     """Store new data-URL images on COS; keep existing refs/URLs."""
     stored: list[str] = []

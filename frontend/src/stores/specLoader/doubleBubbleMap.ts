@@ -24,6 +24,18 @@ import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 import { doubleBubbleDiffRequiredRadius, doubleBubbleRequiredRadius } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
+/** Vertical center of the first item when a column is centered on `centerY`. */
+function columnAnchorY(
+  count: number,
+  centerY: number,
+  spacing: number,
+  itemHeight: number
+): number {
+  if (count <= 0) return centerY
+  const colHeight = (count - 1) * spacing + itemHeight
+  return centerY - colHeight / 2 + itemHeight / 2
+}
+
 /** Capsule dimensions from radius (same formula as useDoubleBubbleMap) */
 function capsuleFromRadius(radius: number): { width: number; height: number; diameter: number } {
   const diameter = radius * 2
@@ -248,10 +260,12 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   })
 
   // Similarities (capsules)
-  const simCount = similarities.length
-  const simColHeight =
-    simCount > 0 ? (simCount - 1) * layout.simVerticalSpacing + layout.simCap.height : 0
-  const simStartY = layout.centerY - simColHeight / 2 + layout.simCap.height / 2
+  const simStartY = columnAnchorY(
+    similarities.length,
+    layout.centerY,
+    layout.simVerticalSpacing,
+    layout.simCap.height
+  )
   similarities.forEach((sim, index) => {
     const cy = simStartY + index * layout.simVerticalSpacing
     const simId = takeDoubleBubbleMapStableId(claimedIds, sim.id)
@@ -298,14 +312,23 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     )
   })
 
-  // Left differences (capsules)
-  const maxDiffCount = Math.max(leftDifferences.length, rightDifferences.length)
-  const diffColHeight =
-    maxDiffCount > 0 ? (maxDiffCount - 1) * layout.diffVerticalSpacing + layout.diffCap.height : 0
-  const diffStartY = layout.centerY - diffColHeight / 2 + layout.diffCap.height / 2
+  // Each difference column centers on its own count so a shorter side
+  // does not stay pinned to the top of the taller side.
+  const leftDiffStartY = columnAnchorY(
+    leftDifferences.length,
+    layout.centerY,
+    layout.diffVerticalSpacing,
+    layout.diffCap.height
+  )
+  const rightDiffStartY = columnAnchorY(
+    rightDifferences.length,
+    layout.centerY,
+    layout.diffVerticalSpacing,
+    layout.diffCap.height
+  )
 
   leftDifferences.forEach((diff, index) => {
-    const cy = diffStartY + index * layout.diffVerticalSpacing
+    const cy = leftDiffStartY + index * layout.diffVerticalSpacing
     const leftGloss = leftDiffSecondary[index]
     const pairColor = thinkingMapStampedBranchColor(index)
     const leftId = takeDoubleBubbleMapStableId(claimedIds, diff.id)
@@ -344,7 +367,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   })
 
   rightDifferences.forEach((diff, index) => {
-    const cy = diffStartY + index * layout.diffVerticalSpacing
+    const cy = rightDiffStartY + index * layout.diffVerticalSpacing
     const rightGloss = rightDiffSecondary[index]
     const pairColor = thinkingMapStampedBranchColor(index)
     const rightId = takeDoubleBubbleMapStableId(claimedIds, diff.id)

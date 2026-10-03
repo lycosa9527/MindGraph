@@ -815,6 +815,7 @@ export function useAppSidebar() {
     | 'none'
     | null
   >(null)
+  const learningSpaceCanViewAll = ref(false)
 
   const studentLearningClassId = computed(() => {
     const user = authStore.user
@@ -827,8 +828,16 @@ export function useAppSidebar() {
     if (authStore.user?.role === 'student') {
       return Boolean(studentLearningClassId.value)
     }
+    if (learningSpaceCanViewAll.value) {
+      return true
+    }
     const role = learningSpaceContextRole.value
-    return role === 'pilot_teacher' || role === 'learner' || role === 'assistant'
+    return (
+      role === 'pilot_teacher' ||
+      role === 'learner' ||
+      role === 'assistant' ||
+      role === 'superadmin'
+    )
   })
 
   const showLearningSpaceNav = computed(() => {
@@ -841,8 +850,8 @@ export function useAppSidebar() {
     if (!featureStudentLearningSpace.value) {
       return false
     }
-    // Product nav only for assigned Learning Space roles (pilot / learner / assistant).
-    // Panel managers (superadmin, expert, …) use 管理面板 → 学习空间 instead.
+    // Product nav for assigned roles, plus superadmins who can open every class.
+    // Other panel managers use 管理面板 → 学习空间.
     return isLearningSpaceProductRole.value
   })
 
@@ -857,9 +866,11 @@ export function useAppSidebar() {
   async function refreshLearningSpaceNav(): Promise<void> {
     if (!featureStudentLearningSpace.value || !isAuthenticated.value) {
       learningSpaceContextRole.value = null
+      learningSpaceCanViewAll.value = false
       return
     }
     if (authStore.user?.role === 'student') {
+      learningSpaceCanViewAll.value = false
       if (!studentLearningClassId.value) {
         learningSpaceContextRole.value = null
         return
@@ -871,8 +882,10 @@ export function useAppSidebar() {
       const { fetchLearningSpaceContext } = await import('@/utils/learningSpaceApi')
       const ctx = await fetchLearningSpaceContext()
       learningSpaceContextRole.value = ctx.role
+      learningSpaceCanViewAll.value = ctx.can_view_all === true || ctx.role === 'superadmin'
     } catch {
       learningSpaceContextRole.value = null
+      learningSpaceCanViewAll.value = false
     }
   }
 

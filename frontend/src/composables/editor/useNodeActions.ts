@@ -21,6 +21,7 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { consumeMindMapPostEditSiblingAnchor } from '@/composables/mindMap/mindMapCanvasEnterGuard'
 import { braceMapRootId } from '@/stores/diagram/braceMapParentResolve'
+import { doubleBubbleDeleteKeepWarningKey } from '@/stores/diagram/doubleBubbleMapOps'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramNode } from '@/types'
@@ -686,12 +687,14 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         notify.warningKey('canvas.toolbar.selectSimilarityOrDifferenceDelete')
         return
       }
-      const deleted = diagramStore.removeDoubleBubbleMapNodes(toDelete)
-      if (deleted > 0) {
+      const outcome = diagramStore.removeDoubleBubbleMapNodes(toDelete)
+      if (outcome.deleted > 0) {
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
-        notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
+        notify.successKey('canvas.toolbar.deletedNodes', { count: outcome.deleted })
       }
+      const keepKey = doubleBubbleDeleteKeepWarningKey(outcome)
+      if (keepKey) notify.warningKey(keepKey)
       return
     }
 

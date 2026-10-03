@@ -42,6 +42,20 @@ from services.learning_space.image_storage import (
     stored_image_keys,
 )
 from services.learning_space.passwords import merge_ai_permissions
+from services.learning_space.thumbnail_promote import (
+    ensure_assignment_thumbnail_refs,
+    ensure_submission_thumbnail_ref,
+)
+from services.learning_space.thumbnail_storage import (
+    TEMPLATE_THUMBNAIL_REF,
+    assignment_thumbnail_src,
+    collect_thumbnail_keys,
+    display_thumbnail,
+    present_reference_diagrams,
+    promote_snapshot_thumbnail_sync,
+    submission_thumbnail_src,
+    template_thumbnail_ref_ready,
+)
 from services.learning_space.students import count_class_students
 from services.diagram.spec_coerce import coerce_diagram_spec
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
@@ -151,7 +165,15 @@ async def delete_assignment(db: AsyncSession, assignment: LearningAssignment) ->
     """Delete an assignment and its submissions without relying on ORM cascade."""
     assignment_id = int(assignment.id)
     image_keys = stored_image_keys(assignment.instruction_images)
+    snap_rows = await db.execute(
+        select(LearningSubmission.snapshot_spec).where(LearningSubmission.assignment_id == assignment_id)
+    )
+    thumb_keys = collect_thumbnail_keys(
+        assignment.ai_permissions,
+        [row[0] for row in snap_rows.all()],
+    )
     unused_keys = await unreferenced_image_keys(db, image_keys, except_assignment_id=assignment_id)
+    unused_keys.extend(thumb_keys)
     class_id = int(assignment.class_id)
     try:
         await db.execute(delete(LearningSubmission).where(LearningSubmission.assignment_id == assignment_id))
@@ -568,6 +590,8 @@ async def submit_assignment(
             detail="Diagram service unavailable",
         ) from exc
     snapshot: dict[str, Any] | None = None
+    previous_snap = submission.snapshot_spec if isinstance(submission.snapshot_spec, dict) else None
+    previous_keys = collect_thumbnail_keys(None, [previous_snap] if previous_snap else [])
     if diagram:
         snapshot = {
             "title": diagram.get("title"),
@@ -576,6 +600,11 @@ async def submit_assignment(
             "language": diagram.get("language", "zh"),
             "thumbnail": diagram.get("thumbnail"),
         }
+        await asyncio.to_thread(
+            promote_snapshot_thumbnail_sync,
+            snapshot,
+            owner_id=int(student.id),
+        )
     else:
         logger.warning(
             "[LearningSpace] Submit without live diagram assignment=%s student=%s diagram=%s",
@@ -594,6 +623,10 @@ async def submit_assignment(
         await db.refresh(submission)
     except DATABASE_ERRORS as exc:
         await db.rollback()
+        fresh_keys = collect_thumbnail_keys(None, [snapshot] if isinstance(snapshot, dict) else [])
+        orphans = [key for key in fresh_keys if key not in previous_keys]
+        if orphans:
+            await asyncio.to_thread(delete_stored_images_sync, orphans)
         logger.error(
             "[LearningSpace] Submit failed assignment=%s student=%s: %s",
             assignment.id,
@@ -604,6 +637,10 @@ async def submit_assignment(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to submit assignment",
         ) from exc
+    fresh_keys = collect_thumbnail_keys(None, [snapshot] if isinstance(snapshot, dict) else [])
+    stale_keys = [key for key in previous_keys if key not in fresh_keys]
+    if stale_keys:
+        await asyncio.to_thread(delete_stored_images_sync, stale_keys)
     logger.info(
         "[LearningSpace] Submitted assignment=%s class=%s student=%s submission=%s",
         assignment.id,
@@ -645,6 +682,20 @@ async def return_submission(
     return submission
 
 
+def _public_ai_permissions(assignment: LearningAssignment) -> dict[str, Any]:
+    """Permissions for clients: thumbnail bytes stay on COS, img src is a download hop."""
+    raw = assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else None
+    merged = merge_ai_permissions(raw)
+    merged.pop(TEMPLATE_THUMBNAIL_REF, None)
+    references = merged.get("reference_diagrams")
+    if isinstance(references, list) and assignment.id is not None:
+        merged["reference_diagrams"] = present_reference_diagrams(
+            references,
+            assignment_id=int(assignment.id),
+        )
+    return merged
+
+
 def assignment_public_dict(
     assignment: LearningAssignment,
     *,
@@ -665,15 +716,19 @@ def assignment_public_dict(
         ),
         "template_diagram_id": assignment.template_diagram_id,
         "due_at": assignment.due_at.isoformat() if assignment.due_at else None,
-        "ai_permissions": merge_ai_permissions(
-            assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else None
-        ),
+        "ai_permissions": _public_ai_permissions(assignment),
         "status": assignment.status,
         "created_by": assignment.created_by,
         "created_at": assignment.created_at.isoformat() if assignment.created_at else None,
     }
     if template_thumbnail is not None:
         payload["template_thumbnail"] = template_thumbnail
+    elif assignment.id is not None:
+        raw_perms = assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else None
+        stored_ref = raw_perms.get(TEMPLATE_THUMBNAIL_REF) if isinstance(raw_perms, dict) else None
+        shown = display_thumbnail(stored_ref, assignment_thumbnail_src(int(assignment.id)))
+        if shown:
+            payload["template_thumbnail"] = shown
     if submission_count is not None:
         payload["submission_count"] = submission_count
     if submitted_count is not None:
@@ -785,14 +840,14 @@ def _resolve_submission_diagram_fields(
     preview_title = ""
 
     snap = submission.snapshot_spec if isinstance(submission.snapshot_spec, dict) else None
-    if diagram:
-        thumb = diagram.get("thumbnail")
-        if isinstance(thumb, str) and thumb.strip():
-            diagram_thumbnail = thumb
-    if not diagram_thumbnail and snap:
+    if snap:
         snap_thumb = snap.get("thumbnail")
         if isinstance(snap_thumb, str) and snap_thumb.strip():
             diagram_thumbnail = snap_thumb
+    if not diagram_thumbnail and diagram:
+        thumb = diagram.get("thumbnail")
+        if isinstance(thumb, str) and thumb.strip():
+            diagram_thumbnail = thumb
 
     if snap:
         preview_spec = _normalize_preview_spec(snap.get("spec"))
@@ -873,10 +928,15 @@ async def enrich_submission_dict(
     if submission.diagram_id:
         diagram = await _load_submission_diagram(submission, student)
 
+    await ensure_submission_thumbnail_ref(db, submission)
     diagram_thumbnail, preview_spec, preview_diagram_type, preview_title = _resolve_submission_diagram_fields(
         submission,
         diagram,
     )
+    if submission.id is not None:
+        shown = display_thumbnail(diagram_thumbnail, submission_thumbnail_src(int(submission.id)))
+        if shown:
+            diagram_thumbnail = shown
     return submission_public_dict(
         submission,
         student_name=student_name or f"#{submission.student_user_id}",
@@ -896,15 +956,25 @@ async def enrich_assignment_dict(
 ) -> dict[str, Any]:
     """Assignment payload with template thumbnail and submission counts."""
     template_thumbnail: str | None = None
-    cache = get_diagram_cache()
-    try:
-        template = await cache.get_diagram(int(assignment.created_by), assignment.template_diagram_id)
-        if template:
-            thumb = template.get("thumbnail")
-            if isinstance(thumb, str) and thumb.strip():
-                template_thumbnail = thumb
-    except BACKGROUND_INFRA_ERRORS:
-        template_thumbnail = None
+    raw_perms = assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else {}
+    live_thumb: str | None = None
+    if not template_thumbnail_ref_ready(raw_perms):
+        cache = get_diagram_cache()
+        try:
+            template = await cache.get_diagram(int(assignment.created_by), assignment.template_diagram_id)
+            if template:
+                thumb = template.get("thumbnail")
+                if isinstance(thumb, str) and thumb.strip():
+                    live_thumb = thumb
+        except BACKGROUND_INFRA_ERRORS:
+            live_thumb = None
+    await ensure_assignment_thumbnail_refs(db, assignment, live_thumb)
+    if assignment.id is not None:
+        raw_perms = assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else None
+        stored_ref = raw_perms.get(TEMPLATE_THUMBNAIL_REF) if isinstance(raw_perms, dict) else None
+        template_thumbnail = display_thumbnail(stored_ref, assignment_thumbnail_src(int(assignment.id)))
+    if template_thumbnail is None:
+        template_thumbnail = display_thumbnail(live_thumb, "")
 
     total = await db.execute(
         select(func.count()).select_from(LearningSubmission).where(LearningSubmission.assignment_id == assignment.id)
@@ -952,14 +1022,20 @@ async def load_template_preview(
         )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template diagram not found")
     spec = template.get("spec")
-    thumb = template.get("thumbnail")
+    raw_perms = assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else None
+    stored_ref = raw_perms.get(TEMPLATE_THUMBNAIL_REF) if isinstance(raw_perms, dict) else None
+    thumb_out = None
+    if assignment.id is not None:
+        thumb_out = display_thumbnail(stored_ref, assignment_thumbnail_src(int(assignment.id)))
+    if thumb_out is None:
+        thumb_out = display_thumbnail(template.get("thumbnail"), "")
     return {
         "template_diagram_id": assignment.template_diagram_id,
         "title": str(template.get("title") or assignment.title),
         "diagram_type": str(template.get("diagram_type") or "mind_map"),
         "language": str(template.get("language") or "zh"),
         "preview_spec": spec if isinstance(spec, dict) else None,
-        "thumbnail": thumb if isinstance(thumb, str) and thumb.strip() else None,
+        "thumbnail": thumb_out,
     }
 
 

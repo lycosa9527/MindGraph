@@ -40,7 +40,8 @@ defineEmits<{
       <span
         v-if="badge"
         class="ls-case-card__badge"
-      >{{ badge }}</span>
+        >{{ badge }}</span
+      >
     </div>
     <div class="ls-case-card__body">
       <h3 class="ls-case-card__title">{{ title }}</h3>
@@ -102,7 +103,7 @@ defineEmits<{
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
 }
 .ls-case-card__badge {

@@ -10,7 +10,7 @@ from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
-from models.domain.learning_space import LearningAssignment
+from models.domain.learning_space import LearningAssignment, LearningSubmission
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.auth.dependencies import get_current_user
 from routers.features.learning_space.deps import get_learning_space_db
@@ -30,6 +30,8 @@ from services.learning_space.image_storage import (
     put_image_bytes_sync,
     read_image_bytes_sync,
 )
+from services.learning_space.passwords import merge_ai_permissions
+from services.learning_space.thumbnail_storage import stored_ref
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -143,3 +145,73 @@ async def download_instruction_image(
         index,
     )
     raise HTTPException(status_code=404, detail="Image not found")
+
+
+async def _respond_stored_image(raw: object) -> Response:
+    """Stream a stored thumbnail, or 302 to COS outside local fallback."""
+    key = logical_key_from_ref(str(raw or ""))
+    if key is None:
+        raise HTTPException(status_code=404, detail="Image not found")
+    loaded = await asyncio.to_thread(read_image_bytes_sync, key)
+    if loaded is not None:
+        body, content_type = loaded
+        return Response(
+            content=body,
+            media_type=content_type,
+            headers={"X-Content-Type-Options": "nosniff"},
+        )
+    if not cos_failure_allows_local_fallback():
+        presigned = create_presigned_get(key)
+        if presigned:
+            return RedirectResponse(presigned, status_code=302)
+    raise HTTPException(status_code=404, detail="Image not found")
+
+
+@router.get("/thumbnails/assignments/{assignment_id}")
+async def download_assignment_thumbnail(
+    assignment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_learning_space_db),
+):
+    """Template card image for an assignment."""
+    assignment = await get_assignment(db, assignment_id)
+    await _assert_can_view_assignment(db, current_user, assignment)
+    raw = assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else {}
+    return await _respond_stored_image(raw.get("template_thumbnail_ref"))
+
+
+@router.get("/thumbnails/assignments/{assignment_id}/references/{index}")
+async def download_reference_thumbnail(
+    assignment_id: int,
+    index: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_learning_space_db),
+):
+    """Look-only reference diagram card image."""
+    if index < 0:
+        raise HTTPException(status_code=404, detail="Image not found")
+    assignment = await get_assignment(db, assignment_id)
+    await _assert_can_view_assignment(db, current_user, assignment)
+    merged = merge_ai_permissions(assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else None)
+    references = merged.get("reference_diagrams")
+    if not isinstance(references, list) or index >= len(references):
+        raise HTTPException(status_code=404, detail="Image not found")
+    item = references[index]
+    raw = item.get("thumbnail") if isinstance(item, dict) else None
+    return await _respond_stored_image(raw)
+
+
+@router.get("/thumbnails/submissions/{submission_id}")
+async def download_submission_thumbnail(
+    submission_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_learning_space_db),
+):
+    """Submitted homework card image."""
+    submission = await db.get(LearningSubmission, submission_id)
+    if submission is None:
+        raise HTTPException(status_code=404, detail="Image not found")
+    assignment = await get_assignment(db, int(submission.assignment_id))
+    await _assert_can_view_assignment(db, current_user, assignment)
+    snap = submission.snapshot_spec if isinstance(submission.snapshot_spec, dict) else {}
+    return await _respond_stored_image(stored_ref(snap.get("thumbnail")) or snap.get("thumbnail"))

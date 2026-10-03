@@ -46,6 +46,7 @@ from routers.features.learning_space.schemas import (
 from routers.features.learning_space.deps import get_learning_space_db
 from services.auth.password_security import invalidate_user_cache_after_password_write
 from services.learning_space.access import (
+    classes_visible_to_staff,
     get_class_for_publisher,
     get_class_for_staff,
     get_enabled_pilot,
@@ -102,15 +103,23 @@ from services.learning_space.passwords import (
     assign_learning_space_login_password,
     merge_ai_permissions,
 )
+from services.learning_space.staff_overview import assignment_metric_rows, roster_counts_by_class
 from services.learning_space.students import (
     classroom_student_ids,
-    count_class_students,
     count_class_students_admin,
     import_students,
     kick_classroom_student_sessions,
     preview_student_names,
     remove_class_member,
     reset_student_password,
+)
+from services.learning_space.thumbnail_promote import (
+    load_reference_diagram_preview,
+    reference_library_thumbnails,
+)
+from services.learning_space.thumbnail_storage import (
+    collect_thumbnail_keys,
+    prepare_assignment_thumbnails_sync,
 )
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
@@ -122,7 +131,7 @@ from utils.auth.admin_panel_permissions import (
 from utils.auth.admin_scope import AdminScope
 from utils.auth.password import hash_password
 from utils.auth.role_constants import ROLE_STUDENT
-from utils.auth.roles import get_user_role, is_student
+from utils.auth.roles import get_user_role, is_student, is_superadmin
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -584,43 +593,33 @@ async def teacher_list_classes(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_learning_space_db),
 ):
-    """Classes owned by an enabled pilot, plus classes they assist."""
-    owned: list[LearningClass] = []
+    """Classes owned by an enabled pilot, plus classes they assist. Superadmins see all."""
+    classes = await classes_visible_to_staff(db, current_user)
     is_pilot = await get_enabled_pilot(db, int(current_user.id)) is not None
-    if is_pilot:
-        owned_result = await db.execute(
-            select(LearningClass)
-            .where(LearningClass.teacher_user_id == current_user.id)
-            .order_by(LearningClass.id.desc())
-        )
-        owned = list(owned_result.scalars().all())
-    assisted_ids = await class_ids_for_membership_role(db, int(current_user.id), MEMBERSHIP_ROLE_ASSISTANT)
-    assisted: list[LearningClass] = []
-    if assisted_ids:
-        assisted_result = await db.execute(
-            select(LearningClass).where(LearningClass.id.in_(tuple(assisted_ids))).order_by(LearningClass.id.desc())
-        )
-        assisted = list(assisted_result.scalars().all())
-    seen: set[int] = set()
-    classes: list[LearningClass] = []
-    for cls in owned + assisted:
-        if int(cls.id) in seen:
-            continue
-        seen.add(int(cls.id))
-        classes.append(cls)
-    return {
-        "items": [
-            {
-                "id": c.id,
-                "name": c.name,
-                "class_code": c.class_code,
-                "status": c.status,
-                "student_count": await count_class_students(db, c.id),
-                "can_publish": is_pilot and int(c.teacher_user_id) == int(current_user.id),
-            }
-            for c in classes
-        ]
-    }
+    observe_all = is_superadmin(current_user)
+    roster_counts = await roster_counts_by_class(db, [int(cls.id) for cls in classes])
+    names: dict[int, str] = {}
+    org_names: dict[int, str] = {}
+    if observe_all and classes:
+        names = await user_display_map({int(cls.teacher_user_id) for cls in classes})
+        org_names = await organization_display_map({int(cls.organization_id) for cls in classes})
+    items = []
+    for cls in classes:
+        row = {
+            "id": cls.id,
+            "name": cls.name,
+            "class_code": cls.class_code,
+            "status": cls.status,
+            "student_count": roster_counts.get(int(cls.id), 0),
+            "can_publish": is_pilot and int(cls.teacher_user_id) == int(current_user.id),
+        }
+        if observe_all:
+            row["teacher_user_id"] = cls.teacher_user_id
+            row["teacher_name"] = names.get(int(cls.teacher_user_id), "")
+            row["organization_id"] = cls.organization_id
+            row["organization_name"] = org_names.get(int(cls.organization_id), "")
+        items.append(row)
+    return {"items": items}
 
 
 @router.get("/teacher/classes/{class_id}/students")
@@ -630,7 +629,7 @@ async def teacher_list_students(
     db: AsyncSession = Depends(get_learning_space_db),
 ):
     """List students and enrolled members in the class."""
-    await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True)
+    await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True, actor=current_user)
     return {"items": await class_roster_items(db, class_id, include_initial_password=True)}
 
 
@@ -693,13 +692,23 @@ async def teacher_create_assignment(
             exc,
         )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    template_thumb = template.get("thumbnail")
+    source_permissions = body.ai_permissions if isinstance(body.ai_permissions, dict) else {}
+    reference_thumbs = await reference_library_thumbnails(int(current_user.id), source_permissions)
+    prepared_permissions = await asyncio.to_thread(
+        prepare_assignment_thumbnails_sync,
+        source_permissions,
+        owner_id=int(current_user.id),
+        template_thumbnail=template_thumb if isinstance(template_thumb, str) else None,
+        reference_thumbnails=reference_thumbs,
+    )
     assignment = LearningAssignment(
         class_id=body.class_id,
         title=body.title.strip(),
         instructions=body.instructions or "",
         template_diagram_id=body.template_diagram_id,
         due_at=body.due_at,
-        ai_permissions=merge_ai_permissions(body.ai_permissions),
+        ai_permissions=merge_ai_permissions(prepared_permissions),
         instruction_images=stored_images,
         organization_id=int(learning_class.organization_id),
         created_by=int(current_user.id),
@@ -715,6 +724,7 @@ async def teacher_create_assignment(
         orphans = [
             key for key in stored_image_keys(stored_images) if ref_for_key(key) not in incoming and key not in incoming
         ]
+        orphans.extend(collect_thumbnail_keys(prepared_permissions, []))
         await asyncio.to_thread(delete_stored_images_sync, orphans)
         logger.error(
             "[LearningSpace] Create assignment failed class=%s teacher=%s: %s",
@@ -754,13 +764,24 @@ async def teacher_list_assignments(
     db: AsyncSession = Depends(get_learning_space_db),
 ):
     """List assignments for a class."""
-    await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True)
+    await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True, actor=current_user)
     result = await db.execute(
         select(LearningAssignment).where(LearningAssignment.class_id == class_id).order_by(LearningAssignment.id.desc())
     )
     items = []
     for assignment in result.scalars().all():
         items.append(await enrich_assignment_dict(db, assignment))
+    return {"items": items}
+
+
+@router.get("/teacher/assignments")
+async def teacher_list_visible_assignments(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_learning_space_db),
+):
+    """Dashboard metrics for visible classes. Full homework stays on the class route."""
+    classes = await classes_visible_to_staff(db, current_user)
+    items = await assignment_metric_rows(db, [int(cls.id) for cls in classes])
     return {"items": items}
 
 
@@ -772,12 +793,12 @@ async def teacher_list_submissions(
 ):
     """Submission board for an assignment."""
     assignment = await get_assignment(db, assignment_id)
-    await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True)
+    await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True, actor=current_user)
     result = await db.execute(select(LearningSubmission).where(LearningSubmission.assignment_id == assignment_id))
     subs = list(result.scalars().all())
     items = []
     for submission in subs:
-        items.append(await enrich_submission_dict(db, submission, include_preview=True))
+        items.append(await enrich_submission_dict(db, submission))
     return {"items": items}
 
 
@@ -792,7 +813,7 @@ async def teacher_return_submission(
     if submission is None:
         raise HTTPException(status_code=404, detail="Submission not found")
     assignment = await get_assignment(db, submission.assignment_id)
-    await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True)
+    await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True, actor=current_user)
     updated = await return_submission(db, submission)
     return submission_public_dict(updated)
 
@@ -809,7 +830,7 @@ async def teacher_extend_due(
     if submission is None:
         raise HTTPException(status_code=404, detail="Submission not found")
     assignment = await get_assignment(db, submission.assignment_id)
-    await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True)
+    await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True, actor=current_user)
     submission.due_at_override = body.due_at
     try:
         await db.commit()
@@ -844,7 +865,7 @@ async def teacher_save_review(
     if submission is None:
         raise HTTPException(status_code=404, detail="Submission not found")
     assignment = await get_assignment(db, submission.assignment_id)
-    await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True)
+    await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True, actor=current_user)
     updated = await save_submission_review(
         db,
         submission,
@@ -898,6 +919,19 @@ async def assignment_template_preview(
     assignment = await get_assignment(db, assignment_id)
     await resolve_assignment_viewer(db, current_user, assignment)
     return await load_template_preview(assignment)
+
+
+@router.get("/assignments/{assignment_id}/reference-diagrams/{diagram_id}/preview")
+async def assignment_reference_preview(
+    assignment_id: int,
+    diagram_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_learning_space_db),
+):
+    """Opened look-only reference diagram: spec for the live canvas, thumbnail stays an image."""
+    assignment = await get_assignment(db, assignment_id)
+    await resolve_assignment_viewer(db, current_user, assignment)
+    return await load_reference_diagram_preview(assignment, diagram_id)
 
 
 # ---------------------------------------------------------------------------
@@ -987,7 +1021,6 @@ async def student_class_wall(
             await enrich_submission_dict(
                 db,
                 submission,
-                include_preview=True,
                 assignment_title=assignment.title,
             )
         )
@@ -1098,8 +1131,9 @@ async def learning_space_context(
         }
     pilot = await get_enabled_pilot(db, int(current_user.id))
     can_manage = can_manage_learning_space_classes(current_user)
+    observe_all = is_superadmin(current_user)
     can_learn = bool(learner_ids)
-    can_review = bool(pilot) or bool(assistant_ids)
+    can_review = bool(pilot) or bool(assistant_ids) or observe_all
     can_publish = bool(pilot)
     if pilot:
         role = "pilot_teacher"
@@ -1117,6 +1151,7 @@ async def learning_space_context(
         "can_review": can_review,
         "can_publish": can_publish,
         "can_manage_classes": can_manage,
+        "can_view_all": observe_all,
     }
     if pilot:
         payload["organization_id"] = pilot.organization_id
@@ -1144,6 +1179,6 @@ async def get_assignment_ai_permissions(
         payload["submission"] = submission_public_dict(submission) if submission else None
     return {
         "assignment_id": assignment_id,
-        "ai_permissions": merge_ai_permissions(assignment.ai_permissions),
+        "ai_permissions": payload["ai_permissions"],
         "assignment": payload,
     }

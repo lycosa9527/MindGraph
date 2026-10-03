@@ -22,6 +22,7 @@ export interface LearningSpaceContext {
   can_review?: boolean
   can_publish?: boolean
   can_manage_classes?: boolean
+  can_view_all?: boolean
   must_change_password?: boolean
   organization_id?: number
   class?: { id: number; name: string; class_code: string } | null
@@ -307,6 +308,10 @@ export async function listTeacherAssignments(
   return apiRequestJson(`${BASE}/teacher/classes/${classId}/assignments`)
 }
 
+export async function listVisibleTeacherAssignments(): Promise<{ items: LearningAssignment[] }> {
+  return apiRequestJson(`${BASE}/teacher/assignments`)
+}
+
 export async function deleteTeacherAssignment(assignmentId: number): Promise<{ ok: boolean }> {
   return postJson(`${BASE}/teacher/assignments/${assignmentId}/delete`)
 }
@@ -340,6 +345,18 @@ export async function fetchAssignmentTemplatePreview(
   assignmentId: number
 ): Promise<LearningTemplatePreview> {
   return apiRequestJson(`${BASE}/assignments/${assignmentId}/template-preview`)
+}
+
+export async function fetchReferenceDiagramPreview(
+  assignmentId: number,
+  diagramId: string
+): Promise<{
+  preview_spec: Record<string, unknown> | null
+  thumbnail: string | null
+}> {
+  return apiRequestJson(
+    `${BASE}/assignments/${assignmentId}/reference-diagrams/${encodeURIComponent(diagramId)}/preview`
+  )
 }
 
 export async function listStudentClassWall(): Promise<{ items: LearningSubmission[] }> {
@@ -459,15 +476,18 @@ export async function runAdminAccountImport(
   classId: number,
   phones: string[]
 ): Promise<{
-  created: Array<{ user_id: number; phone: string; name?: string | null; organization_name?: string | null }>
+  created: Array<{
+    user_id: number
+    phone: string
+    name?: string | null
+    organization_name?: string | null
+  }>
   failed: Array<{ phone: string; error: string }>
 }> {
   return postJson(`${BASE}/admin/classes/${classId}/import/accounts`, { phones })
 }
 
-export async function listAdminStudents(
-  classId: number
-): Promise<{ items: LearningStudentRow[] }> {
+export async function listAdminStudents(classId: number): Promise<{ items: LearningStudentRow[] }> {
   return apiRequestJson(`${BASE}/admin/classes/${classId}/students`)
 }
 

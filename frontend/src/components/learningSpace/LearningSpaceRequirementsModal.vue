@@ -4,27 +4,30 @@
  */
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ExternalLink, Loader2, Maximize2, X } from '@lucide/vue'
+
+import { ExternalLink, Loader2, X } from '@lucide/vue'
 
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
+  type LsReferenceDiagram,
   assignmentHasTeacherTemplate,
-  diagramTypeLabelKey,
   assignmentHasWorkingDiagram,
   assignmentIsClosed,
   assignmentReferenceDiagrams,
   assignmentTemplateRole,
+  diagramTypeLabelKey,
   formatLsDateTime,
 } from '@/composables/learningSpace/lsHelpers'
 import { useAuthStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { apiGet } from '@/utils/apiClient'
 import {
   type LearningAssignment,
   type LearningTemplatePreview,
   fetchAssignmentTemplatePreview,
+  fetchReferenceDiagramPreview,
 } from '@/utils/learningSpaceApi'
-import { apiGet } from '@/utils/apiClient'
 
 const AI_TOOL_KEYS = [
   'topic_generate',
@@ -122,9 +125,7 @@ const showStudentMaterials = computed(
     hasInstructionImages.value || showStudentTemplate.value || referenceDiagrams.value.length > 0
 )
 
-const hasInstructionImages = computed(
-  () => (props.assignment?.instruction_images ?? []).length > 0
-)
+const hasInstructionImages = computed(() => (props.assignment?.instruction_images ?? []).length > 0)
 
 const referenceDiagrams = computed(() => assignmentReferenceDiagrams(props.assignment))
 
@@ -206,11 +207,8 @@ const statusText = computed(() => {
     : t('learningSpace.statusActive')
 })
 
-const extraSpecs = ref<Record<string, Record<string, unknown>>>({})
-
 async function loadTemplate(): Promise<void> {
   const a = props.assignment
-  extraSpecs.value = {}
   templatePreview.value = null
   if (!a) {
     return
@@ -232,15 +230,21 @@ async function loadTemplate(): Promise<void> {
       templateLoading.value = false
     }
   }
-  const extraIds = assignmentReferenceDiagrams(a).map((item) => item.id)
-  if (!extraIds.length) return
-  await savedDiagramsStore.prefetchDiagramSpecs(extraIds)
-  const next: Record<string, Record<string, unknown>> = {}
-  for (const id of extraIds) {
-    const spec = savedDiagramsStore.getCachedDiagramSpec(id)
-    if (spec) next[id] = spec
+}
+
+function openWorkingDiagram(): void {
+  openDiagramLightbox(workingPreviewSpec.value, workingPreviewThumbnail.value)
+}
+
+async function openReferenceDiagram(item: LsReferenceDiagram): Promise<void> {
+  const assignmentId = props.assignment?.id
+  if (assignmentId == null) return
+  try {
+    const detail = await fetchReferenceDiagramPreview(assignmentId, item.id)
+    openDiagramLightbox(detail.preview_spec, detail.thumbnail || item.thumbnail)
+  } catch {
+    if (item.thumbnail) openImageLightbox(item.thumbnail)
   }
-  extraSpecs.value = next
 }
 
 watch(
@@ -377,7 +381,13 @@ async function onOpenInCanvas(): Promise<void> {
             <div>
               <dt><I18nText k="learningSpace.studentReqResubmit" /></dt>
               <dd>
-                <I18nText v-if="perms.allow_resubmit !== false" k="learningSpace.studentReqResubmitYes" /><I18nText v-else k="learningSpace.studentReqResubmitNo" />
+                <I18nText
+                  v-if="perms.allow_resubmit !== false"
+                  k="learningSpace.studentReqResubmitYes"
+                /><I18nText
+                  v-else
+                  k="learningSpace.studentReqResubmitNo"
+                />
               </dd>
             </div>
           </dl>
@@ -444,35 +454,23 @@ async function onOpenInCanvas(): Promise<void> {
                   :size="20"
                 />
               </div>
-              <div
-                v-else-if="workingPreviewSpec && hasTeacherTemplate"
-                class="ls-req-template__frame"
-              >
-                <button
-                  type="button"
-                  class="ls-review__fs-btn"
-                  :title="t('learningSpace.previewFullscreen')"
-                  :aria-label="t('learningSpace.previewFullscreen')"
-                  @click="openDiagramLightbox(workingPreviewSpec, workingPreviewThumbnail)"
-                >
-                  <Maximize2 :size="16" />
-                </button>
-                <ShowcaseInlineDiagramPreview
-                  :spec="workingPreviewSpec"
-                  :thumbnail-url="workingPreviewThumbnail"
-                />
-              </div>
               <button
-                v-else-if="hasTeacherTemplate && workingPreviewThumbnail"
+                v-else-if="hasTeacherTemplate"
                 type="button"
                 class="ls-req-img-btn"
-                @click="openImageLightbox(workingPreviewThumbnail)"
+                @click="openWorkingDiagram"
               >
                 <img
+                  v-if="workingPreviewThumbnail"
                   :src="workingPreviewThumbnail"
                   alt=""
                   class="ls-req-img"
                 />
+                <span
+                  v-else
+                  class="ls-muted"
+                  ><I18nText k="learningSpace.noPreview"
+                /></span>
               </button>
               <button
                 v-if="hasTeacherTemplate"
@@ -496,43 +494,26 @@ async function onOpenInCanvas(): Promise<void> {
                 :key="item.id"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label"><I18nText k="learningSpace.extraDiagramAsReference" /></p>
-                <div
-                  v-if="extraSpecs[item.id]"
-                  class="ls-req-template__frame"
-                >
-                  <button
-                    type="button"
-                    class="ls-review__fs-btn"
-                    :title="t('learningSpace.previewFullscreen')"
-                    :aria-label="t('learningSpace.previewFullscreen')"
-                    @click="openDiagramLightbox(extraSpecs[item.id], item.thumbnail)"
-                  >
-                    <Maximize2 :size="16" />
-                  </button>
-                  <ShowcaseInlineDiagramPreview
-                    :spec="extraSpecs[item.id]"
-                    :thumbnail-url="item.thumbnail"
-                  />
-                </div>
+                <p class="ls-req-attach__label">
+                  <I18nText k="learningSpace.extraDiagramAsReference" />
+                </p>
                 <button
-                  v-else-if="item.thumbnail"
                   type="button"
                   class="ls-req-img-btn"
-                  @click="openImageLightbox(item.thumbnail)"
+                  @click="openReferenceDiagram(item)"
                 >
                   <img
+                    v-if="item.thumbnail"
                     :src="item.thumbnail"
                     alt=""
                     class="ls-req-img"
                   />
+                  <span
+                    v-else
+                    class="ls-muted"
+                    >{{ item.title }}</span
+                  >
                 </button>
-                <p
-                  v-else
-                  class="ls-muted"
-                >
-                  {{ item.title }}
-                </p>
               </article>
               <article
                 v-for="(src, idx) in assignment.instruction_images || []"
@@ -597,7 +578,13 @@ async function onOpenInCanvas(): Promise<void> {
               <div>
                 <dt><I18nText k="learningSpace.resubmitPolicy" /></dt>
                 <dd>
-                  <I18nText v-if="perms.allow_resubmit !== false" k="learningSpace.allowResubmitYes" /><I18nText v-else k="learningSpace.allowResubmitNo" />
+                  <I18nText
+                    v-if="perms.allow_resubmit !== false"
+                    k="learningSpace.allowResubmitYes"
+                  /><I18nText
+                    v-else
+                    k="learningSpace.allowResubmitNo"
+                  />
                 </dd>
               </div>
             </dl>
@@ -614,7 +601,9 @@ async function onOpenInCanvas(): Promise<void> {
                 v-if="hasWorkingDiagram"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label"><I18nText k="learningSpace.attachWorkingDiagram" /></p>
+                <p class="ls-req-attach__label">
+                  <I18nText k="learningSpace.attachWorkingDiagram" />
+                </p>
                 <div class="ls-req-template">
                   <div
                     v-if="templateLoading"
@@ -625,35 +614,23 @@ async function onOpenInCanvas(): Promise<void> {
                       :size="20"
                     />
                   </div>
-                  <div
-                    v-else-if="workingPreviewSpec"
-                    class="ls-req-template__frame"
-                  >
-                    <button
-                      type="button"
-                      class="ls-review__fs-btn"
-                      :title="t('learningSpace.previewFullscreen')"
-                      :aria-label="t('learningSpace.previewFullscreen')"
-                      @click="openDiagramLightbox(workingPreviewSpec, workingPreviewThumbnail)"
-                    >
-                      <Maximize2 :size="16" />
-                    </button>
-                    <ShowcaseInlineDiagramPreview
-                      :spec="workingPreviewSpec"
-                      :thumbnail-url="workingPreviewThumbnail"
-                    />
-                  </div>
                   <button
-                    v-else-if="workingPreviewThumbnail"
+                    v-else-if="workingPreviewSpec || workingPreviewThumbnail"
                     type="button"
                     class="ls-req-img-btn"
-                    @click="openImageLightbox(workingPreviewThumbnail)"
+                    @click="openWorkingDiagram"
                   >
                     <img
+                      v-if="workingPreviewThumbnail"
                       :src="workingPreviewThumbnail"
                       alt=""
                       class="ls-req-img"
                     />
+                    <span
+                      v-else
+                      class="ls-muted"
+                      ><I18nText k="learningSpace.noPreview"
+                    /></span>
                   </button>
                   <p
                     v-else
@@ -665,7 +642,9 @@ async function onOpenInCanvas(): Promise<void> {
                     type="button"
                     class="ls-btn ls-btn--ghost ls-btn--sm"
                     style="margin-top: 0.65rem"
-                    :disabled="openingCanvas || templateLoading || (!workingPreviewSpec && !isTeacherOwner)"
+                    :disabled="
+                      openingCanvas || templateLoading || (!workingPreviewSpec && !isTeacherOwner)
+                    "
                     @click="onOpenInCanvas"
                   >
                     <ExternalLink :size="14" />
@@ -678,43 +657,26 @@ async function onOpenInCanvas(): Promise<void> {
                 :key="item.id"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label"><I18nText k="learningSpace.extraDiagramAsReference" /></p>
-                <div
-                  v-if="extraSpecs[item.id]"
-                  class="ls-req-template__frame"
-                >
-                  <button
-                    type="button"
-                    class="ls-review__fs-btn"
-                    :title="t('learningSpace.previewFullscreen')"
-                    :aria-label="t('learningSpace.previewFullscreen')"
-                    @click="openDiagramLightbox(extraSpecs[item.id], item.thumbnail)"
-                  >
-                    <Maximize2 :size="16" />
-                  </button>
-                  <ShowcaseInlineDiagramPreview
-                    :spec="extraSpecs[item.id]"
-                    :thumbnail-url="item.thumbnail"
-                  />
-                </div>
+                <p class="ls-req-attach__label">
+                  <I18nText k="learningSpace.extraDiagramAsReference" />
+                </p>
                 <button
-                  v-else-if="item.thumbnail"
                   type="button"
                   class="ls-req-img-btn"
-                  @click="openImageLightbox(item.thumbnail)"
+                  @click="openReferenceDiagram(item)"
                 >
                   <img
+                    v-if="item.thumbnail"
                     :src="item.thumbnail"
                     alt=""
                     class="ls-req-img"
                   />
+                  <span
+                    v-else
+                    class="ls-muted"
+                    >{{ item.title }}</span
+                  >
                 </button>
-                <p
-                  v-else
-                  class="ls-muted"
-                >
-                  <template v-if="item.title">{{ item.title }}</template><I18nText v-else k="learningSpace.noTemplatePreview" />
-                </p>
               </article>
               <article
                 v-for="(src, idx) in assignment.instruction_images || []"
@@ -856,7 +818,10 @@ async function onOpenInCanvas(): Promise<void> {
       >
         <ShowcaseInlineDiagramPreview
           v-if="diagramLightbox.spec"
+          browse
+          tight-fit
           :spec="diagramLightbox.spec"
+          :diagram-type="null"
           :thumbnail-url="diagramLightbox.thumbnail"
         />
         <img

@@ -299,6 +299,8 @@ const headerTitle = computed(
             </div>
             <ShowcaseInlineDiagramPreview
               v-else-if="previewSpec"
+              browse
+              tight-fit
               :spec="previewSpec"
               :diagram-type="previewMeta.diagramType"
               :thumbnail-url="submission.diagram_thumbnail"

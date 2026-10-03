@@ -678,9 +678,9 @@ export function applyVoiceDiagramRemoveNodes(
       continue
     }
     if (dt === 'double_bubble_map') {
-      const nRemoved = store.removeDoubleBubbleMapNodes([resolved])
-      removed += nRemoved
-      removedNeedHistory += nRemoved
+      const outcome = store.removeDoubleBubbleMapNodes([resolved])
+      removed += outcome.deleted
+      removedNeedHistory += outcome.deleted
       continue
     }
 

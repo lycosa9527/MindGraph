@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.140] - 2026-10-03
+
+> **Learning Space card images live on COS, and a double-bubble map keeps one similarity and one difference.**
+
+### Changed
+
+- **学习空间** — Template, reference, and submitted-homework thumbnails go to Tencent COS as `lsimg:` refs. A card shows that image. Opening it mounts a read-only canvas for select, pan, and zoom. Once the ref is stored, opening the list does not fetch the diagram again just to paint the card. A superadmin can open Learning Space and see every class. Dashboard counts load in one query.
+- **双气泡图** — Delete keeps at least one similarity and one difference, and says which one was kept. Topic connection points stay on the circle.
+- **复流程图** — Cause and effect connection points stay evenly spaced when the counts change.
+
+### Tests
+
+- [`tests/test_learning_space_images.py`](tests/test_learning_space_images.py), [`tests/test_learning_space.py`](tests/test_learning_space.py), [`frontend/tests/useDiagramCanvasVueFlowUi.spec.ts`](frontend/tests/useDiagramCanvasVueFlowUi.spec.ts), [`frontend/tests/mindMapFitChromeInsets.spec.ts`](frontend/tests/mindMapFitChromeInsets.spec.ts), [`frontend/tests/doubleBubbleMapDelete.spec.ts`](frontend/tests/doubleBubbleMapDelete.spec.ts), [`frontend/tests/doubleBubbleTopicHandles.spec.ts`](frontend/tests/doubleBubbleTopicHandles.spec.ts), [`frontend/tests/multiFlowTopicHandles.spec.ts`](frontend/tests/multiFlowTopicHandles.spec.ts)
+
 ## [5.180.139] - 2026-10-03
 
 > **Install no longer depends on patch-package.**

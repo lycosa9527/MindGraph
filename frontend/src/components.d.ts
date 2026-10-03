@@ -230,6 +230,7 @@ declare module 'vue' {
     DocumentList: typeof import('./components/knowledge-space/DocumentList.vue')['default']
     DocumentTable: typeof import('./components/knowledge-space/DocumentTable.vue')['default']
     DocumentUpload: typeof import('./components/knowledge-space/DocumentUpload.vue')['default']
+    DoubleBubbleTopicHandles: typeof import('./components/diagram/nodes/DoubleBubbleTopicHandles.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElBadge: typeof import('element-plus/es')['ElBadge']

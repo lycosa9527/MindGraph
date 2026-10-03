@@ -15,6 +15,7 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { useUIStore } from '@/stores'
+import { doubleBubbleDeleteKeepWarningKey } from '@/stores/diagram/doubleBubbleMapOps'
 import { isProtectedClipboardNode } from '@/stores/diagram/hierarchicalClipboardExtract'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { DiagramNode, MindGraphNode } from '@/types'
@@ -116,7 +117,11 @@ const menuItems = computed<MenuItem[]>(() => {
         } else if (diagramType === 'brace_map') {
           deleted = diagramStore.removeBraceMapNodes([node.id]) > 0
         } else if (diagramType === 'double_bubble_map') {
-          deleted = diagramStore.removeDoubleBubbleMapNodes([node.id]) > 0
+          const outcome = diagramStore.removeDoubleBubbleMapNodes([node.id])
+          const keepKey = doubleBubbleDeleteKeepWarningKey(outcome)
+          if (keepKey) notify.warningKey(keepKey)
+          deleted = outcome.deleted > 0
+          if (!deleted && keepKey) emit('close')
         } else if (diagramType === 'tree_map') {
           deleted = diagramStore.removeTreeMapNodes([node.id]) > 0
         } else {

@@ -1,31 +1,17 @@
 <script setup lang="ts">
 /**
- * Assignment-wall thumbnail — live diagram preview (Showcase path) with PNG fallback.
+ * Assignment-wall thumbnail. Still image only; the opened review is the live canvas.
  */
-import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
-import { useLanguage } from '@/composables/core/useLanguage'
-
-const props = defineProps<{
-  previewSpec?: Record<string, unknown> | null
-  previewDiagramType?: string | null
+defineProps<{
   thumbnailUrl?: string | null
 }>()
-
-const { t } = useLanguage()
 </script>
 
 <template>
   <div class="ls-thumb-card__cover-inner">
-    <ShowcaseInlineDiagramPreview
-      v-if="props.previewSpec"
-      :spec="props.previewSpec"
-      :diagram-type="props.previewDiagramType"
-      :thumbnail-url="props.thumbnailUrl"
-      empty-label-key="learningSpace.noPreview"
-    />
     <img
-      v-else-if="props.thumbnailUrl"
-      :src="props.thumbnailUrl"
+      v-if="thumbnailUrl"
+      :src="thumbnailUrl"
       alt=""
       loading="lazy"
     />

@@ -323,6 +323,11 @@ run_frontend() {
     tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts \
     tests/mindMapIdentityMigrate.spec.ts \
     tests/thinkingMapsIdentity.spec.ts \
+    tests/doubleBubbleMapDelete.spec.ts \
+    tests/doubleBubbleTopicHandles.spec.ts \
+    tests/multiFlowTopicHandles.spec.ts \
+    tests/useDiagramCanvasVueFlowUi.spec.ts \
+    tests/mindMapFitChromeInsets.spec.ts \
     tests/thinkingMapsAutocompleteLayout.spec.ts \
     tests/flowMapIdentity.spec.ts \
     tests/flowMapSubsteps.spec.ts \
