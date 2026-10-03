@@ -130,6 +130,10 @@ async def _run_loop(
             patch("services.kitty.agent_loop.tools.emit_auto_complete_branch", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete", ac_mock),
             patch("services.kitty.agent_loop.tools.send_kitty_ws_action", new=AsyncMock(return_value=True)),
+            patch(
+                "services.kitty.agent_loop.loop.kitty_student_ai_denied_message",
+                new=AsyncMock(return_value=None),
+            ),
             patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
             patch(
                 "services.kitty.agent_loop.loop.throttled_refresh_voice_context_from_library",

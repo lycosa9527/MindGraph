@@ -97,6 +97,10 @@ def _loop_patches(
         ),
         patch("services.kitty.agent_loop.loop.persist_armed_intent_slot", new=AsyncMock()),
         patch("services.kitty.agent_loop.loop.clear_pending_intent_slot_async", new=AsyncMock()),
+        patch(
+            "services.kitty.agent_loop.loop.kitty_student_ai_denied_message",
+            new=AsyncMock(return_value=None),
+        ),
         patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
         patch(
             "services.kitty.agent_loop.loop.throttled_refresh_voice_context_from_library",

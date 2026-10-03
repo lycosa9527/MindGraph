@@ -67,6 +67,10 @@ async def test_paragraph_runs_flash_tool_loop() -> None:
         with (
             patch("services.kitty.agent_loop.loop.llm_service.chat_raw", chat_mock),
             patch("services.kitty.agent_loop.loop._offer_intent_clarify", clarify),
+            patch(
+                "services.kitty.agent_loop.loop.kitty_student_ai_denied_message",
+                new=AsyncMock(return_value=None),
+            ),
             patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
             patch(
                 "services.kitty.agent_loop.loop.throttled_refresh_voice_context_from_library",

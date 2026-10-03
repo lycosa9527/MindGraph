@@ -83,6 +83,10 @@ async def test_five_maps_all_node_actions(slug: str, action: str) -> None:
             patch("services.kitty.agent_loop.tools.send_kitty_ws_action", ws_mock),
             patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch(
+                "services.kitty.agent_loop.loop.kitty_student_ai_denied_message",
+                new=AsyncMock(return_value=None),
+            ),
             patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
             patch(
                 "services.kitty.agent_loop.loop.throttled_refresh_voice_context_from_library",
