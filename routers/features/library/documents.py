@@ -529,7 +529,7 @@ async def upload_cover_image(
 
     if len(content) > service.max_file_size:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=(
                 f"File too large. Maximum size is "
                 f"{service.max_file_size / 1024 / 1024:.1f}MB, "

@@ -10,6 +10,10 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-24.04
+    env:
+      # App import warns when this is unset. CI has no Postgres; the value only
+      # satisfies the explicit-config check.
+      DATABASE_URL: postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6

@@ -31,7 +31,7 @@ def _validate_thumbnail(content: bytes, _filename: Optional[str]) -> None:
     """Validate thumbnail: PNG magic bytes, size."""
     if len(content) > THUMBNAIL_MAX_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=f"Thumbnail too large. Max 2MB, got {len(content) / 1024 / 1024:.1f}MB",
         )
     if not content.startswith(PNG_MAGIC):
@@ -99,7 +99,7 @@ def prepare_post_id_and_spec(spec: str) -> tuple[str, dict]:
     """Generate post_id and parse spec. Validates spec size."""
     if len(spec.encode("utf-8")) > SPEC_MAX_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="Diagram spec too large",
         )
     return str(uuid.uuid4()), parse_spec_json(spec)
@@ -109,7 +109,7 @@ def validate_and_parse_spec(spec: str) -> dict:
     """Validate spec size and parse JSON. Raises HTTPException on error."""
     if len(spec.encode("utf-8")) > SPEC_MAX_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="Diagram spec too large",
         )
     return parse_spec_json(spec)

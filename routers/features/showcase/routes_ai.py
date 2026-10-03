@@ -114,22 +114,22 @@ def _raise_extract_http(exc: Exception) -> NoReturn:
             ) from exc
         if message == "no_text_extracted":
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="No text extracted from document",
             ) from exc
         logger.warning("[ShowcaseAI] extract failed: %s", exc)
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Failed to extract text from document",
         ) from exc
     if isinstance(exc, _EXTRACT_IO_ERRORS):
         logger.warning("[ShowcaseAI] extract io failed: %s", exc)
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Failed to extract text from document",
         ) from exc
     raise HTTPException(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         detail="Failed to extract text from document",
     ) from exc
 
@@ -169,7 +169,7 @@ async def _prepare_teaching_copy_document(
         )
     if len(raw) > ATTACHMENT_MAX_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="Document too large",
         )
     _validate_magic_bytes(raw, suffix)
@@ -405,11 +405,11 @@ async def _prepare_diagram_copy_text_async(
     except ValueError as exc:
         if str(exc) == "no_text_extracted":
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="No text extracted from diagram",
             ) from exc
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Failed to extract text from diagram",
         ) from exc
 
@@ -433,7 +433,7 @@ async def _read_validated_gallery_image(
         )
     if len(raw) > ATTACHMENT_MAX_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="Image too large",
         )
     _validate_magic_bytes(raw, suffix)
@@ -474,7 +474,7 @@ async def _prepare_diagram_copy_images_async(
         total_bytes += len(raw)
         if total_bytes > _MAX_DIAGRAM_OCR_TOTAL_BYTES:
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail="Total image size for AI copy exceeds limit",
             )
         images.append((raw, mime_type))
@@ -484,11 +484,11 @@ async def _prepare_diagram_copy_images_async(
     except ValueError as exc:
         if str(exc) == "no_text_extracted":
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="No text extracted from images",
             ) from exc
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Failed to extract text from images",
         ) from exc
 

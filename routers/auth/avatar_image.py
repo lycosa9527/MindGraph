@@ -33,7 +33,7 @@ router = APIRouter()
 _STATUS = {
     "empty": status.HTTP_400_BAD_REQUEST,
     "invalid": status.HTTP_400_BAD_REQUEST,
-    "too_large": status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+    "too_large": status.HTTP_413_CONTENT_TOO_LARGE,
     "unavailable": status.HTTP_503_SERVICE_UNAVAILABLE,
 }
 

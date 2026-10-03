@@ -228,14 +228,14 @@ def _resolve_secrets(
     if existing is None:
         if not secret_raw:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(
                     f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: dingtalk_app_secret is required for new config"
                 ),
             )
         if not use_org_dify and not key_raw:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: dify_api_key is required for new config"),
             )
         return secret_raw, key_raw
@@ -257,7 +257,7 @@ def _resolved_dify_settings(
         api_key, api_url = resolve_organization_dify_credentials(org)
         if not api_key or not api_url:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(
                     f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: "
                     "Configure MindMate Dify credentials for this organization first"
@@ -274,7 +274,7 @@ def _resolved_dify_settings(
     if not base_url:
         if existing is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: dify_api_base_url is required"),
             )
         base_url = existing.dify_api_base_url.strip()

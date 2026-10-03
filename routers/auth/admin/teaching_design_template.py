@@ -72,7 +72,7 @@ def _catalog_or_500() -> dict:
 def _http_for_value_error(exc: ValueError) -> HTTPException:
     detail = str(exc) or "teaching_design_template_invalid"
     if detail == "teaching_design_template_too_large":
-        code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+        code = status.HTTP_413_CONTENT_TOO_LARGE
     elif detail == "teaching_design_template_not_found":
         code = status.HTTP_404_NOT_FOUND
     else:

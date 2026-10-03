@@ -218,7 +218,7 @@ async def _load_public_channel_payload(
     channel_key = _channel_token_from_query(channel_token, legacy_token)
     if not channel_key:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=Messages.error("missing_required_fields", lang, "channel_token"),
         )
     await _enforce_public_channel_get_limits(http_request, channel_key, lang, kind)

@@ -3,12 +3,20 @@
 from __future__ import annotations
 
 import importlib
+import os
 from collections.abc import Iterator
 from unittest.mock import patch
 
 import pytest
 
 from tests.stubs.redis8_features import install_redis8_features_stub
+
+# Same dev default as config.database. Setting it before import avoids the
+# production UserWarning when CI and local pytest have no DATABASE_URL.
+os.environ.setdefault(
+    "DATABASE_URL",
+    "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph",
+)
 
 install_redis8_features_stub()
 importlib.import_module("models.domain.registry")

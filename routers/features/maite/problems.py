@@ -106,7 +106,7 @@ async def extract_problem_ocr(
             len(image_bytes),
         )
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="Image exceeds 8MB limit",
         )
     schedule_module_activity(

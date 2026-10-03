@@ -155,7 +155,7 @@ async def export_worksheet_docx(
         )
     if len(diagram_bytes) > _MAX_DIAGRAM_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="Diagram image is too large",
         )
 

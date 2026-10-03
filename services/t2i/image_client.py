@@ -1,4 +1,4 @@
-"""DashScope MultiModalConversation client for ZhiHui Qwen Image 3.0 T2I."""
+"""DashScope HTTP client for ZhiHui Qwen Image 3.0 T2I."""
 
 from __future__ import annotations
 
@@ -7,8 +7,7 @@ import logging
 from http import HTTPStatus
 from typing import Any, NoReturn, Optional
 
-import dashscope
-from dashscope import MultiModalConversation
+import requests
 
 from config.settings import config
 from models.requests.requests_t2i import ALLOWED_IMAGE_MODELS, DEFAULT_IMAGE_MODEL
@@ -134,23 +133,23 @@ def _extract_image_url(content: Any) -> Optional[str]:
     return None
 
 
-def _response_request_id(response: Any) -> str:
+def _response_request_id(response: dict[str, Any]) -> str:
     """DashScope request id for support / model-monitor lookup."""
-    raw = getattr(response, "request_id", None)
+    raw = response.get("request_id")
     if isinstance(raw, str) and raw.strip():
         return raw.strip()
     return ""
 
 
-def _raise_dashscope_image_error(response: Any) -> NoReturn:
+def _raise_dashscope_image_error(response: dict[str, Any]) -> NoReturn:
     """Map DashScope failure to LLM* errors (content filter, billing, params)."""
-    status_raw = getattr(response, "status_code", None)
+    status_raw = response.get("status_code")
     try:
         status = int(status_raw) if status_raw is not None else HTTPStatus.INTERNAL_SERVER_ERROR
     except (TypeError, ValueError):
         status = int(HTTPStatus.INTERNAL_SERVER_ERROR)
-    code = getattr(response, "code", None) or ""
-    message = getattr(response, "message", None) or "Unknown DashScope image error"
+    code = response.get("code") or ""
+    message = response.get("message") or "Unknown DashScope image error"
     request_id = _response_request_id(response)
     error_data = {
         "code": str(code),
@@ -172,11 +171,62 @@ def _raise_dashscope_image_error(response: Any) -> NoReturn:
     raise exception
 
 
+def post_qwen_image(
+    *,
+    api_key: str,
+    model: str,
+    messages: list[dict[str, Any]],
+    n: int = 1,
+    prompt_extend: bool = True,
+    watermark: bool = False,
+    size: Optional[str] = None,
+    negative_prompt: str = "",
+    seed: Optional[int] = None,
+) -> dict[str, Any]:
+    """POST one synchronous Qwen image request. Returns the JSON body plus HTTP status."""
+    base = (config.DASHSCOPE_API_URL or "").rstrip("/")
+    url = f"{base}/services/aigc/multimodal-generation/generation"
+    parameters: dict[str, Any] = {
+        "result_format": "message",
+        "n": n,
+        "prompt_extend": prompt_extend,
+        "watermark": watermark,
+    }
+    if size:
+        parameters["size"] = size
+    if negative_prompt:
+        parameters["negative_prompt"] = negative_prompt
+    if seed is not None:
+        parameters["seed"] = seed
+    payload = {
+        "model": model,
+        "input": {"messages": messages},
+        "parameters": parameters,
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=300)
+    except requests.RequestException as exc:
+        raise RuntimeError(f"Image generation call failed: {exc}") from exc
+    try:
+        data = response.json()
+    except ValueError as exc:
+        raise RuntimeError(f"Image generation returned non-JSON HTTP {response.status_code}") from exc
+    if not isinstance(data, dict):
+        raise RuntimeError("Image generation returned non-object JSON")
+    body = dict(data)
+    body["status_code"] = response.status_code
+    return body
+
+
 class ImageClient:
     """Client for DashScope Qwen Image 3.0 multimodal generation (T2I)."""
 
     def __init__(self) -> None:
-        dashscope.base_http_api_url = config.DASHSCOPE_API_URL.rstrip("/")
         logger.info(
             "[T2I] ImageClient ready default_model=%s base=%s",
             resolve_image_model(None),
@@ -197,7 +247,7 @@ class ImageClient:
         reference_images: Optional[list[str]] = None,
     ) -> str:
         """
-        Generate one image URL via MultiModalConversation (sync call in thread).
+        Generate one image URL via the Qwen image HTTP API (sync call in a thread).
 
         Request shape matches Qwen Image 3.0: single user message. T2I uses one
         ``{"text": "..."}`` part; I2I prepends 1–3 ``{"image": "..."}`` parts.
@@ -231,25 +281,8 @@ class ImageClient:
                 "content": content,
             }
         ]
-        params: dict[str, Any] = {
-            "api_key": api_key,
-            "model": resolved_model,
-            "messages": messages,
-            "result_format": "message",
-            "stream": False,
-            "n": _clamp_n(n),
-            "prompt_extend": bool(prompt_extend),
-            "watermark": bool(watermark),
-        }
-        if resolved_size:
-            params["size"] = resolved_size
-        if negative_prompt:
-            params["negative_prompt"] = negative_prompt.strip()
-        if resolved_seed is not None:
-            params["seed"] = resolved_seed
-
         logger.info(
-            "[T2I] MultiModalConversation start model=%s size=%s prompt_len=%s refs=%s extend=%s",
+            "[T2I] Qwen image start model=%s size=%s prompt_len=%s refs=%s extend=%s",
             resolved_model,
             resolved_size or "auto",
             len(cleaned_prompt),
@@ -257,34 +290,41 @@ class ImageClient:
             prompt_extend,
         )
 
-        loop = asyncio.get_running_loop()
         try:
-            response = await loop.run_in_executor(
-                None,
-                lambda: MultiModalConversation.call(**params),
+            response = await asyncio.to_thread(
+                post_qwen_image,
+                api_key=api_key,
+                model=resolved_model,
+                messages=messages,
+                n=_clamp_n(n),
+                prompt_extend=bool(prompt_extend),
+                watermark=bool(watermark),
+                size=resolved_size,
+                negative_prompt=negative_prompt.strip(),
+                seed=resolved_seed,
             )
-        except (OSError, TimeoutError, ConnectionError, RuntimeError, ValueError, TypeError) as exc:
-            logger.error("[T2I] MultiModalConversation call failed: %s", exc, exc_info=True)
-            raise RuntimeError(f"Image generation call failed: {exc}") from exc
+        except RuntimeError:
+            logger.error("[T2I] Qwen image call failed", exc_info=True)
+            raise
 
         request_id = _response_request_id(response)
-        status = getattr(response, "status_code", None)
+        status = response.get("status_code")
         if status != HTTPStatus.OK:
             _raise_dashscope_image_error(response)
 
-        output = getattr(response, "output", None)
-        choices = getattr(output, "choices", None) if output is not None else None
+        output = response.get("output")
+        choices = output.get("choices") if isinstance(output, dict) else None
         if not choices:
             logger.error("[T2I] Empty choices request_id=%s", request_id or "-")
             raise RuntimeError("No images generated")
-        message = getattr(choices[0], "message", None)
-        response_content = getattr(message, "content", None) if message is not None else None
+        message = choices[0].get("message") if isinstance(choices[0], dict) else None
+        response_content = message.get("content") if isinstance(message, dict) else None
         image_url = _extract_image_url(response_content)
         if not image_url:
             logger.error("[T2I] Empty image URL request_id=%s", request_id or "-")
             raise RuntimeError("Empty image URL from DashScope")
         logger.info(
-            "[T2I] MultiModalConversation done request_id=%s url_len=%s",
+            "[T2I] Qwen image done request_id=%s url_len=%s",
             request_id or "-",
             len(image_url),
         )

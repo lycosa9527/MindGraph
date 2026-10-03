@@ -193,7 +193,7 @@ def _validate_magic_bytes(content: bytes, suffix: str) -> None:
 def _validate_thumbnail(content: bytes) -> None:
     if len(content) > THUMBNAIL_MAX_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=f"Thumbnail too large. Max 2MB, got {len(content) / 1024 / 1024:.1f}MB",
         )
     if not content.startswith(PNG_MAGIC):
@@ -513,7 +513,7 @@ async def save_case_file(
     suffix = _suffix_or_raise(upload.filename, allowed_suffixes)
     if len(content) > max_bytes:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=f"File too large. Max {max_bytes // 1024 // 1024}MB",
         )
     _validate_magic_bytes(content, suffix)
@@ -567,7 +567,7 @@ def assert_showcase_spec_size(spec: str) -> None:
     """Reject oversized showcase diagram/gallery JSON bodies."""
     if len(spec.encode("utf-8")) > SHOWCASE_SPEC_MAX_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="Diagram spec too large",
         )
 

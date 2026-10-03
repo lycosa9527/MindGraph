@@ -134,7 +134,7 @@ async def export_teaching_design_docx(
             len(markdown),
         )
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="teaching_design_too_large",
         )
     if not teaching_instruction_from_request(body.reply_kind, markdown):

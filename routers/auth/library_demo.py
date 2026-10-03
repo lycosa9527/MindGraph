@@ -66,7 +66,7 @@ async def write_library_demo(
 ) -> LibraryDemoDocumentModel:
     """Replace this account's demo document."""
     if len(json.dumps(body)) > _MAX_BODY_CHARS:
-        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Library demo is too large")
+        raise HTTPException(status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail="Library demo is too large")
     try:
         document = normalize_library_demo(body)
     except ValueError as exc:

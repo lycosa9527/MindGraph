@@ -195,14 +195,14 @@ async def admin_create_mindbot_config(
     app_secret = payload.dingtalk_app_secret.strip()
     if not app_secret:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: dingtalk_app_secret is required for new config"),
         )
 
     dify_key_raw = (payload.dify_api_key or "").strip()
     if not payload.use_org_dify_settings and not dify_key_raw:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: dify_api_key is required for new config"),
         )
 
@@ -700,7 +700,7 @@ async def admin_list_mindbot_usage_thread_events(
     df = (dify_conversation_id or "").strip()
     if not dt and not df:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="dingtalk_conversation_id or dify_conversation_id is required",
         )
     repo = MindbotUsageRepository(db)

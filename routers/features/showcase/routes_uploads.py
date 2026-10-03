@@ -190,7 +190,7 @@ async def init_showcase_upload(
             reason="file_too_large",
         )
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=f"File too large. Max {role_spec.max_bytes // 1024 // 1024}MB",
         )
 
@@ -387,7 +387,7 @@ async def complete_showcase_upload(
                 key=key,
             )
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail="File too large",
             )
         try:

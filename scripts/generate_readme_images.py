@@ -6,21 +6,16 @@ import os
 import urllib.request
 from pathlib import Path
 
-import dashscope
-from dashscope import MultiModalConversation
 from dotenv import load_dotenv
 
 from config.settings import config
+from services.t2i.image_client import post_qwen_image
 
 load_dotenv()
 
 API_KEY = (config.QWEN_API_KEY or os.getenv("QWEN_API_KEY") or "").strip()
 if not API_KEY:
     raise SystemExit("QWEN_API_KEY missing")
-
-# Prefer workspace MaaS /api/v1 (falls back to legacy when workspace unset).
-dashscope.base_http_api_url = config.DASHSCOPE_API_URL.rstrip("/")
-dashscope.api_key = API_KEY
 
 OUT_DIR = Path("docs/assets")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -95,20 +90,20 @@ def _extract_image_url(content: object) -> str | None:
     return None
 
 
-def _response_image_url(resp: object) -> str | None:
+def _response_image_url(resp: dict) -> str | None:
     """Pull the first image URL from a DashScope multimodal response."""
-    status = getattr(resp, "status_code", None)
+    status = resp.get("status_code")
     print(f"  status={status}")
     if status != 200:
-        print("  error:", getattr(resp, "code", None), getattr(resp, "message", None))
+        print("  error:", resp.get("code"), resp.get("message"))
         return None
-    output = getattr(resp, "output", None)
-    choices = getattr(output, "choices", None) if output is not None else None
+    output = resp.get("output")
+    choices = output.get("choices") if isinstance(output, dict) else None
     if not choices:
         print("  no choices in response")
         return None
-    message = getattr(choices[0], "message", None)
-    content = getattr(message, "content", None) if message is not None else None
+    message = choices[0].get("message") if isinstance(choices[0], dict) else None
+    content = message.get("content") if isinstance(message, dict) else None
     image_url = _extract_image_url(content)
     if not image_url:
         print("  no image in response:", content)
@@ -120,16 +115,14 @@ def main() -> None:
     for job in JOBS:
         print(f"Generating {job['name']}...")
         messages = [{"role": "user", "content": [{"text": job["prompt"]}]}]
-        resp = MultiModalConversation.call(
+        resp = post_qwen_image(
             api_key=API_KEY,
             model="qwen-image-2.0",
             messages=messages,
-            result_format="message",
-            stream=False,
             watermark=False,
             prompt_extend=bool(job.get("prompt_extend", True)),
-            negative_prompt=job["negative"],
-            size=job["size"],
+            negative_prompt=str(job["negative"]),
+            size=str(job["size"]),
             n=1,
         )
         image_url = _response_image_url(resp)

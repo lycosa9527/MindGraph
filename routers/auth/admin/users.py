@@ -100,7 +100,7 @@ async def list_users_admin(
         canonical_role = normalize_role(role)
         if canonical_role not in ALL_USER_ROLES:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Invalid role filter: {role}",
             )
         conditions.append(User.role.in_(tuple(db_roles_for_canonical_filter(canonical_role))))
