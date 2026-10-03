@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.180.138",
+  "version": "5.180.139",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -24,7 +24,7 @@
     "check:scripts": "node scripts/sync-version.ts && node scripts/check-i18n-keys.ts && node scripts/check-i18n-translated-banners.ts && node scripts/check-lazy-locale-loaders.ts && node scripts/codemod-bilingual-template.mjs --check && node scripts/codemod-bilingual-notify.mjs --check && python3 scripts/_audit_brand_locale_keys.py && npm run check:sidebar-quotes && npm run check:china-geo && npm run check:pwa-workbox && npm run check:pdf-worker",
     "check:dep0205": "node scripts/check-dep0205.mjs",
     "check:vueuse-pure": "node scripts/check-vueuse-pure-annotations.mjs",
-    "postinstall": "patch-package && node scripts/ensure-cross-platform-native-deps.mjs",
+    "postinstall": "node scripts/ensure-cross-platform-native-deps.mjs",
     "i18n:check-keys": "node scripts/check-i18n-keys.ts",
     "i18n:check-banners": "node scripts/check-i18n-translated-banners.ts",
     "i18n:check-lazy-loaders": "node scripts/check-lazy-locale-loaders.ts",
@@ -124,7 +124,6 @@
     "google-translate-api-x": "^10.7.2",
     "jsdom": "^30.0.1",
     "opencc-js": "^1.4.1",
-    "patch-package": "^8.0.1",
     "prettier": "^3.9.6",
     "rollup-plugin-visualizer": "^7.0.1",
     "sharp": "^0.35.4",

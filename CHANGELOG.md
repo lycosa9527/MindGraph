@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.139] - 2026-10-03
+
+> **Install no longer depends on patch-package.**
+
+### Changed
+
+- **依赖** — `@vueuse/core` 14.4.0 already includes the Rolldown annotation fix, and no patch files remain. `postinstall` no longer runs `patch-package`, which removes the `braces` advisory from the frontend install.
+
 ## [5.180.138] - 2026-10-03
 
 > **A bilingual diagram keeps both languages, and every school version includes the same tools.**

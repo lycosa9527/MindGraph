@@ -43,7 +43,7 @@ if (violations.length > 0) {
     console.error(`    ${v.text}`)
   }
   console.error(
-    '\nApply patches/@vueuse+core+14.3.0.patch (postinstall) or upgrade @vueuse/core when > 14.3.0 is published.',
+    '\nUpgrade @vueuse/core to 14.4.0 or newer. vueuse#5388 is in that release.',
   )
   process.exit(1)
 }
