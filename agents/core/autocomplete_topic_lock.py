@@ -39,24 +39,38 @@ def apply_locked_topic_to_spec(
         normalized = "mind_map"
 
     if normalized in ("mind_map", "bubble_map", "circle_map", "tree_map"):
-        spec["topic"] = topic
+        _write_locked_field(spec, "topic", topic)
         return spec
 
     if normalized == "brace_map":
-        spec["whole"] = topic
+        _write_locked_field(spec, "whole", topic)
         if "topic" in spec:
-            spec["topic"] = topic
+            _write_locked_field(spec, "topic", topic)
         return spec
 
     if normalized == "flow_map":
-        spec["title"] = topic
+        _write_locked_field(spec, "title", topic)
         return spec
 
     if normalized == "multi_flow_map":
-        spec["event"] = topic
+        _write_locked_field(spec, "event", topic)
         return spec
 
     return spec
+
+
+def _write_locked_field(spec: dict[str, Any], field: str, topic: str) -> None:
+    """Replace one central label. Drop its gloss when the text actually changes.
+
+    Peel already checked the mirror against the model's topic. Keeping that
+    gloss after the canvas text replaces the topic shows a translation of a
+    sentence the canvas no longer contains.
+    """
+    previous = spec.get(field)
+    spec[field] = topic
+    secondary = spec.get("secondary")
+    if isinstance(secondary, dict) and previous != topic:
+        secondary.pop(field, None)
 
 
 def resolve_locked_topic(

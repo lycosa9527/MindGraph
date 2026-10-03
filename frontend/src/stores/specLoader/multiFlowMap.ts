@@ -15,7 +15,7 @@ import {
   MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH,
   MULTI_FLOW_TOPIC_PADDING_X,
 } from '@/composables/diagrams/layoutConfig'
-import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
+import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
 import type { Connection, DiagramNode } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import {
@@ -27,6 +27,7 @@ import {
   stampMultiFlowData,
   takeMultiFlowMapStableId,
 } from '@/utils/multiFlowMapIdentity'
+import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
@@ -140,7 +141,9 @@ export function recalculateMultiFlowMapLayout(
 
   const getH = (id: string): number => {
     const pinia = nodeDimensions[id]?.height
-    return pinia ?? DEFAULT_NODE_HEIGHT
+    if (pinia != null && pinia > 0) return pinia
+    const node = nodes.find((item) => item.id === id)
+    return heightWithSecondaryLine(DEFAULT_NODE_HEIGHT, node?.textSecondary, 14)
   }
 
   const actualTopicWidth = topicNodeWidth ?? estimateMultiFlowTopicWidth(event, eventNode?.style)

@@ -11,22 +11,40 @@ from __future__ import annotations
 import re
 from typing import Iterable, Optional
 
-# @MindMate / @**MindMate** then end, whitespace, or a non-name character.
-_MENTION_BOUND = r"(?=$|\s|[^\w])"
-_MINDMATE_MENTION_RE = re.compile(
-    rf"@(?:\*\*)?mindmate(?:\*\*)?{_MENTION_BOUND}",
-    re.IGNORECASE,
-)
+# @ or fullwidth ＠, not glued to an email local-part.
+_MENTION_LEAD = r"(?<![A-Za-z0-9_])"
+_MENTION_AT = r"[@＠]"
+
+
+def _trailing_bound(name: str) -> str:
+    """End an @token before CJK when the name itself is ASCII.
+
+    ``@mindmate帮我`` is a mention. ``@mindmatexyz`` and ``@小思你好`` are not:
+    a CJK name still needs whitespace or punctuation so it does not eat the
+    next word.
+    """
+    last = name[-1:]
+    if last.isascii() and (last.isalnum() or last == "_"):
+        return r"(?=$|\s|[^A-Za-z0-9_])"
+    return r"(?=$|\s|[^\w])"
+
+
+def _compile_mention(name: str) -> re.Pattern[str]:
+    bound = _trailing_bound(name)
+    return re.compile(
+        rf"{_MENTION_LEAD}{_MENTION_AT}(?:\*\*)?{re.escape(name)}(?:\*\*)?{bound}",
+        re.IGNORECASE,
+    )
+
+
+_MINDMATE_MENTION_RE = _compile_mention("mindmate")
 
 
 def _alias_pattern(alias: str) -> Optional[re.Pattern[str]]:
-    cleaned = alias.strip().lstrip("@").strip("*").strip()
+    cleaned = alias.strip().lstrip("@＠").strip("*").strip()
     if not cleaned:
         return None
-    return re.compile(
-        rf"@(?:\*\*)?{re.escape(cleaned)}(?:\*\*)?{_MENTION_BOUND}",
-        re.IGNORECASE,
-    )
+    return _compile_mention(cleaned)
 
 
 def mention_aliases_from_org(org: object) -> tuple[str, ...]:
@@ -37,6 +55,22 @@ def mention_aliases_from_org(org: object) -> tuple[str, ...]:
         if cleaned and cleaned not in found:
             found.append(cleaned)
     return tuple(found)
+
+
+def collab_message_targets_mindmate(
+    explicit_flag: object,
+    content: str,
+    agent_aliases: Iterable[str] = (),
+) -> bool:
+    """Route a seminar line to MindMate.
+
+    The MindMate segment sends ``to_mindmate: true`` and always asks the AI.
+    The everyone segment sends false, and ``@mindmate`` (or a school alias)
+    still asks the AI.
+    """
+    if explicit_flag is True:
+        return True
+    return message_mentions_mindmate(content, agent_aliases)
 
 
 def message_mentions_mindmate(content: str, agent_aliases: Iterable[str] = ()) -> bool:

@@ -15,6 +15,7 @@ import {
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import { hasActiveWorksheetHeader, resolveWorksheetTopicText } from '@/config/canvasWorksheetText'
+import { specHasSecondaryText } from '@/diagramBilingual/mirror'
 import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
 import { apiRequestJson, apiUpload } from '@/utils/apiClient'
@@ -515,7 +516,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       const json = JSON.stringify(spec)
-      const bytes = await encodeMgFileContents(json)
+      const bytes = await encodeMgFileContents(json, specHasSecondaryText(spec) ? '2.0' : '1.1')
       const blob = new Blob([new Uint8Array(bytes)], { type: 'application/octet-stream' })
       if (!(await handOffExportFile(blob, exportFilename(getTitle(), 'mg')))) return
 

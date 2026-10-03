@@ -1120,7 +1120,7 @@ export default {
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Restaurar para imagem completa',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
+    'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Escolha um método para criar um diagrama de andaime oco, adequado para prática e revisão em sala de aula.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':

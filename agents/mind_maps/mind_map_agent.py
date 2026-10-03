@@ -24,6 +24,7 @@ from prompts.ai_content_level import (
     resolve_generation_instructions,
 )
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.bilingual_prompt import bilingual_max_tokens
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 
@@ -167,7 +168,9 @@ class MindMapAgent(BaseAgent):
                     "error": "Failed to generate mind map specification",
                 }
 
-            if locked_topic:
+            # A bilingual mirror must stay paired until peel. The workflow locks
+            # the canvas topic after that and drops only the mismatched gloss.
+            if locked_topic and not isinstance(spec.get("secondary"), dict):
                 spec["topic"] = locked_topic
 
             is_valid, validation_msg = self.validate_output(
@@ -309,7 +312,7 @@ class MindMapAgent(BaseAgent):
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=1000,
+                max_tokens=bilingual_max_tokens(1000),
                 temperature=1.0,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -407,7 +410,7 @@ class MindMapAgent(BaseAgent):
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=4000,
+                max_tokens=bilingual_max_tokens(4000),
                 temperature=0.7,
                 user_id=user_id,
                 organization_id=organization_id,

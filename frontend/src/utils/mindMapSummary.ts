@@ -145,6 +145,23 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value)
 }
 
+function summaryGloss(raw: unknown): { textSecondary?: string } {
+  const line = typeof raw === 'string' ? raw.trim() : ''
+  return line ? { textSecondary: line } : {}
+}
+
+function applySummaryGloss<T extends { textSecondary?: string }>(
+  item: T,
+  textSecondary: string | undefined
+): T {
+  if (textSecondary === undefined) return item
+  const next = { ...item }
+  const line = textSecondary.trim()
+  if (line) next.textSecondary = line
+  else delete next.textSecondary
+  return next
+}
+
 function parseSummaryChildren(raw: unknown): MindMapSummaryChildSpec[] | undefined {
   if (!Array.isArray(raw)) return undefined
   const children: MindMapSummaryChildSpec[] = []
@@ -152,7 +169,8 @@ function parseSummaryChildren(raw: unknown): MindMapSummaryChildSpec[] | undefin
     if (!isPlainObject(item)) continue
     const text = typeof item.text === 'string' ? item.text : ''
     const nested = parseSummaryChildren(item.children)
-    children.push(nested ? { text, children: nested } : { text })
+    const gloss = summaryGloss(item.textSecondary)
+    children.push(nested ? { text, ...gloss, children: nested } : { text, ...gloss })
   }
   return children.length > 0 ? children : undefined
 }
@@ -174,7 +192,7 @@ export function parseMindMapSummaries(raw: unknown): MindMapSummarySpec[] {
     const lineStyle = parseMindMapSummaryLineStyle(item.lineStyle)
     const strokeColor = parseMindMapSummaryStrokeColor(item.strokeColor)
     const strokeWidth = parseMindMapSummaryStrokeWidth(item.strokeWidth)
-    const spec: MindMapSummarySpec = { id, text, coveredPaths }
+    const spec: MindMapSummarySpec = { id, text, ...summaryGloss(item.textSecondary), coveredPaths }
     if (children) spec.children = children
     if (kind) spec.kind = kind
     if (lineStyle) spec.lineStyle = lineStyle
@@ -262,10 +280,7 @@ export function sameMindMapSummaryPaths(
 }
 
 /** True when `path` is a covered sibling or a descendant of one. */
-export function isMindMapSummaryExtentPath(
-  path: string,
-  coveredPaths: readonly string[]
-): boolean {
+export function isMindMapSummaryExtentPath(path: string, coveredPaths: readonly string[]): boolean {
   return coveredPaths.some((covered) => path === covered || path.startsWith(`${covered}/`))
 }
 
@@ -583,14 +598,18 @@ export function walkSummaryChildren(
 export function updateSummaryChildText(
   children: MindMapSummaryChildSpec[] | undefined,
   indexPath: readonly number[],
-  text: string
+  text: string,
+  textSecondary?: string
 ): MindMapSummaryChildSpec[] | undefined {
   if (!children || indexPath.length === 0) return children
   const [head, ...rest] = indexPath
   return children.map((child, index) => {
     if (index !== head) return child
-    if (rest.length === 0) return { ...child, text }
-    return { ...child, children: updateSummaryChildText(child.children, rest, text) }
+    if (rest.length === 0) return applySummaryGloss({ ...child, text }, textSecondary)
+    return {
+      ...child,
+      children: updateSummaryChildText(child.children, rest, text, textSecondary),
+    }
   })
 }
 

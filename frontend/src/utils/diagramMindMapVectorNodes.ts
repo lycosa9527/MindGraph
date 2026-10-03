@@ -1,23 +1,21 @@
 /**
  * Node shape SVG for mind-map vector export.
  */
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import {
-  MIND_MAP_GEOMETRY,
   MINDMAP_UNDERLINE_STROKE_WIDTH,
+  MIND_MAP_GEOMETRY,
   mindMapBranchFontSize,
   mindMapHorizontalPadding,
 } from '@/config/mindMapGeometry'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import type { NodeStyle } from '@/types'
-import {
-  OUTLINE_WIREFRAME_FILL,
-  OUTLINE_WIREFRAME_INK,
-} from '@/utils/mindMapOutlineWireframeStyle'
 import { renderMindMapSvgText } from '@/utils/diagramMindMapVectorText'
+import { OUTLINE_WIREFRAME_FILL, OUTLINE_WIREFRAME_INK } from '@/utils/mindMapOutlineWireframeStyle'
 
 export type MindMapVectorNodeDraw = {
   id: string
   text: string
+  textSecondary?: string
   /** Un-editable prefix chrome; body wrap excludes this string. */
   numberPrefix?: string
   type: string
@@ -55,9 +53,7 @@ function resolveColors(
     stroke:
       node.style.borderColor ??
       (isTopic ? MIND_MAP_GEOMETRY.topicBorderColor : MIND_MAP_GEOMETRY.defaultBorderColor),
-    textColor:
-      node.style.textColor ??
-      (isTopic ? '#1E3A8A' : MIND_MAP_GEOMETRY.leafTextColor),
+    textColor: node.style.textColor ?? (isTopic ? '#1E3A8A' : MIND_MAP_GEOMETRY.leafTextColor),
     strokeWidth: node.style.borderWidth ?? MIND_MAP_GEOMETRY.borderWidth,
   }
 }
@@ -114,8 +110,7 @@ export function renderMindMapVectorNode(
     node.style.fontWeight ?? (isTopic || /\*\*|__/.test(node.text) ? 'bold' : 'normal')
   const paddingX = mindMapHorizontalPadding(shape)
   const paddingY = shape === 'underline' ? 2 : MIND_MAP_GEOMETRY.paddingY
-  const textAlign =
-    node.style.textAlign ?? (shape === 'underline' ? 'left' : 'center')
+  const textAlign = node.style.textAlign ?? (shape === 'underline' ? 'left' : 'center')
   // Vue Flow node width is border-box; canvas text sits inside padding + border.
   const borderWidth = shape === 'underline' ? 0 : colors.strokeWidth
 
@@ -126,6 +121,7 @@ export function renderMindMapVectorNode(
       width: node.width,
       height: node.height,
       rawText: node.text,
+      rawSecondary: node.textSecondary,
       numberPrefix: node.numberPrefix,
       fontSize,
       fontWeight: fontWeight === 'bold' ? 'bold' : 'normal',

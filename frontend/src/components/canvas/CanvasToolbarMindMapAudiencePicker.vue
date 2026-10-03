@@ -32,6 +32,7 @@ import {
   DEFAULT_AI_CONTENT_LEVEL,
 } from '@/config/aiContentLevels'
 import { useAiContentLevelStore, useSavedDiagramsStore } from '@/stores'
+import { flexRowSparePx, nextProLevelTagExpanded } from '@/utils/proLevelTagFit'
 
 const AI_CONTENT_LEVEL_ICONS: Record<AiContentLevelId, Component> = {
   general: Sparkles,
@@ -71,6 +72,9 @@ const proContentPanelOpen = ref(false)
 const proContentGuideReady = ref(false)
 const proContentAnchor = ref<HTMLElement | null>(null)
 const proContentAnchorRect = ref<DOMRect | null>(null)
+/** Status bar has room for the unclipped level name (General, not Gen…). */
+const proLevelTagFull = ref(false)
+let proLevelFitObserver: ResizeObserver | null = null
 
 const proContentLevelOptions = computed(() =>
   AI_CONTENT_LEVEL_IDS.map((id) => ({
@@ -200,6 +204,50 @@ watch(proContentPanelOpen, (open) => {
   }
 })
 
+function unbindProLevelTagFit(): void {
+  proLevelFitObserver?.disconnect()
+  proLevelFitObserver = null
+}
+
+function syncProLevelTagWidth(): void {
+  const anchor = proContentAnchor.value
+  const bar = anchor?.closest('.mm-status')
+  const slot = bar?.querySelector('.mm-status__center')
+  if (!anchor || !(bar instanceof HTMLElement) || !(slot instanceof HTMLElement) || props.compact) {
+    proLevelTagFull.value = false
+    return
+  }
+  if (proLevelFitObserver) {
+    proLevelFitObserver.observe(bar)
+    for (const kid of slot.children) proLevelFitObserver.observe(kid)
+  }
+  if (slot.clientWidth <= 0) return
+  const tag = anchor.querySelector('.mm-pro-level-tag')
+  if (!(tag instanceof HTMLElement)) {
+    proLevelTagFull.value = false
+    return
+  }
+  proLevelTagFull.value = nextProLevelTagExpanded(
+    proLevelTagFull.value,
+    Math.floor(flexRowSparePx(slot)),
+    Math.ceil(tag.scrollWidth - tag.clientWidth)
+  )
+}
+
+function bindProLevelTagFit(): void {
+  unbindProLevelTagFit()
+  const anchor = proContentAnchor.value
+  const bar = anchor?.closest('.mm-status')
+  if (!anchor || !bar || props.compact) {
+    proLevelTagFull.value = false
+    return
+  }
+  proLevelFitObserver = new ResizeObserver(() => {
+    syncProLevelTagWidth()
+  })
+  syncProLevelTagWidth()
+}
+
 function onProContentClick(event: MouseEvent): void {
   if (!aiBlockedByCollab.value) return
   event.preventDefault()
@@ -209,6 +257,7 @@ function onProContentClick(event: MouseEvent): void {
 }
 
 onMounted(() => {
+  void nextTick(bindProLevelTagFit)
   if (props.hideGuide || !showFirstRunGuide.value || aiBlockedByCollab.value) return
   proContentGuideTimer = window.setTimeout(() => {
     updateProContentAnchorRect()
@@ -218,9 +267,17 @@ onMounted(() => {
   }, 700)
 })
 
+watch(
+  () => [proContentActiveOption.value.title, showProContentHintLabel.value, props.compact] as const,
+  () => {
+    void nextTick(syncProLevelTagWidth)
+  }
+)
+
 onBeforeUnmount(() => {
   if (proContentGuideTimer !== undefined) window.clearTimeout(proContentGuideTimer)
   unbindProContentGuideListeners()
+  unbindProLevelTagFit()
 })
 
 function proContentDiagramKey(): string {
@@ -309,6 +366,7 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
         :class="{
           'mm-btn--icon': props.compact,
           'mm-btn--pro-content-compact': !showProContentHintLabel && !props.compact,
+          'mm-btn--pro-level-full': proLevelTagFull,
           'mm-btn--pro-content-guide': showProContentGuide,
           'is-open': proContentPanelOpen,
           'is-dimmed': aiBlockedByCollab,

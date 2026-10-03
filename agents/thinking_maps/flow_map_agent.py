@@ -20,6 +20,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from agents.core.agent_result import agent_validation_failure
+from agents.diagram_bilingual.split import transplant_secondary
 from agents.core.agent_utils import extract_json_from_response
 from agents.core.fixed_structure import (
     append_fixed_labels_user_note,
@@ -32,6 +33,7 @@ from agents.core.base_agent import BaseAgent
 from config.settings import config
 from prompts import get_prompt
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.bilingual_prompt import bilingual_max_tokens
 from utils.prompt_locale import is_chinese_prompt_shell_language
 from utils.text_width_estimate import estimate_text_width_px
 
@@ -180,7 +182,7 @@ class FlowMapAgent(BaseAgent):
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=1000,
+                max_tokens=bilingual_max_tokens(1000),
                 temperature=config.LLM_TEMPERATURE,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -225,7 +227,7 @@ class FlowMapAgent(BaseAgent):
                     prompt=user_prompt + retry_suffix,
                     model=self.model,
                     system_message=system_prompt,
-                    max_tokens=1000,
+                    max_tokens=bilingual_max_tokens(1000),
                     temperature=config.LLM_TEMPERATURE,
                     user_id=user_id,
                     organization_id=organization_id,
@@ -298,7 +300,7 @@ class FlowMapAgent(BaseAgent):
                 prompt=retry_user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=1000,
+                max_tokens=bilingual_max_tokens(1000),
                 temperature=config.LLM_TEMPERATURE,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -576,6 +578,7 @@ class FlowMapAgent(BaseAgent):
                 },
             }
 
+            transplant_secondary(spec, enhanced_spec)
             return {"success": True, "spec": enhanced_spec}
         except LLM_PIPELINE_ERRORS as exc:
             return {"success": False, "error": f"Unexpected error: {exc}"}

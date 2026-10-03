@@ -1120,7 +1120,7 @@ export default {
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Restaurar diagrama completo',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
+    'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Elija cómo crear una ficha de aprendizaje para practicar y repasar.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':

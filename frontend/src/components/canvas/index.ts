@@ -25,6 +25,7 @@ export { default as CanvasMindMapShortcutGuide } from './CanvasMindMapShortcutGu
 export { default as CanvasMindMapGestureGuide } from './CanvasMindMapGestureGuide.vue'
 export { default as CanvasKittyVoiceCommandGuide } from './CanvasKittyVoiceCommandGuide.vue'
 export { default as MindMapSidePanel } from './MindMapSidePanel.vue'
+export { default as MindClassroomLaunchDialog } from './MindClassroomLaunchDialog.vue'
 export { default as MindClassroomMascot } from './MindClassroomMascot.vue'
 export { default as MindClassroomLectureOverlay } from './MindClassroomLectureOverlay.vue'
 export { default as MindClassroomSlidePane } from './MindClassroomSlidePane.vue'

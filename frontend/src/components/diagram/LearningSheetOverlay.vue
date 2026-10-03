@@ -8,10 +8,15 @@ import { computed } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { useLanguage } from '@/composables'
-import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { nodesInLearningSheetReadingOrder } from '@/utils/learningSheetAnswerOrder'
+import {
+  thinkingMapAdaptiveTextColor,
+  thinkingMapAdaptiveTopicTextColor,
+  thinkingMapStructureColor,
+} from '@/utils/thinkingMapConnectionStroke'
 
 const diagramStore = useDiagramSession()
 const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow(diagramStore.vueFlowId)
@@ -43,9 +48,7 @@ const showReferenceAnswers = computed(() => diagramStore.learningSheetShowAnswer
 
 const isLearningSheet = computed(
   () =>
-    diagramStore.isLearningSheet &&
-    blankedAnswers.value.length > 0 &&
-    showReferenceAnswers.value
+    diagramStore.isLearningSheet && blankedAnswers.value.length > 0 && showReferenceAnswers.value
 )
 
 interface NodeWithDimensions {
@@ -54,7 +57,13 @@ interface NodeWithDimensions {
   dimensions?: { width?: number; height?: number }
 }
 
-const SEPARATOR_COLOR = '#1976d2'
+const structureColor = computed(() => thinkingMapStructureColor(diagramStore.data?._mindmap_theme))
+const structureTextColor = computed(() =>
+  thinkingMapAdaptiveTextColor(diagramStore.data?._mindmap_theme, structureColor.value)
+)
+const chipTextColor = computed(() =>
+  thinkingMapAdaptiveTopicTextColor(diagramStore.data?._mindmap_theme, '#ffffff')
+)
 const SEPARATOR_OPACITY = 0.4
 const SEPARATOR_OFFSET_Y = 15
 const SEPARATOR_DASHARRAY = '4,4'
@@ -63,7 +72,6 @@ const LABEL_OFFSET_Y = 15
 const LABEL_FONT_SIZE = 13
 const LABEL_CHIP_GAP = 8
 const CHIP_FONT_SIZE = 12
-const CHIP_COLOR = '#1976d2'
 const CHIP_OPACITY = 0.8
 const CHIP_SPACING = 8
 const CHIP_PADDING_X = 8
@@ -145,7 +153,7 @@ const answerChips = computed(() => {
         :y1="separatorLine.y1"
         :x2="separatorLine.x2"
         :y2="separatorLine.y2"
-        :stroke="SEPARATOR_COLOR"
+        :stroke="structureColor"
         :stroke-width="LINE_WIDTH"
         :stroke-dasharray="SEPARATOR_DASHARRAY"
         :opacity="SEPARATOR_OPACITY"
@@ -156,7 +164,7 @@ const answerChips = computed(() => {
         <text
           :x="answerSectionPosition.centerX"
           :y="answerSectionPosition.labelY"
-          :fill="CHIP_COLOR"
+          :fill="structureTextColor"
           :font-size="LABEL_FONT_SIZE"
           :opacity="CHIP_OPACITY"
           text-anchor="middle"
@@ -175,13 +183,13 @@ const answerChips = computed(() => {
           :width="chip.width"
           :height="CHIP_FONT_SIZE + CHIP_PADDING_Y * 2"
           :rx="CHIP_RADIUS"
-          :fill="CHIP_COLOR"
+          :fill="structureColor"
           :opacity="CHIP_OPACITY"
         />
         <text
           :x="chip.x"
           :y="chip.y"
-          fill="white"
+          :fill="chipTextColor"
           :font-size="CHIP_FONT_SIZE"
           text-anchor="middle"
           dominant-baseline="middle"

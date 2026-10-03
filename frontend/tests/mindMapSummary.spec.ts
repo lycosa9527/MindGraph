@@ -210,10 +210,32 @@ describe('mind map summary chrome', () => {
       strokeColor: '#c2410c',
       strokeWidth: 3,
     })
+    expect(parsed[0]?.textSecondary).toBeUndefined()
     expect(parsed[1]?.kind).toBeUndefined()
     expect(parsed[1]?.lineStyle).toBeUndefined()
     expect(parsed[1]?.strokeColor).toBeUndefined()
     expect(parsed[1]?.strokeWidth).toBeUndefined()
+  })
+
+  it('keeps the second line on the summary and its children', () => {
+    const parsed = parseMindMapSummaries([
+      {
+        id: 's1',
+        text: '概要',
+        textSecondary: 'Summary',
+        coveredPaths: ['r/0'],
+        children: [
+          {
+            text: '细节',
+            textSecondary: 'Detail',
+            children: [{ text: '空', textSecondary: '  ' }],
+          },
+        ],
+      },
+    ])
+    expect(parsed[0]?.textSecondary).toBe('Summary')
+    expect(parsed[0]?.children?.[0]?.textSecondary).toBe('Detail')
+    expect(parsed[0]?.children?.[0]?.children?.[0]?.textSecondary).toBeUndefined()
   })
 })
 

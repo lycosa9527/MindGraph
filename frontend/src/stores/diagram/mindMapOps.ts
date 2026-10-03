@@ -106,7 +106,12 @@ function ctxV2Visuals(ctx: DiagramContext): boolean {
 }
 
 function loadCtxMindMapSpec(ctx: DiagramContext, spec: Record<string, unknown>) {
-  return loadMindMapSpec(spec, { canvasMode: ctxCanvasMode(ctx) })
+  const topicNode = ctx.data.value?.nodes?.find((node) => node.id === 'topic')
+  const topicSecondary = (topicNode?.textSecondary ?? '').trim()
+  const sameTopic = (topicNode?.text ?? '') === (typeof spec.topic === 'string' ? spec.topic : '')
+  const withTopic =
+    sameTopic && topicSecondary && spec.topicSecondary == null ? { ...spec, topicSecondary } : spec
+  return loadMindMapSpec(withTopic, { canvasMode: ctxCanvasMode(ctx) })
 }
 
 function defaultNewNodeText(): string {

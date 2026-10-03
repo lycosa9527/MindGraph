@@ -126,6 +126,7 @@ export function buildMindMapVectorSnapshot(options: {
     drawNodes.push({
       id: node.id,
       text: node.text ?? '',
+      ...((node.textSecondary ?? '').trim() ? { textSecondary: node.textSecondary } : {}),
       ...(numberPrefix ? { numberPrefix } : {}),
       type: node.type,
       x: node.position.x,

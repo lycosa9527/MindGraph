@@ -12,7 +12,7 @@ import {
   DEFAULT_TOPIC_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
 import { bubbleMapChildrenRadius, polarToPosition } from '@/composables/diagrams/useRadialLayout'
-import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
+import { mirrorString, mirrorStringList, readSecondaryMirror } from '@/diagramBilingual/mirror'
 import type { Connection, DiagramNode } from '@/types'
 import {
   BUBBLE_MAP_UID_DATA_KEY,
@@ -28,6 +28,7 @@ import {
   type NodeShape,
   shapePackHalfExtent,
 } from '@/utils/nodeShapeStyle'
+import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
 import {
   CONTEXT_FONT_SIZE,
@@ -35,24 +36,29 @@ import {
   calculateBubbleMapRadius,
   computeTopicRadiusForCircleMap,
   diagramLabelLikelyNeedsRenderedMeasure,
+  growRadiusForSecondary,
   measureRenderedDiagramLabelHeight,
   measureRenderedDiagramLabelWidth,
 } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
-function defaultContextBubbleRadiusFromText(text: string): number {
+function defaultContextBubbleRadiusFromText(text: string, secondary?: string): number {
   const trimmed = (text || '').trim() || ' '
-  return Math.max(
-    DEFAULT_CONTEXT_RADIUS,
-    calculateBubbleMapRadius(
-      trimmed,
-      CONTEXT_FONT_SIZE,
-      10,
+  return growRadiusForSecondary(
+    Math.max(
       DEFAULT_CONTEXT_RADIUS,
-      false,
-      false,
-      DIAGRAM_NODE_FONT_STACK
-    )
+      calculateBubbleMapRadius(
+        trimmed,
+        CONTEXT_FONT_SIZE,
+        10,
+        DEFAULT_CONTEXT_RADIUS,
+        false,
+        false,
+        DIAGRAM_NODE_FONT_STACK
+      )
+    ),
+    secondary,
+    CONTEXT_FONT_SIZE
   )
 }
 
@@ -103,20 +109,24 @@ function bubbleContextRadiusFromNode(node: DiagramNode): number {
     const h = measureRenderedDiagramLabelHeight(trimmed, fs, 1_000_000, labelOpts)
     const diagonal = Math.sqrt(w * w + h * h)
     const radius = Math.ceil(diagonal / 2 + 10)
-    return Math.max(DEFAULT_CONTEXT_RADIUS, radius)
+    return growRadiusForSecondary(Math.max(DEFAULT_CONTEXT_RADIUS, radius), node.textSecondary, fs)
   }
 
-  return Math.max(
-    DEFAULT_CONTEXT_RADIUS,
-    calculateBubbleMapRadius(
-      trimmed,
-      fs,
-      10,
+  return growRadiusForSecondary(
+    Math.max(
       DEFAULT_CONTEXT_RADIUS,
-      false,
-      measureBold,
-      fontFamily
-    )
+      calculateBubbleMapRadius(
+        trimmed,
+        fs,
+        10,
+        DEFAULT_CONTEXT_RADIUS,
+        false,
+        measureBold,
+        fontFamily
+      )
+    ),
+    node.textSecondary,
+    fs
   )
 }
 
@@ -136,6 +146,7 @@ export function recalculateBubbleMapLayout(
     .sort((a, b) => readBubbleGroupIndex(a) - readBubbleGroupIndex(b))
   const nodeCount = bubbleNodes.length
   const topicText = topicNode?.text ?? ''
+  const topicSecondary = topicNode?.textSecondary
   const topicStyle = topicNode?.style
   const topicR = Math.max(
     DEFAULT_TOPIC_RADIUS,
@@ -143,6 +154,7 @@ export function recalculateBubbleMapLayout(
       fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
       fontWeight: topicStyle?.fontWeight,
       fontFamily: topicStyle?.fontFamily,
+      secondary: topicSecondary,
     })
   )
   const centerX = DEFAULT_CENTER_X
@@ -273,13 +285,21 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
 
   const topic = (spec.topic as string) || ''
   const attributes = Array.isArray(spec.attributes) ? (spec.attributes as string[]) : []
+  const mirror = readSecondaryMirror(spec)
+  const topicSecondary = mirrorString(mirror, 'topic')
+  const attributeSecondary = mirrorStringList(mirror, 'attributes')
 
-  const topicR = Math.max(DEFAULT_TOPIC_RADIUS, computeTopicRadiusForCircleMap(topic || ' '))
+  const topicR = Math.max(
+    DEFAULT_TOPIC_RADIUS,
+    computeTopicRadiusForCircleMap(topic || ' ', { secondary: topicSecondary })
+  )
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
   const nodeCount = attributes.length
 
-  const radii = attributes.map((attr) => defaultContextBubbleRadiusFromText(attr))
+  const radii = attributes.map((attr, index) =>
+    defaultContextBubbleRadiusFromText(attr, attributeSecondary[index])
+  )
   const uniformRadius =
     nodeCount > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
@@ -293,6 +313,7 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   nodes.push({
     id: BUBBLE_TOPIC_NODE_ID,
     text: topic,
+    ...(topicSecondary ? { textSecondary: topicSecondary } : {}),
     type: 'topic',
     position: { x: Math.round(centerX - topicR), y: Math.round(centerY - topicR) },
     style: {
@@ -318,6 +339,7 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
       nodes.push({
         id: bubbleId,
         text: attr,
+        ...(attributeSecondary[index] ? { textSecondary: attributeSecondary[index] } : {}),
         type: 'bubble',
         position: { x: Math.round(x), y: Math.round(y) },
         data: stampBubbleAttributeData(index, { [BUBBLE_MAP_UID_DATA_KEY]: bubbleId }),

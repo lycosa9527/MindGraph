@@ -21,9 +21,12 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
-import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { thinkingMapFamilyLine } from '@/utils/thinkingMapChrome'
-import { resolveThinkingMapConnectorStroke } from '@/utils/thinkingMapConnectionStroke'
+import {
+  resolveThinkingMapConnectorStroke,
+  thinkingMapAdaptiveTextColor,
+  thinkingMapStructureColor,
+} from '@/utils/thinkingMapConnectionStroke'
 
 // Diagram store for diagram type
 const diagramStore = useDiagramSession()
@@ -247,7 +250,12 @@ const { t } = useLanguage()
 const SEPARATOR_OFFSET_Y = 15
 const ALTERNATIVE_DIMENSIONS_OFFSET_Y = 15
 const ALTERNATIVE_LABEL_FONT_SIZE = 14
-const ALTERNATIVE_CHIP_COLOR = MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+const alternativeChipColor = computed(() =>
+  thinkingMapStructureColor(diagramStore.data?._mindmap_theme)
+)
+const alternativeTextColor = computed(() =>
+  thinkingMapAdaptiveTextColor(diagramStore.data?._mindmap_theme, alternativeChipColor.value)
+)
 
 const alternativeDimensions = computed(() => {
   if (!isBraceMap.value) return []
@@ -339,7 +347,7 @@ const braceMapAlternativePosition = computed(() => {
           :y1="braceMapSeparatorLine.y1"
           :x2="braceMapSeparatorLine.x2"
           :y2="braceMapSeparatorLine.y2"
-          :stroke="ALTERNATIVE_CHIP_COLOR"
+          :stroke="alternativeChipColor"
           stroke-width="1"
           stroke-dasharray="4,4"
           :opacity="0.4"
@@ -348,7 +356,7 @@ const braceMapAlternativePosition = computed(() => {
         <text
           :x="braceMapAlternativePosition.centerX"
           :y="braceMapAlternativePosition.labelY"
-          :fill="ALTERNATIVE_CHIP_COLOR"
+          :fill="alternativeTextColor"
           :font-size="ALTERNATIVE_LABEL_FONT_SIZE"
           text-anchor="middle"
           dominant-baseline="middle"
@@ -359,7 +367,7 @@ const braceMapAlternativePosition = computed(() => {
         <text
           :x="braceMapAlternativePosition.centerX"
           :y="braceMapAlternativePosition.chipsY"
-          :fill="ALTERNATIVE_CHIP_COLOR"
+          :fill="alternativeTextColor"
           :font-size="ALTERNATIVE_LABEL_FONT_SIZE - 1"
           text-anchor="middle"
           dominant-baseline="middle"

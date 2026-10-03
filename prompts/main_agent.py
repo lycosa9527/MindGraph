@@ -185,6 +185,7 @@ Shared rules:
 5. constraints: optional tone, audience, or detail hints (both cases).
 6. clarity: "clear" or "unclear" — use "unclear" only for empty or meaningless input.
 7. Output ONLY valid JSON — no markdown, no explanation.
+8. When structure_mode is "free", set every array to [] and every unused string to "". Do not invent branches, steps, attributes, or pairs in free mode.
 
 Type-specific schema and examples:
 {requirements_schema}
@@ -208,6 +209,7 @@ PROMPT_REQUIREMENTS_BASE_ZH = """你从用户输入中提取结构化需求，�
 5. constraints：可选的语气、受众或详细程度提示（两种情况均可）。
 6. clarity："clear" 或 "unclear"——仅对空输入或无意义内容使用 "unclear"。
 7. 只输出有效 JSON——不要 markdown，不要解释。
+8. structure_mode 为 "free" 时，所有数组填 []，未使用的字符串填 ""。自由模式下不要编造分支、步骤、特征或类比对。
 
 本类型的 schema 与示例：
 {requirements_schema}

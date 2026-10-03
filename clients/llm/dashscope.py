@@ -20,6 +20,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 import httpx
 
 from clients.llm.http_client_manager import get_httpx_manager
+from clients.llm.structured_output import apply_structured_output
 from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.infrastructure.http.error_handler import (
@@ -201,9 +202,7 @@ class QwenClient:
             if "parallel_tool_calls" in kwargs:
                 payload["parallel_tool_calls"] = kwargs.pop("parallel_tool_calls")
 
-            # Add response format if provided
-            if "response_format" in kwargs:
-                payload["response_format"] = kwargs.pop("response_format")
+            apply_structured_output(payload, kwargs.pop("response_format", None))
 
             # Pass through any remaining kwargs (for future extensibility)
             if kwargs:
@@ -400,8 +399,7 @@ class QwenClient:
                 payload["parallel_tool_calls"] = kwargs.pop("parallel_tool_calls")
 
             # Add response format if provided
-            if "response_format" in kwargs:
-                payload["response_format"] = kwargs.pop("response_format")
+            apply_structured_output(payload, kwargs.pop("response_format", None))
 
             # Pass through any remaining kwargs
             if kwargs:
@@ -543,8 +541,7 @@ class DeepSeekClient:
             payload["messages"] = messages
             payload["temperature"] = temperature
             payload["max_tokens"] = max_tokens
-            if "response_format" in kwargs:
-                payload["response_format"] = kwargs.pop("response_format")
+            apply_structured_output(payload, kwargs.pop("response_format", None))
 
             headers = _dashscope_headers(self.api_key)
 
@@ -641,8 +638,7 @@ class DeepSeekClient:
             payload["max_tokens"] = max_tokens
             payload["stream"] = True
             payload["stream_options"] = {"include_usage": True}
-            if "response_format" in kwargs:
-                payload["response_format"] = kwargs.pop("response_format")
+            apply_structured_output(payload, kwargs.pop("response_format", None))
 
             # Enable thinking mode if requested
             if "extra_body" not in payload:

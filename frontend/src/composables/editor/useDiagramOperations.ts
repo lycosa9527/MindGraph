@@ -14,6 +14,12 @@ import type { DiagramSpec, DiagramType } from '@/types'
 
 import { eventBus } from '../core/useEventBus'
 import {
+  applySpecArrayText,
+  padMirrorStringList,
+  spliceMirrorList,
+  writeMirrorScalar,
+} from './diagramOperationGloss'
+import {
   applyVoiceDiagramAddNodes,
   applyVoiceDiagramRemoveNodes,
   applyVoiceDiagramUpdateCenter,
@@ -41,6 +47,7 @@ export interface NodeStyles {
 
 export interface NodeUpdate {
   text?: string
+  textSecondary?: string
   label?: string
   styles?: NodeStyles
 }
@@ -360,6 +367,7 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
         // Add new node
         const newText = getDefaultText(addType)
         arr.push(newText)
+        padMirrorStringList(spec as Record<string, unknown>, field)
 
         const index = arr.length - 1
         const newNodeId = `${addType}_${index}`
@@ -425,6 +433,7 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
           for (const index of indices) {
             if (index < arr.length) {
               arr.splice(index, 1)
+              spliceMirrorList(spec as Record<string, unknown>, field, index)
               deletedIndices.push(index)
 
               // Find the node type for this field
@@ -467,23 +476,31 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
         // Handle protected nodes (topic, main, etc.)
         if (cfg.protectedNodes.includes(nodeInfo.type) && updates.text !== undefined) {
           // Update the main field directly (use index access since DiagramSpec has index signature)
+          const specRecord = spec as Record<string, unknown>
           if (nodeInfo.type === 'topic' && 'topic' in spec) {
             spec['topic'] = updates.text
+            writeMirrorScalar(specRecord, 'topic', updates.textSecondary)
           } else if (nodeInfo.type === 'whole' && 'whole' in spec) {
             spec['whole'] = updates.text
+            writeMirrorScalar(specRecord, 'whole', updates.textSecondary)
           } else if (nodeInfo.type === 'main' && 'main' in spec) {
             spec['main'] = updates.text
+            writeMirrorScalar(specRecord, 'main', updates.textSecondary)
           } else if (nodeInfo.type === 'event' && 'event' in spec) {
             spec['event'] = updates.text
+            writeMirrorScalar(specRecord, 'event', updates.textSecondary)
           }
         }
 
         // Handle array nodes
         if (nodeInfo.field && nodeInfo.index !== undefined && updates.text !== undefined) {
-          const arr = (spec as Record<string, unknown[]>)[nodeInfo.field]
-          if (Array.isArray(arr) && nodeInfo.index < arr.length) {
-            arr[nodeInfo.index] = updates.text
-          }
+          applySpecArrayText(
+            spec as Record<string, unknown>,
+            nodeInfo.field,
+            nodeInfo.index,
+            updates.text,
+            updates.textSecondary
+          )
         }
 
         eventBus.emit('diagram:node_updated', {

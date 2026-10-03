@@ -110,10 +110,6 @@ watch(schoolTierEdit, (tier) => {
   }
 })
 
-const showLiteFeaturesHint = computed(
-  () => schoolTierEdit.value === 'trial' || schoolTierEdit.value === 'lite'
-)
-
 const managerLimit = computed(() => SCHOOL_TIER_LIMITS[schoolTierEdit.value].managerLimit)
 
 const managersRemaining = computed(() => Math.max(0, managerLimit.value - props.managers.length))
@@ -259,12 +255,6 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
           </el-select>
           <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
             {{ schoolTierHint }}
-          </p>
-          <p
-            v-if="showLiteFeaturesHint"
-            class="mindbot-swiss-hint text-xs m-0 leading-relaxed text-amber-800/90"
-          >
-            <I18nText k="admin.schoolVersionLiteFeaturesHint" />
           </p>
         </div>
       </div>

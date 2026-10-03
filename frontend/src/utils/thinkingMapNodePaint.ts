@@ -9,7 +9,6 @@ import {
   type ThinkingMapChrome,
   thinkingMapColorsAreDefault,
   thinkingMapDisplayedFontSize,
-  thinkingMapPaletteIndex,
   thinkingMapRoleChrome,
 } from '@/utils/thinkingMapChrome'
 import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
@@ -28,7 +27,7 @@ export interface ThinkingMapNodePaint {
 
 type PaintNode = Pick<DiagramNode, 'id' | 'type' | 'data' | 'style'>
 
-function solidThemeNodePaint(
+export function solidThemeNodePaint(
   themeId: string | null | undefined,
   topic: boolean
 ): ThinkingMapNodePaint | null {
@@ -81,8 +80,6 @@ export function thinkingMapDisplayedNodeColors(
     const borderColor = style?.borderColor
     const textColor = style?.textColor
     if (!backgroundColor && !borderColor && !textColor) return themePaint
-    const index = thinkingMapPaletteIndex(diagramType, node)
-    if (index == null || textColor) return null
     const chrome = thinkingMapRoleChrome(diagramType, node, connections)
     if (chrome && thinkingMapColorsAreDefault(style, chrome)) return themePaint
     return null

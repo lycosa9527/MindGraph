@@ -5,19 +5,13 @@
  */
 import { computed } from 'vue'
 
-import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
-import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import type { MindGraphNodeProps } from '@/types'
+import { thinkingMapStructureColor } from '@/utils/thinkingMapConnectionStroke'
 
 const props = defineProps<MindGraphNodeProps>()
-
-// Get theme defaults
-const { getNodeStyle } = useTheme({
-  diagramType: computed(() => props.data.diagramType),
-})
-
-const defaultStyle = computed(() => getNodeStyle('boundary'))
+const diagramStore = useDiagramSession()
 
 // Get dimensions from style prop (set by diagram store)
 // Check both data.style and originalNode.style for width/height
@@ -35,17 +29,10 @@ const height = computed(() => {
   return directStyle?.height || originalStyle?.height || 400
 })
 
-// Outer circle colors matching old JS bubble-map-renderer.js THEME
-// outerCircleStroke: #666666, outerCircleStrokeWidth: 2
-const strokeColor = computed(
-  () =>
-    props.data.style?.borderColor ||
-    defaultStyle.value.borderColor ||
-    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
-)
+const strokeColor = computed(() => thinkingMapStructureColor(diagramStore.data?._mindmap_theme))
 
 const strokeWidth = computed(
-  () => props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
+  () => props.data.style?.borderWidth || MIND_MAP_GEOMETRY.edgeStrokeWidth
 )
 </script>
 

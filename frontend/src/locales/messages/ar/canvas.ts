@@ -1120,7 +1120,7 @@ export default {
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'استعادة الصورة الكاملة',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
+    'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'اختر طريقة لإنشاء مخطط سقالات مجوف، مناسب للتمرين والمراجعة في الفصل الدراسي.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':

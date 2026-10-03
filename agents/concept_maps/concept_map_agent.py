@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from langchain_core.prompts import PromptTemplate
 
+from agents.diagram_bilingual.split import transplant_secondary
 from prompts.concept_maps import CONCEPT_MAP_PROMPTS
 from services.llm import llm_service
 from services.utils.error_types import REDIS_ERRORS
@@ -219,6 +220,7 @@ class ConceptMapAgent(BaseAgent):
             if isinstance(spec.get("_style"), dict):
                 enhanced_spec["_style"] = spec["_style"]
 
+            transplant_secondary(spec, enhanced_spec)
             return {"success": True, "spec": enhanced_spec}
         except REDIS_ERRORS as exc:
             return {"success": False, "error": f"ConceptMapAgent failed: {exc}"}

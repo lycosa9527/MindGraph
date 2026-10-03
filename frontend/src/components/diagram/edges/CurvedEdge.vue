@@ -33,6 +33,10 @@ import { focusHtmlControl } from '@/utils/focusHtmlControl'
 import { mindMapAssociationCurveFromEnds } from '@/utils/mindMapAssociationLine'
 import { isMindMapBranchId, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { diagramEdgeStrokeStyle } from '@/utils/thinkingMapChrome'
+import {
+  thinkingMapAdaptiveTextColor,
+  thinkingMapSolidThemeStroke,
+} from '@/utils/thinkingMapConnectionStroke'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -100,6 +104,10 @@ const { theme } = useTheme({
 
 const relationshipColor = computed(() => {
   if (!isConceptMap.value) return undefined
+  const themeId = diagramStore.data?._mindmap_theme
+  if (thinkingMapSolidThemeStroke(themeId)) {
+    return thinkingMapAdaptiveTextColor(themeId, '#666666')
+  }
   return theme.value?.relationshipColor || '#666666'
 })
 

@@ -121,6 +121,7 @@ def _build_workflow_kwargs(req: GenerateRequest, prepared: dict[str, Any]) -> di
             else (req.generation_instructions or "").strip() or None
         ),
         "is_learning_sheet": prepared.get("is_learning_sheet"),
+        "secondary_language": getattr(req, "secondary_language", None),
     }
 
 

@@ -7,6 +7,7 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
+import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
 import type { Connection, DiagramNode } from '@/types'
 import {
   BRIDGE_DIMENSION_LABEL_ID,
@@ -45,7 +46,9 @@ export function recalculateBridgeMapLayout(
 
   const getH = (id: string): number => {
     const pinia = nodeDimensions[id]?.height
-    return pinia ?? BRANCH_NODE_HEIGHT
+    if (pinia != null && pinia > 0) return pinia
+    const node = nodes.find((item) => item.id === id)
+    return heightWithSecondaryLine(BRANCH_NODE_HEIGHT, node?.textSecondary, 14)
   }
 
   const getW = (id: string): number => nodeDimensions[id]?.width ?? DEFAULT_NODE_WIDTH

@@ -22,9 +22,9 @@ from services.features.mindmate_collab.dify_stream_control import acquire_dify_s
 from services.features.mindmate_collab.dify_stream import schedule_assistant_reply
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
 from services.features.mindmate_collab.mention import (
+    collab_message_targets_mindmate,
     extract_mindmate_query,
     mention_aliases_from_org,
-    message_mentions_mindmate,
 )
 from services.features.mindmate_collab.message_cursor import read_latest_collab_message_id
 from services.features.mindmate_collab.message_history import catchup_frames, history_row_ids
@@ -470,9 +470,11 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                         )
                         continue
 
-                    to_mindmate = bool(msg.get("to_mindmate"))
-                    if not to_mindmate:
-                        to_mindmate = message_mentions_mindmate(content, mention_aliases)
+                    to_mindmate = collab_message_targets_mindmate(
+                        msg.get("to_mindmate"),
+                        content,
+                        mention_aliases,
+                    )
 
                     await mgr.refresh_participant_ttl(norm_code, int(user.id))
                     await mgr.touch_activity(norm_code)

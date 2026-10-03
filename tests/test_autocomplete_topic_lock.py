@@ -56,6 +56,32 @@ def test_apply_locked_topic_mind_map_and_brace() -> None:
     assert flow["title"] == "水循环"
 
 
+def test_apply_locked_topic_drops_gloss_of_replaced_text() -> None:
+    """A second-language topic must not survive after the canvas text replaces it."""
+    spec = {
+        "topic": "China's foreign policy",
+        "children": [],
+        "secondary": {
+            "topic": "中国的外交政策",
+            "children": [],
+        },
+    }
+    locked = apply_locked_topic_to_spec(spec, "中国外交政策", "mind_map")
+    assert locked["topic"] == "中国外交政策"
+    assert "topic" not in locked["secondary"]
+    assert not locked["secondary"]["children"]
+
+
+def test_apply_locked_topic_keeps_gloss_when_text_matches() -> None:
+    """The mirror stays when the model already used the canvas topic."""
+    spec = {
+        "topic": "中国外交政策",
+        "secondary": {"topic": "China's foreign policy"},
+    }
+    locked = apply_locked_topic_to_spec(spec, "中国外交政策", "mind_map")
+    assert locked["secondary"]["topic"] == "China's foreign policy"
+
+
 def test_mind_map_validate_rejects_flat_children() -> None:
     """Hierarchy mode rejects main branches that have no nested children."""
     agent = MindMapAgent(model="qwen")

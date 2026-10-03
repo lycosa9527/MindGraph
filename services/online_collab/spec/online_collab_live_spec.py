@@ -115,6 +115,21 @@ def _prune_dangling_connections(spec: dict[str, Any]) -> None:
     ]
 
 
+def _sync_node_labels(node: dict[str, Any], patch: dict[str, Any]) -> None:
+    """Keep Vue Flow labels aligned with canonical node text."""
+    data = node.get("data")
+    if not isinstance(data, dict):
+        return
+    if "text" not in patch and "textSecondary" not in patch:
+        return
+    synced = dict(data)
+    if "text" in patch:
+        synced["label"] = node.get("text")
+    if "textSecondary" in patch:
+        synced["labelSecondary"] = node.get("textSecondary") or ""
+    node["data"] = synced
+
+
 def _merge_node_patches(
     existing_nodes: list[dict[str, Any]],
     patches: list[dict[str, Any]],
@@ -136,15 +151,11 @@ def _merge_node_patches(
             i = by_index[sid]
             old_node = existing_nodes[i]
             merged = {**old_node, **patch}
-            # Keep data.label in sync with text (text is canonical, mirrors client-side fix).
-            if "text" in patch and isinstance(merged.get("data"), dict):
-                merged["data"] = {**merged["data"], "label": merged["text"]}
+            _sync_node_labels(merged, patch)
             existing_nodes[i] = merged
         else:
             new_node = dict(patch)
-            # Sync data.label from text for newly inserted nodes too.
-            if "text" in new_node and isinstance(new_node.get("data"), dict):
-                new_node["data"] = {**new_node["data"], "label": new_node["text"]}
+            _sync_node_labels(new_node, new_node)
             existing_nodes.append(new_node)
             by_index[sid] = len(existing_nodes) - 1
     return existing_nodes

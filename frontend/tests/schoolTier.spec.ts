@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  effectiveMemberLimit,
   SCHOOL_TIER_LIMITS,
   SCHOOL_TIER_OPTIONS,
+  effectiveMemberLimit,
   isPaidSchoolTier,
   mergeSchoolTierFeatures,
   normalizeSchoolTier,
@@ -37,16 +37,23 @@ describe('schoolTier constants', () => {
     expect(normalizeSchoolTier('standard')).toBe('standard')
   })
 
-  it('treats trial like lite for premium feature gating', () => {
-    expect(tierFeaturesForSchoolTier('trial').online_collab).toBe(false)
-    expect(tierFeaturesForSchoolTier('lite').online_collab).toBe(false)
-    expect(tierFeaturesForSchoolTier('standard').online_collab).toBe(true)
+  it('enables product features on every tier, including trial', () => {
+    for (const tier of SCHOOL_TIER_OPTIONS) {
+      const features = tierFeaturesForSchoolTier(tier)
+      expect(features.online_collab).toBe(true)
+      expect(features.chrome_extension).toBe(true)
+      expect(features.presentation_tools).toBe(true)
+      expect(features.api_token).toBe(true)
+    }
   })
 
-  it('mergeSchoolTierFeatures respects trial defaults', () => {
-    const merged = mergeSchoolTierFeatures('trial', { online_collab: true })
+  it('mergeSchoolTierFeatures keeps trial features on when a cached payload says off', () => {
+    const merged = mergeSchoolTierFeatures('trial', {
+      online_collab: false,
+      api_token: false,
+    })
     expect(merged.online_collab).toBe(true)
-    expect(merged.api_token).toBe(false)
+    expect(merged.api_token).toBe(true)
   })
 
   it('treats zero manager limit as unavailable on trial', () => {

@@ -14,15 +14,16 @@ import { Menu } from '@element-plus/icons-vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
-import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getConceptMapFocusQuestionEditableSplit } from '@/stores/diagram/diagramDefaultLabels'
 import { useUIStore } from '@/stores/ui'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { solidThemeNodePaint } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -64,17 +65,33 @@ const conceptMapInlineMaxWidth = computed(() =>
   isTopic.value ? 'min(560px, 94vw)' : 'min(480px, 92vw)'
 )
 
+const themeFallback = computed(() =>
+  solidThemeNodePaint(diagramStore.data?._mindmap_theme, isTopic.value)
+)
+
 const nodeStyle = computed(() => {
   const pillRadius = '9999px'
+  const painted = themeFallback.value
   if (isTopic.value) {
-    const borderColor = props.data.style?.borderColor || defaultStyle.value.borderColor || '#35506b'
+    const borderColor =
+      props.data.style?.borderColor ||
+      painted?.borderColor ||
+      defaultStyle.value.borderColor ||
+      '#35506b'
     const borderWidth = props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3
     const borderStyle = props.data.style?.borderStyle || 'solid'
     const backgroundColor =
-      props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd'
+      props.data.style?.backgroundColor ||
+      painted?.backgroundColor ||
+      defaultStyle.value.backgroundColor ||
+      '#e3f2fd'
     return {
       backgroundColor,
-      color: props.data.style?.textColor || defaultStyle.value.textColor || '#000000',
+      color:
+        props.data.style?.textColor ||
+        painted?.textColor ||
+        defaultStyle.value.textColor ||
+        '#000000',
       fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
       fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
       fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
@@ -87,14 +104,25 @@ const nodeStyle = computed(() => {
       boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
     }
   }
-  const borderColor = props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7'
+  const borderColor =
+    props.data.style?.borderColor ||
+    painted?.borderColor ||
+    defaultStyle.value.borderColor ||
+    '#4e79a7'
   const borderWidth = props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
-    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd'
+    props.data.style?.backgroundColor ||
+    painted?.backgroundColor ||
+    defaultStyle.value.backgroundColor ||
+    '#e3f2fd'
   return {
     backgroundColor,
-    color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
+    color:
+      props.data.style?.textColor ||
+      painted?.textColor ||
+      defaultStyle.value.textColor ||
+      '#333333',
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
@@ -110,11 +138,12 @@ const nodeStyle = computed(() => {
 
 const isEditing = ref(false)
 
-function handleTextSave(newText: string) {
+function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
+    ...(textSecondary !== undefined ? { textSecondary } : {}),
   })
 }
 

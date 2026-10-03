@@ -10,7 +10,7 @@ import {
   DEFAULT_PADDING,
   DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT,
 } from '@/composables/diagrams/layoutConfig'
-import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
+import { mirrorString, mirrorStringList, readSecondaryMirror } from '@/diagramBilingual/mirror'
 import type { Connection, DiagramNode } from '@/types'
 import {
   DOUBLE_BUBBLE_LEFT_TOPIC_ID,
@@ -19,6 +19,7 @@ import {
   stampDoubleBubbleData,
   takeDoubleBubbleMapStableId,
 } from '@/utils/doubleBubbleMapIdentity'
+import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
 import { doubleBubbleDiffRequiredRadius, doubleBubbleRequiredRadius } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
@@ -116,7 +117,7 @@ function normalizeDoubleBubbleItems(raw: unknown): Array<{ id?: string; text: st
   return raw.map((item) => {
     if (typeof item === 'string') return { text: item }
     if (item && typeof item === 'object') {
-      const record = item as { id?: string; text?: string; name?: string }
+      const record = item as Exclude<DoubleBubbleSpecItem, string>
       return {
         id: typeof record.id === 'string' ? record.id : undefined,
         text: record.text ?? record.name ?? '',
@@ -152,17 +153,30 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   const rightHint = hints[DOUBLE_BUBBLE_RIGHT_TOPIC_ID]
 
   // Topic radii (text-adaptive; empty uses saved)
+  const mirror = readSecondaryMirror(spec)
+  const leftSecondary = mirrorString(mirror, 'left')
+  const rightSecondary = mirrorString(mirror, 'right')
+  const similaritySecondary = mirrorStringList(mirror, 'similarities')
+  const leftDiffSecondary = mirrorStringList(mirror, 'left_differences').length
+    ? mirrorStringList(mirror, 'left_differences')
+    : mirrorStringList(mirror, 'leftDifferences')
+  const rightDiffSecondary = mirrorStringList(mirror, 'right_differences').length
+    ? mirrorStringList(mirror, 'right_differences')
+    : mirrorStringList(mirror, 'rightDifferences')
+
   const leftTopicR = doubleBubbleRequiredRadius(left, {
     isTopic: true,
     savedRadius: sizes.leftTopicR,
     fontSize: leftHint?.fontSize,
     fontWeight: leftHint?.fontWeight,
+    secondary: leftSecondary,
   })
   const rightTopicR = doubleBubbleRequiredRadius(right, {
     isTopic: true,
     savedRadius: sizes.rightTopicR,
     fontSize: rightHint?.fontSize,
     fontWeight: rightHint?.fontWeight,
+    secondary: rightSecondary,
   })
   const topicR = Math.max(leftTopicR, rightTopicR)
 
@@ -174,6 +188,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
       savedRadius: sizes.simRadii?.[i],
       fontSize: h?.fontSize,
       fontWeight: h?.fontWeight,
+      secondary: similaritySecondary[i],
     })
   })
   const simR = simRadii.length > 0 ? Math.max(...simRadii) : 30
@@ -184,6 +199,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     return doubleBubbleDiffRequiredRadius(item.text, sizes.leftDiffRadii?.[i], {
       fontSize: h?.fontSize,
       fontWeight: h?.fontWeight,
+      secondary: leftDiffSecondary[i],
     })
   })
   const rightDiffRadii = rightDifferences.map((item, i) => {
@@ -191,6 +207,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     return doubleBubbleDiffRequiredRadius(item.text, sizes.rightDiffRadii?.[i], {
       fontSize: h?.fontSize,
       fontWeight: h?.fontWeight,
+      secondary: rightDiffSecondary[i],
     })
   })
   const leftDiffR = leftDiffRadii.length > 0 ? Math.max(...leftDiffRadii) : 30
@@ -214,6 +231,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   nodes.push({
     id: DOUBLE_BUBBLE_LEFT_TOPIC_ID,
     text: left,
+    ...(leftSecondary ? { textSecondary: leftSecondary } : {}),
     type: 'topic',
     position: { x: layout.leftTopicX - topicR, y: layout.centerY - topicR },
     style: { size: topicR * 2, noWrap: true },
@@ -223,6 +241,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   nodes.push({
     id: DOUBLE_BUBBLE_RIGHT_TOPIC_ID,
     text: right,
+    ...(rightSecondary ? { textSecondary: rightSecondary } : {}),
     type: 'topic',
     position: { x: layout.rightTopicX - topicR, y: layout.centerY - topicR },
     style: { size: topicR * 2, noWrap: true },
@@ -239,6 +258,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     nodes.push({
       id: simId,
       text: sim.text,
+      ...(similaritySecondary[index] ? { textSecondary: similaritySecondary[index] } : {}),
       type: 'bubble',
       position: {
         x: layout.simX - layout.simCap.width / 2,
@@ -286,11 +306,13 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
 
   leftDifferences.forEach((diff, index) => {
     const cy = diffStartY + index * layout.diffVerticalSpacing
+    const leftGloss = leftDiffSecondary[index]
     const pairColor = thinkingMapStampedBranchColor(index)
     const leftId = takeDoubleBubbleMapStableId(claimedIds, diff.id)
     nodes.push({
       id: leftId,
       text: diff.text,
+      ...(leftGloss ? { textSecondary: leftGloss } : {}),
       type: 'bubble',
       position: {
         x: layout.leftDiffX - layout.diffCap.width,
@@ -323,11 +345,13 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
 
   rightDifferences.forEach((diff, index) => {
     const cy = diffStartY + index * layout.diffVerticalSpacing
+    const rightGloss = rightDiffSecondary[index]
     const pairColor = thinkingMapStampedBranchColor(index)
     const rightId = takeDoubleBubbleMapStableId(claimedIds, diff.id)
     nodes.push({
       id: rightId,
       text: diff.text,
+      ...(rightGloss ? { textSecondary: rightGloss } : {}),
       type: 'bubble',
       position: {
         x: layout.rightDiffX - layout.diffCap.width,

@@ -6,26 +6,17 @@ import { computed, ref } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { ElDialog } from 'element-plus'
-
 import { ChevronDown } from '@lucide/vue'
 
-import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
-import MindClassroomLaunchContent from '@/components/canvas/MindClassroomLaunchContent.vue'
-import '@/components/canvas/aiGenerateGlass.css'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
-import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramStore, useMindClassroomStore } from '@/stores'
 
 const { t } = useLanguage()
-const notify = useNotifications()
-const eventBus = useEventBus('MindClassroomMascot')
 const diagramStore = useDiagramStore()
 const classroomStore = useMindClassroomStore()
-const { modalOpen, jobError } = storeToRefs(classroomStore)
+const { modalOpen } = storeToRefs(classroomStore)
 
 /** Session-only tuck; hover bottom edge to reveal again. */
 const docked = ref(false)
@@ -80,33 +71,6 @@ function handleRootLeave(event: MouseEvent): void {
   if (related && root.contains(related)) return
   peekHover.value = false
 }
-
-function handleModalClose(): void {
-  classroomStore.closeModal()
-}
-
-eventBus.on('classroom:queue_result', (result) => {
-  if (!result.ok) {
-    if (result.reason === 'cancelled') return
-    if (result.reason === 'failed') {
-      notify.error(jobError.value || t('canvas.mindClassroom.lecture.queueFailed'))
-      return
-    }
-    if (result.reason === 'unauthenticated') {
-      notify.warningKey('canvas.mindClassroom.queue.loginRequired')
-      return
-    }
-    notify.warning(
-      result.reason === 'no_diagram'
-        ? t('canvas.mindClassroom.lecture.needDiagram')
-        : t('canvas.mindClassroom.lecture.emptySteps')
-    )
-    return
-  }
-  if (result.action === 'start' && result.phase === 'playing') {
-    classroomStore.closeModal()
-  }
-})
 </script>
 
 <template>
@@ -558,25 +522,6 @@ eventBus.on('classroom:queue_result', (result) => {
       </I18nTooltip>
     </div>
   </div>
-
-  <ElDialog
-    v-model="modalOpen"
-    width="min(600px, 92vw)"
-    top="12vh"
-    append-to-body
-    destroy-on-close
-    :show-close="false"
-    class="mc-classroom-dialog mm-canvas-upper-dialog ai-gen-shell ai-gen-shell--classroom"
-    @close="handleModalClose"
-  >
-    <template #header>
-      <AiGenerateGlassHero
-        variant="classroom"
-        @close="handleModalClose"
-      />
-    </template>
-    <MindClassroomLaunchContent variant="modal" />
-  </ElDialog>
 </template>
 
 <style scoped src="./mindClassroomMascot.css"></style>

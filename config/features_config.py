@@ -210,7 +210,7 @@ class FeaturesConfigMixin:
         """Enable MindMate shared AI chatroom (online collab for MindMate).
 
         Disabled by default. Set FEATURE_MINDMATE_COLLAB=True in .env to enable.
-        Requires online_collab school tier for end users when enabled.
+        Available on every school version when enabled.
         """
         return self._get_cached_value("FEATURE_MINDMATE_COLLAB", "False").lower() == "true"
 

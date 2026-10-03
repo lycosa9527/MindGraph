@@ -17,6 +17,7 @@ import {
   DEFAULT_PADDING,
   NODE_MIN_DIMENSIONS,
 } from '@/composables/diagrams/layoutConfig'
+import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
 import type { Connection, DiagramNode } from '@/types'
 import {
   BRACE_MAP_UID_DATA_KEY,
@@ -36,6 +37,7 @@ import type { SpecLoaderResult } from './types'
 interface BraceNode {
   id?: string
   text: string
+  textSecondary?: string
   parts?: BraceNode[]
 }
 
@@ -156,7 +158,11 @@ function refreshBraceFlatNodesFromDiagram(
   for (const fn of flatNodes) {
     const typo = braceTypographyFromNode(diagramById.get(fn.id), fn.depth)
     fn.width = estimateBraceNodeWidth(fn.text, fn.depth, typo)
-    fn.height = estimateBraceNodeHeight(fn.text, fn.depth, typo)
+    fn.height = heightWithSecondaryLine(
+      estimateBraceNodeHeight(fn.text, fn.depth, typo),
+      diagramById.get(fn.id)?.textSecondary,
+      typo.fontSize
+    )
   }
 }
 
@@ -204,7 +210,11 @@ function flattenTree(
 ): string {
   const nodeId = resolveBraceFlattenId(node, depth, claimedIds, mode)
   const nodeWidth = estimateBraceNodeWidth(node.text, depth)
-  const nodeHeight = estimateBraceNodeHeight(node.text, depth)
+  const nodeHeight = heightWithSecondaryLine(
+    estimateBraceNodeHeight(node.text, depth),
+    node.textSecondary,
+    getBraceFontSize(depth)
+  )
 
   nodes.push({ id: nodeId, text: node.text, depth, width: nodeWidth, height: nodeHeight })
 
@@ -535,6 +545,7 @@ export function recalculateBraceMapLayout(
     return {
       id: nodeId,
       text: node?.text ?? '',
+      textSecondary: node?.textSecondary,
       parts: parts.length > 0 ? parts : undefined,
     }
   }

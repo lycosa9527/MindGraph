@@ -134,7 +134,7 @@ def test_school_tier_list_fields():
     assert trial_fields["extra_member_seats"] == 0
     assert trial_fields["member_limit_effective"] == 0
     assert trial_fields["school_tier_manager_limit"] == 0
-    assert trial_fields["school_tier_features"]["online_collab"] is False
+    assert trial_fields["school_tier_features"]["online_collab"] is True
 
     fields = school_tier_list_fields(_org(SCHOOL_TIER_STANDARD), 25)
     assert fields["school_tier"] == SCHOOL_TIER_STANDARD
@@ -267,20 +267,20 @@ async def test_assert_organization_has_member_capacity_respects_extra_seats() ->
 
 
 def test_school_tier_feature_gating():
-    """Test school tier feature gating."""
-    assert school_tier_allows_feature(SCHOOL_TIER_TRIAL, TIER_FEATURE_ONLINE_COLLAB) is False
-    assert school_tier_allows_feature(SCHOOL_TIER_LITE, TIER_FEATURE_ONLINE_COLLAB) is False
-    assert school_tier_allows_feature(SCHOOL_TIER_STANDARD, TIER_FEATURE_ONLINE_COLLAB) is True
-    assert school_tier_allows_feature(SCHOOL_TIER_PROFESSIONAL, TIER_FEATURE_ONLINE_COLLAB) is True
-    lite_features = school_tier_features_payload(SCHOOL_TIER_LITE)
-    assert lite_features["presentation_tools"] is False
-    assert lite_features["chrome_extension"] is False
-    assert lite_features["api_token"] is False
-    trial_features = school_tier_features_payload(SCHOOL_TIER_TRIAL)
-    assert trial_features["online_collab"] is False
-    assert trial_features["api_token"] is False
-    assert school_tier_allows_feature(SCHOOL_TIER_LITE, TIER_FEATURE_API_TOKEN) is False
-    assert school_tier_allows_feature(SCHOOL_TIER_STANDARD, TIER_FEATURE_API_TOKEN) is True
+    """Product features are on for every tier, including trial."""
+    for tier in (
+        SCHOOL_TIER_TRIAL,
+        SCHOOL_TIER_LITE,
+        SCHOOL_TIER_STANDARD,
+        SCHOOL_TIER_PROFESSIONAL,
+    ):
+        assert school_tier_allows_feature(tier, TIER_FEATURE_ONLINE_COLLAB) is True
+        assert school_tier_allows_feature(tier, TIER_FEATURE_API_TOKEN) is True
+        features = school_tier_features_payload(tier)
+        assert features["online_collab"] is True
+        assert features["presentation_tools"] is True
+        assert features["chrome_extension"] is True
+        assert features["api_token"] is True
 
 
 @pytest.mark.asyncio

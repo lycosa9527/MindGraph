@@ -5,23 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.180.137] - 2026-10-03
+## [5.180.138] - 2026-10-03
 
-> **Thinking maps use the same rainbow chrome as mind map v2.**
-
-### Changed
-
-- **配色** — Topic, groups, leaves, braces, bridges, and connectors use the mind-map rainbow families, fonts, border width, and line opacity. A solid theme still paints the whole map. A hand-painted color stays.
-- **工具栏** — Node swatches match those families. Font size and border color read back the role on screen. Changing a border recolors that node's connectors.
-- **主题切换** — A solid theme clears a rainbow leaf bar and restores the border. Rainbow keeps a hand-painted leaf bar.
+> **A bilingual diagram keeps both languages, and every school version includes the same tools.**
 
 ### Added
 
-- **旧外观** — [`docs/architecture/diagram_chrome_legacy_spec.md`](docs/architecture/diagram_chrome_legacy_spec.md) records the previous Material look so it can be restored.
+- **双语图示** — With bilingual UI on, one generate writes the primary language and a smaller second line. Nodes grow to fit that line. Editing, copy and paste, summaries, learning-sheet blanks, and `.mg` files keep the second line. Branch expand, the node palette, and explain stay in the primary language.
+- **智能补全** — Auto-complete asks the model for a fixed JSON shape, including the second-language object when bilingual is on.
+
+### Changed
+
+- **学校版本** — Trial, basic, standard, and professional include online collaboration, presentation tools, the Chrome extension, API tokens, and OpenClaw. Versions differ by member seats and diagram storage. MindMate collab follows the same rule when that feature is on.
+- **挖空支架** — A single click still blanks a node. A double-click edits it instead. Editing a blanked node stores the new wording and drops the old answer. Restore warns that blanks are filled back and edited wording is overwritten. Mind maps and thinking maps share that confirm.
+- **配色** — A solid theme keeps outer rings, annotation text, and topic-chip text readable on the light canvas. A hand-painted color stays.
+- **MindMate 提及** — `@mindmate` and a school alias match a fullwidth ＠, and Chinese can follow immediately. A line in the everyone segment that mentions MindMate still asks the AI.
+- **思维讲堂** — The lecture settings dialog opens from the Teaching tab without the corner tutor on the canvas.
+- **专业程度** — The status-bar level name shows in full when the bar has room, and stays shortened when it does not.
 
 ### Tests
 
-- [`frontend/tests/thinkingMapNodePaint.spec.ts`](frontend/tests/thinkingMapNodePaint.spec.ts), [`frontend/tests/thinkingMapConnectionStroke.spec.ts`](frontend/tests/thinkingMapConnectionStroke.spec.ts), [`frontend/tests/thinkingMapNodeShape.spec.ts`](frontend/tests/thinkingMapNodeShape.spec.ts), [`frontend/tests/thinkingMapsAutocompleteLayout.spec.ts`](frontend/tests/thinkingMapsAutocompleteLayout.spec.ts), [`frontend/tests/braceMapLayout.spec.ts`](frontend/tests/braceMapLayout.spec.ts), [`frontend/tests/flowMapSubsteps.spec.ts`](frontend/tests/flowMapSubsteps.spec.ts), [`frontend/tests/diagramMindMapVectorExport.spec.ts`](frontend/tests/diagramMindMapVectorExport.spec.ts)
+- [`frontend/tests/diagramBilingualMeasure.spec.ts`](frontend/tests/diagramBilingualMeasure.spec.ts), [`frontend/tests/diagramOperationGloss.spec.ts`](frontend/tests/diagramOperationGloss.spec.ts), [`frontend/tests/learningSheetPersist.spec.ts`](frontend/tests/learningSheetPersist.spec.ts), [`frontend/tests/hierarchicalClipboard.spec.ts`](frontend/tests/hierarchicalClipboard.spec.ts), [`frontend/tests/mindMapSummary.spec.ts`](frontend/tests/mindMapSummary.spec.ts), [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts), [`frontend/tests/schoolTier.spec.ts`](frontend/tests/schoolTier.spec.ts), [`frontend/tests/proLevelTagFit.spec.ts`](frontend/tests/proLevelTagFit.spec.ts), [`frontend/tests/thinkingMapConnectionStroke.spec.ts`](frontend/tests/thinkingMapConnectionStroke.spec.ts), [`frontend/tests/thinkingMapNodePaint.spec.ts`](frontend/tests/thinkingMapNodePaint.spec.ts), [`tests/test_diagram_bilingual_split.py`](tests/test_diagram_bilingual_split.py), [`tests/test_generate_pipeline_secondary_language.py`](tests/test_generate_pipeline_secondary_language.py), [`tests/test_autocomplete_json_schema.py`](tests/test_autocomplete_json_schema.py), [`tests/test_autocomplete_topic_lock.py`](tests/test_autocomplete_topic_lock.py), [`tests/test_mindmate_collab_mention.py`](tests/test_mindmate_collab_mention.py), [`tests/test_school_tier.py`](tests/test_school_tier.py), [`tests/test_school_tier_http.py`](tests/test_school_tier_http.py)
 
 ## [5.180.137] - 2026-10-03
 

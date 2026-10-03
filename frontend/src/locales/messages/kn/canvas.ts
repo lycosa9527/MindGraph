@@ -1120,7 +1120,7 @@ export default {
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'ಪೂರ್ಣ ಚಿತ್ರಕ್ಕೆ ಮರುಸ್ಥಾಪಿಸಿ',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
+    'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'ಟೊಳ್ಳಾದ ಸ್ಕ್ಯಾಫೋಲ್ಡಿಂಗ್ ರೇಖಾಚಿತ್ರವನ್ನು ರಚಿಸಲು ವಿಧಾನವನ್ನು ಆರಿಸಿ, ತರಗತಿಯ ಅಭ್ಯಾಸ ಮತ್ತು ವಿಮರ್ಶೆಗೆ ಸೂಕ್ತವಾಗಿದೆ.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':

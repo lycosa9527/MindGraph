@@ -15,6 +15,7 @@ import {
 
 export type MindMapBranchSpec = {
   text: string
+  textSecondary?: string
   children?: MindMapBranchSpec[]
   /** Stable identity across positional id rebuilds (duplicate labels safe). */
   uid?: string
@@ -57,8 +58,10 @@ function mergeChildrenReplacingPlaceholders(
 }
 
 function deepCloneBranch(branch: MindMapBranchSpec): MindMapBranchSpec {
+  const gloss = (branch.textSecondary ?? '').trim()
   return {
     text: branch.text,
+    ...(gloss ? { textSecondary: gloss } : {}),
     uid: branch.uid,
     children: branch.children?.map(deepCloneBranch),
   }

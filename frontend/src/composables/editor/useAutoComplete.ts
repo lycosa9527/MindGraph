@@ -33,6 +33,7 @@ import {
 } from '@/composables/editor/autoCompleteValidation'
 import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
+import { diagramSecondaryLanguage } from '@/diagramBilingual/generationRequest'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore } from '@/stores/diagram'
 import { type ModelLoadPhase, useLLMResultsStore } from '@/stores/llmResults'
@@ -570,11 +571,13 @@ export function useAutoComplete() {
     // Do not also splice them into prompt — that duplicated 【用户要求】.
     const topic = `${baseTopic}${promptSuffix ?? ''}`
 
+    const secondaryLanguage = diagramSecondaryLanguage()
     const requestBody: Record<string, unknown> = {
       prompt: topic,
       diagram_type: diagramStore.type,
       language,
       request_type: 'autocomplete',
+      ...(secondaryLanguage ? { secondary_language: secondaryLanguage } : {}),
     }
     if (baseTopic) {
       requestBody.locked_topic = baseTopic
@@ -627,6 +630,9 @@ export function useAutoComplete() {
 
     try {
       await ensureFontsForLanguageCode(language)
+      if (secondaryLanguage) {
+        await ensureFontsForLanguageCode(secondaryLanguage)
+      }
 
       const abortControllers = modelsToRun.map(() => new AbortController())
       abortControllers.forEach((controller) => llmResultsStore.addAbortController(controller))

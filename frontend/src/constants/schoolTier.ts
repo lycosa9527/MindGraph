@@ -55,32 +55,27 @@ export const PREMIUM_SCHOOL_TIER_FEATURES: SchoolTierFeatures = {
   api_token: true,
 }
 
-export const LITE_SCHOOL_TIER_FEATURES: SchoolTierFeatures = {
-  online_collab: false,
-  chrome_extension: false,
-  presentation_tools: false,
-  api_token: false,
-}
-
 /** Paid school tiers (superadmin-assigned); trial is the default experience edition. */
 export function isPaidSchoolTier(tier: SchoolTier | null | undefined): boolean {
   return tier === 'lite' || tier === 'standard' || tier === 'professional'
 }
 
-export function tierFeaturesForSchoolTier(
-  tier: SchoolTier | null | undefined
-): SchoolTierFeatures {
-  if (!tier || tier === 'trial' || tier === 'lite') {
-    return LITE_SCHOOL_TIER_FEATURES
+/** Collab, presentation tools, the Chrome extension, and API tokens are on for every tier. */
+export function tierFeaturesForSchoolTier(tier: SchoolTier | null | undefined): SchoolTierFeatures {
+  const features: Record<SchoolTier, SchoolTierFeatures> = {
+    trial: PREMIUM_SCHOOL_TIER_FEATURES,
+    lite: PREMIUM_SCHOOL_TIER_FEATURES,
+    standard: PREMIUM_SCHOOL_TIER_FEATURES,
+    professional: PREMIUM_SCHOOL_TIER_FEATURES,
   }
-  return PREMIUM_SCHOOL_TIER_FEATURES
+  return { ...features[normalizeSchoolTier(tier)] }
 }
 
 /** Resolve online collab tier access for router guards and deep links. */
 export function userCanUseOnlineCollab(
   schoolId: string | null | undefined,
   schoolTier: SchoolTier | null | undefined,
-  fromApi: Partial<SchoolTierFeatures> | null | undefined,
+  fromApi: Partial<SchoolTierFeatures> | null | undefined
 ): boolean {
   if (!schoolId) {
     return true
@@ -88,7 +83,11 @@ export function userCanUseOnlineCollab(
   return mergeSchoolTierFeatures(schoolTier, fromApi).online_collab
 }
 
-/** Merge partial API flags with tier defaults (handles stale login payloads). */
+/**
+ * Merge partial API flags with tier defaults.
+ * Cached login payloads may still mark features off. Every tier includes them,
+ * so an explicit false does not turn a feature off.
+ */
 export function mergeSchoolTierFeatures(
   tier: SchoolTier | null | undefined,
   fromApi: Partial<SchoolTierFeatures> | null | undefined
@@ -98,10 +97,10 @@ export function mergeSchoolTierFeatures(
     return base
   }
   return {
-    online_collab: fromApi.online_collab ?? base.online_collab,
-    chrome_extension: fromApi.chrome_extension ?? base.chrome_extension,
-    presentation_tools: fromApi.presentation_tools ?? base.presentation_tools,
-    api_token: fromApi.api_token ?? base.api_token,
+    online_collab: base.online_collab || fromApi.online_collab === true,
+    chrome_extension: base.chrome_extension || fromApi.chrome_extension === true,
+    presentation_tools: base.presentation_tools || fromApi.presentation_tools === true,
+    api_token: base.api_token || fromApi.api_token === true,
   }
 }
 
@@ -119,13 +118,10 @@ export function effectiveMemberLimit(tier: SchoolTier, extraSeats: number): numb
 }
 
 export function normalizeSchoolTier(value: unknown): SchoolTier {
-  const token = String(value ?? '').trim().toLowerCase()
-  if (
-    token === 'trial' ||
-    token === 'lite' ||
-    token === 'standard' ||
-    token === 'professional'
-  ) {
+  const token = String(value ?? '')
+    .trim()
+    .toLowerCase()
+  if (token === 'trial' || token === 'lite' || token === 'standard' || token === 'professional') {
     return token
   }
   return 'trial'

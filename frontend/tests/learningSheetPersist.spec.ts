@@ -174,4 +174,137 @@ describe('learning sheet persistence', () => {
     const restored = diagramStore.data?.nodes.find((node) => node.id === blankId)
     expect(restored?.text).toBe(branchText)
   })
+
+  it('keeps an in-mode edit on the canvas and warns that restore would overwrite it', () => {
+    const diagramStore = useDiagramStore()
+    const { branchId, branchText } = loadMindMapWithBranch()
+    diagramStore.setLearningSheetMode(true)
+
+    expect(diagramStore.updateNode(branchId, { text: 'bbb' })).toBe(true)
+
+    const edited = diagramStore.data?.nodes.find((node) => node.id === branchId)
+    expect(edited?.text).toBe('bbb')
+    expect((edited?.data as { label?: string } | undefined)?.label).toBe('bbb')
+    expect(diagramStore.learningSheetHasUserDiagramEdits()).toBe(true)
+    expect(diagramStore.learningSheetRestoreOverwritesDiagram()).toBe(true)
+
+    diagramStore.restoreFromLearningSheetMode()
+    expect(diagramStore.data?.nodes.find((node) => node.id === branchId)?.text).toBe(branchText)
+  })
+
+  it('replaces a blanked node answer when the content is edited', () => {
+    const diagramStore = useDiagramStore()
+    const { branchId, branchText } = loadMindMapWithBranch()
+    diagramStore.setLearningSheetMode(true)
+    learningSheetPickActive.value = true
+    handleLearningSheetPickNodeClick(branchId)
+    expect(diagramStore.isNodeBlankedForLearningSheet(branchId)).toBe(true)
+
+    expect(diagramStore.commitLearningSheetNodeContent(branchId, '')).toBe(false)
+    expect(diagramStore.updateNode(branchId, { text: branchText })).toBe(true)
+    expect(diagramStore.isNodeBlankedForLearningSheet(branchId)).toBe(true)
+    expect(diagramStore.data?.nodes.find((node) => node.id === branchId)?.text).toBe(
+      LEARNING_SHEET_BLANK_TEXT
+    )
+    expect(diagramStore.hiddenAnswers).toContain(branchText)
+    const stillBlanked = diagramStore.data?.nodes.find((node) => node.id === branchId)
+    expect((stillBlanked?.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer).toBe(
+      branchText
+    )
+
+    expect(diagramStore.updateNode(branchId, { text: 'bbb' })).toBe(true)
+
+    const edited = diagramStore.data?.nodes.find((node) => node.id === branchId)
+    expect(edited?.text).toBe('bbb')
+    expect(diagramStore.isNodeBlankedForLearningSheet(branchId)).toBe(false)
+    expect((edited?.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer).toBeUndefined()
+    expect(diagramStore.hiddenAnswers).not.toContain(branchText)
+    expect(diagramStore.hiddenAnswers).not.toContain('bbb')
+    expect(diagramStore.learningSheetRestoreOverwritesDiagram()).toBe(true)
+
+    learningSheetPickActive.value = true
+    handleLearningSheetPickNodeClick(branchId)
+    const reblanked = diagramStore.data?.nodes.find((node) => node.id === branchId)
+    expect((reblanked?.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer).toBe('bbb')
+    expect(diagramStore.hiddenAnswers).toContain('bbb')
+    expect(diagramStore.hiddenAnswers).not.toContain(branchText)
+
+    diagramStore.restoreFromLearningSheetMode()
+    expect(diagramStore.data?.nodes.find((node) => node.id === branchId)?.text).toBe(branchText)
+  })
+
+  it('asks to confirm restore after content is cleared, even before wording changes', () => {
+    const diagramStore = useDiagramStore()
+    const { branchId, branchText } = loadMindMapWithBranch()
+    diagramStore.setLearningSheetMode(true)
+    expect(diagramStore.learningSheetRestoreOverwritesDiagram()).toBe(false)
+
+    learningSheetPickActive.value = true
+    handleLearningSheetPickNodeClick(branchId)
+    expect(diagramStore.learningSheetRestoreOverwritesDiagram()).toBe(true)
+    expect(diagramStore.learningSheetHasUserDiagramEdits()).toBe(false)
+
+    const spec = diagramStore.getSpecForSave()
+    if (!spec || !diagramStore.type) {
+      throw new Error('expected a saved learning sheet spec')
+    }
+    expect(spec.learning_sheet_baseline).toBeTruthy()
+    diagramStore.loadFromSpec(spec, diagramStore.type)
+    expect(diagramStore.learningSheetRestoreOverwritesDiagram()).toBe(true)
+    diagramStore.restoreFromLearningSheetMode()
+    expect(diagramStore.data?.nodes.find((node) => node.id === branchId)?.text).toBe(branchText)
+  })
+
+  it('keeps the other reference answers when one blanked node is edited', () => {
+    const diagramStore = useDiagramStore()
+    const { branchId, branchText } = loadMindMapWithBranch()
+    const other = diagramStore.data?.nodes.find(
+      (node) => node.type === 'branch' && node.id !== branchId && String(node.text ?? '').trim()
+    )
+    if (!other) {
+      throw new Error('expected a second branch node')
+    }
+    const otherText = String(other.text).trim()
+    diagramStore.setLearningSheetMode(true)
+    learningSheetPickActive.value = true
+    handleLearningSheetPickNodeClick(branchId)
+    handleLearningSheetPickNodeClick(other.id)
+    expect(diagramStore.hiddenAnswers).toContain(branchText)
+    expect(diagramStore.hiddenAnswers).toContain(otherText)
+
+    diagramStore.updateNode(branchId, { text: 'bbb' })
+
+    expect(diagramStore.isNodeBlankedForLearningSheet(branchId)).toBe(false)
+    expect(diagramStore.isNodeBlankedForLearningSheet(other.id)).toBe(true)
+    expect(diagramStore.hiddenAnswers).not.toContain(branchText)
+    expect(diagramStore.hiddenAnswers).not.toContain('bbb')
+    expect(diagramStore.hiddenAnswers).toContain(otherText)
+    const otherNode = diagramStore.data?.nodes.find((node) => node.id === other.id)
+    expect((otherNode?.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer).toBe(otherText)
+  })
+
+  it('drops a stale answer key when a revealed node is edited', () => {
+    const diagramStore = useDiagramStore()
+    const { branchId, branchText } = loadMindMapWithBranch()
+    diagramStore.setLearningSheetMode(true)
+    learningSheetPickActive.value = true
+    handleLearningSheetPickNodeClick(branchId)
+    handleLearningSheetPickNodeClick(branchId)
+    expect(diagramStore.isNodeBlankedForLearningSheet(branchId)).toBe(false)
+    const revealed = diagramStore.data?.nodes.find((node) => node.id === branchId)
+    expect((revealed?.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer).toBe(branchText)
+
+    diagramStore.updateNode(branchId, { text: 'bbb' })
+
+    const edited = diagramStore.data?.nodes.find((node) => node.id === branchId)
+    expect(edited?.text).toBe('bbb')
+    expect((edited?.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer).toBeUndefined()
+    expect(diagramStore.hiddenAnswers).not.toContain(branchText)
+
+    diagramStore.applyLearningSheetView()
+    const afterView = diagramStore.data?.nodes.find((node) => node.id === branchId)
+    expect(afterView?.text).toBe('bbb')
+    expect(diagramStore.isNodeBlankedForLearningSheet(branchId)).toBe(false)
+    expect(diagramStore.hiddenAnswers).not.toContain(branchText)
+  })
 })

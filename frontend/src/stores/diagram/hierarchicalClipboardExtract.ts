@@ -37,6 +37,11 @@ export function isProtectedClipboardNode(nodeId: string): boolean {
   return PROTECTED_CUT_IDS.has(nodeId)
 }
 
+function glossField(node: { textSecondary?: string }): { textSecondary?: string } {
+  const line = String(node.textSecondary ?? '').trim()
+  return line ? { textSecondary: line } : {}
+}
+
 function filterTopLevelNodeIds(
   nodeIds: string[],
   descendantOf: (rootId: string, candidateId: string) => boolean
@@ -115,12 +120,13 @@ function buildTreeMapSpecFromData(data: DiagramData): Record<string, unknown> | 
     return {
       id: cat.id,
       text: cat.text,
-      children: leaves.map((l) => ({ id: l.id, text: l.text })),
+      ...glossField(cat),
+      children: leaves.map((leaf) => ({ id: leaf.id, text: leaf.text, ...glossField(leaf) })),
     }
   })
 
   return {
-    root: { id: 'tree-topic', text: rootNode.text, children: categories },
+    root: { id: 'tree-topic', text: rootNode.text, ...glossField(rootNode), children: categories },
     dimension: (data as Record<string, unknown>).dimension,
     alternative_dimensions: (data as Record<string, unknown>).alternative_dimensions,
   }
@@ -144,7 +150,12 @@ function extractTreeMapPayload(
   if (!nodeId) return null
 
   const root = spec.root as {
-    children?: Array<{ id?: string; text: string; children?: Array<{ id?: string; text: string }> }>
+    children?: Array<{
+      id?: string
+      text: string
+      textSecondary?: string
+      children?: Array<{ id?: string; text: string; textSecondary?: string }>
+    }>
   }
   const categories = root.children ?? []
   const selected = data.nodes.find((n) => n.id === nodeId)
@@ -154,7 +165,8 @@ function extractTreeMapPayload(
     const payload: TreeMapClipboardPayload = {
       kind: 'category',
       text: cat.text,
-      leaves: (cat.children ?? []).map((leaf) => ({ text: leaf.text })),
+      ...glossField(cat),
+      leaves: (cat.children ?? []).map((leaf) => ({ text: leaf.text, ...glossField(leaf) })),
     }
     return { kind: 'tree_map', payload }
   }
@@ -167,7 +179,7 @@ function extractTreeMapPayload(
   const leaf =
     cat?.children?.find((row) => row.id === nodeId) ?? cat?.children?.[readTreeLeafIndex(selected)]
   if (!leaf) return null
-  const payload: TreeMapClipboardPayload = { kind: 'leaf', text: leaf.text }
+  const payload: TreeMapClipboardPayload = { kind: 'leaf', text: leaf.text, ...glossField(leaf) }
   return { kind: 'tree_map', payload }
 }
 
@@ -187,7 +199,7 @@ function extractBraceSubtree(
     const children = childIds
       .map((childId) => build(childId))
       .filter((c): c is BraceMapClipboardNode => c !== null)
-    return { text: current.text, children }
+    return { text: current.text, ...glossField(current), children }
   }
   return build(nodeId)
 }
@@ -225,20 +237,27 @@ function extractFlowMapPayload(
   if (!picked) return null
 
   if (isFlowMapStepNode(picked)) {
-    const substeps = data.nodes
-      .filter((n) => isFlowMapSubstepNode(n) && readFlowParentStepId(n) === picked.id)
-      .map((n) => n.text)
+    const children = data.nodes.filter(
+      (n) => isFlowMapSubstepNode(n) && readFlowParentStepId(n) === picked.id
+    )
+    const stepSecondary = String(picked.textSecondary ?? '').trim()
     const payload: FlowMapClipboardPayload = {
       kind: 'step',
       step: picked.text,
-      substeps,
+      ...(stepSecondary ? { stepSecondary } : {}),
+      substeps: children.map((child) => child.text),
+      substepsSecondary: children.map((child) => String(child.textSecondary ?? '').trim()),
     }
     return { kind: 'flow_map', payload }
   }
 
   const node = data.nodes.find((n) => n.id === nodeId)
   if (!node) return null
-  const payload: FlowMapClipboardPayload = { kind: 'substep', text: node.text }
+  const payload: FlowMapClipboardPayload = {
+    kind: 'substep',
+    text: node.text,
+    ...glossField(node),
+  }
   return { kind: 'flow_map', payload }
 }
 

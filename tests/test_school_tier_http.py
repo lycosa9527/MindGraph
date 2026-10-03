@@ -1,15 +1,18 @@
-"""HTTP-level school tier feature gating tests."""
+"""School tier feature access is not denied for trial or lite organizations."""
 
 from __future__ import annotations
 
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
-from fastapi.testclient import TestClient
 
-from main import app
-from routers.auth.dependencies import get_language_dependency
-from utils.auth import get_current_user
+from tests.typing_helpers import as_user
+from utils.auth.school_tier import (
+    TIER_FEATURE_API_TOKEN,
+    TIER_FEATURE_ONLINE_COLLAB,
+    assert_user_has_school_tier_feature,
+)
 
 
 def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
@@ -20,20 +23,6 @@ def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
     user.organization_id = organization_id
     user.phone = "13800000001"
     return user
-
-
-@pytest.fixture(name="client")
-def fixture_client():
-    """Fixture client."""
-    return TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-def clear_dependency_overrides():
-    """Clear dependency overrides."""
-    app.dependency_overrides.clear()
-    yield
-    app.dependency_overrides.clear()
 
 
 @pytest.fixture(name="trial_org_user")
@@ -74,67 +63,45 @@ def fixture_lite_org_user(monkeypatch: pytest.MonkeyPatch):
     return user
 
 
-def test_lite_tier_denied_workshop_start(
-    client: TestClient,
-    lite_org_user: SimpleNamespace,
-) -> None:
-    """Test lite tier denied workshop start."""
-    app.dependency_overrides[get_current_user] = lambda: lite_org_user
-    app.dependency_overrides[get_language_dependency] = lambda: "en"
-
-    response = client.post("/api/diagrams/diag-1/workshop/start")
-    assert response.status_code == 403
-
-
-def test_lite_tier_denied_api_token_mint(
-    client: TestClient,
-    lite_org_user: SimpleNamespace,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Test lite tier denied api token mint."""
-    app.dependency_overrides[get_current_user] = lambda: lite_org_user
-    app.dependency_overrides[get_language_dependency] = lambda: "en"
-
-    async def _no_rate_limit(*_args, **_kwargs):
-        return None
-
-    monkeypatch.setattr(
-        "routers.auth.personal_token.check_endpoint_rate_limit",
-        _no_rate_limit,
+@pytest.mark.asyncio
+async def test_lite_tier_allows_online_collab(lite_org_user: SimpleNamespace) -> None:
+    """Lite schools can start online collaboration."""
+    await assert_user_has_school_tier_feature(
+        AsyncMock(),
+        as_user(lite_org_user),
+        TIER_FEATURE_ONLINE_COLLAB,
+        "en",
     )
 
-    response = client.post("/api/auth/api-token")
-    assert response.status_code == 403
 
-
-def test_trial_tier_denied_workshop_start(
-    client: TestClient,
-    trial_org_user: SimpleNamespace,
-) -> None:
-    """Test trial tier denied workshop start."""
-    app.dependency_overrides[get_current_user] = lambda: trial_org_user
-    app.dependency_overrides[get_language_dependency] = lambda: "en"
-
-    response = client.post("/api/diagrams/diag-1/workshop/start")
-    assert response.status_code == 403
-
-
-def test_trial_tier_denied_api_token_mint(
-    client: TestClient,
-    trial_org_user: SimpleNamespace,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Test trial tier denied api token mint."""
-    app.dependency_overrides[get_current_user] = lambda: trial_org_user
-    app.dependency_overrides[get_language_dependency] = lambda: "en"
-
-    async def _no_rate_limit(*_args, **_kwargs):
-        return None
-
-    monkeypatch.setattr(
-        "routers.auth.personal_token.check_endpoint_rate_limit",
-        _no_rate_limit,
+@pytest.mark.asyncio
+async def test_lite_tier_allows_api_token(lite_org_user: SimpleNamespace) -> None:
+    """Lite schools can mint an API token."""
+    await assert_user_has_school_tier_feature(
+        AsyncMock(),
+        as_user(lite_org_user),
+        TIER_FEATURE_API_TOKEN,
+        "en",
     )
 
-    response = client.post("/api/auth/api-token")
-    assert response.status_code == 403
+
+@pytest.mark.asyncio
+async def test_trial_tier_allows_online_collab(trial_org_user: SimpleNamespace) -> None:
+    """Trial schools can start online collaboration."""
+    await assert_user_has_school_tier_feature(
+        AsyncMock(),
+        as_user(trial_org_user),
+        TIER_FEATURE_ONLINE_COLLAB,
+        "en",
+    )
+
+
+@pytest.mark.asyncio
+async def test_trial_tier_allows_api_token(trial_org_user: SimpleNamespace) -> None:
+    """Trial schools can mint an API token."""
+    await assert_user_has_school_tier_feature(
+        AsyncMock(),
+        as_user(trial_org_user),
+        TIER_FEATURE_API_TOKEN,
+        "en",
+    )

@@ -66,7 +66,7 @@ export function useCanvasToolbarApps() {
   const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
   const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
   const { requireCapability, showCanvasAiFeatures } = useLearningAiGate()
-  const { startRandomLearningSheet } = useLearningSheetCustomMode()
+  const { startRandomLearningSheet, exitLearningSheet } = useLearningSheetCustomMode()
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
   const useMindMapV2 = useMindMapV2Chrome()
@@ -244,8 +244,7 @@ export function useCanvasToolbarApps() {
         return
       }
       if (diagramStore.isLearningSheet) {
-        diagramStore.restoreFromLearningSheetMode()
-        notify.successKey('canvas.toolbar.switchedToRegular')
+        void exitLearningSheet()
       } else if (diagramStore.hasPreservedLearningSheet()) {
         diagramStore.applyLearningSheetView()
         notify.successKey('canvas.toolbar.learningSheetRestored')

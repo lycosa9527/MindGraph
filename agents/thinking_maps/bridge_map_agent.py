@@ -19,6 +19,7 @@ from agents.core.base_agent import BaseAgent
 from config.settings import config
 from prompts import get_prompt
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.bilingual_prompt import bilingual_max_tokens
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 # Use standard logging like other modules
@@ -280,7 +281,7 @@ class BridgeMapAgent(BaseAgent):
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=1000,
+                max_tokens=bilingual_max_tokens(1000),
                 temperature=config.LLM_TEMPERATURE,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -479,7 +480,7 @@ class BridgeMapAgent(BaseAgent):
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=800,
+                max_tokens=bilingual_max_tokens(800),
                 temperature=config.LLM_TEMPERATURE,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -652,7 +653,7 @@ class BridgeMapAgent(BaseAgent):
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=800,
+                max_tokens=bilingual_max_tokens(800),
                 temperature=config.LLM_TEMPERATURE,
                 user_id=user_id,
                 organization_id=organization_id,

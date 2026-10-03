@@ -27,7 +27,7 @@ import {
   clearMindMapPostEditSiblingAnchor,
   setMindMapPostEditSiblingAnchor,
 } from '@/composables/mindMap/mindMapCanvasEnterGuard'
-import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import {
   isNodeDisplayPlaceholderLabel,
   shouldReplaceLabelWithMathInsert,
@@ -127,7 +127,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'save', newText: string): void
+  (e: 'save', newText: string, textSecondary?: string): void
   (e: 'cancel'): void
   (e: 'close'): void
   (e: 'editStart'): void
@@ -141,6 +141,11 @@ const collabCanvas = inject<{ isNodeLockedByOther?: (nodeId: string) => boolean 
 const notifyCollab = useNotifications()
 const { t } = useLanguage()
 const diagramStore = useDiagramSession()
+const bilingualSecondary = computed(() => {
+  const node = diagramStore.data?.nodes?.find((item) => item.id === props.nodeId)
+  return (node?.textSecondary ?? '').trim()
+})
+const bilingualEdit = computed(() => Boolean(diagramStore.data?.languages?.secondary))
 const mindMapPendingEditNodeId = diagramSessionRef(diagramStore, 'mindMapPendingEditNodeId')
 const mindMapEditingNodeId = diagramSessionRef(diagramStore, 'mindMapEditingNodeId')
 
@@ -165,6 +170,9 @@ let mindMapEditOpenedAtMs = 0
 const MIND_MAP_BLUR_SAVE_GRACE_MS = 400
 const rootRef = ref<HTMLElement | null>(null)
 const editText = ref(props.text)
+const editSecondary = ref('')
+const originalSecondary = ref('')
+const secondaryInputRef = ref<HTMLInputElement | null>(null)
 const originalText = ref(props.text)
 /** Concept map focus-question: editable segment only; full snapshot at edit start is originalComposed */
 const editBody = ref('')
@@ -280,6 +288,7 @@ watch(
     if (localIsEditing.value) return
     editText.value = props.text
     originalText.value = props.text
+    editSecondary.value = bilingualSecondary.value
     if (props.focusQuestionEditableSplit) {
       editBody.value = props.focusQuestionEditableSplit.body
     }
@@ -594,10 +603,29 @@ const wrapperStyle = computed(() => {
   return baseStyle
 })
 
+function learningSheetBlankSeed(): { text: string; secondary: string } | null {
+  if (!diagramStore.isLearningSheet) return null
+  if (!diagramStore.isNodeBlankedForLearningSheet(props.nodeId)) return null
+  const node = diagramStore.data?.nodes?.find((item) => item.id === props.nodeId)
+  const nodeData = node?.data as
+    | {
+        hiddenAnswer?: string
+        hiddenAnswerSecondary?: string
+      }
+    | undefined
+  const text = nodeData?.hiddenAnswer?.trim() ?? ''
+  if (!text) return null
+  return {
+    text,
+    secondary: nodeData?.hiddenAnswerSecondary?.trim() ?? '',
+  }
+}
+
 /**
  * Start editing mode
  */
 function startEditing(options?: { replaceContent?: boolean }): void {
+  cancelScheduledLearningSheetPick()
   if (localIsEditing.value || props.readonly) {
     markMindMapInlineEditStage('edit:start-blocked', {
       nodeId: props.nodeId,
@@ -658,8 +686,20 @@ function startEditing(options?: { replaceContent?: boolean }): void {
     editBody.value = options?.replaceContent ? '' : props.focusQuestionEditableSplit.body
   } else {
     originalText.value = editText.value
+    originalSecondary.value = bilingualSecondary.value
+    editSecondary.value = options?.replaceContent ? '' : bilingualSecondary.value
     if (options?.replaceContent) {
       editText.value = ''
+    } else {
+      const seed = learningSheetBlankSeed()
+      if (seed) {
+        editText.value = seed.text
+        originalText.value = seed.text
+        if (bilingualEdit.value) {
+          editSecondary.value = seed.secondary
+          originalSecondary.value = seed.secondary
+        }
+      }
     }
   }
 
@@ -825,8 +865,11 @@ function saveEdit(source = 'saveEdit'): void {
   })
 
   // Only emit save if text actually changed
-  if (finalText !== originalText.value) {
-    emit('save', finalText)
+  const nextSecondary = bilingualEdit.value ? editSecondary.value.trim() : undefined
+  const secondaryChanged =
+    nextSecondary !== undefined && nextSecondary !== originalSecondary.value.trim()
+  if (finalText !== originalText.value || secondaryChanged) {
+    emit('save', finalText, nextSecondary)
   } else {
     emit('close')
   }
@@ -894,6 +937,9 @@ function handleKeydown(event: KeyboardEvent): void {
     event.stopPropagation()
     insertLineBreakAtCaret()
   } else if (event.key === 'Tab') {
+    if (bilingualEdit.value && event.target === inputRef.value && secondaryInputRef.value) {
+      return
+    }
     event.preventDefault()
     event.stopPropagation()
     if (isThinkingMapDiagramType(diagramStore.type)) {
@@ -937,6 +983,7 @@ function handleBlur(): void {
   setTimeout(() => {
     if (!localIsEditing.value) return
     if (inputRef.value && document.activeElement === inputRef.value) return
+    if (secondaryInputRef.value && document.activeElement === secondaryInputRef.value) return
     if (isVirtualKeyboardChromeElement(document.activeElement)) return
     if (isVirtualKeyboardPanelOpen()) {
       focusHtmlControl(inputRef.value)
@@ -1014,19 +1061,24 @@ function syncDocumentOutsideEditListeners(editing: boolean): void {
 }
 
 let inputEnterCaptureHandler: ((event: Event) => void) | null = null
+const inputEnterCaptureTargets: Array<HTMLInputElement | HTMLTextAreaElement> = []
 
 function detachInputEnterCapture(): void {
-  const el = inputRef.value
-  if (el && inputEnterCaptureHandler) {
-    el.removeEventListener('keydown', inputEnterCaptureHandler, true)
+  if (inputEnterCaptureHandler) {
+    for (const el of inputEnterCaptureTargets) {
+      el.removeEventListener('keydown', inputEnterCaptureHandler, true)
+    }
   }
+  inputEnterCaptureTargets.length = 0
   inputEnterCaptureHandler = null
 }
 
 function attachInputEnterCapture(): void {
   detachInputEnterCapture()
-  const el = inputRef.value
-  if (!el) return
+  const targets = [inputRef.value, secondaryInputRef.value].filter(
+    (el): el is HTMLInputElement | HTMLTextAreaElement => el != null
+  )
+  if (targets.length === 0) return
 
   inputEnterCaptureHandler = (event: Event): void => {
     if (!(event instanceof KeyboardEvent)) return
@@ -1043,7 +1095,10 @@ function attachInputEnterCapture(): void {
     saveEdit('enter-commit')
   }
 
-  el.addEventListener('keydown', inputEnterCaptureHandler, true)
+  for (const el of targets) {
+    el.addEventListener('keydown', inputEnterCaptureHandler, true)
+    inputEnterCaptureTargets.push(el)
+  }
 }
 
 function syncInputEnterCaptureListener(editing: boolean): void {
@@ -1067,7 +1122,7 @@ watch(localIsEditing, (editing) => {
  * Handle double-click to start editing
  */
 function handleDoubleClick(event: MouseEvent): void {
-  if (isLearningSheetCustomPickActive()) return
+  cancelScheduledLearningSheetPick()
   if (props.readonly) return
   event.preventDefault()
   event.stopPropagation()
@@ -1297,7 +1352,13 @@ onUnmounted(() => {
   <div
     ref="rootRef"
     class="inline-editable-text"
-    :class="[rootAlignClass, { 'inline-editable-text--full-width': fullWidth }]"
+    :class="[
+      rootAlignClass,
+      {
+        'inline-editable-text--full-width': fullWidth,
+        'inline-editable-text--bilingual': bilingualSecondary || (localIsEditing && bilingualEdit),
+      },
+    ]"
     @dblclick="handleDoubleClick"
     @touchstart.passive="handleTouchStart"
     @touchend.passive="handleTouchEnd"
@@ -1426,6 +1487,18 @@ onUnmounted(() => {
           />
         </template>
       </div>
+      <input
+        v-if="bilingualEdit"
+        ref="secondaryInputRef"
+        v-model="editSecondary"
+        dir="auto"
+        type="text"
+        class="bilingual-node-secondary-input"
+        @keydown.escape.stop.prevent="cancelEdit"
+        @blur="handleBlur"
+        @mousedown.stop
+        @click.stop
+      />
     </div>
 
     <!-- Display mode: use div so markdown `<p>` + KaTeX stay inside `.diagram-node-md` (invalid inside span). -->
@@ -1489,11 +1562,42 @@ onUnmounted(() => {
           >{{ text }}</span
         >
       </template>
+      <div
+        v-if="bilingualSecondary"
+        class="bilingual-node-secondary"
+      >
+        {{ bilingualSecondary }}
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.inline-editable-text--bilingual {
+  flex-direction: column;
+  align-items: center;
+}
+
+.bilingual-node-secondary,
+.bilingual-node-secondary-input {
+  font-size: 0.75em;
+  line-height: 1.2;
+  font-weight: 400;
+  opacity: 0.7;
+  max-width: 100%;
+  text-align: center;
+}
+
+.bilingual-node-secondary-input {
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  width: 100%;
+}
+
 .inline-editable-text {
   display: inline-flex;
   align-items: center;

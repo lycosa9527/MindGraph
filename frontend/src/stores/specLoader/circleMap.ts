@@ -6,7 +6,7 @@
  * Uses mindmap branch color palette for each context (like double bubble map).
  */
 import { DEFAULT_CONTEXT_RADIUS } from '@/composables/diagrams/layoutConfig'
-import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
+import { mirrorString, mirrorStringList, readSecondaryMirror } from '@/diagramBilingual/mirror'
 import type { Connection, DiagramNode } from '@/types'
 import {
   CIRCLE_BOUNDARY_NODE_ID,
@@ -22,6 +22,7 @@ import {
   type NodeShape,
   shapePackHalfExtent,
 } from '@/utils/nodeShapeStyle'
+import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
 import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
@@ -84,6 +85,7 @@ export function recalculateCircleMapLayout(
     .sort((a, b) => readCircleContextIndex(a) - readCircleContextIndex(b))
   const nodeCount = contextNodes.length
   const contextTexts = contextNodes.map((n) => n.text)
+  const contextSecondary = contextNodes.map((n) => n.textSecondary ?? '')
   const topicText = topicNode?.text ?? ''
 
   let topicROverride: number | undefined
@@ -98,13 +100,15 @@ export function recalculateCircleMapLayout(
     let maxR = DEFAULT_CONTEXT_RADIUS
     for (const node of circleContexts) {
       const diskR = circleDiskRadius(node.style?.nodeShape, nodeDimensions[node.id])
-      const r = diskR ?? estimateContextCircleDiameter(node.text || ' ') / 2
+      const r = diskR ?? estimateContextCircleDiameter(node.text || ' ', node.textSecondary) / 2
       maxR = Math.max(maxR, r)
     }
     uniformContextROverride = maxR
   }
 
   const layoutBase = calculateCircleMapLayout(nodeCount, contextTexts, topicText, {
+    topicSecondary: topicNode?.textSecondary,
+    contextSecondary,
     topicR: topicROverride,
     uniformContextR: uniformContextROverride,
   })
@@ -251,8 +255,14 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const topic = (spec.topic as string) || ''
   const context = Array.isArray(spec.context) ? (spec.context as string[]) : []
   const nodeCount = context.length
+  const mirror = readSecondaryMirror(spec)
+  const topicSecondary = mirrorString(mirror, 'topic')
+  const contextSecondary = mirrorStringList(mirror, 'context')
 
-  const layout = calculateCircleMapLayout(nodeCount, context, topic)
+  const layout = calculateCircleMapLayout(nodeCount, context, topic, {
+    topicSecondary,
+    contextSecondary,
+  })
   const uniformContextDiameter = layout.uniformContextR * 2
   const topicSize = layout.topicR * 2
 
@@ -275,6 +285,7 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   nodes.push({
     id: CIRCLE_TOPIC_NODE_ID,
     text: topic,
+    ...(topicSecondary ? { textSecondary: topicSecondary } : {}),
     type: 'center',
     position: {
       x: Math.round(layout.centerX - layout.topicR),
@@ -301,6 +312,7 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
       nodes.push({
         id: contextId,
         text: ctx,
+        ...(contextSecondary[index] ? { textSecondary: contextSecondary[index] } : {}),
         type: 'bubble',
         position: { x, y },
         data: stampCircleContextData(index, {

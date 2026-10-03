@@ -114,16 +114,20 @@ function makeSummaryNode(
   x: number,
   y: number,
   style: DiagramNode['style'],
-  extraData: Record<string, unknown>
+  extraData: Record<string, unknown>,
+  textSecondary?: string
 ): DiagramNode {
+  const gloss = (textSecondary ?? '').trim()
   return {
     id,
     text,
+    ...(gloss ? { textSecondary: gloss } : {}),
     type: 'summary',
     position: { x, y },
     style,
     data: {
       label: text,
+      ...(gloss ? { labelSecondary: gloss } : {}),
       ...extraData,
     },
   }
@@ -217,12 +221,20 @@ function placeChildColumn(
     const height = boxes[index].height
     const x = outward === 1 ? originX : originX - width
     nodes.push(
-      makeSummaryNode(id, child.text, x, y, summaryStyle(data, id), {
-        summaryId,
-        summaryChildPath: [...prefix, index],
-        mindMapSide: outward === 1 ? 'right' : 'left',
-        mindMapDepth: prefix.length + 2,
-      })
+      makeSummaryNode(
+        id,
+        child.text,
+        x,
+        y,
+        summaryStyle(data, id),
+        {
+          summaryId,
+          summaryChildPath: [...prefix, index],
+          mindMapSide: outward === 1 ? 'right' : 'left',
+          mindMapDepth: prefix.length + 2,
+        },
+        child.textSecondary
+      )
     )
     const nestedOriginX =
       outward === 1 ? x + width + MINDMAP_SUMMARY_CHILD_GAP_X : x - MINDMAP_SUMMARY_CHILD_GAP_X
@@ -297,13 +309,21 @@ export function placeMindMapSummaryNodes(
         : tipX - MINDMAP_SUMMARY_TIP_NODE_GAP - rootW
     const rootY = union.y + union.height / 2 - rootH / 2
     placed.push(
-      makeSummaryNode(rootId, summary.text, rootX, rootY, summaryStyle(data, rootId), {
-        summaryId: summary.id,
-        summaryChildPath: [],
-        coveredPaths: summary.coveredPaths,
-        mindMapSide: side,
-        mindMapDepth: 1,
-      })
+      makeSummaryNode(
+        rootId,
+        summary.text,
+        rootX,
+        rootY,
+        summaryStyle(data, rootId),
+        {
+          summaryId: summary.id,
+          summaryChildPath: [],
+          coveredPaths: summary.coveredPaths,
+          mindMapSide: side,
+          mindMapDepth: 1,
+        },
+        summary.textSecondary
+      )
     )
     const childOriginX =
       side === 'right'

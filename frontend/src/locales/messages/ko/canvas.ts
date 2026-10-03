@@ -1120,7 +1120,7 @@ export default {
   'canvas.mindMapSideToolbar.restoreFullDiagram': '전체 다이어그램 복원',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
+    'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': '연습과 복습용 학습지를 만드는 방법을 선택하세요.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':

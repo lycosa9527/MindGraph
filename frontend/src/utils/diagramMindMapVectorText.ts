@@ -4,6 +4,7 @@
  * Wrap column + line breaks come from ``mindMapTextWrap`` (shared with canvas hosts).
  */
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { BILINGUAL_SECONDARY_LINE_HEIGHT, secondaryFontSize } from '@/diagramBilingual/measure'
 import { estimateTextWidthFallbackPx } from '@/stores/specLoader/textMeasurementFallback'
 import { renderMathText } from '@/utils/maite/mathText'
 import {
@@ -185,6 +186,7 @@ export function renderMindMapSvgText(options: {
   width: number
   height: number
   rawText: string
+  rawSecondary?: string
   fontSize: number
   fontWeight?: 'normal' | 'bold'
   textColor: string
@@ -204,6 +206,7 @@ export function renderMindMapSvgText(options: {
     width,
     height,
     rawText,
+    rawSecondary = '',
     fontSize,
     fontWeight = 'normal',
     textColor,
@@ -218,23 +221,37 @@ export function renderMindMapSvgText(options: {
 
   const spans = parseMindMapExportText(rawText)
   const plain = spans.map((s) => s.text).join('')
+  const glossLayout = mindMapSecondaryLayout(rawSecondary, fontSize, width, paddingX)
+  const glossReserve = glossLayout && glossLayout.blockHeight < height ? glossLayout.blockHeight : 0
+  const primaryHeight = height - glossReserve
   if (numberPrefix && role === 'branch') {
-    return renderMindMapNumberedSvgText({
-      x,
-      y,
-      width,
-      height,
-      plain,
-      numberPrefix,
-      fontSize,
-      fontWeight,
-      textColor,
-      textAlign,
-      paddingX,
-      paddingY,
-      borderWidth,
-      underline,
-    })
+    return (
+      renderMindMapNumberedSvgText({
+        x,
+        y,
+        width,
+        height: primaryHeight,
+        plain,
+        numberPrefix,
+        fontSize,
+        fontWeight,
+        textColor,
+        textAlign,
+        paddingX,
+        paddingY,
+        borderWidth,
+        underline,
+      }) +
+      renderMindMapSecondarySvg(glossLayout, {
+        x,
+        y,
+        width,
+        height,
+        textColor,
+        textAlign,
+        paddingX,
+      })
+    )
   }
   const lines = wrapMindMapExportLabelLines({
     role,
@@ -254,7 +271,7 @@ export function renderMindMapSvgText(options: {
   const blockHeight = lines.length * lineHeight
   const startY = mindMapSvgTextBaselineY({
     boxY: y,
-    boxHeight: height,
+    boxHeight: primaryHeight,
     blockHeight,
     fontSize,
     lineHeight,
@@ -283,7 +300,84 @@ export function renderMindMapSvgText(options: {
   return (
     `<text x="${textX}" y="${startY}" text-anchor="${anchor}" ` +
     `font-family="${escapeXml(MIND_MAP_VECTOR_FONT_FAMILY)}" font-size="${fontSize}"` +
-    `${weightAttr} fill="${escapeXml(textColor)}">${parts.join('')}</text>`
+    `${weightAttr} fill="${escapeXml(textColor)}">${parts.join('')}</text>` +
+    renderMindMapSecondarySvg(glossLayout, { x, y, width, height, textColor, textAlign, paddingX })
+  )
+}
+
+type MindMapSecondaryLayout = {
+  lines: string[]
+  fontSize: number
+  lineHeight: number
+  blockHeight: number
+}
+
+/** Wrapped second line. Empty gloss returns null so mono layout stays put. */
+function mindMapSecondaryLayout(
+  rawSecondary: string,
+  fontSize: number,
+  boxWidth: number,
+  paddingX: number
+): MindMapSecondaryLayout | null {
+  const gloss = rawSecondary.trim()
+  if (!gloss) return null
+  const glossSize = secondaryFontSize(fontSize)
+  const lineHeight = glossSize * BILINGUAL_SECONDARY_LINE_HEIGHT
+  const column = Math.max(8, boxWidth - paddingX * 2)
+  const lines = wrapMindMapTextLines(mindMapExportPlainText(gloss), column, {
+    fontSize: glossSize,
+    fontWeight: 'normal',
+    fontFamily: MIND_MAP_GEOMETRY.fontFamily,
+  }).filter((line) => line.length > 0)
+  if (lines.length === 0) return null
+  return {
+    lines,
+    fontSize: glossSize,
+    lineHeight,
+    blockHeight: lines.length * lineHeight,
+  }
+}
+
+function renderMindMapSecondarySvg(
+  layout: MindMapSecondaryLayout | null,
+  options: {
+    x: number
+    y: number
+    width: number
+    height: number
+    textColor: string
+    textAlign: 'left' | 'center' | 'right'
+    paddingX: number
+  }
+): string {
+  if (!layout) return ''
+  const regionY = options.y + Math.max(0, options.height - layout.blockHeight)
+  const startY = mindMapSvgTextBaselineY({
+    boxY: regionY,
+    boxHeight: layout.blockHeight,
+    blockHeight: layout.blockHeight,
+    fontSize: layout.fontSize,
+    lineHeight: layout.lineHeight,
+    paddingY: 0,
+    borderWidth: 0,
+  })
+  let anchor = 'middle'
+  let textX = options.x + options.width / 2
+  if (options.textAlign === 'left') {
+    anchor = 'start'
+    textX = options.x + options.paddingX
+  } else if (options.textAlign === 'right') {
+    anchor = 'end'
+    textX = options.x + options.width - options.paddingX
+  }
+  const parts = layout.lines.map((line, index) => {
+    const dyAttr = index === 0 ? '' : ` dy="${layout.lineHeight}"`
+    return `<tspan x="${textX}"${dyAttr}>${escapeXml(line)}</tspan>`
+  })
+  return (
+    `<text x="${textX}" y="${startY}" text-anchor="${anchor}" ` +
+    `font-family="${escapeXml(MIND_MAP_VECTOR_FONT_FAMILY)}" font-size="${layout.fontSize}" ` +
+    `fill="${escapeXml(options.textColor)}" opacity="0.7">${parts.join('')}</text>`
   )
 }
 

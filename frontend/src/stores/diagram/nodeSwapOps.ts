@@ -1,5 +1,5 @@
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import type { Connection } from '@/types'
+import type { Connection, DiagramNode } from '@/types'
 import {
   findBridgePairSide,
   isBridgeMapPairNode,
@@ -43,6 +43,21 @@ import {
 } from '../specLoader/flowMapSubsteps'
 import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
+
+function writeSwappedLabel(
+  node: DiagramNode,
+  text: string | undefined,
+  gloss: string | undefined
+): void {
+  node.text = text ?? ''
+  const line = (gloss ?? '').trim()
+  if (line) node.textSecondary = line
+  else delete node.textSecondary
+  if (!node.data) return
+  const data = node.data as Record<string, unknown>
+  data.label = node.text
+  data.labelSecondary = line
+}
 
 export function useNodeSwapOpsSlice(ctx: DiagramContext) {
   function getNodeGroupIds(nodeId: string): Set<string> {
@@ -106,9 +121,12 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
     const src = ctx.data.value.nodes.find((n) => n.id === sourceId)
     const tgt = ctx.data.value.nodes.find((n) => n.id === targetId)
     if (!src || !tgt) return false
-    const tmp = src.text
-    src.text = tgt.text
-    tgt.text = tmp
+    const srcText = src.text
+    const tgtText = tgt.text
+    const srcGloss = src.textSecondary
+    const tgtGloss = tgt.textSecondary
+    writeSwappedLabel(src, tgtText, tgtGloss)
+    writeSwappedLabel(tgt, srcText, srcGloss)
     return true
   }
 

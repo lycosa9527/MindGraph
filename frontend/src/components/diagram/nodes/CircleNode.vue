@@ -22,7 +22,7 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
-import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
@@ -382,11 +382,12 @@ const nodeStyle = computed(() => {
 // Inline editing state
 const isEditing = ref(false)
 
-function handleTextSave(newText: string) {
+function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
+    ...(textSecondary !== undefined ? { textSecondary } : {}),
   })
 }
 
@@ -411,8 +412,8 @@ const circleTextAlign = computed<'left' | 'center' | 'right'>(() => {
 })
 
 function handleCircleDoubleClick(event: MouseEvent): void {
+  cancelScheduledLearningSheetPick()
   if (diagramStore.type !== 'circle_map') return
-  if (isLearningSheetCustomPickActive()) return
   if (isTextReadonly.value || isEditing.value) return
   event.preventDefault()
   event.stopPropagation()

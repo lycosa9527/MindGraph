@@ -25,7 +25,7 @@ _MIND_MAP_AGENT_GENERATION_EN_PREFIX = (
 MIND_MAP_AGENT_GENERATION_EN = (
     _MIND_MAP_AGENT_GENERATION_EN_PREFIX
     + """Please create a detailed mind map specification based on the user's description.
-The output must be valid JSON, strictly following this structure:
+The primary object must be valid JSON in this shape:
 
 {
   "topic": "Central Topic",
@@ -84,7 +84,7 @@ CRITICAL Requirements:
 
 MIND_MAP_AGENT_GENERATION_ZH = """你是一名专为提升教师思维教学水平而设计的高级思维导图架构专家。你的核心使命是帮助教师将任何教学主题转化为结构清晰、逻辑严谨且极具教学实践价值的思维导图。
 
-请根据用户的描述，创建一个详细的思维导图规范。输出必须是有效的JSON格式，严格按照以下结构：
+请根据用户的描述，创建一个详细的思维导图规范。主对象必须是有效的JSON，形状如下：
 
 {
   "topic": "中心主题",
@@ -271,7 +271,7 @@ RULES:
 - Main branch count MUST equal the number of user-specified labels
 - Do NOT add, remove, rename, or merge main branches
 - Sub-branches may be creative but must relate to their parent branch
-- Output ONLY valid JSON with "topic" and "children" array
+- The primary object contains "topic" and "children" only
 
 Example structure:
 {{
@@ -297,7 +297,7 @@ MIND_MAP_FIXED_CHILDREN_ZH = """你正在完成一个思维导图，用户已经
 - 主分支数量必须等于用户指定的标签数量
 - 不要增加、删除、重命名或合并主分支
 - 子分支可创造性展开，但必须与父分支相关
-- 只输出包含 topic 和 children 的有效 JSON"""
+- 主对象只包含 topic 和 children"""
 
 MIND_MAP_BRANCH_EXPAND_EN = """You are expanding ONE node of an existing mind map with new direct children.
 

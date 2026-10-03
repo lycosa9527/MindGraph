@@ -263,7 +263,10 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     runWithLearningSheetAnswersRevealed,
     ensureLearningSheetBaseline,
     learningSheetHasUserDiagramEdits,
+    learningSheetRestoreOverwritesDiagram,
+    commitLearningSheetNodeContent,
   } = learningSheetSlice
+  ctx.commitLearningSheetNodeContent = commitLearningSheetNodeContent
   const {
     effectiveTitle,
     getTopicNodeText,
@@ -606,6 +609,8 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     runWithLearningSheetAnswersRevealed,
     ensureLearningSheetBaseline,
     learningSheetHasUserDiagramEdits,
+    learningSheetRestoreOverwritesDiagram,
+    commitLearningSheetNodeContent,
     addNode,
     addConnection,
     updateConnectionLabel,

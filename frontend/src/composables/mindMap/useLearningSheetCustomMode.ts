@@ -1,6 +1,5 @@
 import { computed, onMounted, onUnmounted, ref, toValue } from 'vue'
 
-import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { notify } from '@/composables/core/notifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -10,6 +9,11 @@ import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
 
 /** Hammer pick mode — survives panel close so user can focus on canvas. */
 export const learningSheetPickActive = ref(false)
+
+/** Wait out a double-click before a hammer click knocks a node out. */
+const LEARNING_SHEET_PICK_CLICK_DELAY_MS = 400
+let learningSheetPickTimer: ReturnType<typeof setTimeout> | null = null
+let learningSheetPickNodeId: string | null = null
 
 /** Top float bar (custom pick or random blank session). */
 export const learningSheetFloatBarOpen = ref(false)
@@ -45,6 +49,30 @@ function t(key: string): string {
 
 export function isLearningSheetCustomPickActive(): boolean {
   return customPickActive.value
+}
+
+export function cancelScheduledLearningSheetPick(): void {
+  if (learningSheetPickTimer !== null) {
+    clearTimeout(learningSheetPickTimer)
+    learningSheetPickTimer = null
+  }
+  learningSheetPickNodeId = null
+}
+
+/**
+ * Single click blanks. Double-click cancels this and opens inline edit instead.
+ */
+export function scheduleLearningSheetPickNodeClick(nodeId: string): boolean {
+  if (!customPickActive.value) return false
+  cancelScheduledLearningSheetPick()
+  learningSheetPickNodeId = nodeId
+  learningSheetPickTimer = setTimeout(() => {
+    learningSheetPickTimer = null
+    const id = learningSheetPickNodeId
+    learningSheetPickNodeId = null
+    if (id) handleLearningSheetPickNodeClick(id)
+  }, LEARNING_SHEET_PICK_CLICK_DELAY_MS)
+  return true
 }
 
 /** Safe to call from node click handlers (outside component setup). */
@@ -88,6 +116,7 @@ function dismissLearningSheetFloatBar(): void {
 
 /** Clear module-level learning-sheet UI when leaving canvas or resetting session. */
 export function resetLearningSheetCustomModeUi(): void {
+  cancelScheduledLearningSheetPick()
   learningSheetPickActive.value = false
   learningSheetFloatBarOpen.value = false
   learningSheetFloatBarBeforePresentation.value = false
@@ -194,11 +223,7 @@ export function useLearningSheetCustomMode() {
   }
 
   async function exitLearningSheet(): Promise<void> {
-    if (
-      isThinkingMapDiagramType(diagramStore.type) &&
-      diagramStore.isLearningSheet &&
-      diagramStore.learningSheetHasUserDiagramEdits()
-    ) {
+    if (diagramStore.isLearningSheet && diagramStore.learningSheetRestoreOverwritesDiagram()) {
       try {
         await swissGlassConfirm(
           t('canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody'),

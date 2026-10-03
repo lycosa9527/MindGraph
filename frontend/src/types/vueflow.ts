@@ -38,6 +38,7 @@ export type MindGraphEdgeType =
 // Node data structure for Vue Flow
 export interface MindGraphNodeData {
   label: string
+  labelSecondary?: string
   nodeType: MindGraphNodeType
   diagramType: DiagramType
   style?: NodeStyle
@@ -196,6 +197,7 @@ export function diagramNodeToVueFlowNode(
       // shadow node.text — breaking remote collab updates that only update text.
       ...customData,
       label: node.text,
+      labelSecondary: node.textSecondary,
       nodeType: dataNodeType,
       diagramType,
       style: node.style,

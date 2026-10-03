@@ -15,6 +15,7 @@ import { estimateNodeWidth, measureBranchNodeHeight } from './mindMap'
 import {
   CONTEXT_FONT_SIZE,
   computeTopicRadiusForCircleMap,
+  growRadiusForSecondary,
   measureTextWidth,
 } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
@@ -239,8 +240,13 @@ export interface CircleMapLayoutResult {
  * @param text - Topic text
  * @returns Diameter in pixels
  */
-export function getTopicCircleDiameter(text: string): number {
-  return 2 * computeTopicRadiusForCircleMap((text || '').trim() || ' ')
+export function getTopicCircleDiameter(text: string, secondary?: string): number {
+  return (
+    2 *
+    computeTopicRadiusForCircleMap((text || '').trim() || ' ', {
+      secondary,
+    })
+  )
 }
 
 /**
@@ -263,16 +269,20 @@ const MIN_CONTEXT_DIAMETER = 70
  * Mirrors the brace-map pattern: fixed max text width → balanced lines →
  * compute text-block diagonal → add border/slack for final circle diameter.
  */
-export function estimateContextCircleDiameter(text: string): number {
+export function estimateContextCircleDiameter(text: string, secondary?: string): number {
+  const finish = (diameter: number): number => {
+    if (!secondary?.trim()) return diameter
+    return growRadiusForSecondary(diameter / 2, secondary, CONTEXT_FONT_SIZE) * 2
+  }
   const trimmed = (text || '').trim()
-  if (!trimmed) return MIN_CONTEXT_DIAMETER
+  if (!trimmed) return finish(MIN_CONTEXT_DIAMETER)
 
   if (typeof document === 'undefined') {
     const rough = trimmed.length * 8
     if (rough <= CONTEXT_MAX_TEXT_WIDTH) {
-      return Math.max(MIN_CONTEXT_DIAMETER, rough + CONTEXT_BORDER_SLACK)
+      return finish(Math.max(MIN_CONTEXT_DIAMETER, rough + CONTEXT_BORDER_SLACK))
     }
-    return MIN_CONTEXT_DIAMETER + 60
+    return finish(MIN_CONTEXT_DIAMETER + 60)
   }
 
   const singleLineW = measureTextWidth(trimmed, CONTEXT_FONT_SIZE)
@@ -291,7 +301,7 @@ export function estimateContextCircleDiameter(text: string): number {
   }
 
   const diagonal = Math.ceil(Math.sqrt(contentW * contentW + contentH * contentH))
-  return Math.max(MIN_CONTEXT_DIAMETER, diagonal + CONTEXT_BORDER_SLACK)
+  return finish(Math.max(MIN_CONTEXT_DIAMETER, diagonal + CONTEXT_BORDER_SLACK))
 }
 
 export function calculateAdaptiveCircleSize(text: string, isTopic: boolean = false): number {
@@ -333,6 +343,8 @@ export interface CircleMapLayoutRadiusOverrides {
   topicPackR?: number
   /** Context outline extent used for ring clearance. Defaults to uniformContextR. */
   contextPackR?: number
+  topicSecondary?: string
+  contextSecondary?: string[]
 }
 
 /**
@@ -360,7 +372,12 @@ export function calculateCircleMapLayout(
   const topicR =
     overrides?.topicR != null && Number.isFinite(overrides.topicR) && overrides.topicR > 0
       ? Math.max(DEFAULT_TOPIC_RADIUS, overrides.topicR)
-      : Math.max(DEFAULT_TOPIC_RADIUS, computeTopicRadiusForCircleMap(topicText || ' '))
+      : Math.max(
+          DEFAULT_TOPIC_RADIUS,
+          computeTopicRadiusForCircleMap(topicText || ' ', {
+            secondary: overrides?.topicSecondary,
+          })
+        )
 
   // (b) Uniform context R: overrides win; else min diameter per text → max → radius
   let uniformContextR: number
@@ -374,8 +391,9 @@ export function calculateCircleMapLayout(
     uniformContextR = Math.max(DEFAULT_CONTEXT_RADIUS, overrides.uniformContextR)
   } else {
     let maxRadius = DEFAULT_CONTEXT_RADIUS
-    for (const t of contextTexts) {
-      const d = estimateContextCircleDiameter(t || ' ')
+    for (let index = 0; index < contextTexts.length; index += 1) {
+      const t = contextTexts[index]
+      const d = estimateContextCircleDiameter(t || ' ', overrides?.contextSecondary?.[index])
       maxRadius = Math.max(maxRadius, d / 2)
     }
     uniformContextR = maxRadius

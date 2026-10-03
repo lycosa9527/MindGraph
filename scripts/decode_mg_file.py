@@ -1,4 +1,4 @@
-"""Decode a MindGraph .mg interchange file to JSON (MG v1.1 AES-GCM).
+"""Decode a MindGraph .mg interchange file to JSON (MG v1.1 or v2.0 AES-GCM).
 
 See docs/MG_FILE_FORMAT.md for the wire format. Codec source of truth:
 frontend/src/utils/mgInterchange.ts
@@ -21,12 +21,21 @@ TAG_LEN = 16
 MIN_LEN = HEADER_LEN + IV_LEN + TAG_LEN
 
 
+def _supported_mg_header(data: bytes) -> bool:
+    if data[:2] != b"MG":
+        return False
+    return (data[2], data[3]) in ((1, 1), (2, 0))
+
+
 def decode_mg_v1_1(data: bytes) -> dict:
-    """Decrypt MG v1.1 bytes and return the JSON diagram spec."""
+    """Decrypt MG v1.1 or v2.0 bytes and return the JSON diagram spec.
+
+    v2.0 uses the same AES key. The name is kept so existing callers stay valid.
+    """
     if len(data) < MIN_LEN:
         raise ValueError(f"file too short ({len(data)} bytes; need >= {MIN_LEN})")
-    if data[:2] != b"MG" or data[2] != 1 or data[3] != 1:
-        raise ValueError(f"unsupported header {data[:4]!r} (expected MG v1.1)")
+    if not _supported_mg_header(data):
+        raise ValueError(f"unsupported header {data[:4]!r} (expected MG v1.1 or v2.0)")
     iv = data[HEADER_LEN : HEADER_LEN + IV_LEN]
     blob = data[HEADER_LEN + IV_LEN :]
     ciphertext, tag = blob[:-TAG_LEN], blob[-TAG_LEN:]
@@ -41,6 +50,9 @@ def decode_mg_v1_1(data: bytes) -> dict:
 def _summarize(obj: dict) -> None:
     print("keys=", sorted(obj.keys())[:40])
     print("type=", obj.get("type") or obj.get("diagramType") or obj.get("diagram_type") or "")
+    languages = obj.get("languages")
+    if isinstance(languages, dict):
+        print("languages=", languages)
     title = obj.get("title") or obj.get("name") or ""
     if not title and isinstance(obj.get("nodes"), list):
         for node in obj["nodes"]:

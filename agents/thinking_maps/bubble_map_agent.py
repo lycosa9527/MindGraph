@@ -17,6 +17,7 @@ from agents.core.base_agent import BaseAgent
 from config.settings import config
 from prompts import get_prompt
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.bilingual_prompt import bilingual_max_tokens
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
@@ -116,7 +117,7 @@ class BubbleMapAgent(BaseAgent):
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=1000,
+                max_tokens=bilingual_max_tokens(1000),
                 temperature=config.LLM_TEMPERATURE,
                 **token_params,
             )

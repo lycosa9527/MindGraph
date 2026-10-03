@@ -40,6 +40,46 @@ describe('thinking map node paint', () => {
       style: { backgroundColor: '#ff00aa', borderColor: '#ff00aa', textColor: '#111111' },
     })
     expect(thinkingMapDisplayedNodeColors('bubble_map', 'vibrantOrange', painted)).toBeNull()
+    const stampedText = node({
+      ...grouped,
+      style: {
+        backgroundColor: palette.fill,
+        borderColor: palette.border,
+        textColor: MIND_MAP_RAINBOW_FAMILIES[1].text,
+      },
+    })
+    expect(
+      thinkingMapDisplayedNodeColors('bubble_map', 'vibrantOrange', stampedText)
+    ).toMatchObject({
+      backgroundColor: theme.backgroundColor,
+      borderColor: theme.borderColor,
+    })
+  })
+
+  it('paints a default similarity with the solid theme', () => {
+    const theme = getMindMapThemeById('vibrantYellow')
+    const sim = node({
+      id: 'sim',
+      type: 'bubble',
+      data: { doubleBubbleRole: 'similarity' },
+      style: { backgroundColor: '#FFFFFF', borderColor: '#3B5BDB', textColor: '#334155' },
+    })
+    expect(thinkingMapDisplayedNodeColors('double_bubble_map', 'vibrantYellow', sim)).toEqual({
+      backgroundColor: theme.backgroundColor,
+      textColor: theme.textColor,
+      borderColor: theme.borderColor,
+    })
+    const applied = node({
+      id: 'bubble-2',
+      type: 'bubble',
+      data: { groupIndex: 2 },
+      style: {
+        backgroundColor: theme.backgroundColor,
+        textColor: theme.textColor,
+        borderColor: theme.borderColor,
+      },
+    })
+    expect(thinkingMapDisplayedNodeColors('bubble_map', 'vibrantYellow', applied)).toBeNull()
   })
 
   it('restores per-group colors on the default theme and clears the topic', () => {

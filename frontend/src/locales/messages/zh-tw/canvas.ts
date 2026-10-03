@@ -1197,7 +1197,7 @@ export default {
   'canvas.mindMapSideToolbar.restoreFullDiagram': '還原為完整圖示',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': '還原圖示',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    '目前圖示已增刪節點或修改了未挖空內容，還原後將覆蓋現在的圖，是否繼續？',
+    '還原會用進入挖空前的圖覆蓋當前圖。已挖空的節點會填回，你改過的文字也會被蓋掉。是否繼續？',
   'canvas.mindMapSideToolbar.learningSheetIntro':
     '选择一种方式创建挖空支架图，适合课堂练习与复习。',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': '全部留空',

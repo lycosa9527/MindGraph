@@ -154,11 +154,12 @@ const braceNodeMaxWidth = computed(() => {
 // Inline editing state
 const isEditing = ref(false)
 
-function handleTextSave(newText: string) {
+function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
+    ...(textSecondary !== undefined ? { textSecondary } : {}),
   })
 }
 

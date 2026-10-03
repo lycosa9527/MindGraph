@@ -19,8 +19,9 @@ import { useTheme } from '@/composables/core/useTheme'
 import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import {
-  handleLearningSheetPickNodeClick,
+  cancelScheduledLearningSheetPick,
   isLearningSheetCustomPickActive,
+  scheduleLearningSheetPickNodeClick,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useMindMapBranchNumbering } from '@/composables/mindMap/useMindMapBranchNumbering'
 import {
@@ -59,12 +60,10 @@ const props = defineProps<MindGraphNodeProps>()
 const diagramStore = useDiagramSession()
 const mindMapPendingEditNodeId = diagramSessionRef(diagramStore, 'mindMapPendingEditNodeId')
 const mindMapEditingNodeId = diagramSessionRef(diagramStore, 'mindMapEditingNodeId')
-const isTextReadonly = computed(
-  () =>
-    (props.data.hidden === true && diagramStore.isLearningSheet) ||
-    diagramPresentationReadOnlyRef.value ||
-    toValue(diagramStore.isReadonly)
-)
+const isTextReadonly = computed(() => {
+  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return true
+  return props.data.hidden === true && !diagramStore.isLearningSheet
+})
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 const exportOutlineActive = useMindMapExportOutlineWireframeActive()
 
@@ -378,11 +377,12 @@ onMounted(() => {
   markMindMapLoadShellMounted('branch')
 })
 
-function handleTextSave(newText: string) {
+function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: stripMatchingBranchNumberPrefix(newText, numberPrefix.value),
+    ...(textSecondary !== undefined ? { textSecondary } : {}),
   })
 }
 
@@ -391,9 +391,9 @@ function handleEditCancel() {
 }
 
 function handleBranchNodeDoubleClick(): void {
-  if (isLearningSheetCustomPickActive()) return
+  cancelScheduledLearningSheetPick()
   if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
-  if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
+  if ((props.data.hidden === true && !diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))
     return
@@ -413,7 +413,7 @@ function handleBranchNodeClick(event: MouseEvent): void {
   if (isLearningSheetCustomPickActive()) {
     event.stopPropagation()
     event.preventDefault()
-    handleLearningSheetPickNodeClick(props.id)
+    scheduleLearningSheetPickNodeClick(props.id)
   }
 }
 </script>

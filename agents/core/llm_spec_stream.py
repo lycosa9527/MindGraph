@@ -12,6 +12,7 @@ output. Pass ``structured_json=False`` for free-text classification replies.
 from collections.abc import Awaitable, Callable
 from typing import Any, Optional
 
+from agents.core.structured_output import current_structured_response_format
 from services.llm import llm_service
 
 PhaseEmitter = Callable[[str], Awaitable[None]]
@@ -46,7 +47,8 @@ async def dispatch_llm_chat(
     """Run LLM chat; stream with phase signals when ``phase_emit`` is set."""
     llm_kwargs = {key: value for key, value in kwargs.items() if key not in ("phase_emit", "structured_json")}
     if structured_json and "response_format" not in llm_kwargs:
-        llm_kwargs["response_format"] = JSON_OBJECT_RESPONSE_FORMAT
+        scoped = current_structured_response_format()
+        llm_kwargs["response_format"] = scoped if scoped is not None else JSON_OBJECT_RESPONSE_FORMAT
 
     if phase_emit is None:
         return await llm_service.chat(prompt=prompt, model=model, **llm_kwargs)

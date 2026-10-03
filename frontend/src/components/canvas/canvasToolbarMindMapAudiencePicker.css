@@ -36,6 +36,10 @@
   max-width: 3em;
 }
 
+.mm-btn--pro-level-full .mm-pro-level-tag {
+  max-width: none;
+}
+
 .mm-btn--pro-content-guide {
   border-color: #2563eb;
   box-shadow:

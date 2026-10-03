@@ -46,7 +46,11 @@ import {
   requestMindmateCollabStop,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
-import { type MindmateMentionCandidate, contentMentionsMindmate } from '@/utils/mindmateMention'
+import {
+  type CollabRecipientMode,
+  type MindmateMentionCandidate,
+  collabRoutesToMindmate,
+} from '@/utils/mindmateMention'
 
 const props = withDefaults(
   defineProps<{
@@ -137,7 +141,6 @@ const stoppingRoom = ref(false)
 const inputText = ref('')
 const joining = ref(false)
 const followTranscript = ref(true)
-type CollabRecipientMode = 'mindmate' | 'all'
 const recipientMode = ref<CollabRecipientMode>('all')
 const showShareModal = ref(false)
 const feedbackByKey = ref<Record<string, CollabFeedbackRating>>({})
@@ -336,15 +339,17 @@ async function stopRoom() {
   }
 }
 
+function selectRecipient(mode: CollabRecipientMode): void {
+  recipientMode.value = mode
+}
+
 function handleSend() {
   const trimmed = inputText.value.trim()
   if (!trimmed || !canSend.value || joining.value) {
     return
   }
   followTranscript.value = true
-  const toMindmate =
-    recipientMode.value === 'mindmate' ||
-    contentMentionsMindmate(trimmed, [mindmateAgentName.value])
+  const toMindmate = collabRoutesToMindmate(recipientMode.value, trimmed, [mindmateAgentName.value])
   sendChat(trimmed, { toMindmate })
   inputText.value = ''
 }
@@ -601,7 +606,8 @@ watch(messages, () => {
             :class="{ 'mindmate-collab-room__recipient-tab--active': recipientMode === 'mindmate' }"
             :aria-selected="recipientMode === 'mindmate'"
             :title="mindmateAgentName"
-            @click="recipientMode = 'mindmate'"
+            @pointerdown.prevent="selectRecipient('mindmate')"
+            @click="selectRecipient('mindmate')"
           >
             {{ mindmateAgentName }}
           </button>
@@ -611,7 +617,8 @@ watch(messages, () => {
             class="mindmate-collab-room__recipient-tab"
             :class="{ 'mindmate-collab-room__recipient-tab--active': recipientMode === 'all' }"
             :aria-selected="recipientMode === 'all'"
-            @click="recipientMode = 'all'"
+            @pointerdown.prevent="selectRecipient('all')"
+            @click="selectRecipient('all')"
           >
             <I18nText
               k="mindmate.collabRecipientAll"

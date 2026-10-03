@@ -25,6 +25,7 @@ from agents.core.generate_events import (
     phase_emitter_from_event_emitter,
 )
 from agents.core.agent_result import artifact_metadata, artifact_to_spec_or_error, normalize_agent_generation_result
+from agents.diagram_bilingual.split import peel_bilingual_spec, tighten_secondary
 from agents.core.agent_routing import AgentGenerateRoute, resolve_agent_generate_route
 from agents.core.autocomplete_topic_lock import apply_locked_topic_to_spec, resolve_locked_topic
 from agents.core.prompt_requirements import (
@@ -35,6 +36,7 @@ from agents.core.prompt_requirements import (
     merge_agent_params,
 )
 from agents.core.prompt_to_diagram_result import coerce_prompt_to_diagram_spec
+from agents.core.structured_output import structured_output_scope
 from agents.core.learning_sheet import (
     clean_prompt_for_learning_sheet,
     detect_learning_sheet_from_prompt,
@@ -49,10 +51,15 @@ from agents.thinking_maps.double_bubble_map_agent import DoubleBubbleMapAgent
 from agents.thinking_maps.flow_map_agent import FlowMapAgent
 from agents.thinking_maps.multi_flow_map_agent import MultiFlowMapAgent
 from agents.thinking_maps.tree_map_agent import TreeMapAgent
+from prompts.autocomplete_json_schema import (
+    branch_expand_response_format,
+    diagram_spec_response_format,
+)
 from services.knowledge.package_rag_scope import resolve_diagram_rag_scope
 from services.llm.rag_context_state import suppress_implicit_rag
 from services.llm.rag_service import RAGService
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.bilingual_prompt import bilingual_prompt_scope
 from utils.db.session_open import user_rls_session
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
@@ -172,6 +179,7 @@ async def _generate_spec_with_agent(
     generation_instructions: str | None = None,
     rag_context_block: str = "",
     phase_emit: PhaseEmitter | None = None,
+    secondary_language: str | None = None,
 ) -> dict:
     """
     Generate specification using the appropriate specialized agent.
@@ -227,14 +235,29 @@ async def _generate_spec_with_agent(
             route.kwargs["locked_topic"] = topic_lock
         logger.debug("Agent route mode: %s", route.mode)
 
-        result = await _invoke_agent_route(
-            diagram_type,
-            model,
-            user_prompt,
-            language,
-            route,
-        )
+        spec_format = None
+        if (request_type or "") == "autocomplete":
+            if expand_label and diagram_type in ("mind_map", "mindmap"):
+                spec_format = branch_expand_response_format()
+            else:
+                spec_format = diagram_spec_response_format(
+                    diagram_type,
+                    bilingual=bool(secondary_language),
+                )
+        with structured_output_scope(spec_format):
+            with bilingual_prompt_scope(secondary_language):
+                result = await _invoke_agent_route(
+                    diagram_type,
+                    model,
+                    user_prompt,
+                    language,
+                    route,
+                )
         artifact = normalize_agent_generation_result(result)
+        spec = artifact.get("spec")
+        if secondary_language and isinstance(spec, dict):
+            tighten_secondary(spec)
+            peel_bilingual_spec(spec, language, secondary_language)
         logger.debug("Agent artifact keys: %s", list(artifact.keys()))
         return artifact
 
@@ -280,6 +303,7 @@ async def agent_graph_workflow_with_styles(
     parent_branch=None,
     generation_instructions=None,
     is_learning_sheet: bool | None = None,
+    secondary_language: str | None = None,
     phase_emit: PhaseEmitter | None = None,
     event_emit: EventEmitter | None = None,
     cancel_event: asyncio.Event | None = None,
@@ -579,6 +603,11 @@ Please generate a more accurate and detailed diagram based on the above context.
         # Generate specification using the appropriate agent.
         # When package-scoped RAG is active, suppress implicit whole-library RAG
         # inside agent LLM calls so retrieval stays scoped to the package only.
+        # Branch expand stays single-language; a full topic generate may be bilingual.
+        requested_secondary = (secondary_language or "").strip()
+        active_secondary_language = None
+        if requested_secondary and requested_secondary != language and not is_mind_map_branch_expand:
+            active_secondary_language = requested_secondary
         generation_start = time.time()
         _check_cancelled(cancel_event)
         rag_guard = suppress_implicit_rag() if package_rag_active else nullcontext()
@@ -608,6 +637,7 @@ Please generate a more accurate and detailed diagram based on the above context.
                 generation_instructions=generation_instructions,
                 rag_context_block=rag_context_block,
                 phase_emit=agent_phase_emit,
+                secondary_language=active_secondary_language,
             )
         generation_time = time.time() - generation_start
         logger.info(

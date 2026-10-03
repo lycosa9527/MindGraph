@@ -14,6 +14,7 @@ import {
   FLOW_SUBSTEP_SPACING,
   FLOW_TOPIC_TO_STEP_GAP,
 } from '@/composables/diagrams/layoutConfig'
+import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
 import type { Connection, DiagramNode } from '@/types'
 import {
   FLOW_MAP_UID_DATA_KEY,
@@ -34,11 +35,11 @@ import {
 import { measureTextWidth } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
-const FLOW_SUBSTEP_FONT_SIZE = 14
-const FLOW_STEP_FONT_SIZE = 16
+export const FLOW_SUBSTEP_FONT_SIZE = 14
+export const FLOW_STEP_FONT_SIZE = 16
 const FLOW_NODE_PADDING_X = 36
 /** Topic node: px-6 = 24px each side; fontWeight bold for accurate measurement */
-const FLOW_TOPIC_FONT_SIZE = 18
+export const FLOW_TOPIC_FONT_SIZE = 18
 const FLOW_TOPIC_PADDING_X = 36
 const FLOW_MAX_TEXT_WIDTH = 250
 const FLOW_TOPIC_MAX_TEXT_WIDTH = 300
@@ -67,6 +68,19 @@ function flowNodeTypography(
   const fw = (node?.style?.fontWeight as string | undefined) ?? base.fontWeight
   const fontFamily = node?.style?.fontFamily
   return { fontSize: fs, fontWeight: fw, fontFamily }
+}
+
+function flowBoxHeight(
+  node: DiagramNode,
+  role: FlowTypographyRole,
+  measured: number | undefined
+): number {
+  if (measured != null && measured > 0) return measured
+  return heightWithSecondaryLine(
+    FLOW_MAP_PILL_HEIGHT,
+    node.textSecondary,
+    flowNodeTypography(node, role).fontSize
+  )
 }
 
 function estimateFlowRenderedWidth(
@@ -219,7 +233,7 @@ export function recalculateFlowMapLayout(
     groupInfos.forEach((group) => {
       const centerX = curX + group.footprintWidth / 2
       const stepX = Math.round(centerX - group.stepW / 2)
-      const stepH = nodeDimensions[group.stepNode.id]?.height ?? FLOW_MAP_PILL_HEIGHT
+      const stepH = flowBoxHeight(group.stepNode, 'step', nodeDimensions[group.stepNode.id]?.height)
       const stepY = Math.round(referenceCenterY - stepH / 2)
       const stepIdx = result.findIndex((n) => n.id === group.stepNode.id)
       result[stepIdx] = {
@@ -242,7 +256,7 @@ export function recalculateFlowMapLayout(
           subTyp.fontFamily
         )
         const subX = Math.round(centerX - subW / 2)
-        const subH = nodeDimensions[sub.id]?.height ?? FLOW_MAP_PILL_HEIGHT
+        const subH = flowBoxHeight(sub, 'substep', nodeDimensions[sub.id]?.height)
         const subIdx = result.findIndex((n) => n.id === sub.id)
         result[subIdx] = {
           ...result[subIdx],
@@ -278,14 +292,14 @@ export function recalculateFlowMapLayout(
 
     orderedSteps.forEach((stepNode) => {
       const stepDims = nodeDimensions[stepNode.id]
-      const stepH = stepDims?.height ?? FLOW_MAP_PILL_HEIGHT
+      const stepH = flowBoxHeight(stepNode, 'step', stepDims?.height)
 
       const groupSubsteps = substepsForFlowStep(substepNodes, stepNode)
 
       if (groupSubsteps.length > 0) {
         let substepColumnH = 0
         groupSubsteps.forEach((sub, i) => {
-          const subH = nodeDimensions[sub.id]?.height ?? FLOW_MAP_PILL_HEIGHT
+          const subH = flowBoxHeight(sub, 'substep', nodeDimensions[sub.id]?.height)
           substepColumnH += subH + (i > 0 ? FLOW_SUBSTEP_SPACING : 0)
         })
 
@@ -300,7 +314,7 @@ export function recalculateFlowMapLayout(
 
         let subY = Math.round(currentY + Math.max(0, (stepH - substepColumnH) / 2))
         groupSubsteps.forEach((sub) => {
-          const subH = nodeDimensions[sub.id]?.height ?? FLOW_MAP_PILL_HEIGHT
+          const subH = flowBoxHeight(sub, 'substep', nodeDimensions[sub.id]?.height)
           const subResultIdx = result.findIndex((n) => n.id === sub.id)
           const subPrevPos = result[subResultIdx].position
           result[subResultIdx] = {

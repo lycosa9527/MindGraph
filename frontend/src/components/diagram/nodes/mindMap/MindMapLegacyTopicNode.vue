@@ -13,10 +13,11 @@ import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { aiBrainstormGlowingNodeIds } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import {
-  handleLearningSheetPickNodeClick,
   isLearningSheetCustomPickActive,
+  scheduleLearningSheetPickNodeClick,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
 import {
   useMindMapExportOutlineWireframeActive,
@@ -24,14 +25,11 @@ import {
 } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { useLLMResultsStore } from '@/stores'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { buildClassicMindMapTopicHandlePositions } from '@/utils/classicMindMapTopicHandles'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
-import {
-  resolveMindMapTopicTextMaxWidthPx,
-} from '@/utils/mindMapTextWrap'
+import { resolveMindMapTopicTextMaxWidthPx } from '@/utils/mindMapTextWrap'
 
 import InlineEditableText from '../InlineEditableText.vue'
 
@@ -50,7 +48,10 @@ function finalizeMindMapExportNodeStyle(style: CSSProperties): CSSProperties {
 }
 
 const isTextReadonly = computed(
-  () => props.data.hidden === true || (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))
+  () =>
+    props.data.hidden === true ||
+    diagramPresentationReadOnlyRef.value ||
+    toValue(diagramStore.isReadonly)
 )
 
 const { getNodeStyle } = useTheme({
@@ -60,8 +61,7 @@ const { getNodeStyle } = useTheme({
 const defaultStyle = computed(() => getNodeStyle('topic'))
 
 const isTopicAutoCompleteGlowing = computed(
-  () =>
-    isWholeDiagramGenerating.value || aiBrainstormGlowingNodeIds.value.has(props.id)
+  () => isWholeDiagramGenerating.value || aiBrainstormGlowingNodeIds.value.has(props.id)
 )
 
 const resolvedStyle = computed(() => ({
@@ -143,11 +143,12 @@ useNodeDimensions(topicNodeRef, props.id, {
   },
 })
 
-function handleTextSave(newText: string) {
+function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
+    ...(textSecondary !== undefined ? { textSecondary } : {}),
   })
 }
 
@@ -160,7 +161,7 @@ function handleTopicNodeClick(event: MouseEvent): void {
   if (isLearningSheetCustomPickActive()) {
     event.stopPropagation()
     event.preventDefault()
-    handleLearningSheetPickNodeClick(props.id)
+    scheduleLearningSheetPickNodeClick(props.id)
   }
 }
 </script>

@@ -45,8 +45,8 @@ import {
   ConceptMapFocusReviewPicker,
   ConceptMapLabelPicker,
   ConceptMapRootConceptPicker,
+  MindClassroomLaunchDialog,
   MindClassroomLectureOverlay,
-  MindClassroomMascot,
   MindClassroomSlidePane,
   MindMapPresentationSideToolbar,
   MindMapSidePanel,
@@ -686,6 +686,17 @@ const showMindMapSidePanel = computed(
     sideToolAllowed(activeTool.value) &&
     !presentationRailOpen.value &&
     !mindClassroomSlideDeck.value &&
+    Boolean(diagramStore.data) &&
+    !isViewer.value
+)
+
+/** Settings dialog. Independent of the side panel, which also requires an open tool. */
+const showMindClassroomDialog = computed(
+  () =>
+    ribbonCaps.value.mindClassroom &&
+    !presentationRailOpen.value &&
+    !mindClassroomSlideDeck.value &&
+    !mindClassroomLecturing.value &&
     Boolean(diagramStore.data) &&
     !isViewer.value
 )
@@ -1818,7 +1829,7 @@ onUnmounted(() => {
             :tool="activeTool"
             @close="closeActiveTool"
           />
-          <MindClassroomMascot v-if="showMindMapSidePanel && !mindClassroomLecturing" />
+          <MindClassroomLaunchDialog v-if="showMindClassroomDialog" />
           <MindClassroomLectureOverlay v-if="mindClassroomCanvasTour" />
         </div>
         <MindClassroomSlidePane v-if="mindClassroomSlideDeck" />

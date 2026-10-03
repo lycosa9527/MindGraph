@@ -1,6 +1,5 @@
 import { computed } from 'vue'
 
-import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { eventBus } from '@/composables/core/useEventBus'
 import type { Connection, DiagramNode } from '@/types'
 import { nodesInLearningSheetReadingOrder } from '@/utils/learningSheetAnswerOrder'
@@ -153,7 +152,10 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const answer = nodeHiddenAnswer(node)
     if (answer) return answer
     const nodeData = node.data as { label?: string } | undefined
-    return String(node.text ?? nodeData?.label ?? '').trim()
+    const primary = String(node.text ?? nodeData?.label ?? '').trim()
+    const secondary = String((node as { textSecondary?: string }).textSecondary ?? '').trim()
+    if (!secondary) return primary
+    return `${primary}\u0000${secondary}`
   }
 
   function captureLearningSheetBaseline(): void {
@@ -170,7 +172,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
   }
 
   function ensureLearningSheetBaseline(): void {
-    if (!data.value || !isThinkingMapDiagramType(ctx.type.value)) return
+    if (!data.value) return
     const d = data.value as Record<string, unknown>
     if (readLearningSheetBaseline(d)) return
     captureLearningSheetBaseline()
@@ -181,6 +183,78 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const d = data.value as Record<string, unknown>
     delete d.learningSheetBaseline
     delete d.learning_sheet_baseline
+  }
+
+  /**
+   * Write an inline edit into the node's real content while the worksheet is on.
+   * A knocked-out node is filled with the new wording, and its reference chip is dropped
+   * so the answer list cannot keep the previous text. Re-blanking stores the new wording.
+   * A visible node drops a stale answer key when the wording changes, so re-applying
+   * the sheet cannot put the old answer back. The pre-worksheet baseline stays unchanged.
+   */
+  function commitLearningSheetNodeContent(
+    nodeId: string,
+    text: string,
+    textSecondary?: string
+  ): boolean {
+    if (!isLearningSheet.value || !data.value?.nodes) return false
+    const trimmed = text.trim()
+    if (!trimmed || isLearningSheetBlankDisplayText(trimmed)) return false
+
+    const nodeIndex = data.value.nodes.findIndex((node) => node.id === nodeId)
+    if (nodeIndex === -1) return false
+
+    const node = data.value.nodes[nodeIndex]
+    const nodeData = { ...(node.data as Record<string, unknown> | undefined) }
+    const wasBlanked = isNodeBlankedForLearningSheet(nodeId)
+    const storedAnswer = nodeHiddenAnswer(node) ?? ''
+    const storedSecondary =
+      typeof nodeData.hiddenAnswerSecondary === 'string'
+        ? nodeData.hiddenAnswerSecondary.trim()
+        : ''
+    const visibleSecondary = String(node.textSecondary ?? '').trim()
+    const canonical = wasBlanked || storedAnswer ? storedAnswer : String(node.text ?? '').trim()
+    const canonicalSecondary = wasBlanked || storedSecondary ? storedSecondary : visibleSecondary
+    const nextSecondary = textSecondary !== undefined ? textSecondary.trim() : canonicalSecondary
+    const textEdited = trimmed !== canonical
+    const secondaryEdited = textSecondary !== undefined && nextSecondary !== canonicalSecondary
+    if (!textEdited && !secondaryEdited) {
+      if (wasBlanked && !isLearningSheetBlankDisplayText(String(node.text ?? ''))) {
+        data.value.nodes[nodeIndex] = {
+          ...node,
+          text: LEARNING_SHEET_BLANK_TEXT,
+          textSecondary: '',
+          data: {
+            ...nodeData,
+            hidden: true,
+            hiddenAnswer: storedAnswer,
+            ...(storedSecondary ? { hiddenAnswerSecondary: storedSecondary } : {}),
+            label: LEARNING_SHEET_BLANK_TEXT,
+            labelSecondary: '',
+          },
+        }
+      }
+      return false
+    }
+
+    const applySecondary = textSecondary !== undefined || storedSecondary.length > 0
+    delete nodeData.hidden
+    delete nodeData.hiddenAnswer
+    delete nodeData.hiddenAnswerSecondary
+    nodeData.label = trimmed
+    if (applySecondary) {
+      nodeData.labelSecondary = nextSecondary
+    }
+
+    data.value.nodes[nodeIndex] = {
+      ...node,
+      text: trimmed,
+      ...(applySecondary ? { textSecondary: nextSecondary } : {}),
+      data: nodeData,
+    }
+
+    reconcileHiddenAnswersFromBlankedNodes()
+    return true
   }
 
   function learningSheetHasUserDiagramEdits(): boolean {
@@ -197,12 +271,21 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     }
 
     for (const node of data.value.nodes) {
-      if (isNodeBlankedForLearningSheet(node.id)) continue
       const baselineText = baseline.textsById[node.id]
       if (baselineText === undefined) continue
-      if (nodeOriginalTextForBaseline(node) !== baselineText) return true
+      const currentText = isNodeBlankedForLearningSheet(node.id)
+        ? (nodeHiddenAnswer(node) ?? '')
+        : nodeOriginalTextForBaseline(node)
+      if (currentText !== baselineText) return true
     }
     return false
+  }
+
+  /** Restore replaces the live diagram with the pre-worksheet snapshot. */
+  function learningSheetRestoreOverwritesDiagram(): boolean {
+    if (!isLearningSheet.value || !data.value?.nodes?.length) return false
+    if (data.value.nodes.some((node) => isNodeBlankedForLearningSheet(node.id))) return true
+    return learningSheetHasUserDiagramEdits()
   }
 
   function isNodeBlankedForLearningSheet(nodeId: string): boolean {
@@ -229,11 +312,21 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     data.value.nodes[nodeIndex] = {
       ...node,
       text: originalText,
+      textSecondary:
+        typeof (node.data as { hiddenAnswerSecondary?: string } | undefined)
+          ?.hiddenAnswerSecondary === 'string'
+          ? (node.data as { hiddenAnswerSecondary?: string }).hiddenAnswerSecondary
+          : node.textSecondary,
       data: {
         ...(node.data as Record<string, unknown>),
         hidden: false,
         hiddenAnswer: originalText,
         label: originalText,
+        labelSecondary:
+          typeof (node.data as { hiddenAnswerSecondary?: string } | undefined)
+            ?.hiddenAnswerSecondary === 'string'
+            ? (node.data as { hiddenAnswerSecondary?: string }).hiddenAnswerSecondary
+            : (node.textSecondary ?? ''),
       },
     }
 
@@ -256,6 +349,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const nodeData = node.data as
       { hidden?: boolean; hiddenAnswer?: string; label?: string } | undefined
     const originalText = String(node.text ?? nodeData?.label ?? '').trim()
+    const originalSecondary = String(node.textSecondary ?? '').trim()
     if (!originalText || isLearningSheetBlankDisplayText(originalText) || nodeData?.hidden) {
       return false
     }
@@ -264,12 +358,15 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     data.value.nodes[nodeIndex] = {
       ...node,
       text: LEARNING_SHEET_BLANK_TEXT,
+      textSecondary: '',
       data: {
         ...nodeRecord,
         ...mindMapBoxAlreadyUsed(nodeId, nodeRecord),
         hidden: true,
         hiddenAnswer: originalText,
+        ...(originalSecondary ? { hiddenAnswerSecondary: originalSecondary } : {}),
         label: LEARNING_SHEET_BLANK_TEXT,
+        labelSecondary: '',
       },
     }
 
@@ -332,7 +429,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     if (!dv?.nodes || !isLearningSheet.value) return
 
     const d = dv as Record<string, unknown>
-    const baseline = isThinkingMapDiagramType(ctx.type.value) ? readLearningSheetBaseline(d) : null
+    const baseline = readLearningSheetBaseline(d)
 
     if (baseline?.nodes?.length) {
       dv.nodes = baseline.nodes.map(cloneDiagramNodeForBaseline)
@@ -398,6 +495,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
       })
     })
 
+    reconcileHiddenAnswersFromBlankedNodes()
     syncLearningSheetFlags(d, true)
     notifyLearningSheetChanged()
   }
@@ -417,7 +515,12 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     dv.nodes.forEach((node, idx) => {
       const nodeData = node.data as Record<string, unknown> | undefined
       if (!nodeData?.hiddenAnswer) return
-      const { hidden: _hidden, hiddenAnswer: _answer, ...rest } = nodeData
+      const {
+        hidden: _hidden,
+        hiddenAnswer: _answer,
+        hiddenAnswerSecondary: _answerSecondary,
+        ...rest
+      } = nodeData
       dv.nodes[idx] = {
         ...node,
         data: rest,
@@ -524,5 +627,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     runWithLearningSheetAnswersRevealed,
     ensureLearningSheetBaseline,
     learningSheetHasUserDiagramEdits,
+    learningSheetRestoreOverwritesDiagram,
+    commitLearningSheetNodeContent,
   }
 }

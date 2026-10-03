@@ -747,7 +747,7 @@ export type EventTypes = {
   'node:empty_requested': { nodeId: string }
   'node:duplicate_requested': Record<string, never>
   'node:selected': { nodeId: string; nodeData?: unknown }
-  'node:text_updated': { nodeId: string; text: string }
+  'node:text_updated': { nodeId: string; text: string; textSecondary?: string }
   'node:resized': { nodeId?: string }
   'node:edit_requested': { nodeId: string; replaceContent?: boolean }
   'inline_recommendation:applied': { nodeId: string; text: string; appliedToConnectionId?: string }

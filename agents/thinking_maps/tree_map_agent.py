@@ -23,6 +23,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from agents.core.agent_result import agent_validation_failure
+from agents.diagram_bilingual.split import transplant_secondary
 from agents.core.agent_utils import extract_json_from_response
 from agents.core.fixed_structure import (
     append_fixed_labels_user_note,
@@ -40,6 +41,7 @@ from agents.thinking_maps.tree_map_helpers import (
 from config.settings import config
 from prompts import get_prompt
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.bilingual_prompt import bilingual_max_tokens
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
@@ -301,7 +303,7 @@ class TreeMapAgent(BaseAgent):
                 prompt=retry_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=1000,
+                max_tokens=bilingual_max_tokens(1000),
                 temperature=config.LLM_TEMPERATURE,
                 diagram_type="tree_map",
             ),
@@ -343,7 +345,7 @@ class TreeMapAgent(BaseAgent):
                     prompt=user_prompt,
                     model=self.model,
                     system_message=system_prompt,
-                    max_tokens=1000,
+                    max_tokens=bilingual_max_tokens(1000),
                     temperature=config.LLM_TEMPERATURE,
                     diagram_type="tree_map",
                 ),
@@ -423,7 +425,7 @@ class TreeMapAgent(BaseAgent):
                     prompt=user_prompt,
                     model=self.model,
                     system_message=system_prompt,
-                    max_tokens=1000,
+                    max_tokens=bilingual_max_tokens(1000),
                     temperature=config.LLM_TEMPERATURE,
                     diagram_type="tree_map",
                 ),
@@ -579,6 +581,7 @@ class TreeMapAgent(BaseAgent):
             if "alternative_dimensions" in spec:
                 enhanced_spec["alternative_dimensions"] = spec["alternative_dimensions"]
 
+            transplant_secondary(spec, enhanced_spec)
             return {"success": True, "spec": enhanced_spec}
         except LLM_PIPELINE_ERRORS as exc:
             return {"success": False, "error": f"Unexpected error: {exc}"}

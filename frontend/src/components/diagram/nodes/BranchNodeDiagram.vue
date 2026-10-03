@@ -12,6 +12,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
@@ -43,12 +44,10 @@ import NodeShapeUnderline from './NodeShapeUnderline.vue'
 const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramSession()
-const isTextReadonly = computed(
-  () =>
-    (props.data.hidden === true && diagramStore.isLearningSheet) ||
-    diagramPresentationReadOnlyRef.value ||
-    toValue(diagramStore.isReadonly)
-)
+const isTextReadonly = computed(() => {
+  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return true
+  return props.data.hidden === true && !diagramStore.isLearningSheet
+})
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 
 const { getNodeStyle } = useTheme({
@@ -295,11 +294,12 @@ function handleBranchMovePointerUp(): void {
 
 useNodeDimensions(branchNodeRef, props.id)
 
-function handleTextSave(newText: string) {
+function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
+    ...(textSecondary !== undefined ? { textSecondary } : {}),
   })
 }
 
@@ -308,8 +308,9 @@ function handleEditCancel() {
 }
 
 function handleBranchNodeDoubleClick(): void {
+  cancelScheduledLearningSheetPick()
   if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
-  if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
+  if ((props.data.hidden === true && !diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))
     return

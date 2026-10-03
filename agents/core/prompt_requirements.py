@@ -16,7 +16,9 @@ from typing import Any, Dict, List, Literal, Optional
 
 from agents.core.agent_utils import extract_json_from_response
 from agents.core.llm_spec_stream import dispatch_llm_chat
+from agents.core.structured_output import structured_output_scope
 from prompts import get_prompt
+from prompts.autocomplete_json_schema import requirements_response_format
 from prompts.requirements_schemas import get_requirements_schema, normalize_diagram_type_for_requirements
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
@@ -420,17 +422,21 @@ async def extract_prompt_requirements(
             topic_extraction_rules=topic_rules,
         )
 
-        response = await dispatch_llm_chat(
-            phase_emit=phase_emit,
-            prompt=prompt,
-            model=model,
-            max_tokens=800,
-            temperature=0.3,
-            user_id=user_id,
-            organization_id=organization_id,
-            request_type=request_type,
-            endpoint_path=endpoint_path,
-        )
+        requirements_format = None
+        if (request_type or "") == "autocomplete":
+            requirements_format = requirements_response_format(dtype)
+        with structured_output_scope(requirements_format):
+            response = await dispatch_llm_chat(
+                phase_emit=phase_emit,
+                prompt=prompt,
+                model=model,
+                max_tokens=800,
+                temperature=0.3,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+            )
 
         raw = extract_json_from_response(str(response))
         if not raw:

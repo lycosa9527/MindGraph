@@ -7,6 +7,7 @@ import {
   DEFAULT_PADDING,
   NODE_MIN_DIMENSIONS,
 } from '@/composables/diagrams/layoutConfig'
+import { secondaryFontSize, stackedTextBlock } from '@/diagramBilingual/measure'
 import type { DiagramNode } from '@/types'
 import {
   TREE_TOPIC_NODE_ID,
@@ -47,9 +48,30 @@ function computeBalancedMaxWidth(
   return Math.min(Math.ceil(tw / numLines) + BALANCE_PADDING, cap)
 }
 
+function finishTopicSecondary(
+  box: { width: number; height: number },
+  fontSize: number,
+  secondary?: string
+): { width: number; height: number } {
+  const gloss = (secondary ?? '').trim()
+  if (!gloss) return box
+  const glossWidth =
+    typeof document === 'undefined'
+      ? Math.ceil(gloss.length * secondaryFontSize(fontSize) * 0.6)
+      : measureTextWidth(gloss, secondaryFontSize(fontSize))
+  return stackedTextBlock(
+    box.width,
+    box.height,
+    glossWidth + TREE_MAP_TOPIC_PADDING_X * 2,
+    fontSize,
+    gloss
+  )
+}
+
 export function measureTreeMapTopicDimensions(
   text: string,
-  style?: DiagramNode['style']
+  style?: DiagramNode['style'],
+  secondary?: string
 ): { width: number; height: number } {
   const t = (text || '').trim() || ' '
   const b = TREE_MAP_TOPIC_BORDER_WIDTH
@@ -65,16 +87,20 @@ export function measureTreeMapTopicDimensions(
   if (diagramLabelLikelyNeedsRenderedMeasure(t)) {
     const contentW = measureRenderedDiagramLabelWidth(t, fs, measureOpts)
     const contentH = measureRenderedDiagramLabelHeight(t, fs, adaptiveMaxW, measureOpts)
-    return {
-      width: Math.max(
-        contentW + 2 * TREE_MAP_TOPIC_PADDING_X + 2 * b,
-        NODE_MIN_DIMENSIONS.topic.minWidth
-      ),
-      height: Math.max(
-        Math.ceil(contentH) + 2 * TREE_MAP_TOPIC_PADDING_Y + 2 * b,
-        NODE_MIN_DIMENSIONS.topic.minHeight
-      ),
-    }
+    return finishTopicSecondary(
+      {
+        width: Math.max(
+          contentW + 2 * TREE_MAP_TOPIC_PADDING_X + 2 * b,
+          NODE_MIN_DIMENSIONS.topic.minWidth
+        ),
+        height: Math.max(
+          Math.ceil(contentH) + 2 * TREE_MAP_TOPIC_PADDING_Y + 2 * b,
+          NODE_MIN_DIMENSIONS.topic.minHeight
+        ),
+      },
+      fs,
+      secondary
+    )
   }
 
   const dims = measureTextDimensions(t, fs, {
@@ -83,6 +109,7 @@ export function measureTreeMapTopicDimensions(
     paddingY: TREE_MAP_TOPIC_PADDING_Y,
     maxWidth: adaptiveMaxW,
     fontFamily,
+    secondary,
   })
   return {
     width: Math.max(dims.width + 2 * b, NODE_MIN_DIMENSIONS.topic.minWidth),
@@ -109,7 +136,11 @@ export function applyTreeMapTopicLayoutToNodes(
   mergedTopic: DiagramNode
 ): DiagramNode[] {
   const oldNode = nodes[topicIndex]
-  const dims = measureTreeMapTopicDimensions(mergedTopic.text, mergedTopic.style)
+  const dims = measureTreeMapTopicDimensions(
+    mergedTopic.text,
+    mergedTopic.style,
+    mergedTopic.textSecondary
+  )
   const oldH = oldNode.style?.height ?? DEFAULT_NODE_HEIGHT
   const deltaY = dims.height - oldH
   const topicY = oldNode.position?.y ?? DEFAULT_PADDING
@@ -125,11 +156,7 @@ export function applyTreeMapTopicLayoutToNodes(
   for (let i = 0; i < next.length; i++) {
     if (i === topicIndex) continue
     const n = next[i]
-    if (
-      n.id === 'dimension-label' ||
-      isTreeMapCategoryNode(n) ||
-      isTreeMapLeafNode(n)
-    ) {
+    if (n.id === 'dimension-label' || isTreeMapCategoryNode(n) || isTreeMapLeafNode(n)) {
       const py = n.position?.y ?? 0
       const px = n.position?.x ?? 0
       next[i] = {

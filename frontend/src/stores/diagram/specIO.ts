@@ -9,6 +9,9 @@ import {
   nodeHasMindMapThemeColors,
 } from '@/config/mindMapThemes'
 import { applyRainbowMindMapColors, isRainbowMindMapTheme } from '@/config/mindMapVibrantThemes'
+import { attachRemainingSecondary } from '@/diagramBilingual/attachRest'
+import { offsetFlowLayoutForSecondary } from '@/diagramBilingual/flowLayout'
+import { readDiagramLanguages } from '@/diagramBilingual/mirror'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import {
   remapCollabConnectionEndpoints,
@@ -36,7 +39,10 @@ import {
   estimateMultiFlowTopicWidth,
   getDefaultTemplate,
   loadSpecForDiagramType,
+  recalculateBraceMapLayout,
+  recalculateBridgeMapLayout,
   recalculateBubbleMapLayout,
+  recalculateMultiFlowMapLayout,
   recalculateTreeMapLayout,
 } from '../specLoader'
 import { collectFlowMapSpecFromNodes } from '../specLoader/flowMapSubsteps'
@@ -124,8 +130,25 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       preferLaidOutMindMapNodes: options?.preferLaidOutMindMapNodes,
       mindMapCanvasMode: sessionCanvasMode,
     })
+    attachRemainingSecondary(diagramTypeValue, result.nodes, spec)
 
+    const savedCanvas = Array.isArray(spec.nodes) && spec.nodes.length > 0
     let nodesToStore = result.nodes
+    if (!savedCanvas && diagramTypeValue === 'flow_map') {
+      nodesToStore = offsetFlowLayoutForSecondary(nodesToStore)
+    }
+    if (!savedCanvas && diagramTypeValue === 'tree_map') {
+      nodesToStore = recalculateTreeMapLayout(result.nodes, {})
+    }
+    if (!savedCanvas && diagramTypeValue === 'brace_map') {
+      nodesToStore = recalculateBraceMapLayout(result.nodes, result.connections, {})
+    }
+    if (!savedCanvas && diagramTypeValue === 'bridge_map') {
+      nodesToStore = recalculateBridgeMapLayout(result.nodes, {})
+    }
+    if (!savedCanvas && diagramTypeValue === 'multi_flow_map') {
+      nodesToStore = recalculateMultiFlowMapLayout(result.nodes, null, {}, {})
+    }
     if (diagramTypeValue === 'bubble_map' && result.nodes.length > 0) {
       nodesToStore = recalculateBubbleMapLayout(result.nodes)
     }
@@ -296,6 +319,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
               '_import_cmap_measured_relax_pending',
               '_doubleBubbleMapNodeSizes',
               '_doubleBubbleMeasureHints',
+              'secondary',
             ].includes(key)
         )
       ),
@@ -426,12 +450,32 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (rightDiffRadii.some((r) => r != null))
       _doubleBubbleMapNodeSizes['rightDiffRadii'] = rightDiffRadii
 
+    const gloss = (node: (typeof nodes)[0] | undefined): string =>
+      String(node?.textSecondary ?? '').trim()
+    const secondary = {
+      left: gloss(leftNode),
+      right: gloss(rightNode),
+      similarities: simNodes.map((node) => gloss(node)),
+      leftDifferences: leftDiffNodes.map((node) => gloss(node)),
+      rightDifferences: rightDiffNodes.map((node) => gloss(node)),
+    }
+    const hasSecondary = [
+      secondary.left,
+      secondary.right,
+      ...secondary.similarities,
+      ...secondary.leftDifferences,
+      ...secondary.rightDifferences,
+    ].some((line) => line.length > 0)
+    const languages = (ctx.data.value as { languages?: unknown }).languages
+
     return {
       left,
       right,
       similarities,
       leftDifferences,
       rightDifferences,
+      ...(hasSecondary ? { secondary } : {}),
+      ...(languages && typeof languages === 'object' ? { languages } : {}),
       ...(Object.keys(_doubleBubbleMapNodeSizes).length > 0 ? { _doubleBubbleMapNodeSizes } : {}),
       ...(Object.keys(_doubleBubbleMeasureHints).length > 0 ? { _doubleBubbleMeasureHints } : {}),
     }
@@ -483,6 +527,10 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       spec.learning_sheet_show_answers = false
     }
     if (hiddenAnswers?.length) spec.hiddenAnswers = hiddenAnswers
+    const baseline = dataRecord.learningSheetBaseline ?? dataRecord.learning_sheet_baseline
+    if (isLS && baseline && typeof baseline === 'object') {
+      spec.learning_sheet_baseline = baseline
+    }
     if (ctx.type.value === 'concept_map') {
       const fq = dataRecord.focus_question
       if (typeof fq === 'string' && fq.trim()) {
@@ -532,6 +580,8 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (attribution) {
       spec[LLM_EXPORT_ATTRIBUTION_KEY] = attribution
     }
+    const languages = readDiagramLanguages(dataRecord)
+    if (languages) spec.languages = languages
     return spec
   }
 
@@ -541,7 +591,31 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const title = topicNode?.text ?? (ctx.data.value as Record<string, unknown>).title ?? ''
     const collected = collectFlowMapSpecFromNodes(ctx.data.value.nodes)
     const orientation = (ctx.data.value as Record<string, unknown>).orientation ?? 'horizontal'
-    return { title, steps: collected.steps, substeps: collected.substeps, orientation }
+    const byId = new Map(ctx.data.value.nodes.map((node) => [node.id, node]))
+    const lineOf = (id: string | undefined): string =>
+      String(byId.get(id ?? '')?.textSecondary ?? '').trim()
+    const secondary = {
+      title: String(topicNode?.textSecondary ?? '').trim(),
+      steps: collected.steps.map((step) => lineOf(step.id)),
+      substeps: collected.substeps.map((group) => ({
+        substeps: group.substeps.map((child) =>
+          lineOf(typeof child === 'string' ? undefined : child.id)
+        ),
+      })),
+    }
+    const hasSecondary =
+      secondary.title.length > 0 ||
+      secondary.steps.some((line) => line.length > 0) ||
+      secondary.substeps.some((group) => group.substeps.some((line) => line.length > 0))
+    const languages = (ctx.data.value as { languages?: unknown }).languages
+    return {
+      title,
+      steps: collected.steps,
+      substeps: collected.substeps,
+      orientation,
+      ...(hasSecondary ? { secondary } : {}),
+      ...(languages && typeof languages === 'object' ? { languages } : {}),
+    }
   }
 
   function loadDefaultTemplate(diagramTypeValue: DiagramType): boolean {

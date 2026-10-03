@@ -14,6 +14,7 @@ from agents.core.llm_spec_stream import dispatch_llm_chat
 from config.settings import config
 from prompts import get_prompt
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.bilingual_prompt import bilingual_max_tokens
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 from ..core.agent_result import agent_validation_failure
@@ -293,7 +294,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=1000,
+                max_tokens=bilingual_max_tokens(1000),
                 temperature=config.LLM_TEMPERATURE,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -350,7 +351,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                         prompt=retry_user_prompt,
                         model=self.model,
                         system_message=system_prompt,
-                        max_tokens=1000,
+                        max_tokens=bilingual_max_tokens(1000),
                         temperature=config.LLM_TEMPERATURE,
                         user_id=user_id,
                         organization_id=organization_id,
@@ -462,7 +463,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=1000,
+                max_tokens=bilingual_max_tokens(1000),
                 temperature=config.LLM_TEMPERATURE,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -507,7 +508,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                         prompt=retry_user_prompt,
                         model=self.model,
                         system_message=system_prompt,
-                        max_tokens=1000,
+                        max_tokens=bilingual_max_tokens(1000),
                         temperature=config.LLM_TEMPERATURE,
                         user_id=user_id,
                         organization_id=organization_id,

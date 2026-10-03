@@ -558,14 +558,7 @@ similarities: ["Feature1", "Feature2", "Feature3", "Feature4", "Feature5"]
 left_differences: ["Feature1", "Feature2", "Feature3", "Feature4", "Feature5"]
 right_differences: ["Feature1", "Feature2", "Feature3", "Feature4", "Feature5"]
 
-Example JSON format:
-{{
-  "left": "Apple",
-  "right": "Banana",
-  "similarities": ["Fruit", "Healthy", "Sweet", "Natural", "Nutritious"],
-  "left_differences": ["Red", "Round", "Crisp", "Tree-grown", "Fall harvest"],
-  "right_differences": ["Yellow", "Curved", "Soft", "Tropical", "Year-round"]
-}}
+Those five fields are the primary object. left_differences and right_differences have the same length and pair by index.
 
 Requirements: Each characteristic should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.
 
@@ -587,14 +580,7 @@ similarities: ["特征1", "特征2", "特征3", "特征4", "特征5"]
 left_differences: ["特点1", "特点2", "特点3", "特点4", "特点5"]
 right_differences: ["特点1", "特点2", "特点3", "特点4", "特点5"]
 
-JSON格式示例：
-{{
-  "left": "苹果",
-  "right": "香蕉",
-  "similarities": ["水果", "健康", "甜味", "天然", "营养"],
-  "left_differences": ["红色", "圆形", "脆", "温带", "秋季收获"],
-  "right_differences": ["黄色", "弯曲", "软", "热带", "全年供应"]
-}}
+这五个字段构成主对象。left_differences 与 right_differences 长度相同，并按位置一一对应。
 
 要求：每个特征要简洁明了，可以超过4个字，但不要太长，避免完整句子。
 
@@ -678,11 +664,11 @@ topic: "{topic}"
 dimension: "The classification dimension being used (e.g., 'Biological Taxonomy', 'Habitat', 'Diet')"
 children: [
   {{"text": "Category 1", "children": [
-    {{"text": "Item 1", "children": []}},
-    {{"text": "Item 2", "children": []}}
+    {{"text": "Item 1"}},
+    {{"text": "Item 2"}}
   ]}},
   {{"text": "Category 2", "children": [
-    {{"text": "Item A", "children": []}}
+    {{"text": "Item A"}}
   ]}}
 ]
 alternative_dimensions: ["Dimension1", "Dimension2", "Dimension3", "Dimension4"]
@@ -714,9 +700,9 @@ Example format (for reference only):
 topic: "Animals"
 dimension: "Biological Taxonomy"
 children: [
-  {{"text": "Mammals", "children": [{{"text": "Dogs", "children": []}}, {{"text": "Cats", "children": []}}, {{"text": "Whales", "children": []}}]}},
-  {{"text": "Birds", "children": [{{"text": "Eagles", "children": []}}, {{"text": "Sparrows", "children": []}}, {{"text": "Penguins", "children": []}}]}},
-  {{"text": "Reptiles", "children": [{{"text": "Snakes", "children": []}}, {{"text": "Lizards", "children": []}}, {{"text": "Turtles", "children": []}}]}}
+  {{"text": "Mammals", "children": [{{"text": "Dogs"}}, {{"text": "Cats"}}, {{"text": "Whales"}}]}},
+  {{"text": "Birds", "children": [{{"text": "Eagles"}}, {{"text": "Sparrows"}}, {{"text": "Penguins"}}]}},
+  {{"text": "Reptiles", "children": [{{"text": "Snakes"}}, {{"text": "Lizards"}}, {{"text": "Turtles"}}]}}
 ]
 alternative_dimensions: ["Habitat", "Diet", "Size", "Geographic Region", "Conservation Status"]
 
@@ -757,18 +743,18 @@ topic: "{topic}"
 dimension: "使用的分类维度（例如：'生物分类'、'栖息地'、'食性'）"
 children: [
   {{"text": "类别一", "children": [
-    {{"text": "条目一", "children": []}},
-    {{"text": "条目二", "children": []}}
+    {{"text": "条目一"}},
+    {{"text": "条目二"}}
   ]}},
   {{"text": "类别二", "children": [
-    {{"text": "条目甲", "children": []}}
+    {{"text": "条目甲"}}
   ]}}
 ]
 alternative_dimensions: ["维度1", "维度2", "维度3", "维度4"]
 
 重要提示：如果用户需求中包含引号标注的主题（例如："为主题'动物'创建..."），你必须在"topic"字段中使用完全相同的主题词。不要改写、翻译或修改它。
 
-关键要求：必须全部使用中文生成内容，包括topic、dimension、children数组和alternative_dimensions数组中的所有文本。不要混用英文和中文。请生成全新的、有意义的类别和条目内容，不要使用占位符文本如"类别一"、"条目一"等。
+请生成全新的、有意义的类别和条目内容，不要使用占位符文本如"类别一"、"条目一"等。每个字符串只写一种语言。
 
 要求：
 - 生成4-6个主要类别，名称清晰、描述性强
@@ -793,9 +779,9 @@ alternative_dimensions: ["维度1", "维度2", "维度3", "维度4"]
 topic: "动物"
 dimension: "生物分类"
 children: [
-  {{"text": "哺乳动物", "children": [{{"text": "狗", "children": []}}, {{"text": "猫", "children": []}}, {{"text": "鲸鱼", "children": []}}]}},
-  {{"text": "鸟类", "children": [{{"text": "老鹰", "children": []}}, {{"text": "麻雀", "children": []}}, {{"text": "企鹅", "children": []}}]}},
-  {{"text": "爬行动物", "children": [{{"text": "蛇", "children": []}}, {{"text": "蜥蜴", "children": []}}, {{"text": "海龟", "children": []}}]}}
+  {{"text": "哺乳动物", "children": [{{"text": "狗"}}, {{"text": "猫"}}, {{"text": "鲸鱼"}}]}},
+  {{"text": "鸟类", "children": [{{"text": "老鹰"}}, {{"text": "麻雀"}}, {{"text": "企鹅"}}]}},
+  {{"text": "爬行动物", "children": [{{"text": "蛇"}}, {{"text": "蜥蜴"}}, {{"text": "海龟"}}]}}
 ]
 alternative_dimensions: ["栖息地", "食性", "体型", "地理区域", "保护状态"]
 
@@ -827,8 +813,8 @@ Return ONLY a valid JSON object with these fields:
   "topic": "{topic}",
   "dimension": "[COPY THE USER'S SPECIFIED DIMENSION EXACTLY]",
   "children": [
-    {{"text": "Category 1", "children": [{{"text": "Item 1", "children": []}}, {{"text": "Item 2", "children": []}}]}},
-    {{"text": "Category 2", "children": [{{"text": "Item A", "children": []}}, {{"text": "Item B", "children": []}}]}}
+    {{"text": "Category 1", "children": [{{"text": "Item 1"}}, {{"text": "Item 2"}}]}},
+    {{"text": "Category 2", "children": [{{"text": "Item A"}}, {{"text": "Item B"}}]}}
   ],
   "alternative_dimensions": ["Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4"]
 }}
@@ -857,8 +843,8 @@ TREE_MAP_FIXED_DIMENSION_ZH = """你正在完成一个树形图，用户已经�
   "topic": "{topic}",
   "dimension": "[完全复制用户指定的维度]",
   "children": [
-    {{"text": "类别1", "children": [{{"text": "条目1", "children": []}}, {{"text": "条目2", "children": []}}]}},
-    {{"text": "类别2", "children": [{{"text": "条目甲", "children": []}}, {{"text": "条目乙", "children": []}}]}}
+    {{"text": "类别1", "children": [{{"text": "条目1"}}, {{"text": "条目2"}}]}},
+    {{"text": "类别2", "children": [{{"text": "条目甲"}}, {{"text": "条目乙"}}]}}
   ],
   "alternative_dimensions": ["替代维度1", "替代维度2", "替代维度3", "替代维度4"]
 }}
@@ -892,8 +878,8 @@ Return ONLY a valid JSON object with these fields:
   "topic": "[GENERATE A SUITABLE TOPIC]",
   "dimension": "[COPY THE USER'S CLASSIFICATION DIMENSION EXACTLY]",
   "children": [
-    {"text": "Category1", "children": [{"text": "Item1", "children": []}, {"text": "Item2", "children": []}]},
-    {"text": "Category2", "children": [{"text": "ItemA", "children": []}, {"text": "ItemB", "children": []}]}
+    {"text": "Category1", "children": [{"text": "Item1"}, {"text": "Item2"}]},
+    {"text": "Category2", "children": [{"text": "ItemA"}, {"text": "ItemB"}]}
   ],
   "alternative_dimensions": ["Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4"]
 }
@@ -926,8 +912,8 @@ TREE_MAP_DIMENSION_ONLY_ZH = """你正在生成一个树形图，用户只提供
   "topic": "[生成一个合适的主题]",
   "dimension": "[完全复制用户指定的分类维度]",
   "children": [
-    {"text": "类别1", "children": [{"text": "条目1", "children": []}, {"text": "条目2", "children": []}]},
-    {"text": "类别2", "children": [{"text": "条目甲", "children": []}, {"text": "条目乙", "children": []}]}
+    {"text": "类别1", "children": [{"text": "条目1"}, {"text": "条目2"}]},
+    {"text": "类别2", "children": [{"text": "条目甲"}, {"text": "条目乙"}]}
   ],
   "alternative_dimensions": ["替代维度1", "替代维度2", "替代维度3", "替代维度4"]
 }
@@ -973,9 +959,7 @@ FLOW_MAP_GENERATION_ZH = """
 
 重要提示：如果用户需求中包含引号标注的主题（例如："为主题'水循环'创建..."），你必须在"title"字段中使用完全相同的主题词。不要改写、翻译或修改它。
 
-关键要求：必须全部使用中文生成内容，包括steps数组和substeps数组中的所有文本。不要混用英文和中文。
-
-输出一个且仅一个JSON对象，包含以下字段：
+输出一个JSON对象，包含以下字段：
 - title: "{topic}"（如果需求中明确指定主题，必须完全匹配）
 - steps: ["准备阶段", "执行阶段", "检查阶段", "完成阶段"]
 - substeps: [
@@ -1112,7 +1096,7 @@ alternative_dimensions: ["维度1", "维度2", "维度3", "维度4"]
 
 重要提示：如果用户需求中包含引号标注的主题（例如："为主题'植物'创建..."），你必须在"whole"字段中使用完全相同的主题词。不要改写、翻译或修改它。
 
-关键要求：必须全部使用中文生成内容，包括whole、dimension、parts数组、subparts数组和alternative_dimensions数组中的所有文本。不要混用英文和中文。请生成全新的、有意义的部分和子部分内容，不要使用占位符文本如"部分1"、"子部分1.1"等。
+请生成全新的、有意义的部分和子部分内容，不要使用占位符文本如"部分1"、"子部分1.1"等。每个字符串只写一种语言。
 
 要求：
 - 生成3-6个主要部分，名称清晰、描述性强

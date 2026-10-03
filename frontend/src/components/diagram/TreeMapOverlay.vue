@@ -8,8 +8,12 @@ import { computed } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { useLanguage } from '@/composables/core/useLanguage'
-import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
+import {
+  thinkingMapAdaptiveTextColor,
+  thinkingMapStructureColor,
+} from '@/utils/thinkingMapConnectionStroke'
 
 const diagramStore = useDiagramSession()
 const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow(diagramStore.vueFlowId)
@@ -30,7 +34,12 @@ interface NodeWithDimensions {
 const SEPARATOR_OFFSET_Y = 15
 const ALTERNATIVE_DIMENSIONS_OFFSET_Y = 15
 const ALTERNATIVE_LABEL_FONT_SIZE = 13
-const ALTERNATIVE_CHIP_COLOR = '#1976d2'
+const alternativeChipColor = computed(() =>
+  thinkingMapStructureColor(diagramStore.data?._mindmap_theme)
+)
+const alternativeTextColor = computed(() =>
+  thinkingMapAdaptiveTextColor(diagramStore.data?._mindmap_theme, alternativeChipColor.value)
+)
 
 const alternativeDimensions = computed(() => {
   if (!isTreeMap.value) return []
@@ -103,7 +112,7 @@ const treeMapAlternativePosition = computed(() => {
         :y1="treeMapSeparatorLine.y1"
         :x2="treeMapSeparatorLine.x2"
         :y2="treeMapSeparatorLine.y2"
-        :stroke="ALTERNATIVE_CHIP_COLOR"
+        :stroke="alternativeChipColor"
         stroke-width="1"
         stroke-dasharray="4,4"
         :opacity="0.4"
@@ -112,7 +121,7 @@ const treeMapAlternativePosition = computed(() => {
       <text
         :x="treeMapAlternativePosition.centerX"
         :y="treeMapAlternativePosition.labelY"
-        :fill="ALTERNATIVE_CHIP_COLOR"
+        :fill="alternativeTextColor"
         :font-size="ALTERNATIVE_LABEL_FONT_SIZE"
         text-anchor="middle"
         dominant-baseline="middle"
@@ -123,7 +132,7 @@ const treeMapAlternativePosition = computed(() => {
       <text
         :x="treeMapAlternativePosition.centerX"
         :y="treeMapAlternativePosition.chipsY"
-        :fill="ALTERNATIVE_CHIP_COLOR"
+        :fill="alternativeTextColor"
         :font-size="ALTERNATIVE_LABEL_FONT_SIZE - 1"
         text-anchor="middle"
         dominant-baseline="middle"

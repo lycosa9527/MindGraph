@@ -7,7 +7,13 @@ function mindMapData(): DiagramData {
   return {
     nodes: [
       { id: 'topic', text: '主题', type: 'topic', position: { x: 0, y: 0 } },
-      { id: 'branch-r-1-0', text: '历史', type: 'branch', position: { x: 1, y: 0 } },
+      {
+        id: 'branch-r-1-0',
+        text: '历史',
+        textSecondary: 'History',
+        type: 'branch',
+        position: { x: 1, y: 0 },
+      },
       { id: 'branch-r-2-0', text: '唐朝', type: 'branch', position: { x: 2, y: 0 } },
     ],
     connections: [
@@ -29,6 +35,7 @@ describe('hierarchicalClipboard extract', () => {
     expect(clip?.payload.kind).toBe('mindmap_branches')
     if (clip?.payload.kind === 'mindmap_branches') {
       expect(clip.payload.branches[0]?.text).toBe('历史')
+      expect(clip.payload.branches[0]?.textSecondary).toBe('History')
       expect(clip.payload.branches[0]?.children?.[0]?.text).toBe('唐朝')
     }
   })
@@ -39,9 +46,7 @@ describe('hierarchicalClipboard extract', () => {
       data: mindMapData(),
       nodeIds: ['branch-r-1-0', 'branch-r-2-0'],
       getMindMapDescendantIds: (root) =>
-        root === 'branch-r-1-0'
-          ? new Set(['branch-r-1-0', 'branch-r-2-0'])
-          : new Set([root]),
+        root === 'branch-r-1-0' ? new Set(['branch-r-1-0', 'branch-r-2-0']) : new Set([root]),
       getTreeMapDescendantIds: () => new Set(),
     })
     expect(clip?.payload.kind).toBe('mindmap_branches')

@@ -26,6 +26,71 @@ import type {
 } from './hierarchicalClipboardTypes'
 import type { DiagramContext } from './types'
 
+function glossField(node: { textSecondary?: string }): { textSecondary?: string } {
+  const line = String(node.textSecondary ?? '').trim()
+  return line ? { textSecondary: line } : {}
+}
+
+function flowMirror(spec: Record<string, unknown>): Record<string, unknown> {
+  const raw = spec.secondary
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>
+  }
+  const created = {
+    title: '',
+    steps: [] as string[],
+    substeps: [] as Array<{ substeps: string[] }>,
+  }
+  spec.secondary = created
+  return created
+}
+
+function appendFlowStepGloss(
+  spec: Record<string, unknown>,
+  stepCount: number,
+  stepGloss: string,
+  substepGlosses: string[]
+): void {
+  const hasNew = stepGloss.trim().length > 0 || substepGlosses.some((line) => line.trim())
+  const raw = spec.secondary
+  const existed = Boolean(raw && typeof raw === 'object' && !Array.isArray(raw))
+  if (!existed && !hasNew) return
+  const mirror = flowMirror(spec)
+  const steps = Array.isArray(mirror.steps) ? [...(mirror.steps as string[])] : []
+  const groups = Array.isArray(mirror.substeps)
+    ? [...(mirror.substeps as Array<{ substeps?: string[] }>)]
+    : []
+  while (steps.length < stepCount - 1) steps.push('')
+  while (groups.length < stepCount - 1) groups.push({ substeps: [] })
+  steps.push(stepGloss.trim())
+  groups.push({ substeps: substepGlosses.map((line) => line.trim()) })
+  mirror.steps = steps
+  mirror.substeps = groups
+}
+
+function appendFlowSubstepGloss(
+  spec: Record<string, unknown>,
+  stepIndex: number,
+  gloss: string
+): void {
+  const line = gloss.trim()
+  const raw = spec.secondary
+  const existed = Boolean(raw && typeof raw === 'object' && !Array.isArray(raw))
+  if (!existed && !line) return
+  if (stepIndex < 0) return
+  const mirror = flowMirror(spec)
+  const groups = Array.isArray(mirror.substeps)
+    ? [...(mirror.substeps as Array<{ substeps?: string[] }>)]
+    : []
+  while (groups.length <= stepIndex) groups.push({ substeps: [] })
+  const group = groups[stepIndex]
+  if (!group) return
+  const lines = Array.isArray(group.substeps) ? [...group.substeps] : []
+  lines.push(line)
+  groups[stepIndex] = { ...group, substeps: lines }
+  mirror.substeps = groups
+}
+
 export type HierarchicalClipboardPasteDeps = {
   pasteMindMapClipboardBranches: (
     anchorNodeId: string,
@@ -85,7 +150,8 @@ function pasteTreeMapPayload(
       .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
     return {
       text: cat.text,
-      children: leaves.map((l) => ({ text: l.text })),
+      ...glossField(cat),
+      children: leaves.map((leaf) => ({ text: leaf.text, ...glossField(leaf) })),
     }
   })
 
@@ -95,14 +161,16 @@ function pasteTreeMapPayload(
     if (anchorNodeId === 'tree-topic') {
       categories.push({
         text: payload.text,
-        children: payload.leaves.map((leaf) => ({ text: leaf.text })),
+        ...glossField(payload),
+        children: payload.leaves.map((leaf) => ({ text: leaf.text, ...glossField(leaf) })),
       })
     } else if (anchor && isTreeMapCategoryNode(anchor)) {
       const idx = categoryNodes.findIndex((c) => c.id === anchorNodeId)
       const insertAt = idx >= 0 ? idx + 1 : categories.length
       categories.splice(insertAt, 0, {
         text: payload.text,
-        children: payload.leaves.map((leaf) => ({ text: leaf.text })),
+        ...glossField(payload),
+        children: payload.leaves.map((leaf) => ({ text: leaf.text, ...glossField(leaf) })),
       })
     } else {
       return false
@@ -117,15 +185,21 @@ function pasteTreeMapPayload(
     if (targetIdx < 0 || targetIdx >= categories.length) return false
     const cat = categories[targetIdx]
     if (!cat.children) cat.children = []
-    cat.children.push({ text: payload.text })
+    cat.children.push({ text: payload.text, ...glossField(payload) })
   }
 
-  const dimension = (ctx.data.value as Record<string, unknown>).dimension
-  const altDims = (ctx.data.value as Record<string, unknown>).alternative_dimensions
+  const dataRecord = ctx.data.value as Record<string, unknown>
+  const dimension = dataRecord.dimension
+  const altDims = dataRecord.alternative_dimensions
+  const dimensionNode = nodes.find((node) => node.id === 'dimension-label')
+  const dimensionSecondary = String(dimensionNode?.textSecondary ?? '').trim()
+  const languages = dataRecord.languages
   const newSpec = {
-    root: { text: rootNode.text, children: categories },
+    root: { text: rootNode.text, ...glossField(rootNode), children: categories },
     dimension,
+    ...(dimensionSecondary ? { dimensionSecondary } : {}),
     alternative_dimensions: altDims,
+    ...(languages && typeof languages === 'object' ? { languages } : {}),
   }
   const ok = ctx.loadFromSpec(newSpec, 'tree_map', { mergePreviousNodeStyles: true })
   if (ok) {
@@ -145,6 +219,7 @@ function addBraceSubtree(
   ctx.addNode({
     id: newId,
     text: node.text,
+    ...glossField(node),
     type: 'brace',
     position: { x: 0, y: 0 },
   })
@@ -155,6 +230,7 @@ function addBraceSubtree(
     ctx.addNode({
       id: childId,
       text: child.text,
+      ...glossField(child),
       type: 'brace',
       position: { x: 0, y: 0 },
     })
@@ -219,6 +295,12 @@ function pasteFlowMapPayload(
         stepIndex: steps.length - 1,
         substeps: [...payload.substeps],
       })
+      appendFlowStepGloss(
+        spec,
+        steps.length,
+        payload.stepSecondary ?? '',
+        payload.substepsSecondary ?? []
+      )
     } else {
       return false
     }
@@ -235,6 +317,7 @@ function pasteFlowMapPayload(
     )
     if (entry) {
       entry.substeps.push(payload.text)
+      appendFlowSubstepGloss(spec, stepIndex, payload.textSecondary ?? '')
     } else {
       substeps.push({
         step: stepText,
@@ -242,6 +325,7 @@ function pasteFlowMapPayload(
         stepIndex: stepIndex >= 0 ? stepIndex : undefined,
         substeps: [payload.text],
       })
+      appendFlowSubstepGloss(spec, stepIndex, payload.textSecondary ?? '')
     }
   }
 

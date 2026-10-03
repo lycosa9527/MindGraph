@@ -53,6 +53,7 @@ import {
   recalculateBubbleMapLayout,
   recalculateCircleMapLayout,
   recalculateMultiFlowMapLayout,
+  recalculateTreeMapLayout,
 } from '../specLoader'
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
@@ -134,19 +135,27 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     if ('text' in updates && typeof merged.text === 'string' && merged.data != null) {
       ;(merged.data as Record<string, unknown>).label = merged.text
     }
+    if ('textSecondary' in updates && merged.data != null) {
+      ;(merged.data as Record<string, unknown>).labelSecondary = merged.textSecondary ?? ''
+    }
 
     if (
       (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
-      'text' in updates &&
-      typeof merged.text === 'string'
+      (('text' in updates && typeof merged.text === 'string') || 'textSecondary' in updates)
     ) {
-      syncMindMapSummaryNodeText(ctx.data.value, nodeId, merged.text)
+      syncMindMapSummaryNodeText(
+        ctx.data.value,
+        nodeId,
+        merged.text ?? '',
+        'textSecondary' in updates ? String(merged.textSecondary ?? '') : undefined
+      )
     }
 
     const treeTopicLayoutBump =
       ctx.type.value === 'tree_map' &&
       nodeId === 'tree-topic' &&
       (('text' in updates && updates.text !== undefined) ||
+        ('textSecondary' in updates && updates.textSecondary !== undefined) ||
         (updates.style &&
           (updates.style.fontSize !== undefined ||
             updates.style.fontWeight !== undefined ||
@@ -158,6 +167,26 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       ctx.layoutRecalcTrigger.value++
     } else {
       ctx.data.value.nodes[nodeIndex] = merged
+      if (
+        ctx.type.value === 'tree_map' &&
+        'textSecondary' in updates &&
+        updates.textSecondary !== undefined
+      ) {
+        delete ctx.nodeDimensions.value[nodeId]
+        ctx.data.value.nodes = recalculateTreeMapLayout(
+          ctx.data.value.nodes,
+          ctx.nodeDimensions.value
+        )
+        ctx.layoutRecalcTrigger.value++
+      }
+    }
+
+    if (('text' in updates || 'textSecondary' in updates) && ctx.commitLearningSheetNodeContent) {
+      const written = ctx.data.value.nodes.find((node) => node.id === nodeId)
+      const nextText = String(written?.text ?? '')
+      const nextSecondary =
+        'textSecondary' in updates ? String(written?.textSecondary ?? '') : undefined
+      ctx.commitLearningSheetNodeContent(nodeId, nextText, nextSecondary)
     }
 
     if (ctx.type.value === 'concept_map' && nodeId === 'topic' && 'text' in updates) {
@@ -184,7 +213,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
     if (
       ctx.type.value &&
-      'text' in updates &&
+      ('text' in updates || 'textSecondary' in updates) &&
       shouldInvalidateNodeDimensionsOnTextEdit(ctx.type.value, nodeId)
     ) {
       delete ctx.nodeDimensions.value[nodeId]
@@ -226,10 +255,12 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
           { id: nodeId, type: currentNode.type ?? 'branch', style: nodeStyle },
           ctx.data.value._mindmap_diagram_style as string | undefined
         )
+        const gloss = (currentNode.textSecondary ?? '').trim()
+        const glossExtra = gloss ? Math.ceil(14 * 0.75 * 1.2) : 0
         const freshHeight =
-          shape === 'underline'
+          (shape === 'underline'
             ? measureNumberedBranchUnderlineHeight(newText, prefix, nodeId, nodeStyle)
-            : measureNumberedBranchHeight(newText, prefix, nodeId, nodeStyle)
+            : measureNumberedBranchHeight(newText, prefix, nodeId, nodeStyle)) + glossExtra
         ctx.data.value.nodes[nodeIndex] = {
           ...ctx.data.value.nodes[nodeIndex],
           data: {

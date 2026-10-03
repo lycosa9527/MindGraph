@@ -17,11 +17,13 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response
+from agents.diagram_bilingual.split import transplant_secondary
 from agents.core.llm_spec_stream import dispatch_llm_chat
 from agents.core.base_agent import BaseAgent
 from config.settings import config
 from prompts import get_prompt
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.bilingual_prompt import bilingual_max_tokens
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
@@ -130,7 +132,7 @@ class MultiFlowMapAgent(BaseAgent):
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=1000,
+                max_tokens=bilingual_max_tokens(1000),
                 temperature=config.LLM_TEMPERATURE,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -340,6 +342,7 @@ class MultiFlowMapAgent(BaseAgent):
                 },
             }
 
+            transplant_secondary(spec, enhanced_spec)
             return {"success": True, "spec": enhanced_spec}
         except LLM_PIPELINE_ERRORS as exc:  # Defensive guard
             return {"success": False, "error": f"Unexpected error: {exc}"}

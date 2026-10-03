@@ -70,6 +70,8 @@ export interface Position {
 export interface DiagramNode {
   id: string
   text: string
+  /** Smaller second line. Absent means the single-language layout. */
+  textSecondary?: string
   type: NodeType
   position?: Position
   style?: NodeStyle
@@ -149,6 +151,7 @@ export interface MindMapCanvasStyleBuckets {
 /** Nested topics attached to a mind-map summary (not part of the main tree). */
 export interface MindMapSummaryChildSpec {
   text: string
+  textSecondary?: string
   children?: MindMapSummaryChildSpec[]
 }
 
@@ -162,6 +165,7 @@ export type MindMapSummaryLineStyle = 'solid' | 'dashed' | 'dotted'
 export interface MindMapSummarySpec {
   id: string
   text: string
+  textSecondary?: string
   coveredPaths: string[]
   children?: MindMapSummaryChildSpec[]
   kind?: MindMapSummaryKind
@@ -186,10 +190,17 @@ export interface MindMapNodeAdornment {
 
 export type MindMapAdornmentsByPath = Record<string, MindMapNodeAdornment>
 
+export interface DiagramLanguages {
+  primary: string
+  secondary: string
+}
+
 export interface DiagramData {
   type: DiagramType
   nodes: DiagramNode[]
   connections: Connection[]
+  /** File language pair for a bilingual diagram. Display follows this, not the chrome toggle. */
+  languages?: DiagramLanguages
   /** Concept map (standard mode): guiding question persisted with the diagram */
   focus_question?: string
   metadata?: {

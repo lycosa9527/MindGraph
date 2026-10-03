@@ -3,16 +3,18 @@ import { computed, toValue } from 'vue'
 
 import type { GraphNode } from '@vue-flow/core'
 
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   getBranchMoveCircleStyle,
   getBranchMoveGhostStyle,
   getDropTargetStyle,
 } from '@/composables/diagramCanvas'
 import { getDropTargetShapeClass } from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
+import type { MindMapPaletteDragPreviewState } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
-import type { MindMapPaletteDragPreviewState } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
 import type { MindGraphNode } from '@/types/vueflow'
+import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
 
 type BranchMove = ReturnType<typeof useBranchMoveDrag>
 
@@ -29,6 +31,11 @@ const props = defineProps<{
   showLinkPreviewPill?: boolean
 }>()
 
+const diagramStore = useDiagramSession()
+const linkPreviewStroke = computed(
+  () => thinkingMapSolidThemeStroke(diagramStore.data?._mindmap_theme) ?? '#94a3b8'
+)
+
 const dragState = computed(() => toValue(props.branchMove.state))
 
 const paletteDrag = computed(() => props.paletteDragPreview ?? null)
@@ -44,8 +51,7 @@ const paletteDropTargetShapeClass = computed((): string => {
   const target = paletteDrag.value?.dropTarget
   if (!target) return ''
   const node = props.getVueFlowNodes().find((n) => n.id === target.nodeId) as
-    | MindGraphNode
-    | undefined
+    MindGraphNode | undefined
   return node ? getDropTargetShapeClass(node) : ''
 })
 
@@ -60,8 +66,7 @@ const dropTargetShapeClass = computed((): string => {
   const target = dragState.value.dropTarget
   if (!target) return ''
   const node = props.getVueFlowNodes().find((n) => n.id === target.nodeId) as
-    | MindGraphNode
-    | undefined
+    MindGraphNode | undefined
   return node ? getDropTargetShapeClass(node) : ''
 })
 </script>
@@ -165,7 +170,7 @@ const dropTargetShapeClass = computed((): string => {
       >
         <path
           d="M0,0 L0,10 L10,5 z"
-          fill="#94a3b8"
+          :fill="linkPreviewStroke"
           opacity="0.6"
         />
       </marker>
@@ -173,7 +178,7 @@ const dropTargetShapeClass = computed((): string => {
     <path
       :d="linkPreviewPath"
       fill="none"
-      stroke="#94a3b8"
+      :stroke="linkPreviewStroke"
       stroke-width="2"
       opacity="0.6"
       :marker-end="linkPreviewShowArrow ? 'url(#concept-map-link-preview-arrow)' : undefined"

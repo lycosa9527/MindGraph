@@ -172,4 +172,9 @@ export interface DiagramContext {
    * Filled by the Vue Flow integration slice; sync must not recompute layout.
    */
   writeBackMindMapV2LayoutFromComputed?: () => void
+  /**
+   * Keep learning-sheet reference answers aligned with a text edit.
+   * Filled by the learning-sheet slice before node updates run.
+   */
+  commitLearningSheetNodeContent?: (nodeId: string, text: string, textSecondary?: string) => boolean
 }

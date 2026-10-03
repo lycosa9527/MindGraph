@@ -11,7 +11,10 @@ Proprietary License
 
 from typing import Dict, Any
 
+from utils.bilingual_prompt import current_bilingual_secondary
 from utils.prompt_locale import output_language_instruction, template_lang_for_registry
+
+from .diagram_bilingual import bilingual_footer_applies, bilingual_output_footer
 
 from .thinking_maps import THINKING_MAP_PROMPTS
 from .concept_maps import CONCEPT_MAP_PROMPTS
@@ -52,6 +55,9 @@ def get_prompt(diagram_type: str, language: str = "en", prompt_type: str = "gene
         text = PROMPT_REGISTRY.get(key, "")
     if not text:
         return ""
+    secondary = current_bilingual_secondary()
+    if secondary and bilingual_footer_applies(diagram_type, prompt_type):
+        return text + bilingual_output_footer(language, secondary)
     return text + output_language_instruction(language)
 
 

@@ -27,7 +27,10 @@ import { isMindMapAssociationConnection, mindMapNodeSide } from '@/utils/mindMap
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 import { filterTreeMindMapNodes } from '@/utils/mindMapSummary'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
-import { resolveThinkingMapConnectorStroke } from '@/utils/thinkingMapConnectionStroke'
+import {
+  resolveThinkingMapConnectorStroke,
+  thinkingMapSolidThemeStroke,
+} from '@/utils/thinkingMapConnectionStroke'
 
 import {
   recalculateBraceMapLayout,
@@ -456,6 +459,17 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
                 MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
               ),
             },
+          }
+        } else if (diagramType === 'concept_map') {
+          const solid = thinkingMapSolidThemeStroke(diagramData._mindmap_theme)
+          if (solid) {
+            effectiveConn = {
+              ...effectiveConn,
+              style: {
+                ...(effectiveConn.style || {}),
+                strokeColor: solid,
+              },
+            }
           }
         }
 

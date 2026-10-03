@@ -351,13 +351,19 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
-      eventBus.on('node:text_updated', ({ nodeId, text }) => {
+      eventBus.on('node:text_updated', ({ nodeId, text, textSecondary }) => {
         if (isDiagramPresentationReadOnly() || sessionReadonly()) return
         const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
         const currentText = (node?.text ?? (node?.data as { label?: string })?.label ?? '').trim()
+        const currentSecondary = (node?.textSecondary ?? '').trim()
         const alreadyUpdated = currentText === text.trim()
-        if (!alreadyUpdated) {
-          diagramStore.updateNode(nodeId, { text })
+        const secondaryChanged =
+          textSecondary !== undefined && currentSecondary !== textSecondary.trim()
+        if (!alreadyUpdated || secondaryChanged) {
+          diagramStore.updateNode(nodeId, {
+            text,
+            ...(textSecondary !== undefined ? { textSecondary } : {}),
+          })
           diagramStore.pushHistory('Edit node text')
         }
         if (diagramStore.type === 'concept_map') {

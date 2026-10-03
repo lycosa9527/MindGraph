@@ -352,6 +352,7 @@ declare module 'vue' {
     MessageReactions: typeof import('./components/workshop-chat/MessageReactions.vue')['default']
     MindbotUsageEventDetailDialog: typeof import('./components/admin/MindbotUsageEventDetailDialog.vue')['default']
     MindClassroomLaunchContent: typeof import('./components/canvas/MindClassroomLaunchContent.vue')['default']
+    MindClassroomLaunchDialog: typeof import('./components/canvas/MindClassroomLaunchDialog.vue')['default']
     MindClassroomLectureOverlay: typeof import('./components/canvas/MindClassroomLectureOverlay.vue')['default']
     MindClassroomMascot: typeof import('./components/canvas/MindClassroomMascot.vue')['default']
     MindClassroomSlidePane: typeof import('./components/canvas/MindClassroomSlidePane.vue')['default']

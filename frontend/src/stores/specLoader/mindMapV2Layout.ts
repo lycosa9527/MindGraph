@@ -1,36 +1,29 @@
 /**
  * V2 mind-map side layout — subtree-relative X, sequential root stacking.
  */
-import {
-  mindMapAdaptiveBranchGap,
-  mindMapAdaptiveSiblingGap,
-} from '@/config/mindMapAdaptiveGaps'
+import { mindMapAdaptiveBranchGap, mindMapAdaptiveSiblingGap } from '@/config/mindMapAdaptiveGaps'
 import {
   getMindMapDiagramStyleById,
   mindMapNodeShapeFromPreset,
 } from '@/config/mindMapDiagramStyles'
-import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
+import { stackedTextBlock } from '@/diagramBilingual/measure'
 import type { Connection, DiagramNode } from '@/types'
-import type { NodeShape } from '@/utils/nodeShapeStyle'
-
-import { MINDMAP_LEGACY_ID_DATA_KEY } from '@/utils/mindMapIdentityMigrate'
-import { mindMapBranchDataFields } from '@/utils/mindMapLocation'
 import {
-  ensureMindMapBranchUid,
-  MINDMAP_NODE_UID_DATA_KEY,
-} from '@/utils/mindMapNodeUid'
-
-import {
-  formatMindMapBranchPrefix,
-  mindMapClockwiseL1Index,
   type MindMapNumberingGlyphStyle,
   type MindMapNumberingNestedStyle,
+  formatMindMapBranchPrefix,
+  mindMapClockwiseL1Index,
 } from '@/utils/mindMapBranchNumbering'
+import { MINDMAP_LEGACY_ID_DATA_KEY } from '@/utils/mindMapIdentityMigrate'
+import { mindMapBranchDataFields } from '@/utils/mindMapLocation'
+import { MINDMAP_NODE_UID_DATA_KEY, ensureMindMapBranchUid } from '@/utils/mindMapNodeUid'
+import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 import type { MindMapBranchSpec } from './mindMapLegacyLayout'
 import {
-  estimateNumberedBranchBoxWidth,
   estimateNodeWidthForCanvasMode,
+  estimateNumberedBranchBoxWidth,
   measureNumberedBranchHeightForCanvasMode,
   measureNumberedUnderlineBoxMetrics,
 } from './mindMapMeasurements'
@@ -68,6 +61,7 @@ export function layoutMindMapSideV2(
     id: string
     text: string
     uid: string
+    textSecondary?: string
     legacyId?: string
     depth: number
     estimatedWidth: number
@@ -95,18 +89,40 @@ export function layoutMindMapSideV2(
     const shape = mindMapNodeShapeFromPreset({ id, type: 'branch' }, diagramStyle, depth)
     const parts = [...ancestorParts, siblingIndex]
     const prefix = prefixForParts(parts)
-    const estimatedWidth = prefix
+    const primaryWidth = prefix
       ? estimateNumberedBranchBoxWidth(text, prefix, id, shape)
       : estimateNodeWidthForCanvasMode(text, id, 'v2', shape)
-    const estimatedHeight =
+    const primaryHeight =
       shape === 'underline'
         ? measureNumberedUnderlineBoxMetrics(text, prefix, id).totalHeight
         : measureNumberedBranchHeightForCanvasMode(text, prefix, id, 'v2')
+    const block = stackedTextBlock(
+      primaryWidth,
+      primaryHeight,
+      b.textSecondary ? Math.ceil(b.textSecondary.length * 8) : 0,
+      14,
+      b.textSecondary
+    )
+    const estimatedWidth = block.width
+    const estimatedHeight = block.height
     const children = (b.children ?? []).map((child, childIndex) =>
       buildTree(child, depth + 1, branchIndex, parts, childIndex + 1)
     )
-    const legacyId = typeof b.legacyId === 'string' && b.legacyId.trim() ? b.legacyId.trim() : undefined
-    return { id, text, uid, legacyId, depth, estimatedWidth, estimatedHeight, children, branchIndex, shape }
+    const legacyId =
+      typeof b.legacyId === 'string' && b.legacyId.trim() ? b.legacyId.trim() : undefined
+    return {
+      id,
+      text,
+      textSecondary: b.textSecondary,
+      uid,
+      legacyId,
+      depth,
+      estimatedWidth,
+      estimatedHeight,
+      children,
+      branchIndex,
+      shape,
+    }
   }
 
   const topLevel = branches.map((b, i) => {
@@ -236,11 +252,7 @@ export function layoutMindMapSideV2(
     if (!upper || !lower) continue
     branchGaps.push(mindMapAdaptiveBranchGap(lastLeafShape(upper), firstLeafShape(lower)))
   }
-  const rootStartYs = computeSymmetricRootStartYs(
-    topLevelSpans,
-    topicCenterY,
-    branchGaps
-  )
+  const rootStartYs = computeSymmetricRootStartYs(topLevelSpans, topicCenterY, branchGaps)
   topLevel.forEach((node, i) => {
     layoutSubtreeFromTop(node, rootStartYs[i] ?? topicCenterY)
   })
@@ -258,6 +270,7 @@ export function layoutMindMapSideV2(
     nodes.push({
       id: node.id,
       text: node.text,
+      ...(node.textSecondary ? { textSecondary: node.textSecondary } : {}),
       type: 'branch',
       position: { x, y },
       style: { nodeShape: node.shape },

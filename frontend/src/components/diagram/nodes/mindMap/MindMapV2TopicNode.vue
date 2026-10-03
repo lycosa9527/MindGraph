@@ -20,8 +20,8 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import {
-  handleLearningSheetPickNodeClick,
   isLearningSheetCustomPickActive,
+  scheduleLearningSheetPickNodeClick,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
 import {
   useMindMapExportOutlineWireframeActive,
@@ -237,11 +237,12 @@ onMounted(() => {
   markMindMapLoadShellMounted('topic')
 })
 
-function handleTextSave(newText: string) {
+function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
+    ...(textSecondary !== undefined ? { textSecondary } : {}),
   })
 }
 
@@ -260,7 +261,7 @@ function handleTopicNodeClick(event: MouseEvent): void {
   if (isLearningSheetCustomPickActive()) {
     event.stopPropagation()
     event.preventDefault()
-    handleLearningSheetPickNodeClick(props.id)
+    scheduleLearningSheetPickNodeClick(props.id)
   }
 }
 </script>

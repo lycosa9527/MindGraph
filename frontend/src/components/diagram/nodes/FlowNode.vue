@@ -261,13 +261,14 @@ async function flushMultiFlowCauseEffectWidthFromPinia(): Promise<void> {
   })
 }
 
-function handleTextSave(newText: string) {
+function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
   dynamicWidth.value = null // Reset width after saving
 
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
+    ...(textSecondary !== undefined ? { textSecondary } : {}),
   })
 
   if (isMultiFlowMap.value) {

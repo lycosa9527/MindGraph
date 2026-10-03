@@ -12,6 +12,7 @@ import {
   loadDiagramMarkdownPipeline,
   renderMarkdownForDiagramLabelMeasureSync,
 } from '@/composables/core/diagramMarkdownPipeline'
+import { secondaryFontSize, stackedTextBlock } from '@/diagramBilingual/measure'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import {
@@ -362,6 +363,8 @@ export interface MeasureTextDimensionsOptions {
   fontWeight?: string
   /** Optional override; defaults to diagram multiscript stack */
   fontFamily?: string
+  /** Second language line. Empty leaves the primary box unchanged. */
+  secondary?: string
 }
 
 /**
@@ -379,7 +382,11 @@ export function measureTextDimensions(
       isTopic: (options?.fontWeight ?? 'normal') === 'bold',
     })
     const h = fontSize * 1.4 + (options?.paddingY ?? 8) * 2
-    return { width: w + (options?.paddingX ?? 16) * 2, height: h }
+    return finishMeasuredBox(
+      { width: w + (options?.paddingX ?? 16) * 2, height: h },
+      fontSize,
+      options
+    )
   }
   const t = (text || '').trim() || ' '
   const paddingX = options?.paddingX ?? 16
@@ -396,7 +403,7 @@ export function measureTextDimensions(
     paddingY
   )
   const cachedBox = cachedPlainTextBox(boxKey)
-  if (cachedBox) return cachedBox
+  if (cachedBox) return finishMeasuredBox(cachedBox, fontSize, options)
   const el = getMeasureEl(fontFamily)
   el.style.fontSize = `${fontSize}px`
   el.style.fontWeight = fontWeight
@@ -413,7 +420,26 @@ export function measureTextDimensions(
     el.style.maxWidth = 'none'
   }
   el.textContent = t
-  return { width: el.offsetWidth, height: el.offsetHeight }
+  return finishMeasuredBox({ width: el.offsetWidth, height: el.offsetHeight }, fontSize, options)
+}
+
+function finishMeasuredBox(
+  box: { width: number; height: number },
+  fontSize: number,
+  options?: MeasureTextDimensionsOptions
+): { width: number; height: number } {
+  const gloss = (options?.secondary ?? '').trim()
+  if (!gloss) return box
+  const glossFont = secondaryFontSize(fontSize)
+  const glossWidth =
+    typeof document === 'undefined'
+      ? Math.ceil(gloss.length * glossFont * 0.6)
+      : measureTextWidth(gloss, glossFont, {
+          fontWeight: options?.fontWeight,
+          fontFamily: options?.fontFamily,
+        })
+  const paddingX = options?.paddingX ?? 16
+  return stackedTextBlock(box.width, box.height, glossWidth + paddingX * 2, fontSize, gloss)
 }
 
 function measureTextWidthNoWrap(
@@ -639,6 +665,23 @@ const DOUBLE_BUBBLE_TOPIC_PADDING = 12
 const DOUBLE_BUBBLE_SIM_PADDING = 5
 const DOUBLE_BUBBLE_DIFF_PADDING = 5
 
+export function growRadiusForSecondary(
+  radius: number,
+  secondary: string | undefined,
+  fontSize: number
+): number {
+  const gloss = (secondary ?? '').trim()
+  if (!gloss) return radius
+  const secFs = secondaryFontSize(fontSize)
+  const secW =
+    typeof document === 'undefined'
+      ? estimateTextWidthFallbackPx(gloss, secFs)
+      : measureTextWidth(gloss, secFs)
+  const diameter = radius * 2
+  const block = stackedTextBlock(diameter, diameter, secW + 24, fontSize, gloss)
+  return Math.max(radius, block.width / 2, block.height / 2)
+}
+
 export function doubleBubbleRequiredRadius(
   text: string,
   options: {
@@ -646,6 +689,7 @@ export function doubleBubbleRequiredRadius(
     savedRadius?: number
     fontSize?: number
     fontWeight?: string
+    secondary?: string
   }
 ): number {
   const { isTopic, savedRadius, fontSize: fontSizeOpt, fontWeight } = options
@@ -663,13 +707,17 @@ export function doubleBubbleRequiredRadius(
   } else if (fontWeight === 'normal') {
     measureBold = false
   }
-  return calculateBubbleMapRadius(trimmed, fontSize, padding, minR, isTopic, measureBold)
+  return growRadiusForSecondary(
+    calculateBubbleMapRadius(trimmed, fontSize, padding, minR, isTopic, measureBold),
+    options.secondary,
+    fontSize
+  )
 }
 
 export function doubleBubbleDiffRequiredRadius(
   text: string,
   savedRadius?: number,
-  measure?: { fontSize?: number; fontWeight?: string }
+  measure?: { fontSize?: number; fontWeight?: string; secondary?: string }
 ): number {
   const trimmed = (text || '').trim()
   if (!trimmed) {
@@ -683,13 +731,17 @@ export function doubleBubbleDiffRequiredRadius(
   } else if (measure?.fontWeight === 'normal') {
     measureBold = false
   }
-  return calculateBubbleMapRadius(
-    trimmed,
-    fontSize,
-    DOUBLE_BUBBLE_DIFF_PADDING,
-    DOUBLE_BUBBLE_MIN_DIFF_RADIUS,
-    false,
-    measureBold
+  return growRadiusForSecondary(
+    calculateBubbleMapRadius(
+      trimmed,
+      fontSize,
+      DOUBLE_BUBBLE_DIFF_PADDING,
+      DOUBLE_BUBBLE_MIN_DIFF_RADIUS,
+      false,
+      measureBold
+    ),
+    measure?.secondary,
+    fontSize
   )
 }
 
@@ -697,6 +749,7 @@ export interface TopicCircleMeasureOptions {
   fontSize?: number
   fontWeight?: string
   fontFamily?: string
+  secondary?: string
 }
 
 export function computeTopicRadiusForCircleMap(
@@ -713,7 +766,11 @@ export function computeTopicRadiusForCircleMap(
     const approxH = fs * 1.4
     const diagonal = Math.sqrt(approxW * approxW + approxH * approxH)
     const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
-    return Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, contentR + BORDER_TOPIC)
+    return growRadiusForSecondary(
+      Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, contentR + BORDER_TOPIC),
+      measure?.secondary,
+      fs
+    )
   }
   const { width, height } = measureTextWithSVG(t, fs, measureBold, fontFamily)
   const w = width || estimateTextWidthFallbackPx(t, fs, { isTopic: measureBold })
@@ -721,5 +778,9 @@ export function computeTopicRadiusForCircleMap(
   const diagonal = Math.sqrt(w * w + h * h)
   const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
   const radius = contentR + BORDER_TOPIC
-  return Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, radius)
+  return growRadiusForSecondary(
+    Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, radius),
+    measure?.secondary,
+    fs
+  )
 }

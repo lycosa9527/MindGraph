@@ -23,6 +23,7 @@ from clients.llm.base import (
     extract_usage_from_openai_completion,
     extract_usage_from_stream_chunk,
 )
+from clients.llm.structured_output import apply_structured_output
 from config.settings import config
 from services.infrastructure.http.error_handler import (
     LLMProviderError,
@@ -113,8 +114,7 @@ class DoubaoClient:
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             }
-            if "response_format" in kwargs:
-                create_kwargs["response_format"] = kwargs["response_format"]
+            apply_structured_output(create_kwargs, kwargs.get("response_format"))
 
             # Call OpenAI-compatible API
             completion = await self.client.chat.completions.create(**create_kwargs)
@@ -232,8 +232,7 @@ class DoubaoClient:
                 "stream": True,
                 "stream_options": {"include_usage": True},
             }
-            if "response_format" in kwargs:
-                create_kwargs["response_format"] = kwargs["response_format"]
+            apply_structured_output(create_kwargs, kwargs.get("response_format"))
 
             # Use OpenAI SDK's streaming with usage tracking
             stream = await self.client.chat.completions.create(**create_kwargs)
@@ -447,8 +446,7 @@ class VolcengineClient:
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             }
-            if response_format is not None:
-                create_kwargs["response_format"] = response_format
+            apply_structured_output(create_kwargs, response_format)
 
             completion = await self.client.chat.completions.create(**create_kwargs)
 
@@ -586,8 +584,7 @@ class VolcengineClient:
                 "stream_options": {"include_usage": True},
                 "extra_body": extra_body if extra_body else None,
             }
-            if response_format is not None:
-                create_kwargs["response_format"] = response_format
+            apply_structured_output(create_kwargs, response_format)
 
             stream = await self.client.chat.completions.create(**create_kwargs)
 

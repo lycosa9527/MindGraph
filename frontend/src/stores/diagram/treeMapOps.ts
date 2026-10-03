@@ -8,9 +8,14 @@ import {
 } from '@/utils/treeMapIdentity'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
-import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitCtxEvent } from './events'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
+
+function carriedGloss(node: { textSecondary?: string }): { textSecondary?: string } {
+  const line = String(node.textSecondary ?? '').trim()
+  return line ? { textSecondary: line } : {}
+}
 
 export function useTreeMapOpsSlice(ctx: DiagramContext) {
   const { type, data, selectedNodes } = ctx
@@ -36,21 +41,32 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       return {
         id: cat.id,
         text: cat.text,
-        children: leaves.map((l) => ({ id: l.id, text: l.text, children: [] })),
+        ...carriedGloss(cat),
+        children: leaves.map((leaf) => ({
+          id: leaf.id,
+          text: leaf.text,
+          ...carriedGloss(leaf),
+          children: [],
+        })),
       }
     })
-    const dimension = (data.value as Record<string, unknown>).dimension as string | undefined
-    const altDims = (data.value as Record<string, unknown>).alternative_dimensions as
-      | string[]
-      | undefined
+    const record = data.value as Record<string, unknown>
+    const dimension = record.dimension as string | undefined
+    const altDims = record.alternative_dimensions as string[] | undefined
+    const dimensionNode = nodes.find((node) => node.id === 'dimension-label')
+    const dimensionSecondary = String(dimensionNode?.textSecondary ?? '').trim()
+    const languages = record.languages
     return {
       root: {
         id: rootId,
         text: rootNode.text,
+        ...carriedGloss(rootNode),
         children: categories,
       },
       dimension,
+      ...(dimensionSecondary ? { dimensionSecondary } : {}),
       alternative_dimensions: altDims,
+      ...(languages && typeof languages === 'object' ? { languages } : {}),
     }
   }
 
@@ -76,7 +92,8 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       children?: Array<{
         id?: string
         text: string
-        children?: Array<{ id?: string; text: string }>
+        textSecondary?: string
+        children?: Array<{ id?: string; text: string; textSecondary?: string }>
       }>
     }
     const categories = root.children ?? []
@@ -105,6 +122,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       })
       .map((cat) => ({
         text: cat.text,
+        ...carriedGloss(cat),
         children: (cat.children ?? [])
           .filter((leaf) => {
             if (idsToRemove.has(leaf.id ?? '')) {
@@ -113,7 +131,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
             }
             return true
           })
-          .map((leaf) => ({ id: leaf.id, text: leaf.text })),
+          .map((leaf) => ({ id: leaf.id, text: leaf.text, ...carriedGloss(leaf) })),
       }))
 
     if (deletedCount === 0) return 0
@@ -184,7 +202,8 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       children?: Array<{
         id?: string
         text: string
-        children?: Array<{ id?: string; text: string }>
+        textSecondary?: string
+        children?: Array<{ id?: string; text: string; textSecondary?: string }>
       }>
     }
     const categories = root.children ?? []
@@ -284,7 +303,12 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     const cleanCategories = categories.map((cat) => ({
       id: cat.id,
       text: cat.text,
-      children: (cat.children ?? []).map((leaf) => ({ id: leaf.id, text: leaf.text })),
+      ...carriedGloss(cat),
+      children: (cat.children ?? []).map((leaf) => ({
+        id: leaf.id,
+        text: leaf.text,
+        ...carriedGloss(leaf),
+      })),
     }))
     const newSpec = {
       ...spec,

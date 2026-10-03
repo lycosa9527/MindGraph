@@ -26,16 +26,35 @@ export function learningSheetLayoutText(node: DiagramNode): string {
 }
 
 /** Spec `text` is the answer so layout keeps underline width. */
+function nodeHiddenAnswerSecondary(node: DiagramNode): string | undefined {
+  const raw = (node.data as { hiddenAnswerSecondary?: string } | undefined)?.hiddenAnswerSecondary
+  if (typeof raw !== 'string') return undefined
+  const trimmed = raw.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
 export function readLearningSheetBranchFromNode(node: DiagramNode): {
   text: string
+  textSecondary?: string
   hidden?: true
   hiddenAnswer?: string
+  hiddenAnswerSecondary?: string
 } {
+  const visibleGloss = (node.textSecondary ?? '').trim()
   if (!isBlanked(node)) {
-    return { text: node.text ?? '' }
+    return visibleGloss
+      ? { text: node.text ?? '', textSecondary: visibleGloss }
+      : { text: node.text ?? '' }
   }
   const answer = nodeHiddenAnswer(node) ?? ''
-  return { text: answer, hidden: true, hiddenAnswer: answer }
+  const answerSecondary = nodeHiddenAnswerSecondary(node) || visibleGloss
+  return {
+    text: answer,
+    ...(answerSecondary ? { textSecondary: answerSecondary } : {}),
+    hidden: true,
+    hiddenAnswer: answer,
+    ...(answerSecondary ? { hiddenAnswerSecondary: answerSecondary } : {}),
+  }
 }
 
 /** After layout, put blank display text and hiddenAnswer back on matching nodes. */
@@ -46,17 +65,21 @@ export function stampLearningSheetBlanksFromBranches(
   const byId = new Map(nodes.map((node) => [node.id, node]))
 
   const visit = (branch: MindMapBranchSpec): void => {
-    const answer =
-      typeof branch.hiddenAnswer === 'string' ? branch.hiddenAnswer.trim() : ''
+    const answer = typeof branch.hiddenAnswer === 'string' ? branch.hiddenAnswer.trim() : ''
     const uid = typeof branch.uid === 'string' ? branch.uid.trim() : ''
     const node = branch.hidden === true && answer && uid ? byId.get(uid) : undefined
     if (node) {
+      const answerSecondary =
+        typeof branch.hiddenAnswerSecondary === 'string' ? branch.hiddenAnswerSecondary.trim() : ''
       node.text = LEARNING_SHEET_BLANK_TEXT
+      node.textSecondary = answerSecondary ? '' : node.textSecondary
       node.data = {
         ...node.data,
         hidden: true,
         hiddenAnswer: answer,
+        ...(answerSecondary ? { hiddenAnswerSecondary: answerSecondary } : {}),
         label: LEARNING_SHEET_BLANK_TEXT,
+        ...(answerSecondary ? { labelSecondary: '' } : {}),
       }
     }
     branch.children?.forEach(visit)

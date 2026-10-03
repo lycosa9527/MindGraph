@@ -1,8 +1,10 @@
 /**
  * MindGraph `.mg` interchange format (obfuscation, not secret storage).
  *
- * **v1.1 (current export):** `MG` (ASCII) | major `0x01` | minor `0x01` | 12-byte IV |
+ * **v1.1 (mono export):** `MG` (ASCII) | major `0x01` | minor `0x01` | 12-byte IV |
  * AES-256-GCM ciphertext (includes auth tag). Human-readable label: **MG v1.1**.
+ *
+ * **v2.0 (bilingual export):** same layout with major `0x02` minor `0x00`. Same key.
  *
  * **v1.0 encrypted (legacy):** ASCII `MG1` | IV | ciphertext — still accepted on import.
  *
@@ -14,12 +16,19 @@
 /** Display / diagnostics only (e.g. docs, future UI). */
 export const MG_INTERCHANGE_VERSION_LABEL = '1.1'
 
+/** Bilingual diagram files. Same AES key as v1.1. */
+export const MG_V2_VERSION_LABEL = '2.0'
+
+export type MgWireVersion = '1.1' | '2.0'
+
 /** Thrown when bytes are not v1.1 or legacy MG1 encrypted payload. */
 export const MG_FILE_NOT_ENCRYPTED = 'MG_FILE_NOT_ENCRYPTED'
 
 const MG_SIG = 0x4d47 // 'MG' — file type
 const VERSION_MAJOR_V1_1 = 1
 const VERSION_MINOR_V1_1 = 1
+const VERSION_MAJOR_V2 = 2
+const VERSION_MINOR_V2 = 0
 
 /** v1.1: MG + major + minor (4 bytes), then IV, then ciphertext. */
 const HEADER_V1_1_BYTE_LENGTH = 4
@@ -47,10 +56,18 @@ async function importAesGcmKey(): Promise<CryptoKey> {
   return subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
 }
 
-function isHeaderV1_1(view: Uint8Array): boolean {
+function isMgHeader(view: Uint8Array, major: number, minor: number): boolean {
   if (view.length < HEADER_V1_1_BYTE_LENGTH) return false
   const sig = (view[0] << 8) | view[1]
-  return sig === MG_SIG && view[2] === VERSION_MAJOR_V1_1 && view[3] === VERSION_MINOR_V1_1
+  return sig === MG_SIG && view[2] === major && view[3] === minor
+}
+
+function isHeaderV1_1(view: Uint8Array): boolean {
+  return isMgHeader(view, VERSION_MAJOR_V1_1, VERSION_MINOR_V1_1)
+}
+
+function isHeaderV2(view: Uint8Array): boolean {
+  return isMgHeader(view, VERSION_MAJOR_V2, VERSION_MINOR_V2)
 }
 
 function isLegacyMg1EncryptedHeader(view: Uint8Array): boolean {
@@ -65,7 +82,10 @@ function isLegacyMg1EncryptedHeader(view: Uint8Array): boolean {
  * Build binary contents for a `.mg` download from a JSON string (diagram spec).
  * Writes **MG v1.1** wire format.
  */
-export async function encodeMgFileContents(plaintextJson: string): Promise<Uint8Array> {
+export async function encodeMgFileContents(
+  plaintextJson: string,
+  version: MgWireVersion = '1.1'
+): Promise<Uint8Array> {
   const subtle = subtleOrThrow()
   const key = await importAesGcmKey()
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTE_LENGTH))
@@ -73,10 +93,12 @@ export async function encodeMgFileContents(plaintextJson: string): Promise<Uint8
   const ciphertext = await subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext)
   const ct = new Uint8Array(ciphertext)
   const out = new Uint8Array(HEADER_V1_1_BYTE_LENGTH + IV_BYTE_LENGTH + ct.length)
+  const major = version === '2.0' ? VERSION_MAJOR_V2 : VERSION_MAJOR_V1_1
+  const minor = version === '2.0' ? VERSION_MINOR_V2 : VERSION_MINOR_V1_1
   out[0] = 0x4d
   out[1] = 0x47
-  out[2] = VERSION_MAJOR_V1_1
-  out[3] = VERSION_MINOR_V1_1
+  out[2] = major
+  out[3] = minor
   out.set(iv, HEADER_V1_1_BYTE_LENGTH)
   out.set(ct, HEADER_V1_1_BYTE_LENGTH + IV_BYTE_LENGTH)
   return out
@@ -91,7 +113,7 @@ export async function decodeMgFileToJsonText(buffer: ArrayBuffer): Promise<strin
   const minV1_1 = HEADER_V1_1_BYTE_LENGTH + IV_BYTE_LENGTH + AES_GCM_TAG_BYTES
   const minLegacy = LEGACY_MAGIC_MG1.length + IV_BYTE_LENGTH + AES_GCM_TAG_BYTES
 
-  if (view.length >= minV1_1 && isHeaderV1_1(view)) {
+  if (view.length >= minV1_1 && (isHeaderV1_1(view) || isHeaderV2(view))) {
     const subtle = subtleOrThrow()
     const key = await importAesGcmKey()
     const iv = view.subarray(HEADER_V1_1_BYTE_LENGTH, HEADER_V1_1_BYTE_LENGTH + IV_BYTE_LENGTH)

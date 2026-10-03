@@ -130,7 +130,12 @@ export function addMindMapSummaryChild(
   return true
 }
 
-export function syncMindMapSummaryNodeText(data: DiagramData, nodeId: string, text: string): void {
+export function syncMindMapSummaryNodeText(
+  data: DiagramData,
+  nodeId: string,
+  text: string,
+  textSecondary?: string
+): void {
   const parsed = parseMindMapSummaryNodeId(nodeId)
   if (!parsed) return
   const summaries = readMindMapSummaries(data)
@@ -138,13 +143,18 @@ export function syncMindMapSummaryNodeText(data: DiagramData, nodeId: string, te
   if (index < 0) return
   const target = summaries[index]
   if (parsed.childPath.length === 0) {
-    if (target.text === text) return
+    const gloss =
+      textSecondary === undefined ? target.textSecondary : textSecondary.trim() || undefined
+    if (target.text === text && target.textSecondary === gloss) return
     const next = [...summaries]
-    next[index] = { ...target, text }
+    const updated = { ...target, text }
+    if (gloss) updated.textSecondary = gloss
+    else delete updated.textSecondary
+    next[index] = updated
     writeMindMapSummaries(data, next)
     return
   }
-  const children = updateSummaryChildText(target.children, parsed.childPath, text)
+  const children = updateSummaryChildText(target.children, parsed.childPath, text, textSecondary)
   const next = [...summaries]
   next[index] = { ...target, children }
   writeMindMapSummaries(data, next)

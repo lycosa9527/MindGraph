@@ -13,6 +13,8 @@ import {
   mindMapNodeShapeFromPreset,
 } from '@/config/mindMapDiagramStyles'
 import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
+import { stackedTextBlock } from '@/diagramBilingual/measure'
+import { stampMindMapSecondary } from '@/diagramBilingual/mindMapMirror'
 import {
   buildMindMapChildrenMapByConnectionOrder,
   mindMapNodePathKey,
@@ -30,6 +32,10 @@ import { isLeftoverMindMapBranchId, mindMapNodeSide } from '@/utils/mindMapLocat
 import { hydrateMindMapBranchTree, readMindMapNodeUid } from '@/utils/mindMapNodeUid'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
+import {
+  readLearningSheetBranchFromNode,
+  stampLearningSheetBlanksFromBranches,
+} from './mindMapLearningSheet'
 import { layoutMindMapSideLegacy } from './mindMapLegacyLayout'
 import type { MindMapBranchSpec } from './mindMapLegacyLayout'
 import {
@@ -54,10 +60,6 @@ import {
   resolveShapeFromMeasureStyle,
 } from './mindMapTypographyMeasure'
 import { layoutMindMapSideV2 } from './mindMapV2Layout'
-import {
-  readLearningSheetBranchFromNode,
-  stampLearningSheetBlanksFromBranches,
-} from './mindMapLearningSheet'
 import type { SpecLoaderResult } from './types'
 
 export type { MindMapMeasureTypography }
@@ -379,9 +381,15 @@ export function normalizeMindMapHorizontalSymmetry(
 export function nodesAndConnectionsToMindMapSpec(
   nodes: DiagramNode[],
   connections: Connection[]
-): { topic: string; leftBranches: MindMapBranch[]; rightBranches: MindMapBranch[] } {
+): {
+  topic: string
+  topicSecondary?: string
+  leftBranches: MindMapBranch[]
+  rightBranches: MindMapBranch[]
+} {
   const topicNode = nodes.find((n) => n.id === 'topic')
   const topic = topicNode?.text ?? ''
+  const topicSecondary = (topicNode?.textSecondary ?? '').trim()
 
   const childrenMap = buildMindMapChildrenMapByConnectionOrder(connections)
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
@@ -406,9 +414,18 @@ export function nodesAndConnectionsToMindMapSpec(
     const sheet = readLearningSheetBranchFromNode(node)
     return {
       text: sheet.text,
+      ...(sheet.textSecondary ? { textSecondary: sheet.textSecondary } : {}),
       uid,
       legacyId,
-      ...(sheet.hidden === true ? { hidden: true, hiddenAnswer: sheet.hiddenAnswer } : {}),
+      ...(sheet.hidden === true
+        ? {
+            hidden: true,
+            hiddenAnswer: sheet.hiddenAnswer,
+            ...(sheet.hiddenAnswerSecondary
+              ? { hiddenAnswerSecondary: sheet.hiddenAnswerSecondary }
+              : {}),
+          }
+        : {}),
       children: children.length > 0 ? children : undefined,
     }
   }
@@ -428,7 +445,12 @@ export function nodesAndConnectionsToMindMapSpec(
     .map((id) => buildBranch(id))
     .filter((b): b is MindMapBranch => b !== null)
 
-  return { topic, leftBranches, rightBranches }
+  return {
+    topic,
+    ...(topicSecondary ? { topicSecondary } : {}),
+    leftBranches,
+    rightBranches,
+  }
 }
 
 export interface FindBranchResult {
@@ -532,6 +554,10 @@ export function loadMindMapSpec(
   spec: Record<string, unknown>,
   options?: LoadMindMapSpecOptions
 ): SpecLoaderResult {
+  const stampedTopicSecondary = stampMindMapSecondary(spec)
+  const carriedTopicSecondary =
+    typeof spec.topicSecondary === 'string' ? spec.topicSecondary.trim() : ''
+  const topicSecondary = stampedTopicSecondary || carriedTopicSecondary
   const topic = (spec.topic as string) || (spec.central_topic as string) || ''
 
   let rightBranches: MindMapBranch[]
@@ -575,8 +601,19 @@ export function loadMindMapSpec(
   const centerY = DEFAULT_CENTER_Y
   const rankSeparation = DEFAULT_MINDMAP_RANK_SEPARATION
 
-  const topicWidth = estimateTopicNodeWidthForCanvasMode(topic, canvasMode, topicShape)
-  const topicEstimatedHeight = estimateTopicNodeHeightForCanvasMode(topic, canvasMode)
+  let topicWidth = estimateTopicNodeWidthForCanvasMode(topic, canvasMode, topicShape)
+  let topicEstimatedHeight = estimateTopicNodeHeightForCanvasMode(topic, canvasMode)
+  if (topicSecondary) {
+    const block = stackedTextBlock(
+      topicWidth,
+      topicEstimatedHeight,
+      Math.ceil(topicSecondary.length * 9),
+      16,
+      topicSecondary
+    )
+    topicWidth = block.width
+    topicEstimatedHeight = block.height
+  }
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
@@ -584,6 +621,7 @@ export function loadMindMapSpec(
   const topicNode: DiagramNode = {
     id: 'topic',
     text: topic,
+    ...(topicSecondary ? { textSecondary: topicSecondary } : {}),
     type: 'topic',
     position: {
       x: centerX - topicWidth / 2,

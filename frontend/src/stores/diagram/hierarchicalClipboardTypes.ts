@@ -1,19 +1,27 @@
 import type { DiagramNode, DiagramType } from '@/types'
-
 import type { MindMapBranchSpec } from '@/utils/mindMapSubgraphMerge'
 
 export type BraceMapClipboardNode = {
   text: string
+  textSecondary?: string
   children: BraceMapClipboardNode[]
 }
 
+export type TreeMapClipboardLeaf = { text: string; textSecondary?: string }
+
 export type TreeMapClipboardPayload =
-  | { kind: 'category'; text: string; leaves: { text: string }[] }
-  | { kind: 'leaf'; text: string }
+  | { kind: 'category'; text: string; textSecondary?: string; leaves: TreeMapClipboardLeaf[] }
+  | { kind: 'leaf'; text: string; textSecondary?: string }
 
 export type FlowMapClipboardPayload =
-  | { kind: 'step'; step: string; substeps: string[] }
-  | { kind: 'substep'; text: string }
+  | {
+      kind: 'step'
+      step: string
+      stepSecondary?: string
+      substeps: string[]
+      substepsSecondary?: string[]
+    }
+  | { kind: 'substep'; text: string; textSecondary?: string }
 
 export type HierarchicalClipboardPayload =
   | { kind: 'mindmap_branches'; branches: MindMapBranchSpec[] }

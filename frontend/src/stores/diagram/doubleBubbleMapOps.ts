@@ -1,7 +1,7 @@
 import {
+  type DoubleBubbleRole,
   isDoubleBubbleRoleNode,
   readDoubleBubbleIndex,
-  type DoubleBubbleRole,
 } from '@/utils/doubleBubbleMapIdentity'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
@@ -9,6 +9,24 @@ import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
 type SpecItem = string | { id?: string; text?: string }
+
+function secondaryRecord(spec: Record<string, unknown>): Record<string, unknown> | null {
+  const raw = spec.secondary
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  return raw as Record<string, unknown>
+}
+
+function appendGlossSlot(spec: Record<string, unknown>, key: string): void {
+  const secondary = secondaryRecord(spec)
+  if (!secondary || !Array.isArray(secondary[key])) return
+  secondary[key] = [...secondary[key], '']
+}
+
+function dropGlossSlots(spec: Record<string, unknown>, key: string, drop: Set<number>): void {
+  const secondary = secondaryRecord(spec)
+  if (!secondary || !Array.isArray(secondary[key]) || drop.size === 0) return
+  secondary[key] = secondary[key].filter((_, index) => !drop.has(index))
+}
 
 function asItems(raw: unknown): SpecItem[] {
   return Array.isArray(raw) ? (raw as SpecItem[]) : []
@@ -29,9 +47,12 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
 
     if (group === 'similarity') {
       spec.similarities = [...similarities, { text: defaultText }]
+      appendGlossSlot(spec, 'similarities')
     } else {
       spec.leftDifferences = [...leftDifferences, { text: defaultText }]
       spec.rightDifferences = [...rightDifferences, { text: pairText ?? defaultText }]
+      appendGlossSlot(spec, 'leftDifferences')
+      appendGlossSlot(spec, 'rightDifferences')
     }
 
     return ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
@@ -68,6 +89,9 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
     spec.rightDifferences = asItems(spec.rightDifferences).filter(
       (_, i) => !rightDiffIndices.has(i)
     )
+    dropGlossSlots(spec, 'similarities', simIndices)
+    dropGlossSlots(spec, 'leftDifferences', leftDiffIndices)
+    dropGlossSlots(spec, 'rightDifferences', rightDiffIndices)
 
     ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
     return simIndices.size + leftDiffIndices.size + rightDiffIndices.size

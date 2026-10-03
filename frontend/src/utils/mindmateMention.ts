@@ -12,17 +12,21 @@ export interface MentionQueryAtCaret {
   query: string
 }
 
+function isMentionMark(ch: string): boolean {
+  return ch === '@' || ch === '＠'
+}
+
 export function findMentionQueryAtCaret(text: string, caret: number): MentionQueryAtCaret | null {
   const pos = Math.max(0, Math.min(caret, (text || '').length))
   const source = text || ''
   let at = pos - 1
-  while (at >= 0 && source.charAt(at) !== '@') {
+  while (at >= 0 && !isMentionMark(source.charAt(at))) {
     if (/\s/.test(source.charAt(at))) {
       return null
     }
     at -= 1
   }
-  if (at < 0 || source.charAt(at) !== '@') {
+  if (at < 0 || !isMentionMark(source.charAt(at))) {
     return null
   }
   if (at > 0 && !/\s/.test(source.charAt(at - 1))) {
@@ -66,13 +70,31 @@ export function filterMentionCandidates(
   return rows.slice(0, 12)
 }
 
+const MENTION_LEAD = '(?<![A-Za-z0-9_])'
+const MENTION_AT = '[@＠]'
+
+function trailingBound(name: string): string {
+  const last = name.charAt(name.length - 1)
+  if (/[A-Za-z0-9_]/.test(last)) {
+    return '(?=$|\\s|[^A-Za-z0-9_])'
+  }
+  return '(?=$|\\s|[^\\p{L}\\p{N}_])'
+}
+
 function mentionPattern(name: string): RegExp | null {
-  const cleaned = name.trim().replace(/^@+/, '').replace(/^\*\*|\*\*$/g, '').trim()
+  const cleaned = name
+    .trim()
+    .replace(/^[@＠]+/, '')
+    .replace(/^\*\*|\*\*$/g, '')
+    .trim()
   if (!cleaned) {
     return null
   }
   const escaped = cleaned.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`@(?:\\*\\*)?${escaped}(?:\\*\\*)?(?=$|\\s|[^\\p{L}\\p{N}_])`, 'iu')
+  return new RegExp(
+    `${MENTION_LEAD}${MENTION_AT}(?:\\*\\*)?${escaped}(?:\\*\\*)?${trailingBound(cleaned)}`,
+    'iu'
+  )
 }
 
 export function contentMentionsMindmate(
@@ -91,4 +113,18 @@ export function contentMentionsMindmate(
     }
   }
   return false
+}
+
+export type CollabRecipientMode = 'mindmate' | 'all'
+
+/** MindMate segment always asks the AI. Everyone still does when the line @mentions it. */
+export function collabRoutesToMindmate(
+  recipientMode: CollabRecipientMode,
+  content: string,
+  agentAliases: readonly string[] = []
+): boolean {
+  if (recipientMode === 'mindmate') {
+    return true
+  }
+  return contentMentionsMindmate(content, agentAliases)
 }

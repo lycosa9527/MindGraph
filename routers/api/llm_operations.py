@@ -69,6 +69,7 @@ async def _cached_multi_model_workflow(
         diagram_type=SimpleNamespace(value=diagram_type) if diagram_type else None,
         dimension_preference=getattr(req, "dimension_preference", None),
         fixed_dimension=None,
+        secondary_language=getattr(req, "secondary_language", None),
     )
     prepared = {
         "req": req_ns,
@@ -91,6 +92,7 @@ async def _cached_multi_model_workflow(
             user_id=user_id,
             organization_id=organization_id,
             endpoint_path=endpoint_path,
+            secondary_language=getattr(req, "secondary_language", None),
         )
 
     return await load_or_generate_cached_result(prepared, _generate)

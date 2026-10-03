@@ -129,6 +129,7 @@ def fingerprint_generation_request(
     existing_analogies: list[Any] | None = None,
     reference_branches: list[Any] | None = None,
     existing_branch_children: list[Any] | None = None,
+    secondary_language: str | None = None,
 ) -> str:
     """SHA-256 of the canonical complete-match fields (schema ``v2``)."""
     analogies = existing_analogies if isinstance(existing_analogies, list) else []
@@ -159,6 +160,8 @@ def fingerprint_generation_request(
             normalize_search_text(item) for item in (existing_branch_children or []) if _has_text(item)
         ],
     }
+    if _has_text(secondary_language):
+        payload["secondary_language"] = normalize_search_text(secondary_language)
     encoded = orjson.dumps(payload, option=orjson.OPT_SORT_KEYS)
     return hashlib.sha256(encoded).hexdigest()
 
@@ -214,6 +217,7 @@ def resolve_generation_cache_lookup(prepared: dict[str, Any]) -> Optional[tuple[
         existing_analogies=getattr(req, "existing_analogies", None),
         reference_branches=getattr(req, "reference_branches", None),
         existing_branch_children=getattr(req, "existing_branch_children", None),
+        secondary_language=getattr(req, "secondary_language", None),
     )
     return org_id, fingerprint
 

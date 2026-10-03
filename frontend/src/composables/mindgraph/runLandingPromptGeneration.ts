@@ -9,6 +9,8 @@ import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
 import type { useNotifications } from '@/composables/core/useNotifications'
 import type { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
 import { LANDING_LLM_MODEL, LANDING_PROMPT_MAX_LENGTH } from '@/config/landingQuickAccess'
+import { diagramSecondaryLanguage } from '@/diagramBilingual/generationRequest'
+import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore, useLLMResultsStore } from '@/stores'
 import type { DiagramType } from '@/types'
 
@@ -57,11 +59,16 @@ export async function executeLandingPrompt(options: {
   const run = options.generation.beginGeneration()
   options.onStart?.()
   try {
+    const secondaryLanguage = diagramSecondaryLanguage()
+    if (secondaryLanguage) {
+      await ensureFontsForLanguageCode(secondaryLanguage)
+    }
     const outcome = await options.generation.generateLandingGraph(
       {
         prompt: text,
         language: options.language,
         llm: LANDING_LLM_MODEL,
+        ...(secondaryLanguage ? { secondary_language: secondaryLanguage } : {}),
       },
       run.signal
     )

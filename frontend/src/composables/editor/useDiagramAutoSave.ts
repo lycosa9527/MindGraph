@@ -45,6 +45,7 @@ type DiagramDataLike = { nodes?: unknown[]; connections?: unknown[] } | null
 interface NodeLike {
   id?: string
   text?: string
+  textSecondary?: string
   data?: {
     label?: string
     hidden?: boolean
@@ -101,14 +102,15 @@ function getContentFingerprint(data: DiagramDataLike): string {
   const conns = data.connections || []
   const nodeContent = (n: unknown) => {
     const node = n as NodeLike
-    return JSON.stringify({
+    const fingerprint: Record<string, unknown> = {
       id: node.id,
       text: node.text ?? node.data?.label ?? '',
       hidden: node.data?.hidden === true,
       hiddenAnswer: node.data?.hiddenAnswer ?? '',
-      // First layout assigns mindMapUid without text changes — must autosave.
       mindMapUid: node.data?.mindMapUid ?? '',
-    })
+    }
+    if (node.textSecondary) fingerprint.textSecondary = node.textSecondary
+    return JSON.stringify(fingerprint)
   }
   const connContent = (c: unknown) => {
     const conn = c as ConnectionLike
@@ -128,6 +130,9 @@ function getContentFingerprint(data: DiagramDataLike): string {
     learningSheet: learningSheetFingerprint(data),
     // Theme / collapse / style-only mindmap edits must debounce-save to library.
     mindMapExtras: mindMapLiveSpecExtrasFingerprint(data as Record<string, unknown>),
+    ...((data as { languages?: unknown }).languages
+      ? { languages: (data as { languages?: unknown }).languages }
+      : {}),
   })
 }
 
@@ -140,14 +145,16 @@ function getFullFingerprint(data: DiagramDataLike): string {
     const posKey = node.position
       ? `${Math.round(node.position.x ?? 0)},${Math.round(node.position.y ?? 0)}`
       : ''
-    return JSON.stringify({
+    const full: Record<string, unknown> = {
       id: node.id,
       text: node.text ?? node.data?.label ?? '',
       hidden: node.data?.hidden === true,
       hiddenAnswer: node.data?.hiddenAnswer ?? '',
       pos: posKey,
       style: node.style ?? null,
-    })
+    }
+    if (node.textSecondary) full.textSecondary = node.textSecondary
+    return JSON.stringify(full)
   }
   const connFull = (c: unknown) => {
     const conn = c as ConnectionLike
@@ -165,6 +172,9 @@ function getFullFingerprint(data: DiagramDataLike): string {
     nodes: nodeFingerprints,
     conns: connFingerprints,
     learningSheet: learningSheetFingerprint(data),
+    ...((data as { languages?: unknown }).languages
+      ? { languages: (data as { languages?: unknown }).languages }
+      : {}),
   })
 }
 

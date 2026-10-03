@@ -17,7 +17,11 @@ import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { findBridgePairSide } from '@/utils/bridgeMapIdentity'
 import { THINKING_MAP_LEAF_TEXT } from '@/utils/thinkingMapChrome'
-import { resolveThinkingMapConnectorStroke } from '@/utils/thinkingMapConnectionStroke'
+import {
+  resolveThinkingMapConnectorStroke,
+  thinkingMapAdaptiveTextColor,
+  thinkingMapStructureColor,
+} from '@/utils/thinkingMapConnectionStroke'
 
 // Diagram store for diagram type and spec metadata
 const diagramStore = useDiagramSession()
@@ -50,29 +54,32 @@ interface NodeWithDimensions {
   dimensions?: { width?: number; height?: number }
 }
 
-// Bridge styling. Default grey; a solid color theme repaints the bridge and triangles.
-const BRIDGE_DEFAULT_LINE = MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+// Bridge lines follow the connector accent. The rule and labels use the topic stroke.
 const BRIDGE_LINE_WIDTH = 2
-const bridgeStructureColor = computed(() =>
+const bridgeLineColor = computed(() =>
   resolveThinkingMapConnectorStroke(
     diagramStore.data?._mindmap_theme,
-    BRIDGE_DEFAULT_LINE,
-    BRIDGE_DEFAULT_LINE
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor,
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
   )
+)
+const structureColor = computed(() => thinkingMapStructureColor(diagramStore.data?._mindmap_theme))
+const structureTextColor = computed(() =>
+  thinkingMapAdaptiveTextColor(diagramStore.data?._mindmap_theme, structureColor.value)
+)
+const asLabelColor = computed(() =>
+  thinkingMapAdaptiveTextColor(diagramStore.data?._mindmap_theme, THINKING_MAP_LEAF_TEXT)
 )
 const TRIANGLE_HEIGHT = 8 // Height of triangle separator (vertical distance from base to tip)
 const TRIANGLE_BASE_WIDTH = 12 // Width of triangle base (bottom edge)
-const AS_LABEL_COLOR = THINKING_MAP_LEAF_TEXT
 const AS_LABEL_FONT_SIZE = 14
 const AS_LABEL_OFFSET_Y = 15 // Distance below triangle
-const SEPARATOR_COLOR = MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
 const SEPARATOR_OPACITY = 0.4
 const SEPARATOR_OFFSET_Y = 15 // Distance below lowest node
 const SEPARATOR_DASHARRAY = '4,4' // Dashed line pattern
 const ALTERNATIVE_DIMENSIONS_OFFSET_Y = 15 // Distance below separator line
 const ALTERNATIVE_LABEL_FONT_SIZE = 14
 const ALTERNATIVE_CHIP_FONT_SIZE = 12
-const ALTERNATIVE_CHIP_COLOR = MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
 const ALTERNATIVE_CHIP_OPACITY = 0.8
 const DELETE_BUTTON_SIZE = 24 // Size of delete button
 const DELETE_BUTTON_OFFSET_X = 6 // Horizontal offset from right edge
@@ -508,7 +515,7 @@ onUnmounted(() => {
         :y1="horizontalBridgeLine.y1"
         :x2="horizontalBridgeLine.x2"
         :y2="horizontalBridgeLine.y2"
-        :stroke="bridgeStructureColor"
+        :stroke="bridgeLineColor"
         :stroke-width="BRIDGE_LINE_WIDTH"
         :stroke-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
         stroke-linecap="round"
@@ -519,8 +526,8 @@ onUnmounted(() => {
         v-for="triangle in triangleSeparators"
         :key="`triangle-${triangle.pairIndex}`"
         :points="`${triangle.x - TRIANGLE_BASE_WIDTH / 2},${triangle.y} ${triangle.x + TRIANGLE_BASE_WIDTH / 2},${triangle.y} ${triangle.x},${triangle.y - TRIANGLE_HEIGHT}`"
-        :fill="bridgeStructureColor"
-        :stroke="bridgeStructureColor"
+        :fill="bridgeLineColor"
+        :stroke="bridgeLineColor"
         stroke-width="1"
         :fill-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
         :stroke-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
@@ -532,7 +539,7 @@ onUnmounted(() => {
         :key="`as-label-${triangle.pairIndex}`"
         :x="triangle.x"
         :y="triangle.asLabelY"
-        :fill="AS_LABEL_COLOR"
+        :fill="asLabelColor"
         :font-size="AS_LABEL_FONT_SIZE"
         text-anchor="middle"
         dominant-baseline="middle"
@@ -548,7 +555,7 @@ onUnmounted(() => {
         :y1="separatorLine.y1"
         :x2="separatorLine.x2"
         :y2="separatorLine.y2"
-        :stroke="SEPARATOR_COLOR"
+        :stroke="structureColor"
         :stroke-width="BRIDGE_LINE_WIDTH"
         :stroke-dasharray="SEPARATOR_DASHARRAY"
         :opacity="SEPARATOR_OPACITY"
@@ -561,7 +568,7 @@ onUnmounted(() => {
         <text
           :x="alternativeDimensionsPosition.centerX"
           :y="alternativeDimensionsPosition.labelY"
-          :fill="ALTERNATIVE_CHIP_COLOR"
+          :fill="structureTextColor"
           :font-size="ALTERNATIVE_LABEL_FONT_SIZE"
           :opacity="ALTERNATIVE_CHIP_OPACITY"
           text-anchor="middle"
@@ -576,7 +583,7 @@ onUnmounted(() => {
           v-if="alternativeDimensionsChipsText"
           :x="alternativeDimensionsPosition.centerX"
           :y="alternativeDimensionsPosition.chipsY"
-          :fill="ALTERNATIVE_CHIP_COLOR"
+          :fill="structureTextColor"
           :font-size="ALTERNATIVE_CHIP_FONT_SIZE"
           font-weight="600"
           :opacity="0.8"
@@ -589,7 +596,7 @@ onUnmounted(() => {
           v-else
           :x="alternativeDimensionsPosition.centerX"
           :y="alternativeDimensionsPosition.chipsY"
-          :fill="ALTERNATIVE_CHIP_COLOR"
+          :fill="structureTextColor"
           :font-size="ALTERNATIVE_CHIP_FONT_SIZE"
           :opacity="0.4"
           font-style="italic"

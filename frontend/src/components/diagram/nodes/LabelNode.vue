@@ -14,10 +14,13 @@ import { translateDimension, useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
-import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { useUIStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import {
+  thinkingMapAdaptiveTextColor,
+  thinkingMapStructureColor,
+} from '@/utils/thinkingMapConnectionStroke'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -222,7 +225,10 @@ const nodeStyle = computed((): CSSProperties => {
   const isBridgeDimension = props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel
 
   return {
-    color: MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor,
+    color: thinkingMapAdaptiveTextColor(
+      diagramStore.data?._mindmap_theme,
+      thinkingMapStructureColor(diagramStore.data?._mindmap_theme)
+    ),
     opacity: isPlaceholder.value ? 0.4 : isBridgeDimension ? 1 : 0.8,
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || (isBridgeDimension ? 14 : 14)}px`,
@@ -306,11 +312,12 @@ const displayText = computed(() => {
 // Inline editing state
 const isEditing = ref(false)
 
-function handleTextSave(newText: string) {
+function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
+    ...(textSecondary !== undefined ? { textSecondary } : {}),
   })
   // Recalculate position after text update to prevent overlap
   if (isBridgeDimension.value) {

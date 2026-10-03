@@ -53,7 +53,13 @@ const TREE_MAP_LEAF_BORDER = 0
 interface TreeNode {
   id?: string
   text: string
+  textSecondary?: string
   children?: TreeNode[]
+}
+
+function glossFields(raw: unknown): { textSecondary?: string } {
+  const line = typeof raw === 'string' ? raw.trim() : ''
+  return line ? { textSecondary: line } : {}
 }
 
 /**
@@ -92,6 +98,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     nodes.push({
       id: rootId,
       text: root.text,
+      ...glossFields(root.textSecondary),
       type: 'topic',
       position: topicPos,
       style: { width: topicDims.width, height: topicDims.height },
@@ -161,6 +168,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       nodes.push({
         id: categoryId,
         text: category.text,
+        ...glossFields(category.textSecondary),
         type: 'branch',
         position: { x: categoryX, y: categoryY },
         style: { width: dims.categoryWidth },
@@ -188,6 +196,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         nodes.push({
           id: leafId,
           text: leaf.text,
+          ...glossFields(leaf.textSecondary),
           type: 'branch',
           position: { x: leafX, y: leafY },
           style: { width: leafWidth },
@@ -220,6 +229,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       nodes.push({
         id: 'dimension-label',
         text: dimension || '',
+        ...glossFields(spec.dimensionSecondary),
         type: 'label',
         position: {
           x: topicCenterX - labelWidth / 2,
@@ -281,7 +291,7 @@ export function recalculateTreeMapLayout(
   const topicText = topicNode.text ?? ''
 
   const topicDims = resolveTreeMapBox(TREE_TOPIC_NODE_ID, nodeDimensions, () =>
-    measureTreeMapTopicDimensions(topicText, topicNode.style)
+    measureTreeMapTopicDimensions(topicText, topicNode.style, topicNode.textSecondary)
   )
 
   const topicY = topicNode.position?.y ?? DEFAULT_PADDING
@@ -310,6 +320,7 @@ export function recalculateTreeMapLayout(
         paddingY: TREE_MAP_NODE_PADDING_Y,
         fontWeight: fw,
         fontFamily: catNode?.style?.fontFamily,
+        secondary: catNode?.textSecondary,
       })
       const categoryBorder =
         catNode?.style?.nodeShape === 'underline' ? 0 : TREE_MAP_CATEGORY_BORDER
@@ -349,6 +360,7 @@ export function recalculateTreeMapLayout(
           paddingY: TREE_MAP_NODE_PADDING_Y,
           fontWeight: fw,
           fontFamily: leaf.style?.fontFamily,
+          secondary: leaf.textSecondary,
         })
         const leafBorder = leaf.style?.nodeShape === 'underline' ? 0 : TREE_MAP_LEAF_BORDER
         const leafW = Math.max(leafDims.width + 2 * leafBorder, NODE_MIN_DIMENSIONS.branch.minWidth)

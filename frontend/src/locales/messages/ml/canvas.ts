@@ -1120,7 +1120,7 @@ export default {
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'പൂർണ്ണ ചിത്രത്തിലേക്ക് പുനഃസ്ഥാപിക്കുക',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
+    'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'ക്ലാസ്റൂം പരിശീലനത്തിനും അവലോകനത്തിനും അനുയോജ്യമായ പൊള്ളയായ സ്കാർഫോൾഡിംഗ് ഡയഗ്രം സൃഷ്ടിക്കുന്നതിനുള്ള ഒരു രീതി തിരഞ്ഞെടുക്കുക.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':

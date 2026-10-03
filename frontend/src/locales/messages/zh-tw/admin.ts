@@ -93,7 +93,7 @@ export default {
   'admin.feature.workshopChat': '研習社',
   'admin.feature.workshopChatHint': '校級頻道、話題與私信。',
   'admin.feature.mindmateCollab': 'MindMate 在線協同',
-  'admin.feature.mindmateCollabHint': '共享 MindMate AI 聊天室（校內瀏覽 + 邀請碼）。需 online_collab 套餐。',
+  'admin.feature.mindmateCollabHint': '共享 MindMate AI 聊天室（校內瀏覽 + 邀請碼）。各學校版本均可使用。',
   'admin.feature.training': '校本培訓跟隨',
   'admin.feature.trainingHint': '到校講師可將該校教師拉到同一圖示頁。',
   'admin.feature.vod': '線上視頻庫',
@@ -981,7 +981,7 @@ export default {
   'admin.schoolManagerNotAvailableTrial': '體驗版學校不可設置學校管理員。',
   'admin.noSchoolManagersShort': '不可設置',
   'admin.schoolVersionLiteFeaturesHint':
-    '体验版与基础教研版不含：在线协同、演示工具、Chrome 扩展、API 令牌与 OpenClaw 集成。',
+    '各學校版本均包含：在線協同、演示工具、Chrome 擴展、API 令牌與 OpenClaw 集成。版本之間只區別成員名額與導圖儲存。',
   'admin.schoolVersionTierTrial': '體驗版',
   'admin.schoolVersionTierLite': '基礎教研版',
   'admin.schoolVersionTierStandard': '標準教研版',

@@ -7,14 +7,11 @@ import {
   MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { stackedTextBlock } from '@/diagramBilingual/measure'
 import type { Connection, DiagramNode } from '@/types'
-
 import { MINDMAP_LEGACY_ID_DATA_KEY } from '@/utils/mindMapIdentityMigrate'
 import { mindMapBranchDataFields } from '@/utils/mindMapLocation'
-import {
-  ensureMindMapBranchUid,
-  MINDMAP_NODE_UID_DATA_KEY,
-} from '@/utils/mindMapNodeUid'
+import { MINDMAP_NODE_UID_DATA_KEY, ensureMindMapBranchUid } from '@/utils/mindMapNodeUid'
 
 import {
   estimateNodeWidthForCanvasMode,
@@ -23,6 +20,7 @@ import {
 
 export interface MindMapBranchSpec {
   text: string
+  textSecondary?: string
   children?: MindMapBranchSpec[]
   /** Children-only wire id (UUID or leftover invented). Hydrated into uid/legacyId. */
   id?: string
@@ -33,6 +31,7 @@ export interface MindMapBranchSpec {
   /** Learning-sheet: node is blanked; `text` is the answer used for layout. */
   hidden?: boolean
   hiddenAnswer?: string
+  hiddenAnswerSecondary?: string
 }
 
 function getBranchText(branch: { text?: string; label?: string }): string {
@@ -56,6 +55,7 @@ export function layoutMindMapSideLegacy(
   interface LayoutNode {
     id: string
     text: string
+    textSecondary?: string
     uid: string
     legacyId?: string
     depth: number
@@ -69,11 +69,32 @@ export function layoutMindMapSideLegacy(
     const text = getBranchText(b)
     const uid = ensureMindMapBranchUid(b)
     const id = uid
-    const estimatedWidth = estimateNodeWidthForCanvasMode(text, id, 'legacy')
-    const estimatedHeight = measureBranchNodeHeightForCanvasMode(text, id, 'legacy')
+    const primaryWidth = estimateNodeWidthForCanvasMode(text, id, 'legacy')
+    const primaryHeight = measureBranchNodeHeightForCanvasMode(text, id, 'legacy')
+    const block = stackedTextBlock(
+      primaryWidth,
+      primaryHeight,
+      b.textSecondary ? Math.ceil(b.textSecondary.length * 8) : 0,
+      14,
+      b.textSecondary
+    )
+    const estimatedWidth = block.width
+    const estimatedHeight = block.height
     const children = (b.children ?? []).map((c) => buildTree(c, depth + 1, branchIndex))
-    const legacyId = typeof b.legacyId === 'string' && b.legacyId.trim() ? b.legacyId.trim() : undefined
-    return { id, text, uid, legacyId, depth, estimatedWidth, estimatedHeight, children, branchIndex }
+    const legacyId =
+      typeof b.legacyId === 'string' && b.legacyId.trim() ? b.legacyId.trim() : undefined
+    return {
+      id,
+      text,
+      textSecondary: b.textSecondary,
+      uid,
+      legacyId,
+      depth,
+      estimatedWidth,
+      estimatedHeight,
+      children,
+      branchIndex,
+    }
   }
 
   const topLevel = branches.map((b, i) => {
@@ -195,6 +216,7 @@ export function layoutMindMapSideLegacy(
     nodes.push({
       id: node.id,
       text: node.text,
+      ...(node.textSecondary ? { textSecondary: node.textSecondary } : {}),
       type: 'branch',
       position: { x, y },
       data: {

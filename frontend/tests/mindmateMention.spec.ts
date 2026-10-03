@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  collabRoutesToMindmate,
   contentMentionsMindmate,
   filterMentionCandidates,
   findMentionQueryAtCaret,
@@ -37,5 +38,21 @@ describe('mindmateMention', () => {
     expect(contentMentionsMindmate('@迈特教研 帮我写教案', ['迈特教研'])).toBe(true)
     expect(contentMentionsMindmate('只给老师看')).toBe(false)
     expect(contentMentionsMindmate('@mindmatexyz')).toBe(false)
+    expect(contentMentionsMindmate('@mindmate1')).toBe(false)
+    expect(contentMentionsMindmate('@mindmate帮我写教案')).toBe(true)
+    expect(contentMentionsMindmate('请@MindMate看一下')).toBe(true)
+    expect(contentMentionsMindmate('＠mindmate 你好')).toBe(true)
+    expect(contentMentionsMindmate('联系 user@mindmate.com')).toBe(false)
+    expect(contentMentionsMindmate('@小思你好', ['小思'])).toBe(false)
+    expect(contentMentionsMindmate('@小思，你好', ['小思'])).toBe(true)
+  })
+
+  it('routes the MindMate segment to the AI and still honors @mindmate for everyone', () => {
+    expect(collabRoutesToMindmate('mindmate', '只给老师看')).toBe(true)
+    expect(collabRoutesToMindmate('mindmate', '联系 user@mindmate.com')).toBe(true)
+    expect(collabRoutesToMindmate('all', '只给老师看')).toBe(false)
+    expect(collabRoutesToMindmate('all', '联系 user@mindmate.com')).toBe(false)
+    expect(collabRoutesToMindmate('all', '@mindmate帮我写教案')).toBe(true)
+    expect(collabRoutesToMindmate('all', '@迈特教研 帮我', ['迈特教研'])).toBe(true)
   })
 })

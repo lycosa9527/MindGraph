@@ -89,7 +89,7 @@ export default {
   'admin.feature.workshopChat': 'Workshop (研习社)',
   'admin.feature.workshopChatHint': 'School channels, topics, and direct messages.',
   'admin.feature.mindmateCollab': 'MindMate collab',
-  'admin.feature.mindmateCollabHint': 'Shared MindMate AI chatroom (org browse + invite code). Requires online_collab tier.',
+  'admin.feature.mindmateCollabHint': 'Shared MindMate AI chatroom (org browse + invite code). Available on every school version.',
   'admin.feature.training': 'Org training follow',
   'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.feature.vod': 'Online video library',

@@ -48,6 +48,10 @@ class GenerateRequest(BaseModel):
         "zh",
         description="Language code for diagram generation (see prompt output registry)",
     )
+    secondary_language: Optional[str] = Field(
+        None,
+        description="Second diagram language. Omitted keeps the single-language path.",
+    )
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
     models: Optional[List[str]] = Field(
         None,
@@ -162,6 +166,17 @@ class GenerateRequest(BaseModel):
     def validate_generate_language(cls, value: str) -> str:
         """Reject unknown generation language codes."""
         return _validate_prompt_output_language(value)
+
+    @field_validator("secondary_language")
+    @classmethod
+    def validate_secondary_language(cls, value: Optional[str]) -> Optional[str]:
+        """Empty means single-language generation. A code must be in the registry."""
+        if value is None:
+            return None
+        cleaned = value.strip()
+        if not cleaned:
+            return None
+        return _validate_prompt_output_language(cleaned)
 
     @field_validator("reference_branches", "existing_branch_children")
     @classmethod

@@ -86,22 +86,23 @@ def normalize_school_tier(value: object | None) -> str:
 
 
 def school_tier_allows_feature(tier: str, feature: str) -> bool:
-    """Trial and lite tiers block collab, presentation tools, Chrome extension, and API tokens."""
+    """Every school tier includes collab, presentation tools, the Chrome extension, and API tokens.
+
+    Tiers differ by member cap and diagram storage, not by these product features.
+    """
     if feature not in _STANDARD_PLUS_FEATURES:
         return True
-    normalized = normalize_school_tier(tier)
-    return normalized not in (SCHOOL_TIER_TRIAL, SCHOOL_TIER_LITE)
+    return normalize_school_tier(tier) in SCHOOL_TIER_LIMITS
 
 
 def school_tier_features_payload(tier: str) -> dict[str, bool]:
-    """Feature flags derived from a school's tier slug."""
-    normalized = normalize_school_tier(tier)
-    allows_premium = normalized not in (SCHOOL_TIER_TRIAL, SCHOOL_TIER_LITE)
+    """Feature flags for a school. Every tier enables the same product features."""
+    enabled = normalize_school_tier(tier) in SCHOOL_TIER_LIMITS
     return {
-        TIER_FEATURE_ONLINE_COLLAB: allows_premium,
-        TIER_FEATURE_CHROME_EXTENSION: allows_premium,
-        TIER_FEATURE_PRESENTATION_TOOLS: allows_premium,
-        TIER_FEATURE_API_TOKEN: allows_premium,
+        TIER_FEATURE_ONLINE_COLLAB: enabled,
+        TIER_FEATURE_CHROME_EXTENSION: enabled,
+        TIER_FEATURE_PRESENTATION_TOOLS: enabled,
+        TIER_FEATURE_API_TOKEN: enabled,
     }
 
 
