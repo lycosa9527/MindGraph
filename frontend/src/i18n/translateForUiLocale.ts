@@ -10,6 +10,20 @@ type GlobalTForLocale = (
 const globalTForLocale = i18n.global.t as GlobalTForLocale
 
 /**
+ * vue-i18n JIT compile throws SyntaxError on a literal `@` (linked-message
+ * syntax). Production reports that as ``SyntaxError: 10`` (INVALID_LINKED_FORMAT).
+ * Return the key so I18nText still has a string instead of crashing the render.
+ */
+function translateOrKey(key: string, locale: LocaleCode, params: Record<string, unknown>): string {
+  try {
+    return String(globalTForLocale(key, params, { locale }))
+  } catch (err) {
+    if (err instanceof SyntaxError) return key
+    throw err
+  }
+}
+
+/**
  * Translate for a specific UI locale without spamming missing-key warnings for
  * lazy-loaded bundles: if that locale is not registered yet (or lacks the key),
  * resolve via English only. Module-level helpers that iterate all locale codes
@@ -24,13 +38,13 @@ export function translateForUiLocale(
   // Track lazy catalog registration so bilingual labels refresh after the chunk loads.
   void localeCatalogRevision.value
   if (!isLocaleLoaded(locale)) {
-    return String(globalTForLocale(key, safeParams, { locale: 'en' }))
+    return translateOrKey(key, 'en', safeParams)
   }
   const bundle = i18n.global.getLocaleMessage(locale) as Record<string, unknown>
   if (bundle && Object.prototype.hasOwnProperty.call(bundle, key)) {
-    return String(globalTForLocale(key, safeParams, { locale }))
+    return translateOrKey(key, locale, safeParams)
   }
-  return String(globalTForLocale(key, safeParams, { locale: 'en' }))
+  return translateOrKey(key, 'en', safeParams)
 }
 
 /** True when the key exists in the locale catalog, or in English while that locale is still loading. */

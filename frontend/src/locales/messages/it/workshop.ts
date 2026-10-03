@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Anteprima',
   'workshop.previewEmpty': 'Nessun contenuto da visualizzare in anteprima',
   'workshop.personalMenu': 'Menu personale',
-  'workshop.phase2RoadmapGroupsAlerts': 'In arrivo: menzioni @gruppo, parole di allerta e policy cronologia modifiche messaggi.',
+  'workshop.phase2RoadmapGroupsAlerts': 'In arrivo: menzioni {\'@\'}gruppo, parole di allerta e policy cronologia modifiche messaggi.',
   'workshop.phase2RoadmapMovePreview': 'In arrivo: spostamento singolo messaggio, anteprime link URL e attività cross-canale più ricca.',
   'workshop.phase2RoadmapPlatform': 'Backlog piattaforma: sync incrementale, push mobile, digest email, bot/webhook.',
   'workshop.pickColleagueToInvite': 'Scegli un collega da invitare.',

@@ -5,15 +5,14 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { assignmentAllowsResubmit } from '@/composables/learningSpace/lsHelpers'
+import { useAuthStore } from '@/stores/auth'
 import {
   type LearningAiPermissions,
   type LearningAssignment,
-  type LearningSubmission,
   bindStudentDraftDiagram,
   fetchAssignmentAiPermissions,
 } from '@/utils/learningSpaceApi'
-import { assignmentAllowsResubmit } from '@/composables/learningSpace/lsHelpers'
-import { useAuthStore } from '@/stores/auth'
 
 export const MG_LEARNING_ASSIGNMENT_STORAGE_KEY = 'mg_learning_assignment_id'
 
@@ -54,10 +53,11 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
   const isHomeworkLocked = computed(
     () => isSubmitted.value && !assignmentAllowsResubmit(assignment.value)
   )
-  const shellEpoch = ref(0)
+  /** Where Back returns after homework. Mobile Learning Space stays on /m. */
+  const returnPath = ref('/learning-space')
 
-  function bumpShell(): void {
-    shellEpoch.value += 1
+  function setReturnPath(path: string): void {
+    returnPath.value = path.startsWith('/m/') ? '/m/learning-space' : '/learning-space'
   }
 
   const aiAssistOn = computed(() => Boolean(permissions.value?.ai_assist))
@@ -107,13 +107,11 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
     permissions.value = null
     loadError.value = null
     draftHydrated.value = false
+    returnPath.value = '/learning-space'
     writeAssignmentId(null)
   }
 
-  async function bindDraftDiagram(
-    diagramId: string,
-    opts?: { force?: boolean }
-  ): Promise<void> {
+  async function bindDraftDiagram(diagramId: string, opts?: { force?: boolean }): Promise<void> {
     const id = assignmentId.value
     if (id == null || !diagramId) return
     if (!opts?.force && !draftHydrated.value) return
@@ -146,8 +144,8 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
     isActive,
     isSubmitted,
     isHomeworkLocked,
-    shellEpoch,
-    bumpShell,
+    returnPath,
+    setReturnPath,
     aiAssistOn,
     can,
     activate,

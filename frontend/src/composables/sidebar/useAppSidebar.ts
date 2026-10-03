@@ -34,15 +34,15 @@ import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
 import { isPaidSchoolTier } from '@/constants/schoolTier'
 import { useAskOnceStore } from '@/stores/askonce'
 import { useAuthStore } from '@/stores/auth'
-import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
+import { useLearningSpaceStore } from '@/stores/learningSpace'
 import { useMindMateStore } from '@/stores/mindmate'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
 import { useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 import { getShowcasePendingCount } from '@/utils/apiClient'
-import { focusPersonalMindmateThread } from '@/utils/mindmateCollabLibrarySave'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
+import { focusPersonalMindmateThread } from '@/utils/mindmateCollabLibrarySave'
 import { shouldExpandWorkshopOnNavClick } from '@/utils/sidebarWorkshopPanel'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
@@ -114,10 +114,7 @@ export function useAppSidebar() {
       return 'mindgraph'
     }
     if (path.startsWith('/knowledge-space')) return 'knowledge-space'
-    if (
-      path.startsWith('/learning-space') ||
-      path.startsWith('/m/learning-space')
-    ) {
+    if (path.startsWith('/learning-space') || path.startsWith('/m/learning-space')) {
       return 'learning-space'
     }
     if (path.startsWith('/chunk-test')) return 'chunk-test'
@@ -535,7 +532,7 @@ export function useAppSidebar() {
         path === '/m/learning-space' ||
         path.startsWith('/m/learning-space/')
       if (alreadyOn) {
-        useLearningAssignmentCanvasStore().bumpShell()
+        eventBus.emit('learningSpace:refresh', {})
         return
       }
       void router.push({ name: targetName }).catch((err: unknown) => {
@@ -803,19 +800,9 @@ export function useAppSidebar() {
     () => featureTraining.value && authStore.isPlatformLevel && isAuthenticated.value
   )
 
-  const learningSpaceContextRole = ref<
-    | 'student'
-    | 'pilot_teacher'
-    | 'assistant'
-    | 'learner'
-    | 'superadmin'
-    | 'platform_bd'
-    | 'expert'
-    | 'school_admin'
-    | 'none'
-    | null
-  >(null)
-  const learningSpaceCanViewAll = ref(false)
+  const learningSpaceStore = useLearningSpaceStore()
+  const learningSpaceContextRole = computed(() => learningSpaceStore.navRole)
+  const learningSpaceCanViewAll = computed(() => learningSpaceStore.navCanViewAll)
 
   const studentLearningClassId = computed(() => {
     const user = authStore.user
@@ -864,29 +851,9 @@ export function useAppSidebar() {
   )
 
   async function refreshLearningSpaceNav(): Promise<void> {
-    if (!featureStudentLearningSpace.value || !isAuthenticated.value) {
-      learningSpaceContextRole.value = null
-      learningSpaceCanViewAll.value = false
-      return
-    }
-    if (authStore.user?.role === 'student') {
-      learningSpaceCanViewAll.value = false
-      if (!studentLearningClassId.value) {
-        learningSpaceContextRole.value = null
-        return
-      }
-      learningSpaceContextRole.value = 'student'
-      return
-    }
-    try {
-      const { fetchLearningSpaceContext } = await import('@/utils/learningSpaceApi')
-      const ctx = await fetchLearningSpaceContext()
-      learningSpaceContextRole.value = ctx.role
-      learningSpaceCanViewAll.value = ctx.can_view_all === true || ctx.role === 'superadmin'
-    } catch {
-      learningSpaceContextRole.value = null
-      learningSpaceCanViewAll.value = false
-    }
+    await learningSpaceStore.ensureContext(
+      featureStudentLearningSpace.value && isAuthenticated.value
+    )
   }
 
   watch(

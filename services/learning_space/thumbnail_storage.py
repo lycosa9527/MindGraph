@@ -59,6 +59,20 @@ def _stable_thumbnail(value: object) -> bool:
     return item.startswith("http://") or item.startswith("https://")
 
 
+def thumbnail_is_durable(value: object) -> bool:
+    """True when the card already points at COS or an http(s) image."""
+    return _stable_thumbnail(value)
+
+
+def submit_thumbnail_source(diagram_thumb: object, previous_thumb: object) -> object:
+    """Prefer a fresh diagram image. Keep a stored COS ref when the diagram has none."""
+    if isinstance(diagram_thumb, str) and diagram_thumb.strip():
+        return diagram_thumb
+    if isinstance(previous_thumb, str) and is_image_ref(previous_thumb.strip()):
+        return previous_thumb.strip()
+    return diagram_thumb
+
+
 def _promote_reference_thumbnail(
     current: object,
     library_thumb: str | None,

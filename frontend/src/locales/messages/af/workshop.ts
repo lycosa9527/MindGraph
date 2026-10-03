@@ -219,7 +219,7 @@ export default {
   'workshop.others': 'ANDERS',
   'workshop.permissions': 'Toestemmings',
   'workshop.personalMenu': 'Persoonlike spyskaart',
-  'workshop.phase2RoadmapGroupsAlerts': 'Kom gou: @groepverwysings, waarskuwingswoorde en beleid vir boodskapredigeringgeskiedenis.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Kom gou: {\'@\'}groepverwysings, waarskuwingswoorde en beleid vir boodskapredigeringgeskiedenis.',
   'workshop.phase2RoadmapMovePreview': 'Kom gou: beweeg enkele boodskappe, URL-skakelvoorbeelde en ryker kruiskanaalaktiwiteit.',
   'workshop.phase2RoadmapPlatform': 'Platform-agenda: inkrementele sinkronisasie, mobiele drukmeldings, e-posopsommings, bots/webhake.',
   'workshop.pickColleagueToInvite': 'Kies \'n kollega om uit te nooi.',

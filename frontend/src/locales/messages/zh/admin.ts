@@ -1740,6 +1740,12 @@ export default {
   'admin.learningSpace.maxStudents': '人数上限',
   'admin.learningSpace.copyPasswords': '复制密码',
   'admin.learningSpace.passwordsCopied': '已复制到剪贴板',
+  'admin.learningSpace.scanThumbnails': '扫描并生成缩略图',
+  'admin.learningSpace.scanThumbnailsRunning': '正在生成（剩余 {remaining}）',
+  'admin.learningSpace.scanThumbnailsDone': '已补齐 {count} 张卡片缩略图',
+  'admin.learningSpace.scanThumbnailsNone': '没有缺少缩略图的卡片',
+  'admin.learningSpace.scanThumbnailsPartial': '已补齐 {ok} 张，{failed} 张未能生成',
+  'admin.learningSpace.scanThumbnailsFailed': '缩略图扫描失败',
   'admin.learningSpace.intro':
     '先开通试点教师，再创建班级并批量导入学生账号。学生登录后侧栏仅显示 MindGraph 与学习空间。',
   'admin.learningSpace.subtabAria': '学习空间管理分区',

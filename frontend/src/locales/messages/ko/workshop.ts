@@ -229,7 +229,7 @@ export default {
   'workshop.preview': '시사',
   'workshop.previewEmpty': '미리 볼 콘텐츠가 없습니다.',
   'workshop.personalMenu': '개인 메뉴',
-  'workshop.phase2RoadmapGroupsAlerts': '예정: @그룹 멘션, 알림 단어, 메시지 편집 기록 정책.',
+  'workshop.phase2RoadmapGroupsAlerts': '예정: {\'@\'}그룹 멘션, 알림 단어, 메시지 편집 기록 정책.',
   'workshop.phase2RoadmapMovePreview': '예정: 단일 메시지 이동, URL 미리보기, 풍부한 채널 간 활동.',
   'workshop.phase2RoadmapPlatform': '플랫폼 백로그: 증분 동기화, 모바일 푸시, 이메일 다이제스트, 봇/webhook.',
   'workshop.pickColleagueToInvite': '초대할 동료를 선택하세요.',

@@ -40,6 +40,7 @@ from services.learning_space.access import (
 )
 from services.learning_space.staff_overview import assignment_metric_rows
 from services.learning_space.assignments import (
+    apply_learner_due,
     assert_can_edit_submission,
     student_homework_diagram_title,
     student_open_diagram_payload,
@@ -134,8 +135,8 @@ def test_initial_password_from_chinese_name() -> None:
     assert initial_password_from_name("张三") == "zs123"
 
 
-def test_staff_visible_password_prefers_stored_value() -> None:
-    """Teachers see the stored login password after a student changes it."""
+def test_staff_visible_password_only_while_change_required() -> None:
+    """Roster shows the temporary password until the student sets their own."""
     assert (
         staff_visible_learning_space_password(
             name="张三",
@@ -144,7 +145,17 @@ def test_staff_visible_password_prefers_stored_value() -> None:
             must_change_password=False,
             stored_password="mySecret9",
         )
-        == "mySecret9"
+        == ""
+    )
+    assert (
+        staff_visible_learning_space_password(
+            name="张三",
+            role="student",
+            learning_class_id=3,
+            must_change_password=True,
+            stored_password="tempPass1",
+        )
+        == "tempPass1"
     )
     assert (
         staff_visible_learning_space_password(
@@ -156,6 +167,15 @@ def test_staff_visible_password_prefers_stored_value() -> None:
         )
         == "zs123"
     )
+
+
+def test_apply_learner_due_uses_personal_override() -> None:
+    """A per-student extension replaces the class deadline on that student's payload."""
+    assignment = cast(LearningAssignment, SimpleNamespace(due_at=datetime(2020, 1, 1, tzinfo=UTC)))
+    submission = cast(LearningSubmission, SimpleNamespace(due_at_override=datetime(2030, 6, 1, tzinfo=UTC)))
+    payload = apply_learner_due({}, assignment, submission)
+    assert payload["due_at"] is not None
+    assert payload["due_at"].startswith("2030-06-01")
 
 
 def test_synthetic_student_email_is_not_a_real_login() -> None:
@@ -791,3 +811,44 @@ def test_resolve_submission_diagram_fields_uses_snapshot_when_submitted() -> Non
     assert spec == snap["spec"]
     assert diagram_type == "bubble_map"
     assert title == "提交版"
+
+
+def test_resolve_submission_diagram_fields_keeps_live_spec_beside_thumbnail() -> None:
+    """A COS thumbnail on the snapshot does not hide the live diagram."""
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=2,
+        diagram_id="diag-1",
+        status=SUBMISSION_STATUS_DRAFT,
+        snapshot_spec={"thumbnail": "lsimg:2/2026/10/card.png"},
+    )
+    live = {
+        "title": "作业",
+        "diagram_type": "mind_map",
+        "spec": {"nodes": [{"id": "topic", "text": "中心"}]},
+    }
+    thumb, spec, diagram_type, title = _resolve_submission_diagram_fields(submission, live)
+    assert thumb == "lsimg:2/2026/10/card.png"
+    assert spec == live["spec"]
+    assert diagram_type == "mind_map"
+    assert title == "作业"
+
+
+def test_resolve_submission_diagram_fields_keeps_frozen_spec_shape() -> None:
+    """A stored snapshot spec stays frozen even when it does not match the live diagram."""
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=2,
+        diagram_id="diag-1",
+        status=SUBMISSION_STATUS_SUBMITTED,
+        snapshot_spec={"spec": {"unrecognized": True}, "diagram_type": "mind_map", "title": "冻结"},
+    )
+    live = {
+        "title": "草稿",
+        "diagram_type": "bubble_map",
+        "spec": {"nodes": [{"id": "topic", "text": "中心"}]},
+    }
+    _thumb, spec, diagram_type, title = _resolve_submission_diagram_fields(submission, live)
+    assert spec is None
+    assert diagram_type == "mind_map"
+    assert title == "冻结"

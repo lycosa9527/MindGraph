@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Parapamje',
   'workshop.previewEmpty': 'Nuk ka përmbajtje për të parë paraprakisht',
   'workshop.personalMenu': 'Menyja personale',
-  'workshop.phase2RoadmapGroupsAlerts': 'Së shpejti: përmendje @group, fjalë alarmi dhe politika e historikut të redaktimit.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Së shpejti: përmendje {\'@\'}group, fjalë alarmi dhe politika e historikut të redaktimit.',
   'workshop.phase2RoadmapMovePreview': 'Së shpejti: lëvizje mesazhi të vetëm, pamje paraprake URL dhe aktivitet më i pasur ndër-kanale.',
   'workshop.phase2RoadmapPlatform': 'Backlog i platformës: sinkronizim inkremental, push mobile, përmbledhje email, botë/webhooks.',
   'workshop.pickColleagueToInvite': 'Zgjidhni një koleg për ftesë.',

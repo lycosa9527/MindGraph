@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Ko‘rib chiqish',
   'workshop.previewEmpty': 'Ko‘rish uchun kontent yo‘q',
   'workshop.personalMenu': 'Shaxsiy menyu',
-  'workshop.phase2RoadmapGroupsAlerts': 'Sonra: @qrup qaydlari, ogohlantirish sozleri va xabar tahrir tarixsi siyaseti.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Sonra: {\'@\'}qrup qaydlari, ogohlantirish sozleri va xabar tahrir tarixsi siyaseti.',
   'workshop.phase2RoadmapMovePreview': 'Sonra: tek xabar ko’chirishme, URL onizlemeleri va daha zengin kanallararasi fealiyyet.',
   'workshop.phase2RoadmapPlatform': 'Platforma novbesi: artan sinxronizasiya, mobil push, e-poqt xulaseleri, botlar/webhooklar.',
   'workshop.pickColleagueToInvite': 'Taklif etmek uchun hemkar tanlang.',

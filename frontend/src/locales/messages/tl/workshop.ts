@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Silipin',
   'workshop.previewEmpty': 'Walang content na i-preview',
   'workshop.personalMenu': 'Personal na Menu',
-  'workshop.phase2RoadmapGroupsAlerts': 'Paparating na: @group pagbanggit, alerto na mga salita, at patakaran sa kasaysayan ng pag-edit ng mensahe.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Paparating na: {\'@\'}group pagbanggit, alerto na mga salita, at patakaran sa kasaysayan ng pag-edit ng mensahe.',
   'workshop.phase2RoadmapMovePreview': 'Paparating na: ilipat ang isang mensahe, mga preview ng link ng URL, at mas mahusay na aktibidad sa cross-channel.',
   'workshop.phase2RoadmapPlatform': 'Platform backlog: incremental sync, mobile push, email digest, bots/webhooks.',
   'workshop.pickColleagueToInvite': 'Pumili ng kasamahan na imbitahan.',

@@ -54,6 +54,7 @@ from services.learning_space.thumbnail_storage import (
     present_reference_diagrams,
     promote_snapshot_thumbnail_sync,
     submission_thumbnail_src,
+    submit_thumbnail_source,
     template_thumbnail_ref_ready,
 )
 from services.learning_space.students import count_class_students
@@ -73,6 +74,17 @@ def effective_due_at(
     if submission is not None and submission.due_at_override is not None:
         return submission.due_at_override
     return assignment.due_at
+
+
+def apply_learner_due(
+    payload: dict[str, Any],
+    assignment: LearningAssignment,
+    submission: LearningSubmission | None,
+) -> dict[str, Any]:
+    """Show this student their own deadline, including a per-person extension."""
+    due = effective_due_at(assignment, submission)
+    payload["due_at"] = due.isoformat() if due is not None else None
+    return payload
 
 
 def submission_allows_resubmit(
@@ -593,12 +605,13 @@ async def submit_assignment(
     previous_snap = submission.snapshot_spec if isinstance(submission.snapshot_spec, dict) else None
     previous_keys = collect_thumbnail_keys(None, [previous_snap] if previous_snap else [])
     if diagram:
+        previous_thumb = previous_snap.get("thumbnail") if previous_snap else None
         snapshot = {
             "title": diagram.get("title"),
             "diagram_type": diagram.get("diagram_type"),
             "spec": diagram.get("spec"),
             "language": diagram.get("language", "zh"),
-            "thumbnail": diagram.get("thumbnail"),
+            "thumbnail": submit_thumbnail_source(diagram.get("thumbnail"), previous_thumb),
         }
         await asyncio.to_thread(
             promote_snapshot_thumbnail_sync,
@@ -655,7 +668,12 @@ async def return_submission(
     db: AsyncSession,
     submission: LearningSubmission,
 ) -> LearningSubmission:
-    """Teacher returns work for revision."""
+    """Teacher returns submitted work for revision."""
+    if submission.status != SUBMISSION_STATUS_SUBMITTED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only submitted work can be returned",
+        )
     submission.status = SUBMISSION_STATUS_RETURNED
     submission.submitted_at = None
     try:
@@ -678,6 +696,41 @@ async def return_submission(
         submission.id,
         submission.assignment_id,
         submission.student_user_id,
+    )
+    return submission
+
+
+async def extend_submission_due(
+    db: AsyncSession,
+    submission: LearningSubmission,
+    due_at: datetime,
+) -> LearningSubmission:
+    """Set one student's deadline. The new time must be in the future."""
+    due = due_at if due_at.tzinfo is not None else due_at.replace(tzinfo=UTC)
+    if due <= datetime.now(UTC):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Due date must be in the future",
+        )
+    submission.due_at_override = due
+    try:
+        await db.commit()
+        await db.refresh(submission)
+    except DATABASE_ERRORS as exc:
+        await db.rollback()
+        logger.error(
+            "[LearningSpace] Extend due failed submission=%s: %s",
+            submission.id,
+            exc,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to extend due date",
+        ) from exc
+    logger.info(
+        "[LearningSpace] Extended due submission=%s assignment=%s",
+        submission.id,
+        submission.assignment_id,
     )
     return submission
 
@@ -840,6 +893,7 @@ def _resolve_submission_diagram_fields(
     preview_title = ""
 
     snap = submission.snapshot_spec if isinstance(submission.snapshot_spec, dict) else None
+    snap_spec = snap.get("spec") if snap else None
     if snap:
         snap_thumb = snap.get("thumbnail")
         if isinstance(snap_thumb, str) and snap_thumb.strip():
@@ -850,13 +904,17 @@ def _resolve_submission_diagram_fields(
             diagram_thumbnail = thumb
 
     if snap:
-        preview_spec = _normalize_preview_spec(snap.get("spec"))
-        preview_diagram_type = str(snap.get("diagram_type") or preview_diagram_type)
-        preview_title = str(snap.get("title") or preview_title)
-    elif diagram:
+        preview_spec = _normalize_preview_spec(snap_spec)
+        if snap.get("diagram_type"):
+            preview_diagram_type = str(snap.get("diagram_type") or preview_diagram_type)
+        if snap.get("title"):
+            preview_title = str(snap.get("title") or preview_title)
+    # A backfilled card may store only the COS thumbnail. A frozen spec still wins.
+    if preview_spec is None and diagram is not None and not isinstance(snap_spec, dict):
         preview_spec = _normalize_preview_spec(diagram.get("spec"))
         preview_diagram_type = str(diagram.get("diagram_type") or preview_diagram_type)
-        preview_title = str(diagram.get("title") or preview_title)
+        if not preview_title:
+            preview_title = str(diagram.get("title") or "")
 
     return diagram_thumbnail, preview_spec, preview_diagram_type, preview_title
 

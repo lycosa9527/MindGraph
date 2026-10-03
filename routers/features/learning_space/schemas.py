@@ -23,6 +23,25 @@ class PilotTeacherCreate(BaseModel):
     organization_id: int
 
 
+class ThumbnailBackfillRequest(BaseModel):
+    """One batch of the admin thumbnail scan. ``skip`` holds keys already tried this click."""
+
+    skip: list[str] = Field(default_factory=list, max_length=2000)
+
+    @field_validator("skip")
+    @classmethod
+    def skip_keys(cls, value: list[str]) -> list[str]:
+        """Keep template, reference, and submission keys only."""
+        cleaned: list[str] = []
+        for item in value:
+            key = item.strip()
+            if not key or len(key) > 80:
+                continue
+            if key.startswith(("template:", "reference:", "submission:")):
+                cleaned.append(key)
+        return cleaned
+
+
 class ClassCreate(BaseModel):
     """Create a learning class."""
 

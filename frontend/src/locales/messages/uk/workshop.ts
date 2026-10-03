@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Попередній перегляд',
   'workshop.previewEmpty': 'Немає вмісту для попереднього перегляду',
   'workshop.personalMenu': 'Особисте меню',
-  'workshop.phase2RoadmapGroupsAlerts': 'Незабаром: згадки @group, тривожні слова та політика історії редагування.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Незабаром: згадки {\'@\'}group, тривожні слова та політика історії редагування.',
   'workshop.phase2RoadmapMovePreview': 'Незабаром: переміщення окремого повідомлення, попередній перегляд URL і багатша активність між каналами.',
   'workshop.phase2RoadmapPlatform': 'Backlog платформи: інкрементальна синхронізація, mobile push, email-дайджести, боти/webhooks.',
   'workshop.pickColleagueToInvite': 'Оберіть колегу для запрошення.',

@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'पूर्व दर्शन',
   'workshop.previewEmpty': 'पूर्वावलोकन के लिए कोई सामग्री नहीं',
   'workshop.personalMenu': 'व्यक्तिगत मेनू',
-  'workshop.phase2RoadmapGroupsAlerts': 'बाद में: @group उल्लेख, अलर्ट शब्द, संपादन इतिहास।',
+  'workshop.phase2RoadmapGroupsAlerts': 'बाद में: {\'@\'}group उल्लेख, अलर्ट शब्द, संपादन इतिहास।',
   'workshop.phase2RoadmapMovePreview': 'बाद में: संदेश स्थानांतरण, URL पूर्वावलोकन, क्रॉस-चैनल।',
   'workshop.phase2RoadmapPlatform': 'बैकलॉग: इंक्रिमेंटल सिंक, मोबाइल पुश, ईमेल डाइजेस्ट, बॉट।',
   'workshop.pickColleagueToInvite': 'आमंत्रित सहकर्मी चुनें।',

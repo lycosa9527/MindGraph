@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Xem trước',
   'workshop.previewEmpty': 'Không có nội dung để xem trước',
   'workshop.personalMenu': 'Thực đơn cá nhân',
-  'workshop.phase2RoadmapGroupsAlerts': 'Đến sau: đề cập @group, từ cảnh báo và chính sách lịch sử chỉnh sửa tin nhắn.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Đến sau: đề cập {\'@\'}group, từ cảnh báo và chính sách lịch sử chỉnh sửa tin nhắn.',
   'workshop.phase2RoadmapMovePreview': 'Đến sau: di chuyển một tin nhắn, xem trước liên kết URL và hoạt động đa kênh phong phú hơn.',
   'workshop.phase2RoadmapPlatform': 'Tồn đọng nền tảng: đồng bộ hóa gia tăng, đẩy thiết bị di động, thông báo email, bot/webhook.',
   'workshop.pickColleagueToInvite': 'Chọn một đồng nghiệp để mời.',

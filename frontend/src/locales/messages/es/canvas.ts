@@ -353,7 +353,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'Ley de senos',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'Coseno(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'Seno(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'iθ{\'}\'}',
+  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'Ángulo doble',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'Aritmética aₙ',

@@ -530,3 +530,15 @@ export async function adminResetPassword(
 ): Promise<{ student_id: number; name: string; initial_password: string }> {
   return postJson(`${BASE}/admin/students/${studentId}/reset-password`)
 }
+
+export interface ThumbnailBackfillBatch {
+  stored: number
+  generated: number
+  remaining: number
+  failed_keys: string[]
+  ready_keys: string[]
+}
+
+export async function backfillAdminThumbnails(skip: string[]): Promise<ThumbnailBackfillBatch> {
+  return postJson(`${BASE}/admin/thumbnails/backfill`, { skip })
+}

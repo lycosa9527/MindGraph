@@ -1682,6 +1682,12 @@ export default {
   'admin.learningSpace.maxStudents': 'Max students',
   'admin.learningSpace.copyPasswords': 'Copy passwords',
   'admin.learningSpace.passwordsCopied': 'Copied to clipboard',
+  'admin.learningSpace.scanThumbnails': 'Scan and generate thumbnails',
+  'admin.learningSpace.scanThumbnailsRunning': 'Generating ({remaining} left)',
+  'admin.learningSpace.scanThumbnailsDone': 'Filled {count} card thumbnails',
+  'admin.learningSpace.scanThumbnailsNone': 'Every card already has a thumbnail',
+  'admin.learningSpace.scanThumbnailsPartial': 'Filled {ok} cards, {failed} could not be generated',
+  'admin.learningSpace.scanThumbnailsFailed': 'Thumbnail scan failed',
   'admin.learningSpace.intro':
     'Grant pilot teachers first, then create classes and bulk-import students. Student sidebars show only MindGraph and Learning Space.',
   'admin.learningSpace.subtabAria': 'Learning Space admin sections',

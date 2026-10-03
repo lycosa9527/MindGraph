@@ -228,7 +228,7 @@ export default {
   'workshop.preview': 'Preview',
   'workshop.previewEmpty': 'Nothing to preview',
   'workshop.personalMenu': 'Personal Menu',
-  'workshop.phase2RoadmapGroupsAlerts': 'Coming later: @group mentions, alert words, and message edit history policy.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Coming later: {\'@\'}group mentions, alert words, and message edit history policy.',
   'workshop.phase2RoadmapMovePreview': 'Coming later: move single message, URL link previews, and richer cross-channel activity.',
   'workshop.phase2RoadmapPlatform': 'Platform backlog: incremental sync, mobile push, email digests, bots/webhooks.',
   'workshop.pickColleagueToInvite': 'Choose a colleague to invite.',

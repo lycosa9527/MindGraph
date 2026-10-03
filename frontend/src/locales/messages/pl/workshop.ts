@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Zapowiedź',
   'workshop.previewEmpty': 'Brak treści do podglądu',
   'workshop.personalMenu': 'Menu osobiste',
-  'workshop.phase2RoadmapGroupsAlerts': 'Wkrótce: wzmianki @grupa, słowa alarmowe i polityka historii edycji wiadomości.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Wkrótce: wzmianki {\'@\'}grupa, słowa alarmowe i polityka historii edycji wiadomości.',
   'workshop.phase2RoadmapMovePreview': 'Wkrótce: przenoszenie pojedynczej wiadomości, podglądy linków URL i bogatsza aktywność między kanałami.',
   'workshop.phase2RoadmapPlatform': 'Plan platformy: synchronizacja przyrostowa, powiadomienia mobilne, podsumowania e-mail, boty/webhooki.',
   'workshop.pickColleagueToInvite': 'Wybierz kolegę do zaproszenia.',

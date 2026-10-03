@@ -82,7 +82,7 @@ flowchart TB
 
 ### 查看详情
 
-花名册：ID、姓名、身份（班级学生 / 导入学员 / 助教）、所属组织/学校、手机号、初始密码（仅班级学生）、需改密。可重置班级学生密码、导出 CSV。
+花名册：ID、姓名、身份（班级学生 / 导入学员 / 助教）、所属组织/学校、手机号、临时密码、需改密。临时密码只在学生还没改密时给任课教师和管理员看，助教看不到。学生自己设的密码只留哈希。可重置班级学生密码、导出 CSV。
 
 ---
 
@@ -208,6 +208,7 @@ RLS：按学校隔离。`rls_org_visible(organization_id)`，外加任课教师 
 | `components/learningSpace/*` | 布置、要求、批改、状态、顶栏 |
 | `components/admin/AdminLearningSpace*.vue` | 管理试点与班级 |
 | `utils/learningSpaceApi.ts` | 前端 API |
+| `stores/learningSpace.ts` | 教师/学员壳：异步加载，`learningSpace:refresh` 刷新 |
 | `stores/learningAssignmentCanvas.ts` | 作业画布上下文 |
 | `composables/learningSpace/useLearningAiGate.ts` | 画布 AI 门禁 |
 | `locales/messages/zh/learningSpace.ts` | 文案（中文为源） |
@@ -224,7 +225,9 @@ RLS：按学校隔离。`rls_org_visible(organization_id)`，外加任课教师 
 - 本班任课教师不能再导入为学员。
 - 草稿对学生不可见（猜 id 也 404）。
 - 停用班级后：班级学生会话被踢；导入学员保留原帐号会话，但作业接口按班级状态拒绝。
-- 重置班级学生密码会清缓存并踢掉已登录会话。
+- 重置班级学生密码会清缓存并踢掉已登录会话，并重新发一份临时密码。
+- 学生改密后，明文密码从花名册和数据库里删掉。改密接口只在「必须改密」时可用。
+- 退回只接受已提交的作业。按人延期后，这名学生看到的截止时间是延期后的时间。
 - 已提交作业冻结快照；画布 PUT 与自动保存不再改该图。
 - 删除作业只删没有被其它作业引用的 COS 对象。
 - 开关关闭：接口 404；班级学生仍显示学习空间入口。
@@ -233,7 +236,7 @@ RLS：按学校隔离。`rls_org_visible(organization_id)`，外加任课教师 
 
 ## 上线检查
 
-1. 迁移至少到 `0127`。
+1. 迁移至少到 `0142`（`0142` 清掉学生已经改过的明文密码）。
 2. 确认 `FEATURE_STUDENT_LEARNING_SPACE` 为开（默认开；`.env` 里写 `False` 仍会关）。
 3. 生产打开 `COS_LEARNING_SPACE_ENABLED` 与 COS 凭证，避免说明图落本地盘。
 4. 设试点 → 建班 → 导入学生和/或已有帐号。

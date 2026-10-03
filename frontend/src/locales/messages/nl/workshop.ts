@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Voorbeeld',
   'workshop.previewEmpty': 'Geen inhoud om te bekijken',
   'workshop.personalMenu': 'Persoonlijk menu',
-  'workshop.phase2RoadmapGroupsAlerts': 'Later beschikbaar: @groepvermeldingen, waarschuwingswoorden en beleid voor het bewerken van berichten.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Later beschikbaar: {\'@\'}groepvermeldingen, waarschuwingswoorden en beleid voor het bewerken van berichten.',
   'workshop.phase2RoadmapMovePreview': 'Later beschikbaar: verplaats één bericht, voorbeelden van URL-links en rijkere cross-channel-activiteit.',
   'workshop.phase2RoadmapPlatform': 'Platformachterstand: incrementele synchronisatie, mobiele push, e-mailsamenvattingen, bots/webhooks.',
   'workshop.pickColleagueToInvite': 'Kies een collega om uit te nodigen.',

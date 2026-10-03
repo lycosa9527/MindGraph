@@ -1903,6 +1903,16 @@
   justify-content: flex-end;
 }
 
+.ls-review__extend {
+  margin: 0;
+  min-width: 12rem;
+  flex: 1;
+}
+
+.ls-review__extend input {
+  margin-top: 0.25rem;
+}
+
 .ls-review--fs {
   grid-template-columns: 1fr;
   min-height: 0;

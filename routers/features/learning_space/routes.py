@@ -75,10 +75,12 @@ from services.learning_space.memberships import (
     replace_class_assistants,
 )
 from services.learning_space.assignments import (
+    apply_learner_due,
     assignment_public_dict,
     bind_draft_diagram,
     delete_assignment,
     enrich_assignment_dict,
+    extend_submission_due,
     enrich_submission_dict,
     get_assignment,
     get_or_create_submission,
@@ -629,8 +631,11 @@ async def teacher_list_students(
     db: AsyncSession = Depends(get_learning_space_db),
 ):
     """List students and enrolled members in the class."""
-    await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True, actor=current_user)
-    return {"items": await class_roster_items(db, class_id, include_initial_password=True)}
+    learning_class = await get_class_for_staff(
+        db, class_id, int(current_user.id), allow_archived=True, actor=current_user
+    )
+    include_password = is_superadmin(current_user) or int(learning_class.teacher_user_id) == int(current_user.id)
+    return {"items": await class_roster_items(db, class_id, include_initial_password=include_password)}
 
 
 @router.post("/teacher/students/{student_id}/reset-password")
@@ -831,26 +836,8 @@ async def teacher_extend_due(
         raise HTTPException(status_code=404, detail="Submission not found")
     assignment = await get_assignment(db, submission.assignment_id)
     await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True, actor=current_user)
-    submission.due_at_override = body.due_at
-    try:
-        await db.commit()
-        await db.refresh(submission)
-    except DATABASE_ERRORS as exc:
-        await db.rollback()
-        logger.error(
-            "[LearningSpace] Extend due failed submission=%s actor=%s: %s",
-            submission_id,
-            current_user.id,
-            exc,
-        )
-        raise HTTPException(status_code=500, detail="Failed to extend due date") from exc
-    logger.info(
-        "[LearningSpace] Extended due submission=%s assignment=%s actor=%s",
-        submission.id,
-        assignment.id,
-        current_user.id,
-    )
-    return submission_public_dict(submission)
+    updated = await extend_submission_due(db, submission, body.due_at)
+    return submission_public_dict(updated)
 
 
 @router.post("/teacher/submissions/{submission_id}/review")
@@ -970,9 +957,11 @@ async def student_list_assignments(
             )
         )
         submission = sub_result.scalar_one_or_none()
+        payload = await enrich_assignment_dict(db, assignment)
+        apply_learner_due(payload, assignment, submission)
         items.append(
             {
-                **(await enrich_assignment_dict(db, assignment)),
+                **payload,
                 "submission": (await enrich_submission_dict(db, submission) if submission else None),
             }
         )
@@ -1042,8 +1031,10 @@ async def student_open_assignment(
         current_user,
         organization_id=getattr(current_user, "organization_id", None),
     )
+    assignment_payload = assignment_public_dict(assignment)
+    apply_learner_due(assignment_payload, assignment, submission)
     return {
-        "assignment": assignment_public_dict(assignment),
+        "assignment": assignment_payload,
         "submission": submission_public_dict(submission),
     }
 
@@ -1091,9 +1082,11 @@ async def student_change_password(
         user = await db.get(User, current_user.id)
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
+        if not getattr(user, "must_change_password", False):
+            raise HTTPException(status_code=400, detail="Password already set")
         user.password_hash = hash_password(body.new_password)
         user.must_change_password = False
-        assign_learning_space_login_password(user, body.new_password)
+        assign_learning_space_login_password(user, "")
         user.failed_login_attempts = 0
         user.locked_until = None
         try:
@@ -1176,6 +1169,7 @@ async def get_assignment_ai_permissions(
             )
         )
         submission = sub_result.scalar_one_or_none()
+        apply_learner_due(payload, assignment, submission)
         payload["submission"] = submission_public_dict(submission) if submission else None
     return {
         "assignment_id": assignment_id,

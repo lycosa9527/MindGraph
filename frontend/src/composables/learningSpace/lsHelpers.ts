@@ -142,9 +142,7 @@ export function looksLikeAutoScaffoldSpec(
   return JSON.stringify(spec).includes('…')
 }
 
-export function assignmentHasWorkingDiagram(
-  a: LearningAssignment | null | undefined
-): boolean {
+export function assignmentHasWorkingDiagram(a: LearningAssignment | null | undefined): boolean {
   const perms = a?.ai_permissions
   if (!perms) return false
   if (perms.has_teacher_template === true) return true
@@ -235,4 +233,20 @@ export function formatLsStudentLabel(
 export function studentCanViewAssignmentWall(a: LearningAssignment | null | undefined): boolean {
   if (!a) return false
   return studentAssignmentDone(a)
+}
+
+export function assignmentEvalDimensions(a: LearningAssignment | null | undefined): string[] {
+  const dims = a?.ai_permissions?.evaluation_dimensions
+  if (!Array.isArray(dims)) return []
+  return dims.map((d) => String(d).trim()).filter(Boolean)
+}
+
+export function submissionIsReviewed(
+  sub:
+    Pick<LearningSubmission, 'reviewed_at' | 'review_comment' | 'review_scores'> | null | undefined
+): boolean {
+  if (!sub) return false
+  if (sub.reviewed_at || sub.review_comment) return true
+  const scores = sub.review_scores
+  return Boolean(scores && Object.keys(scores).length > 0)
 }

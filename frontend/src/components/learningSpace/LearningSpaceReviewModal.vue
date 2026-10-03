@@ -33,6 +33,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   save: [payload: { submissionId: number; draft: ReviewDraft }]
+  return: [submissionId: number]
+  extend: [payload: { submissionId: number; dueAt: string }]
 }>()
 
 const { t } = useLanguage()
@@ -51,6 +53,7 @@ const previewSpec = ref<Record<string, unknown> | null>(null)
 const previewLoading = ref(false)
 const savingLibrary = ref(false)
 const previewFullscreen = ref(false)
+const extendLocal = ref('')
 const previewMeta = ref<{ title: string; diagramType: string }>({
   title: '',
   diagramType: 'mind_map',
@@ -131,6 +134,7 @@ watch(
   ([open]) => {
     if (!open || !props.submission) return
     previewFullscreen.value = false
+    extendLocal.value = ''
     if (isView.value) {
       applyDraft(draftFromSubmission(props.submission))
     } else {
@@ -168,6 +172,21 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown, true)
 })
+
+function onExtend(): void {
+  if (!props.submission || isView.value || !extendLocal.value) return
+  const due = new Date(extendLocal.value)
+  if (Number.isNaN(due.getTime()) || due.getTime() <= Date.now()) {
+    notify.warningKey('learningSpace.extendDueFuture')
+    return
+  }
+  emit('extend', { submissionId: props.submission.id, dueAt: due.toISOString() })
+}
+
+function onReturn(): void {
+  if (!props.submission || isView.value || props.submission.status !== 'submitted') return
+  emit('return', props.submission.id)
+}
 
 function onSave(): void {
   if (!props.submission || isView.value) return
@@ -455,13 +474,38 @@ const headerTitle = computed(
           class="ls-modal__foot"
           :class="{ 'ls-modal__foot--end': true }"
         >
-          <button
-            type="button"
-            class="ls-btn ls-btn--primary"
-            @click="onSave"
-          >
-            <I18nText k="learningSpace.reviewSubmit" />
-          </button>
+          <label class="ls-field ls-review__extend">
+            <I18nText k="learningSpace.extendDue" />
+            <input
+              v-model="extendLocal"
+              type="datetime-local"
+            />
+          </label>
+          <div class="ls-modal__foot-right">
+            <button
+              type="button"
+              class="ls-btn"
+              :disabled="!extendLocal"
+              @click="onExtend"
+            >
+              <I18nText k="learningSpace.extendDue" />
+            </button>
+            <button
+              v-if="submission.status === 'submitted'"
+              type="button"
+              class="ls-btn"
+              @click="onReturn"
+            >
+              <I18nText k="learningSpace.return" />
+            </button>
+            <button
+              type="button"
+              class="ls-btn ls-btn--primary"
+              @click="onSave"
+            >
+              <I18nText k="learningSpace.reviewSubmit" />
+            </button>
+          </div>
         </footer>
       </div>
     </div>

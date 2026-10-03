@@ -219,7 +219,7 @@ export default {
   'workshop.others': 'DİGƏRLƏRİ',
   'workshop.permissions': 'İcazələr',
   'workshop.personalMenu': 'Şəxsi menyu',
-  'workshop.phase2RoadmapGroupsAlerts': 'Sonra: @qrup qeydləri, xəbərdarlıq sözləri və mesaj redaktə tarixçəsi siyasəti.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Sonra: {\'@\'}qrup qeydləri, xəbərdarlıq sözləri və mesaj redaktə tarixçəsi siyasəti.',
   'workshop.phase2RoadmapMovePreview': 'Sonra: tək mesaj köçürmə, URL önizləmələri və daha zəngin kanallararası fəaliyyət.',
   'workshop.phase2RoadmapPlatform': 'Platforma növbəsi: artan sinxronizasiya, mobil push, e-poqt xülasələri, botlar/webhooklar.',
   'workshop.pickColleagueToInvite': 'Dəvət etmək üçün həmkar seçin.',

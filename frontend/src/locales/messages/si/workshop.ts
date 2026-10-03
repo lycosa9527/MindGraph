@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'පෙරදසුන',
   'workshop.previewEmpty': 'පෙරදසුන් කිරීමට අන්තර්ගතයක් නැත',
   'workshop.personalMenu': 'පුද්ගලික මෙනුව',
-  'workshop.phase2RoadmapGroupsAlerts': 'පසුව එන: @group සඳහන් කරයි, අනතුරු ඇඟවීමේ වචන, සහ පණිවිඩ සංස්කරණ ඉතිහාස ප්‍රතිපත්තිය.',
+  'workshop.phase2RoadmapGroupsAlerts': 'පසුව එන: {\'@\'}group සඳහන් කරයි, අනතුරු ඇඟවීමේ වචන, සහ පණිවිඩ සංස්කරණ ඉතිහාස ප්‍රතිපත්තිය.',
   'workshop.phase2RoadmapMovePreview': 'පසුව එන: තනි පණිවිඩය, URL සබැඳි පෙරදසුන්, සහ පොහොසත් හරස් නාලිකා ක්‍රියාකාරකම් ගෙන යන්න.',
   'workshop.phase2RoadmapPlatform': 'වේදිකා පසුබෑම: වර්ධක සමමුහුර්තකරණය, ජංගම තල්ලුව, විද්‍යුත් තැපෑල දිරවීම්, bots/webhooks.',
   'workshop.pickColleagueToInvite': 'ආරාධනා කිරීමට සගයකු තෝරන්න.',

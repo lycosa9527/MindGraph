@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Pratonton',
   'workshop.previewEmpty': 'Tiada kandungan untuk dipratonton',
   'workshop.personalMenu': 'Menu Pribadi',
-  'workshop.phase2RoadmapGroupsAlerts': 'Nanti: sebutan @group, kata-kata peringatan, dan kebijakan sejarah edit pesan.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Nanti: sebutan {\'@\'}group, kata-kata peringatan, dan kebijakan sejarah edit pesan.',
   'workshop.phase2RoadmapMovePreview': 'Nantikan: pindahkan satu pesan, pratinjau tautan URL, dan aktivitas lintas saluran yang lebih kaya.',
   'workshop.phase2RoadmapPlatform': 'Backlog platform: sinkronisasi tambahan, mobile push, ringkasan email, bot/webhook.',
   'workshop.pickColleagueToInvite': 'Pilih kolega untuk diundang.',

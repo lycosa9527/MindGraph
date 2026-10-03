@@ -147,7 +147,9 @@ export function useOrgPresenceCore(options: OrgPresenceCoreOptions): OrgPresence
     if (ts === undefined) {
       return ''
     }
-    return formatContactLastOnlineLabel(ts, nowMs.value, t)
+    return formatContactLastOnlineLabel(ts, nowMs.value, (key, named) =>
+      named ? t(key, named) : t(key)
+    )
   }
 
   function isUserOnline(memberId: number): boolean {

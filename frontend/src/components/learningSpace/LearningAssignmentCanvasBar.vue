@@ -66,10 +66,7 @@ async function onSubmit(): Promise<void> {
       await lsCanvas.activate(id)
       return
     }
-    await router.push('/learning-space')
-    if (router.currentRoute.value.path.startsWith('/learning-space')) {
-      lsCanvas.clear()
-    }
+    await leaveHomework()
   } catch {
     notify.errorKey('learningSpace.submitFailed')
   } finally {
@@ -77,11 +74,16 @@ async function onSubmit(): Promise<void> {
   }
 }
 
-function onBack(): void {
-  void router.push('/learning-space').finally(() => {
-    if (!router.currentRoute.value.path.startsWith('/learning-space')) return
+function leaveHomework(): Promise<void> {
+  const path = lsCanvas.returnPath
+  return router.push(path).then(() => {
+    if (router.currentRoute.value.path !== path) return
     lsCanvas.clear()
   })
+}
+
+function onBack(): void {
+  void leaveHomework()
 }
 </script>
 

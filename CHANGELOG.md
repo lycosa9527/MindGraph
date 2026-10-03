@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.141] - 2026-10-04
+
+> **Learning Space keeps a student's chosen password off the roster, and missing card thumbnails can be filled in.**
+
+### Changed
+
+- **学习空间** — The class shell loads from one store and refreshes from events. A roster password appears only while the student must still change it, and only for the class teacher or a superadmin. After the student sets a password, the plain copy is removed. Return applies only to submitted work. A teacher can extend one student's deadline, and that student sees the new time. Submitting again keeps a stored card image when the diagram has none.
+- **研习社** — Copy that contains a literal @ compiles. Last-online labels pass the count through the translator.
+
+### Added
+
+- **学习空间** — The admin panel can scan cards that have no COS thumbnail and store one, rendering the diagram when the card has no image yet. Migration `0142` clears plain passwords already stored for students who changed them.
+
+### Tests
+
+- [`tests/test_learning_space.py`](tests/test_learning_space.py), [`tests/test_learning_space_thumbnail_backfill.py`](tests/test_learning_space_thumbnail_backfill.py), [`frontend/tests/adminLearningSpaceThumbnails.spec.ts`](frontend/tests/adminLearningSpaceThumbnails.spec.ts), [`frontend/tests/formatContactLastOnline.spec.ts`](frontend/tests/formatContactLastOnline.spec.ts), [`frontend/tests/workshopI18nLiteralAt.spec.ts`](frontend/tests/workshopI18nLiteralAt.spec.ts)
+
 ## [5.180.140] - 2026-10-03
 
 > **Learning Space card images live on COS, and a double-bubble map keeps one similarity and one difference.**

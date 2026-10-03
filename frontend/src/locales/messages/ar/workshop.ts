@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'معاينة',
   'workshop.previewEmpty': 'لا يوجد محتوى للمعاينة',
   'workshop.personalMenu': 'القائمة الشخصية',
-  'workshop.phase2RoadmapGroupsAlerts': 'خطط المتابعة: @group، تذكير بالكلمات الرئيسية، استراتيجية سجل تحرير الرسائل.',
+  'workshop.phase2RoadmapGroupsAlerts': 'خطط المتابعة: {\'@\'}group، تذكير بالكلمات الرئيسية، استراتيجية سجل تحرير الرسائل.',
   'workshop.phase2RoadmapMovePreview': 'خطط المتابعة: حركة رسالة واحدة، ومعاينة الارتباط، وديناميكيات أكثر ثراءً عبر القنوات.',
   'workshop.phase2RoadmapPlatform': 'مهام النظام الأساسي: المزامنة المتزايدة، والدفع عبر الهاتف المحمول، وملخصات البريد الإلكتروني، والروبوتات، وخطافات الويب.',
   'workshop.pickColleagueToInvite': 'الرجاء تحديد الزملاء لدعوتهم.',

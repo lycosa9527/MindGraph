@@ -54,17 +54,15 @@ def staff_visible_learning_space_password(
     stored_password: str | None,
     include: bool = True,
 ) -> str:
-    """Return the login password teachers may read (classroom students only)."""
-    if not include:
+    """Return the temporary password while the student still must change it."""
+    if not include or not must_change_password:
         return ""
     if role != ROLE_STUDENT or learning_class_id is None:
         return ""
     stored = (stored_password or "").strip()
     if stored:
         return stored
-    if must_change_password:
-        return initial_password_from_name(name)
-    return ""
+    return initial_password_from_name(name)
 
 
 def initial_password_from_name(name: str) -> str:

@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Önizleme',
   'workshop.previewEmpty': 'Önizlenecek içerik yok',
   'workshop.personalMenu': 'Kişisel menü',
-  'workshop.phase2RoadmapGroupsAlerts': 'Yakında: @grup bahsetmeleri, uyarı kelimeleri ve mesaj düzenleme geçmişi politikası.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Yakında: {\'@\'}grup bahsetmeleri, uyarı kelimeleri ve mesaj düzenleme geçmişi politikası.',
   'workshop.phase2RoadmapMovePreview': 'Yakında: tek mesaj taşıma, URL bağlantı önizlemeleri ve daha zengin kanallar arası etkinlik.',
   'workshop.phase2RoadmapPlatform': 'Platform yol haritası: artımlı senkronizasyon, mobil anlık bildirimler, e-posta özetleri, botlar/webhook\'lar.',
   'workshop.pickColleagueToInvite': 'Davet edilecek bir meslektaş seçin.',

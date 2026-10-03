@@ -219,7 +219,7 @@ export default {
   'workshop.others': 'อื่น…',
   'workshop.permissions': 'สิทธิ์',
   'workshop.personalMenu': 'เมนูส่วนตัว',
-  'workshop.phase2RoadmapGroupsAlerts': 'ภายหลั การกล่าวถึ@group คำเตือน และนโยบายประวัติการแก้ไขข้อควา',
+  'workshop.phase2RoadmapGroupsAlerts': 'ภายหลั การกล่าวถึ{\'@\'}group คำเตือน และนโยบายประวัติการแก้ไขข้อควา',
   'workshop.phase2RoadmapMovePreview': 'ภายหลั ย้ายข้อความเดี่ยแสดงตัวอย่างลิงกและกิจกรรมข้ามช่องที่หลากหลายขึ้',
   'workshop.phase2RoadmapPlatform': 'คิวแพลตฟอร์ม: ซิงค์แบบเพิ่ม การแจ้งเตือนมือถือ อีเมลสรุป บอเว็บฮุก',
   'workshop.pickColleagueToInvite': 'เลือกเพื่อนร่วมงานที่จะเชิ…',

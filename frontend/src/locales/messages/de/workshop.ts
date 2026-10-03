@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'Vorschau',
   'workshop.previewEmpty': 'Kein Inhalt zur Vorschau verfügbar',
   'workshop.personalMenu': 'Persönliches Menü',
-  'workshop.phase2RoadmapGroupsAlerts': 'Demnächst: @Gruppen-Erwähnungen, Alarmwörter und Richtlinie für Nachrichtenbearbeitungsverlauf.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Demnächst: {\'@\'}Gruppen-Erwähnungen, Alarmwörter und Richtlinie für Nachrichtenbearbeitungsverlauf.',
   'workshop.phase2RoadmapMovePreview': 'Demnächst: einzelne Nachricht verschieben, URL-Linkvorschauen und reichere kanalübergreifende Aktivität.',
   'workshop.phase2RoadmapPlatform': 'Plattform-Backlog: inkrementelle Synchronisation, Mobile Push, E-Mail-Digest, Bots/Webhooks.',
   'workshop.pickColleagueToInvite': 'Wählen Sie eine Person zum Einladen.',

@@ -229,7 +229,7 @@ export default {
   'workshop.preview': 'プレビュー',
   'workshop.previewEmpty': 'プレビューするコンテンツがありません',
   'workshop.personalMenu': '個人メニュー',
-  'workshop.phase2RoadmapGroupsAlerts': 'Coming later: @group mentions, alert words, and message edit history policy。',
+  'workshop.phase2RoadmapGroupsAlerts': 'Coming later: {\'@\'}group mentions, alert words, and message edit history policy。',
   'workshop.phase2RoadmapMovePreview': 'Coming later: move single message, URL link previews, and richer cross-channel activity。',
   'workshop.phase2RoadmapPlatform': 'プラットフォーム予定：差分同期、モバイルプッシュ、メールダイジェスト、ボット/Webhook。',
   'workshop.pickColleagueToInvite': '選択してください要邀请的同事。',

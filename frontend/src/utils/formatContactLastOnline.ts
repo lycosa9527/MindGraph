@@ -3,10 +3,16 @@
  */
 import { LAST_SEEN_ONLINE_MAX_AGE_MS } from '@/utils/workshopContactLastSeenStorage'
 
+type LastOnlineKey =
+  | 'workshop.contactLastOnlineJustNow'
+  | 'workshop.contactLastOnlineMinutes'
+  | 'workshop.contactLastOnlineHours'
+  | 'workshop.contactLastOnlineDays'
+
 export function formatContactLastOnlineLabel(
   lastSeenAtMs: number,
   nowMs: number,
-  translate: (key: string) => string
+  translate: (key: LastOnlineKey, named?: { n: number }) => string
 ): string {
   const diff = nowMs - lastSeenAtMs
   if (diff < 0 || diff > LAST_SEEN_ONLINE_MAX_AGE_MS) {
@@ -20,12 +26,12 @@ export function formatContactLastOnlineLabel(
   }
   if (diff < hourMs) {
     const n = Math.max(1, Math.floor(diff / minuteMs))
-    return translate('workshop.contactLastOnlineMinutes').replace('{n}', String(n))
+    return translate('workshop.contactLastOnlineMinutes', { n })
   }
   if (diff < dayMs) {
     const n = Math.max(1, Math.floor(diff / hourMs))
-    return translate('workshop.contactLastOnlineHours').replace('{n}', String(n))
+    return translate('workshop.contactLastOnlineHours', { n })
   }
   const n = Math.max(1, Math.floor(diff / dayMs))
-  return translate('workshop.contactLastOnlineDays').replace('{n}', String(n))
+  return translate('workshop.contactLastOnlineDays', { n })
 }
