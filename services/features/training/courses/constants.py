@@ -30,6 +30,7 @@ MODAL_KEYS = frozenset(
         "account",
         "thinking-coins",
         "update-log",
+        "october-update",
         "login",
         "online-collab",
         "export-community",
@@ -47,7 +48,7 @@ DIAGRAM_FOCUS_TYPES = (
     "mindmap",
     "concept_map",
 )
-UI_LOCK_KEYS = frozenset({"mindgraph-language"})
+UI_LOCK_KEYS = frozenset({"mindgraph-language", "user-dropdown"})
 FOCUS_KEYS = frozenset(
     {f"diagram-{name}" for name in DIAGRAM_FOCUS_TYPES}
     | {
@@ -90,7 +91,7 @@ def optional_step_key(value: object, allowed: frozenset[str], label: str) -> str
     return text
 
 
-VOD_SPAN_MIN = 20
+VOD_SPAN_MIN = 8
 VOD_SPAN_MAX = 92
 
 
@@ -161,6 +162,16 @@ IMAGE_MIME = frozenset({"image/png", "image/jpeg", "image/webp"})
 SLIDE_MIME = IMAGE_MIME | frozenset({"application/pdf"})
 VIDEO_MIME = frozenset({"video/mp4", "video/webm", "video/quicktime"})
 MEDIA_MIME = SLIDE_MIME | VIDEO_MIME
+AUDIO_MIME = frozenset(
+    {
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/mp4",
+        "audio/wav",
+        "audio/x-wav",
+        "audio/webm",
+    }
+)
 
 ROLE_MIME = {
     "cover": IMAGE_MIME,
@@ -168,6 +179,9 @@ ROLE_MIME = {
     "video": VIDEO_MIME,
     "media": MEDIA_MIME,
     "thumb": IMAGE_MIME,
+    "voice": AUDIO_MIME,
+    "music": AUDIO_MIME,
+    "mascot": frozenset({"image/webp"}),
 }
 ROLE_MAX_BYTES = {
     "cover": 20 * 1024 * 1024,
@@ -175,4 +189,7 @@ ROLE_MAX_BYTES = {
     "video": 100 * 1024 * 1024,
     "media": 100 * 1024 * 1024,
     "thumb": 2 * 1024 * 1024,
+    "voice": 15 * 1024 * 1024,
+    "music": 15 * 1024 * 1024,
+    "mascot": 15 * 1024 * 1024,
 }

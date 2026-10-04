@@ -161,13 +161,14 @@ export function addOverlay(
     })
   } else if (kind === 'role') {
     const roleId = extra.role || extra.glyph || ''
+    const custom = Boolean(extra.asset_id)
     overlays.push({
       ...extra,
       kind: 'role',
       x: extra.x ?? 82,
       y: extra.y ?? 74,
       w: extra.w ?? TRAINING_ROLE_WIDTH_DEFAULT,
-      role: isTrainingRoleId(roleId) ? roleId : '01-look-here',
+      role: custom ? extra.role || '' : isTrainingRoleId(roleId) ? roleId : '01-look-here',
       step: at,
     })
   } else {
@@ -245,6 +246,13 @@ export function trainingCourseWriteBody(
       }
       delete next.asset_url
       delete next.thumb_url
+      delete next.voice_url
+      delete next.music_url
+      next.overlays = (next.overlays || []).map((row) => {
+        const copy = { ...row }
+        delete copy.src
+        return copy
+      })
       return next
     }),
   }
@@ -281,5 +289,9 @@ export function mergeSavedStepMeta(
     if (from.thumb_url && !to.thumb_url) to.thumb_url = from.thumb_url
     if (from.asset_id) to.asset_id = from.asset_id
     if (from.asset_url && !to.asset_url) to.asset_url = from.asset_url
+    if (from.voice_asset_id) to.voice_asset_id = from.voice_asset_id
+    if (from.voice_url) to.voice_url = from.voice_url
+    if (from.music_asset_id) to.music_asset_id = from.music_asset_id
+    if (from.music_url) to.music_url = from.music_url
   }
 }

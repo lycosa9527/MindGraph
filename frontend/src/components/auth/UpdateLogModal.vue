@@ -14,6 +14,7 @@ import {
   markdownRendererReady,
   renderRichMarkdownHtml,
 } from '@/composables/core/useMarkdown'
+import { useTrainingDialogHost } from '@/composables/training/trainingInlineHost'
 import { apiGet } from '@/utils/apiClient'
 
 const props = defineProps<{
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const dialogHost = useTrainingDialogHost()
 
 const isVisible = computed({
   get: () => props.visible,
@@ -92,6 +94,7 @@ watch(
   <ElDialog
     v-model="isVisible"
     width="min(580px, 94vw)"
+    :append-to="dialogHost"
     append-to-body
     destroy-on-close
     class="update-log-dialog"

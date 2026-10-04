@@ -3,10 +3,8 @@
  */
 import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
-import {
-  refreshOfficeEmbedLayout,
-  useMobileDetect,
-} from '@/composables/core/useMobileDetect'
+import { refreshOfficeEmbedLayout, useMobileDetect } from '@/composables/core/useMobileDetect'
+import { consumeTrainingDeckNavigation } from '@/composables/training/trainingDeckNav'
 import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
 import { userCanUseOnlineCollab } from '@/constants/schoolTier'
 import { useAuthStore } from '@/stores/auth'
@@ -15,15 +13,15 @@ import { useUIStore } from '@/stores/ui'
 import { canSeeMobileOrgManagement } from '@/utils/adminCapabilities'
 import { CANVAS_ENTRY_PATH_KEY } from '@/utils/canvasBackNavigation'
 import {
-  clearWorkshopSessionStorage,
-  shouldClearWorkshopSessionOnNavigate,
-} from '@/utils/workshopSessionStorage'
-import {
   resolveMobileRouteRedirect,
   shouldSkipMobileRouteRedirect,
 } from '@/utils/mobileRouteRedirect'
-import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 import { requiredTrainingRedirect } from '@/utils/requiredTrainingGate'
+import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
+import {
+  clearWorkshopSessionStorage,
+  shouldClearWorkshopSessionOnNavigate,
+} from '@/utils/workshopSessionStorage'
 
 /** Localized `document.title` via `meta.pageTitle.*` keys. */
 function pageTitle(segment: string): { titleKey: string } {
@@ -412,6 +410,7 @@ const router = createRouter({
 
 // Navigation guards
 router.beforeEach(async (to, from) => {
+  if (consumeTrainingDeckNavigation(to.path, to.query.type)) return false
   const authStore = useAuthStore()
   const featureFlagsStore = useFeatureFlagsStore()
   refreshOfficeEmbedLayout(to.query as Record<string, unknown>)
@@ -479,8 +478,7 @@ router.beforeEach(async (to, from) => {
       if (!authStore.user) {
         await authStore.checkAuth()
       }
-      const isTrainingLead =
-        featureFlagsStore.getFeatureTraining() && authStore.isPlatformLevel
+      const isTrainingLead = featureFlagsStore.getFeatureTraining() && authStore.isPlatformLevel
       return {
         path: resolveMobileRouteRedirect(to.path, { isTrainingLead }),
         query: to.query as Record<string, string>,
@@ -659,10 +657,7 @@ router.beforeEach(async (to, from) => {
     // Students are Learning Space accounts; do not bounce them to MindMate when the
     // flag cache is still empty/stale. Teachers/others still need the feature on —
     // but only after flags actually loaded (failed fetch defaults to all-off).
-    if (
-      authStore.user?.role !== 'student' &&
-      featureFlagsStore.hasLiveFeatureFlags()
-    ) {
+    if (authStore.user?.role !== 'student' && featureFlagsStore.hasLiveFeatureFlags()) {
       return isMobile.value ? { path: '/m' } : { name: 'MindMate' }
     }
   }

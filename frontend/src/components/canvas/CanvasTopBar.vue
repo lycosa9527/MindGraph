@@ -43,6 +43,7 @@ import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { useTrainingDeckNav } from '@/composables/training/trainingDeckNav'
 import {
   CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
   CANVAS_STANDARD_EXPORT_MENU_ITEMS,
@@ -117,6 +118,8 @@ const props = defineProps<{
   isDirty?: boolean
   isSaving?: boolean
   previewLock?: boolean
+  /** Deck slides keep the template. Reset stays off even when Back works. */
+  lockReset?: boolean
   /** Snapshot badges to display next to the filename */
   snapshots?: SnapshotMetadata[]
   /** Currently active (recalled) snapshot version */
@@ -300,7 +303,13 @@ watch(
   }
 )
 
+const deckNav = useTrainingDeckNav()
+
 function handleBack() {
+  if (deckNav) {
+    deckNav.backFromCanvas()
+    return
+  }
   if (props.previewLock) return
   if (lsCanvas.isActive) {
     void router.push('/learning-space')
@@ -382,7 +391,7 @@ function handleOpenMindmate() {
  * Nothing is persisted. Shows confirmation modal first.
  */
 async function handleReset() {
-  if (props.previewLock) return
+  if (props.previewLock || props.lockReset) return
   await resetToDefaultTemplate()
   showSlotFullModal.value = false
 }

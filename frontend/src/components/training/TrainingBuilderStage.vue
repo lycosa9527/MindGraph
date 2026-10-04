@@ -19,10 +19,11 @@ const props = withDefaults(
     index: number
     thumb?: string | null
     hibernated?: boolean
+    playAudio?: boolean | null
     readonly?: boolean
     canNext?: boolean
   }>(),
-  { canNext: true }
+  { canNext: true, playAudio: null }
 )
 
 const stageRef = ref<HTMLElement | null>(null)
@@ -71,6 +72,8 @@ function onDrop(event: DragEvent): void {
       :index="index"
       :thumb="hibernated ? thumb : null"
       :interactive="!hibernated"
+      authoring
+      :play-audio="playAudio"
       :can-next="canNext"
       @resize="emit('resize', $event)"
       @next="emit('next')"

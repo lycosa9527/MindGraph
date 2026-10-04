@@ -14,9 +14,9 @@ import {
   blankPageStep,
   blankSlideStep,
   insertStepsAt,
+  mergeSavedStepMeta,
   selectedIndexAfterRemove,
   stepSpotlight,
-  mergeSavedStepMeta,
   trainingCourseFingerprint,
   trainingCourseWriteBody,
   uploadedSlideSteps,
@@ -32,11 +32,11 @@ import {
 } from '@/composables/training/trainingMarkSteps'
 import { applyTrainingTopicToDiagram } from '@/composables/training/trainingTopicApply'
 import {
+  TRAINING_TOPICS_DRAG,
   isTrainingTopicsDrag,
   isTrainingTopicsDrop,
   normalizeTopicOptions,
   stepUsesDualTopics,
-  TRAINING_TOPICS_DRAG,
 } from '@/composables/training/trainingTopicOptions'
 import { hasTrainingLivePreview } from '@/config/trainingPageLive'
 import { TRAINING_PAGES, trainingPagePath } from '@/config/trainingPages'
@@ -197,9 +197,9 @@ describe('training course playback', () => {
         true
       )
     ).toEqual([{ id: '1', label: 'ice vs water', item_a: 'ice', item_b: 'water', prompt: null }])
-    expect(
-      normalizeTopicOptions([{ id: '3', label: '', prompt: '密度' }], false)
-    ).toEqual([{ id: '3', label: '密度', item_a: null, item_b: null, prompt: '密度' }])
+    expect(normalizeTopicOptions([{ id: '3', label: '', prompt: '密度' }], false)).toEqual([
+      { id: '3', label: '密度', item_a: null, item_b: null, prompt: '密度' },
+    ])
   })
 
   it('places a topics overlay on the current mark step', () => {
@@ -240,9 +240,9 @@ describe('training course playback', () => {
     } as DataTransfer
     expect(isTrainingTopicsDrag(transfer)).toBe(true)
     expect(isTrainingTopicsDrop(transfer)).toBe(true)
-    expect(isTrainingTopicsDrop({ types: ['text/plain'], getData: () => 'nope' } as DataTransfer)).toBe(
-      false
-    )
+    expect(
+      isTrainingTopicsDrop({ types: ['text/plain'], getData: () => 'nope' } as DataTransfer)
+    ).toBe(false)
   })
 
   it('starts a slide with empty speaker notes', () => {
@@ -317,23 +317,26 @@ describe('training course playback', () => {
     expect(local[0].notes).toBe('讲稿')
   })
 
-  it('only offers account and language-settings on the landing page', () => {
-    expect(trainingModalsForPage('mindgraph').map((modal) => modal.key)).toEqual([
+  it('keeps the account chip modals on every slide, including canvas', () => {
+    const shell = [
+      'october-update',
       'account',
       'language-settings',
       'thinking-coins',
       'update-log',
-    ])
+      'login',
+    ]
+    expect(trainingModalsForPage('mindgraph').map((modal) => modal.key)).toEqual(shell)
     expect(trainingModalsForPage('canvas').map((modal) => modal.key)).toEqual([
+      ...shell,
       'online-collab',
       'export-community',
     ])
-    expect(trainingModalsForPage('library').map((modal) => modal.key)).toEqual(['login'])
-    expect(trainingModalsForPage('auth')).toEqual([])
+    expect(trainingModalsForPage('library').map((modal) => modal.key)).toEqual(shell)
     const step = blankPageStep(0)
     applyModalKey(step, 'account')
     applyPageKey(step, 'canvas')
-    expect(step.modal_key).toBeNull()
+    expect(step.modal_key).toBe('account')
   })
 
   it('does not pull when the instructor released the room', () => {
@@ -385,11 +388,7 @@ describe('training course playback', () => {
     addOverlay(step, 'text', { text: 'hint' })
     expect(currentMarkStep(step)).toBe(1)
     expect(step.mark_steps).toBe(1)
-    expect(visibleMarkOverlays(step).map((row) => row.kind)).toEqual([
-      'spotlight',
-      'role',
-      'text',
-    ])
+    expect(visibleMarkOverlays(step).map((row) => row.kind)).toEqual(['spotlight', 'role', 'text'])
     addMarkStep(step)
     addOverlay(step, 'arrow')
     expect(currentMarkStep(step)).toBe(2)
@@ -406,10 +405,29 @@ describe('training course playback', () => {
     ])
     removeMarkStep(step)
     expect(step.mark_step).toBe(1)
-    expect(visibleMarkOverlays(step).map((row) => row.kind)).toEqual([
-      'spotlight',
-      'role',
-      'text',
+    expect(visibleMarkOverlays(step).map((row) => row.kind)).toEqual(['spotlight', 'role', 'text'])
+  })
+
+  it('replaces an uploaded mascot on the later mark', () => {
+    const step = blankPageStep(0)
+    addOverlay(step, 'role', { asset_id: 'mascot-a', src: '/a.webp', x: 88 })
+    addMarkStep(step)
+    addOverlay(step, 'role', { asset_id: 'mascot-b', src: '/b.webp', x: 40 })
+    expect(visibleMarkOverlays(step)).toMatchObject([
+      { kind: 'role', asset_id: 'mascot-b', src: '/b.webp', x: 40 },
+    ])
+  })
+
+  it('moves one role to the later mark, including in front of the modal', () => {
+    const step = blankPageStep(0)
+    addOverlay(step, 'role', { role: '11-clap', depth: 'behind', x: 20, y: 80 })
+    addMarkStep(step)
+    addOverlay(step, 'role', { role: '11-clap', depth: 'front', x: 60, y: 30 })
+    expect(visibleMarkOverlays({ ...step, mark_step: 1 })).toMatchObject([
+      { kind: 'role', role: '11-clap', depth: 'behind', x: 20 },
+    ])
+    expect(visibleMarkOverlays(step)).toMatchObject([
+      { kind: 'role', role: '11-clap', depth: 'front', x: 60 },
     ])
   })
 

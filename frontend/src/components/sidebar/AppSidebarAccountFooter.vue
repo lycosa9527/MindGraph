@@ -36,7 +36,7 @@ import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 import { toggleQuickAccessRemote } from '@/composables/sidebar/useQuickAccessRemote'
 import { useSidebarThinkingCoinTaskPromo } from '@/composables/sidebar/useSidebarThinkingCoinTaskPromo'
-import { refreshUserDropdownMenu } from '@/composables/sidebar/useUserDropdownMenu'
+import { useSidebarUserMenuLock } from '@/composables/sidebar/useSidebarUserMenuLock'
 import { usePwaInstall } from '@/composables/usePwaInstall'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
 import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
@@ -54,6 +54,9 @@ if (!sidebarCtx) {
   throw new Error('AppSidebarAccountFooter must be used inside AppSidebar')
 }
 const s = reactive(sidebarCtx)
+const dropdownRef = ref<{ handleOpen?: () => void; handleClose?: () => void } | null>(null)
+const collapsedDropdownRef = ref<{ handleOpen?: () => void; handleClose?: () => void } | null>(null)
+const { onUserMenuVisible } = useSidebarUserMenuLock(dropdownRef, collapsedDropdownRef)
 const route = useRoute()
 const voiceNotesStore = useVoiceNotesStore()
 const showShareSiteModal = ref(false)
@@ -74,10 +77,6 @@ function openPlatformQuickGuide(): void {
 
 function handleVoiceNotes(): void {
   void voiceNotesStore.enableAndOpen()
-}
-
-function onUserMenuVisible(open: boolean): void {
-  if (open) void refreshUserDropdownMenu()
 }
 </script>
 
@@ -207,6 +206,7 @@ function onUserMenuVisible(open: boolean): void {
 
       <el-dropdown
         v-if="!menuOnly && !s.isCollapsed"
+        ref="dropdownRef"
         trigger="click"
         placement="top-end"
         popper-class="user-dropdown-popper"
@@ -330,6 +330,7 @@ function onUserMenuVisible(open: boolean): void {
       <!-- Collapsed mode: show avatar button with dropdown -->
       <el-dropdown
         v-else
+        ref="collapsedDropdownRef"
         trigger="click"
         placement="top-end"
         popper-class="user-dropdown-popper"

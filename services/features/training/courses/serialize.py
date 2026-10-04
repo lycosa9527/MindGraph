@@ -55,6 +55,25 @@ def step_preview_url(
     return preview
 
 
+def overlays_with_asset_urls(
+    overlays: object,
+    assets_by_id: dict[str, TrainingCourseAsset],
+) -> list[Any]:
+    """Fill a custom mascot's playback URL from its stored asset id."""
+    if not isinstance(overlays, list):
+        return []
+    rows: list[Any] = []
+    for item in overlays:
+        if not isinstance(item, dict):
+            continue
+        row = dict(item)
+        asset_id = row.get("asset_id")
+        if asset_id:
+            row["src"] = asset_url(assets_by_id.get(str(asset_id)))
+        rows.append(row)
+    return rows
+
+
 def serialize_step(
     step: TrainingCourseStep,
     assets_by_id: dict[str, TrainingCourseAsset],
@@ -65,6 +84,10 @@ def serialize_step(
     asset = assets_by_id.get(str(asset_id)) if asset_id else None
     thumb_id = payload.get("thumb_id")
     thumb = assets_by_id.get(str(thumb_id)) if thumb_id else None
+    voice_id = payload.get("voice_asset_id")
+    voice = assets_by_id.get(str(voice_id)) if voice_id else None
+    music_id = payload.get("music_asset_id")
+    music = assets_by_id.get(str(music_id)) if music_id else None
     page_key, pull_users = step_navigation_fields(step.step_type, payload)
     return {
         "id": step.id,
@@ -74,9 +97,13 @@ def serialize_step(
         "topic_options": payload.get("topic_options") or [],
         "asset_id": asset_id,
         "asset_url": asset_url(asset),
+        "voice_asset_id": voice_id,
+        "voice_url": asset_url(voice),
+        "music_asset_id": music_id,
+        "music_url": asset_url(music),
         "thumb_id": thumb_id,
         "thumb_url": step_preview_url(step.step_type, asset, thumb),
-        "overlays": payload.get("overlays") or [],
+        "overlays": overlays_with_asset_urls(payload.get("overlays"), assets_by_id),
         "page_key": page_key,
         "pull_users": bool(pull_users),
         "mandatory": bool(payload.get("mandatory")),
@@ -132,6 +159,8 @@ def snapshot_step_payload(step_body: dict[str, Any]) -> dict[str, Any]:
         "diagram_type": step_body.get("diagram_type"),
         "topic_options": step_body.get("topic_options") or [],
         "asset_url": step_body.get("asset_url"),
+        "voice_url": step_body.get("voice_url"),
+        "music_url": step_body.get("music_url"),
         "overlays": step_body.get("overlays") or [],
         "page_key": step_body.get("page_key"),
         "pull_users": bool(step_body.get("pull_users")),

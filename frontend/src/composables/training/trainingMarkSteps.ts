@@ -60,10 +60,7 @@ export function allocateOverlayStep(step: TrainingCourseStep): number {
   return currentMarkStep(step)
 }
 
-export function visibleMarkOverlays(
-  step: TrainingCourseStep,
-  at?: number
-): TrainingStepOverlay[] {
+export function visibleMarkOverlays(step: TrainingCourseStep, at?: number): TrainingStepOverlay[] {
   const current = at ?? currentMarkStep(step)
   const due = (step.overlays || []).filter((overlay) => overlayMarkStep(overlay) <= current)
   let latestSpot: TrainingStepOverlay | undefined
@@ -74,13 +71,21 @@ export function visibleMarkOverlays(
     }
   }
   let latestTopics: TrainingStepOverlay | undefined
+  const latestRole = new Map<string, TrainingStepOverlay>()
   for (const overlay of due) {
-    if (overlay.kind !== 'topics') continue
-    latestTopics = overlay
+    if (overlay.kind === 'topics') latestTopics = overlay
+    if (overlay.kind !== 'role') continue
+    const id = overlay.asset_id ? 'mascot' : overlay.role || ''
+    const prev = latestRole.get(id)
+    if (!prev || overlayMarkStep(overlay) >= overlayMarkStep(prev)) latestRole.set(id, overlay)
   }
   return due.filter((overlay) => {
     if (overlay.kind === 'spotlight') return overlay === latestSpot
     if (overlay.kind === 'topics') return overlay === latestTopics
+    if (overlay.kind === 'role') {
+      const id = overlay.asset_id ? 'mascot' : overlay.role || ''
+      return latestRole.get(id) === overlay
+    }
     return true
   })
 }

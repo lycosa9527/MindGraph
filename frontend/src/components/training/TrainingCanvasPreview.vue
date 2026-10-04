@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
 
 import { CanvasChrome, CanvasTopBar, ZoomControls } from '@/components/canvas'
-import { OnlineCollabModal } from '@/components/workshop'
-import { eventBus } from '@/composables/core/useEventBus'
-import { applyTrainingTopicToDiagram } from '@/composables/training/trainingTopicApply'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import DiagramSessionProvider from '@/components/diagram/DiagramSessionProvider.vue'
+import { OnlineCollabModal } from '@/components/workshop'
 import { normalizeDiagramTypeKey } from '@/composables/canvasPage/newCanvasBootstrap'
+import { eventBus } from '@/composables/core/useEventBus'
+import { useTrainingDeckNav } from '@/composables/training/trainingDeckNav'
+import { applyTrainingTopicToDiagram } from '@/composables/training/trainingTopicApply'
+import { TRAINING_LOCK_SCOPE, registerTrainingUiLock } from '@/composables/training/trainingUiLock'
 import type { LocaleCode } from '@/i18n/locales'
 import type { DiagramSession } from '@/stores/diagram'
 import { getDefaultTemplate } from '@/stores/specLoader/defaultTemplates'
@@ -25,6 +27,8 @@ const props = defineProps<{
 }>()
 
 const uiStore = useUIStore()
+const deckNav = useTrainingDeckNav()
+const lockScope = inject(TRAINING_LOCK_SCOPE, '')
 
 const normalizedType = computed(() => {
   const key = normalizeDiagramTypeKey(props.diagramType) || 'mindmap'
@@ -46,6 +50,15 @@ const sessionKey = computed(
 const collabOpen = ref(false)
 const providerRef = ref<{ session: DiagramSession } | null>(null)
 const owner = `TrainingCanvasPreview:${Math.random().toString(36).slice(2, 8)}`
+
+const releaseCollabLock = registerTrainingUiLock({
+  key: 'online-collab',
+  scope: lockScope,
+  isOpen: () => collabOpen.value,
+  setOpen: (open: boolean) => {
+    collabOpen.value = open
+  },
+})
 
 onMounted(() => {
   eventBus.onWithOwner(
@@ -73,6 +86,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  releaseCollabLock()
   eventBus.removeAllListenersForOwner(owner)
 })
 </script>
@@ -89,7 +103,10 @@ onUnmounted(() => {
       :diagram-type="normalizedType"
     >
       <CanvasChrome>
-        <CanvasTopBar preview-lock />
+        <CanvasTopBar
+          :preview-lock="!deckNav"
+          lock-reset
+        />
       </CanvasChrome>
       <div class="canvas-preview__body">
         <DiagramCanvasHost

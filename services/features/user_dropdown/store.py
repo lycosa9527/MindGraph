@@ -111,6 +111,40 @@ async def assign_course(db: AsyncSession, item: UserDropdownItem, course_id: Opt
     item.course = course
 
 
+def _item_for_course(items: list[UserDropdownItem], course_id: str) -> Optional[UserDropdownItem]:
+    """The menu row already pointing at this course."""
+    for item in items:
+        if item.course_id == course_id:
+            return item
+    return None
+
+
+async def menu_label_for_course(db: AsyncSession, course_id: str) -> str:
+    """Avatar-menu name for this course, or blank when it is not listed."""
+    match = _item_for_course(await list_items(db), course_id)
+    return match.label if match is not None else ""
+
+
+async def set_course_menu_label(db: AsyncSession, course_id: str, label: str) -> str:
+    """Show this course in the avatar menu, or hide it when the name is blank."""
+    course = await get_course(db, course_id)
+    if course is None:
+        raise ValueError("user_dropdown_course_missing")
+    existing = _item_for_course(await list_items(db), course_id)
+    cleaned = label.strip()
+    if not cleaned:
+        if existing is not None:
+            await delete_item(db, existing)
+        return ""
+    name = clean_label(cleaned)
+    if existing is None:
+        created = await create_item(db, name)
+        await assign_course(db, created, course_id)
+        return created.label
+    await rename_item(existing, name)
+    return existing.label
+
+
 async def delete_item(db: AsyncSession, item: UserDropdownItem) -> None:
     """Remove a menu function."""
     await db.delete(item)

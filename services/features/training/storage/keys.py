@@ -9,13 +9,16 @@ from config.settings import config
 from services.utils.tencent_cos_client import cos_object_key
 
 LOGICAL_PREFIX = "courses"
-ASSET_ROLES = frozenset({"cover", "slide", "video", "media", "thumb"})
+ASSET_ROLES = frozenset({"cover", "slide", "video", "media", "thumb", "voice", "music", "mascot"})
 ROLE_FOLDERS = {
     "cover": "",
     "slide": "slides",
     "video": "videos",
     "media": "media",
     "thumb": "thumbs",
+    "voice": "voice",
+    "music": "music",
+    "mascot": "mascot",
 }
 
 _UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
@@ -24,7 +27,8 @@ _UUID_PATH = r"[0-9a-fA-F-]{36}"
 _COURSE_OBJECT_RE = re.compile(
     rf"^{re.escape(LOGICAL_PREFIX)}/"
     rf"{_UUID_PATH}/"
-    rf"(?:cover|slides/{_UUID_PATH}|videos/{_UUID_PATH}|media/{_UUID_PATH}|thumbs/{_UUID_PATH})"
+    rf"(?:cover|slides/{_UUID_PATH}|videos/{_UUID_PATH}|media/{_UUID_PATH}|"
+    rf"thumbs/{_UUID_PATH}|voice/{_UUID_PATH}|music/{_UUID_PATH}|mascot/{_UUID_PATH})"
     r"\.[a-z0-9]{1,8}$",
     re.IGNORECASE,
 )
@@ -38,6 +42,12 @@ MIME_SUFFIX = {
     "video/mp4": ".mp4",
     "video/webm": ".webm",
     "video/quicktime": ".mov",
+    "audio/mpeg": ".mp3",
+    "audio/mp3": ".mp3",
+    "audio/mp4": ".m4a",
+    "audio/wav": ".wav",
+    "audio/x-wav": ".wav",
+    "audio/webm": ".webm",
 }
 
 
@@ -112,7 +122,7 @@ def is_training_logical_key(logical_key: str) -> bool:
 
 
 def is_scoped_course_object_key(logical_key: str) -> bool:
-    """True when key matches courses/{id}/cover|slides|videos|media|thumbs."""
+    """True when key matches a course cover, slide, video, media, thumb, voice, music, or mascot object."""
     normalized = logical_key.lstrip("/").replace("\\", "/")
     return bool(_COURSE_OBJECT_RE.match(normalized))
 

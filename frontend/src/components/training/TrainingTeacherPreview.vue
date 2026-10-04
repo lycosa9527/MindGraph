@@ -52,7 +52,12 @@ watch(
   ([modalKey, focusKey, uiLock, live]) => {
     if (!live) return
     void nextTick().then(() =>
-      applyTrainingUiTarget({ modalKey, focusKey, uiLock, hostModals: false })
+      applyTrainingUiTarget({
+        modalKey,
+        focusKey,
+        uiLock: uiLock || modalKey,
+        hostModals: false,
+      })
     )
   },
   { immediate: true }
@@ -99,6 +104,7 @@ onUnmounted(() => {
         v-else-if="showLive"
         :page-key="step.page_key"
         :diagram-type="step.diagram_type"
+        :step="step"
         interactive
       />
       <p
@@ -122,6 +128,8 @@ onUnmounted(() => {
       <TrainingStepMarks
         :overlays="marks"
         :step="step"
+        portaled
+        remote-roles
         selectable
       />
       <TrainingPlayControls

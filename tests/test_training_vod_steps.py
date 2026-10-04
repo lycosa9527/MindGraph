@@ -53,6 +53,45 @@ def test_step_payload_keeps_always_play() -> None:
     assert _step_payload({"type": "page"})["always_play"] is False
 
 
+def test_step_payload_keeps_voice_and_music() -> None:
+    """Voice and music asset ids stay on the slide payload."""
+    voice = "6f2a1c90-db01-4000-8000-00000000db11"
+    music = "6f2a1c90-db01-4000-8000-00000000db12"
+    payload = _step_payload({"type": "page", "voice_asset_id": voice, "music_asset_id": music})
+    assert payload["voice_asset_id"] == voice
+    assert payload["music_asset_id"] == music
+    assert _step_payload({"type": "page"})["voice_asset_id"] is None
+    with pytest.raises(ValueError, match="voice_asset_id"):
+        _step_payload({"type": "page", "voice_asset_id": "nope"})
+
+
+def test_step_payload_keeps_mascot_asset_and_drops_playback_url() -> None:
+    """A custom mascot stores its asset id. The playback URL is filled on read."""
+    asset_id = "6f2a1c90-db01-4000-8000-00000000db13"
+    payload = _step_payload(
+        {
+            "type": "page",
+            "overlays": [
+                {
+                    "kind": "role",
+                    "asset_id": asset_id,
+                    "src": "/api/training/assets/stale.webp",
+                    "x": 88,
+                }
+            ],
+        }
+    )
+    assert payload["overlays"] == [{"kind": "role", "asset_id": asset_id, "x": 88}]
+    with pytest.raises(ValueError, match="asset_id"):
+        _step_payload({"type": "page", "overlays": [{"kind": "role", "asset_id": "nope"}]})
+
+
+def test_step_payload_keeps_user_dropdown_lock() -> None:
+    """The avatar menu can stay locked on a canvas slide."""
+    payload = _step_payload({"type": "page", "page_key": "canvas", "ui_lock": "user-dropdown"})
+    assert payload["ui_lock"] == "user-dropdown"
+
+
 def test_step_payload_keeps_vod_window_size() -> None:
     """A resized video window must survive save and reject a tiny box."""
     payload = _step_payload({"type": "page", "vod_width": 48, "vod_height": 30})

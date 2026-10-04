@@ -4,7 +4,8 @@
  */
 import { completeTrainingAsset, initTrainingAsset } from '@/utils/trainingApi'
 
-export type TrainingUploadRole = 'cover' | 'slide' | 'video' | 'media' | 'thumb'
+export type TrainingUploadRole =
+  'cover' | 'slide' | 'video' | 'media' | 'thumb' | 'voice' | 'music' | 'mascot'
 
 function contentTypeFromExtension(name: string): string {
   const lower = name.toLowerCase()
@@ -15,6 +16,10 @@ function contentTypeFromExtension(name: string): string {
   if (lower.endsWith('.mp4') || lower.endsWith('.m4v')) return 'video/mp4'
   if (lower.endsWith('.webm')) return 'video/webm'
   if (lower.endsWith('.mov')) return 'video/quicktime'
+  if (lower.endsWith('.mp3')) return 'audio/mpeg'
+  if (lower.endsWith('.m4a')) return 'audio/mp4'
+  if (lower.endsWith('.wav')) return 'audio/wav'
+  if (lower.endsWith('.weba')) return 'audio/webm'
   return 'application/octet-stream'
 }
 
@@ -34,6 +39,12 @@ const EXTENSION_BY_TYPE: Record<string, string> = {
   'video/mp4': '.mp4',
   'video/webm': '.webm',
   'video/quicktime': '.mov',
+  'audio/mpeg': '.mp3',
+  'audio/mp3': '.mp3',
+  'audio/mp4': '.m4a',
+  'audio/wav': '.wav',
+  'audio/x-wav': '.wav',
+  'audio/webm': '.webm',
 }
 
 export function filenameForTrainingUpload(file: File, contentType: string): string {

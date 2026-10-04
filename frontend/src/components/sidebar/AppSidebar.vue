@@ -4,7 +4,7 @@
  * Each module can expand its history panel below; only one panel open at a time.
  * Workshop mode hides admin items and fills remaining space.
  */
-import { onBeforeUnmount, provide, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, provide, ref, watch } from 'vue'
 
 import { ElButton } from 'element-plus'
 
@@ -15,10 +15,13 @@ import ThinkingCoinsModal from '@/components/auth/ThinkingCoinsModal.vue'
 import UpdateLogModal from '@/components/auth/UpdateLogModal.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import UserSettingsModal from '@/components/settings/UserSettingsModal.vue'
+import OctoberUpdateModal from '@/components/training/OctoberUpdateModal.vue'
 import { useThinkingCoinInsufficientListener } from '@/composables/auth/useThinkingCoinInsufficientListener'
 import { eventBus } from '@/composables/core/useEventBus'
 import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
 import { useLogoSiteQrHover } from '@/composables/sidebar/useLogoSiteQrHover'
+import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
+import { TRAINING_LOCK_SCOPE, registerTrainingUiLock } from '@/composables/training/trainingUiLock'
 import type { TrainingModalKey } from '@/config/trainingUiTargets'
 
 import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
@@ -26,12 +29,31 @@ import AppSidebarNav from './AppSidebarNav.vue'
 import LogoQrScanModal from './LogoQrScanModal.vue'
 
 const sidebar = useAppSidebar()
-provide(appSidebarInjectionKey, sidebar)
+const inline = isTrainingInlineHost()
+const lockScope = inject(TRAINING_LOCK_SCOPE, '')
+const localCollapsed = ref(false)
+const collapsed = computed(() => (inline ? localCollapsed.value : sidebar.isCollapsed.value))
+
+function toggleCollapsed(): void {
+  if (inline) {
+    localCollapsed.value = !localCollapsed.value
+    return
+  }
+  sidebar.toggleSidebar()
+}
+
+const providedSidebar = inline
+  ? {
+      ...sidebar,
+      isCollapsed: collapsed,
+      toggleSidebar: toggleCollapsed,
+    }
+  : sidebar
+provide(appSidebarInjectionKey, providedSidebar)
 
 useThinkingCoinInsufficientListener(() => sidebar.openThinkingCoinsUpgrade())
 
 const {
-  isCollapsed,
   showUserSettingsModal,
   userSettingsTab,
   showLoginModal,
@@ -46,6 +68,7 @@ const {
   orgEditionParams,
   orgEditionTooltip,
 } = sidebar
+const showOctoberUpdate = ref(false)
 
 function openTrainingModal(key: TrainingModalKey): void {
   if (key === 'language-settings') {
@@ -66,6 +89,10 @@ function openTrainingModal(key: TrainingModalKey): void {
   }
   if (key === 'update-log') {
     sidebar.openUpdateLogModal()
+    return
+  }
+  if (key === 'october-update') {
+    showOctoberUpdate.value = true
   }
 }
 
@@ -74,6 +101,7 @@ const TRAINING_HOST_MODALS = new Set<TrainingModalKey>([
   'account',
   'thinking-coins',
   'update-log',
+  'october-update',
   'login',
 ])
 const TRAINING_MODAL_OWNER = 'AppSidebarTrainingModals'
@@ -82,25 +110,28 @@ function closeTrainingHostModals(): void {
   showUserSettingsModal.value = false
   showThinkingCoinsModal.value = false
   showUpdateLogModal.value = false
+  showOctoberUpdate.value = false
   showLoginModal.value = false
 }
 
-eventBus.onWithOwner(
-  'training:modal_open_requested',
-  ({ key }) => {
-    if (TRAINING_HOST_MODALS.has(key as TrainingModalKey)) {
-      openTrainingModal(key as TrainingModalKey)
-    }
-  },
-  TRAINING_MODAL_OWNER
-)
-eventBus.onWithOwner(
-  'training:modal_close_requested',
-  () => {
-    closeTrainingHostModals()
-  },
-  TRAINING_MODAL_OWNER
-)
+if (!inline) {
+  eventBus.onWithOwner(
+    'training:modal_open_requested',
+    ({ key }) => {
+      if (TRAINING_HOST_MODALS.has(key as TrainingModalKey)) {
+        openTrainingModal(key as TrainingModalKey)
+      }
+    },
+    TRAINING_MODAL_OWNER
+  )
+  eventBus.onWithOwner(
+    'training:modal_close_requested',
+    () => {
+      closeTrainingHostModals()
+    },
+    TRAINING_MODAL_OWNER
+  )
+}
 
 const {
   visible: showLogoQrScan,
@@ -109,7 +140,7 @@ const {
   close: closeLogoQrScan,
   clearHoverCloseTimer,
   scheduleHoverClose,
-} = useLogoSiteQrHover(() => !isCollapsed.value)
+} = useLogoSiteQrHover(() => !collapsed.value)
 
 function onLogoClick(): void {
   if (showLogoQrScan.value) {
@@ -118,14 +149,70 @@ function onLogoClick(): void {
   sidebar.handleLogoClick()
 }
 
-watch(isCollapsed, (collapsed) => {
-  if (collapsed) {
+watch(collapsed, (isClosed) => {
+  if (isClosed) {
     closeLogoQrScan()
   }
 })
 
+const releaseModalLocks = [
+  registerTrainingUiLock({
+    key: 'account',
+    scope: lockScope,
+    isOpen: () => showUserSettingsModal.value && userSettingsTab.value === 'account',
+    setOpen: (open: boolean) => {
+      if (open) sidebar.openAccountModal()
+      else showUserSettingsModal.value = false
+    },
+  }),
+  registerTrainingUiLock({
+    key: 'language-settings',
+    scope: lockScope,
+    isOpen: () => showUserSettingsModal.value && userSettingsTab.value === 'language',
+    setOpen: (open: boolean) => {
+      if (open) sidebar.openLanguageSettingsModal()
+      else showUserSettingsModal.value = false
+    },
+  }),
+  registerTrainingUiLock({
+    key: 'update-log',
+    scope: lockScope,
+    isOpen: () => showUpdateLogModal.value,
+    setOpen: (open: boolean) => {
+      showUpdateLogModal.value = open
+    },
+  }),
+  registerTrainingUiLock({
+    key: 'october-update',
+    scope: lockScope,
+    isOpen: () => showOctoberUpdate.value,
+    setOpen: (open: boolean) => {
+      showOctoberUpdate.value = open
+    },
+  }),
+  registerTrainingUiLock({
+    key: 'thinking-coins',
+    scope: lockScope,
+    isOpen: () => showThinkingCoinsModal.value,
+    setOpen: (open: boolean) => {
+      if (open) sidebar.openThinkingCoinsModal()
+      else showThinkingCoinsModal.value = false
+    },
+  }),
+  registerTrainingUiLock({
+    key: 'login',
+    scope: lockScope,
+    isOpen: () => showLoginModal.value,
+    setOpen: (open: boolean) => {
+      if (open) sidebar.openLoginModal()
+      else showLoginModal.value = false
+    },
+  }),
+]
+
 onBeforeUnmount(() => {
-  eventBus.removeAllListenersForOwner(TRAINING_MODAL_OWNER)
+  if (!inline) eventBus.removeAllListenersForOwner(TRAINING_MODAL_OWNER)
+  for (const release of releaseModalLocks) release()
 })
 </script>
 
@@ -133,11 +220,11 @@ onBeforeUnmount(() => {
   <div
     class="app-sidebar bg-stone-50 flex flex-col h-full min-h-0 shrink-0 overflow-hidden"
     :class="
-      isCollapsed
+      collapsed
         ? 'w-0 min-w-0 max-w-0 border-transparent pointer-events-none'
         : 'w-[var(--mg-sidebar-width)] border-r border-stone-200'
     "
-    :aria-hidden="isCollapsed"
+    :aria-hidden="collapsed"
   >
     <!-- Header: brand + collapse (expand when hidden is on the active page) -->
     <div
@@ -203,7 +290,7 @@ onBeforeUnmount(() => {
         class="sidebar-header-collapse shrink-0"
         :title="sidebar.t('sidebar.collapseSidebar')"
         :aria-label="sidebar.t('sidebar.collapseSidebar')"
-        @click.stop="sidebar.toggleSidebar()"
+        @click.stop="toggleCollapsed()"
       >
         <PanelLeftClose class="w-[18px] h-[18px]" />
       </el-button>
@@ -220,6 +307,7 @@ onBeforeUnmount(() => {
     />
     <LoginModal v-model:visible="showLoginModal" />
     <UpdateLogModal v-model:visible="showUpdateLogModal" />
+    <OctoberUpdateModal v-model:visible="showOctoberUpdate" />
     <ThinkingCoinsModal
       v-model:visible="showThinkingCoinsModal"
       :initial-tab="thinkingCoinsModalTab"

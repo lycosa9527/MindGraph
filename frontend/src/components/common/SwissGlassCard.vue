@@ -8,6 +8,7 @@ import { Sparkles } from '@lucide/vue'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
+import { useTrainingDialogHost } from '@/composables/training/trainingInlineHost'
 import '@/styles/mind-map-side-rail-panel.css'
 import '@/styles/swissGlassControls.css'
 
@@ -50,6 +51,8 @@ const emit = defineEmits<{ close: []; pointerenter: []; pointerleave: [] }>()
 
 const overlayEl = ref<HTMLElement | null>(null)
 const cardEl = ref<HTMLElement | null>(null)
+const dialogHost = useTrainingDialogHost()
+const teleportTarget = computed(() => dialogHost.value)
 
 const plateIcon = computed(() => props.icon ?? Sparkles)
 
@@ -67,6 +70,7 @@ const overlayClassName = computed(() =>
   [
     'swiss-glass-card-overlay',
     props.lightBackdrop ? 'swiss-glass-card-overlay--light' : '',
+    dialogHost.value === 'body' ? '' : 'swiss-glass-card-overlay--contained',
     props.overlayClass,
   ]
     .filter(Boolean)
@@ -91,7 +95,7 @@ function onBackdrop(): void {
 
 <template>
   <Teleport
-    to="body"
+    :to="teleportTarget"
     :disabled="teleportDisabled"
   >
     <div
@@ -147,6 +151,7 @@ function onBackdrop(): void {
 
 .swiss-glass-card-overlay--contained {
   position: absolute;
+  overflow: auto;
 }
 
 .swiss-glass-card-overlay--auth-pad {

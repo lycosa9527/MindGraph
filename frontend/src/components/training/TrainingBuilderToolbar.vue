@@ -5,6 +5,8 @@ import { ElButton, ElCheckbox, ElOption, ElSelect } from 'element-plus'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import TrainingArrowPicker from '@/components/training/TrainingArrowPicker.vue'
+import TrainingBuilderAudioField from '@/components/training/TrainingBuilderAudioField.vue'
+import TrainingBuilderMascotField from '@/components/training/TrainingBuilderMascotField.vue'
 import TrainingBuilderVodPicker from '@/components/training/TrainingBuilderVodPicker.vue'
 import TrainingEmojiPicker from '@/components/training/TrainingEmojiPicker.vue'
 import TrainingMarkStepsBar from '@/components/training/TrainingMarkStepsBar.vue'
@@ -12,7 +14,8 @@ import TrainingRolePicker from '@/components/training/TrainingRolePicker.vue'
 import TrainingTopicOptionsPanel from '@/components/training/TrainingTopicOptionsPanel.vue'
 import { swissGlassConfirm, useLanguage } from '@/composables'
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
-import { stepSpotlight } from '@/composables/training/trainingBuilderSteps'
+import { applyModalKey, stepSpotlight } from '@/composables/training/trainingBuilderSteps'
+import { currentMarkStep } from '@/composables/training/trainingMarkSteps'
 import {
   clampSpotlightScale,
   spotlightRadius,
@@ -20,7 +23,12 @@ import {
 } from '@/composables/training/trainingOverlayDrag'
 import type { TrainingArrowColor, TrainingArrowLine } from '@/config/trainingMarkPalettes'
 import { TRAINING_PAGES, type TrainingPageKey } from '@/config/trainingPages'
-import type { TrainingCourseStep, TrainingSpotlightShape } from '@/types/training'
+import { trainingModalsForPage } from '@/config/trainingUiTargets'
+import type {
+  TrainingCourseStep,
+  TrainingRoleDepth,
+  TrainingSpotlightShape,
+} from '@/types/training'
 
 const BUILDER_DIAGRAM_TYPES = VALID_DIAGRAM_TYPES.filter((type) => type !== 'mind_map')
 
@@ -35,11 +43,15 @@ const emit = defineEmits<{
   arrow: [opts: { color: TrainingArrowColor; line: TrainingArrowLine }]
   spotlight: []
   role: [role: string]
+  roleAsset: [file: { id: string; url: string }]
   image: [file: File]
   awake: []
+  lockArm: []
+  lock: []
 }>()
 
 const { t } = useLanguage()
+const roleDepth = ref<TrainingRoleDepth>('front')
 const emojiOpen = ref(false)
 const arrowOpen = ref(false)
 const spotOpen = ref(false)
@@ -66,6 +78,12 @@ const spotShapeOptions = computed(() => [
 ])
 
 const isCanvas = computed(() => props.step.page_key === 'canvas' || props.step.type === 'canvas')
+const pageModals = computed(() => trainingModalsForPage(props.step.page_key || 'mindgraph'))
+
+function onModal(value: string): void {
+  emit('awake')
+  applyModalKey(props.step, value || null)
+}
 
 function addTextBubble(): void {
   emit('awake')
@@ -190,6 +208,21 @@ function pickRole(role: string): void {
   emit('awake')
   emit('role', role)
   roleOpen.value = false
+  setRoleDepth(roleDepth.value)
+}
+
+function onMascot(file: { id: string; url: string }): void {
+  emit('awake')
+  emit('roleAsset', file)
+  setRoleDepth(roleDepth.value)
+}
+
+function setRoleDepth(depth: TrainingRoleDepth): void {
+  roleDepth.value = depth
+  const at = currentMarkStep(props.step)
+  for (const overlay of props.step.overlays || []) {
+    if (overlay.kind === 'role' && (overlay.step || 1) === at) overlay.depth = depth
+  }
 }
 
 function onSpotRadius(event: Event): void {
@@ -225,6 +258,29 @@ function clearSpotlight(): void {
           :label="t(page.labelKey)"
         >
           <I18nText :k="page.labelKey" />
+        </ElOption>
+      </ElSelect>
+      <span class="builder-toolbar__label"><I18nText k="training.builder.modal" /></span>
+      <ElSelect
+        class="admin-swiss-select builder-toolbar__page"
+        :model-value="step.modal_key || ''"
+        size="small"
+        :placeholder="t('training.builder.modal')"
+        @change="onModal"
+      >
+        <ElOption
+          value=""
+          :label="t('training.builder.modalNone')"
+        >
+          <I18nText k="training.builder.modalNone" />
+        </ElOption>
+        <ElOption
+          v-for="modal in pageModals"
+          :key="modal.key"
+          :value="modal.key"
+          :label="t(modal.labelKey)"
+        >
+          <I18nText :k="modal.labelKey" />
         </ElOption>
       </ElSelect>
       <template v-if="isCanvas">
@@ -280,7 +336,32 @@ function clearSpotlight(): void {
     <TrainingMarkStepsBar
       :step="step"
       @awake="emit('awake')"
-    />
+    >
+      <TrainingBuilderAudioField kind="voice" />
+      <TrainingBuilderAudioField kind="music" />
+      <TrainingBuilderVodPicker
+        :step="step"
+        @video="onVodVideo"
+        @autoplay="step.vod_autoplay = $event"
+      />
+      <div class="builder-toolbar__tail">
+        <ElButton
+          size="small"
+          class="admin-swiss-btn"
+          :class="{ 'is-on': Boolean(step.ui_lock || step.modal_key) }"
+          :aria-pressed="Boolean(step.ui_lock || step.modal_key)"
+          @pointerdown="emit('lockArm')"
+          @click="emit('lock')"
+        >
+          <I18nText
+            :k="
+              step.ui_lock || step.modal_key ? 'training.builder.unlock' : 'training.builder.lock'
+            "
+          />
+        </ElButton>
+        <TrainingBuilderMascotField @placed="onMascot" />
+      </div>
+    </TrainingMarkStepsBar>
     <div class="builder-toolbar__row">
       <span class="builder-toolbar__label"><I18nText k="training.builder.groupMarks" /></span>
       <ElButton
@@ -346,7 +427,7 @@ function clearSpotlight(): void {
             v-model="spotShape"
             equal
             :options="spotShapeOptions"
-            :ariaLabel="t('training.builder.spotlightShape')"
+            :aria-label="t('training.builder.spotlightShape')"
           />
           <label class="builder-toolbar__slider">
             <span><I18nText k="training.builder.spotlightRadius" /></span>
@@ -385,6 +466,24 @@ function clearSpotlight(): void {
           class="builder-toolbar__sheet builder-toolbar__sheet--roles"
         >
           <TrainingRolePicker @pick="pickRole" />
+          <div class="builder-toolbar__depth">
+            <ElButton
+              size="small"
+              class="admin-swiss-btn"
+              :class="{ 'is-on': roleDepth === 'behind' }"
+              @click="setRoleDepth('behind')"
+            >
+              <I18nText k="training.builder.roleBehind" />
+            </ElButton>
+            <ElButton
+              size="small"
+              class="admin-swiss-btn"
+              :class="{ 'is-on': roleDepth === 'front' }"
+              @click="setRoleDepth('front')"
+            >
+              <I18nText k="training.builder.roleFront" />
+            </ElButton>
+          </div>
         </div>
       </div>
       <label class="builder-toolbar__upload">
@@ -395,11 +494,6 @@ function clearSpotlight(): void {
           @change="onImage"
         />
       </label>
-      <TrainingBuilderVodPicker
-        :step="step"
-        @video="onVodVideo"
-        @autoplay="step.vod_autoplay = $event"
-      />
     </div>
   </div>
 </template>
@@ -489,6 +583,12 @@ function clearSpotlight(): void {
   color: #78716c;
   font-size: 0.72rem;
   cursor: pointer;
+}
+.builder-toolbar__tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
 }
 .builder-toolbar__upload {
   display: inline-flex;

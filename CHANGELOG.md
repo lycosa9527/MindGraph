@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.143] - 2026-10-04
+
+> **A course slide can play voice and music, show a mascot, and open from the account menu.**
+
+### Added
+
+- **校本培训** — Each slide can carry a voice track and quieter background music. A WebP mascot can sit behind a locked dialog or in front of it. Course info can put a name in the account menu; a click starts that course, and a blank name hides it. A slide can lock the account menu and the sidebar dialogs, including a new October update summary.
+- **十月更新** — The dialog lists canvas, account, Learning Space, and course changes since August.
+
+### Changed
+
+- **校本培训** — In the course preview, gallery, sidebar, and canvas Back stay on the slide deck. A slide video keeps its picture's aspect ratio and can be resized smaller.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`tests/test_course_menu_label.py`](tests/test_course_menu_label.py), [`tests/test_training_vod_steps.py`](tests/test_training_vod_steps.py), [`tests/test_training_storage_keys.py`](tests/test_training_storage_keys.py), [`frontend/tests/trainingDeckNav.spec.ts`](frontend/tests/trainingDeckNav.spec.ts), [`frontend/tests/trainingUiLock.spec.ts`](frontend/tests/trainingUiLock.spec.ts), [`frontend/tests/trainingCourses.spec.ts`](frontend/tests/trainingCourses.spec.ts)
+
 ## [5.180.142] - 2026-10-04
 
 > **Account, security, language, and plugins live in one settings dialog, and a custom avatar is a photo stored on COS.**

@@ -5,6 +5,7 @@ import TrainingSpotlightLayer from '@/components/training/TrainingSpotlightLayer
 import TrainingTextBubble from '@/components/training/TrainingTextBubble.vue'
 import TrainingTopicsMark from '@/components/training/TrainingTopicsMark.vue'
 import { requestTrainingTopicApply } from '@/composables/training/trainingCommands'
+import { trainingDialogHostNear } from '@/composables/training/trainingInlineHost'
 import {
   type ArrowHandle,
   moveArrowHandle,
@@ -17,11 +18,7 @@ import {
   trainingArrowHex,
   trainingArrowLine,
 } from '@/config/trainingMarkPalettes'
-import {
-  resizeRoleWidth,
-  roleWidth,
-  trainingRoleMarkSrc,
-} from '@/config/trainingRoles'
+import { resizeRoleWidth, roleWidth, trainingRoleMarkSrc } from '@/config/trainingRoles'
 import {
   bumpTextBubbleFont,
   resizeTextBubble,
@@ -44,6 +41,7 @@ const props = defineProps<{
   selectable?: boolean
   remoteRoles?: boolean
   stillRoles?: boolean
+  portaled?: boolean
   step?: TrainingCourseStep
 }>()
 
@@ -55,6 +53,9 @@ const topicOptions = computed(() => props.step?.topic_options || [])
 const dualTopics = computed(() => stepUsesDualTopics(props.step))
 
 const rootRef = ref<HTMLElement | null>(null)
+const roleHost = computed(() => trainingDialogHostNear(rootRef.value))
+const roleTeleport = computed(() => roleHost.value ?? 'body')
+const stageBox = ref({ left: 0, top: 0, width: 1, height: 1 })
 const selectedTextIndex = ref<number | null>(null)
 const markScope = `ar-${Math.random().toString(36).slice(2, 10)}`
 type MarkHandle = ArrowHandle | 'body' | 'role-size' | 'text-size'
@@ -62,6 +63,10 @@ let dragIndex = -1
 let arrowHandle: MarkHandle = 'body'
 let lastX = 0
 let lastY = 0
+
+watch(roleHost, () => {
+  void nextTick().then(measureStage)
+})
 
 watch(
   () => props.overlays.length,
@@ -78,12 +83,28 @@ function onDocPointer(event: PointerEvent): void {
   selectedTextIndex.value = null
 }
 
+function measureStage(): void {
+  const el = rootRef.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  stageBox.value = { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+}
+
+function onStageMove(): void {
+  if (props.portaled || roleHost.value) measureStage()
+}
+
 onMounted(() => {
   document.addEventListener('pointerdown', onDocPointer)
+  measureStage()
+  window.addEventListener('resize', onStageMove)
+  window.addEventListener('scroll', onStageMove, true)
 })
 
 onUnmounted(() => {
   document.removeEventListener('pointerdown', onDocPointer)
+  window.removeEventListener('resize', onStageMove)
+  window.removeEventListener('scroll', onStageMove, true)
 })
 
 function startDrag(index: number, event: PointerEvent, handle: MarkHandle = 'body'): void {
@@ -95,7 +116,9 @@ function startDrag(index: number, event: PointerEvent, handle: MarkHandle = 'bod
   arrowHandle = handle
   lastX = event.clientX
   lastY = event.clientY
-  const capture = rootRef.value
+  const current = event.currentTarget
+  const insideRoot = rootRef.value && current instanceof Node && rootRef.value.contains(current)
+  const capture = !insideRoot && current instanceof HTMLElement ? current : rootRef.value
   if (capture) capture.setPointerCapture(event.pointerId)
 }
 
@@ -128,6 +151,7 @@ function endDrag(): void {
 }
 
 function roleSrc(overlay: TrainingStepOverlay): string {
+  if (overlay.src) return overlay.src
   const id = overlay.role || overlay.glyph || ''
   return trainingRoleMarkSrc(id, {
     still: props.stillRoles,
@@ -136,10 +160,26 @@ function roleSrc(overlay: TrainingStepOverlay): string {
 }
 
 function roleBox(overlay: TrainingStepOverlay): Record<string, string> {
+  const host = roleHost.value
+  if (!host && !props.portaled) {
+    return {
+      left: left(overlay),
+      top: top(overlay),
+      width: `${roleWidth(overlay)}%`,
+    }
+  }
+  const box = stageBox.value
+  const width = (roleWidth(overlay) / 100) * box.width
+  const hostRect = host?.getBoundingClientRect()
+  const originX = hostRect?.left ?? 0
+  const originY = hostRect?.top ?? 0
   return {
-    left: left(overlay),
-    top: top(overlay),
-    width: `${roleWidth(overlay)}%`,
+    position: host ? 'absolute' : 'fixed',
+    left: `${box.left - originX + ((overlay.x ?? 0) / 100) * box.width}px`,
+    top: `${box.top - originY + ((overlay.y ?? 0) / 100) * box.height}px`,
+    width: `${Math.max(1, width)}px`,
+    zIndex: overlay.depth === 'behind' ? '1500' : '8000',
+    pointerEvents: props.editable ? 'auto' : 'none',
   }
 }
 
@@ -289,23 +329,31 @@ function dashArray(overlay: TrainingStepOverlay): string | undefined {
         @pointerdown="startDrag(index, $event)"
         >{{ overlay.glyph }}</span
       >
-      <div
+      <Teleport
         v-else-if="overlay.kind === 'role'"
-        class="step-marks__label step-marks__role"
-        :style="roleBox(overlay)"
-        @pointerdown="startDrag(index, $event)"
+        :to="roleTeleport"
+        :disabled="!roleHost"
       >
-        <img
-          class="step-marks__role-img"
-          :src="roleSrc(overlay)"
-          alt=""
-        />
-        <span
-          v-if="editable"
-          class="step-marks__role-handle"
-          @pointerdown="startDrag(index, $event, 'role-size')"
-        />
-      </div>
+        <div
+          class="step-marks__label step-marks__role"
+          :style="roleBox(overlay)"
+          @pointerdown="startDrag(index, $event)"
+          @pointermove="moveDrag"
+          @pointerup="endDrag"
+          @pointercancel="endDrag"
+        >
+          <img
+            class="step-marks__role-img"
+            :src="roleSrc(overlay)"
+            alt=""
+          />
+          <span
+            v-if="editable"
+            class="step-marks__role-handle"
+            @pointerdown="startDrag(index, $event, 'role-size')"
+          />
+        </div>
+      </Teleport>
       <div
         v-else-if="overlay.kind === 'topics'"
         class="step-marks__label step-marks__topics"

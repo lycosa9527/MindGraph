@@ -2,6 +2,7 @@ import { nextTick, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { refreshUserDropdownMenu } from '@/composables/sidebar/useUserDropdownMenu'
 import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
 import { uploadedSlideSteps } from '@/composables/training/trainingBuilderSteps'
 import { requestTrainingModalsClose } from '@/composables/training/trainingCommands'
@@ -17,9 +18,10 @@ import { uploadTrainingFile } from '@/composables/training/uploadTrainingFile'
 import { useTrainingAuthoringBind } from '@/composables/training/useTrainingAuthoringBind'
 import { useTrainingBuilderAutosave } from '@/composables/training/useTrainingBuilderAutosave'
 import { useTrainingBuilderThumbs } from '@/composables/training/useTrainingBuilderThumbs'
+import { TRAINING_MODALS } from '@/config/trainingUiTargets'
 import { useTrainingStore } from '@/stores/training'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
-import { fetchTrainingCourse } from '@/utils/trainingApi'
+import { fetchTrainingCourse, saveTrainingCourseMenu } from '@/utils/trainingApi'
 
 export type TrainingBuilderSessionApi = {
   selectStep: (index: number) => Promise<void>
@@ -61,7 +63,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
         applyTrainingUiTarget({
           modalKey: next.modal,
           focusKey: next.focus,
-          uiLock: next.lock,
+          uiLock: next.lock || next.modal,
           hostModals: false,
         })
       )
@@ -132,16 +134,27 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     }
   }
 
+  function menuSaveError(error: unknown): string {
+    const detail = error instanceof Error ? error.message : ''
+    if (detail === 'user_dropdown_label_too_long') return t('training.builder.menuLabelTooLong')
+    if (detail === 'user_dropdown_limit') return t('training.builder.menuLabelLimit')
+    return detail && detail !== 'menu' && detail !== 'save'
+      ? detail
+      : t('training.builder.saveFailed')
+  }
+
   async function save(): Promise<void> {
     builder.setBusy(true)
     try {
       await rememberIfNeeded()
       await flush()
+      const label = await saveTrainingCourseMenu(builder.courseId, builder.menuLabel)
+      builder.setMenuLabel(label)
+      void refreshUserDropdownMenu()
       builder.setInfoOpen(false)
       notify.successKey('training.builder.saved')
     } catch (error) {
-      const detail = error instanceof Error ? error.message : ''
-      notify.error(detail && detail !== 'save' ? detail : t('training.builder.saveFailed'))
+      notify.error(menuSaveError(error))
     } finally {
       builder.setBusy(false)
     }
@@ -162,9 +175,13 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     const armed = takeArmedTrainingUiLock()
     const step = builder.steps[index]
     if (!step) return
-    if (step.ui_lock) {
+    if (step.ui_lock || step.modal_key) {
       step.ui_lock = null
-      if (index === builder.selected) applyTrainingUiLock(null)
+      step.modal_key = null
+      if (index === builder.selected) {
+        applyTrainingUiLock(null)
+        requestTrainingModalsClose()
+      }
       return
     }
     if (index !== builder.selected) {
@@ -176,7 +193,9 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
       notify.warningKey('training.builder.lockEmpty')
       return
     }
-    step.ui_lock = key
+    const modal = TRAINING_MODALS.some((item) => item.key === key)
+    if (modal) step.modal_key = key
+    else step.ui_lock = key
     applyTrainingUiLock(key)
   }
 

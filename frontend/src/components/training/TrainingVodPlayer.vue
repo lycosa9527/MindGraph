@@ -8,7 +8,8 @@ import { playVodMedia } from '@/utils/vodApi'
 
 const DEFAULT_WIDTH = 42
 const DEFAULT_HEIGHT = 36
-const SPAN_MIN = 20
+const LONG_EDGE = 280
+const SPAN_MIN = 8
 const SPAN_MAX = 92
 
 const props = withDefaults(
@@ -48,12 +49,41 @@ const rootRef = ref<HTMLElement | null>(null)
 const stageRef = ref<HTMLElement | null>(null)
 const localWidth = ref(props.width ?? DEFAULT_WIDTH)
 const localHeight = ref(props.height ?? DEFAULT_HEIGHT)
+const aspect = ref(16 / 9)
+const boxW = ref(LONG_EDGE)
+const boxH = ref(Math.round(LONG_EDGE / (16 / 9)))
 let player: { dispose: () => void } | null = null
 let loadGen = 0
 let dragging = false
 
 function clampSpan(value: number): number {
   return Math.round(Math.min(SPAN_MAX, Math.max(SPAN_MIN, value)))
+}
+
+function layoutFromScale(): void {
+  const host = rootRef.value
+  const parent = host?.offsetParent
+  const parentW = parent instanceof HTMLElement ? parent.clientWidth : LONG_EDGE
+  let width = (parentW * localWidth.value) / 100
+  if (!(width > 0)) width = LONG_EDGE
+  let height = width / aspect.value
+  const long = Math.max(width, height)
+  if (long > LONG_EDGE) {
+    const scale = LONG_EDGE / long
+    width *= scale
+    height *= scale
+  }
+  boxW.value = Math.max(1, Math.round(width))
+  boxH.value = Math.max(1, Math.round(height))
+}
+
+function onVideoMeta(event: Event): void {
+  const video = event.target
+  if (!(video instanceof HTMLVideoElement)) return
+  if (video.videoWidth < 1 || video.videoHeight < 1) return
+  aspect.value = video.videoWidth / video.videoHeight
+  layoutFromScale()
+  void nextTick().then(fitPlayer)
 }
 
 function fitPlayer(): void {
@@ -74,20 +104,30 @@ function onResizeDown(event: PointerEvent): void {
   event.preventDefault()
   event.stopPropagation()
   const parentBox = bounds.getBoundingClientRect()
-  const box = host.getBoundingClientRect()
   const startX = event.clientX
-  const startY = event.clientY
+  const startW = boxW.value
   dragging = true
   const move = (ev: PointerEvent): void => {
-    if (parentBox.width <= 0 || parentBox.height <= 0) return
-    localWidth.value = clampSpan(((box.width + ev.clientX - startX) / parentBox.width) * 100)
-    localHeight.value = clampSpan(((box.height + ev.clientY - startY) / parentBox.height) * 100)
+    let width = Math.max(1, startW + ev.clientX - startX)
+    let height = width / aspect.value
+    const long = Math.max(width, height)
+    if (long > LONG_EDGE) {
+      const scale = LONG_EDGE / long
+      width *= scale
+      height *= scale
+    }
+    boxW.value = Math.round(width)
+    boxH.value = Math.max(1, Math.round(height))
     void nextTick().then(fitPlayer)
   }
   const up = (): void => {
     dragging = false
     window.removeEventListener('pointermove', move)
     window.removeEventListener('pointerup', up)
+    if (parentBox.width > 0 && parentBox.height > 0) {
+      localWidth.value = clampSpan((boxW.value / parentBox.width) * 100)
+      localHeight.value = clampSpan((boxH.value / parentBox.height) * 100)
+    }
     emit('resize', { width: localWidth.value, height: localHeight.value })
     void nextTick().then(fitPlayer)
   }
@@ -157,6 +197,7 @@ watch(
     dismissed.value = false
     localWidth.value = props.width ?? DEFAULT_WIDTH
     localHeight.value = props.height ?? DEFAULT_HEIGHT
+    layoutFromScale()
     void loadPlayer()
   },
   { immediate: true }
@@ -168,6 +209,7 @@ watch(
     if (dragging) return
     localWidth.value = props.width ?? DEFAULT_WIDTH
     localHeight.value = props.height ?? DEFAULT_HEIGHT
+    layoutFromScale()
   }
 )
 
@@ -181,7 +223,7 @@ onBeforeUnmount(() => {
     v-if="!dismissed"
     ref="rootRef"
     class="vod-player"
-    :style="{ width: `${localWidth}%`, height: `${localHeight}%` }"
+    :style="{ width: `${boxW}px` }"
   >
     <div class="vod-player__bar">
       <button
@@ -209,6 +251,7 @@ onBeforeUnmount(() => {
     <div
       ref="stageRef"
       class="vod-player__stage"
+      :style="{ height: `${boxH}px` }"
     >
       <video
         v-if="playerSlot"
@@ -217,6 +260,7 @@ onBeforeUnmount(() => {
         class="vod-player__video"
         preload="auto"
         playsinline
+        @loadedmetadata="onVideoMeta"
       />
     </div>
     <button
@@ -233,8 +277,6 @@ onBeforeUnmount(() => {
   position: absolute;
   display: flex;
   flex-direction: column;
-  min-width: 12rem;
-  min-height: 8rem;
   background: #111;
   border-radius: 0.5rem;
   overflow: hidden;
@@ -272,8 +314,7 @@ onBeforeUnmount(() => {
 }
 .vod-player__stage {
   position: relative;
-  flex: 1;
-  min-height: 0;
+  flex: none;
   overflow: hidden;
 }
 .vod-player__video {

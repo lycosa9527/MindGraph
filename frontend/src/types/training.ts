@@ -12,6 +12,7 @@ export type TrainingSpotlightShape = 'circle' | 'rect'
 export type TrainingArrowColor = 'red' | 'amber' | 'green' | 'blue' | 'violet' | 'stone'
 export type TrainingArrowLine = 'solid' | 'dashed' | 'thick'
 export type TrainingTextAlign = 'left' | 'center' | 'right'
+export type TrainingRoleDepth = 'behind' | 'front'
 
 export interface TrainingStepOverlay {
   kind: 'arrow' | 'emoji' | 'text' | 'spotlight' | 'topics' | 'role'
@@ -34,6 +35,10 @@ export interface TrainingStepOverlay {
   step?: number
   glyph?: string
   role?: string
+  /** Uploaded mascot WebP. Playback fills src from this id. */
+  asset_id?: string | null
+  src?: string | null
+  depth?: TrainingRoleDepth
   text?: string
 }
 
@@ -45,6 +50,10 @@ export interface TrainingCourseStep {
   topic_options?: TrainingTopicOption[]
   asset_id?: string | null
   asset_url?: string | null
+  voice_asset_id?: string | null
+  voice_url?: string | null
+  music_asset_id?: string | null
+  music_url?: string | null
   thumb_id?: string | null
   thumb_url?: string | null
   overlays?: TrainingStepOverlay[]
@@ -74,6 +83,7 @@ export interface TrainingCourse {
   status: 'draft' | 'ready'
   is_system: boolean
   cover_url?: string | null
+  menu_label?: string
   first_step?: TrainingCourseStep | null
   steps?: TrainingCourseStep[]
   updated_at?: string | null

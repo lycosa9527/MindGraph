@@ -20,6 +20,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { executeLandingPrompt } from '@/composables/mindgraph/runLandingPromptGeneration'
 import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
+import { useTrainingDeckNav } from '@/composables/training/trainingDeckNav'
 import {
   LANDING_PROMPT_EXAMPLE_KEYS,
   LANDING_PROMPT_MAX_LENGTH,
@@ -40,6 +41,7 @@ import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
+const deckNav = useTrainingDeckNav()
 const { t, promptLanguage } = useLanguage()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 const authStore = useAuthStore()
@@ -174,6 +176,10 @@ function handleClickOutside(event: MouseEvent) {
 function handleDiagramSelect(diagram: SavedDiagram) {
   showDropdown.value = false
   cancelInFlightGeneration()
+  if (deckNav) {
+    deckNav.openDiagram('mindmap')
+    return
+  }
   nextTick(() => {
     router.push({
       path: '/canvas',
@@ -191,6 +197,10 @@ onUnmounted(() => {
 
 function handleCardClick(item: { type: DiagramType }, event?: MouseEvent) {
   const raw = event?.target
+  if (deckNav) {
+    deckNav.openDiagram(item.type)
+    return
+  }
   if (raw instanceof Element && raw.closest('.builder-stage')) return
   cancelInFlightGeneration()
   const zhName = TYPE_TO_ZH_NAME[item.type]
@@ -421,10 +431,16 @@ onMounted(() => {
               <DiagramPreviewSvg :type="item.type" />
             </div>
             <h3 class="intl-card-title">
-              <I18nText :k="item.titleKey" layout="beside" />
+              <I18nText
+                :k="item.titleKey"
+                layout="beside"
+              />
             </h3>
             <p class="intl-card-desc">
-              <I18nText :k="item.descKey" layout="beside" />
+              <I18nText
+                :k="item.descKey"
+                layout="beside"
+              />
             </p>
           </div>
         </div>
@@ -443,10 +459,16 @@ onMounted(() => {
               <DiagramPreviewSvg :type="item.type" />
             </div>
             <h3 class="intl-card-title">
-              <I18nText :k="item.titleKey" layout="beside" />
+              <I18nText
+                :k="item.titleKey"
+                layout="beside"
+              />
             </h3>
             <p class="intl-card-desc">
-              <I18nText :k="item.descKey" layout="beside" />
+              <I18nText
+                :k="item.descKey"
+                layout="beside"
+              />
             </p>
           </div>
         </div>

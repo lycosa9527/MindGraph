@@ -9,6 +9,7 @@ import { useLanguage } from '@/composables'
 
 const title = defineModel<string>('title', { default: '' })
 const description = defineModel<string>('description', { default: '' })
+const menuLabel = defineModel<string>('menuLabel', { default: '' })
 const open = defineModel<boolean>('open', { default: false })
 
 defineProps<{
@@ -63,6 +64,17 @@ function onCover(event: Event): void {
           :disabled="readonly"
         />
       </label>
+      <label>
+        <I18nText k="training.builder.menuLabel" />
+        <ElInput
+          v-model="menuLabel"
+          size="small"
+          maxlength="40"
+          :disabled="readonly"
+          :placeholder="t('training.builder.menuLabelPlaceholder')"
+        />
+        <span class="builder-info__hint"><I18nText k="training.builder.menuLabelHint" /></span>
+      </label>
       <label
         v-if="!readonly"
         class="builder-info__cover"
@@ -108,5 +120,10 @@ function onCover(event: Event): void {
 }
 .builder-info__cover input {
   font-size: 0.75rem;
+}
+.builder-info__hint {
+  color: #a8a29e;
+  font-size: 0.7rem;
+  line-height: 1.35;
 }
 </style>

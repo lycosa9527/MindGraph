@@ -10,6 +10,7 @@ import { Sparkles } from '@lucide/vue'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
+import { useTrainingDialogHost } from '@/composables/training/trainingInlineHost'
 import '@/styles/mind-map-side-rail-panel.css'
 import '@/styles/swissGlassControls.css'
 
@@ -51,6 +52,8 @@ const props = withDefaults(
 const emit = defineEmits<{ close: [] }>()
 
 const plateIcon = computed(() => props.icon ?? Sparkles)
+const dialogHost = useTrainingDialogHost()
+const dialogTop = computed(() => (dialogHost.value === 'body' ? props.top : '0.75rem'))
 
 const dialogClassName = computed(() =>
   ['swiss-glass-dialog', 'mm-canvas-upper-dialog', 'ai-gen-shell', props.dialogClass]
@@ -75,7 +78,8 @@ function onUpdate(next: boolean): void {
   <ElDialog
     :model-value="visible"
     :width="width"
-    :top="top"
+    :top="dialogTop"
+    :append-to="dialogHost"
     :append-to-body="appendToBody"
     :destroy-on-close="destroyOnClose"
     :close-on-click-modal="closeOnClickModal"

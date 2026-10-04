@@ -18,6 +18,7 @@ from services.features.training.courses.repository import (
 )
 from services.features.training.courses.seed import ensure_double_bubble_seed_once
 from services.features.training.courses.serialize import serialize_course
+from services.features.user_dropdown.store import menu_label_for_course, set_course_menu_label
 from services.features.training.permissions import (
     can_delete_training_course,
     can_lead_any_training,
@@ -33,6 +34,12 @@ from utils.db.session_open import system_rls_session
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+class CourseMenuBody(BaseModel):
+    """Name shown in the user avatar menu. Blank hides the course."""
+
+    label: str = Field(default="", max_length=40)
 
 
 class CourseWriteBody(BaseModel):
@@ -111,9 +118,28 @@ async def get_training_course(
     _require_author(current_user)
     async with system_rls_session() as db:
         course = await get_course(db, course_id)
-    if course is None:
-        raise HTTPException(status_code=404, detail="Course not found")
-    return serialize_course(course, locale=_locale_from_user(current_user))
+        if course is None:
+            raise HTTPException(status_code=404, detail="Course not found")
+        body = serialize_course(course, locale=_locale_from_user(current_user))
+        body["menu_label"] = await menu_label_for_course(db, course.id)
+    return body
+
+
+@router.put("/courses/{course_id}/menu")
+async def update_training_course_menu(
+    course_id: str,
+    body: CourseMenuBody,
+    current_user: User = Depends(get_current_user),
+):
+    """Link this course into the user avatar menu under the given name."""
+    _require_author(current_user)
+    async with system_rls_session() as db:
+        try:
+            label = await set_course_menu_label(db, course_id, body.label)
+            await db.commit()
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"label": label}
 
 
 @router.put("/courses/{course_id}")

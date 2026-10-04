@@ -49,6 +49,16 @@ def test_slide_and_video_keys_stay_in_course_folder() -> None:
     assert video == f"courses/{DOUBLE_BUBBLE_COURSE_ID}/videos/{asset_id}.mp4"
     assert is_scoped_course_object_key(slide)
     assert is_scoped_course_object_key(video)
+    voice = build_object_key(DOUBLE_BUBBLE_COURSE_ID, "voice", asset_id, ".mp3")
+    music = build_object_key(DOUBLE_BUBBLE_COURSE_ID, "music", asset_id, ".m4a")
+    assert voice == f"courses/{DOUBLE_BUBBLE_COURSE_ID}/voice/{asset_id}.mp3"
+    assert music == f"courses/{DOUBLE_BUBBLE_COURSE_ID}/music/{asset_id}.m4a"
+    assert is_scoped_course_object_key(voice)
+    assert is_scoped_course_object_key(music)
+    assert suffix_for_upload("narration", "audio/mpeg") == ".mp3"
+    mascot = build_object_key(DOUBLE_BUBBLE_COURSE_ID, "mascot", asset_id, ".webp")
+    assert mascot == f"courses/{DOUBLE_BUBBLE_COURSE_ID}/mascot/{asset_id}.webp"
+    assert is_scoped_course_object_key(mascot)
 
 
 def test_reject_foreign_or_swapped_keys() -> None:

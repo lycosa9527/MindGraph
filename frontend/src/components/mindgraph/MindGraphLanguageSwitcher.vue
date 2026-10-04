@@ -2,14 +2,14 @@
 /**
  * Quick UI + prompt language switch for MindGraph landing — enables sync and updates both.
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
 import { Check, Languages } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
-import { registerTrainingUiLock } from '@/composables/training/trainingUiLock'
+import { TRAINING_LOCK_SCOPE, registerTrainingUiLock } from '@/composables/training/trainingUiLock'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { getGalleryLanguageMenuRows } from '@/i18n/galleryLanguageMenuRows'
 import type { Language } from '@/stores/ui'
@@ -27,6 +27,7 @@ const props = withDefaults(
 )
 
 const uiStore = useUIStore()
+const lockScope = inject(TRAINING_LOCK_SCOPE, '')
 const { t } = useLanguage()
 const menuOpen = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
@@ -55,6 +56,7 @@ function setMenuOpen(open: boolean): void {
 onMounted(() => {
   unregisterLock = registerTrainingUiLock({
     key: 'mindgraph-language',
+    scope: lockScope,
     isOpen: () => menuOpen.value,
     setOpen: setMenuOpen,
   })

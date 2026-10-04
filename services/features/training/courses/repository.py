@@ -130,12 +130,39 @@ def _optional_vod_media_id(raw: dict[str, Any]) -> Optional[str]:
         raise ValueError("Invalid vod_media_id") from exc
 
 
+def _optional_asset_id(raw: dict[str, Any], field: str) -> Optional[str]:
+    value = str(raw.get(field) or "").strip()
+    if not value:
+        return None
+    try:
+        return str(uuid.UUID(value))
+    except ValueError as exc:
+        raise ValueError(f"Invalid {field}") from exc
+
+
 def _ui_lock_for_page(page_key: object, value: object) -> str | None:
     """Keep a locked list only on the page that actually shows it."""
     lock = optional_step_key(value, UI_LOCK_KEYS, "ui_lock")
     if lock == "mindgraph-language" and page_key != "mindgraph":
         return None
     return lock
+
+
+def _clean_overlays(raw: object) -> list[Any]:
+    """Drop playback URLs. A custom mascot keeps its asset id."""
+    if not isinstance(raw, list):
+        return []
+    cleaned: list[Any] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        row = dict(item)
+        row.pop("src", None)
+        asset_id = row.get("asset_id")
+        if asset_id:
+            row["asset_id"] = _optional_asset_id({"asset_id": asset_id}, "asset_id")
+        cleaned.append(row)
+    return cleaned
 
 
 def _step_payload(raw: dict[str, Any]) -> dict[str, Any]:
@@ -150,7 +177,9 @@ def _step_payload(raw: dict[str, Any]) -> dict[str, Any]:
         "topic_options": raw.get("topic_options") or [],
         "asset_id": raw.get("asset_id"),
         "thumb_id": raw.get("thumb_id"),
-        "overlays": raw.get("overlays") or [],
+        "voice_asset_id": _optional_asset_id(raw, "voice_asset_id"),
+        "music_asset_id": _optional_asset_id(raw, "music_asset_id"),
+        "overlays": _clean_overlays(raw.get("overlays")),
         "page_key": page_key,
         "pull_users": bool(raw.get("pull_users")),
         "mandatory": bool(raw.get("mandatory")),

@@ -8,7 +8,7 @@ import type {
   TrainingSnapshot,
 } from '@/types/training'
 import { apiRequest, apiUpload, parseApiErrorDetail } from '@/utils/apiClient'
-import { emptyTrainingSnapshot, TRAINING_RAIL_PAGE_SIZE } from '@/utils/trainingClient'
+import { TRAINING_RAIL_PAGE_SIZE, emptyTrainingSnapshot } from '@/utils/trainingClient'
 
 const API = '/api/training'
 
@@ -204,6 +204,20 @@ export async function fetchTrainingCourses(): Promise<TrainingCourse[]> {
   return body.items
 }
 
+export async function saveTrainingCourseMenu(courseId: string, label: string): Promise<string> {
+  const res = await apiRequest(`${API}/courses/${encodeURIComponent(courseId)}/menu`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ label }),
+  })
+  if (!res.ok) {
+    const payload: unknown = await res.json().catch(() => null)
+    throw new Error(parseApiErrorDetail(payload, 'menu'))
+  }
+  const body = await readJson<{ label?: string }>(res)
+  return body.label || ''
+}
+
 export async function fetchTrainingCourse(courseId: string): Promise<TrainingCourse> {
   const res = await apiRequest(`${API}/courses/${encodeURIComponent(courseId)}`)
   if (!res.ok) throw new Error('course')
@@ -301,7 +315,7 @@ export async function stepTrainingCourse(
 
 export async function initTrainingAsset(body: {
   course_id: string
-  role: 'cover' | 'slide' | 'video' | 'media' | 'thumb'
+  role: 'cover' | 'slide' | 'video' | 'media' | 'thumb' | 'voice' | 'music' | 'mascot'
   filename: string
   content_type: string
   size_bytes: number
@@ -326,7 +340,7 @@ export async function initTrainingAsset(body: {
 
 export async function completeTrainingAsset(body: {
   course_id: string
-  role: 'cover' | 'slide' | 'video' | 'media' | 'thumb'
+  role: 'cover' | 'slide' | 'video' | 'media' | 'thumb' | 'voice' | 'music' | 'mascot'
   key: string
   asset_id: string
   filename?: string

@@ -1,11 +1,12 @@
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
-import type { TrainingPageKey } from '@/config/trainingPages'
+import { TRAINING_PAGES, type TrainingPageKey } from '@/config/trainingPages'
 
 export type TrainingModalKey =
   | 'language-settings'
   | 'account'
   | 'thinking-coins'
   | 'update-log'
+  | 'october-update'
   | 'login'
   | 'online-collab'
   | 'export-community'
@@ -24,46 +25,44 @@ export interface TrainingModalDef {
   focuses: TrainingFocusDef[]
 }
 
-const LANDING_PAGES: TrainingPageKey[] = ['mindgraph']
-const LOGIN_PAGES: TrainingPageKey[] = [
-  'library',
-  'template',
-  'course',
-  'askonce',
-  'community',
-  'showcase',
-]
+const SHELL_PAGES: TrainingPageKey[] = TRAINING_PAGES.map((page) => page.key)
 const CANVAS_PAGES: TrainingPageKey[] = ['canvas']
 
 export const TRAINING_MODALS: TrainingModalDef[] = [
   {
+    key: 'october-update',
+    labelKey: 'training.october.menu',
+    pages: SHELL_PAGES,
+    focuses: [],
+  },
+  {
     key: 'account',
     labelKey: 'sidebar.account',
-    pages: LANDING_PAGES,
+    pages: SHELL_PAGES,
     focuses: [],
   },
   {
     key: 'language-settings',
     labelKey: 'settings.tabs.language',
-    pages: LANDING_PAGES,
+    pages: SHELL_PAGES,
     focuses: [],
   },
   {
     key: 'thinking-coins',
     labelKey: 'thinkingCoins.title',
-    pages: LANDING_PAGES,
+    pages: SHELL_PAGES,
     focuses: [],
   },
   {
     key: 'update-log',
     labelKey: 'auth.updateLog',
-    pages: LANDING_PAGES,
+    pages: SHELL_PAGES,
     focuses: [],
   },
   {
     key: 'login',
     labelKey: 'auth.login',
-    pages: LOGIN_PAGES,
+    pages: SHELL_PAGES,
     focuses: [
       {
         key: 'auth-login',

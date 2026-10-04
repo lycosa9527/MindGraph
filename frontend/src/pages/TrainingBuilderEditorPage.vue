@@ -39,6 +39,10 @@ const description = computed({
   get: () => builder.description,
   set: (value: string) => builder.setDescription(value),
 })
+const menuLabel = computed({
+  get: () => builder.menuLabel,
+  set: (value: string) => builder.setMenuLabel(value),
+})
 
 const {
   selectStep,
@@ -87,6 +91,7 @@ const syncLabel = computed(() => {
       v-model:open="infoOpen"
       v-model:title="title"
       v-model:description="description"
+      v-model:menu-label="menuLabel"
       :busy="busy"
       @cover="onUpload('cover', $event)"
       @save="save"
@@ -117,13 +122,24 @@ const syncLabel = computed(() => {
           @arrow="builder.addCurrentOverlay('arrow', $event)"
           @spotlight="builder.addCurrentOverlay('spotlight')"
           @role="builder.addCurrentOverlay('role', { role: $event })"
+          @role-asset="
+            builder.addCurrentOverlay('role', {
+              asset_id: $event.id,
+              src: $event.url,
+              x: 88,
+              y: 64,
+            })
+          "
           @image="onUpload('slide', $event)"
+          @lock-arm="onLockArm"
+          @lock="onLock(selected)"
         />
         <TrainingBuilderStage
           :step="current"
           :index="selected"
           :thumb="stageThumb"
           :hibernated="hibernated"
+          :play-audio="!previewing"
           :can-next="previewCanNext"
           @wake="builder.wake()"
           @topics="onTopicsDrop"

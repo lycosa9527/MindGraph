@@ -4,6 +4,7 @@ import {
   applyTrainingUiLock,
   armTrainingUiLock,
   captureOpenTrainingUiLock,
+  pushTrainingLockScope,
   registerTrainingUiLock,
   releaseTrainingUiLock,
   takeArmedTrainingUiLock,
@@ -62,5 +63,35 @@ describe('trainingUiLock', () => {
       })
     )
     expect(later).toEqual([])
+  })
+
+  it('applies a lock only inside the deck shell that is on screen', () => {
+    const outer: boolean[] = []
+    const inner: boolean[] = []
+    stops.push(
+      registerTrainingUiLock({
+        key: 'user-dropdown',
+        isOpen: () => false,
+        setOpen: (next) => {
+          outer.push(next)
+        },
+      })
+    )
+    stops.push(
+      registerTrainingUiLock({
+        key: 'user-dropdown',
+        scope: 'deck-a',
+        isOpen: () => true,
+        setOpen: (next) => {
+          inner.push(next)
+        },
+      })
+    )
+    const releaseScope = pushTrainingLockScope('deck-a')
+    stops.push(releaseScope)
+    expect(captureOpenTrainingUiLock()).toBe('user-dropdown')
+    applyTrainingUiLock(null)
+    expect(outer).toEqual([])
+    expect(inner).toEqual([false])
   })
 })

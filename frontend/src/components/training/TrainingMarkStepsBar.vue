@@ -61,7 +61,7 @@ function onRemove(): void {
       v-model="current"
       :equal="count <= 4"
       :options="options"
-      :ariaLabel="t('training.builder.groupSteps')"
+      :aria-label="t('training.builder.groupSteps')"
     />
     <ElButton
       size="small"
@@ -81,6 +81,7 @@ function onRemove(): void {
     >
       −
     </ElButton>
+    <slot />
   </div>
 </template>
 

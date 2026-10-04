@@ -95,22 +95,26 @@ function onImages(event: Event): void {
         v-if="!readonly"
         type="button"
         class="filmstrip__lock"
-        :class="{ 'is-on': Boolean(step.ui_lock) }"
-        :aria-pressed="Boolean(step.ui_lock)"
-        :aria-label="step.ui_lock ? t('training.builder.unlock') : t('training.builder.lock')"
-        :title="step.ui_lock ? t('training.builder.unlock') : t('training.builder.lock')"
+        :class="{ 'is-on': Boolean(step.ui_lock || step.modal_key) }"
+        :aria-pressed="Boolean(step.ui_lock || step.modal_key)"
+        :aria-label="
+          step.ui_lock || step.modal_key ? t('training.builder.unlock') : t('training.builder.lock')
+        "
         @pointerdown="emit('lockArm')"
         @keydown.enter="emit('lockArm')"
         @keydown.space="emit('lockArm')"
         @click.stop="emit('lock', index)"
       >
         <Lock
-          v-if="step.ui_lock"
+          v-if="step.ui_lock || step.modal_key"
           class="filmstrip__lock-icon"
         />
         <LockOpen
           v-else
           class="filmstrip__lock-icon"
+        />
+        <I18nText
+          :k="step.ui_lock || step.modal_key ? 'training.builder.unlock' : 'training.builder.lock'"
         />
       </button>
       <button
@@ -191,28 +195,30 @@ function onImages(event: Event): void {
   cursor: pointer;
 }
 .filmstrip__lock {
-  position: absolute;
-  top: 0.2rem;
-  left: 0.2rem;
-  z-index: 5;
   display: flex;
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 100%;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.92);
-  color: #44403c;
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+  border: 1px solid #d6d3d1;
+  border-radius: 0.35rem;
+  background: #fff;
+  padding: 0.22rem 0.3rem;
+  color: #1c1917;
+  font-size: 0.68rem;
+  line-height: 1.2;
   cursor: pointer;
 }
 .filmstrip__lock.is-on {
+  border-color: #1c1917;
   background: #1c1917;
   color: #fafaf9;
 }
 .filmstrip__lock-icon {
-  width: 0.72rem;
-  height: 0.72rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  flex-shrink: 0;
 }
 .filmstrip__delete {
   position: absolute;

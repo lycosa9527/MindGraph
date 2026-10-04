@@ -16,10 +16,12 @@ const props = withDefaults(
     index: number
     compact?: boolean
     interactive?: boolean
+    authoring?: boolean
+    playAudio?: boolean | null
     thumb?: string | null
     canNext?: boolean
   }>(),
-  { canNext: true }
+  { canNext: true, playAudio: null }
 )
 
 const emit = defineEmits<{
@@ -75,7 +77,10 @@ const marks = computed(() => visibleMarkOverlays(props.step))
       v-else-if="showLive"
       :page-key="step.page_key"
       :diagram-type="step.diagram_type"
+      :step="step"
       :interactive="interactive"
+      :authoring="authoring"
+      :play-audio="playAudio"
     />
     <div
       v-else

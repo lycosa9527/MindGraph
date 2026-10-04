@@ -2,7 +2,6 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import type { TrainingPageKey } from '@/config/trainingPages'
 import {
   isTrainingMediaStep,
   shouldAwakeOnSelect,
@@ -14,21 +13,16 @@ import {
   insertStepsAt,
   selectedIndexAfterRemove,
 } from '@/composables/training/trainingBuilderSteps'
-import {
-  advancePlayCursor,
-  canAdvancePlayCursor,
-} from '@/composables/training/trainingMarkSteps'
+import { advancePlayCursor, canAdvancePlayCursor } from '@/composables/training/trainingMarkSteps'
 import { trainingStepThumbKey } from '@/composables/training/trainingStageThumb'
-import type {
-  TrainingCourse,
-  TrainingCourseStep,
-  TrainingStepOverlay,
-} from '@/types/training'
+import type { TrainingPageKey } from '@/config/trainingPages'
+import type { TrainingCourse, TrainingCourseStep, TrainingStepOverlay } from '@/types/training'
 
 export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
   const courseId = ref('')
   const title = ref('')
   const description = ref('')
+  const menuLabel = ref('')
   const steps = ref<TrainingCourseStep[]>([])
   const selected = ref(0)
   const busy = ref(false)
@@ -45,12 +39,8 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
     () => thumbs.value[selected.value] || current.value?.asset_url || null
   )
   const hibernated = computed(() => !awake.value && Boolean(stageThumb.value))
-  const previewCanPrev = computed(() =>
-    canAdvancePlayCursor(steps.value, selected.value, -1)
-  )
-  const previewCanNext = computed(() =>
-    canAdvancePlayCursor(steps.value, selected.value, 1)
-  )
+  const previewCanPrev = computed(() => canAdvancePlayCursor(steps.value, selected.value, -1))
+  const previewCanNext = computed(() => canAdvancePlayCursor(steps.value, selected.value, 1))
 
   function setCourseId(id: string): void {
     courseId.value = id
@@ -62,6 +52,10 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
 
   function setDescription(value: string): void {
     description.value = value
+  }
+
+  function setMenuLabel(value: string): void {
+    menuLabel.value = value
   }
 
   function setBusy(value: boolean): void {
@@ -154,6 +148,7 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
     isSystem.value = Boolean(course.is_system)
     title.value = course.title
     description.value = course.description
+    menuLabel.value = course.menu_label || ''
     steps.value = (course.steps || []).map((step) => ({ ...step }))
     if (!keepThumbs) hydrateFromSteps(steps.value)
     if (!steps.value.length) {
@@ -227,6 +222,7 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
     courseId.value = ''
     title.value = ''
     description.value = ''
+    menuLabel.value = ''
     steps.value = []
     selected.value = 0
     busy.value = false
@@ -243,6 +239,7 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
     courseId,
     title,
     description,
+    menuLabel,
     steps,
     selected,
     busy,
@@ -261,6 +258,7 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
     setCourseId,
     setTitle,
     setDescription,
+    setMenuLabel,
     setBusy,
     setInfoOpen,
     setPreviewing,
