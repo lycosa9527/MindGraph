@@ -40,10 +40,10 @@ async def restore_online_collab_redis_from_db_row(
     Also seeds the session manager meta hash, org registry, and idle_scores so
     restored sessions are visible to the idle monitor and org listing.
     """
-    await redis.setex(
+    await redis.set(
         code_to_diagram_key(code),
-        ttl,
         diagram_id,
+        ex=ttl,
     )
     session_data = {
         "diagram_id": diagram_id,
@@ -52,10 +52,10 @@ async def restore_online_collab_redis_from_db_row(
             diagram.workshop_started_at.isoformat() if diagram.workshop_started_at else datetime.now(tz=UTC).isoformat()
         ),
     }
-    await redis.setex(
+    await redis.set(
         session_key(code),
-        ttl,
         str(session_data),
+        ex=ttl,
     )
 
     resolved_visibility = visibility or getattr(diagram, "workshop_visibility", None) or "organization"

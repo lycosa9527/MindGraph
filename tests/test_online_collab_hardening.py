@@ -212,9 +212,11 @@ class _AtomicRedis:
         """init  ."""
         self.data: dict[str, str] = {}
         self.eval_calls = 0
+        self.last_ttl: int | None = None
 
-    async def setex(self, key: str, _ttl: int, val: str) -> bool:
-        """Setex."""
+    async def set(self, key: str, val: str, ex: int | None = None) -> bool:
+        """SET key value EX ttl."""
+        self.last_ttl = ex
         self.data[key] = val
         return True
 

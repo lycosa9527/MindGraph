@@ -79,7 +79,7 @@ class _APIKeyCache:
             return
         cache_key = _keys.API_KEY_BY_HASH.format(hash=_key_hash(api_key))
         try:
-            await redis.setex(cache_key, _keys.TTL_API_KEY, _serialize(key_record))
+            await redis.set(cache_key, _serialize(key_record), ex=_keys.TTL_API_KEY)
         except REDIS_ERRORS as exc:
             logger.debug("[APIKeyCache] set failed: %s", exc)
 

@@ -246,10 +246,10 @@ class HealthMonitor:
             if redis_client is None:
                 return
 
-            await redis_client.setex(
+            await redis_client.set(
                 SMS_ALERT_COOLDOWN_KEY,
-                HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
                 str(time.time()),
+                ex=HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
             )
         except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[HealthMonitor] Failed to set SMS cooldown: %s", e)

@@ -368,7 +368,7 @@ async def _set_cached_check_score_async(ip: str, score: int, ttl: int) -> None:
         return
     key = f"{KEY_CHECK_PREFIX}{ip}"
     try:
-        await redis.setex(key, ttl, json.dumps({"score": score}))
+        await redis.set(key, json.dumps({"score": score}), ex=ttl)
     except OSError as exc:
         logger.debug("[AbuseIPDB] check cache write failed: %s", exc)
 

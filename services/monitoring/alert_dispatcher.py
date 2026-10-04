@@ -80,7 +80,7 @@ class AlertDispatcher:
             if redis_client is None:
                 return
             key = f"{ALERT_SENT_KEY_PREFIX}{alert_hash}"
-            await redis_client.setex(key, cooldown_seconds, "1")
+            await redis_client.set(key, "1", ex=cooldown_seconds)
         except BACKGROUND_INFRA_ERRORS as redis_error:
             logger.debug("[ErrorAlert] Redis mark failed: %s", redis_error)
 

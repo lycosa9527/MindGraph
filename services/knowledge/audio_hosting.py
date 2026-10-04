@@ -51,7 +51,7 @@ def publish_audio(file_path: str, ttl_sec: int = _DEFAULT_TTL_SEC) -> tuple[str,
     if client is None:
         raise RuntimeError("Redis unavailable; cannot host audio for transcription")
     try:
-        client.setex(f"{_TOKEN_PREFIX}{token}", ttl_sec, str(file_path))
+        client.set(f"{_TOKEN_PREFIX}{token}", str(file_path), ex=ttl_sec)
     except REDIS_ERRORS as exc:
         raise RuntimeError(f"Failed to register audio for transcription hosting: {exc}") from exc
 

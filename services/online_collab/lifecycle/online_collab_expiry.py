@@ -102,7 +102,7 @@ def expires_at_to_unix(expires_at_naive_utc: datetime) -> int:
 
 
 def redis_ttl_seconds_for_expires_at(expires_at_naive_utc: datetime) -> int:
-    """Seconds until expiry for Redis setex; at least 1."""
+    """Seconds until expiry for Redis SET EX; at least 1."""
     now = datetime.now(tz=UTC)
     if expires_at_naive_utc.tzinfo is not None:
         exp = expires_at_naive_utc.astimezone(UTC)

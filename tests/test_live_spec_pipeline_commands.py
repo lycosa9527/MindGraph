@@ -64,7 +64,7 @@ async def test_mutate_granular_json_merge_pipeline(monkeypatch):
     )
     redis = MagicMock()
     redis.pipeline = MagicMock(side_effect=lambda **_: fake)
-    redis.setex = AsyncMock()
+    redis.set = AsyncMock()
 
     monkeypatch.setattr(
         "services.online_collab.spec.online_collab_live_spec_ops.collab_hash_tags_enabled",
@@ -114,7 +114,7 @@ async def test_mutate_granular_json_merge_pipeline(monkeypatch):
     assert rec[2][0] == "sadd"
     assert rec[3][0] == "expire"
     assert rec[4][0] == "incr"
-    redis.setex.assert_awaited_once()
+    redis.set.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -124,7 +124,7 @@ async def test_mutate_full_replace_json_set_pipeline(monkeypatch):
     fake = _FakePipeline([True, True, 1, True, 99])
     redis = MagicMock()
     redis.pipeline = MagicMock(side_effect=lambda **_: fake)
-    redis.setex = AsyncMock()
+    redis.set = AsyncMock()
 
     monkeypatch.setattr(
         "services.online_collab.spec.online_collab_live_spec_ops.collab_hash_tags_enabled",
@@ -162,4 +162,4 @@ async def test_mutate_full_replace_json_set_pipeline(monkeypatch):
     assert rec[2][2] == ("__full__",)
     assert rec[3][0] == "expire"
     assert rec[4][0] == "incr"
-    redis.setex.assert_awaited_once()
+    redis.set.assert_awaited_once()

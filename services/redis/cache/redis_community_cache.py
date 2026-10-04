@@ -142,7 +142,7 @@ async def set_cached_list(
     version = await get_version()
     key = _list_cache_key(mine, type_filter, category, sort, page, page_size, version)
     try:
-        await redis.setex(key, LIST_TTL_SECONDS, orjson.dumps(data))
+        await redis.set(key, orjson.dumps(data), ex=LIST_TTL_SECONDS)
         return True
     except REDIS_ERRORS as e:
         logger.warning("[CommunityCache] Failed to cache list: %s", e)
@@ -183,7 +183,7 @@ async def set_cached_post(post_id: str, data: dict) -> bool:
         return False
     key = _keys.COMMUNITY_POST.format(post_id=post_id)
     try:
-        await redis.setex(key, POST_TTL_SECONDS, orjson.dumps(data))
+        await redis.set(key, orjson.dumps(data), ex=POST_TTL_SECONDS)
         return True
     except REDIS_ERRORS as e:
         logger.warning("[CommunityCache] Failed to cache post %s: %s", post_id, e)

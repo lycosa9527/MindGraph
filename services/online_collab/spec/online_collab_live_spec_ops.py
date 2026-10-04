@@ -165,10 +165,10 @@ async def mark_live_spec_collab_activity(redis: Any, code: str, ttl_sec: int) ->
         return
     ttl_clamped = max(_FLUSH_TS_MIN_TTL_SEC, min(int(ttl_sec), 86400 * 14))
     try:
-        await redis.setex(
+        await redis.set(
             room_last_collab_activity_key(code),
-            ttl_clamped,
             str(int(time.time())),
+            ex=ttl_clamped,
         )
     except (RedisError, OSError, RuntimeError, TypeError) as exc:
         logger.debug(
@@ -390,10 +390,10 @@ async def mark_live_spec_db_flushed(redis: Any, code: str) -> None:
         live_ttl = None
     if not isinstance(live_ttl, int) or live_ttl <= 0:
         live_ttl = _FLUSH_TS_FALLBACK_TTL_SEC
-    await redis.setex(
+    await redis.set(
         live_last_db_flush_key(code),
-        max(live_ttl, _FLUSH_TS_MIN_TTL_SEC),
         str(int(time.time())),
+        ex=max(live_ttl, _FLUSH_TS_MIN_TTL_SEC),
     )
 
 

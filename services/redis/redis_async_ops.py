@@ -159,7 +159,7 @@ class AsyncRedisOperations:
     async def set_with_ttl(key: str, value: str, ttl_seconds: int) -> bool:
         """SET key value EX ttl. Returns True on success."""
 
-        await _client().setex(key, ttl_seconds, value)
+        await _client().set(key, value, ex=ttl_seconds)
         return True
 
     @staticmethod

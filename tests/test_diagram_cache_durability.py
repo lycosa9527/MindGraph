@@ -139,7 +139,7 @@ async def test_list_diagrams_rebuilds_cache_missing_source_channel_field() -> No
     ]
     redis = MagicMock()
     redis.get = AsyncMock(return_value=json.dumps({"items": stale, "total": 1}))
-    redis.setex = AsyncMock()
+    redis.set = AsyncMock()
 
     with (
         patch.object(cache, "_use_redis", return_value=True),
@@ -153,8 +153,8 @@ async def test_list_diagrams_rebuilds_cache_missing_source_channel_field() -> No
         result = await cache.list_diagrams(7, page=1, page_size=10)
 
     assert result["total"] == 3
-    redis.setex.assert_awaited()
-    written = orjson.loads(redis.setex.await_args.args[2])
+    redis.set.assert_awaited()
+    written = orjson.loads(redis.set.await_args.args[1])
     assert written["total"] == 3
     assert [row["id"] for row in written["items"]] == ["v2", "v1", "m1"]
 
@@ -169,7 +169,7 @@ async def test_list_diagrams_channel_filter_reads_database_not_list_cache() -> N
     ]
     redis = MagicMock()
     redis.get = AsyncMock()
-    redis.setex = AsyncMock()
+    redis.set = AsyncMock()
     load_db = AsyncMock(return_value=list(tagged))
 
     with (
@@ -193,4 +193,4 @@ async def test_list_diagrams_channel_filter_reads_database_not_list_cache() -> N
     assert result["has_more"] is True
     assert result["diagrams"][0]["id"] == "v2"
     redis.get.assert_not_called()
-    redis.setex.assert_not_called()
+    redis.set.assert_not_called()

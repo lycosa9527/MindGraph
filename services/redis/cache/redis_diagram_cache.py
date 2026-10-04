@@ -658,7 +658,7 @@ class RedisDiagramCache:
                 if redis:
                     try:
                         cache_data = {"items": items, "total": len(items)}
-                        await redis.setex(list_key, CACHE_TTL, orjson.dumps(cache_data))
+                        await redis.set(list_key, orjson.dumps(cache_data), ex=CACHE_TTL)
                     except REDIS_ERRORS as e:
                         logger.warning("[DiagramCache] Redis list cache write failed: %s", e)
 
@@ -1063,7 +1063,7 @@ class RedisDiagramCache:
                 redis = get_async_redis()
                 if redis:
                     cache_data = {"items": items, "total": len(items)}
-                    await redis.setex(list_key, CACHE_TTL, orjson.dumps(cache_data))
+                    await redis.set(list_key, orjson.dumps(cache_data), ex=CACHE_TTL)
                     logger.debug(
                         "[DiagramCache] Preloaded %s diagrams for user %s",
                         len(items),

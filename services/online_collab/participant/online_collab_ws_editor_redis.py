@@ -172,7 +172,7 @@ async def save_editors(code: str, editors: Dict[str, Dict[int, str]]) -> None:
         if not editors:
             await redis.delete(key)
             return
-        await redis.setex(key, _TTL_SECONDS, _serialize_editors_payload(editors))
+        await redis.set(key, _serialize_editors_payload(editors), ex=_TTL_SECONDS)
     except (RedisError, OSError) as exc:
         logger.warning("[OnlineCollabEditorsRedis] save failed: %s", exc)
 
@@ -240,10 +240,10 @@ async def apply_node_editor_delta_redis(
                 if not editors:
                     pipe.delete(key)
                 else:
-                    pipe.setex(
+                    pipe.set(
                         key,
-                        _TTL_SECONDS,
                         _serialize_editors_payload(editors),
+                        ex=_TTL_SECONDS,
                     )
                 await pipe.execute()
             return True
@@ -288,10 +288,10 @@ async def purge_user_from_all_nodes_redis_watched(code: str, user_id: int) -> Tu
                 if not editors:
                     pipe.delete(key)
                 else:
-                    pipe.setex(
+                    pipe.set(
                         key,
-                        _TTL_SECONDS,
                         _serialize_editors_payload(editors),
+                        ex=_TTL_SECONDS,
                     )
                 await pipe.execute()
             return touched, True
@@ -375,10 +375,10 @@ async def apply_node_editor_batch_delta_redis(
                 if not editors:
                     pipe.delete(key)
                 else:
-                    pipe.setex(
+                    pipe.set(
                         key,
-                        _TTL_SECONDS,
                         _serialize_editors_payload(editors),
+                        ex=_TTL_SECONDS,
                     )
                 await pipe.execute()
             return effective, True

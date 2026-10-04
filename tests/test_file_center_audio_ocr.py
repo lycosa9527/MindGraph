@@ -107,8 +107,10 @@ def test_audio_hosting_publish_resolve_revoke(monkeypatch) -> None:
         """In-memory stand-in for the sync Redis client."""
 
         @staticmethod
-        def setex(key: str, _ttl: int, value: str) -> None:
-            """Store a value under a key."""
+        def set(key: str, value: str, ex: int | None = None) -> None:
+            """Store a value under a key with TTL."""
+            if ex is not None and ex < 1:
+                raise ValueError("ttl must be at least 1")
             store[key] = value
 
         @staticmethod

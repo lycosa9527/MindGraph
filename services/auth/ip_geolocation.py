@@ -353,10 +353,10 @@ class IPGeolocationService:
                 return
 
             cache_key = f"{LOCATION_PREFIX}{ip}"
-            await redis.setex(
+            await redis.set(
                 cache_key,
-                CACHE_TTL_SECONDS,
                 json.dumps(location, ensure_ascii=False),
+                ex=CACHE_TTL_SECONDS,
             )
             logger.debug("[IPGeo] Cached location for IP %s", ip)
 

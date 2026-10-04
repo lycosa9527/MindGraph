@@ -480,7 +480,7 @@ class RedisOperations:
         redis_client = _RedisState.get_client()
         if not _RedisState.is_available() or not redis_client:
             return False
-        redis_client.setex(key, ttl_seconds, value)
+        redis_client.set(key, value, ex=ttl_seconds)
         return True
 
     @staticmethod

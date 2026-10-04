@@ -87,7 +87,7 @@ class _UserTokenCache:
             "token_hash_full": row.token_hash,
         }
         try:
-            await redis.setex(cache_key, _keys.TTL_USER_TOKEN, json.dumps(payload))
+            await redis.set(cache_key, json.dumps(payload), ex=_keys.TTL_USER_TOKEN)
         except REDIS_ERRORS as exc:
             logger.debug("[UserTokenCache] set failed: %s", exc)
 

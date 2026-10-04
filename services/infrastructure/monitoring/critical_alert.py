@@ -196,7 +196,7 @@ class CriticalAlertService:
                 return
 
             key = f"{ALERT_SENT_KEY_PREFIX}{component}:{error_hash}"
-            await redis_client.setex(key, cooldown_seconds, str(time.time()))
+            await redis_client.set(key, str(time.time()), ex=cooldown_seconds)
         except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[CriticalAlert] Failed to mark alert as sent: %s", e)
 

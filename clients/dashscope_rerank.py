@@ -157,7 +157,7 @@ class DashScopeRerankClient:
 
         try:
             cached_data = json.dumps(result)
-            await redis_client.setex(cache_key, self.cache_ttl, cached_data)
+            await redis_client.set(cache_key, cached_data, ex=self.cache_ttl)
             logger.debug("[DashScopeRerank] Cached rerank result")
         except (TypeError, ValueError) as e:
             logger.debug("[DashScopeRerank] Failed to serialize result: %s", e)

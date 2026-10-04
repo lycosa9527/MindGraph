@@ -287,7 +287,7 @@ class EmbeddingCache:
             embedding_array = np.array(embedding, dtype=np.float32)
             encoded = base64.b64encode(embedding_array.tobytes()).decode("utf-8")
 
-            await redis.setex(cache_key, self.query_cache_ttl, encoded)
+            await redis.set(cache_key, encoded, ex=self.query_cache_ttl)
 
             # Also register in the VSET so semantically similar queries get a hit.
             await self._vset_add(redis, self._vset_key(model_name), embedding, encoded)

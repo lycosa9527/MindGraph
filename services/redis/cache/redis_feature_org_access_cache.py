@@ -85,7 +85,7 @@ async def set_cached_map(data: Dict[str, FeatureOrgAccessEntry]) -> None:
     try:
         payload = {k: v.model_dump() for k, v in data.items()}
         text = json.dumps(payload, sort_keys=True, ensure_ascii=False)
-        await redis.setex(CACHE_KEY, CACHE_TTL_SECONDS, text)
+        await redis.set(CACHE_KEY, text, ex=CACHE_TTL_SECONDS)
     except (TypeError, ValueError) as exc:
         logger.warning("Failed to serialize feature org access cache: %s", exc)
     except REDIS_ERRORS as exc:

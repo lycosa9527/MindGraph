@@ -567,10 +567,10 @@ class ProcessMonitor:
                 return
 
             key = f"{SMS_ALERT_COOLDOWN_KEY_PREFIX}{service_name}"
-            await redis_client.setex(
+            await redis_client.set(
                 key,
-                PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
                 str(time.time()),
+                ex=PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
             )
         except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[ProcessMonitor] Failed to set SMS cooldown: %s", e)

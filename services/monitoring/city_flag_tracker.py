@@ -95,10 +95,10 @@ class CityFlagTracker:
                 if redis:
                     flag_key = f"{CITY_FLAG_PREFIX}{city_name}"
                     # Store flag data with coordinates
-                    await redis.setex(
+                    await redis.set(
                         flag_key,
-                        FLAG_DURATION_SECONDS,
                         json.dumps(flag_data, ensure_ascii=False),
+                        ex=FLAG_DURATION_SECONDS,
                     )
                     logger.debug(
                         "[CityFlag] Recorded flag for city: %s (lat: %s, lng: %s)",

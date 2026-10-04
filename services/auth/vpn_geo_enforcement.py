@@ -108,8 +108,8 @@ async def record_vpn_login_geo(user_id: int, request: Request) -> None:
     login_key = redis_keys.GEO_VPN_LOGIN_CC.format(user_id=user_id)
     last_ip_key = redis_keys.GEO_VPN_LAST_IP.format(user_id=user_id)
     async with redis.pipeline(transaction=False) as pipe:
-        pipe.setex(login_key, ttl, login_val)
-        pipe.setex(last_ip_key, ttl, client_ip)
+        pipe.set(login_key, login_val, ex=ttl)
+        pipe.set(last_ip_key, client_ip, ex=ttl)
         await pipe.execute()
 
 
@@ -129,7 +129,7 @@ async def record_vpn_refresh_last_ip(user_id: int, request: Request) -> None:
     login_key = redis_keys.GEO_VPN_LOGIN_CC.format(user_id=user_id)
     last_ip_key = redis_keys.GEO_VPN_LAST_IP.format(user_id=user_id)
     async with redis.pipeline(transaction=False) as pipe:
-        pipe.setex(last_ip_key, ttl, client_ip)
+        pipe.set(last_ip_key, client_ip, ex=ttl)
         pipe.expire(login_key, ttl)
         pipe.expire(last_ip_key, ttl)
         await pipe.execute()
@@ -184,8 +184,8 @@ async def maybe_enforce_vpn_cn_geo_for_user(
         current = resolve_country_iso_from_connection(connection)
         login_val = current if current else ""
         async with redis.pipeline(transaction=False) as write_pipe:
-            write_pipe.setex(login_key, ttl, login_val)
-            write_pipe.setex(last_ip_key, ttl, client_ip)
+            write_pipe.set(login_key, login_val, ex=ttl)
+            write_pipe.set(last_ip_key, client_ip, ex=ttl)
             await write_pipe.execute()
         return None
 
@@ -197,7 +197,7 @@ async def maybe_enforce_vpn_cn_geo_for_user(
         return None
 
     current_cc = resolve_country_iso_from_connection(connection)
-    await redis.setex(last_ip_key, ttl, client_ip)
+    await redis.set(last_ip_key, client_ip, ex=ttl)
 
     if should_kick_vpn_transition(login_cc, current_cc):
         await get_session_manager().invalidate_user_sessions(

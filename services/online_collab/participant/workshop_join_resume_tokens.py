@@ -133,7 +133,7 @@ async def mint_join_resume_token_async(
         return ""
     try:
         ttl = _resume_ttl_seconds()
-        await redis.setex(key, ttl, body)
+        await redis.set(key, body, ex=ttl)
     except (RedisError, OSError, TypeError) as exc:
         logger.debug("[collab:jresume] mint failed user=%s: %s", user_id, exc)
         return ""

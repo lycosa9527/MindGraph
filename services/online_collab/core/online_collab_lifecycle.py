@@ -553,15 +553,15 @@ async def start_online_collab_impl(
                 )
 
             try:
-                await redis.setex(
+                await redis.set(
                     session_key(code),
-                    ttl_sec,
                     session_redis_value(diagram_id, user_id, started_at),
+                    ex=ttl_sec,
                 )
-                await redis.setex(
+                await redis.set(
                     code_to_diagram_key(code),
-                    ttl_sec,
                     diagram_id,
+                    ex=ttl_sec,
                 )
 
                 if create_session is not None:
