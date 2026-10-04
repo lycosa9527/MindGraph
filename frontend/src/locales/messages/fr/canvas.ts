@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Nouvelle sous-partie 1',
   'braceMap.defaultSubpartSecond': 'Nouvelle sous-partie 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Impossible d’exporter : la zone de dessin n’est pas prête',
   'canvas.export.jsonError': 'L’exportation du fichier MG a échoué, veuillez réessayer',
   'canvas.export.jsonSuccess': 'Exportation du fichier MG réussie',
@@ -1332,6 +1333,9 @@ export default {
   'canvas.toolbar.educationStageUniversity': 'Université',
   'canvas.toolbar.educationStageAdult': 'adulte',
   'canvas.toolbar.educationStageExpert': 'expert',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl+S',
   'canvas.ribbon.tabFile': 'document',
   'canvas.ribbon.tabHome': 'commencer',

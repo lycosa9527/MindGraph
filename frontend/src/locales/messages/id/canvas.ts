@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Subbagian Baru 1',
   'braceMap.defaultSubpartSecond': 'Subbagian Baru 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Tidak dapat mengekspor: kanvas belum siap',
   'canvas.export.jsonError': 'Ekspor file MG gagal, coba lagi',
   'canvas.export.jsonSuccess': 'File MG berhasil diekspor',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Batalkan dan ulangi',
   'canvas.toolbar.redo': 'Mengulangi',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Silakan pilih cabang atau simpul anak',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Silakan pilih kategori atau node daun (node ​​topik tidak dapat dihapus)',

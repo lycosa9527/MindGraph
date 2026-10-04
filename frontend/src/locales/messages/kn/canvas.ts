@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'ಹೊಸ ಉಪ ಭಾಗ 1',
   'braceMap.defaultSubpartSecond': 'ಹೊಸ ಉಪ ಭಾಗ 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'ರಫ್ತು ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ: ಕ್ಯಾನ್ವಾಸ್ ಸಿದ್ಧವಾಗಿಲ್ಲ',
   'canvas.export.jsonError': 'MG ಫೈಲ್ ರಫ್ತು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'canvas.export.jsonSuccess': 'MG ಫೈಲ್ ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ರಫ್ತು ಮಾಡಲಾಗಿದೆ',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'ರದ್ದುಮಾಡಿ ಮತ್ತು ಮತ್ತೆಮಾಡು',
   'canvas.toolbar.redo': 'ಮತ್ತೆ ಮಾಡಿ',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'ದಯವಿಟ್ಟು ಮೊದಲು ಶಾಖೆ ಅಥವಾ ಉಪನೋಡ್ ಆಯ್ಕೆಮಾಡಿ',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'ದಯವಿಟ್ಟು ವರ್ಗ ಅಥವಾ ಉಪ-ಐಟಂ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ (ವಿಷಯ ನೋಡ್‌ಗಳನ್ನು ಅಳಿಸಲಾಗುವುದಿಲ್ಲ)',

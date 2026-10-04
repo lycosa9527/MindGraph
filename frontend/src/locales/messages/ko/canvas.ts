@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': '새 하위 부분 1',
   'braceMap.defaultSubpartSecond': '새 하위 부분 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': '내보낼 수 없음: 캔버스가 준비되지 않았습니다',
   'canvas.export.jsonError': 'MG 파일 내보내기에 실패했습니다. 다시 시도하세요',
   'canvas.export.jsonSuccess': 'MG 파일을 내보냈습니다',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': '실행 취소와 다시 실행',
   'canvas.toolbar.redo': '다시 실행',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': '가지 또는 자식 노드를 선택하세요',
   'canvas.toolbar.selectCategoryOrLeafDelete': '범주 또는 리프 노드를 선택하세요(주제 노드는 삭제할 수 없음)',

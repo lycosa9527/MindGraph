@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Phần phụ mới 1',
   'braceMap.defaultSubpartSecond': 'Phần phụ mới 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Không thể xuất: canvas chưa sẵn sàng',
   'canvas.export.jsonError': 'MG xuất tệp không thành công, vui lòng thử lại',
   'canvas.export.jsonSuccess': 'Tệp MG đã được xuất thành công',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Hoàn tác và làm lại',
   'canvas.toolbar.redo': 'Làm lại',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Vui lòng chọn một nhánh hoặc nút con',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Vui lòng chọn danh mục hoặc nút lá (không thể xóa nút chủ đề)',

@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'कार्रवाइयाँ',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'आज सक्रिय',
   'admin.addAdmin': 'एडमिन जोड़ें',
   'admin.addRoleMember': 'सदस्य जोड़ें',
@@ -48,6 +50,7 @@ export default {
   'admin.displayNameLabel': 'साइडबार प्रदर्शन पाठ',
   'admin.displayNameHint':
     'उपयोगकर्ता साइडबार में कस्टम पाठ (उदा. MindGraph Pro)। खाली = स्कूल नाम।',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'API Key संपादित',
   'admin.editSchool': 'स्कूल संपादित',
   'admin.enabled': 'सक्षम',
@@ -1108,6 +1111,7 @@ export default {
   'admin.schoolDifyAuthErrorForbidden': 'Dify API (HTTP 403) तक पहुंचने के लिए अधिकृत नहीं है।',
   'admin.schoolDifyAuthErrorNotFound':
     'Dify API पता मौजूद नहीं है (HTTP 404), कृपया API रूट पता जांचें।',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify रिटर्न त्रुटि: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify प्रमाणीकरण विफल: {detail}',
   'admin.schoolDifyServer1': 'सर्वर 1',

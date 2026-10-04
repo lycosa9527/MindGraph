@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'పనిచేస్తాయి',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'ఈరోజు యాక్టివ్‌గా ఉన్నారు',
   'admin.addAdmin': 'నిర్వాహకుడిని జోడించండి',
   'admin.addRoleMember': 'సభ్యుడిని జోడించండి',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'ఆపివేయి',
   'admin.displayNameLabel': 'సంస్థ పేరు మార్చండి',
   'admin.displayNameHint': 'వినియోగదారు సైడ్‌బార్‌లో (MindGraph Pro వంటివి) ప్రదర్శించబడే అనుకూల వచనం. పాఠశాల పేరును ఉపయోగించడానికి ఖాళీగా ఉంచండి.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'API కీని సవరించండి',
   'admin.editSchool': 'పాఠశాలను సవరించండి',
   'admin.enabled': 'ప్రారంభించు',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'API కీ చెల్లదు లేదా అనధికారమైనది (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Dify API (HTTP 403)ని యాక్సెస్ చేయడానికి అధికారం లేదు.',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API చిరునామా ఉనికిలో లేదు (HTTP 404), దయచేసి API రూట్ చిరునామాను తనిఖీ చేయండి.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'డిఫై రిటర్న్స్ లోపం: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'డిఫై ప్రామాణీకరణ విఫలమైంది: {detail}',
   'admin.schoolDifyServer1': 'సర్వర్ 1',

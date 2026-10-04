@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': '操作',
+  'admin.yes': '是',
+  'admin.no': '否',
   'admin.activeToday': '今日活躍',
   'admin.addAdmin': '添加管理員',
   'admin.addRoleMember': '添加成員',
@@ -48,6 +50,7 @@ export default {
   'admin.displayNameLabel': '更改組織名字',
   'admin.displayNameHint':
     '在用户侧栏显示的自定义文字（如 MindGraph Pro）。留空则使用学校名称。',
+  'admin.edit': '編輯',
   'admin.editApiKey': '編輯 API 密鑰',
   'admin.editSchool': '編輯學校',
   'admin.enabled': '啟用',
@@ -1053,6 +1056,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'API Key 無效或未授權（HTTP 401）。',
   'admin.schoolDifyAuthErrorForbidden': '無權訪問 Dify API（HTTP 403）。',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API 地址不存在（HTTP 404），請檢查 API 根地址。',
+  'admin.schoolDifyAuthErrorTestFailed': '連接測試失敗，請檢查配置後重試。',
   'admin.schoolDifyAuthErrorHttp': 'Dify 返回錯誤：{detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify 鑑權失敗：{detail}',
   'admin.schoolDifyServer1': '服務器 1',

@@ -5,6 +5,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'New Subpart 1',
   'braceMap.defaultSubpartSecond': 'New Subpart 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Cannot export: canvas not ready',
   'canvas.export.jsonError': 'MG file export failed, please try again',
   'canvas.export.jsonSuccess': 'MG file exported successfully',
@@ -598,6 +599,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Undo and redo',
   'canvas.toolbar.redo': 'Redo',
   'canvas.toolbar.redoShortcut': 'Ctrl + Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Please select a branch or child node',
   'canvas.toolbar.selectCategoryOrLeafDelete':

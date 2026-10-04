@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Bagong Subpart 1',
   'braceMap.defaultSubpartSecond': 'Bagong Subpart 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Hindi ma-export: hindi pa handa ang canvas',
   'canvas.export.jsonError': 'Nabigo ang MG na pag-export ng file, pakisubukang muli',
   'canvas.export.jsonSuccess': 'Matagumpay na na-export ang MG file',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'I-undo at gawing muli',
   'canvas.toolbar.redo': 'Gawin muli',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Mangyaring pumili ng branch o child node',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Mangyaring pumili ng kategorya o mga node ng dahon (hindi matatanggal ang node ng paksa)',

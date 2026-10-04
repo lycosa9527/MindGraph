@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Nieuw subdeel 1',
   'braceMap.defaultSubpartSecond': 'Nieuw subdeel 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Kan niet exporteren: canvas is niet gereed',
   'canvas.export.jsonError': 'Exporteren van MG-bestand is mislukt. Probeer het opnieuw',
   'canvas.export.jsonSuccess': 'MG-bestand succesvol geëxporteerd',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Ongedaan maken en opnieuw uitvoeren',
   'canvas.toolbar.redo': 'Opnieuw uitvoeren',
   'canvas.toolbar.redoShortcut': 'Ctrl + J',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Selecteer een vertakking of onderliggend knooppunt',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Selecteer categorie- of leaf-knooppunten (onderwerpknooppunt kan niet worden verwijderd)',

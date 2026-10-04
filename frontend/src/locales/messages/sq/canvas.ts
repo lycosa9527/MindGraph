@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Nënpjesë e re 1',
   'braceMap.defaultSubpartSecond': 'Nënpjesë e re 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Nuk mund të eksportohet: kanavaca nuk është gati',
   'canvas.export.jsonError': 'Eksportimi i skedarit MG dështoi, ju lutemi provoni përsëri',
   'canvas.export.jsonSuccess': 'Skedari MG u eksportua me sukses',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Zhbëj dhe ribëj',
   'canvas.toolbar.redo': 'Ribëj',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Zgjidhni një degë ose nyje fëmijë',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Zgjidhni nyje kategorie ose gjethe (nyja e temës nuk mund të fshihet)',

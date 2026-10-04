@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'නව උප කොටස 1',
   'braceMap.defaultSubpartSecond': 'නව උප කොටස 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'අපනයනය කළ නොහැක: කැන්වසය සූදානම් නැත',
   'canvas.export.jsonError': 'MG ගොනු අපනයනය අසාර්ථක විය, කරුණාකර නැවත උත්සාහ කරන්න',
   'canvas.export.jsonSuccess': 'MG ගොනුව සාර්ථකව අපනයනය කරන ලදී',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'අහෝසි කර නැවත කරන්න',
   'canvas.toolbar.redo': 'නැවත කරන්න',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'කරුණාකර ශාඛාවක් හෝ ළමා නෝඩයක් තෝරන්න',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'කරුණාකර ප්‍රවර්ගය හෝ පත්‍ර නෝඩ් තෝරන්න (මාතෘකා නෝඩය මකා දැමිය නොහැක)',

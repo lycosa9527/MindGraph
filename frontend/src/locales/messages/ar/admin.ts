@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'تعمل',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'نشط اليوم',
   'admin.addAdmin': 'إضافة مسؤول',
   'admin.addRoleMember': 'إضافة عضو',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'إبطال',
   'admin.displayNameLabel': 'تغيير اسم المنظمة',
   'admin.displayNameHint': 'نص مخصص معروض في الشريط الجانبي للمستخدم (مثل MindGraph Pro). اترك الحقل فارغًا لاستخدام اسم المدرسة.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'تحرير مفتاح API',
   'admin.editSchool': 'تحرير المدرسة',
   'admin.enabled': 'يُمكَِن',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'مفتاح API غير صالح أو غير مصرح به (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'غير مصرح له بالوصول إلى Dify API (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'عنوان Dify API غير موجود (HTTP 404)، يرجى التحقق من عنوان جذر API.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'خطأ في إرجاع Dify: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'فشلت مصادقة Dify: {detail}',
   'admin.schoolDifyServer1': 'الخادم 1',

@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'புதிய துணை பகுதி 1',
   'braceMap.defaultSubpartSecond': 'புதிய துணை பகுதி 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'ஏற்றுமதி செய்ய முடியவில்லை: கேன்வாஸ் தயாராக இல்லை',
   'canvas.export.jsonError': 'MG கோப்பு ஏற்றுமதி தோல்வியடைந்தது, மீண்டும் முயற்சிக்கவும்',
   'canvas.export.jsonSuccess': 'MG கோப்பு வெற்றிகரமாக ஏற்றுமதி செய்யப்பட்டது',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'செயல்தவிர் மற்றும் மீண்டும் செய்',
   'canvas.toolbar.redo': 'மீண்டும் செய்',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'முதலில் கிளை அல்லது துணை முனையைத் தேர்ந்தெடுக்கவும்',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'வகை அல்லது துணை உருப்படி முனையைத் தேர்ந்தெடுக்கவும் (தலைப்பு முனைகளை நீக்க முடியாது)',

@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'Дії',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'Активні сьогодні',
   'admin.addAdmin': 'Додати адміністратора',
   'admin.addRoleMember': 'Додати учасника',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'Вимкнено',
   'admin.displayNameLabel': 'Текст у бічній панелі',
   'admin.displayNameHint': 'Власний текст у бічній панелі користувача (напр. MindGraph Pro). Залиште порожнім, щоб використовувати назву школи.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'Редагувати ключ API',
   'admin.editSchool': 'Редагувати школу',
   'admin.enabled': 'Увімкнено',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'Недійсний або неавторизований ключ API (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Доступ до API Dify заборонено (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'URL API Dify не знайдено (HTTP 404). Перевірте базову URL.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify повернув помилку: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Авторизацію Dify не пройдено: {detail}',
   'admin.schoolDifyServer1': 'Сервер 1',

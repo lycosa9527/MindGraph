@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': '新子部分 1',
   'braceMap.defaultSubpartSecond': '新子部分 2',
+  'canvas.emptyState': '选择图示类型开始创建',
   'canvas.export.canvasNotReady': '无法导出：画布未就绪',
   'canvas.export.jsonError': 'MG文件导出失败，请重试',
   'canvas.export.jsonSuccess': 'MG文件导出成功',
@@ -578,6 +579,9 @@ export default {
   'canvas.toolbar.historyGroup': '撤销与恢复',
   'canvas.toolbar.redo': '恢复',
   'canvas.toolbar.redoShortcut': 'Ctrl + Y',
+  'canvas.toolbar.save': '保存',
+  'canvas.toolbar.add': '添加',
+  'canvas.toolbar.delete': '删除',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': '请先选择分支或子节点',
   'canvas.toolbar.selectCategoryOrLeafDelete': '请选择分类或子项节点（主题节点不可删除）',

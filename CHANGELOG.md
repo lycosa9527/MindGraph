@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.144] - 2026-10-05
+
+> **Mobile toolbar and account buttons show their labels again.**
+
+### Fixed
+
+- **手机画布** — Save, add, and delete on the top toolbar, and the empty-canvas line, read from the catalog again. Those keys were dropped when the labels moved to the bilingual text component, so the buttons showed the key names.
+- **手机账户** — Change phone, change password, change avatar, and log out use catalog copy.
+- **案例广场** — Yes, no, and edit in the field and permission tables resolve. A failed school Dify connection test names the failure.
+
 ## [5.180.143] - 2026-10-04
 
 > **A course slide can play voice and music, show a mascot, and open from the account menu.**

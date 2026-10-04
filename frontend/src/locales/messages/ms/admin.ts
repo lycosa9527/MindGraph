@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'Tindakan',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'Aktif Hari Ini',
   'admin.addAdmin': 'Tambahkan Admin',
   'admin.addRoleMember': 'Tambahkan anggota',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'Dengan disabilitas',
   'admin.displayNameLabel': 'Teks Tampilan Bilah Sisi',
   'admin.displayNameHint': 'Teks khusus ditampilkan di sidebar pengguna (mis. MindGraph Pro). Biarkan kosong untuk menggunakan nama sekolah.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'Edit Kunci API',
   'admin.editSchool': 'Sunting Sekolah',
   'admin.enabled': 'Diaktifkan',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'Kunci API tidak valid atau tidak sah (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Akses ke Dify API dilarang (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API URL tidak ditemukan (HTTP 404). Periksa URL dasar.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify mengembalikan kesalahan: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify autentikasi gagal: {detail}',
   'admin.schoolDifyServer1': 'pelayan 1',

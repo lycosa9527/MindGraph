@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'hành động',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'Hoạt động hôm nay',
   'admin.addAdmin': 'Thêm quản trị viên',
   'admin.addRoleMember': 'Thêm thành viên',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'Tàn tật',
   'admin.displayNameLabel': 'Văn bản hiển thị thanh bên',
   'admin.displayNameHint': 'Văn bản tùy chỉnh được hiển thị trong thanh bên của người dùng (ví dụ: MindGraph Pro). Để trống để sử dụng tên trường.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'Chỉnh sửa khóa API',
   'admin.editSchool': 'Chỉnh sửa trường học',
   'admin.enabled': 'Đã bật',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'Khóa API không hợp lệ hoặc trái phép (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Việc truy cập vào Dify API bị cấm (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API URL không tìm thấy (HTTP 404). Kiểm tra URL cơ sở.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify trả về lỗi: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify xác thực không thành công: {detail}',
   'admin.schoolDifyServer1': 'Máy chủ 1',

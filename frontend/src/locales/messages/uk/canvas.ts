@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Нова підчастина 1',
   'braceMap.defaultSubpartSecond': 'Нова підчастина 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Неможливо експортувати: полотно не готове',
   'canvas.export.jsonError': 'Не вдалося експортувати файл MG, спробуйте ще раз',
   'canvas.export.jsonSuccess': 'Файл MG успішно експортовано',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Відмінити та повторити',
   'canvas.toolbar.redo': 'Повторити',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Виберіть гілку або дочірній вузол',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Виберіть вузли категорії або листка (вузол теми не можна видалити)',

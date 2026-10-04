@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'नया उपभाग 1',
   'braceMap.defaultSubpartSecond': 'नया उपभाग 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'निर्यात नहीं: कैनवास तैयार नहीं',
   'canvas.export.jsonError': 'MG निर्यात विफल, पुनः',
   'canvas.export.jsonSuccess': 'MG फ़ाइल सफलतापूर्वक निर्यात',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'पूर्ववत और फिर से',
   'canvas.toolbar.redo': 'फिर से',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl+एस',
   'canvas.toolbar.selectBranchOrChild': 'कृपया चुनें: a branch or child node',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'कृपया चुनें: category or leaf nodes (topic node cannot be deleted)',

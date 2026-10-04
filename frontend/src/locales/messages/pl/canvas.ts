@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Nowa podczęść 1',
   'braceMap.defaultSubpartSecond': 'Nowa podczęść 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Nie można eksportować: płótno nie jest gotowe',
   'canvas.export.jsonError': 'Eksport pliku MG nieudany, spróbuj ponownie',
   'canvas.export.jsonSuccess': 'Plik MG wyeksportowany pomyślnie',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Cofnij i ponów',
   'canvas.toolbar.redo': 'Ponów',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Wybierz gałąź lub węzeł podrzędny',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Wybierz węzły kategorii lub liści (węzła tematu nie można usunąć)',

@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Yangi kichik qism 1',
   'braceMap.defaultSubpartSecond': 'Yangi kichik qism 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Eksport mumkin emas: kanvas tayyor emas',
   'canvas.export.jsonError': 'JSON eksporti muvaffaqiyatsiz bo’ldi, qayta urinib ko’ring',
   'canvas.export.jsonSuccess': 'JSON muvaffaqiyatli eksport olundu',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Geri al va qaytala',
   'canvas.toolbar.redo': 'Qaytala',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Budaq yoki alt tugun tanlang',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Kateqoriya yoki yarpaq tugunlerini tanlang (mavzu o’chiringmir)',

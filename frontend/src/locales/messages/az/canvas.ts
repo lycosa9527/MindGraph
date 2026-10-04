@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Yeni alt hissə 1',
   'braceMap.defaultSubpartSecond': 'Yeni alt hissə 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'İxrac mümkün deyil: kanvas hazır deyil',
   'canvas.export.jsonError': 'JSON ixracı uğursuz oldu, yenidən cəhd edin',
   'canvas.export.jsonSuccess': 'JSON uğurla ixrac olundu',
@@ -1332,6 +1333,9 @@ export default {
   'canvas.toolbar.educationStageUniversity': 'Universitet',
   'canvas.toolbar.educationStageAdult': 'yetkin',
   'canvas.toolbar.educationStageExpert': 'ekspert',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.ribbon.tabFile': 'sənəd',
   'canvas.ribbon.tabHome': 'başlamaq',

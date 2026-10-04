@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'Veprimet',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'Aktiv sot',
   'admin.addAdmin': 'Shto administrator',
   'admin.addRoleMember': 'Shto anëtar',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'Çaktivizuar',
   'admin.displayNameLabel': 'Teksti në shiritin anësor',
   'admin.displayNameHint': 'Tekst i personalizuar në shiritin anësor të përdoruesit (p.sh. MindGraph Pro). Lëreni bosh për të përdorur emrin e shkollës.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'Ndrysho çelësin API',
   'admin.editSchool': 'Ndrysho shkollën',
   'admin.enabled': 'Aktivizuar',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'Çelës API i pavlefshëm ose i paautorizuar (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Aksesi në API Dify u ndal (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'URL API Dify nuk u gjet (HTTP 404). Kontrolloni URL bazë.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify ktheu gabim: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Autentifikimi Dify dështoi: {detail}',
   'admin.schoolDifyServer1': 'Serveri 1',

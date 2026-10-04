@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'ส่วนย่อยใหม่ 1',
   'braceMap.defaultSubpartSecond': 'ส่วนย่อยใหม่ 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'ไม่สามารถส่งออก: แคนวาสยังไม่พร้อม',
   'canvas.export.jsonError': 'ส่งออกไฟล์ MG ล้มเหลว กรุณาลองอีกครั้ง',
   'canvas.export.jsonSuccess': 'ส่งออกไฟล์ MG สำเร็จ',
@@ -1332,6 +1333,9 @@ export default {
   'canvas.toolbar.educationStageUniversity': 'มหาวิทยาลัย',
   'canvas.toolbar.educationStageAdult': 'ผู้ใหญ่',
   'canvas.toolbar.educationStageExpert': 'ผู้เชี่ยวชาญ',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + ส',
   'canvas.ribbon.tabFile': 'เอกสาร',
   'canvas.ribbon.tabHome': 'เริ่ม',

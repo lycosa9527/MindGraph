@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Nuova sotto-parte 1',
   'braceMap.defaultSubpartSecond': 'Nuova sotto-parte 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Impossibile exporter : la zone di dessin n’è non prête',
   'canvas.export.jsonError': 'L’exportation del file MG a non riuscito, per favore riprova',
   'canvas.export.jsonSuccess': 'Exportation del file MG riuscita',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Annulla e ripeti',
   'canvas.toolbar.redo': 'Refaire',
   'canvas.toolbar.redoShortcut': 'CTRL+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'CTRL+S',
   'canvas.toolbar.selectBranchOrChild': 'Per favore selezionare una ramo o un nodo enfant',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Per favore selezionare una catégorie o dei nodi feuilles (un nodo sujet ne può non être eliminato)',

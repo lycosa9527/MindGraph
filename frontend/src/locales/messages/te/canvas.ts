@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'కొత్త ఉప భాగం 1',
   'braceMap.defaultSubpartSecond': 'కొత్త ఉప భాగం 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'ఎగుమతి చేయడం సాధ్యపడలేదు: కాన్వాస్ సిద్ధంగా లేదు',
   'canvas.export.jsonError': 'MG ఫైల్ ఎగుమతి విఫలమైంది, దయచేసి మళ్లీ ప్రయత్నించండి',
   'canvas.export.jsonSuccess': 'MG ఫైల్ విజయవంతంగా ఎగుమతి చేయబడింది',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'అన్డు మరియు రీడు',
   'canvas.toolbar.redo': 'మళ్లీ చేయి',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'దయచేసి ముందుగా బ్రాంచ్ లేదా సబ్‌నోడ్‌ని ఎంచుకోండి',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'దయచేసి ఒక వర్గం లేదా ఉప-అంశం నోడ్‌ను ఎంచుకోండి (టాపిక్ నోడ్‌లు తొలగించబడవు)',

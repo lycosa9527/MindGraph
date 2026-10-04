@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'Fəaliyyətlər',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'Bu gün Aktivdir',
   'admin.addAdmin': 'Admin əlavə edin',
   'admin.addRoleMember': 'Üzv əlavə et',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'Deaktiv',
   'admin.displayNameLabel': 'Yan panel mətni göstərin',
   'admin.displayNameHint': 'İstifadəçinin yan panelində göstərilən fərdi mətn (məsələn, MindGraph Pro). Məktəb adını istifadə etmək üçün boş buraxın.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'API açarını redaktə edin',
   'admin.editSchool': 'Məktəbi redaktə edin',
   'admin.enabled': 'Aktivdir',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'Yanlış və ya icazəsiz API açarı (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Dify API-yə giriş qadağan edildi (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API URL tapılmadı (HTTP 404). Əsas URL-i yoxlayın.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify xəta qaytardı: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify auth uğursuz oldu: {detail}',
   'admin.schoolDifyServer1': 'Server 1',

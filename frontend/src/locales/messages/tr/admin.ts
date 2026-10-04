@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'işletmek',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'Bugün aktif',
   'admin.addAdmin': 'Yönetici ekle',
   'admin.addRoleMember': 'Üye ekle',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'Devre dışı bırakmak',
   'admin.displayNameLabel': 'Kuruluş adını değiştir',
   'admin.displayNameHint': 'Kullanıcının kenar çubuğunda görüntülenen özel metin (MindGraph Pro gibi). Okul adını kullanmak için boş bırakın.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'API anahtarını düzenle',
   'admin.editSchool': 'Okulu düzenle',
   'admin.enabled': 'olanak vermek',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'API Anahtarı geçersiz veya yetkisiz (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Dify API\'sine (HTTP 403) erişme yetkisi yok.',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API adresi mevcut değil (HTTP 404), lütfen API kök adresini kontrol edin.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify şu hatayı döndürür: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify kimlik doğrulaması başarısız oldu: {detail}',
   'admin.schoolDifyServer1': 'Sunucu 1',

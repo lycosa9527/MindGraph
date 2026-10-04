@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': '작업',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': '오늘 활성',
   'admin.addAdmin': '관리자 추가',
   'admin.addRoleMember': '멤버 추가',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': '비활성',
   'admin.displayNameLabel': '사이드바 표시 이름',
   'admin.displayNameHint': '사용자 사이드바에 표시되는 사용자 지정 텍스트(예: MindGraph Pro). 비우면 학교 이름을 사용합니다.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'API 키 편집',
   'admin.editSchool': '학교 편집',
   'admin.enabled': '활성',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': '유효하지 않거나 권한이 없는 API 키(HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Dify API 접근이 거부되었습니다(HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API URL을 찾을 수 없습니다(HTTP 404). 기본 URL을 확인하세요.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify가 오류를 반환했습니다: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify 인증 실패: {detail}',
   'admin.schoolDifyServer1': '서버 1',

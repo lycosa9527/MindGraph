@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'പ്രവർത്തിക്കുക',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'ഇന്ന് സജീവമാണ്',
   'admin.addAdmin': 'അഡ്മിനിസ്ട്രേറ്ററെ ചേർക്കുക',
   'admin.addRoleMember': 'അംഗത്തെ ചേർക്കുക',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'പ്രവർത്തനരഹിതമാക്കുക',
   'admin.displayNameLabel': 'സ്ഥാപനത്തിൻ്റെ പേര് മാറ്റുക',
   'admin.displayNameHint': 'MindGraph ഉപയോക്താവിൻ്റെ സൈഡ്‌ബാറിൽ (മൈൻഡ്‌ഗ്രാഫ് പ്രോ പോലുള്ളവ) ഇഷ്‌ടാനുസൃത വാചകം പ്രദർശിപ്പിക്കും. സ്കൂളിൻ്റെ പേര് ഉപയോഗിക്കാൻ ശൂന്യമായി ഇടുക.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'API കീ എഡിറ്റ് ചെയ്യുക',
   'admin.editSchool': 'സ്കൂൾ എഡിറ്റ് ചെയ്യുക',
   'admin.enabled': 'പ്രാപ്തമാക്കുക',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'API കീ അസാധുവാണ് അല്ലെങ്കിൽ അനധികൃതമാണ് (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Dify API (HTTP 403) ആക്‌സസ് ചെയ്യാൻ അംഗീകാരമില്ല.',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API വിലാസം നിലവിലില്ല (HTTP 404), ദയവായി API റൂട്ട് വിലാസം പരിശോധിക്കുക.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'ഡിഫൈ റിട്ടേൺസ് പിശക്: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'ഡിഫൈ പ്രാമാണീകരണം പരാജയപ്പെട്ടു: {detail}',
   'admin.schoolDifyServer1': 'സെർവർ 1',

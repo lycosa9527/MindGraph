@@ -4,6 +4,8 @@
 
 export default {
   'admin.actions': 'Actions',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'Active Today',
   'admin.addAdmin': 'Add Admin',
   'admin.addRoleMember': 'Add member',
@@ -44,6 +46,7 @@ export default {
   'admin.disabled': 'Disabled',
   'admin.displayNameLabel': 'Sidebar Display Text',
   'admin.displayNameHint': 'Custom text shown in user sidebar (e.g. MindGraph Pro). Leave empty to use school name.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'Edit API Key',
   'admin.editSchool': 'Edit School',
   'admin.enabled': 'Enabled',
@@ -1001,6 +1004,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'Invalid or unauthorized API key (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Access to the Dify API was forbidden (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API URL not found (HTTP 404). Check the base URL.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify returned an error: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify auth failed: {detail}',
   'admin.schoolDifyServer1': 'Server 1',

@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'การดำเนินการ',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'ใช้งานวันนี้',
   'admin.addAdmin': 'เพิ่มผู้ดูแล',
   'admin.addRoleMember': 'เพิ่มสมาชิก',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'ปิดใช้งาน',
   'admin.displayNameLabel': 'ข้อความแสดงในแถบด้านข้าง',
   'admin.displayNameHint': 'ข้อความที่กำหนดเองแสดงในแถบด้านข้างของผู้ใช้ (เช่น MindGraph Pro) เว้นว่างเพื่อใช้ชื่อโรงเรียน',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'แก้ไขคีย์ API',
   'admin.editSchool': 'แก้ไขโรงเรียน',
   'admin.enabled': 'เปิดใช้งาน',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'API key ไม่ถูกต้องหรือไม่ได้รับอนุญาต (HTTP 401)',
   'admin.schoolDifyAuthErrorForbidden': 'การเข้าถึง Dify API ถูกปฏิเสธ (HTTP 403)',
   'admin.schoolDifyAuthErrorNotFound': 'ไม่พบ URL ของ Dify API (HTTP 404) ตรวจสอบ base URL',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify ส่งข้อผิดพลาด: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify auth ล้มเหลว: {detail}',
   'admin.schoolDifyServer1': 'เซิร์ฟเวอร์ 1',

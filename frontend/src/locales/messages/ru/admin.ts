@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'действовать',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'Активен сегодня',
   'admin.addAdmin': 'Добавить администратора',
   'admin.addRoleMember': 'Добавить участника',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'Запрещать',
   'admin.displayNameLabel': 'Изменить название организации',
   'admin.displayNameHint': 'Пользовательский текст, отображаемый на боковой панели пользователя (например, MindGraph Pro). Оставьте поле пустым, чтобы использовать название школы.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'Изменить ключ API',
   'admin.editSchool': 'Изменить школу',
   'admin.enabled': 'давать возможность',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'Ключ API недействителен или неавторизован (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Не авторизован для доступа к Dify API (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'Адрес API Dify не существует (HTTP 404), проверьте корневой адрес API.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify возвращает ошибку: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Аутентификация Dify не удалась: {detail}',
   'admin.schoolDifyServer1': 'Сервер 1',

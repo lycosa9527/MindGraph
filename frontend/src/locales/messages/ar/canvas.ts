@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'الجزء الفرعي الجديد 1',
   'braceMap.defaultSubpartSecond': 'الجزء الفرعي الجديد 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'غير قادر على التصدير: اللوحة القماشية غير جاهزة',
   'canvas.export.jsonError': 'فشل تصدير ملف MG، يرجى المحاولة مرة أخرى',
   'canvas.export.jsonSuccess': 'تم تصدير ملف MG بنجاح',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'التراجع والإعادة',
   'canvas.toolbar.redo': 'يتعافى',
   'canvas.toolbar.redoShortcut': 'السيطرة + ص',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'السيطرة + س',
   'canvas.toolbar.selectBranchOrChild': 'الرجاء تحديد فرع أو عقدة فرعية أولاً',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'يرجى تحديد فئة أو عقدة عنصر فرعي (لا يمكن حذف عقد الموضوع)',

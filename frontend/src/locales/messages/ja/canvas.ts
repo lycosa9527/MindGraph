@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': '新しいサブパーツ 1',
   'braceMap.defaultSubpartSecond': '新しいサブパーツ 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'エクスポートできません：キャンバスが準備できていません',
   'canvas.export.jsonError': 'MG ファイルのエクスポートに失敗しました。もう一度お試しください。',
   'canvas.export.jsonSuccess': 'MGファイルのエクスポートに成功しました',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': '元に戻す and redo',
   'canvas.toolbar.redo': '恢复',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': '先に选择ブランチ或子ノード',
   'canvas.toolbar.selectCategoryOrLeafDelete': '選択してください分类或子项ノード（トピックノード不可削除）',

@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'Mga aksyon',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'Aktibo Ngayon',
   'admin.addAdmin': 'Magdagdag ng Admin',
   'admin.addRoleMember': 'Magdagdag ng miyembro',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'Hindi pinagana',
   'admin.displayNameLabel': 'Display Name sa Sidebar',
   'admin.displayNameHint': 'Custom na text na ipinapakita sa sidebar ng user (hal. MindGraph Pro). Iwanang walang laman upang gamitin ang pangalan ng paaralan.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'I-edit ang API Key',
   'admin.editSchool': 'I-edit ang Paaralan',
   'admin.enabled': 'Pinagana',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'Di-wasto o hindi awtorisadong API key (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Ang pag-access sa Dify API ay ipinagbabawal (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API URL ay hindi nahanap (HTTP 404). Suriin ang base URL.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Nagbalik si Dify ng error: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify ang auth ay nabigo: {detail}',
   'admin.schoolDifyServer1': 'Server 1',

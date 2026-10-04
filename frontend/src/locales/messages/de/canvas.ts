@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Neuer Unterteil 1',
   'braceMap.defaultSubpartSecond': 'Neuer Unterteil 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Export nicht möglich: Zeichenfläche nicht bereit',
   'canvas.export.jsonError': 'MG-Dateiexport fehlgeschlagen, bitte erneut versuchen',
   'canvas.export.jsonSuccess': 'MG-Datei erfolgreich exportiert',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Rückgängig und Wiederholen',
   'canvas.toolbar.redo': 'Wiederholen',
   'canvas.toolbar.redoShortcut': 'Strg + Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Strg + S',
   'canvas.toolbar.selectBranchOrChild': 'Bitte wählen Sie einen Zweig- oder Unterknoten',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Bitte wählen Sie Kategorie- oder Blattknoten (Themenknoten können nicht gelöscht werden)',

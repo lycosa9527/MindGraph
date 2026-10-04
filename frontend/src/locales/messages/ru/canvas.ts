@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Новая часть 1',
   'braceMap.defaultSubpartSecond': 'Новая часть 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Невозможно экспортировать: холст не готов.',
   'canvas.export.jsonError': 'Не удалось экспортировать файл MG. Повторите попытку.',
   'canvas.export.jsonSuccess': 'Файл MG успешно экспортирован',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Отменить и повторить',
   'canvas.toolbar.redo': 'восстанавливаться',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + С',
   'canvas.toolbar.selectBranchOrChild': 'Пожалуйста, сначала выберите ветку или подузел',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Пожалуйста, выберите узел категории или подпункта (узлы тем нельзя удалить)',

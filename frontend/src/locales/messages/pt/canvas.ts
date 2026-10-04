@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Nova subparte 1',
   'braceMap.defaultSubpartSecond': 'Nova subparte 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Não é possível exportar: o Canvas não está pronto',
   'canvas.export.jsonError': 'Falha na exportação do arquivo MG. Tente novamente',
   'canvas.export.jsonSuccess': 'Arquivo MG exportado com sucesso',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Desfazer e refazer',
   'canvas.toolbar.redo': 'recuperar',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Selecione uma ramificação ou subnó primeiro',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Selecione um nó de categoria ou subitem (nós de tópico não podem ser excluídos)',

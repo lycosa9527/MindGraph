@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'ක්රියාවන්',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'අද ක්‍රියාකාරී',
   'admin.addAdmin': 'Admin එකතු කරන්න',
   'admin.addRoleMember': 'සාමාජික එකතු කරන්න',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'ආබාධිතයි',
   'admin.displayNameLabel': 'පැති තීරු සංදර්ශක පෙළ',
   'admin.displayNameHint': 'පරිශීලක පැති තීරුවේ පෙන්වන අභිරුචි පෙළ (උදා. MindGraph Pro). පාසලේ නම භාවිතා කිරීමට හිස්ව තබන්න.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'API යතුර සංස්කරණය කරන්න',
   'admin.editSchool': 'පාසල සංස්කරණය කරන්න',
   'admin.enabled': 'සබල කර ඇත',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'වලංගු නොවන හෝ අනවසර API යතුර (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Dify API වෙත ප්‍රවේශය තහනම් විය (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API URL හමු නොවීය (HTTP 404). මූලික URL එක පරීක්ෂා කරන්න.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify දෝෂයක් ලබා දුන්නේය: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify සහතිකය අසාර්ථක විය: {detail}',
   'admin.schoolDifyServer1': 'සේවාදායකය 1',

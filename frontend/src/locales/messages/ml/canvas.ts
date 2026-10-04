@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'പുതിയ ഉപഭാഗം 1',
   'braceMap.defaultSubpartSecond': 'പുതിയ ഉപഭാഗം 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'കയറ്റുമതി ചെയ്യാനാവുന്നില്ല: ക്യാൻവാസ് തയ്യാറായിട്ടില്ല',
   'canvas.export.jsonError': 'MG ഫയൽ കയറ്റുമതി പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക',
   'canvas.export.jsonSuccess': 'MG ഫയൽ കയറ്റുമതി ചെയ്തു',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'പഴയപടിയാക്കുക, വീണ്ടും ചെയ്യുക',
   'canvas.toolbar.redo': 'വീണ്ടും ചെയ്യുക',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'ദയവായി ആദ്യം ഒരു ശാഖയോ ഉപനോഡോ തിരഞ്ഞെടുക്കുക',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'ദയവായി ഒരു വിഭാഗമോ ഉപ-ഇന നോഡോ തിരഞ്ഞെടുക്കുക (വിഷയ നോഡുകൾ ഇല്ലാതാക്കാൻ കഴിയില്ല)',

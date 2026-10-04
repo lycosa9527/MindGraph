@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Nueva subparte 1',
   'braceMap.defaultSubpartSecond': 'Nueva subparte 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'No se puede exportar: el lienzo no está listo',
   'canvas.export.jsonError': 'Error al exportar el archivo MG; inténtelo de nuevo',
   'canvas.export.jsonSuccess': 'Archivo MG exportado correctamente',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Deshacer y rehacer',
   'canvas.toolbar.redo': 'Rehacer',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Seleccione una rama o un nodo hijo',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Seleccione nodos de categoría u hoja (el nodo de tema no se puede eliminar)',

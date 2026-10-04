@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Yeni Alt Parça 1',
   'braceMap.defaultSubpartSecond': 'Yeni Alt Parça 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Dışa aktarılamaz: tuval hazır değil',
   'canvas.export.jsonError': 'MG dosyası dışa aktarma başarısız, lütfen tekrar deneyin',
   'canvas.export.jsonSuccess': 'MG dosyası başarıyla dışa aktarıldı',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Geri al ve yinele',
   'canvas.toolbar.redo': 'Yinele',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Lütfen bir dal veya alt düğüm seçin',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Lütfen kategori veya yaprak düğümleri seçin (konu düğümü silinemez)',

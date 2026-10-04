@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'بخش فرعی جدید 1',
   'braceMap.defaultSubpartSecond': 'بخش فرعی جدید 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'صادر کردن امکان پذیر نیست: بوم آماده نیست',
   'canvas.export.jsonError': 'صادرات فایل MG انجام نشد، لطفاً دوباره امتحان کنید',
   'canvas.export.jsonSuccess': 'فایل MG با موفقیت صادر شد',
@@ -563,6 +564,9 @@ export default {
   'canvas.toolbar.historyGroup': 'Undo و Redo',
   'canvas.toolbar.redo': 'بهبود می یابند',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'لطفا ابتدا یک شاخه یا گره فرعی را انتخاب کنید',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'لطفاً یک دسته یا گره فرعی انتخاب کنید (گره های موضوع را نمی توان حذف کرد)',

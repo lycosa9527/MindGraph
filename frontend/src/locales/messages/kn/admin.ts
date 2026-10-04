@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತವೆ',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'ಇಂದು ಸಕ್ರಿಯವಾಗಿದೆ',
   'admin.addAdmin': 'ನಿರ್ವಾಹಕರನ್ನು ಸೇರಿಸಿ',
   'admin.addRoleMember': 'ಸದಸ್ಯರನ್ನು ಸೇರಿಸಿ',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಿ',
   'admin.displayNameLabel': 'ಸಂಸ್ಥೆಯ ಹೆಸರನ್ನು ಬದಲಾಯಿಸಿ',
   'admin.displayNameHint': 'ಬಳಕೆದಾರರ ಸೈಡ್‌ಬಾರ್‌ನಲ್ಲಿ ಕಸ್ಟಮ್ ಪಠ್ಯವನ್ನು ಪ್ರದರ್ಶಿಸಲಾಗುತ್ತದೆ (ಉದಾಹರಣೆಗೆ MindGraph Pro). ಶಾಲೆಯ ಹೆಸರನ್ನು ಬಳಸಲು ಖಾಲಿ ಬಿಡಿ.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'ಎಪಿಐ ಕೀಯನ್ನು ಸಂಪಾದಿಸಿ',
   'admin.editSchool': 'ಶಾಲೆಯನ್ನು ಸಂಪಾದಿಸಿ',
   'admin.enabled': 'ಸಕ್ರಿಯಗೊಳಿಸಿ',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'API ಕೀ ಅಮಾನ್ಯವಾಗಿದೆ ಅಥವಾ ಅನಧಿಕೃತವಾಗಿದೆ (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Dify API (HTTP 403) ಅನ್ನು ಪ್ರವೇಶಿಸಲು ಅಧಿಕಾರ ಹೊಂದಿಲ್ಲ.',
   'admin.schoolDifyAuthErrorNotFound': 'ಡಿಫೈ API ವಿಳಾಸ ಅಸ್ತಿತ್ವದಲ್ಲಿಲ್ಲ (HTTP 404), ದಯವಿಟ್ಟು API ಮೂಲ ವಿಳಾಸವನ್ನು ಪರಿಶೀಲಿಸಿ.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'ಡಿಫೈ ರಿಟರ್ನ್ಸ್ ದೋಷ: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'ಡಿಫೈ ದೃಢೀಕರಣ ವಿಫಲವಾಗಿದೆ: {detail}',
   'admin.schoolDifyServer1': 'ಸರ್ವರ್ 1',

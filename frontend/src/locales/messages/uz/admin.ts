@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'Harakatlar',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'Bugun Faol',
   'admin.addAdmin': 'Admin qo’shing',
   'admin.addRoleMember': 'A’zo qo’shish',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'Defaol',
   'admin.displayNameLabel': 'Yan panel metni ko’rsatishin',
   'admin.displayNameHint': 'Foydalanuvchinin yon panelnde ko’rsatishilen ferdi metn (meselen, MindGraph Pro). Maktab nomini foydalanish uchun bo’sh buraxin.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'API ochisharini tahrirlang',
   'admin.editSchool': 'Maktabi tahrirlang',
   'admin.enabled': 'Faol',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'Yanlish yoki icazesiz API ochishari (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Dify API-ye kirish qadagan etildi (HTTP 403).',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API URL topilmnomi (HTTP 404). Esas URL-i tekshiring.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify xato qaytardi: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify auth muvaffaqiyatsiz bo’ldi: {detail}',
   'admin.schoolDifyServer1': 'Server 1',

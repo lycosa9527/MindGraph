@@ -6,6 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'Nuwe Subdeel 1',
   'braceMap.defaultSubpartSecond': 'Nuwe Subdeel 2',
+  'canvas.emptyState': 'Choose a diagram type to start',
   'canvas.export.canvasNotReady': 'Kan nie eksporteer nie: die canvas is nie gereed nie',
   'canvas.export.jsonError': 'MG-lêer-eksport het misluk, probeer asseblief weer',
   'canvas.export.jsonSuccess': 'MG-lêer suksesvol eksporteer',
@@ -1332,6 +1333,9 @@ export default {
   'canvas.toolbar.educationStageUniversity': 'Universiteit',
   'canvas.toolbar.educationStageAdult': 'oudvolwasse',
   'canvas.toolbar.educationStageExpert': 'deskundige',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.ribbon.tabFile': 'dokument',
   'canvas.ribbon.tabHome': 'begin',

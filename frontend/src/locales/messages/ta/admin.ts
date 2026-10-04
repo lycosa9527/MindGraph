@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'செயல்படும்',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'இன்று செயலில் உள்ளது',
   'admin.addAdmin': 'நிர்வாகியைச் சேர்க்கவும்',
   'admin.addRoleMember': 'உறுப்பினரைச் சேர்க்கவும்',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'முடக்கு',
   'admin.displayNameLabel': 'அமைப்பின் பெயரை மாற்றவும்',
   'admin.displayNameHint': 'பயனரின் பக்கப்பட்டியில் (MindGraph Pro போன்றவை) தனிப்பயன் உரை காட்டப்படும். பள்ளியின் பெயரைப் பயன்படுத்த, காலியாக விடவும்.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'API விசையைத் திருத்து',
   'admin.editSchool': 'பள்ளியைத் திருத்தவும்',
   'admin.enabled': 'செயல்படுத்த',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'API விசை தவறானது அல்லது அங்கீகரிக்கப்படாதது (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Dify API (HTTP 403) ஐ அணுக அங்கீகரிக்கப்படவில்லை.',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API முகவரி இல்லை (HTTP 404), தயவுசெய்து API ரூட் முகவரியைச் சரிபார்க்கவும்.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'டிஃபை ரிட்டர்ன்ஸ் பிழை: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'டிஃபை அங்கீகாரம் தோல்வியடைந்தது: {detail}',
   'admin.schoolDifyServer1': 'சேவையகம் 1',

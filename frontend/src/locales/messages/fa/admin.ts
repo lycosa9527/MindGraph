@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': 'کنشها',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': 'فعال امروز',
   'admin.addAdmin': 'افزودن مدیر',
   'admin.addRoleMember': 'افزودن کاربر',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': 'غیر فعال شده',
   'admin.displayNameLabel': 'نمایش نوار کناری',
   'admin.displayNameHint': 'متن دلخواه در نوار کناری کاربر نمایش داده می‌شود (مثلاً MindGraph Pro). برای استفاده از نام مدرسه، آن را خالی بگذارید.',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'ویرایش کلید API',
   'admin.editSchool': 'ویرایش مدرسه ',
   'admin.enabled': 'فعال',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'کلید API نامعتبر یا غیرمجاز است (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'برای دسترسی به Dify API (HTTP 403) مجاز نیست.',
   'admin.schoolDifyAuthErrorNotFound': 'آدرس API Dify وجود ندارد (HTTP 404)، لطفاً آدرس ریشه API را بررسی کنید.',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'خطای Dify برمی‌گرداند: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'عدم تأیید اعتبار: {detail}',
   'admin.schoolDifyServer1': 'سرور 1',

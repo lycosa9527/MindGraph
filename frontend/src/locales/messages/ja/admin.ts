@@ -5,6 +5,8 @@
 
 export default {
   'admin.actions': '操作',
+  'admin.yes': 'Yes',
+  'admin.no': 'No',
   'admin.activeToday': '本日のアクティブ',
   'admin.addAdmin': '管理者を追加',
   'admin.addRoleMember': 'メンバーを追加',
@@ -45,6 +47,7 @@ export default {
   'admin.disabled': '無効',
   'admin.displayNameLabel': 'サイドバー表示テキスト',
   'admin.displayNameHint': '在ユーザー侧栏表示的カスタム文字（如 MindGraph Pro）。空欄则使用学校名前。',
+  'admin.edit': 'Edit',
   'admin.editApiKey': 'API キーを編集',
   'admin.editSchool': '編集 学校',
   'admin.enabled': '有効',
@@ -991,6 +994,7 @@ export default {
   'admin.schoolDifyAuthErrorUnauthorized': 'Invalid or unauthorized API key (HTTP 401)。',
   'admin.schoolDifyAuthErrorForbidden': 'Access to the Dify API was forbidden (HTTP 403)。',
   'admin.schoolDifyAuthErrorNotFound': 'Dify API 地址不存在（HTTP 404），ご確認ください API 根地址。',
+  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify 戻るエラー：{detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify 認証が失敗しました: {detail}',
   'admin.schoolDifyServer1': '服务器 1',
