@@ -12,6 +12,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Optional
 
 from config.dashscope_urls import build_dashscope_headers
+from services.infrastructure.utils.llm_routing_store import peek_override
 
 logger = logging.getLogger(__name__)
 
@@ -55,27 +56,48 @@ class LLMConfigMixin:
 
     @property
     def QWEN_MODEL_CLASSIFICATION(self):
-        """Model for classification tasks"""
-        return self._get_cached_value("QWEN_MODEL_CLASSIFICATION", "qwen3.6-flash")
+        """Model for classification tasks. A superadmin override replaces env."""
+        return self._with_routing_override("QWEN_MODEL_CLASSIFICATION", "qwen3.6-flash")
+
+    def _with_routing_override(self, key: str, default: str) -> str:
+        """Prefer a superadmin Redis override, then the env cache."""
+        overridden = peek_override(key)
+        if overridden:
+            return overridden
+        return self._get_cached_value(key, default)
 
     @property
     def QWEN_MODEL_GENERATION(self):
-        """Model for generation tasks (higher quality)"""
-        return self._get_cached_value("QWEN_MODEL_GENERATION", "qwen3.6-flash")
+        """Model for generation tasks (higher quality)."""
+        return self._with_routing_override("QWEN_MODEL_GENERATION", "qwen3.6-flash")
 
     @property
     def QWEN_MODEL_NODE_EXPLAIN(self):
-        """DashScope model for mind-map node-explain Responses research."""
-        return self._get_cached_value("QWEN_MODEL_NODE_EXPLAIN", "qwen3.8-flash")
+        """Physical id for the Qwen 3.8 rate window.
+
+        Node explain uses Express. This id still matches the pinned qwen3.8-flash
+        client and any leftover override so that traffic stays on the qwen38 cap.
+        """
+        return self._with_routing_override("QWEN_MODEL_NODE_EXPLAIN", "qwen3.8-flash")
 
     @property
     def DEEPSEEK_MODEL(self):
-        """DeepSeek model name on DashScope (non-reasoning; faster than R1).
+        """DashScope model for the logical ``deepseek`` route.
 
-        Default ``deepseek-v3.2``: ``deepseek-v3.1`` returns a misleading
-        ``logprobs is not supported`` 400 on workspace MaaS endpoints.
+        Pairs with the Volcengine ``DS_v4.1flash`` endpoint in the load balancer.
+        ``enable_thinking`` still selects thinking mode on this DashScope id.
+        A superadmin override replaces the env value until it is cleared.
         """
-        return self._get_cached_value("DEEPSEEK_MODEL", "deepseek-v3.2")
+        return self._with_routing_override("DEEPSEEK_MODEL", "deepseek-v4.1-flash")
+
+    @property
+    def EXPRESS_MODEL(self):
+        """DashScope model for canvas Express mode.
+
+        Always DashScope. Not load-balanced to Volcengine.
+        A superadmin override replaces the env value until it is cleared.
+        """
+        return self._with_routing_override("EXPRESS_MODEL", "deepseek-v4.1-flash")
 
     @property
     def KIMI_MODEL(self):
@@ -119,23 +141,32 @@ class LLMConfigMixin:
 
     @property
     def ARK_DEEPSEEK_ENDPOINT(self):
-        """Volcengine ARK DeepSeek endpoint ID (higher RPM than direct model name)"""
-        return self._get_cached_value("ARK_DEEPSEEK_ENDPOINT", "ep-20250101000000-dummy")
+        """Volcengine ARK DeepSeek endpoint ID (higher RPM than direct model name)."""
+        return self._with_routing_override("ARK_DEEPSEEK_ENDPOINT", "ep-20250101000000-dummy")
 
     @property
     def ARK_KIMI_ENDPOINT(self):
-        """Volcengine ARK Kimi endpoint ID (higher RPM than direct model name)"""
-        return self._get_cached_value("ARK_KIMI_ENDPOINT", "ep-20250101000000-dummy")
+        """Volcengine ARK Kimi endpoint ID (higher RPM than direct model name)."""
+        return self._with_routing_override("ARK_KIMI_ENDPOINT", "ep-20250101000000-dummy")
 
     @property
     def ARK_DOUBAO_ENDPOINT(self):
-        """Volcengine ARK Doubao endpoint ID (higher RPM than direct model name)"""
-        return self._get_cached_value("ARK_DOUBAO_ENDPOINT", "ep-20250101000000-dummy")
+        """Volcengine ARK Doubao endpoint ID (higher RPM than direct model name)."""
+        return self._with_routing_override("ARK_DOUBAO_ENDPOINT", "ep-20250101000000-dummy")
 
     @property
     def DOUBAO_MODEL(self):
         """Doubao model name"""
         return self._get_cached_value("DOUBAO_MODEL", "doubao-1-5-pro-32k-250115")
+
+    @property
+    def DOUBAO21_MODEL(self):
+        """Volcengine model id for the canvas Doubao 2.1 choice.
+
+        Sent as the chat ``model`` field. An ``ep-`` value is an endpoint id.
+        This does not replace ``ARK_DOUBAO_ENDPOINT`` (doubao_1.5pro_32k).
+        """
+        return self._get_cached_value("DOUBAO21_MODEL", "doubao-seed-2.1-turbo")
 
     @property
     def QWEN_TEMPERATURE(self):
@@ -331,6 +362,7 @@ class LLMConfigMixin:
         model_map = {
             "qwen": self.QWEN_MODEL_GENERATION,
             "deepseek": self.DEEPSEEK_MODEL,
+            "express": self.EXPRESS_MODEL,
             "kimi": self.KIMI_MODEL,
             "hunyuan": self.HUNYUAN_MODEL,
         }

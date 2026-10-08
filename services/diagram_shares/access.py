@@ -12,10 +12,10 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.domain.auth import User
+from models.domain.auth import OrganizationExpertBinding, User
 from models.domain.diagram_folders import DiagramFolder
 from models.domain.diagram_shares import DiagramShare
 from models.domain.diagrams import Diagram
@@ -202,7 +202,14 @@ async def replace_share_set(
                 found = await db.execute(
                     select(User.id).where(
                         User.id.in_(desired),
-                        User.organization_id == org_id,
+                        or_(
+                            User.organization_id == org_id,
+                            User.id.in_(
+                                select(OrganizationExpertBinding.user_id).where(
+                                    OrganizationExpertBinding.organization_id == org_id
+                                )
+                            ),
+                        ),
                     )
                 )
                 found_ids = {int(row[0]) for row in found.all()}

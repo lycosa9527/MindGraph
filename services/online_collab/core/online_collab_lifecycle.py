@@ -26,6 +26,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
+from services.auth.expert_school_binding import list_bound_org_ids
 from services.infrastructure.monitoring.ws_metrics import record_ws_cleanup_partition_size
 from services.online_collab.lifecycle.online_collab_expiry import (
     DURATION_TODAY,
@@ -44,9 +45,8 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
 )
 from services.online_collab.redis.online_collab_redis_keys import (
     code_to_diagram_key,
+    organization_registry_keys,
     purge_online_collab_redis_keys,
-    registry_global_org_key,
-    registry_org_key,
     session_key,
     session_meta_key,
     start_lock_key,
@@ -59,6 +59,7 @@ from services.online_collab.redis.online_collab_redis_locks import (
 )
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_async_client import get_async_redis
+from utils.auth.roles import is_expert
 from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
@@ -392,6 +393,7 @@ async def start_online_collab_impl(
 
             owner_name = ""
             org_id: Optional[int] = None
+            bound_org_ids: list[int] = []
             try:
                 user_result = await db.execute(
                     select(User).filter(User.id == user_id),
@@ -400,6 +402,8 @@ async def start_online_collab_impl(
                 if owner:
                     owner_name = owner.name or ""
                     org_id = owner.organization_id
+                    if is_expert(owner):
+                        bound_org_ids = await list_bound_org_ids(db, int(owner.id))
             except SQLAlchemyError as user_exc:
                 logger.warning(
                     "[OnlineCollabMgr] Could not fetch owner for session registry user_id=%s: %s",
@@ -433,10 +437,12 @@ async def start_online_collab_impl(
                     )
                     try:
                         async with redis.pipeline(transaction=False) as reg_pipe:
-                            if org_id is not None:
-                                reg_pipe.sadd(registry_org_key(org_id), existing_code)
-                            elif visibility == "organization":
-                                reg_pipe.sadd(registry_global_org_key(), existing_code)
+                            for registry_key in organization_registry_keys(
+                                org_id,
+                                bound_org_ids,
+                                visibility,
+                            ):
+                                reg_pipe.sadd(registry_key, existing_code)
                             await reg_pipe.execute()
                     except (RedisError, OSError, RuntimeError, TypeError) as reg_exc:
                         logger.warning(
@@ -575,6 +581,7 @@ async def start_online_collab_impl(
                         ttl_sec=ttl_sec,
                         title=diagram_title,
                         owner_name=owner_name,
+                        extra_org_ids=bound_org_ids,
                     )
             except (RedisError, OSError, RuntimeError, TypeError) as redis_exc:
                 logger.error(

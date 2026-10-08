@@ -498,14 +498,24 @@ class QwenClient:
 class DeepSeekClient:
     """Client for DeepSeek R1 via Dashscope API using httpx with HTTP/2 support."""
 
-    def __init__(self):
-        """Initialize DeepSeek client"""
+    def __init__(self, model_id: str = "deepseek", model_name: Optional[str] = None):
+        """Initialize a DashScope DeepSeek-family client.
+
+        ``express`` is the canvas fast mode and always uses ``EXPRESS_MODEL``
+        (``deepseek-v4.1-flash``). The logical ``deepseek`` client stays on
+        ``DEEPSEEK_MODEL``.
+        """
         self.api_url = config.QWEN_API_URL  # Dashscope uses same endpoint
         self.api_key = config.QWEN_API_KEY
         self.timeout = 60  # seconds (DeepSeek R1 can be slower for reasoning)
         self.stream_timeout = 180  # Longer timeout for streaming (DeepSeek thinking can be slow)
-        self.model_id = "deepseek"
-        self.model_name = config.DEEPSEEK_MODEL
+        self.model_id = model_id
+        if model_name:
+            self.model_name = model_name
+        elif model_id == "express":
+            self.model_name = config.EXPRESS_MODEL
+        else:
+            self.model_name = config.DEEPSEEK_MODEL
         # DIVERSITY FIX: Lower temperature for DeepSeek (reasoning model, more deterministic)
         self.default_temperature = 0.6
         logger.debug(

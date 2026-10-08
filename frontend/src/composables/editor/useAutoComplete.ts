@@ -5,7 +5,7 @@
  * Handles AI-powered diagram generation (auto-complete functionality).
  *
  * Features:
- * - Calls 3 LLMs in parallel (Qwen, DeepSeek, Doubao)
+ * - Runs the selected canvas model (Express by default)
  * - Disabled for collab guests (host may still generate; concept-map palette stays viewable)
  * - First-result-wins: renders immediately when first LLM completes
  * - Caches results for switching between LLM perspectives
@@ -15,7 +15,7 @@
  * Usage:
  *   const { isGenerating, autoComplete, switchToModel } = useAutoComplete()
  *
- *   // Generate from all 3 LLMs
+ *   // Generate with the selected model
  *   await autoComplete()
  *
  *   // Switch to different model's result
@@ -33,6 +33,7 @@ import {
 } from '@/composables/editor/autoCompleteValidation'
 import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
+import { canvasRunModel } from '@/config/canvasLlmMenu'
 import { diagramSecondaryLanguage } from '@/diagramBilingual/generationRequest'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore } from '@/stores/diagram'
@@ -69,7 +70,7 @@ export function useAutoComplete() {
   const { promptLanguage, t } = useLanguage()
   const notify = useNotifications()
   const { guardCollabGuestAi } = useCollabGuestAiGate()
-  const { canvasModels } = useOrgCustomLlm()
+  const { customLlmEnabled } = useOrgCustomLlm()
   // Expose store state
   const isGenerating = computed(() => llmResultsStore.isGenerating)
   const selectedModel = computed(() => llmResultsStore.selectedModel)
@@ -522,8 +523,13 @@ export function useAutoComplete() {
     }
   }
 
+  /** One model per run. School override stays on qwen. Otherwise the menu selection, else Express. */
+  function defaultCanvasModels(): string[] {
+    return [canvasRunModel(llmResultsStore.selectedModel, customLlmEnabled.value)]
+  }
+
   /**
-   * Generate diagram from all 3 LLMs in parallel
+   * Generate the diagram with the selected canvas LLM (Express by default).
    */
   async function autoComplete(
     options: {
@@ -541,7 +547,7 @@ export function useAutoComplete() {
     } = {}
   ): Promise<{ success: boolean; error?: string }> {
     const {
-      modelsToRun = [...canvasModels.value],
+      modelsToRun = defaultCanvasModels(),
       onFirstResult,
       onAllComplete,
       promptSuffix,

@@ -133,17 +133,17 @@ def _log_topic_and_firing(req: NodePaletteStartRequest, center_topic: str, sessi
         if center_topic and center_topic.strip():
             logger.debug(
                 "[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | "
-                "Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
+                "Firing Express LLM (DashScope deepseek-v4.1-flash)",
                 center_topic,
             )
         else:
             logger.debug(
                 "[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | "
-                "Firing 3 LLMs concurrently (qwen, deepseek, doubao)"
+                "Firing Express LLM (DashScope deepseek-v4.1-flash)"
             )
     else:
         logger.debug(
-            "[NodePalette-API] Type: %s | Topic: '%s' | Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
+            "[NodePalette-API] Type: %s | Topic: '%s' | Firing Express LLM (DashScope deepseek-v4.1-flash)",
             req.diagram_type,
             center_topic,
         )
@@ -162,7 +162,7 @@ async def start_node_palette(
     db: AsyncSession = Depends(get_async_db),
 ):
     """
-    Initialize Node Palette and fire 3 LLMs concurrently (qwen, deepseek, doubao).
+    Initialize Node Palette and fire the Express LLM.
 
     Returns SSE stream with progressive results as each LLM completes.
     No limits - this is the start of infinite scrolling!
@@ -249,7 +249,7 @@ async def start_node_palette(
 @router.post("/thinking_mode/node_palette/next_batch")
 async def get_next_batch(req: NodePaletteNextRequest, current_user: User = Depends(get_current_user)):
     """
-    Generate next batch - fires 3 LLMs concurrently again (qwen, deepseek, doubao)!
+    Generate next batch with the Express LLM.
 
     Called when user scrolls to 2/3 of content.
     Infinite scroll - keeps firing 3 concurrent LLMs on each trigger.
@@ -265,7 +265,7 @@ async def get_next_batch(req: NodePaletteNextRequest, current_user: User = Depen
     try:
         generator = _get_palette_generator(req.diagram_type)
         logger.debug(
-            "[NodePalette-API] Type: %s | Firing 3 LLMs concurrently for next batch (qwen, deepseek, doubao)...",
+            "[NodePalette-API] Type: %s | Firing Express LLM for next batch...",
             req.diagram_type,
         )
 

@@ -44,6 +44,7 @@ from models.domain.workshop_chat import (
     ChatTopic,
     UserTopicPreference,
 )
+from services.auth.expert_school_binding import user_is_bound_to_org
 from services.features.workshop_chat.channel_unread import batch_channel_unread_counts
 from services.features.workshop_chat.group_lesson_membership import (
     backfill_joined_group_lessons,
@@ -52,7 +53,7 @@ from services.features.workshop_chat.group_lesson_membership import (
     subscribe_group_members_to_lesson,
 )
 from services.utils.error_types import DATABASE_ERRORS
-from utils.auth import is_admin
+from utils.auth import is_admin, is_expert
 
 logger = logging.getLogger(__name__)
 
@@ -743,7 +744,11 @@ class ChannelService:
             return None
         user_result = await db.execute(select(User).where(User.id == target_user_id))
         target = user_result.scalar_one_or_none()
-        if not target or target.organization_id != organization_id:
+        if not target:
+            return None
+        same_school = target.organization_id == organization_id
+        bound_expert = is_expert(target) and await user_is_bound_to_org(db, int(target.id), organization_id)
+        if not same_school and not bound_expert:
             return None
         await ChannelService.join_channel(db, channel_id, target_user_id)
         return {

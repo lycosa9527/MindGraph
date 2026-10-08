@@ -5,6 +5,7 @@
 import { computed, ref, watch } from 'vue'
 
 import AdminSchoolCustomLlmSettings from '@/components/admin/AdminSchoolCustomLlmSettings.vue'
+import AdminSchoolExpertBinding from '@/components/admin/AdminSchoolExpertBinding.vue'
 import AdminSchoolOauthSettings from '@/components/admin/AdminSchoolOauthSettings.vue'
 import { useLanguage } from '@/composables'
 import {
@@ -199,7 +200,15 @@ watch(templateOptions, (options) => {
 })
 
 const oauthSettingsRef = ref<InstanceType<typeof AdminSchoolOauthSettings> | null>(null)
+const expertBindingRef = ref<InstanceType<typeof AdminSchoolExpertBinding> | null>(null)
 const customLlmSettingsRef = ref<InstanceType<typeof AdminSchoolCustomLlmSettings> | null>(null)
+
+async function saveExpertBindings(): Promise<boolean> {
+  if (!expertBindingRef.value) {
+    return true
+  }
+  return expertBindingRef.value.saveBindings()
+}
 
 async function saveOauthSettings(): Promise<boolean> {
   if (!oauthSettingsRef.value) {
@@ -215,7 +224,7 @@ function getCustomLlmPayload(): Record<string, unknown> {
   return customLlmSettingsRef.value.getSavePayload()
 }
 
-defineExpose({ saveOauthSettings, getCustomLlmPayload })
+defineExpose({ saveOauthSettings, saveExpertBindings, getCustomLlmPayload })
 </script>
 
 <template>
@@ -456,6 +465,13 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
         </div>
       </div>
     </div>
+
+    <AdminSchoolExpertBinding
+      ref="expertBindingRef"
+      :org-id="orgId"
+      :read-only="props.readOnly"
+      :active="props.generalTabActive !== false"
+    />
 
     <AdminSchoolCustomLlmSettings
       ref="customLlmSettingsRef"

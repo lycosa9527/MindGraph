@@ -6,7 +6,9 @@ import logging
 from typing import Optional
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import object_session
 
 from models.domain.thinking_coin import ThinkingCoinLedger, ThinkingCoinWallet
 from services.auth.thinking_coin.dates import beijing_date_today
@@ -72,21 +74,62 @@ def _expire_stale_daily_balance(db: AsyncSession, wallet: ThinkingCoinWallet) ->
     return expired
 
 
-async def get_or_create_wallet(db: AsyncSession, user_id: int) -> ThinkingCoinWallet:
-    """Fetch wallet row, creating with zero balance if missing. Expires stale daily coins."""
-    wallet = (
+_UNIQUE_VIOLATION = "23505"
+
+
+def _is_unique_violation(exc: IntegrityError) -> bool:
+    """True for PostgreSQL unique_violation (psycopg3 sqlstate or psycopg2 pgcode)."""
+    orig = exc.orig
+    sqlstate = getattr(orig, "sqlstate", None)
+    if not isinstance(sqlstate, str):
+        sqlstate = getattr(orig, "pgcode", None)
+    return sqlstate == _UNIQUE_VIOLATION
+
+
+def _discard_unpersisted_wallet(wallet: ThinkingCoinWallet) -> None:
+    """Drop a wallet object whose INSERT was rolled back by a savepoint."""
+    session = object_session(wallet)
+    if session is not None:
+        session.expunge(wallet)
+
+
+async def _select_wallet_for_update(db: AsyncSession, user_id: int) -> Optional[ThinkingCoinWallet]:
+    """Lock the wallet row when it already exists."""
+    return (
         await db.execute(select(ThinkingCoinWallet).where(ThinkingCoinWallet.user_id == user_id).with_for_update())
     ).scalar_one_or_none()
+
+
+async def _insert_zero_wallet(db: AsyncSession, user_id: int) -> ThinkingCoinWallet:
+    """Insert a zero wallet. Re-raise when a concurrent insert won the primary key."""
+    wallet = ThinkingCoinWallet(
+        user_id=user_id,
+        balance=0,
+        daily_balance=0,
+        daily_balance_date=None,
+    )
+    try:
+        async with db.begin_nested():
+            db.add(wallet)
+            await db.flush()
+    except IntegrityError:
+        _discard_unpersisted_wallet(wallet)
+        raise
+    return wallet
+
+
+async def get_or_create_wallet(db: AsyncSession, user_id: int) -> ThinkingCoinWallet:
+    """Fetch wallet row, creating with zero balance if missing. Expires stale daily coins."""
+    wallet = await _select_wallet_for_update(db, user_id)
     if wallet is None:
-        wallet = ThinkingCoinWallet(
-            user_id=user_id,
-            balance=0,
-            daily_balance=0,
-            daily_balance_date=None,
-        )
-        db.add(wallet)
-        await db.flush()
-        return wallet
+        try:
+            return await _insert_zero_wallet(db, user_id)
+        except IntegrityError as exc:
+            if not _is_unique_violation(exc):
+                raise
+            wallet = await _select_wallet_for_update(db, user_id)
+            if wallet is None:
+                raise
 
     orphan_cleared = _clear_orphan_daily_bucket(wallet)
     expired = _expire_stale_daily_balance(db, wallet)

@@ -624,6 +624,10 @@ async function saveGeneralSettings() {
     teachingDesignTemplateKeyEdit.value =
       typeof savedTemplate === 'string' && savedTemplate.trim() ? savedTemplate.trim() : 'system'
     if (orgGeneralTabRef.value) {
+      const bindingOk = await orgGeneralTabRef.value.saveExpertBindings()
+      if (!bindingOk) {
+        return
+      }
       const oauthOk = await orgGeneralTabRef.value.saveOauthSettings()
       if (!oauthOk) {
         return

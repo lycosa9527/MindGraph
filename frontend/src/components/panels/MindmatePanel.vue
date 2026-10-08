@@ -147,6 +147,18 @@ function saveEndedSeminar(sessionId: string, openAfterSave: boolean): void {
   })
 }
 
+function mapLibrarySeed(msgs: Array<{ role: string; content: string }>): MindmateCollabMessage[] {
+  return msgs
+    .filter((message) => message.role === 'user' || message.role === 'assistant')
+    .filter((message) => message.content.trim())
+    .map((message) => ({
+      role: message.role as 'user' | 'assistant',
+      content: message.content,
+      sender_user_id: message.role === 'user' ? Number(authStore.user?.id) || null : null,
+      username: message.role === 'user' ? (authStore.user?.username ?? null) : null,
+    }))
+}
+
 function mapThreadToCollabSeed(msgs: MindMateMessage[]): MindmateCollabMessage[] {
   return msgs
     .filter((m) => (m.role === 'user' || m.role === 'assistant') && m.content.trim())
@@ -228,14 +240,20 @@ function handleCollabSessionStarted(payload: {
   visibility?: 'organization' | 'network'
   ownerUserId?: number
   seedThread?: boolean
+  title?: string
+  seedMessages?: Array<{ role: string; content: string }>
 }) {
   if (wasMindmateCollabCodeRecentlyEnded(payload.code)) {
     notify.infoKey('mindmate.collabRoomEndedHost')
     return
   }
-  collabSeedMessages.value = payload.seedThread
-    ? mapThreadToCollabSeed(mindMate.messages.value)
-    : []
+  if (payload.seedMessages?.length) {
+    collabSeedMessages.value = mapLibrarySeed(payload.seedMessages)
+  } else if (payload.seedThread) {
+    collabSeedMessages.value = mapThreadToCollabSeed(mindMate.messages.value)
+  } else {
+    collabSeedMessages.value = []
+  }
   collabRoomCode.value = payload.code
   if (payload.visibility === 'network' || payload.visibility === 'organization') {
     collabVisibility.value = payload.visibility
@@ -245,7 +263,7 @@ function handleCollabSessionStarted(payload: {
   } else {
     collabOwnerId.value = null
   }
-  collabRoomTitle.value = mindMateStore.conversationTitle || null
+  collabRoomTitle.value = payload.title || mindMateStore.conversationTitle || null
   savedSeminar.clear()
   setEmbeddedCollabRoomCode(payload.code)
 }

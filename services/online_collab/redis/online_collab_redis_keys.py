@@ -19,7 +19,7 @@ Proprietary License
 
 import logging
 import os
-from typing import Any
+from typing import Any, Optional
 
 from redis.exceptions import RedisError
 
@@ -236,6 +236,33 @@ def registry_global_org_key() -> str:
     return ONLINE_COLLAB_REGISTRY_GLOBAL_ORG_KEY
 
 
+def organization_registry_keys(
+    org_id: Optional[int],
+    extra_org_ids: Optional[list[int]],
+    visibility: str,
+) -> list[str]:
+    """Registry SET keys for one organization-visibility session.
+
+    The host school is included when ``org_id`` is set. Extra ids are the
+    schools an expert is bound to. With neither, organization visibility uses
+    the global registry.
+    """
+    keys: list[str] = []
+    seen: set[int] = set()
+    if org_id is not None:
+        keys.append(registry_org_key(int(org_id)))
+        seen.add(int(org_id))
+    for raw in extra_org_ids or []:
+        extra = int(raw)
+        if extra in seen:
+            continue
+        seen.add(extra)
+        keys.append(registry_org_key(extra))
+    if not seen and visibility == "organization":
+        keys.append(registry_global_org_key())
+    return keys
+
+
 def idle_scores_key() -> str:
     """Redis ZSET: code 鈫?last_activity unix timestamp for idle monitoring."""
     return ONLINE_COLLAB_IDLE_SCORES_KEY
@@ -284,6 +311,7 @@ async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
 
     org_id_str = _decode_bytes(meta.get(b"org_id") or meta.get("org_id"))
     visibility = _decode_bytes(meta.get(b"visibility") or meta.get("visibility"))
+    bound_raw = _decode_bytes(meta.get(b"bound_org_ids") or meta.get("bound_org_ids"))
 
     per_code_keys = [
         session_key(code),
@@ -320,7 +348,7 @@ async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
         )
         await _purge_keys_per_key_fallback(redis, per_code_keys)
 
-    await _purge_global_indexes(redis, code, org_id_str, visibility)
+    await _purge_global_indexes(redis, code, org_id_str, visibility, bound_raw)
 
     try:
         batch: list = []
@@ -348,6 +376,7 @@ async def _purge_global_indexes(
     code: str,
     org_id_str: str,
     visibility: str,
+    bound_org_ids: str = "",
 ) -> None:
     """Best-effort cleanup for indexes that are not in the room hash slot."""
     try:
@@ -371,6 +400,12 @@ async def _purge_global_indexes(
         candidate_registry_keys.add(registry_network_key())
     else:
         await _purge_unknown_org_registries(redis, code, candidate_registry_keys)
+
+    for piece in bound_org_ids.split(","):
+        token = piece.strip()
+        if not token.isdigit():
+            continue
+        candidate_registry_keys.add(registry_org_key(int(token)))
 
     for registry_key in candidate_registry_keys:
         try:

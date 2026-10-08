@@ -127,4 +127,17 @@ describe('useSlideRemote start jump', () => {
     expect(openDiagram).not.toHaveBeenCalled()
     stop()
   })
+
+  it('ignores a dropped network while draining commands', async () => {
+    drainMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    const stop = mountRemote({
+      diagramId: () => 'diag-1',
+      openDiagram: vi.fn(),
+      enterSlides: vi.fn(),
+    })
+    await vi.waitFor(() => {
+      expect(drainMock).toHaveBeenCalled()
+    })
+    stop()
+  })
 })

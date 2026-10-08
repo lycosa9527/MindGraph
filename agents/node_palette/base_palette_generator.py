@@ -24,13 +24,14 @@ from abc import ABC, abstractmethod
 from difflib import SequenceMatcher
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
+from models.common import CANVAS_LLM_MODEL_KEYS
 from services.llm import llm_service
 from utils.prompt_locale import is_chinese_prompt_shell_language, output_language_instruction
 from utils.prompt_output_languages import is_prompt_output_language
 
 logger = logging.getLogger(__name__)
 
-_PALETTE_LLM_WHITELIST = frozenset({"qwen", "deepseek", "doubao"})
+_PALETTE_LLM_WHITELIST = CANVAS_LLM_MODEL_KEYS
 
 
 class BasePaletteGenerator(ABC):
@@ -38,9 +39,9 @@ class BasePaletteGenerator(ABC):
     Base class for all diagram-specific node palette generators.
 
     Architecture:
-    - Uses llm_service.stream_progressive() for concurrent token streaming
-    - 3 LLMs (qwen, deepseek, doubao) fire simultaneously (Hunyuan disabled, Kimi removed due to Volcengine load issues)
-    - Nodes render progressively as tokens arrive from any LLM
+    - Uses llm_service.stream_progressive() for token streaming
+    - Defaults to Express. A caller can pass one canvas menu model.
+    - Nodes render progressively as tokens arrive
     - Deduplication across all batches and LLMs
     - Subclasses override _build_prompt() for diagram-specific generation
     """
@@ -57,9 +58,7 @@ class BasePaletteGenerator(ABC):
     def __init__(self):
         """Initialize base palette generator"""
         self.llm_service = llm_service
-        # NOTE: Hunyuan disabled due to 5 concurrent connection limit
-        # NOTE: Kimi removed from node palette - Volcengine server cannot handle load
-        self.llm_models = ["qwen", "deepseek", "doubao"]
+        self.llm_models = ["express"]
 
         # Session storage
         self.generated_nodes = {}  # session_id -> List[Dict]
@@ -109,7 +108,7 @@ class BasePaletteGenerator(ABC):
         llm_models: Optional[List[str]] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
-        Generate batch of nodes using 3 LLMs (qwen, deepseek, doubao) with concurrent token streaming.
+        Generate a batch of nodes. Omitted models stay on Express.
 
         Nodes render progressively as tokens arrive from any LLM!
 
@@ -122,7 +121,7 @@ class BasePaletteGenerator(ABC):
 
         Yields:
             Dict events:
-            - {'event': 'batch_start', 'batch_number': 1, 'llm_count': 4}
+            - {'event': 'batch_start', 'batch_number': 1, 'llm_count': N}
             - {'event': 'node_generated', 'node': {...}}
             - {'event': 'llm_complete', 'llm': 'qwen', 'unique_nodes': 12, ...}
             - {'event': 'batch_complete', 'total_unique': 45, ...}
@@ -186,7 +185,7 @@ class BasePaletteGenerator(ABC):
         llm_yield_order = active_models.copy()  # Round-robin order
         next_llm_index = 0
 
-        # 🚀 CONCURRENT TOKEN STREAMING - 3 LLMs fire simultaneously (qwen, deepseek, doubao)!
+        # Stream the active models and interleave tokens as they arrive.
         logger.debug(
             "[NodePalette] Streaming from %d LLMs with progressive rendering (round-robin interleaving)...",
             len(active_models),

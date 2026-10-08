@@ -134,7 +134,7 @@ async def _generate_and_persist(
     title: str,
     transcript: str,
 ) -> None:
-    agent = WebContentMindMapAgent(model="qwen")
+    agent = WebContentMindMapAgent(model="express")
     result = await agent.generate_from_page_content(
         page_content=transcript,
         language="zh",

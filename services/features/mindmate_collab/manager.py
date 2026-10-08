@@ -20,6 +20,8 @@ from sqlalchemy.exc import IntegrityError
 
 from models.domain.auth import User
 from models.domain.mindmate_collab import MindmateCollabSession
+from services.auth.expert_live_scope import bound_org_label
+from services.auth.expert_school_binding import bound_org_ids_for_user
 from services.features.mindmate_collab.config import (
     MINDMATE_COLLAB_CLOSING_TTL_SEC,
     MINDMATE_COLLAB_DEFAULT_DURATION,
@@ -155,6 +157,7 @@ class MindmateCollabManager:
                     return None, "User not found"
 
                 org_id = user.organization_id
+                bound_org_ids = await bound_org_ids_for_user(db, user)
                 if visibility == ONLINE_COLLAB_VISIBILITY_ORGANIZATION and org_id is not None:
                     live_count = await self._count_live_org_sessions(org_id)
                     if live_count >= MINDMATE_COLLAB_MAX_ORG_CONCURRENT_SESSIONS:
@@ -208,6 +211,7 @@ class MindmateCollabManager:
                 owner_id=user_id,
                 owner_name=user.name or user.phone or user.email or str(user_id),
                 org_id=org_id,
+                bound_org_ids=bound_org_ids,
                 title=(title or "").strip() or "MindMate Collab",
                 visibility=visibility,
                 expires_at=expires_at,
@@ -243,6 +247,7 @@ class MindmateCollabManager:
         title: str,
         visibility: str,
         expires_at: datetime,
+        bound_org_ids: Optional[List[int]] = None,
     ) -> bool:
         redis = get_async_redis()
         if not redis:
@@ -259,6 +264,7 @@ class MindmateCollabManager:
             "owner_id": str(owner_id),
             "owner_name": owner_name,
             "org_id": str(org_id) if org_id is not None else "",
+            "bound_org_ids": bound_org_label(org_id, bound_org_ids or []),
             "title": title,
             "visibility": visibility,
             "expires_at": str(exp_unix),
@@ -272,7 +278,7 @@ class MindmateCollabManager:
             pipe.expire(session_meta_key(norm), ttl)
             pipe.set(code_to_session_key(norm), session_id, ex=ttl)
             pipe.zadd(idle_scores_key(), {norm: now})
-            for reg in registry_keys_for_visibility(org_id, visibility):
+            for reg in registry_keys_for_visibility(org_id, visibility, bound_org_ids):
                 pipe.sadd(reg, norm)
             await pipe.execute()
         except REDIS_ERRORS as exc:

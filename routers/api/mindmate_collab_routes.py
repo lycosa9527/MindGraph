@@ -21,6 +21,7 @@ from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.mindmate_collab_library_mutations import router as saved_seminar_mutation_router
 from routers.auth.dependencies import get_language_dependency
+from routers.features.workshop_chat.dependencies import resolve_social_org_id
 from routers.features.workshop_chat.schemas import OrgMembersPage
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
@@ -349,12 +350,10 @@ async def list_collab_org_members(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_collab_org_members", identifier, max_requests=60, window_seconds=60)
 
-    if not current_user.organization_id:
-        raise HTTPException(status_code=400, detail="User is not part of an organization")
-
+    effective_org_id = await resolve_social_org_id(db, current_user, None)
     return await fetch_org_members_page(
         db,
-        int(current_user.organization_id),
+        effective_org_id,
         q=q or "",
         limit=limit,
         offset=offset,

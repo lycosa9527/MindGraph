@@ -12,10 +12,11 @@ import logging
 import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
-from models.domain.auth import User
+from models.domain.auth import OrganizationExpertBinding, User
 from models.domain.mindmate_collab import MindmateCollabSession
+from services.auth.expert_school_binding import list_bound_org_ids
 from services.features.mindmate_collab.redis_keys import (
     normalize_collab_code,
     registry_global_org_key,
@@ -28,6 +29,7 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
 )
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import REDIS_ERRORS
+from utils.auth.roles import is_expert
 from utils.db.session_open import user_rls_session
 
 logger = logging.getLogger(__name__)
@@ -85,6 +87,10 @@ async def resolve_viewer_org_id(
     async with user_rls_session(user_id) as probe:
         viewer = (await probe.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
         if not viewer or viewer.organization_id is None:
+            if viewer is not None and is_expert(viewer):
+                bound = await list_bound_org_ids(probe, int(viewer.id))
+                if bound:
+                    return bound[0]
             return None
         return int(viewer.organization_id)
 
@@ -118,7 +124,14 @@ async def list_org_sessions_sql(user_id: int, org_id: int) -> List[Dict[str, Any
             select(MindmateCollabSession, User.name, User.phone, User.email)
             .outerjoin(User, User.id == MindmateCollabSession.owner_user_id)
             .where(
-                MindmateCollabSession.organization_id == org_id,
+                or_(
+                    MindmateCollabSession.organization_id == org_id,
+                    MindmateCollabSession.owner_user_id.in_(
+                        select(OrganizationExpertBinding.user_id).where(
+                            OrganizationExpertBinding.organization_id == org_id
+                        )
+                    ),
+                ),
                 MindmateCollabSession.visibility == ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
                 MindmateCollabSession.ended_at.is_(None),
             )
@@ -228,6 +241,24 @@ async def attach_participant_counts(
     return rows
 
 
+async def viewer_seminar_org_ids(user_id: int, organization_id: Optional[int]) -> List[int]:
+    """Schools whose seminar lists this viewer should see."""
+    if organization_id is not None:
+        return [int(organization_id)]
+    async with user_rls_session(user_id) as probe:
+        viewer = (await probe.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+        if viewer is None:
+            return []
+        org_ids: List[int] = []
+        if viewer.organization_id is not None:
+            org_ids.append(int(viewer.organization_id))
+        if is_expert(viewer):
+            for bound_org_id in await list_bound_org_ids(probe, int(viewer.id)):
+                if bound_org_id not in org_ids:
+                    org_ids.append(bound_org_id)
+        return org_ids
+
+
 async def list_visible_org_sessions(
     user_id: int,
     *,
@@ -235,10 +266,18 @@ async def list_visible_org_sessions(
     participant_counts_fn: ParticipantCountsFn,
 ) -> List[Dict[str, Any]]:
     """Return live org seminars the viewer should see in the school group list."""
-    org_id = await resolve_viewer_org_id(user_id, organization_id)
-    if org_id is None:
+    org_ids = await viewer_seminar_org_ids(user_id, organization_id)
+    if not org_ids:
         return []
-    sql_rows = await list_org_sessions_sql(user_id, org_id)
-    redis_rows = await list_org_sessions_redis(org_id)
-    merged = merge_org_session_rows(sql_rows, redis_rows)
+    merged: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    for org_id in org_ids:
+        sql_rows = await list_org_sessions_sql(user_id, org_id)
+        redis_rows = await list_org_sessions_redis(org_id)
+        for row in merge_org_session_rows(sql_rows, redis_rows):
+            code = str(row.get("code") or "")
+            if code in seen:
+                continue
+            seen.add(code)
+            merged.append(row)
     return await attach_participant_counts(merged, participant_counts_fn)

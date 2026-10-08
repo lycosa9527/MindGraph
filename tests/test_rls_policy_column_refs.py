@@ -45,6 +45,15 @@ def test_all_rls_policy_expressions_reference_real_columns():
     assert not errors, "RLS policy column mismatches:\n" + "\n".join(errors)
 
 
+def test_token_usage_allows_null_organization_for_current_user():
+    """Personal accounts can insert token_usage when organization_id is null."""
+    builder = load_rls_policy_builder()
+    expr = dict(builder.iter_all_table_policies())["token_usage"]
+    assert "organization_id IS NULL" in expr
+    assert "user_id = rls_current_user_id()" in expr
+    assert "rls_org_visible(organization_id)" in expr
+
+
 def test_knowledge_embeddings_not_document_scoped():
     """Test knowledge embeddings not document scoped."""
     builder = load_rls_policy_builder()

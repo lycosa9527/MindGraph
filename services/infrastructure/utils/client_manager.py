@@ -85,25 +85,33 @@ class ClientManager:
                     "generation",
                     pinned_dashscope_model="qwen3.7-plus",
                 )
+                self._clients["qwen3-max"] = QwenClient(
+                    "generation",
+                    pinned_dashscope_model="qwen3-max",
+                )
 
                 # Initialize other LLM clients
                 self._clients["deepseek"] = DeepSeekClient()
+                self._clients["express"] = DeepSeekClient(model_id="express")
                 # Note: KimiClient (Dashscope) is initialized but NEVER USED
                 # Load balancer always routes 'kimi' → 'ark-kimi' (Volcengine)
-                # due to higher limits (5,000 RPM vs 60 RPM)
+                # Kimi stays on Volcengine. DashScope Moonshot-Kimi-K2-Instruct is 500 RPM.
                 self._clients["kimi"] = KimiClient()  # Dashscope client (not used, kept for backward compatibility)
                 self._clients["hunyuan"] = HunyuanClient()
 
                 # Initialize Volcengine ARK clients (using endpoints for higher RPM)
                 # Note: ark-qwen is NOT registered - Qwen always routes to Dashscope
                 # Only DeepSeek is load-balanced (Route A: Dashscope, Route B: Volcengine)
-                # Kimi ALWAYS uses Volcengine endpoint (5,000 RPM vs Dashscope's 60 RPM)
+                # Kimi ALWAYS uses the Volcengine endpoint. DashScope Kimi is 500 RPM / 1,000,000 TPM.
                 # Doubao always uses Volcengine endpoint
                 self._clients["ark-deepseek"] = VolcengineClient("ark-deepseek")
                 self._clients["ark-kimi"] = VolcengineClient("ark-kimi")  # PRIMARY route for Kimi
                 self._clients["ark-doubao"] = VolcengineClient("ark-doubao")
                 # Map logical 'doubao' to 'ark-doubao' for consistency
                 self._clients["doubao"] = self._clients["ark-doubao"]
+                # Canvas Doubao 2.1 uses a model id, not the 1.5 pro endpoint above.
+                self._clients["ark-doubao21"] = VolcengineClient("ark-doubao21")
+                self._clients["doubao21"] = self._clients["ark-doubao21"]
                 logger.debug("[ClientManager] Volcengine ARK clients initialized (using endpoints)")
 
                 # Initialize Qwen Omni client (for Kitty Agent)

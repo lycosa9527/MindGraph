@@ -7,7 +7,7 @@
  * - llm-progress-renderer.js
  *
  * Features:
- * - Caches results from 3 LLMs (Qwen, DeepSeek, Doubao)
+ * - Caches the canvas run (one model at a time; older keys still load)
  * - TTL-based cache validation (10 minutes)
  * - First-result-wins rendering
  * - Click to switch between cached results
@@ -30,25 +30,17 @@ import {
   shouldPaintCompletedLlmModel,
   shouldStampCanvasOntoLlmResult,
 } from './llmResultsPaint'
-import {
-  clonePersistedLlmResults,
-  resolvePersistedSelectedModel,
-} from './llmResultsPersist'
+import { clonePersistedLlmResults, resolvePersistedSelectedModel } from './llmResultsPersist'
 import { useSavedDiagramsStore } from './savedDiagrams'
 
 // Types
 export type ModelState = 'idle' | 'loading' | 'ready' | 'error'
 
 /** In-flight auto-complete phases for per-model button colors (AIModelSelector). */
-export type ModelLoadPhase =
-  | 'idle'
-  | 'sending'
-  | 'waiting'
-  | 'streaming'
-  | 'ready'
-  | 'error'
+export type ModelLoadPhase = 'idle' | 'sending' | 'waiting' | 'streaming' | 'ready' | 'error'
 
 const IDLE_PHASES: Record<string, ModelLoadPhase> = {
+  express: 'idle',
   qwen: 'idle',
   deepseek: 'idle',
   doubao: 'idle',
@@ -74,8 +66,9 @@ export interface LLMResultsState {
 }
 
 // Constants
-const MODELS = ['qwen', 'deepseek', 'doubao'] as const
-export type LLMModel = (typeof MODELS)[number]
+const MODELS = ['express'] as const
+/** Live canvas menu plus older keys still stored on diagrams. */
+export type { CanvasLlmModel as LLMModel } from '@/config/canvasLlmMenu'
 
 const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
 
@@ -91,6 +84,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   // State
   const results = ref<Record<string, LLMResult>>({})
   const modelStates = ref<Record<string, ModelState>>({
+    express: 'idle',
     qwen: 'idle',
     deepseek: 'idle',
     doubao: 'idle',

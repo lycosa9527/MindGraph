@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional
 
 from redis.exceptions import RedisError
 
+from models.common import CANVAS_LLM_MODEL_KEYS
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log, summarize_diagram_update
 from services.kitty.infra.redis.kitty_redis_keys import kitty_desktop_wake_channel
 from services.redis.redis_async_client import get_async_redis
@@ -209,11 +210,11 @@ async def publish_kitty_selection_update(
     )
 
 
-_VALID_KITTY_LLM_MODELS = frozenset({"qwen", "deepseek", "doubao"})
+_VALID_KITTY_LLM_MODELS = CANVAS_LLM_MODEL_KEYS
 
 
 def normalize_kitty_llm_model(raw: Any) -> Optional[str]:
-    """Return qwen|deepseek|doubao, or None when value is absent/invalid/clear."""
+    """Return a canvas LLM key, or None when value is absent/invalid/clear."""
     if raw is None:
         return None
     if not isinstance(raw, str):

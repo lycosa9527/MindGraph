@@ -15,6 +15,7 @@ from services.llm.llm_utils import LLMUtils
 def test_is_no_retry_model_doubao_only() -> None:
     """Doubao / ark-doubao skip retry; kimi still retries."""
     assert LLMUtils.is_no_retry_model("doubao", "ark-doubao") is True
+    assert LLMUtils.is_no_retry_model("doubao21", "ark-doubao21") is True
     assert LLMUtils.is_no_retry_model("kimi", "ark-kimi") is False
     assert LLMUtils.is_no_retry_model("qwen", "qwen") is False
 

@@ -103,7 +103,7 @@ async def reply_text_only_conversational(
     try:
         result = await llm_service.chat(
             prompt=user_prompt,
-            model="qwen-turbo",
+            model="express",
             temperature=0.4,
             max_tokens=220,
             timeout=12.0,

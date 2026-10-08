@@ -11,10 +11,10 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from models.domain.auth import User
-from routers.features.workshop_chat.dependencies import get_effective_org_id
+from routers.features.workshop_chat.dependencies import presence_org_ids_for_user
 from services.features.mindmate_notify_ws_manager import mindmate_notify_ws_manager
 from utils.auth import user_has_feature_access
 from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
@@ -105,8 +105,8 @@ async def mindmate_notify_websocket(websocket: WebSocket) -> None:
         except WebSocketDisconnect:
             logger.debug("[MindmateNotifyWS] user %s disconnected", user_id)
         finally:
-            org_id = await mindmate_notify_ws_manager.disconnect(user_id)
-            if org_id is not None:
+            org_ids = await mindmate_notify_ws_manager.disconnect(user_id)
+            for org_id in org_ids:
                 await mindmate_notify_ws_manager.broadcast_org_presence(
                     user_id,
                     "offline",
@@ -118,13 +118,14 @@ async def mindmate_notify_websocket(websocket: WebSocket) -> None:
 async def _handle_subscribe_presence(websocket: WebSocket, user: User, data: dict) -> None:
     raw = data.get("org_id")
     requested = int(raw) if raw is not None else None
-    try:
-        effective = get_effective_org_id(user, requested)
-    except HTTPException:
+    async with actor_rls_session(user) as db:
+        org_ids = await presence_org_ids_for_user(db, user, requested)
+    if not org_ids:
         logger.warning("[MindmateNotifyWS] subscribe_presence rejected for user %s", user.id)
         return
     user_id = int(user.id)
-    await mindmate_notify_ws_manager.set_presence_org(user_id, effective)
+    effective = org_ids[0]
+    await mindmate_notify_ws_manager.set_presence_orgs(user_id, org_ids)
     online_here = await mindmate_notify_ws_manager.presence_org_online_ids(effective)
     others = [uid for uid in online_here if uid != user_id]
     await websocket.send_text(
@@ -135,12 +136,13 @@ async def _handle_subscribe_presence(websocket: WebSocket, user: User, data: dic
             },
         ),
     )
-    await mindmate_notify_ws_manager.broadcast_org_presence(
-        user_id,
-        "active",
-        effective,
-        exclude_user=user_id,
-    )
+    for org_id in org_ids:
+        await mindmate_notify_ws_manager.broadcast_org_presence(
+            user_id,
+            "active",
+            org_id,
+            exclude_user=user_id,
+        )
 
 
 async def _handle_presence(user_id: int, data: dict) -> None:

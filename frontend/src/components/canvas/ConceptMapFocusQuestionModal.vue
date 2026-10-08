@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Standard-mode gate: 3-LLM validation (once, may disagree) + rolling suggestions
+ * Standard-mode gate: Express validation (once) + rolling suggestions
  * (5 per page, - / = like label picker). Validation and suggestions run in parallel.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -13,19 +13,15 @@ import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { FOCUS_MODELS, type FocusModel } from '@/composables/editor/conceptMapFocusQuestionApi'
 import { getLLMColor } from '@/config/llmModelColors'
 import { useUIStore } from '@/stores/ui'
 import '@/styles/mind-map-side-rail-panel.css'
 import '@/styles/swissGlassControls.css'
 import { authFetch } from '@/utils/api'
 
-const FOCUS_MODELS = ['qwen', 'deepseek', 'doubao'] as const
-type FocusModel = (typeof FOCUS_MODELS)[number]
-
 const MODEL_LABELS: Record<FocusModel, string> = {
-  qwen: 'Qwen',
-  deepseek: 'DeepSeek',
-  doubao: 'Doubao',
+  express: 'Express',
 }
 
 const PAGE_SIZE = 5
@@ -77,11 +73,15 @@ function emptyVState(): VState {
   return { valid: null, reason: '', error: null, loading: false }
 }
 
-const validationByModel = ref<Record<FocusModel, VState>>({
-  qwen: emptyVState(),
-  deepseek: emptyVState(),
-  doubao: emptyVState(),
-})
+function emptyByModel(): Record<FocusModel, VState> {
+  const out = {} as Record<FocusModel, VState>
+  for (const m of FOCUS_MODELS) {
+    out[m] = emptyVState()
+  }
+  return out
+}
+
+const validationByModel = ref<Record<FocusModel, VState>>(emptyByModel())
 
 const suggestionRows = ref<Array<{ model: FocusModel; text: string }>>([])
 const suggestionPage = ref(0)

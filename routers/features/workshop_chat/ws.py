@@ -25,8 +25,9 @@ from models.domain.auth import User as UserModel
 from models.domain.workshop_chat import ChatChannel
 from routers.features.workshop_chat.dependencies import (
     access_channel,
-    get_effective_org_id,
+    presence_org_ids_for_user,
     require_post_permission,
+    users_may_direct_message,
 )
 from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
 from services.features.workshop_chat import (
@@ -275,15 +276,16 @@ async def _handle_subscribe_presence(
     """
     raw = data.get("org_id")
     requested = int(raw) if raw is not None else None
-    try:
-        effective = get_effective_org_id(user, requested)
-    except HTTPException:
+    async with actor_rls_session(user, allow_global_channels=True) as db:
+        org_ids = await presence_org_ids_for_user(db, user, requested)
+    if not org_ids:
         logger.warning(
             "[ChatWS] subscribe_presence rejected for user %s",
             user.id,
         )
         return
-    await chat_ws_manager.set_presence_org(user.id, effective)
+    effective = org_ids[0]
+    await chat_ws_manager.set_presence_orgs(user.id, org_ids)
     online_here = await chat_ws_manager.presence_org_online_ids(effective)
     others = [uid for uid in online_here if uid != user.id]
     await websocket.send_text(
@@ -294,12 +296,13 @@ async def _handle_subscribe_presence(
             }
         )
     )
-    await chat_ws_manager.broadcast_org_presence(
-        user.id,
-        "active",
-        effective,
-        exclude_user=user.id,
-    )
+    for org_id in org_ids:
+        await chat_ws_manager.broadcast_org_presence(
+            user.id,
+            "active",
+            org_id,
+            exclude_user=user.id,
+        )
 
 
 async def _handle_channel_message(
@@ -472,7 +475,7 @@ async def _handle_dm(
             return
         sender_row = await db.execute(select(UserModel).where(UserModel.id == user.id))
         sender = sender_row.scalar_one_or_none()
-        if not sender or not sender.organization_id or sender.organization_id != recipient.organization_id:
+        if sender is None or not await users_may_direct_message(db, sender, recipient):
             await websocket.send_text(
                 json.dumps(
                     {
@@ -586,7 +589,9 @@ async def _handle_typing_dm(
         recipient = recip_row.scalar_one_or_none()
         sender_row = await db.execute(select(UserModel).where(UserModel.id == user.id))
         sender = sender_row.scalar_one_or_none()
-        can_send = recipient is not None and sender is not None and sender.organization_id == recipient.organization_id
+        can_send = (
+            recipient is not None and sender is not None and await users_may_direct_message(db, sender, recipient)
+        )
     if not can_send:
         return
     await chat_ws_manager.broadcast_typing_dm(

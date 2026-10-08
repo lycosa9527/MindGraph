@@ -36,6 +36,7 @@ export type AdminCapability =
   | 'tab.settings.roles'
   | 'tab.settings.tokens'
   | 'tab.settings.library'
+  | 'tab.settings.llm_control'
   | 'tab.settings.database'
   | 'tab.settings.cos'
   | 'tab.settings.performance'
@@ -96,6 +97,7 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'tab.settings.roles',
   'tab.settings.tokens',
   'tab.settings.library',
+  'tab.settings.llm_control',
   'tab.settings.database',
   'tab.settings.cos',
   'tab.settings.performance',
@@ -297,6 +299,7 @@ export function settingsSubtabRequiresCapabilities(subtab: string): AdminCapabil
     roles: ['tab.settings.roles'],
     tokens: ['tab.settings.tokens'],
     library: ['tab.settings.library'],
+    llm_control: ['tab.settings.llm_control'],
     database: ['tab.settings.database'],
     cos: ['tab.settings.cos'],
     performance: ['tab.settings.performance'],

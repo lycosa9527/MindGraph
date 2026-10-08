@@ -1,5 +1,5 @@
 /**
- * Concept map focus question review — 3-LLM validation + suggestions (canvas flow)
+ * Concept map focus question review — Express validation + suggestions (canvas flow)
  */
 import { computed, ref, watch } from 'vue'
 
@@ -37,11 +37,15 @@ export const useConceptMapFocusReviewStore = defineStore('conceptMapFocusReview'
   const streamAbortController = ref<AbortController | null>(null)
   const streamPhase = ref<'idle' | 'requesting' | 'streaming'>('idle')
 
-  const validationByModel = ref<Record<FocusModel, FocusValidationState>>({
-    qwen: emptyVState(),
-    deepseek: emptyVState(),
-    doubao: emptyVState(),
-  })
+  function emptyByModel(): Record<FocusModel, FocusValidationState> {
+    const out = {} as Record<FocusModel, FocusValidationState>
+    for (const m of FOCUS_MODELS) {
+      out[m] = emptyVState()
+    }
+    return out
+  }
+
+  const validationByModel = ref<Record<FocusModel, FocusValidationState>>(emptyByModel())
 
   const suggestionRows = ref<Array<{ model: FocusModel; text: string }>>([])
   const suggestionPage = ref(0)

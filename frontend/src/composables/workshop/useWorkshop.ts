@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
+import { isCanvasLlmModel } from '@/config/canvasLlmMenu'
 import { useAuthStore } from '@/stores'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
@@ -257,7 +258,7 @@ export function useWorkshop(
       return
     }
     const m = llmResultsStore.selectedModel
-    const normalized = m === 'qwen' || m === 'deepseek' || m === 'doubao' ? m : null
+    const normalized = isCanvasLlmModel(m) ? m : null
     sendHostLlmModelNotify(normalized)
   }
 

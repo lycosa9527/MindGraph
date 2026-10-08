@@ -80,8 +80,8 @@ ASKONCE_MODELS = {
         "display_name": "Qwen",
     },
     "deepseek": {
-        # Load balanced: Dashscope=deepseek-v3.2, Volcengine=ep-20251222212434-cxpzb
-        "model_name": "deepseek-v3.2",
+        # Load balanced: DashScope deepseek-v4.1-flash and Volcengine DS_v4.1flash.
+        "model_name": "deepseek-v4.1-flash",
         "default_temperature": 0.6,
         "enable_thinking": True,
         "display_name": "DeepSeek",

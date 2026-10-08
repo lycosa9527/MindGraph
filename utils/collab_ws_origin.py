@@ -16,6 +16,13 @@ from starlette.datastructures import Headers
 
 logger = logging.getLogger(__name__)
 
+_MINDGRAPH_HTTPS_ORIGINS = frozenset(
+    {
+        "https://mg.mindspringedu.com",
+        "https://www.mindspringedu.com",
+    }
+)
+
 
 def normalize_origin_header(origin: str) -> str:
     """Lowercase scheme and host portion for comparisons."""
@@ -50,12 +57,19 @@ def first_party_ws_origins_from_env() -> FrozenSet[str]:
     return parse_collab_ws_allowed_origins(os.environ.get("EXTERNAL_BASE_URL"))
 
 
+def expand_mindgraph_https_siblings(origins: FrozenSet[str]) -> FrozenSet[str]:
+    """Allow both public HTTPS hosts when either one is already allowlisted."""
+    if not origins & _MINDGRAPH_HTTPS_ORIGINS:
+        return origins
+    return frozenset(origins | _MINDGRAPH_HTTPS_ORIGINS)
+
+
 def load_collab_ws_allowed_origins_env() -> FrozenSet[str]:
     """Load CSWSH allowlist; policy off when ``COLLAB_WS_ALLOWED_ORIGINS`` is empty."""
     configured = parse_collab_ws_allowed_origins(os.environ.get("COLLAB_WS_ALLOWED_ORIGINS"))
     if not configured:
         return frozenset()
-    return frozenset(configured | first_party_ws_origins_from_env())
+    return expand_mindgraph_https_siblings(frozenset(configured | first_party_ws_origins_from_env()))
 
 
 def canvas_collab_websocket_origin_is_allowed(
@@ -82,7 +96,7 @@ def canvas_collab_websocket_origin_is_allowed(
         return bool(missing_ok)
 
     cand = normalize_origin_header(raw)
-    permitted = frozenset(allowed_normalized | first_party_ws_origins_from_env())
+    permitted = expand_mindgraph_https_siblings(frozenset(allowed_normalized | first_party_ws_origins_from_env()))
     return cand in permitted
 
 

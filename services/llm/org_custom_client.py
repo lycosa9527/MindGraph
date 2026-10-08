@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 from clients.llm.org_custom.factory import build_org_custom_llm_client
+from services.infrastructure.utils.llm_routing_overrides import refresh_routing_overrides
 from services.llm.org_custom_config import load_org_custom_llm_config
 from services.llm.org_custom_llm_constants import API_TYPE_OPENAI_RESPONSES, OrgCustomLlmConfig
 
@@ -37,6 +38,7 @@ async def resolve_chat_routing(
     Custom orgs skip global DashScope/Volcengine load balancing and remap
     every canvas alias to the school model name.
     """
+    await refresh_routing_overrides()
     config = await load_org_custom_llm_config(organization_id)
     if config is not None:
         return build_org_custom_llm_client(config), config.model, config.api_type, True

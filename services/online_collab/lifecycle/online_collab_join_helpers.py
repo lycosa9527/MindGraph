@@ -15,6 +15,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
+from services.auth.expert_school_binding import bound_org_ids_for_user
 from services.online_collab.core.online_collab_manager_access import get_online_collab_manager
 from services.online_collab.lifecycle.online_collab_expiry import expires_at_to_unix
 from services.online_collab.redis.online_collab_redis_keys import code_to_diagram_key, session_key
@@ -62,25 +63,26 @@ async def restore_online_collab_redis_from_db_row(
     resolved_org_id = org_id
     resolved_title = title or getattr(diagram, "title", "") or ""
     resolved_owner_name = owner_name or ""
+    bound_org_ids: list[int] = []
 
-    if resolved_org_id is None:
-        owner_id = getattr(diagram, "user_id", None)
-        if owner_id is not None:
-            try:
-                async with user_rls_session(int(owner_id)) as db:
-                    result = await db.execute(select(User.organization_id, User.name).where(User.id == owner_id))
-                    row = result.first()
-                    if row:
-                        resolved_org_id = row.organization_id
-                        if not resolved_owner_name:
-                            resolved_owner_name = row.name or ""
-            except (SQLAlchemyError, OSError) as exc:
-                logger.warning(
-                    "[JoinHelpers] restore: could not fetch owner org for code=%s owner_id=%s: %s",
-                    code,
-                    owner_id,
-                    exc,
-                )
+    owner_id = getattr(diagram, "user_id", None)
+    if owner_id is not None:
+        try:
+            async with user_rls_session(int(owner_id)) as db:
+                owner = (await db.execute(select(User).where(User.id == owner_id))).scalar_one_or_none()
+                if owner is not None:
+                    if resolved_org_id is None:
+                        resolved_org_id = owner.organization_id
+                    if not resolved_owner_name:
+                        resolved_owner_name = owner.name or ""
+                    bound_org_ids = await bound_org_ids_for_user(db, owner)
+        except (SQLAlchemyError, OSError) as exc:
+            logger.warning(
+                "[JoinHelpers] restore: could not fetch owner org for code=%s owner_id=%s: %s",
+                code,
+                owner_id,
+                exc,
+            )
 
     expires_at = getattr(diagram, "workshop_expires_at", None)
     expires_at_unix: int
@@ -103,6 +105,7 @@ async def restore_online_collab_redis_from_db_row(
             ttl_sec=ttl,
             title=resolved_title,
             owner_name=resolved_owner_name,
+            extra_org_ids=bound_org_ids,
         )
     except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError) as exc:
         logger.warning(

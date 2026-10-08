@@ -10,6 +10,11 @@ export interface LLMModelColor {
 }
 
 export const LLM_MODEL_COLORS: Record<string, LLMModelColor> = {
+  express: {
+    bg: 'rgba(16, 185, 129, 0.15)',
+    border: 'rgba(16, 185, 129, 0.4)',
+    text: '#10b981',
+  },
   qwen: {
     bg: 'rgba(99, 102, 241, 0.15)',
     border: 'rgba(99, 102, 241, 0.4)',
@@ -29,6 +34,11 @@ export const LLM_MODEL_COLORS: Record<string, LLMModelColor> = {
 
 /** Dark mode variants for NodePalettePanel */
 export const LLM_MODEL_COLORS_DARK: Record<string, LLMModelColor> = {
+  express: {
+    bg: 'rgba(16, 185, 129, 0.2)',
+    border: 'rgba(16, 185, 129, 0.5)',
+    text: '#34d399',
+  },
   qwen: {
     bg: 'rgba(99, 102, 241, 0.2)',
     border: 'rgba(99, 102, 241, 0.5)',

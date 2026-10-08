@@ -52,7 +52,7 @@ class GenerateRequest(BaseModel):
         None,
         description="Second diagram language. Omitted keeps the single-language path.",
     )
-    llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
+    llm: LLMModel = Field(LLMModel.EXPRESS, description="LLM model to use")
     models: Optional[List[str]] = Field(
         None,
         description=("List of models for parallel generation (e.g., ['qwen', 'deepseek', 'kimi', 'doubao'])"),
@@ -226,7 +226,7 @@ class GenerateRequest(BaseModel):
                 "prompt": "生成关于光合作用的概念图",
                 "diagram_type": "concept_map",
                 "language": "zh",
-                "llm": "qwen",
+                "llm": "express",
             }
         }
     )
@@ -239,7 +239,7 @@ class EnhanceRequest(BaseModel):
     diagram_type: DiagramType = Field(..., description="Type of diagram")
     enhancement_type: str = Field(..., description="Type of enhancement to apply")
     language: str = Field("zh", description="Language code for enhancement")
-    llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
+    llm: LLMModel = Field(LLMModel.EXPRESS, description="LLM model to use")
 
     @field_validator("language")
     @classmethod
@@ -254,7 +254,7 @@ class EnhanceRequest(BaseModel):
                 "diagram_type": "bubble_map",
                 "enhancement_type": "expand",
                 "language": "zh",
-                "llm": "qwen",
+                "llm": "express",
             }
         }
     )
@@ -287,7 +287,7 @@ class GeneratePNGRequest(BaseModel):
 
     prompt: str = Field(..., min_length=1, description="Natural language description of diagram")
     language: str = Field("zh", description="Language code for diagram text (prompt output registry)")
-    llm: Optional[LLMModel] = Field(LLMModel.QWEN, description="LLM model to use for generation")
+    llm: Optional[LLMModel] = Field(LLMModel.EXPRESS, description="LLM model to use for generation")
     diagram_type: Optional[DiagramType] = Field(None, description="Force specific diagram type")
     dimension_preference: Optional[str] = Field(None, description="Dimension preference hint")
     width: Optional[int] = Field(1200, ge=400, le=4000, description="PNG width in pixels")
@@ -305,7 +305,7 @@ class GeneratePNGRequest(BaseModel):
             "example": {
                 "prompt": "Create a mind map about machine learning",
                 "language": "en",
-                "llm": "qwen",
+                "llm": "express",
                 "width": 1200,
                 "height": 800,
             }
@@ -318,7 +318,7 @@ class GenerateDingTalkRequest(BaseModel):
 
     prompt: str = Field(..., min_length=1, description="Natural language description")
     language: str = Field("zh", description="Language code (prompt output registry)")
-    llm: Optional[LLMModel] = Field(LLMModel.QWEN, description="LLM model to use")
+    llm: Optional[LLMModel] = Field(LLMModel.EXPRESS, description="LLM model to use")
     diagram_type: Optional[DiagramType] = Field(None, description="Force specific diagram type")
     dimension_preference: Optional[str] = Field(None, description="Dimension preference hint")
     dify_user_id: Optional[str] = Field(

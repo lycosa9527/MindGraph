@@ -1,8 +1,8 @@
 """
-Relationship Labels Generator - Catapult-style multi-LLM streaming.
+Relationship Labels Generator.
 
-Fires 3 LLMs (qwen, deepseek, doubao) concurrently to generate relationship labels
-between two concepts. Streams labels progressively, deduplicates across LLMs.
+Generates relationship labels between two concepts with Express.
+Streams labels progressively and drops duplicates.
 Used by concept map label picker (IME-style) with pagination (- and = keys).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
@@ -97,15 +97,15 @@ def _get_direction_instruction(link_direction: str | None, language: str) -> str
 
 class RelationshipLabelsGenerator:
     """
-    Catapult-style generator for concept map relationship labels.
+    Express generator for concept map relationship labels.
 
-    Fires 3 LLMs concurrently, streams labels as they arrive, deduplicates.
+    Fires the canvas Express LLM, streams labels as they arrive, deduplicates.
     """
 
     def __init__(self) -> None:
         """init  ."""
         self.llm_service = llm_service
-        self.llm_models = ["qwen", "deepseek", "doubao"]
+        self.llm_models = ["express"]
         self.seen_labels: Dict[str, Set[str]] = {}
         self.generated_labels: Dict[str, list] = {}
         self.batch_counts: Dict[str, int] = {}
@@ -312,7 +312,7 @@ class RelationshipLabelsGenerator:
         organization_id: Optional[int],
         endpoint_path: Optional[str],
     ) -> AsyncGenerator[Dict[str, Any], None]:
-        """Stream labels from 3 LLMs. Yields label_generated events."""
+        """Stream Express labels. Yields label_generated events."""
         state: Dict[str, Any] = {
             "current_lines": {m: "" for m in self.llm_models},
             "llm_unique": {m: 0 for m in self.llm_models},
@@ -354,10 +354,10 @@ class RelationshipLabelsGenerator:
         endpoint_path: Optional[str] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Generate batch of relationship labels using 3 LLMs concurrently.
+        Generate a batch of relationship labels with Express.
 
         Yields:
-            - {'event': 'batch_start', 'batch_number': N, 'llm_count': 3}
+            - {'event': 'batch_start', 'batch_number': N, 'llm_count': N}
             - {'event': 'label_generated', 'label': str, 'source_llm': str}
             - {'event': 'batch_complete', 'total_unique': N}
             - {'event': 'error', 'message': str}

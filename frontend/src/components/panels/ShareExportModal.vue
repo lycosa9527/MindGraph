@@ -5,7 +5,7 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { ElCheckbox, ElIcon, ElScrollbar } from 'element-plus'
+import { ElCheckbox, ElIcon } from 'element-plus'
 
 import { Close, Select } from '@element-plus/icons-vue'
 
@@ -359,58 +359,55 @@ async function exportAsPng() {
         </div>
       </div>
 
-      <!-- Message Selection List with proper scrolling -->
       <div class="message-list-container">
-        <el-scrollbar class="message-list-scrollbar">
-          <div class="message-list">
-            <div
-              v-for="message in selectableMessages"
-              :key="message.id"
-              class="message-item"
-              :class="{
-                selected: selectedMessageIds.has(message.id),
-                'is-user': message.role === 'user',
-                'is-assistant': message.role === 'assistant',
-              }"
-              @click="toggleMessage(message.id)"
-            >
-              <el-checkbox
-                :model-value="selectedMessageIds.has(message.id)"
-                size="large"
-                @click.stop
-                @update:model-value="toggleMessage(message.id)"
-              />
-              <div class="message-avatar">
-                <span
-                  v-if="message.role === 'user'"
-                  class="avatar-emoji mg-user-avatar-emoji"
-                >
-                  <img
-                    v-if="userAvatarSrc"
-                    :src="userAvatarSrc"
-                    alt=""
-                    class="avatar-photo"
-                  />
-                  <template v-else>{{ userAvatar }}</template>
-                </span>
+        <div class="message-list">
+          <div
+            v-for="message in selectableMessages"
+            :key="message.id"
+            class="message-item"
+            :class="{
+              selected: selectedMessageIds.has(message.id),
+              'is-user': message.role === 'user',
+              'is-assistant': message.role === 'assistant',
+            }"
+            @click="toggleMessage(message.id)"
+          >
+            <el-checkbox
+              :model-value="selectedMessageIds.has(message.id)"
+              size="large"
+              @click.stop
+              @update:model-value="toggleMessage(message.id)"
+            />
+            <div class="message-avatar">
+              <span
+                v-if="message.role === 'user'"
+                class="avatar-emoji mg-user-avatar-emoji"
+              >
                 <img
-                  v-else
-                  :src="mindMateAvatarUrl"
-                  :alt="mindMateLabel"
-                  class="avatar-img"
+                  v-if="userAvatarSrc"
+                  :src="userAvatarSrc"
+                  alt=""
+                  class="avatar-photo"
                 />
+                <template v-else>{{ userAvatar }}</template>
+              </span>
+              <img
+                v-else
+                :src="mindMateAvatarUrl"
+                :alt="mindMateLabel"
+                class="avatar-img"
+              />
+            </div>
+            <div class="message-info">
+              <div class="message-role">
+                {{ message.role === 'user' ? displayName : mindMateLabel }}
               </div>
-              <div class="message-info">
-                <div class="message-role">
-                  {{ message.role === 'user' ? displayName : mindMateLabel }}
-                </div>
-                <div class="message-content-preview">
-                  {{ message.content.slice(0, 120) }}{{ message.content.length > 120 ? '...' : '' }}
-                </div>
+              <div class="message-content-preview">
+                {{ message.content.slice(0, 120) }}{{ message.content.length > 120 ? '...' : '' }}
               </div>
             </div>
           </div>
-        </el-scrollbar>
+        </div>
       </div>
 
       <!-- Selection tip -->
@@ -522,14 +519,19 @@ async function exportAsPng() {
 .modal-content {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   gap: 12px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Header Section */
 .modal-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 12px 16px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: 12px;
@@ -543,8 +545,10 @@ async function exportAsPng() {
 
 .header-info {
   display: flex;
+  flex: 1 1 140px;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .header-title {
@@ -585,42 +589,31 @@ async function exportAsPng() {
 
 .header-actions {
   display: flex;
+  flex-shrink: 0;
   gap: 8px;
 }
 
-/* Message List Container - Fixed height with scrolling */
+.modal-header,
+.selection-tip {
+  flex-shrink: 0;
+}
+
+/* Fills leftover dialog space, capped at 380px, and scrolls the rows. */
 .message-list-container {
-  height: 380px;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 380px;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #fafafa;
 }
 
 .dark .message-list-container {
   border-color: #475569;
   background: #1e293b;
-}
-
-.message-list-scrollbar {
-  height: 100%;
-}
-
-.message-list-scrollbar :deep(.el-scrollbar__wrap) {
-  overflow-x: hidden;
-}
-
-.message-list-scrollbar :deep(.el-scrollbar__bar.is-vertical) {
-  width: 8px;
-}
-
-.message-list-scrollbar :deep(.el-scrollbar__thumb) {
-  background-color: rgba(99, 102, 241, 0.3);
-  border-radius: 4px;
-}
-
-.message-list-scrollbar :deep(.el-scrollbar__thumb:hover) {
-  background-color: rgba(99, 102, 241, 0.5);
 }
 
 /* Checkbox styling */
@@ -964,5 +957,38 @@ async function exportAsPng() {
   max-width: 100%;
   border-radius: 8px;
   margin: 8px 0;
+}
+</style>
+
+<style>
+/* Teleported dialog: keep the shell inside the viewport so the message list can scroll. */
+.el-dialog.share-export-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 12vh - 50px);
+  overflow: hidden;
+}
+
+@media (max-height: 700px) {
+  .el-dialog.mm-canvas-upper-dialog.share-export-modal {
+    margin-top: max(8px, env(safe-area-inset-top, 0px)) !important;
+    margin-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(
+      100dvh - max(8px, env(safe-area-inset-top, 0px)) - max(8px, env(safe-area-inset-bottom, 0px))
+    );
+  }
+}
+
+.share-export-modal .el-dialog__header,
+.share-export-modal .el-dialog__footer {
+  flex-shrink: 0;
+}
+
+.share-export-modal .el-dialog__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 </style>

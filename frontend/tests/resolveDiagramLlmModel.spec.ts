@@ -7,8 +7,9 @@ describe('resolveDiagramLlmModel', () => {
     expect(resolveDiagramLlmModel('deepseek')).toBe('deepseek')
   })
 
-  it('defaults to qwen when unset or unknown', () => {
-    expect(resolveDiagramLlmModel(null)).toBe('qwen')
-    expect(resolveDiagramLlmModel('kimi')).toBe('qwen')
+  it('keeps a menu id and defaults when unset or unknown', () => {
+    expect(resolveDiagramLlmModel('kimi')).toBe('kimi')
+    expect(resolveDiagramLlmModel(null)).toBe('express')
+    expect(resolveDiagramLlmModel('not-a-model')).toBe('express')
   })
 })

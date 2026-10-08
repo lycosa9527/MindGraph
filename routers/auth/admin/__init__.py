@@ -16,10 +16,12 @@ from routers.features.showcase import admin as showcase
 from . import (
     api_keys,
     errors,
+    expert_school_binding,
     feature_org_access,
     geolite,
     invites,
     kitty_llmops,
+    llm_control,
     organization_oauth,
     organizations,
     performance,
@@ -44,6 +46,7 @@ admin_router = APIRouter()
 # Include all admin sub-routers
 admin_router.include_router(organizations.router)
 admin_router.include_router(organization_oauth.router)
+admin_router.include_router(expert_school_binding.router)
 admin_router.include_router(invites.router)
 admin_router.include_router(roles.router)
 admin_router.include_router(users.router)
@@ -65,5 +68,6 @@ admin_router.include_router(user_activity.router)
 admin_router.include_router(feature_org_access.router)
 admin_router.include_router(geolite.router)
 admin_router.include_router(kitty_llmops.router)
+admin_router.include_router(llm_control.router)
 
 __all__ = ["admin_router"]

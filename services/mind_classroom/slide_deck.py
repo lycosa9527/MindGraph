@@ -126,11 +126,12 @@ async def run_slide_deck_job(
                 settings=settings,
                 user_id=user_id,
                 organization_id=organization_id,
+                model="express",
                 on_progress=_on_planning_progress,
             )
             plan_elapsed = time.monotonic() - started
             await track_classroom_usage(
-                model_alias="qwen",
+                model_alias="express",
                 usage=usage,
                 request_type="mind_classroom_lesson_plan",
                 user_id=user_id,

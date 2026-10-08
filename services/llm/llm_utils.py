@@ -13,7 +13,12 @@ import asyncio
 import logging
 from typing import Any, Optional
 
+from config.settings import config
 from services.infrastructure.http.error_handler import LLMTimeoutError
+from services.infrastructure.rate_limiting.dashscope_model_limiters import (
+    qwen38_rate_limiter,
+    qwen_rate_limiter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +38,7 @@ class LLMUtils:
         ml = (model or "").strip().lower()
         if not ml:
             return False
-        if ml == "kimi":
+        if ml in ("kimi", "express"):
             return False
         # qwen, qwen-plus, qwen3.7-flash/plus, etc. — keep thinking off app-wide.
         if ml == "qwen" or ml.startswith("qwen-") or ml.startswith("qwen3"):
@@ -61,7 +66,9 @@ class LLMUtils:
             "qwen3.7-flash": 120.0,
             "qwen3.8-flash": 120.0,
             "qwen3.7-plus": 120.0,
+            "qwen3-max": 120.0,
             "deepseek": 70.0,
+            "express": 120.0,
             "ark-deepseek": 70.0,  # Volcengine DeepSeek (Route B)
             "ark-kimi": 70.0,  # Volcengine Kimi (both routes)
             "hunyuan": 70.0,
@@ -73,10 +80,10 @@ class LLMUtils:
 
     @staticmethod
     def is_no_retry_model(model: str, actual_model: str) -> bool:
-        """Doubao / ark-doubao: single attempt, fail fast (no with_retry)."""
-        if model == "doubao":
+        """Doubao routes: single attempt, fail fast (no with_retry)."""
+        if model in ("doubao", "doubao21"):
             return True
-        return actual_model == "ark-doubao"
+        return actual_model in ("ark-doubao", "ark-doubao21")
 
     @staticmethod
     def format_request_failure(exc: BaseException) -> str:
@@ -136,11 +143,24 @@ class LLMUtils:
                 return kimi_rate_limiter
 
         # For Doubao: use Volcengine endpoint-specific rate limiter
-        if model == "doubao" or actual_model == "ark-doubao":
+        if model in ("doubao", "doubao21") or actual_model in ("ark-doubao", "ark-doubao21"):
             if doubao_rate_limiter and doubao_rate_limiter.enabled:
                 return doubao_rate_limiter
 
-        # For Qwen and other Dashscope models, use shared Dashscope rate limiter
+        # Pinned Qwen 3.8 Flash, and a renamed node-explain id, stay on the qwen38 window.
+        node_explain = config.QWEN_MODEL_NODE_EXPLAIN
+        if actual_model == "qwen3.8-flash" or (node_explain and actual_model == node_explain):
+            qwen38_limiter = qwen38_rate_limiter()
+            if qwen38_limiter is not None and qwen38_limiter.enabled:
+                return qwen38_limiter
+
+        # qwen3.6-flash has a 30,000 RPM quota, separate from deepseek-v4.1-flash.
+        if model == "qwen" or actual_model.startswith("qwen"):
+            qwen_limiter = qwen_rate_limiter()
+            if qwen_limiter is not None and qwen_limiter.enabled:
+                return qwen_limiter
+
+        # Express and the logical deepseek DashScope leg share deepseek-v4.1-flash.
         return rate_limiter
 
 

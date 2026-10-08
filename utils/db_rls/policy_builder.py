@@ -209,6 +209,10 @@ SHARED_DIAGRAM_CHILD = [
 ]
 
 ORG_EXPR = "rls_org_visible(organization_id)"
+TOKEN_USAGE_EXPR = (
+    "rls_org_visible(organization_id) OR ("
+    "organization_id IS NULL AND user_id IS NOT NULL AND user_id = rls_current_user_id())"
+)
 MINDBOT_CONFIG_EXPR = "rls_org_visible(organization_id) OR rls_mindbot_callback_token_visible(public_callback_token)"
 MINDBOT_USAGE_EXPR = "rls_org_visible(organization_id)"
 
@@ -266,6 +270,7 @@ MINDMATE_COLLAB_SESSION_EXPR = (
     "owner_user_id = rls_current_user_id() "
     "OR (visibility = 'network' AND rls_community_read_allowed()) "
     "OR (organization_id IS NOT NULL AND rls_org_visible(organization_id)) "
+    "OR rls_user_bound_to_org(owner_user_id, rls_current_org_id()) "
     "OR rls_platform_admin_only() "
     "OR rls_is_system_mode()"
 )
@@ -277,6 +282,7 @@ MINDMATE_COLLAB_MESSAGE_EXPR = (
     "s.owner_user_id = rls_current_user_id() "
     "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
     "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
+    "OR rls_user_bound_to_org(s.owner_user_id, rls_current_org_id()) "
     "OR rls_platform_admin_only() "
     "OR rls_is_system_mode()"
     ")) AND (sender_user_id = rls_current_user_id() OR role = 'assistant' OR rls_is_system_mode())"
@@ -286,6 +292,7 @@ MINDMATE_COLLAB_READ_EXPR = (
     "s.owner_user_id = rls_current_user_id() "
     "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
     "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
+    "OR rls_user_bound_to_org(s.owner_user_id, rls_current_org_id()) "
     "OR rls_platform_admin_only() "
     "OR rls_is_system_mode()"
     "))"
@@ -300,8 +307,17 @@ MINDMATE_COLLAB_TABLES = [
 ]
 
 # Group C — users: id is NULL on INSERT; panel school managers set organization_id on the new row.
+# Bound experts are readable as people (roster, message sender). This stays off
+# rls_user_visible: that helper is also the direct-message policy, and widening
+# it would show every DM the expert sends, including other schools.
 USERS_EXPR = (
-    "rls_user_visible(id) OR (rls_is_panel_mode() AND organization_id IS NOT NULL AND rls_org_visible(organization_id))"
+    "rls_user_visible(id) "
+    "OR (rls_is_panel_mode() AND organization_id IS NOT NULL AND rls_org_visible(organization_id)) "
+    "OR (NOT rls_is_deny_mode() AND ("
+    "rls_user_bound_to_org(id, rls_current_org_id()) "
+    "OR rls_user_bound_to_org(rls_current_user_id(), organization_id) "
+    "OR rls_users_share_bound_org(rls_current_user_id(), id)"
+    "))"
 )
 ORGS_EXPR = (
     "(rls_mode() = 'public' AND rls_allow_public_org_list()) "
@@ -548,6 +564,8 @@ def _org_table_expr(table: str) -> str:
         return MINDBOT_USAGE_EXPR
     if table == "feature_access_org_grants":
         return f"{ORG_EXPR} OR rls_platform_admin_only()"
+    if table == "token_usage":
+        return TOKEN_USAGE_EXPR
     return ORG_EXPR
 
 

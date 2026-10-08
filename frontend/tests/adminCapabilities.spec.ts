@@ -211,6 +211,21 @@ describe('adminCapabilities', () => {
     expect(canManageOrganizationsOnMobile(fallbackCapabilitiesForRole('teacher'))).toBe(false)
   })
 
+  it('llm_control settings subtab is superadmin-only', () => {
+    expect(settingsSubtabRequiresCapabilities('llm_control')).toEqual(['tab.settings.llm_control'])
+    expect(fallbackCapabilitiesForRole('superadmin')).toContain('tab.settings.llm_control')
+    for (const role of [
+      'platform_bd',
+      'expert',
+      'school_admin',
+      'teacher',
+      'personal_trial',
+      'personal_paid',
+    ] as const) {
+      expect(fallbackCapabilitiesForRole(role)).not.toContain('tab.settings.llm_control')
+    }
+  })
+
   it('public_dashboard settings subtab is superadmin-only', () => {
     expect(settingsSubtabRequiresCapabilities('public_dashboard')).toEqual([
       'tab.settings.public_dashboard',

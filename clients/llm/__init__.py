@@ -36,6 +36,7 @@ def _initialize_clients():
     qwen_client_gen = None
     qwen_client_main = None
     deepseek_cli = None
+    express_cli = None
     kimi_cli = None
     hunyuan_cli = None
     doubao_cli = None
@@ -47,6 +48,7 @@ def _initialize_clients():
 
         # Multi-LLM clients - Dedicated classes for each provider
         deepseek_cli = DeepSeekClient()
+        express_cli = DeepSeekClient(model_id="express")
         kimi_cli = KimiClient()
         hunyuan_cli = HunyuanClient()
         # Note: doubao_client uses VolcengineClient with endpoint for higher RPM
@@ -69,6 +71,7 @@ def _initialize_clients():
         qwen_client_cls,
         qwen_client_gen,
         deepseek_cli,
+        express_cli,
         kimi_cli,
         hunyuan_cli,
         doubao_cli,
@@ -81,6 +84,7 @@ def _initialize_clients():
     qwen_client_classification,
     qwen_client_generation,
     deepseek_client,
+    express_client,
     kimi_client,
     hunyuan_client,
     doubao_client,
@@ -110,6 +114,7 @@ def get_llm_client(
     client_map = {
         "qwen": qwen_client_generation,
         "deepseek": deepseek_client,
+        "express": express_client,
         "kimi": kimi_client,
         "hunyuan": hunyuan_client,
         "doubao": doubao_client,
@@ -143,6 +148,7 @@ __all__ = [
     "qwen_client_classification",
     "qwen_client_generation",
     "deepseek_client",
+    "express_client",
     "kimi_client",
     "hunyuan_client",
     "doubao_client",

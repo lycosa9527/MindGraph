@@ -330,7 +330,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
         prompt = prompt + output_language_instruction(language)
         raw = await self.llm_service.chat(
             prompt=prompt,
-            model="qwen",
+            model="express",
             temperature=0.75,
             max_tokens=400,
             system_message=(

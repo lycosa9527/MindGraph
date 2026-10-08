@@ -35,9 +35,30 @@ class LLMModel(str, Enum):
 
     QWEN = "qwen"
     DEEPSEEK = "deepseek"
+    EXPRESS = "express"
     KIMI = "kimi"
     HUNYUAN = "hunyuan"
     DOUBAO = "doubao"
+    QWEN36_FLASH = "qwen3.6-flash"
+    QWEN37_PLUS = "qwen3.7-plus"
+    QWEN38_FLASH = "qwen3.8-flash"
+    QWEN3_MAX = "qwen3-max"
+    DOUBAO21 = "doubao21"
+
+
+# Canvas picker plus older diagram keys. Palette stays on its own whitelist.
+CANVAS_LLM_MODEL_KEYS = frozenset(
+    {
+        LLMModel.EXPRESS.value,
+        LLMModel.QWEN.value,
+        LLMModel.DEEPSEEK.value,
+        LLMModel.DOUBAO.value,
+        LLMModel.KIMI.value,
+        LLMModel.QWEN38_FLASH.value,
+        LLMModel.QWEN3_MAX.value,
+        LLMModel.DOUBAO21.value,
+    }
+)
 
 
 class Language(str, Enum):

@@ -24,6 +24,7 @@ from agents.mind_maps.node_explain_prompts import (
     normalize_facet,
 )
 from agents.mind_maps.node_explain_research import merge_research_streams
+from config.settings import config
 from services.infrastructure.http.error_handler import (
     LLMInvalidParameterError,
     LLMModelNotFoundError,
@@ -173,6 +174,7 @@ class MindMapNodeExplainGenerator:
         )
         write_stream = self.responses_service.stream(
             prompt=prompt,
+            model=config.EXPRESS_MODEL,
             tools=list(RESEARCH_TOOLS),
             enable_thinking=True,
             reasoning_effort=RESEARCH_REASONING_EFFORT,
@@ -187,6 +189,7 @@ class MindMapNodeExplainGenerator:
         )
         image_stream = self.responses_service.stream(
             prompt=image_prompt,
+            model=config.EXPRESS_MODEL,
             tools=list(RESEARCH_IMAGE_TOOLS),
             enable_thinking=False,
             reasoning_effort=RESEARCH_IMAGE_REASONING_EFFORT,
@@ -301,7 +304,7 @@ class MindMapNodeExplainGenerator:
         saw_token = False
         async for chunk in self.llm_service.chat_stream(
             prompt=prompt,
-            model="qwen",
+            model="express",
             max_tokens=max_tokens_for_audience(audience_level or "general"),
             temperature=0.6,
             user_id=user_id,

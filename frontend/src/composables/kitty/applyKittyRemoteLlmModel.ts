@@ -1,10 +1,9 @@
 /**
  * Apply remote Kitty LLM model choice onto desktop llmResults (+ switch when ready).
  */
+import { isCanvasLlmModel } from '@/config/canvasLlmMenu'
 import type { LLMModel } from '@/stores/llmResults'
 import { useLLMResultsStore } from '@/stores/llmResults'
-
-const VALID_MODELS = new Set<string>(['qwen', 'deepseek', 'doubao'])
 
 export function normalizeKittyLlmModel(raw: unknown): LLMModel | null {
   if (raw == null) {
@@ -17,10 +16,10 @@ export function normalizeKittyLlmModel(raw: unknown): LLMModel | null {
   if (key === '' || key === 'null' || key === 'none') {
     return null
   }
-  if (!VALID_MODELS.has(key)) {
+  if (!isCanvasLlmModel(key)) {
     return null
   }
-  return key as LLMModel
+  return key
 }
 
 /**

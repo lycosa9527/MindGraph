@@ -98,6 +98,7 @@ from utils.auth.admin_panel_permissions import (
     CAP_SETTINGS_GEWE,
     CAP_SETTINGS_KITTY_LLMOPS,
     CAP_SETTINGS_LIBRARY,
+    CAP_SETTINGS_LLM_CONTROL,
     CAP_SETTINGS_PERFORMANCE,
     CAP_SETTINGS_PUBLIC_DASHBOARD,
     CAP_SETTINGS_ROLES,
@@ -617,6 +618,7 @@ require_settings_features = require_panel_capability(CAP_SETTINGS_FEATURES)
 require_settings_roles = require_panel_capability(CAP_SETTINGS_ROLES)
 require_settings_tokens = require_panel_capability(CAP_SETTINGS_TOKENS)
 require_settings_library = require_panel_capability(CAP_SETTINGS_LIBRARY)
+require_settings_llm_control = require_panel_capability(CAP_SETTINGS_LLM_CONTROL)
 require_settings_database = require_panel_capability_short_lived(CAP_SETTINGS_DATABASE)
 require_settings_cos = require_panel_capability_short_lived(CAP_SETTINGS_COS)
 require_settings_performance = require_panel_capability_short_lived(CAP_SETTINGS_PERFORMANCE)

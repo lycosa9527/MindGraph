@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import Organization, User
+from services.auth.expert_school_binding import list_bound_org_ids
 from services.auth.thinking_coin.checkin_service import ensure_wallet_bootstrap
 from services.auth.thinking_coin.eligibility import user_eligible_for_thinking_coins
 from services.auth.thinking_coin.wallet_payload import build_wallet_payload
@@ -13,6 +14,7 @@ from services.llm.org_custom_config import session_custom_llm_fields_for_org_id
 from services.redis.cache.redis_org_cache import org_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_user_role
+from utils.auth.roles import is_expert
 from utils.auth.bayi_mode import user_needs_display_name
 from utils.auth.thinking_coin_config import feature_thinking_coins_enabled
 from utils.auth.user_daily_token_quota import current_user_daily_token_payload
@@ -62,6 +64,14 @@ async def build_session_user_payload(
 ) -> dict[str, Any]:
     """User object embedded in login/register JSON and flattened on /me."""
     resolved_org = await resolve_session_organization(user, org)
+    bound_ids: list[int] = []
+    if is_expert(user):
+        bound_ids = await list_bound_org_ids(db, int(user.id))
+        if resolved_org is None and bound_ids:
+            try:
+                resolved_org = await org_cache.get_by_id(bound_ids[0])
+            except BACKGROUND_INFRA_ERRORS:
+                resolved_org = None
     thinking_coins = await thinking_coins_session_summary(db, user, resolved_org)
     daily_tokens = await current_user_daily_token_payload(int(user.id))
     created_at = user.created_at.isoformat() if user.created_at else None
@@ -80,6 +90,7 @@ async def build_session_user_payload(
         "must_change_password": bool(getattr(user, "must_change_password", False)),
         "learning_class_id": getattr(user, "learning_class_id", None),
         "organization": organization_session_payload(resolved_org, custom_llm),
+        "bound_organization_ids": bound_ids,
         "thinking_coins": thinking_coins,
         "daily_tokens": daily_tokens,
         "created_at": created_at,

@@ -21,24 +21,34 @@ function tryReloadStaleAssetTarget(target: EventTarget | null): boolean {
   return reloadForStaleChunk(synthetic)
 }
 
+let vueErrorDepth = 0
+
 export function installFrontendErrorReporting(app: App): void {
   app.config.errorHandler = (err, instance, info) => {
-    if (import.meta.env.DEV) {
-      console.error('Vue Error:', err)
-      console.error('Component:', instance)
-      console.error('Info:', info)
-    }
-    if (reloadForStaleChunk(err)) {
+    if (vueErrorDepth > 0) {
       return
     }
-    const componentName =
-      instance && typeof instance === 'object' && '$options' in instance
-        ? String((instance as { $options?: { name?: string } }).$options?.name ?? '')
-        : ''
-    reportFrontendError(err, {
-      source: 'vue',
-      info: [info, componentName].filter(Boolean).join(' | '),
-    })
+    vueErrorDepth += 1
+    try {
+      if (import.meta.env.DEV) {
+        console.error('Vue Error:', err)
+        console.error('Component:', instance)
+        console.error('Info:', info)
+      }
+      if (reloadForStaleChunk(err)) {
+        return
+      }
+      const componentName =
+        instance && typeof instance === 'object' && '$options' in instance
+          ? String((instance as { $options?: { name?: string } }).$options?.name ?? '')
+          : ''
+      reportFrontendError(err, {
+        source: 'vue',
+        info: [info, componentName].filter(Boolean).join(' | '),
+      })
+    } finally {
+      vueErrorDepth -= 1
+    }
   }
 
   window.addEventListener('error', (event) => {

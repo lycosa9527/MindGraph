@@ -3,7 +3,7 @@ Relationship Labels API Router
 ==============================
 
 SSE endpoints for concept map relationship label generation.
-Catapult-style: fires 3 LLMs concurrently, streams labels progressively.
+Streams Express relationship labels progressively.
 
 @author MindSpring Team
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
@@ -120,7 +120,7 @@ async def start_relationship_labels(
     db: AsyncSession = Depends(get_async_db),
 ):
     """
-    Start relationship labels generation - fires 3 LLMs concurrently.
+    Start relationship label generation on Express.
 
     Returns SSE stream with label_generated events.
     """
@@ -178,7 +178,7 @@ async def next_relationship_labels_batch(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Fetch next batch of relationship labels - fires 3 LLMs again.
+    Fetch the next batch of Express relationship labels.
 
     Called when user presses = to go to next page and more labels are needed.
     """

@@ -22,7 +22,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
-from models.domain.auth import User
+from models.domain.auth import OrganizationExpertBinding, User
 from utils.auth.role_constants import SUPERADMIN_ROLES
 
 _MENTION_RE = re.compile(r"@\*\*([^*]+)\*\*")
@@ -76,6 +76,13 @@ async def _users_matching_mention(
     conds: list[ColumnElement[bool]] = [User.role.in_(tuple(SUPERADMIN_ROLES))]
     if effective_org_id is not None:
         conds.append(User.organization_id == effective_org_id)
+        conds.append(
+            User.id.in_(
+                select(OrganizationExpertBinding.user_id).where(
+                    OrganizationExpertBinding.organization_id == effective_org_id
+                )
+            )
+        )
     if staff_ids:
         conds.append(User.id.in_(staff_ids))
     result = await db.execute(

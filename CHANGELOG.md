@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.145] - 2026-10-08
+
+> **The canvas runs one model at a time, an expert can belong to several schools, and a seminar can start from a saved conversation.**
+
+### Added
+
+- **画布模型** — Generation uses one model. Express is the default, and Express is DeepSeek V4.1 Flash. The button shows Express until the list opens. The list shows a logo, a short label, and the model name.
+- **LLM 控制** — Superadmin system settings include a load-balancer page for DashScope and Volcengine. Weights, RPM, and TPM are on the page. Endpoint ids and DashScope model names can be changed without a restart.
+- **专家学校绑定** — Organization edit, other settings, binds an expert to this school. One expert can belong to many schools. A school an expert creates is bound to them. Migration `0145`.
+- **研讨开场** — MindMate collab can start a session from a library conversation, inside the school or public.
+
+### Changed
+
+- **模型分流** — DeepSeek traffic is 75% DashScope and 25% Volcengine. RPM and TPM follow the current DashScope and Volcengine caps.
+- **依赖** — Vue 3.5.43, DOMPurify 3.4.16, Sharp 0.35.5, and source-map-js 1.2.2 close the current high advisories.
+- **其他 AI** — Brainstorm and the other canvas AI actions use the model selected on the canvas. With nothing selected, they use Express.
+
+### Fixed
+
+- **思维币** — Two requests that both find no wallet keep the row the first request saved, so opening the account no longer fails on that duplicate. Only a duplicate primary key is retried.
+- **实时连接** — `https://www.mindspringedu.com` is allowed together with `https://mg.mindspringedu.com` when either host is already on the WebSocket allowlist.
+- **Kitty 语音** — An account with no organization stores token usage and debits thinking coins in the same step. Migration `0144`.
+- **演讲模式** — A dropped network while reading clicker commands is ignored.
+- **错误上报** — The page error handler stops if it calls itself. Injected browser scripts are left out of the error log. An application error whose stack mentions a browser extension is still stored.
+- **导出图片** — The message list in the export dialog scrolls on a short screen, including a phone with a notch.
+- **专家在线** — Saving a binding, or creating a school, moves that expert's online status, channel listeners, and open school rooms onto the schools they belong to now.
+
+### Tests
+
+- [`tests/test_thinking_coin_wallet_concurrency.py`](tests/test_thinking_coin_wallet_concurrency.py), [`tests/test_collab_stability_helpers.py`](tests/test_collab_stability_helpers.py), [`tests/test_rls_policy_column_refs.py`](tests/test_rls_policy_column_refs.py), [`tests/test_rls_functions_sql.py`](tests/test_rls_functions_sql.py), [`tests/auth/test_expert_school_binding.py`](tests/auth/test_expert_school_binding.py), [`tests/auth/test_expert_live_scope.py`](tests/auth/test_expert_live_scope.py), [`tests/test_canvas_express_llm.py`](tests/test_canvas_express_llm.py), [`tests/test_llm_routing_store.py`](tests/test_llm_routing_store.py), [`tests/test_llm_provider_rate_caps.py`](tests/test_llm_provider_rate_caps.py), [`frontend/tests/useSlideRemote.spec.ts`](frontend/tests/useSlideRemote.spec.ts), [`frontend/tests/useSlideRemoteDesktopPoll.spec.ts`](frontend/tests/useSlideRemoteDesktopPoll.spec.ts), [`frontend/tests/frontendLog.spec.ts`](frontend/tests/frontendLog.spec.ts), [`frontend/tests/installFrontendErrorReporting.spec.ts`](frontend/tests/installFrontendErrorReporting.spec.ts), [`frontend/tests/MindmateCollabStartPicker.spec.ts`](frontend/tests/MindmateCollabStartPicker.spec.ts), [`frontend/tests/mindmateCollabSeed.spec.ts`](frontend/tests/mindmateCollabSeed.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/resolveDiagramLlmModel.spec.ts`](frontend/tests/resolveDiagramLlmModel.spec.ts)
+
 ## [5.180.144] - 2026-10-05
 
 > **Mobile toolbar and account buttons show their labels again.**

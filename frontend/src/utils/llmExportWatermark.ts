@@ -28,12 +28,14 @@ const LEVEL_TITLE_KEYS: Record<AiContentLevelId, string> = {
 }
 
 const MODEL_LABEL_ZH: Record<CanvasLlmModel, string> = {
+  express: '快速',
   qwen: '千问',
   deepseek: 'DeepSeek',
   doubao: '豆包',
 }
 
 const MODEL_LABEL_EN: Record<CanvasLlmModel, string> = {
+  express: 'Express',
   qwen: 'Qwen',
   deepseek: 'DeepSeek',
   doubao: 'Doubao',

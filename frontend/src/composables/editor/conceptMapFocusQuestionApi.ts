@@ -5,7 +5,7 @@
 import { i18n } from '@/i18n'
 import { authFetch } from '@/utils/api'
 
-export const FOCUS_MODELS = ['qwen', 'deepseek', 'doubao'] as const
+export const FOCUS_MODELS = ['express'] as const
 export type FocusModel = (typeof FOCUS_MODELS)[number]
 
 export type FocusValidationState = {
@@ -38,10 +38,9 @@ export async function validateFocusQuestionParallel(
   })
   const t = (key: string) => String(i18n.global.t(key))
 
-  const out: Record<FocusModel, FocusValidationState> = {
-    qwen: { ...empty(), loading: true },
-    deepseek: { ...empty(), loading: true },
-    doubao: { ...empty(), loading: true },
+  const out = {} as Record<FocusModel, FocusValidationState>
+  for (const m of FOCUS_MODELS) {
+    out[m] = { ...empty(), loading: true }
   }
 
   const response = await authFetch('/api/concept_map/focus_question_review/validate', {

@@ -246,6 +246,10 @@ class DirectMessageService:
         if not sender:
             raise ValueError("Sender not found")
         org_id = sender.organization_id
+        if org_id is None:
+            recipient = (await db.execute(select(User).where(User.id == recipient_id))).scalar_one_or_none()
+            if recipient is not None:
+                org_id = recipient.organization_id
         mention_ids = await resolve_mentioned_user_ids(
             db,
             sender,

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * MindmateCollabPanel — shared AI chatroom entry (org browse + invite code).
- * Landing / welcome: join org or public seminar. In an open conversation: launch only.
+ * Landing / welcome: join org or public seminar, or start one from the library.
+ * In an open conversation: launch only.
  */
 import { onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -12,6 +13,7 @@ import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
+import MindmateCollabStartPicker from '@/components/mindmate/MindmateCollabStartPicker.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import {
@@ -49,6 +51,8 @@ const emit = defineEmits<{
       visibility?: 'organization' | 'network'
       ownerUserId?: number
       seedThread?: boolean
+      title?: string
+      seedMessages?: Array<{ role: string; content: string }>
     }
   ): void
 }>()
@@ -61,7 +65,7 @@ const router = useRouter()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 
 const collabPopoverVisible = ref(false)
-const collabPanelMode = ref<'organization' | 'network'>('network')
+const collabPanelMode = ref<'organization' | 'network' | 'start'>('network')
 const orgSessionsLoading = ref(false)
 const orgSessions = ref<
   Array<{
@@ -120,7 +124,11 @@ function getFormattedCode(): string {
 function navigateToRoom(
   code: string,
   sessionMeta?: Record<string, unknown>,
-  options?: { seedThread?: boolean }
+  options?: {
+    seedThread?: boolean
+    title?: string
+    seedMessages?: Array<{ role: string; content: string }>
+  }
 ) {
   collabPopoverVisible.value = false
   const formatted = formatMindmateCollabCode(code)
@@ -141,6 +149,8 @@ function navigateToRoom(
       visibility: (sessionMeta?.visibility as 'organization' | 'network') || 'organization',
       ownerUserId: Number(sessionMeta?.owner_user_id || 0) || undefined,
       seedThread: Boolean(options?.seedThread),
+      title: options?.title,
+      seedMessages: options?.seedMessages,
     })
     return
   }
@@ -165,22 +175,32 @@ async function joinByCode() {
   }
 }
 
-async function startSeminar(visibility: 'organization' | 'network') {
-  if (!props.inConversation) {
+async function startSeminar(
+  visibility: 'organization' | 'network',
+  source?: {
+    title?: string
+    seedMessages?: Array<{ role: string; content: string }>
+  }
+) {
+  const fromLibrary = source != null
+  if (!fromLibrary && !props.inConversation) {
     return
   }
   isJoining.value = true
   try {
-    const seedMessages = (props.getSeedMessages?.() ?? []).map((message) => ({
-      role: message.role,
-      content: message.content,
-    }))
+    const seedMessages = fromLibrary
+      ? (source.seedMessages ?? [])
+      : (props.getSeedMessages?.() ?? []).map((message) => ({
+          role: message.role,
+          content: message.content,
+        }))
+    const title = fromLibrary ? source.title : props.conversationTitle || undefined
     const response = await authFetch('/api/mindmate/collab/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         visibility,
-        title: props.conversationTitle || undefined,
+        title: title || undefined,
         seed_messages: seedMessages,
       }),
     })
@@ -189,7 +209,11 @@ async function startSeminar(visibility: 'organization' | 'network') {
       applyThinkingCoinMutation(extractThinkingCoinsFooter(data))
       notify.successKey('mindmate.collabStarted')
       notifyMindmateCollabLibraryChanged()
-      navigateToRoom(String(data.code || ''), data, { seedThread: true })
+      navigateToRoom(String(data.code || ''), data, {
+        seedThread: !fromLibrary,
+        title: fromLibrary ? title : undefined,
+        seedMessages: fromLibrary ? seedMessages : undefined,
+      })
     } else {
       const err = await response.json().catch(() => ({}))
       const detail = (err as { detail?: string }).detail
@@ -253,7 +277,20 @@ function joinOrgSession(session: {
   })
 }
 
+function onStartFromLibrary(payload: {
+  visibility: 'organization' | 'network'
+  title: string
+  seedMessages: Array<{ role: string; content: string }>
+}) {
+  void startSeminar(payload.visibility, payload)
+}
+
 function onCollabDropdownCommand(command: string) {
+  if (command === 'start') {
+    collabPanelMode.value = 'start'
+    collabPopoverVisible.value = true
+    return
+  }
   if (command === 'launch-org') {
     void startSeminar('organization')
     return
@@ -377,6 +414,12 @@ defineExpose({ prefillAndAutoJoin })
                     dense
                   />
                 </ElDropdownItem>
+                <ElDropdownItem command="start">
+                  <I18nText
+                    k="mindmate.collabStartSession"
+                    dense
+                  />
+                </ElDropdownItem>
               </template>
             </ElDropdownMenu>
           </template>
@@ -476,6 +519,13 @@ defineExpose({ prefillAndAutoJoin })
         </li>
       </ul>
     </div>
+
+    <MindmateCollabStartPicker
+      v-else-if="collabPanelMode === 'start'"
+      :starting="isJoining"
+      @back="closeCollabPopover"
+      @start="onStartFromLibrary"
+    />
 
     <div
       v-else

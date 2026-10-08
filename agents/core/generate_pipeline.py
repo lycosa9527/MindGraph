@@ -21,7 +21,7 @@ async def run_generate_pipeline(
     language: str = "zh",
     forced_diagram_type: str | None = None,
     dimension_preference: str | None = None,
-    model: str = "qwen",
+    model: str = "express",
     user_id: Any = None,
     organization_id: Any = None,
     request_type: str = "diagram_generation",

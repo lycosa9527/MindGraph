@@ -8,11 +8,11 @@ Proprietary License
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
 
-from models.domain.auth import User
+from models.domain.auth import OrganizationExpertBinding, User
 from services.features.org_member_models import OrgMemberRow, OrgMembersPage
 
 _ORG_MEMBER_Q_MAX_LEN = 100
@@ -40,7 +40,10 @@ async def fetch_org_members_page(
     if raw_q and len(raw_q) > _ORG_MEMBER_Q_MAX_LEN:
         raw_q = raw_q[:_ORG_MEMBER_Q_MAX_LEN]
 
-    filters = [User.organization_id == org_id]
+    bound_to_school = select(OrganizationExpertBinding.user_id).where(
+        OrganizationExpertBinding.organization_id == org_id
+    )
+    filters = [or_(User.organization_id == org_id, User.id.in_(bound_to_school))]
     if raw_q:
         pattern = f"%{escape_ilike_literal(raw_q)}%"
         filters.append(User.name.ilike(pattern, escape="\\"))

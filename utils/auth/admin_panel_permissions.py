@@ -76,6 +76,7 @@ CAP_SETTINGS_FEATURES: Final[str] = "tab.settings.features"
 CAP_SETTINGS_ROLES: Final[str] = "tab.settings.roles"
 CAP_SETTINGS_TOKENS: Final[str] = "tab.settings.tokens"
 CAP_SETTINGS_LIBRARY: Final[str] = "tab.settings.library"
+CAP_SETTINGS_LLM_CONTROL: Final[str] = "tab.settings.llm_control"
 CAP_SETTINGS_DATABASE: Final[str] = "tab.settings.database"
 CAP_SETTINGS_COS: Final[str] = "tab.settings.cos"
 CAP_SETTINGS_PERFORMANCE: Final[str] = "tab.settings.performance"
@@ -103,6 +104,7 @@ _ALL_SETTINGS_CAPS: frozenset[str] = frozenset(
         CAP_SETTINGS_ROLES,
         CAP_SETTINGS_TOKENS,
         CAP_SETTINGS_LIBRARY,
+        CAP_SETTINGS_LLM_CONTROL,
         CAP_SETTINGS_DATABASE,
         CAP_SETTINGS_COS,
         CAP_SETTINGS_PERFORMANCE,

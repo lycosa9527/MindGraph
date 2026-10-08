@@ -30,6 +30,7 @@ class MindmateNotifyWsManager:
     def __init__(self) -> None:
         self._connections: Dict[int, WebSocket] = {}
         self._presence_org_by_user: Dict[int, int] = {}
+        self._extra_presence_orgs: Dict[int, Set[int]] = {}
 
     async def connect(self, user_id: int, websocket: WebSocket) -> None:
         """Register or replace the user's notify socket."""
@@ -42,15 +43,68 @@ class MindmateNotifyWsManager:
             except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("[MindmateNotifyWS] close superseded failed: %s", exc)
 
-    async def disconnect(self, user_id: int) -> Optional[int]:
-        """Remove a notify socket; returns org id if presence was scoped."""
+    async def disconnect(self, user_id: int) -> list[int]:
+        """Remove a notify socket and return every presence org it covered."""
         self._connections.pop(user_id, None)
-        return self._presence_org_by_user.pop(user_id, None)
+        primary = self._presence_org_by_user.pop(user_id, None)
+        extras = self._extra_presence_orgs.pop(user_id, set())
+        org_ids: list[int] = []
+        if primary is not None:
+            org_ids.append(primary)
+        for org_id in sorted(extras):
+            if org_id not in org_ids:
+                org_ids.append(org_id)
+        return org_ids
 
     async def set_presence_org(self, user_id: int, org_id: int) -> None:
         """Scope org-wide presence for this notify connection."""
-        self._presence_org_by_user[user_id] = org_id
-        await workshop_chat_presence_store.touch_presence_org_user(org_id, user_id)
+        await self.set_presence_orgs(user_id, [org_id])
+
+    def _presence_org_ids(self, user_id: int) -> Set[int]:
+        """Schools this notify socket currently marks the user online in."""
+        org_ids: Set[int] = set()
+        primary = self._presence_org_by_user.get(user_id)
+        if primary is not None:
+            org_ids.add(primary)
+        org_ids.update(self._extra_presence_orgs.get(user_id, set()))
+        return org_ids
+
+    def _covers_org(self, user_id: int, org_id: int) -> bool:
+        """True when this user's notify socket is watching that school."""
+        return org_id in self._presence_org_ids(user_id)
+
+    async def set_presence_orgs(self, user_id: int, org_ids: list[int]) -> None:
+        """Mark the user online in each bound school and drop schools they left."""
+        if not org_ids:
+            return
+        previous = self._presence_org_ids(user_id)
+        primary = int(org_ids[0])
+        extras = {int(org_id) for org_id in org_ids[1:]}
+        self._presence_org_by_user[user_id] = primary
+        self._extra_presence_orgs[user_id] = extras
+        desired = {primary, *extras}
+        for org_id in org_ids:
+            await workshop_chat_presence_store.touch_presence_org_user(int(org_id), user_id)
+        for org_id in previous - desired:
+            await workshop_chat_presence_store.remove_presence_org_user(org_id, user_id)
+            await self.broadcast_org_presence(user_id, "offline", org_id, exclude_user=user_id)
+
+    async def replace_presence_orgs(self, user_id: int, org_ids: list[int]) -> None:
+        """Move a connected user onto exactly these schools."""
+        if user_id not in self._connections:
+            return
+        previous = self._presence_org_ids(user_id)
+        desired = [int(org_id) for org_id in org_ids if int(org_id) > 0]
+        if not desired:
+            self._presence_org_by_user.pop(user_id, None)
+            self._extra_presence_orgs.pop(user_id, None)
+            for org_id in previous:
+                await workshop_chat_presence_store.remove_presence_org_user(org_id, user_id)
+                await self.broadcast_org_presence(user_id, "offline", org_id, exclude_user=user_id)
+            return
+        await self.set_presence_orgs(user_id, desired)
+        for org_id in set(desired) - previous:
+            await self.broadcast_org_presence(user_id, "active", org_id, exclude_user=user_id)
 
     def get_presence_org_id(self, user_id: int) -> Optional[int]:
         """Return org id subscribed for presence, if any."""
@@ -58,16 +112,21 @@ class MindmateNotifyWsManager:
 
     async def touch_presence(self, user_id: int) -> None:
         """Refresh Redis presence TTL for the user's org scope."""
-        org_id = self._presence_org_by_user.get(user_id)
-        if org_id is None:
-            return
-        await workshop_chat_presence_store.touch_presence_org_user(org_id, user_id)
+        org_ids = set(self._extra_presence_orgs.get(user_id, set()))
+        primary = self._presence_org_by_user.get(user_id)
+        if primary is not None:
+            org_ids.add(primary)
+        for org_id in org_ids:
+            await workshop_chat_presence_store.touch_presence_org_user(org_id, user_id)
 
     async def presence_org_online_ids(self, org_id: int) -> Set[int]:
         """Online user ids in org (Redis + local notify sockets)."""
         online = await workshop_chat_presence_store.online_user_ids_for_org(org_id)
         for uid, scoped_org in self._presence_org_by_user.items():
             if scoped_org == org_id and uid in self._connections:
+                online.add(uid)
+        for uid, extras in self._extra_presence_orgs.items():
+            if org_id in extras and uid in self._connections:
                 online.add(uid)
         return online
 
@@ -87,8 +146,8 @@ class MindmateNotifyWsManager:
                 "status": status,
             },
         )
-        for uid, scoped_org in list(self._presence_org_by_user.items()):
-            if scoped_org != org_id:
+        for uid in list(self._connections):
+            if not self._covers_org(uid, org_id):
                 continue
             if exclude_user is not None and uid == exclude_user:
                 continue

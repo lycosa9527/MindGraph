@@ -283,6 +283,23 @@ class UpdateNotificationDismissed(Base):
     __table_args__ = (UniqueConstraint("user_id", "version", name="uq_user_version_dismissed"),)
 
 
+class OrganizationExpertBinding(Base):
+    """Many-to-many link: a platform expert may belong to several schools."""
+
+    __tablename__ = "organization_expert_bindings"
+
+    organization_id: Mapped[int] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+
+
 # NOTE: Captcha model removed - captchas are now stored in Redis
 # See: services/captcha_storage.py
 # The captchas table may still exist in the database but is no longer used.

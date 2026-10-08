@@ -2,8 +2,7 @@
 Content mind map agent — generates mind map specs from extracted text.
 
 Used by Document Summary (document prompt) and Chrome/web flows (web prompt).
-Defaults to Qwen classification ``QWEN_MODEL_CLASSIFICATION`` (default
-``qwen3.6-flash``) via ``dashscope_model`` override.
+Uses Express (DashScope DeepSeek V4.1 Flash).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -14,7 +13,6 @@ from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response
 from agents.mind_maps.mind_map_agent import MindMapAgent
-from config.settings import config
 from prompts import get_prompt
 from prompts.ai_content_level import append_audience_instructions
 from services.llm import llm_service
@@ -131,7 +129,7 @@ class WebContentMindMapAgent(MindMapAgent):
 
         response = await llm_service.chat(
             prompt=user_block,
-            model="qwen",
+            model="express",
             system_message=system_prompt,
             max_tokens=4000,
             temperature=0.9,
@@ -141,7 +139,6 @@ class WebContentMindMapAgent(MindMapAgent):
             endpoint_path=endpoint_path,
             diagram_type="mind_map",
             use_knowledge_base=False,
-            dashscope_model=config.QWEN_MODEL_CLASSIFICATION,
             http_request_id=http_request_id,
         )
 

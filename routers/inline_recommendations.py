@@ -2,7 +2,7 @@
 Inline Recommendations API Router.
 
 SSE endpoints for diagram auto-completion (mindmap, flow_map, tree_map, brace_map).
-Catapult-style: fires 3 LLMs concurrently, streams recommendations progressively.
+Streams Express recommendations progressively.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -180,7 +180,7 @@ async def start_inline_recommendations(
     db: AsyncSession = Depends(get_async_db),
 ):
     """
-    Start inline recommendations generation - fires 3 LLMs concurrently.
+    Start inline recommendations on Express.
 
     Returns SSE stream with recommendation_generated events.
     """

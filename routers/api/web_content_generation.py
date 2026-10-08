@@ -187,7 +187,7 @@ async def _generate_mindmap_from_resolved_content(
     cleaned = strip_voice_notes_markdown_meta(page_content).strip()
     try:
         if content_slug == "mindmap":
-            agent = WebContentMindMapAgent(model="qwen")
+            agent = WebContentMindMapAgent(model="express")
             result = await agent.generate_from_page_content(
                 page_content=cleaned,
                 language=language,
@@ -847,7 +847,7 @@ async def web_content_mindmap_png(
             persist_usage=False,
         )
 
-    agent = WebContentMindMapAgent(model="qwen")
+    agent = WebContentMindMapAgent(model="express")
     result = await agent.generate_from_page_content(
         page_content=req.page_content.strip(),
         language=req.language,

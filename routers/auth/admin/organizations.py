@@ -43,6 +43,8 @@ from services.admin.user_usage_activity import (
     activity_to_admin_dict,
     list_org_usage_activities,
 )
+from services.auth.expert_live_membership import refresh_expert_live_membership
+from services.auth.expert_school_binding import bind_creating_expert, creator_should_auto_bind
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.llm.org_custom_config import invalidate_org_custom_llm_cache
 from services.mindmate.teaching_design_template_store import (
@@ -409,6 +411,8 @@ async def create_organization_admin(
 
     db.add(new_org)
     try:
+        await db.flush()
+        await bind_creating_expert(db, new_org, current_user)
         await db.commit()
         await db.refresh(new_org)
     except DATABASE_ERRORS as e:
@@ -425,6 +429,9 @@ async def create_organization_admin(
         logger.info("[Auth] New org cached: ID %s, code %s", new_org.id, new_org.code)
     except REDIS_ERRORS as e:
         logger.warning("[Auth] Failed to cache new org ID %s: %s", new_org.id, e)
+
+    if creator_should_auto_bind(getattr(current_user, "role", None)):
+        await refresh_expert_live_membership([int(current_user.id)])
 
     logger.info("Admin %s created organization: %s", current_user.phone, new_org.code)
     created_expires = cast(Optional[datetime], new_org.expires_at)

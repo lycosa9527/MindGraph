@@ -76,9 +76,34 @@ function formatError(err: unknown, context?: { source?: string; info?: string })
   return `${message.slice(0, MAX_MESSAGE_LEN)}\n... [truncated]`
 }
 
-/** Browser quirk / opaque cross-origin / WeChat bridge noise that floods error collection. */
+const INJECTED_BROWSER_NOISE =
+  /weixinPostMessageHandlers|weixinDispatchMessage|WeixinJSBridge|traval|_getImageElementAtPoint|_handleMessageFromWeixin|evaluating 'e\.childNodes'|shortcut icon|UCShellJava|ucapi is not defined|LIDNotifyId|EmptyRanges|Identifier 'Shop' has already been declared/i
+
+function isExtensionEvalNoise(message: string, stack: string): boolean {
+  const blob = `${message}\n${stack}`
+  return (
+    /unsafe-eval['"]?\s+is not an allowed source/i.test(blob) && /chrome-extension:\/\//i.test(blob)
+  )
+}
+
+function errorText(err: unknown): { message: string; stack: string } {
+  if (err instanceof Error) {
+    return { message: err.message, stack: err.stack ?? '' }
+  }
+  return { message: String(err), stack: '' }
+}
+
+function isTruncatedInjectedScript(message: string, stack: string): boolean {
+  if (!/Unexpected end of input/i.test(`${message}\n${stack}`)) {
+    return false
+  }
+  return !stack.includes('/assets/')
+}
+
+/** Browser quirk / opaque cross-origin / injected-script noise that floods error collection. */
 function isBenignBrowserNoise(err: unknown): boolean {
-  const message = err instanceof Error ? err.message : String(err)
+  const { message, stack } = errorText(err)
+  const blob = `${message}\n${stack}`
   if (
     /ResizeObserver loop (limit exceeded|completed with undelivered notifications)/i.test(message)
   ) {
@@ -88,17 +113,13 @@ function isBenignBrowserNoise(err: unknown): boolean {
   if (/^Script error\.?$/i.test(message.trim())) {
     return true
   }
-  if (/weixinPostMessageHandlers|weixinDispatchMessage|WeixinJSBridge/i.test(message)) {
+  if (INJECTED_BROWSER_NOISE.test(blob) || isExtensionEvalNoise(message, stack)) {
     return true
   }
-  return false
+  return isTruncatedInjectedScript(message, stack)
 }
 
-export function reportFrontendLog(
-  level: FrontendLogLevel,
-  message: string,
-  source?: string
-): void {
+export function reportFrontendLog(level: FrontendLogLevel, message: string, source?: string): void {
   if (shouldSkipReporting()) {
     return
   }

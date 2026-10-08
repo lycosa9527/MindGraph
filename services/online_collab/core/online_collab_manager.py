@@ -93,11 +93,10 @@ from services.online_collab.participant.online_collab_participant_ops import (
 from services.online_collab.redis.online_collab_redis_keys import (
     destroy_lock_key,
     idle_scores_key,
+    organization_registry_keys,
     participants_key,
     purge_online_collab_redis_keys,
-    registry_global_org_key,
     registry_network_key,
-    registry_org_key,
     session_meta_key,
 )
 from services.online_collab.redis.online_collab_redis_locks import (
@@ -192,6 +191,7 @@ class OnlineCollabManager:
         ttl_sec: int,
         title: str = "",
         owner_name: str = "",
+        extra_org_ids: Optional[List[int]] = None,
     ) -> None:
         """
         Register a new session in Redis.
@@ -206,10 +206,12 @@ class OnlineCollabManager:
             logger.warning("[OnlineCollabMgr] create_session skipped ??Redis unavailable code=%s", code)
             return
         now = int(time.time())
+        bound_label = ",".join(str(int(item)) for item in (extra_org_ids or []) if item != org_id)
         meta = {
             "diagram_id": diagram_id,
             "owner_id": str(owner_id),
             "org_id": str(org_id) if org_id is not None else "",
+            "bound_org_ids": bound_label,
             "visibility": visibility,
             "expires_at": str(expires_at_unix),
             "last_activity": str(now),
@@ -221,10 +223,8 @@ class OnlineCollabManager:
             async with redis.pipeline(transaction=False) as pipe:
                 pipe.hset(session_meta_key(code), mapping=redis_hset_mapping(meta))
                 pipe.expire(session_meta_key(code), ttl_sec)
-                if org_id is not None:
-                    pipe.sadd(registry_org_key(org_id), code)
-                elif visibility == "organization":
-                    pipe.sadd(registry_global_org_key(), code)
+                for registry_key in organization_registry_keys(org_id, extra_org_ids, visibility):
+                    pipe.sadd(registry_key, code)
                 if visibility == "network":
                     pipe.sadd(registry_network_key(), code)
                 pipe.zadd(idle_scores_key(), {code: float(now)})

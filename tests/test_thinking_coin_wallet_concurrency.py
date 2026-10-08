@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.exc import IntegrityError
 
 from services.auth.thinking_coin import usage_wire as usage_wire_mod
 from services.auth.thinking_coin import wallet_service as wallet_mod
@@ -33,6 +34,65 @@ async def test_get_or_create_wallet_uses_for_update() -> None:
         )
     ).upper()
     assert "FOR UPDATE" in compiled
+
+
+class _PgError(Exception):
+    """Stand-in for a psycopg error that carries a SQLSTATE."""
+
+    def __init__(self, sqlstate: str) -> None:
+        super().__init__(sqlstate)
+        self.sqlstate = sqlstate
+
+
+class _Savepoint:
+    """Async savepoint that rolls back when the nested flush raises."""
+
+    async def __aenter__(self) -> "_Savepoint":
+        return self
+
+    async def __aexit__(self, exc_type, _exc, _tb) -> bool:
+        return False
+
+
+@pytest.mark.asyncio
+async def test_get_or_create_wallet_reloads_after_unique_violation() -> None:
+    """A concurrent insert on the wallet primary key is re-read instead of failing the request."""
+    db = AsyncMock()
+    existing = MagicMock()
+    existing.user_id = 6470
+    existing.balance = 0
+    existing.daily_balance = 0
+    existing.daily_balance_date = None
+    missing = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
+    found = MagicMock(scalar_one_or_none=MagicMock(return_value=existing))
+    db.execute = AsyncMock(side_effect=[missing, found])
+    db.begin_nested = MagicMock(return_value=_Savepoint())
+    db.add = MagicMock()
+    db.flush = AsyncMock(
+        side_effect=IntegrityError("INSERT", {"user_id": 6470}, _PgError("23505")),
+    )
+
+    result = await wallet_mod.get_or_create_wallet(db, 6470)
+
+    assert result is existing
+    assert db.execute.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_or_create_wallet_reraises_non_unique_integrity_error() -> None:
+    """A check-constraint failure is not treated as a lost insert race."""
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None)))
+    db.begin_nested = MagicMock(return_value=_Savepoint())
+    db.add = MagicMock()
+    db.flush = AsyncMock(
+        side_effect=IntegrityError("INSERT", {"user_id": 1}, _PgError("23514")),
+    )
+
+    with pytest.raises(IntegrityError):
+        await wallet_mod.get_or_create_wallet(db, 1)
+
+    assert db.execute.await_count == 1
 
 
 @pytest.mark.asyncio

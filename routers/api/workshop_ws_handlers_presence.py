@@ -14,6 +14,7 @@ import time
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
+from models.common import CANVAS_LLM_MODEL_KEYS
 from routers.api.workshop_ws_broadcast import broadcast_to_all, broadcast_to_others
 from services.features.workshop_ws_registry import ACTIVE_EDITORS as active_editors
 from services.features.workshop_ws_connection_state import (
@@ -407,7 +408,7 @@ async def handle_node_editing_batch(
     )
 
 
-_ALLOWED_HOST_LLM_MODELS = frozenset({"qwen", "deepseek", "doubao"})
+_ALLOWED_HOST_LLM_MODELS = CANVAS_LLM_MODEL_KEYS
 
 
 async def handle_host_llm_model(ctx: Any, message: Dict[str, Any]) -> None:

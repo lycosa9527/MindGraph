@@ -21,7 +21,7 @@ import {
   endQuietBranchComplete,
 } from '@/composables/kitty/kittyQuietBranchCompleteBatch'
 import { i18n } from '@/i18n'
-import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
+import { useDiagramStore, useSavedDiagramsStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import { useKittySessionStore } from '@/stores/kittySession'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
@@ -59,7 +59,6 @@ import {
   noteOrgGenerationCacheResult,
   withOrgGenerationCacheBypass,
 } from '@/utils/orgGenerationCache'
-import { resolveDiagramLlmModel } from '@/utils/resolveDiagramLlmModel'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 const MAX_SUBGRAPH_CHILDREN = 6
@@ -220,7 +219,7 @@ async function applyGeneratedSubgraphBranches(options: {
   mindMapSubgraphDebug('merge', 'lookup immediately before paste', mergeLookupBeforePaste)
 
   const childTexts = generatedBranches.map((b) => b.text)
-  let applied = false
+  let applied: boolean
   let verifiedPersistOk = true
   let persistError: string | undefined
 
@@ -329,7 +328,6 @@ async function runMindMapSubgraphGeneration(
     savedDiagramsStore: ReturnType<typeof useSavedDiagramsStore>
     authStore: ReturnType<typeof useAuthStore>
     previewStore: ReturnType<typeof useMindMapSubgraphPreviewStore>
-    llmResultsStore: ReturnType<typeof useLLMResultsStore>
     promptLanguage: string
     t: (key: string) => string
     subgraphNotify: SubgraphNotifier
@@ -343,7 +341,6 @@ async function runMindMapSubgraphGeneration(
     savedDiagramsStore,
     authStore,
     previewStore,
-    llmResultsStore,
     promptLanguage,
     t,
     subgraphNotify,
@@ -440,7 +437,7 @@ async function runMindMapSubgraphGeneration(
 
   try {
     const diagramId = savedDiagramsStore.activeDiagramId
-    const llmModel = resolveDiagramLlmModel(llmResultsStore.selectedModel)
+    const llmModel = 'express'
     const requestBody = buildMindMapSubgraphGenerateBody({
       context: subgraphContext,
       language: promptLanguage,
@@ -640,7 +637,6 @@ export async function generateMindMapSubgraphForNode(
     savedDiagramsStore: useSavedDiagramsStore(),
     authStore: useAuthStore(),
     previewStore: useMindMapSubgraphPreviewStore(),
-    llmResultsStore: useLLMResultsStore(),
     promptLanguage: uiStore.promptLanguage,
     t,
     subgraphNotify: notify,
@@ -655,7 +651,6 @@ export function useMindMapSubgraphSuggest() {
   const savedDiagramsStore = useSavedDiagramsStore()
   const authStore = useAuthStore()
   const previewStore = useMindMapSubgraphPreviewStore()
-  const llmResultsStore = useLLMResultsStore()
   const { isGenerating } = storeToRefs(previewStore)
   const notifyComposable = useNotifications()
   const { promptLanguage, t } = useLanguage()
@@ -670,7 +665,6 @@ export function useMindMapSubgraphSuggest() {
       savedDiagramsStore,
       authStore,
       previewStore,
-      llmResultsStore,
       promptLanguage: promptLanguage.value,
       t,
       subgraphNotify: notifyComposable,

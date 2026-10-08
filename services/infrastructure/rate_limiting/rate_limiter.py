@@ -36,6 +36,12 @@ logger = logging.getLogger(__name__)
 # Provider-specific keys for separate rate limiting per provider
 RATE_QPM_KEY_DASHSCOPE = "llm:rate:dashscope:qpm"
 RATE_CONCURRENT_KEY_DASHSCOPE = "llm:rate:dashscope:concurrent"
+# qwen3.6-flash has its own DashScope quota. Do not share the deepseek-v4.1-flash window.
+RATE_QPM_KEY_DASHSCOPE_QWEN = "llm:rate:dashscope:qwen:qpm"
+RATE_CONCURRENT_KEY_DASHSCOPE_QWEN = "llm:rate:dashscope:qwen:concurrent"
+# qwen3.8-flash is dynamic on DashScope. Keep it off the deepseek and qwen3.6 windows.
+RATE_QPM_KEY_DASHSCOPE_QWEN38 = "llm:rate:dashscope:qwen38:qpm"
+RATE_CONCURRENT_KEY_DASHSCOPE_QWEN38 = "llm:rate:dashscope:qwen38:concurrent"
 
 # Volcengine endpoint-specific keys (each endpoint has independent limits)
 RATE_QPM_KEY_VOLCENGINE_DEEPSEEK = "llm:rate:volcengine:deepseek:qpm"
@@ -86,6 +92,8 @@ class DashscopeRateLimiter:
         enabled: bool = True,
         provider: str = "dashscope",
         endpoint: Optional[str] = None,
+        qpm_key: Optional[str] = None,
+        concurrent_key: Optional[str] = None,
     ):
         """
         Initialize rate limiter.
@@ -130,6 +138,9 @@ class DashscopeRateLimiter:
         else:  # Default to dashscope
             self.qpm_key = RATE_QPM_KEY_DASHSCOPE
             self.concurrent_key = RATE_CONCURRENT_KEY_DASHSCOPE
+        if qpm_key and concurrent_key:
+            self.qpm_key = qpm_key
+            self.concurrent_key = concurrent_key
 
         # Generate unique request ID prefix for this worker
         self._worker_id = os.getenv("WORKER_ID", str(os.getpid()))
@@ -735,7 +746,7 @@ class LoadBalancerRateLimiter:
 
     def __init__(
         self,
-        volcengine_qpm: int = 13500,
+        volcengine_qpm: int = 450,
         volcengine_concurrent: int = 500,
         enabled: bool = True,
     ):

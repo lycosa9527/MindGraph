@@ -277,7 +277,7 @@ async def generate_png_from_prompt(
     """
     Generate PNG directly from user prompt using simplified prompt-to-diagram agent.
 
-    Uses only Qwen in a single LLM call for fast, efficient diagram generation.
+    Uses Express in a single LLM call for fast, efficient diagram generation.
 
     Rate limited: 100 requests per minute per user/IP (PNG generation is expensive).
     """
@@ -365,7 +365,7 @@ async def generate_png_from_prompt(
 
                 token_tracker = get_token_tracker()
                 await token_tracker.track_usage(
-                    model_alias="qwen",
+                    model_alias="express",
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
                     total_tokens=total_tokens,
@@ -559,7 +559,7 @@ async def generate_dingtalk_png(
 
                 token_tracker = get_token_tracker()
                 await token_tracker.track_usage(
-                    model_alias="qwen",
+                    model_alias="express",
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
                     total_tokens=total_tokens,

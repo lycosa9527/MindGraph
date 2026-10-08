@@ -1,7 +1,7 @@
 """
-Inline Recommendations Generator - Catapult-style multi-LLM streaming.
+Inline Recommendations Generator.
 
-Fires 3 LLMs (qwen, deepseek, doubao) concurrently to generate node text
+Fires the canvas Express LLM to generate node text
 recommendations for mindmap, flow_map, tree_map, brace_map.
 Streams recommendations progressively, deduplicates across LLMs.
 
@@ -49,15 +49,15 @@ class _GeneratorHolder:
 
 class InlineRecommendationsGenerator:
     """
-    Catapult-style generator for inline node recommendations.
+    Express generator for inline node recommendations.
 
-    Fires 3 LLMs concurrently, streams recommendations as they arrive, deduplicates.
+    Fires the canvas Express LLM, streams recommendations as they arrive, deduplicates.
     """
 
     def __init__(self) -> None:
         """init  ."""
         self.llm_service = llm_service
-        self.llm_models = ["qwen", "deepseek", "doubao"]
+        self.llm_models = ["express"]
         self.seen_texts: Dict[str, Set[str]] = {}
         self.generated: Dict[str, List[str]] = {}
         self.batch_counts: Dict[str, int] = {}

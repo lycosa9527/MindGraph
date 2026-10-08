@@ -14,6 +14,7 @@ import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { drainSlideRemoteCommands } from '@/utils/slideRemoteApi'
 import { slideRemoteCanvasIsDraining } from '@/utils/slideRemoteCanvasDrainLock'
 import { setSlideRemotePendingStart } from '@/utils/slideRemotePendingStart'
+import { isSlideRemoteTransportError } from '@/utils/slideRemoteTransportError'
 
 export function useSlideRemoteDesktopPoll(): void {
   const authStore = useAuthStore()
@@ -51,6 +52,8 @@ export function useSlideRemoteDesktopPoll(): void {
         const diagramId = typeof row.diagram_id === 'string' ? row.diagram_id : ''
         await handleStart(diagramId)
       }
+    } catch (err) {
+      if (!isSlideRemoteTransportError(err)) throw err
     } finally {
       inFlight = false
     }

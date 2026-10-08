@@ -13,7 +13,12 @@ import logging
 from typing import Any, Dict
 
 from config.settings import config
+from services.infrastructure.rate_limiting.dashscope_model_limiters import set_dashscope_model_limiters
 from services.infrastructure.rate_limiting.rate_limiter import (
+    RATE_CONCURRENT_KEY_DASHSCOPE_QWEN,
+    RATE_CONCURRENT_KEY_DASHSCOPE_QWEN38,
+    RATE_QPM_KEY_DASHSCOPE_QWEN,
+    RATE_QPM_KEY_DASHSCOPE_QWEN38,
     DashscopeRateLimiter,
     LoadBalancerRateLimiter,
     initialize_rate_limiter,
@@ -77,6 +82,31 @@ class LLMServiceInitializer:
         else:
             logger.debug("[LLMServiceInitializer] Rate limiting disabled")
             self.rate_limiter = None
+            set_dashscope_model_limiters(None, None)
+
+        if config.DASHSCOPE_RATE_LIMITING_ENABLED:
+            qwen_limiter = DashscopeRateLimiter(
+                qpm_limit=config.QWEN_DASHSCOPE_QPM_LIMIT,
+                concurrent_limit=config.DASHSCOPE_CONCURRENT_LIMIT,
+                enabled=True,
+                qpm_key=RATE_QPM_KEY_DASHSCOPE_QWEN,
+                concurrent_key=RATE_CONCURRENT_KEY_DASHSCOPE_QWEN,
+            )
+            qwen38_limiter = DashscopeRateLimiter(
+                qpm_limit=config.QWEN38_DASHSCOPE_QPM_LIMIT,
+                concurrent_limit=config.DASHSCOPE_CONCURRENT_LIMIT,
+                enabled=True,
+                qpm_key=RATE_QPM_KEY_DASHSCOPE_QWEN38,
+                concurrent_key=RATE_CONCURRENT_KEY_DASHSCOPE_QWEN38,
+            )
+            set_dashscope_model_limiters(qwen_limiter, qwen38_limiter)
+            logger.info(
+                "[LLMServiceInitializer] DashScope model windows: "
+                "deepseek-v4.1-flash QPM=%s, qwen3.6-flash QPM=%s, qwen3.8-flash QPM=%s",
+                config.DASHSCOPE_QPM_LIMIT,
+                config.QWEN_DASHSCOPE_QPM_LIMIT,
+                config.QWEN38_DASHSCOPE_QPM_LIMIT,
+            )
 
         # Initialize load balancer
         if config.LOAD_BALANCING_ENABLED:

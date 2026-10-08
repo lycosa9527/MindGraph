@@ -1,15 +1,14 @@
-/** Canvas LLM keys aligned with AIModelSelector / llmResults store. */
-export const CANVAS_LLM_MODELS = ['qwen', 'deepseek', 'doubao'] as const
+import { type CanvasLlmModel, isCanvasLlmModel } from '@/config/canvasLlmMenu'
 
-export type CanvasLlmModel = (typeof CANVAS_LLM_MODELS)[number]
+/** Canvas LLM keys. Express is the live default; older keys stay for saved diagrams. */
+export { CANVAS_LLM_MODELS, type CanvasLlmModel, isCanvasLlmModel } from '@/config/canvasLlmMenu'
 
-const CANVAS_LLM_SET = new Set<string>(CANVAS_LLM_MODELS)
+export const DEFAULT_CANVAS_LLM_MODEL: CanvasLlmModel = 'express'
 
-/** Resolve the active canvas LLM from user selection (defaults to qwen). */
+/** Resolve the active canvas LLM from user selection (defaults to express). */
 export function resolveDiagramLlmModel(selected: string | null | undefined): CanvasLlmModel {
-  const key = (selected ?? '').trim().toLowerCase()
-  if (CANVAS_LLM_SET.has(key)) {
-    return key as CanvasLlmModel
+  if (isCanvasLlmModel(selected)) {
+    return selected
   }
-  return 'qwen'
+  return DEFAULT_CANVAS_LLM_MODEL
 }

@@ -59,7 +59,7 @@ async def run_prompt_to_diagram_llm(
     cache_payload = {
         "prompt": normalize_org_cache_text(prepared.merged_prompt()),
         "language": normalize_org_cache_text(prepared.language),
-        "model": "qwen",
+        "model": "express",
         "endpoint": "prompt_to_diagram",
     }
     winner_usage: list[Optional[dict[str, Any]]] = [None]
@@ -67,7 +67,7 @@ async def run_prompt_to_diagram_llm(
     async def _call_llm() -> dict[str, Any] | None:
         response, usage_data = await llm_service.chat_with_usage(
             prompt=formatted,
-            model="qwen",
+            model="express",
             max_tokens=2000,
             temperature=config.LLM_TEMPERATURE,
             user_id=user_id,

@@ -244,7 +244,7 @@ class LLMMultiService:
 
         Args:
             prompt: Prompt to send to all LLMs
-            models: List of model names (default: ['qwen', 'deepseek', 'doubao'])
+            models: List of model names (default: ['express'])
             temperature: Sampling temperature
             max_tokens: Maximum tokens
             timeout: Per-LLM timeout
@@ -261,10 +261,8 @@ class LLMMultiService:
         Yields:
             Dict for each token/event
         """
-        # NOTE: Hunyuan disabled due to 5 concurrent connection limit
-        # NOTE: Kimi removed from node palette default
         if models is None:
-            models = ["qwen", "deepseek", "doubao"]
+            models = ["express"]
         models = await self._models_for_org(models, organization_id)
 
         # Map logical models to physical models

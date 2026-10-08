@@ -24,6 +24,7 @@ from agents.mind_maps.node_explain_research import (
 from clients.llm.responses.dashscope import _build_payload
 from clients.llm.responses.dashscope_events import normalize_responses_event
 from clients.llm.responses.types import ResponsesRequest
+from config.settings import config
 from services.infrastructure.http.error_handler import (
     LLMInvalidParameterError,
     LLMModelNotFoundError,
@@ -114,6 +115,7 @@ async def test_meaning_path_uses_research_tools() -> None:
     )
     events = await _collect(_generator(responses))
     assert responses.kwargs is not None
+    assert responses.kwargs["model"] == config.EXPRESS_MODEL
     assert responses.kwargs["tools"] == list(RESEARCH_TOOLS)
     assert responses.kwargs["enable_thinking"] is True
     assert responses.kwargs["reasoning_effort"] == RESEARCH_REASONING_EFFORT

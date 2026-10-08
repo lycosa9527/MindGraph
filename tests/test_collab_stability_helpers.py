@@ -66,6 +66,22 @@ def test_load_origins_stays_off_without_allowlist(monkeypatch: pytest.MonkeyPatc
     assert load_collab_ws_allowed_origins_env() == frozenset()
 
 
+def test_www_sibling_allowed_when_mg_https_is_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Browsers on www share the mg HTTPS origin; plain http stays rejected."""
+    monkeypatch.delenv("COLLAB_WS_ALLOW_MISSING_ORIGIN", raising=False)
+    monkeypatch.setenv("EXTERNAL_BASE_URL", "https://mg.mindspringedu.com")
+    monkeypatch.setenv("COLLAB_WS_ALLOWED_ORIGINS", "https://app.example.com")
+    allowed = load_collab_ws_allowed_origins_env()
+    www = Headers({"origin": "https://www.mindspringedu.com"})
+    assert canvas_collab_websocket_origin_is_allowed(www, allowed) is True
+    http_www = Headers({"origin": "http://www.mindspringedu.com"})
+    assert canvas_collab_websocket_origin_is_allowed(http_www, allowed) is False
+    http_mg = Headers({"origin": "http://mg.mindspringedu.com"})
+    assert canvas_collab_websocket_origin_is_allowed(http_mg, allowed) is False
+    other = Headers({"origin": "https://evil.example"})
+    assert canvas_collab_websocket_origin_is_allowed(other, allowed) is False
+
+
 @pytest.mark.asyncio
 async def test_workshop_session_closing_probe(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test workshop session closing probe."""

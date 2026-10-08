@@ -28,6 +28,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.workshop_chat import ChatChannel, ChatMessage
+from services.auth.expert_school_binding import (
+    list_bound_org_ids,
+    user_is_bound_to_org,
+    users_linked_by_expert_binding,
+)
 from services.features.workshop_chat.group_lesson_membership import (
     ensure_lesson_membership_if_group_member,
 )
@@ -35,6 +40,7 @@ from utils.auth import (
     can_moderate_workshop_channel,
     is_admin,
     is_admin_or_manager,
+    is_expert,
     is_manager,
 )
 
@@ -56,6 +62,66 @@ def get_effective_org_id(
             detail="User is not part of an organization",
         )
     return current_user.organization_id
+
+
+async def resolve_social_org_id(
+    db: AsyncSession,
+    current_user: User,
+    requested_org_id: Optional[int] = None,
+) -> int:
+    """Organization for contacts, channels, and presence.
+
+    Admins may pass another school. An expert with no home school uses a
+    bound school. Teachers keep ``get_effective_org_id`` behavior.
+    """
+    if requested_org_id is not None and is_admin(current_user):
+        return requested_org_id
+    home = current_user.organization_id
+    if home is not None and (requested_org_id is None or requested_org_id == home):
+        return int(home)
+    if is_expert(current_user):
+        bound = await list_bound_org_ids(db, int(current_user.id))
+        if requested_org_id is not None and requested_org_id in bound:
+            return requested_org_id
+        if requested_org_id is None and bound:
+            return bound[0]
+    if home is not None:
+        return int(home)
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="User is not part of an organization",
+    )
+
+
+async def presence_org_ids_for_user(
+    db: AsyncSession,
+    current_user: User,
+    requested_org_id: Optional[int] = None,
+) -> list[int]:
+    """Schools whose contact lists should show this user as online."""
+    try:
+        effective = await resolve_social_org_id(db, current_user, requested_org_id)
+    except HTTPException:
+        effective = None
+    org_ids: list[int] = []
+    if effective is not None:
+        org_ids.append(effective)
+    if is_expert(current_user):
+        for org_id in await list_bound_org_ids(db, int(current_user.id)):
+            if org_id not in org_ids:
+                org_ids.append(org_id)
+    return org_ids
+
+
+async def users_may_direct_message(db: AsyncSession, left: User, right: User) -> bool:
+    """True when these two users may exchange a direct message.
+
+    Same ``organization_id`` still matches, including two users with no school.
+    An expert binding is an extra link and does not open every DM that expert sends.
+    """
+    if left.organization_id == right.organization_id:
+        return True
+    return await users_linked_by_expert_binding(db, left, right)
 
 
 async def access_channel(
@@ -85,7 +151,14 @@ async def access_channel(
     if channel.channel_type == "announce":
         return channel
 
-    if channel.organization_id != current_user.organization_id and not is_admin(current_user):
+    same_school = channel.organization_id == current_user.organization_id
+    bound_expert = (
+        not same_school
+        and channel.organization_id is not None
+        and is_expert(current_user)
+        and await user_is_bound_to_org(db, int(current_user.id), int(channel.organization_id))
+    )
+    if not same_school and not bound_expert and not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not your organization",
@@ -304,7 +377,7 @@ async def access_dm_partner(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-    if partner.organization_id != current_user.organization_id:
+    if not await users_may_direct_message(db, current_user, partner):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot message users outside your organization",

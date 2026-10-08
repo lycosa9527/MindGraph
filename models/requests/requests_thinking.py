@@ -14,8 +14,21 @@ from typing import Optional, Dict, Any, List, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from models.common import CANVAS_LLM_MODEL_KEYS
 from services.utils.ai_content_level import is_valid_ai_content_level
 from utils.prompt_output_languages import is_prompt_output_language
+
+
+def _canvas_llm_models(value: Optional[List[str]]) -> Optional[List[str]]:
+    """Keep canvas menu ids. Unknown names are dropped."""
+    if not value:
+        return value
+    resolved: List[str] = []
+    for item in value:
+        key = str(item).strip().lower()
+        if key in CANVAS_LLM_MODEL_KEYS and key not in resolved:
+            resolved.append(key)
+    return resolved or None
 
 
 def _validate_node_palette_language(value: str) -> str:
@@ -89,16 +102,8 @@ class NodePaletteStartRequest(BaseModel):
     @field_validator("llm_models")
     @classmethod
     def validate_llm_models(cls, value: Optional[List[str]]) -> Optional[List[str]]:
-        """Allow only known palette LLM keys."""
-        if not value:
-            return value
-        allowed = {"qwen", "deepseek", "doubao"}
-        resolved: List[str] = []
-        for item in value:
-            key = str(item).strip().lower()
-            if key in allowed and key not in resolved:
-                resolved.append(key)
-        return resolved or None
+        """Allow only canvas menu LLM keys."""
+        return _canvas_llm_models(value)
 
     @field_validator("language")
     @classmethod
@@ -174,6 +179,16 @@ class NodePaletteNextRequest(BaseModel):
         max_length=64,
         description="Saved diagram id for collab owner-only AI guard",
     )
+    llm_models: Optional[List[str]] = Field(
+        None,
+        description="Canvas model for this batch. Omitted keeps Express.",
+    )
+
+    @field_validator("llm_models")
+    @classmethod
+    def validate_next_llm_models(cls, value: Optional[List[str]]) -> Optional[List[str]]:
+        """Allow only canvas menu LLM keys."""
+        return _canvas_llm_models(value)
 
     @field_validator("language")
     @classmethod

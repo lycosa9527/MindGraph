@@ -13,6 +13,17 @@ from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
 
+# 90% of the confirmed provider RPM, leaving headroom for the per-second RPS/TPS burst check.
+# DashScope Beijing, 2026-10: qwen3.6-flash 30,000 RPM / 10,000,000 TPM;
+# deepseek-v4.1-flash 15,000 RPM / 1,200,000 TPM.
+# Volcengine console, DeepSeek-V4-Flash 正式版 (260731): 500 RPM / 1,000,000 TPM regular.
+DASHSCOPE_DEEPSEEK_QPM_DEFAULT = 13500
+QWEN_DASHSCOPE_QPM_DEFAULT = 27000
+QWEN38_DASHSCOPE_QPM_DEFAULT = 13500
+DEEPSEEK_VOLCENGINE_QPM_DEFAULT = 450
+DOUBAO_VOLCENGINE_QPM_DEFAULT = 27000
+KIMI_VOLCENGINE_QPM_DEFAULT = 4500
+
 
 class RateLimitingConfigMixin:
     """Mixin class for rate limiting configuration properties.
@@ -32,13 +43,34 @@ class RateLimitingConfigMixin:
         """
         Dashscope Queries Per Minute limit.
 
-        Default: 13,500 (90% of official 15,000 RPM limit for qwen-plus/deepseek-v3.2).
+        Default: 13,500 (90% of DashScope Beijing deepseek-v4.1-flash, 15,000 RPM).
+
+        This window is shared by Express and the logical deepseek DashScope leg,
+        because both call ``deepseek-v4.1-flash``. Qwen uses its own limit.
         """
         try:
-            return int(self._get_cached_value("DASHSCOPE_QPM_LIMIT", "13500"))
+            return int(self._get_cached_value("DASHSCOPE_QPM_LIMIT", str(DASHSCOPE_DEEPSEEK_QPM_DEFAULT)))
         except (ValueError, TypeError):
-            logger.warning("Invalid DASHSCOPE_QPM_LIMIT, using 13500")
-            return 13500
+            logger.warning("Invalid DASHSCOPE_QPM_LIMIT, using %s", DASHSCOPE_DEEPSEEK_QPM_DEFAULT)
+            return DASHSCOPE_DEEPSEEK_QPM_DEFAULT
+
+    @property
+    def QWEN_DASHSCOPE_QPM_LIMIT(self):
+        """Qwen generation QPM. Default 27,000 (90% of qwen3.6-flash 30,000 RPM)."""
+        try:
+            return int(self._get_cached_value("QWEN_DASHSCOPE_QPM_LIMIT", str(QWEN_DASHSCOPE_QPM_DEFAULT)))
+        except (ValueError, TypeError):
+            logger.warning("Invalid QWEN_DASHSCOPE_QPM_LIMIT, using %s", QWEN_DASHSCOPE_QPM_DEFAULT)
+            return QWEN_DASHSCOPE_QPM_DEFAULT
+
+    @property
+    def QWEN38_DASHSCOPE_QPM_LIMIT(self):
+        """Node-explain QPM. qwen3.8-flash is dynamic on DashScope; keep a separate cap."""
+        try:
+            return int(self._get_cached_value("QWEN38_DASHSCOPE_QPM_LIMIT", str(QWEN38_DASHSCOPE_QPM_DEFAULT)))
+        except (ValueError, TypeError):
+            logger.warning("Invalid QWEN38_DASHSCOPE_QPM_LIMIT, using %s", QWEN38_DASHSCOPE_QPM_DEFAULT)
+            return QWEN38_DASHSCOPE_QPM_DEFAULT
 
     @property
     def DASHSCOPE_CONCURRENT_LIMIT(self):
@@ -94,13 +126,15 @@ class RateLimitingConfigMixin:
         """
         DeepSeek Volcengine route QPM limit for load balancing.
 
-        Default: 13,500 (90% of official 15,000 RPM limit).
+        Default: 450 (90% of the console quota, 500 RPM / 1,000,000 TPM).
+
+        Flex on that model is 200,000 TPM and is not the path we call.
         """
         try:
-            return int(self._get_cached_value("DEEPSEEK_VOLCENGINE_QPM_LIMIT", "13500"))
+            return int(self._get_cached_value("DEEPSEEK_VOLCENGINE_QPM_LIMIT", str(DEEPSEEK_VOLCENGINE_QPM_DEFAULT)))
         except (ValueError, TypeError):
-            logger.warning("Invalid DEEPSEEK_VOLCENGINE_QPM_LIMIT, using 13500")
-            return 13500
+            logger.warning("Invalid DEEPSEEK_VOLCENGINE_QPM_LIMIT, using %s", DEEPSEEK_VOLCENGINE_QPM_DEFAULT)
+            return DEEPSEEK_VOLCENGINE_QPM_DEFAULT
 
     @property
     def DEEPSEEK_VOLCENGINE_CONCURRENT_LIMIT(self):
@@ -116,13 +150,16 @@ class RateLimitingConfigMixin:
         """
         Kimi Volcengine endpoint QPM limit.
 
-        Default: 4,500 (90% of official 5,000 RPM limit).
+        Default: 4,500. The Volcengine endpoint quota was not on the model-square page.
+
+        DashScope ``Moonshot-Kimi-K2-Instruct`` in Beijing is 500 RPM / 1,000,000 TPM,
+        which is why Kimi stays on the Volcengine endpoint.
         """
         try:
-            return int(self._get_cached_value("KIMI_VOLCENGINE_QPM_LIMIT", "4500"))
+            return int(self._get_cached_value("KIMI_VOLCENGINE_QPM_LIMIT", str(KIMI_VOLCENGINE_QPM_DEFAULT)))
         except (ValueError, TypeError):
-            logger.warning("Invalid KIMI_VOLCENGINE_QPM_LIMIT, using 4500")
-            return 4500
+            logger.warning("Invalid KIMI_VOLCENGINE_QPM_LIMIT, using %s", KIMI_VOLCENGINE_QPM_DEFAULT)
+            return KIMI_VOLCENGINE_QPM_DEFAULT
 
     @property
     def KIMI_VOLCENGINE_CONCURRENT_LIMIT(self):
@@ -138,13 +175,17 @@ class RateLimitingConfigMixin:
         """
         Doubao Volcengine endpoint QPM limit.
 
-        Default: 27,000 (90% of official 30,000 RPM limit).
+        Default: 27,000 (90% of 30,000 RPM).
+
+        The console row for Doubao-Seed-2.0-mini is 30,000 RPM / 5,000,000 TPM
+        and that model is being retired. Live traffic uses the doubao_1.5pro_32k
+        endpoint, so this cap is not raised further from that row.
         """
         try:
-            return int(self._get_cached_value("DOUBAO_VOLCENGINE_QPM_LIMIT", "27000"))
+            return int(self._get_cached_value("DOUBAO_VOLCENGINE_QPM_LIMIT", str(DOUBAO_VOLCENGINE_QPM_DEFAULT)))
         except (ValueError, TypeError):
-            logger.warning("Invalid DOUBAO_VOLCENGINE_QPM_LIMIT, using 27000")
-            return 27000
+            logger.warning("Invalid DOUBAO_VOLCENGINE_QPM_LIMIT, using %s", DOUBAO_VOLCENGINE_QPM_DEFAULT)
+            return DOUBAO_VOLCENGINE_QPM_DEFAULT
 
     @property
     def DOUBAO_VOLCENGINE_CONCURRENT_LIMIT(self):
@@ -164,17 +205,20 @@ class RateLimitingConfigMixin:
     @property
     def LOAD_BALANCING_STRATEGY(self):
         """Load balancing strategy: 'weighted', 'random', or 'round_robin'"""
-        return self._get_cached_value("LOAD_BALANCING_STRATEGY", "round_robin")
+        return self._get_cached_value("LOAD_BALANCING_STRATEGY", "weighted")
 
     @property
     def LOAD_BALANCING_WEIGHTS(self):
         """
         Load balancing weights as dict.
-        Format: 'dashscope:50,volcengine:50' -> {'dashscope': 50, 'volcengine': 50}
+        Format: 'dashscope:75,volcengine:25' -> {'dashscope': 75, 'volcengine': 25}
+
+        A quarter stays on Volcengine so logical DeepSeek still moves if DashScope
+        is degrading. The Volcengine leg is still capped at 450 QPM.
 
         Validates weights are in 0-100 range and normalizes to sum to 100.
         """
-        weights_str = self._get_cached_value("LOAD_BALANCING_WEIGHTS", "dashscope:50,volcengine:50")
+        weights_str = self._get_cached_value("LOAD_BALANCING_WEIGHTS", "dashscope:75,volcengine:25")
         weights = {}
         try:
             for pair in weights_str.split(","):
@@ -183,15 +227,15 @@ class RateLimitingConfigMixin:
                     weights[key] = int(weight)
         except (ValueError, AttributeError):
             logger.warning(
-                "Invalid LOAD_BALANCING_WEIGHTS format: %s, using default 50/50",
+                "Invalid LOAD_BALANCING_WEIGHTS format: %s, using default 75/25",
                 weights_str,
             )
-            weights = {"dashscope": 50, "volcengine": 50}
+            weights = {"dashscope": 75, "volcengine": 25}
 
         if "dashscope" not in weights:
-            weights["dashscope"] = 50
+            weights["dashscope"] = 75
         if "volcengine" not in weights:
-            weights["volcengine"] = 50
+            weights["volcengine"] = 25
 
         for provider in ["dashscope", "volcengine"]:
             if provider in weights:
@@ -203,8 +247,8 @@ class RateLimitingConfigMixin:
             weights["dashscope"] = int(round(dashscope_weight * 100 / total))
             weights["volcengine"] = 100 - weights["dashscope"]
         else:
-            logger.warning("LOAD_BALANCING_WEIGHTS sum to 0, using default 50/50")
-            weights = {"dashscope": 50, "volcengine": 50}
+            logger.warning("LOAD_BALANCING_WEIGHTS sum to 0, using default 75/25")
+            weights = {"dashscope": 75, "volcengine": 25}
 
         return weights
 

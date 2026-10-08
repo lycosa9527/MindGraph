@@ -85,4 +85,4 @@ export const LANDING_PROMPT_EXAMPLE_KEYS = [
 export type LandingPromptExampleKey = (typeof LANDING_PROMPT_EXAMPLE_KEYS)[number]
 
 export const LANDING_PROMPT_MAX_LENGTH = 10000
-export const LANDING_LLM_MODEL = 'qwen'
+export const LANDING_LLM_MODEL = 'express'

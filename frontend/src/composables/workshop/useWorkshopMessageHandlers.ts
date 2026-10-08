@@ -5,7 +5,6 @@ import type { Ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
-import { colorForUser, emojiForUser, lockRingColorForUser } from '@/shared/collabPalette'
 import type {
   ActiveEditor,
   NodeEditingEvent,
@@ -14,11 +13,10 @@ import type {
   WorkshopRole,
   WorkshopUpdate,
 } from '@/composables/workshop/useWorkshopTypes'
+import { isCanvasLlmModel } from '@/config/canvasLlmMenu'
+import { colorForUser, emojiForUser, lockRingColorForUser } from '@/shared/collabPalette'
 
-import {
-  applyActiveEditorPresence,
-  purgeActiveEditorsForUser,
-} from './applyCollabEditorPresence'
+import { applyActiveEditorPresence, purgeActiveEditorsForUser } from './applyCollabEditorPresence'
 import type { CollabSyncVersion } from './useCollabSyncVersion'
 
 // applySnapshotFrame / evaluateLiveSpecGap are now used inside useCollabSyncVersion;
@@ -441,8 +439,7 @@ export function dispatchWorkshopMessage(
         break
       }
       const raw = message.model
-      const allowed = raw === 'qwen' || raw === 'deepseek' || raw === 'doubao'
-      deps.remoteHostDisplayedLlmModel.value = allowed ? raw : null
+      deps.remoteHostDisplayedLlmModel.value = isCanvasLlmModel(raw) ? raw : null
       break
     }
 

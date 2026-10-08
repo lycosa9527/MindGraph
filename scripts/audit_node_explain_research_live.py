@@ -333,7 +333,7 @@ async def async_main(
     language = "zh" if (row.get("language") or "zh").lower().startswith("zh") else "en"
     print(f"map: {row['title'] or row['id']}", flush=True)
     print(f"id:  {row['id']}  updated={row['updated_at']}", flush=True)
-    print(f"model: {config.QWEN_MODEL_NODE_EXPLAIN}  host={_safe_host(config.QWEN_RESPONSES_URL)}", flush=True)
+    print(f"model: {config.EXPRESS_MODEL}  host={_safe_host(config.QWEN_RESPONSES_URL)}", flush=True)
     print(f"nodes: {len(targets)}  start={start}  language={language}", flush=True)
     print("-" * 72, flush=True)
     results: List[Dict[str, Any]] = []

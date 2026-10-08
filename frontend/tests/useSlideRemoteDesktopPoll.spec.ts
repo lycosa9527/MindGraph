@@ -102,4 +102,15 @@ describe('useSlideRemoteDesktopPoll', () => {
     expect(pushMock).not.toHaveBeenCalled()
     stop()
   })
+
+  it('ignores a dropped network while draining commands', async () => {
+    drainMock.mockRejectedValueOnce(
+      new TypeError('NetworkError when attempting to fetch resource.')
+    )
+    const stop = mountPoll()
+    await vi.waitFor(() => {
+      expect(drainMock).toHaveBeenCalled()
+    })
+    stop()
+  })
 })

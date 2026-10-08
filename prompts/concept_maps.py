@@ -422,7 +422,7 @@ Output only JSON with keys recommended_root_concept and brief_reason.
 """.strip()
 
 # ============================================================================
-# ROOT CONCEPT SUGGESTIONS (3 LLMs × 5 per wave, SSE — Tab on root concept node)
+# ROOT CONCEPT SUGGESTIONS (Express, 5 per wave, SSE — Tab on root concept node)
 # ============================================================================
 
 CONCEPT_MAP_ROOT_CONCEPT_SUGGESTIONS_SYSTEM_ZH = """
@@ -465,7 +465,7 @@ CONCEPT_MAP_PROMPTS = {
     # Real-time relationship generation (link creation)
     "concept_map_relationship_only_en": CONCEPT_MAP_RELATIONSHIP_ONLY_EN,
     "concept_map_relationship_only_zh": CONCEPT_MAP_RELATIONSHIP_ONLY_ZH,
-    # Standard-mode focus question (validate once + rolling suggestions, 3 LLMs)
+    # Standard-mode focus question (validate once + rolling suggestions, Express)
     "concept_map_focus_validate_system_zh": CONCEPT_MAP_FOCUS_VALIDATE_SYSTEM_ZH,
     "concept_map_focus_validate_system_en": CONCEPT_MAP_FOCUS_VALIDATE_SYSTEM_EN,
     "concept_map_focus_validate_user_zh": CONCEPT_MAP_FOCUS_VALIDATE_USER_ZH,

@@ -25,8 +25,8 @@ from routers.features.workshop_chat.conditional_list_response import (
 )
 from routers.features.workshop_chat.dependencies import (
     access_channel,
-    get_effective_org_id,
     require_channel_manager,
+    resolve_social_org_id,
     require_channel_remove,
 )
 from routers.features.workshop_chat.schemas import (
@@ -78,7 +78,7 @@ async def list_org_members(
     Pagination: ``limit`` (default 200, max 200), ``offset``. Optional ``q``
     filters display names with case-insensitive substring match (ILIKE).
     """
-    effective_org_id = get_effective_org_id(current_user, org_id)
+    effective_org_id = await resolve_social_org_id(db, current_user, org_id)
     return await fetch_org_members_page(
         db,
         effective_org_id,
@@ -182,7 +182,7 @@ async def list_channels(
 
     Admins may pass ``org_id`` to view channels of another organization.
     """
-    effective_org_id = get_effective_org_id(current_user, org_id)
+    effective_org_id = await resolve_social_org_id(db, current_user, org_id)
     channels_body = await channel_service.list_channels(
         db,
         effective_org_id,

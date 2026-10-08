@@ -20,7 +20,7 @@ from services.mind_classroom.canvas_tour_chunks import (
 from services.mind_classroom.deep_outline import build_tour_nodes
 from services.mind_classroom.job_manifest import mark_job_ready, mark_job_stage
 from services.mind_classroom.lease import LeaseLost, mark_terminal_from_error, require_run_lease
-from services.mind_classroom.lesson_planner import planner_max_tokens, planner_model_id
+from services.mind_classroom.lesson_planner import planner_max_tokens
 from services.mind_classroom.metrics_log import log_job_completed, log_script_llm_done
 from services.mind_classroom.canvas_tour_llm import stream_tour_script_text
 from services.mind_classroom.progress_log import log_job_stage
@@ -170,7 +170,7 @@ async def _chat_script(
     prompt: str,
     settings: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], Optional[dict[str, Any]]]:
-    model = planner_model_id()
+    model = "express"
     max_tokens = max(planner_max_tokens(), 8000)
     system_message = build_canvas_tour_system_message(settings)
     started = time.monotonic()
@@ -547,7 +547,7 @@ async def run_canvas_tour_job(
         )
         llm_elapsed = time.monotonic() - llm_started
         await track_classroom_usage(
-            model_alias="qwen",
+            model_alias="express",
             usage=usage,
             request_type="mind_classroom_canvas_tour",
             user_id=user_id,

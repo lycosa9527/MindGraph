@@ -14,6 +14,7 @@ import { applyAiBrainstormSelection } from '@/composables/aiBrainstorm/applyAiBr
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { isPlaceholderText } from '@/composables/editor/placeholderText'
+import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import {
   MINDMAP_WATERFALL_NODES_PER_LLM,
@@ -36,7 +37,8 @@ import {
   stage2StageNameForType,
 } from '@/composables/nodePalette/stageHelpers'
 import { streamNodePaletteBatch } from '@/composables/nodePalette/streamNodePaletteBatch'
-import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
+import { canvasRunModel } from '@/config/canvasLlmMenu'
+import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import type { NodeSuggestion } from '@/types/panels'
@@ -79,6 +81,12 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   const savedDiagramsStore = useSavedDiagramsStore()
   const uiStore = useUIStore()
   const { promptLanguage } = storeToRefs(uiStore)
+  const llmResultsStore = useLLMResultsStore()
+  const { customLlmEnabled } = useOrgCustomLlm()
+
+  function selectedLlmModels(): string[] {
+    return [canvasRunModel(llmResultsStore.selectedModel, customLlmEnabled.value)]
+  }
 
   const sessionId = ref<string | null>(null)
   const isLoading = ref(false)
@@ -241,6 +249,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       language: promptLanguage.value,
       stage: stage2StageNameForType('mindmap'),
       nodes_per_llm: MINDMAP_WATERFALL_NODES_PER_LLM,
+      llm_models: selectedLlmModels(),
       mode: parents[0]?.name,
     }
     try {
@@ -313,6 +322,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
             diagram_data: diagramData.value,
             language: promptLanguage.value,
             nodes_per_llm: MINDMAP_WATERFALL_NODES_PER_LLM,
+            llm_models: selectedLlmModels(),
             stage: source.stage,
             stage_data: stageData,
             mode: source.id,
@@ -372,7 +382,6 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
     const connections = diagramStore.data?.connections
     const resolvedStage =
       panelsStore.aiBrainstormPanel.stage ?? getDefaultStage('mindmap', nodes, connections)
-    const stageData = panelsStore.aiBrainstormPanel.stage_data ?? undefined
     const isStage2 = resolvedStage === 'children'
     const parents = isStage2 ? getStage2ParentsForDiagram('mindmap', nodes, connections) : []
 
@@ -409,7 +418,6 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
         sourceTabs: [{ id: 'topic', name: tabLabel(topic) }],
         selected: keepSessionId ? panelsStore.aiBrainstormPanel.selected : [],
       })
-      glowIds = ['topic']
     }
 
     isLoading.value = true
@@ -422,6 +430,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
         diagram_data: diagramData.value,
         language: promptLanguage.value,
         nodes_per_llm: MINDMAP_WATERFALL_NODES_PER_LLM,
+        llm_models: selectedLlmModels(),
         stage: panelsStore.aiBrainstormPanel.stage,
         mode: panelsStore.aiBrainstormPanel.mode,
       }
@@ -500,6 +509,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
         language: promptLanguage.value,
         mode,
         nodes_per_llm: MINDMAP_WATERFALL_NODES_PER_LLM,
+        llm_models: selectedLlmModels(),
       }
       if (stage) payload.stage = stage
       if (stageData && Object.keys(stageData).length > 0) payload.stage_data = stageData

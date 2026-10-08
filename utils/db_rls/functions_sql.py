@@ -257,6 +257,65 @@ AS $$
     SELECT organization_id FROM users WHERE id = target_user_id
 $$;
 
+CREATE OR REPLACE FUNCTION rls_user_bound_to_org(target_user_id bigint, target_org_id bigint)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+PARALLEL SAFE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF target_user_id IS NULL OR target_org_id IS NULL THEN
+        RETURN false;
+    END IF;
+    IF to_regclass('public.organization_expert_bindings') IS NULL THEN
+        RETURN false;
+    END IF;
+    RETURN EXISTS (
+        SELECT 1
+        FROM organization_expert_bindings
+        WHERE user_id = target_user_id
+          AND organization_id = target_org_id
+    );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION rls_actor_bound_to_org(target_org_id bigint)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+PARALLEL SAFE
+AS $$
+    SELECT rls_user_bound_to_org(rls_current_user_id(), target_org_id)
+$$;
+
+CREATE OR REPLACE FUNCTION rls_users_share_bound_org(left_user_id bigint, right_user_id bigint)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+PARALLEL SAFE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF left_user_id IS NULL OR right_user_id IS NULL THEN
+        RETURN false;
+    END IF;
+    IF to_regclass('public.organization_expert_bindings') IS NULL THEN
+        RETURN false;
+    END IF;
+    RETURN EXISTS (
+        SELECT 1
+        FROM organization_expert_bindings mine
+        JOIN organization_expert_bindings theirs
+          ON mine.organization_id = theirs.organization_id
+        WHERE mine.user_id = left_user_id
+          AND theirs.user_id = right_user_id
+    );
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION rls_same_org_users(target_user_id bigint)
 RETURNS boolean
 LANGUAGE sql
@@ -357,7 +416,7 @@ AS $$
         WHEN rls_is_system_mode() THEN true
         WHEN rls_is_deny_mode() THEN false
         WHEN channel_org_id IS NULL THEN rls_allow_global_channels() OR rls_is_panel_mode()
-        ELSE rls_org_visible(channel_org_id)
+        ELSE rls_org_visible(channel_org_id) OR rls_actor_bound_to_org(channel_org_id)
     END
 $$;
 
@@ -397,6 +456,9 @@ DROP FUNCTION IF EXISTS rls_panel_org_invited_by_actor(bigint);
 DROP FUNCTION IF EXISTS rls_lookup_org_invited_by_user_id(bigint);
 DROP FUNCTION IF EXISTS rls_lookup_user_organization_id(bigint);
 DROP FUNCTION IF EXISTS rls_same_org_users(bigint);
+DROP FUNCTION IF EXISTS rls_actor_bound_to_org(bigint);
+DROP FUNCTION IF EXISTS rls_users_share_bound_org(bigint, bigint);
+DROP FUNCTION IF EXISTS rls_user_bound_to_org(bigint, bigint);
 DROP FUNCTION IF EXISTS rls_org_visible(bigint);
 DROP FUNCTION IF EXISTS rls_panel_legacy_org_visible(bigint);
 DROP FUNCTION IF EXISTS rls_org_id_in_readable_list(bigint);

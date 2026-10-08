@@ -17,6 +17,7 @@ from services.auth.thinking_coin.usage_wire import (
     thinking_coins_apply_to_user,
 )
 from services.infrastructure.http.error_handler import LLMServiceError
+from services.infrastructure.utils.llm_routing_overrides import refresh_routing_overrides
 from services.llm import llm_service
 from services.llm.llm_utils import LLMUtils
 from services.llm.org_custom_client import stream_chat_as_responses_events, uses_official_responses
@@ -124,7 +125,8 @@ class LLMResponsesService:
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Yield normalized Responses events and record usage / coins."""
         start_time = time.time()
-        physical_model = (model or config.QWEN_MODEL_NODE_EXPLAIN).strip() or "qwen3.8-flash"
+        await refresh_routing_overrides()
+        physical_model = (model or config.EXPRESS_MODEL).strip() or "deepseek-v4.1-flash"
         await assert_llm_usage_budget(
             user_id,
             organization_id,

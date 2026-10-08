@@ -15,12 +15,13 @@ from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from redis.exceptions import RedisError
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.domain.auth import User
+from models.domain.auth import OrganizationExpertBinding, User
 from models.domain.diagrams import Diagram
+from services.auth.expert_school_binding import list_bound_org_ids
 from services.online_collab.core.online_collab_manager_access import get_online_collab_manager
 from services.online_collab.lifecycle.online_collab_expiry import is_online_collab_expired, remaining_seconds
 from services.online_collab.lifecycle.online_collab_session_fields import backfill_online_collab_expiry_if_needed
@@ -36,6 +37,8 @@ from services.online_collab.lifecycle.session_meta_cache import get_session_meta
 from services.online_collab.participant.online_collab_participant_ops import participant_count_for_code
 from services.online_collab.redis.online_collab_redis_keys import participants_key
 from services.redis.redis_async_client import get_async_redis
+from utils.auth.role_constants import ROLE_EXPERT
+from utils.auth.roles import is_expert
 from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
@@ -76,7 +79,15 @@ async def _sql_list_org_sessions_by_org_id(
                     Diagram.workshop_code.isnot(None),
                     or_(
                         User.organization_id == org_id,
-                        User.organization_id.is_(None),
+                        and_(
+                            User.organization_id.is_(None),
+                            User.role != ROLE_EXPERT,
+                        ),
+                        User.id.in_(
+                            select(OrganizationExpertBinding.user_id).where(
+                                OrganizationExpertBinding.organization_id == org_id
+                            )
+                        ),
                     ),
                     or_(
                         Diagram.workshop_visibility.is_(None),
@@ -137,9 +148,15 @@ async def list_org_online_collab_sessions_for_user(
         try:
             result = await db.execute(select(User).filter(User.id == user_id))
             viewer = result.scalars().first()
-            if not viewer or viewer.organization_id is None:
+            org_ids: List[int] = []
+            if viewer is not None and viewer.organization_id is not None:
+                org_ids.append(int(viewer.organization_id))
+            if viewer is not None and is_expert(viewer):
+                for bound_org_id in await list_bound_org_ids(db, int(viewer.id)):
+                    if bound_org_id not in org_ids:
+                        org_ids.append(bound_org_id)
+            if not org_ids:
                 return []
-            org_id = viewer.organization_id
         except (SQLAlchemyError, OSError) as exc:
             logger.error(
                 "[OnlineCollabStatusOps] list_org_online_collab_sessions: user lookup: %s",
@@ -148,10 +165,21 @@ async def list_org_online_collab_sessions_for_user(
             )
             return []
 
-    async def _db_fallback() -> List[Dict[str, Any]]:
-        return await _sql_list_org_sessions_by_org_id(org_id)
+    merged: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    for org_id in org_ids:
 
-    return await get_online_collab_manager().list_org_sessions(org_id, db_fallback_fn=_db_fallback)
+        async def _db_fallback(fallback_org: int = org_id) -> List[Dict[str, Any]]:
+            return await _sql_list_org_sessions_by_org_id(fallback_org)
+
+        rows = await get_online_collab_manager().list_org_sessions(org_id, db_fallback_fn=_db_fallback)
+        for row in rows:
+            diagram_id = str(row.get("diagram_id") or "")
+            if diagram_id in seen:
+                continue
+            seen.add(diagram_id)
+            merged.append(row)
+    return merged
 
 
 async def _redis_visibility_for_code(code: str) -> Optional[str]:

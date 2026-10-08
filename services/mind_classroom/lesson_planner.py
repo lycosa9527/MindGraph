@@ -524,6 +524,7 @@ async def plan_lesson_from_outline(
     settings: Optional[dict[str, Any]] = None,
     user_id: Optional[int] = None,
     organization_id: Optional[int] = None,
+    model: Optional[str] = None,
     on_progress: Optional[PlanningProgressCallback] = None,
 ) -> tuple[dict[str, Any], Optional[dict[str, Any]]]:
     """
@@ -531,7 +532,7 @@ async def plan_lesson_from_outline(
 
     Returns (plan_dict, aggregated_usage_data).
     """
-    model = planner_model_id()
+    model = model.strip() if isinstance(model, str) and model.strip() else planner_model_id()
     max_tokens = planner_max_tokens()
     title = diagram_title or outline.topic
     settings = dict(settings or {})

@@ -55,12 +55,16 @@ class LLMLoadBalancer:
     FIXED_MODEL_MAP = {
         # Logical models (frontend buttons); DashScope model id comes from env (e.g. qwen3.6-flash).
         "qwen": "qwen",
-        # → Volcengine Kimi via endpoint (ALWAYS - 5,000 RPM, 500,000 TPM vs Dashscope's 60 RPM, 100,000 TPM)
+        # Canvas Express: DashScope deepseek-v4.1-flash only (never Volcengine).
+        "express": "express",
+        # Kimi stays on Volcengine. DashScope Moonshot-Kimi-K2-Instruct is 500 RPM / 1,000,000 TPM.
         "kimi": "ark-kimi",
-        "doubao": "ark-doubao",  # → Volcengine Doubao via endpoint (higher RPM than Dashscope)
-        # DeepSeek load balancing:
-        # - Dashscope route (deepseek-v3.2 / deepseek-v3): 15,000 RPM, 1,200,000-1,500,000 TPM
-        # - Volcengine route (ark-deepseek v3.2): 15,000 RPM, 1,500,000 TPM
+        "doubao": "ark-doubao",  # Volcengine doubao_1.5pro_32k endpoint, not Doubao-Seed-2.0-mini
+        # Canvas Doubao 2.1: model id doubao-seed-2.1-turbo, not the 1.5 pro endpoint.
+        "doubao21": "ark-doubao21",
+        # DeepSeek load balancing (both legs are DeepSeek-V4.1-Flash):
+        # - DashScope: DEEPSEEK_MODEL (default deepseek-v4.1-flash)
+        # - Volcengine: ARK_DEEPSEEK_ENDPOINT (console name DS_v4.1flash)
         # Internal aliases (resolved model id from ``QWEN_MODEL_*`` env)
         "qwen-turbo": "qwen-turbo",
         "qwen-plus": "qwen-plus",
@@ -69,6 +73,7 @@ class LLMLoadBalancer:
         "qwen3.7-flash": "qwen3.7-flash",
         "qwen3.8-flash": "qwen3.8-flash",
         "qwen3.7-plus": "qwen3.7-plus",
+        "qwen3-max": "qwen3-max",
         # Unaffected
         "hunyuan": "hunyuan",  # → Tencent hunyuan
         "omni": "omni",  # → Voice agent
@@ -76,7 +81,7 @@ class LLMLoadBalancer:
 
     def __init__(
         self,
-        strategy: str = "round_robin",
+        strategy: str = "weighted",
         weights: Optional[Dict[str, int]] = None,
         enabled: bool = True,
         dashscope_rate_limiter: Optional["DashscopeRateLimiter"] = None,
@@ -87,8 +92,8 @@ class LLMLoadBalancer:
         Initialize load balancer.
 
         Args:
-            strategy: 'weighted', 'random', or 'round_robin' (default: 'round_robin')
-            weights: Provider weights, e.g., {'dashscope': 50, 'volcengine': 50}
+            strategy: 'weighted', 'random', or 'round_robin' (default: 'weighted')
+            weights: Provider weights, e.g., {'dashscope': 75, 'volcengine': 25}
             enabled: Whether load balancing is enabled
             dashscope_rate_limiter: Shared Dashscope rate limiter (for Dashscope route checks)
             load_balancer_rate_limiter: LoadBalancerRateLimiter instance (for Volcengine route checks)
@@ -96,7 +101,7 @@ class LLMLoadBalancer:
         """
         self.strategy = strategy
         # Normalize weights to dashscope/volcengine format
-        self.weights = self._normalize_weights(weights or {"dashscope": 50, "volcengine": 50})
+        self.weights = self._normalize_weights(weights or {"dashscope": 75, "volcengine": 25})
         self.enabled = enabled
         self._counter = 0  # Local fallback for round_robin if Redis unavailable
         self._use_redis = is_redis_available()
@@ -130,8 +135,8 @@ class LLMLoadBalancer:
         Validates and normalizes weights to sum to 100.
         """
         normalized = {
-            "dashscope": weights.get("dashscope", 50),
-            "volcengine": weights.get("volcengine", 50),
+            "dashscope": weights.get("dashscope", 75),
+            "volcengine": weights.get("volcengine", 25),
         }
 
         # Validate weights are in valid range (0-100)
@@ -146,9 +151,8 @@ class LLMLoadBalancer:
             normalized["dashscope"] = int(round(dashscope_weight * 100 / total))
             normalized["volcengine"] = 100 - normalized["dashscope"]  # Ensure they sum to exactly 100
         else:
-            # If both are 0, default to 50/50
-            logger.warning("Load balancing weights sum to 0, using default 50/50")
-            normalized = {"dashscope": 50, "volcengine": 50}
+            logger.warning("Load balancing weights sum to 0, using default 75/25")
+            normalized = {"dashscope": 75, "volcengine": 25}
 
         return normalized
 
@@ -168,14 +172,14 @@ class LLMLoadBalancer:
             'dashscope' or 'volcengine'
 
         Strategy Details:
-            'round_robin' (DEFAULT):
+            'round_robin':
                 - Uses Redis INCR for shared counter across all workers
                 - Even counter → Dashscope, odd counter → Volcengine
                 - Provides true round-robin distribution in multi-worker deployments
                 - Falls back to per-worker counter if Redis unavailable
                 - Example: Request 1 → Dashscope, Request 2 → Volcengine, Request 3 → Dashscope...
 
-            'weighted':
+            'weighted' (DEFAULT):
                 - Stateless random selection based on configured weights
                 - Each request independently selects provider with probability
                 - Perfect for multi-worker (no coordination needed)
@@ -227,7 +231,7 @@ class LLMLoadBalancer:
             # Perfect for multi-worker - no coordination needed
             rand = random.randint(1, 100)
             provider = (
-                self.PROVIDER_DASHSCOPE if rand <= self.weights.get("dashscope", 50) else self.PROVIDER_VOLCENGINE
+                self.PROVIDER_DASHSCOPE if rand <= self.weights.get("dashscope", 75) else self.PROVIDER_VOLCENGINE
             )
             logger.debug(
                 "[LoadBalancer] Weighted selection: rand=%s, provider=%s",
@@ -293,9 +297,8 @@ class LLMLoadBalancer:
         For DeepSeek: Selects provider (Dashscope or Volcengine) based on weights.
         For others: Uses fixed mapping (Qwen→Dashscope, Kimi/Doubao→Volcengine).
 
-        IMPORTANT: Kimi ALWAYS routes to Volcengine (ark-kimi) because:
-        - Volcengine: 5,000 RPM, 500,000 TPM
-        - Dashscope: 60 RPM, 100,000 TPM (83x lower RPM!)
+        IMPORTANT: Kimi ALWAYS routes to Volcengine (ark-kimi).
+        DashScope Moonshot-Kimi-K2-Instruct in Beijing is 500 RPM and 1,000,000 TPM.
 
         Args:
             logical_model: Frontend model name (e.g., 'deepseek', 'qwen')
@@ -326,11 +329,9 @@ class LLMLoadBalancer:
         # All other models use fixed mapping
         physical = self.FIXED_MODEL_MAP.get(logical_model, logical_model)
 
-        # Safety check: Ensure Kimi always uses Volcengine (5,000 RPM vs Dashscope's 60 RPM)
         if logical_model == "kimi" and physical != "ark-kimi":
             logger.warning(
-                "[LoadBalancer] Kimi mapped to %s instead of ark-kimi! "
-                "Force routing to Volcengine (5,000 RPM vs Dashscope's 60 RPM)",
+                "[LoadBalancer] Kimi mapped to %s instead of ark-kimi. Force routing to Volcengine.",
                 physical,
             )
             physical = "ark-kimi"
@@ -357,6 +358,8 @@ class LLMLoadBalancer:
         if model == "ark-deepseek":
             return self.PROVIDER_VOLCENGINE
         if model == "deepseek":
+            return self.PROVIDER_DASHSCOPE
+        if model == "express":
             return self.PROVIDER_DASHSCOPE
 
         # Check if it's a logical DeepSeek model (would need to map first)
@@ -569,7 +572,7 @@ class LLMLoadBalancer:
         if dashscope_health["healthy"] and volcengine_health["healthy"]:
             rand = random.randint(1, 100)
             provider = (
-                self.PROVIDER_DASHSCOPE if rand <= self.weights.get("dashscope", 50) else self.PROVIDER_VOLCENGINE
+                self.PROVIDER_DASHSCOPE if rand <= self.weights.get("dashscope", 75) else self.PROVIDER_VOLCENGINE
             )
             logger.debug(
                 "[LoadBalancer] Health-aware: both healthy, using weighted: %s",
@@ -599,7 +602,7 @@ class LLMLoadBalancer:
         # Both unhealthy - use weighted selection (better than random)
         logger.warning("[LoadBalancer] Health-aware: Both providers unhealthy, using weighted selection")
         rand = random.randint(1, 100)
-        provider = self.PROVIDER_DASHSCOPE if rand <= self.weights.get("dashscope", 50) else self.PROVIDER_VOLCENGINE
+        provider = self.PROVIDER_DASHSCOPE if rand <= self.weights.get("dashscope", 75) else self.PROVIDER_VOLCENGINE
         return provider
 
 
@@ -615,7 +618,7 @@ class _LoadBalancerState:
 
 
 def initialize_load_balancer(
-    strategy: str = "round_robin",
+    strategy: str = "weighted",
     weights: Optional[Dict[str, int]] = None,
     enabled: bool = True,
     dashscope_rate_limiter: Optional["DashscopeRateLimiter"] = None,

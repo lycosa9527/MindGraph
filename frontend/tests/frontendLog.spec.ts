@@ -75,11 +75,64 @@ describe('frontendLog', () => {
     vi.stubEnv('DEV', false)
 
     reportFrontendError(
-      new Error('Cannot read properties of undefined (reading \'weixinPostMessageHandlers\')'),
+      new Error("Cannot read properties of undefined (reading 'weixinPostMessageHandlers')"),
       { source: 'window.onerror' }
     )
 
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('skips injected browser script noise', () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+    vi.stubEnv('PROD', true)
+    vi.stubEnv('DEV', false)
+
+    const samples = [
+      "null is not an object (evaluating 'e.childNodes')\ntraval",
+      "null is not an object (evaluating 'document.querySelector('link[rel=\"shortcut icon\"]').getAttribute')",
+      'UCShellJava.sdkEventFire is not a function',
+      'ucapi is not defined',
+      "Cannot read properties of undefined (reading 'LIDNotifyId')",
+      'EmptyRanges',
+      "Evaluating a string as JavaScript violates the following Content Security Policy directive because 'unsafe-eval' is not an allowed source of script: chrome-extension://abc",
+      "Identifier 'Shop' has already been declared",
+      'Unexpected end of input',
+    ]
+    for (const sample of samples) {
+      reportFrontendError(new Error(sample), { source: 'window.onerror' })
+    }
+
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('still reports app errors whose stack mentions an extension', () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubEnv('PROD', true)
+    vi.stubEnv('DEV', false)
+
+    const err = new Error("Cannot read properties of null (reading 'offsetHeight')")
+    err.stack =
+      "TypeError: Cannot read properties of null (reading 'offsetHeight')\n" +
+      '    at chrome-extension://abc/content.js:1:1\n' +
+      '    at render (https://mg.example/assets/index-abc.js:1:2)'
+    reportFrontendError(err, { source: 'vue' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('still reports Unexpected end of input when the stack is ours', () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubEnv('PROD', true)
+    vi.stubEnv('DEV', false)
+
+    const err = new Error('Unexpected end of input')
+    err.stack =
+      'Error: Unexpected end of input\n    at parse (https://mg.example/assets/index-abc.js:1:2)'
+    reportFrontendError(err, { source: 'window.onerror' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('does not skip generic offsetHeight layout errors', () => {
@@ -88,10 +141,9 @@ describe('frontendLog', () => {
     vi.stubEnv('PROD', true)
     vi.stubEnv('DEV', false)
 
-    reportFrontendError(
-      new Error("Cannot read properties of null (reading 'offsetHeight')"),
-      { source: 'vue' }
-    )
+    reportFrontendError(new Error("Cannot read properties of null (reading 'offsetHeight')"), {
+      source: 'vue',
+    })
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
@@ -101,10 +153,9 @@ describe('frontendLog', () => {
     vi.stubEnv('PROD', true)
     vi.stubEnv('DEV', false)
 
-    reportFrontendError(
-      new Error('Failed to fetch dynamically imported module: https://x/a.js'),
-      { source: 'unhandledrejection' }
-    )
+    reportFrontendError(new Error('Failed to fetch dynamically imported module: https://x/a.js'), {
+      source: 'unhandledrejection',
+    })
 
     expect(fetch).not.toHaveBeenCalled()
   })
@@ -116,10 +167,7 @@ describe('frontendLog', () => {
 
     const abort = new DOMException('The user aborted a request.', 'AbortError')
     reportFrontendError(abort, { source: 'unhandledrejection' })
-    reportFrontendError(
-      new Error('BodyStreamBuffer was aborted'),
-      { source: 'unhandledrejection' }
-    )
+    reportFrontendError(new Error('BodyStreamBuffer was aborted'), { source: 'unhandledrejection' })
 
     expect(fetch).not.toHaveBeenCalled()
   })

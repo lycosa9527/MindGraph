@@ -29,6 +29,7 @@ from services.infrastructure.http.error_handler import (
     LLMProviderError,
     LLMRateLimitError,
 )
+from services.infrastructure.utils.ark_thinking import volcengine_thinking_extra
 from services.llm.error_parsers.doubao_error_parser import parse_and_raise_doubao_error
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
@@ -363,6 +364,13 @@ class VolcengineClient:
         Uses config properties for consistency with other configuration values.
         Endpoint IDs must be configured in environment variables (see env.example).
         """
+        if alias == "ark-doubao21":
+            # Model id (or an ep- endpoint pasted into DOUBAO21_MODEL). Not the 1.5 pro endpoint.
+            name = str(config.DOUBAO21_MODEL or "").strip()
+            if not name:
+                raise ValueError("DOUBAO21_MODEL is empty. Set a Volcengine model id or endpoint.")
+            return name
+
         endpoint_map = {
             "ark-deepseek": config.ARK_DEEPSEEK_ENDPOINT,
             "ark-kimi": config.ARK_KIMI_ENDPOINT,
@@ -403,12 +411,14 @@ class VolcengineClient:
             Dict with 'content' and 'usage' keys
         """
         response_format = kwargs.pop("response_format", None)
+        enable_thinking = bool(kwargs.pop("enable_thinking", False))
         try:
             return await self._chat_completion_once(
                 messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 response_format=response_format,
+                enable_thinking=enable_thinking,
             )
         except LLMProviderError as exc:
             if response_format is None or not _is_unsupported_structured_output_error(exc):
@@ -423,6 +433,7 @@ class VolcengineClient:
                 temperature=temperature,
                 max_tokens=max_tokens,
                 response_format=None,
+                enable_thinking=enable_thinking,
             )
 
     async def _chat_completion_once(
@@ -432,20 +443,25 @@ class VolcengineClient:
         temperature: Optional[float],
         max_tokens: int,
         response_format: Optional[Any],
+        enable_thinking: bool,
     ) -> Dict[str, Any]:
         """Single non-streaming Volcengine chat completion attempt."""
         try:
             if temperature is None:
                 temperature = self.default_temperature
 
-            logger.debug("Volcengine %s request: endpoint=%s", self.model_alias, self.endpoint_id)
+            endpoint_id = self._get_endpoint_id(self.model_alias)
+            logger.debug("Volcengine %s request: endpoint=%s", self.model_alias, endpoint_id)
 
             create_kwargs: Dict[str, Any] = {
-                "model": self.endpoint_id,
+                "model": endpoint_id,
                 "messages": as_openai_chat_messages(messages),
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             }
+            thinking_extra = volcengine_thinking_extra(self.model_alias, enable_thinking)
+            if thinking_extra:
+                create_kwargs["extra_body"] = thinking_extra
             apply_structured_output(create_kwargs, response_format)
 
             completion = await self.client.chat.completions.create(**create_kwargs)
@@ -570,19 +586,19 @@ class VolcengineClient:
             if temperature is None:
                 temperature = self.default_temperature
 
-            logger.debug("Volcengine %s stream: endpoint=%s", self.model_alias, self.endpoint_id)
+            endpoint_id = self._get_endpoint_id(self.model_alias)
+            logger.debug("Volcengine %s stream: endpoint=%s", self.model_alias, endpoint_id)
 
-            # Build extra params for thinking mode if enabled
-            extra_body = {"enable_thinking": enable_thinking} if enable_thinking else {}
+            thinking_extra = volcengine_thinking_extra(self.model_alias, enable_thinking)
 
             create_kwargs: Dict[str, Any] = {
-                "model": self.endpoint_id,
+                "model": endpoint_id,
                 "messages": as_openai_chat_messages(messages),
                 "temperature": temperature,
                 "max_tokens": max_tokens,
                 "stream": True,
                 "stream_options": {"include_usage": True},
-                "extra_body": extra_body if extra_body else None,
+                "extra_body": thinking_extra or None,
             }
             apply_structured_output(create_kwargs, response_format)
 

@@ -13,6 +13,7 @@ from utils.auth.admin_panel_permissions import (
     CAP_SETTINGS_GEWE,
     CAP_SETTINGS_KITTY_LLMOPS,
     CAP_SETTINGS_LIBRARY,
+    CAP_SETTINGS_LLM_CONTROL,
     CAP_SETTINGS_MINDMATE_EXPORT,
     CAP_SETTINGS_MINDBOT,
     CAP_SETTINGS_PERFORMANCE,
@@ -283,6 +284,7 @@ _ALL_SETTINGS_CAPABILITY_KEYS = frozenset(
         CAP_SETTINGS_ROLES,
         CAP_SETTINGS_TOKENS,
         CAP_SETTINGS_LIBRARY,
+        CAP_SETTINGS_LLM_CONTROL,
         CAP_SETTINGS_DATABASE,
         CAP_SETTINGS_COS,
         CAP_SETTINGS_PERFORMANCE,
@@ -317,6 +319,13 @@ def test_all_settings_caps_superadmin_only():
     for cap in _ALL_SETTINGS_CAPABILITY_KEYS:
         assert cap in super_caps
         assert cap not in school_caps
+
+
+def test_llm_control_settings_cap_superadmin_only():
+    """LLM control settings subtab is super-admin only."""
+    assert CAP_SETTINGS_LLM_CONTROL in capabilities_for_role("superadmin")
+    for role in _NON_SUPERADMIN_PANEL_ROLES:
+        assert CAP_SETTINGS_LLM_CONTROL not in capabilities_for_role(role)
 
 
 def test_public_dashboard_settings_cap_superadmin_only():

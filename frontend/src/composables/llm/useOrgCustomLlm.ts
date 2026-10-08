@@ -3,6 +3,7 @@
  */
 import { computed } from 'vue'
 
+import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 
 export function useOrgCustomLlm() {
@@ -19,12 +20,15 @@ export function useOrgCustomLlm() {
     if (customLlmEnabled.value) {
       return ['qwen'] as const
     }
-    return ['qwen', 'deepseek', 'doubao'] as const
+    return ['express'] as const
   })
 
   function displayNameForModel(modelKey: string): string {
     if (customLlmEnabled.value && customLlmModel.value) {
       return customLlmModel.value
+    }
+    if (modelKey === 'express') {
+      return String(i18n.global.t('aiModel.express'))
     }
     const names: Record<string, string> = {
       qwen: 'Qwen',

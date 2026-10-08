@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
+from services.auth.expert_school_binding import user_is_bound_to_org
 from services.online_collab.lifecycle.online_collab_expiry import is_online_collab_expired
 from services.online_collab.lifecycle.online_collab_session_fields import (
     backfill_online_collab_expiry_if_needed,
@@ -27,6 +28,7 @@ from services.online_collab.lifecycle.online_collab_session_fields import (
 )
 from services.online_collab.redis.online_collab_redis_keys import purge_online_collab_redis_keys
 from utils.auth.role_constants import SCHOOL_ADMIN_ROLES, SUPERADMIN_ROLES
+from utils.auth.roles import is_expert
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +88,22 @@ async def user_may_join_diagram_online_collab(
         return True
     if org_owner is None and org_joiner is not None and vis == ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
         return True
+    if await _bound_expert_shares_school(db, joiner_row, owner_row):
+        return True
+    return False
+
+
+async def _bound_expert_shares_school(db: AsyncSession, joiner_row: Any, owner_row: Any) -> bool:
+    """A bound expert may join the other person's school session."""
+    joiner_expert = is_expert(joiner_row)
+    owner_expert = is_expert(owner_row)
+    if not joiner_expert and not owner_expert:
+        return False
+    if joiner_expert and owner_row.organization_id is not None:
+        if await user_is_bound_to_org(db, int(joiner_row.id), int(owner_row.organization_id)):
+            return True
+    if owner_expert and joiner_row.organization_id is not None:
+        return await user_is_bound_to_org(db, int(owner_row.id), int(joiner_row.organization_id))
     return False
 
 

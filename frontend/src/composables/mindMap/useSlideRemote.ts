@@ -25,6 +25,7 @@ import {
   setSlideRemotePendingStart,
   shouldJumpForSlideRemoteStart,
 } from '@/utils/slideRemotePendingStart'
+import { isSlideRemoteTransportError } from '@/utils/slideRemoteTransportError'
 
 type SlidePresentation = ReturnType<typeof useMindMapSlidePresentation>
 
@@ -98,6 +99,8 @@ export function useSlideRemote(options: {
       for (const row of items) {
         applySlideRemoteCommand(row, handlers())
       }
+    } catch (err) {
+      if (!isSlideRemoteTransportError(err)) throw err
     } finally {
       inFlight = false
     }

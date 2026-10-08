@@ -328,10 +328,35 @@ export async function updateAdminOrganization(
   })
 }
 
-export async function deleteAdminOrganization(
+export interface ExpertSchoolBindingOption {
+  id: number
+  name: string | null
+  phone: string | null
+  email: string | null
+}
+
+export interface ExpertSchoolBindingResponse {
+  bound_user_ids: number[]
+  experts: ExpertSchoolBindingOption[]
+}
+
+export async function fetchAdminExpertSchoolBinding(
+  orgId: number
+): Promise<ExpertSchoolBindingResponse> {
+  return adminFetchJson(`/api/auth/admin/organizations/${orgId}/expert-bindings`)
+}
+
+export async function updateAdminExpertSchoolBinding(
   orgId: number,
-  deleteUsers = false
-): Promise<void> {
+  userIds: number[]
+): Promise<ExpertSchoolBindingResponse> {
+  return adminFetchJson(`/api/auth/admin/organizations/${orgId}/expert-bindings`, {
+    method: 'PUT',
+    body: JSON.stringify({ user_ids: userIds }),
+  })
+}
+
+export async function deleteAdminOrganization(orgId: number, deleteUsers = false): Promise<void> {
   const qs = deleteUsers ? '?delete_users=true' : ''
   await adminFetchJson(`/api/auth/admin/organizations/${orgId}${qs}`, { method: 'DELETE' })
 }
@@ -380,10 +405,7 @@ export async function probeAdminOrganizationMindmateDifyHealth(
 }
 
 export type CustomLlmApiType =
-  | 'dashscope_volcengine'
-  | 'openai_chat'
-  | 'openai_responses'
-  | 'anthropic_messages'
+  'dashscope_volcengine' | 'openai_chat' | 'openai_responses' | 'anthropic_messages'
 
 export async function probeAdminOrganizationCustomLlmHealth(
   orgId: number,
@@ -414,8 +436,7 @@ export async function fetchAdminUser(
   userId: number,
   organizationId?: number | null
 ): Promise<Record<string, unknown>> {
-  const qs =
-    organizationId != null ? buildQuery({ organization_id: organizationId }) : ''
+  const qs = organizationId != null ? buildQuery({ organization_id: organizationId }) : ''
   const base =
     organizationId != null
       ? `/api/auth/admin/school/users/${userId}`
@@ -438,10 +459,9 @@ export async function deleteAdminUser(userId: number): Promise<void> {
 }
 
 export async function updateAdminUserRole(userId: number, role: string): Promise<void> {
-  await adminFetchJson(
-    `/api/auth/admin/users/${userId}/role?role=${encodeURIComponent(role)}`,
-    { method: 'PUT' }
-  )
+  await adminFetchJson(`/api/auth/admin/users/${userId}/role?role=${encodeURIComponent(role)}`, {
+    method: 'PUT',
+  })
 }
 
 export async function fetchAdminSchoolUsers(
@@ -500,8 +520,7 @@ export async function fetchAdminTokenStats(
   organizationId?: number | null,
   signal?: AbortSignal
 ): Promise<AdminPlatformTokenStats> {
-  const qs =
-    organizationId != null ? buildQuery({ organization_id: organizationId }) : ''
+  const qs = organizationId != null ? buildQuery({ organization_id: organizationId }) : ''
   return adminFetchJson(`/api/auth/admin/token-stats${qs}`, { signal })
 }
 
@@ -527,10 +546,9 @@ export async function fetchAdminStatsTrendsOrganization(
   },
   signal?: AbortSignal
 ): Promise<AdminTrendsResponse> {
-  return adminFetchJson(
-    `/api/auth/admin/stats/trends/organization${buildQuery(params)}`,
-    { signal }
-  )
+  return adminFetchJson(`/api/auth/admin/stats/trends/organization${buildQuery(params)}`, {
+    signal,
+  })
 }
 
 export async function fetchAdminStatsTrendsUser(
@@ -577,10 +595,9 @@ export async function fetchAdminUserActivity(
   },
   signal?: AbortSignal
 ): Promise<AdminUserActivityResponse> {
-  return adminFetchJson(
-    `/api/auth/admin/users/${userId}/activity${buildQuery(params ?? {})}`,
-    { signal }
-  )
+  return adminFetchJson(`/api/auth/admin/users/${userId}/activity${buildQuery(params ?? {})}`, {
+    signal,
+  })
 }
 
 export interface AdminOrgActivityItem extends AdminUserActivityItem {
@@ -626,10 +643,7 @@ export async function fetchAdminSchoolTrends(
   },
   signal?: AbortSignal
 ): Promise<AdminTrendsResponse> {
-  return adminFetchJson(
-    `/api/auth/admin/stats/school/trends${buildQuery(params)}`,
-    { signal }
-  )
+  return adminFetchJson(`/api/auth/admin/stats/school/trends${buildQuery(params)}`, { signal })
 }
 
 export async function fetchAdminSchoolTokenStats(
@@ -650,9 +664,7 @@ export async function fetchAdminAdmins(): Promise<{ admins: AdminUser[]; env_adm
   return adminFetchJson('/api/auth/admin/admins')
 }
 
-export async function fetchAdminPlatformRoleMembers(
-  role: string
-): Promise<PlatformRoleMember[]> {
+export async function fetchAdminPlatformRoleMembers(role: string): Promise<PlatformRoleMember[]> {
   const data = await adminFetchJson<{ members?: PlatformRoleMember[] }>(
     `/api/auth/admin/platform-role-members${buildQuery({ role })}`
   )
@@ -660,9 +672,7 @@ export async function fetchAdminPlatformRoleMembers(
 }
 
 export async function fetchAdminManagers(): Promise<ManagerUser[]> {
-  const data = await adminFetchJson<{ managers?: ManagerUser[] }>(
-    '/api/auth/admin/managers'
-  )
+  const data = await adminFetchJson<{ managers?: ManagerUser[] }>('/api/auth/admin/managers')
   return data.managers ?? []
 }
 
@@ -723,10 +733,12 @@ export async function fetchMobileOrganizations(): Promise<MobileOrganizationRow[
 // MindBot
 // ============================================================================
 
-export async function fetchAdminMindbotConfigs(params: {
-  limit?: number
-  after_id?: number
-} = {}): Promise<AdminMindbotConfigsResponse | MindbotConfigRow[]> {
+export async function fetchAdminMindbotConfigs(
+  params: {
+    limit?: number
+    after_id?: number
+  } = {}
+): Promise<AdminMindbotConfigsResponse | MindbotConfigRow[]> {
   const limit = params.limit ?? 50
   const qs = buildQuery({
     limit,
@@ -766,18 +778,14 @@ export async function fetchAdminMindbotStreamingStatus(
   configId: number,
   query = ''
 ): Promise<Record<string, unknown>> {
-  return adminFetchJson(
-    `/api/mindbot/admin/configs/${configId}/ai-card-streaming-status${query}`
-  )
+  return adminFetchJson(`/api/mindbot/admin/configs/${configId}/ai-card-streaming-status${query}`)
 }
 
 export async function fetchAdminMindbotUsageEvents(
   orgId: number,
   params: Record<string, string | number | undefined> = {}
 ): Promise<MindbotUsageEventRow[]> {
-  return adminFetchJson(
-    `/api/mindbot/admin/configs/${orgId}/usage-events${buildQuery(params)}`
-  )
+  return adminFetchJson(`/api/mindbot/admin/configs/${orgId}/usage-events${buildQuery(params)}`)
 }
 
 export async function fetchAdminMindbotUsageThreadEvents(
@@ -838,15 +846,11 @@ export async function fetchAdminMarketsStats(): Promise<AdminMarketsStats> {
   return adminFetchJson('/api/markets/admin/stats')
 }
 
-export async function fetchAdminMarketsOrders(
-  limit = 200
-): Promise<AdminMarketOrderRow[]> {
+export async function fetchAdminMarketsOrders(limit = 200): Promise<AdminMarketOrderRow[]> {
   return adminFetchJson(`/api/markets/admin/orders${buildQuery({ limit })}`)
 }
 
-export async function fetchAdminMarketsListings(
-  limit = 500
-): Promise<AdminMarketListingRow[]> {
+export async function fetchAdminMarketsListings(limit = 500): Promise<AdminMarketListingRow[]> {
   return adminFetchJson(`/api/markets/admin/listings${buildQuery({ limit })}`)
 }
 
@@ -877,9 +881,7 @@ export async function updateAdminFeatureOrgAccess(
   })
 }
 
-export async function updateAdminEnvSettings(
-  body: Record<string, unknown>
-): Promise<void> {
+export async function updateAdminEnvSettings(body: Record<string, unknown>): Promise<void> {
   await adminFetchJson('/api/auth/admin/env/settings', {
     method: 'PUT',
     body: JSON.stringify(body),
@@ -905,7 +907,6 @@ export async function scanAdminDatabase(): Promise<Record<string, unknown>> {
 export async function fetchAdminDatabaseOrphans(): Promise<Record<string, unknown>> {
   return adminFetchJson('/api/auth/admin/database/orphans')
 }
-
 
 export async function exportAdminDatabase(): Promise<Record<string, unknown>> {
   return adminFetchJson('/api/auth/admin/database/export', { method: 'POST' })
@@ -1069,7 +1070,9 @@ export interface AdminErrorGroupsResponse {
   total_pages: number
 }
 
-export async function fetchAdminErrorSummary(signal?: AbortSignal): Promise<AdminErrorSummaryResponse> {
+export async function fetchAdminErrorSummary(
+  signal?: AbortSignal
+): Promise<AdminErrorSummaryResponse> {
   return adminFetchJson('/api/auth/admin/errors/summary', { signal })
 }
 
@@ -1178,9 +1181,7 @@ export async function fetchAdminTeacherUsageUsers(
   )
 }
 
-export async function fetchAdminTeacherUsageUserDetail(
-  userId: number
-): Promise<UserDetailData> {
+export async function fetchAdminTeacherUsageUserDetail(userId: number): Promise<UserDetailData> {
   return adminFetchJson(`/api/auth/admin/teacher-usage/user/${userId}/detail`)
 }
 
@@ -1188,9 +1189,7 @@ export async function fetchAdminTeacherUsageConfig(): Promise<AdminTeacherUsageC
   return adminFetchJson('/api/auth/admin/teacher-usage/config')
 }
 
-export async function updateAdminTeacherUsageConfig(
-  body: AdminTeacherUsageConfig
-): Promise<void> {
+export async function updateAdminTeacherUsageConfig(body: AdminTeacherUsageConfig): Promise<void> {
   await adminFetchJson('/api/auth/admin/teacher-usage/config', {
     method: 'PUT',
     body: JSON.stringify(body),
@@ -1424,7 +1423,9 @@ function exportFilterQuery(filters: MindMateExportFilters): string {
 export async function fetchMindMateExportUsers(
   orgId?: number | null
 ): Promise<{ organization_id: number; users: MindMateExportUser[] }> {
-  return adminFetchJson(`/api/admin/mindmate-export/users${buildQuery({ org_id: orgId ?? undefined })}`)
+  return adminFetchJson(
+    `/api/admin/mindmate-export/users${buildQuery({ org_id: orgId ?? undefined })}`
+  )
 }
 
 export async function fetchMindMateExportConversations(
@@ -1517,27 +1518,19 @@ export async function fetchMindMateExportJob(jobId: number): Promise<{ job: Mind
   return adminFetchJson(`/api/admin/mindmate-export/jobs/${jobId}`)
 }
 
-export async function listMindMateExportJobs(
-  limit = 20
-): Promise<{ jobs: MindMateExportJob[] }> {
+export async function listMindMateExportJobs(limit = 20): Promise<{ jobs: MindMateExportJob[] }> {
   return adminFetchJson(`/api/admin/mindmate-export/jobs${buildQuery({ limit })}`)
 }
 
-export async function pauseMindMateExportJob(
-  jobId: number
-): Promise<{ job: MindMateExportJob }> {
+export async function pauseMindMateExportJob(jobId: number): Promise<{ job: MindMateExportJob }> {
   return adminFetchJson(`/api/admin/mindmate-export/jobs/${jobId}/pause`, { method: 'POST' })
 }
 
-export async function resumeMindMateExportJob(
-  jobId: number
-): Promise<{ job: MindMateExportJob }> {
+export async function resumeMindMateExportJob(jobId: number): Promise<{ job: MindMateExportJob }> {
   return adminFetchJson(`/api/admin/mindmate-export/jobs/${jobId}/resume`, { method: 'POST' })
 }
 
-export async function cancelMindMateExportJob(
-  jobId: number
-): Promise<{ job: MindMateExportJob }> {
+export async function cancelMindMateExportJob(jobId: number): Promise<{ job: MindMateExportJob }> {
   return adminFetchJson(`/api/admin/mindmate-export/jobs/${jobId}/cancel`, { method: 'POST' })
 }
 
@@ -1614,9 +1607,12 @@ export async function fetchMindMateExportDumpInventory(): Promise<MindMateExport
   return adminFetchJson('/api/admin/mindmate-export/dumps')
 }
 
-export async function uploadMindMateExportDumpZip(
-  formData: FormData
-): Promise<{ name: string; bytes: number; server_label: string | null; inventory: MindMateExportDumpInventory }> {
+export async function uploadMindMateExportDumpZip(formData: FormData): Promise<{
+  name: string
+  bytes: number
+  server_label: string | null
+  inventory: MindMateExportDumpInventory
+}> {
   const res = await apiUpload('/api/admin/mindmate-export/dumps/upload', formData)
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))

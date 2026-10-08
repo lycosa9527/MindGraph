@@ -1,5 +1,7 @@
 import type { Ref } from 'vue'
 
+import { isCanvasLlmModel } from '@/config/canvasLlmMenu'
+
 interface UseWorkshopOutboundDispatcherOptions {
   ws: Ref<WebSocket | null>
   diagramId: Ref<string | null>
@@ -198,8 +200,7 @@ export function useWorkshopOutboundDispatcher(options: UseWorkshopOutboundDispat
       if (!options.ws.value) {
         return
       }
-      const normalized =
-        model === 'qwen' || model === 'deepseek' || model === 'doubao' ? model : null
+      const normalized = isCanvasLlmModel(model) ? model : null
       options.ws.value.send(
         JSON.stringify({
           type: 'host_llm_model',

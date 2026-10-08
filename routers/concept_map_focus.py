@@ -2,9 +2,8 @@
 Concept map focus question API
 ==============================
 
-Standard mode: **validation** (3 LLMs in parallel, once) and **suggestions** (3 LLMs,
-separate batches, SSE as each model finishes). Models may disagree on valid — UI shows
-per-model verdict. Suggestions paginate 5 per page on the client.
+Standard mode: **validation** (Express, once) and **suggestions** (Express,
+SSE when the batch finishes). Suggestions paginate 5 per page on the client.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -37,10 +36,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/concept_map", tags=["concept_map"])
 
-FOCUS_MODELS: Tuple[str, ...] = ("qwen", "deepseek", "doubao")
+FOCUS_MODELS: Tuple[str, ...] = ("express",)
 FOCUS_SUGGESTION_COUNT = 5
 FOCUS_REASON_MAX_LEN = 4000
-ROOT_CONCEPT_MODEL = "deepseek"
+ROOT_CONCEPT_MODEL = "express"
 
 
 async def _focus_models_for_org(organization_id: Optional[int]) -> List[str]:
@@ -383,7 +382,7 @@ async def root_concept_generate(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Given the focus question, propose a single root concept (Novak theory) using DeepSeek.
+    Given the focus question, propose a single root concept (Novak theory) using Express.
     Used when the user presses Tab while editing the root concept node.
     """
     question = req.question.strip()
@@ -439,7 +438,7 @@ async def focus_question_validate(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Run Novak-style validation once per model (qwen, deepseek, doubao) in parallel.
+    Run Novak-style validation once on Express.
     Models may disagree; each returns valid + reason.
     """
     question, lang = _question_lang_or_raise(req)

@@ -10,6 +10,7 @@ import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminErrorsTab from '@/components/admin/AdminErrorsTab.vue'
 import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
+import AdminLlmControlTab from '@/components/admin/AdminLlmControlTab.vue'
 import AdminPerformanceTab from '@/components/admin/AdminPerformanceTab.vue'
 import AdminPublicDashboardTab from '@/components/admin/AdminPublicDashboardTab.vue'
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
@@ -91,6 +92,7 @@ watch(
     <AdminRolesTab v-else-if="activeSubtab === 'roles'" />
     <AdminLibraryTab v-else-if="activeSubtab === 'library'" />
     <AdminDatabaseTab v-else-if="activeSubtab === 'database'" />
+    <AdminLlmControlTab v-else-if="activeSubtab === 'llm_control'" />
     <AdminCosTab v-else-if="activeSubtab === 'cos'" />
     <AdminPerformanceTab v-else-if="activeSubtab === 'performance'" />
     <AdminErrorsTab v-else-if="activeSubtab === 'errors'" />

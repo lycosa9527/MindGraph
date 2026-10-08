@@ -1,7 +1,7 @@
 /**
  * useConceptMapRelationship - AI-generated relationship labels for concept map links
  *
- * Catapult-style: fires 3 LLMs concurrently, streams labels via SSE.
+ * Streams Express labels via SSE.
  * Shows first 5; user uses - and = for prev/next page. On next page when at end,
  * fetches more via next_batch and filters duplicates.
  *

@@ -271,7 +271,7 @@ async def agent_graph_workflow_with_styles(
     language="zh",
     forced_diagram_type=None,
     dimension_preference=None,
-    model="qwen",
+    model="express",
     # Token tracking parameters
     user_id=None,
     organization_id=None,

@@ -216,7 +216,8 @@ const modelColors = LLM_MODEL_COLORS
 function getButtonClass(modelKey: string): string {
   const state = getModelState(modelKey)
   const phase = getModelPhase(modelKey)
-  const classes = ['model-btn', `model-btn-${modelKey}`]
+  const styleKey = modelKey === 'express' ? 'deepseek' : modelKey
+  const classes = ['model-btn', `model-btn-${styleKey}`]
 
   if (state === 'loading') {
     classes.push('loading')
@@ -236,6 +237,12 @@ function getButtonClass(modelKey: string): string {
     classes.push('error')
   } else if (state === 'idle' && isSelectedModel(modelKey)) {
     classes.push('selected', 'blink-selected')
+  } else if (
+    state === 'idle' &&
+    canvasModels.value.length === 1 &&
+    canvasModels.value[0] === modelKey
+  ) {
+    classes.push('selected')
   }
 
   if (aiBlockedByCollab.value && state === 'idle') {
@@ -372,7 +379,11 @@ function getButtonStyle(modelKey: string) {
 
       <!-- Ready count indicator (hidden for concept map — no multi-model autocomplete) -->
       <div
-        v-if="!isConceptMap && (llmResultsStore.isGenerating || llmResultsStore.hasAnyResults)"
+        v-if="
+          !isConceptMap &&
+          canvasModels.length > 1 &&
+          (llmResultsStore.isGenerating || llmResultsStore.hasAnyResults)
+        "
         class="text-[10px] text-gray-500 dark:text-gray-400 shrink-0 self-center leading-none tabular-nums"
       >
         <span v-if="llmResultsStore.isGenerating">

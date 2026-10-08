@@ -27,7 +27,7 @@ async def test_reply_text_only_skips_non_text_mode() -> None:
 
 @pytest.mark.asyncio
 async def test_reply_text_only_emits_llm_reply() -> None:
-    """Text-only one_sentence panel gets a Qwen text reply."""
+    """Text-only one_sentence panel gets an Express text reply."""
     websocket = MagicMock()
     session_state = {
         "_kitty_client_mode": "text",

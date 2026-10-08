@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import Any, Iterable, List
 
+from services.auth.expert_live_scope import parse_bound_org_label, session_registry_org_ids
+
 MINDMATE_COLLAB_REDIS_PREFIX = "mindmate_collab"
 MINDMATE_COLLAB_FANOUT_ROOM_PREFIX = "mmc:"
 
@@ -130,21 +132,47 @@ async def async_purge_session_redis_keys(
             continue
         pipe.delete(key)
     pipe.zrem(idle_scores_key(), norm)
+    bound_ids = await _bound_org_ids_from_meta(redis, norm)
     if org_id is not None:
         pipe.srem(registry_org_key(org_id), norm)
-    else:
-        pipe.srem(registry_global_org_key(), norm)
+    pipe.srem(registry_global_org_key(), norm)
+    for school_id in bound_ids:
+        pipe.srem(registry_org_key(school_id), norm)
     if visibility == "network":
         pipe.srem(registry_network_key(), norm)
     await pipe.execute()
 
 
-def registry_keys_for_visibility(org_id: int | None, visibility: str) -> Iterable[str]:
-    """Yield registry SET keys that must track one room code."""
+async def _bound_org_ids_from_meta(redis: Any, code: str) -> list[int]:
+    """Read bound school ids stored on the room hash. Missing meta yields none."""
+    try:
+        meta = await redis.hgetall(session_meta_key(code)) or {}
+    except (AttributeError, OSError, RuntimeError, TypeError):
+        return []
+    raw = meta.get(b"bound_org_ids")
+    if raw is None:
+        raw = meta.get("bound_org_ids")
+    if isinstance(raw, (bytes, bytearray)):
+        raw = raw.decode("utf-8", errors="replace")
+    return parse_bound_org_label(str(raw or ""))
+
+
+def registry_keys_for_visibility(
+    org_id: int | None,
+    visibility: str,
+    bound_org_ids: list[int] | None = None,
+) -> Iterable[str]:
+    """Yield registry SET keys that must track one room code.
+
+    A room with no school stays on the global registry (org-less admin hosts).
+    Bound schools are listed on their own registries instead of that global set.
+    """
     if visibility == "network":
         yield registry_network_key()
         return
-    if org_id is not None:
-        yield registry_org_key(org_id)
-    else:
+    org_ids = session_registry_org_ids(org_id, bound_org_ids or [])
+    if not org_ids:
         yield registry_global_org_key()
+        return
+    for school_id in org_ids:
+        yield registry_org_key(school_id)
