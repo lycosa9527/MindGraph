@@ -647,7 +647,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'เขียวเรืองแสง',
   'canvas.mindMapPresentationToolbar.colorOrange': 'ส้มมีชีวิต',
   'canvas.mindMapPresentationToolbar.colorWhite': 'ขาวเรียบง่าย',
-  'canvas.mindMapPresentationToolbar.slides': 'สไลด์โชว์',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Exit',
   'canvas.mindMapPresentationToolbar.highlighter': 'ไฮไลต์เตอร์',
   'canvas.mindMapPresentationToolbar.laserSmall': 'เลเซอร์เล็ก',

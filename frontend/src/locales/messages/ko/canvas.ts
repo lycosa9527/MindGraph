@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': '형광 초록',
   'canvas.mindMapPresentationToolbar.colorOrange': '생기 주황',
   'canvas.mindMapPresentationToolbar.colorWhite': '미니멀 화이트',
-  'canvas.mindMapPresentationToolbar.slides': '슬라이드 쇼',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': '프레젠테이션 종료',
   'canvas.mindMapPresentationToolbar.highlighter': '형광펜',
   'canvas.mindMapPresentationToolbar.laserSmall': '작은 레이저',

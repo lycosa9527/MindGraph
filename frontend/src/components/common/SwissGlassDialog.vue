@@ -36,6 +36,11 @@ const props = withDefaults(
     showClose?: boolean
     dialogClass?: string
     beforeClose?: (done: () => void) => void
+    /**
+     * Overlay z-index. Set when this dialog must sit above `.swiss-glass-card-overlay` (4000).
+     * Leave unset so Element Plus can stack ordinary dialogs from its ~2000 base.
+     */
+    zIndex?: number
   }>(),
   {
     line2: '',
@@ -85,6 +90,7 @@ function onUpdate(next: boolean): void {
     :close-on-click-modal="closeOnClickModal"
     :show-close="false"
     :class="dialogClassName"
+    :z-index="zIndex"
     :before-close="beforeClose"
     @update:model-value="onUpdate"
   >

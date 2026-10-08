@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'ఫ్లోరోసెంట్ ఆకుపచ్చ',
   'canvas.mindMapPresentationToolbar.colorOrange': 'వైబ్రాంట్ ఆరెంజ్',
   'canvas.mindMapPresentationToolbar.colorWhite': 'కొద్దిపాటి తెలుపు',
-  'canvas.mindMapPresentationToolbar.slides': 'లెక్చర్ మోడ్',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'ప్రదర్శన నుండి నిష్క్రమించు',
   'canvas.mindMapPresentationToolbar.highlighter': 'హైలైటర్ పెన్',
   'canvas.mindMapPresentationToolbar.laserSmall': 'చిన్నది',

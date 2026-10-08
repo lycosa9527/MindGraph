@@ -4,6 +4,19 @@ from __future__ import annotations
 
 from typing import NotRequired, TypedDict
 
+from scripts.zhilian_junan_video.activities import (
+    ACTIVITY_NEGATIVE,
+    ACTIVITY_SCENES,
+    ACTIVITY_SHELL,
+    TEACHER_SCENES,
+    ActivityScene,
+)
+from scripts.zhilian_junan_video.bookends import (
+    BOOKEND_NEGATIVE,
+    BOOKEND_SCENES,
+    BOOKEND_SHELL,
+    BookendScene,
+)
 from scripts.zhilian_junan_video.intro import INTRO_NEGATIVE, INTRO_SCENES, INTRO_SHELL
 from scripts.zhilian_junan_video.speech import SPEECH_NEGATIVE, SPEECH_SCENES, SPEECH_SHELL, SpeechScene
 from scripts.zhilian_junan_video.travel import TRAVEL_SCENES, TRAVEL_SHELL, TravelScene
@@ -341,8 +354,42 @@ def _speech_plates() -> tuple[PromoScene, ...]:
     return tuple(_promo_from_speech(item) for item in SPEECH_SCENES)
 
 
+def _promo_from_activity(item: ActivityScene) -> PromoScene:
+    spoken = f"口播：「{item['line']}」口型同步，语速像聊天，不要拖腔。"
+    return {
+        "id": item["id"],
+        "slug": item["slug"],
+        "name": item["name"],
+        "seconds": item["seconds"],
+        "prompt": item["prompt"] + spoken,
+        "source": item["source"],
+    }
+
+
+def _activity_plates() -> tuple[PromoScene, ...]:
+    visits = ACTIVITY_SCENES + TEACHER_SCENES
+    return tuple(_promo_from_activity(item) for item in visits)
+
+
+def _promo_from_bookend(item: BookendScene) -> PromoScene:
+    spoken = f"口播：「{item['line']}」口型同步，语速像聊天，不要拖腔。"
+    return {
+        "id": item["id"],
+        "slug": item["slug"],
+        "name": item["name"],
+        "seconds": item["seconds"],
+        "prompt": item["prompt"] + spoken,
+        "source": item["source"],
+    }
+
+
+def _bookend_plates() -> tuple[PromoScene, ...]:
+    return tuple(_promo_from_bookend(item) for item in BOOKEND_SCENES)
+
+
 def _all_scenes() -> tuple[PromoScene, ...]:
-    return SCENES + AGENT_SCENES + _travel_plates() + _intro_plates() + _speech_plates()
+    plates = SCENES + AGENT_SCENES + _travel_plates() + _intro_plates()
+    return plates + _speech_plates() + _activity_plates() + _bookend_plates()
 
 
 def uses_travel(scene: PromoScene) -> bool:
@@ -358,6 +405,16 @@ def uses_intro(scene: PromoScene) -> bool:
 def uses_speech(scene: PromoScene) -> bool:
     """Silent 8s cinematic plates timed to 纯演讲稿_v2.mp4."""
     return scene["id"].startswith("s")
+
+
+def uses_activity(scene: PromoScene) -> bool:
+    """Dragon visits one client activity photo."""
+    return scene["id"].startswith("p")
+
+
+def uses_bookend(scene: PromoScene) -> bool:
+    """Opening or closing line on an empty wall."""
+    return scene["id"].startswith("b")
 
 
 def uses_agent(scene: PromoScene) -> bool:
@@ -382,8 +439,9 @@ def select_scenes(
     travel: bool = False,
     intro: bool = False,
     speech: bool = False,
+    activity: bool = False,
 ) -> list[PromoScene]:
-    """Return empty shots, dragon plates, travel plates, intros, speech, or requested ids."""
+    """Return empty shots, dragon plates, travel, intros, speech, activities, or ids."""
     if raw_ids:
         return [scene_by_id(item.strip()) for item in raw_ids.split(",") if item.strip()]
     if speech:
@@ -392,6 +450,8 @@ def select_scenes(
         return list(_intro_plates())
     if travel:
         return list(_travel_plates())
+    if activity:
+        return list(_activity_plates())
     if agent:
         return list(AGENT_SCENES)
     return list(SCENES)
@@ -416,6 +476,10 @@ def clip_prompt(scene: PromoScene) -> str:
         return f"{INTRO_SHELL}{scene['prompt']}不要出现：{INTRO_NEGATIVE}"
     if uses_speech(scene):
         return f"{SPEECH_SHELL}{scene['prompt']}不要出现：{SPEECH_NEGATIVE}"
+    if uses_bookend(scene):
+        return f"{BOOKEND_SHELL}{scene['prompt']}不要出现：{BOOKEND_NEGATIVE}"
+    if uses_activity(scene):
+        return f"{ACTIVITY_SHELL}{scene['prompt']}不要出现：{ACTIVITY_NEGATIVE}"
     if uses_travel(scene):
         return f"{TRAVEL_SHELL}{scene['prompt']}不要出现：{AGENT_NEGATIVE}"
     if uses_agent(scene):

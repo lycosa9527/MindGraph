@@ -699,7 +699,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': '荧光绿',
   'canvas.mindMapPresentationToolbar.colorOrange': '活力橙',
   'canvas.mindMapPresentationToolbar.colorWhite': '极简白',
-  'canvas.mindMapPresentationToolbar.slides': '演讲模式',
+  'canvas.mindMapPresentationToolbar.slides': '节点轮播',
   'canvas.mindMapPresentationToolbar.exit': '退出放映',
   'canvas.mindMapPresentationToolbar.highlighter': '荧光笔',
   'canvas.mindMapPresentationToolbar.laserSmall': '小',

@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'ಪ್ರತಿದೀಪಕ ಹಸಿರು',
   'canvas.mindMapPresentationToolbar.colorOrange': 'ರೋಮಾಂಚಕ ಕಿತ್ತಳೆ',
   'canvas.mindMapPresentationToolbar.colorWhite': 'ಕನಿಷ್ಠ ಬಿಳಿ',
-  'canvas.mindMapPresentationToolbar.slides': 'ಉಪನ್ಯಾಸ ಮೋಡ್',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'ನಿರ್ಗಮನ ಪ್ರದರ್ಶನ',
   'canvas.mindMapPresentationToolbar.highlighter': 'ಹೈಲೈಟರ್ ಪೆನ್',
   'canvas.mindMapPresentationToolbar.laserSmall': 'ಚಿಕ್ಕದು',

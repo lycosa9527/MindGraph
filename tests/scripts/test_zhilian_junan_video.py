@@ -5,6 +5,16 @@ from __future__ import annotations
 from PIL import Image
 
 from scripts.training_roles.wan_client import WAN3_VIDEO_PRIME, build_video_body
+from scripts.zhilian_junan_video.activities import (
+    ACTIVITY_FILENAMES,
+    ACTIVITY_NEGATIVE,
+    ACTIVITY_SCENES,
+    ACTIVITY_SECONDS,
+    TEACHER_SCENES,
+    activity_filename,
+    activity_source_for_filename,
+)
+from scripts.zhilian_junan_video.assemble import CLOSING, FULL_CUT, MAIN_CUT, OPENING
 from scripts.zhilian_junan_video.catalog import (
     AGENT_NEGATIVE,
     AGENT_SCENES,
@@ -20,13 +30,16 @@ from scripts.zhilian_junan_video.catalog import (
     environment_source,
     scene_by_id,
     select_scenes,
+    uses_activity,
     uses_agent,
+    uses_bookend,
     uses_intro,
     uses_speech,
     uses_travel,
 )
 from scripts.zhilian_junan_video.intro import INTRO_SCENES, INTRO_SECONDS
 from scripts.zhilian_junan_video.paths import (
+    ACTIVITY_DIR,
     AGENT_DIR,
     INTRO_DIR,
     SPEECH_DIR,
@@ -34,9 +47,9 @@ from scripts.zhilian_junan_video.paths import (
     TRAVEL_DIR,
     WORK_DIR,
 )
+from scripts.zhilian_junan_video.plates import write_activity_plate, write_agent_plate
 from scripts.zhilian_junan_video.speech import SPEECH_NEGATIVE, SPEECH_SCENES, SPEECH_SECONDS
 from scripts.zhilian_junan_video.travel import TRAVEL_SCENES
-from scripts.zhilian_junan_video.plates import write_agent_plate
 
 SHELL_FRAGMENT = "ARRI Alexa 65"
 
@@ -185,6 +198,108 @@ def test_speech_catalog_is_thirteen_silent_storyboard_plates() -> None:
     assert "media" not in body["input"]
     assert body["parameters"]["duration"] == SPEECH_SECONDS
     assert body["parameters"]["audio"] is False
+
+
+def test_activity_catalog_visits_real_photos_with_the_dragon() -> None:
+    """Activity plates stay 5s, speak one line, and lock one client still as figure 3."""
+    ids = [scene["id"] for scene in ACTIVITY_SCENES]
+    teacher_ids = [scene["id"] for scene in TEACHER_SCENES]
+    assert ids[0] == "p01"
+    assert ids[-1] == "p12"
+    assert teacher_ids == ["p13", "p14", "p15", "p16", "p17"]
+    assert len(ids + teacher_ids) == len(set(ids + teacher_ids))
+    assert [scene["id"] for scene in select_scenes(None, activity=True)] == ids + teacher_ids
+    visit = scene_by_id("p01-jump-rope")
+    assert uses_activity(visit)
+    assert not uses_agent(visit)
+    assert not uses_travel(visit)
+    assert visit["seconds"] == ACTIVITY_SECONDS
+    source = environment_source(visit)
+    assert source.endswith(".jpg")
+    assert "均安资料" not in source
+    prompt = clip_prompt(visit)
+    assert "图3" in prompt
+    assert "实拍" in prompt
+    assert "黄色小龙" in prompt
+    assert "无文字" in prompt
+    assert "不要背景音乐" in prompt
+    assert "口型同步" in prompt
+    assert "武术先留在场上" in prompt
+    assert "BGM" in prompt
+    assert "配乐" in ACTIVITY_NEGATIVE
+    assert "横幅" in ACTIVITY_NEGATIVE
+    assert ACTIVITY_DIR.name == "AI吉祥物-活动"
+    assert activity_filename("p04") == "02-版画.mp4"
+    assert activity_filename("p02") == "13-武术.mp4"
+    assert list(ACTIVITY_FILENAMES) == [
+        "p04",
+        "p09",
+        "p06",
+        "p10",
+        "p13",
+        "p14",
+        "p12",
+        "p15",
+        "p16",
+        "p17",
+        "p11",
+        "p02",
+        "p01",
+        "p05",
+        "p08",
+        "p07",
+        "p03",
+    ]
+    assert activity_source_for_filename("06-实验.mp4").endswith(".png")
+    assert activity_filename("p15") == "09-老师在学.mp4"
+    assert "第一帧" in clip_prompt(scene_by_id("p02"))
+    body = build_video_body(
+        WAN3_VIDEO_PRIME,
+        prompt,
+        negative=ACTIVITY_NEGATIVE,
+        media=[{"type": "reference_image", "url": "data:image/jpeg;base64,xx"}],
+        resolution=RESOLUTION,
+        duration=ACTIVITY_SECONDS,
+        ratio=RATIO,
+        audio=True,
+        prompt_extend=False,
+        watermark=False,
+    )
+    assert body["parameters"]["audio"] is True
+    assert body["parameters"]["duration"] == ACTIVITY_SECONDS
+    assert body["input"]["media"][0]["type"] == "reference_image"
+
+
+def test_cuts_follow_the_walking_script() -> None:
+    """The spine is the screen script. The long cut parks every extra clip where the script allows."""
+    assert MAIN_CUT[0] == OPENING
+    assert MAIN_CUT[-1] == CLOSING
+    assert MAIN_CUT.index("13-武术.mp4") < MAIN_CUT.index("14-跳绳.mp4") < MAIN_CUT.index("17-机器人.mp4")
+    assert "18-粤剧.mp4" not in MAIN_CUT
+    assert FULL_CUT.index("12-团辅.mp4") < FULL_CUT.index("13-武术.mp4")
+    assert FULL_CUT.index("14-跳绳.mp4") < FULL_CUT.index("15-女篮.mp4")
+    assert FULL_CUT.index("18-粤剧.mp4") == len(FULL_CUT) - 2
+    assert "06-实验.mp4" in MAIN_CUT
+    assert "10-未来名师.mp4" in FULL_CUT
+    opening = scene_by_id("b0")
+    assert uses_bookend(opening)
+    assert not uses_activity(opening)
+    assert "我是启思龙" in clip_prompt(opening)
+    assert "无人机" in clip_prompt(opening)
+    assert environment_source(opening).endswith(".jpg")
+    assert "不要背景音乐" in clip_prompt(opening)
+
+
+def test_activity_plate_shrinks_to_wan_edge(tmp_path) -> None:
+    """Client stills are reduced before they are sent as reference images."""
+    source = tmp_path / "wide.png"
+    image = Image.new("RGBA", (3000, 1600), (20, 40, 60, 255))
+    image.save(source, format="PNG")
+    dest = tmp_path / "plate.jpg"
+    write_activity_plate(source, dest)
+    plate = Image.open(dest)
+    assert max(plate.size) == 1280
+    assert plate.mode == "RGB"
 
 
 def test_wan3_body_is_silent_t2v() -> None:

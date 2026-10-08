@@ -8,6 +8,7 @@ import { TriangleAlert } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { useGlassCardDialogZIndex } from '@/components/common/swissGlassStack'
 import {
   getSwissGlassConfirmState,
   settleSwissGlassConfirm,
@@ -16,6 +17,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 
 const state = getSwissGlassConfirmState()
 const { t } = useLanguage()
+const dialogZIndex = useGlassCardDialogZIndex(() => state.open)
 
 const ribbon = computed(() => state.ribbon || t('swissGlass.confirm.ribbon'))
 const confirmLabel = computed(() => state.confirmLabel || t('common.confirm'))
@@ -44,6 +46,7 @@ function onCancel(): void {
     :line2-key="state.line2Key"
     :icon="plateIcon"
     width="min(440px, 92vw)"
+    :z-index="dialogZIndex"
     :close-on-click-modal="false"
     @close="onCancel"
   >

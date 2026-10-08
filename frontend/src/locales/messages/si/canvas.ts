@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'ප්රතිදීප්ත කොළ',
   'canvas.mindMapPresentationToolbar.colorOrange': 'වැදගත් තැඹිලි',
   'canvas.mindMapPresentationToolbar.colorWhite': 'අවම සුදු',
-  'canvas.mindMapPresentationToolbar.slides': 'විනිවිදක දර්ශනය',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'ඉදිරිපත් කිරීමෙන් පිටවන්න',
   'canvas.mindMapPresentationToolbar.highlighter': 'උද්දීපනය කරන්නා',
   'canvas.mindMapPresentationToolbar.laserSmall': 'කුඩා ලේසර්',

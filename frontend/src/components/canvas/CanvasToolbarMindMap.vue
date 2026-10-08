@@ -25,6 +25,7 @@ import {
   MonitorPlay,
   Paintbrush,
   Plus,
+  Presentation,
   Redo2,
   RotateCcw,
   Save,
@@ -920,6 +921,26 @@ watch(
               <MmToolbarLabel
                 class="mm-btn__label"
                 k="canvas.zoomControls.presentationMode"
+              />
+            </button>
+          </I18nTooltip>
+          <I18nTooltip
+            v-if="caps.mindMapV2"
+            k="canvas.mindMapPresentationToolbar.slides"
+            placement="bottom"
+            :disabled="shortLabels"
+          >
+            <button
+              type="button"
+              class="mm-btn"
+              data-testid="mindmap-ribbon-speech-mode"
+              :aria-label="t('canvas.mindMapPresentationToolbar.slides')"
+              @click="ribbon.startSpeechMode"
+            >
+              <Presentation class="w-4 h-4" />
+              <MmToolbarLabel
+                class="mm-btn__label"
+                k="canvas.mindMapPresentationToolbar.slides"
               />
             </button>
           </I18nTooltip>

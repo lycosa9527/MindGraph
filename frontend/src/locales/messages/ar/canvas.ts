@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'الفلورسنت الأخضر',
   'canvas.mindMapPresentationToolbar.colorOrange': 'برتقالي نابض بالحياة',
   'canvas.mindMapPresentationToolbar.colorWhite': 'الأبيض البسيط',
-  'canvas.mindMapPresentationToolbar.slides': 'وضع المحاضرة',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'عرض الخروج',
   'canvas.mindMapPresentationToolbar.highlighter': 'قلم تمييز',
   'canvas.mindMapPresentationToolbar.laserSmall': 'صغير',

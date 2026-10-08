@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': '荧光绿',
   'canvas.mindMapPresentationToolbar.colorOrange': '活力橙',
   'canvas.mindMapPresentationToolbar.colorWhite': '极简白',
-  'canvas.mindMapPresentationToolbar.slides': 'レクチャーモード',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'ショーを終了する',
   'canvas.mindMapPresentationToolbar.highlighter': '蛍光ペン',
   'canvas.mindMapPresentationToolbar.laserSmall': '小',

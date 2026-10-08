@@ -30,7 +30,6 @@ interface SlidePreShowSnapshot {
 export function useMindMapSlidePresentation(options: {
   active: () => boolean
   onExitPresentation: () => void
-  onExitSlides: () => void
 }) {
   const diagramStore = useDiagramStore()
   const { mindMapRecalcTrigger } = storeToRefs(diagramStore)
@@ -235,8 +234,7 @@ export function useMindMapSlidePresentation(options: {
   }
 
   function exitSlideShow(): void {
-    restoreSlidePreShowState()
-    options.onExitSlides()
+    options.onExitPresentation()
   }
 
   async function startSlideShow(): Promise<void> {

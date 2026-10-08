@@ -321,10 +321,10 @@ function handleOpenCollab(mode: 'organization' | 'network' | 'stop') {
   collabOverlayRef.value?.openCollab(mode)
 }
 
-async function handleStartPresentationWithTier(): Promise<void> {
+async function confirmOpeningPresentation(): Promise<boolean> {
   if (!canUsePresentationTools.value) {
     notify.warningKey('auth.schoolTierFeatureUnavailable')
-    return
+    return false
   }
   const opening = !presentationRailOpen.value
   if (opening && learningSheetNeedsPresentationConfirm()) {
@@ -339,12 +339,17 @@ async function handleStartPresentationWithTier(): Promise<void> {
         }
       )
     } catch {
-      return
+      return false
     }
   }
   if (opening && mindClassroomLecturing.value) {
     requestClassroomStop()
   }
+  return true
+}
+
+async function handleStartPresentationWithTier(): Promise<void> {
+  if (!(await confirmOpeningPresentation())) return
   handleStartPresentation()
 }
 
@@ -544,10 +549,8 @@ const { laserScale, highlighterScale, spotlightScale } = storeToRefs(presentatio
 
 const slidePresentation = useMindMapSlidePresentation({
   active: () => isMindMapPresentationMode.value && mindMapPresentationTool.value === 'slides',
-  onExitPresentation: () => handleStartPresentationWithTier(),
-  onExitSlides: () => {
-    mindMapPresentationTool.value = 'pointer'
-    presentationTool.value = 'laser'
+  onExitPresentation: () => {
+    void handleMindMapPresentationExit()
   },
 })
 
@@ -564,6 +567,13 @@ const slideRemotePlay = createSlideRemoteDesktopPlay({
   },
 })
 
+async function handleStartSlidesWithTier(): Promise<void> {
+  if (!useMindMapV2.value) return
+  if (presentationRailOpen.value && mindMapPresentationTool.value === 'slides') return
+  if (!(await confirmOpeningPresentation())) return
+  slideRemotePlay.requestPlay()
+}
+
 useSlideRemote({
   slidesActive: () => isMindMapPresentationMode.value && mindMapPresentationTool.value === 'slides',
   slidePresentation,
@@ -576,7 +586,7 @@ useSlideRemote({
   enterSlides: () => slideRemotePlay.requestPlay(),
   exitPresentation: () => {
     if (presentationRailOpen.value) {
-      handleStartPresentation()
+      void handleMindMapPresentationExit()
     }
   },
 })
@@ -1211,12 +1221,6 @@ watch(mindMapPresentationTool, (tool) => {
     presentationTool.value = 'spotlight'
     handToolActive.value = false
     slidePresentation.stopSlideShow()
-    return
-  }
-  if (tool === 'timer') {
-    presentationTool.value = 'timer'
-    handToolActive.value = false
-    slidePresentation.stopSlideShow()
   }
 })
 
@@ -1254,6 +1258,7 @@ registerMindMapRibbonPageBridge({
   handleSnapshotDelete,
   handleRestoreCurrentVersion,
   handleStartPresentationWithTier,
+  handleStartSlidesWithTier,
   handleOpenCollab,
   handleHandToolToggle,
   handToolActive,
@@ -1702,7 +1707,7 @@ onUnmounted(() => {
       @last="slidePresentation.lastSlide()"
       @go-to="slidePresentation.goToSlide"
       @update-traversal-mode="slidePresentation.setTraversalMode"
-      @exit="slidePresentation.exitSlideShow()"
+      @exit="handleMindMapPresentationExit"
     />
 
     <CanvasChrome v-if="showCanvasChrome">

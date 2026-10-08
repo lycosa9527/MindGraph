@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'سبز فلورسنت',
   'canvas.mindMapPresentationToolbar.colorOrange': 'نارنجی پر جنب و جوش',
   'canvas.mindMapPresentationToolbar.colorWhite': 'سفید مینیمالیستی',
-  'canvas.mindMapPresentationToolbar.slides': 'حالت سخنرانی',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'خروج از نمایش',
   'canvas.mindMapPresentationToolbar.highlighter': 'قلم هایلایتر',
   'canvas.mindMapPresentationToolbar.laserSmall': 'کوچک',

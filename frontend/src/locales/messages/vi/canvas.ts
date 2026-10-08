@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'huỳnh quang màu xanh lá cây',
   'canvas.mindMapPresentationToolbar.colorOrange': 'Màu cam sống động',
   'canvas.mindMapPresentationToolbar.colorWhite': 'Màu trắng tối thiểu',
-  'canvas.mindMapPresentationToolbar.slides': 'Trình chiếu',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Thoát khỏi bài thuyết trình',
   'canvas.mindMapPresentationToolbar.highlighter': 'Bút đánh dấu',
   'canvas.mindMapPresentationToolbar.laserSmall': 'Tia laser nhỏ',

@@ -265,7 +265,20 @@ Run **option 3** (status) or **option 4** (full setup). Ensure `.env` has `DATAB
 
 ### `Connection refused` on 5432 / `postgresql.service` masked / empty `pg_lsclusters`
 
-Data may still be under `/var/lib/postgresql/mindgraph` while cluster registration is missing. Do **not** delete that directory. Follow [`POSTGRES_ORPHAN_CLUSTER_RECOVERY.md`](POSTGRES_ORPHAN_CLUSTER_RECOVERY.md).
+The MindGraph database on the test server is `/var/lib/postgresql/mindgraph`. `pg_lsclusters` can be empty after an accidental PostgreSQL upgrade, or it can show a new `main` cluster that is not this database. Leave `/var/lib/postgresql/mindgraph` in place.
+
+Check and start that cluster (full steps in [`POSTGRES_ORPHAN_CLUSTER_RECOVERY.md`](POSTGRES_ORPHAN_CLUSTER_RECOVERY.md)):
+
+```bash
+VER=$(sudo -u postgres cat /var/lib/postgresql/mindgraph/PG_VERSION)
+PG_CTL=/usr/lib/postgresql/${VER}/bin/pg_ctl
+sudo -u postgres "$PG_CTL" -D /var/lib/postgresql/mindgraph \
+  -l /var/log/postgresql/postgresql-mindgraph.log start
+sudo -u postgres psql -h /var/lib/postgresql/mindgraph/sockets -d mindgraph \
+  -c "SELECT current_database(), inet_server_port(), current_setting('data_directory');"
+```
+
+The query should show data directory `/var/lib/postgresql/mindgraph`. `sudo pg_ctl` is not on `PATH`. `psql` with no `-h` uses `/var/run/postgresql`, which is the distro socket.
 
 ## Production tuning (PostgreSQL 18)
 

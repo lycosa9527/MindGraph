@@ -116,6 +116,32 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(state).not.toContain('sessionStorage')
   })
 
+  it('puts speech mode on the teaching tab beside presentation mode', () => {
+    const mmToolbar = readSrc('src/components/canvas/CanvasToolbarMindMap.vue')
+    const teachingTab = mmToolbar.slice(
+      mmToolbar.indexOf("ribbonTab === 'teaching'"),
+      mmToolbar.indexOf("ribbonTab === 'ai'")
+    )
+    const presentation = teachingTab.indexOf('ribbon.startPresentation')
+    const speech = teachingTab.indexOf('ribbon.startSpeechMode')
+    expect(presentation).toBeGreaterThan(-1)
+    expect(speech).toBeGreaterThan(presentation)
+    expect(teachingTab).toContain('canvas.mindMapPresentationToolbar.slides')
+    expect(teachingTab).toContain('v-if="caps.mindMapV2"')
+    expect(teachingTab).toContain('data-testid="mindmap-ribbon-speech-mode"')
+    const page = readSrc('src/pages/CanvasPage.vue')
+    const overlayExit = page.indexOf('<MindMapSlideOverlay')
+    const overlayBlock = page.slice(overlayExit, page.indexOf('CanvasChrome', overlayExit))
+    expect(overlayBlock).toContain('@exit="handleMindMapPresentationExit"')
+    expect(overlayBlock).not.toContain('exitSlideShow()')
+    expect(page).not.toContain('onExitSlides')
+    const slides = readSrc('src/composables/mindMap/useMindMapSlidePresentation.ts')
+    expect(slides).toContain('options.onExitPresentation()')
+    expect(slides).not.toContain('onExitSlides')
+    const overlay = readSrc('src/components/canvas/MindMapSlideOverlay.vue')
+    expect(overlay).toContain('canvas.mindMapPresentationToolbar.exit')
+  })
+
   it('puts collaborative drawing on the title row as a global control', () => {
     const topBar = readSrc('src/components/canvas/CanvasTopBar.vue')
     const mmToolbar = readSrc('src/components/canvas/CanvasToolbarMindMap.vue')

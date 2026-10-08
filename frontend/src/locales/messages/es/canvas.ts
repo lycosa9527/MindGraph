@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'Verde fluorescente',
   'canvas.mindMapPresentationToolbar.colorOrange': 'Naranja vital',
   'canvas.mindMapPresentationToolbar.colorWhite': 'Blanco minimalista',
-  'canvas.mindMapPresentationToolbar.slides': 'Presentación con diapositivas',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Salir de la presentación',
   'canvas.mindMapPresentationToolbar.highlighter': 'Rotulador',
   'canvas.mindMapPresentationToolbar.laserSmall': 'Láser pequeño',

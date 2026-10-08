@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'Jeshile fluoreshente',
   'canvas.mindMapPresentationToolbar.colorOrange': 'Portokalli vital',
   'canvas.mindMapPresentationToolbar.colorWhite': 'E bardhë minimale',
-  'canvas.mindMapPresentationToolbar.slides': 'Slajde',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Dil nga prezantimi',
   'canvas.mindMapPresentationToolbar.highlighter': 'Theksues',
   'canvas.mindMapPresentationToolbar.laserSmall': 'Lazer i vogël',

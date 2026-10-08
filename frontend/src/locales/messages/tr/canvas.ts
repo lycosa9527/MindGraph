@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'Floresan yeşil',
   'canvas.mindMapPresentationToolbar.colorOrange': 'Canlı turuncu',
   'canvas.mindMapPresentationToolbar.colorWhite': 'Minimal beyaz',
-  'canvas.mindMapPresentationToolbar.slides': 'Slayt gösterisi',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Sunumdan çık',
   'canvas.mindMapPresentationToolbar.highlighter': 'Vurgulayıcı',
   'canvas.mindMapPresentationToolbar.laserSmall': 'Küçük lazer',

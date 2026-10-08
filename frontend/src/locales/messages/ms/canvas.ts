@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'Hijau neon',
   'canvas.mindMapPresentationToolbar.colorOrange': 'Jeruk penting',
   'canvas.mindMapPresentationToolbar.colorWhite': 'Minimal putih',
-  'canvas.mindMapPresentationToolbar.slides': 'Pertunjukan slide',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Keluar dari presentasi',
   'canvas.mindMapPresentationToolbar.highlighter': 'Penyorot',
   'canvas.mindMapPresentationToolbar.laserSmall': 'Laser kecil',

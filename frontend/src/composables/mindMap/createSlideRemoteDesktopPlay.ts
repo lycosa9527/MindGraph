@@ -1,5 +1,5 @@
 /**
- * ESP32 演讲模式 Start: open presentation if needed, then start slides
+ * 演讲模式 Start (teaching tab or watch): open presentation if needed, then start slides
  * after the existing rail/fullscreen settle — no second fit pipeline.
  */
 

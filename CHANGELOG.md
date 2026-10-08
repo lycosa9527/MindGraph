@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.146] - 2026-10-08
+
+> **The teaching tab starts 节点轮播 on its own, and leaving it returns to the canvas.**
+
+### Added
+
+- **节点轮播** — The teaching tab has a 节点轮播 button beside 放映模式. On a mind map it opens the node slideshow. Quit, Escape, and the watch clicker close the show and return to the canvas.
+
+### Fixed
+
+- **玻璃弹层** — A confirm, prompt, or menu opened from a full-screen glass card paints above that card.
+
+### Changed
+
+- **均安宣传片** — The generator can shoot activity visits and the opening and closing lines, then assemble those clips.
+- **数据库恢复** — The Postgres note starts `/var/lib/postgresql/mindgraph` when the cluster list is empty or points at a different database.
+
+### Tests
+
+- [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/toolbarLabelAbbreviation.spec.ts`](frontend/tests/toolbarLabelAbbreviation.spec.ts), [`frontend/tests/swissGlassStack.spec.ts`](frontend/tests/swissGlassStack.spec.ts), [`tests/scripts/test_zhilian_junan_video.py`](tests/scripts/test_zhilian_junan_video.py)
+
 ## [5.180.145] - 2026-10-08
 
 > **The canvas runs one model at a time, an expert can belong to several schools, and a seminar can start from a saved conversation.**

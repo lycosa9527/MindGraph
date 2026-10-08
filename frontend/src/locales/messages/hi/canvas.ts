@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'फ्लोरो हरा',
   'canvas.mindMapPresentationToolbar.colorOrange': 'जीवंत नारंगी',
   'canvas.mindMapPresentationToolbar.colorWhite': 'न्यूनतम सफेद',
-  'canvas.mindMapPresentationToolbar.slides': 'स्लाइड शो',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'प्रस्तुति से बाहर',
   'canvas.mindMapPresentationToolbar.highlighter': 'हाइलाइटर',
   'canvas.mindMapPresentationToolbar.laserSmall': 'छोटा लेज़र',

@@ -175,6 +175,10 @@ export function useMindMapRibbonActions() {
     eventBus.emit('presentation:start_requested', {})
   }
 
+  function startSpeechMode(): void {
+    eventBus.emit('presentation:slides_requested', {})
+  }
+
   function openCollab(mode: 'organization' | 'network' | 'stop'): void {
     eventBus.emit('collab:open_requested', { mode })
   }
@@ -239,6 +243,7 @@ export function useMindMapRibbonActions() {
     fitToScreen,
     toggleHand,
     startPresentation,
+    startSpeechMode,
     openCollab,
     openSideTool,
     requestAiSubgraph,

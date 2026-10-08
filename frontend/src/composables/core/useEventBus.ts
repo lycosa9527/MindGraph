@@ -774,6 +774,7 @@ export type EventTypes = {
   'toolbar:worksheet_text_requested': { preferLearningSheet?: boolean }
   'toolbar:zhihui_diagram_requested': Record<string, never>
   'presentation:start_requested': Record<string, never>
+  'presentation:slides_requested': Record<string, never>
   'collab:open_requested': { mode: 'organization' | 'network' | 'stop' }
   'toolbar:import_file': { file: File }
 

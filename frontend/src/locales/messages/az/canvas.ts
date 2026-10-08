@@ -647,7 +647,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'Fluorescent yaşıl',
   'canvas.mindMapPresentationToolbar.colorOrange': 'Canlı narıncı',
   'canvas.mindMapPresentationToolbar.colorWhite': 'Minimal ağ',
-  'canvas.mindMapPresentationToolbar.slides': 'Slayd şousu',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Exit',
   'canvas.mindMapPresentationToolbar.highlighter': 'Marker',
   'canvas.mindMapPresentationToolbar.laserSmall': 'Kiçik lazer',

@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'ഫ്ലൂറസെൻ്റ് പച്ച',
   'canvas.mindMapPresentationToolbar.colorOrange': 'വൈബ്രൻ്റ് ഓറഞ്ച്',
   'canvas.mindMapPresentationToolbar.colorWhite': 'മിനിമലിസ്റ്റ് വെള്ള',
-  'canvas.mindMapPresentationToolbar.slides': 'പ്രഭാഷണ മോഡ്',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'എക്സിറ്റ് ഷോ',
   'canvas.mindMapPresentationToolbar.highlighter': 'ഹൈലൈറ്റർ പേന',
   'canvas.mindMapPresentationToolbar.laserSmall': 'ചെറുത്',

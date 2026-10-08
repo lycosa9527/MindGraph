@@ -8,6 +8,10 @@ import { Sparkles } from '@lucide/vue'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
+import {
+  bindFullScreenGlassCard,
+  glassCardHoldsPopupLayer,
+} from '@/components/common/swissGlassStack'
 import { useTrainingDialogHost } from '@/composables/training/trainingInlineHost'
 import '@/styles/mind-map-side-rail-panel.css'
 import '@/styles/swissGlassControls.css'
@@ -79,6 +83,16 @@ const overlayClassName = computed(() =>
 
 const cardClassName = computed(() =>
   ['ai-gen-shell', 'swiss-glass-card', props.cardClass].filter(Boolean).join(' ')
+)
+
+bindFullScreenGlassCard(
+  () =>
+    visible.value &&
+    glassCardHoldsPopupLayer({
+      hostIsBody: dialogHost.value === 'body',
+      teleportDisabled: props.teleportDisabled,
+      overlayClass: props.overlayClass,
+    })
 )
 
 function close(): void {

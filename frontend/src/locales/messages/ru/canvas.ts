@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'флуоресцентный зеленый',
   'canvas.mindMapPresentationToolbar.colorOrange': 'Яркий оранжевый',
   'canvas.mindMapPresentationToolbar.colorWhite': 'минималистичный белый',
-  'canvas.mindMapPresentationToolbar.slides': 'Режим лекции',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Выход из шоу',
   'canvas.mindMapPresentationToolbar.highlighter': 'маркер-ручка',
   'canvas.mindMapPresentationToolbar.laserSmall': 'Маленький',

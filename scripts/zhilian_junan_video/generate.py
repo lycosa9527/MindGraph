@@ -7,7 +7,8 @@ Examples (from repo root, conda env mindgraph):
   python -m scripts.zhilian_junan_video.generate --travel
   python -m scripts.zhilian_junan_video.generate --intro
   python -m scripts.zhilian_junan_video.generate --speech
-  python -m scripts.zhilian_junan_video.generate --ids d01,d05
+  python -m scripts.zhilian_junan_video.generate --activities
+  python -m scripts.zhilian_junan_video.generate --ids d01,d05,p01
 """
 
 from __future__ import annotations
@@ -26,7 +27,16 @@ from scripts.training_roles.wan_client import (
     download_mp4,
     poll_video_url,
     submit_video,
+    synthesize_tts,
+    with_reference_audio,
 )
+from scripts.zhilian_junan_video.activities import (
+    ACTIVITY_NEGATIVE,
+    QISI_VOICE,
+    activity_filename,
+    activity_line,
+)
+from scripts.zhilian_junan_video.bookends import BOOKEND_NEGATIVE, bookend_filename, bookend_line
 from scripts.zhilian_junan_video.catalog import (
     AGENT_NEGATIVE,
     INTRO_NEGATIVE,
@@ -38,21 +48,30 @@ from scripts.zhilian_junan_video.catalog import (
     clip_stem,
     environment_source,
     select_scenes,
+    uses_activity,
     uses_agent,
+    uses_bookend,
     uses_intro,
     uses_speech,
     uses_travel,
 )
 from scripts.zhilian_junan_video.paths import (
+    ACTIVITY_DIR,
     AGENT_DIR,
     INTRO_DIR,
+    MATERIALS_DIR,
     SPEECH_DIR,
     TASKS_PATH,
     TRAVEL_DIR,
     WORK_DIR,
+    activity_photo,
+)
+from scripts.zhilian_junan_video.plates import (
+    agent_plate_paths,
+    extract_scene_still,
+    write_activity_plate,
 )
 from scripts.zhilian_junan_video.speech import SPEECH_NEGATIVE
-from scripts.zhilian_junan_video.plates import agent_plate_paths, extract_scene_still
 
 
 def _load_tasks() -> dict[str, str]:
@@ -100,7 +119,33 @@ def _travel_media(dragon: list[dict[str, str]], scene: PromoScene) -> list[dict[
     return [*dragon, {"type": "reference_image", "url": _plate_data_url(still)}]
 
 
+def _activity_media(
+    dragon: list[dict[str, str]],
+    scene: PromoScene,
+    speech_url: str,
+) -> list[dict[str, str]]:
+    photo = activity_photo(environment_source(scene))
+    plate = write_activity_plate(photo, WORK_DIR / "activity-ref" / f"{clip_stem(scene)}.jpg")
+    images = [*dragon, {"type": "reference_image", "url": _plate_data_url(plate)}]
+    return with_reference_audio(images, [speech_url])
+
+
+def _bookend_media(
+    dragon: list[dict[str, str]],
+    scene: PromoScene,
+    speech_url: str,
+) -> list[dict[str, str]]:
+    photo = activity_photo(environment_source(scene))
+    plate = write_activity_plate(photo, WORK_DIR / "activity-ref" / f"{clip_stem(scene)}.jpg")
+    images = [*dragon, {"type": "reference_image", "url": _plate_data_url(plate)}]
+    return with_reference_audio(images, [speech_url])
+
+
 def _scene_negative(scene: PromoScene) -> str:
+    if uses_bookend(scene):
+        return BOOKEND_NEGATIVE
+    if uses_activity(scene):
+        return ACTIVITY_NEGATIVE
     if uses_intro(scene):
         return INTRO_NEGATIVE
     if uses_speech(scene):
@@ -111,6 +156,8 @@ def _scene_negative(scene: PromoScene) -> str:
 
 
 def _publish_folder(scene: PromoScene) -> Path:
+    if uses_activity(scene) or uses_bookend(scene):
+        return ACTIVITY_DIR
     if uses_speech(scene):
         return SPEECH_DIR
     if uses_intro(scene):
@@ -120,13 +167,34 @@ def _publish_folder(scene: PromoScene) -> Path:
     return AGENT_DIR
 
 
+def _publish_name(mp4: Path, scene: PromoScene) -> str:
+    if uses_bookend(scene):
+        return bookend_filename(scene["id"])
+    if uses_activity(scene):
+        return activity_filename(scene["id"])
+    return mp4.name
+
+
 def _publish_desktop(mp4: Path, scene: PromoScene) -> Path:
     folder = _publish_folder(scene)
     folder.mkdir(parents=True, exist_ok=True)
-    dest = folder / mp4.name
+    dest = folder / _publish_name(mp4, scene)
     shutil.copy2(mp4, dest)
     print(f"desktop {dest}", flush=True)
+    if uses_activity(scene) or uses_bookend(scene):
+        materials = MATERIALS_DIR / "v1"
+        materials.mkdir(parents=True, exist_ok=True)
+        copied = materials / dest.name
+        shutil.copy2(mp4, copied)
+        print(f"materials {copied}", flush=True)
     return dest
+
+
+def _clip_has_voice(scene: PromoScene) -> bool:
+    """Activity clips speak one line. Wan must not add a music bed."""
+    if uses_activity(scene) or uses_bookend(scene):
+        return True
+    return uses_intro(scene)
 
 
 def _submit_one(
@@ -146,7 +214,13 @@ def _submit_one(
         return
     print(f"submit {stem} {WAN3_VIDEO_PRIME} {scene['seconds']}s {RESOLUTION}", flush=True)
     scene_media = None
-    if (uses_travel(scene) or uses_intro(scene)) and media is not None:
+    if uses_activity(scene) and media is not None:
+        speech_url = synthesize_tts(api_key, activity_line(scene["id"]), QISI_VOICE)
+        scene_media = _activity_media(media, scene, speech_url)
+    elif uses_bookend(scene) and media is not None:
+        speech_url = synthesize_tts(api_key, bookend_line(scene["id"]), QISI_VOICE)
+        scene_media = _bookend_media(media, scene, speech_url)
+    elif (uses_travel(scene) or uses_intro(scene)) and media is not None:
         scene_media = _travel_media(media, scene)
     elif uses_agent(scene):
         scene_media = media
@@ -160,7 +234,7 @@ def _submit_one(
         resolution=RESOLUTION,
         duration=scene["seconds"],
         ratio=RATIO,
-        audio=uses_intro(scene),
+        audio=_clip_has_voice(scene),
         prompt_extend=False,
         watermark=False,
     )
@@ -195,6 +269,7 @@ def main() -> None:
     parser.add_argument("--travel", action="store_true", help="Send the dragon through earlier scenes")
     parser.add_argument("--intro", action="store_true", help="20s spoken 均安起思楼 self-intro")
     parser.add_argument("--speech", action="store_true", help="8s cinematic plates for 纯演讲稿_v2")
+    parser.add_argument("--activities", action="store_true", help="5s dragon visits real activity photos")
     parser.add_argument("--force", action="store_true", help="Resubmit even if an MP4 exists")
     args = parser.parse_args()
     WORK_DIR.mkdir(parents=True, exist_ok=True)
@@ -204,10 +279,12 @@ def main() -> None:
         travel=args.travel,
         intro=args.intro,
         speech=args.speech,
+        activity=args.activities,
     )
     tasks = _load_tasks()
     api_key = dashscope_api_key()
-    media = _agent_media() if any(uses_agent(scene) for scene in scenes) else None
+    needs_dragon = any(uses_agent(scene) or uses_activity(scene) or uses_bookend(scene) for scene in scenes)
+    media = _agent_media() if needs_dragon else None
     failed: list[str] = []
     for scene in scenes:
         stem = clip_stem(scene)
@@ -222,7 +299,7 @@ def main() -> None:
             continue
         try:
             dest = _download_one(api_key, scene, tasks, args.force)
-            if uses_agent(scene) or uses_speech(scene):
+            if uses_agent(scene) or uses_speech(scene) or uses_activity(scene) or uses_bookend(scene):
                 dest = _publish_desktop(dest, scene)
             print(f"ready {dest}", flush=True)
         except (RuntimeError, TimeoutError, ValueError, OSError) as exc:

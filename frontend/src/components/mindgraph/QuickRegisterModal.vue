@@ -10,6 +10,7 @@ import { ChevronDown, Loader2, Share2 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
+import { SWISS_GLASS_CARD_POPPER_Z } from '@/components/common/swissGlassStack'
 import { useQuickRegisterDialogClose } from '@/composables/auth/useQuickRegisterDialogClose'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -20,6 +21,9 @@ import { APP_REFINED_SANS_STACK } from '@/utils/diagramNodeFontStack'
 
 /** Font stack for toolbar + room code (shared with diagramNodeFontStack APP_REFINED_SANS_STACK). */
 const quickRegFontFamily = APP_REFINED_SANS_STACK
+
+/** Above `.swiss-glass-card-overlay`; under the close confirmation. */
+const quickRegPopperStyle = { zIndex: SWISS_GLASS_CARD_POPPER_Z }
 
 /**
  * Compact countdown ring (viewBox 0 0 120 120, center 60,60) — small, matches room-key type scale.
@@ -377,6 +381,7 @@ onBeforeUnmount(() => {
             trigger="click"
             teleported
             popper-class="quick-reg-org-dropdown-popper"
+            :popper-style="quickRegPopperStyle"
             :disabled="orgsLoading || tokenLoading"
             @command="onAdminOrgDropdownCommand"
           >
@@ -411,6 +416,8 @@ onBeforeUnmount(() => {
             /></span>
             <ElDropdown
               trigger="click"
+              teleported
+              :popper-style="quickRegPopperStyle"
               :disabled="tokenLoading"
               @command="onMaxUsesDropdownCommand"
             >

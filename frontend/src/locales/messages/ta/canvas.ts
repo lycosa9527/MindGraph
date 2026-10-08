@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'ஒளிரும் பச்சை',
   'canvas.mindMapPresentationToolbar.colorOrange': 'துடிப்பான ஆரஞ்சு',
   'canvas.mindMapPresentationToolbar.colorWhite': 'குறைந்தபட்ச வெள்ளை',
-  'canvas.mindMapPresentationToolbar.slides': 'விரிவுரை முறை',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'வெளியேறு நிகழ்ச்சி',
   'canvas.mindMapPresentationToolbar.highlighter': 'ஹைலைட்டர் பேனா',
   'canvas.mindMapPresentationToolbar.laserSmall': 'சிறியது',

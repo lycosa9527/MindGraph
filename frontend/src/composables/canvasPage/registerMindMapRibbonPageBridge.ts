@@ -11,6 +11,7 @@ export function registerMindMapRibbonPageBridge(options: {
   handleSnapshotDelete: (version: number) => void
   handleRestoreCurrentVersion: () => void
   handleStartPresentationWithTier: () => void | Promise<void>
+  handleStartSlidesWithTier: () => void | Promise<void>
   handleOpenCollab: (mode: 'organization' | 'network' | 'stop') => void
   handleHandToolToggle: (active: boolean) => void
   handToolActive: Ref<boolean>
@@ -47,6 +48,13 @@ export function registerMindMapRibbonPageBridge(options: {
     'presentation:start_requested',
     () => {
       void options.handleStartPresentationWithTier()
+    },
+    'CanvasPage'
+  )
+  eventBus.onWithOwner(
+    'presentation:slides_requested',
+    () => {
+      void options.handleStartSlidesWithTier()
     },
     'CanvasPage'
   )

@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'Fluorescent yashil',
   'canvas.mindMapPresentationToolbar.colorOrange': 'Canli narinci',
   'canvas.mindMapPresentationToolbar.colorWhite': 'Minimal ag',
-  'canvas.mindMapPresentationToolbar.slides': 'Slayd shousu',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Exit',
   'canvas.mindMapPresentationToolbar.highlighter': 'Marker',
   'canvas.mindMapPresentationToolbar.laserSmall': 'Kichik lazer',

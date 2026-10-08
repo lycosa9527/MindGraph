@@ -60,6 +60,7 @@
 .swiss-glass-card-overlay {
   position: fixed;
   inset: 0;
+  /* Keep in sync with SWISS_GLASS_CARD_Z in swissGlassStack.ts */
   z-index: 4000;
   display: flex;
   align-items: flex-start;

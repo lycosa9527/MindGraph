@@ -681,7 +681,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'Fluorescent na berde',
   'canvas.mindMapPresentationToolbar.colorOrange': 'Masiglang kahel',
   'canvas.mindMapPresentationToolbar.colorWhite': 'Minimal na puti',
-  'canvas.mindMapPresentationToolbar.slides': 'Lecture mode',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Lumabas sa pagtatanghal',
   'canvas.mindMapPresentationToolbar.highlighter': 'panulat ng highlighter',
   'canvas.mindMapPresentationToolbar.laserSmall': 'Maliit na laser',

@@ -647,7 +647,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'Fluoresserende groen',
   'canvas.mindMapPresentationToolbar.colorOrange': 'Lewendige oranje',
   'canvas.mindMapPresentationToolbar.colorWhite': 'Minimalistiese wit',
-  'canvas.mindMapPresentationToolbar.slides': 'Skyfievertoning',
+  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
   'canvas.mindMapPresentationToolbar.exit': 'Exit',
   'canvas.mindMapPresentationToolbar.highlighter': 'Markeerder',
   'canvas.mindMapPresentationToolbar.laserSmall': 'Klein laser',

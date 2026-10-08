@@ -35,6 +35,7 @@ const TOOLBAR_LABEL_KEYS = [
   'canvas.floatingToolbar.explain',
   'canvas.floatingToolbar.aiSubgraph',
   'canvas.zoomControls.presentationMode',
+  'canvas.mindMapPresentationToolbar.slides',
 ]
 
 const COMPOUND_TAIL = ['generierung', 'erstellung', 'generatie', 'generering']

@@ -8,6 +8,7 @@ import { Folder } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { useGlassCardDialogZIndex } from '@/components/common/swissGlassStack'
 import {
   cancelSwissGlassPrompt,
   getSwissGlassPromptState,
@@ -17,6 +18,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 
 const state = getSwissGlassPromptState()
 const { t } = useLanguage()
+const dialogZIndex = useGlassCardDialogZIndex(() => state.open)
 
 const draft = ref('')
 const error = ref('')
@@ -65,6 +67,7 @@ function onCancel(): void {
     :line1-key="state.line1Key"
     :icon="plateIcon"
     width="min(440px, 92vw)"
+    :z-index="dialogZIndex"
     :close-on-click-modal="false"
     @close="onCancel"
   >

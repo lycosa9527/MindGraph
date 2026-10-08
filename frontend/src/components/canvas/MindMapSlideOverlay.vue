@@ -248,13 +248,13 @@ function toggleCollapsed(): void {
           </button>
 
           <I18nTooltip
-            k="canvas.mindMapSlideOverlay.exit"
+            k="canvas.mindMapPresentationToolbar.exit"
             placement="top"
           >
             <button
               type="button"
               class="icon-btn icon-btn--exit"
-              :aria-label="t('canvas.mindMapSlideOverlay.exit')"
+              :aria-label="t('canvas.mindMapPresentationToolbar.exit')"
               @click="emit('exit')"
             >
               <LogOut class="h-4 w-4" />

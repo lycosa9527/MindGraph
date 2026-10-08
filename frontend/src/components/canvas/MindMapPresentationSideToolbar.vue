@@ -10,9 +10,9 @@ import {
   Eraser,
   Hand,
   LogOut,
-  MonitorPlay,
   MousePointer2,
   PenLine,
+  Presentation,
   Sun,
   Timer,
 } from '@lucide/vue'
@@ -450,7 +450,7 @@ function onHighlighterScaleInput(event: Event): void {
             data-tip-key="canvas.mindMapPresentationToolbar.slides"
             @click="emit('selectTool', 'slides')"
           >
-            <MonitorPlay class="h-5 w-5 shrink-0" />
+            <Presentation class="h-5 w-5 shrink-0" />
           </button>
         </div>
 
