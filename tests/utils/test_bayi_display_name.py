@@ -34,6 +34,17 @@ def test_sso_phone_flag_is_bayi_only(monkeypatch) -> None:
     """A UUID phone is a normal phone outside Bayi mode."""
     monkeypatch.setattr(bayi_mode, "AUTH_MODE", "standard")
     assert bayi_mode.is_bayi_sso_phone("a1b2c3d4-e5f6-4789-a012-3456789abcde") is False
+    assert bayi_mode.is_admin_account_phone("ed2d998e-495e-46cc-ab7d-2d64ccba4b92") is False
+    assert bayi_mode.is_admin_account_phone("13800138000") is True
+
+
+def test_admin_account_phone_accepts_xiaozhi_uuid_in_bayi(monkeypatch) -> None:
+    """Bayi stores 小致 userId in the phone column, so role edits must keep it."""
+    monkeypatch.setattr(bayi_mode, "AUTH_MODE", "bayi")
+    uuid_phone = "ed2d998e-495e-46cc-ab7d-2d64ccba4b92"
+    assert bayi_mode.is_admin_account_phone(uuid_phone) is True
+    assert bayi_mode.is_admin_account_phone("13800138000") is True
+    assert bayi_mode.is_admin_account_phone("not-a-phone") is False
 
 
 def test_other_auth_modes_skip_the_name_prompt(monkeypatch) -> None:

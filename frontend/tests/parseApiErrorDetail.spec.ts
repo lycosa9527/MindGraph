@@ -22,4 +22,20 @@ describe('parseApiErrorDetail', () => {
   it('falls back when detail is missing', () => {
     expect(parseApiErrorDetail(null, 'fallback')).toBe('fallback')
   })
+
+  it('drops API field paths from validation lines', () => {
+    expect(
+      parseApiErrorDetail(
+        {
+          detail: [
+            'body.name: Value error, Name must be at least 2 characters and must not contain digits.',
+            'body.phone: Phone number is too short (2 digits). Must be exactly 11 digits starting with 1.',
+          ],
+        },
+        'fallback'
+      )
+    ).toBe(
+      'Name must be at least 2 characters and must not contain digits.\nPhone number is too short (2 digits). Must be exactly 11 digits starting with 1.'
+    )
+  })
 })

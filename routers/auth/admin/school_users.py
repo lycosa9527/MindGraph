@@ -50,6 +50,7 @@ from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth.admin_panel_permissions import CAP_TAB_USERS_EDIT, CAP_TAB_USERS_VIEW
+from utils.auth.bayi_mode import canonical_bayi_subject, is_admin_account_phone
 from utils.auth.user_daily_token_quota import resolve_daily_usage
 from utils.auth.admin_scope import AdminScope
 
@@ -406,11 +407,11 @@ async def update_school_user(
     phone_will_change = False
     last_requested_new_phone: Optional[str] = None
     if "phone" in request and request["phone"] is not None:
-        new_phone = str(request["phone"]).strip()
+        new_phone = canonical_bayi_subject(str(request["phone"]).strip())
         if not new_phone:
             error_msg = Messages.error("phone_cannot_be_empty", lang=lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        if len(new_phone) != 11 or not new_phone.isdigit() or not new_phone.startswith("1"):
+        if not is_admin_account_phone(new_phone):
             error_msg = Messages.error("phone_format_invalid", lang=lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         if new_phone != user.phone:

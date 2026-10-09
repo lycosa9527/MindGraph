@@ -33,6 +33,8 @@ try:
 except ImportError:
     pass
 
+from utils.cn_mobile import is_cn_mainland_mobile
+
 from .config import AUTH_MODE, BAYI_CLOCK_SKEW_TOLERANCE, BAYI_SSO_DEFAULT_DISPLAY_NAME
 
 logger = logging.getLogger(__name__)
@@ -308,6 +310,11 @@ def is_bayi_sso_phone(phone: str | None) -> bool:
     except ValueError:
         return False
     return True
+
+
+def is_admin_account_phone(phone: str | None) -> bool:
+    """Mainland mobile, or a Bayi SSO userId stored in the phone column."""
+    return is_cn_mainland_mobile(phone) or is_bayi_sso_phone(phone)
 
 
 def is_bayi_placeholder_display_name(name: str | None) -> bool:

@@ -201,25 +201,33 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
   return response
 }
 
+function readableValidationLine(raw: string): string {
+  let text = raw.trim()
+  const prefixed = text.match(/^(?:body|query|path)\.[^:]+:\s*(.+)$/)
+  if (prefixed?.[1]) {
+    text = prefixed[1].trim()
+  }
+  return text.replace(/^Value error,\s*/i, '').trim()
+}
+
 /** Extract a human-readable message from FastAPI `{ detail }` error payloads. */
 export function parseApiErrorDetail(payload: unknown, fallback: string): string {
   if (payload && typeof payload === 'object' && 'detail' in payload) {
     const detail = (payload as { detail?: unknown }).detail
     if (typeof detail === 'string' && detail.trim()) {
-      return detail
+      return readableValidationLine(detail)
     }
     if (Array.isArray(detail) && detail.length > 0) {
       const lines = detail
         .map((item) => {
+          if (typeof item === 'string') {
+            const line = readableValidationLine(item)
+            return line || null
+          }
           if (!item || typeof item !== 'object') return null
-          const loc = Array.isArray((item as { loc?: unknown }).loc)
-            ? (item as { loc: unknown[] }).loc
-                .filter((part) => part !== 'body')
-                .join('.')
-            : ''
           const msg = (item as { msg?: unknown }).msg
           if (typeof msg !== 'string' || !msg.trim()) return null
-          return loc ? `${loc}: ${msg}` : msg
+          return readableValidationLine(msg)
         })
         .filter((line): line is string => Boolean(line))
       if (lines.length > 0) return lines.join('\n')

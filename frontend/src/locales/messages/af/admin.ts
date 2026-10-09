@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Vorige',
   'admin.refresh': 'Verfris',
   'admin.refreshInvitationCode': 'Verfris uitnodigingskode',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'Die huidige uitnodigingskode sal ophou werk. Genereer \'n nuwe een?',
   'admin.regenerateSchoolCode': 'Genereer skoolkode opnuut',
   'admin.regenerateInvitationCode': 'Hergenereer uitnodigingskode',

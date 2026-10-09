@@ -27,6 +27,7 @@ from . import (
     performance,
     roles,
     school_feature_usage,
+    school_invitation,
     school_user_activity,
     school_users,
     settings,
@@ -50,6 +51,7 @@ admin_router.include_router(expert_school_binding.router)
 admin_router.include_router(invites.router)
 admin_router.include_router(roles.router)
 admin_router.include_router(users.router)
+admin_router.include_router(school_invitation.router)
 admin_router.include_router(school_users.router)
 admin_router.include_router(school_user_activity.router)
 admin_router.include_router(school_feature_usage.router)

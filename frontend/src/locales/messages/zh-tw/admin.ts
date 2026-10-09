@@ -748,6 +748,8 @@ export default {
   'admin.previous': '上一頁',
   'admin.refresh': '刷新',
   'admin.refreshInvitationCode': '刷新邀請碼',
+  'admin.rotateInvitationCode': '輪換',
+  'admin.rotateInvitationCodeSuccess': '邀請碼已輪換',
   'admin.refreshInvitationCodeConfirm': '刷新後舊邀請碼將失效，確定繼續？',
   'admin.regenerateSchoolCode': '重新生成學校代碼',
   'admin.regenerateInvitationCode': '重新生成邀請碼',

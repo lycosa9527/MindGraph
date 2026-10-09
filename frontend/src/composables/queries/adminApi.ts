@@ -480,6 +480,15 @@ export async function createAdminSchoolUser(
   )
 }
 
+export async function rotateSchoolInvitationCode(
+  organizationId: number
+): Promise<{ id: number; invitation_code: string }> {
+  return adminFetchJson(
+    `/api/auth/admin/school/invitation-code/rotate${buildQuery({ organization_id: organizationId })}`,
+    { method: 'POST' }
+  )
+}
+
 export async function createAdminSchoolUsersBatch(
   body: Record<string, unknown>,
   organizationId: number

@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'පෙර',
   'admin.refresh': 'නැවුම් කරන්න',
   'admin.refreshInvitationCode': 'ආරාධනා කේතය නැවුම් කරන්න',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'වත්මන් ආරාධනා කේතය වැඩ කිරීම නවත්වනු ඇත. අලුත් එකක් ජනනය කරන්නද?',
   'admin.regenerateSchoolCode': 'පාසල් කේතය නැවත උත්පාදනය කරන්න',
   'admin.regenerateInvitationCode': 'ආරාධනා කේතය නැවත උත්පාදනය කරන්න',

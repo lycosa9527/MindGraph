@@ -289,6 +289,11 @@ ERRORS = {
         "en": "Registration is not available in {} mode. Sign in with an existing account.",
         "az": "{} rejimində qeydiyyat mövcud deyil. Mövcud hesabla daxil olun.",
     },
+    "bayi_register_use_invite": {
+        "zh": "请使用手机号和学校邀请码注册。",
+        "en": "Register with your mobile number and school invitation code.",
+        "az": "Mobil nömrə və məktəb dəvət kodu ilə qeydiyyatdan keçin.",
+    },
     "registration_disabled": {
         "zh": ("注册功能已由管理员关闭。请使用已有账号登录，或联系学校管理员。"),
         "en": (

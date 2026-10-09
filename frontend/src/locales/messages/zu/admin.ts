@@ -711,6 +711,8 @@ export default {
   'admin.previous': 'Previous',
   'admin.refresh': 'Refresh',
   'admin.refreshInvitationCode': 'Refresh Invitation Code',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'The current invitation code will stop working. Generate a new one?',
   'admin.regenerateSchoolCode': 'Regenerate school code',
   'admin.regenerateInvitationCode': 'Regenerate invitation code',

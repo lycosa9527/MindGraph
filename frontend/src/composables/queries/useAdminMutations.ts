@@ -36,6 +36,7 @@ import {
   reloadAdminEnvRuntime,
   removeAdminOrganizationManager,
   renameAdminLibraryPages,
+  rotateSchoolInvitationCode,
   repairAdminLibrary,
   recomputeAdminTeacherUsage,
   rotateAdminMindbotCallbackToken,
@@ -51,6 +52,7 @@ import {
   updateAdminUser,
   updateAdminUserRole,
   uploadAdminOrganizationMindmateAvatar,
+  type AdminSchoolStatsResponse,
   type AdminTeacherUsageConfig,
 } from './adminApi'
 import { adminKeys } from './adminKeys'
@@ -608,5 +610,31 @@ export function useDeleteAdminLibraryDocument() {
 export function useRenameAdminLibraryPages() {
   return useMutation({
     mutationFn: renameAdminLibraryPages,
+  })
+}
+
+export function useRotateSchoolInvitationCode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (organizationId: number) => rotateSchoolInvitationCode(organizationId),
+    onSuccess: (data, organizationId) => {
+      queryClient.setQueryData(
+        adminKeys.schoolStats(organizationId),
+        (current: AdminSchoolStatsResponse | undefined) => {
+          if (!current?.organization) {
+            return current
+          }
+          return {
+            ...current,
+            organization: {
+              ...current.organization,
+              invitation_code: data.invitation_code,
+            },
+          }
+        }
+      )
+      invalidateOrganizations(queryClient)
+      queryClient.invalidateQueries({ queryKey: adminKeys.organization(organizationId) })
+    },
   })
 }

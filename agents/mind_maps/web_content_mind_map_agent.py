@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response
 from agents.mind_maps.mind_map_agent import MindMapAgent
+from agents.mind_maps.mind_map_spec_normalize import canonicalize_mind_map_spec
 from prompts import get_prompt
 from prompts.ai_content_level import append_audience_instructions
 from services.llm import llm_service
@@ -67,6 +68,7 @@ class WebContentMindMapAgent(MindMapAgent):
                     "error": "Failed to generate mind map specification from content",
                 }
 
+            spec = canonicalize_mind_map_spec(spec)
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
                 if recovery_warnings:

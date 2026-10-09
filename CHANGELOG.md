@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.147] - 2026-10-09
+
+> **Bayi sign-up is a mobile number plus a school invitation code, and a school can rotate that code.**
+
+### Added
+
+- **邀请码轮换** — The school dashboard shows 轮换 beside copy. Confirming issues a new code and retires the old one. A school manager stays on their own school. A superadmin rotates the school they are viewing.
+
+### Changed
+
+- **八一注册** — Bayi mode always shows mobile plus invitation code, and email sign-up is refused. The form waits until the server reports the mode. A successful registration signs the user in. A pasted number with spaces or a leading 86 is stored as an 11-digit mobile. Spaces and lookalike dashes in the invitation code are normalized, and the older `AAAA-XXXXX` form still matches. An expired school cannot take a new member. A new Bayi school gets a generated code.
+- **八一账号** — Admin user edit keeps a Bayi user id in the phone field. The same id matches every letter-case spelling.
+- **思维导图** — A node labeled with name, title, content, or label is treated as text before the map is validated, so document generation keeps the branch.
+
+### Fixed
+
+- **提示** — Validation toasts drop the field path and the "Value error" prefix. A toast opened over the document-to-image overlay stays above that overlay.
+
+### Tests
+
+- [`tests/auth/test_bayi_invite_registration.py`](tests/auth/test_bayi_invite_registration.py), [`tests/auth/test_school_invitation_rotate_http.py`](tests/auth/test_school_invitation_rotate_http.py), [`tests/auth/test_phone_uniqueness_rls.py`](tests/auth/test_phone_uniqueness_rls.py), [`tests/utils/test_bayi_display_name.py`](tests/utils/test_bayi_display_name.py), [`tests/test_mind_map_spec_normalize.py`](tests/test_mind_map_spec_normalize.py), [`frontend/tests/accountPhone.spec.ts`](frontend/tests/accountPhone.spec.ts), [`frontend/tests/invitationCode.spec.ts`](frontend/tests/invitationCode.spec.ts), [`frontend/tests/parseApiErrorDetail.spec.ts`](frontend/tests/parseApiErrorDetail.spec.ts)
+
 ## [5.180.146] - 2026-10-08
 
 > **The teaching tab starts 节点轮播 on its own, and leaving it returns to the canvas.**

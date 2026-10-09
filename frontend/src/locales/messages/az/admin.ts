@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Əvvəlki',
   'admin.refresh': 'Yeniləyin',
   'admin.refreshInvitationCode': 'Dəvət Kodunu Yeniləyin',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'Cari dəvət kodu işləməyi dayandıracaq. Yenisini yaradaq?',
   'admin.regenerateSchoolCode': 'Məktəb kodunu bərpa edin',
   'admin.regenerateInvitationCode': 'Dəvət kodunu yenidən yarat',

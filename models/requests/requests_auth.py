@@ -63,6 +63,26 @@ def validate_password_strength(value: str) -> str:
 StrongPassword = Annotated[str, AfterValidator(validate_password_strength)]
 
 
+def normalize_person_name(value: str) -> str:
+    """Strip a display name and reject digits or a too-short value."""
+    text = (value or "").strip()
+    if len(text) < 2 or any(char.isdigit() for char in text):
+        raise ValueError("Name must be at least 2 characters and must not contain digits.")
+    if len(text) > 100:
+        raise ValueError("Name must be at most 100 characters.")
+    return text
+
+
+def coerce_cn_mobile(value: object) -> object:
+    """Keep digits only, and drop a leading 86 country code."""
+    if not isinstance(value, str):
+        return value
+    digits = "".join(char for char in value if char.isdigit())
+    if len(digits) == 13 and digits.startswith("86"):
+        return digits[2:]
+    return digits
+
+
 # ============================================================================
 # AUTHENTICATION REQUEST MODELS
 # ============================================================================
@@ -75,7 +95,6 @@ class RegisterRequest(BaseModel):
     password: StrongPassword = Field(..., min_length=8, description="Password (min 8 characters)")
     name: str = Field(
         ...,
-        min_length=2,
         description="Teacher's name (required, min 2 chars, no numbers)",
     )
     invitation_code: str = Field(
@@ -84,6 +103,12 @@ class RegisterRequest(BaseModel):
     )
     captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
     captcha_id: str = Field(..., description="Captcha session ID")
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def digits_only_phone(cls, value: object) -> object:
+        """Accept pasted mobiles that include spaces or a country code."""
+        return coerce_cn_mobile(value)
 
     @field_validator("phone")
     @classmethod
@@ -107,11 +132,7 @@ class RegisterRequest(BaseModel):
     @classmethod
     def validate_name(cls, v):
         """Validate name has no numbers"""
-        if len(v) < 2:
-            raise ValueError(f"Name is too short ({len(v)} character(s)). Must be at least 2 characters.")
-        if any(char.isdigit() for char in v):
-            raise ValueError("Name cannot contain numbers. Please enter your name using letters only.")
-        return v
+        return normalize_person_name(v)
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -134,7 +155,6 @@ class RegisterOverseasRequest(BaseModel):
     password: StrongPassword = Field(..., min_length=8, description="Password (min 8 characters)")
     name: str = Field(
         ...,
-        min_length=2,
         description="Display name (min 2 chars, no numbers)",
     )
     email_code: str = Field(..., min_length=6, max_length=6, description="6-digit email verification code")
@@ -155,11 +175,7 @@ class RegisterOverseasRequest(BaseModel):
     @classmethod
     def validate_name(cls, value: str) -> str:
         """Reject names shorter than two characters or containing digits."""
-        if len(value) < 2:
-            raise ValueError("Name must be at least 2 characters.")
-        if any(char.isdigit() for char in value):
-            raise ValueError("Name cannot contain numbers.")
-        return value
+        return normalize_person_name(value)
 
     @field_validator("email_code")
     @classmethod
@@ -475,11 +491,16 @@ class RegisterWithSMSRequest(BaseModel):
     password: StrongPassword = Field(..., min_length=8, description="Password (min 8 characters)")
     name: str = Field(
         ...,
-        min_length=2,
         description="Teacher's name (required, min 2 chars, no numbers)",
     )
     invitation_code: str = Field(..., description="Invitation code for registration")
     sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def digits_only_phone(cls, value: object) -> object:
+        """Accept pasted mobiles that include spaces or a country code."""
+        return coerce_cn_mobile(value)
 
     @field_validator("phone")
     @classmethod
@@ -503,11 +524,7 @@ class RegisterWithSMSRequest(BaseModel):
     @classmethod
     def validate_name(cls, v):
         """Validate name has no numbers"""
-        if len(v) < 2:
-            raise ValueError(f"Name is too short ({len(v)} character(s)). Must be at least 2 characters.")
-        if any(char.isdigit() for char in v):
-            raise ValueError("Name cannot contain numbers. Please enter your name using letters only.")
-        return v
+        return normalize_person_name(v)
 
     @field_validator("sms_code")
     @classmethod
@@ -621,18 +638,13 @@ class QuickRegisterCloseRequest(BaseModel):
 class UpdateProfileNameRequest(BaseModel):
     """Self-service display name (no digits, min 2 characters)."""
 
-    name: str = Field(..., min_length=2, max_length=100, description="Display name")
+    name: str = Field(..., description="Display name")
 
     @field_validator("name")
     @classmethod
     def validate_name_no_digits(cls, v: str) -> str:
         """Reject names shorter than two characters or containing digits."""
-        t = v.strip()
-        if len(t) < 2:
-            raise ValueError("Name must be at least 2 characters.")
-        if any(char.isdigit() for char in t):
-            raise ValueError("Name cannot contain numbers.")
-        return t
+        return normalize_person_name(v)
 
 
 class SetPasswordWithSMSLoggedInRequest(BaseModel):

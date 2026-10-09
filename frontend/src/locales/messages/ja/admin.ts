@@ -710,6 +710,8 @@ export default {
   'admin.previous': '上一ページ',
   'admin.refresh': '更新',
   'admin.refreshInvitationCode': '更新招待コード',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': '更新后旧招待コード将失效，確認继续？',
   'admin.regenerateSchoolCode': '学校コードを再生成する',
   'admin.regenerateInvitationCode': '重新生成招待コード',

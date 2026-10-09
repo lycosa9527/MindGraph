@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'మునుపటి పేజీ',
   'admin.refresh': 'రిఫ్రెష్',
   'admin.refreshInvitationCode': 'ఆహ్వాన కోడ్‌ని రిఫ్రెష్ చేయండి',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'రిఫ్రెష్ చేసిన తర్వాత పాత ఆహ్వాన కోడ్ చెల్లదు. మీరు ఖచ్చితంగా కొనసాగించాలనుకుంటున్నారా?',
   'admin.regenerateSchoolCode': 'పాఠశాల కోడ్‌ను పునరుద్ధరించండి',
   'admin.regenerateInvitationCode': 'ఆహ్వాన కోడ్‌ని మళ్లీ రూపొందించండి',

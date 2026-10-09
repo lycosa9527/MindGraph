@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Sebelumnya',
   'admin.refresh': 'Menyegarkan',
   'admin.refreshInvitationCode': 'Segarkan Kode Undangan',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'Kode undangan saat ini akan berhenti berfungsi. Hasilkan yang baru?',
   'admin.regenerateSchoolCode': 'Regenerasi kode sekolah',
   'admin.regenerateInvitationCode': 'Buat ulang kode undangan',

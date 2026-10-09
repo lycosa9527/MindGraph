@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'മുൻ പേജ്',
   'admin.refresh': 'പുതുക്കുക',
   'admin.refreshInvitationCode': 'ക്ഷണ കോഡ് പുതുക്കുക',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'പുതുക്കിയ ശേഷം പഴയ ക്ഷണ കോഡ് അസാധുവാകും. നിങ്ങൾക്ക് തുടരണമെന്ന് തീർച്ചയാണോ?',
   'admin.regenerateSchoolCode': 'സ്കൂൾ കോഡ് പുനഃസൃഷ്ടിക്കുക',
   'admin.regenerateInvitationCode': 'ക്ഷണ കോഡ് പുനഃസൃഷ്ടിക്കുക',

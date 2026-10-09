@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Nakaraang',
   'admin.refresh': 'I-refresh',
   'admin.refreshInvitationCode': 'I-refresh ang Code ng Imbitasyon',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'Hihinto sa paggana ang kasalukuyang code ng imbitasyon. Bumuo ng bago?',
   'admin.regenerateSchoolCode': 'I-regenerate ang code ng paaralan',
   'admin.regenerateInvitationCode': 'Buuin muli ang code ng imbitasyon',

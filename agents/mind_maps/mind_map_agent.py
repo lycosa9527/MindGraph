@@ -17,6 +17,7 @@ from agents.core.base_agent import BaseAgent
 from agents.core.agent_result import agent_validation_failure
 from agents.core.agent_utils import extract_json_from_response
 from agents.core.llm_spec_stream import dispatch_llm_chat
+from agents.mind_maps.mind_map_spec_normalize import canonicalize_mind_map_spec
 from config.settings import Config
 from prompts import get_prompt
 from prompts.ai_content_level import (
@@ -173,6 +174,7 @@ class MindMapAgent(BaseAgent):
             if locked_topic and not isinstance(spec.get("secondary"), dict):
                 spec["topic"] = locked_topic
 
+            spec = canonicalize_mind_map_spec(spec)
             is_valid, validation_msg = self.validate_output(
                 spec,
                 fixed_branch_labels=fixed_nodes.get("children") if structure_mode == "fixed" else None,

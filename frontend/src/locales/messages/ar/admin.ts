@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'الصفحة السابقة',
   'admin.refresh': 'ينعش',
   'admin.refreshInvitationCode': 'تحديث رمز الدعوة',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'سيكون رمز الدعوة القديم غير صالح بعد التحديث. هل أنت متأكد أنك تريد الاستمرار؟',
   'admin.regenerateSchoolCode': 'إعادة إنشاء رمز المدرسة',
   'admin.regenerateInvitationCode': 'إعادة إنشاء رمز الدعوة',

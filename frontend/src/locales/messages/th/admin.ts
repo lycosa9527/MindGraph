@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'ก่อนหน้า',
   'admin.refresh': 'รีเฟรช',
   'admin.refreshInvitationCode': 'รีเฟรชรหัสเชิญ',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'รหัสเชิญปัจจุบันจะใช้ไม่ได้ สร้างใหม่หรือไม่?',
   'admin.regenerateSchoolCode': 'สร้างรหัสโรงเรียนใหม่',
   'admin.regenerateInvitationCode': 'สร้างรหัสเชิญใหม่',

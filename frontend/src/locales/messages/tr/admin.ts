@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Geri',
   'admin.refresh': 'Yenile',
   'admin.refreshInvitationCode': 'Davet Kodunu Yenile',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'Mevcut davet kodu çalışmayı durduracak. Yeni bir tane oluşturulsun mu?',
   'admin.regenerateSchoolCode': 'Okul kodunu yeniden oluştur',
   'admin.regenerateInvitationCode': 'Davet kodunu yeniden oluştur',

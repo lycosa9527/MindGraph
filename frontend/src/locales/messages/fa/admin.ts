@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'صفحه قبلی',
   'admin.refresh': 'تازه کردن',
   'admin.refreshInvitationCode': 'بازخوانی کد دعوت',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'کد دعوت قدیمی پس از بازخوانی نامعتبر خواهد بود. آیا مطمئن هستید که می خواهید ادامه دهید؟',
   'admin.regenerateSchoolCode': 'کد مدرسه را بازسازی کنید',
   'admin.regenerateInvitationCode': 'ایجاد مجدد کد دعوت',

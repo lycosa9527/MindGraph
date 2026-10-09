@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Mëparshme',
   'admin.refresh': 'Rifresko',
   'admin.refreshInvitationCode': 'Rifresko kodin e ftesës',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'Kodi aktual i ftesës do të ndalojë së punuari. Të gjenerohet i ri?',
   'admin.regenerateSchoolCode': 'Rigjenero kodin e shkollës',
   'admin.regenerateInvitationCode': 'Rigjenero kodin e ftesës',

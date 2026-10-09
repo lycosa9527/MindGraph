@@ -37,6 +37,12 @@ describe('invitationCode utils', () => {
 
   it('normalizes invitation input to uppercase trimmed text', () => {
     expect(normalizeInvitationCodeInput('  abc-234  ')).toBe('ABC-234')
+    expect(normalizeInvitationCodeInput('abc – 234')).toBe('ABC-234')
+  })
+
+  it('accepts the previous AAAA-XXXXX invitation codes', () => {
+    expect(isValidInvitationCode('wxyz-abc12')).toBe(true)
+    expect(invitationCodeFromSearch('?invite=wxyz-abc12')).toBe('WXYZ-ABC12')
   })
 
   it('derives school code from latin letters in the name', () => {

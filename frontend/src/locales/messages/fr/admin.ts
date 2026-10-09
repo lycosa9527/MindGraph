@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Précédent',
   'admin.refresh': 'Actualiser',
   'admin.refreshInvitationCode': 'Rafraîchir le code d\'invitation',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'Le code d’invitation actuel cessera de fonctionner. En générer un nouveau ?',
   'admin.regenerateSchoolCode': 'Régénérer le code établissement',
   'admin.regenerateInvitationCode': 'Régénérer le code d’invitation',

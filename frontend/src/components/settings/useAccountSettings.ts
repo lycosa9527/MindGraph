@@ -9,6 +9,7 @@ import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAuthStore } from '@/stores/auth'
+import { isBayiSsoPhone } from '@/utils/accountPhone'
 import { apiRequest } from '@/utils/apiClient'
 import {
   canStartWechatBind,
@@ -150,10 +151,7 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
   const currentAvatarSrc = computed(() => userAvatarImageSrc(authStore.user?.avatar))
 
   /** Bayi jump-in stores a UUID in phone. That id must stay put. */
-  const isBayiSsoSubject = computed(() => {
-    const phone = (authStore.user?.phone || '').trim()
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(phone)
-  })
+  const isBayiSsoSubject = computed(() => isBayiSsoPhone(authStore.user?.phone))
 
   /** Quick registration: server-only password until user sets one via SMS. */
   const needsSetLoginPassword = computed(() => authStore.user?.loginPasswordSet === false)

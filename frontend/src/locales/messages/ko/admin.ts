@@ -710,6 +710,8 @@ export default {
   'admin.previous': '이전',
   'admin.refresh': '새로고침',
   'admin.refreshInvitationCode': '초대 코드 새로고침',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': '현재 초대 코드가 더 이상 작동하지 않습니다. 새 코드를 생성할까요?',
   'admin.regenerateSchoolCode': '학교 코드 재생성',
   'admin.regenerateInvitationCode': '초대 코드 재생성',

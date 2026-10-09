@@ -38,7 +38,10 @@ from utils.auth import (
     hash_password,
 )
 from utils.auth.overseas_registration_messages import overseas_registration_error
-from utils.auth.registration_gate import http_forbid_if_registration_disabled
+from utils.auth.registration_gate import (
+    http_forbid_email_signup_in_bayi,
+    http_forbid_if_registration_disabled,
+)
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from utils.email_mainland_china import raise_if_mainland_china_email_for_overseas_registration
 from utils.email_validation import validate_email_for_api
@@ -68,8 +71,10 @@ async def register_overseas(
 
     Any valid non-mainland-China email is allowed. No invitation code;
     organization_id is NULL; Simplified Chinese UI is disabled.
+    Bayi mode rejects this path and uses mobile plus invitation code instead.
     """
     http_forbid_if_registration_disabled(lang)
+    http_forbid_email_signup_in_bayi(lang)
 
     if not request.outside_mainland_acknowledged:
         error_msg = overseas_registration_error("register_overseas_acknowledgment_required", lang)

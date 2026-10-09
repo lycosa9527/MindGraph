@@ -406,6 +406,17 @@ body {
 }
 
 /*
+ * 文档生图 teleports a full-screen overlay to body at z-index 4000. Element Plus
+ * assigns message and notification z-index from about 2000, so a toast opened
+ * while that dialog is up paints underneath it. Stay just above that shell and
+ * under the session card (4100), glass confirm (4200), and context menus.
+ */
+.el-message,
+.el-notification {
+  z-index: 4050 !important;
+}
+
+/*
  * Element Plus dialog / message-box: header close uses physical `right: 0`.
  * Use inline-end so the × sits on the trailing edge in RTL (physical left), matching notifications.
  * `show-close` padding uses `padding-right` in EP — switch to `padding-inline-end` so the title

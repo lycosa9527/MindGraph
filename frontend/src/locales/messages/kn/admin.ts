@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'ಹಿಂದಿನ ಪುಟ',
   'admin.refresh': 'ರಿಫ್ರೆಶ್ ಮಾಡಿ',
   'admin.refreshInvitationCode': 'ಆಮಂತ್ರಣ ಕೋಡ್ ಅನ್ನು ರಿಫ್ರೆಶ್ ಮಾಡಿ',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'ರಿಫ್ರೆಶ್ ಮಾಡಿದ ನಂತರ ಹಳೆಯ ಆಹ್ವಾನ ಕೋಡ್ ಅಮಾನ್ಯವಾಗಿರುತ್ತದೆ. ನೀವು ಮುಂದುವರಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ?',
   'admin.regenerateSchoolCode': 'ಶಾಲೆಯ ಕೋಡ್ ಅನ್ನು ಮರುಸೃಷ್ಟಿಸಿ',
   'admin.regenerateInvitationCode': 'ಆಮಂತ್ರಣ ಕೋಡ್ ಅನ್ನು ಮರುಸೃಷ್ಟಿಸಿ',

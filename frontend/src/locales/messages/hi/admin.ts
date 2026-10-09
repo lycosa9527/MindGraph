@@ -774,6 +774,8 @@ export default {
   'admin.previous': 'पिछला',
   'admin.refresh': 'रीफ़्रेश',
   'admin.refreshInvitationCode': 'रीफ़्रेश आमंत्रण कोड',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm':
     'current invitation code will stop working. Generate a new one?',
   'admin.regenerateSchoolCode': 'स्कूल कोड पुनः बनाएँ',

@@ -48,6 +48,7 @@ from utils.auth import (
 from utils.auth.bayi_mode import canonical_bayi_subject
 from utils.auth.org_subscription import is_org_subscription_expired
 from utils.db.session_open import system_rls_session
+from utils.invitations import generate_invitation_code
 
 _issue_bayi_access_token = issue_access_token_with_vpn_geo
 
@@ -224,7 +225,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                         org = Organization(
                             code=BAYI_DEFAULT_ORG_CODE,
                             name="Bayi School",
-                            invitation_code="BAYI2024",
+                            invitation_code=generate_invitation_code(),
                             created_at=datetime.now(UTC),
                         )
                         db.add(org)

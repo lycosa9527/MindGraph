@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Trước',
   'admin.refresh': 'Làm cho khỏe lại',
   'admin.refreshInvitationCode': 'Làm mới mã lời mời',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'Mã mời hiện tại sẽ ngừng hoạt động. Tạo một cái mới?',
   'admin.regenerateSchoolCode': 'Tạo lại mã trường học',
   'admin.regenerateInvitationCode': 'Tạo lại mã mời',

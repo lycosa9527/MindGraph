@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Oldingi',
   'admin.refresh': 'Yangilashyin',
   'admin.refreshInvitationCode': 'Taklif Kodninu Yangilashyin',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'Cari taklif kodni ishlemeyi to’xtatishacaq. Yenisini yaradaq?',
   'admin.regenerateSchoolCode': 'Maktab kodninu berpa edin',
   'admin.regenerateInvitationCode': 'Taklif kodinu qayta yarat',

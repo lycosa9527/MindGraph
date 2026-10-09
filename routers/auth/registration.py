@@ -45,10 +45,11 @@ from utils.auth import (
     get_client_ip,
     hash_password,
 )
+from utils.auth.org_subscription import enforce_org_accessible_or_raise
 from utils.auth.registration_gate import http_forbid_if_registration_disabled
 from utils.auth.school_tier import assert_organization_has_member_capacity
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
-from utils.invitations import invitation_code_is_valid
+from utils.invitations import invitation_code_is_valid, normalize_invitation_code
 
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
@@ -218,7 +219,7 @@ async def register(
     cache_write_success = False
 
     # Find organization by invitation code (each invitation code is unique)
-    provided_invite = (request.invitation_code or "").strip().upper()
+    provided_invite = normalize_invitation_code(request.invitation_code)
     if not provided_invite:
         duration = time.time() - start_time
         registration_metrics.record_failure("invitation_code_invalid", duration)
@@ -248,6 +249,8 @@ async def register(
                 await org_cache.cache_org(org)
             except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("[Auth] Failed to cache org after database query: %s", e)
+
+    org = await enforce_org_accessible_or_raise(org, lang)
 
     logger.debug(
         "User registering with invitation code for organization: %s (%s)",
@@ -426,7 +429,7 @@ async def register_with_sms(
     retry_count = 0
 
     # Find organization by invitation code
-    provided_invite = (request.invitation_code or "").strip().upper()
+    provided_invite = normalize_invitation_code(request.invitation_code)
     if not provided_invite:
         duration = time.time() - start_time
         registration_metrics.record_failure("invitation_code_invalid", duration)
@@ -456,6 +459,8 @@ async def register_with_sms(
                 await org_cache.cache_org(org)
             except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("[Auth] Failed to cache org after database query: %s", e)
+
+    org = await enforce_org_accessible_or_raise(org, lang)
 
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:

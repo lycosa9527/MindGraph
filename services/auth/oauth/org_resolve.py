@@ -9,12 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import Organization
 from services.redis.cache.redis_org_cache import org_cache
-from utils.invitations import invitation_code_is_valid
+from utils.invitations import invitation_code_is_valid, normalize_invitation_code
 
 
 async def resolve_org_by_invitation_code(db: AsyncSession, invite: str) -> Optional[Organization]:
     """Find organization by invitation code or None."""
-    provided = (invite or "").strip().upper()
+    provided = normalize_invitation_code(invite)
     if not provided or not invitation_code_is_valid(provided):
         return None
     org = await org_cache.get_by_invitation_code(provided)

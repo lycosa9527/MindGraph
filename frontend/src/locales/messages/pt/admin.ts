@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Página anterior',
   'admin.refresh': 'atualizar',
   'admin.refreshInvitationCode': 'Atualizar código de convite',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'O antigo código de convite será inválido após a atualização. Tem certeza de que deseja continuar?',
   'admin.regenerateSchoolCode': 'Gerar novamente o código da escola',
   'admin.regenerateInvitationCode': 'Gerar novamente o código de convite',

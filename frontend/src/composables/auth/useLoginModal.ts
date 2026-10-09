@@ -18,6 +18,7 @@ import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 import { parseApiErrorDetail } from '@/utils/apiClient'
 import { isBrowserLanguageSimplifiedChinese } from '@/utils/clientRegion'
+import { normalizeInvitationCodeInput } from '@/utils/invitationCode'
 import {
   clearSavedLoginCredentials,
   loadSavedLoginIdentifier,
@@ -144,9 +145,29 @@ export function useLoginModal(
   const emailCountdown = ref(0)
   const emailCountdownTimer = ref<ReturnType<typeof setInterval> | null>(null)
 
-  const { registerRegion, registerRegionLoading, isBothRegister } = useRegisterRegionDetection(
-    toRef(props, 'visible'),
-    currentView
+  const {
+    registerRegion,
+    registerRegionLoading,
+    isBothRegister: regionOffersBothPaths,
+  } = useRegisterRegionDetection(toRef(props, 'visible'), currentView)
+
+  /** False until GET /api/auth/mode returns, so the form does not guess email vs invite. */
+  const registerModeReady = computed(() => authStore.modeResolved)
+
+  /** Bayi sign-up is always mobile plus a school invitation code. */
+  const bayiInviteRegistration = computed(
+    () => registerModeReady.value && authStore.mode === 'bayi'
+  )
+
+  const isBothRegister = computed(
+    () => registerModeReady.value && !bayiInviteRegistration.value && regionOffersBothPaths.value
+  )
+
+  const registerAwaitingRegion = computed(
+    () =>
+      !registerModeReady.value ||
+      (!bayiInviteRegistration.value &&
+        (registerRegionLoading.value || registerRegion.value === null))
   )
 
   /** When region is unknown (GeoIP): user picks email vs phone + invitation. */
@@ -158,14 +179,18 @@ export function useLoginModal(
 
   const showOverseasEmailFlow = computed(
     () =>
-      registerRegion.value === 'intl' ||
-      (registerRegion.value === 'both' && registerPath.value === 'email')
+      registerModeReady.value &&
+      !bayiInviteRegistration.value &&
+      (registerRegion.value === 'intl' ||
+        (registerRegion.value === 'both' && registerPath.value === 'email'))
   )
 
   const showMainlandPhoneFlow = computed(
     () =>
-      registerRegion.value === 'cn' ||
-      (registerRegion.value === 'both' && registerPath.value === 'phone')
+      registerModeReady.value &&
+      (bayiInviteRegistration.value ||
+        registerRegion.value === 'cn' ||
+        (registerRegion.value === 'both' && registerPath.value === 'phone'))
   )
 
   const forgotUsesEmail = computed(() => {
@@ -283,9 +308,11 @@ export function useLoginModal(
   watch(
     () => [registerRegion.value, registerPath.value] as const,
     ([region, path]) => {
+      if (bayiInviteRegistration.value) {
+        return
+      }
       if (region === 'intl' || (region === 'both' && path === 'email')) {
         registerForm.value.phone = ''
-        registerForm.value.invitationCode = ''
       }
       if (region === 'cn' || (region === 'both' && path === 'phone')) {
         registerForm.value.registrationEmail = ''
@@ -663,7 +690,7 @@ export function useLoginModal(
       return
     }
 
-    if (registerRegionLoading.value || registerRegion.value === null) {
+    if (registerAwaitingRegion.value) {
       notify.warningKey('auth.modal.waitRegionDetection')
       return
     }
@@ -688,10 +715,11 @@ export function useLoginModal(
         const response = await fetch('/api/auth/register-overseas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
           body: JSON.stringify({
             email,
             password: registerForm.value.password,
-            name: registerForm.value.name,
+            name: registerForm.value.name.trim(),
             email_code: registerForm.value.emailCode,
             captcha: proof.captcha,
             captcha_id: proof.captcha_id,
@@ -699,15 +727,22 @@ export function useLoginModal(
           }),
         })
         const data = await response.json().catch(() => ({}))
-        if (response.ok) {
+        if (response.ok && data.user) {
+          authStore.finishBrowserLogin(data.user)
+          notify.successKey('auth.modal.registerSuccess')
+          emit('success')
+        } else if (response.ok) {
           notify.successKey('auth.modal.registerSuccess')
           switchLoginRegisterTab('login')
           loginForm.value.phone = email
           loginForm.value.password = registerForm.value.password
           saveLoginIdentifier(email)
+        } else if (emitSchoolExpiredFromPayload(data)) {
+          registerForm.value.captcha = ''
+          void refreshCaptcha({ force: true })
         } else {
           notify.error(
-            typeof data.detail === 'string' ? data.detail : t('auth.modal.registerFailed'),
+            parseApiErrorDetail(data, t('auth.modal.registerFailed')),
             AUTH_HINT_TOAST_MS
           )
           registerForm.value.captcha = ''
@@ -723,13 +758,17 @@ export function useLoginModal(
       return
     }
 
-    if (
-      !registerForm.value.phone ||
-      !registerForm.value.password ||
-      !registerForm.value.name ||
-      !registerForm.value.invitationCode
-    ) {
+    const phoneDigits = registerForm.value.phone.replace(/\D/g, '')
+    const normalizedPhone =
+      phoneDigits.length === 13 && phoneDigits.startsWith('86') ? phoneDigits.slice(2) : phoneDigits
+    const displayName = registerForm.value.name.trim()
+    const invitationCode = normalizeInvitationCodeInput(registerForm.value.invitationCode)
+    if (!normalizedPhone || !registerForm.value.password || !displayName || !invitationCode) {
       notify.warningKey('auth.modal.fillRequired')
+      return
+    }
+    if (normalizedPhone.length !== 11 || !normalizedPhone.startsWith('1')) {
+      notify.warningKey('auth.modal.phone11Digits')
       return
     }
 
@@ -743,11 +782,12 @@ export function useLoginModal(
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
-          phone: registerForm.value.phone,
+          phone: normalizedPhone,
           password: registerForm.value.password,
-          name: registerForm.value.name,
-          invitation_code: registerForm.value.invitationCode,
+          name: displayName,
+          invitation_code: invitationCode,
           captcha: proof.captcha,
           captcha_id: proof.captcha_id,
         }),
@@ -755,14 +795,22 @@ export function useLoginModal(
 
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok && data.user) {
+        authStore.finishBrowserLogin(data.user)
+        notify.successKey('auth.modal.registerSuccess')
+        saveLoginIdentifier(normalizedPhone)
+        emit('success')
+      } else if (response.ok) {
         notify.successKey('auth.modal.registerSuccess')
         switchLoginRegisterTab('login')
-        loginForm.value.phone = registerForm.value.phone
+        loginForm.value.phone = normalizedPhone
         loginForm.value.password = registerForm.value.password
-        saveLoginIdentifier(registerForm.value.phone)
+        saveLoginIdentifier(normalizedPhone)
+      } else if (emitSchoolExpiredFromPayload(data)) {
+        registerForm.value.captcha = ''
+        void refreshCaptcha({ force: true })
       } else {
-        notify.error(data.detail || t('auth.modal.registerFailed'), AUTH_HINT_TOAST_MS)
+        notify.error(parseApiErrorDetail(data, t('auth.modal.registerFailed')), AUTH_HINT_TOAST_MS)
         registerForm.value.captcha = ''
         void refreshCaptcha({ force: true })
       }
@@ -1087,6 +1135,8 @@ export function useLoginModal(
     isBothRegister,
     showOverseasEmailFlow,
     showMainlandPhoneFlow,
+    bayiInviteRegistration,
+    registerAwaitingRegion,
     registerRegion,
     registerRegionLoading,
     forgotUsesEmail,

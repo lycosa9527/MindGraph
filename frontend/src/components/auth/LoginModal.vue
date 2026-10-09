@@ -32,7 +32,7 @@ import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLoginModal } from '@/composables/auth/useLoginModal'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
-import { invitationCodeFromSearch } from '@/utils/invitationCode'
+import { invitationCodeFromSearch, normalizeInvitationCodeInput } from '@/utils/invitationCode'
 import { initCatWalk } from '@/utils/mascot/catWalk'
 import { resolveOAuthInviteCode, shouldShowWechatLoginLink } from '@/utils/oauthLoginUi'
 
@@ -106,7 +106,8 @@ const {
   isBothRegister,
   showOverseasEmailFlow,
   showMainlandPhoneFlow,
-  registerRegion,
+  bayiInviteRegistration,
+  registerAwaitingRegion,
   registerRegionLoading,
   forgotUsesEmail,
   smsLoginUsesEmail,
@@ -876,7 +877,7 @@ defineExpose({ openLogin, openRegister })
         @submit.prevent="handleRegister"
       >
         <div
-          v-if="registerRegionLoading"
+          v-if="registerAwaitingRegion"
           class="flex items-center gap-2 text-sm text-stone-500 py-1"
         >
           <Loader2 class="w-4 h-4 animate-spin shrink-0" />
@@ -954,10 +955,11 @@ defineExpose({ openLogin, openRegister })
             id="register-phone"
             v-model="registerForm.phone"
             type="tel"
-            name="register-phone"
+            name="phone"
             :placeholder="t('auth.modal.phonePlaceholder11')"
-            maxlength="11"
-            autocomplete="username"
+            maxlength="20"
+            inputmode="numeric"
+            autocomplete="tel"
             class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
           />
         </div>
@@ -997,7 +999,7 @@ defineExpose({ openLogin, openRegister })
               id="register-password"
               v-model="registerForm.password"
               :type="showPassword ? 'text' : 'password'"
-              name="register-password"
+              name="new-password"
               :placeholder="t('auth.modal.passwordMinPlaceholder')"
               autocomplete="new-password"
               class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -1031,7 +1033,8 @@ defineExpose({ openLogin, openRegister })
             id="register-name"
             v-model="registerForm.name"
             type="text"
-            name="register-name"
+            name="name"
+            maxlength="100"
             :placeholder="t('auth.modal.namePlaceholder')"
             autocomplete="name"
             class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -1049,9 +1052,15 @@ defineExpose({ openLogin, openRegister })
             id="register-invitation-code"
             v-model="registerForm.invitationCode"
             type="text"
-            name="register-invitation-code"
+            name="invitation_code"
+            autocomplete="off"
             :placeholder="t('auth.modal.invitationPlaceholder')"
             class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+            @blur="
+              registerForm.invitationCode = normalizeInvitationCodeInput(
+                registerForm.invitationCode
+              )
+            "
           />
         </div>
 
@@ -1163,7 +1172,7 @@ defineExpose({ openLogin, openRegister })
         </template>
 
         <p
-          v-if="showMainlandPhoneFlow"
+          v-if="showMainlandPhoneFlow && !bayiInviteRegistration"
           class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed"
         >
           <I18nText k="auth.modal.mainlandSalesNotice" />
@@ -1171,7 +1180,7 @@ defineExpose({ openLogin, openRegister })
 
         <button
           type="submit"
-          :disabled="isLoading || registerRegionLoading || registerRegion === null"
+          :disabled="isLoading || registerAwaitingRegion"
           class="w-full py-3 px-4 text-white font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           :class="
             authPageInline

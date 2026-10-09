@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'Предыдущая страница',
   'admin.refresh': 'обновить',
   'admin.refreshInvitationCode': 'Обновить код приглашения',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'Старый код приглашения станет недействительным после обновления. Вы уверены, что хотите продолжить?',
   'admin.regenerateSchoolCode': 'Восстановить школьный код',
   'admin.regenerateInvitationCode': 'Восстановить код приглашения',

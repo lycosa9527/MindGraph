@@ -88,6 +88,8 @@ export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null)
   const mode = ref<AuthMode>('standard')
+  /** False until GET /api/auth/mode returns, so signup does not guess standard vs bayi. */
+  const modeResolved = ref(false)
   /** From GET /api/auth/mode; signup UI gated when false. Defaults true until the server responds. */
   const registrationEnabled = ref(true)
   const loading = ref(false)
@@ -830,7 +832,9 @@ export const useAuthStore = defineStore('auth', () => {
       setMode(detectedMode)
       return detectedMode
     } catch {
-      return 'standard'
+      return mode.value
+    } finally {
+      modeResolved.value = true
     }
   }
 
@@ -1208,6 +1212,7 @@ export const useAuthStore = defineStore('auth', () => {
     // State
     user,
     mode,
+    modeResolved,
     registrationEnabled,
     loading,
     showSessionExpiredModal,

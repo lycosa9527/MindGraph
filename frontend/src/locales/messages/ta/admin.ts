@@ -710,6 +710,8 @@ export default {
   'admin.previous': 'முந்தைய பக்கம்',
   'admin.refresh': 'புதுப்பிக்கவும்',
   'admin.refreshInvitationCode': 'அழைப்புக் குறியீட்டைப் புதுப்பிக்கவும்',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
   'admin.refreshInvitationCodeConfirm': 'புதுப்பித்த பிறகு பழைய அழைப்புக் குறியீடு செல்லாது. நீங்கள் நிச்சயமாக தொடர விரும்புகிறீர்களா?',
   'admin.regenerateSchoolCode': 'பள்ளி குறியீட்டை மீண்டும் உருவாக்கவும்',
   'admin.regenerateInvitationCode': 'அழைப்பிதழ் குறியீட்டை மீண்டும் உருவாக்கவும்',
