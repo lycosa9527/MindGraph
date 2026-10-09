@@ -26,6 +26,7 @@ import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.v
 import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import { useLanguage } from '@/composables'
 import { usePwaInstall } from '@/composables/usePwaInstall'
+import { formatGalleryLanguageMenuLabel } from '@/i18n/galleryLanguageMenuLabel'
 import {
   PROMPT_LANGUAGE_OPTIONS,
   getLocalesForInterfaceLanguagePicker,
@@ -355,7 +356,9 @@ async function handleLogout() {
             :class="uiStore.language === locale.code ? 'bg-indigo-50' : ''"
             @click="selectUiLanguage(locale.code)"
           >
-            <span class="text-sm text-gray-800">{{ locale.nativeName }}</span>
+            <span class="text-sm text-gray-800">{{
+              formatGalleryLanguageMenuLabel(locale.code, locale.nativeName)
+            }}</span>
             <span class="text-xs text-gray-400">{{ locale.englishName }}</span>
             <Check
               v-if="uiStore.language === locale.code"
@@ -402,7 +405,9 @@ async function handleLogout() {
             :class="uiStore.promptLanguage === opt.code ? 'bg-indigo-50' : ''"
             @click="selectPromptLanguage(opt.code)"
           >
-            <span class="text-sm text-gray-800">{{ opt.label }}</span>
+            <span class="text-sm text-gray-800">{{
+              formatGalleryLanguageMenuLabel(opt.code, opt.label)
+            }}</span>
             <span class="text-xs text-gray-400">{{ opt.englishName }}</span>
             <Check
               v-if="uiStore.promptLanguage === opt.code"
@@ -431,7 +436,9 @@ async function handleLogout() {
               :class="uiStore.promptLanguage === opt.code ? 'bg-indigo-50' : ''"
               @click="selectPromptLanguage(opt.code)"
             >
-              <span class="text-sm text-gray-800">{{ opt.label }}</span>
+              <span class="text-sm text-gray-800">{{
+                formatGalleryLanguageMenuLabel(opt.code, opt.label)
+              }}</span>
               <span class="text-xs text-gray-400">{{ opt.englishName }}</span>
               <Check
                 v-if="uiStore.promptLanguage === opt.code"

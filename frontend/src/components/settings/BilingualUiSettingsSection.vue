@@ -5,6 +5,7 @@
  */
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { formatGalleryLanguageMenuLabel } from '@/i18n/galleryLanguageMenuLabel'
 import type { Language } from '@/stores/ui'
 
 const { t } = useLanguage()
@@ -92,7 +93,9 @@ function languageSelectDisplayLabel(option: { code: string; label: string }): st
           >
             <span class="prompt-option-code">{{ option.code }}</span>
             <span class="prompt-option-text">
-              <span class="prompt-option-name">{{ option.label }}</span>
+              <span class="prompt-option-name">{{
+                formatGalleryLanguageMenuLabel(option.code, option.label)
+              }}</span>
               <span class="prompt-option-en">{{ option.englishName }}</span>
             </span>
           </span>
@@ -125,7 +128,9 @@ function languageSelectDisplayLabel(option: { code: string; label: string }): st
           >
             <span class="prompt-option-code">{{ option.code }}</span>
             <span class="prompt-option-text">
-              <span class="prompt-option-name">{{ option.label }}</span>
+              <span class="prompt-option-name">{{
+                formatGalleryLanguageMenuLabel(option.code, option.label)
+              }}</span>
               <span class="prompt-option-en">{{ option.englishName }}</span>
             </span>
           </span>

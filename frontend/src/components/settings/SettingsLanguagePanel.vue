@@ -11,6 +11,7 @@ import I18nText from '@/components/common/I18nText.vue'
 import BilingualUiSettingsSection from '@/components/settings/BilingualUiSettingsSection.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { formatGalleryLanguageMenuLabel } from '@/i18n/galleryLanguageMenuLabel'
 import {
   getInterfaceLanguagePickerLocaleCount,
   getLocalesForInterfaceLanguagePicker,
@@ -357,7 +358,9 @@ watch(
           >
             <span class="prompt-option-code">{{ o.code }}</span>
             <span class="prompt-option-text">
-              <span class="prompt-option-name">{{ o.label }}</span>
+              <span class="prompt-option-name">{{
+                formatGalleryLanguageMenuLabel(o.code, o.label)
+              }}</span>
               <span class="prompt-option-en">{{ o.englishName }}</span>
             </span>
           </span>
@@ -396,7 +399,9 @@ watch(
           >
             <span class="prompt-option-code">{{ o.code }}</span>
             <span class="prompt-option-text">
-              <span class="prompt-option-name">{{ o.label }}</span>
+              <span class="prompt-option-name">{{
+                formatGalleryLanguageMenuLabel(o.code, o.label)
+              }}</span>
               <span class="prompt-option-en">{{ o.englishName }}</span>
             </span>
           </span>

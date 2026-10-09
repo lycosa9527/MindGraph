@@ -37,6 +37,18 @@
  * | uk | ukrainian | |
  * | ms | english | Latin / QWERTY |
  * | af | english | Latin / QWERTY |
+ * | no | norwegian | Bokmål; nb/nn browsers use this locale |
+ * | sv | swedish | |
+ * | da | norwegian | Danish layout is the Nordic pack match |
+ * | fi | swedish | Finnish uses the Nordic layout |
+ * | cs | czech | |
+ * | sk | czech | Closest Latin-Slavic layout in the pack |
+ * | ro | english | No Romanian layout in the pack |
+ * | hu | hungarian | |
+ * | el | greek | |
+ * | bg | russian | Closest Cyrillic layout in the pack |
+ * | hr | english | Latin; no Croatian layout in the pack |
+ * | sr | russian | Cyrillic; closest layout in the pack |
  *
  * All layout modules under `simple-keyboard-layouts/build/layouts/*.js` are in {@link PRESET_LOADERS}.
  */
@@ -148,6 +160,18 @@ export const PICKER_VIRTUAL_KEYBOARD_PRESET_BY_UI_LOCALE = {
   uk: 'ukrainian',
   ms: 'english',
   af: 'english',
+  no: 'norwegian',
+  sv: 'swedish',
+  da: 'norwegian',
+  fi: 'swedish',
+  cs: 'czech',
+  sk: 'czech',
+  ro: 'english',
+  hu: 'hungarian',
+  el: 'greek',
+  bg: 'russian',
+  hr: 'english',
+  sr: 'russian',
 } as const satisfies Record<InterfaceLanguagePickerCode, LayoutPresetName>
 
 if (
@@ -170,17 +194,11 @@ for (const code of INTERFACE_LANGUAGE_PICKER_CODES) {
  * Registry locales not in the picker: map to the closest pack layout. Omitted → `english`.
  */
 const EXTENDED_UI_LOCALE_TO_PRESET: Partial<Record<LocaleCode, LayoutPresetName>> = {
-  bg: 'russian',
   bn: 'bengali',
   ca: 'spanish',
-  cs: 'czech',
-  da: 'norwegian',
-  el: 'greek',
   es: 'spanish',
-  fi: 'swedish',
   ha: 'nigerian',
   he: 'hebrew',
-  hu: 'hungarian',
   hy: 'armenianEastern',
   ka: 'georgian',
   kk: 'russian',
@@ -189,10 +207,6 @@ const EXTENDED_UI_LOCALE_TO_PRESET: Partial<Record<LocaleCode, LayoutPresetName>
   mn: 'russian',
   my: 'burmese',
   ne: 'hindi',
-  no: 'norwegian',
-  sk: 'czech',
-  sr: 'russian',
-  sv: 'swedish',
   tg: 'russian',
   tk: 'turkish',
   ur: 'urdu',

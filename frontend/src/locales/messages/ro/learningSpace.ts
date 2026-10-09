@@ -1,6 +1,8 @@
 /**
- * Learning Space UI copy (en).
+ * ro UI — learningSpace
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
+
 export default {
   'learningSpace.title': 'Learning Space',
   'learningSpace.loadFailed': 'Could not load Learning Space',

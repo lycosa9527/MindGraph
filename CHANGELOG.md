@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.148] - 2026-10-10
+
+> **Twelve more European interface languages, each labeled with its Chinese name.**
+
+### Added
+
+- **界面语言** — Settings, the landing language menu, and the mobile account picker add Norwegian (`no`), Swedish (`sv`), Danish (`da`), Finnish (`fi`), Czech (`cs`), Slovak (`sk`), Romanian (`ro`), Hungarian (`hu`), Greek (`el`), Bulgarian (`bg`), Croatian (`hr`), and Serbian (`sr`). Browser tags `nb` and `nn` use Norwegian. Copy is filled from `zh`. Nordic and Slavic layouts use the closest bundled keyboard; Romanian and Croatian stay on the English layout.
+
+### Changed
+
+- **语言菜单** — A language that is not Chinese shows its Chinese name beside the native name, for example `Norsk (挪威语)`. 简体中文 and 繁體中文 stay native-only. Settings, the bilingual pickers, and the mobile account list use the same label as the landing menu.
+
+### Tests
+
+- [`frontend/tests/interfaceLanguagePicker.spec.ts`](frontend/tests/interfaceLanguagePicker.spec.ts), [`frontend/tests/galleryLanguageMenuRows.spec.ts`](frontend/tests/galleryLanguageMenuRows.spec.ts), [`frontend/tests/diagramDefaultPlaceholders.spec.ts`](frontend/tests/diagramDefaultPlaceholders.spec.ts)
+
 ## [5.180.147] - 2026-10-09
 
 > **Bayi sign-up is a mobile number plus a school invitation code, and a school can rotate that code.**
