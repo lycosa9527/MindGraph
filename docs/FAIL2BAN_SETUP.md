@@ -231,8 +231,6 @@ export PYTHONPATH="$PWD"
 python3 -m services.infrastructure.security.fail2ban_integration.report_ban 198.51.100.1
 ```
 
-Or use [`scripts/fail2ban_report_ban.sh`](../scripts/fail2ban_report_ban.sh) with `MINDGRAPH_ROOT` set.
-
 ## 4. Optional: `allowipv6` warning
 
 If logs show `'allowipv6' not defined`, add to `/etc/fail2ban/jail.local`:

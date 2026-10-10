@@ -12,9 +12,9 @@ Repository: https://github.com/lycosa9527/MindGraph
 |-------|--------|
 | WSL, conda, paths, no `npm run build` | [`.cursor/rules/wsl-conda-dev.mdc`](.cursor/rules/wsl-conda-dev.mdc) |
 | CI before commit/push | [`.cursor/rules/ci-before-commit-push.mdc`](.cursor/rules/ci-before-commit-push.mdc) → [`scripts/ci-local.sh`](scripts/ci-local.sh) |
-| i18n: translate from `zh`, fill from `en` | [`.cursor/rules/i18n-zh-source.mdc`](.cursor/rules/i18n-zh-source.mdc) |
+| i18n: translate from `zh`; fill a new locale from `en` once | [`frontend/src/i18n/locales.ts`](frontend/src/i18n/locales.ts) — do not rematerialize a locale that already has translations |
 | File-reader Windows exe rebuild | [`.cursor/rules/file-reader-rebuild.mdc`](.cursor/rules/file-reader-rebuild.mdc) (glob: `clients/file-reader/**`) |
-| 研习社 / Zulip reference | [`.cursor/rules/workshop-zulip-reference.mdc`](.cursor/rules/workshop-zulip-reference.mdc) (workshop chat only; not canvas `workshop_ws`) |
+| Docs and tests index | [`docs/README.md`](docs/README.md), [`tests/README.md`](tests/README.md) |
 
 **DingTalk bind:** MindBot pair-code ingress (`services/mindbot/tools/`); bind/unbind via rotating codes — see [`docs/architecture/dingtalk_account_binding.md`](docs/architecture/dingtalk_account_binding.md) and [`docs/architecture/mindbot_tool_ingress.md`](docs/architecture/mindbot_tool_ingress.md).
 

@@ -5,17 +5,16 @@
 MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features intelligent LLM-based classification, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
 **Base URL**: `https://mg.mindspringedu.com` (or your deployed server URL)  
-**API Version**: 4.12.0  
-**Architecture**: Multi-agent system with smart LLM classification
+**App version**: 5.180.150  
+**Architecture**: FastAPI with LLM classification
 
 **Key Features**:
 - **Smart Classification**: LLM-based diagram type detection
-- **10 Diagram Types**: Complete Thinking Maps, Mind Maps, and Concept Maps coverage
-- **High Performance**: Dual-model LLM system (qwen-turbo + qwen-plus)
-- **Multi-language**: English and Chinese support
-- **Secure Authentication**: API key support for external integrations
+- **10 Diagram Types**: Thinking Maps (8), Mind Maps, and Concept Maps
+- **Multi-language**: prompt output follows the request `language` (149 codes in `data/prompt_language_registry.json`). UI language is separate
+- **Secure Authentication**: API key support for external integrations (`X-API-Key`)
 
-**Endpoint Compatibility**: Both `/endpoint` and `/api/endpoint` formats are supported.
+External routes are mounted under `/api`.
 
 ## Authentication | 身份验证
 

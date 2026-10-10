@@ -37,9 +37,15 @@ if (!viteConfig.includes('urlPattern: /^\\/assets\\//')) {
   throw new Error('vite PWA runtimeCaching must include /assets/ CacheFirst rule')
 }
 
-if (viteConfig.includes('navigateFallback:')) {
+if (!viteConfig.includes('navigateFallback: null')) {
   throw new Error(
-    'vite PWA must not set navigateFallback; a precached shell freezes the CSP nonce and VOD hosts'
+    'vite PWA must set navigateFallback: null; the plugin default binds index.html and throws non-precached-url'
+  )
+}
+
+if (/navigateFallback:\s*['"`]/.test(viteConfig)) {
+  throw new Error(
+    'vite PWA must not set a navigateFallback URL; a precached shell freezes the CSP nonce and VOD hosts'
   )
 }
 

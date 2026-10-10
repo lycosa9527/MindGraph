@@ -363,7 +363,10 @@ export default defineConfig({
         globPatterns: isPwaDev ? [] : PWA_PRECACHE_GLOB_PATTERNS,
         // Sidebar quote pools are fetched on demand after login (locale-specific).
         globIgnores: ['**/sidebar-quotes-*', '**/training/roles/**', '**/stats.html'],
-        // No navigateFallback. Client routes are served by FastAPI with a fresh CSP.
+        // Plugin default is index.html, which calls createHandlerBoundToURL and
+        // throws non-precached-url because the shell is not precached. Client
+        // routes stay on the network so FastAPI can stamp a fresh CSP nonce.
+        navigateFallback: null,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: isPwaDev ? undefined : PWA_RUNTIME_CACHING,
       },

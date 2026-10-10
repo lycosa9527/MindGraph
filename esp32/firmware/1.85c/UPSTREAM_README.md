@@ -1,6 +1,6 @@
 # System Super Example
 
-[中文版本](./README_CN.md)
+This tree ships the English upstream README.
 
 This example demonstrates how to start a complete ESP-Brookesia System Super product shell. The default build integrates HAL, Display/Audio/Wi-Fi/HTTP/Storage/SNTP/Video/Device services, NES emulation, Coze and Xiaozhi agents, the GUI LVGL backend, the JavaScript runtime, and the built-in Settings, App Store, and Files apps.
 

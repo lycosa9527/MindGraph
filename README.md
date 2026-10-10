@@ -13,7 +13,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.13+-blue.svg" alt="Python"></a>
   <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.104+-green.svg" alt="FastAPI"></a>
   <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3.5+-42b883.svg" alt="Vue"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.169.6-brightgreen.svg" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.180.150-brightgreen.svg" alt="Version"></a>
 </p>
 
 ---
@@ -57,8 +57,9 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 - Output in 149+ languages (ISO/BCP-47, filterable prompt-language picker)
 - **Thinking coins** (思维币): optional trial-school wallet for LLM usage metering; daily login bucket expires at Beijing midnight (no rollover) — see [docs/architecture/thinking_coins.md](docs/architecture/thinking_coins.md)
 
-**MindMate & MindBot**
+**MindMate, MindBot & Kitty**
 
+- **Kitty Agent**: voice and canvas control on the desktop canvas and mobile `/m/kitty` (always on)
 - **MindMate**: Dify-backed AI chat with SSE streaming, diagram preview cache, and canvas navigation handoff
 - **MindBot**: DingTalk HTTP robot → Dify per-organization config; pair-code account binding; unified conversation history with web MindMate
 - **Document Summary** (文档总结): canvas panel that ingests documents, images, web URLs, and chat transcripts into a session package and generates RAG-backed mind maps
@@ -70,6 +71,7 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 - KaTeX math rendering in diagram labels (mhchem for chemistry notation)
 - Branch drag-and-drop (long-press to reparent or swap nodes)
 - Presentation mode with pointer, hand, laser, spotlight (size presets), highlighter, pen, and countdown timer
+- 思维讲堂: canvas tour and slide lecture (幻灯片讲解 is always available)
 - Learning sheet float bar: custom pick and random blank sessions
 - Auto-save with dirty/saving indicators and relative timestamps
 - Diagram snapshots: up to 10 point-in-time versions per diagram with click-to-recall
@@ -90,8 +92,7 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 
 **Internationalization**
 
-- Full UI in 77 bundled locales (tier-1: zh, en; tier-2: 75+ locales including RTL Dhivehi)
-- Interface language picker with parity-checked bundles
+- 79 bundled UI locales. Settings → Interface language lists 45 of them. A language that is not Chinese shows its Chinese name beside the native name
 - Prompt output language independent of UI language
 
 **Security & Auth**
@@ -205,12 +206,23 @@ Notable feature flags (see `env.example` for full list):
 | Flag | Default | Description |
 |------|---------|-------------|
 | `FEATURE_MINDBOT` | `True` | DingTalk MindBot → Dify |
+| `FEATURE_SHOWCASE` | `True` | Showcase (案例广场) |
+| `FEATURE_ZHIHUI` | `True` | ZhiHui text-to-image |
+| `FEATURE_STUDENT_LEARNING_SPACE` | `True` | Classroom homework |
 | `FEATURE_MINDMATE` | `False` | MindMate AI chat |
 | `FEATURE_KNOWLEDGE_SPACE` | `False` | RAG / Document Summary (requires Qdrant + Celery) |
+| `FEATURE_LIBRARY` | `False` | Library PDF viewer |
+| `FEATURE_WORKSHOP_CHAT` | `False` | Workshop Chat (研习社) |
 | `FEATURE_WECHAT_LOGIN` | `False` | WeChat QR login (platform-wide; production only — one Open Platform domain) |
 | `FEATURE_DINGTALK_LOGIN` | `False` | DingTalk QR login (per school AppKey/Secret; enable on production) |
 | `FEATURE_WORD_ADDIN` | `False` | Account Word add-in download + deploy zip (hosted `/word-addin/` shell stays on) |
 | `FEATURE_THINKING_COINS` | `False` | Trial-tier org thinking coin wallet |
+| `FEATURE_MCP_HTTP` | `False` | MCP Streamable HTTP at `/api/mcp` |
+| `FEATURE_TRAINING` | `False` | Org training follow |
+| `FEATURE_VOD` | `False` | Admin online video library |
+| `FEATURE_MARKETS` | `False` | Market catalog and Alipay checkout |
+
+Kitty Agent and 思维讲堂 slide lecture stay on in every deployment. Full flag list: `config/features_config.py`.
 
 Production hardening: set `COLLAB_FANOUT_ORIGIN_SECRET` (shared across workers), `ALLOWED_HOSTS`, and see [docs/architecture/production_security_deploy.md](docs/architecture/production_security_deploy.md).
 
@@ -233,23 +245,18 @@ API keys are created in the admin panel (`/admin`). See [docs/API_REFERENCE.md](
 
 ## Documentation
 
+Index: [docs/README.md](docs/README.md). Tests: [tests/README.md](tests/README.md).
+
 - [API Reference](docs/API_REFERENCE.md)
 - [Changelog](CHANGELOG.md)
-- [Architecture](docs/ARCHITECTURE.md)
+- [Canvas workshop architecture](docs/ARCHITECTURE.md)
+- [Production Security Deploy](docs/architecture/production_security_deploy.md)
 - [OAuth QR Login](docs/architecture/oauth_qr_login.md)
 - [Thinking Coins](docs/architecture/thinking_coins.md)
 - [Showcase](services/showcase/README.md)
+- [Kitty](services/kitty/README.md)
 - [DingTalk Account Binding](docs/architecture/dingtalk_account_binding.md)
-- [MindBot Tool Ingress](docs/architecture/mindbot_tool_ingress.md)
-- [Production Security Deploy](docs/architecture/production_security_deploy.md)
-- [Mind Map v2 Separation](docs/architecture/mindmap_v2_separation.md)
-- [File Reader Client](clients/file-reader/README.md)
-- [Redis Setup](docs/REDIS_SETUP.md)
-- [Qdrant Setup](docs/QDRANT_SETUP.md)
-- [PostgreSQL Setup](docs/POSTGRES_SETUP.md)
-- [Celery Setup](docs/CELERY_SETUP.md)
-- [Fail2ban + AbuseIPDB](docs/FAIL2BAN_SETUP.md)
-- [Uvicorn `resource_tracker` / SIGHUP (operations)](docs/operations/UVICORN_RESOURCE_TRACKER.md)
+- [`.mg` file format](docs/MG_FILE_FORMAT.md)
 
 ---
 

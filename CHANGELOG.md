@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.150] - 2026-10-10
+
+> **www and mg WebSocket upgrades stay open, and the service worker leaves the HTML shell on the network.**
+
+### Fixed
+
+- **协作 WebSocket** — When `COLLAB_WS_ALLOWED_ORIGINS` is set, `https://www.mindspringedu.com` and `https://mg.mindspringedu.com` are both first-party. The allowlist does not have to name either host. Plain `http` and every other origin stay rejected. Collab, slide remote, training remote, ASR, live translate, and chat share that check.
+- **PWA** — The service worker turns navigation fallback off. The plugin default bound `index.html`, which is not precached, and threw `non-precached-url`. Document requests stay on the network so each page keeps a fresh CSP nonce.
+
+### Tests
+
+- [`tests/test_collab_stability_helpers.py`](tests/test_collab_stability_helpers.py), [`frontend/scripts/check-pwa-workbox.ts`](frontend/scripts/check-pwa-workbox.ts)
+
 ## [5.180.149] - 2026-10-10
 
 > **Retired modules are gone, and Kitty Agent and 思维讲堂 slide lecture stay on.**

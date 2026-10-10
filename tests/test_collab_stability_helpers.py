@@ -10,9 +10,23 @@ from starlette.datastructures import Headers
 from services.online_collab.lifecycle import online_collab_session_closing as sc
 from utils.collab_ws_origin import (
     canvas_collab_websocket_origin_is_allowed,
+    close_ws_if_origin_disallowed,
     load_collab_ws_allowed_origins_env,
     parse_collab_ws_allowed_origins,
 )
+
+
+class _OriginSocket:
+    """Minimal socket for the production CSWSH close path."""
+
+    def __init__(self, origin: str) -> None:
+        """Store the Origin header the browser sent."""
+        self.headers = Headers({"origin": origin})
+        self.closed: list[tuple[int, str]] = []
+
+    async def close(self, code: int = 1000, reason: str = "") -> None:
+        """Record a close so the test can see a rejection."""
+        self.closed.append((code, reason))
 
 
 def test_parse_collab_ws_allowed_origins_trims_and_lowercases_scheme_host() -> None:
@@ -66,20 +80,39 @@ def test_load_origins_stays_off_without_allowlist(monkeypatch: pytest.MonkeyPatc
     assert load_collab_ws_allowed_origins_env() == frozenset()
 
 
-def test_www_sibling_allowed_when_mg_https_is_configured(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Browsers on www share the mg HTTPS origin; plain http stays rejected."""
+def test_www_and_mg_allowed_whenever_policy_is_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    """www and mg HTTPS are first-party even when the allowlist names neither."""
     monkeypatch.delenv("COLLAB_WS_ALLOW_MISSING_ORIGIN", raising=False)
-    monkeypatch.setenv("EXTERNAL_BASE_URL", "https://mg.mindspringedu.com")
+    monkeypatch.delenv("EXTERNAL_BASE_URL", raising=False)
     monkeypatch.setenv("COLLAB_WS_ALLOWED_ORIGINS", "https://app.example.com")
     allowed = load_collab_ws_allowed_origins_env()
     www = Headers({"origin": "https://www.mindspringedu.com"})
+    mg = Headers({"origin": "https://mg.mindspringedu.com"})
     assert canvas_collab_websocket_origin_is_allowed(www, allowed) is True
+    assert canvas_collab_websocket_origin_is_allowed(mg, allowed) is True
     http_www = Headers({"origin": "http://www.mindspringedu.com"})
     assert canvas_collab_websocket_origin_is_allowed(http_www, allowed) is False
     http_mg = Headers({"origin": "http://mg.mindspringedu.com"})
     assert canvas_collab_websocket_origin_is_allowed(http_mg, allowed) is False
     other = Headers({"origin": "https://evil.example"})
     assert canvas_collab_websocket_origin_is_allowed(other, allowed) is False
+
+
+@pytest.mark.asyncio
+async def test_production_www_origin_is_not_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The logged www upgrade must pass even when the allowlist names neither host."""
+    monkeypatch.delenv("COLLAB_WS_ALLOW_MISSING_ORIGIN", raising=False)
+    monkeypatch.delenv("EXTERNAL_BASE_URL", raising=False)
+    monkeypatch.setenv("COLLAB_WS_ALLOWED_ORIGINS", "https://app.example.com")
+    logged = _OriginSocket("https://www.mindspringedu.com")
+    folded = _OriginSocket("HTTPS://WWW.MindSpringEdu.com/")
+    evil = _OriginSocket("https://evil.example")
+    assert await close_ws_if_origin_disallowed(logged, "MindmateCollab") is False
+    assert await close_ws_if_origin_disallowed(folded, "SlideRemote") is False
+    assert await close_ws_if_origin_disallowed(evil, "MindmateNotify") is True
+    assert not logged.closed
+    assert not folded.closed
+    assert evil.closed == [(1008, "Cross-origin connection is not allowed")]
 
 
 @pytest.mark.asyncio

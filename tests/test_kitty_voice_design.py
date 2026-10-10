@@ -152,7 +152,7 @@ async def test_runtime_falls_back_to_v3_when_locate_empty(
 def test_persist_kitty_tts_pin_upserts_env_file(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Located v3.5 voice is written to .env and process env."""
     env_file = tmp_path / ".env"
-    env_file.write_text("FEATURE_KITTY_AGENT=True\n", encoding="utf-8")
+    env_file.write_text("FEATURE_MINDMATE=False\n", encoding="utf-8")
     monkeypatch.delenv("KITTY_TTS_MODEL", raising=False)
     monkeypatch.delenv("KITTY_TTS_VOICE", raising=False)
     wrote = persist_kitty_tts_pin(
@@ -162,6 +162,7 @@ def test_persist_kitty_tts_pin_upserts_env_file(tmp_path, monkeypatch: pytest.Mo
     )
     assert wrote is True
     text = env_file.read_text(encoding="utf-8")
+    assert "FEATURE_MINDMATE=False" in text
     assert "KITTY_TTS_MODEL=cosyvoice-v3.5-flash" in text
     assert "KITTY_TTS_VOICE=cosyvoice-v3.5-flash-vd-mgv35f-test" in text
     assert os.environ["KITTY_TTS_VOICE"] == "cosyvoice-v3.5-flash-vd-mgv35f-test"

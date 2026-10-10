@@ -54,16 +54,6 @@ DIAGRAMS_USER_LIST = "diagrams:user:{user_id}:list"
 TTL_DIAGRAM = int(os.getenv("DIAGRAM_CACHE_TTL", "604800"))  # 7 d default
 
 # ---------------------------------------------------------------------------
-# Community cache  (redis_community_cache.py)
-# ---------------------------------------------------------------------------
-COMMUNITY_VERSION = "community:version"
-COMMUNITY_LIST = "community:list:{hash16}:v{version}"
-COMMUNITY_POST = "community:post:{post_id}"
-TTL_COMMUNITY_LIST = 60
-TTL_COMMUNITY_POST = 300
-TTL_COMMUNITY_VERSION = 86_400
-
-# ---------------------------------------------------------------------------
 # Showcase cache  (redis_showcase_cache.py)
 # ---------------------------------------------------------------------------
 SHOWCASE_VERSION = "showcase:version"
