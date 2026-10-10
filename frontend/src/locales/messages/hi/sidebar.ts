@@ -147,7 +147,7 @@ export default {
   'sidebar.logout': 'Log out',
   'sidebar.account': 'खाता',
   'sidebar.roleSuperAdmin': 'सुपर एडमिन',
-  'sidebar.rolePlatformAdmin': 'शिक्षण शोधकर्ता',
+  'sidebar.rolePlatformAdmin': 'शोधकर्ता',
   'sidebar.roleExpert': 'विशेषज्ञ',
   'sidebar.roleSchoolAdmin': 'स्कूल एडमिन',
   'sidebar.roleSchoolEdition': 'स्कूल',

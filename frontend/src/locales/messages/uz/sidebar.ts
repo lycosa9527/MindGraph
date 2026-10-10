@@ -147,7 +147,7 @@ export default {
   'sidebar.logout': 'Log out',
   'sidebar.account': 'Hisob',
   'sidebar.roleSuperAdmin': 'Super admin',
-  'sidebar.rolePlatformAdmin': 'O‘qitish tadqiqotchi',
+  'sidebar.rolePlatformAdmin': 'Tadqiqotchi',
   'sidebar.roleExpert': 'Mutaxassis',
   'sidebar.roleSchoolAdmin': 'Maktab admini',
   'sidebar.roleSchoolEdition': 'Maktab',

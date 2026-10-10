@@ -147,7 +147,7 @@ export default {
   'sidebar.logout': 'Log out',
   'sidebar.account': 'Rekening',
   'sidebar.roleSuperAdmin': 'Superadmin',
-  'sidebar.rolePlatformAdmin': 'Onderrignavorser',
+  'sidebar.rolePlatformAdmin': 'Navorser',
   'sidebar.roleExpert': 'Kundige',
   'sidebar.roleSchoolAdmin': 'Skooladmin',
   'sidebar.roleSchoolEdition': 'Skool',

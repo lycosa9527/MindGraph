@@ -147,7 +147,7 @@ export default {
   'sidebar.logout': 'Log out',
   'sidebar.account': 'Impostazioni dell\'account',
   'sidebar.roleSuperAdmin': 'Super admin',
-  'sidebar.rolePlatformAdmin': 'Ricercatore didattico',
+  'sidebar.rolePlatformAdmin': 'Ricercatore',
   'sidebar.roleExpert': 'Esperto',
   'sidebar.roleSchoolAdmin': 'Admin scuola',
   'sidebar.roleSchoolEdition': 'Scuola',

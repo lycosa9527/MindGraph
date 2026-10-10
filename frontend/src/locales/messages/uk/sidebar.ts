@@ -147,7 +147,7 @@ export default {
   'sidebar.logout': 'Log out',
   'sidebar.account': 'Обліковий запис',
   'sidebar.roleSuperAdmin': 'Суперадмін',
-  'sidebar.rolePlatformAdmin': 'Дослідник викладання',
+  'sidebar.rolePlatformAdmin': 'Дослідник',
   'sidebar.roleExpert': 'Експерт',
   'sidebar.roleSchoolAdmin': 'Адмін школи',
   'sidebar.roleSchoolEdition': 'Школа',

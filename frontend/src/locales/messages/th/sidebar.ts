@@ -149,7 +149,7 @@ export default {
   'sidebar.roleSuperAdmin': 'ผู้ดูแลสูงสุด',
   'sidebar.rolePlatformAdmin': 'นักวิจัยการสอน',
   'sidebar.roleExpert': 'ผู้เชี่ยวชาญ',
-  'sidebar.roleSchoolAdmin': 'ผู้ดูแลโรงเรียน',
+  'sidebar.roleSchoolAdmin': 'แอดมินโรงเรียน',
   'sidebar.roleSchoolEdition': 'โรงเรียน',
   'sidebar.roleTrialEdition': 'ทดลอง',
   'sidebar.roleSuperMember': 'สมาชิกพิเศษ',
