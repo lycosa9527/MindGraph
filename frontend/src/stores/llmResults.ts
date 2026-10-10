@@ -7,8 +7,8 @@
  * - llm-progress-renderer.js
  *
  * Features:
- * - Caches the canvas run (one model at a time; older keys still load)
- * - TTL-based cache validation (10 minutes)
+ * - One model runs at a time; each model's last success stays selectable
+ * - Older keys still load from saved diagrams
  * - First-result-wins rendering
  * - Click to switch between cached results
  * - Per-model loading/ready/error states
@@ -70,8 +70,6 @@ const MODELS = ['express'] as const
 /** Live canvas menu plus older keys still stored on diagrams. */
 export type { CanvasLlmModel as LLMModel } from '@/config/canvasLlmMenu'
 
-const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
-
 export {
   isLlmResultForCurrentSession,
   shouldPaintCompletedLlmModel,
@@ -113,6 +111,12 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
 
   /** Model painted by first-result-wins in the current generate round. */
   const paintedThisSession = ref<string | null>(null)
+  /** Saved model the user opened while this run was still in flight. */
+  const pinnedDuringRun = ref<string | null>(null)
+  /** Models whose HTTP result was stored for the current generate round. */
+  const acceptedThisRun = ref<Record<string, true>>({})
+  /** Failure from the current round, kept even when a prior success stays. */
+  const runErrors = ref<Record<string, { error: string; errorType?: string }>>({})
 
   // Getters
   const models = computed(() => MODELS)
@@ -131,24 +135,14 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     return Object.values(results.value).filter((r) => r.success).length
   })
 
-  // Check if a result is still valid (within TTL)
+  /** A successful spec stays until that model is replaced or the diagram session clears. */
   function isResultValid(model: string): boolean {
     const result = results.value[model]
-    if (!result || !result.success) return false
-
-    const age = Date.now() - result.timestamp
-    return age < CACHE_TTL_MS
+    return Boolean(result?.success && result.spec)
   }
 
-  // Get valid (non-expired) result for a model
   function getValidResult(model: string): LLMResult | null {
     if (!isResultValid(model)) {
-      // Clean up expired result
-      if (results.value[model]) {
-        delete results.value[model]
-        modelStates.value[model] = 'idle'
-        modelPhases.value[model] = 'idle'
-      }
       return null
     }
     return results.value[model]
@@ -255,6 +249,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     if (loaded) {
       selectedModel.value = model
       rememberPreferredModel(model)
+      if (isGenerating.value) {
+        pinnedDuringRun.value = model
+      }
       // Defer stamp so getSpecForSave does not block first paint after soft load.
       void nextTick(() => {
         const stamped = diagramStore.getSpecForSave()
@@ -281,6 +278,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     totalModels.value = null
     lockedTopic.value = null
     paintedThisSession.value = null
+    pinnedDuringRun.value = null
+    acceptedThisRun.value = {}
+    runErrors.value = {}
   }
 
   function rememberPreferredModel(model: string | null): void {
@@ -319,35 +319,67 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     clearCachedResultsOnly()
   }
 
-  // Set selected model (for pre-selection, e.g. concept map relationship)
+  // Menu choice. Stamp the painted model first so a later switch still has its edits.
   function setSelectedModel(model: string | null): void {
+    if (model !== selectedModel.value && !isGenerating.value) {
+      const spec = diagramStore.getSpecForSave()
+      if (spec) {
+        updateCurrentModelSpec(spec)
+      }
+    }
     selectedModel.value = model
     preferredModel.value = model
   }
 
-  // Cancel all active requests
-  function cancelAllRequests(): void {
+  function abortInFlightRequests(): void {
     abortControllers.value.forEach((controller) => {
       controller.abort()
     })
     abortControllers.value = []
-    setAllModelsState('idle')
-    resetModelPhases()
+  }
+
+  // Cancel all active requests
+  function settleModelAfterStop(model: string): void {
+    if (isResultValid(model)) {
+      modelStates.value[model] = 'ready'
+      modelPhases.value[model] = 'ready'
+      return
+    }
+    modelStates.value[model] = 'idle'
+    modelPhases.value[model] = 'idle'
+  }
+
+  function cancelAllRequests(): void {
+    abortInFlightRequests()
+    const modelsToSettle = new Set([
+      ...Object.keys(modelStates.value),
+      ...Object.keys(results.value),
+      ...MODELS,
+    ])
+    modelsToSettle.forEach((model) => {
+      settleModelAfterStop(model)
+    })
     isGenerating.value = false
   }
 
-  // Start generation (called before parallel API calls)
+  /**
+   * Start one model's run. Other models' saved responses stay so the user can
+   * switch back. This model's previous spec stays until a new success replaces it.
+   */
   function startGeneration(
     newSessionId: string,
     diagramType: string,
     modelsToRun?: string[],
     topicToLock?: string | null
   ): void {
-    cancelAllRequests()
-    clearCachedResultsOnly()
+    abortInFlightRequests()
 
     isGenerating.value = true
     sessionId.value = newSessionId
+    acceptedThisRun.value = {}
+    runErrors.value = {}
+    paintedThisSession.value = null
+    pinnedDuringRun.value = null
     const trimmedLock = typeof topicToLock === 'string' ? topicToLock.trim() : ''
     lockedTopic.value = trimmedLock || null
 
@@ -358,9 +390,11 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     }
     expectedDiagramType.value = normalizedType
 
-    // Set loading state for models that will run
     const targetModels = modelsToRun || [...MODELS]
     totalModels.value = targetModels.length
+    if (selectedModel.value && targetModels.includes(selectedModel.value)) {
+      selectedModel.value = null
+    }
     setAllModelsState('loading', targetModels)
     targetModels.forEach((model) => {
       modelPhases.value[model] = 'sending'
@@ -403,6 +437,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       diagramType,
       elapsed,
     })
+    acceptedThisRun.value = { ...acceptedThisRun.value, [model]: true }
 
     const isFirstPaint = paintedThisSession.value === null
     if (
@@ -410,6 +445,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
         paintedModel: paintedThisSession.value,
         selectedModel: selectedModel.value,
         completedModel: model,
+        pinnedModel: pinnedDuringRun.value,
       })
     ) {
       return true
@@ -440,6 +476,16 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     if (!isLlmResultForCurrentSession(sessionId.value, forSessionId)) {
       return
     }
+    runErrors.value = {
+      ...runErrors.value,
+      [model]: { error, errorType },
+    }
+    const previous = results.value[model]
+    if (previous?.success && previous.spec) {
+      modelStates.value[model] = 'ready'
+      modelPhases.value[model] = 'ready'
+      return
+    }
     storeResult(model, {
       success: false,
       error,
@@ -448,21 +494,21 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     })
   }
 
+  function runSuccessCount(models: string[]): number {
+    return models.filter((model) => acceptedThisRun.value[model]).length
+  }
+
+  function runErrorFor(model: string): { error: string; errorType?: string } | null {
+    return runErrors.value[model] ?? null
+  }
+
   // Complete generation (called when all models finish)
   function completeGeneration(): void {
     isGenerating.value = false
 
-    // Clear loading states for any models still loading
     Object.entries(modelStates.value).forEach(([model, state]) => {
       if (state === 'loading') {
-        modelStates.value[model] = 'idle'
-        if (
-          modelPhases.value[model] === 'sending' ||
-          modelPhases.value[model] === 'waiting' ||
-          modelPhases.value[model] === 'streaming'
-        ) {
-          modelPhases.value[model] = 'idle'
-        }
+        settleModelAfterStop(model)
       }
     })
   }
@@ -604,6 +650,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     startGeneration,
     handleModelSuccess,
     handleModelError,
+    runSuccessCount,
+    runErrorFor,
     completeGeneration,
     addAbortController,
     removeAbortController,

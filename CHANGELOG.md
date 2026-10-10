@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.154] - 2026-10-11
+
+> **Each canvas model keeps the diagram it generated, so switching back shows that response.**
+
+### Fixed
+
+- **画布模型** — Generation still runs one model at a time. Express, Qwen, and the other menu choices each keep their last successful diagram. Choosing a model that already ran loads that diagram. A failed retry keeps the previous success. Opening a saved model while another is still generating is not replaced when the new one finishes. Both diagrams are saved with the file, so they are still there after you reopen it.
+
+### Tests
+
+- [`frontend/tests/llmResultsTeardown.spec.ts`](frontend/tests/llmResultsTeardown.spec.ts)
+
 ## [5.180.153] - 2026-10-10
 
 > **Thinking-map labels wrap like mind-map branches, and diagram generation asks for a JSON schema.**

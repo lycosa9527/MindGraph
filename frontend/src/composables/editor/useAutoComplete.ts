@@ -715,7 +715,7 @@ export function useAutoComplete() {
 
       llmResultsStore.completeGeneration()
 
-      const successCount = llmResultsStore.successCount
+      const successCount = llmResultsStore.runSuccessCount(modelsToRun)
       const totalCount = modelsToRun.length
 
       eventBus.emit('llm:generation_completed', {
@@ -727,10 +727,8 @@ export function useAutoComplete() {
       onAllComplete?.(successCount, totalCount)
 
       if (successCount === 0) {
-        const failedModel = modelsToRun.find(
-          (model) => llmResultsStore.results[model]?.success === false
-        )
-        const failedResult = failedModel ? llmResultsStore.results[failedModel] : undefined
+        const failedModel = modelsToRun.find((model) => llmResultsStore.runErrorFor(model))
+        const failedResult = failedModel ? llmResultsStore.runErrorFor(failedModel) : null
         const firstModelError = failedResult?.error
         const firstModelErrorType = failedResult?.errorType
         const errorMsg =

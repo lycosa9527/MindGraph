@@ -132,9 +132,11 @@ export function useMindMapRibbonChromeActions() {
   }
 
   function selectLlm(model: string): void {
-    llmResultsStore.setSelectedModel(model)
-    void leaveTranslatePreview().then(() => {
-      switchToModel(model)
+    void leaveTranslatePreview().then(async () => {
+      const switched = await switchToModel(model)
+      if (!switched) {
+        llmResultsStore.setSelectedModel(model)
+      }
     })
   }
 

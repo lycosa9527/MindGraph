@@ -5,7 +5,7 @@
 MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features intelligent LLM-based classification, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
 **Base URL**: `https://mg.mindspringedu.com` (or your deployed server URL)  
-**App version**: 5.180.153  
+**App version**: 5.180.154  
 **Architecture**: FastAPI with LLM classification
 
 **Key Features**:

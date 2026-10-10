@@ -136,6 +136,14 @@ describe('llmResults regenerate paint / stamp', () => {
         completedModel: 'deepseek',
       })
     ).toBe(true)
+    expect(
+      shouldPaintCompletedLlmModel({
+        paintedModel: null,
+        selectedModel: 'express',
+        completedModel: 'qwen3.8-flash',
+        pinnedModel: 'express',
+      })
+    ).toBe(false)
   })
 
   it('drops completions from a superseded generate session', () => {
@@ -218,6 +226,68 @@ describe('llmResults regenerate paint / stamp', () => {
     expect(store.hasAnyResults).toBe(false)
     expect(store.selectedModel).toBeNull()
     expect(store.isGenerating).toBe(true)
+  })
+
+  it('keeps each model response when a later model runs', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.storeResult('express', {
+      success: true,
+      spec: { topic: 'express-map' },
+      elapsed: 1,
+    })
+    store.setModelState('express', 'ready')
+    store.setSelectedModel('qwen3.8-flash')
+
+    store.startGeneration('gen_qwen', 'mindmap', ['qwen3.8-flash'], 'water')
+
+    expect(store.getValidResult('express')?.spec).toEqual({ topic: 'express-map' })
+    expect(store.modelStates.express).toBe('ready')
+    expect(store.modelStates['qwen3.8-flash']).toBe('loading')
+    expect(store.canvasModelChoice).toBe('qwen3.8-flash')
+
+    store.storeResult('qwen3.8-flash', {
+      success: true,
+      spec: { topic: 'qwen-map' },
+      elapsed: 2,
+    })
+    store.setSelectedModel('qwen3.8-flash')
+    const persisted = store.getResultsForPersistence()
+    expect(persisted?.selectedModel).toBe('qwen3.8-flash')
+    expect(Object.keys(persisted?.results ?? {}).sort()).toEqual(['express', 'qwen3.8-flash'])
+  })
+
+  it('still returns a saved response after the old 10 minute cache window', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.storeResult('express', {
+      success: true,
+      spec: { topic: 'kept' },
+      elapsed: 1,
+    })
+    store.results.express.timestamp = Date.now() - 11 * 60 * 1000
+
+    expect(store.getValidResult('express')?.spec).toEqual({ topic: 'kept' })
+    expect(store.modelStates.express).toBe('ready')
+  })
+
+  it('a failed rerun keeps the previous success for that model', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.startGeneration('gen_express', 'mindmap', ['express'])
+    store.storeResult('express', {
+      success: true,
+      spec: { topic: 'first' },
+      elapsed: 1,
+    })
+
+    store.startGeneration('gen_express_2', 'mindmap', ['express'])
+    store.handleModelError('express', 'timeout', 2, 'timeout', 'gen_express_2')
+
+    expect(store.results.express.spec).toEqual({ topic: 'first' })
+    expect(store.modelStates.express).toBe('ready')
+    expect(store.runSuccessCount(['express'])).toBe(0)
+    expect(store.runErrorFor('express')?.error).toBe('timeout')
   })
 
   it('does not overwrite a fresh DeepSeek spec with the stale canvas mid-generate', () => {
