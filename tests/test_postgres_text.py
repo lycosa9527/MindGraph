@@ -82,6 +82,7 @@ def test_app_engines_serialize_json_without_nul() -> None:
         context = connect_params["context"]
         wrapped = JSONB().bind_processor(target.dialect)({"topic": "浮力\x00"})
         dumper_cls = context.adapters.get_dumper(type(wrapped), PyFormat.TEXT)
+        assert dumper_cls is not None
         raw = dumper_cls(type(wrapped), context).dump(wrapped)
         loaded = json.loads(bytes(raw).decode())
         assert loaded["topic"] == "浮力"
