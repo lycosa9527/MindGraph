@@ -91,6 +91,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   })
   const modelPhases = ref<Record<string, ModelLoadPhase>>({ ...IDLE_PHASES })
   const selectedModel = ref<string | null>(null)
+  /** Menu choice kept across generation cache clears. selectedModel is the painted result. */
+  const preferredModel = ref<string | null>(null)
   const isGenerating = ref(false)
   const sessionId = ref<string | null>(null)
   const expectedDiagramType = ref<string | null>(null)
@@ -252,6 +254,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     )
     if (loaded) {
       selectedModel.value = model
+      rememberPreferredModel(model)
       // Defer stamp so getSpecForSave does not block first paint after soft load.
       void nextTick(() => {
         const stamped = diagramStore.getSpecForSave()
@@ -278,6 +281,10 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     totalModels.value = null
     lockedTopic.value = null
     paintedThisSession.value = null
+  }
+
+  function rememberPreferredModel(model: string | null): void {
+    if (model) preferredModel.value = model
   }
 
   function applyLockedTopicToSpec(
@@ -315,6 +322,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   // Set selected model (for pre-selection, e.g. concept map relationship)
   function setSelectedModel(model: string | null): void {
     selectedModel.value = model
+    preferredModel.value = model
   }
 
   // Cancel all active requests
@@ -408,6 +416,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     }
     if (isFirstPaint) {
       selectedModel.value = model
+      rememberPreferredModel(model)
     }
     const loaded = await switchToModel(model)
     if (!isLlmResultForCurrentSession(sessionId.value, forSessionId)) {
@@ -475,6 +484,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   function reset(): void {
     cancelAllRequests()
     clearCache()
+    preferredModel.value = null
     sessionId.value = null
     expectedDiagramType.value = null
     totalModels.value = null
@@ -552,8 +562,12 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       }
     })
     const sel = saved.selectedModel
-    selectedModel.value = sel && Object.keys(results.value).includes(sel) ? sel : null
+    const restored = sel && Object.keys(results.value).includes(sel) ? sel : null
+    selectedModel.value = restored
+    if (restored) preferredModel.value = restored
   }
+
+  const canvasModelChoice = computed(() => selectedModel.value || preferredModel.value)
 
   return {
     // State
@@ -561,6 +575,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     modelStates,
     modelPhases,
     selectedModel,
+    canvasModelChoice,
     isGenerating,
     contentChangeIsFromModelSwitch,
     sessionId,

@@ -1,4 +1,4 @@
-import { type Ref, ref } from 'vue'
+import { type Ref } from 'vue'
 
 import { useDiagramExport, useDiagramSpecForSave, useLanguage } from '@/composables'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -6,7 +6,10 @@ import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import { ANIMATION } from '@/config/uiConfig'
 import { useUIStore } from '@/stores'
 import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
-import { runLearningSheetRasterCapture } from '@/utils/diagramExportLearningSheet'
+import {
+  prepareLearningSheetAnswersForFit,
+  runLearningSheetRasterCapture,
+} from '@/utils/diagramExportLearningSheet'
 import { prepareDiagramCanvasForRasterCapture } from '@/utils/diagramExportPrep'
 import { captureDiagramPngData } from '@/utils/diagramExportRasterCapture'
 import { getDiagramCanvasPdfHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
@@ -56,6 +59,7 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
     if (!container) return null
 
     const saved = getViewport?.() ?? null
+    const restoreAnswers = await prepareLearningSheetAnswersForFit(diagramStore, exportOptions)
     try {
       await prepareDiagramCanvasForRasterCapture(fitForExport, {
         promptLanguage: uiStore.promptLanguage,
@@ -69,6 +73,7 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
       })
       return dataUrl
     } finally {
+      restoreAnswers()
       if (saved && setViewport) {
         setViewport(saved, { duration: ANIMATION.DURATION_FAST })
       }

@@ -8,19 +8,20 @@ import { X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import type {
+  ExplainBubblePosition,
+  ExplainBubbleSize,
+} from '@/composables/canvasToolbar/useNodeExplainBubblePosition'
+import type {
   ExplainResearchSource,
   MindMapNodeExplainTarget,
 } from '@/composables/mindMap/useMindMapNodeExplain'
 import {
   citedExplainIndexes,
+  explainCitationDisplayMap,
   hostFromUrl,
   lastThinkingLines,
   splitExplainCitationParts,
 } from '@/utils/mindMapExplainResearch'
-import type {
-  ExplainBubblePosition,
-  ExplainBubbleSize,
-} from '@/composables/canvasToolbar/useNodeExplainBubblePosition'
 
 const visible = defineModel<boolean>('visible', { required: true })
 
@@ -79,9 +80,7 @@ const pageStats = computed(() => {
   })
 })
 
-const thinkingLive = computed(
-  () => props.loading && !bodyText.value && !props.thinkingDone
-)
+const thinkingLive = computed(() => props.loading && !bodyText.value && !props.thinkingDone)
 
 const thinkingLabel = computed(() =>
   thinkingLive.value
@@ -89,9 +88,7 @@ const thinkingLabel = computed(() =>
     : t('canvas.mindMapNodeExplain.thinkingDone')
 )
 
-const showThinking = computed(
-  () => props.loading || !!thinkingText.value || !!pageStats.value
-)
+const showThinking = computed(() => props.loading || !!thinkingText.value || !!pageStats.value)
 
 const thinkingExpanded = ref(true)
 const thinkBodyEl = ref<HTMLElement | null>(null)
@@ -135,13 +132,22 @@ const awaiting = computed(() => props.loading && !bodyText.value && !showThinkin
 
 const bodyParts = computed(() => splitExplainCitationParts(bodyText.value))
 
+const citationDisplay = computed(() =>
+  explainCitationDisplayMap(bodyText.value, props.sources.length)
+)
+
+function displayCite(raw: number): number {
+  return citationDisplay.value.get(raw) ?? raw
+}
+
 const citedChips = computed(() => {
   const chips: { index: number; title: string; url: string }[] = []
   citedExplainIndexes(bodyText.value).forEach((index) => {
     const source = props.sources[index - 1]
-    if (!source) return
+    const shown = citationDisplay.value.get(index)
+    if (!source || shown == null) return
     chips.push({
-      index,
+      index: shown,
       url: source.url,
       title: source.title.trim() || hostFromUrl(source.url),
     })
@@ -322,13 +328,15 @@ onUnmounted(() => {
               :href="sourceForCite(part.index)?.url"
               target="_blank"
               rel="noopener noreferrer"
-              :aria-label="t('canvas.mindMapNodeExplain.citation', { n: String(part.index) })"
-              >[{{ part.index }}]</a
+              :aria-label="
+                t('canvas.mindMapNodeExplain.citation', { n: String(displayCite(part.index)) })
+              "
+              >[{{ displayCite(part.index) }}]</a
             >
             <span
               v-else
               class="ne-bubble__cite ne-bubble__cite--plain"
-              >[{{ part.index }}]</span
+              >[{{ displayCite(part.index) }}]</span
             >
           </template>
         </template>

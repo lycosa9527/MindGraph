@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  RESEARCH_IMAGE_MAX,
   applyExplainResearchEvent,
   citedExplainIndexes,
   emptyExplainResearchState,
+  explainCitationDisplayMap,
   lastThinkingLines,
-  RESEARCH_IMAGE_MAX,
   resolveExplainResearchPanelBox,
   resolveExplainResearchSide,
   splitExplainCitationParts,
@@ -123,6 +124,17 @@ describe('applyExplainResearchEvent', () => {
       { kind: 'cite', index: 2 },
     ])
     expect(citedExplainIndexes('叶片把光变成糖。[1][3] 这是代谢。[2]')).toEqual([1, 3, 2])
+  })
+
+  it('renumbers cited sources from 1 in first-appearance order', () => {
+    const text = '算法杀手。[3][4][6] 另一处。[1]'
+    const display = explainCitationDisplayMap(text, 6)
+    expect(display.get(3)).toBe(1)
+    expect(display.get(4)).toBe(2)
+    expect(display.get(6)).toBe(3)
+    expect(display.get(1)).toBe(4)
+    expect(display.has(2)).toBe(false)
+    expect(explainCitationDisplayMap(text, 4).has(6)).toBe(false)
   })
 
   it('accumulates thinking deltas separately from the gloss', () => {

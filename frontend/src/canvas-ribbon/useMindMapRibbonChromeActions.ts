@@ -67,7 +67,7 @@ export function useMindMapRibbonChromeActions() {
     }))
   })
   const selectedLlm = computed(() => {
-    const current = llmResultsStore.selectedModel
+    const current = llmResultsStore.canvasModelChoice
     if (current && llmMenu.value.some((item) => item.id === current)) {
       return current
     }

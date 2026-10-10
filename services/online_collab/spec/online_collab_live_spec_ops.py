@@ -18,9 +18,8 @@ from redis.exceptions import RedisError, WatchError
 from sqlalchemy import text as sql_text
 from sqlalchemy.exc import SQLAlchemyError
 
-from services.monitoring.error_reporting import record_exception
-
 from services.infrastructure.monitoring.ws_metrics import record_ws_redisjson_failure_total
+from services.monitoring.error_reporting import record_exception
 from services.online_collab.common.online_collab_json_offload import dumps_maybe_offload
 from services.online_collab.db.online_collab_stmt_cache import (
     STMT_DIAGRAM_BY_ID,

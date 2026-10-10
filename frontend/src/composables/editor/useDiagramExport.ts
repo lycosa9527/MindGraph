@@ -356,8 +356,11 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       if (canUseMindMapVectorExport(diagramStore)) {
         // Write the markup itself. A data: URL would have to be fetched to become
         // a file, and production connect-src does not allow data:.
-        const vector = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
-          captureMindMapVectorSvg()
+        const vector = await runLearningSheetRasterCapture(
+          diagramStore,
+          exportOptions,
+          () => captureMindMapVectorSvg(),
+          'in-node'
         )
         delivered = await deliverExportFile(
           new Blob([vector.svg], { type: 'image/svg+xml' }),
@@ -431,11 +434,9 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const captures: PdfRasterCapture[] = [worksheetCapture]
 
       if (includeAnswers) {
-        const answerCapture = await diagramStore.runWithLearningSheetAnswersRevealed(async () => {
-          await waitForExportCanvasPaint()
-          return captureContainerForPdfRaw(container)
-        })
-        captures.push(answerCapture)
+        diagramStore.setLearningSheetShowAnswers(true)
+        await waitForExportCanvasPaint()
+        captures.push(await captureContainerForPdfRaw(container))
       }
 
       const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
@@ -549,8 +550,11 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       await waitForExportFonts()
       let diagramBlob: Blob
       if (canUseMindMapVectorExport(diagramStore)) {
-        const raster = await runLearningSheetRasterCapture(diagramStore, mergedOptions, () =>
-          exportMindMapVectorDocxPng(diagramStore, uiStore)
+        const raster = await runLearningSheetRasterCapture(
+          diagramStore,
+          mergedOptions,
+          () => exportMindMapVectorDocxPng(diagramStore, uiStore),
+          'in-node'
         )
         if (!raster) {
           throw new Error('Mind-map vector DOCX raster produced empty PNG')

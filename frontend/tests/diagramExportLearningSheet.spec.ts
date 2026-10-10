@@ -1,26 +1,31 @@
 import { createPinia, setActivePinia } from 'pinia'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useDiagramStore } from '@/stores/diagram'
+import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
 import {
   isLearningSheetRasterCapture,
   learningSheetIncludeAnswers,
+  prepareLearningSheetAnswersForFit,
   runAsShownRasterCapture,
   runLearningSheetRasterCapture,
 } from '@/utils/diagramExportLearningSheet'
-import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
 
 describe('diagramExportLearningSheet', () => {
   beforeEach(() => {
-    vi.stubGlobal('matchMedia', vi.fn(() => ({
-      matches: false,
-      media: '',
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })))
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        media: '',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+    )
     setActivePinia(createPinia())
   })
 
@@ -37,8 +42,20 @@ describe('diagramExportLearningSheet', () => {
   })
 
   it('honors answerMode include flag', () => {
-    expect(learningSheetIncludeAnswers({ colorMode: 'color', layout: 'landscape', answerMode: 'include' })).toBe(true)
-    expect(learningSheetIncludeAnswers({ colorMode: 'color', layout: 'landscape', answerMode: 'exclude' })).toBe(false)
+    expect(
+      learningSheetIncludeAnswers({
+        colorMode: 'color',
+        layout: 'landscape',
+        answerMode: 'include',
+      })
+    ).toBe(true)
+    expect(
+      learningSheetIncludeAnswers({
+        colorMode: 'color',
+        layout: 'landscape',
+        answerMode: 'exclude',
+      })
+    ).toBe(false)
   })
 
   it('hides answers during exclude capture', async () => {
@@ -81,5 +98,43 @@ describe('diagramExportLearningSheet', () => {
     expect(store.learningSheetShowAnswers).toBe(false)
     const after = store.data?.nodes.find((node) => node.id === branch.id)
     expect(after?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
+  })
+
+  it('shows the answer row before an include-answers fit, then restores it', async () => {
+    const store = useDiagramStore()
+    store.loadDefaultTemplate('mindmap')
+    store.setLearningSheetMode(true)
+    const branch = store.data?.nodes.find((node) => node.type === 'branch')
+    if (!branch) throw new Error('missing branch')
+    store.emptyNodeForLearningSheet(branch.id)
+    store.setLearningSheetShowAnswers(false)
+
+    const restore = await prepareLearningSheetAnswersForFit(store, {
+      colorMode: 'color',
+      layout: 'landscape',
+      answerMode: 'include',
+    })
+    expect(store.learningSheetShowAnswers).toBe(true)
+    restore()
+    expect(store.learningSheetShowAnswers).toBe(false)
+  })
+
+  it('leaves answer visibility unchanged for an as-shown fit', async () => {
+    const store = useDiagramStore()
+    store.loadDefaultTemplate('mindmap')
+    store.setLearningSheetMode(true)
+    const branch = store.data?.nodes.find((node) => node.type === 'branch')
+    if (!branch) throw new Error('missing branch')
+    store.emptyNodeForLearningSheet(branch.id)
+    store.setLearningSheetShowAnswers(false)
+
+    const restore = await prepareLearningSheetAnswersForFit(
+      store,
+      { colorMode: 'color', layout: 'landscape', answerMode: 'include' },
+      true
+    )
+    expect(store.learningSheetShowAnswers).toBe(false)
+    restore()
+    expect(store.learningSheetShowAnswers).toBe(false)
   })
 })

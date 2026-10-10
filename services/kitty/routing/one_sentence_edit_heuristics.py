@@ -18,7 +18,7 @@ _ADD_KIND_ZH = (
     r"右边不同点|右侧不同点|右不同点|"
     r"相同点|相似点|不同点|"
     r"背景|观察|特征|属性|类别|分类|部分|步骤|原因|结果|"
-    r"分支|节点"
+    r"分支|节点|结点"
 )
 _ADD_KIND_EN = (
     r"left-diff|right-diff|left_difference|right_difference|"
@@ -178,6 +178,17 @@ _DELETE_NODE_ZH = re.compile(
     r"(?:这个|这条)?"
     r"(?:的)?"
     rf"(?:{_ADD_KIND_ZH})$"
+)
+
+_DELETE_BA_ZH = re.compile(
+    r"^(?:请)?(?:帮我)?"
+    r"(?:把|将)"
+    r"(?P<label>.+?)"
+    r"(?:这个|这条)?"
+    r"(?:的)?"
+    rf"(?:{_ADD_KIND_ZH})?"
+    r"(?:删掉|删除|去掉|移除)"
+    r"(?:一下)?$"
 )
 
 _DELETE_NUMBER_ZH = re.compile(
@@ -512,7 +523,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
                 "confidence": 0.92,
             }
 
-    for pattern in (_DELETE_NUMBER_ZH, _DELETE_NODE_ZH, _DELETE_NODE_EN):
+    for pattern in (_DELETE_NUMBER_ZH, _DELETE_NODE_ZH, _DELETE_BA_ZH, _DELETE_NODE_EN):
         delete = pattern.match(text)
         if delete is None:
             continue

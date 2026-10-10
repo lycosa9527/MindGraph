@@ -235,7 +235,7 @@ export interface CircleMapLayoutResult {
 /**
  * Get topic circle diameter from text (circle map center node).
  * Uses same measurement as layout (computeTopicRadiusForCircleMap) so size is consistent.
- * Single-line text only; circle adapts to text length.
+ * Long labels wrap at the topic column; the circle grows to the wrapped block.
  *
  * @param text - Topic text
  * @returns Diameter in pixels

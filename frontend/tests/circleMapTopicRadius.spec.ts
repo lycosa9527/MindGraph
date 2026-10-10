@@ -85,4 +85,29 @@ describe('circle map default topic radius', () => {
       roundContext?.style?.size
     )
   })
+
+  it('grows a long topic to the wrapped text and ignores a smaller DOM box', () => {
+    const long = '测'.repeat(40)
+    const topic: DiagramNode = {
+      id: 'topic',
+      text: long,
+      type: 'center',
+      style: { nodeShape: 'oval' },
+    }
+    const contexts: DiagramNode[] = [
+      { id: 'context-0', text: '联想', type: 'bubble', data: { groupIndex: 0 } },
+    ]
+    const fitted = recalculateCircleMapLayout([topic, ...contexts])
+    const fittedSize = fitted.find((node) => node.id === 'topic')?.style?.size ?? 0
+    const short = recalculateCircleMapLayout([{ ...topic, text: '主题' }, ...contexts])
+    const shortSize = short.find((node) => node.id === 'topic')?.style?.size ?? 0
+    expect(fittedSize).toBeGreaterThan(shortSize)
+
+    const poisoned = recalculateCircleMapLayout([topic, ...contexts], {
+      topic: { width: 120, height: 80 },
+    })
+    expect(poisoned.find((node) => node.id === 'topic')?.style?.size ?? 0).toBeGreaterThanOrEqual(
+      fittedSize
+    )
+  })
 })

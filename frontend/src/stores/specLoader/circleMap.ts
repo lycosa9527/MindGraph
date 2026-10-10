@@ -2,7 +2,7 @@
  * Circle Map Loader
  * Circle maps have: central topic circle, context circles around it, outer boundary ring
  * NO connection lines between nodes (unlike bubble maps)
- * Fixed font size; circles grown from text (one line, no wrap, no truncate).
+ * Fixed font size; circles grown from text. Topics wrap at the shared column width.
  * Uses mindmap branch color palette for each context (like double bubble map).
  */
 import { DEFAULT_CONTEXT_RADIUS } from '@/composables/diagrams/layoutConfig'
@@ -24,7 +24,11 @@ import {
 } from '@/utils/nodeShapeStyle'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
-import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from './textMeasurement'
+import {
+  CONTEXT_FONT_SIZE,
+  TOPIC_FONT_SIZE,
+  computeTopicRadiusForCircleMap,
+} from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 import { calculateCircleMapLayout, estimateContextCircleDiameter } from './utils'
 
@@ -90,8 +94,15 @@ export function recalculateCircleMapLayout(
 
   let topicROverride: number | undefined
   if (topicNode && topicNode.style?.nodeShape !== 'underline') {
-    const diskR = circleDiskRadius(topicNode.style?.nodeShape, nodeDimensions[topicNode.id])
-    if (diskR != null) topicROverride = diskR
+    const topicStyle = topicNode.style
+    const textTopicR = computeTopicRadiusForCircleMap(topicText || ' ', {
+      secondary: topicNode.textSecondary,
+      fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
+      fontWeight: typeof topicStyle?.fontWeight === 'string' ? topicStyle.fontWeight : undefined,
+      fontFamily: typeof topicStyle?.fontFamily === 'string' ? topicStyle.fontFamily : undefined,
+    })
+    const diskR = circleDiskRadius(topicStyle?.nodeShape, nodeDimensions[topicNode.id])
+    topicROverride = Math.max(textTopicR, diskR ?? 0)
   }
 
   const circleContexts = contextNodes.filter((node) => node.style?.nodeShape !== 'underline')
@@ -99,9 +110,9 @@ export function recalculateCircleMapLayout(
   if (circleContexts.length > 0) {
     let maxR = DEFAULT_CONTEXT_RADIUS
     for (const node of circleContexts) {
+      const textR = estimateContextCircleDiameter(node.text || ' ', node.textSecondary) / 2
       const diskR = circleDiskRadius(node.style?.nodeShape, nodeDimensions[node.id])
-      const r = diskR ?? estimateContextCircleDiameter(node.text || ' ', node.textSecondary) / 2
-      maxR = Math.max(maxR, r)
+      maxR = Math.max(maxR, textR, diskR ?? 0)
     }
     uniformContextROverride = maxR
   }

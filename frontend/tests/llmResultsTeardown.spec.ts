@@ -80,12 +80,14 @@ describe('llmResults teardown', () => {
     })
     store.addAbortController(controller)
 
+    store.setSelectedModel('kimi')
     store.clearCachedResultsOnly()
 
     expect(aborted).toBe(false)
     expect(store.isGenerating).toBe(true)
     expect(store.hasAnyResults).toBe(false)
     expect(store.selectedModel).toBeNull()
+    expect(store.canvasModelChoice).toBe('kimi')
   })
 })
 

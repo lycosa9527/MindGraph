@@ -7,10 +7,7 @@ import { type ComputedRef, type Ref, watch } from 'vue'
 import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
-import {
-  attachMindMapLiveSpecExtras,
-  isMindMapDiagramType,
-} from '@/utils/mindMapLiveSpecExtras'
+import { attachMindMapLiveSpecExtras, isMindMapDiagramType } from '@/utils/mindMapLiveSpecExtras'
 
 const DEBOUNCE_MS = 700
 
@@ -32,7 +29,7 @@ export function useKittyDesktopLiveSpecPublish(options: {
     }
     const fingerprint = getKittyDiagramContentFingerprint(data)
     const selKey = diagramStore.selectedNodes.join('\u0001')
-    const key = `${scope}:${fingerprint}:${selKey}:${llmResultsStore.selectedModel ?? ''}`
+    const key = `${scope}:${fingerprint}:${selKey}:${llmResultsStore.canvasModelChoice ?? ''}`
     if (key === lastPostedKey || fingerprint === '') {
       return
     }
@@ -53,7 +50,7 @@ export function useKittyDesktopLiveSpecPublish(options: {
           diagram_data: diagramData,
           selected_nodes: [...diagramStore.selectedNodes],
           active_panel: 'one_sentence',
-          selected_llm_model: llmResultsStore.selectedModel,
+          selected_llm_model: llmResultsStore.canvasModelChoice,
         }),
       })
       if (res.ok) {
@@ -102,7 +99,7 @@ export function useKittyDesktopLiveSpecPublish(options: {
         options.scopeId.value,
         getKittyDiagramContentFingerprint(diagramStore.data),
         diagramStore.selectedNodes.join('\u0001'),
-        llmResultsStore.selectedModel,
+        llmResultsStore.canvasModelChoice,
       ] as const,
     () => {
       schedule()

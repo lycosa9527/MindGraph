@@ -41,6 +41,8 @@ const BORDER_CONTEXT = 1.5
 export const CONTEXT_FONT_SIZE = 16
 /** Fixed font size for circle map topic node (never change; grow circle instead). */
 export const TOPIC_FONT_SIZE = 18
+/** Topic labels wrap at this width. CircleNode uses the same cap. */
+export const CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH = 200
 
 /** Minimum radius for circle map topic (avoid too small when text is very short). */
 const MIN_TOPIC_RADIUS_CIRCLE_MAP = 60
@@ -752,6 +754,45 @@ export interface TopicCircleMeasureOptions {
   secondary?: string
 }
 
+function estimateWrappedTopicBlock(
+  singleLineWidth: number,
+  fontSize: number
+): { width: number; height: number } {
+  const lines = Math.max(1, Math.ceil(singleLineWidth / CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH))
+  return {
+    width: Math.ceil(singleLineWidth / lines),
+    height: lines * fontSize * 1.4,
+  }
+}
+
+/** Wrap a topic label at CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH. Falls back when the DOM has no metrics. */
+function measureWrappedTopicBlock(
+  text: string,
+  fontSize: number,
+  bold: boolean,
+  fontFamily: string | undefined,
+  singleLineWidth: number
+): { width: number; height: number } {
+  if (typeof document === 'undefined') {
+    return estimateWrappedTopicBlock(singleLineWidth, fontSize)
+  }
+  const el = getMeasureEl(fontFamily)
+  el.style.width = `${CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH}px`
+  el.style.whiteSpace = 'pre-wrap'
+  el.style.fontSize = `${fontSize}px`
+  el.style.fontWeight = bold ? 'bold' : 'normal'
+  el.style.lineHeight = '1.4'
+  el.textContent = text.trim()
+  const width = el.offsetWidth
+  const height = el.offsetHeight
+  el.style.width = 'max-content'
+  el.style.whiteSpace = 'nowrap'
+  if (!(width > 0) || !(height > 0)) {
+    return estimateWrappedTopicBlock(singleLineWidth, fontSize)
+  }
+  return { width, height }
+}
+
 export function computeTopicRadiusForCircleMap(
   text: string,
   measure?: TopicCircleMeasureOptions
@@ -761,20 +802,16 @@ export function computeTopicRadiusForCircleMap(
   const measureBold =
     measure?.fontWeight === 'normal' ? false : measure?.fontWeight === 'bold' ? true : true
   const fontFamily = measure?.fontFamily
-  if (typeof document === 'undefined') {
-    const approxW = estimateTextWidthFallbackPx(t, fs, { isTopic: measureBold })
-    const approxH = fs * 1.4
-    const diagonal = Math.sqrt(approxW * approxW + approxH * approxH)
-    const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
-    return growRadiusForSecondary(
-      Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, contentR + BORDER_TOPIC),
-      measure?.secondary,
-      fs
-    )
+  const single = measureTextWithSVG(t, fs, measureBold, fontFamily)
+  const singleW = single.width || estimateTextWidthFallbackPx(t, fs, { isTopic: measureBold })
+  const singleH = single.height || fs * 1.4
+  let w = singleW
+  let h = singleH
+  if (singleW > CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH) {
+    const wrapped = measureWrappedTopicBlock(t, fs, measureBold, fontFamily, singleW)
+    w = wrapped.width
+    h = wrapped.height
   }
-  const { width, height } = measureTextWithSVG(t, fs, measureBold, fontFamily)
-  const w = width || estimateTextWidthFallbackPx(t, fs, { isTopic: measureBold })
-  const h = height || fs * 1.4
   const diagonal = Math.sqrt(w * w + h * h)
   const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
   const radius = contentR + BORDER_TOPIC

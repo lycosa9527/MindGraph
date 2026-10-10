@@ -85,7 +85,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   const { customLlmEnabled } = useOrgCustomLlm()
 
   function selectedLlmModels(): string[] {
-    return [canvasRunModel(llmResultsStore.selectedModel, customLlmEnabled.value)]
+    return [canvasRunModel(llmResultsStore.canvasModelChoice, customLlmEnabled.value)]
   }
 
   const sessionId = ref<string | null>(null)

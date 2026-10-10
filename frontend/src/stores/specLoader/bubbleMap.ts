@@ -148,15 +148,26 @@ export function recalculateBubbleMapLayout(
   const topicText = topicNode?.text ?? ''
   const topicSecondary = topicNode?.textSecondary
   const topicStyle = topicNode?.style
-  const topicR = Math.max(
-    DEFAULT_TOPIC_RADIUS,
-    computeTopicRadiusForCircleMap(topicText || ' ', {
-      fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
-      fontWeight: topicStyle?.fontWeight,
-      fontFamily: topicStyle?.fontFamily,
-      secondary: topicSecondary,
-    })
-  )
+  const textTopicR = computeTopicRadiusForCircleMap(topicText || ' ', {
+    fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
+    fontWeight: topicStyle?.fontWeight,
+    fontFamily: topicStyle?.fontFamily,
+    secondary: topicSecondary,
+  })
+  const topicMeasured = topicNode ? nodeDimensions[topicNode.id] : undefined
+  let domTopicR = 0
+  if (
+    topicMeasured &&
+    topicMeasured.width > 0 &&
+    topicMeasured.height > 0 &&
+    topicStyle?.nodeShape !== 'underline'
+  ) {
+    domTopicR =
+      topicStyle?.nodeShape === 'oval'
+        ? topicMeasured.height / 2
+        : Math.max(topicMeasured.width, topicMeasured.height) / 2
+  }
+  const topicR = Math.max(DEFAULT_TOPIC_RADIUS, textTopicR, domTopicR)
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
 

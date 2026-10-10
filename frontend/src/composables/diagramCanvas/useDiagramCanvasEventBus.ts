@@ -3,7 +3,7 @@ import { nextTick, toValue } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
-import { ANIMATION } from '@/config/uiConfig'
+import { ANIMATION, ZOOM } from '@/config/uiConfig'
 import { useCanvasExportStore } from '@/stores'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { useUIStore } from '@/stores/ui'
@@ -13,6 +13,7 @@ import { isManualViewportMode } from '@/utils/conceptMapDesktopViewport'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 import type { DiagramExportFlowNode } from '@/utils/diagramExportContentBounds'
 import { withDiagramExportContentFrame } from '@/utils/diagramExportContentFrame'
+import { prepareLearningSheetAnswersForFit } from '@/utils/diagramExportLearningSheet'
 import { prepareDiagramCanvasForRasterCapture } from '@/utils/diagramExportPrep'
 import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 
@@ -48,8 +49,6 @@ export interface DiagramCanvasEventBusContext {
     opts?: { duration?: number }
   ) => void
   setMinZoom?: (zoom: number) => void
-  zoomIn: () => void
-  zoomOut: () => void
   fitApi: FitApi
   emit: (e: 'nodeDoubleClick', node: MindGraphNode) => void
   exportByFormat: (format: string, options?: CanvasExportOptions) => Promise<void>
@@ -60,6 +59,27 @@ export interface DiagramCanvasEventBusContext {
 }
 
 const DOUBLE_BUBBLE_REBUILD_DEBOUNCE_MS = 16
+
+/** Keep the viewport center fixed when the zoom level changes. */
+export function viewportZoomedAboutCenter(
+  viewport: { x: number; y: number; zoom: number },
+  nextZoom: number,
+  width: number,
+  height: number
+): { x: number; y: number; zoom: number } {
+  if (!(width > 0) || !(height > 0) || !(viewport.zoom > 0)) {
+    return { x: viewport.x, y: viewport.y, zoom: nextZoom }
+  }
+  const centerX = width / 2
+  const centerY = height / 2
+  const flowX = (centerX - viewport.x) / viewport.zoom
+  const flowY = (centerY - viewport.y) / viewport.zoom
+  return {
+    x: centerX - flowX * nextZoom,
+    y: centerY - flowY * nextZoom,
+    zoom: nextZoom,
+  }
+}
 
 export function useDiagramCanvasEventBus(): {
   mountSubscriptions: (ctx: DiagramCanvasEventBusContext) => () => void
@@ -98,8 +118,6 @@ export function useDiagramCanvasEventBus(): {
       getViewport,
       setViewport,
       setMinZoom,
-      zoomIn,
-      zoomOut,
       fitApi,
       emit,
       exportByFormat,
@@ -111,6 +129,16 @@ export function useDiagramCanvasEventBus(): {
 
     const viewBus = diagramStore.viewBus
     const sessionReadonly = () => toValue(diagramStore.isReadonly)
+
+    function applyZoomAboutCenter(nextZoom: number): void {
+      const vp = getViewport()
+      const el = getExportContainer()
+      const zoom = Math.min(ZOOM.MAX, Math.max(ZOOM.MIN, nextZoom))
+      setViewport(
+        viewportZoomedAboutCenter(vp, zoom, el?.clientWidth ?? 0, el?.clientHeight ?? 0),
+        { duration: ANIMATION.DURATION_FAST }
+      )
+    }
 
     unsubscribers.push(
       viewBus.on('node:edit_requested', ({ nodeId }) => {
@@ -207,18 +235,17 @@ export function useDiagramCanvasEventBus(): {
     if (sessionReadonly()) {
       unsubscribers.push(
         viewBus.on('view:zoom_in_requested', () => {
-          zoomIn()
+          applyZoomAboutCenter(getViewport().zoom * ZOOM.STEP)
         })
       )
       unsubscribers.push(
         viewBus.on('view:zoom_out_requested', () => {
-          zoomOut()
+          applyZoomAboutCenter(getViewport().zoom / ZOOM.STEP)
         })
       )
       unsubscribers.push(
         viewBus.on('view:zoom_set_requested', ({ zoom }) => {
-          const vp = getViewport()
-          setViewport({ x: vp.x, y: vp.y, zoom }, { duration: ANIMATION.DURATION_FAST })
+          applyZoomAboutCenter(zoom)
         })
       )
       return () => {
@@ -239,9 +266,17 @@ export function useDiagramCanvasEventBus(): {
           return
         }
 
-        async function runFittedVisualExport<T>(run: () => Promise<T>): Promise<T> {
+        async function runFittedVisualExport<T>(
+          run: () => Promise<T>,
+          asShown = false
+        ): Promise<T> {
           const savedViewport = getViewport()
           const conceptMap = diagramStore.type === 'concept_map'
+          const restoreAnswers = await prepareLearningSheetAnswersForFit(
+            diagramStore,
+            mergedOptions,
+            asShown
+          )
           try {
             if (conceptMap) {
               // Fit-to-window paints concept-map text at a tiny zoom, then the PNG
@@ -269,6 +304,7 @@ export function useDiagramCanvasEventBus(): {
             })
             return await runWithExportVisualMode(uiStore, getExportContainer(), mergedOptions, run)
           } finally {
+            restoreAnswers()
             if (!conceptMap) {
               setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
             }
@@ -279,7 +315,7 @@ export function useDiagramCanvasEventBus(): {
           // Start clipboard.write in this turn (user gesture) with a Promise
           // that resolves after fit + color/B&W visual mode + PNG capture.
           const blobPromise = canvasExportStore.runExportSession(() =>
-            runFittedVisualExport(() => capturePngBlob(mergedOptions, true))
+            runFittedVisualExport(() => capturePngBlob(mergedOptions, true), true)
           )
           await copyPngToClipboard(blobPromise)
           return
@@ -301,20 +337,19 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       viewBus.on('view:zoom_in_requested', () => {
-        zoomIn()
+        applyZoomAboutCenter(getViewport().zoom * ZOOM.STEP)
       })
     )
 
     unsubscribers.push(
       viewBus.on('view:zoom_out_requested', () => {
-        zoomOut()
+        applyZoomAboutCenter(getViewport().zoom / ZOOM.STEP)
       })
     )
 
     unsubscribers.push(
       viewBus.on('view:zoom_set_requested', ({ zoom }) => {
-        const vp = getViewport()
-        setViewport({ x: vp.x, y: vp.y, zoom }, { duration: ANIMATION.DURATION_FAST })
+        applyZoomAboutCenter(zoom)
       })
     )
 

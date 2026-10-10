@@ -10,12 +10,12 @@ import { loadBlankCanvasForType } from '@/composables/canvasPage/newCanvasBootst
 import { shouldUseOneSentenceEditFlow } from '@/composables/canvasToolbar/mindMapOneSentencePhase'
 import { kittyInteractionLanguageFromUi } from '@/composables/kitty/buildKittyDiagramContext'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
-import { reportKittySessionPromote } from '@/composables/kitty/useKittySessionManager'
+import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyDesktopFocusHint } from '@/composables/kitty/useKittyDesktopFocus'
+import { reportKittySessionPromote } from '@/composables/kitty/useKittySessionManager'
 import { useMobileKittyLiveContextPoll } from '@/composables/kitty/useMobileKittyLiveContextPoll'
-import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
 import { useAuthStore, useDiagramStore } from '@/stores'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useOneSentenceStore } from '@/stores/oneSentence'
@@ -418,7 +418,7 @@ export function useMobileKittyPairing(
     desktopFollowInFlight = (async () => {
       try {
         const fromScope = promotingEphemeralCreate
-          ? (sessionId.value?.trim() || kittyPairScope.value?.trim() || '')
+          ? sessionId.value?.trim() || kittyPairScope.value?.trim() || ''
           : ''
         clearForceEphemeralSession()
         savedDiagramsStore.setActiveDiagram(id)
@@ -502,7 +502,7 @@ export function useMobileKittyPairing(
       diagram_display_title: displayTitle,
       interaction_language: kittyInteractionLanguageFromUi(),
       one_sentence_phase: resolveMobileOneSentencePhase(),
-      selected_llm_model: llmResultsStore.selectedModel,
+      selected_llm_model: llmResultsStore.canvasModelChoice,
     })
   }
 
@@ -544,7 +544,7 @@ export function useMobileKittyPairing(
       diagram_display_title: displayTitle,
       interaction_language: kittyInteractionLanguageFromUi(),
       one_sentence_phase: resolveMobileOneSentencePhase(),
-      selected_llm_model: llmResultsStore.selectedModel,
+      selected_llm_model: llmResultsStore.canvasModelChoice,
     })
   }
 
@@ -623,23 +623,20 @@ export function useMobileKittyPairing(
     })
   }
 
-  watch(
-    kittyDesktopLibraryId,
-    (libraryId, previousId) => {
-      if (libraryId == null || libraryId === '') {
-        const hadPrevious = typeof previousId === 'string' && previousId.trim() !== ''
-        if (hadPrevious || (activeDiagramId.value != null && activeDiagramId.value !== '')) {
-          resetToFreshEphemeralSession({
-            pinAgainstDesktopFocus: false,
-            loadMindmapTemplate: true,
-          })
-          options.onDebugLine?.('#desk', 'focus cleared → ephemeral')
-        }
-        return
+  watch(kittyDesktopLibraryId, (libraryId, previousId) => {
+    if (libraryId == null || libraryId === '') {
+      const hadPrevious = typeof previousId === 'string' && previousId.trim() !== ''
+      if (hadPrevious || (activeDiagramId.value != null && activeDiagramId.value !== '')) {
+        resetToFreshEphemeralSession({
+          pinAgainstDesktopFocus: false,
+          loadMindmapTemplate: true,
+        })
+        options.onDebugLine?.('#desk', 'focus cleared → ephemeral')
       }
-      void applyDesktopFocusLibrary(libraryId)
+      return
     }
-  )
+    void applyDesktopFocusLibrary(libraryId)
+  })
 
   watch(
     [diagramTypeRef, diagramDataRef, selectedNodesRef, activeDiagramId, kittyDesktopLibraryId],

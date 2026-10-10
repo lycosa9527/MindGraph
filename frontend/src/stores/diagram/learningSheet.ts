@@ -155,7 +155,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const primary = String(node.text ?? nodeData?.label ?? '').trim()
     const secondary = String((node as { textSecondary?: string }).textSecondary ?? '').trim()
     if (!secondary) return primary
-    return `${primary}\u0000${secondary}`
+    return JSON.stringify([primary, secondary])
   }
 
   function captureLearningSheetBaseline(): void {

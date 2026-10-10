@@ -48,6 +48,23 @@ describe('learning sheet persistence', () => {
     return connections.filter((connection) => connection.source === 'topic').map((c) => c.target)
   }
 
+  it('stores a bilingual worksheet baseline without a PostgreSQL-rejected null', () => {
+    const diagramStore = useDiagramStore()
+    diagramStore.loadDefaultTemplate('mindmap')
+    const topic = diagramStore.data?.nodes.find((node) => node.id === 'topic')
+    if (!topic) {
+      throw new Error('expected a topic node')
+    }
+    const primary = String(topic.text ?? '')
+    expect(diagramStore.updateNode('topic', { textSecondary: 'buoyancy' })).toBe(true)
+    diagramStore.setLearningSheetMode(true)
+
+    const spec = diagramStore.getSpecForSave()
+    const baseline = spec?.learning_sheet_baseline as { textsById?: Record<string, string> } | undefined
+    expect(baseline?.textsById?.topic).toBe(JSON.stringify([primary, 'buoyancy']))
+    expect(JSON.stringify(spec)).not.toContain('\u0000')
+  })
+
   it('round-trips learning sheet blanks and show-answers preference via spec save/load', () => {
     const diagramStore = useDiagramStore()
     const { branchId, branchText } = loadMindMapWithBranch()

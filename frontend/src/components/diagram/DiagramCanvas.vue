@@ -226,8 +226,6 @@ const {
   setViewport,
   getViewport,
   setMinZoom,
-  zoomIn,
-  zoomOut,
   screenToFlowCoordinate,
 } = useVueFlow(diagramStore.vueFlowId)
 
@@ -734,8 +732,6 @@ onMounted(() => {
     getViewport,
     setViewport,
     setMinZoom,
-    zoomIn,
-    zoomOut,
     fitApi: {
       fitToFullCanvas,
       fitWithPanel,

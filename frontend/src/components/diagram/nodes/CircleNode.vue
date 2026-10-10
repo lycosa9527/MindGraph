@@ -26,7 +26,10 @@ import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearn
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
+import {
+  CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH,
+  TOPIC_FONT_SIZE,
+} from '@/stores/specLoader/textMeasurement'
 import {
   CONTEXT_MAX_TEXT_WIDTH,
   calculateAdaptiveCircleSize,
@@ -56,14 +59,6 @@ const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === tr
 
 const topicBorderPx = MIND_MAP_GEOMETRY.borderWidth
 const contextBorderPx = MIND_MAP_GEOMETRY.borderWidth
-
-/**
- * Fixed wrap threshold for circle_map topic text. Using `circleSize - borders` would
- * create a circular dependency: large initial estimate → no wrap → stays large.
- * A fixed cap forces text to wrap, and measureRenderedMarkdownAndReport then grows
- * the circle to fit the wrapped content.
- */
-const CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH = 200
 
 /**
  * Context labels use `px-2` on a border-box display, so that padding sits inside max-width.

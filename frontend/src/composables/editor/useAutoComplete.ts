@@ -525,7 +525,7 @@ export function useAutoComplete() {
 
   /** One model per run. School override stays on qwen. Otherwise the menu selection, else Express. */
   function defaultCanvasModels(): string[] {
-    return [canvasRunModel(llmResultsStore.selectedModel, customLlmEnabled.value)]
+    return [canvasRunModel(llmResultsStore.canvasModelChoice, customLlmEnabled.value)]
   }
 
   /**

@@ -610,6 +610,9 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       errorMessage.value = t('nodePalette.error.createDiagramFirst')
       return false
     }
+    if (isLoading.value && !options?.keepSessionId) {
+      return true
+    }
 
     const topic =
       diagramType.value === 'concept_map' ? conceptMapCenterTopic.value : topicText.value

@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.152] - 2026-10-10
+
+> **Thinking maps keep the font, model, zoom center, and answer row you chose.**
+
+### Fixed
+
+- **字号** — 12、13, and 20 were rewritten to the role default, so a topic stayed at 18px. The stored size is now used on every thinking map. A missing size still uses the role default.
+- **节点解释** — Citation numbers in the explain bubble are 1…n in the order they first appear. The link still opens the source the model numbered.
+- **圆圈图、气泡图** — A long topic wraps at the shared column and the circle grows to that block. A small measured radius cannot shrink the circle below the text. Bubble maps share that topic node. Tree, flow, multi-flow, brace, and bridge already sized the box from wrapped text. Double bubble still grows the circle with the full line.
+- **模型** — Generation clears the painted result, and the menu was reading that empty value as DeepSeek 快速. The choice you picked stays through generation, the next run, and Kitty sync. Switching windows no longer resets it. Turning a model off still clears it.
+- **概念停车场** — Opening the panel started the session twice and wiped the suggestions. A session that is already loading is left alone.
+- **对话式修改** — “帮我把获奖作家结点删掉” deletes that node instead of regenerating the diagram.
+- **缩放** — The slider and +/- keep the center of the canvas fixed. Wheel zoom still follows the cursor.
+- **学习单导出** — “含答案” raster export draws the answer row under the diagram and fits the page after that row is visible. Copy-as-shown does not change the row. Mind-map vector files still fill the answers into the nodes.
+
+### Tests
+
+- [`frontend/tests/circleMapTopicRadius.spec.ts`](frontend/tests/circleMapTopicRadius.spec.ts), [`frontend/tests/mindMapExplainResearch.spec.ts`](frontend/tests/mindMapExplainResearch.spec.ts), [`frontend/tests/llmResultsTeardown.spec.ts`](frontend/tests/llmResultsTeardown.spec.ts), [`frontend/tests/viewportZoomAboutCenter.spec.ts`](frontend/tests/viewportZoomAboutCenter.spec.ts), [`frontend/tests/diagramExportLearningSheet.spec.ts`](frontend/tests/diagramExportLearningSheet.spec.ts), [`tests/test_kitty_fast_structural.py`](tests/test_kitty_fast_structural.py)
+
+## [5.180.151] - 2026-10-10
+
+> **Saving a diagram no longer fails when the spec contains a null byte.**
+
+### Fixed
+
+- **图保存** — A worksheet baseline joined a node's two lines with a null character. PostgreSQL rejected that spec (`\u0000 cannot be converted to text`), so autosave of the diagram returned 500. The baseline now stores the two lines as ordinary JSON. Every JSON value written through the database engines is serialized without a null byte, including collaboration flushes, snapshots, and other JSON columns. The diagram title and thumbnail drop the same character before the write. A database error on that save is returned as a save error.
+
+### Tests
+
+- [`tests/test_postgres_text.py`](tests/test_postgres_text.py), [`frontend/tests/learningSheetPersist.spec.ts`](frontend/tests/learningSheetPersist.spec.ts)
+
 ## [5.180.150] - 2026-10-10
 
 > **www and mg WebSocket upgrades stay open, and the service worker leaves the HTML shell on the network.**

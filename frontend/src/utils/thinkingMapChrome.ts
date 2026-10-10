@@ -26,8 +26,6 @@ import { isTreeMapLeafNode, readTreeCategoryIndex } from '@/utils/treeMapIdentit
 
 export const THINKING_MAP_LEAF_TEXT = '#334155'
 
-const LEGACY_ROLE_FONT_SIZES = new Set([12, 13, 20])
-
 const OLD_TEXT = new Set(['#333333', '#ffffff', '#303133', '#000000', '#606266'])
 
 const OLD_ROLE_PAIRS: ReadonlyArray<readonly [string, string]> = [
@@ -297,11 +295,10 @@ export function thinkingMapBorderWidth(
   return fallback
 }
 
-/** Replace old role sizes 12, 13, and 20. Any other stored size is kept. */
+/** Stored size wins, including 12, 13, and 20. Missing or invalid sizes use the role default. */
 export function thinkingMapDisplayedFontSize(stored: unknown, roleSize: number): number {
   const parsed = typeof stored === 'number' ? stored : Number(stored)
   if (!Number.isFinite(parsed) || parsed <= 0) return roleSize
-  if (LEGACY_ROLE_FONT_SIZES.has(parsed)) return roleSize
   return parsed
 }
 

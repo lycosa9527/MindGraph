@@ -65,6 +65,12 @@ def test_normalize_edit_label_peels_asr_wrappers() -> None:
         "confidence": 0.92,
     }
     delete = heuristic_one_sentence_edit_command("删除我的“自画像”写作支架这个节点")
+    ba_delete = heuristic_one_sentence_edit_command("帮我把获奖作家结点删掉")
+    assert ba_delete == {
+        "action": "delete_node",
+        "target": "获奖作家",
+        "confidence": 0.92,
+    }
     assert delete == {
         "action": "delete_node",
         "target": "我的“自画像”写作支架",
