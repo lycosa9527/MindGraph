@@ -80,7 +80,9 @@ def test_app_engines_serialize_json_without_nul() -> None:
     for target in (engine, async_engine.sync_engine):
         _args, connect_params = target.dialect.create_connect_args(target.url)
         context = connect_params["context"]
-        wrapped = JSONB().bind_processor(target.dialect)({"topic": "浮力\x00"})
+        processor = JSONB().bind_processor(target.dialect)
+        assert processor is not None
+        wrapped = processor({"topic": "浮力\x00"})
         dumper_cls = context.adapters.get_dumper(type(wrapped), PyFormat.TEXT)
         assert dumper_cls is not None
         raw = dumper_cls(type(wrapped), context).dump(wrapped)
