@@ -11,6 +11,7 @@ import httpx
 from clients.llm.http_client_manager import get_httpx_manager
 from clients.llm.responses.dashscope_events import normalize_responses_event
 from clients.llm.responses.types import ResponsesRequest
+from clients.llm.structured_output import apply_responses_text_format
 from services.infrastructure.http.error_handler import LLMProviderError, LLMTimeoutError
 from services.llm.error_parsers.org_custom_llm_error_parser import (
     parse_error_json,
@@ -103,6 +104,7 @@ class OrgOpenAIResponsesClient:
         temperature: Optional[float],
         max_tokens: int,
         stream: bool,
+        response_format: Any = None,
     ) -> Dict[str, Any]:
         payload: Dict[str, Any] = {
             "model": self.model_name,
@@ -112,6 +114,7 @@ class OrgOpenAIResponsesClient:
         }
         if temperature is not None:
             payload["temperature"] = temperature
+        apply_responses_text_format(payload, response_format, model=self.model_name)
         return payload
 
     async def chat_completion(
@@ -122,7 +125,7 @@ class OrgOpenAIResponsesClient:
         **kwargs: Any,
     ) -> Dict[str, Any]:
         """Non-stream official Responses request flattened to chat text."""
-        del kwargs
+        response_format = kwargs.pop("response_format", None)
         client = await get_httpx_manager().get_client(
             f"org-responses-{id(self)}",
             self.api_url,
@@ -132,7 +135,13 @@ class OrgOpenAIResponsesClient:
         try:
             response = await client.post(
                 self.api_url,
-                json=self._payload(messages, temperature, max_tokens, stream=False),
+                json=self._payload(
+                    messages,
+                    temperature,
+                    max_tokens,
+                    stream=False,
+                    response_format=response_format,
+                ),
                 headers=self._headers(),
             )
         except httpx.TimeoutException as exc:
@@ -206,7 +215,8 @@ class OrgOpenAIResponsesClient:
         **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Stream official Responses events as chat tokens."""
-        del enable_thinking, kwargs
+        del enable_thinking
+        response_format = kwargs.pop("response_format", None)
         client = await get_httpx_manager().get_client(
             f"org-responses-stream-{id(self)}",
             self.api_url,
@@ -217,7 +227,13 @@ class OrgOpenAIResponsesClient:
             async with client.stream(
                 "POST",
                 self.api_url,
-                json=self._payload(messages, temperature, max_tokens, stream=True),
+                json=self._payload(
+                    messages,
+                    temperature,
+                    max_tokens,
+                    stream=True,
+                    response_format=response_format,
+                ),
                 headers=self._headers(),
             ) as response:
                 if response.status_code != 200:
@@ -257,6 +273,7 @@ class OrgOpenAIResponsesClient:
             messages,
             temperature=request.temperature,
             max_tokens=request.max_output_tokens,
+            response_format=request.response_format,
         ):
             yield event
 

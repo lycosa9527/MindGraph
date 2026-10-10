@@ -7,6 +7,7 @@ import time
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from clients.llm.org_custom.factory import build_org_custom_llm_client
+from clients.llm.structured_output import bind_llm_call
 from clients.llm.responses.base import BaseResponsesClient
 from clients.llm.responses.types import ResponsesInput, ResponsesRequest
 from config.settings import config
@@ -158,15 +159,16 @@ class LLMResponsesService:
                 "session_id": session_id,
             }
             try:
-                async for event in stream_chat_as_responses_events(
-                    chat_client,
-                    _responses_input_to_messages(request_input),
-                    temperature=temperature,
-                    max_output_tokens=max_output_tokens,
-                ):
-                    if event.get("type") == "usage" and isinstance(event.get("usage"), dict):
-                        usage_data = event["usage"]
-                    yield event
+                with bind_llm_call(request_type, diagram_type, physical_model):
+                    async for event in stream_chat_as_responses_events(
+                        chat_client,
+                        _responses_input_to_messages(request_input),
+                        temperature=temperature,
+                        max_output_tokens=max_output_tokens,
+                    ):
+                        if event.get("type") == "usage" and isinstance(event.get("usage"), dict):
+                            usage_data = event["usage"]
+                        yield event
                 duration = time.time() - start_time
                 await self._record_success(
                     physical_model,
@@ -220,18 +222,19 @@ class LLMResponsesService:
             "session_id": session_id,
         }
         try:
-            async for event in self._iter_events(client, request, rate_limiter):
-                if event.get("type") == "usage":
-                    raw_usage = event.get("usage")
-                    if isinstance(raw_usage, dict):
-                        usage_data = raw_usage
+            with bind_llm_call(request_type, diagram_type, physical_model):
+                async for event in self._iter_events(client, request, rate_limiter):
+                    if event.get("type") == "usage":
+                        raw_usage = event.get("usage")
+                        if isinstance(raw_usage, dict):
+                            usage_data = raw_usage
+                        yield event
+                        continue
+                    if event.get("type") == "error":
+                        message = event.get("content")
+                        if isinstance(message, str) and message.strip():
+                            stream_error = message.strip()
                     yield event
-                    continue
-                if event.get("type") == "error":
-                    message = event.get("content")
-                    if isinstance(message, str) and message.strip():
-                        stream_error = message.strip()
-                yield event
             duration = time.time() - start_time
             if stream_error:
                 await llm_service.metrics_tracker.track_all(

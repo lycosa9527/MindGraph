@@ -202,7 +202,11 @@ class QwenClient:
             if "parallel_tool_calls" in kwargs:
                 payload["parallel_tool_calls"] = kwargs.pop("parallel_tool_calls")
 
-            apply_structured_output(payload, kwargs.pop("response_format", None))
+            apply_structured_output(
+                payload,
+                kwargs.pop("response_format", None),
+                model=model_name,
+            )
 
             # Pass through any remaining kwargs (for future extensibility)
             if kwargs:
@@ -398,8 +402,11 @@ class QwenClient:
             if "parallel_tool_calls" in kwargs:
                 payload["parallel_tool_calls"] = kwargs.pop("parallel_tool_calls")
 
-            # Add response format if provided
-            apply_structured_output(payload, kwargs.pop("response_format", None))
+            apply_structured_output(
+                payload,
+                kwargs.pop("response_format", None),
+                model=model_name,
+            )
 
             # Pass through any remaining kwargs
             if kwargs:
@@ -551,11 +558,16 @@ class DeepSeekClient:
             payload["messages"] = messages
             payload["temperature"] = temperature
             payload["max_tokens"] = max_tokens
-            apply_structured_output(payload, kwargs.pop("response_format", None))
+            wire_model = payload.get("model")
+            apply_structured_output(
+                payload,
+                kwargs.pop("response_format", None),
+                model=wire_model if isinstance(wire_model, str) else None,
+            )
 
             headers = _dashscope_headers(self.api_key)
 
-            logger.debug("DeepSeek async API request: %s", self.model_name)
+            logger.debug("DeepSeek async API request: %s", payload.get("model"))
 
             client = await get_httpx_manager().get_client("deepseek", self.api_url, self.timeout, self.stream_timeout)
             response = await client.post(self.api_url, json=payload, headers=headers)
@@ -648,7 +660,12 @@ class DeepSeekClient:
             payload["max_tokens"] = max_tokens
             payload["stream"] = True
             payload["stream_options"] = {"include_usage": True}
-            apply_structured_output(payload, kwargs.pop("response_format", None))
+            wire_model = payload.get("model")
+            apply_structured_output(
+                payload,
+                kwargs.pop("response_format", None),
+                model=wire_model if isinstance(wire_model, str) else None,
+            )
 
             # Enable thinking mode if requested
             if "extra_body" not in payload:

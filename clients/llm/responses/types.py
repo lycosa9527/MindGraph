@@ -27,6 +27,7 @@ class ResponsesRequest:
     temperature: Optional[float] = None
     reasoning_effort: Optional[str] = None
     extra: Dict[str, Any] = field(default_factory=dict)
+    response_format: Optional[Dict[str, Any]] = None
 
     def canonical_tools(self) -> List[str]:
         """Drop unknown tool names so adapters stay stable."""

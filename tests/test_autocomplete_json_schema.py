@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
@@ -9,7 +10,16 @@ import pytest
 
 from agents.core.llm_spec_stream import dispatch_llm_chat
 from agents.core.structured_output import structured_output_scope
-from clients.llm.structured_output import apply_structured_output
+from clients.llm.structured_output import (
+    DASHSCOPE_DEEPSEEK_V41_FLASH,
+    apply_responses_text_format,
+    apply_structured_output,
+    bind_llm_call,
+    bind_llm_log_topic,
+    llm_failed_message,
+    llm_finished_message,
+    response_format_for_dashscope_deepseek,
+)
 from prompts.autocomplete_json_schema import (
     branch_expand_response_format,
     diagram_spec_response_format,
@@ -65,6 +75,111 @@ def test_json_object_call_keeps_max_tokens() -> None:
     payload: dict[str, Any] = {"max_tokens": 1000}
     apply_structured_output(payload, {"type": "json_object"})
     assert payload["max_tokens"] == 1000
+
+
+def _bubble_schema() -> dict[str, Any]:
+    envelope = diagram_spec_response_format("bubble_map", bilingual=False)
+    assert envelope is not None
+    return envelope
+
+
+def test_dashscope_deepseek_flash_chat_uses_json_object() -> None:
+    """DashScope deepseek-v4.1-flash keeps JSON mode and drops the schema."""
+    payload: dict[str, Any] = {"max_tokens": 1000, "model": DASHSCOPE_DEEPSEEK_V41_FLASH}
+    apply_structured_output(payload, _bubble_schema(), model=DASHSCOPE_DEEPSEEK_V41_FLASH)
+    assert payload["response_format"] == {"type": "json_object"}
+    assert "max_tokens" not in payload
+
+
+def test_json_output_log_names_task_format_and_model(caplog: pytest.LogCaptureFixture) -> None:
+    """The line names the task, the format change, and the route that served it."""
+    payload: dict[str, Any] = {"max_tokens": 1000}
+    with caplog.at_level(logging.INFO, logger="clients.llm.structured_output"):
+        with bind_llm_log_topic("苹果\n脆甜"):
+            with bind_llm_call("autocomplete", "bubble_map", "express"):
+                apply_structured_output(payload, _bubble_schema(), model=DASHSCOPE_DEEPSEEK_V41_FLASH)
+    message = caplog.records[-1].getMessage()
+    assert "\n" not in message
+    assert (
+        '[LLM] autocomplete bubble_map topic="苹果 脆甜" asked json_schema:bubble_map_spec '
+        "sent json_object using express -> deepseek-v4.1-flash via chat, max_tokens omitted"
+    ) == message
+
+
+def test_finish_and_failure_lines_name_the_wire_model() -> None:
+    """Finish and failure stay one line and name the id that was posted."""
+    with bind_llm_log_topic("苹果"):
+        finished = llm_finished_message(
+            "autocomplete",
+            "bubble_map",
+            "express",
+            "express",
+            1.2,
+            DASHSCOPE_DEEPSEEK_V41_FLASH,
+        )
+        failed = llm_failed_message(
+            "autocomplete",
+            "bubble_map",
+            "express",
+            "express",
+            0.4,
+            "This response_format type\nis unavailable now",
+            DASHSCOPE_DEEPSEEK_V41_FLASH,
+        )
+    assert "\n" not in finished
+    assert "\n" not in failed
+    assert finished == (
+        '[LLM] autocomplete bubble_map topic="苹果" finished in 1.20s using express -> deepseek-v4.1-flash'
+    )
+    assert failed == (
+        '[LLM] autocomplete bubble_map topic="苹果" failed in 0.40s '
+        "using express -> deepseek-v4.1-flash: This response_format type is unavailable now"
+    )
+
+
+def test_explicit_json_object_on_flash_keeps_max_tokens() -> None:
+    """A caller that asked for json_object keeps the cap on the flash id."""
+    payload: dict[str, Any] = {"max_tokens": 1000}
+    apply_structured_output(
+        payload,
+        {"type": "json_object"},
+        model=DASHSCOPE_DEEPSEEK_V41_FLASH,
+    )
+    assert payload["response_format"] == {"type": "json_object"}
+    assert payload["max_tokens"] == 1000
+
+
+def test_other_models_keep_json_schema_on_chat() -> None:
+    """Qwen and any non-flash id still send native json_schema."""
+    payload: dict[str, Any] = {"max_tokens": 1000, "model": "qwen3.8-flash"}
+    apply_structured_output(payload, _bubble_schema(), model="qwen3.8-flash")
+    assert payload["response_format"]["type"] == "json_schema"
+    assert payload["response_format"]["json_schema"]["name"] == "bubble_map_spec"
+    assert "max_tokens" not in payload
+
+
+def test_dashscope_deepseek_flash_responses_uses_json_object() -> None:
+    """The same flash id uses json_object on the Responses API."""
+    payload: dict[str, Any] = {"model": DASHSCOPE_DEEPSEEK_V41_FLASH}
+    apply_responses_text_format(payload, _bubble_schema(), model=DASHSCOPE_DEEPSEEK_V41_FLASH)
+    assert payload["text"]["format"] == {"type": "json_object"}
+
+
+def test_qwen_responses_keeps_json_schema() -> None:
+    """Responses text.format carries name, schema, and strict for Qwen."""
+    payload: dict[str, Any] = {"model": "qwen3.8-flash"}
+    apply_responses_text_format(payload, _bubble_schema(), model="qwen3.8-flash")
+    text_format = payload["text"]["format"]
+    assert text_format["type"] == "json_schema"
+    assert text_format["name"] == "bubble_map_spec"
+    assert text_format["strict"] is True
+    assert "topic" in text_format["schema"]["properties"]
+
+
+def test_volcengine_deepseek_endpoint_keeps_schema() -> None:
+    """An endpoint id is not DashScope deepseek-v4.1-flash, so the schema stays."""
+    chosen = response_format_for_dashscope_deepseek(_bubble_schema(), "ep-20250101000000-dummy")
+    assert chosen["type"] == "json_schema"
 
 
 @pytest.mark.asyncio

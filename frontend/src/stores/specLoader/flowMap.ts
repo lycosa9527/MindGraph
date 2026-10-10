@@ -23,6 +23,7 @@ import {
   stampFlowMapSubstepData,
   takeFlowMapStableId,
 } from '@/utils/flowMapIdentity'
+import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 import { thinkingMapFamilyLine } from '@/utils/thinkingMapChrome'
 
 import {
@@ -32,7 +33,6 @@ import {
   resolveFlowSubstepsForSteps,
   substepsForFlowStep,
 } from './flowMapSubsteps'
-import { measureTextWidth } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
 export const FLOW_SUBSTEP_FONT_SIZE = 14
@@ -44,8 +44,6 @@ const FLOW_TOPIC_PADDING_X = 36
 const FLOW_MAX_TEXT_WIDTH = 250
 const FLOW_TOPIC_MAX_TEXT_WIDTH = 300
 const FLOW_SUBSTEP_MAX_TEXT_WIDTH = 180
-const FLOW_BALANCE_PADDING = 5
-
 /**
  * Load flow map spec into diagram nodes and connections
  *
@@ -94,18 +92,11 @@ function estimateFlowRenderedWidth(
   const trimmed = (text || '').trim()
   if (!trimmed || typeof document === 'undefined') return FLOW_MAP_PILL_WIDTH
 
-  const singleLineWidth = measureTextWidth(trimmed, fontSize, { fontWeight, fontFamily })
-
-  let effectiveTextWidth: number
-  if (singleLineWidth <= maxTextWidth) {
-    effectiveTextWidth = singleLineWidth
-  } else {
-    const numLines = Math.ceil(singleLineWidth / maxTextWidth)
-    const balancedWidth = Math.ceil(singleLineWidth / numLines) + FLOW_BALANCE_PADDING
-    effectiveTextWidth = Math.min(balancedWidth, maxTextWidth)
-  }
-
-  return Math.max(FLOW_MAP_PILL_WIDTH, effectiveTextWidth + paddingX)
+  const block = measureThinkingMapLabelBlockPx(trimmed, fontSize, maxTextWidth, {
+    fontWeight,
+    fontFamily,
+  })
+  return Math.max(FLOW_MAP_PILL_WIDTH, block.width + paddingX)
 }
 
 function getEffectiveFlowWidth(
@@ -143,8 +134,11 @@ export function getFlowTopicCenteredPosition(
   const fs = typeof style?.fontSize === 'number' ? style.fontSize : FLOW_TOPIC_FONT_SIZE
   const fw = (style?.fontWeight as string | undefined) ?? 'bold'
   const fontFamily = style?.fontFamily
-  const measuredTextWidth = measureTextWidth(text, fs, { fontWeight: fw, fontFamily })
-  const topicEstWidth = Math.max(FLOW_MAP_PILL_WIDTH, measuredTextWidth + FLOW_TOPIC_PADDING_X)
+  const topicTextW = measureThinkingMapLabelBlockPx(text, fs, FLOW_TOPIC_MAX_TEXT_WIDTH, {
+    fontWeight: fw,
+    fontFamily,
+  }).width
+  const topicEstWidth = Math.max(FLOW_MAP_PILL_WIDTH, topicTextW + FLOW_TOPIC_PADDING_X)
   const x = Math.round(stepCenterX - topicEstWidth / 2)
   return { x, y: currentY }
 }
@@ -410,9 +404,12 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 
     // Topic centered on step node group (step column only)
     const stepCenterX = stepX + pillWidth / 2
-    const measuredTextWidth = measureTextWidth(title, FLOW_TOPIC_FONT_SIZE, {
-      fontWeight: 'bold',
-    })
+    const measuredTextWidth = measureThinkingMapLabelBlockPx(
+      title,
+      FLOW_TOPIC_FONT_SIZE,
+      FLOW_TOPIC_MAX_TEXT_WIDTH,
+      { fontWeight: 'bold' }
+    ).width
     const topicEstWidth = Math.max(FLOW_MAP_PILL_WIDTH, measuredTextWidth + FLOW_TOPIC_PADDING_X)
     const topicX = Math.round(stepCenterX - topicEstWidth / 2)
     const topicY = DEFAULT_PADDING + 40
@@ -598,7 +595,12 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     const stepY = DEFAULT_CENTER_Y - pillHeight / 2
 
     // Measure topic node width (adaptive: max-content with minWidth 120px)
-    const topicTextW = measureTextWidth(title, FLOW_TOPIC_FONT_SIZE, { fontWeight: 'bold' })
+    const topicTextW = measureThinkingMapLabelBlockPx(
+      title,
+      FLOW_TOPIC_FONT_SIZE,
+      FLOW_TOPIC_MAX_TEXT_WIDTH,
+      { fontWeight: 'bold' }
+    ).width
     const topicEstWidth = Math.max(pillWidth, topicTextW + FLOW_TOPIC_PADDING_X)
     const topicX = DEFAULT_PADDING
     const topicY = DEFAULT_CENTER_Y - pillHeight / 2
@@ -621,11 +623,19 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 
     const hGroups: HGroupInfo[] = steps.map((step, stepIndex) => {
       const subs = substepsByStep[stepIndex] || []
-      const stepTextW = measureTextWidth(step.text, FLOW_STEP_FONT_SIZE)
+      const stepTextW = measureThinkingMapLabelBlockPx(
+        step.text,
+        FLOW_STEP_FONT_SIZE,
+        FLOW_MAX_TEXT_WIDTH
+      ).width
       const stepEstW = Math.max(pillWidth, stepTextW + FLOW_NODE_PADDING_X)
 
       const substepEntries = subs.map((item) => {
-        const w = measureTextWidth(item.text, FLOW_SUBSTEP_FONT_SIZE)
+        const w = measureThinkingMapLabelBlockPx(
+          item.text,
+          FLOW_SUBSTEP_FONT_SIZE,
+          FLOW_SUBSTEP_MAX_TEXT_WIDTH
+        ).width
         return {
           id: item.id,
           text: item.text,

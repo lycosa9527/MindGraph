@@ -11,6 +11,7 @@ import httpx
 from clients.llm.http_client_manager import get_httpx_manager
 from clients.llm.responses.dashscope_events import normalize_responses_event
 from clients.llm.responses.types import ResponsesRequest
+from clients.llm.structured_output import apply_responses_text_format
 from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.infrastructure.http.error_handler import (
@@ -50,6 +51,12 @@ def _build_payload(request: ResponsesRequest) -> Dict[str, Any]:
         payload["reasoning"] = {"effort": request.reasoning_effort}
     if request.extra:
         payload.update(request.extra)
+    wire_model = payload.get("model")
+    apply_responses_text_format(
+        payload,
+        request.response_format,
+        model=wire_model if isinstance(wire_model, str) else request.model,
+    )
     return payload
 
 

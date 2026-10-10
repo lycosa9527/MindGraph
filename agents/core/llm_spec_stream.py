@@ -5,8 +5,8 @@ When ``phase_emit`` is provided, uses ``chat_stream`` and emits ``waiting`` befo
 the LLM call and ``streaming`` on the first content token. Otherwise delegates to
 blocking ``chat()`` unchanged.
 
-Diagram-spec callers default to DashScope/Volcengine ``json_object`` structured
-output. Pass ``structured_json=False`` for free-text classification replies.
+When a diagram schema is in scope, that schema is sent. Otherwise structured
+callers use ``json_object``. Pass ``structured_json=False`` for free-text replies.
 """
 
 from collections.abc import Awaitable, Callable

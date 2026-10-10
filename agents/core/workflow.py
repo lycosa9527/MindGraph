@@ -51,6 +51,7 @@ from agents.thinking_maps.double_bubble_map_agent import DoubleBubbleMapAgent
 from agents.thinking_maps.flow_map_agent import FlowMapAgent
 from agents.thinking_maps.multi_flow_map_agent import MultiFlowMapAgent
 from agents.thinking_maps.tree_map_agent import TreeMapAgent
+from clients.llm.structured_output import note_llm_log_topic, push_llm_log_topic, reset_llm_log_topic
 from prompts.autocomplete_json_schema import (
     branch_expand_response_format,
     diagram_spec_response_format,
@@ -235,15 +236,13 @@ async def _generate_spec_with_agent(
             route.kwargs["locked_topic"] = topic_lock
         logger.debug("Agent route mode: %s", route.mode)
 
-        spec_format = None
-        if (request_type or "") == "autocomplete":
-            if expand_label and diagram_type in ("mind_map", "mindmap"):
-                spec_format = branch_expand_response_format()
-            else:
-                spec_format = diagram_spec_response_format(
-                    diagram_type,
-                    bilingual=bool(secondary_language),
-                )
+        if expand_label and diagram_type in ("mind_map", "mindmap"):
+            spec_format = branch_expand_response_format()
+        else:
+            spec_format = diagram_spec_response_format(
+                diagram_type,
+                bilingual=bool(secondary_language),
+            )
         with structured_output_scope(spec_format):
             with bilingual_prompt_scope(secondary_language):
                 result = await _invoke_agent_route(
@@ -333,6 +332,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
     """
     logger.debug("Starting simplified graph workflow")
     workflow_start_time = time.time()
+    topic_token = push_llm_log_topic(locked_topic or mind_map_topic or concept_map_topic or user_prompt)
     agent_phase_emit = phase_emitter_from_event_emitter(event_emit) or phase_emit
 
     # Initialize timing variables
@@ -431,6 +431,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
                 AgentRequirementParams(),
             )
             generation_central = expand_label
+            note_llm_log_topic(mind_map_topic or expand_label)
             topic_time = 0.0
             logger.info(
                 "Mind map branch expand (skipped requirements extraction): topic=%r, expand=%r, refs=%d",
@@ -460,6 +461,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
                 map_to_agent_params(diagram_type, parsed),
             )
             generation_central = parsed.central_for_type(diagram_type) or user_prompt.strip()
+            note_llm_log_topic(generation_central)
             topic_time = time.time() - requirements_start
             logger.info(
                 "Requirements extraction completed in %.2fs: structure_mode=%s, central=%r",
@@ -750,3 +752,5 @@ Please generate a more accurate and detailed diagram based on the above context.
             "style_preferences": {},
             "language": language,
         }
+    finally:
+        reset_llm_log_topic(topic_token)

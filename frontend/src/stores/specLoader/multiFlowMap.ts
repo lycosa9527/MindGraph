@@ -18,6 +18,7 @@ import {
 import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
 import type { Connection, DiagramNode } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 import {
   MULTI_FLOW_EVENT_NODE_ID,
   MULTI_FLOW_UID_DATA_KEY,
@@ -29,37 +30,12 @@ import {
 } from '@/utils/multiFlowMapIdentity'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
-import {
-  diagramLabelLikelyNeedsRenderedMeasure,
-  measureRenderedDiagramLabelWidth,
-  measureTextWidth,
-} from './textMeasurement'
-import { estimateTextWidthFallbackPx } from './textMeasurementFallback'
 import type { SpecLoaderResult } from './types'
 
 /** FlowNode font size (matches FlowNode.vue defaultStyle) */
 const FLOW_NODE_FONT_SIZE = 16
 /** FlowNode horizontal padding: px-5 = 20px each side */
 const FLOW_NODE_PADDING_X = 36
-
-function measureLabelInnerWidth(
-  text: string,
-  fontSize: number,
-  fontWeight: string | undefined,
-  fontFamily: string,
-  isTopic: boolean
-): number {
-  const trimmed = text.trim() || ' '
-  const fallback = estimateTextWidthFallbackPx(trimmed, fontSize, { isTopic })
-  if (typeof document === 'undefined') {
-    return fallback
-  }
-  const weight = fontWeight === 'bold' ? 'bold' : 'normal'
-  const measured = diagramLabelLikelyNeedsRenderedMeasure(trimmed)
-    ? measureRenderedDiagramLabelWidth(trimmed, fontSize, { fontFamily, fontWeight: weight })
-    : measureTextWidth(trimmed, fontSize, { fontFamily, fontWeight: weight })
-  return measured > 0 ? measured : fallback
-}
 
 /**
  * Event-pill width from label + TopicNodeDiagram padding / wrap cap.
@@ -73,8 +49,12 @@ export function estimateMultiFlowTopicWidth(
   const fontWeight = style?.fontWeight
   const fontFamily = style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
   const isBold = fontWeight === undefined || fontWeight === 'bold' || fontWeight === 700
-  const nowrapInner = measureLabelInnerWidth(text, fs, isBold ? 'bold' : 'normal', fontFamily, true)
-  const innerForLayout = Math.min(nowrapInner, MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH)
+  const innerForLayout = measureThinkingMapLabelBlockPx(
+    text,
+    fs,
+    MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH,
+    { fontWeight: isBold ? 'bold' : 'normal', fontFamily }
+  ).width
   return Math.max(
     MULTI_FLOW_MAP_TOPIC_WIDTH,
     Math.ceil(innerForLayout + MULTI_FLOW_TOPIC_PADDING_X)
@@ -89,14 +69,15 @@ function computeFlowNodeWidth(node: DiagramNode): number {
   const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : FLOW_NODE_FONT_SIZE
   const fontWeight = node.style?.fontWeight
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
-  const nowrapInner = measureLabelInnerWidth(
+  const innerForLayout = measureThinkingMapLabelBlockPx(
     node.text ?? '',
     fs,
-    fontWeight === 'bold' ? 'bold' : 'normal',
-    fontFamily,
-    fontWeight === 'bold'
-  )
-  const innerForLayout = Math.min(nowrapInner, MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH)
+    MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH,
+    {
+      fontWeight: fontWeight === 'bold' ? 'bold' : 'normal',
+      fontFamily,
+    }
+  ).width
   return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(innerForLayout + FLOW_NODE_PADDING_X))
 }
 

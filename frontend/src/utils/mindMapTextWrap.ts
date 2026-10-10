@@ -1,10 +1,9 @@
 /**
- * Shared mind-map label wrap contract (canvas hosts + vector PDF/DOCX export).
+ * Shared thinking-map label wrap contract (canvas hosts + vector PDF/DOCX export).
  *
- * Canvas SoT: InlineEditableText ``max-width`` + CSS
- * ``pre-wrap / word-break:normal / overflow-wrap:break-word / line-height:1.4``
- * and ``text-wrap: balance``. Export uses the same column and the same
- * balance: the narrowest width that keeps the greedy line count.
+ * Width comes from the browser when that measurement sits near the fallback
+ * estimate. A label that fits the script-aware column stays one line. A longer
+ * label wraps at the map's own cap with word boundaries and ``text-wrap: balance``.
  */
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
@@ -62,6 +61,83 @@ export function measureMindMapLabelWidthPx(
 }
 
 /**
+ * Wrap column for any thinking-map label.
+ * Fits the script-aware threshold → that threshold (one line).
+ * Longer text → ``baseCapPx``.
+ */
+export function resolveThinkingMapTextColumnPx(
+  text: string,
+  fontSize: number,
+  baseCapPx: number,
+  options: MindMapTextMeasureOptions = {}
+): number {
+  const label = (text || '').trim()
+  if (!label) return baseCapPx
+  const wrapThreshold = computeScriptAwareMaxWidth(label, baseCapPx)
+  const textWidth = measureMindMapLabelWidthPx(label, fontSize, options)
+  if (textWidth <= wrapThreshold) return wrapThreshold
+  return baseCapPx
+}
+
+export type ThinkingMapLabelBlock = {
+  width: number
+  height: number
+  lineCount: number
+}
+
+/** Content box after the shared wrap. One line reports the measured width, not the threshold. */
+export function measureThinkingMapLabelBlockPx(
+  text: string,
+  fontSize: number,
+  baseCapPx: number,
+  options: MindMapTextMeasureOptions = {}
+): ThinkingMapLabelBlock {
+  const label = (text || '').trim() || ' '
+  const column = resolveThinkingMapTextColumnPx(
+    label === ' ' ? '' : label,
+    fontSize,
+    baseCapPx,
+    options
+  )
+  const single = measureMindMapLabelWidthPx(label, fontSize, options)
+  if (!label.includes('\n') && (label === ' ' || single <= column)) {
+    return {
+      width: single,
+      height: fontSize * MIND_MAP_TEXT_LINE_HEIGHT,
+      lineCount: 1,
+    }
+  }
+  const lines = wrapMindMapTextLines(label, column, { fontSize, ...options })
+  let width = 0
+  for (const line of lines) {
+    width = Math.max(width, measureMindMapLabelWidthPx(line, fontSize, options))
+  }
+  return {
+    width: width > 0 ? width : Math.min(single, baseCapPx),
+    height: Math.max(lines.length, 1) * fontSize * MIND_MAP_TEXT_LINE_HEIGHT,
+    lineCount: Math.max(lines.length, 1),
+  }
+}
+
+/**
+ * CSS max-width. A one-line label gets the script-aware column.
+ * A wrapped label gets the balanced line width, never wider than the cap.
+ */
+export function resolveThinkingMapDisplayMaxWidthPx(
+  text: string,
+  fontSize: number,
+  baseCapPx: number,
+  options: MindMapTextMeasureOptions = {}
+): number {
+  const label = (text || '').trim()
+  if (!label) return baseCapPx
+  const column = resolveThinkingMapTextColumnPx(label, fontSize, baseCapPx, options)
+  const block = measureThinkingMapLabelBlockPx(label, fontSize, baseCapPx, options)
+  if (block.lineCount <= 1 && !label.includes('\n')) return column
+  return Math.max(8, Math.min(column, Math.ceil(block.width)))
+}
+
+/**
  * Canvas branch ``:max-width`` in px (same logic as MindMapV2/LegacyBranchNode).
  */
 export function resolveMindMapBranchTextMaxWidthPx(
@@ -69,14 +145,7 @@ export function resolveMindMapBranchTextMaxWidthPx(
   fontSize: number,
   options: MindMapTextMeasureOptions = {}
 ): number {
-  const text = (label || '').trim()
-  if (!text) return MIND_MAP_BRANCH_MAX_TEXT_WIDTH
-  const wrapThreshold = computeScriptAwareMaxWidth(text, MIND_MAP_BRANCH_MAX_TEXT_WIDTH)
-  const textWidth = measureMindMapLabelWidthPx(text, fontSize, options)
-  if (textWidth <= wrapThreshold) {
-    return wrapThreshold
-  }
-  return MIND_MAP_BRANCH_MAX_TEXT_WIDTH
+  return resolveThinkingMapTextColumnPx(label, fontSize, MIND_MAP_BRANCH_MAX_TEXT_WIDTH, options)
 }
 
 export const MIND_MAP_NUMBER_PREFIX_GAP_PX = 6

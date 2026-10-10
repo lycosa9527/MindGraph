@@ -28,6 +28,7 @@ import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH,
+  CONTEXT_FONT_SIZE,
   TOPIC_FONT_SIZE,
 } from '@/stores/specLoader/textMeasurement'
 import {
@@ -41,6 +42,10 @@ import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
 import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
+import {
+  MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
+  resolveThinkingMapDisplayMaxWidthPx,
+} from '@/utils/mindMapTextWrap'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO, applyNodeShapeToStyle } from '@/utils/nodeShapeStyle'
 import {
   THINKING_MAP_LEAF_TEXT,
@@ -62,8 +67,9 @@ const contextBorderPx = MIND_MAP_GEOMETRY.borderWidth
 
 /**
  * Context labels use `px-2` on a border-box display, so that padding sits inside max-width.
- * Layout treats CONTEXT_MAX_TEXT_WIDTH as the text column; add the padding back here or a
- * string that still fits the column wraps and leaves one CJK glyph on the next line.
+ * Circle-map layout treats CONTEXT_MAX_TEXT_WIDTH as the text column. Bubble-map attributes
+ * use the mind-map branch column. Add the padding back here or a string that still fits
+ * the column wraps and leaves one CJK glyph on the next line.
  */
 const CONTEXT_LABEL_PADDING_X = 16
 
@@ -248,16 +254,32 @@ const circleSize = computed(() => {
 })
 
 const textMaxWidth = computed(() => {
+  const label = (props.data.label || '').trim()
+  const fontFamily = props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK
   if (isTopicNode.value) {
     if (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') {
-      return CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH
+      const fontSize =
+        typeof props.data.style?.fontSize === 'number' ? props.data.style.fontSize : TOPIC_FONT_SIZE
+      const fontWeight = String(props.data.style?.fontWeight || 'bold')
+      return resolveThinkingMapDisplayMaxWidthPx(label, fontSize, CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH, {
+        fontWeight,
+        fontFamily,
+      })
     }
     return circleSize.value - 2 * topicBorderPx
   }
   if (isCapsuleNode.value) {
     return capsuleWidth.value - 2 * contextBorderPx
   }
-  return CONTEXT_MAX_TEXT_WIDTH + CONTEXT_LABEL_PADDING_X
+  const fontSize =
+    typeof props.data.style?.fontSize === 'number' ? props.data.style.fontSize : CONTEXT_FONT_SIZE
+  const fontWeight = String(props.data.style?.fontWeight || 'normal')
+  const cap =
+    diagramStore.type === 'bubble_map' ? MIND_MAP_BRANCH_MAX_TEXT_WIDTH : CONTEXT_MAX_TEXT_WIDTH
+  return (
+    resolveThinkingMapDisplayMaxWidthPx(label, fontSize, cap, { fontWeight, fontFamily }) +
+    CONTEXT_LABEL_PADDING_X
+  )
 })
 
 const themeNodePaint = computed(() => {

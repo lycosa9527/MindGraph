@@ -115,7 +115,11 @@ class DoubaoClient:
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             }
-            apply_structured_output(create_kwargs, kwargs.get("response_format"))
+            apply_structured_output(
+                create_kwargs,
+                kwargs.get("response_format"),
+                model=self.model_name,
+            )
 
             # Call OpenAI-compatible API
             completion = await self.client.chat.completions.create(**create_kwargs)
@@ -233,7 +237,11 @@ class DoubaoClient:
                 "stream": True,
                 "stream_options": {"include_usage": True},
             }
-            apply_structured_output(create_kwargs, kwargs.get("response_format"))
+            apply_structured_output(
+                create_kwargs,
+                kwargs.get("response_format"),
+                model=self.model_name,
+            )
 
             # Use OpenAI SDK's streaming with usage tracking
             stream = await self.client.chat.completions.create(**create_kwargs)
@@ -462,7 +470,7 @@ class VolcengineClient:
             thinking_extra = volcengine_thinking_extra(self.model_alias, enable_thinking)
             if thinking_extra:
                 create_kwargs["extra_body"] = thinking_extra
-            apply_structured_output(create_kwargs, response_format)
+            apply_structured_output(create_kwargs, response_format, model=endpoint_id)
 
             completion = await self.client.chat.completions.create(**create_kwargs)
 
@@ -600,7 +608,7 @@ class VolcengineClient:
                 "stream_options": {"include_usage": True},
                 "extra_body": thinking_extra or None,
             }
-            apply_structured_output(create_kwargs, response_format)
+            apply_structured_output(create_kwargs, response_format, model=endpoint_id)
 
             stream = await self.client.chat.completions.create(**create_kwargs)
 

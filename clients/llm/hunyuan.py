@@ -19,6 +19,7 @@ from clients.llm.base import (
     extract_usage_from_openai_completion,
     extract_usage_from_stream_chunk,
 )
+from clients.llm.structured_output import apply_structured_output
 from config.settings import config
 from services.infrastructure.http.error_handler import (
     LLMProviderError,
@@ -63,6 +64,7 @@ class HunyuanClient:
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Send async chat completion request to Tencent Hunyuan (OpenAI-compatible)
@@ -82,13 +84,16 @@ class HunyuanClient:
 
             logger.debug("Hunyuan async API request: %s (temp: %s)", self.model_name, temperature)
 
-            # Call OpenAI-compatible API
-            completion = await self.client.chat.completions.create(
-                model=self.model_name,
-                messages=as_openai_chat_messages(messages),
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+            response_format = kwargs.pop("response_format", None)
+            del kwargs
+            create_kwargs: Dict[str, Any] = {
+                "model": self.model_name,
+                "messages": as_openai_chat_messages(messages),
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            apply_structured_output(create_kwargs, response_format, model=self.model_name)
+            completion = await self.client.chat.completions.create(**create_kwargs)
 
             # Extract content from response
             content = completion.choices[0].message.content
@@ -159,9 +164,10 @@ class HunyuanClient:
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Alias for async_chat_completion for API consistency"""
-        return await self.async_chat_completion(messages, temperature, max_tokens)
+        return await self.async_chat_completion(messages, temperature, max_tokens, **kwargs)
 
     async def async_stream_chat_completion(
         self,
@@ -169,6 +175,7 @@ class HunyuanClient:
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
         enable_thinking: bool = False,
+        **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from Hunyuan using OpenAI-compatible API.
@@ -197,14 +204,18 @@ class HunyuanClient:
             # Use OpenAI SDK's streaming with usage tracking
             # enable_thinking parameter is accepted for API consistency but not used
             _ = enable_thinking
-            stream = await self.client.chat.completions.create(
-                model=self.model_name,
-                messages=as_openai_chat_messages(messages),
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=True,  # Enable streaming
-                stream_options={"include_usage": True},  # Request usage in stream
-            )
+            response_format = kwargs.pop("response_format", None)
+            del kwargs
+            create_kwargs: Dict[str, Any] = {
+                "model": self.model_name,
+                "messages": as_openai_chat_messages(messages),
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "stream": True,
+                "stream_options": {"include_usage": True},
+            }
+            apply_structured_output(create_kwargs, response_format, model=self.model_name)
+            stream = await self.client.chat.completions.create(**create_kwargs)
 
             last_usage = None
             async for chunk in stream:

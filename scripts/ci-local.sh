@@ -287,7 +287,10 @@ run_backend() {
     tests/scripts/test_zhilian_junan_video.py \
     tests/scripts/test_dify_db_merge.py \
     tests/scripts/test_wan_tts.py \
-    tests/scripts/test_october_update_promo.py
+    tests/scripts/test_october_update_promo.py \
+    tests/test_autocomplete_json_schema.py \
+    tests/test_llm_http_errors.py \
+    tests/test_mind_map_node_explain_research.py
 }
 
 run_frontend() {
@@ -328,6 +331,9 @@ run_frontend() {
     tests/useDiagramCanvasVueFlowUi.spec.ts \
     tests/mindMapFitChromeInsets.spec.ts \
     tests/thinkingMapsAutocompleteLayout.spec.ts \
+    tests/mindMapTextWrap.spec.ts \
+    tests/bubbleMapAttributeWrap.spec.ts \
+    tests/doubleBubbleMapLayout.spec.ts \
     tests/flowMapIdentity.spec.ts \
     tests/flowMapSubsteps.spec.ts \
     tests/orgGenerationCache.spec.ts \

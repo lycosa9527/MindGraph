@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.153] - 2026-10-10
+
+> **Thinking-map labels wrap like mind-map branches, and diagram generation asks for a JSON schema.**
+
+### Fixed
+
+- **思维图换行** — Circle, bubble, tree, brace, flow, and multi-flow labels share the mind-map wrap: browser text measurement, a script-aware column, and balanced lines. Each map keeps its own column. A phrase that fits stays one line; a longer one wraps and the node hugs the longest line. Bubble auto-complete answers wrap the same way, and a stored no-wrap flag is dropped the next time the map is laid out. Double bubble, bridge pairs, and tree branches stay one line.
+- **双气泡图** — The left and right difference columns size from their own text. An empty column adds no width. Pairs that share a row stay on one horizontal center.
+- **图表生成** — Diagram generation and requirements extraction send a JSON schema on every run. DashScope `deepseek-v4.1-flash` still receives `json_object`, on chat completions and the Responses API, because that model rejects `json_schema`. Other models keep the schema.
+
+### Tests
+
+- [`frontend/tests/mindMapTextWrap.spec.ts`](frontend/tests/mindMapTextWrap.spec.ts), [`frontend/tests/bubbleMapAttributeWrap.spec.ts`](frontend/tests/bubbleMapAttributeWrap.spec.ts), [`frontend/tests/doubleBubbleMapLayout.spec.ts`](frontend/tests/doubleBubbleMapLayout.spec.ts) — script-aware wrap, bubble answer circles, independent difference columns.
+- [`tests/test_autocomplete_json_schema.py`](tests/test_autocomplete_json_schema.py), [`tests/test_mind_map_node_explain_research.py`](tests/test_mind_map_node_explain_research.py), [`tests/test_llm_http_errors.py`](tests/test_llm_http_errors.py) — schema on generation, flash rewritten to `json_object`, Responses `text.format` keyword errors.
+
 ## [5.180.152] - 2026-10-10
 
 > **Thinking maps keep the font, model, zoom center, and answer row you chose.**

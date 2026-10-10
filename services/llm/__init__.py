@@ -17,6 +17,7 @@ import logging
 import time
 from typing import Any, AsyncGenerator, Dict, List, NoReturn, Optional, Tuple
 
+from clients.llm.structured_output import bind_llm_call, llm_failed_message, llm_finished_message
 from services.infrastructure.http.error_handler import (
     LLMContentFilterError,
     LLMServiceError,
@@ -307,6 +308,7 @@ class LLMService:
         provider: str | None = None
         used_custom = False
         actual_model = model
+        llm_call = None
         thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
         if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
@@ -358,18 +360,18 @@ class LLMService:
                 )
             )
 
-            # Execute request
-            response = await self.request_executor.execute_chat_request(
-                client=client,
-                messages=chat_messages,
-                rate_limiter=rate_limiter,
-                timeout=timeout,
-                model=model,
-                actual_model=actual_model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                **kwargs,
-            )
+            with bind_llm_call(request_type, diagram_type, model) as llm_call:
+                response = await self.request_executor.execute_chat_request(
+                    client=client,
+                    messages=chat_messages,
+                    rate_limiter=rate_limiter,
+                    timeout=timeout,
+                    model=model,
+                    actual_model=actual_model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    **kwargs,
+                )
 
             duration = time.time() - start_time
 
@@ -381,7 +383,17 @@ class LLMService:
                 content = str(response)
                 usage_data = {}
 
-            logger.info("[LLMService] %s responded in %.2fs", model, duration)
+            logger.info(
+                "%s",
+                llm_finished_message(
+                    request_type,
+                    diagram_type,
+                    model,
+                    actual_model,
+                    duration,
+                    llm_call.wire if llm_call is not None else None,
+                ),
+            )
 
             # Track all metrics
             metadata = {
@@ -424,7 +436,18 @@ class LLMService:
         except LLM_PIPELINE_ERRORS as e:
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
-            logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, detail)
+            logger.error(
+                "%s",
+                llm_failed_message(
+                    request_type,
+                    diagram_type,
+                    model,
+                    actual_model,
+                    duration,
+                    detail,
+                    llm_call.wire if llm_call is not None else None,
+                ),
+            )
 
             # Track failed request
             metadata = {
@@ -497,6 +520,7 @@ class LLMService:
         provider: str | None = None
         used_custom = False
         actual_model = model
+        llm_call = None
         thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
         if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
@@ -545,17 +569,18 @@ class LLMService:
                 )
             )
 
-            response = await self.request_executor.execute_chat_request(
-                client=client,
-                messages=chat_messages,
-                rate_limiter=rate_limiter,
-                timeout=timeout,
-                model=model,
-                actual_model=actual_model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                **kwargs,
-            )
+            with bind_llm_call(request_type, diagram_type, model) as llm_call:
+                response = await self.request_executor.execute_chat_request(
+                    client=client,
+                    messages=chat_messages,
+                    rate_limiter=rate_limiter,
+                    timeout=timeout,
+                    model=model,
+                    actual_model=actual_model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    **kwargs,
+                )
 
             duration = time.time() - start_time
 
@@ -566,7 +591,17 @@ class LLMService:
                 usage_data = {}
                 result = {"content": str(response), "usage": {}}
 
-            logger.info("[LLMService] %s chat_raw responded in %.2fs", model, duration)
+            logger.info(
+                "%s",
+                llm_finished_message(
+                    request_type,
+                    diagram_type,
+                    model,
+                    actual_model,
+                    duration,
+                    llm_call.wire if llm_call is not None else None,
+                ),
+            )
 
             metadata = {
                 "user_id": user_id,
@@ -608,7 +643,18 @@ class LLMService:
         except LLM_PIPELINE_ERRORS as e:
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
-            logger.error("[LLMService] %s chat_raw failed after %.2fs: %s", model, duration, detail)
+            logger.error(
+                "%s",
+                llm_failed_message(
+                    request_type,
+                    diagram_type,
+                    model,
+                    actual_model,
+                    duration,
+                    detail,
+                    llm_call.wire if llm_call is not None else None,
+                ),
+            )
 
             metadata = {
                 "user_id": user_id,
@@ -685,6 +731,8 @@ class LLMService:
         provider: str | None = None
         used_custom = False
         actual_model = model
+        llm_call = None
+        diagram = None
         thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
         req_type = str(kwargs.get("request_type", "diagram_generation"))
@@ -735,18 +783,20 @@ class LLMService:
                 )
             )
 
-            # Execute request
-            response = await self.request_executor.execute_chat_request(
-                client=client,
-                messages=chat_messages,
-                rate_limiter=rate_limiter,
-                timeout=timeout,
-                model=model,
-                actual_model=actual_model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                **kwargs,
-            )
+            req_diagram = kwargs.get("diagram_type")
+            diagram = req_diagram if isinstance(req_diagram, str) else None
+            with bind_llm_call(req_type, diagram, model) as llm_call:
+                response = await self.request_executor.execute_chat_request(
+                    client=client,
+                    messages=chat_messages,
+                    rate_limiter=rate_limiter,
+                    timeout=timeout,
+                    model=model,
+                    actual_model=actual_model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    **kwargs,
+                )
 
             duration = time.time() - start_time
 
@@ -758,7 +808,17 @@ class LLMService:
                 content = str(response)
                 usage_data = {}
 
-            logger.info("[LLMService] %s responded in %.2fs", model, duration)
+            logger.info(
+                "%s",
+                llm_finished_message(
+                    req_type,
+                    diagram,
+                    model,
+                    actual_model,
+                    duration,
+                    llm_call.wire if llm_call is not None else None,
+                ),
+            )
 
             # Record performance metrics only (caller tracks tokens)
             self.metrics_tracker.record_performance_metrics(model=model, duration=duration, success=True)
@@ -796,7 +856,18 @@ class LLMService:
         except LLM_PIPELINE_ERRORS as e:
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
-            logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, detail)
+            logger.error(
+                "%s",
+                llm_failed_message(
+                    req_type,
+                    diagram,
+                    model,
+                    actual_model,
+                    duration,
+                    detail,
+                    llm_call.wire if llm_call is not None else None,
+                ),
+            )
 
             self.metrics_tracker.record_performance_metrics(
                 model=model,
@@ -894,6 +965,7 @@ class LLMService:
         provider: str | None = None
         used_custom = False
         actual_model = model
+        llm_call = None
         thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
         if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
@@ -969,30 +1041,39 @@ class LLMService:
 
             # Stream the response and capture usage
             usage_data = None
-            async for chunk in self.request_executor.execute_stream_request(
-                client=client,
-                messages=chat_messages,
-                rate_limiter=rate_limiter,
-                model=model,
-                actual_model=actual_model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                enable_thinking=enable_thinking,
-                yield_structured=yield_structured,
-                **kwargs,
-            ):
-                # Capture usage data from final chunk (for tracking)
-                if isinstance(chunk, dict):
-                    if chunk.get("type") == "usage":
-                        usage_data = chunk.get("usage", {})
-                        # Only yield usage chunk if structured mode
-                        if yield_structured:
-                            yield chunk
-                        continue
-                yield chunk
+            with bind_llm_call(request_type, diagram_type, model) as llm_call:
+                async for chunk in self.request_executor.execute_stream_request(
+                    client=client,
+                    messages=chat_messages,
+                    rate_limiter=rate_limiter,
+                    model=model,
+                    actual_model=actual_model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    enable_thinking=enable_thinking,
+                    yield_structured=yield_structured,
+                    **kwargs,
+                ):
+                    if isinstance(chunk, dict):
+                        if chunk.get("type") == "usage":
+                            usage_data = chunk.get("usage", {})
+                            if yield_structured:
+                                yield chunk
+                            continue
+                    yield chunk
 
             duration = time.time() - start_time
-            logger.debug("[LLMService] %s stream completed in %.2fs", model, duration)
+            logger.info(
+                "%s",
+                llm_finished_message(
+                    request_type,
+                    diagram_type,
+                    model,
+                    actual_model,
+                    duration,
+                    llm_call.wire if llm_call is not None else None,
+                ),
+            )
 
             # Track all metrics
             metadata = {
@@ -1031,7 +1112,18 @@ class LLMService:
         except LLM_PIPELINE_ERRORS as e:
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
-            logger.error("[LLMService] %s stream failed after %.2fs: %s", model, duration, detail)
+            logger.error(
+                "%s",
+                llm_failed_message(
+                    request_type,
+                    diagram_type,
+                    model,
+                    actual_model,
+                    duration,
+                    detail,
+                    llm_call.wire if llm_call is not None else None,
+                ),
+            )
 
             # Track failure metrics
             metadata = {

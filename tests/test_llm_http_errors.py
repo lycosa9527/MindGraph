@@ -7,6 +7,7 @@ import pytest
 from services.infrastructure.http.error_handler import (
     LLMAccessDeniedError,
     LLMContentFilterError,
+    LLMInvalidParameterError,
     LLMProviderError,
     LLMRateLimitError,
     LLMServiceError,
@@ -132,3 +133,17 @@ def test_dashscope_parse_raises_content_filter_type() -> None:
     mapped = http_exception_for_llm_error(caught.value)
     assert mapped.status_code == 400
     assert _detail_map(mapped.detail)["error_type"] == CONTENT_FILTER_ERROR_TYPE
+
+
+def test_responses_json_object_requires_json_in_the_prompt() -> None:
+    """Responses text.format json_object uses the same prompt-keyword error as chat."""
+    message = "'messages' must contain the word 'json' in some form, to use 'text.format' of type 'json_object'."
+    with pytest.raises(LLMInvalidParameterError) as caught:
+        parse_and_raise_dashscope_error(
+            400,
+            message,
+            {"code": "InvalidParameter", "message": message},
+        )
+    user_message = caught.value.user_message
+    assert user_message is not None
+    assert "json" in user_message.lower()

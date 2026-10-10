@@ -21,6 +21,7 @@ import { useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { buildMultiFlowTopicHandles } from '@/utils/multiFlowTopicHandles'
 import { type NodeShape, applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
 import {
@@ -246,7 +247,19 @@ const topicRingBorderRadius = computed(() => {
   return '9999px'
 })
 
-const topicMaxWidth = computed(() => `${MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH}px`)
+const topicMaxWidth = computed(() => {
+  const label = String(props.data.label || '').trim()
+  const fontSize =
+    typeof props.data.style?.fontSize === 'number'
+      ? props.data.style.fontSize
+      : MIND_MAP_GEOMETRY.topicFontSize
+  const fontWeight = String(props.data.style?.fontWeight || 'bold')
+  const fontFamily = props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK
+  return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH, {
+    fontWeight,
+    fontFamily,
+  })}px`
+})
 
 const isEditing = ref(false)
 const dynamicWidth = ref<number | null>(null)

@@ -6,10 +6,12 @@ import {
   estimateMindMapNumberedContentWidthPx,
   measureMindMapLabelWidthPx,
   measureMindMapNumberPrefixAdvancePx,
+  measureThinkingMapLabelBlockPx,
   resolveMindMapBranchBodyMaxWidthPx,
   resolveMindMapBranchTextMaxWidthPx,
   resolveMindMapExportWrapColumnPx,
   resolveMindMapTopicTextMaxWidthPx,
+  resolveThinkingMapDisplayMaxWidthPx,
   wrapMindMapExportLabelLines,
   wrapMindMapTextLines,
 } from '@/utils/mindMapTextWrap'
@@ -45,9 +47,26 @@ describe('mindMapTextWrap', () => {
     expect(withPrefix).toBeGreaterThanOrEqual(48)
   })
 
+  it('keeps a CJK label that fits the script-aware column on one line', () => {
+    const text = '香甜多汁的红色果实'
+    const block = measureThinkingMapLabelBlockPx(text, 16, 200)
+    expect(block.lineCount).toBe(1)
+    expect(resolveThinkingMapDisplayMaxWidthPx(text, 16, 200)).toBeGreaterThanOrEqual(200)
+  })
+
+  it('wraps a long label at the map cap and balances the lines', () => {
+    const text = '香甜多汁的红色果实'.repeat(6)
+    const block = measureThinkingMapLabelBlockPx(text, 16, 200)
+    expect(block.lineCount).toBeGreaterThan(1)
+    expect(block.width).toBeLessThanOrEqual(200)
+    expect(resolveThinkingMapDisplayMaxWidthPx(text, 16, 350)).toBeLessThanOrEqual(350)
+    const lines = block.lineCount
+    const widerCap = measureThinkingMapLabelBlockPx(text, 16, 350)
+    expect(widerCap.lineCount).toBeLessThanOrEqual(lines)
+  })
+
   it('caps long branch wrap column at 200', () => {
-    const long =
-      '这是一段足够长的思维导图分支文字用来触发换行限制检查一二三四五六七八九十'
+    const long = '这是一段足够长的思维导图分支文字用来触发换行限制检查一二三四五六七八九十'
     const max = resolveMindMapBranchTextMaxWidthPx(long, 14)
     expect(max).toBe(MIND_MAP_BRANCH_MAX_TEXT_WIDTH)
   })

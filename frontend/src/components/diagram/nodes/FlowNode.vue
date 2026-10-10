@@ -21,11 +21,11 @@ import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapStepNode } from '@/utils/flowMapIdentity'
+import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
 import {
@@ -191,25 +191,23 @@ const shapeLineColor = computed(() => {
   )
 })
 
-const BALANCE_PADDING = 5
-
 const flowMaxWidth = computed(() => {
   if (!isPillShape.value) return '200px'
 
   const label = ((props.data.label as string) || '').trim()
-  const cap = MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH
-  if (!label) return `${cap}px`
-
   const fontSize =
     parseFloat(nodeStyle.value.fontSize as string) || MIND_MAP_GEOMETRY.branchFontSize
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
-  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
-
-  if (textWidth <= cap) return `${cap}px`
-
-  const numLines = Math.ceil(textWidth / cap)
-  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
-  return `${Math.min(balancedWidth, cap)}px`
+  const fontFamily = String(nodeStyle.value.fontFamily || DIAGRAM_NODE_FONT_STACK)
+  return `${resolveThinkingMapDisplayMaxWidthPx(
+    label,
+    fontSize,
+    MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH,
+    {
+      fontWeight,
+      fontFamily,
+    }
+  )}px`
 })
 
 // Inline editing state

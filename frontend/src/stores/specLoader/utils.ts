@@ -10,13 +10,13 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import type { DiagramNode, DiagramType } from '@/types'
 import { nodesInLearningSheetReadingOrder } from '@/utils/learningSheetAnswerOrder'
+import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 
 import { estimateNodeWidth, measureBranchNodeHeight } from './mindMap'
 import {
   CONTEXT_FONT_SIZE,
   computeTopicRadiusForCircleMap,
   growRadiusForSecondary,
-  measureTextWidth,
 } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
@@ -277,28 +277,9 @@ export function estimateContextCircleDiameter(text: string, secondary?: string):
   const trimmed = (text || '').trim()
   if (!trimmed) return finish(MIN_CONTEXT_DIAMETER)
 
-  if (typeof document === 'undefined') {
-    const rough = trimmed.length * 8
-    if (rough <= CONTEXT_MAX_TEXT_WIDTH) {
-      return finish(Math.max(MIN_CONTEXT_DIAMETER, rough + CONTEXT_BORDER_SLACK))
-    }
-    return finish(MIN_CONTEXT_DIAMETER + 60)
-  }
-
-  const singleLineW = measureTextWidth(trimmed, CONTEXT_FONT_SIZE)
-  const lineHeight = CONTEXT_FONT_SIZE * 1.5
-
-  let contentW: number
-  let contentH: number
-  if (singleLineW <= CONTEXT_MAX_TEXT_WIDTH) {
-    contentW = singleLineW + CONTEXT_PADDING_X
-    contentH = lineHeight + CONTEXT_PADDING_Y
-  } else {
-    const numLines = Math.ceil(singleLineW / CONTEXT_MAX_TEXT_WIDTH)
-    const balancedW = Math.ceil(singleLineW / numLines)
-    contentW = balancedW + CONTEXT_PADDING_X
-    contentH = numLines * lineHeight + CONTEXT_PADDING_Y
-  }
+  const block = measureThinkingMapLabelBlockPx(trimmed, CONTEXT_FONT_SIZE, CONTEXT_MAX_TEXT_WIDTH)
+  const contentW = block.width + CONTEXT_PADDING_X
+  const contentH = block.height + CONTEXT_PADDING_Y
 
   const diagonal = Math.ceil(Math.sqrt(contentW * contentW + contentH * contentH))
   return finish(Math.max(MIN_CONTEXT_DIAMETER, diagonal + CONTEXT_BORDER_SLACK))

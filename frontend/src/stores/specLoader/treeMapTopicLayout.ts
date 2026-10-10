@@ -9,6 +9,7 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { secondaryFontSize, stackedTextBlock } from '@/diagramBilingual/measure'
 import type { DiagramNode } from '@/types'
+import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import {
   TREE_TOPIC_NODE_ID,
   isTreeMapCategoryNode,
@@ -23,9 +24,8 @@ import {
   measureTextWidth,
 } from './textMeasurement'
 
-/** Align with TopicNode.vue TOPIC_MAX_TEXT_WIDTH for tree map topic pill wrap. */
+/** Align with TopicNode.vue topic wrap cap. */
 const TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH = 300
-const BALANCE_PADDING = 5
 /** Matches tree_map theme topic font (getNodeStyle topic fallback 18) */
 export const TREE_MAP_TOPIC_FONT_SIZE = 18
 /** Matches TopicNode px-6 / py-4 */
@@ -40,12 +40,10 @@ function computeBalancedMaxWidth(
   fontWeight: string,
   fontFamily?: string
 ): number {
-  const cap = TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH
-  if (typeof document === 'undefined') return cap
-  const tw = measureTextWidth(text, fontSize, { fontWeight, fontFamily })
-  if (tw <= cap) return cap
-  const numLines = Math.ceil(tw / cap)
-  return Math.min(Math.ceil(tw / numLines) + BALANCE_PADDING, cap)
+  return resolveThinkingMapDisplayMaxWidthPx(text, fontSize, TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH, {
+    fontWeight,
+    fontFamily,
+  })
 }
 
 function finishTopicSecondary(

@@ -1,6 +1,6 @@
 /**
  * Double Bubble Map Loader
- * Text-adaptive radii, capsule dimensions, layout aligned with useDoubleBubbleMap.
+ * Text-adaptive radii and capsule dimensions. This loader is the layout source.
  * Supports _doubleBubbleMapNodeSizes for empty-node saved radii.
  * _doubleBubbleMeasureHints (fontSize/fontWeight per node id) drives radii when users customize typography.
  * Similarities stay default blue; difference pairs use mindmap color palette (same color for left-diff and right-diff).
@@ -36,18 +36,21 @@ function columnAnchorY(
   return centerY - colHeight / 2 + itemHeight / 2
 }
 
-/** Capsule dimensions from radius (same formula as useDoubleBubbleMap) */
-function capsuleFromRadius(radius: number): { width: number; height: number; diameter: number } {
+/** Capsule box from a text radius. Width tracks the diameter; height is capped. */
+function capsuleFromRadius(radius: number): { width: number; height: number } {
   const diameter = radius * 2
   const height = Math.min(Math.round(diameter * 0.56), DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT)
   return {
     width: Math.round(diameter * 1.22),
     height,
-    diameter,
   }
 }
 
-/** Layout from unified radii (mirrors useDoubleBubbleMap computeLayoutFromRadii) */
+function columnRadius(radii: number[]): number {
+  return radii.length > 0 ? Math.max(...radii) : 0
+}
+
+/** Layout from per-column radii. Difference columns size independently. */
 function computeLayout(
   simCount: number,
   leftDiffCount: number,
@@ -55,7 +58,8 @@ function computeLayout(
   padding: number,
   topicR: number,
   simR: number,
-  diffR: number
+  leftDiffR: number,
+  rightDiffR: number
 ): {
   centerX: number
   centerY: number
@@ -67,19 +71,29 @@ function computeLayout(
   simVerticalSpacing: number
   diffVerticalSpacing: number
   simCap: { width: number; height: number }
-  diffCap: { width: number; height: number }
+  leftDiffCap: { width: number; height: number }
+  rightDiffCap: { width: number; height: number }
+  diffSlotHeight: number
 } {
   const columnSpacing = DEFAULT_COLUMN_SPACING
-  const diffCap = capsuleFromRadius(diffR)
-  const maxLeftW = diffCap.width
-  const maxRightW = diffCap.width
+  const leftDiffCap = capsuleFromRadius(leftDiffR)
+  const rightDiffCap = capsuleFromRadius(rightDiffR)
+  const maxLeftW = leftDiffCount > 0 ? leftDiffCap.width : 0
+  const maxRightW = rightDiffCount > 0 ? rightDiffCap.width : 0
   const simCap = capsuleFromRadius(simR)
   const simVerticalSpacing = simCap.height + 12
-  const diffVerticalSpacing = diffCap.height + 10
+  // Shared row pitch so an equal-length pair stays on one horizontal center.
+  // An empty column contributes no height.
+  const diffSlotHeight = Math.max(
+    leftDiffCount > 0 ? leftDiffCap.height : 0,
+    rightDiffCount > 0 ? rightDiffCap.height : 0
+  )
+  const diffVerticalSpacing = diffSlotHeight + 10
 
   const D = simR + 2 * columnSpacing + 2 * topicR
-  const requiredWidth = 2 * D + maxLeftW + maxRightW + padding * 2
-  const centerX = requiredWidth / 2
+  // Left difference edge sits on `padding` when that column exists.
+  // Equal widths match a centered origin; a wider left column stays at x >= padding.
+  const centerX = padding + D + maxLeftW
   const simX = centerX
   const leftTopicX = centerX - simR - columnSpacing - topicR
   const rightTopicX = centerX + simR + columnSpacing + topicR
@@ -89,7 +103,7 @@ function computeLayout(
   const simColHeight = simCount > 0 ? (simCount - 1) * simVerticalSpacing + simCap.height : 0
   const maxDiffCount = Math.max(leftDiffCount, rightDiffCount)
   const diffColHeight =
-    maxDiffCount > 0 ? (maxDiffCount - 1) * diffVerticalSpacing + diffCap.height : 0
+    maxDiffCount > 0 ? (maxDiffCount - 1) * diffVerticalSpacing + diffSlotHeight : 0
   const maxColHeight = Math.max(simColHeight, diffColHeight, topicR * 2)
   const requiredHeight = maxColHeight + padding * 2
   const centerY = requiredHeight / 2
@@ -105,7 +119,9 @@ function computeLayout(
     simVerticalSpacing,
     diffVerticalSpacing,
     simCap,
-    diffCap,
+    leftDiffCap,
+    rightDiffCap,
+    diffSlotHeight,
   }
 }
 
@@ -205,7 +221,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   })
   const simR = simRadii.length > 0 ? Math.max(...simRadii) : 30
 
-  // Difference radii → unified diffR (both sides)
+  // Each difference column uses its own longest label. The other side does not stretch it.
   const leftDiffRadii = leftDifferences.map((item, i) => {
     const h = hints[item.id ?? `left-diff-${i}`]
     return doubleBubbleDiffRequiredRadius(item.text, sizes.leftDiffRadii?.[i], {
@@ -222,9 +238,8 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
       secondary: rightDiffSecondary[i],
     })
   })
-  const leftDiffR = leftDiffRadii.length > 0 ? Math.max(...leftDiffRadii) : 30
-  const rightDiffR = rightDiffRadii.length > 0 ? Math.max(...rightDiffRadii) : 30
-  const diffR = Math.max(leftDiffR, rightDiffR)
+  const leftDiffR = columnRadius(leftDiffRadii)
+  const rightDiffR = columnRadius(rightDiffRadii)
 
   const layout = computeLayout(
     similarities.length,
@@ -233,7 +248,8 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     padding,
     topicR,
     simR,
-    diffR
+    leftDiffR,
+    rightDiffR
   )
 
   const nodes: DiagramNode[] = []
@@ -318,13 +334,13 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     leftDifferences.length,
     layout.centerY,
     layout.diffVerticalSpacing,
-    layout.diffCap.height
+    layout.diffSlotHeight
   )
   const rightDiffStartY = columnAnchorY(
     rightDifferences.length,
     layout.centerY,
     layout.diffVerticalSpacing,
-    layout.diffCap.height
+    layout.diffSlotHeight
   )
 
   leftDifferences.forEach((diff, index) => {
@@ -338,16 +354,16 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
       ...(leftGloss ? { textSecondary: leftGloss } : {}),
       type: 'bubble',
       position: {
-        x: layout.leftDiffX - layout.diffCap.width,
-        y: cy - layout.diffCap.height / 2,
+        x: layout.leftDiffX - layout.leftDiffCap.width,
+        y: cy - layout.leftDiffCap.height / 2,
       },
       data: stampDoubleBubbleData('leftDiff', index, {
         [DOUBLE_BUBBLE_UID_DATA_KEY]: leftId,
       }),
       style: {
-        width: layout.diffCap.width,
-        height: layout.diffCap.height,
-        size: diffR * 2,
+        width: layout.leftDiffCap.width,
+        height: layout.leftDiffCap.height,
+        size: leftDiffR * 2,
         noWrap: true,
         backgroundColor: pairColor.fill,
         borderColor: pairColor.border,
@@ -377,16 +393,16 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
       ...(rightGloss ? { textSecondary: rightGloss } : {}),
       type: 'bubble',
       position: {
-        x: layout.rightDiffX - layout.diffCap.width,
-        y: cy - layout.diffCap.height / 2,
+        x: layout.rightDiffX - layout.rightDiffCap.width,
+        y: cy - layout.rightDiffCap.height / 2,
       },
       data: stampDoubleBubbleData('rightDiff', index, {
         [DOUBLE_BUBBLE_UID_DATA_KEY]: rightId,
       }),
       style: {
-        width: layout.diffCap.width,
-        height: layout.diffCap.height,
-        size: diffR * 2,
+        width: layout.rightDiffCap.width,
+        height: layout.rightDiffCap.height,
+        size: rightDiffR * 2,
         noWrap: true,
         backgroundColor: pairColor.fill,
         borderColor: pairColor.border,

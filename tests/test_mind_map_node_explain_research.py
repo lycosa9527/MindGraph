@@ -421,6 +421,49 @@ def test_dashscope_payload_sends_reasoning_effort() -> None:
     assert payload["tools"] == [{"type": "web_search"}]
 
 
+def test_dashscope_payload_json_object_for_deepseek_flash() -> None:
+    """Express on the Responses API sends json_object for deepseek-v4.1-flash."""
+    schema = {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "note",
+            "strict": True,
+            "schema": {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]},
+        },
+    }
+    payload = _build_payload(
+        ResponsesRequest(
+            model="deepseek-v4.1-flash",
+            input="苹果",
+            tools=[],
+            response_format=schema,
+        )
+    )
+    assert payload["text"]["format"] == {"type": "json_object"}
+
+
+def test_dashscope_payload_json_schema_for_qwen() -> None:
+    """Qwen on the Responses API keeps the schema under text.format."""
+    schema = {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "note",
+            "strict": True,
+            "schema": {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]},
+        },
+    }
+    payload = _build_payload(
+        ResponsesRequest(
+            model="qwen3.8-flash",
+            input="苹果",
+            tools=[],
+            response_format=schema,
+        )
+    )
+    assert payload["text"]["format"]["type"] == "json_schema"
+    assert payload["text"]["format"]["name"] == "note"
+
+
 def test_dashscope_payload_omits_reasoning_when_unset() -> None:
     """Other callers keep the previous body when they do not set an effort."""
     payload = _build_payload(

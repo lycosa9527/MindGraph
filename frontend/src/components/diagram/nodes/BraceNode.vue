@@ -17,10 +17,10 @@ import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
 import {
   thinkingMapBorderWidth,
@@ -45,7 +45,6 @@ const { getNodeStyle } = useTheme({
 })
 
 const BRACE_NODE_MAX_TEXT_WIDTH = 350
-const BALANCE_PADDING = 5
 
 const isWholeNode = computed(() => props.data.originalNode?.type === 'topic')
 const _isPart = computed(() => !isWholeNode.value && !props.data.parentId)
@@ -132,23 +131,15 @@ const nodeStyle = computed(() => {
   return painted
 })
 
-// Pill width only. Line breaks are text-wrap: balance on the label
-// (.inline-edit-display--wrap), which keeps a short last CJK line from happening.
 const braceNodeMaxWidth = computed(() => {
   const label = ((props.data.label as string) || '').trim()
-  if (!label) return `${BRACE_NODE_MAX_TEXT_WIDTH}px`
-
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 14
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
-  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
-
-  if (textWidth <= BRACE_NODE_MAX_TEXT_WIDTH) {
-    return `${BRACE_NODE_MAX_TEXT_WIDTH}px`
-  }
-
-  const numLines = Math.ceil(textWidth / BRACE_NODE_MAX_TEXT_WIDTH)
-  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
-  return `${Math.min(balancedWidth, BRACE_NODE_MAX_TEXT_WIDTH)}px`
+  const fontFamily = String(nodeStyle.value.fontFamily || DIAGRAM_NODE_FONT_STACK)
+  return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, BRACE_NODE_MAX_TEXT_WIDTH, {
+    fontWeight,
+    fontFamily,
+  })}px`
 })
 
 // Inline editing state

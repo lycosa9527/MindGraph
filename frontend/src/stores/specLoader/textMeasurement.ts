@@ -14,6 +14,7 @@ import {
 } from '@/composables/core/diagramMarkdownPipeline'
 import { secondaryFontSize, stackedTextBlock } from '@/diagramBilingual/measure'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 
 import {
   cachedPlainTextBox,
@@ -754,45 +755,6 @@ export interface TopicCircleMeasureOptions {
   secondary?: string
 }
 
-function estimateWrappedTopicBlock(
-  singleLineWidth: number,
-  fontSize: number
-): { width: number; height: number } {
-  const lines = Math.max(1, Math.ceil(singleLineWidth / CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH))
-  return {
-    width: Math.ceil(singleLineWidth / lines),
-    height: lines * fontSize * 1.4,
-  }
-}
-
-/** Wrap a topic label at CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH. Falls back when the DOM has no metrics. */
-function measureWrappedTopicBlock(
-  text: string,
-  fontSize: number,
-  bold: boolean,
-  fontFamily: string | undefined,
-  singleLineWidth: number
-): { width: number; height: number } {
-  if (typeof document === 'undefined') {
-    return estimateWrappedTopicBlock(singleLineWidth, fontSize)
-  }
-  const el = getMeasureEl(fontFamily)
-  el.style.width = `${CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH}px`
-  el.style.whiteSpace = 'pre-wrap'
-  el.style.fontSize = `${fontSize}px`
-  el.style.fontWeight = bold ? 'bold' : 'normal'
-  el.style.lineHeight = '1.4'
-  el.textContent = text.trim()
-  const width = el.offsetWidth
-  const height = el.offsetHeight
-  el.style.width = 'max-content'
-  el.style.whiteSpace = 'nowrap'
-  if (!(width > 0) || !(height > 0)) {
-    return estimateWrappedTopicBlock(singleLineWidth, fontSize)
-  }
-  return { width, height }
-}
-
 export function computeTopicRadiusForCircleMap(
   text: string,
   measure?: TopicCircleMeasureOptions
@@ -802,16 +764,12 @@ export function computeTopicRadiusForCircleMap(
   const measureBold =
     measure?.fontWeight === 'normal' ? false : measure?.fontWeight === 'bold' ? true : true
   const fontFamily = measure?.fontFamily
-  const single = measureTextWithSVG(t, fs, measureBold, fontFamily)
-  const singleW = single.width || estimateTextWidthFallbackPx(t, fs, { isTopic: measureBold })
-  const singleH = single.height || fs * 1.4
-  let w = singleW
-  let h = singleH
-  if (singleW > CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH) {
-    const wrapped = measureWrappedTopicBlock(t, fs, measureBold, fontFamily, singleW)
-    w = wrapped.width
-    h = wrapped.height
-  }
+  const block = measureThinkingMapLabelBlockPx(t, fs, CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH, {
+    fontWeight: measureBold ? 'bold' : 'normal',
+    fontFamily,
+  })
+  const w = block.width
+  const h = block.height
   const diagonal = Math.sqrt(w * w + h * h)
   const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
   const radius = contentR + BORDER_TOPIC
