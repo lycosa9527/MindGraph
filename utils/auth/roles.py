@@ -38,16 +38,9 @@ from utils.auth.role_constants import (
 
 FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_rag_chunk_test": "FEATURE_RAG_CHUNK_TEST",
-    "feature_course": "FEATURE_COURSE",
-    "feature_mate_learning": "FEATURE_MATE_LEARNING",
-    "feature_template": "FEATURE_TEMPLATE",
-    "feature_community": "FEATURE_COMMUNITY",
     "feature_showcase": "FEATURE_SHOWCASE",
-    "feature_askonce": "FEATURE_ASKONCE",
-    "feature_debateverse": "FEATURE_DEBATEVERSE",
     "feature_knowledge_space": "FEATURE_KNOWLEDGE_SPACE",
     "feature_library": "FEATURE_LIBRARY",
-    "feature_gewe": "FEATURE_GEWE",
     "feature_smart_response": "FEATURE_SMART_RESPONSE",
     "feature_teacher_usage": "FEATURE_TEACHER_USAGE",
     "feature_workshop_chat": "FEATURE_WORKSHOP_CHAT",
@@ -55,7 +48,6 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_markets": "FEATURE_MARKETS",
     "feature_mindbot": "FEATURE_MINDBOT",
     "feature_mindmate_export": "FEATURE_MINDMATE_EXPORT",
-    "feature_kitty_agent": "FEATURE_KITTY_AGENT",
     "feature_training": "FEATURE_TRAINING",
     "feature_vod": "FEATURE_VOD",
     "feature_student_learning_space": "FEATURE_STUDENT_LEARNING_SPACE",
@@ -68,7 +60,6 @@ FEATURE_KEYS_WITH_ORG_ACCESS = frozenset(
         "feature_mindmate_collab",
         "feature_mindbot",
         "feature_mindmate_export",
-        "feature_kitty_agent",
     }
 )
 

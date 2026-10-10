@@ -455,7 +455,6 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     if (!requireCapability('mind_classroom')) {
       return { ok: false, reason: 'failed' }
     }
-    classroomStore.clampGatedSlideDeck()
     const data = diagramStore.data
     const generation = classroomStore.queueGeneration
     const mode = classroomStore.presentation
@@ -523,7 +522,6 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
   async function startLecture(reuse = true): Promise<LectureStartResult> {
     classroomStore.setStartInFlight(true)
     try {
-      classroomStore.clampGatedSlideDeck()
       const data = diagramStore.data
       if (!data?.nodes?.length) {
         return publishQueueResult('start', { ok: false, reason: 'no_diagram' })
@@ -606,7 +604,6 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       if (!authStore.isAuthenticated) {
         return publishQueueResult('restart', { ok: false, reason: 'unauthenticated' })
       }
-      classroomStore.clampGatedSlideDeck()
       await cancelQueuedJob()
       return publishQueueResult('restart', await startQueuedLecture(false))
     } finally {

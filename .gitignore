@@ -217,7 +217,7 @@ frontend/coverage/
 .eslintcache
 
 # Runtime static files and user content
-# - announcement images, community thumbnails (.png), community specs (.json)
+# - announcement images and other runtime uploads
 # These are user uploads, not part of the codebase
 static/
 

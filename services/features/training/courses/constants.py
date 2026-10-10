@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 STEP_TYPES = frozenset({"canvas", "slide", "video", "page"})
+# Archived page keys stay valid so stored courses that named removed modules still load.
 PAGE_KEYS = frozenset(
     {
         "auth",

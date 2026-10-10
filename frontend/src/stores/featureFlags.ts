@@ -18,18 +18,11 @@ export interface FeatureOrgAccessEntry {
 interface FeatureFlagsResponse {
   external_base_url: string
   feature_rag_chunk_test: boolean
-  feature_course: boolean
-  feature_mate_learning: boolean
-  feature_template: boolean
-  feature_community: boolean
   feature_showcase: boolean
   feature_zhihui: boolean
-  feature_askonce: boolean
-  feature_debateverse: boolean
   feature_knowledge_space: boolean
   feature_mind_classroom_slide_deck?: boolean
   feature_library: boolean
-  feature_gewe: boolean
   feature_smart_response: boolean
   feature_teacher_usage: boolean
   feature_workshop_chat: boolean
@@ -67,18 +60,11 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return {
       external_base_url: '',
       feature_rag_chunk_test: false,
-      feature_course: false,
-      feature_mate_learning: false,
-      feature_template: false,
-      feature_community: false,
       feature_showcase: false,
       feature_zhihui: false,
-      feature_askonce: false,
-      feature_debateverse: false,
       feature_knowledge_space: false,
-      feature_mind_classroom_slide_deck: false,
+      feature_mind_classroom_slide_deck: true,
       feature_library: false,
-      feature_gewe: false,
       feature_smart_response: false,
       feature_teacher_usage: false,
       feature_workshop_chat: false,
@@ -89,7 +75,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_markets: false,
       feature_mindbot: false,
       feature_mindmate_export: false,
-      feature_kitty_agent: false,
+      feature_kitty_agent: true,
       feature_auth_pixel_battle: false,
       feature_test_server_banner: false,
       feature_wechat_login: false,
@@ -157,7 +143,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_markets: raw.feature_markets ?? false,
           feature_mindbot: raw.feature_mindbot ?? false,
           feature_mindmate_export: raw.feature_mindmate_export ?? false,
-          feature_kitty_agent: raw.feature_kitty_agent ?? false,
+          feature_kitty_agent: true,
           feature_auth_pixel_battle: raw.feature_auth_pixel_battle ?? false,
           feature_test_server_banner: raw.feature_test_server_banner ?? false,
           feature_wechat_login: raw.feature_wechat_login ?? false,
@@ -166,7 +152,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_thinking_coins: raw.feature_thinking_coins ?? false,
           captcha_provider: raw.captcha_provider === 'tsec' ? 'tsec' : 'legacy',
           tencent_captcha_app_id: raw.tencent_captcha_app_id ?? '',
-          feature_mind_classroom_slide_deck: raw.feature_mind_classroom_slide_deck ?? false,
+          feature_mind_classroom_slide_deck: true,
         }
         flags.value = data
         lastFetchTime.value = epochAtStart === staleEpoch ? fetchedAt : 0
@@ -206,22 +192,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_rag_chunk_test ?? false
   }
 
-  function getFeatureCourse(): boolean {
-    return flags.value?.feature_course ?? false
-  }
-
-  function getFeatureMateLearning(): boolean {
-    return flags.value?.feature_mate_learning ?? false
-  }
-
-  function getFeatureTemplate(): boolean {
-    return flags.value?.feature_template ?? false
-  }
-
-  function getFeatureCommunity(): boolean {
-    return flags.value?.feature_community ?? false
-  }
-
   function getFeatureShowcase(): boolean {
     return flags.value?.feature_showcase ?? false
   }
@@ -230,28 +200,16 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_zhihui ?? false
   }
 
-  function getFeatureAskOnce(): boolean {
-    return flags.value?.feature_askonce ?? false
-  }
-
-  function getFeatureDebateverse(): boolean {
-    return flags.value?.feature_debateverse ?? false
-  }
-
   function getFeatureKnowledgeSpace(): boolean {
     return flags.value?.feature_knowledge_space ?? false
   }
 
   function getFeatureMindClassroomSlideDeck(): boolean {
-    return flags.value?.feature_mind_classroom_slide_deck ?? false
+    return true
   }
 
   function getFeatureLibrary(): boolean {
     return flags.value?.feature_library ?? false
-  }
-
-  function getFeatureGewe(): boolean {
-    return flags.value?.feature_gewe ?? false
   }
 
   function getFeatureSmartResponse(): boolean {
@@ -300,7 +258,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   }
 
   function getFeatureKittyAgent(): boolean {
-    return flags.value?.feature_kitty_agent ?? false
+    return true
   }
 
   function getFeatureAuthPixelBattle(): boolean {
@@ -330,18 +288,11 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     isLoading,
     fetchFlags,
     getFeatureRagChunkTest,
-    getFeatureCourse,
-    getFeatureMateLearning,
-    getFeatureTemplate,
-    getFeatureCommunity,
     getFeatureShowcase,
     getFeatureZhihui,
-    getFeatureAskOnce,
-    getFeatureDebateverse,
     getFeatureKnowledgeSpace,
     getFeatureMindClassroomSlideDeck,
     getFeatureLibrary,
-    getFeatureGewe,
     getFeatureSmartResponse,
     getFeatureTeacherUsage,
     getFeatureWorkshopChat,

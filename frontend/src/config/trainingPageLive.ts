@@ -8,16 +8,10 @@ const LIVE_PAGES: Partial<Record<TrainingPageKey, Component>> = {
     () => import('@/components/mindgraph/MindGraphContainer.vue')
   ),
   mindmate: defineAsyncComponent(() => import('@/pages/MindMatePage.vue')),
-  askonce: defineAsyncComponent(() => import('@/pages/AskOncePage.vue')),
-  maite: defineAsyncComponent(() => import('@/pages/MaiteLearningPage.vue')),
-  debateverse: defineAsyncComponent(() => import('@/pages/DebateVersePage.vue')),
   zhihui: defineAsyncComponent(() => import('@/pages/ZhiHuiPage.vue')),
   library: defineAsyncComponent(() => import('@/pages/LibraryPage.vue')),
-  template: defineAsyncComponent(() => import('@/pages/TemplatePage.vue')),
-  course: defineAsyncComponent(() => import('@/pages/CoursePage.vue')),
   knowledge: defineAsyncComponent(() => import('@/pages/KnowledgeSpacePage.vue')),
   showcase: defineAsyncComponent(() => import('@/pages/ShowcasePage.vue')),
-  community: defineAsyncComponent(() => import('@/pages/CommunityPage.vue')),
   'voice-notes': defineAsyncComponent(() => import('@/pages/VoiceNotesPage.vue')),
   'thinking-coins': defineAsyncComponent(
     () => import('@/pages/ThinkingCoinsUpgradePage.vue')

@@ -13,8 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from routers.features.community.helpers import THUMBNAIL_MAX_BYTES
 from routers.features.showcase.helpers import (
+    THUMBNAIL_MAX_BYTES,
     ALLOWED_DOC_SUFFIXES,
     ALLOWED_SOURCE_SUFFIXES,
     ALLOWED_VIDEO_SUFFIXES,

@@ -166,18 +166,18 @@ def should_serve_vue_spa() -> bool:
 
 def setup_static_files(app: FastAPI) -> None:
     """
-    Mount /static for backend-generated content (community thumbnails, etc.).
+    Mount /static for backend-generated content (announcement images, etc.).
 
-    Must run in both dev and production so community thumbnails and other
-    runtime uploads are always served. In dev, Vite proxies /static to backend.
+    Must run in both dev and production so runtime uploads are always served.
+    In dev, Vite proxies /static to the backend.
     """
     static_dir = Path(__file__).parent.parent.parent.parent / "static"
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-        logger.debug("Mounted /static for runtime uploads (community, announcements, etc.)")
+        logger.debug("Mounted /static for runtime uploads (announcements, etc.)")
     else:
         logger.warning(
-            "Static directory not found at %s - community thumbnails will 404",
+            "Static directory not found at %s - runtime uploads will 404",
             static_dir,
         )
 
@@ -225,7 +225,7 @@ def setup_vue_spa(app: FastAPI) -> bool:
         True if full Vue SPA HTML ownership is enabled, False otherwise
         (``/assets`` may still be mounted for Playwright export).
     """
-    # Always mount /static - needed for community thumbnails in dev and prod
+    # Always mount /static for runtime uploads in dev and prod
     setup_static_files(app)
     # Always mount dist assets when present (Playwright /export-render in DEBUG)
     mount_vue_dist_static(app)

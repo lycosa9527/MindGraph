@@ -27,7 +27,7 @@ import {
   isThinkingMapDiagramType,
 } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { showsNodeFloatingAiSubgraph } from '@/canvas-ribbon/nodeFloatingAiSubgraph'
-import { CanvasNodeFloatingToolbar, ExportToCommunityModal } from '@/components/canvas'
+import { CanvasNodeFloatingToolbar } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
 import MindMapNodeExplainResearchPanel from '@/components/canvas/MindMapNodeExplainResearchPanel.vue'
@@ -507,15 +507,11 @@ const {
 })
 
 const {
-  showExportToCommunityModal,
   getExportContainer,
   getExportTitle,
-  getExportSpec,
   exportByFormat,
   capturePngBlob,
   copyPngToClipboard,
-  prepareForCommunityExport,
-  restoreViewportAfterCommunityExport,
   captureWorksheetPreviewPng,
 } = useDiagramCanvasExport({
   vueFlowWrapper,
@@ -753,9 +749,6 @@ onMounted(() => {
     capturePngBlob,
     copyPngToClipboard,
     getExportContainer,
-    showExportToCommunityModal,
-    prepareForCommunityExport,
-    restoreViewportAfterCommunityExport,
     regenerateForNodeIfNeeded,
   })
   syncTouchPanPinchLayer()
@@ -966,17 +959,6 @@ defineExpose({
       :canvas-container="canvasContainer"
       :loading="nodeExplainLoading"
       @close="closeNodeExplain"
-    />
-
-    <ExportToCommunityModal
-      v-model:visible="showExportToCommunityModal"
-      mode="create"
-      :get-container="getExportContainer"
-      :get-diagram-spec="getExportSpec"
-      :get-title="getExportTitle"
-      :prepare-for-thumbnail="prepareForCommunityExport"
-      :restore-after-thumbnail="restoreViewportAfterCommunityExport"
-      :diagram-type="diagramStore.type || 'mind_map'"
     />
 
     <CanvasWorksheetTextModal

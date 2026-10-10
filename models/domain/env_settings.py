@@ -190,17 +190,6 @@ class FeatureFlagSettings(BaseModel):
     __category__ = "Feature Flags"
 
     FEATURE_MINDMATE: bool = Field(default=False, description="Enable MindMate AI Assistant button")
-    FEATURE_KITTY_AGENT: bool = Field(
-        default=False,
-        description="Enable Kitty Agent (Qwen Omni Realtime multimodal)",
-    )
-    FEATURE_COURSE: bool = Field(default=False, description="Enable Thinking Course (思维课程) feature")
-    FEATURE_MATE_LEARNING: bool = Field(
-        default=False,
-        description="Enable Mate Learning (迈特学习法) feature",
-    )
-    FEATURE_TEMPLATE: bool = Field(default=False, description="Enable Template Resources (模板资源) feature")
-    FEATURE_COMMUNITY: bool = Field(default=False, description="Enable Community Sharing (社区分享) feature")
     FEATURE_SHOWCASE: bool = Field(
         default=True,
         description="Enable Showcase (案例广场) moderated public case gallery",
@@ -209,7 +198,6 @@ class FeatureFlagSettings(BaseModel):
         default=True,
         description="Enable ZhiHui (智绘) text-to-image history (admin UI for now)",
     )
-    FEATURE_ASKONCE: bool = Field(default=True, description="Enable AskOnce (多应) multi-LLM chat feature")
     FEATURE_MARKETS: bool = Field(default=False, description="Enable Market (市场) catalog and Alipay checkout")
     FEATURE_MINDBOT: bool = Field(
         default=True,
@@ -232,10 +220,6 @@ class FeatureFlagSettings(BaseModel):
     FEATURE_MINDMATE_EXPORT: bool = Field(
         default=False,
         description="Enable the MindMate 记录导出 admin subtab (view/export Dify conversation history)",
-    )
-    FEATURE_MIND_CLASSROOM_SLIDE_DECK: bool = Field(
-        default=False,
-        description="Enable 思维讲堂 slide-lecture (幻灯片讲解) presentation mode",
     )
     FEATURE_TRAINING: bool = Field(
         default=False,

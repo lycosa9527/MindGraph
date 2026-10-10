@@ -261,7 +261,6 @@ def test_production_guard_warns_on_removed_oauth_master_flag(
                             "FEATURE_WECHAT_LOGIN": "False",
                             "FEATURE_DINGTALK_LOGIN": "False",
                             "CAPTCHA_PROVIDER": "legacy",
-                            "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
                             "FEATURE_WORKSHOP_CHAT": "False",
                         },
@@ -289,7 +288,6 @@ def test_production_guard_allows_oauth_without_wechat_secrets() -> None:
                             "WECHAT_OAUTH_APP_SECRET": "",
                             "EXTERNAL_BASE_URL": "https://example.com",
                             "CAPTCHA_PROVIDER": "legacy",
-                            "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
                             "FEATURE_WORKSHOP_CHAT": "False",
                         },
@@ -313,7 +311,6 @@ def test_production_guard_ignores_partial_wechat_secrets_when_wechat_off() -> No
                             "WECHAT_OAUTH_APP_ID": "wx-test-app-id",
                             "WECHAT_OAUTH_APP_SECRET": "",
                             "CAPTCHA_PROVIDER": "legacy",
-                            "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
                             "FEATURE_WORKSHOP_CHAT": "False",
                         },
@@ -337,7 +334,6 @@ def test_production_guard_rejects_partial_wechat_secrets() -> None:
                             "WECHAT_OAUTH_APP_ID": "wx-test-app-id",
                             "WECHAT_OAUTH_APP_SECRET": "",
                             "CAPTCHA_PROVIDER": "legacy",
-                            "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
                         },
                         clear=False,
@@ -378,7 +374,6 @@ def test_production_guard_requires_fanout_secret_when_workshop_chat_on() -> None
                             "WS_REDIS_FANOUT_ENABLED": "true",
                             "COLLAB_FANOUT_ORIGIN_SECRET": "",
                             "CAPTCHA_PROVIDER": "legacy",
-                            "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
                         },
                         clear=False,
@@ -393,7 +388,7 @@ def test_allows_same_origin_showcase_frame_for_teaching_attachments() -> None:
     assert middleware_module.allows_same_origin_showcase_frame("/api/showcase/assets/case_square/abc_doc.docx")
     assert middleware_module.allows_same_origin_showcase_frame("/static/case_square/abc_doc.pdf")
     assert not middleware_module.allows_same_origin_showcase_frame("/api/showcase/assets/case_square/abc.json")
-    assert not middleware_module.allows_same_origin_showcase_frame("/static/community/thumb.png")
+    assert not middleware_module.allows_same_origin_showcase_frame("/static/announcement_images/thumb.png")
 
 
 def test_showcase_publish_body_size_limit_paths(monkeypatch: pytest.MonkeyPatch) -> None:

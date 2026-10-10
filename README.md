@@ -83,11 +83,9 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 - Online canvas collaboration (WebSocket, Redis live-spec merge)
 - Workshop Chat (研习社): school-scoped real-time channels, topics, DMs, reactions, and file attachments
 - **Showcase** (案例广场): community case gallery with teaching-design / diagram publish, AI copy, Office→PDF preview, cover job manifesto, and admin moderation — see [services/showcase/README.md](services/showcase/README.md)
-- **迈特学习法 (Maite Learning)**: native async learning module (PG + RLS, Redis, event-bus UI) — see [services/maite/README.md](services/maite/README.md)
 - International landing page with Chinese / International UI version toggle
 - Knowledge Space (RAG) for document management and retrieval
 - Library with image-based document viewing
-- DebateVerse and AskOnce
 - Teacher usage tracking
 
 **Internationalization**
@@ -181,7 +179,6 @@ Default: `http://localhost:9527`
 | `/library` | Document library |
 | `/workshop-chat` | Workshop Chat — real-time teacher collaboration |
 | `/showcase` | Showcase — community case gallery |
-| `/maite` | 迈特学习法 (Maite Learning) |
 | `/thinking-coins/upgrade` | Thinking coins upgrade / school consult |
 | `/admin` | Admin panel (API keys, users, features, database) |
 | `/docs` | API docs (when `DEBUG=True`) |
@@ -214,7 +211,6 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_DINGTALK_LOGIN` | `False` | DingTalk QR login (per school AppKey/Secret; enable on production) |
 | `FEATURE_WORD_ADDIN` | `False` | Account Word add-in download + deploy zip (hosted `/word-addin/` shell stays on) |
 | `FEATURE_THINKING_COINS` | `False` | Trial-tier org thinking coin wallet |
-| `FEATURE_MIND_CLASSROOM_SLIDE_DECK` | `False` | 思维讲堂「幻灯片讲解」(greyed + coming-soon until enabled) |
 
 Production hardening: set `COLLAB_FANOUT_ORIGIN_SECRET` (shared across workers), `ALLOWED_HOSTS`, and see [docs/architecture/production_security_deploy.md](docs/architecture/production_security_deploy.md).
 
@@ -243,7 +239,6 @@ API keys are created in the admin panel (`/admin`). See [docs/API_REFERENCE.md](
 - [OAuth QR Login](docs/architecture/oauth_qr_login.md)
 - [Thinking Coins](docs/architecture/thinking_coins.md)
 - [Showcase](services/showcase/README.md)
-- [Maite Learning](services/maite/README.md)
 - [DingTalk Account Binding](docs/architecture/dingtalk_account_binding.md)
 - [MindBot Tool Ingress](docs/architecture/mindbot_tool_ingress.md)
 - [Production Security Deploy](docs/architecture/production_security_deploy.md)

@@ -8,7 +8,7 @@ import { defineStore } from 'pinia'
 import type { RoleControlTab } from '@/composables/admin/adminRoleControlNav'
 import { eventBus } from '@/composables/core/useEventBus'
 
-export type AdminPollKey = 'performance' | 'gewe_qr'
+export type AdminPollKey = 'performance'
 
 export interface AdminUsersToolbarState {
   searchQuery: string

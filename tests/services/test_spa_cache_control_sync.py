@@ -61,13 +61,8 @@ def test_vue_router_extensionless_paths_are_spa_routes(path: str) -> None:
         "/mindgraph",
         "/canvas",
         "/export-render",
-        "/template",
-        "/course",
-        "/community",
         "/showcase",
         "/knowledge-space",
-        "/askonce",
-        "/debateverse",
         "/index.html",
     ],
 )

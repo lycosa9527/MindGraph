@@ -105,7 +105,7 @@ describe('training course playback', () => {
     expect(trainingPagePath('/m/home', 'mindgraph')).toBe('/m/mindgraph')
     expect(trainingPagePath('/mindgraph', 'mindgraph')).toBe('/mindgraph')
     expect(trainingPagePath('/mindmate', 'mindgraph')).toBe('/mindgraph')
-    expect(trainingPagePath('/maite', 'maite')).toBe('/maite')
+    expect(trainingPagePath('/library', 'library')).toBe('/library')
     expect(trainingCanvasLocation('/mindgraph', 'double_bubble_map')).toEqual({
       path: '/canvas',
       query: { type: 'double_bubble_map' },
@@ -121,7 +121,6 @@ describe('training course playback', () => {
         'mindgraph',
         'canvas',
         'mindmate',
-        'askonce',
         'library',
         'thinking-coins',
       ])
@@ -330,7 +329,6 @@ describe('training course playback', () => {
     expect(trainingModalsForPage('canvas').map((modal) => modal.key)).toEqual([
       ...shell,
       'online-collab',
-      'export-community',
     ])
     expect(trainingModalsForPage('library').map((modal) => modal.key)).toEqual(shell)
     const step = blankPageStep(0)

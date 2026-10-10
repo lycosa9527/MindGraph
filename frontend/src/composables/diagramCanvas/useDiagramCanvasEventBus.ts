@@ -1,4 +1,3 @@
-import type { Ref } from 'vue'
 import { nextTick, toValue } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
@@ -56,10 +55,7 @@ export interface DiagramCanvasEventBusContext {
   exportByFormat: (format: string, options?: CanvasExportOptions) => Promise<void>
   capturePngBlob: (options?: CanvasExportOptions, asShown?: boolean) => Promise<Blob>
   copyPngToClipboard: (blobSource: Promise<Blob>) => Promise<void>
-  showExportToCommunityModal: Ref<boolean>
   getExportContainer: () => HTMLElement | null
-  prepareForCommunityExport: () => Promise<void>
-  restoreViewportAfterCommunityExport: () => void
   regenerateForNodeIfNeeded: (nodeId: string) => void
 }
 
@@ -109,9 +105,7 @@ export function useDiagramCanvasEventBus(): {
       exportByFormat,
       capturePngBlob,
       copyPngToClipboard,
-      showExportToCommunityModal,
       getExportContainer,
-      prepareForCommunityExport,
       regenerateForNodeIfNeeded,
     } = ctx
 
@@ -241,14 +235,6 @@ export function useDiagramCanvasEventBus(): {
         if (format === 'mg') {
           await canvasExportStore.runExportSession(async () => {
             await exportByFormat(format, mergedOptions)
-          })
-          return
-        }
-
-        if (format === 'community') {
-          await canvasExportStore.runExportSession(async () => {
-            await prepareForCommunityExport()
-            showExportToCommunityModal.value = true
           })
           return
         }

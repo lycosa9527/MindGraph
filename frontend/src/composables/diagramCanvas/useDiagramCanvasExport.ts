@@ -28,9 +28,6 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
   const { currentLanguage } = useLanguage()
   const uiStore = useUIStore()
 
-  const showExportToCommunityModal = ref(false)
-  const communityViewportSnapshot = ref<CanvasViewport | null>(null)
-
   function getExportContainer(): HTMLElement | null {
     return vueFlowWrapper.value
   }
@@ -50,27 +47,6 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
     getDiagramSpec: getExportSpec,
     getTitle: getExportTitle,
   })
-
-  function snapshotViewportForCommunityIfNeeded(): void {
-    if (getViewport && !communityViewportSnapshot.value) {
-      communityViewportSnapshot.value = getViewport()
-    }
-  }
-
-  async function prepareForCommunityExport(): Promise<void> {
-    snapshotViewportForCommunityIfNeeded()
-    await prepareDiagramCanvasForRasterCapture(fitForExport, {
-      promptLanguage: uiStore.promptLanguage,
-    })
-  }
-
-  function restoreViewportAfterCommunityExport(): void {
-    const saved = communityViewportSnapshot.value
-    if (saved && setViewport) {
-      setViewport(saved, { duration: ANIMATION.DURATION_FAST })
-    }
-    communityViewportSnapshot.value = null
-  }
 
   /** Fit → rasterize diagram for worksheet modal preview → restore viewport. */
   async function captureWorksheetPreviewPng(
@@ -100,15 +76,12 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
   }
 
   return {
-    showExportToCommunityModal,
     getExportContainer,
     getExportTitle,
     getExportSpec,
     exportByFormat,
     capturePngBlob,
     copyPngToClipboard,
-    prepareForCommunityExport,
-    restoreViewportAfterCommunityExport,
     captureWorksheetPreviewPng,
   }
 }

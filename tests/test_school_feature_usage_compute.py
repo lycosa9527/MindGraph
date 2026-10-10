@@ -121,7 +121,7 @@ def test_token_fail_rate_stays_separate_from_usage_pass():
     assert by_key["dingtalk"]["avg_duration_seconds"] == 3.0
     assert by_key["dingtalk"]["capacity"] == "normal"
     assert by_key["mindmate"]["fail_rate"] == 0.0
-    assert by_key["askonce"]["fail_rate"] is None
+    assert by_key["library"]["fail_rate"] is None
     judgement = build_judgement(rows, 2)
     assert judgement["bottleneck_slots"]["slow_keys"] == []
     assert judgement["bottleneck_slots"]["no_bottleneck"] is True
@@ -185,7 +185,7 @@ def test_module_rows_uv_uses_and_sort():
     assert by_key["canvas"]["monthly_uses"][0]["value"] == 3
     assert by_key["canvas"]["monthly_uses"][1]["value"] == 1
     assert by_key["mindmate"]["uses"] == 4
-    assert by_key["askonce"]["uses"] == 0
+    assert by_key["library"]["uses"] == 0
     assert rows[0]["key"] in {"canvas", "mindmate"}
     assert rows[-1]["uses"] == 0
 
@@ -225,8 +225,8 @@ def test_judgement_high_low_and_concentration():
             _bucket(1, "diagram_generate", count=20),
             _bucket(2, "diagram_generate", count=20),
             _bucket(1, "chat_turn", count=10),
-            _bucket(1, "askonce_turn", count=8),
-            _bucket(1, "debate_turn", count=2),
+            _bucket(1, "library_engage", count=8),
+            _bucket(1, "showcase_engage", count=2),
         ],
         2026,
     )
@@ -234,7 +234,7 @@ def test_judgement_high_low_and_concentration():
     assert judgement["top5"][0]["key"] == "canvas"
     assert judgement["top5"][0]["usage_rate"] == 20.0
     assert "canvas" in judgement["high"]
-    assert "debateverse" in judgement["low"]
+    assert "showcase" in judgement["low"]
     assert judgement["conclusion_slots"]["concentrated"] is True
 
 

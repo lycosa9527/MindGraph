@@ -61,7 +61,6 @@ USER_OWNED_TABLES = [
     "user_usage_activities",
     "kitty_one_sentence_sessions",
     "kitty_one_sentence_turns",
-    "debate_sessions",
     "library_bookmarks",
     "market_orders",
     "market_entitlements",
@@ -136,6 +135,12 @@ KNOWLEDGE_SPACE_CHILD_TABLES = [
             "WHERE ctd.id = document_id AND rls_diagram_visible(ctd.user_id))"
         ),
     ),
+]
+
+# Leftover DebateVerse table. Kept out of USER_OWNED_TABLES because there is
+# no ORM model; historical migrations still apply the same user-owned policy.
+DEBATE_SESSION_TABLES = [
+    "debate_sessions",
 ]
 
 DEBATE_CHILD_TABLES = [
@@ -420,7 +425,7 @@ def upgrade_group_a() -> None:
     upgraded databases and are skipped; revisions 0061, 0079, and 0081
     install their policies after CREATE TABLE.
     """
-    for table in USER_OWNED_TABLES:
+    for table in USER_OWNED_TABLES + DEBATE_SESSION_TABLES:
         _enable_force(table)
         _create_all_policy(table, f"{table}_tenant", USER_OWNED_EXPR)
     upgrade_devices_policy()
@@ -573,6 +578,7 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
     """Every (table, policy expression) pair for schema validation tests."""
     rows: list[tuple[str, str]] = []
     rows.extend((table, USER_OWNED_EXPR) for table in USER_OWNED_TABLES)
+    rows.extend((table, USER_OWNED_EXPR) for table in DEBATE_SESSION_TABLES)
     rows.append(("devices", DEVICE_EXPR))
     rows.extend((table, GEWE_EXPR) for table in GEWE_TABLES)
     rows.extend(KNOWLEDGE_SPACE_CHILD_TABLES)
@@ -633,6 +639,7 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
 def all_rls_tables() -> list[str]:
     """Return every table name that greenfield RLS policies cover."""
     tables = list(USER_OWNED_TABLES)
+    tables.extend(DEBATE_SESSION_TABLES)
     tables.extend(GEWE_TABLES)
     tables.append("devices")
     tables.extend(t for t, _ in KNOWLEDGE_SPACE_CHILD_TABLES)

@@ -1,5 +1,5 @@
 /**
- * Minimal LaTeX-ish math text to Unicode for Maite display.
+ * Minimal LaTeX-ish math text to Unicode for diagram labels.
  */
 
 const SUPERSCRIPT_MAP: Record<string, string> = {

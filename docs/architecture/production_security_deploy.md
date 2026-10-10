@@ -10,7 +10,6 @@ Use this when rolling hardened MindGraph to **mg.mindspringedu.com** (or any TLS
 |----------|----------------|
 | `BAYI_DECRYPTION_KEY` | `AUTH_MODE=bayi`. Must be the value issued by 小致 for `/loginByXz` (do not generate a replacement). `BAYI_PASSKEY` is removed; delete it from `.env`. |
 | `DEVICE_REGISTRATION_SECRET` | `FEATURE_SMART_RESPONSE=True` |
-| `GEWE_WEBHOOK_SECRET` | `FEATURE_GEWE=True` |
 | `FEATURE_WECHAT_LOGIN` | `True` on production only (WeChat Open Platform: one callback domain). Defaults off. |
 | `FEATURE_DINGTALK_LOGIN` | `True` on production when school DingTalk QR is needed. Defaults off. |
 | `FEATURE_OAUTH_LOGIN` | **Removed.** Delete from `.env`. A leftover value is ignored (startup warning); it does not enable QR login. |

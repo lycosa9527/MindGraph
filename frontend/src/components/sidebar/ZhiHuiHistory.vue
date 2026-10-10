@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * ZhiHui sidebar history — titled generation rows (AskOnce / MindGraph pattern).
+ * ZhiHui sidebar history — titled generation rows.
  */
 import { computed, onMounted, ref } from 'vue'
 

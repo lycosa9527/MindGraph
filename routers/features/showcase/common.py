@@ -19,7 +19,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from models.domain.auth import User
 from models.domain.showcase import ShowcaseCoverJob, ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
-from routers.features.community.helpers import parse_spec_json
+from routers.features.showcase.helpers import parse_spec_json
 from services.auth.thinking_coin.case_earn import try_publish_case_earn_as_author
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.audit import write_showcase_audit

@@ -53,8 +53,8 @@ async def test_record_persists_row() -> None:
 
 
 @pytest.mark.asyncio
-async def test_record_persists_maite_diagnosis() -> None:
-    """Maite actions are now valid and persist."""
+async def test_record_persists_named_action() -> None:
+    """Named usage actions with a title are persisted."""
     insert_mock = AsyncMock()
     with patch("services.admin.user_usage_activity.system_rls_session") as mock_session:
         session = AsyncMock()
@@ -66,8 +66,8 @@ async def test_record_persists_maite_diagnosis() -> None:
                 user_id=7,
                 organization_id=2,
                 source="mindgraph",
-                action="maite_diagnosis",
-                title="maite",
+                action="showcase_engage",
+                title="showcase",
                 prompt_preview="diagnosis",
             )
     insert_mock.assert_awaited_once()

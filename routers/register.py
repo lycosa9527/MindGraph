@@ -33,8 +33,6 @@ from routers.admin import realtime_router as admin_realtime
 from routers.core import changelog, pages, update_notification
 from routers.core.health import router as health_router
 from routers.core.vue_spa import router as vue_spa
-from routers.features.askonce import router as askonce
-from routers.features.maite import router as maite
 from routers.features.kitty import router as kitty
 from services.mcp.mount import mount_mindgraph_mcp
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -58,10 +56,6 @@ def _try_import_module(module_path: str, label: str):
 
 
 LIBRARY_MODULE = _try_import_module("routers.features.library", "library")
-DEBATEVERSE_MODULE = _try_import_module("routers.features.debateverse", "debateverse")
-
-_community_mod = _try_import_module("routers.features.community", "community")
-COMMUNITY_MODULE = getattr(_community_mod, "router", None) if _community_mod else None
 
 _showcase_mod = _try_import_module("routers.features.showcase", "showcase")
 SHOWCASE_MODULE = getattr(_showcase_mod, "router", None) if _showcase_mod else None
@@ -77,9 +71,6 @@ ZHIHUI_MODULE = getattr(_zhihui_mod, "router", None) if _zhihui_mod else None
 
 _classroom_mod = _try_import_module("routers.features.mind_classroom", "mind_classroom")
 MIND_CLASSROOM_MODULE = getattr(_classroom_mod, "router", None) if _classroom_mod else None
-
-_gewe_mod = _try_import_module("routers.features.gewe", "gewe")
-GEWE_MODULE = getattr(_gewe_mod, "router", None) if _gewe_mod else None
 
 _wc_mod = _try_import_module("routers.features.workshop_chat", "workshop_chat")
 _wc_ws_mod = _try_import_module("routers.features.workshop_chat.ws", "workshop_chat_ws")
@@ -155,7 +146,6 @@ def register_routers(app: FastAPI) -> None:
     else:
         logger.warning("[RouterRegistration] Library router NOT registered - import failed or router is None.")
 
-    _mount_feature(app, COMMUNITY_MODULE, "/api/community", registered_feature_paths)
     _mount_feature(app, SHOWCASE_MODULE, "/api/showcase", registered_feature_paths)
     _mount_feature(app, VOD_MODULE, "/api/vod", registered_feature_paths)
     _mount_feature(app, LEARNING_SPACE_MODULE, "/api/learning-space", registered_feature_paths)
@@ -167,7 +157,6 @@ def register_routers(app: FastAPI) -> None:
     else:
         logger.warning("[RouterRegistration] Markets router NOT registered - import failed or router is None.")
 
-    _mount_feature(app, GEWE_MODULE, "/api/gewe", registered_feature_paths)
     _mount_feature(app, WORKSHOP_CHAT_MODULE, "/api/chat", registered_feature_paths)
 
     app.include_router(admin_env)
@@ -184,15 +173,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(kitty)
     app.include_router(update_notification)
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
-    app.include_router(askonce)
-    app.include_router(maite)
 
     _mount_feature(app, WORKSHOP_CHAT_WS_MODULE, "/api/ws/chat", registered_feature_paths)
-
-    if DEBATEVERSE_MODULE is not None:
-        _mount_feature(app, DEBATEVERSE_MODULE.router, "/api/debateverse", registered_feature_paths)
-    else:
-        logger.warning("[RouterRegistration] DebateVerse router NOT registered - import failed or router is None.")
 
     if registered_feature_paths:
         logger.debug(

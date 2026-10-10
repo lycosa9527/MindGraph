@@ -182,7 +182,6 @@ run_backend() {
     tests/test_ip_geolocation_national_map.py \
     tests/test_llm_daily_token_cap.py \
     tests/test_get_client_ip.py \
-    tests/test_gewe_webhook_auth.py \
     tests/test_refresh_token_reuse.py \
     tests/test_device_limit_kickoff.py \
     tests/test_device_hash_refresh.py \

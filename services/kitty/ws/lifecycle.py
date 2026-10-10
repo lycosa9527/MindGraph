@@ -63,7 +63,6 @@ from services.learning_space.ai_gate import (
     resolve_assignment_id_from_websocket,
     store_learning_assignment_on_voice_session,
 )
-from utils.auth import user_has_feature_access
 from utils.auth_ws import authenticate_websocket_user
 from utils.ws_limits import (
     DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
@@ -117,24 +116,11 @@ async def authenticate_kitty_websocket(
     websocket: WebSocket,
     diagram_session_id: str,
 ) -> Optional[KittyWsAuthResult]:
-    """Auth, feature gate, accept WS, and open hub session. Returns None when rejected."""
-    if not config.FEATURE_KITTY_WS_ENABLED:
-        logger.warning("Kitty Agent WebSocket connection rejected: feature disabled")
-        await reject_kitty_websocket(websocket, 4003, "Kitty Agent feature is disabled")
-        return None
-
+    """Auth, accept WS, and open hub session. Returns None when rejected."""
     current_user, auth_error = await authenticate_websocket_user(websocket)
     if auth_error or current_user is None:
         logger.warning("WebSocket auth failed: %s", auth_error)
         await reject_kitty_websocket(websocket, 4001, auth_error or "Authentication failed")
-        return None
-
-    if not await user_has_feature_access(current_user, "feature_kitty_agent"):
-        logger.warning(
-            "Kitty Agent WebSocket connection rejected: access denied user_id=%s",
-            getattr(current_user, "id", None),
-        )
-        await reject_kitty_websocket(websocket, 4003, "Kitty Agent access denied")
         return None
 
     # Accept before remaining policy checks so VPN/scope rejects also carry codes.

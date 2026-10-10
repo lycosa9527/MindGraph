@@ -2,7 +2,7 @@
 /**
  * Mind Classroom launch settings — readable modal / panel layout.
  */
-import { computed, nextTick, watch } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -19,7 +19,6 @@ import {
 import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
-import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
@@ -53,7 +52,6 @@ const props = withDefaults(
 )
 
 const { t } = useLanguage()
-const { featureMindClassroomSlideDeck } = useFeatureFlags()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const classroomStore = useMindClassroomStore()
@@ -126,23 +124,11 @@ const presentationOptions = computed(() =>
     titleKey: `canvas.mindClassroom.settings.presentation.${id}.title`,
     descKey: `canvas.mindClassroom.settings.presentation.${id}.desc`,
     icon: presentationIcons[id],
-    gated: id === 'slide_deck' && !featureMindClassroomSlideDeck.value,
+    gated: false,
   }))
 )
 
-const selectablePresentationIds = computed(() =>
-  featureMindClassroomSlideDeck.value ? MIND_CLASSROOM_PRESENTATION_IDS : (['canvas_tour'] as const)
-)
-
-watch(
-  featureMindClassroomSlideDeck,
-  (enabled) => {
-    if (!enabled && presentation.value === 'slide_deck') {
-      classroomStore.setPresentation('canvas_tour')
-    }
-  },
-  { immediate: true }
-)
+const selectablePresentationIds = computed(() => MIND_CLASSROOM_PRESENTATION_IDS)
 
 const tourScopeOptions = computed(() =>
   MIND_CLASSROOM_TOUR_SCOPE_IDS.map((id) => ({
@@ -173,7 +159,6 @@ function pickMastery(id: MindClassroomMasteryId): void {
 
 function pickPresentation(id: MindClassroomPresentationId): void {
   if (queueBusy.value) return
-  if (id === 'slide_deck' && !featureMindClassroomSlideDeck.value) return
   classroomStore.setPresentation(id)
 }
 

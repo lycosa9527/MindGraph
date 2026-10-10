@@ -41,11 +41,6 @@ from .dashboard_activity import DashboardActivity
 from .user_activity_log import UserActivityLog
 from .user_usage_activity import UserUsageActivity
 from .user_usage_stats import UserUsageStats
-from .debateverse import (
-    DebateSession,
-    DebateMessage,
-    DebateParticipant,
-)
 from .school_zone import (
     SharedDiagram,
     SharedDiagramLike,
@@ -59,9 +54,6 @@ from .library import (
 )
 from .pinned_conversations import PinnedConversation
 from .env_settings import EnvSetting
-from .gewe_message import GeweMessage
-from .gewe_contact import GeweContact
-from .gewe_group_member import GeweGroupMember
 from .zhihui import ZhihuiConversation, ZhihuiGeneration
 
 __all__ = [
@@ -105,10 +97,6 @@ __all__ = [
     "UserActivityLog",
     "UserUsageActivity",
     "UserUsageStats",
-    # Debateverse
-    "DebateSession",
-    "DebateMessage",
-    "DebateParticipant",
     # Legacy org shared diagrams (School Zone tables; feature removed)
     "SharedDiagram",
     "SharedDiagramLike",
@@ -122,12 +110,6 @@ __all__ = [
     "PinnedConversation",
     # Env Settings
     "EnvSetting",
-    # Gewe Messages
-    "GeweMessage",
-    # Gewe Contacts
-    "GeweContact",
-    # Gewe Group Members
-    "GeweGroupMember",
     # ZhiHui
     "ZhihuiConversation",
     "ZhihuiGeneration",

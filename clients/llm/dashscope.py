@@ -123,7 +123,7 @@ class QwenClient:
             logprobs: Whether to return token log probabilities
             top_logprobs: Number of top logprobs to return (0-5, requires logprobs=True)
             **kwargs: Additional parameters:
-                - dashscope_model: Override model id sent to DashScope (popped; e.g. AskOnce-only)
+                - dashscope_model: Override model id sent to DashScope (popped before the request)
                 - tools: Function calling tools array
                 - tool_choice: Tool selection strategy
                 - parallel_tool_calls: Enable parallel tool calls
@@ -317,7 +317,7 @@ class QwenClient:
             logprobs: Whether to return token log probabilities
             top_logprobs: Number of top logprobs to return (0-5, requires logprobs=True)
             **kwargs: Additional parameters:
-                - dashscope_model: Override model id sent to DashScope (popped; e.g. AskOnce-only)
+                - dashscope_model: Override model id sent to DashScope (popped before the request)
                 - tools: Function calling tools array
                 - tool_choice: Tool selection strategy
                 - parallel_tool_calls: Enable parallel tool calls

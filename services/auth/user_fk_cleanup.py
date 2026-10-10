@@ -16,7 +16,6 @@ from sqlalchemy import delete, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import UpdateNotificationDismissed
-from models.domain.community import CommunityPost, CommunityPostComment, CommunityPostLike
 from models.domain.device import Device
 from models.domain.diagrams import Diagram
 from models.domain.dingtalk_staff_link import DingtalkStaffLink
@@ -73,13 +72,23 @@ async def _null_mindbot_linked_user(db: AsyncSession, user_id: int) -> None:
 
 
 async def _delete_community_for_user(db: AsyncSession, user_id: int) -> None:
-    """Delete community for user."""
-    ap = select(CommunityPost.id).where(CommunityPost.author_id == user_id).scalar_subquery()
-    await db.execute(delete(CommunityPostComment).where(CommunityPostComment.post_id.in_(ap)))
-    await db.execute(delete(CommunityPostLike).where(CommunityPostLike.post_id.in_(ap)))
-    await db.execute(delete(CommunityPostLike).where(CommunityPostLike.user_id == user_id))
-    await db.execute(delete(CommunityPostComment).where(CommunityPostComment.user_id == user_id))
-    await db.execute(delete(CommunityPost).where(CommunityPost.author_id == user_id))
+    """Delete leftover community-share rows so users.id can be deleted."""
+    uid = {"uid": user_id}
+    await db.execute(
+        text(
+            "DELETE FROM community_post_comments WHERE user_id = :uid OR post_id IN "
+            "(SELECT id FROM community_posts WHERE author_id = :uid)"
+        ),
+        uid,
+    )
+    await db.execute(
+        text(
+            "DELETE FROM community_post_likes WHERE user_id = :uid OR post_id IN "
+            "(SELECT id FROM community_posts WHERE author_id = :uid)"
+        ),
+        uid,
+    )
+    await db.execute(text("DELETE FROM community_posts WHERE author_id = :uid"), uid)
 
 
 async def _delete_school_zone_for_user(db: AsyncSession, user_id: int) -> None:

@@ -33,17 +33,6 @@ def test_policy_builder_community_writes_include_system() -> None:
     assert '("community_post_likes", COMMUNITY_READ, COMMUNITY_WRITE)' in text
 
 
-def test_community_like_uses_system_counter_helper() -> None:
-    """Like/comment routes must bump counters through system_bootstrap helpers."""
-    router = _read("routers/features/community/__init__.py")
-    counters = _read("routers/features/community/counters.py")
-    assert "adjust_post_likes_count" in router
-    assert "adjust_post_comments_count" in router
-    assert "system_bootstrap" in router
-    assert "panel_superadmin" not in router
-    assert "system_bootstrap" in counters
-
-
 def test_proxy_auto_approve_does_not_credit_thinking_coins() -> None:
     """Admin proxy auto-approve path must not credit thinking coins itself."""
     text = _read("routers/features/showcase/admin.py")

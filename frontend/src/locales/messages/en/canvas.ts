@@ -669,7 +669,6 @@ export default {
   'canvas.topBar.resetTemplate': 'Reset to default template',
   'canvas.topBar.resetCanvas': 'Reset canvas',
   'canvas.topBar.schoolCollab': 'School collaboration',
-  'canvas.topBar.shareCommunity': 'Share to Community',
   'canvas.topBar.zhihuiUnavailable': 'ZhiHui diagram-to-image is unavailable',
   'canvas.topBar.zhihuiNeedMindmap': 'Diagram-to-image only supports mind maps',
   'canvas.topBar.zhihuiSaveFailed': 'Could not save the mind map for ZhiHui',
@@ -962,7 +961,7 @@ export default {
     'Some branches are ready, but a few didn’t finish. You can ask to auto-complete again.',
   'canvas.mindMapOneSentence.kittyWorking': 'OK — working on that…',
   'canvas.mindMapOneSentence.kittyUnavailable':
-    'Kitty is unavailable. Check that FEATURE_KITTY_AGENT is enabled on the server.',
+    'Kitty is unavailable. Try again in a moment.',
   'canvas.mindMapOneSentence.kittyConnectFailed':
     'Could not connect canvas Kitty. Open this diagram on desktop, then try again.',
   'canvas.mindMapOneSentence.clarifyChoices': 'Choose an option',
@@ -1712,11 +1711,6 @@ export default {
   'canvas.hero.worksheet.title': 'Export as DOC/PDF',
   'canvas.hero.worksheet.line1': 'Set worksheet header and paper options, then export',
   'canvas.hero.worksheet.line2': '',
-  'canvas.hero.communityExport.ribbon': 'Share',
-  'canvas.hero.communityExport.title': 'Share to community',
-  'canvas.hero.communityExport.line1': 'Add a title and category, then publish with a thumbnail',
-  'canvas.hero.communityExport.line2': '',
-  'canvas.hero.communityExport.editTitle': 'Edit community post',
   'canvas.hero.slotFull.ribbon': 'Library',
   'canvas.hero.slotFull.title': 'Library is full',
   'canvas.hero.slotFull.line1': 'Delete an existing diagram to save the current one',

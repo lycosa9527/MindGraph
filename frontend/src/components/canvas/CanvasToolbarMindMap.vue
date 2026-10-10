@@ -55,7 +55,6 @@ import MindMapNumberingControls from '@/components/canvas/MindMapNumberingContro
 import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
-import { useFeatureFlags } from '@/composables'
 import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
@@ -77,7 +76,6 @@ import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
 import {
   CANVAS_CLIPBOARD_EXPORT_MENU_ITEM,
-  CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
   CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
   CANVAS_STANDARD_EXPORT_MENU_ITEMS,
   CANVAS_WORKSHEET_TEXT_MENU_ITEM,
@@ -85,7 +83,6 @@ import {
 } from '@/config/canvasExportMenu'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import {
-  useAuthStore,
   useCanvasExportStore,
   useDiagramStore,
   useMindClassroomStore,
@@ -109,8 +106,6 @@ const notify = useNotifications()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const { showCanvasAiFeatures } = useLearningAiGate()
 const diagramStore = useDiagramStore()
-const authStore = useAuthStore()
-const { featureCommunity } = useFeatureFlags()
 const { triggerImportInPlace } = useDiagramImport()
 const { resetToDefaultTemplate } = useCanvasReset()
 const ribbon = useMindMapRibbonActions()
@@ -134,8 +129,6 @@ const voiceSummaryTooltip = computed(() => {
   if (aiBlockedByCollab.value) return t('canvas.toolbar.collabAiBlocked')
   return voiceSummaryLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.voiceSummary')
 })
-
-const showCommunityExport = computed(() => featureCommunity.value && authStore.isAuthenticated)
 
 /** Hidden for now with the ZhiHui sidebar entry; flip when 图示生图 ships. */
 const showZhihuiDiagramExport = computed(() => false)
@@ -816,17 +809,6 @@ watch(
                           @click="handleZhihuiDiagramMenuClick"
                         >
                           <I18nText :k="CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM.labelKey" />
-                        </button>
-                        <button
-                          v-if="showCommunityExport"
-                          type="button"
-                          class="mm-list-item"
-                          :class="{
-                            'mm-list-item--divided': CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided,
-                          }"
-                          @click="handleExportCommand(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command)"
-                        >
-                          <I18nText :k="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey" />
                         </button>
                       </div>
                     </div>

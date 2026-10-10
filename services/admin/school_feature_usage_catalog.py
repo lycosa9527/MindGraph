@@ -17,14 +17,11 @@ FEATURE_USAGE_MODULE_KEYS: tuple[str, ...] = (
     "knowledge",
     "doc_summary",
     "workshop",
-    "askonce",
-    "debateverse",
     "markets",
     "library",
     "showcase",
     "dingtalk",
     "zhihui",
-    "maite",
 )
 
 _ACTION_TO_MODULE: dict[str, str] = {
@@ -43,21 +40,11 @@ _ACTION_TO_MODULE: dict[str, str] = {
     "doc_summary_session": "doc_summary",
     "workshop_collab": "workshop",
     "workshop_chat": "workshop",
-    "askonce_turn": "askonce",
-    "debate_turn": "debateverse",
     "market_order": "markets",
     "library_engage": "library",
     "showcase_engage": "showcase",
     "dingtalk_diagram": "dingtalk",
     "t2i_image": "zhihui",
-    "maite_problem": "maite",
-    "maite_ocr": "maite",
-    "maite_inquiry": "maite",
-    "maite_diagnosis": "maite",
-    "maite_remedy": "maite",
-    "maite_variant": "maite",
-    "maite_mentor": "maite",
-    "maite_report": "maite",
 }
 
 _TOKEN_TYPE_TO_MODULE: dict[str, str] = {
@@ -81,8 +68,6 @@ _TOKEN_TYPE_TO_MODULE: dict[str, str] = {
     "concept_map_focus_suggestions": "canvas",
     "knowledge_wiki": "knowledge",
     "knowledge_ingest": "knowledge",
-    "askonce": "askonce",
-    "debateverse": "debateverse",
     "showcase_ai_copy": "showcase",
     "showcase_ai_diagram_copy": "showcase",
     "t2i_generation": "zhihui",
@@ -91,7 +76,6 @@ _TOKEN_TYPE_TO_MODULE: dict[str, str] = {
     "mind_classroom_canvas_tour": "zhihui",
     "mind_classroom_lesson_plan": "zhihui",
     "mind_classroom_wan_batch": "zhihui",
-    "maite_learning": "maite",
     "kitty_agent_loop_map_gen": "kitty",
     "kitty_agent_loop_audit": "kitty",
 }
@@ -112,11 +96,8 @@ TOP_RANK_LIMIT = 5
 SLOW_DURATION_FLOOR_SECONDS = 8.0
 SLOW_DURATION_FLOOR_BY_MODULE: dict[str, float] = {
     "mindmate": 90.0,
-    "askonce": 90.0,
-    "debateverse": 90.0,
     "voice_notes": 180.0,
     "zhihui": 60.0,
-    "maite": 60.0,
     "showcase": 60.0,
 }
 

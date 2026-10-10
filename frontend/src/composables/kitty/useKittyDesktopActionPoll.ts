@@ -100,14 +100,9 @@ export function useKittyDesktopActionPoll(): void {
     return featureFlagsStore.getFeatureKittyAgent()
   }
 
-  function flagsReady(): boolean {
-    return featureFlagsStore.flags != null
-  }
-
   /** Elect a desktop poll leader only when this surface could actually poll. */
   function pollLeaderEligible(): boolean {
     return (
-      flagsReady() &&
       kittyFeatureEnabled() &&
       isAuthenticated.value &&
       !surfaceIsMobileKittyLane() &&

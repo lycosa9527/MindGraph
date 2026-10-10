@@ -14,7 +14,6 @@ export { default as ConceptMapFocusReviewPicker } from './ConceptMapFocusReviewP
 export { default as ConceptMapRootConceptPicker } from './ConceptMapRootConceptPicker.vue'
 export { default as InlineRecommendationsPicker } from './InlineRecommendationsPicker.vue'
 export { default as DiagramSlotFullModal } from './DiagramSlotFullModal.vue'
-export { default as ExportToCommunityModal } from './ExportToCommunityModal.vue'
 export { default as PresentationSideToolbar } from './PresentationSideToolbar.vue'
 export { default as MindMapPresentationSideToolbar } from './MindMapPresentationSideToolbar.vue'
 export { default as MindMapSlideOverlay } from './MindMapSlideOverlay.vue'

@@ -2452,7 +2452,6 @@ def setup_application_directories() -> bool:
         # We're already in project root from main()
         directories_to_create = [
             ("static/images", "Static images"),
-            ("static/community", "Community thumbnails"),
             ("tests/images", "Test images"),
             ("temp_images", "Temporary images"),
         ]

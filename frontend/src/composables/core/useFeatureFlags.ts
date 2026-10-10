@@ -31,20 +31,11 @@ export function useFeatureFlags() {
   const live = computed(() => store.flags ?? data.value ?? null)
 
   const featureRagChunkTest = computed(() => live.value?.feature_rag_chunk_test ?? false)
-  const featureCourse = computed(() => live.value?.feature_course ?? false)
-  const featureMateLearning = computed(() => live.value?.feature_mate_learning ?? false)
-  const featureTemplate = computed(() => live.value?.feature_template ?? false)
-  const featureCommunity = computed(() => live.value?.feature_community ?? false)
   const featureShowcase = computed(() => live.value?.feature_showcase ?? false)
   const featureZhihui = computed(() => live.value?.feature_zhihui ?? false)
-  const featureAskOnce = computed(() => live.value?.feature_askonce ?? false)
-  const featureDebateverse = computed(() => live.value?.feature_debateverse ?? false)
   const featureKnowledgeSpace = computed(() => live.value?.feature_knowledge_space ?? false)
-  const featureMindClassroomSlideDeck = computed(
-    () => live.value?.feature_mind_classroom_slide_deck ?? false
-  )
+  const featureMindClassroomSlideDeck = computed(() => true)
   const featureLibrary = computed(() => live.value?.feature_library ?? false)
-  const featureGewe = computed(() => live.value?.feature_gewe ?? false)
   const featureSmartResponse = computed(() => live.value?.feature_smart_response ?? false)
   const featureTeacherUsage = computed(() => live.value?.feature_teacher_usage ?? false)
   const featureWorkshopChat = computed(() => live.value?.feature_workshop_chat ?? false)
@@ -60,7 +51,7 @@ export function useFeatureFlags() {
   const featureDingtalkLogin = computed(() => live.value?.feature_dingtalk_login ?? false)
   const featureWordAddin = computed(() => live.value?.feature_word_addin ?? false)
   const featureMindmateExport = computed(() => live.value?.feature_mindmate_export ?? false)
-  const featureKittyAgent = computed(() => live.value?.feature_kitty_agent ?? false)
+  const featureKittyAgent = computed(() => true)
   const featureThinkingCoins = computed(() => live.value?.feature_thinking_coins ?? false)
   const workshopChatPreviewOrgIds = computed(() => live.value?.workshop_chat_preview_org_ids ?? [])
   const featureOrgAccess = computed(() => live.value?.feature_org_access ?? {})
@@ -69,18 +60,11 @@ export function useFeatureFlags() {
 
   return {
     featureRagChunkTest,
-    featureCourse,
-    featureMateLearning,
-    featureTemplate,
-    featureCommunity,
     featureShowcase,
     featureZhihui,
-    featureAskOnce,
-    featureDebateverse,
     featureKnowledgeSpace,
     featureMindClassroomSlideDeck,
     featureLibrary,
-    featureGewe,
     featureSmartResponse,
     featureTeacherUsage,
     featureWorkshopChat,

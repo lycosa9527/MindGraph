@@ -45,7 +45,6 @@ export type AdminCapability =
   | 'tab.settings.public_dashboard'
   | 'tab.settings.teaching_design'
   | 'tab.settings.user_dropdown'
-  | 'tab.settings.gewe'
   | 'tab.settings.kitty_llmops'
   | 'tab.settings.mindbot'
   | 'tab.settings.mindmate_export'
@@ -106,7 +105,6 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'tab.settings.public_dashboard',
   'tab.settings.teaching_design',
   'tab.settings.user_dropdown',
-  'tab.settings.gewe',
   'tab.settings.kitty_llmops',
   'tab.settings.mindbot',
   'tab.settings.mindmate_export',
@@ -308,7 +306,6 @@ export function settingsSubtabRequiresCapabilities(subtab: string): AdminCapabil
     public_dashboard: ['tab.settings.public_dashboard'],
     teaching_design: ['tab.settings.teaching_design'],
     user_dropdown: ['tab.settings.user_dropdown'],
-    gewe: ['tab.settings.gewe'],
     kitty_llmops: ['tab.settings.kitty_llmops'],
     mindbot: ['tab.settings.mindbot'],
     smart_response: ['tab.settings.smart_response'],

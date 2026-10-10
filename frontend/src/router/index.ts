@@ -32,7 +32,7 @@ function pageTitle(segment: string): { titleKey: string } {
  * Route auth (see `beforeEach`):
  * - `requiresAuth`: guests are sent to `/auth?redirect=…`; expired sessions use the login modal.
  * - `guestOnly`: `/auth` — signed-in users are sent to MindMate landing.
- * - Public main-layout: `/mindmate`, `/template`, `/course`, `/askonce`, `/debateverse`, `/library`, …
+ * - Public main-layout: `/mindmate`, `/library`, …
  */
 
 const routes: RouteRecordRaw[] = [
@@ -222,18 +222,6 @@ const routes: RouteRecordRaw[] = [
     redirect: { path: '/privacy', hash: '#browser-extension' },
   },
   {
-    path: '/template',
-    name: 'Template',
-    component: () => import('@/pages/TemplatePage.vue'),
-    meta: { layout: 'main', ...pageTitle('template') },
-  },
-  {
-    path: '/course',
-    name: 'Course',
-    component: () => import('@/pages/CoursePage.vue'),
-    meta: { layout: 'main', ...pageTitle('course') },
-  },
-  {
     path: '/showcase',
     name: 'Showcase',
     component: () => import('@/pages/ShowcasePage.vue'),
@@ -257,36 +245,11 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/community',
-    name: 'Community',
-    component: () => import('@/pages/CommunityPage.vue'),
-    meta: { requiresAuth: true, layout: 'main', ...pageTitle('community') },
-  },
-  {
     path: '/school-dashboard',
     redirect: (to) => ({
       path: '/admin',
       query: { ...to.query, tab: 'data_center', view: 'school_dashboard' },
     }),
-  },
-  {
-    path: '/askonce',
-    name: 'AskOnce',
-    component: () => import('@/pages/AskOncePage.vue'),
-    meta: { layout: 'main', ...pageTitle('askOnce') },
-  },
-  {
-    path: '/maite',
-    name: 'MaiteLearning',
-    // Same as AskOnce / DebateVerse: lazy page, no requiresAuth probe on cold load.
-    component: () => import('@/pages/MaiteLearningPage.vue'),
-    meta: { layout: 'main', ...pageTitle('mateLearning') },
-  },
-  {
-    path: '/debateverse',
-    name: 'DebateVerse',
-    component: () => import('@/pages/DebateVersePage.vue'),
-    meta: { layout: 'main', ...pageTitle('debateverse') },
   },
   {
     path: '/knowledge-space',
@@ -351,13 +314,6 @@ const routes: RouteRecordRaw[] = [
     name: 'ThinkingCoinsUpgrade',
     component: () => import('@/pages/ThinkingCoinsUpgradePage.vue'),
     meta: { requiresAuth: true, layout: 'main', ...pageTitle('thinkingCoinsUpgrade') },
-  },
-  {
-    path: '/gewe',
-    redirect: (to) => ({
-      path: '/admin',
-      query: { ...to.query, tab: 'settings', subtab: 'gewe' },
-    }),
   },
   {
     path: '/teacher-usage',
@@ -462,13 +418,6 @@ router.beforeEach(async (to, from) => {
     }
   }
 
-  if (to.name === 'Admin' && to.query.tab === 'gewe') {
-    return {
-      path: '/admin',
-      query: { ...to.query, tab: 'settings', subtab: 'gewe' },
-    }
-  }
-
   // Auto-redirect mobile users to /m/* routes (skip for auth, export, dashboard pages)
   const skipMobileRedirect = shouldSkipMobileRouteRedirect(to.path)
 
@@ -519,13 +468,6 @@ router.beforeEach(async (to, from) => {
     if (featureFlagsStore.getFeatureTraining()) {
       const required = await requiredTrainingRedirect(to.path, authStore.user?.id)
       if (required) return required
-    }
-  }
-
-  if (to.name === 'MobileKitty') {
-    await featureFlagsStore.fetchFlags()
-    if (!featureFlagsStore.getFeatureKittyAgent()) {
-      return { path: '/m' }
     }
   }
 
@@ -620,28 +562,10 @@ router.beforeEach(async (to, from) => {
   ) {
     return { name: 'MindMate' }
   }
-  if (to.name === 'Course' && !featureFlagsStore.getFeatureCourse()) {
-    return { name: 'MindMate' }
-  }
-  if (to.name === 'Template' && !featureFlagsStore.getFeatureTemplate()) {
-    return { name: 'MindMate' }
-  }
   if (to.name === 'Showcase' && !featureFlagsStore.getFeatureShowcase()) {
     return { name: 'MindMate' }
   }
   if (to.name === 'ZhiHui' && !featureFlagsStore.getFeatureZhihui()) {
-    return { name: 'MindMate' }
-  }
-  if (to.name === 'Community' && !featureFlagsStore.getFeatureCommunity()) {
-    return { name: 'MindMate' }
-  }
-  if (to.name === 'AskOnce' && !featureFlagsStore.getFeatureAskOnce()) {
-    return { name: 'MindMate' }
-  }
-  if (to.name === 'MaiteLearning' && !featureFlagsStore.getFeatureMateLearning()) {
-    return { name: 'MindMate' }
-  }
-  if (to.name === 'DebateVerse' && !featureFlagsStore.getFeatureDebateverse()) {
     return { name: 'MindMate' }
   }
   if (

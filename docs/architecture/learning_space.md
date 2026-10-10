@@ -2,8 +2,6 @@
 
 学习空间是面向班级的图示作业系统：后台开通试点教师、建班、导入学生；教师布置作业、批改；学生（或培训班已有帐号）在画布上完成并提交。
 
-与「迈特学习法」（`FEATURE_MATE_LEARNING`）无关。
-
 **开关：** `FEATURE_STUDENT_LEARNING_SPACE`（默认开）。管理面板 → 功能；路由前缀 `/api/learning-space`（关闭时 404）。  
 **入口：** 桌面 `/learning-space`，移动 `/m/learning-space`。  
 **管理：** 管理面板 → 学习空间（子页：试点教师 / 班级管理 / 学生管理）。超级管理员、教研员、专家、学校管理员拥有 `tab.learning_space.view` / `.edit`，可在其面板范围内建班（学校管理员仅本组织；专家仅其邀请的学校）。

@@ -17,7 +17,6 @@ import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
 import AdminTeachingDesignTemplateTab from '@/components/admin/AdminTeachingDesignTemplateTab.vue'
 import AdminThinkingCoinsTab from '@/components/admin/AdminThinkingCoinsTab.vue'
 import AdminUserDropdownTab from '@/components/admin/AdminUserDropdownTab.vue'
-import GeweLoginComponent from '@/components/admin/GeweLoginComponent.vue'
 import {
   type SettingsSubtab,
   defaultSettingsSubtab,
@@ -30,7 +29,7 @@ import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 const route = useRoute()
 const router = useRouter()
 const { canViewSettingsSubtab } = useAdminAccess()
-const { featureGewe, featureLibrary } = useFeatureFlags()
+const { featureLibrary } = useFeatureFlags()
 
 const activeSubtab = ref<SettingsSubtab>(
   isSettingsSubtab(route.query.subtab as string)
@@ -41,7 +40,6 @@ const activeSubtab = ref<SettingsSubtab>(
 const allowedSubtabs = computed(() =>
   visibleSettingsSubtabs({
     canViewSettingsSubtab,
-    featureGewe: featureGewe.value,
     featureLibrary: featureLibrary.value,
   })
 )
@@ -98,7 +96,6 @@ watch(
     <AdminErrorsTab v-else-if="activeSubtab === 'errors'" />
     <AdminThinkingCoinsTab v-else-if="activeSubtab === 'thinking_coins'" />
     <AdminPublicDashboardTab v-else-if="activeSubtab === 'public_dashboard'" />
-    <GeweLoginComponent v-else-if="activeSubtab === 'gewe'" />
   </div>
 </template>
 

@@ -56,7 +56,7 @@ const {
     class="teacher-usage-page flex-1 flex flex-col bg-stone-50 overflow-hidden"
     :class="{ 'teacher-usage-page--embedded': embedded }"
   >
-    <!-- Header (same as Library, Gewe modules) -->
+    <!-- Header -->
     <div
       v-if="!embedded"
       class="teacher-usage-header h-14 px-4 flex items-center justify-between bg-white border-b border-stone-200"

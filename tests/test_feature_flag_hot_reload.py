@@ -114,15 +114,12 @@ async def test_feature_flag_gate_blocks_packed_roles_when_both_off():
 
 
 @pytest.mark.asyncio
-async def test_feature_flag_gate_blocks_kitty_prefix():
-    """Kitty REST is gated when FEATURE_KITTY_AGENT is off."""
+async def test_feature_flag_gate_does_not_block_kitty_prefix():
+    """Kitty Agent is a core module and is not behind a feature-flag gate."""
     call_next = AsyncMock(return_value=MagicMock(status_code=200))
-    with patch(
-        "services.infrastructure.http.feature_gate.config",
-        SimpleNamespace(FEATURE_KITTY_AGENT=False),
-    ):
-        response = await feature_flag_gate(_request("/api/kitty/session/x"), call_next)
-    assert response.status_code == 404
+    response = await feature_flag_gate(_request("/api/kitty/session/x"), call_next)
+    assert response.status_code == 200
+    call_next.assert_awaited()
 
 
 @pytest.mark.asyncio

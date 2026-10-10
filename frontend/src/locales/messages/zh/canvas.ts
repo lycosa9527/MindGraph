@@ -644,7 +644,6 @@ export default {
   'canvas.topBar.resetTemplate': '重置为默认模板',
   'canvas.topBar.resetCanvas': '重置画布',
   'canvas.topBar.schoolCollab': '校内协同',
-  'canvas.topBar.shareCommunity': '分享到社区',
   'canvas.topBar.zhihuiUnavailable': '智绘图示生图暂不可用',
   'canvas.topBar.zhihuiNeedMindmap': '图示生图仅支持思维导图',
   'canvas.topBar.zhihuiSaveFailed': '保存导图失败，无法打开图示生图',
@@ -903,7 +902,7 @@ export default {
     '有的分支补全好了，有的没成功。你可以再说一次「自动补全」。',
   'canvas.mindMapOneSentence.kittyWorking': '好的，正在处理…',
   'canvas.mindMapOneSentence.kittyUnavailable':
-    'Kitty 暂不可用，请确认已开启 FEATURE_KITTY_AGENT。',
+    'Kitty 暂不可用，请稍后重试。',
   'canvas.mindMapOneSentence.kittyConnectFailed':
     '暂时无法连接画布 Kitty。请确认电脑端已打开该导图，然后重试。',
   'canvas.mindMapOneSentence.clarifyChoices': '请选择一项',
@@ -1622,11 +1621,6 @@ export default {
   'canvas.hero.worksheet.title': '导出为 DOC/PDF',
   'canvas.hero.worksheet.line1': '设置学习单页眉与纸张选项，预览后导出',
   'canvas.hero.worksheet.line2': '',
-  'canvas.hero.communityExport.ribbon': '分享',
-  'canvas.hero.communityExport.title': '分享到社区',
-  'canvas.hero.communityExport.line1': '填写标题与分类，生成缩略图后发布',
-  'canvas.hero.communityExport.line2': '',
-  'canvas.hero.communityExport.editTitle': '编辑社区帖',
   'canvas.hero.slotFull.ribbon': '图库',
   'canvas.hero.slotFull.title': '图库已满',
   'canvas.hero.slotFull.line1': '请删除一个已有图示，再保存当前图示',

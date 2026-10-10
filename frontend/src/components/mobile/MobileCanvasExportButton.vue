@@ -16,21 +16,19 @@ import {
   FilePen,
   FileText,
   ImageDown,
-  Share2,
 } from '@lucide/vue'
 
 import MindMapExportOptionsPanel from '@/components/canvas/MindMapExportOptionsPanel.vue'
 import MindMapLearningSheetIcon from '@/components/canvas/MindMapLearningSheetIcon.vue'
-import { useFeatureFlags, useLanguage, useNotifications } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
   CANVAS_CLIPBOARD_EXPORT_MENU_ITEM,
-  CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
   CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
   CANVAS_STANDARD_EXPORT_MENU_ITEMS,
   CANVAS_WORKSHEET_TEXT_MENU_ITEM,
 } from '@/config/canvasExportMenu'
-import { useAuthStore, useDiagramStore } from '@/stores'
+import { useDiagramStore } from '@/stores'
 import { useCanvasExportStore } from '@/stores/canvasExport'
 import { isPdfExportCommand } from '@/utils/diagramPdfExport'
 
@@ -42,12 +40,8 @@ const open = ref(false)
 const { t } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()
-const authStore = useAuthStore()
-const { featureCommunity } = useFeatureFlags()
 const canvasExportStore = useCanvasExportStore()
 const { exportOptions, mergedExportOptions } = storeToRefs(canvasExportStore)
-
-const showCommunityExport = computed(() => featureCommunity.value && authStore.isAuthenticated)
 
 const formatItems = computed(() =>
   props.mindMapExport ? CANVAS_MINDMAP_EXPORT_MENU_ITEMS : CANVAS_STANDARD_EXPORT_MENU_ITEMS
@@ -170,18 +164,6 @@ function handleMakeLearningSheet(): void {
                 class="shrink-0 text-gray-500"
               />
               <span><I18nText :k="item.labelKey" /></span>
-            </button>
-            <button
-              v-if="showCommunityExport"
-              type="button"
-              class="mobile-export-row mobile-export-row--divided"
-              @click="handleExportCommand(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command)"
-            >
-              <Share2
-                :size="18"
-                class="shrink-0 text-rose-500"
-              />
-              <span><I18nText :k="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey" /></span>
             </button>
           </div>
         </div>

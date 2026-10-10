@@ -11,14 +11,11 @@ const MODULE_THEMES: Record<string, AdminSwissStatTheme> = {
   knowledge: 'storage',
   doc_summary: 'members',
   workshop: 'managers',
-  askonce: 'success',
-  debateverse: 'warn',
   markets: 'neutral',
   library: 'storage',
   showcase: 'success',
   dingtalk: 'integration',
   zhihui: 'platform',
-  maite: 'mindgraph',
 }
 
 export function moduleUsageTheme(key: string): AdminSwissStatTheme {

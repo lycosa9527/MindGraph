@@ -6,7 +6,7 @@
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { BILINGUAL_SECONDARY_LINE_HEIGHT, secondaryFontSize } from '@/diagramBilingual/measure'
 import { estimateTextWidthFallbackPx } from '@/stores/specLoader/textMeasurementFallback'
-import { renderMathText } from '@/utils/maite/mathText'
+import { renderMathText } from '@/utils/mathText'
 import {
   MIND_MAP_TEXT_LINE_HEIGHT,
   MIND_MAP_UNDERLINE_TEXT_LINE_HEIGHT,

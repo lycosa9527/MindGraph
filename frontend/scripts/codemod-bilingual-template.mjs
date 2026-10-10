@@ -724,8 +724,8 @@ function selfTest() {
   )
   assertFixture(
     'fallback key',
-    transformTextMustaches('{{ t(`maite.errors.${errorMessage}`, t(\'maite.errors.generic\')) }}').text,
-    '<I18nText :k="`maite.errors.${errorMessage}`" fallback-key="maite.errors.generic" />'
+    transformTextMustaches('{{ t(`errors.${errorMessage}`, t(\'errors.generic\')) }}').text,
+    '<I18nText :k="`errors.${errorMessage}`" fallback-key="errors.generic" />'
   )
   assertFixture(
     'fallback string',

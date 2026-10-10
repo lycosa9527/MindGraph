@@ -29,7 +29,7 @@ export type Theme = 'light' | 'dark' | 'system'
 export type Language = LocaleCode
 export type PromptLanguage = PromptOutputLanguageCode
 
-export type AppMode = 'mindmate' | 'mindgraph' | 'template' | 'course' | 'community'
+export type AppMode = 'mindmate' | 'mindgraph'
 export type UiVersion = 'chinese' | 'international'
 export type MindMapCanvasMode = 'legacy' | 'v2'
 

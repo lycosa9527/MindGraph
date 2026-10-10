@@ -7,19 +7,14 @@ import { useRoute } from 'vue-router'
 
 import {
   BookOpen,
-  Bot,
   ChevronDown,
   ClipboardList,
   FileText,
-  Files,
   GraduationCap,
   LayoutGrid,
-  MessageCircle,
   MessageSquare,
   MessagesSquare,
-  Play,
   Settings,
-  Share2,
   UserPlus,
   Wand2,
   Waypoints,
@@ -30,14 +25,11 @@ import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 
-const AskOnceHistory = defineAsyncComponent(() => import('./AskOnceHistory.vue'))
 const ChatHistory = defineAsyncComponent(() => import('./ChatHistory.vue'))
 const ChunkTestHistory = defineAsyncComponent(() => import('./ChunkTestHistory.vue'))
-const DebateHistory = defineAsyncComponent(() => import('./DebateHistory.vue'))
 const DiagramHistory = defineAsyncComponent(() => import('./DiagramHistory.vue'))
 const KnowledgeSpaceHistory = defineAsyncComponent(() => import('./KnowledgeSpaceHistory.vue'))
 const LibraryCommentsHistory = defineAsyncComponent(() => import('./LibraryCommentsHistory.vue'))
-const MaitePracticeHistory = defineAsyncComponent(() => import('./MaitePracticeHistory.vue'))
 const WorkshopChatHistory = defineAsyncComponent(() => import('./WorkshopChatHistory.vue'))
 const ZhiHuiHistory = defineAsyncComponent(() => import('./ZhiHuiHistory.vue'))
 
@@ -318,38 +310,6 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
-        <!-- AskOnce -->
-        <I18nTooltip
-          v-if="!s.isLearningSpaceStudent && s.featureAskOnce"
-          k="askonce.title"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('askonce')"
-            @click="s.setMode('askonce')"
-          >
-            <Bot
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label"
-              ><I18nText k="askonce.title"
-            /></span>
-          </div>
-        </I18nTooltip>
-        <transition name="panel-slide">
-          <div
-            v-if="!s.isLearningSpaceStudent && s.featureAskOnce && s.showPanel('askonce')"
-            class="sidebar-panel"
-          >
-            <AskOnceHistory />
-          </div>
-        </transition>
-
         <I18nTooltip
           v-if="!s.isLearningSpaceStudent && s.showTrainingNav"
           k="sidebar.training"
@@ -402,142 +362,6 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             </button>
           </div>
         </transition>
-
-        <!-- Debateverse -->
-        <I18nTooltip
-          v-if="!s.isLearningSpaceStudent && s.featureDebateverse"
-          k="sidebar.debateverse"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('debateverse')"
-            @click="s.setMode('debateverse')"
-          >
-            <MessageCircle
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label"
-              ><I18nText k="sidebar.debateverse"
-            /></span>
-          </div>
-        </I18nTooltip>
-        <transition name="panel-slide">
-          <div
-            v-if="!s.isLearningSpaceStudent && s.featureDebateverse && s.showPanel('debateverse')"
-            class="sidebar-panel"
-          >
-            <DebateHistory />
-          </div>
-        </transition>
-
-        <!-- Templates -->
-        <I18nTooltip
-          v-if="!s.isLearningSpaceStudent && s.featureTemplate"
-          k="sidebar.templateResources"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('template')"
-            @click="s.setMode('template')"
-          >
-            <Files
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label"
-              ><I18nText k="sidebar.templateResources"
-            /></span>
-          </div>
-        </I18nTooltip>
-
-        <!-- Courses -->
-        <I18nTooltip
-          v-if="!s.isLearningSpaceStudent && s.featureCourse"
-          k="sidebar.courses"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('course')"
-            @click="s.setMode('course')"
-          >
-            <Play
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label"
-              ><I18nText k="sidebar.courses"
-            /></span>
-          </div>
-        </I18nTooltip>
-
-        <!-- Mate Learning -->
-        <I18nTooltip
-          v-if="!s.isLearningSpaceStudent && s.featureMateLearning"
-          k="sidebar.mateLearning"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('maite')"
-            @click="s.setMode('maite')"
-          >
-            <GraduationCap
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label"
-              ><I18nText k="sidebar.mateLearning"
-            /></span>
-          </div>
-        </I18nTooltip>
-        <transition name="panel-slide">
-          <div
-            v-if="!s.isLearningSpaceStudent && s.featureMateLearning && s.showPanel('maite')"
-            class="sidebar-panel"
-          >
-            <MaitePracticeHistory />
-          </div>
-        </transition>
-
-        <!-- Community -->
-        <I18nTooltip
-          v-if="!s.isLearningSpaceStudent && s.featureCommunity"
-          k="sidebar.community"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('community')"
-            @click="s.setMode('community')"
-          >
-            <Share2
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label"
-              ><I18nText k="sidebar.community"
-            /></span>
-          </div>
-        </I18nTooltip>
 
         <!-- Showcase -->
         <I18nTooltip

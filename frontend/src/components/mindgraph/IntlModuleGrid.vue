@@ -6,19 +6,9 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import {
-  ChatDotRound,
-  Document,
-  Files,
-  MagicStick,
-  Reading,
-  Share,
-  Tools,
-  TrendCharts,
-  VideoPlay,
-} from '@element-plus/icons-vue'
+import { Document, Reading, Tools } from '@element-plus/icons-vue'
 
-import { GraduationCap, LayoutGrid, MessageSquare, Settings, Watch } from '@lucide/vue'
+import { LayoutGrid, MessageSquare, Settings } from '@lucide/vue'
 
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -30,18 +20,9 @@ const authStore = useAuthStore()
 const { t } = useLanguage()
 const {
   featureRagChunkTest,
-  featureCourse,
-  featureTemplate,
-  featureCommunity,
   featureShowcase,
-  featureAskOnce,
-  featureMateLearning,
-  featureDebateverse,
   featureKnowledgeSpace,
   featureLibrary,
-  featureGewe,
-  featureSmartResponse,
-  featureTeacherUsage,
   featureWorkshopChat,
   workshopChatPreviewOrgIds,
   featureOrgAccess,
@@ -78,48 +59,6 @@ const modules = computed<ModuleItem[]>(() => [
     route: '/knowledge-space',
     icon: Document,
     visible: isAuthenticated.value && featureKnowledgeSpace.value,
-  },
-  {
-    key: 'askonce',
-    labelKey: 'askonce.title',
-    route: '/askonce',
-    icon: MagicStick,
-    visible: featureAskOnce.value,
-  },
-  {
-    key: 'debateverse',
-    labelKey: 'sidebar.debateverse',
-    route: '/debateverse',
-    icon: ChatDotRound,
-    visible: featureDebateverse.value,
-  },
-  {
-    key: 'template',
-    labelKey: 'sidebar.templateResources',
-    route: '/template',
-    icon: Files,
-    visible: featureTemplate.value,
-  },
-  {
-    key: 'course',
-    labelKey: 'sidebar.courses',
-    route: '/course',
-    icon: VideoPlay,
-    visible: featureCourse.value,
-  },
-  {
-    key: 'maite',
-    labelKey: 'sidebar.mateLearning',
-    route: '/maite',
-    icon: GraduationCap,
-    visible: featureMateLearning.value,
-  },
-  {
-    key: 'community',
-    labelKey: 'sidebar.community',
-    route: '/community',
-    icon: Share,
-    visible: featureCommunity.value,
   },
   {
     key: 'showcase',
@@ -198,12 +137,7 @@ function goTo(route: string) {
             class="w-6 h-6"
           />
         </div>
-        <span class="intl-module-label"
-          ><template v-if="m.key === 'gewe'">{{ 'Gewe' }}</template
-          ><I18nText
-            v-else
-            :k="m.labelKey"
-        /></span>
+        <span class="intl-module-label"><I18nText :k="m.labelKey" /></span>
       </div>
     </div>
   </el-popover>

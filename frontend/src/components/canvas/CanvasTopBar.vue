@@ -24,7 +24,7 @@ import {
 
 import { ChatDotRound, Download } from '@element-plus/icons-vue'
 
-import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from '@lucide/vue'
+import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw } from '@lucide/vue'
 
 import MindMapRibbonTabs from '@/canvas-ribbon/MindMapRibbonTabs.vue'
 import { isDiagramRibbonFamily } from '@/canvas-ribbon/diagramRibbonCapabilities'
@@ -35,7 +35,6 @@ import CanvasToolbar from '@/components/canvas/CanvasToolbar.vue'
 import DiagramSlotFullModal from '@/components/canvas/DiagramSlotFullModal.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
-import { useFeatureFlags } from '@/composables'
 import { eventBus, getDefaultDiagramName, useDiagramSpecForSave } from '@/composables'
 import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
@@ -44,10 +43,7 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useTrainingDeckNav } from '@/composables/training/trainingDeckNav'
-import {
-  CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
-  CANVAS_STANDARD_EXPORT_MENU_ITEMS,
-} from '@/config/canvasExportMenu'
+import { CANVAS_STANDARD_EXPORT_MENU_ITEMS } from '@/config/canvasExportMenu'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { useAuthStore, useCanvasExportStore, usePanelsStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
@@ -163,8 +159,6 @@ const authStore = useAuthStore()
 const panelsStore = usePanelsStore()
 const lsCanvas = useLearningAssignmentCanvasStore()
 const isHomeworkCanvas = computed(() => lsCanvas.isActive)
-
-const { featureCommunity } = useFeatureFlags()
 
 /** Native tooltip: status text + action hint (replaces duplicate :title bindings) */
 const autoSaveHoverTitle = computed(() => {
@@ -701,14 +695,6 @@ async function handleReset() {
                       class="w-4 h-4 mr-2 text-amber-500"
                     />
                     <I18nText :k="item.labelKey" />
-                  </ElDropdownItem>
-                  <ElDropdownItem
-                    v-if="featureCommunity && authStore.isAuthenticated"
-                    :divided="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided"
-                    :command="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command"
-                  >
-                    <Share2 class="w-4 h-4 mr-2 text-rose-500" />
-                    <I18nText :k="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey" />
                   </ElDropdownItem>
                 </ElDropdownMenu>
               </template>

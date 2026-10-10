@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.149] - 2026-10-10
+
+> **Retired modules are gone, and Kitty Agent and 思维讲堂 slide lecture stay on.**
+
+### Removed
+
+- **论境、多应、迈特学习法、Gewe、社区分享、模板资源、思维课程** — those modules, their pages, and their APIs are removed. 案例广场, 研习社 courses, teaching-design templates, and Alipay markets stay.
+
+### Changed
+
+- **Kitty Agent** — voice and canvas control are a regular module. There is no feature switch and no organization permission gate.
+- **思维讲堂** — 幻灯片讲解 is always available beside the canvas tour.
+- **功能开关** — the admin feature list matches the modules that remain.
+
+### Tests
+
+- [`tests/test_feature_flag_hot_reload.py`](tests/test_feature_flag_hot_reload.py), [`tests/test_mind_classroom_enqueue.py`](tests/test_mind_classroom_enqueue.py), [`frontend/tests/canvasExportMenu.spec.ts`](frontend/tests/canvasExportMenu.spec.ts), [`frontend/tests/trainingCourses.spec.ts`](frontend/tests/trainingCourses.spec.ts)
+
 ## [5.180.148] - 2026-10-10
 
 > **Twelve more European interface languages, each labeled with its Chinese name.**

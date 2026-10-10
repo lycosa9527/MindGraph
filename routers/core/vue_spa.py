@@ -167,24 +167,6 @@ async def vue_export_render(request: Request):
     return await _serve_index(request)
 
 
-@router.get("/template", response_class=HTMLResponse)
-async def vue_template(request: Request):
-    """Serve Vue SPA for template route."""
-    return await _serve_index(request)
-
-
-@router.get("/course", response_class=HTMLResponse)
-async def vue_course(request: Request):
-    """Serve Vue SPA for course route."""
-    return await _serve_index(request)
-
-
-@router.get("/community", response_class=HTMLResponse)
-async def vue_community(request: Request):
-    """Serve Vue SPA for community route."""
-    return await _serve_index(request)
-
-
 @router.get("/showcase", response_class=HTMLResponse)
 async def vue_showcase(request: Request):
     """Serve Vue SPA for showcase route."""
@@ -208,18 +190,6 @@ async def vue_knowledge_space(request: Request):
 async def vue_knowledge_space_sub(request: Request, path: str):
     """Serve Vue SPA for knowledge-space sub-routes."""
     _ = path  # Path parameter required by FastAPI but not used
-    return await _serve_index(request)
-
-
-@router.get("/askonce", response_class=HTMLResponse)
-async def vue_askonce(request: Request):
-    """Serve Vue SPA for askonce route."""
-    return await _serve_index(request)
-
-
-@router.get("/debateverse", response_class=HTMLResponse)
-async def vue_debateverse(request: Request):
-    """Serve Vue SPA for debateverse route."""
     return await _serve_index(request)
 
 

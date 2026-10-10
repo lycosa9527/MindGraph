@@ -88,8 +88,6 @@ class RedisActivityTracker:
         "doc_summary": "Document Summary",
         "workshop_collab": "Workshop Collab",
         "workshop_chat": "Workshop Chat",
-        "askonce": "AskOnce",
-        "debateverse": "DebateVerse",
         "markets": "Markets",
         "library": "Library",
         "showcase": "Showcase",

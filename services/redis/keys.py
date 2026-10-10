@@ -199,12 +199,6 @@ MINDMATE_STREAMING_HOUR_MAX = "admin:mindmate:streaming_max:{hour_utc}"
 TTL_MINDMATE_STREAMING_HOUR_MAX = 100_800
 
 # ---------------------------------------------------------------------------
-# Maite learning practice cache  (services/maite/redis/practice_cache.py)
-# ---------------------------------------------------------------------------
-MAITE_PRACTICE = "maite:practice:{user_id}"
-TTL_MAITE_PRACTICE = 300
-
-# ---------------------------------------------------------------------------
 # Office / embed session handoff (mgat_ → browser cookies)
 # ---------------------------------------------------------------------------
 EMBED_SESSION_HANDOFF = "auth:embed:handoff:{code}"

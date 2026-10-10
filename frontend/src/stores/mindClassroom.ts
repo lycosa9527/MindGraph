@@ -29,7 +29,6 @@ import {
 } from '@/config/mindClassroom'
 import { useAiContentLevelStore } from '@/stores/aiContentLevel'
 import { useDiagramStore } from '@/stores/diagram'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useUIStore } from '@/stores/ui'
 import { collectLiveNodeIds } from '@/utils/mindClassroomRemoteSteps'
@@ -149,31 +148,9 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     mastery.value = next
   }
 
-  function isSlideDeckEnabled(): boolean {
-    return useFeatureFlagsStore().getFeatureMindClassroomSlideDeck()
-  }
-
-  function resolvePresentation(next: MindClassroomPresentationId): MindClassroomPresentationId {
-    if (next === 'slide_deck' && !isSlideDeckEnabled()) {
-      return DEFAULT_MIND_CLASSROOM_PRESENTATION
-    }
-    return next
-  }
-
-  function clampGatedSlideDeck(): void {
-    presentation.value = resolvePresentation(presentation.value)
-  }
-
   function setPresentation(next: MindClassroomPresentationId): void {
-    presentation.value = resolvePresentation(next)
+    presentation.value = next
   }
-
-  watch(
-    () => useFeatureFlagsStore().flags?.feature_mind_classroom_slide_deck,
-    () => {
-      clampGatedSlideDeck()
-    }
-  )
 
   function setTourScope(next: MindClassroomTourScopeId): void {
     tourScope.value = next
@@ -419,7 +396,6 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     dimFocusNodeIds,
     setMastery,
     setPresentation,
-    clampGatedSlideDeck,
     setTourScope,
     setSlideStyle,
     setTone,

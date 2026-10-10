@@ -12,7 +12,6 @@ import zhihui from './zhihui.ts'
 import knowledge from './knowledge.ts'
 import learningSpace from './learningSpace.ts'
 import mindmate from './mindmate.ts'
-import maite from './maite.ts'
 import notification from './notification.ts'
 import sidebar from './sidebar.ts'
 import { thinkingCoinsMessages as thinkingCoins } from './thinkingCoins.ts'
@@ -22,7 +21,6 @@ import training from './training.ts'
 export default {
   ...common,
   ...mindmate,
-  ...maite,
   ...canvas,
   ...workshop,
   ...training,

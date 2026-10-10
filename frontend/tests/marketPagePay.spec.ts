@@ -5,7 +5,6 @@ import {
   isAlipayReturnQuery,
   parseAlipayReturnOrderId,
 } from '@/composables/markets/marketPagePay'
-import { listingRowToTemplate } from '@/composables/markets/templateCatalog'
 
 describe('marketPagePay', () => {
   it('formats fen as yuan', () => {
@@ -24,21 +23,5 @@ describe('marketPagePay', () => {
     expect(isAlipayReturnQuery({ alipay: 'return' })).toBe(true)
     expect(isAlipayReturnQuery({ order_id: '3' })).toBe(true)
     expect(isAlipayReturnQuery({})).toBe(false)
-  })
-})
-
-describe('listingRowToTemplate', () => {
-  it('maps a market listing to a catalog card', () => {
-    const row = listingRowToTemplate({
-      id: 9,
-      title: '演示模板',
-      product_type: 'MindMate',
-      scene: '教学通用',
-      subject: '语文',
-      price_minor: 990,
-    })
-    expect(row.listingId).toBe(9)
-    expect(row.priceMinor).toBe(990)
-    expect(row.type).toBe('MindMate')
   })
 })
