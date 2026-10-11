@@ -6,12 +6,17 @@ import {
   shouldSkipLibraryReloadDuringGeneration,
   shouldSkipLibraryReloadForActiveDiagram,
 } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
+import { SAVE } from '@/config'
 import {
   isLlmResultForCurrentSession,
   shouldPaintCompletedLlmModel,
   shouldStampCanvasOntoLlmResult,
   useLLMResultsStore,
 } from '@/stores/llmResults'
+import {
+  attachLlmResultsWithinSizeLimit,
+  splitSavedLlmResultsFromSpec,
+} from '@/stores/llmResultsPersist'
 
 describe('shouldSkipLibraryReloadForActiveDiagram', () => {
   it('skips when route id matches the already-active diagram (first autosave URL sync)', () => {
@@ -186,6 +191,117 @@ describe('llmResults regenerate paint / stamp', () => {
     expect(store.results.qwen).toBeUndefined()
   })
 
+  it('manual work has nothing to attach, and one model is recorded without a second diagram', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.setSelectedModel('qwen3.8-flash')
+    expect(store.getResultsForPersistence()).toBeNull()
+
+    store.storeResult('kimi', { success: true, spec: { topic: 'only' }, elapsed: 1 })
+    const one = store.getResultsForPersistence()
+    expect(one?.selectedModel).toBe('')
+    expect(one?.canvasOwnsSelected).toBe(false)
+    expect(one?.results.kimi.spec).toEqual({ topic: 'only' })
+  })
+
+  it('saves every model and the menu choice that was open when the diagram closed', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    const ids = ['express', 'qwen3.8-flash', 'qwen3-max', 'kimi', 'doubao21']
+    ids.forEach((id) => {
+      store.storeResult(id, { success: true, spec: { topic: id }, elapsed: 1 })
+    })
+    store.setSelectedModel('kimi')
+    store.startGeneration('gen_next', 'mindmap', ['kimi'])
+
+    const persisted = store.getResultsForPersistence()
+    expect(persisted?.selectedModel).toBe('kimi')
+    expect(Object.keys(persisted?.results ?? {}).sort()).toEqual([...ids].sort())
+
+    const reopened = useLLMResultsStore()
+    reopened.reset()
+    reopened.restoreFromSaved(persisted ?? { results: {} }, 'mindmap', { topic: 'kimi' })
+    expect(reopened.canvasModelChoice).toBe('kimi')
+    expect(reopened.modelStates.express).toBe('ready')
+    expect(reopened.getValidResult('doubao21')?.spec).toEqual({ topic: 'doubao21' })
+  })
+
+  it('keeps the open diagram on its model when the menu moves to an empty choice', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.restoreFromSaved(
+      {
+        results: {
+          express: { success: true, spec: { topic: 'express' }, timestamp: 1 },
+          qwen: { success: true, spec: { topic: 'qwen' }, timestamp: 1 },
+        },
+        selectedModel: 'qwen',
+      },
+      'mindmap',
+      { topic: 'qwen' }
+    )
+    store.setSelectedModel('doubao21')
+
+    const persisted = store.getResultsForPersistence()
+    expect(persisted?.selectedModel).toBe('qwen')
+    expect(persisted?.canvasOwnsSelected).toBe(true)
+    const packed = attachLlmResultsWithinSizeLimit(
+      { topic: 'qwen' },
+      persisted,
+      SAVE.MAX_SPEC_WITH_LLM_RESULTS_KB
+    )
+    const llm = packed.llm_results as { results: Record<string, { spec: { topic: string } }> }
+    expect(packed.topic).toBe('qwen')
+    expect(llm.results.qwen).toBeUndefined()
+    expect(llm.results.express.spec.topic).toBe('express')
+  })
+
+  it('saves one diagram body for one painted model and five for five', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.restoreFromSaved({ results: {}, selectedModel: 'kimi' }, 'mindmap', { topic: 'only' })
+    const one = store.getResultsForPersistence()
+    const onePacked = attachLlmResultsWithinSizeLimit(
+      { topic: 'only' },
+      one,
+      SAVE.MAX_SPEC_WITH_LLM_RESULTS_KB
+    )
+    const oneLlm = onePacked.llm_results as {
+      results: Record<string, unknown>
+      selectedModel: string
+    }
+    expect(oneLlm.selectedModel).toBe('kimi')
+    expect(oneLlm.results).toEqual({})
+
+    const ids = ['express', 'qwen3.8-flash', 'qwen3-max', 'kimi', 'doubao21']
+    const results: Record<string, { success: true; spec: { topic: string }; timestamp: number }> =
+      {}
+    ids.forEach((id) => {
+      results[id] = { success: true, spec: { topic: id }, timestamp: 1 }
+    })
+    store.reset()
+    store.restoreFromSaved({ results, selectedModel: 'kimi' }, 'mindmap', { topic: 'kimi' })
+    const five = store.getResultsForPersistence()
+    expect(five?.canvasOwnsSelected).toBe(true)
+    const packed = attachLlmResultsWithinSizeLimit(
+      { topic: 'kimi' },
+      five,
+      SAVE.MAX_SPEC_WITH_LLM_RESULTS_KB
+    )
+    const { specForLoad, saved } = splitSavedLlmResultsFromSpec(packed)
+    expect(Object.keys(saved?.results ?? {}).sort()).toEqual(
+      ids.filter((id) => id !== 'kimi').sort()
+    )
+
+    const reopened = useLLMResultsStore()
+    reopened.reset()
+    reopened.restoreFromSaved(saved ?? { results: {} }, 'mindmap', specForLoad)
+    expect(reopened.canvasModelChoice).toBe('kimi')
+    expect(reopened.getValidResult('kimi')?.spec).toEqual({ topic: 'kimi' })
+    expect(reopened.getValidResult('express')?.spec).toEqual({ topic: 'express' })
+    expect(reopened.getValidResult('doubao21')?.spec).toEqual({ topic: 'doubao21' })
+  })
+
   it('persists 2+ results even when selectedModel was never painted', () => {
     setActivePinia(createPinia())
     const store = useLLMResultsStore()
@@ -193,7 +309,8 @@ describe('llmResults regenerate paint / stamp', () => {
     store.storeResult('deepseek', { success: true, spec: { topic: 'd' }, elapsed: 1 })
 
     const persisted = store.getResultsForPersistence()
-    expect(persisted?.selectedModel).toBe('qwen')
+    expect(persisted?.selectedModel).toBe('')
+    expect(persisted?.canvasOwnsSelected).toBe(false)
     expect(Object.keys(persisted?.results ?? {}).sort()).toEqual(['deepseek', 'qwen'])
   })
 

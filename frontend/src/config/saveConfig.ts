@@ -16,8 +16,14 @@ export const SAVE = {
   SUPPRESS_AFTER_WORKSHOP_SNAPSHOT_MS: 5000,
   /** How often to refresh the relative "saved X ago" text (ms) */
   RELATIVE_TIME_TICK_MS: 10_000,
-  /** Max spec size for backend (KB) - must match DIAGRAM_MAX_SPEC_SIZE_KB */
+  /** Max canvas spec size (KB), excluding saved model diagrams. Matches DIAGRAM_MAX_SPEC_SIZE_KB. */
   MAX_SPEC_SIZE_KB: 500,
+  /**
+   * Ceiling for a canvas that also stores model diagrams. The slot count is
+   * however many models succeeded, not a fixed menu size. Matches
+   * DIAGRAM_MAX_SPEC_WITH_LLM_RESULTS_KB.
+   */
+  MAX_SPEC_WITH_LLM_RESULTS_KB: 4000,
 } as const
 
 /** Session storage key for diagram import from `.mg` (landing page → canvas) */

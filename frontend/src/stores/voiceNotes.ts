@@ -35,10 +35,16 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useKittySessionStore } from '@/stores/kittySession'
 import { useLiveSubtitlesStore } from '@/stores/liveSubtitles'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
+import { useLLMResultsStore } from '@/stores/llmResults'
+import { attachLlmResultsWithinSizeLimit } from '@/stores/llmResultsPersist'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { getDefaultTemplate } from '@/stores/specLoader'
 import { useUIStore } from '@/stores/ui'
 import { apiRequestJson } from '@/utils/apiClient'
+import {
+  getDiagramPersistBaseSpec,
+  shouldStampLiveCanvasOntoLlmResult,
+} from '@/utils/diagramPersistBaseSpec'
 import {
   diagramSourceLockMessage,
   fetchLockedDiagramSourceKind,
@@ -341,8 +347,17 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
 
   async function persistUnsavedCanvasDiagram(): Promise<string | null> {
     const diagramStore = useDiagramStore()
-    const spec = diagramStore.getSpecForSave()
-    if (!spec) return null
+    const llmResultsStore = useLLMResultsStore()
+    const specBase = getDiagramPersistBaseSpec()
+    if (!specBase) return null
+    if (shouldStampLiveCanvasOntoLlmResult()) {
+      llmResultsStore.updateCurrentModelSpec(specBase)
+    }
+    const spec = attachLlmResultsWithinSizeLimit(
+      specBase,
+      llmResultsStore.getResultsForPersistence(),
+      SAVE.MAX_SPEC_WITH_LLM_RESULTS_KB
+    )
     const lang = String(uiStore.promptLanguage || uiStore.language || 'zh').split('-')[0] || 'zh'
     const diagramType = diagramStore.type || 'mindmap'
     const title = getDefaultDiagramName(diagramType, uiStore.language)

@@ -1428,16 +1428,16 @@ onMounted(async () => {
           notify.errorKey('notification.importUnsupportedType')
         } else {
           const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
-          if (llmResults) {
-            llmResultsStore.restoreFromSaved(llmResults, diagramType)
-          } else {
-            llmResultsStore.clearCache()
-          }
           if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
             await loadDiagramMarkdownPipeline({ bumpLayout: false })
           }
           const loaded = diagramStore.loadFromSpec(specForLoad, diagramType)
           if (loaded) {
+            if (llmResults) {
+              llmResultsStore.restoreFromSaved(llmResults, diagramType, specForLoad)
+            } else {
+              llmResultsStore.clearCache()
+            }
             const chineseName = diagramTypeToChineseMap[diagramType]
             if (chineseName) {
               uiStore.setSelectedChartType(chineseName)

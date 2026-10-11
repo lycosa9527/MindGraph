@@ -123,18 +123,18 @@ export async function handleKittyReloadLibraryDiagramAction(
   const spec = result.diagram.spec as Record<string, unknown>
   const diagramType = (result.diagram.diagram_type || 'mindmap') as DiagramType
   const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
-  const llmResultsStore = useLLMResultsStore()
-  if (llmResults) {
-    llmResultsStore.restoreFromSaved(llmResults, diagramType)
-  } else {
-    llmResultsStore.reset()
-  }
   const loaded = diagramStore.loadFromSpec(
     specForLoad,
     diagramType,
     mindMapLibraryLoadOptions(diagramType, specForLoad)
   )
   if (loaded) {
+    const llmResultsStore = useLLMResultsStore()
+    if (llmResults) {
+      llmResultsStore.restoreFromSaved(llmResults, diagramType, specForLoad)
+    } else {
+      llmResultsStore.reset()
+    }
     options.savedDiagramsStore.setActiveDiagram(targetId)
     traceKittyWorkflow('desktop', 'desktop_nav', `reload_library ${targetId.slice(0, 12)}`, {
       scope: targetId,

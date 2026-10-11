@@ -8,7 +8,7 @@
  * - Supports manual save with slot management modal
  *
  * Security:
- * - Validates spec size before sending to backend (max 500KB)
+ * - Validates spec size before sending to backend (canvas 500KB; saved models use the higher cap)
  * - Validates thumbnail size (max ~100KB base64)
  */
 import { computed, ref } from 'vue'
@@ -40,7 +40,10 @@ import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { useAuthStore } from './auth'
 import { useDiagramStore } from './diagram'
 import { useLLMResultsStore } from './llmResults'
-import { attachLlmResultsWithinSizeLimit } from './llmResultsPersist'
+import {
+  attachLlmResultsWithinSizeLimit,
+  diagramSpecExceedsSaveLimit,
+} from './llmResultsPersist'
 import { usePanelsStore } from './panels'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
 import { useUIStore } from './ui'
@@ -676,13 +679,10 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     if (!authStore.isAuthenticated) return null
 
     // Validate spec size before sending
-    const specJson = JSON.stringify(spec)
-    const specSizeKB = new Blob([specJson]).size / 1024
-    if (specSizeKB > SAVE.MAX_SPEC_SIZE_KB) {
-      console.error(
-        `[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${SAVE.MAX_SPEC_SIZE_KB}KB`
-      )
-      error.value = `Diagram data too large (${specSizeKB.toFixed(0)}KB). Maximum is ${SAVE.MAX_SPEC_SIZE_KB}KB.`
+    const sizeError = diagramSpecExceedsSaveLimit(spec)
+    if (sizeError) {
+      console.error(`[SavedDiagrams] ${sizeError}`)
+      error.value = sizeError
       return null
     }
 
@@ -764,13 +764,10 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
     // Validate spec size if provided
     if (updates.spec) {
-      const specJson = JSON.stringify(updates.spec)
-      const specSizeKB = new Blob([specJson]).size / 1024
-      if (specSizeKB > SAVE.MAX_SPEC_SIZE_KB) {
-        console.error(
-          `[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${SAVE.MAX_SPEC_SIZE_KB}KB`
-        )
-        error.value = `Diagram data too large (${specSizeKB.toFixed(0)}KB). Maximum is ${SAVE.MAX_SPEC_SIZE_KB}KB.`
+      const sizeError = diagramSpecExceedsSaveLimit(updates.spec)
+      if (sizeError) {
+        console.error(`[SavedDiagrams] ${sizeError}`)
+        error.value = sizeError
         return false
       }
     }
@@ -1118,7 +1115,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     const spec = attachLlmResultsWithinSizeLimit(
       persistBase,
       llmResultsStore.getResultsForPersistence(),
-      SAVE.MAX_SPEC_SIZE_KB
+      SAVE.MAX_SPEC_WITH_LLM_RESULTS_KB
     )
 
     const title = resolveDiagramTitleForSave(

@@ -320,6 +320,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
               '_doubleBubbleMapNodeSizes',
               '_doubleBubbleMeasureHints',
               'secondary',
+              'llm_results',
             ].includes(key)
         )
       ),

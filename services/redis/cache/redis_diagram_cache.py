@@ -47,6 +47,7 @@ from services.redis.cache._redis_diagram_cache_helpers import (
     USER_META_KEY,
     _redis_json_set_paths,
     count_diagrams_from_db,
+    diagram_spec_size_error,
 )
 from services.diagram.source_channel import list_items_missing_source_channel_field
 from services.diagram_shares.access import annotate_library_shares, items_missing_share_role
@@ -185,13 +186,9 @@ class RedisDiagramCache:
             if cleaned_spec is not spec:
                 spec = cleaned_spec
                 spec_json = json.dumps(spec)
-        spec_size_kb = len(spec_json.encode("utf-8")) / 1024
-        if spec_size_kb > MAX_SPEC_SIZE_KB:
-            return (
-                False,
-                None,
-                f"Diagram spec too large ({spec_size_kb:.1f}KB > {MAX_SPEC_SIZE_KB}KB)",
-            )
+        size_error = diagram_spec_size_error(spec, spec_json)
+        if size_error:
+            return False, None, size_error
         # spec_json is not used further; SQLAlchemy handles JSONB serialization.
 
         is_new = diagram_id is None

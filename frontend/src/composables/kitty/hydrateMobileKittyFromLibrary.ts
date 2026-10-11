@@ -4,6 +4,8 @@
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useDiagramStore } from '@/stores/diagram'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
+import { useLLMResultsStore } from '@/stores/llmResults'
+import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { mindMapLibraryLoadOptions } from '@/utils/mindMapLibraryLoadOptions'
@@ -41,11 +43,16 @@ export async function hydrateMobileKittyFromLibrary(diagramId: string): Promise<
   savedDiagramsStore.setActiveDiagram(trimmed)
   diagramStore.clearHistory()
   const specRecord = spec as Record<string, unknown>
-  const ok = diagramStore.loadFromSpec(
-    specRecord,
-    dt,
-    mindMapLibraryLoadOptions(dt, specRecord)
-  )
+  const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(specRecord)
+  const ok = diagramStore.loadFromSpec(specForLoad, dt, mindMapLibraryLoadOptions(dt, specForLoad))
+  if (ok) {
+    const llmResultsStore = useLLMResultsStore()
+    if (llmResults) {
+      llmResultsStore.restoreFromSaved(llmResults, dt, specForLoad)
+    } else {
+      llmResultsStore.clearCache()
+    }
+  }
   traceKittyWorkflow('mobile', 'library_hydrate', ok ? `ok type=${dt}` : 'load failed', {
     scope: trimmed,
   })

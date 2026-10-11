@@ -132,11 +132,6 @@ export function useCanvasPageLibrarySnapshots(options: {
 
     const spec = diagram.spec as Record<string, unknown>
     const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
-    if (llmResults) {
-      llmResultsStore.restoreFromSaved(llmResults, diagram.diagram_type)
-    } else {
-      llmResultsStore.clearCache()
-    }
 
     if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
       await loadDiagramMarkdownPipeline({ bumpLayout: false })
@@ -152,6 +147,9 @@ export function useCanvasPageLibrarySnapshots(options: {
     )
 
     if (loaded) {
+      if (llmResults) {
+        llmResultsStore.restoreFromSaved(llmResults, diagram.diagram_type, specForLoad)
+      }
       applyOpenedDiagramTitle(diagram.title)
       // Emit after Pinia replace so listeners do not read the previous diagram.
       eventBus.emit('diagram:loaded_from_library', {
@@ -262,7 +260,6 @@ export function useCanvasPageLibrarySnapshots(options: {
         return
       }
 
-      llmResultsStore.clearCache()
       const loaded = await applySpecToCanvas(
         recallResult.spec,
         diagramId,
@@ -276,6 +273,7 @@ export function useCanvasPageLibrarySnapshots(options: {
         notify.errorKey('canvas.topBar.snapshotRecallFailed')
         return
       }
+      llmResultsStore.releaseCanvasOwnership()
       snapshotHistory.setActiveVersion(versionNumber)
     } finally {
       snapshotHistory.setRecallingVersion(null)
@@ -293,17 +291,17 @@ export function useCanvasPageLibrarySnapshots(options: {
     }
     const spec = result.diagram.spec as SavedDiagramSpec
     const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
-    if (llmResults) {
-      llmResultsStore.restoreFromSaved(llmResults, result.diagram.diagram_type)
-    } else {
-      llmResultsStore.clearCache()
-    }
     const loaded = await applySpecToCanvas(
       specForLoad,
       diagramId,
       diagramType,
       t('canvas.ribbon.historyRestoreUndo')
     )
+    if (loaded && llmResults) {
+      llmResultsStore.restoreFromSaved(llmResults, result.diagram.diagram_type, specForLoad)
+    } else if (loaded) {
+      llmResultsStore.clearCache()
+    }
     if (loaded && result.diagram.title) {
       diagramStore.initTitle(result.diagram.title)
     }

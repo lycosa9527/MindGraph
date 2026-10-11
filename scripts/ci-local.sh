@@ -211,6 +211,7 @@ run_backend() {
     tests/test_pg_merge_log_coverage.py \
     tests/test_pg_merge_usage_activities.py \
     tests/test_diagram_folders_api.py \
+    tests/test_diagram_spec_size.py \
     tests/test_mind_classroom_tone_prompts.py \
     tests/test_mind_classroom_audience_prompts.py \
     tests/test_mind_classroom_mastery_prompts.py \
@@ -322,7 +323,8 @@ run_frontend() {
     tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts \
     tests/unloadCanvasForLibrarySwitch.spec.ts \
     tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts \
-    tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts \
+    tests/llmResultsTeardown.spec.ts tests/diagramImportLlmSlots.spec.ts \
+    tests/shouldFlushBeforeLibrarySwitch.spec.ts \
     tests/mindMapIdentityMigrate.spec.ts \
     tests/thinkingMapsIdentity.spec.ts \
     tests/doubleBubbleMapDelete.spec.ts \

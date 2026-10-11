@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.155] - 2026-10-11
+
+> **A saved diagram keeps one copy of each model's result, and a .mg file brings those results back.**
+
+### Fixed
+
+- **模型图保存** — Manual work saves the canvas alone. One successful model saves that diagram once. Each additional model that succeeds adds its own slot, including a model that is not on the menu yet. Reopening puts the menu back on the diagram that was open. Importing a `.mg` file, including onto a canvas that is already open, restores those slots. The canvas stays within 500KB. A file that also stores model diagrams can be up to 4000KB. The `.mg` header stays 1.1 or 2.0.
+
+### Tests
+
+- [`frontend/tests/llmResultsPersist.spec.ts`](frontend/tests/llmResultsPersist.spec.ts), [`frontend/tests/llmResultsTeardown.spec.ts`](frontend/tests/llmResultsTeardown.spec.ts), [`frontend/tests/diagramImportLlmSlots.spec.ts`](frontend/tests/diagramImportLlmSlots.spec.ts) — one slot per successful model, including a future model id, and `.mg` import restores the menu.
+- [`tests/test_diagram_spec_size.py`](tests/test_diagram_spec_size.py) — canvas stays at 500KB; saved model diagrams use 4000KB.
+
 ## [5.180.154] - 2026-10-11
 
 > **Each canvas model keeps the diagram it generated, so switching back shows that response.**

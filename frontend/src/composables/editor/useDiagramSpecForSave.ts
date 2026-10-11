@@ -25,13 +25,13 @@ function attachLlmResultsIfFit(
   return attachLlmResultsWithinSizeLimit(
     base,
     llmResultsStore.getResultsForPersistence(),
-    SAVE.MAX_SPEC_SIZE_KB
+    SAVE.MAX_SPEC_WITH_LLM_RESULTS_KB
   )
 }
 
 /**
  * Pure diagram spec for export, previews, and templates.
- * Includes llm_results when 2+ successful LLM results fit under the size limit.
+ * A manual or single-model diagram is one spec. Several models are all included.
  */
 export function useDiagramSpecForSave(): () => Record<string, unknown> | null {
   const diagramStore = useDiagramStore()

@@ -169,11 +169,6 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
 
     const spec = diagram.spec as Record<string, unknown>
     const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
-    if (llmResults) {
-      llmResultsStore.restoreFromSaved(llmResults, diagram.diagram_type)
-    } else {
-      llmResultsStore.clearCache()
-    }
 
     if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
       await loadDiagramMarkdownPipeline({ bumpLayout: false })
@@ -188,6 +183,9 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
       loadOpts
     )
     if (loaded) {
+      if (llmResults) {
+        llmResultsStore.restoreFromSaved(llmResults, diagram.diagram_type, specForLoad)
+      }
       applyOpenedDiagramTitle(diagram.title)
       eventBus.emit('diagram:loaded_from_library', {
         diagramId,
@@ -254,11 +252,6 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
             notifyError(translate('notification.importUnsupportedType'))
           } else {
             const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
-            if (llmResults) {
-              llmResultsStore.restoreFromSaved(llmResults, loadedType)
-            } else {
-              llmResultsStore.clearCache()
-            }
             if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
               await loadDiagramMarkdownPipeline({ bumpLayout: false })
             }
@@ -268,6 +261,11 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
               mindMapLibraryLoadOptions(loadedType, specForLoad)
             )
             if (loaded) {
+              if (llmResults) {
+                llmResultsStore.restoreFromSaved(llmResults, loadedType, specForLoad)
+              } else {
+                llmResultsStore.clearCache()
+              }
               const key = diagramTypeKeyForType(loadedType)
               if (key) {
                 uiStore.setSelectedChartType(key)

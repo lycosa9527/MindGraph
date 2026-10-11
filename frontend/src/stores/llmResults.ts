@@ -30,7 +30,11 @@ import {
   shouldPaintCompletedLlmModel,
   shouldStampCanvasOntoLlmResult,
 } from './llmResultsPaint'
-import { clonePersistedLlmResults, resolvePersistedSelectedModel } from './llmResultsPersist'
+import {
+  canvasSpecMatchesSaved,
+  clonePersistedLlmResults,
+  resolvePersistedSelectedModel,
+} from './llmResultsPersist'
 import { useSavedDiagramsStore } from './savedDiagrams'
 
 // Types
@@ -109,6 +113,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   /** Canvas topic captured at auto-complete start; applied on every model switch/load. */
   const lockedTopic = ref<string | null>(null)
 
+  /** Model whose diagram is on the canvas. Menu highlight can differ. */
+  const canvasSlotModel = ref<string | null>(null)
   /** Model painted by first-result-wins in the current generate round. */
   const paintedThisSession = ref<string | null>(null)
   /** Saved model the user opened while this run was still in flight. */
@@ -248,6 +254,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     )
     if (loaded) {
       selectedModel.value = model
+      canvasSlotModel.value = model
       rememberPreferredModel(model)
       if (isGenerating.value) {
         pinnedDuringRun.value = model
@@ -275,6 +282,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   function clearCachedResultsOnly(): void {
     results.value = {}
     selectedModel.value = null
+    canvasSlotModel.value = null
     totalModels.value = null
     lockedTopic.value = null
     paintedThisSession.value = null
@@ -537,8 +545,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   }
 
   /**
-   * Get results for persistence (save with diagram spec).
-   * Returns { results, selectedModel } when we have 2+ successful results.
+   * Manual work saves the canvas alone. One or more model diagrams record
+   * which model owns that canvas. Extra models are separate slots.
    */
   function getResultsForPersistence(): {
     results: Record<string, LLMResult>
@@ -550,12 +558,17 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
         successResults[model] = r
       }
     })
-    const count = Object.keys(successResults).length
-    const selected = resolvePersistedSelectedModel(successResults, selectedModel.value)
-    if (count < 2 || !selected) return null
+    if (Object.keys(successResults).length < 1) return null
+    const menuChoice = selectedModel.value || preferredModel.value
+    const resolved = resolvePersistedSelectedModel(
+      successResults,
+      menuChoice,
+      canvasSlotModel.value
+    )
     return clonePersistedLlmResults({
       results: successResults,
-      selectedModel: selected,
+      selectedModel: resolved.selectedModel ?? '',
+      canvasOwnsSelected: resolved.canvasOwnsSelected,
     })
   }
 
@@ -566,7 +579,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
    * instead of the original AI output.
    */
   function updateCurrentModelSpec(spec: Record<string, unknown>): void {
-    const model = selectedModel.value
+    const model = canvasSlotModel.value
     if (!model || !results.value[model]?.success) return
     if (
       !shouldStampCanvasOntoLlmResult({
@@ -590,7 +603,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
    */
   function restoreFromSaved(
     saved: { results?: Record<string, LLMResult>; selectedModel?: string },
-    diagramType: string
+    diagramType: string,
+    canvasSpec?: Record<string, unknown> | null
   ): void {
     if (isGenerating.value) {
       return
@@ -607,10 +621,37 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
         modelPhases.value[model] = 'ready'
       }
     })
-    const sel = saved.selectedModel
-    const restored = sel && Object.keys(results.value).includes(sel) ? sel : null
-    selectedModel.value = restored
-    if (restored) preferredModel.value = restored
+    const sel = typeof saved.selectedModel === 'string' ? saved.selectedModel.trim() : ''
+    selectedModel.value = sel || null
+    preferredModel.value = sel || null
+    canvasSlotModel.value = null
+    if (!sel || !canvasSpec) return
+
+    const canvas = { ...canvasSpec }
+    delete canvas.llm_results
+    const existing = results.value[sel]
+    if (!existing?.spec) {
+      results.value[sel] = {
+        success: true,
+        spec: canvas,
+        diagramType: normalizedType,
+        timestamp: Date.now(),
+      }
+      modelStates.value[sel] = 'ready'
+      modelPhases.value[sel] = 'ready'
+      canvasSlotModel.value = sel
+      return
+    }
+    if (canvasSpecMatchesSaved(existing.spec, canvas)) {
+      canvasSlotModel.value = sel
+    }
+  }
+
+  /** Snapshot recall keeps each model's spec, but the canvas is no longer that slot. */
+  function releaseCanvasOwnership(): void {
+    canvasSlotModel.value = null
+    selectedModel.value = null
+    preferredModel.value = null
   }
 
   const canvasModelChoice = computed(() => selectedModel.value || preferredModel.value)
@@ -658,6 +699,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     reset,
     getResultsForPersistence,
     restoreFromSaved,
+    releaseCanvasOwnership,
     updateCurrentModelSpec,
   }
 })

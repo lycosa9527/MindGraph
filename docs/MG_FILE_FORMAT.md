@@ -25,3 +25,9 @@ Key material (all versions): SHA-256 of the UTF-8 label `MindGraph.MG.interchang
 Plain JSON inside a `.mg` file is rejected.
 
 Display labels in the codec: `MG_INTERCHANGE_VERSION_LABEL` (`1.1`) and `MG_V2_VERSION_LABEL` (`2.0`).
+
+## JSON payload
+
+The decrypted body is the diagram spec. Optional `llm_results` holds the other models' diagrams. The open canvas is the selected model's diagram, so the file stays one spec per model.
+
+That field does not change the wire version. **v1.1** and **v2.0** still mean the open canvas is mono or bilingual. Both versions use the same key, and import accepts either. An older app that only draws `nodes` can still open the file. It will not restore the model menu.
