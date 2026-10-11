@@ -55,6 +55,7 @@ import {
 import { cancelMindMapPendingInlineEdit, clearMindMapEditingNodeId } from './mindMapOps'
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
 import { rematerializeMindMapSummaryNodes } from './mindMapSummaryLayout'
+import { mergeReloadedNodeFields, structuralSessionCarry } from './structuralSpecReload'
 import type { DiagramContext, LoadFromSpecOptions } from './types'
 
 function seedMindMapMeasuresFromEstimates(
@@ -88,7 +89,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       markMindMapLoadStage('spec:load:start', { diagramType: diagramTypeValue })
     }
 
-    ctx.resetSessionEditCount()
+    const structural = options?.structuralEdit === true
+    const carriedSession =
+      structural && ctx.type.value === diagramTypeValue
+        ? structuralSessionCarry(ctx.data.value as Record<string, unknown> | undefined)
+        : undefined
+    if (!structural) ctx.resetSessionEditCount()
     // Library / template load replaces the tree — drop stale post-add inline-edit retries.
     cancelMindMapPendingInlineEdit(ctx)
     clearMindMapEditingNodeId(ctx)
@@ -100,7 +106,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ctx.type.value === diagramTypeValue ? { ...ctx.nodeDimensions.value } : {}
 
     const prevNodesForStyleMerge =
-      options?.mergePreviousNodeStyles === true &&
+      (options?.mergePreviousNodeStyles === true || structural) &&
       ctx.type.value === diagramTypeValue &&
       ctx.data.value?.nodes
         ? ctx.data.value.nodes
@@ -137,9 +143,6 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (!savedCanvas && diagramTypeValue === 'flow_map') {
       nodesToStore = offsetFlowLayoutForSecondary(nodesToStore)
     }
-    if (!savedCanvas && diagramTypeValue === 'tree_map') {
-      nodesToStore = recalculateTreeMapLayout(result.nodes, {})
-    }
     if (!savedCanvas && diagramTypeValue === 'brace_map') {
       nodesToStore = recalculateBraceMapLayout(result.nodes, result.connections, {})
     }
@@ -153,17 +156,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       nodesToStore = recalculateBubbleMapLayout(result.nodes)
     }
 
-    if (prevNodesForStyleMerge && prevNodesForStyleMerge.length > 0) {
-      const styleById = new Map(prevNodesForStyleMerge.map((n) => [n.id, n.style] as const))
-      nodesToStore = nodesToStore.map((node) => {
-        const prevSt = styleById.get(node.id)
-        if (!prevSt) return node
-        return {
-          ...node,
-          style: { ...prevSt, ...node.style },
-        }
-      })
-    }
+    nodesToStore = mergeReloadedNodeFields(nodesToStore, prevNodesForStyleMerge, structural)
 
     if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
       const nextNodeIds = new Set(nodesToStore.map((n) => n.id).filter(Boolean))
@@ -281,7 +274,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       }
     }
 
-    ctx.setExpectedNodeCount(nodesToStore.length)
+    if (!structural) ctx.setExpectedNodeCount(nodesToStore.length)
 
     ctx.data.value = {
       type: diagramTypeValue,
@@ -327,6 +320,13 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ...(result.metadata || {}),
     }
 
+    if (carriedSession && ctx.data.value) {
+      const record = ctx.data.value as Record<string, unknown>
+      for (const [key, value] of Object.entries(carriedSession)) {
+        if (record[key] === undefined) record[key] = value
+      }
+    }
+
     if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
       if (ctx.data.value) {
         hydrateMindMapCanvasStylesOnLoad(ctx.data.value, sessionCanvasMode)
@@ -348,7 +348,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       normalizeAllConceptMapTopicRootLabels(ctx.data.value.connections, ctx.data.value.nodes)
     }
 
-    if (options?.emitLoaded !== false) {
+    if (!structural && options?.emitLoaded !== false) {
       const loadedPayload = {
         diagramType: diagramTypeValue,
         skipFit: options?.skipFit === true,

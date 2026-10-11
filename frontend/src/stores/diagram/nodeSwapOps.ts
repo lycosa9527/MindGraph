@@ -42,7 +42,7 @@ import {
   swapFlowMapCollectedSteps,
 } from '../specLoader/flowMapSubsteps'
 import { emitCtxEvent } from './events'
-import type { DiagramContext } from './types'
+import { type DiagramContext, STRUCTURAL_SPEC_RELOAD } from './types'
 
 function writeSwappedLabel(
   node: DiagramNode,
@@ -217,7 +217,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       const ti = readFlowStepIndex(tgtNode)
       if (si >= 0 && si < steps.length && ti >= 0 && ti < steps.length) {
         swapFlowMapCollectedSteps(steps, substepsList, si, ti)
-        return ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
+        return ctx.loadFromSpec(spec, 'flow_map', STRUCTURAL_SPEC_RELOAD)
       }
       return false
     }
@@ -249,7 +249,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
           const tmp = srcEntry.substeps[srcSub]
           srcEntry.substeps[srcSub] = tgtEntry.substeps[tgtSub]
           tgtEntry.substeps[tgtSub] = tmp
-          return ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
+          return ctx.loadFromSpec(spec, 'flow_map', STRUCTURAL_SPEC_RELOAD)
         }
       }
       return false
@@ -301,14 +301,13 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         })
       }
 
-      success = ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
+      success = ctx.loadFromSpec(spec, 'flow_map', STRUCTURAL_SPEC_RELOAD)
     } else {
       success = swapFlowMapNodes(sourceId, targetId)
     }
 
     if (success) {
       if (ctx.data.value?._customPositions) ctx.data.value._customPositions = {}
-      if (ctx.data.value?._node_styles) ctx.data.value._node_styles = {}
       ctx.selectedNodes.value = []
       ctx.selectedConnectionId.value = null
       ctx.pushHistory('Move node')
@@ -448,7 +447,6 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
 
     if (success) {
       if (ctx.data.value?._customPositions) ctx.data.value._customPositions = {}
-      if (ctx.data.value?._node_styles) ctx.data.value._node_styles = {}
       ctx.selectedNodes.value = []
       ctx.selectedConnectionId.value = null
       ctx.pushHistory('Move node')
@@ -508,7 +506,6 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
 
     if (success) {
       if (ctx.data.value?._customPositions) ctx.data.value._customPositions = {}
-      if (ctx.data.value?._node_styles) ctx.data.value._node_styles = {}
       ctx.selectedNodes.value = []
       ctx.selectedConnectionId.value = null
       ctx.pushHistory('Move node')

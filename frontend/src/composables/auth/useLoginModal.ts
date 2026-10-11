@@ -212,18 +212,6 @@ export function useLoginModal(
     set: (value) => emit('update:visible', value),
   })
 
-  /** `/auth` only: primary sign-in CTA acknowledges terms. */
-  const loginSubmitLabel = computed(() =>
-    props.authPage ? t('auth.loginAgreeTerms') : t('auth.login')
-  )
-
-  const pageHeaderTitle = computed(() => {
-    if (currentView.value === 'sms-login') {
-      return t('auth.smsLogin')
-    }
-    return t('auth.resetPassword')
-  })
-
   function maskIdentifierForCodeSent(raw: string): string {
     const trimmed = raw.trim()
     if (trimmed.includes('@')) {
@@ -239,28 +227,22 @@ export function useLoginModal(
     return trimmed.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
   }
 
-  const hybridRegisterEmailTabLabel = computed(() => t('auth.modal.hybridRegisterEmailTabAny'))
-
-  const registrationEmailLabel = computed(() => t('auth.modal.registrationEmailLabelAny'))
-
   const registrationEmailHint = computed(() => t('auth.modal.registrationEmailHintAny').trim())
 
   const registerEmailInvalidMessage = computed(() => t('auth.modal.emailInvalid'))
 
   /**
-   * Overseas email registration: SC-browser copy includes no-Simplified-Chinese notice when available.
+   * Overseas email registration. Simplified-Chinese browsers use the longer notice.
+   * Other browsers use the shared key so `/auth` can add Simplified Chinese underneath.
    */
-  const overseasAcknowledgeCheckboxLabel = computed(() => {
-    if (!showOverseasEmailFlow.value) {
-      return ''
-    }
+  const overseasAcknowledgeKey = computed(() => {
     if (isBrowserLanguageSimplifiedChinese()) {
       const full = translateForUiLocale('auth.modal.acknowledgeOverseasAnyScBrowser', 'zh')
-      if (typeof full === 'string' && full.trim() !== '') {
-        return full
+      if (full.trim() !== '') {
+        return 'auth.modal.acknowledgeOverseasAnyScBrowser'
       }
     }
-    return t('auth.modal.acknowledgeOverseasAny')
+    return 'auth.modal.acknowledgeOverseasAny'
   })
 
   function closeModal() {
@@ -1142,16 +1124,12 @@ export function useLoginModal(
     forgotUsesEmail,
     smsLoginUsesEmail,
     maskIdentifierForCodeSent,
-    overseasAcknowledgeCheckboxLabel,
-    hybridRegisterEmailTabLabel,
-    registrationEmailLabel,
+    overseasAcknowledgeKey,
     registrationEmailHint,
     isLoading,
     showPassword,
     showConfirmPassword,
     isVisible,
-    loginSubmitLabel,
-    pageHeaderTitle,
     closeModal,
     switchLoginRegisterTab,
     switchLoginAudience,

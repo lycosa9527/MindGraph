@@ -70,7 +70,7 @@ import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabH
 import { emitCtxEvent } from './events'
 import { syncMindMapSummaryNodeText } from './mindMapSummaryOps'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
-import type { DiagramContext } from './types'
+import { type DiagramContext, STRUCTURAL_SPEC_RELOAD } from './types'
 
 /**
  * Layouts that mix Pinia nodeDimensions with text metrics must drop cached DOM size when label
@@ -719,7 +719,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       })
       const spec = ctx.buildFlowMapSpecFromNodes()
       if (spec) {
-        ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
+        ctx.loadFromSpec(spec, 'flow_map', STRUCTURAL_SPEC_RELOAD)
       }
       emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: [...idsToRemove] })
       return true

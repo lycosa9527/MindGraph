@@ -24,11 +24,20 @@ import type {
   HierarchicalClipboard,
   TreeMapClipboardPayload,
 } from './hierarchicalClipboardTypes'
-import type { DiagramContext } from './types'
+import { type DiagramContext, STRUCTURAL_SPEC_RELOAD } from './types'
 
 function glossField(node: { textSecondary?: string }): { textSecondary?: string } {
   const line = String(node.textSecondary ?? '').trim()
   return line ? { textSecondary: line } : {}
+}
+
+/** Pasted tree-map nodes have no id yet. The spec loader assigns one. */
+type TreePasteLeaf = { id?: string; text: string; textSecondary?: string }
+type TreePasteCategory = {
+  id?: string
+  text: string
+  textSecondary?: string
+  children: TreePasteLeaf[]
 }
 
 function flowMirror(spec: Record<string, unknown>): Record<string, unknown> {
@@ -139,7 +148,7 @@ function pasteTreeMapPayload(
     .filter((n) => isTreeMapCategoryNode(n))
     .sort((a, b) => readTreeCategoryIndex(a) - readTreeCategoryIndex(b))
 
-  const categories = categoryNodes.map((cat) => {
+  const categories: TreePasteCategory[] = categoryNodes.map((cat) => {
     const leaves = nodes
       .filter((n) => {
         if (!isTreeMapLeafNode(n)) return false
@@ -149,9 +158,10 @@ function pasteTreeMapPayload(
       })
       .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
     return {
+      id: cat.id,
       text: cat.text,
       ...glossField(cat),
-      children: leaves.map((leaf) => ({ text: leaf.text, ...glossField(leaf) })),
+      children: leaves.map((leaf) => ({ id: leaf.id, text: leaf.text, ...glossField(leaf) })),
     }
   })
 
@@ -201,7 +211,7 @@ function pasteTreeMapPayload(
     alternative_dimensions: altDims,
     ...(languages && typeof languages === 'object' ? { languages } : {}),
   }
-  const ok = ctx.loadFromSpec(newSpec, 'tree_map', { mergePreviousNodeStyles: true })
+  const ok = ctx.loadFromSpec(newSpec, 'tree_map', STRUCTURAL_SPEC_RELOAD)
   if (ok) {
     ctx.pushHistory(String(i18n.global.t('diagram.history.pasteNodes')))
   }
@@ -329,9 +339,11 @@ function pasteFlowMapPayload(
     }
   }
 
-  const ok = ctx.loadFromSpec({ ...spec, steps, substeps, orientation }, 'flow_map', {
-    mergePreviousNodeStyles: true,
-  })
+  const ok = ctx.loadFromSpec(
+    { ...spec, steps, substeps, orientation },
+    'flow_map',
+    STRUCTURAL_SPEC_RELOAD
+  )
   if (ok) {
     ctx.pushHistory(String(i18n.global.t('diagram.history.pasteNodes')))
   }

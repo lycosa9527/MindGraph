@@ -324,13 +324,14 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
         diagram_type: Optional[str],
         endpoint_path: Optional[str],
         session_id: str,
+        model: str,
     ) -> List[str]:
         """One-shot chat: return `count` distinct domain/branch names."""
         prompt = self._build_domain_label_prompt(center_topic, educational_context, count, existing_labels, language)
         prompt = prompt + output_language_instruction(language)
         raw = await self.llm_service.chat(
             prompt=prompt,
-            model="express",
+            model=model,
             temperature=0.75,
             max_tokens=400,
             system_message=(
@@ -359,6 +360,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
         organization_id: Optional[int],
         diagram_type: Optional[str],
         endpoint_path: Optional[str],
+        llm_models: Optional[List[str]] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """SSE: batch_start + concept_map_domains + batch_complete."""
         count = max(1, min(int(stage.get("domain_count") or 3), 12))
@@ -378,6 +380,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
             diagram_type=diagram_type,
             endpoint_path=endpoint_path,
             session_id=session_id,
+            model=self._resolve_batch_llm_models(llm_models)[0],
         )
         yield {
             "event": "batch_start",
@@ -490,6 +493,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
                 organization_id,
                 diagram_type,
                 endpoint_path,
+                llm_models,
             ):
                 yield ev
             return

@@ -513,7 +513,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       }
       if (stage) payload.stage = stage
       if (stageData && Object.keys(stageData).length > 0) payload.stage_data = stageData
-      await streamBatch(NODE_PALETTE_NEXT, payload)
+      await streamBatch(NODE_PALETTE_NEXT, payload, { append: true })
       return true
     } catch (err) {
       if (isAbortError(err)) return false

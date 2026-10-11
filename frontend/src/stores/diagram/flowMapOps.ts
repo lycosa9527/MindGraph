@@ -1,6 +1,6 @@
 import { type FlowSubstepEntry, findFlowSubstepEntry } from '../specLoader/flowMapSubsteps'
 import { emitCtxEvent } from './events'
-import type { DiagramContext } from './types'
+import { type DiagramContext, STRUCTURAL_SPEC_RELOAD } from './types'
 
 interface FlowSecondaryMirror {
   steps?: string[]
@@ -50,7 +50,7 @@ export function useFlowMapOpsSlice(ctx: DiagramContext) {
     if (!spec) return
     spec.orientation = newOrientation
 
-    ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
+    ctx.loadFromSpec(spec, 'flow_map', STRUCTURAL_SPEC_RELOAD)
     ctx.pushHistory(`Toggle orientation to ${newOrientation}`)
     emitCtxEvent(ctx, 'diagram:orientation_changed', { orientation: newOrientation })
   }
@@ -71,9 +71,7 @@ export function useFlowMapOpsSlice(ctx: DiagramContext) {
     }
     padFlowSecondary(spec, { step: true, substeps: addedSubsteps ? 2 : 0 })
     const orientation = (data.value as Record<string, unknown>)?.orientation ?? spec.orientation
-    ctx.loadFromSpec({ ...spec, steps, substeps, orientation }, 'flow_map', {
-      mergePreviousNodeStyles: true,
-    })
+    ctx.loadFromSpec({ ...spec, steps, substeps, orientation }, 'flow_map', STRUCTURAL_SPEC_RELOAD)
     ctx.pushHistory('Add flow step')
     emitCtxEvent(ctx, 'diagram:node_added', { node: null })
     return true
@@ -104,9 +102,7 @@ export function useFlowMapOpsSlice(ctx: DiagramContext) {
     }
     padFlowSecondary(spec, { step: false, substeps: 1, groupIndex })
     const orientation = (data.value as Record<string, unknown>)?.orientation ?? spec.orientation
-    ctx.loadFromSpec({ ...spec, substeps, orientation }, 'flow_map', {
-      mergePreviousNodeStyles: true,
-    })
+    ctx.loadFromSpec({ ...spec, substeps, orientation }, 'flow_map', STRUCTURAL_SPEC_RELOAD)
     ctx.pushHistory('Add flow substep')
     emitCtxEvent(ctx, 'diagram:node_added', { node: null })
     return true

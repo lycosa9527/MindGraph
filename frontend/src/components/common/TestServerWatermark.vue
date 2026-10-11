@@ -20,7 +20,10 @@ const TILE_COUNT = 72
         :key="index"
         class="tsw-tile"
       >
-        <I18nText k="app.testServer.watermark" />
+        <I18nText
+          k="app.testServer.watermark"
+          primary-only
+        />
       </span>
     </div>
   </div>

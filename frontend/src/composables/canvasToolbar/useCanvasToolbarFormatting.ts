@@ -1,4 +1,4 @@
-import { type Ref, ref, watch } from 'vue'
+import { type Ref, computed, nextTick, ref, watch } from 'vue'
 
 import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
@@ -11,18 +11,16 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { STYLE_PRESET_PALETTES, type StylePresetColors } from '@/config/colorPalette'
+import { FLOATING_TOOLBAR_FONT_SIZES } from '@/config/floatingToolbarColors'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import type { DiagramNode, NodeStyle } from '@/types'
 import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { colorToHex, hexToRgba, parseAlphaFromColor } from '@/utils/colorFormat'
+import { displayedNodeFontSize, readPaintedNodeFontSizePx } from '@/utils/displayedNodeFontSize'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { type NodeShape, defaultDisplayedNodeShape } from '@/utils/nodeShapeStyle'
-import {
-  thinkingMapColorsAreDefault,
-  thinkingMapDisplayedFontSize,
-  thinkingMapRoleChrome,
-} from '@/utils/thinkingMapChrome'
+import { thinkingMapColorsAreDefault, thinkingMapRoleChrome } from '@/utils/thinkingMapChrome'
 import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 export {
@@ -49,8 +47,88 @@ export function useCanvasToolbarFormatting(options?: {
     return pinned ? [pinned] : []
   }
 
+  function currentFormattingNode(): DiagramNode | undefined {
+    const nodes = diagramStore.data?.nodes
+    if (!nodes?.length) return undefined
+    const pinned = pinnedNodeId?.value
+    if (pinned) return nodes.find((node) => node.id === pinned)
+    const selected = diagramStore.selectedNodes
+    if (selected.length !== 1) return undefined
+    return nodes.find((node) => node.id === selected[0])
+  }
+
+  function mergedNodeStyle(node: DiagramNode): NodeStyle {
+    const persisted = diagramStore.getNodeStyle(node.id)
+    const flow = diagramStore.vueFlowNodes.find((item) => item.id === node.id)
+    const flowStyle = flow?.data?.style
+    const painted = flowStyle && typeof flowStyle === 'object' ? flowStyle : undefined
+    return { ...(persisted || {}), ...(node.style || {}), ...(painted || {}) }
+  }
+
+  function modelFontSize(node: DiagramNode): number {
+    return displayedNodeFontSize(
+      diagramStore.type,
+      node,
+      mergedNodeStyle(node),
+      diagramStore.data?.connections
+    )
+  }
+
+  const lastFontSize = ref(14)
+  const paintedFontSize = ref<{ nodeId: string; size: number } | null>(null)
+  /** Size just written by the toolbar. A stale DOM read must not put the old size back. */
+  const appliedFontSize = ref<{ nodeId: string; size: number } | null>(null)
+  let paintMeasureGeneration = 0
+
+  function roundToolbarFontSize(value: number): number {
+    const rounded = Math.round(value)
+    return rounded > 0 ? rounded : lastFontSize.value
+  }
+
+  function rememberAppliedFontSize(size: number): void {
+    const node = currentFormattingNode()
+    if (!node) return
+    appliedFontSize.value = { nodeId: node.id, size }
+    paintedFontSize.value = { nodeId: node.id, size }
+  }
+
+  function schedulePaintedFontSizeRead(nodeId: string, attempt = 0): void {
+    const generation = ++paintMeasureGeneration
+    void nextTick(() => {
+      if (generation !== paintMeasureGeneration) return
+      const size = readPaintedNodeFontSizePx(nodeId)
+      if (generation !== paintMeasureGeneration) return
+      const applied = appliedFontSize.value
+      const pending = applied?.nodeId === nodeId ? applied.size : null
+      if (pending != null && size !== pending && attempt < 2) {
+        schedulePaintedFontSizeRead(nodeId, attempt + 1)
+        return
+      }
+      if (pending != null && size !== pending) {
+        paintedFontSize.value = { nodeId, size: pending }
+        return
+      }
+      appliedFontSize.value = null
+      paintedFontSize.value = size == null ? null : { nodeId, size }
+    })
+  }
+
+  const fontSize = computed(() => {
+    const node = currentFormattingNode()
+    if (!node) return lastFontSize.value
+    const painted = paintedFontSize.value
+    if (painted?.nodeId === node.id) return roundToolbarFontSize(painted.size)
+    return roundToolbarFontSize(modelFontSize(node))
+  })
+
+  const fontSizeChoices = computed(() => {
+    const sizes = new Set<number>(FLOATING_TOOLBAR_FONT_SIZES)
+    const current = fontSize.value
+    if (Number.isFinite(current) && current > 0) sizes.add(Math.round(current))
+    return [...sizes].sort((left, right) => left - right)
+  })
+
   const fontFamily = ref('Inter')
-  const fontSize = ref(14)
   const textColor = ref('#000000')
   const fontWeight = ref<'normal' | 'bold'>('normal')
   const fontStyle = ref<'normal' | 'italic'>('normal')
@@ -344,13 +422,13 @@ export function useCanvasToolbarFormatting(options?: {
   function handleFontSizeInput(ev: Event) {
     const v = parseInt((ev.target as HTMLInputElement).value, 10)
     if (!Number.isNaN(v)) {
-      fontSize.value = v
+      rememberAppliedFontSize(v)
       applyTextStyleToSelected({ fontSize: v })
     }
   }
 
   function handleFontSizePick(size: number) {
-    fontSize.value = size
+    rememberAppliedFontSize(size)
     applyTextStyleToSelected({ fontSize: size }, { silent: true })
   }
 
@@ -374,6 +452,28 @@ export function useCanvasToolbarFormatting(options?: {
 
   watch(
     () => {
+      const node = currentFormattingNode()
+      if (!node) return ''
+      const flow = diagramStore.vueFlowNodes.find((item) => item.id === node.id)
+      const flowSize = flow?.data?.style?.fontSize
+      return `${node.id}:${node.style?.fontSize ?? ''}:${flowSize ?? ''}:${diagramStore.type ?? ''}`
+    },
+    () => {
+      const node = currentFormattingNode()
+      if (!node) return
+      const model = roundToolbarFontSize(modelFontSize(node))
+      lastFontSize.value = model
+      const applied = appliedFontSize.value
+      if (applied && (applied.nodeId !== node.id || applied.size !== model)) {
+        appliedFontSize.value = null
+      }
+      schedulePaintedFontSizeRead(node.id)
+    },
+    { immediate: true }
+  )
+
+  watch(
+    () => {
       const pinned = pinnedNodeId?.value
       const nodes = diagramStore.selectedNodeData
       if (nodes.length === 1) return nodes[0]
@@ -386,7 +486,6 @@ export function useCanvasToolbarFormatting(options?: {
         const s = { ...(persisted || {}), ...(node.style || {}) }
         if (Object.keys(s).length > 0) {
           if (s.fontFamily) fontFamily.value = s.fontFamily
-          if (s.fontSize) fontSize.value = s.fontSize
           if (s.textColor) textColor.value = s.textColor
           if (s.fontWeight) fontWeight.value = s.fontWeight
           if (s.fontStyle) fontStyle.value = s.fontStyle
@@ -414,9 +513,6 @@ export function useCanvasToolbarFormatting(options?: {
             s,
             diagramStore.data?.connections
           )
-          if (chrome) {
-            fontSize.value = thinkingMapDisplayedFontSize(s.fontSize, chrome.fontSize)
-          }
           const showRolePaint = Boolean(paint && chrome && thinkingMapColorsAreDefault(s, chrome))
           if (showRolePaint && paint) {
             backgroundColor.value = colorToHex(paint.backgroundColor)
@@ -437,6 +533,7 @@ export function useCanvasToolbarFormatting(options?: {
     stylePresets,
     fontFamily,
     fontSize,
+    fontSizeChoices,
     textColor,
     fontWeight,
     fontStyle,

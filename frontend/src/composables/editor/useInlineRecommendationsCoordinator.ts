@@ -13,8 +13,8 @@
  *   is included on `onDiagramChanged` and teardown to avoid stale label pickers.
  * - Keeps options after applying a numeric pick: node:text_updated does not clear (pair updates
  *   emit twice for bridge + double bubble — still OK).
- * - Double bubble layout refresh uses loadFromSpec(..., { emitLoaded: false,
- *   mergePreviousNodeStyles: true }) so it does not masquerade as a full load but keeps node styles.
+ * - Double bubble layout refresh uses a structural loadFromSpec so it does not
+ *   masquerade as a full load, and node styles stay merged by id.
  * - Selection: dismiss when the active session node is no longer selected; for bridge + double
  *   bubble difference pairs, the opposite paired node still counts as “same row” context.
  */

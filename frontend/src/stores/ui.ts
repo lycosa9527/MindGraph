@@ -8,6 +8,7 @@ import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { htmlLangForLocale, loadLocaleMessages, setI18nLocale } from '@/i18n'
+import { authPageSecondaryLocale } from '@/i18n/authPageBilingual'
 import type { LocaleCode, PromptOutputLanguageCode } from '@/i18n/locales'
 import {
   UI_LOCALE_CODES,
@@ -137,6 +138,11 @@ export const useUIStore = defineStore('ui', () => {
   /** Dual-language UI chrome: audience locale + presenter locale. */
   const bilingualUiEnabled = ref(false)
   const presenterUiLocale = ref<Language>(defaultPresenterUiLocale(true))
+  /**
+   * `/auth` only. Not written to localStorage. Primary stays the browser locale.
+   * A second line is Simplified Chinese, except Chinese browsers stay one line.
+   */
+  const authPageBilingual = ref(false)
   const isMobile = ref(false)
   // Word task panes are narrow — start collapsed; user can expand.
   const sidebarCollapsed = ref(isOfficeEmbedDesktop())
@@ -389,6 +395,12 @@ export const useUIStore = defineStore('ui', () => {
       languageSwitchSeq += 1
     }
     document.documentElement.lang = htmlLangForLocale(newLanguage)
+    if (authPageBilingual.value) {
+      const secondary = authPageSecondaryLocale(newLanguage)
+      if (secondary !== null) {
+        void loadLocaleMessages(secondary).catch(() => undefined)
+      }
+    }
     // Always (re)sync vue-i18n — even when Pinia already has this code — so HMR /
     // failed lazy loads cannot leave the switcher on "zh" while copy stays English.
     const seq = languageSwitchSeq
@@ -442,6 +454,17 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.setItem(BILINGUAL_UI_KEY, value ? '1' : '0')
     if (value) {
       void loadLocaleMessages(presenterUiLocale.value).catch(() => undefined)
+    }
+  }
+
+  function setAuthPageBilingual(active: boolean): void {
+    authPageBilingual.value = active
+    if (!active) {
+      return
+    }
+    const secondary = authPageSecondaryLocale(language.value)
+    if (secondary !== null) {
+      void loadLocaleMessages(secondary).catch(() => undefined)
     }
   }
 
@@ -654,6 +677,7 @@ export const useUIStore = defineStore('ui', () => {
     languagePolicyAllowZh.value = true
     bilingualUiEnabled.value = false
     presenterUiLocale.value = defaultPresenterUiLocale(true)
+    authPageBilingual.value = false
     uiVersion.value = detectDefaultUiVersion()
     localStorage.removeItem(THEME_KEY)
     localStorage.removeItem(LANGUAGE_KEY)
@@ -691,6 +715,7 @@ export const useUIStore = defineStore('ui', () => {
     eBlackboardOptimize,
     bilingualUiEnabled,
     presenterUiLocale,
+    authPageBilingual,
     isMobile,
     sidebarCollapsed,
     wireframeMode,
@@ -722,6 +747,7 @@ export const useUIStore = defineStore('ui', () => {
     setEBlackboardOptimize,
     setBilingualUiEnabled,
     setPresenterUiLocale,
+    setAuthPageBilingual,
     applyUiVersionFromServerProfile,
     applyLanguageFromServerProfile,
     applyGuestLocaleFromBrowser,

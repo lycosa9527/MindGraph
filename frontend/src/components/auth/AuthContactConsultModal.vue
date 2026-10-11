@@ -6,6 +6,7 @@ import { reactive, ref, watch } from 'vue'
 
 import { MessageCircle } from '@lucide/vue'
 
+import AuthDualInput from '@/components/auth/AuthDualInput.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import { notify } from '@/composables/core/notifications'
@@ -117,8 +118,11 @@ async function submitConsultation(): Promise<void> {
   <SwissGlassCard
     v-model="visible"
     :ribbon="t('auth.landing.navContact')"
+    ribbon-key="auth.landing.navContact"
     :title="t('thinkingCoins.school.consultTitle')"
+    title-key="thinkingCoins.school.consultTitle"
     :line1="t('thinkingCoins.school.description')"
+    line1-key="thinkingCoins.school.description"
     :icon="MessageCircle"
     show-close
   >
@@ -126,54 +130,62 @@ async function submitConsultation(): Promise<void> {
       class="auth-contact-form space-y-3 p-5"
       @submit.prevent="submitConsultation"
     >
-      <input
+      <AuthDualInput
+        id="auth-contact-name"
         v-model="form.name"
         type="text"
         required
         autocomplete="name"
         :maxlength="SCHOOL_CONSULT_LIMITS.name"
-        class="auth-contact-form__input"
-        :placeholder="t('thinkingCoins.school.fieldName')"
+        placeholder-key="thinkingCoins.school.fieldName"
+        input-class="auth-contact-form__input"
       />
-      <input
+      <AuthDualInput
+        id="auth-contact-phone"
         v-model="form.phone"
         type="tel"
         inputmode="tel"
         required
         autocomplete="tel"
         :maxlength="SCHOOL_CONSULT_LIMITS.phone"
-        class="auth-contact-form__input"
-        :placeholder="t('thinkingCoins.school.fieldPhone')"
+        placeholder-key="thinkingCoins.school.fieldPhone"
+        input-class="auth-contact-form__input"
       />
-      <input
+      <AuthDualInput
+        id="auth-contact-org"
         v-model="form.organization"
         type="text"
         required
         autocomplete="organization"
         :maxlength="SCHOOL_CONSULT_LIMITS.organization"
-        class="auth-contact-form__input"
-        :placeholder="t('thinkingCoins.school.fieldOrg')"
+        placeholder-key="thinkingCoins.school.fieldOrg"
+        input-class="auth-contact-form__input"
       />
-      <textarea
+      <AuthDualInput
+        id="auth-contact-note"
         v-model="form.note"
-        rows="3"
+        multiline
+        :rows="3"
         :maxlength="SCHOOL_CONSULT_LIMITS.note"
-        class="auth-contact-form__input auth-contact-form__textarea"
-        :placeholder="t('thinkingCoins.school.fieldNote')"
+        placeholder-key="thinkingCoins.school.fieldNote"
+        input-class="auth-contact-form__input auth-contact-form__textarea"
       />
       <button
         type="submit"
         class="auth-contact-form__submit"
         :disabled="submitting"
       >
-        <I18nText k="thinkingCoins.school.submit" />
+        <I18nText
+          k="thinkingCoins.school.submit"
+          align="center"
+        />
       </button>
     </form>
   </SwissGlassCard>
 </template>
 
 <style scoped>
-.auth-contact-form__input {
+.auth-contact-form :deep(.auth-contact-form__input) {
   width: 100%;
   border-radius: 0.85rem;
   border: 0;
@@ -187,16 +199,16 @@ async function submitConsultation(): Promise<void> {
     box-shadow 0.15s ease;
 }
 
-.auth-contact-form__input::placeholder {
+.auth-contact-form :deep(.auth-contact-form__input::placeholder) {
   color: #94a3b8;
 }
 
-.auth-contact-form__input:focus {
+.auth-contact-form :deep(.auth-contact-form__input:focus) {
   background: #fff;
   box-shadow: 0 0 0 3px rgb(99 102 241 / 0.16);
 }
 
-.auth-contact-form__textarea {
+.auth-contact-form :deep(.auth-contact-form__textarea) {
   resize: vertical;
   min-height: 5.5rem;
 }

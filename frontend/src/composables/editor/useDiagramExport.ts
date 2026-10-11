@@ -29,6 +29,8 @@ import {
 import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
 import {
   isLearningSheetRasterCapture,
+  learningSheetAnswerRowVisible,
+  learningSheetIncludeAnswers,
   runAsShownRasterCapture,
   runLearningSheetRasterCapture,
   waitForExportCanvasPaint,
@@ -242,17 +244,14 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     return resolvePdfOrientationFromExportOptions(format, width, height, exportOptions?.layout)
   }
 
-  async function capturePngBlob(
-    exportOptions?: CanvasExportOptions,
-    asShown = false
-  ): Promise<Blob> {
+  async function capturePngBlob(): Promise<Blob> {
     const container = getContainer()
     if (!container) {
       throw new Error('canvas-not-ready')
     }
     await waitForExportFonts()
     const captureOptions = getDiagramCanvasHtmlToImageOptions()
-    const runCapture = async () => {
+    const blob = await runAsShownRasterCapture(async () => {
       const canvas = await captureDiagramRasterCanvas(container, captureOptions)
       applyLlmExportWatermarkToCanvas(
         canvas,
@@ -261,10 +260,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         uiStore.language
       )
       return canvasToPngBlob(canvas)
-    }
-    const blob = asShown
-      ? await runAsShownRasterCapture(runCapture)
-      : await runLearningSheetRasterCapture(diagramStore, exportOptions, runCapture)
+    })
     if (!blob || blob.size === 0) {
       throw new Error('PNG export produced empty image')
     }
@@ -283,10 +279,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     return false
   }
 
-  async function exportAsPng(exportOptions?: CanvasExportOptions): Promise<void> {
+  async function exportAsPng(): Promise<void> {
     isExporting.value = true
     try {
-      const blob = await capturePngBlob(exportOptions)
+      const blob = await capturePngBlob()
       if ((await downloadPngBlob(blob)) === 'cancelled') return
       logDiagramExport('png')
       notify.successKey('canvas.export.pngSuccess')
@@ -340,7 +336,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
   }
 
-  async function exportAsSvg(exportOptions?: CanvasExportOptions): Promise<void> {
+  async function exportAsSvg(): Promise<void> {
     const container = getContainer()
     if (!container) {
       notify.warningKey('canvas.export.canvasNotReady')
@@ -353,15 +349,13 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
       const filename = exportFilename(getTitle(), 'svg')
       let delivered: DeliverExportResult
-      if (canUseMindMapVectorExport(diagramStore)) {
+      // Vector markup has no answer row. When that row is on the canvas, capture the DOM.
+      const useVector =
+        canUseMindMapVectorExport(diagramStore) && !learningSheetAnswerRowVisible(diagramStore)
+      if (useVector) {
         // Write the markup itself. A data: URL would have to be fetched to become
         // a file, and production connect-src does not allow data:.
-        const vector = await runLearningSheetRasterCapture(
-          diagramStore,
-          exportOptions,
-          () => captureMindMapVectorSvg(),
-          'in-node'
-        )
+        const vector = await runAsShownRasterCapture(() => captureMindMapVectorSvg())
         delivered = await deliverExportFile(
           new Blob([vector.svg], { type: 'image/svg+xml' }),
           filename
@@ -369,9 +363,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       } else {
         const { toSvg } = await loadHtmlToImageModule()
         const captureOptions = getDiagramCanvasHtmlToImageOptions()
-        const dataUrl = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
-          toSvg(container, captureOptions)
-        )
+        const dataUrl = await runAsShownRasterCapture(() => toSvg(container, captureOptions))
         delivered = await deliverExportDataUrl(dataUrl, filename)
       }
 
@@ -401,7 +393,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     format: string,
     exportOptions?: CanvasExportOptions
   ): Promise<void> {
-    const includeAnswers = exportOptions?.answerMode !== 'exclude'
+    const includeAnswers = learningSheetIncludeAnswers(exportOptions)
     const savedShowAnswers = diagramStore.learningSheetShowAnswers
     diagramStore.setLearningSheetShowAnswers(false)
     await waitForExportCanvasPaint()
@@ -617,13 +609,13 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
     switch (format) {
       case 'clipboard':
-        await copyPngToClipboard(capturePngBlob(exportOptions, true))
+        await copyPngToClipboard(capturePngBlob())
         break
       case 'png':
-        await exportAsPng(exportOptions)
+        await exportAsPng()
         break
       case 'svg':
-        await exportAsSvg(exportOptions)
+        await exportAsSvg()
         break
       case 'pdf':
       case 'pdf_landscape':

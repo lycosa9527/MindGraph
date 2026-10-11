@@ -7,6 +7,12 @@ import type { DiagramViewBus } from './diagramViewBus'
 
 /** Optional flags for `loadFromSpec` (same-document layout refresh vs full load). */
 export type LoadFromSpecOptions = {
+  /**
+   * Same-document structure change (add, delete, move, paste).
+   * Skips `diagram:loaded`, the session-edit reset, and the measure-settling batch,
+   * and keeps theme, styles, and learning-sheet fields the spec builder does not carry.
+   */
+  structuralEdit?: boolean
   /** When false, skip `diagram:loaded` so listeners do not treat it as a new diagram. */
   emitLoaded?: boolean
   /**
@@ -26,6 +32,12 @@ export type LoadFromSpecOptions = {
   preferLaidOutMindMapNodes?: boolean
   /** When true, canvas fit listeners keep the current viewport (LLM model switch). */
   skipFit?: boolean
+}
+
+/** Reload the current diagram after a structure edit. Not a new open. */
+export const STRUCTURAL_SPEC_RELOAD: LoadFromSpecOptions = {
+  structuralEdit: true,
+  mergePreviousNodeStyles: true,
 }
 
 export type DiagramEventType =

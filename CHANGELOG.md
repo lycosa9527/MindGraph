@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.156] - 2026-10-11
+
+> **The login screen follows the browser language, brainstorm returns suggestions, and a tree map keeps its layout when you edit it.**
+
+### Added
+
+- **登录页** — `/auth` shows the browser language on top and Simplified Chinese underneath: the slogan, buttons, labels, and empty fields. Simplified and Traditional Chinese stay one line. This pairing stays on the login screen and does not change the signed-in bilingual setting. The test-server notice uses the same pair. The watermark stays one line.
+
+### Fixed
+
+- **AI 头脑风暴** — Express was still thinking. DashScope `deepseek-v4.1-flash` ignores `enable_thinking` when it sits inside `extra_body`, so the 500-token cap was spent on reasoning and the parking lot stayed empty. The flag is now a top-level field on DashScope chat calls. Circle, bubble, double bubble, tree, brace, flow, multi-flow, bridge, mind map, and concept map share that call.
+- **加载更多** — The next batch is added under the suggestions already listed. Scrolling up still shows the earlier batch. Opening brainstorm again still starts from an empty list.
+- **画布模型** — Thinking-map brainstorm uses the model selected on the canvas, the same as mind-map brainstorm. Qwen, Kimi, and Doubao get the same thinking-off request, so a short batch is not spent on reasoning. A school override still uses that school's model.
+- **树状图** — A long classification label stays above the category row, and wrapped text stays inside its node. Adding or deleting a category or leaf keeps the existing ids and rebuilds the connectors.
+- **结构编辑** — Adding, deleting, moving, or pasting reloads the open diagram and keeps the theme, node styles, and learning-sheet answers.
+- **字号** — The toolbar reads the size painted on the node, including a size stored as text.
+- **学习单图片** — PNG and SVG copy the canvas as shown. When the answer row is on screen, the image includes it.
+
+### Tests
+
+- [`frontend/tests/authPageBilingual.spec.ts`](frontend/tests/authPageBilingual.spec.ts) — non-Chinese browsers get Simplified Chinese underneath; Chinese browsers stay one line; a saved presenter locale is not used on `/auth`.
+- [`tests/test_dashscope_enable_thinking_wire.py`](tests/test_dashscope_enable_thinking_wire.py) — Express sends `enable_thinking: false` at the top level.
+- [`frontend/tests/nodePaletteLoadMore.spec.ts`](frontend/tests/nodePaletteLoadMore.spec.ts) — the next batch keeps earlier suggestions; a new session still replaces the list.
+- [`frontend/tests/treeMapStructure.spec.ts`](frontend/tests/treeMapStructure.spec.ts), [`frontend/tests/treeMapDimensionClearance.spec.ts`](frontend/tests/treeMapDimensionClearance.spec.ts), [`frontend/tests/structuralSpecReload.spec.ts`](frontend/tests/structuralSpecReload.spec.ts), [`frontend/tests/displayedNodeFontSize.spec.ts`](frontend/tests/displayedNodeFontSize.spec.ts), [`frontend/tests/canvasExportMenu.spec.ts`](frontend/tests/canvasExportMenu.spec.ts) — tree-map edits, label clearance, structural reload, painted font size, and canvas-as-shown image export.
+
 ## [5.180.155] - 2026-10-11
 
 > **A saved diagram keeps one copy of each model's result, and a .mg file brings those results back.**

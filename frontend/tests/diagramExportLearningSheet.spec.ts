@@ -6,6 +6,7 @@ import { useDiagramStore } from '@/stores/diagram'
 import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
 import {
   isLearningSheetRasterCapture,
+  learningSheetAnswerRowVisible,
   learningSheetIncludeAnswers,
   prepareLearningSheetAnswersForFit,
   runAsShownRasterCapture,
@@ -39,6 +40,20 @@ describe('diagramExportLearningSheet', () => {
     if (!branch) throw new Error('missing branch')
     store.emptyNodeForLearningSheet(branch.id)
     expect(isLearningSheetRasterCapture(store)).toBe(true)
+  })
+
+  it('treats the answer row as visible only while the canvas is showing it', () => {
+    const store = useDiagramStore()
+    store.loadDefaultTemplate('mindmap')
+    store.setLearningSheetMode(true)
+    const branch = store.data?.nodes.find((node) => node.type === 'branch')
+    if (!branch) throw new Error('missing branch')
+    store.emptyNodeForLearningSheet(branch.id)
+
+    store.setLearningSheetShowAnswers(false)
+    expect(learningSheetAnswerRowVisible(store)).toBe(false)
+    store.setLearningSheetShowAnswers(true)
+    expect(learningSheetAnswerRowVisible(store)).toBe(true)
   })
 
   it('honors answerMode include flag', () => {

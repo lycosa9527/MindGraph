@@ -25,10 +25,7 @@ import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
-import {
-  FLOATING_TOOLBAR_COLORS,
-  FLOATING_TOOLBAR_FONT_SIZES,
-} from '@/config/floatingToolbarColors'
+import { FLOATING_TOOLBAR_COLORS } from '@/config/floatingToolbarColors'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
 
@@ -106,6 +103,7 @@ const formatting = useCanvasToolbarFormatting({
 const {
   fontFamily,
   fontSize,
+  fontSizeChoices,
   textColor,
   fontWeight,
   fontStyle,
@@ -204,6 +202,10 @@ function onCustomColor(panel: 'fill' | 'border' | 'text', ev: Event) {
 
 function onShapePick(shape: NodeShape) {
   handleNodeShapePick(shape)
+}
+
+function isActiveFontSize(size: number): boolean {
+  return Math.round(Number(fontSize.value)) === size
 }
 </script>
 
@@ -419,10 +421,10 @@ function onShapePick(shape: NodeShape) {
           <template #dropdown>
             <ElDropdownMenu class="nft-dropdown-menu">
               <ElDropdownItem
-                v-for="size in FLOATING_TOOLBAR_FONT_SIZES"
+                v-for="size in fontSizeChoices"
                 :key="size"
                 class="nft-dropdown-item"
-                :class="{ 'nft-dropdown-item--active': fontSize === size }"
+                :class="{ 'nft-dropdown-item--active': isActiveFontSize(size) }"
                 @click="handleFontSizePick(size)"
               >
                 {{ size }}px

@@ -7,6 +7,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import { ArrowLeft, Loader2, UserPlus } from '@lucide/vue'
 
+import AuthDualInput from '@/components/auth/AuthDualInput.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
@@ -217,14 +218,14 @@ async function submitQuickRegister() {
         >
           <I18nText k="auth.phone" />
         </label>
-        <input
+        <AuthDualInput
           id="auth-qr-phone"
           v-model="phone"
           type="tel"
           maxlength="11"
           autocomplete="tel"
-          class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-          :placeholder="t('auth.modal.phonePlaceholder11')"
+          placeholder-key="auth.modal.phonePlaceholder11"
+          input-class="px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
         />
       </div>
 
@@ -235,15 +236,15 @@ async function submitQuickRegister() {
         >
           <I18nText k="auth.quickRegRoomCodeLabel" />
         </label>
-        <input
+        <AuthDualInput
           id="auth-qr-room"
           v-model="roomCode"
           type="text"
           maxlength="6"
           inputmode="numeric"
-          class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all font-mono tracking-wider"
-          :placeholder="t('auth.quickRegRoomCodePlaceholder')"
+          placeholder-key="auth.quickRegRoomCodePlaceholder"
           autocomplete="one-time-code"
+          input-class="px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all font-mono tracking-wider"
         />
         <p class="text-xs text-stone-400 mt-1.5">
           <I18nText k="auth.quickRegRoomCodeHint" />

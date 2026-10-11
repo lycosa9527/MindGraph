@@ -25,6 +25,7 @@ import {
   UserRound,
 } from '@lucide/vue'
 
+import AuthDualInput from '@/components/auth/AuthDualInput.vue'
 import LoginAuthAltLinks from '@/components/auth/LoginAuthAltLinks.vue'
 import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
 import I18nText from '@/components/common/I18nText.vue'
@@ -83,8 +84,6 @@ const {
   showPassword,
   showConfirmPassword,
   isVisible,
-  loginSubmitLabel,
-  pageHeaderTitle,
   closeModal,
   switchLoginRegisterTab,
   switchLoginAudience,
@@ -92,7 +91,6 @@ const {
   showSmsLogin,
   showForgotPassword,
   backToLogin,
-  refreshCaptcha,
   retryCaptcha,
   onCaptchaImageError,
   showLegacyCaptcha,
@@ -112,9 +110,7 @@ const {
   forgotUsesEmail,
   smsLoginUsesEmail,
   maskIdentifierForCodeSent,
-  overseasAcknowledgeCheckboxLabel,
-  hybridRegisterEmailTabLabel,
-  registrationEmailLabel,
+  overseasAcknowledgeKey,
   registrationEmailHint,
   emailSending,
   emailCountdown,
@@ -166,6 +162,18 @@ const inlineHost = isTrainingInlineHost()
 /** Dedicated `/auth` page: embed form in the white card (no teleport / glass hero). */
 const authPageInline = computed(() => Boolean(props.authPage))
 const embedInline = computed(() => inlineHost || authPageInline.value)
+const AUTH_FIELD_CLASS =
+  'px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all'
+const PLAIN_FIELD_CLASS = `${AUTH_FIELD_CLASS} bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white`
+
+function fieldClass(extra = ''): string {
+  const base = authPageInline.value ? AUTH_FIELD_CLASS : PLAIN_FIELD_CLASS
+  return extra ? `${base} ${extra}` : base
+}
+
+const passwordLoginLabelKey = computed(() =>
+  props.authPage ? 'auth.loginAgreeTerms' : 'auth.login'
+)
 
 let disposeLoginCatWalk: (() => void) | undefined
 
@@ -418,7 +426,10 @@ defineExpose({ openLogin, openRegister })
             v-if="currentView === 'sms-login'"
             class="page-header-title"
           >
-            {{ pageHeaderTitle }}
+            <I18nText
+              k="auth.smsLogin"
+              align="center"
+            />
           </span>
           <span
             v-else-if="authPageInline && currentView === 'register'"
@@ -445,20 +456,15 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.loginPhoneOrEmail" />
           </label>
-          <input
+          <AuthDualInput
             id="login-phone"
             v-model="loginForm.phone"
             type="text"
             name="username"
-            :placeholder="t('auth.modal.forgotPhoneOrEmailPlaceholder')"
+            placeholder-key="auth.modal.forgotPhoneOrEmailPlaceholder"
             maxlength="254"
             autocomplete="username"
-            class="w-full px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
-            :class="
-              authPageInline
-                ? 'auth-page-teacher__input'
-                : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
-            "
+            :input-class="fieldClass()"
           />
         </div>
 
@@ -470,21 +476,16 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.password" />
           </label>
-          <div class="relative">
-            <input
-              id="login-password"
-              v-model="loginForm.password"
-              :type="showPassword ? 'text' : 'password'"
-              name="password"
-              :placeholder="t('auth.modal.passwordPlaceholder')"
-              autocomplete="current-password"
-              class="w-full px-4 py-3 pr-12 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
-              :class="
-                authPageInline
-                  ? 'auth-page-teacher__input'
-                  : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
-              "
-            />
+          <AuthDualInput
+            id="login-password"
+            v-model="loginForm.password"
+            :type="showPassword ? 'text' : 'password'"
+            name="password"
+            placeholder-key="auth.modal.passwordPlaceholder"
+            autocomplete="current-password"
+            reserve-end
+            :input-class="fieldClass()"
+          >
             <button
               type="button"
               class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
@@ -500,7 +501,7 @@ defineExpose({ openLogin, openRegister })
                 class="w-4 h-4"
               />
             </button>
-          </div>
+          </AuthDualInput>
         </div>
 
         <div
@@ -525,15 +526,15 @@ defineExpose({ openLogin, openRegister })
             <I18nText k="auth.captcha" />
           </label>
           <div class="captcha-row">
-            <input
+            <AuthDualInput
               id="login-captcha"
               v-model="loginForm.captcha"
               type="text"
               name="login-captcha"
-              :placeholder="t('auth.modal.captchaPlaceholderShort')"
+              placeholder-key="auth.modal.captchaPlaceholderShort"
               maxlength="4"
-              class="captcha-row__input px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-              :class="authPageInline ? 'auth-page-teacher__input' : 'bg-stone-50'"
+              class="captcha-row__input"
+              :input-class="fieldClass()"
             />
             <img
               v-if="captchaImage"
@@ -589,8 +590,13 @@ defineExpose({ openLogin, openRegister })
           <I18nText
             v-if="isLoading"
             k="auth.modal.loggingIn"
+            align="center"
           />
-          <template v-else>{{ loginSubmitLabel }}</template>
+          <I18nText
+            v-else
+            :k="passwordLoginLabelKey"
+            align="center"
+          />
         </button>
 
         <div
@@ -702,20 +708,16 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.studentClassCode" />
           </label>
-          <input
+          <AuthDualInput
             id="student-class-code"
             v-model="studentLoginForm.classCode"
             type="text"
             name="class_code"
-            :placeholder="t('auth.studentClassCodePlaceholder')"
+            placeholder-key="auth.studentClassCodePlaceholder"
             maxlength="16"
             autocomplete="off"
-            class="w-full px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all uppercase"
-            :class="
-              authPageInline
-                ? 'auth-page-teacher__input'
-                : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
-            "
+            hint-class="uppercase"
+            :input-class="fieldClass('uppercase')"
           />
         </div>
 
@@ -727,20 +729,15 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.name" />
           </label>
-          <input
+          <AuthDualInput
             id="student-name"
             v-model="studentLoginForm.name"
             type="text"
             name="name"
-            :placeholder="t('auth.modal.namePlaceholder')"
+            placeholder-key="auth.modal.namePlaceholder"
             maxlength="100"
             autocomplete="name"
-            class="w-full px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
-            :class="
-              authPageInline
-                ? 'auth-page-teacher__input'
-                : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
-            "
+            :input-class="fieldClass()"
           />
         </div>
 
@@ -752,21 +749,16 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.password" />
           </label>
-          <div class="relative">
-            <input
-              id="student-password"
-              v-model="studentLoginForm.password"
-              :type="showPassword ? 'text' : 'password'"
-              name="password"
-              :placeholder="t('auth.modal.passwordPlaceholder')"
-              autocomplete="current-password"
-              class="w-full px-4 py-3 pr-12 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
-              :class="
-                authPageInline
-                  ? 'auth-page-teacher__input'
-                  : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
-              "
-            />
+          <AuthDualInput
+            id="student-password"
+            v-model="studentLoginForm.password"
+            :type="showPassword ? 'text' : 'password'"
+            name="password"
+            placeholder-key="auth.modal.passwordPlaceholder"
+            autocomplete="current-password"
+            reserve-end
+            :input-class="fieldClass()"
+          >
             <button
               type="button"
               class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
@@ -782,7 +774,7 @@ defineExpose({ openLogin, openRegister })
                 class="w-4 h-4"
               />
             </button>
-          </div>
+          </AuthDualInput>
         </div>
 
         <div v-if="showLegacyCaptcha">
@@ -793,19 +785,15 @@ defineExpose({ openLogin, openRegister })
             <I18nText k="auth.captcha" />
           </label>
           <div class="captcha-row">
-            <input
+            <AuthDualInput
               id="student-captcha"
               v-model="studentLoginForm.captcha"
               type="text"
               name="student-captcha"
-              :placeholder="t('auth.modal.captchaPlaceholderShort')"
+              placeholder-key="auth.modal.captchaPlaceholderShort"
               maxlength="4"
-              class="captcha-row__input px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
-              :class="
-                authPageInline
-                  ? 'auth-page-teacher__input'
-                  : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
-              "
+              class="captcha-row__input"
+              :input-class="fieldClass()"
             />
             <img
               v-if="captchaImage"
@@ -860,12 +848,13 @@ defineExpose({ openLogin, openRegister })
           <I18nText
             v-if="isLoading"
             k="auth.modal.loggingIn"
-          /><template v-else
-            ><I18nText
-              v-if="authPageInline"
-              k="auth.login"
-            /><template v-else>{{ loginSubmitLabel }}</template></template
-          >
+            align="center"
+          />
+          <I18nText
+            v-else
+            k="auth.login"
+            align="center"
+          />
         </button>
       </form>
 
@@ -901,7 +890,10 @@ defineExpose({ openLogin, openRegister })
             :class="{ 'auth-tab-switch__btn--active': registerPath === 'email' }"
             @click="setRegisterPath('email')"
           >
-            {{ hybridRegisterEmailTabLabel }}
+            <I18nText
+              k="auth.modal.hybridRegisterEmailTabAny"
+              align="center"
+            />
           </button>
           <button
             type="button"
@@ -928,7 +920,10 @@ defineExpose({ openLogin, openRegister })
             "
             @click="setRegisterPath('email')"
           >
-            {{ hybridRegisterEmailTabLabel }}
+            <I18nText
+              k="auth.modal.hybridRegisterEmailTabAny"
+              align="center"
+            />
           </button>
           <button
             type="button"
@@ -951,16 +946,16 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.phone" /> *
           </label>
-          <input
+          <AuthDualInput
             id="register-phone"
             v-model="registerForm.phone"
             type="tel"
             name="phone"
-            :placeholder="t('auth.modal.phonePlaceholder11')"
+            placeholder-key="auth.modal.phonePlaceholder11"
             maxlength="20"
             inputmode="numeric"
             autocomplete="tel"
-            class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+            :input-class="fieldClass()"
           />
         </div>
 
@@ -969,21 +964,22 @@ defineExpose({ openLogin, openRegister })
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="register-education-email"
           >
-            {{ registrationEmailLabel }}
+            <I18nText k="auth.modal.registrationEmailLabelAny" />
           </label>
-          <input
+          <AuthDualInput
             id="register-education-email"
             v-model="registerForm.registrationEmail"
             type="email"
             name="register-education-email"
+            placeholder-key="auth.modal.registrationEmailLabelAny"
             autocomplete="email"
-            class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+            :input-class="fieldClass()"
           />
           <p
             v-if="registrationEmailHint"
             class="text-xs text-stone-500 mt-1.5 leading-relaxed"
           >
-            {{ registrationEmailHint }}
+            <I18nText k="auth.modal.registrationEmailHintAny" />
           </p>
         </div>
 
@@ -994,16 +990,16 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.password" /> *
           </label>
-          <div class="relative">
-            <input
-              id="register-password"
-              v-model="registerForm.password"
-              :type="showPassword ? 'text' : 'password'"
-              name="new-password"
-              :placeholder="t('auth.modal.passwordMinPlaceholder')"
-              autocomplete="new-password"
-              class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-            />
+          <AuthDualInput
+            id="register-password"
+            v-model="registerForm.password"
+            :type="showPassword ? 'text' : 'password'"
+            name="new-password"
+            placeholder-key="auth.modal.passwordMinPlaceholder"
+            autocomplete="new-password"
+            reserve-end
+            :input-class="fieldClass()"
+          >
             <button
               type="button"
               class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
@@ -1019,7 +1015,7 @@ defineExpose({ openLogin, openRegister })
                 class="w-4 h-4"
               />
             </button>
-          </div>
+          </AuthDualInput>
         </div>
 
         <div>
@@ -1029,15 +1025,15 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.name" /> *
           </label>
-          <input
+          <AuthDualInput
             id="register-name"
             v-model="registerForm.name"
             type="text"
             name="name"
             maxlength="100"
-            :placeholder="t('auth.modal.namePlaceholder')"
+            placeholder-key="auth.modal.namePlaceholder"
             autocomplete="name"
-            class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+            :input-class="fieldClass()"
           />
         </div>
 
@@ -1048,14 +1044,14 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.invitationCode" /> *
           </label>
-          <input
+          <AuthDualInput
             id="register-invitation-code"
             v-model="registerForm.invitationCode"
             type="text"
             name="invitation_code"
             autocomplete="off"
-            :placeholder="t('auth.modal.invitationPlaceholder')"
-            class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+            placeholder-key="auth.modal.invitationPlaceholder"
+            :input-class="fieldClass()"
             @blur="
               registerForm.invitationCode = normalizeInvitationCodeInput(
                 registerForm.invitationCode
@@ -1072,14 +1068,15 @@ defineExpose({ openLogin, openRegister })
             <I18nText k="auth.captcha" /> *
           </label>
           <div class="captcha-row">
-            <input
+            <AuthDualInput
               id="register-captcha"
               v-model="registerForm.captcha"
               type="text"
               name="register-captcha"
-              :placeholder="t('auth.modal.captchaPlaceholderShort')"
+              placeholder-key="auth.modal.captchaPlaceholderShort"
               maxlength="4"
-              class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+              class="captcha-row__input"
+              :input-class="fieldClass()"
             />
             <img
               v-if="captchaImage"
@@ -1126,15 +1123,16 @@ defineExpose({ openLogin, openRegister })
               >
                 <I18nText k="auth.modal.emailCodeLabel" /> *
               </label>
-              <input
+              <AuthDualInput
                 id="register-email-code"
                 v-model="registerForm.emailCode"
                 type="text"
                 name="register-email-code"
+                placeholder-key="auth.modal.emailCodePlaceholder"
                 maxlength="6"
                 inputmode="numeric"
                 autocomplete="one-time-code"
-                class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                :input-class="fieldClass()"
               />
             </div>
             <button
@@ -1167,7 +1165,9 @@ defineExpose({ openLogin, openRegister })
               type="checkbox"
               class="mt-0.5 shrink-0 rounded border-stone-300"
             />
-            <span class="min-w-0">{{ overseasAcknowledgeCheckboxLabel }}</span>
+            <span class="min-w-0">
+              <I18nText :k="overseasAcknowledgeKey" />
+            </span>
           </label>
         </template>
 
@@ -1210,17 +1210,17 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.loginPhoneOrEmail" />
           </label>
-          <input
+          <AuthDualInput
             id="sms-login-phone"
             v-model="smsLoginForm.phone"
             type="text"
             name="username"
-            :placeholder="t('auth.modal.forgotPhoneOrEmailPlaceholder')"
+            placeholder-key="auth.modal.forgotPhoneOrEmailPlaceholder"
             maxlength="254"
             inputmode="text"
             autocomplete="username"
             :disabled="smsSent"
-            class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all disabled:opacity-60"
+            :input-class="fieldClass('disabled:opacity-60')"
           />
         </div>
 
@@ -1232,14 +1232,15 @@ defineExpose({ openLogin, openRegister })
             <I18nText k="auth.captcha" />
           </label>
           <div class="captcha-row">
-            <input
+            <AuthDualInput
               id="sms-login-captcha"
               v-model="smsLoginForm.captcha"
               type="text"
               name="sms-login-captcha"
-              :placeholder="t('auth.modal.captchaPlaceholderShort')"
+              placeholder-key="auth.modal.captchaPlaceholderShort"
               maxlength="4"
-              class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+              class="captcha-row__input"
+              :input-class="fieldClass()"
             />
             <img
               v-if="captchaImage"
@@ -1316,19 +1317,19 @@ defineExpose({ openLogin, openRegister })
                 :k="smsLoginUsesEmail ? 'auth.modal.emailCodeLabel' : 'auth.modal.smsCodeLabel'"
               />
             </label>
-            <input
+            <AuthDualInput
               id="sms-login-code"
               v-model="smsLoginForm.smsCode"
               type="text"
               name="sms-login-code"
-              :placeholder="
+              :placeholder-key="
                 smsLoginUsesEmail
-                  ? t('auth.modal.emailCodePlaceholder')
-                  : t('auth.modal.smsCodePlaceholder')
+                  ? 'auth.modal.emailCodePlaceholder'
+                  : 'auth.modal.smsCodePlaceholder'
               "
               maxlength="6"
               autocomplete="one-time-code"
-              class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+              :input-class="fieldClass()"
             />
             <p class="text-xs text-stone-400 mt-1">
               <I18nText k="auth.modal.codeSentTo" />
@@ -1353,8 +1354,13 @@ defineExpose({ openLogin, openRegister })
             <I18nText
               v-if="isLoading"
               k="auth.modal.loggingIn"
+              align="center"
             />
-            <template v-else>{{ loginSubmitLabel }}</template>
+            <I18nText
+              v-else
+              :k="passwordLoginLabelKey"
+              align="center"
+            />
           </button>
 
           <div class="text-center">
@@ -1392,17 +1398,17 @@ defineExpose({ openLogin, openRegister })
           >
             <I18nText k="auth.loginPhoneOrEmail" />
           </label>
-          <input
+          <AuthDualInput
             id="forgot-phone"
             v-model="forgotForm.phone"
             type="text"
             name="forgot-phone"
-            :placeholder="t('auth.modal.forgotPhoneOrEmailPlaceholder')"
+            placeholder-key="auth.modal.forgotPhoneOrEmailPlaceholder"
             maxlength="254"
             inputmode="text"
             autocomplete="username"
             :disabled="smsSent"
-            class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all disabled:opacity-60"
+            :input-class="fieldClass('disabled:opacity-60')"
           />
         </div>
 
@@ -1414,14 +1420,15 @@ defineExpose({ openLogin, openRegister })
             <I18nText k="auth.captcha" />
           </label>
           <div class="captcha-row">
-            <input
+            <AuthDualInput
               id="forgot-captcha"
               v-model="forgotForm.captcha"
               type="text"
               name="forgot-captcha"
-              :placeholder="t('auth.modal.captchaPlaceholderShort')"
+              placeholder-key="auth.modal.captchaPlaceholderShort"
               maxlength="4"
-              class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+              class="captcha-row__input"
+              :input-class="fieldClass()"
             />
             <img
               v-if="captchaImage"
@@ -1498,19 +1505,19 @@ defineExpose({ openLogin, openRegister })
                 :k="forgotUsesEmail ? 'auth.modal.emailCodeLabel' : 'auth.modal.smsCodeLabel'"
               />
             </label>
-            <input
+            <AuthDualInput
               id="forgot-sms-code"
               v-model="forgotForm.smsCode"
               type="text"
               name="forgot-sms-code"
-              :placeholder="
+              :placeholder-key="
                 forgotUsesEmail
-                  ? t('auth.modal.emailCodePlaceholder')
-                  : t('auth.modal.smsCodePlaceholder')
+                  ? 'auth.modal.emailCodePlaceholder'
+                  : 'auth.modal.smsCodePlaceholder'
               "
               maxlength="6"
               autocomplete="one-time-code"
-              class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+              :input-class="fieldClass()"
             />
             <p class="text-xs text-stone-400 mt-1">
               <I18nText k="auth.modal.codeSentTo" />
@@ -1525,19 +1532,20 @@ defineExpose({ openLogin, openRegister })
             >
               <I18nText k="auth.modal.newPassword" />
             </label>
-            <div class="relative">
-              <input
-                id="forgot-new-password"
-                v-model="forgotForm.newPassword"
-                :type="showPassword ? 'text' : 'password'"
-                name="forgot-new-password"
-                :placeholder="t('auth.modal.passwordMinPlaceholder')"
-                autocomplete="new-password"
-                class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-              />
+            <AuthDualInput
+              id="forgot-new-password"
+              v-model="forgotForm.newPassword"
+              :type="showPassword ? 'text' : 'password'"
+              name="forgot-new-password"
+              placeholder-key="auth.modal.passwordMinPlaceholder"
+              autocomplete="new-password"
+              reserve-end
+              :input-class="fieldClass()"
+            >
               <button
                 type="button"
                 class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+                :class="{ 'auth-page-teacher__eye': authPageInline }"
                 @click="showPassword = !showPassword"
               >
                 <Eye
@@ -1549,7 +1557,7 @@ defineExpose({ openLogin, openRegister })
                   class="w-4 h-4"
                 />
               </button>
-            </div>
+            </AuthDualInput>
           </div>
 
           <div>
@@ -1559,19 +1567,20 @@ defineExpose({ openLogin, openRegister })
             >
               <I18nText k="auth.modal.confirmPassword" />
             </label>
-            <div class="relative">
-              <input
-                id="forgot-confirm-password"
-                v-model="forgotForm.confirmPassword"
-                :type="showConfirmPassword ? 'text' : 'password'"
-                name="forgot-confirm-password"
-                :placeholder="t('auth.modal.confirmPasswordPlaceholder')"
-                autocomplete="new-password"
-                class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-              />
+            <AuthDualInput
+              id="forgot-confirm-password"
+              v-model="forgotForm.confirmPassword"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              name="forgot-confirm-password"
+              placeholder-key="auth.modal.confirmPasswordPlaceholder"
+              autocomplete="new-password"
+              reserve-end
+              :input-class="fieldClass()"
+            >
               <button
                 type="button"
                 class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+                :class="{ 'auth-page-teacher__eye': authPageInline }"
                 @click="showConfirmPassword = !showConfirmPassword"
               >
                 <Eye
@@ -1583,7 +1592,7 @@ defineExpose({ openLogin, openRegister })
                   class="w-4 h-4"
                 />
               </button>
-            </div>
+            </AuthDualInput>
           </div>
 
           <button
@@ -1712,7 +1721,8 @@ defineExpose({ openLogin, openRegister })
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.72rem 0.65rem;
+  min-height: 2.85rem;
+  padding: 0.55rem 0.65rem;
   border: 0;
   border-bottom: 0;
   border-radius: 0.78rem;
@@ -1721,6 +1731,7 @@ defineExpose({ openLogin, openRegister })
   font-weight: 600;
   letter-spacing: 0.01em;
   background: transparent;
+  white-space: normal;
   transition:
     color 0.28s ease,
     transform 0.28s ease;
@@ -1767,31 +1778,24 @@ defineExpose({ openLogin, openRegister })
 
 .auth-page-teacher label.block,
 .auth-page-teacher__label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.2rem;
   color: #475569;
+  font-size: 0.8125rem;
   font-weight: 600;
+  line-height: 1.25;
 }
 
-.auth-page-teacher
-  :is(input[type='text'], input[type='email'], input[type='tel'], input[type='password']) {
+.auth-page-teacher :deep(input:not([type='checkbox'])),
+.auth-page-teacher :deep(textarea) {
   border-radius: 0.85rem !important;
   background: #eef2ff !important;
   box-shadow: none;
 }
 
-.auth-page-teacher
-  :is(input[type='text'], input[type='email'], input[type='tel'], input[type='password']):focus {
-  background: #fff !important;
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.16);
-}
-
-.auth-page-teacher__input {
-  border-radius: 0.85rem !important;
-  background: #eef2ff !important;
-  box-shadow: none;
-}
-
-.auth-page-teacher__input:focus {
+.auth-page-teacher :deep(input:not([type='checkbox']):focus),
+.auth-page-teacher :deep(textarea:focus) {
   background: #fff !important;
   outline: none;
   box-shadow: 0 0 0 3px rgb(99 102 241 / 0.16);
@@ -1817,7 +1821,7 @@ defineExpose({ openLogin, openRegister })
 .auth-page-teacher__prefs {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   width: 100%;
   gap: 0.85rem 1.25rem;
@@ -1839,6 +1843,11 @@ defineExpose({ openLogin, openRegister })
   filter: brightness(1.05);
 }
 
+.auth-page-cta :deep(.i18n-label__secondary) {
+  color: rgb(255 255 255 / 0.88);
+  opacity: 1;
+}
+
 .auth-page-cta--compact {
   margin-top: 0;
   min-width: 7.5rem;
@@ -1848,7 +1857,7 @@ defineExpose({ openLogin, openRegister })
 
 .auth-page-student__beta {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.55rem;
   margin: 0 0 0.15rem;
 }
@@ -1867,12 +1876,18 @@ defineExpose({ openLogin, openRegister })
 }
 
 .auth-page-student__beta-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.1rem 0.35rem;
   font-size: 0.78rem;
   color: #94a3b8;
   line-height: 1.35;
 }
 
 .auth-page-student__beta-link {
+  display: inline-flex;
+  align-items: flex-start;
   margin: 0;
   padding: 0;
   border: 0;
@@ -1905,6 +1920,8 @@ defineExpose({ openLogin, openRegister })
   background: transparent;
   color: #64748b;
   font: inherit;
+  line-height: 1.2;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -1928,7 +1945,7 @@ defineExpose({ openLogin, openRegister })
 
 .auth-page-remember {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.4rem;
   font-size: 0.85rem;
   color: #64748b;
@@ -1939,6 +1956,7 @@ defineExpose({ openLogin, openRegister })
 .auth-page-remember__box {
   width: 0.95rem;
   height: 0.95rem;
+  margin-top: 0.12rem;
   accent-color: #6366f1;
 }
 
@@ -1981,7 +1999,7 @@ defineExpose({ openLogin, openRegister })
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 22px;
+  min-height: 2.4rem;
 }
 
 .page-header__back {
@@ -2013,5 +2031,13 @@ defineExpose({ openLogin, openRegister })
   font-weight: 500;
   color: #1c1917;
   flex-shrink: 0;
+}
+
+.auth-tab-switch__btn :deep(.i18n-label),
+.auth-page-cta :deep(.i18n-label),
+.auth-page-teacher__footer-link :deep(.i18n-label),
+.page-header__back :deep(.i18n-label),
+.page-header-title :deep(.i18n-label) {
+  align-items: center;
 }
 </style>

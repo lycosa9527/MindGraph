@@ -16,7 +16,9 @@ import { storeToRefs } from 'pinia'
 
 import { type EventTypes, eventBus } from '@/composables/core/useEventBus'
 import { isPlaceholderText } from '@/composables/editor/placeholderText'
-import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
+import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
+import { canvasRunModel } from '@/config/canvasLlmMenu'
+import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import type { DiagramType } from '@/types'
@@ -67,6 +69,12 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   const savedDiagramsStore = useSavedDiagramsStore()
   const uiStore = useUIStore()
   const { promptLanguage } = storeToRefs(uiStore)
+  const llmResultsStore = useLLMResultsStore()
+  const { customLlmEnabled } = useOrgCustomLlm()
+
+  function selectedLlmModels(): string[] {
+    return [canvasRunModel(llmResultsStore.canvasModelChoice, customLlmEnabled.value)]
+  }
 
   const sessionId = ref<string | null>(null)
   const centerTopic = ref('')
@@ -160,7 +168,10 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       onConceptMapDomains?: (domains: string[]) => void
     }
   ): Promise<number> {
-    return streamNodePaletteBatch(streamDeps, url, payload, options)
+    const body = Array.isArray(payload.llm_models)
+      ? payload
+      : { ...payload, llm_models: selectedLlmModels() }
+    return streamNodePaletteBatch(streamDeps, url, body, options)
   }
 
   const rawDiagramType = computed(() => diagramStore.type)
@@ -816,7 +827,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
           payload.stage_data = mergedStageData
         }
       }
-      await streamBatch(NODE_PALETTE_NEXT, payload)
+      await streamBatch(NODE_PALETTE_NEXT, payload, { append: true })
       return true
     } catch (err) {
       if (isAbortError(err)) return false

@@ -297,7 +297,8 @@ export function thinkingMapBorderWidth(
 
 /** Stored size wins, including 12, 13, and 20. Missing or invalid sizes use the role default. */
 export function thinkingMapDisplayedFontSize(stored: unknown, roleSize: number): number {
-  const parsed = typeof stored === 'number' ? stored : Number(stored)
+  const parsed =
+    typeof stored === 'number' ? stored : Number.parseFloat(String(stored ?? '').trim())
   if (!Number.isFinite(parsed) || parsed <= 0) return roleSize
   return parsed
 }

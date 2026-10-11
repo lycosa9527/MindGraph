@@ -119,9 +119,35 @@ export function measureThinkingMapLabelBlockPx(
   }
 }
 
+const displayMaxWidthCache = new Map<string, number>()
+const DISPLAY_MAX_WIDTH_CACHE_MAX = 500
+
+function displayFontsSettled(): boolean {
+  return typeof document === 'undefined' || document.fonts?.status === 'loaded'
+}
+
+function displayMaxWidthCacheKey(
+  label: string,
+  fontSize: number,
+  baseCapPx: number,
+  options: MindMapTextMeasureOptions
+): string {
+  return `${fontSize}\u0001${options.fontWeight ?? ''}\u0001${options.fontFamily ?? ''}\u0001${baseCapPx}\u0001${label}`
+}
+
+function rememberDisplayMaxWidth(key: string, width: number): void {
+  if (displayMaxWidthCache.size >= DISPLAY_MAX_WIDTH_CACHE_MAX) {
+    const oldest = displayMaxWidthCache.keys().next().value
+    if (oldest !== undefined) displayMaxWidthCache.delete(oldest)
+  }
+  displayMaxWidthCache.set(key, width)
+}
+
 /**
  * CSS max-width. A one-line label gets the script-aware column.
  * A wrapped label gets the balanced line width, never wider than the cap.
+ * Repeated calls with the same text and font reuse the width after fonts have loaded,
+ * so a column shift does not measure every label again.
  */
 export function resolveThinkingMapDisplayMaxWidthPx(
   text: string,
@@ -131,10 +157,19 @@ export function resolveThinkingMapDisplayMaxWidthPx(
 ): number {
   const label = (text || '').trim()
   if (!label) return baseCapPx
+  const cacheKey = displayMaxWidthCacheKey(label, fontSize, baseCapPx, options)
+  if (displayFontsSettled()) {
+    const cached = displayMaxWidthCache.get(cacheKey)
+    if (cached !== undefined) return cached
+  }
   const column = resolveThinkingMapTextColumnPx(label, fontSize, baseCapPx, options)
   const block = measureThinkingMapLabelBlockPx(label, fontSize, baseCapPx, options)
-  if (block.lineCount <= 1 && !label.includes('\n')) return column
-  return Math.max(8, Math.min(column, Math.ceil(block.width)))
+  const width =
+    block.lineCount <= 1 && !label.includes('\n')
+      ? column
+      : Math.max(8, Math.min(column, Math.ceil(block.width)))
+  if (displayFontsSettled()) rememberDisplayMaxWidth(cacheKey, width)
+  return width
 }
 
 /**

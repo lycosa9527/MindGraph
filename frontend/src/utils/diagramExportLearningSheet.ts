@@ -36,6 +36,11 @@ export function learningSheetIncludeAnswers(options?: CanvasExportOptions): bool
   return options?.answerMode === 'include'
 }
 
+/** The answer row under the diagram is on screen right now. */
+export function learningSheetAnswerRowVisible(store: DiagramStore): boolean {
+  return isLearningSheetRasterCapture(store) && store.learningSheetShowAnswers
+}
+
 /** Capture whatever is on the canvas now — do not toggle learning-sheet answers. */
 export async function runAsShownRasterCapture<T>(capture: () => T | Promise<T>): Promise<T> {
   await waitForCanvasPaint()
@@ -45,7 +50,7 @@ export async function runAsShownRasterCapture<T>(capture: () => T | Promise<T>):
 /**
  * Fit measures overlay ink already in the DOM. Show or hide the answer row
  * before that measurement, then restore the user's flag.
- * Clipboard "as shown" leaves the flag alone.
+ * Image export passes asShown and leaves the row as it is on the canvas.
  */
 export async function prepareLearningSheetAnswersForFit(
   store: DiagramStore,

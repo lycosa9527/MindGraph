@@ -111,6 +111,7 @@ declare module 'vue' {
     AppSidebarAccountFooter: typeof import('./components/sidebar/AppSidebarAccountFooter.vue')['default']
     AppSidebarNav: typeof import('./components/sidebar/AppSidebarNav.vue')['default']
     AuthContactConsultModal: typeof import('./components/auth/AuthContactConsultModal.vue')['default']
+    AuthDualInput: typeof import('./components/auth/AuthDualInput.vue')['default']
     AuthLandingBrand: typeof import('./components/auth/AuthLandingBrand.vue')['default']
     AuthLegalFooter: typeof import('./components/auth/AuthLegalFooter.vue')['default']
     AuthMarketingNav: typeof import('./components/auth/AuthMarketingNav.vue')['default']

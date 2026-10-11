@@ -16,39 +16,37 @@ import {
   TREE_MAP_CATEGORY_SPACING,
   TREE_MAP_CATEGORY_TO_LEAF_GAP,
   TREE_MAP_LEAF_SPACING,
-  TREE_MAP_TOPIC_TO_CATEGORY_GAP,
 } from '@/composables/diagrams/layoutConfig'
-import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode } from '@/types'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 import {
   TREE_MAP_UID_DATA_KEY,
   TREE_TOPIC_NODE_ID,
-  isTreeMapCategoryNode,
-  isTreeMapLeafNode,
-  readTreeCategoryIndex,
-  readTreeLeafIndex,
-  readTreeParentCategoryId,
   stampTreeCategoryData,
   stampTreeLeafData,
   takeTreeMapStableId,
+  treeMapColumnsOf,
 } from '@/utils/treeMapIdentity'
+import {
+  measureTreeMapDimensionLabelBox,
+  resolveTreeMapDimensionLabelBox,
+  treeMapCategoryTopY,
+  treeMapDimensionLabelPosition,
+} from '@/utils/treeMapLabelLayout'
+import {
+  TREE_MAP_BRANCH_FONT_SIZE,
+  TREE_MAP_LEAF_FONT_SIZE,
+  measureTreeMapNodeBox,
+} from '@/utils/treeMapNodeBox'
 
+import {
+  collectTreeMapNodeMeasureSpecs,
+  collectTreeMapSpecMeasureSpecs,
+  treeMapBranchMeasureOptions,
+  withTreeMapTextMeasureCache,
+} from './treeMapMeasureBatch'
 import { measureTreeMapTopicDimensions, treeMapTopicPositionFromLayout } from './treeMapTopicLayout'
 import type { SpecLoaderResult } from './types'
-
-/** Font size for category nodes (L1). */
-const TREE_MAP_BRANCH_FONT_SIZE = 16
-/** Font size for leaf nodes (L2). */
-const TREE_MAP_LEAF_FONT_SIZE = 14
-/** Horizontal padding inside node (12px each side). */
-const TREE_MAP_NODE_PADDING_X = 24
-/** Vertical padding inside node (9px each side). */
-const TREE_MAP_NODE_PADDING_Y = 9
-/** Border width for category nodes — add to measured width for layout. */
-const TREE_MAP_CATEGORY_BORDER = 1.5
-/** Leaf nodes use a left bar instead of a stroke. */
-const TREE_MAP_LEAF_BORDER = 0
 
 interface TreeNode {
   id?: string
@@ -69,6 +67,12 @@ function glossFields(raw: unknown): { textSecondary?: string } {
  * @returns SpecLoaderResult with nodes and connections
  */
 export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
+  return withTreeMapTextMeasureCache(collectTreeMapSpecMeasureSpecs(spec), () =>
+    loadTreeMapSpecMeasured(spec)
+  )
+}
+
+function loadTreeMapSpecMeasured(spec: Record<string, unknown>): SpecLoaderResult {
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
@@ -104,9 +108,16 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       style: { width: topicDims.width, height: topicDims.height },
     })
 
-    const categoryY = topicY + topicDims.height + TREE_MAP_TOPIC_TO_CATEGORY_GAP
+    const labelBox =
+      dimension !== undefined
+        ? measureTreeMapDimensionLabelBox(
+            dimension || '',
+            typeof spec.dimensionSecondary === 'string' ? spec.dimensionSecondary : undefined
+          )
+        : null
+    const categoryY = treeMapCategoryTopY(topicY, topicDims.height, labelBox)
 
-    // Per-group: measure all node dimensions (width + height for multi-line, like flow map substeps)
+    // Per-group: measure all node dimensions (width + height for wrapped lines)
     interface GroupDims {
       categoryWidth: number
       categoryHeight: number
@@ -116,29 +127,25 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     }
     const groupDimsList: GroupDims[] = []
     categories.forEach((category, _catIndex) => {
-      const catDims = measureTextDimensions(category.text, TREE_MAP_BRANCH_FONT_SIZE, {
-        paddingX: TREE_MAP_NODE_PADDING_X / 2,
-        paddingY: TREE_MAP_NODE_PADDING_Y,
+      const catBox = measureTreeMapNodeBox(category.text, {
+        role: 'category',
+        fontSize: TREE_MAP_BRANCH_FONT_SIZE,
+        secondary: category.textSecondary,
       })
-      const catWidth = Math.max(
-        catDims.width + 2 * TREE_MAP_CATEGORY_BORDER,
-        NODE_MIN_DIMENSIONS.branch.minWidth
-      )
-      const catHeight = Math.max(catDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
+      const catWidth = catBox.width
+      const catHeight = catBox.height
       const leaves = category.children || []
       const leafWidths: number[] = []
       const leafHeights: number[] = []
       let maxW = catWidth
       leaves.forEach((leaf) => {
-        const leafDims = measureTextDimensions(leaf.text, TREE_MAP_LEAF_FONT_SIZE, {
-          paddingX: TREE_MAP_NODE_PADDING_X / 2,
-          paddingY: TREE_MAP_NODE_PADDING_Y,
+        const leafBox = measureTreeMapNodeBox(leaf.text, {
+          role: 'leaf',
+          fontSize: TREE_MAP_LEAF_FONT_SIZE,
+          secondary: leaf.textSecondary,
         })
-        const leafW = Math.max(
-          leafDims.width + 2 * TREE_MAP_LEAF_BORDER,
-          NODE_MIN_DIMENSIONS.branch.minWidth
-        )
-        const leafH = Math.max(leafDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
+        const leafW = leafBox.width
+        const leafH = leafBox.height
         leafWidths.push(leafW)
         leafHeights.push(leafH)
         maxW = Math.max(maxW, leafW)
@@ -223,18 +230,13 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     })
 
     // Add dimension label node if dimension field exists
-    if (dimension !== undefined) {
-      const topicCenterX = DEFAULT_CENTER_X
-      const labelWidth = NODE_MIN_DIMENSIONS.label.minWidth
+    if (dimension !== undefined && labelBox) {
       nodes.push({
         id: 'dimension-label',
         text: dimension || '',
         ...glossFields(spec.dimensionSecondary),
         type: 'label',
-        position: {
-          x: topicCenterX - labelWidth / 2,
-          y: topicY + topicDims.height + 20,
-        },
+        position: treeMapDimensionLabelPosition(topicY, topicDims.height, labelBox),
       })
     }
   }
@@ -256,10 +258,13 @@ function resolveTreeMapBox(
 ): { width: number; height: number } {
   const measured = measure()
   const pinia = nodeDimensions[nodeId]
-  if (!pinia || pinia.height <= 0) {
+  if (!pinia || pinia.height <= 0 || pinia.width <= 0) {
     return measured
   }
-  return { width: measured.width, height: pinia.height }
+  return {
+    width: Math.max(measured.width, pinia.width),
+    height: Math.max(measured.height, pinia.height),
+  }
 }
 
 interface TreeMapGroupDims {
@@ -277,6 +282,16 @@ interface TreeMapGroupDims {
 export function recalculateTreeMapLayout(
   nodes: DiagramNode[],
   nodeDimensions: Record<string, { width: number; height: number }> = {}
+): DiagramNode[] {
+  if (!Array.isArray(nodes) || nodes.length === 0) return nodes
+  return withTreeMapTextMeasureCache(collectTreeMapNodeMeasureSpecs(nodes), () =>
+    recalculateTreeMapLayoutMeasured(nodes, nodeDimensions)
+  )
+}
+
+function recalculateTreeMapLayoutMeasured(
+  nodes: DiagramNode[],
+  nodeDimensions: Record<string, { width: number; height: number }>
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return nodes
@@ -297,83 +312,28 @@ export function recalculateTreeMapLayout(
   const topicY = topicNode.position?.y ?? DEFAULT_PADDING
   const topicPos = treeMapTopicPositionFromLayout(topicDims.width, topicY)
 
-  const categoryNodes = nodes
-    .filter((n) => isTreeMapCategoryNode(n))
-    .sort((a, b) => readTreeCategoryIndex(a) - readTreeCategoryIndex(b))
-  const catIds = categoryNodes.map((n) => n.id)
-
+  const columns = treeMapColumnsOf(nodes)
   const groupDimsList: TreeMapGroupDims[] = []
 
-  catIds.forEach((catId) => {
-    const catNode = nodes.find((n) => n.id === catId)
-    const catIndex = catNode ? readTreeCategoryIndex(catNode) : -1
-    const catText = catNode?.text ?? ''
-
-    const catBox = resolveTreeMapBox(catId, nodeDimensions, () => {
-      const fs =
-        typeof catNode?.style?.fontSize === 'number'
-          ? catNode.style.fontSize
-          : TREE_MAP_BRANCH_FONT_SIZE
-      const fw = (catNode?.style?.fontWeight as string | undefined) ?? 'normal'
-      const catDims = measureTextDimensions(catText, fs, {
-        paddingX: TREE_MAP_NODE_PADDING_X / 2,
-        paddingY: TREE_MAP_NODE_PADDING_Y,
-        fontWeight: fw,
-        fontFamily: catNode?.style?.fontFamily,
-        secondary: catNode?.textSecondary,
-      })
-      const categoryBorder =
-        catNode?.style?.nodeShape === 'underline' ? 0 : TREE_MAP_CATEGORY_BORDER
-      const catWidth = Math.max(
-        catDims.width + 2 * categoryBorder,
-        NODE_MIN_DIMENSIONS.branch.minWidth
-      )
-      const catHeight =
-        catNode?.style?.nodeShape === 'underline'
-          ? catDims.height
-          : Math.max(catDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
-      return { width: catWidth, height: catHeight }
-    })
-
-    const leafNodes = nodes
-      .filter((n) => {
-        if (!isTreeMapLeafNode(n)) return false
-        const parentId = readTreeParentCategoryId(n)
-        if (parentId) return parentId === catId
-        return readTreeCategoryIndex(n) === catIndex
-      })
-      .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
+  for (const column of columns) {
+    const catNode = column.category
+    const catId = catNode.id ?? ''
+    const catBox = resolveTreeMapBox(catId, nodeDimensions, () =>
+      measureTreeMapNodeBox(catNode.text ?? '', treeMapBranchMeasureOptions(catNode, 'category'))
+    )
 
     const leafWidths: number[] = []
     const leafHeights: number[] = []
     let maxW = catBox.width
 
-    leafNodes.forEach((leaf) => {
-      const leafId = leaf.id ?? ''
-      const leafText = leaf.text ?? ''
-      const leafBox = resolveTreeMapBox(leafId, nodeDimensions, () => {
-        const fs =
-          typeof leaf.style?.fontSize === 'number' ? leaf.style.fontSize : TREE_MAP_LEAF_FONT_SIZE
-        const fw = (leaf.style?.fontWeight as string | undefined) ?? 'normal'
-        const leafDims = measureTextDimensions(leafText, fs, {
-          paddingX: TREE_MAP_NODE_PADDING_X / 2,
-          paddingY: TREE_MAP_NODE_PADDING_Y,
-          fontWeight: fw,
-          fontFamily: leaf.style?.fontFamily,
-          secondary: leaf.textSecondary,
-        })
-        const leafBorder = leaf.style?.nodeShape === 'underline' ? 0 : TREE_MAP_LEAF_BORDER
-        const leafW = Math.max(leafDims.width + 2 * leafBorder, NODE_MIN_DIMENSIONS.branch.minWidth)
-        const leafH =
-          leaf.style?.nodeShape === 'underline'
-            ? leafDims.height
-            : Math.max(leafDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
-        return { width: leafW, height: leafH }
-      })
+    for (const leaf of column.leaves) {
+      const leafBox = resolveTreeMapBox(leaf.id ?? '', nodeDimensions, () =>
+        measureTreeMapNodeBox(leaf.text ?? '', treeMapBranchMeasureOptions(leaf, 'leaf'))
+      )
       leafWidths.push(leafBox.width)
       leafHeights.push(leafBox.height)
       maxW = Math.max(maxW, leafBox.width)
-    })
+    }
 
     groupDimsList.push({
       categoryWidth: catBox.width,
@@ -382,7 +342,7 @@ export function recalculateTreeMapLayout(
       leafHeights,
       maxWidth: maxW,
     })
-  })
+  }
 
   const byId = new Map<string, DiagramNode>()
   for (const n of nodes) {
@@ -404,19 +364,29 @@ export function recalculateTreeMapLayout(
     })
   }
 
-  const categoryY = topicY + topicDims.height + TREE_MAP_TOPIC_TO_CATEGORY_GAP
-  const numCategories = catIds.length
+  const dimLabel = byId.get('dimension-label')
+  const labelBox = dimLabel
+    ? resolveTreeMapDimensionLabelBox(
+        dimLabel.text ?? '',
+        dimLabel.textSecondary,
+        nodeDimensions['dimension-label']
+      )
+    : null
+  const categoryY = treeMapCategoryTopY(topicY, topicDims.height, labelBox)
+  const numCategories = columns.length
   const totalCategoriesWidth =
     groupDimsList.reduce((a, g) => a + g.maxWidth, 0) +
     Math.max(0, numCategories - 1) * TREE_MAP_CATEGORY_SPACING
   let columnLeft = DEFAULT_CENTER_X - totalCategoriesWidth / 2
 
-  catIds.forEach((catId, catIndex) => {
+  columns.forEach((column, catIndex) => {
     const dims = groupDimsList[catIndex]
+    if (!dims) return
     const groupCenterX = columnLeft + dims.maxWidth / 2
     const categoryX = groupCenterX - dims.categoryWidth / 2
-    const catNode = byId.get(catId)
-    if (catNode) {
+    const catId = column.category.id
+    const catNode = catId ? byId.get(catId) : undefined
+    if (catId && catNode) {
       byId.set(catId, {
         ...catNode,
         position: { x: categoryX, y: categoryY },
@@ -428,19 +398,9 @@ export function recalculateTreeMapLayout(
       })
     }
 
-    const catIndexForLeaves = catNode ? readTreeCategoryIndex(catNode) : -1
-    const leafNodes = nodes
-      .filter((n) => {
-        if (!isTreeMapLeafNode(n)) return false
-        const parentId = readTreeParentCategoryId(n)
-        if (parentId) return parentId === catId
-        return readTreeCategoryIndex(n) === catIndexForLeaves
-      })
-      .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
-
     let leafY = categoryY + dims.categoryHeight + TREE_MAP_CATEGORY_TO_LEAF_GAP
 
-    leafNodes.forEach((leaf, leafIndex) => {
+    column.leaves.forEach((leaf, leafIndex) => {
       const leafId = leaf.id
       if (!leafId) return
       const leafWidth = dims.leafWidths[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minWidth
@@ -460,17 +420,10 @@ export function recalculateTreeMapLayout(
     columnLeft += dims.maxWidth + TREE_MAP_CATEGORY_SPACING
   })
 
-  const dimLabel = byId.get('dimension-label')
-  if (dimLabel) {
-    const piniaDim = nodeDimensions['dimension-label']
-    const labelWidth =
-      piniaDim && piniaDim.width > 0 ? piniaDim.width : NODE_MIN_DIMENSIONS.label.minWidth
+  if (dimLabel && labelBox) {
     byId.set('dimension-label', {
       ...dimLabel,
-      position: {
-        x: DEFAULT_CENTER_X - labelWidth / 2,
-        y: topicY + topicDims.height + 20,
-      },
+      position: treeMapDimensionLabelPosition(topicY, topicDims.height, labelBox),
     })
   }
 

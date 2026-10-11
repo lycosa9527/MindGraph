@@ -85,7 +85,11 @@ import {
   diagramPresentationReadOnlyRef,
   resolvePresentationTeleportTarget,
 } from '@/composables/presentation/presentationDiagramEdit'
-import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasExportOptions'
+import type {
+  CanvasExportAnswerMode,
+  CanvasExportColorMode,
+  CanvasExportLayout,
+} from '@/config/canvasExportOptions'
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
@@ -531,13 +535,15 @@ function handleWorksheetTextSave(payload: {
   worksheetText: CanvasWorksheetTextOptions
   colorMode: CanvasExportColorMode
   layout: CanvasExportLayout
+  answerMode: CanvasExportAnswerMode
   format: 'pdf' | 'worksheet_docx'
 }) {
   canvasExportStore.commitWorksheetAndExport(
     payload.worksheetText,
     payload.colorMode,
     payload.format,
-    payload.layout
+    payload.layout,
+    payload.answerMode
   )
 }
 
@@ -545,12 +551,13 @@ const worksheetDefaultTopic = computed(() => getExportTitle())
 
 async function captureWorksheetPreview(preview?: {
   colorMode?: CanvasExportColorMode
+  answerMode?: CanvasExportAnswerMode
 }): Promise<string | null> {
   return canvasExportStore.runExportSession(async () =>
     captureWorksheetPreviewPng({
       ...exportOptions.value,
       colorMode: preview?.colorMode ?? exportOptions.value.colorMode,
-      answerMode: exportOptions.value.answerMode,
+      answerMode: preview?.answerMode ?? exportOptions.value.answerMode,
     })
   )
 }
@@ -960,6 +967,7 @@ defineExpose({
     <CanvasWorksheetTextModal
       v-model:visible="worksheetTextModalOpen"
       :color-mode="exportOptions.colorMode"
+      :answer-mode="exportOptions.answerMode"
       :options="worksheetTextOptions"
       :layout="exportOptions.layout"
       :default-topic="worksheetDefaultTopic"

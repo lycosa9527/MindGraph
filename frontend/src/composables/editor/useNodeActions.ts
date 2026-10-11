@@ -108,7 +108,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         t('canvas.toolbar.substepDefault2', { n: stepNum }),
       ]
       if (diagramStore.addFlowMapStep(t('canvas.toolbar.newStep'), subs)) {
-        diagramStore.pushHistory(t('canvas.toolbar.addStepHistory'))
         notify.successKey('canvas.toolbar.stepAdded')
       }
       return
@@ -180,7 +179,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
           stepNode.id
         )
       ) {
-        diagramStore.pushHistory(t('canvas.toolbar.addSubstepHistory'))
         notify.successKey('canvas.toolbar.substepAdded')
       }
       return
@@ -412,7 +410,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
             stepNode.id
           )
         ) {
-          diagramStore.pushHistory(t('canvas.toolbar.addSubstepHistory'))
           notify.successKey('canvas.toolbar.substepAdded')
         }
       } else {
@@ -424,7 +421,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
           t('canvas.toolbar.substepDefault2', { n: stepNum }),
         ]
         if (diagramStore.addFlowMapStep(t('canvas.toolbar.newStep'), subs)) {
-          diagramStore.pushHistory(t('canvas.toolbar.addStepHistory'))
           notify.successKey('canvas.toolbar.stepAdded')
         }
       }
@@ -670,7 +666,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       const deleted = diagramStore.removeMindMapNodes(selectedNodesArray)
       if (deleted > 0) {
         diagramStore.clearSelection()
-        diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
         notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
       } else {
         notify.warningKey('canvas.toolbar.cannotDeleteTopic')
@@ -710,7 +705,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       const deleted = diagramStore.removeTreeMapNodes(toDelete)
       if (deleted > 0) {
         diagramStore.clearSelection()
-        diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
         notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
       } else {
         notify.warningKey('canvas.toolbar.cannotDeleteTopicGeneric')

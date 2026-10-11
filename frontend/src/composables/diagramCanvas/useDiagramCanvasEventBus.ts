@@ -2,10 +2,12 @@ import { nextTick, toValue } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { isCanvasShownImageExport } from '@/config/canvasExportMenu'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import { ANIMATION, ZOOM } from '@/config/uiConfig'
 import { useCanvasExportStore } from '@/stores'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
+import { STRUCTURAL_SPEC_RELOAD } from '@/stores/diagram/types'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode, MindGraphNode } from '@/types'
 import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
@@ -52,7 +54,7 @@ export interface DiagramCanvasEventBusContext {
   fitApi: FitApi
   emit: (e: 'nodeDoubleClick', node: MindGraphNode) => void
   exportByFormat: (format: string, options?: CanvasExportOptions) => Promise<void>
-  capturePngBlob: (options?: CanvasExportOptions, asShown?: boolean) => Promise<Blob>
+  capturePngBlob: () => Promise<Blob>
   copyPngToClipboard: (blobSource: Promise<Blob>) => Promise<void>
   getExportContainer: () => HTMLElement | null
   regenerateForNodeIfNeeded: (nodeId: string) => void
@@ -93,10 +95,7 @@ export function useDiagramCanvasEventBus(): {
       doubleBubbleRebuildTimer = null
       const spec = diagramStore.getDoubleBubbleSpecFromData()
       if (spec) {
-        diagramStore.loadFromSpec(spec, 'double_bubble_map', {
-          emitLoaded: false,
-          mergePreviousNodeStyles: true,
-        })
+        diagramStore.loadFromSpec(spec, 'double_bubble_map', STRUCTURAL_SPEC_RELOAD)
       }
     }, DOUBLE_BUBBLE_REBUILD_DEBOUNCE_MS)
   }
@@ -257,7 +256,7 @@ export function useDiagramCanvasEventBus(): {
     unsubscribers.push(
       eventBus.on('toolbar:export_requested', async ({ format, options }) => {
         // Worksheet headers only when the payload opts in (打印学习单 commit).
-        const mergedOptions = mergeCanvasExportOptions(options)
+        const mergedOptions = mergeCanvasExportOptions(options ?? canvasExportStore.exportOptions)
 
         if (format === 'mg') {
           await canvasExportStore.runExportSession(async () => {
@@ -315,7 +314,7 @@ export function useDiagramCanvasEventBus(): {
           // Start clipboard.write in this turn (user gesture) with a Promise
           // that resolves after fit + color/B&W visual mode + PNG capture.
           const blobPromise = canvasExportStore.runExportSession(() =>
-            runFittedVisualExport(() => capturePngBlob(mergedOptions, true), true)
+            runFittedVisualExport(() => capturePngBlob(), true)
           )
           await copyPngToClipboard(blobPromise)
           return
@@ -324,7 +323,7 @@ export function useDiagramCanvasEventBus(): {
         await canvasExportStore.runExportSession(() =>
           runFittedVisualExport(async () => {
             await exportByFormat(format, mergedOptions)
-          })
+          }, isCanvasShownImageExport(format))
         )
       })
     )

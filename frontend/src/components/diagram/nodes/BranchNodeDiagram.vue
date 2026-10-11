@@ -36,6 +36,7 @@ import {
   isTreeMapLeafNode,
   readTreeCategoryIndex,
 } from '@/utils/treeMapIdentity'
+import { TREE_MAP_BRANCH_TEXT_CAP_PX, TREE_MAP_LEAF_TEXT_CAP_PX } from '@/utils/treeMapNodeBox'
 
 import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
@@ -212,10 +213,6 @@ const nodeStyle = computed((): CSSProperties => {
 
 const textMaxWidth = computed(() => {
   const label = ((props.data.label as string) || '').trim()
-  if (isTreeMap.value && props.data.style?.width != null) {
-    const px = Number(props.data.style.width)
-    return `${Math.max(60, px - 32)}px`
-  }
   if (isBridgeMap.value) {
     return 'min(420px, 88vw)'
   }
@@ -223,13 +220,19 @@ const textMaxWidth = computed(() => {
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 16
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   const fontFamily = String(nodeStyle.value.fontFamily || DIAGRAM_NODE_FONT_STACK)
-  return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, BRANCH_MAX_TEXT_WIDTH, {
+  let cap = BRANCH_MAX_TEXT_WIDTH
+  if (isTreeMap.value) {
+    cap = isTreeMapLeafNode({ id: props.id, data: props.data })
+      ? TREE_MAP_LEAF_TEXT_CAP_PX
+      : TREE_MAP_BRANCH_TEXT_CAP_PX
+  }
+  return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, cap, {
     fontWeight,
     fontFamily,
   })}px`
 })
 
-const useAutoWrap = computed(() => !isTreeMap.value && !isBridgeMap.value)
+const useAutoWrap = computed(() => !isBridgeMap.value)
 
 const isEditing = ref(false)
 

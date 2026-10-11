@@ -14,7 +14,7 @@ import { computed, nextTick, onUnmounted, useTemplateRef, watch } from 'vue'
 
 import { ArrowUpRight } from '@lucide/vue'
 
-import { useLanguage } from '@/composables/core/useLanguage'
+import I18nText from '@/components/common/I18nText.vue'
 import { BlackCat } from '@/utils/mascot/blackCat'
 import { markTestServerBannerShownToday } from '@/utils/testServerBanner'
 
@@ -44,19 +44,13 @@ const emit = defineEmits<{
   confirm: []
 }>()
 
-const { t } = useLanguage()
-const badgeText = computed(() => props.badge ?? t('app.testServer.badge'))
 const envText = computed(() => props.envLabel ?? 'ENVIRONMENT')
-const titleText = computed(() => props.title ?? t('app.testServer.title'))
-const bodyText = computed(() => props.body ?? t('app.testServer.body'))
-const hostText = computed(() => {
+const showHost = computed(() => {
   if (props.host !== undefined) {
-    return props.host
+    return props.host.length > 0
   }
-  return props.showJump ? t('app.testServer.productionHost') : ''
+  return props.showJump
 })
-const confirmText = computed(() => props.confirmLabel ?? t('app.testServer.confirm'))
-const jumpText = computed(() => props.jumpLabel ?? t('app.testServer.jump'))
 const kittyHostRef = useTemplateRef<HTMLDivElement>('kittyHostRef')
 let kittyMascot: BlackCat | null = null
 
@@ -136,7 +130,13 @@ function handleJump(): void {
           />
 
           <div class="swm-meta">
-            <span class="swm-badge">{{ badgeText }}</span>
+            <span class="swm-badge">
+              <I18nText
+                v-if="badge === undefined"
+                k="app.testServer.badge"
+              />
+              <template v-else>{{ badge }}</template>
+            </span>
             <span class="swm-rule" />
             <span class="swm-env">{{ envText }}</span>
           </div>
@@ -145,21 +145,35 @@ function handleJump(): void {
             id="swm-title"
             class="swm-title"
           >
-            {{ titleText }}
+            <I18nText
+              v-if="title === undefined"
+              k="app.testServer.title"
+            />
+            <template v-else>{{ title }}</template>
           </h2>
 
           <p
             id="swm-body"
             class="swm-body"
           >
-            {{ bodyText }}
+            <I18nText
+              v-if="body === undefined"
+              k="app.testServer.body"
+            />
+            <template v-else>{{ body }}</template>
           </p>
 
           <p
-            v-if="hostText"
+            v-if="showHost"
             class="swm-host"
           >
-            <span class="swm-host-value">{{ hostText }}</span>
+            <span class="swm-host-value">
+              <I18nText
+                v-if="host === undefined"
+                k="app.testServer.productionHost"
+              />
+              <template v-else>{{ host }}</template>
+            </span>
           </p>
 
           <div class="swm-actions">
@@ -169,7 +183,12 @@ function handleJump(): void {
               class="swm-btn swm-btn-ghost"
               @click="handleConfirm"
             >
-              {{ confirmText }}
+              <I18nText
+                v-if="confirmLabel === undefined"
+                k="app.testServer.confirm"
+                align="center"
+              />
+              <template v-else>{{ confirmLabel }}</template>
             </button>
             <div class="swm-jump-wrap">
               <div
@@ -182,7 +201,17 @@ function handleJump(): void {
                 class="swm-btn swm-btn-solid"
                 @click="showJump ? handleJump() : handleConfirm()"
               >
-                <span>{{ showJump ? jumpText : confirmText }}</span>
+                <I18nText
+                  v-if="showJump && jumpLabel === undefined"
+                  k="app.testServer.jump"
+                  align="center"
+                />
+                <I18nText
+                  v-else-if="!showJump && confirmLabel === undefined"
+                  k="app.testServer.confirm"
+                  align="center"
+                />
+                <span v-else>{{ showJump ? jumpLabel : confirmLabel }}</span>
                 <ArrowUpRight
                   v-if="showJump"
                   class="swm-btn-icon"
@@ -351,11 +380,13 @@ function handleJump(): void {
   justify-content: center;
   gap: 6px;
   min-height: 40px;
-  padding: 0 16px;
+  padding: 8px 16px;
   border: 1px solid var(--swiss-ink, #1c1917);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
+  white-space: normal;
+  text-align: center;
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -379,6 +410,15 @@ function handleJump(): void {
 .swm-btn-solid:hover {
   background: var(--swiss-geek-red, #e30613);
   border-color: var(--swiss-geek-red, #e30613);
+}
+
+.swm-btn :deep(.i18n-label) {
+  align-items: center;
+}
+
+.swm-btn-solid :deep(.i18n-label__secondary) {
+  color: rgb(255 255 255 / 0.82);
+  opacity: 1;
 }
 
 .swm-btn-icon {

@@ -20,6 +20,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 import httpx
 
 from clients.llm.http_client_manager import get_httpx_manager
+from clients.llm.openai_extra_body import hoist_openai_extra_body
 from clients.llm.structured_output import apply_structured_output
 from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
@@ -217,6 +218,7 @@ class QwenClient:
                 payload.update(kwargs)
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             client = await get_httpx_manager().get_client("qwen", self.api_url, self.timeout, self.stream_timeout)
             response = await client.post(self.api_url, json=payload, headers=headers)
@@ -414,6 +416,7 @@ class QwenClient:
                 payload.update(kwargs)
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             client = await get_httpx_manager().get_client("qwen", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
@@ -566,6 +569,7 @@ class DeepSeekClient:
             )
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             logger.debug("DeepSeek async API request: %s", payload.get("model"))
 
@@ -673,6 +677,7 @@ class DeepSeekClient:
             payload["extra_body"]["enable_thinking"] = enable_thinking
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             client = await get_httpx_manager().get_client("deepseek", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
@@ -790,6 +795,7 @@ class KimiClient:
             payload["max_tokens"] = max_tokens
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             logger.debug("Kimi async API request: %s", self.model_name)
 
@@ -883,6 +889,7 @@ class KimiClient:
             payload["extra_body"]["enable_thinking"] = enable_thinking
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             client = await get_httpx_manager().get_client("kimi", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:

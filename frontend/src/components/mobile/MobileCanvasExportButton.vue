@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Mobile canvas export — desktop export commands in a bottom sheet.
- * Mind maps include color/answer options, clipboard, and worksheet text.
+ * Mind maps include color, clipboard, and worksheet text.
  * Other diagrams use the standard PNG / SVG / PDF / .mg menu.
  */
 import { type Component, computed, ref } from 'vue'

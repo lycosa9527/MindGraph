@@ -46,6 +46,11 @@ export const CANVAS_RASTER_EXPORT_COMMANDS: readonly CanvasRasterExportCommand[]
   'pdf_portrait',
 ]
 
+/** PNG and SVG copy the canvas as shown, including the learning-sheet answer row. */
+export function isCanvasShownImageExport(format: string): boolean {
+  return format === 'png' || format === 'svg'
+}
+
 /** Open 智绘 图示生图 — hidden from the mind-map export menu for now. */
 export const CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM = {
   command: 'zhihui_diagram' as CanvasZhihuiDiagramCommand,

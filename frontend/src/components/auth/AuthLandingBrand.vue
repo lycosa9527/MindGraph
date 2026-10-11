@@ -145,8 +145,7 @@ function onVideoError(): void {
           id="auth-landing-brand-title"
           class="auth-landing-brand__headline"
         >
-          <span><I18nText k="auth.landing.headlinePrefix" /></span>
-          <span><I18nText k="auth.landing.headlineAccent" /></span>
+          <I18nText k="auth.landing.headline" />
         </h1>
         <p class="auth-landing-brand__subcopy">
           <I18nText k="auth.landing.subcopy" />
@@ -243,13 +242,18 @@ function onVideoError(): void {
 
 .auth-landing-brand__headline {
   margin: 0 0 0.9rem;
-  max-width: 14em;
+  max-width: 16em;
   font-size: clamp(1.85rem, 3.6vw, 2.75rem);
   font-weight: 800;
   letter-spacing: -0.035em;
-  line-height: 1.2;
+  line-height: 1.15;
   color: #2e1065;
   text-shadow: none;
+}
+
+.auth-landing-brand__headline :deep(.i18n-label__secondary) {
+  margin-top: 0.12em;
+  font-weight: 600;
 }
 
 .auth-landing-brand__subcopy {
@@ -291,6 +295,10 @@ function onVideoError(): void {
     max-width: none;
     margin-bottom: 0;
     font-size: 1.2rem;
+  }
+
+  .auth-landing-brand__headline :deep(.i18n-label__secondary) {
+    margin-top: 0.08em;
   }
 
   .auth-landing-brand__subcopy {

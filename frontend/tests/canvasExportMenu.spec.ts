@@ -5,6 +5,7 @@ import {
   CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
   CANVAS_RASTER_EXPORT_COMMANDS,
   CANVAS_STANDARD_EXPORT_MENU_ITEMS,
+  isCanvasShownImageExport,
 } from '@/config/canvasExportMenu'
 import {
   computePdfRasterTargetSize,
@@ -59,6 +60,12 @@ describe('canvasExportMenu', () => {
     expect(mgItem?.divided).toBe(true)
   })
 
+  it('treats png and svg as canvas-as-shown image exports', () => {
+    expect(isCanvasShownImageExport('png')).toBe(true)
+    expect(isCanvasShownImageExport('svg')).toBe(true)
+    expect(isCanvasShownImageExport('pdf')).toBe(false)
+    expect(isCanvasShownImageExport('clipboard')).toBe(false)
+  })
 })
 
 describe('diagramPdfExport', () => {

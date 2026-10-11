@@ -17,10 +17,16 @@ import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useUIStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import {
   thinkingMapAdaptiveTextColor,
   thinkingMapStructureColor,
 } from '@/utils/thinkingMapConnectionStroke'
+import {
+  TREE_MAP_DIMENSION_LABEL_FONT_PX,
+  TREE_MAP_DIMENSION_LABEL_MAX_TEXT_PX,
+  thinkingMapDimensionLabelDisplayText,
+} from '@/utils/treeMapLabelLayout'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -32,6 +38,7 @@ const isPlaceholder = computed(() => props.data.isPlaceholder || !props.data.lab
 const isBridgeDimension = computed(
   () => props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel
 )
+const isTreeMapDimension = computed(() => props.data.diagramType === 'tree_map')
 
 // Position recalculation for bridge map dimension labels
 const labelRef = ref<HTMLElement | null>(null)
@@ -238,8 +245,8 @@ const nodeStyle = computed((): CSSProperties => {
     textAlign: (isBridgeDimension ? 'right' : 'center') as
       'left' | 'right' | 'center' | 'justify' | 'start' | 'end',
     padding: isBridgeDimension ? '4px 8px' : '4px 8px',
-    whiteSpace: isBridgeDimension ? 'normal' : 'nowrap', // Allow natural wrapping for bridge maps
-    overflowWrap: (isBridgeDimension ? 'break-word' : 'normal') as
+    whiteSpace: isBridgeDimension || isTreeMapDimension.value ? 'normal' : 'nowrap',
+    overflowWrap: (isBridgeDimension || isTreeMapDimension.value ? 'break-word' : 'normal') as
       'normal' | 'break-word' | 'anywhere',
   }
 })
@@ -269,17 +276,6 @@ const bridgeMapDisplay = computed(() => {
   }
 })
 
-function labeledDimensionPrefix(braceMap: boolean, dimensionValue: string): string {
-  const hasChinese = /[\u4e00-\u9fa5]/.test(dimensionValue)
-  if (hasChinese) {
-    return braceMap
-      ? t('diagram.dimension.decompositionZh')
-      : t('diagram.dimension.classificationZh')
-  }
-  // Locale-specific wording comes from each bundle’s *En keys (misnamed; not English-only).
-  return braceMap ? t('diagram.dimension.decompositionEn') : t('diagram.dimension.classificationEn')
-}
-
 const displayText = computed(() => {
   // For bridge maps, return single string (will be handled separately in template)
   if (props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel) {
@@ -287,26 +283,22 @@ const displayText = computed(() => {
   }
 
   const braceMap = props.data.diagramType === 'brace_map'
+  const raw = props.data.label || ''
+  const dimensionValue =
+    braceMap && raw && uiStore.language === 'zh' ? translateDimension(raw, true) : raw
+  return thinkingMapDimensionLabelDisplayText(dimensionValue, braceMap ? 'brace' : 'tree')
+})
 
-  if (props.data.label) {
-    const dimensionValue =
-      braceMap && uiStore.language === 'zh'
-        ? translateDimension(props.data.label, true)
-        : props.data.label
-    const prefix = labeledDimensionPrefix(braceMap, dimensionValue)
-    return t('diagram.labelNode.placeholderBracket', {
-      prefix,
-      hint: dimensionValue,
-    })
-  }
-
-  const placeholderPrefix = braceMap
-    ? t('diagram.labelNode.emptyPrefixBrace')
-    : t('diagram.labelNode.emptyPrefixTree')
-  return t('diagram.labelNode.placeholderBracket', {
-    prefix: placeholderPrefix,
-    hint: t('diagram.labelNode.clickToFillHint'),
-  })
+const treeLabelMaxWidth = computed(() => {
+  const fontSize = props.data.style?.fontSize || TREE_MAP_DIMENSION_LABEL_FONT_PX
+  const fontWeight = String(props.data.style?.fontWeight || 'normal')
+  const fontFamily = props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK
+  return `${resolveThinkingMapDisplayMaxWidthPx(
+    displayText.value,
+    fontSize,
+    TREE_MAP_DIMENSION_LABEL_MAX_TEXT_PX,
+    { fontWeight, fontFamily }
+  )}px`
 })
 
 // Inline editing state
@@ -379,10 +371,11 @@ function handleEditCancel() {
         :text="displayText"
         :node-id="id"
         :is-editing="isEditing"
-        max-width="200px"
+        :max-width="isTreeMapDimension ? treeLabelMaxWidth : '200px'"
         text-align="center"
         :text-decoration="data.style?.textDecoration || 'none'"
-        text-class="whitespace-nowrap"
+        :text-class="isTreeMapDimension ? '' : 'whitespace-nowrap'"
+        :auto-wrap="isTreeMapDimension"
         render-markdown
         @save="handleTextSave"
         @cancel="handleEditCancel"
