@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.158] - 2026-10-12
+
+> **The backup Dify server defaults to the MindSpring host.**
+
+### Fixed
+
+- **备用服务器** — A blank backup URL is `http://dify.mindspringedu.com/v1`. The school form no longer shows `https://api.dify.ai/v1` on that slot. Leave the backup key empty to stay on one server.
+
 ## [5.180.157] - 2026-10-12
 
 > **MindMate stays available when the main message server is down, and a chat opened on the backup keeps going there.**

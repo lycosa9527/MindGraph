@@ -17,7 +17,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import Organization
 from models.domain.messages import Language, Messages
 from models.domain.mindbot_config import OrganizationMindbotConfig
-from services.dify.dify_global_servers import effective_server_credentials, global_dify_slot_credentials
+from services.dify.dify_global_servers import (
+    effective_server_credentials,
+    global_dify_backup_url,
+    global_dify_slot_credentials,
+)
 from services.dify.dify_servers import configured_dify_servers, org_server_credentials, primary_server_no
 from services.dify.org_mindmate_client import global_mindmate_dify_credentials
 from services.mindbot.dify.service_health import check_dify_app_api_reachable
@@ -114,11 +118,11 @@ def global_mindmate_dify_fields() -> dict[str, Any]:
     """Serialized global MindMate Dify settings from .env (never exposes raw key)."""
     api_key, api_url = global_mindmate_dify_credentials()
     backup = global_dify_slot_credentials(2)
-    backup_key, backup_url = backup if backup is not None else ("", "")
+    backup_key = backup[0] if backup is not None else ""
     return {
         "dify_api_base_url": api_url or None,
         "dify_api_key_masked": mask_secret(api_key) if api_key else None,
-        "dify_backup_api_base_url": backup_url or None,
+        "dify_backup_api_base_url": global_dify_backup_url() or None,
         "dify_backup_api_key_masked": mask_secret(backup_key) if backup_key else None,
     }
 

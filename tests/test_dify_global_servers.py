@@ -13,6 +13,7 @@ from routers.auth.admin import organization_dify as org_dify_mod
 from services.dify import org_mindmate_client as mindmate_client_mod
 from services.dify.dify_global_servers import (
     effective_configured_dify_servers,
+    global_dify_backup_url,
     global_dify_slot_credentials,
 )
 from services.dify.dify_server_schema import clear_dify_server_schema_cache, organization_dify_server_slots
@@ -118,6 +119,19 @@ def test_backup_unset_does_not_fill_slots(monkeypatch: pytest.MonkeyPatch) -> No
 
     assert not effective_configured_dify_servers(_org())
     assert global_dify_slot_credentials(2) is None
+
+
+def test_unset_backup_url_defaults_to_mindspring_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    """备用服务器 shows the MindSpring host, not the public Dify placeholder."""
+    _clear_dify_env(monkeypatch)
+
+    assert global_dify_backup_url() == "http://dify.mindspringedu.com/v1"
+    fields = org_dify_mod.global_mindmate_dify_fields()
+    assert fields["dify_backup_api_base_url"] == "http://dify.mindspringedu.com/v1"
+    assert fields["dify_backup_api_key_masked"] is None
+
+    monkeypatch.setenv("DIFY_BACKUP_API_KEY", "backup-key")
+    assert global_dify_slot_credentials(2) == ("backup-key", "http://dify.mindspringedu.com/v1")
 
 
 def test_global_fields_expose_backup_without_raw_key(monkeypatch: pytest.MonkeyPatch) -> None:

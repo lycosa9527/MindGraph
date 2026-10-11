@@ -133,7 +133,12 @@ const globalDifyUnconfigured = computed(
     !globalDifyKeyMasked.value
 )
 
-const urlPlaceholder = computed(() => globalDifyUrl.value || t('admin.schoolDifyUrlPlaceholder'))
+const DEFAULT_BACKUP_DIFY_URL = 'http://dify.mindspringedu.com/v1'
+const urlPlaceholder = computed(() => {
+  if (globalDifyUrl.value) return globalDifyUrl.value
+  if (selectedServer.value === 2) return DEFAULT_BACKUP_DIFY_URL
+  return t('admin.schoolDifyUrlPlaceholder')
+})
 
 const difyStatusLabel = computed(() => {
   if (difyStatusLoading.value) {

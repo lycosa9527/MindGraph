@@ -253,8 +253,8 @@ class DifySettings(BaseModel):
         description="Dify backup API key (school 备用服务器). Same workflow as main.",
     )
     DIFY_BACKUP_API_URL: str = Field(
-        default="",
-        description="Dify backup API URL (school 备用服务器). Empty disables backup.",
+        default="http://dify.mindspringedu.com/v1",
+        description="Dify backup API URL (school 备用服务器). Leave the key empty to disable backup.",
     )
     DIFY_TIMEOUT: int = Field(default=300, ge=5, le=600, description="Request timeout in seconds")
 
