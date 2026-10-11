@@ -3,7 +3,8 @@ Background heartbeat poller for per-organization Dify servers.
 
 Platform monitoring walks every schema slot (1, 2, 3, …) and probes each unique
 base URL once (shared hosts collapse across schools/keys). Per-school failover
-logs and routing use only the pair that school configured (e.g. 1+2, 2+3, or 1+3).
+uses that school's pair. A blank 主服务器 or 备用服务器 uses Dify main or Dify backup
+from the environment when both env pairs are set.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -19,6 +20,11 @@ import uuid
 from typing import Dict, List, Optional, Tuple
 
 from models.domain.auth import Organization
+from services.dify.dify_global_servers import (
+    effective_configured_dify_servers,
+    effective_failover_partner_server,
+    effective_server_credentials,
+)
 from services.dify.dify_health_host_probe import check_dify_host_reachable
 from services.dify.dify_health_logging import (
     LOG_PREFIX,
@@ -28,7 +34,7 @@ from services.dify.dify_health_logging import (
     server_label,
     traffic_route_sentence,
 )
-from services.dify.dify_health_org_loader import load_orgs_with_dify_credentials
+from services.dify.dify_health_org_loader import load_orgs_for_dify_health
 from services.dify.dify_health_probe_plan import (
     DifyProbeAssignment,
     DifyProbePlan,
@@ -38,9 +44,7 @@ from services.dify.dify_health_probe_plan import (
 )
 from services.dify.dify_server_schema import organization_dify_server_slots
 from services.dify.dify_servers import (
-    configured_dify_servers,
-    failover_partner_server,
-    org_eligible_for_failover_probing,
+    failover_enabled,
     primary_server_no,
 )
 from services.dify.org_mindmate_client import select_active_dify_server
@@ -90,7 +94,7 @@ def _server_role(org: Organization, server: int) -> str:
     primary = primary_server_no(org)
     if server == primary:
         return "primary"
-    partner = failover_partner_server(org)
+    partner = effective_failover_partner_server(org)
     if partner is not None and server == partner:
         return "standby"
     return f"server_{server}"
@@ -171,7 +175,7 @@ def _log_org_heartbeat_summary(
     active_route: Optional[int],
 ) -> None:
     """One readable line per org each heartbeat cycle."""
-    servers = configured_dify_servers(org)
+    servers = effective_configured_dify_servers(org)
     status_parts = []
     for creds in servers:
         role = _server_role(org, creds.server)
@@ -179,7 +183,7 @@ def _log_org_heartbeat_summary(
         status_parts.append(f"{label} is {health_status_text(health_by_server.get(creds.server))}")
 
     primary = primary_server_no(org)
-    partner = failover_partner_server(org)
+    partner = effective_failover_partner_server(org)
     partner_no = partner if partner is not None else primary
     route_note = traffic_route_sentence(
         active_route,
@@ -207,7 +211,7 @@ def _log_routing_change(
         return
     school = org_label(org)
     primary = primary_server_no(org)
-    partner = failover_partner_server(org)
+    partner = effective_failover_partner_server(org)
     main = server_label(primary, "primary")
     if partner is None:
         logger.warning(
@@ -265,14 +269,14 @@ async def _acquire_or_refresh_lock() -> bool:
 
 
 async def _load_orgs_with_dify_credentials() -> List[Organization]:
-    """Return every school that configures at least one Dify server slot."""
+    """Return schools the heartbeat should probe."""
     async with system_rls_session() as db:
-        return await load_orgs_with_dify_credentials(db)
+        return await load_orgs_for_dify_health(db)
 
 
 def _failover_orgs(orgs: List[Organization]) -> List[Organization]:
-    """Schools that participate in automatic failover (enabled + configured pair)."""
-    return [org for org in orgs if org_eligible_for_failover_probing(org)]
+    """Schools that participate in automatic failover (enabled + effective pair)."""
+    return [org for org in orgs if failover_enabled(org) and effective_failover_partner_server(org) is not None]
 
 
 async def _probe_unique_target(
@@ -321,7 +325,7 @@ async def _apply_assignment(
 async def _finalize_org(org: Organization, route_before: Optional[int]) -> None:
     """Emit per-school summary and routing logs after all server slots are updated."""
     health_by_server: Dict[int, Optional[DifyServerHealth]] = {}
-    for creds in configured_dify_servers(org):
+    for creds in effective_configured_dify_servers(org):
         health_by_server[creds.server] = await get_server_health(org.id, creds.server)
 
     route_after = await select_active_dify_server(org)
@@ -329,15 +333,25 @@ async def _finalize_org(org: Organization, route_before: Optional[int]) -> None:
     _log_routing_change(org, route_before, route_after)
 
 
-async def _probe_once() -> None:
+async def run_dify_health_check_once(orgs: Optional[List[Organization]] = None) -> None:
+    """
+    Run one heartbeat cycle.
+
+    Pass *orgs* to check a known school list. The background loop omits it and
+    loads schools from the database.
+    """
+    await _probe_once(orgs)
+
+
+async def _probe_once(orgs: Optional[List[Organization]] = None) -> None:
     """Probe unique endpoints once, then fan results to each school's server slots."""
-    monitor_orgs = await _load_orgs_with_dify_credentials()
+    monitor_orgs = orgs if orgs is not None else await _load_orgs_with_dify_credentials()
     if not monitor_orgs:
         logger.debug("%s No schools with Dify server credentials are configured.", LOG_PREFIX)
         return
 
     failover_orgs = _failover_orgs(monitor_orgs)
-    plan = build_deduped_probe_plan(monitor_orgs)
+    plan = build_deduped_probe_plan(monitor_orgs, effective_server_credentials)
     schema_slots = organization_dify_server_slots()
     logger.debug(
         "%s Health check cycle: %s unique base URL(s) across schema slot(s) %s; "

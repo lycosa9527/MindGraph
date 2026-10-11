@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI-tarkastus',
   'focusQuestion.validationRequestFailed': 'Vahvistuspyyntö epäonnistui',
   'focusQuestion.weakLabel': 'epäonnistunut',
+  'mindmate.backupServerNotice': 'Pääviestipalvelimessa on vika, joten olet varapalvelimella. Palaa muutaman minuutin kuluttua hakeaksesi keskustelun.',
   'mindmate.defaultSuggestion1': 'Mitä kognitiivisia konflikteja voidaan suunnitella oppitunnilla "Rinnakkaiset"?',
   'mindmate.defaultSuggestion10': 'Miten tilanneopetusta tehdään historian luokassa?',
   'mindmate.defaultSuggestion11': 'Mihin turvallisuuskysymyksiin tulisi kiinnittää huomiota fysiikan kokeiden opetuksessa?',

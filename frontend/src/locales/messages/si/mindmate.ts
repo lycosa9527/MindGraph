@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI පරීක්ෂාව',
   'focusQuestion.validationRequestFailed': 'වලංගු කිරීමේ ඉල්ලීම අසාර්ථක විය',
   'focusQuestion.weakLabel': 'දුර්වලයි',
+  'mindmate.backupServerNotice': 'ප්‍රධාන පණිවිඩ සේවාදායකයේ ගැටලුවක් ඇත, එබැවින් ඔබ උපස්ථ සේවාදායකයේ සිටී. සංවාදය ලබා ගැනීමට මිනිත්තු කිහිපයකින් නැවත එන්න.',
   'mindmate.defaultSuggestion1': 'සමාන්තර චලිත පාඩමක් සඳහා මට සැලසුම් කළ හැකි සංජානන ගැටුම් මොනවාද?',
   'mindmate.defaultSuggestion10': 'ඉතිහාස පන්තියේ තත්ව ඉගැන්වීම භාවිතා කරන්නේ කෙසේද?',
   'mindmate.defaultSuggestion11': 'භෞතික විද්‍යා පරීක්‍ෂණවලදී සටහන් කළ යුතු ආරක්‍ෂිත ගැටලු මොනවාද?',

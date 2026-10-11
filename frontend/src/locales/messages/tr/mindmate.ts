@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'YZ kontrolü',
   'focusQuestion.validationRequestFailed': 'Doğrulama isteği başarısız',
   'focusQuestion.weakLabel': 'Zayıf',
+  'mindmate.backupServerNotice': 'Ana mesaj sunucusunda bir sorun var, bu yüzden yedek sunucudasınız. Konuşmayı almak için lütfen birkaç dakika sonra geri gelin.',
   'mindmate.defaultSuggestion1': 'Paralelkenar dersi için hangi bilişsel çatışmaları tasarlayabilirim?',
   'mindmate.defaultSuggestion10': 'Tarih dersinde durumsal öğretim nasıl kullanılır?',
   'mindmate.defaultSuggestion11': 'Fizik deneylerinde hangi güvenlik konularına dikkat edilmeli?',

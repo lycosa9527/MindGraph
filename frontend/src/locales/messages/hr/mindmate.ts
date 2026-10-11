@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI inspekcija',
   'focusQuestion.validationRequestFailed': 'Zahtjev za provjeru nije uspio',
   'focusQuestion.weakLabel': 'nije uspio',
+  'mindmate.backupServerNotice': 'Nešto nije u redu s glavnim poslužiteljem poruka, pa ste na pričuvnom. Vratite se za nekoliko minuta da preuzmete razgovor.',
   'mindmate.defaultSuggestion1': 'Koji se kognitivni sukobi mogu osmisliti u lekciji "Paralelogrami"?',
   'mindmate.defaultSuggestion10': 'Kako provoditi situacijsku nastavu u učionici povijesti?',
   'mindmate.defaultSuggestion11': 'Na koje sigurnosne probleme treba obratiti pozornost u nastavi fizike?',

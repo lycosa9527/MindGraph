@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI yoxlaması',
   'focusQuestion.validationRequestFailed': 'Yoxlama sorğusu uğursuz oldu',
   'focusQuestion.weakLabel': 'Zəif',
+  'mindmate.backupServerNotice': 'Əsas mesaj serverində problem var, ona görə ehtiyat serverdəsiniz. Zəhmət olmasa bir neçə dəqiqədən sonra qayıdıb söhbəti götürün.',
   'mindmate.defaultSuggestion1': 'Paraleloqram dərsi üçün hansı idraki konfliktlər dizayn edə bilərəm?',
   'mindmate.defaultSuggestion10': 'Tarix dərsində situasiya təlimindən necə istifadə etmək olar?',
   'mindmate.defaultSuggestion11': 'Fizika təcrübələrində hansı təhlükəsizlik məsələlərinə diqqət yetirmək lazımdır?',

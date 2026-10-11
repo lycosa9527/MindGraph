@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI проверка',
   'focusQuestion.validationRequestFailed': 'Неуспешна заявка за проверка',
   'focusQuestion.weakLabel': 'неуспешно',
+  'mindmate.backupServerNotice': 'Нещо не е наред с основния сървър за съобщения и сте на резервния. Моля, върнете се след няколко минути, за да възстановите разговора.',
   'mindmate.defaultSuggestion1': 'Какви когнитивни конфликти могат да бъдат проектирани в урока "Успоредници"?',
   'mindmate.defaultSuggestion10': 'Как да провеждаме ситуационно обучение в класната стая по история?',
   'mindmate.defaultSuggestion11': 'На какви проблеми с безопасността трябва да се обърне внимание при преподаването на експерименти по физика?',

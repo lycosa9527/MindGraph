@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'KI-kontrole',
   'focusQuestion.validationRequestFailed': 'Validasieversoek het misluk',
   'focusQuestion.weakLabel': 'Swak',
+  'mindmate.backupServerNotice': 'Iets is fout met die hoofboodskapbediener, so u is op die rugsteun. Kom asseblief oor n paar minute terug om die gesprek terug te kry.',
   'mindmate.defaultSuggestion1': 'Watter kognitiewe konflikte kan ek vir \'n parallelogram-les ontwerp?',
   'mindmate.defaultSuggestion10': 'Hoe gebruik ek situasionele onderrig in geskiedenisklas?',
   'mindmate.defaultSuggestion11': 'Watter veiligheidskwessies moet in fisika-eksperimente in ag geneem word?',

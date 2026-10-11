@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'ตรวจด้วย AI',
   'focusQuestion.validationRequestFailed': 'คำขอตรวจล้มเหลว',
   'focusQuestion.weakLabel': 'อ่อน',
+  'mindmate.backupServerNotice': 'เซิร์ฟเวอร์ข้อความหลักมีปัญหา จึงใช้งานเซิร์ฟเวอร์สำรองอยู่ โปรดกลับมาในอีกไม่กี่นาทีเพื่อดึงการสนทนากลับมา',
   'mindmate.defaultSuggestion1': 'ฉันออกแบบความขัดแย้งทางความคิดสำหรับบทสี่เหลี่ยมด้านขนานได้อย่างไร?',
   'mindmate.defaultSuggestion10': 'ใช้การสอนตามสถานการณ์ในวิชาประวัติศาสตร์อย่างไร?',
   'mindmate.defaultSuggestion11': 'ควรระวังประเด็นความปลอดภัยอะไรในทดลองฟิสิกส์?',

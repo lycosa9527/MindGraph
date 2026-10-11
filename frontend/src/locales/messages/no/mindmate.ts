@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI-inspeksjon',
   'focusQuestion.validationRequestFailed': 'Bekreftelsesforespørsel mislyktes',
   'focusQuestion.weakLabel': 'mislyktes',
+  'mindmate.backupServerNotice': 'Noe er galt med hovedmeldingsserveren, så du er på reserveserveren. Kom tilbake om noen minutter for å hente samtalen.',
   'mindmate.defaultSuggestion1': 'Hvilke kognitive konflikter kan utformes i leksjonen «Parallelogrammer»?',
   'mindmate.defaultSuggestion10': 'Hvordan gjennomføre situasjonsbestemt undervisning i historieklasserom?',
   'mindmate.defaultSuggestion11': 'Hvilke sikkerhetsspørsmål bør man være oppmerksom på i fysikkeksperimentundervisning?',

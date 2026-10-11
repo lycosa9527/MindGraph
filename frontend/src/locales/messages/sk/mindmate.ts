@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Inšpekcia AI',
   'focusQuestion.validationRequestFailed': 'Žiadosť o overenie zlyhala',
   'focusQuestion.weakLabel': 'nepodarilo',
+  'mindmate.backupServerNotice': 'S hlavným serverom správ je niečo v neporiadku, preto ste na záložnom. Vráťte sa o niekoľko minút a vyzdvihnite si konverzáciu.',
   'mindmate.defaultSuggestion1': 'Aké kognitívne konflikty možno navrhnúť v lekcii „Paralelogramy“?',
   'mindmate.defaultSuggestion10': 'Ako realizovať situačné vyučovanie na hodinách dejepisu?',
   'mindmate.defaultSuggestion11': 'Akým otázkam bezpečnosti treba venovať pozornosť pri výučbe fyzikálnych experimentov?',

@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Controllo IA',
   'focusQuestion.validationRequestFailed': 'Richiesta validazione non riuscita',
   'focusQuestion.weakLabel': 'Debole',
+  'mindmate.backupServerNotice': 'Il server dei messaggi principale ha un problema, quindi sei sul server di riserva. Torna tra qualche minuto per recuperare la conversazione.',
   'mindmate.defaultSuggestion1': 'Quali conflitti cognitivi posso progettare per una lezione sul parallelogramma?',
   'mindmate.defaultSuggestion10': 'Come usare la didattica situazionale in storia?',
   'mindmate.defaultSuggestion11': 'Quali problemi di sicurezza considerare negli esperimenti di fisica?',

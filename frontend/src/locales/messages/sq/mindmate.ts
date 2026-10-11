@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Kontroll AI',
   'focusQuestion.validationRequestFailed': 'Kërkesa e validimit dështoi',
   'focusQuestion.weakLabel': 'E dobët',
+  'mindmate.backupServerNotice': 'Diçka nuk shkon me serverin kryesor të mesazheve, ndaj jeni te serveri rezervë. Kthehuni pas disa minutash për të marrë bisedën.',
   'mindmate.defaultSuggestion1': 'Çfarë konfliktesh kognitivë mund të projektoj për një mësim rreth paralelogramit?',
   'mindmate.defaultSuggestion10': 'Si të përdor mësimdhënien situative në orën e historisë?',
   'mindmate.defaultSuggestion11': 'Çfarë çështjesh sigurie duhet vënë re në eksperimentet e fizikës?',

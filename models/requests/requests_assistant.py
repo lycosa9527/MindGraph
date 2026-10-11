@@ -73,6 +73,12 @@ class AIAssistantRequest(BaseModel):
         max_length=100,
         description="Conversation ID for context (null for new conversation)",
     )
+    server: Optional[int] = Field(
+        None,
+        ge=1,
+        le=3,
+        description="Dify server that owns conversation_id (1 = 主服务器)",
+    )
     files: Optional[List[AIAssistantFile]] = Field(None, description="Files for Vision/document processing")
     inputs: Optional[Dict[str, Any]] = Field(None, description="App-defined variable values")
     auto_generate_name: bool = Field(True, description="Auto-generate conversation title")

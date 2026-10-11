@@ -14,7 +14,7 @@ Proprietary License
 """
 
 import logging
-from typing import Optional
+from typing import NoReturn, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import AsyncDifyClient
 from clients.dify_exceptions import DifyAPIError, DifyConversationNotFoundError
+from clients.dify_http_errors import dify_error_is_upstream_outage
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.pinned_conversations import PinnedConversation
@@ -72,6 +73,13 @@ def _http_exception_for_dify_route(exc: Exception) -> HTTPException:
         status_code = exc.status_code if exc.status_code and 400 <= exc.status_code < 600 else 502
         return HTTPException(status_code=status_code, detail=exc.message)
     return HTTPException(status_code=502, detail=str(exc))
+
+
+def _finish_dify_route_error(exc: Exception) -> NoReturn:
+    """Re-raise Dify restarts for the shared handler; map other Dify errors to HTTP."""
+    if isinstance(exc, DifyAPIError) and dify_error_is_upstream_outage(exc):
+        raise exc
+    raise _http_exception_for_dify_route(exc) from exc
 
 
 class RenameRequest(BaseModel):
@@ -203,7 +211,7 @@ async def delete_conversation(
 
     except (DifyConversationNotFoundError, DifyAPIError) as e:
         logger.warning("Delete conversation failed for %s: %s", conversation_id, e)
-        raise _http_exception_for_dify_route(e) from e
+        _finish_dify_route_error(e)
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to delete conversation: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -252,7 +260,7 @@ async def rename_conversation(
 
     except (DifyConversationNotFoundError, DifyAPIError) as e:
         logger.warning("Rename conversation failed for %s: %s", conversation_id, e)
-        raise _http_exception_for_dify_route(e) from e
+        _finish_dify_route_error(e)
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to rename conversation: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -315,7 +323,7 @@ async def get_conversation_messages(
 
     except (DifyConversationNotFoundError, DifyAPIError) as e:
         logger.warning("Fetch messages failed for %s: %s", conversation_id, e)
-        raise _http_exception_for_dify_route(e) from e
+        _finish_dify_route_error(e)
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to fetch messages: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e

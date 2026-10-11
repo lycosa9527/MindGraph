@@ -11,7 +11,7 @@ import main as _main_app
 
 assert _main_app.app.title
 
-from clients.dify_exceptions import DifyConversationNotFoundError
+from clients.dify_exceptions import DifyAPIError, DifyConversationNotFoundError
 from clients.dify_http_errors import raise_for_dify_http_error
 from services.dify.export.endpoints import ExportDifyEndpoint
 from services.dify.export.transcript import ExportConversationSummary
@@ -90,6 +90,9 @@ async def test_list_unified_conversations_merges_web_and_mindbot(
     async def _fake_targets(_db, _user):
         return [web_target, mindbot_target]
 
+    async def _no_org(_org_id):
+        return None
+
     async def _fake_fetch_page(_db, target, _org_by_id, *, limit):
         del limit
         if target.channel == "web":
@@ -99,6 +102,10 @@ async def test_list_unified_conversations_merges_web_and_mindbot(
     monkeypatch.setattr(
         "services.dify.unified_conversations.build_user_dify_targets",
         _fake_targets,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._load_org",
+        _no_org,
     )
     monkeypatch.setattr(
         "services.dify.unified_conversations._fetch_target_summaries_page",
@@ -113,6 +120,82 @@ async def test_list_unified_conversations_merges_web_and_mindbot(
     assert rows[0].dify_user == "mindbot_5_staff42"
     assert rows[1].channel == "web"
     assert rows[1].dify_user == "mg_user_7"
+
+
+@pytest.mark.asyncio
+async def test_list_unified_conversations_raises_when_every_dify_target_is_down(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A Dify restart must not look like an empty history."""
+    user = SimpleNamespace(id=7, organization_id=5, name="Alice", phone="", email="")
+    web_target, mindbot_target = _web_and_mindbot_targets()
+
+    async def _fake_targets(_db, _user):
+        return [web_target, mindbot_target]
+
+    async def _no_org(_org_id):
+        return None
+
+    async def _fake_fetch_page(_db, _target, _org_by_id, *, limit):
+        del limit
+        raise DifyAPIError("HTTP 502", status_code=502)
+
+    monkeypatch.setattr(
+        "services.dify.unified_conversations.build_user_dify_targets",
+        _fake_targets,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._load_org",
+        _no_org,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._fetch_target_summaries_page",
+        _fake_fetch_page,
+    )
+
+    with pytest.raises(DifyAPIError) as caught:
+        await list_unified_conversations(MagicMock(), as_user(user), limit=10)
+
+    assert caught.value.status_code == 502
+
+
+@pytest.mark.asyncio
+async def test_list_unified_conversations_keeps_rows_when_one_target_is_down(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One unreachable Dify identity does not drop conversations from the other."""
+    user = SimpleNamespace(id=7, organization_id=5, name="Alice", phone="", email="")
+    web_target, mindbot_target = _web_and_mindbot_targets()
+
+    async def _fake_targets(_db, _user):
+        return [web_target, mindbot_target]
+
+    async def _no_org(_org_id):
+        return None
+
+    async def _fake_fetch_page(_db, target, _org_by_id, *, limit):
+        del limit
+        if target.channel == "mindbot":
+            raise DifyAPIError("HTTP 502", status_code=502)
+        return [_web_summary()]
+
+    monkeypatch.setattr(
+        "services.dify.unified_conversations.build_user_dify_targets",
+        _fake_targets,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._load_org",
+        _no_org,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._fetch_target_summaries_page",
+        _fake_fetch_page,
+    )
+
+    rows, has_more = await list_unified_conversations(MagicMock(), as_user(user), limit=10)
+
+    assert has_more is False
+    assert [row.id for row in rows] == ["web-1"]
 
 
 @pytest.mark.asyncio

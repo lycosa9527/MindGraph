@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI tekshirishmasi',
   'focusQuestion.validationRequestFailed': 'Tekshirishma so’rovsu muvaffaqiyatsiz bo’ldi',
   'focusQuestion.weakLabel': 'Zeif',
+  'mindmate.backupServerNotice': 'Asosiy xabar serverida muammo bor, shuning uchun zaxira serverdasiz. Suhbatni olish uchun bir necha daqiqadan keyin qayting.',
   'mindmate.defaultSuggestion1': 'Paraleloqram darsi uchun hansi idraki konfliktler dizayn ede bilerem?',
   'mindmate.defaultSuggestion10': 'Tarix darsinde situasiya teliminden nece foydalanish olar?',
   'mindmate.defaultSuggestion11': 'Fizika tecrubelerinde hansi xavfsizlik meselelerine diqqet yetirmek lazimdir?',

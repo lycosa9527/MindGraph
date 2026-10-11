@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Comprobación IA',
   'focusQuestion.validationRequestFailed': 'Solicitud de validación fallida',
   'focusQuestion.weakLabel': 'Débil',
+  'mindmate.backupServerNotice': 'Hay un problema con el servidor principal de mensajes y estás en el de respaldo. Vuelve en unos minutos para recuperar la conversación.',
   'mindmate.defaultSuggestion1': '¿Qué conflictos cognitivos puedo diseñar para una lección de paralelogramos?',
   'mindmate.defaultSuggestion10': '¿Cómo usar la enseñanza situada en clase de historia?',
   'mindmate.defaultSuggestion11': '¿Qué cuestiones de seguridad deben tenerse en cuenta en experimentos de física?',

@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Pagsusuri ng AI',
   'focusQuestion.validationRequestFailed': 'Nabigo ang kahilingan sa pagpapatunay',
   'focusQuestion.weakLabel': 'Mahina',
+  'mindmate.backupServerNotice': 'May problema sa pangunahing server ng mensahe, kaya nasa backup server ka. Bumalik pagkalipas ng ilang minuto para makuha ang usapan.',
   'mindmate.defaultSuggestion1': 'Anong mga cognitive conflict ang maaari kong idisenyo para sa isang paralelogram na aralin?',
   'mindmate.defaultSuggestion10': 'Paano gamitin ang pagtuturo sa sitwasyon sa klase ng kasaysayan?',
   'mindmate.defaultSuggestion11': 'Anong mga isyu sa kaligtasan ang dapat tandaan sa mga eksperimento sa pisika?',

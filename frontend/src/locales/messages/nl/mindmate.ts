@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI-controle',
   'focusQuestion.validationRequestFailed': 'Validatieverzoek is mislukt',
   'focusQuestion.weakLabel': 'Zwak',
+  'mindmate.backupServerNotice': 'Er is iets mis met de hoofdberichtenserver, daarom zit u op de reserveserver. Kom over een paar minuten terug om het gesprek op te halen.',
   'mindmate.defaultSuggestion1': 'Welke cognitieve conflicten kan ik ontwerpen voor een parallellogramles?',
   'mindmate.defaultSuggestion10': 'Hoe gebruik je situationeel onderwijs in de geschiedenisles?',
   'mindmate.defaultSuggestion11': 'Met welke veiligheidsproblemen moet rekening worden gehouden bij natuurkundige experimenten?',

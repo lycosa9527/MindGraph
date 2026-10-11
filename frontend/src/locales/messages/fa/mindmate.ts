@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'بازرسی هوش مصنوعی',
   'focusQuestion.validationRequestFailed': 'درخواست تأیید ناموفق بود',
   'focusQuestion.weakLabel': 'شکست خورد',
+  'mindmate.backupServerNotice': 'سرور پیام اصلی مشکل دارد و شما روی سرور پشتیبان هستید. لطفاً چند دقیقه دیگر برگردید تا گفتگو را بازیابی کنید.',
   'mindmate.defaultSuggestion1': 'در درس «متوازی الاضلاع» چه تعارضات شناختی را می توان طراحی کرد؟',
   'mindmate.defaultSuggestion10': 'چگونه در کلاس تاریخ تدریس موقعیتی انجام دهیم؟',
   'mindmate.defaultSuggestion11': 'در آموزش تجربی فیزیک به چه مسائل ایمنی باید توجه کرد؟',

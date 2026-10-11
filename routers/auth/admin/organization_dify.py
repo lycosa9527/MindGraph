@@ -17,7 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import Organization
 from models.domain.messages import Language, Messages
 from models.domain.mindbot_config import OrganizationMindbotConfig
-from services.dify.dify_servers import org_server_credentials, primary_server_no
+from services.dify.dify_global_servers import effective_server_credentials, global_dify_slot_credentials
+from services.dify.dify_servers import configured_dify_servers, org_server_credentials, primary_server_no
 from services.dify.org_mindmate_client import global_mindmate_dify_credentials
 from services.mindbot.dify.service_health import check_dify_app_api_reachable
 from utils.secrets_mask import mask_secret
@@ -78,28 +79,47 @@ def dify_list_fields(org: Organization) -> dict[str, Any]:
     }
 
 
+def _global_credentials_for_slot(server: int) -> tuple[str, str]:
+    """Env pair for one school slot. Slot 1 can fall back to the main URL default."""
+    creds = global_dify_slot_credentials(server)
+    if creds is not None:
+        return creds
+    if server == 1:
+        return global_mindmate_dify_credentials()
+    return "", ""
+
+
 def resolve_organization_dify_credentials(org: Organization, server: Optional[int] = None) -> tuple[str, str]:
     """
     Effective Dify API key and base URL for one school.
 
     With *server* (1 or 2) returns that server's credentials; otherwise the
-    configured active/primary server. Falls back to the global ``.env`` server
-    when the selected server has no per-org credentials.
+    configured active/primary server. A blank 主服务器 uses Dify main. A blank
+    备用服务器 uses Dify backup when that pair is set.
     """
     selected = server if server in (1, 2) else primary_server_no(org)
-    creds = org_server_credentials(org, selected)
+    creds = effective_server_credentials(org, selected)
     if creds is not None:
-        api_key, api_url = creds
-        return api_key, api_url
-    return global_mindmate_dify_credentials()
+        return creds
+    # A school with no servers of its own still uses Dify main for 主服务器.
+    # A slot outside an existing pair stays empty instead of borrowing the other env server.
+    if selected == 1 and not configured_dify_servers(org):
+        return global_mindmate_dify_credentials()
+    if server not in (1, 2):
+        return global_mindmate_dify_credentials()
+    return "", ""
 
 
 def global_mindmate_dify_fields() -> dict[str, Any]:
     """Serialized global MindMate Dify settings from .env (never exposes raw key)."""
     api_key, api_url = global_mindmate_dify_credentials()
+    backup = global_dify_slot_credentials(2)
+    backup_key, backup_url = backup if backup is not None else ("", "")
     return {
         "dify_api_base_url": api_url or None,
         "dify_api_key_masked": mask_secret(api_key) if api_key else None,
+        "dify_backup_api_base_url": backup_url or None,
+        "dify_backup_api_key_masked": mask_secret(backup_key) if backup_key else None,
     }
 
 
@@ -140,7 +160,7 @@ def resolve_mindmate_dify_probe_credentials(
     if org_url and org_key:
         return org_key, org_url
 
-    return global_mindmate_dify_credentials()
+    return _global_credentials_for_slot(selected)
 
 
 def resolve_mindmate_dify_probe_credentials_draft(
@@ -154,7 +174,8 @@ def resolve_mindmate_dify_probe_credentials_draft(
         draft_key = (body.get("dify_api_key") or "").strip()
     if draft_url and draft_key:
         return draft_key, draft_url
-    return global_mindmate_dify_credentials()
+    server = _probe_server_from_body(body) or 1
+    return _global_credentials_for_slot(server)
 
 
 async def probe_mindmate_dify_health_draft(body: Optional[dict]) -> dict[str, Any]:

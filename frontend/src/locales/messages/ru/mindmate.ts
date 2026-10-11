@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'ИИ-инспекция',
   'focusQuestion.validationRequestFailed': 'Запрос на проверку не выполнен',
   'focusQuestion.weakLabel': 'неуспешный',
+  'mindmate.backupServerNotice': 'С основным сервером сообщений что-то не так, поэтому вы на резервном. Вернитесь через несколько минут, чтобы забрать разговор.',
   'mindmate.defaultSuggestion1': 'Какие познавательные конфликты можно сконструировать на уроке «Параллелограммы»?',
   'mindmate.defaultSuggestion10': 'Как осуществлять ситуационное обучение на уроке истории?',
   'mindmate.defaultSuggestion11': 'На какие вопросы безопасности следует обратить внимание при преподавании физического эксперимента?',

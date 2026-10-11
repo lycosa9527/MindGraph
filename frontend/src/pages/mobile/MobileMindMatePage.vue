@@ -13,9 +13,9 @@ import { ElDrawer } from 'element-plus'
 
 import { Home, Menu, Plus } from '@lucide/vue'
 
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import I18nText from '@/components/common/I18nText.vue'
 import ShareExportModal from '@/components/panels/ShareExportModal.vue'
+import MindmateAgentAvatar from '@/components/panels/mindmate/MindmateAgentAvatar.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import MindmateMessages from '@/components/panels/mindmate/MindmateMessages.vue'
 import ChatHistory from '@/components/sidebar/ChatHistory.vue'
@@ -43,16 +43,7 @@ const teachingDesignExport = useTeachingDesignExportStore()
 const { exportingMessageId: exportingWordTemplateId } = storeToRefs(teachingDesignExport)
 const voiceStore = useVoiceStore()
 
-const { displayName, avatarUrl } = useMindMateBranding('md')
-const welcomeAvatarSrc = ref(avatarUrl.value)
-
-watch(avatarUrl, (url) => {
-  welcomeAvatarSrc.value = url
-})
-
-function onWelcomeAvatarError() {
-  welcomeAvatarSrc.value = mindmateAvatarMd
-}
+const { displayName } = useMindMateBranding('md')
 
 const displayTitle = ref(displayName.value)
 const isTypingTitle = ref(false)
@@ -355,12 +346,7 @@ onUnmounted(() => {
     >
       <!-- Welcome content — avatar + text, centered -->
       <div class="flex flex-col items-center justify-center px-6 pt-16 pb-6">
-        <img
-          :src="welcomeAvatarSrc"
-          :alt="displayName"
-          class="w-16 h-16 rounded-2xl shadow-md object-cover"
-          @error="onWelcomeAvatarError"
-        />
+        <MindmateAgentAvatar :size="64" />
         <div class="text-center mt-4">
           <div class="text-lg font-medium text-gray-800">{{ displayName }}</div>
           <div class="text-sm text-gray-500 mt-1">

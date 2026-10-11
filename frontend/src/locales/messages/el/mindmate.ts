@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Επιθεώρηση AI',
   'focusQuestion.validationRequestFailed': 'Το αίτημα επαλήθευσης απέτυχε',
   'focusQuestion.weakLabel': 'αποτυχημένος',
+  'mindmate.backupServerNotice': 'Κάτι δεν πάει καλά με τον κύριο διακομιστή μηνυμάτων και είστε στον εφεδρικό. Επιστρέψτε σε λίγα λεπτά για να ανακτήσετε τη συνομιλία.',
   'mindmate.defaultSuggestion1': 'Ποιες γνωστικές συγκρούσεις μπορούν να σχεδιαστούν στο μάθημα «Παραλληλόγραμμα»;',
   'mindmate.defaultSuggestion10': 'Πώς να πραγματοποιήσετε τη διδασκαλία της κατάστασης στην τάξη της ιστορίας;',
   'mindmate.defaultSuggestion11': 'Σε ποια θέματα ασφάλειας πρέπει να δίνεται προσοχή στη διδασκαλία πειραμάτων φυσικής;',

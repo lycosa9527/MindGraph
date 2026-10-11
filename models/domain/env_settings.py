@@ -240,15 +240,23 @@ class DifySettings(BaseModel):
 
     __category__ = "Dify AI Assistant"
 
-    DIFY_API_KEY: Optional[str] = Field(default="", description="Dify API key (optional)")
-    DIFY_API_URL: str = Field(default="https://api.dify.ai/v1", description="Dify API URL")
-    DIFY_TIMEOUT: int = Field(default=300, ge=5, le=600, description="Request timeout in seconds")
-    AI_ASSISTANT_NAME: str = Field(
-        default="MindMate AI",
-        min_length=1,
-        max_length=50,
-        description="AI assistant display name",
+    DIFY_API_KEY: Optional[str] = Field(
+        default="",
+        description="Dify main API key (school 主服务器). Optional.",
     )
+    DIFY_API_URL: str = Field(
+        default="https://api.dify.ai/v1",
+        description="Dify main API URL (school 主服务器)",
+    )
+    DIFY_BACKUP_API_KEY: Optional[str] = Field(
+        default="",
+        description="Dify backup API key (school 备用服务器). Same workflow as main.",
+    )
+    DIFY_BACKUP_API_URL: str = Field(
+        default="",
+        description="Dify backup API URL (school 备用服务器). Empty disables backup.",
+    )
+    DIFY_TIMEOUT: int = Field(default=300, ge=5, le=600, description="Request timeout in seconds")
 
 
 class DatabaseSettings(BaseModel):

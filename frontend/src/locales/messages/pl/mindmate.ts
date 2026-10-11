@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Kontrola AI',
   'focusQuestion.validationRequestFailed': 'Żądanie walidacji nieudane',
   'focusQuestion.weakLabel': 'Słabe',
+  'mindmate.backupServerNotice': 'Coś jest nie tak z głównym serwerem wiadomości, więc jesteś na serwerze zapasowym. Wróć za kilka minut, aby odzyskać rozmowę.',
   'mindmate.defaultSuggestion1': 'Jakie konflikty poznawcze mogę zaprojektować na lekcję o równoległoboku?',
   'mindmate.defaultSuggestion10': 'Jak stosować nauczanie sytuacyjne na lekcji historii?',
   'mindmate.defaultSuggestion11': 'Jakie kwestie bezpieczeństwa należy uwzględnić w doświadczeniach fizycznych?',

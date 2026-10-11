@@ -1100,8 +1100,8 @@ export default {
   'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify रिटर्न त्रुटि: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Dify प्रमाणीकरण विफल: {detail}',
-  'admin.schoolDifyServer1': 'सर्वर 1',
-  'admin.schoolDifyServer2': 'सर्वर 2',
+  'admin.schoolDifyServer1': 'मुख्य सर्वर',
+  'admin.schoolDifyServer2': 'बैकअप सर्वर',
   'admin.schoolDifyActiveServer': 'सक्रिय server',
   'admin.schoolDifyFailover': 'स्वचालित स्विचिंग',
   'admin.schoolDifyDualServerHint':

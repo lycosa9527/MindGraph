@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Per-school MindMate agent branding and optional Dify override.
- * Blank Dify fields on save use global .env credentials.
+ * A blank 主服务器 uses Dify main. A blank 备用服务器 uses Dify backup.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -103,8 +103,16 @@ const avatarPreviewSrc = computed(
 const keyReplaceMode = ref(false)
 const saving = ref(false)
 const globalDifyLoading = ref(false)
-const globalDifyUrl = ref<string | null>(null)
-const globalDifyKeyMasked = ref<string | null>(null)
+const globalMainUrl = ref<string | null>(null)
+const globalMainKeyMasked = ref<string | null>(null)
+const globalBackupUrl = ref<string | null>(null)
+const globalBackupKeyMasked = ref<string | null>(null)
+const globalDifyUrl = computed(() =>
+  selectedServer.value === 2 ? globalBackupUrl.value : globalMainUrl.value
+)
+const globalDifyKeyMasked = computed(() =>
+  selectedServer.value === 2 ? globalBackupKeyMasked.value : globalMainKeyMasked.value
+)
 
 const difyStatusLoading = ref(false)
 const difyStatus = ref<{
@@ -231,9 +239,13 @@ async function loadGlobalDify() {
     const data = (result.data ?? {}) as {
       dify_api_base_url?: string | null
       dify_api_key_masked?: string | null
+      dify_backup_api_base_url?: string | null
+      dify_backup_api_key_masked?: string | null
     }
-    globalDifyUrl.value = data.dify_api_base_url ?? null
-    globalDifyKeyMasked.value = data.dify_api_key_masked ?? null
+    globalMainUrl.value = data.dify_api_base_url ?? null
+    globalMainKeyMasked.value = data.dify_api_key_masked ?? null
+    globalBackupUrl.value = data.dify_backup_api_base_url ?? null
+    globalBackupKeyMasked.value = data.dify_backup_api_key_masked ?? null
   } catch {
     // Non-blocking.
   } finally {
@@ -749,7 +761,7 @@ defineExpose({
               class="mindbot-swiss-input w-full max-w-2xl"
             />
             <p
-              v-if="isServerOne && !hasSchoolOverride && !baseUrl"
+              v-if="!hasSchoolOverride && !baseUrl && globalDifyUrl"
               class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl m-0"
             >
               <I18nText
@@ -828,7 +840,7 @@ defineExpose({
                   <template v-if="activeKeyMasked">
                     <I18nText k="admin.mindbot.difyApiKeyReplaceHint" />
                   </template>
-                  <template v-else-if="isServerOne && !hasSchoolOverride && globalDifyKeyMasked">
+                  <template v-else-if="!hasSchoolOverride && globalDifyKeyMasked">
                     <I18nText
                       k="admin.schoolDifyApiKeyBlankUsesGlobal"
                       :params="{ masked: globalDifyKeyMasked }"

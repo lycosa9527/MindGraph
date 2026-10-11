@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'KI-Prüfung',
   'focusQuestion.validationRequestFailed': 'Validierungsanfrage fehlgeschlagen',
   'focusQuestion.weakLabel': 'Schwach',
+  'mindmate.backupServerNotice': 'Mit dem Hauptnachrichtenserver stimmt etwas nicht, deshalb sind Sie auf dem Ersatzserver. Bitte kommen Sie in ein paar Minuten zurück, um das Gespräch abzurufen.',
   'mindmate.defaultSuggestion1': 'Welche kognitiven Konflikte kann ich für eine Parallelogramm-Stunde entwerfen?',
   'mindmate.defaultSuggestion10': 'Wie nutze ich situatives Unterrichten im Geschichtsunterricht?',
   'mindmate.defaultSuggestion11': 'Welche Sicherheitsaspekte sind bei Physikexperimenten zu beachten?',

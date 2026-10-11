@@ -83,6 +83,7 @@ export default {
   'focusQuestion.validate': 'AI检验',
   'focusQuestion.validationRequestFailed': '检验请求失败',
   'focusQuestion.weakLabel': '未通过',
+  'mindmate.backupServerNotice': '主消息服务器出了问题，当前已切换到备用服务器。请过几分钟再回来，即可取回原来的对话。',
   'mindmate.defaultSuggestion1': '《平行四边形》这节课可以设计哪些认知冲突？',
   'mindmate.defaultSuggestion10': '历史课堂中如何进行情境教学？',
   'mindmate.defaultSuggestion11': '物理实验教学中应注意哪些安全问题？',

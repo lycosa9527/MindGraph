@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Inspecție AI',
   'focusQuestion.validationRequestFailed': 'Solicitarea de verificare a eșuat',
   'focusQuestion.weakLabel': 'a eșuat',
+  'mindmate.backupServerNotice': 'Este o problemă cu serverul principal de mesaje, așa că ești pe serverul de rezervă. Revino în câteva minute pentru a recupera conversația.',
   'mindmate.defaultSuggestion1': 'Ce conflicte cognitive pot fi proiectate la lecția „Paralelograme”?',
   'mindmate.defaultSuggestion10': 'Cum se realizează predarea situațională în sala de istorie?',
   'mindmate.defaultSuggestion11': 'La ce probleme de siguranță ar trebui să se acorde atenție în predarea experimentelor de fizică?',

@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Pemeriksaan AI',
   'focusQuestion.validationRequestFailed': 'Permintaan validasi gagal',
   'focusQuestion.weakLabel': 'Lemah',
+  'mindmate.backupServerNotice': 'Pelayan mesej utama ada masalah, jadi anda berada di pelayan sandaran. Sila kembali dalam beberapa minit untuk mendapatkan semula perbualan.',
   'mindmate.defaultSuggestion1': 'Konflik kognitif apa yang dapat saya rancang untuk pelajaran jajaran genjang?',
   'mindmate.defaultSuggestion10': 'Bagaimana cara menggunakan pengajaran situasional di kelas sejarah?',
   'mindmate.defaultSuggestion11': 'Masalah keamanan apa yang harus diperhatikan dalam eksperimen fisika?',

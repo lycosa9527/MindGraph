@@ -5,7 +5,7 @@
 MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features intelligent LLM-based classification, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
 **Base URL**: `https://mg.mindspringedu.com` (or your deployed server URL)  
-**App version**: 5.180.156  
+**App version**: 5.180.157  
 **Architecture**: FastAPI with LLM classification
 
 **Key Features**:
@@ -463,8 +463,8 @@ GET /status
 MindGraph provides seamless integration with Dify through HTTP POST requests. This section covers how to configure Dify (external service) to call MindGraph API endpoints for diagram generation.  
 MindGraph通过HTTP POST请求提供与Dify的无缝集成。本节介绍如何配置Dify（外部服务）调用MindGraph API端点进行图表生成。
 
-**Note**: MindGraph also uses Dify API internally for its AI Assistant feature (`/api/ai_assistant/stream`). That configuration is separate and managed via environment variables (`DIFY_API_KEY`, `DIFY_API_URL`, `DIFY_TIMEOUT`).  
-**注意**: MindGraph内部也使用Dify API来实现AI助手功能（`/api/ai_assistant/stream`）。该配置是独立的，通过环境变量（`DIFY_API_KEY`、`DIFY_API_URL`、`DIFY_TIMEOUT`）进行管理。
+**Note**: MindGraph also uses Dify API internally for its AI Assistant feature (`/api/ai_assistant/stream`). That configuration is separate and managed via environment variables (`DIFY_API_KEY`, `DIFY_API_URL`, `DIFY_BACKUP_API_KEY`, `DIFY_BACKUP_API_URL`, `DIFY_TIMEOUT`).  
+**注意**: MindGraph内部也使用Dify API来实现AI助手功能（`/api/ai_assistant/stream`）。该配置是独立的，通过环境变量（`DIFY_API_KEY`、`DIFY_API_URL`、`DIFY_BACKUP_API_KEY`、`DIFY_BACKUP_API_URL`、`DIFY_TIMEOUT`）进行管理。
 
 #### Step 1: Generate API Key | 步骤1：生成API密钥
 
@@ -773,8 +773,8 @@ GET /status
 MindGraph provides seamless integration with Dify through HTTP POST requests. This section covers how to configure Dify (external service) to call MindGraph API endpoints for diagram generation.  
 MindGraph通过HTTP POST请求提供与Dify的无缝集成。本节介绍如何配置Dify（外部服务）调用MindGraph API端点进行图表生成。
 
-**Note**: MindGraph also uses Dify API internally for its AI Assistant feature (`/api/ai_assistant/stream`). That configuration is separate and managed via environment variables (`DIFY_API_KEY`, `DIFY_API_URL`, `DIFY_TIMEOUT`).  
-**注意**: MindGraph内部也使用Dify API来实现AI助手功能（`/api/ai_assistant/stream`）。该配置是独立的，通过环境变量（`DIFY_API_KEY`、`DIFY_API_URL`、`DIFY_TIMEOUT`）进行管理。
+**Note**: MindGraph also uses Dify API internally for its AI Assistant feature (`/api/ai_assistant/stream`). That configuration is separate and managed via environment variables (`DIFY_API_KEY`, `DIFY_API_URL`, `DIFY_BACKUP_API_KEY`, `DIFY_BACKUP_API_URL`, `DIFY_TIMEOUT`).  
+**注意**: MindGraph内部也使用Dify API来实现AI助手功能（`/api/ai_assistant/stream`）。该配置是独立的，通过环境变量（`DIFY_API_KEY`、`DIFY_API_URL`、`DIFY_BACKUP_API_KEY`、`DIFY_BACKUP_API_URL`、`DIFY_TIMEOUT`）进行管理。
 
 #### Step 1: Generate API Key | 步骤1：生成API密钥
 

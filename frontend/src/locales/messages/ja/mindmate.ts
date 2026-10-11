@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI チェック',
   'focusQuestion.validationRequestFailed': '検証リクエストに失敗しました',
   'focusQuestion.weakLabel': '弱い',
+  'mindmate.backupServerNotice': 'メインのメッセージサーバーに問題があり、バックアップサーバーを使用しています。数分後に戻ると、以前の会話を取り出せます。',
   'mindmate.defaultSuggestion1': '平行四辺形の授業でどんな認知矛盾を設計できますか？',
   'mindmate.defaultSuggestion10': '歴史の授業で状況学習をどう使いますか？',
   'mindmate.defaultSuggestion11': '物理実験で注意すべき安全上の問題は？',

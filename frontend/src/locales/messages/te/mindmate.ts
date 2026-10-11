@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI తనిఖీ',
   'focusQuestion.validationRequestFailed': 'ధృవీకరణ అభ్యర్థన విఫలమైంది',
   'focusQuestion.weakLabel': 'విఫలమయ్యారు',
+  'mindmate.backupServerNotice': 'ప్రధాన సందేశ సర్వర్‌లో సమస్య ఉంది, కాబట్టి మీరు బ్యాకప్ సర్వర్‌లో ఉన్నారు. సంభాషణను తిరిగి పొందడానికి కొన్ని నిమిషాల తర్వాత రండి.',
   'mindmate.defaultSuggestion1': '"సమాంతర చతుర్భుజాలు" పాఠంలో ఏ అభిజ్ఞా వైరుధ్యాలను రూపొందించవచ్చు?',
   'mindmate.defaultSuggestion10': 'చరిత్ర తరగతి గదిలో సందర్భోచిత బోధనను ఎలా నిర్వహించాలి?',
   'mindmate.defaultSuggestion11': 'భౌతిక శాస్త్ర ప్రయోగ బోధనలో ఏ భద్రతా సమస్యలకు శ్రద్ధ వహించాలి?',

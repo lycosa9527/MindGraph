@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import AsyncDifyClient
 from clients.dify_exceptions import DifyAPIError, DifyConversationNotFoundError
+from clients.dify_http_errors import dify_error_is_upstream_outage
 from models.domain.auth import Organization, User
 from services.dify.export.endpoints import (
     ExportDifyEndpoint,
@@ -173,6 +174,8 @@ async def _fetch_target_summaries_page(
         return []
 
     merged: dict[str, ExportConversationSummary] = {}
+    failures = 0
+    last_error: Optional[BaseException] = None
     for endpoint in endpoints:
         try:
             client = _client_for_endpoint(endpoint)
@@ -182,6 +185,8 @@ async def _fetch_target_summaries_page(
                 sort_by="-updated_at",
             )
         except dify_client_errors as exc:
+            failures += 1
+            last_error = exc
             logger.warning(
                 "[UnifiedConversations] list failed user=%s channel=%s server=%s: %s",
                 target.dify_user,
@@ -202,6 +207,8 @@ async def _fetch_target_summaries_page(
             if existing is None or summary.updated_at >= existing.updated_at:
                 merged[key] = summary
 
+    if failures == len(endpoints) and last_error is not None:
+        raise last_error
     return list(merged.values())
 
 
@@ -258,14 +265,28 @@ async def list_unified_conversations(
             org_by_id[org_id] = org
 
     flat: List[ExportConversationSummary] = []
+    outages = 0
+    last_outage: Optional[BaseException] = None
     for target in targets:
-        endpoint_summaries = await _fetch_target_summaries_page(
-            db,
-            target,
-            org_by_id,
-            limit=page_size,
-        )
+        try:
+            endpoint_summaries = await _fetch_target_summaries_page(
+                db,
+                target,
+                org_by_id,
+                limit=page_size,
+            )
+        except dify_client_errors as exc:
+            if isinstance(exc, DifyAPIError) and not dify_error_is_upstream_outage(exc):
+                raise
+            outages += 1
+            last_outage = exc
+            continue
         flat.extend(endpoint_summaries)
+
+    if outages == len(targets) and last_outage is not None:
+        if isinstance(last_outage, DifyAPIError):
+            raise last_outage
+        raise DifyAPIError("HTTP 502", status_code=502) from last_outage
 
     ordered = sorted(flat, key=lambda row: row.updated_at, reverse=True)
     page = ordered[:page_size]

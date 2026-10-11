@@ -274,11 +274,6 @@ class FeaturesConfigMixin:
         return (self._get_cached_value("MINDBOT_DIFY_HEALTH_API_KEY", "") or "").strip()
 
     @property
-    def AI_ASSISTANT_NAME(self):
-        """AI Assistant display name (appears in toolbar button and panel header)."""
-        return self._get_cached_value("AI_ASSISTANT_NAME", "MindMate AI")
-
-    @property
     def DEFAULT_LANGUAGE(self):
         """Default UI language (en/zh/az)."""
         lang = self._get_cached_value("DEFAULT_LANGUAGE", "zh").lower()

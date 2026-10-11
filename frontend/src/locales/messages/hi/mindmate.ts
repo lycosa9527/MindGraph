@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI जाँच',
   'focusQuestion.validationRequestFailed': 'सत्यापन अनुरोध विफल',
   'focusQuestion.weakLabel': 'कमज़ोर',
+  'mindmate.backupServerNotice': 'मुख्य संदेश सर्वर में समस्या है, इसलिए आप बैकअप सर्वर पर हैं। बातचीत वापस पाने के लिए कृपया कुछ मिनट बाद लौटें।',
   'mindmate.defaultSuggestion1': 'समांतर चतुर्भुज पाठ में कौन से संज्ञानात्मक संघर्ष?',
   'mindmate.defaultSuggestion10': 'इतिहास में स्थितिजनक शिक्षण?',
   'mindmate.defaultSuggestion11': 'भौतिकी प्रयोगों में सुरक्षा?',

@@ -94,6 +94,8 @@ export function useMindmateCollab(
 ) {
   const authStore = useAuthStore()
   const notify = useNotifications()
+  let backupNoticeShown = false
+  let turnSawBackup = false
   const { t } = useLanguage()
 
   const messages = shallowRef<MindmateCollabMessage[]>([])
@@ -580,6 +582,14 @@ export function useMindmateCollab(
       applyUserMessageFrame(parsed)
       return
     }
+    if (type === 'mindmate_failover') {
+      turnSawBackup = true
+      if (!backupNoticeShown) {
+        backupNoticeShown = true
+        notify.warningKey('mindmate.backupServerNotice', 12000)
+      }
+      return
+    }
     if (type === 'ai_message_chunk') {
       appendAssistantChunk(String(parsed.content || ''))
       return
@@ -593,6 +603,10 @@ export function useMindmateCollab(
         collabPrevId(parsed.prev_id),
         collabFrameCreatedAt(parsed.created_at)
       )
+      if (!turnSawBackup) {
+        backupNoticeShown = false
+      }
+      turnSawBackup = false
       return
     }
     if (type === 'room_idle_warning') {
@@ -623,6 +637,8 @@ export function useMindmateCollab(
 
   function resetForRoomChange(): void {
     gapGeneration += 1
+    backupNoticeShown = false
+    turnSawBackup = false
     resumeToken.value = null
     wsUrl.value = ''
     wsProtocolList.length = 0

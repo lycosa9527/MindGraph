@@ -86,6 +86,8 @@ def test_resolve_mindbot_config_credentials_missing_returns_none(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Empty credentials yield None when org and global env are unset."""
+    monkeypatch.delenv("DIFY_BACKUP_API_KEY", raising=False)
+    monkeypatch.delenv("DIFY_BACKUP_API_URL", raising=False)
     monkeypatch.setattr(
         "services.mindbot.dify.credential_resolution.global_mindmate_dify_credentials",
         lambda: ("", ""),
@@ -100,6 +102,8 @@ async def test_distinct_mindbot_endpoints_dedupes_same_app(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Two bots sharing one Dify app collapse to one endpoint."""
+    monkeypatch.delenv("DIFY_BACKUP_API_KEY", raising=False)
+    monkeypatch.delenv("DIFY_BACKUP_API_URL", raising=False)
     org = _org()
     cfg_a = _cfg(id=1)
     cfg_b = _cfg(id=2)

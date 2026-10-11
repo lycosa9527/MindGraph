@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI vizsgálat',
   'focusQuestion.validationRequestFailed': 'Az ellenőrzési kérés sikertelen',
   'focusQuestion.weakLabel': 'sikertelen',
+  'mindmate.backupServerNotice': 'A fő üzenetszerverrel valami gond van, ezért a tartalék szerveren van. Néhány perc múlva térjen vissza a beszélgetésért.',
   'mindmate.defaultSuggestion1': 'Milyen kognitív konfliktusokat lehet megtervezni a "Párhuzamok" leckében?',
   'mindmate.defaultSuggestion10': 'Hogyan végezzünk szituációs tanítást a történelem tanteremben?',
   'mindmate.defaultSuggestion11': 'Milyen biztonsági kérdésekre kell figyelni a fizikakísérletek tanítása során?',

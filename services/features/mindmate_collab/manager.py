@@ -753,7 +753,25 @@ class MindmateCollabManager:
             await remember_latest_collab_message_id(room_code, saved.id)
         return saved
 
-    async def set_dify_conversation_id(self, session_id: str, conversation_id: str) -> None:
+    async def resolve_dify_conversation_server(self, code: str) -> Optional[int]:
+        """Return the Dify server that owns the room conversation, when Redis has it."""
+        meta = await self.get_session_meta(code)
+        raw = (meta.get("dify_conversation_server") or "").strip()
+        if not raw:
+            return None
+        try:
+            value = int(raw)
+        except ValueError:
+            return None
+        return value if value >= 1 else None
+
+    async def set_dify_conversation_id(
+        self,
+        session_id: str,
+        conversation_id: str,
+        *,
+        server: Optional[int] = None,
+    ) -> None:
         """Persist Dify conversation id in PostgreSQL and Redis session meta."""
         async with system_rls_session() as db:
             await db.execute(
@@ -768,12 +786,11 @@ class MindmateCollabManager:
         redis = get_async_redis()
         if not redis:
             return
+        mapping = {"dify_conversation_id": conversation_id}
+        if isinstance(server, int) and server >= 1:
+            mapping["dify_conversation_server"] = str(server)
         try:
-            await redis.hset(
-                session_meta_key(session.code),
-                "dify_conversation_id",
-                conversation_id,
-            )
+            await redis.hset(session_meta_key(session.code), mapping=redis_hset_mapping(mapping))
         except REDIS_ERRORS:
             pass
 

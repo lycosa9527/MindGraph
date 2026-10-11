@@ -66,21 +66,27 @@ def primary_server_no(org: Organization) -> int:
     return value if value in slots else default
 
 
-def failover_partner_server(org: Organization) -> Optional[int]:
+def partner_for_configured_slots(primary: int, slots: List[int]) -> Optional[int]:
     """
-    The other server in this org's configured failover pair.
+    The other server when *slots* is exactly one failover pair.
 
-    Schools pick any two slots (e.g. 1+2, 2+3, or 1+3); the partner is whichever
-    configured slot is not the primary. Requires exactly two configured servers.
+    Schools pick any two slots (e.g. 1+2, 2+3, or 1+3). Requires exactly two
+    configured servers.
     """
-    primary = primary_server_no(org)
-    slots = sorted(entry.server for entry in configured_dify_servers(org))
-    if len(slots) != FAILOVER_CONFIGURED_SERVER_COUNT:
+    ordered = sorted(set(slots))
+    if len(ordered) != FAILOVER_CONFIGURED_SERVER_COUNT:
         return None
-    if primary not in slots:
-        return slots[0]
-    others = [slot for slot in slots if slot != primary]
+    if primary not in ordered:
+        return ordered[0]
+    others = [slot for slot in ordered if slot != primary]
     return others[0] if others else None
+
+
+def failover_partner_server(org: Organization) -> Optional[int]:
+    """The other server in this org's own configured failover pair."""
+    primary = primary_server_no(org)
+    slots = [entry.server for entry in configured_dify_servers(org)]
+    return partner_for_configured_slots(primary, slots)
 
 
 def standby_server_no(server: int) -> int:

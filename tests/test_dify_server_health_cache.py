@@ -70,6 +70,24 @@ async def test_resolver_prefers_healthy_primary(monkeypatch: pytest.MonkeyPatch)
     assert await resolver.select_active_dify_server(_org()) == 1
 
 
+def test_backup_notice_only_after_main_outage(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Toast when slot 1 failed over to slot 2, not when backup is the chosen primary."""
+    monkeypatch.delenv("DIFY_BACKUP_API_KEY", raising=False)
+    monkeypatch.delenv("DIFY_BACKUP_API_URL", raising=False)
+    org = _org()
+    assert resolver.using_backup_after_main_outage(org, 2) is True
+    assert resolver.using_backup_after_main_outage(org, 1) is False
+    org.dify_active_server = 2
+    assert resolver.using_backup_after_main_outage(org, 2) is False
+    org.dify_active_server = 1
+    org.dify_failover_enabled = False
+    assert resolver.using_backup_after_main_outage(org, 2) is False
+    org.dify_failover_enabled = True
+    org.dify_api_base_url = None
+    org.dify_api_key = None
+    assert resolver.using_backup_after_main_outage(org, 2) is False
+
+
 @pytest.mark.asyncio
 async def test_resolver_fails_over_when_primary_down(monkeypatch: pytest.MonkeyPatch) -> None:
     """Primary down + standby up routes to the standby."""
@@ -121,6 +139,8 @@ async def test_resolver_uses_standby_when_primary_unconfigured(
     org = _org()
     org.dify_api_base_url = None
     org.dify_api_key = None
+    monkeypatch.delenv("DIFY_BACKUP_API_KEY", raising=False)
+    monkeypatch.delenv("DIFY_BACKUP_API_URL", raising=False)
     monkeypatch.setattr(resolver, "get_server_health", fake_health)
     assert await resolver.select_active_dify_server(org) == 2
 

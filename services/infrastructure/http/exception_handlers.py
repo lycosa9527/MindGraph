@@ -24,8 +24,10 @@ from starlette.types import ExceptionHandler
 from starlette.websockets import WebSocketDisconnect
 from uvicorn.protocols.utils import ClientDisconnected
 
+from clients.dify_exceptions import DifyAPIError
+from clients.dify_http_errors import dify_error_is_upstream_outage
 from config.settings import config
-from models import get_request_language
+from models import Messages, get_request_language
 from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
@@ -147,6 +149,39 @@ async def user_daily_token_cap_handler(request: Request, exc: UserDailyTokenCapE
     detail = daily_token_limit_message(lang, exc.cap)
     logger.info("Daily token cap exceeded on %s: used=%s cap=%s", path, exc.used, exc.cap)
     return JSONResponse(status_code=429, content={"detail": detail})
+
+
+async def dify_api_error_handler(request: Request, exc: DifyAPIError):
+    """
+    Map Dify Service API failures to HTTP responses.
+
+    Registered on ``DifyAPIError`` (not ``Exception``) so FastAPI handles it inside
+    ExceptionMiddleware. Upstream 502/503/504 during a Dify restart must not fall
+    through to the generic handler, which logs a full traceback and uvicorn then
+    logs it again as an ASGI crash.
+    """
+    path = getattr(request.url, "path", "") if request and request.url else ""
+    language_header = request.headers.get("x-language") if request else None
+    accept_language = request.headers.get("accept-language") if request else None
+    lang = get_request_language(language_header, accept_language)
+    status = exc.status_code if isinstance(exc.status_code, int) else 502
+
+    # 401/403 here are Dify app-key failures. Returning them would look like a
+    # MindGraph session expiry to the browser.
+    if dify_error_is_upstream_outage(exc) or status in (401, 403):
+        detail = Messages.error("ai_temporarily_unavailable", lang=lang)
+        logger.warning(
+            "Dify upstream unavailable on %s: HTTP %s %s",
+            path,
+            status,
+            exc.message,
+        )
+        return JSONResponse(status_code=503, content={"detail": detail})
+
+    if not 400 <= status < 600:
+        status = 502
+    logger.warning("Dify API error on %s: HTTP %s %s", path, status, exc.message)
+    return JSONResponse(status_code=status, content={"detail": exc.message})
 
 
 async def thinking_coin_insufficient_handler(request: Request, exc: ThinkingCoinInsufficientError):
@@ -300,4 +335,5 @@ def setup_exception_handlers(app: FastAPI):
         ThinkingCoinInsufficientError,
         cast(ExceptionHandler, thinking_coin_insufficient_handler),
     )
+    app.add_exception_handler(DifyAPIError, cast(ExceptionHandler, dify_api_error_handler))
     app.add_exception_handler(Exception, cast(ExceptionHandler, general_exception_handler))

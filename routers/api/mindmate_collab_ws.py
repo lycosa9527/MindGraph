@@ -518,6 +518,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                     )
                     if conv_id:
                         session.dify_conversation_id = conv_id
+                    conversation_server = await mgr.resolve_dify_conversation_server(norm_code)
                     schedule_assistant_reply(
                         code=norm_code,
                         session_id=session.id,
@@ -525,6 +526,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                         user_message=dify_query,
                         sender_user_id=int(user.id),
                         conversation_id=conv_id,
+                        conversation_server=conversation_server,
                     )
             except WebSocketDisconnect:
                 pass

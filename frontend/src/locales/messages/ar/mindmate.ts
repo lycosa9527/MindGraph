@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'فحص الذكاء الاصطناعي',
   'focusQuestion.validationRequestFailed': 'فشل طلب التحقق',
   'focusQuestion.weakLabel': 'فشل',
+  'mindmate.backupServerNotice': 'حدثت مشكلة في خادم الرسائل الرئيسي، وأنت الآن على الخادم الاحتياطي. يُرجى العودة بعد بضع دقائق لاسترجاع المحادثة.',
   'mindmate.defaultSuggestion1': 'ما هي الصراعات المعرفية التي يمكن تصميمها في درس "متوازيات الأضلاع"؟',
   'mindmate.defaultSuggestion10': 'كيفية تنفيذ التدريس الظرفي في الفصول الدراسية التاريخ؟',
   'mindmate.defaultSuggestion11': 'ما هي قضايا السلامة التي ينبغي الاهتمام بها في تدريس تجارب الفيزياء؟',

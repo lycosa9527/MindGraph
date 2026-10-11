@@ -19,6 +19,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import DifyFile
+from clients.dify_http_errors import dify_stream_chunk_is_upstream_outage
 from config.database import get_async_db
 from models import AIAssistantRequest, Messages, get_request_language
 from models.domain.auth import User
@@ -32,7 +33,7 @@ from services.auth.thinking_coin.usage_wire import (
 )
 from services.diagram.generation_session_registry import register_generation_session
 from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
-from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
+from services.dify.org_mindmate_client import resolve_mindmate_dify_stream_short_lived
 from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
@@ -118,10 +119,14 @@ async def ai_assistant_stream(
     # Resolve Dify credentials in a short-lived session. Do not use Depends(get_async_db)
     # here: FastAPI keeps request-scoped sessions open until the SSE body finishes, which
     # leaves a read transaction idle past idle_in_transaction_session_timeout (30s default).
-    dify_client = await resolve_mindmate_dify_client_short_lived(
+    stream_target = await resolve_mindmate_dify_stream_short_lived(
         organization_id_for_dify,
         detail=Messages.error("ai_not_configured", lang),
+        conversation_id=req.conversation_id,
+        conversation_server=req.server,
     )
+    dify_client = stream_target.client
+    using_backup = stream_target.notify_backup
     logger.debug(
         "MindMate Dify client resolved for org_id=%s url=%s",
         organization_id_for_dify,
@@ -163,6 +168,9 @@ async def ai_assistant_stream(
         # Matches node_palette_streaming: avoids ASGI/middleware issues when the
         # client aborts during the first await. EventSource ignores ':' lines.
         yield ": stream_open\n\n"
+        if using_backup:
+            # One notice per request. The client shows the toast once per outage.
+            yield f"data: {json.dumps({'event': 'mindmate_failover'})}\n\n"
 
         chunk_count = 0
         cancelled = False
@@ -239,10 +247,13 @@ async def ai_assistant_stream(
 
             message_preview = message[:50] + "..."
             logger.debug("[STREAM] Starting async stream_chat for message: %s", message_preview)
+            # A 主服务器 conversation id is unknown on 备用服务器. The resolver drops
+            # it for that turn. A thread that already lives on the chosen server,
+            # including one opened on 备用服务器 during the outage, keeps its id.
             dify_stream = client.stream_chat(
                 message=message,
                 user_id=dify_user_id,
-                conversation_id=req.conversation_id,
+                conversation_id=stream_target.upstream_conversation_id,
                 files=dify_files,
                 inputs=stream_inputs,
                 auto_generate_name=req.auto_generate_name,
@@ -288,6 +299,9 @@ async def ai_assistant_stream(
                     if isinstance(answer_part, str) and answer_part:
                         reply_parts.append(answer_part)
 
+                if event_type == "error" and dify_stream_chunk_is_upstream_outage(chunk):
+                    friendly = Messages.error("ai_temporarily_unavailable", lang)
+                    chunk = {**chunk, "message": friendly, "error": friendly}
                 yield f"data: {json.dumps(chunk)}\n\n"
                 if not emitted_teaching_meta:
                     meta_event = mindmate_meta_from_workflow_chunk(chunk)

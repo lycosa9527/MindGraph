@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Перевірка ШІ',
   'focusQuestion.validationRequestFailed': 'Запит перевірки не вдався',
   'focusQuestion.weakLabel': 'Слабке',
+  'mindmate.backupServerNotice': 'З основним сервером повідомлень щось не так, тож ви на резервному. Поверніться за кілька хвилин, щоб забрати розмову.',
   'mindmate.defaultSuggestion1': 'Які когнітивні конфлікти можу спроєктувати для уроку про паралелограм?',
   'mindmate.defaultSuggestion10': 'Як використовувати ситуативне навчання на уроці історії?',
   'mindmate.defaultSuggestion11': 'На які питання безпеки звернути увагу в фізичних експериментах?',

@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Inspeção de IA',
   'focusQuestion.validationRequestFailed': 'Falha na solicitação de verificação',
   'focusQuestion.weakLabel': 'fracassado',
+  'mindmate.backupServerNotice': 'Há um problema no servidor principal de mensagens, por isso está no servidor de reserva. Volte dentro de alguns minutos para recuperar a conversa.',
   'mindmate.defaultSuggestion1': 'Que conflitos cognitivos podem ser desenhados na lição “Paralelogramos”?',
   'mindmate.defaultSuggestion10': 'Como realizar o ensino situacional em sala de aula de história?',
   'mindmate.defaultSuggestion11': 'A quais questões de segurança devemos prestar atenção no ensino de experimentos de física?',

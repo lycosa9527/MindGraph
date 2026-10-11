@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI ತಪಾಸಣೆ',
   'focusQuestion.validationRequestFailed': 'ಪರಿಶೀಲನೆ ವಿನಂತಿ ವಿಫಲವಾಗಿದೆ',
   'focusQuestion.weakLabel': 'ವಿಫಲವಾಯಿತು',
+  'mindmate.backupServerNotice': 'ಮುಖ್ಯ ಸಂದೇಶ ಸರ್ವರ್‌ನಲ್ಲಿ ತೊಂದರೆ ಇದೆ, ಆದ್ದರಿಂದ ನೀವು ಬ್ಯಾಕಪ್ ಸರ್ವರ್‌ನಲ್ಲಿದ್ದೀರಿ. ಸಂಭಾಷಣೆಯನ್ನು ಹಿಂಪಡೆಯಲು ಕೆಲವು ನಿಮಿಷಗಳಲ್ಲಿ ಮರಳಿ ಬನ್ನಿ.',
   'mindmate.defaultSuggestion1': '"ಸಮಾನಾಂತರ ಚತುರ್ಭುಜಗಳು" ಪಾಠದಲ್ಲಿ ಯಾವ ಅರಿವಿನ ಸಂಘರ್ಷಗಳನ್ನು ವಿನ್ಯಾಸಗೊಳಿಸಬಹುದು?',
   'mindmate.defaultSuggestion10': 'ಇತಿಹಾಸ ತರಗತಿಯಲ್ಲಿ ಸಾಂದರ್ಭಿಕ ಬೋಧನೆಯನ್ನು ಹೇಗೆ ನಡೆಸುವುದು?',
   'mindmate.defaultSuggestion11': 'ಭೌತಶಾಸ್ತ್ರ ಪ್ರಯೋಗ ಬೋಧನೆಯಲ್ಲಿ ಯಾವ ಸುರಕ್ಷತಾ ಸಮಸ್ಯೆಗಳಿಗೆ ಗಮನ ಕೊಡಬೇಕು?',

@@ -15,11 +15,13 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import DefaultDict, Dict, List, Set, Tuple
+from typing import Callable, DefaultDict, Dict, List, Optional, Set, Tuple
 
 from models.domain.auth import Organization
 from services.dify.dify_server_schema import organization_dify_server_slots
 from services.dify.dify_servers import org_server_credentials
+
+CredentialLookup = Callable[[Organization, int], Optional[tuple[str, str]]]
 
 
 def normalize_dify_probe_url(api_url: str) -> str:
@@ -70,7 +72,10 @@ class DifyProbePlan:
         return len(self.unique_targets)
 
 
-def build_deduped_probe_plan(orgs: List[Organization]) -> DifyProbePlan:
+def build_deduped_probe_plan(
+    orgs: List[Organization],
+    credential_lookup: Optional[CredentialLookup] = None,
+) -> DifyProbePlan:
     """
     Build a platform-wide heartbeat plan.
 
@@ -78,6 +83,10 @@ def build_deduped_probe_plan(orgs: List[Organization]) -> DifyProbePlan:
     configures credentials on that slot. Each unique base URL is probed once;
     results fan out to every org/server assignment that shares that host.
     Candidate keys are ordered by org_id then server for stable selection.
+
+    *credential_lookup* defaults to the school's own stored pair. The health
+    poller passes the effective lookup so a blank 主服务器 or 备用服务器 uses
+    Dify main or Dify backup.
     """
     grouped: DefaultDict[str, List[DifyProbeAssignment]] = defaultdict(list)
     keys_by_url: DefaultDict[str, List[str]] = defaultdict(list)
@@ -87,11 +96,12 @@ def build_deduped_probe_plan(orgs: List[Organization]) -> DifyProbePlan:
     contributing_org_ids: Set[int] = set()
 
     ordered_orgs = sorted(orgs, key=lambda org: int(org.id))
+    lookup = credential_lookup or org_server_credentials
 
     for server in organization_dify_server_slots():
         slot_used = False
         for org in ordered_orgs:
-            creds = org_server_credentials(org, server)
+            creds = lookup(org, server)
             if creds is None:
                 continue
             api_key, api_url = creds

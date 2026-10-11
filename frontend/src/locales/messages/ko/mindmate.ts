@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI 검사',
   'focusQuestion.validationRequestFailed': '검증 요청에 실패했습니다',
   'focusQuestion.weakLabel': '약함',
+  'mindmate.backupServerNotice': '메인 메시지 서버에 문제가 있어 백업 서버를 사용 중입니다. 몇 분 뒤에 다시 오면 이전 대화를 가져올 수 있습니다.',
   'mindmate.defaultSuggestion1': '평행사변형 수업에서 어떤 인지적 갈등을 설계할 수 있을까?',
   'mindmate.defaultSuggestion10': '역사 수업에서 상황 학습을 어떻게 활용할까?',
   'mindmate.defaultSuggestion11': '물리 실험에서 주의할 안전 문제는?',

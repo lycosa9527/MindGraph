@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'АИ инспекција',
   'focusQuestion.validationRequestFailed': 'Захтев за верификацију није успео',
   'focusQuestion.weakLabel': 'пропао',
+  'mindmate.backupServerNotice': 'Нешто није у реду са главним сервером порука, па сте на резервном. Вратите се за неколико минута да преузмете разговор.',
   'mindmate.defaultSuggestion1': 'Који се когнитивни сукоби могу осмислити у лекцији „Паралелограми“?',
   'mindmate.defaultSuggestion10': 'Како изводити ситуациону наставу у учионици историје?',
   'mindmate.defaultSuggestion11': 'На која питања безбедности треба обратити пажњу у настави физике?',

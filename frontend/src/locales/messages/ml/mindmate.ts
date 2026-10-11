@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI പരിശോധന',
   'focusQuestion.validationRequestFailed': 'സ്ഥിരീകരണ അഭ്യർത്ഥന പരാജയപ്പെട്ടു',
   'focusQuestion.weakLabel': 'പരാജയപ്പെട്ടു',
+  'mindmate.backupServerNotice': 'പ്രധാന സന്ദേശ സെർവറിൽ പ്രശ്നമുണ്ട്, അതിനാൽ നിങ്ങൾ ബാക്കപ്പ് സെർവറിലാണ്. സംഭാഷണം തിരികെ എടുക്കാൻ ഏതാനും മിനിറ്റുകൾക്ക് ശേഷം വീണ്ടും വരിക.',
   'mindmate.defaultSuggestion1': '"സമാന്തരരേഖകൾ" എന്ന പാഠത്തിൽ എന്ത് വൈജ്ഞാനിക വൈരുദ്ധ്യങ്ങൾ രൂപകൽപ്പന ചെയ്യാൻ കഴിയും?',
   'mindmate.defaultSuggestion10': 'ഹിസ്റ്ററി ക്ലാസ്റൂമിൽ സാഹചര്യപരമായ അദ്ധ്യാപനം എങ്ങനെ നടത്താം?',
   'mindmate.defaultSuggestion11': 'ഭൗതികശാസ്ത്ര പരീക്ഷണ അധ്യാപനത്തിൽ എന്ത് സുരക്ഷാ പ്രശ്‌നങ്ങളാണ് ശ്രദ്ധിക്കേണ്ടത്?',

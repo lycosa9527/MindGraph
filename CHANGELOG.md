@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.157] - 2026-10-12
+
+> **MindMate stays available when the main message server is down, and a chat opened on the backup keeps going there.**
+
+### Added
+
+- **备用服务器** — Dify main (`DIFY_API_URL` / `DIFY_API_KEY`) is 主服务器. Dify backup (`DIFY_BACKUP_API_URL` / `DIFY_BACKUP_API_KEY`) is 备用服务器. Both run the same workflow. A blank school slot uses that pair. A school that already has its own two servers keeps them. The school form shows the global key for the slot being edited.
+
+### Fixed
+
+- **主服务器中断** — After the heartbeat marks 主服务器 down, new messages go to 备用服务器. A notice says the earlier conversation can be opened again after you come back. A thread that already lives on 备用服务器 stays there, including after 主服务器 recovers, so the next message still has its context. A thread from 主服务器 is not sent to 备用服务器.
+- **暂时不可用** — A Dify restart (502, 503, 504, or a dropped connection) answers with “AI助手暂时不可用，请稍后再试” on chat and on conversation actions. The history list still shows conversations from the server that answers.
+- **手机欢迎页** — The mobile MindMate welcome uses the same avatar as the desktop panel.
+
+### Removed
+
+- **`AI_ASSISTANT_NAME`** — The assistant name is the school MindMate name. The unused environment setting is gone.
+
+### Tests
+
+- [`tests/test_dify_global_servers.py`](tests/test_dify_global_servers.py), [`tests/test_dify_failover_switch_e2e.py`](tests/test_dify_failover_switch_e2e.py) — blank slots use the env pair; a backup thread stays on 备用服务器; a 主服务器 id is not sent there during an outage; traffic returns when 主服务器 recovers.
+- [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py), [`tests/test_dify_conversations_http.py`](tests/test_dify_conversations_http.py), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py) — history survives one server being down; collab omits the 主服务器 conversation id on failover.
+
 ## [5.180.156] - 2026-10-11
 
 > **The login screen follows the browser language, brainstorm returns suggestions, and a tree map keeps its layout when you edit it.**

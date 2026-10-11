@@ -237,19 +237,30 @@ class AsyncDifyClient:
         if custom_headers:
             headers.update(custom_headers)
 
-        session = await _DifySharedHttpPool.session_blocking(self.api_url, self.timeout)
-        async with session.request(method, url, json=json_data, params=params, data=data, headers=headers) as response:
-            if response.status == 204:
-                return {"result": "success"}
-            if response.status not in (200, 201):
-                error_msg, error_code = await parse_dify_error_response(response)
-                raise_for_dify_http_error(
-                    response.status,
-                    error_msg,
-                    error_code,
-                    endpoint,
-                )
-            return await response.json()
+        try:
+            session = await _DifySharedHttpPool.session_blocking(self.api_url, self.timeout)
+            async with session.request(
+                method,
+                url,
+                json=json_data,
+                params=params,
+                data=data,
+                headers=headers,
+            ) as response:
+                if response.status == 204:
+                    return {"result": "success"}
+                if response.status not in (200, 201):
+                    error_msg, error_code = await parse_dify_error_response(response)
+                    raise_for_dify_http_error(
+                        response.status,
+                        error_msg,
+                        error_code,
+                        endpoint,
+                    )
+                return await response.json()
+        except (aiohttp.ClientError, TimeoutError, ConnectionError, OSError) as exc:
+            logger.warning("Dify request failed %s %s: %s", method, endpoint, exc)
+            raise DifyAPIError("HTTP 502", status_code=502) from exc
 
     # =========================================================================
     # Chat Messages
@@ -400,14 +411,18 @@ class AsyncDifyClient:
             logger.error("Dify API async request error: %s", e)
             yield {
                 "event": "error",
+                "status": 502,
                 "error": str(e),
+                "message": str(e),
                 "timestamp": int(time.time() * 1000),
             }
         except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Dify API async error: %s", e)
             yield {
                 "event": "error",
+                "status": 502,
                 "error": str(e),
+                "message": str(e),
                 "timestamp": int(time.time() * 1000),
             }
 

@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'kiểm tra AI',
   'focusQuestion.validationRequestFailed': 'Yêu cầu xác thực không thành công',
   'focusQuestion.weakLabel': 'Yếu đuối',
+  'mindmate.backupServerNotice': 'Máy chủ tin nhắn chính đang gặp sự cố, nên bạn đang dùng máy chủ dự phòng. Hãy quay lại sau vài phút để lấy lại cuộc trò chuyện.',
   'mindmate.defaultSuggestion1': 'Tôi có thể thiết kế những xung đột nhận thức nào cho bài học về hình bình hành?',
   'mindmate.defaultSuggestion10': 'Sử dụng phương pháp dạy học tình huống trong giờ lịch sử như thế nào?',
   'mindmate.defaultSuggestion11': 'Những vấn đề an toàn cần lưu ý trong thí nghiệm vật lý?',

@@ -37,6 +37,22 @@ from clients.dify_exceptions import (
 
 logger = logging.getLogger(__name__)
 
+# Gateway responses while Dify (or the proxy in front of it) is restarting.
+DIFY_UPSTREAM_OUTAGE_STATUSES = frozenset({502, 503, 504})
+
+
+def dify_error_is_upstream_outage(exc: BaseException) -> bool:
+    """True when Dify is restarting or its gateway cannot reach the app."""
+    if isinstance(exc, DifyAPIError):
+        return exc.status_code in DIFY_UPSTREAM_OUTAGE_STATUSES
+    return False
+
+
+def dify_stream_chunk_is_upstream_outage(chunk: dict) -> bool:
+    """True when a streamed error event is a gateway or connection failure."""
+    status = chunk.get("status")
+    return isinstance(status, int) and status in DIFY_UPSTREAM_OUTAGE_STATUSES
+
 
 async def parse_dify_error_response(
     response: aiohttp.ClientResponse,

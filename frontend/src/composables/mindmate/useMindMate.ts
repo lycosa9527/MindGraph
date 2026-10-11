@@ -17,6 +17,7 @@ import { computed, onActivated, onUnmounted, ref, shallowRef, watch } from 'vue'
 
 import { useQueryClient } from '@tanstack/vue-query'
 
+import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore, useMindMateStore } from '@/stores'
 import type { ModelLoadPhase } from '@/stores/llmResults'
@@ -155,6 +156,9 @@ export function useMindMate(options: MindMateOptions = {}) {
   const currentStreamingId = ref<string | null>(null)
   const abortController = ref<AbortController | null>(null)
   let streamGeneration = 0
+  // Shown once while chat stays on 备用服务器; cleared after a stream that is back on 主服务器.
+  let backupNoticeShown = false
+  let streamSawBackup = false
 
   // File upload state
   const pendingFiles = ref<MindMateFile[]>([])
@@ -511,6 +515,7 @@ export function useMindMate(options: MindMateOptions = {}) {
 
     streamGeneration += 1
     const activeGeneration = streamGeneration
+    streamSawBackup = false
 
     // Create new abort controller
     abortController.value = new AbortController()
@@ -552,6 +557,12 @@ export function useMindMate(options: MindMateOptions = {}) {
         message: message || (filesToSend.length > 0 ? 'Please analyze this file.' : ''),
         user_id: userId.value,
         conversation_id: conversationId.value,
+      }
+      if (conversationId.value) {
+        const route = mindMateStore.getConversationRoute(conversationId.value)
+        if (typeof route.server === 'number' && route.server >= 1) {
+          requestBody.server = route.server
+        }
       }
 
       // Add files in Dify format
@@ -596,6 +607,10 @@ export function useMindMate(options: MindMateOptions = {}) {
         (payload) => handleStreamEvent(payload as unknown as SSEData, activeGeneration),
         abortController.value.signal
       )
+
+      if (isActiveStreamGeneration(activeGeneration) && !streamSawBackup) {
+        backupNoticeShown = false
+      }
 
       if (
         isActiveStreamGeneration(activeGeneration) &&
@@ -751,7 +766,7 @@ export function useMindMate(options: MindMateOptions = {}) {
             updated_at: now,
             channel: 'web' as const,
             dify_user: webDifyUser,
-            server: 1,
+            server: streamSawBackup ? 2 : 1,
           }
 
           // Update conversations cache optimistically
@@ -801,6 +816,14 @@ export function useMindMate(options: MindMateOptions = {}) {
         applyThinkingCoinMutation(
           extractThinkingCoinsFooter(data as unknown as Record<string, unknown>)
         )
+        break
+
+      case 'mindmate_failover':
+        streamSawBackup = true
+        if (!backupNoticeShown) {
+          backupNoticeShown = true
+          notify.warningKey('mindmate.backupServerNotice', 12000)
+        }
         break
 
       case 'mindmate_meta':

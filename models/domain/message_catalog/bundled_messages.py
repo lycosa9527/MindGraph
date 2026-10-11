@@ -16,6 +16,11 @@ ERRORS = {
         "en": "AI assistant not configured",
         "az": "AI köməkçisi konfiqurasiya edilməyib",
     },
+    "ai_temporarily_unavailable": {
+        "zh": "AI助手暂时不可用，请稍后再试",
+        "en": "AI assistant is temporarily unavailable. Please try again shortly.",
+        "az": "AI köməkçisi müvəqqəti əlçatan deyil. Bir az sonra yenidən cəhd edin.",
+    },
     "invalid_prompt": {"zh": "提示词无效或为空", "en": "Invalid or empty prompt", "az": "Etibarsız və ya boş prompt"},
     "diagram_data_required": {
         "zh": "需要图示数据",

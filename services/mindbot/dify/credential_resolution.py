@@ -22,7 +22,7 @@ from models.domain.auth import Organization
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from repositories.mindbot_repo import MindbotConfigRepository
 from repositories.mindbot_usage_repo import MindbotUsageRepository
-from services.dify.dify_servers import configured_dify_servers
+from services.dify.dify_global_servers import effective_configured_dify_servers
 from services.dify.org_mindmate_client import global_mindmate_dify_credentials
 from utils.dify_user_key import parse_mindbot_dify_key
 
@@ -49,8 +49,8 @@ def _org_linked_dify_endpoints(
     org: Organization,
     mindbot_config_id: int,
 ) -> List[MindbotDifyEndpoint]:
-    """All configured org Dify servers, else one global .env fallback endpoint."""
-    servers = configured_dify_servers(org)
+    """Effective org Dify servers, else one global .env fallback endpoint."""
+    servers = effective_configured_dify_servers(org)
     if servers:
         return [
             MindbotDifyEndpoint(

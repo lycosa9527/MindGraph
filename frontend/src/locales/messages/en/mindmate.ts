@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'AI check',
   'focusQuestion.validationRequestFailed': 'Validation request failed',
   'focusQuestion.weakLabel': 'Weak',
+  'mindmate.backupServerNotice': 'Something is wrong with the main message server, so you are on the backup. Please come back in a few minutes to retrieve your conversation.',
   'mindmate.defaultSuggestion1': 'What cognitive conflicts can I design for a parallelogram lesson?',
   'mindmate.defaultSuggestion10': 'How to use situational teaching in history class?',
   'mindmate.defaultSuggestion11': 'What safety issues should be noted in physics experiments?',

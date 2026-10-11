@@ -78,6 +78,7 @@ export default {
   'focusQuestion.validate': 'Vérification IA',
   'focusQuestion.validationRequestFailed': 'Échec de la requête de validation',
   'focusQuestion.weakLabel': 'Faible',
+  'mindmate.backupServerNotice': 'Un problème est survenu sur le serveur de messagerie principal, vous êtes donc sur le serveur de secours. Revenez dans quelques minutes pour récupérer la conversation.',
   'mindmate.defaultSuggestion1': 'Quels conflits cognitifs puis-je concevoir pour une leçon sur le parallélogramme ?',
   'mindmate.defaultSuggestion10': 'Comment utiliser l’enseignement situationnel en histoire ?',
   'mindmate.defaultSuggestion11': 'Quelles questions de sécurité noter dans les expériences de physique ?',
