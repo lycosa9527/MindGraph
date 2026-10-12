@@ -287,14 +287,14 @@ class LLMConfigMixin:
     @property
     def QWEN_LIVE_TRANSLATE_MODEL(self) -> str:
         """
-        Qwen3 LiveTranslate Flash Realtime model id for WebSocket ``?model=``.
+        Qwen LiveTranslate Flash Realtime model id for WebSocket ``?model=``.
 
-        Stable default: ``qwen3-livetranslate-flash-realtime``.
+        Stable default: ``qwen3.8-livetranslate-flash-realtime`` (60 text targets).
         Override with ``QWEN_LIVE_TRANSLATE_MODEL`` env var.
         """
         return self._get_cached_value(
             "QWEN_LIVE_TRANSLATE_MODEL",
-            "qwen3-livetranslate-flash-realtime",
+            "qwen3.8-livetranslate-flash-realtime",
         )
 
     def get_qwen_headers(self) -> dict:

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.160] - 2026-10-12
+
+> **Live translation subtitles use Qwen3.8 and list all 60 target languages.**
+
+### Changed
+
+- **实时翻译** — Canvas live translation calls `qwen3.8-livetranslate-flash-realtime` and shows text only. The Globe menu lists all 60 languages from the DashScope realtime translation table. Picking another language while translation is on updates the open session. Stopping sends `session.finish` so the last sentence is not dropped. Diagram label translation still uses its own 18-language allowlist.
+
+### Tests
+
+- [`tests/test_live_translate_session.py`](tests/test_live_translate_session.py) — the session asks for text only, and a target update accepts a short language code.
+- [`frontend/tests/translateLanguages.spec.ts`](frontend/tests/translateLanguages.spec.ts) — the menu lists each of the 60 codes once; diagram translation still falls back to English outside its allowlist.
+
 ## [5.180.159] - 2026-10-12
 
 > **The two Dify server URLs come only from the environment, and the school server switch stays on one line.**

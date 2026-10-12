@@ -1,11 +1,14 @@
 """
-Relay browser canvas audio to DashScope Qwen3 LiveTranslate Flash Realtime over WebSocket.
+Relay browser canvas audio to DashScope Qwen3.8 LiveTranslate Flash Realtime over WebSocket.
 
 Protocol:
-  1. session.update — sets input_audio_transcription.language, translation.language,
-     modalities=["text"], input_audio_format="pcm16".
-  2. Continuous input_audio_buffer.append — base64 PCM16 audio chunks.
-  DashScope auto-detects VAD; no session.finish needed; session stays alive until client disconnects.
+  1. session.update — output_modalities=["text"], translation.language.
+     Source language is detected by the model. Do not send qwen3.5 fields
+     (modalities, input_audio_format, input_audio_transcription).
+  2. Continuous input_audio_buffer.append — base64 PCM16 audio at 16 kHz.
+  3. session.finish when the client sends stop or disconnects, so the last
+     utterance is translated before the upstream socket closes.
+  The model detects turns while the session is open.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -41,6 +44,7 @@ from utils.ws_limits import (
 logger = logging.getLogger(__name__)
 
 SESSION_READY_TIMEOUT_SEC = 25.0
+SESSION_FINISH_TIMEOUT_SEC = 2.5
 
 
 def translate_error_json(code: str, message: str) -> str:
@@ -69,25 +73,35 @@ def _resolve_api_key() -> Optional[str]:
     return None
 
 
-def build_translate_session_update(
-    source_language: str,
-    target_language: str,
-) -> Dict[str, Any]:
-    """session.update payload for Qwen3 LiveTranslate (text-only output).
+def normalize_translate_target(value: object) -> str:
+    """Return a LiveTranslate language code, or empty when the value is unusable."""
+    text = str(value or "").strip().lower()
+    if not text or len(text) > 16:
+        return ""
+    if not text.isalpha():
+        return ""
+    return text
 
-    ``input_audio_format`` is hardcoded to ``pcm16`` — the only value accepted
-    by the LiveTranslate realtime API.  ``sample_rate`` is not part of the
-    LiveTranslate session schema and must not be sent.
+
+def build_session_finish() -> Dict[str, Any]:
+    """session.finish payload. Required before close so the last utterance is kept."""
+    return {
+        "event_id": f"evt_{uuid.uuid4().hex}",
+        "type": "session.finish",
+    }
+
+
+def build_translate_session_update(target_language: str) -> Dict[str, Any]:
+    """session.update payload for qwen3.8 LiveTranslate text-only output.
+
+    Input audio stays at the model default (PCM, 16 kHz). ``sample_rate`` and
+    the qwen3.5 session fields must not be sent.
     """
     return {
         "event_id": f"evt_{uuid.uuid4().hex}",
         "type": "session.update",
         "session": {
-            "modalities": ["text"],
-            "input_audio_format": "pcm16",
-            "input_audio_transcription": {
-                "language": source_language,
-            },
+            "output_modalities": ["text"],
             "translation": {
                 "language": target_language,
             },
@@ -97,7 +111,6 @@ def build_translate_session_update(
 
 async def run_translate_relay(
     client_ws: WebSocket,
-    source_language: str,
     target_language: str,
     *,
     model: Optional[str] = None,
@@ -109,9 +122,10 @@ async def run_translate_relay(
 
     Client messages (after the initial 'start' frame handled by the router):
         input_audio_buffer.append (alias 'append') — base64 audio.
+        set_target — change translation.language on the open session.
+        stop — finish the upstream session and close.
 
     All DashScope server events are forwarded unchanged.
-    The session stays open until the client disconnects; no session.finish needed.
     """
     api_key = _resolve_api_key()
     if not api_key:
@@ -161,6 +175,7 @@ async def run_translate_relay(
         return
 
     session_ready = asyncio.Event()
+    session_finished = asyncio.Event()
 
     async def pump_upstream() -> None:
         try:
@@ -171,8 +186,11 @@ async def run_translate_relay(
                     payload = json.loads(text_raw)
                 except json.JSONDecodeError:
                     continue
-                if payload.get("type") == "session.updated":
+                event_type = payload.get("type")
+                if event_type == "session.updated":
                     session_ready.set()
+                elif event_type == "session.finished":
+                    session_finished.set()
         except ConnectionClosedOK:
             logger.debug("LiveTranslate upstream closed normally")
         except ConnectionClosedError as exc:
@@ -183,7 +201,7 @@ async def run_translate_relay(
     pump_task = asyncio.create_task(pump_upstream())
 
     try:
-        await upstream.send(json.dumps(build_translate_session_update(source_language, target_language)))
+        await upstream.send(json.dumps(build_translate_session_update(target_language)))
 
         session_ready_task: asyncio.Task[bool] = asyncio.create_task(session_ready.wait())
         try:
@@ -229,6 +247,13 @@ async def run_translate_relay(
             msg_type = data.get("type")
             if msg_type == "start":
                 continue
+            if msg_type == "set_target":
+                new_target = normalize_translate_target(data.get("target_language"))
+                if new_target:
+                    await upstream.send(json.dumps(build_translate_session_update(new_target)))
+                continue
+            if msg_type == "stop":
+                break
             if msg_type in ("append", "input_audio_buffer.append"):
                 audio_b64 = data.get("audio") or data.get("data")
                 if not audio_b64 or not isinstance(audio_b64, str):
@@ -251,8 +276,16 @@ async def run_translate_relay(
             translate_error_json("relay", "Translation relay error"),
         )
     finally:
+        if session_ready.is_set():
+            with contextlib.suppress(OSError, RuntimeError, ConnectionClosed):
+                await upstream.send(json.dumps(build_session_finish()))
+            if not session_finished.is_set():
+                with contextlib.suppress(TimeoutError):
+                    await asyncio.wait_for(session_finished.wait(), SESSION_FINISH_TIMEOUT_SEC)
         pump_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await pump_task
         with contextlib.suppress(OSError, RuntimeError, ConnectionClosed):
             await upstream.close()
+        with contextlib.suppress(OSError, RuntimeError):
+            await client_ws.close()

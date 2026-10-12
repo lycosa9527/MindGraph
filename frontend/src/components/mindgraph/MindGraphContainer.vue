@@ -12,8 +12,8 @@ import InternationalLanding from './InternationalLanding.vue'
 <!-- Teleported translate dropdown — width lives on popper, not scoped subtree -->
 <style>
 .mindgraph-translate-popper.el-popper {
-  width: min(180px, calc(100vw - 24px)) !important;
-  max-width: min(180px, calc(100vw - 24px)) !important;
+  width: min(240px, calc(100vw - 24px)) !important;
+  max-width: min(240px, calc(100vw - 24px)) !important;
   box-sizing: border-box !important;
   padding: 4px !important;
   border: 1px solid #e7e5e4 !important;
@@ -63,5 +63,11 @@ import InternationalLanding from './InternationalLanding.vue'
   width: 100%;
   padding: 0;
   overflow: hidden;
+}
+
+.mindgraph-translate-popper .el-scrollbar,
+.mindgraph-translate-popper .el-scrollbar__wrap {
+  height: auto;
+  max-height: min(420px, calc(100dvh - 96px));
 }
 </style>
