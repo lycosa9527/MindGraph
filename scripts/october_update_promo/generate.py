@@ -38,7 +38,7 @@ from scripts.sync_classroom_video.roles import RoleStill, discover_roles
 from scripts.training_roles.env import dashscope_api_key
 from scripts.training_roles.wan_client import (
     LONG_POLL_SECONDS,
-    WAN3_VIDEO_PRIME,
+    WAN3_VIDEO,
     download_mp4,
     poll_video_url,
     submit_video,
@@ -111,7 +111,7 @@ def _submit_video(api_key: str, clip: PromoClip, prompt: str, media: list[dict[s
                 api_key,
                 prompt,
                 clip_stem(clip),
-                model=WAN3_VIDEO_PRIME,
+                model=WAN3_VIDEO,
                 negative=NEGATIVE,
                 media=media,
                 resolution=RESOLUTION,
@@ -144,7 +144,7 @@ def _submit_one(
         print(f"{stem} already submitted {tasks[stem]}", flush=True)
         return
     prompt = clip_prompt(clip, roles)
-    print(f"submit {stem} {WAN3_VIDEO_PRIME} {clip['seconds']}s {RESOLUTION} audio", flush=True)
+    print(f"submit {stem} {WAN3_VIDEO} {clip['seconds']}s {RESOLUTION} audio", flush=True)
     try:
         tasks[stem] = _submit_video(api_key, clip, prompt, media)
     except RuntimeError as exc:

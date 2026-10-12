@@ -63,6 +63,7 @@ import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSav
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useMindClassroomStore } from '@/stores'
+import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 
 import './mindMapClassroomRemote.css'
 
@@ -329,7 +330,7 @@ const teachingTools = computed<RemoteTool[]>(() => [
     id: 'explain',
     labelKey: 'canvas.floatingToolbar.explain',
     icon: Lightbulb,
-    dimmed: aiBlockedByCollab.value || !ribbon.hasSelection,
+    dimmed: aiBlockedByCollab.value || !ribbon.hasSelection || ribbon.explainLockedUntilConfirm,
     run: () => runGuestAi(() => requireSelection(() => ribbon.requestExplainNode())),
   },
   {
@@ -395,10 +396,13 @@ function tabIcon(tab: ClassroomRemoteTabId): Component | undefined {
   return tab === 'ai' ? undefined : TAB_ICONS[tab]
 }
 
+function onRemoteToolPointerDown(tool: RemoteTool, event: PointerEvent): void {
+  if (tool.id !== 'explain') return
+  retainEditOnExplainPointer(event, ribbon.explainLockedUntilConfirm)
+}
+
 function runTool(tool: RemoteTool): void {
-  if (tool.disabled) {
-    return
-  }
+  if (tool.disabled) return
   tool.run()
 }
 
@@ -522,9 +526,20 @@ function onClose(): void {
             'is-locked': tool.id === 'painter' && formatBrushLocked,
           }"
           :disabled="tool.disabled"
+          :data-node-explain-trigger="tool.id === 'explain' ? '' : undefined"
           :data-testid="tool.testid"
-          :aria-label="t(tool.labelKey)"
+          :title="
+            tool.id === 'explain' && ribbon.explainLockedUntilConfirm
+              ? t('canvas.floatingToolbar.explainNeedsConfirm')
+              : undefined
+          "
+          :aria-label="
+            tool.id === 'explain' && ribbon.explainLockedUntilConfirm
+              ? t('canvas.floatingToolbar.explainNeedsConfirm')
+              : t(tool.labelKey)
+          "
           :aria-pressed="tool.active"
+          @pointerdown="onRemoteToolPointerDown(tool, $event)"
           @click="runTool(tool)"
         >
           <MindMapInsertNodeIcon

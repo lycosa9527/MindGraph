@@ -323,7 +323,7 @@ class VolcengineClient:
     ENDPOINT_MAP = {
         "ark-qwen": "ARK_QWEN_ENDPOINT",
         "ark-deepseek": "ARK_DEEPSEEK_ENDPOINT",
-        "ark-kimi": "ARK_KIMI_ENDPOINT",
+        "ark-kimi": "GLM_FLASH_MODEL",
         "ark-doubao": "ARK_DOUBAO_ENDPOINT",
     }
 
@@ -372,16 +372,20 @@ class VolcengineClient:
         Uses config properties for consistency with other configuration values.
         Endpoint IDs must be configured in environment variables (see env.example).
         """
-        if alias == "ark-doubao21":
-            # Model id (or an ep- endpoint pasted into DOUBAO21_MODEL). Not the 1.5 pro endpoint.
-            name = str(config.DOUBAO21_MODEL or "").strip()
+        if alias == "ark-kimi":
+            name = str(config.GLM_FLASH_MODEL or "").strip()
             if not name:
-                raise ValueError("DOUBAO21_MODEL is empty. Set a Volcengine model id or endpoint.")
+                raise ValueError("GLM_FLASH_MODEL is empty. Set a Volcengine model id or endpoint.")
+            return name
+        if alias == "ark-doubao21":
+            # Canvas Doubao. Not the 1.5 pro endpoint in ARK_DOUBAO_ENDPOINT.
+            name = str(config.DOUBAO_MODEL or "").strip()
+            if not name:
+                raise ValueError("DOUBAO_MODEL is empty. Set a Volcengine model id or endpoint.")
             return name
 
         endpoint_map = {
             "ark-deepseek": config.ARK_DEEPSEEK_ENDPOINT,
-            "ark-kimi": config.ARK_KIMI_ENDPOINT,
             "ark-doubao": config.ARK_DOUBAO_ENDPOINT,
         }
 

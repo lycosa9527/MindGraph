@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'szöveg színe',
   'canvas.floatingToolbar.typography': 'betűszedés',
   'canvas.floatingToolbar.explain': 'Csomópont magyarázata',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Alapértelmezett betűtípus',
   'canvas.floatingToolbar.fontSimSun': 'Song-dinasztia',
   'canvas.floatingToolbar.fontKaiTi': 'szabályos szkript',

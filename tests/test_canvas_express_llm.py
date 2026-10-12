@@ -1,5 +1,7 @@
 """Canvas Express stays on DashScope deepseek-v4.1-flash."""
 
+import pytest
+
 from config.settings import config
 from services.infrastructure.utils.ark_thinking import volcengine_thinking_extra
 from services.infrastructure.utils.load_balancer import LLMLoadBalancer
@@ -30,4 +32,23 @@ def test_volcengine_v4_thinking_switch() -> None:
     assert LLMLoadBalancer.FIXED_MODEL_MAP["qwen3-max"] == "qwen3-max"
     assert LLMLoadBalancer.FIXED_MODEL_MAP["kimi"] == "ark-kimi"
     assert LLMLoadBalancer.FIXED_MODEL_MAP["qwen3.8-flash"] == "qwen3.8-flash"
-    assert config.DOUBAO21_MODEL == "doubao-seed-2.1-turbo"
+
+
+def test_canvas_model_ids_come_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Canvas Doubao and GLM Flash use env model ids and invent none."""
+    monkeypatch.setenv("DOUBAO_MODEL", "doubao-seed-2-1-turbo-260628")
+    monkeypatch.setenv("GLM_FLASH_MODEL", "glm-5-3-flash-260828")
+    config.refresh_env_cache()
+    try:
+        assert config.DOUBAO_MODEL == "doubao-seed-2-1-turbo-260628"
+        assert config.GLM_FLASH_MODEL == "glm-5-3-flash-260828"
+        monkeypatch.setenv("DOUBAO_MODEL", "  ep-example  ")
+        config.refresh_env_cache()
+        assert config.DOUBAO_MODEL == "ep-example"
+        monkeypatch.delenv("DOUBAO_MODEL", raising=False)
+        monkeypatch.delenv("GLM_FLASH_MODEL", raising=False)
+        config.refresh_env_cache()
+        assert config.DOUBAO_MODEL == ""
+        assert config.GLM_FLASH_MODEL == ""
+    finally:
+        config.refresh_env_cache()

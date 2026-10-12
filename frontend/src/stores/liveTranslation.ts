@@ -11,6 +11,7 @@ import { defineStore } from 'pinia'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { i18n } from '@/i18n'
 import { useUIStore } from '@/stores/ui'
+import { notifySimplifiedChineseUnsupported } from '@/utils/simplifiedChineseNotice'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 const TARGET_SAMPLE_RATE = 16000
@@ -468,6 +469,10 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
 
   function setTargetLanguage(lang: string): void {
     if (!lang || lang === targetLanguage.value) return
+    if (lang === 'zh' && !useUIStore().languagePolicyAllowZh) {
+      notifySimplifiedChineseUnsupported(useUIStore().language)
+      return
+    }
     targetLanguage.value = lang
     const sock = wsRef.value
     if (!enabled.value || !sock || sock.readyState !== WebSocket.OPEN) return

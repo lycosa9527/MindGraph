@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Колір тексту',
   'canvas.floatingToolbar.typography': 'Типографіка',
   'canvas.floatingToolbar.explain': 'Пояснення вузла',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Типовий',
   'canvas.floatingToolbar.fontSimSun': 'Династія Сун',
   'canvas.floatingToolbar.fontKaiTi': 'звичайний сценарій',

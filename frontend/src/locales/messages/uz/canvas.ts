@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Metn rengi',
   'canvas.floatingToolbar.typography': 'Tipoqrafiya',
   'canvas.floatingToolbar.explain': 'Tugun tushuntirish',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Standart',
   'canvas.floatingToolbar.fontSimSun': 'Song sulolasi',
   'canvas.floatingToolbar.fontKaiTi': 'oddiy skript',

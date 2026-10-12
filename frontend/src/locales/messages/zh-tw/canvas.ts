@@ -470,6 +470,7 @@ export default {
   'canvas.floatingToolbar.textColor': '文字顏色',
   'canvas.floatingToolbar.typography': '排版',
   'canvas.floatingToolbar.explain': '節點解釋',
+  'canvas.floatingToolbar.explainNeedsConfirm': '請先確認節點內容',
   'canvas.floatingToolbar.fontDefault': '默認字體',
   'canvas.floatingToolbar.fontSimSun': '宋體',
   'canvas.floatingToolbar.fontKaiTi': '楷體',

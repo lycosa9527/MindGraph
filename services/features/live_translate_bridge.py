@@ -33,6 +33,7 @@ from websockets.exceptions import ConnectionClosed, ConnectionClosedError, Conne
 from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.chinese_language_policy import guard_json_text
 from utils.ws_limits import (
     DEFAULT_MAX_WS_TEXT_BYTES,
     WebsocketMessageRateLimiter,
@@ -181,7 +182,7 @@ async def run_translate_relay(
         try:
             async for raw in upstream:
                 text_raw = raw.decode("utf-8") if isinstance(raw, bytes) else str(raw)
-                await safe_websocket_send_text(client_ws, text_raw)
+                await safe_websocket_send_text(client_ws, guard_json_text(text_raw))
                 try:
                     payload = json.loads(text_raw)
                 except json.JSONDecodeError:

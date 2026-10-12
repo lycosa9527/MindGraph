@@ -33,6 +33,7 @@ from routers.api.vueflow_screenshot import capture_diagram_screenshot
 from services.infrastructure.http.error_handler import LLMContentFilterError, LLMServiceError
 from services.infrastructure.http.llm_http_errors import (
     is_llm_content_filter_detail,
+    is_user_llm_limit_error,
     raise_http_for_llm_error,
 )
 from services.diagram.content_diagram_generate import (
@@ -73,6 +74,7 @@ from services.utils.error_types import (
     REDIS_ERRORS,
 )
 from utils.auth import get_current_user, get_current_user_or_api_key
+from utils.chinese_language_policy import coerce_generation_language, guard_user_visible
 from utils.auth.mg_client import (
     MG_CLIENT_UNSPECIFIED,
     client_source_from_request,
@@ -159,6 +161,12 @@ async def _generate_mindmap_from_resolved_content(
     """Shared generation from resolved extracted text for the requested diagram type."""
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(rate_limit_key, identifier, max_requests=100, window_seconds=60)
+    language = coerce_generation_language(
+        language,
+        page_content,
+        page_title or "",
+        generation_instructions or "",
+    )
 
     accept_language = request.headers.get("Accept-Language", "")
     lang = get_request_language(None, accept_language)
@@ -222,6 +230,13 @@ async def _generate_mindmap_from_resolved_content(
                 user_id,
                 exc,
             )
+        elif is_user_llm_limit_error(exc):
+            logger.info(
+                "[ContentMindMap] user limit endpoint=%s user=%s: %s",
+                endpoint_path,
+                user_id,
+                exc,
+            )
         else:
             logger.error(
                 "[ContentMindMap] LLM error endpoint=%s user=%s: %s",
@@ -257,7 +272,7 @@ async def _generate_mindmap_from_resolved_content(
             diagram_type="mind_map" if content_slug == "mindmap" else content_slug,
         )
 
-    return result
+    return guard_user_visible(result)
 
 
 async def _try_save_to_library(

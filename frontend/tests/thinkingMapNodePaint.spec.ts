@@ -129,6 +129,60 @@ describe('thinking map node paint', () => {
     expect(nodes[3].style?.borderColor).toBe(diffFamily.line)
   })
 
+  it('keeps a white role fill when only the text color changes', () => {
+    const customText = '#dc2626'
+    const similarity = node({
+      id: 'sim-1',
+      type: 'bubble',
+      data: { doubleBubbleRole: 'similarity' },
+      style: { textColor: customText },
+    })
+    const similarityPaint = thinkingMapDisplayedNodeColors(
+      'double_bubble_map',
+      'rainbow',
+      similarity
+    )
+    expect(similarityPaint?.backgroundColor).toBe('#FFFFFF')
+    expect(similarityPaint?.borderColor).toBe('#3B5BDB')
+    expect(similarityPaint?.textColor).toBeUndefined()
+
+    const leaf = node({
+      id: 'leaf-1',
+      type: 'branch',
+      data: { nodeType: 'leaf', categoryIndex: 1 },
+      style: { textColor: customText },
+    })
+    const leafPaint = thinkingMapDisplayedNodeColors('tree_map', 'rainbow', leaf)
+    const green = MIND_MAP_RAINBOW_FAMILIES[1]
+    expect(leafPaint?.backgroundColor).toBe('#FFFFFF')
+    expect(leafPaint?.accentBarColor).toBe(green.line)
+    expect(leafPaint?.textColor).toBeUndefined()
+
+    const palette = getMindmapBranchColor(1)
+    const grouped = node({
+      id: 'bubble-1',
+      type: 'bubble',
+      data: { groupIndex: 1 },
+      style: {
+        backgroundColor: palette.fill,
+        borderColor: palette.border,
+        textColor: customText,
+      },
+    })
+    const groupedPaint = thinkingMapDisplayedNodeColors('bubble_map', 'rainbow', grouped)
+    expect(groupedPaint?.backgroundColor).toBe(green.fill)
+    expect(groupedPaint?.textColor).toBeUndefined()
+
+    const theme = getMindMapThemeById('vibrantYellow')
+    const themedSimilarity = thinkingMapDisplayedNodeColors(
+      'double_bubble_map',
+      'vibrantYellow',
+      similarity
+    )
+    expect(themedSimilarity?.backgroundColor).toBe(theme.backgroundColor)
+    expect(themedSimilarity?.textColor).toBeUndefined()
+  })
+
   it('keeps a painted zero border and ignores a leftover stored zero', () => {
     expect(thinkingMapBorderWidth(0, 1.5, 1.5)).toBe(0)
     expect(thinkingMapBorderWidth(undefined, 0, 1.5)).toBe(1.5)

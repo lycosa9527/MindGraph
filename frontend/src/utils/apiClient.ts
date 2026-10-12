@@ -16,6 +16,7 @@ import type { LocaleCode } from '@/i18n/locales'
 import { AUTH_USER_STORAGE_KEY, useAuthStore } from '@/stores/auth'
 import { hasAuthSessionHint } from '@/utils/authSessionHint'
 import { useUIStore } from '@/stores/ui'
+import { notifyIfAiRequestUsesSimplifiedChinese } from '@/utils/simplifiedChineseNotice'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { emitSchoolExpiredFromPayload } from '@/utils/schoolExpiredLockout'
 import {
@@ -158,6 +159,11 @@ function requestHeaders(options: RequestInit): Record<string, string> {
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
+  const uiStore = useUIStore()
+  notifyIfAiRequestUsesSimplifiedChinese(url, options, {
+    allowSimplifiedChinese: uiStore.languagePolicyAllowZh,
+    uiLanguage: uiStore.language,
+  })
 
   const headers = requestHeaders(options)
 

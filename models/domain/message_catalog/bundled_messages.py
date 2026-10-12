@@ -451,21 +451,16 @@ ERRORS = {
         "az": "Giriş uğursuz oldu. Bu telefon nömrəsi və ya e-poçt üzrə hesab tapılmadı. {} cəhd qalıb.",
     },
     "ui_language_zh_not_allowed": {
-        "zh": "您的账户不支持简体中文界面。请选择其他界面语言。",
-        "en": "Simplified Chinese UI is not available for your account. Please choose another language.",
-        "az": "Hesabınız üçün sadə çin dilində interfeysə icazə verilmir. Başqa dil seçin.",
+        "zh": "海外用户暂不支持简体中文。",
+        "zh-tw": "海外用戶暫不支援簡體中文。",
+        "en": "We do not support Simplified Chinese for overseas users at this point.",
+        "az": "Xarici istifadəçilər üçün sadələşdirilmiş Çin dilini hazırda dəstəkləmirik.",
     },
     "prompt_language_zh_not_allowed": {
-        "zh": ("您的账户不支持简体中文作为生成语言。请选择其他语言（例如繁体中文或英语）。"),
-        "en": (
-            "Simplified Chinese is not available as the generation language "
-            "for your account. Please choose another language (e.g. "
-            "Traditional Chinese or English)."
-        ),
-        "az": (
-            "Hesabınız üçün sadə çin dili nəsrlər üçün mövcud deyil. Başqa "
-            "dil seçin (məsələn, ənənəvi çin və ya ingilis)."
-        ),
+        "zh": "海外用户暂不支持简体中文。",
+        "zh-tw": "海外用戶暫不支援簡體中文。",
+        "en": "We do not support Simplified Chinese for overseas users at this point.",
+        "az": "Xarici istifadəçilər üçün sadələşdirilmiş Çin dilini hazırda dəstəkləmirik.",
     },
     "register_overseas_acknowledgment_required": {
         "zh": "请确认您了解海外教育邮箱注册的相关条款。",

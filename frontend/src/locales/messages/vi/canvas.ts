@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Màu văn bản',
   'canvas.floatingToolbar.typography': 'Kiểu chữ',
   'canvas.floatingToolbar.explain': 'Giải thích nút',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Mặc định',
   'canvas.floatingToolbar.fontSimSun': 'Nhà Tống',
   'canvas.floatingToolbar.fontKaiTi': 'kịch bản thông thường',

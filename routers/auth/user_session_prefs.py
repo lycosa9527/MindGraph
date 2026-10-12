@@ -4,6 +4,7 @@ from typing import Any
 
 from models.domain.auth import User
 from services.utils.quick_access_prompts import clean_quick_access_prompt_overrides
+from utils.chinese_language_policy import user_allows_simplified_chinese
 
 
 def _bool_pref(user: User, name: str, default: bool) -> bool:
@@ -23,7 +24,7 @@ def user_preference_fields(user: User) -> dict[str, Any]:
         "match_prompt_to_ui": _bool_pref(user, "match_prompt_to_ui", True),
         "bilingual_ui_enabled": _bool_pref(user, "bilingual_ui_enabled", False),
         "presenter_ui_locale": getattr(user, "presenter_ui_locale", None),
-        "allows_simplified_chinese": _bool_pref(user, "allows_simplified_chinese", True),
+        "allows_simplified_chinese": user_allows_simplified_chinese(user),
         "education_stage": getattr(user, "education_stage", None),
         "ai_content_level": getattr(user, "ai_content_level", None),
         "v3_ribbon_classic": bool(getattr(user, "v3_ribbon_classic", False)),
@@ -54,7 +55,7 @@ def coerce_overseas_ui_language_prefs(user: User) -> bool:
 
     Returns True when any column changed so callers can persist once.
     """
-    if getattr(user, "allows_simplified_chinese", True):
+    if user_allows_simplified_chinese(user):
         return False
     changed = False
     if (user.ui_language or "").lower() == "zh":

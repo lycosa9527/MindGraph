@@ -450,6 +450,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Mətn rəngi',
   'canvas.floatingToolbar.typography': 'Tipoqrafiya',
   'canvas.floatingToolbar.explain': 'Düyün izahatı',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Standart',
   'canvas.floatingToolbar.fontSimSun': 'Mahnı sülaləsi',
   'canvas.floatingToolbar.fontKaiTi': 'müntəzəm skript',

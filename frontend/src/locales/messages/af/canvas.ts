@@ -450,6 +450,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Tekskleur',
   'canvas.floatingToolbar.typography': 'Tipografie',
   'canvas.floatingToolbar.explain': 'Nodus verduideliking',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Verstek',
   'canvas.floatingToolbar.fontSimSun': 'Song-dinastie',
   'canvas.floatingToolbar.fontKaiTi': 'gewone skrif',

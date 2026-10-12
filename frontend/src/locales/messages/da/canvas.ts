@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'tekst farve',
   'canvas.floatingToolbar.typography': 'sætning',
   'canvas.floatingToolbar.explain': 'Node forklaring',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Standard skrifttype',
   'canvas.floatingToolbar.fontSimSun': 'Song-dynastiet',
   'canvas.floatingToolbar.fontKaiTi': 'almindeligt manuskript',

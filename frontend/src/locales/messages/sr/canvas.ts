@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'боја текста',
   'canvas.floatingToolbar.typography': 'слагање',
   'canvas.floatingToolbar.explain': 'Објашњење чвора',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Подразумевани фонт',
   'canvas.floatingToolbar.fontSimSun': 'Сонг Династи',
   'canvas.floatingToolbar.fontKaiTi': 'редовног сценарија',

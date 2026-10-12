@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'textfärg',
   'canvas.floatingToolbar.typography': 'typsättning',
   'canvas.floatingToolbar.explain': 'Nodförklaring',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Standardteckensnitt',
   'canvas.floatingToolbar.fontSimSun': 'Songdynastin',
   'canvas.floatingToolbar.fontKaiTi': 'vanligt manus',

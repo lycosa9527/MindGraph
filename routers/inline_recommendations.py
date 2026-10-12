@@ -9,7 +9,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import json
 import logging
 from contextlib import nullcontext
 
@@ -42,6 +41,7 @@ from utils.chinese_language_policy import (
     collect_inline_recommendation_text_blobs,
     effective_language_for_thinking_user,
     is_chinese_ui_error_language,
+    sse_data,
 )
 
 router = APIRouter(tags=["thinking"])
@@ -75,7 +75,7 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
         await assert_collab_blocks_canvas_ai(diagram_id, user)
     except HTTPException as exc:
         msg = str(exc.detail)
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
         return
 
     generator = get_inline_recommendations_generator()
@@ -128,13 +128,13 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
                         rec_count,
                         chunk.get("text", "")[:60],
                     )
-                yield f"data: {json.dumps(chunk)}\n\n"
+                yield sse_data(chunk)
     except LLMContentFilterError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (
             "无法处理您的请求。" if is_chinese_ui_error_language(effective_lang) else "Content could not be processed."
         )
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
     except LLMRateLimitError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (
@@ -142,13 +142,13 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
             if is_chinese_ui_error_language(effective_lang)
             else "AI service busy. Please retry."
         )
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
     except LLMTimeoutError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (
             "请求超时，请重试。" if is_chinese_ui_error_language(effective_lang) else "Request timed out. Please retry."
         )
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
     except LLMServiceError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (
@@ -156,12 +156,12 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
             if is_chinese_ui_error_language(effective_lang)
             else "AI service error. Please retry."
         )
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
     except BACKGROUND_INFRA_ERRORS as e:
         error_yielded = True
         logger.error("[InlineRec] Stream error: %s", str(e), exc_info=True)
         msg = "请求失败，请重试。" if is_chinese_ui_error_language(effective_lang) else "Request failed. Please retry."
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
     finally:
         logger.debug(
             "[InlineRec] Stream done: %d chunks, %d recommendations",
@@ -169,7 +169,7 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
             rec_count,
         )
         if chunk_count == 0 and not error_yielded:
-            yield f"data: {json.dumps({'event': 'error', 'message': 'No response'})}\n\n"
+            yield sse_data({"event": "error", "message": "No response"})
 
 
 @router.post("/thinking_mode/inline_recommendations/start")

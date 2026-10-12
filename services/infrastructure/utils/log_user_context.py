@@ -15,6 +15,11 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from typing import Any, Optional
 
+from utils.chinese_language_policy import (
+    bind_simplified_chinese_policy,
+    clear_simplified_chinese_policy,
+)
+
 _CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]+")
 _MAX_NAME_LEN = 64
 
@@ -64,17 +69,21 @@ def _parse_user_id(user: Any) -> Optional[int]:
 
 
 def bind_log_user(user: Any) -> Token[BoundLogUser | None]:
-    """Pin actor id and display name for the current task."""
+    """Pin actor id, display name, and Simplified Chinese policy for the current task."""
     if user is None:
+        clear_simplified_chinese_policy()
         return _log_user.set(None)
     user_id = _parse_user_id(user)
     if user_id is None:
+        clear_simplified_chinese_policy()
         return _log_user.set(None)
+    bind_simplified_chinese_policy(user)
     return _log_user.set(BoundLogUser(user_id=user_id, name=display_name_for_log(user)))
 
 
 def reset_log_user(token: Token[BoundLogUser | None] | None) -> None:
-    """Restore the previous actor identity."""
+    """Restore the previous actor identity and clear the script policy."""
+    clear_simplified_chinese_policy()
     if token is None:
         return
     _log_user.reset(token)

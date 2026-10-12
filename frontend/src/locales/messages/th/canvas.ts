@@ -450,6 +450,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'สีข้อความ',
   'canvas.floatingToolbar.typography': 'การจัดพิมพ์',
   'canvas.floatingToolbar.explain': 'คำอธิบายโหนด',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'ค่าเริ่มต้น',
   'canvas.floatingToolbar.fontSimSun': 'ราชวงศ์ซ่ง',
   'canvas.floatingToolbar.fontKaiTi': 'สคริปต์ปกติ',

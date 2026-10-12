@@ -24,6 +24,7 @@ import orjson
 from sqlalchemy import insert as sa_insert
 
 from config.database import check_disk_space
+from config.settings import config
 from models.domain.token_usage import TokenUsage
 from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
@@ -57,6 +58,23 @@ STREAM_HARD_CAP = MAX_BUFFER_SIZE * 5
 _TOKEN_BUFFER_IDMP_PRODUCER_ID = os.getenv("TOKEN_BUFFER_IDMP_PRODUCER_ID", "mindgraph-token-buffer")
 
 
+def token_model_display_name(model_alias: str) -> str:
+    """Name stored on a usage row. Canvas choices use the env model id."""
+    if model_alias == "express":
+        return config.EXPRESS_MODEL or model_alias
+    if model_alias == "deepseek":
+        return config.DEEPSEEK_MODEL or model_alias
+    if model_alias == "kimi":
+        return config.GLM_FLASH_MODEL or model_alias
+    if model_alias == "doubao21":
+        return config.DOUBAO_MODEL or model_alias
+    if model_alias == "qwen3.8-flash":
+        return config.QWEN_FLASH_MODEL or model_alias
+    if model_alias == "qwen3-max":
+        return config.QWEN_MAX_MODEL or model_alias
+    return RedisTokenBuffer.MODEL_NAME_MAP.get(model_alias, model_alias)
+
+
 class RedisTokenBuffer:
     """
     Redis-based token usage buffer.
@@ -68,31 +86,7 @@ class RedisTokenBuffer:
     could lose buffered data.
     """
 
-    # Model pricing (per 1M tokens in CNY). Logical keys qwen / qwen-turbo map to
-    # QWEN_MODEL_GENERATION / classification (see config); reconcile with 百炼 billing.
-    MODEL_PRICING = {
-        # Logical qwen uses QWEN_MODEL_GENERATION (default qwen3.6-flash); same tier as turbo/flash.
-        "qwen": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
-        "qwen-turbo": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
-        # Logical alias still routes to generation client; physical model follows env (flash by default).
-        "qwen-plus": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
-        "qwen3.6-flash": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
-        "qwen3.7-flash": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
-        "qwen3.8-flash": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
-        "qwen3.7-plus": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
-        "deepseek": {"input": 0.4, "output": 2.0, "provider": "dashscope"},
-        "express": {"input": 0.4, "output": 2.0, "provider": "dashscope"},
-        "kimi": {"input": 2.0, "output": 6.0, "provider": "dashscope"},
-        "hunyuan": {"input": 0.45, "output": 0.5, "provider": "tencent"},
-        "doubao": {"input": 0.8, "output": 2.0, "provider": "volcengine"},
-        # Dify MindMate - uses Dify's hosted models (pricing estimated based on typical usage)
-        "dify": {"input": 0.5, "output": 1.5, "provider": "dify"},
-        # Fun-ASR realtime (Kitty). Voice Notes duration-proxy tokens use tencent-asr-v2.
-        "fun-asr-realtime": {"input": 0.8, "output": 0.8, "provider": "dashscope"},
-        "tencent-asr-v2": {"input": 0.8, "output": 0.8, "provider": "tencent"},
-    }
-
-    # Display names for resolved DashScope model ids (Qwen 3.6 family defaults).
+    # Display names for aliases that are not the canvas env model ids.
     MODEL_NAME_MAP = {
         "qwen": "qwen3.6-flash",
         "qwen-turbo": "qwen3.6-flash",
@@ -102,8 +96,6 @@ class RedisTokenBuffer:
         "qwen3.8-flash": "qwen3.8-flash",
         "qwen3.7-plus": "qwen3.7-plus",
         "deepseek": "deepseek-v4.1-flash",
-        "express": "deepseek-v4.1-flash",
-        "kimi": "moonshot-v1-32k",
         "hunyuan": "hunyuan-turbo",
         "doubao": "doubao-1-5-pro-32k",
         "dify": "dify-mindmate",
@@ -488,12 +480,8 @@ class RedisTokenBuffer:
             if total_tokens is None:
                 total_tokens = input_tokens + output_tokens
 
-            pricing = self.MODEL_PRICING.get(model_alias, {"input": 0.4, "output": 1.2, "provider": "unknown"})
-            input_cost = input_tokens * pricing["input"] / 1_000_000
-            output_cost = output_tokens * pricing["output"] / 1_000_000
-            total_cost = input_cost + output_cost
-            model_name = self.MODEL_NAME_MAP.get(model_alias, model_alias)
-            recorded_provider = (model_provider or "").strip() or pricing["provider"]
+            model_name = token_model_display_name(model_alias)
+            recorded_provider = (model_provider or "").strip() or None
 
             # Build record
             if kwargs:
@@ -510,9 +498,9 @@ class RedisTokenBuffer:
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "total_tokens": total_tokens,
-                "input_cost": round(input_cost, 6),
-                "output_cost": round(output_cost, 6),
-                "total_cost": round(total_cost, 6),
+                "input_cost": 0.0,
+                "output_cost": 0.0,
+                "total_cost": 0.0,
                 "request_type": request_type,
                 "diagram_type": diagram_type,
                 "endpoint_path": endpoint_path,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-from scripts.training_roles.wan_client import HAPPYHORSE_T2V, WAN3_VIDEO_PRIME
+from scripts.training_roles.wan_client import HAPPYHORSE_T2V, is_wan3_model
 
 CAT_LOCK = (
     "同一只3D动画电影质感的黑色小猫吉祥物：全身黑色短绒毛，圆滚滚短腿站立，"
@@ -136,7 +136,7 @@ def concept_by_id(concept_id: str) -> LoginConcept:
 
 def clip_stem(concept: LoginConcept, model: str) -> str:
     """Work-dir filename without suffix."""
-    short = "wan3" if model == WAN3_VIDEO_PRIME else "horse"
+    short = "wan3" if is_wan3_model(model) else "horse"
     return f"{concept['id']}-{concept['slug']}-{short}"
 
 
@@ -174,5 +174,5 @@ def clip_duration(concept: LoginConcept, model: str) -> int:
 
 def clip_prompt(concept: LoginConcept, model: str) -> str:
     """Full prompt: identity lock + cinema layout + shot list."""
-    shell = WAN_SHELL if model == WAN3_VIDEO_PRIME else HORSE_SHELL
+    shell = WAN_SHELL if is_wan3_model(model) else HORSE_SHELL
     return f"{shell}{concept['prompt']} 不要出现：{NEGATIVE}"

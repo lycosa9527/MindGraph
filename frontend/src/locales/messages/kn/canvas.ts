@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'ಪಠ್ಯ ಬಣ್ಣ',
   'canvas.floatingToolbar.typography': 'ಟೈಪ್ಸೆಟ್ಟಿಂಗ್',
   'canvas.floatingToolbar.explain': 'ನೋಡ್ ವಿವರಣೆ',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'ಡೀಫಾಲ್ಟ್ ಫಾಂಟ್',
   'canvas.floatingToolbar.fontSimSun': 'ಸಾಂಗ್ ರಾಜವಂಶ',
   'canvas.floatingToolbar.fontKaiTi': 'ನಿಯಮಿತ ಸ್ಕ್ರಿಪ್ಟ್',

@@ -26,6 +26,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 from models.common import CANVAS_LLM_MODEL_KEYS
 from services.llm import llm_service
+from utils.chinese_language_policy import canonical_generation_language, simplified_chinese_forbidden
 from utils.prompt_locale import is_chinese_prompt_shell_language, output_language_instruction
 from utils.prompt_output_languages import is_prompt_output_language
 
@@ -553,17 +554,19 @@ class BasePaletteGenerator(ABC):
         if educational_context:
             raw_lang = educational_context.get("language")
             if isinstance(raw_lang, str):
-                normalized = raw_lang.strip().lower()
+                normalized = canonical_generation_language(raw_lang)
+                if simplified_chinese_forbidden() and normalized == "zh":
+                    return "zh-hant"
                 if is_prompt_output_language(normalized):
                     return normalized
 
         if center_topic and re.search(r"[\u4e00-\u9fff]", center_topic):
-            return "zh"
+            return "zh-hant" if simplified_chinese_forbidden() else "zh"
 
         if educational_context and "raw_message" in educational_context:
             raw_msg = educational_context["raw_message"]
             if isinstance(raw_msg, str) and re.search(r"[\u4e00-\u9fff]", raw_msg):
-                return "zh"
+                return "zh-hant" if simplified_chinese_forbidden() else "zh"
 
         return "en"
 

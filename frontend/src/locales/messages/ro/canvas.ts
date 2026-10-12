@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'culoarea textului',
   'canvas.floatingToolbar.typography': 'compunere',
   'canvas.floatingToolbar.explain': 'Explicația nodului',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Font implicit',
   'canvas.floatingToolbar.fontSimSun': 'Dinastia Song',
   'canvas.floatingToolbar.fontKaiTi': 'scenariu obișnuit',

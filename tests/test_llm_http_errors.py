@@ -12,6 +12,8 @@ from services.infrastructure.http.error_handler import (
     LLMRateLimitError,
     LLMServiceError,
     LLMTimeoutError,
+    ThinkingCoinInsufficientError,
+    UserDailyTokenCapExceededError,
     attach_llm_user_message,
     error_handler,
 )
@@ -19,6 +21,7 @@ from services.infrastructure.http.llm_http_errors import (
     CONTENT_FILTER_ERROR_TYPE,
     http_exception_for_llm_error,
     is_llm_content_filter_detail,
+    is_user_llm_limit_error,
     should_record_http_exception,
 )
 from services.llm.error_parsers.dashscope_error_parser import parse_and_raise_dashscope_error
@@ -86,6 +89,15 @@ def test_attach_still_sets_provider_user_message() -> None:
     assert isinstance(attached, LLMProviderError)
     assert attached is original
     assert attached.user_message == "请稍后重试"
+
+
+def test_user_limit_errors_are_not_service_faults() -> None:
+    """Coin and daily-token refusals stay client limits so routes can log them below error."""
+    assert is_user_llm_limit_error(ThinkingCoinInsufficientError(balance=8, cost=15)) is True
+    assert is_user_llm_limit_error(UserDailyTokenCapExceededError(cap=100, used=100)) is True
+    assert is_user_llm_limit_error(LLMServiceError("provider down")) is False
+    coin = http_exception_for_llm_error(ThinkingCoinInsufficientError(balance=8, cost=15))
+    assert coin.status_code == 402
 
 
 def test_content_filter_http_is_not_recorded() -> None:

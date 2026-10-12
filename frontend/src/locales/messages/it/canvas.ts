@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Colore del testo',
   'canvas.floatingToolbar.typography': 'Typographie',
   'canvas.floatingToolbar.explain': 'Spiegazione del nodo',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Predefinito',
   'canvas.floatingToolbar.fontSimSun': 'Dinastia della canzone',
   'canvas.floatingToolbar.fontKaiTi': 'sceneggiatura regolare',

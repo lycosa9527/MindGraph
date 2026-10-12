@@ -264,21 +264,28 @@ function textIsDefault(text: string | undefined, chromeText: string): boolean {
   return OLD_TEXT.has(text.trim().toLowerCase())
 }
 
-/** True when stored colors are empty or still an old/default stamp. */
-export function thinkingMapColorsAreDefault(
+/** True when fill and border are empty or still an old/default stamp. */
+export function thinkingMapFillAndBorderAreDefault(
   style: NodeStyle | undefined,
   chrome: ThinkingMapChrome
 ): boolean {
   const fill = style?.backgroundColor
   const border = style?.borderColor
-  const text = style?.textColor
-  if (!textIsDefault(text, chrome.textColor)) return false
   if (!fill && !border) return true
   if (isLegacyBranchStamp(fill, border) || isRainbowBranchStamp(fill, border)) return true
   if (isOldRolePair(fill, border)) return true
   return (
     sameColor(fill, chrome.backgroundColor) && (!border || sameColor(border, chrome.borderColor))
   )
+}
+
+/** True when stored colors are empty or still an old/default stamp. */
+export function thinkingMapColorsAreDefault(
+  style: NodeStyle | undefined,
+  chrome: ThinkingMapChrome
+): boolean {
+  if (!textIsDefault(style?.textColor, chrome.textColor)) return false
+  return thinkingMapFillAndBorderAreDefault(style, chrome)
 }
 
 /**

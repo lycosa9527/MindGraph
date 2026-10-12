@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'цвят на текста',
   'canvas.floatingToolbar.typography': 'набор',
   'canvas.floatingToolbar.explain': 'Обяснение на възела',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Шрифт по подразбиране',
   'canvas.floatingToolbar.fontSimSun': 'Династия Сонг',
   'canvas.floatingToolbar.fontKaiTi': 'редовен скрипт',

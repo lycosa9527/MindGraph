@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'رنگ متن',
   'canvas.floatingToolbar.typography': 'حروفچینی',
   'canvas.floatingToolbar.explain': 'توضیح گره',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'فونت پیش فرض',
   'canvas.floatingToolbar.fontSimSun': 'سلسله آهنگ',
   'canvas.floatingToolbar.fontKaiTi': 'اسکریپت معمولی',

@@ -25,8 +25,10 @@ import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
+import { useNodeExplainEditGate } from '@/composables/mindMap/nodeExplainEditGate'
 import { FLOATING_TOOLBAR_COLORS } from '@/config/floatingToolbarColors'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
 
 import MindMapSubgraphAiMark from './MindMapSubgraphAiMark.vue'
@@ -93,7 +95,13 @@ onUnmounted(() => {
 const { t } = useLanguage()
 const { showCanvasAiFeatures } = useLearningAiGate()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
+const { locked: explainLockedUntilConfirm } = useNodeExplainEditGate()
 const guestAiDisabled = computed(() => Boolean(props.aiDisabled) || aiBlockedByCollab.value)
+const explainTitle = computed(() => {
+  if (explainLockedUntilConfirm.value) return t('canvas.floatingToolbar.explainNeedsConfirm')
+  if (aiBlockedByCollab.value) return t('canvas.toolbar.collabAiBlocked')
+  return t('canvas.floatingToolbar.explain')
+})
 
 const formatting = useCanvasToolbarFormatting({
   silentUpdates: true,
@@ -140,7 +148,12 @@ function onAiSubgraphClick(): void {
   emit('aiSubgraphGenerate')
 }
 
+function onExplainPointerDown(event: PointerEvent): void {
+  retainEditOnExplainPointer(event, explainLockedUntilConfirm.value)
+}
+
 function onExplainClick(): void {
+  if (explainLockedUntilConfirm.value) return
   if (aiBlockedByCollab.value) {
     notifyCollabGuestAiBlocked()
     return
@@ -564,14 +577,14 @@ function isActiveFontSize(size: number): boolean {
           v-if="showCanvasAiFeatures"
           type="button"
           class="nft-btn nft-btn--explain"
-          :class="{ 'nft-btn--explain-blocked': aiBlockedByCollab }"
-          :title="
-            aiBlockedByCollab
-              ? t('canvas.toolbar.collabAiBlocked')
-              : t('canvas.floatingToolbar.explain')
-          "
+          :class="{
+            'nft-btn--explain-blocked': aiBlockedByCollab || explainLockedUntilConfirm,
+          }"
+          data-node-explain-trigger
+          :title="explainTitle"
           :disabled="!nodeId"
-          :aria-disabled="aiBlockedByCollab"
+          :aria-disabled="aiBlockedByCollab || explainLockedUntilConfirm"
+          @pointerdown="onExplainPointerDown"
           @click="onExplainClick"
         >
           <Lightbulb
@@ -676,7 +689,7 @@ function isActiveFontSize(size: number): boolean {
   color: #d97706;
 }
 
-.nft-btn--explain:hover:not(:disabled) {
+.nft-btn--explain:hover:not(:disabled):not(.nft-btn--explain-blocked) {
   background: rgba(254, 243, 199, 0.9);
   color: #b45309;
 }

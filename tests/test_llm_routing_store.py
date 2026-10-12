@@ -53,7 +53,7 @@ def test_token_buckets_follow_provider() -> None:
 
 def test_diagram_uses_override_and_sums_tokens() -> None:
     """The DeepSeek split shows the live model name and both token legs."""
-    replace_overrides({"DEEPSEEK_MODEL": "deepseek-v4-pro", "ARK_DOUBAO_ENDPOINT": "ep-20260101010101-abcde"})
+    replace_overrides({"DEEPSEEK_MODEL": "deepseek-v4-pro", "DOUBAO_MODEL": "doubao-seed-2-1-turbo-260628"})
     tokens = accumulate_token_rows(
         [
             ("deepseek", "dashscope", 10, 1),
@@ -109,7 +109,7 @@ def test_diagram_uses_override_and_sums_tokens() -> None:
     assert isinstance(doubao_legs, list)
     doubao_leg = doubao_legs[0]
     assert isinstance(doubao_leg, dict)
-    assert doubao_leg["target"] == "ep-20260101010101-abcde"
+    assert doubao_leg["target"] == "doubao-seed-2-1-turbo-260628"
 
 
 def test_config_properties_read_the_process_override() -> None:
@@ -122,7 +122,7 @@ def test_config_properties_read_the_process_override() -> None:
             "QWEN_MODEL_CLASSIFICATION": "qwen-pasted-cls",
             "ARK_DEEPSEEK_ENDPOINT": "ep-20260303030303-paste1",
             "ARK_DOUBAO_ENDPOINT": "ep-20260303030303-paste2",
-            "ARK_KIMI_ENDPOINT": "ep-20260202020202-zzzzz",
+            "GLM_FLASH_MODEL": "glm-pasted-id",
         }
     )
     assert pasted["ARK_DEEPSEEK_ENDPOINT"] == "ep-20260303030303-paste1"
@@ -134,7 +134,7 @@ def test_config_properties_read_the_process_override() -> None:
     assert config.QWEN_MODEL_NODE_EXPLAIN == env_value("QWEN_MODEL_NODE_EXPLAIN")
     assert config.ARK_DEEPSEEK_ENDPOINT == "ep-20260303030303-paste1"
     assert config.ARK_DOUBAO_ENDPOINT == "ep-20260303030303-paste2"
-    assert config.ARK_KIMI_ENDPOINT == "ep-20260202020202-zzzzz"
+    assert config.GLM_FLASH_MODEL == "glm-pasted-id"
     assert config.get_llm_data("hello", "express")["model"] == "deepseek-pasted-express"
     assert config.get_llm_data("hello", "deepseek")["model"] == "deepseek-pasted-id"
     assert config.get_qwen_generation_data("hello")["model"] == "qwen-pasted-gen"

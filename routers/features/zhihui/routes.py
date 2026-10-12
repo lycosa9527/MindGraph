@@ -41,6 +41,7 @@ from services.zhihui.storage import (
 )
 from tasks.zhihui_lesson_tasks import run_diagram_lesson_task
 from utils.auth.admin_panel_permissions import CAP_FEATURE_ZHIHUI, user_panel_capabilities
+from utils.chinese_language_policy import coerce_generation_language
 from utils.auth.admin_scope import AdminScope
 from utils.db.session_open import system_rls_session
 
@@ -211,7 +212,7 @@ async def start_diagram_lesson(
                 ),
             )
 
-    language = (body.language or "zh").strip() or "zh"
+    language = coerce_generation_language((body.language or "zh").strip() or "zh")
     org_id = getattr(current_user, "organization_id", None)
     try:
         conversation = await create_diagram_lesson_conversation(

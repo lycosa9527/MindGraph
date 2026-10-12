@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * Per-school MindMate agent branding and optional Dify override.
- * A blank 主服务器 uses Dify main. A blank 备用服务器 uses Dify backup.
+ * A blank 主服务器 shows Dify main. A blank 备用服务器 shows Dify backup.
+ * Keys are shown masked. Editing a slot is what stores a school override.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -16,6 +17,14 @@ import {
   useUploadAdminOrganizationMindmateAvatar,
 } from '@/composables/queries'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
+import {
+  applySchoolDifyUrlInput,
+  schoolDifyCredentialDraftUrl,
+  schoolDifyDisplayedKey,
+  schoolDifyPairWrite,
+  schoolDifyShownUrl,
+  schoolDifyUsingGlobalUrl,
+} from '@/utils/schoolDifyServerDisplay'
 
 const props = withDefaults(
   defineProps<{
@@ -89,9 +98,9 @@ const isServerOne = computed(() => selectedServer.value === 1)
 
 const baseUrl = ref('')
 const apiKey = ref('')
-const difyTimeoutSeconds = ref(300)
+const timeoutSeconds = ref(300)
 const aiCardStreamingMaxChars = ref(6500)
-const showChainOfThought = ref(false)
+const chainOfThought = ref(false)
 const agentName = ref('')
 const agentAlias = ref('')
 const agentAvatarUrl = ref<string | null>(null)
@@ -113,6 +122,45 @@ const globalDifyUrl = computed(() =>
 const globalDifyKeyMasked = computed(() =>
   selectedServer.value === 2 ? globalBackupKeyMasked.value : globalMainKeyMasked.value
 )
+const urlDirty = ref(false)
+const keyReplaceRequested = ref(false)
+const schoolBaseUrl = computed(() => (activeBaseUrlProp.value ?? '').trim())
+const displayedKeyMasked = computed(() =>
+  schoolDifyDisplayedKey(activeKeyMasked.value, globalDifyKeyMasked.value)
+)
+const usingGlobalKey = computed(
+  () => !(activeKeyMasked.value ?? '').trim() && Boolean((globalDifyKeyMasked.value ?? '').trim())
+)
+const usingGlobalUrl = computed(() =>
+  schoolDifyUsingGlobalUrl(
+    urlDirty.value,
+    baseUrl.value,
+    schoolBaseUrl.value,
+    globalDifyUrl.value ?? ''
+  )
+)
+const shownUrl = computed(() =>
+  schoolDifyShownUrl(urlDirty.value, baseUrl.value, schoolBaseUrl.value, globalDifyUrl.value ?? '')
+)
+
+function onBaseUrlUpdate(value: string | number) {
+  const next = applySchoolDifyUrlInput(
+    String(value ?? ''),
+    schoolBaseUrl.value,
+    globalDifyUrl.value ?? ''
+  )
+  urlDirty.value = next.urlDirty
+  baseUrl.value = next.draftUrl
+}
+
+function beginKeyReplace() {
+  keyReplaceRequested.value = true
+  keyReplaceMode.value = true
+}
+
+function credentialDraftUrl(): string {
+  return schoolDifyCredentialDraftUrl(baseUrl.value, apiKey.value, shownUrl.value)
+}
 
 const difyStatusLoading = ref(false)
 const difyStatus = ref<{
@@ -123,7 +171,9 @@ const difyStatus = ref<{
 const difyAuthVerified = ref(false)
 const difyAuthVerifiedFingerprint = ref('')
 
-const hasSchoolOverride = computed(() => Boolean(activeKeyMasked.value))
+const hasSchoolOverride = computed(() =>
+  Boolean((activeKeyMasked.value ?? '').trim() || schoolBaseUrl.value)
+)
 
 const globalDifyUnconfigured = computed(
   () =>
@@ -132,8 +182,6 @@ const globalDifyUnconfigured = computed(
     !(globalDifyUrl.value ?? '').trim() &&
     !globalDifyKeyMasked.value
 )
-
-const urlPlaceholder = computed(() => globalDifyUrl.value || '')
 
 const difyStatusLabel = computed(() => {
   if (difyStatusLoading.value) {
@@ -203,7 +251,7 @@ const difyStatusButtonClass = computed(() => {
 function difyFormFingerprint(): string {
   return JSON.stringify({
     server: selectedServer.value,
-    url: baseUrl.value.trim(),
+    url: credentialDraftUrl(),
     key: apiKey.value.trim(),
     keyReplaceMode: keyReplaceMode.value,
     hasMasked: Boolean(activeKeyMasked.value),
@@ -255,7 +303,7 @@ async function loadGlobalDify() {
 
 function probeBody(): Record<string, string> {
   const body: Record<string, string> = { server: String(selectedServer.value) }
-  const url = baseUrl.value.trim()
+  const url = credentialDraftUrl()
   const key = apiKey.value.trim()
   if (url) {
     body.dify_api_base_url = url
@@ -267,7 +315,7 @@ function probeBody(): Record<string, string> {
 }
 
 function validateDifyProbeInputs(): string | null {
-  const url = baseUrl.value.trim()
+  const url = credentialDraftUrl()
   const key = apiKey.value.trim()
   const hasMasked = Boolean(activeKeyMasked.value)
   if (url && !key && !hasMasked) {
@@ -332,8 +380,10 @@ function onFetchDifyHealthClick() {
 
 function loadSelectedServerCreds() {
   baseUrl.value = (activeBaseUrlProp.value ?? '').trim()
+  urlDirty.value = false
   apiKey.value = ''
-  keyReplaceMode.value = !activeKeyMasked.value
+  keyReplaceRequested.value = false
+  keyReplaceMode.value = !displayedKeyMasked.value
   invalidateDifyAuthVerification()
 }
 
@@ -355,9 +405,9 @@ watch(
     selectedServer.value = props.difyActiveServer === 2 ? 2 : 1
     failoverEnabled.value = Boolean(props.difyFailoverEnabled)
     loadSelectedServerCreds()
-    difyTimeoutSeconds.value = props.difyTimeoutSeconds ?? 300
+    timeoutSeconds.value = props.difyTimeoutSeconds ?? 300
     aiCardStreamingMaxChars.value = props.dingtalkAiCardStreamingMaxChars ?? 6500
-    showChainOfThought.value = Boolean(props.showChainOfThought)
+    chainOfThought.value = Boolean(props.showChainOfThought)
   },
   { immediate: true }
 )
@@ -366,6 +416,19 @@ watch(selectedServer, () => {
   loadSelectedServerCreds()
   difyStatus.value = null
 })
+
+watch(
+  () => [displayedKeyMasked.value, globalDifyLoading.value] as const,
+  ([masked, loading]) => {
+    if (keyReplaceRequested.value || apiKey.value.trim()) {
+      return
+    }
+    if (loading) {
+      return
+    }
+    keyReplaceMode.value = !masked
+  }
+)
 
 watch(
   () => [props.mindmateAgentName, props.mindmateAgentAlias, props.mindmateAgentAvatarUrl] as const,
@@ -401,8 +464,10 @@ function serverFieldNames(): { urlField: string; keyField: string } {
 
 async function clearSchoolDifyOverride() {
   baseUrl.value = ''
+  urlDirty.value = true
   apiKey.value = ''
-  keyReplaceMode.value = true
+  keyReplaceRequested.value = false
+  keyReplaceMode.value = false
   invalidateDifyAuthVerification()
   saving.value = true
   const { urlField, keyField } = serverFieldNames()
@@ -422,6 +487,8 @@ async function clearSchoolDifyOverride() {
     void fetchDifyHealth({ silent: true })
   } catch (err) {
     const detail = err instanceof Error ? err.message : ''
+    urlDirty.value = false
+    loadSelectedServerCreds()
     notify.error(detail || t('admin.trendChartErrors.saveFailed'))
   } finally {
     saving.value = false
@@ -434,7 +501,7 @@ async function saveSettings() {
     return
   }
 
-  const url = baseUrl.value.trim()
+  const url = credentialDraftUrl()
   const key = apiKey.value.trim()
   const hasMasked = Boolean(activeKeyMasked.value)
 
@@ -452,20 +519,28 @@ async function saveSettings() {
     mindmate_agent_name: agentName.value.trim() || null,
     mindmate_agent_alias: agentAlias.value.trim() || null,
     display_name: schoolDisplayName.value.trim() || null,
-    dify_timeout_seconds: difyTimeoutSeconds.value,
+    dify_timeout_seconds: timeoutSeconds.value,
     dingtalk_ai_card_streaming_max_chars: aiCardStreamingMaxChars.value,
-    show_chain_of_thought: showChainOfThought.value,
+    show_chain_of_thought: chainOfThought.value,
     dify_active_server: selectedServer.value,
     dify_failover_enabled: failoverEnabled.value,
   }
 
-  if (!url && !key && !hasMasked) {
+  const pairWrite = schoolDifyPairWrite({
+    draftUrl: baseUrl.value,
+    typedKey: key,
+    shownUrl: shownUrl.value,
+    urlDirty: urlDirty.value,
+    schoolUrl: schoolBaseUrl.value,
+    hasSchoolKey: hasMasked,
+  })
+  if (pairWrite?.clear) {
     body[urlField] = null
     body[keyField] = null
-  } else {
-    body[urlField] = url || null
-    if (key) {
-      body[keyField] = key
+  } else if (pairWrite) {
+    body[urlField] = pairWrite.url
+    if (pairWrite.key) {
+      body[keyField] = pairWrite.key
     }
   }
 
@@ -755,18 +830,19 @@ defineExpose({
               <I18nText k="admin.mindbot.difyBaseUrl" />
             </template>
             <el-input
-              v-model="baseUrl"
-              clearable
-              :placeholder="urlPlaceholder"
+              :model-value="shownUrl"
+              :clearable="!usingGlobalUrl"
               class="mindbot-swiss-input w-full max-w-2xl"
+              :class="{ 'school-dify-value--default': usingGlobalUrl }"
+              @update:model-value="onBaseUrlUpdate"
             />
             <p
-              v-if="!hasSchoolOverride && !baseUrl && globalDifyUrl"
+              v-if="usingGlobalUrl"
               class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl m-0"
             >
               <I18nText
                 k="admin.schoolDifyBlankUsesGlobal"
-                :params="{ url: globalDifyUrl || urlPlaceholder }"
+                :params="{ url: globalDifyUrl || shownUrl }"
               />
             </p>
           </el-form-item>
@@ -775,20 +851,21 @@ defineExpose({
               <I18nText k="admin.mindbot.difyApiKey" />
             </template>
             <div class="school-dify-api-key-block max-w-2xl">
-              <template v-if="activeKeyMasked && !keyReplaceMode">
+              <template v-if="displayedKeyMasked && !keyReplaceMode">
                 <div class="school-dify-api-key-input-line">
                   <el-input
-                    :model-value="difyApiKeyMasked"
+                    :model-value="displayedKeyMasked"
                     type="text"
                     readonly
                     class="mindbot-swiss-input font-mono text-sm school-dify-api-key-input"
+                    :class="{ 'school-dify-value--default': usingGlobalKey }"
                   />
                   <el-button
                     type="primary"
                     plain
                     class="mindbot-pill mindbot-pill--replace shrink-0"
                     size="small"
-                    @click="keyReplaceMode = true"
+                    @click="beginKeyReplace"
                   >
                     <I18nText k="admin.mindbot.replaceSecret" />
                   </el-button>
@@ -808,7 +885,15 @@ defineExpose({
                   </el-tooltip>
                 </div>
                 <p class="mindbot-swiss-hint text-xs mt-1.5 m-0 leading-relaxed">
-                  <I18nText k="admin.mindbot.difyApiKeyMaskedHint" />
+                  <I18nText
+                    v-if="usingGlobalKey"
+                    k="admin.schoolDifyApiKeyBlankUsesGlobal"
+                    :params="{ masked: displayedKeyMasked }"
+                  />
+                  <I18nText
+                    v-else
+                    k="admin.mindbot.difyApiKeyMaskedHint"
+                  />
                 </p>
               </template>
               <template v-else>
@@ -846,7 +931,7 @@ defineExpose({
                       :params="{ masked: globalDifyKeyMasked }"
                     />
                   </template>
-                  <template v-else>
+                  <template v-else-if="!globalDifyLoading">
                     <I18nText k="admin.schoolDifyApiKeyHintOptional" />
                   </template>
                 </div>
@@ -858,7 +943,7 @@ defineExpose({
               <I18nText k="admin.mindbot.difyTimeout" />
             </template>
             <el-input-number
-              v-model="difyTimeoutSeconds"
+              v-model="timeoutSeconds"
               :min="5"
               :max="600"
               class="mindbot-swiss-input-number w-full sm:w-40"
@@ -883,7 +968,7 @@ defineExpose({
               ><I18nText k="admin.mindbot.difyShowChainOfThought"
             /></span>
             <el-switch
-              v-model="showChainOfThought"
+              v-model="chainOfThought"
               class="mindbot-cot-switch mindbot-footer-enabled-switch shrink-0"
             />
           </div>

@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'barva textu',
   'canvas.floatingToolbar.typography': 'sazba',
   'canvas.floatingToolbar.explain': 'Vysvětlení uzlu',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Výchozí písmo',
   'canvas.floatingToolbar.fontSimSun': 'Dynastie písní',
   'canvas.floatingToolbar.fontKaiTi': 'běžný skript',

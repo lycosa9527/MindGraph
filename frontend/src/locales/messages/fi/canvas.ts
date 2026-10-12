@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'tekstin väri',
   'canvas.floatingToolbar.typography': 'ladonta',
   'canvas.floatingToolbar.explain': 'Solmun selitys',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Oletusfontti',
   'canvas.floatingToolbar.fontSimSun': 'Song-dynastia',
   'canvas.floatingToolbar.fontKaiTi': 'tavallinen kirjoitus',

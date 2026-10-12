@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Tekstkleur',
   'canvas.floatingToolbar.typography': 'Typografie',
   'canvas.floatingToolbar.explain': 'Knoopuitleg',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Standaard',
   'canvas.floatingToolbar.fontSimSun': 'Simzon',
   'canvas.floatingToolbar.fontKaiTi': 'regulier schrift',

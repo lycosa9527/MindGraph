@@ -5,7 +5,7 @@
 MindGraph provides a RESTful API for generating AI-powered data visualizations from natural language prompts. The API features intelligent LLM-based classification, supports 10 diagram types, and provides both interactive graph generation and direct PNG export.
 
 **Base URL**: `https://mg.mindspringedu.com` (or your deployed server URL)  
-**App version**: 5.180.160  
+**App version**: 5.180.161  
 **Architecture**: FastAPI with LLM classification
 
 **Key Features**:
@@ -135,7 +135,7 @@ Returns a PNG image file that can be displayed directly in a web browser, downlo
 
 Generates an image via DashScope Qwen Image 3.0 (`MultiModalConversation` / multimodal-generation), stores it on COS (Showcase-style private objects), records history for the admin **智绘** module, and returns markdown `![](url)`.
 
-Supported models: `qwen-image-3.0` (default), `qwen-image-3.0-pro`.
+Supported models: `qwen-image-3.0-pro` (default), `qwen-image-3.0`, `qwen-image-2.1-pro`.
 
 Uses DashScope `MultiModalConversation` (multimodal-generation). Failures map Bailian codes via the shared DashScope error parser (e.g. `DataInspectionFailed` → 400, throttling/arrears → 429); logs include DashScope `request_id` for model-monitor lookup.
 
@@ -159,7 +159,7 @@ X-API-Key: your_api_key_here
 ```json
 {
   "prompt": "{{#sys.query#}}",
-  "model": "qwen-image-3.0",
+  "model": "qwen-image-3.0-pro",
   "language": "zh",
   "conversation_id": "{{#sys.conversation_id#}}",
   "dify_user_id": "{{#sys.user_id#}}"

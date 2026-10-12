@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'цвет текста',
   'canvas.floatingToolbar.typography': 'набор текста',
   'canvas.floatingToolbar.explain': 'Объяснение узла',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Шрифт по умолчанию',
   'canvas.floatingToolbar.fontSimSun': 'Династия Сун',
   'canvas.floatingToolbar.fontKaiTi': 'обычный сценарий',

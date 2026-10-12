@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'පෙළ වර්ණය',
   'canvas.floatingToolbar.typography': 'මුද්‍රණ ශිල්පය',
   'canvas.floatingToolbar.explain': 'නෝඩ් පැහැදිලි කිරීම',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'පෙරනිමිය',
   'canvas.floatingToolbar.fontSimSun': 'සිම්සන්',
   'canvas.floatingToolbar.fontKaiTi': 'සාමාන්‍ය පිටපත',

@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'boja teksta',
   'canvas.floatingToolbar.typography': 'slaganje sloga',
   'canvas.floatingToolbar.explain': 'Objašnjenje čvora',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Zadani font',
   'canvas.floatingToolbar.fontSimSun': 'Dinastija Song',
   'canvas.floatingToolbar.fontKaiTi': 'regularna skripta',

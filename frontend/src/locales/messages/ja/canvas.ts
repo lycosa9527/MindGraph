@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': '文字の色',
   'canvas.floatingToolbar.typography': '排版',
   'canvas.floatingToolbar.explain': 'ノード説明',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'デフォルト字体',
   'canvas.floatingToolbar.fontSimSun': '宋体',
   'canvas.floatingToolbar.fontKaiTi': '楷体',

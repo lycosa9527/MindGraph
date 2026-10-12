@@ -9,9 +9,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from utils.prompt_output_languages import is_prompt_output_language
 
-# DashScope Qwen Image 3.0 multimodal-generation models (T2I / I2I).
-DEFAULT_IMAGE_MODEL = "qwen-image-3.0"
-ALLOWED_IMAGE_MODELS = frozenset({"qwen-image-3.0", "qwen-image-3.0-pro"})
+# DashScope Qwen Image multimodal-generation models (T2I / I2I).
+DEFAULT_IMAGE_MODEL = "qwen-image-3.0-pro"
+ALLOWED_IMAGE_MODELS = frozenset({"qwen-image-2.1-pro", "qwen-image-3.0", "qwen-image-3.0-pro"})
 MAX_REFERENCE_IMAGES = 3
 # Rough cap on data-URI payload (~4.5MB base64 ≈ 6MB string).
 MAX_REFERENCE_IMAGE_CHARS = 6_000_000
@@ -49,7 +49,7 @@ class GenerateTextToImageRequest(BaseModel):
     language: str = Field("zh", description="Language code for notices / tracking")
     model: str = Field(
         DEFAULT_IMAGE_MODEL,
-        description="Qwen Image 3.0 model: qwen-image-3.0 (default) or qwen-image-3.0-pro",
+        description="Qwen Image model: qwen-image-3.0-pro (default), qwen-image-3.0, or qwen-image-2.1-pro",
     )
     dify_user_id: Optional[str] = Field(
         None,
@@ -92,7 +92,7 @@ class GenerateTextToImageRequest(BaseModel):
     @field_validator("model")
     @classmethod
     def validate_model(cls, value: Optional[str]) -> str:
-        """Default to qwen-image-3.0; reject unknown model ids."""
+        """Default to qwen-image-3.0-pro; reject unknown model ids."""
         if value is None:
             return DEFAULT_IMAGE_MODEL
         cleaned = value.strip()
@@ -121,7 +121,7 @@ class GenerateTextToImageRequest(BaseModel):
             "example": {
                 "prompt": "一只小猫在教室里看书",
                 "language": "zh",
-                "model": "qwen-image-3.0",
+                "model": "qwen-image-3.0-pro",
                 "conversation_id": "conv-123",
                 "dify_user_id": "user-456",
             }

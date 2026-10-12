@@ -20,7 +20,6 @@ import { colorToHex, hexToRgba, parseAlphaFromColor } from '@/utils/colorFormat'
 import { displayedNodeFontSize, readPaintedNodeFontSizePx } from '@/utils/displayedNodeFontSize'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { type NodeShape, defaultDisplayedNodeShape } from '@/utils/nodeShapeStyle'
-import { thinkingMapColorsAreDefault, thinkingMapRoleChrome } from '@/utils/thinkingMapChrome'
 import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 export {
@@ -501,11 +500,6 @@ export function useCanvasToolbarFormatting(options?: {
         }
         nodeShape.value = toolbarDisplayedNodeShape(node, s)
         if (isThinkingMapDiagramType(diagramStore.type)) {
-          const chrome = thinkingMapRoleChrome(
-            diagramStore.type,
-            node,
-            diagramStore.data?.connections
-          )
           const paint = thinkingMapDisplayedNodeColors(
             diagramStore.type,
             diagramStore.data?._mindmap_theme,
@@ -513,12 +507,12 @@ export function useCanvasToolbarFormatting(options?: {
             s,
             diagramStore.data?.connections
           )
-          const showRolePaint = Boolean(paint && chrome && thinkingMapColorsAreDefault(s, chrome))
-          if (showRolePaint && paint) {
+          if (paint?.backgroundColor) {
             backgroundColor.value = colorToHex(paint.backgroundColor)
-            textColor.value = paint.textColor
-            borderColor.value = paint.borderColor
+            backgroundOpacity.value = parseAlphaFromColor(paint.backgroundColor)
           }
+          if (paint?.textColor) textColor.value = paint.textColor
+          if (paint?.borderColor) borderColor.value = paint.borderColor
         }
       }
     },

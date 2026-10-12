@@ -686,6 +686,15 @@
   min-width: 12rem;
 }
 
+.mindbot-swiss-dialog .school-dify-value--default {
+  --el-input-text-color: rgba(148, 163, 184, 0.92);
+}
+
+.mindbot-swiss-dialog .school-dify-value--default .el-input__inner {
+  color: rgba(148, 163, 184, 0.92);
+  -webkit-text-fill-color: rgba(148, 163, 184, 0.92);
+}
+
 .mindbot-swiss-dialog .school-dify-api-key-input-line .el-button {
   align-self: center;
 }

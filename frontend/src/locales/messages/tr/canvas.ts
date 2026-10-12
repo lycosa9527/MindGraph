@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Metin rengi',
   'canvas.floatingToolbar.typography': 'Tipografi',
   'canvas.floatingToolbar.explain': 'Düğüm açıklaması',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Varsayılan',
   'canvas.floatingToolbar.fontSimSun': 'Şarkı Hanedanlığı',
   'canvas.floatingToolbar.fontKaiTi': 'normal komut dosyası',

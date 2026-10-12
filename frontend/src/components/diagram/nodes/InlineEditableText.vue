@@ -37,6 +37,7 @@ import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasuremen
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isWhitespaceOnlyNodeText, resolveInlineNodeTextForSave } from '@/utils/nodeEditableText'
+import { isNodeExplainTriggerTarget } from '@/utils/nodeExplainTrigger'
 import {
   isVirtualKeyboardChromeElement,
   isVirtualKeyboardChromeEvent,
@@ -984,6 +985,11 @@ function handleBlur(): void {
     if (!localIsEditing.value) return
     if (inputRef.value && document.activeElement === inputRef.value) return
     if (secondaryInputRef.value && document.activeElement === secondaryInputRef.value) return
+    // Explain stays disabled until confirm. Refocus instead of saving on that click.
+    if (isNodeExplainTriggerTarget(document.activeElement)) {
+      focusHtmlControl(inputRef.value)
+      return
+    }
     if (isVirtualKeyboardChromeElement(document.activeElement)) return
     if (isVirtualKeyboardPanelOpen()) {
       focusHtmlControl(inputRef.value)
@@ -1035,6 +1041,8 @@ function commitEditOnOutsidePointer(event: Event): void {
   if (!localIsEditing.value) return
   if (isEventInsideEditor(event)) return
   if (isVirtualKeyboardChromeEvent(event)) return
+  // Same gesture must not confirm the draft and start node explain.
+  if (isNodeExplainTriggerTarget(event.target)) return
   // Keep sticky edit only for toast/overlay focus theft — not canvas clicks.
   if (isMindMapStickyEditOwner() && isEphemeralOutsideEditTarget(event)) {
     return

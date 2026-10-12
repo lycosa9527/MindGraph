@@ -9,6 +9,7 @@ import {
   type ThinkingMapChrome,
   thinkingMapColorsAreDefault,
   thinkingMapDisplayedFontSize,
+  thinkingMapFillAndBorderAreDefault,
   thinkingMapRoleChrome,
 } from '@/utils/thinkingMapChrome'
 import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
@@ -17,7 +18,8 @@ export { thinkingMapPaletteIndex } from '@/utils/thinkingMapChrome'
 
 export interface ThinkingMapNodePaint {
   backgroundColor: string
-  textColor: string
+  /** Omitted when the node stores its own text color. Callers then use that color. */
+  textColor?: string
   borderColor: string
   borderWidth?: number
   fontSize?: number
@@ -64,8 +66,30 @@ function paintFromChrome(chrome: ThinkingMapChrome): ThinkingMapNodePaint {
 }
 
 /**
+ * Role fill and border stay when only the text color was chosen.
+ * White similarities and tree leaves do not store a fill; dropping the
+ * whole paint would fall through to the parent group color.
+ */
+function paintKeepingCustomText(
+  paint: ThinkingMapNodePaint,
+  style: NodeStyle | undefined,
+  chrome: ThinkingMapChrome
+): ThinkingMapNodePaint | null {
+  if (thinkingMapColorsAreDefault(style, chrome)) return paint
+  if (!thinkingMapFillAndBorderAreDefault(style, chrome)) return null
+  return {
+    backgroundColor: paint.backgroundColor,
+    borderColor: paint.borderColor,
+    borderWidth: paint.borderWidth,
+    fontSize: paint.fontSize,
+    accentBarColor: paint.accentBarColor,
+    accentBarWidth: paint.accentBarWidth,
+  }
+}
+
+/**
  * Theme paint that should win over the stored palette. Null keeps the caller's
- * own color chain (a hand-painted color).
+ * own color chain (a hand-painted fill or border).
  */
 export function thinkingMapDisplayedNodeColors(
   diagramType: string | null | undefined,
@@ -81,13 +105,12 @@ export function thinkingMapDisplayedNodeColors(
     const textColor = style?.textColor
     if (!backgroundColor && !borderColor && !textColor) return themePaint
     const chrome = thinkingMapRoleChrome(diagramType, node, connections)
-    if (chrome && thinkingMapColorsAreDefault(style, chrome)) return themePaint
-    return null
+    if (!chrome) return null
+    return paintKeepingCustomText(themePaint, style, chrome)
   }
   const chrome = thinkingMapRoleChrome(diagramType, node, connections)
   if (!chrome) return null
-  if (!thinkingMapColorsAreDefault(style, chrome)) return null
-  return paintFromChrome(chrome)
+  return paintKeepingCustomText(paintFromChrome(chrome), style, chrome)
 }
 
 function stripThemeColors(style: NodeStyle | undefined): NodeStyle | undefined {

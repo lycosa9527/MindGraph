@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'వచన రంగు',
   'canvas.floatingToolbar.typography': 'టైప్ సెట్టింగ్',
   'canvas.floatingToolbar.explain': 'నోడ్ వివరణ',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'డిఫాల్ట్ ఫాంట్',
   'canvas.floatingToolbar.fontSimSun': 'పాటల రాజవంశం',
   'canvas.floatingToolbar.fontKaiTi': 'సాధారణ స్క్రిప్ట్',

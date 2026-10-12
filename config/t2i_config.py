@@ -32,8 +32,8 @@ class T2IConfigMixin:
 
     @property
     def IMAGE_MODEL(self) -> str:
-        """DashScope Qwen Image 3.0 model for ZhiHui /generate-text-to-image."""
-        return self._get_cached_value("IMAGE_MODEL", "qwen-image-3.0")
+        """DashScope Qwen Image model for ZhiHui /generate-text-to-image."""
+        return self._get_cached_value("IMAGE_MODEL", "qwen-image-3.0-pro")
 
     @property
     def IMAGE_DEFAULT_SIZE(self) -> str:

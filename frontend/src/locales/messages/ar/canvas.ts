@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'لون النص',
   'canvas.floatingToolbar.typography': 'التنضيد',
   'canvas.floatingToolbar.explain': 'شرح العقدة',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'الخط الافتراضي',
   'canvas.floatingToolbar.fontSimSun': 'سلالة سونغ',
   'canvas.floatingToolbar.fontKaiTi': 'البرنامج النصي العادي',

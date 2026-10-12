@@ -1,4 +1,4 @@
-"""DashScope HTTP client for ZhiHui Qwen Image 3.0 T2I."""
+"""DashScope HTTP client for ZhiHui Qwen Image T2I."""
 
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def _dashscope_api_key() -> str:
 
 
 def resolve_image_model(model: Optional[str]) -> str:
-    """Return an allowed Qwen Image 3.0 model id (default: qwen-image-3.0)."""
+    """Return an allowed Qwen Image model id (default: qwen-image-3.0-pro)."""
     candidate = (model or config.IMAGE_MODEL or "").strip()
     if candidate in ALLOWED_IMAGE_MODELS:
         return candidate

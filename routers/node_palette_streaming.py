@@ -29,8 +29,10 @@ from services.utils.error_types import (
     REDIS_ERRORS,
 )
 from utils.chinese_language_policy import (
+    canonical_generation_language,
     collect_node_palette_text_blobs,
     effective_language_for_thinking_user,
+    guard_user_visible,
     is_chinese_ui_error_language,
 )
 from utils.placeholder import is_placeholder_text
@@ -163,7 +165,8 @@ def _yield_error_event(
 ) -> str:
     """Format error event as SSE data string."""
     msg = user_message or _get_error_message(req, error_type, language_for_ui)
-    return f"data: {json.dumps({'event': 'error', 'error_type': error_type, 'message': msg})}\n\n"
+    payload = guard_user_visible({"event": "error", "error_type": error_type, "message": msg})
+    return f"data: {json.dumps(payload)}\n\n"
 
 
 def _merged_educational_context(req: Any, effective_language: str | None = None) -> Optional[Dict[str, Any]]:
@@ -183,7 +186,7 @@ def _merged_educational_context(req: Any, effective_language: str | None = None)
                 edu["root_concept"] = rc
     req_lang = effective_language if effective_language is not None else getattr(req, "language", None)
     if isinstance(req_lang, str):
-        stripped = req_lang.strip().lower()
+        stripped = canonical_generation_language(req_lang)
         if is_prompt_output_language(stripped):
             edu["language"] = stripped
     instructions = getattr(req, "generation_instructions", None)
@@ -313,7 +316,7 @@ async def stream_node_palette(
             chunk_count += 1
             if chunk.get("event") == "node_generated":
                 node_count += 1
-            yield f"data: {json.dumps(chunk)}\n\n"
+            yield f"data: {json.dumps(guard_user_visible(chunk))}\n\n"
 
         if chunk_count == 0:
             logger.warning(
@@ -322,7 +325,7 @@ async def stream_node_palette(
                 session_id[:8],
             )
             no_chunk_response_sent = True
-            yield f"data: {json.dumps({'event': 'batch_complete', 'nodes': node_count})}\n\n"
+            yield f"data: {json.dumps(guard_user_visible({'event': 'batch_complete', 'nodes': node_count}))}\n\n"
 
         logger.debug(
             "%s Batch complete | Session: %s | Nodes: %d",

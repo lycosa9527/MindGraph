@@ -112,6 +112,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         # 400 Bad Request - usually client errors (invalid parameters, malformed requests)
         # Log at DEBUG level to reduce noise (these are expected client errors)
         logger.debug("HTTP %s on %s: %s", exc.status_code, path, exc.detail)
+    elif exc.status_code == 402:
+        # Thinking-coin balance is expected user state. The typed handler logs the same at info.
+        logger.info("HTTP %s: %s", exc.status_code, exc.detail)
     elif exc.status_code == 404:
         # 404 Not Found - check if it's an expected case
         if path.startswith("/api/library/documents/") and "/pages/" in path:

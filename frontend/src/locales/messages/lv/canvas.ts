@@ -483,6 +483,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Text color',
   'canvas.floatingToolbar.typography': 'Typography',
   'canvas.floatingToolbar.explain': 'Node explanation',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Default',
   'canvas.floatingToolbar.fontSimSun': 'SimSun',
   'canvas.floatingToolbar.fontKaiTi': 'KaiTi',

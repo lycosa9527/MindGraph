@@ -137,6 +137,7 @@ async def register_overseas(
         name=request.name,
         organization_id=None,
         created_at=datetime.now(UTC),
+        # Account mark. OVERSEAS_SIMPLIFIED_CHINESE=true turns the script back on.
         allows_simplified_chinese=False,
         email_login_whitelisted_from_cn=False,
         ui_language="en",

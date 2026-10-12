@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'पाठ रंग',
   'canvas.floatingToolbar.typography': 'टाइपोग्राफ़ी',
   'canvas.floatingToolbar.explain': 'नोड व्याख्या',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'डिफ़ॉल्ट',
   'canvas.floatingToolbar.fontSimSun': 'सांग राजवंश',
   'canvas.floatingToolbar.fontKaiTi': 'नियमित स्क्रिप्ट',

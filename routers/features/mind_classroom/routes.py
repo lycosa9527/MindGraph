@@ -33,6 +33,7 @@ from services.mind_classroom.transcript_persist import (
     transcript_key_from_result,
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.chinese_language_policy import coerce_generation_language, guard_user_visible
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -93,7 +94,7 @@ def _normalize_settings(body: ClassroomJobRequest) -> dict[str, Any]:
         "slide_style": style,
         "audience_level": audience,
         "audience_title": (body.audience_title or "").strip()[:128],
-        "language": (body.language or "zh").strip() or "zh",
+        "language": coerce_generation_language((body.language or "zh").strip() or "zh"),
         "llm_model": (body.llm_model or "").strip()[:64],
     }
 
@@ -198,7 +199,7 @@ async def get_job_by_diagram(
         row = await _refresh_queued_job(row, db)
         await ensure_transcript_on_server(row.result_json)
         slides = list(await MindClassroomSlideRepository(db).list_by_job(row.id))
-        return job_payload(row, request, slides=slides)
+        return guard_user_visible(job_payload(row, request, slides=slides))
 
     conv_repo = ZhihuiConversationRepository(db)
     legacy = await conv_repo.get_latest_diagram_conversation(user_id=user_id, diagram_id=cleaned)
@@ -247,7 +248,7 @@ async def get_classroom_job(
         progress=progress,
         elapsed_s=job_elapsed_seconds(row),
     )
-    return job_payload(row, request, slides=slides)
+    return guard_user_visible(job_payload(row, request, slides=slides))
 
 
 @router.post("/jobs/{job_id}/cancel")

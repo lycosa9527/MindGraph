@@ -72,6 +72,16 @@ class LLMConfigMixin:
         return self._with_routing_override("QWEN_MODEL_GENERATION", "qwen3.6-flash")
 
     @property
+    def QWEN_FLASH_MODEL(self):
+        """DashScope model id for the canvas Balanced choice (Qwen Flash)."""
+        return self._with_routing_override("QWEN_FLASH_MODEL", "qwen3.8-flash")
+
+    @property
+    def QWEN_MAX_MODEL(self):
+        """DashScope model id for the canvas Max choice (Qwen Max)."""
+        return self._with_routing_override("QWEN_MAX_MODEL", "qwen3.8-max")
+
+    @property
     def QWEN_MODEL_NODE_EXPLAIN(self):
         """Physical id for the Qwen 3.8 rate window.
 
@@ -145,9 +155,16 @@ class LLMConfigMixin:
         return self._with_routing_override("ARK_DEEPSEEK_ENDPOINT", "ep-20250101000000-dummy")
 
     @property
-    def ARK_KIMI_ENDPOINT(self):
-        """Volcengine ARK Kimi endpoint ID (higher RPM than direct model name)."""
-        return self._with_routing_override("ARK_KIMI_ENDPOINT", "ep-20250101000000-dummy")
+    def GLM_FLASH_MODEL(self):
+        """Volcengine model id for the canvas GLM Flash choice.
+
+        Read from ``GLM_FLASH_MODEL``. Sent as the chat ``model`` field.
+        An ``ep-`` value is an endpoint id.
+        """
+        raw = self._with_routing_override("GLM_FLASH_MODEL", "")
+        if not isinstance(raw, str):
+            return ""
+        return raw.strip()
 
     @property
     def ARK_DOUBAO_ENDPOINT(self):
@@ -156,17 +173,16 @@ class LLMConfigMixin:
 
     @property
     def DOUBAO_MODEL(self):
-        """Doubao model name"""
-        return self._get_cached_value("DOUBAO_MODEL", "doubao-1-5-pro-32k-250115")
+        """Volcengine model id for the canvas Doubao choice.
 
-    @property
-    def DOUBAO21_MODEL(self):
-        """Volcengine model id for the canvas Doubao 2.1 choice.
-
-        Sent as the chat ``model`` field. An ``ep-`` value is an endpoint id.
+        Read from ``DOUBAO_MODEL``. Sent as the chat ``model`` field.
+        An ``ep-`` value is an endpoint id.
         This does not replace ``ARK_DOUBAO_ENDPOINT`` (doubao_1.5pro_32k).
         """
-        return self._get_cached_value("DOUBAO21_MODEL", "doubao-seed-2.1-turbo")
+        raw = self._with_routing_override("DOUBAO_MODEL", "")
+        if not isinstance(raw, str):
+            return ""
+        return raw.strip()
 
     @property
     def QWEN_TEMPERATURE(self):
@@ -211,51 +227,6 @@ class LLMConfigMixin:
         except (ValueError, TypeError):
             logger.warning("Invalid QWEN_TIMEOUT value, using 40")
             return 40
-
-    @property
-    def QWEN_OMNI_MODEL(self) -> str:
-        """Qwen Omni model name"""
-        return self._get_cached_value("QWEN_OMNI_MODEL", "qwen3-omni-flash-realtime-2025-12-01")
-
-    @property
-    def QWEN_OMNI_VOICE(self) -> str:
-        """Qwen Omni voice name"""
-        return self._get_cached_value("QWEN_OMNI_VOICE", "Cherry")
-
-    @property
-    def QWEN_OMNI_VAD_THRESHOLD(self) -> float:
-        """Qwen Omni VAD threshold"""
-        return float(self._get_cached_value("QWEN_OMNI_VAD_THRESHOLD", "0.5"))
-
-    @property
-    def QWEN_OMNI_VAD_SILENCE_MS(self) -> int:
-        """Qwen Omni VAD silence duration (ms) - time to wait after user stops speaking"""
-        return int(self._get_cached_value("QWEN_OMNI_VAD_SILENCE_MS", "1200"))
-
-    @property
-    def QWEN_OMNI_VAD_PREFIX_MS(self) -> int:
-        """Qwen Omni VAD prefix padding (ms)"""
-        return int(self._get_cached_value("QWEN_OMNI_VAD_PREFIX_MS", "300"))
-
-    @property
-    def QWEN_OMNI_SMOOTH_OUTPUT(self) -> bool:
-        """Qwen Omni smooth output (flash models only)"""
-        return self._get_cached_value("QWEN_OMNI_SMOOTH_OUTPUT", "true").lower() == "true"
-
-    @property
-    def QWEN_OMNI_INPUT_FORMAT(self) -> str:
-        """Qwen Omni input audio format"""
-        return self._get_cached_value("QWEN_OMNI_INPUT_FORMAT", "pcm16")
-
-    @property
-    def QWEN_OMNI_OUTPUT_FORMAT(self) -> str:
-        """Qwen Omni output audio format"""
-        return self._get_cached_value("QWEN_OMNI_OUTPUT_FORMAT", "pcm24")
-
-    @property
-    def QWEN_OMNI_TRANSCRIPTION_MODEL(self) -> str:
-        """Qwen Omni transcription model"""
-        return self._get_cached_value("QWEN_OMNI_TRANSCRIPTION_MODEL", "gummy-realtime-v1")
 
     @property
     def DASHSCOPE_API_KEY(self) -> Optional[str]:

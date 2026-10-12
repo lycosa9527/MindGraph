@@ -33,6 +33,8 @@ from services.showcase.diagram_structure_outline import (
     resolve_diagram_type,
 )
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.chinese_language_policy import guard_user_visible
+from utils.prompt_locale import append_traditional_output_rule
 
 logger = logging.getLogger(__name__)
 
@@ -262,7 +264,7 @@ async def generate_diagram_case_copy(
     try:
         raw = await llm_service.chat(
             prompt=user_prompt,
-            system_message=_SYSTEM_PROMPT_ZH,
+            system_message=append_traditional_output_rule(_SYSTEM_PROMPT_ZH),
             model="qwen",
             temperature=0.45,
             max_tokens=1600,
@@ -286,7 +288,7 @@ async def generate_diagram_case_copy(
     if not text:
         raise ValueError("empty_llm_response")
     parsed = parse_json_object(text)
-    return normalize_diagram_ai_copy_fields(parsed)
+    return guard_user_visible(normalize_diagram_ai_copy_fields(parsed))
 
 
 async def stream_diagram_case_copy(
@@ -313,7 +315,7 @@ async def stream_diagram_case_copy(
     try:
         async for chunk in llm_service.chat_stream(
             prompt=user_prompt,
-            system_message=_SYSTEM_PROMPT_ZH,
+            system_message=append_traditional_output_rule(_SYSTEM_PROMPT_ZH),
             model="qwen",
             temperature=0.45,
             max_tokens=1600,
@@ -339,7 +341,7 @@ async def stream_diagram_case_copy(
             snapshot = extract_partial_diagram_ai_copy_fields(buffer)
             if snapshot and snapshot != last_snapshot:
                 last_snapshot = dict(snapshot)
-                yield {"event": "fields", **snapshot}
+                yield guard_user_visible({"event": "fields", **snapshot})
     except LLM_PIPELINE_ERRORS:
         logger.exception(
             "[ShowcaseAI] diagram llm stream failed model=%s",
@@ -352,9 +354,11 @@ async def stream_diagram_case_copy(
         raise ValueError("empty_llm_response")
     parsed = parse_json_object(text)
     fields = normalize_diagram_ai_copy_fields(parsed)
-    yield {
-        "event": "done",
-        "description": fields["description"],
-        "classroom_application": fields["classroom_application"],
-        "model": SHOWCASE_AI_COPY_MODEL,
-    }
+    yield guard_user_visible(
+        {
+            "event": "done",
+            "description": fields["description"],
+            "classroom_application": fields["classroom_application"],
+            "model": SHOWCASE_AI_COPY_MODEL,
+        }
+    )

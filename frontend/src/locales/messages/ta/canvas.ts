@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'உரை நிறம்',
   'canvas.floatingToolbar.typography': 'தட்டச்சு அமைத்தல்',
   'canvas.floatingToolbar.explain': 'முனை விளக்கம்',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'இயல்பு எழுத்துரு',
   'canvas.floatingToolbar.fontSimSun': 'பாடல் வம்சம்',
   'canvas.floatingToolbar.fontKaiTi': 'வழக்கமான ஸ்கிரிப்ட்',

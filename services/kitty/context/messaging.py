@@ -11,6 +11,8 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 from models.domain.messages import Language
 
+from utils.chinese_language_policy import guard_user_visible, simplified_chinese_forbidden
+
 from services.diagram_edit.transport.kitty_ws import (
     MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY,
     OUTBOUND_EXTRAS_KEY,
@@ -197,7 +199,7 @@ async def safe_websocket_send(websocket: WebSocket, message: Dict[str, Any]) -> 
             if websocket.client_state.name == "DISCONNECTED":
                 logger.debug("WebSocket is disconnected, skipping send")
                 return False
-        await websocket.send_json(message)
+        await websocket.send_json(guard_user_visible(message))
         return True
     except WebSocketDisconnect:
         logger.debug("WebSocket closed, cannot send message")
@@ -606,6 +608,10 @@ When the user asks to change the diagram, give a **one short sentence** acknowle
 (e.g. Chinese), respond in that language naturally."""
 
     else:
+        if simplified_chinese_forbidden():
+            chinese_default = "**預設請使用繁體中文**進行口語和文字回覆；僅當使用者**明確**使用其他語言（如英語）時，再用該語言自然回覆。"
+        else:
+            chinese_default = "**默认请使用简体中文**进行口语和文字回复；仅当用户**明确**使用其他语言（如英语）时，再用该语言自然回复。"
         instructions = f"""你是 MindGraph 面向 K12 课堂的智能助手。
 
 【当前图示】
@@ -639,7 +645,7 @@ When the user asks to change the diagram, give a **one short sentence** acknowle
 - **先答要点**：开门见山；需要时可再补一句点拨。
 - 语气稳重、克制，少用堆砌形容词和表情包式语气。
 
-**默认请使用简体中文**进行口语和文字回复；仅当用户**明确**使用其他语言（如英语）时，再用该语言自然回复。"""
+{chinese_default}"""
 
     return (
         instructions

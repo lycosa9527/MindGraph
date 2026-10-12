@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Kulay ng teksto',
   'canvas.floatingToolbar.typography': 'Tipograpiya',
   'canvas.floatingToolbar.explain': 'Pagpapaliwanag ng node',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Default na font',
   'canvas.floatingToolbar.fontSimSun': 'Dinastiyang Awit',
   'canvas.floatingToolbar.fontKaiTi': 'regular na script',

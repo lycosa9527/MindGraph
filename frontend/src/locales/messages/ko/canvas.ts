@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': '텍스트 색',
   'canvas.floatingToolbar.typography': '타이포그래피',
   'canvas.floatingToolbar.explain': '노드 설명',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': '기본',
   'canvas.floatingToolbar.fontSimSun': '宋体',
   'canvas.floatingToolbar.fontKaiTi': '楷体',

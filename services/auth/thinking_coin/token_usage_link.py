@@ -9,7 +9,7 @@ from typing import Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.token_usage import TokenUsage
-from services.redis.redis_token_buffer import get_token_tracker
+from services.redis.redis_token_buffer import token_model_display_name
 from services.redis.cache.redis_user_daily_token import record_tracked_daily_tokens
 
 
@@ -117,30 +117,21 @@ def merge_usage_dicts(parts: list[dict[str, Any]]) -> dict[str, int]:
 
 async def insert_token_usage_row(db: AsyncSession, snapshot: TokenUsageSnapshot) -> int:
     """Insert one token_usage row and return its primary key."""
-    tracker = get_token_tracker()
-    pricing = tracker.MODEL_PRICING.get(
-        snapshot.model_alias,
-        {"input": 0.4, "output": 1.2, "provider": "unknown"},
-    )
-    model_name = tracker.MODEL_NAME_MAP.get(snapshot.model_alias, snapshot.model_alias)
-    input_cost = snapshot.input_tokens * pricing["input"] / 1_000_000
-    output_cost = snapshot.output_tokens * pricing["output"] / 1_000_000
-
     row = TokenUsage(
         user_id=snapshot.user_id,
         organization_id=snapshot.organization_id,
         api_key_id=snapshot.api_key_id,
         session_id=snapshot.session_id,
         conversation_id=snapshot.conversation_id,
-        model_provider=pricing["provider"],
-        model_name=model_name,
+        model_provider=None,
+        model_name=token_model_display_name(snapshot.model_alias),
         model_alias=snapshot.model_alias,
         input_tokens=snapshot.input_tokens,
         output_tokens=snapshot.output_tokens,
         total_tokens=snapshot.total_tokens,
-        input_cost=round(input_cost, 6),
-        output_cost=round(output_cost, 6),
-        total_cost=round(input_cost + output_cost, 6),
+        input_cost=0.0,
+        output_cost=0.0,
+        total_cost=0.0,
         request_type=snapshot.request_type,
         diagram_type=snapshot.diagram_type,
         endpoint_path=snapshot.endpoint_path,

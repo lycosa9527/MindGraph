@@ -19,6 +19,7 @@ from models.requests.requests_auth import DiagramPreferencesUpdate, LanguagePref
 from services.redis.cache.redis_user_cache import user_cache
 from services.utils.error_types import REDIS_ERRORS
 from utils.auth import get_current_user
+from utils.chinese_language_policy import user_allows_simplified_chinese
 
 from .dependencies import get_language_dependency
 from .user_session_prefs import language_preference_patch_fields, user_preference_fields
@@ -64,14 +65,14 @@ async def update_language_preferences(
         )
 
     if body.ui_language is not None:
-        if body.ui_language.lower() == "zh" and not getattr(user, "allows_simplified_chinese", True):
+        if body.ui_language.lower() == "zh" and not user_allows_simplified_chinese(user):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=Messages.error("ui_language_zh_not_allowed", lang),
             )
         user.ui_language = body.ui_language
     if body.prompt_language is not None:
-        if body.prompt_language.lower() == "zh" and not getattr(user, "allows_simplified_chinese", True):
+        if body.prompt_language.lower() == "zh" and not user_allows_simplified_chinese(user):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=Messages.error("prompt_language_zh_not_allowed", lang),
@@ -84,7 +85,7 @@ async def update_language_preferences(
     if body.bilingual_ui_enabled is not None:
         user.bilingual_ui_enabled = body.bilingual_ui_enabled
     if body.presenter_ui_locale is not None:
-        if body.presenter_ui_locale.lower() == "zh" and not getattr(user, "allows_simplified_chinese", True):
+        if body.presenter_ui_locale.lower() == "zh" and not user_allows_simplified_chinese(user):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=Messages.error("ui_language_zh_not_allowed", lang),

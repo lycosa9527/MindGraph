@@ -25,7 +25,7 @@ from agents.inline_recommendations.prompts import build_prompt
 from agents.inline_recommendations.prompts._common import get_context_desc
 from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
-from utils.prompt_locale import is_chinese_prompt_shell_language
+from utils.prompt_locale import is_chinese_prompt_shell_language, output_language_instruction
 
 logger = logging.getLogger(__name__)
 
@@ -271,6 +271,7 @@ class InlineRecommendationsGenerator:
 
         if not prompt:
             return None
+        prompt = prompt + output_language_instruction(language)
 
         return {
             "batch_num": batch_num,

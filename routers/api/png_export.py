@@ -17,7 +17,7 @@ import hashlib
 import logging
 import time
 import uuid
-from typing import Any, Optional, Tuple
+from typing import Any, NoReturn, Optional, Tuple
 
 import aiofiles
 import aiofiles.os
@@ -73,12 +73,19 @@ from services.diagram.temp_image_storage import (
     temp_images_dir,
     temp_images_signed_ttl,
 )
-from services.infrastructure.http.error_handler import LLMServiceError
-from services.infrastructure.http.llm_http_errors import raise_http_for_llm_error
+from services.auth.thinking_coin.usage_wire import thinking_coin_limit_message
+from services.infrastructure.http.error_handler import (
+    LLMServiceError,
+    ThinkingCoinInsufficientError,
+    UserDailyTokenCapExceededError,
+)
+from services.infrastructure.http.llm_http_errors import is_user_llm_limit_error, raise_http_for_llm_error
 from services.infrastructure.utils.browser import BrowserUnavailableError
 from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, get_current_user_or_api_key
+from utils.auth.user_daily_token_quota import daily_token_limit_message
+from utils.chinese_language_policy import coerce_generation_language
 from utils.db.session_open import actor_rls_session, system_rls_session, user_rls_session
 from .helpers import (
     build_public_temp_image_url,
@@ -92,7 +99,25 @@ from .vueflow_screenshot import capture_diagram_screenshot
 logger = logging.getLogger(__name__)
 
 
-def _raise_png_generation_http(exc: Exception, lang: Language) -> None:
+def _dingtalk_user_limit_reply(exc: LLMServiceError, generation_language: str) -> Optional[str]:
+    """Text Dify can post into DingTalk. A 402 fails the workflow before any reply is sent."""
+    reply_lang = get_request_language(generation_language)
+    if isinstance(exc, ThinkingCoinInsufficientError):
+        return thinking_coin_limit_message(reply_lang, exc.balance, exc.cost)
+    if isinstance(exc, UserDailyTokenCapExceededError):
+        return daily_token_limit_message(reply_lang, exc.cap)
+    return None
+
+
+def _log_png_llm_failure(label: str, exc: LLMServiceError) -> None:
+    """Log provider failures. Coin and daily-token limits are expected user state."""
+    if is_user_llm_limit_error(exc):
+        logger.info("[%s] %s", label, exc)
+        return
+    logger.error("[%s] LLM error: %s", label, exc)
+
+
+def _raise_png_generation_http(exc: Exception, lang: Language) -> NoReturn:
     """Map browser/infra failures to HTTP errors for PNG generation routes."""
     if isinstance(exc, BrowserUnavailableError):
         raise HTTPException(
@@ -292,7 +317,7 @@ async def generate_png_from_prompt(
     if not prompt:
         raise HTTPException(status_code=400, detail=Messages.error("invalid_prompt", lang))
 
-    language = (req.language or "zh").strip()
+    language = coerce_generation_language((req.language or "zh").strip(), prompt)
 
     user_id = current_user.id if current_user and hasattr(current_user, "id") else None
     organization_id = (
@@ -406,7 +431,7 @@ async def generate_png_from_prompt(
                     right = spec.get("right", "")
                     if left and right:
                         # Format as "Left vs Right" (English) or "左和右" (Chinese)
-                        topic_display = f"{left}和{right}" if language == "zh" else f"{left} vs {right}"
+                        topic_display = f"{left}和{right}" if str(language).startswith("zh") else f"{left} vs {right}"
                     elif left or right:
                         topic_display = left or right
 
@@ -426,7 +451,9 @@ async def generate_png_from_prompt(
                 left = spec.get("left", "")
                 right = spec.get("right", "")
                 if left and right:
-                    topic_for_activity = f"{left} vs {right}" if language != "zh" else f"{left}和{right}"
+                    topic_for_activity = (
+                        f"{left} vs {right}" if not str(language).startswith("zh") else f"{left}和{right}"
+                    )
                 elif left or right:
                     topic_for_activity = str(left or right)
             schedule_user_usage_activity(
@@ -446,7 +473,7 @@ async def generate_png_from_prompt(
         )
 
     except LLMServiceError as e:
-        logger.error("[GeneratePNG] LLM error: %s", e)
+        _log_png_llm_failure("GeneratePNG", e)
         raise_http_for_llm_error(e)
     except BrowserUnavailableError as e:
         logger.error("[GeneratePNG] Browser unavailable: %s", e)
@@ -476,9 +503,9 @@ async def generate_dingtalk_png(
     if not prompt:
         raise HTTPException(status_code=400, detail=Messages.error("invalid_prompt", lang))
 
-    try:
-        language = (req.language or "zh").strip()
+    language = coerce_generation_language((req.language or "zh").strip(), prompt)
 
+    try:
         logger.debug(
             "[GenerateDingTalk] Request: prompt_meta=%s language=%s",
             _prompt_meta_for_log(prompt),
@@ -600,7 +627,7 @@ async def generate_dingtalk_png(
                     right = spec.get("right", "")
                     if left and right:
                         # Format as "Left vs Right" (English) or "左和右" (Chinese)
-                        topic_display = f"{left}和{right}" if language == "zh" else f"{left} vs {right}"
+                        topic_display = f"{left}和{right}" if str(language).startswith("zh") else f"{left} vs {right}"
                     elif left or right:
                         topic_display = left or right
 
@@ -714,7 +741,10 @@ async def generate_dingtalk_png(
         return PlainTextResponse(content=plain_text)
 
     except LLMServiceError as e:
-        logger.error("[GenerateDingTalk] LLM error: %s", e)
+        _log_png_llm_failure("GenerateDingTalk", e)
+        limit_reply = _dingtalk_user_limit_reply(e, language)
+        if limit_reply:
+            return PlainTextResponse(content=limit_reply)
         raise_http_for_llm_error(e)
     except BrowserUnavailableError as e:
         logger.error("[GenerateDingTalk] Browser unavailable: %s", e)

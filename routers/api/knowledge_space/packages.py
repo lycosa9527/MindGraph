@@ -62,6 +62,7 @@ from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from tasks.knowledge_space_tasks import process_document_task
 from utils.auth import get_current_user
+from utils.chinese_language_policy import guard_user_visible
 
 logger = logging.getLogger(__name__)
 
@@ -588,7 +589,7 @@ async def get_package_wiki(
 
     pages = package_wiki_store.list_pages(current_user.id, package_id)
     body = package_wiki_store.read_page(current_user.id, package_id, slug) if slug else None
-    return {"pages": pages, "slug": slug, "body": body}
+    return guard_user_visible({"pages": pages, "slug": slug, "body": body})
 
 
 @router.get("/audio-fetch/{token}")

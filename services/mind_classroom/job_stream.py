@@ -29,6 +29,7 @@ from services.mind_classroom.job_events import (
 from services.mind_classroom.job_payload import job_event_dict
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.chinese_language_policy import guard_json_text
 from utils.db.session_open import release_open_transaction
 
 logger = logging.getLogger(__name__)
@@ -115,7 +116,7 @@ async def _next_sse_item(
 async def _iter_job_events(job_id: str, initial_payload: str) -> AsyncIterator[str]:
     """Yield SSE frames. Redis is the live push; Postgres is the idle reconcile."""
     yield ": stream_open\n\n"
-    yield f"data: {initial_payload}\n\n"
+    yield f"data: {guard_json_text(initial_payload)}\n\n"
     if sse_payload_is_terminal(initial_payload):
         return
 
@@ -126,12 +127,12 @@ async def _iter_job_events(job_id: str, initial_payload: str) -> AsyncIterator[s
         while True:
             item, use_queue = await _next_sse_item(queue, use_queue)
             if item:
-                yield f"data: {item}\n\n"
+                yield f"data: {guard_json_text(item)}\n\n"
                 if sse_payload_is_terminal(item):
                     return
                 continue
             frame = await classroom_sse_reconcile_payload(job_id)
-            yield f"data: {frame}\n\n"
+            yield f"data: {guard_json_text(frame)}\n\n"
             if sse_payload_is_terminal(frame):
                 return
     finally:

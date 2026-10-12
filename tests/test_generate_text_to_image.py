@@ -53,16 +53,18 @@ def test_generate_text_to_image_request_accepts_dify_fields() -> None:
     assert req.dify_user_id == "user-1"
 
 
-def test_generate_text_to_image_request_defaults_to_qwen_image_3() -> None:
-    """Endpoint defaults model to qwen-image-3.0 when omitted."""
+def test_generate_text_to_image_request_defaults_to_qwen_image_30_pro() -> None:
+    """Endpoint defaults model to qwen-image-3.0-pro when omitted."""
     req = GenerateTextToImageRequest.model_validate({"prompt": "一只猫"})
-    assert req.model == "qwen-image-3.0"
+    assert req.model == "qwen-image-3.0-pro"
 
 
 def test_generate_text_to_image_request_accepts_qwen_image_models() -> None:
-    """Only Qwen Image 3.0 multimodal models are allowed."""
+    """Qwen Image 3.0 Pro is the default; 3.0 and 2.1 Pro stay selectable."""
     req = GenerateTextToImageRequest.model_validate({"prompt": "一只猫", "model": "qwen-image-3.0-pro"})
     assert req.model == "qwen-image-3.0-pro"
+    current = GenerateTextToImageRequest.model_validate({"prompt": "一只猫", "model": "qwen-image-3.0"})
+    assert current.model == "qwen-image-3.0"
     with pytest.raises(ValidationError):
         GenerateTextToImageRequest.model_validate({"prompt": "一只猫", "model": "wan2.5-t2i-preview"})
 

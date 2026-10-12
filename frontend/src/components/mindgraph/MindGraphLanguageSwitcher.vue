@@ -108,9 +108,7 @@ function onSelect(code: string): void {
         <span class="mindgraph-lang-switcher__code">{{ buttonLabelShort }}</span>
       </ElButton>
       <template #dropdown>
-        <ElDropdownMenu
-          class="mindgraph-lang-switcher__menu max-h-[min(420px,70vh)] overflow-y-auto"
-        >
+        <ElDropdownMenu class="mindgraph-lang-switcher__menu">
           <ElDropdownItem
             v-for="row in languageRows"
             :key="row.code"

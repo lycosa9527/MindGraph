@@ -64,12 +64,12 @@ import { useCanvasToolbarFormatting, useFollowNodeStyleToolbar } from '@/composa
 import { toggleCanvasVirtualKeyboard } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -88,6 +88,7 @@ import {
   useMindClassroomStore,
   useVoiceNotesStore,
 } from '@/stores'
+import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 import {
   type LabelCollapseSnapshot,
   createLabelCollapseSnapshot,
@@ -270,6 +271,18 @@ function onGuestAiToolClick(event: MouseEvent, run: () => void): void {
   }
   event.preventDefault()
   notifyCollabGuestAiBlocked()
+}
+
+function onExplainPointerDown(event: PointerEvent): void {
+  retainEditOnExplainPointer(event, ribbon.explainLockedUntilConfirm)
+}
+
+function onExplainClick(event: MouseEvent): void {
+  if (ribbon.explainLockedUntilConfirm) {
+    event.preventDefault()
+    return
+  }
+  onGuestAiToolClick(event, () => requireNodeSelection(() => ribbon.requestExplainNode()))
 }
 
 function onFormatPainterClick(): void {
@@ -928,28 +941,40 @@ watch(
           </I18nTooltip>
           <I18nTooltip
             :k="
-              aiBlockedByCollab
-                ? 'canvas.toolbar.collabAiBlocked'
-                : 'canvas.floatingToolbar.explain'
+              ribbon.explainLockedUntilConfirm
+                ? 'canvas.floatingToolbar.explainNeedsConfirm'
+                : aiBlockedByCollab
+                  ? 'canvas.toolbar.collabAiBlocked'
+                  : 'canvas.floatingToolbar.explain'
             "
             placement="bottom"
-            :disabled="!aiBlockedByCollab && (shortLabels || !props.compact)"
+            :disabled="
+              !ribbon.explainLockedUntilConfirm &&
+              !aiBlockedByCollab &&
+              (shortLabels || !props.compact)
+            "
           >
             <button
               type="button"
               class="mm-btn"
-              :aria-disabled="aiBlockedByCollab || !ribbon.hasSelection"
-              :class="{ 'is-dimmed': aiBlockedByCollab || !ribbon.hasSelection }"
+              :class="{
+                'is-dimmed':
+                  aiBlockedByCollab || !ribbon.hasSelection || ribbon.explainLockedUntilConfirm,
+                'mm-btn--explain-locked': ribbon.explainLockedUntilConfirm,
+              }"
+              data-node-explain-trigger
+              :aria-disabled="
+                aiBlockedByCollab || !ribbon.hasSelection || ribbon.explainLockedUntilConfirm
+              "
               :aria-label="
-                aiBlockedByCollab
-                  ? t('canvas.toolbar.collabAiBlocked')
-                  : t('canvas.floatingToolbar.explain')
+                ribbon.explainLockedUntilConfirm
+                  ? t('canvas.floatingToolbar.explainNeedsConfirm')
+                  : aiBlockedByCollab
+                    ? t('canvas.toolbar.collabAiBlocked')
+                    : t('canvas.floatingToolbar.explain')
               "
-              @click="
-                onGuestAiToolClick($event, () =>
-                  requireNodeSelection(() => ribbon.requestExplainNode())
-                )
-              "
+              @pointerdown="onExplainPointerDown"
+              @click="onExplainClick"
             >
               <Lightbulb class="w-4 h-4" />
               <MmToolbarLabel

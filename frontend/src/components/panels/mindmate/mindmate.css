@@ -172,11 +172,15 @@
   opacity: 1;
 }
 
-/* Large action buttons with cute animations */
+/* Large action buttons with cute animations.
+   Text buttons read --el-button-*-text-color; a plain `color` rule does not win. */
 .action-btn-lg {
+  --el-button-text-color: #6b7280;
+  --el-button-hover-text-color: #374151;
+  --el-button-active-text-color: #374151;
   padding: 8px;
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--el-button-text-color);
   transition:
     color 0.2s ease,
     background-color 0.2s ease,
@@ -184,17 +188,18 @@
 }
 
 .dark .action-btn-lg {
-  color: #9ca3af;
+  --el-button-text-color: #9ca3af;
+  --el-button-hover-text-color: #e5e7eb;
+  --el-button-active-text-color: #e5e7eb;
 }
 
-.action-btn-lg:hover {
-  color: #374151;
+.el-button.action-btn-lg:hover {
+  color: var(--el-button-hover-text-color);
   background-color: #f3f4f6;
   transform: scale(1.15);
 }
 
-.dark .action-btn-lg:hover {
-  color: #e5e7eb;
+.dark .el-button.action-btn-lg:hover {
   background-color: #4b5563;
 }
 
@@ -203,23 +208,31 @@
   transition: transform 0.1s ease;
 }
 
-.action-btn-lg.is-active {
-  color: #3b82f6;
+.el-button.action-btn-lg.is-active {
+  --el-button-text-color: #3b82f6;
+  --el-button-hover-text-color: #2563eb;
+  --el-button-active-text-color: #1d4ed8;
+  color: var(--el-button-text-color);
   animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.action-btn-lg.is-active:hover {
-  color: #2563eb;
+.el-button.action-btn-lg.is-active:hover {
+  --el-button-text-color: #2563eb;
+  color: var(--el-button-text-color);
   background-color: #dbeafe;
 }
 
-.action-btn-lg.is-active-dislike {
-  color: #ef4444;
+.el-button.action-btn-lg.is-active-dislike {
+  --el-button-text-color: #ef4444;
+  --el-button-hover-text-color: #dc2626;
+  --el-button-active-text-color: #b91c1c;
+  color: var(--el-button-text-color);
   animation: wiggle 0.4s ease;
 }
 
-.action-btn-lg.is-active-dislike:hover {
-  color: #dc2626;
+.el-button.action-btn-lg.is-active-dislike:hover {
+  --el-button-text-color: #dc2626;
+  color: var(--el-button-text-color);
   background-color: #fee2e2;
 }
 

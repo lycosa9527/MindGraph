@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'ടെക്സ്റ്റ് നിറം',
   'canvas.floatingToolbar.typography': 'ടൈപ്പ് സെറ്റിംഗ്',
   'canvas.floatingToolbar.explain': 'നോഡ് വിശദീകരണം',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'ഡിഫോൾട്ട് ഫോണ്ട്',
   'canvas.floatingToolbar.fontSimSun': 'സോങ് രാജവംശം',
   'canvas.floatingToolbar.fontKaiTi': 'സാധാരണ സ്ക്രിപ്റ്റ്',

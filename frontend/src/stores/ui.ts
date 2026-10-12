@@ -18,6 +18,7 @@ import {
   matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
+import { notifySimplifiedChineseUnsupported } from '@/utils/simplifiedChineseNotice'
 import {
   BILINGUAL_UI_KEY,
   PRESENTER_UI_LOCALE_KEY,
@@ -381,6 +382,10 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   function setLanguage(newLanguage: Language): void {
+    if (!languagePolicyAllowZh.value && newLanguage === 'zh') {
+      notifySimplifiedChineseUnsupported(language.value)
+      return
+    }
     if (matchPromptToUi.value) {
       const matched = matchedPromptLanguageForUiLocale(newLanguage)
       if (matched !== null && promptLanguage.value !== matched) {
@@ -417,6 +422,10 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   function setPromptLanguage(lang: PromptLanguage): void {
+    if (!languagePolicyAllowZh.value && lang === 'zh') {
+      notifySimplifiedChineseUnsupported(language.value)
+      return
+    }
     if (promptLanguage.value === lang) {
       return
     }
@@ -444,8 +453,18 @@ export const useUIStore = defineStore('ui', () => {
 
   function setLanguagePolicyAllowZh(allow: boolean): void {
     languagePolicyAllowZh.value = allow
-    if (!allow && presenterUiLocale.value === 'zh') {
+    if (allow) {
+      return
+    }
+    if (presenterUiLocale.value === 'zh') {
       setPresenterUiLocale('en')
+    }
+    if (language.value === 'zh') {
+      setLanguage('en')
+    }
+    if (promptLanguage.value === 'zh') {
+      promptLanguage.value = 'en'
+      localStorage.setItem(PROMPT_LANGUAGE_KEY, 'en')
     }
   }
 

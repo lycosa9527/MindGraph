@@ -14,6 +14,8 @@ describe('zhihuiModes', () => {
   })
 
   it('keeps Qwen models for image mode', () => {
+    expect(defaultModelId('image')).toBe('qwen-image-3.0-pro')
+    expect(isZhihuiImageModel('qwen-image-2.1-pro')).toBe(true)
     expect(isZhihuiImageModel('qwen-image-3.0')).toBe(true)
     expect(isZhihuiImageModel('wan2.7-image')).toBe(false)
   })

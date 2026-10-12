@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.161] - 2026-10-12
+
+> **Canvas models use Express, Balanced, Max, GLM Flash, and Doubao, and Max calls `qwen3.8-max`.**
+
+### Changed
+
+- **画布模型** — The dropdown shows Express / DeepSeek Flash, Balanced / Qwen Flash, Max / Qwen Max, GLM Flash, and Doubao. Simplified Chinese short labels are 快速, 均衡, 极致, GLM Flash, and 豆包. Traditional Chinese Max is 極致. Saved diagrams still open on the same slots.
+- **模型配置** — Balanced is `QWEN_FLASH_MODEL` (`qwen3.8-flash`). Max is `QWEN_MAX_MODEL` (`qwen3.8-max`). GLM Flash is `GLM_FLASH_MODEL`. Doubao is `DOUBAO_MODEL` (`doubao-seed-2-1-turbo-260628`). `ARK_KIMI_ENDPOINT` and `DOUBAO21_MODEL` are gone. An empty GLM or Doubao value is rejected instead of sending a fallback id.
+- **用量** — Token rows keep a zero cost. The stored model name follows the env id for Express, Balanced, Max, GLM Flash, and Doubao.
+- **配图** — Text-to-image defaults to `qwen-image-3.0-pro` and also accepts `qwen-image-2.1-pro`.
+- **学校 Dify** — A blank school slot shows the global URL and a masked key. Editing that slot is what stores a school override.
+- **用户协议** — Traditional Chinese UI shows the agreement converted from the Simplified text.
+
+### Fixed
+
+- **节点解释** — Explanation waits until the node text is confirmed, including from the classroom remote and the outline.
+- **桥形图** — A long dimension label wraps and leaves a gap before the first pair.
+- **思维图颜色** — Changing only the text color keeps the role fill and border.
+- **海外简体** — Overseas email accounts stay on Traditional Chinese while `OVERSEAS_SIMPLIFIED_CHINESE` is off. Kitty warns when Simplified text is typed. Set the switch true to allow Simplified Chinese again without a migration.
+- **钉钉配图** — When thinking coins or the daily token cap run out, DingTalk receives a 200 text reply so the workflow can post the balance message.
+
+### Tests
+
+- [`tests/test_canvas_express_llm.py`](tests/test_canvas_express_llm.py), [`tests/test_llm_routing_store.py`](tests/test_llm_routing_store.py) — canvas model ids come from the new env flags.
+- [`tests/test_chinese_language_policy.py`](tests/test_chinese_language_policy.py), [`frontend/tests/nodeExplainEditGate.spec.ts`](frontend/tests/nodeExplainEditGate.spec.ts), [`frontend/tests/bridgeMapDimensionClearance.spec.ts`](frontend/tests/bridgeMapDimensionClearance.spec.ts), [`frontend/tests/schoolDifyServerDisplay.spec.ts`](frontend/tests/schoolDifyServerDisplay.spec.ts).
+
 ## [5.180.160] - 2026-10-12
 
 > **Live translation subtitles use Qwen3.8 and list all 60 target languages.**

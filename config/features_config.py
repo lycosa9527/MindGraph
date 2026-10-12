@@ -93,6 +93,17 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_DINGTALK_LOGIN", "False").lower() == "true"
 
     @property
+    def OVERSEAS_SIMPLIFIED_CHINESE(self) -> bool:
+        """Let overseas email accounts use Simplified Chinese.
+
+        Off by default. Those accounts stay marked in the database, and every
+        picker, prompt, and AI path follows that mark. Set
+        OVERSEAS_SIMPLIFIED_CHINESE=true to turn Simplified Chinese back on
+        for all of them without a migration.
+        """
+        return self._get_cached_value("OVERSEAS_SIMPLIFIED_CHINESE", "False").lower() == "true"
+
+    @property
     def FEATURE_WORD_ADDIN(self):
         """Show the Word add-in download in Account and serve the deploy zip.
 

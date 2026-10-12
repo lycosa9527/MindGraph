@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Ngjyra e tekstit',
   'canvas.floatingToolbar.typography': 'Tipografia',
   'canvas.floatingToolbar.explain': 'Shpjegimi i nyjës',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Parazgjedhur',
   'canvas.floatingToolbar.fontSimSun': 'Dinastia e Këngës',
   'canvas.floatingToolbar.fontKaiTi': 'skenar i rregullt',

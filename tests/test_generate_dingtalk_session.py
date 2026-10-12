@@ -10,6 +10,7 @@ from agents.core import prompt_to_diagram_run as p2d
 from models.requests.requests_diagram import GenerateDingTalkRequest
 from routers.api import png_export as mod
 from services.diagram.dify_user_resolve import DiagramSaveIdentity
+from services.infrastructure.http.error_handler import ThinkingCoinInsufficientError
 
 
 def _user() -> MagicMock:
@@ -98,3 +99,42 @@ async def test_generate_dingtalk_closes_rls_before_llm_and_screenshot() -> None:
     assert llm_saw_closed == [True]
     assert shot_saw_closed == [True]
     assert session_open["value"] is False
+
+
+@pytest.mark.asyncio
+async def test_generate_dingtalk_replies_when_thinking_coins_run_out() -> None:
+    """Dify must get a 200 body so DingTalk posts the balance message instead of failing the workflow."""
+    fake_db = MagicMock()
+    fake_cm = MagicMock()
+
+    async def _enter(_self: object) -> MagicMock:
+        return fake_db
+
+    async def _exit(_self: object, *_args: object) -> bool:
+        return False
+
+    fake_cm.__aenter__ = _enter
+    fake_cm.__aexit__ = _exit
+
+    identity = DiagramSaveIdentity(user_id=7, organization_id=1, dify_user_key="mindbot_1_staff")
+    req = GenerateDingTalkRequest.model_validate({"prompt": "画一张图", "language": "zh"})
+    coin_error = ThinkingCoinInsufficientError(balance=8, cost=15, user_message="english fallback")
+
+    with (
+        patch.object(mod, "actor_rls_session", return_value=fake_cm),
+        patch.object(mod, "system_rls_session", return_value=fake_cm),
+        patch.object(
+            mod,
+            "resolve_diagram_save_identity",
+            new=AsyncMock(return_value=identity),
+        ),
+        patch.object(mod, "run_prompt_to_diagram_llm", new=AsyncMock(side_effect=coin_error)),
+        patch.object(mod, "schedule_module_activity"),
+    ):
+        response = await mod.generate_dingtalk_png(req, _request(), None, _user())
+
+    assert response.status_code == 200
+    body = bytes(response.body).decode()
+    assert "思维币不足" in body
+    assert "8" in body
+    assert "15" in body

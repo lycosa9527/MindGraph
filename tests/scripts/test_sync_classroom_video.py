@@ -16,7 +16,7 @@ from scripts.sync_classroom_video.catalog import (
     select_clips,
 )
 from scripts.sync_classroom_video.roles import RoleStill, discover_roles, identity_shell
-from scripts.training_roles.wan_client import WAN3_VIDEO_PRIME, build_video_body
+from scripts.training_roles.wan_client import WAN3_VIDEO, build_video_body
 
 
 def _role(folder: str, slug: str, label: str, tmp_path: Path) -> RoleStill:
@@ -89,7 +89,7 @@ def test_clip_prompt_locks_reference_stills(tmp_path: Path) -> None:
 def test_build_video_body_is_silent_wan3() -> None:
     """Classroom jobs stay 16:9, silent, and reference-image based."""
     body = build_video_body(
-        WAN3_VIDEO_PRIME,
+        WAN3_VIDEO,
         "课堂",
         negative=NEGATIVE,
         media=[{"type": "reference_image", "url": "data:image/jpeg;base64,xx"}],
@@ -100,7 +100,7 @@ def test_build_video_body_is_silent_wan3() -> None:
         prompt_extend=False,
         watermark=False,
     )
-    assert body["model"] == WAN3_VIDEO_PRIME
+    assert body["model"] == WAN3_VIDEO
     assert body["input"]["media"][0]["type"] == "reference_image"
     assert body["parameters"]["audio"] is False
     assert body["parameters"]["duration"] == 12

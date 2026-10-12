@@ -43,8 +43,10 @@ from services.infrastructure.http.error_handler import (
 from services.learning_space.ai_gate import assert_student_ai_capability
 from services.monitoring.activity_stream import get_activity_stream_service
 from services.monitoring.module_activity import track_module_activity
+from services.infrastructure.http.llm_http_errors import is_user_llm_limit_error
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user_or_api_key, is_superadmin
+from utils.chinese_language_policy import coerce_generation_language, guard_user_visible
 from utils.db.session_open import system_rls_session
 
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -141,11 +143,15 @@ async def _prepare_generate_graph(
 
     accept_language = request.headers.get("Accept-Language", "")
     lang = get_request_language(x_language, accept_language)
-    language = req.language
+    language = coerce_generation_language(
+        req.language,
+        req.prompt or "",
+        req.generation_instructions or "",
+    )
 
     understood = prepare_generation_prompt(
         (req.prompt or "").strip(),
-        req.language,
+        language,
         explicit_instructions=(req.generation_instructions or "").strip() or None,
     )
     prompt = understood.merged_prompt()
@@ -206,7 +212,7 @@ async def _prepare_generate_graph(
 
 async def _finalize_generate_graph_result(result: dict[str, Any], prepared: dict[str, Any]) -> dict[str, Any]:
     """Post-process workflow result: logging, activity broadcast, metadata."""
-    result = normalize_generate_graph_failure(result)
+    result = guard_user_visible(normalize_generate_graph_failure(result))
     req = prepared["req"]
     prompt = prepared["prompt"]
     user_id = prepared["user_id"]
@@ -405,7 +411,7 @@ async def _stream_generate_graph_events(prepared: dict[str, Any]):
             item = await queue.get()
             if item is None:
                 break
-            yield f"data: {json.dumps(item, default=str)}\n\n"
+            yield f"data: {json.dumps(guard_user_visible(item), default=str)}\n\n"
     finally:
         monitor_task.cancel()
         if not task.done():
@@ -474,7 +480,10 @@ async def generate_graph(
         request_id = f"gen_{int(time.time() * 1000)}"
         accept_language = request.headers.get("Accept-Language", "")
         lang = get_request_language(x_language, accept_language)
-        logger.error("[%s] generate_graph LLM error: %s", request_id, e, exc_info=True)
+        if is_user_llm_limit_error(e):
+            logger.info("[%s] generate_graph user limit: %s", request_id, e)
+        else:
+            logger.error("[%s] generate_graph LLM error: %s", request_id, e, exc_info=True)
         msg = getattr(e, "user_message", None) or Messages.error("internal_error", lang)
         return GenerateResponse.model_validate(
             {

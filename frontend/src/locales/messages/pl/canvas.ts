@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Kolor tekstu',
   'canvas.floatingToolbar.typography': 'Typografia',
   'canvas.floatingToolbar.explain': 'Wyjaśnienie węzła',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Domyślny',
   'canvas.floatingToolbar.fontSimSun': 'Dynastia Song',
   'canvas.floatingToolbar.fontKaiTi': 'zwykły skrypt',

@@ -31,6 +31,7 @@ from services.llm.org_custom_client import collapse_org_custom_models
 from services.llm.org_result_cache import load_or_generate_org_llm_result, normalize_org_cache_text
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
+from utils.chinese_language_policy import coerce_generation_language, guard_user_visible
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ async def _focus_models_for_org(organization_id: Optional[int]) -> List[str]:
 
 def _sse_data(obj: Dict[str, Any]) -> str:
     """One SSE event line (UTF-8 safe for Chinese)."""
-    return f"data: {json.dumps(obj, ensure_ascii=False)}\n\n"
+    return f"data: {json.dumps(guard_user_visible(obj), ensure_ascii=False)}\n\n"
 
 
 def _question_lang_or_raise(req: FocusQuestionReviewRequest) -> Tuple[str, str]:
@@ -57,7 +58,7 @@ def _question_lang_or_raise(req: FocusQuestionReviewRequest) -> Tuple[str, str]:
     question = req.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="question required")
-    return question, req.language
+    return question, coerce_generation_language(req.language, question)
 
 
 def _avoid_section(avoid: Optional[List[str]], lang: str) -> str:
@@ -388,7 +389,7 @@ async def root_concept_generate(
     question = req.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="question required")
-    lang = req.language
+    lang = coerce_generation_language(req.language)
     user_id = current_user.id
     org_id = getattr(current_user, "organization_id", None)
     system, user_tmpl = _get_root_concept_prompts(lang)
@@ -490,7 +491,7 @@ async def focus_question_suggestions_stream(
     question = req.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="question required")
-    lang = req.language
+    lang = coerce_generation_language(req.language)
     avoid = req.avoid
     user_id = current_user.id
     org_id = getattr(current_user, "organization_id", None)
@@ -559,7 +560,7 @@ async def root_concept_suggestions_stream(
     question = req.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="question required")
-    lang = req.language
+    lang = coerce_generation_language(req.language)
     avoid = req.avoid
     user_id = current_user.id
     org_id = getattr(current_user, "organization_id", None)

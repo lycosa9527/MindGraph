@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'χρώμα κειμένου',
   'canvas.floatingToolbar.typography': 'στοιχειοθεσία',
   'canvas.floatingToolbar.explain': 'Επεξήγηση κόμβου',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Προεπιλεγμένη γραμματοσειρά',
   'canvas.floatingToolbar.fontSimSun': 'Δυναστεία των τραγουδιών',
   'canvas.floatingToolbar.fontKaiTi': 'κανονικό σενάριο',

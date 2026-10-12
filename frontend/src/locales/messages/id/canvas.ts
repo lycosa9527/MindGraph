@@ -459,6 +459,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Warna teks',
   'canvas.floatingToolbar.typography': 'Tipografi',
   'canvas.floatingToolbar.explain': 'Penjelasan simpul',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Bawaan',
   'canvas.floatingToolbar.fontSimSun': 'Dinasti Song',
   'canvas.floatingToolbar.fontKaiTi': 'skrip biasa',

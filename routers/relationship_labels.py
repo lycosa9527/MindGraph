@@ -11,7 +11,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import json
 import logging
 from datetime import UTC, datetime
 
@@ -42,6 +41,7 @@ from utils.chinese_language_policy import (
     collect_relationship_label_text_blobs,
     effective_language_for_thinking_user,
     is_chinese_ui_error_language,
+    sse_data,
 )
 
 router = APIRouter(tags=["thinking"])
@@ -53,7 +53,7 @@ async def _stream_labels(req, user: User | None, is_next: bool):
     try:
         await assert_collab_blocks_canvas_ai(getattr(req, "diagram_id", None), user)
     except HTTPException as exc:
-        yield f"data: {json.dumps({'event': 'error', 'message': str(exc.detail)})}\n\n"
+        yield sse_data({"event": "error", "message": str(exc.detail)})
         return
     generator = get_relationship_labels_generator()
     user_id = user.id if user and hasattr(user, "id") else None
@@ -78,38 +78,38 @@ async def _stream_labels(req, user: User | None, is_next: bool):
             endpoint_path=endpoint,
         ):
             chunk_count += 1
-            yield f"data: {json.dumps(chunk)}\n\n"
+            yield sse_data(chunk)
     except LLMContentFilterError as e:
         msg = getattr(e, "user_message", None) or (
             "无法处理您的请求。" if is_chinese_ui_error_language(effective_lang) else "Content could not be processed."
         )
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
     except LLMRateLimitError as e:
         msg = getattr(e, "user_message", None) or (
             "AI服务繁忙，请稍后重试。"
             if is_chinese_ui_error_language(effective_lang)
             else "AI service busy. Please retry."
         )
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
     except LLMTimeoutError as e:
         msg = getattr(e, "user_message", None) or (
             "请求超时，请重试。" if is_chinese_ui_error_language(effective_lang) else "Request timed out. Please retry."
         )
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
     except LLMServiceError as e:
         msg = getattr(e, "user_message", None) or (
             "AI服务错误，请稍后重试。"
             if is_chinese_ui_error_language(effective_lang)
             else "AI service error. Please retry."
         )
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[RelLabels] Stream error: %s", str(e), exc_info=True)
         msg = "请求失败，请重试。" if is_chinese_ui_error_language(effective_lang) else "Request failed. Please retry."
-        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        yield sse_data({"event": "error", "message": msg})
     finally:
         if chunk_count == 0:
-            yield f"data: {json.dumps({'event': 'error', 'message': 'No response'})}\n\n"
+            yield sse_data({"event": "error", "message": "No response"})
 
 
 @router.post("/thinking_mode/relationship_labels/start")
