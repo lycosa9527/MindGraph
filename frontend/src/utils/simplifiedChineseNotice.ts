@@ -2,15 +2,14 @@
  * Overseas accounts cannot use Simplified Chinese.
  * AI requests that ask for it, or that include Simplified glyphs, show one notice.
  */
-import { Converter } from 'opencc-js'
-
 import { notify } from '@/composables/core/notifications'
+import { textHasSimplifiedChinese } from '@/utils/simplifiedTraditional'
+
+export { textHasSimplifiedChinese }
 
 const NOTICE_EN = 'We do not support Simplified Chinese for overseas users at this point.'
 const NOTICE_ZH = '海外用户暂不支持简体中文。'
 const NOTICE_ZH_TW = '海外用戶暫不支援簡體中文。'
-
-const SIMPLIFIED_TO_TRADITIONAL = Converter({ from: 'cn', to: 'tw' })
 
 const AI_REQUEST_MARKERS = [
   '/generate_graph',
@@ -39,14 +38,6 @@ export function simplifiedChineseUnsupportedMessage(uiLanguage: string): string 
     return NOTICE_ZH
   }
   return NOTICE_EN
-}
-
-export function textHasSimplifiedChinese(text: string): boolean {
-  const trimmed = text.trim()
-  if (!trimmed) {
-    return false
-  }
-  return SIMPLIFIED_TO_TRADITIONAL(trimmed) !== trimmed
 }
 
 function isTraditionalUiCode(code: string): boolean {

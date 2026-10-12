@@ -2,11 +2,8 @@
  * MindGraph combined Terms of Use + Privacy Policy — shown from /auth footer.
  * Draft for review; not legal advice.
  */
-import { Converter } from 'opencc-js'
-
 import { isChineseUiLocale } from '@/types/sidebar-quotes'
-
-const SIMPLIFIED_TO_TRADITIONAL = Converter({ from: 'cn', to: 'tw' })
+import { toTraditionalChinese } from '@/utils/simplifiedTraditional'
 
 const COMPANY_ZH = '北京思源智教科技有限公司'
 const COMPANY_EN = 'Beijing Siyuan Zhijiao Technology Co., Ltd.'
@@ -364,7 +361,7 @@ function isTraditionalChineseUi(uiCode: string): boolean {
 }
 
 function traditionalAgreement(source: SoftwareAgreementContent): SoftwareAgreementContent {
-  const convert = SIMPLIFIED_TO_TRADITIONAL
+  const convert = toTraditionalChinese
   return {
     title: convert(source.title),
     updated: convert(source.updated),
@@ -436,8 +433,8 @@ export function browserExtensionPrivacyForUiCode(uiCode: string): SoftwareAgreem
   }
   if (traditionalExtensionCache === null) {
     traditionalExtensionCache = BROWSER_EXTENSION_PRIVACY_ZH.map((section) => ({
-      title: SIMPLIFIED_TO_TRADITIONAL(section.title),
-      paragraphs: section.paragraphs.map((paragraph) => SIMPLIFIED_TO_TRADITIONAL(paragraph)),
+      title: toTraditionalChinese(section.title),
+      paragraphs: section.paragraphs.map((paragraph) => toTraditionalChinese(paragraph)),
     }))
   }
   return traditionalExtensionCache

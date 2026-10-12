@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.166] - 2026-10-13
+
+> **Startup no longer downloads the full Chinese conversion dictionary.**
+
+### Changed
+
+- **简繁检测** — Overseas Simplified Chinese checks and traditional agreement text use OpenCC's character table instead of the full phrase dictionaries. Those dictionaries were about 1 MB and shipped inside the notifications chunk on every page load.
+
+### Tests
+
+- [`frontend/tests/simplifiedTraditional.spec.ts`](frontend/tests/simplifiedTraditional.spec.ts) — simplified glyphs convert, and shared characters such as 信息 stay unchanged.
+
 ## [5.180.165] - 2026-10-13
 
 > **The canvas model menu stays quiet until a model has a diagram, and reopening a diagram restores the last choice.**
