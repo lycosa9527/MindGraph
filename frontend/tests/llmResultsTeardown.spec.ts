@@ -226,7 +226,7 @@ describe('llmResults regenerate paint / stamp', () => {
     expect(reopened.getValidResult('doubao21')?.spec).toEqual({ topic: 'doubao21' })
   })
 
-  it('keeps the open diagram on its model when the menu moves to an empty choice', () => {
+  it('keeps the open diagram on its model when the menu moves to an unused model', () => {
     setActivePinia(createPinia())
     const store = useLLMResultsStore()
     store.restoreFromSaved(
@@ -243,17 +243,33 @@ describe('llmResults regenerate paint / stamp', () => {
     store.setSelectedModel('doubao21')
 
     const persisted = store.getResultsForPersistence()
-    expect(persisted?.selectedModel).toBe('qwen')
-    expect(persisted?.canvasOwnsSelected).toBe(true)
+    expect(persisted?.selectedModel).toBe('doubao21')
+    expect(persisted?.canvasModel).toBe('qwen')
+    expect(persisted?.canvasOwnsSelected).toBe(false)
     const packed = attachLlmResultsWithinSizeLimit(
       { topic: 'qwen' },
       persisted,
       SAVE.MAX_SPEC_WITH_LLM_RESULTS_KB
     )
-    const llm = packed.llm_results as { results: Record<string, { spec: { topic: string } }> }
+    const llm = packed.llm_results as {
+      results: Record<string, { spec: { topic: string } }>
+      selectedModel: string
+      canvasModel: string
+    }
     expect(packed.topic).toBe('qwen')
+    expect(llm.selectedModel).toBe('doubao21')
+    expect(llm.canvasModel).toBe('qwen')
     expect(llm.results.qwen).toBeUndefined()
+    expect(llm.results.doubao21).toBeUndefined()
     expect(llm.results.express.spec.topic).toBe('express')
+
+    const { specForLoad, saved } = splitSavedLlmResultsFromSpec(packed)
+    const reopened = useLLMResultsStore()
+    reopened.reset()
+    reopened.restoreFromSaved(saved ?? { results: {} }, 'mindmap', specForLoad)
+    expect(reopened.canvasModelChoice).toBe('doubao21')
+    expect(reopened.isResultValid('doubao21')).toBe(false)
+    expect(reopened.getValidResult('qwen')?.spec).toEqual({ topic: 'qwen' })
   })
 
   it('saves one diagram body for one painted model and five for five', () => {

@@ -76,7 +76,7 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     const chromeActions = readSrc('src/canvas-ribbon/useMindMapRibbonChromeActions.ts')
     expect(chromeActions).toContain('canvasMenuModelLabel')
     expect(chromeActions).toContain('leaveTranslatePreview')
-    expect(chromeActions).toContain('switchToModel(model)')
+    expect(chromeActions).toContain('selectCanvasLlmModel(model)')
     expect(chrome).toContain('.mm-status__translate-btn.is-translating')
     const toolbarApps = readSrc('src/composables/canvasToolbar/useCanvasToolbarApps.ts')
     expect(toolbarApps).not.toContain('moreApps')

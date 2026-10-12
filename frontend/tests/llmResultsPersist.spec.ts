@@ -6,6 +6,7 @@ import {
   attachLlmResultsWithinSizeLimit,
   diagramSpecExceedsSaveLimit,
   resolvePersistedSelectedModel,
+  restoredLlmView,
   splitSavedLlmResultsFromSpec,
 } from '@/stores/llmResultsPersist'
 
@@ -23,27 +24,39 @@ describe('resolvePersistedSelectedModel', () => {
     deepseek: resultOf('d', 1),
   }
 
-  it('keeps the canvas slot when that model has a successful spec', () => {
+  it('keeps the menu when another model owns the canvas', () => {
     expect(resolvePersistedSelectedModel(results, 'qwen', 'deepseek')).toEqual({
-      selectedModel: 'deepseek',
-      canvasOwnsSelected: true,
+      selectedModel: 'qwen',
+      canvasModel: 'deepseek',
+      canvasOwnsSelected: false,
     })
   })
 
   it('remembers a menu model that has a spec without claiming the canvas', () => {
     expect(resolvePersistedSelectedModel(results, 'deepseek', null)).toEqual({
       selectedModel: 'deepseek',
+      canvasModel: null,
       canvasOwnsSelected: false,
     })
   })
 
-  it('does not substitute another model when the menu has no diagram', () => {
+  it('remembers a menu model that has not generated when the canvas has an owner', () => {
+    expect(resolvePersistedSelectedModel(results, 'kimi', 'qwen')).toEqual({
+      selectedModel: 'kimi',
+      canvasModel: 'qwen',
+      canvasOwnsSelected: false,
+    })
+  })
+
+  it('does not substitute another model when the menu has no diagram and nothing owns the canvas', () => {
     expect(resolvePersistedSelectedModel(results, null, null)).toEqual({
       selectedModel: null,
+      canvasModel: null,
       canvasOwnsSelected: false,
     })
     expect(resolvePersistedSelectedModel(results, 'doubao', null)).toEqual({
       selectedModel: null,
+      canvasModel: null,
       canvasOwnsSelected: false,
     })
   })
@@ -189,6 +202,35 @@ describe('attachLlmResultsWithinSizeLimit', () => {
     expect(packed.topic).toBe('t')
     expect(llm.selectedModel).toBe('qwen')
     expect(llm.results).toEqual({})
+  })
+})
+
+describe('menu choice survives reopen', () => {
+  it('stores the unused menu id and keeps the generated diagram on its model', () => {
+    const packed = attachLlmResultsWithinSizeLimit(
+      { topic: 'doubao21' },
+      {
+        selectedModel: 'kimi',
+        canvasModel: 'doubao21',
+        canvasOwnsSelected: false,
+        results: {
+          doubao21: resultOf('doubao21', 8),
+          express: resultOf('express', 8),
+        },
+      },
+      SAVE.MAX_SPEC_WITH_LLM_RESULTS_KB
+    )
+    const { specForLoad, saved } = splitSavedLlmResultsFromSpec(packed)
+    expect(specForLoad.topic).toBe('doubao21')
+    expect(saved?.selectedModel).toBe('kimi')
+    expect(saved?.canvasModel).toBe('doubao21')
+    expect(saved?.results?.doubao21).toBeUndefined()
+    expect(saved?.results?.kimi).toBeUndefined()
+    expect(saved?.results?.express).toBeDefined()
+    expect(restoredLlmView(saved ?? {})).toEqual({
+      menuModel: 'kimi',
+      canvasOwner: 'doubao21',
+    })
   })
 })
 

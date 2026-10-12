@@ -2,6 +2,7 @@
  * Apply remote Kitty LLM model choice onto desktop llmResults (+ switch when ready).
  */
 import { isCanvasLlmModel } from '@/config/canvasLlmMenu'
+import { requestLlmMenuPersist } from '@/stores/llmMenuChoice'
 import type { LLMModel } from '@/stores/llmResults'
 import { useLLMResultsStore } from '@/stores/llmResults'
 
@@ -38,6 +39,7 @@ export async function applyKittyRemoteLlmModel(rawModel: unknown): Promise<boole
   if (model == null) {
     if (llmResultsStore.selectedModel != null) {
       llmResultsStore.setSelectedModel(null)
+      requestLlmMenuPersist()
       return true
     }
     return false
@@ -51,12 +53,18 @@ export async function applyKittyRemoteLlmModel(rawModel: unknown): Promise<boole
     if (llmResultsStore.selectedModel === model) {
       return false
     }
-    return llmResultsStore.switchToModel(model)
+    const switched = await llmResultsStore.switchToModel(model)
+    if (!switched) {
+      llmResultsStore.setSelectedModel(model)
+    }
+    requestLlmMenuPersist()
+    return true
   }
 
   if (llmResultsStore.selectedModel === model) {
     return false
   }
   llmResultsStore.setSelectedModel(model)
+  requestLlmMenuPersist()
   return true
 }

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.165] - 2026-10-13
+
+> **The canvas model menu stays quiet until a model has a diagram, and reopening a diagram restores the last choice.**
+
+### Fixed
+
+- **画布模型** — Picking a model that has not run auto-complete only moves the menu. It no longer warns that there is no result. After auto-complete, the diagram and the last menu choice are both saved, and opening the diagram again highlights that model.
+
+### Tests
+
+- [`frontend/tests/llmResultsPersist.spec.ts`](frontend/tests/llmResultsPersist.spec.ts) — an unused menu id is stored beside the model that owns the canvas.
+- [`frontend/tests/llmResultsTeardown.spec.ts`](frontend/tests/llmResultsTeardown.spec.ts) — reopening highlights that menu id and keeps the generated diagram on its model.
+
 ## [5.180.164] - 2026-10-13
 
 > **Settings keeps the DingTalk MindBot bind button under WeChat, and the public privacy page lists the full agreement.**

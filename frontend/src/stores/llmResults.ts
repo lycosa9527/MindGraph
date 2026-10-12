@@ -31,9 +31,10 @@ import {
   shouldStampCanvasOntoLlmResult,
 } from './llmResultsPaint'
 import {
-  canvasSpecMatchesSaved,
+  type SavedLlmResultsPayload,
   clonePersistedLlmResults,
   resolvePersistedSelectedModel,
+  restoredLlmView,
 } from './llmResultsPersist'
 import { useSavedDiagramsStore } from './savedDiagrams'
 
@@ -192,7 +193,6 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   async function switchToModel(model: string): Promise<boolean> {
     const result = getValidResult(model)
     if (!result || !result.success || !result.spec) {
-      console.warn(`[LLMResults] Cannot switch to ${model}: no valid result`)
       return false
     }
 
@@ -210,10 +210,10 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     const savedDiagramsStore = useSavedDiagramsStore()
 
     // During auto-complete: per-model autosave runs on llm:model_completed; skip
-    // save-before-replace on programmatic first-result render. User-initiated switch
-    // (after generation): save current so user can revert — do not block first paint.
+    // save-before-replace on programmatic first-result render. A user switch
+    // waits so that save cannot land after the new menu choice is written.
     if (!isGenerating.value) {
-      void savedDiagramsStore.saveCurrentDiagramBeforeReplace()
+      await savedDiagramsStore.saveCurrentDiagramBeforeReplace()
     }
 
     // Flow map: preserve current orientation (LLM spec typically omits it, defaulting to horizontal)
@@ -568,6 +568,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     return clonePersistedLlmResults({
       results: successResults,
       selectedModel: resolved.selectedModel ?? '',
+      canvasModel: resolved.canvasModel || undefined,
       canvasOwnsSelected: resolved.canvasOwnsSelected,
     })
   }
@@ -602,7 +603,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
    * @param saved - { results: Record<model, LLMResult>, selectedModel: string }
    */
   function restoreFromSaved(
-    saved: { results?: Record<string, LLMResult>; selectedModel?: string },
+    saved: SavedLlmResultsPayload,
     diagramType: string,
     canvasSpec?: Record<string, unknown> | null
   ): void {
@@ -621,30 +622,27 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
         modelPhases.value[model] = 'ready'
       }
     })
-    const sel = typeof saved.selectedModel === 'string' ? saved.selectedModel.trim() : ''
-    selectedModel.value = sel || null
-    preferredModel.value = sel || null
+    const view = restoredLlmView(saved)
+    selectedModel.value = view.menuModel
+    preferredModel.value = view.menuModel
     canvasSlotModel.value = null
-    if (!sel || !canvasSpec) return
+    const canvasOwner = view.canvasOwner
+    if (!canvasOwner || !canvasSpec) return
 
     const canvas = { ...canvasSpec }
     delete canvas.llm_results
-    const existing = results.value[sel]
+    const existing = results.value[canvasOwner]
     if (!existing?.spec) {
-      results.value[sel] = {
+      results.value[canvasOwner] = {
         success: true,
         spec: canvas,
         diagramType: normalizedType,
         timestamp: Date.now(),
       }
-      modelStates.value[sel] = 'ready'
-      modelPhases.value[sel] = 'ready'
-      canvasSlotModel.value = sel
-      return
+      modelStates.value[canvasOwner] = 'ready'
+      modelPhases.value[canvasOwner] = 'ready'
     }
-    if (canvasSpecMatchesSaved(existing.spec, canvas)) {
-      canvasSlotModel.value = sel
-    }
+    canvasSlotModel.value = canvasOwner
   }
 
   /** Snapshot recall keeps each model's spec, but the canvas is no longer that slot. */

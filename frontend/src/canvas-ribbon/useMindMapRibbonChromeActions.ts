@@ -14,7 +14,6 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useCanvasLlmModelNames } from '@/composables/llm/useCanvasLlmModelNames'
@@ -22,6 +21,7 @@ import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { CANVAS_LLM_MENU, canvasLlmLogo, canvasMenuModelLabel } from '@/config/canvasLlmMenu'
 import { useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
+import { selectCanvasLlmModel } from '@/stores/llmMenuChoice'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
 export function useMindMapRibbonChromeActions() {
@@ -38,7 +38,6 @@ export function useMindMapRibbonChromeActions() {
   const { handleAIGenerate } = useCanvasToolbarApps()
   const { leaveTranslatePreview } = useCanvasDiagramTranslate()
   const { triggerImportInPlace } = useDiagramImport()
-  const { switchToModel } = useAutoComplete()
   const { t } = useLanguage()
   const { customLlmEnabled, displayNameForModel } = useOrgCustomLlm()
   const { names: canvasModelNames } = useCanvasLlmModelNames()
@@ -134,11 +133,8 @@ export function useMindMapRibbonChromeActions() {
   }
 
   function selectLlm(model: string): void {
-    void leaveTranslatePreview().then(async () => {
-      const switched = await switchToModel(model)
-      if (!switched) {
-        llmResultsStore.setSelectedModel(model)
-      }
+    void leaveTranslatePreview().then(() => {
+      void selectCanvasLlmModel(model)
     })
   }
 

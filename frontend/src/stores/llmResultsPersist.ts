@@ -12,10 +12,17 @@ import type { LLMResult } from './llmResults'
 
 export interface PersistedLlmResults {
   results: Record<string, LLMResult>
+  /** Dropdown choice to restore. May be a model that has not generated yet. */
   selectedModel: string
   /**
-   * True when the canvas body is that model's diagram, so the file must not
-   * store a second copy. False keeps every spec, including the menu model.
+   * Model whose diagram is the open canvas. Omitted from ``results`` so the
+   * file does not store that spec twice. Absent on older saves; those treat
+   * ``selectedModel`` as the owner.
+   */
+  canvasModel?: string
+  /**
+   * True when ``selectedModel`` is the canvas owner, so a reader that does not
+   * know ``canvasModel`` still skips a second copy of that spec.
    */
   canvasOwnsSelected?: boolean
 }
@@ -23,6 +30,7 @@ export interface PersistedLlmResults {
 export interface SavedLlmResultsPayload {
   results?: Record<string, LLMResult>
   selectedModel?: string
+  canvasModel?: string
 }
 
 function specSizeKb(spec: Record<string, unknown>): number {
@@ -35,46 +43,75 @@ function cloneJson<T>(value: T): T {
 
 export interface ResolvedPersistedSelection {
   selectedModel: string | null
+  canvasModel: string | null
   canvasOwnsSelected: boolean
 }
 
 /**
- * The canvas slot wins. A menu id is remembered only when that model has a
- * spec. Never substitute some other model's key — that would save the open
- * diagram under the wrong name and drop the real spec.
+ * Menu choice and canvas owner are stored separately.
+ * The menu id is kept even when that model has no spec yet.
+ * A menu id is not treated as the canvas owner unless it has a spec or it is
+ * the slot already on the canvas — that would save the open diagram under the
+ * wrong name.
  */
 export function resolvePersistedSelectedModel(
   successResults: Record<string, LLMResult>,
   menuModel: string | null,
   canvasSlotModel: string | null
 ): ResolvedPersistedSelection {
-  if (canvasSlotModel && successResults[canvasSlotModel]?.spec) {
-    return { selectedModel: canvasSlotModel, canvasOwnsSelected: true }
+  const canvasOwner =
+    canvasSlotModel && successResults[canvasSlotModel]?.spec ? canvasSlotModel : null
+  const menu = menuModel?.trim() ? menuModel.trim() : null
+  const menuHasSpec = Boolean(menu && successResults[menu]?.spec)
+  let selectedModel: string | null = null
+  if (canvasOwner && menu) {
+    selectedModel = menu
+  } else if (canvasOwner) {
+    selectedModel = canvasOwner
+  } else if (menu && menuHasSpec) {
+    selectedModel = menu
   }
-  if (menuModel && successResults[menuModel]?.spec) {
-    return { selectedModel: menuModel, canvasOwnsSelected: false }
+  return {
+    selectedModel,
+    canvasModel: canvasOwner,
+    canvasOwnsSelected: Boolean(canvasOwner && selectedModel === canvasOwner),
   }
-  return { selectedModel: null, canvasOwnsSelected: false }
 }
 
-export function canvasSpecMatchesSaved(
-  savedSpec: Record<string, unknown> | undefined,
-  canvasSpec: Record<string, unknown>
-): boolean {
-  const canvas = { ...canvasSpec }
-  delete canvas.llm_results
-  return JSON.stringify(savedSpec ?? null) === JSON.stringify(canvas)
+/** Menu highlight and the model that owns the open canvas, including old files. */
+export function restoredLlmView(saved: SavedLlmResultsPayload): {
+  menuModel: string | null
+  canvasOwner: string | null
+} {
+  const menu = typeof saved.selectedModel === 'string' ? saved.selectedModel.trim() : ''
+  const explicit = typeof saved.canvasModel === 'string' ? saved.canvasModel.trim() : ''
+  return {
+    menuModel: menu || null,
+    canvasOwner: explicit || menu || null,
+  }
 }
 
 export function clonePersistedLlmResults(persisted: PersistedLlmResults): PersistedLlmResults {
   return cloneJson(persisted)
 }
 
+function canvasModelOmittedFromResults(persisted: PersistedLlmResults): string {
+  const canvasModel = persisted.canvasModel?.trim() ?? ''
+  if (canvasModel && persisted.results[canvasModel]?.spec) {
+    return canvasModel
+  }
+  const selected = persisted.selectedModel
+  const ownsCanvas = persisted.canvasOwnsSelected !== false && Boolean(selected)
+  if (ownsCanvas && selected && persisted.results[selected]?.spec) {
+    return selected
+  }
+  return ''
+}
+
 /**
- * The canvas spec is the selected model's slot. Every other successful model
- * is an extra slot, including a model added after this file was written.
- * One model stays one diagram. A model that cannot fit is dropped, largest
- * first. The open diagram is kept.
+ * The open canvas is one model's diagram and is not copied into ``results``.
+ * Every other successful model is an extra slot. A model that cannot fit is
+ * dropped, largest first. The open diagram and the menu choice are kept.
  */
 export function attachLlmResultsWithinSizeLimit(
   base: Record<string, unknown>,
@@ -84,8 +121,8 @@ export function attachLlmResultsWithinSizeLimit(
   if (!persisted) return base
 
   const selected = persisted.selectedModel
-  const ownsCanvas = persisted.canvasOwnsSelected !== false && Boolean(selected)
-  const omit = ownsCanvas ? selected : ''
+  const omit = canvasModelOmittedFromResults(persisted)
+  const canvasModel = persisted.canvasModel?.trim() ?? ''
   const peersByLargest = Object.keys(persisted.results)
     .filter((model) => model !== omit && persisted.results[model]?.spec)
     .sort((left, right) => {
@@ -109,9 +146,13 @@ export function attachLlmResultsWithinSizeLimit(
         results[model] = row
       }
     })
+    const llmResults: SavedLlmResultsPayload = { results, selectedModel: selected }
+    if (canvasModel) {
+      llmResults.canvasModel = canvasModel
+    }
     const withLlm = {
       ...base,
-      llm_results: { results, selectedModel: selected },
+      llm_results: llmResults,
     }
     if (specSizeKb(withLlm) <= maxSizeKb) {
       if (drop > 0) {

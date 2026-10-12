@@ -238,6 +238,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const isSuppressed = ref(false)
   const lastSavedAt = ref<Date | null>(null)
   const isDirty = ref(false)
+  let llmMenuDirty = false
   const isSaving = ref(false)
   let disposed = false
 
@@ -294,6 +295,10 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       if (!canSave.value || !isDirty.value) return
       const currentFull = getFullFingerprint(diagramStore.data as DiagramDataLike)
       if (currentFull === lastSavedFullFingerprint) {
+        if (llmMenuDirty) {
+          void performSave()
+          return
+        }
         isDirty.value = false
         return
       }
@@ -355,6 +360,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
       if (result.success) {
         consecutiveSaveFailures = 0
+        llmMenuDirty = false
         lastSavedAt.value = new Date()
         lastSavedFullFingerprint = captured.fullFingerprint
         diagramStore.resetSessionEditCount()
@@ -556,6 +562,15 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     }
   )
 
+  const stopLlmMenu = eventBus.on('llm:model_selection_clicked', () => {
+    if (disposed || llmResultsStore.isGenerating || !llmResultsStore.hasAnyResults) {
+      return
+    }
+    llmMenuDirty = true
+    isDirty.value = true
+    void performSave()
+  })
+
   const stopLlmComplete = eventBus.on(
     'llm:generation_completed',
     (data: { allFailed?: boolean }) => {
@@ -618,6 +633,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     stopIsGenerating()
     stopCanSaveWatch()
     stopLlmModelCompleted()
+    stopLlmMenu()
     stopLlmComplete()
     stopLoadedFromLibrary()
     stopWorkshopSnapshot()
