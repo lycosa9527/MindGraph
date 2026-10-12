@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Geanimeerde GIF moet 120 rame of minder hê.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Verskil',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Globale Dify is nie in .env gekonfigureer nie (DIFY_API_URL / DIFY_API_KEY).',
   'admin.schoolDifySetOverride': 'Stel skool-overskrywing',
   'admin.schoolDifyCancelOverrideDraft': 'Kanselleer',

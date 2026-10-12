@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Animasiyali GIF 120 yoki daha az kadr olmalidir.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Farqlash',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Qlobal Dify .env-de konfiqurasiya etilmeyib (DIFY_API_URL / DIFY_API_KEY).',
   'admin.schoolDifySetOverride': 'Maktab override teyin et',
   'admin.schoolDifyCancelOverrideDraft': 'Bekor qilish',

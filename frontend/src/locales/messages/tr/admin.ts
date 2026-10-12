@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Animasyonlu GIF 120 kare veya daha az olmalıdır.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Değiştir',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Global Dify, .env (DIFY_API_URL/DIFY_API_KEY) içinde yapılandırılmamıştır.',
   'admin.schoolDifySetOverride': 'Okulu geçersiz kılmayı ayarla',
   'admin.schoolDifyCancelOverrideDraft': 'İptal',

@@ -952,7 +952,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Animoidut GIF-kuvat eivät saa ylittää 120 kehystä.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Jaa',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Global Difya (DIFY_API_URL/DIFY_API_KEY) ei ole määritetty .env:ssä.',
   'admin.schoolDifySetOverride': 'Aseta koulun kattavuus',
   'admin.schoolDifyCancelOverrideDraft': 'Peruuttaa',

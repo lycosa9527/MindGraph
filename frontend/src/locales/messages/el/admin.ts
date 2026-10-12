@@ -952,7 +952,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Τα κινούμενα GIF δεν μπορούν να υπερβαίνουν τα 120 καρέ.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Το Global Dify (DIFY_API_URL/DIFY_API_KEY) δεν έχει διαμορφωθεί σε .env.',
   'admin.schoolDifySetOverride': 'Ρύθμιση σχολικής κάλυψης',
   'admin.schoolDifyCancelOverrideDraft': 'Ματαίωση',

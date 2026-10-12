@@ -1012,7 +1012,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': '動圖 GIF 不能超過 120 幀。',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured':
     '未在 .env 中配置全局 Dify（DIFY_API_URL / DIFY_API_KEY）。',
   'admin.schoolDifySetOverride': '設置本校覆蓋',

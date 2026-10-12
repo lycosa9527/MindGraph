@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': '애니메이션 GIF는 120프레임 이하여야 합니다.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': '디파이하다',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': '전역 Dify가 .env에 구성되지 않았습니다(DIFY_API_URL / DIFY_API_KEY).',
   'admin.schoolDifySetOverride': '학교 재정의 설정',
   'admin.schoolDifyCancelOverrideDraft': '취소',

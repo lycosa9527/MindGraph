@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Анимированные GIF-файлы не могут превышать 120 кадров.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Диди',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Глобальный Dify (DIFY_API_URL/DIFY_API_KEY) не настроен в .env.',
   'admin.schoolDifySetOverride': 'Настройте покрытие школы',
   'admin.schoolDifyCancelOverrideDraft': 'Отмена',

@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'ಅನಿಮೇಟೆಡ್ GIF ಗಳು 120 ಫ್ರೇಮ್‌ಗಳನ್ನು ಮೀರುವಂತಿಲ್ಲ.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'ಡಿಫೈ',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'ಗ್ಲೋಬಲ್ ಡಿಫೈ (DIFY_API_URL/DIFY_API_KEY) ಅನ್ನು .env ನಲ್ಲಿ ಕಾನ್ಫಿಗರ್ ಮಾಡಲಾಗಿಲ್ಲ.',
   'admin.schoolDifySetOverride': 'ಶಾಲಾ ವ್ಯಾಪ್ತಿಯನ್ನು ಹೊಂದಿಸಿ',
   'admin.schoolDifyCancelOverrideDraft': 'ರದ್ದುಮಾಡಿ',

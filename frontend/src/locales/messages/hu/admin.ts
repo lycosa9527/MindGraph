@@ -952,7 +952,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Az animált GIF-ek mérete nem haladhatja meg a 120 képkockát.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'A Global Dify (DIFY_API_URL/DIFY_API_KEY) nincs konfigurálva a .env fájlban.',
   'admin.schoolDifySetOverride': 'Állítsa be az iskolai lefedettséget',
   'admin.schoolDifyCancelOverrideDraft': 'Mégsem',

@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'සජීවිකරණ GIF හි රාමු 120ක් හෝ ඊට අඩුවෙන් තිබිය යුතුය.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'වෙනස් කරන්න',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'ගෝලීය Dify .env (DIFY_API_URL / DIFY_API_KEY) තුළ වින්‍යාස කර නැත.',
   'admin.schoolDifySetOverride': 'පාසල් අභිබවා යාම සකසන්න',
   'admin.schoolDifyCancelOverrideDraft': 'අවලංගු කරන්න',

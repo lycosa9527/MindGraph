@@ -952,7 +952,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'GIF-urile animate nu pot depăși 120 de cadre.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Difică',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Global Dify (DIFY_API_URL/DIFY_API_KEY) nu este configurat în .env.',
   'admin.schoolDifySetOverride': 'Configurați acoperirea școlii',
   'admin.schoolDifyCancelOverrideDraft': 'Anula',

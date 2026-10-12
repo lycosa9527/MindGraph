@@ -6,9 +6,9 @@ Slot 2 (school 备用服务器) is Dify backup: ``DIFY_BACKUP_API_URL`` / ``DIFY
 Both servers run the same workflow; the app sends the school name.
 
 A school override replaces that slot. A blank slot uses the matching env pair
-only when the backup key is set. An empty backup URL uses
-``http://dify.mindspringedu.com/v1``. A school that already has its own two
-servers keeps that pair.
+only when that pair is set in the environment. Neither URL is invented when
+the variable is empty. A school that already has its own two servers keeps
+that pair.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -33,25 +33,23 @@ _MAIN_URL_ENV = "DIFY_API_URL"
 _MAIN_KEY_ENV = "DIFY_API_KEY"
 _BACKUP_URL_ENV = "DIFY_BACKUP_API_URL"
 _BACKUP_KEY_ENV = "DIFY_BACKUP_API_KEY"
-_DEFAULT_MAIN_URL = "https://api.dify.ai/v1"
-_DEFAULT_BACKUP_URL = "http://dify.mindspringedu.com/v1"
 _SCHOOL_ENV_SLOTS = (1, 2)
 
 
 def global_dify_main_url() -> str:
-    """Dify main base URL, or the public default when ``DIFY_API_URL`` is unset."""
-    return (os.getenv(_MAIN_URL_ENV) or _DEFAULT_MAIN_URL).strip()
+    """Dify main base URL from ``DIFY_API_URL``. Empty when unset."""
+    return (os.getenv(_MAIN_URL_ENV) or "").strip()
 
 
 def global_dify_backup_url() -> str:
-    """Dify backup base URL. Unset uses the MindSpring backup host."""
-    return (os.getenv(_BACKUP_URL_ENV) or _DEFAULT_BACKUP_URL).strip()
+    """Dify backup base URL from ``DIFY_BACKUP_API_URL``. Empty when unset."""
+    return (os.getenv(_BACKUP_URL_ENV) or "").strip()
 
 
-def _env_pair(url_name: str, key_name: str, *, default_url: str = "") -> Optional[tuple[str, str]]:
-    """Return ``(api_key, api_url)`` when both are set."""
+def _env_pair(url_name: str, key_name: str) -> Optional[tuple[str, str]]:
+    """Return ``(api_key, api_url)`` when both environment values are set."""
     api_key = (os.getenv(key_name) or "").strip()
-    api_url = (os.getenv(url_name) or default_url).strip()
+    api_url = (os.getenv(url_name) or "").strip()
     if api_key and api_url:
         return api_key, api_url
     return None
@@ -64,9 +62,9 @@ def global_dify_slot_credentials(server: int) -> Optional[tuple[str, str]]:
     Slot 1 is 主服务器 (Dify main). Slot 2 is 备用服务器 (Dify backup). Other slots have no env pair.
     """
     if server == 1:
-        return _env_pair(_MAIN_URL_ENV, _MAIN_KEY_ENV, default_url=global_dify_main_url())
+        return _env_pair(_MAIN_URL_ENV, _MAIN_KEY_ENV)
     if server == 2:
-        return _env_pair(_BACKUP_URL_ENV, _BACKUP_KEY_ENV, default_url=global_dify_backup_url())
+        return _env_pair(_BACKUP_URL_ENV, _BACKUP_KEY_ENV)
     return None
 
 

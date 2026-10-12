@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'యానిమేటెడ్ GIFలు 120 ఫ్రేమ్‌లను మించకూడదు.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'విభజించు',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'గ్లోబల్ డిఫై (DIFY_API_URL/DIFY_API_KEY) .envలో కాన్ఫిగర్ చేయబడలేదు.',
   'admin.schoolDifySetOverride': 'పాఠశాల కవరేజీని సెటప్ చేయండి',
   'admin.schoolDifyCancelOverrideDraft': 'రద్దు చేయి',

@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Animowane pliki GIF nie mogą przekraczać 120 klatek.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Difikuj',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Global Dify (DIFY_API_URL/DIFY_API_KEY) nie jest skonfigurowany w .env.',
   'admin.schoolDifySetOverride': 'Skonfiguruj zasięg szkoły',
   'admin.schoolDifyCancelOverrideDraft': 'Anulować',

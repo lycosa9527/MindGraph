@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Ang animated na GIF ay dapat mayroong 120 frame o mas kaunti.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Ang pandaigdigang Dify ay hindi naka-configure sa .env (DIFY_API_URL / DIFY_API_KEY).',
   'admin.schoolDifySetOverride': 'Itakda ang pag-override sa paaralan',
   'admin.schoolDifyCancelOverrideDraft': 'Kanselahin',

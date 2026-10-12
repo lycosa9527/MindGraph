@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.159] - 2026-10-12
+
+> **The two Dify server URLs come only from the environment, and the school server switch stays on one line.**
+
+### Fixed
+
+- **Dify 地址** — 主服务器 is `DIFY_API_URL` and 备用服务器 is `DIFY_BACKUP_API_URL`, used exactly as written in `.env`. An empty variable stays empty. The school form no longer fills `https://api.dify.ai/v1` or a hardcoded host.
+- **优先使用** — 主服务器 and 备用服务器 stay on one line.
+
+### Tests
+
+- [`tests/test_dify_global_servers.py`](tests/test_dify_global_servers.py) — an unset URL stays empty, and a key without a URL does not create a server.
+
 ## [5.180.158] - 2026-10-12
 
 > **The backup Dify server defaults to the MindSpring host.**

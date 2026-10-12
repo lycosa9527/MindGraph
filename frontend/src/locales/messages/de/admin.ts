@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Animiertes GIF darf höchstens 120 Frames haben.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Verändern',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Globales Dify ist in .env nicht konfiguriert (DIFY_API_URL / DIFY_API_KEY).',
   'admin.schoolDifySetOverride': 'Schul-Override setzen',
   'admin.schoolDifyCancelOverrideDraft': 'Abbrechen',

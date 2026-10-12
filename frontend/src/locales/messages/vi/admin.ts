@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Hoạt ảnh GIF phải có 120 khung hình trở xuống.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': '__ GIỮ0__',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Dify chung không được định cấu hình trong .env (DIFY_API_URL / DIFY_API_KEY).',
   'admin.schoolDifySetOverride': 'Đặt ghi đè trường học',
   'admin.schoolDifyCancelOverrideDraft': 'Hủy bỏ',

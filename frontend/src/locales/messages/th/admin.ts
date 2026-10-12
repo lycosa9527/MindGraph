@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'GIF เคลื่อนไหวต้องมีไม่เกิน 120 เฟรม',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'ดิฟาย',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'ยังไม่ได้ตั้งค่า Dify ทั่วโลกใน .env (DIFY_API_URL / DIFY_API_KEY)',
   'admin.schoolDifySetOverride': 'ตั้งค่าแทนที่ของโรงเรียน',
   'admin.schoolDifyCancelOverrideDraft': 'ยกเลิก',

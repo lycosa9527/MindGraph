@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'GIF animasi harus memiliki 120 frame atau kurang.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': '__TETAP0__',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Global Dify tidak dikonfigurasi di .env (DIFY_API_URL / DIFY_API_KEY).',
   'admin.schoolDifySetOverride': 'Setel penggantian sekolah',
   'admin.schoolDifyCancelOverrideDraft': 'Membatalkan',

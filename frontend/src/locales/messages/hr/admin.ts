@@ -952,7 +952,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Animirani GIF-ovi ne smiju premašiti 120 okvira.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Globalni Dify (DIFY_API_URL/DIFY_API_KEY) nije konfiguriran u .env.',
   'admin.schoolDifySetOverride': 'Postavite školsku pokrivenost',
   'admin.schoolDifyCancelOverrideDraft': 'Otkazati',

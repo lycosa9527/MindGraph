@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'அனிமேஷன் செய்யப்பட்ட GIFகள் 120 பிரேம்களுக்கு மேல் இருக்கக்கூடாது.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'டிஃபை',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Global Dify (DIFY_API_URL/DIFY_API_KEY) .env இல் உள்ளமைக்கப்படவில்லை.',
   'admin.schoolDifySetOverride': 'பள்ளி கவரேஜ் அமைக்கவும்',
   'admin.schoolDifyCancelOverrideDraft': 'ரத்து செய்',

@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'گیف های متحرک نمی توانند بیش از 120 فریم باشند.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 't0',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Global Dify (DIFY_API_URL/DIFY_API_KEY) در env. پیکربندی نشده است.',
   'admin.schoolDifySetOverride': 'پوشش مدرسه را تنظیم کنید',
   'admin.schoolDifyCancelOverrideDraft': 'لغو کنید',

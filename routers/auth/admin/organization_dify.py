@@ -20,6 +20,7 @@ from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.dify.dify_global_servers import (
     effective_server_credentials,
     global_dify_backup_url,
+    global_dify_main_url,
     global_dify_slot_credentials,
 )
 from services.dify.dify_servers import configured_dify_servers, org_server_credentials, primary_server_no
@@ -84,7 +85,7 @@ def dify_list_fields(org: Organization) -> dict[str, Any]:
 
 
 def _global_credentials_for_slot(server: int) -> tuple[str, str]:
-    """Env pair for one school slot. Slot 1 can fall back to the main URL default."""
+    """Env pair for one school slot. An unset slot stays empty."""
     creds = global_dify_slot_credentials(server)
     if creds is not None:
         return creds
@@ -116,11 +117,11 @@ def resolve_organization_dify_credentials(org: Organization, server: Optional[in
 
 def global_mindmate_dify_fields() -> dict[str, Any]:
     """Serialized global MindMate Dify settings from .env (never exposes raw key)."""
-    api_key, api_url = global_mindmate_dify_credentials()
+    api_key, _api_url = global_mindmate_dify_credentials()
     backup = global_dify_slot_credentials(2)
     backup_key = backup[0] if backup is not None else ""
     return {
-        "dify_api_base_url": api_url or None,
+        "dify_api_base_url": global_dify_main_url() or None,
         "dify_api_key_masked": mask_secret(api_key) if api_key else None,
         "dify_backup_api_base_url": global_dify_backup_url() or None,
         "dify_backup_api_key_masked": mask_secret(backup_key) if backup_key else None,

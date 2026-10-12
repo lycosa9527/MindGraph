@@ -133,12 +133,7 @@ const globalDifyUnconfigured = computed(
     !globalDifyKeyMasked.value
 )
 
-const DEFAULT_BACKUP_DIFY_URL = 'http://dify.mindspringedu.com/v1'
-const urlPlaceholder = computed(() => {
-  if (globalDifyUrl.value) return globalDifyUrl.value
-  if (selectedServer.value === 2) return DEFAULT_BACKUP_DIFY_URL
-  return t('admin.schoolDifyUrlPlaceholder')
-})
+const urlPlaceholder = computed(() => globalDifyUrl.value || '')
 
 const difyStatusLabel = computed(() => {
   if (difyStatusLoading.value) {
@@ -718,14 +713,14 @@ defineExpose({
         <div
           class="school-dify-server-toolbar flex flex-col gap-3 mb-3 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div class="flex flex-col gap-1">
+          <div class="school-dify-server-picker flex flex-col gap-1 items-start shrink-0">
             <span class="mindbot-swiss-hint text-[11px] font-semibold uppercase tracking-[0.12em]">
               <I18nText k="admin.schoolDifyActiveServer" />
             </span>
             <AdminMindbotSwissSegmented
               v-model="selectedServer"
+              class="school-dify-server-segment"
               :options="serverOptions"
-              block
               :aria-label="t('admin.schoolDifyActiveServer')"
             />
           </div>

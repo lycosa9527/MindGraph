@@ -952,7 +952,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Animované súbory GIF nemôžu presiahnuť 120 snímok.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Global Dify (DIFY_API_URL/DIFY_API_KEY) nie je nakonfigurované v .env.',
   'admin.schoolDifySetOverride': 'Nastavte školské pokrytie',
   'admin.schoolDifyCancelOverrideDraft': 'Zrušiť',

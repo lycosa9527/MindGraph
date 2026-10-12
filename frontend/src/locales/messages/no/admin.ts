@@ -952,7 +952,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Animerte GIF-er kan ikke overstige 120 bilder.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Global Dify (DIFY_API_URL/DIFY_API_KEY) er ikke konfigurert i .env.',
   'admin.schoolDifySetOverride': 'Sett opp skoledekning',
   'admin.schoolDifyCancelOverrideDraft': 'Kansellere',

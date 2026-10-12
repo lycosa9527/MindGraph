@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Os GIFs animados não podem exceder 120 quadros.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Modificar',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Global Dify (DIFY_API_URL/DIFY_API_KEY) não está configurado em .env.',
   'admin.schoolDifySetOverride': 'Configurar cobertura escolar',
   'admin.schoolDifyCancelOverrideDraft': 'Cancelar',

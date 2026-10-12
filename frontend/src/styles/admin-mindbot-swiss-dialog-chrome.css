@@ -663,6 +663,17 @@
   --el-button-text-color: #92400e;
 }
 
+.mindbot-swiss-dialog .school-dify-server-segment.mindbot-swiss-segmented {
+  width: max-content;
+  max-width: 100%;
+}
+
+.mindbot-swiss-dialog .school-dify-server-segment .mindbot-swiss-segment {
+  flex: 0 0 auto;
+  min-width: max-content;
+  white-space: nowrap;
+}
+
 .mindbot-swiss-dialog .school-dify-api-key-input-line {
   display: flex;
   flex-wrap: wrap;

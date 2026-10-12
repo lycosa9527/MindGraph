@@ -952,7 +952,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Анимирани ГИФ-ови не могу да пређу 120 кадрова.',
   'admin.schoolDifySection': 'MindMate Дифи',
   'admin.schoolDifyBadge': 'Дифи',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Глобални Дифи (ДИФИ_АПИ_УРЛ/ДИФИ_АПИ_КЕИ) није конфигурисан у .енв.',
   'admin.schoolDifySetOverride': 'Подесите покривеност школе',
   'admin.schoolDifyCancelOverrideDraft': 'Откажи',

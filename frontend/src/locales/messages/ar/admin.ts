@@ -953,7 +953,6 @@ export default {
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'لا يمكن أن تتجاوز صور GIF المتحركة 120 إطارًا.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'ديفي',
-  'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'لم يتم تكوين Global Dify (DIFY_API_URL/DIFY_API_KEY) في .env.',
   'admin.schoolDifySetOverride': 'إعداد التغطية المدرسية',
   'admin.schoolDifyCancelOverrideDraft': 'يلغي',
