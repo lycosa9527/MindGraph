@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.163] - 2026-10-12
+
+> **The canvas stays on the ribbon while a diagram loads, and unused chrome is gone.**
+
+### Fixed
+
+- **画布加载** — Opening a diagram no longer flashes the old bottom toolbar. The status bar is the bottom chrome from the first paint, including while the diagram type is still loading.
+
+### Changed
+
+- **画布模型** — The GLM slot uses the Zhipu mark.
+- **快捷键与手势** — Those guides open from the status bar.
+
+### Removed
+
+- **旧工具栏** — The glass editing toolbar and the more-apps menu are gone. Concept maps still open the virtual keyboard from the ribbon.
+- **未挂载界面** — Removed the old presentation rail, the gallery module grid and share-site alias, the unmounted file-center panel, the Tab recommendation picker, the classroom mascot dock, the unused subgraph accept bar, the deprecated DingTalk bind alias, the auth agreement modal (the privacy page stays), the unused auth pixel-battle background, and the unused MindBot admin tab that the school MindBot pane replaced.
+
+### Tests
+
+- [`frontend/tests/canvasEditorRibbon.spec.ts`](frontend/tests/canvasEditorRibbon.spec.ts) — ribbon chrome stays on while the diagram type is still loading.
+
 ## [5.180.162] - 2026-10-12
 
 > **The canvas model menu shows the configured model id, and Chinese labels GLM as 智谱.**

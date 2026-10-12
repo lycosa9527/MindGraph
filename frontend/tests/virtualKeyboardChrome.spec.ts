@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
@@ -70,7 +69,7 @@ describe('virtual keyboard chrome vs inline edit', () => {
   it('does not mount the panel on new-canvas chrome', () => {
     const toolbar = readSrc('src/components/canvas/CanvasToolbar.vue')
     const status = readSrc('src/canvas-ribbon/MindMapStatusBar.vue')
-    expect(toolbar).toContain('v-if="!showMindMapRibbonTools || isConceptMap"')
+    expect(toolbar).toContain('v-if="isConceptMap"')
     expect(toolbar).toContain('CanvasVirtualKeyboardPanel')
     expect(status).not.toContain('toggleVirtualKeyboard')
     expect(status).not.toContain('data-virtual-keyboard-chrome')

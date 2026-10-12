@@ -30,41 +30,6 @@
   transform: translateX(0);
 }
 
-/* Stop bottom bar children from stretching or clipping each other */
-.bottom-controls-card {
-  overflow: visible;
-}
-
-.ai-selector-wrap,
-.zoom-controls-wrap {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  max-width: 100%;
-}
-
-@media (max-width: 767px) {
-  .bottom-controls-card {
-    width: min(95vw, max-content);
-  }
-
-  .zoom-controls-wrap {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .ai-selector-wrap {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-@media (max-height: 560px) {
-  .ai-selector-wrap {
-    justify-content: flex-start;
-  }
-}
-
 /* Hide the native cursor when presentation mode is active */
 .presentation-active,
 .presentation-active * {

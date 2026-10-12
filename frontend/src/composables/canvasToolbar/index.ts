@@ -1,9 +1,4 @@
-export {
-  useCanvasToolbarApps,
-  type MoreAppGuestBlock,
-  type MoreAppHandlerKey,
-  type MoreAppItem,
-} from './useCanvasToolbarApps'
+export { useCanvasToolbarApps } from './useCanvasToolbarApps'
 export { useCanvasDiagramTranslate } from './useCanvasDiagramTranslate'
 export {
   canvasVirtualKeyboardOpen,

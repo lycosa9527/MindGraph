@@ -121,7 +121,7 @@ export const FIT_PADDING = {
   STANDARD_PX: 40,
   /**
    * Right padding when the vertical presentation rail is visible: rail width + margin + buffer
-   * so fit-to-canvas does not place content under PresentationSideToolbar.
+   * so fit-to-canvas does not place content under the presentation rail.
    */
   PRESENTATION_SIDE_TOOLBAR_RIGHT_PX: 50,
   /**

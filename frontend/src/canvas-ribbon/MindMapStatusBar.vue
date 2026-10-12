@@ -104,11 +104,8 @@ function ringVariant(modelId: string): LlmPhaseRingStreamingVariant {
         />
       </span>
       <span class="mm-status__sep" />
-      <CanvasMindMapShortcutGuide variant="status" />
-      <CanvasMindMapGestureGuide
-        v-if="caps.gestureGuide"
-        variant="status"
-      />
+      <CanvasMindMapShortcutGuide />
+      <CanvasMindMapGestureGuide v-if="caps.gestureGuide" />
     </div>
     <div
       v-if="showCanvasAiFeatures"

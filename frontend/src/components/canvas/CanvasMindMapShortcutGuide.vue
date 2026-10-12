@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Collapsible mind-map keyboard shortcut guide — sits left of the bottom toolbar.
+ * Keyboard shortcut guide. Status-bar icon; the card pops above the bar.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 
-import { ChevronDown, ChevronUp, Hand, Keyboard, MousePointer2 } from '@lucide/vue'
+import { ChevronDown, Hand, Keyboard, MousePointer2 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
@@ -18,22 +18,10 @@ import { useDiagramStore } from '@/stores'
 
 const STORAGE_KEY = 'mindgraph.mindmap.shortcutGuide.expanded'
 
-const props = withDefaults(
-  defineProps<{
-    /** floating = old bottom-bar cluster; status = icon in the status bar, card pops up */
-    variant?: 'floating' | 'status'
-  }>(),
-  { variant: 'floating' }
-)
-
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
 
-const expandedLocal = ref(props.variant !== 'status')
-const isStatus = computed(() => props.variant === 'status')
-const expanded = computed(() =>
-  isStatus.value ? activeCanvasGuideId.value === 'shortcut' : expandedLocal.value
-)
+const expanded = computed(() => activeCanvasGuideId.value === 'shortcut')
 
 const rows = computed(() =>
   resolveDiagramShortcutGuideRows(diagramStore.type, diagramStore.isLearningSheet)
@@ -53,13 +41,8 @@ onMounted(() => {
     if (stored === null) {
       return
     }
-    const next = stored === 'true'
-    if (isStatus.value) {
-      if (next) {
-        openCanvasGuide('shortcut')
-      }
-    } else {
-      expandedLocal.value = next
+    if (stored === 'true') {
+      openCanvasGuide('shortcut')
     }
   } catch {
     /* ignore private mode */
@@ -67,22 +50,13 @@ onMounted(() => {
 })
 
 function toggleExpanded(): void {
-  if (isStatus.value) {
-    persistExpanded(toggleCanvasGuide('shortcut'))
-    return
-  }
-  expandedLocal.value = !expandedLocal.value
-  persistExpanded(expandedLocal.value)
+  persistExpanded(toggleCanvasGuide('shortcut'))
 }
 </script>
 
 <template>
-  <div
-    class="select-none shrink-0"
-    :class="{ 'shortcut-guide--status': isStatus }"
-  >
+  <div class="shortcut-guide--status select-none shrink-0">
     <button
-      v-if="isStatus"
       type="button"
       class="mm-status__zoom-btn"
       :class="{ 'is-active': expanded }"
@@ -97,34 +71,11 @@ function toggleExpanded(): void {
         :stroke-width="2"
       />
     </button>
-    <!-- Collapsed pill -->
-    <button
-      v-else-if="!expanded"
-      type="button"
-      class="inline-flex items-center gap-2 rounded-xl border border-gray-200/80 bg-white/90 dark:border-gray-600/80 dark:bg-gray-800/90 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-lg backdrop-blur-md transition-all hover:border-slate-300 hover:bg-white dark:hover:bg-gray-800"
-      :aria-expanded="false"
-      :aria-label="t('canvas.shortcutGuide.title')"
-      @click="toggleExpanded"
-    >
-      <Keyboard
-        class="shrink-0 text-blue-500"
-        :size="15"
-        :stroke-width="2"
-      />
-      <span class="whitespace-nowrap"><I18nText k="canvas.shortcutGuide.title" /></span>
-      <ChevronUp
-        class="shrink-0 text-slate-400"
-        :size="14"
-        :stroke-width="2"
-      />
-    </button>
 
-    <!-- Expanded card -->
     <Transition name="shortcut-guide-card">
       <div
         v-if="expanded"
-        class="shortcut-guide-card w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-gray-900"
-        :class="{ 'shortcut-guide-card--popover': isStatus }"
+        class="shortcut-guide-card shortcut-guide-card--popover w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-gray-900"
       >
         <div
           class="flex items-center justify-between gap-2 border-b border-slate-100 px-3 pb-1 pt-2 dark:border-slate-700"

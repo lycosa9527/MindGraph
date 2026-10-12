@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Collapsible canvas multi-touch guide — sits next to the shortcut guide.
+ * Multi-touch guide. Status-bar icon; the card pops above the bar.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 
-import { ChevronDown, ChevronUp, Hand } from '@lucide/vue'
+import { ChevronDown, Hand } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
@@ -17,31 +17,15 @@ import { MIND_MAP_GESTURE_GUIDE_ROWS } from '@/config/mindMapGestureGuide'
 
 const STORAGE_KEY = 'mindgraph.mindmap.gestureGuide.expanded'
 
-const props = withDefaults(
-  defineProps<{
-    variant?: 'floating' | 'status'
-  }>(),
-  { variant: 'floating' }
-)
-
 const { t } = useLanguage()
 
-const expandedLocal = ref(false)
-const isStatus = computed(() => props.variant === 'status')
-
-const expanded = computed(() =>
-  isStatus.value ? activeCanvasGuideId.value === 'gesture' : expandedLocal.value
-)
+const expanded = computed(() => activeCanvasGuideId.value === 'gesture')
 
 onMounted(() => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'true') {
-      if (isStatus.value) {
-        openCanvasGuide('gesture')
-      } else {
-        expandedLocal.value = true
-      }
+      openCanvasGuide('gesture')
     }
   } catch {
     /* ignore private mode */
@@ -57,22 +41,13 @@ function persistExpanded(next: boolean): void {
 }
 
 function toggleExpanded(): void {
-  if (isStatus.value) {
-    persistExpanded(toggleCanvasGuide('gesture'))
-    return
-  }
-  expandedLocal.value = !expandedLocal.value
-  persistExpanded(expandedLocal.value)
+  persistExpanded(toggleCanvasGuide('gesture'))
 }
 </script>
 
 <template>
-  <div
-    class="select-none shrink-0"
-    :class="{ 'gesture-guide--status': isStatus }"
-  >
+  <div class="gesture-guide--status select-none shrink-0">
     <button
-      v-if="isStatus"
       type="button"
       class="mm-status__zoom-btn"
       :class="{ 'is-active': expanded }"
@@ -87,32 +62,11 @@ function toggleExpanded(): void {
         :stroke-width="2"
       />
     </button>
-    <button
-      v-else-if="!expanded"
-      type="button"
-      class="inline-flex items-center gap-2 rounded-xl border border-gray-200/80 bg-white/90 px-3 py-2 text-xs font-semibold text-slate-700 shadow-lg backdrop-blur-md transition-all hover:border-slate-300 hover:bg-white dark:border-gray-600/80 dark:bg-gray-800/90 dark:text-slate-200 dark:hover:bg-gray-800"
-      :aria-expanded="false"
-      :aria-label="t('canvas.gestureGuide.title')"
-      @click="toggleExpanded"
-    >
-      <Hand
-        class="shrink-0 text-teal-500"
-        :size="15"
-        :stroke-width="2"
-      />
-      <span class="whitespace-nowrap"><I18nText k="canvas.gestureGuide.title" /></span>
-      <ChevronUp
-        class="shrink-0 text-slate-400"
-        :size="14"
-        :stroke-width="2"
-      />
-    </button>
 
     <Transition name="gesture-guide-card">
       <div
         v-if="expanded"
-        class="gesture-guide-card w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-gray-900"
-        :class="{ 'gesture-guide-card--popover': isStatus }"
+        class="gesture-guide-card gesture-guide-card--popover w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-gray-900"
       >
         <div
           class="flex items-center justify-between gap-2 border-b border-slate-100 px-3 pb-1 pt-2 dark:border-slate-700"

@@ -73,7 +73,6 @@ export {
   useConceptMapRelationship,
   CONCEPT_MAP_GENERATING_KEY,
 } from './editor/useConceptMapRelationship'
-export { useInlineRecommendations } from './editor/useInlineRecommendations'
 export { useInlineRecommendationsCoordinator } from './editor/useInlineRecommendationsCoordinator'
 export { useWorkshop } from './workshop/useWorkshop'
 export type { WorkshopUpdate } from './workshop/useWorkshop'

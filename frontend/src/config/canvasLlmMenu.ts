@@ -3,7 +3,7 @@
  * Legacy deepseek/doubao keys stay valid for saved diagrams and are not listed.
  */
 
-export type CanvasLlmLogo = 'deepseek' | 'qwen' | 'kimi' | 'doubao'
+export type CanvasLlmLogo = 'deepseek' | 'qwen' | 'zhipu' | 'doubao'
 
 export interface CanvasLlmMenuItem {
   id: string
@@ -33,7 +33,7 @@ export function canvasMenuModelLabel(
 /** Compact mark for a canvas model id. School override stays on the Qwen mark. */
 export function canvasLlmLogo(id: string): CanvasLlmLogo {
   if (id === 'kimi') {
-    return 'kimi'
+    return 'zhipu'
   }
   if (id === 'doubao' || id === 'doubao21') {
     return 'doubao'
@@ -67,7 +67,7 @@ export const CANVAS_LLM_MENU: readonly CanvasLlmMenuItem[] = [
     id: 'kimi',
     labelKey: 'aiModel.menu.kimi',
     modelKey: 'aiModel.menu.kimiModel',
-    logo: 'kimi',
+    logo: 'zhipu',
   },
   {
     id: 'doubao21',

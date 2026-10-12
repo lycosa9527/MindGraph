@@ -1,25 +1,10 @@
 import { computed } from 'vue'
 
-import {
-  Camera,
-  Keyboard,
-  Languages,
-  Layers,
-  LayoutGrid,
-  type LucideIcon,
-  Package,
-} from '@lucide/vue'
-
-import { useCanvasDiagramTranslate } from '@/composables/canvasToolbar/useCanvasDiagramTranslate'
-import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
-import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
-import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
 import {
   buildEducationStageInstructions,
@@ -28,135 +13,25 @@ import {
 } from '@/constants/educationStage'
 import { useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
-import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
 
 import {
   canvasVirtualKeyboardOpen,
   ensureCanvasVirtualKeyboardUiVersionSync,
-  toggleCanvasVirtualKeyboard,
 } from './useCanvasVirtualKeyboardOpen'
-
-export type MoreAppHandlerKey = 'concept_map_modes'
-
-export type MoreAppGuestBlock = 'ai' | 'feature'
-
-export type MoreAppItem = {
-  name: string
-  icon: LucideIcon
-  desc: string
-  tag?: string
-  iconBg: string
-  iconColor: string
-  handlerKey?: MoreAppHandlerKey
-  appKey?: 'waterfall' | 'learning_sheet' | 'snapshot' | 'virtual_keyboard' | 'translate_diagram'
-  guestBlock?: MoreAppGuestBlock
-}
 
 export function useCanvasToolbarApps() {
   ensureCanvasVirtualKeyboardUiVersionSync()
   const diagramStore = useDiagramStore()
-  const savedDiagramsStore = useSavedDiagramsStore()
-  const { runFromCurrentDiagram } = useCanvasDiagramTranslate()
   const uiStore = useUIStore()
   const authStore = useAuthStore()
   const { t } = useLanguage()
   const notify = useNotifications()
   const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
-  const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
-  const { requireCapability, showCanvasAiFeatures } = useLearningAiGate()
-  const { startRandomLearningSheet, exitLearningSheet } = useLearningSheetCustomMode()
+  const { guardCollabGuestAi } = useCollabGuestAiGate()
+  const { requireCapability } = useLearningAiGate()
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
-  const useMindMapV2 = useMindMapV2Chrome()
-
-  const moreApps = computed((): MoreAppItem[] => {
-    const conceptMapModesRow: MoreAppItem = {
-      name: t('canvas.toolbar.moreAppConceptMapModes'),
-      icon: Layers,
-      desc: t('canvas.toolbar.moreAppConceptMapModesDesc'),
-      tag: t('canvas.toolbar.tagSoon'),
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-600',
-      handlerKey: 'concept_map_modes',
-    }
-    const apps: MoreAppItem[] = [
-      {
-        appKey: 'waterfall',
-        name: t('canvas.toolbar.moreAppWaterfall'),
-        icon: LayoutGrid,
-        desc: t('canvas.toolbar.moreAppWaterfallDesc'),
-        tag: t('canvas.toolbar.tagHot'),
-        iconBg: 'bg-blue-100',
-        iconColor: 'text-blue-600',
-      },
-      {
-        appKey: 'learning_sheet',
-        name: t('canvas.toolbar.moreAppLearningSheet'),
-        icon: Package,
-        desc: t('canvas.toolbar.moreAppLearningSheetDesc'),
-        iconBg: 'bg-purple-100',
-        iconColor: 'text-purple-600',
-      },
-      {
-        appKey: 'snapshot',
-        name: t('canvas.toolbar.moreAppSnapshot'),
-        icon: Camera,
-        desc: t('canvas.toolbar.moreAppSnapshotDesc'),
-        iconBg: 'bg-amber-100',
-        iconColor: 'text-amber-600',
-      },
-      {
-        appKey: 'translate_diagram',
-        name: t('canvas.toolbar.moreAppTranslateLabel'),
-        icon: Languages,
-        desc: t('canvas.toolbar.moreAppTranslateLabelDesc'),
-        iconBg: 'bg-teal-100',
-        iconColor: 'text-teal-600',
-      },
-      {
-        appKey: 'virtual_keyboard' as const,
-        name: t('canvas.toolbar.moreAppVirtualKeyboard'),
-        icon: Keyboard,
-        desc: t('canvas.toolbar.moreAppVirtualKeyboardDesc'),
-        iconBg: 'bg-slate-100',
-        iconColor: 'text-slate-600',
-      },
-    ]
-    const withoutWaterfall = isConceptMap.value
-      ? apps.filter((a) => a.appKey !== 'waterfall')
-      : apps
-    let list: MoreAppItem[]
-    if (isConceptMap.value) {
-      list = [conceptMapModesRow, ...withoutWaterfall]
-    } else {
-      list = withoutWaterfall
-    }
-    if (useMindMapV2.value) {
-      list = list.filter((a) => a.appKey !== 'translate_diagram' && a.appKey !== 'virtual_keyboard')
-    }
-    if (!showCanvasAiFeatures.value) {
-      list = list.filter(
-        (a) =>
-          a.appKey !== 'waterfall' &&
-          a.appKey !== 'translate_diagram' &&
-          a.appKey !== 'learning_sheet'
-      )
-    }
-    if (!aiBlockedByCollab.value) {
-      return list
-    }
-    return list.map((app) => {
-      if (app.appKey === 'waterfall' || app.appKey === 'translate_diagram') {
-        return { ...app, guestBlock: 'ai' as const }
-      }
-      if (app.appKey === 'learning_sheet' || app.appKey === 'snapshot') {
-        return { ...app, guestBlock: 'feature' as const }
-      }
-      return app
-    })
-  })
 
   async function handleAIGenerate(options?: {
     generationInstructions?: string
@@ -207,84 +82,11 @@ export function useCanvasToolbarApps() {
     openConceptMapNodePalette()
   }
 
-  function handleMoreAppItem(app: MoreAppItem) {
-    if (app.handlerKey === 'concept_map_modes') {
-      notify.infoKey('canvas.toolbar.conceptMapModesDev')
-      return
-    }
-    void handleMoreApp(app)
-  }
-
-  async function handleMoreApp(app: MoreAppItem) {
-    if (app.guestBlock === 'ai' && !guardCollabGuestAi()) {
-      return
-    }
-    if (app.guestBlock === 'feature') {
-      notify.warningKey('canvas.toolbar.collabGuestFeatureBlocked')
-      return
-    }
-    if (app.appKey === 'waterfall') {
-      if (!guardCollabGuestAi()) {
-        return
-      }
-      if (!diagramStore.data?.nodes?.length) {
-        notify.warningKey('canvas.toolbar.createDiagramFirst')
-        return
-      }
-      if (useMindMapV2.value) {
-        useMindMapSideToolbarState().openTool('waterfall')
-      } else {
-        eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar' })
-      }
-      return
-    }
-    if (app.appKey === 'learning_sheet') {
-      if (!diagramStore.data?.nodes?.length) {
-        notify.warningKey('canvas.toolbar.createDiagramFirst')
-        return
-      }
-      if (diagramStore.isLearningSheet) {
-        void exitLearningSheet()
-      } else if (diagramStore.hasPreservedLearningSheet()) {
-        diagramStore.applyLearningSheetView()
-        notify.successKey('canvas.toolbar.learningSheetRestored')
-        void claimThinkingCoinEvent('learning_sheet_enable')
-      } else {
-        startRandomLearningSheet()
-      }
-      return
-    }
-    if (app.appKey === 'snapshot') {
-      if (!diagramStore.data?.nodes?.length) {
-        notify.warningKey('canvas.toolbar.createDiagramFirst')
-        return
-      }
-      if (!savedDiagramsStore.activeDiagramId) {
-        notify.warningKey('canvas.toolbar.snapshotSaveFirst')
-        return
-      }
-      eventBus.emit('snapshot:requested', {})
-      return
-    }
-    if (app.appKey === 'virtual_keyboard') {
-      toggleCanvasVirtualKeyboard()
-      return
-    }
-    if (app.appKey === 'translate_diagram') {
-      runFromCurrentDiagram()
-      return
-    }
-    notify.infoKey('canvas.toolbar.featureInDevelopment', { name: app.name })
-  }
-
   return {
-    aiBlockedByCollab,
     isAIGenerating,
     isConceptMap,
-    moreApps,
     virtualKeyboardOpen: canvasVirtualKeyboardOpen,
     handleAIGenerate,
     handleConceptGeneration,
-    handleMoreAppItem,
   }
 }
