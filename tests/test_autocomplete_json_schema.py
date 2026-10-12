@@ -18,7 +18,7 @@ from clients.llm.structured_output import (
     bind_llm_log_topic,
     llm_failed_message,
     llm_finished_message,
-    response_format_for_dashscope_deepseek,
+    response_format_for_model,
 )
 from prompts.autocomplete_json_schema import (
     branch_expand_response_format,
@@ -178,8 +178,16 @@ def test_qwen_responses_keeps_json_schema() -> None:
 
 def test_volcengine_deepseek_endpoint_keeps_schema() -> None:
     """An endpoint id is not DashScope deepseek-v4.1-flash, so the schema stays."""
-    chosen = response_format_for_dashscope_deepseek(_bubble_schema(), "ep-20250101000000-dummy")
+    chosen = response_format_for_model(_bubble_schema(), "ep-20250101000000-dummy")
     assert chosen["type"] == "json_schema"
+
+
+def test_glm_flash_chat_uses_json_object() -> None:
+    """Volcengine GLM Flash rejects json_schema, so the wire format is json_object."""
+    payload: dict[str, Any] = {"max_tokens": 1000, "model": "glm-5-3-flash-260828"}
+    apply_structured_output(payload, _bubble_schema(), model="glm-5-3-flash-260828")
+    assert payload["response_format"] == {"type": "json_object"}
+    assert "max_tokens" not in payload
 
 
 @pytest.mark.asyncio

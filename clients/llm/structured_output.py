@@ -4,9 +4,9 @@ Both APIs accept ``json_object`` and ``json_schema``. Chat completions put the
 choice in ``response_format``. The Responses API puts the same choice in
 ``text.format``.
 
-DashScope ``deepseek-v4.1-flash`` chat completions reject ``json_schema``
-(``This response_format type is unavailable now``). That model id uses
-``json_object`` on both APIs. Qwen and Volcengine DeepSeek keep ``json_schema``.
+DashScope ``deepseek-v4.1-flash`` and Volcengine GLM Flash reject
+``json_schema``. Those ids use ``json_object`` on both APIs. Qwen and
+Volcengine DeepSeek keep ``json_schema``.
 
 A token cap truncates the JSON object. Chat calls that asked for
 ``json_schema`` omit ``max_tokens``, including the flash rewrite to
@@ -46,13 +46,15 @@ def dashscope_deepseek_flash_uses_json_object(model: str | None) -> bool:
     return (model or "").strip() == DASHSCOPE_DEEPSEEK_V41_FLASH
 
 
-def response_format_for_dashscope_deepseek(response_format: Any, model: str | None) -> Any:
-    """Keep the requested format, except DashScope ``deepseek-v4.1-flash``.
+def response_format_for_model(response_format: Any, model: str | None) -> Any:
+    """Keep the requested format, except models that reject ``json_schema``.
 
-    That id receives ``json_object`` when the caller asked for ``json_schema``.
-    Every other model, including Volcengine DeepSeek, keeps ``json_schema``.
+    DashScope ``deepseek-v4.1-flash`` and Volcengine GLM ids (``glm…``) receive
+    ``json_object``. Qwen and Volcengine DeepSeek keep ``json_schema``.
     """
-    if dashscope_deepseek_flash_uses_json_object(model) and is_json_schema_format(response_format):
+    wire = (model or "").strip()
+    rejects = dashscope_deepseek_flash_uses_json_object(wire) or wire.lower().startswith("glm")
+    if rejects and is_json_schema_format(response_format):
         return dict(JSON_OBJECT_RESPONSE_FORMAT)
     return response_format
 
@@ -251,10 +253,10 @@ def apply_structured_output(
     """Attach chat-completions ``response_format``.
 
     ``model`` is the physical id on the wire. A ``json_schema`` request drops
-    ``max_tokens`` even when flash is rewritten to ``json_object``.
+    ``max_tokens`` even when that id is rewritten to ``json_object``.
     """
     asked_schema = is_json_schema_format(response_format)
-    chosen = response_format_for_dashscope_deepseek(response_format, model)
+    chosen = response_format_for_model(response_format, model)
     if chosen is None:
         return
     payload["response_format"] = chosen
@@ -274,9 +276,9 @@ def responses_text_format(response_format: Any, model: str | None) -> dict[str, 
 
     ``json_object`` stays ``{"type": "json_object"}``. ``json_schema`` becomes
     the Responses object (``name``, ``schema``, ``strict`` at the top level).
-    DashScope ``deepseek-v4.1-flash`` is forced to ``json_object``.
+    Models that reject ``json_schema`` are forced to ``json_object``.
     """
-    chosen = response_format_for_dashscope_deepseek(response_format, model)
+    chosen = response_format_for_model(response_format, model)
     if is_json_object_format(chosen):
         return dict(JSON_OBJECT_RESPONSE_FORMAT)
     if not is_json_schema_format(chosen):
