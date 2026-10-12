@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Bibliothèque pleine ; le diagramme a été importé mais non enregistré dans la bibliothèque',
   'notification.importSuccess': 'Diagramme importé et enregistré dans la bibliothèque',
   'notification.importUnsupportedType': 'Échec de l’importation : type de diagramme non pris en charge',
-  'notification.inlineRecEmpty': 'Aucun contenu recommandé n\'a été généré, veuillez réessayer ou ajuster le thème et réessayer',
   'notification.loadMoreFailed': 'Impossible de charger davantage',
   'notification.networkError': 'Erreur réseau',
   'notification.nodeNotEligible': 'Ce nœud ne prend pas en charge les recommandations d\'onglets',

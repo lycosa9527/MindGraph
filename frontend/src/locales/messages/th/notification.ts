@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'ห้องสมุดเต็ม นำเข้าไดอะแกรมแล้วแต่ไม่ได้บันทึกไปยังห้องสมุด',
   'notification.importSuccess': 'นำเข้าไดอะแกรมและบันทึกไปยังห้องสมุดแล้ว',
   'notification.importUnsupportedType': 'นำเข้าล้มเหลว: ประเภทไดอะแกรมไม่รองรับ',
-  'notification.inlineRecEmpty': 'ไม่มีการสร้างเนื้อหาที่แนะนำ โปรดลองอีกครั้งหรือปรับธีมแล้วลองอีกครั้ง',
   'notification.loadMoreFailed': 'ไม่สามารถโหลดเพิ่มเติม',
   'notification.networkError': 'ข้อผิดพลาดของเครือข่าย',
   'notification.nodeNotEligible': 'โหนดนี้ไม่รองรับคำแนะนำแท็บ',

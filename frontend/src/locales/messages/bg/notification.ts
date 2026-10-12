@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Галерията е пълна. Иконата е импортирана, но не е запазена в галерията.',
   'notification.importSuccess': 'Иконата е импортирана и запазена в галерията',
   'notification.importUnsupportedType': 'Импортирането е неуспешно, неподдържан тип икона',
-  'notification.inlineRecEmpty': 'Не е генерирано препоръчително съдържание, моля, опитайте отново или коригирайте темата и опитайте отново',
   'notification.loadMoreFailed': 'Неуспешно зареждане на повече',
   'notification.networkError': 'мрежова грешка',
   'notification.nodeNotEligible': 'Този възел не поддържа препоръки за раздели',

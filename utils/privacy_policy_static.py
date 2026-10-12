@@ -4,105 +4,369 @@ from __future__ import annotations
 
 from html import escape
 from pathlib import Path
+from typing import NamedTuple
 
 _COMPANY_EN = "Beijing Siyuan Zhijiao Technology Co., Ltd."
 _COMPANY_ZH = "北京思源智教科技有限公司"
 
+_USER_AGREEMENT_SECTION_ID = "user-agreement"
+_PRIVACY_POLICY_SECTION_ID = "privacy-policy"
 _EXTENSION_SECTION_ID = "browser-extension"
 
-_PLATFORM_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    (
+
+class _HtmlSection(NamedTuple):
+    title: str
+    paragraphs: tuple[str, ...]
+    section_id: str = ""
+
+
+# Full English text matches frontend/src/content/authSoftwareAgreement.ts.
+# Numbering is continuous: 1–4 terms, 5–18 privacy and remaining terms.
+_PLATFORM_SECTIONS: tuple[_HtmlSection, ...] = (
+    _HtmlSection(
+        "1. Acceptance and scope",
+        (
+            (
+                f"This document is a legal agreement between you and {_COMPANY_EN} ({_COMPANY_ZH}) "
+                "regarding your use of MindGraph and related services, and explains how we process "
+                "your personal information and related data."
+            ),
+            (
+                "If you do not agree, do not use the Platform. If you use the Platform on behalf of "
+                "a school or organization, you represent that you are authorized to bind that "
+                "organization to this document."
+            ),
+            (
+                "If your school or organization has signed a separate written service agreement with "
+                "us, that agreement prevails where it conflicts with this document; otherwise this "
+                "document applies."
+            ),
+        ),
+        _USER_AGREEMENT_SECTION_ID,
+    ),
+    _HtmlSection(
+        "2. Services",
+        (
+            (
+                "The Platform provides AI-assisted diagram generation, knowledge organization, "
+                "MindMate conversations, collaboration, third-party integrations, and related "
+                "educational tools. Available features may change over time."
+            ),
+            (
+                'The Platform is provided "as is". We work to keep it stable and secure but do not '
+                "guarantee uninterrupted, error-free service or that it will meet every specific "
+                "teaching need."
+            ),
+            (
+                "AI-generated content is for reference only and is not professional advice. You "
+                "should independently verify accuracy and suitability in your teaching practice."
+            ),
+        ),
+    ),
+    _HtmlSection(
+        "3. Your responsibilities and accounts",
+        (
+            (
+                "Provide accurate registration information and keep your account credentials secure. "
+                "You are responsible for activity under your account."
+            ),
+            (
+                "Do not use the Platform to create or distribute unlawful, infringing, false, "
+                "harassing, or otherwise harmful content, or to disrupt the Platform or others' rights."
+            ),
+            (
+                "If you upload, input, or generate content involving student or other personal "
+                "information, ensure you have required authorization from the school, guardians, or "
+                "other rights holders, and upload only what is necessary for teaching purposes."
+            ),
+        ),
+    ),
+    _HtmlSection(
+        "4. Intellectual property and proprietary license",
+        (
+            (
+                f"MindGraph and its software, interface design, trademarks, documentation, algorithms, "
+                f"and related technology are owned by {_COMPANY_EN} ({_COMPANY_ZH}) or respective "
+                "rights holders."
+            ),
+            (
+                "MindGraph is protected by a Proprietary License and is not open-source software. "
+                "Without authorization, you may not run, modify, copy, distribute, commercially "
+                "exploit, or create derivative works."
+            ),
+            (
+                "Except for sign-in use expressly authorized through this Platform under this "
+                "document, any use of the software or related materials (including self-hosting, "
+                "modification, sublicensing, independent operation inside or outside schools, or use "
+                "in competitions, training, or publications) requires prior written permission from "
+                "the Company."
+            ),
+            (
+                "Copyright and other lawful rights in teaching content you upload or generate remain "
+                "yours or belong to respective rights holders. You grant us a non-exclusive license "
+                "to use such content as reasonably necessary to provide services, perform this "
+                "document, and conduct statistical analysis. Without our permission, you may not use "
+                "Platform data to compete with the Platform, bulk-scrape, or harm Platform security "
+                "or stability."
+            ),
+        ),
+    ),
+    _HtmlSection(
         "5. Information we collect",
         (
             "To provide, maintain, and improve services and meet legal obligations, we may collect:",
             (
-                "(1) Account and identity information: phone number, name, school or "
-                "organization, role, avatar, invitation code, and account status;"
+                "(1) Account and identity information: phone number, name, school or organization, "
+                "role, avatar, invitation code, and account status;"
             ),
             (
-                "(2) Teaching and creative content: diagrams, notes, uploaded files and "
-                "images, knowledge-base documents, and collaboration content;"
+                "(2) Teaching and creative content: diagrams, notes, uploaded files and images, "
+                "knowledge-base documents, and collaboration content;"
             ),
             (
-                "(3) Interaction and generated content: inputs, outputs, and session "
-                "identifiers in MindMate and similar modules;"
+                "(3) Interaction and generated content: inputs, outputs, and session identifiers in "
+                "MindMate and similar modules (exact scope depends on product features);"
             ),
             (
-                "(4) Usage and log data: sign-in times, feature usage, operation logs, "
-                "device type, browser information, IP address, and error logs;"
+                "(4) Usage and log data: sign-in times, feature usage, operation logs, device type, "
+                "browser information, IP address, and error logs;"
             ),
             (
-                "(5) Third-party binding data: if you bind DingTalk or similar accounts, "
-                "we may store binding identifiers and necessary data returned by those platforms;"
+                "(5) Third-party binding data: if you bind DingTalk or similar accounts, we may store "
+                "binding identifiers and necessary data returned by those platforms;"
             ),
-            "(6) Security and compliance data: captcha verification, abnormal sign-in detection, and audit logs.",
+            ("(6) Security and compliance data: captcha verification, abnormal sign-in detection, and audit logs."),
         ),
+        _PRIVACY_POLICY_SECTION_ID,
     ),
-    (
+    _HtmlSection(
         "6. How we use information",
         (
+            "We process information for the following purposes:",
             (
-                "We process information to provide core services (registration, diagrams, "
-                "collaboration, AI conversations, export, school management), maintain security "
-                "and stability, improve the product using aggregated or de-identified data where "
-                "possible, comply with law, and for other purposes with your explicit consent."
+                "(1) Core services: registration and sign-in, diagram generation and storage, "
+                "collaboration, AI conversations, export, and school or organization management;"
             ),
-            "We do not sell personally identifiable information to unrelated third parties.",
+            (
+                "(2) Security and stability: authentication, troubleshooting, fraud and abuse "
+                "prevention, and system maintenance;"
+            ),
+            (
+                "(3) Product improvement: statistical analysis, feature optimization, and model "
+                "evaluation (preferably using de-identified or aggregated data);"
+            ),
+            ("(4) Compliance with applicable laws and lawful requests from regulators or judicial authorities;"),
+            "(5) Other purposes with your separate explicit consent.",
+            (
+                "We process information only as necessary for these purposes and take reasonable "
+                "steps to reduce the risk of identifying specific individuals."
+            ),
         ),
     ),
-    (
+    _HtmlSection(
+        "7. Educational research use",
+        (
+            (
+                "To improve teaching quality, learning experience, educational research, and product "
+                "development, we may analyze Platform data in compliance with applicable law, "
+                "including to:"
+            ),
+            ("(1) aggregate usage and feature outcomes for teaching research and product improvement;"),
+            (
+                "(2) use de-identified or non-personally identifiable data for academic research, "
+                "publications, or industry reports in education;"
+            ),
+            "(3) evaluate AI-assisted teaching effectiveness using anonymized or aggregated data.",
+            (
+                "If research requires personally identifiable information, we will obtain your "
+                "separate explicit consent, or ensure that a school or other lawful controller has "
+                "provided the required authorization."
+            ),
+        ),
+    ),
+    _HtmlSection(
+        "8. Third-party services and processors",
+        (
+            (
+                "To operate the Platform, we may use third-party services and share necessary "
+                "information with them, such as:"
+            ),
+            "(1) large-model and AI inference providers (for generation, understanding, and analysis);",
+            "(2) collaboration and messaging platforms (such as DingTalk);",
+            "(3) cloud infrastructure, databases, caches, search, and object storage services;",
+            "(4) SMS verification, security, and other technical service providers.",
+            (
+                "We require third parties to process information within the entrusted scope and apply "
+                "reasonable security measures. Specific providers and scope may change as our business "
+                "evolves; we will update this document or provide in-product notice for material "
+                "changes where practical."
+            ),
+        ),
+    ),
+    _HtmlSection(
         "9. Sharing, transfer, and disclosure",
         (
             (
-                "We share personal information only with your consent, as required by law, as "
-                "necessary to provide services through entrusted processors (AI providers, cloud "
-                "infrastructure, SMS verification, etc.), or with authorized school administrators "
-                "in organization deployments."
+                "We do not sell personally identifiable information to unrelated third parties. Except "
+                "as described below, we do not share your personal information with third parties:"
+            ),
+            "(1) with your explicit consent;",
+            (
+                "(2) as required by applicable law, litigation/arbitration, or lawful requests from "
+                "government or judicial authorities;"
+            ),
+            (
+                "(3) as necessary to perform this document or provide services, including to third "
+                "parties listed in Section 8;"
+            ),
+            (
+                "(4) in school or organization deployments, to authorized administrators of your "
+                "organization for duties within their management scope."
+            ),
+            (
+                "If a merger, acquisition, or asset transfer occurs, we will require the successor to "
+                "remain bound by this document or obtain your consent again."
             ),
         ),
     ),
-    (
+    _HtmlSection(
         "10. Storage and retention",
         (
             (
-                "Your information is generally stored within the People's Republic of China. "
-                "We retain information only as long as necessary for the purposes described in "
-                "this policy, unless a longer period is required by law."
+                "Your information is generally stored within the People's Republic of China. We retain "
+                "information only as long as necessary for the purposes described in this document, "
+                "unless a longer period is required by law or agreed with you."
+            ),
+            (
+                "After account cancellation, school contract termination, or when processing purposes "
+                "are fulfilled, we will delete or anonymize relevant information as required by law, "
+                "except where retention is legally required. Data in backups may be deleted later, but "
+                "we will stop processing it except for storage and security protection."
             ),
         ),
     ),
-    (
+    _HtmlSection(
         "11. Your rights",
         (
+            "Under applicable law, you may have the following rights regarding personal information:",
             (
-                "You may request access, correction, deletion, consent withdrawal, or account "
-                "cancellation through in-platform feedback or your school administrator, subject "
-                "to applicable law and identity verification."
+                "(1) access and copy: learn what information we hold about you through account "
+                "settings or your platform administrator;"
+            ),
+            "(2) correction and supplementation: request correction or supplementation if information is inaccurate;",
+            "(3) deletion: request deletion where legal conditions are met;",
+            (
+                "(4) withdraw consent: withdraw consent for specific processing, without affecting "
+                "prior processing based on consent;"
+            ),
+            (
+                "(5) account cancellation: request account cancellation and we will handle related "
+                "data as required by law."
+            ),
+            (
+                "Contact us through in-platform feedback or your school administrator to exercise "
+                "these rights. We will respond within a reasonable period and may verify your identity "
+                "for security."
             ),
         ),
     ),
-    (
+    _HtmlSection(
+        "12. Minors and student personal information",
+        (
+            (
+                "The Platform is primarily intended for teachers and school staff. If students use the "
+                "Platform directly or indirectly, schools and teachers must ensure lawful authorization "
+                "from guardians or the school, and avoid uploading student personal information beyond "
+                "what is necessary for teaching."
+            ),
+            (
+                "We do not knowingly collect personal information from children under 14 without "
+                "guardian consent or valid school authorization. If you believe we have collected such "
+                "information improperly, contact us for deletion."
+            ),
+        ),
+    ),
+    _HtmlSection(
         "13. Information security",
         (
             (
-                "We use reasonable safeguards such as access control, encryption in transit, "
-                "log auditing, and role-based permissions."
+                "We use reasonable safeguards such as access control, encryption in transit, log "
+                "auditing, and role-based permissions, and we continue to improve our security posture."
             ),
             (
-                "No internet environment is absolutely secure. Please protect your credentials "
-                "and report suspicious security events promptly."
+                "Despite reasonable measures, no internet environment is absolutely secure. Please "
+                "protect your credentials and report suspicious security events promptly."
+            ),
+            (
+                "If a personal information security incident occurs, we will activate our response plan "
+                "as required by law and inform you of the general situation, potential impact, and "
+                "measures taken by reasonable means."
             ),
         ),
     ),
-    (
+    _HtmlSection(
+        "14. Changes, suspension, and termination",
+        (
+            (
+                "We may suspend or discontinue some or all services for maintenance, upgrades, "
+                "compliance, or force majeure, and will try to provide advance notice when practical."
+            ),
+            (
+                "If you materially breach this document or applicable law, we may restrict, suspend, or "
+                "terminate your access and retain records as required by law."
+            ),
+        ),
+    ),
+    _HtmlSection(
+        "15. Disclaimer",
+        (
+            (
+                "To the maximum extent permitted by law, we are not liable beyond legal requirements "
+                "for losses caused by force majeure, third-party failures, network interruption, or "
+                "your own actions."
+            ),
+            (
+                "You are responsible for disputes, infringement claims, or teaching decisions arising "
+                "from content you upload, publish, or rely on from AI-generated output, except where "
+                "applicable law provides otherwise."
+            ),
+        ),
+    ),
+    _HtmlSection(
+        "16. Revisions",
+        (
+            (
+                "We may revise this document as our business or legal obligations change. Updated "
+                "versions will be published on the Platform; continued use means acceptance. For "
+                "material changes affecting your significant rights, we will notify you by dialog, "
+                "in-product notice, or other reasonable means."
+            ),
+        ),
+    ),
+    _HtmlSection(
+        "17. Governing law and dispute resolution",
+        (
+            (
+                "This document is governed by the laws of the mainland of the People's Republic of "
+                "China (excluding conflict-of-law rules)."
+            ),
+            (
+                "Disputes arising from or relating to this document should first be resolved through "
+                "friendly negotiation. If negotiation fails, either party may bring suit in a court "
+                "with jurisdiction at the Company's domicile."
+            ),
+        ),
+    ),
+    _HtmlSection(
         "18. Contact",
         (
             (
-                "Questions about this policy or personal information processing may be sent "
-                "through in-platform feedback or your school's platform administrator."
+                "Questions, complaints, or requests regarding this document, personal information "
+                "processing, or software licensing may be sent through in-platform feedback or your "
+                "school's platform administrator."
             ),
             (
-                "Requests for self-hosting, modification, or use beyond sign-in on this Platform "
+                "Requests for self-hosting, modification, or any use beyond sign-in on this Platform "
                 f"require written permission from {_COMPANY_EN} ({_COMPANY_ZH})."
             ),
         ),
@@ -169,7 +433,9 @@ def _section_html(title: str, paragraphs: tuple[str, ...], section_id: str | Non
 
 def build_privacy_policy_html() -> str:
     """Return crawlable HTML for Terms + Privacy + browser extension appendix."""
-    platform_body = "".join(_section_html(title, paragraphs) for title, paragraphs in _PLATFORM_SECTIONS)
+    platform_body = "".join(
+        _section_html(section.title, section.paragraphs, section.section_id or None) for section in _PLATFORM_SECTIONS
+    )
     extension_body = _section_html(
         _EXTENSION_SECTION[0],
         _EXTENSION_SECTION[1],

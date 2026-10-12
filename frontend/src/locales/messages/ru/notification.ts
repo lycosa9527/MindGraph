@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Галерея заполнена. Значок был импортирован, но не сохранен в галерее.',
   'notification.importSuccess': 'Значок был импортирован и сохранен в галерее.',
   'notification.importUnsupportedType': 'Не удалось импортировать, неподдерживаемый тип значка',
-  'notification.inlineRecEmpty': 'Рекомендуемый контент не был создан. Повторите попытку или измените тему и повторите попытку.',
   'notification.loadMoreFailed': 'Не удалось загрузить больше',
   'notification.networkError': 'сетевая ошибка',
   'notification.nodeNotEligible': 'Этот узел не поддерживает рекомендации вкладок.',

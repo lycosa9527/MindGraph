@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'گالری پر است نماد وارد شده است اما در گالری ذخیره نشده است.',
   'notification.importSuccess': 'نماد وارد شده و در گالری ذخیره شده است',
   'notification.importUnsupportedType': 'واردات انجام نشد، نوع نماد پشتیبانی نشد',
-  'notification.inlineRecEmpty': 'هیچ محتوای توصیه‌شده‌ای تولید نشد، لطفاً دوباره امتحان کنید یا طرح زمینه را تنظیم کنید و دوباره امتحان کنید',
   'notification.loadMoreFailed': 'بارگیری بیشتر انجام نشد',
   'notification.networkError': 'خطای شبکه',
   'notification.nodeNotEligible': 'این گره از توصیه های Tab پشتیبانی نمی کند',

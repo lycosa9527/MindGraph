@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.164] - 2026-10-13
+
+> **Settings keeps the DingTalk MindBot bind button under WeChat, and the public privacy page lists the full agreement.**
+
+### Fixed
+
+- **钉钉绑定** — Settings → Security shows the DingTalk MindBot bind button under WeChat, so a platform account can pair with a MindBot user. Pairing still uses the rotating MindBot code.
+
+### Changed
+
+- **隐私政策** — The public privacy page includes the full agreement, numbered 1 through 18, matching the in-app text.
+
+### Removed
+
+- **未使用文案** — Dropped leftover strings for the old more-apps menu and Tab recommendations. The Kitty node-action guide that opens from the one-sentence mascot stays.
+
+### Tests
+
+- [`frontend/tests/settingsAccountBindingsOrder.spec.ts`](frontend/tests/settingsAccountBindingsOrder.spec.ts) — the DingTalk row renders under WeChat.
+- [`tests/test_privacy_policy_static.py`](tests/test_privacy_policy_static.py) — public headings run 1 through 18.
+
 ## [5.180.163] - 2026-10-12
 
 > **The canvas stays on the ribbon while a diagram loads, and unused chrome is gone.**
@@ -21,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **旧工具栏** — The glass editing toolbar and the more-apps menu are gone. Concept maps still open the virtual keyboard from the ribbon.
-- **未挂载界面** — Removed the old presentation rail, the gallery module grid and share-site alias, the unmounted file-center panel, the Tab recommendation picker, the classroom mascot dock, the unused subgraph accept bar, the deprecated DingTalk bind alias, the auth agreement modal (the privacy page stays), the unused auth pixel-battle background, and the unused MindBot admin tab that the school MindBot pane replaced.
+- **未挂载界面** — Removed the old presentation rail, the gallery module grid and share-site alias, the unmounted file-center panel, the Tab recommendation picker, the classroom mascot dock, the unused subgraph accept bar, the auth agreement modal (the privacy page stays), the unused auth pixel-battle background, and the unused MindBot admin tab that the school MindBot pane replaced.
 
 ### Tests
 

@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Bibliotheek vol; diagram geïmporteerd maar niet opgeslagen in bibliotheek',
   'notification.importSuccess': 'Diagram geïmporteerd en opgeslagen in bibliotheek',
   'notification.importUnsupportedType': 'Importeren mislukt: niet-ondersteund diagramtype',
-  'notification.inlineRecEmpty': 'Er zijn geen aanbevelingen gegenereerd. Probeer opnieuw of bewerk het onderwerp.',
   'notification.loadMoreFailed': 'Kon niet meer laden',
   'notification.networkError': 'Netwerkfout',
   'notification.nodeNotEligible': 'Dit knooppunt ondersteunt geen Tab-aanbevelingen.',

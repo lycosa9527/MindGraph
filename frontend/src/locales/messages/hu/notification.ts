@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'A galéria megtelt. Az ikont importálták, de nem mentették a galériába.',
   'notification.importSuccess': 'Az ikon importálva és elmentve a galériába',
   'notification.importUnsupportedType': 'Sikertelen importálás, nem támogatott ikontípus',
-  'notification.inlineRecEmpty': 'Nem jött létre ajánlott tartalom, próbálkozzon újra, vagy módosítsa a témát, és próbálja újra',
   'notification.loadMoreFailed': 'Nem sikerült többet betölteni',
   'notification.networkError': 'hálózati hiba',
   'notification.nodeNotEligible': 'Ez a csomópont nem támogatja a Tab ajánlásait',

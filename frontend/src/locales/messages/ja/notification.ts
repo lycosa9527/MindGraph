@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'ライブラリが満杯です。図はインポートされましたがライブラリには保存されません',
   'notification.importSuccess': '図をインポートし、ライブラリに保存しました',
   'notification.importUnsupportedType': 'インポート失敗：サポートされていない図の種類です',
-  'notification.inlineRecEmpty': 'おすすめは生成されませんでした。もう一度試すか、トピックを編集してください。',
   'notification.loadMoreFailed': 'さらに読み込めませんでした',
   'notification.networkError': 'ネットワークエラー',
   'notification.nodeNotEligible': 'このノードは Tab おすすめに対応していません。',

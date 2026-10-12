@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Thư viện đầy; sơ đồ đã nhập nhưng chưa lưu vào thư viện',
   'notification.importSuccess': 'Đã nhập và lưu sơ đồ vào thư viện',
   'notification.importUnsupportedType': 'Nhập thất bại: loại sơ đồ không được hỗ trợ',
-  'notification.inlineRecEmpty': 'Không có gợi ý nào được tạo. Thử lại hoặc chỉnh sửa chủ đề.',
   'notification.loadMoreFailed': 'Không thể tải thêm',
   'notification.networkError': 'Lỗi mạng',
   'notification.nodeNotEligible': 'Nút này không hỗ trợ gợi ý Tab.',

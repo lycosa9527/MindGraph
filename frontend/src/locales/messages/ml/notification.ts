@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'ഗാലറി നിറഞ്ഞിരിക്കുന്നു. ഐക്കൺ ഇറക്കുമതി ചെയ്‌തെങ്കിലും ഗാലറിയിൽ സംരക്ഷിച്ചിട്ടില്ല.',
   'notification.importSuccess': 'ഐക്കൺ ഇറക്കുമതി ചെയ്‌ത് ഗാലറിയിൽ സംരക്ഷിച്ചു',
   'notification.importUnsupportedType': 'ഇറക്കുമതി പരാജയപ്പെട്ടു, ഐക്കൺ തരം പിന്തുണയ്ക്കുന്നില്ല',
-  'notification.inlineRecEmpty': 'ശുപാർശ ചെയ്‌ത ഉള്ളടക്കമൊന്നും സൃഷ്‌ടിച്ചിട്ടില്ല, ദയവായി വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ തീം ക്രമീകരിച്ച് വീണ്ടും ശ്രമിക്കുക',
   'notification.loadMoreFailed': 'കൂടുതൽ ലോഡ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു',
   'notification.networkError': 'നെറ്റ്‌വർക്ക് പിശക്',
   'notification.nodeNotEligible': 'ഈ നോഡ് ടാബ് ശുപാർശകളെ പിന്തുണയ്ക്കുന്നില്ല',

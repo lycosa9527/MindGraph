@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Galéria je plná. Ikona bola importovaná, ale nebola uložená do galérie.',
   'notification.importSuccess': 'Ikona bola importovaná a uložená do galérie',
   'notification.importUnsupportedType': 'Import zlyhal, nepodporovaný typ ikony',
-  'notification.inlineRecEmpty': 'Nebol vygenerovaný žiadny odporúčaný obsah, skúste to znova alebo upravte motív a skúste to znova',
   'notification.loadMoreFailed': 'Nepodarilo sa načítať ďalšie',
   'notification.networkError': 'chyba siete',
   'notification.nodeNotEligible': 'Tento uzol nepodporuje odporúčania kariet',

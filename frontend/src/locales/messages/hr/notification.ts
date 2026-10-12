@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Galerija je puna. Ikona je uvezena, ali nije spremljena u galeriju.',
   'notification.importSuccess': 'Ikona je uvezena i spremljena u galeriju',
   'notification.importUnsupportedType': 'Uvoz nije uspio, vrsta ikone nije podržana',
-  'notification.inlineRecEmpty': 'Nije generiran preporučeni sadržaj, pokušajte ponovno ili prilagodite temu i pokušajte ponovno',
   'notification.loadMoreFailed': 'Nije uspjelo učitavanje više',
   'notification.networkError': 'mrežna greška',
   'notification.nodeNotEligible': 'Ovaj čvor ne podržava preporuke kartica',

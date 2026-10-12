@@ -7,7 +7,6 @@ export default {
   'aiModel.conceptAiOff': '点击开启：用 AI 生成关系标签',
   'aiModel.conceptAiOn': '已开启：拖拽连线将用 AI 生成关系标签',
   'aiModel.enableAi': '启用AI',
-  'aiModel.inlineRecTooltip': '编辑节点后按Tab获取AI推荐',
   'aiModel.label': 'AI模型',
   'aiModel.express': '快速',
   'aiModel.menu.express': '快速',
@@ -29,7 +28,6 @@ export default {
   'aiModel.tabFocusQuestionBadge': 'Tab焦点问题',
   'aiModel.conceptMapFocusQuestionTabTooltip':
     '选中或编辑焦点问题时：按 Tab 进行 AI 检验（须先写有实质内容的焦点问题，并需登录）。',
-  'aiModel.tabRecBadge': 'Tab推荐',
   'aiModel.tabContentRecBadge': 'Tab内容推荐',
   'aiModel.tabRelationshipRecBadge': 'Tab关系推荐',
   'aiModel.conceptMapConceptTabTooltip':

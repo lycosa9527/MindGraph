@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Library full; diagram imported but not saved to library',
   'notification.importSuccess': 'Diagram imported and saved to library',
   'notification.importUnsupportedType': 'Import failed: unsupported diagram type',
-  'notification.inlineRecEmpty': 'No recommendations were generated. Try again or edit the topic.',
   'notification.loadMoreFailed': 'Could not load more',
   'notification.networkError': 'Network error',
   'notification.nodeNotEligible': 'This node does not support Tab recommendations.',

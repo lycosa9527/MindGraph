@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Biblioteek is vol; diagram is geïmporteer maar nie na biblioteek gestoor nie',
   'notification.importSuccess': 'Diagram geïmporteer en na biblioteek gestoor',
   'notification.importUnsupportedType': 'Importeer het misluk: nie-ondersteunde diagramtipe',
-  'notification.inlineRecEmpty': 'Geen aanbevole inhoud is gegenereer nie, probeer asseblief weer of pas die tema aan en probeer weer',
   'notification.loadMoreFailed': 'Kon nie meer laai nie',
   'notification.networkError': 'Netwerkfout',
   'notification.nodeNotEligible': 'Hierdie nodus ondersteun nie Tab-aanbevelings nie',

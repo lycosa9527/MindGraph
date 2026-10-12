@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Galleriet är fullt. Ikonen har importerats men inte sparats i galleriet.',
   'notification.importSuccess': 'Ikonen har importerats och sparats i galleriet',
   'notification.importUnsupportedType': 'Import misslyckades, ikontyp stöds inte',
-  'notification.inlineRecEmpty': 'Inget rekommenderat innehåll genererades, försök igen eller justera temat och försök igen',
   'notification.loadMoreFailed': 'Det gick inte att ladda fler',
   'notification.networkError': 'nätverksfel',
   'notification.nodeNotEligible': 'Den här noden stöder inte Tab-rekommendationer',

@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Галерија је пуна. Икона је увезена, али није сачувана у галерији.',
   'notification.importSuccess': 'Икона је увезена и сачувана у галерији',
   'notification.importUnsupportedType': 'Увоз није успео, тип иконе није подржан',
-  'notification.inlineRecEmpty': 'Није генерисан ниједан препоручени садржај, покушајте поново или прилагодите тему и покушајте поново',
   'notification.loadMoreFailed': 'Учитавање више није успело',
   'notification.networkError': 'мрежна грешка',
   'notification.nodeNotEligible': 'Овај чвор не подржава препоруке за картице',

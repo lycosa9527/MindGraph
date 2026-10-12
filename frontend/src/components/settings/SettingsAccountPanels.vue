@@ -10,6 +10,7 @@ import ApiTokenModal from '@/components/auth/ApiTokenModal.vue'
 import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'
 import ChangePasswordForm from '@/components/auth/ChangePasswordForm.vue'
 import ChangePhoneModal from '@/components/auth/ChangePhoneModal.vue'
+import DingTalkPairModal from '@/components/auth/DingTalkPairModal.vue'
 import LoginDevicesModal from '@/components/auth/LoginDevicesModal.vue'
 import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
 import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.vue'
@@ -254,6 +255,20 @@ const showChangePasswordForm = computed(() => !form.isBayiSsoSubject && !form.ne
       initial-provider="wechat"
       lock-provider
       @success="form.handleOAuthBindSuccess"
+    />
+    <DingTalkPairModal
+      v-if="form.showBindDingTalkModal"
+      v-model="form.showBindDingTalkModal"
+      mode="bind"
+      :linked-staff-id="form.dingtalkStaffMasked"
+      @completed="form.handleDingtalkBindCompleted"
+    />
+    <DingTalkPairModal
+      v-if="form.showUnbindDingTalkModal"
+      v-model="form.showUnbindDingTalkModal"
+      mode="unbind"
+      :linked-staff-id="form.dingtalkStaffMasked"
+      @completed="form.handleDingtalkBindCompleted"
     />
   </div>
 </template>

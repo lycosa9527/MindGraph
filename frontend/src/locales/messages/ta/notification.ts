@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'கேலரி நிரம்பியுள்ளது. ஐகான் இறக்குமதி செய்யப்பட்டது ஆனால் கேலரியில் சேமிக்கப்படவில்லை.',
   'notification.importSuccess': 'ஐகான் இறக்குமதி செய்யப்பட்டு கேலரியில் சேமிக்கப்பட்டது',
   'notification.importUnsupportedType': 'இறக்குமதி தோல்வி, ஆதரிக்கப்படாத ஐகான் வகை',
-  'notification.inlineRecEmpty': 'பரிந்துரைக்கப்பட்ட உள்ளடக்கம் எதுவும் உருவாக்கப்படவில்லை, தயவுசெய்து மீண்டும் முயற்சிக்கவும் அல்லது தீம் சரிசெய்து மீண்டும் முயற்சிக்கவும்',
   'notification.loadMoreFailed': 'மேலும் ஏற்ற முடியவில்லை',
   'notification.networkError': 'பிணைய பிழை',
   'notification.nodeNotEligible': 'இந்த முனை தாவல் பரிந்துரைகளை ஆதரிக்காது',

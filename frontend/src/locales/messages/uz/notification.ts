@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Kutubxona to‘ldi; diagramma import qilindi, lekin kutubxonaga saqlanmadi',
   'notification.importSuccess': 'Diagramma import qilindi va kutubxonaga saqlandi',
   'notification.importUnsupportedType': 'Import muvaffaqiyatsiz: diagramma turi qo‘llab-quvvatlanmaydi',
-  'notification.inlineRecEmpty': 'Tavsiyalar yaratilmadi. Qayta urining yoki mavzuni tahrirlang.',
   'notification.loadMoreFailed': 'Ko‘proq yuklab bo‘lmadi',
   'notification.networkError': 'Tarmoq xatosi',
   'notification.nodeNotEligible': 'Bu tugun Tab tavsiyalarini qo‘llab-quvvatlamaydi.',

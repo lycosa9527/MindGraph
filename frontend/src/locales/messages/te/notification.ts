@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'గ్యాలరీ నిండిపోయింది. చిహ్నం దిగుమతి చేయబడింది కానీ గ్యాలరీకి సేవ్ చేయబడలేదు.',
   'notification.importSuccess': 'చిహ్నం దిగుమతి చేయబడింది మరియు గ్యాలరీకి సేవ్ చేయబడింది',
   'notification.importUnsupportedType': 'దిగుమతి విఫలమైంది, ఐకాన్ రకం మద్దతు లేదు',
-  'notification.inlineRecEmpty': 'సిఫార్సు చేయబడిన కంటెంట్ ఏదీ రూపొందించబడలేదు, దయచేసి మళ్లీ ప్రయత్నించండి లేదా థీమ్‌ను సర్దుబాటు చేసి మళ్లీ ప్రయత్నించండి',
   'notification.loadMoreFailed': 'మరింత లోడ్ చేయడంలో విఫలమైంది',
   'notification.networkError': 'నెట్‌వర్క్ లోపం',
   'notification.nodeNotEligible': 'ఈ నోడ్ ట్యాబ్ సిఫార్సులకు మద్దతు ఇవ్వదు',

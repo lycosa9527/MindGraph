@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'المعرض ممتلئ. تم استيراد الرمز ولكن لم يتم حفظه في المعرض.',
   'notification.importSuccess': 'تم استيراد الرمز وحفظه في المعرض',
   'notification.importUnsupportedType': 'فشل الاستيراد، نوع الرمز غير مدعوم',
-  'notification.inlineRecEmpty': 'لم يتم إنشاء أي محتوى موصى به، يرجى المحاولة مرة أخرى أو تعديل المظهر والمحاولة مرة أخرى',
   'notification.loadMoreFailed': 'فشل في تحميل المزيد',
   'notification.networkError': 'خطأ في الشبكة',
   'notification.nodeNotEligible': 'هذه العقدة لا تدعم توصيات علامة التبويب',

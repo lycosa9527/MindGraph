@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Galerie je plná. Ikona byla importována, ale nebyla uložena do galerie.',
   'notification.importSuccess': 'Ikona byla importována a uložena do galerie',
   'notification.importUnsupportedType': 'Import se nezdařil, nepodporovaný typ ikony',
-  'notification.inlineRecEmpty': 'Nebyl vygenerován žádný doporučený obsah, zkuste to prosím znovu nebo upravte motiv a zkuste to znovu',
   'notification.loadMoreFailed': 'Nepodařilo se načíst další',
   'notification.networkError': 'chyba sítě',
   'notification.nodeNotEligible': 'Tento uzel nepodporuje doporučení Tab',

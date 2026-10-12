@@ -54,15 +54,22 @@ export function resolveOAuthInviteCode(
 
 /**
  * Whether the Settings security tab should show the account bindings section.
- * DingTalk / MindBot bind is live and stays off this screen.
+ * WeChat OAuth and DingTalk MindBot pair-code bind both live on this screen.
  */
 export function shouldShowAccountBindingsSection(input: {
   schoolId: string | null | undefined
   featureWechatLogin: boolean
   wechatAvailable: boolean
   wechatLinked?: boolean
+  featureMindbot?: boolean
 }): boolean {
-  if (!input.schoolId || !input.featureWechatLogin) {
+  if (!input.schoolId) {
+    return false
+  }
+  if (input.featureMindbot) {
+    return true
+  }
+  if (!input.featureWechatLogin) {
     return false
   }
   return input.wechatAvailable || input.wechatLinked === true

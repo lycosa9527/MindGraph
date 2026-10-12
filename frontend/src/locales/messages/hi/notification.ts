@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'पुस्तकालय भरा है; आरेख आयात हुआ पर पुस्तकालय में सहेजा नहीं गया',
   'notification.importSuccess': 'आरेख आयात और पुस्तकालय में सहेजा गया',
   'notification.importUnsupportedType': 'आयात विफल: असमर्थित आरेख प्रकार',
-  'notification.inlineRecEmpty': 'कोई सुझाव नहीं बना। पुनः प्रयास करें या विषय संपादित करें।',
   'notification.loadMoreFailed': 'और लोड नहीं हो सका',
   'notification.networkError': 'नेटवर्क त्रुटि',
   'notification.nodeNotEligible': 'यह नोड Tab सुझावों का समर्थन नहीं करता।',

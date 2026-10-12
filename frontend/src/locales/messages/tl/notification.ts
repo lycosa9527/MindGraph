@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Puno ang library; na-import ang diagram pero hindi na-save',
   'notification.importSuccess': 'Na-import at na-save ang diagram sa library',
   'notification.importUnsupportedType': 'Nabigo ang import: hindi suportadong uri ng diagram',
-  'notification.inlineRecEmpty': 'Walang nabuong rekomendasyon. Subukan muli o i-edit ang topic.',
   'notification.loadMoreFailed': 'Hindi ma-load ang higit pa',
   'notification.networkError': 'Error sa network',
   'notification.nodeNotEligible': 'Hindi suportado ng node na ito ang Tab recommendations.',

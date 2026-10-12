@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': '라이브러리가 가득 찼습니다. 다이어그램은 가져왔지만 라이브러리에 저장되지 않았습니다',
   'notification.importSuccess': '다이어그램을 가져와 라이브러리에 저장했습니다',
   'notification.importUnsupportedType': '가져오기 실패: 지원하지 않는 다이어그램 유형',
-  'notification.inlineRecEmpty': '추천이 생성되지 않았습니다. 다시 시도하거나 주제를 수정하세요.',
   'notification.loadMoreFailed': '더 불러올 수 없습니다',
   'notification.networkError': '네트워크 오류',
   'notification.nodeNotEligible': '이 노드는 Tab 추천을 지원하지 않습니다.',

@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'පුස්‍තකාලය පිරී ඇත; රූප සටහන ආයාත වුවත් පුස්‍තකාලයට සුරැකුණේ නැත',
   'notification.importSuccess': 'රූප සටහන ආයාත කර පුස්‍තකාලයට සුරැකි',
   'notification.importUnsupportedType': 'ආයාතය අසාර්ථක: unsupported රූප සටහන වර්ගය',
-  'notification.inlineRecEmpty': 'නිර්දේශ කිසිවක් සෑදුණේ නැත. නැවත උත්සාහ කරන්න හෝ මාතෘකාව සංස්කරණය කරන්න.',
   'notification.loadMoreFailed': 'තවත් පූරණය කළ නොහැක',
   'notification.networkError': 'ජාල දෝෂය',
   'notification.nodeNotEligible': 'මෙම නෝඩ්ය Tab නිර්දේශ සඳහා සහය නොදක්වයි.',

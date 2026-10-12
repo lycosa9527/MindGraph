@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Kitabxana doludur; diaqram idxal edildi amma saxlanılmadı',
   'notification.importSuccess': 'Diaqram idxal edildi və kitabxanaya saxlanıldı',
   'notification.importUnsupportedType': 'İdxal uğursuz: dəstəklənməyən diaqram növü',
-  'notification.inlineRecEmpty': 'Tövsiyə olunan məzmun yaradılmayıb, lütfən, yenidən cəhd edin və ya temanı tənzimləyib yenidən cəhd edin',
   'notification.loadMoreFailed': 'Daha çox yükləmək mümkün olmadı',
   'notification.networkError': 'Şəbəkə xətası',
   'notification.nodeNotEligible': 'Bu qovşaq Tab tövsiyələrini dəstəkləmir',

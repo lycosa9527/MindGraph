@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Galeria este plină. Pictograma a fost importată, dar nu a fost salvată în galerie.',
   'notification.importSuccess': 'Pictograma a fost importată și salvată în galerie',
   'notification.importUnsupportedType': 'Import eșuat, tip de pictogramă neacceptat',
-  'notification.inlineRecEmpty': 'Nu a fost generat niciun conținut recomandat, încercați din nou sau ajustați tema și încercați din nou',
   'notification.loadMoreFailed': 'Nu s-au încărcat mai multe',
   'notification.networkError': 'eroare de rețea',
   'notification.nodeNotEligible': 'Acest nod nu acceptă recomandările Tab',

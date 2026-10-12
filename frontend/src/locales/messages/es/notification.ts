@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Biblioteca llena; diagrama importado pero no guardado en la biblioteca',
   'notification.importSuccess': 'Diagrama importado y guardado en la biblioteca',
   'notification.importUnsupportedType': 'Importación fallida: tipo de diagrama no compatible',
-  'notification.inlineRecEmpty': 'No se generaron recomendaciones. Inténtelo de nuevo o edite el tema.',
   'notification.loadMoreFailed': 'No se pudo cargar más',
   'notification.networkError': 'Error de red',
   'notification.nodeNotEligible': 'Este nodo no admite recomendaciones con Tab.',

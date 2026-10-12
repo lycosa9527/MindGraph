@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Biblioteka pełna; diagram zaimportowano, ale nie zapisano w bibliotece',
   'notification.importSuccess': 'Diagram zaimportowano i zapisano w bibliotece',
   'notification.importUnsupportedType': 'Import nieudany: nieobsługiwany typ diagramu',
-  'notification.inlineRecEmpty': 'Nie wygenerowano rekomendacji. Spróbuj ponownie lub edytuj temat.',
   'notification.loadMoreFailed': 'Nie udało się wczytać więcej',
   'notification.networkError': 'Błąd sieci',
   'notification.nodeNotEligible': 'Ten węzeł nie obsługuje rekomendacji Tab.',

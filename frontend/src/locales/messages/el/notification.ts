@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Η γκαλερί είναι γεμάτη. Το εικονίδιο έχει εισαχθεί αλλά δεν έχει αποθηκευτεί στη συλλογή.',
   'notification.importSuccess': 'Το εικονίδιο έχει εισαχθεί και αποθηκευτεί στη συλλογή',
   'notification.importUnsupportedType': 'Η εισαγωγή απέτυχε, μη υποστηριζόμενος τύπος εικονιδίου',
-  'notification.inlineRecEmpty': 'Δεν δημιουργήθηκε προτεινόμενο περιεχόμενο, δοκιμάστε ξανά ή προσαρμόστε το θέμα και δοκιμάστε ξανά',
   'notification.loadMoreFailed': 'Αποτυχία φόρτωσης περισσότερων',
   'notification.networkError': 'σφάλμα δικτύου',
   'notification.nodeNotEligible': 'Αυτός ο κόμβος δεν υποστηρίζει προτάσεις καρτελών',

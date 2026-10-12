@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'ಗ್ಯಾಲರಿ ತುಂಬಿದೆ. ಐಕಾನ್ ಅನ್ನು ಆಮದು ಮಾಡಿಕೊಳ್ಳಲಾಗಿದೆ ಆದರೆ ಗ್ಯಾಲರಿಗೆ ಉಳಿಸಲಾಗಿಲ್ಲ.',
   'notification.importSuccess': 'ಐಕಾನ್ ಅನ್ನು ಆಮದು ಮಾಡಿಕೊಳ್ಳಲಾಗಿದೆ ಮತ್ತು ಗ್ಯಾಲರಿಗೆ ಉಳಿಸಲಾಗಿದೆ',
   'notification.importUnsupportedType': 'ಆಮದು ವಿಫಲವಾಗಿದೆ, ಐಕಾನ್ ಪ್ರಕಾರ ಬೆಂಬಲಿತವಾಗಿಲ್ಲ',
-  'notification.inlineRecEmpty': 'ಯಾವುದೇ ಶಿಫಾರಸು ಮಾಡಲಾದ ವಿಷಯವನ್ನು ರಚಿಸಲಾಗಿಲ್ಲ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಥೀಮ್ ಅನ್ನು ಸರಿಹೊಂದಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'notification.loadMoreFailed': 'ಹೆಚ್ಚು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ',
   'notification.networkError': 'ನೆಟ್ವರ್ಕ್ ದೋಷ',
   'notification.nodeNotEligible': 'ಈ ನೋಡ್ ಟ್ಯಾಬ್ ಶಿಫಾರಸುಗಳನ್ನು ಬೆಂಬಲಿಸುವುದಿಲ್ಲ',

@@ -11,6 +11,7 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { useAuthStore } from '@/stores/auth'
 import { isBayiSsoPhone } from '@/utils/accountPhone'
 import { apiRequest } from '@/utils/apiClient'
+import { logPairAudit } from '@/utils/dingtalkPairAuditLog'
 import {
   canStartWechatBind,
   shouldShowAccountBindingsSection,
@@ -27,11 +28,18 @@ type OauthLinks = {
   dingtalk_enabled?: boolean
 }
 
+type DingtalkBindStatus = {
+  linked: boolean
+  mindbot_available: boolean
+  dingtalk_staff_id?: string | null
+  rate_limited?: boolean
+}
+
 export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) {
   const { t } = useLanguage()
   const notify = useNotifications()
   const authStore = useAuthStore()
-  const { featureWechatLogin, featureWordAddin } = useFeatureFlags()
+  const { featureMindbot, featureWechatLogin, featureWordAddin } = useFeatureFlags()
   const { canUseApiToken, canUseChromeExtension } = useSchoolTierFeatures()
 
   const showAvatarModal = ref(false)
@@ -40,6 +48,10 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
   const showApiTokenModal = ref(false)
   const showLoginDevicesModal = ref(false)
   const showOAuthBindModal = ref(false)
+  const showBindDingTalkModal = ref(false)
+  const showUnbindDingTalkModal = ref(false)
+  const dingtalkBindLoading = ref(false)
+  const dingtalkBindStatus = ref<DingtalkBindStatus | null>(null)
   const oauthLinksLoading = ref(false)
   const oauthLinks = ref<OauthLinks | null>(null)
   const nameEdit = ref('')
@@ -59,12 +71,29 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     return phone
   })
 
+  const showDingtalkBindSection = computed(
+    () => Boolean(authStore.user?.schoolId) && featureMindbot.value
+  )
+  const dingtalkLinked = computed(() => dingtalkBindStatus.value?.linked === true)
+  const canMintDingtalkBind = computed(() => dingtalkBindStatus.value?.mindbot_available === true)
+  const dingtalkStaffMasked = computed(() => dingtalkBindStatus.value?.dingtalk_staff_id || '')
+  const dingtalkBindingStatus = computed(() => {
+    if (dingtalkLinked.value && dingtalkStaffMasked.value) {
+      return t('auth.dingtalkBindLinkedLabel', { staff: dingtalkStaffMasked.value })
+    }
+    if (dingtalkLinked.value) {
+      return t('auth.dingtalkBindLinkedButton')
+    }
+    return t('auth.bindingUnlinked')
+  })
+
   const showAccountBindingsSection = computed(() =>
     shouldShowAccountBindingsSection({
       schoolId: authStore.user?.schoolId,
       featureWechatLogin: featureWechatLogin.value,
       wechatAvailable: oauthLinks.value?.wechat_enabled === true,
       wechatLinked: oauthLinks.value?.wechat != null,
+      featureMindbot: featureMindbot.value,
     })
   )
 
@@ -121,6 +150,64 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     } finally {
       oauthLinksLoading.value = false
     }
+  }
+
+  async function fetchDingtalkBindStatus() {
+    if (!authStore.user?.schoolId || !featureMindbot.value) {
+      dingtalkBindStatus.value = null
+      return
+    }
+    dingtalkBindLoading.value = true
+    const previous = dingtalkBindStatus.value
+    try {
+      const response = await apiRequest('/api/auth/dingtalk-bind/status', { method: 'GET' })
+      if (response.ok) {
+        dingtalkBindStatus.value = (await response.json()) as DingtalkBindStatus
+        return
+      }
+      if (response.status === 429 && previous) {
+        dingtalkBindStatus.value = { ...previous, rate_limited: true }
+        return
+      }
+      dingtalkBindStatus.value = {
+        linked: previous?.linked ?? false,
+        mindbot_available: previous?.mindbot_available ?? false,
+        dingtalk_staff_id: previous?.dingtalk_staff_id,
+      }
+    } catch {
+      dingtalkBindStatus.value = previous ?? { linked: false, mindbot_available: false }
+    } finally {
+      dingtalkBindLoading.value = false
+    }
+  }
+
+  function openBindDingTalkModal() {
+    if (!canMintDingtalkBind.value) {
+      notify.warningKey('auth.dingtalkBindNoMindbot')
+      return
+    }
+    logPairAudit('account_open_bind', { purpose: 'bind' }, { reportToServer: false })
+    void fetchDingtalkBindStatus().then(() => {
+      if (canMintDingtalkBind.value) {
+        showBindDingTalkModal.value = true
+      }
+    })
+  }
+
+  function openUnbindDingTalkModal() {
+    if (!dingtalkLinked.value) {
+      return
+    }
+    logPairAudit('account_open_unbind', { purpose: 'unbind' }, { reportToServer: false })
+    void fetchDingtalkBindStatus().then(() => {
+      if (dingtalkLinked.value) {
+        showUnbindDingTalkModal.value = true
+      }
+    })
+  }
+
+  function handleDingtalkBindCompleted() {
+    void fetchDingtalkBindStatus()
   }
 
   function openWechatBindModal() {
@@ -220,6 +307,8 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     (open) => {
       if (!open) {
         showOAuthBindModal.value = false
+        showBindDingTalkModal.value = false
+        showUnbindDingTalkModal.value = false
         return
       }
       resetNameDraft()
@@ -232,6 +321,16 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     (shouldFetch) => {
       if (shouldFetch) {
         void fetchOauthLinks()
+      }
+    },
+    { immediate: true }
+  )
+
+  watch(
+    () => isOpen.value && featureMindbot.value && Boolean(authStore.user?.schoolId),
+    (shouldFetch) => {
+      if (shouldFetch) {
+        void fetchDingtalkBindStatus()
       }
     },
     { immediate: true }
@@ -258,6 +357,17 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     fileReaderZipUrl,
     userPhone,
     showAccountBindingsSection,
+    showDingtalkBindSection,
+    dingtalkBindLoading,
+    dingtalkLinked,
+    canMintDingtalkBind,
+    dingtalkStaffMasked,
+    dingtalkBindingStatus,
+    showBindDingTalkModal,
+    showUnbindDingTalkModal,
+    openBindDingTalkModal,
+    openUnbindDingTalkModal,
+    handleDingtalkBindCompleted,
     showWechatOAuthRow,
     canBindWechat,
     wechatOAuthLinked,

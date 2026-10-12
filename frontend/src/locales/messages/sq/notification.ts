@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Biblioteka është plot; diagrami u importua por nuk u ruajt në bibliotekë',
   'notification.importSuccess': 'Diagrami u importua dhe u ruajt në bibliotekë',
   'notification.importUnsupportedType': 'Importi dështoi: lloj diagrami i pambështetur',
-  'notification.inlineRecEmpty': 'Nuk u gjeneruan rekomandime. Provoni përsëri ose ndryshoni temën.',
   'notification.loadMoreFailed': 'Nuk u ngarkua më shumë',
   'notification.networkError': 'Gabim rrjeti',
   'notification.nodeNotEligible': 'Kjo nyje nuk mbështet rekomandimet Tab.',

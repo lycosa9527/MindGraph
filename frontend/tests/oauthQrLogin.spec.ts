@@ -112,12 +112,31 @@ describe('oauthLoginUi', () => {
     expect(shouldShowWechatLoginLink(false)).toBe(false)
   })
 
-  it('hides account bindings when only MindBot or DingTalk is on', () => {
+  it('hides account bindings when WeChat and MindBot are both off', () => {
     expect(
       shouldShowAccountBindingsSection({
         schoolId: '1',
         featureWechatLogin: false,
         wechatAvailable: false,
+      })
+    ).toBe(false)
+  })
+
+  it('shows account bindings for MindBot pair bind when WeChat is off', () => {
+    expect(
+      shouldShowAccountBindingsSection({
+        schoolId: '1',
+        featureWechatLogin: false,
+        wechatAvailable: false,
+        featureMindbot: true,
+      })
+    ).toBe(true)
+    expect(
+      shouldShowAccountBindingsSection({
+        schoolId: null,
+        featureWechatLogin: false,
+        wechatAvailable: false,
+        featureMindbot: true,
       })
     ).toBe(false)
   })

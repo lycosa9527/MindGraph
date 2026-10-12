@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Bibliothek voll; Diagramm importiert, aber nicht in der Bibliothek gespeichert',
   'notification.importSuccess': 'Diagramm importiert und in der Bibliothek gespeichert',
   'notification.importUnsupportedType': 'Import fehlgeschlagen: nicht unterstützter Diagrammtyp',
-  'notification.inlineRecEmpty': 'Es wurden keine Empfehlungen generiert. Versuchen Sie es erneut oder bearbeiten Sie das Thema.',
   'notification.loadMoreFailed': 'Weitere Einträge konnten nicht geladen werden',
   'notification.networkError': 'Netzwerkfehler',
   'notification.nodeNotEligible': 'Dieser Knoten unterstützt keine Tab-Empfehlungen.',

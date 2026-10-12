@@ -37,7 +37,6 @@ export default {
   'notification.importSlotsFull': '圖庫已滿，已導入圖示但未保存到圖庫',
   'notification.importSuccess': '圖示已導入並保存到圖庫',
   'notification.importUnsupportedType': '導入失敗，不支持的圖示類型',
-  'notification.inlineRecEmpty': '未生成推薦內容，請重試或調整主題後再試',
   'notification.loadMoreFailed': '加載更多失敗',
   'notification.networkError': '網絡錯誤',
   'notification.nodeNotEligible': '該節點不支持 Tab 推薦',

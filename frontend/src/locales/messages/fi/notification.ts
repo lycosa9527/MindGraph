@@ -36,7 +36,6 @@ export default {
   'notification.importSlotsFull': 'Galleria on täynnä. Kuvake on tuotu, mutta sitä ei ole tallennettu galleriaan.',
   'notification.importSuccess': 'Kuvake on tuotu ja tallennettu galleriaan',
   'notification.importUnsupportedType': 'Tuonti epäonnistui, kuvaketyyppiä ei tueta',
-  'notification.inlineRecEmpty': 'Suositeltua sisältöä ei luotu. Yritä uudelleen tai säädä teemaa ja yritä uudelleen',
   'notification.loadMoreFailed': 'Enemmän lataus epäonnistui',
   'notification.networkError': 'verkkovirhe',
   'notification.nodeNotEligible': 'Tämä solmu ei tue Tab-suosituksia',
