@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.162] - 2026-10-12
+
+> **The canvas model menu shows the configured model id, and Chinese labels GLM as 智谱.**
+
+### Changed
+
+- **画布模型** — The gray name is the live model id: `deepseek-v4.1-flash`, `qwen3.8-flash`, `qwen3.8-max`, `glm-5-3-flash`, and `doubao-seed-2-1-turbo`. A trailing date such as `-260828` stays off the label. A superadmin override updates the name. Simplified Chinese calls GLM **智谱**; Traditional Chinese calls it **智譜**. Other languages stay GLM Flash.
+
+### Tests
+
+- [`tests/test_canvas_express_llm.py`](tests/test_canvas_express_llm.py), [`frontend/tests/canvasLlmMenu.spec.ts`](frontend/tests/canvasLlmMenu.spec.ts) — the menu reads the configured id and hides a trailing date.
+
 ## [5.180.161] - 2026-10-12
 
 > **Canvas models use Express, Balanced, Max, GLM Flash, and Doubao, and Max calls `qwen3.8-max`.**

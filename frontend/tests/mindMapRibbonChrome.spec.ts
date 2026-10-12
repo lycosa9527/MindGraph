@@ -74,6 +74,7 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(picker).toContain('armAndStartTranslate')
     expect(picker).toContain('aiBlockedByCollab')
     const chromeActions = readSrc('src/canvas-ribbon/useMindMapRibbonChromeActions.ts')
+    expect(chromeActions).toContain('canvasMenuModelLabel')
     expect(chromeActions).toContain('leaveTranslatePreview')
     expect(chromeActions).toContain('switchToModel(model)')
     expect(chrome).toContain('.mm-status__translate-btn.is-translating')

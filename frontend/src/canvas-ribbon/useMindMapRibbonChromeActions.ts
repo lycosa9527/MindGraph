@@ -17,9 +17,10 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
+import { useCanvasLlmModelNames } from '@/composables/llm/useCanvasLlmModelNames'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { CANVAS_LLM_MENU, canvasLlmLogo } from '@/config/canvasLlmMenu'
+import { CANVAS_LLM_MENU, canvasLlmLogo, canvasMenuModelLabel } from '@/config/canvasLlmMenu'
 import { useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
@@ -40,6 +41,7 @@ export function useMindMapRibbonChromeActions() {
   const { switchToModel } = useAutoComplete()
   const { t } = useLanguage()
   const { customLlmEnabled, displayNameForModel } = useOrgCustomLlm()
+  const { names: canvasModelNames } = useCanvasLlmModelNames()
   const learningSheet = useLearningSheetCustomMode()
 
   const nodeCount = computed(() => diagramStore.data?.nodes?.length ?? 0)
@@ -62,7 +64,7 @@ export function useMindMapRibbonChromeActions() {
     return CANVAS_LLM_MENU.map((item) => ({
       id: item.id,
       label: String(t(item.labelKey)),
-      model: String(t(item.modelKey)),
+      model: canvasMenuModelLabel(item.id, canvasModelNames.value, String(t(item.modelKey))),
       logo: item.logo,
     }))
   })

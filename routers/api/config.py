@@ -72,6 +72,12 @@ async def _effective_feature_workshop_chat(current_user: Optional[User]) -> bool
     return await user_has_feature_access(current_user, "feature_workshop_chat")
 
 
+class CanvasLlmModelsResponse(BaseModel):
+    """Physical model ids shown beside each canvas LLM choice."""
+
+    models: dict[str, str]
+
+
 class FeatureFlagsResponse(BaseModel):
     """Feature flags response model."""
 
@@ -103,6 +109,12 @@ class FeatureFlagsResponse(BaseModel):
     tencent_captcha_app_id: str = ""
     workshop_chat_preview_org_ids: list[int]
     feature_org_access: dict[str, FeatureOrgAccessEntry] = Field(default_factory=dict)
+
+
+@router.get("/canvas-llm-models", response_model=CanvasLlmModelsResponse)
+async def get_canvas_llm_models() -> CanvasLlmModelsResponse:
+    """Model ids for the canvas dropdown. Contains no secrets."""
+    return CanvasLlmModelsResponse(models=config.canvas_menu_model_ids())
 
 
 @router.get("/features", response_model=FeatureFlagsResponse)

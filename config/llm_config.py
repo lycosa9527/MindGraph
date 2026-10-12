@@ -184,6 +184,20 @@ class LLMConfigMixin:
             return ""
         return raw.strip()
 
+    def canvas_menu_model_ids(self) -> dict[str, str]:
+        """Physical model ids for the canvas LLM menu.
+
+        Keys are menu aliases. Values follow env and superadmin overrides.
+        An empty string means that choice has no model id configured.
+        """
+        return {
+            "express": self.EXPRESS_MODEL,
+            "qwen3.8-flash": self.QWEN_FLASH_MODEL,
+            "qwen3-max": self.QWEN_MAX_MODEL,
+            "kimi": self.GLM_FLASH_MODEL,
+            "doubao21": self.DOUBAO_MODEL,
+        }
+
     @property
     def QWEN_TEMPERATURE(self):
         """Get Qwen temperature setting."""

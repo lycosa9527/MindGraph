@@ -34,6 +34,30 @@ def test_volcengine_v4_thinking_switch() -> None:
     assert LLMLoadBalancer.FIXED_MODEL_MAP["qwen3.8-flash"] == "qwen3.8-flash"
 
 
+def test_canvas_menu_model_ids_follow_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The canvas dropdown names the physical ids, including an override."""
+    monkeypatch.setenv("EXPRESS_MODEL", "deepseek-v4.1-flash")
+    monkeypatch.setenv("QWEN_FLASH_MODEL", "qwen3.8-flash")
+    monkeypatch.setenv("QWEN_MAX_MODEL", "qwen3.8-max")
+    monkeypatch.setenv("GLM_FLASH_MODEL", "glm-5-3-flash-260828")
+    monkeypatch.setenv("DOUBAO_MODEL", "doubao-seed-2-1-turbo-260628")
+    config.refresh_env_cache()
+    try:
+        ids = config.canvas_menu_model_ids()
+        assert ids == {
+            "express": "deepseek-v4.1-flash",
+            "qwen3.8-flash": "qwen3.8-flash",
+            "qwen3-max": "qwen3.8-max",
+            "kimi": "glm-5-3-flash-260828",
+            "doubao21": "doubao-seed-2-1-turbo-260628",
+        }
+        monkeypatch.setenv("QWEN_MAX_MODEL", "qwen3.8-max-preview")
+        config.refresh_env_cache()
+        assert config.canvas_menu_model_ids()["qwen3-max"] == "qwen3.8-max-preview"
+    finally:
+        config.refresh_env_cache()
+
+
 def test_canvas_model_ids_come_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Canvas Doubao and GLM Flash use env model ids and invent none."""
     monkeypatch.setenv("DOUBAO_MODEL", "doubao-seed-2-1-turbo-260628")

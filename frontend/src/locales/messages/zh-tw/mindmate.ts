@@ -16,7 +16,7 @@ export default {
   'aiModel.menu.qwenModel': 'Qwen Flash',
   'aiModel.menu.max': '極致',
   'aiModel.menu.maxModel': 'Qwen Max',
-  'aiModel.menu.kimi': 'GLM Flash',
+  'aiModel.menu.kimi': '智譜',
   'aiModel.menu.kimiModel': 'GLM Flash',
   'aiModel.menu.doubao': '豆包',
   'aiModel.menu.doubaoModel': '豆包',

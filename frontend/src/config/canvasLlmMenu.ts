@@ -12,6 +12,24 @@ export interface CanvasLlmMenuItem {
   logo: CanvasLlmLogo
 }
 
+/** Drop a trailing YYMMDD snapshot, such as `-260828`, from a menu label. */
+export function canvasMenuModelDisplayName(modelId: string): string {
+  return modelId.replace(/-(\d{6})$/, '')
+}
+
+/** Gray name in the canvas menu. A live id wins; otherwise the translated fallback. */
+export function canvasMenuModelLabel(
+  id: string,
+  live: Readonly<Record<string, string>> | null | undefined,
+  fallback: string
+): string {
+  const name = live?.[id]
+  if (typeof name === 'string' && name.trim()) {
+    return canvasMenuModelDisplayName(name.trim())
+  }
+  return fallback
+}
+
 /** Compact mark for a canvas model id. School override stays on the Qwen mark. */
 export function canvasLlmLogo(id: string): CanvasLlmLogo {
   if (id === 'kimi') {
