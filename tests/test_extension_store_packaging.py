@@ -26,20 +26,42 @@ def test_build_store_zip_includes_background_worker() -> None:
         assert "background.js" in archive.namelist()
 
 
-def test_build_store_zip_excludes_jspdf_and_pdf_worker() -> None:
-    """CWS RHC: do not ship jsPDF UMD or pdf.js worker (local jpeg-pdf + disableWorker)."""
+_REMOTE_CODE_MARKERS = (
+    "eval(",
+    "new Function",
+    'createElement("script")',
+    "createElement('script')",
+    'importScripts("${',
+    "importScripts('${",
+    "importScripts(`",
+)
+
+
+def test_build_store_zip_has_no_remote_code_patterns() -> None:
+    """CWS rejects Manifest V3 packages that contain eval, new Function, or script injection."""
     data = build_store_zip_bytes()
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         names = set(archive.namelist())
-    assert "vendor/jspdf.umd.min.js" not in names
-    assert "vendor/pdfjs/pdf.worker.min.js" not in names
-    assert "doc-extract/engines/jpeg-pdf.js" in names
-    assert not any(n.endswith("REFERENCES.md") for n in names)
-    assert not any(n.startswith("store-assets/") for n in names)
-    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        assert "vendor/jspdf.umd.min.js" not in names
+        assert "vendor/pdfjs/pdf.worker.min.js" in names
+        assert "vendor/pdfjs/pdf.min.js" in names
+        assert "doc-extract/engines/jpeg-pdf.js" in names
+        assert not any(name.endswith("REFERENCES.md") for name in names)
+        assert not any(name.startswith("store-assets/") for name in names)
         background = archive.read("background.js").decode("utf-8")
         hosts = archive.read("doc-extract/hosts.js").decode("utf-8")
+        offscreen = archive.read("offscreen.html").decode("utf-8")
+        offenders: list[str] = []
+        for name in sorted(names):
+            if not name.endswith((".js", ".html", ".json")):
+                continue
+            text = archive.read(name).decode("utf-8")
+            for marker in _REMOTE_CODE_MARKERS:
+                if marker in text:
+                    offenders.append(f"{name}: {marker}")
+    assert not offenders, offenders
     assert "jspdf" not in background.lower()
     assert "jpeg-pdf.js" in background
     assert "437609" not in hosts
     assert "GreasyFork" not in hosts
+    assert offscreen.index("pdf.worker.min.js") < offscreen.index("pdf.min.js")

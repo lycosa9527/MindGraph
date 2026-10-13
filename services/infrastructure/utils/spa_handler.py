@@ -301,6 +301,7 @@ _PUBLIC_STATIC_EXACT_PATHS = frozenset(
         "/favicon.ico",
         "/favicon.svg",
         "/robots.txt",
+        "/sitemap.xml",
         "/apple-touch-icon.png",
         "/pwa-192x192.png",
         "/pwa-512x512.png",

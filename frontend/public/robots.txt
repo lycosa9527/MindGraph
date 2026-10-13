@@ -1,5 +1,10 @@
-# MindGraph — request that crawlers do not fetch site content
-# (Not a security control; polite crawlers may still ignore this.)
+# Public sign-in and privacy pages only. The signed-in app stays disallowed.
+# Production serves a host-specific copy of this file that also names the sitemap.
 
 User-agent: *
+Allow: /auth
+Allow: /privacy
+Allow: /sitemap.xml
+Disallow: /privacy/
+Disallow: /privacy-policy.html
 Disallow: /

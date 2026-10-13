@@ -7,7 +7,11 @@
 
   const MindGraphDocExtract = global.MindGraphDocExtract || {};
   const MindGraphShared = global.MindGraphShared;
-  const PDF_EXTRACT_FILES = ["vendor/pdfjs/pdf.min.js", "doc-extract/text/pdf-extract-in-tab.js"];
+  const PDF_EXTRACT_FILES = [
+    "vendor/pdfjs/pdf.worker.min.js",
+    "vendor/pdfjs/pdf.min.js",
+    "doc-extract/text/pdf-extract-in-tab.js",
+  ];
   const PAGE_MARKDOWN_SCRIPT =
     MindGraphDocExtract.PAGE_CONTENT_INJECT_SCRIPT || "doc-extract/text/page-content.js";
   const DEFAULT_MAX_MARKDOWN_CHARS = MindGraphShared.DEFAULT_MINDMATE_CAPTURE_CHARS;

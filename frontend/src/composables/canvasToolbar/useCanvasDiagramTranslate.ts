@@ -180,10 +180,15 @@ export function useCanvasDiagramTranslate() {
         }
         const errorPayload = (await response.json().catch(() => null)) as {
           detail?: unknown
+          error_type?: string
         } | null
-        notify.warning(
-          parseTranslateHttpDetail(errorPayload) || t('canvas.toolbar.translateLabelFailed')
-        )
+        if (errorPayload?.error_type === 'thinking_coin_insufficient') {
+          eventBus.emit('thinking_coins:insufficient', {})
+        } else {
+          notify.warning(
+            parseTranslateHttpDetail(errorPayload) || t('canvas.toolbar.translateLabelFailed')
+          )
+        }
         if (deferCanvasApply) {
           diagramTranslateUi.setPhase('error')
         }
@@ -224,11 +229,15 @@ export function useCanvasDiagramTranslate() {
           streamFinishedOk = true
           applyThinkingCoinMutation(extractThinkingCoinsFooter(donePayload))
         },
-        onError(message) {
+        onError(message, errorType) {
           if (signal.aborted || !diagramTranslateUi.isCurrentGeneration(generation)) {
             return
           }
-          notify.warning(message || t('canvas.toolbar.translateLabelFailed'))
+          if (errorType === 'thinking_coin_insufficient') {
+            eventBus.emit('thinking_coins:insufficient', {})
+          } else {
+            notify.warning(message || t('canvas.toolbar.translateLabelFailed'))
+          }
           if (deferCanvasApply) {
             diagramTranslateUi.setPhase('error')
           }

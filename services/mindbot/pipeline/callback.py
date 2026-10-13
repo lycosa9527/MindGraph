@@ -27,6 +27,8 @@ from services.mindbot.core.conv_gate import (
     redis_acquire_conv_gate_async,
     redis_release_conv_gate_async,
 )
+from services.mindbot.outbound.text import is_group_conversation, send_full_reply
+from services.mindbot.pipeline.thinking_coin_gate import mindbot_thinking_coin_block_reply
 from services.mindbot.tools.dispatch import try_handle_mindbot_tools
 from services.mindbot.core.dify_reply import mindbot_dify_chat_blocking
 from services.mindbot.dify.usage_parse import parse_dify_usage_from_blocking_response
@@ -575,6 +577,37 @@ async def execute_mindbot_pipeline(
         if gate_acquired:
             await redis_release_conv_gate_async(cfg.organization_id, conv_gate_scope)
         return bind_result
+
+    coin_reply = await mindbot_thinking_coin_block_reply(
+        linked_user_id,
+        cfg.organization_id,
+        reveal_balance=not is_group_conversation(body),
+    )
+    if coin_reply:
+        sent_ok, token_failed = await send_full_reply(
+            cfg,
+            body,
+            session_webhook_valid,
+            coin_reply,
+            pipeline_ctx=pipeline_ctx,
+            pinned_ip=session_webhook_pinned_ip,
+        )
+        if not sent_ok:
+            logger.warning(
+                "[MindBot] thinking coin reply failed %s token_failed=%s",
+                pipeline_ctx,
+                token_failed,
+            )
+        await _record_usage(
+            MindbotErrorCode.THINKING_COIN_INSUFFICIENT,
+            reply_text=coin_reply,
+            dify_conversation_id=dify_conv,
+            usage=None,
+            streaming=False,
+        )
+        if gate_acquired:
+            await redis_release_conv_gate_async(cfg.organization_id, conv_gate_scope)
+        return 200, _hdr(MindbotErrorCode.THINKING_COIN_INSUFFICIENT)
 
     cb_key = str(cfg.id)
     _streaming = _dify_streaming_enabled()

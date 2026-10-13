@@ -1,5 +1,7 @@
 /**
- * In-tab PDF text extraction (pdf.js loaded via chrome.scripting.executeScript files).
+ * In-tab PDF text extraction.
+ * pdf.worker.min.js must be injected before pdf.min.js so parsing stays inside
+ * the extension package (no worker URL, no eval).
  */
 (function (global) {
   "use strict";
@@ -50,9 +52,10 @@
     if (!pdfjsLib || typeof pdfjsLib.getDocument !== "function") {
       throw new Error("PDFJS_NOT_LOADED");
     }
-    // Run on the main thread so we do not need a worker script URL (CWS RHC-safe).
+    // The packaged worker is already on this realm. pdf.js 3.11 ignores disableWorker
+    // and would otherwise construct a Worker from a URL.
     const data = pdfBuffer instanceof ArrayBuffer ? new Uint8Array(pdfBuffer) : pdfBuffer;
-    const loadingTask = pdfjsLib.getDocument({ data, disableWorker: true });
+    const loadingTask = pdfjsLib.getDocument({ data, isEvalSupported: false });
     const pdf = await loadingTask.promise;
     const limit = Math.min(pdf.numPages || 0, maxPages > 0 ? maxPages : 80);
     const parts = [];

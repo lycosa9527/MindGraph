@@ -6,6 +6,8 @@ from html import escape
 from pathlib import Path
 from typing import NamedTuple
 
+from services.infrastructure.utils.search_indexing import SEARCH_DESCRIPTION
+
 _COMPANY_EN = "Beijing Siyuan Zhijiao Technology Co., Ltd."
 _COMPANY_ZH = "北京思源智教科技有限公司"
 
@@ -442,8 +444,8 @@ def build_privacy_policy_html() -> str:
         section_id=_EXTENSION_SECTION_ID,
     )
     preamble = (
-        f"MindGraph is an educational product developed and operated by {_COMPANY_EN} "
-        f"({_COMPANY_ZH}). This document combines our Terms of Use and Privacy Policy. "
+        "MindGraph (Mind Platform, 迈特教研) is an educational product developed and operated by "
+        f"{_COMPANY_EN} ({_COMPANY_ZH}). This document combines our Terms of Use and Privacy Policy. "
         "By using MindGraph or the MindGraph browser extension, you acknowledge that you "
         "have read and agree to this policy."
     )
@@ -452,6 +454,7 @@ def build_privacy_policy_html() -> str:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="{escape(SEARCH_DESCRIPTION)}" />
   <title>MindGraph Terms of Use &amp; Privacy Policy</title>
   <style>
     body {{

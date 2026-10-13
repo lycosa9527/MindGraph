@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.169] - 2026-10-13
+
+> **Search engines can read the public pages, a low thinking-coin balance opens the wallet from anywhere, and the browser extension ships a store-safe PDF worker.**
+
+### Added
+
+- **搜索收录** — `/auth` and `/privacy` are allowed in `robots.txt` and listed in `/sitemap.xml`. The sign-in page title is MindGraph · Mind Platform, with a description crawlers can read without JavaScript. The rest of the signed-in app stays disallowed.
+- **思维币** — A short balance shows one toast and opens the wallet from the app root, including the canvas, mobile, MindMate, voice notes, node explain, subgraph suggest, and diagram translate. MindBot answers with the same shortage message and does not call Dify. A group chat hides the sender's balance.
+
+### Changed
+
+- **浏览器扩展 0.4.24** — The PDF worker ships inside the package and loads before `pdf.min.js`. The store zip has no `eval`, `new Function`, or dynamic script loading.
+
+### Tests
+
+- [`tests/test_search_indexing.py`](tests/test_search_indexing.py) — robots allow only the public pages, and the sitemap uses the deployment origin.
+- [`tests/test_mindbot_thinking_coin_gate.py`](tests/test_mindbot_thinking_coin_gate.py) — a short balance blocks the MindBot turn; a group reply omits the balance.
+- [`tests/test_extension_store_packaging.py`](tests/test_extension_store_packaging.py) — the store zip includes the PDF worker and no remote-code markers.
+- [`frontend/tests/diagramTranslateStream.spec.ts`](frontend/tests/diagramTranslateStream.spec.ts), [`frontend/tests/generateGraphErrors.spec.ts`](frontend/tests/generateGraphErrors.spec.ts) — a coin shortage is a typed error, and a failed generation keeps the server detail.
+
 ## [5.180.168] - 2026-10-13
 
 > **The canvas translate button uses the language you pick, including Norwegian.**

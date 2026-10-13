@@ -13,7 +13,7 @@ type StreamHandlers = {
   onStart?: (totalItems: number) => void
   onItem: (row: DiagramTranslateStreamItem) => void
   onDone?: (payload: Record<string, unknown>) => void
-  onError: (message: string) => void
+  onError: (message: string, errorType?: string) => void
 }
 
 function coerceItemPayload(raw: Record<string, unknown>): DiagramTranslateStreamItem | null {
@@ -80,7 +80,8 @@ export async function consumeDiagramTranslateNdjsonStream(
       handlers.onDone?.(msg)
     } else if (ev === 'error') {
       const detail = msg.detail
-      handlers.onError(typeof detail === 'string' ? detail : 'Translation failed')
+      const errorType = typeof msg.error_type === 'string' ? msg.error_type : undefined
+      handlers.onError(typeof detail === 'string' ? detail : 'Translation failed', errorType)
       return true
     }
     return false

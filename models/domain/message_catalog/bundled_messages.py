@@ -1087,6 +1087,11 @@ ERRORS = {
         "en": "Insufficient thinking coins (balance {}, need {}). Complete tasks or try again later.",
         "zh-tw": "思維幣不足（當前 {}，本次需要 {}），請完成任務或明天再來",
     },
+    "thinking_coin_insufficient_shared": {
+        "zh": "思维币不足，请完成任务或明天再来",
+        "en": "Insufficient thinking coins. Complete tasks or try again later.",
+        "zh-tw": "思維幣不足，請完成任務或明天再來",
+    },
     "failed_generate_invitation_code": {
         "zh": "生成唯一邀请码失败",
         "en": "Failed to generate unique invitation code",

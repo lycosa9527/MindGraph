@@ -444,6 +444,7 @@ declare module 'vue' {
     TeachingGroupLanding: typeof import('./components/workshop-chat/TeachingGroupLanding.vue')['default']
     TeachingGroupsManageDialog: typeof import('./components/workshop-chat/TeachingGroupsManageDialog.vue')['default']
     TestServerWatermark: typeof import('./components/common/TestServerWatermark.vue')['default']
+    ThinkingCoinInsufficientHost: typeof import('./components/auth/ThinkingCoinInsufficientHost.vue')['default']
     ThinkingCoinsModal: typeof import('./components/auth/ThinkingCoinsModal.vue')['default']
     ThinkingCoinsSchoolSubscriptionPanel: typeof import('./components/auth/ThinkingCoinsSchoolSubscriptionPanel.vue')['default']
     ThinkingCoinsSubscriptionSection: typeof import('./components/auth/ThinkingCoinsSubscriptionSection.vue')['default']

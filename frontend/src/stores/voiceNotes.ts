@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { defineStore } from 'pinia'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { getDefaultDiagramName } from '@/composables/editor/useDiagramLabels'
 import {
@@ -727,7 +728,12 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       const i18nKey = voiceNotesErrorI18nKey(code)
       const msg = i18nKey ? t(i18nKey) : String(data.message ?? t('auth.voiceNotes.genericError'))
       error.value = msg
-      if (code === 'daily_token_cap' || code === 'thinking_coin' || code === 'budget') {
+      if (code === 'thinking_coin') {
+        eventBus.emit('thinking_coins:insufficient', {})
+        void stopRecording('upstream_error')
+        return
+      }
+      if (code === 'daily_token_cap' || code === 'budget') {
         notify.warning(msg || t('auth.voiceNotes.budgetExceeded'))
         void stopRecording('upstream_error')
         return

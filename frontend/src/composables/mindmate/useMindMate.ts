@@ -906,12 +906,15 @@ export function useMindMate(options: MindMateOptions = {}) {
         state.value = 'error'
         applyLoadPhase(mindMateLoadPhaseOnError())
 
+        const errorType = typeof data.error_type === 'string' ? data.error_type : undefined
         eventBus.emit('mindmate:stream_error', {
           error: typeof data.error === 'string' ? data.error : undefined,
-          error_type: typeof data.error_type === 'string' ? data.error_type : undefined,
+          error_type: errorType,
           message: errorMsg,
         })
-        onError?.(errorMsg)
+        if (errorType !== 'thinking_coin_insufficient') {
+          onError?.(errorMsg)
+        }
         return false
       }
 

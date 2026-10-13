@@ -135,6 +135,7 @@ export function useMindMapNodeExplain() {
     if (activeRunId.value !== runId) return
     if (errorType === 'thinking_coin_insufficient') {
       eventBus.emit('thinking_coins:insufficient', {})
+      return
     }
     notify.error(message || t('canvas.mindMapNodeExplain.requestFailed'))
   }

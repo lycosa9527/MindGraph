@@ -16,7 +16,6 @@ import UpdateLogModal from '@/components/auth/UpdateLogModal.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import UserSettingsModal from '@/components/settings/UserSettingsModal.vue'
 import OctoberUpdateModal from '@/components/training/OctoberUpdateModal.vue'
-import { useThinkingCoinInsufficientListener } from '@/composables/auth/useThinkingCoinInsufficientListener'
 import { eventBus } from '@/composables/core/useEventBus'
 import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
 import { useLogoSiteQrHover } from '@/composables/sidebar/useLogoSiteQrHover'
@@ -50,8 +49,6 @@ const providedSidebar = inline
     }
   : sidebar
 provide(appSidebarInjectionKey, providedSidebar)
-
-useThinkingCoinInsufficientListener(() => sidebar.openThinkingCoinsUpgrade())
 
 const {
   showUserSettingsModal,

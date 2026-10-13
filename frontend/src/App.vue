@@ -12,6 +12,7 @@ import { ElConfigProvider } from 'element-plus/es/components/config-provider/ind
 import 'element-plus/es/components/config-provider/style/css'
 import type { Language } from 'element-plus/es/locale'
 
+import ThinkingCoinInsufficientHost from '@/components/auth/ThinkingCoinInsufficientHost.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useOAuthRouteFeedback } from '@/composables/auth/useOAuthRouteFeedback'
@@ -355,7 +356,11 @@ watch(
     const key = typeof raw === 'string' && raw.length > 0 ? raw : 'meta.pageTitle.default'
     const page = t(key)
     const brand = t('app.brandName')
-    document.title = page === key ? brand : `${page} · ${brand}`
+    if (route.name === 'Auth') {
+      document.title = `MindGraph · ${brand}`
+    } else {
+      document.title = page === key ? brand : `${page} · ${brand}`
+    }
     document.documentElement.dir = isRtlUiLocale(uiStore.language) ? 'rtl' : 'ltr'
   },
   { immediate: true }
@@ -482,6 +487,7 @@ onUnmounted(() => {
     <GeoLiteNotification />
 
     <ChatMessageToast />
+    <ThinkingCoinInsufficientHost />
     <WorkshopChatWsHost />
 
     <SessionExpiredAuthCard
