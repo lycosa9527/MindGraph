@@ -36,6 +36,7 @@ from services.infrastructure.http.error_handler import (
     LLMRateLimitError,
     LLMServiceError,
 )
+from services.infrastructure.http.llm_http_errors import is_user_llm_limit_error
 from services.t2i.image_service import generate_and_store_image
 from services.utils.error_types import (
     BACKGROUND_INFRA_ERRORS,
@@ -293,6 +294,9 @@ async def generate_text_to_image(
         logger.error("[T2I] Provider error: %s", exc, exc_info=True)
         return _plain_error(exc, 502)
     except LLMServiceError as exc:
+        if is_user_llm_limit_error(exc):
+            logger.info("[T2I] user limit: %s", exc)
+            return _plain_error(exc, 402)
         logger.error("[T2I] LLM service error: %s", exc, exc_info=True)
         return _plain_error(exc, 502)
     except _GENERATION_ERRORS as exc:

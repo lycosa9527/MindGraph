@@ -20,8 +20,10 @@ from services.infrastructure.http.error_handler import (
     LLMRateLimitError,
     LLMServiceError,
     LLMTimeoutError,
+    ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
 )
+from services.infrastructure.http.llm_http_errors import is_user_llm_limit_error
 from services.utils.error_types import (
     DATABASE_ERRORS,
     FILE_IO_ERRORS,
@@ -48,6 +50,7 @@ _NODE_PALETTE_STREAM_FALLBACK_ERRORS: tuple[Type[Exception], ...] = (
 )
 
 _LLM_ERROR_MAP: dict[Type[Exception], str] = {
+    ThinkingCoinInsufficientError: "thinking_coin_insufficient",
     LLMContentFilterError: "content_filter",
     LLMRateLimitError: "rate_limit",
     LLMTimeoutError: "timeout",
@@ -60,6 +63,10 @@ _LLM_ERROR_MAP: dict[Type[Exception], str] = {
 }
 
 _ERROR_MESSAGES: dict[str, tuple[str, str]] = {
+    "thinking_coin_insufficient": (
+        "思维币不足，请先获取思维币后再试。",
+        "Not enough thinking coins. Earn more, then try again.",
+    ),
     "content_filter": (
         "无法处理您的请求，请尝试修改主题描述。",
         "Content could not be processed. Please try a different topic.",
@@ -99,6 +106,16 @@ _ERROR_MESSAGES: dict[str, tuple[str, str]] = {
         "Request processing failed. Please try again.",
     ),
 }
+
+
+def _palette_llm_error_log(exc: Exception) -> tuple[str, int]:
+    """SSE error type and log level. A low coin balance is expected, not a fault."""
+    error_type = _LLM_ERROR_MAP.get(type(exc), "unknown")
+    if is_user_llm_limit_error(exc):
+        return error_type, logging.INFO
+    if isinstance(exc, LLMServiceError):
+        return error_type, logging.ERROR
+    return error_type, logging.WARNING
 
 
 def _get_default_stage(diagram_type: str) -> str:
@@ -362,10 +379,9 @@ async def stream_node_palette(
         LLMAccessDeniedError,
         LLMServiceError,
     ) as exc:
-        error_type = _LLM_ERROR_MAP.get(type(exc), "unknown")
-        is_service_error = isinstance(exc, LLMServiceError)
-        log_fn = logger.error if is_service_error else logger.warning
-        log_fn(
+        error_type, log_level = _palette_llm_error_log(exc)
+        logger.log(
+            log_level,
             "%s %s | Session: %s | Error: %s",
             log_prefix,
             error_type.replace("_", " ").title(),

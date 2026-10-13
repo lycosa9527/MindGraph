@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.167] - 2026-10-13
+
+> **The sidebar account chip moves with the sidebar, and a low thinking-coin balance stays out of the error log.**
+
+### Fixed
+
+- **侧边栏** — Collapsing the sidebar hides the account chip with the brand and navigation. It no longer stays on the MindGraph gallery as a separate avatar. Opening the sidebar brings that whole group back.
+- **思维币** — A short thinking-coin balance is an expected limit. Node palette, node explain, the Responses stream, text-to-image, and the LLM retry wrapper log it at info. A real provider failure still logs at error.
+- **节点面板** — Load More on double-bubble and multi-flow keeps the batch counter. Later cards keep new ids instead of repeating the first batch and disappearing.
+
+### Tests
+
+- [`frontend/tests/floatingAccountMenu.spec.ts`](frontend/tests/floatingAccountMenu.spec.ts) — the floating account chip is only for pages that do not mount the sidebar.
+- [`tests/test_node_palette_stream_log.py`](tests/test_node_palette_stream_log.py) — a coin shortfall logs at info; a provider failure stays at error.
+- [`tests/test_llm_http_errors.py`](tests/test_llm_http_errors.py) — the retry wrapper does not retry or error-log a low balance.
+- [`tests/test_palette_load_more_session.py`](tests/test_palette_load_more_session.py) — a second double-bubble or multi-flow batch uses new node ids.
+
 ## [5.180.166] - 2026-10-13
 
 > **Startup no longer downloads the full Chinese conversion dictionary.**

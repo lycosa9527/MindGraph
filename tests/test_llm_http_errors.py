@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 
 from services.infrastructure.http.error_handler import (
@@ -113,6 +115,22 @@ def test_content_filter_http_is_not_recorded() -> None:
     assert should_record_http_exception(502, "Qwen API timeout") is True
     assert should_record_http_exception(502, "输入可能包含不当内容，请修改输入内容") is False
     assert is_llm_content_filter_detail("Generation failed: Content filter: blocked") is True
+
+
+@pytest.mark.asyncio
+async def test_with_retry_does_not_log_thinking_coin_shortfall_as_error(caplog: pytest.LogCaptureFixture) -> None:
+    """A low balance must not be retried or written at error."""
+    calls = {"n": 0}
+
+    async def boom() -> None:
+        calls["n"] += 1
+        raise ThinkingCoinInsufficientError(balance=3, cost=4)
+
+    with caplog.at_level(logging.DEBUG):
+        with pytest.raises(ThinkingCoinInsufficientError):
+            await error_handler.with_retry(boom)
+    assert calls["n"] == 1
+    assert not any(record.levelno >= logging.ERROR for record in caplog.records)
 
 
 @pytest.mark.asyncio

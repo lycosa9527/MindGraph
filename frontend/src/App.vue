@@ -302,15 +302,14 @@ const showQuickAccessRemote = computed(
     !isMindgraphHeadlessExportSession()
 )
 
-/** Sidebar footer is on screen and can open the account menu. */
-const sidebarAccountMenuVisible = computed(
+/** Main sidebar is mounted. Collapse hides that whole group, including the account chip. */
+const sidebarGroupMounted = computed(
   () =>
     route.meta.layout === 'main' &&
-    !uiStore.sidebarCollapsed &&
     !(isAdminPublicDashboardRoute(route) && canViewSettingsSubtab('public_dashboard'))
 )
 
-/** Account dropdown on pages that do not show the sidebar footer. Canvas has none. */
+/** Account chip only where the sidebar is not mounted. Canvas has none. */
 const showFloatingAccountMenu = computed(
   () =>
     authStore.isAuthenticated &&
@@ -322,7 +321,7 @@ const showFloatingAccountMenu = computed(
     route.meta.layout !== 'auth' &&
     route.meta.layout !== 'default' &&
     !isMobileAppPath(route.path) &&
-    !sidebarAccountMenuVisible.value
+    !sidebarGroupMounted.value
 )
 
 watch(

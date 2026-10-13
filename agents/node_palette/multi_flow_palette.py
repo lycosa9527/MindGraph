@@ -191,8 +191,10 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             else:
                 yield msg[1]
         await asyncio.gather(*tasks)
-        self.end_session(f"{session_id}_causes", "complete")
-        self.end_session(f"{session_id}_effects", "complete")
+        # Sub-sessions must survive this request. Load More reuses the same
+        # session id, and node ids include the batch number. Ending the session
+        # here resets that counter, so the next batch repeats ids and the panel
+        # drops every new card. Idle TTL and /cleanup still evict the session.
 
     def _build_prompt(
         self,
