@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.168] - 2026-10-13
+
+> **The canvas translate button uses the language you pick, including Norwegian.**
+
+### Fixed
+
+- **图示翻译** — The status-bar translate menu sends every interface language as that language. Norwegian no longer falls back to English. On a dual-language diagram, only the main line is translated. The smaller second line stays.
+
+### Tests
+
+- [`frontend/tests/translateLanguages.spec.ts`](frontend/tests/translateLanguages.spec.ts) — Norwegian, Polish, and Traditional Chinese map to translator targets. An unknown locale still falls back to English.
+- [`frontend/tests/collectDiagramTranslateItems.spec.ts`](frontend/tests/collectDiagramTranslateItems.spec.ts) — a second language line is left out of the translate request.
+- [`frontend/tests/applyDiagramTranslationsToSpec.spec.ts`](frontend/tests/applyDiagramTranslationsToSpec.spec.ts) — the gloss and summary gloss stay, and the diagram's primary language follows the target.
+- [`tests/test_canvas_translate_targets.py`](tests/test_canvas_translate_targets.py) — the API accepts Norwegian and rejects an unknown code.
+
 ## [5.180.167] - 2026-10-13
 
 > **The sidebar account chip moves with the sidebar, and a low thinking-coin balance stays out of the error log.**

@@ -1,3 +1,5 @@
+import { isPromptOutputLanguageCode } from '@/i18n/locales'
+
 export interface TranslateLanguage {
   code: string
   label: string
@@ -71,47 +73,48 @@ export const LIVE_TRANSLATE_LANGUAGES: TranslateLanguage[] = [
   { code: 'uk', label: 'Українська (乌克兰语)' },
 ]
 
-/**
- * Diagram-label targets accepted by `/api/canvas/translate_*`.
- * That API allowlist is separate from live subtitle languages.
- */
-const CANVAS_TRANSLATE_TARGET_CODES = new Set([
-  'en',
-  'zh',
-  'yue',
-  'ja',
-  'ko',
-  'fr',
-  'de',
-  'es',
-  'pt',
-  'it',
-  'ru',
-  'ar',
-  'hi',
-  'id',
-  'vi',
-  'th',
-  'el',
-  'tr',
-])
+/** UI codes that share one API target. Traditional Chinese still uses `zh` plus `ui_locale`. */
+const CANVAS_TRANSLATE_LOCALE_ALIASES: Record<string, string> = {
+  'zh-tw': 'zh',
+  'zh-hant': 'zh',
+  'zh-hk': 'zh',
+  'zh-mo': 'zh',
+  nb: 'no',
+  nn: 'no',
+}
 
-/**
- * Map MindGraph UI locale to `target_language` for `/api/canvas/translate_*` endpoints.
- * Only the diagram-translate allowlist is accepted; other locales fall back to `en`.
- * Traditional-Chinese UI (`zh-tw`, `zh-hant`) maps to API code `zh` (see also `ui_locale` body field).
- */
-export function canvasTranslateTargetForUiLocale(ui: string): string {
-  const code = String(ui || '').trim()
-  if (code === 'zh-tw' || code === 'zh-hant') {
-    return 'zh'
+function promptTargetForCode(code: string): string | null {
+  const aliased = CANVAS_TRANSLATE_LOCALE_ALIASES[code]
+  if (aliased && isPromptOutputLanguageCode(aliased)) {
+    return aliased
   }
-  if (CANVAS_TRANSLATE_TARGET_CODES.has(code)) {
+  if (isPromptOutputLanguageCode(code)) {
     return code
   }
+  return null
+}
+
+/**
+ * Map a MindGraph UI locale to `target_language` for `/api/canvas/translate_*`.
+ * Any prompt-registry language is accepted, including Norwegian (`no`).
+ * Traditional-Chinese UI (`zh-tw`, `zh-hant`) maps to API code `zh` (see also `ui_locale`).
+ * Locales outside the registry fall back to `en`.
+ */
+export function canvasTranslateTargetForUiLocale(ui: string): string {
+  const code = String(ui || '')
+    .trim()
+    .toLowerCase()
+    .replaceAll('_', '-')
+  const direct = promptTargetForCode(code)
+  if (direct) {
+    return direct
+  }
   const base = code.split('-')[0]
-  if (base && base !== code && CANVAS_TRANSLATE_TARGET_CODES.has(base)) {
-    return base
+  if (base && base !== code) {
+    const fromBase = promptTargetForCode(base)
+    if (fromBase) {
+      return fromBase
+    }
   }
   return 'en'
 }

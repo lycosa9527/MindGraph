@@ -20,11 +20,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.requests.requests_canvas_translate import (
-    CANVAS_TRANSLATE_LANGUAGE_NAMES_EN,
     CANVAS_TRANSLATE_MODEL,
     TranslateDiagramLabelResult,
     TranslateDiagramLabelsRequest,
     TranslateNodeLabelRequest,
+    canvas_translate_language_name,
 )
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import (
@@ -187,6 +187,7 @@ async def _translate_unique_texts_chunk(
             "- No markdown fences, no explanations.\n"
             "- Preserve meaning. Keep proper nouns when commonly left untranslated.\n"
             "- Do not add prefixes.\n"
+            "- Each result is one label. Do not add a second language line or a gloss.\n"
             f"- Target language: {lang_name}."
             f"{extra_rules}"
         )
@@ -343,7 +344,13 @@ async def _translate_diagram_labels_ndjson(
             done_payload["thinking_coins"] = coins_footer
         yield _ndjson_line(done_payload)
     except ThinkingCoinInsufficientError as coin_exc:
-        yield _ndjson_line({"event": "error", "detail": coin_exc.user_message})
+        yield _ndjson_line(
+            {
+                "event": "error",
+                "detail": coin_exc.user_message,
+                "error_type": "thinking_coin_insufficient",
+            }
+        )
     except UserDailyTokenCapExceededError as cap_exc:
         yield _ndjson_line({"event": "error", "detail": cap_exc.user_message})
     except LLMServiceError as exc:
@@ -388,7 +395,7 @@ async def translate_node_label(
     await _ownership_check_diagram_translate(req.diagram_id, current_user)
 
     lang_code = req.target_language
-    lang_name = CANVAS_TRANSLATE_LANGUAGE_NAMES_EN.get(lang_code, lang_code)
+    lang_name = canvas_translate_language_name(lang_code)
     source_text = req.text.strip()
     if not source_text:
         raise HTTPException(status_code=400, detail="text must not be empty")
@@ -413,6 +420,7 @@ async def translate_node_label(
         "- Output only the translation in the target language. No quotes, markdown, or explanations.\n"
         "- Preserve meaning. Keep proper nouns when commonly left untranslated.\n"
         "- Do not add prefixes like 'Translation:'.\n"
+        "- Return one label. Do not add a second language line or a gloss.\n"
         f"- Target language: {lang_name}."
         + (_TRADITIONAL_SCRIPT_RULE if simplified_chinese_forbidden() and lang_code == "zh" else "")
     )
@@ -498,7 +506,7 @@ async def translate_diagram_labels(
     await _ownership_check_diagram_translate(req.diagram_id, current_user)
 
     lang_code = req.target_language
-    lang_name = CANVAS_TRANSLATE_LANGUAGE_NAMES_EN.get(lang_code, lang_code)
+    lang_name = canvas_translate_language_name(lang_code, req.ui_locale)
     force_traditional = simplified_chinese_forbidden() and lang_code == "zh"
     script_rules = _chinese_script_extra_rules(req.ui_locale, force_traditional=force_traditional)
 
@@ -612,7 +620,7 @@ async def translate_diagram_labels_stream(
     await _ownership_check_diagram_translate(req.diagram_id, current_user)
 
     lang_code = req.target_language
-    lang_name = CANVAS_TRANSLATE_LANGUAGE_NAMES_EN.get(lang_code, lang_code)
+    lang_name = canvas_translate_language_name(lang_code, req.ui_locale)
     force_traditional = simplified_chinese_forbidden() and lang_code == "zh"
     script_rules = _chinese_script_extra_rules(req.ui_locale, force_traditional=force_traditional)
 

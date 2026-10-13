@@ -240,7 +240,11 @@ export function useCanvasDiagramTranslate() {
       if (streamFinishedOk) {
         await ensureFontsForLanguageCode(targetLanguage)
         if (deferCanvasApply && sourceSpec) {
-          const translated = applyDiagramTranslationsToSpec(sourceSpec, deferredPatches)
+          const translated = applyDiagramTranslationsToSpec(
+            sourceSpec,
+            deferredPatches,
+            targetLanguage
+          )
           diagramTranslateUi.setTranslatedSpec(translated)
           await showTranslatedSpec(translated)
           diagramTranslateUi.setPhase('ready')

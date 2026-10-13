@@ -7,7 +7,8 @@ export type DiagramTranslateItem = {
 type TranslateNodeLike = {
   id?: unknown
   text?: unknown
-  data?: { label?: unknown } | null
+  textSecondary?: unknown
+  data?: { label?: unknown; labelSecondary?: unknown } | null
 }
 
 type TranslateConnectionLike = {
@@ -30,13 +31,45 @@ function readId(value: unknown): string | null {
   return id.length > 0 ? id : null
 }
 
+function readSecondaryLine(node: TranslateNodeLike, data: Record<string, unknown> | null): string {
+  const fromNode = typeof node.textSecondary === 'string' ? node.textSecondary.trim() : ''
+  if (fromNode) {
+    return fromNode
+  }
+  const fromData = data?.labelSecondary
+  return typeof fromData === 'string' ? fromData.trim() : ''
+}
+
+/**
+ * Dual-language nodes keep the gloss on `textSecondary`.
+ * If that gloss was also pasted into the primary field, send only the primary lines.
+ */
+function primaryLabelText(text: string, secondary: string): string {
+  if (!secondary) {
+    return text
+  }
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+  if (lines.length < 2) {
+    return text
+  }
+  const kept = lines.filter((line) => line !== secondary)
+  if (kept.length === 0 || kept.length === lines.length) {
+    return text
+  }
+  return kept.join('\n')
+}
+
 function collectNodeItem(node: TranslateNodeLike): DiagramTranslateItem | null {
   const itemId = readId(node.id)
   if (!itemId) {
     return null
   }
   const fromData = asObject(node.data)
-  const text = String(node.text ?? fromData?.label ?? '').trim()
+  const raw = String(node.text ?? fromData?.label ?? '').trim()
+  const text = primaryLabelText(raw, readSecondaryLine(node, fromData))
   if (!text) {
     return null
   }

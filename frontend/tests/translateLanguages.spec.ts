@@ -78,9 +78,12 @@ describe('LIVE_TRANSLATE_LANGUAGES', () => {
 })
 
 describe('canvasTranslateTargetForUiLocale', () => {
-  it('keeps diagram translation on the original allowlist', () => {
-    expect(canvasTranslateTargetForUiLocale('pl')).toBe('en')
+  it('maps interface locales onto prompt-registry targets', () => {
+    expect(canvasTranslateTargetForUiLocale('no')).toBe('no')
+    expect(canvasTranslateTargetForUiLocale('nb')).toBe('no')
+    expect(canvasTranslateTargetForUiLocale('pl')).toBe('pl')
     expect(canvasTranslateTargetForUiLocale('zh-tw')).toBe('zh')
     expect(canvasTranslateTargetForUiLocale('fr-FR')).toBe('fr')
+    expect(canvasTranslateTargetForUiLocale('xx-unknown')).toBe('en')
   })
 })
