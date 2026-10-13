@@ -13,10 +13,8 @@ from services.dify.dify_servers import (
     configured_dify_servers,
     failover_enabled,
     failover_partner_server,
-    org_eligible_for_failover_probing,
     org_server_credentials,
     primary_server_no,
-    standby_server_no,
 )
 
 
@@ -87,12 +85,6 @@ def test_primary_server_defaults_and_clamps() -> None:
     assert primary_server_no(_org(dify_active_server=2)) == 2
     assert primary_server_no(_org(dify_active_server=9)) == 1
     assert primary_server_no(_org(dify_active_server="bad")) == 1
-
-
-def test_standby_is_the_other_server() -> None:
-    """Standby is always the opposite of the primary."""
-    assert standby_server_no(1) == 2
-    assert standby_server_no(2) == 1
 
 
 def test_failover_enabled_reads_flag() -> None:
@@ -207,19 +199,3 @@ def test_failover_partner_none_when_three_servers_configured(
     )
     assert failover_partner_server(org) is None
     clear_dify_server_schema_cache()
-
-
-def test_org_eligible_for_failover_probing() -> None:
-    """Eligibility requires failover enabled and a resolvable partner pair."""
-    assert org_eligible_for_failover_probing(_org(dify_failover_enabled=False)) is False
-    assert (
-        org_eligible_for_failover_probing(
-            _org(
-                dify_api_base_url="https://s1/v1",
-                dify_api_key="key1",
-                dify_api_base_url_2="https://s2/v1",
-                dify_api_key_2="key2",
-            )
-        )
-        is True
-    )

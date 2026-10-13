@@ -3,7 +3,6 @@ import {
   omitNodeStyleLayoutSizes,
   pickFormatBrushStyle,
 } from '@/composables/canvasToolbar/formatBrushStyle'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
@@ -65,10 +64,10 @@ import {
   measureNumberedBranchUnderlineHeight,
 } from '../specLoader/mindMap'
 import { applyTreeMapTopicLayoutToNodes } from '../specLoader/treeMapTopicLayout'
-import { isLearningSheetBlankDisplayText } from '../specLoader/utils'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitCtxEvent } from './events'
 import { syncMindMapSummaryNodeText } from './mindMapSummaryOps'
+import { applyMindMapTextEditBox } from './mindMapTextEditSize'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { type DiagramContext, STRUCTURAL_SPEC_RELOAD } from './types'
 
@@ -225,58 +224,9 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     if (
       (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
       'text' in updates &&
-      updates.text !== undefined &&
-      nodeId !== 'topic'
+      updates.text !== undefined
     ) {
-      const currentNode = ctx.data.value.nodes[nodeIndex]
-      const nodeData = currentNode.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
-      const newText = updates.text ?? ''
-      const diagramData = ctx.data.value as {
-        isLearningSheet?: boolean
-        is_learning_sheet?: boolean
-      }
-      const isLearningSheetActive =
-        diagramData.isLearningSheet === true || diagramData.is_learning_sheet === true
-      const isLearningSheetBlankUpdate =
-        isLearningSheetActive &&
-        typeof nodeData?.hiddenAnswer === 'string' &&
-        nodeData.hiddenAnswer.trim().length > 0 &&
-        (nodeData?.hidden === true || isLearningSheetBlankDisplayText(newText))
-
-      if (!isLearningSheetBlankUpdate) {
-        const nodeStyle = {
-          ...(ctx.data.value._node_styles?.[nodeId] || {}),
-          ...(currentNode.style || {}),
-        }
-        const numberMap = mindMapBranchNumberMapFromData(ctx.data.value)
-        const prefix = numberMap.get(nodeId) ?? ''
-        const freshWidth = estimateNumberedBranchWidth(newText, prefix, nodeId, nodeStyle)
-        const shape = resolveMindMapNodeShape(
-          { id: nodeId, type: currentNode.type ?? 'branch', style: nodeStyle },
-          ctx.data.value._mindmap_diagram_style as string | undefined
-        )
-        const gloss = (currentNode.textSecondary ?? '').trim()
-        const glossExtra = gloss ? Math.ceil(14 * 0.75 * 1.2) : 0
-        const freshHeight =
-          (shape === 'underline'
-            ? measureNumberedBranchUnderlineHeight(newText, prefix, nodeId, nodeStyle)
-            : measureNumberedBranchHeight(newText, prefix, nodeId, nodeStyle)) + glossExtra
-        ctx.data.value.nodes[nodeIndex] = {
-          ...ctx.data.value.nodes[nodeIndex],
-          data: {
-            ...ctx.data.value.nodes[nodeIndex].data,
-            estimatedWidth: freshWidth,
-            estimatedHeight: freshHeight,
-          },
-        }
-        // Drop stale DOM height so the next restack uses the fresh estimate immediately;
-        // BranchNode ResizeObserver will replace it with the real box on the next frame.
-        if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
-          ctx.mindMapNodeHeights.value[nodeId] = freshHeight
-          ctx.mindMapNodeWidths.value[nodeId] = freshWidth
-          ctx.scheduleMindMapRecalc()
-        }
-      }
+      applyMindMapTextEditBox(ctx, nodeId, nodeIndex)
     }
 
     if (

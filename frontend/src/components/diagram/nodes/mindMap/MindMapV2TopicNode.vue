@@ -227,8 +227,8 @@ const isEditing = ref(false)
 const topicNodeRef = ref<HTMLDivElement | null>(null)
 
 useNodeDimensions(topicNodeRef, props.id, {
+  deferWhile: isEditing,
   onResize(w, h) {
-    if (isEditing.value) return
     diagramStore.setMindMapTopicMeasured(w, h)
   },
 })

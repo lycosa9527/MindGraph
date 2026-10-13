@@ -34,7 +34,7 @@ from services.dify.dify_servers import (
     partner_for_configured_slots,
     primary_server_no,
 )
-from services.redis.cache.redis_dify_server_health_cache import get_server_health
+from services.redis.cache.redis_dify_server_health_cache import get_url_health
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -146,8 +146,8 @@ async def select_active_dify_server(org: Organization) -> Optional[int]:
     if not failover_enabled(org) or partner is None or partner_creds is None:
         return primary
 
-    primary_health = await get_server_health(org.id, primary)
-    partner_health = await get_server_health(org.id, partner) if partner is not None else None
+    primary_health = await get_url_health(primary_creds.api_url)
+    partner_health = await get_url_health(partner_creds.api_url)
     route = choose_failover_route(primary, partner, primary_health, partner_health)
     if route == partner and route != primary:
         if primary_health is not None and not is_health_fresh(primary_health):
@@ -172,9 +172,10 @@ async def select_active_dify_server(org: Organization) -> Optional[int]:
 
 async def _conversation_server_usable(org: Organization, server: int) -> bool:
     """True when this conversation's server is not known to be down."""
-    if effective_server_credentials(org, server) is None:
+    creds = effective_server_credentials(org, server)
+    if creds is None:
         return False
-    health = await get_server_health(org.id, server)
+    health = await get_url_health(creds[1])
     if health is None:
         return True
     if not is_health_fresh(health):

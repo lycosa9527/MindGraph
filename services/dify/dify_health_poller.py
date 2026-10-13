@@ -1,10 +1,9 @@
 """
-Background heartbeat poller for per-organization Dify servers.
+Background heartbeat for the shared Dify main and backup servers.
 
-Platform monitoring walks every schema slot (1, 2, 3, …) and probes each unique
-base URL once (shared hosts collapse across schools/keys). Per-school failover
-uses that school's pair. A blank 主服务器 or 备用服务器 uses Dify main or Dify backup
-from the environment when both env pairs are set.
+MindMate sends the school on each request, so every school uses the same two
+URLs (``DIFY_API_URL`` and ``DIFY_BACKUP_API_URL``). The poller probes those
+hosts once per cycle and stores one health snapshot per URL.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -19,83 +18,64 @@ import os
 import uuid
 from typing import Dict, List, Optional, Tuple
 
-from models.domain.auth import Organization
-from services.dify.dify_global_servers import (
-    effective_configured_dify_servers,
-    effective_failover_partner_server,
-    effective_server_credentials,
-)
+from services.dify.dify_failover_routing import choose_failover_route, positive_int_env
+from services.dify.dify_global_servers import global_dify_servers
 from services.dify.dify_health_host_probe import check_dify_host_reachable
 from services.dify.dify_health_logging import (
     LOG_PREFIX,
     health_status_text,
-    org_label,
     probe_failure_reason,
     server_label,
     traffic_route_sentence,
 )
-from services.dify.dify_health_org_loader import load_orgs_for_dify_health
-from services.dify.dify_health_probe_plan import (
-    DifyProbeAssignment,
-    DifyProbePlan,
-    DifyProbeTarget,
-    build_deduped_probe_plan,
-    probe_target_key,
-)
-from services.dify.dify_server_schema import organization_dify_server_slots
-from services.dify.dify_servers import (
-    failover_enabled,
-    primary_server_no,
-)
-from services.dify.org_mindmate_client import select_active_dify_server
+from services.dify.dify_servers import DifyServerCreds
 from services.redis import keys as _keys
 from services.redis.cache.redis_dify_server_health_cache import (
     DifyServerHealth,
     HEALTH_FAILURE_THRESHOLD,
-    get_server_health,
-    record_probe_result,
+    get_url_health,
+    normalize_dify_health_url,
+    record_url_probe_result,
 )
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
-from utils.db.session_open import system_rls_session
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
 # 120s balances failover latency (~4 min with failure threshold 2) vs probe/log noise.
-DIFY_HEALTH_POLL_INTERVAL_SECONDS = int(os.getenv("DIFY_HEALTH_POLL_INTERVAL_SECONDS", "120"))
-DIFY_PROBE_CONCURRENCY = max(1, int(os.getenv("DIFY_PROBE_CONCURRENCY", "10")))
-_LOCK_REFRESH_EVERY_ASSIGNMENTS = 25
+DIFY_HEALTH_POLL_INTERVAL_SECONDS = positive_int_env("DIFY_HEALTH_POLL_INTERVAL_SECONDS", 120)
+DIFY_PROBE_CONCURRENCY = positive_int_env("DIFY_PROBE_CONCURRENCY", 10)
 
-_POLLER_CYCLE_ERRORS = BACKGROUND_INFRA_ERRORS + DATABASE_ERRORS + REDIS_ERRORS
+_POLLER_CYCLE_ERRORS = BACKGROUND_INFRA_ERRORS + REDIS_ERRORS
 
 _LOCK_KEY = _keys.DIFY_HEALTH_POLLER_LOCK
 _LOCK_TTL = _keys.TTL_DIFY_HEALTH_POLLER_LOCK
 
-_ProbeOutcome = Tuple[bool, Optional[int], Optional[str]]
+_MAIN_SERVER = 1
+_BACKUP_SERVER = 2
 
 
 class _PollerLockState:
-    """Holds this worker's lock token across loop iterations."""
+    """Holds this worker's lock token and the last shared route it logged."""
 
-    __slots__ = ("lock_id", "is_holder")
+    __slots__ = ("lock_id", "is_holder", "last_route")
 
     def __init__(self) -> None:
-        """init  ."""
+        """Create this worker's lock token."""
         self.lock_id = f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
         self.is_holder = False
+        self.last_route: Optional[int] = None
 
 
 _lock_state = _PollerLockState()
 
 
-def _server_role(org: Organization, server: int) -> str:
+def _server_role(server: int) -> str:
     """Return a human-readable role label for logging."""
-    primary = primary_server_no(org)
-    if server == primary:
+    if server == _MAIN_SERVER:
         return "primary"
-    partner = effective_failover_partner_server(org)
-    if partner is not None and server == partner:
+    if server == _BACKUP_SERVER:
         return "standby"
     return f"server_{server}"
 
@@ -107,17 +87,14 @@ def _was_considered_down(previous: Optional[DifyServerHealth]) -> bool:
 
 
 def _log_probe_transition(
-    org: Organization,
     server: int,
-    role: str,
     previous: Optional[DifyServerHealth],
     snapshot: DifyServerHealth,
     http_status: Optional[int],
     err: Optional[str],
 ) -> None:
-    """Emit detail logs when a probe outcome or offline threshold changes."""
-    school = org_label(org)
-    target = server_label(server, role)
+    """Emit detail logs when a shared host's probe outcome changes."""
+    target = server_label(server, _server_role(server))
     prev_down = _was_considered_down(previous)
     now_down = snapshot.considered_down
     reason = probe_failure_reason(http_status, err)
@@ -126,23 +103,16 @@ def _log_probe_transition(
     if snapshot.online:
         if previous is None:
             logger.info(
-                "%s %s: %s responded OK on first health check.",
+                "%s %s responded OK on first health check.",
                 LOG_PREFIX,
-                school,
                 target,
             )
         elif not previous.online:
-            logger.info(
-                "%s %s: %s is back online.",
-                LOG_PREFIX,
-                school,
-                target,
-            )
+            logger.info("%s %s is back online.", LOG_PREFIX, target)
         elif prev_down and not now_down:
             logger.info(
-                "%s %s: %s passed health check again and is available for traffic.",
+                "%s %s passed health check again and is available for traffic.",
                 LOG_PREFIX,
-                school,
                 target,
             )
         return
@@ -150,9 +120,8 @@ def _log_probe_transition(
     failures = snapshot.consecutive_failures
     if previous is None or previous.online:
         logger.warning(
-            "%s %s: %s health check failed (%s). %s of %s failures before failover.",
+            "%s %s health check failed (%s). %s of %s failures before failover.",
             LOG_PREFIX,
-            school,
             target,
             reason,
             failures,
@@ -160,90 +129,60 @@ def _log_probe_transition(
         )
     elif not prev_down and now_down:
         logger.warning(
-            "%s %s: %s marked offline after %s failed checks (%s).",
+            "%s %s marked offline after %s failed checks (%s).",
             LOG_PREFIX,
-            school,
             target,
             failures,
             reason,
         )
 
 
-def _log_org_heartbeat_summary(
-    org: Organization,
-    health_by_server: Dict[int, Optional[DifyServerHealth]],
-    active_route: Optional[int],
-) -> None:
-    """One readable line per org each heartbeat cycle."""
-    servers = effective_configured_dify_servers(org)
+def _log_pair_summary(health_by_server: Dict[int, DifyServerHealth]) -> None:
+    """One line for the shared main and backup hosts."""
     status_parts = []
-    for creds in servers:
-        role = _server_role(org, creds.server)
-        label = server_label(creds.server, role)
-        status_parts.append(f"{label} is {health_status_text(health_by_server.get(creds.server))}")
+    for server in (_MAIN_SERVER, _BACKUP_SERVER):
+        snapshot = health_by_server.get(server)
+        if snapshot is None:
+            continue
+        label = server_label(server, _server_role(server))
+        status_parts.append(f"{label} is {health_status_text(snapshot)}")
+    if not status_parts:
+        return
 
-    primary = primary_server_no(org)
-    partner = effective_failover_partner_server(org)
-    partner_no = partner if partner is not None else primary
+    main_health = health_by_server.get(_MAIN_SERVER)
+    backup_health = health_by_server.get(_BACKUP_SERVER)
+    if main_health is None or backup_health is None:
+        logger.debug("%s %s.", LOG_PREFIX, "; ".join(status_parts))
+        return
+
+    route = choose_failover_route(_MAIN_SERVER, _BACKUP_SERVER, main_health, backup_health)
     route_note = traffic_route_sentence(
-        active_route,
-        primary,
-        partner_no,
-        health_by_server.get(primary),
-        health_by_server.get(partner_no),
+        route,
+        _MAIN_SERVER,
+        _BACKUP_SERVER,
+        main_health,
+        backup_health,
     )
-    logger.debug(
-        "%s %s: %s. %s",
-        LOG_PREFIX,
-        org_label(org),
-        "; ".join(status_parts),
-        route_note,
-    )
+    logger.debug("%s %s. %s", LOG_PREFIX, "; ".join(status_parts), route_note)
+    _log_routing_change(route)
 
 
-def _log_routing_change(
-    org: Organization,
-    route_before: Optional[int],
-    route_after: Optional[int],
-) -> None:
-    """Log when live routing switches between main and backup servers."""
-    if route_before == route_after:
+def _log_routing_change(route_after: int) -> None:
+    """Log when the shared main/backup route changes."""
+    route_before = _lock_state.last_route
+    _lock_state.last_route = route_after
+    if route_before is None or route_before == route_after:
         return
-    school = org_label(org)
-    primary = primary_server_no(org)
-    partner = effective_failover_partner_server(org)
-    main = server_label(primary, "primary")
-    if partner is None:
-        logger.warning(
-            "%s %s: MindMate traffic routing changed to server %s.",
-            LOG_PREFIX,
-            school,
-            route_after,
-        )
-        return
-    backup = server_label(partner, "standby")
-    if route_after == primary:
-        logger.info(
-            "%s %s: MindMate traffic restored to %s.",
-            LOG_PREFIX,
-            school,
-            main,
-        )
-        return
-    if route_after == partner:
-        logger.warning(
-            "%s %s: MindMate traffic switched from %s to %s because the main server is offline.",
-            LOG_PREFIX,
-            school,
-            main,
-            backup,
-        )
+    main = server_label(_MAIN_SERVER, "primary")
+    backup = server_label(_BACKUP_SERVER, "standby")
+    if route_after == _MAIN_SERVER:
+        logger.info("%s MindMate traffic restored to %s.", LOG_PREFIX, main)
         return
     logger.warning(
-        "%s %s: MindMate traffic routing changed to server %s.",
+        "%s MindMate traffic switched from %s to %s because the main server is offline.",
         LOG_PREFIX,
-        school,
-        route_after,
+        main,
+        backup,
     )
 
 
@@ -268,134 +207,71 @@ async def _acquire_or_refresh_lock() -> bool:
         return False
 
 
-async def _load_orgs_with_dify_credentials() -> List[Organization]:
-    """Return schools the heartbeat should probe."""
-    async with system_rls_session() as db:
-        return await load_orgs_for_dify_health(db)
+def _group_servers_by_url(
+    servers: List[DifyServerCreds],
+) -> Tuple[List[str], Dict[str, List[DifyServerCreds]]]:
+    """Collapse slots that share a base URL so one cycle probes each host once."""
+    order: List[str] = []
+    grouped: Dict[str, List[DifyServerCreds]] = {}
+    for creds in servers:
+        url = normalize_dify_health_url(creds.api_url)
+        if not url:
+            continue
+        if url not in grouped:
+            order.append(url)
+            grouped[url] = []
+        grouped[url].append(creds)
+    return order, grouped
 
 
-def _failover_orgs(orgs: List[Organization]) -> List[Organization]:
-    """Schools that participate in automatic failover (enabled + effective pair)."""
-    return [org for org in orgs if failover_enabled(org) and effective_failover_partner_server(org) is not None]
-
-
-async def _probe_unique_target(
-    target: DifyProbeTarget,
+async def _probe_url(
+    url: str,
+    group: List[DifyServerCreds],
     semaphore: asyncio.Semaphore,
-) -> _ProbeOutcome:
-    """Run one host-level HTTP health check with bounded concurrency."""
-    async with semaphore:
-        return await check_dify_host_reachable(target.api_url, target.api_keys)
-
-
-async def _run_deduped_probes(plan: DifyProbePlan) -> Dict[str, _ProbeOutcome]:
-    """Probe each unique base URL once and index results by normalized URL."""
-    if not plan.unique_targets:
-        return {}
-    semaphore = asyncio.Semaphore(DIFY_PROBE_CONCURRENCY)
-    outcomes = await asyncio.gather(*(_probe_unique_target(target, semaphore) for target in plan.unique_targets))
-    return {probe_target_key(target): outcome for target, outcome in zip(plan.unique_targets, outcomes, strict=True)}
-
-
-async def _apply_assignment(
-    org: Organization,
-    assignment: DifyProbeAssignment,
-    outcome: _ProbeOutcome,
-) -> None:
-    """Persist one school's server-slot result and log state transitions."""
+) -> Tuple[str, DifyServerHealth]:
+    """Probe one shared host and store a single health snapshot."""
+    try:
+        async with semaphore:
+            outcome = await check_dify_host_reachable(url, (entry.api_key for entry in group))
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning("%s Health check could not finish for %s: %s", LOG_PREFIX, url, exc)
+        outcome = (False, None, "probe_failed")
     online, http_status, err = outcome
-    previous = await get_server_health(org.id, assignment.server)
-    snapshot = await record_probe_result(
-        org.id,
-        assignment.server,
-        online,
-        previous=previous,
-    )
-    _log_probe_transition(
-        org,
-        assignment.server,
-        _server_role(org, assignment.server),
-        previous,
-        snapshot,
-        http_status,
-        err,
-    )
+    previous = await get_url_health(url)
+    snapshot = await record_url_probe_result(url, online, previous=previous)
+    _log_probe_transition(group[0].server, previous, snapshot, http_status, err)
+    return url, snapshot
 
 
-async def _finalize_org(org: Organization, route_before: Optional[int]) -> None:
-    """Emit per-school summary and routing logs after all server slots are updated."""
-    health_by_server: Dict[int, Optional[DifyServerHealth]] = {}
-    for creds in effective_configured_dify_servers(org):
-        health_by_server[creds.server] = await get_server_health(org.id, creds.server)
-
-    route_after = await select_active_dify_server(org)
-    _log_org_heartbeat_summary(org, health_by_server, route_after)
-    _log_routing_change(org, route_before, route_after)
-
-
-async def run_dify_health_check_once(orgs: Optional[List[Organization]] = None) -> None:
-    """
-    Run one heartbeat cycle.
-
-    Pass *orgs* to check a known school list. The background loop omits it and
-    loads schools from the database.
-    """
-    await _probe_once(orgs)
-
-
-async def _probe_once(orgs: Optional[List[Organization]] = None) -> None:
-    """Probe unique endpoints once, then fan results to each school's server slots."""
-    monitor_orgs = orgs if orgs is not None else await _load_orgs_with_dify_credentials()
-    if not monitor_orgs:
-        logger.debug("%s No schools with Dify server credentials are configured.", LOG_PREFIX)
+async def _probe_once() -> None:
+    """Probe Dify main and Dify backup once and publish the shared snapshots."""
+    order, grouped = _group_servers_by_url(global_dify_servers())
+    if not order:
+        logger.debug("%s Dify main and backup URLs are not configured.", LOG_PREFIX)
         return
 
-    failover_orgs = _failover_orgs(monitor_orgs)
-    plan = build_deduped_probe_plan(monitor_orgs, effective_server_credentials)
-    schema_slots = organization_dify_server_slots()
     logger.debug(
-        "%s Health check cycle: %s unique base URL(s) across schema slot(s) %s; "
-        "%s school(s) contribute credentials (%s org/server assignment(s)).",
+        "%s Health check cycle: %s Dify host(s).",
         LOG_PREFIX,
-        plan.unique_endpoint_count,
-        list(plan.monitored_schema_slots) or list(schema_slots),
-        plan.contributing_school_count,
-        plan.server_slot_count,
+        len(order),
     )
+    semaphore = asyncio.Semaphore(DIFY_PROBE_CONCURRENCY)
+    probed = await asyncio.gather(*(_probe_url(url, grouped[url], semaphore) for url in order))
+    health_by_server: Dict[int, DifyServerHealth] = {}
+    for url, snapshot in probed:
+        for creds in grouped[url]:
+            health_by_server[creds.server] = snapshot
+    _log_pair_summary(health_by_server)
 
-    outcomes = await _run_deduped_probes(plan)
-    org_by_id = {org.id: org for org in monitor_orgs}
-    route_before_by_org: Dict[int, Optional[int]] = {}
-    for org in failover_orgs:
-        route_before_by_org[org.id] = await select_active_dify_server(org)
 
-    assignments_applied = 0
-    lock_lost = False
-    for target, assignments in plan.assignments_by_target:
-        outcome = outcomes[probe_target_key(target)]
-        for assignment in assignments:
-            org = org_by_id.get(assignment.org_id)
-            if org is None:
-                continue
-            await _apply_assignment(org, assignment, outcome)
-            assignments_applied += 1
-            if lock_lost or assignments_applied % _LOCK_REFRESH_EVERY_ASSIGNMENTS != 0:
-                continue
-            if await _acquire_or_refresh_lock():
-                continue
-            lock_lost = True
-            logger.warning(
-                "%s Lost health-check lock mid-cycle; finishing fan-out with in-memory probe results.",
-                LOG_PREFIX,
-            )
-
-    for org in failover_orgs:
-        await _finalize_org(org, route_before_by_org.get(org.id))
+async def run_dify_health_check_once() -> None:
+    """Run one heartbeat cycle against the shared Dify main and backup URLs."""
+    await _probe_once()
 
 
 async def start_dify_health_poller() -> None:
     """
-    Run the Dify server heartbeat loop on the single Redis lock holder.
+    Run the shared Dify heartbeat loop on the single Redis lock holder.
 
     Non-holders sleep and retry so failover continues if the holder dies.
     """
@@ -413,17 +289,18 @@ async def start_dify_health_poller() -> None:
                         LOG_PREFIX,
                     )
                     _lock_state.is_holder = False
+                    _lock_state.last_route = None
                 await asyncio.sleep(DIFY_HEALTH_POLL_INTERVAL_SECONDS)
                 continue
 
             if not _lock_state.is_holder:
-                logger.info(
-                    "%s This worker will run platform Dify health checks.",
-                    LOG_PREFIX,
-                )
+                logger.info("%s This worker will run Dify main and backup health checks.", LOG_PREFIX)
                 _lock_state.is_holder = True
 
             await _probe_once()
+            if not await _acquire_or_refresh_lock():
+                _lock_state.is_holder = False
+                _lock_state.last_route = None
             await asyncio.sleep(DIFY_HEALTH_POLL_INTERVAL_SECONDS)
         except asyncio.CancelledError:
             logger.info("%s Background health checks stopped.", LOG_PREFIX)

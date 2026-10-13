@@ -83,10 +83,11 @@ ENV_RELOAD_CHANNEL = "mg:env:reload"
 # ---------------------------------------------------------------------------
 # Dify dual-server health  (redis_dify_server_health_cache.py)
 # ---------------------------------------------------------------------------
-DIFY_SERVER_HEALTH = "dify:health:{org_id}:{server}"
+# Shared by every school. MindMate sends the school on the request.
+DIFY_URL_HEALTH = "dify:health:url:{url_hash}"
 DIFY_HEALTH_POLLER_LOCK = "dify:health:poller:lock"
 # Must outlive DIFY_HEALTH_POLL_INTERVAL_SECONDS and default max-age (poll*4+60).
-TTL_DIFY_SERVER_HEALTH = 900  # safety net; poller refreshes every ~120 s by default
+TTL_DIFY_URL_HEALTH = 900  # safety net; poller refreshes every ~120 s by default
 TTL_DIFY_HEALTH_POLLER_LOCK = 300  # must exceed worst-case probe cycle duration
 
 # ---------------------------------------------------------------------------

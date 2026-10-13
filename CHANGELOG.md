@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.170] - 2026-10-13
+
+> **Editing a mind-map topic keeps the painted stem, and MindMate checks the shared Dify hosts once.**
+
+### Fixed
+
+- **思维导图** — Editing the center topic updates the layout estimate and leaves the painted stem width alone. The right-hand branch stays on that painted edge. When editing ends, the measured size is published even if the box already settled.
+
+### Changed
+
+- **Dify 健康检查** — The heartbeat probes the shared main and backup URLs once per cycle and stores one snapshot per host. Every school reads that snapshot. A missing primary snapshot stays on the primary.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`frontend/tests/mindMapTopicEditStem.spec.ts`](frontend/tests/mindMapTopicEditStem.spec.ts) — a shorter topic label updates the estimate and leaves the painted width until measurement replaces it.
+- [`tests/test_dify_server_health_cache.py`](tests/test_dify_server_health_cache.py), [`tests/test_dify_failover_routing.py`](tests/test_dify_failover_routing.py), [`tests/test_dify_global_servers.py`](tests/test_dify_global_servers.py) — health is keyed by base URL, and the poller covers the shared pair.
+
 ## [5.180.169] - 2026-10-13
 
 > **Search engines can read the public pages, a low thinking-coin balance opens the wallet from anywhere, and the browser extension ships a store-safe PDF worker.**

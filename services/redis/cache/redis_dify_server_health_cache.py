@@ -1,9 +1,9 @@
 """
-Redis cache for per-organization Dify server health (dual-server failover).
+Redis cache for the shared Dify main and backup server health.
 
-The background heartbeat poller writes one entry per ``org_id``+``server`` with
-the latest probe outcome. The MindMate credential resolver reads it to decide
-whether to fail over from the primary server to the standby. Redis is the shared
+MindMate sends the school on each request, so both hosts are shared. The
+background heartbeat writes one entry per base URL. The credential resolver
+reads that snapshot for whichever URL a school will call. Redis is the shared
 source of truth across workers; a short TTL is a safety net if the poller stops.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
@@ -13,6 +13,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import time
@@ -69,7 +70,7 @@ return payload
 
 @dataclass(frozen=True)
 class DifyServerHealth:
-    """Snapshot of one Dify server's health for one organization."""
+    """Snapshot of one shared Dify base URL."""
 
     online: bool
     consecutive_failures: int
@@ -82,9 +83,15 @@ class DifyServerHealth:
         return not self.online and self.consecutive_failures >= HEALTH_FAILURE_THRESHOLD
 
 
-def _cache_key(org_id: int, server: int) -> str:
-    """Cache key."""
-    return _keys.DIFY_SERVER_HEALTH.format(org_id=int(org_id), server=int(server))
+def normalize_dify_health_url(api_url: str) -> str:
+    """Normalize a Dify base URL so trailing slashes share one health entry."""
+    return (api_url or "").strip().rstrip("/")
+
+
+def dify_health_cache_key(api_url: str) -> str:
+    """Redis key for one Dify base URL. The URL itself is not stored in the key."""
+    digest = hashlib.sha256(normalize_dify_health_url(api_url).encode("utf-8")).hexdigest()
+    return _keys.DIFY_URL_HEALTH.format(url_hash=digest)
 
 
 def _deserialize(text: str) -> Optional[DifyServerHealth]:
@@ -125,15 +132,17 @@ def _snapshot_from_probe(online: bool, previous: Optional[DifyServerHealth]) -> 
     )
 
 
-async def get_server_health(org_id: int, server: int) -> Optional[DifyServerHealth]:
-    """Return the cached health snapshot, or None on miss / Redis unavailable."""
+async def get_url_health(api_url: str) -> Optional[DifyServerHealth]:
+    """Return the cached health snapshot for a Dify base URL, or None on miss."""
+    if not normalize_dify_health_url(api_url):
+        return None
     if not is_redis_available():
         return None
     redis = get_async_redis()
     if not redis:
         return None
     try:
-        text = await redis.get(_cache_key(org_id, server))
+        text = await redis.get(dify_health_cache_key(api_url))
     except REDIS_ERRORS as exc:
         logger.debug("Dify server health read failed: %s", exc)
         return None
@@ -144,22 +153,21 @@ async def get_server_health(org_id: int, server: int) -> Optional[DifyServerHeal
     return _deserialize(text)
 
 
-async def record_probe_result(
-    org_id: int,
-    server: int,
+async def record_url_probe_result(
+    api_url: str,
     online: bool,
     *,
     previous: Optional[DifyServerHealth] = None,
 ) -> DifyServerHealth:
     """
-    Fold a new probe outcome into the cached snapshot and persist it atomically.
+    Fold a new probe outcome into the cached snapshot for one base URL.
 
     When *previous* is supplied the poller avoids a redundant Redis GET. The
     Lua script still reads the latest value at write time for correctness under
     concurrent writers.
     """
     if previous is None:
-        previous = await get_server_health(org_id, server)
+        previous = await get_url_health(api_url)
 
     if not is_redis_available():
         return _snapshot_from_probe(online, previous)
@@ -172,11 +180,11 @@ async def record_probe_result(
         payload = await redis.eval(
             _RECORD_PROBE_LUA,
             1,
-            _cache_key(org_id, server),
+            dify_health_cache_key(api_url),
             str(now),
             "1" if online else "0",
             str(MAX_CONSECUTIVE_FAILURES),
-            str(_keys.TTL_DIFY_SERVER_HEALTH),
+            str(_keys.TTL_DIFY_URL_HEALTH),
         )
     except REDIS_ERRORS as exc:
         logger.debug("Dify server health write failed: %s", exc)

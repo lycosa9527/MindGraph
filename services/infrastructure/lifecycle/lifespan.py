@@ -33,7 +33,6 @@ from services.auth.geoip_country import log_geolite_country_mmdb_startup_status
 from services.auth.sms_middleware import get_sms_middleware
 from services.auth.sms_service import SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
 from services.dify.dify_health_poller import start_dify_health_poller
-from services.dify.dify_server_schema import clear_dify_server_schema_cache
 from services.infrastructure.lifecycle.app_runtime import set_app_start_time
 from services.infrastructure.lifecycle.cos_prefix_posture import log_cos_prefix_posture
 from services.infrastructure.lifecycle.lifespan_collab_integration import (
@@ -503,10 +502,9 @@ async def lifespan(fastapi_app: FastAPI):
 
     dify_health_poller_task: asyncio.Task | None = None
     try:
-        clear_dify_server_schema_cache()
         dify_health_poller_task = asyncio.create_task(start_dify_health_poller())
         if is_main_worker:
-            logger.debug("[Dify Failover] Dual-server health check task scheduled")
+            logger.debug("[Dify Failover] Dify main and backup health check task scheduled")
     except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("[Dify Failover] Could not start background health checks: %s", e)

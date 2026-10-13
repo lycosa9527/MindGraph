@@ -15,11 +15,34 @@ from typing import Optional
 from services.redis.cache.redis_dify_server_health_cache import DifyServerHealth
 
 
+def positive_int_env(name: str, default: int) -> int:
+    """Return a positive integer from the environment, or *default* when unset or invalid."""
+    raw = (os.getenv(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    if value <= 0:
+        return default
+    return value
+
+
 def health_max_age_seconds() -> float:
     """Treat health snapshots older than this as stale (not trusted for routing)."""
-    poll_interval = int(os.getenv("DIFY_HEALTH_POLL_INTERVAL_SECONDS", "120"))
-    default = poll_interval * 4 + 60
-    return float(os.getenv("DIFY_HEALTH_MAX_AGE_SECONDS", str(default)))
+    poll_interval = positive_int_env("DIFY_HEALTH_POLL_INTERVAL_SECONDS", 120)
+    default = float(poll_interval * 4 + 60)
+    raw = (os.getenv("DIFY_HEALTH_MAX_AGE_SECONDS") or "").strip()
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        return default
+    if value <= 0:
+        return default
+    return value
 
 
 def is_health_fresh(
@@ -50,28 +73,22 @@ def choose_failover_route(
     """
     Pick primary or partner for live MindMate traffic.
 
-    Prefers a fresh, healthy primary. Fails over when primary is stale or
-    considered down and the partner is fresh and not considered down. When both
-    lack trustworthy health data, keeps primary (cold start / last resort).
+    Prefers a fresh, healthy primary. Fails over when that primary's snapshot
+    is stale or considered down and the partner is usable. A missing primary
+    snapshot stays on primary: the host has not been checked, or it is not one
+    of the two shared Dify URLs.
     """
-    if server_is_routable(primary_health):
+    if primary_health is None or server_is_routable(primary_health):
         return primary
 
     # Anti-flap: a fresh primary that failed once is not yet considered down.
-    if primary_health is not None and is_health_fresh(primary_health) and not primary_health.considered_down:
+    if is_health_fresh(primary_health) and not primary_health.considered_down:
         return primary
 
     if server_is_routable(partner_health):
         return partner
 
-    if (
-        primary_health is not None
-        and primary_health.considered_down
-        and (partner_health is None or not partner_health.considered_down)
-    ):
+    if primary_health.considered_down and (partner_health is None or not partner_health.considered_down):
         return partner
-
-    if primary_health is None and partner_health is None:
-        return primary
 
     return primary

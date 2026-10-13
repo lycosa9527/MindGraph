@@ -108,21 +108,27 @@ def _install_health_redis(monkeypatch: pytest.MonkeyPatch) -> _HealthRedis:
 @pytest.mark.asyncio
 async def test_main_outage_switches_to_backup_and_back(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Heartbeats drive live MindMate routing for a school on the env pair.
+    Heartbeats probe the shared Dify main and backup URLs once per cycle.
 
     One failed check stays on 主服务器. The next failed check moves traffic to
-    备用服务器. The first successful check after recovery moves it back.
+    备用服务器 for every school on that pair. The first successful check after
+    recovery moves it back.
     """
     _install_env(monkeypatch)
     _install_health_redis(monkeypatch)
     school = _school()
+    other = _school()
+    other.id = 99
     main_up = True
+    probe_calls = 0
 
     async def probe(
         base_url: str,
         _api_keys: object,
     ) -> tuple[bool, Optional[int], Optional[str]]:
         """Report 主服务器 down only while the outage flag is set."""
+        nonlocal probe_calls
+        probe_calls += 1
         if base_url.rstrip("/") == _MAIN_URL and not main_up:
             return False, None, "connection_refused"
         return True, 200, None
@@ -142,20 +148,45 @@ async def test_main_outage_switches_to_backup_and_back(monkeypatch: pytest.Monke
 
     assert await routed_url() == _MAIN_URL
 
-    await poller.run_dify_health_check_once([school])
+    await poller.run_dify_health_check_once()
     assert await routed_url() == _MAIN_URL
 
     main_up = False
-    await poller.run_dify_health_check_once([school])
+    await poller.run_dify_health_check_once()
     assert await routed_url() == _MAIN_URL
 
-    await poller.run_dify_health_check_once([school])
+    await poller.run_dify_health_check_once()
     client = await resolver.resolve_mindmate_dify_client(db, school.id)
     assert client.api_url == _BACKUP_URL
     assert client.api_key == _BACKUP_KEY
+    assert await resolver.select_active_dify_server(other) == 2
 
     main_up = True
-    await poller.run_dify_health_check_once([school])
+    await poller.run_dify_health_check_once()
     client = await resolver.resolve_mindmate_dify_client(db, school.id)
     assert client.api_url == _MAIN_URL
     assert client.api_key == _MAIN_KEY
+    assert probe_calls == 8
+
+
+@pytest.mark.asyncio
+async def test_probe_exception_counts_toward_failover(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A probe that raises is a failed check, and the heartbeat keeps running."""
+    _install_env(monkeypatch)
+    _install_health_redis(monkeypatch)
+    school = _school()
+
+    async def probe(
+        base_url: str,
+        _api_keys: object,
+    ) -> tuple[bool, Optional[int], Optional[str]]:
+        """主服务器 cannot be checked; 备用服务器 answers."""
+        if base_url.rstrip("/") == _MAIN_URL:
+            raise RuntimeError("outbound session closed")
+        return True, 200, None
+
+    monkeypatch.setattr(poller, "check_dify_host_reachable", probe)
+    await poller.run_dify_health_check_once()
+    assert await resolver.select_active_dify_server(school) == 1
+    await poller.run_dify_health_check_once()
+    assert await resolver.select_active_dify_server(school) == 2

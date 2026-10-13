@@ -175,9 +175,9 @@ async def test_client_fails_over_to_env_backup(monkeypatch: pytest.MonkeyPatch) 
     db = AsyncMock()
     db.execute = AsyncMock(return_value=_Result())
 
-    async def fake_health(_org_id: int, server: int) -> Optional[DifyServerHealth]:
+    async def fake_health(api_url: str) -> Optional[DifyServerHealth]:
         now = 10_000_000_000.0
-        if server == 1:
+        if api_url.rstrip("/") == "https://main.example/v1":
             return DifyServerHealth(
                 online=False,
                 consecutive_failures=HEALTH_FAILURE_THRESHOLD,
@@ -191,10 +191,36 @@ async def test_client_fails_over_to_env_backup(monkeypatch: pytest.MonkeyPatch) 
             last_checked_at=now,
         )
 
-    monkeypatch.setattr(mindmate_client_mod, "get_server_health", fake_health)
+    monkeypatch.setattr(mindmate_client_mod, "get_url_health", fake_health)
     client = await mindmate_client_mod.resolve_mindmate_dify_client(db, org.id)
     assert client.api_key == "backup-key"
     assert client.api_url == "https://backup.example/v1"
+
+
+@pytest.mark.asyncio
+async def test_custom_main_without_health_stays_on_that_server(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A school 主服务器 that is not the shared Dify URL is not failed over from a missing snapshot."""
+    _clear_dify_env(monkeypatch)
+    monkeypatch.setenv("DIFY_API_KEY", "main-key")
+    monkeypatch.setenv("DIFY_API_URL", "https://main.example/v1")
+    monkeypatch.setenv("DIFY_BACKUP_API_KEY", "backup-key")
+    monkeypatch.setenv("DIFY_BACKUP_API_URL", "https://backup.example/v1")
+
+    org = _org(dify_api_base_url="https://school.example/v1", dify_api_key="school-key")
+
+    async def fake_health(api_url: str) -> Optional[DifyServerHealth]:
+        now = 10_000_000_000.0
+        if api_url.rstrip("/") == "https://backup.example/v1":
+            return DifyServerHealth(
+                online=True,
+                consecutive_failures=0,
+                last_ok_at=now,
+                last_checked_at=now,
+            )
+        return None
+
+    monkeypatch.setattr(mindmate_client_mod, "get_url_health", fake_health)
+    assert await mindmate_client_mod.select_active_dify_server(org) == 1
 
 
 def test_resolve_slot_two_uses_backup_not_main(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -293,9 +319,9 @@ async def test_backup_thread_stays_on_backup_after_main_recovers(monkeypatch: py
     db = AsyncMock()
     db.execute = AsyncMock(return_value=_Result())
 
-    async def fake_health(_org_id: int, server: int) -> Optional[DifyServerHealth]:
+    async def fake_health(api_url: str) -> Optional[DifyServerHealth]:
         now = 10_000_000_000.0
-        assert server in (1, 2)
+        assert api_url.rstrip("/") in {"https://main.example/v1", "https://backup.example/v1"}
         return DifyServerHealth(
             online=True,
             consecutive_failures=0,
@@ -312,7 +338,7 @@ async def test_backup_thread_stays_on_backup_after_main_recovers(monkeypatch: py
             """Do not swallow exceptions."""
             return False
 
-    monkeypatch.setattr(mindmate_client_mod, "get_server_health", fake_health)
+    monkeypatch.setattr(mindmate_client_mod, "get_url_health", fake_health)
     monkeypatch.setattr(mindmate_client_mod, "system_rls_session", _Session)
     target = await mindmate_client_mod.resolve_mindmate_dify_stream_short_lived(
         org.id,
@@ -346,9 +372,9 @@ async def test_main_thread_is_not_sent_to_backup_during_outage(monkeypatch: pyte
     db = AsyncMock()
     db.execute = AsyncMock(return_value=_Result())
 
-    async def fake_health(_org_id: int, server: int) -> Optional[DifyServerHealth]:
+    async def fake_health(api_url: str) -> Optional[DifyServerHealth]:
         now = 10_000_000_000.0
-        if server == 1:
+        if api_url.rstrip("/") == "https://main.example/v1":
             return DifyServerHealth(
                 online=False,
                 consecutive_failures=HEALTH_FAILURE_THRESHOLD,
@@ -371,7 +397,7 @@ async def test_main_thread_is_not_sent_to_backup_during_outage(monkeypatch: pyte
             """Do not swallow exceptions."""
             return False
 
-    monkeypatch.setattr(mindmate_client_mod, "get_server_health", fake_health)
+    monkeypatch.setattr(mindmate_client_mod, "get_url_health", fake_health)
     monkeypatch.setattr(mindmate_client_mod, "system_rls_session", _Session)
     target = await mindmate_client_mod.resolve_mindmate_dify_stream_short_lived(
         org.id,
