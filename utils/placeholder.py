@@ -20,7 +20,6 @@ _CHINESE_PLACEHOLDERS = [
     re.compile(r"^子项\s*[\d.]+$"),
     re.compile(r"^子节点\s*[\d.]+$"),
     re.compile(r"^子\s*[\d.]+$"),
-    re.compile(r"^新.*$"),
     re.compile(r"^属性\s*\d+$"),
     re.compile(r"^步骤\s*\d+$"),
     re.compile(r"^子步骤\s*[\d.]+$"),
@@ -62,7 +61,6 @@ _CHINESE_PLACEHOLDERS = [
 _ENGLISH_PLACEHOLDERS = [
     re.compile(r"^Branch\s+\d+$", re.IGNORECASE),
     re.compile(r"^Child\s+[\d.]+$", re.IGNORECASE),
-    re.compile(r"^New\s+.*$", re.IGNORECASE),
     re.compile(r"^Attribute\s+\d+$", re.IGNORECASE),
     re.compile(r"^Step\s+\d+$", re.IGNORECASE),
     re.compile(r"^Substep\s+[\d.]+$", re.IGNORECASE),
@@ -102,6 +100,77 @@ _ENGLISH_PLACEHOLDERS = [
 
 _PLACEHOLDER_PATTERNS = _CHINESE_PLACEHOLDERS + _ENGLISH_PLACEHOLDERS
 
+# Blank labels written onto a new node. Exact catalog strings for zh, zh-tw, and en.
+# The frontend resolves the same keys for every loaded interface language.
+_INSERTED_BLANK_LABELS = frozenset(
+    {
+        "left difference",
+        "new attribute",
+        "new branch",
+        "new category",
+        "new cause",
+        "new child",
+        "new concept",
+        "new context",
+        "new effect",
+        "new item",
+        "new item a",
+        "new item b",
+        "new left",
+        "new part",
+        "new right",
+        "new similarity",
+        "new step",
+        "new subpart",
+        "new subpart 1",
+        "new subpart 2",
+        "new substep",
+        "new association",
+        "new node",
+        "right difference",
+        "sub-item",
+        "右不同点",
+        "右不同點",
+        "子項",
+        "子项",
+        "左不同点",
+        "左不同點",
+        "新事物a",
+        "新事物b",
+        "新分支",
+        "新原因",
+        "新子步驟",
+        "新子步骤",
+        "新子部分",
+        "新子部分 1",
+        "新子部分 2",
+        "新子項",
+        "新子项",
+        "新属性",
+        "新屬性",
+        "新概念",
+        "新步驟",
+        "新步骤",
+        "新相似点",
+        "新相似點",
+        "新类别",
+        "新結果",
+        "新结果",
+        "新联想",
+        "新聯想",
+        "新部分",
+        "新項目",
+        "新類別",
+        "新项目",
+        "新节点",
+    }
+)
+
+
+def _is_inserted_blank_label(text: str) -> bool:
+    """True when text is an unedited insert label, not a real topic such as 新加坡."""
+    return text.casefold() in _INSERTED_BLANK_LABELS
+
 
 def is_placeholder_text(text: Optional[str]) -> bool:
     """
@@ -113,6 +182,8 @@ def is_placeholder_text(text: Optional[str]) -> bool:
         return True
     stripped = text.strip()
     if not stripped:
+        return True
+    if _is_inserted_blank_label(stripped):
         return True
     return any(p.match(stripped) for p in _PLACEHOLDER_PATTERNS)
 

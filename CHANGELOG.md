@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.171] - 2026-10-15
+
+> **Auto-complete accepts a filled topic such as 新加坡, and a collaborative mind map keeps one branch.**
+
+### Fixed
+
+- **自动完成** — A topic that starts with 新 or New counts as filled on every diagram, including a dual-language double bubble map. 新加坡 and New Zealand no longer raise “fill in both topics” or “enter a topic first”. An unedited insert label (新步骤, New Step) and a seeded title (Topic A, 主题A, Zentrumsthema) still block generation. The node palette and the server prompt filter use the same rule.
+- **协作思维导图** — Clients share one id for a leftover positional branch. A position-only echo updates that branch. It does not add a second copy, and a later patch still finds the live node.
+
+### Tests
+
+- [`frontend/tests/diagramDefaultLabels.spec.ts`](frontend/tests/diagramDefaultLabels.spec.ts) — 新加坡 and New Zealand are real topics; 新步骤, New Step, 主题, and Zentrumsthema stay blank.
+- [`tests/test_placeholder_text.py`](tests/test_placeholder_text.py) — the server list matches the zh, zh-tw, and en insert labels and keeps 新加坡.
+- [`frontend/tests/mindMapIdentityMigrate.spec.ts`](frontend/tests/mindMapIdentityMigrate.spec.ts) — every client mints the same id for a leftover branch, and a position echo has no branch identity.
+- [`tests/test_online_collab_live_spec_merge_extras.py`](tests/test_online_collab_live_spec_merge_extras.py) — a second mind-map id binds onto the live branch, and a layout-only unknown id does not append.
+
 ## [5.180.170] - 2026-10-13
 
 > **Editing a mind-map topic keeps the painted stem, and MindMate checks the shared Dify hosts once.**

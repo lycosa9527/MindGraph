@@ -1,14 +1,15 @@
 /**
  * Default canvas labels that should not be treated as real topic text.
- * Leaf module: stores and palette helpers import this without loading auto-complete.
+ * Inserted blanks come from the locale catalog. Seeded titles such as 主题A
+ * stay in the patterns below, and per-node checks use diagramDefaultLabels.
  */
+import { isInsertedBlankNodeLabel } from '@/stores/diagram/diagramDefaultLabels'
 
 const CHINESE_PLACEHOLDERS = [
   /^分支\s*\d+$/, // 分支1, 分支2
   /^子项\s*[\d.]+$/, // 子项1.1, 子项2.3
   /^子节点\s*[\d.]+$/, // 子节点1.1
   /^子\s*[\d.]+$/, // 子1.1
-  /^新.*$/, // 新节点, 新属性, 新步骤, 新原因, 新结果, etc.
   /^属性\s*\d+$/, // 属性1, 属性2
   /^步骤\s*\d+$/, // 步骤1, 步骤2
   /^子步骤\s*[\d.]+$/, // 子步骤1.1, 子步骤2.2 (Flow Map)
@@ -31,7 +32,7 @@ const CHINESE_PLACEHOLDERS = [
   /^叶子\s*\d+$/, // 叶子1
   /^部分\s*\d+$/, // 部分1, 部分2 (Brace Map)
   /^子部分\s*[\d.]+$/, // 子部分1.1, 子部分1.2 (Brace Map)
-  /^新子部分\s*[\d.]+$/, // 新子部分 1, 新子部分 2 (Brace Map default subparts)
+  /^新子部分\s*[\d.]+$/, // 新子部分 1, 新子部分 2
   /^左\s*\d+$/, // 左1
   /^右\s*\d+$/, // 右1
   /^中心主题$/, // 中心主题
@@ -57,7 +58,6 @@ const EN_DEFAULT_CANVAS_PLACEHOLDERS = [
 const ENGLISH_PLACEHOLDERS = [
   /^Branch\s+\d+$/i, // Branch 1, Branch 2
   /^Child\s+[\d.]+$/i, // Child 1.1, Child 2.3
-  /^New\s+.*$/i, // New Node, New Attribute, New Step, etc.
   /^Attribute\s+\d+$/i, // Attribute 1, Attribute 2
   /^Step\s+\d+$/i, // Step 1, Step 2
   /^Substep\s+[\d.]+$/i, // Substep 1.1, Substep 2.2 (Flow Map)
@@ -104,5 +104,7 @@ const PLACEHOLDER_PATTERNS = [
 /** True when text is empty or a default canvas label, not a real topic. */
 export function isPlaceholderText(text: string | undefined | null): boolean {
   if (!text || !text.trim()) return true
-  return PLACEHOLDER_PATTERNS.some((pattern) => pattern.test(text.trim()))
+  const trimmed = text.trim()
+  if (isInsertedBlankNodeLabel(trimmed)) return true
+  return PLACEHOLDER_PATTERNS.some((pattern) => pattern.test(trimmed))
 }

@@ -88,4 +88,21 @@ describe('useCollabOutboundQueue', () => {
   it('respects max export constant', () => {
     expect(COLLAB_OUTBOUND_QUEUE_MAX_SIZE).toBeGreaterThan(100)
   })
+
+  it('drops ops queued after the socket opened and keeps earlier reconnect edits', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-14T00:00:00Z'))
+    const q = useCollabOutboundQueue({
+      send: () => {},
+      canFlush: () => false,
+    })
+    const reconnectEdit = q.enqueue({ type: 'update', nodes: [{ id: 'live' }] })
+    vi.setSystemTime(new Date('2026-10-14T00:00:01Z'))
+    const openedAt = Date.now()
+    const privateCanvas = q.enqueue({ type: 'update', nodes: [{ id: 'private' }] })
+    expect(q.dropEnqueuedSince(openedAt)).toBe(1)
+    expect(q.snapshot().map((op) => op.id)).toEqual([reconnectEdit])
+    expect(q.snapshot().some((op) => op.id === privateCanvas)).toBe(false)
+    vi.useRealTimers()
+  })
 })

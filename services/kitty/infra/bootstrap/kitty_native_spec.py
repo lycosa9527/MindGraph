@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
+from services.diagram.mindmap_identity import stable_mindmap_identity_id
 from services.diagram.mindmap_location import is_leftover_mindmap_branch_id
 from services.diagram.thinking_map_patterns import (
     BRACE_MAP_LEGACY_ID_DATA_KEY,
@@ -448,11 +449,13 @@ def native_spec_to_pseudo_nodes(spec: Dict[str, Any], diagram_type: str) -> Opti
                 if leftover and not is_leftover_mindmap_branch_id(leftover):
                     bid = leftover
                     leftover = ""
+                elif leftover:
+                    bid = stable_mindmap_identity_id(leftover)
                 else:
                     bid = str(uuid4())
                 row: Dict[str, Any] = {"id": bid, "text": label, "type": "branch"}
                 if leftover:
-                    row["data"] = {"mindMapLegacyId": leftover}
+                    row["data"] = {"mindMapLegacyId": leftover, "mindMapUid": bid}
                 nodes.append(row)
                 kids = br.get("children") or br.get("branches")
                 walk_branches(kids)

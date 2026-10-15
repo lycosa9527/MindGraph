@@ -77,6 +77,8 @@ export function useWorkshop(
   const diagramOwnerId = ref<number | null>(null)
   const workshopRole = ref<WorkshopRole>('editor')
   const serverBaselineReady = ref(false)
+  /** Ops queued at or after this instant belong to the current socket, not a reconnect replay. */
+  let socketOpenedAt = Number.POSITIVE_INFINITY
   const remoteHostDisplayedLlmModel = ref<string | null>(null)
 
   let _sessionDiagramIdValue: string | null = null
@@ -304,6 +306,12 @@ export function useWorkshop(
     markServerBaselineReady: () => {
       serverBaselineReady.value = true
     },
+    dropOutboundSinceSocketOpen: () => {
+      if (serverBaselineReady.value) {
+        return
+      }
+      outboundQueue.dropEnqueuedSince(socketOpenedAt)
+    },
     acknowledgeOutboundUpdate: (id) => {
       outboundQueue.acknowledge(id)
     },
@@ -394,6 +402,7 @@ export function useWorkshop(
         scheduleAuthRefreshReconnect()
         version.reset()
         serverBaselineReady.value = false
+        socketOpenedAt = Date.now()
 
         const joinMsg: Record<string, unknown> = { type: 'join' }
         if (diagramId.value) {
@@ -668,6 +677,7 @@ export function useWorkshop(
     workshopRole: computed(() => workshopRole.value),
     isDiagramOwner,
     isCollabGuest,
+    serverBaselineReady: computed(() => serverBaselineReady.value),
     sessionDiagramId: computed(() => sessionDiagramIdRef.value),
     sessionDiagramTitle: computed(() => sessionDiagramTitleRef.value),
     connect,

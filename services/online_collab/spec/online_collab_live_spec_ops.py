@@ -42,6 +42,7 @@ from services.online_collab.redis.redis8_features import tdigest_record_latency
 from services.online_collab.spec.online_collab_live_spec import (
     apply_live_update,
     granular_has_leftover_mindmap_ids,
+    granular_needs_mindmap_identity_merge,
     read_live_spec,
     seed_live_spec_from_diagram,
     spec_for_snapshot,
@@ -215,13 +216,14 @@ async def _mutate_live_spec_json(
         current = seeded
 
     # Granular fast path: single atomic FCALL — no Python read-modify-write loop.
-    # Leftover invented ids must go through Python merge so they migrate to UUIDs.
+    # Leftover invented ids, and a second UUID for the same branch, must go
+    # through Python merge so identity binding can drop the extra tree.
     skip_fcall = granular_has_leftover_mindmap_ids(
         current,
         nodes_for_merge,
         conns_list,
         deleted_node_ids,
-    )
+    ) or granular_needs_mindmap_identity_merge(current, nodes_for_merge)
     if is_granular and not skip_fcall:
         result = await fcall_spec_granular_apply(
             redis,
@@ -396,6 +398,50 @@ async def mark_live_spec_db_flushed(redis: Any, code: str) -> None:
     )
 
 
+def bound_session_diagram_id(raw: Any) -> str:
+    """Decode the diagram id stored at ``workshop code → diagram``."""
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", errors="replace").strip()
+    if isinstance(raw, str):
+        return raw.strip()
+    return ""
+
+
+async def session_bound_diagram_id(redis: Any, code: str) -> str | None:
+    """Diagram id for this code.
+
+    ``None`` means the binding is gone. An empty string means the lookup failed
+    and the caller must not write.
+    """
+    try:
+        raw = await redis.get(code_to_diagram_key(code))
+    except (RedisError, OSError, RuntimeError, TypeError):
+        return ""
+    if raw is None:
+        return None
+    return bound_session_diagram_id(raw)
+
+
+async def _flush_target_status(redis: Any, code: str, diagram_id: str) -> str:
+    """``write`` when the code still owns ``diagram_id``, else ``skip`` or ``refuse``."""
+    bound = await session_bound_diagram_id(redis, code)
+    if bound == "":
+        logger.warning("[LiveSpec] flush binding lookup failed code=%s diagram=%s", code, diagram_id)
+        return "refuse"
+    if bound is None:
+        logger.info("[LiveSpec] flush skipped: code %s has no diagram binding", code)
+        return "skip"
+    if bound != diagram_id.strip():
+        logger.warning(
+            "[LiveSpec] flush refused: code %s is bound to %s, not %s",
+            code,
+            bound,
+            diagram_id,
+        )
+        return "refuse"
+    return "write"
+
+
 async def flush_live_spec_to_db_in_session(
     db: Any,
     redis: Any,
@@ -412,6 +458,11 @@ async def flush_live_spec_to_db_in_session(
     or when the tracking key is missing.
     """
     if redis is None:
+        return False
+    target = await _flush_target_status(redis, code, diagram_id)
+    if target == "skip":
+        return True
+    if target != "write":
         return False
     doc = await read_live_spec(redis, code)
     if doc is None:
@@ -466,6 +517,11 @@ async def flush_live_spec_to_db_in_session(
     use_partial = bool(changed_keys) and "__full__" not in changed_keys and changed_keys <= PARTIAL_JSONB_FLUSH_KEYS
 
     snapshot = spec_for_snapshot(doc)
+    target_again = await _flush_target_status(redis, code, diagram_id)
+    if target_again == "skip":
+        return True
+    if target_again != "write":
+        return False
     # PG 18: set lock_timeout so UPDATE cannot wait indefinitely for a row
     # lock held by a concurrent request; fail fast and let the next flush try.
     await db.execute(sql_text("SET LOCAL lock_timeout = '3000ms'"))

@@ -25,6 +25,7 @@ import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
+import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import {
   findBridgePairSide,
   isBridgeMapPairNode,
@@ -109,6 +110,11 @@ export function useInlineRecommendationsCoordinator() {
     const topic = getTopicFromDiagram()
     const dt = diagramStore.type
     const normalizedDt = dt === 'mind_map' ? 'mindmap' : dt
+    const filled = (nodeId: string, text: string): boolean => {
+      const trimmed = text.trim()
+      if (!trimmed || isPlaceholderText(trimmed)) return false
+      return !shouldReplaceLabelWithMathInsert(normalizedDt, nodeId, trimmed)
+    }
     let topicValid =
       topic.trim().length > 0 &&
       !isPlaceholderText(topic) &&
@@ -119,15 +125,13 @@ export function useInlineRecommendationsCoordinator() {
       )
       const dimText = (dimNode?.text ?? '').trim()
       topicValid =
-        dimText.length > 0 &&
-        !isPlaceholderText(dimText) &&
+        filled('dimension-label', dimText) &&
         (INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(normalizedDt ?? '')
     }
     if (!topicValid && normalizedDt === 'bridge_map') {
       const dimension = extractFixedDimension()
       const analogies = extractBridgeMapAnalogies()
-      const hasDimension =
-        (dimension ?? '').trim().length > 0 && !isPlaceholderText(dimension ?? '')
+      const hasDimension = filled('dimension-label', dimension ?? '')
       const hasFirstPair = analogies.length > 0
       topicValid =
         hasDimension &&
@@ -139,9 +143,8 @@ export function useInlineRecommendationsCoordinator() {
       const leftNode = nodes.find((n) => n.id === 'left-topic')
       const rightNode = nodes.find((n) => n.id === 'right-topic')
       const getText = (n: { id?: string; text?: string } | undefined) => (n?.text ?? '').trim()
-      const leftValid = getText(leftNode).length > 0 && !isPlaceholderText(getText(leftNode))
-      const rightValid = getText(rightNode).length > 0 && !isPlaceholderText(getText(rightNode))
-      topicValid = leftValid && rightValid
+      topicValid =
+        filled('left-topic', getText(leftNode)) && filled('right-topic', getText(rightNode))
     }
     store.onTopicUpdated(topic, topicValid)
   }

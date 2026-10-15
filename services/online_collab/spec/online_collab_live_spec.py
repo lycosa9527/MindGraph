@@ -16,7 +16,16 @@ from copy import deepcopy
 from typing import Any
 
 from models.domain.diagrams import Diagram
-from services.diagram.mindmap_identity import identity_aliases, migrate_mindmap_diagram_payload
+from services.diagram.mindmap_identity import (
+    collapse_duplicate_mindmap_payload,
+    identity_aliases,
+    migrate_mindmap_diagram_payload,
+    mindmap_nodes_have_duplicate_identity,
+    mindmap_patch_is_unbound_layout,
+    preserve_mindmap_alias_ids,
+    remember_mindmap_peer_ids,
+    retarget_divergent_mindmap_patches,
+)
 from services.diagram.mindmap_location import is_leftover_mindmap_branch_id
 from services.diagram.spec_coerce import coerce_diagram_spec
 from services.diagram.thinking_map_identity import (
@@ -55,11 +64,13 @@ def _migrate_live_spec(spec: dict[str, Any]) -> None:
     diagram_type = _spec_diagram_type(spec)
     if diagram_type in {"mindmap", "mind_map"}:
         migrate_mindmap_diagram_payload(spec)
+        collapse_duplicate_mindmap_payload(spec)
         return
     if is_thinking_map_diagram_type(diagram_type):
         migrate_thinking_map_diagram_payload(spec, diagram_type)
         return
     migrate_mindmap_diagram_payload(spec)
+    collapse_duplicate_mindmap_payload(spec)
     migrate_thinking_map_diagram_payload(spec, diagram_type)
 
 
@@ -95,6 +106,50 @@ def granular_has_leftover_mindmap_ids(
             return True
     for nid in deleted_node_ids or []:
         if _is_leftover_id(nid):
+            return True
+    return False
+
+
+def _spec_has_mindmap_identity(spec: dict[str, Any]) -> bool:
+    """True when nodes carry mind-map identity even if ``type`` was omitted."""
+    for node in spec.get("nodes") or []:
+        if not isinstance(node, dict):
+            continue
+        if node.get("type") in {"branch", "topic"} and is_leftover_mindmap_branch_id(str(node.get("id") or "")):
+            return True
+        data = node.get("data")
+        if isinstance(data, dict) and (
+            data.get("mindMapLegacyId") or data.get("mindMapUid") or data.get("mindMapSide")
+        ):
+            return True
+    return False
+
+
+def granular_needs_mindmap_identity_merge(
+    current: dict[str, Any] | None,
+    nodes: list[Any] | None,
+) -> bool:
+    """Python merge binds a second UUID tree and drops the crushed copy.
+
+    The Redis FCALL path only matches ``node.id``. Two peers that minted
+    different ids for the same leftover branch otherwise both stay on the canvas.
+    """
+    if not isinstance(current, dict):
+        return False
+    diagram_type = _spec_diagram_type(current)
+    if diagram_type and diagram_type not in {"mindmap", "mind_map"}:
+        return False
+    if not diagram_type and not _spec_has_mindmap_identity(current):
+        return False
+    live_nodes = [node for node in (current.get("nodes") or []) if isinstance(node, dict)]
+    if mindmap_nodes_have_duplicate_identity(live_nodes):
+        return True
+    live_ids = {str(node.get("id")) for node in live_nodes if node.get("id")}
+    for patch in nodes or []:
+        if not isinstance(patch, dict):
+            continue
+        raw = patch.get("id")
+        if isinstance(raw, str) and raw and raw not in live_ids:
             return True
     return False
 
@@ -151,6 +206,7 @@ def _merge_node_patches(
             i = by_index[sid]
             old_node = existing_nodes[i]
             merged = {**old_node, **patch}
+            preserve_mindmap_alias_ids(old_node, merged)
             _sync_node_labels(merged, patch)
             existing_nodes[i] = merged
         else:
@@ -263,9 +319,16 @@ def merge_granular_into_spec(
         skip_patch_ids = {remap_hint(nid) for nid in deleted_node_ids if nid}
 
     if nodes:
+        patch_rows = [row for row in nodes if isinstance(row, dict)]
+        peer_to_live = retarget_divergent_mindmap_patches(patch_rows, aliases)
+        aliases.update(peer_to_live)
         existing_nodes: list[dict[str, Any]] = list(spec.get("nodes") or [])
         if not isinstance(existing_nodes, list):
             existing_nodes = []
+        live_ids = {str(node.get("id")) for node in existing_nodes if node.get("id")}
+        mindmap_room = diagram_type in {"mindmap", "mind_map"} or (
+            not diagram_type and _spec_has_mindmap_identity(spec)
+        )
         remapped_nodes: list[dict[str, Any]] = []
         for row in nodes:
             if not isinstance(row, dict):
@@ -274,12 +337,16 @@ def merge_granular_into_spec(
             raw_id = patched.get("id")
             if isinstance(raw_id, str) and raw_id.strip():
                 patched["id"] = remap_hint(raw_id)
+            patched_id = str(patched.get("id") or "")
+            if mindmap_room and patched_id not in live_ids and mindmap_patch_is_unbound_layout(patched):
+                continue
             remapped_nodes.append(patched)
         spec["nodes"] = _merge_node_patches(
             existing_nodes,
             remapped_nodes,
             skip_node_ids=skip_patch_ids,
         )
+        remember_mindmap_peer_ids(spec["nodes"], peer_to_live)
 
     if connections:
         conns: list[dict[str, Any]] = list(spec.get("connections") or [])
@@ -401,6 +468,8 @@ def spec_for_snapshot(doc: dict[str, Any]) -> dict[str, Any]:
     out = deepcopy(doc)
     out.pop("v", None)
     out.pop("__seq__", None)
+    if isinstance(out.get("nodes"), list):
+        collapse_duplicate_mindmap_payload(out)
     return out
 
 

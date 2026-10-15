@@ -8,7 +8,10 @@
  */
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramType, NodeStyle } from '@/types'
-import { migrateMindMapIdentityIds } from '@/utils/mindMapIdentityMigrate'
+import {
+  collapseDuplicateMindMapNodes,
+  migrateMindMapIdentityIds,
+} from '@/utils/mindMapIdentityMigrate'
 import { migrateThinkingMapIdentityIds } from '@/utils/thinkingMapIdentity'
 
 import { loadBraceMapSpec } from './braceMap'
@@ -138,6 +141,21 @@ export function loadSpecForDiagramType(
         result = {
           ...laidOut,
           metadata: styleMeta ? { ...(laidOut.metadata || {}), ...styleMeta } : laidOut.metadata,
+        }
+      }
+      const collapsed = collapseDuplicateMindMapNodes(
+        result.nodes,
+        result.connections,
+        result.metadata?._node_styles as Record<string, NodeStyle> | undefined
+      )
+      if (collapsed.nodes !== result.nodes || collapsed.connections !== result.connections) {
+        result = {
+          ...result,
+          nodes: collapsed.nodes,
+          connections: collapsed.connections,
+          metadata: collapsed.nodeStyles
+            ? { ...(result.metadata || {}), _node_styles: collapsed.nodeStyles }
+            : result.metadata,
         }
       }
     } else {

@@ -30,7 +30,14 @@ import {
   readLlmExportAttribution,
 } from '@/utils/llmExportWatermark'
 import { isMindMapV2FamilyMode, resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
-import { migrateMindMapIdentityIds, resolveMindMapAliasId } from '@/utils/mindMapIdentityMigrate'
+import {
+  collapseDuplicateMindMapNodes,
+  migrateMindMapIdentityIds,
+  mindMapPatchCarriesBranchIdentity,
+  resolveMindMapAliasId,
+  resolveMindMapPatchTargetId,
+  stampCollabMindMapPeers,
+} from '@/utils/mindMapIdentityMigrate'
 import { beginMindMapSpecLoadSession, markMindMapLoadStage } from '@/utils/mindMapLoadDebug'
 import { resolveThinkingMapAliasId } from '@/utils/thinkingMapIdentity'
 
@@ -634,8 +641,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (!ctx.data.value) return false
 
     const liveNodes = ctx.data.value.nodes
+    const mindMap = ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
+    const divergentLive = new Map<string, string>()
     const remapPatchId = (hint: string): string => {
-      if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+      const bound = divergentLive.get(hint)
+      if (bound) return bound
+      if (mindMap) {
         return resolveMindMapAliasId(hint, liveNodes) ?? hint
       }
       return resolveThinkingMapAliasId(ctx.type.value, hint, liveNodes) ?? hint
@@ -661,25 +672,42 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       for (const updatedNode of updatedNodes) {
         const rawId = updatedNode.id as string
         if (!rawId) continue
-        const nodeId = remapPatchId(rawId)
+        const patchData =
+          updatedNode.data != null && typeof updatedNode.data === 'object'
+            ? (updatedNode.data as Record<string, unknown>)
+            : undefined
+        const nodeId = mindMap
+          ? (resolveMindMapPatchTargetId(rawId, patchData, liveNodes) ?? rawId)
+          : remapPatchId(rawId)
         if (deletedThisBatch.has(nodeId)) continue
         if (nodeId !== rawId) {
+          divergentLive.set(rawId, nodeId)
           updatedNode.id = nodeId
         }
 
         const existingIndex = ctx.data.value.nodes.findIndex((n) => n.id === nodeId)
         if (existingIndex >= 0) {
+          const previous = ctx.data.value.nodes[existingIndex]
           const merged = {
-            ...ctx.data.value.nodes[existingIndex],
+            ...previous,
             ...updatedNode,
           } as DiagramNode
+          if (mindMap && nodeId !== rawId) {
+            merged.data = stampCollabMindMapPeers(
+              previous?.data,
+              merged.data,
+              rawId,
+              patchData,
+              nodeId
+            )
+          }
           // Keep data.label in sync with text so vue-flow nodes always render
           // the latest label regardless of spread order in diagramNodeToVueFlowNode.
           if (typeof merged.text === 'string' && merged.data != null) {
             ;(merged.data as Record<string, unknown>).label = merged.text
           }
           ctx.data.value.nodes[existingIndex] = merged
-        } else {
+        } else if (!mindMap || mindMapPatchCarriesBranchIdentity(updatedNode)) {
           const newNode = { ...updatedNode } as unknown as DiagramNode
           if (typeof newNode.text === 'string' && newNode.data != null) {
             ;(newNode.data as Record<string, unknown>).label = newNode.text
@@ -730,6 +758,16 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ctx.data.value.connections = migrated.connections
       if (migrated.nodeStyles) {
         ctx.data.value._node_styles = migrated.nodeStyles
+      }
+      const collapsed = collapseDuplicateMindMapNodes(
+        ctx.data.value.nodes,
+        ctx.data.value.connections ?? [],
+        ctx.data.value._node_styles
+      )
+      ctx.data.value.nodes = collapsed.nodes
+      ctx.data.value.connections = collapsed.connections
+      if (collapsed.nodeStyles) {
+        ctx.data.value._node_styles = collapsed.nodeStyles
       }
     }
 

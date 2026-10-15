@@ -2,6 +2,7 @@
  * Node Palette stage helpers - stage resolution and parent selection for staged diagrams
  */
 import { isPlaceholderText } from '@/composables/editor/placeholderText'
+import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import type { DiagramType } from '@/types'
 import { findBraceMapWholeId } from '@/utils/braceMapIdentity'
 import { isMindMapL1, mindMapNodeDepth } from '@/utils/mindMapLocation'
@@ -14,6 +15,16 @@ export { STAGED_DIAGRAM_TYPES }
 export interface Stage2Parent {
   id: string
   name: string
+}
+
+function isRealNodeText(
+  diagramType: DiagramType | null,
+  node: { id?: string; text?: string }
+): boolean {
+  const text = (node.text ?? '').trim()
+  if (!text || isPlaceholderText(text)) return false
+  if (!node.id) return true
+  return !shouldReplaceLabelWithMathInsert(diagramType, node.id, text)
 }
 
 function normalizeDiagramType(dt: DiagramType | null): DiagramType | null {
@@ -39,8 +50,7 @@ export function hasDimension(
     return true
   }
   const dim = dataDimension ?? nodes.find((n) => n.id === 'dimension-label')?.text ?? ''
-  const t = (dim ?? '').trim()
-  return t.length > 0 && !isPlaceholderText(t)
+  return isRealNodeText(dt, { id: 'dimension-label', text: dim })
 }
 
 export function getDefaultStage(
@@ -54,23 +64,20 @@ export function getDefaultStage(
     case 'mindmap': {
       const branchNodes = nodes.filter((n) => isPaletteMindMapL1(n, connections))
       const hasBranchesWithRealText =
-        branchNodes.length > 0 &&
-        branchNodes.some((n) => n.text && n.text.trim() && !isPlaceholderText(n.text))
+        branchNodes.length > 0 && branchNodes.some((n) => isRealNodeText(dt, n))
       return hasBranchesWithRealText ? 'children' : 'branches'
     }
     case 'flow_map': {
       const stepNodes = nodes.filter((n) => n.type === 'flow')
       const hasStepsWithRealText =
-        stepNodes.length > 0 &&
-        stepNodes.some((n) => n.text && n.text.trim() && !isPlaceholderText(n.text))
+        stepNodes.length > 0 && stepNodes.some((n) => isRealNodeText(dt, n))
       return hasStepsWithRealText ? 'substeps' : 'steps'
     }
     case 'tree_map': {
       if (!hasDimension(dt, nodes, dataDimension)) return 'dimensions'
       const categoryNodes = nodes.filter((n) => isTreeMapCategoryNode(n))
       const hasCategoriesWithRealText =
-        categoryNodes.length > 0 &&
-        categoryNodes.some((n) => n.text && n.text.trim() && !isPlaceholderText(n.text))
+        categoryNodes.length > 0 && categoryNodes.some((n) => isRealNodeText(dt, n))
       return hasCategoriesWithRealText ? 'children' : 'categories'
     }
     case 'brace_map': {
@@ -83,8 +90,7 @@ export function getDefaultStage(
           connections?.some((c) => c.source === rootId && c.target === n.id)
       )
       const hasPartsWithRealText =
-        directParts.length > 0 &&
-        directParts.some((n) => n.text && n.text.trim() && !isPlaceholderText(n.text))
+        directParts.length > 0 && directParts.some((n) => isRealNodeText(dt, n))
       return hasPartsWithRealText ? 'subparts' : 'parts'
     }
     case 'bridge_map': {
@@ -120,8 +126,7 @@ export function getStage2ParentsForDiagram(
   connections?: Array<{ source: string; target: string }>
 ): Stage2Parent[] {
   const dt = normalizeDiagramType(diagramType)
-  const hasRealText = (n: { text?: string }) =>
-    n.text && n.text.trim() && !isPlaceholderText(n.text)
+  const hasRealText = (n: { id?: string; text?: string }) => isRealNodeText(dt, n)
   if (dt === 'mindmap') {
     return nodes
       .filter((n) => isPaletteMindMapL1(n, connections) && hasRealText(n))
