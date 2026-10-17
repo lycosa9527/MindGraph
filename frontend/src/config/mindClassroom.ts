@@ -151,6 +151,16 @@ export function loadMindClassroomPresentation(): MindClassroomPresentationId {
   }
 }
 
+export function resolveMindClassroomPresentation(
+  presentation: MindClassroomPresentationId,
+  slideDeckEnabled: boolean
+): MindClassroomPresentationId {
+  if (presentation === 'slide_deck' && !slideDeckEnabled) {
+    return DEFAULT_MIND_CLASSROOM_PRESENTATION
+  }
+  return presentation
+}
+
 export function saveMindClassroomPresentation(presentation: MindClassroomPresentationId): void {
   if (typeof localStorage === 'undefined') return
   try {

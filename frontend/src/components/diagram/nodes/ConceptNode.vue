@@ -17,6 +17,7 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { getConceptMapFocusQuestionEditableSplit } from '@/stores/diagram/diagramDefaultLabels'
 import { useUIStore } from '@/stores/ui'
 import type { MindGraphNodeProps } from '@/types'
@@ -33,6 +34,10 @@ const conceptNodeRef = ref<HTMLElement | null>(null)
 useNodeDimensions(conceptNodeRef, props.id)
 
 const diagramStore = useDiagramSession()
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const uiStore = useUIStore()
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
@@ -216,7 +221,7 @@ onUnmounted(() => {
       ref="conceptNodeRef"
       class="concept-node concept-node-pill flex items-center justify-center px-4 py-2 cursor-grab select-none border-solid"
       :class="{ 'concept-topic': isTopic }"
-      :style="nodeStyle"
+      :style="[nodeStyle, blankFrame]"
     >
       <!-- Primary handles: centered on each side -->
       <Handle

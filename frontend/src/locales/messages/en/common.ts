@@ -285,11 +285,9 @@ export default {
   'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
   'settings.language.eBlackboardOff': 'Off',
   'settings.language.eBlackboardOn': 'On',
-  'settings.language.eBlackboardHint':
-    'Enlarges branch + and collapse controls on the new canvas; tap to select, double-tap to edit, two-finger drag to pan/zoom — for classroom e-blackboards',
+  'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas; tap to select, double-tap to edit, two-finger drag to pan/zoom — for classroom e-blackboards',
   'settings.language.bilingualUi': 'Bilingual interface',
-  'settings.language.bilingualUiHint':
-    'When on, buttons, tooltips, and modal chrome show the primary language plus a second language. Autocomplete and AI results stay in the primary language only.',
+  'settings.language.bilingualUiHint': 'When on, buttons, tooltips, and modal chrome show the primary language plus a second language. Autocomplete and AI results stay in the primary language only.',
   'settings.language.bilingualUiOff': 'Off',
   'settings.language.bilingualUiOn': 'On',
   'settings.language.presenterLanguage': 'Presenter language',

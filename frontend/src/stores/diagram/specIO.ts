@@ -53,6 +53,10 @@ import {
   recalculateTreeMapLayout,
 } from '../specLoader'
 import { collectFlowMapSpecFromNodes } from '../specLoader/flowMapSubsteps'
+import {
+  learningSheetLayoutSecondary,
+  learningSheetLayoutText,
+} from '../specLoader/mindMapLearningSheet'
 import { useUIStore } from '../ui'
 import { getMindMapCurveExtents } from './events'
 import {
@@ -382,8 +386,8 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     let right = ''
     const leftNode = nodes.find((n) => n.id === DOUBLE_BUBBLE_LEFT_TOPIC_ID)
     const rightNode = nodes.find((n) => n.id === DOUBLE_BUBBLE_RIGHT_TOPIC_ID)
-    if (leftNode) left = String(leftNode.text ?? '').trim()
-    if (rightNode) right = String(rightNode.text ?? '').trim()
+    if (leftNode) left = learningSheetLayoutText(leftNode).trim()
+    if (rightNode) right = learningSheetLayoutText(rightNode).trim()
     const roleNodes = (role: 'similarity' | 'leftDiff' | 'rightDiff') =>
       nodes
         .filter((n) => isDoubleBubbleRoleNode(n, role))
@@ -391,14 +395,17 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const simNodes = roleNodes('similarity')
     const leftDiffNodes = roleNodes('leftDiff')
     const rightDiffNodes = roleNodes('rightDiff')
-    const similarities = simNodes.map((n) => ({ id: n.id, text: String(n.text ?? '').trim() }))
+    const similarities = simNodes.map((n) => ({
+      id: n.id,
+      text: learningSheetLayoutText(n).trim(),
+    }))
     const leftDifferences = leftDiffNodes.map((n) => ({
       id: n.id,
-      text: String(n.text ?? '').trim(),
+      text: learningSheetLayoutText(n).trim(),
     }))
     const rightDifferences = rightDiffNodes.map((n) => ({
       id: n.id,
-      text: String(n.text ?? '').trim(),
+      text: learningSheetLayoutText(n).trim(),
     }))
     const radiusFromDom = (nodeId: string): number | undefined => {
       const d = ctx.nodeDimensions.value[nodeId]
@@ -459,7 +466,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       _doubleBubbleMapNodeSizes['rightDiffRadii'] = rightDiffRadii
 
     const gloss = (node: (typeof nodes)[0] | undefined): string =>
-      String(node?.textSecondary ?? '').trim()
+      node ? learningSheetLayoutSecondary(node).trim() : ''
     const secondary = {
       left: gloss(leftNode),
       right: gloss(rightNode),

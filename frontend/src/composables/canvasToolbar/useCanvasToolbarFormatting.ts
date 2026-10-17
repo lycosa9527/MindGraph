@@ -12,15 +12,15 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { STYLE_PRESET_PALETTES, type StylePresetColors } from '@/config/colorPalette'
 import { FLOATING_TOOLBAR_FONT_SIZES } from '@/config/floatingToolbarColors'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import type { DiagramNode, NodeStyle } from '@/types'
 import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUtils'
-import { colorToHex, hexToRgba, parseAlphaFromColor } from '@/utils/colorFormat'
+import { colorToHex, hexToRgba } from '@/utils/colorFormat'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { displayedNodeFontSize, readPaintedNodeFontSizePx } from '@/utils/displayedNodeFontSize'
+import { resolveFloatingToolbarNodeDisplay } from '@/utils/floatingToolbarNodeDisplay'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
-import { type NodeShape, defaultDisplayedNodeShape } from '@/utils/nodeShapeStyle'
-import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 export {
   formatBrushActive,
@@ -127,7 +127,7 @@ export function useCanvasToolbarFormatting(options?: {
     return [...sizes].sort((left, right) => left - right)
   })
 
-  const fontFamily = ref('Inter')
+  const fontFamily = ref(DIAGRAM_NODE_FONT_STACK)
   const textColor = ref('#000000')
   const fontWeight = ref<'normal' | 'bold'>('normal')
   const fontStyle = ref<'normal' | 'italic'>('normal')
@@ -135,18 +135,29 @@ export function useCanvasToolbarFormatting(options?: {
     'none'
   )
   const textAlign = ref<'left' | 'center' | 'right'>('center')
-  const nodeShape = ref<NodeShape | null>('rounded')
+  const nodeShape = ref<NodeShape | null>(null)
 
-  function toolbarDisplayedNodeShape(node: DiagramNode, style: NodeStyle): NodeShape | null {
-    const diagramType = diagramStore.type
-    if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-      return resolveMindMapNodeShape(
-        { id: node.id, type: node.type, style },
-        diagramStore.data?._mindmap_diagram_style
-      )
-    }
-    if (style.nodeShape) return style.nodeShape
-    return defaultDisplayedNodeShape(diagramType, node.type)
+  function applyDisplayedFormatting(node: DiagramNode): void {
+    const display = resolveFloatingToolbarNodeDisplay({
+      diagramType: diagramStore.type,
+      themeId: diagramStore.data?._mindmap_theme,
+      mindmapDiagramStyle: diagramStore.data?._mindmap_diagram_style,
+      node,
+      style: mergedNodeStyle(node),
+      connections: diagramStore.data?.connections,
+    })
+    fontFamily.value = display.fontFamily
+    textColor.value = display.textColor
+    fontWeight.value = display.fontWeight
+    fontStyle.value = display.fontStyle
+    textDecoration.value = display.textDecoration
+    textAlign.value = display.textAlign
+    borderColor.value = display.borderColor
+    borderWidth.value = display.borderWidth
+    borderStyle.value = display.borderStyle
+    backgroundColor.value = display.backgroundColor
+    backgroundOpacity.value = display.backgroundOpacity
+    nodeShape.value = display.nodeShape
   }
 
   const textColorPalette = [
@@ -473,53 +484,26 @@ export function useCanvasToolbarFormatting(options?: {
 
   watch(
     () => {
-      const pinned = pinnedNodeId?.value
-      const nodes = diagramStore.selectedNodeData
-      if (nodes.length === 1) return nodes[0]
-      if (pinned) return diagramStore.data?.nodes?.find((n) => n.id === pinned)
-      return undefined
+      const node = currentFormattingNode()
+      if (!node) return ''
+      const style = mergedNodeStyle(node)
+      return [
+        node.id,
+        node.type,
+        diagramStore.type ?? '',
+        diagramStore.data?._mindmap_theme ?? '',
+        diagramStore.data?._mindmap_diagram_style ?? '',
+        JSON.stringify(style),
+      ].join('|')
     },
-    (node) => {
-      if (node) {
-        const persisted = diagramStore.getNodeStyle(node.id)
-        const s = { ...(persisted || {}), ...(node.style || {}) }
-        if (Object.keys(s).length > 0) {
-          if (s.fontFamily) fontFamily.value = s.fontFamily
-          if (s.textColor) textColor.value = s.textColor
-          if (s.fontWeight) fontWeight.value = s.fontWeight
-          if (s.fontStyle) fontStyle.value = s.fontStyle
-          textDecoration.value = s.textDecoration ?? 'none'
-          textAlign.value = s.textAlign ?? 'center'
-          if (s.borderColor) borderColor.value = s.borderColor
-          if (s.borderWidth !== undefined) borderWidth.value = s.borderWidth
-          if (s.borderStyle) borderStyle.value = s.borderStyle
-          if (s.backgroundColor) {
-            backgroundColor.value = colorToHex(s.backgroundColor)
-            backgroundOpacity.value = parseAlphaFromColor(s.backgroundColor)
-          }
-        }
-        nodeShape.value = toolbarDisplayedNodeShape(node, s)
-        if (isThinkingMapDiagramType(diagramStore.type)) {
-          const paint = thinkingMapDisplayedNodeColors(
-            diagramStore.type,
-            diagramStore.data?._mindmap_theme,
-            node,
-            s,
-            diagramStore.data?.connections
-          )
-          if (paint?.backgroundColor) {
-            backgroundColor.value = colorToHex(paint.backgroundColor)
-            backgroundOpacity.value = parseAlphaFromColor(paint.backgroundColor)
-          }
-          if (paint?.textColor) textColor.value = paint.textColor
-          if (paint?.borderColor) borderColor.value = paint.borderColor
-        }
-      }
+    () => {
+      const node = currentFormattingNode()
+      if (node) applyDisplayedFormatting(node)
     },
-    { deep: true }
+    { immediate: true }
   )
 
-  useCanvasFormatBrush()
+  useCanvasFormatBrush(diagramStore)
 
   return {
     formatBrushActive,

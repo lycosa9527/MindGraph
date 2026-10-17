@@ -57,6 +57,15 @@
   gap: 0.7rem;
 }
 
+/*
+ * Canvas ElDialogs marked `.mm-above-node-chrome`. Toolbar poppers are 5100
+ * `!important`, so this overlay must also be `!important` and higher.
+ * Keep in sync with SWISS_GLASS_CANVAS_DIALOG_Z in swissGlassStack.ts.
+ */
+.el-overlay:has(.mm-above-node-chrome) {
+  z-index: 5200 !important;
+}
+
 .swiss-glass-card-overlay {
   position: fixed;
   inset: 0;

@@ -39,6 +39,7 @@ from utils.auth.role_constants import (
 FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_rag_chunk_test": "FEATURE_RAG_CHUNK_TEST",
     "feature_showcase": "FEATURE_SHOWCASE",
+    "feature_mind_classroom_slide_deck": "FEATURE_MIND_CLASSROOM_SLIDE_DECK",
     "feature_knowledge_space": "FEATURE_KNOWLEDGE_SPACE",
     "feature_library": "FEATURE_LIBRARY",
     "feature_smart_response": "FEATURE_SMART_RESPONSE",

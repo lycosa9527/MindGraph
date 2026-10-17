@@ -19,6 +19,7 @@ import {
 import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
@@ -53,6 +54,7 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const { featureMindClassroomSlideDeck } = useFeatureFlags()
 const authStore = useAuthStore()
 const classroomStore = useMindClassroomStore()
 const {
@@ -124,11 +126,13 @@ const presentationOptions = computed(() =>
     titleKey: `canvas.mindClassroom.settings.presentation.${id}.title`,
     descKey: `canvas.mindClassroom.settings.presentation.${id}.desc`,
     icon: presentationIcons[id],
-    gated: false,
+    gated: id === 'slide_deck' && !featureMindClassroomSlideDeck.value,
   }))
 )
 
-const selectablePresentationIds = computed(() => MIND_CLASSROOM_PRESENTATION_IDS)
+const selectablePresentationIds = computed(() =>
+  presentationOptions.value.filter((option) => !option.gated).map((option) => option.id)
+)
 
 const tourScopeOptions = computed(() =>
   MIND_CLASSROOM_TOUR_SCOPE_IDS.map((id) => ({
@@ -159,6 +163,8 @@ function pickMastery(id: MindClassroomMasteryId): void {
 
 function pickPresentation(id: MindClassroomPresentationId): void {
   if (queueBusy.value) return
+  const option = presentationOptions.value.find((item) => item.id === id)
+  if (option?.gated) return
   classroomStore.setPresentation(id)
 }
 
@@ -298,7 +304,7 @@ function handleRestart(): void {
                 role="radio"
                 :aria-checked="presentation === option.id"
                 :aria-disabled="option.gated"
-                :disabled="queueBusy"
+                :disabled="queueBusy || option.gated"
                 :tabindex="presentation === option.id ? 0 : -1"
                 @click="pickPresentation(option.id)"
                 @keydown="

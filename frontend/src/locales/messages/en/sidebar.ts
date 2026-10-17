@@ -231,26 +231,15 @@ export default {
   'sidebar.demo.loading': 'Generating',
   'sidebar.demo.moveUp': 'Move up',
   'sidebar.demo.moveDown': 'Move down',
-  'sidebar.demo.caption.circle_map':
-    '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
-  'sidebar.demo.caption.bubble_map':
-    '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
-  'sidebar.demo.caption.double_bubble_map':
-    '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
-  'sidebar.demo.caption.tree_map':
-    '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
-  'sidebar.demo.caption.brace_map':
-    '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
-  'sidebar.demo.caption.flow_map':
-    '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
-  'sidebar.demo.caption.multi_flow_map':
-    '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
-  'sidebar.demo.caption.bridge_map':
-    '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
-  'sidebar.demo.caption.mindmap':
-    '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
-  'sidebar.demo.caption.concept_map':
-    '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
-  'sidebar.demo.caption.fallback':
-    '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
+  'sidebar.demo.caption.circle_map': '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
+  'sidebar.demo.caption.bubble_map': '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
+  'sidebar.demo.caption.double_bubble_map': '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
+  'sidebar.demo.caption.tree_map': '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
+  'sidebar.demo.caption.brace_map': '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
+  'sidebar.demo.caption.flow_map': '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
+  'sidebar.demo.caption.multi_flow_map': '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
+  'sidebar.demo.caption.bridge_map': '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
+  'sidebar.demo.caption.mindmap': '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
+  'sidebar.demo.caption.concept_map': '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
+  'sidebar.demo.caption.fallback': '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
 } as const

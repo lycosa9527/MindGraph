@@ -399,7 +399,9 @@ export function useDiagramCanvasEventBus(): {
             }
           })
         }
-        if (diagramStore.type === 'double_bubble_map') {
+        const sheetBlank =
+          diagramStore.isLearningSheet && diagramStore.isNodeBlankedForLearningSheet(nodeId)
+        if (diagramStore.type === 'double_bubble_map' && !sheetBlank) {
           scheduleDoubleBubbleRebuild(diagramStore)
         }
       })

@@ -84,6 +84,42 @@ function resolveTreeCategoryId(nodes: DiagramNode[], selectedId: string): string
   return null
 }
 
+export type DiagramNodeActionBusHandlers = {
+  handleAddNode: () => void | Promise<void>
+  handleDeleteNode: () => void | Promise<void>
+  handleAddBranch: () => void | Promise<void>
+  handleAddChild: () => void | Promise<void>
+  handleAddSibling: () => void | Promise<void>
+}
+
+/** Wire keyboard / outline / sidebar diagram:* requests to node actions. */
+export function registerDiagramNodeActionEventBus(
+  handlers: DiagramNodeActionBusHandlers,
+  owner?: string
+): void {
+  const bind = <K extends keyof typeof handlers>(
+    event:
+      | 'diagram:add_node_requested'
+      | 'diagram:delete_selected_requested'
+      | 'diagram:add_branch_requested'
+      | 'diagram:add_child_requested'
+      | 'diagram:add_sibling_requested',
+    run: K
+  ): void => {
+    const fn = () => {
+      void handlers[run]()
+    }
+    if (owner) eventBus.onWithOwner(event, fn, owner)
+    else eventBus.on(event, fn)
+  }
+
+  bind('diagram:delete_selected_requested', 'handleDeleteNode')
+  bind('diagram:add_node_requested', 'handleAddNode')
+  bind('diagram:add_branch_requested', 'handleAddBranch')
+  bind('diagram:add_child_requested', 'handleAddChild')
+  bind('diagram:add_sibling_requested', 'handleAddSibling')
+}
+
 export function useNodeActions(options: UseNodeActionsOptions = {}) {
   const opts = { ...DEFAULT_NODE_ACTIONS_OPTIONS, ...options }
   const diagramStore = useDiagramSession()
@@ -663,6 +699,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     }
 
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+      const adornmentsCleared = diagramStore.clearMindMapNodeAdornments(selectedNodesArray)
+      if (adornmentsCleared > 0) return
+
       const deleted = diagramStore.removeMindMapNodes(selectedNodesArray)
       if (deleted > 0) {
         diagramStore.clearSelection()
@@ -769,22 +808,38 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
 
   // ---- Lifecycle: auto-register event listeners ----
 
+  const onDiagramAddNodeRequested = () => {
+    void handleAddNode()
+  }
+  const onDiagramDeleteSelectedRequested = () => {
+    void handleDeleteNode()
+  }
+  const onDiagramAddBranchRequested = () => {
+    void handleAddBranch()
+  }
+  const onDiagramAddChildRequested = () => {
+    void handleAddChild()
+  }
+  const onDiagramAddSiblingRequested = () => {
+    void handleAddSibling()
+  }
+
   onMounted(() => {
     if (!opts.registerEventBusListeners) return
-    eventBus.on('diagram:add_node_requested', handleAddNode)
-    eventBus.on('diagram:delete_selected_requested', handleDeleteNode)
-    eventBus.on('diagram:add_branch_requested', handleAddBranch)
-    eventBus.on('diagram:add_child_requested', handleAddChild)
-    eventBus.on('diagram:add_sibling_requested', handleAddSibling)
+    eventBus.on('diagram:add_node_requested', onDiagramAddNodeRequested)
+    eventBus.on('diagram:delete_selected_requested', onDiagramDeleteSelectedRequested)
+    eventBus.on('diagram:add_branch_requested', onDiagramAddBranchRequested)
+    eventBus.on('diagram:add_child_requested', onDiagramAddChildRequested)
+    eventBus.on('diagram:add_sibling_requested', onDiagramAddSiblingRequested)
   })
 
   onUnmounted(() => {
     if (!opts.registerEventBusListeners) return
-    eventBus.off('diagram:add_node_requested', handleAddNode)
-    eventBus.off('diagram:delete_selected_requested', handleDeleteNode)
-    eventBus.off('diagram:add_branch_requested', handleAddBranch)
-    eventBus.off('diagram:add_child_requested', handleAddChild)
-    eventBus.off('diagram:add_sibling_requested', handleAddSibling)
+    eventBus.off('diagram:add_node_requested', onDiagramAddNodeRequested)
+    eventBus.off('diagram:delete_selected_requested', onDiagramDeleteSelectedRequested)
+    eventBus.off('diagram:add_branch_requested', onDiagramAddBranchRequested)
+    eventBus.off('diagram:add_child_requested', onDiagramAddChildRequested)
+    eventBus.off('diagram:add_sibling_requested', onDiagramAddSiblingRequested)
   })
 
   return {

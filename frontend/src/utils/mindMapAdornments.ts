@@ -64,15 +64,28 @@ export function mindMapAdornmentPathKey(
   return mindMapLocationPathKey(nodeId, connections)
 }
 
+/** Path key plus legacy node-id keys (read fallback) so deletes do not leave orphans. */
+export function mindMapAdornmentStorageKeys(
+  nodeId: string,
+  connections: readonly Connection[]
+): string[] {
+  const path = mindMapAdornmentPathKey(nodeId, connections)
+  if (path && path !== nodeId) return [path, nodeId]
+  if (path) return [path]
+  return [nodeId]
+}
+
 export function readNodeAdornment(
   data: Record<string, unknown> | DiagramData | null | undefined,
   nodeId: string,
   connections: readonly Connection[] | undefined
 ): MindMapNodeAdornment | null {
   const all = readMindMapAdornments(data)
-  const path = mindMapAdornmentPathKey(nodeId, connections ?? [])
-  if (path && all[path]) return all[path]
-  return all[nodeId] ?? null
+  for (const key of mindMapAdornmentStorageKeys(nodeId, connections ?? [])) {
+    const hit = all[key]
+    if (hit) return hit
+  }
+  return null
 }
 
 export type MindMapAdornmentPart = 'all' | 'image' | 'inline'
@@ -143,21 +156,44 @@ export function hostnameFromMindMapHref(href: string): string {
   }
 }
 
+export type MindMapLinkDialogSeed = {
+  /** Editable name field (empty when the node label is only a placeholder hint). */
+  name: string
+  href: string
+  /** Grey placeholder in the name field — usually the current node label. */
+  namePlaceholder: string
+}
+
+export function mindMapNodeHasAdornment(adornment: MindMapNodeAdornment | null | undefined): boolean {
+  if (!adornment) return false
+  return Boolean(adornment.href || adornment.icon || adornment.imageUrl)
+}
+
+/** One Delete press removes a single adornment layer: link, then image, then icon. */
+export function mindMapAdornmentDeletePatch(
+  adornment: MindMapNodeAdornment
+): MindMapNodeAdornment | null {
+  if (adornment.href) return { href: '' }
+  if (adornment.imageUrl) return { imageUrl: '' }
+  if (adornment.icon) return { icon: '' }
+  return null
+}
+
 /** Prefill the insert-link dialog: URL-like node text goes into href, not Name. */
 export function seedMindMapLinkDialog(
   currentText: string,
   existingHref: string
-): { name: string; href: string } {
+): MindMapLinkDialogSeed {
   const text = currentText.trim()
   const stored = existingHref.trim()
   const textAsHref = text ? sanitizeMindMapHref(text) : null
   if (stored) {
     const storedSanitized = sanitizeMindMapHref(stored)
     const name = textAsHref && storedSanitized && textAsHref === storedSanitized ? '' : text
-    return { href: stored, name }
+    return { href: stored, name, namePlaceholder: name || text }
   }
-  if (textAsHref) return { href: textAsHref, name: '' }
-  return { href: '', name: text }
+  if (textAsHref) return { href: textAsHref, name: '', namePlaceholder: '' }
+  return { href: '', name: '', namePlaceholder: text }
 }
 
 /**

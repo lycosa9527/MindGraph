@@ -25,6 +25,13 @@ TASK_SCRIPT = "mind_classroom.run_script"
 TASK_SLIDES = "mind_classroom.run_slides"
 
 
+def resolve_classroom_mode(mode: str, slide_deck_enabled: bool) -> str:
+    """Slide lecture stays a canvas tour until the feature ships."""
+    if mode == "slide_deck" and not slide_deck_enabled:
+        return "canvas_tour"
+    return mode
+
+
 class ClassroomJobsBusy(RuntimeError):
     """Per-user in-flight classroom job cap. ``job_id`` is the blocking row."""
 

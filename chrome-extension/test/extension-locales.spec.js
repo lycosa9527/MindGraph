@@ -1,5 +1,5 @@
 /**
- * Extension interface locales — same 44 codes as the web language picker.
+ * Extension interface locales — 43 picker codes (web has 44; no zh-tw).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -10,7 +10,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const extensionRoot = path.resolve(__dirname, "..");
 
 const PICKER_CODES = [
-  "zh-tw",
   "zh",
   "en",
   "es",
@@ -70,9 +69,9 @@ function loadModule(relPath, exportName) {
 describe("extension interface locales", () => {
   const locales = loadModule("extension-locales.js", "MindGraphExtensionLocales");
 
-  it("lists the same 44 picker languages in the same order", () => {
+  it("lists the 43 extension picker languages in order", () => {
     expect(locales.LOCALES.map((entry) => entry.code)).toEqual(PICKER_CODES);
-    expect(new Set(locales.LOCALES.map((entry) => entry.nativeName)).size).toBe(44);
+    expect(new Set(locales.LOCALES.map((entry) => entry.nativeName)).size).toBe(43);
   });
 
   it("keeps Chrome-unsupported catalogs outside _locales", () => {
@@ -88,10 +87,10 @@ describe("extension interface locales", () => {
   it("normalizes legacy storage values and browser tags", () => {
     expect(locales.normalizeUiLanguage(undefined)).toBe("auto");
     expect(locales.normalizeUiLanguage("zh_CN")).toBe("zh");
-    expect(locales.normalizeUiLanguage("zh_TW")).toBe("zh-tw");
+    expect(locales.normalizeUiLanguage("zh_TW")).toBe("zh");
     expect(locales.normalizeUiLanguage("fr")).toBe("fr");
     expect(locales.normalizeUiLanguage("not-a-locale")).toBe("auto");
-    expect(locales.matchUiLanguage("zh-HK")).toBe("zh-tw");
+    expect(locales.matchUiLanguage("zh-HK")).toBe("zh");
     expect(locales.matchUiLanguage("zh-CN")).toBe("zh");
     expect(locales.matchUiLanguage("pt-PT")).toBe("pt");
     expect(locales.matchUiLanguage("fil")).toBe("tl");
@@ -108,11 +107,11 @@ describe("extension interface locales", () => {
     const shared = loadModule("shared-mindgraph.js", "MindGraphShared");
     const allowed = ["zh", "zh-hant", "en", "fr", "pt", "tl", "az"];
     expect(shared.resolvePromptLanguageFromUiMode("fr", "en", allowed)).toBe("fr");
-    expect(shared.resolvePromptLanguageFromUiMode("zh_TW", "en", allowed)).toBe("zh-hant");
+    expect(shared.resolvePromptLanguageFromUiMode("zh_TW", "en", allowed)).toBe("zh");
     expect(shared.resolvePromptLanguageFromUiMode("zh_CN", "en", allowed)).toBe("zh");
     expect(shared.resolvePromptLanguageFromUiMode("tl", "en", allowed)).toBe("tl");
     expect(shared.resolvePromptLanguageFromUiMode("auto", "pt-BR", allowed)).toBe("pt");
-    expect(shared.resolvePromptLanguageFromUiMode("auto", "zh-HK", allowed)).toBe("zh-hant");
+    expect(shared.resolvePromptLanguageFromUiMode("auto", "zh-HK", allowed)).toBe("zh");
     expect(shared.resolvePromptLanguageFromUiMode("fr", "ca", allowed)).toBe("fr");
     expect(shared.resolvePromptLanguageFromUiMode("auto", "ca", ["zh", "zh-hant", "en", "ca"])).toBe("ca");
     expect(shared.resolvePromptLanguageFromUiMode("auto", "he", ["zh", "zh-hant", "en", "he"])).toBe("he");

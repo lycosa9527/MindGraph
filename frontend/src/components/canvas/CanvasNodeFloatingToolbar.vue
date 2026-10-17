@@ -16,6 +16,7 @@ import {
   Square,
 } from '@lucide/vue'
 
+import { CANVAS_NODE_CHROME_Z } from '@/components/common/swissGlassStack'
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import type {
   FloatingToolbarPosition,
@@ -165,7 +166,7 @@ const toolbarStyle = computed(() => ({
   left: `${props.position.left}px`,
   top: `${props.position.top}px`,
   position: 'fixed' as const,
-  zIndex: 5000,
+  zIndex: CANVAS_NODE_CHROME_Z.FLOATING_TOOLBAR,
   // above: anchor is bar bottom; below: anchor is bar top (fit-to-screen flip).
   transform: props.position.placement === 'below' ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
 }))
@@ -600,6 +601,7 @@ function isActiveFontSize(size: number): boolean {
 <style scoped>
 .node-floating-toolbar {
   position: fixed;
+  /* Keep in sync with CANVAS_NODE_CHROME_Z.FLOATING_TOOLBAR */
   z-index: 5000;
 }
 
@@ -798,6 +800,7 @@ function isActiveFontSize(size: number): boolean {
   border: 1px solid #e2e8f0;
   background: #fff;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  /* Keep in sync with CANVAS_NODE_CHROME_Z.FLOATING_TOOLBAR_PANEL */
   z-index: 5010;
   min-width: 160px;
 }
@@ -923,6 +926,7 @@ function isActiveFontSize(size: number): boolean {
 
 <style>
 .node-floating-toolbar-popper.el-popper {
+  /* Keep in sync with CANVAS_NODE_CHROME_Z.FLOATING_TOOLBAR_POPPER */
   z-index: 5100 !important;
   padding: 4px !important;
   border-radius: 10px !important;

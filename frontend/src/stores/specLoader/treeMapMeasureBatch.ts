@@ -22,6 +22,7 @@ import {
   type TreeMapNodeMeasureOptions,
 } from '@/utils/treeMapNodeBox'
 
+import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
 import {
   type NowrapMeasureSpec,
   measureNowrapBatch,
@@ -41,7 +42,7 @@ export function treeMapBranchMeasureOptions(
     fontSize: typeof node.style?.fontSize === 'number' ? node.style.fontSize : fallback,
     fontWeight: (node.style?.fontWeight as string | undefined) ?? 'normal',
     fontFamily: node.style?.fontFamily,
-    secondary: node.textSecondary,
+    secondary: learningSheetLayoutSecondary(node),
     underline: node.style?.nodeShape === 'underline',
   }
 }
@@ -139,19 +140,32 @@ export function collectTreeMapNodeMeasureSpecs(nodes: readonly DiagramNode[]): N
   const specs: NowrapMeasureSpec[] = []
   for (const node of nodes) {
     if (node.id === TREE_TOPIC_NODE_ID) {
-      pushTopicSpecs(specs, node.text ?? '', node.style, node.textSecondary)
+      pushTopicSpecs(
+        specs,
+        learningSheetLayoutText(node),
+        node.style,
+        learningSheetLayoutSecondary(node)
+      )
       continue
     }
     if (node.id === 'dimension-label') {
-      pushDimensionSpecs(specs, node.text ?? '', node.textSecondary)
+      pushDimensionSpecs(specs, learningSheetLayoutText(node), learningSheetLayoutSecondary(node))
       continue
     }
     if (isTreeMapCategoryNode(node)) {
-      pushBranchSpecs(specs, node.text ?? '', treeMapBranchMeasureOptions(node, 'category'))
+      pushBranchSpecs(
+        specs,
+        learningSheetLayoutText(node),
+        treeMapBranchMeasureOptions(node, 'category')
+      )
       continue
     }
     if (isTreeMapLeafNode(node)) {
-      pushBranchSpecs(specs, node.text ?? '', treeMapBranchMeasureOptions(node, 'leaf'))
+      pushBranchSpecs(
+        specs,
+        learningSheetLayoutText(node),
+        treeMapBranchMeasureOptions(node, 'leaf')
+      )
     }
   }
   return specs

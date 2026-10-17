@@ -36,7 +36,12 @@ import { useFlowMapOpsSlice } from './flowMapOps'
 import { useHistorySlice } from './history'
 import { reconcileAfterHistoryRestore as reconcileDiagramAfterHistoryRestore } from './historyRestore'
 import { useLearningSheetSlice } from './learningSheet'
-import { setMindMapNodeHref, setMindMapNodeIcon, setMindMapNodeImage } from './mindMapAdornmentOps'
+import {
+  clearMindMapNodeAdornments,
+  setMindMapNodeHref,
+  setMindMapNodeIcon,
+  setMindMapNodeImage,
+} from './mindMapAdornmentOps'
 import { reconcileMindMapCanvasModeSwitch } from './mindMapCanvasModeSwitch'
 import { syncMindMapStoreLayoutPositions } from './mindMapDisplayLayout'
 import { useMindMapLayoutSlice } from './mindMapLayout'
@@ -636,6 +641,8 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     setMindMapNodeHref: (nodeId: string, href: string) => setMindMapNodeHref(ctx, nodeId, href),
     setMindMapNodeImage: (nodeId: string, imageUrl: string) =>
       setMindMapNodeImage(ctx, nodeId, imageUrl),
+    clearMindMapNodeAdornments: (nodeIds: readonly string[]) =>
+      clearMindMapNodeAdornments(ctx, nodeIds),
     removeMindMapNodes,
     moveMindMapBranch,
     addMindMapSibling,

@@ -18,7 +18,6 @@ import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useCanvasLlmModelNames } from '@/composables/llm/useCanvasLlmModelNames'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
-import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { CANVAS_LLM_MENU, canvasLlmLogo, canvasMenuModelLabel } from '@/config/canvasLlmMenu'
 import { useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { selectCanvasLlmModel } from '@/stores/llmMenuChoice'
@@ -41,7 +40,6 @@ export function useMindMapRibbonChromeActions() {
   const { t } = useLanguage()
   const { customLlmEnabled, displayNameForModel } = useOrgCustomLlm()
   const { names: canvasModelNames } = useCanvasLlmModelNames()
-  const learningSheet = useLearningSheetCustomMode()
 
   const nodeCount = computed(() => diagramStore.data?.nodes?.length ?? 0)
   const canUndo = computed(() => diagramStore.canUndo)
@@ -100,22 +98,6 @@ export function useMindMapRibbonChromeActions() {
     uiStore.toggleWireframe()
   }
 
-  function toggleLearning(): void {
-    if (!diagramStore.data?.nodes?.length) {
-      notify.warningKey('canvas.toolbar.createDiagramFirst')
-      return
-    }
-    if (diagramStore.isLearningSheet) {
-      learningSheet.exitLearningSheet()
-      return
-    }
-    if (diagramStore.hasPreservedLearningSheet()) {
-      diagramStore.applyLearningSheetView()
-      return
-    }
-    diagramStore.setLearningSheetMode(true)
-  }
-
   function openNodePalette(): void {
     eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'mind-map-ribbon' })
   }
@@ -158,7 +140,6 @@ export function useMindMapRibbonChromeActions() {
     emptySelected,
     handleAIGenerate,
     toggleLineMode,
-    toggleLearning,
     openNodePalette,
     toggleMindmate,
     undo: tryCollabGuardedUndo,

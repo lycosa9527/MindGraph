@@ -86,7 +86,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_showcase: bool
     feature_zhihui: bool
     feature_knowledge_space: bool
-    feature_mind_classroom_slide_deck: bool = True
+    feature_mind_classroom_slide_deck: bool = False
     feature_library: bool
     feature_smart_response: bool
     feature_teacher_usage: bool
@@ -148,7 +148,7 @@ async def get_feature_flags(
         feature_showcase=config.FEATURE_SHOWCASE,
         feature_zhihui=config.FEATURE_ZHIHUI,
         feature_knowledge_space=config.FEATURE_KNOWLEDGE_SPACE,
-        feature_mind_classroom_slide_deck=True,
+        feature_mind_classroom_slide_deck=config.FEATURE_MIND_CLASSROOM_SLIDE_DECK,
         feature_library=config.FEATURE_LIBRARY,
         feature_smart_response=config.FEATURE_SMART_RESPONSE,
         feature_teacher_usage=config.FEATURE_TEACHER_USAGE,

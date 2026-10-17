@@ -1,5 +1,6 @@
 /**
- * en UI � common
+ * bn UI — common
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {
@@ -91,6 +92,7 @@ export default {
   'meta.pageTitle.dashboardLogin': 'Dashboard login',
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.knowledgeSpace': 'Knowledge space',
+  'meta.pageTitle.learningSpace': 'Learning Space',
   'meta.pageTitle.library': 'Library',
   'meta.pageTitle.libraryBookmark': 'Bookmark',
   'meta.pageTitle.libraryViewer': 'Library viewer',
@@ -283,11 +285,9 @@ export default {
   'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
   'settings.language.eBlackboardOff': 'Off',
   'settings.language.eBlackboardOn': 'On',
-  'settings.language.eBlackboardHint':
-    'Enlarges branch + and collapse controls on the new canvas; tap to select, double-tap to edit, two-finger drag to pan/zoom — for classroom e-blackboards',
+  'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas; tap to select, double-tap to edit, two-finger drag to pan/zoom — for classroom e-blackboards',
   'settings.language.bilingualUi': 'Bilingual interface',
-  'settings.language.bilingualUiHint':
-    'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',
+  'settings.language.bilingualUiHint': 'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',
   'settings.language.bilingualUiOff': 'Off',
   'settings.language.bilingualUiOn': 'On',
   'settings.language.presenterLanguage': 'Presenter language',
@@ -296,6 +296,11 @@ export default {
   'settings.language.primaryLanguageHint': 'Regular-size line for the audience; also the interface language.',
   'settings.language.secondaryLanguage': 'Second language',
   'settings.language.secondaryLanguageHint': 'Smaller line for the demonstrator to read.',
+  'settings.tabs.account': 'Account',
+  'settings.tabs.security': 'Security',
+  'settings.tabs.language': 'Language',
+  'settings.tabs.plugins': 'Plugins',
+  'settings.tabs.aria': 'Settings sections',
   'settings.version.title': 'UI Version',
   'settings.version.chinese': 'Professional mode',
   'settings.version.international': 'Simplified mode',
@@ -333,6 +338,9 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
+  'swissGlass.hero.userSettings.ribbon': 'Settings',
+  'swissGlass.hero.userSettings.title': 'Settings',
+  'swissGlass.hero.userSettings.line1': 'Manage your account, security, language, and plugins',
   'swissGlass.hero.localeHint.ribbon': 'Language',
   'swissGlass.hero.localeHint.title': 'Switch interface language?',
   'swissGlass.hero.localeHint.line1': 'Your browser language was detected. Switch the app to match?',
@@ -502,13 +510,4 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'Concept map',
   'swissGlass.hero.focusQuestion.title': 'Focus question',
   'swissGlass.hero.focusQuestion.line1': 'Set the core question for this concept map',
-  'meta.pageTitle.learningSpace': 'Learning Space',
-  'settings.tabs.account': 'Account',
-  'settings.tabs.security': 'Security',
-  'settings.tabs.language': 'Language',
-  'settings.tabs.plugins': 'Plugins',
-  'settings.tabs.aria': 'Settings sections',
-  'swissGlass.hero.userSettings.ribbon': 'Settings',
-  'swissGlass.hero.userSettings.title': 'Settings',
-  'swissGlass.hero.userSettings.line1': 'Manage your account, security, language, and plugins',
 } as const

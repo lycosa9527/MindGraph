@@ -33,6 +33,7 @@ import {
   resolveFlowSubstepsForSteps,
   substepsForFlowStep,
 } from './flowMapSubsteps'
+import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
 import type { SpecLoaderResult } from './types'
 
 export const FLOW_SUBSTEP_FONT_SIZE = 14
@@ -76,7 +77,7 @@ function flowBoxHeight(
   if (measured != null && measured > 0) return measured
   return heightWithSecondaryLine(
     FLOW_MAP_PILL_HEIGHT,
-    node.textSecondary,
+    learningSheetLayoutSecondary(node),
     flowNodeTypography(node, role).fontSize
   )
 }
@@ -184,7 +185,7 @@ export function recalculateFlowMapLayout(
       const stepTyp = flowNodeTypography(stepNode, 'step')
       const stepW = getEffectiveFlowWidth(
         stepNode.id,
-        stepNode.text ?? '',
+        learningSheetLayoutText(stepNode),
         stepTyp.fontSize,
         FLOW_MAX_TEXT_WIDTH,
         FLOW_NODE_PADDING_X,
@@ -197,7 +198,7 @@ export function recalculateFlowMapLayout(
         const subTyp = flowNodeTypography(sub, 'substep')
         const subW = getEffectiveFlowWidth(
           sub.id,
-          sub.text ?? '',
+          learningSheetLayoutText(sub),
           subTyp.fontSize,
           FLOW_SUBSTEP_MAX_TEXT_WIDTH,
           FLOW_NODE_PADDING_X,
@@ -213,7 +214,7 @@ export function recalculateFlowMapLayout(
 
     const topicTyp = flowNodeTypography(topicNode, 'topic')
     const topicEstW = estimateFlowRenderedWidth(
-      topicNode.text ?? '',
+      learningSheetLayoutText(topicNode),
       topicTyp.fontSize,
       FLOW_TOPIC_MAX_TEXT_WIDTH,
       FLOW_TOPIC_PADDING_X,
@@ -241,7 +242,7 @@ export function recalculateFlowMapLayout(
         const subTyp = flowNodeTypography(sub, 'substep')
         const subW = getEffectiveFlowWidth(
           sub.id,
-          sub.text ?? '',
+          learningSheetLayoutText(sub),
           subTyp.fontSize,
           FLOW_SUBSTEP_MAX_TEXT_WIDTH,
           FLOW_NODE_PADDING_X,
@@ -336,7 +337,7 @@ export function recalculateFlowMapLayout(
       const stepTyp = flowNodeTypography(stepNode, 'step')
       const stepW = getEffectiveFlowWidth(
         stepNode.id,
-        stepNode.text ?? '',
+        learningSheetLayoutText(stepNode),
         stepTyp.fontSize,
         FLOW_MAX_TEXT_WIDTH,
         FLOW_NODE_PADDING_X,

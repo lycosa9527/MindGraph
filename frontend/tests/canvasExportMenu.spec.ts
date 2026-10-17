@@ -5,6 +5,7 @@ import {
   CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
   CANVAS_RASTER_EXPORT_COMMANDS,
   CANVAS_STANDARD_EXPORT_MENU_ITEMS,
+  CANVAS_WORKSHEET_TEXT_MENU_ITEM,
   isCanvasShownImageExport,
 } from '@/config/canvasExportMenu'
 import {
@@ -41,6 +42,10 @@ describe('canvasExportMenu', () => {
     for (const item of CANVAS_STANDARD_EXPORT_MENU_ITEMS) {
       expect(item.labelKey.startsWith('canvas.topBar.export')).toBe(true)
     }
+  })
+
+  it('uses a top bar label key for the worksheet document export menu item', () => {
+    expect(CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey).toBe('canvas.topBar.addWorksheetText')
   })
 
   it('defines mind map export menu without standalone pdf (DOCX/PDF via worksheet modal)', () => {

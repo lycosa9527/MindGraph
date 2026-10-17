@@ -231,6 +231,7 @@ const {
   getViewport,
   setMinZoom,
   screenToFlowCoordinate,
+  selectionKeyCode: vueFlowSelectionKeyCode,
 } = useVueFlow(diagramStore.vueFlowId)
 
 function getVueFlowNodesForOverlays(): GraphNode[] {
@@ -285,6 +286,15 @@ const {
   presentationHighlighterColor,
   presentationPenColor,
 })
+
+// Vue Flow 1.48's prop only accepts boolean | null, and null would clear this.
+watch(
+  selectionKeyCode,
+  (key) => {
+    vueFlowSelectionKeyCode.value = key
+  },
+  { immediate: true }
+)
 
 /** Mobile page or desktop e-blackboard — CSS touch-action + marquee hide. */
 const canvasTouchGesturesActive = computed(
@@ -834,7 +844,6 @@ defineExpose({
         :nodes-connectable="false"
         :elements-selectable="elementsSelectable"
         :select-nodes-on-drag="selectNodesOnDrag"
-        :selection-key-code="selectionKeyCode"
         :selection-mode="SelectionMode.Partial"
         :pan-on-scroll="false"
         :zoom-on-scroll="true"

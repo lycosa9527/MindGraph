@@ -1,5 +1,6 @@
 /**
- * en UI � knowledge
+ * xh UI — knowledge
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {

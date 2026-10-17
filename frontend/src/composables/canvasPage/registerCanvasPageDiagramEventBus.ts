@@ -7,7 +7,10 @@ import {
   resolveThinkingMapNodeSlash,
 } from '@/composables/canvasPage/thinkingMapNodeSlash'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useNodeActions } from '@/composables/editor/useNodeActions'
+import {
+  registerDiagramNodeActionEventBus,
+  useNodeActions,
+} from '@/composables/editor/useNodeActions'
 import { restoreLearningSheetUiFromDiagram } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore, usePanelsStore } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
@@ -31,6 +34,17 @@ export function registerCanvasPageDiagramEventBus(options: {
     })
   const focusReviewStore = useConceptMapFocusReviewStore()
   const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
+
+  registerDiagramNodeActionEventBus(
+    {
+      handleAddNode,
+      handleDeleteNode,
+      handleAddBranch,
+      handleAddChild,
+      handleAddSibling,
+    },
+    'CanvasPage'
+  )
 
   eventBus.onWithOwner(
     'view:zoom_changed',

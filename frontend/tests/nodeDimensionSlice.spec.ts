@@ -52,6 +52,34 @@ describe('useNodeDimensionSlice measure batch', () => {
     expect(ctx.layoutRecalcTrigger.value).toBe(1)
   })
 
+  it('counts a blanked node without replacing its held box', async () => {
+    const ctx = makeCtx()
+    ctx.data = ref({
+      isLearningSheet: true,
+      nodes: [
+        {
+          id: 'a',
+          text: '',
+          data: { hidden: true, hiddenAnswer: 'photosynthesis' },
+        },
+      ],
+    }) as DiagramContext['data']
+    ctx.nodeDimensions.value = { a: { width: 80, height: 40 } }
+    const slice = useNodeDimensionSlice(ctx)
+    slice.setExpectedNodeCount(1)
+
+    slice.setNodeDimensions('a', 12, 12)
+
+    expect(ctx.nodeDimensions.value.a).toEqual({ width: 80, height: 40 })
+    expect(ctx.layoutRecalcTrigger.value).toBe(1)
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve())
+      })
+    })
+    expect(ctx.layoutMeasureSettling.value).toBe(false)
+  })
+
   it('live mode still relayouts on a real size change', () => {
     const ctx = makeCtx()
     const slice = useNodeDimensionSlice(ctx)

@@ -231,26 +231,15 @@ export default {
   'sidebar.demo.loading': '正在生成',
   'sidebar.demo.moveUp': '上移',
   'sidebar.demo.moveDown': '下移',
-  'sidebar.demo.caption.circle_map':
-    '《{title}》是一張圓圈圖，用來打開聯想。中心是主題，周圍是學生想到的相關事物，他們能看清自己聯想到了什麼。',
-  'sidebar.demo.caption.bubble_map':
-    '《{title}》是一張氣泡圖，用來描述特徵。中心事物被具體的樣子包圍，學生要把籠統的印象說成可以核對的句子。',
-  'sidebar.demo.caption.double_bubble_map':
-    '《{title}》是一張雙氣泡圖，用來比較兩件事。中間是相同點，兩側是各自的不同，學生能同時看見像與不像。',
-  'sidebar.demo.caption.tree_map':
-    '《{title}》是一張樹形圖，用來分類。總主題分出類別，類別再落到例子，學生能看清一層層的包含關係。',
-  'sidebar.demo.caption.brace_map':
-    '《{title}》是一張括號圖，用來拆開整體。左邊是整體，右邊是部分和更小的部分，學生能回答它由什麼組成。',
-  'sidebar.demo.caption.flow_map':
-    '《{title}》是一張流程圖，用來看順序。步驟按先後排開，學生能說出先做什麼、後做什麼，以及為什麼不能顛倒。',
-  'sidebar.demo.caption.multi_flow_map':
-    '《{title}》是一張複流程圖，用來看因果。左邊是原因，右邊是結果，學生能把為什麼發生和帶來了什麼分開。',
-  'sidebar.demo.caption.bridge_map':
-    '《{title}》是一張橋形圖，用來做類比。一對關係推出另一對關係，學生要說清這邊的聯繫為什麼能用到那邊。',
-  'sidebar.demo.caption.mindmap':
-    '《{title}》是一張思維導圖，用來把想法攤開再收攏。分支從中心長出，學生先盡情聯想，再整理成可以講清楚的結構。',
-  'sidebar.demo.caption.concept_map':
-    '《{title}》是一張概念圖，用來搭建知識之間的關係。概念用帶說明的線連起來，學生能講出它們為什麼相連。',
-  'sidebar.demo.caption.fallback':
-    '《{title}》把這個內容畫成一張圖。學生不用只靠一段話，就能看見事物之間怎麼連在一起。',
+  'sidebar.demo.caption.circle_map': '《{title}》是一張圓圈圖，用來打開聯想。中心是主題，周圍是學生想到的相關事物，他們能看清自己聯想到了什麼。',
+  'sidebar.demo.caption.bubble_map': '《{title}》是一張氣泡圖，用來描述特徵。中心事物被具體的樣子包圍，學生要把籠統的印象說成可以核對的句子。',
+  'sidebar.demo.caption.double_bubble_map': '《{title}》是一張雙氣泡圖，用來比較兩件事。中間是相同點，兩側是各自的不同，學生能同時看見像與不像。',
+  'sidebar.demo.caption.tree_map': '《{title}》是一張樹形圖，用來分類。總主題分出類別，類別再落到例子，學生能看清一層層的包含關係。',
+  'sidebar.demo.caption.brace_map': '《{title}》是一張括號圖，用來拆開整體。左邊是整體，右邊是部分和更小的部分，學生能回答它由什麼組成。',
+  'sidebar.demo.caption.flow_map': '《{title}》是一張流程圖，用來看順序。步驟按先後排開，學生能說出先做什麼、後做什麼，以及為什麼不能顛倒。',
+  'sidebar.demo.caption.multi_flow_map': '《{title}》是一張複流程圖，用來看因果。左邊是原因，右邊是結果，學生能把為什麼發生和帶來了什麼分開。',
+  'sidebar.demo.caption.bridge_map': '《{title}》是一張橋形圖，用來做類比。一對關係推出另一對關係，學生要說清這邊的聯繫為什麼能用到那邊。',
+  'sidebar.demo.caption.mindmap': '《{title}》是一張思維導圖，用來把想法攤開再收攏。分支從中心長出，學生先盡情聯想，再整理成可以講清楚的結構。',
+  'sidebar.demo.caption.concept_map': '《{title}》是一張概念圖，用來搭建知識之間的關係。概念用帶說明的線連起來，學生能講出它們為什麼相連。',
+  'sidebar.demo.caption.fallback': '《{title}》把這個內容畫成一張圖。學生不用只靠一段話，就能看見事物之間怎麼連在一起。',
 } as const

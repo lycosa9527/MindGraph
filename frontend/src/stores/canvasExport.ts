@@ -1,5 +1,5 @@
 /**
- * Canvas export preferences + worksheet (导出为DOC/PDF) modal lifecycle.
+ * Canvas export preferences + worksheet document export modal lifecycle.
  * Persisted in sessionStorage; toolbar open/export stay event-bus driven.
  */
 import { computed, ref, watch } from 'vue'

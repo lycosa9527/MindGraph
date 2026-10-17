@@ -12,6 +12,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
@@ -44,6 +45,10 @@ import NodeShapeUnderline from './NodeShapeUnderline.vue'
 const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramSession()
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const isTextReadonly = computed(() => {
   if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return true
   return props.data.hidden === true && !diagramStore.isLearningSheet
@@ -330,7 +335,7 @@ function handleBranchNodeClick(): void {
       'border-none': isBridgeMap && !bridgeHasBody,
       'cursor-grab': true,
     }"
-    :style="nodeStyle"
+    :style="[nodeStyle, blankFrame]"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.passive.capture="handleBranchMoveTouchStart"

@@ -6,31 +6,56 @@ import type { DiagramNode } from '@/types'
 import type { MindMapBranchSpec } from './mindMapLegacyLayout'
 import { LEARNING_SHEET_BLANK_TEXT, isLearningSheetBlankDisplayText } from './utils'
 
-function nodeHiddenAnswer(node: DiagramNode): string | undefined {
-  const raw = (node.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer
+/** Fields layout and blank detection read. Spec collectors can pass this without a full node. */
+export type LearningSheetTextSource = {
+  text?: string
+  textSecondary?: string
+  data?: object
+}
+
+function nodeData(node: LearningSheetTextSource): {
+  hidden?: boolean
+  hiddenAnswer?: string
+  hiddenAnswerSecondary?: string
+} {
+  return (node.data ?? {}) as {
+    hidden?: boolean
+    hiddenAnswer?: string
+    hiddenAnswerSecondary?: string
+  }
+}
+
+function nodeHiddenAnswer(node: LearningSheetTextSource): string | undefined {
+  const raw = nodeData(node).hiddenAnswer
   if (typeof raw !== 'string') return undefined
   const trimmed = raw.trim()
   return trimmed.length > 0 ? trimmed : undefined
 }
 
-function isBlanked(node: DiagramNode): boolean {
+export function isLearningSheetBlankedNode(node: LearningSheetTextSource | undefined): boolean {
+  if (!node) return false
   const answer = nodeHiddenAnswer(node)
   if (!answer) return false
-  const hidden = (node.data as { hidden?: boolean } | undefined)?.hidden
-  return hidden === true || isLearningSheetBlankDisplayText(node.text)
+  return nodeData(node).hidden === true || isLearningSheetBlankDisplayText(node.text)
 }
 
 /** Layout / numbering estimates use the answer while the node is blanked. */
-export function learningSheetLayoutText(node: DiagramNode): string {
-  return isBlanked(node) ? (nodeHiddenAnswer(node) ?? '') : String(node.text ?? '')
+export function learningSheetLayoutText(node: LearningSheetTextSource): string {
+  return isLearningSheetBlankedNode(node) ? (nodeHiddenAnswer(node) ?? '') : String(node.text ?? '')
 }
 
 /** Spec `text` is the answer so layout keeps underline width. */
-function nodeHiddenAnswerSecondary(node: DiagramNode): string | undefined {
-  const raw = (node.data as { hiddenAnswerSecondary?: string } | undefined)?.hiddenAnswerSecondary
+function nodeHiddenAnswerSecondary(node: LearningSheetTextSource): string | undefined {
+  const raw = nodeData(node).hiddenAnswerSecondary
   if (typeof raw !== 'string') return undefined
   const trimmed = raw.trim()
   return trimmed.length > 0 ? trimmed : undefined
+}
+
+/** Gloss line used for layout. A blank keeps the stored answer gloss, not the empty display. */
+export function learningSheetLayoutSecondary(node: LearningSheetTextSource): string {
+  if (!isLearningSheetBlankedNode(node)) return String(node.textSecondary ?? '')
+  return nodeHiddenAnswerSecondary(node) ?? ''
 }
 
 export function readLearningSheetBranchFromNode(node: DiagramNode): {
@@ -41,7 +66,7 @@ export function readLearningSheetBranchFromNode(node: DiagramNode): {
   hiddenAnswerSecondary?: string
 } {
   const visibleGloss = (node.textSecondary ?? '').trim()
-  if (!isBlanked(node)) {
+  if (!isLearningSheetBlankedNode(node)) {
     return visibleGloss
       ? { text: node.text ?? '', textSecondary: visibleGloss }
       : { text: node.text ?? '' }

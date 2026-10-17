@@ -21,8 +21,7 @@ export default {
   'notification.feedbackThanks': '感謝您的反饋',
   'notification.feedbackThanksDislike': '感謝您的反饋，我們會努力改進',
   'notification.focusQuestionTooShort': '請先輸入更長的焦點問題',
-  'notification.geoLiteMissingIntro':
-    '请从 MaxMind 下载 GeoLite2 Country，解压后把 GeoLite2-Country.mmdb 复制到服务器 data 目录：',
+  'notification.geoLiteMissingIntro': '请从 MaxMind 下载 GeoLite2 Country，解压后把 GeoLite2-Country.mmdb 复制到服务器 data 目录：',
   'notification.geoLiteMissingLink': '打開 MaxMind GeoLite 下載頁',
   'notification.geoLiteMissingPathLabel': '期望路徑：',
   'notification.geoLiteMissingTitle': '缺少 GeoLite2 Country 數據庫',
@@ -51,4 +50,4 @@ export default {
   'notification.sessionKicked': '該賬號已在其他設備上將此登錄下線',
   'notification.signInToUse': '請登錄後使用',
   'notification.signInToValidateFocus': '請登錄後檢驗焦點問題',
-}
+} as const

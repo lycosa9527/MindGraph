@@ -1,5 +1,5 @@
 /**
- * Popup UI — i18n via the 44 interface locales (extension-locales.js).
+ * Popup UI — i18n via extension-locales.js (43 picker languages).
  * The Language setting also drives mind map generation language (via the service worker).
  */
 

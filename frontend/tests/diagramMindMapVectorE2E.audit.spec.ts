@@ -2,6 +2,7 @@
  * Production-readiness E2E audit: real PG mind map → vector SVG → PDF (+ DOCX PNG).
  * Writes artifacts under tests/fixtures/pg_mindmaps/_e2e_out/
  */
+import { execSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -13,6 +14,21 @@ import {
 } from '@/utils/diagramMindMapVectorPdfFonts'
 import { buildMindMapVectorSvg } from '@/utils/diagramMindMapVectorSvg'
 import { estimateTextWidth } from '@/utils/diagramMindMapVectorText'
+
+function resolvePythonBin(): string {
+  const fromEnv = process.env.PYTHON?.trim() || process.env.CONDA_PYTHON?.trim()
+  if (fromEnv) return fromEnv
+  const condaPrefix = process.env.CONDA_PREFIX?.trim()
+  if (condaPrefix) {
+    const condaPython = join(condaPrefix, 'bin', 'python')
+    if (existsSync(condaPython)) return condaPython
+  }
+  try {
+    return execSync('which python3', { encoding: 'utf8' }).trim()
+  } catch {
+    return 'python3'
+  }
+}
 
 const FIXTURE_DIR = join(__dirname, 'fixtures/pg_mindmaps')
 const OUT_DIR = join(FIXTURE_DIR, '_e2e_out')
@@ -250,7 +266,7 @@ describe.runIf(Boolean(picked) && hasFonts)('mind-map vector export E2E audit (r
     const repoRoot = join(__dirname, '../..')
     const outDocx = join(OUT_DIR, 'e2e.docx')
     const py = spawnSync(
-      '/home/royw/miniconda3/envs/python313/bin/python',
+      resolvePythonBin(),
       [
         '-c',
         `

@@ -28,6 +28,7 @@ import {
 import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
+import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
   measureRenderedDiagramLabelHeight,
@@ -147,11 +148,13 @@ function refreshBraceFlatNodesFromDiagram(
   diagramById: Map<string, DiagramNode>
 ): void {
   for (const fn of flatNodes) {
-    const typo = braceTypographyFromNode(diagramById.get(fn.id), fn.depth)
+    const diagramNode = diagramById.get(fn.id)
+    const typo = braceTypographyFromNode(diagramNode, fn.depth)
+    fn.text = diagramNode ? learningSheetLayoutText(diagramNode) : fn.text
     fn.width = estimateBraceNodeWidth(fn.text, fn.depth, typo)
     fn.height = heightWithSecondaryLine(
       estimateBraceNodeHeight(fn.text, fn.depth, typo),
-      diagramById.get(fn.id)?.textSecondary,
+      diagramNode ? learningSheetLayoutSecondary(diagramNode) : undefined,
       typo.fontSize
     )
   }
@@ -535,8 +538,8 @@ export function recalculateBraceMapLayout(
     const parts = childIds.map((id) => buildTree(id))
     return {
       id: nodeId,
-      text: node?.text ?? '',
-      textSecondary: node?.textSecondary,
+      text: node ? learningSheetLayoutText(node) : '',
+      textSecondary: node ? learningSheetLayoutSecondary(node) : undefined,
       parts: parts.length > 0 ? parts : undefined,
     }
   }

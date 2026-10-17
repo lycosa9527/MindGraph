@@ -3,7 +3,7 @@
   "minimum_chrome_version": "109",
   "minimum_edge_version": "120",
   "name": "__MSG_extName__",
-  "version": "0.4.25",
+  "version": "0.4.26",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
   "permissions": ["activeTab", "scripting", "storage", "downloads", "tabs", "contextMenus", "notifications", "offscreen"],

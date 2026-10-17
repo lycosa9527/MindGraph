@@ -34,7 +34,9 @@ export function useFeatureFlags() {
   const featureShowcase = computed(() => live.value?.feature_showcase ?? false)
   const featureZhihui = computed(() => live.value?.feature_zhihui ?? false)
   const featureKnowledgeSpace = computed(() => live.value?.feature_knowledge_space ?? false)
-  const featureMindClassroomSlideDeck = computed(() => true)
+  const featureMindClassroomSlideDeck = computed(
+    () => live.value?.feature_mind_classroom_slide_deck ?? false
+  )
   const featureLibrary = computed(() => live.value?.feature_library ?? false)
   const featureSmartResponse = computed(() => live.value?.feature_smart_response ?? false)
   const featureTeacherUsage = computed(() => live.value?.feature_teacher_usage ?? false)

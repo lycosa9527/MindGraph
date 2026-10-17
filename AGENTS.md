@@ -13,6 +13,7 @@ Repository: https://github.com/lycosa9527/MindGraph
 | WSL, conda, paths, no `npm run build` | [`.cursor/rules/wsl-conda-dev.mdc`](.cursor/rules/wsl-conda-dev.mdc) |
 | CI before commit/push | [`.cursor/rules/ci-before-commit-push.mdc`](.cursor/rules/ci-before-commit-push.mdc) → [`scripts/ci-local.sh`](scripts/ci-local.sh) |
 | i18n: translate from `zh`; fill a new locale from `en` once | [`frontend/src/i18n/locales.ts`](frontend/src/i18n/locales.ts) — do not rematerialize a locale that already has translations |
+| i18n Google gap-fill (live) | WSL: `npm run i18n:gap-fill` → **Windows host Node + VPN** only ([`frontend/i18n-google/README.md`](frontend/i18n-google/README.md)). Sync keys first: `node scripts/sync-messages-keys-from-reference.ts`. No WSL proxy to Google. |
 | File-reader Windows exe rebuild | [`.cursor/rules/file-reader-rebuild.mdc`](.cursor/rules/file-reader-rebuild.mdc) (glob: `clients/file-reader/**`) |
 | Docs and tests index | [`docs/README.md`](docs/README.md), [`tests/README.md`](tests/README.md) |
 

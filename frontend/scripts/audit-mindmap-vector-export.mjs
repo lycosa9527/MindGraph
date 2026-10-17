@@ -50,10 +50,10 @@ function installFontFetchMock() {
   const originalFetch = globalThis.fetch
   globalThis.fetch = async (input, init) => {
     const url = String(input)
-    const name = url.includes('NotoSansCJKsc-Bold')
-      ? 'NotoSansCJKsc-Bold.otf'
-      : url.includes('NotoSansCJKsc-Regular')
-        ? 'NotoSansCJKsc-Regular.otf'
+    const name = url.includes('NotoSansSC-Bold')
+      ? 'NotoSansSC-Bold.ttf'
+      : url.includes('NotoSansSC-Regular')
+        ? 'NotoSansSC-Regular.ttf'
         : null
     if (
       name &&
@@ -119,8 +119,8 @@ async function loadTs(specifierFromSrc) {
 
 async function main() {
   mkdirSync(outDir, { recursive: true })
-  const regular = join(fontsDir, 'NotoSansCJKsc-Regular.otf')
-  const bold = join(fontsDir, 'NotoSansCJKsc-Bold.otf')
+  const regular = join(fontsDir, 'NotoSansSC-Regular.ttf')
+  const bold = join(fontsDir, 'NotoSansSC-Bold.ttf')
   const audit = {
     ok: false,
     checks: [],
@@ -273,8 +273,9 @@ async function main() {
   if (pngBuf) {
     // Call Python worksheet builder
     const { spawnSync } = await import('node:child_process')
+    const pythonBin = process.env.PYTHON || process.env.CONDA_PYTHON || 'python3'
     const py = spawnSync(
-      '/home/royw/miniconda3/envs/python313/bin/python',
+      pythonBin,
       [
         '-c',
         `

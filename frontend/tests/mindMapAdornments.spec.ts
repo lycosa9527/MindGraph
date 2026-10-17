@@ -4,6 +4,8 @@ import type { Connection, DiagramNode } from '@/types'
 import {
   hostnameFromMindMapHref,
   mergeNodeAdornment,
+  mindMapAdornmentDeletePatch,
+  mindMapAdornmentStorageKeys,
   parseMindMapAdornments,
   remapMindMapAdornmentsAfterReload,
   resolveMindMapAdornmentParts,
@@ -33,10 +35,17 @@ describe('mind map adornments', () => {
     expect(seedMindMapLinkDialog('Wikipedia', 'https://en.wikipedia.org/wiki/X')).toEqual({
       name: 'Wikipedia',
       href: 'https://en.wikipedia.org/wiki/X',
+      namePlaceholder: 'Wikipedia',
     })
     expect(seedMindMapLinkDialog('https://en.wikipedia.org/wiki/X', '')).toEqual({
       name: '',
       href: 'https://en.wikipedia.org/wiki/X',
+      namePlaceholder: '',
+    })
+    expect(seedMindMapLinkDialog('子项1.1', '')).toEqual({
+      name: '',
+      href: '',
+      namePlaceholder: '子项1.1',
     })
     expect(hostnameFromMindMapHref('https://www.example.com/path?q=1')).toBe('example.com')
     expect(
@@ -62,6 +71,22 @@ describe('mind map adornments', () => {
     expect(sanitizeMindMapImageUrl('https://cdn.example/a.png')).toBe('https://cdn.example/a.png')
     expect(sanitizeMindMapImageUrl('data:image/png;base64,abc')).toBe('data:image/png;base64,abc')
     expect(sanitizeMindMapImageUrl('javascript:alert(1)')).toBeNull()
+  })
+
+  it('deletes adornment layers link → image → icon', () => {
+    expect(mindMapAdornmentDeletePatch({ href: 'https://a', icon: '⭐' })).toEqual({ href: '' })
+    expect(mindMapAdornmentDeletePatch({ icon: '⭐', imageUrl: 'https://img/x.png' })).toEqual({
+      imageUrl: '',
+    })
+    expect(mindMapAdornmentDeletePatch({ icon: '⭐' })).toEqual({ icon: '' })
+  })
+
+  it('lists path and legacy node-id storage keys', () => {
+    const conns: Connection[] = [
+      { id: 'e1', source: 'topic', target: 'a', sourceHandle: 'mindmap-right' },
+    ]
+    expect(mindMapAdornmentStorageKeys('topic', conns)).toEqual(['topic'])
+    expect(mindMapAdornmentStorageKeys('a', conns)).toEqual(['r/0', 'a'])
   })
 
   it('merges and clears adornment fields', () => {

@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.celery import celery_app
 from config.database import get_async_db
+from config.settings import config
 from models.domain.auth import User
 from models.domain.mind_classroom import MindClassroomJob
 from repositories.mind_classroom_repo import MindClassroomJobRepository, MindClassroomSlideRepository
@@ -21,7 +22,11 @@ from routers.features.zhihui.routes import _conversation_list_item, _generation_
 from services.learning_space.ai_gate import assert_student_ai_capability
 from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.diagram_spec import load_owned_diagram_spec
-from services.mind_classroom.enqueue import ClassroomJobsBusy, create_and_enqueue_job
+from services.mind_classroom.enqueue import (
+    ClassroomJobsBusy,
+    create_and_enqueue_job,
+    resolve_classroom_mode,
+)
 from services.mind_classroom.job_events import publish_classroom_job_snapshot
 from services.mind_classroom.job_payload import job_payload
 from services.mind_classroom.job_stream import classroom_job_stream_response
@@ -81,6 +86,7 @@ def _normalize_settings(body: ClassroomJobRequest) -> dict[str, Any]:
     mode = body.mode.strip()
     if mode not in _MODES:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid mode")
+    mode = resolve_classroom_mode(mode, config.FEATURE_MIND_CLASSROOM_SLIDE_DECK)
     mastery = body.mastery.strip() if body.mastery in _MASTERY else "first_look"
     tone = body.tone.strip() if body.tone in _TONES else "classroom"
     scope = body.tour_scope.strip() if body.tour_scope in _SCOPES else "main_branch"

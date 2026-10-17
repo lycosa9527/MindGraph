@@ -402,6 +402,7 @@ async function handleReset() {
     :icon="FileText"
     width="min(920px, 96vw)"
     dialog-class="worksheet-text-modal"
+    above-canvas-chrome
     @close="close"
   >
     <div class="worksheet-text-modal__layout">

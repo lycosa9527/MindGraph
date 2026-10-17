@@ -142,6 +142,14 @@ function onFormatPainter(): void {
   requireSelection(handleFormatBrush)
 }
 
+function onFormatPainterDblClick(): void {
+  if (formatBrushActive.value) {
+    handleFormatBrush({ lock: true })
+    return
+  }
+  requireSelection(() => handleFormatBrush({ lock: true }))
+}
+
 function openDocGenerate(): void {
   if (aiBlockedByCollab.value) {
     notifyCollabGuestAiBlocked()
@@ -541,6 +549,7 @@ function onClose(): void {
           :aria-pressed="tool.active"
           @pointerdown="onRemoteToolPointerDown(tool, $event)"
           @click="runTool(tool)"
+          @dblclick.prevent="tool.id === 'painter' ? onFormatPainterDblClick() : undefined"
         >
           <MindMapInsertNodeIcon
             v-if="tool.insertKind"

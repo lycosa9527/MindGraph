@@ -67,6 +67,15 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_ZHIHUI", "True").lower() == "true"
 
     @property
+    def FEATURE_MIND_CLASSROOM_SLIDE_DECK(self):
+        """Enable 思维讲堂 幻灯片讲解 (AI slide lecture).
+
+        Disabled by default until the feature ships. The option stays visible
+        but greyed out. Set FEATURE_MIND_CLASSROOM_SLIDE_DECK=True to enable.
+        """
+        return self._get_cached_value("FEATURE_MIND_CLASSROOM_SLIDE_DECK", "False").lower() == "true"
+
+    @property
     def FEATURE_LIBRARY(self):
         """Enable Library (图书馆) PDF viewing feature with danmaku comments.
 

@@ -1,5 +1,7 @@
 import type { DiagramNode } from '@/types'
 
+import { LEARNING_SHEET_BLANK_TEXT, isLearningSheetBlankDisplayText } from '../specLoader/utils'
+
 const STRUCTURAL_SESSION_KEYS = [
   '_node_styles',
   '_customPositions',
@@ -37,6 +39,26 @@ function hiddenAnswerFields(node: DiagramNode | undefined): Record<string, unkno
   }
 }
 
+function wasBlanked(node: DiagramNode): boolean {
+  const data = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
+  const answer = typeof data?.hiddenAnswer === 'string' ? data.hiddenAnswer.trim() : ''
+  if (!answer) return false
+  return data?.hidden === true || isLearningSheetBlankDisplayText(node.text)
+}
+
+function carriedHold(node: DiagramNode): Record<string, number> {
+  const data = node.data as
+    { learningSheetHoldWidth?: unknown; learningSheetHoldHeight?: unknown } | undefined
+  const hold: Record<string, number> = {}
+  if (typeof data?.learningSheetHoldWidth === 'number' && data.learningSheetHoldWidth > 0) {
+    hold.learningSheetHoldWidth = data.learningSheetHoldWidth
+  }
+  if (typeof data?.learningSheetHoldHeight === 'number' && data.learningSheetHoldHeight > 0) {
+    hold.learningSheetHoldHeight = data.learningSheetHoldHeight
+  }
+  return hold
+}
+
 /** Keep typography and worksheet answers on nodes whose ids survive a structure reload. */
 export function mergeReloadedNodeFields(
   nodes: DiagramNode[],
@@ -49,6 +71,22 @@ export function mergeReloadedNodeFields(
     const prev = prevById.get(node.id)
     if (!prev) return node
     const answers = structural ? hiddenAnswerFields(prev) : undefined
+    if (structural && wasBlanked(prev)) {
+      return {
+        ...node,
+        text: LEARNING_SHEET_BLANK_TEXT,
+        textSecondary: '',
+        ...(prev.style ? { style: { ...prev.style, ...node.style } } : {}),
+        data: {
+          ...(node.data ?? {}),
+          ...(answers ?? {}),
+          ...carriedHold(prev),
+          hidden: true,
+          label: LEARNING_SHEET_BLANK_TEXT,
+          labelSecondary: '',
+        },
+      }
+    }
     if (!prev.style && !answers) return node
     return {
       ...node,

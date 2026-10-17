@@ -63,7 +63,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_showcase: false,
       feature_zhihui: false,
       feature_knowledge_space: false,
-      feature_mind_classroom_slide_deck: true,
+      feature_mind_classroom_slide_deck: false,
       feature_library: false,
       feature_smart_response: false,
       feature_teacher_usage: false,
@@ -152,7 +152,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_thinking_coins: raw.feature_thinking_coins ?? false,
           captcha_provider: raw.captcha_provider === 'tsec' ? 'tsec' : 'legacy',
           tencent_captcha_app_id: raw.tencent_captcha_app_id ?? '',
-          feature_mind_classroom_slide_deck: true,
+          feature_mind_classroom_slide_deck: raw.feature_mind_classroom_slide_deck ?? false,
         }
         flags.value = data
         lastFetchTime.value = epochAtStart === staleEpoch ? fetchedAt : 0
@@ -205,7 +205,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   }
 
   function getFeatureMindClassroomSlideDeck(): boolean {
-    return true
+    return flags.value?.feature_mind_classroom_slide_deck ?? false
   }
 
   function getFeatureLibrary(): boolean {

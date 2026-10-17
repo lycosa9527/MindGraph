@@ -759,6 +759,8 @@ export function useDiagramCanvasMobileTouch(options: {
 
     function onPointerDown(event: PointerEvent): void {
       if (event.pointerType !== 'mouse' || event.button !== 0) return
+      // Ctrl-drag is rubber-band select; a plain left-drag stays the slash.
+      if (event.ctrlKey) return
       if (allowMouseSlash && !allowMouseSlash()) return
       if (conceptMapLinkChaseActive.value) return
       if (isEditableTarget(event.target) || branchMove.state.value.active) return

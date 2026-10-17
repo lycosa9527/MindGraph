@@ -21,7 +21,8 @@ describe('format painter wiring', () => {
   it('double-click locks on the format strip', () => {
     const format = readSrc('src/components/canvas/CanvasToolbarMindMapFormat.vue')
     const toolbar = readSrc('src/components/canvas/CanvasToolbarMindMap.vue')
-    expect(format).toContain('@dblclick.prevent="handleFormatBrush({ lock: true })"')
+    expect(format).toContain('@dblclick.prevent="onFormatPainterDblClick"')
+    expect(format).toContain('handleFormatBrush({ lock: true })')
     expect(toolbar).toContain('@dblclick.prevent="onFormatPainterDblClick"')
   })
 
@@ -51,5 +52,17 @@ describe('format painter wiring', () => {
     expect(branch).toContain('applyFormatBrushToNode(props.id)')
     expect(topic).toContain('applyFormatBrushToNode(props.id)')
     expect(handlers).toContain("eventBus.emit('canvas:node_clicked'")
+  })
+
+  it('snapshots concept-map and thinking-map theme paint when the store is empty', () => {
+    const snapshot = readSrc('src/composables/canvasToolbar/formatBrushSnapshot.ts')
+    expect(snapshot).toContain('thinkingMapDisplayedNodeColors')
+    expect(snapshot).toContain("diagramType === 'concept_map'")
+  })
+
+  it('binds the injected diagram session instead of assuming a global Pinia store', () => {
+    const brush = readSrc('src/composables/canvasToolbar/useCanvasFormatBrush.ts')
+    expect(brush).toContain('bindFormatBrushDiagramSession')
+    expect(brush).not.toContain('useDiagramStore')
   })
 })

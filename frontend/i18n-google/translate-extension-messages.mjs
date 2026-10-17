@@ -17,7 +17,7 @@ const extensionRoot = path.join(repoRoot, "chrome-extension");
 const enPath = path.join(extensionRoot, "_locales/en/messages.json");
 const zhPath = path.join(extensionRoot, "_locales/zh_CN/messages.json");
 
-/** Picker codes that still need a catalog. en / zh / zh-tw already ship. */
+/** Picker codes that still need a catalog. en / zh already ship (no zh-tw in extension). */
 const TARGETS = [
   ["es", "es", "_locales/es/messages.json"],
   ["az", "az", "i18n/az/messages.json"],

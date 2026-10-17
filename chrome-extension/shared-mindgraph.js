@@ -327,7 +327,7 @@
       return null;
     }
     if (s === "zh-tw" || s === "zh-hk" || s === "zh-hant" || s === "zh-mo") {
-      return allowedSet.has("zh-hant") ? "zh-hant" : "zh";
+      return allowedSet.has("zh") ? "zh" : null;
     }
     if (s === "zh-cn" || s === "zh-hans" || s === "zh-sg") {
       return "zh";
@@ -377,7 +377,7 @@
         return "zh";
       }
       if (mode === "zh-tw" || mode === "zh_TW") {
-        return allowedSet.has("zh-hant") ? "zh-hant" : "zh";
+        return "zh";
       }
     }
     const fromBrowser = matchPromptLanguageCode(browserUiLang, allowedCodes);

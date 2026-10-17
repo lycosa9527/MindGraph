@@ -22,6 +22,7 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
@@ -60,6 +61,10 @@ import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 const diagramStore = useDiagramSession()
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const topicBorderPx = MIND_MAP_GEOMETRY.borderWidth
@@ -397,6 +402,12 @@ const nodeStyle = computed(() => {
   return box
 })
 
+const circleNodeStyle = computed(() =>
+  props.data.style?.nodeShape === 'underline'
+    ? [nodeStyle.value, blankFrame.value]
+    : nodeStyle.value
+)
+
 // Inline editing state
 const isEditing = ref(false)
 
@@ -509,7 +520,7 @@ function handleBranchMovePointerUp(): void {
       !data.style?.nodeShape || data.style.nodeShape === 'oval' ? 'rounded-full' : '',
       data.style?.nodeShape === 'underline' ? 'circle-node--underline' : '',
     ]"
-    :style="nodeStyle"
+    :style="circleNodeStyle"
     @dblclick="handleCircleDoubleClick"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"

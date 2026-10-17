@@ -21,6 +21,7 @@ import {
   loadMindClassroomSlideStyle,
   loadMindClassroomTone,
   loadMindClassroomTourScope,
+  resolveMindClassroomPresentation,
   saveMindClassroomMastery,
   saveMindClassroomPresentation,
   saveMindClassroomSlideStyle,
@@ -29,6 +30,7 @@ import {
 } from '@/config/mindClassroom'
 import { useAiContentLevelStore } from '@/stores/aiContentLevel'
 import { useDiagramStore } from '@/stores/diagram'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useUIStore } from '@/stores/ui'
 import { collectLiveNodeIds } from '@/utils/mindClassroomRemoteSteps'
@@ -50,8 +52,22 @@ export type MindClassroomLectureStatus = 'idle' | 'running' | 'paused'
 
 export const useMindClassroomStore = defineStore('mindClassroom', () => {
   const diagramStore = useDiagramStore()
+  const featureFlags = useFeatureFlagsStore()
+
+  function slideDeckEnabled(): boolean {
+    return featureFlags.getFeatureMindClassroomSlideDeck()
+  }
+
+  function gatedPresentation(next: MindClassroomPresentationId): MindClassroomPresentationId {
+    return resolveMindClassroomPresentation(next, slideDeckEnabled())
+  }
+
   const mastery = ref<MindClassroomMasteryId>(loadMindClassroomMastery())
-  const presentation = ref<MindClassroomPresentationId>(loadMindClassroomPresentation())
+  const loadedPresentation = loadMindClassroomPresentation()
+  const presentation = ref<MindClassroomPresentationId>(gatedPresentation(loadedPresentation))
+  if (presentation.value !== loadedPresentation) {
+    saveMindClassroomPresentation(presentation.value)
+  }
   const tourScope = ref<MindClassroomTourScopeId>(loadMindClassroomTourScope())
   const slideStyle = ref<MindClassroomSlideStyleId>(loadMindClassroomSlideStyle())
   const tone = ref<MindClassroomToneId>(loadMindClassroomTone())
@@ -99,6 +115,10 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
 
   watch(tone, (value) => {
     saveMindClassroomTone(value)
+  })
+
+  watch(slideDeckEnabled, () => {
+    presentation.value = gatedPresentation(presentation.value)
   })
 
   const isLecturing = computed(() => status.value !== 'idle')
@@ -149,7 +169,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   }
 
   function setPresentation(next: MindClassroomPresentationId): void {
-    presentation.value = next
+    presentation.value = gatedPresentation(next)
   }
 
   function setTourScope(next: MindClassroomTourScopeId): void {
@@ -196,7 +216,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     stepIndex.value = 0
     transitioning.value = false
     narrating.value = false
-    activeMode.value = mode
+    activeMode.value = gatedPresentation(mode)
     activeTourScope.value = tourScope.value
     status.value = 'running'
   }

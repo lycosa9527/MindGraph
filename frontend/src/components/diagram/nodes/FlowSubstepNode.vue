@@ -13,6 +13,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
@@ -35,6 +36,10 @@ import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 const diagramStore = useDiagramSession()
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const flowSubstepNodeRef = ref<HTMLElement | null>(null)
@@ -194,7 +199,7 @@ function handleBranchMovePointerUp(): void {
     ref="flowSubstepNodeRef"
     class="flow-substep-node relative flex items-center justify-center px-3 py-2 border-solid cursor-grab select-none"
     :class="{ 'pill-shape': isFlowMap }"
-    :style="nodeStyle"
+    :style="[nodeStyle, blankFrame]"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.passive.capture="handleBranchMoveTouchStart"

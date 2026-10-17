@@ -198,6 +198,10 @@ class FeatureFlagSettings(BaseModel):
         default=True,
         description="Enable ZhiHui (智绘) text-to-image history (admin UI for now)",
     )
+    FEATURE_MIND_CLASSROOM_SLIDE_DECK: bool = Field(
+        default=False,
+        description="Enable 思维讲堂 幻灯片讲解. Off: option stays visible but greyed out.",
+    )
     FEATURE_MARKETS: bool = Field(default=False, description="Enable Market (市场) catalog and Alipay checkout")
     FEATURE_MINDBOT: bool = Field(
         default=True,

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
@@ -6,6 +9,7 @@ import {
   loadMindClassroomSlideStyle,
   loadMindClassroomTone,
   loadMindClassroomTourScope,
+  resolveMindClassroomPresentation,
 } from '@/config/mindClassroom'
 
 describe('mind classroom preferences', () => {
@@ -39,5 +43,20 @@ describe('mind classroom preferences', () => {
     expect(loadMindClassroomTourScope()).toBe('main_branch')
     expect(loadMindClassroomSlideStyle()).toBe('handdrawn')
     expect(localStorage.getItem('mg-mind-classroom-slide-style')).toBe('handdrawn')
+  })
+
+  it('keeps slide lecture only when the feature is enabled', () => {
+    expect(resolveMindClassroomPresentation('slide_deck', false)).toBe('canvas_tour')
+    expect(resolveMindClassroomPresentation('slide_deck', true)).toBe('slide_deck')
+    expect(resolveMindClassroomPresentation('canvas_tour', false)).toBe('canvas_tour')
+  })
+
+  it('gates slide lecture in the shared launch UI used by every map type', () => {
+    const text = readFileSync(
+      resolve(__dirname, '../src/components/canvas/MindClassroomLaunchContent.vue'),
+      'utf8'
+    )
+    expect(text).toContain('gated: id === \'slide_deck\' && !featureMindClassroomSlideDeck.value')
+    expect(text).toContain('queueBusy || option.gated')
   })
 })

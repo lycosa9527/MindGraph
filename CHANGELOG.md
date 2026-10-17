@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.173] - 2026-10-18
+
+> **格式刷 copies the paint you see on concept maps and thinking maps, learning-sheet blanks keep their frame, and 幻灯片讲解 stays greyed until the slide-deck flag is on.**
+
+### Fixed
+
+- **格式刷** — Pickup reads theme paint when a node has no stored style (concept maps, thinking maps, and a last-resort canvas read). An empty snapshot or a failed apply shows a warning. Only the first selected node is the source. The format strip and the classroom remote use the same click and double-click lock as the edit toolbar. The session writes the injected diagram, so a preview canvas does not paint the editor.
+- **学习单** — A knocked-out pill or underline keeps the painted width and height instead of collapsing to the blank label.
+- **概要** — The range box stays up while the 概要 topic is selected, styled, or dragged.
+- **删除** — On a mind map, Delete clears node adornments before it removes the node.
+
+### Changed
+
+- **思维讲堂** — 幻灯片讲解 stays visible but greyed on every thinking map and concept map. `FEATURE_MIND_CLASSROOM_SLIDE_DECK` is off by default. Start, ZhiHui, and enqueue stay on 画布语音巡讲.
+- **i18n** — Live Google gap-fill runs on the Windows host (VPN / system proxy). WSL `npm run i18n:gap-fill` only counts gaps on `--dry-run`. Canvas catalogs that still matched English were filled from zh.
+- **浏览器扩展 0.4.26** — Traditional Chinese is not an extension catalog. Saved `zh_TW` maps to 中文. The web app still has 44 interface languages.
+
+### Tests
+
+- [`frontend/tests/formatBrushSnapshot.spec.ts`](frontend/tests/formatBrushSnapshot.spec.ts), [`frontend/tests/formatBrushWiring.spec.ts`](frontend/tests/formatBrushWiring.spec.ts), [`frontend/tests/useCanvasToolbarFormatBrush.spec.ts`](frontend/tests/useCanvasToolbarFormatBrush.spec.ts)
+- [`frontend/tests/learningSheetThinkingMapHold.spec.ts`](frontend/tests/learningSheetThinkingMapHold.spec.ts), [`frontend/tests/mindMapSummaryRangeChrome.spec.ts`](frontend/tests/mindMapSummaryRangeChrome.spec.ts), [`frontend/tests/mindMapAdornments.spec.ts`](frontend/tests/mindMapAdornments.spec.ts)
+- [`frontend/tests/mindClassroomStore.spec.ts`](frontend/tests/mindClassroomStore.spec.ts), [`frontend/tests/mindClassroomConfig.spec.ts`](frontend/tests/mindClassroomConfig.spec.ts), [`tests/test_mind_classroom_enqueue.py`](tests/test_mind_classroom_enqueue.py)
+
 ## [5.180.172] - 2026-10-17
 
 > **The extension merges web text with linked PDFs and server OCR, `/auth` keeps the hero video under modals on Android, and Document Summary sends SmartEdu and CNKI URLs to the extension.**

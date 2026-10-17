@@ -10,6 +10,7 @@ import { Sparkles } from '@lucide/vue'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
+import { MM_ABOVE_NODE_CHROME_CLASS } from '@/components/common/swissGlassStack'
 import { useTrainingDialogHost } from '@/composables/training/trainingInlineHost'
 import '@/styles/mind-map-side-rail-panel.css'
 import '@/styles/swissGlassControls.css'
@@ -37,10 +38,13 @@ const props = withDefaults(
     dialogClass?: string
     beforeClose?: (done: () => void) => void
     /**
-     * Overlay z-index. Set when this dialog must sit above `.swiss-glass-card-overlay` (4000).
-     * Leave unset so Element Plus can stack ordinary dialogs from its ~2000 base.
+     * Overlay z-index. Set when this dialog must sit above `.swiss-glass-card-overlay`
+     * (4000). Leave unset so Element Plus can stack ordinary dialogs from its ~2000 base
+     * (so in-dialog selects still increment above the overlay).
      */
     zIndex?: number
+    /** Cover teleported node chrome (floating toolbar / + handles / explain). */
+    aboveCanvasChrome?: boolean
   }>(),
   {
     line2: '',
@@ -51,6 +55,7 @@ const props = withDefaults(
     closeOnClickModal: true,
     showClose: true,
     dialogClass: '',
+    aboveCanvasChrome: false,
   }
 )
 
@@ -61,7 +66,13 @@ const dialogHost = useTrainingDialogHost()
 const dialogTop = computed(() => (dialogHost.value === 'body' ? props.top : '0.75rem'))
 
 const dialogClassName = computed(() =>
-  ['swiss-glass-dialog', 'mm-canvas-upper-dialog', 'ai-gen-shell', props.dialogClass]
+  [
+    'swiss-glass-dialog',
+    'mm-canvas-upper-dialog',
+    'ai-gen-shell',
+    props.aboveCanvasChrome ? MM_ABOVE_NODE_CHROME_CLASS : '',
+    props.dialogClass,
+  ]
     .filter(Boolean)
     .join(' ')
 )

@@ -436,6 +436,7 @@ async function endCollaboration() {
     :icon="Users"
     width="min(500px, 92vw)"
     :close-on-click-modal="false"
+    above-canvas-chrome
   >
     <div class="online-collab-modal">
       <div
@@ -567,6 +568,7 @@ async function endCollaboration() {
               placement="bottom"
               :width="280"
               trigger="click"
+              :teleported="false"
             >
               <template #reference>
                 <button

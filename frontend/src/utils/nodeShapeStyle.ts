@@ -24,6 +24,7 @@ export function defaultDisplayedNodeShape(
   diagramType: string | null | undefined,
   nodeType: string | undefined
 ): NodeShape | null {
+  if (nodeType === 'label' || nodeType === 'boundary') return null
   switch (diagramType) {
     case 'circle_map':
     case 'bubble_map':

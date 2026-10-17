@@ -14,6 +14,7 @@ import AiBusyGenerateButton from '@/components/canvas/AiBusyGenerateButton.vue'
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
 import I18nText from '@/components/common/I18nText.vue'
+import { MM_ABOVE_NODE_CHROME_CLASS } from '@/components/common/swissGlassStack'
 import VoiceNotesSpeakerEditor from '@/components/voiceNotes/VoiceNotesSpeakerEditor.vue'
 import VoiceNotesTranscriptPane from '@/components/voiceNotes/VoiceNotesTranscriptPane.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -23,6 +24,7 @@ import { isMobileAppPath } from '@/composables/voiceNotes/mobileVoiceNotesFinish
 import { useVoiceNotesGenerate } from '@/composables/voiceNotes/useVoiceNotesGenerate'
 import { useVoiceNotesSessionChrome } from '@/composables/voiceNotes/useVoiceNotesSessionChrome'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
+import '@/styles/swissGlassControls.css'
 
 const { t } = useLanguage()
 const route = useRoute()
@@ -107,7 +109,13 @@ async function onCopy(): Promise<void> {
     top="12vh"
     append-to-body
     destroy-on-close
-    class="voice-notes-swiss mm-canvas-upper-dialog ai-gen-shell ai-gen-shell--voice"
+    :class="[
+      'voice-notes-swiss',
+      'mm-canvas-upper-dialog',
+      'ai-gen-shell',
+      'ai-gen-shell--voice',
+      MM_ABOVE_NODE_CHROME_CLASS,
+    ]"
     :show-close="false"
     :before-close="onBeforeClose"
   >

@@ -31,9 +31,18 @@ export interface UseDiagramCanvasVueFlowUiResult {
   nodesDraggable: ComputedRef<boolean>
   elementsSelectable: ComputedRef<boolean>
   selectNodesOnDrag: ComputedRef<boolean>
-  selectionKeyCode: ComputedRef<boolean | null>
+  /**
+   * `Control` rubber-bands while that key is held. `null` leaves box select off.
+   * Written onto the Vue Flow store. The 1.48 prop only accepts boolean | null.
+   */
+  selectionKeyCode: ComputedRef<CanvasGroupSelectKey | null>
   vueFlowBackgroundClasses: ComputedRef<string[]>
 }
+
+/** Hold to rubber-band select. A plain left-drag stays the slash gesture. */
+export const CANVAS_GROUP_SELECT_KEY = 'Control'
+
+export type CanvasGroupSelectKey = typeof CANVAS_GROUP_SELECT_KEY
 
 export function useDiagramCanvasVueFlowUi(
   options: UseDiagramCanvasVueFlowUiOptions
@@ -137,7 +146,7 @@ export function useDiagramCanvasVueFlowUi(
   const selectNodesOnDrag = computed(() => {
     if (browseMode.value) return false
     if (learningSheetPickActive.value) return false
-    // Finger pan/pinch (mobile page or e-blackboard) — never start rubber-band on touch.
+    // A finger drag must not also select the node under it.
     if (touchPanPinchActive.value) return false
     if (presentationStrokeToolActive.value) return false
     if (presentationPointerEditMode.value) return true
@@ -146,9 +155,21 @@ export function useDiagramCanvasVueFlowUi(
     return true
   })
 
-  // Vue Flow 1.48 runtime prop check accepts boolean | null only (not key strings).
-  // null keeps the library default (Shift) for hand-tool / pick / mobile where drag-select is off.
-  const selectionKeyCode = computed<boolean | null>(() => (selectNodesOnDrag.value ? true : null))
+  /**
+   * Separate from selectNodesOnDrag. Always-on marquee stole the left-drag slash.
+   * A finger never holds Control, so e-blackboard touch keeps the slash.
+   * The phone page pans on the primary button, so box select stays off there.
+   */
+  const selectionKeyCode = computed<CanvasGroupSelectKey | null>(() => {
+    if (browseMode.value) return null
+    if (learningSheetPickActive.value) return null
+    if (mobilePageTouchGesturesActive.value) return null
+    if (presentationStrokeToolActive.value) return null
+    if (presentationPointerEditMode.value) return CANVAS_GROUP_SELECT_KEY
+    if (presentationDiagramEditLocked.value) return null
+    if (handToolActive.value || presentationHandPanMode.value) return null
+    return CANVAS_GROUP_SELECT_KEY
+  })
 
   const vueFlowBackgroundClasses = computed(() => {
     const classes = ['bg-gray-50', 'dark:bg-gray-900']

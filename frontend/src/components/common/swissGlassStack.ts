@@ -1,9 +1,13 @@
 /**
- * Stacking for Swiss glass cards vs Element Plus.
+ * Stacking for Swiss glass cards vs Element Plus vs canvas node chrome.
  *
  * `.swiss-glass-card-overlay` is z-index 4000. Element Plus popups start near 2000,
  * so a menu or confirm opened from a full-screen card paints underneath it.
  * Full-screen cards register here; confirms and prompts rise only while one is open.
+ *
+ * Selected-node chrome is Teleported to `body` (floating toolbar 5000, poppers
+ * 5100). Canvas dialogs opt into `.mm-above-node-chrome` so their overlay sits
+ * at `SWISS_GLASS_CANVAS_DIALOG_Z` (keep in sync with swissGlassControls.css).
  */
 import { type ComputedRef, computed, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -15,6 +19,22 @@ export const SWISS_GLASS_CARD_POPPER_Z = 4100
 
 /** Confirm / prompt while a full-screen card is open. */
 export const SWISS_GLASS_CARD_DIALOG_Z = 4200
+
+/**
+ * Teleported selected-node chrome. Toolbar poppers use `!important` at this
+ * band, so canvas dialog overlays must use the same (`SWISS_GLASS_CANVAS_DIALOG_Z`).
+ */
+export const CANVAS_NODE_CHROME_Z = {
+  FLOATING_TOOLBAR: 5000,
+  FLOATING_TOOLBAR_PANEL: 5010,
+  FLOATING_TOOLBAR_POPPER: 5100,
+} as const
+
+/** Marker on canvas ElDialogs whose overlay must cover node chrome. */
+export const MM_ABOVE_NODE_CHROME_CLASS = 'mm-above-node-chrome'
+
+/** Canvas dialog overlay. Below context menu (10000) and MathLive keyboard. */
+export const SWISS_GLASS_CANVAS_DIALOG_Z = CANVAS_NODE_CHROME_Z.FLOATING_TOOLBAR_POPPER + 100
 
 const openFullScreenCards = ref(0)
 

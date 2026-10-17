@@ -35,6 +35,7 @@ import {
 } from '@/utils/nodeShapeStyle'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
+import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
 import {
   CONTEXT_FONT_SIZE,
   TOPIC_FONT_SIZE,
@@ -162,7 +163,13 @@ function bubbleContextRadiusFromNode(node: DiagramNode): number {
   const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : CONTEXT_FONT_SIZE
   const measureBold = node.style?.fontWeight === 'bold'
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
-  return attributeBubbleRadius(node.text ?? '', fs, measureBold, fontFamily, node.textSecondary)
+  return attributeBubbleRadius(
+    learningSheetLayoutText(node),
+    fs,
+    measureBold,
+    fontFamily,
+    learningSheetLayoutSecondary(node)
+  )
 }
 
 /**
@@ -180,8 +187,8 @@ export function recalculateBubbleMapLayout(
     .filter((n) => isBubbleMapAttributeNode(n))
     .sort((a, b) => readBubbleGroupIndex(a) - readBubbleGroupIndex(b))
   const nodeCount = bubbleNodes.length
-  const topicText = topicNode?.text ?? ''
-  const topicSecondary = topicNode?.textSecondary
+  const topicText = topicNode ? learningSheetLayoutText(topicNode) : ''
+  const topicSecondary = topicNode ? learningSheetLayoutSecondary(topicNode) : undefined
   const topicStyle = topicNode?.style
   const textTopicR = computeTopicRadiusForCircleMap(topicText || ' ', {
     fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,

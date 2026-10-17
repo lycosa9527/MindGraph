@@ -12,6 +12,7 @@ import {
 } from '../specLoader/utils'
 import { emitCtxEvent } from './events'
 import { reconcileAfterHistoryRestore } from './historyRestore'
+import { learningSheetHoldFields, withoutLearningSheetHold } from './learningSheetHold'
 import type { DiagramContext } from './types'
 
 export function useLearningSheetSlice(ctx: DiagramContext) {
@@ -19,6 +20,11 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
   function isMindMap(): boolean {
     return ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
+  }
+
+  function thinkingMapHoldFields(nodeId: string, node: DiagramNode) {
+    if (isMindMap()) return {}
+    return learningSheetHoldFields(nodeId, node, ctx.nodeDimensions.value)
   }
 
   /**
@@ -241,6 +247,8 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     delete nodeData.hidden
     delete nodeData.hiddenAnswer
     delete nodeData.hiddenAnswerSecondary
+    delete nodeData.learningSheetHoldWidth
+    delete nodeData.learningSheetHoldHeight
     nodeData.label = trimmed
     if (applySecondary) {
       nodeData.labelSecondary = nextSecondary
@@ -318,7 +326,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
           ? (node.data as { hiddenAnswerSecondary?: string }).hiddenAnswerSecondary
           : node.textSecondary,
       data: {
-        ...(node.data as Record<string, unknown>),
+        ...withoutLearningSheetHold(node.data as Record<string, unknown>),
         hidden: false,
         hiddenAnswer: originalText,
         label: originalText,
@@ -362,6 +370,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
       data: {
         ...nodeRecord,
         ...mindMapBoxAlreadyUsed(nodeId, nodeRecord),
+        ...thinkingMapHoldFields(nodeId, node),
         hidden: true,
         hiddenAnswer: originalText,
         ...(originalSecondary ? { hiddenAnswerSecondary: originalSecondary } : {}),
@@ -449,7 +458,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
         ...node,
         text: originalText,
         data: {
-          ...(node.data as Record<string, unknown>),
+          ...withoutLearningSheetHold(node.data as Record<string, unknown>),
           hidden: false,
           hiddenAnswer: originalText,
           label: originalText,
@@ -484,6 +493,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
         data: {
           ...nodeRecord,
           ...mindMapBoxAlreadyUsed(node.id, nodeRecord),
+          ...thinkingMapHoldFields(node.id, node),
           hidden: true,
           hiddenAnswer: originalText,
           label: LEARNING_SHEET_BLANK_TEXT,
@@ -519,6 +529,8 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
         hidden: _hidden,
         hiddenAnswer: _answer,
         hiddenAnswerSecondary: _answerSecondary,
+        learningSheetHoldWidth: _holdWidth,
+        learningSheetHoldHeight: _holdHeight,
         ...rest
       } = nodeData
       dv.nodes[idx] = {

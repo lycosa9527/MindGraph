@@ -1,6 +1,6 @@
 /**
- * Interface languages for the extension — same 44 codes as
- * INTERFACE_LANGUAGE_PICKER_CODES in frontend/src/i18n/locales.ts.
+ * Interface languages for the extension — 43 picker codes (web has 44;
+ * Traditional Chinese / zh-tw is omitted from the extension).
  *
  * Chrome only accepts a fixed set of folders under _locales. Albanian, Afrikaans,
  * Azerbaijani, Sinhala, and Uzbek live in i18n/ and are loaded by this module.
@@ -23,7 +23,6 @@
 
   /** @type {Array<[string, string, string, string, string, string | null, boolean, string[] | null]>} */
   const ROWS = [
-    ["zh-tw", "繁體中文", "zh-TW", "zh-hant", "_locales/zh_TW/messages.json", "zh_TW", false, ["zh-tw", "zh-hk", "zh-mo", "zh-hant"]],
     ["zh", "中文", "zh-CN", "zh", "_locales/zh_CN/messages.json", "zh_CN", false, ["zh", "zh-cn", "zh-hans", "zh-sg"]],
     ["en", "English", "en", "en", "_locales/en/messages.json", "en", false, ["en"]],
     ["es", "Español", "es", "es", "_locales/es/messages.json", "es", false, null],
@@ -115,7 +114,7 @@
       return "zh";
     }
     if (key === "zh-tw" || key === "zh-hk" || key === "zh-mo" || key === "zh-hant") {
-      return "zh-tw";
+      return "zh";
     }
     if (BY_CODE[key]) {
       return key;
@@ -124,7 +123,7 @@
   }
 
   /**
-   * Longest browser-prefix match. zh-tw is longer than zh, so zh-HK stays Traditional.
+   * Longest browser-prefix match (e.g. pt before en for pt-PT).
    * @param {string | null | undefined} raw
    * @returns {string | null}
    */

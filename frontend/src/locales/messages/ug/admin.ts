@@ -1,5 +1,6 @@
 /**
- * en UI � admin
+ * ug UI — admin
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {
@@ -73,8 +74,7 @@ export default {
   'admin.feature.kittyAgent': 'Kitty Agent (voice & canvas)',
   'admin.feature.kittyAgentHint': 'Kitty edits the canvas with Fun-ASR, CosyVoice, and a typed edit loop; WebSocket and REST respect org/user access rules.',
   'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
-  'admin.feature.mindClassroomSlideDeckHint':
-    'When off, 幻灯片讲解 stays visible but greyed out. Off by default.',
+  'admin.feature.mindClassroomSlideDeckHint': 'When off, 幻灯片讲解 stays visible but greyed out. Off by default.',
   'admin.feature.workshopChat': 'Workshop (研习社)',
   'admin.feature.workshopChatHint': 'School channels, topics, and direct messages.',
   'admin.feature.mindmateCollab': 'MindMate collab',
@@ -84,8 +84,7 @@ export default {
   'admin.feature.vod': 'Online video library',
   'admin.feature.vodHint': 'Online video library in the management panel for school admins to browse and upload videos.',
   'admin.feature.studentLearningSpace': 'Learning Space',
-  'admin.feature.studentLearningSpaceHint':
-    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
+  'admin.feature.studentLearningSpaceHint': 'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Could not load feature flags',
   'admin.featureSaveFailed': 'Could not save settings',
   'admin.featuresIntro': 'Toggle module flags. Values are written to .env and reloaded on all API workers so the UI and API checks update without a restart. Knowledge Space may still need Qdrant/Celery that were started with the process.',
@@ -135,8 +134,7 @@ export default {
   'admin.teachingDesignTemplate.schoolLabel': 'Lesson-design template',
   'admin.teachingDesignTemplate.schoolHint': 'Teachers at this school use the selected template when exporting Word',
   'admin.customLlm.sectionTitle': 'MindGraph custom AI server',
-  'admin.customLlm.hint':
-    'Paste the school’s own URL, key, and model name. The model name appears on the canvas. The default stays on DashScope/Volcengine.',
+  'admin.customLlm.hint': 'Paste the school’s own URL, key, and model name. The model name appears on the canvas. The default stays on DashScope/Volcengine.',
   'admin.customLlm.typePlatform': 'DashScope/Volcengine',
   'admin.customLlm.typeOpenAiChat': 'OpenAI Chat',
   'admin.customLlm.typeOpenAiResponse': 'OpenAI Response',
@@ -795,33 +793,24 @@ export default {
   'admin.schoolFeatureUsage.capacity.tense': 'Constrained',
   'admin.schoolFeatureUsage.capacity.ample': 'Ample',
   'admin.schoolFeatureUsage.capacity.normal': 'Typical',
-  'admin.schoolFeatureUsage.durationEmpty':
-    'No LLM response-time records for this module this year (no token usage rows).',
+  'admin.schoolFeatureUsage.durationEmpty': 'No LLM response-time records for this module this year (no token usage rows).',
   'admin.schoolFeatureUsage.loadError': 'Failed to load feature usage',
   'admin.schoolFeatureUsage.nameSep': ', ',
   'admin.schoolFeatureUsage.noneListed': 'none',
-  'admin.schoolFeatureUsage.bottleneckNone':
-    'Process pass rates are steady this year and LLM response time is not unusually slow (above the median and over the module floor: 8s canvas, 90s chat). Pass rate is from feature events; LLM fail rate is from token usage.',
-  'admin.schoolFeatureUsage.bottleneckVolume':
-    'Process pass rates are generally high. Constraints come from volume mix and idle modules ({idle}), not failed or slow handling.',
-  'admin.schoolFeatureUsage.bottleneckSlow':
-    'Process pass rates are steady. LLM response is above the median and over the module floor on {slow}.',
-  'admin.schoolFeatureUsage.bottleneckPass':
-    'Lower process pass-rate modules: {lowest}. Constrained capacity: {tense}. Pass rate is from feature events; read this with volume.',
-  'admin.schoolFeatureUsage.bottleneckPassSlow':
-    'Lower process pass-rate modules: {lowest}. Constrained capacity: {tense}. Slower LLM response (above median and over the module floor): {slow}.',
+  'admin.schoolFeatureUsage.bottleneckNone': 'Process pass rates are steady this year and LLM response time is not unusually slow (above the median and over the module floor: 8s canvas, 90s chat). Pass rate is from feature events; LLM fail rate is from token usage.',
+  'admin.schoolFeatureUsage.bottleneckVolume': 'Process pass rates are generally high. Constraints come from volume mix and idle modules ({idle}), not failed or slow handling.',
+  'admin.schoolFeatureUsage.bottleneckSlow': 'Process pass rates are steady. LLM response is above the median and over the module floor on {slow}.',
+  'admin.schoolFeatureUsage.bottleneckPass': 'Lower process pass-rate modules: {lowest}. Constrained capacity: {tense}. Pass rate is from feature events; read this with volume.',
+  'admin.schoolFeatureUsage.bottleneckPassSlow': 'Lower process pass-rate modules: {lowest}. Constrained capacity: {tense}. Slower LLM response (above median and over the module floor): {slow}.',
   'admin.schoolFeatureUsage.top5Title': '1. Core feature coverage ranking (TOP 5)',
   'admin.schoolFeatureUsage.top5Empty': 'No module had visitors this year.',
   'admin.schoolFeatureUsage.usageRateHint': 'Coverage = annual unique visitors / current enrolled members.',
   'admin.schoolFeatureUsage.highTitle': '2. High-frequency features',
   'admin.schoolFeatureUsage.lowIdleTitle': '3. Low-frequency and long-idle features',
-  'admin.schoolFeatureUsage.lowIdleBody':
-    'Low-frequency: {low}. Long-idle: {idle}. Idle may include features not enabled for this school.',
+  'admin.schoolFeatureUsage.lowIdleBody': 'Low-frequency: {low}. Long-idle: {idle}. Idle may include features not enabled for this school.',
   'admin.schoolFeatureUsage.conclusionTitle': '4. Overall feature-usage judgement',
-  'admin.schoolFeatureUsage.conclusionConcentrated':
-    'Usage concentrates on {top}. Idle or unpersisted modules: {idle}. Volume clusters on a few core features; idle items may be disabled.',
-  'admin.schoolFeatureUsage.conclusionSpread':
-    'Usage is relatively spread; leading modules are {top}. Idle or unpersisted modules: {idle}. Idle items may be disabled.',
+  'admin.schoolFeatureUsage.conclusionConcentrated': 'Usage concentrates on {top}. Idle or unpersisted modules: {idle}. Volume clusters on a few core features; idle items may be disabled.',
+  'admin.schoolFeatureUsage.conclusionSpread': 'Usage is relatively spread; leading modules are {top}. Idle or unpersisted modules: {idle}. Idle items may be disabled.',
   'admin.schoolFeatureUsage.usageRate': 'Coverage',
   'admin.schoolFeatureUsage.module.canvas': 'Diagram canvas',
   'admin.schoolFeatureUsage.module.mindmate': 'MindMate',
@@ -1661,6 +1650,22 @@ export default {
   'admin.vod.loadFailed': 'Could not load the online video library',
   'admin.vod.playFailed': 'Could not play this video',
   'admin.vod.orgFilter': 'Superadmins can pick a school in the header to view that org’s library.',
+  'admin.vod.folder': 'Folder',
+  'admin.vod.folderAll': 'All folders',
+  'admin.vod.folderNone': 'Unfiled',
+  'admin.vod.folderName': 'Folder name',
+  'admin.vod.folderCreate': 'New folder',
+  'admin.vod.folderCreated': 'Folder created',
+  'admin.vod.folderDelete': 'Delete folder',
+  'admin.vod.folderDeleteConfirm': 'Delete this folder? Videos in it become unfiled.',
+  'admin.vod.folderDeleted': 'Folder deleted. Videos are now unfiled.',
+  'admin.vod.folderExists': 'A folder with that name already exists',
+  'admin.vod.folderFailed': 'Could not update folders',
+  'admin.vod.folderRename': 'Rename',
+  'admin.vod.folderRenamePrompt': 'Enter a new name for this folder',
+  'admin.vod.folderRenameTitle': 'Rename folder',
+  'admin.vod.folderRenamed': 'Folder renamed',
+  'admin.vod.moveFolder': 'Move to folder',
   'admin.tabs.learningSpace': 'Learning Space',
   'admin.learningSpace.pilots': 'Pilot teachers',
   'admin.learningSpace.classes': 'Classes',
@@ -1698,8 +1703,7 @@ export default {
   'admin.learningSpace.passwordReset': 'Password reset for {name}',
   'admin.learningSpace.yes': 'Yes',
   'admin.learningSpace.no': 'No',
-  'admin.learningSpace.pilotWorkflowHint':
-    'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
+  'admin.learningSpace.pilotWorkflowHint': 'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
   'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
@@ -1723,8 +1727,7 @@ export default {
   'admin.learningSpace.scanThumbnailsNone': 'Every card already has a thumbnail',
   'admin.learningSpace.scanThumbnailsPartial': 'Filled {ok} cards, {failed} could not be generated',
   'admin.learningSpace.scanThumbnailsFailed': 'Thumbnail scan failed',
-  'admin.learningSpace.intro':
-    'Grant pilot teachers first, then create classes and bulk-import students. Student sidebars show only MindGraph and Learning Space.',
+  'admin.learningSpace.intro': 'Grant pilot teachers first, then create classes and bulk-import students. Student sidebars show only MindGraph and Learning Space.',
   'admin.learningSpace.subtabAria': 'Learning Space admin sections',
   'admin.learningSpace.subtabPilots': 'Pilot teachers',
   'admin.learningSpace.subtabClasses': 'Classes',
@@ -1746,13 +1749,10 @@ export default {
   'admin.learningSpace.pilotList': 'Pilot teachers',
   'admin.learningSpace.pilotsEmpty': 'No pilots yet. Search and grant pilot access above.',
   'admin.learningSpace.classCount': 'Classes',
-  'admin.learningSpace.disablePilotConfirm':
-    'This teacher has {count} class(es). Disabling removes Learning Space from their sidebar. Continue?',
+  'admin.learningSpace.disablePilotConfirm': 'This teacher has {count} class(es). Disabling removes Learning Space from their sidebar. Continue?',
   'admin.learningSpace.delete': 'Delete',
-  'admin.learningSpace.deletePilotConfirm':
-    'Delete pilot “{name}”? You can search and add them again afterwards.',
-  'admin.learningSpace.deletePilotConfirmWithClasses':
-    'Delete pilot “{name}”? They still have {count} class(es); class data is kept, but Learning Space access is removed. You can re-add them later.',
+  'admin.learningSpace.deletePilotConfirm': 'Delete pilot “{name}”? You can search and add them again afterwards.',
+  'admin.learningSpace.deletePilotConfirmWithClasses': 'Delete pilot “{name}”? They still have {count} class(es); class data is kept, but Learning Space access is removed. You can re-add them later.',
   'admin.learningSpace.pilotDeleted': 'Pilot teacher removed',
   'admin.learningSpace.createClassSection': 'Create class',
   'admin.learningSpace.classList': 'Classes',
@@ -1772,30 +1772,24 @@ export default {
   'admin.learningSpace.restoreClass': 'Enable',
   'admin.learningSpace.disableClass': 'Disable',
   'admin.learningSpace.enableClass': 'Enable',
-  'admin.learningSpace.disableClassConfirm':
-    'Students in this class will not be able to sign in with the class code. Disable “{name}”?',
-  'admin.learningSpace.enableClassConfirm':
-    'Students will be able to sign in with the class code again. Enable “{name}”?',
+  'admin.learningSpace.disableClassConfirm': 'Students in this class will not be able to sign in with the class code. Disable “{name}”?',
+  'admin.learningSpace.enableClassConfirm': 'Students will be able to sign in with the class code again. Enable “{name}”?',
   'admin.learningSpace.classDisabled': 'Class disabled; students cannot sign in',
   'admin.learningSpace.classEnabled': 'Class enabled; students can sign in',
   'admin.learningSpace.statusDisabled': 'Disabled',
   'admin.learningSpace.copy': 'Copy',
   'admin.learningSpace.copyCode': 'Copy class code',
   'admin.learningSpace.codeCopied': 'Class code copied',
-  'admin.learningSpace.rotateCodeConfirm':
-    'Rotating invalidates the old code immediately. Students must use the new code. Continue?',
-  'admin.learningSpace.importHint':
-    'Import creates initial passwords (pinyin initials + 123). Copy them for students right away.',
+  'admin.learningSpace.rotateCodeConfirm': 'Rotating invalidates the old code immediately. Students must use the new code. Continue?',
+  'admin.learningSpace.importHint': 'Import creates initial passwords (pinyin initials + 123). Copy them for students right away.',
   'admin.learningSpace.studentsEmpty': 'No students in this class yet. Use Import students first.',
   'admin.learningSpace.classCodeHint': 'Class code: 4–16 letters and digits only',
   'admin.learningSpace.classCodeInvalid': 'Class code must be 4–16 alphanumeric characters',
-  'admin.learningSpace.detailHint':
-    'View student id, name, organization/school, and initial password; export the roster',
+  'admin.learningSpace.detailHint': 'View student id, name, organization/school, and initial password; export the roster',
   'admin.learningSpace.exportRoster': 'Export roster',
   'admin.learningSpace.exportDone': 'Roster exported',
   'admin.learningSpace.importAccounts': 'Import existing accounts',
-  'admin.learningSpace.importAccountsHint':
-    'Import registered accounts by phone as class learners without changing their role (trial stays trial). They can then complete assignments in Learning Space.',
+  'admin.learningSpace.importAccountsHint': 'Import registered accounts by phone as class learners without changing their role (trial stays trial). They can then complete assignments in Learning Space.',
   'admin.learningSpace.importAccountsPlaceholder': 'One phone number per line',
   'admin.learningSpace.enterPhones': 'Enter at least one phone number',
   'admin.learningSpace.assignmentCount': 'Assignments',
@@ -1805,33 +1799,15 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Imported learner',
   'admin.learningSpace.memberAssistant': 'Assistant',
   'admin.learningSpace.assistants': 'Assistants',
-  'admin.learningSpace.assistantsHint':
-    'Assistants can review work but cannot publish assignments. Add an existing account by phone.',
+  'admin.learningSpace.assistantsHint': 'Assistants can review work but cannot publish assignments. Add an existing account by phone.',
   'admin.learningSpace.addAssistant': 'Add assistant',
   'admin.learningSpace.assistantPhonePlaceholder': 'Assistant phone number',
   'admin.learningSpace.accountImportError.not_found': 'Account not found',
-  'admin.learningSpace.accountImportError.classroom_student':
-    'Learning Space student accounts cannot be imported this way',
+  'admin.learningSpace.accountImportError.classroom_student': 'Learning Space student accounts cannot be imported this way',
   'admin.learningSpace.accountImportError.is_class_teacher': 'Cannot import this class’s teacher',
   'admin.learningSpace.accountImportError.already_member': 'Already a learner in this class',
   'admin.learningSpace.accountImportError.already_assistant': 'Already an assistant in this class',
   'admin.learningSpace.accountImportError.class_full': 'Class is full',
-  'admin.vod.folder': 'Folder',
-  'admin.vod.folderAll': 'All folders',
-  'admin.vod.folderNone': 'Unfiled',
-  'admin.vod.folderName': 'Folder name',
-  'admin.vod.folderCreate': 'New folder',
-  'admin.vod.folderCreated': 'Folder created',
-  'admin.vod.folderDelete': 'Delete folder',
-  'admin.vod.folderDeleteConfirm': 'Delete this folder? Videos in it become unfiled.',
-  'admin.vod.folderDeleted': 'Folder deleted. Videos are now unfiled.',
-  'admin.vod.folderExists': 'A folder with that name already exists',
-  'admin.vod.folderFailed': 'Could not update folders',
-  'admin.vod.folderRename': 'Rename',
-  'admin.vod.folderRenamePrompt': 'Enter a new name for this folder',
-  'admin.vod.folderRenameTitle': 'Rename folder',
-  'admin.vod.folderRenamed': 'Folder renamed',
-  'admin.vod.moveFolder': 'Move to folder',
   'admin.userDropdown.tab': 'User dropdown list',
   'admin.userDropdown.intro': 'Manage functions in the user avatar menu. Add, rename, or delete each one, link it to a course you already built, and preview the walkthrough.',
   'admin.userDropdown.add': 'Add function',

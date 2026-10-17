@@ -24,6 +24,7 @@ import {
   resolveBridgePairOrigin,
 } from '@/utils/bridgeMapLabelLayout'
 
+import { learningSheetLayoutSecondary } from './mindMapLearningSheet'
 import type { SpecLoaderResult } from './types'
 
 const BRIDGE_VERTICAL_GAP = 5
@@ -53,7 +54,11 @@ export function recalculateBridgeMapLayout(
     const pinia = nodeDimensions[id]?.height
     if (pinia != null && pinia > 0) return pinia
     const node = nodes.find((item) => item.id === id)
-    return heightWithSecondaryLine(BRANCH_NODE_HEIGHT, node?.textSecondary, 14)
+    return heightWithSecondaryLine(
+      BRANCH_NODE_HEIGHT,
+      node ? learningSheetLayoutSecondary(node) : undefined,
+      14
+    )
   }
 
   const getW = (id: string): number => nodeDimensions[id]?.width ?? DEFAULT_NODE_WIDTH

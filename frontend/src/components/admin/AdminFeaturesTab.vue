@@ -40,6 +40,7 @@ interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_rag_chunk_test: boolean
   feature_showcase: boolean
   feature_knowledge_space: boolean
+  feature_mind_classroom_slide_deck: boolean
   feature_library: boolean
   feature_smart_response: boolean
   feature_teacher_usage: boolean
@@ -137,6 +138,12 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_KNOWLEDGE_SPACE',
     labelKey: 'admin.feature.knowledgeSpace',
     hintKey: 'admin.feature.knowledgeSpaceHint',
+  },
+  {
+    apiKey: 'feature_mind_classroom_slide_deck',
+    envKey: 'FEATURE_MIND_CLASSROOM_SLIDE_DECK',
+    labelKey: 'admin.feature.mindClassroomSlideDeck',
+    hintKey: 'admin.feature.mindClassroomSlideDeckHint',
   },
   {
     apiKey: 'feature_rag_chunk_test',

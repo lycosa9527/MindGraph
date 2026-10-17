@@ -30,6 +30,7 @@ import {
 } from '@/utils/multiFlowMapIdentity'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
+import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
 import type { SpecLoaderResult } from './types'
 
 /** FlowNode font size (matches FlowNode.vue defaultStyle) */
@@ -70,7 +71,7 @@ function computeFlowNodeWidth(node: DiagramNode): number {
   const fontWeight = node.style?.fontWeight
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
   const innerForLayout = measureThinkingMapLabelBlockPx(
-    node.text ?? '',
+    learningSheetLayoutText(node),
     fs,
     MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH,
     {
@@ -111,7 +112,7 @@ export function recalculateMultiFlowMapLayout(
     .filter((n) => isMultiFlowEffectNode(n))
     .sort((a, b) => readMultiFlowIndex(a) - readMultiFlowIndex(b))
 
-  const event = eventNode?.text || ''
+  const event = eventNode ? learningSheetLayoutText(eventNode) : ''
 
   // Layout constants
   const centerX = DEFAULT_CENTER_X
@@ -124,7 +125,11 @@ export function recalculateMultiFlowMapLayout(
     const pinia = nodeDimensions[id]?.height
     if (pinia != null && pinia > 0) return pinia
     const node = nodes.find((item) => item.id === id)
-    return heightWithSecondaryLine(DEFAULT_NODE_HEIGHT, node?.textSecondary, 14)
+    return heightWithSecondaryLine(
+      DEFAULT_NODE_HEIGHT,
+      node ? learningSheetLayoutSecondary(node) : undefined,
+      14
+    )
   }
 
   const actualTopicWidth = topicNodeWidth ?? estimateMultiFlowTopicWidth(event, eventNode?.style)

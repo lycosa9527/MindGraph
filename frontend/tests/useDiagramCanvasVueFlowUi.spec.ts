@@ -26,11 +26,11 @@ function buildUiOptions(overrides: Partial<Parameters<typeof useDiagramCanvasVue
 }
 
 describe('useDiagramCanvasVueFlowUi', () => {
-  it('keeps desktop pointer-mode always-on marquee (new canvas)', () => {
+  it('box-selects only while Control is held so a plain left-drag can slash', () => {
     learningSheetPickActive.value = false
     const ui = useDiagramCanvasVueFlowUi(buildUiOptions())
     expect(ui.selectNodesOnDrag.value).toBe(true)
-    expect(ui.selectionKeyCode.value).toBe(true)
+    expect(ui.selectionKeyCode.value).toBe('Control')
     expect(ui.effectivePanOnDrag.value).toEqual([1])
     expect(ui.elementsSelectable.value).toBe(true)
   })
@@ -49,7 +49,7 @@ describe('useDiagramCanvasVueFlowUi', () => {
     expect(ui.elementsSelectable.value).toBe(true)
   })
 
-  it('e-blackboard two-finger touch keeps mouse middle-button VF pan and disables marquee', () => {
+  it('e-blackboard keeps middle-button pan and Ctrl box-select, not drag-select', () => {
     learningSheetPickActive.value = false
     const ui = useDiagramCanvasVueFlowUi(
       buildUiOptions({
@@ -57,13 +57,13 @@ describe('useDiagramCanvasVueFlowUi', () => {
       })
     )
     expect(ui.selectNodesOnDrag.value).toBe(false)
-    expect(ui.selectionKeyCode.value).toBe(null)
-    // Unlike mobile page: mouse middle-button pan must remain
+    // A finger cannot hold Control, so the slash stays the default drag.
+    expect(ui.selectionKeyCode.value).toBe('Control')
     expect(ui.effectivePanOnDrag.value).toEqual([1])
     expect(ui.elementsSelectable.value).toBe(true)
   })
 
-  it('uses null (Vue Flow default Shift) when drag-select is disabled', () => {
+  it('turns box select off while a learning sheet is being picked', () => {
     learningSheetPickActive.value = true
     const ui = useDiagramCanvasVueFlowUi(buildUiOptions())
     expect(ui.selectNodesOnDrag.value).toBe(false)
@@ -97,6 +97,7 @@ describe('useDiagramCanvasVueFlowUi', () => {
     )
     expect(ui.effectivePanOnDrag.value).toEqual([0, 1, 2])
     expect(ui.selectNodesOnDrag.value).toBe(false)
+    expect(ui.selectionKeyCode.value).toBe(null)
     expect(ui.elementsSelectable.value).toBe(false)
   })
 

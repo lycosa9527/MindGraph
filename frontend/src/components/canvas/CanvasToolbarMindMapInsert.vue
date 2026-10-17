@@ -72,6 +72,7 @@ const linkDialogSeeds = computed(() =>
 
 const initialLinkHref = computed(() => linkDialogSeeds.value.href)
 const initialLinkName = computed(() => linkDialogSeeds.value.name)
+const initialLinkNamePlaceholder = computed(() => linkDialogSeeds.value.namePlaceholder)
 const initialImageUrl = computed(
   () =>
     readNodeAdornment(diagramStore.data, selectedNodeId.value, diagramStore.data?.connections)
@@ -317,6 +318,7 @@ function onMathConfirm(latex: string): void {
     v-model="linkOpen"
     :initial-href="initialLinkHref"
     :initial-name="initialLinkName"
+    :name-placeholder="initialLinkNamePlaceholder"
     @confirm="onLinkConfirm"
   />
   <CanvasImageInsertDialog

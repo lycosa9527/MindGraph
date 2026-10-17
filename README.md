@@ -13,7 +13,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.13+-blue.svg" alt="Python"></a>
   <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.104+-green.svg" alt="FastAPI"></a>
   <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3.5+-42b883.svg" alt="Vue"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.180.172-brightgreen.svg" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.180.173-brightgreen.svg" alt="Version"></a>
 </p>
 
 ---
@@ -219,10 +219,11 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_THINKING_COINS` | `False` | Trial-tier org thinking coin wallet |
 | `FEATURE_MCP_HTTP` | `False` | MCP Streamable HTTP at `/api/mcp` |
 | `FEATURE_TRAINING` | `False` | Org training follow |
+| `FEATURE_MIND_CLASSROOM_SLIDE_DECK` | `False` | 思维讲堂 slide lecture (visible but greyed until ready) |
 | `FEATURE_VOD` | `False` | Admin online video library |
 | `FEATURE_MARKETS` | `False` | Market catalog and Alipay checkout |
 
-Kitty Agent and 思维讲堂 slide lecture stay on in every deployment. Full flag list: `config/features_config.py`.
+Kitty Agent stays on in every deployment. Full flag list: `config/features_config.py`.
 
 Production hardening: set `COLLAB_FANOUT_ORIGIN_SECRET` (shared across workers), `ALLOWED_HOSTS`, and see [docs/architecture/production_security_deploy.md](docs/architecture/production_security_deploy.md).
 

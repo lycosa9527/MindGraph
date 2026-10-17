@@ -1,5 +1,6 @@
 /**
- * en UI � workshop
+ * km UI — workshop
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {
@@ -225,9 +226,9 @@ export default {
   'workshop.openMainChannelStream': 'Main channel',
   'workshop.others': 'OTHERS',
   'workshop.permissions': 'Permissions',
+  'workshop.personalMenu': 'Personal Menu',
   'workshop.preview': 'Preview',
   'workshop.previewEmpty': 'Nothing to preview',
-  'workshop.personalMenu': 'Personal Menu',
   'workshop.phase2RoadmapGroupsAlerts': 'Coming later: {\'@\'}group mentions, alert words, and message edit history policy.',
   'workshop.phase2RoadmapMovePreview': 'Coming later: move single message, URL link previews, and richer cross-channel activity.',
   'workshop.phase2RoadmapPlatform': 'Platform backlog: incremental sync, mobile push, email digests, bots/webhooks.',

@@ -24,6 +24,7 @@ import {
 } from '@/utils/nodeShapeStyle'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
+import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
 import {
   CONTEXT_FONT_SIZE,
   TOPIC_FONT_SIZE,
@@ -88,15 +89,15 @@ export function recalculateCircleMapLayout(
     .filter((n) => isCircleMapContextNode(n))
     .sort((a, b) => readCircleContextIndex(a) - readCircleContextIndex(b))
   const nodeCount = contextNodes.length
-  const contextTexts = contextNodes.map((n) => n.text)
-  const contextSecondary = contextNodes.map((n) => n.textSecondary ?? '')
-  const topicText = topicNode?.text ?? ''
+  const contextTexts = contextNodes.map((n) => learningSheetLayoutText(n))
+  const contextSecondary = contextNodes.map((n) => learningSheetLayoutSecondary(n))
+  const topicText = topicNode ? learningSheetLayoutText(topicNode) : ''
 
   let topicROverride: number | undefined
   if (topicNode && topicNode.style?.nodeShape !== 'underline') {
     const topicStyle = topicNode.style
     const textTopicR = computeTopicRadiusForCircleMap(topicText || ' ', {
-      secondary: topicNode.textSecondary,
+      secondary: learningSheetLayoutSecondary(topicNode),
       fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
       fontWeight: typeof topicStyle?.fontWeight === 'string' ? topicStyle.fontWeight : undefined,
       fontFamily: typeof topicStyle?.fontFamily === 'string' ? topicStyle.fontFamily : undefined,
@@ -110,7 +111,11 @@ export function recalculateCircleMapLayout(
   if (circleContexts.length > 0) {
     let maxR = DEFAULT_CONTEXT_RADIUS
     for (const node of circleContexts) {
-      const textR = estimateContextCircleDiameter(node.text || ' ', node.textSecondary) / 2
+      const textR =
+        estimateContextCircleDiameter(
+          learningSheetLayoutText(node) || ' ',
+          learningSheetLayoutSecondary(node)
+        ) / 2
       const diskR = circleDiskRadius(node.style?.nodeShape, nodeDimensions[node.id])
       maxR = Math.max(maxR, textR, diskR ?? 0)
     }
@@ -118,7 +123,7 @@ export function recalculateCircleMapLayout(
   }
 
   const layoutBase = calculateCircleMapLayout(nodeCount, contextTexts, topicText, {
-    topicSecondary: topicNode?.textSecondary,
+    topicSecondary: topicNode ? learningSheetLayoutSecondary(topicNode) : undefined,
     contextSecondary,
     topicR: topicROverride,
     uniformContextR: uniformContextROverride,

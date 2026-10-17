@@ -121,8 +121,7 @@ export default {
   'learningSpace.diagramTypeLabel': '圖示類型',
   'learningSpace.fillDiagramType': '請選擇圖示類型',
   'learningSpace.fillScoreDims': '請至少保留一個評分維度',
-  'learningSpace.attachmentsScaffoldHint':
-    '作答图示限一份，可设为底稿或仅供对照。参考图片可多张，可与作答图示同时使用。再选的图示会作为对照材料。',
+  'learningSpace.attachmentsScaffoldHint': '作答图示限一份，可设为底稿或仅供对照。参考图片可多张，可与作答图示同时使用。再选的图示会作为对照材料。',
   'learningSpace.attachWorkingDiagram': '作答圖示',
   'learningSpace.attachReferenceMaterials': '參考材料',
   'learningSpace.attachImageQuota': '圖片 {used}/{n}',
@@ -253,8 +252,7 @@ export default {
   'learningSpace.teacherReview': '老師評價',
   'learningSpace.waitingTeacherReview': '老師尚未評價此作業。',
   'learningSpace.noTeacherComment': '暫無評語',
-  'learningSpace.templateMgHint':
-    '作答图示可预览并在画布中打开；对照图示与参考图片列在下方。',
+  'learningSpace.templateMgHint': '作答图示可预览并在画布中打开；对照图示与参考图片列在下方。',
   'learningSpace.noTemplatePreview': '暫無模板預覽',
   'learningSpace.openTemplateInCanvas': '在畫布中打開',
   'learningSpace.pendingBadge': '{n}待批',
@@ -303,8 +301,7 @@ export default {
   'learningSpace.allSubmitted': '全部學生已提交',
   'learningSpace.noSubmissionsYet': '暫無學生提交',
   'learningSpace.rosterLoginHint': '共 {n} 名學生 · 登錄信息如下',
-  'learningSpace.rosterLoginHow':
-    '学生用户通过班级码、姓名和密码进行登录，需要帮助请联系平台管理员',
+  'learningSpace.rosterLoginHow': '学生用户通过班级码、姓名和密码进行登录，需要帮助请联系平台管理员',
   'learningSpace.rosterColName': '姓名',
   'learningSpace.rosterColClassCode': '班級碼',
   'learningSpace.rosterColPassword': '密碼',
@@ -312,8 +309,7 @@ export default {
   'learningSpace.rosterEmpty': '點擊班級卡片加載花名冊',
   'learningSpace.settingsHint': '配置與 MindGraph 畫布的對接說明。',
   'learningSpace.editorBridgeTitle': '思維導圖編輯器對接',
-  'learningSpace.editorBridgeBody':
-    '学生作答会打开 MindGraph 画布，并携带 assignmentId / diagramId 参数。',
+  'learningSpace.editorBridgeBody': '学生作答会打开 MindGraph 画布，并携带 assignmentId / diagramId 参数。',
   'learningSpace.metricTodo': '待完成',
   'learningSpace.metricSubmitted': '已提交',
   'learningSpace.metricWorks': '作品數',

@@ -18,6 +18,7 @@ import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNode
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
@@ -220,6 +221,10 @@ const isHovering = ref(false)
 const dynamicWidth = ref<number | null>(null)
 
 const diagramStore = useDiagramSession()
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 // Layout width for multi-flow map (from recalculateMultiFlowMapLayout)
@@ -344,7 +349,7 @@ function handleBranchMovePointerUp(): void {
     ref="flowNodeRef"
     class="flow-node flex items-center justify-center px-5 py-3 border-solid cursor-grab select-none relative"
     :class="{ 'pill-shape': isPillShape, 'multi-flow-map-node': isMultiFlowMap }"
-    :style="nodeStyle"
+    :style="[nodeStyle, blankFrame]"
     @mouseenter="isHovering = true"
     @mouseleave="isHovering = false"
     @mousedown.capture="handleBranchMovePointerDown"

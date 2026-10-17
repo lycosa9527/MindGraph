@@ -71,5 +71,5 @@ export const CANVAS_CLIPBOARD_EXPORT_MENU_ITEM = {
 } as const
 
 export const CANVAS_WORKSHEET_TEXT_MENU_ITEM = {
-  labelKey: 'canvas.worksheetText.modalTitle',
+  labelKey: 'canvas.topBar.addWorksheetText',
 } as const
