@@ -156,7 +156,65 @@
     return "";
   }
 
+  /**
+   * @param {object} payload
+   * @returns {Promise<{ text: string, imageBased: boolean, pageCount: number }>}
+   */
+  function sendPdfClassifyRequest(payload) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(payload, (response) => {
+        const last = chrome.runtime.lastError;
+        if (last) {
+          reject(new Error(last.message));
+          return;
+        }
+        if (response && response.ok) {
+          resolve({
+            text: typeof response.text === "string" ? response.text.trim() : "",
+            imageBased: Boolean(response.imageBased),
+            pageCount: typeof response.pageCount === "number" ? response.pageCount : 0,
+          });
+          return;
+        }
+        reject(new Error((response && response.error) || "PDF_CLASSIFY_FAILED"));
+      });
+    });
+  }
+
+  /**
+   * @param {Blob} blob
+   * @param {number} maxPages
+   * @param {number} maxChars
+   * @returns {Promise<{ text: string, imageBased: boolean, pageCount: number }>}
+   */
+  async function classifyPdfBlobOffscreen(blob, maxPages, maxChars) {
+    if (!blob || blob.size < 64) {
+      return { text: "", imageBased: false, pageCount: 0 };
+    }
+    await ensureOffscreenForPdfExtract();
+    const buffer = await blob.arrayBuffer();
+    const common = {
+      type: "MINDGRAPH_PDF_TEXT_EXTRACT",
+      classify: true,
+      maxPages,
+      maxChars,
+    };
+    try {
+      return await sendPdfClassifyRequest({ ...common, buffer });
+    } catch (bufferErr) {
+      const base64 = arrayBufferToBase64(buffer);
+      try {
+        return await sendPdfClassifyRequest({ ...common, base64 });
+      } catch (base64Err) {
+        const bufferMessage = bufferErr instanceof Error ? bufferErr.message : String(bufferErr);
+        const base64Message = base64Err instanceof Error ? base64Err.message : String(base64Err);
+        throw new Error(`${bufferMessage}; base64: ${base64Message}`);
+      }
+    }
+  }
+
   MindGraphDocExtract.ensureOffscreenForPdfExtract = ensureOffscreenForPdfExtract;
   MindGraphDocExtract.extractPdfBlobTextOffscreen = extractPdfBlobTextOffscreen;
+  MindGraphDocExtract.classifyPdfBlobOffscreen = classifyPdfBlobOffscreen;
   global.MindGraphDocExtract = MindGraphDocExtract;
 })(typeof self !== "undefined" ? self : globalThis);

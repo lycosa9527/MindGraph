@@ -2,9 +2,9 @@
   "manifest_version": 3,
   "minimum_chrome_version": "109",
   "minimum_edge_version": "120",
-  "name": "MindGraph — Web to mind map",
-  "version": "0.4.24",
-  "description": "Turn the current page into MindGraph mind maps, chat context, and document files via your MindGraph account.",
+  "name": "__MSG_extName__",
+  "version": "0.4.25",
+  "description": "__MSG_extDescription__",
   "default_locale": "en",
   "permissions": ["activeTab", "scripting", "storage", "downloads", "tabs", "contextMenus", "notifications", "offscreen"],
   "host_permissions": [

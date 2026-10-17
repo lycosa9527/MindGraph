@@ -281,6 +281,39 @@
         }
       }
     }
+
+    if (hostEntry.id === "cnki" && tabId && typeof MindGraphDocExtract.resolveCnkiPdfFromTab === "function") {
+      try {
+        const resolved = await MindGraphDocExtract.resolveCnkiPdfFromTab(tabId);
+        if (resolved && resolved.title) {
+          out.title = resolved.title;
+        }
+        const asset =
+          typeof MindGraphDocExtract.cnkiPreviewAsset === "function"
+            ? MindGraphDocExtract.cnkiPreviewAsset(resolved)
+            : null;
+        if (asset) {
+          out.assets = [asset];
+        } else if (resolved && resolved.error === "CNKI_CAPTCHA") {
+          out.fileExtractError = "errExtractCnkiCaptcha";
+        } else if (resolved && resolved.error === "CNKI_LOGIN_REQUIRED") {
+          out.fileExtractError = "errExtractLoginRequired";
+        }
+      } catch {
+        /* page has no downloadable PDF yet */
+      }
+    }
+
+    if (hostEntry.id === "wenku" && typeof MindGraphDocExtract.guessWenkuReaderPdfUrl === "function") {
+      const pdfUrl = MindGraphDocExtract.guessWenkuReaderPdfUrl(resolvedUrl);
+      const asset =
+        typeof MindGraphDocExtract.wenkuPreviewAsset === "function"
+          ? MindGraphDocExtract.wenkuPreviewAsset(pdfUrl, out.title)
+          : null;
+      if (asset) {
+        out.assets = [asset];
+      }
+    }
     return out;
   }
 

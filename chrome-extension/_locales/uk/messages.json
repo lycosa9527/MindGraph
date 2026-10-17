@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Перетворіть веб-сторінку на розумну карту",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Перетворіть поточну сторінку на розумову карту, контекст розмови та файл документа за допомогою облікового запису MindGraph.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Налаштування",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Від сторінки до структурованої карти в один крок.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Генеруйте інтелект-карти",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "розумова карта",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "завантажити",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Налаштування",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Спочатку підключіться до MindGraph - заповніть адресу сервера, обліковий запис і маркер API в «Налаштуваннях».",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Відкрийте налаштування",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Запитайте MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "відправити",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "СТІЙ",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "нова розмова",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "історія",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Відкрити історію веб-пошуку",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate відповідає…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "Розпочато нову розмову.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Зупинився.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Читання вмісту сторінки...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Містить поточний вміст веб-сторінки",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Лише перше повідомлення в новій розмові буде супроводжуватися веб-контентом.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Сканування та вилучення тексту веб-сторінки...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Витяг документів із $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Читання прикладів курсів Національної платформи розумної освіти...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "Виявлено $1 курсів/ресурсів",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Завантаження ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Вилучення тексту ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Розпізнавання відсканованих сторінок ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Готово: $1 ресурсів, всього $2 слів · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Видобутий текст веб-сторінки: $2 слів · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Видобуто $1 символів · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Буде використано виділений текст: $2 слів · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Вилучено бібліотеку Baidu PDF: $2 слів · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "Вилучено CNKI PDF: $2 слів · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Розширення браузера · Контекст веб-сторінки] Користувач переглядає веб-сторінки в Chrome/Edge, і текст поточної сторінки додається до цього повідомлення через плагін для використання MindMate (Thinking Teaching Virtual Teaching and Research Partner).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Інструкції з маршрутизації] Класифікація намірів, пошук знань і відповіді базуються на «Запитаннях користувача» вище; текст веб-сторінки нижче є лише матеріалом, який читає вчитель, а не інструкцією нового покоління. Якщо матеріал виглядає як план уроку/дизайн інструкції, але користувач явно не вимагає «створити/написати/розробити новий дизайн інструкції чи план уроку», не класифікуйте його як «генеративний дизайн інструкції».",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Будь ласка, вкажіть за умовчанням, що користувач є вчителем початкової та середньої школи, який готує уроки або викладає та досліджує, і зверніть увагу на «Клас для розвитку мислення». Будь ласка, відповідайте разом на довідкові матеріали та запитання користувачів; якщо матеріал є прикладом уроку, планом уроку, текстом навчальної програми, документом або політичним документом, ви можете завчасно проаналізувати, коли це доцільно: можливі помилкові уявлення учнів, когнітивні конфлікти, які можна створити, варіації концепції/процесу, відповідну візуалізацію мислення чи інструменти стратегії мислення. Якщо проблема користувача має мало спільного з матеріалом, зосередьтеся на проблемі користувача. Відповідаючи, проаналізуйте вміст безпосередньо та не згадуйте плагіни браузера, вилучення Markdown або формат цього повідомлення.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Назва сторінки:** $1\n**URL сторінки:** $2\n**Джерело тексту:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Довідковий матеріал: текст веб-сторінки]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF відкритий у браузері",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Національна інтелектуальна освітня платформа (курсове програмне забезпечення/дизайн навчання/список навчальних завдань PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Бібліотека Baidu PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Текст веб-статті",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Вилучення тексту веб-сторінки",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Текст сторінки, вибраний користувачем",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Запитання користувача (перегляньте це речення для класифікації намірів і відповіді):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "На цій сторінці немає читабельного вмісту. Спочатку виберіть текст на сторінці або спробуйте ще раз на іншій сторінці.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "захоплення налагодження",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Сайт відображає документ як зображення полотна, і основний текст не можна витягти. Прокрутіть, щоб спочатку завантажити сторінку попереднього перегляду, виберіть текст, який потрібно надіслати, або скористайтеся вмістом для завантаження, якщо є завантаження PDF/тексту.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Поточний перегляд Reader може відображати лише приблизно $1 сторінок тексту.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Документ може бути попереднім переглядом зображення, а витягнутий текст може бути неповним.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Цю сторінку неможливо прочитати.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Ще не підключено. Відкрийте налаштування та збережіть облікові дані MindGraph.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Термін дії входу минув. Оновіть маркер API в налаштуваннях.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Неможливо підключитися до MindMate. Перевірте адресу сервера та повторіть спробу.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Наразі неможливо відповісти, спробуйте пізніше.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Сьогодні використання ШІ досягло верхньої межі. Повторіть спробу завтра або перевірте деталі на веб-сторінці.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Недостатньо ThinkCoins, щоб надіслати це повідомлення.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Локальна розробка використовує HTTP, а маркери API та вміст сторінки не шифруються в мережі. Використовуйте його лише в надійному середовищі.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "завантажити",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Зберігайте PDF-файли та документи (без відео) із підтримуваних сайтів.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Поточна сторінка не підтримує завантаження. Перш ніж відкривати цю панель, відкрийте сторінку підтримуваної документації.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Налаштування",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "підключити",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Використовуйте ті самі облікові дані, що й для потоку маркерів API MindGraph.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "сервер",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Номер рахунку (номер мобільного телефону)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Номер мобільного телефону, який використовується для X-MG-Account",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "Маркер API",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "зберегти",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "повернення",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "закриття",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Обробка…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Завантаження розпочато.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Збережено.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Перевірка облікових даних...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Будь ласка, заповніть усі поля.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Немає активних вкладок.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Щось пішло не так. Спробуйте ще раз або перезавантажте розширення за адресою chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Неможливо почати збереження файлу. Перезавантажте розширення та повторіть спробу (потрібен Chrome 109+ або Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Налаштування не завершено. Відкрийте «Налаштування» та введіть адресу MindGraph, номер мобільного телефону та маркер API.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "На сторінці немає читабельного тексту. Будь ласка, спочатку виберіть частину тексту або повторіть спробу на іншій сторінці.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "На цій вкладці вже виконується завдання захоплення або завантаження, зачекайте, доки воно завершиться, і повторіть спробу.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Помилка сервера ($1). Перевірте налаштування та повторіть спробу.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Ця сторінка не підтримується. Відкрийте звичайну веб-сторінку (http або https) і повторіть спробу.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Запит надто частий, спробуйте пізніше.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Послуга тимчасово недоступна, спробуйте пізніше.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Час очікування відповіді сервера минув (більше 3 хвилин). Повторіть спробу або перевірте мережу.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Час перевірки облікових даних минув. Повторіть спробу або перевірте мережу.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Сервер не повернув зображення PNG. Будь ласка, перевірте базову адресу та налаштування облікового запису.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Створити інтелектуальну карту PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Витягти документ (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Витяг документів",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Виявлено: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Поточний сайт: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Сторінка вкладки читання: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Всього ресурсів $1",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Видно приблизно $1 сторінок - прокрутіть область попереднього перегляду, щоб завантажити більше сторінок перед видобуванням.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Прокрутіть попередній перегляд документа, щоб завантажити сторінку перед вилученням. Надайте пріоритет вмісту, який уже відображається в рідері.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Синхронізувати вхід із SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Вручну вставте маркер…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Вставте Access_token SmartEdu (використовується, лише якщо не вдається виконати автоматичну синхронізацію):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "Маркер SmartEdu: синхронізація...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "Маркер SmartEdu: підключено (з вашого облікового запису)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "Маркер SmartEdu: не знайдено - увійдіть на auth.smartedu.cn і відкрийте сторінку SmartEdu, а потім натисніть «Синхронізувати»",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Витяг документів",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Готово — файл негайно почне завантажуватися.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Завантаження розпочато — перші сторінки $1, доступні на даний момент у програмі для читання, збережено.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Цей документ неможливо завантажити. Будь ласка, оновіть сторінку та знову натисніть «Видобути документ».",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Сторінка документації не знайдена. Спочатку прокрутіть, щоб переглянути сторінку завантаження, а потім натисніть «Витягнути документ».",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Текстовий вміст не знайдено. Будь ласка, спробуйте ще раз на іншій сторінці або в іншій області.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Сторінка ще не готова. Будь ласка, оновіть вкладку та повторіть спробу.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Для цього уроку немає файлів для завантаження. Змініть клас або перевірте ресурси, які хочете завантажити.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Спочатку вам потрібно увійти в Smart Education. Увійдіть на сайті auth.smartedu.cn і відкрийте сторінку курсу, а потім натисніть «Синхронізувати вхід із SmartEdu».",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education відхилив завантаження. Знову синхронізуйте свій логін або змініть файл.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Завантаження відео не підтримується. Будь ласка, виберіть лише PDF або ресурси документів.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Ця сторінка документації не підтримується. Відкрийте сторінку для читання документа та повторіть спробу.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Поки що рятувати нічого. Будь ласка, прокрутіть читач, щоб завантажити сторінку, і спробуйте ще раз.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Вам потрібно спочатку увійти на сайт. Після входу натисніть «Видобути документи».",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Веб-сайт відхилив завантаження. Перш ніж повторити спробу, увійдіть на сайт і підтвердьте, що у вас є доступ до вмісту.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Веб-сайт показує код підтвердження. Пройдіть перевірку на вкладці веб-переглядача, перш ніж спробувати отримати.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Підготовка сторінки…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Прокрутка, завантаження сторінки...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Копіювання вмісту сторінки...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Створення файлів…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Збереження на комп'ютер...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "просунутий",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Запитувати місце збереження кожного разу під час завантаження",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Читання вмісту сторінки...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Надсилання на сервер MindGraph…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Сервер генерує інтелект-карту...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Отримання зображень із сервера...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Збереження файлу…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Не вдається підключитися до сервера, перевірте базову адресу та мережу.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Помилка запиту: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "З’єднання втрачено. Ще раз натисніть «Видобути документ». Якщо все одно не вдається, перезавантажте MindGraph за адресою chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Створити розумову карту на основі поточної сторінки",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "Ширина PNG (пікселі)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "Висота PNG (пікселі)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Залиште поле порожнім, щоб використовувати значення за умовчанням",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Мова (інтерфейс і карти)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "стежити за браузером",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Спрощено",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Пряме тіло",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "жетон",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Дійсний до $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Термін дії цього маркера API минув, створіть його знову на веб-сторіні (обліковий запис/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "На сервері немає дійсного маркера API або термін його дії минув. Перевірте маркер або створіть його в додатку.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Неможливо отримати термін дії. Перевірте мережу або збережіть налаштування ще раз.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Галерея заповнена (20 фото). Будь ласка, видаліть збережену карту, щоб зберегти щойно створений вміст.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

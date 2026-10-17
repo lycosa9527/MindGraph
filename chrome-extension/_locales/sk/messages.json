@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Konverzia webovej stránky na myšlienkovú mapu",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Preveďte aktuálnu stránku na myšlienkovú mapu, kontext konverzácie a súbor dokumentu prostredníctvom účtu MindGraph.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Nastavenia",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Od stránky k štruktúrovanej mape v jednom kroku.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Vytvorte myšlienkové mapy",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "myšlienkovú mapu",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "stiahnuť",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Nastavenia",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Najprv sa pripojte k MindGraph - v časti Nastavenia vyplňte adresu servera, účet a token API.",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Otvorte nastavenia",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Opýtajte sa MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "poslať",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "zastaviť",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "nový rozhovor",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "História",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Otvorte webovú históriu",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate odpovedá...",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "Začala sa nová konverzácia.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Zastavené.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Číta sa obsah stránky...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Obsahuje aktuálny obsah webovej stránky",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Iba prvá správa v novej konverzácii bude sprevádzaná webovým obsahom.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Skenovanie a extrahovanie textu webovej stránky...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Extrahovanie dokumentov z $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Čítanie príkladov kurzov Národnej platformy inteligentného vzdelávania...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "Zistilo sa $1 kurzov/zdrojov",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Sťahovanie ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Extrahovanie textu ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Rozpoznanie naskenovaných strán ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Pripravené: $1 zdrojov, celkovo $2 slov · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Extrahovaný text webovej stránky: $2 slov · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Extrahovaných $1 znakov · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Použije sa vybratý text: $2 slov · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Extrahovaná knižnica Baidu PDF: $2 slov · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "Extrahované CNKI PDF: $2 slov · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Rozšírenie prehliadača · Kontext webovej stránky] Používateľ si prehliada web v prehliadači Chrome/Edge a text aktuálnej stránky je pripojený k tejto správe prostredníctvom doplnku, ktorý používa MindMate (partner pre virtuálne vyučovanie a výskum Thinking Teaching).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Pokyny na smerovanie] Klasifikácia zámerov, získavanie vedomostí a odpovede sú založené na „Otázkach používateľa“ vyššie; text webovej stránky nižšie je len materiál, ktorý učiteľ číta, nie inštrukcia novej generácie. Ak materiál vyzerá ako vyučovací plán/návrh výučby, ale používateľ výslovne nepožaduje „vygenerovať/napísať/navrhnúť nový návrh výučby alebo plán výučby“, neklasifikujte ho ako „generatívny návrh výučby“.",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Predvoleným nastavením je, že používateľ je učiteľ základnej a strednej školy, ktorý pripravuje hodiny alebo vyučuje a skúma, a venujte pozornosť „Učebni rozvoja myslenia“. Odpovedzte na referenčné materiály a otázky používateľov spoločne; ak je materiálom príklad lekcie, plán lekcie, text z učebného materiálu, papier alebo dokument o zásadách, môžete proaktívne analyzovať, keď je to vhodné: možné mylné predstavy študentov, možné kognitívne konflikty, koncepčné/procesné variácie, použiteľná vizualizácia myslenia alebo nástroje stratégie myslenia. Ak má používateľský problém málo spoločného s materiálom, zamerajte sa na problém používateľa. Pri odpovedi analyzujte obsah priamo a nespomínajte doplnky prehliadača, extrakciu Markdown ani formát tejto správy.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Názov stránky:** $1\n**Adresa URL stránky:** $2\n**Zdroj textu:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Referenčný materiál: Text webovej stránky]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF otvorené v prehliadači",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Národná platforma pre inteligentné vzdelávanie (Courseware/Design výučby/Learning Task List PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Knižnica Baidu PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Text článku na webe",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Extrakcia textu webovej stránky",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Text stránky vybraný používateľom",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Otázka používateľa (klasifikáciu zámeru a odpoveď nájdete v tejto vete):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Na tejto stránke nie je žiadny čitateľný obsah. Najprv vyberte text na stránke alebo to skúste znova na inej stránke.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "zachytiť ladenie",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Stránka vykresľuje dokument ako obraz na plátne a hlavný text nie je možné extrahovať. Najprv prejdite na načítanie stránky s ukážkou, vyberte text na odoslanie alebo použite obsah na stiahnutie, ak existuje súbor PDF/text na stiahnutie.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Aktuálne zobrazenie čitateľa môže zobraziť iba približne $1 strán textu.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Dokument môže byť ukážkou obrázka a extrahovaný text môže byť neúplný.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Táto stránka sa nedá prečítať.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Zatiaľ nepripojené. Otvorte Nastavenia a uložte poverenia MindGraph.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Platnosť prihlásenia vypršala. Aktualizujte token API v Nastaveniach.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Nedá sa pripojiť k MindMate. Skontrolujte adresu servera a skúste to znova.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Momentálne nie je možné odpovedať, skúste to znova neskôr.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Dnešné používanie AI dosiahlo hornú hranicu. Skúste to znova zajtra alebo skontrolujte podrobnosti na webovej stránke.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Nedostatok ThinkCoinov na odoslanie tejto správy.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Miestny vývoj používa HTTP a tokeny API a obsah stránky sú v sieti nešifrované. Používajte ho iba v dôveryhodnom prostredí.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "stiahnuť",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Uložte súbory PDF a dokumenty (bez videí) z podporovaných stránok.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Aktuálna stránka nepodporuje sťahovanie. Pred otvorením tohto panelu otvorte podporovanú stránku dokumentácie.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Nastavenia",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "pripojiť",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Použite rovnaké poverenia ako token tokenu MindGraph API.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "server",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Číslo účtu (číslo mobilného telefónu)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Číslo mobilného telefónu používané pre účet X-MG",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API token",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "uložiť",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "vrátiť",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "uzavretie",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Spracováva sa…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Sťahovanie sa začalo.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Uložené.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Overujú sa poverenia...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Vyplňte všetky polia.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Neexistujú žiadne aktívne karty.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Niečo sa pokazilo. Skúste to znova alebo znova načítajte rozšírenie na adrese chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Nie je možné spustiť ukladanie súboru. Znova načítajte rozšírenie a skúste to znova (vyžaduje Chrome 109+ alebo Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Nastavenie je neúplné. Otvorte „Nastavenia“ a vyplňte adresu MindGraph, číslo mobilného telefónu a token API.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Na stránke nie je čitateľný text. Najprv vyberte časť textu alebo to skúste znova na inej stránke.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Na tejto karte už prebieha úloha zachytávania alebo sťahovania, počkajte, kým sa dokončí, a skúste to znova.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Chyba servera ($1). Skontrolujte nastavenia a skúste to znova.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Táto stránka nie je podporovaná. Otvorte normálnu webovú stránku (http alebo https) a skúste to znova.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Požiadavka je príliš častá, skúste to znova neskôr.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Služba je dočasne nedostupná, skúste to znova neskôr.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Časový limit odpovede servera vypršal (viac ako 3 minúty). Skúste to znova alebo skontrolujte sieť.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Časový limit overenia poverení vypršal. Skúste to znova alebo skontrolujte sieť.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Server nevrátil obrázok PNG. Skontrolujte základnú adresu a nastavenia účtu.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Vytvorte myšlienkovú mapu PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Extrahovať dokument (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Extrahujte dokumenty",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Zistené: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Aktuálna lokalita: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Stránka karty Čítanie: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Celkom $1 zdrojov",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Viditeľných je približne $1 strán – pred extrahovaním posuňte oblasť ukážky, aby ste načítali ďalšie strany.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Pred extrahovaním posuňte náhľad dokumentu, aby sa stránka načítala. Uprednostnite obsah už zobrazený v čítačke.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Synchronizujte prihlásenie zo SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Manuálne prilepte token…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Prilepte prístupový_token SmartEdu (používa sa iba v prípade, že automatická synchronizácia zlyhá):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu token: Synchronizácia...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu token: Pripojené (z vášho prihlásenia)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu token: nenájdený – prihláste sa na auth.smartedu.cn a otvorte stránku SmartEdu, potom kliknite na „Synchronizovať“",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Extrahujte dokumenty",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Hotovo – súbor sa začne okamžite sťahovať.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Sťahovanie spustené — Uložilo sa prvých $1 stránok aktuálne dostupných v čítačke.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Tento dokument nie je možné stiahnuť. Obnovte stránku a znova kliknite na „Extrahovať dokument“.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Stránka dokumentácie sa nenašla. Najprv prejdite na náhľad načítavanej stránky a potom kliknite na „Extrahovať dokument“.",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Nenašiel sa žiadny textový obsah. Skúste to znova na inej stránke alebo oblasti.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Stránka ešte nie je pripravená. Obnovte kartu a skúste to znova.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Pre túto lekciu neexistujú žiadne súbory na stiahnutie. Zmeňte triedu alebo skontrolujte zdroje, ktoré chcete stiahnuť.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Najprv sa musíte prihlásiť do Smart Education. Prihláste sa na auth.smartedu.cn a otvorte stránku kurzu, potom kliknite na „Synchronizovať prihlásenie zo SmartEdu“.",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education odmietlo sťahovanie. Znova synchronizujte svoje prihlasovacie údaje alebo zmeňte súbor.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Sťahovanie videí nie je podporované. Vyberte iba zdroje PDF alebo dokumentov.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Toto nie je podporovaná stránka dokumentácie. Otvorte stránku na čítanie dokumentu a skúste to znova.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Zatiaľ nie je čo zachraňovať. Posuňte čítačku, aby sa stránka načítala a skúste to znova.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Najprv sa musíte prihlásiť na web. Po prihlásení kliknite na „Extrahovať dokumenty“.",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Sťahovanie bolo odmietnuté webom. Pred opätovným pokusom sa prihláste na stránku a potvrďte, že máte prístup k obsahu.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Webová stránka zobrazuje overovací kód. Pred pokusom o načítanie dokončite overenie na karte prehliadača.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Pripravuje sa stránka…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Posunúť stránku načítavania...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Kopíruje sa obsah stránky...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Generujú sa súbory…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Ukladá sa do počítača...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "pokročilé",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Pri každom sťahovaní požiadajte o umiestnenie uloženia",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Číta sa obsah stránky...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Odosiela sa na server MindGraph…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Server generuje myšlienkovú mapu...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Prijímanie obrázkov zo servera...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Ukladá sa súbor…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Nedá sa pripojiť k serveru, skontrolujte základnú adresu a sieť.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Žiadosť zlyhala: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Spojenie sa prerušilo. Znova kliknite na \"Extrahovať dokument\". Ak stále zlyhá, znova načítajte MindGraph na adrese chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Vytvorte myšlienkovú mapu na základe aktuálnej stránky",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "Šírka PNG (v pixeloch)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "Výška PNG (v pixeloch)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Ak chcete použiť predvolené, ponechajte pole prázdne",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Jazyk (rozhranie a mapy)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "sledovať prehliadač",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Zjednodušené",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Vzpriamené telo",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "žetón",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Platí do $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Platnosť tohto tokenu API vypršala, vytvorte ho znova na webe (účet/rozhranie API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Na serveri nie je platný token API alebo jeho platnosť vypršala. Skontrolujte token alebo ho vytvorte v aplikácii.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Nie je možné získať čas vypršania platnosti. Skontrolujte svoju sieť alebo znova uložte nastavenia.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Galéria je plná (20 fotiek). Ak chcete uložiť novo vygenerovaný obsah, odstráňte uloženú mapu.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

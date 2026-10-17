@@ -348,6 +348,75 @@ describe("smartedu markdown extract", () => {
     expect(pdfs.map((asset) => asset.alias).sort()).toEqual(
       ["coursewares", "learning_task", "lesson_plandesign"].sort(),
     );
+    const plan = pdfs.find((asset) => asset.alias === "lesson_plandesign");
+    expect(plan.pageCount).toBe(3);
+  });
+
+  it("orders lesson files so plans are OCR'd before slide decks", () => {
+    loadModule("doc-extract/smartedu/markdown-extract.js");
+    const ordered = globalThis.MindGraphDocExtract.orderSmartEduAssetsForOcr([
+      { alias: "coursewares", title: "课件" },
+      { alias: "after_class_exercise", title: "课后练习" },
+      { alias: "lesson_plandesign", title: "教学设计" },
+      { alias: "learning_task", title: "学习任务单" },
+    ]);
+    expect(ordered.map((asset) => asset.title)).toEqual([
+      "教学设计",
+      "学习任务单",
+      "课后练习",
+      "课件",
+    ]);
+  });
+
+  it("keeps a text layer and falls back to OCR only when that layer is empty", () => {
+    loadModule("doc-extract/smartedu/markdown-extract.js");
+    const api = globalThis.MindGraphDocExtract;
+    expect(api.chooseSmartEduPdfText("This lesson has enough local text.", "")).toContain("local text");
+    expect(api.chooseSmartEduPdfText("", "教学目标：朗读课文，整体感知济南的冬天。")).toContain("教学目标");
+    expect(api.chooseSmartEduPdfText("short", "x")).toBe("");
+    expect(api.smartEduShouldRequestOcr("This lesson has enough local text.", true)).toBe(false);
+    expect(api.smartEduShouldRequestOcr("", true)).toBe(true);
+    expect(api.smartEduShouldRequestOcr("", false)).toBe(false);
+    expect(api.smartEduOcrPageCap(12)).toBe(4);
+    expect(api.smartEduOcrPageCap(12, 2)).toBe(2);
+    expect(api.smartEduOcrPageCap(2)).toBe(2);
+    expect(api.smartEduOcrPageCap(0)).toBe(0);
+  });
+
+  it("posts an image PDF to the account OCR endpoint", async () => {
+    loadModule("doc-extract/smartedu/pdf-ocr-client.js");
+    const blob = new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46])], { type: "application/pdf" });
+    let posted = null;
+    const fetchImpl = async (url, init) => {
+      posted = { url, init };
+      return {
+        ok: true,
+        json: async () => ({ text: "教学目标 朗读课文", source: "ocr" }),
+      };
+    };
+    const text = await globalThis.MindGraphDocExtract.postSmartEduPdfForOcr(
+      blob,
+      4,
+      { baseUrl: "https://mg.example", account: "teacher", token: "secret-token" },
+      fetchImpl,
+    );
+    expect(text).toContain("教学目标");
+    expect(posted.url).toBe("https://mg.example/api/extension/extract_pdf_text");
+    expect(posted.init.method).toBe("POST");
+    expect(posted.init.headers.Authorization).toBe("Bearer secret-token");
+    expect(posted.init.body).toBeInstanceOf(FormData);
+    expect(posted.init.body.get("image_based")).toBe("true");
+  });
+
+  it("treats a picture page with no text as image-based", () => {
+    loadModule("doc-extract/text/pdf-extract-in-tab.js");
+    const api = globalThis.__MGDocExtractPdf;
+    expect(api.pageLooksImageBased(0, true)).toBe(true);
+    expect(api.pageLooksImageBased(80, true)).toBe(false);
+    expect(api.pageLooksImageBased(0, false)).toBe(false);
+    expect(api.documentIsImageBased([{ imageLike: true }, { imageLike: true }])).toBe(true);
+    expect(api.documentIsImageBased([{ imageLike: true }, { imageLike: false }])).toBe(false);
+    expect(api.documentIsImageBased([])).toBe(false);
   });
 
   it("combines lesson sections into markdown", () => {
@@ -425,6 +494,66 @@ describe("browser pdf tab", () => {
     expect(shared.isBrowserPdfTabUrl("file:///C:/Users/me/paper.pdf")).toBe(true);
     expect(shared.isBrowserPdfTabUrl("https://example.com/article")).toBe(false);
     expect(shared.isRestrictedTabUrl("file:///C:/local/doc.pdf")).toBe(false);
+  });
+});
+
+describe("mixed capture orchestrator", () => {
+  it("finds pdf links on a page", async () => {
+    loadModule("doc-extract/mixed-capture.js");
+    const api = globalThis.MindGraphDocExtract;
+    expect(typeof api.discoverLinkedPdfUrlsInTab).toBe("function");
+  });
+});
+
+describe("mixed capture merge", () => {
+  it("prepends page shell when it is not already inside the file extract", () => {
+    loadModule("doc-extract/text/mixed-capture-merge.js");
+    const api = globalThis.MindGraphDocExtract;
+    const merged = api.mergePageShellWithDocuments(
+      "Activity goals: compare seasonal imagery in the poem.\n".repeat(8),
+      "## 课件\n\nPDF body about 济南的冬天。",
+      32000,
+    );
+    expect(merged).toContain("## Web page");
+    expect(merged).toContain("Activity goals");
+    expect(merged).toContain("济南的冬天");
+  });
+
+  it("merges partial pdf.js text with OCR instead of picking one side", () => {
+    loadModule("doc-extract/text/mixed-capture-merge.js");
+    const api = globalThis.MindGraphDocExtract;
+    const merged = api.mergePdfTextAndOcr(
+      "Page 1 title only with enough characters here.",
+      "教学目标：朗读课文，整体感知济南的冬天这篇散文的语言特点。",
+      20,
+    );
+    expect(merged).toContain("Page 1 title");
+    expect(merged).toContain("教学目标");
+  });
+});
+
+describe("document asset helpers", () => {
+  it("lists a CNKI PDF and a Wenku PDF, and skips videos", () => {
+    loadModule("doc-extract/text/markdown-capture-policy.js");
+    const api = globalThis.MindGraphDocExtract;
+    expect(api.cnkiPreviewAsset({ pdfUrl: "https://docdown.cnki.net/a.pdf", title: "济南的冬天" })).toEqual({
+      id: "cnki-pdf",
+      title: "济南的冬天",
+      alias: "pdf",
+      localKind: "pdf",
+      selected: true,
+    });
+    expect(api.cnkiPreviewAsset({ error: "CNKI_LOGIN_REQUIRED", title: "x" })).toBeNull();
+    expect(api.wenkuPreviewAsset("https://wenku.baidu.com/view/abc.pdf", "课件")).toMatchObject({
+      id: "wenku-pdf",
+      title: "课件",
+    });
+    expect(api.wenkuPreviewAsset("", "课件")).toBeNull();
+    const listed = api.listedDocumentAssets([
+      { id: "1", title: "课件", localKind: "pdf" },
+      { id: "2", title: "微课", alias: "micro_lesson_video", localKind: "m3u8" },
+    ]);
+    expect(listed.map((asset) => asset.id)).toEqual(["1"]);
   });
 });
 

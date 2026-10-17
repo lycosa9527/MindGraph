@@ -63,7 +63,7 @@ body {
 
 .panel-head-with-close .title {
   margin: 0 0 8px;
-  padding-right: 4px;
+  padding-inline-end: 4px;
 }
 
 .panel-head-with-close .eyebrow {
@@ -118,6 +118,15 @@ body {
 
 .main-status-area .status {
   margin-top: 10px;
+}
+
+.main-status-area .status:empty {
+  min-height: 0;
+  margin-top: 0;
+}
+
+#generate-view.panel {
+  padding-bottom: 12px;
 }
 
 .settings-status-area {
@@ -466,7 +475,8 @@ body {
 
 .link-view-diagram {
   display: block;
-  margin-top: 8px;
+  margin-top: 6px;
+  margin-bottom: 0;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -487,7 +497,7 @@ body {
 }
 
 .library-full-note {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   font-size: 11px;
   line-height: 1.45;
   color: var(--ink-muted);
@@ -701,7 +711,7 @@ body {
 .mindmate-md ul,
 .mindmate-md ol {
   margin: 0.35em 0;
-  padding-left: 1.25em;
+  padding-inline-start: 1.25em;
 }
 
 .mindmate-md li + li {
@@ -710,8 +720,8 @@ body {
 
 .mindmate-md blockquote {
   margin: 0.35em 0;
-  padding-left: 0.65em;
-  border-left: 3px solid var(--line-strong);
+  padding-inline-start: 0.65em;
+  border-inline-start: 3px solid var(--line-strong);
   color: var(--muted, #555);
 }
 

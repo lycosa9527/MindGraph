@@ -92,11 +92,11 @@ Certification notes must be **under 2000 characters**. Edit [`scripts/edge_certi
 This API updates the **package** only. Store metadata (description, screenshots, logo) still requires Partner Center.
 
 
-Locale strings live in **`chrome-extension/_locales/`** (`en`, `zh_CN`, `zh_TW`). The manifest `default_locale` is **`en`**.
+Locale strings follow the same **44** interface languages as Settings → Interface language ([`extension-locales.js`](extension-locales.js)). The manifest `default_locale` is **`en`**. Chrome-supported codes live in **`_locales/`** (Portuguese is `pt_BR` plus a `pt_PT` copy; Tagalog is `fil`). Albanian, Afrikaans, Azerbaijani, Sinhala, and Uzbek are not Chrome locale folders, so their catalogs live in **`i18n/`** and are loaded by the extension.
 
-- **Settings → Language** — One control (stored as `uiLanguage`: Match browser, English, 简体, 正體). It sets **both** the popup’s effective UI strings (optional override by loading a locale’s `messages.json`) and the **`language`** field sent to **`POST /api/web_content_mindmap_png`**, resolved in the service worker to match the server’s prompt registry ([`scripts/build_prompt_language_registry.py`](../scripts/build_prompt_language_registry.py); the allowed code list is embedded in [`background.js`](background.js) as `PROMPT_OUTPUT_LANGUAGE_CODES`). Page text language and diagram output language are **independent** (e.g. English article + Chinese map labels).
+- **Settings → Language** — One control (stored as `uiLanguage`: Match browser, then each language’s native name). An explicit choice sets both the interface and the diagram language. Saved `zh_CN` / `zh_TW` values still map to 中文 / 繁體中文. Page text language and diagram output language stay **independent** (e.g. English article + Chinese map labels).
 
-- **Match browser** — Uses `chrome.i18n.getMessage` / UI language to pick copy and, for the API, maps the browser UI language to a registry code in [`shared-mindgraph.js`](shared-mindgraph.js) (`resolvePromptLanguageFromUiMode`).
+- **Match browser** — Interface copy loads one of the 44 catalogs when `chrome.i18n.getUILanguage()` matches, and **English** otherwise. Diagram output follows the browser language across the full prompt registry ([`shared-mindgraph.js`](shared-mindgraph.js) `resolvePromptLanguageFromUiMode`, codes in [`background.js`](background.js) `PROMPT_OUTPUT_LANGUAGE_CODES`). `POST /api/web_content_mindmap_png` passes that code to `get_prompt`, the same builder as the rest of diagram generation. A browser language outside the registry uses **English**.
 
 ## Load unpacked (Chrome or Edge)
 
@@ -183,7 +183,8 @@ Errors from **page** scripts (e.g. news sites) appear in that **page’s** DevTo
 
 1. Open a normal **http** or **https** web page (internal `chrome://` pages and most non-web URLs are blocked; built-in PDF / `file://` are not supported).
 2. Click the extension icon → **Generate**, or right-click the page → **Generate mind map PNG**, or use the optional keyboard shortcut.
-3. Optional: select text first; otherwise the extension takes text from a best-effort main-content region (`[itemprop="articleBody"]`, `[role="article"]`, `article`, `main`, else `body`), capped at **32k** characters (same as the API).
+3. After a successful library save, the link under the button opens **this mind map** on canvas; on any other page it opens **your library** (`/library`). One page is remembered for the browser session (`chrome.storage.session`).
+4. **Mixed capture:** DOM/selection markdown is merged with PDFs found on the page (up to three `.pdf` links, fetched with your login). Image-only PDFs and thin canvas readers go through server OCR (`/api/extension/extract_pdf_text`), then everything is sent as one markdown payload to the mind-map API (32k cap). Optional: select text first to prioritize a passage as the web section.
 
 The server must be reachable from your machine and Playwright must be able to render the Vue app for PNG export.
 

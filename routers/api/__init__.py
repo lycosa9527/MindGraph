@@ -36,6 +36,7 @@ from . import (
     mindmate_folders,
     dify_conversations,
     dify_files,
+    extension_pdf_text,
     feedback,
     frontend_logging,
     image_generation,
@@ -107,6 +108,7 @@ router.include_router(client_bundles.router)
 router.include_router(diagram_generation.router)
 router.include_router(canvas_translate.router)
 router.include_router(web_content_generation.router)
+router.include_router(extension_pdf_text.router)
 router.include_router(png_export.router)
 router.include_router(image_generation.router)
 router.include_router(worksheet_docx_export.router)

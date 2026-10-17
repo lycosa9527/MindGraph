@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Converti la pagina web in una mappa mentale",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Converti la pagina corrente in una mappa mentale, contesto di conversazione e file di documento tramite l'account MindGraph.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Impostazioni",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Dalla pagina alla mappa strutturata, completa in un solo passaggio.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Genera mappe mentali",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "mappa mentale",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "scaricamento",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Impostazioni",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Connettiti prima a MindGraph: inserisci l'indirizzo del server, l'account e il token API in \"Impostazioni\".",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Apri le impostazioni",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Chiedi a MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "Inviare",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "fermare",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "nuova conversazione",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Storia",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Apri la cronologia web",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate sta rispondendo...",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "È stata avviata una nuova conversazione.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Fermato.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Lettura del contenuto della pagina...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Contiene il contenuto della pagina Web corrente",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Solo il primo messaggio di una nuova conversazione sarà accompagnato da contenuto web.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Scansione ed estrazione del testo della pagina Web in corso...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Estrazione documenti da $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Lettura degli esempi di corsi della Piattaforma Nazionale Smart Education...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 materiale didattico/risorse rilevati",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Download in corso ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Estrazione testo ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Riconoscimento delle pagine scansionate ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Pronto: $1 risorse, totale $2 parole · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Testo della pagina web estratto: $2 parole · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Caratteri $1 estratti · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Verrà utilizzato il testo selezionato: $2 parole · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "PDF estratto della libreria Baidu: $2 parole · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "PDF CNKI estratto: $2 parole · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Estensione del browser · Contesto della pagina Web] L'utente sta navigando sul Web in Chrome/Edge e il testo della pagina corrente è allegato a questo messaggio tramite il plug-in utilizzato da MindMate (Thinking Teaching Virtual Teaching and Research Partner).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Istruzioni di instradamento] La classificazione degli intenti, il recupero della conoscenza e le risposte si basano tutti sulle \"Domande dell'utente\" di cui sopra; il testo della pagina web sottostante è solo il materiale che l'insegnante sta leggendo, non un'istruzione di nuova generazione. Se il materiale assomiglia a un piano di lezione/progettazione didattica, ma l'utente non richiede esplicitamente di \"generare/scrivere/progettare un nuovo progetto didattico o piano di lezione\", non classificarlo come \"progettazione didattica generativa\".",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Per impostazione predefinita, l'utente è un insegnante di scuola primaria e secondaria che sta preparando lezioni o insegnando e facendo ricerca e prestare attenzione alla \"Classe di sviluppo del pensiero\". Si prega di rispondere insieme ai materiali di riferimento e alle domande degli utenti; se il materiale è un esempio di lezione, un programma di lezione, un testo del corso, un documento o un documento politico, puoi analizzare in modo proattivo quando appropriato: possibili malintesi degli studenti, conflitti cognitivi creabili, variazioni concettuali/di processo, visualizzazione del pensiero applicabile o strumenti di strategia di pensiero. Se il problema dell'utente ha poco a che fare con il materiale, concentrati sul problema dell'utente. Quando rispondi, analizza direttamente il contenuto e non menzionare i plug-in del browser, l'estrazione Markdown o il formato di questo messaggio.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Titolo della pagina:** $1\n**URL della pagina:** $2\n**Fonte testo:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Materiale di riferimento: testo della pagina Web]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF aperto nel browser",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Piattaforma nazionale per l'educazione intelligente (PDF dei corsi/progettazione didattica/elenco delle attività di apprendimento)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "PDF della Biblioteca Baidu",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Testo dell'articolo web",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Estrazione del testo della pagina Web",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Il testo della pagina selezionato dall'utente",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Domanda dell'utente (fare riferimento a questa frase per la classificazione delle intenzioni e la risposta):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Non c'è contenuto leggibile in questa pagina. Seleziona prima il testo sulla pagina o riprova su una pagina diversa.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "acquisire il debug",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Il sito esegue il rendering del documento come immagine su tela e il corpo del testo non può essere estratto. Scorri per caricare prima la pagina di anteprima, seleziona il testo da inviare o utilizza il contenuto scaricato se è disponibile un download PDF/testo.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "La visualizzazione corrente di Reader può visualizzare solo circa $1 pagine di testo.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Il documento potrebbe essere un'anteprima dell'immagine e il testo estratto potrebbe essere incompleto.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Questa pagina non può essere letta.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Non ancora connesso. Apri Impostazioni e salva le credenziali MindGraph.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "L'accesso è scaduto. Aggiorna il token API nelle Impostazioni.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Impossibile connettersi a MindMate. Controlla l'indirizzo del server e riprova.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Impossibile rispondere al momento, riprova più tardi.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "L'utilizzo odierno dell'intelligenza artificiale ha raggiunto il limite superiore. Riprova domani o controlla i dettagli sulla pagina web.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "ThinkCoins insufficienti per inviare questo messaggio.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Lo sviluppo locale utilizza HTTP e i token API e il contenuto della pagina non sono crittografati sulla rete. Si prega di utilizzarlo solo in un ambiente affidabile.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "scaricamento",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Salva PDF e documenti (senza video) dai siti supportati.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "La pagina corrente non supporta il download. Apri una pagina di documentazione supportata prima di aprire questo pannello.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Impostazioni",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "collegare",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Utilizza le stesse credenziali del flusso token API MindGraph.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "server",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Numero di conto (numero di cellulare)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Numero di cellulare utilizzato per l'account X-MG",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "Token API",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "salva",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "ritorno",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "chiusura",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Elaborazione...",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Il download è iniziato.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Salvato.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Verifica credenziali...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Si prega di compilare tutti i campi.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Non ci sono schede attive.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Qualcosa è andato storto. Riprova o ricarica l'estensione su chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Impossibile avviare il salvataggio del file. Ricarica l'estensione e riprova (richiede Chrome 109+ o Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "La configurazione è incompleta. Apri \"Impostazioni\" e inserisci l'indirizzo MindGraph, il numero di cellulare e il token API.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Non è presente testo leggibile nella pagina. Seleziona prima una sezione di testo o riprova su una pagina diversa.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "C'è già un'attività di acquisizione o download in corso in questa scheda, attendi fino al completamento e riprova.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Errore del server ($1). Controlla le tue impostazioni e riprova.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Questa pagina non è supportata. Apri una normale pagina web (http o https) e riprova.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "La richiesta è troppo frequente, riprova più tardi.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Il servizio è momentaneamente non disponibile, riprova più tardi.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "La risposta del server è scaduta (più di 3 minuti). Riprova o controlla la rete.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Verifica delle credenziali scaduta. Riprova o controlla la rete.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Il server non ha restituito un'immagine PNG. Controlla l'indirizzo di base e le impostazioni dell'account.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Genera mappa mentale PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Estrai documento (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Estrarre documenti",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Rilevato: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Sito attuale: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Scheda Lettura: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Totale $1 risorse",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Sono visibili circa $1 pagine: scorri l'area di anteprima per caricare più pagine prima dell'estrazione.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Scorri l'anteprima del documento per caricare la pagina prima dell'estrazione. Dai priorità ai contenuti già visualizzati nel lettore.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Sincronizza l'accesso da SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Incolla manualmente il token...",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Incolla SmartEdu access_token (utilizzato solo se la sincronizzazione automatica fallisce):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "Token SmartEdu: sincronizzazione in corso...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "Token SmartEdu: connesso (dal tuo login)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "Token SmartEdu: non trovato: accedi a auth.smartedu.cn e apri la pagina SmartEdu, quindi fai clic su \"Sincronizza\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Estrarre documenti",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Fatto: il download del file inizierà immediatamente.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Download avviato: le prime $1 pagine attualmente disponibili nel lettore sono state salvate.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Questo documento non può essere scaricato. Aggiorna la pagina e fai nuovamente clic su \"Estrai documento\".",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Pagina della documentazione non trovata. Scorri prima per visualizzare l'anteprima della pagina di caricamento, quindi fai clic su \"Estrai documento\".",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Nessun contenuto testuale trovato. Riprova su una pagina o area diversa.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "La pagina non è ancora pronta. Aggiorna la scheda e riprova.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Non ci sono file scaricabili per questa lezione. Cambia classe o controlla le risorse che desideri scaricare.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "È necessario prima accedere a Smart Education. Accedi a auth.smartedu.cn e apri la pagina del corso, quindi fai clic su \"Sincronizza l'accesso da SmartEdu\".",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education ha rifiutato il download. Sincronizza nuovamente il tuo login o modifica il file.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Il download di video non è supportato. Seleziona solo risorse PDF o documenti.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Questa non è una pagina di documentazione supportata. Apri la pagina di lettura del documento e riprova.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Non c'è ancora nulla da salvare. Per favore scorri il lettore per caricare la pagina e riprova.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "È necessario prima accedere al sito web. Dopo aver effettuato l'accesso, fare clic su \"Estrai documenti\".",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Il download è stato rifiutato dal sito web. Accedi al sito e conferma di avere accesso ai contenuti prima di riprovare.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Il sito Web mostra un codice di verifica. Completa la verifica in una scheda del browser prima di tentare il recupero.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Preparazione della pagina...",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Scorri la pagina di caricamento...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Copia del contenuto della pagina...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Generazione di file…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Salvataggio sul computer...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "avanzato",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Richiedi la posizione di salvataggio ogni volta che scarichi",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Lettura del contenuto della pagina...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Invio al server MindGraph…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Il server sta generando la mappa mentale...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Ricezione di immagini dal server...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Salvataggio file...",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Impossibile connettersi al server, controlla l'indirizzo di base e la rete.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Richiesta non riuscita: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "La connessione è stata persa. Fare di nuovo clic su \"Estrai documento\". Se il problema persiste, ricarica MindGraph su chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Genera una mappa mentale basata sulla pagina corrente",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "Larghezza PNG (pixel)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "Altezza PNG (pixel)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Lascia vuoto per utilizzare l'impostazione predefinita",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Lingua (interfaccia e mappe)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "segui il browser",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Semplificato",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Corpo eretto",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "gettone",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Valido fino al $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Questo token API è scaduto, crealo di nuovo sul Web (account/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Non è presente alcun token API valido sul server oppure è scaduto. Controlla il token o crealo nell'app.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Impossibile ottenere l'ora di scadenza. Controlla la tua rete o salva nuovamente le impostazioni.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "La gallery è piena (20 foto). Elimina la mappa salvata per salvare il contenuto appena generato.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

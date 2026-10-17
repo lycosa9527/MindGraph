@@ -9,3 +9,4 @@ Token, metadata, and download helpers under `doc-extract/smartedu/` mirror the d
 | Asset list from detail JSON | `metadata.js`, `models.js` |
 | Binary download | `downloader.js` |
 | MindMate markdown | `markdown-extract.js` |
+| Image-only PDF OCR | `pdf-ocr-client.js` → `POST /api/extension/extract_pdf_text` |

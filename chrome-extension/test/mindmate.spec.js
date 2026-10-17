@@ -649,6 +649,7 @@ describe("canvas diagram link helpers", () => {
     expect(shared.resolveMindGraphSettings({ baseUrlPresetId: "local" }).baseUrl).toBe(
       "http://localhost:9527",
     );
+    expect(shared.buildLibraryUrl("local")).toBe("http://localhost:9527/library");
     expect(shared.buildCanvasDiagramUrl("local", "abc-123")).toBe(
       "http://localhost:9527/canvas?diagramId=abc-123",
     );

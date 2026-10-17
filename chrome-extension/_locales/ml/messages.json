@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — വെബ് പേജ് മൈൻഡ് മാപ്പിലേക്ക് പരിവർത്തനം ചെയ്യുക",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "MindGraph അക്കൗണ്ട് മുഖേന നിലവിലെ പേജ് മൈൻഡ് മാപ്പ്, സംഭാഷണ സന്ദർഭം, ഡോക്യുമെൻ്റ് ഫയൽ എന്നിവയിലേക്ക് പരിവർത്തനം ചെയ്യുക.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "ക്രമീകരണങ്ങൾ",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "പേജിൽ നിന്ന് ഘടനാപരമായ മാപ്പിലേക്ക്, ഒരു ഘട്ടത്തിൽ പൂർത്തിയാക്കുക.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "മൈൻഡ് മാപ്പുകൾ സൃഷ്ടിക്കുക",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "മനസ്സിൻ്റെ ഭൂപടം",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "ഡൗൺലോഡ് ചെയ്യുക",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "ക്രമീകരണങ്ങൾ",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "ആദ്യം MindGraph-ലേക്ക് കണക്റ്റുചെയ്യുക - \"ക്രമീകരണങ്ങളിൽ\" സെർവർ വിലാസം, അക്കൗണ്ട്, API ടോക്കൺ എന്നിവ പൂരിപ്പിക്കുക.",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "ക്രമീകരണങ്ങൾ തുറക്കുക",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "MindMate ചോദിക്കൂ...",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "അയയ്ക്കുക",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "നിർത്തുക",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "പുതിയ സംഭാഷണം",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "ചരിത്രം",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "വെബ് ചരിത്രം തുറക്കുക",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate മറുപടി നൽകുന്നു...",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "ഒരു പുതിയ സംഭാഷണം ആരംഭിച്ചു.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "നിർത്തി.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "പേജ് ഉള്ളടക്കം വായിക്കുന്നു...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "നിലവിലെ വെബ് പേജ് ഉള്ളടക്കം അടങ്ങിയിരിക്കുന്നു",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "ഒരു പുതിയ സംഭാഷണത്തിലെ ആദ്യ സന്ദേശം മാത്രമേ വെബ് ഉള്ളടക്കത്തോടൊപ്പമുണ്ടാകൂ.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "വെബ് പേജ് ടെക്‌സ്‌റ്റ് സ്‌കാൻ ചെയ്യുകയും എക്‌സ്‌ട്രാക്റ്റുചെയ്യുകയും ചെയ്യുന്നു...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "$1 ൽ നിന്ന് ഡോക്യുമെൻ്റുകൾ എക്‌സ്‌ട്രാക്റ്റുചെയ്യുന്നു...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "നാഷണൽ സ്മാർട്ട് എഡ്യൂക്കേഷൻ പ്ലാറ്റ്‌ഫോം കോഴ്‌സ് ഉദാഹരണങ്ങൾ വായിക്കുന്നു...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 കോഴ്‌സ്വെയർ/വിഭവങ്ങൾ കണ്ടെത്തി",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "ഡൗൺലോഡ് ചെയ്യുന്നു ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "വാചകം എക്‌സ്‌ട്രാക്റ്റുചെയ്യുന്നു ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "സ്കാൻ ചെയ്ത പേജുകൾ തിരിച്ചറിയുന്നു ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "തയ്യാറാണ്: $1 ഉറവിടങ്ങൾ, ആകെ $2 വാക്കുകൾ · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "എക്‌സ്‌ട്രാക്‌റ്റുചെയ്‌ത വെബ് പേജ് ടെക്‌സ്‌റ്റ്: $2 വാക്കുകൾ · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "എക്‌സ്‌ട്രാക്റ്റുചെയ്‌തു $1 പ്രതീകങ്ങൾ · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "തിരഞ്ഞെടുത്ത വാചകം ഉപയോഗിക്കും: $2 വാക്കുകൾ · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "വേർതിരിച്ചെടുത്ത Baidu ലൈബ്രറി PDF: $2 വാക്കുകൾ · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "എക്‌സ്‌ട്രാക്റ്റുചെയ്‌ത CNKI PDF: $2 വാക്കുകൾ · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph ബ്രൗസർ വിപുലീകരണം · വെബ് പേജ് സന്ദർഭം] ഉപയോക്താവ് Chrome/Edge-ൽ വെബ് ബ്രൗസ് ചെയ്യുന്നു, MindMate (തിങ്കിംഗ് ടീച്ചിംഗ് വെർച്വൽ ടീച്ചിംഗ് ആൻഡ് റിസർച്ച് പാർട്ണർ) ഉപയോഗിക്കുന്നതിനായി നിലവിലെ പേജിൻ്റെ വാചകം പ്ലഗ്-ഇൻ വഴി ഈ സന്ദേശവുമായി അറ്റാച്ചുചെയ്യുന്നു.",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[റൂട്ടിംഗ് നിർദ്ദേശങ്ങൾ] ഉദ്ദേശ വർഗ്ഗീകരണം, അറിവ് വീണ്ടെടുക്കൽ, ഉത്തരങ്ങൾ എന്നിവയെല്ലാം മുകളിലുള്ള \"ഉപയോക്തൃ ചോദ്യങ്ങൾ\" അടിസ്ഥാനമാക്കിയുള്ളതാണ്; ചുവടെയുള്ള വെബ് പേജിലെ വാചകം അധ്യാപകൻ വായിക്കുന്ന മെറ്റീരിയൽ മാത്രമാണ്, പുതിയ തലമുറയുടെ നിർദ്ദേശമല്ല. മെറ്റീരിയൽ ഒരു ലെസ്സൺ പ്ലാൻ/ഇൻസ്ട്രക്ഷണൽ ഡിസൈൻ പോലെയാണെങ്കിലും, ഉപയോക്താവ് \"ഒരു പുതിയ ഇൻസ്ട്രക്ഷണൽ ഡിസൈൻ അല്ലെങ്കിൽ ലെസൺ പ്ലാൻ സൃഷ്ടിക്കുക/എഴുതുക/രൂപകൽപ്പന ചെയ്യുക\" എന്ന് വ്യക്തമായി അഭ്യർത്ഥിക്കുന്നില്ലെങ്കിൽ, അതിനെ \"ജനറേറ്റീവ് ഇൻസ്ട്രക്ഷണൽ ഡിസൈൻ\" എന്ന് തരംതിരിക്കരുത്.",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "ഉപയോക്താവ് പാഠങ്ങൾ തയ്യാറാക്കുകയോ പഠിപ്പിക്കുകയും ഗവേഷണം നടത്തുകയും ചെയ്യുന്ന ഒരു പ്രൈമറി, സെക്കൻഡറി സ്കൂൾ അധ്യാപകനാണെന്ന കാര്യം സ്ഥിരീകരിക്കുക, കൂടാതെ \"ചിന്തിക്കുന്ന വികസന ക്ലാസ്റൂം\" ശ്രദ്ധിക്കുക. റഫറൻസ് മെറ്റീരിയലുകൾക്കും ഉപയോക്തൃ ചോദ്യങ്ങൾക്കും ഒരുമിച്ച് ഉത്തരം നൽകുക; മെറ്റീരിയൽ ഒരു പാഠ ഉദാഹരണം, ലെസൺ പ്ലാൻ, കോഴ്‌സ്‌വെയർ ടെക്‌സ്‌റ്റ്, പേപ്പർ അല്ലെങ്കിൽ പോളിസി ഡോക്യുമെൻ്റ് ആണെങ്കിൽ, ഉചിതമായ സമയത്ത് നിങ്ങൾക്ക് സജീവമായി വിശകലനം ചെയ്യാം: സാധ്യമായ വിദ്യാർത്ഥികളുടെ തെറ്റിദ്ധാരണകൾ, സൃഷ്ടിക്കാവുന്ന വൈജ്ഞാനിക വൈരുദ്ധ്യങ്ങൾ, ആശയപരമായ/പ്രക്രിയ വ്യതിയാനങ്ങൾ, ബാധകമായ ചിന്താ ദൃശ്യവൽക്കരണം അല്ലെങ്കിൽ ചിന്താ തന്ത്ര ഉപകരണങ്ങൾ. ഉപയോക്തൃ പ്രശ്‌നത്തിന് മെറ്റീരിയലുമായി വലിയ ബന്ധമില്ലെങ്കിൽ, ഉപയോക്തൃ പ്രശ്‌നത്തിൽ ശ്രദ്ധ കേന്ദ്രീകരിക്കുക. ഉത്തരം നൽകുമ്പോൾ, ഉള്ളടക്കം നേരിട്ട് വിശകലനം ചെയ്യുക, ബ്രൗസർ പ്ലഗ്-ഇന്നുകൾ, മാർക്ക്ഡൗൺ എക്‌സ്‌ട്രാക്ഷൻ അല്ലെങ്കിൽ ഈ സന്ദേശത്തിൻ്റെ ഫോർമാറ്റ് എന്നിവ പരാമർശിക്കരുത്.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**പേജ് തലക്കെട്ട്:** $1\n**പേജ് URL:** $2\n**ടെക്‌സ്റ്റ് ഉറവിടം:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[റഫറൻസ് മെറ്റീരിയൽ: വെബ് പേജ് ടെക്സ്റ്റ്]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF ബ്രൗസറിൽ തുറന്നു",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "ദേശീയ സ്മാർട്ട് വിദ്യാഭ്യാസ പ്ലാറ്റ്ഫോം (കോഴ്‌സ്വെയർ/ടീച്ചിംഗ് ഡിസൈൻ/ലേണിംഗ് ടാസ്‌ക് ലിസ്റ്റ് PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "ബൈദു ലൈബ്രറി PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "വെബ് ലേഖന വാചകം",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "വെബ് പേജ് ടെക്സ്റ്റ് എക്സ്ട്രാക്ഷൻ",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "ഉപയോക്താവ് തിരഞ്ഞെടുത്ത പേജ് ടെക്സ്റ്റ്",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "** ഉപയോക്തൃ ചോദ്യം (ഉദ്ദേശ്യ വർഗ്ഗീകരണത്തിനും ഉത്തരത്തിനും ദയവായി ഈ വാചകം കാണുക):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "ഈ പേജിൽ വായിക്കാനാകുന്ന ഉള്ളടക്കമൊന്നുമില്ല. ദയവായി ആദ്യം പേജിലെ വാചകം തിരഞ്ഞെടുക്കുക, അല്ലെങ്കിൽ മറ്റൊരു പേജിൽ വീണ്ടും ശ്രമിക്കുക.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "ഡീബഗ്ഗിംഗ് ക്യാപ്‌ചർ ചെയ്യുക",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "സൈറ്റ് ഒരു ക്യാൻവാസ് ഇമേജായി ഡോക്യുമെൻ്റിനെ റെൻഡർ ചെയ്യുന്നു, ബോഡി ടെക്‌സ്‌റ്റ് എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്യാൻ കഴിയില്ല. ആദ്യം പ്രിവ്യൂ പേജ് ലോഡുചെയ്യാൻ സ്ക്രോൾ ചെയ്യുക, അയയ്‌ക്കേണ്ട ടെക്‌സ്‌റ്റ് തിരഞ്ഞെടുക്കുക, അല്ലെങ്കിൽ ഒരു PDF/ടെക്‌സ്‌റ്റ് ഡൗൺലോഡ് ഉണ്ടെങ്കിൽ ഡൗൺലോഡ് ഉള്ളടക്കം ഉപയോഗിക്കുക.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "നിലവിലെ റീഡർ കാഴ്‌ചയിൽ ഏകദേശം $1 പേജുകൾ മാത്രമേ പ്രദർശിപ്പിക്കൂ.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "പ്രമാണം ഒരു ചിത്ര പ്രിവ്യൂ ആയിരിക്കാം, എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്‌ത വാചകം അപൂർണ്ണമായിരിക്കാം.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "ഈ പേജ് വായിക്കാൻ കഴിയില്ല.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "ഇതുവരെ ബന്ധിപ്പിച്ചിട്ടില്ല. ക്രമീകരണങ്ങൾ തുറന്ന് MindGraph ക്രെഡൻഷ്യലുകൾ സംരക്ഷിക്കുക.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "ലോഗിൻ കാലഹരണപ്പെട്ടു. ക്രമീകരണങ്ങളിൽ API ടോക്കൺ അപ്‌ഡേറ്റ് ചെയ്യുക.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "MindMate ലേക്ക് കണക്റ്റുചെയ്യാനായില്ല. ദയവായി സെർവർ വിലാസം പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate ഇപ്പോൾ മറുപടി നൽകാൻ കഴിയുന്നില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "ഇന്നത്തെ AI ഉപയോഗം ഉയർന്ന പരിധിയിലെത്തി. ദയവായി നാളെ വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ വെബ് പേജിലെ വിശദാംശങ്ങൾ പരിശോധിക്കുക.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "ഈ സന്ദേശം അയയ്‌ക്കുന്നതിന് ThinkCoins അപര്യാപ്തമാണ്.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "പ്രാദേശിക വികസനം HTTP ഉപയോഗിക്കുന്നു, കൂടാതെ API ടോക്കണുകളും പേജ് ഉള്ളടക്കവും നെറ്റ്‌വർക്കിൽ എൻക്രിപ്റ്റ് ചെയ്തിട്ടില്ല. വിശ്വസനീയമായ അന്തരീക്ഷത്തിൽ മാത്രം ഉപയോഗിക്കുക.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "ഡൗൺലോഡ് ചെയ്യുക",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "പിന്തുണയ്‌ക്കുന്ന സൈറ്റുകളിൽ നിന്ന് PDF-കളും പ്രമാണങ്ങളും (വീഡിയോകൾ ഇല്ലാതെ) സംരക്ഷിക്കുക.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "നിലവിലെ പേജ് ഡൗൺലോഡ് ചെയ്യുന്നതിനെ പിന്തുണയ്ക്കുന്നില്ല. ഈ പാനൽ തുറക്കുന്നതിന് മുമ്പ് പിന്തുണയ്ക്കുന്ന ഒരു ഡോക്യുമെൻ്റേഷൻ പേജ് തുറക്കുക.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "ക്രമീകരണങ്ങൾ",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "ബന്ധിപ്പിക്കുക",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "MindGraph API ടോക്കൺ ഫ്ലോയുടെ അതേ ക്രെഡൻഷ്യലുകൾ ദയവായി ഉപയോഗിക്കുക.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "സെർവർ",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "അക്കൗണ്ട് നമ്പർ (മൊബൈൽ ഫോൺ നമ്പർ)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "X-MG-അക്കൗണ്ടിനായി ഉപയോഗിക്കുന്ന മൊബൈൽ ഫോൺ നമ്പർ",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API ടോക്കൺ",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "സംരക്ഷിക്കുക",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "മടങ്ങുക",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "അടച്ചുപൂട്ടൽ",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "പ്രോസസ്സ് ചെയ്യുന്നു...",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "ഡൗൺലോഡ് ആരംഭിച്ചു.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "സംരക്ഷിച്ചു.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "ക്രെഡൻഷ്യലുകൾ പരിശോധിക്കുന്നു...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "എല്ലാ ഫീൽഡുകളും പൂരിപ്പിക്കുക.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "സജീവമായ ടാബുകളൊന്നുമില്ല.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "എന്തോ കുഴപ്പം സംഭവിച്ചു. ദയവായി വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ chrome://extensions എന്നതിൽ വിപുലീകരണം വീണ്ടും ലോഡുചെയ്യുക.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "ഫയൽ സംരക്ഷിക്കാൻ ആരംഭിക്കാനായില്ല. വിപുലീകരണം വീണ്ടും ലോഡുചെയ്‌ത് വീണ്ടും ശ്രമിക്കുക (Chrome 109+ അല്ലെങ്കിൽ Edge 120+ ആവശ്യമാണ്).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "സജ്ജീകരണം അപൂർണ്ണമാണ്. ദയവായി \"ക്രമീകരണങ്ങൾ\" തുറന്ന് MindGraph വിലാസം, മൊബൈൽ ഫോൺ നമ്പർ, API ടോക്കൺ എന്നിവ പൂരിപ്പിക്കുക.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "പേജിൽ വായിക്കാൻ കഴിയുന്ന വാചകങ്ങളൊന്നുമില്ല. ദയവായി ആദ്യം ടെക്‌സ്‌റ്റിൻ്റെ ഒരു വിഭാഗം തിരഞ്ഞെടുക്കുക, അല്ലെങ്കിൽ മറ്റൊരു പേജിൽ വീണ്ടും ശ്രമിക്കുക.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "ഈ ടാബിൽ ഇതിനകം ഒരു ക്യാപ്‌ചർ അല്ലെങ്കിൽ ഡൗൺലോഡ് ടാസ്‌ക് പുരോഗമിക്കുന്നു, അത് പൂർത്തിയാകുന്നത് വരെ കാത്തിരുന്ന് വീണ്ടും ശ്രമിക്കുക.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph സെർവർ പിശക് ($1). നിങ്ങളുടെ ക്രമീകരണങ്ങൾ പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "ഈ പേജ് പിന്തുണയ്ക്കുന്നില്ല. ദയവായി ഒരു സാധാരണ വെബ് പേജ് (http അല്ലെങ്കിൽ https) തുറന്ന് വീണ്ടും ശ്രമിക്കുക.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "അഭ്യർത്ഥന വളരെ പതിവാണ്, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "സേവനം താൽക്കാലികമായി ലഭ്യമല്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "സെർവർ പ്രതികരണം കാലഹരണപ്പെട്ടു (3 മിനിറ്റിൽ കൂടുതൽ). ദയവായി വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ നെറ്റ്‌വർക്ക് പരിശോധിക്കുക.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "ക്രെഡൻഷ്യലുകളുടെ പരിശോധന സമയം കഴിഞ്ഞു. ദയവായി വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ നെറ്റ്‌വർക്ക് പരിശോധിക്കുക.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "സെർവർ ഒരു PNG ചിത്രം തിരികെ നൽകിയില്ല. അടിസ്ഥാന വിലാസവും അക്കൗണ്ട് ക്രമീകരണവും പരിശോധിക്കുക.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "മൈൻഡ് മാപ്പ് PNG സൃഷ്ടിക്കുക",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "എക്‌സ്‌ട്രാക്റ്റ് ഡോക്യുമെൻ്റ് (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "രേഖകൾ എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്യുക",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "കണ്ടെത്തി: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "നിലവിലെ സൈറ്റ്: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "റീഡിംഗ് ടാബ് പേജ്: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "ആകെ $1 ഉറവിടങ്ങൾ",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "ഏകദേശം $1 പേജുകൾ ദൃശ്യമാണ് - എക്‌സ്‌ട്രാക്‌റ്റുചെയ്യുന്നതിന് മുമ്പ് കൂടുതൽ പേജുകൾ ലോഡുചെയ്യുന്നതിന് ദയവായി പ്രിവ്യൂ ഏരിയ സ്‌ക്രോൾ ചെയ്യുക.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "എക്‌സ്‌ട്രാക്‌റ്റുചെയ്യുന്നതിന് മുമ്പ് പേജ് ലോഡുചെയ്യാൻ ഡോക്യുമെൻ്റ് പ്രിവ്യൂ സ്‌ക്രോൾ ചെയ്യുക. റീഡറിൽ ഇതിനകം പ്രദർശിപ്പിച്ചിരിക്കുന്ന ഉള്ളടക്കത്തിന് മുൻഗണന നൽകുക.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "SmartEdu-ൽ നിന്നുള്ള ലോഗിൻ സമന്വയിപ്പിക്കുക",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "ടോക്കൺ സ്വമേധയാ ഒട്ടിക്കുക...",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "SmartEdu access_token ഒട്ടിക്കുക (ഓട്ടോമാറ്റിക് സിൻക്രൊണൈസേഷൻ പരാജയപ്പെട്ടാൽ മാത്രം ഉപയോഗിക്കുന്നു):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu ടോക്കൺ: സമന്വയിപ്പിക്കുന്നു...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu ടോക്കൺ: ബന്ധിപ്പിച്ചിരിക്കുന്നു (നിങ്ങളുടെ ലോഗിൻ മുതൽ)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu ടോക്കൺ: കണ്ടെത്തിയില്ല - ദയവായി auth.smartedu.cn-ൽ ലോഗിൻ ചെയ്‌ത് SmartEdu പേജ് തുറക്കുക, തുടർന്ന് \"സമന്വയം\" ക്ലിക്ക് ചെയ്യുക",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "രേഖകൾ എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്യുക",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "പൂർത്തിയായി - ഫയൽ ഉടൻ ഡൗൺലോഡ് ചെയ്യാൻ തുടങ്ങും.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "ഡൗൺലോഡ് ആരംഭിച്ചു - റീഡറിൽ നിലവിൽ ലഭ്യമായ ആദ്യ $1 പേജുകൾ സംരക്ഷിച്ചു.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "ഈ പ്രമാണം ഡൗൺലോഡ് ചെയ്യാൻ കഴിയില്ല. പേജ് പുതുക്കി വീണ്ടും \"എക്‌സ്‌ട്രാക്റ്റ് ഡോക്യുമെൻ്റ്\" ക്ലിക്ക് ചെയ്യുക.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "ഡോക്യുമെൻ്റേഷൻ പേജ് കണ്ടെത്തിയില്ല. ആദ്യം ലോഡിംഗ് പേജ് പ്രിവ്യൂ ചെയ്യാൻ സ്ക്രോൾ ചെയ്യുക, തുടർന്ന് \"എക്‌സ്‌ട്രാക്റ്റ് ഡോക്യുമെൻ്റ്\" ക്ലിക്ക് ചെയ്യുക.",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "ടെക്സ്റ്റ് ഉള്ളടക്കമൊന്നും കണ്ടെത്തിയില്ല. മറ്റൊരു പേജിലോ ഏരിയയിലോ വീണ്ടും ശ്രമിക്കുക.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "പേജ് ഇതുവരെ തയ്യാറായിട്ടില്ല. ടാബ് പുതുക്കി വീണ്ടും ശ്രമിക്കുക.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "ഈ പാഠത്തിന് ഡൗൺലോഡ് ചെയ്യാവുന്ന ഫയലുകളൊന്നുമില്ല. ദയവായി ഒരു ക്ലാസ് മാറ്റുക, അല്ലെങ്കിൽ നിങ്ങൾ ഡൗൺലോഡ് ചെയ്യാൻ ആഗ്രഹിക്കുന്ന ഉറവിടങ്ങൾ പരിശോധിക്കുക.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "നിങ്ങൾ ആദ്യം സ്മാർട്ട് വിദ്യാഭ്യാസത്തിലേക്ക് ലോഗിൻ ചെയ്യേണ്ടതുണ്ട്. ദയവായി auth.smartedu.cn-ൽ ലോഗിൻ ചെയ്‌ത് കോഴ്‌സ് പേജ് തുറക്കുക, തുടർന്ന് \"SmartEdu-ൽ നിന്ന് ലോഗിൻ സമന്വയിപ്പിക്കുക\" ക്ലിക്കുചെയ്യുക.",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education ഡൗൺലോഡ് നിരസിച്ചു. ദയവായി നിങ്ങളുടെ ലോഗിൻ വീണ്ടും സമന്വയിപ്പിക്കുക അല്ലെങ്കിൽ ഫയൽ മാറ്റുക.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "വീഡിയോകൾ ഡൗൺലോഡ് ചെയ്യുന്നത് പിന്തുണയ്ക്കുന്നില്ല. PDF അല്ലെങ്കിൽ പ്രമാണ ഉറവിടങ്ങൾ മാത്രം തിരഞ്ഞെടുക്കുക.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "ഇതൊരു പിന്തുണയ്‌ക്കുന്ന ഡോക്യുമെൻ്റേഷൻ പേജല്ല. ഡോക്യുമെൻ്റ് റീഡിംഗ് പേജ് തുറന്ന് വീണ്ടും ശ്രമിക്കുക.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "ഇനിയും സംരക്ഷിക്കാൻ ഒന്നുമില്ല. പേജ് ലോഡുചെയ്യാൻ വായനക്കാരനെ സ്ക്രോൾ ചെയ്‌ത് വീണ്ടും ശ്രമിക്കുക.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "ആദ്യം നിങ്ങൾ വെബ്സൈറ്റിൽ ലോഗിൻ ചെയ്യണം. ലോഗിൻ ചെയ്ത ശേഷം, \"എക്‌സ്‌ട്രാക്റ്റ് ഡോക്യുമെൻ്റുകൾ\" ക്ലിക്ക് ചെയ്യുക.",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "ഡൗൺലോഡ് വെബ്‌സൈറ്റ് നിരസിച്ചു. സൈറ്റിൽ ലോഗിൻ ചെയ്‌ത് വീണ്ടും ശ്രമിക്കുന്നതിന് മുമ്പ് ഉള്ളടക്കത്തിലേക്ക് നിങ്ങൾക്ക് ആക്‌സസ് ഉണ്ടെന്ന് സ്ഥിരീകരിക്കുക.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "വെബ്‌സൈറ്റ് ഒരു സ്ഥിരീകരണ കോഡ് കാണിക്കുന്നു. വീണ്ടെടുക്കാൻ ശ്രമിക്കുന്നതിന് മുമ്പ് ബ്രൗസർ ടാബിൽ പരിശോധന പൂർത്തിയാക്കുക.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "പേജ് തയ്യാറാക്കുന്നു...",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "സ്ക്രോൾ ലോഡിംഗ് പേജ്...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "പേജ് ഉള്ളടക്കം പകർത്തുന്നു...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "ഫയലുകൾ സൃഷ്ടിക്കുന്നു...",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "കമ്പ്യൂട്ടറിൽ സംരക്ഷിക്കുന്നു...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "മുന്നേറി",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "നിങ്ങൾ ഡൗൺലോഡ് ചെയ്യുമ്പോഴെല്ലാം ലൊക്കേഷൻ സംരക്ഷിക്കാൻ ആവശ്യപ്പെടുക",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "പേജ് ഉള്ളടക്കം വായിക്കുന്നു...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "MindGraph സെർവറിലേക്ക് അയയ്ക്കുന്നു...",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "സെർവർ മൈൻഡ് മാപ്പ് സൃഷ്ടിക്കുന്നു...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "സെർവറിൽ നിന്ന് ചിത്രങ്ങൾ സ്വീകരിക്കുന്നു...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "ഫയൽ സംരക്ഷിക്കുന്നു...",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "സെർവറിലേക്ക് കണക്റ്റുചെയ്യാൻ കഴിയുന്നില്ല, ദയവായി അടിസ്ഥാന വിലാസവും നെറ്റ്‌വർക്കും പരിശോധിക്കുക.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "അഭ്യർത്ഥന പരാജയപ്പെട്ടു: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "ബന്ധം നഷ്ടപ്പെട്ടു. ദയവായി \"എക്‌സ്‌ട്രാക്റ്റ് ഡോക്യുമെൻ്റ്\" വീണ്ടും ക്ലിക്ക് ചെയ്യുക. ഇത് ഇപ്പോഴും പരാജയപ്പെടുകയാണെങ്കിൽ, chrome://extensions-ൽ MindGraph വീണ്ടും ലോഡുചെയ്യുക.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "നിലവിലെ പേജിനെ അടിസ്ഥാനമാക്കി ഒരു മൈൻഡ് മാപ്പ് സൃഷ്ടിക്കുക",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG വീതി (പിക്സലുകൾ)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG ഉയരം (പിക്സലുകൾ)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "ഡിഫോൾട്ട് ഉപയോഗിക്കാൻ ശൂന്യമായി വിടുക",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "ഭാഷ (ഇൻ്റർഫേസും മാപ്പും)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "ബ്രൗസർ പിന്തുടരുക",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "ലളിതമാക്കിയത്",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "കുത്തനെയുള്ള ശരീരം",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "ടോക്കൺ",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "$1 വരെ സാധുതയുണ്ട്",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "ഈ API ടോക്കൺ കാലഹരണപ്പെട്ടു, ദയവായി ഇത് വെബിൽ വീണ്ടും സൃഷ്‌ടിക്കുക (അക്കൗണ്ട്/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "സെർവറിൽ സാധുവായ API ടോക്കൺ ഇല്ല, അല്ലെങ്കിൽ അത് കാലഹരണപ്പെട്ടു. ടോക്കൺ പരിശോധിക്കുക അല്ലെങ്കിൽ ആപ്പിൽ സൃഷ്‌ടിക്കുക.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "കാലഹരണപ്പെടൽ സമയം ലഭിക്കില്ല. നിങ്ങളുടെ നെറ്റ്‌വർക്ക് പരിശോധിക്കുക അല്ലെങ്കിൽ നിങ്ങളുടെ ക്രമീകരണങ്ങൾ വീണ്ടും സംരക്ഷിക്കുക.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "ഗാലറി നിറഞ്ഞിരിക്കുന്നു (20 ഫോട്ടോകൾ). പുതുതായി സൃഷ്ടിച്ച ഉള്ളടക്കം സംരക്ഷിക്കാൻ സംരക്ഷിച്ച മാപ്പ് ഇല്ലാതാക്കുക.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

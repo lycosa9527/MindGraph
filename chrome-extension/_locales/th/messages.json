@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — แปลงหน้าเว็บเป็นแผนที่ความคิด",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "แปลงหน้าปัจจุบันให้เป็นแผนที่ความคิด บริบทการสนทนา และไฟล์เอกสารผ่านบัญชี MindGraph",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "การตั้งค่า",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "จากหน้าสู่แผนที่ที่มีโครงสร้าง เสร็จสมบูรณ์ในขั้นตอนเดียว",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "สร้างแผนที่ความคิด",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "แผนที่ความคิด",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "ดาวน์โหลด",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "การตั้งค่า",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "โปรดเชื่อมต่อกับ MindGraph ก่อน - กรอกที่อยู่เซิร์ฟเวอร์ บัญชี และโทเค็น API ใน \"การตั้งค่า\"",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "เปิดการตั้งค่า",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "ถาม MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "ส่ง",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "หยุด",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "บทสนทนาใหม่",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "ประวัติศาสตร์",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "เปิดประวัติเว็บ",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate กำลังตอบกลับ...",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "บทสนทนาใหม่ได้เริ่มต้นขึ้นแล้ว",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "หยุดแล้ว",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "กำลังอ่านเนื้อหาหน้า...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "ประกอบด้วยเนื้อหาหน้าเว็บปัจจุบัน",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "เฉพาะข้อความแรกในการสนทนาใหม่เท่านั้นที่จะมาพร้อมกับเนื้อหาเว็บ",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "กำลังสแกนและแยกข้อความหน้าเว็บ...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "กำลังแยกเอกสารจาก $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "อ่านตัวอย่างหลักสูตร National Smart Education Platform...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 ตรวจพบบทเรียน/ทรัพยากร",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "กำลังดาวน์โหลด ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "การแยกข้อความ ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "การจดจำหน้าที่สแกน ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "พร้อม: ทรัพยากร $1 รวม $2 คำ · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "ข้อความหน้าเว็บที่แยกออกมา: $2 คำ · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "แยกอักขระ $1 แล้ว · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "ข้อความที่เลือกจะถูกใช้: $2 คำ · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "แยกไลบรารี Baidu PDF: $2 คำ · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "แยก CNKI PDF: $2 คำ · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph ส่วนขยายเบราว์เซอร์ · บริบทของหน้าเว็บ] ผู้ใช้กำลังท่องเว็บใน Chrome/Edge และข้อความของหน้าปัจจุบันแนบมากับข้อความนี้ผ่านปลั๊กอินสำหรับใช้งานโดย MindMate (พันธมิตรคิดการสอนการสอนเสมือนจริงและการวิจัย)",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[คำแนะนำการกำหนดเส้นทาง] การจำแนกเจตนา การดึงความรู้ และคำตอบทั้งหมดขึ้นอยู่กับ \"คำถามของผู้ใช้\" ข้างต้น ข้อความในหน้าเว็บด้านล่างเป็นเพียงเนื้อหาที่ครูอ่านเท่านั้น ไม่ใช่บทเรียนของคนรุ่นใหม่ หากเนื้อหาดูเหมือนแผนการสอน/การออกแบบการเรียนการสอน แต่ผู้ใช้ไม่ได้ร้องขออย่างชัดเจนว่า \"สร้าง/เขียน/ออกแบบการออกแบบการเรียนการสอนหรือแผนการสอนใหม่\" อย่าจัดประเภทเป็น \"การออกแบบการเรียนการสอนเชิงสร้างสรรค์\"",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "โปรดตั้งค่าเริ่มต้นว่าผู้ใช้เป็นครูโรงเรียนประถมศึกษาและมัธยมศึกษาที่กำลังเตรียมบทเรียนหรือการสอนและการค้นคว้า และให้ความสนใจกับ \"ห้องเรียนพัฒนาความคิด\" โปรดตอบเอกสารอ้างอิงและคำถามของผู้ใช้ร่วมกัน หากเนื้อหาเป็นตัวอย่างบทเรียน แผนการสอน ข้อความในบทเรียน เอกสารหรือเอกสารนโยบาย คุณสามารถวิเคราะห์เชิงรุกได้เมื่อเหมาะสม: ความเข้าใจผิดของนักเรียนที่เป็นไปได้ ความขัดแย้งทางความคิดที่สร้างสรรค์ได้ รูปแบบแนวคิด/กระบวนการ การแสดงภาพการคิดที่นำไปใช้ได้ หรือเครื่องมือกลยุทธ์การคิด หากปัญหาของผู้ใช้แทบไม่เกี่ยวข้องกับเนื้อหา ให้เน้นไปที่ปัญหาของผู้ใช้ เมื่อรับสาย ให้วิเคราะห์เนื้อหาโดยตรงและอย่ากล่าวถึงปลั๊กอินของเบราว์เซอร์ การดึงข้อมูล Markdown หรือรูปแบบของข้อความนี้",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**ชื่อหน้า:** $1\n**URL ของหน้า:** $2\n**แหล่งที่มาของข้อความ:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[เอกสารอ้างอิง: ข้อความหน้าเว็บ]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF เปิดในเบราว์เซอร์",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "แพลตฟอร์มการศึกษาอัจฉริยะแห่งชาติ (หลักสูตร/การออกแบบการสอน/รายการงานการเรียนรู้ PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "ห้องสมุดไป่ตู้ PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "ข้อความบทความบนเว็บ",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "การแยกข้อความหน้าเว็บ",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "ข้อความหน้าที่เลือกโดยผู้ใช้",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**คำถามผู้ใช้ (โปรดอ้างอิงประโยคนี้สำหรับการจำแนกความตั้งใจและคำตอบ):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "ไม่มีเนื้อหาที่สามารถอ่านได้ในหน้านี้ โปรดเลือกข้อความในหน้านั้นก่อน หรือลองอีกครั้งในหน้าอื่น",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "จับการแก้ไขข้อบกพร่อง",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "ไซต์แสดงเอกสารเป็นรูปภาพแคนวาสและไม่สามารถแยกข้อความเนื้อหาได้ โปรดเลื่อนเพื่อโหลดหน้าตัวอย่างก่อน เลือกข้อความที่จะส่ง หรือใช้เนื้อหาดาวน์โหลดหากมีการดาวน์โหลด PDF/ข้อความ",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "มุมมอง Reader ปัจจุบันอาจแสดงข้อความได้ประมาณ $1 หน้าเท่านั้น",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "เอกสารอาจเป็นการแสดงตัวอย่างรูปภาพ และข้อความที่แยกออกมาอาจไม่สมบูรณ์",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "หน้านี้ไม่สามารถอ่านได้",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "ยังไม่ได้เชื่อมต่อ โปรดเปิดการตั้งค่าและบันทึกข้อมูลประจำตัว MindGraph",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "การเข้าสู่ระบบหมดอายุแล้ว โปรดอัปเดตโทเค็น API ในการตั้งค่า",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "ไม่สามารถเชื่อมต่อกับ MindMate ได้ โปรดตรวจสอบที่อยู่เซิร์ฟเวอร์แล้วลองอีกครั้ง",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate ไม่สามารถตอบกลับได้ในขณะนี้ โปรดลองอีกครั้งในภายหลัง",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "การใช้งาน AI ในปัจจุบันถึงขีดจำกัดสูงสุดแล้ว โปรดลองอีกครั้งในวันพรุ่งนี้หรือตรวจสอบรายละเอียดบนหน้าเว็บ",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "ThinkCoins ไม่เพียงพอที่จะส่งข้อความนี้",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "การพัฒนาในเครื่องใช้ HTTP และโทเค็น API และเนื้อหาเพจไม่ได้เข้ารหัสบนเครือข่าย โปรดใช้ในสภาพแวดล้อมที่เชื่อถือได้เท่านั้น",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "ดาวน์โหลด",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "บันทึก PDF และเอกสาร (ไม่มีวิดีโอ) จากไซต์ที่รองรับ",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "หน้าปัจจุบันไม่รองรับการดาวน์โหลด โปรดเปิดหน้าเอกสารที่รองรับก่อนที่จะเปิดแผงนี้",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "การตั้งค่า",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "เชื่อมต่อ",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "โปรดใช้ข้อมูลประจำตัวเดียวกันกับโฟลว์โทเค็น API MindGraph",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "เซิร์ฟเวอร์",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "หมายเลขบัญชี (หมายเลขโทรศัพท์มือถือ)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "หมายเลขโทรศัพท์มือถือที่ใช้สำหรับบัญชี X-MG-Account",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "โทเค็น API",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "บันทึก",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "กลับ",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "ปิด",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "กำลังประมวลผล…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "การดาวน์โหลดเริ่มต้นแล้ว",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "บันทึกแล้ว",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "กำลังยืนยันข้อมูลรับรอง...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "กรุณากรอกข้อมูลให้ครบทุกช่อง",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "ไม่มีแท็บที่ใช้งานอยู่",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "มีบางอย่างผิดพลาด โปรดลองอีกครั้งหรือโหลดส่วนขยายซ้ำที่ chrome://extensions",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "ไม่สามารถเริ่มบันทึกไฟล์ได้ โปรดโหลดส่วนขยายซ้ำแล้วลองอีกครั้ง (ต้องใช้ Chrome 109+ หรือ Edge 120+)",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "การตั้งค่าไม่สมบูรณ์ โปรดเปิด \"การตั้งค่า\" และกรอกที่อยู่ MindGraph หมายเลขโทรศัพท์มือถือ และโทเค็น API",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "ไม่มีข้อความที่สามารถอ่านได้บนหน้า โปรดเลือกส่วนของข้อความก่อน หรือลองอีกครั้งในหน้าอื่น",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "มีงานจับภาพหรือดาวน์โหลดอยู่ในระหว่างดำเนินการบนแท็บนี้ โปรดรอจนกว่าจะเสร็จสิ้นแล้วลองอีกครั้ง",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph ข้อผิดพลาดของเซิร์ฟเวอร์ ($1) โปรดตรวจสอบการตั้งค่าของคุณแล้วลองอีกครั้ง",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "ไม่รองรับเพจนี้ โปรดเปิดหน้าเว็บปกติ (http หรือ https) แล้วลองอีกครั้ง",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "คำขอบ่อยเกินไป โปรดลองอีกครั้งในภายหลัง",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "บริการไม่สามารถใช้งานได้ชั่วคราว โปรดลองอีกครั้งในภายหลัง",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "การตอบสนองของเซิร์ฟเวอร์หมดเวลา (มากกว่า 3 นาที) โปรดลองอีกครั้งหรือตรวจสอบเครือข่าย",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "การตรวจสอบข้อมูลรับรองหมดเวลา โปรดลองอีกครั้งหรือตรวจสอบเครือข่าย",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "เซิร์ฟเวอร์ไม่ได้ส่งคืนอิมเมจ PNG โปรดตรวจสอบที่อยู่ฐานและการตั้งค่าบัญชี",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "สร้างแผนที่ความคิด PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "แยกเอกสาร (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "แยกเอกสาร",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "ตรวจพบ: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "เว็บไซต์ปัจจุบัน: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "หน้าแท็บการอ่าน: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "ทรัพยากร $1 ทั้งหมด",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "มองเห็นได้ประมาณ $1 หน้า - โปรดเลื่อนพื้นที่แสดงตัวอย่างเพื่อโหลดหน้าเพิ่มเติมก่อนที่จะแตกไฟล์",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "โปรดเลื่อนดูตัวอย่างเอกสารเพื่อโหลดหน้าก่อนที่จะแตกไฟล์ จัดลำดับความสำคัญของเนื้อหาที่แสดงอยู่แล้วในโปรแกรมอ่าน",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "ซิงค์การเข้าสู่ระบบจาก SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "วางโทเค็นด้วยตนเอง...",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "วาง SmartEdu access_token (ใช้เฉพาะในกรณีที่การซิงโครไนซ์อัตโนมัติล้มเหลว):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "โทเค็น SmartEdu: กำลังซิงโครไนซ์...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "โทเค็น SmartEdu: เชื่อมต่อแล้ว (จากการเข้าสู่ระบบของคุณ)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "ไม่พบโทเค็น SmartEdu - โปรดเข้าสู่ระบบที่ auth.smartedu.cn และเปิดหน้า SmartEdu จากนั้นคลิก \"ซิงค์\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "แยกเอกสาร",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "เสร็จสิ้น — ไฟล์จะเริ่มดาวน์โหลดทันที",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "เริ่มต้นการดาวน์โหลด — เพจ $1 หน้าแรกที่มีอยู่ในโปรแกรมอ่านได้รับการบันทึกแล้ว",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "ไม่สามารถดาวน์โหลดเอกสารนี้ได้ โปรดรีเฟรชหน้านี้แล้วคลิก \"แยกเอกสาร\" อีกครั้ง",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "ไม่พบหน้าเอกสารประกอบ โปรดเลื่อนเพื่อดูตัวอย่างหน้าการโหลดก่อน จากนั้นคลิก \"แยกเอกสาร\"",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "ไม่พบเนื้อหาข้อความ โปรดลองอีกครั้งในหน้าหรือพื้นที่อื่น",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "เพจยังไม่พร้อม โปรดรีเฟรชแท็บแล้วลองอีกครั้ง",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "ไม่มีไฟล์ที่สามารถดาวน์โหลดได้สำหรับบทเรียนนี้ โปรดเปลี่ยนชั้นเรียนหรือตรวจสอบทรัพยากรที่คุณต้องการดาวน์โหลด",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "คุณต้องเข้าสู่ระบบ Smart Education ก่อน โปรดเข้าสู่ระบบที่ auth.smartedu.cn และเปิดหน้าหลักสูตร จากนั้นคลิก \"ซิงโครไนซ์การเข้าสู่ระบบจาก SmartEdu\"",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education ปฏิเสธการดาวน์โหลด กรุณาซิงโครไนซ์การเข้าสู่ระบบของคุณอีกครั้งหรือเปลี่ยนไฟล์",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "ไม่รองรับการดาวน์โหลดวิดีโอ โปรดเลือกเฉพาะทรัพยากร PDF หรือเอกสาร",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "นี่ไม่ใช่หน้าเอกสารที่รองรับ โปรดเปิดหน้าอ่านเอกสารแล้วลองอีกครั้ง",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "ไม่มีอะไรจะบันทึกยัง โปรดเลื่อนตัวอ่านเพื่อโหลดหน้าเว็บแล้วลองอีกครั้ง",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "คุณต้องเข้าสู่ระบบเว็บไซต์ก่อน หลังจากเข้าสู่ระบบแล้ว คลิก \"แยกเอกสาร\"",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "การดาวน์โหลดถูกปฏิเสธโดยเว็บไซต์ โปรดเข้าสู่ระบบไซต์และยืนยันว่าคุณสามารถเข้าถึงเนื้อหาได้ก่อนที่จะลองอีกครั้ง",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "เว็บไซต์กำลังแสดงรหัสยืนยัน โปรดทำการยืนยันในแท็บเบราว์เซอร์ให้เสร็จสิ้นก่อนที่จะพยายามดึงข้อมูล",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "กำลังเตรียมหน้า...",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "เลื่อนหน้าโหลด...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "กำลังคัดลอกเนื้อหาของหน้า...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "กำลังสร้างไฟล์...",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "กำลังบันทึกลงคอมพิวเตอร์...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "ขั้นสูง",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "ขอตำแหน่งบันทึกทุกครั้งที่คุณดาวน์โหลด",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "กำลังอ่านเนื้อหาหน้า...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "กำลังส่งไปยังเซิร์ฟเวอร์ MindGraph...",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "เซิร์ฟเวอร์กำลังสร้างแผนที่ความคิด...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "กำลังรับภาพจากเซิร์ฟเวอร์...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "กำลังบันทึกไฟล์...",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ โปรดตรวจสอบที่อยู่ฐานและเครือข่าย",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "คำขอล้มเหลว: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "การเชื่อมต่อขาดหายไป กรุณาคลิก \"แยกเอกสาร\" อีกครั้ง หากยังคงล้มเหลว โปรดโหลด MindGraph อีกครั้งที่ chrome://extensions",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "สร้างแผนที่ความคิดตามหน้าปัจจุบัน",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "ความกว้าง PNG (พิกเซล)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "ความสูง PNG (พิกเซล)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "เว้นว่างไว้เพื่อใช้ค่าเริ่มต้น",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "ภาษา (อินเทอร์เฟซและแผนที่)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "ติดตามเบราว์เซอร์",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "ตัวย่อ",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "ร่างกายตั้งตรง",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "โทเค็น",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "ใช้ได้จนถึง $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "โทเค็น API นี้หมดอายุแล้ว โปรดสร้างใหม่อีกครั้งบนเว็บ (บัญชี/API)",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "ไม่มีโทเค็น API ที่ถูกต้องบนเซิร์ฟเวอร์ หรือโทเค็นหมดอายุแล้ว โปรดตรวจสอบโทเค็นหรือสร้างในแอป",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "ไม่สามารถรับเวลาหมดอายุได้ โปรดตรวจสอบเครือข่ายของคุณหรือบันทึกการตั้งค่าของคุณอีกครั้ง",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "แกลเลอรี่เต็ม (20 ภาพ) โปรดลบแผนที่ที่บันทึกไว้เพื่อบันทึกเนื้อหาที่สร้างขึ้นใหม่",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

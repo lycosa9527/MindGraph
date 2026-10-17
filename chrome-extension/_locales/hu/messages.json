@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Weboldal konvertálása gondolattérképpé",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Alakítsa át az aktuális oldalt gondolattérképpé, beszélgetési kontextussá és dokumentumfájllá az MindGraph fiókon keresztül.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Beállítások",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Az oldaltól a strukturált térképig, egy lépésben fejezze be.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Gondolattérképek létrehozása",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "gondolattérkép",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "letöltés",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Beállítások",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Kérjük, először csatlakozzon a MindGraph -hoz – adja meg a szerver címét, fiókját és API-tokenjét a \"Beállítások\" részben.",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Nyissa meg a beállításokat",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Kérdezd MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "elküld",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "Stop",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "új beszélgetés",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Történelem",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Nyissa meg az internetes előzményeket",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate válaszol…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "Új beszélgetés indult.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Megállt.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Az oldal tartalmának olvasása...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Az aktuális weboldal tartalmát tartalmazza",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Egy új beszélgetésben csak az első üzenetet kíséri webtartalom.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Weboldal szövegének beolvasása és kibontása...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Dokumentumok kibontása innen: $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "A National Smart Education Platform kurzuspéldák olvasása...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 tananyag/források észlelve",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Letöltés ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Szöveg kibontása ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "A beolvasott oldalak felismerése ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Kész: $1 források, összesen $2 szó · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Kivont weboldal szövege: $2 szó · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Kivonat $1 karakter · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "A kiválasztott szöveg kerül felhasználásra: $2 szó · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Kibontott Baidu Library PDF: $2 szó · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "Kivonat CNKI PDF: $2 szó · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Böngészőbővítmény · Weboldal kontextusa] A felhasználó Chrome/Edge segítségével böngészik az interneten, és az aktuális oldal szövege ehhez az üzenethez van csatolva a beépülő modulon keresztül, amelyet MindMate (Thinking Teaching Virtual Teaching and Research Partner) használhat.",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Útválasztási utasítások] A szándékok besorolása, a tudás visszakeresése és a válaszok a fenti „Felhasználói kérdések”-en alapulnak; az alábbi weboldal szövege csak a tanár által olvasott anyag, nem egy új generációs instrukció. Ha az anyag úgy néz ki, mint egy óraterv/oktatási terv, de a felhasználó nem kéri kifejezetten „új oktatási terv vagy óravázlat létrehozását/írását/tervezését”, ne minősítse „generatív oktatási tervnek”.",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Alapértelmezés szerint a felhasználó általános és középiskolai tanár, aki órákat készít, vagy tanít és kutat, és figyeljen a „Gondolkodó Fejlesztő Tanteremre”. Kérjük, együtt válaszoljon a referenciaanyagokra és a felhasználói kérdésekre; ha az anyag egy leckepélda, óraterv, tananyag szövege, papír vagy irányelvdokumentum, adott esetben proaktívan elemezheti: lehetséges tanulói tévhiteket, létrehozható kognitív konfliktusokat, fogalmi/folyamat-variációkat, alkalmazható gondolkodási vizualizációt vagy gondolkodási stratégiai eszközöket. Ha a felhasználói problémának nem sok köze van az anyaghoz, összpontosítson a felhasználói problémára. Amikor válaszol, elemezze közvetlenül a tartalmat, és ne említse meg a böngésző beépülő moduljait, a Markdown kivonatát vagy az üzenet formátumát.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Oldalcím:** $1\n**Oldal URL:** $2\n**Szöveg forrása:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Referenciaanyag: Weboldal szövege]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF megnyitva a böngészőben",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Nemzeti Okos Oktatási Platform (tanfolyami program/tanítástervezés/tanulási feladatlista PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Baidu Könyvtár PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Webcikk szövege",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Weboldal szöveg kinyerése",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "A felhasználó által kiválasztott oldalszöveg",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Felhasználói kérdés (a szándékok besorolásához és válaszához olvassa el ezt a mondatot):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Ezen az oldalon nincs olvasható tartalom. Kérjük, először válassza ki az oldalon található szöveget, vagy próbálja újra egy másik oldalon.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "rögzítés hibakeresés",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "A webhely a dokumentumot vászonképként jeleníti meg, és a törzsszöveg nem bontható ki. Kérjük, görgessen először az előnézeti oldal betöltéséhez, válassza ki az elküldeni kívánt szöveget, vagy használja a letölthető tartalmat, ha van PDF/szöveges letöltés.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Az aktuális Reader nézet csak körülbelül $1 oldalnyi szöveget jeleníthet meg.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Előfordulhat, hogy a dokumentum kép előnézete, a kivonatolt szöveg pedig hiányos.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Ez az oldal nem olvasható.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Még nincs csatlakoztatva. Nyissa meg a Beállításokat, és mentse el az MindGraph hitelesítő adatait.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "A bejelentkezés lejárt. Kérjük, frissítse az API tokent a Beállításokban.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Nem lehet csatlakozni a következőhöz: MindMate. Kérjük, ellenőrizze a szerver címét, és próbálja újra.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Jelenleg nem tudok válaszolni, kérjük, próbálja újra később.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "A mai mesterséges intelligencia használat elérte a felső határt. Kérjük, próbálja újra holnap, vagy ellenőrizze a részleteket a weboldalon.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Nincs elegendő ThinkCoin az üzenet elküldéséhez.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "A helyi fejlesztés HTTP-t használ, az API tokenek és az oldal tartalma pedig titkosítatlan a hálózaton. Kérjük, csak megbízható környezetben használja.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "letöltés",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Mentse PDF-fájlokat és dokumentumokat (videók nélkül) a támogatott webhelyekről.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Az aktuális oldal nem támogatja a letöltést. A panel megnyitása előtt nyissa meg a támogatott dokumentációs oldalt.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Beállítások",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "csatlakozni",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Kérjük, használja ugyanazokat a hitelesítési adatokat, mint az MindGraph API-tokenfolyamat.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "szerver",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Számlaszám (mobiltelefonszám)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Az X-MG-fiókhoz használt mobiltelefonszám",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API-token",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "megtakarítás",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "visszatérés",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "bezárás",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Feldolgozás…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "A letöltés elindult.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Mentve.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Hitelesítési adatok ellenőrzése...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Kérjük, töltse ki az összes mezőt.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Nincsenek aktív lapok.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Valami elromlott. Kérjük, próbálja újra, vagy töltse be újra a bővítményt a chrome://extensions címen.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Nem lehet elindítani a fájl mentését. Töltse be újra a bővítményt, és próbálja újra (Chrome 109+ vagy Edge 120+ szükséges).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "A beállítás nem teljes. Nyissa meg a \"Beállítások\" menüpontot, és adja meg a MindGraph címet, mobiltelefonszámot és API tokent.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Az oldalon nincs olvasható szöveg. Kérjük, először válassza ki a szöveg egy részét, vagy próbálja újra egy másik oldalon.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Már folyamatban van egy rögzítési vagy letöltési feladat ezen a lapon. Kérjük, várja meg, amíg befejeződik, és próbálja újra.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Szerverhiba ($1). Kérjük, ellenőrizze a beállításokat, és próbálja újra.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Ez az oldal nem támogatott. Nyisson meg egy normál weboldalt (http vagy https), és próbálja újra.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "A kérés túl gyakori, kérjük, próbálja újra később.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "A szolgáltatás átmenetileg nem elérhető, kérjük, próbálja újra később.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "A szerver válaszidőtúllépése (több mint 3 perc). Kérjük, próbálja újra, vagy ellenőrizze a hálózatot.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "A hitelesítő adatok ellenőrzése időtúllépést szenvedett. Kérjük, próbálja újra, vagy ellenőrizze a hálózatot.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "A szerver nem adott vissza PNG-képet. Kérjük, ellenőrizze az alapcímet és a fiókbeállításokat.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "PNG gondolattérkép létrehozása",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Dokumentum kibontása (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Dokumentumok kivonata",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Észlelve: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Jelenlegi oldal: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Lap olvasása: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Összesen $1 erőforrás",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Körülbelül $1 oldal látható – a kibontás előtt görgessen az előnézeti területen további oldalak betöltéséhez.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Kérjük, görgessen a dokumentum előnézetében az oldal betöltéséhez a kibontás előtt. Az olvasóban már megjelenített tartalmak előnyben részesítése.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Szinkronizálja a bejelentkezést a SmartEdu-ból",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Manuálisan illessze be a tokent…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Illessze be a SmartEdu access_token-t (csak akkor használatos, ha az automatikus szinkronizálás sikertelen):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu token: Szinkronizálás...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu token: csatlakoztatva (a bejelentkezésből)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu token: nem található – kérjük, jelentkezzen be az auth.smartedu.cn oldalon, nyissa meg a SmartEdu oldalt, majd kattintson a \"Szinkronizálás\" gombra.",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Dokumentumok kivonata",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Kész – A fájl letöltése azonnal megkezdődik.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Letöltés megkezdődött — Az olvasóban jelenleg elérhető első $1 oldal mentésre került.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Ez a dokumentum nem tölthető le. Kérjük, frissítse az oldalt, és kattintson ismét a „Dokumentum kibontása” gombra.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "A dokumentációs oldal nem található. Először görgessen a betöltési oldal előnézetéhez, majd kattintson a \"Dokumentum kibontása\" gombra.",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Nem található szöveges tartalom. Kérjük, próbálja újra egy másik oldalon vagy területen.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Az oldal még nincs kész. Kérjük, frissítse a lapot, és próbálja újra.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Ehhez a leckéhez nincsenek letölthető fájlok. Kérjük, módosítson egy kurzust, vagy ellenőrizze a letölteni kívánt forrásokat.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Először be kell jelentkeznie a Smart Education szolgáltatásba. Kérjük, jelentkezzen be az auth.smartedu.cn oldalon, nyissa meg a kurzus oldalát, majd kattintson a \"Bejelentkezés szinkronizálása a SmartEdu-ból\" gombra.",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "A Smart Education elutasította a letöltést. Kérjük, szinkronizálja újra bejelentkezési adatait, vagy módosítsa a fájlt.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "A videók letöltése nem támogatott. Kérjük, csak PDF vagy dokumentumforrásokat válasszon.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Ez nem támogatott dokumentációs oldal. Nyissa meg a dokumentumolvasó oldalt, és próbálja újra.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Még nincs mit menteni. Kérjük, görgessen az olvasóban az oldal betöltéséhez, és próbálja újra.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Először be kell jelentkeznie a weboldalra. Bejelentkezés után kattintson a \"Dokumentumok kibontása\" gombra.",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "A letöltést a webhely elutasította. Kérjük, jelentkezzen be az oldalra, és erősítse meg, hogy hozzáfér a tartalomhoz, mielőtt újra próbálkozna.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "A webhely ellenőrző kódot mutat. Kérjük, végezze el az ellenőrzést a böngésző lapján, mielőtt megpróbálná letölteni.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Oldal előkészítése…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Görgetés az oldal betöltése alatt...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Az oldal tartalmának másolása...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Fájlok generálása…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Mentés számítógépre...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "fejlett",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Minden letöltéskor kérjen mentési helyet",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Az oldal tartalmának olvasása...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Küldés a MindGraph szerverre…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "A szerver generálja a gondolattérképet...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Képek fogadása a szerverről...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Fájl mentése…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Nem lehet csatlakozni a szerverhez, ellenőrizze az alapcímet és a hálózatot.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Sikertelen kérés: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "A kapcsolat megszakadt. Kérjük, kattintson ismét a „Dokumentum kibontása” gombra. Ha továbbra is sikertelen, töltse be újra az MindGraph fájlt a chrome://extensions címen.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Gondolattérkép létrehozása az aktuális oldal alapján",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG szélesség (pixel)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG magasság (pixel)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Hagyja üresen az alapértelmezett használathoz",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Nyelv (kezelőfelület és térképek)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "kövesse a böngészőt",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Egyszerűsített",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Álló test",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "jelképes",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Érvényes: $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Ez az API-token lejárt, kérjük, hozza létre újra az interneten (fiók/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Nincs érvényes API token a szerveren, vagy lejárt. Kérjük, ellenőrizze a tokent, vagy hozza létre az alkalmazásban.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Nem sikerült lekérni a lejárati időt. Kérjük, ellenőrizze a hálózatot, vagy mentse újra a beállításokat.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "A galéria megtelt (20 kép). Kérjük, törölje a mentett térképet az újonnan létrehozott tartalom mentéséhez.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

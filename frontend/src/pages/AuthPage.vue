@@ -295,6 +295,7 @@ onBeforeUnmount(() => {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .auth-page-stage__brand {
@@ -305,8 +306,9 @@ onBeforeUnmount(() => {
 
 .auth-page-stage__content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: flex;
+  isolation: isolate;
   align-items: center;
   justify-content: flex-end;
   box-sizing: border-box;

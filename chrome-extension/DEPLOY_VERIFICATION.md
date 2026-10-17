@@ -4,7 +4,9 @@ Run after deploying current MindGraph backend + Alembic migrations to **test.min
 
 Replace `BASE`, `ACCOUNT`, and `MGAT` with values from extension Settings.
 
-## 1. Knowledge Space (File Center)
+## 1. Knowledge Space API (canvas Document Summary)
+
+The extension **Generate** tab no longer calls this API; canvas Document Summary still does. Smoke-test that packages are deployed:
 
 ```bash
 curl -sS -o /dev/null -w "%{http_code}\n" \
@@ -64,7 +66,7 @@ Generate a mind map from the extension popup, then in popup DevTools → Network
 - Response header `X-MG-Diagram-Id` present when library save succeeds
 - Or `Content-Disposition: attachment; filename="mindgraph-{uuid}.png"`
 
-Popup should show **View in library** linking to `https://BASE/canvas?diagramId=...`.
+On the **Generate** tab, after a successful save the link reads **Open this mind map in the library** (zh: 在图库中打开此思维导图) and opens `https://BASE/canvas?diagramId=...`. Before generate, or on any other page, it reads **Open my library** and opens `https://BASE/library`. The shortcut is one session record (`lastPageDiagram`: page URL + diagram id + server preset), not a browsing history.
 
 ## 4. nginx / openresty (MindMate SSE + extension PNG)
 
@@ -72,11 +74,29 @@ On the reverse proxy, set `proxy_read_timeout` / `proxy_send_timeout` ≥ **300s
 
 See [production_security_deploy.md](../docs/architecture/production_security_deploy.md).
 
-## 5. Edge extension client label (optional)
+## 5. Extension PDF OCR (`POST /api/extension/extract_pdf_text`)
+
+Mixed capture sends in-tab PDFs here when the text layer is empty or image-only. Requires the same **mgat** + **X-MG-Account** headers as PNG generate.
+
+```bash
+# Replace with a small PDF on disk; expect JSON with "text" and "source" (text | ocr | mixed).
+curl -sS \
+  -H "Authorization: Bearer MGAT" \
+  -H "X-MG-Account: ACCOUNT" \
+  -H "X-MG-Client: chrome-extension" \
+  -F "file=@/path/to/sample.pdf" \
+  "https://BASE/api/extension/extract_pdf_text" | head -c 400
+```
+
+Expected: **200** (not **404**). **413** if the file exceeds the server size cap (~8 MiB).
+
+After a successful **Generate** save, reopen the diagram in canvas → **Document Summary** should show the web extract (`extracted.md` on COS) when `page_content` was non-empty in the PNG request.
+
+## 6. Edge extension client label (optional)
 
 Repeat §2 with `X-MG-Client: edge-extension` — same **200** responses; server logs distinguish Edge from Chrome.
 
-## 6. Privacy policy (Chrome Web Store)
+## 7. Privacy policy (Chrome Web Store)
 
 Google's crawler does **not** run JavaScript. `/privacy` must return static HTML (not the Vue `Mind Platform` shell).
 
@@ -96,12 +116,14 @@ PYTHONPATH=. python scripts/check_privacy_policy_crawlable.py
 
 Chrome Web Store privacy URL (test): `https://test.mindspringedu.com/privacy` (after backend deploy) or `https://test.mindspringedu.com/privacy-policy.html` (dist file only).
 
-## 7. Per-environment checklist
+## 8. Per-environment checklist
 
 | Check | test | mg |
 |-------|------|-----|
 | Migrations applied | | |
 | `/api/knowledge-space/packages` → 200 | | |
+| `/api/extension/extract_pdf_text` → 200 (small PDF) | | |
+| Generate → diagram Document Summary has web extract | | |
 | Web MindMate chat works (same account) | | |
 | Extension preset + token from **same** server | | |
 | `proxy_read_timeout` ≥ 300s (or ≥ 180s for PNG only) | | |

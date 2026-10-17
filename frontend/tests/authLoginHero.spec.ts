@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   AUTH_LOGIN_HERO_IDS,
   AUTH_LOGIN_HERO_NARROW_QUERY,
-  AUTH_LOGIN_HERO_PHONE_SHORT_SIDE_MAX_PX,
   AUTH_LOGIN_HERO_SESSION_KEY,
   AUTH_LOGIN_HERO_STILL_SRC,
   AUTH_LOGIN_HERO_STORAGE_KEY,
@@ -98,6 +97,7 @@ describe('authLoginHero', () => {
     expect(authLoginHeroShouldAnimate({ narrowViewport: true })).toBe(false)
     expect(authLoginHeroShouldAnimate({ handheld: true })).toBe(false)
     expect(authLoginHeroShouldAnimate({ reduceMotion: true })).toBe(false)
+    expect(authLoginHeroShouldAnimate({ nativeVideoLayerRisk: true })).toBe(false)
   })
 
   it('treats phones and tablets as handheld, including iOS desktop-site mode', () => {
@@ -127,12 +127,32 @@ describe('authLoginHero', () => {
         screenHeight: 844,
       })
     ).toBe(true)
-    expect(AUTH_LOGIN_HERO_PHONE_SHORT_SIDE_MAX_PX).toBe(520)
     expect(
       authLoginHeroHandheld({
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
         pointerCoarse: true,
         hoverNone: true,
+        screenWidth: 1440,
+        screenHeight: 900,
+      })
+    ).toBe(true)
+    expect(
+      authLoginHeroHandheld({
+        userAgent:
+          'Mozilla/5.0 (Linux; Android 12; HONOR-XXX) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36',
+      })
+    ).toBe(true)
+    expect(
+      authLoginHeroHandheld({
+        userAgent:
+          'Mozilla/5.0 (Tablet; OpenHarmony 5.0) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+      })
+    ).toBe(true)
+    expect(
+      authLoginHeroHandheld({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
+        pointerCoarse: false,
+        hoverNone: false,
         screenWidth: 1440,
         screenHeight: 900,
       })

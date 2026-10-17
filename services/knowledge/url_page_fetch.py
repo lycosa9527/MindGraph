@@ -40,6 +40,8 @@ _NOISE_TAGS = (
 
 _HTML_CONTENT_TYPES = ("text/html", "application/xhtml+xml")
 _PLAIN_CONTENT_TYPES = ("text/plain", "application/json")
+_BROWSER_FILE_EXTRACT_SUFFIXES = ("smartedu.cn", "cnki.net", "wenku.baidu.com")
+BROWSER_FILE_EXTRACT_DETAIL = "browser_file_extract_required"
 
 
 def _ip_is_blocked(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
@@ -151,6 +153,22 @@ def _extract_html_body_text(raw_html: str) -> Tuple[str, Optional[str]]:
     return text, title
 
 
+def url_requires_browser_file_extract(url: str) -> bool:
+    """True when the page's real content is login-gated files, not public HTML.
+
+    SmartEdu, CNKI, and Baidu Wenku expose PDFs behind the user's session.
+    A server fetch only sees the shell, so those URLs must be saved from the
+    browser extension, which lists the files and stores them as markdown.
+    """
+    host = (urlparse((url or "").strip()).hostname or "").lower().rstrip(".")
+    if not host:
+        return False
+    for suffix in _BROWSER_FILE_EXTRACT_SUFFIXES:
+        if host == suffix or host.endswith(f".{suffix}"):
+            return True
+    return False
+
+
 def fallback_title_from_url(page_url: str) -> str:
     """Build a short filesystem-safe title when the page has no <title>."""
     parsed = urlparse(page_url.strip())
@@ -180,6 +198,8 @@ async def fetch_url_page_text(url: str) -> Tuple[str, Optional[str]]:
     parsed = urlparse(url.strip())
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise HTTPException(status_code=400, detail="Invalid URL")
+    if url_requires_browser_file_extract(url):
+        raise HTTPException(status_code=400, detail=BROWSER_FILE_EXTRACT_DETAIL)
 
     hostname = parsed.hostname or ""
     connect_ip = _resolve_public_connect_ip(hostname)

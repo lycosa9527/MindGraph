@@ -45,6 +45,7 @@ import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_MAX_INPUT_CHARS } from '@/config/docSummaryApi'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useDiagramStore } from '@/stores'
+import { urlRequiresBrowserFileExtract } from '@/utils/browserFileExtractUrl'
 import { diagramSourceKindFromDocument } from '@/utils/diagramSourceKind'
 import { docSummarySourceLabel, toDocSummaryMarkdownName } from '@/utils/docSummaryMarkdownName'
 
@@ -550,6 +551,10 @@ async function ingestPendingLiteDraft(): Promise<{
 
   if (kind === 'web') {
     const url = webUrl.value.trim()
+    if (urlRequiresBrowserFileExtract(url)) {
+      notify.warningKey('canvas.mindMapDocumentSummary.webChromeExtensionHint')
+      throw new Error('browser_file_extract')
+    }
     notify.infoKey('canvas.mindMapDocumentSummary.webFetchStarted')
     const uploaded = await ingestWebUrl.mutateAsync({ packageId: id, payload: { page_url: url } })
     webUrl.value = ''
@@ -612,6 +617,10 @@ async function handleAddToCorpus(): Promise<void> {
       const url = webUrl.value.trim()
       if (!url) {
         notify.warningKey('canvas.mindMapDocumentSummary.emptyUrl')
+        return
+      }
+      if (urlRequiresBrowserFileExtract(url)) {
+        notify.warningKey('canvas.mindMapDocumentSummary.webChromeExtensionHint')
         return
       }
       await ingestWebUrl.mutateAsync({ packageId: id, payload: { page_url: url } })
@@ -689,7 +698,12 @@ async function handleLiteSaveAndGenerate(): Promise<void> {
 
     await generateAndShowDiagram(packageId)
   } catch (error) {
-    if (error instanceof Error && error.message === 'paste_too_long') return
+    if (
+      error instanceof Error &&
+      (error.message === 'paste_too_long' || error.message === 'browser_file_extract')
+    ) {
+      return
+    }
     console.error('[DocumentSummary] lite save-and-generate failed:', error)
   } finally {
     isAdding.value = false
@@ -715,6 +729,8 @@ async function handleGenerate(): Promise<void> {
     pipelineBusy.value = false
   }
 }
+
+const webNeedsBrowserExtract = computed(() => urlRequiresBrowserFileExtract(webUrl.value))
 
 const canAdd = computed(() => {
   if (docSummaryLiteUi) return false
@@ -1232,7 +1248,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
             />
           </p>
           <p
-            v-if="docSummaryLiteUi"
+            v-if="docSummaryLiteUi || webNeedsBrowserExtract"
             class="text-[11px] leading-relaxed text-(--swiss-muted,#78716c)"
           >
             <I18nText k="canvas.mindMapDocumentSummary.webChromeExtensionHint" />

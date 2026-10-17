@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — 웹페이지를 마인드맵으로 변환",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "MindGraph 계정을 통해 현재 페이지를 마인드맵, 대화문맥, 문서파일로 변환해보세요.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "설정",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "페이지부터 구조화된 지도까지 한 단계로 완료하세요.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "마인드맵 생성",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "마인드맵",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "다운로드",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "설정",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "먼저 MindGraph에 연결하세요. \"설정\"에서 서버 주소, 계정, API 토큰을 입력하세요.",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "설정 열기",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "MindMate에게 물어보세요…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "보내다",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "멈추다",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "새로운 대화",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "역사",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "웹 기록 열기",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate님이 답글을 달고 있습니다…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "새로운 대화가 시작되었습니다.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "중지되었습니다.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "페이지 콘텐츠를 읽는 중...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "현재 웹페이지 콘텐츠를 포함합니다.",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "새 대화의 첫 번째 메시지에만 웹 콘텐츠가 포함됩니다.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "웹페이지 텍스트를 스캔하고 추출하는 중...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "$1에서 문서를 추출하는 중...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "국가스마트교육플랫폼 강좌 예시를 읽어보세요...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 코스웨어/리소스가 감지되었습니다.",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "다운로드 중($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "텍스트 추출 중($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "스캔한 페이지 인식($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "준비: $1 자원, 총 $2 단어 · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "추출된 웹페이지 텍스트: $2 단어 · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "추출된 $1 문자 · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "선택한 텍스트가 사용됩니다: $2 단어 · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "추출된 Baidu 라이브러리 PDF: $2 단어 · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "추출된 CNKI PDF: $2 단어 · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph 브라우저 확장 · 웹 페이지 컨텍스트] 사용자가 Chrome/Edge에서 웹을 탐색하고 있으며, MindMate(Thinking Teaching Virtual Teaching and Research Partner)이 사용할 플러그인을 통해 현재 페이지의 텍스트가 이 메시지에 첨부됩니다.",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[라우팅 지침] 의도 분류, 지식 검색 및 답변은 ​​모두 위의 \"사용자 질문\"을 기반으로 합니다. 아래 웹 페이지의 텍스트는 교사가 읽고 있는 자료일 뿐이며 신세대 교육이 아닙니다. 자료가 수업 계획/교육 설계처럼 보이지만 사용자가 \"새로운 교육 설계 또는 수업 계획 생성/작성/설계\"를 명시적으로 요청하지 않는 경우 이를 \"생성 교육 설계\"로 분류하지 마세요.",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "사용자는 수업을 준비하거나 가르치고 연구하는 초중등 교사로 기본 설정되어 있으며, \"사고력 개발 교실\"에 주목하시기 바랍니다. 참고자료와 사용자 질문에 함께 답변해주세요. 자료가 수업 예제, 수업 계획, 코스웨어 텍스트, 종이 또는 정책 문서인 경우 적절한 경우 학생의 오해 가능성, 생성 가능한 인지 갈등, 개념/프로세스 변형, 적용 가능한 사고 시각화 또는 사고 전략 도구 등을 사전에 분석할 수 있습니다. 사용자 문제가 자료와 관련이 거의 없는 경우 사용자 문제에 초점을 맞춥니다. 답변할 때 내용을 직접 분석하고 브라우저 플러그인, 마크다운 추출 또는 이 메시지의 형식을 언급하지 마세요.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**페이지 제목:** $1\n**페이지 URL:** $2\n**텍스트 출처:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[참고자료: 웹페이지 텍스트]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "브라우저에서 열린 PDF",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "국가 스마트 교육 플랫폼(교과목/교육 설계/학습 과제 목록 PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "바이두 도서관 PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "웹 기사 텍스트",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "웹페이지 텍스트 추출",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "사용자가 선택한 페이지 텍스트",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**사용자 질문(의도 분류 및 답변은 ​​이 문장을 참조하세요):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "이 페이지에는 읽을 수 있는 콘텐츠가 없습니다. 먼저 페이지의 텍스트를 선택하거나 다른 페이지에서 다시 시도하세요.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "디버깅 캡처",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "사이트에서는 문서를 캔버스 이미지로 렌더링하므로 본문 텍스트를 추출할 수 없습니다. 스크롤하여 미리보기 페이지를 먼저 불러오시고, 보내실 텍스트를 선택하시거나, PDF/텍스트 다운로드가 있는 경우 다운로드 콘텐츠를 이용하시기 바랍니다.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "현재 리더 보기에는 약 $1 페이지의 텍스트만 표시될 수 있습니다.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "문서는 그림 미리보기일 수 있으며 추출된 텍스트가 불완전할 수 있습니다.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "이 페이지를 읽을 수 없습니다.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "아직 연결되지 않았습니다. 설정을 열고 MindGraph 자격 증명을 저장하세요.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "로그인이 만료되었습니다. 설정에서 API 토큰을 업데이트하세요.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "MindMate에 연결할 수 없습니다. 서버 주소를 확인하신 후 다시 시도해 주세요.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate 지금은 답변을 드릴 수 없습니다. 나중에 다시 시도해 주세요.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "오늘의 AI 사용량이 상한에 도달했습니다. 내일 다시 시도하시거나 웹페이지에서 자세한 내용을 확인하시기 바랍니다.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "이 메시지를 보내기에는 ThinkCoins가 부족합니다.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "로컬 개발에서는 HTTP를 사용하며 API 토큰과 페이지 콘텐츠는 네트워크에서 암호화되지 않습니다. 신뢰할 수 있는 환경에서만 사용하시기 바랍니다.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "다운로드",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "지원되는 사이트에서 PDF 및 문서(동영상 제외)를 저장하세요.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "현재 페이지는 다운로드를 지원하지 않습니다. 이 패널을 열기 전에 지원되는 문서 페이지를 열어보세요.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "설정",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "연결하다",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "MindGraph API 토큰 흐름과 동일한 자격 증명을 사용하세요.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "섬기는 사람",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "계좌번호(휴대폰번호)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "X-MG-Account에 사용되는 휴대폰 번호",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API 토큰",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "구하다",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "반품",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "폐쇄",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "처리 중…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "다운로드가 시작되었습니다.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "저장되었습니다.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "자격 증명 확인 중...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "모든 필드를 작성해 주세요.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "활성 탭이 없습니다.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "문제가 발생했습니다. 다시 시도하거나 chrome://extensions에서 확장 프로그램을 다시 로드하세요.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "파일 저장을 시작할 수 없습니다. 확장 프로그램을 다시 로드하고 다시 시도하세요(Chrome 109+ 또는 Edge 120+ 필요).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "설정이 불완전합니다. \"설정\"을 열고 MindGraph 주소, 휴대폰 번호, API 토큰을 입력하세요.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "페이지에 읽을 수 있는 텍스트가 없습니다. 먼저 텍스트 섹션을 선택하거나 다른 페이지에서 다시 시도하세요.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "이 탭에는 이미 캡처 또는 다운로드 작업이 진행 중입니다. 완료될 때까지 기다렸다가 다시 시도하십시오.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph 서버 오류($1). 설정을 확인하고 다시 시도해 주세요.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "이 페이지는 지원되지 않습니다. 일반 웹페이지(http 또는 https)를 열고 다시 시도하세요.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "요청이 너무 자주 발생합니다. 나중에 다시 시도해 주세요.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "일시적으로 서비스를 이용할 수 없습니다. 나중에 다시 시도해 주세요.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "서버 응답 시간이 초과되었습니다(3분 이상). 다시 시도하거나 네트워크를 확인하세요.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "자격 증명 확인 시간이 초과되었습니다. 다시 시도하거나 네트워크를 확인하세요.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "서버가 PNG 이미지를 반환하지 않았습니다. 기본 주소와 계정 설정을 확인해주세요.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "마인드맵 PNG 생성",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "문서 추출(MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "문서 추출",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "감지됨: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "현재 사이트: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "읽기 탭 페이지: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "총 $1 리소스",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "약 $1 페이지가 표시됩니다. 추출하기 전에 미리보기 영역을 스크롤하여 더 많은 페이지를 로드하세요.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "추출하기 전에 문서 미리보기를 스크롤하여 페이지를 로드하세요. 리더에 이미 표시된 콘텐츠의 우선순위를 지정합니다.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "SmartEdu에서 로그인 동기화",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "토큰을 수동으로 붙여넣으세요…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "SmartEdu access_token을 붙여넣습니다(자동 동기화가 실패한 경우에만 사용됨):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu 토큰: 동기화 중...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu 토큰: 연결됨(로그인에서)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu 토큰: 찾을 수 없음 - auth.smartedu.cn에 로그인하고 SmartEdu 페이지를 연 다음 \"동기화\"를 클릭하세요.",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "문서 추출",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "완료 — 파일 다운로드가 즉시 시작됩니다.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "다운로드 시작됨 — 현재 리더에서 사용할 수 있는 첫 번째 $1 페이지가 저장되었습니다.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "이 문서를 다운로드할 수 없습니다. 페이지를 새로 고치고 \"문서 추출\"을 다시 클릭하십시오.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "문서 페이지를 찾을 수 없습니다. 먼저 스크롤하여 로딩 페이지를 미리 본 다음 \"문서 추출\"을 클릭하세요.",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "텍스트 콘텐츠를 찾을 수 없습니다. 다른 페이지나 영역에서 다시 시도해 주세요.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "페이지가 아직 준비되지 않았습니다. 탭을 새로고침하고 다시 시도하세요.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "이 강의에는 다운로드할 수 있는 파일이 없습니다. 수업을 변경하거나, 다운로드하고 싶은 자료를 확인해주세요.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "먼저 스마트교육에 로그인이 필요합니다. auth.smartedu.cn에 로그인하고 강좌 페이지를 연 다음 \"SmartEdu에서 로그인 동기화\"를 클릭하세요.",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education이 다운로드를 거부했습니다. 로그인을 다시 동기화하거나 파일을 변경하세요.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "비디오 다운로드는 지원되지 않습니다. PDF 또는 문서 리소스만 선택하세요.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "이것은 지원되는 설명서 페이지가 아닙니다. 문서 읽기 페이지를 열고 다시 시도해 주세요.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "아직 저장할 항목이 없습니다. 리더를 스크롤하여 페이지를 로드한 후 다시 시도하세요.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "먼저 웹사이트에 로그인해야 합니다. 로그인 후 \"문서 추출\"을 클릭하세요.",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "웹사이트에서 다운로드를 거부했습니다. 다시 시도하기 전에 사이트에 로그인하여 콘텐츠에 액세스할 수 있는지 확인하세요.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "웹사이트에 인증 코드가 표시됩니다. 검색을 시도하기 전에 브라우저 탭에서 확인을 완료하세요.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "페이지 준비 중…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "로딩 페이지 스크롤...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "페이지 콘텐츠 복사 중...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "파일 생성 중…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "컴퓨터에 저장 중...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "고급의",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "다운로드할 때마다 저장 위치를 ​​요청하세요.",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "페이지 콘텐츠를 읽는 중...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "MindGraph 서버로 보내는 중…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "서버가 마인드맵을 생성하는 중입니다...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "서버에서 이미지를 받는 중...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "파일 저장 중…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "서버에 연결할 수 없습니다. 기본 주소와 네트워크를 확인하세요.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "요청 실패: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "연결이 끊어졌습니다. \"문서 추출\"을 다시 클릭하십시오. 그래도 실패하면 chrome://extensions에서 MindGraph을(를) 다시 로드하세요.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "현재 페이지를 기반으로 마인드맵 생성",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG 너비(픽셀)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG 높이(픽셀)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "기본값을 사용하려면 비워 두세요.",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "언어(인터페이스 및 맵)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "브라우저를 따르다",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "쉽게 한",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "직립형 몸체",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "토큰",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "$1까지 유효",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "이 API 토큰은 만료되었습니다. 웹(계정/API)에서 다시 생성하세요.",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "서버에 유효한 API 토큰이 없거나 만료되었습니다. 토큰을 확인하거나 앱에서 생성해주세요.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "만료 시간을 가져올 수 없습니다. 네트워크를 확인하거나 설정을 다시 저장하세요.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "갤러리가 가득 찼습니다(사진 20장). 새로 생성된 콘텐츠를 저장하려면 저장된 지도를 삭제하세요.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

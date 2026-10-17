@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Tukar halaman web kepada peta minda",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Tukar halaman semasa ke dalam peta minda, konteks perbualan dan fail dokumen melalui akaun MindGraph.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Tetapan",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Dari halaman ke peta berstruktur, lengkapkan dalam satu langkah.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Hasilkan peta minda",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "peta minda",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "muat turun",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Tetapan",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Sila sambung ke MindGraph dahulu - isikan alamat pelayan, akaun dan token API dalam \"Tetapan\".",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Buka tetapan",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Tanya MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "hantar",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "berhenti",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "perbualan baru",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Sejarah",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Buka sejarah web",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate sedang membalas…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "Perbualan baharu telah dimulakan.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Berhenti.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Membaca kandungan halaman...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Mengandungi kandungan halaman web semasa",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Hanya mesej pertama dalam perbualan baharu akan disertakan dengan kandungan web.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Mengimbas dan mengekstrak teks halaman web...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Mengeluarkan dokumen daripada $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Membaca contoh kursus Platform Pendidikan Bestari Negara...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 perisian kursus/sumber dikesan",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Memuat turun ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Mengekstrak teks ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Mengecam halaman yang diimbas ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Sedia: $1 sumber, jumlah $2 perkataan · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Teks halaman web yang diekstrak: $2 perkataan · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Diekstrak $1 aksara · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Teks yang dipilih akan digunakan: $2 perkataan · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "PDF Perpustakaan Baidu yang diekstrak: $2 perkataan · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "PDF CNKI yang diekstrak: $2 perkataan · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Sambungan Penyemak Imbas · Konteks Halaman Web] Pengguna sedang menyemak imbas web dalam Chrome/Edge, dan teks halaman semasa dilampirkan pada mesej ini melalui pemalam untuk digunakan oleh MindMate (Rakan Kongsi Pengajaran Maya dan Penyelidikan Berfikir Pengajaran).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Arahan Penghalaan] Klasifikasi niat, perolehan pengetahuan dan jawapan semuanya berdasarkan \"Soalan Pengguna\" di atas; teks halaman web di bawah hanyalah bahan yang dibaca oleh guru, bukan arahan generasi baru. Jika bahan tersebut kelihatan seperti rancangan pengajaran/reka bentuk pengajaran, tetapi pengguna tidak secara eksplisit meminta \"hasilkan/tulis/reka reka bentuk pengajaran atau rancangan pengajaran baharu\", jangan klasifikasikannya sebagai \"reka bentuk pengajaran generatif\".",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Sila lalai bahawa pengguna ialah guru sekolah rendah dan menengah yang sedang menyediakan pelajaran atau mengajar dan menyelidik, dan beri perhatian kepada \"Bilik Darjah Pembangunan Berfikir\". Sila jawab bahan rujukan dan soalan pengguna bersama-sama; jika bahan tersebut ialah contoh pelajaran, rancangan pengajaran, teks perisian kursus, kertas atau dokumen dasar, anda boleh menganalisis secara proaktif apabila sesuai: kemungkinan salah tanggapan pelajar, konflik kognitif yang boleh dicipta, variasi konsep/proses, visualisasi pemikiran yang boleh digunakan atau alat strategi berfikir. Jika masalah pengguna mempunyai sedikit kaitan dengan bahan, fokus pada masalah pengguna. Semasa menjawab, analisis kandungan secara langsung dan jangan sebut pemalam penyemak imbas, Pengekstrakan Markdown atau format mesej ini.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Tajuk Halaman:** $1\n**URL Halaman:** $2\n**Sumber teks:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Bahan rujukan: Teks halaman web]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF dibuka dalam penyemak imbas",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Platform Pendidikan Bestari Nasional (Perisian Kursus/Reka Bentuk Pengajaran/Senarai Tugas Pembelajaran PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "PDF Perpustakaan Baidu",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Teks artikel web",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Pengekstrakan teks halaman web",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Teks halaman yang dipilih oleh pengguna",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Soalan pengguna (sila rujuk ayat ini untuk klasifikasi niat dan jawapan):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Tiada kandungan yang boleh dibaca pada halaman ini. Sila pilih teks pada halaman dahulu atau cuba lagi pada halaman lain.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "tangkap penyahpepijatan",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Tapak ini menjadikan dokumen sebagai imej kanvas dan teks kandungan tidak boleh diekstrak. Sila tatal untuk memuatkan halaman pratonton dahulu, pilih teks untuk dihantar atau gunakan kandungan muat turun jika terdapat muat turun PDF/teks.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Paparan Pembaca semasa hanya boleh memaparkan lebih kurang $1 halaman teks.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Dokumen itu mungkin pratonton gambar, dan teks yang diekstrak mungkin tidak lengkap.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Halaman ini tidak boleh dibaca.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Belum sambung lagi. Sila buka Tetapan dan simpan bukti kelayakan MindGraph.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Log masuk telah tamat tempoh. Sila kemas kini token API dalam Tetapan.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Tidak dapat menyambung ke MindMate. Sila semak alamat pelayan dan cuba lagi.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Tidak dapat membalas pada masa ini, sila cuba sebentar lagi.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Penggunaan AI hari ini telah mencapai had atas. Sila cuba lagi esok atau semak butiran pada halaman web.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "ThinkCoins tidak mencukupi untuk menghantar mesej ini.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Pembangunan tempatan menggunakan HTTP, dan token API serta kandungan halaman tidak disulitkan pada rangkaian. Sila gunakan hanya dalam persekitaran yang dipercayai.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "muat turun",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Simpan PDF dan dokumen (tanpa video) daripada tapak yang disokong.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Halaman semasa tidak menyokong muat turun. Sila buka halaman dokumentasi yang disokong sebelum membuka panel ini.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Tetapan",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "menyambung",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Sila gunakan bukti kelayakan yang sama seperti aliran token API MindGraph.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "pelayan",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Nombor akaun (nombor telefon bimbit)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Nombor telefon mudah alih yang digunakan untuk X-MG-Account",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "Token API",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "jimat",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "kembali",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "penutupan",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Memproses…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Muat turun telah bermula.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Disimpan.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Mengesahkan bukti kelayakan...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Sila isi semua ruangan.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Tiada tab aktif.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Sesuatu telah berlaku. Sila cuba lagi atau muat semula sambungan di chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Tidak dapat mula menyimpan fail. Sila muatkan semula sambungan dan cuba lagi (memerlukan Chrome 109+ atau Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Persediaan tidak lengkap. Sila buka \"Tetapan\" dan isikan alamat MindGraph, nombor telefon mudah alih dan token API.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Tiada teks yang boleh dibaca pada halaman. Sila pilih bahagian teks dahulu, atau cuba lagi pada halaman lain.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Sudah ada tugas tangkapan atau muat turun sedang dijalankan pada tab ini, sila tunggu sehingga selesai dan cuba lagi.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Ralat pelayan ($1). Sila semak tetapan anda dan cuba lagi.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Halaman ini tidak disokong. Sila buka halaman web biasa (http atau https) dan cuba lagi.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Permintaan itu terlalu kerap, sila cuba sebentar lagi.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Perkhidmatan ini tidak tersedia buat sementara waktu, sila cuba sebentar lagi.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Sambutan pelayan tamat masa (lebih daripada 3 minit). Sila cuba lagi atau semak rangkaian.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Pengesahan kelayakan tamat masa. Sila cuba lagi atau semak rangkaian.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Pelayan tidak mengembalikan imej PNG. Sila semak alamat asas dan tetapan akaun.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Hasilkan peta minda PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Ekstrak dokumen (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Ekstrak dokumen",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Dikesan: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Tapak semasa: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Halaman tab membaca: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Jumlah $1 sumber",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Kira-kira $1 halaman kelihatan - sila tatal kawasan pratonton untuk memuatkan lebih banyak halaman sebelum mengekstrak.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Sila tatal pratonton dokumen untuk memuatkan halaman sebelum mengekstrak. Utamakan kandungan yang telah dipaparkan dalam pembaca.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Segerakkan log masuk daripada SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Tampalkan token secara manual…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Tampal SmartEdu access_token (hanya digunakan jika penyegerakan automatik gagal):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "Token SmartEdu: Menyegerakkan...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "Token SmartEdu: Bersambung (dari log masuk anda)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "Token SmartEdu: tidak dijumpai - sila log masuk di auth.smartedu.cn dan buka halaman SmartEdu, kemudian klik \"Segerak\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Ekstrak dokumen",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Selesai — Fail akan mula dimuat turun serta-merta.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Muat Turun Dimulakan — Halaman $1 pertama yang tersedia pada masa ini dalam pembaca telah disimpan.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Dokumen ini tidak boleh dimuat turun. Sila muat semula halaman dan klik \"Ekstrak Dokumen\" sekali lagi.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Halaman dokumentasi tidak ditemui. Sila tatal untuk pratonton halaman pemuatan dahulu, dan kemudian klik \"Ekstrak Dokumen\".",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Tiada kandungan teks ditemui. Sila cuba lagi pada halaman atau kawasan lain.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Halaman belum siap lagi. Sila muat semula tab dan cuba lagi.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Tiada fail yang boleh dimuat turun untuk pelajaran ini. Sila tukar kelas atau semak sumber yang ingin anda muat turun.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Anda perlu log masuk ke Smart Education terlebih dahulu. Sila log masuk di auth.smartedu.cn dan buka halaman kursus, kemudian klik \"Segerakkan log masuk daripada SmartEdu\".",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Pendidikan Pintar menolak muat turun. Sila segerakkan log masuk anda sekali lagi atau tukar fail.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Memuat turun video tidak disokong. Sila pilih sumber PDF atau dokumen sahaja.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Ini bukan halaman dokumentasi yang disokong. Sila buka halaman bacaan dokumen dan cuba lagi.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Belum ada apa-apa untuk disimpan. Sila tatal pembaca untuk memuatkan halaman dan cuba lagi.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Anda perlu log masuk ke laman web terlebih dahulu. Selepas log masuk, klik \"Ekstrak Dokumen\".",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Muat turun telah ditolak oleh tapak web. Sila log masuk ke tapak dan sahkan anda mempunyai akses kepada kandungan sebelum mencuba lagi.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Tapak web menunjukkan kod pengesahan. Sila lengkapkan pengesahan dalam tab penyemak imbas sebelum cuba mendapatkan semula.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Menyediakan halaman…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Tatal memuatkan halaman...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Menyalin kandungan halaman...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Menjana fail…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Menyimpan ke komputer...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "maju",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Minta simpan lokasi setiap kali anda memuat turun",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Membaca kandungan halaman...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Menghantar ke pelayan MindGraph…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Pelayan sedang menjana peta minda...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Menerima imej daripada pelayan...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Menyimpan fail…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Tidak dapat menyambung ke pelayan, sila semak alamat asas dan rangkaian.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Permintaan gagal: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Sambungan telah terputus. Sila klik \"Ekstrak Dokumen\" sekali lagi. Jika masih gagal, sila muat semula MindGraph di chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Hasilkan peta minda berdasarkan halaman semasa",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "Lebar PNG (piksel)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "Ketinggian PNG (piksel)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Biarkan kosong untuk menggunakan lalai",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Bahasa (Antara Muka dan Peta)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "ikuti pelayar",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Dipermudahkan",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Badan tegak",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "token",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Sah sehingga $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Token API ini telah tamat tempoh, sila buat sekali lagi di web (akaun/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Tiada token API yang sah pada pelayan, atau ia telah tamat tempoh. Sila semak token atau buatnya dalam apl.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Tidak dapat mendapatkan masa tamat tempoh. Sila semak rangkaian anda atau simpan tetapan anda sekali lagi.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Galeri penuh (20 gambar). Sila padamkan peta yang disimpan untuk menyimpan kandungan yang baru dijana.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

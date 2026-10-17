@@ -35,8 +35,8 @@ export const AUTH_LOGIN_HERO_NARROW_QUERY = `(max-width: ${AUTH_LOGIN_HERO_NARRO
  * A viewport at or below 899px must not fetch the mp4.
  */
 export const AUTH_LOGIN_HERO_WIDE_MEDIA = '(min-width: 900px)'
-/** Largest phone short side. Tablets and laptops stay above this. */
-export const AUTH_LOGIN_HERO_PHONE_SHORT_SIDE_MAX_PX = 520
+const AUTH_LOGIN_HANDHELD_UA =
+  /OpenHarmony|HarmonyOS|HuaweiBrowser|HONORBrowser|HonorBrowser/i
 
 export function authLoginHeroKind(): AuthLoginHeroKind {
   return import.meta.env.DEV ? 'image' : 'video'
@@ -47,8 +47,9 @@ export function authLoginHeroViewportNarrow(width: number): boolean {
 }
 
 /**
- * Phone or tablet, including iOS desktop-site mode (Mac UA, phone-sized screen).
- * Those clients cover the hero with the login card, so the COS clip is wasted.
+ * Phone or tablet, including iOS/Honor desktop-site mode and HarmonyOS browsers.
+ * Touch-primary tablets skip the COS clip (login card covers the hero; Android
+ * WebViews may paint `<video>` above modals regardless of z-index).
  */
 export function authLoginHeroHandheld(input: {
   userAgent?: string
@@ -59,7 +60,10 @@ export function authLoginHeroHandheld(input: {
   screenWidth?: number
   screenHeight?: number
 } = {}): boolean {
-  if (isTouchDeviceUserAgent(input.userAgent)) {
+  const ua =
+    input.userAgent ??
+    (typeof navigator !== 'undefined' ? navigator.userAgent : '')
+  if (isTouchDeviceUserAgent(ua) || AUTH_LOGIN_HANDHELD_UA.test(ua)) {
     return true
   }
   // iPhone/iPad "Request Desktop Website": Mac UA, MacIntel platform, touch points.
@@ -67,21 +71,22 @@ export function authLoginHeroHandheld(input: {
   if (input.platform === 'MacIntel' && touchPoints > 1) {
     return true
   }
-  const shortSide = Math.min(input.screenWidth ?? 0, input.screenHeight ?? 0)
-  return Boolean(
-    input.pointerCoarse &&
-      input.hoverNone &&
-      shortSide > 0 &&
-      shortSide <= AUTH_LOGIN_HERO_PHONE_SHORT_SIDE_MAX_PX
-  )
+  // Tablet desktop mode: desktop UA but primary input is touch (no hover).
+  return Boolean(input.pointerCoarse && input.hoverNone)
 }
 
 export function authLoginHeroShouldAnimate(options: {
   reduceMotion?: boolean
   narrowViewport?: boolean
   handheld?: boolean
+  nativeVideoLayerRisk?: boolean
 } = {}): boolean {
-  if (options.reduceMotion || options.narrowViewport || options.handheld) {
+  if (
+    options.reduceMotion ||
+    options.narrowViewport ||
+    options.handheld ||
+    options.nativeVideoLayerRisk
+  ) {
     return false
   }
   return authLoginHeroKind() === 'video'

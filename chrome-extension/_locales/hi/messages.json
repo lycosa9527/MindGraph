@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph - वेब पेज को माइंड मैप में बदलें",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "MindGraph खाते के माध्यम से वर्तमान पृष्ठ को माइंड मैप, वार्तालाप संदर्भ और दस्तावेज़ फ़ाइल में परिवर्तित करें।",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "सेटिंग्स",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "पृष्ठ से संरचित मानचित्र तक, एक चरण में पूरा करें।",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "माइंड मैप तैयार करें",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "मन में नक्शे बनाना",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "डाउनलोड करना",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "सेटिंग्स",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "कृपया पहले MindGraph से कनेक्ट करें - \"सेटिंग्स\" में सर्वर पता, खाता और एपीआई टोकन भरें।",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "खुली सेटिंग",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "पूछें MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "भेजना",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "रुकना",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "नई बातचीत",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "इतिहास",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "वेब इतिहास खोलें",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate उत्तर दे रहा है...",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "एक नई बातचीत शुरू हो गई है.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "रुक गया.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "पृष्ठ सामग्री पढ़ रहा है...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "वर्तमान वेब पेज सामग्री शामिल है",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "किसी नई बातचीत में केवल पहला संदेश वेब सामग्री के साथ होगा।",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "वेब पेज टेक्स्ट को स्कैन करना और निकालना...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "$1 से दस्तावेज़ निकाले जा रहे हैं...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "राष्ट्रीय स्मार्ट शिक्षा प्लेटफ़ॉर्म पाठ्यक्रम के उदाहरण पढ़ना...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 कोर्सवेयर/संसाधनों का पता चला",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "डाउनलोड हो रहा है ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "पाठ निकालना ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "स्कैन किए गए पृष्ठों को पहचानना ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "तैयार: $1 संसाधन, कुल $2 शब्द · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "निकाला गया वेब पेज टेक्स्ट: $2 शब्द · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "निकाले गए $1 अक्षर · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "चयनित पाठ का उपयोग किया जाएगा: $2 शब्द · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "निकाली गई Baidu लाइब्रेरी पीडीएफ: $2 शब्द · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "निकाला गया CNKI PDF: $2 शब्द · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph ब्राउज़र एक्सटेंशन · वेब पेज संदर्भ] उपयोगकर्ता क्रोम/एज में वेब ब्राउज़ कर रहा है, और वर्तमान पृष्ठ का टेक्स्ट MindMate (थिंकिंग टीचिंग वर्चुअल टीचिंग एंड रिसर्च पार्टनर) द्वारा उपयोग के लिए प्लग-इन के माध्यम से इस संदेश से जुड़ा हुआ है।",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[रूटिंग निर्देश] आशय वर्गीकरण, ज्ञान पुनर्प्राप्ति और उत्तर सभी उपरोक्त \"उपयोगकर्ता प्रश्न\" पर आधारित हैं; नीचे दिए गए वेब पेज का पाठ केवल वह सामग्री है जिसे शिक्षक पढ़ रहा है, नई पीढ़ी का निर्देश नहीं। यदि सामग्री एक पाठ योजना/अनुदेशात्मक डिज़ाइन की तरह दिखती है, लेकिन उपयोगकर्ता स्पष्ट रूप से \"नए अनुदेशात्मक डिज़ाइन या पाठ योजना तैयार करने/लिखने/डिज़ाइन करने\" का अनुरोध नहीं करता है, तो इसे \"जनरेटिव अनुदेशात्मक डिज़ाइन\" के रूप में वर्गीकृत न करें।",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "कृपया डिफ़ॉल्ट करें कि उपयोगकर्ता एक प्राथमिक और माध्यमिक विद्यालय का शिक्षक है जो पाठ तैयार कर रहा है या पढ़ा रहा है और शोध कर रहा है, और \"सोच विकास कक्षा\" पर ध्यान दें। कृपया संदर्भ सामग्री और उपयोगकर्ता प्रश्नों का उत्तर एक साथ दें; यदि सामग्री एक पाठ उदाहरण, पाठ योजना, पाठ्यक्रम पाठ, कागज या नीति दस्तावेज़ है, तो आप उपयुक्त होने पर सक्रिय रूप से विश्लेषण कर सकते हैं: संभावित छात्र गलतफहमियां, रचनात्मक संज्ञानात्मक संघर्ष, वैचारिक / प्रक्रिया विविधताएं, लागू सोच विज़ुअलाइज़ेशन या सोच रणनीति उपकरण। यदि उपयोगकर्ता की समस्या का सामग्री से कोई लेना-देना नहीं है, तो उपयोगकर्ता की समस्या पर ध्यान केंद्रित करें। उत्तर देते समय, सीधे सामग्री का विश्लेषण करें और ब्राउज़र प्लग-इन, मार्कडाउन निष्कर्षण या इस संदेश के प्रारूप का उल्लेख न करें।",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**पेज शीर्षक:** $1\n**पेज यूआरएल:** $2\n**पाठ स्रोत:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[संदर्भ सामग्री: वेब पेज टेक्स्ट]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "ब्राउजर में पीडीएफ खुली",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "राष्ट्रीय स्मार्ट शिक्षा मंच (पाठ्यक्रम/शिक्षण डिजाइन/शिक्षण कार्य सूची पीडीएफ)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "सीएनकेआई पीडीएफ",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Baidu लाइब्रेरी पीडीएफ",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "वेब आलेख पाठ",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "वेब पेज टेक्स्ट निष्कर्षण",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "उपयोगकर्ता द्वारा चयनित पृष्ठ पाठ",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**उपयोगकर्ता प्रश्न (कृपया इरादे के वर्गीकरण और उत्तर के लिए इस वाक्य को देखें):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "इस पृष्ठ पर कोई पठनीय सामग्री नहीं है. कृपया पहले पृष्ठ पर पाठ का चयन करें, या किसी भिन्न पृष्ठ पर पुनः प्रयास करें।",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "डिबगिंग कैप्चर करें",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "साइट दस्तावेज़ को एक कैनवास छवि के रूप में प्रस्तुत करती है और मुख्य पाठ को निकाला नहीं जा सकता है। कृपया पहले पूर्वावलोकन पृष्ठ को लोड करने के लिए स्क्रॉल करें, भेजने के लिए टेक्स्ट का चयन करें, या यदि कोई पीडीएफ/टेक्स्ट डाउनलोड है तो डाउनलोड सामग्री का उपयोग करें।",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "वर्तमान रीडर दृश्य केवल पाठ के लगभग $1 पृष्ठों को प्रदर्शित कर सकता है।",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "दस्तावेज़ एक चित्र पूर्वावलोकन हो सकता है, और निकाला गया पाठ अधूरा हो सकता है।",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "यह पृष्ठ पढ़ा नहीं जा सकता.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "अभी तक कनेक्ट नहीं हुआ. कृपया सेटिंग्स खोलें और MindGraph क्रेडेंशियल सहेजें।",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "लॉगिन समाप्त हो गया है. कृपया सेटिंग्स में एपीआई टोकन अपडेट करें।",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "MindMate से कनेक्ट करने में असमर्थ. कृपया सर्वर पता जांचें और पुनः प्रयास करें।",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate इस समय उत्तर देने में असमर्थ, कृपया बाद में पुनः प्रयास करें।",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "आज का AI उपयोग ऊपरी सीमा तक पहुँच गया है। कृपया कल पुनः प्रयास करें या वेब पेज पर विवरण देखें।",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "यह संदेश भेजने के लिए अपर्याप्त ThinkCoins।",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "स्थानीय विकास HTTP का उपयोग करता है, और एपीआई टोकन और पेज सामग्री नेटवर्क पर अनएन्क्रिप्टेड हैं। कृपया इसका उपयोग केवल विश्वसनीय वातावरण में ही करें।",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "डाउनलोड करना",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "समर्थित साइटों से पीडीएफ़ और दस्तावेज़ (वीडियो के बिना) सहेजें।",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "वर्तमान पृष्ठ डाउनलोडिंग का समर्थन नहीं करता. कृपया इस पैनल को खोलने से पहले एक समर्थित दस्तावेज़ पृष्ठ खोलें।",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "सेटिंग्स",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "जोड़ना",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "कृपया MindGraph एपीआई टोकन प्रवाह के समान क्रेडेंशियल का उपयोग करें।",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "सर्वर",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "खाता संख्या (मोबाइल फ़ोन नंबर)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "एक्स-एमजी-खाते के लिए उपयोग किया जाने वाला मोबाइल फोन नंबर",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "एपीआई टोकन",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "बचाना",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "वापस करना",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "बंद",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "प्रसंस्करण...",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "डाउनलोड शुरू हो गया है.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "सहेजा गया.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "क्रेडेंशियल सत्यापित किया जा रहा है...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "कृपया सभी स्थानों को भरें।",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "कोई सक्रिय टैब नहीं हैं.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "कुछ गलत हो गया। कृपया पुनः प्रयास करें या chrome://extensions पर एक्सटेंशन पुनः लोड करें।",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "फ़ाइल सहेजना प्रारंभ करने में असमर्थ. कृपया एक्सटेंशन पुनः लोड करें और पुनः प्रयास करें (Chrome 109+ या Edge 120+ की आवश्यकता है)।",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "सेटअप अधूरा है. कृपया \"सेटिंग्स\" खोलें और MindGraph पता, मोबाइल फोन नंबर और एपीआई टोकन भरें।",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "पृष्ठ पर कोई पढ़ने योग्य पाठ नहीं है. कृपया पहले पाठ का एक अनुभाग चुनें, या किसी भिन्न पृष्ठ पर पुनः प्रयास करें।",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "इस टैब पर पहले से ही कैप्चर या डाउनलोड कार्य प्रगति पर है, कृपया इसके पूरा होने तक प्रतीक्षा करें और पुनः प्रयास करें।",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph सर्वर त्रुटि ($1)। कृपया अपनी सेटिंग देखें और पुनः प्रयास करें।",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "यह पेज समर्थित नहीं है. कृपया एक सामान्य वेब पेज (http या https) खोलें और पुनः प्रयास करें।",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "अनुरोध बहुत बार-बार होता है, कृपया बाद में पुनः प्रयास करें।",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "सेवा अस्थायी रूप से अनुपलब्ध है, कृपया बाद में पुनः प्रयास करें।",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "सर्वर प्रतिक्रिया का समय समाप्त हो गया (3 मिनट से अधिक)। कृपया पुनः प्रयास करें या नेटवर्क जांचें।",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "क्रेडेंशियल्स के सत्यापन का समय समाप्त हो गया. कृपया पुनः प्रयास करें या नेटवर्क जांचें।",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "सर्वर ने पीएनजी छवि नहीं लौटाई। कृपया आधार पता और खाता सेटिंग जांचें.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "माइंड मैप पीएनजी बनाएं",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "दस्तावेज़ निकालें (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "दस्तावेज़ निकालें",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "पता चला: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "वर्तमान साइट: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "रीडिंग टैब पेज: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "कुल $1 संसाधन",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "लगभग $1 पृष्ठ दृश्यमान हैं - कृपया निकालने से पहले अधिक पृष्ठ लोड करने के लिए पूर्वावलोकन क्षेत्र को स्क्रॉल करें।",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "कृपया निकालने से पहले पृष्ठ को लोड करने के लिए दस्तावेज़ पूर्वावलोकन को स्क्रॉल करें। रीडर में पहले से प्रदर्शित सामग्री को प्राथमिकता दें।",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "SmartEdu से लॉगिन सिंक करें",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "टोकन को मैन्युअल रूप से चिपकाएँ...",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "SmartEdu access_token चिपकाएँ (केवल स्वचालित सिंक्रनाइज़ेशन विफल होने पर उपयोग किया जाता है):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "स्मार्टएडु टोकन: सिंक्रोनाइज़ हो रहा है...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "स्मार्टएडु टोकन: कनेक्टेड (आपके लॉगिन से)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "स्मार्टएडु टोकन: नहीं मिला - कृपया auth.smartedu.cn पर लॉग इन करें और स्मार्टएडु पेज खोलें, फिर \"सिंक\" पर क्लिक करें",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "दस्तावेज़ निकालें",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "हो गया - फ़ाइल तुरंत डाउनलोड होना शुरू हो जाएगी।",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "डाउनलोड प्रारंभ - रीडर में वर्तमान में उपलब्ध पहले $1 पृष्ठ सहेजे गए हैं।",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "यह दस्तावेज़ डाउनलोड नहीं किया जा सकता. कृपया पृष्ठ को ताज़ा करें और \"दस्तावेज़ निकालें\" पर फिर से क्लिक करें।",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "दस्तावेज़ीकरण पृष्ठ नहीं मिला. कृपया पहले लोडिंग पृष्ठ का पूर्वावलोकन करने के लिए स्क्रॉल करें, और फिर \"दस्तावेज़ निकालें\" पर क्लिक करें।",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "कोई पाठ्य सामग्री नहीं मिली. कृपया किसी भिन्न पृष्ठ या क्षेत्र पर पुनः प्रयास करें।",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "पेज अभी तैयार नहीं है. कृपया टैब रीफ्रेश करें और पुनः प्रयास करें।",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "इस पाठ के लिए कोई डाउनलोड करने योग्य फ़ाइलें नहीं हैं. कृपया कक्षा बदलें, या उन संसाधनों की जाँच करें जिन्हें आप डाउनलोड करना चाहते हैं।",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "सबसे पहले आपको स्मार्ट एजुकेशन में लॉग इन करना होगा। कृपया auth.smartedu.cn पर लॉग इन करें और पाठ्यक्रम पृष्ठ खोलें, फिर \"SmartEdu से लॉगिन सिंक्रनाइज़ करें\" पर क्लिक करें।",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "स्मार्ट एजुकेशन ने डाउनलोड अस्वीकार कर दिया। कृपया अपना लॉगिन फिर से सिंक्रनाइज़ करें या फ़ाइल बदलें।",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "वीडियो डाउनलोड करना समर्थित नहीं है. कृपया केवल पीडीएफ या दस्तावेज़ संसाधनों का चयन करें।",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "यह समर्थित दस्तावेज़ीकरण पृष्ठ नहीं है. कृपया दस्तावेज़ पढ़ने वाला पृष्ठ खोलें और पुनः प्रयास करें।",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "अभी तक बचाने के लिए कुछ भी नहीं है. कृपया पेज लोड करने के लिए रीडर को स्क्रॉल करें और पुनः प्रयास करें।",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "आपको सबसे पहले वेबसाइट पर लॉग इन करना होगा। लॉग इन करने के बाद, \"दस्तावेज़ निकालें\" पर क्लिक करें।",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "डाउनलोड को वेबसाइट द्वारा अस्वीकार कर दिया गया था। कृपया साइट पर लॉग इन करें और दोबारा प्रयास करने से पहले पुष्टि करें कि आपके पास सामग्री तक पहुंच है।",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "वेबसाइट एक सत्यापन कोड दिखा रही है. पुनः प्राप्त करने का प्रयास करने से पहले कृपया ब्राउज़र टैब में सत्यापन पूरा करें।",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "पेज तैयार हो रहा है...",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "लोड हो रहा है पेज स्क्रॉल करें...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "पृष्ठ सामग्री की प्रतिलिपि बनाई जा रही है...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "फ़ाइलें जनरेट की जा रही हैं...",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "कंप्यूटर में सहेजा जा रहा है...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "विकसित",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "हर बार डाउनलोड करते समय स्थान सहेजने के लिए कहें",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "पृष्ठ सामग्री पढ़ रहा है...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "MindGraph सर्वर पर भेजा जा रहा है...",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "सर्वर माइंड मैप तैयार कर रहा है...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "सर्वर से छवियाँ प्राप्त हो रही हैं...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "फ़ाइल सहेजी जा रही है...",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "सर्वर से कनेक्ट करने में असमर्थ, कृपया आधार पता और नेटवर्क जांचें।",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "अनुरोध विफल: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "संपर्क टूट गया है. कृपया फिर से \"दस्तावेज़ निकालें\" पर क्लिक करें। यदि यह अभी भी विफल रहता है, तो कृपया MindGraph को chrome://extensions पर पुनः लोड करें।",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "वर्तमान पृष्ठ के आधार पर एक माइंड मैप तैयार करें",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "पीएनजी चौड़ाई (पिक्सेल)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "पीएनजी ऊंचाई (पिक्सेल)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "डिफ़ॉल्ट का उपयोग करने के लिए खाली छोड़ दें",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "भाषा (इंटरफ़ेस और मानचित्र)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "ब्राउज़र का अनुसरण करें",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "सरलीकृत",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "सीधा शरीर",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "टोकन",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "$1 तक वैध",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "यह एपीआई टोकन समाप्त हो गया है, कृपया इसे वेब साइड (खाता/एपीआई) पर फिर से बनाएं।",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "सर्वर पर कोई वैध एपीआई टोकन नहीं है, या इसकी समय सीमा समाप्त हो चुकी है। कृपया टोकन की जांच करें या इसे ऐप में बनाएं।",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "समाप्ति समय प्राप्त करने में असमर्थ. कृपया अपना नेटवर्क जांचें या अपनी सेटिंग्स दोबारा सहेजें।",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "गैलरी भरी हुई है (20 तस्वीरें)। कृपया नव निर्मित सामग्री को सहेजने के लिए सहेजे गए मानचित्र को हटा दें।",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

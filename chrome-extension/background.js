@@ -7,8 +7,10 @@
  * Prompt output language codes: keep in sync with scripts/build_prompt_language_registry.py (_RAW).
  */
 
+importScripts("extension-locales.js");
 importScripts("shared-mindgraph.js");
 importScripts("extension-storage.js");
+importScripts("page-diagram-link.js");
 importScripts("extension-security.js");
 importScripts("extension-jobs.js");
 importScripts("offscreen-blobs.js");
@@ -35,14 +37,28 @@ importScripts("doc-extract/engines/cnki.js");
 importScripts("doc-extract/extract-core.js");
 importScripts("mindmate-capture-debug.js");
 importScripts("mindmate-capture-progress.js");
+importScripts("doc-extract/text/mixed-capture-merge.js");
+importScripts("doc-extract/mixed-capture.js");
 importScripts("doc-extract/extract-to-markdown.js");
 importScripts("doc-extract/page-content-capture.js");
 importScripts("doc-extract/text/blob-to-text.js");
 importScripts("doc-extract/text/markdown-capture-policy.js");
 importScripts("doc-extract/text/browser-pdf-fetch.js");
 importScripts("doc-extract/text/pdf-extract-offscreen.js");
+importScripts("doc-extract/text/pdf-classify.js");
+importScripts("doc-extract/smartedu/pdf-ocr-client.js");
 importScripts("doc-extract/smartedu/markdown-extract.js");
 importScripts("mindmate-capture.js");
+
+/**
+ * Selected interface language, then the browser locale.
+ * @param {string} key
+ * @param {string | string[] | undefined} substitutions
+ * @returns {string}
+ */
+function extMsg(key, substitutions) {
+  return MindGraphExtensionLocales.message(key, substitutions);
+}
 
 const MAX_CHARS = MindGraphShared.MAX_PAGE_CHARS;
 const FETCH_TIMEOUT_MS = MindGraphShared.FETCH_TIMEOUT_MS;
@@ -227,7 +243,7 @@ function notifyUser(message) {
   chrome.notifications.create({
     type: "basic",
     iconUrl: "icons/icon128.png",
-    title: chrome.i18n.getMessage("notificationTitle"),
+    title: extMsg("notificationTitle"),
     message,
   });
 }
@@ -253,10 +269,10 @@ function postProgress(port, stage) {
  */
 function resolveNotifyError(error) {
   if (!error) {
-    return chrome.i18n.getMessage("errFailed");
+    return extMsg("errFailed");
   }
   if (error.startsWith("err")) {
-    return chrome.i18n.getMessage(error) || error;
+    return extMsg(error) || error;
   }
   return error;
 }
@@ -266,6 +282,7 @@ function resolveNotifyError(error) {
  * @param {{ progressPort?: chrome.runtime.Port, fromContextMenu?: boolean, fromPopup?: boolean }} options
  */
 async function runGenerateMindmap(tabId, options) {
+  await MindGraphExtensionLocales.ensureLoaded();
   const { progressPort, fromContextMenu, fromPopup } = options;
 
   let finished = false;
@@ -285,13 +302,13 @@ async function runGenerateMindmap(tabId, options) {
     }
     if (fromContextMenu) {
       if (result.ok) {
-        notifyUser(chrome.i18n.getMessage("statusDownloadStarted"));
+        notifyUser(extMsg("statusDownloadStarted"));
       } else {
         notifyUser(resolveNotifyError(result.error));
       }
     } else if (fromPopup && !delivered) {
       if (result.ok) {
-        notifyUser(chrome.i18n.getMessage("statusDownloadStarted"));
+        notifyUser(extMsg("statusDownloadStarted"));
       } else {
         notifyUser(resolveNotifyError(result.error));
       }
@@ -316,14 +333,14 @@ async function runGenerateMindmap(tabId, options) {
     const account = (settings.account || "").trim();
     const token = (settings.token || "").trim();
     if (!baseUrl || !account || !token) {
-      finish({ ok: false, error: chrome.i18n.getMessage("errSettingsIncomplete") });
+      finish({ ok: false, error: "errSettingsIncomplete" });
       return;
     }
 
     const tab = await chrome.tabs.get(tabId);
     if (MindGraphShared.isRestrictedTabUrl(tab.url)) {
       console.error("[MindGraph] restricted tab URL", tab.url);
-      finish({ ok: false, error: chrome.i18n.getMessage("errRestrictedPage") });
+      finish({ ok: false, error: extMsg("errRestrictedPage") });
       return;
     }
 
@@ -372,7 +389,7 @@ async function runGenerateMindmap(tabId, options) {
       clearTimeout(timeoutId);
       if (fetchErr && fetchErr.name === "AbortError") {
         console.error("[MindGraph] fetch timeout", FETCH_TIMEOUT_MS, "ms", pngApiUrl, requestId);
-        finish({ ok: false, error: chrome.i18n.getMessage("errFetchTimeout") });
+        finish({ ok: false, error: extMsg("errFetchTimeout") });
         return;
       }
       throw fetchErr;
@@ -383,18 +400,18 @@ async function runGenerateMindmap(tabId, options) {
 
     if (!res.ok) {
       if (res.status === 429) {
-        finish({ ok: false, error: chrome.i18n.getMessage("errRateLimit") });
+        finish({ ok: false, error: extMsg("errRateLimit") });
         return;
       }
       if (res.status === 503) {
-        finish({ ok: false, error: chrome.i18n.getMessage("errServiceUnavailable") });
+        finish({ ok: false, error: extMsg("errServiceUnavailable") });
         return;
       }
       const detail = await MindGraphShared.parseErrorDetailFromResponse(res);
       console.error("[MindGraph] API HTTP error", res.status, pngApiUrl, detail);
       finish({
         ok: false,
-        error: chrome.i18n.getMessage("errApi", [String(res.status), detail]),
+        error: extMsg("errApi", [String(res.status), detail]),
       });
       return;
     }
@@ -408,7 +425,7 @@ async function runGenerateMindmap(tabId, options) {
         bodyPreview = "";
       }
       console.error("[MindGraph] expected image/png, got", contentType, bodyPreview || "(empty body)");
-      finish({ ok: false, error: chrome.i18n.getMessage("errNotPng") });
+      finish({ ok: false, error: extMsg("errNotPng") });
       return;
     }
 
@@ -422,7 +439,7 @@ async function runGenerateMindmap(tabId, options) {
       prepared = await MindGraphOffscreenBlobs.prepareDownloadUrlFromBlob(blob);
     } catch (e) {
       console.error("[MindGraph] prepare download url", e);
-      finish({ ok: false, error: chrome.i18n.getMessage("errDownloadPrepare") });
+      finish({ ok: false, error: extMsg("errDownloadPrepare") });
       return;
     }
     const { href: downloadHref, revokeMode } = prepared;
@@ -441,13 +458,23 @@ async function runGenerateMindmap(tabId, options) {
       return;
     }
     MindGraphOffscreenBlobs.scheduleDownloadUrlRevoke(downloadHref, revokeMode);
+    if (savedDiagramId && tab.url && globalThis.MindGraphPageDiagramLink) {
+      try {
+        await globalThis.MindGraphPageDiagramLink.savePageDiagram(
+          tab.url,
+          savedDiagramId,
+          baseUrlPresetId,
+        );
+      } catch (storeErr) {
+        console.error("[MindGraph] save last page diagram", storeErr);
+      }
+    }
     finish({
       ok: true,
       ...(savedDiagramId
         ? {
             diagramId: savedDiagramId,
             baseUrlPresetId,
-            diagramUrl: MindGraphShared.buildCanvasDiagramUrl(baseUrl, savedDiagramId),
           }
         : {}),
       ...(saveError ? { saveError } : {}),
@@ -464,164 +491,17 @@ async function runGenerateMindmap(tabId, options) {
   }
 }
 
-/**
- * Read stored credentials and resolve the API origin.
- * @returns {Promise<{ baseUrl: string, account: string, token: string } | null>}
- */
-async function getApiCredentials() {
-  const settings = await chrome.storage.local.get(["baseUrl", "baseUrlPresetId", "account", "token"]);
-  const resolvedServer = MindGraphShared.resolveMindGraphSettings(settings);
-  const baseUrl = resolvedServer.baseUrl;
-  const account = (settings.account || "").trim();
-  const token = (settings.token || "").trim();
-  if (!baseUrl || !account || !token) {
-    return null;
-  }
-  return { baseUrl, account, token };
-}
-
-/**
- * @param {{ account: string, token: string }} creds
- * @returns {Record<string, string>}
- */
-function buildAuthHeaders(creds) {
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${creds.token}`,
-    "X-MG-Account": creds.account,
-    "X-MG-Client": MindGraphShared.mgClientHeader(),
-    "X-Request-Id": MindGraphShared.newRequestId(),
-  };
-}
-
-/**
- * List the user's Document Summary packages for the popup picker.
- * @returns {Promise<{ ok: true, packages: Array<object> } | { ok: false, error: string }>}
- */
-async function fetchPackages() {
-  const creds = await getApiCredentials();
-  if (!creds) {
-    return { ok: false, error: chrome.i18n.getMessage("errSettingsIncomplete") };
-  }
-  const url = `${creds.baseUrl}/api/doc-summary/packages`;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, MindGraphShared.mgatFetchInit({
-      method: "GET",
-      signal: controller.signal,
-      headers: buildAuthHeaders(creds),
-    }));
-    clearTimeout(timeoutId);
-    if (!res.ok) {
-      const detail = await MindGraphShared.parseErrorDetailFromResponse(res);
-      return { ok: false, error: chrome.i18n.getMessage("errApi", [String(res.status), detail]) };
-    }
-    const data = await res.json();
-    return { ok: true, packages: Array.isArray(data.packages) ? data.packages : [] };
-  } catch (e) {
-    clearTimeout(timeoutId);
-    return { ok: false, error: e?.message || String(e) };
-  }
-}
-
-/**
- * Capture the active tab and store extract.md in a Document Summary session (COS).
- * @param {number} tabId
- * @param {number|null|undefined} packageId Optional existing doc_summary package id.
- * @returns {Promise<{ ok: true, document: object, packageId: number } | { ok: false, error: string }>}
- */
-async function runSaveToFileCenter(tabId, packageId) {
-  const parsedPackageId = MindGraphExtensionSecurity.parsePositiveInt(packageId);
-  const creds = await getApiCredentials();
-  if (!creds) {
-    return { ok: false, error: chrome.i18n.getMessage("errSettingsIncomplete") };
-  }
-
-  const tab = await chrome.tabs.get(tabId);
-  if (MindGraphShared.isRestrictedTabUrl(tab.url)) {
-    return { ok: false, error: chrome.i18n.getMessage("errRestrictedPage") };
-  }
-
-  const outcome = await MindGraphExtensionJobs.withTabJobLock(tabId, async () => {
-  const resolvedLang = await getResolvedLanguageForCapture();
-  const captureResult = await MindGraphDocExtract.capturePageContentMarkdown(tabId, MAX_CHARS, {
-    suppressMindMateUi: true,
-  });
-  const payload = MindGraphDocExtract.captureResultToWebContentPayload(captureResult, resolvedLang);
-  if (!payload) {
-    return { ok: false, error: MindGraphDocExtract.localizedCaptureErrorKey(captureResult) };
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const sessionRes = await fetch(`${creds.baseUrl}/api/doc-summary/session/start`, MindGraphShared.mgatFetchInit({
-      method: "POST",
-      signal: controller.signal,
-      headers: buildAuthHeaders(creds),
-      body: JSON.stringify({
-        diagram_title: payload.page_title || undefined,
-        package_id: parsedPackageId || undefined,
-        create_if_missing: true,
-      }),
-    }));
-    if (!sessionRes.ok) {
-      clearTimeout(timeoutId);
-      const detail = await MindGraphShared.parseErrorDetailFromResponse(sessionRes);
-      return { ok: false, error: chrome.i18n.getMessage("errApi", [String(sessionRes.status), detail]) };
-    }
-    const sessionPkg = await sessionRes.json();
-    const targetPackageId = MindGraphExtensionSecurity.parsePositiveInt(sessionPkg && sessionPkg.id);
-    if (!targetPackageId) {
-      clearTimeout(timeoutId);
-      return { ok: false, error: chrome.i18n.getMessage("errFailed") };
-    }
-
-    const ingestUrl = `${creds.baseUrl}/api/doc-summary/packages/${targetPackageId}/documents/ingest-web`;
-    const res = await fetch(ingestUrl, MindGraphShared.mgatFetchInit({
-      method: "POST",
-      signal: controller.signal,
-      headers: buildAuthHeaders(creds),
-      body: JSON.stringify({
-        page_content: payload.page_content,
-        page_url: payload.page_url,
-        page_title: payload.page_title,
-        language: payload.language,
-      }),
-    }));
-    clearTimeout(timeoutId);
-    if (!res.ok) {
-      const detail = await MindGraphShared.parseErrorDetailFromResponse(res);
-      return { ok: false, error: chrome.i18n.getMessage("errApi", [String(res.status), detail]) };
-    }
-    const document = await res.json();
-    return { ok: true, document, packageId: targetPackageId };
-  } catch (e) {
-    clearTimeout(timeoutId);
-    if (e && e.name === "AbortError") {
-      return { ok: false, error: chrome.i18n.getMessage("errFetchTimeout") };
-    }
-    return { ok: false, error: e?.message || String(e) };
-  }
-  });
-
-  if (outcome && outcome.ok === false && outcome.error === "errJobAlreadyRunning") {
-    return { ok: false, error: "errJobAlreadyRunning" };
-  }
-  return outcome;
-}
-
-function ensureContextMenu() {
+async function ensureContextMenu() {
+  await MindGraphExtensionLocales.ensureLoaded();
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: "mindgraph-generate",
-      title: chrome.i18n.getMessage("contextMenuGenerate"),
+      title: extMsg("contextMenuGenerate"),
       contexts: ["page"],
     });
     chrome.contextMenus.create({
       id: "mindgraph-extract-document",
-      title: chrome.i18n.getMessage("contextMenuExtractDocument"),
+      title: extMsg("contextMenuExtractDocument"),
       contexts: ["page"],
     });
   });
@@ -632,6 +512,7 @@ function ensureContextMenu() {
  * @param {number} tabId
  */
 async function runExtractDocumentJob(tabId, options) {
+  await MindGraphExtensionLocales.ensureLoaded();
   const { progressPort, fromContextMenu, smarteduAssets, smarteduToken } = options;
   const lockOutcome = await MindGraphExtensionJobs.withTabJobLock(tabId, async () => {
   const settings = await chrome.storage.local.get(["saveAs"]);
@@ -651,13 +532,13 @@ async function runExtractDocumentJob(tabId, options) {
   if (fromContextMenu) {
     if (result.ok) {
       const noticeMsg = result.notice
-        ? chrome.i18n.getMessage(result.notice, result.noticeArgs || [])
+        ? extMsg(result.notice, result.noticeArgs || [])
         : "";
-      notifyUser(noticeMsg || chrome.i18n.getMessage("statusExtractDownloadStarted"));
+      notifyUser(noticeMsg || extMsg("statusExtractDownloadStarted"));
     } else {
       const errKey =
         result.error && result.error.startsWith("err") ? result.error : "errExtractFailed";
-      notifyUser(chrome.i18n.getMessage(errKey) || chrome.i18n.getMessage("errFailed"));
+      notifyUser(extMsg(errKey) || extMsg("errFailed"));
     }
   }
   return { lockComplete: true };
@@ -705,8 +586,14 @@ function onDocExtractConnect(port) {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  ensureContextMenu();
+  void ensureContextMenu();
   void MindGraphExtensionStorage.pruneStaleExtensionStorage();
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.uiLanguage) {
+    void ensureContextMenu();
+  }
 });
 
 /**
@@ -728,15 +615,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }, 0);
     return true;
   }
-  if (msg && msg.type === "LIST_PACKAGES") {
-    fetchPackages().then(sendResponse);
-    return true;
-  }
-  if (msg && msg.type === "SAVE_TO_FILE_CENTER" && typeof msg.tabId === "number") {
-    const packageId = MindGraphExtensionSecurity.parsePositiveInt(msg.packageId);
-    runSaveToFileCenter(msg.tabId, packageId || null).then(sendResponse);
-    return true;
-  }
   if (msg && msg.type === "PREVIEW_EXTRACT" && typeof msg.tabId === "number") {
     const pageUrl = typeof msg.pageUrl === "string" ? msg.pageUrl : "";
     MindGraphDocExtract.previewExtractTarget(pageUrl, msg.tabId).then(sendResponse);
@@ -745,7 +623,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === "SAVE_SMARTEDU_TOKEN") {
     const token = MindGraphExtensionSecurity.parseSmartEduToken(msg.token);
     if (!token) {
-      sendResponse({ ok: false, error: chrome.i18n.getMessage("errFailed") });
+      sendResponse({ ok: false, error: extMsg("errFailed") });
       return true;
     }
     MindGraphDocExtract.persistSmartEduToken(token).then(() => {

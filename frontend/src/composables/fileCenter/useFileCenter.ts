@@ -203,6 +203,9 @@ export function useFileCenterMutations(options?: { apiMode?: FileCenterApiMode }
     ) {
       return t('canvas.mindMapDocumentSummary.contentTooLongForModel')
     }
+    if (raw.includes('browser_file_extract_required')) {
+      return t('canvas.mindMapDocumentSummary.webChromeExtensionHint')
+    }
     return raw || fallback
   }
 

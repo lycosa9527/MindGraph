@@ -127,6 +127,10 @@
     "message": "Extracting text ($1/$2): $3",
     "description": "SmartEdu PDF text extraction"
   },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Reading scanned pages ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
   "mindmatePageContextSmarteduReady": {
     "message": "Ready: $1 file(s), $2 chars · $3",
     "description": "SmartEdu extraction complete"
@@ -267,30 +271,6 @@
     "message": "This page is not supported for download. Open a supported document page, then open this panel again.",
     "description": "Hint when current tab has no document extract host"
   },
-  "fileCenterSectionLabel": {
-    "message": "Save to Document Summary",
-    "description": "Document Summary section label"
-  },
-  "fileCenterPackageLabel": {
-    "message": "Session",
-    "description": "Document Summary session picker label"
-  },
-  "fileCenterNewSession": {
-    "message": "New session (this page)",
-    "description": "Create a new Document Summary session for the captured page"
-  },
-  "btnSaveToFileCenter": {
-    "message": "Save page extract",
-    "description": "Button to save page markdown into Document Summary (COS)"
-  },
-  "fileCenterUntitled": {
-    "message": "Untitled session",
-    "description": "Fallback Document Summary session name"
-  },
-  "statusSavedToFileCenter": {
-    "message": "Saved extract for review in Document Summary.",
-    "description": "Status after saving page markdown into COS-backed Document Summary"
-  },
   "btnSettings": {
     "message": "Settings",
     "description": "Settings button"
@@ -380,8 +360,8 @@
     "description": "Blob URL, offscreen, or data-URL download prep failed"
   },
   "errSettingsIncomplete": {
-    "message": "Settings are incomplete. Open Settings and enter your MindGraph URL, phone number, and API token.",
-    "description": "Background error"
+    "message": "Please log in first. Open Settings and save your MindGraph URL, phone number, and API token.",
+    "description": "Missing extension credentials"
   },
   "errNoPageText": {
     "message": "No text found on this page. Select some text first, or try a different page.",
@@ -663,9 +643,13 @@
     "message": "Could not load token expiry. Check network or save settings again.",
     "description": "Token meta"
   },
-  "linkViewInLibrary": {
-    "message": "View in library →",
-    "description": "Link shown after successful generation to open the saved diagram in the web editor"
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
   },
   "errLibraryFull": {
     "message": "Library full (20 diagrams). Delete a saved diagram to enable saving future mind maps.",

@@ -23,7 +23,12 @@ def test_build_store_zip_includes_background_worker() -> None:
     """Runtime service worker must be present in the store package."""
     data = build_store_zip_bytes()
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
-        assert "background.js" in archive.namelist()
+        names = archive.namelist()
+        assert "background.js" in names
+        assert "page-diagram-link.js" in names
+        assert "popup.html" in names
+        popup_html = archive.read("popup.html").decode("utf-8")
+        assert "page-diagram-link.js" in popup_html
 
 
 _REMOTE_CODE_MARKERS = (

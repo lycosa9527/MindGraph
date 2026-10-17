@@ -1,9 +1,9 @@
 /**
- * Popup UI — i18n via chrome.i18n with optional override from _locales.
+ * Popup UI — i18n via the 44 interface locales (extension-locales.js).
  * The Language setting also drives mind map generation language (via the service worker).
  */
 
-/* global MindGraphShared, MindGraphMindMate, MindGraphExtensionStorage */
+/* global MindGraphShared, MindGraphMindMate, MindGraphExtensionStorage, MindGraphExtensionLocales */
 
 const STAGE_I18N = {
   reading: "stageReadingPage",
@@ -37,10 +37,8 @@ const STAGE_WIDTH_PCT = {
   saving: 100,
 };
 
-/** @type {Record<string, string> | null} */
-let i18nOverride = null;
-/** @type {"auto" | "en" | "zh_CN" | "zh_TW"} */
-let i18nMode = "auto";
+/** Effective picker code after Match browser is resolved. */
+let i18nMode = "en";
 
 const VERIFY_TIMEOUT_MS = MindGraphShared.VERIFY_TIMEOUT_MS;
 
@@ -50,16 +48,7 @@ const VERIFY_TIMEOUT_MS = MindGraphShared.VERIFY_TIMEOUT_MS;
  * @returns {string}
  */
 function t(key, substitutions) {
-  if (i18nOverride && i18nOverride[key] != null) {
-    let raw = i18nOverride[key];
-    if (substitutions && Array.isArray(substitutions) && substitutions.length) {
-      for (let i = 0; i < substitutions.length; i += 1) {
-        raw = String(raw).split(`$${i + 1}`).join(String(substitutions[i]));
-      }
-    }
-    return raw;
-  }
-  return chrome.i18n.getMessage(key, substitutions) || key;
+  return MindGraphExtensionLocales.message(key, substitutions);
 }
 
 /**
@@ -67,10 +56,44 @@ function t(key, substitutions) {
  * @returns {string}
  */
 function userFacingError(code) {
-  if (code && code.startsWith("err")) {
+  if (!code) {
+    return t("errExtractFailed");
+  }
+  if (code.startsWith("err")) {
     return t(code);
   }
-  return t("errExtractFailed");
+  return code;
+}
+
+/**
+ * @returns {Promise<boolean>}
+ */
+async function mindGraphCredentialsComplete() {
+  const data = await chrome.storage.local.get(["baseUrl", "baseUrlPresetId", "account", "token"]);
+  const resolved = MindGraphShared.resolveMindGraphSettings(data);
+  const account = (data.account || "").trim();
+  const token = (data.token || "").trim();
+  return Boolean(resolved.baseUrl && account && token);
+}
+
+/**
+ * Generate tab: inline status and a system notification.
+ * @param {HTMLElement | null} statusElement
+ * @param {string} messageKey
+ */
+function notifyGenerateError(statusElement, messageKey) {
+  const text = t(messageKey);
+  if (statusElement) {
+    setStatus(statusElement, text, "err");
+  }
+  if (typeof chrome !== "undefined" && chrome.notifications && chrome.notifications.create) {
+    chrome.notifications.create({
+      type: "basic",
+      iconUrl: "icons/icon128.png",
+      title: t("notificationTitle"),
+      message: text,
+    });
+  }
 }
 
 /**
@@ -118,23 +141,8 @@ function setDownloadExtractProgressStage(stage) {
  * @returns {Promise<void>}
  */
 async function initI18n() {
-  const { uiLanguage } = await chrome.storage.local.get("uiLanguage");
-  const raw = (uiLanguage || "auto").toString();
-  if (raw === "auto" || (raw !== "en" && raw !== "zh_CN" && raw !== "zh_TW")) {
-    i18nOverride = null;
-    i18nMode = "auto";
-  } else {
-    i18nMode = raw;
-    const url = chrome.runtime.getURL(`_locales/${raw}/messages.json`);
-    const r = await fetch(url);
-    const data = await r.json();
-    i18nOverride = {};
-    Object.keys(data).forEach((k) => {
-      if (data[k] && data[k].message) {
-        i18nOverride[k] = data[k].message;
-      }
-    });
-  }
+  await MindGraphExtensionLocales.ensureLoaded();
+  i18nMode = MindGraphExtensionLocales.effectiveCode();
 }
 
 /**
@@ -142,14 +150,9 @@ async function initI18n() {
  * @returns {string}
  */
 function getEffectiveBcpForIntl() {
-  if (i18nMode === "en") {
-    return "en";
-  }
-  if (i18nMode === "zh_CN") {
-    return "zh-CN";
-  }
-  if (i18nMode === "zh_TW") {
-    return "zh-TW";
+  const entry = MindGraphExtensionLocales.entryFor(i18nMode);
+  if (entry) {
+    return entry.intl;
   }
   return chrome.i18n.getUILanguage() || "en";
 }
@@ -202,32 +205,23 @@ function populateUiLanguageSelect(selectEl) {
   if (!selectEl) {
     return;
   }
-  const opts = [
-    { value: "auto", key: "optionLangAuto" },
-    { value: "en", key: "optionLangEn" },
-    { value: "zh_CN", key: "optionLangZhCN" },
-    { value: "zh_TW", key: "optionLangZhTW" },
-  ];
   selectEl.textContent = "";
-  opts.forEach((o) => {
+  const auto = document.createElement("option");
+  auto.value = "auto";
+  auto.textContent = t("optionLangAuto");
+  selectEl.appendChild(auto);
+  MindGraphExtensionLocales.LOCALES.forEach((entry) => {
     const opt = document.createElement("option");
-    opt.value = o.value;
-    opt.textContent = t(o.key);
+    opt.value = entry.code;
+    opt.textContent = entry.nativeName;
     selectEl.appendChild(opt);
   });
 }
 
 function applyLocaleToDocument() {
-  const bcp = getEffectiveBcpForIntl();
-  if (bcp === "en") {
-    document.documentElement.lang = "en";
-  } else if (bcp.startsWith("zh-TW") || bcp === "zh-Hant" || bcp === "zh-HK") {
-    document.documentElement.lang = "zh-TW";
-  } else if (bcp.startsWith("zh")) {
-    document.documentElement.lang = "zh-CN";
-  } else {
-    document.documentElement.lang = bcp;
-  }
+  const entry = MindGraphExtensionLocales.entryFor(i18nMode);
+  document.documentElement.lang = entry ? entry.intl : getEffectiveBcpForIntl();
+  document.documentElement.dir = entry && entry.rtl ? "rtl" : "ltr";
   document.title = t("appTitle");
 }
 
@@ -458,11 +452,7 @@ async function startPopup() {
         fieldAccount.value = data.account || "";
         fieldToken.value = data.token || "";
         fieldSaveAs.checked = Boolean(data.saveAs);
-        if (data.uiLanguage && ["auto", "en", "zh_CN", "zh_TW"].includes(String(data.uiLanguage))) {
-          fieldUiLanguage.value = String(data.uiLanguage);
-        } else {
-          fieldUiLanguage.value = "auto";
-        }
+        fieldUiLanguage.value = MindGraphExtensionLocales.normalizeUiLanguage(data.uiLanguage);
         if (typeof data.pngWidth === "number") {
           fieldPngWidth.value = String(data.pngWidth);
         } else {
@@ -501,6 +491,9 @@ async function startPopup() {
     tabMindmate.setAttribute("aria-selected", tab === "mindmate" ? "true" : "false");
     tabDownload.setAttribute("aria-selected", tab === "download" ? "true" : "false");
     tabSettings.setAttribute("aria-selected", tab === "settings" ? "true" : "false");
+    if (tab === "generate") {
+      await refreshLibraryLinkForActiveTab();
+    }
     if (tab === "download") {
       await loadExtractPreview();
     }
@@ -568,11 +561,7 @@ async function startPopup() {
   updateLocalServerWarning(fieldBaseUrl, fieldLocalServerWarning);
   populateUiLanguageSelect(fieldUiLanguage);
   const storedLang = (await chrome.storage.local.get("uiLanguage")).uiLanguage;
-  if (storedLang && ["auto", "en", "zh_CN", "zh_TW"].includes(String(storedLang))) {
-    fieldUiLanguage.value = String(storedLang);
-  } else {
-    fieldUiLanguage.value = "auto";
-  }
+  fieldUiLanguage.value = MindGraphExtensionLocales.normalizeUiLanguage(storedLang);
   applyI18n();
   void MindGraphExtensionStorage.pruneStaleExtensionStorage();
 
@@ -707,6 +696,9 @@ async function startPopup() {
       populateUiLanguageSelect(fieldUiLanguage);
       fieldUiLanguage.value = String(payload.uiLanguage);
       applyI18n();
+      if (linkViewDiagram && !linkViewDiagram.getAttribute("data-diagram-id")) {
+        await showPersonalLibraryLink();
+      }
       await updateTokenExpiresHint(baseUrl, account, token, fieldTokenExpires);
     } catch (e) {
       console.error("[MindGraph] settings save error", e);
@@ -717,66 +709,102 @@ async function startPopup() {
     }
   });
 
+  /**
+   * @returns {Promise<{ baseUrl: string, presetId: string }>}
+   */
+  async function resolvePopupServer() {
+    const data = await chrome.storage.local.get(["baseUrl", "baseUrlPresetId"]);
+    return MindGraphShared.resolveMindGraphSettings(data);
+  }
+
+  /**
+   * Personal library, until this page's diagram has been saved.
+   * @returns {Promise<void>}
+   */
+  async function showPersonalLibraryLink() {
+    if (!linkViewDiagram) {
+      return;
+    }
+    const resolved = await resolvePopupServer();
+    const url = MindGraphShared.buildLibraryUrl(resolved.baseUrl);
+    linkViewDiagram.href = url;
+    linkViewDiagram.setAttribute("data-href", url);
+    linkViewDiagram.removeAttribute("data-diagram-id");
+    linkViewDiagram.removeAttribute("data-base-url-preset");
+    linkViewDiagram.setAttribute("data-i18n", "linkOpenLibrary");
+    linkViewDiagram.textContent = t("linkOpenLibrary");
+  }
+
+  /**
+   * @param {string} diagramId
+   * @param {string} [presetId]
+   */
+  function showGeneratedDiagramLink(diagramId, presetId) {
+    if (!linkViewDiagram) {
+      return;
+    }
+    const resolved = MindGraphShared.resolveMindGraphSettings({
+      baseUrlPresetId: presetId || undefined,
+    });
+    const url = MindGraphShared.buildCanvasDiagramUrl(resolved.baseUrl, diagramId);
+    if (!url) {
+      return;
+    }
+    linkViewDiagram.href = url;
+    linkViewDiagram.setAttribute("data-href", url);
+    linkViewDiagram.setAttribute("data-diagram-id", diagramId);
+    linkViewDiagram.setAttribute("data-base-url-preset", resolved.presetId);
+    linkViewDiagram.setAttribute("data-i18n", "linkOpenThisDiagram");
+    linkViewDiagram.textContent = t("linkOpenThisDiagram");
+  }
+
   if (linkViewDiagram) {
     linkViewDiagram.addEventListener("click", (e) => {
       e.preventDefault();
-      const diagramId = linkViewDiagram.getAttribute("data-diagram-id");
-      const presetId = linkViewDiagram.getAttribute("data-base-url-preset");
-      let url = linkViewDiagram.getAttribute("data-href") || linkViewDiagram.href;
-      if (diagramId) {
-        const resolved = MindGraphShared.resolveMindGraphSettings({
-          baseUrlPresetId: presetId || undefined,
-        });
-        const rebuilt = MindGraphShared.buildCanvasDiagramUrl(resolved.baseUrl, diagramId);
-        if (rebuilt) {
-          url = rebuilt;
+      void (async () => {
+        if (!(await mindGraphCredentialsComplete())) {
+          notifyGenerateError(statusEl, "errSettingsIncomplete");
+          return;
         }
-      }
-      if (url && url !== "#" && !url.endsWith("#")) {
-        void chrome.tabs.create({ url, active: true });
-      }
+        const url = linkViewDiagram.getAttribute("data-href") || "";
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+          await chrome.tabs.create({ url, active: true });
+        }
+      })();
     });
   }
-
-  const fileCenterSection = document.getElementById("file-center-section");
-  const fieldPackage = document.getElementById("field-package");
-  const btnSaveFileCenter = document.getElementById("btn-save-file-center");
 
   /**
-   * Populate the package picker from the backend. Hides the section when no
-   * package exists or credentials are missing.
-   * @returns {Promise<void>}
+   * Active page tab for Generate — lastFocusedWindow avoids stale window on Edge/Chrome.
+   * @returns {Promise<chrome.tabs.Tab | undefined>}
    */
-  async function loadPackages() {
-    if (!fileCenterSection || !fieldPackage || !btnSaveFileCenter) {
-      return;
+  async function getActiveContentTab() {
+    let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (tabs[0]?.id) {
+      return tabs[0];
     }
-    const response = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ type: "LIST_PACKAGES" }, (res) => {
-        void chrome.runtime.lastError;
-        resolve(res || { ok: false, error: "no_response" });
-      });
-    });
-    if (!response.ok) {
-      fileCenterSection.hidden = true;
-      return;
-    }
-    fieldPackage.textContent = "";
-    const optNew = document.createElement("option");
-    optNew.value = "";
-    optNew.textContent = t("fileCenterNewSession");
-    fieldPackage.appendChild(optNew);
-    const packages = Array.isArray(response.packages) ? response.packages : [];
-    packages.forEach((pkg) => {
-      const opt = document.createElement("option");
-      opt.value = String(pkg.id);
-      opt.textContent = pkg.name || t("fileCenterUntitled");
-      fieldPackage.appendChild(opt);
-    });
-    fileCenterSection.hidden = false;
+    tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    return tabs[0];
   }
 
-  void loadPackages();
+  /**
+   * Library link follows the active page: its diagram when one was saved, otherwise the library.
+   * @returns {Promise<void>}
+   */
+  async function refreshLibraryLinkForActiveTab() {
+    const tab = await getActiveContentTab();
+    const pageUrl = tab && tab.url ? tab.url : "";
+    const store = window.MindGraphPageDiagramLink;
+    const saved = store && pageUrl ? await store.loadPageDiagram(pageUrl) : null;
+    if (saved && saved.diagramId) {
+      showGeneratedDiagramLink(saved.diagramId, saved.presetId);
+      return;
+    }
+    await showPersonalLibraryLink();
+  }
+
+  void refreshLibraryLinkForActiveTab();
+
 
   const docExtractSection = document.getElementById("doc-extract-section");
   const downloadUnsupported = document.getElementById("download-unsupported");
@@ -858,19 +886,6 @@ async function startPopup() {
   }
 
   /**
-   * Active page tab for Download — lastFocusedWindow avoids stale window on Edge/Chrome.
-   * @returns {Promise<chrome.tabs.Tab | undefined>}
-   */
-  async function getActiveContentTab() {
-    let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    if (tabs[0]?.id) {
-      return tabs[0];
-    }
-    tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    return tabs[0];
-  }
-
-  /**
    * @param {string | undefined} url
    * @returns {string}
    */
@@ -889,6 +904,9 @@ async function startPopup() {
    * Debounced refresh when the user switches tabs while the Download panel is open.
    */
   function scheduleExtractPreviewRefresh() {
+    if (activeMainTab === "generate") {
+      void refreshLibraryLinkForActiveTab();
+    }
     if (activeMainTab !== "download") {
       return;
     }
@@ -1144,64 +1162,17 @@ async function startPopup() {
     });
   }
 
-  if (btnSaveFileCenter && fieldPackage) {
-    btnSaveFileCenter.addEventListener("click", () => {
-      void (async () => {
-        const rawPackageId = (fieldPackage.value || "").trim();
-        const packageId = rawPackageId ? parseInt(rawPackageId, 10) : null;
-        if (rawPackageId && !Number.isFinite(packageId)) {
-          return;
-        }
-        setStatus(statusEl, t("statusWorking"), "loading");
-        btnSaveFileCenter.disabled = true;
-        try {
-          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-          if (!tab?.id) {
-            setStatus(statusEl, t("errNoTab"), "err");
-            return;
-          }
-          const response = await new Promise((resolve) => {
-            chrome.runtime.sendMessage(
-              {
-                type: "SAVE_TO_FILE_CENTER",
-                tabId: tab.id,
-                packageId: packageId || undefined,
-              },
-              (res) => {
-                void chrome.runtime.lastError;
-                resolve(res || { ok: false, error: t("errFailed") });
-              },
-            );
-          });
-          if (response.ok) {
-            setStatus(statusEl, t("statusSavedToFileCenter"), "ok");
-            void loadPackages();
-          } else {
-            console.error("[MindGraph] save to Document Summary failed", response.error);
-            setStatus(statusEl, userFacingError(response.error), "err");
-          }
-        } catch (e) {
-          setStatus(statusEl, e?.message || String(e), "err");
-        } finally {
-          btnSaveFileCenter.disabled = false;
-        }
-      })();
-    });
-  }
 
   btnGenerate.addEventListener("click", () => {
     void (async () => {
       setStatus(statusEl, "", "");
-      if (linkViewDiagram) {
-        linkViewDiagram.hidden = true;
-        linkViewDiagram.removeAttribute("data-href");
-        linkViewDiagram.removeAttribute("data-diagram-id");
-        linkViewDiagram.removeAttribute("data-base-url-preset");
-        linkViewDiagram.href = "#";
-      }
       if (libraryFullNote) {
         libraryFullNote.hidden = true;
         libraryFullNote.textContent = "";
+      }
+      if (!(await mindGraphCredentialsComplete())) {
+        notifyGenerateError(statusEl, "errSettingsIncomplete");
+        return;
       }
       setProgressVisible(true);
       if (progressFill) {
@@ -1235,7 +1206,7 @@ async function startPopup() {
           }
         }
       };
-      const onMsg = (msg) => {
+      const onMsg = async (msg) => {
         if (!msg) {
           return;
         }
@@ -1247,28 +1218,10 @@ async function startPopup() {
           setProgressVisible(false);
           if (msg.ok) {
             setStatus(statusEl, t("statusDownloadStarted"), "ok");
-            if (linkViewDiagram && msg.diagramId && typeof msg.diagramId === "string") {
+            if (msg.diagramId && typeof msg.diagramId === "string") {
               const presetId =
                 typeof msg.baseUrlPresetId === "string" ? msg.baseUrlPresetId : fieldBaseUrl.value;
-              const resolved = MindGraphShared.resolveMindGraphSettings({
-                baseUrlPresetId: presetId,
-              });
-              const diagramUrl =
-                (typeof msg.diagramUrl === "string" && msg.diagramUrl) ||
-                MindGraphShared.buildCanvasDiagramUrl(resolved.baseUrl, msg.diagramId);
-              if (diagramUrl) {
-                linkViewDiagram.href = diagramUrl;
-                linkViewDiagram.setAttribute("data-href", diagramUrl);
-                linkViewDiagram.setAttribute("data-diagram-id", msg.diagramId);
-                linkViewDiagram.setAttribute("data-base-url-preset", resolved.presetId);
-                linkViewDiagram.textContent = t("linkViewInLibrary");
-                linkViewDiagram.hidden = false;
-              }
-            } else if (linkViewDiagram && msg.diagramUrl && typeof msg.diagramUrl === "string") {
-              linkViewDiagram.href = msg.diagramUrl;
-              linkViewDiagram.setAttribute("data-href", msg.diagramUrl);
-              linkViewDiagram.textContent = t("linkViewInLibrary");
-              linkViewDiagram.hidden = false;
+              showGeneratedDiagramLink(msg.diagramId, presetId);
             } else if (libraryFullNote && msg.saveError === "limit_reached") {
               libraryFullNote.textContent = t("errLibraryFull");
               libraryFullNote.hidden = false;

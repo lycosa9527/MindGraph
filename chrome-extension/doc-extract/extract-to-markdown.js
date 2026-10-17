@@ -7,6 +7,22 @@
 
   const MindGraphDocExtract = global.MindGraphDocExtract || {};
   const MindGraphShared = global.MindGraphShared;
+
+  /**
+   * @param {string} key
+   * @param {string[] | string | undefined} substitutions
+   * @returns {string}
+   */
+  function extensionUiMessage(key, substitutions) {
+    const locales = global.MindGraphExtensionLocales;
+    if (locales && typeof locales.message === "function") {
+      return locales.message(key, substitutions);
+    }
+    if (typeof chrome !== "undefined" && chrome.i18n) {
+      return chrome.i18n.getMessage(key, substitutions) || "";
+    }
+    return "";
+  }
   const PDF_EXTRACT_FILES = [
     "vendor/pdfjs/pdf.worker.min.js",
     "vendor/pdfjs/pdf.min.js",
@@ -243,8 +259,17 @@
       return null;
     }
     try {
-      const text = await MindGraphDocExtract.extractPdfBlobTextOffscreen(blob, PDF_MAX_PAGES, maxChars);
-      if (!text || text.trim().length < 20) {
+      let text = await MindGraphDocExtract.extractPdfBlobTextOffscreen(blob, PDF_MAX_PAGES, maxChars);
+      text = typeof text === "string" ? text.trim() : "";
+      const pdfTitle =
+        (tabTitle && tabTitle.replace(/\.pdf$/i, "").trim()) ||
+        (MindGraphDocExtract.titleFromBrowserPdfUrl
+          ? MindGraphDocExtract.titleFromBrowserPdfUrl(pageUrl)
+          : "PDF document");
+      if (typeof MindGraphDocExtract.finishPdfBlobText === "function") {
+        text = (await MindGraphDocExtract.finishPdfBlobText(tabId, blob, text, 8, maxChars, pdfTitle)).trim();
+      }
+      if (!text || text.length < 20) {
         return null;
       }
       const title =
@@ -441,11 +466,21 @@
         typeof MindGraphDocExtract.extractBlobTextInTab === "function"
           ? MindGraphDocExtract.extractBlobTextInTab
           : extractPdfBlobTextWithFallback;
-      const text = await extractFn(tabId, blob, limits.pdfMaxPages, maxChars);
+      let text = await extractFn(tabId, blob, limits.pdfMaxPages, maxChars);
+      const title = resolved.title || "cnki-document";
+      if (typeof MindGraphDocExtract.finishPdfBlobText === "function") {
+        text = await MindGraphDocExtract.finishPdfBlobText(
+          tabId,
+          blob,
+          text,
+          limits.pdfMaxPages,
+          maxChars,
+          title,
+        );
+      }
       if (text.length < 80) {
         return { ok: false, error: "CNKI_PDF_URL_MISS" };
       }
-      const title = resolved.title || "cnki-document";
       return {
         title,
         url: pageUrl,
@@ -486,15 +521,25 @@
         typeof MindGraphDocExtract.extractBlobTextInTab === "function"
           ? MindGraphDocExtract.extractBlobTextInTab
           : extractPdfBlobTextWithFallback;
-      const text = await extractFn(tabId, blob, limits.pdfMaxPages, maxChars);
-      if (text.length < 80) {
-        return null;
-      }
+      let text = await extractFn(tabId, blob, limits.pdfMaxPages, maxChars);
       let title = "wenku-document";
       try {
         title = decodeURIComponent(new URL(pageUrl).pathname.split("/").pop() || title);
       } catch {
         /* keep default */
+      }
+      if (typeof MindGraphDocExtract.finishPdfBlobText === "function") {
+        text = await MindGraphDocExtract.finishPdfBlobText(
+          tabId,
+          blob,
+          text,
+          limits.pdfMaxPages,
+          maxChars,
+          title,
+        );
+      }
+      if (text.length < 80) {
+        return null;
       }
       let markdown = formatDocumentMarkdown(title, text, pageUrl, maxChars);
       if (
@@ -503,7 +548,7 @@
         typeof chrome !== "undefined" &&
         chrome.i18n
       ) {
-        const notice = chrome.i18n.getMessage(limits.previewNotice, [String(limits.pdfMaxPages)]);
+        const notice = extensionUiMessage(limits.previewNotice, [String(limits.pdfMaxPages)]);
         markdown = MindGraphDocExtract.prependCaptureNotice(markdown, notice, maxChars);
       }
       return {
@@ -589,11 +634,30 @@
     if (!limits.previewNotice || hostEntry.id === "wenku") {
       return markdown;
     }
-    const notice = chrome.i18n.getMessage(limits.previewNotice);
+    const notice = extensionUiMessage(limits.previewNotice);
     if (!notice) {
       return markdown;
     }
     return MindGraphDocExtract.prependCaptureNotice(markdown, notice, maxChars);
+  }
+
+  /**
+   * @param {number} tabId
+   * @param {Blob} blob
+   * @param {string} title
+   * @param {string} url
+   * @param {number} maxChars
+   * @returns {Promise<string>}
+   */
+  async function pdfBlobToDocumentMarkdown(tabId, blob, title, url, maxChars) {
+    let text = await extractPdfBlobTextWithFallback(tabId, blob, PDF_MAX_PAGES, maxChars);
+    if (typeof MindGraphDocExtract.finishPdfBlobText === "function") {
+      text = await MindGraphDocExtract.finishPdfBlobText(tabId, blob, text, 8, maxChars, title);
+    }
+    if (!text || text.trim().length < 80) {
+      return "";
+    }
+    return formatDocumentMarkdown(title, text.trim(), url, maxChars);
   }
 
   /**
@@ -666,245 +730,36 @@
         });
       }
 
-      const autoScanGeneric = hostEntry.id === "generic";
-      if (!fileFirst && !autoScanGeneric) {
-        const selectionPayload = await captureSelectionMarkdown(tabId, maxChars);
-        if (selectionPayload && selectionPayload.markdown) {
-          if (dbg) {
-            dbg.log("selection", "using text selection", {
-              markdownLen: selectionPayload.markdown.length,
-            });
-          }
-          return finalizeCaptureResult(ctx, {
-            ok: true,
-            title: selectionPayload.title,
-            url: selectionPayload.url,
-            markdown: selectionPayload.markdown,
-            fromSelection: true,
-            source: selectionPayload.source,
-          });
-        }
-        if (dbg) {
-          dbg.log("selection", "no selection text");
-        }
-      } else if (dbg) {
-        dbg.log(
-          "selection",
-          autoScanGeneric ? "skipped for generic auto-scan" : "skipped for file-first host",
-        );
+      if (typeof MindGraphDocExtract.runProductRuleCapture !== "function") {
+        return finalizeCaptureResult(ctx, { ok: false, error: "errMindMatePageCaptureFailed" });
       }
-
-      const browserPdf = await tryBrowserPdfTabMarkdown(
+      const captureApi = {
+        captureDebug,
+        tryBrowserPdfTabMarkdown,
+        captureSelectionMarkdown,
+        collectInPageMarkdown,
+        extractEmbeddedPdfTextFromTab,
+        tryCnkiReaderTextMarkdown,
+        tryCnkiPdfMarkdown,
+        tryWenkuPdfMarkdown,
+        tryDomArticleMarkdown,
+        runPrepOnTab: MindGraphDocExtract.runPrepOnTab,
+        formatDocumentMarkdown,
+        applyHostPreviewNotice,
+        pdfBlobToDocumentMarkdown,
+      };
+      return MindGraphDocExtract.runProductRuleCapture(captureApi, {
+        ctx,
         tabId,
+        tab,
         pageUrl,
-        tab.title || "",
+        hostEntry,
+        fileFirst,
         maxChars,
-      );
-      if (browserPdf && browserPdf.markdown) {
-        if (dbg) {
-          dbg.log("browser-pdf", "extracted tab PDF", { markdownLen: browserPdf.markdown.length });
-        }
-        return finalizeCaptureResult(ctx, { ok: true, fromSelection: false, ...browserPdf });
-      }
-      if (dbg) {
-        dbg.log("browser-pdf", "not a browser PDF tab or empty");
-      }
-
-      if (hostEntry.id === "smartedu" && typeof MindGraphDocExtract.trySmartEduPdfMarkdown === "function") {
-        if (dbg) {
-          dbg.log("smartedu", "starting SmartEdu PDF pipeline");
-        }
-        const smarteduResult = await MindGraphDocExtract.trySmartEduPdfMarkdown(
-          tabId,
-          pageUrl,
-          maxChars,
-          options || {},
-        );
-        if (smarteduResult && smarteduResult.ok === false) {
-          if (dbg) {
-            dbg.log("smartedu", "SmartEdu pipeline error", { error: smarteduResult.error });
-          }
-          return finalizeCaptureResult(ctx, smarteduResult);
-        }
-        if (smarteduResult && smarteduResult.markdown) {
-          if (dbg) {
-            dbg.log("smartedu", "SmartEdu markdown ready", {
-              markdownLen: smarteduResult.markdown.length,
-              source: smarteduResult.source,
-            });
-          }
-          return finalizeCaptureResult(ctx, {
-            ok: true,
-            title: smarteduResult.title,
-            url: smarteduResult.url,
-            markdown: smarteduResult.markdown,
-            fromSelection: false,
-            source: smarteduResult.source,
-            assetTotal: smarteduResult.assetTotal || 0,
-          });
-        }
-        if (dbg) {
-          dbg.log("smartedu", "SmartEdu returned no markdown", { error: "errExtractWrongPage" });
-        }
-        return finalizeCaptureResult(ctx, { ok: false, error: "errExtractWrongPage" });
-      }
-
-      if (isKnownHost && typeof MindGraphDocExtract.runPrepOnTab === "function") {
-        if (dbg) {
-          dbg.log("prep", `runPrepOnTab for ${hostEntry.id}`);
-        }
-        await MindGraphDocExtract.runPrepOnTab(tabId, hostEntry, () => {});
-      }
-
-      if (isKnownHost) {
-        const embeddedText = await extractEmbeddedPdfTextFromTab(tabId, PDF_MAX_PAGES, maxChars);
-        if (dbg) {
-          dbg.log("embedded-pdf", "embedded PDF text layer", { chars: embeddedText.length });
-        }
-        if (embeddedText.length >= 80) {
-          const title = tab.title || hostEntry.label || "document";
-          return finalizeCaptureResult(ctx, {
-            ok: true,
-            title,
-            url: pageUrl,
-            markdown: formatDocumentMarkdown(title, embeddedText, pageUrl, maxChars),
-            fromSelection: false,
-            source: "page-pdfjs",
-          });
-        }
-
-        /** @type {string | null} */
-        let cnkiLastError = null;
-
-        if (hostEntry.id === "cnki") {
-          const cnkiReaderText = await tryCnkiReaderTextMarkdown(tabId, hostEntry, pageUrl, maxChars);
-          if (cnkiReaderText && cnkiReaderText.markdown) {
-            if (dbg) {
-              dbg.log("cnki-reader", "CNKI reader text extracted", {
-                markdownLen: cnkiReaderText.markdown.length,
-              });
-            }
-            return finalizeCaptureResult(ctx, { ok: true, fromSelection: false, ...cnkiReaderText });
-          }
-          if (dbg) {
-            dbg.log("cnki-reader", "CNKI reader text path failed or empty");
-          }
-        }
-
-        const cnkiPdf = await tryCnkiPdfMarkdown(tabId, hostEntry, pageUrl, maxChars);
-        if (cnkiPdf && cnkiPdf.markdown) {
-          if (dbg) {
-            dbg.log("cnki-pdf", "CNKI PDF extracted", { markdownLen: cnkiPdf.markdown.length });
-          }
-          return finalizeCaptureResult(ctx, { ok: true, fromSelection: false, ...cnkiPdf });
-        }
-        if (cnkiPdf && cnkiPdf.ok === false && cnkiPdf.error) {
-          cnkiLastError = cnkiPdf.error;
-        }
-        if (dbg && hostEntry.id === "cnki") {
-          dbg.log("cnki-pdf", "CNKI PDF path failed or empty", { error: cnkiLastError || "" });
-        }
-
-        const wenkuPdf = await tryWenkuPdfMarkdown(tabId, hostEntry, pageUrl, maxChars);
-        if (wenkuPdf && wenkuPdf.markdown) {
-          if (dbg) {
-            dbg.log("wenku-pdf", "Wenku PDF extracted", { markdownLen: wenkuPdf.markdown.length });
-          }
-          return finalizeCaptureResult(ctx, { ok: true, fromSelection: false, ...wenkuPdf });
-        }
-        if (dbg && hostEntry.id === "wenku") {
-          dbg.log("wenku-pdf", "Wenku PDF path failed or empty");
-        }
-
-        if (!fileFirst) {
-          const domArticle = await tryDomArticleMarkdown(tabId, hostEntry, maxChars, pageUrl);
-          if (domArticle && domArticle.markdown) {
-            if (dbg) {
-              dbg.log("dom-article", "DOM article extracted", {
-                markdownLen: domArticle.markdown.length,
-                source: domArticle.source,
-              });
-            }
-            domArticle.markdown = applyHostPreviewNotice(domArticle.markdown, hostEntry, maxChars);
-            return finalizeCaptureResult(ctx, { ok: true, fromSelection: false, ...domArticle });
-          }
-          if (dbg) {
-            dbg.log("dom-article", "DOM article empty or too short");
-          }
-        } else if (dbg) {
-          dbg.log("dom-article", "skipped DOM fallback for file-first host");
-        }
-
-        if (fileFirst) {
-          let fileFirstError = "errMindMatePageEmpty";
-          if (hostEntry.id === "cnki") {
-            const loginLike =
-              cnkiLastError === "CNKI_LOGIN_REQUIRED" ||
-              cnkiLastError === "CNKI_CAPTCHA" ||
-              /BINARY_HTTP_401|BINARY_HTTP_403|LOGIN/i.test(cnkiLastError || "");
-            if (
-              loginLike &&
-              typeof MindGraphDocExtract.resolveExtractErrorKey === "function"
-            ) {
-              fileFirstError = MindGraphDocExtract.resolveExtractErrorKey(cnkiLastError, hostEntry);
-            }
-          } else if (hostEntry.id === "wenku") {
-            fileFirstError = "errExtractWenkuNoPreview";
-          }
-          if (dbg) {
-            dbg.log("file-first", "all file extract paths failed", { error: fileFirstError });
-          }
-          return finalizeCaptureResult(ctx, { ok: false, error: fileFirstError });
-        }
-      }
-
-      const pagePayload = await collectInPageMarkdown(
-        tabId,
-        maxChars,
-        pageUrl,
-        tab.title || "",
-        { skipSelection: autoScanGeneric },
-      );
-      if (pagePayload.markdown) {
-        if (dbg) {
-          dbg.log("page-markdown", "generic page markdown", {
-            markdownLen: pagePayload.markdown.length,
-            source: pagePayload.source,
-          });
-        }
-        pagePayload.markdown = applyHostPreviewNotice(pagePayload.markdown, hostEntry, maxChars);
-        return finalizeCaptureResult(ctx, {
-          ok: true,
-          title: pagePayload.title,
-          url: pagePayload.url,
-          markdown: pagePayload.markdown,
-          fromSelection: false,
-          source: pagePayload.source,
-        });
-      }
-      if (dbg) {
-        dbg.log("page-markdown", "generic page markdown empty");
-      }
-
-      if (
-        MindGraphDocExtract.isCanvasRenderHost &&
-        MindGraphDocExtract.isCanvasRenderHost(hostEntry)
-      ) {
-        const canvasCount = MindGraphDocExtract.countCanvasPagesInTab
-          ? await MindGraphDocExtract.countCanvasPagesInTab(tabId, hostEntry)
-          : null;
-        if (dbg) {
-          dbg.log("canvas", "canvas host with no text", { canvasCount });
-        }
-        if (canvasCount && canvasCount > 0) {
-          return finalizeCaptureResult(ctx, { ok: false, error: "errMindMateCanvasPreviewEmpty" });
-        }
-      }
-
-      if (dbg) {
-        dbg.log("finish", "no capture path produced markdown", { error: "errMindMatePageEmpty" });
-      }
-      return finalizeCaptureResult(ctx, { ok: false, error: "errMindMatePageEmpty" });
+        options: options || {},
+        isKnownHost,
+        finalizeCaptureResult,
+      });
     } catch (err) {
       if (dbg) {
         dbg.log("exception", err instanceof Error ? err.message : "capture exception", {

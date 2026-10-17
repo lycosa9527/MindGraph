@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Chuyển đổi trang web thành bản đồ tư duy",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Chuyển đổi trang hiện tại thành bản đồ tư duy, ngữ cảnh hội thoại và tệp tài liệu thông qua tài khoản MindGraph.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Cài đặt",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Từ trang đến bản đồ có cấu trúc, hoàn thành trong một bước.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Tạo bản đồ tư duy",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "bản đồ tư duy",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "tải về",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Cài đặt",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Trước tiên, vui lòng kết nối với MindGraph - điền địa chỉ máy chủ, tài khoản và mã thông báo API vào \"Cài đặt\".",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Mở cài đặt",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Hỏi MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "gửi",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "dừng lại",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "cuộc trò chuyện mới",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Lịch sử",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Mở lịch sử web",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate đang trả lời…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "Một cuộc trò chuyện mới đã được bắt đầu.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Đã dừng lại.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Đọc nội dung trang...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Chứa nội dung trang web hiện tại",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Chỉ tin nhắn đầu tiên trong cuộc trò chuyện mới sẽ có nội dung web kèm theo.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Quét và trích xuất văn bản trang web...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Đang trích xuất tài liệu từ $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Đọc các ví dụ về khóa học của Nền tảng Giáo dục Thông minh Quốc gia...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 đã phát hiện thấy phần mềm/tài nguyên khóa học",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Đang tải xuống ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Trích xuất văn bản ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Nhận dạng các trang được quét ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Sẵn sàng: $1 tài nguyên, tổng số $2 từ · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Văn bản trang web được trích xuất: $2 từ · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Đã trích xuất $1 ký tự · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Văn bản đã chọn sẽ được sử dụng: $2 từ · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Thư viện Baidu được trích xuất PDF: $2 từ · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "CNKI PDF đã được trích xuất: $2 từ · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Tiện ích mở rộng trình duyệt · Ngữ cảnh trang web] Người dùng đang duyệt web trong Chrome/Edge và văn bản của trang hiện tại được đính kèm với thông báo này thông qua plugin để MindMate (Đối tác nghiên cứu và giảng dạy ảo dạy tư duy).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Hướng dẫn định tuyến] Phân loại ý định, truy xuất kiến ​​thức và câu trả lời đều dựa trên \"Câu hỏi của người dùng\" ở trên; nội dung của trang web bên dưới chỉ là tài liệu giáo viên đang đọc chứ không phải là tài liệu hướng dẫn thế hệ mới. Nếu tài liệu trông giống như một giáo án/thiết kế giảng dạy nhưng người dùng không yêu cầu rõ ràng \"tạo/viết/thiết kế một thiết kế giảng dạy hoặc giáo án mới\", thì không phân loại nó là \"thiết kế giảng dạy tổng quát\".",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Vui lòng mặc định người dùng là giáo viên tiểu học, trung học đang soạn bài hoặc giảng dạy, nghiên cứu và chú ý đến \"Lớp học phát triển tư duy\". Vui lòng trả lời các tài liệu tham khảo và câu hỏi của người dùng cùng nhau; Nếu tài liệu là một ví dụ bài học, giáo án, văn bản chương trình học, bài viết hoặc tài liệu chính sách, bạn có thể chủ động phân tích khi thích hợp: những quan niệm sai lầm có thể xảy ra của học sinh, những xung đột nhận thức có thể tạo ra, các biến thể khái niệm/quy trình, hình dung tư duy có thể áp dụng hoặc các công cụ chiến lược tư duy. Nếu vấn đề của người dùng ít liên quan đến tài liệu, hãy tập trung vào vấn đề của người dùng. Khi trả lời, hãy phân tích trực tiếp nội dung và không đề cập đến plug-in của trình duyệt, trích xuất Markdown hoặc định dạng của thông báo này.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Tiêu đề trang:** $1\n**URL trang:** $2\n**Nguồn văn bản:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Tài liệu tham khảo: Văn bản trang web]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF được mở trong trình duyệt",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Nền tảng Giáo dục Thông minh Quốc gia (Khóa học/Thiết kế giảng dạy/Danh sách nhiệm vụ học tập PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Thư viện Baidu PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "văn bản bài viết trên web",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Trích xuất văn bản trang web",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Văn bản trang được người dùng chọn",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Câu hỏi của người dùng (vui lòng tham khảo câu này để phân loại ý định và trả lời):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Không có nội dung có thể đọc được trên trang này. Vui lòng chọn văn bản trên trang trước hoặc thử lại trên một trang khác.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "chụp gỡ lỗi",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Trang web hiển thị tài liệu dưới dạng hình ảnh canvas và không thể trích xuất nội dung văn bản. Vui lòng cuộn để tải trang xem trước trước, chọn văn bản để gửi hoặc sử dụng nội dung tải xuống nếu có bản tải xuống PDF/văn bản.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Chế độ xem Reader hiện tại chỉ có thể hiển thị khoảng $1 trang văn bản.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Tài liệu có thể là bản xem trước hình ảnh và văn bản được trích xuất có thể không đầy đủ.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Trang này không thể đọc được.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Chưa kết nối. Vui lòng mở Cài đặt và lưu thông tin xác thực MindGraph.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Đăng nhập đã hết hạn. Vui lòng cập nhật mã thông báo API trong Cài đặt.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Không thể kết nối với MindMate. Vui lòng kiểm tra địa chỉ máy chủ và thử lại.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Hiện không thể trả lời, vui lòng thử lại sau.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Việc sử dụng AI ngày nay đã đạt đến giới hạn trên. Vui lòng thử lại vào ngày mai hoặc kiểm tra chi tiết trên trang web.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Không đủ ThinkCoin để gửi tin nhắn này.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Sự phát triển cục bộ sử dụng HTTP và mã thông báo API cũng như nội dung trang không được mã hóa trên mạng. Vui lòng chỉ sử dụng nó trong một môi trường đáng tin cậy.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "tải về",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Lưu tệp PDF và tài liệu (không có video) từ các trang được hỗ trợ.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Trang hiện tại không hỗ trợ tải xuống. Vui lòng mở trang tài liệu được hỗ trợ trước khi mở bảng này.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Cài đặt",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "kết nối",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Vui lòng sử dụng thông tin đăng nhập giống như luồng mã thông báo API MindGraph.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "máy chủ",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Số tài khoản (số điện thoại di động)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Số điện thoại di động sử dụng cho Tài khoản X-MG",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "mã thông báo API",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "cứu",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "trở lại",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "đóng cửa",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Xử lý…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Quá trình tải xuống đã bắt đầu.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Đã lưu.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Đang xác minh thông tin đăng nhập...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Vui lòng điền vào tất cả các trường.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Không có tab hoạt động.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Đã xảy ra lỗi. Vui lòng thử lại hoặc tải lại tiện ích mở rộng tại chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Không thể bắt đầu lưu tập tin. Vui lòng tải lại tiện ích và thử lại (yêu cầu Chrome 109+ hoặc Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Việc thiết lập chưa đầy đủ. Vui lòng mở \"Cài đặt\" và điền địa chỉ MindGraph, số điện thoại di động và mã thông báo API.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Không có văn bản có thể đọc được trên trang. Vui lòng chọn một phần văn bản trước tiên hoặc thử lại trên một trang khác.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Hiện đã có một tác vụ chụp hoặc tải xuống đang diễn ra trên tab này, vui lòng đợi cho đến khi tác vụ này hoàn tất và thử lại.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Lỗi máy chủ ($1). Vui lòng kiểm tra cài đặt của bạn và thử lại.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Trang này không được hỗ trợ. Vui lòng mở một trang web bình thường (http hoặc https) và thử lại.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Yêu cầu quá thường xuyên, vui lòng thử lại sau.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Dịch vụ tạm thời không khả dụng, vui lòng thử lại sau.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Đã hết thời gian phản hồi của máy chủ (hơn 3 phút). Vui lòng thử lại hoặc kiểm tra mạng.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Đã hết thời gian xác minh thông tin đăng nhập. Vui lòng thử lại hoặc kiểm tra mạng.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Máy chủ không trả về hình ảnh PNG. Vui lòng kiểm tra địa chỉ cơ sở và cài đặt tài khoản.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Tạo bản đồ tư duy PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Trích xuất tài liệu (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Trích xuất tài liệu",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Đã phát hiện: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Trang web hiện tại: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Trang tab đọc: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Tổng số tài nguyên $1",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Khoảng $1 trang được hiển thị - vui lòng cuộn khu vực xem trước để tải thêm trang trước khi giải nén.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Vui lòng cuộn bản xem trước tài liệu để tải trang trước khi giải nén. Ưu tiên nội dung đã hiển thị trong đầu đọc.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Đồng bộ đăng nhập từ SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Dán mã thông báo theo cách thủ công…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Dán SmartEdu access_token (chỉ được sử dụng nếu đồng bộ hóa tự động không thành công):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "Mã thông báo SmartEdu: Đang đồng bộ hóa...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "Mã thông báo SmartEdu: Đã kết nối (từ thông tin đăng nhập của bạn)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "Mã thông báo SmartEdu: không tìm thấy - vui lòng đăng nhập tại auth.smartedu.cn và mở trang SmartEdu, sau đó nhấp vào \"Đồng bộ hóa\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Trích xuất tài liệu",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Xong — Tệp sẽ bắt đầu tải xuống ngay lập tức.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Đã bắt đầu tải xuống — Các trang $1 đầu tiên hiện có trong trình đọc đã được lưu.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Không thể tải xuống tài liệu này. Vui lòng làm mới trang và nhấp lại vào \"Trích xuất tài liệu\".",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Trang tài liệu không tìm thấy. Vui lòng cuộn để xem trước trang tải trước, sau đó nhấp vào \"Trích xuất tài liệu\".",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Không tìm thấy nội dung văn bản. Vui lòng thử lại trên một trang hoặc khu vực khác.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Trang này vẫn chưa sẵn sàng. Vui lòng làm mới tab và thử lại.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Không có tập tin có thể tải xuống cho bài học này. Vui lòng thay đổi lớp học hoặc kiểm tra tài nguyên bạn muốn tải xuống.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Trước tiên bạn cần đăng nhập vào Smart Education. Vui lòng đăng nhập tại auth.smartedu.cn và mở trang khóa học, sau đó nhấp vào \"Đồng bộ hóa đăng nhập từ SmartEdu\".",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Giáo dục thông minh đã từ chối tải xuống. Vui lòng đồng bộ hóa lại thông tin đăng nhập của bạn hoặc thay đổi tập tin.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Tải xuống video không được hỗ trợ. Vui lòng chỉ chọn tài nguyên PDF hoặc tài liệu.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Đây không phải là trang tài liệu được hỗ trợ. Vui lòng mở trang đọc tài liệu và thử lại.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Vẫn chưa có gì để cứu. Vui lòng cuộn đầu đọc để tải trang và thử lại.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Bạn cần đăng nhập vào trang web trước. Sau khi đăng nhập, nhấp vào \"Trích xuất tài liệu\".",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Việc tải xuống đã bị từ chối bởi trang web. Vui lòng đăng nhập vào trang web và xác nhận bạn có quyền truy cập vào nội dung trước khi thử lại.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Trang web đang hiển thị mã xác minh. Vui lòng hoàn tất xác minh trong tab trình duyệt trước khi thử truy xuất.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Đang chuẩn bị trang…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Cuộn trang tải...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Đang sao chép nội dung trang...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Đang tạo tập tin…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Đang lưu vào máy tính...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "trình độ cao",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Yêu cầu lưu vị trí mỗi khi bạn tải xuống",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Đọc nội dung trang...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Đang gửi tới máy chủ MindGraph…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Máy chủ đang tạo bản đồ tư duy...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Đang nhận hình ảnh từ máy chủ...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Đang lưu tệp…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Không thể kết nối với máy chủ, vui lòng kiểm tra địa chỉ cơ sở và mạng.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Yêu cầu không thành công: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Kết nối đã bị mất. Vui lòng nhấp vào \"Trích xuất tài liệu\" một lần nữa. Nếu vẫn không thành công, vui lòng tải lại MindGraph tại chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Tạo bản đồ tư duy dựa trên trang hiện tại",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "Chiều rộng PNG (pixel)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "Chiều cao PNG (pixel)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Để trống để sử dụng mặc định",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Ngôn ngữ (Giao diện và Bản đồ)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "theo dõi trình duyệt",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Đơn giản hóa",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Thân thẳng",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "mã thông báo",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Có giá trị đến $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Mã thông báo API này đã hết hạn, vui lòng tạo lại trên web (tài khoản/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Không có mã thông báo API hợp lệ trên máy chủ hoặc nó đã hết hạn. Vui lòng kiểm tra mã thông báo hoặc tạo mã thông báo trong ứng dụng.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Không thể có được thời gian hết hạn. Vui lòng kiểm tra mạng của bạn hoặc lưu lại cài đặt của bạn.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Thư viện đã đầy (20 ảnh). Vui lòng xóa bản đồ đã lưu để lưu nội dung mới tạo.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

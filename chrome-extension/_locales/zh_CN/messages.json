@@ -127,6 +127,10 @@
     "message": "正在提取文字 ($1/$2)：$3",
     "description": "SmartEdu PDF 文字提取"
   },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "正在识别扫描页 ($1/$2)：$3",
+    "description": "SmartEdu 图片版 PDF 文字识别"
+  },
   "mindmatePageContextSmarteduReady": {
     "message": "已就绪：$1 个资源，共 $2 字 · $3",
     "description": "SmartEdu 提取完成"
@@ -267,30 +271,6 @@
     "message": "当前页面不支持下载。请先打开受支持的文档页，再打开本面板。",
     "description": "当前标签页不支持文档提取时的提示"
   },
-  "fileCenterSectionLabel": {
-    "message": "保存到文档总结",
-    "description": "文档总结区域标题"
-  },
-  "fileCenterPackageLabel": {
-    "message": "会话",
-    "description": "文档总结会话选择标签"
-  },
-  "fileCenterNewSession": {
-    "message": "新建会话（当前页面）",
-    "description": "为当前页面创建新的文档总结会话"
-  },
-  "btnSaveToFileCenter": {
-    "message": "保存网页提取",
-    "description": "将网页 markdown 保存到文档总结（COS）的按钮"
-  },
-  "fileCenterUntitled": {
-    "message": "未命名会话",
-    "description": "文档总结会话默认名称"
-  },
-  "statusSavedToFileCenter": {
-    "message": "已保存提取内容，可在文档总结中回顾。",
-    "description": "保存网页提取到 COS 后的状态"
-  },
   "btnSettings": {
     "message": "设置",
     "description": "设置按钮"
@@ -380,8 +360,8 @@
     "description": "下载准备失败"
   },
   "errSettingsIncomplete": {
-    "message": "设置不完整。请打开「设置」，填写 MindGraph 地址、手机号和 API 令牌。",
-    "description": "后台错误"
+    "message": "请先登录。请打开「设置」，填写 MindGraph 地址、手机号和 API 令牌并保存。",
+    "description": "扩展未配置账号"
   },
   "errNoPageText": {
     "message": "页面上没有可读文字。请先选中一段文字，或换一页再试。",
@@ -663,9 +643,13 @@
     "message": "无法获取过期时间。请检查网络或重新保存设置。",
     "description": "Token meta"
   },
-  "linkViewInLibrary": {
-    "message": "在图库中查看 →",
-    "description": "生成成功后显示的链接，点击可在网页编辑器中打开已保存的导图"
+  "linkOpenLibrary": {
+    "message": "打开个人图库",
+    "description": "未生成本页导图时，打开个人图库"
+  },
+  "linkOpenThisDiagram": {
+    "message": "在图库中打开此思维导图",
+    "description": "本页导图已保存后，打开该图"
   },
   "errLibraryFull": {
     "message": "图库已满（20 张）。请删除已保存的导图以保存新生成的内容。",

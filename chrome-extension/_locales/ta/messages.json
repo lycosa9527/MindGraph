@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — வலைப்பக்கத்தை மன வரைபடமாக மாற்றவும்",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "MindGraph கணக்கு மூலம் தற்போதைய பக்கத்தை மன வரைபடம், உரையாடல் சூழல் மற்றும் ஆவணக் கோப்பாக மாற்றவும்.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "அமைப்புகள்",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "பக்கத்திலிருந்து கட்டமைக்கப்பட்ட வரைபடம் வரை, ஒரு கட்டத்தில் முடிக்கவும்.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "மன வரைபடங்களை உருவாக்கவும்",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "மன வரைபடம்",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "பதிவிறக்கம்",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "அமைப்புகள்",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "முதலில் MindGraph உடன் இணைக்கவும் - \"அமைப்புகள்\" என்பதில் சர்வர் முகவரி, கணக்கு மற்றும் API டோக்கனை நிரப்பவும்.",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "அமைப்புகளைத் திறக்கவும்",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "MindMate ஐ கேள்…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "அனுப்பு",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "நிறுத்து",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "புதிய உரையாடல்",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "வரலாறு",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "இணைய வரலாற்றைத் திறக்கவும்",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate பதிலளிக்கிறது…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "புதிய உரையாடல் தொடங்கப்பட்டுள்ளது.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "நிறுத்தப்பட்டது.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "பக்க உள்ளடக்கத்தைப் படிக்கிறது...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "தற்போதைய இணையப் பக்க உள்ளடக்கத்தைக் கொண்டுள்ளது",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "புதிய உரையாடலில் முதல் செய்தி மட்டும் இணைய உள்ளடக்கத்துடன் இருக்கும்.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "வலைப்பக்க உரையை ஸ்கேன் செய்து பிரித்தெடுக்கிறது...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "$1 இலிருந்து ஆவணங்களைப் பிரித்தெடுக்கிறது...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "நேஷனல் ஸ்மார்ட் எஜுகேஷன் பிளாட்ஃபார்ம் படிப்பு உதாரணங்களைப் படித்தல்...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 பாடப்பொருள்/வளங்கள் கண்டறியப்பட்டன",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "பதிவிறக்குகிறது ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "உரையைப் பிரித்தெடுத்தல் ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "ஸ்கேன் செய்யப்பட்ட பக்கங்களை அங்கீகரித்தல் ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "தயார்: $1 வளங்கள், மொத்தம் $2 சொற்கள் · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "பிரித்தெடுக்கப்பட்ட இணையப் பக்க உரை: $2 சொற்கள் · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "பிரித்தெடுக்கப்பட்டது $1 எழுத்துகள் · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "தேர்ந்தெடுக்கப்பட்ட உரை பயன்படுத்தப்படும்: $2 சொற்கள் · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "பிரித்தெடுக்கப்பட்ட Baidu லைப்ரரி PDF: $2 சொற்கள் · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "பிரித்தெடுக்கப்பட்ட CNKI PDF: $2 சொற்கள் · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph உலாவி நீட்டிப்பு · இணையப் பக்கச் சூழல்] பயனர் Chrome/Edge இல் இணையத்தில் உலாவுகிறார், மேலும் தற்போதைய பக்கத்தின் உரை இந்தச் செய்தியுடன் செருகு-இன் மூலம் இணைக்கப்பட்டுள்ளது, MindMate-க்கு.",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[ரூட்டிங் வழிமுறைகள்] நோக்க வகைப்பாடு, அறிவைப் பெறுதல் மற்றும் பதில்கள் அனைத்தும் மேலே உள்ள \"பயனர் கேள்விகள்\" அடிப்படையிலானவை; கீழே உள்ள வலைப்பக்கத்தின் உரை ஆசிரியர் படிக்கும் பொருள் மட்டுமே, புதிய தலைமுறை அறிவுறுத்தல் அல்ல. பொருள் ஒரு பாடத் திட்டம்/அறிவுறுத்தல் வடிவமைப்பு போல் தோன்றினாலும், \"புதிய அறிவுறுத்தல் வடிவமைப்பு அல்லது பாடத் திட்டத்தை உருவாக்குதல்/எழுதுதல்/வடிவமைத்தல்\" என்று பயனர் வெளிப்படையாகக் கோரவில்லை என்றால், அதை \"உருவாக்கும் அறிவுறுத்தல் வடிவமைப்பு\" என வகைப்படுத்த வேண்டாம்.",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "தயவு செய்து பயனர் ஒரு ஆரம்ப மற்றும் இடைநிலைப் பள்ளி ஆசிரியர் என்பதை இயல்பாக்கவும், அவர் பாடங்களைத் தயாரிக்கிறார் அல்லது கற்பித்தல் மற்றும் ஆராய்ச்சி செய்கிறார், மேலும் \"சிந்தனை மேம்பாட்டு வகுப்பறை\" என்பதில் கவனம் செலுத்தவும். குறிப்பு பொருட்கள் மற்றும் பயனர் கேள்விகளுக்கு ஒன்றாக பதிலளிக்கவும்; பாடம் உதாரணம், பாடத் திட்டம், பாடப்பொருள் உரை, காகிதம் அல்லது கொள்கை ஆவணம் எனில், பொருத்தமான போது நீங்கள் முன்கூட்டியே பகுப்பாய்வு செய்யலாம்: சாத்தியமான மாணவர்களின் தவறான கருத்துகள், உருவாக்கக்கூடிய அறிவாற்றல் முரண்பாடுகள், கருத்தியல்/செயல்முறை மாறுபாடுகள், பொருந்தக்கூடிய சிந்தனை காட்சிப்படுத்தல் அல்லது சிந்தனை உத்தி கருவிகள். பயனர் பிரச்சனைக்கும் பொருளுக்கும் சிறிதும் சம்பந்தம் இல்லை என்றால், பயனர் பிரச்சனையில் கவனம் செலுத்துங்கள். பதிலளிக்கும் போது, ​​உள்ளடக்கத்தை நேரடியாக பகுப்பாய்வு செய்து, உலாவி செருகுநிரல்கள், மார்க் டவுன் பிரித்தெடுத்தல் அல்லது இந்த செய்தியின் வடிவமைப்பைக் குறிப்பிட வேண்டாம்.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "** பக்க தலைப்பு:** $1\n** பக்க URL:** $2\n**உரை ஆதாரம்:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[குறிப்பு பொருள்: வலைப்பக்க உரை]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "உலாவியில் PDF திறக்கப்பட்டது",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "தேசிய ஸ்மார்ட் கல்வித் தளம் (பாடப்பொருள்/கற்பித்தல் வடிவமைப்பு/கற்றல் பணிப் பட்டியல் PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "பைடு லைப்ரரி PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "இணைய கட்டுரை உரை",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "வலைப்பக்க உரை பிரித்தெடுத்தல்",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "பயனரால் தேர்ந்தெடுக்கப்பட்ட பக்க உரை",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**பயனர் கேள்வி (உத்தேசம் வகைப்பாடு மற்றும் பதிலுக்கு இந்த வாக்கியத்தைப் பார்க்கவும்):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "இந்தப் பக்கத்தில் படிக்கக்கூடிய உள்ளடக்கம் எதுவும் இல்லை. முதலில் பக்கத்தில் உள்ள உரையைத் தேர்ந்தெடுக்கவும் அல்லது வேறு பக்கத்தில் மீண்டும் முயற்சிக்கவும்.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "பிழைத்திருத்தத்தைப் பிடிக்கவும்",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "தளமானது ஆவணத்தை ஒரு கேன்வாஸ் படமாக வழங்குகிறது மற்றும் உடல் உரையைப் பிரித்தெடுக்க முடியாது. முதலில் முன்னோட்டப் பக்கத்தை ஏற்ற உருட்டவும், அனுப்ப வேண்டிய உரையைத் தேர்ந்தெடுக்கவும் அல்லது PDF/உரைப் பதிவிறக்கம் இருந்தால் பதிவிறக்க உள்ளடக்கத்தைப் பயன்படுத்தவும்.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "தற்போதைய ரீடர் பார்வையில் தோராயமாக $1 பக்கங்கள் மட்டுமே காட்டப்படும்.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "ஆவணம் பட மாதிரிக்காட்சியாக இருக்கலாம், பிரித்தெடுக்கப்பட்ட உரை முழுமையடையாமல் இருக்கலாம்.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "இந்தப் பக்கத்தைப் படிக்க முடியாது.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "இன்னும் இணைக்கப்படவில்லை. அமைப்புகளைத் திறந்து MindGraph நற்சான்றிதழ்களைச் சேமிக்கவும்.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "உள்நுழைவு காலாவதியானது. அமைப்புகளில் API டோக்கனைப் புதுப்பிக்கவும்.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "MindMate உடன் இணைக்க முடியவில்லை. சேவையக முகவரியைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate தற்போது பதிலளிக்க முடியவில்லை, தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "இன்றைய AI பயன்பாடு உச்ச வரம்பை எட்டியுள்ளது. நாளை மீண்டும் முயற்சிக்கவும் அல்லது இணையப் பக்கத்தில் உள்ள விவரங்களைச் சரிபார்க்கவும்.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "இந்த செய்தியை அனுப்ப போதுமான ThinkCoins இல்லை.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "உள்ளூர் மேம்பாடு HTTP ஐப் பயன்படுத்துகிறது, மேலும் API டோக்கன்கள் மற்றும் பக்க உள்ளடக்கம் பிணையத்தில் குறியாக்கம் செய்யப்படவில்லை. நம்பகமான சூழலில் மட்டுமே பயன்படுத்தவும்.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "பதிவிறக்கம்",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "ஆதரிக்கப்படும் தளங்களிலிருந்து PDFகள் மற்றும் ஆவணங்களை (வீடியோக்கள் இல்லாமல்) சேமிக்கவும்.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "தற்போதைய பக்கம் பதிவிறக்குவதை ஆதரிக்கவில்லை. இந்தப் பேனலைத் திறப்பதற்கு முன் ஆதரிக்கப்படும் ஆவணப் பக்கத்தைத் திறக்கவும்.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "அமைப்புகள்",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "இணைக்க",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "MindGraph API டோக்கன் ஓட்டத்தின் அதே நற்சான்றிதழ்களைப் பயன்படுத்தவும்.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "சர்வர்",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "கணக்கு எண் (மொபைல் எண்)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "X-MG-கணக்கிற்கு பயன்படுத்தப்படும் மொபைல் ஃபோன் எண்",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API டோக்கன்",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "சேமிக்க",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "திரும்ப",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "மூடல்",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "செயலாக்குகிறது…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "பதிவிறக்கம் தொடங்கியது.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "சேமிக்கப்பட்டது.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "நற்சான்றிதழ்களைச் சரிபார்க்கிறது...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "அனைத்து துறைகளையும் நிரப்பவும்.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "செயலில் உள்ள தாவல்கள் எதுவும் இல்லை.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "ஏதோ தவறாகிவிட்டது. மீண்டும் முயற்சிக்கவும் அல்லது chrome://extensions இல் நீட்டிப்பை மீண்டும் ஏற்றவும்.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "கோப்பைச் சேமிக்கத் தொடங்க முடியவில்லை. நீட்டிப்பை மீண்டும் ஏற்றி மீண்டும் முயற்சிக்கவும் (Chrome 109+ அல்லது Edge 120+ தேவை).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "அமைப்பு முழுமையடையவில்லை. \"அமைப்புகள்\" என்பதைத் திறந்து MindGraph முகவரி, மொபைல் ஃபோன் எண் மற்றும் API டோக்கனை நிரப்பவும்.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "பக்கத்தில் படிக்கக்கூடிய உரை எதுவும் இல்லை. முதலில் உரையின் ஒரு பகுதியைத் தேர்ந்தெடுக்கவும் அல்லது வேறு பக்கத்தில் மீண்டும் முயற்சிக்கவும்.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "இந்தத் தாவலில் ஏற்கனவே பிடிப்பு அல்லது பதிவிறக்கப் பணி நடந்து கொண்டிருக்கிறது, அது முடியும் வரை காத்திருந்து மீண்டும் முயற்சிக்கவும்.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph சர்வர் பிழை ($1). உங்கள் அமைப்புகளைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "இந்தப் பக்கம் ஆதரிக்கப்படவில்லை. தயவுசெய்து ஒரு சாதாரண வலைப்பக்கத்தைத் திறந்து (http அல்லது https) மீண்டும் முயற்சிக்கவும்.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "கோரிக்கை மிகவும் அடிக்கடி உள்ளது, பின்னர் மீண்டும் முயற்சிக்கவும்.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "சேவை தற்காலிகமாக கிடைக்கவில்லை, பிறகு மீண்டும் முயற்சிக்கவும்.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "சேவையக பதில் நேரம் முடிந்தது (3 நிமிடங்களுக்கு மேல்). மீண்டும் முயற்சிக்கவும் அல்லது பிணையத்தைச் சரிபார்க்கவும்.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "நற்சான்றிதழ்களின் சரிபார்ப்பு நேரம் முடிந்தது. மீண்டும் முயற்சிக்கவும் அல்லது பிணையத்தைச் சரிபார்க்கவும்.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "சேவையகம் PNG படத்தை வழங்கவில்லை. அடிப்படை முகவரி மற்றும் கணக்கு அமைப்புகளைச் சரிபார்க்கவும்.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "PNG மன வரைபடத்தை உருவாக்கவும்",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "பிரித்தெடுத்தல் ஆவணம் (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "ஆவணங்களை பிரித்தெடுக்கவும்",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "கண்டறியப்பட்டது: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "தற்போதைய தளம்: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "வாசிப்புத் தாவல் பக்கம்: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "மொத்த $1 வளங்கள்",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "தோராயமாக $1 பக்கங்கள் தெரியும் - பிரித்தெடுப்பதற்கு முன் மேலும் பக்கங்களை ஏற்றுவதற்கு முன்னோட்ட பகுதியை உருட்டவும்.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "பிரித்தெடுப்பதற்கு முன் பக்கத்தை ஏற்றுவதற்கு ஆவணத்தின் மாதிரிக்காட்சியை உருட்டவும். ரீடரில் ஏற்கனவே காட்டப்பட்டுள்ள உள்ளடக்கத்திற்கு முன்னுரிமை கொடுங்கள்.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "SmartEdu இலிருந்து உள்நுழைவை ஒத்திசைக்கவும்",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "டோக்கனை கைமுறையாக ஒட்டவும்...",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "SmartEdu access_token ஐ ஒட்டவும் (தானியங்கி ஒத்திசைவு தோல்வியுற்றால் மட்டுமே பயன்படுத்தப்படும்):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu டோக்கன்: ஒத்திசைக்கிறது...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu டோக்கன்: இணைக்கப்பட்டது (உங்கள் உள்நுழைவிலிருந்து)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu டோக்கன்: கிடைக்கவில்லை - auth.smartedu.cn இல் உள்நுழைந்து SmartEdu பக்கத்தைத் திறந்து, \"ஒத்திசைவு\" என்பதைக் கிளிக் செய்யவும்",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "ஆவணங்களை பிரித்தெடுக்கவும்",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "முடிந்தது - கோப்பு உடனடியாக பதிவிறக்கம் செய்யத் தொடங்கும்.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "பதிவிறக்கம் தொடங்கியது — ரீடரில் தற்போது கிடைக்கும் முதல் $1 பக்கங்கள் சேமிக்கப்பட்டுள்ளன.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "இந்த ஆவணத்தை பதிவிறக்கம் செய்ய முடியாது. பக்கத்தைப் புதுப்பித்து, \"ஆவணத்தைப் பிரித்தெடுக்கவும்\" என்பதை மீண்டும் கிளிக் செய்யவும்.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "ஆவணப் பக்கம் கிடைக்கவில்லை. முதலில் ஏற்றுதல் பக்கத்தை முன்னோட்டமிட உருட்டவும், பின்னர் \"ஆவணத்தைப் பிரித்தெடுக்கவும்\" என்பதைக் கிளிக் செய்யவும்.",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "உரை உள்ளடக்கம் இல்லை. வேறு பக்கம் அல்லது பகுதியில் மீண்டும் முயற்சிக்கவும்.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "பக்கம் இன்னும் தயாராகவில்லை. தாவலைப் புதுப்பித்து மீண்டும் முயற்சிக்கவும்.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "இந்தப் பாடத்திற்கு பதிவிறக்கக்கூடிய கோப்புகள் எதுவும் இல்லை. வகுப்பை மாற்றவும் அல்லது நீங்கள் பதிவிறக்க விரும்பும் ஆதாரங்களைச் சரிபார்க்கவும்.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "நீங்கள் முதலில் ஸ்மார்ட் கல்வியில் உள்நுழைய வேண்டும். auth.smartedu.cn இல் உள்நுழைந்து பாடப் பக்கத்தைத் திறந்து, பின்னர் \"SmartEdu இலிருந்து உள்நுழைவை ஒத்திசை\" என்பதைக் கிளிக் செய்யவும்.",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "ஸ்மார்ட் கல்வி பதிவிறக்கத்தை நிராகரித்தது. உங்கள் உள்நுழைவை மீண்டும் ஒத்திசைக்கவும் அல்லது கோப்பை மாற்றவும்.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "வீடியோக்களைப் பதிவிறக்குவது ஆதரிக்கப்படவில்லை. PDF அல்லது ஆவண ஆதாரங்களை மட்டும் தேர்ந்தெடுக்கவும்.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "இது ஆதரிக்கப்படும் ஆவணப் பக்கம் அல்ல. ஆவணம் படிக்கும் பக்கத்தைத் திறந்து மீண்டும் முயற்சிக்கவும்.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "இன்னும் சேமிக்க எதுவும் இல்லை. பக்கத்தை ஏற்ற ரீடரை ஸ்க்ரோல் செய்து மீண்டும் முயற்சிக்கவும்.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "முதலில் இணையதளத்தில் உள்நுழைய வேண்டும். உள்நுழைந்த பிறகு, \"ஆவணங்களை பிரித்தெடுக்கவும்\" என்பதைக் கிளிக் செய்யவும்.",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "பதிவிறக்கம் இணையதளத்தால் நிராகரிக்கப்பட்டது. தளத்தில் உள்நுழைந்து, மீண்டும் முயற்சிக்கும் முன், உள்ளடக்கத்திற்கான அணுகல் உங்களுக்கு இருப்பதை உறுதிப்படுத்தவும்.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "இணையதளம் சரிபார்ப்புக் குறியீட்டைக் காட்டுகிறது. மீட்டெடுக்க முயற்சிக்கும் முன் உலாவி தாவலில் சரிபார்ப்பை முடிக்கவும்.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "பக்கம் தயாராகிறது…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "ஸ்க்ரோல் லோடிங் பக்கம்...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "பக்க உள்ளடக்கத்தை நகலெடுக்கிறது...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "கோப்புகளை உருவாக்குகிறது…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "கணினியில் சேமிக்கிறது...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "முன்னேறியது",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "ஒவ்வொரு முறை பதிவிறக்கம் செய்யும் இடத்தைச் சேமிக்கும்படி கேட்கவும்",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "பக்க உள்ளடக்கத்தைப் படிக்கிறது...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "MindGraph சேவையகத்திற்கு அனுப்புகிறது…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "சேவையகம் மன வரைபடத்தை உருவாக்குகிறது...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "சர்வரிலிருந்து படங்களைப் பெறுகிறது...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "கோப்பைச் சேமிக்கிறது…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "சேவையகத்துடன் இணைக்க முடியவில்லை, அடிப்படை முகவரி மற்றும் நெட்வொர்க்கைச் சரிபார்க்கவும்.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "கோரிக்கை தோல்வி: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "இணைப்பு துண்டிக்கப்பட்டது. மீண்டும் \"ஆவணத்தைப் பிரித்தெடுக்கவும்\" என்பதைக் கிளிக் செய்யவும். அது இன்னும் தோல்வியுற்றால், chrome://extensions இல் MindGraph ஐ மீண்டும் ஏற்றவும்.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "தற்போதைய பக்கத்தின் அடிப்படையில் மன வரைபடத்தை உருவாக்கவும்",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG அகலம் (பிக்சல்கள்)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG உயரம் (பிக்சல்கள்)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "இயல்புநிலையைப் பயன்படுத்த, காலியாக விடவும்",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "மொழி (இடைமுகம் மற்றும் வரைபடங்கள்)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "உலாவியைப் பின்தொடரவும்",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "எளிமைப்படுத்தப்பட்டது",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "நிமிர்ந்த உடல்",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "டோக்கன்",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "$1 வரை செல்லுபடியாகும்",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "இந்த API டோக்கன் காலாவதியானது, தயவுசெய்து அதை மீண்டும் இணையத்தில் உருவாக்கவும் (கணக்கு/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "சர்வரில் சரியான API டோக்கன் இல்லை அல்லது அது காலாவதியாகிவிட்டது. டோக்கனைச் சரிபார்க்கவும் அல்லது பயன்பாட்டில் உருவாக்கவும்.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "காலாவதி நேரத்தைப் பெற முடியவில்லை. உங்கள் நெட்வொர்க்கைச் சரிபார்க்கவும் அல்லது உங்கள் அமைப்புகளை மீண்டும் சேமிக்கவும்.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "கேலரி நிரம்பியுள்ளது (20 புகைப்படங்கள்). புதிதாக உருவாக்கப்பட்ட உள்ளடக்கத்தைச் சேமிக்க, சேமித்த வரைபடத்தை நீக்கவும்.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

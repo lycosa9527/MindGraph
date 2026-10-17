@@ -134,7 +134,8 @@
         phase === "reading" ||
         phase === "smartedu_detected" ||
         phase === "smartedu_download" ||
-        phase === "smartedu_extract"
+        phase === "smartedu_extract" ||
+        phase === "smartedu_ocr"
       ) {
         el.classList.add("is-loading");
       } else if (phase === "ready") {

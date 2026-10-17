@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.172] - 2026-10-17
+
+> **The extension merges web text with linked PDFs and server OCR, `/auth` keeps the hero video under modals on Android, and Document Summary sends SmartEdu and CNKI URLs to the extension.**
+
+### Added
+
+- **Extension PDF OCR** — `POST /api/extension/extract_pdf_text` returns embedded PDF text or vision OCR for image-only pages (rate limited, ~8 MiB cap). Mixed capture and SmartEdu use the same endpoint with `X-MG-Client: chrome-extension`.
+- **浏览器扩展混合抓取** — **Generate** merges DOM or selection markdown with up to three linked PDFs (login-aware fetch). Thin text layers merge with OCR instead of picking one side. CNKI and Wenku PDF assets join SmartEdu lesson files in the same pipeline.
+- **扩展界面语言** — Settings lists the same **44** languages as the web app. Chrome `_locales/` plus `i18n/` catalogs for codes Chrome does not ship; manifest name and description use `__MSG_` keys.
+
+### Fixed
+
+- **登录页** — Android WebViews skip the COS hero `<video>` so native video layers do not paint over teleported modals. While a body overlay is open, the clip unmounts until the overlay closes.
+
+### Changed
+
+- **浏览器扩展 0.4.25** — The Generate tab no longer saves to Document Summary separately; non-empty `page_content` rides with PNG generate so canvas **Document Summary** keeps the web extract on COS. The library shortcut opens **your library** until this page saves a diagram, then **this mind map** for the session (`chrome.storage.session`). SmartEdu OCR runs lesson plans before slide decks.
+- **文档总结** — Pasting a URL on `smartedu.cn`, `cnki.net`, or `wenku.baidu.com` shows the Chrome-extension hint in the panel and blocks server fetch (`browser_file_extract_required`).
+
+### Tests
+
+- [`tests/test_extension_pdf_text.py`](tests/test_extension_pdf_text.py) — text-layer PDFs, image-only OCR, size and auth gates.
+- [`tests/test_url_page_fetch.py`](tests/test_url_page_fetch.py) — gated hosts and API detail string.
+- [`frontend/tests/browserFileExtractUrl.spec.ts`](frontend/tests/browserFileExtractUrl.spec.ts) — canvas host suffix list matches the server.
+- [`frontend/tests/authLoginHero.spec.ts`](frontend/tests/authLoginHero.spec.ts), [`frontend/tests/authLoginHeroVideoLayer.spec.ts`](frontend/tests/authLoginHeroVideoLayer.spec.ts) — Android and overlay gates for hero video mount.
+- [`chrome-extension/test/doc-extract.spec.js`](chrome-extension/test/doc-extract.spec.js), [`chrome-extension/test/extension-locales.spec.js`](chrome-extension/test/extension-locales.spec.js), [`chrome-extension/test/page-diagram-link.spec.js`](chrome-extension/test/page-diagram-link.spec.js) — mixed capture merge, SmartEdu OCR client, PDF classify, locale catalogs, page-diagram session link.
+- [`tests/test_extension_store_packaging.py`](tests/test_extension_store_packaging.py) — store zip still passes packaging rules.
+
 ## [5.180.171] - 2026-10-15
 
 > **Auto-complete accepts a filled topic such as 新加坡, and a collaborative mind map keeps one branch.**

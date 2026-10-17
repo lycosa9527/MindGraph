@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — I-convert ang web page sa mind map",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "I-convert ang kasalukuyang page sa isang mind map, konteksto ng pag-uusap at file ng dokumento sa pamamagitan ng MindGraph account.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Mga Setting",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Mula sa pahina hanggang sa structured na mapa, kumpleto sa isang hakbang.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Bumuo ng mga mapa ng isip",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "mapa ng isip",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "download",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Mga Setting",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Mangyaring kumonekta muna sa MindGraph - punan ang address ng server, account at token ng API sa \"Mga Setting\".",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Buksan ang mga setting",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Itanong mo kay MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "ipadala",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "huminto",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "bagong usapan",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Kasaysayan",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Buksan ang kasaysayan ng web",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate ay tumutugon...",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "Isang bagong pag-uusap ang nasimulan.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Tumigil.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Binabasa ang nilalaman ng pahina...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Naglalaman ng kasalukuyang nilalaman ng web page",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Tanging ang unang mensahe sa isang bagong pag-uusap ang sasamahan ng nilalaman sa web.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Pag-scan at pag-extract ng text ng web page...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Kinukuha ang mga dokumento mula sa $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Pagbabasa ng mga halimbawa ng kurso sa National Smart Education Platform...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 courseware/resources na nakita",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Dina-download ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Kinukuha ang text ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Kinikilala ang mga na-scan na pahina ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Handa: $1 mapagkukunan, kabuuang $2 salita · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Extracted web page text: $2 salita · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Na-extract ang $1 character · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Ang napiling teksto ay gagamitin: $2 salita · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Extracted Baidu Library PDF: $2 salita · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "Extracted CNKI PDF: $2 salita · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Browser Extension · Web Page Context] Nagba-browse ang user sa web sa Chrome/Edge, at ang text ng kasalukuyang page ay naka-attach sa mensaheng ito sa pamamagitan ng plug-in para magamit ng MindMate (Thinking Teaching Virtual Teaching and Research Partner).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Mga Tagubilin sa Pagruruta] Ang pag-uuri ng layunin, pagkuha ng kaalaman at mga sagot ay lahat ay batay sa \"Mga Tanong ng User\" sa itaas; ang teksto ng web page sa ibaba ay ang materyal lamang na binabasa ng guro, hindi isang bagong henerasyong pagtuturo. Kung ang materyal ay mukhang isang lesson plan/instructional design, ngunit ang user ay hindi tahasang humiling ng \"bumuo/magsulat/magdisenyo ng isang bagong disenyo ng pagtuturo o lesson plan\", huwag itong uriin bilang \"generative instructional design\".",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Paki-default na ang user ay isang guro sa elementarya at sekondarya na naghahanda ng mga aralin o pagtuturo at pagsasaliksik, at bigyang pansin ang \"Thinking Development Classroom\". Mangyaring sagutin ang mga reference na materyales at mga tanong ng user nang magkasama; kung ang materyal ay isang halimbawa ng aralin, plano ng aralin, text ng courseware, papel o dokumento ng patakaran, maaari mong proactive na pag-aralan kung naaangkop: posibleng mga maling paniniwala ng mag-aaral, nalilikhang mga salungatan sa pag-iisip, mga pagkakaiba-iba ng konsepto/proseso, naaangkop na visualization ng pag-iisip o mga tool sa diskarte sa pag-iisip. Kung ang problema ng user ay walang gaanong kinalaman sa materyal, tumuon sa problema ng user. Kapag sumasagot, direktang suriin ang nilalaman at huwag banggitin ang mga browser plug-in, Markdown extraction, o ang format ng mensaheng ito.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Pamagat ng Pahina:** $1\n**URL ng Pahina:** $2\n**Pinagmulan ng teksto:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Reference material: Text ng web page]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "Binuksan ang PDF sa browser",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "National Smart Education Platform (Courseware/Teaching Design/Learning Task List PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Baidu Library PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Teksto ng artikulo sa web",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Pagkuha ng teksto ng web page",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Ang teksto ng pahina na pinili ng gumagamit",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "** Tanong ng gumagamit (mangyaring sumangguni sa pangungusap na ito para sa pag-uuri ng intensyon at sagot):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Walang nababasang nilalaman sa pahinang ito. Mangyaring piliin muna ang teksto sa pahina, o subukang muli sa ibang pahina.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "pagkuha ng pag-debug",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Ang site ay nagre-render ng dokumento bilang isang canvas na imahe at ang body text ay hindi maaaring makuha. Mangyaring mag-scroll upang i-load muna ang pahina ng preview, piliin ang text na ipapadala, o gamitin ang nilalaman ng pag-download kung mayroong PDF/text download.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Ang kasalukuyang view ng Reader ay maaari lamang magpakita ng humigit-kumulang $1 na mga pahina ng teksto.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Ang dokumento ay maaaring isang preview ng larawan, at ang nakuhang teksto ay maaaring hindi kumpleto.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Hindi mababasa ang page na ito.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Hindi pa konektado. Mangyaring buksan ang Mga Setting at i-save ang MindGraph na mga kredensyal.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Nag-expire na ang pag-login. Paki-update ang token ng API sa Mga Setting.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Hindi makakonekta sa MindMate. Pakisuri ang address ng server at subukang muli.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Hindi makasagot sa ngayon, pakisubukang muli sa ibang pagkakataon.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Ang paggamit ng AI ngayon ay umabot na sa pinakamataas na limitasyon. Pakisubukang muli bukas o tingnan ang mga detalye sa web page.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Hindi sapat ang ThinkCoins para ipadala ang mensaheng ito.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Ang lokal na pag-unlad ay gumagamit ng HTTP, at ang mga token ng API at nilalaman ng pahina ay hindi naka-encrypt sa network. Mangyaring gamitin lamang ito sa isang pinagkakatiwalaang kapaligiran.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "download",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "I-save ang mga PDF at dokumento (walang mga video) mula sa mga sinusuportahang site.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Hindi sinusuportahan ng kasalukuyang page ang pag-download. Mangyaring magbukas ng suportadong pahina ng dokumentasyon bago buksan ang panel na ito.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Mga Setting",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "kumonekta",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Pakigamit ang parehong mga kredensyal gaya ng MindGraph API token flow.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "server",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Numero ng account (numero ng mobile phone)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Numero ng mobile phone na ginagamit para sa X-MG-Account",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API token",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "iligtas",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "bumalik",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "pagsasara",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Pinoproseso…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Nagsimula na ang pag-download.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Nai-save.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Bine-verify ang mga kredensyal...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Mangyaring punan ang lahat ng mga patlang.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Walang mga aktibong tab.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Nagkaproblema. Pakisubukang muli o i-reload ang extension sa chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Hindi masimulan ang pag-save ng file. Paki-reload ang extension at subukang muli (nangangailangan ng Chrome 109+ o Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Hindi kumpleto ang setup. Mangyaring buksan ang \"Mga Setting\" at punan ang MindGraph address, numero ng mobile phone at token ng API.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Walang nababasang teksto sa pahina. Mangyaring pumili muna ng isang seksyon ng teksto, o subukang muli sa ibang pahina.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Mayroon nang ginagawang pagkuha o pag-download sa tab na ito, mangyaring maghintay hanggang makumpleto ito at subukang muli.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Error sa server ($1). Pakisuri ang iyong mga setting at subukang muli.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Ang pahinang ito ay hindi suportado. Mangyaring magbukas ng normal na web page (http o https) at subukang muli.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Masyadong madalas ang kahilingan, pakisubukang muli sa ibang pagkakataon.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Pansamantalang hindi available ang serbisyo, pakisubukang muli sa ibang pagkakataon.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Nag-time out ang tugon ng server (higit sa 3 minuto). Pakisubukang muli o tingnan ang network.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Nag-time out ang pag-verify ng mga kredensyal. Pakisubukang muli o tingnan ang network.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Ang server ay hindi nagbalik ng PNG na imahe. Pakisuri ang base address at mga setting ng account.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Bumuo ng mind map PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "I-extract ang dokumento (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "I-extract ang mga dokumento",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Natukoy: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Kasalukuyang site: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Binabasa ang pahina ng tab: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Kabuuang $1 na mapagkukunan",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Humigit-kumulang $1 na mga pahina ang nakikita - mangyaring mag-scroll sa lugar ng preview upang mag-load ng higit pang mga pahina bago i-extract.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Mangyaring mag-scroll sa preview ng dokumento upang i-load ang pahina bago i-extract. Unahin ang nilalaman na ipinakita na sa mambabasa.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "I-sync ang login mula sa SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Manu-manong i-paste ang token...",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "I-paste ang SmartEdu access_token (ginagamit lamang kung nabigo ang awtomatikong pag-synchronize):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu token: Sini-synchronize...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu token: Nakakonekta (mula sa iyong login)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu token: hindi nakita - mangyaring mag-log in sa auth.smartedu.cn at buksan ang pahina ng SmartEdu, pagkatapos ay i-click ang \"Sync\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "I-extract ang mga dokumento",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Tapos na — Magsisimulang mag-download kaagad ang file.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Nagsimula ang Pag-download — Ang unang $1 na mga pahina na kasalukuyang magagamit sa mambabasa ay nai-save na.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Hindi ma-download ang dokumentong ito. Paki-refresh ang page at i-click muli ang \"Extract Document\".",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Hindi nahanap ang pahina ng dokumentasyon. Mangyaring mag-scroll upang i-preview muna ang naglo-load na pahina, at pagkatapos ay i-click ang \"I-extract ang Dokumento\".",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Walang nakitang nilalamang teksto. Pakisubukang muli sa ibang pahina o lugar.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Hindi pa handa ang page. Paki-refresh ang tab at subukang muli.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Walang mada-download na file para sa araling ito. Mangyaring magpalit ng klase, o tingnan ang mga mapagkukunang gusto mong i-download.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Kailangan mo munang mag-log in sa Smart Education. Mangyaring mag-log in sa auth.smartedu.cn at buksan ang pahina ng kurso, pagkatapos ay i-click ang \"I-synchronize ang login mula sa SmartEdu\".",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Tinanggihan ng Smart Education ang pag-download. Mangyaring i-synchronize muli ang iyong login o baguhin ang file.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Ang pag-download ng mga video ay hindi suportado. Mangyaring pumili lamang ng mga mapagkukunang PDF o dokumento.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Ito ay hindi isang suportadong pahina ng dokumentasyon. Mangyaring buksan ang pahina ng pagbabasa ng dokumento at subukang muli.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Wala pang ipon. Mangyaring mag-scroll sa mambabasa upang i-load ang pahina at subukang muli.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Kailangan mo munang mag-log in sa website. Pagkatapos mag-log in, i-click ang \"Extract Documents\".",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Ang pag-download ay tinanggihan ng website. Mangyaring mag-log in sa site at kumpirmahin na mayroon kang access sa nilalaman bago subukang muli.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Ang website ay nagpapakita ng verification code. Mangyaring kumpletuhin ang pag-verify sa isang tab ng browser bago subukang kunin.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Inihahanda ang pahina…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Mag-scroll sa pag-load ng pahina...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Kinokopya ang content ng page...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Bumubuo ng mga file...",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Sine-save sa computer...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "advanced",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Humingi ng pag-save ng lokasyon sa tuwing magda-download ka",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Binabasa ang nilalaman ng pahina...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Ipinapadala sa MindGraph server…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Binubuo ng server ang mind map...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Tumatanggap ng mga larawan mula sa server...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Sine-save ang file...",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Hindi makakonekta sa server, pakitingnan ang base address at network.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Nabigo ang kahilingan: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Nawala ang koneksyon. Paki-click muli ang \"Extract Document\". Kung nabigo pa rin ito, paki-reload ang MindGraph sa chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Bumuo ng mind map batay sa kasalukuyang page",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "Lapad ng PNG (mga pixel)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG taas (mga pixel)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Iwanang blangko upang gamitin ang default",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Wika (Interface at Mapa)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "sundin ang browser",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Pinasimple",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Patayong katawan",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "token",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "May bisa hanggang $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Ang API token na ito ay nag-expire na, mangyaring gawin itong muli sa web (account/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Walang wastong token ng API sa server, o nag-expire na ito. Pakisuri ang token o gawin ito sa app.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Hindi makuha ang oras ng pag-expire. Pakisuri ang iyong network o i-save muli ang iyong mga setting.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Puno ang gallery (20 larawan). Mangyaring tanggalin ang naka-save na mapa upang i-save ang bagong nabuong nilalaman.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

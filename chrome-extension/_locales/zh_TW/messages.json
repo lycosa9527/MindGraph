@@ -127,6 +127,10 @@
     "message": "正在提取文字 ($1/$2)：$3",
     "description": "SmartEdu PDF 文字提取"
   },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "正在識別掃描頁 ($1/$2)：$3",
+    "description": "SmartEdu 圖片版 PDF 文字識別"
+  },
   "mindmatePageContextSmarteduReady": {
     "message": "已就緒：$1 個資源，共 $2 字 · $3",
     "description": "SmartEdu 提取完成"
@@ -267,30 +271,6 @@
     "message": "目前頁面不支援下載。請先開啟支援的文件頁，再開啟本面板。",
     "description": "目前分頁不支援文件擷取時的提示"
   },
-  "fileCenterSectionLabel": {
-    "message": "儲存到文件總結",
-    "description": "文件總結區域標題"
-  },
-  "fileCenterPackageLabel": {
-    "message": "工作階段",
-    "description": "文件總結工作階段選擇標籤"
-  },
-  "fileCenterNewSession": {
-    "message": "新建工作階段（目前頁面）",
-    "description": "為目前頁面建立新的文件總結工作階段"
-  },
-  "btnSaveToFileCenter": {
-    "message": "儲存網頁擷取",
-    "description": "將網頁 markdown 儲存到文件總結（COS）的按鈕"
-  },
-  "fileCenterUntitled": {
-    "message": "未命名工作階段",
-    "description": "文件總結工作階段預設名稱"
-  },
-  "statusSavedToFileCenter": {
-    "message": "已儲存擷取內容，可在文件總結中回顧。",
-    "description": "儲存網頁擷取到 COS 後的狀態"
-  },
   "btnSettings": {
     "message": "設定",
     "description": "設定按鈕"
@@ -380,8 +360,8 @@
     "description": "下載準備失敗"
   },
   "errSettingsIncomplete": {
-    "message": "設定不完整。請開啟「設定」，填寫 MindGraph 網址、手機號碼和 API 權杖。",
-    "description": "背景錯誤"
+    "message": "請先登入。請開啟「設定」，填寫 MindGraph 網址、手機號碼與 API 權杖並儲存。",
+    "description": "擴充功能未設定帳號"
   },
   "errNoPageText": {
     "message": "頁面上沒有可讀文字。請先選取一段文字，或換一頁再試。",
@@ -663,9 +643,13 @@
     "message": "無法取得過期時間。請檢查網路或重新儲存設定。",
     "description": "Token meta"
   },
-  "linkViewInLibrary": {
-    "message": "在圖庫中查看 →",
-    "description": "產生成功後顯示的連結，點擊可在網頁編輯器中開啟已儲存的導圖"
+  "linkOpenLibrary": {
+    "message": "開啟個人圖庫",
+    "description": "尚未生成本頁導圖時，開啟個人圖庫"
+  },
+  "linkOpenThisDiagram": {
+    "message": "在圖庫中開啟此心智圖",
+    "description": "本頁導圖已儲存後，開啟該圖"
   },
   "errLibraryFull": {
     "message": "圖庫已滿（20 張）。請刪除已儲存的導圖以儲存新產生的內容。",
