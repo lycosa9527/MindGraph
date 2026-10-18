@@ -7,11 +7,13 @@ How MindGraph tracks one teacher across web MindMate, Chrome extension, DingTalk
 | Layer | Identifier | Purpose |
 |-------|------------|---------|
 | **MindGraph account** | `users.id` (integer PK) | Diagram ownership, auth, admin analytics |
-| **Web MindMate (Dify)** | `mg_user_{pk}` or Bayi UUID in `users.phone` | Dify API `user` for browser/PWA/extension chat |
+| **Web MindMate (Dify)** | `{prefix}_mg_user_{pk}`, legacy `mg_user_{pk}`, or Bayi UUID in `users.phone` | Dify API `user` for browser/PWA/extension chat |
 | **DingTalk MindBot (Dify)** | `mindbot_{org_id}_{dingtalk_staff_id}` | Dify API `user` per bound staff; group chats scope per member |
 | **Cross-org DingTalk groups** | `mindbot_{org_id}_unknown` | Shared Dify user for LWCP / cross-org group threads |
 
 OAuth QR login (WeChat/DingTalk) and **MindBot account bind** are separate flows. Both resolve to the same `users.id` once the teacher is logged in and bound.
+
+`MINDMATE_DIFY_USER_PREFIX` is required (lowercase letters, digits, and single underscores, 1–32). New chats use `{prefix}_mg_user_{pk}`. The history list still queries `mg_user_{pk}`, so threads from before the prefix stay visible. Each developer sets their own `dev_<name>` (`dev_roy`, `dev_alice`) and does not copy someone else's. A school install uses a stable name such as `bayi`, not a `dev_` name. Leave the value unchanged after chats exist under it. Bayi vendor UUIDs are not prefixed. Library save accepts `mg_user_{pk}` and this install's prefixed form, and rejects another install's prefix.
 
 ## Binding table
 

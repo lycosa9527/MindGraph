@@ -465,13 +465,12 @@ class OpenAIHTTPLogFilter(logging.Filter):
     """Filter to reformat OpenAI SDK HTTP logs to match project log format.
 
     Reformats verbose HTTP request/response logs from OpenAI SDK into concise format:
-    - "HTTP Response: POST https://api.hunyuan.cloud.tencent.com/v1/chat/completions "200 OK" Headers({...})"
-      → "Hunyuan API: POST /v1/chat/completions → 200 OK"
+    - "HTTP Response: POST https://ark.cn-beijing.volces.com/api/v3/chat/completions "200 OK" Headers({...})"
+      → "Doubao API: POST /v3/chat/completions → 200 OK"
     """
 
     # API name mapping: URL substring -> Display name
     API_NAMES = {
-        "hunyuan": "Hunyuan",
         "doubao": "Doubao",
         "dashscope": "DashScope",
         "openai": "OpenAI",
@@ -718,7 +717,7 @@ def setup_logging():
     logging.getLogger("urllib3.connectionpool").setLevel(urllib3_level)
 
     # Enable OpenAI SDK logging for HTTP request/response visibility
-    # This provides detailed logs for Hunyuan and Doubao API calls
+    # This provides detailed logs for Doubao API calls
     # Respect global LOG_LEVEL setting - only show DEBUG logs if LOG_LEVEL=DEBUG
     openai_logger = logging.getLogger("openai")
     openai_logger.setLevel(log_level)  # Use global log level instead of hardcoded DEBUG

@@ -247,7 +247,7 @@ async def generate_multi_parallel(
     if not prompt:
         raise HTTPException(status_code=400, detail=Messages.error("invalid_prompt", lang))
 
-    # Get models to use (default to all 4, Hunyuan disabled due to 5 concurrent limit)
+    # Get models to use (default to all 4)
     models = req.models if hasattr(req, "models") and req.models else ["qwen", "deepseek", "kimi", "doubao"]
 
     language = coerce_generation_language(req.language, prompt)
@@ -413,7 +413,7 @@ async def generate_multi_progressive(
     if not prompt:
         raise HTTPException(status_code=400, detail=Messages.error("invalid_prompt", lang))
 
-    # Get models to use (Hunyuan disabled due to 5 concurrent limit)
+    # Get models to use
     models = req.models if hasattr(req, "models") and req.models else ["qwen", "deepseek", "kimi", "doubao"]
 
     # Extract language and diagram_type

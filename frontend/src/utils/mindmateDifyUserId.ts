@@ -30,13 +30,18 @@ function normalizeUuidLike(raw: string): string | null {
 export function mindmateDifyUserIdFromSession(
   authMode: AuthMode,
   mindgraphUserId: string,
-  phone?: string | null
+  phone?: string | null,
+  prefix?: string | null
 ): string {
   if (authMode === 'bayi' && phone) {
     const canonical = normalizeUuidLike(phone)
     if (canonical) {
       return canonical
     }
+  }
+  const raw = (prefix || '').trim().toLowerCase()
+  if (raw.length <= 32 && /^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(raw)) {
+    return `${raw}_mg_user_${mindgraphUserId}`
   }
   return `mg_user_${mindgraphUserId}`
 }

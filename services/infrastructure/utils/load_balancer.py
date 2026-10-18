@@ -74,8 +74,6 @@ class LLMLoadBalancer:
         "qwen3.8-flash": "qwen3.8-flash",
         "qwen3.7-plus": "qwen3.7-plus",
         "qwen3-max": "qwen3-max",
-        # Unaffected
-        "hunyuan": "hunyuan",  # → Tencent hunyuan
         "omni": "omni",  # → Voice agent
     }
 

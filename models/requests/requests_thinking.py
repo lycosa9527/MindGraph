@@ -246,7 +246,7 @@ class NodePaletteFinishRequest(BaseModel):
                 "selected_node_ids": [
                     "palette_abc123_qwen_1_5",
                     "palette_abc123_qwen_1_12",
-                    "palette_abc123_hunyuan_2_3",
+                    "palette_abc123_doubao_2_3",
                 ],
                 "total_nodes_generated": 69,
                 "batches_loaded": 4,

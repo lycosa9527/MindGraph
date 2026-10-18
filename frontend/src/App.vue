@@ -407,7 +407,10 @@ onMounted(async () => {
   }
 
   if (!isGuestAuthPath(route.path)) {
-    await authStore.checkAuth().catch(() => false)
+    await Promise.all([
+      authStore.checkAuth().catch(() => false),
+      authStore.detectMode().catch(() => undefined),
+    ])
   }
   installMindmateCollabLiveSession()
 

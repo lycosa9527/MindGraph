@@ -28,7 +28,7 @@ from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from services.utils.safe_upload import UnsafeUploadPathError, safe_upload_basename
 from utils.auth import get_current_user_or_api_key
-from utils.dify_mindmate_user_id import mindmate_dify_user_id
+from utils.dify_mindmate_user_id import mindmate_dify_user_aliases, mindmate_dify_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -104,9 +104,11 @@ async def upload_file_to_dify(
             detail="Session login required for MindMate file upload",
         )
 
-    effective_user_id = mindmate_dify_user_id(current_user)
-    if user_id is not None and user_id.strip() and user_id.strip() != effective_user_id:
+    aliases = mindmate_dify_user_aliases(current_user)
+    supplied = (user_id or "").strip()
+    if supplied and supplied not in aliases:
         raise HTTPException(status_code=403, detail="user_id does not match authenticated user")
+    effective_user_id = supplied or mindmate_dify_user_id(current_user)
 
     lang = get_request_language(x_language)
     client = await resolve_mindmate_dify_client_short_lived(

@@ -92,6 +92,8 @@ export const useAuthStore = defineStore('auth', () => {
   const modeResolved = ref(false)
   /** From GET /api/auth/mode; signup UI gated when false. Defaults true until the server responds. */
   const registrationEnabled = ref(true)
+  /** From GET /api/auth/mode. Empty keeps MindMate ids as mg_user_<pk>. */
+  const mindmateDifyUserPrefix = ref('')
   const loading = ref(false)
   const sessionMonitorInterval = ref<number | null>(null)
   const showSessionExpiredModal = ref(false)
@@ -825,10 +827,15 @@ export const useAuthStore = defineStore('auth', () => {
       const data = (await response.json()) as {
         mode?: string
         registration_enabled?: boolean
+        mindmate_dify_user_prefix?: string
       }
       const detectedMode = (data.mode || 'standard') as AuthMode
       registrationEnabled.value =
         typeof data.registration_enabled === 'boolean' ? data.registration_enabled : true
+      mindmateDifyUserPrefix.value =
+        typeof data.mindmate_dify_user_prefix === 'string'
+          ? data.mindmate_dify_user_prefix.trim()
+          : ''
       setMode(detectedMode)
       return detectedMode
     } catch {
@@ -1214,6 +1221,7 @@ export const useAuthStore = defineStore('auth', () => {
     mode,
     modeResolved,
     registrationEnabled,
+    mindmateDifyUserPrefix,
     loading,
     showSessionExpiredModal,
     pendingRedirect,

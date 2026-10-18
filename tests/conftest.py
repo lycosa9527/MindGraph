@@ -31,6 +31,12 @@ def pytest_configure(config) -> None:
 
 
 @pytest.fixture(autouse=True)
+def require_mindmate_dify_user_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Give the suite a prefix. Tests that need another name call ``setenv``."""
+    monkeypatch.setenv("MINDMATE_DIFY_USER_PREFIX", "ci")
+
+
+@pytest.fixture(autouse=True)
 def isolate_pending_kitty_redis(request: pytest.FixtureRequest) -> Iterator[None]:
     """Keep unit tests from writing armed Kitty picks into the shared Redis."""
     if request.node.get_closest_marker("integration"):

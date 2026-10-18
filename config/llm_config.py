@@ -1,7 +1,7 @@
 """LLM configuration settings.
 
 This module provides LLM-related configuration properties including
-Qwen, Dashscope, DeepSeek, Kimi, Hunyuan, and ARK configurations.
+Qwen, Dashscope, DeepSeek, Kimi, and ARK configurations.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -113,26 +113,6 @@ class LLMConfigMixin:
     def KIMI_MODEL(self):
         """Kimi model name (Moonshot AI)"""
         return self._get_cached_value("KIMI_MODEL", "Moonshot-Kimi-K2-Instruct")
-
-    @property
-    def HUNYUAN_API_KEY(self):
-        """Tencent Hunyuan API Secret Key"""
-        return self._get_cached_value("HUNYUAN_API_KEY", "")
-
-    @property
-    def HUNYUAN_SECRET_ID(self):
-        """Tencent Hunyuan API Secret ID"""
-        return self._get_cached_value("HUNYUAN_SECRET_ID", "")
-
-    @property
-    def HUNYUAN_API_URL(self):
-        """Tencent Hunyuan API URL"""
-        return self._get_cached_value("HUNYUAN_API_URL", "https://hunyuan.tencentcloudapi.com")
-
-    @property
-    def HUNYUAN_MODEL(self):
-        """Hunyuan model name"""
-        return self._get_cached_value("HUNYUAN_MODEL", "hunyuan-turbo")
 
     @property
     def ARK_API_KEY(self):
@@ -336,7 +316,7 @@ class LLMConfigMixin:
 
         Args:
             prompt (str): The prompt to send
-            model (str): Model identifier ('qwen', 'deepseek', 'kimi', 'chatglm')
+            model (str): Model identifier ('qwen', 'deepseek', 'kimi')
 
         Returns:
             dict: Request data dictionary for Dashscope API
@@ -349,7 +329,6 @@ class LLMConfigMixin:
             "deepseek": self.DEEPSEEK_MODEL,
             "express": self.EXPRESS_MODEL,
             "kimi": self.KIMI_MODEL,
-            "hunyuan": self.HUNYUAN_MODEL,
         }
 
         model_name = model_map.get(model, self.QWEN_MODEL_GENERATION)
@@ -369,7 +348,7 @@ class LLMConfigMixin:
         Args:
             system_prompt: The system/instruction prompt
             user_prompt: The user's input prompt
-            _model: Model identifier ('qwen', 'deepseek', 'kimi', 'hunyuan') - reserved for future use
+            _model: Model identifier ('qwen', 'deepseek', 'kimi') - reserved for future use
 
         Returns:
             list: Formatted messages array ready for chat_completion()

@@ -48,6 +48,9 @@ from services.infrastructure.lifecycle.lifespan_shutdown import (
 )
 from services.mcp.session_lifespan import mindgraph_mcp_session_run
 from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
+from services.infrastructure.lifecycle.startup_env_requirements import (
+    enforce_startup_env_requirements_or_exit,
+)
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService, admin_sms_alerts_enabled
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.perf_sample_log import (
@@ -232,6 +235,7 @@ async def lifespan(fastapi_app: FastAPI):
         logger.debug("[LIFESPAN] Starting lifespan initialization...")
         logger.debug("[LIFESPAN] Signal handlers registered")
         _log_security_startup_posture()
+        enforce_startup_env_requirements_or_exit(use_fatal_exit=True)
         enforce_production_security_guards()
         enforce_fail2ban_startup_or_exit()
 
@@ -380,8 +384,15 @@ async def lifespan(fastapi_app: FastAPI):
         if is_main_worker:
             logger.debug("LLM Service initialized")
     except BACKGROUND_INFRA_ERRORS as e:
-        if is_main_worker:
-            logger.warning("Failed to initialize LLM Service: %s", e)
+        print()
+        print("=" * 80)
+        print("[ERROR] LLM clients did not start.")
+        print(f"        {e}")
+        print("        Set the missing value in .env, then start MindGraph again.")
+        print("=" * 80)
+        print()
+        logger.error("[LIFESPAN] LLM startup failed: %s", e)
+        fatal_startup_exit(1)
 
     # Verify Playwright installation (for PNG generation)
     if is_main_worker:

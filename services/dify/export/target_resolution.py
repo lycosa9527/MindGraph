@@ -24,7 +24,7 @@ from services.mindbot.core.dify_user_id import (
     CROSS_ORG_STAFF_PLACEHOLDER,
     mindbot_dify_user_id_for_chat,
 )
-from utils.dify_mindmate_user_id import mindmate_dify_user_id
+from utils.dify_mindmate_user_id import mindmate_dify_user_aliases
 
 UNBOUND_STAFF_CAP = 500
 
@@ -241,18 +241,12 @@ async def build_export_targets(
         org_key = int(org_raw)
         uid = int(user.id)
         label = user_label(user)
-        web_dify = mindmate_dify_user_id(user)
-        if web_dify not in seen_dify:
-            seen_dify.add(web_dify)
-            targets.append(
-                UserTarget(
-                    organization_id=org_key,
-                    user_id=uid,
-                    dify_user=web_dify,
-                    label=label,
-                    channel="web",
-                )
-            )
+        _append_web_dify_targets(
+            targets,
+            seen_dify,
+            user,
+            organization_id=org_key,
+        )
 
         if scope == "all":
             link = link_map.get((org_key, uid))
@@ -379,18 +373,10 @@ async def build_export_targets(
 async def build_user_dify_targets(db: AsyncSession, user: User) -> List[UserTarget]:
     """Web MindMate + bound DingTalk MindBot Dify identities for one user."""
     org_raw = getattr(user, "organization_id", None)
-    uid = int(user.id)
     if org_raw is None:
-        web_dify = mindmate_dify_user_id(user)
-        return [
-            UserTarget(
-                organization_id=0,
-                user_id=uid,
-                dify_user=web_dify,
-                label=user_label(user),
-                channel="web",
-            )
-        ]
+        targets: List[UserTarget] = []
+        _append_web_dify_targets(targets, set(), user, organization_id=0)
+        return targets
     org_id = int(org_raw)
     result = await build_export_targets(
         db,
@@ -401,6 +387,31 @@ async def build_user_dify_targets(db: AsyncSession, user: User) -> List[UserTarg
         include_cross_org=True,
     )
     return result.targets
+
+
+def _append_web_dify_targets(
+    targets: List[UserTarget],
+    seen_dify: Set[str],
+    user: User,
+    *,
+    organization_id: int,
+) -> None:
+    """Add every web MindMate id for this account (canonical, then legacy)."""
+    label = user_label(user)
+    uid = int(user.id)
+    for web_dify in mindmate_dify_user_aliases(user):
+        if web_dify in seen_dify:
+            continue
+        seen_dify.add(web_dify)
+        targets.append(
+            UserTarget(
+                organization_id=organization_id,
+                user_id=uid,
+                dify_user=web_dify,
+                label=label,
+                channel="web",
+            )
+        )
 
 
 def export_scope_label(scope: ExportScope, org_id: Optional[int], user_count: int) -> str:

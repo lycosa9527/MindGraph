@@ -14,11 +14,12 @@ import time
 from asyncio import CancelledError
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import DifyFile
+from clients.dify_exceptions import DifyConversationNotFoundError
 from clients.dify_http_errors import dify_stream_chunk_is_upstream_outage
 from config.database import get_async_db
 from models import AIAssistantRequest, Messages, get_request_language
@@ -34,6 +35,10 @@ from services.auth.thinking_coin.usage_wire import (
 from services.diagram.generation_session_registry import register_generation_session
 from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
 from services.dify.org_mindmate_client import resolve_mindmate_dify_stream_short_lived
+from services.dify.unified_conversations import (
+    MindmateStreamDifyUserRejected,
+    resolve_mindmate_stream_dify_user,
+)
 from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
@@ -54,7 +59,6 @@ from services.mindmate.teaching_design_flag import (
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user_or_api_key
 from utils.auth.user_daily_token_quota import daily_token_limit_message
-from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +147,23 @@ async def ai_assistant_stream(
         user_id_for_tracking = current_user.id
         organization_id_for_tracking = getattr(current_user, "organization_id", None)
 
-    dify_user_id = mindmate_dify_user_id(current_user) if current_user and hasattr(current_user, "id") else req.user_id
+    if current_user and hasattr(current_user, "id"):
+        try:
+            dify_user_id = await resolve_mindmate_stream_dify_user(
+                db,
+                current_user,
+                conversation_id=req.conversation_id,
+                dify_user_hint=req.dify_user,
+            )
+        except MindmateStreamDifyUserRejected as rejected:
+            raise HTTPException(
+                status_code=403,
+                detail="dify_user does not match authenticated user",
+            ) from rejected
+        except DifyConversationNotFoundError as missing:
+            raise HTTPException(status_code=404, detail="Conversation not found") from missing
+    else:
+        dify_user_id = req.user_id
 
     stream_inputs: Dict[str, Any] = dict(req.inputs or {})
     stream_inputs["mg_dify_user"] = dify_user_id

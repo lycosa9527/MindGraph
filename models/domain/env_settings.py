@@ -130,32 +130,6 @@ class QwenAPISettings(BaseModel):
         return v
 
 
-class HunyuanAPISettings(BaseModel):
-    """Tencent Hunyuan API configuration"""
-
-    __category__ = "Tencent Hunyuan API"
-
-    HUNYUAN_API_KEY: Optional[str] = Field(default="", description="Hunyuan secret key (optional)")
-    HUNYUAN_SECRET_ID: Optional[str] = Field(default="", description="Hunyuan secret ID (optional)")
-    HUNYUAN_API_URL: str = Field(default="https://hunyuan.tencentcloudapi.com", description="Hunyuan API URL")
-    HUNYUAN_MODEL: str = Field(default="hunyuan-turbo", description="Hunyuan model name")
-    HUNYUAN_TEMPERATURE: float = Field(
-        default=1.0,
-        ge=0.0,
-        le=2.0,
-        description="Temperature (MUST be ≤ 2.0 for Hunyuan API)",
-    )
-    HUNYUAN_MAX_TOKENS: int = Field(default=2000, gt=0, description="Maximum tokens per request")
-
-    @field_validator("HUNYUAN_TEMPERATURE")
-    @classmethod
-    def validate_hunyuan_temperature(cls, v):
-        """Hunyuan API requires temperature ≤ 2.0"""
-        if v > 2.0:
-            raise ValueError(f"Hunyuan temperature must be ≤ 2.0, got {v}")
-        return v
-
-
 class DashscopeRateLimitSettings(BaseModel):
     """Dashscope platform rate limiting configuration"""
 
@@ -418,7 +392,6 @@ class EnvSettingsSchema(BaseModel):
 
     app: AppSettings
     qwen: QwenAPISettings
-    hunyuan: HunyuanAPISettings
     dashscope: DashscopeRateLimitSettings
     graph: GraphSettings
     logging: LoggingSettings

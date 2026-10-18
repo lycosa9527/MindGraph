@@ -45,8 +45,6 @@
     }
     /** @type {string | null} */
     let difyUserId = null;
-    /** @type {string | null} */
-    let streamDifyUserId = null;
     /** @type {{ difyUser?: string, server?: number, mindbotConfigId?: number | null } | null} */
     let activeConversationRoute = null;
     /** @type {Array<object>} */
@@ -500,9 +498,6 @@
         return false;
       }
       difyUserId = result.userId;
-      if (!activeConversationRoute || !activeConversationRoute.difyUser) {
-        streamDifyUserId = result.userId;
-      }
       setChatEnabled(true);
       setStatus("", "");
       return true;
@@ -588,7 +583,6 @@
         server: typeof item.server === "number" ? item.server : undefined,
         mindbotConfigId: typeof item.mindbot_config_id === "number" ? item.mindbot_config_id : undefined,
       };
-      streamDifyUserId = activeConversationRoute.difyUser || difyUserId;
       setStatus(deps.t("statusVerifying"), "is-loading");
       const loaded = await MindGraphMindMate.fetchConversationMessages(
         { ...creds, requestId: deps.newRequestId() },
@@ -674,7 +668,6 @@
       conversationId = null;
       userMessageCount = 0;
       activeConversationRoute = null;
-      streamDifyUserId = difyUserId;
       authKey = buildAuthKey(creds);
       clearMessages();
       cachedPageContext = null;
@@ -815,9 +808,12 @@
       let buffer = "";
       streamingBubbleId = appendMessage("", "assistant");
 
+      const route = activeConversationRoute;
       const result = await MindGraphMindMate.streamMessage(creds, {
         message: resolved.message,
-        userId: streamDifyUserId || difyUserId,
+        userId: difyUserId,
+        difyUser: route && route.difyUser,
+        server: route && route.server,
         conversationId,
         signal: abortController.signal,
         onConversationId: (id) => {

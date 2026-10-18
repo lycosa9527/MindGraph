@@ -96,7 +96,6 @@ class RedisTokenBuffer:
         "qwen3.8-flash": "qwen3.8-flash",
         "qwen3.7-plus": "qwen3.7-plus",
         "deepseek": "deepseek-v4.1-flash",
-        "hunyuan": "hunyuan-turbo",
         "doubao": "doubao-1-5-pro-32k",
         "dify": "dify-mindmate",
         "fun-asr-realtime": "fun-asr-realtime",

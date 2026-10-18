@@ -25,7 +25,6 @@ from typing import Any, Dict, List
 
 from clients.llm import (
     DeepSeekClient,
-    HunyuanClient,
     KimiClient,
     QwenClient,
     VolcengineClient,
@@ -94,11 +93,9 @@ class ClientManager:
                 # Initialize other LLM clients
                 self._clients["deepseek"] = DeepSeekClient()
                 self._clients["express"] = DeepSeekClient(model_id="express")
-                # Note: KimiClient (Dashscope) is initialized but NEVER USED
-                # Load balancer always routes 'kimi' → 'ark-kimi' (Volcengine)
-                # Kimi stays on Volcengine. DashScope Moonshot-Kimi-K2-Instruct is 500 RPM.
-                self._clients["kimi"] = KimiClient()  # Dashscope client (not used, kept for backward compatibility)
-                self._clients["hunyuan"] = HunyuanClient()
+                # DashScope Kimi is used only when load balancing is off.
+                # With the balancer on, logical kimi is ark-kimi (Volcengine GLM Flash).
+                self._clients["kimi"] = KimiClient()
 
                 # Initialize Volcengine ARK clients (using endpoints for higher RPM)
                 # Note: ark-qwen is NOT registered - Qwen always routes to Dashscope
@@ -119,13 +116,6 @@ class ClientManager:
                 self._clients["omni"] = OmniClient()
                 logger.debug("[ClientManager] Omni client initialized")
 
-                # Optional: ChatGLM (if configured)
-                # NOTE: CHATGLM_API_KEY is NOT currently in config/settings.py
-                # If you need ChatGLM support, add the property to config first
-                # For now, we skip ChatGLM initialization
-                # if hasattr(config, 'CHATGLM_API_KEY') and config.CHATGLM_API_KEY:
-                #     self._clients['chatglm'] = ChatGLMClient()
-
                 self._initialized = True
                 logger.debug("[ClientManager] Initialized %s LLM clients", len(self._clients))
 
@@ -138,7 +128,7 @@ class ClientManager:
         Get LLM client instance by model name.
 
         Args:
-            model: Model name ('qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao', 'chatglm')
+            model: Model name ('qwen', 'deepseek', 'kimi', 'doubao')
 
         Returns:
             Appropriate client instance

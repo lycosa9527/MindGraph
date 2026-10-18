@@ -13,10 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from repositories.dingtalk_staff_link_repo import DingtalkStaffLinkRepository
 from utils.auth import AUTH_MODE
+from utils.dify_mindmate_user_id import mindmate_dify_user_prefix
 
 logger = logging.getLogger(__name__)
 
-_MG_USER_RE = re.compile(r"^mg_user_(\d+)$")
+_MG_USER_RE = re.compile(r"^(?:(?P<prefix>[a-z0-9]+(?:_[a-z0-9]+)*)_)?mg_user_(?P<uid>\d+)$")
 _MINDBOT_USER_RE = re.compile(r"^mindbot_(\d+)_(.+)$")
 
 
@@ -37,13 +38,16 @@ def parse_mindbot_dify_key(raw: str) -> tuple[Optional[int], Optional[str]]:
 
 
 def parse_mg_user_id(raw: str) -> Optional[int]:
-    """Return user pk from ``mg_user_{id}``."""
+    """Return user pk from ``mg_user_{id}`` or this install's ``{prefix}_mg_user_{id}``."""
     text = (raw or "").strip()
     match = _MG_USER_RE.match(text)
     if not match:
         return None
+    prefix = match.group("prefix") or ""
+    if prefix and prefix != mindmate_dify_user_prefix():
+        return None
     try:
-        uid = int(match.group(1))
+        uid = int(match.group("uid"))
     except ValueError:
         return None
     return uid if uid > 0 else None

@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.175] - 2026-10-18
+
+> **MindMate Dify ids require an install prefix, startup exits on placeholder `.env`, and Hunyuan is removed from the LLM stack.**
+
+### Added
+
+- **MINDMATE_DIFY_USER_PREFIX** — Required in `.env`. New web MindMate chats are stored as `{prefix}_mg_user_<id>`. History still lists older `mg_user_<id>` threads. Bayi SSO UUID ids are unchanged. `GET /api/auth/mode` exposes the prefix to the web app and the Chrome extension.
+- **Startup `.env` gate** — Before the server binds, a banner lists missing or sample values for LLM keys, the MindMate prefix, and enabled feature flags (MindMate, Smart Response, OAuth, Markets, VOD, Workshop). `python main.py --help` cheatsheet documents the same list.
+
+### Fixed
+
+- **MindMate** — Streaming and file upload send the conversation owner’s `dify_user` when reopening a thread, so prefixed ids and legacy aliases resolve to the right Dify history. A `dify_user` key this account does not own returns 403.
+- **浏览器扩展** — MindMate chat passes `dify_user` and `server` on the stream request like the web app instead of overloading `user_id`.
+
+### Removed
+
+- **混元 Hunyuan** — Client, env settings, error parser, and model wiring removed. Diagram LLM routing stays on Qwen, DeepSeek, Kimi, and Volcengine ARK.
+- **Mock LLM fallback** — `clients.llm` no longer constructs clients on import or returns a mock when a model is missing.
+
+### Changed
+
+- **LLM clients** — `ClientManager` owns initialization at startup; importing `clients.llm` only exports client classes.
+
+### Tests
+
+- [`tests/test_startup_env_requirements.py`](tests/test_startup_env_requirements.py)
+- [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py), [`tests/test_dify_user_key.py`](tests/test_dify_user_key.py), [`tests/utils/test_dify_mindmate_user_id.py`](tests/utils/test_dify_mindmate_user_id.py), [`tests/test_dify_export_targets.py`](tests/test_dify_export_targets.py)
+
 ## [5.180.174] - 2026-10-18
 
 > **Delete removes the node and closes the gap, thinking-map type changes reflow, and the node toolbar stays off covering sheets.**

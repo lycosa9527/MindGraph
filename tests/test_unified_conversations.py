@@ -16,8 +16,10 @@ from clients.dify_http_errors import raise_for_dify_http_error
 from services.dify.export.endpoints import ExportDifyEndpoint
 from services.dify.export.transcript import ExportConversationSummary
 from services.dify.unified_conversations import (
+    MindmateStreamDifyUserRejected,
     list_unified_conversations,
     resolve_dify_user_for_conversation,
+    resolve_mindmate_stream_dify_user,
 )
 from tests.typing_helpers import as_user
 
@@ -476,6 +478,146 @@ async def test_resolve_dify_user_cross_org_hint_with_unknown_target(
     )
 
     assert dify_user == "mindbot_5_unknown"
+
+
+@pytest.mark.asyncio
+async def test_stream_dify_user_new_chat_skips_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A chat with no conversation id uses the canonical Dify user and does not probe."""
+    user = SimpleNamespace(id=7, organization_id=5, name="Alice", phone="", email="")
+
+    def _canonical(_user: object) -> str:
+        del _user
+        return "prod_mg_user_7"
+
+    async def _explode(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("continue probe")
+
+    monkeypatch.setattr("services.dify.unified_conversations.mindmate_dify_user_id", _canonical)
+    monkeypatch.setattr("services.dify.unified_conversations.resolve_dify_user_for_conversation", _explode)
+
+    dify_user = await resolve_mindmate_stream_dify_user(
+        MagicMock(),
+        as_user(user),
+        conversation_id=None,
+    )
+
+    assert dify_user == "prod_mg_user_7"
+
+
+@pytest.mark.asyncio
+async def test_stream_dify_user_rejects_foreign_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A Dify user key outside this account is not sent upstream."""
+    user = SimpleNamespace(id=7, organization_id=5, name="Alice", phone="", email="")
+    web_target, _mindbot_target = _web_and_mindbot_targets()
+
+    async def _fake_targets(_db: object, _user: object) -> list[object]:
+        del _db, _user
+        return [web_target]
+
+    monkeypatch.setattr("services.dify.unified_conversations.build_user_dify_targets", _fake_targets)
+
+    with pytest.raises(MindmateStreamDifyUserRejected):
+        await resolve_mindmate_stream_dify_user(
+            MagicMock(),
+            as_user(user),
+            conversation_id="conv-1",
+            dify_user_hint="other_mg_user_7",
+        )
+
+
+@pytest.mark.asyncio
+async def test_stream_dify_user_stale_hint_falls_through(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A legacy hint that does not own the thread resolves to the prefixed id."""
+    user = SimpleNamespace(id=7, organization_id=5, name="Alice", phone="", email="")
+    legacy = SimpleNamespace(
+        organization_id=5,
+        user_id=7,
+        dify_user="mg_user_7",
+        label="Alice",
+        channel="web",
+    )
+    prefixed = SimpleNamespace(
+        organization_id=5,
+        user_id=7,
+        dify_user="prod_mg_user_7",
+        label="Alice",
+        channel="web",
+    )
+
+    async def _fake_targets(_db: object, _user: object) -> list[object]:
+        del _db, _user
+        return [prefixed, legacy]
+
+    async def _fake_resolve(
+        _db: object,
+        target: object,
+        conversation_id: str,
+        dify_user: str,
+        **_kwargs: object,
+    ) -> object:
+        del _db, conversation_id, _kwargs
+        if getattr(target, "dify_user", "") == "prod_mg_user_7" and dify_user == "prod_mg_user_7":
+            return _FAKE_ENDPOINT
+        return None
+
+    monkeypatch.setattr("services.dify.unified_conversations.build_user_dify_targets", _fake_targets)
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._resolve_endpoint_for_conversation",
+        _fake_resolve,
+    )
+
+    dify_user = await resolve_mindmate_stream_dify_user(
+        MagicMock(),
+        as_user(user),
+        conversation_id="conv-new",
+        dify_user_hint="mg_user_7",
+    )
+
+    assert dify_user == "prod_mg_user_7"
+
+
+@pytest.mark.asyncio
+async def test_stream_dify_user_missing_hint_probes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Old clients that omit dify_user still continue the thread that owns the id."""
+    user = SimpleNamespace(id=7, organization_id=5, name="Alice", phone="", email="")
+    legacy = SimpleNamespace(
+        organization_id=5,
+        user_id=7,
+        dify_user="mg_user_7",
+        label="Alice",
+        channel="web",
+    )
+
+    async def _fake_targets(_db: object, _user: object) -> list[object]:
+        del _db, _user
+        return [legacy]
+
+    async def _fake_resolve(
+        _db: object,
+        target: object,
+        conversation_id: str,
+        dify_user: str,
+        **_kwargs: object,
+    ) -> object:
+        del _db, conversation_id, _kwargs
+        owner = getattr(target, "dify_user", "")
+        if owner == "mg_user_7" and dify_user == "mg_user_7":
+            return _FAKE_ENDPOINT
+        return None
+
+    monkeypatch.setattr("services.dify.unified_conversations.build_user_dify_targets", _fake_targets)
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._resolve_endpoint_for_conversation",
+        _fake_resolve,
+    )
+
+    dify_user = await resolve_mindmate_stream_dify_user(
+        MagicMock(),
+        as_user(user),
+        conversation_id="conv-old",
+    )
+
+    assert dify_user == "mg_user_7"
 
 
 def test_raise_for_dify_http_error_maps_conversation_not_exists_message() -> None:

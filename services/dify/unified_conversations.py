@@ -34,6 +34,11 @@ from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
 logger = logging.getLogger(__name__)
 
+
+class MindmateStreamDifyUserRejected(Exception):
+    """Client named a Dify user key this account does not own."""
+
+
 DEFAULT_LIST_TIMEOUT = int(os.getenv("DIFY_TIMEOUT", "300"))
 
 dify_client_errors: Tuple[Type[Exception], ...] = (
@@ -396,6 +401,42 @@ async def resolve_dify_user_for_conversation(
             return target.dify_user
 
     raise DifyConversationNotFoundError(f"Conversation {conversation_id} not found for any bound Dify identity")
+
+
+async def resolve_mindmate_stream_dify_user(
+    db: AsyncSession,
+    user: User,
+    *,
+    conversation_id: Optional[str],
+    dify_user_hint: Optional[str] = None,
+) -> str:
+    """Dify ``user`` for a MindMate stream.
+
+    New chats use the canonical id. Continuing a thread uses the hint when this
+    account owns that key, then probes the account's other identities if the
+    hint does not own the conversation. A key the account does not own is rejected.
+
+    The history row's server is not passed in. With a server hint, endpoint
+    resolution returns before ``get_messages`` runs, so a stale alias such as
+    ``mg_user_<pk>`` would be sent for a thread that lives under the prefix.
+    """
+    canonical = mindmate_dify_user_id(user)
+    conv = (conversation_id or "").strip()
+    if not conv:
+        return canonical
+
+    targets = await build_user_dify_targets(db, user)
+    allowed = {target.dify_user for target in targets}
+    hint = (dify_user_hint or "").strip()
+    if hint and hint not in allowed:
+        raise MindmateStreamDifyUserRejected()
+
+    return await resolve_dify_user_for_conversation(
+        db,
+        user,
+        conv,
+        dify_user_hint=hint or None,
+    )
 
 
 async def resolve_client_and_dify_user(

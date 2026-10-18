@@ -265,7 +265,12 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   function getDifyUserId(): string {
     if (authStore.user?.id) {
-      return mindmateDifyUserIdFromSession(authStore.mode, authStore.user.id, authStore.user.phone)
+      return mindmateDifyUserIdFromSession(
+        authStore.mode,
+        authStore.user.id,
+        authStore.user.phone,
+        authStore.mindmateDifyUserPrefix
+      )
     }
     let id = localStorage.getItem('mindgraph_guest_id')
     if (!id) {
@@ -275,9 +280,26 @@ export function useMindMate(options: MindMateOptions = {}) {
     return id
   }
 
+  function uploadDifyUserId(): string {
+    const openId = conversationId.value
+    if (openId) {
+      const owner = mindMateStore.getConversationRoute(openId).difyUser?.trim()
+      if (owner && !owner.startsWith('mindbot_') && !owner.startsWith('mindmate_collab_')) {
+        return owner
+      }
+    }
+    return userId.value
+  }
+
   // Watch for auth changes and update userId
   watch(
-    () => [authStore.user?.id, authStore.mode, authStore.user?.phone] as const,
+    () =>
+      [
+        authStore.user?.id,
+        authStore.mode,
+        authStore.user?.phone,
+        authStore.mindmateDifyUserPrefix,
+      ] as const,
     () => {
       userId.value = getDifyUserId()
     }
@@ -432,7 +454,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('user_id', userId.value)
+      formData.append('user_id', uploadDifyUserId())
 
       // Use fetch with credentials (token in httpOnly cookie)
       const response = await fetch('/api/dify/files/upload', {
@@ -562,6 +584,10 @@ export function useMindMate(options: MindMateOptions = {}) {
         const route = mindMateStore.getConversationRoute(conversationId.value)
         if (typeof route.server === 'number' && route.server >= 1) {
           requestBody.server = route.server
+        }
+        const owner = route.difyUser?.trim()
+        if (owner) {
+          requestBody.dify_user = owner
         }
       }
 
@@ -754,11 +780,7 @@ export function useMindMate(options: MindMateOptions = {}) {
 
           // Optimistic update: Add new conversation to Vue Query cache
           const now = Math.floor(Date.now() / 1000) // Use seconds like Dify
-          const webDifyUser = mindmateDifyUserIdFromSession(
-            authStore.mode,
-            authStore.user!.id,
-            authStore.user!.phone
-          )
+          const webDifyUser = getDifyUserId()
           const newConv = {
             id: data.conversation_id,
             name: mindMateStore.conversationTitle,

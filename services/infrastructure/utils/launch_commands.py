@@ -288,6 +288,32 @@ def lines_showcase_libreoffice_hint() -> list[str]:
     return lines_showcase_cover_host_install()
 
 
+def lines_startup_env_hint() -> list[str]:
+    """``.env`` values the process requires before it will listen."""
+    return [
+        "Required .env (startup exits with a banner when any of these are still samples):",
+        "  QWEN_API_KEY",
+        "  DASHSCOPE_WORKSPACE_ID   # or set QWEN_API_URL",
+        "  ARK_API_KEY",
+        "  ARK_DEEPSEEK_ENDPOINT    # not ep-20250101000000-dummy",
+        "  ARK_DOUBAO_ENDPOINT      # not ep-20250101000000-dummy",
+        "  GLM_FLASH_MODEL",
+        "  DOUBAO_MODEL",
+        "  MINDMATE_DIFY_USER_PREFIX  # your own dev_<name>, not dev_yourname",
+        "",
+        "When the matching feature flag is True, also set:",
+        "  FEATURE_MINDMATE=True          DIFY_API_KEY and DIFY_API_URL",
+        "  FEATURE_SMART_RESPONSE=True    DEVICE_REGISTRATION_SECRET",
+        "  FEATURE_WECHAT_LOGIN=True      WECHAT_OAUTH_APP_ID and WECHAT_OAUTH_APP_SECRET",
+        "  FEATURE_DINGTALK_LOGIN=True    EXTERNAL_BASE_URL",
+        "  FEATURE_MARKETS=True           ALIPAY_APP_ID, ALIPAY_NOTIFY_BASE_URL, certs",
+        "  FEATURE_VOD=True               TENCENT_VOD_APP_ID, TENCENT_VOD_PLAY_KEY, CAM keys",
+        "  FEATURE_WORKSHOP_CHAT=True     COLLAB_FANOUT_ORIGIN_SECRET",
+        "",
+        "  cp env.example .env",
+    ]
+
+
 def lines_playwright_hint() -> list[str]:
     """Chromium for PNG generation (matches browser.py / setup.py patterns)."""
     return [
@@ -350,6 +376,9 @@ def build_cheatsheet_text() -> str:
         "",
         "--- Showcase covers (LibreOffice + Noto CJK) ---",
         *lines_showcase_libreoffice_hint(),
+        "",
+        "--- .env required to start ---",
+        *lines_startup_env_hint(),
         "",
         "--- Playwright ---",
         *lines_playwright_hint(),

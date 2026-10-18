@@ -79,6 +79,11 @@ class AIAssistantRequest(BaseModel):
         le=3,
         description="Dify server that owns conversation_id (1 = 主服务器)",
     )
+    dify_user: Optional[str] = Field(
+        None,
+        max_length=256,
+        description="Dify user key that owns conversation_id (from the history row)",
+    )
     files: Optional[List[AIAssistantFile]] = Field(None, description="Files for Vision/document processing")
     inputs: Optional[Dict[str, Any]] = Field(None, description="App-defined variable values")
     auto_generate_name: bool = Field(True, description="Auto-generate conversation title")

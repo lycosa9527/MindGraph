@@ -310,7 +310,6 @@ class EnvManager:
             ),
             "QWEN_TEMPERATURE": lambda v: self._validate_float_range(v, "QWEN_TEMPERATURE", 0.0, 2.0, errors),
             "LLM_TEMPERATURE": lambda v: self._validate_float_range(v, "LLM_TEMPERATURE", 0.0, 2.0, errors),
-            "HUNYUAN_TEMPERATURE": lambda v: self._validate_float_range(v, "HUNYUAN_TEMPERATURE", 0.0, 2.0, errors),
             "QWEN_TIMEOUT": lambda v: self._validate_int_range(v, "QWEN_TIMEOUT", 5, 120, errors),
             "DIFY_TIMEOUT": lambda v: self._validate_int_range(v, "DIFY_TIMEOUT", 5, 600, errors),
             "JWT_EXPIRY_HOURS": lambda v: self._validate_int_range(v, "JWT_EXPIRY_HOURS", 1, 168, errors),
