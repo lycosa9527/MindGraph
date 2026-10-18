@@ -288,6 +288,43 @@ class MindmateCollabManager:
             return False
         return True
 
+    async def count_live_org_sessions(self, org_id: int) -> int:
+        """Count non-expired organization-visible rooms for one org."""
+        return await self._count_live_org_sessions(org_id)
+
+    async def publish_live_room(
+        self,
+        *,
+        code: str,
+        session_id: str,
+        owner_id: int,
+        owner_name: str,
+        org_id: Optional[int],
+        title: str,
+        visibility: str,
+        expires_at: datetime,
+        bound_org_ids: Optional[List[int]] = None,
+    ) -> bool:
+        """Write Redis keys so an existing seminar row is joinable again."""
+        redis = get_async_redis()
+        if not redis:
+            return False
+        try:
+            await redis.delete(closing_key(normalize_collab_code(code)))
+        except REDIS_ERRORS:
+            return False
+        return await self._write_redis_session(
+            code=code,
+            session_id=session_id,
+            owner_id=owner_id,
+            owner_name=owner_name,
+            org_id=org_id,
+            bound_org_ids=bound_org_ids,
+            title=title,
+            visibility=visibility,
+            expires_at=expires_at,
+        )
+
     async def load_session_by_code(self, code: str) -> Optional[MindmateCollabSession]:
         """Load an active session row by invite code."""
         norm = normalize_collab_code(code)

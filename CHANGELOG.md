@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.177] - 2026-10-19
+
+> **Continue session reopens the same seminar. A closed seminar hides participant faces and the collaborate button.**
+
+### Changed
+
+- **Continue session** — Only the owner sees Continue session. It opens the same seminar again: the same invite code, the same transcript, joint avatars, contacts, and End seminar. The sidebar shows the green live mark, and the seminar leaves saved history until it ends again. Joiners keep the saved transcript and can rejoin once the room is live.
+
+### Fixed
+
+- **Closed seminar** — A finished seminar no longer shows participant avatars or the collaborate button. On a live seminar, the face stack and the room buttons share one gap.
+- **Dev server** — Vite hot reload follows the port the dev server actually bound, so a busy 41732 does not leave the page talking to the other server.
+
+### Tests
+
+- [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py)
+- [`frontend/tests/mindmateContinueSession.spec.ts`](frontend/tests/mindmateContinueSession.spec.ts)
+
 ## [5.180.176] - 2026-10-18
 
 > **Everyone who joined a seminar keeps it in history, a closed seminar can continue as a personal chat, and contact online status follows the shared presence fan-out.**

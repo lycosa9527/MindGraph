@@ -40,6 +40,7 @@ from services.features.mindmate_collab.library_archive import (
     save_finished_seminar_for_owner,
 )
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
+from services.features.mindmate_collab.reopen_session import reopen_saved_seminar
 from services.features.mindmate_collab.poke_notify import send_mindmate_collab_poke
 from services.features.mindmate_collab.visibility import user_may_join_mindmate_collab
 from services.features.org_member_roster import (
@@ -95,6 +96,12 @@ class StartCollabRequest(BaseModel):
 
 class StopCollabRequest(BaseModel):
     """Body for POST /mindmate/collab/stop."""
+
+    session_id: str
+
+
+class ReopenCollabRequest(BaseModel):
+    """Body for POST /mindmate/collab/reopen."""
 
     session_id: str
 
@@ -175,6 +182,28 @@ async def stop_collab_room(
     if not ok:
         raise HTTPException(status_code=404, detail="Room not found or not authorized")
     return {"success": True}
+
+
+@router.post("/reopen")
+async def reopen_collab_room(
+    request: Request,
+    body: ReopenCollabRequest,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Continue a saved seminar by opening the same room again."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit("mindmate_collab_start", identifier, max_requests=10, window_seconds=60)
+
+    payload, error = await reopen_saved_seminar(body.session_id, current_user.id)
+    if not payload:
+        if error == "not_owner":
+            raise HTTPException(status_code=403, detail="Only the seminar owner can continue this session")
+        if error in {"not_found", "not_saved"}:
+            raise HTTPException(status_code=404, detail="Saved seminar not found")
+        raise HTTPException(status_code=400, detail=error or "Failed to start room")
+    return {"success": True, **payload}
 
 
 @router.post("/join")

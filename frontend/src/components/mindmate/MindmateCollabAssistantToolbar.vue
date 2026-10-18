@@ -22,6 +22,8 @@ defineProps<{
   exportingWord: boolean
   showCanvas: boolean
   openingCanvas: boolean
+  /** Regenerate, feedback, and share belong to a live room. */
+  liveActions?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -58,7 +60,7 @@ const { t } = useLanguage()
     </I18nTooltip>
 
     <I18nTooltip
-      v-if="canRegenerate"
+      v-if="liveActions !== false && canRegenerate"
       k="mindmate.tooltip.regenerate"
       placement="top"
     >
@@ -73,6 +75,7 @@ const { t } = useLanguage()
     </I18nTooltip>
 
     <I18nTooltip
+      v-if="liveActions !== false"
       k="mindmate.tooltip.like"
       placement="top"
     >
@@ -87,6 +90,7 @@ const { t } = useLanguage()
     </I18nTooltip>
 
     <I18nTooltip
+      v-if="liveActions !== false"
       k="mindmate.tooltip.dislike"
       placement="top"
     >
@@ -101,6 +105,7 @@ const { t } = useLanguage()
     </I18nTooltip>
 
     <I18nTooltip
+      v-if="liveActions !== false"
       k="mindmate.tooltip.share"
       placement="top"
     >

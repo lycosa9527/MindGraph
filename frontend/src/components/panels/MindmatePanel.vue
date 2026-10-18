@@ -34,17 +34,20 @@ import { useAuthStore, useMindMateStore, useTeachingDesignExportStore } from '@/
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import type { MindMateMessage } from '@/stores/mindmateActiveThread'
 import { useUIStore } from '@/stores/ui'
+import { authFetch } from '@/utils/api'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
 import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
 import {
-  focusPersonalMindmateThread,
   notifyMindmateCollabLibraryChanged,
   saveFinishedSeminar,
   shouldRefreshSavedSeminarLibrary,
 } from '@/utils/mindmateCollabLibrarySave'
 import {
+  clearMindmateCollabCodeEnded,
+  formatMindmateCollabCode,
   loadLocalMindmateCollabSessions,
   normalizeMindmateCollabCode,
+  trackLocalMindmateCollabSession,
   wasMindmateCollabCodeRecentlyEnded,
 } from '@/utils/mindmateCollabSessions'
 import {
@@ -54,6 +57,7 @@ import {
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
 import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
+import { canContinueSavedSeminar } from '@/utils/mindmateSeminarTranscript'
 
 import ShareExportModal from './ShareExportModal.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
@@ -237,6 +241,40 @@ const canStopCollabSession = computed(() => {
   return collabOwnerId.value === userId
 })
 
+function enterLiveSeminar(payload: {
+  code: string
+  visibility?: string
+  ownerUserId?: number
+  title?: string
+  sessionId?: string
+  expiresAt?: string | null
+}): void {
+  const code = formatMindmateCollabCode(payload.code)
+  clearMindmateCollabCodeEnded(code)
+  trackLocalMindmateCollabSession({
+    session_id: payload.sessionId || '',
+    code,
+    title: payload.title || t('mindmate.collabPill'),
+    owner_user_id: payload.ownerUserId,
+    visibility: payload.visibility,
+    expires_at: payload.expiresAt,
+    live: true,
+  })
+  if (payload.sessionId) {
+    collabSessionId.value = payload.sessionId
+  }
+  notifyMindmateCollabLibraryChanged()
+  handleCollabSessionStarted({
+    code,
+    visibility:
+      payload.visibility === 'network' || payload.visibility === 'organization'
+        ? payload.visibility
+        : 'organization',
+    ownerUserId: payload.ownerUserId,
+    title: payload.title,
+  })
+}
+
 function handleCollabSessionStarted(payload: {
   code: string
   visibility?: 'organization' | 'network'
@@ -302,16 +340,87 @@ function handleCollabEnded(reason: 'idle' | 'host' | 'left' = 'left') {
   }
 }
 
-const showContinueSession = computed(
-  () => Boolean(savedSeminar.sessionId.value) && !isCollabChatroomMode.value
+const savedSeminarOwned = ref(false)
+
+watch(
+  () => savedSeminar.sessionId.value,
+  () => {
+    savedSeminarOwned.value = false
+  }
 )
 
-function continuePersonalSession(): void {
-  focusPersonalMindmateThread()
-  const hasThread =
-    Boolean(mindMateStore.currentConversationId) || mindMate.messages.value.length > 0
-  if (!hasThread) {
-    void startNewConversation()
+const showContinueSession = computed(() =>
+  canContinueSavedSeminar(
+    savedSeminar.sessionId.value,
+    savedSeminarOwned.value,
+    isCollabChatroomMode.value
+  )
+)
+
+function onSavedSeminarOwnership(owned: boolean): void {
+  savedSeminarOwned.value = owned
+}
+
+function onSavedSeminarLive(payload: {
+  code: string
+  visibility?: string
+  title?: string
+  ownerUserId?: number
+}): void {
+  enterLiveSeminar({
+    code: payload.code,
+    visibility: payload.visibility,
+    title: payload.title,
+    ownerUserId: payload.ownerUserId,
+    sessionId: savedSeminar.sessionId.value || '',
+  })
+}
+
+async function continueSavedSeminar(): Promise<void> {
+  const sessionId = savedSeminar.sessionId.value
+  if (
+    !sessionId ||
+    !canContinueSavedSeminar(sessionId, savedSeminarOwned.value, isCollabChatroomMode.value)
+  ) {
+    return
+  }
+  try {
+    const response = await authFetch('/api/mindmate/collab/reopen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    })
+    if (!response.ok) {
+      const err = (await response.json().catch(() => ({}))) as { detail?: string }
+      if (err.detail) {
+        notify.error(err.detail)
+      } else {
+        notify.errorKey('mindmate.collabStartFailed')
+      }
+      return
+    }
+    const data = (await response.json()) as {
+      code?: string
+      visibility?: string
+      title?: string
+      owner_user_id?: number
+      session_id?: string
+      expires_at?: string | null
+    }
+    if (!data.code) {
+      notify.errorKey('mindmate.collabStartFailed')
+      return
+    }
+    enterLiveSeminar({
+      code: data.code,
+      visibility: data.visibility,
+      title: data.title,
+      ownerUserId: data.owner_user_id,
+      sessionId: data.session_id || sessionId,
+      expiresAt: data.expires_at,
+    })
+  } catch {
+    notify.errorKey('mindmate.collabStartFailed')
   }
 }
 
@@ -702,7 +811,7 @@ function isLastAssistantMessage(messageId: string): boolean {
         {{ displayTitle }}
       </h1>
       <MindmateCollabPanel
-        v-if="showMindmateCollab && !isCollabChatroomMode"
+        v-if="showMindmateCollab && !isCollabChatroomMode && !savedSeminar.sessionId.value"
         ref="collabPanelRef"
         :in-conversation="inConversation"
         :conversation-title="mindMateStore.conversationTitle || displayTitle"
@@ -710,7 +819,7 @@ function isLastAssistantMessage(messageId: string): boolean {
         embed-in-panel
         @session-started="handleCollabSessionStarted"
       />
-      <div class="mindmate-toolbar-actions flex items-center gap-1.5 shrink-0">
+      <div class="mindmate-toolbar-actions flex items-center gap-2 shrink-0">
         <MindmateSeminarFaces v-if="isCollabChatroomMode" />
         <MindmateContactsToggleButton
           v-if="isCollabChatroomMode"
@@ -732,7 +841,7 @@ function isLastAssistantMessage(messageId: string): boolean {
           v-if="showContinueSession"
           class="continue-session-btn shrink-0"
           size="small"
-          @click="continuePersonalSession"
+          @click="continueSavedSeminar"
         >
           <I18nText
             k="mindmate.collabContinueSession"
@@ -765,7 +874,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       :show-contacts-toggle="isCollabChatroomMode"
       :contacts-open="showCollabContacts"
       :show-continue-session="showContinueSession"
-      @continue-session="continuePersonalSession"
+      @continue-session="continueSavedSeminar"
       @new-conversation="startNewConversation"
       @close="emit('close')"
       @load-history="loadConversationFromHistory"
@@ -773,11 +882,17 @@ function isLastAssistantMessage(messageId: string): boolean {
       @toggle-contacts="showCollabContacts = !showCollabContacts"
     />
 
-    <MindmateCollabSavedTranscript
+    <div
       v-if="savedSeminar.sessionId.value && !isCollabChatroomMode"
-      class="flex-1 min-h-0 min-w-0"
-      :session-id="savedSeminar.sessionId.value"
-    />
+      class="flex flex-col flex-1 min-h-0 min-w-0"
+    >
+      <MindmateCollabSavedTranscript
+        class="flex-1 min-h-0 min-w-0"
+        :session-id="savedSeminar.sessionId.value"
+        @ownership="onSavedSeminarOwnership"
+        @live="onSavedSeminarLive"
+      />
+    </div>
 
     <!-- Collab chatroom mode (chat + right member column) -->
     <MindmateCollabEmbed
@@ -839,13 +954,13 @@ function isLastAssistantMessage(messageId: string): boolean {
           />
         </div>
       </div>
-
-      <ShareExportModal
-        v-model:visible="showShareModal"
-        :messages="mindMate.messages.value"
-        :conversation-title="mindMate.conversationTitle.value"
-      />
     </template>
+
+    <ShareExportModal
+      v-model:visible="showShareModal"
+      :messages="mindMate.messages.value"
+      :conversation-title="mindMate.conversationTitle.value"
+    />
   </div>
 </template>
 
@@ -855,6 +970,10 @@ function isLastAssistantMessage(messageId: string): boolean {
 
 <style scoped>
 @import './mindmate/mindmate.css';
+
+.mindmate-toolbar-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
 
 .mindmate-sidebar-toggle {
   --el-button-text-color: #57534e;

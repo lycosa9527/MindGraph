@@ -104,7 +104,7 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
         {{ title }}
       </h1>
     </div>
-    <div class="flex items-center gap-2 shrink-0">
+    <div class="mindmate-header-actions flex items-center gap-2 shrink-0">
       <ElButton
         v-if="showContinueSession"
         size="small"
@@ -217,6 +217,10 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
 
 <style scoped>
 @import './mindmate.css';
+
+.mindmate-header-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
 
 /* History dropdown - panel mode */
 .history-dropdown-menu {

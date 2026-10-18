@@ -178,6 +178,7 @@ async def list_saved_seminars(user_id: int) -> List[Dict[str, Any]]:
                     select(MindmateCollabSession)
                     .where(
                         MindmateCollabSession.library_saved_at.is_not(None),
+                        MindmateCollabSession.ended_at.is_not(None),
                         or_(
                             MindmateCollabSession.owner_user_id == user_id,
                             member_of,
@@ -257,11 +258,17 @@ async def load_saved_seminar(
         summary = saved_seminar_summary(session, user_id)
         messages, truncated = await _load_transcript(db, session_id)
         read_cursors = await list_read_cursors(db, session_id)
+        seminar_live = session.ended_at is None
+        seminar_code = session.code
+        seminar_owner_id = session.owner_user_id
     return {
         "session": summary,
         "messages": messages,
         "truncated": truncated,
         "read_cursors": read_cursors,
+        "live": seminar_live,
+        "code": seminar_code,
+        "owner_user_id": seminar_owner_id,
     }
 
 

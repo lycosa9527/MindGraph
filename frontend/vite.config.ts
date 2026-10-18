@@ -76,7 +76,7 @@ const devHost = process.env.VITE_HOST || '0.0.0.0'
  * unless `server.hmr.host` is set — browsers cannot connect and updates never apply.
  * Same-machine dev: defaults to localhost. LAN/phone testing: set `VITE_HMR_HOST`.
  */
-function resolveHmrConfig(port: number, host: string | boolean) {
+function resolveHmrConfig(host: string | boolean) {
   const explicitHost = process.env.VITE_HMR_HOST?.trim()
   const explicitPort = process.env.VITE_HMR_PORT?.trim()
   const explicitClientPort = process.env.VITE_HMR_CLIENT_PORT?.trim()
@@ -92,10 +92,10 @@ function resolveHmrConfig(port: number, host: string | boolean) {
   if (!bindAll) {
     return undefined
   }
+  // Do not pin the port. strictPort is off, so a busy 41732 moves to the
+  // next port; a hardcoded HMR port would keep the browser on the old server.
   return {
     host: 'localhost',
-    port,
-    clientPort: port,
   }
 }
 
@@ -115,7 +115,7 @@ function resolveWatchConfig(projectRoot: string) {
   }
 }
 
-const devHmr = resolveHmrConfig(devPort, devHost)
+const devHmr = resolveHmrConfig(devHost)
 const devWatch = resolveWatchConfig(__dirname)
 const isPwaDev = process.env.VITE_PWA_DEV === '1'
 

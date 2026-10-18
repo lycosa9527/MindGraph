@@ -12,6 +12,10 @@ from services.features.mindmate_collab.library_archive import (
     saved_seminar_title_error,
     viewer_may_open_saved_seminar,
 )
+from services.features.mindmate_collab.reopen_session import (
+    reopen_block_reason,
+    reopen_duration,
+)
 
 
 def test_owner_can_save_after_the_seminar_ends() -> None:
@@ -42,6 +46,20 @@ def test_only_the_owner_can_save() -> None:
         actor_user_id=8,
     )
     assert reason == "not_owner"
+
+
+def test_only_the_owner_can_reopen_a_saved_seminar() -> None:
+    """Continue session is refused for a joiner and for a seminar that was never saved."""
+    saved_at = datetime(2026, 9, 28, tzinfo=UTC)
+    assert reopen_block_reason(owner_user_id=7, actor_user_id=8, library_saved_at=saved_at) == "not_owner"
+    assert reopen_block_reason(owner_user_id=7, actor_user_id=7, library_saved_at=None) == "not_saved"
+    assert reopen_block_reason(owner_user_id=7, actor_user_id=7, library_saved_at=saved_at) is None
+
+
+def test_reopen_keeps_a_valid_duration_preset() -> None:
+    """An organization seminar keeps its saved duration when that preset is still allowed."""
+    assert reopen_duration("organization", "10h") == "10h"
+    assert reopen_duration("organization", "not-a-duration") == "10h"
 
 
 def test_saved_seminar_summary_includes_save_time() -> None:

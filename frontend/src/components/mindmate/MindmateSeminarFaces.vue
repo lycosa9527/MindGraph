@@ -15,11 +15,13 @@ import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEm
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
-const { faces } = useMindmateSeminarFaces()
+const { faces: liveFaces } = useMindmateSeminarFaces()
+
+const source = computed(() => liveFaces.value)
 
 const selfId = computed(() => Number(authStore.user?.id) || 0)
 
-const ordered = computed(() => orderSeminarFaces(faces.value, selfId.value))
+const ordered = computed(() => orderSeminarFaces(source.value, selfId.value))
 
 const split = computed(() => splitSeminarFaces(ordered.value))
 
@@ -80,7 +82,8 @@ const overflowLabel = computed(() => split.value.overflow.map((face) => face.nam
 .seminar-faces {
   display: flex;
   align-items: center;
-  margin-right: 4px;
+  margin: 0;
+  padding-right: 2px;
 }
 
 .seminar-faces__item {

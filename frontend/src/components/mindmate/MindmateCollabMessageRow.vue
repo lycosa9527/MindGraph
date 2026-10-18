@@ -50,6 +50,8 @@ const props = defineProps<{
   feedback?: CollabFeedbackRating
   sessionId?: string
   readCursors?: readonly CollabReadCursor[]
+  /** False on a closed seminar: no live read checks or room actions. */
+  live?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -96,6 +98,8 @@ const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => displayText.val
 })
 
 const isAssistant = computed(() => props.message.role === 'assistant')
+
+const showPersonAvatar = computed(() => props.live !== false)
 
 const ownAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 const ownAvatarSrc = computed(() => userAvatarImageSrc(authStore.user?.avatar))
@@ -227,7 +231,10 @@ async function openInCanvas(): Promise<void> {
     class="mindmate-collab-room__msg-row"
     :class="rowClass"
   >
-    <div class="mindmate-collab-room__avatar">
+    <div
+      v-if="isAssistant || showPersonAvatar"
+      class="mindmate-collab-room__avatar"
+    >
       <img
         v-if="isAssistant"
         :src="agentAvatarUrl"
@@ -294,10 +301,12 @@ async function openInCanvas(): Promise<void> {
         :created-at="message.created_at"
         :sender-user-id="message.sender_user_id"
         :is-own="isOwn"
-        :read-cursors="readCursors"
+        :read-cursors="live === false ? [] : readCursors"
+        :show-receipt="live !== false"
       />
       <MindmateCollabAssistantToolbar
         v-if="isAssistant && !message.streaming"
+        :live-actions="live !== false"
         :is-last-assistant="Boolean(isLastAssistant)"
         :can-regenerate="Boolean(userPrompt)"
         :regenerate-disabled="Boolean(regenerateDisabled)"
