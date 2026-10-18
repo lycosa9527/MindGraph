@@ -44,6 +44,17 @@ type LayoutFallback = {
   borderWidth: number
 }
 
+/** Worksheet text and a few layout measurers store `700` for the same bold the buttons toggle. */
+function toolbarFontWeight(
+  value: string | number | null | undefined,
+  fallback: 'normal' | 'bold'
+): 'normal' | 'bold' {
+  if (value == null || value === '') return fallback
+  if (value === 'bold' || value === '700' || value === 700) return 'bold'
+  if (value === 'normal' || value === '400' || value === 400) return 'normal'
+  return fallback
+}
+
 const CONCEPT_TOPIC_FALLBACK = {
   backgroundColor: '#e3f2fd',
   textColor: '#000000',
@@ -155,10 +166,10 @@ function structureDisplay(
     borderWidth: style.borderWidth ?? (ring ? MIND_MAP_GEOMETRY.edgeStrokeWidth : 0),
     borderStyle: (style.borderStyle || 'solid') as BorderStyleType,
     fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontWeight: style.fontWeight || (bridgeLabel ? 'bold' : 'normal'),
+    fontWeight: toolbarFontWeight(style.fontWeight, bridgeLabel ? 'bold' : 'normal'),
     fontStyle: style.fontStyle || (bridgeLabel || ring ? 'normal' : 'italic'),
-    textDecoration: style.textDecoration ?? 'none',
-    textAlign: style.textAlign ?? (bridgeLabel ? 'right' : 'center'),
+    textDecoration: style.textDecoration || 'none',
+    textAlign: style.textAlign || (bridgeLabel ? 'right' : 'center'),
   }
 }
 
@@ -197,9 +208,9 @@ export function resolveFloatingToolbarNodeDisplay(options: {
       paint?.borderWidth ?? style.borderWidth ?? chrome?.borderWidth ?? fallback.borderWidth,
     borderStyle: (style.borderStyle || 'solid') as BorderStyleType,
     fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontWeight: style.fontWeight || chrome?.fontWeight || fallback.fontWeight,
+    fontWeight: toolbarFontWeight(style.fontWeight, chrome?.fontWeight || fallback.fontWeight),
     fontStyle: style.fontStyle || 'normal',
-    textDecoration: style.textDecoration ?? 'none',
-    textAlign: style.textAlign ?? 'center',
+    textDecoration: style.textDecoration || 'none',
+    textAlign: style.textAlign || 'center',
   }
 }

@@ -34,6 +34,7 @@ import MindMapNodeExplainResearchPanel from '@/components/canvas/MindMapNodeExpl
 import {
   type FloatingToolbarSize,
   formatBrushActive,
+  useCanvasNodeChromeOverlayGate,
   useFollowNodeStyleToolbar,
   useNodeFloatingToolbarPosition,
 } from '@/composables/canvasToolbar'
@@ -42,6 +43,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramCanvasFontFaces } from '@/composables/diagram/useDiagramCanvasFontFaces'
 import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   diagramCanvasGridConfig,
@@ -113,6 +115,7 @@ import MindMapSummaryOverlay from './MindMapSummaryOverlay.vue'
 import PresentationHighlightOverlay from './PresentationHighlightOverlay.vue'
 import TreeMapOverlay from './TreeMapOverlay.vue'
 import './diagramCanvas.css'
+import './diagramCanvasExportOutline.css'
 import { diagramCanvasEdgeTypesLegacy } from './diagramCanvasEdgeTypesLegacy'
 import { diagramCanvasEdgeTypesMindMapV2 } from './diagramCanvasEdgeTypesMindMapV2'
 import { diagramCanvasEdgeTypes, diagramCanvasNodeTypes } from './diagramCanvasVueFlowTypes'
@@ -202,6 +205,7 @@ const emit = defineEmits<{
 }>()
 
 const diagramStore = useDiagramSession()
+useDiagramCanvasFontFaces()
 const mindMapBulkLoading = diagramSessionRef(diagramStore, 'mindMapBulkLoading')
 const layoutMeasureSettling = diagramSessionRef(diagramStore, 'layoutMeasureSettling')
 const savedDiagramsStore = useSavedDiagramsStore()
@@ -406,6 +410,8 @@ const floatingToolbarNodeIds = computed(() => {
   }
   return diagramStore.selectedNodes.filter((id) => !isMindMapSummaryNodeId(id))
 })
+
+const overlayBlocksNodeChrome = useCanvasNodeChromeOverlayGate()
 
 const floatingToolbarEnabled = computed(
   () => followNodeStyleToolbar.value && floatingToolbarNodeIds.value.length > 0
@@ -849,7 +855,7 @@ defineExpose({
         :zoom-on-scroll="true"
         :zoom-on-pinch="true"
         :zoom-on-double-click="false"
-        :delete-key-code="props.browseMode ? null : undefined"
+        :delete-key-code="null"
         :pan-on-drag="effectivePanOnDrag"
         :class="vueFlowBackgroundClasses"
         :style="{ backgroundColor: uiStore.exportRasterCapture ? 'transparent' : backgroundColor }"
@@ -924,7 +930,8 @@ defineExpose({
         floatingToolbarEnabled &&
         !headlessExport &&
         !presentationDiagramEditLocked &&
-        !nodeExplainVisible
+        !nodeExplainVisible &&
+        !overlayBlocksNodeChrome
       "
       :position="floatingToolbarPosition"
       :node-id="floatingToolbarAnchorId"

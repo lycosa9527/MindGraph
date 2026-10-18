@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'නෝඩ් ප්‍රතිස්ථාපනය කරන්න/එකතු කරන්න',
   'nodePalette.loadMore': 'වැඩිපුර පටවන්න',
   'nodePalette.next': 'ඊළඟ',
-  'nodePalette.panelTitle': 'සංකල්ප වාහන නැවැත්වීමේ ස්ථානය',
   'nodePalette.refresh': 'නැවුම් කරන්න',
   'nodePalette.selected': 'තෝරාගත්',
   'nodePalette.similarities': 'සමානකම්',

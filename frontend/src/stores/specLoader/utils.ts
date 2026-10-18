@@ -269,15 +269,34 @@ const MIN_CONTEXT_DIAMETER = 70
  * Mirrors the brace-map pattern: fixed max text width → balanced lines →
  * compute text-block diagonal → add border/slack for final circle diameter.
  */
-export function estimateContextCircleDiameter(text: string, secondary?: string): number {
+export type ContextCircleMeasureOpts = {
+  fontSize?: number
+  fontWeight?: string
+  fontFamily?: string
+}
+
+export function estimateContextCircleDiameter(
+  text: string,
+  secondary?: string,
+  measure?: ContextCircleMeasureOpts
+): number {
+  const fontSize =
+    typeof measure?.fontSize === 'number' && measure.fontSize > 0
+      ? measure.fontSize
+      : CONTEXT_FONT_SIZE
+  const fontWeight = measure?.fontWeight === 'bold' ? 'bold' : 'normal'
+  const fontFamily = measure?.fontFamily
   const finish = (diameter: number): number => {
     if (!secondary?.trim()) return diameter
-    return growRadiusForSecondary(diameter / 2, secondary, CONTEXT_FONT_SIZE) * 2
+    return growRadiusForSecondary(diameter / 2, secondary, fontSize) * 2
   }
   const trimmed = (text || '').trim()
   if (!trimmed) return finish(MIN_CONTEXT_DIAMETER)
 
-  const block = measureThinkingMapLabelBlockPx(trimmed, CONTEXT_FONT_SIZE, CONTEXT_MAX_TEXT_WIDTH)
+  const block = measureThinkingMapLabelBlockPx(trimmed, fontSize, CONTEXT_MAX_TEXT_WIDTH, {
+    fontWeight,
+    fontFamily,
+  })
   const contentW = block.width + CONTEXT_PADDING_X
   const contentH = block.height + CONTEXT_PADDING_Y
 

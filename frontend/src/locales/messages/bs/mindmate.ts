@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Replace/add nodes',
   'nodePalette.loadMore': 'Load more',
   'nodePalette.next': 'Next',
-  'nodePalette.panelTitle': 'Concept parking lot',
   'nodePalette.refresh': 'Refresh',
   'nodePalette.selected': 'selected',
   'nodePalette.similarities': 'Similarities',

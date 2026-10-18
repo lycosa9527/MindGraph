@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Düğümleri değiştir/ekle',
   'nodePalette.loadMore': 'Daha fazla yükle',
   'nodePalette.next': 'İleri',
-  'nodePalette.panelTitle': 'Kavram park yeri',
   'nodePalette.refresh': 'Yenile',
   'nodePalette.selected': 'seçili',
   'nodePalette.similarities': 'Benzerlikler',

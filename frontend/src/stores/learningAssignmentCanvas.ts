@@ -1,7 +1,7 @@
 /**
  * Learning-assignment canvas context (student homework mode on /canvas).
  */
-import { computed, ref } from 'vue'
+import { computed, ref, type InjectionKey } from 'vue'
 
 import { defineStore } from 'pinia'
 
@@ -15,6 +15,9 @@ import {
 } from '@/utils/learningSpaceApi'
 
 export const MG_LEARNING_ASSIGNMENT_STORAGE_KEY = 'mg_learning_assignment_id'
+
+/** Persist the open homework diagram before the submission snapshot is taken. */
+export const homeworkCanvasFlushKey: InjectionKey<() => Promise<void>> = Symbol('homeworkCanvasFlush')
 
 const GRANULAR_KEYS = [
   'topic_generate',

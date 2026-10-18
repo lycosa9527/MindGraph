@@ -13,9 +13,10 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { STYLE_PRESET_PALETTES, type StylePresetColors } from '@/config/colorPalette'
 import { FLOATING_TOOLBAR_FONT_SIZES } from '@/config/floatingToolbarColors'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
+import { ensureDiagramCanvasFonts } from '@/fonts/diagramCanvasFonts'
 import type { DiagramNode, NodeStyle } from '@/types'
 import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUtils'
-import { colorToHex, hexToRgba } from '@/utils/colorFormat'
+import { colorToHex, hexToRgba, nativeColorInputHex } from '@/utils/colorFormat'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { displayedNodeFontSize, readPaintedNodeFontSizePx } from '@/utils/displayedNodeFontSize'
 import { resolveFloatingToolbarNodeDisplay } from '@/utils/floatingToolbarNodeDisplay'
@@ -127,18 +128,13 @@ export function useCanvasToolbarFormatting(options?: {
     return [...sizes].sort((left, right) => left - right)
   })
 
-  const fontFamily = ref(DIAGRAM_NODE_FONT_STACK)
   const textColor = ref('#000000')
-  const fontWeight = ref<'normal' | 'bold'>('normal')
-  const fontStyle = ref<'normal' | 'italic'>('normal')
-  const textDecoration = ref<'none' | 'underline' | 'line-through' | 'underline line-through'>(
-    'none'
-  )
-  const textAlign = ref<'left' | 'center' | 'right'>('center')
   const nodeShape = ref<NodeShape | null>(null)
 
-  function applyDisplayedFormatting(node: DiagramNode): void {
-    const display = resolveFloatingToolbarNodeDisplay({
+  const displayedNodeFormatting = computed(() => {
+    const node = currentFormattingNode()
+    if (!node) return null
+    return resolveFloatingToolbarNodeDisplay({
       diagramType: diagramStore.type,
       themeId: diagramStore.data?._mindmap_theme,
       mindmapDiagramStyle: diagramStore.data?._mindmap_diagram_style,
@@ -146,19 +142,15 @@ export function useCanvasToolbarFormatting(options?: {
       style: mergedNodeStyle(node),
       connections: diagramStore.data?.connections,
     })
-    fontFamily.value = display.fontFamily
-    textColor.value = display.textColor
-    fontWeight.value = display.fontWeight
-    fontStyle.value = display.fontStyle
-    textDecoration.value = display.textDecoration
-    textAlign.value = display.textAlign
-    borderColor.value = display.borderColor
-    borderWidth.value = display.borderWidth
-    borderStyle.value = display.borderStyle
-    backgroundColor.value = display.backgroundColor
-    backgroundOpacity.value = display.backgroundOpacity
-    nodeShape.value = display.nodeShape
-  }
+  })
+
+  const fontFamily = computed(
+    () => displayedNodeFormatting.value?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
+  )
+  const fontWeight = computed(() => displayedNodeFormatting.value?.fontWeight ?? 'normal')
+  const fontStyle = computed(() => displayedNodeFormatting.value?.fontStyle ?? 'normal')
+  const textDecoration = computed(() => displayedNodeFormatting.value?.textDecoration ?? 'none')
+  const textAlign = computed(() => displayedNodeFormatting.value?.textAlign ?? 'center')
 
   const textColorPalette = [
     '#000000',
@@ -383,13 +375,11 @@ export function useCanvasToolbarFormatting(options?: {
   }
 
   function handleToggleBold() {
-    fontWeight.value = fontWeight.value === 'bold' ? 'normal' : 'bold'
-    applyTextStyleToSelected({ fontWeight: fontWeight.value })
+    applyTextStyleToSelected({ fontWeight: fontWeight.value === 'bold' ? 'normal' : 'bold' })
   }
 
   function handleToggleItalic() {
-    fontStyle.value = fontStyle.value === 'italic' ? 'normal' : 'italic'
-    applyTextStyleToSelected({ fontStyle: fontStyle.value })
+    applyTextStyleToSelected({ fontStyle: fontStyle.value === 'italic' ? 'normal' : 'italic' })
   }
 
   function toggleTextDecorationPart(
@@ -409,24 +399,28 @@ export function useCanvasToolbarFormatting(options?: {
   }
 
   function handleToggleUnderline() {
-    textDecoration.value = toggleTextDecorationPart('underline')
-    applyTextStyleToSelected({ textDecoration: textDecoration.value })
+    applyTextStyleToSelected({ textDecoration: toggleTextDecorationPart('underline') })
   }
 
   function handleToggleStrikethrough() {
-    textDecoration.value = toggleTextDecorationPart('line-through')
-    applyTextStyleToSelected({ textDecoration: textDecoration.value })
+    applyTextStyleToSelected({ textDecoration: toggleTextDecorationPart('line-through') })
   }
 
   function handleTextAlign(align: 'left' | 'center' | 'right') {
-    textAlign.value = align
     applyTextStyleToSelected({ textAlign: align })
   }
 
+  function applyFontFamily(val: string, options?: { silent?: boolean }) {
+    void ensureDiagramCanvasFonts([val])
+    applyTextStyleToSelected({ fontFamily: val }, options)
+  }
+
   function handleFontFamilyChange(ev: Event) {
-    const val = (ev.target as HTMLSelectElement).value
-    fontFamily.value = val
-    applyTextStyleToSelected({ fontFamily: val })
+    applyFontFamily((ev.target as HTMLSelectElement).value)
+  }
+
+  function handleFontFamilyPick(val: string) {
+    applyFontFamily(val, { silent: true })
   }
 
   function handleFontSizeInput(ev: Event) {
@@ -483,27 +477,25 @@ export function useCanvasToolbarFormatting(options?: {
   )
 
   watch(
-    () => {
-      const node = currentFormattingNode()
-      if (!node) return ''
-      const style = mergedNodeStyle(node)
-      return [
-        node.id,
-        node.type,
-        diagramStore.type ?? '',
-        diagramStore.data?._mindmap_theme ?? '',
-        diagramStore.data?._mindmap_diagram_style ?? '',
-        JSON.stringify(style),
-      ].join('|')
-    },
-    () => {
-      const node = currentFormattingNode()
-      if (node) applyDisplayedFormatting(node)
+    displayedNodeFormatting,
+    (display) => {
+      if (!display) return
+      textColor.value = display.textColor
+      borderColor.value = display.borderColor
+      borderWidth.value = display.borderWidth
+      borderStyle.value = display.borderStyle
+      backgroundColor.value = display.backgroundColor
+      backgroundOpacity.value = display.backgroundOpacity
+      nodeShape.value = display.nodeShape
     },
     { immediate: true }
   )
 
   useCanvasFormatBrush(diagramStore)
+
+  const nativeFillColor = computed(() => nativeColorInputHex(backgroundColor.value, '#ffffff'))
+  const nativeBorderColor = computed(() => nativeColorInputHex(borderColor.value, '#000000'))
+  const nativeTextColor = computed(() => nativeColorInputHex(textColor.value, '#000000'))
 
   return {
     formatBrushActive,
@@ -518,10 +510,13 @@ export function useCanvasToolbarFormatting(options?: {
     textDecoration,
     textAlign,
     textColorPalette,
+    nativeTextColor,
     backgroundColors,
     backgroundColor,
+    nativeFillColor,
     backgroundOpacity,
     borderColor,
+    nativeBorderColor,
     borderColorPalette,
     borderWidth,
     borderStyle,
@@ -537,6 +532,7 @@ export function useCanvasToolbarFormatting(options?: {
     handleToggleStrikethrough,
     handleTextAlign,
     handleFontFamilyChange,
+    handleFontFamilyPick,
     handleFontSizeInput,
     handleFontSizePick,
     handleTextColorPick,

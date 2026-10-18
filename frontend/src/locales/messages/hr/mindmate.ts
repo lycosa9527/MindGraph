@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Zamijeni/dodaj čvorove',
   'nodePalette.loadMore': 'učitati više',
   'nodePalette.next': 'Sljedeći korak',
-  'nodePalette.panelTitle': 'koncept parkinga',
   'nodePalette.refresh': 'Regenerirati',
   'nodePalette.selected': 'Odabrano',
   'nodePalette.similarities': 'Sličnosti',

@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'แทนที่/เพิ่มโหนด',
   'nodePalette.loadMore': 'โหลดเพิ่ม',
   'nodePalette.next': 'ถัดไป',
-  'nodePalette.panelTitle': 'ลานจอดแนวคิด',
   'nodePalette.refresh': 'รีเฟรช',
   'nodePalette.selected': 'ที่เลือก',
   'nodePalette.similarities': 'ความเหมือน',

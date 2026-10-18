@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from sqlalchemy import select
@@ -10,9 +12,23 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from models.domain.learning_space import LearningAssignment, LearningSubmission
 from services.learning_space.image_storage import IMAGE_REF_PREFIX
-from services.learning_space.thumbnail_backfill import fill_missing_card_thumbnails
+from services.learning_space.thumbnail_backfill import (
+    fill_missing_card_thumbnails,
+    store_rendered_thumbnail,
+)
 from services.learning_space.thumbnail_backfill_scan import SUBMISSION_THUMBNAIL_OPEN
-from services.learning_space.thumbnail_storage import submit_thumbnail_source
+from services.learning_space.thumbnail_storage import (
+    stored_submit_thumbnail,
+    submit_thumbnail_source,
+)
+from services.learning_space.thumbnail_submit import (
+    SubmitThumbnailJob,
+    apply_submit_thumbnail,
+    inflight_thumbnails,
+    render_submit_thumbnail,
+    run_submit_thumbnail_job,
+    schedule_submit_thumbnail,
+)
 
 _PNG_1X1 = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
@@ -304,6 +320,148 @@ def test_submission_gap_sql_reads_thumbnail_text() -> None:
     compiled = str(select(LearningSubmission.id).where(SUBMISSION_THUMBNAIL_OPEN).compile(dialect=postgresql.dialect()))
     assert "snapshot_spec->>'thumbnail'" in compiled
     assert "lsimg:%" in compiled
+
+
+@pytest.mark.asyncio
+async def test_submit_renders_diagram_thumbnail_onto_cos(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A background render stores a fresh PNG and does not upload the old data URL."""
+    _patch_put(monkeypatch)
+    rendered: list[str] = []
+
+    async def _render(_spec: dict, diagram_type: str) -> bytes:
+        rendered.append(diagram_type)
+        return _PNG_1X1
+
+    ref = await store_rendered_thumbnail(
+        _SPEC,
+        "mind_map",
+        owner_id=9,
+        render_png=_render,
+    )
+    assert ref.startswith(IMAGE_REF_PREFIX)
+    assert rendered == ["mind_map"]
+
+    rendered_ref = f"{IMAGE_REF_PREFIX}9/2026/10/rendered.png"
+
+    async def _stored(*_args: object, **_kwargs: object) -> str:
+        return rendered_ref
+
+    def _put_should_not_run(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("data-url promote")
+
+    monkeypatch.setattr("services.learning_space.thumbnail_backfill.store_rendered_thumbnail", _stored)
+    monkeypatch.setattr("services.learning_space.image_storage.put_image_bytes_sync", _put_should_not_run)
+    got = await render_submit_thumbnail(
+        _SPEC,
+        "mind_map",
+        owner_id=9,
+        fallback_thumb=_PNG_DATA_URL,
+    )
+    assert got == rendered_ref
+
+
+@pytest.mark.asyncio
+async def test_submit_uploads_existing_image_when_render_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A failed render still puts a diagram data URL on COS."""
+
+    async def _boom(_spec: dict, _diagram_type: str) -> bytes:
+        raise RuntimeError("browser down")
+
+    assert await store_rendered_thumbnail(_SPEC, "mind_map", owner_id=9, render_png=_boom) == ""
+    _patch_put(monkeypatch)
+
+    async def _empty(*_args: object, **_kwargs: object) -> str:
+        return ""
+
+    monkeypatch.setattr("services.learning_space.thumbnail_backfill.store_rendered_thumbnail", _empty)
+    got = await render_submit_thumbnail(
+        _SPEC,
+        "mind_map",
+        owner_id=9,
+        fallback_thumb=_PNG_DATA_URL,
+    )
+    assert got.startswith(IMAGE_REF_PREFIX)
+
+
+def test_submit_row_keeps_cos_image_and_skips_data_urls() -> None:
+    """The submit row must not store a data URL while the render is still running."""
+    kept = stored_submit_thumbnail(None, f"{IMAGE_REF_PREFIX}9/2026/10/card.png")
+    assert kept == f"{IMAGE_REF_PREFIX}9/2026/10/card.png"
+    still = stored_submit_thumbnail(_PNG_DATA_URL, f"{IMAGE_REF_PREFIX}9/2026/10/card.png")
+    assert still == f"{IMAGE_REF_PREFIX}9/2026/10/card.png"
+    assert stored_submit_thumbnail(_PNG_DATA_URL, None) is None
+
+
+def test_stale_render_does_not_replace_a_newer_submit() -> None:
+    """A render for an older submit leaves the newer snapshot alone."""
+    snapshot = {"thumb_token": "new", "spec": _SPEC}
+    assert apply_submit_thumbnail(snapshot, "old", f"{IMAGE_REF_PREFIX}9/2026/10/old.png") is False
+    assert "thumbnail" not in snapshot
+    assert apply_submit_thumbnail(snapshot, "new", f"{IMAGE_REF_PREFIX}9/2026/10/new.png") is True
+    assert snapshot["thumbnail"] == f"{IMAGE_REF_PREFIX}9/2026/10/new.png"
+
+
+@pytest.mark.asyncio
+async def test_background_job_drops_image_when_submit_moved_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A render that loses the race deletes its COS object and does not block submit."""
+    dropped: list[list[str]] = []
+
+    def _delete(keys: list[str]) -> None:
+        dropped.append(keys)
+
+    monkeypatch.setattr("services.learning_space.thumbnail_submit.delete_stored_images_sync", _delete)
+
+    async def _miss(_submission_id: int, _token: str, _ref: str) -> bool:
+        return False
+
+    job = SubmitThumbnailJob(
+        submission_id=4,
+        owner_id=9,
+        token="old",
+        spec=_SPEC,
+        diagram_type="mind_map",
+        fallback_thumb=None,
+        previous_ref=None,
+    )
+
+    async def _render(*_args: object, **_kwargs: object) -> str:
+        return f"{IMAGE_REF_PREFIX}9/2026/10/late.png"
+
+    monkeypatch.setattr("services.learning_space.thumbnail_submit.render_submit_thumbnail", _render)
+    await run_submit_thumbnail_job(job, save=_miss)
+    assert dropped == [["9/2026/10/late.png"]]
+
+
+@pytest.mark.asyncio
+async def test_schedule_returns_before_the_render_finishes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Queuing a thumbnail does not wait for the renderer."""
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def _slow(job: SubmitThumbnailJob, *, save: object = None) -> None:
+        del job, save
+        started.set()
+        await release.wait()
+
+    monkeypatch.setattr("services.learning_space.thumbnail_submit.run_submit_thumbnail_job", _slow)
+    job = SubmitThumbnailJob(
+        submission_id=8,
+        owner_id=9,
+        token="tok",
+        spec=_SPEC,
+        diagram_type="mind_map",
+        fallback_thumb=None,
+        previous_ref=None,
+    )
+    schedule_submit_thumbnail(job)
+    try:
+        assert started.is_set() is False
+        await asyncio.wait_for(started.wait(), timeout=1)
+    finally:
+        release.set()
+        pending = set(inflight_thumbnails.tasks)
+        if pending:
+            await asyncio.wait(pending)
 
 
 def test_submit_keeps_cos_thumbnail_when_diagram_has_none() -> None:

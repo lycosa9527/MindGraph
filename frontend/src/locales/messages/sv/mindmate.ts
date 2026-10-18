@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Ersätt/lägg till noder',
   'nodePalette.loadMore': 'ladda mer',
   'nodePalette.next': 'Nästa steg',
-  'nodePalette.panelTitle': 'koncept parkeringsplats',
   'nodePalette.refresh': 'Regenerera',
   'nodePalette.selected': 'Vald',
   'nodePalette.similarities': 'Likheter',

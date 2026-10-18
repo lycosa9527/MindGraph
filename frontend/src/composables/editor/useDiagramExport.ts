@@ -85,6 +85,18 @@ async function handOffPdf(pdf: jsPDF, filename: string): Promise<boolean> {
   return handOffExportFile(pdf.output('blob'), filename)
 }
 
+function worksheetAnswerOptions(
+  exportOptions: CanvasExportOptions | undefined,
+  answerMode: CanvasExportOptions['answerMode']
+): CanvasExportOptions {
+  return {
+    colorMode: 'color',
+    layout: 'landscape',
+    ...exportOptions,
+    answerMode,
+  }
+}
+
 function logDiagramExport(format: string): void {
   apiRequestJson<Record<string, unknown>>('/api/activity/diagram_export', {
     method: 'POST',
@@ -132,8 +144,12 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     container: HTMLElement,
     exportOptions?: CanvasExportOptions
   ): Promise<PdfRasterCapture> {
-    return runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
-      captureContainerForPdfRaw(container)
+    return runLearningSheetRasterCapture(
+      diagramStore,
+      exportOptions,
+      () => captureContainerForPdfRaw(container),
+      'below',
+      container
     )
   }
 
@@ -394,53 +410,50 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     exportOptions?: CanvasExportOptions
   ): Promise<void> {
     const includeAnswers = learningSheetIncludeAnswers(exportOptions)
-    const savedShowAnswers = diagramStore.learningSheetShowAnswers
-    diagramStore.setLearningSheetShowAnswers(false)
-    await waitForExportCanvasPaint()
 
-    try {
-      if (canUseMindMapVectorExport(diagramStore)) {
-        const vectors: MindMapVectorSvgResult[] = [await captureMindMapVectorSvg()]
-        if (includeAnswers) {
-          const answerVector = await diagramStore.runWithLearningSheetAnswersRevealed(async () => {
-            await waitForExportCanvasPaint()
-            return captureMindMapVectorSvg()
-          })
-          vectors.push(answerVector)
-        }
-        const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
-        const pdf = await exportMindMapVectorPdfDocument({
-          orientation,
-          vectors,
-          headerCapture,
-          exportOptions,
-        })
-        const filename = exportFilename(getTitle(), 'pdf')
-        if (!(await handOffPdf(pdf, filename))) return
-        logDiagramExport(format)
-        notify.successKey('canvas.export.pdfSuccess')
-        return
-      }
-
-      const worksheetCapture = await captureContainerForPdfRaw(container)
-      const captures: PdfRasterCapture[] = [worksheetCapture]
-
+    if (canUseMindMapVectorExport(diagramStore)) {
+      const vectors: MindMapVectorSvgResult[] = [await captureMindMapVectorSvg()]
       if (includeAnswers) {
-        diagramStore.setLearningSheetShowAnswers(true)
-        await waitForExportCanvasPaint()
-        captures.push(await captureContainerForPdfRaw(container))
+        const answerVector = await diagramStore.runWithLearningSheetAnswersRevealed(async () => {
+          await waitForExportCanvasPaint()
+          return captureMindMapVectorSvg()
+        })
+        vectors.push(answerVector)
       }
-
       const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
-      const pdf = await buildA4PdfFromImages(captures, orientation, headerCapture, exportOptions)
+      const pdf = await exportMindMapVectorPdfDocument({
+        orientation,
+        vectors,
+        headerCapture,
+        exportOptions,
+      })
       const filename = exportFilename(getTitle(), 'pdf')
       if (!(await handOffPdf(pdf, filename))) return
-
       logDiagramExport(format)
       notify.successKey('canvas.export.pdfSuccess')
-    } finally {
-      diagramStore.setLearningSheetShowAnswers(savedShowAnswers)
+      return
     }
+
+    const capturePage = (answerMode: CanvasExportOptions['answerMode']) =>
+      runLearningSheetRasterCapture(
+        diagramStore,
+        worksheetAnswerOptions(exportOptions, answerMode),
+        () => captureContainerForPdfRaw(container),
+        'below',
+        container
+      )
+    const captures: PdfRasterCapture[] = [await capturePage('exclude')]
+    if (includeAnswers) {
+      captures.push(await capturePage('include'))
+    }
+
+    const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
+    const pdf = await buildA4PdfFromImages(captures, orientation, headerCapture, exportOptions)
+    const filename = exportFilename(getTitle(), 'pdf')
+    if (!(await handOffPdf(pdf, filename))) return
+
+    logDiagramExport(format)
+    notify.successKey('canvas.export.pdfSuccess')
   }
 
   async function exportAsPdf(format: string, exportOptions?: CanvasExportOptions): Promise<void> {

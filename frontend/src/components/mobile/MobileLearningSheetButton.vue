@@ -8,6 +8,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { Hammer, LayoutList, Shuffle } from '@lucide/vue'
 
 import MindMapLearningSheetIcon from '@/components/canvas/MindMapLearningSheetIcon.vue'
+import { bindCanvasCoveringOverlay } from '@/components/common/swissGlassStack'
 import { useEventBus, useLanguage, useNotifications } from '@/composables'
 import {
   resetLearningSheetCustomModeUi,
@@ -43,6 +44,8 @@ useLearningSheetPickKeyboard()
 bus.on('diagram:loaded', () => {
   restoreLearningSheetUiFromDiagram()
 })
+
+bindCanvasCoveringOverlay(() => open.value || isFloatBarOpen.value)
 
 onMounted(() => {
   restoreLearningSheetUiFromDiagram()

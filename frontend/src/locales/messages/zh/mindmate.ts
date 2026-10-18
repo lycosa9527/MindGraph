@@ -157,7 +157,6 @@ export default {
   'nodePalette.history.replaceAddNodes': '替换/添加节点',
   'nodePalette.loadMore': '加载更多',
   'nodePalette.next': '下一步',
-  'nodePalette.panelTitle': '概念停车场',
   'nodePalette.refresh': '重新生成',
   'nodePalette.selected': '已选',
   'nodePalette.similarities': '相似点',

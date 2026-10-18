@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Knooppunten vervangen/toevoegen',
   'nodePalette.loadMore': 'Laad meer',
   'nodePalette.next': 'Volgende',
-  'nodePalette.panelTitle': 'Conceptparkeerplaats',
   'nodePalette.refresh': 'Vernieuwen',
   'nodePalette.selected': 'gekozen',
   'nodePalette.similarities': 'Overeenkomsten',

@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Ganti/tambah nod',
   'nodePalette.loadMore': 'Muat lebih banyak',
   'nodePalette.next': 'Berikutnya',
-  'nodePalette.panelTitle': 'Konsep tempat parkir',
   'nodePalette.refresh': 'Menyegarkan',
   'nodePalette.selected': 'terpilih',
   'nodePalette.similarities': 'Kesamaan',

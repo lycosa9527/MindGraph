@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Reemplazar/agregar nodos',
   'nodePalette.loadMore': 'Cargar más',
   'nodePalette.next': 'Siguiente',
-  'nodePalette.panelTitle': 'Estacionamiento de conceptos',
   'nodePalette.refresh': 'Actualizar',
   'nodePalette.selected': 'seleccionados',
   'nodePalette.similarities': 'Similitudes',

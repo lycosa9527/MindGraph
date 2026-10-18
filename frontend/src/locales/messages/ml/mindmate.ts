@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'നോഡുകൾ മാറ്റിസ്ഥാപിക്കുക/ചേർക്കുക',
   'nodePalette.loadMore': 'കൂടുതൽ ലോഡ് ചെയ്യുക',
   'nodePalette.next': 'അടുത്ത ഘട്ടം',
-  'nodePalette.panelTitle': 'ആശയം പാർക്കിംഗ് സ്ഥലം',
   'nodePalette.refresh': 'പുനരുജ്ജീവിപ്പിക്കുക',
   'nodePalette.selected': 'തിരഞ്ഞെടുത്തു',
   'nodePalette.similarities': 'സമാനതകൾ',

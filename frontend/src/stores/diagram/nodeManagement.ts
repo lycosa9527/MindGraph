@@ -65,10 +65,15 @@ import {
 } from '../specLoader/mindMap'
 import { applyTreeMapTopicLayoutToNodes } from '../specLoader/treeMapTopicLayout'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
+import { commitDeleteLayout } from './commitDeleteLayout'
 import { emitCtxEvent } from './events'
 import { syncMindMapSummaryNodeText } from './mindMapSummaryOps'
 import { applyMindMapTextEditBox } from './mindMapTextEditSize'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
+import {
+  applyThinkingMapTypographyRelayout,
+  nodeStylePatchHasTypography,
+} from './thinkingMapTypographyRelayout'
 import { type DiagramContext, STRUCTURAL_SPEC_RELOAD } from './types'
 
 /**
@@ -155,10 +160,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       nodeId === 'tree-topic' &&
       (('text' in updates && updates.text !== undefined) ||
         ('textSecondary' in updates && updates.textSecondary !== undefined) ||
-        (updates.style &&
-          (updates.style.fontSize !== undefined ||
-            updates.style.fontWeight !== undefined ||
-            updates.style.fontFamily !== undefined)))
+        (updates.style && nodeStylePatchHasTypography(updates.style)))
 
     if (treeTopicLayoutBump) {
       delete ctx.nodeDimensions.value['tree-topic']
@@ -229,63 +231,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       applyMindMapTextEditBox(ctx, nodeId, nodeIndex)
     }
 
-    if (
-      ctx.type.value === 'multi_flow_map' &&
-      updates.style &&
-      (updates.style.fontSize !== undefined ||
-        updates.style.fontWeight !== undefined ||
-        updates.style.fontFamily !== undefined)
-    ) {
-      delete ctx.nodeDimensions.value[nodeId]
-      ctx.multiFlowMapRecalcTrigger.value++
-    }
-
-    if (
-      ctx.type.value === 'bubble_map' &&
-      updates.style &&
-      (updates.style.fontSize !== undefined ||
-        updates.style.fontWeight !== undefined ||
-        updates.style.fontFamily !== undefined) &&
-      (nodeId === BUBBLE_TOPIC_NODE_ID || oldNode.type === 'bubble' || oldNode.type === 'child')
-    ) {
-      delete ctx.nodeDimensions.value[nodeId]
-      ctx.layoutRecalcTrigger.value++
-    }
-
-    if (
-      ctx.type.value === 'flow_map' &&
-      updates.style &&
-      (updates.style.fontSize !== undefined ||
-        updates.style.fontWeight !== undefined ||
-        updates.style.fontFamily !== undefined) &&
-      (nodeId === 'flow-topic' || oldNode.type === 'flow' || oldNode.type === 'flowSubstep')
-    ) {
-      delete ctx.nodeDimensions.value[nodeId]
-      ctx.layoutRecalcTrigger.value++
-    }
-
-    if (
-      ctx.type.value === 'brace_map' &&
-      updates.style &&
-      (updates.style.fontSize !== undefined ||
-        updates.style.fontWeight !== undefined ||
-        updates.style.fontFamily !== undefined) &&
-      (nodeId === 'brace-whole' || oldNode.type === 'brace' || nodeId === 'dimension-label')
-    ) {
-      delete ctx.nodeDimensions.value[nodeId]
-      ctx.layoutRecalcTrigger.value++
-    }
-
-    if (
-      ctx.type.value === 'double_bubble_map' &&
-      updates.style &&
-      (updates.style.fontSize !== undefined ||
-        updates.style.fontWeight !== undefined ||
-        updates.style.fontFamily !== undefined)
-    ) {
-      delete ctx.nodeDimensions.value[nodeId]
-      ctx.viewBus.emit('diagram:double_bubble_relayout_requested', {})
-    }
+    applyThinkingMapTypographyRelayout(ctx, nodeId, oldNode, updates.style)
 
     if (updates.style?.nodeShape !== undefined && isThinkingMapDiagramType(ctx.type.value)) {
       const nextShape = updates.style.nodeShape
@@ -712,6 +658,8 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     ctx.clearCustomPosition(nodeId)
     ctx.clearNodeStyle(nodeId)
     ctx.removeFromSelection(nodeId)
+
+    commitDeleteLayout(ctx, [nodeId])
 
     emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: [nodeId] })
     return true

@@ -13,6 +13,7 @@ import {
   renderMarkdownForDiagramLabelMeasureSync,
 } from '@/composables/core/diagramMarkdownPipeline'
 import { secondaryFontSize, stackedTextBlock } from '@/diagramBilingual/measure'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 
@@ -55,7 +56,7 @@ let measureEl: HTMLDivElement | null = null
 let diagramLabelHtmlMeasureEl: HTMLDivElement | null = null
 
 function applyMeasureFontFamily(el: HTMLDivElement, fontFamily?: string): void {
-  el.style.fontFamily = fontFamily ?? MEASURE_FONT_FAMILY
+  el.style.fontFamily = diagramPaintFontFamily(fontFamily, MEASURE_FONT_FAMILY)
 }
 
 function getMeasureEl(fontFamily?: string): HTMLDivElement {

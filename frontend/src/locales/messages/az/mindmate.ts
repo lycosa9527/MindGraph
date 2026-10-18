@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Düyünləri əvəz et/əlavə et',
   'nodePalette.loadMore': 'Daha çox yüklə',
   'nodePalette.next': 'Növbəti',
-  'nodePalette.panelTitle': 'Konsept dayanacağı',
   'nodePalette.refresh': 'Yenilə',
   'nodePalette.selected': 'seçilib',
   'nodePalette.similarities': 'Oxşarlıqlar',

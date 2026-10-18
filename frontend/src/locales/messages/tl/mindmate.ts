@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Palitan / magdagdag ng mga node',
   'nodePalette.loadMore': 'Mag-load pa',
   'nodePalette.next': 'Susunod',
-  'nodePalette.panelTitle': 'Konsepto na paradahan',
   'nodePalette.refresh': 'I-refresh',
   'nodePalette.selected': 'pinili',
   'nodePalette.similarities': 'Pagkakatulad',

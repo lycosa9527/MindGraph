@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'ನೋಡ್‌ಗಳನ್ನು ಬದಲಾಯಿಸಿ/ಸೇರಿಸಿ',
   'nodePalette.loadMore': 'ಹೆಚ್ಚು ಲೋಡ್ ಮಾಡಿ',
   'nodePalette.next': 'ಮುಂದಿನ ಹಂತ',
-  'nodePalette.panelTitle': 'ಪರಿಕಲ್ಪನೆ ಪಾರ್ಕಿಂಗ್',
   'nodePalette.refresh': 'ಪುನರುತ್ಪಾದಿಸು',
   'nodePalette.selected': 'ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ',
   'nodePalette.similarities': 'ಹೋಲಿಕೆಗಳು',

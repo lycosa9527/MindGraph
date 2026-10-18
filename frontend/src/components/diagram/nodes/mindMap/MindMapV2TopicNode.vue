@@ -38,6 +38,7 @@ import {
 } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -173,7 +174,7 @@ const nodeStyle = computed(() => {
   const baseStyle = {
     backgroundColor,
     color: style.textColor || defaultStyle.value.textColor || theme?.topicTextColor || '#ffffff',
-    fontFamily: style.fontFamily || MIND_MAP_GEOMETRY.fontFamily,
+    fontFamily: diagramPaintFontFamily(style.fontFamily, MIND_MAP_GEOMETRY.fontFamily),
     fontSize: `${style.fontSize || defaultStyle.value.fontSize || MIND_MAP_GEOMETRY.topicFontSize}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'bold',
     fontStyle: style.fontStyle || 'normal',

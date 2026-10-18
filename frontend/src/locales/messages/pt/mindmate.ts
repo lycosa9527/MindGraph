@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Substituir/adicionar nós',
   'nodePalette.loadMore': 'carregar mais',
   'nodePalette.next': 'Próxima etapa',
-  'nodePalette.panelTitle': 'conceito de estacionamento',
   'nodePalette.refresh': 'Regenerado',
   'nodePalette.selected': 'Selecionado',
   'nodePalette.similarities': 'Semelhanças',

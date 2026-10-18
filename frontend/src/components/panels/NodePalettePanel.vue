@@ -305,7 +305,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
             class="text-sm font-semibold text-gray-800 dark:text-white truncate shrink-0"
             :class="hasPaletteTabs ? 'panel-header-title--tabbed' : ''"
           >
-            <I18nText k="nodePalette.panelTitle" />
+            <I18nText k="canvas.mindMapSideToolbar.waterfall" />
           </h3>
           <div class="flex items-center gap-2 shrink-0">
             <span

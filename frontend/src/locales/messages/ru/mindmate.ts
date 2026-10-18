@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Заменить/добавить узлы',
   'nodePalette.loadMore': 'загрузить больше',
   'nodePalette.next': 'Следующий шаг',
-  'nodePalette.panelTitle': 'концепция парковки',
   'nodePalette.refresh': 'Регенерировать',
   'nodePalette.selected': 'Выбрано',
   'nodePalette.similarities': 'Сходства',

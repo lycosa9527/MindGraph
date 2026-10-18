@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'ノードを置換/追加',
   'nodePalette.loadMore': 'さらに読み込む',
   'nodePalette.next': '次へ',
-  'nodePalette.panelTitle': '概念パーキングロット',
   'nodePalette.refresh': '更新',
   'nodePalette.selected': '選択中',
   'nodePalette.similarities': '類似点',

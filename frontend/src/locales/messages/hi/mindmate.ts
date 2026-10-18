@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'नोड बदलें/जोड़ें',
   'nodePalette.loadMore': 'और लोड',
   'nodePalette.next': 'अगला',
-  'nodePalette.panelTitle': 'अवधारणा पार्किंग',
   'nodePalette.refresh': 'रीफ़्रेश',
   'nodePalette.selected': 'चयनित',
   'nodePalette.similarities': 'समानताएँ',

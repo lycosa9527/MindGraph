@@ -27,11 +27,13 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useNodeExplainEditGate } from '@/composables/mindMap/nodeExplainEditGate'
-import { FLOATING_TOOLBAR_COLORS } from '@/config/floatingToolbarColors'
+import { diagramPaintFontFamily, ensureDiagramCanvasFonts } from '@/fonts/diagramCanvasFonts'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
+import { createToolbarPointerAction } from '@/utils/toolbarPointerAction'
 
+import FloatingToolbarColorPicker from './FloatingToolbarColorPicker.vue'
 import MindMapSubgraphAiMark from './MindMapSubgraphAiMark.vue'
 
 const props = defineProps<{
@@ -119,14 +121,17 @@ const {
   textDecoration,
   textAlign,
   backgroundColor,
+  nativeFillColor,
   borderColor,
+  nativeBorderColor,
+  nativeTextColor,
   nodeShape,
   handleToggleBold,
   handleToggleItalic,
   handleToggleUnderline,
   handleToggleStrikethrough,
   handleTextAlign,
-  handleFontFamilyChange,
+  handleFontFamilyPick,
   handleFontSizePick,
   handleTextColorPick,
   handleFillColorPick,
@@ -136,6 +141,11 @@ const {
 
 const activeColorPanel = ref<'fill' | 'border' | 'text' | null>(null)
 const typographyOpen = ref(false)
+
+watch(typographyOpen, (open) => {
+  if (!open) return
+  void ensureDiagramCanvasFonts(['SimSun', 'KaiTi', 'Inter', 'Space Grotesk'])
+})
 
 const aiSubgraphVisible = computed(
   () => showCanvasAiFeatures.value && props.showAiSubgraph === true
@@ -209,11 +219,6 @@ function pickColor(panel: 'fill' | 'border' | 'text', color: string) {
   activeColorPanel.value = null
 }
 
-function onCustomColor(panel: 'fill' | 'border' | 'text', ev: Event) {
-  const color = (ev.target as HTMLInputElement).value
-  pickColor(panel, color)
-}
-
 function onShapePick(shape: NodeShape) {
   handleNodeShapePick(shape)
 }
@@ -221,6 +226,8 @@ function onShapePick(shape: NodeShape) {
 function isActiveFontSize(size: number): boolean {
   return Math.round(Number(fontSize.value)) === size
 }
+
+const typographyPointer = createToolbarPointerAction()
 </script>
 
 <template>
@@ -323,21 +330,10 @@ function isActiveFontSize(size: number): boolean {
             v-if="activeColorPanel === 'fill'"
             class="nft-color-panel"
           >
-            <div class="nft-color-grid">
-              <button
-                v-for="color in FLOATING_TOOLBAR_COLORS"
-                :key="'fill-' + color"
-                type="button"
-                class="nft-palette-swatch"
-                :style="{ backgroundColor: color }"
-                @click="pickColor('fill', color)"
-              />
-            </div>
-            <input
-              type="color"
-              class="nft-native-color"
-              :value="backgroundColor"
-              @input="onCustomColor('fill', $event)"
+            <FloatingToolbarColorPicker
+              :current-color="backgroundColor"
+              :native-color="nativeFillColor"
+              @pick="pickColor('fill', $event)"
             />
           </div>
         </div>
@@ -360,21 +356,10 @@ function isActiveFontSize(size: number): boolean {
             v-if="activeColorPanel === 'border'"
             class="nft-color-panel"
           >
-            <div class="nft-color-grid">
-              <button
-                v-for="color in FLOATING_TOOLBAR_COLORS"
-                :key="'border-' + color"
-                type="button"
-                class="nft-palette-swatch"
-                :style="{ backgroundColor: color }"
-                @click="pickColor('border', color)"
-              />
-            </div>
-            <input
-              type="color"
-              class="nft-native-color"
-              :value="borderColor"
-              @input="onCustomColor('border', $event)"
+            <FloatingToolbarColorPicker
+              :current-color="borderColor"
+              :native-color="nativeBorderColor"
+              @pick="pickColor('border', $event)"
             />
           </div>
         </div>
@@ -398,21 +383,10 @@ function isActiveFontSize(size: number): boolean {
             v-if="activeColorPanel === 'text'"
             class="nft-color-panel"
           >
-            <div class="nft-color-grid">
-              <button
-                v-for="color in FLOATING_TOOLBAR_COLORS"
-                :key="'text-' + color"
-                type="button"
-                class="nft-palette-swatch"
-                :style="{ backgroundColor: color }"
-                @click="pickColor('text', color)"
-              />
-            </div>
-            <input
-              type="color"
-              class="nft-native-color"
-              :value="textColor"
-              @input="onCustomColor('text', $event)"
+            <FloatingToolbarColorPicker
+              :current-color="textColor"
+              :native-color="nativeTextColor"
+              @pick="pickColor('text', $event)"
             />
           </div>
         </div>
@@ -439,9 +413,18 @@ function isActiveFontSize(size: number): boolean {
                 :key="size"
                 class="nft-dropdown-item"
                 :class="{ 'nft-dropdown-item--active': isActiveFontSize(size) }"
-                @click="handleFontSizePick(size)"
               >
-                {{ size }}px
+                <button
+                  type="button"
+                  class="nft-size-option"
+                  @pointerdown.stop
+                  @pointerup.stop="
+                    typographyPointer.onPointerUp($event, () => handleFontSizePick(size))
+                  "
+                  @click="typographyPointer.onClick(() => handleFontSizePick(size))"
+                >
+                  {{ size }}px
+                </button>
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>
@@ -451,6 +434,7 @@ function isActiveFontSize(size: number): boolean {
         <ElDropdown
           v-model="typographyOpen"
           trigger="click"
+          :hide-on-click="false"
           placement="bottom-start"
           popper-class="node-floating-toolbar-popper node-floating-toolbar-popper--wide"
         >
@@ -472,6 +456,7 @@ function isActiveFontSize(size: number): boolean {
               <ElDropdownItem class="nft-typography-dropdown-item">
                 <div
                   class="nft-typography-panel"
+                  @pointerdown.stop
                   @mousedown.stop
                   @click.stop
                 >
@@ -484,7 +469,11 @@ function isActiveFontSize(size: number): boolean {
                         type="button"
                         class="nft-format-btn"
                         :class="{ 'nft-format-btn--active': textAlign === 'left' }"
-                        @click.stop="handleTextAlign('left')"
+                        @pointerdown.stop
+                        @pointerup.stop="
+                          typographyPointer.onPointerUp($event, () => handleTextAlign('left'))
+                        "
+                        @click.stop="typographyPointer.onClick(() => handleTextAlign('left'))"
                       >
                         <AlignLeft :size="14" />
                       </button>
@@ -492,7 +481,11 @@ function isActiveFontSize(size: number): boolean {
                         type="button"
                         class="nft-format-btn"
                         :class="{ 'nft-format-btn--active': textAlign === 'center' }"
-                        @click.stop="handleTextAlign('center')"
+                        @pointerdown.stop
+                        @pointerup.stop="
+                          typographyPointer.onPointerUp($event, () => handleTextAlign('center'))
+                        "
+                        @click.stop="typographyPointer.onClick(() => handleTextAlign('center'))"
                       >
                         <AlignCenter :size="14" />
                       </button>
@@ -500,7 +493,11 @@ function isActiveFontSize(size: number): boolean {
                         type="button"
                         class="nft-format-btn"
                         :class="{ 'nft-format-btn--active': textAlign === 'right' }"
-                        @click.stop="handleTextAlign('right')"
+                        @pointerdown.stop
+                        @pointerup.stop="
+                          typographyPointer.onPointerUp($event, () => handleTextAlign('right'))
+                        "
+                        @click.stop="typographyPointer.onClick(() => handleTextAlign('right'))"
                       >
                         <AlignRight :size="14" />
                       </button>
@@ -516,7 +513,9 @@ function isActiveFontSize(size: number): boolean {
                         type="button"
                         class="nft-format-btn nft-format-btn--letter"
                         :class="{ 'nft-format-btn--active': fontWeight === 'bold' }"
-                        @click.stop="handleToggleBold"
+                        @pointerdown.stop
+                        @pointerup.stop="typographyPointer.onPointerUp($event, handleToggleBold)"
+                        @click.stop="typographyPointer.onClick(handleToggleBold)"
                       >
                         B
                       </button>
@@ -524,7 +523,9 @@ function isActiveFontSize(size: number): boolean {
                         type="button"
                         class="nft-format-btn nft-format-btn--letter italic"
                         :class="{ 'nft-format-btn--active': fontStyle === 'italic' }"
-                        @click.stop="handleToggleItalic"
+                        @pointerdown.stop
+                        @pointerup.stop="typographyPointer.onPointerUp($event, handleToggleItalic)"
+                        @click.stop="typographyPointer.onClick(handleToggleItalic)"
                       >
                         I
                       </button>
@@ -532,7 +533,11 @@ function isActiveFontSize(size: number): boolean {
                         type="button"
                         class="nft-format-btn nft-format-btn--letter underline"
                         :class="{ 'nft-format-btn--active': textDecoration?.includes('underline') }"
-                        @click.stop="handleToggleUnderline"
+                        @pointerdown.stop
+                        @pointerup.stop="
+                          typographyPointer.onPointerUp($event, handleToggleUnderline)
+                        "
+                        @click.stop="typographyPointer.onClick(handleToggleUnderline)"
                       >
                         U
                       </button>
@@ -542,7 +547,11 @@ function isActiveFontSize(size: number): boolean {
                         :class="{
                           'nft-format-btn--active': textDecoration?.includes('line-through'),
                         }"
-                        @click.stop="handleToggleStrikethrough"
+                        @pointerdown.stop
+                        @pointerup.stop="
+                          typographyPointer.onPointerUp($event, handleToggleStrikethrough)
+                        "
+                        @click.stop="typographyPointer.onClick(handleToggleStrikethrough)"
                       >
                         S
                       </button>
@@ -553,19 +562,35 @@ function isActiveFontSize(size: number): boolean {
                     <div class="nft-typography-label">
                       <I18nText k="canvas.toolbar.fontLabel" />
                     </div>
-                    <select
-                      :value="fontFamily"
-                      class="nft-font-select"
-                      @change="handleFontFamilyChange"
+                    <div
+                      class="nft-font-options"
+                      role="listbox"
+                      :aria-label="t('canvas.toolbar.fontLabel')"
                     >
-                      <option
+                      <button
                         v-for="opt in fontOptions"
                         :key="opt.value"
-                        :value="opt.value"
+                        type="button"
+                        class="nft-font-option"
+                        role="option"
+                        :aria-selected="fontFamily === opt.value"
+                        :class="{ 'nft-font-option--active': fontFamily === opt.value }"
+                        :style="{
+                          fontFamily: diagramPaintFontFamily(opt.value, DIAGRAM_NODE_FONT_STACK),
+                        }"
+                        @pointerdown.stop
+                        @pointerup.stop="
+                          typographyPointer.onPointerUp($event, () =>
+                            handleFontFamilyPick(opt.value)
+                          )
+                        "
+                        @click.stop="
+                          typographyPointer.onClick(() => handleFontFamilyPick(opt.value))
+                        "
                       >
                         {{ opt.label }}
-                      </option>
-                    </select>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </ElDropdownItem>
@@ -805,45 +830,18 @@ function isActiveFontSize(size: number): boolean {
   min-width: 160px;
 }
 
-.nft-color-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
-  margin-bottom: 6px;
-}
-
-.nft-palette-swatch {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  padding: 0;
-}
-
-.nft-palette-swatch:hover {
-  transform: scale(1.08);
-}
-
-.nft-native-color {
-  width: 100%;
-  height: 28px;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-}
-
 .nft-shape-option,
 .nft-size-option {
   display: block;
   width: 100%;
-  padding: 6px 14px;
+  padding: 8px 14px;
   border: none;
   background: transparent;
   text-align: left;
-  font-size: 13px;
-  color: #334155;
+  font-size: 15px;
+  color: inherit;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .nft-shape-option:hover,
@@ -860,6 +858,7 @@ function isActiveFontSize(size: number): boolean {
 .nft-typography-panel {
   padding: 10px 12px;
   min-width: 200px;
+  touch-action: manipulation;
 }
 
 .nft-typography-section + .nft-typography-section {
@@ -891,15 +890,16 @@ function isActiveFontSize(size: number): boolean {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  height: 28px;
+  min-width: 40px;
+  height: 40px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   background: #f8fafc;
   color: #475569;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
+  touch-action: manipulation;
 }
 
 .nft-format-btn:hover {
@@ -913,14 +913,31 @@ function isActiveFontSize(size: number): boolean {
   color: #1d4ed8;
 }
 
-.nft-font-select {
+.nft-font-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nft-font-option {
+  display: block;
   width: 100%;
-  padding: 6px 8px;
-  border: 1px solid #e2e8f0;
+  text-align: start;
+  padding: 8px 10px;
+  border: 1px solid transparent;
   border-radius: 6px;
-  font-size: 12px;
   background: #fff;
+  font-size: 16px;
+  line-height: 1.3;
   color: #334155;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.nft-font-option--active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 </style>
 

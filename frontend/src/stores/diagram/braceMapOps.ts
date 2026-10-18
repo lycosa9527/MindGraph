@@ -9,8 +9,9 @@ import {
   resolveBraceMapSubpartAttachParentId,
 } from './braceMapParentResolve'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
-import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
+import { commitDeleteLayout } from './commitDeleteLayout'
 import { emitCtxEvent } from './events'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
 export function useBraceMapOpsSlice(ctx: DiagramContext) {
@@ -148,6 +149,7 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
       }
     }
 
+    commitDeleteLayout(ctx, deletedIds)
     emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: deletedIds })
     return deletedIds.length
   }

@@ -20,6 +20,7 @@ import { isMindMapSummaryNodeId } from '@/utils/mindMapSummary'
 
 import { remapMindMapNodeIdAfterReload } from './mindMapCollapse'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
+import { requestDiagramLayoutRecalc } from './requestDiagramLayoutRecalc'
 import type { DiagramContext } from './types'
 
 export function setMindMapNodeAdornment(
@@ -43,7 +44,7 @@ export function setMindMapNodeAdornment(
   if (merged) all[path] = merged
   else delete all[path]
   writeMindMapAdornments(data, all)
-  if (isMindMap) ctx.scheduleMindMapRecalc()
+  requestDiagramLayoutRecalc(ctx)
   return true
 }
 
@@ -122,7 +123,7 @@ export function clearMindMapNodeAdornments(
 
   ctx.pushHistory(historyLabel)
   writeMindMapAdornments(data, all)
-  ctx.scheduleMindMapRecalc()
+  requestDiagramLayoutRecalc(ctx)
   return cleared
 }
 

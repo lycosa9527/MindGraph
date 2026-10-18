@@ -10,7 +10,9 @@ import type { CSSProperties } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { translateDimension, useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
+import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { useUIStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import {
@@ -33,6 +35,7 @@ import {
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const { hasImage, fitBox } = useThinkingMapImageFit(() => props.id)
 
 const { t } = useLanguage()
 const uiStore = useUIStore()
@@ -43,7 +46,11 @@ const isBridgeDimension = computed(
 const isTreeMapDimension = computed(() => props.data.diagramType === 'tree_map')
 
 const labelRef = ref<HTMLElement | null>(null)
-useNodeDimensions(labelRef, props.id)
+useThinkingMapNodeBoxTypographyRemeasure({
+  rootRef: labelRef,
+  nodeId: props.id,
+  style: () => props.data.style,
+})
 const diagramStore = useDiagramSession()
 
 function bridgeTranslate(key: string): string {
@@ -76,12 +83,12 @@ const nodeStyle = computed((): CSSProperties => {
       thinkingMapStructureColor(diagramStore.data?._mindmap_theme)
     ),
     opacity: isPlaceholder.value ? 0.4 : bridgeDimension ? 1 : 0.8,
-    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${fontSize}px`,
     fontStyle: props.data.style?.fontStyle || (bridgeDimension ? 'normal' : 'italic'),
     fontWeight: props.data.style?.fontWeight || (bridgeDimension ? 'bold' : 'normal'),
     textDecoration: props.data.style?.textDecoration || 'none',
-    textAlign: (bridgeDimension ? 'right' : 'center') as
+    textAlign: (props.data.style?.textAlign || (bridgeDimension ? 'right' : 'center')) as
       'left' | 'right' | 'center' | 'justify' | 'start' | 'end',
     padding: '4px 8px',
     whiteSpace: bridgeDimension || isTreeMapDimension.value ? 'normal' : 'nowrap',
@@ -144,7 +151,7 @@ function handleEditCancel() {
       'items-center justify-center select-none': !isBridgeDimension,
       'flex-col items-end justify-center': isBridgeDimension,
     }"
-    :style="nodeStyle"
+    :style="fitBox(nodeStyle)"
     :data-bridge-dimension="isBridgeDimension ? '' : undefined"
   >
     <!-- Bridge map: prefix plus a wrapping dimension value -->
@@ -157,7 +164,8 @@ function handleEditCancel() {
       </div>
       <div
         class="bridge-dimension-value"
-        :style="{ maxWidth: `${bridgeLabelMetrics.valueMaxPx}px` }"
+        :class="{ 'bridge-dimension-value--image': hasImage }"
+        :style="hasImage ? undefined : { maxWidth: `${bridgeLabelMetrics.valueMaxPx}px` }"
       >
         <InlineEditableText
           :text="bridgeMapDisplay.value"
@@ -226,6 +234,10 @@ function handleEditCancel() {
 .bridge-dimension-value {
   margin-top: 2px;
   max-width: 100%;
+}
+
+.bridge-dimension-value--image {
+  max-width: none;
 }
 
 .label-node:hover {

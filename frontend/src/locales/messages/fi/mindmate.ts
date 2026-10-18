@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Korvaa/lisää solmuja',
   'nodePalette.loadMore': 'lataa lisää',
   'nodePalette.next': 'Seuraava askel',
-  'nodePalette.panelTitle': 'konseptiparkkipaikka',
   'nodePalette.refresh': 'Luo uudelleen',
   'nodePalette.selected': 'Valittu',
   'nodePalette.similarities': 'Yhtäläisyydet',

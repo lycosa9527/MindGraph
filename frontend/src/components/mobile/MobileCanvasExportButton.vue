@@ -20,6 +20,7 @@ import {
 
 import MindMapExportOptionsPanel from '@/components/canvas/MindMapExportOptionsPanel.vue'
 import MindMapLearningSheetIcon from '@/components/canvas/MindMapLearningSheetIcon.vue'
+import { bindCanvasCoveringOverlay } from '@/components/common/swissGlassStack'
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
@@ -37,6 +38,7 @@ const props = defineProps<{
 }>()
 
 const open = ref(false)
+bindCanvasCoveringOverlay(() => open.value)
 const { t } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()

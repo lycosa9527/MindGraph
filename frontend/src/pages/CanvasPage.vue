@@ -193,7 +193,10 @@ import {
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useKittySessionStore } from '@/stores/kittySession'
-import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
+import {
+  homeworkCanvasFlushKey,
+  useLearningAssignmentCanvasStore,
+} from '@/stores/learningAssignmentCanvas'
 import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import { useOneSentenceStore } from '@/stores/oneSentence'
 import { usePresentationPointerStore } from '@/stores/presentationPointer'
@@ -940,6 +943,13 @@ const diagramAutoSave = useDiagramAutoSave({
       console.error('[LearningSpace] Failed to bind homework draft', err)
     })
   },
+})
+
+provide(homeworkCanvasFlushKey, async () => {
+  const result = await diagramAutoSave.flushOnLeave()
+  if (result.reason === 'error') {
+    throw new Error('homework diagram save failed')
+  }
 })
 
 eventBus.onWithOwner(

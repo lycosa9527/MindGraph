@@ -28,6 +28,11 @@ import {
   stampMultiFlowData,
   takeMultiFlowMapStableId,
 } from '@/utils/multiFlowMapIdentity'
+import {
+  NODE_IMAGE_FRAME_MIN_WIDTH,
+  NODE_IMAGE_GAP,
+  NODE_IMAGE_THUMB_HEIGHT,
+} from '@/utils/nodeImageFrame'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
 import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
@@ -66,6 +71,16 @@ export function estimateMultiFlowTopicWidth(
  * Compute adaptive width for a cause/effect node from its text and typography.
  * Uses the same inner wrap cap as FlowNode so layout matches auto-wrapped labels.
  */
+function imageColumnWidth(
+  nodeId: string,
+  nodeDimensions: Record<string, { width: number; height: number }>,
+  imageNodeIds: ReadonlySet<string>
+): number {
+  if (!imageNodeIds.has(nodeId)) return 0
+  const measured = nodeDimensions[nodeId]?.width
+  return Math.max(NODE_IMAGE_FRAME_MIN_WIDTH, measured && measured > 0 ? measured : 0)
+}
+
 function computeFlowNodeWidth(node: DiagramNode): number {
   const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : FLOW_NODE_FONT_SIZE
   const fontWeight = node.style?.fontWeight
@@ -97,7 +112,8 @@ export function recalculateMultiFlowMapLayout(
   nodes: DiagramNode[],
   topicNodeWidth: number | null = null,
   _nodeWidths: Record<string, number> = {},
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {},
+  imageNodeIds: ReadonlySet<string> = new Set()
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return []
@@ -123,16 +139,28 @@ export function recalculateMultiFlowMapLayout(
 
   const getH = (id: string): number => {
     const pinia = nodeDimensions[id]?.height
-    if (pinia != null && pinia > 0) return pinia
     const node = nodes.find((item) => item.id === id)
-    return heightWithSecondaryLine(
+    const textH = heightWithSecondaryLine(
       DEFAULT_NODE_HEIGHT,
       node ? learningSheetLayoutSecondary(node) : undefined,
       14
     )
+    let height = pinia != null && pinia > 0 ? pinia : textH
+    if (imageNodeIds.has(id)) {
+      height = Math.max(height, textH + NODE_IMAGE_THUMB_HEIGHT + NODE_IMAGE_GAP)
+    }
+    return height
   }
 
-  const actualTopicWidth = topicNodeWidth ?? estimateMultiFlowTopicWidth(event, eventNode?.style)
+  const topicImageWidth = imageColumnWidth(
+    eventNode?.id ?? MULTI_FLOW_EVENT_NODE_ID,
+    nodeDimensions,
+    imageNodeIds
+  )
+  const actualTopicWidth = Math.max(
+    topicNodeWidth ?? estimateMultiFlowTopicWidth(event, eventNode?.style),
+    topicImageWidth
+  )
 
   // Calculate uniform width for visual balance using text measurement.
   // Pinia DOM widths are NOT used for width because font-loading timing can
@@ -142,10 +170,15 @@ export function recalculateMultiFlowMapLayout(
 
   causeNodes.forEach((node) => {
     maxCauseWidth = Math.max(maxCauseWidth, computeFlowNodeWidth(node))
+    maxCauseWidth = Math.max(maxCauseWidth, imageColumnWidth(node.id, nodeDimensions, imageNodeIds))
   })
 
   effectNodes.forEach((node) => {
     maxEffectWidth = Math.max(maxEffectWidth, computeFlowNodeWidth(node))
+    maxEffectWidth = Math.max(
+      maxEffectWidth,
+      imageColumnWidth(node.id, nodeDimensions, imageNodeIds)
+    )
   })
 
   // Use the maximum of both columns for visual balance

@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Nahradiť/pridať uzly',
   'nodePalette.loadMore': 'načítať viac',
   'nodePalette.next': 'Ďalší krok',
-  'nodePalette.panelTitle': 'koncepčné parkovisko',
   'nodePalette.refresh': 'Regenerovať',
   'nodePalette.selected': 'Vybrané',
   'nodePalette.similarities': 'Podobnosti',

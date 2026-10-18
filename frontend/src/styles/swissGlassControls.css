@@ -58,11 +58,15 @@
 }
 
 /*
- * Canvas ElDialogs marked `.mm-above-node-chrome`. Toolbar poppers are 5100
- * `!important`, so this overlay must also be `!important` and higher.
+ * Canvas ElDialogs marked `.mm-above-node-chrome`, plus the document /
+ * learning-sheet center shell. Toolbar poppers are 5100 `!important`, so
+ * this overlay must also be `!important` and higher.
  * Keep in sync with SWISS_GLASS_CANVAS_DIALOG_Z in swissGlassStack.ts.
+ * Do not add `.model-sheet-overlay` here — its tooltips teleport to body
+ * and must stay in the Element Plus ~2000 band.
  */
-.el-overlay:has(.mm-above-node-chrome) {
+.el-overlay:has(.mm-above-node-chrome),
+.mm-canvas-center-modal {
   z-index: 5200 !important;
 }
 
@@ -223,4 +227,26 @@
 .mind-map-side-rail-btn--danger:hover:not(:disabled) {
   background: #991b1b;
   border-color: #991b1b;
+}
+
+/*
+ * One finger may pan from empty space. A control often keeps that gesture;
+ * modalTwoFingerScroll.ts scrolls on a two-finger swipe. pan-x/pan-y lets the
+ * browser pan with one finger and does not treat the second finger as a page
+ * zoom. A diagram frame with touch-action: none still wins.
+ */
+.el-overlay-dialog,
+.el-dialog__body,
+.el-drawer__body,
+.el-message-box__content,
+.el-message-box__message,
+.el-dialog .el-scrollbar__wrap,
+.el-drawer .el-scrollbar__wrap,
+.el-message-box .el-scrollbar__wrap,
+.swiss-glass-card__body,
+.swiss-glass-card.overflow-y-auto,
+.swiss-glass-card-overlay--contained,
+.mm-canvas-center-modal {
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
 }

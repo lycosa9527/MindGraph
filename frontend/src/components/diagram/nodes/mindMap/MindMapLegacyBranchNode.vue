@@ -23,6 +23,7 @@ import {
 } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -82,7 +83,7 @@ const nodeStyle = computed((): CSSProperties => {
       backgroundColor: bgColor,
     }),
     color: style.textColor || defaultStyle.value.textColor || '#333333',
-    fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(style.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${style.fontSize || defaultStyle.value.fontSize || 16}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: style.fontStyle || 'normal',
@@ -114,7 +115,7 @@ const textMaxWidth = computed(() => {
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   return `${resolveMindMapBranchTextMaxWidthPx(label, fontSize, {
     fontWeight,
-    fontFamily: DIAGRAM_NODE_FONT_STACK,
+    fontFamily: String(nodeStyle.value.fontFamily || DIAGRAM_NODE_FONT_STACK),
   })}px`
 })
 

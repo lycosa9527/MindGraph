@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Thay thế/thêm nút',
   'nodePalette.loadMore': 'Tải thêm',
   'nodePalette.next': 'Kế tiếp',
-  'nodePalette.panelTitle': 'Ý tưởng bãi đậu xe',
   'nodePalette.refresh': 'Làm cho khỏe lại',
   'nodePalette.selected': 'đã chọn',
   'nodePalette.similarities': 'Điểm tương đồng',

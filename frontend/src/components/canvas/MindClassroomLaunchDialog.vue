@@ -9,7 +9,10 @@ import { ElDialog } from 'element-plus'
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import MindClassroomLaunchContent from '@/components/canvas/MindClassroomLaunchContent.vue'
 import '@/components/canvas/aiGenerateGlass.css'
-import { MM_ABOVE_NODE_CHROME_CLASS } from '@/components/common/swissGlassStack'
+import {
+  MM_ABOVE_NODE_CHROME_CLASS,
+  bindCanvasCoveringOverlay,
+} from '@/components/common/swissGlassStack'
 import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -21,6 +24,7 @@ const notify = useNotifications()
 const eventBus = useEventBus('MindClassroomLaunchDialog')
 const classroomStore = useMindClassroomStore()
 const { modalOpen, jobError } = storeToRefs(classroomStore)
+bindCanvasCoveringOverlay(() => modalOpen.value)
 
 function handleModalClose(): void {
   classroomStore.closeModal()

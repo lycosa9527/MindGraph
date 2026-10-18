@@ -34,7 +34,9 @@ import {
   stripConceptMapFocusQuestionPrefix,
 } from '@/stores/diagram/diagramDefaultLabels'
 import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
+import { diagramTextDecorationStyle } from '@/utils/diagramTextDecorationStyle'
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
+import { readNodeAdornment } from '@/utils/mindMapAdornments'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isWhitespaceOnlyNodeText, resolveInlineNodeTextForSave } from '@/utils/nodeEditableText'
 import { isNodeExplainTriggerTarget } from '@/utils/nodeExplainTrigger'
@@ -142,6 +144,9 @@ const collabCanvas = inject<{ isNodeLockedByOther?: (nodeId: string) => boolean 
 const notifyCollab = useNotifications()
 const { t } = useLanguage()
 const diagramStore = useDiagramSession()
+const learningSheetBlanked = computed(
+  () => diagramStore.isLearningSheet && diagramStore.isNodeBlankedForLearningSheet(props.nodeId)
+)
 const bilingualSecondary = computed(() => {
   const node = diagramStore.data?.nodes?.find((item) => item.id === props.nodeId)
   return (node?.textSecondary ?? '').trim()
@@ -165,6 +170,13 @@ const fieldAriaLabel = computed(() => resolvedPlaceholder.value)
 const localIsEditing = ref(false)
 const showThinkingMapAdornments = computed(
   () => isThinkingMapDiagramType(diagramStore.type) && !localIsEditing.value
+)
+const hasNodeImage = computed(
+  () =>
+    showThinkingMapAdornments.value &&
+    Boolean(
+      readNodeAdornment(diagramStore.data, props.nodeId, diagramStore.data?.connections)?.imageUrl
+    )
 )
 /** Wall clock when this editor last entered edit mode (blur-save grace). */
 let mindMapEditOpenedAtMs = 0
@@ -550,9 +562,7 @@ const rootAlignClass = computed(() => {
   return 'inline-editable-text--align-center'
 })
 
-const displayDecorationStyle = computed(() => ({
-  textDecoration: props.textDecoration || 'none',
-}))
+const displayDecorationStyle = computed(() => diagramTextDecorationStyle(props.textDecoration))
 
 const isDisplayPlaceholder = computed(
   () =>
@@ -585,7 +595,7 @@ const inputStyle = computed(() => ({
   maxWidth: props.maxWidth,
   width: stretchesToFillWidth.value ? '100%' : undefined,
   textAlign: props.textAlign,
-  textDecoration: props.textDecoration || 'none',
+  ...diagramTextDecorationStyle(props.textDecoration),
   ...(props.autoWrap && editLockedMinHeightPx.value != null
     ? { minHeight: `${editLockedMinHeightPx.value}px` }
     : {}),
@@ -1364,7 +1374,9 @@ onUnmounted(() => {
       rootAlignClass,
       {
         'inline-editable-text--full-width': fullWidth,
+        'inline-editable-text--image': hasNodeImage,
         'inline-editable-text--bilingual': bilingualSecondary || (localIsEditing && bilingualEdit),
+        'learning-sheet-blanked': learningSheetBlanked,
       },
     ]"
     @dblclick="handleDoubleClick"
@@ -1532,7 +1544,7 @@ onUnmounted(() => {
         maxWidth: maxWidth,
         width: stretchesToFillWidth ? '100%' : undefined,
         textAlign: textAlign,
-        textDecoration: textDecoration || 'none',
+        ...displayDecorationStyle,
       }"
       :title="truncate ? text : undefined"
     >
@@ -1566,7 +1578,6 @@ onUnmounted(() => {
         <span
           class="inline-edit-plain"
           :class="{ 'inline-edit-plain--whitespace': isWhitespaceOnlyNodeText(text) }"
-          :style="displayDecorationStyle"
           >{{ text }}</span
         >
       </template>
@@ -1614,10 +1625,20 @@ onUnmounted(() => {
   max-width: 100%;
   min-height: 1.5em;
   position: relative;
+  /* CJK webfonts often ship one weight. Ask the browser to faux-bold and oblique. */
+  font-synthesis: weight style;
 }
 
 .inline-editable-text--full-width {
   width: 100%;
+}
+
+.inline-editable-text--image {
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: max-content;
+  max-width: none;
 }
 
 .inline-editable-text--align-left {
@@ -1719,7 +1740,8 @@ onUnmounted(() => {
 }
 
 .inline-edit-plain {
-  text-decoration: inherit;
+  /* The display box paints the line. A second decoration on this span doubles it. */
+  text-decoration: none;
 }
 
 .inline-edit-plain--whitespace {

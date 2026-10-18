@@ -2,6 +2,7 @@
  * Measure many plain-text labels in one layout.
  * Numbering fills these maps, then the existing width/height functions read them.
  */
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 /** Text styles copied from the shared single-node measurer. Position stays on the host. */
@@ -125,7 +126,7 @@ export function measureNowrapBatch(specs: readonly NowrapMeasureSpec[]): Map<str
   for (const spec of specs) {
     const el = document.createElement('div')
     el.style.cssText = MEASURE_TEXT_CSS
-    el.style.fontFamily = spec.fontFamily || DIAGRAM_NODE_FONT_STACK
+    el.style.fontFamily = diagramPaintFontFamily(spec.fontFamily, DIAGRAM_NODE_FONT_STACK)
     el.style.width = 'max-content'
     el.style.whiteSpace = 'nowrap'
     el.style.padding = '0'
@@ -151,7 +152,7 @@ export function measureBoxBatch(specs: readonly BoxMeasureSpec[]): Map<string, T
   for (const spec of specs) {
     const el = document.createElement('div')
     el.style.cssText = MEASURE_TEXT_CSS
-    el.style.fontFamily = spec.fontFamily || DIAGRAM_NODE_FONT_STACK
+    el.style.fontFamily = diagramPaintFontFamily(spec.fontFamily, DIAGRAM_NODE_FONT_STACK)
     el.style.fontSize = `${spec.fontSize}px`
     el.style.fontWeight = spec.fontWeight
     el.style.padding = `${spec.paddingY}px ${spec.paddingX}px`

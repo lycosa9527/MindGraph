@@ -8,19 +8,14 @@ import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
-import { useCanvasDiagramTranslate } from '@/composables/canvasToolbar/useCanvasDiagramTranslate'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
-import { useCanvasLlmModelNames } from '@/composables/llm/useCanvasLlmModelNames'
-import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
-import { CANVAS_LLM_MENU, canvasLlmLogo, canvasMenuModelLabel } from '@/config/canvasLlmMenu'
-import { useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
-import { selectCanvasLlmModel } from '@/stores/llmMenuChoice'
+import { useCanvasLlmMenu } from '@/composables/llm/useCanvasLlmMenu'
+import { usePanelsStore, useUIStore } from '@/stores'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
 export function useMindMapRibbonChromeActions() {
@@ -30,16 +25,12 @@ export function useMindMapRibbonChromeActions() {
   const diagramStore = useDiagramSession()
   const uiStore = useUIStore()
   const panelsStore = usePanelsStore()
-  const llmResultsStore = useLLMResultsStore()
   const { handleAddNode, handleDeleteNode } = useNodeActions({
     registerEventBusListeners: false,
   })
   const { handleAIGenerate } = useCanvasToolbarApps()
-  const { leaveTranslatePreview } = useCanvasDiagramTranslate()
   const { triggerImportInPlace } = useDiagramImport()
-  const { t } = useLanguage()
-  const { customLlmEnabled, displayNameForModel } = useOrgCustomLlm()
-  const { names: canvasModelNames } = useCanvasLlmModelNames()
+  const { llmMenu, selectedLlm, selectedLlmRow, selectLlm } = useCanvasLlmMenu()
 
   const nodeCount = computed(() => diagramStore.data?.nodes?.length ?? 0)
   const canUndo = computed(() => diagramStore.canUndo)
@@ -47,34 +38,6 @@ export function useMindMapRibbonChromeActions() {
   const selectedId = computed(() => diagramStore.selectedNodes[0] ?? null)
   const selectedNode = computed(() => diagramStore.selectedNodeData[0] ?? null)
   const hasSelection = computed(() => diagramStore.selectedNodes.length > 0)
-  const llmMenu = computed(() => {
-    if (customLlmEnabled.value) {
-      return [
-        {
-          id: 'qwen',
-          label: displayNameForModel('qwen'),
-          model: '',
-          logo: canvasLlmLogo('qwen'),
-        },
-      ]
-    }
-    return CANVAS_LLM_MENU.map((item) => ({
-      id: item.id,
-      label: String(t(item.labelKey)),
-      model: canvasMenuModelLabel(item.id, canvasModelNames.value, String(t(item.modelKey))),
-      logo: item.logo,
-    }))
-  })
-  const selectedLlm = computed(() => {
-    const current = llmResultsStore.canvasModelChoice
-    if (current && llmMenu.value.some((item) => item.id === current)) {
-      return current
-    }
-    return customLlmEnabled.value ? 'qwen' : 'express'
-  })
-  const selectedLlmRow = computed(
-    () => llmMenu.value.find((item) => item.id === selectedLlm.value) ?? llmMenu.value[0]
-  )
   const lineModeOn = computed(() => uiStore.wireframeMode)
   const isLearningSheet = computed(() => diagramStore.isLearningSheet)
   const isMindmateOpen = computed(() => panelsStore.mindmatePanel.isOpen)
@@ -112,12 +75,6 @@ export function useMindMapRibbonChromeActions() {
 
   function fitView(): void {
     eventBus.emit('view:fit_diagram_requested', {})
-  }
-
-  function selectLlm(model: string): void {
-    void leaveTranslatePreview().then(() => {
-      void selectCanvasLlmModel(model)
-    })
   }
 
   return {

@@ -7,6 +7,7 @@ import {
   getMindMapCollapseHiddenIds,
   getMindMapCollapsedPaths,
 } from '@/stores/diagram/mindMapCollapse'
+import { isLearningSheetBlankedNode } from '@/stores/specLoader/mindMapLearningSheet'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { Connection, DiagramData, DiagramNode, NodeStyle } from '@/types'
 import type { MindMapVectorNodeDraw } from '@/utils/diagramMindMapVectorNodes'
@@ -123,10 +124,14 @@ export function buildMindMapVectorSnapshot(options: {
       store.nodeDimensions
     )
     const numberPrefix = numberMap.get(node.id) ?? ''
+    // Knocked-out nodes keep the answer on the record. The sheet draws a blank.
+    const blanked = isLearningSheetBlankedNode(node)
+    const text = blanked ? '' : (node.text ?? '')
+    const textSecondary = blanked ? '' : (node.textSecondary ?? '')
     drawNodes.push({
       id: node.id,
-      text: node.text ?? '',
-      ...((node.textSecondary ?? '').trim() ? { textSecondary: node.textSecondary } : {}),
+      text,
+      ...(textSecondary.trim() ? { textSecondary } : {}),
       ...(numberPrefix ? { numberPrefix } : {}),
       type: node.type,
       x: node.position.x,

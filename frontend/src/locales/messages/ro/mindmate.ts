@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Înlocuiți/adăugați noduri',
   'nodePalette.loadMore': 'încărcați mai mult',
   'nodePalette.next': 'Următorul pas',
-  'nodePalette.panelTitle': 'parcare concept',
   'nodePalette.refresh': 'Regenera',
   'nodePalette.selected': 'Selectat',
   'nodePalette.similarities': 'Asemănări',

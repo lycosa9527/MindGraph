@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.174] - 2026-10-18
+
+> **Delete removes the node and closes the gap, thinking-map type changes reflow, and the node toolbar stays off covering sheets.**
+
+### Fixed
+
+- **删除** — Delete and Backspace remove the selected node on thinking maps, mind maps, and concept maps, and a click on the canvas does not bring it back. Circle, bubble, brace, and bridge maps write the packed layout into the diagram, so the stored coordinates no longer keep the empty slot.
+- **思维图示排版** — On all eight thinking maps (including multi-flow), changing font size and then bold, italic, underline, or strikethrough clears stale node measurements and relayouts so cause/effect columns and ring maps no longer overlap. Underline and strikethrough stay inside the line box.
+- **图片** — A picture on a thinking-map node uses the same 120×80 frame as a mind map, and the node box grows with that frame.
+- **浮动工具栏** — Opening AI brainstorm, Concept parking lot, or another canvas dialog no longer leaves the selected-node pill on top of the sheet. In-page overlays hide the teleported chrome; body dialogs stay above it. The color control reads the paint already on the node.
+- **连线** — Thinking-map connectors follow the active color theme. A solid theme uses its accent. Rainbow keeps the family line.
+- **学习单导出** — A capture that hides answers hides them on the cloned sheet, including knocked-out node text. Outline export paints circle, bubble, flow, brace, tree, bridge, and concept maps in black and white.
+- **字体** — SimSun, KaiTi, Inter, and Space Grotesk load a webfont when the open diagram uses them, so a phone paints the face the menu stored.
+- **触控** — Bold, italic, and underline on the node toolbar apply once on a touch tap. A two-finger swipe scrolls a long dialog.
+- **学习空间** — Homework submit stores the diagram immediately. The thumbnail renders after the student has left and is written onto that same snapshot.
+
+### Changed
+
+- **模型菜单** — The desktop status bar and the phone canvas share one model menu. Express stays the closed-state pick.
+- **面板** — Opening AI brainstorm, Concept parking lot, or conversational edit closes the other covering panel.
+
+### Tests
+
+- [`frontend/tests/diagramNodeKeyboardDelete.spec.ts`](frontend/tests/diagramNodeKeyboardDelete.spec.ts)
+- [`frontend/tests/thinkingMapTypographyRelayout.spec.ts`](frontend/tests/thinkingMapTypographyRelayout.spec.ts), [`frontend/tests/thinkingMapTypographyLayout.spec.ts`](frontend/tests/thinkingMapTypographyLayout.spec.ts), [`frontend/tests/multiFlowMapLayout.spec.ts`](frontend/tests/multiFlowMapLayout.spec.ts)
+- [`frontend/tests/nodeImageFrame.spec.ts`](frontend/tests/nodeImageFrame.spec.ts), [`frontend/tests/diagramTextStyleMobile.spec.ts`](frontend/tests/diagramTextStyleMobile.spec.ts), [`frontend/tests/diagramCanvasFonts.spec.ts`](frontend/tests/diagramCanvasFonts.spec.ts)
+- [`frontend/tests/canvasNodeChromeOverlayGate.spec.ts`](frontend/tests/canvasNodeChromeOverlayGate.spec.ts), [`frontend/tests/swissGlassStack.spec.ts`](frontend/tests/swissGlassStack.spec.ts), [`frontend/tests/floatingToolbarColorPicker.spec.ts`](frontend/tests/floatingToolbarColorPicker.spec.ts), [`frontend/tests/floatingToolbarNodeDisplay.spec.ts`](frontend/tests/floatingToolbarNodeDisplay.spec.ts)
+- [`frontend/tests/thinkingMapConnectionStroke.spec.ts`](frontend/tests/thinkingMapConnectionStroke.spec.ts), [`frontend/tests/thinkingMapNodePaint.spec.ts`](frontend/tests/thinkingMapNodePaint.spec.ts), [`frontend/tests/colorFormat.spec.ts`](frontend/tests/colorFormat.spec.ts)
+- [`frontend/tests/diagramExportLearningSheet.spec.ts`](frontend/tests/diagramExportLearningSheet.spec.ts), [`frontend/tests/diagramCanvasExportOutline.spec.ts`](frontend/tests/diagramCanvasExportOutline.spec.ts), [`frontend/tests/diagramMindMapVectorExport.spec.ts`](frontend/tests/diagramMindMapVectorExport.spec.ts)
+- [`frontend/tests/canvasLlmMenuDropdown.spec.ts`](frontend/tests/canvasLlmMenuDropdown.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/panelsStoreExclusivity.spec.ts`](frontend/tests/panelsStoreExclusivity.spec.ts), [`frontend/tests/modalTwoFingerScroll.spec.ts`](frontend/tests/modalTwoFingerScroll.spec.ts)
+- [`tests/test_learning_space_thumbnail_backfill.py`](tests/test_learning_space_thumbnail_backfill.py), [`tests/test_learning_space_db_flow.py`](tests/test_learning_space_db_flow.py)
+
 ## [5.180.173] - 2026-10-18
 
 > **格式刷 copies the paint you see on concept maps and thinking maps, learning-sheet blanks keep their frame, and 幻灯片讲解 stays greyed until the slide-deck flag is on.**

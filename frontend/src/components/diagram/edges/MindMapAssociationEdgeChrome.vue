@@ -6,6 +6,7 @@ import { computed, ref, toValue } from 'vue'
 
 import { EdgeLabelRenderer, useVueFlow } from '@vue-flow/core'
 
+import { useCanvasNodeChromeOverlayGate } from '@/composables/canvasToolbar'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
@@ -47,6 +48,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useLanguage()
+const overlayBlocksNodeChrome = useCanvasNodeChromeOverlayGate()
 const diagramStore = useDiagramSession()
 useMindMapAssociationLine()
 const { viewport, screenToFlowCoordinate } = useVueFlow(diagramStore.vueFlowId)
@@ -107,12 +109,11 @@ const deleteStyle = computed(() => ({
 }))
 
 const toolbarAnchor = computed(() => {
+  if (overlayBlocksNodeChrome.value) return null
   if (!toolbarOpen.value || typeof window === 'undefined') return null
   void viewport.value
   void handlePoint.value
-  const handle = document.querySelector(
-    `[data-mg-assoc-handle="${props.connectionId}"]`
-  )
+  const handle = document.querySelector(`[data-mg-assoc-handle="${props.connectionId}"]`)
   if (!(handle instanceof HTMLElement)) return null
   const rect = handle.getBoundingClientRect()
   let left = rect.right + TOOLBAR_GAP

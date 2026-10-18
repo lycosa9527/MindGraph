@@ -173,6 +173,74 @@ describe('diagramMindMapVector numbering chrome', () => {
     expect(nodeSvg).toContain('引言')
     expect(nodeSvg).not.toContain('第一章 引言')
   })
+
+  it('omits a knocked-out answer until the node is filled back in', () => {
+    const snapshot = buildMindMapVectorSnapshot({
+      canvasMode: 'v2',
+      outlineWireframe: false,
+      store: {
+        type: 'mindmap',
+        mindMapTopicActualWidth: 120,
+        mindMapNodeWidths: { topic: 120, branch: 140 },
+        mindMapNodeHeights: { topic: 40, branch: 34 },
+        nodeDimensions: {},
+        data: {
+          type: 'mindmap',
+          nodes: [
+            {
+              id: 'topic',
+              text: '北京师范大学',
+              type: 'topic',
+              position: { x: 0, y: 0 },
+            },
+            {
+              id: 'branch',
+              text: '校园有百年历史',
+              type: 'branch',
+              position: { x: 200, y: 0 },
+              data: { hidden: true, hiddenAnswer: '校园有百年历史' },
+            },
+          ],
+          connections: [{ id: 'e1', source: 'topic', target: 'branch' }],
+        },
+      },
+    })
+    const blanked = snapshot?.nodes.find((node) => node.id === 'branch')
+    expect(blanked?.text).toBe('')
+    expect(blanked?.textSecondary).toBeUndefined()
+
+    const revealed = buildMindMapVectorSnapshot({
+      canvasMode: 'v2',
+      outlineWireframe: false,
+      store: {
+        type: 'mindmap',
+        mindMapTopicActualWidth: 120,
+        mindMapNodeWidths: { topic: 120, branch: 140 },
+        mindMapNodeHeights: { topic: 40, branch: 34 },
+        nodeDimensions: {},
+        data: {
+          type: 'mindmap',
+          nodes: [
+            {
+              id: 'topic',
+              text: '北京师范大学',
+              type: 'topic',
+              position: { x: 0, y: 0 },
+            },
+            {
+              id: 'branch',
+              text: '校园有百年历史',
+              type: 'branch',
+              position: { x: 200, y: 0 },
+              data: { hidden: false, hiddenAnswer: '校园有百年历史' },
+            },
+          ],
+          connections: [{ id: 'e1', source: 'topic', target: 'branch' }],
+        },
+      },
+    })
+    expect(revealed?.nodes.find((node) => node.id === 'branch')?.text).toBe('校园有百年历史')
+  })
 })
 
 describe('diagramMindMapVectorSvg', () => {

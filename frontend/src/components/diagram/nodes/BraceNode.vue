@@ -13,11 +13,13 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
+import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
 import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -34,6 +36,7 @@ import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const { fitBox } = useThinkingMapImageFit(() => props.id)
 const diagramStore = useDiagramSession()
 const blankFrame = useLearningSheetBlankFrame(
   () => props.id,
@@ -42,7 +45,11 @@ const blankFrame = useLearningSheetBlankFrame(
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const braceNodeRef = ref<HTMLElement | null>(null)
-useNodeDimensions(braceNodeRef, props.id)
+useThinkingMapNodeBoxTypographyRemeasure({
+  rootRef: braceNodeRef,
+  nodeId: props.id,
+  style: () => props.data.style,
+})
 
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
@@ -110,7 +117,7 @@ const nodeStyle = computed(() => {
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
       (isWholeNode.value ? '#ffffff' : '#333333'),
-    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${thinkingMapDisplayedFontSize(props.data.style?.fontSize, themeNodePaint.value?.fontSize ?? defaultStyle.value.fontSize ?? (isWholeNode.value ? MIND_MAP_GEOMETRY.topicFontSize : isSubpart.value ? MIND_MAP_GEOMETRY.fontSize : MIND_MAP_GEOMETRY.branchFontSize))}px`,
     padding: thinkingMapBoxPadding(true),
     boxShadow: isWholeNode.value ? MIND_MAP_GEOMETRY.topicShadow : MIND_MAP_GEOMETRY.branchShadow,
@@ -209,7 +216,7 @@ function handleBranchMovePointerUp(): void {
     ref="braceNodeRef"
     class="brace-node relative flex items-center justify-center px-4 py-2 border-solid cursor-grab select-none"
     :class="{ 'pill-shape': usePillShape }"
-    :style="[nodeStyle, blankFrame]"
+    :style="[fitBox(nodeStyle), blankFrame]"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.passive.capture="handleBranchMoveTouchStart"

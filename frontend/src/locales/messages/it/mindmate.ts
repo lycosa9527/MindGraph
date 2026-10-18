@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Sostituisci/aggiungi nodi',
   'nodePalette.loadMore': 'Carica altro',
   'nodePalette.next': 'Avanti',
-  'nodePalette.panelTitle': 'Parcheggio concetti',
   'nodePalette.refresh': 'Aggiorna',
   'nodePalette.selected': 'selezionati',
   'nodePalette.similarities': 'Similarità',

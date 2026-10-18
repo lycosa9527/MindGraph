@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Zastąp/dodaj węzły',
   'nodePalette.loadMore': 'Wczytaj więcej',
   'nodePalette.next': 'Dalej',
-  'nodePalette.panelTitle': 'Parking pojęć',
   'nodePalette.refresh': 'Odśwież',
   'nodePalette.selected': 'wybrane',
   'nodePalette.similarities': 'Podobieństwa',

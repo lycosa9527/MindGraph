@@ -174,6 +174,7 @@ onUnmounted(() => {
   >
     <AiGenerateGlassHero
       variant="brainstorm"
+      title-key="canvas.mindMapSideToolbar.waterfall"
       @close="handleClose"
     />
 

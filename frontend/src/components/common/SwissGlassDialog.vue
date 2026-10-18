@@ -10,7 +10,10 @@ import { Sparkles } from '@lucide/vue'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
-import { MM_ABOVE_NODE_CHROME_CLASS } from '@/components/common/swissGlassStack'
+import {
+  MM_ABOVE_NODE_CHROME_CLASS,
+  bindCanvasCoveringOverlay,
+} from '@/components/common/swissGlassStack'
 import { useTrainingDialogHost } from '@/composables/training/trainingInlineHost'
 import '@/styles/mind-map-side-rail-panel.css'
 import '@/styles/swissGlassControls.css'
@@ -64,6 +67,7 @@ const emit = defineEmits<{ close: [] }>()
 const plateIcon = computed(() => props.icon ?? Sparkles)
 const dialogHost = useTrainingDialogHost()
 const dialogTop = computed(() => (dialogHost.value === 'body' ? props.top : '0.75rem'))
+bindCanvasCoveringOverlay(() => visible.value && dialogHost.value === 'body')
 
 const dialogClassName = computed(() =>
   [

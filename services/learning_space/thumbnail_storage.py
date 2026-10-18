@@ -73,6 +73,18 @@ def submit_thumbnail_source(diagram_thumb: object, previous_thumb: object) -> ob
     return diagram_thumb
 
 
+def stored_submit_thumbnail(diagram_thumb: object, previous_thumb: object) -> str | None:
+    """COS or http image kept on the row while a new render runs.
+
+    Data URLs stay out of Postgres. The background job uploads the fresh PNG.
+    """
+    if _stable_thumbnail(diagram_thumb) and isinstance(diagram_thumb, str):
+        return diagram_thumb.strip()
+    if _stable_thumbnail(previous_thumb) and isinstance(previous_thumb, str):
+        return previous_thumb.strip()
+    return None
+
+
 def _promote_reference_thumbnail(
     current: object,
     library_thumb: str | None,

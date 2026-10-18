@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Csomópontok cseréje/hozzáadása',
   'nodePalette.loadMore': 'töltsön be többet',
   'nodePalette.next': 'Következő lépés',
-  'nodePalette.panelTitle': 'koncepció parkoló',
   'nodePalette.refresh': 'Regenerátum',
   'nodePalette.selected': 'Kiválasztott',
   'nodePalette.similarities': 'Hasonlóságok',

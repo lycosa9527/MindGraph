@@ -111,12 +111,39 @@ export const usePanelsStore = defineStore('panels', () => {
     ...property.value,
   }))
 
+  type CoveringPanel = 'mindmate' | 'aiBrainstorm' | 'nodePalette'
+
+  /**
+   * AI brainstorm (waterfall / node palette) and conversational edit both cover
+   * the canvas. Opening one must close the others so they never stack.
+   */
+  function closeCoveringPeers(keep: CoveringPanel): void {
+    if (keep !== 'mindmate') {
+      closeMindmate()
+    }
+    if (keep !== 'aiBrainstorm') {
+      closeAiBrainstorm()
+    }
+    if (keep !== 'nodePalette') {
+      closeNodePalette()
+    }
+  }
+
+  /** Live panel state wins while this canvas session is open; snapshots are for empty restores. */
+  function shouldRestoreCoveringSession(
+    liveSuggestions: NodeSuggestion[],
+    snapshot: { suggestions: NodeSuggestion[] } | undefined
+  ): boolean {
+    return liveSuggestions.length === 0 && !!snapshot && snapshot.suggestions.length > 0
+  }
+
   // Actions
   function openMindmate(options: Partial<MindmatePanelState> = {}): void {
     const ls = useLearningAssignmentCanvasStore()
     if (!ls.can('conversational_edit')) {
       return
     }
+    closeCoveringPeers('mindmate')
     const wasOpen = mindmate.value.open
     mindmate.value = {
       ...mindmate.value,
@@ -176,11 +203,15 @@ export const usePanelsStore = defineStore('panels', () => {
     if (!useLearningAssignmentCanvasStore().can('ai_brainstorm')) {
       return
     }
+    closeCoveringPeers('nodePalette')
     const wasOpen = nodePalette.value.open
     const { diagramKey, conceptMapNodeId, conceptMapNodeText, ...restOptions } = options
-    const snapshot = diagramKey && nodePaletteSessionsByDiagram.value.get(diagramKey)
-    const hasRestoredSession = !conceptMapNodeId && !!(snapshot && snapshot.suggestions.length > 0)
-    if (hasRestoredSession) {
+    const snapshot = diagramKey
+      ? nodePaletteSessionsByDiagram.value.get(diagramKey)
+      : undefined
+    const hasRestoredSession =
+      !conceptMapNodeId && shouldRestoreCoveringSession(nodePalette.value.suggestions, snapshot)
+    if (hasRestoredSession && snapshot) {
       let conceptMapTabs = snapshot.conceptMapTabs ?? undefined
       let mode = snapshot.mode
       if (conceptMapTabs?.length && diagramKey?.startsWith('concept_map')) {
@@ -281,10 +312,16 @@ export const usePanelsStore = defineStore('panels', () => {
     if (!useLearningAssignmentCanvasStore().can('ai_brainstorm')) {
       return
     }
+    closeCoveringPeers('aiBrainstorm')
     const wasOpen = aiBrainstorm.value.open
     const { diagramKey, ...restOptions } = options
-    const snapshot = diagramKey && aiBrainstormSessionsByDiagram.value.get(diagramKey)
-    const hasRestoredSession = !!(snapshot && snapshot.suggestions.length > 0)
+    const snapshot = diagramKey
+      ? aiBrainstormSessionsByDiagram.value.get(diagramKey)
+      : undefined
+    const hasRestoredSession = shouldRestoreCoveringSession(
+      aiBrainstorm.value.suggestions,
+      snapshot
+    )
     if (hasRestoredSession && snapshot) {
       aiBrainstorm.value = {
         ...aiBrainstorm.value,
@@ -552,11 +589,19 @@ export const usePanelsStore = defineStore('panels', () => {
 
   // Toggle functions for convenience
   function toggleMindmatePanel(): void {
-    mindmate.value.open = !mindmate.value.open
+    if (mindmate.value.open) {
+      closeMindmate()
+      return
+    }
+    openMindmate()
   }
 
   function toggleNodePalettePanel(): void {
-    nodePalette.value.open = !nodePalette.value.open
+    if (nodePalette.value.open) {
+      closeNodePalette()
+      return
+    }
+    openNodePalette()
   }
 
   function togglePropertyPanel(): void {

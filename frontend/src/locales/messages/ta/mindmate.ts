@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'முனைகளை மாற்றவும்/சேர்க்கவும்',
   'nodePalette.loadMore': 'மேலும் ஏற்றவும்',
   'nodePalette.next': 'அடுத்த படி',
-  'nodePalette.panelTitle': 'கான்செப்ட் பார்க்கிங்',
   'nodePalette.refresh': 'மீண்டும் உருவாக்கு',
   'nodePalette.selected': 'தேர்ந்தெடுக்கப்பட்டது',
   'nodePalette.similarities': 'ஒற்றுமைகள்',

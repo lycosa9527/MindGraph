@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Замяна/добавяне на възли',
   'nodePalette.loadMore': 'заредете повече',
   'nodePalette.next': 'Следваща стъпка',
-  'nodePalette.panelTitle': 'концептуален паркинг',
   'nodePalette.refresh': 'Регенерирайте',
   'nodePalette.selected': 'Избрано',
   'nodePalette.similarities': 'Прилики',

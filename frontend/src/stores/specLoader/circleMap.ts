@@ -111,10 +111,18 @@ export function recalculateCircleMapLayout(
   if (circleContexts.length > 0) {
     let maxR = DEFAULT_CONTEXT_RADIUS
     for (const node of circleContexts) {
+      const nodeStyle = node.style
       const textR =
         estimateContextCircleDiameter(
           learningSheetLayoutText(node) || ' ',
-          learningSheetLayoutSecondary(node)
+          learningSheetLayoutSecondary(node),
+          {
+            fontSize: typeof nodeStyle?.fontSize === 'number' ? nodeStyle.fontSize : undefined,
+            fontWeight:
+              typeof nodeStyle?.fontWeight === 'string' ? nodeStyle.fontWeight : undefined,
+            fontFamily:
+              typeof nodeStyle?.fontFamily === 'string' ? nodeStyle.fontFamily : undefined,
+          }
         ) / 2
       const diskR = circleDiskRadius(node.style?.nodeShape, nodeDimensions[node.id])
       maxR = Math.max(maxR, textR, diskR ?? 0)

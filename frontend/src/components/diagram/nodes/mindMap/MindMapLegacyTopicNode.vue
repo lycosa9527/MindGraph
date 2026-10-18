@@ -24,6 +24,7 @@ import {
   wrapMindMapNodeStyleForExport,
 } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -104,7 +105,7 @@ const nodeStyle = computed(() => {
   const classicStyle = {
     backgroundColor,
     color: style.textColor || defaultStyle.value.textColor || '#ffffff',
-    fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(style.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${style.fontSize || defaultStyle.value.fontSize || 18}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'bold',
     fontStyle: style.fontStyle || 'normal',

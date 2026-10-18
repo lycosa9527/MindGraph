@@ -12,11 +12,14 @@ import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
+import { useThinkingMapTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
 import { MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -35,6 +38,7 @@ import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const { fitBox } = useThinkingMapImageFit(() => props.id)
 
 const diagramStore = useDiagramSession()
 const llmResultsStore = useLLMResultsStore()
@@ -153,7 +157,7 @@ const nodeStyle = computed(() => {
       style.textColor ||
       defaultStyle.value.textColor ||
       '#ffffff',
-    fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(style.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${thinkingMapDisplayedFontSize(style.fontSize, defaultStyle.value.fontSize || MIND_MAP_GEOMETRY.topicFontSize)}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'bold',
     fontStyle: style.fontStyle || 'normal',
@@ -325,6 +329,25 @@ watch(
   }
 )
 
+async function remeasureTopicNodeBox(): Promise<void> {
+  if (isMultiFlowMap.value) {
+    await flushMultiFlowTopicWidthFromPinia()
+    return
+  }
+  await nextTick()
+  if (typeof document !== 'undefined' && document.fonts?.ready) {
+    await document.fonts.ready
+  }
+  await nextTick()
+  reportDimensions()
+}
+
+useThinkingMapTypographyRemeasure({
+  enabled: () => !isEditing.value,
+  style: () => props.data.style,
+  remeasure: remeasureTopicNodeBox,
+})
+
 function handleWidthChange(width: number) {
   if (isMultiFlowMap.value) {
     dynamicWidth.value = width + 48
@@ -373,7 +396,7 @@ function handleWidthChange(width: number) {
         'py-4': !isFlowMap,
         'px-6': true,
       }"
-      :style="nodeStyle"
+      :style="fitBox(nodeStyle)"
       @click.capture="handleTopicNodeClick"
     >
       <NodeShapeUnderline

@@ -254,6 +254,7 @@ declare module 'vue' {
     EmojiPicker: typeof import('./components/workshop-chat/EmojiPicker.vue')['default']
     FilePreview: typeof import('./components/workshop-chat/FilePreview.vue')['default']
     FloatingAccountMenu: typeof import('./components/sidebar/FloatingAccountMenu.vue')['default']
+    FloatingToolbarColorPicker: typeof import('./components/canvas/FloatingToolbarColorPicker.vue')['default']
     FlowNode: typeof import('./components/diagram/nodes/FlowNode.vue')['default']
     FlowSubstepNode: typeof import('./components/diagram/nodes/FlowSubstepNode.vue')['default']
     GeoLiteNotification: typeof import('./components/common/GeoLiteNotification.vue')['default']

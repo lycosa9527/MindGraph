@@ -26,6 +26,7 @@ import { installCsrfFetchInterceptor } from './utils/installCsrfFetchInterceptor
 import { installFrontendErrorReporting } from './utils/installFrontendErrorReporting'
 import { installIteratorGlobalStub } from './utils/iteratorGlobalStub'
 import { loadMobileDebugConsole } from './utils/loadMobileDebugConsole'
+import { installModalTwoFingerScroll } from './utils/modalTwoFingerScroll'
 import { syncOfficeEmbedFromSearch } from './utils/officeEmbed'
 import { bindPwaInstallListeners } from './utils/pwaInstall'
 import { reloadForStaleChunk } from './utils/staleChunkReload'
@@ -39,6 +40,9 @@ syncOfficeEmbedFromSearch()
 
 // Attach X-CSRF-Token to same-origin mutations before any request is made.
 installCsrfFetchInterceptor()
+
+// Two-finger swipe scrolls long dialogs (one finger stays tap / native pan).
+installModalTwoFingerScroll()
 
 // iOS Safari on-device console (Eruda) when ?eruda=1 / test.* host.
 void loadMobileDebugConsole()

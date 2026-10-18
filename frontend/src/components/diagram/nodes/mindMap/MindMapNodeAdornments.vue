@@ -16,6 +16,7 @@ import {
   sanitizeMindMapHref,
 } from '@/utils/mindMapAdornments'
 import { isMindMapSummaryNodeId } from '@/utils/mindMapSummary'
+import { NODE_IMAGE_THUMB_HEIGHT, NODE_IMAGE_THUMB_WIDTH } from '@/utils/nodeImageFrame'
 
 const props = withDefaults(
   defineProps<{
@@ -48,6 +49,10 @@ const visibleParts = computed(() =>
 )
 
 const previewImageUrl = computed(() => adornment.value?.imageUrl ?? '')
+const thumbStyle = {
+  width: `${NODE_IMAGE_THUMB_WIDTH}px`,
+  height: `${NODE_IMAGE_THUMB_HEIGHT}px`,
+}
 
 function openLink(event: MouseEvent): void {
   event.stopPropagation()
@@ -74,6 +79,7 @@ function openImagePreview(event: MouseEvent): void {
       v-if="visibleParts.image && adornment?.imageUrl"
       type="button"
       class="mm-adornments__image-btn nodrag nopan"
+      :style="thumbStyle"
       :title="t('canvas.ribbon.enlargeImage')"
       :aria-label="t('canvas.ribbon.enlargeImage')"
       @click="openImagePreview"
@@ -122,7 +128,8 @@ function openImagePreview(event: MouseEvent): void {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  max-width: 100%;
+  width: max-content;
+  max-width: none;
 }
 
 .mm-adornments--inline {
@@ -133,9 +140,11 @@ function openImagePreview(event: MouseEvent): void {
 
 .mm-adornments__image-btn {
   display: block;
+  flex-shrink: 0;
   padding: 0;
   border: none;
-  background: transparent;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.06);
   line-height: 0;
   cursor: zoom-in;
   border-radius: 4px;
@@ -149,10 +158,9 @@ function openImagePreview(event: MouseEvent): void {
 
 .mm-adornments__image {
   display: block;
-  max-width: 120px;
-  max-height: 80px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  border-radius: 4px;
   pointer-events: none;
 }
 

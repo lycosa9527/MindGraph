@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'నోడ్‌లను భర్తీ చేయండి/జోడించండి',
   'nodePalette.loadMore': 'మరింత లోడ్ చేయండి',
   'nodePalette.next': 'తదుపరి దశ',
-  'nodePalette.panelTitle': 'భావన పార్కింగ్',
   'nodePalette.refresh': 'పునరుత్పత్తి చేయండి',
   'nodePalette.selected': 'ఎంపిక చేయబడింది',
   'nodePalette.similarities': 'సారూప్యతలు',

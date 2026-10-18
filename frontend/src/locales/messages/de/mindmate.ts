@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Knoten ersetzen/hinzufügen',
   'nodePalette.loadMore': 'Mehr laden',
   'nodePalette.next': 'Weiter',
-  'nodePalette.panelTitle': 'Konzept-Parkplatz',
   'nodePalette.refresh': 'Aktualisieren',
   'nodePalette.selected': 'ausgewählt',
   'nodePalette.similarities': 'Gemeinsamkeiten',

@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Αντικατάσταση/προσθήκη κόμβων',
   'nodePalette.loadMore': 'φορτώστε περισσότερο',
   'nodePalette.next': 'Επόμενο βήμα',
-  'nodePalette.panelTitle': 'έννοια πάρκινγκ',
   'nodePalette.refresh': 'Αναγεννηθείς',
   'nodePalette.selected': 'Επιλεγμένο',
   'nodePalette.similarities': 'Ομοιότητες',

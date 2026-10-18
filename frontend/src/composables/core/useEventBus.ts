@@ -830,7 +830,6 @@ export type EventTypes = {
   'mindmap:selection_restore_requested': { nodeIds: string[] }
 
   // Keyboard Events
-  'keyboard:delete_executed': { deletedNodeIds?: string[]; nodeCount?: number; edgeCount?: number }
   'keyboard:escape_pressed': Record<string, never>
   'keyboard:select_all_executed': { selectedNodeIds?: string[]; nodeCount?: number }
 

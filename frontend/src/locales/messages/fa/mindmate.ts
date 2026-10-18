@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'جایگزینی/افزودن گره ها',
   'nodePalette.loadMore': 'بارگذاری بیشتر',
   'nodePalette.next': 'تاریخ',
-  'nodePalette.panelTitle': 'پارکینگ مفهومی',
   'nodePalette.refresh': 'بازسازی کنید',
   'nodePalette.selected': 'انتخاب شده است',
   'nodePalette.similarities': 'شباهت ها',

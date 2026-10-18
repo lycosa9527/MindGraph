@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Замінити/додати вузли',
   'nodePalette.loadMore': 'Завантажити більше',
   'nodePalette.next': 'Далі',
-  'nodePalette.panelTitle': 'Парковка понять',
   'nodePalette.refresh': 'Оновити',
   'nodePalette.selected': 'обрано',
   'nodePalette.similarities': 'Подібності',

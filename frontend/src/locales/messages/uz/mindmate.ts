@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Tugunleri evez et/qo’shish',
   'nodePalette.loadMore': 'Ko’proq yuklash',
   'nodePalette.next': 'Keyingi',
-  'nodePalette.panelTitle': 'Konsept dayanacagi',
   'nodePalette.refresh': 'Yangilash',
   'nodePalette.selected': 'tanlashilib',
   'nodePalette.similarities': 'Oxsharliqlar',

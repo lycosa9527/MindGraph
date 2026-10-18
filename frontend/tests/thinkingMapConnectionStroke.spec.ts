@@ -7,6 +7,7 @@ import {
 } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
+  connectorStrokeReadableOnFills,
   resolveThinkingMapConnectorStroke,
   thinkingMapAdaptiveTextColor,
   thinkingMapAdaptiveTopicTextColor,
@@ -54,6 +55,18 @@ describe('thinking map connection stroke', () => {
     expect(thinkingMapAdaptiveTopicTextColor('vibrantYellow', '#ffffff')).toBe('#ffffff')
     expect(thinkingMapAdaptiveTopicTextColor('vibrantBlue', '#ffffff')).toBe('#ffffff')
     expect(thinkingMapAdaptiveTopicTextColor(undefined, '#ffffff')).toBe('#ffffff')
+  })
+
+  it('darkens a connector only when the fill is the same hue', () => {
+    const topicBlue = MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+    expect(connectorStrokeReadableOnFills(topicBlue, ['#FFFFFF', undefined])).toBe(topicBlue)
+    expect(connectorStrokeReadableOnFills(topicBlue, ['#EBF3FE'])).toBe(topicBlue)
+    expect(connectorStrokeReadableOnFills(topicBlue, ['#F04438'])).toBe(topicBlue)
+    expect(connectorStrokeReadableOnFills(topicBlue, ['#12B76A'])).toBe(topicBlue)
+    expect(connectorStrokeReadableOnFills(topicBlue, ['#1e293b'])).toBe(topicBlue)
+    expect(connectorStrokeReadableOnFills(topicBlue, ['#0BA5EC'])).toBe('#1e293b')
+    expect(connectorStrokeReadableOnFills(topicBlue, ['rgba(11,181,236,1)'])).toBe('#1e293b')
+    expect(connectorStrokeReadableOnFills(topicBlue, ['#3B5BDB'])).toBe('#1e293b')
   })
 
   it('ignores an unknown theme id and keeps the palette', () => {

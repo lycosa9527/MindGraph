@@ -11,13 +11,15 @@ import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
+import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
 import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
@@ -43,6 +45,7 @@ import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const { fitBox } = useThinkingMapImageFit(() => props.id)
 
 const diagramStore = useDiagramSession()
 const blankFrame = useLearningSheetBlankFrame(
@@ -172,7 +175,7 @@ const nodeStyle = computed((): CSSProperties => {
       style.textColor ||
       defaultStyle.value.textColor ||
       THINKING_MAP_LEAF_TEXT,
-    fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(style.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${thinkingMapDisplayedFontSize(style.fontSize, themeNodePaint.value?.fontSize ?? defaultStyle.value.fontSize ?? MIND_MAP_GEOMETRY.branchFontSize)}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: style.fontStyle || 'normal',
@@ -294,7 +297,12 @@ function handleBranchMovePointerUp(): void {
   }
 }
 
-useNodeDimensions(branchNodeRef, props.id)
+useThinkingMapNodeBoxTypographyRemeasure({
+  rootRef: branchNodeRef,
+  nodeId: props.id,
+  style: () => props.data.style,
+  enabled: () => !isEditing.value,
+})
 
 function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
@@ -335,7 +343,7 @@ function handleBranchNodeClick(): void {
       'border-none': isBridgeMap && !bridgeHasBody,
       'cursor-grab': true,
     }"
-    :style="[nodeStyle, blankFrame]"
+    :style="[fitBox(nodeStyle), blankFrame]"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.passive.capture="handleBranchMoveTouchStart"

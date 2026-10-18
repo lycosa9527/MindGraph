@@ -367,6 +367,8 @@
   max-height: min(62vh, 560px);
   overflow-y: auto;
   padding-inline-end: 0.15rem;
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
 }
 
 .worksheet-text-modal__mode-bar {

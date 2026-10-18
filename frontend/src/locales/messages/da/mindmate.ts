@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Erstat/tilføj noder',
   'nodePalette.loadMore': 'læs mere',
   'nodePalette.next': 'Næste skridt',
-  'nodePalette.panelTitle': 'koncept parkeringsplads',
   'nodePalette.refresh': 'Regenerer',
   'nodePalette.selected': 'Valgt',
   'nodePalette.similarities': 'Ligheder',

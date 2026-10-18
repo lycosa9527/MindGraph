@@ -18,6 +18,19 @@ export type MindMapSideToolId =
 /** Active side tool panel; null = no overlay panel. */
 const activeTool = ref<MindMapSideToolId | null>(null)
 
+export function isCoveringMindMapSideTool(tool: MindMapSideToolId | null): boolean {
+  return (
+    tool === 'waterfall' ||
+    tool === 'learning_sheet' ||
+    tool === 'one_sentence' ||
+    tool === 'document_summary'
+  )
+}
+
+export function coveringMindMapSideToolOpen(): boolean {
+  return isCoveringMindMapSideTool(activeTool.value)
+}
+
 export function useMindMapSideToolbarState() {
   const route = useRoute()
   const diagramStore = useDiagramStore()

@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Zëvendëso/shto nyje',
   'nodePalette.loadMore': 'Ngarko më shumë',
   'nodePalette.next': 'Tjetër',
-  'nodePalette.panelTitle': 'Parkimi i koncepteve',
   'nodePalette.refresh': 'Rifresko',
   'nodePalette.selected': 'të zgjedhura',
   'nodePalette.similarities': 'Ngjashmëritë',

@@ -7,7 +7,7 @@
  *
  * Used by both CanvasToolbar (desktop) and MobileCanvasPage (mobile).
  */
-import { nextTick, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -576,59 +576,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     notify.successKey('canvas.toolbar.effectAdded')
   }
 
-  // ---- Bridge-map reposition helper ----
-
-  function repositionBridgeMapPairs(): void {
-    if (!diagramStore.data) return
-
-    const pairs = new Map<number, { left: DiagramNode | null; right: DiagramNode | null }>()
-    for (const node of diagramStore.data.nodes) {
-      if (
-        node.data?.diagramType !== 'bridge_map' ||
-        node.data?.pairIndex === undefined ||
-        node.data?.isDimensionLabel
-      )
-        continue
-      const pi = node.data.pairIndex as number
-      const pos = node.data.position as 'left' | 'right'
-      if (!pairs.has(pi)) pairs.set(pi, { left: null, right: null })
-      const pair = pairs.get(pi)
-      if (!pair) continue
-      if (pos === 'left') pair.left = node
-      else pair.right = node
-    }
-
-    const sorted = Array.from(pairs.entries())
-      .filter(([, p]) => p.left && p.right)
-      .sort(([a], [b]) => a - b)
-
-    const startX = DEFAULT_PADDING + 100 + 10
-    const nodeWidth = DEFAULT_NODE_WIDTH
-    const nodeHeight = BRANCH_NODE_HEIGHT
-    const centerY = DEFAULT_CENTER_Y
-    const verticalGap = 5
-    const gapBetweenPairs = 50
-
-    let currentX = startX
-    for (const [, pair] of sorted) {
-      if (!pair.left || !pair.right) continue
-      diagramStore.updateNodePosition(
-        pair.left.id,
-        { x: currentX, y: centerY - verticalGap - nodeHeight },
-        false
-      )
-      diagramStore.updateNodePosition(
-        pair.right.id,
-        { x: currentX, y: centerY + verticalGap },
-        false
-      )
-      currentX += nodeWidth + gapBetweenPairs
-    }
-  }
-
   // ---- Main delete handler ----
 
-  async function handleDeleteNode(): Promise<void> {
+  function handleDeleteNode(): void {
     if (isDiagramPresentationReadOnly(diagramStore)) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
@@ -767,8 +717,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         if (right && diagramStore.removeNode(right.id)) deleted++
       }
       if (deleted > 0) {
-        await nextTick()
-        repositionBridgeMapPairs()
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteAnalogyPairHistory'))
         notify.successKey('canvas.toolbar.deletedAnalogyPairs', { count: pairIndicesToDelete.size })

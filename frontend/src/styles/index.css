@@ -614,6 +614,9 @@ a:has(.i18n-label) {
 /* Diagram node labels: compact markdown + KaTeX inside Vue Flow nodes */
 .diagram-node-md {
   font-size: inherit;
+  font-weight: inherit;
+  font-style: inherit;
+  font-synthesis: weight style;
   line-height: 1.35;
   word-break: normal;
   overflow-wrap: break-word;
@@ -663,7 +666,8 @@ a:has(.i18n-label) {
 /* Zero vertical margins so flex `items-center` on the node isn’t fighting CommonMark `<p>` bands */
 .diagram-node-md p {
   margin: 0;
-  text-decoration: inherit;
+  /* The markdown box paints underline and strikethrough. The paragraph must not add a second line. */
+  text-decoration: none;
 }
 
 /*
@@ -694,6 +698,7 @@ a:has(.i18n-label) {
   margin: 0.15em 0;
   font-size: inherit;
   font-weight: 600;
+  font-style: inherit;
 }
 
 .diagram-node-md pre {

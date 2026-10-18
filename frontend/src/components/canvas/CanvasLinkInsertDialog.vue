@@ -10,7 +10,10 @@ import { ElDialog } from 'element-plus'
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
 import I18nText from '@/components/common/I18nText.vue'
-import { MM_ABOVE_NODE_CHROME_CLASS } from '@/components/common/swissGlassStack'
+import {
+  MM_ABOVE_NODE_CHROME_CLASS,
+  bindCanvasCoveringOverlay,
+} from '@/components/common/swissGlassStack'
 import { useLanguage } from '@/composables/core/useLanguage'
 import '@/styles/swissGlassControls.css'
 import { sanitizeMindMapHref } from '@/utils/mindMapAdornments'
@@ -28,6 +31,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+bindCanvasCoveringOverlay(() => props.modelValue)
 const name = ref('')
 const href = ref('')
 const error = ref('')

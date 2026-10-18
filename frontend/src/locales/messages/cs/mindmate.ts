@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Nahradit/přidat uzly',
   'nodePalette.loadMore': 'načíst více',
   'nodePalette.next': 'Další krok',
-  'nodePalette.panelTitle': 'koncept parkoviště',
   'nodePalette.refresh': 'Regenerovat',
   'nodePalette.selected': 'Vybraný',
   'nodePalette.similarities': 'Podobnosti',

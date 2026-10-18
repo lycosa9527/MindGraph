@@ -18,8 +18,14 @@ export { useFollowNodeStyleToolbar, setFollowNodeStyleToolbar } from './useFollo
 export {
   useMindMapSideToolbarState,
   bindMindMapExternalPanelClose,
+  coveringMindMapSideToolOpen,
+  isCoveringMindMapSideTool,
   type MindMapSideToolId,
 } from './useMindMapSideToolbarState'
+export {
+  useCanvasNodeChromeOverlayGate,
+  canvasNodeChromeBlockedByOverlay,
+} from './canvasNodeChromeOverlayGate'
 export {
   useNodeFloatingToolbarPosition,
   resolveFloatingToolbarAnchor,

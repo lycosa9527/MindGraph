@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'استبدال/إضافة العقد',
   'nodePalette.loadMore': 'تحميل المزيد',
   'nodePalette.next': 'الخطوة التالية',
-  'nodePalette.panelTitle': 'موقف سيارات مفهوم',
   'nodePalette.refresh': 'تجديد',
   'nodePalette.selected': 'مختارة',
   'nodePalette.similarities': 'التشابه',

@@ -35,6 +35,7 @@ from services.learning_space.thumbnail_storage import (
     template_thumbnail_ref_ready,
     thumbnail_is_durable,
 )
+from services.learning_space.thumbnail_submit import submit_thumbnail_renderer
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 
@@ -427,6 +428,46 @@ def _record(result: _FillResult, job: _CardJob, counts: dict[str, Any]) -> None:
         counts["ready_keys"].append(job.key)
         return
     counts["failed_keys"].append(job.key)
+
+
+async def store_rendered_thumbnail(
+    spec: object,
+    diagram_type: object,
+    *,
+    owner_id: int,
+    render_png: RenderPng | None = None,
+) -> str:
+    """Render a diagram spec and store the PNG. Empty when it cannot be drawn."""
+    body = renderable_spec(spec)
+    if body is None or owner_id <= 0:
+        return ""
+    renderer = render_png or _default_render_png
+    try:
+        ref, _used = await _rendered_ref(
+            body,
+            _diagram_type(diagram_type, body),
+            owner_id=owner_id,
+            render_png=renderer,
+        )
+    except _FILL_ERRORS as exc:
+        logger.warning("[LearningSpace] Submit thumbnail render failed owner=%s: %s", owner_id, exc)
+        return ""
+    if is_image_ref(ref):
+        return ref
+    return ""
+
+
+async def _submit_render_ref(spec: object, diagram_type: object, owner_id: int) -> str:
+    """Hook used by homework submit. Looks up the renderer at call time."""
+    return await store_rendered_thumbnail(spec, diagram_type, owner_id=owner_id)
+
+
+def install_submit_thumbnail() -> None:
+    """Point homework submit at the diagram renderer. Safe to call more than once."""
+    submit_thumbnail_renderer.render_ref = _submit_render_ref
+
+
+install_submit_thumbnail()
 
 
 async def fill_missing_card_thumbnails(

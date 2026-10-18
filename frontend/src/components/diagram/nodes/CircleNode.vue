@@ -21,12 +21,15 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
+import { useThinkingMapTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import {
   CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH,
   CONTEXT_FONT_SIZE,
@@ -61,6 +64,7 @@ import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 const diagramStore = useDiagramSession()
+const { hasImage, fitBox } = useThinkingMapImageFit(() => props.id)
 const blankFrame = useLearningSheetBlankFrame(
   () => props.id,
   () => props.data
@@ -120,6 +124,13 @@ function measureUnderlineTextStack(): void {
 }
 
 function measureRenderedMarkdownAndReport(): void {
+  if (hasImage.value) {
+    const root = circleNodeRef.value
+    if (root && root.offsetWidth > 0 && root.offsetHeight > 0) {
+      diagramStore.setNodeDimensions(props.id, root.offsetWidth, root.offsetHeight)
+      return
+    }
+  }
   if (props.data.style?.nodeShape === 'underline') {
     if (props.data.diagramType === 'double_bubble_map') {
       reportDimensions()
@@ -175,6 +186,9 @@ function setupMarkdownObserver(): void {
     measureRenderedMarkdownAndReport()
   })
   markdownResizeObserver.observe(el)
+  if (hasImage.value && circleNodeRef.value) {
+    markdownResizeObserver.observe(circleNodeRef.value)
+  }
 }
 
 watch(
@@ -194,6 +208,22 @@ watch(
     void flushRenderedMarkdownDimensions()
   }
 )
+
+useThinkingMapTypographyRemeasure({
+  enabled: () => useIntrinsicMdMeasure,
+  style: () => props.data.style,
+  remeasure: flushRenderedMarkdownDimensions,
+  afterRemeasure: () => {
+    nextTick(() => setupMarkdownObserver())
+  },
+})
+
+watch(hasImage, () => {
+  void nextTick(() => {
+    measureRenderedMarkdownAndReport()
+    setupMarkdownObserver()
+  })
+})
 
 onMounted(() => {
   if (!useIntrinsicMdMeasure) return
@@ -260,7 +290,7 @@ const circleSize = computed(() => {
 
 const textMaxWidth = computed(() => {
   const label = (props.data.label || '').trim()
-  const fontFamily = props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK
+  const fontFamily = diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK)
   if (isTopicNode.value) {
     if (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') {
       const fontSize =
@@ -372,7 +402,7 @@ const nodeStyle = computed(() => {
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
       (isTopicNode.value ? '#ffffff' : THINKING_MAP_LEAF_TEXT),
-    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: cssFontSize(
       thinkingMapDisplayedFontSize(
         props.data.style?.fontSize,
@@ -402,11 +432,7 @@ const nodeStyle = computed(() => {
   return box
 })
 
-const circleNodeStyle = computed(() =>
-  props.data.style?.nodeShape === 'underline'
-    ? [nodeStyle.value, blankFrame.value]
-    : nodeStyle.value
-)
+const circleNodeStyle = computed(() => [fitBox(nodeStyle.value), blankFrame.value])
 
 // Inline editing state
 const isEditing = ref(false)
@@ -514,6 +540,7 @@ function handleBranchMovePointerUp(): void {
     :class="[
       isTopicNode ? 'cursor-default' : 'cursor-grab',
       isTopicNode ? 'topic-circle' : 'context-circle',
+      hasImage ? 'circle-node--image' : '',
       isCapsuleNode ? 'circle-node--capsule' : '',
       isDiskOval ? 'circle-node--oval' : '',
       isDoubleBubbleMap ? 'circle-node--with-handles' : '',
@@ -550,7 +577,9 @@ function handleBranchMovePointerUp(): void {
     </template>
     <div
       class="circle-node__text-wrapper"
-      :class="{ 'circle-node__text-wrapper--underline': data.style?.nodeShape === 'underline' }"
+      :class="{
+        'circle-node__text-wrapper--underline': data.style?.nodeShape === 'underline',
+      }"
     >
       <template v-if="isDoubleBubbleMap && data.style?.nodeShape === 'underline'">
         <DoubleBubbleTopicHandles v-if="isTopicNode" />
@@ -614,12 +643,43 @@ function handleBranchMovePointerUp(): void {
   aspect-ratio: 1;
 }
 
+.circle-node.circle-node--image.rounded-full:not(.circle-node--capsule):not(.circle-node--oval):not(
+    .circle-node--underline
+  ) {
+  aspect-ratio: 1 !important;
+  border-radius: 50% !important;
+  min-width: 184px;
+  min-height: 184px;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.circle-node--capsule.circle-node--image {
+  aspect-ratio: auto !important;
+  border-radius: 9999px !important;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+}
+
 .circle-node__text-wrapper {
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   min-width: 0;
+}
+
+.circle-node--image .circle-node__text-wrapper {
+  width: max-content;
+  max-width: none;
+  min-width: max-content;
+  height: max-content;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
 }
 
 .circle-node__text-wrapper--underline {

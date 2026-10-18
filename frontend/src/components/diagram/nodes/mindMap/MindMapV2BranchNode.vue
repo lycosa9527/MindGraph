@@ -39,6 +39,7 @@ import {
   mindMapUnderlineContentPadding,
 } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -155,7 +156,7 @@ const nodeStyle = computed((): CSSProperties => {
     }),
     color:
       style.textColor || mindMapThemeColors.value.text || defaultStyle.value.textColor || '#333333',
-    fontFamily: style.fontFamily || MIND_MAP_GEOMETRY.fontFamily,
+    fontFamily: diagramPaintFontFamily(style.fontFamily, MIND_MAP_GEOMETRY.fontFamily),
     fontSize: `${style.fontSize || defaultStyle.value.fontSize || mindMapBranchFontSize(props.id, { data: props.data }, diagramStore.data?.connections)}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: style.fontStyle || 'normal',
@@ -236,7 +237,7 @@ const textMaxWidth = computed(() => {
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   return `${resolveMindMapBranchBodyMaxWidthPx(label, numberPrefix.value, fontSize, {
     fontWeight,
-    fontFamily: MIND_MAP_GEOMETRY.fontFamily,
+    fontFamily: String(nodeStyle.value.fontFamily || MIND_MAP_GEOMETRY.fontFamily),
   })}px`
 })
 

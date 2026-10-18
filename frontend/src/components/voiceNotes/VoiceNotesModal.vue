@@ -14,7 +14,10 @@ import AiBusyGenerateButton from '@/components/canvas/AiBusyGenerateButton.vue'
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
 import I18nText from '@/components/common/I18nText.vue'
-import { MM_ABOVE_NODE_CHROME_CLASS } from '@/components/common/swissGlassStack'
+import {
+  MM_ABOVE_NODE_CHROME_CLASS,
+  bindCanvasCoveringOverlay,
+} from '@/components/common/swissGlassStack'
 import VoiceNotesSpeakerEditor from '@/components/voiceNotes/VoiceNotesSpeakerEditor.vue'
 import VoiceNotesTranscriptPane from '@/components/voiceNotes/VoiceNotesTranscriptPane.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -33,6 +36,7 @@ const voiceNotes = useVoiceNotesStore()
 const session = useVoiceNotesGenerate()
 const isMobileShell = computed(() => route.meta.layout === 'mobile' || isMobileAppPath(route.path))
 const { modalOpen, elapsedMs } = storeToRefs(voiceNotes)
+bindCanvasCoveringOverlay(() => modalOpen.value && !isMobileShell.value)
 const { statusLabel, saveKind, statusClickable, onStatusClick, actions } =
   useVoiceNotesSessionChrome({
     generating: session.generating,

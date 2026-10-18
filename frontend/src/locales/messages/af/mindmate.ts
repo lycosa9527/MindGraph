@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Vervang/voeg knooppunte by',
   'nodePalette.loadMore': 'Laai meer',
   'nodePalette.next': 'Volgende',
-  'nodePalette.panelTitle': 'Konsep-parkeerplek',
   'nodePalette.refresh': 'Verfris',
   'nodePalette.selected': 'geselekteer',
   'nodePalette.similarities': 'Ooreenkomste',

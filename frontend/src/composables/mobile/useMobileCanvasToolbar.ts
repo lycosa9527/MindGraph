@@ -55,7 +55,6 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
 
   const isSaving = ref(false)
   const showNodePalette = ref(false)
-  const showModelDrawer = ref(false)
   const { activeTool, closeActiveTool, handleToolSelect } = useMindMapSideToolbarState()
 
   async function handleSave(): Promise<void> {
@@ -149,14 +148,9 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     eventBus.emit('view:fit_to_window_requested', { animate: true, userInitiated: true })
   }
 
-  function handleZoomReset(): void {
-    eventBus.emit('view:zoom_reset_requested', {})
-  }
-
   return {
     isSaving,
     showNodePalette,
-    showModelDrawer,
     handleSave,
     handleAddNode,
     handleDeleteSelected,
@@ -167,6 +161,5 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     toggleNodePalette,
     closeActiveTool,
     handleFitToScreen,
-    handleZoomReset,
   }
 }

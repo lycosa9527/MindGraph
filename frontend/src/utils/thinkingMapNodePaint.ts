@@ -4,6 +4,7 @@
  * mind-map family tokens. A hand-painted color is left in place.
  */
 import { getMindMapThemeById, resolveMindMapThemeId } from '@/config/mindMapThemes'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import {
   type ThinkingMapChrome,
@@ -12,7 +13,11 @@ import {
   thinkingMapFillAndBorderAreDefault,
   thinkingMapRoleChrome,
 } from '@/utils/thinkingMapChrome'
-import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
+import {
+  connectorStrokeReadableOnFills,
+  resolveThinkingMapConnectorStroke,
+  thinkingMapSolidThemeStroke,
+} from '@/utils/thinkingMapConnectionStroke'
 
 export { thinkingMapPaletteIndex } from '@/utils/thinkingMapChrome'
 
@@ -85,6 +90,44 @@ function paintKeepingCustomText(
     accentBarColor: paint.accentBarColor,
     accentBarWidth: paint.accentBarWidth,
   }
+}
+
+/** Fill the user painted. Theme chrome is omitted so default topic blue stays the connector. */
+function handPaintedFill(
+  diagramType: string | null | undefined,
+  themeId: string | null | undefined,
+  node: PaintNode | undefined,
+  connections?: Connection[] | null
+): string | undefined {
+  if (!node) return undefined
+  const stored = node.style?.backgroundColor
+  if (!stored || stored === 'transparent') return undefined
+  const paint = thinkingMapDisplayedNodeColors(diagramType, themeId, node, node.style, connections)
+  if (paint) return undefined
+  return stored
+}
+
+/**
+ * Theme connector. A hand-painted fill of that same hue would hide the curve,
+ * so the rendered stroke becomes dark ink. The stored connection color stays.
+ */
+export function thinkingMapRenderedConnectorStroke(
+  diagramType: string | null | undefined,
+  themeId: string | null | undefined,
+  paletteStroke: string | null | undefined,
+  source: PaintNode | undefined,
+  target: PaintNode | undefined,
+  connections?: Connection[] | null
+): string {
+  const stroke = resolveThinkingMapConnectorStroke(
+    themeId,
+    paletteStroke,
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+  )
+  return connectorStrokeReadableOnFills(stroke, [
+    handPaintedFill(diagramType, themeId, source, connections),
+    handPaintedFill(diagramType, themeId, target, connections),
+  ])
 }
 
 /**

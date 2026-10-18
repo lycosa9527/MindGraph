@@ -7,9 +7,15 @@ import { useId } from 'vue'
 
 import type { CanvasLlmLogo } from '@/config/canvasLlmMenu'
 
-defineProps<{
-  name: CanvasLlmLogo
-}>()
+withDefaults(
+  defineProps<{
+    name: CanvasLlmLogo
+    size?: number
+  }>(),
+  {
+    size: 16,
+  }
+)
 
 const qwenGrad = `qwen-grad-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
 </script>
@@ -19,6 +25,7 @@ const qwenGrad = `qwen-grad-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
     class="canvas-llm-logo"
     viewBox="0 0 24 24"
     aria-hidden="true"
+    :style="{ width: `${size}px`, height: `${size}px` }"
   >
     <path
       v-if="name === 'deepseek'"

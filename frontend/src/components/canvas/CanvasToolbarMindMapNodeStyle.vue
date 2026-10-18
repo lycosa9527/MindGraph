@@ -13,8 +13,9 @@ import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { FLOATING_TOOLBAR_COLORS } from '@/config/floatingToolbarColors'
 import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
+
+import FloatingToolbarColorPicker from './FloatingToolbarColorPicker.vue'
 
 const props = withDefaults(defineProps<{ compact?: boolean; disabled?: boolean }>(), {
   compact: false,
@@ -25,7 +26,9 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const {
   backgroundColor,
+  nativeFillColor,
   borderColor,
+  nativeBorderColor,
   nodeShape,
   handleFillColorPick,
   handleBorderColorPick,
@@ -50,10 +53,6 @@ function pickColor(panel: 'fill' | 'border', color: string): void {
     handleBorderColorPick(color)
     borderOpen.value = false
   }
-}
-
-function onCustomColor(panel: 'fill' | 'border', ev: Event): void {
-  pickColor(panel, (ev.target as HTMLInputElement).value)
 }
 
 function onNeedsSelectionClick(ev: MouseEvent): void {
@@ -144,21 +143,10 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
           </I18nTooltip>
         </span>
       </template>
-      <div class="nft-color-grid">
-        <button
-          v-for="color in FLOATING_TOOLBAR_COLORS"
-          :key="'border-' + color"
-          type="button"
-          class="nft-palette-swatch"
-          :style="{ backgroundColor: color }"
-          @click="pickColor('border', color)"
-        />
-      </div>
-      <input
-        type="color"
-        class="nft-native-color"
-        :value="borderColor"
-        @input="onCustomColor('border', $event)"
+      <FloatingToolbarColorPicker
+        :current-color="borderColor"
+        :native-color="nativeBorderColor"
+        @pick="pickColor('border', $event)"
       />
     </ElPopover>
 
@@ -188,21 +176,10 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
           </I18nTooltip>
         </span>
       </template>
-      <div class="nft-color-grid">
-        <button
-          v-for="color in FLOATING_TOOLBAR_COLORS"
-          :key="'fill-' + color"
-          type="button"
-          class="nft-palette-swatch"
-          :style="{ backgroundColor: color }"
-          @click="pickColor('fill', color)"
-        />
-      </div>
-      <input
-        type="color"
-        class="nft-native-color"
-        :value="backgroundColor"
-        @input="onCustomColor('fill', $event)"
+      <FloatingToolbarColorPicker
+        :current-color="backgroundColor"
+        :native-color="nativeFillColor"
+        @pick="pickColor('fill', $event)"
       />
     </ElPopover>
   </div>

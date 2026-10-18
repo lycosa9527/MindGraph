@@ -6,6 +6,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
+import { useCanvasNodeChromeOverlayGate } from '@/composables/canvasToolbar'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -46,6 +47,7 @@ const TOOLBAR_EST_W = 260
 const TOOLBAR_EST_H = 140
 
 const diagramStore = useDiagramSession()
+const overlayBlocksNodeChrome = useCanvasNodeChromeOverlayGate()
 const { t } = useLanguage()
 const { getNodes, viewport: vueFlowViewport, getViewport } = useVueFlow(diagramStore.vueFlowId)
 
@@ -201,6 +203,7 @@ const elements = computed<BraceElement[]>(() => {
 })
 
 const toolbarAnchor = computed(() => {
+  if (overlayBlocksNodeChrome.value) return null
   const summaryId = toolbarSummaryId.value
   const el = elements.value.find((item) => item.id === summaryId)
   const root = overlayRoot.value

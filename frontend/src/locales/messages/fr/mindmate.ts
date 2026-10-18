@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Remplacer/ajouter des nœuds',
   'nodePalette.loadMore': 'Charger plus',
   'nodePalette.next': 'Suivant',
-  'nodePalette.panelTitle': 'Parking à concepts',
   'nodePalette.refresh': 'Actualiser',
   'nodePalette.selected': 'sélectionné(s)',
   'nodePalette.similarities': 'Similitudes',

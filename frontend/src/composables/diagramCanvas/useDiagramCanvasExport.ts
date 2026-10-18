@@ -66,8 +66,16 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
       })
       let dataUrl: string | null = null
       await runWithExportVisualMode(uiStore, container, exportOptions, async () => {
-        const capture = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
-          captureDiagramPngData(container, getDiagramCanvasPdfHtmlToImageOptions({ pixelRatio: 1 }))
+        const capture = await runLearningSheetRasterCapture(
+          diagramStore,
+          exportOptions,
+          () =>
+            captureDiagramPngData(
+              container,
+              getDiagramCanvasPdfHtmlToImageOptions({ pixelRatio: 1 })
+            ),
+          'below',
+          container
         )
         dataUrl = capture.dataUrl
       })

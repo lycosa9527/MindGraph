@@ -150,7 +150,6 @@ export default {
   'nodePalette.history.replaceAddNodes': '노드 교체/추가',
   'nodePalette.loadMore': '더 불러오기',
   'nodePalette.next': '다음',
-  'nodePalette.panelTitle': '개념 주차장',
   'nodePalette.refresh': '새로고침',
   'nodePalette.selected': '선택됨',
   'nodePalette.similarities': '유사점',

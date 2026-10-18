@@ -36,6 +36,20 @@ export function learningSheetIncludeAnswers(options?: CanvasExportOptions): bool
   return options?.answerMode === 'include'
 }
 
+/**
+ * On the cloned export wrapper. html-to-image copies this element, not the
+ * canvas ancestor, so the hide rules are rooted here.
+ */
+export const LEARNING_SHEET_EXPORT_HIDE_ANSWERS_CLASS = 'mg-export-sheet-answers-hidden'
+
+/** Hide the answer row and knocked-out node text for this capture. */
+function setLearningSheetExportAnswersHidden(
+  root: HTMLElement | null | undefined,
+  hidden: boolean
+): void {
+  root?.classList.toggle(LEARNING_SHEET_EXPORT_HIDE_ANSWERS_CLASS, hidden)
+}
+
 /** The answer row under the diagram is on screen right now. */
 export function learningSheetAnswerRowVisible(store: DiagramStore): boolean {
   return isLearningSheetRasterCapture(store) && store.learningSheetShowAnswers
@@ -82,7 +96,8 @@ export async function runLearningSheetRasterCapture<T>(
   store: DiagramStore,
   options: CanvasExportOptions | undefined,
   capture: () => T | Promise<T>,
-  answerCapture: LearningSheetAnswerCapture = 'below'
+  answerCapture: LearningSheetAnswerCapture = 'below',
+  root?: HTMLElement | null
 ): Promise<T> {
   if (!isLearningSheetRasterCapture(store)) {
     await waitForCanvasPaint()
@@ -90,6 +105,7 @@ export async function runLearningSheetRasterCapture<T>(
   }
 
   if (learningSheetIncludeAnswers(options)) {
+    setLearningSheetExportAnswersHidden(root, false)
     if (answerCapture === 'in-node') {
       return store.runWithLearningSheetAnswersRevealed(async () => {
         await waitForCanvasPaint()
@@ -97,9 +113,9 @@ export async function runLearningSheetRasterCapture<T>(
       })
     }
     const savedShowAnswers = store.learningSheetShowAnswers
-    store.setLearningSheetShowAnswers(true)
-    await waitForCanvasPaint()
     try {
+      store.setLearningSheetShowAnswers(true)
+      await waitForCanvasPaint()
       return await capture()
     } finally {
       store.setLearningSheetShowAnswers(savedShowAnswers)
@@ -107,11 +123,13 @@ export async function runLearningSheetRasterCapture<T>(
   }
 
   const savedShowAnswers = store.learningSheetShowAnswers
-  store.setLearningSheetShowAnswers(false)
-  await waitForCanvasPaint()
   try {
+    store.setLearningSheetShowAnswers(false)
+    setLearningSheetExportAnswersHidden(root, true)
+    await waitForCanvasPaint()
     return await capture()
   } finally {
+    setLearningSheetExportAnswersHidden(root, false)
     store.setLearningSheetShowAnswers(savedShowAnswers)
   }
 }

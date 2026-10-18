@@ -6,8 +6,10 @@
  * Full-screen cards register here; confirms and prompts rise only while one is open.
  *
  * Selected-node chrome is Teleported to `body` (floating toolbar 5000, poppers
- * 5100). Canvas dialogs opt into `.mm-above-node-chrome` so their overlay sits
- * at `SWISS_GLASS_CANVAS_DIALOG_Z` (keep in sync with swissGlassControls.css).
+ * 5100). In-page sheets (mobile brainstorm / parking lot) cannot stack above
+ * that, so they hide chrome via `useCanvasNodeChromeOverlayGate`. Body dialogs
+ * opt into `.mm-above-node-chrome` or use `SWISS_GLASS_CANVAS_DIALOG_Z`
+ * (keep in sync with swissGlassControls.css / mind-map-side-rail-panel.css).
  */
 import { type ComputedRef, computed, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -36,18 +38,59 @@ export const MM_ABOVE_NODE_CHROME_CLASS = 'mm-above-node-chrome'
 /** Canvas dialog overlay. Below context menu (10000) and MathLive keyboard. */
 export const SWISS_GLASS_CANVAS_DIALOG_Z = CANVAS_NODE_CHROME_Z.FLOATING_TOOLBAR_POPPER + 100
 
-const openFullScreenCards = ref(0)
+type OpenCountLayer = {
+  count: { readonly value: number }
+  push: () => () => void
+  bind: (active: () => boolean) => void
+}
+
+function createOpenCountLayer(): OpenCountLayer {
+  const count = ref(0)
+  const push = (): (() => void) => {
+    count.value += 1
+    let released = false
+    return () => {
+      if (released) {
+        return
+      }
+      released = true
+      count.value -= 1
+    }
+  }
+  const bind = (active: () => boolean): void => {
+    let release: (() => void) | null = null
+    const sync = (on: boolean): void => {
+      if (on && !release) {
+        release = push()
+        return
+      }
+      if (!on && release) {
+        release()
+        release = null
+      }
+    }
+    watch(active, sync, { immediate: true })
+    onBeforeUnmount(() => {
+      sync(false)
+    })
+  }
+  return { count, push, bind }
+}
+
+const fullScreenCards = createOpenCountLayer()
+const coveringOverlays = createOpenCountLayer()
 
 export function pushFullScreenGlassCard(): () => void {
-  openFullScreenCards.value += 1
-  let released = false
-  return () => {
-    if (released) {
-      return
-    }
-    released = true
-    openFullScreenCards.value -= 1
-  }
+  return fullScreenCards.push()
+}
+
+/** Body dialog / card that must not sit under teleported node chrome. */
+export function pushCanvasCoveringOverlay(): () => void {
+  return coveringOverlays.push()
+}
+
+export function canvasCoveringOverlayOpen(): boolean {
+  return coveringOverlays.count.value > 0
 }
 
 /** Body-level card overlay. Embedded `/auth` and training hosts are not this layer. */
@@ -69,7 +112,7 @@ export function glassCardHoldsPopupLayer(options: {
 }
 
 export function glassCardDialogZIndex(dialogOpen: boolean): number | undefined {
-  if (!dialogOpen || openFullScreenCards.value < 1) {
+  if (!dialogOpen || fullScreenCards.count.value < 1) {
     return undefined
   }
   return SWISS_GLASS_CARD_DIALOG_Z
@@ -77,21 +120,12 @@ export function glassCardDialogZIndex(dialogOpen: boolean): number | undefined {
 
 /** Call from setup. `active` is read inside the watcher so it stays reactive. */
 export function bindFullScreenGlassCard(active: () => boolean): void {
-  let release: (() => void) | null = null
-  const sync = (on: boolean): void => {
-    if (on && !release) {
-      release = pushFullScreenGlassCard()
-      return
-    }
-    if (!on && release) {
-      release()
-      release = null
-    }
-  }
-  watch(active, sync, { immediate: true })
-  onBeforeUnmount(() => {
-    sync(false)
-  })
+  fullScreenCards.bind(active)
+}
+
+/** Call from setup. Hides teleported node chrome while the overlay is open. */
+export function bindCanvasCoveringOverlay(active: () => boolean): void {
+  coveringOverlays.bind(active)
 }
 
 export function useGlassCardDialogZIndex(

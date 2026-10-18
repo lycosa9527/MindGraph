@@ -5,9 +5,14 @@ import { type Pinia, createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar/useCanvasToolbarFormatting'
-import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
+import { FLOATING_TOOLBAR_COLORS } from '@/config/floatingToolbarColors'
+import {
+  MIND_MAP_RAINBOW_FAMILIES,
+  MIND_MAP_RAINBOW_TOPIC_COLORS,
+} from '@/config/mindMapVibrantThemes'
 import { useDiagramStore } from '@/stores/diagram'
 import type { DiagramType, NodeStyle } from '@/types'
+import { hexColorsEqual, nativeColorInputHex } from '@/utils/colorFormat'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import {
   resolveFloatingToolbarNodeDisplay,
@@ -153,6 +158,31 @@ describe('resolveFloatingToolbarNodeDisplay', () => {
     expect(display.textAlign).toBe('left')
   })
 
+  it('keeps saved bold, italic, underline, and strike ahead of layout defaults', () => {
+    const display = resolveFloatingToolbarNodeDisplay({
+      diagramType: 'circle_map',
+      node: { id: 'context-1', type: 'bubble', text: 'populous' },
+      style: {
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        textDecoration: 'underline line-through',
+        textAlign: 'left',
+        fontFamily: 'Inter',
+      },
+    })
+    expect(display.fontWeight).toBe('bold')
+    expect(display.fontStyle).toBe('italic')
+    expect(display.textDecoration).toBe('underline line-through')
+    expect(display.textAlign).toBe('left')
+    expect(display.fontFamily).toBe('Inter')
+    const numeric = resolveFloatingToolbarNodeDisplay({
+      diagramType: 'circle_map',
+      node: { id: 'context-1', type: 'bubble', text: 'populous' },
+      style: { fontWeight: '700' } as NodeStyle,
+    })
+    expect(numeric.fontWeight).toBe('bold')
+  })
+
   it('uses the stored shape before the layout default', () => {
     expect(
       resolveFloatingToolbarNodeShape('bubble_map', topicNode(), { nodeShape: 'underline' })
@@ -167,9 +197,15 @@ describe('floating toolbar mounts on the already-selected topic', () => {
   type ToolbarRead = {
     nodeShape: string | null
     backgroundColor: string
+    nativeFillColor: string
     textColor: string
+    nativeTextColor: string
     borderColor: string
+    nativeBorderColor: string
     fontWeight: string
+    fontStyle: string
+    textDecoration: string
+    textAlign: string
     fontFamily: string
   }
 
@@ -186,9 +222,15 @@ describe('floating toolbar mounts on the already-selected topic', () => {
         read = () => ({
           nodeShape: formatting.nodeShape.value,
           backgroundColor: formatting.backgroundColor.value,
+          nativeFillColor: formatting.nativeFillColor.value,
           textColor: formatting.textColor.value,
+          nativeTextColor: formatting.nativeTextColor.value,
           borderColor: formatting.borderColor.value,
+          nativeBorderColor: formatting.nativeBorderColor.value,
           fontWeight: formatting.fontWeight.value,
+          fontStyle: formatting.fontStyle.value,
+          textDecoration: formatting.textDecoration.value,
+          textAlign: formatting.textAlign.value,
           fontFamily: formatting.fontFamily.value,
         })
         return () => h('div')
@@ -263,6 +305,85 @@ describe('floating toolbar mounts on the already-selected topic', () => {
       borderColor: '#166534',
       textColor: '#052e16',
       fontWeight: 'normal',
+    })
+  })
+
+  it('shows the painted circle-map context fill in the color popup, not black or white', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = useDiagramStore()
+    expect(store.loadDefaultTemplate('circle_map')).toBe(true)
+    const context = store.data?.nodes.find((node) => node.type === 'bubble')
+    expect(context).toBeTruthy()
+    const nodeId = context?.id ?? ''
+    const display = resolveFloatingToolbarNodeDisplay({
+      diagramType: 'circle_map',
+      themeId: store.data?._mindmap_theme,
+      node: context ?? topicNode('center'),
+      style: { ...(store.getNodeStyle(nodeId) || {}), ...(context?.style || {}) },
+      connections: store.data?.connections,
+    })
+    expect(display.backgroundColor.toLowerCase()).not.toBe('#ffffff')
+    expect(display.backgroundColor.toLowerCase()).not.toBe('#000000')
+    expect(
+      MIND_MAP_RAINBOW_FAMILIES.some((family) => family.fill === display.backgroundColor)
+    ).toBe(true)
+    store.selectNodes(nodeId)
+    pinnedId.value = nodeId
+    mountFormatting(pinia)
+    await nextTick()
+    const toolbar = read?.()
+    expect(toolbar?.backgroundColor).toBe(display.backgroundColor)
+    expect(toolbar?.nativeFillColor).toBe(nativeColorInputHex(display.backgroundColor))
+    expect(toolbar?.nativeFillColor).not.toBe('#ffffff')
+    expect(toolbar?.nativeFillColor).not.toBe('#000000')
+    expect(toolbar?.nativeBorderColor).toBe(nativeColorInputHex(display.borderColor, '#000000'))
+    expect(toolbar?.nativeTextColor).toBe(nativeColorInputHex(display.textColor, '#000000'))
+    expect(
+      FLOATING_TOOLBAR_COLORS.some((color) => hexColorsEqual(color, display.backgroundColor))
+    ).toBe(true)
+  })
+
+  it('shows saved text formatting again after the toolbar is opened a second time', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = useDiagramStore()
+    expect(store.loadDefaultTemplate('circle_map')).toBe(true)
+    const context = store.data?.nodes.find((node) => node.type === 'bubble')
+    expect(context).toBeTruthy()
+    const nodeId = context?.id ?? ''
+    store.updateNode(nodeId, {
+      style: {
+        ...(context?.style || {}),
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        textDecoration: 'underline line-through',
+        textAlign: 'right',
+        fontFamily: 'Inter',
+      },
+    })
+    store.selectNodes(nodeId)
+    pinnedId.value = nodeId
+    mountFormatting(pinia)
+    await nextTick()
+    expect(read?.()).toMatchObject({
+      fontWeight: 'bold',
+      fontStyle: 'italic',
+      textDecoration: 'underline line-through',
+      textAlign: 'right',
+      fontFamily: 'Inter',
+    })
+    app?.unmount()
+    app = null
+    read = null
+    mountFormatting(pinia)
+    await nextTick()
+    expect(read?.()).toMatchObject({
+      fontWeight: 'bold',
+      fontStyle: 'italic',
+      textDecoration: 'underline line-through',
+      textAlign: 'right',
+      fontFamily: 'Inter',
     })
   })
 })

@@ -200,6 +200,14 @@ async def _learning_space_world(monkeypatch: pytest.MonkeyPatch):
     org_a, org_b = await _two_orgs()
     cache = _FakeDiagramCache()
     monkeypatch.setattr("services.learning_space.assignments.get_diagram_cache", lambda: cache)
+
+    def _skip_submit_thumbnail(*_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    monkeypatch.setattr(
+        "services.learning_space.assignments.schedule_submit_thumbnail",
+        _skip_submit_thumbnail,
+    )
     async with rls_async_session(_sys()) as session:
         teacher = await _make_user(session, org_id=org_a, tag="teacher")
         assistant = await _make_user(session, org_id=org_a, tag="assistant")
