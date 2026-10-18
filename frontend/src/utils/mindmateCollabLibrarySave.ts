@@ -1,5 +1,5 @@
 /**
- * Ending a seminar stores the full transcript in the owner's MindMate library.
+ * Ending a seminar keeps the transcript for everyone who joined.
  */
 import router from '@/router'
 import { authFetch } from '@/utils/api'
@@ -34,6 +34,11 @@ export function shouldAutoSaveSeminarOnOwnerEnd(
   return isOwner && reason === 'host'
 }
 
+/** True when a finished room should show up in the sidebar library. */
+export function shouldRefreshSavedSeminarLibrary(reason: 'idle' | 'host' | 'left'): boolean {
+  return reason === 'host' || reason === 'idle'
+}
+
 export function isStandaloneMindmateCollabPath(path: string): boolean {
   return path === '/mindmate/collab' || path.startsWith('/mindmate/collab/')
 }
@@ -48,9 +53,7 @@ export function openSavedMindmateSeminar(sessionId: string): void {
 }
 
 /** Drop `saved_seminar` so a personal thread can replace the read-only transcript. */
-export function withoutSavedSeminarQuery<T extends Record<string, unknown>>(
-  query: T
-): T | null {
+export function withoutSavedSeminarQuery<T extends Record<string, unknown>>(query: T): T | null {
   if (typeof query.saved_seminar !== 'string') {
     return null
   }

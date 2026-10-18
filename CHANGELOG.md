@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.176] - 2026-10-18
+
+> **Everyone who joined a seminar keeps it in history, a closed seminar can continue as a personal chat, and contact online status follows the shared presence fan-out.**
+
+### Added
+
+- **Seminar history** — Joining a seminar is recorded. After the room ends, every participant sees it in seminar history and can reopen the read-only transcript. Pin, rename, and delete stay with the host.
+- **Continue session** — A closed seminar shows Continue session on the MindMate header. It returns to a writable personal thread instead of reopening the ended room.
+
+### Fixed
+
+- **Contact online status** — Org presence updates use the same Redis fan-out as workshop chat and reach MindMate notify sockets. The contact list subscribes even before the school id is known, and replacing a notify tab no longer drops the live socket or leaves a stale online mark.
+
+### Tests
+
+- [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py), [`tests/test_mindmate_notify_presence.py`](tests/test_mindmate_notify_presence.py), [`tests/test_ws_fanout.py`](tests/test_ws_fanout.py)
+- [`frontend/tests/mindmateCollabLibrarySave.spec.ts`](frontend/tests/mindmateCollabLibrarySave.spec.ts), [`frontend/tests/mindmateContinueSession.spec.ts`](frontend/tests/mindmateContinueSession.spec.ts), [`frontend/tests/mindmatePresenceSubscribe.spec.ts`](frontend/tests/mindmatePresenceSubscribe.spec.ts)
+
 ## [5.180.175] - 2026-10-18
 
 > **MindMate Dify ids require an install prefix, startup exits on placeholder `.env`, and Hunyuan is removed from the LLM stack.**

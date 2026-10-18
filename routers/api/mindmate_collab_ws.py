@@ -21,6 +21,7 @@ from services.features.mindmate_collab.config import MINDMATE_COLLAB_MAX_CHAT_CO
 from services.features.mindmate_collab.dify_stream_control import acquire_dify_stream_lock
 from services.features.mindmate_collab.dify_stream import schedule_assistant_reply
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
+from services.features.mindmate_collab.member_record import record_collab_member
 from services.features.mindmate_collab.mention import (
     collab_message_targets_mindmate,
     extract_mindmate_query,
@@ -342,6 +343,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                 return
 
             participant_added = True
+            await record_collab_member(session.id, int(user.id))
 
             history_page = await mgr.fetch_message_page(session.id)
             history = history_page.messages

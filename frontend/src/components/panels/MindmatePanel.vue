@@ -37,8 +37,10 @@ import { useUIStore } from '@/stores/ui'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
 import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
 import {
+  focusPersonalMindmateThread,
   notifyMindmateCollabLibraryChanged,
   saveFinishedSeminar,
+  shouldRefreshSavedSeminarLibrary,
 } from '@/utils/mindmateCollabLibrarySave'
 import {
   loadLocalMindmateCollabSessions,
@@ -289,15 +291,27 @@ function handleCollabEnded(reason: 'idle' | 'host' | 'left' = 'left') {
       (row) => row.session_id === sessionId && row.owner_user_id === selfId
     )
   exitCollabChatroomMode({ removeFromHistory: shouldRemoveCollabFromHistory(reason) })
+  if (shouldRefreshSavedSeminarLibrary(reason)) {
+    notifyMindmateCollabLibraryChanged()
+  }
   if (!ownsRoom || !sessionId) {
     return
   }
   if (reason === 'host') {
     saveEndedSeminar(sessionId, true)
-    return
   }
-  if (reason === 'idle') {
-    notifyMindmateCollabLibraryChanged()
+}
+
+const showContinueSession = computed(
+  () => Boolean(savedSeminar.sessionId.value) && !isCollabChatroomMode.value
+)
+
+function continuePersonalSession(): void {
+  focusPersonalMindmateThread()
+  const hasThread =
+    Boolean(mindMateStore.currentConversationId) || mindMate.messages.value.length > 0
+  if (!hasThread) {
+    void startNewConversation()
   }
 }
 
@@ -715,6 +729,17 @@ function isLastAssistantMessage(messageId: string): boolean {
           />
         </el-button>
         <el-button
+          v-if="showContinueSession"
+          class="continue-session-btn shrink-0"
+          size="small"
+          @click="continuePersonalSession"
+        >
+          <I18nText
+            k="mindmate.collabContinueSession"
+            dense
+          />
+        </el-button>
+        <el-button
           class="new-chat-btn shrink-0"
           size="small"
           :disabled="!authStore.isAuthenticated"
@@ -739,6 +764,8 @@ function isLastAssistantMessage(messageId: string): boolean {
       :current-conversation-id="mindMateStore.currentConversationId"
       :show-contacts-toggle="isCollabChatroomMode"
       :contacts-open="showCollabContacts"
+      :show-continue-session="showContinueSession"
+      @continue-session="continuePersonalSession"
       @new-conversation="startNewConversation"
       @close="emit('close')"
       @load-history="loadConversationFromHistory"
@@ -836,7 +863,8 @@ function isLastAssistantMessage(messageId: string): boolean {
   font-weight: 500;
 }
 
-.new-chat-btn {
+.new-chat-btn,
+.continue-session-btn {
   --el-button-bg-color: #e7e5e4;
   --el-button-border-color: #d6d3d1;
   --el-button-hover-bg-color: #d6d3d1;
@@ -883,7 +911,8 @@ function isLastAssistantMessage(messageId: string): boolean {
   --el-button-text-color: #fde68a;
 }
 
-.dark .new-chat-btn {
+.dark .new-chat-btn,
+.dark .continue-session-btn {
   --el-button-bg-color: #4b5563;
   --el-button-border-color: #6b7280;
   --el-button-hover-bg-color: #6b7280;

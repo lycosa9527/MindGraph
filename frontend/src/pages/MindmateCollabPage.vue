@@ -10,6 +10,7 @@ import {
   notifyMindmateCollabLibraryChanged,
   saveFinishedSeminar,
   shouldAutoSaveSeminarOnOwnerEnd,
+  shouldRefreshSavedSeminarLibrary,
 } from '@/utils/mindmateCollabLibrarySave'
 import {
   loadLocalMindmateCollabSessions,
@@ -48,7 +49,7 @@ function handleEnded(reason: 'idle' | 'host' | 'left' = 'left') {
   teardownMindmateCollabClient(roomCode.value, {
     removeFromHistory: shouldRemoveCollabFromHistory(reason),
   })
-  if (reason === 'idle' && isOwner) {
+  if (shouldRefreshSavedSeminarLibrary(reason)) {
     notifyMindmateCollabLibraryChanged()
   }
   if (sessionId && shouldAutoSaveSeminarOnOwnerEnd(reason, isOwner)) {

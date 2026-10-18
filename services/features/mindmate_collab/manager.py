@@ -31,6 +31,7 @@ from services.features.mindmate_collab.config import (
     MINDMATE_COLLAB_SESSION_TTL,
 )
 from services.features.mindmate_collab.dify_stream_control import abort_dify_stream
+from services.features.mindmate_collab.member_record import record_collab_member
 from services.features.mindmate_collab.message_cursor import remember_latest_collab_message_id
 from services.features.mindmate_collab.message_history import (
     CollabHistoryPage,
@@ -225,6 +226,7 @@ class MindmateCollabManager:
                     )
                     await db.commit()
                 return None, "Collaboration service unavailable"
+            await record_collab_member(session_id, user_id)
             return {
                 "session_id": session_id,
                 "code": code,

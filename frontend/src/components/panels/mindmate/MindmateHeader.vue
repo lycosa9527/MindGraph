@@ -26,6 +26,7 @@ const props = withDefaults(
     currentConversationId?: string | null
     showContactsToggle?: boolean
     contactsOpen?: boolean
+    showContinueSession?: boolean
   }>(),
   {
     mode: 'panel',
@@ -37,6 +38,7 @@ const props = withDefaults(
     currentConversationId: null,
     showContactsToggle: false,
     contactsOpen: false,
+    showContinueSession: false,
   }
 )
 
@@ -46,6 +48,7 @@ const emit = defineEmits<{
   (e: 'loadHistory', conversationId: string): void
   (e: 'deleteHistory', conversationId: string): void
   (e: 'toggleContacts'): void
+  (e: 'continueSession'): void
 }>()
 
 const { t, currentLanguage } = useLanguage()
@@ -102,6 +105,17 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
       </h1>
     </div>
     <div class="flex items-center gap-2 shrink-0">
+      <ElButton
+        v-if="showContinueSession"
+        size="small"
+        class="shrink-0"
+        @click="emit('continueSession')"
+      >
+        <I18nText
+          k="mindmate.collabContinueSession"
+          dense
+        />
+      </ElButton>
       <MindmateSeminarFaces v-if="showContactsToggle" />
       <MindmateContactsToggleButton
         v-if="showContactsToggle"

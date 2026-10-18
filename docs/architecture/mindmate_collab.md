@@ -9,7 +9,7 @@ Shared MindMate AI chatroom for teachers: one room, one Dify conversation, all p
 | REST | `/api/mindmate/collab/*` — [`routers/api/mindmate_collab_routes.py`](../../routers/api/mindmate_collab_routes.py) |
 | WebSocket | `/api/ws/mindmate-collab/{code}` — [`routers/api/mindmate_collab_ws.py`](../../routers/api/mindmate_collab_ws.py) |
 | Service | [`services/features/mindmate_collab/`](../../services/features/mindmate_collab/) |
-| DB | `mindmate_collab_sessions`, `mindmate_collab_messages` (Alembic `rev_0076`) |
+| DB | `mindmate_collab_sessions`, `mindmate_collab_messages` (Alembic `rev_0076`), `mindmate_collab_members` (`rev_0146`) |
 | Frontend room | `/mindmate/collab?code=` — `MindmateCollabPage.vue`, `useMindmateCollab.ts` |
 | Entry UI | `MindmateCollabPanel.vue` on `/mindmate` toolbar |
 | Sidebar | `MindmateCollabHistory.vue` above personal chat history |
@@ -38,7 +38,7 @@ Redis keys under `mindmate_collab:*`; fan-out room prefix `mmc:{CODE}`.
 - **Dify stream lock:** one AI response per room; concurrent `chat` → `mindmate_responding` error.
 - **Dify abort signal:** cooperative cross-worker abort via Redis `dify_abort:{CODE}`; checked each stream chunk; lock released only in stream `finally`.
 - **Message retention:** ended sessions and messages are kept indefinitely (history API gated; live rooms only while `ended_at IS NULL`).
-- **Owner library:** ending a room stamps `library_saved_at` in the same write as `ended_at` (host stop, replacement when starting another room, idle, zombie, or expiry). The sidebar reloads on that event, on room removal, and when the tab becomes visible. Reopen is read-only.
+- **Seminar history:** ending a room stamps `library_saved_at` in the same write as `ended_at` (host stop, replacement when starting another room, idle, zombie, or expiry). Everyone who joined (a `mindmate_collab_members` row, written when the socket connects and when the host starts the room) sees that seminar in the sidebar. Pin, rename, and delete stay with the host. Reopen is read-only. The sidebar reloads on that event, on room removal, and when the tab becomes visible.
 - **Redis teardown:** `touch_activity` does not recreate a purged room hash. The idle monitor drops scores whose session hash is already gone.
 
 Operational parity with canvas collab: see [`docs/operations/online-collab-runbook.md`](../operations/online-collab-runbook.md) for Redis/registry/idle patterns (MindMate uses separate key prefix and omits diagram live-spec merge).
@@ -75,7 +75,7 @@ Server → client: `joined`, `snapshot`, `user_message`, `ai_message_chunk`, `ai
 
 ## Social layer in collab room
 
-- **Org contacts:** shared `frontend/src/composables/social/` module — `OrgContactsPanel` with `source="mindmate-collab"` (collab API + notify WS presence; no `FEATURE_WORKSHOP_CHAT` required for roster).
+- **Org contacts:** shared `frontend/src/composables/social/` module — `OrgContactsPanel` with `source="mindmate-collab"` (collab API + notify WS presence; no `FEATURE_WORKSHOP_CHAT` required for roster). Online and offline use the same Redis `po` fan-out as workshop chat, delivered to `/api/ws/mindmate-notify`.
 - **Workshop parity:** same panel/composables with `source="workshop"` (workshop store + chat WS presence).
 - **Future IM widget:** mount `OrgContactsPanel` or call `useOrgRosterPanel()` from any page.
 - **DMs:** `MindmateDmDrawer` via `/api/chat/dm/*` (requires `FEATURE_WORKSHOP_CHAT`); org isolation enforced by `access_dm_partner`.

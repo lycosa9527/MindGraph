@@ -16,7 +16,14 @@ import { handleMindmateCollabPokeFrame } from '@/utils/mindmateCollabPokeNotify'
 
 const CONNECT_DEBOUNCE_MS = 200
 const PING_MESSAGE = JSON.stringify({ type: 'ping' })
-const PONG_MESSAGE = JSON.stringify({ type: 'pong' })
+
+/** Subscribe frame. Org id is optional; the server resolves the school when it is omitted. */
+export function mindmatePresenceSubscribeMessage(orgId: number | null): string {
+  if (orgId == null) {
+    return JSON.stringify({ type: 'subscribe_presence' })
+  }
+  return JSON.stringify({ type: 'subscribe_presence', org_id: orgId })
+}
 
 function buildWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
@@ -57,11 +64,7 @@ export function useMindmateCollabNotify(): void {
   }
 
   function sendSubscribePresence(sendFn: (payload: string) => void): void {
-    const orgId = resolveOrgId()
-    if (orgId == null) {
-      return
-    }
-    sendFn(JSON.stringify({ type: 'subscribe_presence', org_id: orgId }))
+    sendFn(mindmatePresenceSubscribeMessage(resolveOrgId()))
   }
 
   function handleFrame(raw: string): void {
@@ -106,7 +109,6 @@ export function useMindmateCollabNotify(): void {
     autoReconnect: { retries: 6, delay: 2500 },
     heartbeat: {
       message: PING_MESSAGE,
-      responseMessage: PONG_MESSAGE,
       interval: 30000,
       pongTimeout: 10000,
     },
@@ -212,6 +214,15 @@ export function useMindmateCollabNotify(): void {
       }
     },
     { immediate: true }
+  )
+
+  watch(
+    () => authStore.user?.schoolId,
+    () => {
+      if (status.value === 'OPEN') {
+        sendSubscribePresence(send)
+      }
+    }
   )
 
   onUnmounted(() => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Read-only transcript of a seminar the owner saved to their MindMate library.
+ * Read-only transcript of a finished seminar in this person's history.
  */
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 

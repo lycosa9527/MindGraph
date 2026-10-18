@@ -35,6 +35,7 @@ from services.features.mindmate_collab_fanout_hooks import (
     deliver_registered_collab_fanout,
     notify_collab_fanout_subscribed,
 )
+from services.features.mindmate_notify_ws_manager import mindmate_notify_ws_manager
 from services.features.workshop_chat_ws_manager import chat_ws_manager
 from services.features.workshop_ws_fanout_delivery import (
     deliver_local_workshop_broadcast,
@@ -271,6 +272,7 @@ async def _handle_chat_raw(payload: str) -> None:
             return
         exclude = ex if isinstance(ex, int) else None
         await chat_ws_manager.deliver_local_presence_org(oid, exclude, data_str)
+        await mindmate_notify_ws_manager.deliver_local_presence_org(oid, exclude, data_str)
 
 
 _FANOUT_ORIGIN_SECRET: str = os.environ.get("COLLAB_FANOUT_ORIGIN_SECRET", "")

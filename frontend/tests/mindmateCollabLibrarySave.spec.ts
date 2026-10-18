@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isStandaloneMindmateCollabPath,
   shouldAutoSaveSeminarOnOwnerEnd,
+  shouldRefreshSavedSeminarLibrary,
   withoutSavedSeminarQuery,
 } from '@/utils/mindmateCollabLibrarySave'
 
@@ -15,6 +16,17 @@ describe('shouldAutoSaveSeminarOnOwnerEnd', () => {
     expect(shouldAutoSaveSeminarOnOwnerEnd('host', false)).toBe(false)
     expect(shouldAutoSaveSeminarOnOwnerEnd('idle', true)).toBe(false)
     expect(shouldAutoSaveSeminarOnOwnerEnd('left', true)).toBe(false)
+  })
+})
+
+describe('shouldRefreshSavedSeminarLibrary', () => {
+  it('refreshes after the host ends the room or it goes idle', () => {
+    expect(shouldRefreshSavedSeminarLibrary('host')).toBe(true)
+    expect(shouldRefreshSavedSeminarLibrary('idle')).toBe(true)
+  })
+
+  it('does not refresh when someone only leaves a live room', () => {
+    expect(shouldRefreshSavedSeminarLibrary('left')).toBe(false)
   })
 })
 

@@ -305,6 +305,10 @@ MINDMATE_COLLAB_READ_EXPR = (
 MINDMATE_COLLAB_READ_CHECK = (
     MINDMATE_COLLAB_READ_EXPR + " AND (user_id = rls_current_user_id() OR rls_is_system_mode())"
 )
+# Applied by rev_0146 only. Do not add this table to MINDMATE_COLLAB_TABLES:
+# rev_0077 alters every table in that list, and this table does not exist yet then.
+MINDMATE_COLLAB_MEMBER_EXPR = "user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only()"
+MINDMATE_COLLAB_MEMBER_CHECK = MINDMATE_COLLAB_MEMBER_EXPR
 MINDMATE_COLLAB_TABLES = [
     ("mindmate_collab_sessions", MINDMATE_COLLAB_SESSION_EXPR, MINDMATE_COLLAB_SESSION_CHECK),
     ("mindmate_collab_messages", MINDMATE_COLLAB_MESSAGE_EXPR, MINDMATE_COLLAB_MESSAGE_EXPR),

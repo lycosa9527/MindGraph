@@ -131,6 +131,7 @@ from models.domain.oauth_user_link import OauthUserLink
 from models.domain.generation_preview_link import GenerationPreviewLink
 from models.domain.mindmate_export_job import MindmateExportJob
 from models.domain.mindmate_collab import (
+    MindmateCollabMember,
     MindmateCollabMessage,
     MindmateCollabReadCursor,
     MindmateCollabSession,
@@ -229,6 +230,7 @@ __all__ = [
     "MindmateCollabSession",
     "MindmateCollabMessage",
     "MindmateCollabReadCursor",
+    "MindmateCollabMember",
     "KittyOneSentenceSession",
     "KittyOneSentenceTurn",
     "ErrorEvent",

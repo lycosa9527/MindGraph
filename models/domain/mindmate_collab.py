@@ -104,3 +104,23 @@ class MindmateCollabReadCursor(Base):
     )
     last_read_message_id: Mapped[int] = mapped_column(Integer, nullable=False)
     read_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class MindmateCollabMember(Base):
+    """Someone who joined a seminar. The row stays after they leave the socket."""
+
+    __tablename__ = "mindmate_collab_members"
+
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("mindmate_collab_sessions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (Index("ix_mindmate_collab_members_user", "user_id"),)
