@@ -36,7 +36,10 @@ except ImportError:
 
 from config.settings import config
 from scripts.db.postgres_app_startup import prepare_postgresql_rls_runtime
-from services.infrastructure.lifecycle.startup import MINDGRAPH_LAUNCHER_PID_ENV
+from services.infrastructure.lifecycle.startup import (
+    MINDGRAPH_LAUNCHER_PID_ENV,
+    mindgraph_startup_banner_lines,
+)
 from services.infrastructure.process import _port_utils
 from services.showcase.covers.config import (
     celery_worker_needed_for_app,
@@ -150,8 +153,11 @@ def run_server() -> None:
         workers_str = os.getenv("UVICORN_WORKERS")
         workers = int(workers_str) if workers_str else default_workers
 
-        # Banner is now printed in setup_early_configuration() before logging
-        # Print server configuration summary
+        # Print the launch art here, before logging, so letter spacing stays intact.
+        print()
+        for banner_line in mindgraph_startup_banner_lines():
+            print(banner_line)
+        print()
         print(f"Environment: {environment} (DEBUG={debug})")
         print(f"Host: {host}")
         print(f"Port: {port}")

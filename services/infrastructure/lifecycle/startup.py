@@ -146,14 +146,14 @@ def _is_uvicorn_reloader_process() -> bool:
     return False
 
 
-# Do not delete this MindGraph ASCII banner. It must show at application launch.
+# Original launch art from the first commit. Do not delete. It must show at startup.
 _MINDGRAPH_ASCII_BANNER = (
-    "    ███╗   ███╗██╗███╗   ██╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ██╗  ██╗",
-    "    ████╗ ████║██║████╗  ██║██╔══██╗██╔════╝ ██╔══██╗██╔══██╗██╔══██╗██║  ██║",
-    "    ██╔████╔██║██║██╔██╗ ██║██║  ██║██║  ███╗██████╔╝███████║██████╔╝███████║",
-    "    ██║╚██╔╝██║██║██║╚██╗██║██║  ██║██║   ██║██╔══██╗██╔══██║██╔═══╝ ██╔══██║",
-    "    ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝╚██████╔╝██║  ██║██║  ██║██║     ██║  ██║",
-    "    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝",
+    "    ███╗   ███╗██╗███╗   ██╗██████╗ ███╗   ███╗ █████╗ ████████╗███████╗",
+    "    ████╗ ████║██║████╗  ██║██╔══██╗████╗ ████║██╔══██╗╚══██╔══╝██╔════╝",
+    "    ██╔████╔██║██║██╔██╗ ██║██║  ██║██╔████╔██║███████║   ██║   █████╗  ",
+    "    ██║╚██╔╝██║██║██║╚██╗██║██║  ██║██║╚██╔╝██║██╔══██║   ██║   ██╔══╝  ",
+    "    ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝██║ ╚═╝ ██║██║  ██║   ██║   ███████╗",
+    "    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝",
 )
 
 
@@ -189,8 +189,7 @@ def setup_early_configuration():
     is_reloader = _is_uvicorn_reloader_process()
     should_log_startup = not is_reloader and worker_id is None and not _UvicornProcessHints.is_launched_child()
 
-    # Do not print the ASCII banner here. Lifespan logs it once when launch completes.
-    # A second print from this process would show two banners at startup.
+    # The ASCII banner is printed once from run_server(), before this process logs.
 
     # Windows event loop: psycopg async requires SelectorEventLoop; Proactor is only
     # needed for Playwright subprocesses (set WINDOWS_PROACTOR_EVENT_LOOP=1 if PNG export fails).

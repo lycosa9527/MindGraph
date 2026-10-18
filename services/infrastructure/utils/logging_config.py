@@ -409,9 +409,14 @@ class UnifiedFormatter(logging.Formatter):
         except (TypeError, ValueError, LookupError):
             user_suffix = ""
 
-        # Normalize message spacing: strip leading whitespace and normalize multiple spaces to single space
-        message = record.getMessage().lstrip()
-        message = re.sub(r" +", " ", message)  # Normalize multiple spaces to single space
+        # Collapse runs of spaces on ordinary lines. Banner rows, including the
+        # bottom rule that has no solid blocks, keep their spacing.
+        raw_message = record.getMessage()
+        if "█" in raw_message or "╚" in raw_message:
+            message = raw_message.rstrip()
+        else:
+            message = raw_message.lstrip()
+            message = re.sub(r" +", " ", message)
         if self.use_colors:
             message = _colorize_leading_module_tag(message, self.MODULE_TAG_COLORS, self.COLORS["RESET"])
 
