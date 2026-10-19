@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': '導入學員',
   'admin.learningSpace.memberAssistant': '助教',
   'admin.learningSpace.assistants': '助教',
-  'admin.learningSpace.assistantsHint': '助教可批改作業，不能佈置作業。用手機號添加已有帳號。',
+  'admin.learningSpace.assistantsHint': '助教可發布作業、批改作業。用手機號添加已有帳號。',
   'admin.learningSpace.addAssistant': '添加助教',
   'admin.learningSpace.assistantPhonePlaceholder': '助教手機號',
   'admin.learningSpace.accountImportError.not_found': '未找到該帳號',

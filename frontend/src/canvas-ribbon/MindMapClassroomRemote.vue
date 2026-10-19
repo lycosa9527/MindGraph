@@ -44,6 +44,7 @@ import {
   CLASSROOM_REMOTE_TAB_LABEL_KEYS,
   type ClassroomRemoteTabId,
 } from '@/canvas-ribbon/mindMapClassroomRemoteTypes'
+import { mindMapRibbonTabLabelKey } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
 import MindMapInsertNodeIcon from '@/components/canvas/MindMapInsertNodeIcon.vue'
 import I18nText from '@/components/common/I18nText.vue'
@@ -62,7 +63,7 @@ import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
-import { useMindClassroomStore } from '@/stores'
+import { useAuthStore, useMindClassroomStore } from '@/stores'
 import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 
 import './mindMapClassroomRemote.css'
@@ -98,6 +99,7 @@ const mindMapV2 = useMindMapV2Chrome()
 const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
 
 const { t } = useLanguage()
+const authStore = useAuthStore()
 const notify = useNotifications()
 const ribbon = useMindMapRibbonActions()
 const classroomStore = useMindClassroomStore()
@@ -400,6 +402,13 @@ const activeTools = computed(() => {
   }
 })
 
+function remoteTabLabelKey(tab: ClassroomRemoteTabId): string {
+  if (tab === 'teaching') {
+    return mindMapRibbonTabLabelKey('teaching', authStore.user?.role)
+  }
+  return CLASSROOM_REMOTE_TAB_LABEL_KEYS[tab]
+}
+
 function tabIcon(tab: ClassroomRemoteTabId): Component | undefined {
   return tab === 'ai' ? undefined : TAB_ICONS[tab]
 }
@@ -489,7 +498,7 @@ function onClose(): void {
         :class="{ 'is-active': position.activeTab.value === tab }"
         :aria-selected="position.activeTab.value === tab"
         :data-testid="`mindmap-classroom-remote-tab-${tab}`"
-        :title="t(CLASSROOM_REMOTE_TAB_LABEL_KEYS[tab])"
+        :title="t(remoteTabLabelKey(tab))"
         @click="onSelectTab(tab)"
       >
         <MindMapRibbonAiMark v-if="tab === 'ai'" />
@@ -501,7 +510,7 @@ function onClose(): void {
         />
         <span class="mm-remote__tab-label">
           <I18nText
-            :k="CLASSROOM_REMOTE_TAB_LABEL_KEYS[tab]"
+            :k="remoteTabLabelKey(tab)"
             dense
           />
         </span>

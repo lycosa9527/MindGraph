@@ -18,6 +18,10 @@ export function mindmateCollabWsErrorLocaleKey(errorCode: string): string | null
       return 'mindmate.collabErrorMessageTooLarge'
     case 'dify_error':
       return 'mindmate.collabErrorDify'
+    case 'dify_main_unavailable':
+      return 'mindmate.mainServerDownRetry'
+    case 'dify_backup_unavailable':
+      return 'mindmate.backupServerFailed'
     case 'invalid_payload':
       return 'mindmate.collabErrorInvalidPayload'
     case 'mindmate_responding':

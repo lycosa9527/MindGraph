@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Увезите студенте',
   'admin.learningSpace.memberAssistant': 'асистент у настави',
   'admin.learningSpace.assistants': 'асистент у настави',
-  'admin.learningSpace.assistantsHint': 'Помоћници у настави могу да исправљају домаћи задатак, али не могу да задају домаћи задатак. Користите број свог мобилног телефона да додате постојећи налог.',
+  'admin.learningSpace.assistantsHint': 'Помоћници у настави могу да задају и исправљају домаћи задатак. Користите број свог мобилног телефона да додате постојећи налог.',
   'admin.learningSpace.addAssistant': 'Додајте асистента у настави',
   'admin.learningSpace.assistantPhonePlaceholder': 'Број мобилног телефона асистента у настави',
   'admin.learningSpace.accountImportError.not_found': 'Налог није пронађен',

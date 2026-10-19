@@ -12,8 +12,11 @@ import asyncio
 import logging
 from typing import Any, Optional
 
-from clients.dify_http_errors import dify_stream_chunk_is_upstream_outage
-from models import Messages
+from clients.dify_http_errors import (
+    dify_stream_chunk_is_upstream_outage,
+    mindmate_turn_on_backup,
+    mindmate_upstream_error_code,
+)
 from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
 from services.dify.org_mindmate_client import resolve_mindmate_dify_stream_short_lived
 from services.features.mindmate_collab.dify_stream_control import (
@@ -131,9 +134,18 @@ async def stream_assistant_reply(
                 continue
             event = chunk.get("event") if isinstance(chunk, dict) else None
             if event == "error":
-                message = str(chunk.get("message", ""))
                 if dify_stream_chunk_is_upstream_outage(chunk):
-                    message = Messages.error("ai_temporarily_unavailable", "zh")
+                    on_backup = mindmate_turn_on_backup(
+                        notify_backup=stream_target.notify_backup,
+                        server=stream_target.server,
+                    )
+                    outage_code = mindmate_upstream_error_code(on_backup=on_backup)
+                    await broadcast_to_all(
+                        code,
+                        {"type": "error", "code": outage_code},
+                    )
+                    return
+                message = str(chunk.get("message", ""))
                 await broadcast_to_all(
                     code,
                     {"type": "error", "code": "dify_error", "message": message},

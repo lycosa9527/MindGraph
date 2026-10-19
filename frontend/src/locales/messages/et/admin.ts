@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Imported learner',
   'admin.learningSpace.memberAssistant': 'Assistant',
   'admin.learningSpace.assistants': 'Assistants',
-  'admin.learningSpace.assistantsHint': 'Assistants can review work but cannot publish assignments. Add an existing account by phone.',
+  'admin.learningSpace.assistantsHint': 'Assistants can publish and grade assignments. Add an existing account by phone.',
   'admin.learningSpace.addAssistant': 'Add assistant',
   'admin.learningSpace.assistantPhonePlaceholder': 'Assistant phone number',
   'admin.learningSpace.accountImportError.not_found': 'Account not found',

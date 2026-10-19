@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia'
 
 import { ArrowLeft, ClipboardList, Clock3, FileText, Users } from '@lucide/vue'
 
+import LearningSpaceCreditLine from '@/components/learningSpace/LearningSpaceCreditLine.vue'
 import LearningSpaceThumbCover from '@/components/learningSpace/LearningSpaceThumbCover.vue'
 import { useLanguage } from '@/composables'
 import {
@@ -16,6 +17,8 @@ import {
   formatLsDateTime,
   formatLsStudentLabel,
   greetHourLabel,
+  submissionGraderNames,
+  submissionIsReviewed,
   studentAssignmentDone,
   studentCanOpenAssignment,
   studentCanResubmitAssignment,
@@ -168,6 +171,13 @@ function statusLabel(status: string | undefined): string {
           <p class="ls-asg-card__meta">
             <I18nText k="learningSpace.due" />：{{ formatLsDateTime(a.due_at) }}
           </p>
+          <p class="ls-asg-card__meta">
+            <LearningSpaceCreditLine
+              :publisher-name="a.created_by_name"
+              :grader-names="submissionGraderNames(a.submission)"
+              :unnamed-review="submissionIsReviewed(a.submission)"
+            />
+          </p>
           <div class="ls-asg-card__actions">
             <button
               type="button"
@@ -199,6 +209,12 @@ function statusLabel(status: string | undefined): string {
               · <I18nText k="learningSpace.due" />
               {{ formatLsDateTime(studentDetail.due_at) }}
             </template>
+            ·
+            <LearningSpaceCreditLine
+              :publisher-name="studentDetail.created_by_name"
+              :grader-names="submissionGraderNames(studentDetail.submission)"
+              :unnamed-review="submissionIsReviewed(studentDetail.submission)"
+            />
           </p>
         </div>
         <div class="ls-page-head__actions">
@@ -288,7 +304,14 @@ function statusLabel(status: string | undefined): string {
             </div>
             <div class="ls-thumb-card__meta">
               {{ formatLsDateTime(s.submitted_at) }}
-              <template v-if="s.reviewed_at || s.review_comment || s.review_scores">
+              <template v-if="s.reviewer_name">
+                ·
+                <I18nText
+                  k="learningSpace.gradedBy"
+                  :params="{ name: s.reviewer_name }"
+                />
+              </template>
+              <template v-else-if="s.reviewed_at || s.review_comment || s.review_scores">
                 · <I18nText k="learningSpace.reviewed" />
               </template>
             </div>
@@ -342,7 +365,14 @@ function statusLabel(status: string | undefined): string {
         </div>
         <div class="ls-thumb-card__meta">
           {{ statusLabel(s.status) }}
-          <template v-if="s.reviewed_at || s.review_comment || s.review_scores">
+          <template v-if="s.reviewer_name">
+            ·
+            <I18nText
+              k="learningSpace.gradedBy"
+              :params="{ name: s.reviewer_name }"
+            />
+          </template>
+          <template v-else-if="s.reviewed_at || s.review_comment || s.review_scores">
             · <I18nText k="learningSpace.reviewed" />
           </template>
         </div>

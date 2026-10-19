@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Tuo opiskelijat',
   'admin.learningSpace.memberAssistant': 'Opetusassistentti',
   'admin.learningSpace.assistants': 'Opetusassistentti',
-  'admin.learningSpace.assistantsHint': 'Avustajat voivat korjata läksyjä, mutta eivät voi antaa läksyjä. Käytä matkapuhelinnumeroasi olemassa olevan tilin lisäämiseen.',
+  'admin.learningSpace.assistantsHint': 'Avustajat voivat antaa ja korjata läksyjä. Käytä matkapuhelinnumeroasi olemassa olevan tilin lisäämiseen.',
   'admin.learningSpace.addAssistant': 'Lisää opetusapulainen',
   'admin.learningSpace.assistantPhonePlaceholder': 'Opetusavustajan matkapuhelinnumero',
   'admin.learningSpace.accountImportError.not_found': 'Tiliä ei löytynyt',

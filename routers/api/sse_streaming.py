@@ -20,9 +20,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import DifyFile
 from clients.dify_exceptions import DifyConversationNotFoundError
-from clients.dify_http_errors import dify_stream_chunk_is_upstream_outage
+from clients.dify_http_errors import (
+    dify_stream_chunk_is_upstream_outage,
+    mindmate_turn_on_backup,
+    mindmate_upstream_error_code,
+)
 from config.database import get_async_db
 from models import AIAssistantRequest, Messages, get_request_language
+from models.domain.messages import Language
 from models.domain.auth import User
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.auth.thinking_coin.event_hub import mutation_to_footer
@@ -59,6 +64,7 @@ from services.mindmate.teaching_design_flag import (
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user_or_api_key
 from utils.auth.user_daily_token_quota import daily_token_limit_message
+from utils.db.session_open import release_open_transaction
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +73,19 @@ router = APIRouter(tags=["api"])
 # Keep proxy read timers alive during long Dify vision / workflow gaps (see deploy docs).
 _SSE_KEEPALIVE_INTERVAL_S = 25.0
 _SSE_KEEPALIVE_COMMENT = ": keepalive\n\n"
+
+
+def _internal_error_sse(lang: Language) -> str:
+    """User-facing SSE error. The chat toast uses this text, not a raw exception."""
+    text = Messages.error("internal_error", lang=lang)
+    payload = {
+        "event": "error",
+        "error": text,
+        "message": text,
+        "error_type": "internal_error",
+        "timestamp": int(time.time() * 1000),
+    }
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
 @router.post("/ai_assistant/stream")
@@ -120,9 +139,10 @@ async def ai_assistant_stream(
         org_raw = getattr(current_user, "organization_id", None)
         organization_id_for_dify = int(org_raw) if org_raw is not None else None
 
-    # Resolve Dify credentials in a short-lived session. Do not use Depends(get_async_db)
-    # here: FastAPI keeps request-scoped sessions open until the SSE body finishes, which
-    # leaves a read transaction idle past idle_in_transaction_session_timeout (30s default).
+    # Resolve Dify credentials in a short-lived session. The request session below is
+    # only for the pre-stream reads, then released before StreamingResponse: FastAPI
+    # keeps Depends(get_async_db) open until the SSE body finishes, and an open read
+    # transaction sits idle past idle_in_transaction_session_timeout (30s default).
     stream_target = await resolve_mindmate_dify_stream_short_lived(
         organization_id_for_dify,
         detail=Messages.error("ai_not_configured", lang),
@@ -131,6 +151,10 @@ async def ai_assistant_stream(
     )
     dify_client = stream_target.client
     using_backup = stream_target.notify_backup
+    on_backup_server = mindmate_turn_on_backup(
+        notify_backup=using_backup,
+        server=stream_target.server,
+    )
     logger.debug(
         "MindMate Dify client resolved for org_id=%s url=%s",
         organization_id_for_dify,
@@ -180,6 +204,11 @@ async def ai_assistant_stream(
             conversation_id=req.conversation_id,
         )
 
+    # Continuing a thread reads the Dify user inside this request session, which
+    # autobegins a transaction. Commit it before the Dify stream so session close
+    # does not ROLLBACK a connection Postgres already killed.
+    await release_open_transaction(db)
+
     async def generate():
         """Async generator function for SSE streaming."""
         logger.debug("[GENERATOR] Async generator function called - starting execution")
@@ -211,12 +240,7 @@ async def ai_assistant_stream(
                 "[STREAM] mindmate_streaming_begin failed after stream_open | user=%s",
                 req.user_id,
             )
-            err = {
-                "event": "error",
-                "error": "Internal server error",
-                "timestamp": int(time.time() * 1000),
-            }
-            yield f"data: {json.dumps(err)}\n\n"
+            yield _internal_error_sse(lang)
             return
 
         if user_id_for_tracking is not None:
@@ -320,8 +344,8 @@ async def ai_assistant_stream(
                         reply_parts.append(answer_part)
 
                 if event_type == "error" and dify_stream_chunk_is_upstream_outage(chunk):
-                    friendly = Messages.error("ai_temporarily_unavailable", lang)
-                    chunk = {**chunk, "message": friendly, "error": friendly}
+                    outage_code = mindmate_upstream_error_code(on_backup=on_backup_server)
+                    chunk = {**chunk, "error_type": outage_code}
                 yield f"data: {json.dumps(chunk)}\n\n"
                 if not emitted_teaching_meta:
                     meta_event = mindmate_meta_from_workflow_chunk(chunk)
@@ -439,12 +463,7 @@ async def ai_assistant_stream(
                 exc,
                 exc_info=True,
             )
-            error_data = {
-                "event": "error",
-                "error": "Internal server error",
-                "timestamp": int(time.time() * 1000),
-            }
-            yield f"data: {json.dumps(error_data)}\n\n"
+            yield _internal_error_sse(lang)
             no_chunk_response_sent = True
 
         finally:

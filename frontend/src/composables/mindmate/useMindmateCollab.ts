@@ -242,7 +242,9 @@ export function useMindmateCollab(
     const localeKey = mindmateCollabWsErrorLocaleKey(errorCode)
     if (localeKey) {
       const serverMessage = String(parsed.message || '').trim()
-      if (errorCode === 'dify_error' && serverMessage) {
+      if (errorCode === 'dify_main_unavailable' || errorCode === 'dify_backup_unavailable') {
+        notify.errorKey(localeKey)
+      } else if (errorCode === 'dify_error' && serverMessage) {
         notify.error(serverMessage)
       } else {
         notify.warningKey(localeKey)

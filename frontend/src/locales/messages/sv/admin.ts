@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Importera elever',
   'admin.learningSpace.memberAssistant': 'Lärarassistent',
   'admin.learningSpace.assistants': 'Lärarassistent',
-  'admin.learningSpace.assistantsHint': 'Lärarassistenter kan rätta läxor men kan inte tilldela läxor. Använd ditt mobiltelefonnummer för att lägga till ett befintligt konto.',
+  'admin.learningSpace.assistantsHint': 'Lärarassistenter kan publicera och rätta läxor. Använd ditt mobiltelefonnummer för att lägga till ett befintligt konto.',
   'admin.learningSpace.addAssistant': 'Lägg till en lärarassistent',
   'admin.learningSpace.assistantPhonePlaceholder': 'Lärarassistentens mobiltelefonnummer',
   'admin.learningSpace.accountImportError.not_found': 'Kontot hittades inte',

@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Εισαγωγή φοιτητών',
   'admin.learningSpace.memberAssistant': 'Βοηθός διδασκαλίας',
   'admin.learningSpace.assistants': 'Βοηθός διδασκαλίας',
-  'admin.learningSpace.assistantsHint': 'Οι βοηθοί διδασκαλίας μπορούν να διορθώσουν την εργασία, αλλά δεν μπορούν να αναθέσουν εργασίες για το σπίτι. Χρησιμοποιήστε τον αριθμό του κινητού σας τηλεφώνου για να προσθέσετε έναν υπάρχοντα λογαριασμό.',
+  'admin.learningSpace.assistantsHint': 'Οι βοηθοί διδασκαλίας μπορούν να αναθέτουν και να διορθώνουν εργασίες. Χρησιμοποιήστε τον αριθμό του κινητού σας τηλεφώνου για να προσθέσετε έναν υπάρχοντα λογαριασμό.',
   'admin.learningSpace.addAssistant': 'Προσθέστε έναν βοηθό διδασκαλίας',
   'admin.learningSpace.assistantPhonePlaceholder': 'Αριθμός κινητού τηλεφώνου βοηθού διδασκαλίας',
   'admin.learningSpace.accountImportError.not_found': 'Ο λογαριασμός δεν βρέθηκε',

@@ -46,11 +46,14 @@ from routers.features.learning_space.schemas import (
 from routers.features.learning_space.deps import get_learning_space_db
 from services.auth.password_security import invalidate_user_cache_after_password_write
 from services.learning_space.access import (
+    assert_assignment_deletable,
     classes_visible_to_staff,
     get_class_for_publisher,
     get_class_for_staff,
+    get_class_for_teacher,
     get_enabled_pilot,
     require_class_learner,
+    require_pilot_teacher,
     require_student,
     require_student_password_ok,
     resolve_assignment_viewer,
@@ -77,11 +80,12 @@ from services.learning_space.memberships import (
 from services.learning_space.assignments import (
     apply_learner_due,
     assignment_public_dict,
+    author_names_for_user_ids,
     bind_draft_diagram,
     delete_assignment,
     enrich_assignment_dict,
-    extend_submission_due,
     enrich_submission_dict,
+    extend_submission_due,
     get_assignment,
     get_or_create_submission,
     load_template_preview,
@@ -89,6 +93,11 @@ from services.learning_space.assignments import (
     save_submission_review,
     submission_public_dict,
     submit_assignment,
+)
+from services.learning_space.attribution import (
+    attach_assignment_people,
+    attach_submission_reviewers,
+    submission_label_user_ids,
 )
 from services.learning_space.class_codes import (
     class_code_in_use_error,
@@ -598,6 +607,7 @@ async def teacher_list_classes(
     """Classes owned by an enabled pilot, plus classes they assist. Superadmins see all."""
     classes = await classes_visible_to_staff(db, current_user)
     is_pilot = await get_enabled_pilot(db, int(current_user.id)) is not None
+    assisted_ids = set(await class_ids_for_membership_role(db, int(current_user.id), MEMBERSHIP_ROLE_ASSISTANT))
     observe_all = is_superadmin(current_user)
     roster_counts = await roster_counts_by_class(db, [int(cls.id) for cls in classes])
     names: dict[int, str] = {}
@@ -613,7 +623,9 @@ async def teacher_list_classes(
             "class_code": cls.class_code,
             "status": cls.status,
             "student_count": roster_counts.get(int(cls.id), 0),
-            "can_publish": is_pilot and int(cls.teacher_user_id) == int(current_user.id),
+            "is_owner": int(cls.teacher_user_id) == int(current_user.id),
+            "can_publish": (is_pilot and int(cls.teacher_user_id) == int(current_user.id))
+            or int(cls.id) in assisted_ids,
         }
         if observe_all:
             row["teacher_user_id"] = cls.teacher_user_id
@@ -635,7 +647,16 @@ async def teacher_list_students(
         db, class_id, int(current_user.id), allow_archived=True, actor=current_user
     )
     include_password = is_superadmin(current_user) or int(learning_class.teacher_user_id) == int(current_user.id)
-    return {"items": await class_roster_items(db, class_id, include_initial_password=include_password)}
+    # Staff already passed get_class_for_staff. Read the roster in system mode so
+    # an assistant from another school still sees learner names (users RLS is school-scoped).
+    return {
+        "items": await class_roster_items(
+            db,
+            class_id,
+            include_initial_password=include_password,
+            admin_bypass_rls=True,
+        )
+    }
 
 
 @router.post("/teacher/students/{student_id}/reset-password")
@@ -648,7 +669,8 @@ async def teacher_reset_password(
     student = await db.get(User, student_id)
     if student is None or student.role != ROLE_STUDENT or not student.learning_class_id:
         raise HTTPException(status_code=404, detail="Student not found")
-    await get_class_for_publisher(db, int(student.learning_class_id), current_user, allow_archived=True)
+    await require_pilot_teacher(db, current_user)
+    await get_class_for_teacher(db, int(student.learning_class_id), int(current_user.id), allow_archived=True)
     plain = await reset_student_password(db, student)
     return {"student_id": student.id, "name": student.name, "initial_password": plain}
 
@@ -745,7 +767,9 @@ async def teacher_create_assignment(
         current_user.id,
         assignment.status,
     )
-    return await enrich_assignment_dict(db, assignment)
+    payload = await enrich_assignment_dict(db, assignment)
+    await attach_assignment_people(db, [payload])
+    return payload
 
 
 @router.delete("/teacher/assignments/{assignment_id}")
@@ -757,7 +781,8 @@ async def teacher_delete_assignment(
 ):
     """Delete a published or draft assignment (and cascaded submissions)."""
     assignment = await get_assignment(db, assignment_id)
-    await get_class_for_publisher(db, assignment.class_id, current_user, allow_archived=True)
+    learning_class = await get_class_for_publisher(db, assignment.class_id, current_user, allow_archived=True)
+    assert_assignment_deletable(learning_class, assignment, int(current_user.id))
     await delete_assignment(db, assignment)
     return {"ok": True, "id": assignment_id}
 
@@ -776,6 +801,7 @@ async def teacher_list_assignments(
     items = []
     for assignment in result.scalars().all():
         items.append(await enrich_assignment_dict(db, assignment))
+    await attach_assignment_people(db, items)
     return {"items": items}
 
 
@@ -801,9 +827,11 @@ async def teacher_list_submissions(
     await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True, actor=current_user)
     result = await db.execute(select(LearningSubmission).where(LearningSubmission.assignment_id == assignment_id))
     subs = list(result.scalars().all())
+    label_names = await author_names_for_user_ids(submission_label_user_ids(subs))
     items = []
     for submission in subs:
-        items.append(await enrich_submission_dict(db, submission))
+        items.append(await enrich_submission_dict(db, submission, author_names=label_names))
+    await attach_submission_reviewers(items, label_names)
     return {"items": items}
 
 
@@ -860,8 +888,11 @@ async def teacher_save_review(
         comment=body.comment,
         liked=body.liked,
         pinned=body.pinned,
+        reviewer_user_id=int(current_user.id),
     )
-    return await enrich_submission_dict(db, updated, include_preview=True, assignment_title=assignment.title)
+    payload = await enrich_submission_dict(db, updated, include_preview=True, assignment_title=assignment.title)
+    await attach_submission_reviewers([payload])
+    return payload
 
 
 @router.get("/submissions/{submission_id}/preview")
@@ -885,6 +916,7 @@ async def submission_preview(
         include_preview=True,
         assignment_title=assignment.title,
     )
+    await attach_submission_reviewers([payload])
     logger.info(
         "[LearningSpace] Opened shared work submission=%s assignment=%s author=%s viewer=%s role=%s",
         submission.id,
@@ -965,6 +997,7 @@ async def student_list_assignments(
                 "submission": (await enrich_submission_dict(db, submission) if submission else None),
             }
         )
+    await attach_assignment_people(db, items)
     return {"items": items}
 
 
@@ -1004,15 +1037,20 @@ async def student_class_wall(
             LearningSubmission.id.desc(),
         )
     )
+    rows = list(result.all())
+    label_ids = submission_label_user_ids([submission for submission, _row in rows])
+    label_names = await author_names_for_user_ids(label_ids)
     items = []
-    for submission, assignment in result.all():
+    for submission, assignment in rows:
         items.append(
             await enrich_submission_dict(
                 db,
                 submission,
                 assignment_title=assignment.title,
+                author_names=label_names,
             )
         )
+    await attach_submission_reviewers(items, label_names)
     return {"items": items}
 
 
@@ -1127,7 +1165,7 @@ async def learning_space_context(
     observe_all = is_superadmin(current_user)
     can_learn = bool(learner_ids)
     can_review = bool(pilot) or bool(assistant_ids) or observe_all
-    can_publish = bool(pilot)
+    can_publish = bool(pilot) or bool(assistant_ids)
     if pilot:
         role = "pilot_teacher"
     elif assistant_ids:
@@ -1171,6 +1209,7 @@ async def get_assignment_ai_permissions(
         submission = sub_result.scalar_one_or_none()
         apply_learner_due(payload, assignment, submission)
         payload["submission"] = submission_public_dict(submission) if submission else None
+    await attach_assignment_people(db, [payload])
     return {
         "assignment_id": assignment_id,
         "ai_permissions": payload["ai_permissions"],

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.178] - 2026-10-19
+
+> **Assistants can publish and grade homework, cards name the publisher and the grader, and MindMate says which server failed.**
+
+### Added
+
+- **作业署名** — Homework cards show who published the assignment and who graded it. Saving a review records `reviewed_by` (migration `0147`). An older review with no grader still shows that it was reviewed.
+
+### Changed
+
+- **助教** — A class assistant can publish homework, upload instruction images, and grade. They can delete only assignments they published. The class teacher can still delete any assignment in the class. Resetting a classroom student's password stays with the pilot teacher. A superadmin can still view and grade every class; publishing does not open just because the account is a superadmin.
+- **Student canvas** — Students see 学习 on the canvas teaching tab and on the classroom remote.
+
+### Fixed
+
+- **MindMate** — A main-server outage asks for another try so the next turn uses the backup. A backup outage says the backup did not finish either. A cut-off reply, an empty stream, a network failure, and a generic service failure each have their own notice, and a partial reply stays in the chat. Seminar chat uses the same main and backup codes. The chat request releases its database transaction before the Dify stream, so a long reply does not sit on an idle transaction.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`tests/test_learning_space.py`](tests/test_learning_space.py) — an assistant can publish, can delete only their own homework, and a review stores the grader.
+- [`tests/test_learning_space_db_flow.py`](tests/test_learning_space_db_flow.py) — an assistant can open the class as a publisher, and a review stores `reviewed_by`.
+- [`tests/test_mindmate_stream_session_release.py`](tests/test_mindmate_stream_session_release.py) — the chat request commits its database session before the stream starts.
+- [`frontend/tests/lsHelpersWall.spec.ts`](frontend/tests/lsHelpersWall.spec.ts), [`frontend/tests/mindmateStreamErrorNotice.spec.ts`](frontend/tests/mindmateStreamErrorNotice.spec.ts), [`frontend/tests/mindmateCollabWsErrors.spec.ts`](frontend/tests/mindmateCollabWsErrors.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts)
+
 ## [5.180.177] - 2026-10-19
 
 > **Continue session reopens the same seminar. A closed seminar hides participant faces and the collaborate button.**

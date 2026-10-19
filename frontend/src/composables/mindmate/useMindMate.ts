@@ -34,6 +34,10 @@ import {
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import {
+  mindmateStreamNoticeKey,
+  type MindmateStreamNoticeOptions,
+} from '@/utils/mindmateStreamErrorNotice'
+import {
   isTeachingInstructionOutputs,
   isTeachingInstructionReply,
   TEACHING_INSTRUCTION_KIND,
@@ -156,6 +160,8 @@ export function useMindMate(options: MindMateOptions = {}) {
   const currentStreamingId = ref<string | null>(null)
   const abortController = ref<AbortController | null>(null)
   let streamGeneration = 0
+  let activeTurnSettled = false
+  let receivedAssistantText = false
   // Shown once while chat stays on 备用服务器; cleared after a stream that is back on 主服务器.
   let backupNoticeShown = false
   let streamSawBackup = false
@@ -235,12 +241,15 @@ export function useMindMate(options: MindMateOptions = {}) {
     abortController.value = null
   }
 
-  function finalizeStreamError(generation: number, errorMsg: string, removePlaceholder: boolean): void {
+  function failActiveStream(generation: number, errorMsg: string, notifyUser: boolean): void {
     if (!isActiveStreamGeneration(generation)) {
       return
     }
-    if (removePlaceholder && currentStreamingId.value) {
-      messages.value = messages.value.filter((m) => m.id !== currentStreamingId.value)
+    const partial = streamingBuffer.value.trim()
+    if (currentStreamingId.value) {
+      updateMessage(currentStreamingId.value, partial || errorMsg, false)
+    } else {
+      addMessage('assistant', errorMsg)
     }
     state.value = 'error'
     applyLoadPhase(mindMateLoadPhaseOnError())
@@ -248,7 +257,27 @@ export function useMindMate(options: MindMateOptions = {}) {
     streamingBuffer.value = ''
     abortController.value = null
     eventBus.emit('mindmate:error', { error: errorMsg })
-    onError?.(errorMsg)
+    if (notifyUser) {
+      onError?.(errorMsg)
+    }
+  }
+
+  function streamFailureText(
+    raw: string | undefined,
+    errorType: string | undefined,
+    options: Partial<MindmateStreamNoticeOptions> = {}
+  ): string {
+    const key = mindmateStreamNoticeKey(raw, errorType, {
+      onBackup: options.onBackup ?? streamSawBackup,
+      hasPartial: options.hasPartial ?? receivedAssistantText,
+      emptyStream: options.emptyStream ?? false,
+      httpStatus: options.httpStatus,
+    })
+    if (key) {
+      return String(t(key))
+    }
+    const text = (raw ?? '').trim()
+    return text || String(t('mindmate.serviceRetry'))
   }
   const hasMessages = computed(() => messages.value.length > 0)
   const lastMessage = computed(() => messages.value[messages.value.length - 1] || null)
@@ -538,6 +567,8 @@ export function useMindMate(options: MindMateOptions = {}) {
     streamGeneration += 1
     const activeGeneration = streamGeneration
     streamSawBackup = false
+    activeTurnSettled = false
+    receivedAssistantText = false
 
     // Create new abort controller
     abortController.value = new AbortController()
@@ -615,7 +646,18 @@ export function useMindMate(options: MindMateOptions = {}) {
           authStore.handleTokenExpired('您的登录已过期，请重新登录后继续使用MindMate')
           throw new Error('Session expired')
         }
-        throw new Error(`HTTP error! status: ${response.status}`)
+        let detail = ''
+        try {
+          const body = (await response.json()) as { detail?: unknown }
+          if (typeof body.detail === 'string') {
+            detail = body.detail
+          }
+        } catch {
+          detail = ''
+        }
+        const httpError = new Error(detail) as Error & { httpStatus?: number }
+        httpError.httpStatus = response.status
+        throw httpError
       }
 
       const reader = response.body?.getReader()
@@ -643,7 +685,15 @@ export function useMindMate(options: MindMateOptions = {}) {
         loadPhase.value !== 'error' &&
         loadPhase.value !== 'idle'
       ) {
-        finalizeStreamSuccess(activeGeneration)
+        if (!activeTurnSettled && !receivedAssistantText) {
+          failActiveStream(
+            activeGeneration,
+            streamFailureText(undefined, undefined, { emptyStream: true }),
+            true
+          )
+        } else {
+          finalizeStreamSuccess(activeGeneration)
+        }
       }
     } catch (error) {
       // Ignore abort errors (user cancelled / stopGeneration already reset UI)
@@ -653,9 +703,25 @@ export function useMindMate(options: MindMateOptions = {}) {
         }
         return
       }
+      if (error instanceof Error && error.message === 'Session expired') {
+        if (isActiveStreamGeneration(activeGeneration)) {
+          finalizeStreamAbort(activeGeneration)
+        }
+        return
+      }
+      if (activeTurnSettled) {
+        finalizeStreamSuccess(activeGeneration)
+        return
+      }
 
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-      finalizeStreamError(activeGeneration, errorMsg, true)
+      const errorMsg = error instanceof Error ? error.message : undefined
+      const httpStatus =
+        error instanceof Error ? (error as Error & { httpStatus?: number }).httpStatus : undefined
+      failActiveStream(
+        activeGeneration,
+        streamFailureText(errorMsg, undefined, { httpStatus }),
+        true
+      )
     }
   }
 
@@ -761,6 +827,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     switch (data.event) {
       case 'message':
         if (data.answer) {
+          receivedAssistantText = true
           beginAssistantStreaming()
 
           streamingBuffer.value += data.answer
@@ -806,6 +873,7 @@ export function useMindMate(options: MindMateOptions = {}) {
         break
 
       case 'message_end':
+        activeTurnSettled = true
         if (currentStreamingId.value) {
           const finalContent = streamingBuffer.value
           // Capture the Dify message ID for feedback functionality
@@ -860,6 +928,7 @@ export function useMindMate(options: MindMateOptions = {}) {
       case 'message_replace':
         // Replace entire message content (used by Dify for content edits)
         if (data.answer && currentStreamingId.value) {
+          receivedAssistantText = true
           beginAssistantStreaming()
           streamingBuffer.value = data.answer
           updateMessage(currentStreamingId.value, streamingBuffer.value, true)
@@ -914,29 +983,15 @@ export function useMindMate(options: MindMateOptions = {}) {
         break
 
       case 'error': {
-        const errorMsg = data.message || data.error || 'An error occurred'
-
-        if (currentStreamingId.value) {
-          messages.value = messages.value.filter((m) => m.id !== currentStreamingId.value)
-        }
-
-        addMessage('assistant', errorMsg)
-
-        streamingBuffer.value = ''
-        currentStreamingId.value = null
-        abortController.value = null
-        state.value = 'error'
-        applyLoadPhase(mindMateLoadPhaseOnError())
-
         const errorType = typeof data.error_type === 'string' ? data.error_type : undefined
+        const raw = data.message || data.error
+        const errorMsg = streamFailureText(raw, errorType)
         eventBus.emit('mindmate:stream_error', {
           error: typeof data.error === 'string' ? data.error : undefined,
           error_type: errorType,
           message: errorMsg,
         })
-        if (errorType !== 'thinking_coin_insufficient') {
-          onError?.(errorMsg)
-        }
+        failActiveStream(generation, errorMsg, errorType !== 'thinking_coin_insufficient')
         return false
       }
 

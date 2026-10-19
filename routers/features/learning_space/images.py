@@ -16,7 +16,7 @@ from routers.auth.dependencies import get_current_user
 from routers.features.learning_space.deps import get_learning_space_db
 from services.learning_space.access import (
     get_class_for_publisher,
-    require_pilot_teacher,
+    require_homework_publisher,
     resolve_assignment_viewer,
 )
 from services.learning_space.assignments import get_assignment
@@ -58,11 +58,12 @@ async def upload_instruction_image(
     db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Store an instruction image on COS (local fallback only when COS is off)."""
-    await require_pilot_teacher(db, current_user)
-    identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit("learning_space_images", identifier, max_requests=30, window_seconds=60)
     if class_id is not None:
         await get_class_for_publisher(db, class_id, current_user)
+    else:
+        await require_homework_publisher(db, current_user)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit("learning_space_images", identifier, max_requests=30, window_seconds=60)
     content_type = (file.content_type or "").split(";")[0].strip().lower()
     if content_type == "image/jpg":
         content_type = "image/jpeg"

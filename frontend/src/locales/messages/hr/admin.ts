@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Uvezite studente',
   'admin.learningSpace.memberAssistant': 'Pomoćnik u nastavi',
   'admin.learningSpace.assistants': 'Pomoćnik u nastavi',
-  'admin.learningSpace.assistantsHint': 'Pomoćnici u nastavi mogu ispravljati domaću zadaću, ali ne mogu zadavati domaću zadaću. Koristite svoj broj mobilnog telefona za dodavanje postojećeg računa.',
+  'admin.learningSpace.assistantsHint': 'Pomoćnici u nastavi mogu zadavati i ispravljati domaću zadaću. Koristite svoj broj mobilnog telefona za dodavanje postojećeg računa.',
   'admin.learningSpace.addAssistant': 'Dodajte pomoćnika u nastavi',
   'admin.learningSpace.assistantPhonePlaceholder': 'Broj mobitela asistenta u nastavi',
   'admin.learningSpace.accountImportError.not_found': 'Račun nije pronađen',

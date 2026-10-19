@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Diákok importálása',
   'admin.learningSpace.memberAssistant': 'Tanársegéd',
   'admin.learningSpace.assistants': 'Tanársegéd',
-  'admin.learningSpace.assistantsHint': 'A tanársegédek kijavíthatják a házi feladatot, de nem adhatnak ki házi feladatot. Használja mobiltelefonszámát meglévő fiók hozzáadásához.',
+  'admin.learningSpace.assistantsHint': 'A tanársegédek kiadhatják és kijavíthatják a házi feladatot. Használja mobiltelefonszámát meglévő fiók hozzáadásához.',
   'admin.learningSpace.addAssistant': 'Adjon hozzá egy tanársegédet',
   'admin.learningSpace.assistantPhonePlaceholder': 'A tanársegéd mobiltelefonszáma',
   'admin.learningSpace.accountImportError.not_found': 'A fiók nem található',

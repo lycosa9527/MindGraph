@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Importovať študentov',
   'admin.learningSpace.memberAssistant': 'Pedagogický asistent',
   'admin.learningSpace.assistants': 'Pedagogický asistent',
-  'admin.learningSpace.assistantsHint': 'Pedagogickí asistenti môžu opraviť domáce úlohy, ale nemôžu zadávať domáce úlohy. Použite svoje mobilné telefónne číslo na pridanie existujúceho účtu.',
+  'admin.learningSpace.assistantsHint': 'Pedagogickí asistenti môžu zadávať a opravovať domáce úlohy. Použite svoje mobilné telefónne číslo na pridanie existujúceho účtu.',
   'admin.learningSpace.addAssistant': 'Pridajte asistenta učiteľa',
   'admin.learningSpace.assistantPhonePlaceholder': 'Mobilné telefónne číslo asistenta učiteľa',
   'admin.learningSpace.accountImportError.not_found': 'Účet sa nenašiel',

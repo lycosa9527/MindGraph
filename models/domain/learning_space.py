@@ -166,7 +166,7 @@ class LearningClass(Base):
 
 
 class LearningClassMembership(Base):
-    """Existing-account enrollment: learner (homework) or assistant (review only)."""
+    """Existing-account enrollment: learner (homework) or assistant (publish and grade)."""
 
     __tablename__ = "learning_class_memberships"
     __table_args__ = (UniqueConstraint("class_id", "user_id", name="uq_learning_class_memberships_class_user"),)
@@ -285,6 +285,12 @@ class LearningSubmission(Base):
     review_liked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     review_pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reviewed_by: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,

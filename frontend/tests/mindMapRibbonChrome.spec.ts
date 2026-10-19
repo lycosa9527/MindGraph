@@ -8,6 +8,7 @@ import {
   MIND_MAP_RIBBON_TABS,
   MIND_MAP_RIBBON_TOOLS_ID,
   isMindMapRibbonTabId,
+  mindMapRibbonTabLabelKey,
   resolveLandingMindMapRibbonTab,
 } from '@/canvas-ribbon/mindMapRibbonTypes'
 
@@ -42,6 +43,13 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(isMindMapRibbonTabId('draw')).toBe(false)
     expect(isMindMapRibbonTabId('learn')).toBe(false)
     expect(isMindMapRibbonTabId('palette')).toBe(false)
+    expect(mindMapRibbonTabLabelKey('teaching', 'student')).toBe('canvas.ribbon.tabLearn')
+    expect(mindMapRibbonTabLabelKey('teaching', 'teacher')).toBe('canvas.ribbon.tabTeaching')
+    expect(mindMapRibbonTabLabelKey('edit', 'student')).toBe('canvas.ribbon.tabEdit')
+    expect(tabs).toContain('mindMapRibbonTabLabelKey')
+    expect(readSrc('src/canvas-ribbon/MindMapClassroomRemote.vue')).toContain(
+      'mindMapRibbonTabLabelKey'
+    )
   })
 
   it('reuses the status-bar translate button for language pick and LLM loading', () => {

@@ -33,15 +33,22 @@ from routers.features.learning_space.deps import (
 from routers.features.learning_space.schemas import ClassUpdate
 from services.diagram.semantic_spec_validation import validate_semantic_spec
 from services.learning_space.access import (
+    assert_assignment_deletable,
     assert_assignment_visible_to_learner,
     classes_visible_to_staff,
+    get_class_for_publisher,
     get_class_for_staff,
+    require_homework_publisher,
     require_pilot_teacher,
 )
+from services.learning_space.attribution import assignment_grader_labels, submission_label_user_ids
 from services.learning_space.staff_overview import assignment_metric_rows
 from services.learning_space.assignments import (
     apply_learner_due,
     assert_can_edit_submission,
+    author_names_for_user_ids,
+    enrich_submission_dict,
+    save_submission_review,
     student_homework_diagram_title,
     student_open_diagram_payload,
     submission_allows_resubmit,
@@ -679,6 +686,80 @@ async def test_staff_assistant_ok_without_pilot(monkeypatch: pytest.MonkeyPatch)
 
 
 @pytest.mark.asyncio
+async def test_assistant_can_publish_without_pilot(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Class assistants may publish homework on classes they assist."""
+    learning_class = _staff_class()
+    assistant = as_user(SimpleNamespace(id=8, role="teacher"))
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=learning_class)
+    monkeypatch.setattr("services.learning_space.access.get_enabled_pilot", AsyncMock(return_value=None))
+    monkeypatch.setattr("services.learning_space.access.is_class_assistant", AsyncMock(return_value=True))
+    result = await get_class_for_publisher(db, 1, assistant)
+    assert result is learning_class
+
+
+@pytest.mark.asyncio
+async def test_homework_publisher_allows_assistant_membership(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Uploading homework assets does not require a pilot grant for assistants."""
+    assistant = as_user(SimpleNamespace(id=8, role="teacher"))
+    monkeypatch.setattr("services.learning_space.access.get_enabled_pilot", AsyncMock(return_value=None))
+    monkeypatch.setattr(
+        "services.learning_space.access.class_ids_for_membership_role",
+        AsyncMock(return_value=[1]),
+    )
+    await require_homework_publisher(AsyncMock(), assistant)
+
+
+@pytest.mark.asyncio
+async def test_homework_publisher_rejects_plain_teacher(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A teacher who is neither a pilot nor an assistant cannot upload homework assets."""
+    teacher = as_user(SimpleNamespace(id=8, role="teacher"))
+    monkeypatch.setattr("services.learning_space.access.get_enabled_pilot", AsyncMock(return_value=None))
+    monkeypatch.setattr(
+        "services.learning_space.access.class_ids_for_membership_role",
+        AsyncMock(return_value=[]),
+    )
+    with pytest.raises(HTTPException) as exc:
+        await require_homework_publisher(AsyncMock(), teacher)
+    assert exc.value.status_code == 403
+
+
+def test_assistant_deletes_only_homework_they_published() -> None:
+    """The class owner may delete any homework. An assistant may delete only their own."""
+    learning_class = cast(LearningClass, _staff_class())
+    own = cast(LearningAssignment, SimpleNamespace(created_by=8))
+    other = cast(LearningAssignment, SimpleNamespace(created_by=9))
+    assert_assignment_deletable(learning_class, other, 9)
+    assert_assignment_deletable(learning_class, own, 8)
+    with pytest.raises(HTTPException) as exc:
+        assert_assignment_deletable(learning_class, other, 8)
+    assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_save_submission_review_records_reviewer() -> None:
+    """Grading stores the staff user who saved the review."""
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=2,
+        organization_id=3,
+        status=SUBMISSION_STATUS_SUBMITTED,
+    )
+    db = AsyncMock()
+    reviewed = await save_submission_review(
+        db,
+        submission,
+        scores={"理解": 4},
+        comment="清楚",
+        liked=False,
+        pinned=False,
+        reviewer_user_id=8,
+    )
+    assert reviewed.reviewed_by == 8
+    assert reviewed.reviewed_at is not None
+
+
+@pytest.mark.asyncio
 async def test_remove_class_member_clears_classroom_student(monkeypatch: pytest.MonkeyPatch) -> None:
     """Removing a classroom student clears learning_class_id and ends sessions."""
     learning_class = SimpleNamespace(id=3, teacher_user_id=9)
@@ -739,6 +820,153 @@ async def test_remove_class_member_deletes_enrolled_learner(monkeypatch: pytest.
     result = await remove_class_member(db, cast(LearningClass, learning_class), 12)
     assert result["member_kind"] == "enrolled"
     db.delete.assert_called_once_with(membership)
+
+
+@pytest.mark.asyncio
+async def test_author_names_for_user_ids_reads_name_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cross-school name lookup must not select phone or email."""
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(return_value=MagicMock(all=MagicMock(return_value=[(161, " 王小明 ")])))
+    mock_cm = AsyncMock()
+    mock_cm.__aenter__ = AsyncMock(return_value=mock_db)
+    mock_cm.__aexit__ = AsyncMock(return_value=None)
+    monkeypatch.setattr("services.learning_space.assignments.system_rls_session", lambda: mock_cm)
+
+    names = await author_names_for_user_ids({161})
+
+    assert names == {161: "王小明"}
+    sql = str(mock_db.execute.await_args.args[0].compile(compile_kwargs={"literal_binds": True})).lower()
+    assert "users.name" in sql
+    assert "phone" not in sql
+    assert "email" not in sql
+
+
+@pytest.mark.asyncio
+async def test_enrich_submission_skips_lookup_when_name_is_visible(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Same-school viewers already have the name; do not open a system session."""
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=161,
+        organization_id=99,
+        status=SUBMISSION_STATUS_SUBMITTED,
+    )
+    student = SimpleNamespace(name="王小明", organization_id=99)
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=student)
+    lookup = AsyncMock(return_value={161: "别处的名字"})
+    monkeypatch.setattr("services.learning_space.assignments.author_names_for_user_ids", lookup)
+    monkeypatch.setattr(
+        "services.learning_space.assignments.organization_info_map",
+        AsyncMock(return_value={99: {"organization_name": "北师大思维训练中心"}}),
+    )
+
+    payload = await enrich_submission_dict(db, submission)
+
+    lookup.assert_not_called()
+    assert payload["student_name"] == "王小明"
+
+
+@pytest.mark.asyncio
+async def test_enrich_submission_uses_preloaded_names(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A wall list resolves every author once and reuses that map."""
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=161,
+        organization_id=99,
+        status=SUBMISSION_STATUS_SUBMITTED,
+    )
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=None)
+    lookup = AsyncMock()
+    monkeypatch.setattr("services.learning_space.assignments.author_names_for_user_ids", lookup)
+    monkeypatch.setattr(
+        "services.learning_space.assignments.organization_info_map",
+        AsyncMock(return_value={}),
+    )
+
+    payload = await enrich_submission_dict(db, submission, author_names={161: "王小明"})
+
+    lookup.assert_not_called()
+    assert payload["student_name"] == "王小明"
+
+
+@pytest.mark.asyncio
+async def test_enrich_submission_uses_name_when_user_row_is_hidden(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Assistants outside the student's school still see the account name, not #id."""
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=161,
+        organization_id=99,
+        status=SUBMISSION_STATUS_SUBMITTED,
+    )
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=None)
+    monkeypatch.setattr(
+        "services.learning_space.assignments.author_names_for_user_ids",
+        AsyncMock(return_value={161: "王小明"}),
+    )
+    monkeypatch.setattr(
+        "services.learning_space.assignments.organization_info_map",
+        AsyncMock(return_value={99: {"organization_name": "北师大思维训练中心"}}),
+    )
+
+    payload = await enrich_submission_dict(db, submission)
+
+    assert payload["student_name"] == "王小明"
+    assert payload["organization_name"] == "北师大思维训练中心"
+
+
+@pytest.mark.asyncio
+async def test_enrich_submission_keeps_id_fallback_when_name_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A blank account name still labels the card with the user id."""
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=161,
+        organization_id=99,
+        status=SUBMISSION_STATUS_SUBMITTED,
+    )
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=None)
+    monkeypatch.setattr(
+        "services.learning_space.assignments.author_names_for_user_ids",
+        AsyncMock(return_value={}),
+    )
+    monkeypatch.setattr(
+        "services.learning_space.assignments.organization_info_map",
+        AsyncMock(return_value={}),
+    )
+
+    payload = await enrich_submission_dict(db, submission)
+
+    assert payload["student_name"] == "#161"
+
+
+def test_submission_label_user_ids_include_grader() -> None:
+    """One name query covers the author and the person who graded the work."""
+    graded = LearningSubmission(
+        assignment_id=1,
+        student_user_id=161,
+        organization_id=99,
+        status=SUBMISSION_STATUS_SUBMITTED,
+        reviewed_by=8,
+    )
+    ungraded = LearningSubmission(
+        assignment_id=1,
+        student_user_id=7,
+        organization_id=99,
+        status=SUBMISSION_STATUS_SUBMITTED,
+    )
+    assert submission_label_user_ids([graded, ungraded]) == {161, 7, 8}
+
+
+def test_assignment_grader_labels_keep_unnamed_when_name_missing() -> None:
+    """A saved grader id with no account name still counts as reviewed."""
+    labels, unnamed = assignment_grader_labels([8, 9], False, {8: "李助教", 9: "  "})
+    assert labels == ["李助教"]
+    assert unnamed is True
+    empty, still_unnamed = assignment_grader_labels([], True, {})
+    assert not empty
+    assert still_unnamed is True
 
 
 def test_resolve_submission_org_id_falls_back_to_submission() -> None:

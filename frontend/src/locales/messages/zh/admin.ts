@@ -1878,7 +1878,7 @@ export default {
   'admin.learningSpace.memberEnrolled': '导入学员',
   'admin.learningSpace.memberAssistant': '助教',
   'admin.learningSpace.assistants': '助教',
-  'admin.learningSpace.assistantsHint': '助教可批改作业，不能布置作业。用手机号添加已有帐号。',
+  'admin.learningSpace.assistantsHint': '助教可发布作业、批改作业。用手机号添加已有帐号。',
   'admin.learningSpace.addAssistant': '添加助教',
   'admin.learningSpace.assistantPhonePlaceholder': '助教手机号',
   'admin.learningSpace.accountImportError.not_found': '未找到该帐号',

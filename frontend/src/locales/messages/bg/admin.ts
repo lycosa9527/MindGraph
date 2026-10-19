@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Импортиране на ученици',
   'admin.learningSpace.memberAssistant': 'Помощник в обучението',
   'admin.learningSpace.assistants': 'Помощник в обучението',
-  'admin.learningSpace.assistantsHint': 'Помощниците-учители могат да коригират домашните, но не могат да задават домашни. Използвайте номера на мобилния си телефон, за да добавите съществуващ акаунт.',
+  'admin.learningSpace.assistantsHint': 'Помощниците-учители могат да задават и коригират домашни. Използвайте номера на мобилния си телефон, за да добавите съществуващ акаунт.',
   'admin.learningSpace.addAssistant': 'Добавете помощник-учител',
   'admin.learningSpace.assistantPhonePlaceholder': 'Мобилен телефонен номер на помощник-учител',
   'admin.learningSpace.accountImportError.not_found': 'Акаунтът не е намерен',

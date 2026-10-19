@@ -1,4 +1,4 @@
-"""Class memberships: enrolled learners and review-only assistants.
+"""Class memberships: enrolled learners and assistants who publish and grade.
 
 Classroom students stay on ``users.learning_class_id`` + ``role=student``.
 Existing accounts join a class via this table without changing ``users.role``.
@@ -106,7 +106,7 @@ async def is_class_learner(db: AsyncSession, user_id: int, class_id: int) -> boo
 
 
 async def is_class_assistant(db: AsyncSession, user_id: int, class_id: int) -> bool:
-    """True when the user is a review-only assistant in the class."""
+    """True when the user is an assistant who may publish and grade in the class."""
     return await membership_role_for_user(db, user_id, class_id) == MEMBERSHIP_ROLE_ASSISTANT
 
 
@@ -597,7 +597,12 @@ async def class_roster_items(
     include_initial_password: bool = True,
     admin_bypass_rls: bool = False,
 ) -> list[dict]:
-    """Classroom students plus enrolled members (learners and assistants)."""
+    """Classroom students plus enrolled members (learners and assistants).
+
+    Pass ``admin_bypass_rls`` after the caller has already authorized the class.
+    ``users`` is school-scoped, so an assistant from another school cannot see
+    learner rows on the request session.
+    """
     if admin_bypass_rls:
         async with system_rls_session() as admin_db:
             return await class_roster_items(

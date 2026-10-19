@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Importă studenți',
   'admin.learningSpace.memberAssistant': 'Asistent didactic',
   'admin.learningSpace.assistants': 'Asistent didactic',
-  'admin.learningSpace.assistantsHint': 'Asistenții didactici pot corecta temele, dar nu pot atribui teme. Utilizați numărul dvs. de telefon mobil pentru a adăuga un cont existent.',
+  'admin.learningSpace.assistantsHint': 'Asistenții didactici pot publica și corecta temele. Utilizați numărul dvs. de telefon mobil pentru a adăuga un cont existent.',
   'admin.learningSpace.addAssistant': 'Adăugați un asistent didactic',
   'admin.learningSpace.assistantPhonePlaceholder': 'Numărul de telefon mobil al asistentului didactic',
   'admin.learningSpace.accountImportError.not_found': 'Contul nu a fost găsit',

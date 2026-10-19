@@ -285,6 +285,7 @@ declare module 'vue' {
     LearningSheetFloatBar: typeof import('./components/canvas/LearningSheetFloatBar.vue')['default']
     LearningSheetOverlay: typeof import('./components/diagram/LearningSheetOverlay.vue')['default']
     LearningSpaceAssignModal: typeof import('./components/learningSpace/LearningSpaceAssignModal.vue')['default']
+    LearningSpaceCreditLine: typeof import('./components/learningSpace/LearningSpaceCreditLine.vue')['default']
     LearningSpaceHeader: typeof import('./components/learningSpace/LearningSpaceHeader.vue')['default']
     LearningSpaceRequirementsModal: typeof import('./components/learningSpace/LearningSpaceRequirementsModal.vue')['default']
     LearningSpaceReviewModal: typeof import('./components/learningSpace/LearningSpaceReviewModal.vue')['default']

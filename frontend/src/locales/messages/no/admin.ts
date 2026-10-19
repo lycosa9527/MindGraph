@@ -1799,7 +1799,7 @@ export default {
   'admin.learningSpace.memberEnrolled': 'Importer studenter',
   'admin.learningSpace.memberAssistant': 'Læringsassistent',
   'admin.learningSpace.assistants': 'Læringsassistent',
-  'admin.learningSpace.assistantsHint': 'Læringsassistenter kan rette lekser, men kan ikke tildele lekser. Bruk mobilnummeret ditt for å legge til en eksisterende konto.',
+  'admin.learningSpace.assistantsHint': 'Læringsassistenter kan publisere og rette lekser. Bruk mobilnummeret ditt for å legge til en eksisterende konto.',
   'admin.learningSpace.addAssistant': 'Legg til en lærerassistent',
   'admin.learningSpace.assistantPhonePlaceholder': 'Mobilnummer for undervisningsassistent',
   'admin.learningSpace.accountImportError.not_found': 'Kontoen ble ikke funnet',
