@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Afbeeldingsvoorbeeld',
   'mindmate.input.attachFile': 'Bestand bijvoegen',
   'mindmate.input.unsupportedFile': 'Ondersteunt alleen afbeeldingen, Word, PDF of PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Het bestand is te groot, de maximale grootte is {limit}MB',
   'mindmate.input.placeholder': 'Typ uw vraag...',
   'mindmate.newChat': 'Nieuwe chat',

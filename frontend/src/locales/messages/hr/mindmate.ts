@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Pregled slike',
   'mindmate.input.attachFile': 'Učitajte slike, Word, PDF ili PPT',
   'mindmate.input.unsupportedFile': 'Podržava samo slike, Word, PDF ili PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Datoteka je prevelika, maksimalna veličina je {limit}MB',
   'mindmate.input.placeholder': 'Unesite svoje pitanje',
   'mindmate.newChat': 'Novi razgovor',

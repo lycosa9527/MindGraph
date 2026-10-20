@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'معاينة الصورة',
   'mindmate.input.attachFile': 'Attach file',
   'mindmate.input.unsupportedFile': 'يدعم فقط الصور أو Word أو PDF أو PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'الملف كبير جدًا، الحد الأقصى للحجم هو {limit}MB',
   'mindmate.input.placeholder': 'الرجاء إدخال سؤالك',
   'mindmate.newChat': 'محادثة جديدة',

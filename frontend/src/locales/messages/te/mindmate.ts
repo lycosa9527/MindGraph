@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'చిత్ర పరిదృశ్యం',
   'mindmate.input.attachFile': 'చిత్రాలు, వర్డ్, PDF లేదా PPTని అప్‌లోడ్ చేయండి',
   'mindmate.input.unsupportedFile': 'చిత్రాలు, Word, PDF లేదా PPTకి మాత్రమే మద్దతు ఇస్తుంది',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'ఫైల్ చాలా పెద్దది, గరిష్ట పరిమాణం {limit}MB',
   'mindmate.input.placeholder': 'దయచేసి మీ ప్రశ్నను నమోదు చేయండి',
   'mindmate.newChat': 'కొత్త సంభాషణ',

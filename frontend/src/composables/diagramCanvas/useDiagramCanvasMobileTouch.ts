@@ -9,18 +9,18 @@ import {
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { ZOOM } from '@/config/uiConfig'
 import {
+  type NodeScreenRect,
+  type NodeSlashHit,
+  TOUCH_GESTURE,
+  type TouchPoint,
+  type TwoFingerLock,
   classifyNodeSlash,
   classifySwipe,
+  flashNodeSlash,
   isDoubleTap,
   isNodeSlashTravel,
   isStationaryMultiTap,
   lockTwoFingerMove,
-  TOUCH_GESTURE,
-  type NodeScreenRect,
-  type NodeSlashAction,
-  type NodeSlashHit,
-  type TouchPoint,
-  type TwoFingerLock,
 } from '@/utils/canvasTouchGestures'
 
 /** Panes do not always emit click after touch; dispatch pane-dismiss when the gesture was a tap, not a pan. */
@@ -81,10 +81,7 @@ export function nextTouchGesturePhase(
   return 'idle'
 }
 
-function maxCentroidMove(
-  start: { x: number; y: number },
-  touches: TouchList
-): number {
+function maxCentroidMove(start: { x: number; y: number }, touches: TouchList): number {
   if (touches.length === 0) {
     return 0
   }
@@ -122,40 +119,6 @@ function collectNodeScreenRects(root: HTMLElement): NodeScreenRect[] {
   return rects
 }
 
-const SLASH_TRAIL_COLOR: Record<NodeSlashAction, string> = {
-  delete: '#fb7185',
-  sibling: '#14b8a6',
-  child: '#22c55e',
-}
-
-function flashSlashTrail(host: HTMLElement, points: TouchPoint[], color: string): void {
-  if (points.length < 2) return
-  const bounds = host.getBoundingClientRect()
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  svg.setAttribute('width', String(bounds.width))
-  svg.setAttribute('height', String(bounds.height))
-  svg.style.position = 'absolute'
-  svg.style.inset = '0'
-  svg.style.width = '100%'
-  svg.style.height = '100%'
-  svg.style.pointerEvents = 'none'
-  svg.style.zIndex = '40'
-  const start = points[0]
-  const end = points[points.length - 1]
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
-  line.setAttribute('x1', String(start.x - bounds.left))
-  line.setAttribute('y1', String(start.y - bounds.top))
-  line.setAttribute('x2', String(end.x - bounds.left))
-  line.setAttribute('y2', String(end.y - bounds.top))
-  line.setAttribute('stroke', color)
-  line.setAttribute('stroke-width', '4')
-  line.setAttribute('stroke-linecap', 'round')
-  svg.appendChild(line)
-  host.appendChild(svg)
-  const fade = line.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: 'ease-out' })
-  fade.onfinish = () => svg.remove()
-}
-
 function dispatchContextMenu(touch: Touch, target: EventTarget | null): void {
   if (!(target instanceof Element)) {
     return
@@ -183,6 +146,10 @@ export function useDiagramCanvasMobileTouch(options: {
   allowSingleFingerPan: () => boolean
   /** Two-finger horizontal swipe flips slides instead of panning. */
   canPageSwipe?: () => boolean
+  /** Classroom board: zoom reset, slide swipe, three- and four-finger shortcuts. */
+  boardGestures?: () => boolean
+  /** Mouse and classroom board: finger slash adds or deletes nodes. */
+  slashGestures?: () => boolean
   /** Concept-map pane double-tap adds a node; skip fit-view there. */
   canFitOnDoubleTap?: () => boolean
   /** Left-button slash. Off while the primary button pans (hand tool, phone). */
@@ -201,6 +168,8 @@ export function useDiagramCanvasMobileTouch(options: {
     canPageSwipe,
     canFitOnDoubleTap,
     allowMouseSlash,
+    boardGestures,
+    slashGestures,
   } = options
   const mobileTouchCleanup = ref<(() => void) | null>(null)
 
@@ -237,7 +206,12 @@ export function useDiagramCanvasMobileTouch(options: {
     let slashStroke: SlashStroke | null = null
 
     function slashGesturesEnabled(): boolean {
-      return !allowSingleFingerPan()
+      if (slashGestures) return slashGestures()
+      return Boolean(boardGestures?.())
+    }
+
+    function boardShortcutsEnabled(): boolean {
+      return Boolean(boardGestures?.())
     }
 
     function appendSlashPoint(x: number, y: number, minGap: number): void {
@@ -389,7 +363,7 @@ export function useDiagramCanvasMobileTouch(options: {
         Date.now() - stroke.startedAt,
         collectNodeScreenRects(el)
       )
-      if (hit) flashSlashTrail(el, stroke.points, SLASH_TRAIL_COLOR[hit.action])
+      if (hit) flashNodeSlash(el, stroke.points, hit.action)
       return hit
     }
 
@@ -414,20 +388,22 @@ export function useDiagramCanvasMobileTouch(options: {
 
     function finishTwoFinger(touches: TouchList, changed: TouchList): void {
       const elapsed = Date.now() - twoFingerStartAt
-      const dx = (touches.length >= 2
-        ? (touches[0].clientX + touches[1].clientX) / 2
-        : pinchStartCenterX) - pinchStartCenterX
-      const dy = (touches.length >= 2
-        ? (touches[0].clientY + touches[1].clientY) / 2
-        : pinchStartCenterY) - pinchStartCenterY
-      const endDx = changed.length > 0
-        ? ((changed[0]?.clientX ?? pinchStartCenterX) - pinchStartCenterX)
-        : dx
-      const endDy = changed.length > 0
-        ? ((changed[0]?.clientY ?? pinchStartCenterY) - pinchStartCenterY)
-        : dy
+      const dx =
+        (touches.length >= 2 ? (touches[0].clientX + touches[1].clientX) / 2 : pinchStartCenterX) -
+        pinchStartCenterX
+      const dy =
+        (touches.length >= 2 ? (touches[0].clientY + touches[1].clientY) / 2 : pinchStartCenterY) -
+        pinchStartCenterY
+      const endDx =
+        changed.length > 0 ? (changed[0]?.clientX ?? pinchStartCenterX) - pinchStartCenterX : dx
+      const endDy =
+        changed.length > 0 ? (changed[0]?.clientY ?? pinchStartCenterY) - pinchStartCenterY : dy
 
-      if (twoFingerLock === 'undecided' && isStationaryMultiTap(twoFingerMaxMove, elapsed)) {
+      if (
+        boardShortcutsEnabled() &&
+        twoFingerLock === 'undecided' &&
+        isStationaryMultiTap(twoFingerMaxMove, elapsed)
+      ) {
         eventBus.emit('view:zoom_set_requested', { zoom: ZOOM.DEFAULT })
         resetAllGestureState()
         return
@@ -451,6 +427,10 @@ export function useDiagramCanvasMobileTouch(options: {
 
     function finishMultiFinger(remaining: TouchList): void {
       if (!multiStart) {
+        resetAllGestureState()
+        return
+      }
+      if (!boardShortcutsEnabled()) {
         resetAllGestureState()
         return
       }
@@ -604,7 +584,15 @@ export function useDiagramCanvasMobileTouch(options: {
         }
       }
 
-      if (slashStroke && !isPanning && !isPinching && !multiStart && e.touches.length === 1) {
+      if (branchMove.state.value.active) {
+        slashStroke = null
+      } else if (
+        slashStroke &&
+        !isPanning &&
+        !isPinching &&
+        !multiStart &&
+        e.touches.length === 1
+      ) {
         const touch = e.touches[0]
         appendSlashPoint(touch.clientX, touch.clientY, 4)
         if (isNodeSlashTravel(slashStroke.points, Date.now() - slashStroke.startedAt)) {
@@ -697,11 +685,13 @@ export function useDiagramCanvasMobileTouch(options: {
     const root = canvasContainer.value
     if (!root) return () => {}
     const el = root
-    let stroke: (SlashStroke & {
-      pointerId: number
-      rects: NodeScreenRect[] | null
-      hit: NodeSlashHit | null
-    }) | null = null
+    let stroke:
+      | (SlashStroke & {
+          pointerId: number
+          rects: NodeScreenRect[] | null
+          hit: NodeSlashHit | null
+        })
+      | null = null
 
     function detachWindow(): void {
       window.removeEventListener('pointermove', onPointerMove, true)
@@ -751,7 +741,7 @@ export function useDiagramCanvasMobileTouch(options: {
       detachWindow()
       const hit = classifyNodeSlash(points, elapsed, rects) ?? armed
       if (!hit) return
-      flashSlashTrail(el, points, SLASH_TRAIL_COLOR[hit.action])
+      flashNodeSlash(el, points, hit.action)
       window.setTimeout(() => {
         eventBus.emit('diagram:node_slash_requested', hit)
       }, 0)

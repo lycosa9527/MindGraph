@@ -102,8 +102,7 @@ export function lockTwoFingerMove(options: {
 
 export function isStationaryMultiTap(maxMovePx: number, elapsedMs: number): boolean {
   return (
-    maxMovePx <= TOUCH_GESTURE.MULTI_TAP_MAX_MOVE_PX &&
-    elapsedMs <= TOUCH_GESTURE.MULTI_TAP_MAX_MS
+    maxMovePx <= TOUCH_GESTURE.MULTI_TAP_MAX_MOVE_PX && elapsedMs <= TOUCH_GESTURE.MULTI_TAP_MAX_MS
   )
 }
 
@@ -118,14 +117,6 @@ export function isDoubleTap(
     return false
   }
   return touchDistance(previous, next) <= TOUCH_GESTURE.DOUBLE_TAP_MAX_DIST_PX
-}
-
-/** Desktop IFP / touch laptop: 2-finger pan so 1-finger stays select. */
-export function shouldEnableDesktopTouchPanPinch(
-  eBlackboardOptimize: boolean,
-  maxTouchPoints: number
-): boolean {
-  return eBlackboardOptimize || maxTouchPoints >= 2
 }
 
 export type NodeScreenRect = {
@@ -143,7 +134,7 @@ function slashEndpoints(points: TouchPoint[]): { dx: number; dy: number } | null
   return { dx: end.x - start.x, dy: end.y - start.y }
 }
 
-export type NodeSlashAction = 'delete' | 'sibling' | 'child'
+export type NodeSlashAction = 'delete' | 'sibling'
 
 export type NodeSlashHit = {
   action: NodeSlashAction
@@ -166,13 +157,6 @@ export function isNodeSlashTravel(points: TouchPoint[], elapsedMs: number): bool
   const major = Math.max(absX, absY)
   const minor = Math.min(absX, absY)
   return major >= TOUCH_GESTURE.SLASH_ARM_PX && major >= minor * TOUCH_GESTURE.SLASH_AXIS_RATIO
-}
-
-/** Fast, mostly vertical, downward travel — not a slow drag or a sideways swipe. */
-export function isDownwardSlashTravel(points: TouchPoint[], elapsedMs: number): boolean {
-  const delta = slashIsFast(points, elapsedMs)
-  if (!delta || delta.dy < TOUCH_GESTURE.SLASH_ARM_PX) return false
-  return delta.dy >= Math.abs(delta.dx) * TOUCH_GESTURE.SLASH_AXIS_RATIO
 }
 
 function edgeBand(span: number): number {
@@ -203,12 +187,18 @@ function crossCoord(
   return null
 }
 
-function slashCrossesNode(points: TouchPoint[], rect: NodeScreenRect, action: NodeSlashAction, dx: number): boolean {
+function slashCrossesNode(
+  points: TouchPoint[],
+  rect: NodeScreenRect,
+  action: NodeSlashAction,
+  dx: number,
+  dy: number
+): boolean {
   if (points.length < 2) return false
   const start = points[0]
   const end = points[points.length - 1]
   const pad = TOUCH_GESTURE.SLASH_HIT_PAD_PX
-  if (action === 'sibling') {
+  if (action === 'delete') {
     const width = rect.right - rect.left
     if (width <= 0) return false
     const band = edgeBand(width)
@@ -221,26 +211,28 @@ function slashCrossesNode(points: TouchPoint[], rect: NodeScreenRect, action: No
   const height = rect.bottom - rect.top
   if (height <= 0) return false
   const band = edgeBand(height)
-  const downward = action === 'delete'
+  const downward = dy >= 0
   if (downward && (start.y > rect.top + band || end.y < rect.bottom - band)) return false
   if (!downward && (start.y < rect.bottom - band || end.y > rect.top + band)) return false
   const xMid = crossCoord(points, (rect.top + rect.bottom) / 2, 'y', downward ? 1 : -1)
   return xMid !== null && xMid >= rect.left - pad && xMid <= rect.right + pad
 }
 
+/** Classroom board: either horizontal direction deletes; either vertical direction adds a sibling. */
 function slashActionOf(dx: number, dy: number): NodeSlashAction | null {
   const absX = Math.abs(dx)
   const absY = Math.abs(dy)
-  if (dy >= TOUCH_GESTURE.SLASH_MIN_PX && dy >= absX * TOUCH_GESTURE.SLASH_AXIS_RATIO) return 'delete'
-  if (-dy >= TOUCH_GESTURE.SLASH_MIN_PX && -dy >= absX * TOUCH_GESTURE.SLASH_AXIS_RATIO) return 'child'
-  if (absX >= TOUCH_GESTURE.SLASH_MIN_PX && absX >= absY * TOUCH_GESTURE.SLASH_AXIS_RATIO) return 'sibling'
+  if (absX >= TOUCH_GESTURE.SLASH_MIN_PX && absX >= absY * TOUCH_GESTURE.SLASH_AXIS_RATIO)
+    return 'delete'
+  if (absY >= TOUCH_GESTURE.SLASH_MIN_PX && absY >= absX * TOUCH_GESTURE.SLASH_AXIS_RATIO)
+    return 'sibling'
   return null
 }
 
 /**
- * What a fast one-finger or left-button cut should do.
- * Down deletes every node it crosses. Up adds a child on the first node.
- * Left or right adds one sibling on the first node. Null when it is not a cut.
+ * Classroom-board cut.
+ * Left or right deletes every node it crosses. Up or down adds one same-level node
+ * on the first node the stroke hits. Null when it is not a cut.
  */
 export function classifyNodeSlash(
   points: TouchPoint[],
@@ -251,35 +243,59 @@ export function classifyNodeSlash(
   if (!delta) return null
   const action = slashActionOf(delta.dx, delta.dy)
   if (!action) return null
-  const crossed = nodes.filter((node) => slashCrossesNode(points, node, action, delta.dx))
+  const crossed = nodes.filter((node) => slashCrossesNode(points, node, action, delta.dx, delta.dy))
   if (crossed.length === 0) return null
   if (action === 'delete') {
+    const along = delta.dx >= 0
     return {
       action,
       nodeIds: crossed
-        .sort((a, b) => a.top - b.top || a.left - b.left)
+        .sort((a, b) => (along ? a.left - b.left : b.right - a.right))
         .map((node) => node.id),
     }
   }
   const first =
-    action === 'child'
-      ? crossed.sort((a, b) => b.bottom - a.bottom)[0]
-      : delta.dx >= 0
-        ? crossed.sort((a, b) => a.left - b.left)[0]
-        : crossed.sort((a, b) => b.right - a.right)[0]
+    delta.dy >= 0
+      ? crossed.sort((a, b) => a.top - b.top)[0]
+      : crossed.sort((a, b) => b.bottom - a.bottom)[0]
   if (!first) return null
   return { action, nodeIds: [first.id] }
 }
 
-/**
- * Node ids a top-to-bottom cut passed through, topmost first.
- * Empty when the stroke is too slow, too short, or not downward.
- */
-export function nodesCutByDownwardSlash(
+const SLASH_TRAIL_COLOR: Record<NodeSlashAction, string> = {
+  delete: '#fb7185',
+  sibling: '#14b8a6',
+}
+
+/** Brief stroke so a classroom slash is visible after the finger lifts. */
+export function flashNodeSlash(
+  host: HTMLElement,
   points: TouchPoint[],
-  elapsedMs: number,
-  nodes: NodeScreenRect[]
-): string[] {
-  const hit = classifyNodeSlash(points, elapsedMs, nodes)
-  return hit?.action === 'delete' ? hit.nodeIds : []
+  action: NodeSlashAction
+): void {
+  if (points.length < 2) return
+  const bounds = host.getBoundingClientRect()
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('width', String(bounds.width))
+  svg.setAttribute('height', String(bounds.height))
+  svg.style.position = 'absolute'
+  svg.style.inset = '0'
+  svg.style.width = '100%'
+  svg.style.height = '100%'
+  svg.style.pointerEvents = 'none'
+  svg.style.zIndex = '40'
+  const start = points[0]
+  const end = points[points.length - 1]
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+  line.setAttribute('x1', String(start.x - bounds.left))
+  line.setAttribute('y1', String(start.y - bounds.top))
+  line.setAttribute('x2', String(end.x - bounds.left))
+  line.setAttribute('y2', String(end.y - bounds.top))
+  line.setAttribute('stroke', SLASH_TRAIL_COLOR[action])
+  line.setAttribute('stroke-width', '4')
+  line.setAttribute('stroke-linecap', 'round')
+  svg.appendChild(line)
+  host.appendChild(svg)
+  const fade = line.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: 'ease-out' })
+  fade.onfinish = () => svg.remove()
 }

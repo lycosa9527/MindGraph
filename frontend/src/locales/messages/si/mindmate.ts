@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'රූප පෙරදසුන',
   'mindmate.input.attachFile': 'ගොනුව අමුණන්න',
   'mindmate.input.unsupportedFile': 'පින්තූර, Word, PDF හෝ PPT සඳහා පමණක් සහය දක්වයි',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'ගොනුව විශාල වැඩියි, උපරිම ප්‍රමාණය {limit}MB වේ',
   'mindmate.input.placeholder': 'ඔබේ ප්‍රශ්නය ටයිප් කරන්න...',
   'mindmate.newChat': 'නව කතාබස්',

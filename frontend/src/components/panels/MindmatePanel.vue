@@ -56,6 +56,7 @@ import {
   shouldRemoveCollabFromHistory,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
+import { isMindmateBlockedDocUpload } from '@/utils/mindmateComposerUpload'
 import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
 import { canContinueSavedSeminar } from '@/utils/mindmateSeminarTranscript'
 
@@ -195,6 +196,10 @@ async function attachShowcasePost(postId: string): Promise<void> {
       await import('@/composables/showcase/buildShowcaseMindMateAttachment')
     const post = await getShowcasePost(id)
     const file = await buildShowcaseMindMateAttachment(post)
+    if (await isMindmateBlockedDocUpload(file)) {
+      notify.warningKey('mindmate.input.docNotSupported')
+      return
+    }
     const uploaded = await mindMate.uploadFile(file, { allowDocuments: true })
     if (!uploaded) {
       notify.errorKey('showcase.detail.actionFailed')

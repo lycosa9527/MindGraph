@@ -68,5 +68,7 @@ describe('mind classroom preferences', () => {
     )
     expect(text).toContain("gated: id === 'slide_deck' && !slideDeckSelectable.value")
     expect(text).toContain('queueBusy || option.gated')
+    expect(text).toContain('canvas.mindClassroom.settings.presentation.slide_deck.comingSoon')
+    expect(text).toContain(':disabled="!option.gated"')
   })
 })

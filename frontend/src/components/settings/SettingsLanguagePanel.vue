@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * Language tab inside UserSettingsModal: interface, prompt, bilingual UI, e-blackboard.
+ * Language tab inside UserSettingsModal: interface, optional second line, AI language, canvas touch.
+ * AI language follows the interface unless the user picks another language.
  * Each change is applied immediately. Drafts exist so opening the dialog does not rewrite prefs.
  */
 import { computed, nextTick, ref, watch } from 'vue'
@@ -9,7 +10,10 @@ import { ElCheckbox } from 'element-plus'
 
 import I18nText from '@/components/common/I18nText.vue'
 import BilingualUiSettingsSection from '@/components/settings/BilingualUiSettingsSection.vue'
+import SettingsLanguagePreview from '@/components/settings/SettingsLanguagePreview.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import type { CanvasInputMode } from '@/config/canvasInputMode'
+import { CANVAS_INPUT_MODES, CANVAS_INPUT_MODE_LABEL } from '@/config/canvasInputMode'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { formatGalleryLanguageMenuLabel } from '@/i18n/galleryLanguageMenuLabel'
 import {
@@ -19,6 +23,7 @@ import {
   matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
+import { complementaryUiLocale } from '@/stores/bilingualUiPrefs'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import '@/styles/settings-language-swiss.css'
@@ -38,10 +43,13 @@ const { t } = useLanguage()
 
 const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
-const draftEBlackboardOptimize = ref(uiStore.eBlackboardOptimize)
+const draftCanvasInputMode = ref<CanvasInputMode>(uiStore.canvasInputMode)
+
 const draftBilingualUiEnabled = ref(uiStore.bilingualUiEnabled)
 const draftPresenterUiLocale = ref<Language>(uiStore.presenterUiLocale)
 const matchPromptToInterface = ref(uiStore.matchPromptToUi)
+/** LLM choice to restore when dual mode is turned off in this visit. */
+const promptDraftBeforeBilingual = ref<{ match: boolean; prompt: PromptLanguage } | null>(null)
 
 const allowSimplifiedChinesePicker = computed(() => uiStore.languagePolicyAllowZh)
 
@@ -102,6 +110,13 @@ const promptLanguageOptionCount = computed(
   () => getPromptLanguageOptionsForPicker(allowSimplifiedChinesePicker.value).length
 )
 
+/** Diagram text in the preview: the AI language, which follows the interface when that box is checked. */
+const previewContentLocale = computed(() =>
+  matchPromptToInterface.value
+    ? (matchedPromptLanguageForUiLocale(draftUi.value) ?? draftPrompt.value)
+    : draftPrompt.value
+)
+
 /**
  * el-option `label` is shown in the collapsed select and used by filterable matching.
  * Use a short line only — long concatenations (code + EN + native + search) were
@@ -131,7 +146,7 @@ function loadDraftsFromStore(): void {
   }
   draftUi.value = ui
   draftPrompt.value = pr
-  draftEBlackboardOptimize.value = uiStore.eBlackboardOptimize
+  draftCanvasInputMode.value = uiStore.canvasInputMode
   draftBilingualUiEnabled.value = uiStore.bilingualUiEnabled
   const presenterLocale = uiStore.presenterUiLocale
   draftPresenterUiLocale.value =
@@ -194,17 +209,6 @@ watch(matchPromptToInterface, (on) => {
   }
 })
 
-function complementaryUiLocale(primary: Language): Language {
-  if (primary !== 'zh' && allowSimplifiedChinesePicker.value) {
-    return 'zh'
-  }
-  if (primary !== 'en') {
-    return 'en'
-  }
-  const other = uiLanguageOptions.value.find((option) => option.code !== primary)
-  return other?.code ?? 'en'
-}
-
 function ensureDistinctSecondaryLocale(): void {
   if (!draftBilingualUiEnabled.value) {
     return
@@ -212,16 +216,45 @@ function ensureDistinctSecondaryLocale(): void {
   if (draftPresenterUiLocale.value !== draftUi.value) {
     return
   }
-  const next = complementaryUiLocale(draftUi.value)
+  const next = complementaryUiLocale(draftUi.value, allowSimplifiedChinesePicker.value)
   if (next !== draftUi.value) {
     draftPresenterUiLocale.value = next
   }
 }
 
-watch(draftBilingualUiEnabled, (on) => {
-  if (on) {
-    ensureDistinctSecondaryLocale()
+function lockDraftPromptToInterface(): void {
+  matchPromptToInterface.value = true
+  const matched = matchedPromptLanguageForUiLocale(draftUi.value)
+  if (matched !== null) {
+    draftPrompt.value = matched
   }
+}
+
+watch(draftBilingualUiEnabled, (on, previous) => {
+  if (hydrating) {
+    return
+  }
+  if (on) {
+    if (previous === false) {
+      promptDraftBeforeBilingual.value = {
+        match: matchPromptToInterface.value,
+        prompt: draftPrompt.value,
+      }
+    }
+    ensureDistinctSecondaryLocale()
+    lockDraftPromptToInterface()
+    return
+  }
+  if (previous !== true) {
+    return
+  }
+  const snapshot = promptDraftBeforeBilingual.value
+  promptDraftBeforeBilingual.value = null
+  if (snapshot === null) {
+    return
+  }
+  matchPromptToInterface.value = snapshot.match
+  draftPrompt.value = snapshot.prompt
 })
 
 watch([draftUi, draftPresenterUiLocale], () => {
@@ -250,7 +283,7 @@ async function applyLanguageSettings(): Promise<boolean> {
   if (!matchPromptToInterface.value) {
     uiStore.setPromptLanguage(promptForPersist)
   }
-  uiStore.setEBlackboardOptimize(draftEBlackboardOptimize.value)
+  uiStore.setCanvasInputMode(draftCanvasInputMode.value)
   uiStore.setUiLanguageExplicit(true)
   return true
 }
@@ -303,7 +336,7 @@ watch(
   [
     draftUi,
     draftPrompt,
-    draftEBlackboardOptimize,
+    draftCanvasInputMode,
     draftBilingualUiEnabled,
     draftPresenterUiLocale,
     matchPromptToInterface,
@@ -315,140 +348,227 @@ watch(
 </script>
 
 <template>
-  <div class="language-settings-swiss__stack user-settings-tab-pad">
-    <ElCheckbox v-model="matchPromptToInterface">
-      <I18nText k="settings.language.matchPrompt" />
-    </ElCheckbox>
-
-    <BilingualUiSettingsSection
-      v-model:enabled="draftBilingualUiEnabled"
-      v-model:primary="draftUi"
-      v-model:secondary="draftPresenterUiLocale"
-      :ui-language-options="uiLanguageOptions"
-      :option-count="interfaceLanguageOptionCount"
-    />
-
-    <section v-if="!draftBilingualUiEnabled">
-      <div class="language-settings-swiss__kicker">
-        <span><I18nText k="settings.language.interface" /></span>
-        <span class="language-settings-swiss__kicker-count">
-          <I18nText
-            k="settings.language.supportsCount"
-            :params="{ n: interfaceLanguageOptionCount }"
-          />
-        </span>
-      </div>
-      <el-select
-        v-model="draftUi"
-        class="lang-settings-swiss-select interface-lang-select prompt-lang-select w-full"
-        filterable
-        :placeholder="t('settings.language.promptSelectPlaceholder')"
-        popper-class="prompt-lang-select-popper"
-      >
-        <el-option
-          v-for="o in uiLanguageOptions"
-          :key="o.code"
-          :label="languageSelectDisplayLabel(o)"
-          :value="o.code"
-        >
-          <span
-            class="prompt-option-row"
-            dir="auto"
-            :lang="o.code"
-          >
-            <span class="prompt-option-code">{{ o.code }}</span>
-            <span class="prompt-option-text">
-              <span class="prompt-option-name">{{
-                formatGalleryLanguageMenuLabel(o.code, o.label)
-              }}</span>
-              <span class="prompt-option-en">{{ o.englishName }}</span>
-            </span>
+  <div class="language-settings-swiss__split user-settings-tab-pad">
+    <div class="language-settings-swiss__stack">
+      <BilingualUiSettingsSection
+        v-if="draftBilingualUiEnabled"
+        v-model:enabled="draftBilingualUiEnabled"
+      />
+      <section class="language-settings-ui-picker">
+        <div class="language-settings-swiss__kicker">
+          <span>
+            <I18nText
+              :k="
+                draftBilingualUiEnabled
+                  ? 'settings.language.primaryLanguage'
+                  : 'settings.language.interface'
+              "
+            />
           </span>
-        </el-option>
-      </el-select>
-    </section>
-
-    <section>
-      <div class="language-settings-swiss__kicker">
-        <span><I18nText k="settings.language.prompt" /></span>
-        <span class="language-settings-swiss__kicker-count">
-          <I18nText
-            k="settings.language.supportsCount"
-            :params="{ n: promptLanguageOptionCount }"
-          />
-        </span>
-      </div>
-      <el-select
-        v-model="draftPrompt"
-        class="lang-settings-swiss-select prompt-lang-select w-full"
-        :disabled="matchPromptToInterface"
-        filterable
-        :placeholder="t('settings.language.promptSelectPlaceholder')"
-        popper-class="prompt-lang-select-popper"
-      >
-        <el-option
-          v-for="o in promptLangOptionsFiltered"
-          :key="o.code"
-          :label="languageSelectDisplayLabel(o)"
-          :value="o.code"
-        >
-          <span
-            class="prompt-option-row"
-            dir="auto"
-            :lang="o.code"
-          >
-            <span class="prompt-option-code">{{ o.code }}</span>
-            <span class="prompt-option-text">
-              <span class="prompt-option-name">{{
-                formatGalleryLanguageMenuLabel(o.code, o.label)
-              }}</span>
-              <span class="prompt-option-en">{{ o.englishName }}</span>
-            </span>
+          <span class="language-settings-swiss__kicker-count">
+            <I18nText
+              k="settings.language.supportsCount"
+              :params="{ n: interfaceLanguageOptionCount }"
+            />
           </span>
-        </el-option>
-      </el-select>
-    </section>
+        </div>
+        <el-select
+          v-model="draftUi"
+          class="lang-settings-swiss-select interface-lang-select prompt-lang-select w-full"
+          filterable
+          :placeholder="t('settings.language.promptSelectPlaceholder')"
+          popper-class="prompt-lang-select-popper"
+        >
+          <el-option
+            v-for="o in uiLanguageOptions"
+            :key="o.code"
+            :label="languageSelectDisplayLabel(o)"
+            :value="o.code"
+          >
+            <span
+              class="prompt-option-row"
+              dir="auto"
+              :lang="o.code"
+            >
+              <span class="prompt-option-code">{{ o.code }}</span>
+              <span class="prompt-option-text">
+                <span class="prompt-option-name">{{
+                  formatGalleryLanguageMenuLabel(o.code, o.label)
+                }}</span>
+                <span class="prompt-option-en">{{ o.englishName }}</span>
+              </span>
+            </span>
+          </el-option>
+        </el-select>
+      </section>
 
-    <section>
+      <section v-if="draftBilingualUiEnabled">
+        <div class="language-settings-swiss__kicker">
+          <I18nText k="settings.language.secondaryLanguage" />
+        </div>
+        <el-select
+          v-model="draftPresenterUiLocale"
+          class="lang-settings-swiss-select interface-lang-select prompt-lang-select w-full"
+          filterable
+          :placeholder="t('settings.language.promptSelectPlaceholder')"
+          popper-class="prompt-lang-select-popper"
+        >
+          <el-option
+            v-for="option in uiLanguageOptions"
+            :key="`secondary-${option.code}`"
+            :label="languageSelectDisplayLabel(option)"
+            :value="option.code"
+          >
+            <span
+              class="prompt-option-row"
+              dir="auto"
+              :lang="option.code"
+            >
+              <span class="prompt-option-code">{{ option.code }}</span>
+              <span class="prompt-option-text">
+                <span class="prompt-option-name">{{
+                  formatGalleryLanguageMenuLabel(option.code, option.label)
+                }}</span>
+                <span class="prompt-option-en">{{ option.englishName }}</span>
+              </span>
+            </span>
+          </el-option>
+        </el-select>
+        <p class="language-settings-swiss__hint">
+          <I18nText k="settings.language.secondaryLanguageHint" />
+        </p>
+      </section>
+
+      <BilingualUiSettingsSection
+        v-if="!draftBilingualUiEnabled"
+        v-model:enabled="draftBilingualUiEnabled"
+      />
+
+      <section v-if="!draftBilingualUiEnabled">
+        <div class="language-settings-swiss__kicker">
+          <span><I18nText k="settings.language.prompt" /></span>
+          <span class="language-settings-swiss__kicker-count">
+            <I18nText
+              k="settings.language.supportsCount"
+              :params="{ n: promptLanguageOptionCount }"
+            />
+          </span>
+        </div>
+        <el-select
+          v-model="draftPrompt"
+          class="lang-settings-swiss-select prompt-lang-select language-settings-swiss__follow-select w-full"
+          filterable
+          :disabled="matchPromptToInterface"
+          :placeholder="t('settings.language.promptSelectPlaceholder')"
+          popper-class="prompt-lang-select-popper"
+        >
+          <el-option
+            v-for="o in promptLangOptionsFiltered"
+            :key="o.code"
+            :label="languageSelectDisplayLabel(o)"
+            :value="o.code"
+          >
+            <span
+              class="prompt-option-row"
+              dir="auto"
+              :lang="o.code"
+            >
+              <span class="prompt-option-code">{{ o.code }}</span>
+              <span class="prompt-option-text">
+                <span class="prompt-option-name">{{
+                  formatGalleryLanguageMenuLabel(o.code, o.label)
+                }}</span>
+                <span class="prompt-option-en">{{ o.englishName }}</span>
+              </span>
+            </span>
+          </el-option>
+        </el-select>
+        <ElCheckbox
+          v-model="matchPromptToInterface"
+          class="language-settings-swiss__match-prompt"
+        >
+          <I18nText k="settings.language.matchPrompt" />
+        </ElCheckbox>
+      </section>
+    </div>
+    <div class="language-settings-swiss__preview-slot">
+      <SettingsLanguagePreview
+        :ui-locale="draftUi"
+        :presenter-locale="draftPresenterUiLocale"
+        :bilingual="draftBilingualUiEnabled"
+        :content-locale="previewContentLocale"
+      />
+    </div>
+    <section class="language-settings-swiss__canvas-span">
       <div class="language-settings-swiss__kicker">
-        <span><I18nText k="settings.language.eBlackboardOptimize" /></span>
+        <span><I18nText k="settings.language.canvasInputMode" /></span>
       </div>
       <div
         class="language-settings-canvas-segmented"
         role="radiogroup"
-        :aria-label="t('settings.language.eBlackboardOptimize')"
+        :aria-label="t('settings.language.canvasInputMode')"
       >
         <button
+          v-for="mode in CANVAS_INPUT_MODES"
+          :key="mode"
           type="button"
           role="radio"
           class="language-settings-canvas-segment"
-          :class="{ 'is-active': !draftEBlackboardOptimize }"
-          :aria-checked="!draftEBlackboardOptimize"
-          @click="draftEBlackboardOptimize = false"
+          :class="{ 'is-active': draftCanvasInputMode === mode }"
+          :aria-checked="draftCanvasInputMode === mode"
+          @click="draftCanvasInputMode = mode"
         >
-          <I18nText k="settings.language.eBlackboardOff" />
-        </button>
-        <button
-          type="button"
-          role="radio"
-          class="language-settings-canvas-segment"
-          :class="{ 'is-active': draftEBlackboardOptimize }"
-          :aria-checked="draftEBlackboardOptimize"
-          @click="draftEBlackboardOptimize = true"
-        >
-          <I18nText k="settings.language.eBlackboardOn" />
+          <I18nText :k="CANVAS_INPUT_MODE_LABEL[mode]" />
         </button>
       </div>
       <p class="language-settings-swiss__hint">
-        <I18nText k="settings.language.eBlackboardHint" />
+        <I18nText k="settings.language.canvasInputHint" />
       </p>
     </section>
   </div>
 </template>
 
 <style scoped>
+.language-settings-swiss__split {
+  display: grid;
+  grid-template-columns: 15.5rem minmax(0, 1fr);
+  grid-template-areas:
+    'settings preview'
+    'canvas canvas';
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.language-settings-swiss__stack {
+  grid-area: settings;
+}
+
+.language-settings-swiss__preview-slot {
+  grid-area: preview;
+  min-width: 0;
+  min-height: 0;
+}
+
+.language-settings-swiss__canvas-span {
+  grid-area: canvas;
+}
+
+@media (max-width: 720px) {
+  .language-settings-swiss__split {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'settings'
+      'preview'
+      'canvas';
+  }
+}
+
 /* Dialog checkbox/title/body wrapping is global (`styles/index.css`); overrides here
  * are limited to searchable language selects used only in this modal. */
+.language-settings-swiss__match-prompt {
+  margin-top: 0.75rem;
+}
+
 .prompt-lang-select :deep(.el-select__wrapper) {
   min-width: 0;
 }

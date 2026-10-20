@@ -160,6 +160,11 @@
   min-width: 0;
 }
 
+/* Disabled buttons do not emit hover, so the coming-soon tip would never open. */
+.mc-mode-hit:has(.mc-mode.is-gated) {
+  cursor: not-allowed;
+}
+
 .mc-launch--modal .mc-mode-grid {
   grid-template-columns: 1fr 1fr;
 }
@@ -196,13 +201,8 @@
 
 .mc-mode.is-gated {
   opacity: 0.45;
-  cursor: not-allowed;
   filter: grayscale(0.35);
-}
-
-.mc-mode.is-gated:hover {
-  border-color: #e2e8f0;
-  background: #fff;
+  pointer-events: none;
 }
 
 .mc-mode__top {
@@ -648,7 +648,7 @@
 }
 
 .mc-seg__item:disabled,
-.mc-mode:disabled,
+.mc-mode:disabled:not(.is-gated),
 .mc-sub__btn:disabled,
 .mc-skin:disabled,
 .mc-tone:disabled {

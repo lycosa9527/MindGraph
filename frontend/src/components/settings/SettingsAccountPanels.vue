@@ -101,21 +101,21 @@ const showChangePasswordForm = computed(() => !form.isBayiSsoSubject && !form.ne
         <div>
           <label
             class="language-settings-swiss__kicker"
-            for="account-info-phone"
+            for="account-info-login"
           >
-            <I18nText k="auth.phone" />
+            <I18nText :k="form.accountLoginLabelKey" />
           </label>
           <div class="flex flex-wrap items-center gap-2">
             <input
-              id="account-info-phone"
-              :value="form.userPhone || form.t('auth.notSet')"
+              id="account-info-login"
+              :value="form.accountLoginValue || form.t('auth.notSet')"
               type="text"
-              name="account-info-phone"
+              name="account-info-login"
               disabled
               class="swiss-glass-field__input min-w-0 flex-1"
             />
             <button
-              v-if="!form.isBayiSsoSubject"
+              v-if="form.canChangePhone"
               type="button"
               class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
               @click="form.openChangePhoneModal"
@@ -131,9 +131,7 @@ const showChangePasswordForm = computed(() => !form.isBayiSsoSubject && !form.ne
       v-show="section === 'security'"
       class="space-y-6"
     >
-      <div
-        v-if="!form.isBayiSsoSubject && form.needsSetLoginPassword && form.authStore.user?.phone"
-      >
+      <div v-if="form.canChangePhone && form.needsSetLoginPassword">
         <button
           type="button"
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary w-full"

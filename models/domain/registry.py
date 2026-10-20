@@ -115,6 +115,7 @@ from models.domain.feature_access_control import (
     FeatureAccessOrgGrant,
     FeatureAccessUserGrant,
 )
+from models.domain.canvas_input_device import CanvasInputDevice
 from models.domain.device import Device
 from models.domain.markets import (
     MarketEntitlement,
@@ -214,6 +215,7 @@ __all__ = [
     "FeatureAccessRule",
     "FeatureAccessOrgGrant",
     "FeatureAccessUserGrant",
+    "CanvasInputDevice",
     "Device",
     "MarketEntitlement",
     "MarketListing",

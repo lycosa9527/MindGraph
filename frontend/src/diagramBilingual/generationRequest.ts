@@ -1,14 +1,23 @@
 /**
- * Optional second language for a full-diagram generate request.
- * Branch expand, AI brainstorm, and explain stay primary-only.
+ * Languages for a full-diagram generate request.
+ * Dual mode writes the interface language and the second interface language.
+ * Branch expand, AI brainstorm, and explain stay on the primary language only.
  */
+import { matchedPromptLanguageForUiLocale } from '@/i18n/locales'
 import { useUIStore } from '@/stores/ui'
 
-export function diagramSecondaryLanguage(): string | undefined {
+export function diagramGenerationLanguages(): {
+  language: string
+  secondaryLanguage?: string
+} {
   const ui = useUIStore()
-  if (!ui.bilingualUiEnabled) return undefined
-  const secondary = ui.presenterUiLocale.trim()
-  const primary = ui.promptLanguage.trim()
-  if (!secondary || secondary === primary) return undefined
-  return secondary
+  if (!ui.bilingualUiEnabled) {
+    return { language: ui.promptLanguage }
+  }
+  const language = matchedPromptLanguageForUiLocale(ui.language) ?? ui.promptLanguage
+  const secondary = matchedPromptLanguageForUiLocale(ui.presenterUiLocale)
+  if (secondary === null || secondary === language) {
+    return { language }
+  }
+  return { language, secondaryLanguage: secondary }
 }

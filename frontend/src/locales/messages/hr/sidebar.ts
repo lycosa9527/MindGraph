@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}Ekskluzivno izdanje',
   'sidebar.personalEdition': 'Osobna verzija',
   'sidebar.userSubtitleDefault': 'MindGraph Professional Edition',
-  'sidebar.changePhone': 'Promjena broja mobilnog telefona',
   'sidebar.changePassword': 'Promjena lozinke',
   'sidebar.changeAvatar': 'Izmijeni avatar',
   'sidebar.logout': 'Odjavi se',

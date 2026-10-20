@@ -1,0 +1,1 @@
+"""Canvas device preferences."""

@@ -26,12 +26,14 @@ withDefaults(
       | 'right-start'
       | 'right-end'
     disabled?: boolean
+    popperClass?: string
   }>(),
   {
     suffix: '',
     primaryOnly: false,
     placement: 'top',
     disabled: false,
+    popperClass: '',
   }
 )
 </script>
@@ -40,6 +42,7 @@ withDefaults(
   <ElTooltip
     :placement="placement"
     :disabled="disabled"
+    :popper-class="popperClass"
   >
     <template #content>
       <span class="i18n-tooltip-content">

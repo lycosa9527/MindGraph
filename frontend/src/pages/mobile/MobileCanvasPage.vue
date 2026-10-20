@@ -26,8 +26,8 @@ import MobileCanvasExportButton from '@/components/mobile/MobileCanvasExportButt
 import MobileLearningSheetButton from '@/components/mobile/MobileLearningSheetButton.vue'
 import { DiagramBrainstormPanel, RootConceptModal } from '@/components/panels'
 import {
-  getDiagramOperations,
   getDiagramBrainstorm,
+  getDiagramOperations,
   getPanelCoordinator,
   useCanvasToolbarApps,
   useInlineRecommendationsCoordinator,
@@ -418,6 +418,7 @@ onUnmounted(() => {
         :concept-map-initial-topic-fit="isConceptMap"
         :hand-tool-active="false"
         :collab-locked-node-ids="[]"
+        input-mode="mobile"
         :pan-on-drag-buttons="[0, 1, 2]"
       />
       <div

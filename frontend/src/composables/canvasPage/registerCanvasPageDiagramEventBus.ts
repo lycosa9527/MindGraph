@@ -202,13 +202,8 @@ export function registerCanvasPageDiagramEventBus(options: {
       }
       const node = diagramStore.data?.nodes.find((item) => item.id === nodeId)
       const topic = nodeId === 'topic' || node?.type === 'topic' || node?.type === 'center'
-      if (action === 'sibling') {
-        if (topic) void handleAddBranch()
-        else void handleAddSibling()
-        return
-      }
-      if (mindMap && topic) void handleAddBranch()
-      else void handleAddChild()
+      if (topic) void handleAddBranch()
+      else void handleAddSibling()
     },
     'CanvasPage'
   )

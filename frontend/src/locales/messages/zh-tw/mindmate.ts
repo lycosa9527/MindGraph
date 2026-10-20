@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': '圖片預覽',
   'mindmate.input.attachFile': '上傳圖片、Word、PDF 或 PPT',
   'mindmate.input.unsupportedFile': '僅支持圖片、Word、PDF 或 PPT',
+  'mindmate.input.docNotSupported': '.doc 格式暫不支持，請先將文件轉換為 .docx 再上傳',
   'mindmate.input.fileTooLarge': '文件過大，最大 {limit}MB',
   'mindmate.input.placeholder': '請輸入你的問題',
   'mindmate.newChat': '新建對話',

@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Pamja paraprake e imazhit',
   'mindmate.input.attachFile': 'Bashkëngjit skedar',
   'mindmate.input.unsupportedFile': 'Mbështet vetëm imazhe, Word, PDF ose PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Skedari është shumë i madh, madhësia maksimale është {limit}MB',
   'mindmate.input.placeholder': 'Shkruani pyetjen tuaj…',
   'mindmate.newChat': 'Bisedë e re',

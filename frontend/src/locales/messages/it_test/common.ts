@@ -90,9 +90,8 @@ export default {
   'meta.pageTitle.workshopChat': 'Workshop chat',
   'publicDashboard.networkError': 'Network error, failed to load dashboard',
   'settings.language.interface': 'Interface language',
-  'settings.language.matchPrompt':
-    'Keep AI assistant, interface and virtual keyboard language in sync',
-  'settings.language.prompt': 'AI assistant language',
+  'settings.language.matchPrompt': 'Same as the interface language',
+  'settings.language.prompt': 'LLM output language',
   'settings.language.promptSelectPlaceholder': 'Search languages…',
   'settings.language.supportsCount': 'Supports {n} languages',
   'settings.version.title': "Versione dell'interfaccia utente",

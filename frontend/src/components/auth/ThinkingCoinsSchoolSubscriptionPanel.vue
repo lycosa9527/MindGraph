@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 import {
   SCHOOL_CONSULT_LIMITS,
+  consultProfileFromAccount,
   schoolConsultValidationMessageKey,
   validateSchoolConsultForm,
 } from '@/utils/schoolConsultValidation'
@@ -53,17 +54,11 @@ const SCHOOL_FEATURES = [
 
 function profilePrefill(): { name: string; phone: string; organization: string } {
   const user = authStore.user
-  const username = (user?.username || '').trim()
-  const phone = (user?.phone || '').trim()
-  const organization = (user?.schoolName || '').trim()
-  // Skip name when username is just a phone (common for SMS-only accounts).
-  const looksLikePhone = /^\d{7,15}$/.test(username) || (phone !== '' && username === phone)
-  const name = looksLikePhone ? '' : username
-  return {
-    name: name.slice(0, SCHOOL_CONSULT_LIMITS.name),
-    phone: phone.slice(0, SCHOOL_CONSULT_LIMITS.phone),
-    organization: organization.slice(0, SCHOOL_CONSULT_LIMITS.organization),
-  }
+  return consultProfileFromAccount({
+    username: user?.username,
+    phone: user?.phone,
+    schoolName: user?.schoolName,
+  })
 }
 
 function applyProfilePrefill(options?: { onlyEmpty?: boolean }): void {

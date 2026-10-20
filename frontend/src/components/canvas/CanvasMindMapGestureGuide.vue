@@ -3,6 +3,7 @@
  * Multi-touch guide. Status-bar icon; the card pops above the bar.
  */
 import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { ChevronDown, Hand } from '@lucide/vue'
 
@@ -13,11 +14,21 @@ import {
   openCanvasGuide,
   toggleCanvasGuide,
 } from '@/composables/canvas/canvasGuideExclusive'
-import { MIND_MAP_GESTURE_GUIDE_ROWS } from '@/config/mindMapGestureGuide'
+import { CANVAS_INPUT_MODE_LABEL, effectiveCanvasInputMode } from '@/config/canvasInputMode'
+import { gestureGuideHint, gestureGuideRowsForMode } from '@/config/mindMapGestureGuide'
+import { useUIStore } from '@/stores/ui'
+import { isMobileRoutePath } from '@/utils/mobileRouteRedirect'
 
 const STORAGE_KEY = 'mindgraph.mindmap.gestureGuide.expanded'
 
 const { t } = useLanguage()
+const uiStore = useUIStore()
+const route = useRoute()
+
+const inputMode = computed(() =>
+  effectiveCanvasInputMode(uiStore.canvasInputMode, isMobileRoutePath(route.path))
+)
+const rows = computed(() => gestureGuideRowsForMode(inputMode.value))
 
 const expanded = computed(() => activeCanvasGuideId.value === 'gesture')
 
@@ -80,6 +91,11 @@ function toggleExpanded(): void {
             <span class="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
               <I18nText k="canvas.gestureGuide.title" />
             </span>
+            <span
+              class="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            >
+              <I18nText :k="CANVAS_INPUT_MODE_LABEL[inputMode]" />
+            </span>
           </div>
           <button
             type="button"
@@ -96,7 +112,7 @@ function toggleExpanded(): void {
 
         <ul class="flex max-h-[min(50vh,17.5rem)] flex-col gap-1 overflow-y-auto px-2 pb-1.5 pt-0">
           <li
-            v-for="row in MIND_MAP_GESTURE_GUIDE_ROWS"
+            v-for="row in rows"
             :key="row.id"
             class="flex items-center justify-between gap-2 rounded-md border border-slate-100 bg-slate-50/80 px-2 py-1.5 dark:border-slate-700/80 dark:bg-slate-800/60"
           >
@@ -106,7 +122,7 @@ function toggleExpanded(): void {
             <span
               class="max-w-[52%] shrink-0 text-right text-[10px] leading-tight text-slate-500 dark:text-slate-400"
             >
-              <I18nText :k="row.hintKey" />
+              <I18nText :k="gestureGuideHint(row, inputMode)" />
             </span>
           </li>
         </ul>

@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'ಚಿತ್ರ ಪೂರ್ವವೀಕ್ಷಣೆ',
   'mindmate.input.attachFile': 'ಚಿತ್ರಗಳು, ವರ್ಡ್, ಪಿಡಿಎಫ್ ಅಥವಾ ಪಿಪಿಟಿಯನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
   'mindmate.input.unsupportedFile': 'ಚಿತ್ರಗಳು, ವರ್ಡ್, ಪಿಡಿಎಫ್ ಅಥವಾ ಪಿಪಿಟಿಯನ್ನು ಮಾತ್ರ ಬೆಂಬಲಿಸುತ್ತದೆ',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'ಫೈಲ್ ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ, ಗರಿಷ್ಠ ಗಾತ್ರ {limit}MB ಆಗಿದೆ',
   'mindmate.input.placeholder': 'ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ನಮೂದಿಸಿ',
   'mindmate.newChat': 'ಹೊಸ ಸಂಭಾಷಣೆ',

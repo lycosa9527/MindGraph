@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'ตัวอย่างรูปภาพ',
   'mindmate.input.attachFile': 'แนบไฟล์',
   'mindmate.input.unsupportedFile': 'รองรับเฉพาะรูปภาพ, Word, PDF หรือ PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'ไฟล์มีขนาดใหญ่เกินไป ขนาดสูงสุดคือ {limit}MB',
   'mindmate.input.placeholder': 'พิมพ์คำถามของคุณ...',
   'mindmate.newChat': 'แชทใหม่',

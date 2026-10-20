@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Kép előnézet',
   'mindmate.input.attachFile': 'Töltsön fel képeket, Word, PDF vagy PPT',
   'mindmate.input.unsupportedFile': 'Csak a képeket, Word, PDF vagy PPT támogatja',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'A fájl túl nagy, a maximális méret {limit}MB',
   'mindmate.input.placeholder': 'Kérjük, adja meg kérdését',
   'mindmate.newChat': 'Új beszélgetés',

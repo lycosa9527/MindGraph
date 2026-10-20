@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}专属版',
   'sidebar.personalEdition': '个人专属版',
   'sidebar.userSubtitleDefault': 'MindGraph专业版',
-  'sidebar.changePhone': '修改手机号',
   'sidebar.changePassword': '修改密码',
   'sidebar.changeAvatar': '修改头像',
   'sidebar.logout': '退出登录',

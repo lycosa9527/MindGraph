@@ -5,22 +5,26 @@ import {
   difyUploadMaxBytes,
   fileExtensionFromName,
   isDifyGatewayUploadableFile,
+  isMindmateBlockedDocUpload,
   isMindmateComposerDocumentFile,
   isMindmateComposerUploadableFile,
   isMindmateComposerWordFile,
+  isMindmateLegacyDocFile,
   mindMateFileTypeFromMimeAndName,
   parseDifyUploadErrorDetail,
   resolveDifyChatFileType,
 } from '@/utils/mindmateComposerUpload'
 
 describe('MINDMATE_COMPOSER_FILE_ACCEPT', () => {
-  it('includes Word, PDF, and PowerPoint in the file picker', () => {
-    expect(MINDMATE_COMPOSER_FILE_ACCEPT).toContain('.doc')
-    expect(MINDMATE_COMPOSER_FILE_ACCEPT).toContain('.docx')
-    expect(MINDMATE_COMPOSER_FILE_ACCEPT).toContain('.pdf')
-    expect(MINDMATE_COMPOSER_FILE_ACCEPT).toContain('.ppt')
-    expect(MINDMATE_COMPOSER_FILE_ACCEPT).toContain('.pptx')
-    expect(MINDMATE_COMPOSER_FILE_ACCEPT).toContain('image/*')
+  it('includes Word (.docx), PDF, and PowerPoint in the file picker', () => {
+    const parts = MINDMATE_COMPOSER_FILE_ACCEPT.split(',')
+    expect(parts).toContain('.docx')
+    expect(parts).toContain('.pdf')
+    expect(parts).toContain('.ppt')
+    expect(parts).toContain('.pptx')
+    expect(parts).toContain('image/*')
+    expect(parts).not.toContain('.doc')
+    expect(parts).not.toContain('application/msword')
   })
 })
 
@@ -38,19 +42,48 @@ describe('fileExtensionFromName', () => {
   })
 })
 
+describe('isMindmateLegacyDocFile', () => {
+  it('detects .doc by extension and legacy Word mime', () => {
+    expect(isMindmateLegacyDocFile({ name: 'plan.doc', type: '' })).toBe(true)
+    expect(isMindmateLegacyDocFile({ name: 'plan.DOC', type: '' })).toBe(true)
+    expect(isMindmateLegacyDocFile({ name: 'plan', type: 'application/msword' })).toBe(true)
+  })
+
+  it('keeps .docx even when the mime is mislabeled as legacy Word', () => {
+    expect(isMindmateLegacyDocFile({ name: 'plan.docx', type: 'application/msword' })).toBe(false)
+    expect(isMindmateLegacyDocFile({ name: 'notes.pdf', type: 'application/pdf' })).toBe(false)
+  })
+})
+
+describe('isMindmateBlockedDocUpload', () => {
+  it('blocks a .doc renamed to .docx when the bytes are still OLE', async () => {
+    const bytes = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0])
+    const renamed = new File([bytes], 'plan.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    })
+    const realDocx = new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04])], 'plan.docx')
+    const slides = new File([bytes], 'deck.ppt')
+
+    expect(await isMindmateBlockedDocUpload(renamed)).toBe(true)
+    expect(await isMindmateBlockedDocUpload(realDocx)).toBe(false)
+    expect(await isMindmateBlockedDocUpload(slides)).toBe(false)
+    expect(await isMindmateBlockedDocUpload(new File([bytes], 'plan.doc'))).toBe(true)
+  })
+})
+
 describe('isMindmateComposerWordFile', () => {
-  it('accepts .doc and .docx by extension even with empty mime', () => {
-    expect(isMindmateComposerWordFile({ name: 'plan.doc', type: '' })).toBe(true)
+  it('accepts .docx by extension even with empty mime', () => {
+    expect(isMindmateComposerWordFile({ name: 'plan.doc', type: '' })).toBe(false)
     expect(isMindmateComposerWordFile({ name: 'plan.docx', type: '' })).toBe(true)
   })
 
-  it('accepts Word mime types', () => {
+  it('accepts the .docx mime type', () => {
     expect(
       isMindmateComposerWordFile({
         name: 'plan',
         type: 'application/msword',
       })
-    ).toBe(true)
+    ).toBe(false)
     expect(
       isMindmateComposerWordFile({
         name: 'plan',
@@ -67,8 +100,8 @@ describe('isMindmateComposerWordFile', () => {
 })
 
 describe('isMindmateComposerDocumentFile', () => {
-  it('accepts Word, PDF, and PowerPoint by extension with empty mime', () => {
-    expect(isMindmateComposerDocumentFile({ name: 'plan.doc', type: '' })).toBe(true)
+  it('accepts Word (.docx), PDF, and PowerPoint by extension with empty mime', () => {
+    expect(isMindmateComposerDocumentFile({ name: 'plan.doc', type: '' })).toBe(false)
     expect(isMindmateComposerDocumentFile({ name: 'plan.docx', type: '' })).toBe(true)
     expect(isMindmateComposerDocumentFile({ name: 'notes.pdf', type: '' })).toBe(true)
     expect(isMindmateComposerDocumentFile({ name: 'deck.ppt', type: '' })).toBe(true)
@@ -110,6 +143,11 @@ describe('isMindmateComposerUploadableFile', () => {
     expect(isMindmateComposerUploadableFile({ name: 'a.pdf', type: 'application/pdf' })).toBe(true)
     expect(isMindmateComposerUploadableFile({ name: 'a.ppt', type: '' })).toBe(true)
     expect(isMindmateComposerUploadableFile({ name: 'a.pptx', type: '' })).toBe(true)
+  })
+
+  it('rejects legacy .doc from the paperclip', () => {
+    expect(isMindmateComposerUploadableFile({ name: 'a.doc', type: '' })).toBe(false)
+    expect(isMindmateComposerUploadableFile({ name: 'a', type: 'application/msword' })).toBe(false)
   })
 
   it('rejects spreadsheet from the paperclip', () => {

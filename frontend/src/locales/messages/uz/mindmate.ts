@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Shekil onko’rishi',
   'mindmate.input.attachFile': 'Fayl qo’shish',
   'mindmate.input.unsupportedFile': 'Faqat rasmlar, Word, PDF yoki PPT-ni qo\'llab-quvvatlaydi',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Fayl juda katta, maksimal hajmi {limit}MB',
   'mindmate.input.placeholder': 'Savolinizi yozing...',
   'mindmate.newChat': 'Yangi suhbat',

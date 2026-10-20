@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
- * ImagePreviewModal - Simple modal for previewing images
- * Supports optional navigation when images array is provided
+ * ImagePreviewModal - Simple modal for previewing images.
+ * The wheel zooms the picture. Dragging pans it once it is larger than the frame.
+ * Supports optional navigation when images array is provided.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -11,6 +12,12 @@ import { Image } from '@lucide/vue'
 
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import {
+  type ImagePreviewTransform,
+  clampPreviewPan,
+  nextPreviewScale,
+  zoomAboutPoint,
+} from '@/utils/imagePreviewTransform'
 
 const props = defineProps<{
   visible: boolean
@@ -35,6 +42,13 @@ const open = computed({
 })
 
 const currentIndex = ref(0)
+const stageRef = ref<HTMLElement | null>(null)
+const imageRef = ref<HTMLImageElement | null>(null)
+const transform = ref<ImagePreviewTransform>({ scale: 1, x: 0, y: 0 })
+const panning = ref(false)
+
+let drag: { pointerId: number; x: number; y: number; originX: number; originY: number } | null =
+  null
 
 const hasNavigation = computed(() => props.images && props.images.length > 1)
 
@@ -51,6 +65,69 @@ const canGoNext = computed(
   () => hasNavigation.value && props.images && currentIndex.value < props.images.length - 1
 )
 
+const imageStyle = computed(() => ({
+  transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.scale})`,
+}))
+
+function resetTransform(): void {
+  transform.value = { scale: 1, x: 0, y: 0 }
+  drag = null
+  panning.value = false
+}
+
+function clampToStage(next: ImagePreviewTransform): ImagePreviewTransform {
+  const stage = stageRef.value
+  const image = imageRef.value
+  if (!stage || !image) return next
+  return clampPreviewPan(
+    next,
+    stage.clientWidth,
+    stage.clientHeight,
+    image.offsetWidth,
+    image.offsetHeight
+  )
+}
+
+function onWheel(event: WheelEvent): void {
+  const stage = stageRef.value
+  if (!stage) return
+  const rect = stage.getBoundingClientRect()
+  const cursorX = event.clientX - rect.left - rect.width / 2
+  const cursorY = event.clientY - rect.top - rect.height / 2
+  const nextScale = nextPreviewScale(transform.value.scale, event.deltaY, event.deltaMode)
+  transform.value = clampToStage(zoomAboutPoint(transform.value, nextScale, cursorX, cursorY))
+}
+
+function onPointerDown(event: PointerEvent): void {
+  if (event.button !== 0) return
+  const stage = stageRef.value
+  if (!stage) return
+  stage.setPointerCapture(event.pointerId)
+  drag = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    originX: transform.value.x,
+    originY: transform.value.y,
+  }
+  panning.value = true
+}
+
+function onPointerMove(event: PointerEvent): void {
+  if (!drag || drag.pointerId !== event.pointerId) return
+  transform.value = clampToStage({
+    scale: transform.value.scale,
+    x: drag.originX + (event.clientX - drag.x),
+    y: drag.originY + (event.clientY - drag.y),
+  })
+}
+
+function onPointerUp(event: PointerEvent): void {
+  if (!drag || drag.pointerId !== event.pointerId) return
+  drag = null
+  panning.value = false
+}
+
 // Only sync currentIndex when modal opens - avoid resetting on parent re-renders
 watch(
   () => props.visible,
@@ -61,6 +138,13 @@ watch(
     }
   },
   { immediate: true }
+)
+
+watch(
+  () => [props.visible, currentIndex.value, currentImage.value.imageUrl] as const,
+  () => {
+    resetTransform()
+  }
 )
 
 function handleClose(done?: () => void) {
@@ -127,12 +211,22 @@ function goNext() {
       <!-- Image: key on wrapper forces full re-render when navigating to avoid stale display -->
       <div
         :key="currentImage.imageUrl"
-        class="flex-1 overflow-auto p-4 flex items-center justify-center bg-gray-50 min-h-[400px]"
+        ref="stageRef"
+        class="image-preview-stage"
+        :class="{ 'image-preview-stage--panning': panning }"
+        @wheel.prevent.stop="onWheel"
+        @pointerdown="onPointerDown"
+        @pointermove="onPointerMove"
+        @pointerup="onPointerUp"
+        @pointercancel="onPointerUp"
       >
         <img
+          ref="imageRef"
           :src="currentImage.imageUrl"
           :alt="currentImage.title"
-          class="max-w-full max-h-[70vh] object-contain"
+          draggable="false"
+          :style="imageStyle"
+          @dragstart.prevent
         />
       </div>
 
@@ -165,6 +259,33 @@ function goNext() {
 </template>
 
 <style scoped>
+.image-preview-stage {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  max-height: 70vh;
+  margin: 0 16px 16px;
+  background: #f9fafb;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.image-preview-stage--panning {
+  cursor: grabbing;
+}
+
+.image-preview-stage img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  transform-origin: center center;
+  pointer-events: none;
+}
+
 .nav-btn {
   flex-shrink: 0;
   width: 48px;

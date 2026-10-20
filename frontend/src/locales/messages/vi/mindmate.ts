@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Xem trước hình ảnh',
   'mindmate.input.attachFile': 'Đính kèm tập tin',
   'mindmate.input.unsupportedFile': 'Chỉ hỗ trợ hình ảnh, Word, PDF hoặc PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Tệp quá lớn, kích thước tối đa là {limit}MB',
   'mindmate.input.placeholder': 'Nhập câu hỏi của bạn...',
   'mindmate.newChat': 'Trò chuyện mới',

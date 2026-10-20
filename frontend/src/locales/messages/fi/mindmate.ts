@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Kuvan esikatselu',
   'mindmate.input.attachFile': 'Lataa kuvia, Word, PDF tai PPT',
   'mindmate.input.unsupportedFile': 'Tukee vain kuvia, Wordia, PDF:tä tai PPT:tä',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Tiedosto on liian suuri, enimmäiskoko on {limit}MB',
   'mindmate.input.placeholder': 'Kirjoita kysymyksesi',
   'mindmate.newChat': 'Uusi keskustelu',

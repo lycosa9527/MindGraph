@@ -422,6 +422,7 @@ declare module 'vue' {
     SettingsAccountBindings: typeof import('./components/settings/SettingsAccountBindings.vue')['default']
     SettingsAccountPanels: typeof import('./components/settings/SettingsAccountPanels.vue')['default']
     SettingsLanguagePanel: typeof import('./components/settings/SettingsLanguagePanel.vue')['default']
+    SettingsLanguagePreview: typeof import('./components/settings/SettingsLanguagePreview.vue')['default']
     ShareExportModal: typeof import('./components/panels/ShareExportModal.vue')['default']
     ShowcaseDetailModal: typeof import('./components/showcase/ShowcaseDetailModal.vue')['default']
     ShowcaseDiagramPreview: typeof import('./components/showcase/ShowcaseDiagramPreview.vue')['default']

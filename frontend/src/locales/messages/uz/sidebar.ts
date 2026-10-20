@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org} maxsus',
   'sidebar.personalEdition': 'Shaxsiy maxsus',
   'sidebar.userSubtitleDefault': 'MindGraph Professional nashri',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',

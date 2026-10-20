@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Vista previa de imagen',
   'mindmate.input.attachFile': 'Adjuntar archivo',
   'mindmate.input.unsupportedFile': 'Sólo admite imágenes, Word, PDF o PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'El archivo es demasiado grande, el tamaño máximo es {limit}MB',
   'mindmate.input.placeholder': 'Escriba su pregunta…',
   'mindmate.newChat': 'Nuevo chat',

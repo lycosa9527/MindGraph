@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org} 전용',
   'sidebar.personalEdition': '개인 전용',
   'sidebar.userSubtitleDefault': 'MindGraph 프로페셔널 에디션',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',

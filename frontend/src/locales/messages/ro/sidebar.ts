@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}Ediție exclusivă',
   'sidebar.personalEdition': 'Versiune personală',
   'sidebar.userSubtitleDefault': 'MindGraph Professional Edition',
-  'sidebar.changePhone': 'Modificați numărul de telefon mobil',
   'sidebar.changePassword': 'Schimbaţi parola',
   'sidebar.changeAvatar': 'Modificați avatarul',
   'sidebar.logout': 'Deconectați-vă',

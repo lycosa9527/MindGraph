@@ -42,7 +42,7 @@ import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 const route = useRoute()
 const router = useRouter()
 const deckNav = useTrainingDeckNav()
-const { t, promptLanguage } = useLanguage()
+const { t } = useLanguage()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
@@ -124,7 +124,6 @@ function stopExampleRotation(): void {
 async function handlePromptSubmit() {
   await executeLandingPrompt({
     text: promptText.value,
-    language: promptLanguage.value,
     t,
     notify,
     router,

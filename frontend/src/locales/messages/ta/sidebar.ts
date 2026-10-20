@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}பிரத்தியேக பதிப்பு',
   'sidebar.personalEdition': 'தனிப்பட்ட பதிப்பு',
   'sidebar.userSubtitleDefault': 'MindGraph தொழில்முறை பதிப்பு',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',

@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}專屬版',
   'sidebar.personalEdition': '個人專屬版',
   'sidebar.userSubtitleDefault': 'MindGraph專業版',
-  'sidebar.changePhone': '修改手機號',
   'sidebar.changePassword': '修改密碼',
   'sidebar.changeAvatar': '修改頭像',
   'sidebar.logout': '退出登錄',

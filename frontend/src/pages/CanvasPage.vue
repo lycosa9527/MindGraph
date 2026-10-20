@@ -160,6 +160,7 @@ import {
 } from '@/composables/presentation/presentationDiagramEdit'
 import { useTrainingCanvasGenerate } from '@/composables/training/useTrainingCanvasGenerate'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
+import { effectiveCanvasInputMode } from '@/config/canvasInputMode'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR } from '@/config/presentationHighlighter'
 import {
@@ -205,8 +206,8 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import type { MindMapPresentationToolId } from '@/types/diagram'
 import { MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS } from '@/types/diagram'
-import { shouldEnableDesktopTouchPanPinch } from '@/utils/canvasTouchGestures'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
+import { isMobileRoutePath } from '@/utils/mobileRouteRedirect'
 import {
   clearWorkshopSessionStorage,
   readWorkshopSession,
@@ -221,6 +222,9 @@ const oneSentenceStore = useOneSentenceStore()
 getDiagramOperations()
 const relationshipStore = useConceptMapRelationshipStore()
 const uiStore = useUIStore()
+const canvasInputMode = computed(() =>
+  effectiveCanvasInputMode(uiStore.canvasInputMode, isMobileRoutePath(route.path))
+)
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const learningAssignmentCanvas = useLearningAssignmentCanvasStore()
@@ -638,13 +642,6 @@ const showConceptMapRibbonPickers = computed(() => {
     focusReviewStore.showPicker
   )
 })
-
-const enableDesktopTouchPanPinch = computed(() =>
-  shouldEnableDesktopTouchPanPinch(
-    uiStore.eBlackboardOptimize,
-    typeof navigator === 'undefined' ? 0 : navigator.maxTouchPoints
-  )
-)
 
 const { showCanvasAiFeatures } = useLearningAiGate()
 
@@ -1795,7 +1792,7 @@ onUnmounted(() => {
             :mind-map-slide-dim-focus-node-ids="mindMapTourDimFocusNodeIds"
             :presentation-rail-open="presentationRailOpen"
             :presentation-side-toolbar-visible="showMindMapPresentationSideToolbar"
-            :enable-touch-pan-pinch="enableDesktopTouchPanPinch"
+            :input-mode="canvasInputMode"
             :enable-two-finger-slide-swipe="showMindMapSlideOverlay"
             @node-double-click="handleNodeDoubleClick"
           />

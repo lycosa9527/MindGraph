@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}Exkluzív kiadás',
   'sidebar.personalEdition': 'Személyes verzió',
   'sidebar.userSubtitleDefault': 'MindGraph Professional Edition',
-  'sidebar.changePhone': 'Mobiltelefonszám módosítása',
   'sidebar.changePassword': 'Jelszó módosítása',
   'sidebar.changeAvatar': 'Avatar módosítása',
   'sidebar.logout': 'Jelentkezzen ki',

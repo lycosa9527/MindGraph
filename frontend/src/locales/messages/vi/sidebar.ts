@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': 'Dành riêng {org}',
   'sidebar.personalEdition': 'Dành riêng cá nhân',
   'sidebar.userSubtitleDefault': 'Phiên bản chuyên nghiệp của MindGraph',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',

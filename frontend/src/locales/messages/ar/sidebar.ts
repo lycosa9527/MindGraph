@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}إصدار حصري',
   'sidebar.personalEdition': 'النسخة الشخصية',
   'sidebar.userSubtitleDefault': 'الإصدار الاحترافي من MindGraph',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',

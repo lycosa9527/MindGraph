@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}ವಿಶೇಷ ಆವೃತ್ತಿ',
   'sidebar.personalEdition': 'ವೈಯಕ್ತಿಕ ಆವೃತ್ತಿ',
   'sidebar.userSubtitleDefault': 'MindGraph ಮೈಂಡ್‌ಗ್ರಾಫ್ ವೃತ್ತಿಪರ ಆವೃತ್ತಿ',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',

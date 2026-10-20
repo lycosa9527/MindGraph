@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Попередній перегляд зображення',
   'mindmate.input.attachFile': 'Додати файл',
   'mindmate.input.unsupportedFile': 'Підтримує лише зображення, Word, PDF або PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Файл завеликий, максимальний розмір {limit}MB',
   'mindmate.input.placeholder': 'Введіть питання…',
   'mindmate.newChat': 'Новий чат',

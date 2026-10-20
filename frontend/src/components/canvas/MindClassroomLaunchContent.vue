@@ -290,6 +290,7 @@ function handleRestart(): void {
             :key="option.id"
             k="canvas.mindClassroom.settings.presentation.slide_deck.comingSoon"
             placement="top"
+            popper-class="mc-coming-soon-popper"
             :disabled="!option.gated"
           >
             <span class="mc-mode-hit">

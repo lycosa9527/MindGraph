@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'படத்தின் முன்னோட்டம்',
   'mindmate.input.attachFile': 'படங்கள், Word, PDF அல்லது PPT ஆகியவற்றைப் பதிவேற்றவும்',
   'mindmate.input.unsupportedFile': 'படங்கள், Word, PDF அல்லது PPT ஆகியவற்றை மட்டுமே ஆதரிக்கிறது',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'கோப்பு மிகப் பெரியது, அதிகபட்ச அளவு {limit}MB',
   'mindmate.input.placeholder': 'உங்கள் கேள்வியை உள்ளிடவும்',
   'mindmate.newChat': 'புதிய உரையாடல்',

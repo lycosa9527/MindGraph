@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}Exklusiv utgåva',
   'sidebar.personalEdition': 'Personlig version',
   'sidebar.userSubtitleDefault': 'MindGraph Professional Edition',
-  'sidebar.changePhone': 'Ändra mobilnummer',
   'sidebar.changePassword': 'Byt lösenord',
   'sidebar.changeAvatar': 'Ändra avatar',
   'sidebar.logout': 'Logga ut',

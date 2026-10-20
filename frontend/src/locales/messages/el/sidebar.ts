@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}Αποκλειστική Έκδοση',
   'sidebar.personalEdition': 'Προσωπική έκδοση',
   'sidebar.userSubtitleDefault': 'MindGraph Professional Edition',
-  'sidebar.changePhone': 'Τροποποίηση αριθμού κινητού τηλεφώνου',
   'sidebar.changePassword': 'Αλλαγή κωδικού πρόσβασης',
   'sidebar.changeAvatar': 'Τροποποίηση avatar',
   'sidebar.logout': 'Αποσυνδεθείτε',

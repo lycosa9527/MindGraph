@@ -16,6 +16,7 @@ from typing import Any, Optional
 from clients.dify import AsyncDifyClient, DifyFile
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.diagram.generation_session_registry import register_generation_session
+from services.dify.file_upload_types import legacy_doc_upload_detail
 from services.dify.org_mindmate_client import MindmateDifyNotConfiguredError
 from services.mindbot.dify.runtime_client import mindbot_dify_chat_inputs, open_mindbot_dify_client
 from services.mindbot.diagram.generation_session_bind import resolve_mindbot_linked_user_id
@@ -375,6 +376,9 @@ async def _maybe_dify_files_for_media(
         logger.warning("[MindBot] OpenAPI media fetch returned empty bytes")
         return []
     fname, mime, dify_type = media_filename_and_types(inbound_msg_type, body)
+    if legacy_doc_upload_detail(fname, raw) is not None:
+        logger.info("[MindBot] Refusing legacy .doc upload: %s", fname)
+        return []
     try:
         up = await dify.upload_file(
             dify_user_id,

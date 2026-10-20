@@ -9,6 +9,7 @@ import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAuthStore } from '@/stores/auth'
+import { displayAccountLoginValue, resolveAccountLoginIdentity } from '@/utils/accountLoginIdentity'
 import { isBayiSsoPhone } from '@/utils/accountPhone'
 import { apiRequest } from '@/utils/apiClient'
 import { logPairAudit } from '@/utils/dingtalkPairAuditLog'
@@ -63,13 +64,15 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
   const wordAddinZipUrl = '/api/downloads/mindgraph-word-addin'
   const fileReaderZipUrl = '/api/downloads/mindgraph-file-reader'
 
-  const userPhone = computed(() => {
-    const phone = authStore.user?.phone || ''
-    if (phone && phone.length === 11) {
-      return `${phone.slice(0, 3)}****${phone.slice(7)}`
-    }
-    return phone
-  })
+  const accountLogin = computed(() =>
+    resolveAccountLoginIdentity({
+      phone: authStore.user?.phone,
+      email: authStore.user?.email,
+    })
+  )
+  const accountLoginLabelKey = computed(() => accountLogin.value.labelKey)
+  const accountLoginValue = computed(() => displayAccountLoginValue(accountLogin.value))
+  const canChangePhone = computed(() => accountLogin.value.kind === 'mobile')
 
   const showDingtalkBindSection = computed(
     () => Boolean(authStore.user?.schoolId) && featureMindbot.value
@@ -355,7 +358,9 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     chromeExtensionZipUrl,
     wordAddinZipUrl,
     fileReaderZipUrl,
-    userPhone,
+    accountLoginLabelKey,
+    accountLoginValue,
+    canChangePhone,
     showAccountBindingsSection,
     showDingtalkBindSection,
     dingtalkBindLoading,

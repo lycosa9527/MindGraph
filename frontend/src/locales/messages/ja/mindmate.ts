@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': '画像プレビュー',
   'mindmate.input.attachFile': 'ファイルを添付',
   'mindmate.input.unsupportedFile': '画像、Word、PDF、または PPT のみをサポートします',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'ファイルが大きすぎます。最大サイズは {limit}MB です',
   'mindmate.input.placeholder': '質問を入力…',
   'mindmate.newChat': '新しいチャット',

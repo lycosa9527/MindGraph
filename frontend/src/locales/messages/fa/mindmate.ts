@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'پیش نمایش تصویر',
   'mindmate.input.attachFile': 'Attach file',
   'mindmate.input.unsupportedFile': 'فقط از تصاویر، Word، PDF یا PPT پشتیبانی می کند',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'فایل خیلی بزرگ است، حداکثر اندازه آن {limit}MB است',
   'mindmate.input.placeholder': 'لطفا سوال خود را وارد کنید',
   'mindmate.newChat': 'گفتگوی جدید',

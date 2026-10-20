@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': '이미지 미리보기',
   'mindmate.input.attachFile': '파일 첨부',
   'mindmate.input.unsupportedFile': '이미지, Word, PDF 또는 PPT만 지원합니다.',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': '파일이 너무 큽니다. 최대 크기는 {limit}MB입니다.',
   'mindmate.input.placeholder': '질문을 입력하세요...',
   'mindmate.newChat': '새 대화',

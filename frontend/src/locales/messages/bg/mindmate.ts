@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Преглед на картина',
   'mindmate.input.attachFile': 'Качете изображения, Word, PDF или PPT',
   'mindmate.input.unsupportedFile': 'Поддържа само изображения, Word, PDF или PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Файлът е твърде голям, максималният размер е {limit}MB',
   'mindmate.input.placeholder': 'Моля, въведете вашия въпрос',
   'mindmate.newChat': 'Нов разговор',

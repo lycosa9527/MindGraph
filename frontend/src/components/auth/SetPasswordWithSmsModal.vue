@@ -13,6 +13,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { isCnMainlandMobile } from '@/utils/accountPhone'
 import { apiRequest } from '@/utils/apiClient'
 
 const props = defineProps<{ visible: boolean }>()
@@ -45,7 +46,10 @@ const submitting = ref(false)
 
 let smsTimer: ReturnType<typeof setInterval> | null = null
 
-const boundPhone = computed(() => (authStore.user?.phone || '').trim())
+const boundPhone = computed(() => {
+  const phone = (authStore.user?.phone || '').trim()
+  return isCnMainlandMobile(phone) ? phone : ''
+})
 
 function startCountdown() {
   smsCountdown.value = 60
@@ -90,7 +94,7 @@ async function loadCaptcha() {
 }
 
 async function sendResetSms() {
-  if (!boundPhone.value || boundPhone.value.length !== 11) {
+  if (!boundPhone.value) {
     notify.warningKey('auth.modal.phone11Digits')
     return
   }

@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Beeldvoorskou',
   'mindmate.input.attachFile': 'Heg lêer aan',
   'mindmate.input.unsupportedFile': 'Ondersteun slegs beelde, Word, PDF of PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Die lêer is te groot, die maksimum grootte is {limit}MB',
   'mindmate.input.placeholder': 'Tik u vraag...',
   'mindmate.newChat': 'Nuwe klets',

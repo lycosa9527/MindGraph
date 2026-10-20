@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Преглед слике',
   'mindmate.input.attachFile': 'Отпремите слике, Ворд, ПДФ или ППТ',
   'mindmate.input.unsupportedFile': 'Подржава само слике, Ворд, ПДФ или ППТ',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Датотека је превелика, максимална величина је {limit}МБ',
   'mindmate.input.placeholder': 'Унесите своје питање',
   'mindmate.newChat': 'Нови разговор',

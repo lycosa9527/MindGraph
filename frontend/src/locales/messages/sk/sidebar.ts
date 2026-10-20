@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}Exkluzívne vydanie',
   'sidebar.personalEdition': 'Osobná verzia',
   'sidebar.userSubtitleDefault': 'MindGraph Professional Edition',
-  'sidebar.changePhone': 'Upravte číslo mobilného telefónu',
   'sidebar.changePassword': 'Zmeniť heslo',
   'sidebar.changeAvatar': 'Upraviť avatar',
   'sidebar.logout': 'Odhláste sa',

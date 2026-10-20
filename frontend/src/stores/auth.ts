@@ -43,9 +43,9 @@ import {
 } from '@/utils/adminCapabilities'
 import { registerAiContentLevelAuthBridge } from '@/utils/aiContentLevelAuthBridge'
 import { hasPersistedAuthUser, parseApiErrorDetail } from '@/utils/apiClient'
-import { clearAuthSessionHint, markAuthSessionHint } from '@/utils/authSessionHint'
 import { getAppQueryClient } from '@/utils/appQueryClient'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
+import { clearAuthSessionHint, markAuthSessionHint } from '@/utils/authSessionHint'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { normalizeAuthUser } from '@/utils/normalizeAuthUser'
 import {
@@ -343,6 +343,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     useUIStore().setLanguagePolicyAllowZh(normalizedUser.allowsSimplifiedChinese !== false)
     applyUserLanguageFromProfile(normalizedUser)
+    void useUIStore().hydrateCanvasInputFromDevice()
   }
 
   async function saveLanguagePreferences(

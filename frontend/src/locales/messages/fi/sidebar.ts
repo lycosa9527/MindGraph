@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}Yksinoikeuspainos',
   'sidebar.personalEdition': 'Henkilökohtainen versio',
   'sidebar.userSubtitleDefault': 'MindGraph Professional Edition',
-  'sidebar.changePhone': 'Muokkaa matkapuhelinnumeroa',
   'sidebar.changePassword': 'Vaihda salasana',
   'sidebar.changeAvatar': 'Muokkaa avataria',
   'sidebar.logout': 'Kirjaudu ulos',

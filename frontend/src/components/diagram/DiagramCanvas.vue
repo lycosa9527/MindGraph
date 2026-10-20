@@ -31,6 +31,8 @@ import { CanvasNodeFloatingToolbar } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
 import MindMapNodeExplainResearchPanel from '@/components/canvas/MindMapNodeExplainResearchPanel.vue'
+import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
+import { openThinkingMapAiExpand } from '@/composables/aiBrainstorm/openThinkingMapAiExpand'
 import {
   type FloatingToolbarSize,
   formatBrushActive,
@@ -81,8 +83,6 @@ import {
 import { useMindMapCanvasVisuals } from '@/composables/mindMap/useMindMapCanvasVisuals'
 import { useMindMapConnectorDebugLog } from '@/composables/mindMap/useMindMapConnectorDebugLog'
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
-import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
-import { openThinkingMapAiExpand } from '@/composables/aiBrainstorm/openThinkingMapAiExpand'
 import {
   diagramPresentationReadOnlyRef,
   resolvePresentationTeleportTarget,
@@ -92,6 +92,11 @@ import type {
   CanvasExportColorMode,
   CanvasExportLayout,
 } from '@/config/canvasExportOptions'
+import {
+  type CanvasInputMode,
+  canvasInputUsesSlash,
+  shouldAttachCanvasTouchLayer,
+} from '@/config/canvasInputMode'
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
@@ -115,9 +120,9 @@ import MindMapSummaryOverlay from './MindMapSummaryOverlay.vue'
 import PresentationHighlightOverlay from './PresentationHighlightOverlay.vue'
 import TreeMapOverlay from './TreeMapOverlay.vue'
 import './diagramCanvas.css'
-import './diagramCanvasExportOutline.css'
 import { diagramCanvasEdgeTypesLegacy } from './diagramCanvasEdgeTypesLegacy'
 import { diagramCanvasEdgeTypesMindMapV2 } from './diagramCanvasEdgeTypesMindMapV2'
+import './diagramCanvasExportOutline.css'
 import { diagramCanvasEdgeTypes, diagramCanvasNodeTypes } from './diagramCanvasVueFlowTypes'
 
 interface Props {
@@ -140,10 +145,10 @@ interface Props {
   mindMapSlideDimFocusNodeIds?: Set<string> | null
   panOnDragButtons?: number[] | null
   /**
-   * Desktop classroom e-blackboard: two-finger pan/zoom (1-finger stays tap/select);
-   * mouse middle-button pan stays. Phone mobile uses panOnDragButtons instead.
+   * Laptop: one finger selects, two fingers pan when the screen is touch.
+   * Mobile: one finger pans. Classroom board: two fingers pan, slash, larger targets.
    */
-  enableTouchPanPinch?: boolean
+  inputMode?: CanvasInputMode
   /** Two-finger horizontal swipe flips mind-map slides (when the slide HUD is up). */
   enableTwoFingerSlideSwipe?: boolean
   presentationRailOpen?: boolean
@@ -167,7 +172,7 @@ const props = withDefaults(defineProps<Props>(), {
   mindMapSlideFocusNodeId: null,
   mindMapSlideDimFocusNodeIds: null,
   panOnDragButtons: null,
-  enableTouchPanPinch: false,
+  inputMode: 'laptop',
   enableTwoFingerSlideSwipe: false,
   presentationRailOpen: false,
   presentationSideToolbarVisible: true,
@@ -267,6 +272,13 @@ const presentationStrokePointerScale = computed(() => {
   return 1
 })
 
+const enableTouchPanPinch = computed(() =>
+  shouldAttachCanvasTouchLayer(
+    props.inputMode,
+    typeof navigator === 'undefined' ? 0 : navigator.maxTouchPoints
+  )
+)
+
 const {
   presentationStrokeToolActive,
   presentationStrokeColor,
@@ -285,7 +297,7 @@ const {
   presentationHandPanMode: toRef(props, 'presentationHandPanMode'),
   browseMode: toRef(props, 'browseMode'),
   panOnDragButtons: toRef(props, 'panOnDragButtons'),
-  enableTouchPanPinch: toRef(props, 'enableTouchPanPinch'),
+  enableTouchPanPinch,
   presentationTool,
   presentationHighlighterColor,
   presentationPenColor,
@@ -300,10 +312,10 @@ watch(
   { immediate: true }
 )
 
-/** Mobile page or desktop e-blackboard — CSS touch-action + marquee hide. */
+/** Mobile page, classroom board, or a laptop with a touch screen. */
 const canvasTouchGesturesActive = computed(
   () =>
-    props.enableTouchPanPinch ||
+    enableTouchPanPinch.value ||
     (Array.isArray(props.panOnDragButtons) && props.panOnDragButtons.length > 0)
 )
 
@@ -672,11 +684,13 @@ const { setupMobileTouchZoom, mobileTouchCleanup, setupMouseSlash } = useDiagram
   getViewport,
   setViewport,
   branchMove,
-  // Phone mobile keeps 1-finger pan; e-blackboard uses 2-finger pan so 1-finger can select.
-  allowSingleFingerPan: () => !props.enableTouchPanPinch,
-  canPageSwipe: () => props.enableTwoFingerSlideSwipe,
+  allowSingleFingerPan: () => props.inputMode === 'mobile',
+  canPageSwipe: () => props.enableTwoFingerSlideSwipe && props.inputMode === 'board',
+  boardGestures: () => props.inputMode === 'board',
+  slashGestures: () => canvasInputUsesSlash(props.inputMode),
   canFitOnDoubleTap: () => diagramStore.type !== 'concept_map' && !props.enableTwoFingerSlideSwipe,
   allowMouseSlash: () =>
+    canvasInputUsesSlash(props.inputMode) &&
     !props.browseMode &&
     !props.handToolActive &&
     !props.presentationHandPanMode &&
@@ -688,7 +702,7 @@ let cleanupMouseSlash: (() => void) | null = null
 function syncTouchPanPinchLayer(): void {
   mobileTouchCleanup.value?.()
   mobileTouchCleanup.value = null
-  if (props.enableTouchPanPinch || props.panOnDragButtons) {
+  if (enableTouchPanPinch.value || props.panOnDragButtons) {
     setupMobileTouchZoom()
   }
 }
@@ -775,7 +789,7 @@ onMounted(() => {
 })
 
 watch(
-  () => [props.panOnDragButtons, props.enableTouchPanPinch] as const,
+  () => [props.panOnDragButtons, props.inputMode, enableTouchPanPinch.value] as const,
   () => {
     syncTouchPanPinchLayer()
   }

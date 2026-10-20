@@ -21,33 +21,26 @@ const FLAT_TYPES = [
 describe('resolveThinkingMapNodeSlash', () => {
   it('adds the only node kind on maps that have no child or sibling split', () => {
     for (const type of FLAT_TYPES) {
-      expect(resolveThinkingMapNodeSlash(type, 'child', 'other')).toBe('add_node')
       expect(resolveThinkingMapNodeSlash(type, 'sibling', 'peer')).toBe('add_node')
       expect(resolveThinkingMapNodeSlash(type, 'delete', 'topic')).toBe('delete')
     }
   })
 
-  it('adds a tree category sideways and a child upward', () => {
+  it('adds a tree category on the current level', () => {
     expect(resolveThinkingMapNodeSlash('tree_map', 'sibling', 'topic')).toBe('add_tree_category')
     expect(resolveThinkingMapNodeSlash('tree_map', 'sibling', 'peer')).toBe('add_tree_category')
     expect(resolveThinkingMapNodeSlash('tree_map', 'sibling', 'nested')).toBe('add_node')
-    expect(resolveThinkingMapNodeSlash('tree_map', 'child', 'peer')).toBe('add_node')
-    expect(resolveThinkingMapNodeSlash('tree_map', 'child', 'topic')).toBe('add_node')
     expect(resolveThinkingMapNodeSlash('tree_map', 'delete', 'peer')).toBe('delete')
   })
 
-  it('adds a flow substep upward and a step sideways', () => {
-    expect(resolveThinkingMapNodeSlash('flow_map', 'child', 'peer')).toBe('add_child')
-    expect(resolveThinkingMapNodeSlash('flow_map', 'child', 'nested')).toBe('add_child')
-    expect(resolveThinkingMapNodeSlash('flow_map', 'child', 'topic')).toBe('add_node')
+  it('adds a flow step on the current level', () => {
     expect(resolveThinkingMapNodeSlash('flow_map', 'sibling', 'peer')).toBe('add_node')
     expect(resolveThinkingMapNodeSlash('flow_map', 'sibling', 'nested')).toBe('add_node')
+    expect(resolveThinkingMapNodeSlash('flow_map', 'sibling', 'topic')).toBe('add_node')
     expect(resolveThinkingMapNodeSlash('flow_map', 'delete', 'peer')).toBe('delete')
   })
 
-  it('adds a brace subpart upward and a part sideways', () => {
-    expect(resolveThinkingMapNodeSlash('brace_map', 'child', 'topic')).toBe('add_node')
-    expect(resolveThinkingMapNodeSlash('brace_map', 'child', 'peer')).toBe('add_node')
+  it('adds a brace branch on the current level and a subpart from a nested part', () => {
     expect(resolveThinkingMapNodeSlash('brace_map', 'sibling', 'topic')).toBe('add_branch')
     expect(resolveThinkingMapNodeSlash('brace_map', 'sibling', 'peer')).toBe('add_branch')
     expect(resolveThinkingMapNodeSlash('brace_map', 'sibling', 'nested')).toBe('add_child')
@@ -55,7 +48,7 @@ describe('resolveThinkingMapNodeSlash', () => {
   })
 
   it('leaves mind maps and concept maps on their own slash path', () => {
-    expect(resolveThinkingMapNodeSlash('mindmap', 'child', 'peer')).toBeNull()
+    expect(resolveThinkingMapNodeSlash('mindmap', 'sibling', 'peer')).toBeNull()
     expect(resolveThinkingMapNodeSlash('concept_map', 'delete', 'other')).toBeNull()
   })
 })

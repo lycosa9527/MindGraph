@@ -50,6 +50,11 @@ USER_OWNED_EXPR = "rls_diagram_visible(user_id)"
 DEVICE_EXPR = (
     "(student_id IS NULL AND (rls_is_panel_mode() OR rls_is_system_mode())) OR rls_diagram_visible(student_id)"
 )
+CANVAS_INPUT_DEVICE_EXPR = (
+    "rls_is_system_mode() OR rls_is_panel_mode() OR ("
+    "rls_current_user_id() IS NOT NULL AND "
+    "device_id = rls_setting_text('app.canvas_device_id'))"
+)
 USER_OWNED_TABLES = [
     "diagrams",
     "diagram_snapshots",
@@ -584,6 +589,7 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
     rows.extend((table, USER_OWNED_EXPR) for table in USER_OWNED_TABLES)
     rows.extend((table, USER_OWNED_EXPR) for table in DEBATE_SESSION_TABLES)
     rows.append(("devices", DEVICE_EXPR))
+    rows.append(("canvas_input_devices", CANVAS_INPUT_DEVICE_EXPR))
     rows.extend((table, GEWE_EXPR) for table in GEWE_TABLES)
     rows.extend(KNOWLEDGE_SPACE_CHILD_TABLES)
     rows.extend(DEBATE_CHILD_TABLES)

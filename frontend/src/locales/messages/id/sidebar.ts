@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': 'Eksklusif {org}',
   'sidebar.personalEdition': 'Eksklusif Personal',
   'sidebar.userSubtitleDefault': 'Edisi Profesional MindGraph',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',

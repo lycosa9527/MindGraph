@@ -1,3 +1,5 @@
+import { isCnMainlandMobile } from '@/utils/accountPhone'
+
 /** Limits mirror backend SchoolConsultationBody / school_consult_validation.py */
 
 export const SCHOOL_CONSULT_LIMITS = {
@@ -7,10 +9,7 @@ export const SCHOOL_CONSULT_LIMITS = {
   note: 500,
 } as const
 
-export type SchoolConsultValidationError =
-  | 'required'
-  | 'invalidPhone'
-  | 'tooLong'
+export type SchoolConsultValidationError = 'required' | 'invalidPhone' | 'tooLong'
 
 export interface SchoolConsultFormValues {
   name: string
@@ -20,6 +19,20 @@ export interface SchoolConsultFormValues {
 }
 
 const PHONE_ALLOWED_CHARS = /^[\d\s+\-()]+$/
+
+function isDisallowedControl(code: number): boolean {
+  return code <= 8 || code === 11 || code === 12 || (code >= 14 && code <= 31) || code === 127
+}
+
+function stripDisallowedControls(value: string): string {
+  let out = ''
+  for (const char of value) {
+    if (!isDisallowedControl(char.charCodeAt(0))) {
+      out += char
+    }
+  }
+  return out
+}
 
 function collapseWhitespace(value: string, keepNewlines: boolean): string {
   if (keepNewlines) {
@@ -41,7 +54,7 @@ function sanitizeField(
   if (!cleaned) {
     return { ok: false, error: 'required' }
   }
-  cleaned = cleaned.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
+  cleaned = stripDisallowedControls(cleaned)
   cleaned = cleaned.replace(/<@[^>\s]+>/g, '')
   cleaned = collapseWhitespace(cleaned, keepNewlines)
   if (!cleaned) {
@@ -53,7 +66,9 @@ function sanitizeField(
   return { ok: true, value: cleaned }
 }
 
-function validatePhone(value: string): { ok: true; value: string } | { ok: false; error: SchoolConsultValidationError } {
+function validatePhone(
+  value: string
+): { ok: true; value: string } | { ok: false; error: SchoolConsultValidationError } {
   const cleaned = value.trim()
   if (!cleaned) {
     return { ok: false, error: 'required' }
@@ -112,9 +127,26 @@ export function validateSchoolConsultForm(
   }
 }
 
-export function schoolConsultValidationMessageKey(
-  error: SchoolConsultValidationError
-): string {
+export function consultProfileFromAccount(input: {
+  username?: string | null
+  phone?: string | null
+  schoolName?: string | null
+}): { name: string; phone: string; organization: string } {
+  const username = (input.username || '').trim()
+  const storedPhone = (input.phone || '').trim()
+  const phone = isCnMainlandMobile(storedPhone) ? storedPhone : ''
+  const organization = (input.schoolName || '').trim()
+  const looksLikeAccountKey =
+    /^\d{7,15}$/.test(username) || (storedPhone !== '' && username === storedPhone)
+  const name = looksLikeAccountKey ? '' : username
+  return {
+    name: name.slice(0, SCHOOL_CONSULT_LIMITS.name),
+    phone: phone.slice(0, SCHOOL_CONSULT_LIMITS.phone),
+    organization: organization.slice(0, SCHOOL_CONSULT_LIMITS.organization),
+  }
+}
+
+export function schoolConsultValidationMessageKey(error: SchoolConsultValidationError): string {
   switch (error) {
     case 'required':
       return 'thinkingCoins.school.validationRequired'

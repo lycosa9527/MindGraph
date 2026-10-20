@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Şəkil önbaxışı',
   'mindmate.input.attachFile': 'Fayl əlavə et',
   'mindmate.input.unsupportedFile': 'Yalnız şəkilləri, Word, PDF və ya PPT-ni dəstəkləyir',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Fayl çox böyükdür, maksimum ölçü {limit}MB-dir',
   'mindmate.input.placeholder': 'Sualınızı yazın...',
   'mindmate.newChat': 'Yeni söhbət',

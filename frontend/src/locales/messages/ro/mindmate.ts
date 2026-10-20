@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Previzualizare imagine',
   'mindmate.input.attachFile': 'Încărcați imagini, Word, PDF sau PPT',
   'mindmate.input.unsupportedFile': 'Acceptă doar imagini, Word, PDF sau PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Fișierul este prea mare, dimensiunea maximă este de {limit}MB',
   'mindmate.input.placeholder': 'Vă rugăm să introduceți întrebarea dvs',
   'mindmate.newChat': 'Conversație nouă',

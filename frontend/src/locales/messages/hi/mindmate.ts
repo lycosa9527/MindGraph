@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'छवि पूर्वावलोकन',
   'mindmate.input.attachFile': 'फ़ाइल संलग्न',
   'mindmate.input.unsupportedFile': 'केवल छवियों, वर्ड, पीडीएफ या पीपीटी का समर्थन करता है',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'फ़ाइल बहुत बड़ी है, अधिकतम आकार {limit}MB है',
   'mindmate.input.placeholder': 'अपना प्रश्न लिखें...',
   'mindmate.newChat': 'नई चैट',

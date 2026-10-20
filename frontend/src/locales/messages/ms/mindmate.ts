@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Pratinjau Gambar',
   'mindmate.input.attachFile': 'Lampirkan berkas',
   'mindmate.input.unsupportedFile': 'Hanya menyokong imej, Word, PDF atau PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Fail terlalu besar, saiz maksimum ialah {limit}MB',
   'mindmate.input.placeholder': 'Ketik pertanyaan Anda...',
   'mindmate.newChat': 'Sembang Baru',

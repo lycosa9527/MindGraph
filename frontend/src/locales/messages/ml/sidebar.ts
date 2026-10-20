@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org}എക്‌സ്‌ക്ലൂസീവ് പതിപ്പ്',
   'sidebar.personalEdition': 'വ്യക്തിഗത പതിപ്പ്',
   'sidebar.userSubtitleDefault': 'MindGraph മൈൻഡ്ഗ്രാഫ് പ്രൊഫഷണൽ പതിപ്പ്',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',

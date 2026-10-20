@@ -34,7 +34,7 @@ import {
 import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { canvasRunModel } from '@/config/canvasLlmMenu'
-import { diagramSecondaryLanguage } from '@/diagramBilingual/generationRequest'
+import { diagramGenerationLanguages } from '@/diagramBilingual/generationRequest'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore } from '@/stores/diagram'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
@@ -68,7 +68,7 @@ export function useAutoComplete() {
   const diagramStore = useDiagramStore()
   const llmResultsStore = useLLMResultsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
-  const { promptLanguage, t } = useLanguage()
+  const { t } = useLanguage()
   const notify = useNotifications()
   const { guardCollabGuestAi } = useCollabGuestAiGate()
   const { customLlmEnabled } = useOrgCustomLlm()
@@ -578,7 +578,8 @@ export function useAutoComplete() {
     }
 
     // Build simple request - backend handles prompt construction
-    const language = promptLanguage.value
+    const outputLanguages = diagramGenerationLanguages()
+    const language = outputLanguages.language
     const override = typeof topicOverride === 'string' ? topicOverride.trim() : ''
     const baseTopic = override || extractMainTopic() || ''
     const instructions = (generationInstructions ?? '').trim()
@@ -586,7 +587,7 @@ export function useAutoComplete() {
     // Do not also splice them into prompt — that duplicated 【用户要求】.
     const topic = `${baseTopic}${promptSuffix ?? ''}`
 
-    const secondaryLanguage = diagramSecondaryLanguage()
+    const secondaryLanguage = outputLanguages.secondaryLanguage
     const requestBody: Record<string, unknown> = {
       prompt: topic,
       diagram_type: diagramStore.type,

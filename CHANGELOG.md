@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.180] - 2026-10-20
+
+> **Canvas input is mouse, laptop, phone, or a classroom board. Bilingual diagrams follow the interface languages. Old Word .doc files are refused.**
+
+### Changed
+
+- **Canvas input** — Language settings replace the e-blackboard switch with Mouse, Laptop, Mobile, and Classroom board. The choice stays on this browser, so a classroom board keeps its mode for every account that signs in there (migration `0148`). A phone always uses the mobile profile. The gesture card lists only the active mode. An older e-blackboard On setting becomes Classroom board.
+- **Gestures** — Mouse: wheel zoom, hold the wheel to pan, drag left or right to delete, drag up or down to add a same-level node. Laptop: drag the node; one finger selects, and two fingers pan when the screen is touch. Mobile: one finger pans, then a long-press drag moves a node. Classroom board: two fingers pan, slash left or right to delete, slash up or down to add a same-level node, and larger branch buttons. A vertical slash on a thinking map adds a node on the current level.
+- **Bilingual interface** — Turning it on locks model output to the interface language and keeps the second interface language different. A full diagram is generated in those two interface languages. The language panel shows a live toolbar and a short branch.
+- **Account** — Settings name the login as 小致 UUID, a masked mobile, or email. Changing the phone stays on a mainland mobile account. The school consult form fills name, mobile, and school from the account, and leaves the name blank when the username is the account key.
+- **Image preview** — The wheel zooms the picture. Dragging pans it once it is larger than the frame.
+
+### Fixed
+
+- **MindMate files** — A classic `.doc`, including one renamed to `.docx`, is refused with a convert-to-`.docx` notice. `.docx`, PDF, and PowerPoint still upload. DingTalk MindBot drops the same legacy Word file.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`tests/test_canvas_input_device.py`](tests/test_canvas_input_device.py), [`tests/test_dify_file_upload_types.py`](tests/test_dify_file_upload_types.py)
+- [`frontend/tests/canvasTouchGestures.spec.ts`](frontend/tests/canvasTouchGestures.spec.ts), [`frontend/tests/mindMapGestureGuide.spec.ts`](frontend/tests/mindMapGestureGuide.spec.ts), [`frontend/tests/thinkingMapNodeSlash.spec.ts`](frontend/tests/thinkingMapNodeSlash.spec.ts), [`frontend/tests/mindMapEBlackboardScale.spec.ts`](frontend/tests/mindMapEBlackboardScale.spec.ts), [`frontend/tests/settingsLanguagePanel.spec.ts`](frontend/tests/settingsLanguagePanel.spec.ts), [`frontend/tests/accountLoginIdentity.spec.ts`](frontend/tests/accountLoginIdentity.spec.ts), [`frontend/tests/consultProfileFromAccount.spec.ts`](frontend/tests/consultProfileFromAccount.spec.ts), [`frontend/tests/imagePreviewTransform.spec.ts`](frontend/tests/imagePreviewTransform.spec.ts), [`frontend/tests/mindmateComposerUpload.spec.ts`](frontend/tests/mindmateComposerUpload.spec.ts)
+
 ## [5.180.179] - 2026-10-20
 
 > **Node Palette is AI brainstorm, mind maps leave room for pictures and emoji, and admin SMS is gone.**

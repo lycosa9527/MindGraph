@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Forhåndsvisning av bilde',
   'mindmate.input.attachFile': 'Last opp bilder, Word, PDF eller PPT',
   'mindmate.input.unsupportedFile': 'Støtter kun bilder, Word, PDF eller PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Filen er for stor, maksimal størrelse er {limit}MB',
   'mindmate.input.placeholder': 'Vennligst skriv inn spørsmålet ditt',
   'mindmate.newChat': 'Ny samtale',

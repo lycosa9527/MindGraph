@@ -416,6 +416,11 @@ body {
   z-index: 5300 !important;
 }
 
+/* Same dialog: the 幻灯片讲解 coming-soon tip must paint above the 5200 overlay. */
+.mc-coming-soon-popper.el-popper {
+  z-index: 5400 !important;
+}
+
 /*
  * Element Plus dialog / message-box: header close uses physical `right: 0`.
  * Use inline-end so the × sits on the trailing edge in RTL (physical left), matching notifications.

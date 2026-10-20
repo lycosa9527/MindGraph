@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Προεπισκόπηση εικόνας',
   'mindmate.input.attachFile': 'Μεταφορτώστε εικόνες, Word, PDF ή PPT',
   'mindmate.input.unsupportedFile': 'Υποστηρίζει μόνο εικόνες, Word, PDF ή PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Το αρχείο είναι πολύ μεγάλο, το μέγιστο μέγεθος είναι {limit}MB',
   'mindmate.input.placeholder': 'Εισαγάγετε την ερώτησή σας',
   'mindmate.newChat': 'Νέα συνομιλία',

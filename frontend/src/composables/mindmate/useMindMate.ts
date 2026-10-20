@@ -45,6 +45,7 @@ import {
 import {
   difyUploadMaxBytes,
   isDifyGatewayUploadableFile,
+  isMindmateBlockedDocUpload,
   isMindmateComposerUploadableFile,
   parseDifyUploadErrorDetail,
   resolveDifyChatFileType,
@@ -455,8 +456,15 @@ export function useMindMate(options: MindMateOptions = {}) {
     file: File,
     options: { allowDocuments?: boolean } = {}
   ): Promise<MindMateFile | null> {
-    // Composer paperclip: images + Word/PDF/PPT. Showcase may send other Dify docs.
+    // Composer paperclip: images + Word (.docx)/PDF/PPT. Showcase may send other Dify docs.
+    // Legacy .doc is refused on every MindMate upload, including Showcase attach.
     const allowDocuments = options.allowDocuments === true
+    if (await isMindmateBlockedDocUpload(file)) {
+      const errorMsg = String(t('mindmate.input.docNotSupported'))
+      eventBus.emit('mindmate:error', { error: errorMsg })
+      onError?.(errorMsg)
+      return null
+    }
     const allowed = allowDocuments
       ? isDifyGatewayUploadableFile(file)
       : isMindmateComposerUploadableFile(file)

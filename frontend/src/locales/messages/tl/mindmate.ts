@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Preview ng Larawan',
   'mindmate.input.attachFile': 'Mag-attach ng file',
   'mindmate.input.unsupportedFile': 'Sinusuportahan lamang ang mga larawan, Word, PDF o PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Masyadong malaki ang file, ang maximum na laki ay {limit}MB',
   'mindmate.input.placeholder': 'I-type ang iyong tanong...',
   'mindmate.newChat': 'Bagong Chat',

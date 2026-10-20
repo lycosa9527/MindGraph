@@ -140,7 +140,6 @@ export default {
   'sidebar.orgEdition': '{org} Özel',
   'sidebar.personalEdition': 'Kişisel özel',
   'sidebar.userSubtitleDefault': 'MindGraph Profesyonel Sürümü',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',

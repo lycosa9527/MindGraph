@@ -99,6 +99,7 @@ export default {
   'mindmate.imagePreview': 'Náhled obrázku',
   'mindmate.input.attachFile': 'Nahrajte obrázky, Word, PDF nebo PPT',
   'mindmate.input.unsupportedFile': 'Podporuje pouze obrázky, Word, PDF nebo PPT',
+  'mindmate.input.docNotSupported': '.doc files are not supported. Please convert the file to .docx and upload again.',
   'mindmate.input.fileTooLarge': 'Soubor je příliš velký, maximální velikost je {limit}MB',
   'mindmate.input.placeholder': 'Zadejte prosím svůj dotaz',
   'mindmate.newChat': 'Nový rozhovor',
