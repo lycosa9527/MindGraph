@@ -6,9 +6,9 @@ import pytest
 
 from models import GenerateRequest
 from models.common import LLMModel
-from models.requests.requests_thinking import NodePaletteStartRequest
+from models.requests.requests_thinking import AiBrainstormStartRequest
 from prompts.ai_content_level import merge_generation_instructions
-from routers.node_palette_streaming import _merged_educational_context
+from routers.ai_brainstorm_streaming import _merged_educational_context
 
 
 def test_generate_request_accepts_generation_instructions() -> None:
@@ -40,9 +40,9 @@ def test_generation_instructions_merge_marker(language: str, marker: str) -> Non
     assert instructions in merged
 
 
-def test_node_palette_start_accepts_generation_instructions() -> None:
+def test_ai_brainstorm_start_accepts_generation_instructions() -> None:
     """Brainstorm / palette start keeps 专业内容 on the request model."""
-    req = NodePaletteStartRequest.model_validate(
+    req = AiBrainstormStartRequest.model_validate(
         {
             "session_id": "palette_abc12345",
             "diagram_type": "mindmap",
@@ -56,7 +56,7 @@ def test_node_palette_start_accepts_generation_instructions() -> None:
 
 def test_palette_merge_copies_generation_instructions_into_raw_message() -> None:
     """Palette prompt builder reads audience text from educational_context.raw_message."""
-    req = NodePaletteStartRequest.model_validate(
+    req = AiBrainstormStartRequest.model_validate(
         {
             "session_id": "palette_abc12345",
             "diagram_type": "mindmap",

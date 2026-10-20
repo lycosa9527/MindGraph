@@ -21,6 +21,7 @@ import {
   measureBridgeDimensionLabel,
 } from '@/utils/bridgeMapLabelLayout'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import {
   thinkingMapAdaptiveTextColor,
@@ -119,7 +120,12 @@ const treeLabelMaxWidth = computed(() => {
   const fontWeight = String(props.data.style?.fontWeight || 'normal')
   const fontFamily = props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK
   return `${resolveThinkingMapDisplayMaxWidthPx(
-    displayText.value,
+    labelWithNodeIcon(
+      diagramStore.data,
+      props.id,
+      displayText.value,
+      diagramStore.data?.connections
+    ),
     fontSize,
     TREE_MAP_DIMENSION_LABEL_MAX_TEXT_PX,
     { fontWeight, fontFamily }

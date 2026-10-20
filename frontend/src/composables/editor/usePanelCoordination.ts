@@ -21,7 +21,7 @@ import { eventBus } from '../core/useEventBus'
 // Types
 // ============================================================================
 
-export type PanelName = 'mindmate' | 'nodePalette' | 'property'
+export type PanelName = 'mindmate' | 'diagramBrainstorm' | 'property'
 
 export interface PanelOpenOptions {
   /** Source of the open request (for debugging) */
@@ -44,7 +44,7 @@ export interface UsePanelCoordinationOptions {
 // Composable
 // ============================================================================
 
-function getNodePaletteDiagramKey(
+function getDiagramBrainstormKey(
   diagramType: string,
   activeDiagramId: string | null,
   routeDiagramId: string | undefined
@@ -77,7 +77,7 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
 
   const isPanelOpen = computed(() => ({
     mindmate: panelsStore.mindmate.open,
-    nodePalette: panelsStore.nodePalette.open,
+    diagramBrainstorm: panelsStore.diagramBrainstorm.open,
     property: panelsStore.property.open,
   }))
 
@@ -111,14 +111,14 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
       case 'mindmate':
         panelsStore.openMindmate(data)
         break
-      case 'nodePalette': {
+      case 'diagramBrainstorm': {
         const dt = diagramStore.type === 'mind_map' ? 'mindmap' : diagramStore.type
-        const diagramKey = getNodePaletteDiagramKey(
+        const diagramKey = getDiagramBrainstormKey(
           dt ?? 'unknown',
           savedDiagramsStore.activeDiagramId,
           route.query.diagramId as string | undefined
         )
-        panelsStore.openNodePalette({
+        panelsStore.openDiagramBrainstorm({
           ...data,
           diagramKey,
         })
@@ -157,8 +157,8 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
       case 'mindmate':
         panelsStore.closeMindmate()
         break
-      case 'nodePalette':
-        panelsStore.closeNodePalette()
+      case 'diagramBrainstorm':
+        panelsStore.closeDiagramBrainstorm()
         break
       case 'property':
         panelsStore.closeProperty()
@@ -197,7 +197,7 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
    * Close all panels except the specified one
    */
   function closeAllExcept(name: PanelName): void {
-    const panels: PanelName[] = ['mindmate', 'nodePalette', 'property']
+    const panels: PanelName[] = ['mindmate', 'diagramBrainstorm', 'property']
 
     panels.forEach((panelName) => {
       if (panelName !== name && isPanelOpen.value[panelName]) {
@@ -222,16 +222,16 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
     return togglePanel('mindmate', opts)
   }
 
-  function openNodePalette(opts?: PanelOpenOptions): boolean {
-    return openPanel('nodePalette', opts)
+  function openDiagramBrainstorm(opts?: PanelOpenOptions): boolean {
+    return openPanel('diagramBrainstorm', opts)
   }
 
-  function closeNodePalette(): boolean {
-    return closePanel('nodePalette')
+  function closeDiagramBrainstorm(): boolean {
+    return closePanel('diagramBrainstorm')
   }
 
-  function toggleNodePalette(opts?: PanelOpenOptions): boolean {
-    return togglePanel('nodePalette', opts)
+  function toggleDiagramBrainstorm(opts?: PanelOpenOptions): boolean {
+    return togglePanel('diagramBrainstorm', opts)
   }
 
   function openProperty(nodeId: string, nodeData: Record<string, unknown>): boolean {
@@ -356,9 +356,9 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
     openMindmate,
     closeMindmate,
     toggleMindmate,
-    openNodePalette,
-    closeNodePalette,
-    toggleNodePalette,
+    openDiagramBrainstorm,
+    closeDiagramBrainstorm,
+    toggleDiagramBrainstorm,
     openProperty,
     closeProperty,
     toggleProperty,

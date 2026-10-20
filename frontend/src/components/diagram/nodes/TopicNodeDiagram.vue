@@ -24,6 +24,7 @@ import { useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { buildMultiFlowTopicHandles } from '@/utils/multiFlowTopicHandles'
 import { type NodeShape, applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
@@ -252,7 +253,12 @@ const topicRingBorderRadius = computed(() => {
 })
 
 const topicMaxWidth = computed(() => {
-  const label = String(props.data.label || '').trim()
+  const label = labelWithNodeIcon(
+    diagramStore.data,
+    props.id,
+    String(props.data.label || '').trim(),
+    diagramStore.data?.connections
+  )
   const fontSize =
     typeof props.data.style?.fontSize === 'number'
       ? props.data.style.fontSize

@@ -1276,7 +1276,7 @@ class LLMService:
         system_message: Optional[str] = None,
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
-        request_type: str = "node_palette",
+        request_type: str = "ai_brainstorm",
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
         session_id: Optional[str] = None,

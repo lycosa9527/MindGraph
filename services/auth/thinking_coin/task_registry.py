@@ -10,9 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.thinking_coin import ThinkingCoinEarnTask, ThinkingCoinSetting
 from utils.auth.thinking_coin_config import (
-    CANVAS_ASSIST_REQUEST_TYPES,
     HANDLER_CLIENT_EVENT,
     HANDLER_USAGE_DAILY,
+    is_canvas_assist_request,
     SETTING_COST_CANVAS,
     SETTING_COST_DIAGRAM,
     SETTING_COST_MINDMATE,
@@ -117,7 +117,7 @@ async def get_cost_for_request_type(db: AsyncSession, request_type: str) -> int:
         return settings.get(SETTING_COST_MINDMATE, THINKING_COIN_COST_MINDMATE_TURN_DEFAULT)
     if request_type == "diagram_generation":
         return settings.get(SETTING_COST_DIAGRAM, THINKING_COIN_COST_DIAGRAM_GEN_DEFAULT)
-    if request_type in CANVAS_ASSIST_REQUEST_TYPES:
+    if is_canvas_assist_request(request_type):
         return settings.get(SETTING_COST_CANVAS, THINKING_COIN_COST_CANVAS_ASSIST_DEFAULT)
     return settings.get(SETTING_COST_DIAGRAM, THINKING_COIN_COST_DIAGRAM_GEN_DEFAULT)
 

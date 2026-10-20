@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanelsStore } from '@/stores/panels'
@@ -46,23 +47,23 @@ describe('panels store overlay exclusivity', () => {
     expect(panels.mindmatePanel.isOpen).toBe(false)
   })
 
-  it('closes node palette brainstorm when conversational edit opens', () => {
+  it('closes AI brainstorm brainstorm when conversational edit opens', () => {
     const panels = usePanelsStore()
-    panels.openNodePalette()
-    expect(panels.nodePalettePanel.isOpen).toBe(true)
+    panels.openDiagramBrainstorm()
+    expect(panels.diagramBrainstormPanel.isOpen).toBe(true)
 
     panels.openMindmate()
     expect(panels.mindmatePanel.isOpen).toBe(true)
-    expect(panels.nodePalettePanel.isOpen).toBe(false)
+    expect(panels.diagramBrainstormPanel.isOpen).toBe(false)
   })
 
-  it('closes conversational edit when node palette brainstorm opens', () => {
+  it('closes conversational edit when AI brainstorm brainstorm opens', () => {
     const panels = usePanelsStore()
     panels.openMindmate()
     expect(panels.mindmatePanel.isOpen).toBe(true)
 
-    panels.openNodePalette()
-    expect(panels.nodePalettePanel.isOpen).toBe(true)
+    panels.openDiagramBrainstorm()
+    expect(panels.diagramBrainstormPanel.isOpen).toBe(true)
     expect(panels.mindmatePanel.isOpen).toBe(false)
   })
 
@@ -85,6 +86,29 @@ describe('panels store overlay exclusivity', () => {
     expect(panels.aiBrainstormPanel.isOpen).toBe(true)
     expect(panels.mindmatePanel.isOpen).toBe(false)
     expect(panels.aiBrainstormPanel.suggestions).toEqual([live])
+  })
+
+  it('keeps thinking-map brainstorm separate from the mind-map sheet', () => {
+    const panels = usePanelsStore()
+    panels.openAiBrainstorm()
+    panels.setAiBrainstormSuggestions([{ id: 'mind', text: 'branch', type: 'branch' }])
+
+    panels.openDiagramBrainstorm()
+    expect(panels.diagramBrainstormPanel.isOpen).toBe(true)
+    expect(panels.aiBrainstormPanel.isOpen).toBe(false)
+    expect(panels.diagramBrainstormPanel.suggestions).toEqual([])
+    expect(panels.aiBrainstormPanel.suggestions).toEqual([
+      { id: 'mind', text: 'branch', type: 'branch' },
+    ])
+
+    panels.setDiagramBrainstormSuggestions([{ id: 'think', text: 'idea', type: 'context' }])
+    panels.openAiBrainstorm()
+    expect(panels.aiBrainstormPanel.isOpen).toBe(true)
+    expect(panels.diagramBrainstormPanel.isOpen).toBe(false)
+    expect(panels.diagramBrainstormPanel.suggestions).toEqual([
+      { id: 'think', text: 'idea', type: 'context' },
+    ])
+    expect(panels.openPanelCount).toBe(1)
   })
 
   it('toggles conversational edit through the exclusive open path', () => {

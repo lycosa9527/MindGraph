@@ -64,6 +64,7 @@ import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSav
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useAuthStore, useMindClassroomStore } from '@/stores'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 
 import './mindMapClassroomRemote.css'
@@ -104,6 +105,7 @@ const notify = useNotifications()
 const ribbon = useMindMapRibbonActions()
 const classroomStore = useMindClassroomStore()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
+const lsCanvas = useLearningAssignmentCanvasStore()
 const { formatBrushActive, formatBrushLocked, handleFormatBrush } = useCanvasToolbarFormatting()
 const { activeTool, handleToolSelect, openTool } = useMindMapSideToolbarState()
 const sourceLock = useDiagramSourceLock()
@@ -287,7 +289,7 @@ const aiTools = computed<RemoteTool[]>(() => [
           dimmed: aiBlockedByCollab.value,
           active:
             caps.value.thinkingMapChrome || caps.value.conceptMap
-              ? ribbon.isNodePaletteOpen
+              ? ribbon.isDiagramBrainstormOpen
               : activeTool.value === 'waterfall',
           run: () => runGuestAi(() => handleToolSelect('waterfall')),
         },
@@ -319,17 +321,21 @@ const aiTools = computed<RemoteTool[]>(() => [
 ])
 
 const teachingTools = computed<RemoteTool[]>(() => [
-  {
-    id: 'learning-sheet',
-    labelKey: 'canvas.mindMapSideToolbar.learningSheet',
-    icon: GraduationCap,
-    dimmed: aiBlockedByCollab.value,
-    active:
-      activeTool.value === 'learning_sheet' ||
-      ribbon.learningSheet.isPickActive ||
-      ribbon.learningSheet.isLearningSheetActive,
-    run: () => ribbon.openSideTool('learning_sheet'),
-  },
+  ...(lsCanvas.showLearningSheet
+    ? [
+        {
+          id: 'learning-sheet',
+          labelKey: 'canvas.mindMapSideToolbar.learningSheet',
+          icon: GraduationCap,
+          dimmed: aiBlockedByCollab.value,
+          active:
+            activeTool.value === 'learning_sheet' ||
+            ribbon.learningSheet.isPickActive ||
+            ribbon.learningSheet.isLearningSheetActive,
+          run: () => ribbon.openSideTool('learning_sheet'),
+        },
+      ]
+    : []),
   {
     id: 'worksheet',
     labelKey: 'canvas.ribbon.makeLearningSheet',

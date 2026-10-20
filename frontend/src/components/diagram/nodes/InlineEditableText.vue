@@ -36,7 +36,7 @@ import {
 import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
 import { diagramTextDecorationStyle } from '@/utils/diagramTextDecorationStyle'
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
-import { readNodeAdornment } from '@/utils/mindMapAdornments'
+import { readNodeAdornment, textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isWhitespaceOnlyNodeText, resolveInlineNodeTextForSave } from '@/utils/nodeEditableText'
 import { isNodeExplainTriggerTarget } from '@/utils/nodeExplainTrigger'
@@ -585,8 +585,17 @@ const markdownDisplayEnabled = computed(
     !props.truncate
 )
 
+/** Icon is leading text, not a separate chip, so it wraps and centers with the label. */
+const displayLabel = computed(() => {
+  if (localIsEditing.value) return props.text
+  return textWithIconAdornment(
+    props.text,
+    readNodeAdornment(diagramStore.data, props.nodeId, diagramStore.data?.connections)
+  )
+})
+
 const { richHtml: displayMarkdownHtml, needsRichMarkdown } = useDiagramNodeMarkdownDisplay(
-  computed(() => props.text),
+  displayLabel,
   markdownDisplayEnabled
 )
 
@@ -1387,6 +1396,7 @@ onUnmounted(() => {
     <MindMapNodeAdornments
       v-if="showThinkingMapAdornments"
       :node-id="nodeId"
+      omit-icon
     />
     <!-- Hidden span for measuring text width (autoWrap uses measureSample for live IME draft) -->
     <span
@@ -1578,7 +1588,7 @@ onUnmounted(() => {
         <span
           class="inline-edit-plain"
           :class="{ 'inline-edit-plain--whitespace': isWhitespaceOnlyNodeText(text) }"
-          >{{ text }}</span
+          >{{ displayLabel }}</span
         >
       </template>
       <div

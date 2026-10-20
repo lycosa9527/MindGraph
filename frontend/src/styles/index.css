@@ -406,14 +406,14 @@ body {
 }
 
 /*
- * 文档生图 teleports a full-screen overlay to body at z-index 4000. Element Plus
- * assigns message and notification z-index from about 2000, so a toast opened
- * while that dialog is up paints underneath it. Stay just above that shell and
- * under the session card (4100), glass confirm (4200), and context menus.
+ * Canvas dialogs (`.mm-above-node-chrome`) paint at 5200. Element Plus assigns
+ * message and notification z-index from about 2000, so a toast opened while
+ * 思维讲堂 is up sits under the scrim. Stay above that overlay and under the
+ * context menu (10000).
  */
 .el-message,
 .el-notification {
-  z-index: 4050 !important;
+  z-index: 5300 !important;
 }
 
 /*
@@ -521,6 +521,42 @@ a:has(.i18n-label) {
   word-break: break-word;
   overflow-wrap: break-word;
   line-height: 1.35;
+}
+
+/*
+ * Cap the shell so the header and footer stay on screen. The body is the
+ * scrollbar: wheel and trackpad scroll it, and a two-finger swipe does too
+ * when the gesture starts on a control (modalTwoFingerScroll.ts).
+ * overflow-x: hidden computes overflow-y to auto, so the body must have this
+ * max-height or the wheel is swallowed by a box that never overflows.
+ */
+.el-dialog:not(.is-fullscreen) {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 15vh - 4.5rem);
+  overflow: hidden;
+}
+
+.el-dialog:not(.is-fullscreen) > .el-dialog__header,
+.el-dialog:not(.is-fullscreen) > .el-dialog__footer {
+  flex-shrink: 0;
+}
+
+.el-dialog:not(.is-fullscreen) > .el-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-width: thin;
+}
+
+.el-drawer__body,
+.el-dialog .el-scrollbar__wrap,
+.el-drawer .el-scrollbar__wrap {
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
 }
 
 .el-dialog__body {

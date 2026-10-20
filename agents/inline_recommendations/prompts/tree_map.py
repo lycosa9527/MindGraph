@@ -1,6 +1,6 @@
 """Tree map inline recommendation prompts.
 
-Aligned with prompts/node_palette.get_tree_dimensions_prompt,
+Aligned with prompts/ai_brainstorm.get_tree_dimensions_prompt,
 get_tree_categories_prompt, get_tree_items_prompt.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
@@ -28,7 +28,7 @@ def build_tree_dimensions_prompt(
     """Build prompt for tree map dimension recommendations.
 
     Extracts topic and asks LLM to generate topic-specific classification
-    dimensions. Aligned with prompts/node_palette.get_tree_dimensions_prompt.
+    dimensions. Aligned with prompts/ai_brainstorm.get_tree_dimensions_prompt.
     """
     topic = (context.get("topic") or "").strip()
     context_desc = context.get("context_desc") or "General K12 teaching"

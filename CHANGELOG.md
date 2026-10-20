@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.179] - 2026-10-20
+
+> **Node Palette is AI brainstorm, mind maps leave room for pictures and emoji, and admin SMS is gone.**
+
+### Changed
+
+- **AI brainstorm** — The ribbon, panel, and API are AI brainstorm (`/thinking_mode/ai_brainstorm`). Node Palette names are gone. An assignment saved with `node_palette` still grants the same permission, and an older coin row still bills as canvas assist.
+- **Mind map layout** — An emoji icon counts as part of the label, so wrap and circle size follow the text. A node with a picture grows enough for the thumbnail to stay inside the node and clear of its neighbors.
+- **思维讲堂** — Slide lecture stays grey unless the feature flag is on and the open diagram is a mind map. Thinking maps and concept maps stay on the canvas tour. A toast opened while the classroom dialog is up stays above the scrim.
+- **Homework** — A student completing homework does not see 挖空支架图.
+- **Admin SMS** — Startup texts and critical-alert texts are removed. Verification SMS is unchanged.
+
+### Fixed
+
+- **One panel** — AI brainstorm and 对话式修改 no longer stay open together. Opening one closes the other.
+- **Long dialogs** — The header and footer stay on screen. The body scrolls with the mouse wheel, a trackpad, and a two-finger swipe that starts on a control.
+
+### Tests
+
+- [`tests/test_ai_brainstorm_all_diagrams.py`](tests/test_ai_brainstorm_all_diagrams.py), [`tests/test_mind_classroom_enqueue.py`](tests/test_mind_classroom_enqueue.py), [`tests/test_critical_alert_error_collection.py`](tests/test_critical_alert_error_collection.py)
+- [`frontend/tests/oneSentenceBrainstormExclusion.spec.ts`](frontend/tests/oneSentenceBrainstormExclusion.spec.ts), [`frontend/tests/mindMapImageLayout.spec.ts`](frontend/tests/mindMapImageLayout.spec.ts), [`frontend/tests/bubbleMapAttributeWrap.spec.ts`](frontend/tests/bubbleMapAttributeWrap.spec.ts), [`frontend/tests/mindClassroomStore.spec.ts`](frontend/tests/mindClassroomStore.spec.ts), [`frontend/tests/modalTwoFingerScroll.spec.ts`](frontend/tests/modalTwoFingerScroll.spec.ts)
+
 ## [5.180.178] - 2026-10-19
 
 > **Assistants can publish and grade homework, cards name the publisher and the grader, and MindMate says which server failed.**

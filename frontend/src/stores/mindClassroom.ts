@@ -20,6 +20,7 @@ import {
   loadMindClassroomPresentation,
   loadMindClassroomSlideStyle,
   loadMindClassroomTone,
+  diagramSupportsSlideDeck,
   loadMindClassroomTourScope,
   resolveMindClassroomPresentation,
   saveMindClassroomMastery,
@@ -54,20 +55,30 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   const diagramStore = useDiagramStore()
   const featureFlags = useFeatureFlagsStore()
 
-  function slideDeckEnabled(): boolean {
+  function featureAllowsSlideDeck(): boolean {
     return featureFlags.getFeatureMindClassroomSlideDeck()
   }
 
+  /** Off unless the flag is on and the open diagram is a mind map. Flag default is false. */
+  const slideDeckSelectable = computed(
+    () => featureAllowsSlideDeck() && diagramSupportsSlideDeck(diagramStore.type)
+  )
+
+  function savedPresentation(next: MindClassroomPresentationId): MindClassroomPresentationId {
+    return resolveMindClassroomPresentation(next, featureAllowsSlideDeck())
+  }
+
   function gatedPresentation(next: MindClassroomPresentationId): MindClassroomPresentationId {
-    return resolveMindClassroomPresentation(next, slideDeckEnabled())
+    return resolveMindClassroomPresentation(next, slideDeckSelectable.value)
   }
 
   const mastery = ref<MindClassroomMasteryId>(loadMindClassroomMastery())
   const loadedPresentation = loadMindClassroomPresentation()
-  const presentation = ref<MindClassroomPresentationId>(gatedPresentation(loadedPresentation))
-  if (presentation.value !== loadedPresentation) {
-    saveMindClassroomPresentation(presentation.value)
+  const presentationPreference = ref<MindClassroomPresentationId>(savedPresentation(loadedPresentation))
+  if (presentationPreference.value !== loadedPresentation) {
+    saveMindClassroomPresentation(presentationPreference.value)
   }
+  const presentation = computed(() => gatedPresentation(presentationPreference.value))
   const tourScope = ref<MindClassroomTourScopeId>(loadMindClassroomTourScope())
   const slideStyle = ref<MindClassroomSlideStyleId>(loadMindClassroomSlideStyle())
   const tone = ref<MindClassroomToneId>(loadMindClassroomTone())
@@ -101,7 +112,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     saveMindClassroomMastery(value)
   })
 
-  watch(presentation, (value) => {
+  watch(presentationPreference, (value) => {
     saveMindClassroomPresentation(value)
   })
 
@@ -117,8 +128,8 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     saveMindClassroomTone(value)
   })
 
-  watch(slideDeckEnabled, () => {
-    presentation.value = gatedPresentation(presentation.value)
+  watch(featureAllowsSlideDeck, () => {
+    presentationPreference.value = savedPresentation(presentationPreference.value)
   })
 
   const isLecturing = computed(() => status.value !== 'idle')
@@ -169,7 +180,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   }
 
   function setPresentation(next: MindClassroomPresentationId): void {
-    presentation.value = gatedPresentation(next)
+    presentationPreference.value = savedPresentation(next)
   }
 
   function setTourScope(next: MindClassroomTourScopeId): void {
@@ -194,7 +205,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
 
   function resetSettings(): void {
     mastery.value = DEFAULT_MIND_CLASSROOM_MASTERY
-    presentation.value = DEFAULT_MIND_CLASSROOM_PRESENTATION
+    presentationPreference.value = DEFAULT_MIND_CLASSROOM_PRESENTATION
     tourScope.value = DEFAULT_MIND_CLASSROOM_TOUR_SCOPE
     slideStyle.value = DEFAULT_MIND_CLASSROOM_SLIDE_STYLE
     tone.value = DEFAULT_MIND_CLASSROOM_TONE
@@ -415,6 +426,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     focusNodeId,
     dimFocusNodeIds,
     setMastery,
+    slideDeckSelectable,
     setPresentation,
     setTourScope,
     setSlideStyle,

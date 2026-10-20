@@ -1,6 +1,6 @@
 .mobile-canvas {
   overflow: hidden;
-  /* Layout header + toolbar chrome for node palette overlay */
+  /* Layout header + toolbar chrome for AI brainstorm overlay */
   --mg-mobile-palette-top: 4.75rem;
 }
 
@@ -220,7 +220,7 @@
   transform: translateY(100%);
 }
 
-.mobile-node-palette-overlay {
+.mobile-diagram-brainstorm-overlay {
   pointer-events: auto;
   touch-action: manipulation;
   isolation: isolate;

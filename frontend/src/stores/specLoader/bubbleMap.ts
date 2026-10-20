@@ -13,7 +13,7 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { bubbleMapChildrenRadius, polarToPosition } from '@/composables/diagrams/useRadialLayout'
 import { mirrorString, mirrorStringList, readSecondaryMirror } from '@/diagramBilingual/mirror'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
   BUBBLE_MAP_UID_DATA_KEY,
   BUBBLE_TOPIC_NODE_ID,
@@ -23,6 +23,7 @@ import {
   takeBubbleMapStableId,
 } from '@/utils/bubbleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import {
   MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
   MIND_MAP_TEXT_LINE_HEIGHT,
@@ -159,12 +160,15 @@ function bubbleOutlinePackR(
   return visualR
 }
 
-function bubbleContextRadiusFromNode(node: DiagramNode): number {
+function bubbleContextRadiusFromNode(
+  node: DiagramNode,
+  adornments: MindMapAdornmentsByPath
+): number {
   const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : CONTEXT_FONT_SIZE
   const measureBold = node.style?.fontWeight === 'bold'
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
   return attributeBubbleRadius(
-    learningSheetLayoutText(node),
+    textWithIconAdornment(learningSheetLayoutText(node), adornments[node.id]),
     fs,
     measureBold,
     fontFamily,
@@ -178,7 +182,8 @@ function bubbleContextRadiusFromNode(node: DiagramNode): number {
  */
 export function recalculateBubbleMapLayout(
   nodes: DiagramNode[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {},
+  adornments: MindMapAdornmentsByPath = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) return []
 
@@ -190,12 +195,15 @@ export function recalculateBubbleMapLayout(
   const topicText = topicNode ? learningSheetLayoutText(topicNode) : ''
   const topicSecondary = topicNode ? learningSheetLayoutSecondary(topicNode) : undefined
   const topicStyle = topicNode?.style
-  const textTopicR = computeTopicRadiusForCircleMap(topicText || ' ', {
-    fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
-    fontWeight: topicStyle?.fontWeight,
-    fontFamily: topicStyle?.fontFamily,
-    secondary: topicSecondary,
-  })
+  const textTopicR = computeTopicRadiusForCircleMap(
+    textWithIconAdornment(topicText || ' ', topicNode ? adornments[topicNode.id] : undefined),
+    {
+      fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
+      fontWeight: topicStyle?.fontWeight,
+      fontFamily: topicStyle?.fontFamily,
+      secondary: topicSecondary,
+    }
+  )
   const topicMeasured = topicNode ? nodeDimensions[topicNode.id] : undefined
   let domTopicR = 0
   if (
@@ -213,7 +221,7 @@ export function recalculateBubbleMapLayout(
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
 
-  const radii = bubbleNodes.map((n) => bubbleContextRadiusFromNode(n))
+  const radii = bubbleNodes.map((n) => bubbleContextRadiusFromNode(n, adornments))
   const uniformRadius =
     bubbleNodes.length > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 

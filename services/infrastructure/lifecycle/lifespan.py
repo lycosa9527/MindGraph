@@ -30,8 +30,6 @@ from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
 from config.celery import CeleryStartupError, init_celery_worker_check
 from config.settings import config
 from services.auth.geoip_country import log_geolite_country_mmdb_startup_status
-from services.auth.sms_middleware import get_sms_middleware
-from services.auth.sms_service import SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
 from services.dify.dify_health_poller import start_dify_health_poller
 from services.infrastructure.lifecycle.app_runtime import set_app_start_time
 from services.infrastructure.lifecycle.cos_prefix_posture import log_cos_prefix_posture
@@ -51,7 +49,7 @@ from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
 from services.infrastructure.lifecycle.startup_env_requirements import (
     enforce_startup_env_requirements_or_exit,
 )
-from services.infrastructure.monitoring.critical_alert import CriticalAlertService, admin_sms_alerts_enabled
+from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.perf_sample_log import (
     perf_sample_enabled,
@@ -87,11 +85,7 @@ from services.llm.qdrant_startup import QdrantStartupError, init_qdrant_sync
 from services.monitoring.error_retention_scheduler import start_error_retention_scheduler
 from services.redis.cache.redis_api_key_usage_flush import start_api_key_usage_flush_scheduler
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
-from services.redis.redis_distributed_lock import (
-    acquire_startup_sms_notification_lock,
-    release_startup_sms_notification_lock,
-    try_claim_launch_complete_log,
-)
+from services.redis.redis_distributed_lock import try_claim_launch_complete_log
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from services.utils.temp_export_cleaner import start_export_cleanup_scheduler
@@ -152,60 +146,6 @@ def _log_security_startup_posture() -> None:
         )
 
 
-async def _send_startup_sms_notification_once() -> None:
-    """
-    Notify admins via SMS at most once per process group.
-
-    Uvicorn workers start lifespan at different times. A Redis SET NX lock with
-    TTL covers the boot window: the worker that sends keeps the lock until TTL
-    expiry so slower workers skip instead of triggering duplicate provider errors.
-    """
-    if not admin_sms_alerts_enabled():
-        logger.debug("[LIFESPAN] Startup SMS notification skipped (admin SMS alerts disabled)")
-        return
-
-    sms_startup_enabled = os.getenv("SMS_STARTUP_NOTIFICATION_ENABLED", "true").lower() in ("true", "1", "yes")
-    if not sms_startup_enabled:
-        logger.debug("[LIFESPAN] Startup SMS notification disabled (SMS_STARTUP_NOTIFICATION_ENABLED=false)")
-        return
-
-    sms_middleware = get_sms_middleware()
-    if not sms_middleware.is_available:
-        logger.debug("[LIFESPAN] SMS service not available, skipping startup SMS notification")
-        return
-
-    admin_phones = [phone.strip() for phone in ADMIN_PHONES if phone.strip()]
-    if not admin_phones:
-        logger.debug("[LIFESPAN] No admin phones configured, skipping startup SMS notification")
-        return
-
-    startup_template_id = os.getenv("TENCENT_SMS_TEMPLATE_STARTUP", "").strip()
-    if not startup_template_id:
-        logger.warning("[LIFESPAN] TENCENT_SMS_TEMPLATE_STARTUP not configured, skipping startup SMS notification")
-        return
-
-    lock_token = await acquire_startup_sms_notification_lock()
-    if lock_token is None:
-        return
-
-    success = False
-    message = ""
-    try:
-        success, message = await sms_middleware.send_notification(
-            phones=admin_phones,
-            template_id=startup_template_id,
-            template_params=[],
-            lang="zh",
-        )
-        if success:
-            logger.info("[LIFESPAN] Startup SMS notification sent successfully: %s", message)
-        else:
-            logger.warning("[LIFESPAN] Failed to send startup SMS notification: %s", message)
-    finally:
-        if not success and message != SMS_NOTIFICATION_RATE_LIMIT_MESSAGE:
-            await release_startup_sms_notification_lock(lock_token)
-
-
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
     """
@@ -224,7 +164,7 @@ async def lifespan(fastapi_app: FastAPI):
 
     # Only log startup messages from first worker to avoid repetition.
     # Note: Uvicorn does not set UVICORN_WORKER_ID; default '0' applies to all workers.
-    # Features that must run once per cluster (e.g. startup SMS) use Redis locks instead.
+    # Features that must run once per cluster use Redis locks instead.
     worker_id = os.getenv("UVICORN_WORKER_ID", "0")
     is_main_worker = worker_id == "0" or not worker_id
 
@@ -301,7 +241,7 @@ async def lifespan(fastapi_app: FastAPI):
                     ),
                 )
             except BACKGROUND_INFRA_ERRORS as alert_error:
-                logger.error("Failed to send startup failure alert: %s", alert_error)
+                logger.error("Failed to record startup failure: %s", alert_error)
             logger.error("Application startup failed. Exiting.")
             fatal_startup_exit(1)
     else:
@@ -329,7 +269,7 @@ async def lifespan(fastapi_app: FastAPI):
                     ),
                 )
             except BACKGROUND_INFRA_ERRORS as alert_error:
-                logger.error("Failed to send startup failure alert: %s", alert_error)
+                logger.error("Failed to record startup failure: %s", alert_error)
             logger.error("Application startup failed. Exiting.")
             fatal_startup_exit(1)
     else:
@@ -358,7 +298,7 @@ async def lifespan(fastapi_app: FastAPI):
             )
         except BACKGROUND_INFRA_ERRORS as alert_error:
             if is_main_worker:
-                logger.error("Failed to send startup failure alert: %s", alert_error)
+                logger.error("Failed to record startup failure: %s", alert_error)
         fatal_startup_exit(1)
     except BACKGROUND_INFRA_ERRORS as e:
         # Log but don't exit on unexpected errors during dependency check
@@ -560,15 +500,6 @@ async def lifespan(fastapi_app: FastAPI):
     except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to initialize diagram cache: %s", e)
-
-    # Send startup notification SMS (Redis lock — once per cluster; not gated on worker id)
-    try:
-        await _send_startup_sms_notification_once()
-    except BACKGROUND_INFRA_ERRORS as e:
-        logger.warning(
-            "[LIFESPAN] Failed to send startup SMS notification (non-critical): %s",
-            e,
-        )
 
     # Wait for monitor startup messages to complete before showing completion banner
     # This ensures all monitor startup logs appear before "APPLICATION LAUNCH COMPLETE"

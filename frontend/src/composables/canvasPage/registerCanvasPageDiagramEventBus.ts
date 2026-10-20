@@ -19,7 +19,7 @@ import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationRead
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 /**
- * Zoom sync, node palette clears, concept-map picker dismiss, teacher usage edit counters.
+ * Zoom sync, AI brainstorm clears, concept-map picker dismiss, teacher usage edit counters.
  * Call once during CanvasPage setup; listeners use owner `CanvasPage` and are removed on unmount.
  */
 export function registerCanvasPageDiagramEventBus(options: {
@@ -61,7 +61,7 @@ export function registerCanvasPageDiagramEventBus(options: {
     'diagram:loaded',
     () => {
       diagramStore.seedHistoryBaselineIfEmpty()
-      panelsStore.clearNodePaletteState({ clearSessions: false })
+      panelsStore.clearDiagramBrainstormState({ clearSessions: false })
       panelsStore.clearAiBrainstormState({ clearSessions: false })
       restoreLearningSheetUiFromDiagram()
     },
@@ -78,7 +78,7 @@ export function registerCanvasPageDiagramEventBus(options: {
   eventBus.onWithOwner(
     'diagram:type_changed',
     () => {
-      panelsStore.clearNodePaletteState()
+      panelsStore.clearDiagramBrainstormState()
       panelsStore.clearAiBrainstormState()
     },
     'CanvasPage'

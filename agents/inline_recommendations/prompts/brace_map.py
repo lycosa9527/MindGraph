@@ -27,7 +27,7 @@ def build_brace_dimensions_prompt(
     """Build prompt for brace map dimension recommendations.
 
     Extracts user's main topic (whole) and asks LLM to generate topic-specific
-    decomposition dimensions. Aligned with prompts/node_palette.get_brace_dimensions_prompt.
+    decomposition dimensions. Aligned with prompts/ai_brainstorm.get_brace_dimensions_prompt.
     """
     whole = (context.get("whole") or "").strip()
     context_desc = context.get("context_desc") or "General K12 teaching"

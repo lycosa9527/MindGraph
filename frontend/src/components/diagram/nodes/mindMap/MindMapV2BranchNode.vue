@@ -43,6 +43,7 @@ import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { stripMatchingBranchNumberPrefix } from '@/utils/mindMapBranchNumbering'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { markMindMapLoadShellMounted } from '@/utils/mindMapLoadDebug'
@@ -229,7 +230,12 @@ const accessibleBranchLabel = computed(() => {
 })
 
 const textMaxWidth = computed(() => {
-  const label = ((props.data.label as string) || '').trim()
+  const label = labelWithNodeIcon(
+    diagramStore.data,
+    props.id,
+    ((props.data.label as string) || '').trim(),
+    diagramStore.data?.connections
+  )
   if (!label && !numberPrefix.value) return `${MIND_MAP_BRANCH_MAX_TEXT_WIDTH}px`
   const fontSize =
     parseFloat(nodeStyle.value.fontSize as string) ||
@@ -460,6 +466,7 @@ function handleBranchNodeClick(event: MouseEvent): void {
             <MindMapNodeAdornments
               :node-id="id"
               part="inline"
+              omit-icon
             />
             <div
               class="mm-branch-text-row"
@@ -506,6 +513,7 @@ function handleBranchNodeClick(event: MouseEvent): void {
           <MindMapNodeAdornments
             :node-id="id"
             part="inline"
+            omit-icon
           />
           <div
             class="mm-branch-text-row"

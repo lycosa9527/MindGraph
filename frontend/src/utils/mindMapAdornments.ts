@@ -164,9 +164,32 @@ export type MindMapLinkDialogSeed = {
   namePlaceholder: string
 }
 
-export function mindMapNodeHasAdornment(adornment: MindMapNodeAdornment | null | undefined): boolean {
+export function mindMapNodeHasAdornment(
+  adornment: MindMapNodeAdornment | null | undefined
+): boolean {
   if (!adornment) return false
   return Boolean(adornment.href || adornment.icon || adornment.imageUrl)
+}
+
+/** Icon adornment as leading characters, so wrap and circle size use the label metrics. */
+export function textWithIconAdornment(
+  text: string,
+  adornment: MindMapNodeAdornment | null | undefined
+): string {
+  const icon = adornment?.icon?.trim() ?? ''
+  if (!icon) return text
+  const body = text ?? ''
+  if (!body.trim()) return icon
+  return `${icon} ${body}`
+}
+
+export function labelWithNodeIcon(
+  data: DiagramData | Record<string, unknown> | null | undefined,
+  nodeId: string,
+  text: string,
+  connections?: readonly Connection[]
+): string {
+  return textWithIconAdornment(text, readNodeAdornment(data, nodeId, connections))
 }
 
 /** One Delete press removes a single adornment layer: link, then image, then icon. */

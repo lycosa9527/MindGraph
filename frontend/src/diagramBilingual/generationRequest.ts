@@ -1,6 +1,6 @@
 /**
  * Optional second language for a full-diagram generate request.
- * Branch expand, node palette, and explain stay primary-only.
+ * Branch expand, AI brainstorm, and explain stay primary-only.
  */
 import { useUIStore } from '@/stores/ui'
 

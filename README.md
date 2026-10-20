@@ -13,7 +13,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.13+-blue.svg" alt="Python"></a>
   <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.104+-green.svg" alt="FastAPI"></a>
   <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3.5+-42b883.svg" alt="Vue"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.180.178-brightgreen.svg" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.180.179-brightgreen.svg" alt="Version"></a>
 </p>
 
 ---
@@ -50,7 +50,7 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 **AI Capabilities**
 
 - Natural language to diagram generation
-- Node Palette: AI-suggested nodes with streaming
+- AI brainstorm: AI-suggested nodes with streaming
 - Inline AI Recommendations: double-click any node for context-aware auto-completion (all diagram types)
 - Concept Map focus question validation and SSE suggestion streams
 - Multi-LLM support: Qwen, DeepSeek, Kimi, Doubao (Volcengine)

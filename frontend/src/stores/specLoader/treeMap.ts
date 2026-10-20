@@ -17,7 +17,8 @@ import {
   TREE_MAP_CATEGORY_TO_LEAF_GAP,
   TREE_MAP_LEAF_SPACING,
 } from '@/composables/diagrams/layoutConfig'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 import {
   TREE_MAP_UID_DATA_KEY,
@@ -39,6 +40,7 @@ import {
   measureTreeMapNodeBox,
 } from '@/utils/treeMapNodeBox'
 
+import { learningSheetLayoutText } from './mindMapLearningSheet'
 import {
   collectTreeMapNodeMeasureSpecs,
   collectTreeMapSpecMeasureSpecs,
@@ -281,17 +283,19 @@ interface TreeMapGroupDims {
  */
 export function recalculateTreeMapLayout(
   nodes: DiagramNode[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {},
+  adornments: MindMapAdornmentsByPath = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) return nodes
-  return withTreeMapTextMeasureCache(collectTreeMapNodeMeasureSpecs(nodes), () =>
-    recalculateTreeMapLayoutMeasured(nodes, nodeDimensions)
+  return withTreeMapTextMeasureCache(collectTreeMapNodeMeasureSpecs(nodes, adornments), () =>
+    recalculateTreeMapLayoutMeasured(nodes, nodeDimensions, adornments)
   )
 }
 
 function recalculateTreeMapLayoutMeasured(
   nodes: DiagramNode[],
-  nodeDimensions: Record<string, { width: number; height: number }>
+  nodeDimensions: Record<string, { width: number; height: number }>,
+  adornments: MindMapAdornmentsByPath = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return nodes
@@ -302,8 +306,10 @@ function recalculateTreeMapLayoutMeasured(
     return nodes
   }
 
+  const labelOf = (node: DiagramNode): string =>
+    textWithIconAdornment(learningSheetLayoutText(node), adornments[node.id])
   const topicNode = nodes[topicIdx]
-  const topicText = topicNode.text ?? ''
+  const topicText = labelOf(topicNode)
 
   const topicDims = resolveTreeMapBox(TREE_TOPIC_NODE_ID, nodeDimensions, () =>
     measureTreeMapTopicDimensions(topicText, topicNode.style, topicNode.textSecondary)
@@ -319,7 +325,7 @@ function recalculateTreeMapLayoutMeasured(
     const catNode = column.category
     const catId = catNode.id ?? ''
     const catBox = resolveTreeMapBox(catId, nodeDimensions, () =>
-      measureTreeMapNodeBox(catNode.text ?? '', treeMapBranchMeasureOptions(catNode, 'category'))
+      measureTreeMapNodeBox(labelOf(catNode), treeMapBranchMeasureOptions(catNode, 'category'))
     )
 
     const leafWidths: number[] = []
@@ -328,7 +334,7 @@ function recalculateTreeMapLayoutMeasured(
 
     for (const leaf of column.leaves) {
       const leafBox = resolveTreeMapBox(leaf.id ?? '', nodeDimensions, () =>
-        measureTreeMapNodeBox(leaf.text ?? '', treeMapBranchMeasureOptions(leaf, 'leaf'))
+        measureTreeMapNodeBox(labelOf(leaf), treeMapBranchMeasureOptions(leaf, 'leaf'))
       )
       leafWidths.push(leafBox.width)
       leafHeights.push(leafBox.height)
@@ -367,7 +373,7 @@ function recalculateTreeMapLayoutMeasured(
   const dimLabel = byId.get('dimension-label')
   const labelBox = dimLabel
     ? resolveTreeMapDimensionLabelBox(
-        dimLabel.text ?? '',
+        labelOf(dimLabel),
         dimLabel.textSecondary,
         nodeDimensions['dimension-label']
       )

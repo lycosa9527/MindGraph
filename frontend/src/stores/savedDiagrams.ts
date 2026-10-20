@@ -1077,7 +1077,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
       if (saved) {
         activeDiagramId.value = saved.id
-        usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
+        usePanelsStore().migrateDiagramBrainstormSessionToSavedDiagram(diagramType, saved.id)
         if (diagramType === 'mindmap' || diagramType === 'mind_map') {
           usePanelsStore().migrateAiBrainstormSessionToSavedDiagram(saved.id)
         }
@@ -1193,7 +1193,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     if (saved) {
       activeDiagramId.value = saved.id
       llmResultsStore.updateCurrentModelSpec(spec)
-      usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
+      usePanelsStore().migrateDiagramBrainstormSessionToSavedDiagram(diagramType, saved.id)
       if (diagramType === 'mindmap' || diagramType === 'mind_map') {
         usePanelsStore().migrateAiBrainstormSessionToSavedDiagram(saved.id)
       }
@@ -1227,7 +1227,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     if (saved) {
       activeDiagramId.value = saved.id
       llmResultsStore.updateCurrentModelSpec(spec)
-      usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
+      usePanelsStore().migrateDiagramBrainstormSessionToSavedDiagram(diagramType, saved.id)
       if (diagramType === 'mindmap' || diagramType === 'mind_map') {
         usePanelsStore().migrateAiBrainstormSessionToSavedDiagram(saved.id)
       }

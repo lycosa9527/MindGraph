@@ -22,7 +22,6 @@ from services.auth.thinking_coin.usage_wire import (
     thinking_coins_apply_to_user,
 )
 from services.infrastructure.http.error_handler import LLMServiceError
-from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.llm.org_custom_client import collapse_org_custom_models
 from services.monitoring.error_reporting import record_failure
 from services.utils.error_types import LLM_PIPELINE_ERRORS
@@ -232,7 +231,7 @@ class LLMMultiService:
         system_message: Optional[str] = None,
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
-        request_type: str = "node_palette",
+        request_type: str = "ai_brainstorm",
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
         session_id: Optional[str] = None,
@@ -544,18 +543,6 @@ class LLMMultiService:
             severity="critical",
             exception_type="LLMServiceError",
         )
-        try:
-            await CriticalAlertService.send_runtime_error_alert(
-                component="LLM",
-                error_message="All LLM models failed - complete LLM service outage",
-                details=(
-                    "All configured LLM models are unavailable. "
-                    "Check API keys, network connectivity, and provider status."
-                ),
-                persist_error=False,
-            )
-        except LLM_PIPELINE_ERRORS as alert_error:
-            logger.error("[LLMMultiService] Failed to send critical alert: %s", alert_error)
         raise LLMServiceError("All models failed to generate response")
 
     async def compare_responses(

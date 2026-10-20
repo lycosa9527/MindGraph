@@ -102,7 +102,6 @@ export default {
   'learningSpace.mgSaveFailed': 'Could not save .mg template',
   'learningSpace.mgAttached': '.mg template attached',
   'learningSpace.aiGenerate': 'AI diagram generate',
-  'learningSpace.aiPalette': 'Node palette',
   'learningSpace.aiInline': 'Inline recommend',
   'learningSpace.aiTranslate': 'Canvas translate',
   'learningSpace.aiDocSummary': 'Document summary',

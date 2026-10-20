@@ -4,10 +4,7 @@ import {
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
-import {
-  mindMapAdaptiveBranchGap,
-  mindMapAdaptiveSiblingGap,
-} from '@/config/mindMapAdaptiveGaps'
+import { mindMapAdaptiveBranchGap, mindMapAdaptiveSiblingGap } from '@/config/mindMapAdaptiveGaps'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import {
   mindMapConnectionAnchorY,
@@ -15,7 +12,6 @@ import {
   resolveMindMapTopicLayoutWidth,
 } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
-import type { NodeShape } from '@/utils/nodeShapeStyle'
 import { isMindMapConnectorVerboseDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { logMindMapProcess } from '@/utils/mindMapConnectorDebugVerbose'
 import {
@@ -35,6 +31,11 @@ import {
   resolveMindMapSiblingSubtreeOverlaps,
   settleMindMapPreserveYLayout,
 } from '@/utils/mindMapSideStacking'
+import {
+  expandMindMapLayoutSizesForImages,
+  mindMapTopicWidthWithImage,
+} from '@/utils/nodeImageFrame'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 import type { DiagramContext } from './types'
 
@@ -410,6 +411,8 @@ export interface MindMapV2LayoutOptions {
    * Used after incremental L1 Enter so the first paint is already final.
    */
   preserveIncomingY?: boolean
+  /** Nodes that show a picture. Layout reserves the thumbnail frame for them. */
+  imageNodeIds?: ReadonlySet<string>
 }
 
 /**
@@ -429,6 +432,15 @@ export function recalculateMindMapV2ColumnPositions(
   diagramStyleId?: string | null,
   options?: MindMapV2LayoutOptions
 ): MindMapColumnResult {
+  const sized = expandMindMapLayoutSizesForImages(
+    nodes,
+    nodeWidths,
+    nodeHeights,
+    options?.imageNodeIds
+  )
+  nodeWidths = sized.nodeWidths
+  nodeHeights = sized.nodeHeights
+
   const topicNode = nodes.find((n) => n.id === 'topic')
   if (!topicNode?.position) return { nodes, gaps: { left: 0, right: 0 } }
 
@@ -443,7 +455,10 @@ export function recalculateMindMapV2ColumnPositions(
 
   const storedEstimate =
     (topicNode.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
-  const effectiveTopicWidth = resolveMindMapTopicLayoutWidth(topicWidth, storedEstimate)
+  const effectiveTopicWidth = mindMapTopicWidthWithImage(
+    resolveMindMapTopicLayoutWidth(topicWidth, storedEstimate),
+    Boolean(options?.imageNodeIds?.has('topic'))
+  )
   const gap = DEFAULT_MINDMAP_RANK_SEPARATION
 
   const centerX = topicNode.position.x + effectiveTopicWidth / 2
@@ -661,8 +676,7 @@ function correctYPositions(
       return h
     }
     const childSpans = kids.map((kid) => computeSubtreeSpan(kid))
-    const childrenTotalSpan =
-      childSpans.reduce((a, b) => a + b, 0) + sumSiblingGaps(kids)
+    const childrenTotalSpan = childSpans.reduce((a, b) => a + b, 0) + sumSiblingGaps(kids)
     const span = Math.max(h, childrenTotalSpan)
     subtreeSpanCache.set(nodeId, span)
     return span
@@ -678,8 +692,7 @@ function correctYPositions(
     }
 
     const childSpans = kids.map((kid) => computeSubtreeSpan(kid))
-    const childrenTotalSpan =
-      childSpans.reduce((a, b) => a + b, 0) + sumSiblingGaps(kids)
+    const childrenTotalSpan = childSpans.reduce((a, b) => a + b, 0) + sumSiblingGaps(kids)
 
     // Sole underline child: align its connection anchor to the parent's so the
     // stem is flat horizontal (underline continues from parent mid; text sits above).
@@ -854,13 +867,7 @@ function correctYPositions(
     const rootId = roots[0]
     if (!rootId) return
     const topicAnchorY = getNodeAnchorY('topic', topicTopY, nodeMap, nodeHeights, diagramStyleId)
-    const nextTop = getNodeTopYForAnchor(
-      rootId,
-      topicAnchorY,
-      nodeMap,
-      nodeHeights,
-      diagramStyleId
-    )
+    const nextTop = getNodeTopYForAnchor(rootId, topicAnchorY, nodeMap, nodeHeights, diagramStyleId)
     const prevTop = newY.get(rootId) ?? nodeMap.get(rootId)?.position?.y
     if (prevTop == null) {
       newY.set(rootId, nextTop)
@@ -922,12 +929,7 @@ function correctYPositions(
 
   // Multi-root packs: rigid-slide each side onto the topic. Sole roots already
   // match the topic connection anchor (and their fans moved with them).
-  return centerMindMapSidePacksOnTopic(
-    separated,
-    connections,
-    nodeHeights,
-    diagramStyleId
-  )
+  return centerMindMapSidePacksOnTopic(separated, connections, nodeHeights, diagramStyleId)
 }
 
 /**

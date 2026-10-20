@@ -22,6 +22,7 @@ import {
 } from '@/types/vueflow'
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
 import { DOUBLE_BUBBLE_LEFT_TOPIC_ID } from '@/utils/doubleBubbleMapIdentity'
+import { readMindMapAdornments } from '@/utils/mindMapAdornments'
 import {
   mindMapAssociationShouldVoid,
   withMindMapAssociationHandles,
@@ -31,7 +32,7 @@ import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isMindMapAssociationConnection, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 import { filterTreeMindMapNodes } from '@/utils/mindMapSummary'
-import { thinkingMapImageNodeIds } from '@/utils/nodeImageFrame'
+import { nodeIdsWithImage, thinkingMapImageNodeIds } from '@/utils/nodeImageFrame'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
 import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
 import { thinkingMapRenderedConnectorStroke } from '@/utils/thinkingMapNodePaint'
@@ -82,7 +83,11 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const circleMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'circle_map' || !ctx.data.value?.nodes) return []
     void ctx.layoutRecalcTrigger.value
-    return recalculateCircleMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
+    return recalculateCircleMapLayout(
+      ctx.data.value.nodes,
+      ctx.nodeDimensions.value,
+      readMindMapAdornments(ctx.data.value)
+    )
   })
 
   const braceMapLayoutNodes = computed(() => {
@@ -91,20 +96,29 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     return recalculateBraceMapLayout(
       ctx.data.value.nodes,
       ctx.data.value.connections ?? [],
-      ctx.nodeDimensions.value
+      ctx.nodeDimensions.value,
+      readMindMapAdornments(ctx.data.value)
     )
   })
 
   const bubbleMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'bubble_map' || !ctx.data.value?.nodes) return []
     void ctx.layoutRecalcTrigger.value
-    return recalculateBubbleMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
+    return recalculateBubbleMapLayout(
+      ctx.data.value.nodes,
+      ctx.nodeDimensions.value,
+      readMindMapAdornments(ctx.data.value)
+    )
   })
 
   const flowMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'flow_map' || !ctx.data.value?.nodes) return []
     void ctx.layoutRecalcTrigger.value
-    return recalculateFlowMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
+    return recalculateFlowMapLayout(
+      ctx.data.value.nodes,
+      ctx.nodeDimensions.value,
+      readMindMapAdornments(ctx.data.value)
+    )
   })
 
   const treeMapLayoutNodes = computed(() => {
@@ -115,7 +129,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     // the whole map. Read sizes only when the measure batch bumps the trigger.
     return recalculateTreeMapLayout(
       ctx.data.value.nodes,
-      snapshotNodeDimensions(ctx.nodeDimensions.value)
+      snapshotNodeDimensions(ctx.nodeDimensions.value),
+      readMindMapAdornments(ctx.data.value)
     )
   })
 
@@ -128,7 +143,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       ctx.topicNodeWidth.value,
       ctx.nodeWidths.value,
       ctx.nodeDimensions.value,
-      thinkingMapImageNodeIds(ctx.data.value)
+      thinkingMapImageNodeIds(ctx.data.value),
+      readMindMapAdornments(ctx.data.value)
     )
   })
 
@@ -138,7 +154,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     return recalculateDoubleBubbleMapLayout(
       ctx.data.value.nodes,
       ctx.nodeDimensions.value,
-      thinkingMapImageNodeIds(ctx.data.value)
+      thinkingMapImageNodeIds(ctx.data.value),
+      readMindMapAdornments(ctx.data.value)
     )
   })
 
@@ -174,11 +191,13 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     void ctx.data.value._mindmap_branch_numbering
     void ctx.data.value._mindmap_branch_numbering_prefix
     void ctx.data.value._mindmap_branch_numbering_nested
+    void ctx.data.value._mindmap_adornments
     const connections = ctx.data.value.connections ?? []
     const treeNodes = filterTreeMindMapNodes(ctx.data.value.nodes)
     const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
     const collapsedNodeIds = getMindMapCollapsedNodeIds(treeNodes, connections, collapsedPaths)
     const preserveIncomingY = ctx.mindMapPreserveIncomingY.value
+    const imageNodeIds = nodeIdsWithImage(treeNodes, ctx.data.value, connections)
     const laidOut = computeMindMapDisplayLayout(
       'v2',
       treeNodes,
@@ -188,7 +207,10 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       ctx.mindMapNodeHeights.value,
       collapsedNodeIds,
       ctx.data.value._mindmap_diagram_style as string | undefined,
-      preserveIncomingY ? { preserveIncomingY: true } : undefined
+      {
+        ...(preserveIncomingY ? { preserveIncomingY: true } : {}),
+        imageNodeIds,
+      }
     )
     return {
       nodes: mergeLaidOutTreeWithSummaries(
@@ -327,6 +349,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
 
       // Legacy: keep layout inside this computed (unchanged ownership).
       void ctx.mindMapRecalcTrigger.value
+      void ctx.data.value._mindmap_adornments
       const collapsedNodeIds = new Set<string>()
       const { nodes: correctedNodes, gaps } = computeMindMapDisplayLayout(
         'legacy',
@@ -336,7 +359,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
         ctx.mindMapNodeWidths.value,
         ctx.mindMapNodeHeights.value,
         collapsedNodeIds,
-        ctx.data.value._mindmap_diagram_style as string | undefined
+        ctx.data.value._mindmap_diagram_style as string | undefined,
+        { imageNodeIds: nodeIdsWithImage(ctx.data.value.nodes, ctx.data.value, connections) }
       )
       ctx.mindMapTopicBranchGaps.value = gaps
 

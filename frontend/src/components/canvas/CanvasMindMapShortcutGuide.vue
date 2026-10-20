@@ -15,17 +15,21 @@ import {
 } from '@/composables/canvas/canvasGuideExclusive'
 import { resolveDiagramShortcutGuideRows } from '@/config/mindMapShortcutGuide'
 import { useDiagramStore } from '@/stores'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 
 const STORAGE_KEY = 'mindgraph.mindmap.shortcutGuide.expanded'
 
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
+const lsCanvas = useLearningAssignmentCanvasStore()
 
 const expanded = computed(() => activeCanvasGuideId.value === 'shortcut')
 
-const rows = computed(() =>
-  resolveDiagramShortcutGuideRows(diagramStore.type, diagramStore.isLearningSheet)
-)
+const rows = computed(() => {
+  const resolved = resolveDiagramShortcutGuideRows(diagramStore.type, diagramStore.isLearningSheet)
+  if (lsCanvas.showLearningSheet) return resolved
+  return resolved.filter((row) => row.id !== 'learningSheetAnswers')
+})
 
 function persistExpanded(next: boolean): void {
   try {

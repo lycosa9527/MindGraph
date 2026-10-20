@@ -11,7 +11,7 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { INLINE_RECOMMENDATIONS_CLEANUP } from '@/composables/nodePalette/constants'
+import { INLINE_RECOMMENDATIONS_CLEANUP } from '@/composables/aiBrainstorm/constants'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 

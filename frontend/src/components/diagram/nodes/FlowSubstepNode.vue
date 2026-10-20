@@ -23,6 +23,7 @@ import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapSubstepNode } from '@/utils/flowMapIdentity'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
 import {
@@ -131,7 +132,12 @@ const SUBSTEP_MAX_TEXT_WIDTH = 180
 const substepMaxWidth = computed(() => {
   if (!isFlowMap.value) return '140px'
 
-  const label = ((props.data.label as string) || '').trim()
+  const label = labelWithNodeIcon(
+    diagramStore.data,
+    props.id,
+    ((props.data.label as string) || '').trim(),
+    diagramStore.data?.connections
+  )
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || MIND_MAP_GEOMETRY.fontSize
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   const fontFamily = String(nodeStyle.value.fontFamily || '')

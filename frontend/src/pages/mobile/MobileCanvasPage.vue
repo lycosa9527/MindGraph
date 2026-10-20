@@ -24,10 +24,10 @@ import MindMapWaterfallPanel from '@/components/canvas/MindMapWaterfallPanel.vue
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import MobileCanvasExportButton from '@/components/mobile/MobileCanvasExportButton.vue'
 import MobileLearningSheetButton from '@/components/mobile/MobileLearningSheetButton.vue'
-import { NodePalettePanel, RootConceptModal } from '@/components/panels'
+import { DiagramBrainstormPanel, RootConceptModal } from '@/components/panels'
 import {
   getDiagramOperations,
-  getNodePalette,
+  getDiagramBrainstorm,
   getPanelCoordinator,
   useCanvasToolbarApps,
   useInlineRecommendationsCoordinator,
@@ -47,6 +47,7 @@ import { useNewCanvasTypeQueryBootstrap } from '@/composables/canvasPage/useNewC
 import {
   bindMindMapExternalPanelClose,
   resetMindMapSideToolbarState,
+  watchHomeworkLearningSheet,
 } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
@@ -71,6 +72,7 @@ import {
 } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useTrainingStore } from '@/stores/training'
@@ -97,7 +99,7 @@ const { t, currentLanguage, promptLanguage } = useLanguage()
 const notify = useNotifications()
 
 getPanelCoordinator()
-const { startSession: startNodePaletteSession } = getNodePalette({
+const { startSession: startDiagramBrainstormSession } = getDiagramBrainstorm({
   onError: (err: string) => notify.error(err),
 })
 
@@ -117,10 +119,12 @@ const useMindMapV2 = useMindMapV2Chrome()
 const fitViewOnInit = computed(() => !isConceptMap.value && !useMindMapV2.value)
 
 const { showCanvasAiFeatures } = useLearningAiGate()
+const lsCanvas = useLearningAssignmentCanvasStore()
+watchHomeworkLearningSheet()
 
 const {
   isSaving,
-  showNodePalette,
+  showDiagramBrainstorm,
   activeTool,
   handleSave,
   handleAddNode,
@@ -128,7 +132,7 @@ const {
   handleToolbarAI,
   toggleConceptMapAiToolbar,
   toggleAiBrainstorm,
-  toggleNodePalette,
+  toggleDiagramBrainstorm,
   closeActiveTool,
   handleFitToScreen,
 } = useMobileCanvasToolbar({
@@ -187,7 +191,7 @@ const mobileCanvasEvents = useMobileCanvasEventHandlers({
   rootConceptReviewStore,
   isConceptMap,
   isAIGenerating,
-  startNodePaletteSession,
+  startDiagramBrainstormSession,
   handleAIGenerate,
   handleConceptGeneration,
   translate: t,
@@ -225,9 +229,9 @@ useCanvasUnsavedLeaveGuard({
 })
 
 watch(
-  () => panelsStore.nodePalettePanel.isOpen,
+  () => panelsStore.diagramBrainstormPanel.isOpen,
   (isOpen) => {
-    showNodePalette.value = isOpen
+    showDiagramBrainstorm.value = isOpen
   }
 )
 
@@ -392,12 +396,12 @@ onUnmounted(() => {
           <button
             v-if="!useMindMapV2"
             class="toolbar-btn toolbar-btn--purple"
-            :class="{ 'toolbar-btn--active': showNodePalette }"
-            :aria-label="t('panel.nodePalette')"
-            @click="toggleNodePalette"
+            :class="{ 'toolbar-btn--active': showDiagramBrainstorm }"
+            :aria-label="t('panel.aiBrainstorm')"
+            @click="toggleDiagramBrainstorm"
           >
             <LayoutGrid :size="18" />
-            <span class="toolbar-label"><I18nText k="panel.nodePalette" /></span>
+            <span class="toolbar-label"><I18nText k="panel.aiBrainstorm" /></span>
           </button>
         </template>
       </div>
@@ -469,7 +473,7 @@ onUnmounted(() => {
 
         <div class="ms-auto flex min-w-0 items-center justify-end gap-2">
           <MobileLearningSheetButton
-            v-if="useMindMapV2"
+            v-if="useMindMapV2 && lsCanvas.showLearningSheet"
             :disabled="diagramShareRole === 'viewer'"
           />
           <MobileCanvasExportButton :mind-map-export="useMindMapV2" />
@@ -483,17 +487,17 @@ onUnmounted(() => {
     -->
     <Transition name="palette-slide">
       <div
-        v-if="!useMindMapV2 && showNodePalette && panelsStore.nodePalettePanel.isOpen"
-        class="mobile-node-palette-overlay absolute inset-0 z-100 flex flex-col touch-manipulation bg-white"
+        v-if="!useMindMapV2 && showDiagramBrainstorm && panelsStore.diagramBrainstormPanel.isOpen"
+        class="mobile-diagram-brainstorm-overlay absolute inset-0 z-100 flex flex-col touch-manipulation bg-white"
         style="top: var(--mg-mobile-palette-top, 9.5rem)"
       >
         <RootConceptModal
           v-if="isConceptMap"
-          @close="panelsStore.closeNodePalette"
+          @close="panelsStore.closeDiagramBrainstorm"
         />
-        <NodePalettePanel
+        <DiagramBrainstormPanel
           v-else
-          @close="panelsStore.closeNodePalette"
+          @close="panelsStore.closeDiagramBrainstorm"
         />
       </div>
     </Transition>

@@ -10,7 +10,7 @@ Routers:
 - auth.py: Authentication endpoints
 - admin_env.py: Admin environment settings
 - admin_logs.py: Admin log streaming
-- node_palette.py: Node Palette endpoints
+- ai_brainstorm.py: AI brainstorm endpoints
 - features/kitty/: Kitty Agent (realtime WS + REST helpers)
 - update_notification.py: Update notification system
 
@@ -22,7 +22,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from . import api, auth, inline_recommendations, node_palette, public_dashboard, relationship_labels
+from . import ai_brainstorm, api, auth, inline_recommendations, public_dashboard, relationship_labels
 from .admin import env_router as admin_env
 from .admin import logs_router as admin_logs
 from .admin import realtime_router as admin_realtime
@@ -36,7 +36,7 @@ __all__ = [
     "admin_env",
     "admin_logs",
     "admin_realtime",
-    "node_palette",
+    "ai_brainstorm",
     "relationship_labels",
     "inline_recommendations",
     "kitty",

@@ -1,9 +1,11 @@
 /**
- * Two-finger vertical swipe scrolls long modals.
+ * Two-finger vertical swipe scrolls a long modal's scrollbar.
  *
- * A one-finger drag that starts on a button, field, or scrollbar thumb often
- * never reaches the overflow pane. Empty padding still pans natively. A second
- * finger scrolls the nearest pane that has room, then the dialog shell.
+ * The dialog body is a capped overflow port (see index.css): the mouse wheel
+ * and a trackpad already move it. A one-finger drag that starts on a button
+ * often never reaches that port. A second finger scrolls the nearest pane
+ * that still has room, which is the dialog body once an inner pane is at
+ * its end.
  */
 
 const MODAL_TWO_FINGER_SCROLL_SELECTOR = [
@@ -13,7 +15,6 @@ const MODAL_TWO_FINGER_SCROLL_SELECTOR = [
   '.swiss-glass-card',
   '.swiss-glass-card-overlay',
   '.mm-canvas-center-modal',
-  '.el-overlay-dialog',
 ].join(',')
 
 const AXIS_LOCK_PX = 8

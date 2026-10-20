@@ -376,7 +376,7 @@ def to_albanian(value: str) -> str:
         ("Reset", "Rivendos"),
         (
             "Are you sure? All current content will be lost, including the "
-            "diagram and node palette. This cannot be undone.",
+            "diagram and AI brainstorm. This cannot be undone.",
             "Je i sigurt? Gjithë përmbajtja aktuale do të humbasë, përfshirë "
             "diagramin dhe paletën e nyjeve. Kjo nuk kthehet mbrapsht.",
         ),
@@ -697,7 +697,7 @@ def to_arabic(value: str) -> str:
          "فشل تحليل ملف المخطط، حاول مرة أخرى"),
         (
             "Are you sure? All current content will be lost, including the "
-            "diagram and node palette. This cannot be undone.",
+            "diagram and AI brainstorm. This cannot be undone.",
             "هل أنت متأكد؟ ستفقد كل المحتوى الحالي بما في ذلك المخطط ولوحة "
             "العقد. لا يمكن التراجع.",
         ),
@@ -914,7 +914,7 @@ def to_hindi(value: str) -> str:
          "आरेख फ़ाइल पार्स करने में विफल, पुनः प्रयास करें"),
         (
             "Are you sure? All current content will be lost, including the "
-            "diagram and node palette. This cannot be undone.",
+            "diagram and AI brainstorm. This cannot be undone.",
             "क्या आप सुनिश्चित हैं? वर्तमान सारी सामग्री खो जाएगी, जिसमें "
             "आरेख और नोड पैलेट शामिल है। इसे पूर्ववत नहीं किया जा सकता।",
         ),

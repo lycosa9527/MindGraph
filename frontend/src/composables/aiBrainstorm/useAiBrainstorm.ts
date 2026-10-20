@@ -1,8 +1,8 @@
 /**
  * AI Brainstorm (AI头脑风暴) — mind-map side tool for new Canvas.
  *
- * Isolated from Node Palette (own store/session/events). Reuses shared SSE helpers
- * and stage utilities from the nodePalette package without modifying that module.
+ * Mind maps keep their own store and session. Thinking maps and concept maps
+ * use the shared brainstorm helpers in this folder.
  */
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -11,32 +11,32 @@ import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
 import { applyAiBrainstormSelection } from '@/composables/aiBrainstorm/applyAiBrainstormSelection'
-import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
-import { eventBus } from '@/composables/core/useEventBus'
-import { isPlaceholderText } from '@/composables/editor/placeholderText'
-import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
-import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import {
+  AI_BRAINSTORM_NEXT,
+  AI_BRAINSTORM_START,
   MINDMAP_WATERFALL_NODES_PER_LLM,
-  NODE_PALETTE_NEXT,
-  NODE_PALETTE_START,
   getParentIdFromStageData,
-} from '@/composables/nodePalette/constants'
-import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
-import { isAbortError } from '@/composables/nodePalette/errors'
+} from '@/composables/aiBrainstorm/constants'
+import { buildDiagramData } from '@/composables/aiBrainstorm/diagramDataBuilder'
+import { isAbortError } from '@/composables/aiBrainstorm/errors'
 import {
   resolveMindMapWaterfallSources,
   tabLabel,
-} from '@/composables/nodePalette/mindMapWaterfallHelpers'
-import { getAiBrainstormDiagramKey } from '@/composables/nodePalette/sessionKeys'
+} from '@/composables/aiBrainstorm/mindMapBrainstormSources'
+import { getAiBrainstormDiagramKey } from '@/composables/aiBrainstorm/sessionKeys'
 import {
   type Stage2Parent,
   buildStageDataForParent,
   getDefaultStage,
   getStage2ParentsForDiagram,
   stage2StageNameForType,
-} from '@/composables/nodePalette/stageHelpers'
-import { streamNodePaletteBatch } from '@/composables/nodePalette/streamNodePaletteBatch'
+} from '@/composables/aiBrainstorm/stageHelpers'
+import { streamBrainstormBatch } from '@/composables/aiBrainstorm/streamBrainstormBatch'
+import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
+import { eventBus } from '@/composables/core/useEventBus'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
+import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
+import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { canvasRunModel } from '@/config/canvasLlmMenu'
 import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -174,7 +174,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       useGlobalAbort?: boolean
     }
   ): Promise<number> {
-    return streamNodePaletteBatch(
+    return streamBrainstormBatch(
       streamDeps,
       url,
       withMindMapAudienceContext(payload, promptLanguage.value),
@@ -262,7 +262,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
             stage_data: buildStageDataForParent(parent, 'mindmap'),
             mode: parent.name,
           }
-          return streamBatch(NODE_PALETTE_START, payload, {
+          return streamBatch(AI_BRAINSTORM_START, payload, {
             append: true,
             sharedExistingIds: sharedIds,
             useGlobalAbort: false,
@@ -327,7 +327,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
             stage_data: stageData,
             mode: source.id,
           }
-          return streamBatch(NODE_PALETTE_START, payload, {
+          return streamBatch(AI_BRAINSTORM_START, payload, {
             append: true,
             sharedExistingIds: sharedIds,
             useGlobalAbort: false,
@@ -362,13 +362,13 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
     }
     const dt = diagramStore.type
     if ((dt !== 'mindmap' && dt !== 'mind_map') || !diagramStore.data?.nodes?.length) {
-      errorMessage.value = t('nodePalette.error.createDiagramFirst')
+      errorMessage.value = t('aiBrainstorm.error.createDiagramFirst')
       return false
     }
 
     const topic = topicText.value.trim()
     if (!topic || isPlaceholderText(topic) || isLearningSheetBlankDisplayText(topic)) {
-      errorMessage.value = t('nodePalette.error.replacePlaceholder')
+      errorMessage.value = t('aiBrainstorm.error.replacePlaceholder')
       return false
     }
 
@@ -438,7 +438,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       if (sd && Object.keys(sd).length > 0) {
         payload.stage_data = sd
       }
-      await streamBatch(NODE_PALETTE_START, payload, { append: keepSessionId })
+      await streamBatch(AI_BRAINSTORM_START, payload, { append: keepSessionId })
       return true
     } catch (err) {
       if (isAbortError(err)) return false
@@ -513,7 +513,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       }
       if (stage) payload.stage = stage
       if (stageData && Object.keys(stageData).length > 0) payload.stage_data = stageData
-      await streamBatch(NODE_PALETTE_NEXT, payload, { append: true })
+      await streamBatch(AI_BRAINSTORM_NEXT, payload, { append: true })
       return true
     } catch (err) {
       if (isAbortError(err)) return false
@@ -564,7 +564,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
     const toApply = suggestionsList.filter((s) => selected.includes(s.id))
     if (toApply.length === 0) return false
 
-    diagramStore.pushHistory(t('nodePalette.history.replaceAddNodes'))
+    diagramStore.pushHistory(t('aiBrainstorm.history.replaceAddNodes'))
     return applyAiBrainstormSelection({
       diagramStore,
       diagramKey: diagramKey(),

@@ -57,11 +57,11 @@ import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
 import LearningAssignmentCanvasBar from '@/components/learningSpace/LearningAssignmentCanvasBar.vue'
-import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
+import { DiagramBrainstormPanel, MindmatePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
+  getDiagramBrainstorm,
   getDiagramOperations,
-  getNodePalette,
   getPanelCoordinator,
   useCanvasKittyDesktopPairing,
   useDiagramSpecForPersist,
@@ -116,6 +116,7 @@ import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolb
 import {
   bindMindMapExternalPanelClose,
   useMindMapSideToolbarState,
+  watchHomeworkLearningSheet,
 } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
@@ -461,7 +462,7 @@ function handleCollabSession(payload: {
 
 // Singletons must be created during setup (not in onMounted); they use useI18n / onUnmounted.
 getPanelCoordinator()
-const { startSession: startNodePaletteSession } = getNodePalette({
+const { startSession: startDiagramBrainstormSession } = getDiagramBrainstorm({
   onError: (err) => notify.error(err),
 })
 const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
@@ -645,8 +646,11 @@ const enableDesktopTouchPanPinch = computed(() =>
   )
 )
 
+const { showCanvasAiFeatures } = useLearningAiGate()
+
 function sideToolAllowed(tool: string | null): boolean {
   if (!tool) return false
+  if (tool === 'learning_sheet' && !learningAssignmentCanvas.showLearningSheet) return false
   if (useMindMapV2.value) return true
   if (tool === 'outline') return ribbonCaps.value.outline
   if (tool === 'learning_sheet') return ribbonCaps.value.learningSheetPanel
@@ -678,6 +682,7 @@ const showMindClassroomDialog = computed(
 
 const showLearningSheetExportNudge = computed(
   () =>
+    learningAssignmentCanvas.showLearningSheet &&
     isMindMapRibbonFamily.value &&
     !isMindMapPresentationMode.value &&
     !mindClassroomSlideDeck.value &&
@@ -689,6 +694,7 @@ const showCanvasChrome = computed(
 )
 
 const { activeTool, closeActiveTool } = useMindMapSideToolbarState()
+watchHomeworkLearningSheet()
 
 watch(
   () => diagramStore.type,
@@ -714,8 +720,8 @@ watch(
   () => diagramStore.type,
   () => {
     closeActiveTool()
-    if (panelsStore.nodePalettePanel.isOpen) {
-      panelsStore.closeNodePalette()
+    if (panelsStore.diagramBrainstormPanel.isOpen) {
+      panelsStore.closeDiagramBrainstorm()
     }
   }
 )
@@ -730,7 +736,6 @@ const mindMatePanelRight = computed(() => {
 })
 
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
-const { showCanvasAiFeatures } = useLearningAiGate()
 
 const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
   currentDiagramId,
@@ -826,7 +831,7 @@ useKittyDesktopRemoteSync({
 
 useCanvasPageMountedHandlers({
   snapshotHistory,
-  startNodePaletteSession,
+  startDiagramBrainstormSession,
   isDiagramOwner,
 })
 
@@ -1277,7 +1282,7 @@ useNewCanvasTypeQueryBootstrap({
   },
 })
 
-// Watch for diagram ID changes (sidebar switch) - load new diagram and clear node palette
+// Watch for diagram ID changes (sidebar switch) - load new diagram and clear AI brainstorm
 watch(
   () => {
     const q = route.query
@@ -1731,20 +1736,20 @@ onUnmounted(() => {
       class="flex-1 relative overflow-hidden flex flex-row min-h-0"
       :class="{ 'mc-slide-lecture-fullscreen': mindClassroomSlideDeck }"
     >
-      <!-- Node Palette panel (瀑布流) - left 50%, inset to clear floating toolbars -->
-      <Transition name="node-palette-slide">
+      <!-- AI brainstorm panel (瀑布流) - left 50%, inset to clear floating toolbars -->
+      <Transition name="diagram-brainstorm-slide">
         <div
           v-if="
-            panelsStore.nodePalettePanel.isOpen &&
+            panelsStore.diagramBrainstormPanel.isOpen &&
             !isViewer &&
             !useMindMapV2 &&
             !mindClassroomSlideDeck
           "
-          class="node-palette-panel-split shrink-0 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden ml-4 mr-2 self-stretch"
+          class="diagram-brainstorm-panel-split shrink-0 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden ml-4 mr-2 self-stretch"
           :style="{
             width: '50%',
-            minWidth: `${PANEL.NODE_PALETTE_MIN_WIDTH}px`,
-            maxWidth: `${PANEL.NODE_PALETTE_MAX_WIDTH}px`,
+            minWidth: `${PANEL.DIAGRAM_BRAINSTORM_MIN_WIDTH}px`,
+            maxWidth: `${PANEL.DIAGRAM_BRAINSTORM_MAX_WIDTH}px`,
             marginTop: `${PANEL_INSET.TOP}px`,
             marginBottom: `${PANEL_INSET.BOTTOM}px`,
             maxHeight: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
@@ -1752,11 +1757,11 @@ onUnmounted(() => {
         >
           <RootConceptModal
             v-if="diagramStore.type === 'concept_map'"
-            @close="panelsStore.closeNodePalette"
+            @close="panelsStore.closeDiagramBrainstorm"
           />
-          <NodePalettePanel
+          <DiagramBrainstormPanel
             v-else
-            @close="panelsStore.closeNodePalette"
+            @close="panelsStore.closeDiagramBrainstorm"
           />
         </div>
       </Transition>

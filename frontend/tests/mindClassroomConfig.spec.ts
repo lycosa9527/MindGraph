@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
+  diagramSupportsSlideDeck,
   loadMindClassroomMastery,
   loadMindClassroomPresentation,
   loadMindClassroomSlideStyle,
@@ -51,12 +52,21 @@ describe('mind classroom preferences', () => {
     expect(resolveMindClassroomPresentation('canvas_tour', false)).toBe('canvas_tour')
   })
 
+  it('keeps slide lecture on mind maps only', () => {
+    expect(diagramSupportsSlideDeck('mindmap')).toBe(true)
+    expect(diagramSupportsSlideDeck('mind_map')).toBe(true)
+    expect(diagramSupportsSlideDeck('circle_map')).toBe(false)
+    expect(diagramSupportsSlideDeck('bubble_map')).toBe(false)
+    expect(diagramSupportsSlideDeck('concept_map')).toBe(false)
+    expect(diagramSupportsSlideDeck(null)).toBe(false)
+  })
+
   it('gates slide lecture in the shared launch UI used by every map type', () => {
     const text = readFileSync(
       resolve(__dirname, '../src/components/canvas/MindClassroomLaunchContent.vue'),
       'utf8'
     )
-    expect(text).toContain('gated: id === \'slide_deck\' && !featureMindClassroomSlideDeck.value')
+    expect(text).toContain("gated: id === 'slide_deck' && !slideDeckSelectable.value")
     expect(text).toContain('queueBusy || option.gated')
   })
 })

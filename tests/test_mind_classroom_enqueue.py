@@ -67,9 +67,12 @@ def test_queued_watch_action_waits_then_kicks_then_fails() -> None:
 
 
 def test_resolve_classroom_mode_gates_slide_deck() -> None:
-    """Slide lecture falls back to the canvas tour while the feature is off."""
+    """Slide lecture falls back to the canvas tour while the feature is off or the diagram is not a mind map."""
     assert resolve_classroom_mode("slide_deck", False) == "canvas_tour"
     assert resolve_classroom_mode("slide_deck", True) == "slide_deck"
+    assert resolve_classroom_mode("slide_deck", True, "mindmap") == "slide_deck"
+    assert resolve_classroom_mode("slide_deck", True, "circle_map") == "canvas_tour"
+    assert resolve_classroom_mode("slide_deck", True, "concept_map") == "canvas_tour"
     assert resolve_classroom_mode("canvas_tour", False) == "canvas_tour"
 
 

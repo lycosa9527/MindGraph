@@ -3,7 +3,7 @@
  */
 import { isCancelledError } from '@tanstack/query-core'
 
-import { isAbortError } from '@/composables/nodePalette/errors'
+import { isAbortError } from '@/composables/aiBrainstorm/errors'
 
 export function isIgnorableQueryError(err: unknown): boolean {
   if (err == null) {

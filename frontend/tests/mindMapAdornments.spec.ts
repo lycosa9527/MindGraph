@@ -13,9 +13,20 @@ import {
   sanitizeMindMapHref,
   sanitizeMindMapImageUrl,
   seedMindMapLinkDialog,
+  textWithIconAdornment,
 } from '@/utils/mindMapAdornments'
 
 describe('mind map adornments', () => {
+  it('treats an icon as leading label text', () => {
+    expect(textWithIconAdornment('属性5', null)).toBe('属性5')
+    expect(textWithIconAdornment('属性5', { href: 'https://example.com' })).toBe('属性5')
+    expect(textWithIconAdornment('属性5', { icon: '😬' })).toBe('😬 属性5')
+    expect(textWithIconAdornment('', { icon: '😬' })).toBe('😬')
+    expect(
+      textWithIconAdornment('属性5', { icon: '😬', imageUrl: 'data:image/png;base64,aa' })
+    ).toBe('😬 属性5')
+  })
+
   it('places icon/link inline and keeps image above', () => {
     expect(resolveMindMapAdornmentParts('inline', true, true)).toEqual({
       image: false,

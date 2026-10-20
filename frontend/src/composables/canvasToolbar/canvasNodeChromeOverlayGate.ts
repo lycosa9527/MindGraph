@@ -13,13 +13,13 @@ import { coveringMindMapSideToolOpen } from './useMindMapSideToolbarState'
 export { isCoveringMindMapSideTool } from './useMindMapSideToolbarState'
 
 export function canvasNodeChromeBlockedByOverlay(input: {
-  nodePaletteOpen: boolean
+  diagramBrainstormOpen: boolean
   aiBrainstormOpen: boolean
   coveringSideTool: boolean
   coveringDialogOpen: boolean
 }): boolean {
   return (
-    input.nodePaletteOpen ||
+    input.diagramBrainstormOpen ||
     input.aiBrainstormOpen ||
     input.coveringSideTool ||
     input.coveringDialogOpen
@@ -30,7 +30,7 @@ export function useCanvasNodeChromeOverlayGate(): ComputedRef<boolean> {
   const panelsStore = usePanelsStore()
   return computed(() =>
     canvasNodeChromeBlockedByOverlay({
-      nodePaletteOpen: panelsStore.nodePalettePanel.isOpen,
+      diagramBrainstormOpen: panelsStore.diagramBrainstormPanel.isOpen,
       aiBrainstormOpen: panelsStore.aiBrainstormPanel.isOpen,
       coveringSideTool: coveringMindMapSideToolOpen(),
       coveringDialogOpen: canvasCoveringOverlayOpen(),

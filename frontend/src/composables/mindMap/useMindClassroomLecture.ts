@@ -271,7 +271,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     closeActiveTool()
     classroomStore.closeModal()
     panelsStore.closeMindmate()
-    panelsStore.closeNodePalette()
+    panelsStore.closeDiagramBrainstorm()
     setPresentationDiagramEditLocked(true)
     classroomStore.setPreLectureCollapsedPaths(
       data?._collapsed_paths ? [...data._collapsed_paths] : []

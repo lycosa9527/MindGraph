@@ -21,12 +21,12 @@ export function executeKittyAgentAction(action: string, params: Record<string, u
       eventBus.emit('panel:close_requested', { panel: 'mindmate', source: 'kitty_agent' })
       break
 
-    case 'open_node_palette':
-      eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'kitty_agent' })
+    case 'open_ai_brainstorm':
+      eventBus.emit('panel:open_requested', { panel: 'diagramBrainstorm', source: 'kitty_agent' })
       break
 
-    case 'close_node_palette':
-      eventBus.emit('panel:close_requested', { panel: 'nodePalette', source: 'kitty_agent' })
+    case 'close_ai_brainstorm':
+      eventBus.emit('panel:close_requested', { panel: 'diagramBrainstorm', source: 'kitty_agent' })
       break
 
     case 'close_all_panels':

@@ -29,6 +29,7 @@ import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapStepNode } from '@/utils/flowMapIdentity'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
@@ -199,7 +200,12 @@ const shapeLineColor = computed(() => {
 const flowMaxWidth = computed(() => {
   if (!isPillShape.value) return '200px'
 
-  const label = ((props.data.label as string) || '').trim()
+  const label = labelWithNodeIcon(
+    diagramStore.data,
+    props.id,
+    ((props.data.label as string) || '').trim(),
+    diagramStore.data?.connections
+  )
   const fontSize =
     parseFloat(nodeStyle.value.fontSize as string) || MIND_MAP_GEOMETRY.branchFontSize
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')

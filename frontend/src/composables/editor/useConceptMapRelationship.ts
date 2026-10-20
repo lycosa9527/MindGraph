@@ -23,7 +23,7 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 import { isTopicToRootConceptConnection } from '@/utils/conceptMapTopicRootEdge'
 
-import { RELATIONSHIP_LABELS_NEXT, RELATIONSHIP_LABELS_START } from '../nodePalette/constants'
+import { RELATIONSHIP_LABELS_NEXT, RELATIONSHIP_LABELS_START } from '../aiBrainstorm/constants'
 
 export const CONCEPT_MAP_GENERATING_KEY = Symbol('conceptMapRelationshipGenerating')
 export const CONCEPT_MAP_OPTIONS_KEY = Symbol('conceptMapRelationshipOptions')

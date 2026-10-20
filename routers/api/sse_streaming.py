@@ -214,7 +214,7 @@ async def ai_assistant_stream(
         logger.debug("[GENERATOR] Async generator function called - starting execution")
 
         # SSE comment first so the HTTP response is established before any await.
-        # Matches node_palette_streaming: avoids ASGI/middleware issues when the
+        # Matches ai_brainstorm_streaming: avoids ASGI/middleware issues when the
         # client aborts during the first await. EventSource ignores ':' lines.
         yield ": stream_open\n\n"
         if using_backup:

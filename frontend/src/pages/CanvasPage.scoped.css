@@ -1,16 +1,16 @@
-/* Node Palette panel slide-in animation (from left) */
-.node-palette-slide-enter-active,
-.node-palette-slide-leave-active {
+/* AI brainstorm panel slide-in animation (from left) */
+.diagram-brainstorm-slide-enter-active,
+.diagram-brainstorm-slide-leave-active {
   transition: transform 0.3s ease;
 }
 
-.node-palette-slide-enter-from,
-.node-palette-slide-leave-to {
+.diagram-brainstorm-slide-enter-from,
+.diagram-brainstorm-slide-leave-to {
   transform: translateX(-100%);
 }
 
-.node-palette-slide-enter-to,
-.node-palette-slide-leave-from {
+.diagram-brainstorm-slide-enter-to,
+.diagram-brainstorm-slide-leave-from {
   transform: translateX(0);
 }
 

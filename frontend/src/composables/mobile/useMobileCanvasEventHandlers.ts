@@ -19,7 +19,7 @@ export interface UseMobileCanvasEventHandlersOptions {
   rootConceptReviewStore: ReturnType<typeof useConceptMapRootConceptReviewStore>
   isConceptMap: { value: boolean }
   isAIGenerating: { value: boolean }
-  startNodePaletteSession: (opts: { keepSessionId?: boolean; mode?: string }) => void
+  startDiagramBrainstormSession: (opts: { keepSessionId?: boolean; mode?: string }) => void
   handleAIGenerate: (options?: {
     generationInstructions?: string
     topicOverride?: string
@@ -40,7 +40,7 @@ export function useMobileCanvasEventHandlers(options: UseMobileCanvasEventHandle
     rootConceptReviewStore,
     isConceptMap,
     isAIGenerating,
-    startNodePaletteSession,
+    startDiagramBrainstormSession,
     handleAIGenerate,
     handleConceptGeneration,
     translate,
@@ -48,11 +48,11 @@ export function useMobileCanvasEventHandlers(options: UseMobileCanvasEventHandle
   } = options
 
   eventBus.onWithOwner(
-    'nodePalette:opened',
+    'diagramBrainstorm:opened',
     (data: { hasRestoredSession?: boolean; wasPanelAlreadyOpen?: boolean }) => {
       if (diagramStore.type === 'concept_map') return
       if (!data.hasRestoredSession && diagramStore.data?.nodes?.length) {
-        startNodePaletteSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })
+        startDiagramBrainstormSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })
       }
     },
     OWNER

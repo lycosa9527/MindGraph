@@ -41,7 +41,7 @@ function clearEphemeralUiForLibrarySwitch(): void {
 
   const panelsStore = usePanelsStore()
   panelsStore.closeAllPanels()
-  panelsStore.clearNodePaletteState({ clearSessions: false })
+  panelsStore.clearDiagramBrainstormState({ clearSessions: false })
   panelsStore.clearAiBrainstormState({ clearSessions: false })
 
   useKittySessionStore().resetSessionUi()

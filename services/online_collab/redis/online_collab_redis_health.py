@@ -117,7 +117,7 @@ async def check_online_collab_redis_version(redis: Any) -> None:
             ),
         )
     except (OSError, RuntimeError, TypeError, AttributeError, ValueError) as alert_error:
-        logger.error("Failed to send startup failure alert: %s", alert_error)
+        logger.error("Failed to record startup failure: %s", alert_error)
     logger.error("Application startup failed. %s", msg)
     fatal_startup_exit(1)
 

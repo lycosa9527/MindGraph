@@ -49,7 +49,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
             )
         except BACKGROUND_INFRA_ERRORS as alert_error:
             if is_main_worker:
-                logger.error("Failed to send startup failure alert: %s", alert_error)
+                logger.error("Failed to record startup failure: %s", alert_error)
         raise SystemExit(1)
     if is_main_worker:
         logger.debug("Database integrity verified")
@@ -74,7 +74,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
             )
         except BACKGROUND_INFRA_ERRORS as alert_error:
             if is_main_worker:
-                logger.error("Failed to send startup failure alert: %s", alert_error)
+                logger.error("Failed to record startup failure: %s", alert_error)
         raise SystemExit(1) from init_exc
 
     logger.debug("[LIFESPAN] Cleaning up incomplete chunk test operations (post-migration)...")

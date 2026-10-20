@@ -46,6 +46,7 @@ import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
 import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
+import { readNodeAdornment, textWithIconAdornment } from '@/utils/mindMapAdornments'
 import {
   MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
   resolveThinkingMapDisplayMaxWidthPx,
@@ -275,11 +276,19 @@ const groupColor = computed(() => {
 })
 
 // Prefer style.size from layout (driven by Pinia nodeDimensions on circle/bubble maps); fallback text estimate
+/** Icon adornment is part of the label for wrap width and the fallback disk. */
+const labelForMeasure = computed(() =>
+  textWithIconAdornment(
+    props.data.label || '',
+    readNodeAdornment(diagramStore.data, props.id, diagramStore.data?.connections)
+  )
+)
+
 const circleSize = computed(() => {
   if (props.data.style?.size) {
     return props.data.style.size
   }
-  const text = props.data.label || ''
+  const text = labelForMeasure.value
   const isRadialTopic =
     (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') && isTopicNode.value
   if (isRadialTopic) {
@@ -289,7 +298,7 @@ const circleSize = computed(() => {
 })
 
 const textMaxWidth = computed(() => {
-  const label = (props.data.label || '').trim()
+  const label = labelForMeasure.value.trim()
   const fontFamily = diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK)
   if (isTopicNode.value) {
     if (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') {

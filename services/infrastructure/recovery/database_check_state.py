@@ -6,7 +6,7 @@ when checks take a long time to complete.
 
 Features:
 - Tracks in-progress database checks
-- Prevents SMS alerts for timeouts during legitimate long-running checks
+- Prevents false critical records for timeouts during legitimate long-running checks
 - Uses Redis for distributed state management (if available)
 - Falls back to in-memory state if Redis is unavailable
 

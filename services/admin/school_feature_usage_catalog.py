@@ -52,7 +52,7 @@ _TOKEN_TYPE_TO_MODULE: dict[str, str] = {
     "autocomplete": "canvas",
     "relationship_labels": "canvas",
     "canvas_translate": "canvas",
-    "node_palette": "canvas",
+    "ai_brainstorm": "canvas",
     "inline_recommendations": "canvas",
     "mindmap_node_explain": "canvas",
     "mindmate": "mindmate",
@@ -130,6 +130,8 @@ def resolve_token_module(
     if DINGTALK_ENDPOINT_MARK in path_key:
         return "dingtalk"
     type_key = (request_type or "").strip().lower()
+    if type_key == "node_palette":
+        type_key = "ai_brainstorm"
     mapped = _TOKEN_TYPE_TO_MODULE.get(type_key)
     if mapped:
         return mapped

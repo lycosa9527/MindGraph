@@ -230,7 +230,7 @@ def test_merge_ai_permissions_defaults() -> None:
     merged = merge_ai_permissions({"node_palette": True, "unknown": True})
     assert merged["ai_assist"] is True
     assert merged["ai_brainstorm"] is True
-    assert merged["node_palette"] is True
+    assert "node_palette" not in merged
     assert merged["topic_generate"] is False
     assert merged["generate_diagram"] is False
     assert merged["allow_resubmit"] is True
@@ -239,7 +239,7 @@ def test_merge_ai_permissions_defaults() -> None:
     assert typed["diagram_type"] == "bridge_map"
     assert typed["has_teacher_template"] is False
     assert ai_permission_allowed(merged, "ai_brainstorm") is True
-    assert ai_permission_allowed(merged, "node_palette") is True
+    assert ai_permission_allowed(merged, "node_palette") is False
     assert ai_permission_allowed(merged, "topic_generate") is False
     assert ai_permission_allowed(merged, "generate_diagram") is False
 
@@ -257,7 +257,7 @@ def test_student_ai_gate_permission_matrix() -> None:
     """Map legacy capability aliases onto merged assignment permissions."""
     perms = merge_ai_permissions({"ai_assist": True, "ai_brainstorm": True, "topic_generate": False})
     assert ai_permission_allowed(perms, "ai_brainstorm") is True
-    assert ai_permission_allowed(perms, "node_palette") is True
+    assert ai_permission_allowed(perms, "node_palette") is False
     assert ai_permission_allowed(perms, "topic_generate") is False
     assert ai_permission_allowed(perms, "generate_diagram") is False
     assert ai_permission_allowed(perms, "inline_recommend") is True

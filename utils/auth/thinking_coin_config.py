@@ -64,13 +64,24 @@ SLUG_REFERRAL: Final[str] = "referral_register"
 
 CANVAS_ASSIST_REQUEST_TYPES: Final[frozenset[str]] = frozenset(
     {
+        "ai_brainstorm",
         "autocomplete",
-        "node_palette",
         "canvas_translate",
         "voice_omni",
         "mindmap_node_explain",
     }
 )
+
+
+def is_canvas_assist_request(request_type: str) -> bool:
+    """True when this LLM call uses the canvas-assist coin price.
+
+    Rows saved before the rename stored ``node_palette`` for AI brainstorm.
+    """
+    if request_type == "node_palette":
+        request_type = "ai_brainstorm"
+    return request_type in CANVAS_ASSIST_REQUEST_TYPES
+
 
 THINKING_COIN_MODE_NORMAL: Final[str] = "normal"
 THINKING_COIN_MODE_BATCH_INNER: Final[str] = "batch_inner"

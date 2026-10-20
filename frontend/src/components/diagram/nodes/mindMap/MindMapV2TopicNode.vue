@@ -299,6 +299,7 @@ function handleTopicNodeClick(event: MouseEvent): void {
             <MindMapNodeAdornments
               :node-id="id"
               part="inline"
+              omit-icon
             />
             <InlineEditableText
               :text="data.label || ''"
@@ -334,6 +335,7 @@ function handleTopicNodeClick(event: MouseEvent): void {
           <MindMapNodeAdornments
             :node-id="id"
             part="inline"
+            omit-icon
           />
           <InlineEditableText
             :text="data.label || ''"

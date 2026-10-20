@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
+import { useDiagramStore } from '@/stores/diagram'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useMindClassroomStore } from '@/stores/mindClassroom'
 
 describe('mind classroom slide lecture gate', () => {
@@ -39,5 +41,29 @@ describe('mind classroom slide lecture gate', () => {
     expect(store.presentation).toBe('canvas_tour')
     store.beginSession([], 'slide_deck')
     expect(store.activeMode).toBe('canvas_tour')
+  })
+
+  it('keeps slide lecture only on mind maps when the feature is on', () => {
+    useFeatureFlagsStore().flags = {
+      feature_mind_classroom_slide_deck: true,
+    } as never
+    useDiagramStore().type = 'mindmap'
+    localStorage.setItem('mg-mind-classroom-presentation', 'slide_deck')
+    const store = useMindClassroomStore()
+    expect(store.slideDeckSelectable).toBe(true)
+    expect(store.presentation).toBe('slide_deck')
+
+    useDiagramStore().type = 'circle_map'
+    expect(store.slideDeckSelectable).toBe(false)
+    expect(store.presentation).toBe('canvas_tour')
+    expect(localStorage.getItem('mg-mind-classroom-presentation')).toBe('slide_deck')
+    store.setPresentation('slide_deck')
+    expect(store.presentation).toBe('canvas_tour')
+    store.beginSession([], 'slide_deck')
+    expect(store.activeMode).toBe('canvas_tour')
+
+    useDiagramStore().type = 'mindmap'
+    expect(store.slideDeckSelectable).toBe(true)
+    expect(store.presentation).toBe('slide_deck')
   })
 })

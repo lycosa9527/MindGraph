@@ -4,7 +4,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { DEFAULT_COLUMN_SPACING, DEFAULT_PADDING } from '@/composables/diagrams/layoutConfig'
-import { loadDoubleBubbleMapSpec } from '@/stores/specLoader/doubleBubbleMap'
+import {
+  expandDoubleBubbleNodesForIcons,
+  loadDoubleBubbleMapSpec,
+} from '@/stores/specLoader/doubleBubbleMap'
 import type { DiagramNode } from '@/types'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 
@@ -116,5 +119,28 @@ describe('double bubble difference column widths', () => {
     const pitch = left[1].position.y - left[0].position.y
     expect(pitch).toBe(boxHeight(left[0]) + 10)
     expect(nodes.every((node) => node.position.x >= DEFAULT_PADDING)).toBe(true)
+  })
+})
+
+describe('double bubble icon labels', () => {
+  it('grows the topic disk to the same size as typing the emoji into the label', () => {
+    const spec = {
+      left: 'Apple',
+      right: 'Banana',
+      similarities: ['fruit'],
+      leftDifferences: ['red'],
+      rightDifferences: ['yellow'],
+    }
+    const plain = loadDoubleBubbleMapSpec(spec).nodes
+    const typed = loadDoubleBubbleMapSpec({ ...spec, left: '😬 Apple' }).nodes
+    const grown = expandDoubleBubbleNodesForIcons(plain, { 'left-topic': { icon: '😬' } })
+    const sizeOf = (nodes: DiagramNode[], id: string): number =>
+      nodes.find((node) => node.id === id)?.style?.size ?? 0
+
+    expect(sizeOf(grown, 'left-topic')).toBe(sizeOf(typed, 'left-topic'))
+    expect(sizeOf(grown, 'left-topic')).toBeGreaterThan(sizeOf(plain, 'left-topic'))
+    expect(sizeOf(grown, 'right-topic')).toBe(sizeOf(grown, 'left-topic'))
+    const similarityId = plain.find((node) => node.text === 'fruit')?.id ?? ''
+    expect(sizeOf(grown, similarityId)).toBe(sizeOf(plain, similarityId))
   })
 })

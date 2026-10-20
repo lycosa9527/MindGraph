@@ -30,7 +30,7 @@ function bundleForKey(key: string): string {
     case 'mindmate':
     case 'panels':
     case 'panel':
-    case 'nodePalette':
+    case 'aiBrainstorm':
     case 'focusQuestion':
     case 'rootConceptModal':
     case 'conceptMapPicker':

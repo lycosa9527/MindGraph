@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
  * Root concept modal (concept maps only): AI-suggested concepts to drag onto the canvas.
- * Uses the same node palette store/session as other diagrams but is separate from NodePalettePanel.
+ * Uses the same AI brainstorm store/session as other diagrams but is separate from DiagramBrainstormPanel.
  *
  * Viewport: this component does not call fit/view events. Close paths use
- * `panelsStore.closeNodePalette()` (via dismiss / cancel / finishSelection in useNodePalette).
+ * `panelsStore.closeDiagramBrainstorm()` (via dismiss / cancel / finishSelection in useDiagramBrainstorm).
  * Desktop concept maps: no auto refit on palette close (`stores/panels.ts`) and no programmatic fit unless
  * the user uses zoom/fit controls (`userInitiated` on `view:fit_to_canvas_requested`).
  */
@@ -17,8 +17,8 @@ import { Check, Loader2, Plus, RefreshCw, X } from '@lucide/vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
-import { getNodePalette } from '@/composables/nodePalette/useNodePalette'
+import { BRAINSTORM_CONCEPT_DRAG_MIME } from '@/composables/aiBrainstorm/constants'
+import { getDiagramBrainstorm } from '@/composables/aiBrainstorm/useDiagramBrainstorm'
 import { getLLMColor } from '@/config/llmModelColors'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
@@ -51,12 +51,12 @@ const {
   initializeConceptMapRootModal,
   refreshConceptMapRootModal,
   addConceptMapDomainTab,
-} = getNodePalette({
+} = getDiagramBrainstorm({
   onError: (err) => notify.error(err),
 })
 
 const conceptMapTabs = computed(() => {
-  const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
+  const tabs = panelsStore.diagramBrainstormPanel.conceptMapTabs ?? []
   const nodes = diagramStore.data?.nodes ?? []
   const nodeIds = new Set(nodes.map((n) => n.id))
   return tabs.filter((t) => t.id === 'topic' || t.id.startsWith('domain_') || nodeIds.has(t.id))
@@ -77,13 +77,13 @@ const paletteTabStripGlowClass = computed(() => {
 })
 
 const rootConceptModalHeading = computed(() =>
-  panelsStore.nodePalettePanel.useConceptListHeader
+  panelsStore.diagramBrainstormPanel.useConceptListHeader
     ? t('rootConceptModal.titleConceptList', 'Concept list')
     : t('rootConceptModal.title')
 )
 
 watch(
-  () => [conceptMapTabs.value, panelsStore.nodePalettePanel.mode] as const,
+  () => [conceptMapTabs.value, panelsStore.diagramBrainstormPanel.mode] as const,
   ([tabs, mode]) => {
     if (!mode || !tabs.length) return
     const valid = tabs.some((t) => t.id === mode)
@@ -135,7 +135,7 @@ function handleDragStart(event: DragEvent, suggestion: NodeSuggestion) {
   const payload: { text: string; relationship_label?: string } = { text: suggestion.text }
   const rel = (suggestion.relationship_label ?? '').trim()
   if (rel) payload.relationship_label = rel
-  event.dataTransfer.setData(PALETTE_CONCEPT_DRAG_MIME, JSON.stringify(payload))
+  event.dataTransfer.setData(BRAINSTORM_CONCEPT_DRAG_MIME, JSON.stringify(payload))
   event.dataTransfer.effectAllowed = 'copy'
 }
 
@@ -237,7 +237,7 @@ onMounted(async () => {
               type="button"
               class="palette-tab-btn px-2 py-1 text-xs font-medium rounded-md transition-colors shrink-0 touch-manipulation"
               :class="
-                panelsStore.nodePalettePanel.mode === tab.id
+                panelsStore.diagramBrainstormPanel.mode === tab.id
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
@@ -293,7 +293,7 @@ onMounted(async () => {
         >
           <Loader2 class="w-3.5 h-3.5 animate-spin shrink-0" />
           <I18nText
-            k="nodePalette.generatingProgress"
+            k="aiBrainstorm.generatingProgress"
             :params="{ count: suggestions.length }"
           />
         </p>
@@ -340,7 +340,7 @@ onMounted(async () => {
           size="small"
           @click="loadNextBatch"
         >
-          <I18nText k="nodePalette.loadMore" />
+          <I18nText k="aiBrainstorm.loadMore" />
         </el-button>
       </div>
       <div
@@ -358,7 +358,7 @@ onMounted(async () => {
           <I18nText k="rootConceptModal.helpFooter" />
         </p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          <I18nText k="nodePalette.helpFinish" />
+          <I18nText k="aiBrainstorm.helpFinish" />
         </p>
       </div>
     </div>
@@ -370,7 +370,7 @@ onMounted(async () => {
         size="default"
         @click="handleCancel"
       >
-        <I18nText k="nodePalette.cancel" />
+        <I18nText k="aiBrainstorm.cancel" />
       </ElButton>
       <ElButton
         type="primary"
@@ -378,7 +378,7 @@ onMounted(async () => {
         :disabled="selectedIds.length === 0"
         @click="handleFinish"
       >
-        <I18nText k="nodePalette.finish" />
+        <I18nText k="aiBrainstorm.finish" />
       </ElButton>
     </div>
   </div>

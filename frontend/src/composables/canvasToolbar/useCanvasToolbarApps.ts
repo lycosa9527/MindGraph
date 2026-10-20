@@ -5,7 +5,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
-import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
+import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
 import {
   buildEducationStageInstructions,
   isEducationStage,
@@ -39,7 +39,7 @@ export function useCanvasToolbarApps() {
     isLearningSheet?: boolean
   }) {
     if (diagramStore.type === 'concept_map') {
-      openConceptMapNodePalette()
+      openConceptMapBrainstorm()
       return
     }
     if (!authStore.isAuthenticated) {
@@ -79,7 +79,7 @@ export function useCanvasToolbarApps() {
   }
 
   function handleConceptGeneration() {
-    openConceptMapNodePalette()
+    openConceptMapBrainstorm()
   }
 
   return {

@@ -7,11 +7,11 @@
 import { computed } from 'vue'
 
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useAuthStore } from '@/stores/auth'
 import {
   type LearningAiCapability,
   useLearningAssignmentCanvasStore,
 } from '@/stores/learningAssignmentCanvas'
-import { useAuthStore } from '@/stores/auth'
 
 export function useLearningAiGate() {
   const lsCanvas = useLearningAssignmentCanvasStore()

@@ -40,7 +40,6 @@ export interface LearningAiPermissions {
   node_explain?: boolean
   mind_classroom?: boolean
   generate_diagram?: boolean
-  node_palette?: boolean
   inline_recommend?: boolean
   translate?: boolean
   doc_summary?: boolean

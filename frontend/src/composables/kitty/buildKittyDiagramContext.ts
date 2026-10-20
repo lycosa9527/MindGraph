@@ -9,7 +9,7 @@ import {
 import { getDiagramWriteLockHolder } from '@/composables/kitty/useDiagramWriteLock'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import { resolveMindMapAudienceInstructions } from '@/composables/mindMap/audience/aiContentLevelInstructions'
-import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
+import { buildDiagramData } from '@/composables/aiBrainstorm/diagramDataBuilder'
 import { i18n } from '@/i18n'
 import { useAiContentLevelStore } from '@/stores/aiContentLevel'
 import { useDiagramStore } from '@/stores/diagram'

@@ -31,7 +31,7 @@ const savedState = {
 }
 
 const closeAllPanels = vi.fn()
-const clearNodePaletteState = vi.fn()
+const clearDiagramBrainstormState = vi.fn()
 const clearAiBrainstormState = vi.fn()
 
 const closeModal = vi.fn()
@@ -45,7 +45,7 @@ vi.mock('@/stores', () => ({
   useMindClassroomStore: () => ({ closeModal }),
   usePanelsStore: () => ({
     closeAllPanels,
-    clearNodePaletteState,
+    clearDiagramBrainstormState,
     clearAiBrainstormState,
   }),
 }))
@@ -123,7 +123,7 @@ describe('unloadCanvasForLibrarySwitch', () => {
     expect(diagramState.type).toBe('mindmap')
     expect(savedState.activeDiagramId).toBeNull()
     expect(closeAllPanels).toHaveBeenCalledOnce()
-    expect(clearNodePaletteState).toHaveBeenCalledWith({ clearSessions: false })
+    expect(clearDiagramBrainstormState).toHaveBeenCalledWith({ clearSessions: false })
     expect(clearAiBrainstormState).toHaveBeenCalledWith({ clearSessions: false })
     expect(teardownMindClassroomLecture).toHaveBeenCalledWith({ restoreViewport: false })
     expect(closeModal).toHaveBeenCalledOnce()

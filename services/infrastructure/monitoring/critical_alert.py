@@ -1,15 +1,7 @@
 """
-Critical Alert Service for MindGraph Application
+Record critical failures for the error collector.
 
-Centralized service for sending critical SMS alerts to admin phones.
-Ensures only ONE alert per critical error scenario (no spam).
-
-Features:
-- SMS alerts for critical application errors
-- Redis-based deduplication (prevents duplicate alerts)
-- Component-based cooldown mechanism
-- Comprehensive logging (essential since SMS template is fixed)
-- Non-blocking (doesn't crash app if SMS fails)
+Startup, health, and process-monitor failures are logged and persisted here.
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -19,215 +11,40 @@ All Rights Reserved
 Proprietary License
 """
 
-import asyncio
-import hashlib
 import logging
-import os
-import time
-from typing import Coroutine, Optional
+from typing import Optional
 
+from services.monitoring.error_reporting import record_failure
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-
-try:
-    from services.monitoring.error_reporting import record_failure
-
-    _ERROR_COLLECTOR_AVAILABLE = True
-except ImportError:
-    record_failure = None
-    _ERROR_COLLECTOR_AVAILABLE = False
-
-try:
-    from services.redis.redis_async_client import get_async_redis
-    from services.redis.redis_client import is_redis_available
-
-    _REDIS_AVAILABLE = True
-except ImportError:
-    get_async_redis = None
-    is_redis_available = None
-    _REDIS_AVAILABLE = False
-
-try:
-    from services.auth.sms_middleware import get_sms_middleware
-    from utils.auth.config import ADMIN_PHONES
-
-    _SMS_AVAILABLE = True
-except ImportError:
-    get_sms_middleware = None
-    ADMIN_PHONES = []
-    _SMS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
-_bg_tasks: set[asyncio.Task] = set()
-
-
-def _fire_and_forget(coro: Coroutine) -> None:
-    """Schedule a coroutine as a tracked background task to prevent silent GC and log exceptions."""
-    task = asyncio.create_task(coro)
-    _bg_tasks.add(task)
-
-    def _on_done(t: asyncio.Task) -> None:
-        _bg_tasks.discard(t)
-        if not t.cancelled() and t.exception() is not None:
-            logger.debug("[bg_task] background task raised: %s", t.exception())
-
-    task.add_done_callback(_on_done)
-
-
-# ============================================================================
-# Configuration
-# ============================================================================
-
-_NON_PRODUCTION_ENVIRONMENTS = frozenset({"development", "dev", "test", "staging"})
-
-
-def _env_flag(name: str, default: str) -> bool:
-    """Env flag."""
-    return os.getenv(name, default).lower() in ("true", "1", "yes")
-
-
-def admin_sms_alerts_enabled() -> bool:
-    """
-    Whether admin-target SMS alerts (critical, health, process monitor, startup) may be sent.
-
-    Disabled when DEBUG=true, when ENVIRONMENT is non-production (test/staging/development),
-    or when ADMIN_SMS_ALERTS_ENABLED=false. Production defaults follow CRITICAL_ALERT_ENABLED.
-    """
-    if os.getenv("DEBUG", "").lower() == "true":
-        return False
-
-    explicit = os.getenv("ADMIN_SMS_ALERTS_ENABLED")
-    if explicit is not None:
-        return _env_flag("ADMIN_SMS_ALERTS_ENABLED", "false")
-
-    environment = os.getenv("ENVIRONMENT", "production").strip().lower()
-    if environment in _NON_PRODUCTION_ENVIRONMENTS:
-        return False
-
-    return _env_flag("CRITICAL_ALERT_ENABLED", "true")
-
-
-CRITICAL_ALERT_COOLDOWN_SECONDS = int(os.getenv("CRITICAL_ALERT_COOLDOWN_SECONDS", "1800"))  # 30 min default
-CRITICAL_ALERT_EXCEPTION_COOLDOWN_SECONDS = int(
-    os.getenv("CRITICAL_ALERT_EXCEPTION_COOLDOWN_SECONDS", "3600")
-)  # 1 hour for exceptions
-
-# Redis keys for alert tracking
-ALERT_SENT_KEY_PREFIX = "critical_alert:sent:"
-
-
-# ============================================================================
-# Critical Alert Service
-# ============================================================================
-
 
 class CriticalAlertService:
-    """
-    Centralized service for sending critical SMS alerts.
-
-    Ensures only ONE alert per critical error scenario to prevent spam.
-    Uses Redis-based deduplication and component-based cooldown.
-    """
+    """Persist critical failures for the error collector."""
 
     @staticmethod
-    def _calculate_error_hash(component: str, error_type: str, error_message: str) -> str:
-        """
-        Calculate hash for error deduplication.
-
-        Args:
-            component: Component name (Redis, Database, LLM, etc.)
-            error_type: Error type (StartupFailure, RuntimeError, etc.)
-            error_message: Error message (first 50 chars used)
-
-        Returns:
-            SHA256 hash string
-        """
-        message_preview = error_message[:50] if error_message else ""
-        hash_input = f"{component}:{error_type}:{message_preview}"
-        return hashlib.sha256(hash_input.encode("utf-8")).hexdigest()[:16]
-
-    @staticmethod
-    async def _check_alert_sent(component: str, error_hash: str) -> bool:
-        """
-        Check if alert was already sent for this error.
-
-        Args:
-            component: Component name
-            error_hash: Error hash
-
-        Returns:
-            True if alert already sent, False otherwise
-        """
-        if not _REDIS_AVAILABLE or is_redis_available is None or not is_redis_available():
-            return False
-
-        try:
-            if get_async_redis is None:
-                return False
-            redis_client = get_async_redis()
-            if redis_client is None:
-                return False
-
-            key = f"{ALERT_SENT_KEY_PREFIX}{component}:{error_hash}"
-            exists = await redis_client.exists(key)
-            return bool(exists)
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.debug("[CriticalAlert] Failed to check alert sent status: %s", e)
-            return False
-
-    @staticmethod
-    async def _mark_alert_sent(component: str, error_hash: str, cooldown_seconds: int) -> None:
-        """
-        Mark alert as sent in Redis.
-
-        Args:
-            component: Component name
-            error_hash: Error hash
-            cooldown_seconds: Cooldown period in seconds
-        """
-        if not _REDIS_AVAILABLE or is_redis_available is None or not is_redis_available():
-            return
-
-        try:
-            if get_async_redis is None:
-                return
-            redis_client = get_async_redis()
-            if redis_client is None:
-                return
-
-            key = f"{ALERT_SENT_KEY_PREFIX}{component}:{error_hash}"
-            await redis_client.set(key, str(time.time()), ex=cooldown_seconds)
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.warning("[CriticalAlert] Failed to mark alert as sent: %s", e)
-
-    @staticmethod
-    async def send_critical_alert(
+    def _record(
         component: str,
         error_type: str,
         error_message: str,
-        details: Optional[str] = None,
-        bypass_cooldown: bool = False,
-        cooldown_seconds: Optional[int] = None,
-        persist_error: bool = True,
+        details: Optional[str],
+        persist_error: bool,
     ) -> bool:
-        """
-        Send critical SMS alert to admin phones.
+        """Log a critical failure and optionally enqueue it for the error collector."""
+        logger.critical(
+            "[CriticalAlert] Component: %s, Type: %s, Message: %s",
+            component,
+            error_type,
+            error_message,
+        )
+        if details:
+            logger.critical("[CriticalAlert] Error details: %s", details)
 
-        Ensures only ONE alert per unique error scenario (prevents spam).
+        if not persist_error:
+            return False
 
-        Args:
-            component: Component name (Redis, Database, LLM, Application, etc.)
-            error_type: Error type (StartupFailure, RuntimeError, UnhandledException, etc.)
-            error_message: Error message
-            details: Optional additional details (stack trace, context, etc.)
-            bypass_cooldown: If True, bypass cooldown check (for startup failures)
-            cooldown_seconds: Custom cooldown period (default: CRITICAL_ALERT_COOLDOWN_SECONDS)
-            persist_error: When False, skip error collection (caller already persisted)
-
-        Returns:
-            True if alert was sent, False if skipped (cooldown or already sent)
-        """
-        if persist_error and _ERROR_COLLECTOR_AVAILABLE and record_failure is not None:
+        try:
             record_failure(
                 source="application",
                 component=component,
@@ -236,92 +53,48 @@ class CriticalAlertService:
                 exception_type=error_type,
                 stacktrace=details,
             )
-
-        if not admin_sms_alerts_enabled():
-            logger.debug("[CriticalAlert] Admin SMS alerts disabled for this environment")
+        except BACKGROUND_INFRA_ERRORS as exc:
+            logger.error("[CriticalAlert] Failed to record failure: %s", exc)
             return False
+        return True
 
-        if not _SMS_AVAILABLE:
-            logger.warning("[CriticalAlert] SMS service not available, cannot send alert")
-            return False
+    @staticmethod
+    async def send_critical_alert(
+        component: str,
+        error_type: str,
+        error_message: str,
+        details: Optional[str] = None,
+        persist_error: bool = True,
+    ) -> bool:
+        """
+        Record a critical failure.
 
-        error_hash = CriticalAlertService._calculate_error_hash(component, error_type, error_message)
+        Args:
+            component: Component name (Redis, Database, LLM, Application, etc.)
+            error_type: Error type (StartupFailure, RuntimeError, etc.)
+            error_message: Error message
+            details: Optional additional details
+            persist_error: When False, skip error collection (caller already persisted)
 
-        if not bypass_cooldown:
-            if await CriticalAlertService._check_alert_sent(component, error_hash):
-                logger.info(
-                    "[CriticalAlert] Alert already sent for %s:%s (hash: %s), skipping to prevent spam",
-                    component,
-                    error_type,
-                    error_hash,
-                )
-                return False
-
-        admin_phones = [phone.strip() for phone in ADMIN_PHONES if phone.strip()]
-        if not admin_phones:
-            logger.warning("[CriticalAlert] No admin phones configured, cannot send alert")
-            return False
-
-        logger.critical(
-            "[CriticalAlert] CRITICAL ERROR DETECTED - Component: %s, Type: %s, Message: %s, Hash: %s",
+        Returns:
+            True when the failure was enqueued for the error collector
+        """
+        return CriticalAlertService._record(
             component,
             error_type,
             error_message,
-            error_hash,
+            details,
+            persist_error,
         )
-        if details:
-            logger.critical("[CriticalAlert] Error details: %s", details)
-
-        try:
-            if get_sms_middleware is None:
-                logger.warning("[CriticalAlert] SMS middleware function not available")
-                return False
-            sms_middleware = get_sms_middleware()
-            if not sms_middleware.is_available:
-                logger.warning("[CriticalAlert] SMS middleware not available")
-                return False
-
-            success, message = await sms_middleware.send_alert(admin_phones, lang="zh")
-            if success:
-                logger.info(
-                    "[CriticalAlert] SMS alert sent successfully - Component: %s, Type: %s, Hash: %s",
-                    component,
-                    error_type,
-                    error_hash,
-                )
-
-                if not bypass_cooldown:
-                    cooldown = cooldown_seconds or CRITICAL_ALERT_COOLDOWN_SECONDS
-                    await CriticalAlertService._mark_alert_sent(component, error_hash, cooldown)
-
-                return True
-            logger.error("[CriticalAlert] Failed to send SMS alert: %s", message)
-            return False
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.error("[CriticalAlert] Error sending SMS alert: %s", e, exc_info=True)
-            return False
 
     @staticmethod
     async def send_startup_failure_alert(component: str, error_message: str, details: Optional[str] = None) -> bool:
-        """
-        Send alert for startup failure (app cannot start).
-
-        No cooldown - app is exiting anyway, only one chance to alert.
-
-        Args:
-            component: Component name (Redis, Qdrant, Celery, Database, etc.)
-            error_message: Error message
-            details: Optional additional details
-
-        Returns:
-            True if alert was sent, False otherwise
-        """
+        """Record a startup failure."""
         return await CriticalAlertService.send_critical_alert(
             component=component,
             error_type="StartupFailure",
             error_message=error_message,
             details=details,
-            bypass_cooldown=True,
         )
 
     @staticmethod
@@ -332,101 +105,22 @@ class CriticalAlertService:
         *,
         persist_error: bool = True,
     ) -> bool:
-        """
-        Send alert for runtime critical error.
-
-        Uses cooldown to prevent spam.
-
-        Args:
-            component: Component name
-            error_message: Error message
-            details: Optional additional details
-            persist_error: When False, skip error collection (caller already persisted)
-
-        Returns:
-            True if alert was sent, False if skipped (cooldown)
-        """
+        """Record a runtime critical error."""
         return await CriticalAlertService.send_critical_alert(
             component=component,
             error_type="RuntimeError",
             error_message=error_message,
             details=details,
-            bypass_cooldown=False,
-            cooldown_seconds=CRITICAL_ALERT_COOLDOWN_SECONDS,
             persist_error=persist_error,
         )
 
     @staticmethod
-    async def send_unhandled_exception_alert(
-        component: str,
-        exception_type: str,
-        error_message: str,
-        stack_trace: Optional[str] = None,
-        request_path: Optional[str] = None,
-    ) -> bool:
-        """
-        Send alert for unhandled exception.
-
-        Uses longer cooldown (1 hour) to prevent spam from repeated crashes.
-
-        Args:
-            component: Component name (usually "Application")
-            exception_type: Exception class name
-            error_message: Exception message
-            stack_trace: Optional stack trace
-            request_path: Optional request path
-
-        Returns:
-            True if alert was sent, False if skipped (cooldown)
-        """
-        details_parts = []
-        if request_path:
-            details_parts.append(f"Request Path: {request_path}")
-        if stack_trace:
-            details_parts.append(f"Stack Trace: {stack_trace[:500]}")  # Limit stack trace length
-        details = "\n".join(details_parts) if details_parts else None
-
-        return await CriticalAlertService.send_critical_alert(
-            component=component,
-            error_type=f"UnhandledException:{exception_type}",
-            error_message=error_message,
-            details=details,
-            bypass_cooldown=False,
-            cooldown_seconds=CRITICAL_ALERT_EXCEPTION_COOLDOWN_SECONDS,
-            persist_error=False,
-        )
-
-    @staticmethod
     def send_startup_failure_alert_sync(component: str, error_message: str, details: Optional[str] = None) -> bool:
-        """
-        Send alert for startup failure (synchronous version for use during startup).
-
-        Creates new event loop if needed. Use this when calling from synchronous code.
-
-        Args:
-            component: Component name (Redis, Qdrant, Celery, Database, etc.)
-            error_message: Error message
-            details: Optional additional details
-
-        Returns:
-            True if alert was sent, False otherwise
-        """
-        try:
-            try:
-                asyncio.get_running_loop()
-                _fire_and_forget(CriticalAlertService.send_startup_failure_alert(component, error_message, details))
-                return True
-            except RuntimeError:
-                return asyncio.run(CriticalAlertService.send_startup_failure_alert(component, error_message, details))
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.error(
-                "[CriticalAlert] Failed to send startup failure alert: %s",
-                e,
-                exc_info=True,
-            )
-            return False
-
-
-def get_critical_alert_service() -> type[CriticalAlertService]:
-    """Get CriticalAlertService class (static methods, no instance needed)"""
-    return CriticalAlertService
+        """Record a startup failure from synchronous startup code."""
+        return CriticalAlertService._record(
+            component,
+            "StartupFailure",
+            error_message,
+            details,
+            True,
+        )

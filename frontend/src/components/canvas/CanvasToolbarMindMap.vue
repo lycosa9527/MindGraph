@@ -73,7 +73,7 @@ import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
+import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
 import {
   CANVAS_CLIPBOARD_EXPORT_MENU_ITEM,
   CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
@@ -88,6 +88,7 @@ import {
   useMindClassroomStore,
   useVoiceNotesStore,
 } from '@/stores'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 import {
   type LabelCollapseSnapshot,
@@ -106,6 +107,7 @@ const { t, currentLanguage } = useLanguage()
 const notify = useNotifications()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const { showCanvasAiFeatures } = useLearningAiGate()
+const lsCanvas = useLearningAssignmentCanvasStore()
 const diagramStore = useDiagramStore()
 const { triggerImportInPlace } = useDiagramImport()
 const { resetToDefaultTemplate } = useCanvasReset()
@@ -836,6 +838,7 @@ watch(
       <template v-if="ribbonTab === 'teaching'">
         <div class="mm-btn-group">
           <I18nTooltip
+            v-if="lsCanvas.showLearningSheet"
             :k="
               aiBlockedByCollab
                 ? 'canvas.toolbar.collabGuestFeatureBlocked'
@@ -1035,7 +1038,7 @@ watch(
               "
               @click="
                 onGuestAiToolClick($event, () =>
-                  caps.conceptMap ? openConceptMapNodePalette() : ribbon.handleAIGenerate()
+                  caps.conceptMap ? openConceptMapBrainstorm() : ribbon.handleAIGenerate()
                 )
               "
             >
@@ -1177,7 +1180,7 @@ watch(
               :class="{
                 'is-active':
                   caps.thinkingMapChrome || caps.conceptMap
-                    ? ribbon.isNodePaletteOpen
+                    ? ribbon.isDiagramBrainstormOpen
                     : activeTool === 'waterfall',
                 'is-dimmed': aiBlockedByCollab,
               }"

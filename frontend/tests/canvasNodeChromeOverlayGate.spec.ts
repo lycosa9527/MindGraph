@@ -30,7 +30,7 @@ describe('canvasNodeChromeOverlayGate', () => {
       release()
     }
     expect(blocked.value).toBe(false)
-    panels.updateNodePalette({ open: true })
+    panels.updateDiagramBrainstorm({ open: true })
     expect(blocked.value).toBe(true)
     panels.updateAiBrainstorm({ open: true })
     expect(blocked.value).toBe(true)
@@ -39,7 +39,7 @@ describe('canvasNodeChromeOverlayGate', () => {
   it('treats brainstorm, parking lot, and body dialogs as covering', () => {
     expect(
       canvasNodeChromeBlockedByOverlay({
-        nodePaletteOpen: false,
+        diagramBrainstormOpen: false,
         aiBrainstormOpen: false,
         coveringSideTool: false,
         coveringDialogOpen: false,
@@ -47,7 +47,7 @@ describe('canvasNodeChromeOverlayGate', () => {
     ).toBe(false)
     expect(
       canvasNodeChromeBlockedByOverlay({
-        nodePaletteOpen: true,
+        diagramBrainstormOpen: true,
         aiBrainstormOpen: false,
         coveringSideTool: false,
         coveringDialogOpen: false,
@@ -55,7 +55,7 @@ describe('canvasNodeChromeOverlayGate', () => {
     ).toBe(true)
     expect(
       canvasNodeChromeBlockedByOverlay({
-        nodePaletteOpen: false,
+        diagramBrainstormOpen: false,
         aiBrainstormOpen: true,
         coveringSideTool: false,
         coveringDialogOpen: false,
@@ -63,7 +63,7 @@ describe('canvasNodeChromeOverlayGate', () => {
     ).toBe(true)
     expect(
       canvasNodeChromeBlockedByOverlay({
-        nodePaletteOpen: false,
+        diagramBrainstormOpen: false,
         aiBrainstormOpen: false,
         coveringSideTool: true,
         coveringDialogOpen: false,
@@ -71,7 +71,7 @@ describe('canvasNodeChromeOverlayGate', () => {
     ).toBe(true)
     expect(
       canvasNodeChromeBlockedByOverlay({
-        nodePaletteOpen: false,
+        diagramBrainstormOpen: false,
         aiBrainstormOpen: false,
         coveringSideTool: false,
         coveringDialogOpen: true,

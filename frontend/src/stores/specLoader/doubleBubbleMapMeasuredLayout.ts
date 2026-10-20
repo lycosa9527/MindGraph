@@ -4,7 +4,7 @@
  * DOM box and the text box plus the shared image frame, then columns restack.
  */
 import { DEFAULT_COLUMN_SPACING, DEFAULT_PADDING } from '@/composables/diagrams/layoutConfig'
-import type { DiagramNode } from '@/types'
+import type { DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
   DOUBLE_BUBBLE_LEFT_TOPIC_ID,
   DOUBLE_BUBBLE_RIGHT_TOPIC_ID,
@@ -16,6 +16,8 @@ import {
   NODE_IMAGE_GAP,
   NODE_IMAGE_THUMB_HEIGHT,
 } from '@/utils/nodeImageFrame'
+
+import { expandDoubleBubbleNodesForIcons } from './doubleBubbleMap'
 
 const SIM_GAP = 12
 const DIFF_GAP = 10
@@ -91,7 +93,20 @@ function placeColumn(
 export function recalculateDoubleBubbleMapLayout(
   nodes: DiagramNode[],
   nodeDimensions: Record<string, { width: number; height: number }> = {},
-  imageNodeIds: ReadonlySet<string> = new Set()
+  imageNodeIds: ReadonlySet<string> = new Set(),
+  adornments: MindMapAdornmentsByPath = {}
+): DiagramNode[] {
+  return layoutMeasuredDoubleBubble(
+    expandDoubleBubbleNodesForIcons(nodes, adornments),
+    nodeDimensions,
+    imageNodeIds
+  )
+}
+
+function layoutMeasuredDoubleBubble(
+  nodes: DiagramNode[],
+  nodeDimensions: Record<string, { width: number; height: number }>,
+  imageNodeIds: ReadonlySet<string>
 ): DiagramNode[] {
   if (imageNodeIds.size === 0 || nodes.length === 0) return nodes
 

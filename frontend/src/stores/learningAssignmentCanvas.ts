@@ -43,6 +43,7 @@ function writeAssignmentId(id: number | null): void {
 }
 
 export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentCanvas', () => {
+  const authStore = useAuthStore()
   const assignmentId = ref<number | null>(null)
   const assignment = ref<LearningAssignment | null>(null)
   const permissions = ref<LearningAiPermissions | null>(null)
@@ -65,8 +66,10 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
 
   const aiAssistOn = computed(() => Boolean(permissions.value?.ai_assist))
 
+  /** 挖空支架图 authoring. Off while a student is completing homework. */
+  const showLearningSheet = computed(() => !(authStore.user?.role === 'student' && isActive.value))
+
   function can(capability: LearningAiCapability): boolean {
-    const authStore = useAuthStore()
     if (authStore.user?.role === 'student' && !isActive.value) {
       return false
     }
@@ -150,6 +153,7 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
     returnPath,
     setReturnPath,
     aiAssistOn,
+    showLearningSheet,
     can,
     activate,
     markDraftHydrated,

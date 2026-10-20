@@ -9,7 +9,7 @@ import {
   CONCEPT_LINK_FROM_RELATIONSHIP_TYPE,
   type RelationshipLinkDragPayload,
 } from '@/composables/diagramCanvas/conceptMapLinkMime'
-import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
+import { BRAINSTORM_CONCEPT_DRAG_MIME } from '@/composables/aiBrainstorm/constants'
 import { useLLMResultsStore } from '@/stores'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
@@ -444,7 +444,7 @@ export function useDiagramCanvasConceptMapLink(options: {
     const hasNodeLink = types.includes(CONCEPT_LINK_DATA_TYPE)
     const hasRelLink = types.includes(CONCEPT_LINK_FROM_RELATIONSHIP_TYPE)
     const hasLinkData = hasNodeLink || hasRelLink
-    const hasPaletteConcept = types.includes(PALETTE_CONCEPT_DRAG_MIME)
+    const hasPaletteConcept = types.includes(BRAINSTORM_CONCEPT_DRAG_MIME)
     if ((hasLinkData || hasPaletteConcept) && event.dataTransfer) {
       event.preventDefault()
       event.dataTransfer.dropEffect = 'copy'
@@ -457,7 +457,7 @@ export function useDiagramCanvasConceptMapLink(options: {
   function handleConceptMapDrop(event: DragEvent) {
     if (diagramStore.type !== 'concept_map') return
 
-    const paletteData = event.dataTransfer?.getData(PALETTE_CONCEPT_DRAG_MIME)
+    const paletteData = event.dataTransfer?.getData(BRAINSTORM_CONCEPT_DRAG_MIME)
     if (paletteData) {
       event.preventDefault()
       const target = event.target as HTMLElement

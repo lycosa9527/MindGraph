@@ -70,7 +70,6 @@ GRANULAR_AI_CAPABILITIES: frozenset[str] = frozenset(
 # Legacy capability names → granular keys (older assignments / older gate call sites).
 LEGACY_AI_CAPABILITY_ALIASES: dict[str, str] = {
     "generate_diagram": "topic_generate",
-    "node_palette": "ai_brainstorm",
     "inline_recommend": "ai_brainstorm",
     "doc_summary": "file_generate",
 }
@@ -88,7 +87,6 @@ DEFAULT_AI_PERMISSIONS: dict[str, bool] = {
     "mind_classroom": False,
     # Legacy keys kept for older assignments / older API consumers.
     "generate_diagram": False,
-    "node_palette": False,
     "inline_recommend": False,
     "translate": False,
     "doc_summary": False,

@@ -287,8 +287,8 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
    * Get the width of left-side panels
    */
   function getLeftPanelWidth(): number {
-    if (panelsStore.nodePalettePanel.isOpen) {
-      return PANEL.NODE_PALETTE_WIDTH
+    if (panelsStore.diagramBrainstormPanel.isOpen) {
+      return PANEL.DIAGRAM_BRAINSTORM_WIDTH
     }
     return 0
   }

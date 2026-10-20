@@ -72,6 +72,20 @@ describe('executeKittyAgentAction auto_complete topic', () => {
     })
   })
 
+  it('opens and closes AI brainstorm on the thinking-map panel', async () => {
+    const { executeKittyAgentAction } = await import('@/composables/kitty/kittyAgentActions')
+    executeKittyAgentAction('open_ai_brainstorm', {})
+    expect(emitMock).toHaveBeenCalledWith('panel:open_requested', {
+      panel: 'diagramBrainstorm',
+      source: 'kitty_agent',
+    })
+    executeKittyAgentAction('close_ai_brainstorm', {})
+    expect(emitMock).toHaveBeenCalledWith('panel:close_requested', {
+      panel: 'diagramBrainstorm',
+      source: 'kitty_agent',
+    })
+  })
+
   it('opens 节点解释 instead of MindMate', async () => {
     const { executeKittyAgentAction } = await import('@/composables/kitty/kittyAgentActions')
     executeKittyAgentAction('explain_node', { node_id: 'n1', node_label: '广东' })

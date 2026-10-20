@@ -22,7 +22,7 @@ import { onUnmounted, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
-import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
+import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/aiBrainstorm/constants'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'

@@ -45,14 +45,14 @@ export type EventTypes = {
     options?: Record<string, unknown>
     previousPanel?: string
   }
-  'nodePalette:opened': {
+  'diagramBrainstorm:opened': {
     diagramKey?: string
     hasRestoredSession: boolean
     /** True when panel was already open and we switched to a new node tab (concept generation) */
     wasPanelAlreadyOpen?: boolean
   }
-  /** Stop all node-palette SSE requests (e.g. panel closed or canvas exited). */
-  'node_palette:streaming_stop_requested': Record<string, never>
+  /** Stop all diagram-brainstorm SSE requests (e.g. panel closed or canvas exited). */
+  'diagram_brainstorm:streaming_stop_requested': Record<string, never>
   'ai_brainstorm:opened': {
     diagramKey?: string
     hasRestoredSession: boolean
@@ -811,8 +811,8 @@ export type EventTypes = {
   'learning_mode:validated': { result: unknown }
   'learning_mode:start_requested': Record<string, never>
 
-  // Node Palette Events
-  'node_palette:toggle_requested': Record<string, never>
+  // AI brainstorm Events
+  'diagram_brainstorm:toggle_requested': Record<string, never>
 
   // Node Counter Events
   'node_counter:setup_observer': Record<string, never>

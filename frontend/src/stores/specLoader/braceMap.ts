@@ -18,13 +18,14 @@ import {
   NODE_MIN_DIMENSIONS,
 } from '@/composables/diagrams/layoutConfig'
 import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
   BRACE_MAP_UID_DATA_KEY,
   BRACE_WHOLE_NODE_ID,
   isLeftoverBraceMapId,
   takeBraceMapStableId,
 } from '@/utils/braceMapIdentity'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
@@ -145,12 +146,15 @@ interface FlatNode {
 
 function refreshBraceFlatNodesFromDiagram(
   flatNodes: FlatNode[],
-  diagramById: Map<string, DiagramNode>
+  diagramById: Map<string, DiagramNode>,
+  adornments: MindMapAdornmentsByPath = {}
 ): void {
   for (const fn of flatNodes) {
     const diagramNode = diagramById.get(fn.id)
     const typo = braceTypographyFromNode(diagramNode, fn.depth)
-    fn.text = diagramNode ? learningSheetLayoutText(diagramNode) : fn.text
+    fn.text = diagramNode
+      ? textWithIconAdornment(learningSheetLayoutText(diagramNode), adornments[diagramNode.id])
+      : fn.text
     fn.width = estimateBraceNodeWidth(fn.text, fn.depth, typo)
     fn.height = heightWithSecondaryLine(
       estimateBraceNodeHeight(fn.text, fn.depth, typo),
@@ -512,7 +516,8 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
 export function recalculateBraceMapLayout(
   nodes: DiagramNode[],
   connections: Connection[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {},
+  adornments: MindMapAdornmentsByPath = {}
 ): DiagramNode[] {
   const labelNode = nodes.find((n) => n.type === 'label' || n.id === 'dimension-label')
   const treeNodes = nodes.filter((n) => n.type !== 'label' && n.id !== 'dimension-label')
@@ -564,7 +569,7 @@ export function recalculateBraceMapLayout(
   for (const n of treeNodes) {
     if (n.id) diagramById.set(n.id, n)
   }
-  refreshBraceFlatNodesFromDiagram(flatNodes, diagramById)
+  refreshBraceFlatNodesFromDiagram(flatNodes, diagramById, adornments)
 
   const layout = computeColumnLayout(flatNodes, edges, nodeDimensions)
   const groupIndexMap = computeGroupIndices(flatNodes, edges)

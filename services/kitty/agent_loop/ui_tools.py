@@ -109,8 +109,8 @@ def build_ui_diagram_tools() -> List[Dict[str, Any]]:
         ),
         fn(
             "open_panel",
-            "Open a UI panel (mindmate or node_palette).",
-            {"panel_name": {"type": "string", "description": "mindmate or node_palette"}},
+            "Open a UI panel (mindmate or ai_brainstorm).",
+            {"panel_name": {"type": "string", "description": "mindmate or ai_brainstorm"}},
             ["panel_name"],
         ),
         fn(

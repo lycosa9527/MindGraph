@@ -15,7 +15,7 @@ import {
   FLOW_TOPIC_TO_STEP_GAP,
 } from '@/composables/diagrams/layoutConfig'
 import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
   FLOW_MAP_UID_DATA_KEY,
   FLOW_TOPIC_NODE_ID,
@@ -23,6 +23,7 @@ import {
   stampFlowMapSubstepData,
   takeFlowMapStableId,
 } from '@/utils/flowMapIdentity'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 import { thinkingMapFamilyLine } from '@/utils/thinkingMapChrome'
 
@@ -153,9 +154,12 @@ export function getFlowTopicCenteredPosition(
  */
 export function recalculateFlowMapLayout(
   nodes: DiagramNode[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {},
+  adornments: MindMapAdornmentsByPath = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) return nodes
+  const flowLabel = (node: DiagramNode): string =>
+    textWithIconAdornment(learningSheetLayoutText(node), adornments[node.id])
 
   const topicNode = nodes.find((n) => n.id === FLOW_TOPIC_NODE_ID)
   if (!topicNode) return nodes
@@ -185,7 +189,7 @@ export function recalculateFlowMapLayout(
       const stepTyp = flowNodeTypography(stepNode, 'step')
       const stepW = getEffectiveFlowWidth(
         stepNode.id,
-        learningSheetLayoutText(stepNode),
+        flowLabel(stepNode),
         stepTyp.fontSize,
         FLOW_MAX_TEXT_WIDTH,
         FLOW_NODE_PADDING_X,
@@ -198,7 +202,7 @@ export function recalculateFlowMapLayout(
         const subTyp = flowNodeTypography(sub, 'substep')
         const subW = getEffectiveFlowWidth(
           sub.id,
-          learningSheetLayoutText(sub),
+          flowLabel(sub),
           subTyp.fontSize,
           FLOW_SUBSTEP_MAX_TEXT_WIDTH,
           FLOW_NODE_PADDING_X,
@@ -214,7 +218,7 @@ export function recalculateFlowMapLayout(
 
     const topicTyp = flowNodeTypography(topicNode, 'topic')
     const topicEstW = estimateFlowRenderedWidth(
-      learningSheetLayoutText(topicNode),
+      flowLabel(topicNode),
       topicTyp.fontSize,
       FLOW_TOPIC_MAX_TEXT_WIDTH,
       FLOW_TOPIC_PADDING_X,
@@ -242,7 +246,7 @@ export function recalculateFlowMapLayout(
         const subTyp = flowNodeTypography(sub, 'substep')
         const subW = getEffectiveFlowWidth(
           sub.id,
-          learningSheetLayoutText(sub),
+          flowLabel(sub),
           subTyp.fontSize,
           FLOW_SUBSTEP_MAX_TEXT_WIDTH,
           FLOW_NODE_PADDING_X,
@@ -337,7 +341,7 @@ export function recalculateFlowMapLayout(
       const stepTyp = flowNodeTypography(stepNode, 'step')
       const stepW = getEffectiveFlowWidth(
         stepNode.id,
-        learningSheetLayoutText(stepNode),
+        flowLabel(stepNode),
         stepTyp.fontSize,
         FLOW_MAX_TEXT_WIDTH,
         FLOW_NODE_PADDING_X,

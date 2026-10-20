@@ -2,6 +2,7 @@ import type { Connection, DiagramNode } from '@/types'
 import { voidMindMapAssociationsAcrossSides } from '@/utils/mindMapAssociationLine'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import { collapseDuplicateMindMapNodes } from '@/utils/mindMapIdentityMigrate'
+import { nodeIdsWithImage } from '@/utils/nodeImageFrame'
 
 import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
 import { type MindMapV2LayoutOptions, recalculateMindMapV2ColumnPositions } from './mindMapLayout'
@@ -84,9 +85,10 @@ export function syncMindMapStoreLayoutPositions(ctx: DiagramContext): void {
     ? getMindMapCollapsedNodeIds(ctx.data.value.nodes, connections, collapsedPaths)
     : new Set<string>()
   const preserveIncomingY = v2Family && ctx.mindMapPreserveIncomingY.value
-  const options: MindMapV2LayoutOptions | undefined = preserveIncomingY
-    ? { preserveIncomingY: true }
-    : undefined
+  const options: MindMapV2LayoutOptions = {
+    ...(preserveIncomingY ? { preserveIncomingY: true } : {}),
+    imageNodeIds: nodeIdsWithImage(ctx.data.value.nodes, ctx.data.value, connections),
+  }
 
   // Legacy (always) or v2 fallback before the Vue Flow slice wires write-back.
   const { nodes: laidOut, gaps } = computeMindMapDisplayLayout(
@@ -148,7 +150,8 @@ export function computeMindMapDisplayLayout(
     topicWidth,
     nodeWidths,
     nodeHeights,
-    connections
+    connections,
+    options?.imageNodeIds
   )
 }
 

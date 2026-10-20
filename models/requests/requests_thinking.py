@@ -1,6 +1,6 @@
 """Thinking Mode Request Models.
 
-Pydantic models for validating Node Palette API requests.
+Pydantic models for validating AI brainstorm API requests.
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -31,7 +31,7 @@ def _canvas_llm_models(value: Optional[List[str]]) -> Optional[List[str]]:
     return resolved or None
 
 
-def _validate_node_palette_language(value: str) -> str:
+def _validate_ai_brainstorm_language(value: str) -> str:
     """Generation language code (prompt-output registry)."""
     if not isinstance(value, str) or not value.strip():
         return "en"
@@ -42,14 +42,14 @@ def _validate_node_palette_language(value: str) -> str:
 
 
 # ============================================================================
-# NODE PALETTE REQUEST MODELS
+# AI BRAINSTORM REQUEST MODELS
 # ============================================================================
 
 
-class NodePaletteStartRequest(BaseModel):
-    """Request model for /thinking_mode/node_palette/start endpoint"""
+class AiBrainstormStartRequest(BaseModel):
+    """Request model for /thinking_mode/ai_brainstorm/start endpoint"""
 
-    session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
+    session_id: str = Field(..., min_length=1, max_length=100, description="AI brainstorm session ID")
     diagram_type: str = Field(
         ...,
         description=("Diagram type ('circle_map', 'bubble_map', 'double_bubble_map', 'tree_map', etc.)"),
@@ -109,7 +109,7 @@ class NodePaletteStartRequest(BaseModel):
     @classmethod
     def validate_start_language(cls, value: str) -> str:
         """Reject unknown generation language codes."""
-        return _validate_node_palette_language(value)
+        return _validate_ai_brainstorm_language(value)
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -134,10 +134,10 @@ class NodePaletteStartRequest(BaseModel):
     )
 
 
-class NodePaletteNextRequest(BaseModel):
-    """Request model for /thinking_mode/node_palette/next_batch endpoint"""
+class AiBrainstormNextRequest(BaseModel):
+    """Request model for /thinking_mode/ai_brainstorm/next_batch endpoint"""
 
-    session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
+    session_id: str = Field(..., min_length=1, max_length=100, description="AI brainstorm session ID")
     diagram_type: str = Field(
         ...,
         description=("Diagram type ('circle_map', 'bubble_map', 'double_bubble_map', 'tree_map', etc.)"),
@@ -194,7 +194,7 @@ class NodePaletteNextRequest(BaseModel):
     @classmethod
     def validate_next_language(cls, value: str) -> str:
         """Reject unknown generation language codes."""
-        return _validate_node_palette_language(value)
+        return _validate_ai_brainstorm_language(value)
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -210,10 +210,10 @@ class NodePaletteNextRequest(BaseModel):
     )
 
 
-class NodeSelectionRequest(BaseModel):
-    """Request model for /thinking_mode/node_palette/select_node endpoint"""
+class AiBrainstormSelectionRequest(BaseModel):
+    """Request model for /thinking_mode/ai_brainstorm/select_node endpoint"""
 
-    session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
+    session_id: str = Field(..., min_length=1, max_length=100, description="AI brainstorm session ID")
     node_id: str = Field(..., description="ID of the node being selected/deselected")
     selected: bool = Field(..., description="True if selected, False if deselected")
     node_text: str = Field(..., max_length=200, description="Text content of the node")
@@ -230,10 +230,10 @@ class NodeSelectionRequest(BaseModel):
     )
 
 
-class NodePaletteFinishRequest(BaseModel):
-    """Request model for /thinking_mode/node_palette/finish endpoint"""
+class AiBrainstormFinishRequest(BaseModel):
+    """Request model for /thinking_mode/ai_brainstorm/finish endpoint"""
 
-    session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
+    session_id: str = Field(..., min_length=1, max_length=100, description="AI brainstorm session ID")
     selected_node_ids: List[str] = Field(..., min_length=0, description="List of selected node IDs")
     total_nodes_generated: int = Field(..., ge=0, description="Total number of nodes generated")
     batches_loaded: int = Field(..., ge=1, description="Number of batches loaded")
@@ -285,7 +285,7 @@ class RelationshipLabelsStartRequest(BaseModel):
     @classmethod
     def validate_relationship_labels_start_language(cls, value: str) -> str:
         """Reject unknown generation language codes."""
-        return _validate_node_palette_language(value)
+        return _validate_ai_brainstorm_language(value)
 
 
 class RelationshipLabelsCleanupRequest(BaseModel):
@@ -320,7 +320,7 @@ class RelationshipLabelsNextRequest(BaseModel):
     @classmethod
     def validate_relationship_labels_next_language(cls, value: str) -> str:
         """Reject unknown generation language codes."""
-        return _validate_node_palette_language(value)
+        return _validate_ai_brainstorm_language(value)
 
 
 class InlineRecommendationsStartRequest(BaseModel):
@@ -374,7 +374,7 @@ class InlineRecommendationsStartRequest(BaseModel):
     @classmethod
     def validate_inline_recommendations_start_language(cls, value: str) -> str:
         """Reject unknown generation language codes."""
-        return _validate_node_palette_language(value)
+        return _validate_ai_brainstorm_language(value)
 
 
 class InlineRecommendationsNextRequest(BaseModel):
@@ -413,7 +413,7 @@ class InlineRecommendationsNextRequest(BaseModel):
     @classmethod
     def validate_inline_recommendations_next_language(cls, value: str) -> str:
         """Reject unknown generation language codes."""
-        return _validate_node_palette_language(value)
+        return _validate_ai_brainstorm_language(value)
 
 
 class InlineRecommendationsCleanupRequest(BaseModel):
@@ -426,14 +426,14 @@ class InlineRecommendationsCleanupRequest(BaseModel):
     )
 
 
-class NodePaletteCleanupRequest(BaseModel):
-    """Request model for /thinking_mode/node_palette/cleanup endpoint
+class AiBrainstormCleanupRequest(BaseModel):
+    """Request model for /thinking_mode/ai_brainstorm/cleanup endpoint
 
     Simplified model for session cleanup - only requires session_id.
     Used when user leaves canvas or navigates away.
     """
 
-    session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
+    session_id: str = Field(..., min_length=1, max_length=100, description="AI brainstorm session ID")
     diagram_type: Optional[str] = Field(None, description="Diagram type for cleanup in generator")
 
     model_config = ConfigDict(
@@ -503,7 +503,7 @@ class MindMapNodeExplainRequest(BaseModel):
     @classmethod
     def validate_language(cls, value: str) -> str:
         """Normalize and validate generation language code."""
-        return _validate_node_palette_language(value)
+        return _validate_ai_brainstorm_language(value)
 
     @field_validator("audience_level")
     @classmethod

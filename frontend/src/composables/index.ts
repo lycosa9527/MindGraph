@@ -1,7 +1,7 @@
 /**
  * Composables barrel — re-exports for `@/composables`.
  * Source files live under feature folders: `core/`, `editor/`, `workshop/`, `knowledge/`, `mindmate/`,
- * plus existing `diagrams/`, `nodePalette/`, `canvasPage/`, `canvasToolbar/`, `diagramCanvas/`, `queries/`, etc.
+ * plus existing `diagrams/`, `diagramBrainstorm/`, `canvasPage/`, `canvasToolbar/`, `diagramCanvas/`, `queries/`, etc.
  */
 
 // Core utilities
@@ -48,7 +48,7 @@ export { useMindMate, simpleMarkdown } from './mindmate/useMindMate'
 export { useHistory, useHistoryKeyboard } from './editor/useHistory'
 export { useViewManager, createVueFlowViewport } from './editor/useViewManager'
 export { usePanelCoordination, getPanelCoordinator } from './editor/usePanelCoordination'
-export { getNodePalette } from './nodePalette/useNodePalette'
+export { getDiagramBrainstorm } from './aiBrainstorm/useDiagramBrainstorm'
 export { getAiBrainstorm } from './aiBrainstorm/useAiBrainstorm'
 export { useDragConstraints } from './editor/useDragConstraints'
 export { useNodeActions } from './editor/useNodeActions'

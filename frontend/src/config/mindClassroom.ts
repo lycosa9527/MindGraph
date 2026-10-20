@@ -161,6 +161,12 @@ export function resolveMindClassroomPresentation(
   return presentation
 }
 
+/** 幻灯片讲解 image pipeline is mind-map only. Thinking maps and concept maps stay on the canvas tour. */
+export function diagramSupportsSlideDeck(diagramType: string | null | undefined): boolean {
+  const slug = (diagramType ?? '').trim().toLowerCase().replace(/-/g, '_')
+  return slug === 'mindmap' || slug === 'mind_map'
+}
+
 export function saveMindClassroomPresentation(presentation: MindClassroomPresentationId): void {
   if (typeof localStorage === 'undefined') return
   try {

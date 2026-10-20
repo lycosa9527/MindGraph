@@ -90,4 +90,53 @@ describe('bubble map attribute wrap', () => {
       ) * 2
     expect(next?.style?.size ?? 0).toBeLessThan(fullLine)
   })
+
+  it('sizes an emoji adornment the same as those characters in the label', () => {
+    const topic: DiagramNode = { id: 'topic', text: '主题', type: 'topic' }
+    const labeled: DiagramNode = {
+      id: 'bubble-0',
+      text: '属性5',
+      type: 'bubble',
+      data: { groupIndex: 0 },
+    }
+    const other: DiagramNode = {
+      id: 'bubble-1',
+      text: '124',
+      type: 'bubble',
+      data: { groupIndex: 1 },
+    }
+    const withIcon = recalculateBubbleMapLayout(
+      [topic, labeled, other],
+      {},
+      {
+        'bubble-0': { icon: '😬' },
+      }
+    )
+    const asText = recalculateBubbleMapLayout([topic, { ...labeled, text: '😬 属性5' }, other])
+    const size = (nodes: DiagramNode[], id: string): number =>
+      nodes.find((node) => node.id === id)?.style?.size ?? 0
+    expect(size(withIcon, 'bubble-0')).toBe(size(asText, 'bubble-0'))
+    expect(size(withIcon, 'topic')).toBe(size(asText, 'topic'))
+  })
+
+  it('still counts the emoji as text when a picture is also set', () => {
+    const topic: DiagramNode = { id: 'topic', text: '主题', type: 'topic' }
+    const bubble: DiagramNode = {
+      id: 'bubble-0',
+      text: '属性5',
+      type: 'bubble',
+      data: { groupIndex: 0 },
+    }
+    const withImage = recalculateBubbleMapLayout(
+      [topic, bubble],
+      {},
+      {
+        'bubble-0': { icon: '😬', imageUrl: 'data:image/png;base64,aa' },
+      }
+    )
+    const asText = recalculateBubbleMapLayout([topic, { ...bubble, text: '😬 属性5' }])
+    const size = (nodes: DiagramNode[]): number =>
+      nodes.find((node) => node.id === 'bubble-0')?.style?.size ?? 0
+    expect(size(withImage)).toBe(size(asText))
+  })
 })

@@ -5,8 +5,9 @@
  */
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { secondaryFontSize } from '@/diagramBilingual/measure'
-import type { DiagramNode } from '@/types'
+import type { DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import {
   TREE_TOPIC_NODE_ID,
   isTreeMapCategoryNode,
@@ -136,36 +137,28 @@ function pushDimensionSpecs(
   )
 }
 
-export function collectTreeMapNodeMeasureSpecs(nodes: readonly DiagramNode[]): NowrapMeasureSpec[] {
+export function collectTreeMapNodeMeasureSpecs(
+  nodes: readonly DiagramNode[],
+  adornments: MindMapAdornmentsByPath = {}
+): NowrapMeasureSpec[] {
   const specs: NowrapMeasureSpec[] = []
+  const labelOf = (node: DiagramNode): string =>
+    textWithIconAdornment(learningSheetLayoutText(node), adornments[node.id])
   for (const node of nodes) {
     if (node.id === TREE_TOPIC_NODE_ID) {
-      pushTopicSpecs(
-        specs,
-        learningSheetLayoutText(node),
-        node.style,
-        learningSheetLayoutSecondary(node)
-      )
+      pushTopicSpecs(specs, labelOf(node), node.style, learningSheetLayoutSecondary(node))
       continue
     }
     if (node.id === 'dimension-label') {
-      pushDimensionSpecs(specs, learningSheetLayoutText(node), learningSheetLayoutSecondary(node))
+      pushDimensionSpecs(specs, labelOf(node), learningSheetLayoutSecondary(node))
       continue
     }
     if (isTreeMapCategoryNode(node)) {
-      pushBranchSpecs(
-        specs,
-        learningSheetLayoutText(node),
-        treeMapBranchMeasureOptions(node, 'category')
-      )
+      pushBranchSpecs(specs, labelOf(node), treeMapBranchMeasureOptions(node, 'category'))
       continue
     }
     if (isTreeMapLeafNode(node)) {
-      pushBranchSpecs(
-        specs,
-        learningSheetLayoutText(node),
-        treeMapBranchMeasureOptions(node, 'leaf')
-      )
+      pushBranchSpecs(specs, labelOf(node), treeMapBranchMeasureOptions(node, 'leaf'))
     }
   }
   return specs

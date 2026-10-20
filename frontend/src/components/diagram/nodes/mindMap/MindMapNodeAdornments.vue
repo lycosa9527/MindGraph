@@ -22,8 +22,10 @@ const props = withDefaults(
   defineProps<{
     nodeId: string
     part?: MindMapAdornmentPart
+    /** Icon is painted as leading label text by the caller. */
+    omitIcon?: boolean
   }>(),
-  { part: 'all' }
+  { part: 'all', omitIcon: false }
 )
 
 const { t } = useLanguage()
@@ -40,11 +42,13 @@ const href = computed(() => {
   return raw ? sanitizeMindMapHref(raw) : null
 })
 
+const showIcon = computed(() => Boolean(adornment.value?.icon) && !props.omitIcon)
+
 const visibleParts = computed(() =>
   resolveMindMapAdornmentParts(
     props.part,
     Boolean(adornment.value?.imageUrl),
-    Boolean(adornment.value?.icon || href.value)
+    Boolean(showIcon.value || href.value)
   )
 )
 
@@ -52,6 +56,12 @@ const previewImageUrl = computed(() => adornment.value?.imageUrl ?? '')
 const thumbStyle = {
   width: `${NODE_IMAGE_THUMB_WIDTH}px`,
   height: `${NODE_IMAGE_THUMB_HEIGHT}px`,
+  minWidth: `${NODE_IMAGE_THUMB_WIDTH}px`,
+  minHeight: `${NODE_IMAGE_THUMB_HEIGHT}px`,
+  maxWidth: `${NODE_IMAGE_THUMB_WIDTH}px`,
+  maxHeight: `${NODE_IMAGE_THUMB_HEIGHT}px`,
+  boxSizing: 'border-box' as const,
+  flex: '0 0 auto',
 }
 
 function openLink(event: MouseEvent): void {
@@ -97,10 +107,10 @@ function openImagePreview(event: MouseEvent): void {
       class="mm-adornments__row"
     >
       <span
-        v-if="adornment?.icon"
+        v-if="showIcon"
         class="mm-adornments__icon"
         aria-hidden="true"
-        >{{ adornment.icon }}</span
+        >{{ adornment?.icon }}</span
       >
       <button
         v-if="href"

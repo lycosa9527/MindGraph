@@ -73,14 +73,14 @@ KITTY_INTENT_ROWS: List[IntentRow] = [
         "notes": "Mapped to close MindMate.",
     },
     {
-        "name": "open_node_palette",
+        "name": "open_ai_brainstorm",
         "kind": "ui",
         "channel": "ws_action",
         "hub_op": None,
         "notes": "",
     },
     {
-        "name": "close_node_palette",
+        "name": "close_ai_brainstorm",
         "kind": "ui",
         "channel": "ws_action",
         "hub_op": None,

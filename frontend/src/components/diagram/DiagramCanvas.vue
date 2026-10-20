@@ -61,7 +61,7 @@ import {
   useDiagramCanvasVueFlowUi,
   useDiagramFollowNodeDismiss,
 } from '@/composables/diagramCanvas'
-import { useDiagramCanvasMindMapPaletteDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
+import { useDiagramCanvasMindMapBrainstormDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapBrainstormDrop'
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import {
   CONCEPT_MAP_GENERATING_KEY,
@@ -81,8 +81,8 @@ import {
 import { useMindMapCanvasVisuals } from '@/composables/mindMap/useMindMapCanvasVisuals'
 import { useMindMapConnectorDebugLog } from '@/composables/mindMap/useMindMapConnectorDebugLog'
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
-import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
-import { openThinkingMapAiExpand } from '@/composables/nodePalette/openThinkingMapAiExpand'
+import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
+import { openThinkingMapAiExpand } from '@/composables/aiBrainstorm/openThinkingMapAiExpand'
 import {
   diagramPresentationReadOnlyRef,
   resolvePresentationTeleportTarget,
@@ -480,7 +480,7 @@ const { isGenerating: subgraphGenerating, generateSubgraph } = useMindMapSubgrap
 function runAiSubgraph(nodeId: string | null): void {
   if (!diagramRibbonCapabilities(diagramStore.type, useMindMapV2.value).subgraph) return
   if (diagramStore.type === 'concept_map') {
-    if (nodeId) openConceptMapNodePalette()
+    if (nodeId) openConceptMapBrainstorm()
     return
   }
   if (isThinkingMapDiagramType(diagramStore.type)) {
@@ -602,21 +602,21 @@ const {
   handleConceptMapDrop,
 } = conceptMapLink
 
-const mindMapPaletteDrop = useDiagramCanvasMindMapPaletteDrop({ diagramStore })
+const mindMapPaletteDrop = useDiagramCanvasMindMapBrainstormDrop({ diagramStore })
 const paletteDragPreview = computed(() => mindMapPaletteDrop.paletteDragPreview.value)
 
 function handleCanvasDragOver(event: DragEvent): void {
   handleConceptMapDragOver(event)
-  mindMapPaletteDrop.handleMindMapPaletteDragOver(event)
+  mindMapPaletteDrop.handleMindMapBrainstormDragOver(event)
 }
 
 function handleCanvasDragLeave(event: DragEvent): void {
-  mindMapPaletteDrop.handleMindMapPaletteDragLeave(event)
+  mindMapPaletteDrop.handleMindMapBrainstormDragLeave(event)
 }
 
 function handleCanvasDrop(event: DragEvent): void {
   handleConceptMapDrop(event)
-  mindMapPaletteDrop.handleMindMapPaletteDrop(event)
+  mindMapPaletteDrop.handleMindMapBrainstormDrop(event)
 }
 
 const suppressPaneClearUntil = ref(0)

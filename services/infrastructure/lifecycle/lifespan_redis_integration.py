@@ -196,7 +196,7 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                 ),
             )
         except BACKGROUND_INFRA_ERRORS as alert_error:
-            logger.error("Failed to send startup failure alert: %s", alert_error)
+            logger.error("Failed to record startup failure: %s", alert_error)
         logger.error("Application startup failed. Exiting.")
         fatal_startup_exit(1)
 

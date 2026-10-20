@@ -20,6 +20,6 @@ export function applyCanvasHistoryNavigationSync(): void {
   useConceptMapRootConceptReviewStore().clear()
   useMindMapSubgraphPreviewStore().clear()
   useDiagramTranslateUiStore().abortTranslate()
-  eventBus.emit('node_palette:streaming_stop_requested', {})
+  eventBus.emit('diagram_brainstorm:streaming_stop_requested', {})
   eventBus.emit('ai_brainstorm:streaming_stop_requested', {})
 }

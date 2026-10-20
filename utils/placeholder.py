@@ -1,5 +1,5 @@
 """
-Placeholder text detection for Node Palette and diagram generation.
+Placeholder text detection for AI brainstorm and diagram generation.
 
 Aligns with frontend useAutoComplete.ts placeholder patterns.
 Used to filter out template/placeholder text before sending to LLM prompts.

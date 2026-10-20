@@ -7,7 +7,7 @@
  */
 import { DEFAULT_CONTEXT_RADIUS } from '@/composables/diagrams/layoutConfig'
 import { mirrorString, mirrorStringList, readSecondaryMirror } from '@/diagramBilingual/mirror'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
   CIRCLE_BOUNDARY_NODE_ID,
   CIRCLE_MAP_UID_DATA_KEY,
@@ -17,6 +17,7 @@ import {
   stampCircleContextData,
   takeCircleMapStableId,
 } from '@/utils/circleMapIdentity'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import {
   CIRCLE_MAP_OVAL_WIDTH_RATIO,
   type NodeShape,
@@ -78,7 +79,8 @@ function circleNodePackR(
  */
 export function recalculateCircleMapLayout(
   nodes: DiagramNode[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {},
+  adornments: MindMapAdornmentsByPath = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return []
@@ -96,12 +98,15 @@ export function recalculateCircleMapLayout(
   let topicROverride: number | undefined
   if (topicNode && topicNode.style?.nodeShape !== 'underline') {
     const topicStyle = topicNode.style
-    const textTopicR = computeTopicRadiusForCircleMap(topicText || ' ', {
-      secondary: learningSheetLayoutSecondary(topicNode),
-      fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
-      fontWeight: typeof topicStyle?.fontWeight === 'string' ? topicStyle.fontWeight : undefined,
-      fontFamily: typeof topicStyle?.fontFamily === 'string' ? topicStyle.fontFamily : undefined,
-    })
+    const textTopicR = computeTopicRadiusForCircleMap(
+      textWithIconAdornment(topicText || ' ', adornments[topicNode.id]),
+      {
+        secondary: learningSheetLayoutSecondary(topicNode),
+        fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
+        fontWeight: typeof topicStyle?.fontWeight === 'string' ? topicStyle.fontWeight : undefined,
+        fontFamily: typeof topicStyle?.fontFamily === 'string' ? topicStyle.fontFamily : undefined,
+      }
+    )
     const diskR = circleDiskRadius(topicStyle?.nodeShape, nodeDimensions[topicNode.id])
     topicROverride = Math.max(textTopicR, diskR ?? 0)
   }
@@ -114,7 +119,7 @@ export function recalculateCircleMapLayout(
       const nodeStyle = node.style
       const textR =
         estimateContextCircleDiameter(
-          learningSheetLayoutText(node) || ' ',
+          textWithIconAdornment(learningSheetLayoutText(node) || ' ', adornments[node.id]),
           learningSheetLayoutSecondary(node),
           {
             fontSize: typeof nodeStyle?.fontSize === 'number' ? nodeStyle.fontSize : undefined,

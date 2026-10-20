@@ -7,6 +7,30 @@ import type { DiagramNode } from '@/types'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
 
 describe('circle map default topic radius', () => {
+  it('sizes an emoji adornment the same as those characters in the label', () => {
+    const topic: DiagramNode = { id: 'topic', text: '主题', type: 'center' }
+    const contexts: DiagramNode[] = [
+      { id: 'context-0', text: '属性5', type: 'bubble', data: { groupIndex: 0 } },
+      { id: 'context-1', text: '124', type: 'bubble', data: { groupIndex: 1 } },
+    ]
+    const withIcon = recalculateCircleMapLayout(
+      [topic, ...contexts],
+      {},
+      {
+        'context-0': { icon: '😬' },
+      }
+    )
+    const asText = recalculateCircleMapLayout([
+      topic,
+      { ...contexts[0], text: '😬 属性5' },
+      contexts[1],
+    ])
+    const size = (nodes: DiagramNode[], id: string): number =>
+      nodes.find((node) => node.id === id)?.style?.size ?? 0
+    expect(size(withIcon, 'context-0')).toBe(size(asText, 'context-0'))
+    expect(size(withIcon, 'topic')).toBe(size(asText, 'topic'))
+  })
+
   it('uses text-based floor for short default labels without DOM overrides', () => {
     const layout = calculateCircleMapLayout(8, ['Context 1', 'Context 2'], 'Topic')
     expect(layout.topicR).toBe(60)

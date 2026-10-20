@@ -54,7 +54,7 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
   } = options
 
   const isSaving = ref(false)
-  const showNodePalette = ref(false)
+  const showDiagramBrainstorm = ref(false)
   const { activeTool, closeActiveTool, handleToolSelect } = useMindMapSideToolbarState()
 
   async function handleSave(): Promise<void> {
@@ -126,22 +126,22 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
       notifyWarning(translate('notification.signInToUse'))
       return
     }
-    if (panelsStore.nodePalettePanel.isOpen) {
-      panelsStore.closeNodePalette()
-      showNodePalette.value = false
+    if (panelsStore.diagramBrainstormPanel.isOpen) {
+      panelsStore.closeDiagramBrainstorm()
+      showDiagramBrainstorm.value = false
     }
     handleToolSelect('waterfall')
   }
 
-  function toggleNodePalette(): void {
-    if (panelsStore.nodePalettePanel.isOpen) {
-      panelsStore.closeNodePalette()
-      showNodePalette.value = false
+  function toggleDiagramBrainstorm(): void {
+    if (panelsStore.diagramBrainstormPanel.isOpen) {
+      panelsStore.closeDiagramBrainstorm()
+      showDiagramBrainstorm.value = false
       return
     }
     closeBrainstormIfOpen()
-    panelsStore.openNodePalette()
-    showNodePalette.value = true
+    panelsStore.openDiagramBrainstorm()
+    showDiagramBrainstorm.value = true
   }
 
   function handleFitToScreen(): void {
@@ -150,7 +150,7 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
 
   return {
     isSaving,
-    showNodePalette,
+    showDiagramBrainstorm,
     handleSave,
     handleAddNode,
     handleDeleteSelected,
@@ -158,7 +158,7 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     handleToolbarAI,
     toggleConceptMapAiToolbar,
     toggleAiBrainstorm,
-    toggleNodePalette,
+    toggleDiagramBrainstorm,
     closeActiveTool,
     handleFitToScreen,
   }

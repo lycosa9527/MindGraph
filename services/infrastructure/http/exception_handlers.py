@@ -13,7 +13,6 @@ Proprietary License
 """
 
 import logging
-import traceback
 from typing import cast
 
 from fastapi import FastAPI, HTTPException, Request
@@ -33,9 +32,7 @@ from services.infrastructure.http.error_handler import (
     UserDailyTokenCapExceededError,
 )
 from services.infrastructure.http.llm_http_errors import should_record_http_exception
-from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.monitoring.error_reporting import record_exception, record_failure
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.user_daily_token_quota import daily_token_limit_message
 
 logger = logging.getLogger(__name__)
@@ -228,16 +225,13 @@ async def general_exception_handler(request: Request, exc: Exception):
     # a streaming response is cancelled (asyncio.CancelledError / GeneratorExit) before
     # the ASGI `http.response.start` message is sent. This is a client-disconnect
     # artifact — the SSE generator was aborted by the frontend (AbortController) — not
-    # an application fault. Treat it like ClientDisconnect: log at debug, return 204,
-    # and never trigger a critical SMS alert.
+    # an application fault. Treat it like ClientDisconnect: log at debug and return 204.
     if exception_type == "RuntimeError" and "No response returned" in exception_message:
         logger.debug(
             "Client disconnected during streaming response (no response returned): %s",
             request_path,
         )
         return Response(status_code=204)
-
-    stack_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
 
     logger.error("Unhandled exception: %s: %s", exception_type, exception_message, exc_info=True)
 
@@ -257,31 +251,12 @@ async def general_exception_handler(request: Request, exc: Exception):
     if config.debug:
         error_response["debug"] = str(exc)
 
-    # Check if this is a critical exception that warrants SMS alert
-    is_critical = _is_critical_exception(exception_type, exception_message)
-
-    if is_critical:
-        try:
-            await CriticalAlertService.send_unhandled_exception_alert(
-                component="Application",
-                exception_type=exception_type,
-                error_message=exception_message,
-                stack_trace=stack_trace,
-                request_path=request_path,
-            )
-        except BACKGROUND_INFRA_ERRORS as alert_error:
-            logger.error(
-                "Failed to send unhandled exception alert: %s",
-                alert_error,
-                exc_info=True,
-            )
-
     return JSONResponse(status_code=500, content=error_response)
 
 
 def _is_critical_exception(exception_type: str, exception_message: str) -> bool:
     """
-    Determine if an exception is critical and warrants SMS alert.
+    Determine if an exception is critical enough to store at critical severity.
 
     Args:
         exception_type: Exception class name

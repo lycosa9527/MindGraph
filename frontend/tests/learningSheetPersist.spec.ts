@@ -6,11 +6,15 @@ import {
   learningSheetFloatBarOpen,
   learningSheetPickActive,
   restoreLearningSheetUiFromDiagram,
+  resumeLearningSheetAfterPresentation,
+  suspendLearningSheetForPresentation,
   toggleLearningSheetAnswersVisibility,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
-import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
+import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
+import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
 
 describe('learning sheet persistence', () => {
   beforeEach(() => {
@@ -106,6 +110,41 @@ describe('learning sheet persistence', () => {
 
     expect(learningSheetFloatBarOpen.value).toBe(true)
     expect(learningSheetPickActive.value).toBe(false)
+    expect(useLearningAssignmentCanvasStore().showLearningSheet).toBe(true)
+  })
+
+  it('does not restore the float bar while a student is completing homework', () => {
+    const authStore = useAuthStore()
+    authStore.user = { id: '9', username: 'stu', role: 'student' }
+    useLearningAssignmentCanvasStore().assignmentId = 3
+
+    const diagramStore = useDiagramStore()
+    loadMindMapWithBranch()
+    diagramStore.setLearningSheetMode(true)
+
+    learningSheetFloatBarOpen.value = true
+    learningSheetPickActive.value = true
+    restoreLearningSheetUiFromDiagram()
+
+    expect(useLearningAssignmentCanvasStore().showLearningSheet).toBe(false)
+    expect(learningSheetFloatBarOpen.value).toBe(false)
+    expect(learningSheetPickActive.value).toBe(false)
+    expect(toggleLearningSheetAnswersVisibility()).toBe(false)
+  })
+
+  it('does not reopen the session bar after presentation once homework starts', () => {
+    const diagramStore = useDiagramStore()
+    loadMindMapWithBranch()
+    diagramStore.setLearningSheetMode(true)
+    restoreLearningSheetUiFromDiagram()
+    suspendLearningSheetForPresentation()
+
+    const authStore = useAuthStore()
+    authStore.user = { id: '10', username: 'stu', role: 'student' }
+    useLearningAssignmentCanvasStore().assignmentId = 4
+    resumeLearningSheetAfterPresentation()
+
+    expect(learningSheetFloatBarOpen.value).toBe(false)
   })
 
   it('toggles show-answers preference', () => {

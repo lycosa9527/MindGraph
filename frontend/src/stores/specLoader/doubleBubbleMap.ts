@@ -11,16 +11,20 @@ import {
   DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT,
 } from '@/composables/diagrams/layoutConfig'
 import { mirrorString, mirrorStringList, readSecondaryMirror } from '@/diagramBilingual/mirror'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
   DOUBLE_BUBBLE_LEFT_TOPIC_ID,
   DOUBLE_BUBBLE_RIGHT_TOPIC_ID,
   DOUBLE_BUBBLE_UID_DATA_KEY,
+  readDoubleBubbleIndex,
+  readDoubleBubbleRole,
   stampDoubleBubbleData,
   takeDoubleBubbleMapStableId,
 } from '@/utils/doubleBubbleMapIdentity'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
+import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
 import { doubleBubbleDiffRequiredRadius, doubleBubbleRequiredRadius } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
@@ -422,4 +426,160 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   })
 
   return { nodes, connections }
+}
+
+function doubleBubbleMeasureFont(node: DiagramNode): { fontSize?: number; fontWeight?: string } {
+  const fontSize = typeof node.style?.fontSize === 'number' ? node.style.fontSize : undefined
+  const weight = node.style?.fontWeight
+  const fontWeight = typeof weight === 'string' ? weight : undefined
+  return { fontSize, fontWeight }
+}
+
+/** Radius of the label with a leading icon, matching a typed emoji. */
+function doubleBubbleNodeRadius(node: DiagramNode, adornments: MindMapAdornmentsByPath): number {
+  const text = textWithIconAdornment(learningSheetLayoutText(node), adornments[node.id])
+  const { fontSize, fontWeight } = doubleBubbleMeasureFont(node)
+  const secondary = learningSheetLayoutSecondary(node)
+  const isTopic =
+    node.id === DOUBLE_BUBBLE_LEFT_TOPIC_ID || node.id === DOUBLE_BUBBLE_RIGHT_TOPIC_ID
+  if (isTopic || readDoubleBubbleRole(node) === 'similarity') {
+    return doubleBubbleRequiredRadius(text, { isTopic, fontSize, fontWeight, secondary })
+  }
+  return doubleBubbleDiffRequiredRadius(text, undefined, { fontSize, fontWeight, secondary })
+}
+
+function nodesByIndex(list: DiagramNode[]): DiagramNode[] {
+  return [...list].sort((a, b) => readDoubleBubbleIndex(a) - readDoubleBubbleIndex(b))
+}
+
+/**
+ * Grow double-bubble disks when an icon is part of the label.
+ * Columns stay put when the current radius already fits that string.
+ */
+export function expandDoubleBubbleNodesForIcons(
+  nodes: DiagramNode[],
+  adornments: MindMapAdornmentsByPath = {}
+): DiagramNode[] {
+  if (!nodes.some((node) => (adornments[node.id]?.icon ?? '').trim())) return nodes
+
+  const leftTopic = nodes.find((node) => node.id === DOUBLE_BUBBLE_LEFT_TOPIC_ID)
+  const rightTopic = nodes.find((node) => node.id === DOUBLE_BUBBLE_RIGHT_TOPIC_ID)
+  const similarities = nodesByIndex(
+    nodes.filter((node) => readDoubleBubbleRole(node) === 'similarity')
+  )
+  const leftDiffs = nodesByIndex(nodes.filter((node) => readDoubleBubbleRole(node) === 'leftDiff'))
+  const rightDiffs = nodesByIndex(
+    nodes.filter((node) => readDoubleBubbleRole(node) === 'rightDiff')
+  )
+
+  const halfSize = (node: DiagramNode | undefined): number => (node?.style?.size ?? 0) / 2
+  const grownRadius = (node: DiagramNode): number =>
+    Math.max(doubleBubbleNodeRadius(node, adornments), halfSize(node))
+  const topicR = Math.max(
+    leftTopic ? grownRadius(leftTopic) : 0,
+    rightTopic ? grownRadius(rightTopic) : 0
+  )
+  const simR = similarities.length > 0 ? Math.max(...similarities.map(grownRadius)) : 30
+  const leftDiffR = columnRadius(leftDiffs.map(grownRadius))
+  const rightDiffR = columnRadius(rightDiffs.map(grownRadius))
+
+  const columnHalf = (list: DiagramNode[]): number =>
+    list.reduce((max, node) => Math.max(max, halfSize(node)), 0)
+  const fits =
+    topicR <= Math.max(halfSize(leftTopic), halfSize(rightTopic)) + 0.5 &&
+    simR <= columnHalf(similarities) + 0.5 &&
+    leftDiffR <= columnHalf(leftDiffs) + 0.5 &&
+    rightDiffR <= columnHalf(rightDiffs) + 0.5
+  if (fits) return nodes
+
+  const layout = computeLayout(
+    similarities.length,
+    leftDiffs.length,
+    rightDiffs.length,
+    DEFAULT_PADDING,
+    topicR,
+    simR,
+    leftDiffR,
+    rightDiffR
+  )
+  const placed = new Map<string, Pick<DiagramNode, 'position' | 'style'>>()
+  const place = (node: DiagramNode, x: number, y: number, style: DiagramNode['style']): void => {
+    placed.set(node.id, { position: { x, y }, style })
+  }
+
+  if (leftTopic) {
+    place(leftTopic, layout.leftTopicX - topicR, layout.centerY - topicR, {
+      ...leftTopic.style,
+      size: topicR * 2,
+      noWrap: true,
+    })
+  }
+  if (rightTopic) {
+    place(rightTopic, layout.rightTopicX - topicR, layout.centerY - topicR, {
+      ...rightTopic.style,
+      size: topicR * 2,
+      noWrap: true,
+    })
+  }
+
+  const simStartY = columnAnchorY(
+    similarities.length,
+    layout.centerY,
+    layout.simVerticalSpacing,
+    layout.simCap.height
+  )
+  similarities.forEach((node, index) => {
+    const cy = simStartY + index * layout.simVerticalSpacing
+    place(node, layout.simX - layout.simCap.width / 2, cy - layout.simCap.height / 2, {
+      ...node.style,
+      width: layout.simCap.width,
+      height: layout.simCap.height,
+      size: simR * 2,
+      noWrap: true,
+    })
+  })
+
+  const leftDiffStartY = columnAnchorY(
+    leftDiffs.length,
+    layout.centerY,
+    layout.diffVerticalSpacing,
+    layout.diffSlotHeight
+  )
+  const rightDiffStartY = columnAnchorY(
+    rightDiffs.length,
+    layout.centerY,
+    layout.diffVerticalSpacing,
+    layout.diffSlotHeight
+  )
+  leftDiffs.forEach((node, index) => {
+    const cy = leftDiffStartY + index * layout.diffVerticalSpacing
+    place(node, layout.leftDiffX - layout.leftDiffCap.width, cy - layout.leftDiffCap.height / 2, {
+      ...node.style,
+      width: layout.leftDiffCap.width,
+      height: layout.leftDiffCap.height,
+      size: leftDiffR * 2,
+      noWrap: true,
+    })
+  })
+  rightDiffs.forEach((node, index) => {
+    const cy = rightDiffStartY + index * layout.diffVerticalSpacing
+    place(
+      node,
+      layout.rightDiffX - layout.rightDiffCap.width,
+      cy - layout.rightDiffCap.height / 2,
+      {
+        ...node.style,
+        width: layout.rightDiffCap.width,
+        height: layout.rightDiffCap.height,
+        size: rightDiffR * 2,
+        noWrap: true,
+      }
+    )
+  })
+
+  return nodes.map((node) => {
+    const next = placed.get(node.id)
+    if (!next) return node
+    return { ...node, position: next.position, style: next.style }
+  })
 }

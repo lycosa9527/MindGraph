@@ -695,10 +695,10 @@ async def log_requests(request: Request, call_next):
             request.url.path,
             response_time,
         )
-    elif "node_palette" in request.url.path and response_time > 10:
-        # Node Palette streams from 4 LLMs, 5-8s is normal
+    elif "ai_brainstorm" in request.url.path and response_time > 10:
+        # AI brainstorm streams from 4 LLMs, 5-8s is normal
         logger.warning(
-            "Slow node palette: %s %s took %.3fs",
+            "Slow AI brainstorm: %s %s took %.3fs",
             request.method,
             request.url.path,
             response_time,

@@ -9,6 +9,7 @@ from repositories.mind_classroom_repo import MindClassroomJobRepository
 from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.job_manifest import hash_spec_snapshot, mark_job_failed, mark_job_queued
 from services.mind_classroom.job_match import spec_snapshot_node_ids
+from services.mind_classroom.outline import is_mindmap_type
 from services.mind_classroom.queue_dispatch import (
     WORKER_MISSING_MSG,
     ensure_queued_dispatch,
@@ -25,9 +26,17 @@ TASK_SCRIPT = "mind_classroom.run_script"
 TASK_SLIDES = "mind_classroom.run_slides"
 
 
-def resolve_classroom_mode(mode: str, slide_deck_enabled: bool) -> str:
-    """Slide lecture stays a canvas tour until the feature ships."""
-    if mode == "slide_deck" and not slide_deck_enabled:
+def resolve_classroom_mode(
+    mode: str,
+    slide_deck_enabled: bool,
+    diagram_type: Optional[str] = None,
+) -> str:
+    """Slide lecture stays a canvas tour until it ships, and on non-mind-maps."""
+    if mode != "slide_deck":
+        return mode
+    if not slide_deck_enabled:
+        return "canvas_tour"
+    if diagram_type and not is_mindmap_type(diagram_type):
         return "canvas_tour"
     return mode
 

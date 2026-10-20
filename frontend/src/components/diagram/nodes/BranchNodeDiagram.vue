@@ -24,6 +24,7 @@ import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
 import {
@@ -220,7 +221,12 @@ const nodeStyle = computed((): CSSProperties => {
 })
 
 const textMaxWidth = computed(() => {
-  const label = ((props.data.label as string) || '').trim()
+  const label = labelWithNodeIcon(
+    diagramStore.data,
+    props.id,
+    ((props.data.label as string) || '').trim(),
+    diagramStore.data?.connections
+  )
   if (isBridgeMap.value) {
     return 'min(420px, 88vw)'
   }

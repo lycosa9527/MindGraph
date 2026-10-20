@@ -16,8 +16,9 @@ import {
   MULTI_FLOW_TOPIC_PADDING_X,
 } from '@/composables/diagrams/layoutConfig'
 import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 import {
   MULTI_FLOW_EVENT_NODE_ID,
@@ -81,12 +82,12 @@ function imageColumnWidth(
   return Math.max(NODE_IMAGE_FRAME_MIN_WIDTH, measured && measured > 0 ? measured : 0)
 }
 
-function computeFlowNodeWidth(node: DiagramNode): number {
+function computeFlowNodeWidth(node: DiagramNode, adornments: MindMapAdornmentsByPath = {}): number {
   const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : FLOW_NODE_FONT_SIZE
   const fontWeight = node.style?.fontWeight
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
   const innerForLayout = measureThinkingMapLabelBlockPx(
-    learningSheetLayoutText(node),
+    textWithIconAdornment(learningSheetLayoutText(node), adornments[node.id]),
     fs,
     MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH,
     {
@@ -113,7 +114,8 @@ export function recalculateMultiFlowMapLayout(
   topicNodeWidth: number | null = null,
   _nodeWidths: Record<string, number> = {},
   nodeDimensions: Record<string, { width: number; height: number }> = {},
-  imageNodeIds: ReadonlySet<string> = new Set()
+  imageNodeIds: ReadonlySet<string> = new Set(),
+  adornments: MindMapAdornmentsByPath = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return []
@@ -128,7 +130,9 @@ export function recalculateMultiFlowMapLayout(
     .filter((n) => isMultiFlowEffectNode(n))
     .sort((a, b) => readMultiFlowIndex(a) - readMultiFlowIndex(b))
 
-  const event = eventNode ? learningSheetLayoutText(eventNode) : ''
+  const event = eventNode
+    ? textWithIconAdornment(learningSheetLayoutText(eventNode), adornments[eventNode.id])
+    : ''
 
   // Layout constants
   const centerX = DEFAULT_CENTER_X
@@ -169,12 +173,12 @@ export function recalculateMultiFlowMapLayout(
   let maxEffectWidth = nodeWidth
 
   causeNodes.forEach((node) => {
-    maxCauseWidth = Math.max(maxCauseWidth, computeFlowNodeWidth(node))
+    maxCauseWidth = Math.max(maxCauseWidth, computeFlowNodeWidth(node, adornments))
     maxCauseWidth = Math.max(maxCauseWidth, imageColumnWidth(node.id, nodeDimensions, imageNodeIds))
   })
 
   effectNodes.forEach((node) => {
-    maxEffectWidth = Math.max(maxEffectWidth, computeFlowNodeWidth(node))
+    maxEffectWidth = Math.max(maxEffectWidth, computeFlowNodeWidth(node, adornments))
     maxEffectWidth = Math.max(
       maxEffectWidth,
       imageColumnWidth(node.id, nodeDimensions, imageNodeIds)

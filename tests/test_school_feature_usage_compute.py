@@ -54,6 +54,8 @@ def test_unknown_action_dropped():
 def test_resolve_token_module_autocomplete_and_unknown():
     """Autocomplete maps to canvas; unknown request types are dropped."""
     assert resolve_token_module("autocomplete") == "canvas"
+    assert resolve_token_module("ai_brainstorm") == "canvas"
+    assert resolve_token_module("node_palette") == "canvas"
     assert resolve_token_module("diagram_generation") == "canvas"
     assert resolve_token_module("diagram_generation", "/api/generate_dingtalk") == "dingtalk"
     assert resolve_token_module("voice_command_parsing") == "kitty"

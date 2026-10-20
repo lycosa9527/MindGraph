@@ -73,20 +73,51 @@ describe('modalTwoFingerScroll', () => {
     expect(pickVerticalScroller(mergeScrollChains([outer], [inner]), 10)).toBe(inner)
   })
 
-  it('scrolls the learning-sheet column when two fingers swipe up on a control', () => {
+  it('scrolls the dialog body when two fingers swipe up on a control', () => {
     document.body.innerHTML = `
-      <div class="el-overlay-dialog" style="overflow-y: auto">
+      <div class="el-overlay-dialog">
         <div class="el-dialog">
-          <div class="worksheet-text-modal__controls" style="overflow-y: auto">
+          <div class="el-dialog__body" style="overflow-y: auto">
             <button type="button">显示</button>
           </div>
         </div>
       </div>
     `
-    const column = document.querySelector<HTMLElement>('.worksheet-text-modal__controls')
+    const body = document.querySelector<HTMLElement>('.el-dialog__body')
     const button = document.querySelector('button')
-    if (!column || !button) throw new Error('fixture missing')
+    if (!body || !button) throw new Error('fixture missing')
+    setScrollMetrics(body, 900, 320, 0)
+
+    dispatchTouch('touchstart', button, [
+      { x: 40, y: 200, target: button },
+      { x: 80, y: 210, target: button },
+    ])
+    dispatchTouch('touchmove', button, [
+      { x: 42, y: 140, target: button },
+      { x: 82, y: 150, target: button },
+    ])
+
+    expect(body.scrollTop).toBe(60)
+  })
+
+  it('scrolls an inner pane before the dialog body when two fingers swipe on a control', () => {
+    document.body.innerHTML = `
+      <div class="el-overlay-dialog" style="overflow-y: auto">
+        <div class="el-dialog">
+          <div class="el-dialog__body" style="overflow-y: auto">
+            <div class="inner-pane" style="overflow-y: auto">
+              <button type="button">显示</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+    const column = document.querySelector<HTMLElement>('.inner-pane')
+    const body = document.querySelector<HTMLElement>('.el-dialog__body')
+    const button = document.querySelector('button')
+    if (!column || !body || !button) throw new Error('fixture missing')
     setScrollMetrics(column, 640, 180, 20)
+    setScrollMetrics(body, 900, 400, 0)
 
     dispatchTouch('touchstart', button, [
       { x: 40, y: 200, target: button },
@@ -98,24 +129,29 @@ describe('modalTwoFingerScroll', () => {
     ])
 
     expect(column.scrollTop).toBe(80)
+    expect(body.scrollTop).toBe(0)
     expect(move.defaultPrevented).toBe(true)
   })
 
-  it('continues on the overlay when the inner column is already at the bottom', () => {
+  it('continues on the dialog body when the inner pane is at the bottom, and leaves the overlay', () => {
     document.body.innerHTML = `
       <div class="el-overlay-dialog" style="overflow-y: auto">
         <div class="el-dialog">
-          <div class="worksheet-text-modal__controls" style="overflow-y: auto">
-            <button type="button">课题</button>
+          <div class="el-dialog__body" style="overflow-y: auto">
+            <div class="inner-pane" style="overflow-y: auto">
+              <button type="button">课题</button>
+            </div>
           </div>
         </div>
       </div>
     `
     const overlay = document.querySelector<HTMLElement>('.el-overlay-dialog')
-    const column = document.querySelector<HTMLElement>('.worksheet-text-modal__controls')
+    const column = document.querySelector<HTMLElement>('.inner-pane')
+    const body = document.querySelector<HTMLElement>('.el-dialog__body')
     const button = document.querySelector('button')
-    if (!overlay || !column || !button) throw new Error('fixture missing')
+    if (!overlay || !column || !body || !button) throw new Error('fixture missing')
     setScrollMetrics(column, 400, 200, 200)
+    setScrollMetrics(body, 900, 320, 10)
     setScrollMetrics(overlay, 1200, 500, 10)
 
     dispatchTouch('touchstart', button, [
@@ -128,7 +164,8 @@ describe('modalTwoFingerScroll', () => {
     ])
 
     expect(column.scrollTop).toBe(200)
-    expect(overlay.scrollTop).toBe(70)
+    expect(body.scrollTop).toBe(70)
+    expect(overlay.scrollTop).toBe(10)
   })
 
   it('does not scroll a modal from one finger or from a two-finger swipe outside it', () => {

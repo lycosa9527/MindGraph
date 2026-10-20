@@ -26,11 +26,25 @@
   scrollbar-gutter: stable;
 }
 
+.mc-classroom-dialog.el-dialog:not(.is-fullscreen) > .el-dialog__body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mc-launch--modal {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .mc-launch--modal .mc-launch__body {
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 18px;
-  max-height: min(62vh, 560px);
+  overflow-x: hidden;
   overflow-y: auto;
   padding: 2px 0 0;
+  overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
 

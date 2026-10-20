@@ -188,6 +188,12 @@
   max-height: min(88vh, 900px);
 }
 
+.swiss-glass-card__body,
+.swiss-glass-card.overflow-y-auto {
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+}
+
 .swiss-glass-card__body {
   flex: 1 1 auto;
   min-height: 0;
@@ -227,26 +233,4 @@
 .mind-map-side-rail-btn--danger:hover:not(:disabled) {
   background: #991b1b;
   border-color: #991b1b;
-}
-
-/*
- * One finger may pan from empty space. A control often keeps that gesture;
- * modalTwoFingerScroll.ts scrolls on a two-finger swipe. pan-x/pan-y lets the
- * browser pan with one finger and does not treat the second finger as a page
- * zoom. A diagram frame with touch-action: none still wins.
- */
-.el-overlay-dialog,
-.el-dialog__body,
-.el-drawer__body,
-.el-message-box__content,
-.el-message-box__message,
-.el-dialog .el-scrollbar__wrap,
-.el-drawer .el-scrollbar__wrap,
-.el-message-box .el-scrollbar__wrap,
-.swiss-glass-card__body,
-.swiss-glass-card.overflow-y-auto,
-.swiss-glass-card-overlay--contained,
-.mm-canvas-center-modal {
-  touch-action: pan-x pan-y;
-  overscroll-behavior: contain;
 }

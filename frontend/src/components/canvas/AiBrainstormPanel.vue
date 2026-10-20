@@ -9,13 +9,13 @@ import { Check, Loader2, RefreshCw } from '@lucide/vue'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
-import { PALETTE_MINDMAP_DRAG_MIME } from '@/composables/nodePalette/constants'
+import { BRAINSTORM_MINDMAP_DRAG_MIME } from '@/composables/aiBrainstorm/constants'
 import {
-  beginMindMapPaletteDrag,
-  endMindMapPaletteDrag,
+  beginMindMapBrainstormDrag,
+  endMindMapBrainstormDrag,
   setEmptyNativeDragImage,
-} from '@/composables/nodePalette/mindMapPaletteDragSession'
+} from '@/composables/aiBrainstorm/mindMapBrainstormDrag'
+import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { getLLMColor } from '@/config/llmModelColors'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
@@ -123,14 +123,14 @@ function handleDragStart(event: DragEvent, suggestion: NodeSuggestion): void {
   const payload = {
     items: dragItems.map((s) => ({ id: s.id, text: s.text })),
   }
-  event.dataTransfer.setData(PALETTE_MINDMAP_DRAG_MIME, JSON.stringify(payload))
+  event.dataTransfer.setData(BRAINSTORM_MINDMAP_DRAG_MIME, JSON.stringify(payload))
   event.dataTransfer.effectAllowed = 'copy'
   setEmptyNativeDragImage(event)
-  beginMindMapPaletteDrag({ items: payload.items })
+  beginMindMapBrainstormDrag({ items: payload.items })
 }
 
 function handleDragEnd(): void {
-  endMindMapPaletteDrag()
+  endMindMapBrainstormDrag()
 }
 
 async function handleStageTab(parentId: string, parentName: string): Promise<void> {
@@ -183,13 +183,13 @@ onUnmounted(() => {
         v-if="selectedIds.length > 0"
         class="mr-1 text-xs text-slate-500"
       >
-        {{ selectedIds.length }} <I18nText k="nodePalette.selected" />
+        {{ selectedIds.length }} <I18nText k="aiBrainstorm.selected" />
       </span>
       <button
         type="button"
         class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-slate-100 hover:text-gray-600 disabled:opacity-40"
         :disabled="isLoading"
-        :aria-label="t('nodePalette.refresh')"
+        :aria-label="t('aiBrainstorm.refresh')"
         @click="handleRefresh"
       >
         <RefreshCw
@@ -250,7 +250,7 @@ onUnmounted(() => {
         class="flex flex-col items-center justify-center gap-2 py-10 text-sm text-slate-500"
       >
         <Loader2 class="h-6 w-6 animate-spin text-(--swiss-geek-cyan-ui,#0e7490)" />
-        <span><I18nText k="nodePalette.generatingIdeas" /></span>
+        <span><I18nText k="aiBrainstorm.generatingIdeas" /></span>
       </div>
 
       <p
@@ -277,7 +277,7 @@ onUnmounted(() => {
         >
           <Loader2 class="h-3.5 w-3.5 shrink-0 animate-spin" />
           <I18nText
-            k="nodePalette.generatingProgress"
+            k="aiBrainstorm.generatingProgress"
             :params="{ count: suggestions.length }"
           />
         </p>
@@ -329,7 +329,7 @@ onUnmounted(() => {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
             @click="loadNextBatch"
           >
-            <I18nText k="nodePalette.loadMore" />
+            <I18nText k="aiBrainstorm.loadMore" />
           </button>
         </div>
         <div
@@ -344,10 +344,10 @@ onUnmounted(() => {
         >
           <I18nText
             v-if="showNextButton"
-            k="nodePalette.helpNext"
+            k="aiBrainstorm.helpNext"
           /><I18nText
             v-else
-            k="nodePalette.helpFinish"
+            k="aiBrainstorm.helpFinish"
           />
           <br />
           <I18nText k="canvas.mindMapWaterfall.dragHint" />
@@ -363,7 +363,7 @@ onUnmounted(() => {
         class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
         @click="handleCancel"
       >
-        <I18nText k="nodePalette.cancel" />
+        <I18nText k="aiBrainstorm.cancel" />
       </button>
       <button
         type="button"
@@ -373,10 +373,10 @@ onUnmounted(() => {
       >
         <I18nText
           v-if="showNextButton"
-          k="nodePalette.next"
+          k="aiBrainstorm.next"
         /><I18nText
           v-else
-          k="nodePalette.finish"
+          k="aiBrainstorm.finish"
         />
       </button>
     </footer>

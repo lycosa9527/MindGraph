@@ -208,7 +208,7 @@ function tooltipForModel(modelKey: string): string {
   return getTooltipContent(modelKey)
 }
 
-// Model-specific colors (shared with NodePalettePanel)
+// Model-specific colors (shared with DiagramBrainstormPanel)
 const modelColors = LLM_MODEL_COLORS
 
 // Button class based on state

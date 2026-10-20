@@ -234,8 +234,8 @@ export function useCanvasPageEditorShortcuts(options: {
       panelsStore.closeMindmate()
       return
     }
-    if (panelsStore.nodePalettePanel.isOpen) {
-      panelsStore.closeNodePalette()
+    if (panelsStore.diagramBrainstormPanel.isOpen) {
+      panelsStore.closeDiagramBrainstorm()
       return
     }
     if (panelsStore.propertyPanel.isOpen) {

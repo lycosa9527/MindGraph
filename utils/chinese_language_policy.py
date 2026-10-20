@@ -205,8 +205,8 @@ def _walk_diagram_texts(obj: Any, parts: list[str]) -> None:
             _walk_diagram_texts(item, parts)
 
 
-def collect_node_palette_text_blobs(req: Any, center_topic: str) -> tuple[str, ...]:
-    """Extract text from node palette request for SC detection."""
+def collect_ai_brainstorm_text_blobs(req: Any, center_topic: str) -> tuple[str, ...]:
+    """Extract text from AI brainstorm request for SC detection."""
     parts: list[str] = []
     if center_topic and str(center_topic).strip():
         parts.append(str(center_topic))

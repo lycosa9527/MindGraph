@@ -41,7 +41,7 @@ export function useMindMapRibbonChromeActions() {
   const lineModeOn = computed(() => uiStore.wireframeMode)
   const isLearningSheet = computed(() => diagramStore.isLearningSheet)
   const isMindmateOpen = computed(() => panelsStore.mindmatePanel.isOpen)
-  const isNodePaletteOpen = computed(() => panelsStore.nodePalettePanel.isOpen)
+  const isDiagramBrainstormOpen = computed(() => panelsStore.diagramBrainstormPanel.isOpen)
 
   function goBack(): void {
     if (route.path.startsWith('/training')) return
@@ -61,8 +61,8 @@ export function useMindMapRibbonChromeActions() {
     uiStore.toggleWireframe()
   }
 
-  function openNodePalette(): void {
-    eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'mind-map-ribbon' })
+  function openDiagramBrainstorm(): void {
+    eventBus.emit('panel:open_requested', { panel: 'diagramBrainstorm', source: 'mind-map-ribbon' })
   }
 
   function toggleMindmate(): void {
@@ -90,14 +90,14 @@ export function useMindMapRibbonChromeActions() {
     lineModeOn,
     isLearningSheet,
     isMindmateOpen,
-    isNodePaletteOpen,
+    isDiagramBrainstormOpen,
     goBack,
     handleAddNode,
     handleDeleteNode,
     emptySelected,
     handleAIGenerate,
     toggleLineMode,
-    openNodePalette,
+    openDiagramBrainstorm,
     toggleMindmate,
     undo: tryCollabGuardedUndo,
     redo: tryCollabGuardedRedo,

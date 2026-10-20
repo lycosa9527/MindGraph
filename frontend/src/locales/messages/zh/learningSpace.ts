@@ -102,7 +102,6 @@ export default {
   'learningSpace.mgSaveFailed': '保存 .mg 模板失败',
   'learningSpace.mgAttached': '已附加 .mg 模板',
   'learningSpace.aiGenerate': 'AI 生成图示',
-  'learningSpace.aiPalette': '节点推荐',
   'learningSpace.aiInline': '行内推荐',
   'learningSpace.aiTranslate': '画布翻译',
   'learningSpace.aiDocSummary': '文档摘要',

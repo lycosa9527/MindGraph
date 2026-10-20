@@ -10,7 +10,7 @@ import {
   getDropTargetStyle,
 } from '@/composables/diagramCanvas'
 import { getDropTargetShapeClass } from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
-import type { MindMapPaletteDragPreviewState } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
+import type { MindMapBrainstormDragPreviewState } from '@/composables/diagramCanvas/useDiagramCanvasMindMapBrainstormDrop'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import type { MindGraphNode } from '@/types/vueflow'
@@ -20,7 +20,7 @@ type BranchMove = ReturnType<typeof useBranchMoveDrag>
 
 const props = defineProps<{
   branchMove: BranchMove
-  paletteDragPreview?: MindMapPaletteDragPreviewState | null
+  paletteDragPreview?: MindMapBrainstormDragPreviewState | null
   /** Returns current Vue Flow nodes (for branch-move drop target sizing). */
   getVueFlowNodes: () => GraphNode[]
   linkPreviewPath: string | null

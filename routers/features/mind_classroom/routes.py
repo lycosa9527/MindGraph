@@ -86,7 +86,13 @@ def _normalize_settings(body: ClassroomJobRequest) -> dict[str, Any]:
     mode = body.mode.strip()
     if mode not in _MODES:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid mode")
-    mode = resolve_classroom_mode(mode, config.FEATURE_MIND_CLASSROOM_SLIDE_DECK)
+    spec = body.spec_snapshot if isinstance(body.spec_snapshot, dict) else {}
+    diagram_type = str(spec.get("type") or spec.get("diagramType") or "")
+    mode = resolve_classroom_mode(
+        mode,
+        config.FEATURE_MIND_CLASSROOM_SLIDE_DECK,
+        diagram_type,
+    )
     mastery = body.mastery.strip() if body.mastery in _MASTERY else "first_look"
     tone = body.tone.strip() if body.tone in _TONES else "classroom"
     scope = body.tour_scope.strip() if body.tour_scope in _SCOPES else "main_branch"

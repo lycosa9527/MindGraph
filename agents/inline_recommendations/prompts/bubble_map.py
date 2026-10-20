@@ -1,6 +1,6 @@
 """Bubble map inline recommendation prompts.
 
-Aligned with agents/node_palette/bubble_map_palette.py.
+Aligned with agents/ai_brainstorm/bubble_map.py.
 Follows concept map relationship label prompt structure (concrete examples, RULES, OUTPUT).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)

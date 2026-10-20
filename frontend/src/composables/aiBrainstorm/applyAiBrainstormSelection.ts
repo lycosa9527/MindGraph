@@ -1,18 +1,18 @@
 /**
  * Apply AI Brainstorm selections to a mind map (stage-1 branches → stage-2 children).
- * Isolated from node-palette applySelection so the two modules stay independent.
+ * Isolated from diagram-brainstorm applySelection so the two modules stay independent.
  */
 import { nextTick } from 'vue'
 
-import { i18n } from '@/i18n'
-import { suggestionBelongsToParent } from '@/composables/nodePalette/constants'
-import { getPlaceholderNodes } from '@/composables/nodePalette/placeholderHelpers'
+import { suggestionBelongsToParent } from '@/composables/aiBrainstorm/constants'
+import { getPlaceholderNodes } from '@/composables/aiBrainstorm/placeholderHelpers'
 import {
   type Stage2Parent,
   buildStageDataForParent,
   getStage2ParentsForDiagram,
   stage2StageNameForType,
-} from '@/composables/nodePalette/stageHelpers'
+} from '@/composables/aiBrainstorm/stageHelpers'
+import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
 import { isMindMapBranchNode } from '@/utils/mindMapLocation'
@@ -38,9 +38,7 @@ export interface ApplyAiBrainstormContext {
   startSessionsForAllParents: (parents: Stage2Parent[]) => Promise<void>
 }
 
-export async function applyAiBrainstormSelection(
-  ctx: ApplyAiBrainstormContext
-): Promise<boolean> {
+export async function applyAiBrainstormSelection(ctx: ApplyAiBrainstormContext): Promise<boolean> {
   const {
     diagramStore,
     diagramKey,
@@ -49,11 +47,8 @@ export async function applyAiBrainstormSelection(
     stageData,
     mode,
     updatePanel,
-    clearSuggestions,
     clearSession,
     closePanel,
-    startSession,
-    startSessionsForAllParents,
   } = ctx
 
   const nodes = diagramStore.data?.nodes ?? []
@@ -110,11 +105,7 @@ export async function applyAiBrainstormSelection(
     const branchName = (stageDataTyped.branch_name ?? '').trim()
     let resolvedParentId =
       branchId ??
-      nodes.find(
-        (n) =>
-          isMindMapBranchNode(n) &&
-          (n.text ?? '').trim() === branchName
-      )?.id
+      nodes.find((n) => isMindMapBranchNode(n) && (n.text ?? '').trim() === branchName)?.id
     if (!resolvedParentId && branchName && connections) {
       const fallbackParents = getStage2ParentsForDiagram('mindmap', nodes, connections)
       const match = fallbackParents.find((p) => (p.name ?? '').trim() === branchName)
@@ -131,11 +122,7 @@ export async function applyAiBrainstormSelection(
     remainder.forEach((s) => {
       const text = (s.text ?? '').trim()
       if (text) {
-        diagramStore.addMindMapBranch(
-          undefined,
-          text,
-          String(i18n.global.t('diagram.newChild'))
-        )
+        diagramStore.addMindMapBranch(undefined, text, String(i18n.global.t('diagram.newChild')))
       }
     })
   }
@@ -156,8 +143,17 @@ function applyStage2MultipleParents(
   parents: Stage2Parent[],
   connections: Array<{ source: string; target: string }> | undefined
 ): boolean {
-  const { diagramStore, diagramKey, toApply, stage, stageData, mode, updatePanel, clearSession, closePanel } =
-    ctx
+  const {
+    diagramStore,
+    diagramKey,
+    toApply,
+    stage,
+    stageData,
+    mode,
+    updatePanel,
+    clearSession,
+    closePanel,
+  } = ctx
   const nodes = diagramStore.data?.nodes ?? []
   const currentModeNorm = (mode ?? '').trim()
   const stageDataTyped = (stageData ?? {}) as { branch_id?: string }

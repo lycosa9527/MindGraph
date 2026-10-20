@@ -16,12 +16,12 @@ import logging
 from fastapi import FastAPI
 
 from routers import (
+    ai_brainstorm,
     api,
     auth,
     concept_map_focus,
     inline_recommendations,
     mindmap_node_explain,
-    node_palette,
     public_dashboard,
     relationship_labels,
 )
@@ -129,7 +129,7 @@ def register_routers(app: FastAPI) -> None:
             exc_info=True,
         )
 
-    app.include_router(node_palette.router)
+    app.include_router(ai_brainstorm.router)
     app.include_router(relationship_labels.router)
     app.include_router(inline_recommendations.router)
     app.include_router(mindmap_node_explain.router)
