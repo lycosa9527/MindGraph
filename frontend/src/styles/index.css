@@ -524,16 +524,32 @@ a:has(.i18n-label) {
 }
 
 /*
- * Cap the shell so the header and footer stay on screen. The body is the
- * scrollbar: wheel and trackpad scroll it, and a two-finger swipe does too
- * when the gesture starts on a control (modalTwoFingerScroll.ts).
- * overflow-x: hidden computes overflow-y to auto, so the body must have this
- * max-height or the wheel is swallowed by a box that never overflows.
+ * The overlay is a fixed viewport, so the dialog can be a flex child with a
+ * definite max-height. max-height on the dialog alone does not shrink a flex
+ * column: the body stays content-sized, overflow:hidden clips it, and the
+ * wheel has nothing to scroll. The body is the scrollbar.
  */
-.el-dialog:not(.is-fullscreen) {
+.el-overlay-dialog:not(:has(.is-fullscreen)) {
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - 15vh - 4.5rem);
+  align-items: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  padding: max(1.25rem, 8vh) 1rem max(1.25rem, 2rem);
+}
+
+.el-overlay-dialog:not(:has(.is-fullscreen)):has(> .el-dialog.is-align-center) {
+  justify-content: center;
+  padding-block: max(1.25rem, 3vh);
+}
+
+.el-overlay-dialog > .el-dialog:not(.is-fullscreen) {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  min-height: 0;
+  margin: 0 !important;
+  flex-shrink: 1;
   overflow: hidden;
 }
 

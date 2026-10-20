@@ -920,7 +920,9 @@
   display: flex;
   flex-direction: column;
   width: min(640px, 100%);
-  max-height: min(88vh, 760px);
+  max-height: min(88vh, 760px, 100%);
+  min-height: 0;
+  flex-shrink: 1;
   border-radius: 1.15rem;
   background: #ffffff;
   background: var(--ls-surface, #ffffff);
@@ -1702,13 +1704,13 @@
 
 .ls-modal--review {
   width: min(960px, 100%);
-  max-height: min(90vh, 820px);
+  max-height: min(90vh, 820px, 100%);
 }
 
 .ls-modal--review-fs {
   width: min(100vw - 1.5rem, 1400px);
-  max-height: min(96vh, 1200px);
-  height: min(96vh, 1200px);
+  max-height: min(96vh, 1200px, 100%);
+  height: min(96vh, 1200px, 100%);
 }
 
 .ls-modal__head-actions {

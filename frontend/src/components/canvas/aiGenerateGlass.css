@@ -52,7 +52,9 @@
 .mm-canvas-center-modal .mind-map-document-summary-panel.ai-gen-shell,
 .mm-canvas-center-modal .learning-sheet-glass-panel.ai-gen-shell {
   width: min(560px, 92vw) !important;
-  max-height: min(78vh, 740px);
+  max-height: min(78vh, 740px, 100%);
+  min-height: 0;
+  flex-shrink: 1;
 }
 
 .ai-glass-toolbar {

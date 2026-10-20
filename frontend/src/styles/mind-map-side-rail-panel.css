@@ -53,7 +53,9 @@
   left: auto !important;
   z-index: 1;
   width: min(520px, 92vw) !important;
-  max-height: min(72vh, 680px);
+  max-height: min(72vh, 680px, 100%);
+  min-height: 0;
+  flex-shrink: 1;
 }
 
 .mind-map-side-rail-btn {

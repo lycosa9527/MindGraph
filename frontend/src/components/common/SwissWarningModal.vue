@@ -242,12 +242,17 @@ function handleJump(): void {
 
 .swm-panel {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(420px, 100%);
+  max-height: 100%;
+  min-height: 0;
+  flex-shrink: 1;
   background: var(--swiss-surface, #ffffff);
   border: 1px solid var(--swiss-ink, #1c1917);
   box-shadow: 8px 8px 0 0 var(--swiss-ink, #1c1917);
   padding: 28px 28px 24px;
-  overflow: visible;
+  overflow: auto;
 }
 
 .swm-accent {
@@ -307,6 +312,8 @@ function handleJump(): void {
 .swm-body {
   margin: 0 0 20px;
   padding-left: 8px;
+  min-height: 0;
+  overflow-y: auto;
   font-size: 14px;
   line-height: 1.55;
   color: var(--swiss-body, #44403c);
