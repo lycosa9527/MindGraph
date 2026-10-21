@@ -1,6 +1,6 @@
+import { findBranchByNodeId, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 import type { Connection, DiagramNode } from '@/types'
 import type { MindMapSubgraphContext } from '@/utils/mindMapSubgraphContext'
-import { findBranchByNodeId, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 
 type DebugBranchSpec = { text: string; children?: DebugBranchSpec[] }
 
@@ -162,12 +162,7 @@ export function debugMindMapSubgraphMergeLookup(
   anchorNodeId: string
 ): Record<string, unknown> {
   const spec = nodesAndConnectionsToMindMapSpec(nodes, connections)
-  const found = findBranchByNodeId(
-    spec.rightBranches,
-    spec.leftBranches,
-    anchorNodeId,
-    connections
-  )
+  const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, anchorNodeId, connections)
   return {
     anchorNodeId,
     anchorText: nodes.find((n) => n.id === anchorNodeId)?.text ?? null,

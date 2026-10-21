@@ -4,8 +4,8 @@
 import { onScopeDispose } from 'vue'
 
 import { notify } from '@/composables/core/notifications'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 const WARNING_CODES = new Set(['variants_incomplete', 'variant_answer_required'])
 

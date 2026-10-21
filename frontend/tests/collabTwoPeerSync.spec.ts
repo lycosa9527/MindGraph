@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
+import type { Connection, DiagramNode } from '@/types'
 import {
   remapCollabConnectionEndpoints,
   spliceCollabConnection,
 } from '@/utils/collabConnectionInsert'
 import { resolveMindMapAliasId } from '@/utils/mindMapIdentityMigrate'
-import type { Connection, DiagramNode } from '@/types'
 
 const TOPIC = 'topic'
 const CHILD_A = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
@@ -73,12 +73,8 @@ describe('two-peer mind-map add sync', () => {
     const alice = baseline()
     const bob = baseline()
 
-    const aliceAdd = [
-      branch(CHILD_C, 'C') as unknown as Record<string, unknown>,
-    ]
-    const aliceEdge = [
-      { id: 'e-c', source: TOPIC, target: CHILD_C, insert_after_target: CHILD_A },
-    ]
+    const aliceAdd = [branch(CHILD_C, 'C') as unknown as Record<string, unknown>]
+    const aliceEdge = [{ id: 'e-c', source: TOPIC, target: CHILD_C, insert_after_target: CHILD_A }]
     applyPeerPatch(alice, aliceAdd, aliceEdge)
     applyPeerPatch(bob, aliceAdd, aliceEdge)
     expect(bob.nodes.some((node) => node.id === CHILD_C)).toBe(true)
@@ -86,9 +82,7 @@ describe('two-peer mind-map add sync', () => {
     expect(childOrder(bob)).toEqual([CHILD_A, CHILD_C, CHILD_B])
 
     const bobAdd = [branch(CHILD_D, 'D') as unknown as Record<string, unknown>]
-    const bobEdge = [
-      { id: 'e-d', source: TOPIC, target: CHILD_D, insert_after_target: CHILD_B },
-    ]
+    const bobEdge = [{ id: 'e-d', source: TOPIC, target: CHILD_D, insert_after_target: CHILD_B }]
     applyPeerPatch(bob, bobAdd, bobEdge)
     applyPeerPatch(alice, bobAdd, bobEdge)
     expect(alice.nodes.some((node) => node.id === CHILD_D)).toBe(true)

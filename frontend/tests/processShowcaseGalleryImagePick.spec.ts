@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  processShowcaseGalleryImagePick,
   type ShowcaseGalleryPickEvent,
+  processShowcaseGalleryImagePick,
 } from '@/composables/showcase/processShowcaseGalleryImagePick'
 
 vi.mock('@/composables/media/resizeImageFileForShowcaseGallery', async () => {
@@ -95,16 +95,15 @@ describe('processShowcaseGalleryImagePick', () => {
       },
     })
 
-    expect(events.some((event) => event.type === 'reject' && event.reason === 'gallery_limit')).toBe(
-      true
-    )
+    expect(
+      events.some((event) => event.type === 'reject' && event.reason === 'gallery_limit')
+    ).toBe(true)
     expect(events.some((event) => event.type === 'item')).toBe(false)
   })
 
   it('emits aborted and stops when the signal is cancelled mid-batch', async () => {
-    const { resizeImageFileForShowcaseGallery } = await import(
-      '@/composables/media/resizeImageFileForShowcaseGallery'
-    )
+    const { resizeImageFileForShowcaseGallery } =
+      await import('@/composables/media/resizeImageFileForShowcaseGallery')
     const controller = new AbortController()
     let calls = 0
     vi.mocked(resizeImageFileForShowcaseGallery).mockImplementation(async (file: File) => {

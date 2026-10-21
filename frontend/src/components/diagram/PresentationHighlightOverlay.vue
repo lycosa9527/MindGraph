@@ -27,7 +27,11 @@ const props = withDefaults(
 const strokes = defineModel<PresentationHighlightStroke[]>({ default: () => [] })
 
 const diagramStore = useDiagramSession()
-const { screenToFlowCoordinate, viewport: vueFlowViewport, getViewport } = useVueFlow(diagramStore.vueFlowId)
+const {
+  screenToFlowCoordinate,
+  viewport: vueFlowViewport,
+  getViewport,
+} = useVueFlow(diagramStore.vueFlowId)
 
 const viewport = computed(() => vueFlowViewport.value ?? getViewport())
 
@@ -35,7 +39,6 @@ const transform = computed(
   () => `translate(${viewport.value.x}, ${viewport.value.y}) scale(${viewport.value.zoom})`
 )
 
-const isPen = computed(() => props.mode === 'pen')
 const isEraser = computed(() => props.mode === 'eraser')
 
 function distancePointToSegmentSq(

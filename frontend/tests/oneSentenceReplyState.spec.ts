@@ -54,10 +54,7 @@ describe('oneSentenceReplyState', () => {
       kind: 'final',
     })
 
-    expect(messages.value.map((row) => row.text)).toEqual([
-      '分支已添加',
-      '智能生成子图：A、B',
-    ])
+    expect(messages.value.map((row) => row.text)).toEqual(['分支已添加', '智能生成子图：A、B'])
     expect(messages.value.some((row) => row.thinking)).toBe(false)
   })
 
@@ -150,9 +147,7 @@ describe('oneSentenceReplyState', () => {
       kind: 'final',
     })
 
-    expect(messages.value.map((row) => row.text)).toEqual([
-      '「品牌」分支已添加，正在自动补全…',
-    ])
+    expect(messages.value.map((row) => row.text)).toEqual(['「品牌」分支已添加，正在自动补全…'])
   })
 
   it('attaches clarify choices and consumes them on the next turn', () => {

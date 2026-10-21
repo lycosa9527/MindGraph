@@ -1,14 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
 import { describe, expect, it } from 'vitest'
 
 import { FIT_PADDING } from '@/config/uiConfig'
-import {
-  formatFitPaddingPx,
-  resolveDiagramFitChromeInsetsPx,
-} from '@/utils/mindMapFitChromeInsets'
+import { formatFitPaddingPx, resolveDiagramFitChromeInsetsPx } from '@/utils/mindMapFitChromeInsets'
 
 const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -72,9 +68,7 @@ describe('resolveDiagramFitChromeInsetsPx', () => {
         treeMapAltDims: true,
         presentationRailVisible: false,
       }).bottom
-    ).toBe(
-      FIT_PADDING.BOTTOM_UI_HEIGHT_PX + FIT_PADDING.TREE_MAP_ALTERNATIVE_DIMENSIONS_EXTRA_PX
-    )
+    ).toBe(FIT_PADDING.BOTTOM_UI_HEIGHT_PX + FIT_PADDING.TREE_MAP_ALTERNATIVE_DIMENSIONS_EXTRA_PX)
     expect(
       resolveDiagramFitChromeInsetsPx({
         ribbonChrome: true,

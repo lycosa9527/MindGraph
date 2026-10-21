@@ -58,12 +58,7 @@ function resolveOutputFormat(file: File): OutputFormat | null {
   if (ext === '.webp' || mime === 'image/webp') {
     return { mime: 'image/webp', extension: '.webp', quality: SHOWCASE_GALLERY_WEBP_QUALITY }
   }
-  if (
-    ext === '.jpg' ||
-    ext === '.jpeg' ||
-    mime === 'image/jpeg' ||
-    mime === 'image/jpg'
-  ) {
+  if (ext === '.jpg' || ext === '.jpeg' || mime === 'image/jpeg' || mime === 'image/jpg') {
     return { mime: 'image/jpeg', extension: '.jpg', quality: SHOWCASE_GALLERY_JPEG_QUALITY }
   }
   if (mime.startsWith('image/')) {
@@ -98,10 +93,7 @@ function scaledSize(
   }
 }
 
-async function decodeImageBitmap(
-  file: File,
-  signal?: AbortSignal
-): Promise<ImageBitmap | null> {
+async function decodeImageBitmap(file: File, signal?: AbortSignal): Promise<ImageBitmap | null> {
   if (typeof createImageBitmap !== 'function') {
     return null
   }
@@ -117,9 +109,7 @@ async function decodeImageBitmap(
     }
     try {
       throwIfAborted(signal)
-      const fallbackOptions: CreateImageBitmapOptions | undefined = signal
-        ? { signal }
-        : undefined
+      const fallbackOptions: CreateImageBitmapOptions | undefined = signal ? { signal } : undefined
       return fallbackOptions
         ? await createImageBitmap(file, fallbackOptions)
         : await createImageBitmap(file)

@@ -24,8 +24,10 @@ export default {
   'zhihui.promptPlaceholder.image': 'ใส่แรงบันดาลใจของคุณ...',
   'zhihui.promptPlaceholder.video': 'อธิบายฉาก งานกล้อง และจังหวะ...',
   'zhihui.promptPlaceholder.diagram': 'เลือกแผนที่ความคิดแล้วคลิกสร้าง',
-  'zhihui.composerHint.image': 'ใช้ข้อความเพื่ออธิบายภาพและสร้างภาพประกอบการสอนและสื่อประกอบภาพได้ในคลิกเดียว',
-  'zhihui.composerHint.video': 'ความสามารถของ Wensheng Video และ Tusheng Video กำลังจะถูกเข้าถึงแล้ว',
+  'zhihui.composerHint.image':
+    'ใช้ข้อความเพื่ออธิบายภาพและสร้างภาพประกอบการสอนและสื่อประกอบภาพได้ในคลิกเดียว',
+  'zhihui.composerHint.video':
+    'ความสามารถของ Wensheng Video และ Tusheng Video กำลังจะถูกเข้าถึงแล้ว',
   'zhihui.composerHint.diagram': 'เลือกแผนที่ความคิดเพื่อสร้างแผนภาพบทเรียนจากมุมมองของผู้เรียน',
   'zhihui.diagram.selectMindmap': 'เลือกแผนที่ความคิด',
   'zhihui.diagram.selectMindmapHint': 'โปรดเลือกแผนที่ความคิดด้านบน',
@@ -34,7 +36,8 @@ export default {
   'zhihui.diagram.loadFailed': 'โหลดแผนที่ความคิดไม่สำเร็จ',
   'zhihui.diagram.emptyDeck': 'หลังจากเลือกแผนที่ความคิดแล้ว คลิกสร้าง',
   'zhihui.diagram.waitingSlides': 'กำลังสร้างบทเรียน โปรดรอสักครู่...',
-  'zhihui.diagram.jobStarted': 'การสร้างบทเรียนได้เริ่มต้นขึ้นแล้ว คุณสามารถตรวจสอบความคืบหน้าได้ในประวัติ',
+  'zhihui.diagram.jobStarted':
+    'การสร้างบทเรียนได้เริ่มต้นขึ้นแล้ว คุณสามารถตรวจสอบความคืบหน้าได้ในประวัติ',
   'zhihui.diagram.phaseQueued': 'งานเข้าคิว...',
   'zhihui.diagram.phasePlanning': 'การออกแบบหลักสูตร...',
   'zhihui.diagram.phasePlanningBranches': 'การวางแผนเรื่องต่างๆ...',
@@ -58,7 +61,8 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'ไม่สามารถโหลดสไลด์โชว์ได้',
   'zhihui.diagram.retryImage': 'ลองอีกครั้ง',
   'zhihui.diagram.teacherScript': 'คำบรรยายของอาจารย์',
-  'zhihui.diagram.teacherScriptHint': 'คำอธิบายในชั้นเรียนสอดคล้องกับจุดเน้นของภาพประกอบและแผนที่ในหน้านี้',
+  'zhihui.diagram.teacherScriptHint':
+    'คำอธิบายในชั้นเรียนสอดคล้องกับจุดเน้นของภาพประกอบและแผนที่ในหน้านี้',
   'zhihui.diagram.ttsPlay': 'คลิกที่ลูกแมวเพื่ออ่านออกเสียงคำบรรยายของหน้านี้',
   'zhihui.diagram.ttsStop': 'หยุดอ่าน',
   'zhihui.diagram.ttsMute': 'ปิดเสียงคำบรรยาย',
@@ -74,7 +78,8 @@ export default {
   'zhihui.sizeButton': 'ขนาดภาพ',
   'zhihui.sizePanelTitle': 'ขนาดภาพ',
   'zhihui.sizeOptional': 'ไม่จำเป็น',
-  'zhihui.sizeHint': 'รูปแบบคือกว้าง*สูง หากไม่ได้ระบุ โมเดลจะแนะนำความละเอียดโดยอัตโนมัติตามคำที่พร้อมท์',
+  'zhihui.sizeHint':
+    'รูปแบบคือกว้าง*สูง หากไม่ได้ระบุ โมเดลจะแนะนำความละเอียดโดยอัตโนมัติตามคำที่พร้อมท์',
   'zhihui.sizeLimits': 'พื้นที่พิกเซล 512×512–2048×2048; อัตราส่วนภาพ 1:8–8:1',
   'zhihui.size.auto': 'ฉลาด',
   'zhihui.size.autoHint': 'อัตโนมัติ',

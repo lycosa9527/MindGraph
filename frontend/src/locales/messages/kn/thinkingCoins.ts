@@ -25,9 +25,11 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.checkedInToday': 'ಇಂದು ಸೈನ್ ಇನ್ ಮಾಡಲಾಗಿದೆ',
   'thinkingCoins.usageDoneToday': 'ಇಂದು ಪೂರ್ಣಗೊಂಡಿದೆ',
   'thinkingCoins.casePendingHint': 'ಶೀಘ್ರದಲ್ಲೇ ತೆರೆಯಲಾಗುತ್ತಿದೆ',
-  'thinkingCoins.schoolInfo': 'ಶಾಲೆಯ ಆವೃತ್ತಿಯ ಯೋಜನೆಯ ಬಗ್ಗೆ ತಿಳಿಯಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಶಾಲೆಯ ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ',
+  'thinkingCoins.schoolInfo':
+    'ಶಾಲೆಯ ಆವೃತ್ತಿಯ ಯೋಜನೆಯ ಬಗ್ಗೆ ತಿಳಿಯಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಶಾಲೆಯ ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ',
   'thinkingCoins.school.headline': 'AI ಸಶಕ್ತ ಚಿಂತನೆ·ಶಾಲಾ ಆಧಾರಿತ ಪರಿಹಾರಗಳು',
-  'thinkingCoins.school.description': 'ದೊಡ್ಡ ಪ್ರಮಾಣದ ಬ್ರ್ಯಾಂಡ್ ಕಟ್ಟಡ ಮತ್ತು ಡೇಟಾ ಸುರಕ್ಷತೆ ಅಗತ್ಯಗಳನ್ನು ಪೂರೈಸಲು ಶಾಲೆಗಳು ಮತ್ತು ಶಿಕ್ಷಣ ಸಂಸ್ಥೆಗಳಿಗೆ ಖಾಸಗೀಕರಣದ ನಿಯೋಜನೆ, ವಿಶೇಷ ಗ್ರಾಹಕೀಕರಣ ಮತ್ತು ಸಮಗ್ರ ಕಾರ್ಯಾಚರಣೆ ಮತ್ತು ನಿರ್ವಹಣೆ ಬೆಂಬಲವನ್ನು ಒದಗಿಸಿ.',
+  'thinkingCoins.school.description':
+    'ದೊಡ್ಡ ಪ್ರಮಾಣದ ಬ್ರ್ಯಾಂಡ್ ಕಟ್ಟಡ ಮತ್ತು ಡೇಟಾ ಸುರಕ್ಷತೆ ಅಗತ್ಯಗಳನ್ನು ಪೂರೈಸಲು ಶಾಲೆಗಳು ಮತ್ತು ಶಿಕ್ಷಣ ಸಂಸ್ಥೆಗಳಿಗೆ ಖಾಸಗೀಕರಣದ ನಿಯೋಜನೆ, ವಿಶೇಷ ಗ್ರಾಹಕೀಕರಣ ಮತ್ತು ಸಮಗ್ರ ಕಾರ್ಯಾಚರಣೆ ಮತ್ತು ನಿರ್ವಹಣೆ ಬೆಂಬಲವನ್ನು ಒದಗಿಸಿ.',
   'thinkingCoins.school.feature.accountManager': 'ಮೀಸಲಾದ ಖಾತೆ ವ್ಯವಸ್ಥಾಪಕ',
   'thinkingCoins.school.feature.accountManagerDesc': '1 ರಿಂದ 1 ಸಮಾಲೋಚನೆ ಮತ್ತು ಡಾಕಿಂಗ್',
   'thinkingCoins.school.feature.privateDeploy': 'ಖಾಸಗಿ ನಿಯೋಜನೆ',
@@ -36,20 +38,25 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.feature.customizationDesc': 'ಬೇಡಿಕೆಯ ಮೇಲೆ ಹೊಂದಿಕೊಳ್ಳುವ ಸಂರಚನೆ',
   'thinkingCoins.school.feature.opsSupport': 'ಸಮಗ್ರ ಕಾರ್ಯಾಚರಣೆ ಮತ್ತು ನಿರ್ವಹಣೆ ಬೆಂಬಲ',
   'thinkingCoins.school.feature.opsSupportDesc': '7 × 24 ಗಂಟೆಗಳ ಗ್ಯಾರಂಟಿ',
-  'thinkingCoins.school.consultTitle': 'ಸಮಾಲೋಚನೆಗಾಗಿ ಅಪಾಯಿಂಟ್ಮೆಂಟ್ ಮಾಡಿ ಮತ್ತು ನಾವು ನಿಮ್ಮನ್ನು ಪೂರ್ವಭಾವಿಯಾಗಿ ಸಂಪರ್ಕಿಸುತ್ತೇವೆ',
+  'thinkingCoins.school.consultTitle':
+    'ಸಮಾಲೋಚನೆಗಾಗಿ ಅಪಾಯಿಂಟ್ಮೆಂಟ್ ಮಾಡಿ ಮತ್ತು ನಾವು ನಿಮ್ಮನ್ನು ಪೂರ್ವಭಾವಿಯಾಗಿ ಸಂಪರ್ಕಿಸುತ್ತೇವೆ',
   'thinkingCoins.school.fieldName': 'ನಿಮ್ಮ ಹೆಸರು',
   'thinkingCoins.school.fieldPhone': 'ಸಂಪರ್ಕ ಸಂಖ್ಯೆ',
   'thinkingCoins.school.fieldOrg': 'ಶಾಲೆ/ಸಂಸ್ಥೆಯ ಹೆಸರು',
   'thinkingCoins.school.fieldNote': 'ಪೂರಕ ಸೂಚನೆಗಳು (ಐಚ್ಛಿಕ)',
   'thinkingCoins.school.submit': 'ವಿಚಾರಣೆಯನ್ನು ಸಲ್ಲಿಸಿ',
-  'thinkingCoins.school.submitSuccess': 'ಸಲ್ಲಿಕೆ ಯಶಸ್ವಿಯಾಗಿದೆ, ನಾವು ಸಾಧ್ಯವಾದಷ್ಟು ಬೇಗ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ',
+  'thinkingCoins.school.submitSuccess':
+    'ಸಲ್ಲಿಕೆ ಯಶಸ್ವಿಯಾಗಿದೆ, ನಾವು ಸಾಧ್ಯವಾದಷ್ಟು ಬೇಗ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ',
   'thinkingCoins.school.submitFailed': 'ಸಲ್ಲಿಕೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'thinkingCoins.school.submitRateLimit': 'ತುಂಬಾ ಆಗಾಗ್ಗೆ ಸಲ್ಲಿಸಿ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'thinkingCoins.school.submitNotConfigured': 'ಸಮಾಲೋಚನೆ ಚಾನಲ್ ಅನ್ನು ಇನ್ನೂ ಕಾನ್ಫಿಗರ್ ಮಾಡಲಾಗಿಲ್ಲ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'thinkingCoins.school.submitNotConfigured':
+    'ಸಮಾಲೋಚನೆ ಚಾನಲ್ ಅನ್ನು ಇನ್ನೂ ಕಾನ್ಫಿಗರ್ ಮಾಡಲಾಗಿಲ್ಲ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
   'thinkingCoins.school.validationRequired': 'ದಯವಿಟ್ಟು ಅಗತ್ಯವಿರುವ ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ',
   'thinkingCoins.school.validationPhone': 'ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಸಂಪರ್ಕ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ',
-  'thinkingCoins.school.validationTooLong': 'ವಿಷಯದ ಭಾಗವು ತುಂಬಾ ಉದ್ದವಾಗಿದೆ, ದಯವಿಟ್ಟು ಅದನ್ನು ಕಡಿಮೆ ಮಾಡಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'thinkingCoins.school.validationInvalid': 'ಅಮಾನ್ಯವಾದ ವಿಷಯ, ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'thinkingCoins.school.validationTooLong':
+    'ವಿಷಯದ ಭಾಗವು ತುಂಬಾ ಉದ್ದವಾಗಿದೆ, ದಯವಿಟ್ಟು ಅದನ್ನು ಕಡಿಮೆ ಮಾಡಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'thinkingCoins.school.validationInvalid':
+    'ಅಮಾನ್ಯವಾದ ವಿಷಯ, ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'thinkingCoins.tier.trial': 'ಪ್ರಯೋಗ ಆವೃತ್ತಿ',
   'thinkingCoins.tier.monthly': 'ಸೂಪರ್ ಸದಸ್ಯ·ಏಕ ತಿಂಗಳು',
   'thinkingCoins.tier.sub': 'ಸೂಪರ್ ಸದಸ್ಯ·ನಿರಂತರ ಮಾಸಿಕ ಚಂದಾದಾರಿಕೆ',
@@ -63,7 +70,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'ಆಹ್ವಾನ ಬಹುಮಾನಗಳು',
   'thinkingCoins.reason.case_reward': 'ಪ್ರಕರಣದ ಪ್ರತಿಫಲ',
   'thinkingCoins.reason.subscription_grant': 'ಉಚಿತವಾಗಿ ಚಂದಾದಾರರಾಗಿ',
-  'thinkingCoins.dailyExpiresHint': 'ಸೈನ್-ಇನ್ ಬಹುಮಾನಗಳು ಅದೇ ದಿನ ಮಾನ್ಯವಾಗಿರುತ್ತವೆ ಮತ್ತು 24:00 ಕ್ಕೆ ಮರುಹೊಂದಿಸಲಾಗುತ್ತದೆ',
+  'thinkingCoins.dailyExpiresHint':
+    'ಸೈನ್-ಇನ್ ಬಹುಮಾನಗಳು ಅದೇ ದಿನ ಮಾನ್ಯವಾಗಿರುತ್ತವೆ ಮತ್ತು 24:00 ಕ್ಕೆ ಮರುಹೊಂದಿಸಲಾಗುತ್ತದೆ',
   'thinkingCoins.dailyBalanceRemaining': 'ಇಂದಿನ ಚೆಕ್-ಇನ್ ಉಳಿದಿದೆ {n}',
   'thinkingCoins.admin.tab': 'ಥಾಟ್ ನಾಣ್ಯ',
   'thinkingCoins.admin.tasksTitle': 'ಕಾರ್ಯ ಪ್ರತಿಫಲ',
@@ -75,7 +83,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'ಉಳಿಸಿ',
   'thinkingCoins.admin.signupGrant': 'ಹೊಸ ಬಳಕೆದಾರರಿಗೆ ಉಚಿತ',
   'thinkingCoins.admin.dailyEarnCap': 'ದೈನಂದಿನ ಸ್ವಾಧೀನ ಮಿತಿ',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 ಎಂದರೆ ಯಾವುದೇ ಮಿತಿಯಿಲ್ಲ; ಡೀಫಾಲ್ಟ್ 135 ಎಲ್ಲಾ ದೈನಂದಿನ ಕಾರ್ಯಗಳ ಮೊತ್ತಕ್ಕೆ ಅನುರೂಪವಾಗಿದೆ',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 ಎಂದರೆ ಯಾವುದೇ ಮಿತಿಯಿಲ್ಲ; ಡೀಫಾಲ್ಟ್ 135 ಎಲ್ಲಾ ದೈನಂದಿನ ಕಾರ್ಯಗಳ ಮೊತ್ತಕ್ಕೆ ಅನುರೂಪವಾಗಿದೆ',
   'thinkingCoins.admin.costMindmate': 'MindMate ಮೈಂಡ್‌ಮೇಟ್ ಏಕ ಬಳಕೆ',
   'thinkingCoins.admin.costDiagram': 'ನಕ್ಷೆ ಉತ್ಪಾದನೆಯ ಬಳಕೆ',
   'thinkingCoins.admin.costCanvas': 'ಕ್ಯಾನ್ವಾಸ್ ಸಹಾಯಕ ಬಳಕೆ',

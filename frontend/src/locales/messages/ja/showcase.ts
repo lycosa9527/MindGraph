@@ -31,7 +31,8 @@ export default {
   'showcase.myFavoritesEmpty': 'お気に入りの事例はまだありません',
   'showcase.myFavoritesEmptyHint': 'ブックマークした事例がここに表示されます',
   'showcase.myCasesModalTitle': '自分が公開した事例',
-  'showcase.myCasesManageHint': '一覧から撤回・非公開・編集ができます。事例をクリックすると詳細が表示されます',
+  'showcase.myCasesManageHint':
+    '一覧から撤回・非公開・編集ができます。事例をクリックすると詳細が表示されます',
   'showcase.myCasesAction.edit': '編集',
   'showcase.myCasesEmpty': '公開した事例はまだありません',
   'showcase.myCasesEmptyHint': '公開した事例と審査状況がここに表示されます',
@@ -53,19 +54,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'ファイルをアップロード中（{current}/{total}）…',
   'showcase.publishModal.uploadingFile': '{name} をアップロード中（{current}/{total}）…',
   'showcase.publishModal.finishing': '仕上げ中…',
-  'showcase.publishModal.uploadFailedRolledBack': 'アップロードに失敗しました — 下書きは破棄されました。もう一度お試しください。',
-  'showcase.publishModal.uploadCorsFailed': 'オブジェクトストレージへアップロードできませんでした（バケット CORS またはサイト CSP が COS ホストをブロックしている場合があります）。下書きは破棄されました — 管理者に CORS/CSP の修正を依頼してから再試行してください。',
-  'showcase.publishModal.uploadStorageRejected': 'オブジェクトストレージがアップロードを拒否しました。下書きは破棄されました — しばらくしてから再試行するか、繰り返し失敗する場合は管理者にお問い合わせください。',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'アップロードに失敗しました — 下書きは破棄されました。もう一度お試しください。',
+  'showcase.publishModal.uploadCorsFailed':
+    'オブジェクトストレージへアップロードできませんでした（バケット CORS またはサイト CSP が COS ホストをブロックしている場合があります）。下書きは破棄されました — 管理者に CORS/CSP の修正を依頼してから再試行してください。',
+  'showcase.publishModal.uploadStorageRejected':
+    'オブジェクトストレージがアップロードを拒否しました。下書きは破棄されました — しばらくしてから再試行するか、繰り返し失敗する場合は管理者にお問い合わせください。',
   'showcase.publishModal.uploadFailed': 'アップロードに失敗しました。もう一度お試しください。',
-  'showcase.publishModal.uploadCoverTooLarge': 'カバー画像が 2MB の上限を超えています。プレビューを圧縮するか、より小さい画像を使用してから再試行してください。',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'ファイルがサイズ上限を超えています（文書/画像 20MB、動画 100MB）。圧縮してから再試行してください。',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'ファイルがサイズ上限を超えています（文書/画像 20MB、動画 100MB）。下書きは破棄されました — 圧縮してから再試行してください。',
-  'showcase.publishModal.uploadFileTooLarge': 'このアップロード種別にはファイルが大きすぎます。サイズ上限を確認してから再試行してください。',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'このアップロード種別にはファイルが大きすぎます。下書きは破棄されました — サイズ上限を確認してから再試行してください。',
-  'showcase.publishModal.coverUploadSkipped': '事例は提出されましたが、カバー画像のアップロードに失敗しました。後から事例を編集してカバーを更新できます。',
-  'showcase.publishModal.coverGenerating': 'カバープレビューをバックグラウンドで生成中です — まもなくカードに表示されます。',
-  'showcase.publishModal.coverFailed': '事例は提出されましたが、カバーを生成できませんでした。後から事例を編集してカバーを更新できます。',
-  'showcase.publishModal.coverFailedTimeout': '事例は提出されましたが、カバー生成がタイムアウトしました。後から事例を編集してカバーを更新できます。',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'カバー画像が 2MB の上限を超えています。プレビューを圧縮するか、より小さい画像を使用してから再試行してください。',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'ファイルがサイズ上限を超えています（文書/画像 20MB、動画 100MB）。圧縮してから再試行してください。',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'ファイルがサイズ上限を超えています（文書/画像 20MB、動画 100MB）。下書きは破棄されました — 圧縮してから再試行してください。',
+  'showcase.publishModal.uploadFileTooLarge':
+    'このアップロード種別にはファイルが大きすぎます。サイズ上限を確認してから再試行してください。',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'このアップロード種別にはファイルが大きすぎます。下書きは破棄されました — サイズ上限を確認してから再試行してください。',
+  'showcase.publishModal.coverUploadSkipped':
+    '事例は提出されましたが、カバー画像のアップロードに失敗しました。後から事例を編集してカバーを更新できます。',
+  'showcase.publishModal.coverGenerating':
+    'カバープレビューをバックグラウンドで生成中です — まもなくカードに表示されます。',
+  'showcase.publishModal.coverFailed':
+    '事例は提出されましたが、カバーを生成できませんでした。後から事例を編集してカバーを更新できます。',
+  'showcase.publishModal.coverFailedTimeout':
+    '事例は提出されましたが、カバー生成がタイムアウトしました。後から事例を編集してカバーを更新できます。',
   'showcase.publishModal.success': '事例を提出しました — 管理者の審査をお待ちください',
   'showcase.publishModal.fromCanvas': 'キャンバスから公開',
   'showcase.publishModal.step1Title': '基本情報',
@@ -79,26 +92,34 @@ export default {
   'showcase.publishModal.uploadLabel': 'ファイルをアップロード',
   'showcase.publishModal.uploadImage': '画像をアップロード',
   'showcase.publishModal.uploadFile': 'ファイルをアップロード',
-  'showcase.publishModal.directUploadDisabled': '直接アップロードは一時的に利用できません。保存済みの図を履歴から選択できます。',
-  'showcase.publishModal.uploadViaStorage': 'ファイルは安全な短期 URL 経由でストレージに直接アップロードされます。',
+  'showcase.publishModal.directUploadDisabled':
+    '直接アップロードは一時的に利用できません。保存済みの図を履歴から選択できます。',
+  'showcase.publishModal.uploadViaStorage':
+    'ファイルは安全な短期 URL 経由でストレージに直接アップロードされます。',
   'showcase.publishModal.pickHistory': '履歴から選択',
   'showcase.publishModal.removeFile': '削除',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx（.doc はプレビュー制限あり）',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx（.doc はプレビュー制限あり）— 文書あたり最大 {maxMb} MB',
-  'showcase.publishModal.teachingDocTooLarge': '文書が {maxMb} MB の上限を超えています。圧縮してから再試行してください。',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx（.doc はプレビュー制限あり）— 文書あたり最大 {maxMb} MB',
+  'showcase.publishModal.teachingDocTooLarge':
+    '文書が {maxMb} MB の上限を超えています。圧縮してから再試行してください。',
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif をサポート',
   'showcase.publishModal.uploadImages': '画像をアップロード（複数可）',
   'showcase.publishModal.galleryHint': '複数の画像と保存済み図を追加できます（最大 {max} 件）',
-  'showcase.publishModal.galleryHintCase': '複数の写真と履歴アイコンを最大 {max} アイテムまで追加できます',
-  'showcase.publishModal.galleryHintTemplate': '.mg ファイルをアップロードし、最大 {max} アイテムまでの複数の履歴アイコンを選択できます',
+  'showcase.publishModal.galleryHintCase':
+    '複数の写真と履歴アイコンを最大 {max} アイテムまで追加できます',
+  'showcase.publishModal.galleryHintTemplate':
+    '.mg ファイルをアップロードし、最大 {max} アイテムまでの複数の履歴アイコンを選択できます',
   'showcase.publishModal.galleryCount': '{count}/{max} 件追加済み',
   'showcase.publishModal.galleryImageItem': '画像：{name}',
   'showcase.publishModal.galleryDiagramItem': '図：{name}',
   'showcase.publishModal.galleryLimit': '最大 {max} 件まで追加できます',
   'showcase.publishModal.galleryDuplicateDiagram': 'この保存済み図はすでに一覧にあります',
   'showcase.publishModal.galleryPickerDone': '完了',
-  'showcase.publishModal.galleryUploadFailed': 'ギャラリー画像のアップロードに失敗しました — 再度公開してください',
-  'showcase.publishModal.galleryReuploadHint': '一部のギャラリー画像が保存されませんでした — 提出前に再度選択してください',
+  'showcase.publishModal.galleryUploadFailed':
+    'ギャラリー画像のアップロードに失敗しました — 再度公開してください',
+  'showcase.publishModal.galleryReuploadHint':
+    '一部のギャラリー画像が保存されませんでした — 提出前に再度選択してください',
   'showcase.detail.galleryImage': '画像',
   'showcase.detail.galleryDiagram': '図',
   'showcase.detail.galleryPrev': '前へ',
@@ -108,24 +129,32 @@ export default {
   'showcase.publishModal.templateFileHint': '.mg のみ（MindGraph エクスポート）',
   'showcase.publishModal.templatePreviewLabel': '図のプレビュー',
   'showcase.publishModal.templatePreviewHint': 'ハンドツール — 閲覧のみ、編集不可',
-  'showcase.publishModal.templatePreviewEmpty': '.mg ファイルをアップロードするか、保存済み図を選択してプレビュー',
+  'showcase.publishModal.templatePreviewEmpty':
+    '.mg ファイルをアップロードするか、保存済み図を選択してプレビュー',
   'showcase.publishModal.diagramCasePreviewLabel': '図のプレビュー',
   'showcase.publishModal.diagramCasePreviewHint': 'ハンドツール — パンとズームで閲覧',
-  'showcase.publishModal.diagramTypeAutoMatched': '選択した保存済み図から図の種類を自動一致しました',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    '選択した保存済み図から図の種類を自動一致しました',
   'showcase.publishModal.introLabel': '図の紹介',
   'showcase.publishModal.teachingIntroLabel': '授業デザイン紹介',
   'showcase.publishModal.highlightsLabel': 'デザインのハイライト',
   'showcase.publishModal.highlightsPlaceholder': '1 行に 1 つのハイライト（任意）',
-  'showcase.publishModal.teachingIntroPlaceholder': '授業の背景、目標、適用場面を簡潔に紹介してください',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    '授業の背景、目標、適用場面を簡潔に紹介してください',
   'showcase.publishModal.aiGenerate': 'AI 生成',
   'showcase.publishModal.aiGenerating': '生成中…',
   'showcase.publishModal.aiGenerateStop': '停止',
-  'showcase.publishModal.aiGenerateCancelled': 'AI 生成をキャンセルしました — もう一度クリックで再生成',
-  'showcase.publishModal.aiGenerateSuccess': '文書から紹介とハイライトを入力しました — 確認して編集してください。授業の振り返りはご自身で記入してください',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'イラスト紹介と教室用アプリはイラストを元に作成しております。確認して編集してください。',
+  'showcase.publishModal.aiGenerateCancelled':
+    'AI 生成をキャンセルしました — もう一度クリックで再生成',
+  'showcase.publishModal.aiGenerateSuccess':
+    '文書から紹介とハイライトを入力しました — 確認して編集してください。授業の振り返りはご自身で記入してください',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'イラスト紹介と教室用アプリはイラストを元に作成しております。確認して編集してください。',
   'showcase.publishModal.aiGenerateFailed': 'AI 生成に失敗しました — もう一度お試しください',
-  'showcase.publishModal.aiGenerateNeedFile': '先に前のステップで授業デザイン文書をアップロードしてください',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateNeedFile':
+    '先に前のステップで授業デザイン文書をアップロードしてください',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI 生成は授業デザイン事例のみ利用できます',
   'showcase.publishModal.reflectionLabel': '授業の振り返り',
   'showcase.publishModal.introPlaceholder': '事例の内容と利用場面を簡潔に説明してください',
@@ -135,12 +164,15 @@ export default {
   'showcase.publishModal.tagRecommended': 'おすすめタグ',
   'showcase.publishModal.tagCountHint': '（最大 {max} 個）',
   'showcase.publishModal.tagMaxCount': 'タグは最大 {max} 個まで追加できます',
-  'showcase.publishModal.networkError': '提出に失敗しました — サーバーが稼働中で、ファイルサイズが上限内であることを確認してください',
+  'showcase.publishModal.networkError':
+    '提出に失敗しました — サーバーが稼働中で、ファイルサイズが上限内であることを確認してください',
   'showcase.publishModal.fileTooLarge': '「{name}」が {maxMb}MB のサイズ上限を超えています',
-  'showcase.publishModal.uploadTotalTooLarge': 'アップロード合計サイズが上限を超えています — 添付または動画のサイズを小さくしてください',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'アップロード合計サイズが上限を超えています — 添付または動画のサイズを小さくしてください',
   'showcase.publishModal.tagAdd': '追加',
   'showcase.publishModal.publishBtn': '公開',
-  'showcase.publishModal.reflectionPlaceholder': 'この授業についての振り返りを記入してください（任意）',
+  'showcase.publishModal.reflectionPlaceholder':
+    'この授業についての振り返りを記入してください（任意）',
   'showcase.publishModal.classroomAppLabel': '授業での活用',
   'showcase.publishModal.selectSubject': '教科を選択',
   'showcase.publishModal.selectGrade': '学年を選択',
@@ -148,13 +180,18 @@ export default {
   'showcase.publishModal.validationTitle': 'タイトルを入力してください',
   'showcase.publishModal.validationSubject': '教科を選択してください',
   'showcase.publishModal.validationGrade': '学年を選択してください',
-  'showcase.publishModal.validationFile': 'ファイルをアップロードするか、保存済み図を選択してください',
+  'showcase.publishModal.validationFile':
+    'ファイルをアップロードするか、保存済み図を選択してください',
   'showcase.publishModal.validationDiagramType': '図の種類を選択してください',
   'showcase.publishModal.invalidFileType': 'サポートされていないファイル形式です',
-  'showcase.publishModal.invalidMgFile': 'この .mg ファイルを読み込めません — 先に MindGraph からエクスポートしてください',
-  'showcase.publishModal.cannotPreview': 'カバープレビューを生成できませんでした — 事例は提出されます。PNG/JPG を試すか、保存済み図を選択してください。',
-  'showcase.publishModal.cannotPreviewHistory': 'この保存済み図からカバーを生成できませんでした — 事例は提出されます。再選択するか、キャンバスから再保存してください。',
-  'showcase.publishModal.cannotPreviewTemplate': 'カバーを生成できませんでした — 事例は提出されます。.mg ファイルを確認するか、別の保存済み図を選択してください。',
+  'showcase.publishModal.invalidMgFile':
+    'この .mg ファイルを読み込めません — 先に MindGraph からエクスポートしてください',
+  'showcase.publishModal.cannotPreview':
+    'カバープレビューを生成できませんでした — 事例は提出されます。PNG/JPG を試すか、保存済み図を選択してください。',
+  'showcase.publishModal.cannotPreviewHistory':
+    'この保存済み図からカバーを生成できませんでした — 事例は提出されます。再選択するか、キャンバスから再保存してください。',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'カバーを生成できませんでした — 事例は提出されます。.mg ファイルを確認するか、別の保存済み図を選択してください。',
   'showcase.publishModal.historyTitle': '保存済み図を選択',
   'showcase.publishModal.historySearch': '図名を検索…',
   'showcase.publishModal.historyEmpty': '保存済み図がありません',
@@ -184,9 +221,11 @@ export default {
   'showcase.detail.delist': '非公開',
   'showcase.detail.resubmit': '編集して再提出',
   'showcase.detail.withdrawTitle': '事例を撤回',
-  'showcase.detail.withdrawConfirm': '「{title}」を撤回しますか？審査キューから削除され、元に戻せません。',
+  'showcase.detail.withdrawConfirm':
+    '「{title}」を撤回しますか？審査キューから削除され、元に戻せません。',
   'showcase.detail.delistTitle': '事例を非公開',
-  'showcase.detail.delistConfirm': '「{title}」をギャラリーから非公開にしますか？他のユーザーは閲覧できなくなります。',
+  'showcase.detail.delistConfirm':
+    '「{title}」をギャラリーから非公開にしますか？他のユーザーは閲覧できなくなります。',
   'showcase.detail.confirm': '確認',
   'showcase.detail.cancel': 'キャンセル',
   'showcase.withdrawn': '撤回済み',
@@ -206,8 +245,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'プレビュー用にスライドを変換中…',
   'showcase.detail.officePreviewPending': 'プレビュー用にスライドを変換中…',
   'showcase.detail.docPreviewLoading': '文書を読み込み中…',
-  'showcase.detail.docPreviewFailed': 'プレビューを読み込めませんでした。新しいタブで開いてみてください。',
-  'showcase.detail.legacyDocHint': '旧式 .doc ファイルはインラインでプレビューできません。ファイルを開くかダウンロードするか、ブラウザ内プレビューには .docx をアップロードしてください。',
+  'showcase.detail.docPreviewFailed':
+    'プレビューを読み込めませんでした。新しいタブで開いてみてください。',
+  'showcase.detail.legacyDocHint':
+    '旧式 .doc ファイルはインラインでプレビューできません。ファイルを開くかダウンロードするか、ブラウザ内プレビューには .docx をアップロードしてください。',
   'showcase.detail.noDocument': '文書プレビューなし',
   'showcase.detail.noDiagramPreview': '図のプレビューなし',
   'showcase.detail.diagramPreviewLoading': '図を読み込み中…',

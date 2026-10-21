@@ -16,8 +16,8 @@ import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 import {
   MINDMATE_COLLAB_LIBRARY_CHANGED_EVENT,
-  notifyMindmateCollabLibraryChanged,
   leaveSavedMindmateSeminar,
+  notifyMindmateCollabLibraryChanged,
   openSavedMindmateSeminar,
 } from '@/utils/mindmateCollabLibrarySave'
 import { MINDMATE_COLLAB_SESSION_REMOVED_EVENT } from '@/utils/mindmateCollabSessions'

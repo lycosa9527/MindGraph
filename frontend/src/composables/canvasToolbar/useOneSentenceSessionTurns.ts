@@ -38,9 +38,7 @@ function logTurnApiFailure(action: string, scope: string, status: number): void 
   }
 }
 
-export async function fetchOneSentenceTurns(
-  scope: string
-): Promise<OneSentenceTurnRecord[]> {
+export async function fetchOneSentenceTurns(scope: string): Promise<OneSentenceTurnRecord[]> {
   const res = await fetch(turnsUrl(scope), { credentials: 'same-origin' })
   if (!res.ok) {
     logTurnApiFailure('fetch', scope, res.status)

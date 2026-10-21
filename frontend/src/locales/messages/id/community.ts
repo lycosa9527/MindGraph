@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': 'Klik tombol berikutnya agar perubahan diterapkan',
   'debateverse.coinTossAffirmativeFirst': 'Pihak pro berbicara lebih dulu',
   'debateverse.coinTossGotIt': 'Mengerti',
-  'debateverse.coinTossModalBody': 'Sebelum debat, tentukan urutan bicara atau pilih posisi pro/kontra lewat lempar koin',
+  'debateverse.coinTossModalBody':
+    'Sebelum debat, tentukan urutan bicara atau pilih posisi pro/kontra lewat lempar koin',
   'debateverse.coinTossNegativeFirst': 'Pihak kontra berbicara lebih dulu',
   'debateverse.coinTossOrder': 'Lempar koin untuk menentukan urutan bicara',
-  'debateverse.coinTossRules': 'Model AI telah ditetapkan secara acak ke peran debat. Sebelum debat, tentukan urutan bicara atau pilih posisi pro/kontra lewat lempar koin',
+  'debateverse.coinTossRules':
+    'Model AI telah ditetapkan secara acak ke peran debat. Sebelum debat, tentukan urutan bicara atau pilih posisi pro/kontra lewat lempar koin',
   'debateverse.coinTossStageTitle': 'Tahap lempar koin',
   'debateverse.debateTopicLabel': 'Topik debat: ',
   'debateverse.executeCoinToss': 'Lempar koin',
@@ -105,17 +107,20 @@ export default {
   'debateverse.roleLabel.debater': 'Main sebagai debater',
   'debateverse.roleLabel.judgeRole': 'Main sebagai hakim',
   'debateverse.roleLabel.viewer': 'Main sebagai penonton',
-  'debateverse.setup.greeting': '{username}, kebijaksanaan sejati lahir dari benturan sudut pandang.',
+  'debateverse.setup.greeting':
+    '{username}, kebijaksanaan sejati lahir dari benturan sudut pandang.',
   'debateverse.setup.roleDebater': 'Main sebagai debater',
   'debateverse.setup.roleJudge': 'Main sebagai hakim',
   'debateverse.setup.roleViewer': 'Main sebagai penonton',
   'debateverse.setup.suggestion1': 'Apakah AI harus diberi status badan hukum?',
   'debateverse.setup.suggestion2': 'Apakah video game lebih bermanfaat atau merugikan remaja?',
   'debateverse.setup.suggestion3': 'Apakah ujian masuk perguruan tinggi harus dihapus?',
-  'debateverse.setup.suggestion4': 'Apakah platform media sosial perlu moderasi konten yang lebih ketat?',
+  'debateverse.setup.suggestion4':
+    'Apakah platform media sosial perlu moderasi konten yang lebih ketat?',
   'debateverse.setup.suggestion5': 'Apakah kerja jarak jauh harus menjadi arus utama?',
   'debateverse.setup.suggestion6': 'Apakah konten buatan AI harus dilindungi hak cipta?',
-  'debateverse.setup.suggestion7': 'Apakah pendidikan harus lebih fokus pada pengetahuan atau keterampilan?',
+  'debateverse.setup.suggestion7':
+    'Apakah pendidikan harus lebih fokus pada pengetahuan atau keterampilan?',
   'debateverse.setup.suggestion8': 'Apakah editing gen pada embrio manusia harus diizinkan?',
   'debateverse.setup.topicPlaceholder': 'Masukkan topik debat...',
   'debateverse.side.affirmative': 'Pro',
@@ -138,7 +143,8 @@ export default {
   'library.loading': 'Memuat…',
   'library.other': 'Lainnya',
   'library.premiumCollection': 'Koleksi unggulan',
-  'library.slotFull.body': 'Anda telah menyimpan {max} diagram. Hapus satu untuk menyimpan diagram baru.',
+  'library.slotFull.body':
+    'Anda telah menyimpan {max} diagram. Hapus satu untuk menyimpan diagram baru.',
   'library.slotFull.cancel': 'Batal',
   'library.slotFull.deleteAndSave': 'Hapus & simpan',
   'library.slotFull.networkError': 'Kesalahan jaringan, operasi gagal',

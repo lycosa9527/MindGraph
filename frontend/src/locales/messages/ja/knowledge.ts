@@ -49,7 +49,8 @@ export default {
   'chunkTestResults.answerQuality': '回答品質',
   'chunkTestResults.avgLatency': '平均レイテンシ',
   'chunkTestResults.back': '戻る',
-  'chunkTestResults.cancelConfirmBody': 'このテストをキャンセルしますか？次のチェックポイントで停止します。',
+  'chunkTestResults.cancelConfirmBody':
+    'このテストをキャンセルしますか？次のチェックポイントで停止します。',
   'chunkTestResults.cancelFailed': 'テストのキャンセルに失敗しました',
   'chunkTestResults.cancelRequested': 'テストキャンセルを要求しました',
   'chunkTestResults.cancelTest': 'テストをキャンセル',
@@ -108,7 +109,8 @@ export default {
   'knowledge.doc.colStatus': 'ステータス',
   'knowledge.doc.colType': '種類',
   'knowledge.doc.colUploaded': 'アップロード日',
-  'knowledge.doc.emptyDescription': 'ドキュメントはまだありません。ナレッジベース構築のためアップロードしてください。',
+  'knowledge.doc.emptyDescription':
+    'ドキュメントはまだありません。ナレッジベース構築のためアップロードしてください。',
   'knowledge.doc.errorPrefix': 'エラー：',
   'knowledge.doc.noData': 'データなし',
   'knowledge.doc.statusCompleted': '完了',
@@ -124,33 +126,45 @@ export default {
   'knowledge.header.title': '個人ナレッジベース',
   'knowledge.header.upload': 'ドキュメントをアップロード',
   'knowledge.ragGuide.title': 'パッケージ、RAG、Wiki はどう連動しますか？',
-  'knowledge.ragGuide.subtitle': '専門用語なしで — 参考資料フォルダと考えてください。RAG で検索用にインデックスし、短い Wiki ノートをコンパイルし、マインドマップ作成時に AI が両方を参照します。',
+  'knowledge.ragGuide.subtitle':
+    '専門用語なしで — 参考資料フォルダと考えてください。RAG で検索用にインデックスし、短い Wiki ノートをコンパイルし、マインドマップ作成時に AI が両方を参照します。',
   'knowledge.ragGuide.step1.title': 'パッケージを選ぶ',
-  'knowledge.ragGuide.step1.body': 'パッケージは Zotero コレクションのようなものです。左に最大 3 つ。通常は 1 つのマインドマップに属します。サイドバーでパッケージをクリックしてドキュメントを管理します。',
+  'knowledge.ragGuide.step1.body':
+    'パッケージは Zotero コレクションのようなものです。左に最大 3 つ。通常は 1 つのマインドマップに属します。サイドバーでパッケージをクリックしてドキュメントを管理します。',
   'knowledge.ragGuide.step2.title': 'ソースを追加してインデックス（RAG）',
-  'knowledge.ragGuide.step2.body': 'PDF、Word、メモ、Web ページをアップロード。長文を検索可能なチャンクに分割しベクトル埋め込みを保存 — これが RAG インデックスで、最初に利用可能になります。',
+  'knowledge.ragGuide.step2.body':
+    'PDF、Word、メモ、Web ページをアップロード。長文を検索可能なチャンクに分割しベクトル埋め込みを保存 — これが RAG インデックスで、最初に利用可能になります。',
   'knowledge.ragGuide.step3.title': 'Wiki ノートは自動コンパイル',
-  'knowledge.ragGuide.step3.body': 'インデックス完了後、LLM が概要とトピック Wiki ページをディスク上にコンパイル。逐語録ではなく、パッケージを要約した簡潔なノートです。',
+  'knowledge.ragGuide.step3.body':
+    'インデックス完了後、LLM が概要とトピック Wiki ページをディスク上にコンパイル。逐語録ではなく、パッケージを要約した簡潔なノートです。',
   'knowledge.ragGuide.step4.title': '参照は Wiki + チャンク',
-  'knowledge.ragGuide.step4.body': 'ブランチを展開または要約生成時、関連 Wiki ページを先にマッチし、次に最も関連するチャンク段落を取得（ハイブリッド RAG）。',
+  'knowledge.ragGuide.step4.body':
+    'ブランチを展開または要約生成時、関連 Wiki ページを先にマッチし、次に最も関連するチャンク段落を取得（ハイブリッド RAG）。',
   'knowledge.ragGuide.step5.title': 'ソースに基づく回答',
-  'knowledge.ragGuide.step5.body': 'AI は Wiki ノートと取得スニペットから執筆し、推測しません — 良いソース、完了インデックス、コンパイル済み Wiki でより正確なマップになります。',
-  'knowledge.ragGuide.footer': 'ヒント：キャンバスのドキュメント要約を開くとパッケージが自動作成されます。Chrome 拡張で保存したページもサイドバー一覧に表示されます。',
+  'knowledge.ragGuide.step5.body':
+    'AI は Wiki ノートと取得スニペットから執筆し、推測しません — 良いソース、完了インデックス、コンパイル済み Wiki でより正確なマップになります。',
+  'knowledge.ragGuide.footer':
+    'ヒント：キャンバスのドキュメント要約を開くとパッケージが自動作成されます。Chrome 拡張で保存したページもサイドバー一覧に表示されます。',
   'knowledge.pipeline.title': 'パイプライン状態',
   'knowledge.pipeline.ragIdle': 'RAG インデックス',
-  'knowledge.pipeline.ragIdleDetail': 'インデックス済みパッケージはまだありません。パッケージからソースを追加してインデックスを実行してください。',
+  'knowledge.pipeline.ragIdleDetail':
+    'インデックス済みパッケージはまだありません。パッケージからソースを追加してインデックスを実行してください。',
   'knowledge.pipeline.ragProcessing': 'RAG インデックス中',
   'knowledge.pipeline.ragProcessingDetail': '{count} パッケージがチャンク化と埋め込み中です。',
   'knowledge.pipeline.ragReady': 'RAG 準備完了',
-  'knowledge.pipeline.ragReadyDetail': '{count} パッケージがインデックス済み — チャンク検索が有効です。',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count} パッケージがインデックス済み — チャンク検索が有効です。',
   'knowledge.pipeline.wikiDisabled': 'Wiki コンパイルオフ',
   'knowledge.pipeline.wikiDisabledDetail': 'このサーバーでは Wiki コンパイルが無効です。',
   'knowledge.pipeline.wikiIdle': 'Wiki コンパイル',
-  'knowledge.pipeline.wikiIdleDetail': 'RAG インデックス完了後、各ソースの Wiki ページをコンパイルします。',
+  'knowledge.pipeline.wikiIdleDetail':
+    'RAG インデックス完了後、各ソースの Wiki ページをコンパイルします。',
   'knowledge.pipeline.wikiPending': 'Wiki コンパイル中',
-  'knowledge.pipeline.wikiPendingDetail': '{count} パッケージがインデックス後の Wiki ページ待ちです。',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} パッケージがインデックス後の Wiki ページ待ちです。',
   'knowledge.pipeline.wikiReady': 'Wiki 準備完了',
-  'knowledge.pipeline.wikiReadyDetail': '{count} パッケージにコンパイル済み Wiki ノートがあります。',
+  'knowledge.pipeline.wikiReadyDetail':
+    '{count} パッケージにコンパイル済み Wiki ノートがあります。',
   'knowledge.pipelineBadge.rag.label': 'ラグ',
   'knowledge.pipelineBadge.rag.notYet': '未着手',
   'knowledge.pipelineBadge.rag.processing': '進行中',
@@ -235,7 +249,8 @@ export default {
   'knowledge.settings.retrievalSection': '検索設定',
   'knowledge.settings.title': 'ナレッジベース設定',
   'knowledge.settings.helpTitle': '設定の適用方法',
-  'knowledge.settings.helpBody': '検索設定は検索と AI 回答に即時反映されます。チャンクサイズとオーバーラップは新規インデックスに適用 — 変更後は既存ソースの再インデックスが必要です。',
+  'knowledge.settings.helpBody':
+    '検索設定は検索と AI 回答に即時反映されます。チャンクサイズとオーバーラップは新規インデックスに適用 — 変更後は既存ソースの再インデックスが必要です。',
   'knowledge.settings.tokens': 'トークン',
   'knowledge.settings.serverSection': 'サーバー（読み取り専用）',
   'knowledge.settings.rerankingMode': '再ランキング',
@@ -246,7 +261,8 @@ export default {
   'knowledge.settings.wikiDisabled': '無効',
   'knowledge.settings.saveSuccess': '設定を保存しました',
   'knowledge.settings.saveFailed': '設定の保存に失敗しました',
-  'knowledge.settings.reindexRequired': 'チャンク設定が変更されました — 新サイズを反映するにはパッケージ内の既存ドキュメントを再インデックスしてください。',
+  'knowledge.settings.reindexRequired':
+    'チャンク設定が変更されました — 新サイズを反映するにはパッケージ内の既存ドキュメントを再インデックスしてください。',
   'knowledge.upload.click': 'クリックしてアップロード',
   'knowledge.upload.drag': 'またはファイルをここにドラッグ',
   'knowledge.upload.fileTooLarge': 'ファイルサイズは 10MB 以下にしてください',

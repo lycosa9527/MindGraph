@@ -33,7 +33,8 @@ export default {
   'collab.previousSessionsStopped': 'आपके अन्य आरेखों पर {n} पिछले सहयोग सत्र समाप्त।',
   'collab.saveFailed': 'आरेख सहेजना विफल',
   'collab.scanToJoin': 'शामिल होने स्कैन',
-  'collab.schoolDescActive': 'स्कूल सहयोग चालू। सहकर्मी: MindGraph होम पेज सहयोग → स्कूल, यह आरेख चुनें — कोड नहीं।',
+  'collab.schoolDescActive':
+    'स्कूल सहयोग चालू। सहकर्मी: MindGraph होम पेज सहयोग → स्कूल, यह आरेख चुनें — कोड नहीं।',
   'collab.schoolStarted': 'स्कूल सहयोग चालू — सहकर्मी सहयोग → स्कूल से शामिल।',
   'collab.sectionNetwork': 'साझा सहयोग (कोड)',
   'collab.sectionSchool': 'स्कूल सहयोग',
@@ -56,14 +57,19 @@ export default {
   'workshop.archiveTeachingGroup': 'शिक्षण समूह संग्रह',
   'workshop.archiveTeachingGroupConfirm': 'यह शिक्षण समूह संग्रह? सूची से गायब होगा।',
   'workshop.archiveAnnounceChannel': 'पुरालेख घोषणा चैनल',
-  'workshop.archiveAnnounceChannelConfirm': 'क्या आप वाकई इस घोषणा चैनल को संग्रहीत करना चाहते हैं? साइडबार अब प्रदर्शित नहीं होगा, लेकिन संदेश बना रहेगा।',
+  'workshop.archiveAnnounceChannelConfirm':
+    'क्या आप वाकई इस घोषणा चैनल को संग्रहीत करना चाहते हैं? साइडबार अब प्रदर्शित नहीं होगा, लेकिन संदेश बना रहेगा।',
   'workshop.deleteTeachingGroup': 'शिक्षण और अनुसंधान समूह हटाएँ',
-  'workshop.deleteTeachingGroupConfirm': 'क्या आप वाकई इस शिक्षण और अनुसंधान समूह, इसके पाठों और संदेशों को स्थायी रूप से हटाना चाहते हैं? इस एक्शन को वापस नहीं किया जा सकता।',
+  'workshop.deleteTeachingGroupConfirm':
+    'क्या आप वाकई इस शिक्षण और अनुसंधान समूह, इसके पाठों और संदेशों को स्थायी रूप से हटाना चाहते हैं? इस एक्शन को वापस नहीं किया जा सकता।',
   'workshop.deleteAnnounceChannel': 'घोषणा चैनल हटाएँ',
-  'workshop.deleteAnnounceChannelConfirm': 'क्या आप वाकई इस घोषणा चैनल और इसके संदेशों को स्थायी रूप से हटाना चाहते हैं? इस एक्शन को वापस नहीं किया जा सकता।',
+  'workshop.deleteAnnounceChannelConfirm':
+    'क्या आप वाकई इस घोषणा चैनल और इसके संदेशों को स्थायी रूप से हटाना चाहते हैं? इस एक्शन को वापस नहीं किया जा सकता।',
   'workshop.deleteLessonStudy': 'पाठ हटाएँ',
-  'workshop.deleteLessonStudyConfirm': 'क्या आप वाकई इस पाठ और इसके संदेशों को स्थायी रूप से हटाना चाहते हैं? इस एक्शन को वापस नहीं किया जा सकता।',
-  'workshop.manageNeedAdmin': 'केवल स्कूल प्रशासक ही शिक्षण और अनुसंधान समूह जोड़ सकते हैं। ग्रुप के व्यवस्थापक या निर्माता हटा सकते हैं.',
+  'workshop.deleteLessonStudyConfirm':
+    'क्या आप वाकई इस पाठ और इसके संदेशों को स्थायी रूप से हटाना चाहते हैं? इस एक्शन को वापस नहीं किया जा सकता।',
+  'workshop.manageNeedAdmin':
+    'केवल स्कूल प्रशासक ही शिक्षण और अनुसंधान समूह जोड़ सकते हैं। ग्रुप के व्यवस्थापक या निर्माता हटा सकते हैं.',
   'workshop.math': 'FORMULA',
   'workshop.backToConversations': '← बातचीत',
   'workshop.bold': 'मोटा',
@@ -181,7 +187,8 @@ export default {
   'workshop.loadMore': 'और लोड',
   'workshop.mainChannelStream': 'मुख्य चैनल',
   'workshop.manageTeachingGroups': 'शिक्षण समूह प्रबंधन',
-  'workshop.manageTeachingGroupsBlurb': 'समूह जोड़ें/हटाएँ, सार्वजनिक/निजी, नाम/विवरण, क्रम, टेम्पलेट डुप्लिकेट, सहकर्मी आमंत्रण। उन्नत: पोस्टिंग/सूचना। संग्रह सभी के लिए हटाता।',
+  'workshop.manageTeachingGroupsBlurb':
+    'समूह जोड़ें/हटाएँ, सार्वजनिक/निजी, नाम/विवरण, क्रम, टेम्पलेट डुप्लिकेट, सहकर्मी आमंत्रण। उन्नत: पोस्टिंग/सूचना। संग्रह सभी के लिए हटाता।',
   'workshop.manageUser': 'उपयोगकर्ता प्रबंधन',
   'workshop.markAllReadChannel': 'सभी पढ़े',
   'workshop.markAsRead': 'पढ़ा चिह्नित',
@@ -220,16 +227,17 @@ export default {
   'workshop.noTopicsYet': 'अभी कोई बातचीत नहीं',
   'workshop.numberedList': 'आदेशित सूची',
   'workshop.notifications': 'सूचनाएँ',
-  'workshop.notificationsSettingsBlurb': 'उल्लेख/नए संदेश ब्राउज़र सूचनाएँ सिस्टम सेटिंग। चैनल सेटिंग में डेस्कटॉप/ईमेल।',
+  'workshop.notificationsSettingsBlurb':
+    'उल्लेख/नए संदेश ब्राउज़र सूचनाएँ सिस्टम सेटिंग। चैनल सेटिंग में डेस्कटॉप/ईमेल।',
   'workshop.offline': 'ऑफ़लाइन',
   'workshop.online': 'ऑनलाइन',
   'workshop.openMainChannelStream': 'मुख्य चैनल',
   'workshop.others': 'अन्य',
   'workshop.permissions': 'अनुमतियाँ',
+  'workshop.personalMenu': 'व्यक्तिगत मेनू',
   'workshop.preview': 'पूर्व दर्शन',
   'workshop.previewEmpty': 'पूर्वावलोकन के लिए कोई सामग्री नहीं',
-  'workshop.personalMenu': 'व्यक्तिगत मेनू',
-  'workshop.phase2RoadmapGroupsAlerts': 'बाद में: {\'@\'}group उल्लेख, अलर्ट शब्द, संपादन इतिहास।',
+  'workshop.phase2RoadmapGroupsAlerts': "बाद में: {'@'}group उल्लेख, अलर्ट शब्द, संपादन इतिहास।",
   'workshop.phase2RoadmapMovePreview': 'बाद में: संदेश स्थानांतरण, URL पूर्वावलोकन, क्रॉस-चैनल।',
   'workshop.phase2RoadmapPlatform': 'बैकलॉग: इंक्रिमेंटल सिंक, मोबाइल पुश, ईमेल डाइजेस्ट, बॉट।',
   'workshop.pickColleagueToInvite': 'आमंत्रित सहकर्मी चुनें।',
@@ -248,7 +256,8 @@ export default {
   'workshop.publicChannels': 'सार्वजनिक चैनल',
   'workshop.quote': 'उद्धरण',
   'workshop.quoteMessage': 'संदेश उद्धृत',
-  'workshop.readOnlyProfileBlurb': 'सहकर्मी प्रोफ़ाइल सरलीकृत। व्यवस्थापक: Manage user से निर्देशिका।',
+  'workshop.readOnlyProfileBlurb':
+    'सहकर्मी प्रोफ़ाइल सरलीकृत। व्यवस्थापक: Manage user से निर्देशिका।',
   'workshop.recentDmActivity': 'हाल DM',
   'workshop.recentTopics': 'हाल बातचीत',
   'workshop.renameTopic': 'बातचीत नाम बदलें',
@@ -316,7 +325,8 @@ export default {
   'workshop.viewProfile': 'प्रोफ़ाइल',
   'workshop.viewingSchool': 'देख: {0}',
   'workshop.views': 'दृश्य',
-  'workshop.welcomeChannelsBody': '«चैनल» अक्सर शिक्षण शोध समूह (教研组) या PLC — Math PLC, English PLC।',
+  'workshop.welcomeChannelsBody':
+    '«चैनल» अक्सर शिक्षण शोध समूह (教研组) या PLC — Math PLC, English PLC।',
   'workshop.welcomeChannelsTitle': 'PLC / विषय समूह',
   'workshop.welcomeConversationsBody': 'पाठ अध्ययन में शीर्षक वाली बातचीत — डिज़ाइन, चिंतन, कार्य।',
   'workshop.welcomeConversationsTitle': 'बातचीत',
@@ -340,7 +350,8 @@ export default {
   'workshop.welcomeExampleOrg': 'चेनक्सी मिडिल स्कूल',
   'workshop.welcomeHowTitle': 'कैसे जुड़ता है',
   'workshop.welcomeIntro': 'Workshop संरचित चर्चा: घोषणाएँ, पाठ अध्ययन, बातचीत — शिक्षण के साथ।',
-  'workshop.welcomeLessonStudyBody': 'पाठ अध्ययन चैनल समूह के अंतर्गत — योजना, अवलोकन, चिंतन; आरेख/स्थिति।',
+  'workshop.welcomeLessonStudyBody':
+    'पाठ अध्ययन चैनल समूह के अंतर्गत — योजना, अवलोकन, चिंतन; आरेख/स्थिति।',
   'workshop.welcomeLessonStudyTitle': 'पाठ अध्ययन',
   'workshop.welcomeMessagesBody': 'संदेश मुख्य स्ट्रीम या बातचीत में — उत्तर, उल्लेख, फ़ाइल।',
   'workshop.welcomeMessagesTitle': 'संदेश',
@@ -370,7 +381,8 @@ export default {
   'workshopCanvas.usersLeft': '{count} उपयोगकर्ता छोड़े',
   'workshopCanvas.wsError': 'सहयोग कनेक्शन त्रुटि, नेटवर्क जाँच',
   'workshopCanvas.returnedHomeRoomIdle': 'सहयोग समाप्त: कुछ समय से आरेख संपादन नहीं।',
-  'workshopCanvas.roomIdleWarningToast': 'हाल में संपादन नहीं — उलटी गिनती शून्य पर समाप्त जब तक कोई संपादित न करे।',
+  'workshopCanvas.roomIdleWarningToast':
+    'हाल में संपादन नहीं — उलटी गिनती शून्य पर समाप्त जब तक कोई संपादित न करे।',
   'workshopCanvas.otherTabCollaborationActive': 'सहयोग दूसरे टैब/विंडो में जारी।',
   'workshopCanvas.joinQrAlt': 'सहयोग QR कोड',
 } as const

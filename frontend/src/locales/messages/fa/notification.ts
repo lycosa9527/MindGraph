@@ -5,13 +5,16 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'موضوع یا گره مرکزی پاک نمی شود',
-  'notification.cannotResetSelectDiagramType': 'تنظیم مجدد امکان پذیر نیست: لطفاً ابتدا نوع نماد را انتخاب کنید',
+  'notification.cannotResetSelectDiagramType':
+    'تنظیم مجدد امکان پذیر نیست: لطفاً ابتدا نوع نماد را انتخاب کنید',
   'notification.canvasClearNodes': 'گره های {count} پاک شد',
   'notification.canvasClearNodesLearning': 'گره های {count} خالی مانده، پاسخ اضافه شد',
   'notification.canvasSomeoneEditingNode': 'کاربر دیگری در حال ویرایش این گره است',
   'notification.collabDeleteBlocked': 'حذف نشد: سایر کاربران در حال ویرایش گره های مرتبط هستند',
-  'notification.collabRedoBlocked': 'نمی توان دوباره انجام داد: سایر کاربران در حال ویرایش گره مرتبط هستند',
-  'notification.collabUndoBlocked': 'لغو امکان پذیر نیست: سایر کاربران در حال ویرایش گره های مرتبط هستند',
+  'notification.collabRedoBlocked':
+    'نمی توان دوباره انجام داد: سایر کاربران در حال ویرایش گره مرتبط هستند',
+  'notification.collabUndoBlocked':
+    'لغو امکان پذیر نیست: سایر کاربران در حال ویرایش گره های مرتبط هستند',
   'notification.conversationDeleted': 'مکالمه حذف شد',
   'notification.copied': 'در کلیپ بورد کپی شد',
   'notification.copyFailed': 'کپی ناموفق بود',
@@ -19,15 +22,18 @@ export default {
   'notification.deleted': 'حذف با موفقیت',
   'notification.feedbackCancelled': 'بازخورد لغو شد',
   'notification.feedbackThanks': 'از بازخورد شما متشکرم',
-  'notification.feedbackThanksDislike': 'با تشکر از بازخورد شما، ما سخت تلاش خواهیم کرد تا بهبود پیدا کنیم',
+  'notification.feedbackThanksDislike':
+    'با تشکر از بازخورد شما، ما سخت تلاش خواهیم کرد تا بهبود پیدا کنیم',
   'notification.focusQuestionTooShort': 'لطفاً ابتدا یک سؤال تمرکز طولانی‌تر وارد کنید',
-  'notification.geoLiteMissingIntro': 'لطفاً GeoLite2 Country را از MaxMind دانلود کنید، از حالت فشرده خارج کرده و GeoLite2-Country.mmdb را در فهرست اطلاعات سرور کپی کنید:',
+  'notification.geoLiteMissingIntro':
+    'لطفاً GeoLite2 Country را از MaxMind دانلود کنید، از حالت فشرده خارج کرده و GeoLite2-Country.mmdb را در فهرست اطلاعات سرور کپی کنید:',
   'notification.geoLiteMissingLink': 'صفحه دانلود MaxMind GeoLite را باز کنید',
   'notification.geoLiteMissingPathLabel': 'مسیر مورد انتظار:',
   'notification.geoLiteMissingTitle': 'پایگاه داده کشور GeoLite2 وجود ندارد',
   'notification.fullscreenFailed': 'نمی توان به حالت تمام صفحه وارد شد',
   'notification.generationCancelled': 'نسل لغو شد',
-  'notification.conceptMapTabNeedsAi': 'لطفاً قبل از استفاده از توصیه‌های Tab، «شروع هوش مصنوعی» را در نوار بالا فعال کنید',
+  'notification.conceptMapTabNeedsAi':
+    'لطفاً قبل از استفاده از توصیه‌های Tab، «شروع هوش مصنوعی» را در نوار بالا فعال کنید',
   'notification.historyClearNodes': 'پاک کردن متن گره',
   'notification.historyEmptyLearning': 'گره را خالی بگذارید و پاسخ را اضافه کنید',
   'notification.importInvalidData': 'واردات انجام نشد، داده‌های نماد نامعتبر است',
@@ -36,7 +42,8 @@ export default {
   'notification.importSlotsFull': 'گالری پر است نماد وارد شده است اما در گالری ذخیره نشده است.',
   'notification.importSuccess': 'نماد وارد شده و در گالری ذخیره شده است',
   'notification.importUnsupportedType': 'واردات انجام نشد، نوع نماد پشتیبانی نشد',
-  'notification.inlineRecEmpty': 'هیچ محتوای توصیه‌شده‌ای تولید نشد، لطفاً دوباره امتحان کنید یا طرح زمینه را تنظیم کنید و دوباره امتحان کنید',
+  'notification.inlineRecEmpty':
+    'هیچ محتوای توصیه‌شده‌ای تولید نشد، لطفاً دوباره امتحان کنید یا طرح زمینه را تنظیم کنید و دوباره امتحان کنید',
   'notification.loadMoreFailed': 'بارگیری بیشتر انجام نشد',
   'notification.networkError': 'خطای شبکه',
   'notification.nodeNotEligible': 'این گره از توصیه های Tab پشتیبانی نمی کند',
@@ -47,8 +54,10 @@ export default {
   'notification.rootConceptLinkNotFound': 'سیم مفهومی ریشه پیدا نشد',
   'notification.saved': 'با موفقیت ذخیره شد',
   'notification.selectNodeToClear': 'لطفاً ابتدا گره ای را که باید پاک شود انتخاب کنید',
-  'notification.sessionInvalidated': 'شما از سیستم خارج شده اید زیرا تعداد دستگاه هایی که وارد سیستم شده اند بیش از حد مجاز است',
-  'notification.sessionKicked': 'این حساب این حساب را در دستگاه های دیگر به صورت آفلاین ثبت کرده است',
+  'notification.sessionInvalidated':
+    'شما از سیستم خارج شده اید زیرا تعداد دستگاه هایی که وارد سیستم شده اند بیش از حد مجاز است',
+  'notification.sessionKicked':
+    'این حساب این حساب را در دستگاه های دیگر به صورت آفلاین ثبت کرده است',
   'notification.signInToUse': 'لطفا برای استفاده وارد شوید',
   'notification.signInToValidateFocus': 'لطفا برای بررسی مشکلات تمرکز وارد شوید',
 } as const

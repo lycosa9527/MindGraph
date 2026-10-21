@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'మాట్ లెర్నింగ్ పద్ధతి',
-  'maite.subtitle': 'రివర్స్ డికంపోజిషన్ · నాల్గవ-క్రమ నిర్ధారణ · లక్ష్య నివారణ · వేరియంట్ మైగ్రేషన్',
+  'maite.subtitle':
+    'రివర్స్ డికంపోజిషన్ · నాల్గవ-క్రమ నిర్ధారణ · లక్ష్య నివారణ · వేరియంట్ మైగ్రేషన్',
   'maite.mode.demo': 'డెమో',
   'maite.mode.inquiry': 'అన్వేషించండి',
   'maite.mode.map': 'అట్లాస్',
@@ -18,7 +19,8 @@ export default {
   'maite.problem.ocr': 'చిత్రం గుర్తింపు',
   'maite.stream.working': 'ఉత్పత్తి చేస్తోంది...',
   'maite.stream.receiving': 'ఫలితాలను ప్రసారం చేస్తోంది...',
-  'maite.stream.fallback': 'స్ట్రీమింగ్ అంతరాయం కలిగింది, బదులుగా పూర్తి ప్రతిస్పందనను ఉపయోగించండి...',
+  'maite.stream.fallback':
+    'స్ట్రీమింగ్ అంతరాయం కలిగింది, బదులుగా పూర్తి ప్రతిస్పందనను ఉపయోగించండి...',
   'maite.stream.stop': 'ఆపండి',
   'maite.tables.condition': 'పరిస్థితి పట్టిక',
   'maite.tables.step': 'దశల జాబితా',
@@ -32,7 +34,8 @@ export default {
   'maite.demo.nextQuestion': 'మార్గదర్శక ప్రశ్నలు',
   'maite.demo.guidingQuestionPrefix': 'బూట్ ప్రశ్న:',
   'maite.demo.followUpPrefix': 'తదుపరి ప్రశ్న:',
-  'maite.demo.decomposeComplete': 'కుళ్ళిపోవడం పూర్తయింది, దయచేసి దిగువ మూడు పట్టికలను తనిఖీ చేయండి.',
+  'maite.demo.decomposeComplete':
+    'కుళ్ళిపోవడం పూర్తయింది, దయచేసి దిగువ మూడు పట్టికలను తనిఖీ చేయండి.',
   'maite.demo.replyPlaceholder': 'మీ ఆలోచనలు లేదా సమాధానాలను వ్రాయండి...',
   'maite.inquiry.startTitle': 'అన్వేషణ సెషన్‌ను ప్రారంభించండి',
   'maite.inquiry.start': 'సెషన్‌ని సృష్టించండి',
@@ -45,7 +48,8 @@ export default {
   'maite.inquiry.complete': 'పూర్తి సెషన్',
   'maite.inquiry.completedTitle': 'అన్వేషణ పూర్తయింది',
   'maite.inquiry.completedMessage': 'ఈ అధ్యయనం పూర్తయింది మరియు అభ్యాస నివేదికను చూడవచ్చు.',
-  'maite.diagnosis.thinkingPlaceholder': 'సమస్యను పరిష్కరించడానికి మీ విధానాన్ని వివరించండి (ఐచ్ఛికం)...',
+  'maite.diagnosis.thinkingPlaceholder':
+    'సమస్యను పరిష్కరించడానికి మీ విధానాన్ని వివరించండి (ఐచ్ఛికం)...',
   'maite.diagnosis.runAuto': 'స్వయంచాలక నిర్ధారణ',
   'maite.diagnosis.running': 'నిర్ధారణ చేస్తోంది...',
   'maite.remedy.generate': 'నివారణ పనులను రూపొందించండి',
@@ -85,7 +89,8 @@ export default {
   'maite.errors.diagnosis_failed': 'రోగ నిర్ధారణ విఫలమైంది',
   'maite.errors.remedy_failed': 'లక్ష్య పరిష్కార విధిని రూపొందించడం విఫలమైంది',
   'maite.errors.variant_failed': 'వేరియంట్ టాస్క్‌ని రూపొందించడం విఫలమైంది',
-  'maite.errors.variants_incomplete': 'దయచేసి సెషన్‌ను పూర్తి చేయడానికి ముందు కనీసం 3 వైవిధ్యాలను సమర్పించండి',
+  'maite.errors.variants_incomplete':
+    'దయచేసి సెషన్‌ను పూర్తి చేయడానికి ముందు కనీసం 3 వైవిధ్యాలను సమర్పించండి',
   'maite.errors.variant_answer_required': 'సమాధానాలు మరియు వలస వ్యూహాలు అవసరం',
   'maite.errors.variant_submit_failed': 'వేరియంట్ సమర్పణ విఫలమైంది',
   'maite.errors.load_failed': 'సెషన్ లోడ్ విఫలమైంది',
@@ -98,7 +103,8 @@ export default {
   'maite.toast.ocr_success': 'చిత్రం నుండి ప్రశ్న వచనం సంగ్రహించబడింది',
   'maite.toast.decompose_started': 'ట్యూటర్ బ్రేక్‌డౌన్‌ను ప్రారంభించండి...',
   'maite.toast.decompose_complete': 'కుళ్ళిపోవడం పూర్తయింది',
-  'maite.toast.decompose_fallback': 'స్ట్రీమింగ్ సమయం ముగిసింది, కొనసాగడానికి బదులుగా పూర్తి ప్రతిస్పందనను ఉపయోగించండి...',
+  'maite.toast.decompose_fallback':
+    'స్ట్రీమింగ్ సమయం ముగిసింది, కొనసాగడానికి బదులుగా పూర్తి ప్రతిస్పందనను ఉపయోగించండి...',
   'maite.toast.practice_saved': 'ఇటీవలి వ్యాయామాలకు సేవ్ చేయబడింది',
   'maite.toast.session_created': 'అన్వేషణ సెషన్ సృష్టించబడింది',
   'maite.toast.session_completed': 'అన్వేషణ సెషన్ పూర్తయింది',

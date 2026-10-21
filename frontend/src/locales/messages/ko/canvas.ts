@@ -31,7 +31,8 @@ export default {
   'canvas.exportOptions.layoutLandscape': '가로',
   'canvas.exportOptions.layoutPortrait': '세로',
   'canvas.worksheetText.cancel': '취소',
-  'canvas.worksheetText.defaultInstruction': '빈칸에 알맞은 내용을 채워 다이어그램 구조를 완성하세요.',
+  'canvas.worksheetText.defaultInstruction':
+    '빈칸에 알맞은 내용을 채워 다이어그램 구조를 완성하세요.',
   'canvas.worksheetText.dragDiagramHint': '드래그로 이동 · 모서리로 크기 조절',
   'canvas.worksheetText.fieldClass': '반:',
   'canvas.worksheetText.fieldDate': '날짜:',
@@ -39,14 +40,17 @@ export default {
   'canvas.worksheetText.hide': '숨기기',
   'canvas.worksheetText.instructionLabel': '안내',
   'canvas.worksheetText.instructionPrefix': '과제:',
-  'canvas.worksheetText.modalHint': '인쇄용 PDF를 내보내세요. 편집 가능한 이름/반 필드가 필요하면 문서를 내보내세요. 다이어그램은 이미지로 유지됩니다.',
-  'canvas.worksheetText.headerCaptureFailed': '학습지 머리글을 렌더링하지 못했습니다. 머리글 없이 PDF를 내보냈습니다.',
+  'canvas.worksheetText.modalHint':
+    '인쇄용 PDF를 내보내세요. 편집 가능한 이름/반 필드가 필요하면 문서를 내보내세요. 다이어그램은 이미지로 유지됩니다.',
+  'canvas.worksheetText.headerCaptureFailed':
+    '학습지 머리글을 렌더링하지 못했습니다. 머리글 없이 PDF를 내보냈습니다.',
   'canvas.worksheetText.modalTitle': 'DOC/PDF로 내보내기',
   'canvas.worksheetText.learningSheetMode': '싱글 모드 학습',
   'canvas.worksheetText.learningSheetModeOn': '켜다',
   'canvas.worksheetText.learningSheetModeOff': '폐쇄',
   'canvas.worksheetText.learningSheetPanelTitle': '단일 헤더 연구',
-  'canvas.worksheetText.learningSheetPanelHint': '다음 옵션은 학습 시트 모드에서만 사용할 수 있으며 아이콘 위에 표시됩니다.',
+  'canvas.worksheetText.learningSheetPanelHint':
+    '다음 옵션은 학습 시트 모드에서만 사용할 수 있으며 아이콘 위에 표시됩니다.',
   'canvas.worksheetText.exportSettings': '내보내기 옵션',
   'canvas.worksheetText.previewDiagram': '다이어그램',
   'canvas.worksheetText.previewEmpty': '필드를 켜서 학습지 머리글 미리보기를 확인하세요.',
@@ -65,14 +69,21 @@ export default {
   'canvas.worksheetText.showName': '이름',
   'canvas.worksheetText.showTopic': '주제 제목',
   'canvas.worksheetText.topicPreviewLabel': '다이어그램 주제',
-  'canvas.import.invalidFile': '잘못된 다이어그램 파일입니다. MindGraph에서 내보낸 MG 파일 또는 CmapTools .cmap 파일을 선택하세요.',
+  'canvas.import.invalidFile':
+    '잘못된 다이어그램 파일입니다. MindGraph에서 내보낸 MG 파일 또는 CmapTools .cmap 파일을 선택하세요.',
   'canvas.import.parseError': '다이어그램 파일 구문 분석에 실패했습니다. 다시 시도하세요',
-  'canvas.import.cmapHeuristicSemantics': '이 CmapTools 파일은 링크에 텍스트 순서 대체 방식을 사용했습니다. 원본 맵과 관계를 확인하세요.',
-  'canvas.import.cmapConnectionFallback': '관계는 명제 객체가 아니라 IHMC 그래픽 연결에서 재구성되었습니다.',
-  'canvas.import.cmapEmptyLayout': '가져온 맵에 복구된 노드 좌표가 없어 레이아웃이 다시 생성되었습니다.',
-  'canvas.import.cmapLayoutLabelCollision': '중복 개념 라벨이 레이아웃 앵커에서 겹칩니다. 일부 가져오기 위치가 잘못될 수 있습니다.',
-  'canvas.import.cmapLayoutFailed': '레이아웃 추출 중 구문 오류가 발생해 위치가 다시 생성되었습니다.',
-  'canvas.reset.confirmBody': '정말할까요? 다이어그램과 노드 팔레트를 포함한 현재 내용이 모두 사라지며 되돌릴 수 없습니다.',
+  'canvas.import.cmapHeuristicSemantics':
+    '이 CmapTools 파일은 링크에 텍스트 순서 대체 방식을 사용했습니다. 원본 맵과 관계를 확인하세요.',
+  'canvas.import.cmapConnectionFallback':
+    '관계는 명제 객체가 아니라 IHMC 그래픽 연결에서 재구성되었습니다.',
+  'canvas.import.cmapEmptyLayout':
+    '가져온 맵에 복구된 노드 좌표가 없어 레이아웃이 다시 생성되었습니다.',
+  'canvas.import.cmapLayoutLabelCollision':
+    '중복 개념 라벨이 레이아웃 앵커에서 겹칩니다. 일부 가져오기 위치가 잘못될 수 있습니다.',
+  'canvas.import.cmapLayoutFailed':
+    '레이아웃 추출 중 구문 오류가 발생해 위치가 다시 생성되었습니다.',
+  'canvas.reset.confirmBody':
+    '정말할까요? 다이어그램과 노드 팔레트를 포함한 현재 내용이 모두 사라지며 되돌릴 수 없습니다.',
   'canvas.reset.confirmButton': '초기화',
   'canvas.reset.confirmTitle': '기본값으로 초기화',
   'canvas.reset.warnSelectType': '초기화할 수 없음: 먼저 다이어그램 유형을 선택하세요',
@@ -94,13 +105,15 @@ export default {
   'canvas.shortcutGuide.addSibling': '형제 추가',
   'canvas.shortcutGuide.addSiblingDesc': '선택한 노드 옆에 형제를 빠르게 삽입합니다.',
   'canvas.shortcutGuide.editText': '텍스트 편집',
-  'canvas.shortcutGuide.editTextDesc': '인라인 편집을 엽니다. Enter 또는 포커스 해제 시 저장되고 크기가 즉시 다시 계산됩니다.',
+  'canvas.shortcutGuide.editTextDesc':
+    '인라인 편집을 엽니다. Enter 또는 포커스 해제 시 저장되고 크기가 즉시 다시 계산됩니다.',
   'canvas.shortcutGuide.doubleClick': '더블클릭으로 편집',
   'canvas.shortcutGuide.deleteNode': '노드 삭제',
   'canvas.shortcutGuide.deleteNodeDesc': '선택한 노드와 그 가지를 제거합니다(루트 노드는 보호됨).',
   'canvas.shortcutGuide.arrowNav': '화살표 키',
   'canvas.shortcutGuide.selectNav': '탐색',
-  'canvas.shortcutGuide.arrowNavDesc': '유클리드 탐색: 화살표 키로 캔버스의 물리적 2D 위치 기준 가장 가까운 노드로 이동합니다.',
+  'canvas.shortcutGuide.arrowNavDesc':
+    '유클리드 탐색: 화살표 키로 캔버스의 물리적 2D 위치 기준 가장 가까운 노드로 이동합니다.',
   'canvas.shortcutGuide.cancel': '선택/편집 지우기',
   'canvas.shortcutGuide.cancelDesc': '선택 또는 편집을 취소합니다.',
   'canvas.shortcutGuide.undo': '실행 취소',
@@ -221,7 +234,8 @@ export default {
   'canvas.toolbar.professionalContent.tooltip': 'AI 생성 콘텐츠에 대한 시청자 난이도 선택',
   'canvas.toolbar.professionalContent.panelTitle': 'Content level',
   'canvas.toolbar.professionalContent.guideTitle': '청중 난이도를 먼저 선택하세요',
-  'canvas.toolbar.professionalContent.guideBody': '무대나 장면을 선택하려면 여기를 클릭하세요. AI 생성, 대화 변경 등을 통해 난이도에 따라 콘텐츠를 정리합니다. 선택 후 해당 버튼은 학업 단계 라벨을 받게 됩니다.',
+  'canvas.toolbar.professionalContent.guideBody':
+    '무대나 장면을 선택하려면 여기를 클릭하세요. AI 생성, 대화 변경 등을 통해 난이도에 따라 콘텐츠를 정리합니다. 선택 후 해당 버튼은 학업 단계 라벨을 받게 됩니다.',
   'canvas.toolbar.professionalContent.guideAction': '선택하다',
   'canvas.toolbar.professionalContent.guideDismiss': '알고 있었다',
   'canvas.toolbar.professionalContent.level.general.title': '만능인',
@@ -238,12 +252,16 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': '실제 시나리오',
   'canvas.toolbar.professionalContent.level.expert.title': '전문가',
   'canvas.toolbar.professionalContent.level.expert.description': '깊이 정제된',
-  'canvas.toolbar.professionalContent.notify.preference': '후속 AI 생성 콘텐츠는 "{level}" 청중 인식 수준에 더 부합할 것입니다.',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral': '후속 AI 생성 콘텐츠는 추가적인 난이도 제한 없이 "보편적" 스타일이 될 것입니다.',
-  'canvas.toolbar.professionalContent.notify.afterGenerated': '현재 콘텐츠는 "{current}" 난이도입니다. 앞으로는 "{next}"을 눌러 생성하는 데 도움을 드리겠습니다.',
+  'canvas.toolbar.professionalContent.notify.preference':
+    '후속 AI 생성 콘텐츠는 "{level}" 청중 인식 수준에 더 부합할 것입니다.',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    '후속 AI 생성 콘텐츠는 추가적인 난이도 제한 없이 "보편적" 스타일이 될 것입니다.',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    '현재 콘텐츠는 "{current}" 난이도입니다. 앞으로는 "{next}"을 눌러 생성하는 데 도움을 드리겠습니다.',
   'canvas.toolbar.professionalContent.audienceLine': '현재 청중: {level} (하단 [전문 콘텐츠]부터)',
   'canvas.toolbar.educationStage': '학업 단계',
-  'canvas.toolbar.educationStageTooltip': 'AI 생성 콘텐츠의 깊이에 영향을 미칠 학업 단계를 선택하세요.',
+  'canvas.toolbar.educationStageTooltip':
+    'AI 생성 콘텐츠의 깊이에 영향을 미칠 학업 단계를 선택하세요.',
   'canvas.toolbar.educationStageClear': '만능인',
   'canvas.toolbar.educationStagePrimary': '국민 학교',
   'canvas.toolbar.educationStageMiddle': '중학교',
@@ -269,12 +287,14 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': '주제 노드를 삭제할 수 없습니다',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference':
+    'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': '생성할 수 없습니다',
   'canvas.toolbar.causeAdded': '원인 노드가 추가되었습니다',
   'canvas.toolbar.childAdded': '자식이 추가되었습니다',
   'canvas.toolbar.collabAiBlocked': '협업 중에는 다이어그램 소유자만 AI 생성을 사용할 수 있습니다',
-  'canvas.toolbar.collabGuestFeatureBlocked': '협업 게스트로 참여 중에는 이 기능을 사용할 수 없습니다.',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    '협업 게스트로 참여 중에는 이 기능을 사용할 수 없습니다.',
   'canvas.toolbar.colorLabel': '색상',
   'canvas.toolbar.conceptGeneration': '개념 생성',
   'canvas.toolbar.conceptMapModesDev': '개념도 모드는 개발 중입니다',
@@ -295,11 +315,13 @@ export default {
   'canvas.toolbar.exit': '종료',
   'canvas.toolbar.exitFullscreen': '전체 화면 종료',
   'canvas.toolbar.highlighter': '형광펜',
-  'canvas.toolbar.highlighterTooltip': '형광펜처럼 캔버스에 그립니다. 프레젠테이션을 종료하면 지워집니다',
+  'canvas.toolbar.highlighterTooltip':
+    '형광펜처럼 캔버스에 그립니다. 프레젠테이션을 종료하면 지워집니다',
   'canvas.toolbar.highlighterChooseColor': '형광펜 색상',
   'canvas.toolbar.highlighterPaletteAria': '형광펜 색상 선택',
   'canvas.toolbar.insertEquation': '수식 삽입',
-  'canvas.toolbar.insertEquationTooltip': '캐럿에 인라인 수식($...$)을 삽입하거나, 편집 중이 아니면 선택한 노드에 추가합니다',
+  'canvas.toolbar.insertEquationTooltip':
+    '캐럿에 인라인 수식($...$)을 삽입하거나, 편집 중이 아니면 선택한 노드에 추가합니다',
   'canvas.toolbar.insertEquationSelectNode': '먼저 노드를 선택하세요',
   'canvas.toolbar.insertEquationDialogTitle': '수식 삽입',
   'canvas.toolbar.insertEquationLoading': '수식 편집기 불러오는 중…',
@@ -333,7 +355,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': '중점',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
+  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=1/2bh',
@@ -354,7 +376,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': '사인 법칙',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': '코사인(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': '사인(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
+  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': '배각',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': '등차 aₙ',
@@ -424,7 +446,8 @@ export default {
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-    'canvas.classroomRemote.tabTopics': 'Topics',
+  'canvas.classroomRemote.resize': 'Drag to resize',
+  'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
@@ -437,7 +460,8 @@ export default {
   'canvas.classroomRemote.topicsReset': 'Restore defaults',
   'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
   'canvas.presentation.learningSheetConfirmTitle': '프레젠테이션을 시작할까요?',
-  'canvas.presentation.learningSheetConfirmBody': '아직 학습지를 편집 중입니다. 프레젠테이션을 시작하면 빈칸 편집이 종료되며, 기존 빈칸은 유지됩니다.',
+  'canvas.presentation.learningSheetConfirmBody':
+    '아직 학습지를 편집 중입니다. 프레젠테이션을 시작하면 빈칸 편집이 종료되며, 기존 빈칸은 유지됩니다.',
   'canvas.presentation.learningSheetConfirmProceed': '프레젠테이션 시작',
   'canvas.presentationContextMenu.laserPointer': '레이저 포인터',
   'canvas.presentationContextMenu.spotlight': '스포트라이트',
@@ -496,7 +520,8 @@ export default {
   'canvas.subgraphPreview.historyLabel': 'AI 서브그래프',
   'canvas.inlineRecPicker.prevPage': '이전 페이지',
   'canvas.inlineRecPicker.nextPage': '다음 페이지',
-  'canvas.toolbar.formatBrushActivated': '스타일이 복사되었습니다 — 대상 노드를 선택한 뒤 다시 클릭해 적용하세요',
+  'canvas.toolbar.formatBrushActivated':
+    '스타일이 복사되었습니다 — 대상 노드를 선택한 뒤 다시 클릭해 적용하세요',
   'canvas.toolbar.formatBrushApplied': '{count}개 노드에 서식이 적용되었습니다',
   'canvas.toolbar.formatBrushCancelled': '서식 복사가 취소되었습니다',
   'canvas.toolbar.formatBrushSelectSource': '먼저 원본 노드를 선택하세요',
@@ -514,7 +539,8 @@ export default {
   'canvas.toolbar.moreAppSnapshot': '스냅샷',
   'canvas.toolbar.moreAppSnapshotDesc': '이 다이어그램 버전을 저장합니다(최대 10개)',
   'canvas.toolbar.moreAppTranslateLabel': '번역',
-  'canvas.toolbar.moreAppTranslateLabelDesc': 'AI로 모든 노드·연결 라벨을 현재 인터페이스 언어로 번역합니다',
+  'canvas.toolbar.moreAppTranslateLabelDesc':
+    'AI로 모든 노드·연결 라벨을 현재 인터페이스 언어로 번역합니다',
   'canvas.toolbar.translateLabelTitle': '다이어그램 번역',
   'canvas.toolbar.translateLabelSource': '번역할 라벨({count})',
   'canvas.toolbar.translateLabelTargetLanguage': '대상 언어',
@@ -526,23 +552,31 @@ export default {
   'canvas.toolbar.translateLabelAndMore': '{n}개 더 표시되지 않음…',
   'canvas.toolbar.translateLabelInProgress': '다이어그램 번역 중…',
   'canvas.toolbar.translateLabelBannerTitle': '다이어그램 번역 중',
-  'canvas.toolbar.translateLabelFallbackEnInfo': '인터페이스 언어가 아직 번역 대상으로 제공되지 않습니다. 라벨은 영어로 번역됩니다.',
+  'canvas.toolbar.translateLabelFallbackEnInfo':
+    '인터페이스 언어가 아직 번역 대상으로 제공되지 않습니다. 라벨은 영어로 번역됩니다.',
   'canvas.toolbar.translateLabelFailed': '번역에 실패했습니다. 다시 시도하세요.',
   'canvas.toolbar.translateLabelDone': '다이어그램이 번역되었습니다',
   'canvas.toolbar.moreAppVirtualKeyboard': '가상 키보드',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc': '영어 화면 키보드; 중국어 및 기타 언어의 경우 시스템 입력 방법을 사용하십시오.',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    '영어 화면 키보드; 중국어 및 기타 언어의 경우 시스템 입력 방법을 사용하십시오.',
   'canvas.toolbar.virtualKeyboardClose': '키보드 닫기',
-  'canvas.toolbar.virtualKeyboardFocusHint': '노드를 선택하고 직접 입력하면 원본 내용이 지워집니다. 레이블을 두 번 클릭하여 편집에 들어갈 수도 있습니다.',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    '노드를 선택하고 직접 입력하면 원본 내용이 지워집니다. 레이블을 두 번 클릭하여 편집에 들어갈 수도 있습니다.',
   'canvas.toolbar.virtualKeyboardIme': '시스템 입력 방법',
-  'canvas.toolbar.virtualKeyboardImeHint': '실제 키보드나 시스템 키보드를 사용하여 입력해주세요. 후보창은 시스템 입력방식으로 제공됩니다.',
+  'canvas.toolbar.virtualKeyboardImeHint':
+    '실제 키보드나 시스템 키보드를 사용하여 입력해주세요. 후보창은 시스템 입력방식으로 제공됩니다.',
   'canvas.toolbar.snapshotSaveFirst': '스냅샷을 찍기 전에 다이어그램을 먼저 저장하세요',
   'canvas.toolbar.snapshotTaken': '스냅샷 {n}이(가) 저장되었습니다',
   'canvas.toolbar.snapshotFailed': '스냅샷 저장에 실패했습니다. 다시 시도하세요',
-  'canvas.toolbar.snapshotTooLarge': '스냅샷이 너무 큽니다(최대 {max} KB). 내용을 줄이고 다시 시도하세요.',
+  'canvas.toolbar.snapshotTooLarge':
+    '스냅샷이 너무 큽니다(최대 {max} KB). 내용을 줄이고 다시 시도하세요.',
   'canvas.toolbar.snapshotRateLimited': '스냅샷 작업이 너무 많습니다. 잠시 후 다시 시도하세요.',
-  'canvas.toolbar.snapshotDiagramNotFound': '다이어그램을 찾을 수 없습니다. 페이지를 새로고침하거나 라이브러리에서 여세요.',
-  'canvas.library.diagramNotFound': '다이어그램을 찾을 수 없습니다. 삭제되었을 수 있습니다. 라이브러리에서 다른 다이어그램을 여세요.',
-  'canvas.library.saveBeforeSwitchFailed': '전환하기 전에는 현재 지도를 저장할 수 없습니다. 여기에 머물다가 다시 시도하세요.',
+  'canvas.toolbar.snapshotDiagramNotFound':
+    '다이어그램을 찾을 수 없습니다. 페이지를 새로고침하거나 라이브러리에서 여세요.',
+  'canvas.library.diagramNotFound':
+    '다이어그램을 찾을 수 없습니다. 삭제되었을 수 있습니다. 라이브러리에서 다른 다이어그램을 여세요.',
+  'canvas.library.saveBeforeSwitchFailed':
+    '전환하기 전에는 현재 지도를 저장할 수 없습니다. 여기에 머물다가 다시 시도하세요.',
   'canvas.toolbar.snapshotConflict': '스냅샷을 저장하지 못했습니다(충돌). 다시 시도하세요.',
   'canvas.toolbar.newAssociation': '새 연관',
   'canvas.toolbar.newAttribute': '새 속성',
@@ -569,16 +603,21 @@ export default {
   'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': '가지 또는 자식 노드를 선택하세요',
-  'canvas.toolbar.selectCategoryOrLeafDelete': '범주 또는 리프 노드를 선택하세요(주제 노드는 삭제할 수 없음)',
-  'canvas.toolbar.selectCauseOrEffectForAdd': '원인 또는 결과 노드(이벤트가 아님)를 선택한 뒤 Enter로 같은 열에 추가하세요',
-  'canvas.toolbar.selectTreeBranchForChild': '자식을 추가하려면 범주나 그 하위 항목을 선택하고, 범주를 추가하려면 주제를 선택하세요',
+  'canvas.toolbar.selectCategoryOrLeafDelete':
+    '범주 또는 리프 노드를 선택하세요(주제 노드는 삭제할 수 없음)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    '원인 또는 결과 노드(이벤트가 아님)를 선택한 뒤 Enter로 같은 열에 추가하세요',
+  'canvas.toolbar.selectTreeBranchForChild':
+    '자식을 추가하려면 범주나 그 하위 항목을 선택하고, 범주를 추가하려면 주제를 선택하세요',
   'canvas.toolbar.selectNodesFirst': '먼저 노드를 선택하세요',
   'canvas.toolbar.nodeStyleFollow': '노드를 따르다',
-  'canvas.toolbar.nodeStyleFollowHint': '켜져 있으면 노드 스타일 막대가 선택한 노드를 따릅니다. 꺼지면 숨겨집니다.',
+  'canvas.toolbar.nodeStyleFollowHint':
+    '켜져 있으면 노드 스타일 막대가 선택한 노드를 따릅니다. 꺼지면 숨겨집니다.',
   'canvas.toolbar.selectNodesToDelete': '삭제할 노드를 선택하세요',
   'canvas.toolbar.selectPartForSubpart': '하위 부분을 추가할 부분을 선택하세요',
   'canvas.toolbar.selectPartThenEnter': '부분 노드를 선택한 뒤 Enter로 하위 부분을 추가하세요',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete': '유사점 또는 차이 노드를 선택하세요(주제 노드는 삭제할 수 없음)',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
+    '유사점 또는 차이 노드를 선택하세요(주제 노드는 삭제할 수 없음)',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst': '먼저 유사점 또는 차이 노드를 선택하세요',
   'canvas.toolbar.selectStepForSubstep': '하위 단계를 추가할 단계를 선택하세요',
   'canvas.toolbar.similarityWithIndex': '유사점 {n}',
@@ -650,13 +689,16 @@ export default {
   'canvas.translation.stop': '번역 중지',
   'canvas.topBar.snapshotRecallTooltip': '스냅샷 {n} 복원',
   'canvas.topBar.snapshotRecallTitle': '스냅샷 복원',
-  'canvas.topBar.snapshotRecallConfirm': '스냅샷 {n}을(를) 복원할까요? 현재 변경 사항이 교체됩니다.',
+  'canvas.topBar.snapshotRecallConfirm':
+    '스냅샷 {n}을(를) 복원할까요? 현재 변경 사항이 교체됩니다.',
   'canvas.topBar.snapshotRecallConfirmBtn': '복원',
   'canvas.topBar.snapshotRecallCancelBtn': '취소',
   'canvas.topBar.snapshotRecallHistory': '스냅샷 {n} 복원 전',
   'canvas.topBar.snapshotRecallFailed': '스냅샷 복원에 실패했습니다. 다시 시도하세요',
-  'canvas.topBar.snapshotRecallNoDiagram': '먼저 다이어그램을 라이브러리에 저장한 뒤 스냅샷을 복원하세요.',
-  'canvas.topBar.snapshotRecallNoType': '다이어그램 유형이 아직 준비되지 않았습니다. 잠시 후 다시 시도하세요.',
+  'canvas.topBar.snapshotRecallNoDiagram':
+    '먼저 다이어그램을 라이브러리에 저장한 뒤 스냅샷을 복원하세요.',
+  'canvas.topBar.snapshotRecallNoType':
+    '다이어그램 유형이 아직 준비되지 않았습니다. 잠시 후 다시 시도하세요.',
   'canvas.topBar.snapshotDeleted': '스냅샷 {n}이(가) 삭제되었습니다',
   'canvas.topBar.snapshotDeleteFailed': '스냅샷 삭제에 실패했습니다. 다시 시도하세요',
   'canvas.topBar.snapshotBadgeTooltip': '클릭하여 스냅샷 {n} 복원 · Ctrl+클릭으로 삭제',
@@ -709,7 +751,8 @@ export default {
   'canvas.mindMapSlideOverlay.branch': '가지',
   'canvas.mindMapSlideOverlay.region': '슬라이드 쇼 컨트롤',
   'canvas.mindMapSlideOverlay.progress': '슬라이드 진행 — 클릭하여 이동',
-  'canvas.mindMapSlideOverlay.shortcuts': '캔버스 클릭 또는 Space/→ 다음 · ← 이전 · Home/End 처음/끝 · Esc 슬라이드 종료',
+  'canvas.mindMapSlideOverlay.shortcuts':
+    '캔버스 클릭 또는 Space/→ 다음 · ← 이전 · Home/End 처음/끝 · Esc 슬라이드 종료',
   'canvas.mindMapSlideOverlay.exit': '슬라이드 종료',
   'canvas.mindMapSlideOverlay.collapse': '컨트롤 접기',
   'canvas.mindMapSlideOverlay.expand': '컨트롤 펼치기',
@@ -723,8 +766,10 @@ export default {
   'canvasPage.collaborationFooterOwnerDiagram': '{username}의 다이어그램 «{diagramTitle}» — 협업',
   'canvasPage.collaborationFooterNetworkDiagramTitle': '협업 다이어그램 «{diagramTitle}»',
   'canvasPage.collaborationFooterSchool': '학교 협업 진행 중 — 학교 목록에서 참여하세요.',
-  'canvasPage.collaborationFooterSchoolDiagram': '«{diagramTitle}» 학교 협업 — 학교 세션 목록에서 참여하세요.',
-  'canvasPage.collabRoomIdleEnding': '세션 유휴 — 약 {seconds}초 후 협업이 종료됩니다(편집하면 유지)',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    '«{diagramTitle}» 학교 협업 — 학교 세션 목록에서 참여하세요.',
+  'canvasPage.collabRoomIdleEnding':
+    '세션 유휴 — 약 {seconds}초 후 협업이 종료됩니다(편집하면 유지)',
   'conceptMap.focus.noResult': '결과 없음',
   'conceptMap.focus.validationRequestFailed': '검증 요청 실패',
   'diagram.aiGenerating': 'AI 생성 중…',
@@ -781,11 +826,14 @@ export default {
   'canvas.mindMapSideToolbar.outline': '개요',
   'canvas.mindMapSideToolbar.waterfall': 'AI 브레인스토밍',
   'canvas.mindMapWaterfall.panelHint': 'AI 가지 아이디어용 노드를 선택한 뒤 캔버스로 드래그하세요',
-  'canvas.mindMapWaterfall.emptyHint': '아직 제안이 없습니다. 캔버스에서 노드를 선택하거나 새로고침을 누르세요.',
-  'canvas.mindMapWaterfall.dragHint': '클릭으로 다중 선택한 뒤 맵 노드에 드래그해 삽입하세요. 빈 캔버스에 놓으면 최상위 가지로 추가됩니다.',
+  'canvas.mindMapWaterfall.emptyHint':
+    '아직 제안이 없습니다. 캔버스에서 노드를 선택하거나 새로고침을 누르세요.',
+  'canvas.mindMapWaterfall.dragHint':
+    '클릭으로 다중 선택한 뒤 맵 노드에 드래그해 삽입하세요. 빈 캔버스에 놓으면 최상위 가지로 추가됩니다.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'AI 브레인스토밍에서 노드 추가',
   'canvas.mindMapOneSentence.intro': '주제를 입력하거나 가지 수, 범주, 단계 등 구조를 지정하세요',
-  'canvas.mindMapOneSentence.requirementsPlaceholder': '예: 의·식·주·행 네 가지로 된 베이징 3일 여행',
+  'canvas.mindMapOneSentence.requirementsPlaceholder':
+    '예: 의·식·주·행 네 가지로 된 베이징 3일 여행',
   'canvas.mindMapOneSentence.examplesTitle': '영감',
   'canvas.mindMapOneSentence.generateButton': '생성',
   'canvas.mindMapOneSentence.example1': '의·식·주·행 네 가지로 된 베이징 3일 여행 계획',
@@ -794,17 +842,23 @@ export default {
   'canvas.mindMapOneSentence.suggestion.add_node': '중국 지점 추가',
   'canvas.mindMapOneSentence.suggestion.update_node': '음료 분석을 음료 분석으로 변경',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': '2.1을 녹차로 변경',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint': '번호를 활성화한 후 "2.1을...로 변경" "2번째를...로 변경"이라고 말씀하시면 됩니다.',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint':
+    '번호를 활성화한 후 "2.1을...로 변경" "2번째를...로 변경"이라고 말씀하시면 됩니다.',
   'canvas.mindMapOneSentence.suggestion.update_center': '테마가 차(Tea)로 변경되었습니다.',
   'canvas.mindMapOneSentence.suggestion.delete_node': '음료 분석 분기 삭제',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': '중국 지사 완성',
   'canvas.mindMapOneSentence.suggestion.auto_complete': '지도를 완성할 수 있게 도와주세요',
-  'canvas.mindMapOneSentence.suggestion.set_content_level': '전문컨텐츠를 일반, 초등학교, 중학교, 고등학교, 대학교, 성인, 전문가로 변경',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': '전문 콘텐츠가 {level}로 변경되었습니다.',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': '일곱 번째 수준은 하단의 "전문 콘텐츠"와 일치합니다.',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': '숫자, 중국어, 원, 문자 또는 장 번호 활성화',
+  'canvas.mindMapOneSentence.suggestion.set_content_level':
+    '전문컨텐츠를 일반, 초등학교, 중학교, 고등학교, 대학교, 성인, 전문가로 변경',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
+    '전문 콘텐츠가 {level}로 변경되었습니다.',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
+    '일곱 번째 수준은 하단의 "전문 콘텐츠"와 일치합니다.',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
+    '숫자, 중국어, 원, 문자 또는 장 번호 활성화',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': '{style} 번호 활성화',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': '"디지털 번호 매기기 활성화" "중국 번호 매기기 활성화"라고 말할 수 있습니다.',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
+    '"디지털 번호 매기기 활성화" "중국 번호 매기기 활성화"라고 말할 수 있습니다.',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': '숫자',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': '중국인',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': '원',
@@ -814,7 +868,8 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': '숨겨진 번호',
   'canvas.mindMapOneSentence.suggestion.explain_node': '이 중국 지부에 대해 설명해보세요',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': '이 노드를 소개하세요',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint': '"중국 설명" 및 "이 노드 소개"라고 말할 수 있습니다. 노드를 선택한 후 "Introduce this"라고 말할 수도 있습니다.',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
+    '"중국 설명" 및 "이 노드 소개"라고 말할 수 있습니다. 노드를 선택한 후 "Introduce this"라고 말할 수도 있습니다.',
   'canvas.mindMapOneSentence.nodeActionGuide.title': '노드 운영 가이드',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': '접기 노드 운영 가이드',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': '이름으로',
@@ -825,52 +880,82 @@ export default {
   'canvas.mindMapOneSentence.micButton': '음성 입력',
   'canvas.mindMapOneSentence.photoButton': '사진 업로드',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 사진',
-  'canvas.mindMapOneSentence.photoNeedsDiagram': '먼저 이 다이어그램을 라이브러리에 저장한 뒤 사진을 업로드하세요.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram':
+    '먼저 이 다이어그램을 라이브러리에 저장한 뒤 사진을 업로드하세요.',
   'canvas.mindMapOneSentence.photoInvalidType': 'JPG, PNG 또는 WebP 사진을 선택하세요.',
   'canvas.mindMapOneSentence.photoTooLarge': '사진이 너무 큽니다. 최대 크기는 10MB입니다.',
   'canvas.mindMapOneSentence.photoUntitledMap': '마인드맵',
-  'canvas.mindMapOneSentence.photoHanddrawnReply': '손그림 마인드맵 “{topic}”을(를) 감지했습니다. 캔버스에 다시 그렸고 개요는 문서 요약에 저장했습니다.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': '손그림 마인드맵 “{topic}”을(를) 감지했습니다. 이 캔버스에 다시 그렸고 개요는 문서 요약에 저장했습니다.',
-  'canvas.mindMapOneSentence.photoOcrReply': '사진에서 텍스트를 추출했습니다:\n{excerpt}\n\n전체 텍스트는 문서 요약에 있습니다.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply':
+    '손그림 마인드맵 “{topic}”을(를) 감지했습니다. 캔버스에 다시 그렸고 개요는 문서 요약에 저장했습니다.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
+    '손그림 마인드맵 “{topic}”을(를) 감지했습니다. 이 캔버스에 다시 그렸고 개요는 문서 요약에 저장했습니다.',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    '사진에서 텍스트를 추출했습니다:\n{excerpt}\n\n전체 텍스트는 문서 요약에 있습니다.',
   'canvas.mindMapOneSentence.photoFailed': '사진을 처리하지 못했습니다.',
   'canvas.mindMapOneSentence.micDenied': '마이크를 사용할 수 없습니다 — 브라우저 권한을 확인하세요',
   'canvas.mindMapOneSentence.ttsToggle': '음성 전환',
-  'canvas.mindMapOneSentence.kittyWelcome': '안녕하세요 — 만들 다이어그램을 말하거나, 이어서 채팅하며 가지와 노드를 편집하세요.',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    '안녕하세요 — 만들 다이어그램을 말하거나, 이어서 채팅하며 가지와 노드를 편집하세요.',
   'canvas.mindMapOneSentence.switchDiagramType': '{type}(으)로 전환 중…',
   'canvas.mindMapOneSentence.kittyGenerating': '알겠습니다 — 다이어그램을 생성합니다…',
-  'canvas.mindMapOneSentence.kittyGenerateDone': '다이어그램이 준비되었습니다. 계속 입력해 가지나 노드를 편집하세요.',
-  'canvas.mindMapOneSentence.kittyGenerateFailed': '다이어그램 생성에 실패했습니다. 다시 시도하거나 설명을 다듬으세요.',
-  'canvas.mindMapOneSentence.kittyEditFailed': '그 편집을 적용하지 못했습니다. 요청을 다시 표현해 보세요.',
-  'canvas.mindMapOneSentence.kittyEditStale': '그 편집이 캔버스에 반영되지 않았습니다(만료 또는 무효). 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed': '캔버스가 그 편집을 확인하지 못했습니다. 다이어그램은 변경되지 않았습니다.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed': '편집은 로컬에 적용되었지만 동기화에 실패했습니다. 잠시 후 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed': '캔버스를 동기화하지 못했습니다. 잠시 후 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': '캔버스를 동기화하지 못했습니다({detail}). 잠시 후 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyEditBusy': '다이어그램이 아직 생성 중입니다 — 기다린 뒤 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} 결과가 아직 스트리밍 중입니다 — 끝나면 요청을 자동으로 실행합니다.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': '다른 모델 결과가 아직 스트리밍 중입니다 — 끝나면 요청을 자동으로 실행합니다.',
+  'canvas.mindMapOneSentence.kittyGenerateDone':
+    '다이어그램이 준비되었습니다. 계속 입력해 가지나 노드를 편집하세요.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed':
+    '다이어그램 생성에 실패했습니다. 다시 시도하거나 설명을 다듬으세요.',
+  'canvas.mindMapOneSentence.kittyEditFailed':
+    '그 편집을 적용하지 못했습니다. 요청을 다시 표현해 보세요.',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    '그 편집이 캔버스에 반영되지 않았습니다(만료 또는 무효). 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    '캔버스가 그 편집을 확인하지 못했습니다. 다이어그램은 변경되지 않았습니다.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    '편집은 로컬에 적용되었지만 동기화에 실패했습니다. 잠시 후 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed':
+    '캔버스를 동기화하지 못했습니다. 잠시 후 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    '캔버스를 동기화하지 못했습니다({detail}). 잠시 후 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyEditBusy':
+    '다이어그램이 아직 생성 중입니다 — 기다린 뒤 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    '{models} 결과가 아직 스트리밍 중입니다 — 끝나면 요청을 자동으로 실행합니다.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    '다른 모델 결과가 아직 스트리밍 중입니다 — 끝나면 요청을 자동으로 실행합니다.',
   'canvas.mindMapOneSentence.kittyEditBusyResuming': '다른 모델이 끝났습니다 — 요청을 계속합니다…',
   'canvas.mindMapOneSentence.requestQueued': '대기열에 추가됨',
   'canvas.mindMapOneSentence.requestFailed': '실패',
   'canvas.mindMapOneSentence.kittyEditAccessDenied': '이 다이어그램을 편집할 권한이 없습니다.',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': '다이어그램이 방금 업데이트되어 그 편집이 만료되었습니다. 변경을 다시 요청하세요.',
-  'canvas.mindMapOneSentence.kittyEditTimeout': '편집 시간이 초과되었습니다 — 다이어그램이 변경되지 않았을 수 있습니다. 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner': '편집 가능한 캔버스를 찾지 못했습니다. 캔버스를 연 뒤 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyEditAddFailed': '죄송하지만 그 노드를 추가하지 못했습니다. 이름을 확인하고 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed': '죄송하지만 그 노드 이름을 바꾸지 못했습니다. 이름을 확인하고 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyEditCenterFailed': '죄송하지만 주제를 업데이트하지 못했습니다. 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed': '죄송하지만 그 노드를 제거하지 못했습니다. 이름을 확인하고 다시 시도하세요.',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': '죄송하지만 그 가지를 자동 완성하지 못했습니다. 다시 요청할 수 있습니다.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    '다이어그램이 방금 업데이트되어 그 편집이 만료되었습니다. 변경을 다시 요청하세요.',
+  'canvas.mindMapOneSentence.kittyEditTimeout':
+    '편집 시간이 초과되었습니다 — 다이어그램이 변경되지 않았을 수 있습니다. 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    '편집 가능한 캔버스를 찾지 못했습니다. 캔버스를 연 뒤 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyEditAddFailed':
+    '죄송하지만 그 노드를 추가하지 못했습니다. 이름을 확인하고 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    '죄송하지만 그 노드 이름을 바꾸지 못했습니다. 이름을 확인하고 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyEditCenterFailed':
+    '죄송하지만 주제를 업데이트하지 못했습니다. 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    '죄송하지만 그 노드를 제거하지 못했습니다. 이름을 확인하고 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    '죄송하지만 그 가지를 자동 완성하지 못했습니다. 다시 요청할 수 있습니다.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': '그 가지가 준비되었습니다.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': '그 가지들이 준비되었습니다.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': '일부 가지는 준비되었지만 몇 개는 끝나지 않았습니다. 자동 완성을 다시 요청할 수 있습니다.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
+    '일부 가지는 준비되었지만 몇 개는 끝나지 않았습니다. 자동 완성을 다시 요청할 수 있습니다.',
   'canvas.mindMapOneSentence.kittyWorking': '알겠습니다 — 진행 중입니다…',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty를 사용할 수 없습니다. 서버에서 FEATURE_KITTY_AGENT가 켜져 있는지 확인하세요.',
-  'canvas.mindMapOneSentence.kittyConnectFailed': '캔버스 Kitty에 연결하지 못했습니다. 데스크톱에서 이 다이어그램을 연 뒤 다시 시도하세요.',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'Kitty를 사용할 수 없습니다. 서버에서 FEATURE_KITTY_AGENT가 켜져 있는지 확인하세요.',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    '캔버스 Kitty에 연결하지 못했습니다. 데스크톱에서 이 다이어그램을 연 뒤 다시 시도하세요.',
   'canvas.mindMapOneSentence.clarifyChoices': '옵션 선택',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput': '모바일 Kitty가 이 다이어그램에 연결되어 있습니다. 휴대폰으로 말하거나 입력하세요 — 데스크톱 입력은 일시 중지됩니다.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint': '폰 Kitty가 다른 다이어그램에 있습니다. 폰에서 동기화하거나 여기서 그 다이어그램을 여세요.',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': '휴대폰의 모바일 Kitty를 사용하세요…',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    '모바일 Kitty가 이 다이어그램에 연결되어 있습니다. 휴대폰으로 말하거나 입력하세요 — 데스크톱 입력은 일시 중지됩니다.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    '폰 Kitty가 다른 다이어그램에 있습니다. 폰에서 동기화하거나 여기서 그 다이어그램을 여세요.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder':
+    '휴대폰의 모바일 Kitty를 사용하세요…',
   'canvas.mindMapNodeExplain.titleFallback': '노드 설명',
   'canvas.mindMapNodeExplain.requestFailed': '설명을 가져오지 못했습니다. 다시 시도해 주세요.',
   'canvas.mindMapNodeExplain.thinking': '생각',
@@ -887,17 +972,21 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': '채팅 기록',
   'canvas.mindMapDocumentSummary.tabFileUpload': '파일 업로드',
   'canvas.mindMapDocumentSummary.tabPaste': '텍스트 붙여넣기',
-  'canvas.mindMapDocumentSummary.pasteHintLite': '종이, 메모 또는 회의록을 붙여넣으면 구조를 다듬고 마인드 맵을 생성해 드립니다.',
+  'canvas.mindMapDocumentSummary.pasteHintLite':
+    '종이, 메모 또는 회의록을 붙여넣으면 구조를 다듬고 마인드 맵을 생성해 드립니다.',
   'canvas.mindMapDocumentSummary.tabChatHistory': '채팅 기록',
   'canvas.mindMapDocumentSummary.intro': '핵심을 추출해 더 정확한 마인드맵을 생성합니다',
   'canvas.mindMapDocumentSummary.uploadFileHint': '클릭하여 파일 업로드',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, 텍스트, 이미지, 오디오 — 추출된 마크다운만 보관됩니다',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint':
+    'PDF, Word, PPT, Excel, 텍스트, 이미지, 오디오 — 추출된 마크다운만 보관됩니다',
   'canvas.mindMapDocumentSummary.invalidFileType': '지원되지 않는 파일 유형',
   'canvas.mindMapDocumentSummary.saveContent': '내용 저장',
   'canvas.mindMapDocumentSummary.fetchAndSave': '가져와서 저장',
   'canvas.mindMapDocumentSummary.webFetchStarted': '페이지 내용을 가져오는 중…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite': '공개 페이지 URL을 붙여넣으세요 — 가능한 한 많은 본문을 가져와 Markdown으로 저장합니다.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint': '직접 링크 가져오기는 서버 측이며 로그인 쿠키를 사용할 수 없어 인증·유료 장벽 페이지는 불완전할 수 있습니다.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite':
+    '공개 페이지 URL을 붙여넣으세요 — 가능한 한 많은 본문을 가져와 Markdown으로 저장합니다.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
+    '직접 링크 가져오기는 서버 측이며 로그인 쿠키를 사용할 수 없어 인증·유료 장벽 페이지는 불완전할 수 있습니다.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Chrome 확장 다운로드',
   'canvas.mindMapDocumentSummary.statusExtracting': '추출 중…',
   'canvas.mindMapDocumentSummary.stageStarting': '시작 중…',
@@ -906,15 +995,20 @@ export default {
   'canvas.mindMapDocumentSummary.stageOcr': '이미지 텍스트 읽는 중…',
   'canvas.mindMapDocumentSummary.stageTranscribing': '오디오 받아쓰는 중…',
   'canvas.mindMapDocumentSummary.stageStoring': '추출된 텍스트 저장 중…',
-  'canvas.mindMapDocumentSummary.replaceSourceHint': '다시 업로드하면 이 다이어그램의 현재 소스가 교체됩니다',
+  'canvas.mindMapDocumentSummary.replaceSourceHint':
+    '다시 업로드하면 이 다이어그램의 현재 소스가 교체됩니다',
   'canvas.mindMapDocumentSummary.fromSource': '{name}에서',
   'canvas.mindMapDocumentSummary.deleteSource': '소스 삭제',
-  'canvas.mindMapDocumentSummary.sourceDeleted': '소스가 삭제되었습니다 — 다시 업로드할 수 있습니다',
+  'canvas.mindMapDocumentSummary.sourceDeleted':
+    '소스가 삭제되었습니다 — 다시 업로드할 수 있습니다',
   'canvas.mindMapDocumentSummary.extractStarted': '내용 추출 중…',
   'canvas.mindMapDocumentSummary.extractFailed': '이 파일에서 텍스트를 추출하지 못했습니다',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown이 준비되었습니다. 마인드맵을 생성하거나 소스를 삭제해 다른 것을 업로드하세요.',
-  'canvas.mindMapDocumentSummary.deleteToRetry': '이 소스를 삭제한 뒤 다시 업로드·붙여넣기·페이지 가져오기를 하세요.',
-  'canvas.mindMapDocumentSummary.chatIntroLite': '파일 리더를 다운로드하고 페어링 코드를 입력한 뒤, 이 코퍼스에 위챗 또는 딩톡 기록을 보내세요.',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'Markdown이 준비되었습니다. 마인드맵을 생성하거나 소스를 삭제해 다른 것을 업로드하세요.',
+  'canvas.mindMapDocumentSummary.deleteToRetry':
+    '이 소스를 삭제한 뒤 다시 업로드·붙여넣기·페이지 가져오기를 하세요.',
+  'canvas.mindMapDocumentSummary.chatIntroLite':
+    '파일 리더를 다운로드하고 페어링 코드를 입력한 뒤, 이 코퍼스에 위챗 또는 딩톡 기록을 보내세요.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': '채팅 기록을 받았습니다',
   'canvas.mindMapDocumentSummary.chatDoneLite': '채팅이 저장되었습니다 — 준비되면 생성을 누르세요',
   'canvas.mindMapDocumentSummary.corpusStatus': '{total}개 중 {completed}개 소스 인덱싱됨',
@@ -927,9 +1021,12 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': '인덱싱 중…',
   'canvas.mindMapDocumentSummary.statusFailed': '실패',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': '지식 공간이 비활성화되어 있습니다',
-  'canvas.mindMapDocumentSummary.featureDisabledHint': '문서 요약을 쓰려면 지식 공간 기능을 켜세요.',
-  'canvas.mindMapDocumentSummary.saveDiagramHint': '이 다이어그램을 저장해 패키지를 연결하고 전체 RAG 검색을 사용하세요.',
-  'canvas.mindMapDocumentSummary.chatIntro': '파일 리더를 다운로드하고 아래 페어링 코드를 입력한 뒤, 위챗 또는 딩톡 기록을 이 코퍼스로 보내세요.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint':
+    '문서 요약을 쓰려면 지식 공간 기능을 켜세요.',
+  'canvas.mindMapDocumentSummary.saveDiagramHint':
+    '이 다이어그램을 저장해 패키지를 연결하고 전체 RAG 검색을 사용하세요.',
+  'canvas.mindMapDocumentSummary.chatIntro':
+    '파일 리더를 다운로드하고 아래 페어링 코드를 입력한 뒤, 위챗 또는 딩톡 기록을 이 코퍼스로 보내세요.',
   'canvas.mindMapDocumentSummary.pairingCode': '페어링 코드',
   'canvas.mindMapDocumentSummary.startPairingCode': '페어링 코드 받기',
   'canvas.mindMapDocumentSummary.pairingExpires': '{minutes}분 후 만료',
@@ -938,29 +1035,37 @@ export default {
   'canvas.mindMapDocumentSummary.chatReceived': '채팅 기록을 받아 코퍼스에 추가했습니다',
   'canvas.mindMapDocumentSummary.chatIndexing': '채팅 기록 인덱싱 중…',
   'canvas.mindMapDocumentSummary.chatDone': '채팅이 코퍼스에 추가되었습니다',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed': '업로드 또는 인덱싱 실패 — 새로고침해 다시 시도하세요',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed':
+    '업로드 또는 인덱싱 실패 — 새로고침해 다시 시도하세요',
   'canvas.mindMapDocumentSummary.chatMintFailed': '페어링 코드를 만들지 못했습니다',
-  'canvas.mindMapDocumentSummary.chatExpired': '페어링 코드가 만료되었습니다 — 새로고침해 새 코드를 받으세요',
+  'canvas.mindMapDocumentSummary.chatExpired':
+    '페어링 코드가 만료되었습니다 — 새로고침해 새 코드를 받으세요',
   'canvas.mindMapDocumentSummary.refreshPairingCode': '페어링 코드 새로고침',
   'canvas.mindMapDocumentSummary.sessionStartFailed': '문서 요약 세션을 시작하지 못했습니다',
   'canvas.mindMapDocumentSummary.imageTooLarge': '이미지가 너무 큽니다. 최대 크기는 10MB입니다.',
   'canvas.mindMapDocumentSummary.generateNoCorpus': '소스를 하나 이상 추가한 뒤 생성하세요',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite': '먼저 업로드·붙여넣기·페이지 가져오기를 한 뒤 생성을 누르세요',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
+    '먼저 업로드·붙여넣기·페이지 가져오기를 한 뒤 생성을 누르세요',
   'canvas.mindMapDocumentSummary.collabDisabled': '실시간 협업 중에는 사용할 수 없음',
   'canvas.mindMapDocumentSummary.ingestSuccess': '소스가 코퍼스에 추가되었습니다',
-  'canvas.mindMapDocumentSummary.ingestSuccessLite': '내용이 저장되었습니다 — 준비되면 생성을 누르세요',
+  'canvas.mindMapDocumentSummary.ingestSuccessLite':
+    '내용이 저장되었습니다 — 준비되면 생성을 누르세요',
   'canvas.mindMapDocumentSummary.ingestFailed': '소스 추가에 실패했습니다',
   'canvas.mindMapDocumentSummary.localDocumentLabel': '로컬 문서:',
   'canvas.mindMapDocumentSummary.uploadDocHint': '클릭하여 Word 또는 PDF 업로드',
   'canvas.mindMapDocumentSummary.uploadDocSubhint': '문서 내용을 자동으로 추출합니다',
   'canvas.mindMapDocumentSummary.pasteLabel': '또는 긴 메모를 붙여넣기:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder': '논문 발췌, 책 요약, 회의록, 요구사항 등을 붙여넣으세요.',
+  'canvas.mindMapDocumentSummary.pastePlaceholder':
+    '논문 발췌, 책 요약, 회의록, 요구사항 등을 붙여넣으세요.',
   'canvas.mindMapDocumentSummary.imageUploadLabel': '이미지 업로드:',
   'canvas.mindMapDocumentSummary.uploadImageHint': '클릭하여 JPG 또는 PNG 업로드',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': '손그림 마인드맵을 감지해 다시 그리거나, 그렇지 않으면 텍스트를 추출합니다',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess': '손그림 마인드맵 감지 — 캔버스에 다시 그렸습니다',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    '손그림 마인드맵을 감지해 다시 그리거나, 그렇지 않으면 텍스트를 추출합니다',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
+    '손그림 마인드맵 감지 — 캔버스에 다시 그렸습니다',
   'canvas.mindMapDocumentSummary.visionProgressDetecting': '손그림 마인드맵 감지 중…',
-  'canvas.mindMapDocumentSummary.imageOcrHint': '노트 스크린샷, 화이트보드 사진, 스캔에 적합합니다.',
+  'canvas.mindMapDocumentSummary.imageOcrHint':
+    '노트 스크린샷, 화이트보드 사진, 스캔에 적합합니다.',
   'canvas.mindMapDocumentSummary.removeImage': '이미지 제거',
   'canvas.mindMapDocumentSummary.webLinkLabel': '웹 링크:',
   'canvas.mindMapDocumentSummary.webUrlPlaceholder': '기사, 블로그 또는 뉴스 URL 붙여넣기',
@@ -974,11 +1079,16 @@ export default {
   'canvas.mindMapDocumentSummary.invalidDocType': 'Word(.docx)와 PDF만 지원됩니다',
   'canvas.mindMapDocumentSummary.invalidImageType': 'JPG와 PNG만 지원됩니다',
   'canvas.mindMapDocumentSummary.docTooLarge': '파일이 너무 큽니다. 최대 크기는 20MB입니다.',
-  'canvas.mindMapDocumentSummary.pasteTooLong': '붙여넣은 텍스트가 모델 입력 한도(약 900,000자)를 초과합니다. 줄여 주세요.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel': '추출된 텍스트가 모델 입력 한도(~900,000자 / qwen3.6-flash 991K 토큰)를 초과합니다. 더 짧은 문서를 사용하세요.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel': '이 파일의 텍스트가 모델에 너무 깁니다. 더 짧은 문서를 업로드하세요(텍스트 약 900,000자 미만).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared': '저장된 추출이 없거나 동기화되지 않아 지워졌습니다. 문서를 다시 업로드하거나 붙여넣으세요.',
-  'canvas.mindMapDocumentSummary.contentFiltered': '콘텐츠가 보안 검토를 통과하지 못했습니다. 텍스트를 수정하고 다시 시도하십시오.',
+  'canvas.mindMapDocumentSummary.pasteTooLong':
+    '붙여넣은 텍스트가 모델 입력 한도(약 900,000자)를 초과합니다. 줄여 주세요.',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel':
+    '추출된 텍스트가 모델 입력 한도(~900,000자 / qwen3.6-flash 991K 토큰)를 초과합니다. 더 짧은 문서를 사용하세요.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel':
+    '이 파일의 텍스트가 모델에 너무 깁니다. 더 짧은 문서를 업로드하세요(텍스트 약 900,000자 미만).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared':
+    '저장된 추출이 없거나 동기화되지 않아 지워졌습니다. 문서를 다시 업로드하거나 붙여넣으세요.',
+  'canvas.mindMapDocumentSummary.contentFiltered':
+    '콘텐츠가 보안 검토를 통과하지 못했습니다. 텍스트를 수정하고 다시 시도하십시오.',
   'canvas.mindMapSideToolbar.learningSheet': '학습지',
   'canvas.mobile.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
@@ -991,7 +1101,8 @@ export default {
   'canvas.mindClassroom.mascotDismiss': '바닥까지 집어넣어',
   'canvas.mindClassroom.audienceLine': '현재 청중: {level} (하단 [전문 콘텐츠]부터)',
   'canvas.mindClassroom.start': '설명 시작',
-  'canvas.mindClassroom.startPreview': 'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
+  'canvas.mindClassroom.startPreview':
+    'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
   'canvas.mindClassroom.queue.queued': '이미 튜토리얼 대기열에 참여했습니다…',
   'canvas.mindClassroom.queue.planning': '강의 노트/교육 계획 생성 중...',
   'canvas.mindClassroom.queue.transcriptBranch': '{name} 지점의 수업 계획 작성',
@@ -1000,12 +1111,15 @@ export default {
   'canvas.mindClassroom.queue.generating': '슬라이드쇼 생성 중…',
   'canvas.mindClassroom.queue.loadingVoice': '음성 로드 중…',
   'canvas.mindClassroom.queue.ready': '강의를 시작할 수 있다',
-  'canvas.mindClassroom.queue.readyHint': '강의 노트/수업 계획이 준비되었으며 강의를 시작할 수 있습니다.',
+  'canvas.mindClassroom.queue.readyHint':
+    '강의 노트/수업 계획이 준비되었으며 강의를 시작할 수 있습니다.',
   'canvas.mindClassroom.queue.failed': '준비실패를 설명하라',
   'canvas.mindClassroom.queue.cancel': '대기열 취소',
   'canvas.mindClassroom.queue.restart': 'Restart',
-  'canvas.mindClassroom.queue.restartHint': 'Regenerate the script / lesson plan with the current settings',
-  'canvas.mindClassroom.queue.guestHint': '방문자는 설명을 위해 로컬 템플릿을 사용합니다. 로그인 후 엔진은 강의 노트/교육 계획을 생성합니다.',
+  'canvas.mindClassroom.queue.restartHint':
+    'Regenerate the script / lesson plan with the current settings',
+  'canvas.mindClassroom.queue.guestHint':
+    '방문자는 설명을 위해 로컬 템플릿을 사용합니다. 로그인 후 엔진은 강의 노트/교육 계획을 생성합니다.',
   'canvas.mindClassroom.queue.loginRequired': '설명을 시작하기 전에 먼저 로그인을 해주세요.',
   'canvas.mindClassroom.queue.preparing': '설명 준비중..',
   'canvas.mindClassroom.settings.masteryTitle': '나는 이 사진을 얼마나 잘 알고 있는가?',
@@ -1014,15 +1128,20 @@ export default {
   'canvas.mindClassroom.settings.mastery.teach.title': '수업 준비 및 교육',
   'canvas.mindClassroom.settings.presentationTitle': '설명이 어떻게 표시되기를 원하는지',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': '캔버스 보이스 투어',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': '맵 캔버스의 오디오 설명에 집중하고, 주요 지점 또는 노드를 노드별로 선택하세요.',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    '맵 캔버스의 오디오 설명에 집중하고, 주요 지점 또는 노드를 노드별로 선택하세요.',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': '슬라이드 설명',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'AI는 왼쪽에 비교를 위한 지도가 있고 오른쪽에 페이지 넘기기 설명이 있는 슬라이드를 생성합니다.',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': '개발 중이며 곧 온라인에 공개될 예정입니다.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    'AI는 왼쪽에 비교를 위한 지도가 있고 오른쪽에 페이지 넘기기 설명이 있는 슬라이드를 생성합니다.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
+    '개발 중이며 곧 온라인에 공개될 예정입니다.',
   'canvas.mindClassroom.settings.tourScopeTitle': '투어 세분성',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': '마스터 브랜치별',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc': '1단계 가지를 단계별로 학습하며 리듬이 더욱 안정적입니다.',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
+    '1단계 가지를 단계별로 학습하며 리듬이 더욱 안정적입니다.',
   'canvas.mindClassroom.settings.tourScope.each_node.title': '노드별',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc': '집중적인 독서에 적합한 모든 노드에 깊이 들어가십시오.',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc':
+    '집중적인 독서에 적합한 모든 노드에 깊이 들어가십시오.',
   'canvas.mindClassroom.settings.slideStyleTitle': '슬라이드쇼 스타일',
   'canvas.mindClassroom.settings.slideStyle.general.title': '유니버설 슬라이드',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': '칠판 보고서',
@@ -1040,10 +1159,12 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': '집중 독서',
   'canvas.mindClassroom.settings.tone.examples': '풍부한 예',
   'canvas.mindClassroom.settings.tone.exam_outline': '시험개요',
-  'canvas.mindClassroom.lecture.needDiagram': '설명을 시작하기 전에 캔버스에 마인드맵을 만들어주세요.',
+  'canvas.mindClassroom.lecture.needDiagram':
+    '설명을 시작하기 전에 캔버스에 마인드맵을 만들어주세요.',
   'canvas.mindClassroom.lecture.emptySteps': '현재 맵에는 설명할 노드가 없습니다.',
   'canvas.mindClassroom.lecture.cancelled': '튜토리얼 대기열이 취소되었습니다.',
-  'canvas.mindClassroom.lecture.queueFailed': '튜토리얼 준비에 실패했습니다. 나중에 다시 시도해 주세요.',
+  'canvas.mindClassroom.lecture.queueFailed':
+    '튜토리얼 준비에 실패했습니다. 나중에 다시 시도해 주세요.',
   'canvas.mindClassroom.lecture.pause': '정지시키다',
   'canvas.mindClassroom.lecture.resume': '계속하다',
   'canvas.mindClassroom.lecture.prev': '이전 섹션',
@@ -1053,28 +1174,48 @@ export default {
   'canvas.mindClassroom.lecture.unmute': '큰 소리로 읽기 시작',
   'canvas.mindClassroom.lecture.script.noBranches': '몇 가지 점',
   'canvas.mindClassroom.lecture.script.leafNode': '이 지점에 대한 자세한 내용은 아직 없습니다.',
-  'canvas.mindClassroom.lecture.script.overview.classroom': '안녕하세요, 학우 여러분. 오늘 우리는 "{topic}"을 중심으로 배우고 "{audience}" 청중을 마주하며 "{mastery}"의 속도로 전개됩니다. 전체 그림에는 주로 {branches}이 포함됩니다. 전체적인 그림을 먼저 보고, 그다음에 하나씩 정리해보세요.',
-  'canvas.mindClassroom.lecture.script.overview.story': '먼저 "{topic}"을 이야기 제목으로 생각해 보세요. "{audience}"을 마주하면서 전체 그림에서 세부 사항까지 살펴보겠습니다. 이야기에는 다음과 같은 장들이 있습니다-{branches}.',
-  'canvas.mindClassroom.lecture.script.overview.dialogue': '먼저 "{topic}"을 함께 살펴보겠습니다. 만약 당신이 "{audience}"이라면 어떤 부분을 가장 먼저 주목하게 될까요? 전체 그림에는 대략 다음이 포함됩니다. {branches}. 우리는 질문을 하고 질문에 답하며 내려갔습니다.',
-  'canvas.mindClassroom.lecture.script.overview.socratic': '아직 결론을 외우려고 서두르지 마세요. "{topic}"에 직면했을 때 왜 사진을 찍을 가치가 있다고 생각하시나요? 우리는 "{mastery}"의 깊이를 따르고 다음 분기에서 질문합니다: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.fast': '"{topic}"({audience})을 잠깐 살펴보세요. 트렁크: {branches}. 다음으로, 하나씩 지점에 도달하세요.',
-  'canvas.mindClassroom.lecture.script.overview.close_read': '집중독서 시작: 주제는 "{topic}"입니다. 전체 구조를 먼저 파악하세요 - {branches} - 그리고 각 지점을 주의 깊게 읽어보세요. 대상 설정: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.examples': '예제부터 시작하세요. "{topic}"이라는 주제는 생활이나 교실의 한 장면으로 생각할 수 있습니다. 전체 그림의 가지가 다른 장면과 같습니다: {branches}. 청중: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline': '테스트 포인트 개요: "{topic}". 개요에 따라 주요 사항을 기록합니다——{branches}. 난이도는 "{audience}", 리듬은 "{mastery}"에 맞춰져 있습니다.',
-  'canvas.mindClassroom.lecture.script.branch.classroom': '분기 {index}/{total}: "{title}"를 살펴보세요. 그 아래에도 {children}이 있습니다. 이 구간의 역할을 전체적으로 이해하려면 지도 위치를 참고하시기 바랍니다.',
-  'canvas.mindClassroom.lecture.script.branch.story': '이야기는 {index} "{title}" 장에 도달합니다. 이 장에 등장: {children}. 그림의 전체 줄거리를 어떻게 발전시키는지 생각해 보세요.',
-  'canvas.mindClassroom.lecture.script.branch.dialogue': '이것을 물어보겠습니다. "{title}"을 언급하면 ​​어떤 생각이 드시나요? 다이어그램은 다음을 제공합니다: {children}. ({index}/{total})을 비교해 보겠습니다.',
-  'canvas.mindClassroom.lecture.script.branch.socratic': '후속 질문: "{title}"이 별도의 분기여야 하는 이유는 무엇입니까? 하위 항목 "{children}"과의 관계는 무엇입니까? 먼저 스스로 답해보시고 지도({index}/{total})를 참고해주세요.',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    '안녕하세요, 학우 여러분. 오늘 우리는 "{topic}"을 중심으로 배우고 "{audience}" 청중을 마주하며 "{mastery}"의 속도로 전개됩니다. 전체 그림에는 주로 {branches}이 포함됩니다. 전체적인 그림을 먼저 보고, 그다음에 하나씩 정리해보세요.',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    '먼저 "{topic}"을 이야기 제목으로 생각해 보세요. "{audience}"을 마주하면서 전체 그림에서 세부 사항까지 살펴보겠습니다. 이야기에는 다음과 같은 장들이 있습니다-{branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    '먼저 "{topic}"을 함께 살펴보겠습니다. 만약 당신이 "{audience}"이라면 어떤 부분을 가장 먼저 주목하게 될까요? 전체 그림에는 대략 다음이 포함됩니다. {branches}. 우리는 질문을 하고 질문에 답하며 내려갔습니다.',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    '아직 결론을 외우려고 서두르지 마세요. "{topic}"에 직면했을 때 왜 사진을 찍을 가치가 있다고 생각하시나요? 우리는 "{mastery}"의 깊이를 따르고 다음 분기에서 질문합니다: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    '"{topic}"({audience})을 잠깐 살펴보세요. 트렁크: {branches}. 다음으로, 하나씩 지점에 도달하세요.',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    '집중독서 시작: 주제는 "{topic}"입니다. 전체 구조를 먼저 파악하세요 - {branches} - 그리고 각 지점을 주의 깊게 읽어보세요. 대상 설정: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    '예제부터 시작하세요. "{topic}"이라는 주제는 생활이나 교실의 한 장면으로 생각할 수 있습니다. 전체 그림의 가지가 다른 장면과 같습니다: {branches}. 청중: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    '테스트 포인트 개요: "{topic}". 개요에 따라 주요 사항을 기록합니다——{branches}. 난이도는 "{audience}", 리듬은 "{mastery}"에 맞춰져 있습니다.',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    '분기 {index}/{total}: "{title}"를 살펴보세요. 그 아래에도 {children}이 있습니다. 이 구간의 역할을 전체적으로 이해하려면 지도 위치를 참고하시기 바랍니다.',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    '이야기는 {index} "{title}" 장에 도달합니다. 이 장에 등장: {children}. 그림의 전체 줄거리를 어떻게 발전시키는지 생각해 보세요.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    '이것을 물어보겠습니다. "{title}"을 언급하면 ​​어떤 생각이 드시나요? 다이어그램은 다음을 제공합니다: {children}. ({index}/{total})을 비교해 보겠습니다.',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    '후속 질문: "{title}"이 별도의 분기여야 하는 이유는 무엇입니까? 하위 항목 "{children}"과의 관계는 무엇입니까? 먼저 스스로 답해보시고 지도({index}/{total})를 참고해주세요.',
   'canvas.mindClassroom.lecture.script.branch.fast': '"{title}" → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read': '"{title}"을 집중적으로 읽으세요. 하위 정보를 하나씩 읽어보십시오: {children}. 이 분기는 {index}/{total} 단락에 있습니다. 문구와 수준에주의하십시오.',
-  'canvas.mindClassroom.lecture.script.branch.examples': '"{title}"을 이해하는 데 도움이 되는 예를 들어보세요. {children}이 포함된 특정 장면으로 생각할 수 있습니다. 우리는 {index}/{total} 지점에 있습니다.',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline': '테스트 포인트 {index}/{total}: "{title}". 하위 포인트: {children}. 검토 시에는 제목을 먼저 외운 후 내용을 기재하시기 바랍니다.',
-  'canvas.mindClassroom.lecture.script.closing.first_look': '총평: 방금 "{topic}"의 뼈대를 알게 되었습니다. 전체 사진을 다시 스캔하여 아직 익숙하지 않은 지점 2~3개를 표시하고 다음 번부터 시작하는 것이 좋습니다.',
-  'canvas.mindClassroom.lecture.script.closing.review': '검토 결론: "{topic}" 책을 덮으면서 주요 내용을 다시 말씀해 주실 수 있나요? 한 섹션이 막히면 지도의 해당 섹션으로 돌아가서 다시 살펴보세요.',
-  'canvas.mindClassroom.lecture.script.closing.teach': '수업 준비 및 마무리: "{topic}"을 "{audience}"에 가르칠 때 지도의 순서(열기 - 확장 - 닫기)를 따를 수 있습니다. 특정 분기를 수업 질문으로 나눌 수도 있습니다.',
-  'canvas.mindMapSideToolbar.oneSentenceIntro': '주제나 편집 요청을 한 문장으로 설명해 맵을 생성하거나 다듬습니다',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    '"{title}"을 집중적으로 읽으세요. 하위 정보를 하나씩 읽어보십시오: {children}. 이 분기는 {index}/{total} 단락에 있습니다. 문구와 수준에주의하십시오.',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    '"{title}"을 이해하는 데 도움이 되는 예를 들어보세요. {children}이 포함된 특정 장면으로 생각할 수 있습니다. 우리는 {index}/{total} 지점에 있습니다.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    '테스트 포인트 {index}/{total}: "{title}". 하위 포인트: {children}. 검토 시에는 제목을 먼저 외운 후 내용을 기재하시기 바랍니다.',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    '총평: 방금 "{topic}"의 뼈대를 알게 되었습니다. 전체 사진을 다시 스캔하여 아직 익숙하지 않은 지점 2~3개를 표시하고 다음 번부터 시작하는 것이 좋습니다.',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    '검토 결론: "{topic}" 책을 덮으면서 주요 내용을 다시 말씀해 주실 수 있나요? 한 섹션이 막히면 지도의 해당 섹션으로 돌아가서 다시 살펴보세요.',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    '수업 준비 및 마무리: "{topic}"을 "{audience}"에 가르칠 때 지도의 순서(열기 - 확장 - 닫기)를 따를 수 있습니다. 특정 분기를 수업 질문으로 나눌 수도 있습니다.',
+  'canvas.mindMapSideToolbar.oneSentenceIntro':
+    '주제나 편집 요청을 한 문장으로 설명해 맵을 생성하거나 다듬습니다',
   'canvas.mindMapSideToolbar.documentSummary': '문서 요약',
-  'fileCenter.intro': '패키지는 이 다이어그램용으로 큐레이션된 소스 집합입니다. 파일·메모·웹 페이지를 추가하면 다이어그램이 이 소스에서 가지를 완성합니다.',
+  'fileCenter.intro':
+    '패키지는 이 다이어그램용으로 큐레이션된 소스 집합입니다. 파일·메모·웹 페이지를 추가하면 다이어그램이 이 소스에서 가지를 완성합니다.',
   'fileCenter.defaultPackageName': '제목 없는 패키지',
   'fileCenter.packageNameLabel': '패키지 이름',
   'fileCenter.createPackage': '패키지 만들기',
@@ -1109,9 +1250,12 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': '아직 노드 없음',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI 생성',
   'canvas.mindMapSideToolbar.outlineEditHint': '아무 행이나 더블클릭해 인라인 편집',
-  'canvas.mindMapSideToolbar.outlineIntro': '개요에서 구조를 편집 — 드래그로 순서 변경, 줄을 붙여넣어 일괄 추가',
-  'canvas.mindMapSideToolbar.outlineDragHint': '드래그로 순서 변경; 위/아래에 놓으면 형제, 가운데에 놓으면 자식으로 중첩',
-  'canvas.mindMapSideToolbar.outlinePasteHint': '노드를 선택하고 여러 줄 텍스트를 붙여넣어 형제 노드를 일괄 추가',
+  'canvas.mindMapSideToolbar.outlineIntro':
+    '개요에서 구조를 편집 — 드래그로 순서 변경, 줄을 붙여넣어 일괄 추가',
+  'canvas.mindMapSideToolbar.outlineDragHint':
+    '드래그로 순서 변경; 위/아래에 놓으면 형제, 가운데에 놓으면 자식으로 중첩',
+  'canvas.mindMapSideToolbar.outlinePasteHint':
+    '노드를 선택하고 여러 줄 텍스트를 붙여넣어 형제 노드를 일괄 추가',
   'canvas.mindMapPaste.inserted': '형제 노드 {count}개 삽입됨',
   'canvas.mindMapPaste.truncated': '줄 한도에 도달 — 처음 50줄만 삽입되었습니다',
   'canvas.mindMapSideToolbar.realtimeSync': '실시간 동기화',
@@ -1128,20 +1272,24 @@ export default {
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
     'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro': '연습과 복습용 학습지를 만드는 방법을 선택하세요.',
+  'canvas.mindMapSideToolbar.learningSheetIntro':
+    '연습과 복습용 학습지를 만드는 방법을 선택하세요.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
     'Blank every node except the center topic; reference answers appear below the diagram.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': '무작위 빈칸',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc': '노드의 약 20%를 무작위로 비웁니다. 답은 다이어그램 아래에 표시됩니다.',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
+    '노드의 약 20%를 무작위로 비웁니다. 답은 다이어그램 아래에 표시됩니다.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count}개 노드 비움 · Esc로 닫기',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': '사용자 지정 빈칸',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc': '커서가 망치가 됩니다 — 노드를 클릭해 비우고 다시 클릭해 복원합니다.',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
+    '커서가 망치가 됩니다 — 노드를 클릭해 비우고 다시 클릭해 복원합니다.',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': '활성 · {count}개 노드 비움',
   'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': '선택 모드 · 캔버스에서 노드 클릭',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': '사용자 지정 빈칸 모드',
-  'canvas.mindMapSideToolbar.learningSheetPickHint': '클릭해 비우고 다시 클릭해 복원 · {count}개 비움 · Esc로 종료',
+  'canvas.mindMapSideToolbar.learningSheetPickHint':
+    '클릭해 비우고 다시 클릭해 복원 · {count}개 비움 · Esc로 종료',
   'canvas.mindMapSideToolbar.learningSheetPickDone': '완료',
   'canvas.mindMapSideToolbar.learningSheetProtectedNode': '주제와 구조 노드는 비울 수 없습니다',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': '노드 비우기',
@@ -1149,7 +1297,8 @@ export default {
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': '노드 텍스트 복원',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': '참고 답 숨기기',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': '참고 답변 유지',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': '닫으면 녹아웃 영역의 캔버스에 답변이 표시되지 않습니다.',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
+    '닫으면 녹아웃 영역의 캔버스에 답변이 표시되지 않습니다.',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': '캔버스 답',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': '표시',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': '숨기기',
@@ -1247,7 +1396,8 @@ export default {
   'editor.redo': '다시 실행',
   'editor.saveDiagram': '다이어그램 저장',
   'editor.selectDiagramType': '다이어그램 유형 선택',
-  'editor.slotsFull': '공간이 가득 차 자동 저장을 사용할 수 없습니다. 기존 다이어그램을 삭제해 공간을 확보하세요.',
+  'editor.slotsFull':
+    '공간이 가득 차 자동 저장을 사용할 수 없습니다. 기존 다이어그램을 삭제해 공간을 확보하세요.',
   'editor.undo': '실행 취소',
   'editor.zoomIn': '확대',
   'editor.zoomOut': '축소',
@@ -1287,7 +1437,8 @@ export default {
   'landing.diagramGrid.tree_map.title': '트리 맵',
   'landing.diagramGrid.voice_notes.desc': '녹음 후 마인드맵',
   'landing.diagramGrid.voice_notes.title': '음성 노트',
-  'landing.template.freePlaceholder': '주제나 구조(가지, 단계, 범주…)를 설명하거나 아래 템플릿을 선택하세요…',
+  'landing.template.freePlaceholder':
+    '주제나 구조(가지, 단계, 범주…)를 설명하거나 아래 템플릿을 선택하세요…',
   'landing.template.slot.criterion': '분류',
   'landing.template.slot.event': '사건',
   'landing.template.slot.itemA': '항목 A',
@@ -1319,19 +1470,22 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': '학교 세션을 불러오지 못했습니다',
   'mindgraphLanding.networkError': '네트워크 오류',
   'mindgraphLanding.networkErrorJoin': '네트워크 오류, 참여 실패',
-  'mindgraphLanding.orgSessionsEmpty': '지금 학교 세션이 없습니다. 동료가 캔버스에서 “학교 협업”을 시작해야 합니다.',
+  'mindgraphLanding.orgSessionsEmpty':
+    '지금 학교 세션이 없습니다. 동료가 캔버스에서 “학교 협업”을 시작해야 합니다.',
   'mindgraphLanding.participantsOnline': '{n}명 온라인',
   'mindgraphLanding.schoolCollab': '학교 협업',
   'mindgraphLanding.sharedCodeHint': '초대 코드(xxx-xxx)를 입력해 세션에 참여하세요.',
   'mindgraphLanding.sharedCollab': '공유 협업',
   'mindgraphLanding.joinDiagramEdit': '다이어그램 편집 참여',
-  'mindgraphLanding.welcome': '안녕하세요 {username}, 저는 MindGraph AI 시각적 사고 어시스턴트입니다',
+  'mindgraphLanding.welcome':
+    '안녕하세요 {username}, 저는 MindGraph AI 시각적 사고 어시스턴트입니다',
   'canvasPage.collabReconnecting': '협업에 다시 연결 중…',
   'canvasPage.collabConnectionFailed': '협업 연결이 끊어졌습니다.',
   'canvasPage.collabRetryConnection': '다시 시도',
   'canvasPage.collabParticipantsAria': '협업 참가자',
   'canvasPage.collabConnected': '연결됨',
   'canvas.topBar.viewOnly': '보기 전용',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': '더보기',
   'canvas.ribbon.file': '문서',
   'canvas.ribbon.nodes': '마디',
@@ -1401,6 +1555,17 @@ export default {
   'canvas.ribbon.tip.collabOrg': '우리 학교 동료를 초대하여 함께 편집하세요',
   'canvas.ribbon.tip.collabCross': '학교 전체에서 공동작업하여 이 지도를 편집하세요.',
   'canvas.ribbon.tip.collabOff': '현재 공동작업 세션 종료',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': '선택한 노드 텍스트를 굵게 표시',
   'canvas.ribbon.tip.italic': '선택한 노드 텍스트를 기울임꼴로 설정',
   'canvas.ribbon.tip.alignLeft': '노드 텍스트 왼쪽 정렬',
@@ -1452,12 +1617,14 @@ export default {
   'canvas.ribbon.docGenerate': '문서 생성',
   'canvas.ribbon.webGenerate': '웹링크 생성',
   'canvas.ribbon.voiceSummary': '녹화 요약',
-  'canvas.ribbon.sourceLocked': '현재 지도에서는 ​​{source}을 소스로 사용했습니다. 다른 생성 방법으로 변경하기 전에 새 지도를 생성하십시오.',
+  'canvas.ribbon.sourceLocked':
+    '현재 지도에서는 ​​{source}을 소스로 사용했습니다. 다른 생성 방법으로 변경하기 전에 새 지도를 생성하십시오.',
   'canvas.ribbon.sourceKind.doc': '문서',
   'canvas.ribbon.sourceKind.web': '웹링크',
   'canvas.ribbon.sourceKind.voice': '녹음',
   'canvas.ribbon.assocLine': '관련 라인',
-  'canvas.ribbon.assocLineHint': '연결하려면 다른 노드를 클릭하세요. 취소하려면 Esc 키를 누르거나 빈 캔버스를 사용하세요.',
+  'canvas.ribbon.assocLineHint':
+    '연결하려면 다른 노드를 클릭하세요. 취소하려면 Esc 키를 누르거나 빈 캔버스를 사용하세요.',
   'canvas.ribbon.assocLineSameSide': '연관선은 같은 쪽의 노드만 연결할 수 있습니다.',
   'canvas.ribbon.assocLineDelete': '관련 라인 삭제',
   'canvas.ribbon.summary': '요약',
@@ -1465,7 +1632,8 @@ export default {
   'canvas.ribbon.insertIcon': '상',
   'canvas.ribbon.insertLink': '링크',
   'canvas.ribbon.makeLearningSheet': '학습지를 만들어 보세요',
-  'canvas.ribbon.makeLearningSheetHint': '한 번의 클릭으로 학습 시트를 생성하여 보다 효율적으로 검토할 수 있습니다.',
+  'canvas.ribbon.makeLearningSheetHint':
+    '한 번의 클릭으로 학습 시트를 생성하여 보다 효율적으로 검토할 수 있습니다.',
   'canvas.ribbon.selectTwoNodes': '먼저 두 개의 노드를 선택하십시오.',
   'canvas.ribbon.insertComingSoon': '삽입 기능은 곧 제공될 예정입니다.',
   'canvas.ribbon.summaryNeedSiblings': '동일한 상위 노드 아래의 연속 노드를 선택하십시오.',
@@ -1477,7 +1645,8 @@ export default {
   'canvas.ribbon.imageUrl': '이미지 주소',
   'canvas.ribbon.imagePick': '사진 선택',
   'canvas.ribbon.imageInvalid': '유효한 이미지 주소를 입력하거나 파일을 선택하세요.',
-  'canvas.ribbon.imageTooLarge': '이미지가 너무 큽니다. 더 작은 파일로 변경하거나 URL을 사용하세요.',
+  'canvas.ribbon.imageTooLarge':
+    '이미지가 너무 큽니다. 더 작은 파일로 변경하거나 URL을 사용하세요.',
   'canvas.ribbon.imageConfirm': '사진 추가',
   'canvas.ribbon.clearIcon': '아이콘 제거',
   'canvas.ribbon.openLink': '링크 열기',
@@ -1504,7 +1673,8 @@ export default {
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': '브래킷 속을 비우세요',
   'canvas.ribbon.aiHero.learningSheet.title': '속이 빈 브래킷 다이어그램',
-  'canvas.ribbon.aiHero.learningSheet.line1': '교실 실습 및 복습에 적합한 무작위 또는 맞춤형 비우기 선택',
+  'canvas.ribbon.aiHero.learningSheet.line1':
+    '교실 실습 및 복습에 적합한 무작위 또는 맞춤형 비우기 선택',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': '브레인스토밍',
   'canvas.ribbon.aiHero.brainstorm.title': 'AI 브레인스토밍',
@@ -1532,7 +1702,8 @@ export default {
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': '협력',
   'canvas.hero.collab.title': '온라인 협업',
-  'canvas.hero.collab.line1': '학교 내 또는 초대 코드 공동 작업을 활성화하여 동료를 초대하여 함께 사진을 수정하도록 합니다.',
+  'canvas.hero.collab.line1':
+    '학교 내 또는 초대 코드 공동 작업을 활성화하여 동료를 초대하여 함께 사진을 수정하도록 합니다.',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': '내보내다',
   'canvas.hero.worksheet.title': 'DOC/PDF로 내보내기',
@@ -1547,6 +1718,4 @@ export default {
   'canvas.hero.slotFull.title': '갤러리가 가득 찼습니다.',
   'canvas.hero.slotFull.line1': '기존 아이콘을 삭제하고 현재 아이콘을 저장하세요.',
   'canvas.hero.slotFull.line2': '',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
-  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

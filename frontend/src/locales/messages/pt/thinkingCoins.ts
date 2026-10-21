@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Em breve',
   'thinkingCoins.schoolInfo': 'Contacte o administrador da escola para planos escolares',
   'thinkingCoins.school.headline': 'Pensamento com IA · soluções para escolas',
-  'thinkingCoins.school.description': 'Implementação privada, funcionalidades personalizadas e suporte operacional completo para escolas e instituições — pensado para escala, marca e segurança de dados.',
+  'thinkingCoins.school.description':
+    'Implementação privada, funcionalidades personalizadas e suporte operacional completo para escolas e instituições — pensado para escala, marca e segurança de dados.',
   'thinkingCoins.school.feature.accountManager': 'Gestor de conta dedicado',
   'thinkingCoins.school.feature.accountManagerDesc': 'Consultoria individual',
   'thinkingCoins.school.feature.privateDeploy': 'Implementação privada',
@@ -49,7 +50,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.validationRequired': 'Preencha todos os campos obrigatórios',
   'thinkingCoins.school.validationPhone': 'Introduza um número de telefone válido',
   'thinkingCoins.school.validationTooLong': 'Um ou mais campos são demasiado longos',
-  'thinkingCoins.school.validationInvalid': 'Alguns campos são inválidos — verifique e tente novamente',
+  'thinkingCoins.school.validationInvalid':
+    'Alguns campos são inválidos — verifique e tente novamente',
   'thinkingCoins.tier.trial': 'Experimental',
   'thinkingCoins.tier.monthly': 'Mensal',
   'thinkingCoins.tier.sub': 'Subscrição mensal',
@@ -63,7 +65,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Recompensa por referência',
   'thinkingCoins.reason.case_reward': 'Recompensa de caso',
   'thinkingCoins.reason.subscription_grant': 'Atribuição de subscrição',
-  'thinkingCoins.dailyExpiresHint': 'As recompensas de login são válidas no mesmo dia e serão redefinidas às 24h',
+  'thinkingCoins.dailyExpiresHint':
+    'As recompensas de login são válidas no mesmo dia e serão redefinidas às 24h',
   'thinkingCoins.dailyBalanceRemaining': 'Check-in de hoje restante {n}',
   'thinkingCoins.admin.tab': 'Tokens de pensamento',
   'thinkingCoins.admin.tasksTitle': 'Tarefas para ganhar',
@@ -75,7 +78,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'Guardar',
   'thinkingCoins.admin.signupGrant': 'Atribuição no registo',
   'thinkingCoins.admin.dailyEarnCap': 'Limite diário de ganhos',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = ilimitado; 135 por defeito corresponde a todas as tarefas diárias',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = ilimitado; 135 por defeito corresponde a todas as tarefas diárias',
   'thinkingCoins.admin.costMindmate': 'Custo MindMate',
   'thinkingCoins.admin.costDiagram': 'Custo de geração de diagrama',
   'thinkingCoins.admin.costCanvas': 'Custo de assistência na tela',

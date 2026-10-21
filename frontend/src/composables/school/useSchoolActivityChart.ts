@@ -1,7 +1,7 @@
 /**
  * Chart.js lifecycle for school-activity diagram cards.
  */
-import { onBeforeUnmount, ref, watch, type Ref } from 'vue'
+import { type Ref, onBeforeUnmount, ref, watch } from 'vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
 
@@ -74,9 +74,13 @@ export function useSchoolActivityChart(
     })
   }
 
-  watch([canvasRef, spec], () => {
-    void render()
-  }, { immediate: true, deep: true })
+  watch(
+    [canvasRef, spec],
+    () => {
+      void render()
+    },
+    { immediate: true, deep: true }
+  )
 
   onBeforeUnmount(() => {
     instance.value?.destroy()

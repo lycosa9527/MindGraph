@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  isActiveLlmPhaseRing,
-  isLlmGenerating,
-} from '@/utils/llmLoadPhase'
-import {
   mindMateLoadPhaseOnAbort,
   mindMateLoadPhaseOnComplete,
   mindMateLoadPhaseOnError,
@@ -12,6 +8,7 @@ import {
   mindMateLoadPhaseOnSendStart,
   mindMateLoadPhaseOnStreamOpen,
 } from '@/composables/mindmate/mindMateLoadPhase'
+import { isActiveLlmPhaseRing, isLlmGenerating } from '@/utils/llmLoadPhase'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 
 describe('llmLoadPhase utils', () => {

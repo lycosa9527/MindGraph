@@ -1,7 +1,6 @@
 /** Rewrite MindMate temp-image markdown URLs for same-origin dev proxy. */
 
-const TEMP_IMAGE_ABSOLUTE_URL_RE =
-  /https?:\/\/[^/]+\/(?:api\/)?temp_images\/([^\s)"'<>]+)/gi
+const TEMP_IMAGE_ABSOLUTE_URL_RE = /https?:\/\/[^/]+\/(?:api\/)?temp_images\/([^\s)"'<>]+)/gi
 
 /**
  * Remote MindGraph hosts proxied through `/api/proxy-image` (must match backend whitelist).

@@ -303,13 +303,7 @@ describe('applyMindMapIncrementalTopLevelSiblingLayout', () => {
 })
 
 describe('applyMindMapIncrementalDeleteLayout', () => {
-  function branch(
-    id: string,
-    uid: string,
-    y: number,
-    text: string,
-    height = 40
-  ): DiagramNode {
+  function branch(id: string, uid: string, y: number, text: string, height = 40): DiagramNode {
     return {
       id,
       text,
@@ -375,7 +369,13 @@ describe('applyMindMapIncrementalDeleteLayout', () => {
 
   it('centers sole left L1 on topic after deleting the other left roots', () => {
     const before: DiagramNode[] = [
-      { id: 'topic', text: 'T', type: 'topic', position: { x: 400, y: 200 }, data: { estimatedHeight: 48 } },
+      {
+        id: 'topic',
+        text: 'T',
+        type: 'topic',
+        position: { x: 400, y: 200 },
+        data: { estimatedHeight: 48 },
+      },
       branch('branch-l-1-0', 'uid-a', 120, 'A'),
       branch('branch-l-1-1', 'uid-b', 200, 'B'),
       branch('branch-l-1-2', 'uid-c', 280, 'C'),
@@ -392,7 +392,13 @@ describe('applyMindMapIncrementalDeleteLayout', () => {
       { id: 'c5', source: 'topic', target: 'branch-r-1-0' },
     ]
     const after: DiagramNode[] = [
-      { id: 'topic', text: 'T', type: 'topic', position: { x: 400, y: 250 }, data: { estimatedHeight: 48 } },
+      {
+        id: 'topic',
+        text: 'T',
+        type: 'topic',
+        position: { x: 400, y: 250 },
+        data: { estimatedHeight: 48 },
+      },
       branch('branch-l-1-0', 'uid-c', 50, 'C'),
       branch('branch-l-2-0', 'uid-c1', 30, 'c1'),
       branch('branch-l-2-1', 'uid-c2', 70, 'c2'),

@@ -4,13 +4,13 @@
 import { type ComputedRef, computed, ref, watch } from 'vue'
 
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
-import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
-import type { useDiagramStore } from '@/stores/diagram'
-import type { useInlineRecommendationsStore } from '@/stores/inlineRecommendations'
 import type { useAuthStore } from '@/stores/auth'
-import type { useLLMResultsStore } from '@/stores/llmResults'
 import type { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import type { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
+import type { useDiagramStore } from '@/stores/diagram'
+import type { useInlineRecommendationsStore } from '@/stores/inlineRecommendations'
+import type { useLLMResultsStore } from '@/stores/llmResults'
+import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 const MOBILE_REC_PER_PAGE_NON_CONCEPT = 3
 const MOBILE_REC_PER_PAGE_CONCEPT_MAP = 4

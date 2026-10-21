@@ -31,22 +31,27 @@ export default {
   'canvas.exportOptions.layoutLandscape': 'Üfüqi',
   'canvas.exportOptions.layoutPortrait': 'Şaquli',
   'canvas.worksheetText.cancel': 'Ləğv et',
-  'canvas.worksheetText.defaultInstruction': 'Diaqram strukturunu tamamlamaq üçün boşluqları uyğun məzmunla doldurun.',
-  'canvas.worksheetText.dragDiagramHint': 'Köçürmək üçün sürükləyin · ölçünü dəyişmək üçün küncləri sürükləyin',
+  'canvas.worksheetText.defaultInstruction':
+    'Diaqram strukturunu tamamlamaq üçün boşluqları uyğun məzmunla doldurun.',
+  'canvas.worksheetText.dragDiagramHint':
+    'Köçürmək üçün sürükləyin · ölçünü dəyişmək üçün küncləri sürükləyin',
   'canvas.worksheetText.fieldClass': 'Sinif:',
   'canvas.worksheetText.fieldDate': 'Tarix:',
   'canvas.worksheetText.fieldName': 'Ad:',
   'canvas.worksheetText.hide': 'Gizlət',
   'canvas.worksheetText.instructionLabel': 'Təlimatlar',
   'canvas.worksheetText.instructionPrefix': 'Tapşırıq:',
-  'canvas.worksheetText.modalHint': 'Çap üçün PDF ixrac edin. Redaktə olunan ad/sinif sahələri üçün sənəd ixrac edin; diaqram şəkil olaraq qalır.',
-  'canvas.worksheetText.headerCaptureFailed': 'İş vərəqi başlığı çəkilə bilmədi; PDF onsuz ixrac edildi.',
+  'canvas.worksheetText.modalHint':
+    'Çap üçün PDF ixrac edin. Redaktə olunan ad/sinif sahələri üçün sənəd ixrac edin; diaqram şəkil olaraq qalır.',
+  'canvas.worksheetText.headerCaptureFailed':
+    'İş vərəqi başlığı çəkilə bilmədi; PDF onsuz ixrac edildi.',
   'canvas.worksheetText.modalTitle': 'DOCX/PDF kimi ixrac et',
   'canvas.worksheetText.learningSheetMode': 'Tək rejimdə öyrənin',
   'canvas.worksheetText.learningSheetModeOn': 'yandırın',
   'canvas.worksheetText.learningSheetModeOff': 'bağlanması',
   'canvas.worksheetText.learningSheetPanelTitle': 'Tək başlığı öyrənin',
-  'canvas.worksheetText.learningSheetPanelHint': 'Aşağıdakı seçimlər yalnız dərs cədvəli rejimində mövcuddur və ikonanın üstündə görünəcək.',
+  'canvas.worksheetText.learningSheetPanelHint':
+    'Aşağıdakı seçimlər yalnız dərs cədvəli rejimində mövcuddur və ikonanın üstündə görünəcək.',
   'canvas.worksheetText.exportSettings': 'İxrac seçimləri',
   'canvas.worksheetText.previewDiagram': 'Diaqram',
   'canvas.worksheetText.previewEmpty': 'Öyrənmə vərəqi başlığını önizləmək üçün sahələri açın.',
@@ -65,14 +70,21 @@ export default {
   'canvas.worksheetText.showName': 'Ad',
   'canvas.worksheetText.showTopic': 'Mövzu başlığı',
   'canvas.worksheetText.topicPreviewLabel': 'Diaqram mövzusu',
-  'canvas.import.invalidFile': 'Yanlış diaqram faylı. MindGraph-dan ixrac olunmuş JSON faylını seçin.',
+  'canvas.import.invalidFile':
+    'Yanlış diaqram faylı. MindGraph-dan ixrac olunmuş JSON faylını seçin.',
   'canvas.import.parseError': 'JSON faylı oxunmadı, yenidən cəhd edin',
-  'canvas.import.cmapHeuristicSemantics': 'Bu CmapTools faylı linklər üçün mətn sırası ehtiyatından istifadə edib — əlaqələri orijinal xəritə ilə yoxlayın.',
-  'canvas.import.cmapConnectionFallback': 'Əlaqələr proposition obyektlərindən deyil, IHMC qrafik bağlantılarından yenidən qurulub.',
-  'canvas.import.cmapEmptyLayout': 'İdxal olunmuş xəritədə düyün koordinatları tapılmadı; düzülüş yenidən yaradıldı.',
-  'canvas.import.cmapLayoutLabelCollision': 'Təkrarlanan konsept etiketləri düzülüş lövbərlərində üst-üstə düşür; bəzi idxal mövqeləri səhv ola bilər.',
-  'canvas.import.cmapLayoutFailed': 'Düzülüş çıxarılmasında parse xətası — mövqelər yenidən yaradıldı.',
-  'canvas.reset.confirmBody': 'Əminsiniz? Cari diaqram və palet daxil olmaqla bütün məzmun itəcək; geri qaytarılmır.',
+  'canvas.import.cmapHeuristicSemantics':
+    'Bu CmapTools faylı linklər üçün mətn sırası ehtiyatından istifadə edib — əlaqələri orijinal xəritə ilə yoxlayın.',
+  'canvas.import.cmapConnectionFallback':
+    'Əlaqələr proposition obyektlərindən deyil, IHMC qrafik bağlantılarından yenidən qurulub.',
+  'canvas.import.cmapEmptyLayout':
+    'İdxal olunmuş xəritədə düyün koordinatları tapılmadı; düzülüş yenidən yaradıldı.',
+  'canvas.import.cmapLayoutLabelCollision':
+    'Təkrarlanan konsept etiketləri düzülüş lövbərlərində üst-üstə düşür; bəzi idxal mövqeləri səhv ola bilər.',
+  'canvas.import.cmapLayoutFailed':
+    'Düzülüş çıxarılmasında parse xətası — mövqelər yenidən yaradıldı.',
+  'canvas.reset.confirmBody':
+    'Əminsiniz? Cari diaqram və palet daxil olmaqla bütün məzmun itəcək; geri qaytarılmır.',
   'canvas.reset.confirmButton': 'Sıfırla',
   'canvas.reset.confirmTitle': 'Defolt şablona sıfırla',
   'canvas.reset.warnSelectType': 'Sıfırlamaq olmaz: əvvəlcə diaqram növü seçin',
@@ -88,19 +100,23 @@ export default {
   'canvas.voiceCommandGuide.example.update_center': '“Mövzunu peşə təhsilinə dəyiş”',
   'canvas.voiceCommandGuide.example.delete_node': '“Çin budağını sil”',
   'canvas.voiceCommandGuide.example.explain_node': '“Çini izah et”',
-  'canvas.voiceCommandGuide.example.start_inline_recommendations': '“Bu düyün üçün ideyalar təklif et”',
+  'canvas.voiceCommandGuide.example.start_inline_recommendations':
+    '“Bu düyün üçün ideyalar təklif et”',
   'canvas.shortcutGuide.addChild': 'Alt düyün əlavə et',
   'canvas.shortcutGuide.addChildDesc': 'Seçilmiş düyünə tez alt düyün əlavə edin.',
   'canvas.shortcutGuide.addSibling': 'Qardaş düyün əlavə et',
   'canvas.shortcutGuide.addSiblingDesc': 'Seçilmiş düyünün yanında tez qardaş düyün əlavə edin.',
   'canvas.shortcutGuide.editText': 'Mətni redaktə et',
-  'canvas.shortcutGuide.editTextDesc': 'Yerində sətir içi redaktəni açın; Enter və ya fokus itkisi saxlayır və ölçünü dərhal yenidən hesablayır.',
+  'canvas.shortcutGuide.editTextDesc':
+    'Yerində sətir içi redaktəni açın; Enter və ya fokus itkisi saxlayır və ölçünü dərhal yenidən hesablayır.',
   'canvas.shortcutGuide.doubleClick': 'Redaktə üçün iki dəfə klikləyin',
   'canvas.shortcutGuide.deleteNode': 'Düyünü sil',
-  'canvas.shortcutGuide.deleteNodeDesc': 'Seçilmiş düyünü və budaqlarını silin (kök düyün qorunur).',
+  'canvas.shortcutGuide.deleteNodeDesc':
+    'Seçilmiş düyünü və budaqlarını silin (kök düyün qorunur).',
   'canvas.shortcutGuide.arrowNav': 'Ox düymələri',
   'canvas.shortcutGuide.selectNav': 'Naviqasiya',
-  'canvas.shortcutGuide.arrowNavDesc': 'Evklid naviqasiyası: ox düymələri kətandakı fiziki 2D mövqeyə görə ən yaxın düyünə keçir — istənilən düzülüşdə masaüstü kimi hərəkət.',
+  'canvas.shortcutGuide.arrowNavDesc':
+    'Evklid naviqasiyası: ox düymələri kətandakı fiziki 2D mövqeyə görə ən yaxın düyünə keçir — istənilən düzülüşdə masaüstü kimi hərəkət.',
   'canvas.shortcutGuide.cancel': 'Seçimi / redaktəni təmizlə',
   'canvas.shortcutGuide.cancelDesc': 'Seçimi və ya redaktəni ləğv edin.',
   'canvas.shortcutGuide.undo': 'Geri al',
@@ -110,7 +126,8 @@ export default {
   'canvas.shortcutGuide.learningSheetAnswers': 'Öyrənmə vərəqi cavablarını göstər/gizlət',
   'canvas.shortcutGuide.recalcLayout': 'Düzülüşü yenidən hesabla',
   'canvas.shortcutGuide.multiSelect': 'Çoxseçim',
-  'canvas.shortcutGuide.multiSelectDesc': 'İşarəçi rejimində bir neçə düyün seçmək üçün qutu sürükləyin.',
+  'canvas.shortcutGuide.multiSelectDesc':
+    'İşarəçi rejimində bir neçə düyün seçmək üçün qutu sürükləyin.',
   'canvas.shortcutGuide.multiSelectHint': 'Qutu seçimi üçün sürükləyin',
   'canvas.shortcutGuide.canvasPan': 'Kətanı sürüşdür',
   'canvas.shortcutGuide.canvasPanDesc': 'Kətan görünüşünü köçürün.',
@@ -187,7 +204,8 @@ export default {
   'canvas.toolbar.mindMapDiagramStyleClassic': 'Klassik',
   'canvas.toolbar.mindMapDiagramStyleClassicDesc': 'Düzbucaqlı mərkəz · yuvarlaq L1 · altxətt L2',
   'canvas.toolbar.mindMapDiagramStyleFormal': 'Düzbucaqlı',
-  'canvas.toolbar.mindMapDiagramStyleFormalDesc': 'Düzbucaqlı mərkəz · düzbucaqlı L1 · düzbucaqlı L2',
+  'canvas.toolbar.mindMapDiagramStyleFormalDesc':
+    'Düzbucaqlı mərkəz · düzbucaqlı L1 · düzbucaqlı L2',
   'canvas.toolbar.mindMapDiagramStyleBubble': 'Baloncuk',
   'canvas.toolbar.mindMapDiagramStyleBubbleDesc': 'Baloncuk mərkəz · baloncuk L1 · altxətt L2',
   'canvas.toolbar.mindMapDiagramStyleUnderline': 'Altxətt',
@@ -218,10 +236,12 @@ export default {
   'canvas.toolbar.aiGenerateTooltip': 'Mərkəzi mövzudan yarat',
   'canvas.toolbar.aiGenerating': 'Yaradılır…',
   'canvas.toolbar.professionalContent.label': 'Content level',
-  'canvas.toolbar.professionalContent.tooltip': 'Süni intellekt tərəfindən yaradılan məzmun üçün auditoriya çətinliyini seçin',
+  'canvas.toolbar.professionalContent.tooltip':
+    'Süni intellekt tərəfindən yaradılan məzmun üçün auditoriya çətinliyini seçin',
   'canvas.toolbar.professionalContent.panelTitle': 'Content level',
   'canvas.toolbar.professionalContent.guideTitle': 'Əvvəlcə tamaşaçı çətinliyini seçin',
-  'canvas.toolbar.professionalContent.guideBody': 'Səhnə və ya səhnə seçmək üçün bura klikləyin. AI generasiyası, dialoq dəyişiklikləri və s. məzmunu çətinliyə uyğun təşkil edəcək. Seçdikdən sonra düymə akademik səhnə etiketini alacaq.',
+  'canvas.toolbar.professionalContent.guideBody':
+    'Səhnə və ya səhnə seçmək üçün bura klikləyin. AI generasiyası, dialoq dəyişiklikləri və s. məzmunu çətinliyə uyğun təşkil edəcək. Seçdikdən sonra düymə akademik səhnə etiketini alacaq.',
   'canvas.toolbar.professionalContent.guideAction': 'seçmək',
   'canvas.toolbar.professionalContent.guideDismiss': 'bilirdi',
   'canvas.toolbar.professionalContent.level.general.title': 'Universal',
@@ -238,10 +258,24 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': 'Praktik ssenarilər',
   'canvas.toolbar.professionalContent.level.expert.title': 'ekspert',
   'canvas.toolbar.professionalContent.level.expert.description': 'Dərin təmizlənmiş',
-  'canvas.toolbar.professionalContent.notify.preference': 'Sonrakı AI tərəfindən yaradılan məzmun "{level}" tamaşaçı məlumatlılığı səviyyəsinə daha çox uyğun olacaq',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral': 'Süni intellekt tərəfindən yaradılan sonrakı məzmun heç bir əlavə çətinlik məhdudiyyəti olmadan "universal" üslubda olacaq.',
-  'canvas.toolbar.professionalContent.notify.afterGenerated': 'Cari məzmun "{current}" çətinliyidir; gələcəkdə onu yaratmaqda sizə kömək etmək üçün "{next}" düyməsini sıxacağam.',
-  'canvas.toolbar.professionalContent.audienceLine': 'Cari auditoriya: {level} (aşağıdan [Peşəkar məzmun])',
+  'canvas.toolbar.professionalContent.notify.preference':
+    'Sonrakı AI tərəfindən yaradılan məzmun "{level}" tamaşaçı məlumatlılığı səviyyəsinə daha çox uyğun olacaq',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    'Süni intellekt tərəfindən yaradılan sonrakı məzmun heç bir əlavə çətinlik məhdudiyyəti olmadan "universal" üslubda olacaq.',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    'Cari məzmun "{current}" çətinliyidir; gələcəkdə onu yaratmaqda sizə kömək etmək üçün "{next}" düyməsini sıxacağam.',
+  'canvas.toolbar.professionalContent.audienceLine':
+    'Cari auditoriya: {level} (aşağıdan [Peşəkar məzmun])',
+  'canvas.toolbar.educationStage': 'akademik mərhələ',
+  'canvas.toolbar.educationStageTooltip':
+    'AI tərəfindən yaradılan məzmunun dərinliyinə təsir etmək üçün akademik mərhələni seçin.',
+  'canvas.toolbar.educationStageClear': 'Universal',
+  'canvas.toolbar.educationStagePrimary': 'ibtidai məktəb',
+  'canvas.toolbar.educationStageMiddle': 'orta məktəb',
+  'canvas.toolbar.educationStageHigh': 'orta məktəb',
+  'canvas.toolbar.educationStageUniversity': 'Universitet',
+  'canvas.toolbar.educationStageAdult': 'yetkin',
+  'canvas.toolbar.educationStageExpert': 'ekspert',
   'canvas.toolbar.alignLabel': 'Hizalama',
   'canvas.toolbar.analogyPairAdded': 'Analogiya cütü əlavə olundu',
   'canvas.toolbar.applied': 'Tətbiq olundu',
@@ -260,12 +294,14 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': 'Mövzu düyününü silmək olmaz',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference':
+    'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': 'Yaradıla bilməz',
   'canvas.toolbar.causeAdded': 'Səbəb düyünü əlavə olundu',
   'canvas.toolbar.childAdded': 'Alt element əlavə olundu',
   'canvas.toolbar.collabAiBlocked': 'Əməkdaşlıqda yalnız diaqram sahibi AI yarada bilər',
-  'canvas.toolbar.collabGuestFeatureBlocked': 'Əməkdaşlıq qonağı kimi qoşulduğunuzda bu funksiya əlçatan deyil.',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'Əməkdaşlıq qonağı kimi qoşulduğunuzda bu funksiya əlçatan deyil.',
   'canvas.toolbar.colorLabel': 'Rəng',
   'canvas.toolbar.conceptGeneration': 'Konsept yaradılması',
   'canvas.toolbar.conceptMapModesDev': 'Konsept xəritəsi rejimləri hazırlanır',
@@ -286,11 +322,13 @@ export default {
   'canvas.toolbar.exit': 'Çıx',
   'canvas.toolbar.exitFullscreen': 'Tam ekrandan çıx',
   'canvas.toolbar.highlighter': 'Vurğulayıcı',
-  'canvas.toolbar.highlighterTooltip': 'Kanvasda vurğulayıcı kimi çəkin; təqdimatdan çıxanda təmizlənir',
+  'canvas.toolbar.highlighterTooltip':
+    'Kanvasda vurğulayıcı kimi çəkin; təqdimatdan çıxanda təmizlənir',
   'canvas.toolbar.highlighterChooseColor': 'Vurğulayıcı rəngi',
   'canvas.toolbar.highlighterPaletteAria': 'Vurğulayıcı rəngini seçin',
   'canvas.toolbar.insertEquation': 'Tənlik daxil edin',
-  'canvas.toolbar.insertEquationTooltip': 'Karetaya daxil edilmiş riyaziyyatı ($...$) daxil edin və ya redaktə olunmursa, seçilmiş node əlavə edin',
+  'canvas.toolbar.insertEquationTooltip':
+    'Karetaya daxil edilmiş riyaziyyatı ($...$) daxil edin və ya redaktə olunmursa, seçilmiş node əlavə edin',
   'canvas.toolbar.insertEquationSelectNode': 'Əvvəlcə bir node seçin',
   'canvas.toolbar.insertEquationDialogTitle': 'Tənlik daxil edin',
   'canvas.toolbar.insertEquationLoading': 'Riyaziyyat redaktoru yüklənir...',
@@ -324,7 +362,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'Orta nöqtə',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
+  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=½ bh',
@@ -345,7 +383,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'Sinuslar qanunu',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'Kosinus(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'günah(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
+  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'İkiqat bucaq',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'Arifmetik aₙ',
@@ -411,11 +449,13 @@ export default {
   'canvas.presentationTimer.exitTimer': 'Çıx',
   'canvas.presentationTimer.startPresenting': 'Təqdimata başla',
   'canvas.presentationTimer.closeHud': 'Taymeri bağla',
-  'canvas.cachedResult.notice': 'Nəticələri keşləyin və yeni nəticələr əldə etmək üçün funksiyadan yenidən istifadə edin',
+  'canvas.cachedResult.notice':
+    'Nəticələri keşləyin və yeni nəticələr əldə etmək üçün funksiyadan yenidən istifadə edin',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-    'canvas.classroomRemote.tabTopics': 'Topics',
+  'canvas.classroomRemote.resize': 'Drag to resize',
+  'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
@@ -428,7 +468,8 @@ export default {
   'canvas.classroomRemote.topicsReset': 'Restore defaults',
   'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
   'canvas.presentation.learningSheetConfirmTitle': 'Təqdimata başlayaq?',
-  'canvas.presentation.learningSheetConfirmBody': 'Hələ öyrənmə vərəqini redaktə edirsiniz. Təqdimata başlamaq boşluq redaktəsini bitirəcək; mövcud boşluqlar saxlanılacaq. Davam edək?',
+  'canvas.presentation.learningSheetConfirmBody':
+    'Hələ öyrənmə vərəqini redaktə edirsiniz. Təqdimata başlamaq boşluq redaktəsini bitirəcək; mövcud boşluqlar saxlanılacaq. Davam edək?',
   'canvas.presentation.learningSheetConfirmProceed': 'Təqdimata başla',
   'canvas.presentationContextMenu.laserPointer': 'Lazer göstərici',
   'canvas.presentationContextMenu.spotlight': 'Spot işıq',
@@ -455,6 +496,24 @@ export default {
   'canvas.floatingToolbar.fontKaiTi': 'müntəzəm skript',
   'canvas.floatingToolbar.nodeExplain': 'təhsil məsləhətləri',
   'canvas.floatingToolbar.aiSubgraph': 'AI ilə altqraf yarat',
+  'canvas.floatingToolbar.summaryStyle': 'Xülasə üslubu',
+  'canvas.floatingToolbar.summaryType': 'xülasə növü',
+  'canvas.floatingToolbar.summaryLine': 'xətt',
+  'canvas.floatingToolbar.summaryThickness': 'Qalınlıq',
+  'canvas.floatingToolbar.summaryKindBrace': 'buruq mötərizələr',
+  'canvas.floatingToolbar.summaryKindBracket': 'kvadrat mötərizələr',
+  'canvas.floatingToolbar.summaryKindParen': 'mötərizələr',
+  'canvas.floatingToolbar.summaryLineSolid': 'möhkəm xətt',
+  'canvas.floatingToolbar.summaryLineDashed': 'nöqtəli xətt',
+  'canvas.floatingToolbar.summaryLineDotted': 'nöqtəli xətt',
+  'canvas.floatingToolbar.assocStyle': 'Əlaqədar xətt üslubu',
+  'canvas.floatingToolbar.assocCurveDrag': 'Radianı tənzimləmək üçün üç nöqtəli dairəni dartın',
+  'canvas.floatingToolbar.assocShape': 'Assosiasiya xətti forması',
+  'canvas.floatingToolbar.assocShapeCurve': 'əyri',
+  'canvas.floatingToolbar.assocStartArrow': 'başlanğıc oxu',
+  'canvas.floatingToolbar.assocEndArrow': 'son oxu',
+  'canvas.floatingToolbar.assocArrowNone': 'heç biri',
+  'canvas.floatingToolbar.assocArrow': 'ox',
   'canvas.subgraphPreview.hint': 'AI altqraf önbaxışı',
   'canvas.subgraphPreview.accept': 'Qəbul et',
   'canvas.subgraphPreview.discard': 'Rədd et',
@@ -464,12 +523,14 @@ export default {
   'canvas.subgraphPreview.generationFailed': 'Altqraf generasiyası uğursuz oldu',
   'canvas.subgraphPreview.emptyResult': 'AI istifadəyə yararlı alt düyün qaytarmadı',
   'canvas.subgraphPreview.mergeFailed': 'Altqraf bu düyünə birləşdirilə bilmədi',
-  'canvas.subgraphPreview.enterNodeTextFirst': 'Əvvəlcə bu düyün üçün düzgün mövzu mətni daxil edin',
+  'canvas.subgraphPreview.enterNodeTextFirst':
+    'Əvvəlcə bu düyün üçün düzgün mövzu mətni daxil edin',
   'canvas.subgraphPreview.topicNodeNotSupported': 'Altqraf yaratmaq üçün budaq düyünü seçin',
   'canvas.subgraphPreview.historyLabel': 'AI altqraf',
   'canvas.inlineRecPicker.prevPage': 'Əvvəlki səhifə',
   'canvas.inlineRecPicker.nextPage': 'Növbəti səhifə',
-  'canvas.toolbar.formatBrushActivated': 'Stil kopyalandı — hədəf nodları seçin və tətbiq etmək üçün yenidən klikləyin',
+  'canvas.toolbar.formatBrushActivated':
+    'Stil kopyalandı — hədəf nodları seçin və tətbiq etmək üçün yenidən klikləyin',
   'canvas.toolbar.formatBrushApplied': 'Format {count} noda tətbiq edildi',
   'canvas.toolbar.formatBrushCancelled': 'Format fırçası ləğv edildi',
   'canvas.toolbar.formatBrushSelectSource': 'Əvvəlcə mənbə nodu seçin',
@@ -482,12 +543,14 @@ export default {
   'canvas.toolbar.moreAppLearningSheet': 'Öyrənmə vərəqi',
   'canvas.toolbar.moreAppLearningSheetDesc': 'Təhsil və təkrar üçün təsadüfi boşluqlar',
   'canvas.toolbar.moreAppWaterfall': 'Şəlalə',
-  'canvas.toolbar.moreAppWaterfallDesc': 'Toplu düyünlərdə seçim; divergent və konvergent düşüncəni göstər',
+  'canvas.toolbar.moreAppWaterfallDesc':
+    'Toplu düyünlərdə seçim; divergent və konvergent düşüncəni göstər',
   'canvas.toolbar.moreApps': 'Daha çox tətbiq',
   'canvas.toolbar.moreAppSnapshot': 'Anlıq görüntü',
   'canvas.toolbar.moreAppSnapshotDesc': 'Bu diaqramın versiyasını saxlayın (maks. 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'Tərcümə et',
-  'canvas.toolbar.moreAppTranslateLabelDesc': 'Bütün düyün və bağlantı etiketlərini cari interfeys dilinizə AI ilə tərcümə edin',
+  'canvas.toolbar.moreAppTranslateLabelDesc':
+    'Bütün düyün və bağlantı etiketlərini cari interfeys dilinizə AI ilə tərcümə edin',
   'canvas.toolbar.translateLabelTitle': 'Diaqramı tərcümə et',
   'canvas.toolbar.translateLabelSource': 'Tərcümə ediləcək etiketlər ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'Hədəf dil',
@@ -499,23 +562,32 @@ export default {
   'canvas.toolbar.translateLabelAndMore': 'Daha {n} göstərilmir…',
   'canvas.toolbar.translateLabelInProgress': 'Diaqram tərcümə olunur…',
   'canvas.toolbar.translateLabelBannerTitle': 'Diaqram tərcümə olunur',
-  'canvas.toolbar.translateLabelFallbackEnInfo': 'İnterfeys diliniz hələ tərcümə hədəfi kimi əlçatan deyil. Etiketlər İngiliscəyə tərcümə olunacaq.',
+  'canvas.toolbar.translateLabelFallbackEnInfo':
+    'İnterfeys diliniz hələ tərcümə hədəfi kimi əlçatan deyil. Etiketlər İngiliscəyə tərcümə olunacaq.',
   'canvas.toolbar.translateLabelFailed': 'Tərcümə uğursuz oldu. Yenidən cəhd edin.',
   'canvas.toolbar.translateLabelDone': 'Diaqram tərcümə olundu',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Virtual klaviatura',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'İngilis ekran klaviaturası; Çin və digər dillər üçün sistem daxiletmə metodundan istifadə edin',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'İngilis ekran klaviaturası; Çin və digər dillər üçün sistem daxiletmə metodundan istifadə edin',
   'canvas.toolbar.virtualKeyboardClose': 'Klaviaturanı bağlayın',
-  'canvas.toolbar.virtualKeyboardFocusHint': 'Bir node seçmək və onu birbaşa daxil etmək orijinal məzmunu təmizləyəcək; siz həmçinin redaktəyə daxil olmaq üçün etiketə iki dəfə klikləyə bilərsiniz.',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'Bir node seçmək və onu birbaşa daxil etmək orijinal məzmunu təmizləyəcək; siz həmçinin redaktəyə daxil olmaq üçün etiketə iki dəfə klikləyə bilərsiniz.',
   'canvas.toolbar.virtualKeyboardIme': 'Sistem daxiletmə üsulu',
-  'canvas.toolbar.virtualKeyboardImeHint': 'Daxil etmək üçün fiziki klaviatura və ya sistem klaviaturasından istifadə edin. Namizəd pəncərəsi sistem daxiletmə üsulu ilə təmin edilir.',
+  'canvas.toolbar.virtualKeyboardImeHint':
+    'Daxil etmək üçün fiziki klaviatura və ya sistem klaviaturasından istifadə edin. Namizəd pəncərəsi sistem daxiletmə üsulu ilə təmin edilir.',
   'canvas.toolbar.snapshotSaveFirst': 'Anlıq görüntü almazdan əvvəl diaqramı saxlayın',
   'canvas.toolbar.snapshotTaken': 'Anlıq görüntü {n} saxlanıldı',
   'canvas.toolbar.snapshotFailed': 'Anlıq görüntü saxlanmadı, yenidən cəhd edin',
-  'canvas.toolbar.snapshotTooLarge': 'Anlıq görüntü çox böyükdür (maks. {max} KB). Diaqram məzmununu azaldın və yenidən cəhd edin.',
-  'canvas.toolbar.snapshotRateLimited': 'Çox sayda anlıq görüntü əməliyyatı. Bir az gözləyin və yenidən cəhd edin.',
-  'canvas.toolbar.snapshotDiagramNotFound': 'Diaqram tapılmadı. Səhifəni yeniləyin və ya kitabxanadan açın.',
-  'canvas.library.diagramNotFound': 'Diaqram tapılmadı. Silinmiş ola bilər. Kitabxananızdan başqa diaqram açın.',
-  'canvas.library.saveBeforeSwitchFailed': 'Cari xəritə keçiddən əvvəl yadda saxlanıla bilməz, lütfən, burada qalın və yenidən cəhd edin.',
+  'canvas.toolbar.snapshotTooLarge':
+    'Anlıq görüntü çox böyükdür (maks. {max} KB). Diaqram məzmununu azaldın və yenidən cəhd edin.',
+  'canvas.toolbar.snapshotRateLimited':
+    'Çox sayda anlıq görüntü əməliyyatı. Bir az gözləyin və yenidən cəhd edin.',
+  'canvas.toolbar.snapshotDiagramNotFound':
+    'Diaqram tapılmadı. Səhifəni yeniləyin və ya kitabxanadan açın.',
+  'canvas.library.diagramNotFound':
+    'Diaqram tapılmadı. Silinmiş ola bilər. Kitabxananızdan başqa diaqram açın.',
+  'canvas.library.saveBeforeSwitchFailed':
+    'Cari xəritə keçiddən əvvəl yadda saxlanıla bilməz, lütfən, burada qalın və yenidən cəhd edin.',
   'canvas.toolbar.snapshotConflict': 'Anlıq görüntü saxlanmadı (ziddiyyət). Yenidən cəhd edin.',
   'canvas.toolbar.newAssociation': 'Yeni assosiasiya',
   'canvas.toolbar.newAttribute': 'Yeni atribut',
@@ -537,17 +609,26 @@ export default {
   'canvas.toolbar.historyGroup': 'Geri al və təkrarla',
   'canvas.toolbar.redo': 'Təkrarla',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
+  'canvas.toolbar.save': 'Save',
+  'canvas.toolbar.add': 'Add',
+  'canvas.toolbar.delete': 'Delete',
+  'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Budaq və ya alt düyün seçin',
-  'canvas.toolbar.selectCategoryOrLeafDelete': 'Kateqoriya və ya yarpaq düyünlərini seçin (mövzu silinmir)',
-  'canvas.toolbar.selectCauseOrEffectForAdd': 'Səbəb və ya nəticə düyünü seçin (hadisə deyil), sonra həmin sütunda başqasını əlavə etmək üçün Enter basın',
-  'canvas.toolbar.selectTreeBranchForChild': 'Alt əlavə etmək üçün kateqoriya və ya kateqoriya altındakı elementi seçin, və ya kateqoriya əlavə etmək üçün mövzunu seçin',
+  'canvas.toolbar.selectCategoryOrLeafDelete':
+    'Kateqoriya və ya yarpaq düyünlərini seçin (mövzu silinmir)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Səbəb və ya nəticə düyünü seçin (hadisə deyil), sonra həmin sütunda başqasını əlavə etmək üçün Enter basın',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Alt əlavə etmək üçün kateqoriya və ya kateqoriya altındakı elementi seçin, və ya kateqoriya əlavə etmək üçün mövzunu seçin',
   'canvas.toolbar.selectNodesFirst': 'Əvvəlcə düyün(lər)i seçin',
   'canvas.toolbar.nodeStyleFollow': 'qovşağı izləyin',
-  'canvas.toolbar.nodeStyleFollowHint': 'Yandırıldıqda, qovşaq üslubu paneli seçilmiş qovşağı izləyir; söndürüldükdə gizlədilir.',
+  'canvas.toolbar.nodeStyleFollowHint':
+    'Yandırıldıqda, qovşaq üslubu paneli seçilmiş qovşağı izləyir; söndürüldükdə gizlədilir.',
   'canvas.toolbar.selectNodesToDelete': 'Silmək üçün düyün(lər)i seçin',
   'canvas.toolbar.selectPartForSubpart': 'Alt hissə üçün hissə düyününü seçin',
   'canvas.toolbar.selectPartThenEnter': 'Alt hissə üçün hissə düyününü seçin, sonra Enter basın',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'Oxşarlıq və ya fərq düyünlərini seçin (mövzu silinmir)',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
+    'Oxşarlıq və ya fərq düyünlərini seçin (mövzu silinmir)',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'Əvvəlcə oxşarlıq və ya fərq düyününü seçin',
   'canvas.toolbar.selectStepForSubstep': 'Alt addım üçün addım düyününü seçin',
   'canvas.toolbar.similarityWithIndex': 'Oxşarlıq {n}',
@@ -596,6 +677,10 @@ export default {
   'canvas.topBar.resetCanvas': 'Kətanı sıfırla',
   'canvas.topBar.schoolCollab': 'Məktəb əməkdaşlığı',
   'canvas.topBar.shareCommunity': 'İcma ilə paylaş',
+  'canvas.topBar.zhihuiUnavailable': 'Ağıllı Rəsm Diaqramları hazırda əlçatan deyil',
+  'canvas.topBar.zhihuiNeedMindmap': 'İllüstrasiya yalnız ağıl xəritəsini dəstəkləyir',
+  'canvas.topBar.zhihuiSaveFailed':
+    'Xəritəni saxlamaq alınmadı və yaradılmış xəritəni aça bilmədi.',
   'canvas.topBar.sharedCollab': 'Ümumi əməkdaşlıq',
   'canvas.topBar.teachingDesign': 'MindMate AI',
   'canvas.subtitles.tooltip': 'Canlı subtitr (mikrofon)',
@@ -616,13 +701,16 @@ export default {
   'canvas.translation.stop': 'Tərcüməni dayandır',
   'canvas.topBar.snapshotRecallTooltip': 'Anlıq görüntü {n} bərpa et',
   'canvas.topBar.snapshotRecallTitle': 'Anlıq görüntünü bərpa et',
-  'canvas.topBar.snapshotRecallConfirm': 'Anlıq görüntü {n} bərpa olunsun? Cari dəyişikliklər əvəz olunacaq.',
+  'canvas.topBar.snapshotRecallConfirm':
+    'Anlıq görüntü {n} bərpa olunsun? Cari dəyişikliklər əvəz olunacaq.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'Bərpa et',
   'canvas.topBar.snapshotRecallCancelBtn': 'Ləğv et',
   'canvas.topBar.snapshotRecallHistory': 'Anlıq görüntü {n} bərpa əvvəli',
   'canvas.topBar.snapshotRecallFailed': 'Anlıq görüntü bərpa olunmadı, yenidən cəhd edin',
-  'canvas.topBar.snapshotRecallNoDiagram': 'Əvvəlcə diaqramı kitabxananıza saxlayın, sonra snapshot-u bərpa edin.',
-  'canvas.topBar.snapshotRecallNoType': 'Diaqram növü hələ hazır deyil. Bir az gözləyib yenidən cəhd edin.',
+  'canvas.topBar.snapshotRecallNoDiagram':
+    'Əvvəlcə diaqramı kitabxananıza saxlayın, sonra snapshot-u bərpa edin.',
+  'canvas.topBar.snapshotRecallNoType':
+    'Diaqram növü hələ hazır deyil. Bir az gözləyib yenidən cəhd edin.',
   'canvas.topBar.snapshotDeleted': 'Anlıq görüntü {n} silindi',
   'canvas.topBar.snapshotDeleteFailed': 'Anlıq görüntü silinmədi, yenidən cəhd edin',
   'canvas.topBar.snapshotBadgeTooltip': 'Anlıq görüntü {n} bərpa üçün klik · silmək üçün Ctrl+klik',
@@ -675,7 +763,8 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'Budaq',
   'canvas.mindMapSlideOverlay.region': 'Slayd şousu idarələri',
   'canvas.mindMapSlideOverlay.progress': 'Slayd irəliləyişi — keçmək üçün klikləyin',
-  'canvas.mindMapSlideOverlay.shortcuts': 'Kətana klik və ya Space/→ növbəti · ← əvvəlki · Home/End birinci/sonuncu · Esc slaydlardan çıx',
+  'canvas.mindMapSlideOverlay.shortcuts':
+    'Kətana klik və ya Space/→ növbəti · ← əvvəlki · Home/End birinci/sonuncu · Esc slaydlardan çıx',
   'canvas.mindMapSlideOverlay.exit': 'Slaydlardan çıx',
   'canvas.mindMapSlideOverlay.collapse': 'İdarələri yığ',
   'canvas.mindMapSlideOverlay.expand': 'İdarələri genişləndir',
@@ -688,14 +777,18 @@ export default {
   'canvasPage.collaborationFooterOwner': '{username} əməkdaşlığı',
   'canvasPage.collaborationFooterOwnerDiagram': '{username} diaqramı «{diagramTitle}» — əməkdaşlıq',
   'canvasPage.collaborationFooterNetworkDiagramTitle': '«{diagramTitle}» birgə diaqramı',
-  'canvasPage.collaborationFooterSchool': 'Məktəb əməkdaşlığı davam edir — məktəb siyahısından qoşulun.',
-  'canvasPage.collaborationFooterSchoolDiagram': '«{diagramTitle}» üzrə məktəb əməkdaşlığı — məktəb sessiya siyahısından qoşulun.',
-  'canvasPage.collabRoomIdleEnding': 'Sessiya boşdayanır — təxminən {seconds} saniyə sonra əməkdaşlıq bitəcək (davam etdirmək üçün redaktə edin)',
+  'canvasPage.collaborationFooterSchool':
+    'Məktəb əməkdaşlığı davam edir — məktəb siyahısından qoşulun.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    '«{diagramTitle}» üzrə məktəb əməkdaşlığı — məktəb sessiya siyahısından qoşulun.',
+  'canvasPage.collabRoomIdleEnding':
+    'Sessiya boşdayanır — təxminən {seconds} saniyə sonra əməkdaşlıq bitəcək (davam etdirmək üçün redaktə edin)',
   'conceptMap.focus.noResult': 'Nəticə yoxdur',
   'conceptMap.focus.validationRequestFailed': 'Yoxlama sorğusu uğursuz oldu',
   'diagram.aiGenerating': 'AI...',
   'diagram.alternativeDimensions.braceTitle': 'Bu mövzu üçün digər mümkün parçalama ölçüləri:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'Bu mövzu üçün digər mümkün analogiya nümunələri:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
+    'Bu mövzu üçün digər mümkün analogiya nümunələri:',
   'diagram.alternativeDimensions.treeMapTitle': 'Bu mövzu üçün digər mümkün təsnifat ölçüləri:',
   'diagram.bridgeMap.alternativesEmpty': '[Əvəzedici əlaqələr burada görünəcək]',
   'diagram.conceptMap.focusQuestionPrefix': 'Fokus sualı: ',
@@ -746,31 +839,45 @@ export default {
   'canvas.mindMapSideToolbar.collapse': 'Alətlər panelini yığ',
   'canvas.mindMapSideToolbar.outline': 'Kontur',
   'canvas.mindMapSideToolbar.waterfall': 'Concept parking lot',
-  'canvas.mindMapWaterfall.panelHint': 'AI budaq ideyaları üçün düyünləri seçin, sonra kətana sürükləyin',
+  'canvas.mindMapWaterfall.panelHint':
+    'AI budaq ideyaları üçün düyünləri seçin, sonra kətana sürükləyin',
   'canvas.mindMapWaterfall.emptyHint': 'Hələ təklif yoxdur. Kətanda düyün seçin və ya Yeniləyin.',
-  'canvas.mindMapWaterfall.dragHint': 'Çoxseçim üçün klikləyin, sonra daxil etmək üçün xəritə düyününə sürükləyin. Boş kətana buraxın — üst səviyyə budaq əlavə olunur.',
+  'canvas.mindMapWaterfall.dragHint':
+    'Çoxseçim üçün klikləyin, sonra daxil etmək üçün xəritə düyününə sürükləyin. Boş kətana buraxın — üst səviyyə budaq əlavə olunur.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'Add nodes from concept parking lot',
-  'canvas.mindMapOneSentence.intro': 'Mövzu daxil edin və ya budaq sayı, kateqoriya, addım və digər strukturu göstərin',
-  'canvas.mindMapOneSentence.requirementsPlaceholder': 'məs. 3 günlük Pekin səyahəti, dörd budaq: geyim, yemək, yaşayış, nəqliyyat',
+  'canvas.mindMapOneSentence.intro':
+    'Mövzu daxil edin və ya budaq sayı, kateqoriya, addım və digər strukturu göstərin',
+  'canvas.mindMapOneSentence.requirementsPlaceholder':
+    'məs. 3 günlük Pekin səyahəti, dörd budaq: geyim, yemək, yaşayış, nəqliyyat',
   'canvas.mindMapOneSentence.examplesTitle': 'İlham',
   'canvas.mindMapOneSentence.generateButton': 'Yarat',
-  'canvas.mindMapOneSentence.example1': '3 günlük Pekin səyahət planı, dörd budaq: geyim, yemək, yaşayış, nəqliyyat',
-  'canvas.mindMapOneSentence.example2': 'Yeni məhsul buraxılışı üçün SWOT təhlili: güclü tərəflər, zəif tərəflər, imkanlar, təhlükələr',
-  'canvas.mindMapOneSentence.example3': 'İbtidai elm: suyun halları — sadə etiketlər, düyün başına maks. 6 simvol',
+  'canvas.mindMapOneSentence.example1':
+    '3 günlük Pekin səyahət planı, dörd budaq: geyim, yemək, yaşayış, nəqliyyat',
+  'canvas.mindMapOneSentence.example2':
+    'Yeni məhsul buraxılışı üçün SWOT təhlili: güclü tərəflər, zəif tərəflər, imkanlar, təhlükələr',
+  'canvas.mindMapOneSentence.example3':
+    'İbtidai elm: suyun halları — sadə etiketlər, düyün başına maks. 6 simvol',
   'canvas.mindMapOneSentence.suggestion.add_node': 'Çin filialı əlavə edin',
   'canvas.mindMapOneSentence.suggestion.update_node': 'İçki analizini içki analizinə dəyişin',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': '2.1-i yaşıl çaya dəyişdirin',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint': 'Nömrəni aktivləşdirdikdən sonra "2.1-i...yə dəyiş", "2-cini..." deyə bilərsiniz.',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint':
+    'Nömrəni aktivləşdirdikdən sonra "2.1-i...yə dəyiş", "2-cini..." deyə bilərsiniz.',
   'canvas.mindMapOneSentence.suggestion.update_center': 'Mövzu çaya dəyişdirilib',
   'canvas.mindMapOneSentence.suggestion.delete_node': 'İçki analiz bölməsini silin',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': 'Çin filialını tamamlayın',
   'canvas.mindMapOneSentence.suggestion.auto_complete': 'Xəritəni tamamlamama kömək et',
-  'canvas.mindMapOneSentence.suggestion.set_content_level': 'Peşəkar məzmunu ümumi, ibtidai məktəb, orta məktəb, orta məktəb, kollec, böyüklər və ya ekspert kimi dəyişdirin',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': 'Professional məzmun {level} olaraq dəyişdirildi',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': 'Yeddinci səviyyə aşağıdakı "Peşəkar Məzmun"a uyğundur',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': 'Rəqəmləri, Çin dilini, dairələri, hərfləri və ya fəsil nömrələrini aktivləşdirin',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': '{style} nömrəsini aktivləşdirin',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': 'Siz "rəqəmsal nömrələməni aktivləşdirin" "Çin nömrələnməsini aktivləşdirin" deyə bilərsiniz.',
+  'canvas.mindMapOneSentence.suggestion.set_content_level':
+    'Peşəkar məzmunu ümumi, ibtidai məktəb, orta məktəb, orta məktəb, kollec, böyüklər və ya ekspert kimi dəyişdirin',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
+    'Professional məzmun {level} olaraq dəyişdirildi',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
+    'Yeddinci səviyyə aşağıdakı "Peşəkar Məzmun"a uyğundur',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
+    'Rəqəmləri, Çin dilini, dairələri, hərfləri və ya fəsil nömrələrini aktivləşdirin',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase':
+    '{style} nömrəsini aktivləşdirin',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
+    'Siz "rəqəmsal nömrələməni aktivləşdirin" "Çin nömrələnməsini aktivləşdirin" deyə bilərsiniz.',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': 'nömrə',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': 'çinli',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': 'dairə',
@@ -780,7 +887,8 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': 'Gizli nömrə',
   'canvas.mindMapOneSentence.suggestion.explain_node': 'Çinin bu qolunu izah edin',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'Bu nodu təqdim edin',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint': 'Siz "Çini izah edin" və "Bu qovşağı təqdim edin" deyə bilərsiniz; node seçdikdən sonra siz həmçinin "Bunu təqdim edin" deyə bilərsiniz.',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
+    'Siz "Çini izah edin" və "Bu qovşağı təqdim edin" deyə bilərsiniz; node seçdikdən sonra siz həmçinin "Bunu təqdim edin" deyə bilərsiniz.',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'Node Əməliyyat Təlimatı',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'Düyün əməliyyat təlimatını yığışdırın',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': 'adı ilə',
@@ -791,54 +899,86 @@ export default {
   'canvas.mindMapOneSentence.micButton': 'Səs daxiletmə',
   'canvas.mindMapOneSentence.photoButton': 'Foto yüklə',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 Foto',
-  'canvas.mindMapOneSentence.photoNeedsDiagram': 'Əvvəlcə bu diaqramı kitabxanaya saxlayın, sonra foto yükləyin.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram':
+    'Əvvəlcə bu diaqramı kitabxanaya saxlayın, sonra foto yükləyin.',
   'canvas.mindMapOneSentence.photoInvalidType': 'JPG, PNG və ya WebP foto seçin.',
   'canvas.mindMapOneSentence.photoTooLarge': 'Foto çox böyükdür. Maksimum ölçü 10MB-dir.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'Zehin xəritəsi',
-  'canvas.mindMapOneSentence.photoHanddrawnReply': 'Əl ilə çəkilmiş zehin xəritəsi “{topic}” aşkarlandı. Kətanda yenidən quruldu; kontur Sənəd xülasəsinə saxlanıldı.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'Əl ilə çəkilmiş zehin xəritəsi “{topic}” aşkarlandı. Bu kətanda yenidən quruldu; kontur Sənəd xülasəsinə saxlanıldı. Kitabxana sinxronu tamamlanmadı — lazımdırsa saxlayın və ya yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.photoOcrReply': 'Fotodan çıxarılan mətn:\n{excerpt}\n\nTam mətn Sənəd xülasəsindədir.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply':
+    'Əl ilə çəkilmiş zehin xəritəsi “{topic}” aşkarlandı. Kətanda yenidən quruldu; kontur Sənəd xülasəsinə saxlanıldı.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
+    'Əl ilə çəkilmiş zehin xəritəsi “{topic}” aşkarlandı. Bu kətanda yenidən quruldu; kontur Sənəd xülasəsinə saxlanıldı. Kitabxana sinxronu tamamlanmadı — lazımdırsa saxlayın və ya yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    'Fotodan çıxarılan mətn:\n{excerpt}\n\nTam mətn Sənəd xülasəsindədir.',
   'canvas.mindMapOneSentence.photoFailed': 'Foto emal olunmadı.',
   'canvas.mindMapOneSentence.micDenied': 'Mikrofon əlçatan deyil — brauzer icazəsini yoxlayın',
   'canvas.mindMapOneSentence.ttsToggle': 'Nitqi aç/bağla',
-  'canvas.mindMapOneSentence.kittyWelcome': 'Salam — hansı diaqramı yaratmağımı deyin, və ya budaq və düyünləri redaktə etmək üçün söhbətə davam edin.',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    'Salam — hansı diaqramı yaratmağımı deyin, və ya budaq və düyünləri redaktə etmək üçün söhbətə davam edin.',
   'canvas.mindMapOneSentence.switchDiagramType': '{type} növünə keçilir…',
   'canvas.mindMapOneSentence.kittyGenerating': 'Anladım — diaqramınız yaradılır…',
-  'canvas.mindMapOneSentence.kittyGenerateDone': 'Diaqram hazırdır. Budaq və düyünləri redaktə etmək üçün yazmağa davam edin.',
-  'canvas.mindMapOneSentence.kittyGenerateFailed': 'Diaqram generasiyası uğursuz oldu. Yenidən cəhd edin və ya təsviri dəqiqləşdirin.',
-  'canvas.mindMapOneSentence.kittyEditFailed': 'Bu redaktə tətbiq olunmadı. Sorğunu yenidən ifadə edin.',
-  'canvas.mindMapOneSentence.kittyEditStale': 'Bu redaktə kətanda təsir etmədi (köhnəlmiş və ya boş). Yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'Kətan bu redaktəni təsdiqləyə bilmədi. Diaqramınız dəyişməz qaldı.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'Redaktə yerli tətbiq olundu, amma sinxron uğursuz oldu. Bir az sonra yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed': 'Kətan sinxronlaşmadı. Bir az sonra yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'Kətan sinxronlaşmadı ({detail}). Bir az sonra yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyEditBusy': 'Diaqram hələ yaradılır — gözləyin, sonra yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} nəticələri hələ axır — bitəndə sorğunuzu avtomatik işlədəcəyəm.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'Digər model nəticələri hələ axır — bitəndə sorğunuzu avtomatik işlədəcəyəm.',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming': 'Digər modellər bitdi — sorğunuzla davam edilir…',
+  'canvas.mindMapOneSentence.kittyGenerateDone':
+    'Diaqram hazırdır. Budaq və düyünləri redaktə etmək üçün yazmağa davam edin.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed':
+    'Diaqram generasiyası uğursuz oldu. Yenidən cəhd edin və ya təsviri dəqiqləşdirin.',
+  'canvas.mindMapOneSentence.kittyEditFailed':
+    'Bu redaktə tətbiq olunmadı. Sorğunu yenidən ifadə edin.',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    'Bu redaktə kətanda təsir etmədi (köhnəlmiş və ya boş). Yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    'Kətan bu redaktəni təsdiqləyə bilmədi. Diaqramınız dəyişməz qaldı.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    'Redaktə yerli tətbiq olundu, amma sinxron uğursuz oldu. Bir az sonra yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed':
+    'Kətan sinxronlaşmadı. Bir az sonra yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    'Kətan sinxronlaşmadı ({detail}). Bir az sonra yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyEditBusy':
+    'Diaqram hələ yaradılır — gözləyin, sonra yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    '{models} nəticələri hələ axır — bitəndə sorğunuzu avtomatik işlədəcəyəm.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    'Digər model nəticələri hələ axır — bitəndə sorğunuzu avtomatik işlədəcəyəm.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming':
+    'Digər modellər bitdi — sorğunuzla davam edilir…',
   'canvas.mindMapOneSentence.requestQueued': 'Növbədə',
   'canvas.mindMapOneSentence.requestFailed': 'Uğursuz',
   'canvas.mindMapOneSentence.kittyEditAccessDenied': 'Bu diaqramı redaktə etmək icazəniz yoxdur.',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'Diaqram yenicə yeniləndi, ona görə bu redaktə köhnəlmişdir. Dəyişikliyi təkrarlayın.',
-  'canvas.mindMapOneSentence.kittyEditTimeout': 'Bu redaktənin vaxtı bitdi — diaqram dəyişməmiş ola bilər. Yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner': 'Redaktə olunan kətan tapılmadı. Kətanı açın, sonra yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyEditAddFailed': 'Bağışlayın — o düyünü əlavə edə bilmədim. Adı yoxlayıb yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'Bağışlayın — o düyünü yenidən adlandıra bilmədim. Adı yoxlayıb yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyEditCenterFailed': 'Bağışlayın — mövzunu yeniləyə bilmədim. Yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'Bağışlayın — o düyünü silə bilmədim. Adı yoxlayıb yenidən cəhd edin.',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'Bağışlayın — o budağı avtomatik tamamlaya bilmədim. Yenidən soruşa bilərsiniz.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    'Diaqram yenicə yeniləndi, ona görə bu redaktə köhnəlmişdir. Dəyişikliyi təkrarlayın.',
+  'canvas.mindMapOneSentence.kittyEditTimeout':
+    'Bu redaktənin vaxtı bitdi — diaqram dəyişməmiş ola bilər. Yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    'Redaktə olunan kətan tapılmadı. Kətanı açın, sonra yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyEditAddFailed':
+    'Bağışlayın — o düyünü əlavə edə bilmədim. Adı yoxlayıb yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    'Bağışlayın — o düyünü yenidən adlandıra bilmədim. Adı yoxlayıb yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyEditCenterFailed':
+    'Bağışlayın — mövzunu yeniləyə bilmədim. Yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    'Bağışlayın — o düyünü silə bilmədim. Adı yoxlayıb yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    'Bağışlayın — o budağı avtomatik tamamlaya bilmədim. Yenidən soruşa bilərsiniz.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'O budaq hazırdır.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'O budaqlar hazırdır.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'Bəzi budaqlar hazırdır, amma bir neçəsi bitmədi. Yenidən avtomatik tamamlama istəyə bilərsiniz.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
+    'Bəzi budaqlar hazırdır, amma bir neçəsi bitmədi. Yenidən avtomatik tamamlama istəyə bilərsiniz.',
   'canvas.mindMapOneSentence.kittyWorking': 'OK — üzərində işləyirəm…',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty əlçatan deyil. Serverdə FEATURE_KITTY_AGENT-in aktiv olduğunu yoxlayın.',
-  'canvas.mindMapOneSentence.kittyConnectFailed': 'Kətan Kitty qoşula bilmədi. Bu diaqramı masaüstündə açın, sonra yenidən cəhd edin.',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'Kitty əlçatan deyil. Serverdə FEATURE_KITTY_AGENT-in aktiv olduğunu yoxlayın.',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    'Kətan Kitty qoşula bilmədi. Bu diaqramı masaüstündə açın, sonra yenidən cəhd edin.',
   'canvas.mindMapOneSentence.clarifyChoices': 'Seçim edin',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'Mobil Kitty bu diaqrama qoşulub. Danışmaq və ya yazmaq üçün telefondan istifadə edin — masaüstü daxiletmə dayandırılıb.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint': 'Telefon Kitty başqa diaqramdadır. Telefondan sinxron edin və ya o diaqramı burada açın.',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Telefonda Mobil Kitty istifadə edin…',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    'Mobil Kitty bu diaqrama qoşulub. Danışmaq və ya yazmaq üçün telefondan istifadə edin — masaüstü daxiletmə dayandırılıb.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    'Telefon Kitty başqa diaqramdadır. Telefondan sinxron edin və ya o diaqramı burada açın.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder':
+    'Telefonda Mobil Kitty istifadə edin…',
   'canvas.mindMapNodeExplain.titleFallback': 'Düyün izahatı',
-  'canvas.mindMapNodeExplain.requestFailed': 'Hazırda izah etmək mümkün deyil, sonra yenidən cəhd edin.',
+  'canvas.mindMapNodeExplain.requestFailed':
+    'Hazırda izah etmək mümkün deyil, sonra yenidən cəhd edin.',
   'canvas.mindMapNodeExplain.thinking': 'Düşünmək',
   'canvas.mindMapNodeExplain.thinkingDone': 'Düşüncəni tamamladı',
   'canvas.mindMapNodeExplain.pageStats': '{found} səhifələr tapıldı, {fetched} səhifələri oxuyun',
@@ -853,17 +993,21 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': 'Söhbət tarixçəsi',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'Fayl yükləmə',
   'canvas.mindMapDocumentSummary.tabPaste': 'Mətnin yapışdırılması',
-  'canvas.mindMapDocumentSummary.pasteHintLite': 'Sənədlərə, qeydlərə və ya iclas protokollarına yapışdırın və biz strukturu dəqiqləşdirəcəyik və ağıl xəritəsi yaradacağıq.',
+  'canvas.mindMapDocumentSummary.pasteHintLite':
+    'Sənədlərə, qeydlərə və ya iclas protokollarına yapışdırın və biz strukturu dəqiqləşdirəcəyik və ağıl xəritəsi yaradacağıq.',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'Söhbət tarixçəsi',
   'canvas.mindMapDocumentSummary.intro': 'Daha dəqiq zehin xəritəsi üçün əsas məqamları çıxarın',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'Fayl yükləmək üçün klikləyin',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'Word, PDF, PPT, images, audio — extracted text only is stored',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint':
+    'Word, PDF, PPT, images, audio — extracted text only is stored',
   'canvas.mindMapDocumentSummary.invalidFileType': 'Dəstəklənməyən fayl növü',
   'canvas.mindMapDocumentSummary.saveContent': 'Məzmunu saxla',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'Gətir və saxla',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'Səhifə məzmunu gətirilir…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite': 'İctimai səhifə URL-ini yapışdırın — mümkün qədər çox məqalə mətnini gətirib Markdown kimi saxlayırıq.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Birbaşa link gətirmə server tərəfindədir və giriş kukilərinizi istifadə edə bilməz, ona görə auth və ya paywall arxasındakı səhifələr tez-tez natamam olur. Gördüyünüz tam veb səhifə snapshot-u üçün Chrome / Edge genişlənməsindən istifadə edin.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite':
+    'İctimai səhifə URL-ini yapışdırın — mümkün qədər çox məqalə mətnini gətirib Markdown kimi saxlayırıq.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
+    'Birbaşa link gətirmə server tərəfindədir və giriş kukilərinizi istifadə edə bilməz, ona görə auth və ya paywall arxasındakı səhifələr tez-tez natamam olur. Gördüyünüz tam veb səhifə snapshot-u üçün Chrome / Edge genişlənməsindən istifadə edin.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Chrome genişlənməsini endir',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Çıxarılır…',
   'canvas.mindMapDocumentSummary.stageStarting': 'Başlanır…',
@@ -872,17 +1016,22 @@ export default {
   'canvas.mindMapDocumentSummary.stageOcr': 'Şəkil mətni oxunur…',
   'canvas.mindMapDocumentSummary.stageTranscribing': 'Audio transkripsiya olunur…',
   'canvas.mindMapDocumentSummary.stageStoring': 'Çıxarılmış mətn saxlanılır…',
-  'canvas.mindMapDocumentSummary.replaceSourceHint': 'Yenidən yükləmə bu diaqram üçün cari mənbəni əvəz edir',
+  'canvas.mindMapDocumentSummary.replaceSourceHint':
+    'Yenidən yükləmə bu diaqram üçün cari mənbəni əvəz edir',
   'canvas.mindMapDocumentSummary.fromSource': '{name} mənbəsindən',
   'canvas.mindMapDocumentSummary.deleteSource': 'Mənbəni sil',
   'canvas.mindMapDocumentSummary.sourceDeleted': 'Mənbə silindi — yenidən yükləyə bilərsiniz',
   'canvas.mindMapDocumentSummary.extractStarted': 'Məzmun çıxarılır…',
   'canvas.mindMapDocumentSummary.extractFailed': 'Bu fayldan mətn çıxarıla bilmədi',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown hazırdır. Zehin xəritəsi yaradın və ya başqa şey yükləmək üçün mənbəni silin.',
-  'canvas.mindMapDocumentSummary.deleteToRetry': 'Bu mənbəni silin, sonra yenidən yükləyin, yapışdırın və ya səhifə gətirin.',
-  'canvas.mindMapDocumentSummary.chatIntroLite': 'Fayl oxuyucunu endirin, cütləşmə kodunu daxil edin və bu diaqram üçün WeChat və ya DingTalk tarixçəsi göndərin.',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'Markdown hazırdır. Zehin xəritəsi yaradın və ya başqa şey yükləmək üçün mənbəni silin.',
+  'canvas.mindMapDocumentSummary.deleteToRetry':
+    'Bu mənbəni silin, sonra yenidən yükləyin, yapışdırın və ya səhifə gətirin.',
+  'canvas.mindMapDocumentSummary.chatIntroLite':
+    'Fayl oxuyucunu endirin, cütləşmə kodunu daxil edin və bu diaqram üçün WeChat və ya DingTalk tarixçəsi göndərin.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'Söhbət tarixçəsi alındı',
-  'canvas.mindMapDocumentSummary.chatDoneLite': 'Söhbət saxlanıldı — hazır olanda Yarat düyməsinə toxunun',
+  'canvas.mindMapDocumentSummary.chatDoneLite':
+    'Söhbət saxlanıldı — hazır olanda Yarat düyməsinə toxunun',
   'canvas.mindMapDocumentSummary.corpusStatus': '{total} mənbədən {completed}-i indekslənib',
   'canvas.mindMapDocumentSummary.noSources': 'Hələ mənbə yoxdur. Aşağıdakı tablarda əlavə edin.',
   'canvas.mindMapDocumentSummary.noPackageYet': 'Hələ korpus yoxdur',
@@ -893,9 +1042,12 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': 'İndekslənir…',
   'canvas.mindMapDocumentSummary.statusFailed': 'Uğursuz',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'Bilik məkanı deaktivdir',
-  'canvas.mindMapDocumentSummary.featureDisabledHint': 'Sənəd xülasəsindən istifadə etmək üçün Bilik məkanı funksiyasını aktiv edin.',
-  'canvas.mindMapDocumentSummary.saveDiagramHint': 'Paketi bağlamaq və tam RAG axtarışını aktiv etmək üçün bu diaqramı saxlayın.',
-  'canvas.mindMapDocumentSummary.chatIntro': 'Fayl oxuyucunu endirin, aşağıdakı cütləşmə kodunu daxil edin və WeChat və ya DingTalk tarixçəsini bu korpusa göndərin.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint':
+    'Sənəd xülasəsindən istifadə etmək üçün Bilik məkanı funksiyasını aktiv edin.',
+  'canvas.mindMapDocumentSummary.saveDiagramHint':
+    'Paketi bağlamaq və tam RAG axtarışını aktiv etmək üçün bu diaqramı saxlayın.',
+  'canvas.mindMapDocumentSummary.chatIntro':
+    'Fayl oxuyucunu endirin, aşağıdakı cütləşmə kodunu daxil edin və WeChat və ya DingTalk tarixçəsini bu korpusa göndərin.',
   'canvas.mindMapDocumentSummary.pairingCode': 'Cütləşmə kodu',
   'canvas.mindMapDocumentSummary.startPairingCode': 'Cütləşmə kodu al',
   'canvas.mindMapDocumentSummary.pairingExpires': '{minutes} dəq sonra bitir',
@@ -904,33 +1056,43 @@ export default {
   'canvas.mindMapDocumentSummary.chatReceived': 'Chat history received! Indexing…',
   'canvas.mindMapDocumentSummary.chatIndexing': 'Söhbət transkripti indekslənir…',
   'canvas.mindMapDocumentSummary.chatDone': 'Söhbət korpusa əlavə edildi',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'Yükləmə və ya indeksləmə uğursuz oldu — yenidən cəhd etmək üçün yeniləyin',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed':
+    'Yükləmə və ya indeksləmə uğursuz oldu — yenidən cəhd etmək üçün yeniləyin',
   'canvas.mindMapDocumentSummary.chatMintFailed': 'Cütləşmə kodu yaradıla bilmədi',
-  'canvas.mindMapDocumentSummary.chatExpired': 'Cütləşmə kodunun müddəti bitib — yenisini almaq üçün yeniləyin',
+  'canvas.mindMapDocumentSummary.chatExpired':
+    'Cütləşmə kodunun müddəti bitib — yenisini almaq üçün yeniləyin',
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'Cütləşmə kodunu yenilə',
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'Sənəd xülasəsi sessiyası başlaya bilmədi',
   'canvas.mindMapDocumentSummary.imageTooLarge': 'Şəkil çox böyükdür. Maksimum ölçü 10MB-dir.',
   'canvas.mindMapDocumentSummary.generateNoCorpus': 'Add and index at least one source first',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'Əvvəlcə yükləyin, yapışdırın və ya səhifə gətirin, sonra Yarat düyməsinə toxunun',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
+    'Əvvəlcə yükləyin, yapışdırın və ya səhifə gətirin, sonra Yarat düyməsinə toxunun',
   'canvas.mindMapDocumentSummary.collabDisabled': 'Canlı əməkdaşlıq zamanı əlçatan deyil',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'Source added — indexing started',
-  'canvas.mindMapDocumentSummary.ingestSuccessLite': 'Məzmun saxlanıldı — hazır olanda Yarat düyməsinə toxunun',
+  'canvas.mindMapDocumentSummary.ingestSuccessLite':
+    'Məzmun saxlanıldı — hazır olanda Yarat düyməsinə toxunun',
   'canvas.mindMapDocumentSummary.ingestFailed': 'Mənbə əlavə edilmədi',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'Yerli sənəd:',
   'canvas.mindMapDocumentSummary.uploadDocHint': 'Word və ya PDF yükləmək üçün klikləyin',
   'canvas.mindMapDocumentSummary.uploadDocSubhint': 'Sənəd məzmununu avtomatik çıxarırıq',
   'canvas.mindMapDocumentSummary.pasteLabel': 'Və ya uzun qeydləri yapışdırın:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder': 'Məqalə parçaları, kitab xülasələri, görüş qeydləri, tələblər və s. yapışdırın.',
+  'canvas.mindMapDocumentSummary.pastePlaceholder':
+    'Məqalə parçaları, kitab xülasələri, görüş qeydləri, tələblər və s. yapışdırın.',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'Şəkil yüklə:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'JPG və ya PNG yükləmək üçün klikləyin',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'We extract text from the image automatically',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'Əl ilə çəkilmiş zehin xəritəsi aşkarlandı — kətanda yenidən quruldu',
-  'canvas.mindMapDocumentSummary.visionProgressDetecting': 'Əl ilə çəkilmiş zehin xəritəsi axtarılır…',
-  'canvas.mindMapDocumentSummary.imageOcrHint': 'Qeyd skrinşotları, lövhə fotoları və skanlarla işləyir.',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    'We extract text from the image automatically',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
+    'Əl ilə çəkilmiş zehin xəritəsi aşkarlandı — kətanda yenidən quruldu',
+  'canvas.mindMapDocumentSummary.visionProgressDetecting':
+    'Əl ilə çəkilmiş zehin xəritəsi axtarılır…',
+  'canvas.mindMapDocumentSummary.imageOcrHint':
+    'Qeyd skrinşotları, lövhə fotoları və skanlarla işləyir.',
   'canvas.mindMapDocumentSummary.removeImage': 'Şəkli sil',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'Veb link:',
   'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'Məqalə, bloq və ya xəbər URL-ini yapışdırın',
-  'canvas.mindMapDocumentSummary.webLinkHint': 'We fetch the page text and build a mind map structure.',
+  'canvas.mindMapDocumentSummary.webLinkHint':
+    'We fetch the page text and build a mind map structure.',
   'canvas.mindMapDocumentSummary.generateButton': 'Zehin xəritəsi yarat',
   'canvas.mindMapDocumentSummary.generateSuccess': 'Zehin xəritəsi yaradıldı',
   'canvas.mindMapDocumentSummary.generateFailed': 'Generasiya uğursuz oldu. Yenidən cəhd edin.',
@@ -940,11 +1102,16 @@ export default {
   'canvas.mindMapDocumentSummary.invalidDocType': 'Yalnız Word (.docx) və PDF faylları dəstəklənir',
   'canvas.mindMapDocumentSummary.invalidImageType': 'Yalnız JPG və PNG şəkilləri dəstəklənir',
   'canvas.mindMapDocumentSummary.docTooLarge': 'Fayl çox böyükdür. Maksimum ölçü 20MB-dir.',
-  'canvas.mindMapDocumentSummary.pasteTooLong': 'Yapışdırılmış mətn model giriş limitini aşır (təxminən 900 000 simvol). Qısaldın.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Çıxarılmış mətn model giriş limitini aşır (~900 000 simvol / qwen3.6-flash 991K token). Daha qısa sənəd istifadə edin.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Bu faylın mətni model üçün çox uzundur. Daha qısa sənəd yükləyin (təxminən 900 000 simvoldan az).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared': 'Saxlanmış çıxarış yox idi və ya sinxrondan çıxmışdı və təmizləndi. Sənədi yenidən yükləyin və ya yapışdırın.',
-  'canvas.mindMapDocumentSummary.contentFiltered': 'Məzmun təhlükəsizlik yoxlamasından keçmədi. Lütfən, mətni dəyişdirin və yenidən cəhd edin.',
+  'canvas.mindMapDocumentSummary.pasteTooLong':
+    'Yapışdırılmış mətn model giriş limitini aşır (təxminən 900 000 simvol). Qısaldın.',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel':
+    'Çıxarılmış mətn model giriş limitini aşır (~900 000 simvol / qwen3.6-flash 991K token). Daha qısa sənəd istifadə edin.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel':
+    'Bu faylın mətni model üçün çox uzundur. Daha qısa sənəd yükləyin (təxminən 900 000 simvoldan az).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared':
+    'Saxlanmış çıxarış yox idi və ya sinxrondan çıxmışdı və təmizləndi. Sənədi yenidən yükləyin və ya yapışdırın.',
+  'canvas.mindMapDocumentSummary.contentFiltered':
+    'Məzmun təhlükəsizlik yoxlamasından keçmədi. Lütfən, mətni dəyişdirin və yenidən cəhd edin.',
   'canvas.mindMapSideToolbar.learningSheet': 'Öyrənmə vərəqi',
   'canvas.mobile.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
@@ -957,38 +1124,49 @@ export default {
   'canvas.mindClassroom.mascotDismiss': 'Dibinə sıxın',
   'canvas.mindClassroom.audienceLine': 'Cari auditoriya: {level} (aşağıdan [Peşəkar məzmun])',
   'canvas.mindClassroom.start': 'İzah etməyə başlayın',
-  'canvas.mindClassroom.startPreview': 'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
+  'canvas.mindClassroom.startPreview':
+    'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
   'canvas.mindClassroom.queue.queued': 'Artıq dərslik növbəsinə qoşulmusunuz...',
   'canvas.mindClassroom.queue.planning': 'Mühazirə qeydlərinin/tədris planlarının yaradılması...',
   'canvas.mindClassroom.queue.transcriptBranch': '{name} filialı üçün dərs planlarının yazılması',
-  'canvas.mindClassroom.queue.transcriptRemaining': 'Digər dərs planlarının yazılması ({done}/{total})',
+  'canvas.mindClassroom.queue.transcriptRemaining':
+    'Digər dərs planlarının yazılması ({done}/{total})',
   'canvas.mindClassroom.queue.transcript': 'Mühazirə qeydlərinin/dərs planlarının yazılması...',
   'canvas.mindClassroom.queue.generating': 'Slayd şousu yaradılır...',
   'canvas.mindClassroom.queue.loadingVoice': 'Səslər yüklənir...',
   'canvas.mindClassroom.queue.ready': 'Mühazirəyə başlaya bilər',
-  'canvas.mindClassroom.queue.readyHint': 'Mühazirə qeydləri/dərs planları hazırdır və mühazirə başlaya bilər.',
+  'canvas.mindClassroom.queue.readyHint':
+    'Mühazirə qeydləri/dərs planları hazırdır və mühazirə başlaya bilər.',
   'canvas.mindClassroom.queue.failed': 'Hazırlıq uğursuzluğunu izah edin',
   'canvas.mindClassroom.queue.cancel': 'Növbəni ləğv edin',
   'canvas.mindClassroom.queue.restart': 'Restart',
-  'canvas.mindClassroom.queue.restartHint': 'Regenerate the script / lesson plan with the current settings',
-  'canvas.mindClassroom.queue.guestHint': 'Ziyarətçilər izahat üçün yerli şablonlardan istifadə edirlər; daxil olduqdan sonra mühərrik mühazirə qeydləri/tədris planları yaradır.',
+  'canvas.mindClassroom.queue.restartHint':
+    'Regenerate the script / lesson plan with the current settings',
+  'canvas.mindClassroom.queue.guestHint':
+    'Ziyarətçilər izahat üçün yerli şablonlardan istifadə edirlər; daxil olduqdan sonra mühərrik mühazirə qeydləri/tədris planları yaradır.',
   'canvas.mindClassroom.queue.loginRequired': 'Zəhmət olmasa izahata başlamazdan əvvəl daxil olun.',
   'canvas.mindClassroom.queue.preparing': 'İzah etməyə hazırlanır...',
   'canvas.mindClassroom.settings.masteryTitle': 'Mən bu şəkillə nə qədər tanışam',
   'canvas.mindClassroom.settings.mastery.first_look.title': 'İlk tanışlıq',
   'canvas.mindClassroom.settings.mastery.review.title': 'Nəzərdən keçirin və birləşdirin',
   'canvas.mindClassroom.settings.mastery.teach.title': 'Dərsin hazırlanması və tədrisi',
-  'canvas.mindClassroom.settings.presentationTitle': 'Mən izahatın necə təqdim olunmasını istəyirəm',
+  'canvas.mindClassroom.settings.presentationTitle':
+    'Mən izahatın necə təqdim olunmasını istəyirəm',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'Canvas Voice Tour',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'Xəritə kətanındakı audio izahata diqqət yetirin, əsas filialı və ya qovşağı qovşaq üzrə seçin.',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    'Xəritə kətanındakı audio izahata diqqət yetirin, əsas filialı və ya qovşağı qovşaq üzrə seçin.',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'Slayd izahı',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'Süni intellekt slaydlar yaradır, müqayisə üçün solda xəritə və sağda səhifəni çevirən izahat var.',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': 'Hazırlanma mərhələsindədir, tezliklə onlayn olacaq',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    'Süni intellekt slaydlar yaradır, müqayisə üçün solda xəritə və sağda səhifəni çevirən izahat var.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
+    'Hazırlanma mərhələsindədir, tezliklə onlayn olacaq',
   'canvas.mindClassroom.settings.tourScopeTitle': 'Tur dənəvərliyi',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'Usta filial tərəfindən',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'Birinci səviyyəli budaqlar addım-addım öyrədilir və ritm daha sabitdir.',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
+    'Birinci səviyyəli budaqlar addım-addım öyrədilir və ritm daha sabitdir.',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'Node-node',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'İntensiv oxumaq üçün uyğun olan hər bir qovşağın dərinliyinə gedin.',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc':
+    'İntensiv oxumaq üçün uyğun olan hər bir qovşağın dərinliyinə gedin.',
   'canvas.mindClassroom.settings.slideStyleTitle': 'Slayd şou tərzi',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'Universal slaydlar',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'lövhə hesabatı',
@@ -1006,10 +1184,12 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': 'intensiv oxu',
   'canvas.mindClassroom.settings.tone.examples': 'Zəngin nümunələr',
   'canvas.mindClassroom.settings.tone.exam_outline': 'İmtahan kontur',
-  'canvas.mindClassroom.lecture.needDiagram': 'Lütfən, izahata başlamazdan əvvəl kətan üzərində ağıl xəritəsi yaradın.',
+  'canvas.mindClassroom.lecture.needDiagram':
+    'Lütfən, izahata başlamazdan əvvəl kətan üzərində ağıl xəritəsi yaradın.',
   'canvas.mindClassroom.lecture.emptySteps': 'Cari xəritədə izah etmək üçün heç bir qovşaq yoxdur.',
   'canvas.mindClassroom.lecture.cancelled': 'Dərslik növbəsi ləğv edildi.',
-  'canvas.mindClassroom.lecture.queueFailed': 'Dərslik hazırlığı alınmadı, sonra yenidən cəhd edin.',
+  'canvas.mindClassroom.lecture.queueFailed':
+    'Dərslik hazırlığı alınmadı, sonra yenidən cəhd edin.',
   'canvas.mindClassroom.lecture.pause': 'fasilə',
   'canvas.mindClassroom.lecture.resume': 'davam et',
   'canvas.mindClassroom.lecture.prev': 'Əvvəlki bölmə',
@@ -1018,34 +1198,56 @@ export default {
   'canvas.mindClassroom.lecture.mute': 'Ucadan oxumağı söndürün',
   'canvas.mindClassroom.lecture.unmute': 'Ucadan oxumağa başlayın',
   'canvas.mindClassroom.lecture.script.noBranches': 'Bəzi məqamlar',
-  'canvas.mindClassroom.lecture.script.leafNode': 'Hələlik bu filialla bağlı əlavə təfərrüatlar yoxdur.',
-  'canvas.mindClassroom.lecture.script.overview.classroom': 'Salam, sinif yoldaşları. Bu gün biz "{topic}" ətrafında öyrənirik, "{audience}" auditoriyası ilə qarşılaşırıq və "{mastery}" tempi ilə inkişaf edirik. Bütün şəkil əsasən daxildir: {branches}. Əvvəlcə ümumi şəkilə baxın, sonra hissə-hissə sıralayın.',
-  'canvas.mindClassroom.lecture.script.overview.story': 'Əvvəlcə "{topic}" sözünü hekayənin başlığı kimi düşünün. "{audience}" üz-üzə dayanaraq, bütün şəkildən təfərrüatlara keçəcəyik: hekayədə bu fəsillər var-{branches}.',
-  'canvas.mindClassroom.lecture.script.overview.dialogue': 'Əvvəlcə "{topic}"-a birlikdə baxaq. "{audience}" olsaydınız, ilk olaraq hansı hissələrə diqqət edərdiniz? Bütün şəkil təxminən daxildir: {branches}. Suallar verib, cavablandırıb aşağı düşdük.',
-  'canvas.mindClassroom.lecture.script.overview.socratic': 'Nəticəni hələ əzbərləməyə tələsməyin. "{topic}" ilə qarşılaşanda, sizcə, niyə şəkil çəkməyə dəyər? Biz "{mastery}" dərinliyini izləyirik və bu filiallardan soruşuruq: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.fast': '"{topic}" ({audience}) cəld nəzər salın. Baqaj: {branches}. Sonra, bir-bir nöqtəyə çatın.',
-  'canvas.mindClassroom.lecture.script.overview.close_read': 'İntensiv oxu açılışı: Mövzu "{topic}" dir. Zəhmət olmasa əvvəlcə ümumi quruluşu anlayın - {branches} - və sonra hər bir filialda diqqətlə oxuyun. Tamaşaçı ayarı: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.examples': 'Bir nümunə ilə başlayın. "{topic}" mövzusu həyat və ya sinif səhnəsi kimi düşünülə bilər; bütün şəklin budaqları müxtəlif səhnələrə bənzəyir: {branches}. Tamaşaçılar: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'Test nöqtələrinin icmalı: "{topic}". Əsas məqamları kontur üzrə qeyd edin——{branches}. Çətinlik "{audience}" və ritm "{mastery}" ilə uyğunlaşdırılıb.',
-  'canvas.mindClassroom.lecture.script.branch.classroom': 'Filial {index}/{total}: "{title}"-a baxın. Həmçinin onun altında: {children}. Bu bölmənin bütövlükdə rolunu başa düşmək üçün xəritə mövqeyinə müraciət edin.',
-  'canvas.mindClassroom.lecture.script.branch.story': 'Hekayə {index} "{title}" fəslinə çatır. Bu fəsildə göründü: {children}. Şəklin ümumi süjetini necə inkişaf etdirdiklərini düşünün.',
-  'canvas.mindClassroom.lecture.script.branch.dialogue': 'Sizdən bunu soruşum: "{title}" deyəndə ağlınıza nə gəlir? Diaqram verir: {children}. Gəlin müqayisə edək ({index}/{total}).',
-  'canvas.mindClassroom.lecture.script.branch.socratic': 'Əlavə sual: Nə üçün "{title}" ayrıca filial olmalıdır? Onun "{children}" yarımbəndi ilə əlaqəsi nədir? Zəhmət olmasa əvvəlcə özünüz cavab verin, sonra xəritəyə ({index}/{total}) baxın.',
+  'canvas.mindClassroom.lecture.script.leafNode':
+    'Hələlik bu filialla bağlı əlavə təfərrüatlar yoxdur.',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    'Salam, sinif yoldaşları. Bu gün biz "{topic}" ətrafında öyrənirik, "{audience}" auditoriyası ilə qarşılaşırıq və "{mastery}" tempi ilə inkişaf edirik. Bütün şəkil əsasən daxildir: {branches}. Əvvəlcə ümumi şəkilə baxın, sonra hissə-hissə sıralayın.',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    'Əvvəlcə "{topic}" sözünü hekayənin başlığı kimi düşünün. "{audience}" üz-üzə dayanaraq, bütün şəkildən təfərrüatlara keçəcəyik: hekayədə bu fəsillər var-{branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    'Əvvəlcə "{topic}"-a birlikdə baxaq. "{audience}" olsaydınız, ilk olaraq hansı hissələrə diqqət edərdiniz? Bütün şəkil təxminən daxildir: {branches}. Suallar verib, cavablandırıb aşağı düşdük.',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    'Nəticəni hələ əzbərləməyə tələsməyin. "{topic}" ilə qarşılaşanda, sizcə, niyə şəkil çəkməyə dəyər? Biz "{mastery}" dərinliyini izləyirik və bu filiallardan soruşuruq: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    '"{topic}" ({audience}) cəld nəzər salın. Baqaj: {branches}. Sonra, bir-bir nöqtəyə çatın.',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    'İntensiv oxu açılışı: Mövzu "{topic}" dir. Zəhmət olmasa əvvəlcə ümumi quruluşu anlayın - {branches} - və sonra hər bir filialda diqqətlə oxuyun. Tamaşaçı ayarı: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    'Bir nümunə ilə başlayın. "{topic}" mövzusu həyat və ya sinif səhnəsi kimi düşünülə bilər; bütün şəklin budaqları müxtəlif səhnələrə bənzəyir: {branches}. Tamaşaçılar: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    'Test nöqtələrinin icmalı: "{topic}". Əsas məqamları kontur üzrə qeyd edin——{branches}. Çətinlik "{audience}" və ritm "{mastery}" ilə uyğunlaşdırılıb.',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    'Filial {index}/{total}: "{title}"-a baxın. Həmçinin onun altında: {children}. Bu bölmənin bütövlükdə rolunu başa düşmək üçün xəritə mövqeyinə müraciət edin.',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    'Hekayə {index} "{title}" fəslinə çatır. Bu fəsildə göründü: {children}. Şəklin ümumi süjetini necə inkişaf etdirdiklərini düşünün.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    'Sizdən bunu soruşum: "{title}" deyəndə ağlınıza nə gəlir? Diaqram verir: {children}. Gəlin müqayisə edək ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    'Əlavə sual: Nə üçün "{title}" ayrıca filial olmalıdır? Onun "{children}" yarımbəndi ilə əlaqəsi nədir? Zəhmət olmasa əvvəlcə özünüz cavab verin, sonra xəritəyə ({index}/{total}) baxın.',
   'canvas.mindClassroom.lecture.script.branch.fast': '"{title}" → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read': '"{title}" intensiv oxuyun. Zəhmət olmasa, tabeliyində olan məlumatları bir-bir oxuyun: {children}. Bu filial {index}/{total} bəndindədir. Sözlərə və səviyyəyə diqqət yetirin.',
-  'canvas.mindClassroom.lecture.script.branch.examples': '"{title}" sözünü başa düşmək üçün bir misal göstərin: siz bunu {children} olan xüsusi bir səhnə kimi düşünə bilərsiniz. Biz {index}/{total} filialındayıq.',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'Test nöqtəsi {index}/{total}: "{title}". Alt nöqtələr: {children}. Nəzərdən keçirərkən əvvəlcə başlığı yadda saxlayın və sonra təfərrüatları doldurun.',
-  'canvas.mindClassroom.lecture.script.closing.first_look': 'Ümumi baxış: Biz sadəcə "{topic}" skeleti ilə tanış olduq. Bütün şəkli yenidən skan etmək, sizə hələ də tanış olmayan iki və ya üç nöqtəni qeyd etmək və növbəti dəfə oradan başlamaq tövsiyə olunur.',
-  'canvas.mindClassroom.lecture.script.closing.review': 'Nəticəni nəzərdən keçirin: "{topic}" kitabını bağlayaraq əsas fikirləri təkrarlaya bilərsinizmi? Bir bölmə ilişibsə, sadəcə xəritədəki bölməyə qayıdın və yenidən keçin.',
-  'canvas.mindClassroom.lecture.script.closing.teach': 'Dərsin hazırlanması və bağlanması: "{topic}"-ni "{audience}"-a öyrədərkən xəritənin ardıcıllığına əməl edə bilərsiniz: açılış - genişləndirmə - bağlanma. Siz həmçinin müəyyən bir filialı sinif suallarına bölmək olar.',
-  'canvas.mindMapSideToolbar.oneSentenceIntro': 'Xəritəni yaratmaq və ya təkmilləşdirmək üçün mövzunu və ya redaktə sorğusunu bir cümlə ilə təsvir edin',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    '"{title}" intensiv oxuyun. Zəhmət olmasa, tabeliyində olan məlumatları bir-bir oxuyun: {children}. Bu filial {index}/{total} bəndindədir. Sözlərə və səviyyəyə diqqət yetirin.',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    '"{title}" sözünü başa düşmək üçün bir misal göstərin: siz bunu {children} olan xüsusi bir səhnə kimi düşünə bilərsiniz. Biz {index}/{total} filialındayıq.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    'Test nöqtəsi {index}/{total}: "{title}". Alt nöqtələr: {children}. Nəzərdən keçirərkən əvvəlcə başlığı yadda saxlayın və sonra təfərrüatları doldurun.',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    'Ümumi baxış: Biz sadəcə "{topic}" skeleti ilə tanış olduq. Bütün şəkli yenidən skan etmək, sizə hələ də tanış olmayan iki və ya üç nöqtəni qeyd etmək və növbəti dəfə oradan başlamaq tövsiyə olunur.',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    'Nəticəni nəzərdən keçirin: "{topic}" kitabını bağlayaraq əsas fikirləri təkrarlaya bilərsinizmi? Bir bölmə ilişibsə, sadəcə xəritədəki bölməyə qayıdın və yenidən keçin.',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    'Dərsin hazırlanması və bağlanması: "{topic}"-ni "{audience}"-a öyrədərkən xəritənin ardıcıllığına əməl edə bilərsiniz: açılış - genişləndirmə - bağlanma. Siz həmçinin müəyyən bir filialı sinif suallarına bölmək olar.',
+  'canvas.mindMapSideToolbar.oneSentenceIntro':
+    'Xəritəni yaratmaq və ya təkmilləşdirmək üçün mövzunu və ya redaktə sorğusunu bir cümlə ilə təsvir edin',
   'canvas.mindMapSideToolbar.documentSummary': 'File Center',
-  'fileCenter.intro': 'Paket bu diaqram üçün seçilmiş mənbələr toplusudur. Fayl, qeyd və ya veb səhifə əlavə edin — diaqram budaqlarını bu mənbələrdən tamamlayır.',
+  'fileCenter.intro':
+    'Paket bu diaqram üçün seçilmiş mənbələr toplusudur. Fayl, qeyd və ya veb səhifə əlavə edin — diaqram budaqlarını bu mənbələrdən tamamlayır.',
   'fileCenter.defaultPackageName': 'Adsız paket',
   'fileCenter.packageNameLabel': 'Paket adı',
   'fileCenter.createPackage': 'Paket yarat',
   'fileCenter.deletePackage': 'Paketi sil',
-  'fileCenter.confirmDeletePackage': 'Bu paket və bütün mənbələri silinsin? Bu əməliyyat geri qaytarıla bilməz.',
+  'fileCenter.confirmDeletePackage':
+    'Bu paket və bütün mənbələri silinsin? Bu əməliyyat geri qaytarıla bilməz.',
   'fileCenter.corpusStatus': '{total} mənbədən {completed}-i indekslənib',
   'fileCenter.noSources': 'Hələ mənbə yoxdur. Aşağıda əlavə edin.',
   'fileCenter.addSource': 'Mənbə əlavə et',
@@ -1056,8 +1258,10 @@ export default {
   'fileCenter.pasteTitlePlaceholder': 'Başlıq (ixtiyari)',
   'fileCenter.pastePlaceholder': 'Mənbə kimi əlavə etmək üçün qeyd və ya mətn yapışdırın…',
   'fileCenter.webUrlPlaceholder': 'https://example.com/article',
-  'fileCenter.webContentPlaceholder': 'Mənbə kimi indeksləmək üçün səhifə mətnini yapışdırın və ya yazın…',
-  'fileCenter.saveDiagramForRag': 'Paketi bağlamaq və RAG axtarışını aktiv etmək üçün bu diaqramı saxlayın.',
+  'fileCenter.webContentPlaceholder':
+    'Mənbə kimi indeksləmək üçün səhifə mətnini yapışdırın və ya yazın…',
+  'fileCenter.saveDiagramForRag':
+    'Paketi bağlamaq və RAG axtarışını aktiv etmək üçün bu diaqramı saxlayın.',
   'fileCenter.statusReady': 'Hazır · RAG aktiv',
   'fileCenter.statusPending': 'Əlavə edilib',
   'fileCenter.statusIndexing': 'İndekslənir…',
@@ -1074,10 +1278,14 @@ export default {
   'canvas.mindMapSideToolbar.closeOutline': 'Konturu bağla',
   'canvas.mindMapSideToolbar.outlineEmpty': 'Hələ düyün yoxdur',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI yaratma',
-  'canvas.mindMapSideToolbar.outlineEditHint': 'Sətir içi redaktə üçün hər hansı sətirə iki dəfə klikləyin',
-  'canvas.mindMapSideToolbar.outlineIntro': 'Strukturu konturda redaktə edin — sıralamaq üçün sürükləyin, toplu əlavə üçün sətirləri yapışdırın',
-  'canvas.mindMapSideToolbar.outlineDragHint': 'Sıralamaq üçün sürükləyin; qardaş üçün yuxarı/aşağı, alt üçün mərkəzə buraxın',
-  'canvas.mindMapSideToolbar.outlinePasteHint': 'Düyün seçin və toplu qardaş düyünlər əlavə etmək üçün çoxsətirli mətn yapışdırın',
+  'canvas.mindMapSideToolbar.outlineEditHint':
+    'Sətir içi redaktə üçün hər hansı sətirə iki dəfə klikləyin',
+  'canvas.mindMapSideToolbar.outlineIntro':
+    'Strukturu konturda redaktə edin — sıralamaq üçün sürükləyin, toplu əlavə üçün sətirləri yapışdırın',
+  'canvas.mindMapSideToolbar.outlineDragHint':
+    'Sıralamaq üçün sürükləyin; qardaş üçün yuxarı/aşağı, alt üçün mərkəzə buraxın',
+  'canvas.mindMapSideToolbar.outlinePasteHint':
+    'Düyün seçin və toplu qardaş düyünlər əlavə etmək üçün çoxsətirli mətn yapışdırın',
   'canvas.mindMapPaste.inserted': '{count} qardaş düyün daxil edildi',
   'canvas.mindMapPaste.truncated': 'Sətir limiti çatıldı — yalnız ilk 50 sətir daxil edildi',
   'canvas.mindMapSideToolbar.realtimeSync': 'Canlı sinxron',
@@ -1087,42 +1295,52 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'Budağı sil',
   'canvas.mindMapSideToolbar.expandBranch': 'Budağı genişləndir',
   'canvas.mindMapSideToolbar.collapseBranch': 'Budağı yığ',
-  'canvas.mindMapSideToolbar.aiGenerateDesc': 'Cari mövzudan bir cümlə ilə zehin xəritəsini genişləndirin.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc':
+    'Cari mövzudan bir cümlə ilə zehin xəritəsini genişləndirin.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Öyrənmə vərəqini aktiv et',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Öyrənmə vərəqindən çıx',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Tam diaqramı bərpa et',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
     'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro': 'Məşq və təkrar üçün öyrənmə vərəqini necə yaratmağı seçin.',
+  'canvas.mindMapSideToolbar.learningSheetIntro':
+    'Məşq və təkrar üçün öyrənmə vərəqini necə yaratmağı seçin.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
     'Blank every node except the center topic; reference answers appear below the diagram.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Təsadüfi boşluqlar',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Düyünlərin təxminən 20%-ni təsadüfi boşaldır; cavablar diaqramın altında görünür.',
-  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} düyün boşaldılıb · bağlamaq üçün Esc',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
+    'Düyünlərin təxminən 20%-ni təsadüfi boşaldır; cavablar diaqramın altında görünür.',
+  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint':
+    '{count} düyün boşaldılıb · bağlamaq üçün Esc',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'Fərdi boşluqlar',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'Kursor çəkic olur — boşaltmaq üçün düyünə klikləyin; bərpa üçün yenidən klikləyin.',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
+    'Kursor çəkic olur — boşaltmaq üçün düyünə klikləyin; bərpa üçün yenidən klikləyin.',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'Aktiv · {count} düyün boşaldılıb',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'Seçim rejimi · kətanda düyünlərə klikləyin',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
+    'Seçim rejimi · kətanda düyünlərə klikləyin',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'Fərdi boşluq rejimi',
-  'canvas.mindMapSideToolbar.learningSheetPickHint': 'Boşaltmaq üçün klikləyin, bərpa üçün yenidən · {count} boşaldılıb · çıxmaq üçün Esc',
+  'canvas.mindMapSideToolbar.learningSheetPickHint':
+    'Boşaltmaq üçün klikləyin, bərpa üçün yenidən · {count} boşaldılıb · çıxmaq üçün Esc',
   'canvas.mindMapSideToolbar.learningSheetPickDone': 'Hazır',
-  'canvas.mindMapSideToolbar.learningSheetProtectedNode': 'Mövzu və struktur düyünləri boşaldıla bilməz',
+  'canvas.mindMapSideToolbar.learningSheetProtectedNode':
+    'Mövzu və struktur düyünləri boşaldıla bilməz',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': 'Düyünü boşalt',
   'canvas.mindMapSideToolbar.learningSheetRandomBlankHistory': 'Təsadüfi boş düyünlər',
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': 'Düyün mətnini bərpa et',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': 'İstinad cavablarını gizlət',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': 'İstinad cavablarını saxlayın',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': 'Bağlandıqda cavab nokaut sahəsindəki kətanda göstərilmir',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
+    'Bağlandıqda cavab nokaut sahəsindəki kətanda göstərilmir',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'Kətan cavabları',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': 'Göstər',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': 'Gizlət',
   'canvas.mindMapSideToolbar.learningSheetAnswersShortcut': 'Qısayol: Ctrl + Shift + H',
   'canvas.mindMapSideToolbar.openMindmate': 'MindMate-i aç',
   'canvas.toolbar.learningSheetExportNudgeTitle': 'Öyrənmə vərəqi kimi ixrac et',
-  'canvas.toolbar.learningSheetExportNudgeDesc': 'Çap və ya paylaşım üçün PNG və ya PDF ixrac edin.',
+  'canvas.toolbar.learningSheetExportNudgeDesc':
+    'Çap və ya paylaşım üçün PNG və ya PDF ixrac edin.',
   'canvas.toolbar.learningSheetExportNudgeDismiss': 'Anladım',
   'canvas.toolbar.learningSheetExportNudgeNeverRemind': 'Bir daha xatırlatma',
   'diagram.flow.newCause': 'Yeni səbəb',
@@ -1202,7 +1420,8 @@ export default {
   'editor.savedSuccess': 'Saxlanıldı',
   'editor.saveNeedsLogin': 'Saxlamaq üçün daxil olun',
   'editor.saveWaitForGeneration': 'Saxlamazdan əvvəl AI generasiyasının bitməsini gözləyin',
-  'editor.saveBlockedSubgraphPreview': 'Saxlamazdan əvvəl AI altqraf önbaxışını qəbul edin və ya rədd edin',
+  'editor.saveBlockedSubgraphPreview':
+    'Saxlamazdan əvvəl AI altqraf önbaxışını qəbul edin və ya rədd edin',
   'editor.saveBlockedCollabActive': 'Saxlama canlı əməkdaşlıq sessiyası vasitəsilə idarə olunur',
   'editor.saveBlockedCollabGuest': 'Əməkdaşlıq sessiyasında yalnız ev sahibi saxlaya bilər',
   'editor.saveNothingToSave': 'Hələ saxlanacaq bir şey yoxdur',
@@ -1213,7 +1432,8 @@ export default {
   'editor.redo': 'Təkrarla',
   'editor.saveDiagram': 'Diaqramı saxla',
   'editor.selectDiagramType': 'Diaqram növünü seçin',
-  'editor.slotsFull': 'Yer doludur, avtomatik saxlama müvəqqəti əlçatan deyil. Yer açmaq üçün mövcud diaqramları silin.',
+  'editor.slotsFull':
+    'Yer doludur, avtomatik saxlama müvəqqəti əlçatan deyil. Yer açmaq üçün mövcud diaqramları silin.',
   'editor.undo': 'Geri al',
   'editor.zoomIn': 'Yaxınlaşdır',
   'editor.zoomOut': 'Uzaqlaşdır',
@@ -1285,10 +1505,12 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'Məktəb sessiyaları yüklənmədi',
   'mindgraphLanding.networkError': 'Şəbəkə xətası',
   'mindgraphLanding.networkErrorJoin': 'Şəbəkə xətası, qoşulmaq alınmadı',
-  'mindgraphLanding.orgSessionsEmpty': 'Hazırda qoşula biləcəyiniz məktəb sessiyası yoxdur (həmkarınız kanvasda sessiyanı açmalıdır).',
+  'mindgraphLanding.orgSessionsEmpty':
+    'Hazırda qoşula biləcəyiniz məktəb sessiyası yoxdur (həmkarınız kanvasda sessiyanı açmalıdır).',
   'mindgraphLanding.participantsOnline': '{n} onlayn',
   'mindgraphLanding.schoolCollab': 'Məktəb daxilində əməkdaşlıq',
-  'mindgraphLanding.sharedCodeHint': 'Dəvət kodunu (xxx-xxx) daxil edin ki, onların sessiyasına qoşulasınız.',
+  'mindgraphLanding.sharedCodeHint':
+    'Dəvət kodunu (xxx-xxx) daxil edin ki, onların sessiyasına qoşulasınız.',
   'mindgraphLanding.sharedCollab': 'Ümumi əməkdaşlıq',
   'mindgraphLanding.joinDiagramEdit': 'Diaqram redaktəsinə qoşul',
   'mindgraphLanding.welcome': 'Salam {username}, mən sənin MindGraph AI vizual düşüncə köməkçinəm',
@@ -1298,6 +1520,7 @@ export default {
   'canvasPage.collabParticipantsAria': 'Əməkdaşlıq iştirakçıları',
   'canvasPage.collabConnected': 'Qoşuldu',
   'canvas.topBar.viewOnly': 'Yalnız baxış',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': 'daha çox',
   'canvas.ribbon.file': 'sənəd',
   'canvas.ribbon.nodes': 'düyün',
@@ -1313,6 +1536,8 @@ export default {
   'canvas.ribbon.line': 'Xətt çəkmə',
   'canvas.ribbon.learn': 'öyrənmək',
   'canvas.ribbon.palette': 'qovşaq paneli',
+  'canvas.ribbon.exportImage': 'Şəkilləri ixrac edin',
+  'canvas.ribbon.saveMg': '.mg qənaət edin',
   'canvas.ribbon.mindMate': 'MindMate AI',
   'canvas.ribbon.editMode': 'Redaktə rejimi: aktivdir',
   'canvas.ribbon.fontFamily': 'şrift',
@@ -1321,22 +1546,6 @@ export default {
   'canvas.ribbon.colorText': 'Söz',
   'canvas.ribbon.colorFill': 'doldurulması',
   'canvas.ribbon.colorStroke': 'çərçivə',
-  'canvas.topBar.zhihuiUnavailable': 'Ağıllı Rəsm Diaqramları hazırda əlçatan deyil',
-  'canvas.topBar.zhihuiNeedMindmap': 'İllüstrasiya yalnız ağıl xəritəsini dəstəkləyir',
-  'canvas.topBar.zhihuiSaveFailed': 'Xəritəni saxlamaq alınmadı və yaradılmış xəritəni aça bilmədi.',
-  'canvas.toolbar.educationStage': 'akademik mərhələ',
-  'canvas.toolbar.educationStageTooltip': 'AI tərəfindən yaradılan məzmunun dərinliyinə təsir etmək üçün akademik mərhələni seçin.',
-  'canvas.toolbar.educationStageClear': 'Universal',
-  'canvas.toolbar.educationStagePrimary': 'ibtidai məktəb',
-  'canvas.toolbar.educationStageMiddle': 'orta məktəb',
-  'canvas.toolbar.educationStageHigh': 'orta məktəb',
-  'canvas.toolbar.educationStageUniversity': 'Universitet',
-  'canvas.toolbar.educationStageAdult': 'yetkin',
-  'canvas.toolbar.educationStageExpert': 'ekspert',
-  'canvas.toolbar.save': 'Save',
-  'canvas.toolbar.add': 'Add',
-  'canvas.toolbar.delete': 'Delete',
-  'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.ribbon.tabFile': 'sənəd',
   'canvas.ribbon.tabHome': 'başlamaq',
   'canvas.ribbon.tabDesign': 'dizayn',
@@ -1366,7 +1575,8 @@ export default {
   'canvas.ribbon.tip.docGenerate': 'Xəritə yaratmaq üçün fayl yükləyin və ya mətn yapışdırın',
   'canvas.ribbon.tip.webGenerate': 'Veb səhifələrini tarayın və xəritələr yaradın',
   'canvas.ribbon.tip.voiceSummary': 'Qeydiyyatdan sonra xəritə yaradın',
-  'canvas.ribbon.tip.waterfall': 'Seçilmiş node üçün filialları tövsiyə edin - kətana sürüklənə bilər',
+  'canvas.ribbon.tip.waterfall':
+    'Seçilmiş node üçün filialları tövsiyə edin - kətana sürüklənə bilər',
   'canvas.ribbon.tip.oneSentence': 'Mövzunu və ya dəyişikliyi bir cümlə ilə təsvir edin',
   'canvas.ribbon.tip.aiSubgraph': 'Seçilmiş qovşaqdan alt filialı genişləndirin',
   'canvas.ribbon.tip.addChild': 'Seçilmiş node altına alt mövzu əlavə edin',
@@ -1379,8 +1589,20 @@ export default {
   'canvas.ribbon.tip.explain': 'AI seçilmiş qovşaqları şərh etsin',
   'canvas.ribbon.tip.classroom': 'Qoy AI müəllimi bu xəritədə sizə rəhbərlik etsin',
   'canvas.ribbon.tip.collabOrg': 'Məktəbimizdəki həmkarları birlikdə redaktə etməyə dəvət edin',
-  'canvas.ribbon.tip.collabCross': 'Bu xəritəni redaktə etmək üçün məktəblər arasında əməkdaşlıq edin',
+  'canvas.ribbon.tip.collabCross':
+    'Bu xəritəni redaktə etmək üçün məktəblər arasında əməkdaşlıq edin',
   'canvas.ribbon.tip.collabOff': 'Cari əməkdaşlıq sessiyasını bitirin',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': 'Seçilmiş node mətnini qalın edin',
   'canvas.ribbon.tip.italic': 'Seçilmiş qovşaq mətnini kursiv olaraq təyin edin',
   'canvas.ribbon.tip.alignLeft': 'Node mətni sola yığılmış',
@@ -1432,29 +1654,38 @@ export default {
   'canvas.ribbon.docGenerate': 'Sənədin yaradılması',
   'canvas.ribbon.webGenerate': 'Veb bağlantı yaratmaq',
   'canvas.ribbon.voiceSummary': 'Qeydin xülasəsi',
-  'canvas.ribbon.sourceLocked': 'Cari xəritə mənbə kimi {source} istifadə etmişdir. Başqa nəsil metoduna keçməzdən əvvəl yeni xəritə yaradın.',
+  'canvas.ribbon.sourceLocked':
+    'Cari xəritə mənbə kimi {source} istifadə etmişdir. Başqa nəsil metoduna keçməzdən əvvəl yeni xəritə yaradın.',
   'canvas.ribbon.sourceKind.doc': 'sənəd',
   'canvas.ribbon.sourceKind.web': 'Veb keçidi',
   'canvas.ribbon.sourceKind.voice': 'qeyd',
   'canvas.ribbon.assocLine': 'əlaqəli xətt',
-  'canvas.ribbon.assocLineHint': 'Qoşulmaq üçün başqa node üzərinə klikləyin. Ləğv etmək üçün Esc və ya boş kətan.',
+  'canvas.ribbon.assocLineHint':
+    'Qoşulmaq üçün başqa node üzərinə klikləyin. Ləğv etmək üçün Esc və ya boş kətan.',
+  'canvas.ribbon.assocLineSameSide':
+    'Assosiasiya xətləri yalnız eyni tərəfdəki qovşaqları birləşdirə bilər',
+  'canvas.ribbon.assocLineDelete': 'Əlaqədar xətləri silin',
   'canvas.ribbon.summary': 'xülasə',
   'canvas.ribbon.insertImage': 'şəkil',
   'canvas.ribbon.insertIcon': 'ikona',
   'canvas.ribbon.insertLink': 'Link',
   'canvas.ribbon.makeLearningSheet': 'Bir iş vərəqi hazırlayın',
-  'canvas.ribbon.makeLearningSheetHint': 'Nəzərdən keçirilməsini daha səmərəli etmək üçün bir kliklə təhsil vərəqləri yaradın',
+  'canvas.ribbon.makeLearningSheetHint':
+    'Nəzərdən keçirilməsini daha səmərəli etmək üçün bir kliklə təhsil vərəqləri yaradın',
   'canvas.ribbon.selectTwoNodes': 'Əvvəlcə iki qovşaq seçin',
   'canvas.ribbon.insertComingSoon': 'Daxiletmə qabiliyyəti tezliklə əlçatan olacaq',
-  'canvas.ribbon.summaryNeedSiblings': 'Lütfən, eyni ana qovşağın altındakı ardıcıl qovşaqları seçin',
+  'canvas.ribbon.summaryNeedSiblings':
+    'Lütfən, eyni ana qovşağın altındakı ardıcıl qovşaqları seçin',
   'canvas.ribbon.summaryDelete': 'Xülasəni silin',
+  'canvas.ribbon.linkName': 'ad',
   'canvas.ribbon.linkUrl': 'Əlaqə ünvanı',
   'canvas.ribbon.linkInvalid': 'Lütfən, etibarlı http(lər) linki daxil edin',
   'canvas.ribbon.linkConfirm': 'Link əlavə edin',
   'canvas.ribbon.imageUrl': 'Şəkil ünvanı',
   'canvas.ribbon.imagePick': 'Şəkil seçin',
   'canvas.ribbon.imageInvalid': 'Lütfən, düzgün şəkil ünvanı daxil edin və ya fayl seçin',
-  'canvas.ribbon.imageTooLarge': 'Şəkil çox böyükdür, lütfən, daha kiçik fayla dəyişin və ya URL-dən istifadə edin',
+  'canvas.ribbon.imageTooLarge':
+    'Şəkil çox böyükdür, lütfən, daha kiçik fayla dəyişin və ya URL-dən istifadə edin',
   'canvas.ribbon.imageConfirm': 'şəkil əlavə edin',
   'canvas.ribbon.clearIcon': 'simgesini silin',
   'canvas.ribbon.openLink': 'linki açın',
@@ -1477,43 +1708,24 @@ export default {
   'canvas.ribbon.aiHero.chat.line2': 'Söhbətləri idxal edin və bir kliklə xəritələr yaradın',
   'canvas.ribbon.aiHero.classroom.ribbon': 'öyrənmə artefaktı',
   'canvas.ribbon.aiHero.classroom.title': 'Düşüncə mühazirə salonunu açın',
-  'canvas.ribbon.aiHero.classroom.line1': 'Qoy AI müəllimi sizinlə bu ağıl xəritəsi ətrafında danışsın',
+  'canvas.ribbon.aiHero.classroom.line1':
+    'Qoy AI müəllimi sizinlə bu ağıl xəritəsi ətrafında danışsın',
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'Mötərizəni boşaldın',
   'canvas.ribbon.aiHero.learningSheet.title': 'İçi boş mötərizə diaqramı',
-  'canvas.ribbon.aiHero.learningSheet.line1': 'Sinif təcrübəsi və nəzərdən keçirilməsi üçün uyğun olan təsadüfi və ya fərdiləşdirilmiş boşluq seçin',
+  'canvas.ribbon.aiHero.learningSheet.line1':
+    'Sinif təcrübəsi və nəzərdən keçirilməsi üçün uyğun olan təsadüfi və ya fərdiləşdirilmiş boşluq seçin',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'beyin fırtınası',
   'canvas.ribbon.aiHero.brainstorm.title': 'AI beyin fırtınası',
   'canvas.ribbon.aiHero.brainstorm.line1': 'Filial təklifləri yaratmaq üçün node seçin',
-  'canvas.ribbon.aiHero.brainstorm.line2': 'Onu yoxlayın və xəritəyə tətbiq edin və ya kətana sürükləyin.',
+  'canvas.ribbon.aiHero.brainstorm.line2':
+    'Onu yoxlayın və xəritəyə tətbiq edin və ya kətana sürükləyin.',
   'canvas.ribbon.aiHero.oneSentence.ribbon': 'Dialoqu dəyişdirin',
   'canvas.ribbon.aiHero.oneSentence.title': 'Danışıq modifikasiyası',
-  'canvas.ribbon.aiHero.oneSentence.line1': 'Mövzunu və ya dəyişiklik tələbini bir cümlə ilə təsvir edin',
+  'canvas.ribbon.aiHero.oneSentence.line1':
+    'Mövzunu və ya dəyişiklik tələbini bir cümlə ilə təsvir edin',
   'canvas.ribbon.aiHero.oneSentence.line2': 'Xəritələri ağıllı şəkildə yaradın və tənzimləyin',
-  'canvas.ribbon.exportImage': 'Şəkilləri ixrac edin',
-  'canvas.ribbon.saveMg': '.mg qənaət edin',
-  'canvas.floatingToolbar.summaryStyle': 'Xülasə üslubu',
-  'canvas.floatingToolbar.summaryType': 'xülasə növü',
-  'canvas.floatingToolbar.summaryLine': 'xətt',
-  'canvas.floatingToolbar.summaryThickness': 'Qalınlıq',
-  'canvas.floatingToolbar.summaryKindBrace': 'buruq mötərizələr',
-  'canvas.floatingToolbar.summaryKindBracket': 'kvadrat mötərizələr',
-  'canvas.floatingToolbar.summaryKindParen': 'mötərizələr',
-  'canvas.floatingToolbar.summaryLineSolid': 'möhkəm xətt',
-  'canvas.floatingToolbar.summaryLineDashed': 'nöqtəli xətt',
-  'canvas.floatingToolbar.summaryLineDotted': 'nöqtəli xətt',
-  'canvas.floatingToolbar.assocStyle': 'Əlaqədar xətt üslubu',
-  'canvas.floatingToolbar.assocCurveDrag': 'Radianı tənzimləmək üçün üç nöqtəli dairəni dartın',
-  'canvas.floatingToolbar.assocShape': 'Assosiasiya xətti forması',
-  'canvas.floatingToolbar.assocShapeCurve': 'əyri',
-  'canvas.floatingToolbar.assocStartArrow': 'başlanğıc oxu',
-  'canvas.floatingToolbar.assocEndArrow': 'son oxu',
-  'canvas.floatingToolbar.assocArrowNone': 'heç biri',
-  'canvas.floatingToolbar.assocArrow': 'ox',
-  'canvas.ribbon.assocLineSameSide': 'Assosiasiya xətləri yalnız eyni tərəfdəki qovşaqları birləşdirə bilər',
-  'canvas.ribbon.assocLineDelete': 'Əlaqədar xətləri silin',
-  'canvas.ribbon.linkName': 'ad',
   'canvas.ribbon.aiHero.link.ribbon': 'daxil edin',
   'canvas.ribbon.aiHero.link.title': 'Link əlavə edin',
   'canvas.ribbon.aiHero.link.line1': 'Düyün ekran adı, tam ünvan link simvolunda gizlənir',
@@ -1528,25 +1740,27 @@ export default {
   'canvas.hero.icon.line2': '',
   'canvas.hero.math.ribbon': 'daxil edin',
   'canvas.hero.math.title': 'Formula daxil edin',
-  'canvas.hero.math.line1': 'LaTeX daxil etmək üçün formula klaviaturasından istifadə edin və təsdiqdən sonra qovşağı yazın.',
+  'canvas.hero.math.line1':
+    'LaTeX daxil etmək üçün formula klaviaturasından istifadə edin və təsdiqdən sonra qovşağı yazın.',
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': 'əməkdaşlıq',
   'canvas.hero.collab.title': 'Onlayn əməkdaşlıq',
-  'canvas.hero.collab.line1': 'Həmkarları şəkilləri birlikdə dəyişdirməyə dəvət etmək üçün məktəbdaxili və ya dəvət kodu əməkdaşlığını aktivləşdirin',
+  'canvas.hero.collab.line1':
+    'Həmkarları şəkilləri birlikdə dəyişdirməyə dəvət etmək üçün məktəbdaxili və ya dəvət kodu əməkdaşlığını aktivləşdirin',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': 'İxrac',
   'canvas.hero.worksheet.title': 'DOC/PDF-ə ixrac edin',
-  'canvas.hero.worksheet.line1': 'Tədris vərəqinin başlığını və kağız seçimlərini təyin edin, önizləmə və ixrac',
+  'canvas.hero.worksheet.line1':
+    'Tədris vərəqinin başlığını və kağız seçimlərini təyin edin, önizləmə və ixrac',
   'canvas.hero.worksheet.line2': '',
   'canvas.hero.communityExport.ribbon': 'paylaş',
   'canvas.hero.communityExport.title': 'İcma ilə paylaşın',
-  'canvas.hero.communityExport.line1': 'Başlıq və kateqoriyanı doldurun, miniatür yaradın və dərc edin',
+  'canvas.hero.communityExport.line1':
+    'Başlıq və kateqoriyanı doldurun, miniatür yaradın və dərc edin',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'İcma yazısını redaktə edin',
   'canvas.hero.slotFull.ribbon': 'Qalereya',
   'canvas.hero.slotFull.title': 'Qalereya doludur',
   'canvas.hero.slotFull.line1': 'Lütfən, mövcud ikonanı silin və cari simvolu yadda saxlayın',
   'canvas.hero.slotFull.line2': '',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
-  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

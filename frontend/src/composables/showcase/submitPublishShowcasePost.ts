@@ -43,6 +43,7 @@ import {
   updateShowcasePost,
   withdrawShowcasePost,
 } from '@/utils/apiClient'
+import { must } from '@/utils/must'
 import {
   cloneShowcaseDiagramSpec,
   inferDiagramTypeFromSpec,
@@ -417,7 +418,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
           : 'upload_failed'
       console.error('[Showcase] upload failed; rolling back draft', postId, uploadError)
       await rollbackCreatedPost(postId, proxyMode, uploadFailureReason(uploadError))
-      throw new Error(`SHOWCASE_UPLOAD_ROLLED_BACK:${cause}`)
+      throw new Error(`SHOWCASE_UPLOAD_ROLLED_BACK:${cause}`, { cause: uploadError })
     }
   }
 
@@ -574,8 +575,8 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
               kind: 'diagram',
               diagram_id: draft.diagram.id,
               title: draft.title,
-              diagram_type: resolvePublishDiagramType(draft.diagram.diagram_type, draft.spec!),
-              spec: cloneShowcaseDiagramSpec(draft.spec!),
+              diagram_type: resolvePublishDiagramType(draft.diagram.diagram_type, must(draft.spec)),
+              spec: cloneShowcaseDiagramSpec(must(draft.spec)),
             })
           }
           if (galleryItems.length < 1) {

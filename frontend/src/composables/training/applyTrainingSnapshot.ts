@@ -29,9 +29,7 @@ export function trainingFollowCursorResets(
   current: TrainingSnapshot,
   next: TrainingSnapshot
 ): boolean {
-  return (
-    next.session_id !== current.session_id || next.state === 'none' || next.state === 'ended'
-  )
+  return next.session_id !== current.session_id || next.state === 'none' || next.state === 'ended'
 }
 
 export function canSeeTrainingSpeakerNotes(

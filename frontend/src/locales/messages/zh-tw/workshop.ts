@@ -1,6 +1,6 @@
 /**
- * zh-tw UI — workshop
- * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ * zh UI — workshop
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export default {
@@ -233,7 +233,7 @@ export default {
   'workshop.personalMenu': '個人菜單',
   'workshop.preview': '預覽',
   'workshop.previewEmpty': '沒有可預覽的內容',
-  'workshop.phase2RoadmapGroupsAlerts': '後續計劃：{\'@\'}群組、關鍵詞提醒、消息編輯歷史策略。',
+  'workshop.phase2RoadmapGroupsAlerts': "後續計劃：{\\'@\\'}群組、關鍵詞提醒、消息編輯歷史策略。",
   'workshop.phase2RoadmapMovePreview': '後續計劃：單條消息移動、鏈接預覽、更豐富的跨頻道動態。',
   'workshop.phase2RoadmapPlatform': '平臺待辦：增量同步、移動推送、郵件摘要、機器人與 Webhook。',
   'workshop.pickColleagueToInvite': '請選擇要邀請的同事。',
@@ -355,7 +355,7 @@ export default {
     '课例一般挂在某个课题组下，围绕具体一节课做磨课、观课与反思；可带进度状态，也可关联思维图示。',
   'workshop.welcomeLessonStudyTitle': '課例研究',
   'workshop.welcomeMessagesBody':
-    '消息是会话或频道时间线里的单条发言；回复、{\'@\'}同事、附件等都体现在消息上。',
+    "消息是会话或频道时间线里的单条发言；回复、{'@'}同事、附件等都体现在消息上。",
   'workshop.welcomeMessagesTitle': '消息',
   'workshop.welcomeSubtitle': '在 MindGraph 上與校內同事協作',
   'workshop.welcomeTitle': '歡迎使用研習社',

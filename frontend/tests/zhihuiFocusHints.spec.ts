@@ -104,10 +104,7 @@ describe('resolveZhihuiSlideFocusHints', () => {
 
   it('flattens planner batches in order', () => {
     const flat = flattenLessonPlanFrames({
-      batches: [
-        { frames: [{ title: 'a' }, { title: 'b' }] },
-        { frames: [{ title: 'c' }] },
-      ],
+      batches: [{ frames: [{ title: 'a' }, { title: 'b' }] }, { frames: [{ title: 'c' }] }],
     })
     expect(flat.map((frame) => frame.title)).toEqual(['a', 'b', 'c'])
   })

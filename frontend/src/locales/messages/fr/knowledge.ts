@@ -5,12 +5,14 @@
 
 export default {
   'fileCenterLibrary.title': 'Paquets',
-  'fileCenterLibrary.subtitle': 'Collections de sources regroupées par diagramme (Résumé de document).',
+  'fileCenterLibrary.subtitle':
+    'Collections de sources regroupées par diagramme (Résumé de document).',
   'fileCenterLibrary.openDiagram': 'Ouvrir le diagramme',
   'fileCenterLibrary.badgeCanvas': 'Canevas',
   'fileCenterLibrary.badgeExtension': 'Développer',
   'fileCenterLibrary.badgeUpload': 'Téléversement',
-  'chunkTest.history.confirmDeleteBody': 'Êtes-vous sûr de vouloir supprimer ce test ? Cette action est irréversible.',
+  'chunkTest.history.confirmDeleteBody':
+    'Êtes-vous sûr de vouloir supprimer ce test ? Cette action est irréversible.',
   'chunkTest.history.confirmDeleteTitle': 'Supprimer le test',
   'chunkTest.history.delete': 'Supprimer',
   'chunkTest.history.deleteFailed': 'Échec de la suppression du test',
@@ -32,7 +34,8 @@ export default {
   'chunkTest.page.myDocuments': 'Mes documents',
   'chunkTest.page.noDatasets': 'Aucun jeu de données disponible',
   'chunkTest.page.noDocsToTest': 'Aucun document terminé n’est disponible pour les tests',
-  'chunkTest.page.selectCompletedDocs': 'Veuillez sélectionner des documents terminés pour les tests',
+  'chunkTest.page.selectCompletedDocs':
+    'Veuillez sélectionner des documents terminés pour les tests',
   'chunkTest.page.startingDatasetTest': 'Démarrage du test pour le jeu de données : {name}…',
   'chunkTest.page.startingUserDocTest': 'Démarrage du test pour les documents téléchargés…',
   'chunkTest.page.testFailed': 'Test échoué',
@@ -49,7 +52,8 @@ export default {
   'chunkTestResults.answerQuality': 'Qualité de la réponse',
   'chunkTestResults.avgLatency': 'Latence moyenne',
   'chunkTestResults.back': 'Retour',
-  'chunkTestResults.cancelConfirmBody': 'Êtes-vous sûr de vouloir annuler ce test ? Le test s’arrêtera au prochain point de contrôle.',
+  'chunkTestResults.cancelConfirmBody':
+    'Êtes-vous sûr de vouloir annuler ce test ? Le test s’arrêtera au prochain point de contrôle.',
   'chunkTestResults.cancelFailed': 'Échec de l’annulation du test',
   'chunkTestResults.cancelRequested': 'Demande d’annulation du test envoyée',
   'chunkTestResults.cancelTest': 'Annuler le test',
@@ -66,7 +70,7 @@ export default {
   'chunkTestResults.diversity': 'Diversité',
   'chunkTestResults.diversityEfficiency': 'Diversité et efficacité',
   'chunkTestResults.evaluate': 'Évaluer',
-  'chunkTestResults.evaluationMetrics': 'Métriques d\'évaluation',
+  'chunkTestResults.evaluationMetrics': "Métriques d'évaluation",
   'chunkTestResults.generatingChunks': 'Génération des fragments...',
   'chunkTestResults.loading': 'Chargement...',
   'chunkTestResults.method': 'Méthode',
@@ -79,7 +83,8 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Métriques IR standard',
   'chunkTestResults.storageEff': 'Efficacité du stockage',
   'chunkTestResults.testFailed': 'Échec du test',
-  'chunkTestResults.testFailedHint': 'Une erreur s\'est produite lors de l\'exécution du test. Veuillez réessayer.',
+  'chunkTestResults.testFailedHint':
+    "Une erreur s'est produite lors de l'exécution du test. Veuillez réessayer.",
   'chunkTestResults.testingInProgress': 'Test en cours...',
   'chunkTestResults.totalChunks': 'Total de {n} fragments',
   'chunkTestResults.viewChunks': 'Afficher les fragments',
@@ -89,7 +94,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Tester tous les jeux de données',
   'knowledge.chunkHeader.testUpload': 'Tester les documents téléchargés',
   'knowledge.chunkHeader.title': 'Test des fragments RAG',
-  'knowledge.chunkHeader.waitForProcessing': 'Veuillez patienter jusqu\'à la fin du traitement des documents avant de lancer le test',
+  'knowledge.chunkHeader.waitForProcessing':
+    "Veuillez patienter jusqu'à la fin du traitement des documents avant de lancer le test",
   'knowledge.chunkPreview.empty': 'Aucun fragment trouvé',
   'knowledge.chunkPreview.pageLabel': 'Page n° {n}',
   'knowledge.chunkPreview.title': 'Fragments de document — {fileName}',
@@ -108,7 +114,8 @@ export default {
   'knowledge.doc.colStatus': 'Statut',
   'knowledge.doc.colType': 'Nature',
   'knowledge.doc.colUploaded': 'Date de téléchargement',
-  'knowledge.doc.emptyDescription': 'Aucun document pour le moment. Téléversez des documents pour constituer votre base de connaissances.',
+  'knowledge.doc.emptyDescription':
+    'Aucun document pour le moment. Téléversez des documents pour constituer votre base de connaissances.',
   'knowledge.doc.errorPrefix': 'Erreur : ',
   'knowledge.doc.noData': 'Aucune donnée',
   'knowledge.doc.statusCompleted': 'Terminé',
@@ -124,31 +131,43 @@ export default {
   'knowledge.header.title': 'Base de connaissances',
   'knowledge.header.upload': 'Télécharger des documents',
   'knowledge.ragGuide.title': 'Comment fonctionnent les paquets, RAG et Wiki ?',
-  'knowledge.ragGuide.subtitle': 'Pas besoin de jargon — pensez à un dossier de documents de référence. Nous l’indexons pour la recherche (RAG), puis compilons de courtes notes Wiki, et l’IA lit les deux lorsque vous créez une carte mentale.',
+  'knowledge.ragGuide.subtitle':
+    'Pas besoin de jargon — pensez à un dossier de documents de référence. Nous l’indexons pour la recherche (RAG), puis compilons de courtes notes Wiki, et l’IA lit les deux lorsque vous créez une carte mentale.',
   'knowledge.ragGuide.step1.title': 'Choisir un paquet',
-  'knowledge.ragGuide.step1.body': 'Un paquet ressemble à une collection Zotero. Vous pouvez en avoir jusqu’à 3 à gauche ; chacun appartient généralement à une carte mentale. Cliquez sur un paquet dans la barre latérale pour gérer ses documents.',
+  'knowledge.ragGuide.step1.body':
+    'Un paquet ressemble à une collection Zotero. Vous pouvez en avoir jusqu’à 3 à gauche ; chacun appartient généralement à une carte mentale. Cliquez sur un paquet dans la barre latérale pour gérer ses documents.',
   'knowledge.ragGuide.step2.title': 'Ajouter des sources et les indexer (RAG)',
-  'knowledge.ragGuide.step2.body': 'Téléversez des PDF, fichiers Word, notes ou pages web. Nous découpons les longs documents en fragments consultables et stockons des embeddings vectoriels — c’est l’index RAG, prêt en premier.',
+  'knowledge.ragGuide.step2.body':
+    'Téléversez des PDF, fichiers Word, notes ou pages web. Nous découpons les longs documents en fragments consultables et stockons des embeddings vectoriels — c’est l’index RAG, prêt en premier.',
   'knowledge.ragGuide.step3.title': 'Les notes Wiki se compilent automatiquement',
-  'knowledge.ragGuide.step3.body': 'Une fois l’indexation terminée, un LLM compile sur le disque des pages Wiki de synthèse et par thème. Ce sont des notes concises (pas des transcriptions) qui résument le paquet pour une orientation plus rapide.',
+  'knowledge.ragGuide.step3.body':
+    'Une fois l’indexation terminée, un LLM compile sur le disque des pages Wiki de synthèse et par thème. Ce sont des notes concises (pas des transcriptions) qui résument le paquet pour une orientation plus rapide.',
   'knowledge.ragGuide.step4.title': 'La recherche utilise Wiki + fragments',
-  'knowledge.ragGuide.step4.body': 'Lorsque vous développez une branche ou générez un résumé, nous faisons d’abord correspondre les pages Wiki pertinentes, puis récupérons les passages de fragments les plus pertinents (RAG hybride).',
+  'knowledge.ragGuide.step4.body':
+    'Lorsque vous développez une branche ou générez un résumé, nous faisons d’abord correspondre les pages Wiki pertinentes, puis récupérons les passages de fragments les plus pertinents (RAG hybride).',
   'knowledge.ragGuide.step5.title': 'Des réponses ancrées dans vos sources',
-  'knowledge.ragGuide.step5.body': 'L’IA rédige à partir des notes Wiki et des extraits récupérés plutôt que d’inventer — de meilleures sources, une indexation complète et des pages Wiki compilées donnent des cartes plus précises.',
-  'knowledge.ragGuide.footer': 'Astuce : ouvrir Résumé de document sur le canevas crée automatiquement un paquet ; les pages enregistrées via l’extension Chrome apparaissent aussi dans la liste latérale.',
+  'knowledge.ragGuide.step5.body':
+    'L’IA rédige à partir des notes Wiki et des extraits récupérés plutôt que d’inventer — de meilleures sources, une indexation complète et des pages Wiki compilées donnent des cartes plus précises.',
+  'knowledge.ragGuide.footer':
+    'Astuce : ouvrir Résumé de document sur le canevas crée automatiquement un paquet ; les pages enregistrées via l’extension Chrome apparaissent aussi dans la liste latérale.',
   'knowledge.pipeline.title': 'État du pipeline',
   'knowledge.pipeline.ragIdle': 'Index RAG',
-  'knowledge.pipeline.ragIdleDetail': 'Aucun paquet indexé pour le moment. Ajoutez des sources et lancez l’indexation depuis un paquet.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Aucun paquet indexé pour le moment. Ajoutez des sources et lancez l’indexation depuis un paquet.',
   'knowledge.pipeline.ragProcessing': 'Indexation RAG',
-  'knowledge.pipeline.ragProcessingDetail': '{count} paquet(s) encore en découpage et embedding des sources.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} paquet(s) encore en découpage et embedding des sources.',
   'knowledge.pipeline.ragReady': 'RAG prêt',
-  'knowledge.pipeline.ragReadyDetail': '{count} paquet(s) indexé(s) — la recherche par fragments est active.',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count} paquet(s) indexé(s) — la recherche par fragments est active.',
   'knowledge.pipeline.wikiDisabled': 'Compilation Wiki désactivée',
   'knowledge.pipeline.wikiDisabledDetail': 'La compilation Wiki est désactivée sur ce serveur.',
   'knowledge.pipeline.wikiIdle': 'Compilation Wiki',
-  'knowledge.pipeline.wikiIdleDetail': 'Les pages Wiki se compilent après l’indexation RAG de chaque source.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Les pages Wiki se compilent après l’indexation RAG de chaque source.',
   'knowledge.pipeline.wikiPending': 'Compilation Wiki en cours',
-  'knowledge.pipeline.wikiPendingDetail': '{count} paquet(s) en attente de pages Wiki après indexation.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} paquet(s) en attente de pages Wiki après indexation.',
   'knowledge.pipeline.wikiReady': 'Wiki prêt',
   'knowledge.pipeline.wikiReadyDetail': '{count} paquet(s) disposent de notes Wiki compilées.',
   'knowledge.pipelineBadge.rag.label': 'CHIFFON',
@@ -164,7 +183,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Désélectionner tout',
   'knowledge.manualEval.dialogTitle': 'Évaluation manuelle — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Réponse de référence (facultatif)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Saisissez la réponse de référence pour l’évaluation de la pertinence de la réponse…',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Saisissez la réponse de référence pour l’évaluation de la pertinence de la réponse…',
   'knowledge.manualEval.metric.answer_coverage': 'Couverture de la réponse',
   'knowledge.manualEval.metric.answer_faithfulness': 'Fidélité de la réponse',
   'knowledge.manualEval.metric.clarity': 'Clarté',
@@ -186,7 +206,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Évaluation de la qualité des fragments',
   'knowledge.manualEval.resultsTitle': 'Résultats de l’évaluation',
   'knowledge.manualEval.selectAll': 'Sélectionner tout',
-  'knowledge.manualEval.selectChunksHeading': 'Sélectionnez les fragments à évaluer (laissez vide pour évaluer tous les fragments)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Sélectionnez les fragments à évaluer (laissez vide pour évaluer tous les fragments)',
   'knowledge.manualEval.showingFirst20': 'Affichage des 20 premiers fragments sur {total}',
   'knowledge.manualEval.startEvaluation': 'Démarrer l’évaluation',
   'knowledge.processing.chunking': 'Découpage',
@@ -235,7 +256,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Paramètres de récupération',
   'knowledge.settings.title': 'Paramètres de la base de connaissances',
   'knowledge.settings.helpTitle': 'Comment ces paramètres s’appliquent',
-  'knowledge.settings.helpBody': 'Les préférences de récupération s’appliquent immédiatement à la recherche et aux réponses de l’IA. La taille et le chevauchement des fragments s’appliquent aux documents nouvellement indexés — relancez l’indexation sur les sources existantes après modification.',
+  'knowledge.settings.helpBody':
+    'Les préférences de récupération s’appliquent immédiatement à la recherche et aux réponses de l’IA. La taille et le chevauchement des fragments s’appliquent aux documents nouvellement indexés — relancez l’indexation sur les sources existantes après modification.',
   'knowledge.settings.tokens': 'jetons',
   'knowledge.settings.serverSection': 'Serveur (lecture seule)',
   'knowledge.settings.rerankingMode': 'Réordonnancement',
@@ -246,15 +268,18 @@ export default {
   'knowledge.settings.wikiDisabled': 'Désactivé',
   'knowledge.settings.saveSuccess': 'Paramètres enregistrés',
   'knowledge.settings.saveFailed': 'Échec de l’enregistrement des paramètres',
-  'knowledge.settings.reindexRequired': 'Paramètres de fragmentation modifiés — réindexez les documents existants de vos paquets pour que les nouvelles tailles prennent effet.',
+  'knowledge.settings.reindexRequired':
+    'Paramètres de fragmentation modifiés — réindexez les documents existants de vos paquets pour que les nouvelles tailles prennent effet.',
   'knowledge.upload.click': 'Cliquez pour télécharger',
   'knowledge.upload.drag': 'ou faites glisser un fichier ici',
   'knowledge.upload.fileTooLarge': 'La taille du fichier ne doit pas dépasser 10 Mo',
-  'knowledge.upload.hintFormats': 'Formats pris en charge : PDF, DOCX, TXT, MD, images (max. 10 Mo)',
+  'knowledge.upload.hintFormats':
+    'Formats pris en charge : PDF, DOCX, TXT, MD, images (max. 10 Mo)',
   'knowledge.upload.maxDocs': 'Limite maximale de documents atteinte (5)',
   'knowledge.upload.title': 'Télécharger un document',
   'knowledge.upload.unsupportedType': 'Type de fichier non pris en charge',
-  'knowledgeSpace.confirmDeleteBody': 'Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.',
   'knowledgeSpace.confirmDeleteTitle': 'Confirmer la suppression',
   'knowledgeSpace.deleteFailed': 'Échec de la suppression',
   'knowledgeSpace.documentDeleted': 'Document supprimé',

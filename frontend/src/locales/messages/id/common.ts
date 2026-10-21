@@ -7,13 +7,15 @@ export default {
   'app.aiDisclaimer': 'Konten dihasilkan oleh AI; harap verifikasi dengan saksama.',
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'Masuk untuk menggunakan area ini',
-  'app.browserLocale.body': 'Browser Anda lebih menyukai {name}. Alihkan antarmuka aplikasi agar cocok?',
+  'app.browserLocale.body':
+    'Browser Anda lebih menyukai {name}. Alihkan antarmuka aplikasi agar cocok?',
   'app.browserLocale.dontAsk': 'Jangan tanya lagi',
   'app.browserLocale.keepChinese': 'Tetap gunakan bahasa Mandarin',
   'app.browserLocale.switch': 'Alihkan',
   'app.browserLocale.title': 'Ganti bahasa antarmuka?',
   'app.testServer.badge': 'TEST',
-  'app.testServer.body': 'Roy, tangan di pinggang, mengingatkan Anda: Anda sedang di server uji. Situs ini sering offline untuk pengujian—gunakan situs langsung untuk pekerjaan nyata.',
+  'app.testServer.body':
+    'Roy, tangan di pinggang, mengingatkan Anda: Anda sedang di server uji. Situs ini sering offline untuk pengujian—gunakan situs langsung untuk pekerjaan nyata.',
   'app.testServer.confirm': 'Tetap di uji coba',
   'app.testServer.jump': 'Buka situs langsung',
   'app.testServer.productionHost': 'www.mindspringedu.com',
@@ -21,7 +23,8 @@ export default {
   'app.testServer.watermark': 'lingkungan pengujian',
   'app.schoolExpired.acknowledge': 'tahu',
   'app.schoolExpired.badge': 'Kedaluwarsa',
-  'app.schoolExpired.body': 'Batas waktu produk sekolah telah habis. Guru dan administrator sekolah telah dikunci. Untuk memperbarui, silakan hubungi administrator platform.',
+  'app.schoolExpired.body':
+    'Batas waktu produk sekolah telah habis. Guru dan administrator sekolah telah dikunci. Untuk memperbarui, silakan hubungi administrator platform.',
   'app.schoolExpired.env': 'berlangganan',
   'app.schoolExpired.host': '{school} · Tanggal Kedaluwarsa {date}',
   'app.schoolExpired.signOut': 'Keluar',
@@ -74,7 +77,8 @@ export default {
   'diagramTemplate.allModelsFailed': 'Semua model gagal, silakan coba lagi',
   'diagramTemplate.generated': 'Diagram dibuat ({model})',
   'diagramTemplate.generationFailed': 'Pembuatan gagal',
-  'diagramTemplate.promptTooLong': 'Prompt terlalu panjang ({length} karakter). Maksimum {max} karakter.',
+  'diagramTemplate.promptTooLong':
+    'Prompt terlalu panjang ({length} karakter). Maksimum {max} karakter.',
   'diagramTemplates.brace_map': 'Uraikan 【subject】 dengan peta kurung.',
   'diagramTemplates.bridge_map': 'Buat peta jembatan untuk hubungan 【relation】.',
   'diagramTemplates.bubble_map': 'Gunakan peta gelembung untuk mendeskripsikan 【topic】.',
@@ -99,6 +103,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.gewe': 'Gewei',
   'meta.pageTitle.knowledgeSpace': 'Ruang pengetahuan',
+  'meta.pageTitle.learningSpace': 'Learning Space',
   'meta.pageTitle.library': 'Perpustakaan',
   'meta.pageTitle.libraryBookmark': 'Markah',
   'meta.pageTitle.libraryViewer': 'Penampil perpustakaan',
@@ -110,8 +115,10 @@ export default {
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'kucing',
   'meta.pageTitle.orgs': 'Manajemen organisasi',
-  'canvas.kittyMobileIndicatorHint': 'Sesi Kitty di ponsel (mikrofon aktif) terhubung ke diagram ini. Gunakan ponsel Anda untuk berbicara dengan Kitty.',
-  'canvas.kittyMobileIndicatorAria': 'Status: Kitty seluler terhubung ke kanvas MindGraph ini. Berinteraksi di ponsel Anda.',
+  'canvas.kittyMobileIndicatorHint':
+    'Sesi Kitty di ponsel (mikrofon aktif) terhubung ke diagram ini. Gunakan ponsel Anda untuk berbicara dengan Kitty.',
+  'canvas.kittyMobileIndicatorAria':
+    'Status: Kitty seluler terhubung ke kanvas MindGraph ini. Berinteraksi di ponsel Anda.',
   'canvas.kittyMobileIndicatorTitle': 'Kitty seluler',
   'canvas.kittyMobileIndicatorListening': 'Telepon sedang mendengarkan',
   'canvas.kittyMobileIndicatorSpeaking': 'Telepon membalas',
@@ -177,8 +184,10 @@ export default {
   'mobile.kittyKeyboardToggle': 'Masukan teks',
   'mobile.kittyEnd': 'Selesai',
   'mobile.kittyWelcomeLine': 'Bagikan ide Anda',
-  'mobile.kittyWelcomeSub': 'Tanya dengan suara atau ketik. Buka diagram tersimpan di ponsel atau desktop agar Kitty tetap sinkron dengan MindGraph.',
-  'mobile.kittyNeedsDesktopOwner': 'Buka diagram ini di MindGraph desktop untuk menerapkan suntingan. Kitty di ponsel tetap bisa mengobrol hingga kanvas terhubung.',
+  'mobile.kittyWelcomeSub':
+    'Tanya dengan suara atau ketik. Buka diagram tersimpan di ponsel atau desktop agar Kitty tetap sinkron dengan MindGraph.',
+  'mobile.kittyNeedsDesktopOwner':
+    'Buka diagram ini di MindGraph desktop untuk menerapkan suntingan. Kitty di ponsel tetap bisa mengobrol hingga kanvas terhubung.',
   'mobile.kittyConnecting': 'Menghubungkan…',
   'mobile.kittyInputPlaceholder': 'Ketik pesan…',
   'mobile.kittySend': 'Kirim',
@@ -189,8 +198,10 @@ export default {
   'mobile.kittyDiagramUpdated': 'Diagram diperbarui',
   'mobile.kittyConnectFailed': 'Koneksi gagal. Periksa jaringan Anda dan coba lagi.',
   'mobile.kittyDisconnected': 'Koneksi suara terputus. Menghubungkan ulang…',
-  'mobile.kittyEnableServerHint': 'Aktifkan FEATURE_KITTY_AGENT=True di .env server lalu mulai ulang API.',
-  'mobile.kittyServerDisabledBanner': 'Suara Kitty dinonaktifkan di lingkungan ini. Aktifkan FEATURE_KITTY_AGENT di .env server lalu mulai ulang.',
+  'mobile.kittyEnableServerHint':
+    'Aktifkan FEATURE_KITTY_AGENT=True di .env server lalu mulai ulang API.',
+  'mobile.kittyServerDisabledBanner':
+    'Suara Kitty dinonaktifkan di lingkungan ini. Aktifkan FEATURE_KITTY_AGENT di .env server lalu mulai ulang.',
   'mobile.kittyDiagramPickerTitle': 'Pilih diagram',
   'mobile.kittyDiagramPickerLoading': 'Memuat…',
   'mobile.kittyDiagramPickerEmpty': 'Tidak ada diagram tersimpan',
@@ -200,11 +211,14 @@ export default {
   'mobile.kittyNewMindmapTitle': 'Peta pikiran baru',
   'mobile.kittyNewMindmapCreated': 'Peta pikiran baru disimpan; desktop akan membukanya.',
   'mobile.kittyNewMindmapCreateFailed': 'Tidak dapat membuat peta pikiran. Silakan coba lagi.',
-  'mobile.kittyNewMindmapDesktopFailed': 'Peta pikiran disimpan, tetapi desktop tidak dapat diberi tahu.',
+  'mobile.kittyNewMindmapDesktopFailed':
+    'Peta pikiran disimpan, tetapi desktop tidak dapat diberi tahu.',
   'mobile.kittyDiagramPinned': 'Disematkan',
   'mobile.kittyDiagramPickFailed': 'Tidak dapat memuat diagram itu. Coba lagi nanti.',
-  'mobile.kittyEphemeralScopePinned': 'Menggunakan sesi sementara — pilih atau buat diagram tersimpan untuk sinkron dengan desktop.',
-  'mobile.kittyEphemeralScopeDegraded': 'Pemasangan desktop mungkin tidak sinkron. Buka diagram tersimpan untuk menghubungkan ulang.',
+  'mobile.kittyEphemeralScopePinned':
+    'Menggunakan sesi sementara — pilih atau buat diagram tersimpan untuk sinkron dengan desktop.',
+  'mobile.kittyEphemeralScopeDegraded':
+    'Pemasangan desktop mungkin tidak sinkron. Buka diagram tersimpan untuk menghubungkan ulang.',
   'mobile.kittyDesktopJumpFailed': 'Diagram diganti, tetapi desktop tidak dapat diberi tahu.',
   'mobile.kittyDiagramSelected': 'Diagram dipilih; desktop akan membukanya.',
   'mobile.kittyCurrentDiagramLabel': 'Diagram saat ini',
@@ -213,22 +227,28 @@ export default {
   'mobile.kittyHubSourceLive': 'Hub: langsung',
   'mobile.kittyHubSourceLibrary': 'Hub: perpustakaan',
   'mobile.kittyHubSourceEmpty': 'Hub: kosong',
-  'mobile.kittyMicPttTitle': 'Tahan untuk berbicara; lepas untuk mengirim. Tahan Spasi saat tidak mengetik di kolom.',
-  'mobile.kittyMicPttAria': 'Tahan untuk berbicara: tekan dan tahan mikrofon untuk bicara, lepas untuk mengirim. Tahan Spasi saat tidak mengetik di kolom pesan.',
+  'mobile.kittyMicPttTitle':
+    'Tahan untuk berbicara; lepas untuk mengirim. Tahan Spasi saat tidak mengetik di kolom.',
+  'mobile.kittyMicPttAria':
+    'Tahan untuk berbicara: tekan dan tahan mikrofon untuk bicara, lepas untuk mengirim. Tahan Spasi saat tidak mengetik di kolom pesan.',
   'mobile.kittyHoldToSpeak': 'Tahan untuk berbicara',
   'mobile.kittyReleaseToSend': 'Lepas untuk mengirim',
   'mobile.kittyListenManual': 'tahan dan katakan',
   'mobile.kittyListenAuto': 'mendengarkan otomatis',
-  'mobile.kittyListenAutoHint': 'Half-duplex: Mikrofon hanya menyala saat mendengarkan, dan mati saat Kitty berbicara.',
+  'mobile.kittyListenAutoHint':
+    'Half-duplex: Mikrofon hanya menyala saat mendengarkan, dan mati saat Kitty berbicara.',
   'mobile.kittyListenModeToggle': 'Beralih mendengarkan otomatis',
   'mobile.kittyListening': 'mendengarkan',
   'mobile.kittySpeaking': 'Membalas',
   'mobile.kittyThinking': 'pemikiran',
   'mobile.kittyTapToListen': 'Klik untuk mulai mendengarkan',
   'mobile.kittyTapToStopListen': 'Klik untuk berhenti',
-  'mobile.kittyMicInsecure': 'Halaman saat ini bukan sambungan aman (HTTPS) dan mikrofon dimatikan. Silakan gunakan keyboard sebagai gantinya.',
-  'mobile.kittyMicToggleTitle': 'Tahan untuk berbicara; lepas untuk mengirim. Tahan Spasi saat tidak mengetik di kolom.',
-  'mobile.kittyMicToggleAria': 'Tahan untuk berbicara: tekan dan tahan mikrofon untuk bicara, lepas untuk berhenti.',
+  'mobile.kittyMicInsecure':
+    'Halaman saat ini bukan sambungan aman (HTTPS) dan mikrofon dimatikan. Silakan gunakan keyboard sebagai gantinya.',
+  'mobile.kittyMicToggleTitle':
+    'Tahan untuk berbicara; lepas untuk mengirim. Tahan Spasi saat tidak mengetik di kolom.',
+  'mobile.kittyMicToggleAria':
+    'Tahan untuk berbicara: tekan dan tahan mikrofon untuk bicara, lepas untuk berhenti.',
   'mobile.kittyClickWheelAria': 'Geser atau ketuk untuk memilih simpul',
   'mobile.kittyClickWheelHint': 'Geser atau ketuk chip: cabang → anak',
   'mobile.kittyClickWheelEmptyLabel': 'Simpul tanpa judul',
@@ -238,18 +258,24 @@ export default {
   'mobile.kittyClickWheelNext': 'Simpul berikutnya',
   'mobile.kittyClickWheelSelect': 'Pilih simpul saat ini',
   'mobile.kittyLlmRowAria': 'Pilih model AI',
-  'mobile.kittyPhotoNeedsDiagram': 'Buka atau pilih diagram tersimpan dulu, lalu foto untuk mengekstrak teks.',
+  'mobile.kittyPhotoNeedsDiagram':
+    'Buka atau pilih diagram tersimpan dulu, lalu foto untuk mengekstrak teks.',
   'mobile.kittyPhotoInvalidType': 'Pilih foto JPG, PNG, atau WebP.',
   'mobile.kittyPhotoTooLarge': 'Foto terlalu besar. Ukuran maksimum 10 MB.',
   'mobile.kittyPhotoProgressDetecting': 'Memproses foto…',
   'mobile.kittyPhotoUserBubble': '📷 Foto',
   'mobile.kittyPhotoUntitledMap': 'Peta pikiran',
-  'mobile.kittyPhotoHanddrawnReply': 'Terdeteksi peta pikiran digambar tangan “{topic}”. Dibangun ulang di kanvas; kerangka disimpan ke Ringkasan Dokumen.',
-  'mobile.kittyPhotoHanddrawnLocalReply': 'Terdeteksi peta pikiran digambar tangan “{topic}”. Dibangun ulang di sini; kerangka disimpan ke Ringkasan Dokumen. Sinkron perpustakaan belum selesai — buka lagi diagram jika kanvas terlihat usang.',
-  'mobile.kittyPhotoOcrReply': 'Teks diekstrak dari foto:\n{excerpt}\n\nTeks lengkap ada di Ringkasan Dokumen.',
+  'mobile.kittyPhotoHanddrawnReply':
+    'Terdeteksi peta pikiran digambar tangan “{topic}”. Dibangun ulang di kanvas; kerangka disimpan ke Ringkasan Dokumen.',
+  'mobile.kittyPhotoHanddrawnLocalReply':
+    'Terdeteksi peta pikiran digambar tangan “{topic}”. Dibangun ulang di sini; kerangka disimpan ke Ringkasan Dokumen. Sinkron perpustakaan belum selesai — buka lagi diagram jika kanvas terlihat usang.',
+  'mobile.kittyPhotoOcrReply':
+    'Teks diekstrak dari foto:\n{excerpt}\n\nTeks lengkap ada di Ringkasan Dokumen.',
   'mobile.kittyPhotoUploadFailed': 'Tidak dapat mengunggah foto.',
-  'mobile.kittyPickDiagramToEdit': 'Buka atau pilih diagram tersimpan dulu, lalu tahan untuk berbicara atau ketik untuk menyunting.',
-  'mobile.kittyHubSyncFailed': 'Tidak dapat menyinkronkan diagram ke Kitty. Periksa koneksi dan coba lagi.',
+  'mobile.kittyPickDiagramToEdit':
+    'Buka atau pilih diagram tersimpan dulu, lalu tahan untuk berbicara atau ketik untuk menyunting.',
+  'mobile.kittyHubSyncFailed':
+    'Tidak dapat menyinkronkan diagram ke Kitty. Periksa koneksi dan coba lagi.',
   'mobile.kittyDesktopDiagramFollowed': 'Beralih ke diagram yang terbuka di desktop',
   'mobile.kittyScopeDivergence': 'Desktop membuka diagram berbeda. Pilih cara sinkronisasi:',
   'mobile.kittyScopeFollowDesktop': 'Ikuti diagram desktop',
@@ -258,6 +284,38 @@ export default {
   'mobile.kittyScopeKeepSplit': 'Tetapkan ponsel dan desktop pada diagram berbeda',
   'meta.pageTitle.notFound': 'Halaman tidak ditemukan',
   'meta.pageTitle.privacy': 'Syarat & Privasi',
+  'meta.pageTitle.browserPlugin': 'Browser plugin',
+  'browserPlugin.back': 'Back',
+  'browserPlugin.heroMark': 'Mind',
+  'browserPlugin.heroTitle': 'Browser plugin',
+  'browserPlugin.heroBody':
+    'Turn the page you are reading into a mind map, ask MindMate with that page as context, and save documents from teaching sites.',
+  'browserPlugin.downloadChrome': 'Chrome',
+  'browserPlugin.downloadEdge': 'Edge',
+  'browserPlugin.entryTitle': 'From one web page to a map, a chat, and a file',
+  'browserPlugin.entryBody': 'It lives in Chrome or Edge. Open a page, then open the extension.',
+  'browserPlugin.cardMapTitle': 'Mind map',
+  'browserPlugin.cardMapBody':
+    'Read the page or the text you selected, then download a PNG mind map.',
+  'browserPlugin.cardChatTitle': 'Ask with the page',
+  'browserPlugin.cardChatBody': 'The first message of a new chat can include the page you are on.',
+  'browserPlugin.cardDocTitle': 'Teaching documents',
+  'browserPlugin.cardDocBody':
+    'On CNKI, SmartEdu, Baidu Wenku, and similar sites, save the document on this computer.',
+  'browserPlugin.mapTitle': 'Turn a web page into an editable map',
+  'browserPlugin.mapBody':
+    'Start from the toolbar, the right-click menu, or a shortcut. If nothing is selected, the extension takes the article text.',
+  'browserPlugin.chatTitle': 'Ask about this page',
+  'browserPlugin.chatBody':
+    'Turn on include-current-page. On a SmartEdu lesson, text from the slides and the teaching plan is merged in.',
+  'browserPlugin.docTitle': 'Take the document from the site',
+  'browserPlugin.docBody':
+    'It recognizes CNKI reader pages, SmartEdu lessons, and library pages, then saves a PDF or the article text locally.',
+  'browserPlugin.downloadTitle': 'Download the browser plugin',
+  'browserPlugin.downloadLead': 'One package for Chrome and Edge.',
+  'browserPlugin.installHint':
+    'Unzip it, open the extensions page, turn on developer mode, and load the unpacked folder.',
+  'browserPlugin.downloadAction': 'Download',
   'meta.pageTitle.publicDashboard': 'Pusat Data Nasional MG',
   'meta.pageTitle.schoolDashboard': 'Dasbor sekolah',
   'meta.pageTitle.smartResponse': 'Respons cerdas',
@@ -285,14 +343,16 @@ export default {
   'publicDashboard.visualHigh': 'Tinggi',
   'publicDashboard.visualLow': 'Rendah',
   'settings.language.interface': 'Bahasa antarmuka',
-  'settings.language.matchPrompt': 'Selaraskan bahasa asisten AI, antarmuka, dan papan ketik virtual',
+  'settings.language.matchPrompt':
+    'Selaraskan bahasa asisten AI, antarmuka, dan papan ketik virtual',
   'settings.language.prompt': 'Bahasa asisten AI',
   'settings.language.promptSelectPlaceholder': 'Cari bahasa…',
   'settings.language.supportsCount': 'Mendukung {n} bahasa',
   'settings.language.eBlackboardOptimize': 'Pengoptimalan papan tulis elektronik',
   'settings.language.eBlackboardOff': 'penutup',
   'settings.language.eBlackboardOn': 'menyalakan',
-  'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',
@@ -301,32 +361,48 @@ export default {
   'settings.language.presenterLanguage': 'Presenter language',
   'settings.language.presenterLanguageHint': 'Smaller second line for the demonstrator to read.',
   'settings.language.primaryLanguage': 'Primary language',
-  'settings.language.primaryLanguageHint': 'Regular-size line for the audience; also the interface language.',
+  'settings.language.primaryLanguageHint':
+    'Regular-size line for the audience; also the interface language.',
   'settings.language.secondaryLanguage': 'Second language',
   'settings.language.secondaryLanguageHint': 'Smaller line for the demonstrator to read.',
+  'settings.tabs.account': 'Account',
+  'settings.tabs.security': 'Security',
+  'settings.tabs.language': 'Language',
+  'settings.tabs.plugins': 'Plugins',
+  'settings.tabs.aria': 'Settings sections',
   'settings.version.title': 'Versi UI',
   'settings.version.chinese': 'Mode profesional',
   'settings.version.international': 'Mode sederhana',
   'landing.international.subtitle': 'Perangkat Lunak Diagram Berpikir AI Terkuat di Semesta',
-  'landing.international.promptPlaceholder': 'Jelaskan topik dan jenis diagram—mis. “Gunakan peta alur untuk langkah lab densitas”…',
+  'landing.international.promptPlaceholder':
+    'Jelaskan topik dan jenis diagram—mis. “Gunakan peta alur untuk langkah lab densitas”…',
   'landing.international.examplesTitle': 'Inspirasi',
   'landing.international.example1': 'Buat peta pikiran tentang fotosintesis',
-  'landing.international.example2': 'Gunakan peta pohon untuk mengklasifikasikan vertebrata: ikan, amfibi, reptil, mamalia',
-  'landing.international.example3': 'Gunakan peta alur untuk lab densitas: ukur massa, ukur volume, hitung, catat hasil',
-  'landing.international.example4': 'Gunakan peta gelembung ganda untuk membandingkan sel tumbuhan dan sel hewan',
-  'landing.international.example5': 'Gunakan peta kurung untuk menguraikan persamaan kuadrat: bentuk baku, diskriminan, rumus kuadrat, grafik dan akar',
-  'landing.international.example6': 'Buat peta gelembung yang menjelaskan gagasan utama hukum gerak Newton',
+  'landing.international.example2':
+    'Gunakan peta pohon untuk mengklasifikasikan vertebrata: ikan, amfibi, reptil, mamalia',
+  'landing.international.example3':
+    'Gunakan peta alur untuk lab densitas: ukur massa, ukur volume, hitung, catat hasil',
+  'landing.international.example4':
+    'Gunakan peta gelembung ganda untuk membandingkan sel tumbuhan dan sel hewan',
+  'landing.international.example5':
+    'Gunakan peta kurung untuk menguraikan persamaan kuadrat: bentuk baku, diskriminan, rumus kuadrat, grafik dan akar',
+  'landing.international.example6':
+    'Buat peta gelembung yang menjelaskan gagasan utama hukum gerak Newton',
   'landing.international.phaseRequestSent': 'Permintaan terkirim',
   'landing.international.phaseServerReceived': 'Server menerima permintaan Anda',
   'landing.international.phaseGenerating': 'Membuat diagram Anda…',
   'landing.international.phasePleaseWait': 'Harap tunggu — AI sedang menyusun konten',
-  'landing.international.generatingWithTopic': 'Topik: {topic}. Membuat {diagramType} — harap tunggu.',
+  'landing.international.generatingWithTopic':
+    'Topik: {topic}. Membuat {diagramType} — harap tunggu.',
   'landing.international.topicUnknown': 'topik Anda',
   'landing.international.diagramTypePending': 'Ilustrasi',
-  'landing.international.errorRateLimit': 'Terlalu banyak permintaan. Tunggu sebentar dan coba lagi.',
+  'landing.international.errorRateLimit':
+    'Terlalu banyak permintaan. Tunggu sebentar dan coba lagi.',
   'landing.international.errorTimeout': 'Pembuatan habis waktu. Silakan coba lagi.',
-  'landing.international.errorContentFilter': 'Konten tidak dapat diproses. Ubah susunan prompt Anda.',
-  'landing.international.errorValidation': 'Prompt tidak dipahami. Coba tambahkan topik dan jenis diagram.',
+  'landing.international.errorContentFilter':
+    'Konten tidak dapat diproses. Ubah susunan prompt Anda.',
+  'landing.international.errorValidation':
+    'Prompt tidak dipahami. Coba tambahkan topik dan jenis diagram.',
   'landing.international.errorGeneration': 'Pembuatan diagram gagal. Silakan coba lagi.',
   'landing.international.errorInternal': 'Terjadi masalah di sisi kami. Coba lagi nanti.',
   'landing.international.errorStreamEmpty': 'Pembuatan berakhir tanpa hasil. Silakan coba lagi.',
@@ -341,15 +417,21 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Salin tautan',
   'landing.international.shareSiteCopied': 'Tautan disalin',
+  'swissGlass.hero.userSettings.ribbon': 'Settings',
+  'swissGlass.hero.userSettings.title': 'Settings',
+  'swissGlass.hero.userSettings.line1': 'Manage your account, security, language, and plugins',
   'swissGlass.hero.localeHint.ribbon': 'bahasa',
   'swissGlass.hero.localeHint.title': 'Ganti bahasa antarmuka?',
-  'swissGlass.hero.localeHint.line1': 'Bahasa browser terdeteksi. Apakah Anda ingin beralih ke antarmuka yang sesuai?',
+  'swissGlass.hero.localeHint.line1':
+    'Bahasa browser terdeteksi. Apakah Anda ingin beralih ke antarmuka yang sesuai?',
   'swissGlass.hero.shareExport.ribbon': 'Ekspor',
   'swissGlass.hero.shareExport.title': 'Ekspor percakapan',
   'swissGlass.hero.shareExport.line1': 'Periksa pesan dan ekspor sebagai gambar',
+  'swissGlass.hero.shareExport.line1Preview': 'Preview and export as an image',
   'swissGlass.hero.imagePreview.ribbon': 'Pratinjau',
   'swissGlass.hero.imagePreview.title': 'Lihat gambar',
-  'swissGlass.hero.imagePreview.line1': 'Beralih ke kiri dan kanan untuk menelusuri gambar saat ini',
+  'swissGlass.hero.imagePreview.line1':
+    'Beralih ke kiri dan kanan untuk menelusuri gambar saat ini',
   'swissGlass.hero.chunkPreview.ribbon': 'basis pengetahuan',
   'swissGlass.hero.chunkPreview.title': 'Pratinjau terpotong',
   'swissGlass.hero.chunkPreview.line1': 'Lihat teks asli dan metadata dari potongan yang diambil',
@@ -357,11 +439,14 @@ export default {
   'swissGlass.hero.manualEval.title': 'Tinjauan manusia',
   'swissGlass.hero.manualEval.line1': 'Nilai hasil pencarian ini dan tinggalkan deskripsi',
   'swissGlass.hero.createChannel.ribbon': 'Klub Belajar',
-  'swissGlass.hero.createChannel.title': 'Tambahkan kelompok pengajaran dan penelitian atau contoh pelajaran',
-  'swissGlass.hero.createChannel.line1': 'Buat grup pengajaran dan penelitian dalam organisasi, atau tambahkan pelajaran baru di bawah grup',
+  'swissGlass.hero.createChannel.title':
+    'Tambahkan kelompok pengajaran dan penelitian atau contoh pelajaran',
+  'swissGlass.hero.createChannel.line1':
+    'Buat grup pengajaran dan penelitian dalam organisasi, atau tambahkan pelajaran baru di bawah grup',
   'swissGlass.hero.channelSettings.ribbon': 'Klub Belajar',
   'swissGlass.hero.channelSettings.title': 'Pengaturan saluran',
-  'swissGlass.hero.channelSettings.line1': 'Perbarui informasi nama, profil, dan visibilitas anggota',
+  'swissGlass.hero.channelSettings.line1':
+    'Perbarui informasi nama, profil, dan visibilitas anggota',
   'swissGlass.hero.deadline.ribbon': 'Klub Belajar',
   'swissGlass.hero.deadline.title': 'Tetapkan tenggat waktu',
   'swissGlass.hero.deadline.line1': 'Pilih batas waktu penyerahan untuk contoh pelajaran ini',
@@ -370,10 +455,12 @@ export default {
   'swissGlass.hero.topicEdit.line1': 'Edit judul atau deskripsi topik',
   'swissGlass.hero.teachingGroups.ribbon': 'Klub Belajar',
   'swissGlass.hero.teachingGroups.title': 'Kelompok pengajaran dan penelitian manajemen',
-  'swissGlass.hero.teachingGroups.line1': 'Mengatur status pengarsipan kelompok pengajaran dan penelitian serta contoh pelajaran',
+  'swissGlass.hero.teachingGroups.line1':
+    'Mengatur status pengarsipan kelompok pengajaran dan penelitian serta contoh pelajaran',
   'swissGlass.hero.diagramPicker.ribbon': 'Klub Belajar',
   'swissGlass.hero.diagramPicker.title': 'Pilih ikon',
-  'swissGlass.hero.diagramPicker.line1': 'Pilih salah satu ikon riwayat untuk dilampirkan ke percakapan',
+  'swissGlass.hero.diagramPicker.line1':
+    'Pilih salah satu ikon riwayat untuk dilampirkan ke percakapan',
   'swissGlass.hero.newTopic.ribbon': 'Klub Belajar',
   'swissGlass.hero.newTopic.title': 'Sesi baru',
   'swissGlass.hero.newTopic.line1': 'Mulai topik baru untuk saluran saat ini',
@@ -388,7 +475,8 @@ export default {
   'swissGlass.hero.contactProfile.line1': 'Lihat organisasi pihak lain dan informasi kontak',
   'swissGlass.hero.dingtalk.ribbon': 'akun',
   'swissGlass.hero.dingtalk.title': 'Mengikat DingTalk',
-  'swissGlass.hero.dingtalk.line1': 'Gunakan kode penyandingan untuk menghubungkan akun DingTalk ke pengguna saat ini',
+  'swissGlass.hero.dingtalk.line1':
+    'Gunakan kode penyandingan untuk menghubungkan akun DingTalk ke pengguna saat ini',
   'swissGlass.hero.watchAssign.ribbon': 'Zhiying',
   'swissGlass.hero.watchAssign.title': 'Tetapkan tugas menonton',
   'swissGlass.hero.watchAssign.line1': 'Pilih objek dan konfirmasi jadwal menonton',
@@ -406,13 +494,16 @@ export default {
   'swissGlass.hero.askOnce.line1': 'Pilih templat dan mulai Tanya Jawab baru',
   'swissGlass.hero.login.ribbon': 'akun',
   'swissGlass.hero.login.title': 'Masuk ke Pengajaran dan Penelitian Maite',
-  'swissGlass.hero.login.line1': 'Gunakan nomor ponsel, alamat email, atau akun pihak ketiga Anda untuk melanjutkan',
+  'swissGlass.hero.login.line1':
+    'Gunakan nomor ponsel, alamat email, atau akun pihak ketiga Anda untuk melanjutkan',
   'swissGlass.hero.register.ribbon': 'akun',
   'swissGlass.hero.register.title': 'Pendaftaran cepat',
-  'swissGlass.hero.register.line1': 'Pindai kode QR atau isi informasi untuk menyelesaikan pendaftaran',
+  'swissGlass.hero.register.line1':
+    'Pindai kode QR atau isi informasi untuk menyelesaikan pendaftaran',
   'swissGlass.hero.oauthQr.ribbon': 'akun',
   'swissGlass.hero.oauthQr.title': 'Pindai kode untuk masuk',
-  'swissGlass.hero.oauthQr.line1': 'Gunakan WeChat atau DingTalk untuk memindai kode QR untuk menyelesaikan login',
+  'swissGlass.hero.oauthQr.line1':
+    'Gunakan WeChat atau DingTalk untuk memindai kode QR untuk menyelesaikan login',
   'swissGlass.hero.account.ribbon': 'akun',
   'swissGlass.hero.account.title': 'Informasi akun',
   'swissGlass.hero.account.line1': 'Lihat informasi, pengaturan keamanan dan status pengikatan',
@@ -427,13 +518,16 @@ export default {
   'swissGlass.hero.phone.line1': 'Ubah ponsel terikat melalui kode verifikasi',
   'swissGlass.hero.setPassword.ribbon': 'Keamanan',
   'swissGlass.hero.setPassword.title': 'Tetapkan kata sandi',
-  'swissGlass.hero.setPassword.line1': 'Gunakan kode verifikasi SMS untuk mengatur kata sandi login akun',
+  'swissGlass.hero.setPassword.line1':
+    'Gunakan kode verifikasi SMS untuk mengatur kata sandi login akun',
   'swissGlass.hero.apiToken.ribbon': 'Keamanan',
   'swissGlass.hero.apiToken.title': 'token API',
-  'swissGlass.hero.apiToken.line1': 'Lihat atau putar token yang digunakan untuk panggilan antarmuka',
+  'swissGlass.hero.apiToken.line1':
+    'Lihat atau putar token yang digunakan untuk panggilan antarmuka',
   'swissGlass.hero.loginDevices.ribbon': 'Keamanan',
   'swissGlass.hero.loginDevices.title': 'Masuk ke perangkat',
-  'swissGlass.hero.loginDevices.line1': 'Lihat perangkat yang masuk dan catat perangkat lain secara offline',
+  'swissGlass.hero.loginDevices.line1':
+    'Lihat perangkat yang masuk dan catat perangkat lain secara offline',
   'swissGlass.hero.coins.ribbon': 'Koin Pemikiran',
   'swissGlass.hero.coins.title': 'Koin Pemikiran',
   'swissGlass.hero.coins.line1': 'Lihat saldo, tugas, dan catatan akuisisi',
@@ -442,10 +536,12 @@ export default {
   'swissGlass.hero.logoQr.line1': 'Pindai dengan ponsel Anda untuk membuka situs saat ini',
   'swissGlass.hero.shareSite.ribbon': 'mengundang',
   'swissGlass.hero.shareSite.title': 'Pendaftaran cepat',
-  'swissGlass.hero.shareSite.line1': 'Bagikan link pendaftaran atau kode QR untuk mengundang rekan kerja',
+  'swissGlass.hero.shareSite.line1':
+    'Bagikan link pendaftaran atau kode QR untuk mengundang rekan kerja',
   'swissGlass.hero.publishShowcase.ribbon': 'Kasus',
   'swissGlass.hero.publishShowcase.title': 'Posting sebuah kasus',
-  'swissGlass.hero.publishShowcase.line1': 'Ikuti langkah-langkah untuk mengisi dan menyerahkan kasus terbuka',
+  'swissGlass.hero.publishShowcase.line1':
+    'Ikuti langkah-langkah untuk mengisi dan menyerahkan kasus terbuka',
   'swissGlass.hero.showcaseDetail.ribbon': 'Kasus',
   'swissGlass.hero.showcaseDetail.title': 'Detail kasus',
   'swissGlass.hero.showcaseDetail.line1': 'Lihat ikon, deskripsi, dan interaksi',
@@ -457,7 +553,8 @@ export default {
   'swissGlass.hero.myFavorites.line1': 'Jelajahi koleksi kasus publik Anda',
   'swissGlass.hero.historyPicker.ribbon': 'Kasus',
   'swissGlass.hero.historyPicker.title': 'Pilih ikon sejarah',
-  'swissGlass.hero.historyPicker.line1': 'Pilih salah satu gambar simpanan Anda untuk dipublikasikan',
+  'swissGlass.hero.historyPicker.line1':
+    'Pilih salah satu gambar simpanan Anda untuk dipublikasikan',
   'swissGlass.hero.communityPost.ribbon': 'Masyarakat',
   'swissGlass.hero.communityPost.title': 'Detail posting',
   'swissGlass.hero.communityPost.line1': 'Lihat gambar dan deskripsi yang dibagikan oleh komunitas',
@@ -466,7 +563,8 @@ export default {
   'swissGlass.hero.lightbox.line1': 'Klik ruang kosong atau tombol tutup untuk keluar',
   'swissGlass.hero.adminTrend.ribbon': 'mengelola',
   'swissGlass.hero.adminTrend.title': 'Tren penggunaan',
-  'swissGlass.hero.adminTrend.line1': 'Lihat penggunaan organisasi atau pengguna berdasarkan periode',
+  'swissGlass.hero.adminTrend.line1':
+    'Lihat penggunaan organisasi atau pengguna berdasarkan periode',
   'swissGlass.hero.adminUser.ribbon': 'mengelola',
   'swissGlass.hero.adminUser.title': 'Sunting pengguna',
   'swissGlass.hero.adminUser.line1': 'Perbarui peran, kuota, dan status akun',
@@ -475,7 +573,8 @@ export default {
   'swissGlass.hero.adminMindbot.line1': 'Sesuaikan akses MindBot dan pengaturan balasan',
   'swissGlass.hero.adminApiKeys.ribbon': 'PikiranBot',
   'swissGlass.hero.adminApiKeys.title': 'Hasilkan kunci antarmuka',
-  'swissGlass.hero.adminApiKeys.line1': 'Buat atau putar DingTalk untuk menghasilkan kunci antarmuka',
+  'swissGlass.hero.adminApiKeys.line1':
+    'Buat atau putar DingTalk untuk menghasilkan kunci antarmuka',
   'swissGlass.hero.adminOrgTrend.ribbon': 'mengelola',
   'swissGlass.hero.adminOrgTrend.title': 'Dosis jaringan',
   'swissGlass.hero.adminOrgTrend.line1': 'Lihat tren token untuk sekolah atau organisasi Anda',
@@ -496,7 +595,8 @@ export default {
   'swissGlass.hero.adminRoleMember.line1': 'Tambahkan pengguna ke peran saat ini',
   'swissGlass.hero.schoolMember.ribbon': 'Sekolah',
   'swissGlass.hero.schoolMember.title': 'Tambahkan anggota',
-  'swissGlass.hero.schoolMember.line1': 'Undang guru atau administrator untuk bergabung dengan sekolah kami',
+  'swissGlass.hero.schoolMember.line1':
+    'Undang guru atau administrator untuk bergabung dengan sekolah kami',
   'swissGlass.hero.adminInline.ribbon': 'mengelola',
   'swissGlass.hero.adminInline.title': 'Operasi manajemen',
   'swissGlass.hero.adminInline.line1': 'Simpan setelah menyelesaikan pengaturan ini',
@@ -513,13 +613,4 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'peta konsep',
   'swissGlass.hero.focusQuestion.title': 'masalah fokus',
   'swissGlass.hero.focusQuestion.line1': 'Tetapkan pertanyaan inti untuk peta konsep',
-  'meta.pageTitle.learningSpace': 'Learning Space',
-  'settings.tabs.account': 'Account',
-  'settings.tabs.security': 'Security',
-  'settings.tabs.language': 'Language',
-  'settings.tabs.plugins': 'Plugins',
-  'settings.tabs.aria': 'Settings sections',
-  'swissGlass.hero.userSettings.ribbon': 'Settings',
-  'swissGlass.hero.userSettings.title': 'Settings',
-  'swissGlass.hero.userSettings.line1': 'Manage your account, security, language, and plugins',
 } as const

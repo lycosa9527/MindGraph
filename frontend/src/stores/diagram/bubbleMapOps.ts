@@ -7,8 +7,8 @@ import {
 } from '@/utils/bubbleMapIdentity'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
-import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitCtxEvent } from './events'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
 export function useBubbleMapOpsSlice(ctx: DiagramContext) {

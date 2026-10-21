@@ -4,8 +4,8 @@
  */
 import { computed } from 'vue'
 
-import type { AdminSwissStatTheme } from '@/constants/adminSwissStatTheme'
 import { useSwissStatCardClasses } from '@/composables/admin/useSwissStatCardClasses'
+import type { AdminSwissStatTheme } from '@/constants/adminSwissStatTheme'
 
 const props = withDefaults(
   defineProps<{
@@ -56,7 +56,10 @@ function onKeydown(event: KeyboardEvent): void {
     @click="onClick"
     @keydown="onKeydown"
   >
-    <header v-if="$slots.header" class="swiss-stat-card__service-header">
+    <header
+      v-if="$slots.header"
+      class="swiss-stat-card__service-header"
+    >
       <slot name="header" />
     </header>
     <div class="swiss-stat-card__body">

@@ -1,9 +1,12 @@
 /**
  * Durable create-new: library draft + open_library_diagram (no ephemeral open_canvas).
  */
-import { effectScope, type EffectScope } from 'vue'
+import { type EffectScope, effectScope } from 'vue'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useKittyMobileLibraryDiagramSelect } from '@/composables/kitty/useKittyMobileLibraryDiagramSelect'
+import { must } from '@/utils/must'
 
 const saveDiagramMock = vi.hoisted(() =>
   vi.fn(async () => ({ id: 'lib-new-1', title: '新建思维导图' }))
@@ -70,8 +73,6 @@ vi.mock('@/stores/savedDiagrams', () => ({
   }),
 }))
 
-import { useKittyMobileLibraryDiagramSelect } from '@/composables/kitty/useKittyMobileLibraryDiagramSelect'
-
 describe('useKittyMobileLibraryDiagramSelect createNewMindmap', () => {
   let scope: EffectScope
   const fetchMock = vi.fn()
@@ -95,15 +96,17 @@ describe('useKittyMobileLibraryDiagramSelect createNewMindmap', () => {
     const hydrateFromLibrary = vi.fn(async () => true)
     const scheduleContextSync = vi.fn()
 
-    const { createNewMindmap } = scope.run(() =>
-      useKittyMobileLibraryDiagramSelect({
-        scheduleContextSync,
-        refreshBootstrap,
-        hydrateFromLibrary,
-        hydrateStoreFromBootstrap: vi.fn(),
-        clearForceEphemeralSession: clearForceMock,
-      })
-    )!
+    const { createNewMindmap } = must(
+      scope.run(() =>
+        useKittyMobileLibraryDiagramSelect({
+          scheduleContextSync,
+          refreshBootstrap,
+          hydrateFromLibrary,
+          hydrateStoreFromBootstrap: vi.fn(),
+          clearForceEphemeralSession: clearForceMock,
+        })
+      )
+    )
 
     await createNewMindmap()
 
@@ -138,14 +141,16 @@ describe('useKittyMobileLibraryDiagramSelect createNewMindmap', () => {
 
   it('blocks create when library slots are full', async () => {
     canSaveMoreState.value = false
-    const { createNewMindmap } = scope.run(() =>
-      useKittyMobileLibraryDiagramSelect({
-        scheduleContextSync: vi.fn(),
-        refreshBootstrap: vi.fn(async () => undefined),
-        hydrateFromLibrary: vi.fn(async () => true),
-        hydrateStoreFromBootstrap: vi.fn(),
-      })
-    )!
+    const { createNewMindmap } = must(
+      scope.run(() =>
+        useKittyMobileLibraryDiagramSelect({
+          scheduleContextSync: vi.fn(),
+          refreshBootstrap: vi.fn(async () => undefined),
+          hydrateFromLibrary: vi.fn(async () => true),
+          hydrateStoreFromBootstrap: vi.fn(),
+        })
+      )
+    )
 
     await createNewMindmap()
 

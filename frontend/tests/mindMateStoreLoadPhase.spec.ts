@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+
 import { describe, expect, it } from 'vitest'
 
 import { useMindMateStore } from '@/stores/mindmate'
@@ -24,9 +25,7 @@ describe('useMindMateStore loadPhase', () => {
     setActivePinia(createPinia())
     const store = useMindMateStore()
     store.setLoadPhase('streaming')
-    store.setActiveThread('conv-1', [
-      { id: 'm1', role: 'user', content: 'hi', timestamp: 1 },
-    ], true)
+    store.setActiveThread('conv-1', [{ id: 'm1', role: 'user', content: 'hi', timestamp: 1 }], true)
     store.reset()
     expect(store.loadPhase).toBe('idle')
     expect(store.activeThreadMessages).toHaveLength(0)

@@ -20,21 +20,27 @@ export default {
   'zhihui.modeComingSoon': 'ఈ మోడ్ త్వరలో ప్రారంభించబడుతుంది',
   'zhihui.describe.image': 'దయచేసి మీరు రూపొందించాలనుకుంటున్న చిత్రాన్ని వివరించండి',
   'zhihui.describe.video': 'దయచేసి మీరు రూపొందించాలనుకుంటున్న వీడియోను వివరించండి',
-  'zhihui.describe.diagram': 'దయచేసి చిహ్నం ఆధారంగా మీరు రూపొందించాలనుకుంటున్న స్క్రీన్‌ను వివరించండి',
+  'zhihui.describe.diagram':
+    'దయచేసి చిహ్నం ఆధారంగా మీరు రూపొందించాలనుకుంటున్న స్క్రీన్‌ను వివరించండి',
   'zhihui.promptPlaceholder.image': 'మీ స్ఫూర్తిని నమోదు చేయండి...',
   'zhihui.promptPlaceholder.video': 'దృశ్యం, కెమెరా పనితనం మరియు లయను వివరించండి...',
   'zhihui.promptPlaceholder.diagram': 'మైండ్ మ్యాప్‌ని ఎంచుకుని, రూపొందించు క్లిక్ చేయండి',
-  'zhihui.composerHint.image': 'చిత్రాన్ని వివరించడానికి వచనాన్ని ఉపయోగించండి మరియు ఒకే క్లిక్‌తో టీచింగ్ ఇలస్ట్రేషన్‌లు మరియు విజువల్ మెటీరియల్‌లను రూపొందించండి',
-  'zhihui.composerHint.video': 'Wensheng వీడియో మరియు Tusheng వీడియో సామర్థ్యాలను యాక్సెస్ చేయబోతున్నారు',
-  'zhihui.composerHint.diagram': 'అభ్యాసకుడి దృష్టికోణం నుండి కోర్స్‌వేర్ రేఖాచిత్రాన్ని రూపొందించడానికి మైండ్ మ్యాప్‌ను ఎంచుకోండి',
+  'zhihui.composerHint.image':
+    'చిత్రాన్ని వివరించడానికి వచనాన్ని ఉపయోగించండి మరియు ఒకే క్లిక్‌తో టీచింగ్ ఇలస్ట్రేషన్‌లు మరియు విజువల్ మెటీరియల్‌లను రూపొందించండి',
+  'zhihui.composerHint.video':
+    'Wensheng వీడియో మరియు Tusheng వీడియో సామర్థ్యాలను యాక్సెస్ చేయబోతున్నారు',
+  'zhihui.composerHint.diagram':
+    'అభ్యాసకుడి దృష్టికోణం నుండి కోర్స్‌వేర్ రేఖాచిత్రాన్ని రూపొందించడానికి మైండ్ మ్యాప్‌ను ఎంచుకోండి',
   'zhihui.diagram.selectMindmap': 'మైండ్ మ్యాప్‌ని ఎంచుకోండి',
   'zhihui.diagram.selectMindmapHint': 'దయచేసి పైన ఉన్న మైండ్ మ్యాప్‌ని ఎంచుకోండి',
   'zhihui.diagram.selectMindmapFirst': 'దయచేసి ముందుగా మైండ్ మ్యాప్‌ని ఎంచుకోండి',
-  'zhihui.diagram.emptyLibrary': 'ఇంకా మైండ్ మ్యాప్ లేదు, దయచేసి ముందుగా దాన్ని రేఖాచిత్రం లైబ్రరీలో సేవ్ చేయండి.',
+  'zhihui.diagram.emptyLibrary':
+    'ఇంకా మైండ్ మ్యాప్ లేదు, దయచేసి ముందుగా దాన్ని రేఖాచిత్రం లైబ్రరీలో సేవ్ చేయండి.',
   'zhihui.diagram.loadFailed': 'మైండ్ మ్యాప్‌ను లోడ్ చేయడంలో విఫలమైంది',
   'zhihui.diagram.emptyDeck': 'మైండ్ మ్యాప్‌ని ఎంచుకున్న తర్వాత, రూపొందించు క్లిక్ చేయండి',
   'zhihui.diagram.waitingSlides': 'కోర్స్‌వేర్ రూపొందించబడుతోంది, దయచేసి వేచి ఉండండి...',
-  'zhihui.diagram.jobStarted': 'కోర్స్‌వేర్ ఉత్పత్తి ప్రారంభమైంది. మీరు చరిత్రలో పురోగతిని తనిఖీ చేయవచ్చు.',
+  'zhihui.diagram.jobStarted':
+    'కోర్స్‌వేర్ ఉత్పత్తి ప్రారంభమైంది. మీరు చరిత్రలో పురోగతిని తనిఖీ చేయవచ్చు.',
   'zhihui.diagram.phaseQueued': 'పనులు క్యూలో ఉన్నాయి...',
   'zhihui.diagram.phasePlanning': 'సిలబస్ రూపకల్పన...',
   'zhihui.diagram.phasePlanningBranches': 'వివిధ అంశాలను ప్లాన్ చేస్తోంది...',
@@ -47,9 +53,11 @@ export default {
   'zhihui.diagram.phaseComplete': 'కోర్స్‌వేర్ సిద్ధంగా ఉంది',
   'zhihui.diagram.phaseCancelled': 'రద్దు చేయబడింది',
   'zhihui.diagram.toastPlanning': 'సిలబస్ రూపకల్పన...',
-  'zhihui.diagram.toastGenerating': 'కోర్స్‌వేర్ డ్రా చేయబడుతోంది, దీనికి కొన్ని నిమిషాలు పట్టవచ్చు',
+  'zhihui.diagram.toastGenerating':
+    'కోర్స్‌వేర్ డ్రా చేయబడుతోంది, దీనికి కొన్ని నిమిషాలు పట్టవచ్చు',
   'zhihui.diagram.toastComplete': 'కోర్స్‌వేర్ సిద్ధంగా ఉంది',
-  'zhihui.diagram.toastPartial': 'కోర్స్‌వేర్ పాక్షికంగా పూర్తయింది మరియు ఉత్పత్తిని కొనసాగించవచ్చు.',
+  'zhihui.diagram.toastPartial':
+    'కోర్స్‌వేర్ పాక్షికంగా పూర్తయింది మరియు ఉత్పత్తిని కొనసాగించవచ్చు.',
   'zhihui.diagram.toastCancelled': 'కోర్స్‌వేర్ ఉత్పత్తి రద్దు చేయబడింది',
   'zhihui.diagram.batchProgress': 'బ్యాచ్ {current}/{total}',
   'zhihui.diagram.slideProgress': '{current}/{total} రూపొందించబడింది',
@@ -58,7 +66,8 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'స్లయిడ్‌షో లోడ్ చేయడంలో విఫలమైంది',
   'zhihui.diagram.retryImage': 'మళ్లీ ప్రయత్నించండి',
   'zhihui.diagram.teacherScript': 'ఉపాధ్యాయుల కథనం',
-  'zhihui.diagram.teacherScriptHint': 'తరగతి గది వివరణలు ఈ పేజీలోని దృష్టాంతాలు మరియు మ్యాప్‌ల దృష్టితో సమలేఖనం చేయబడ్డాయి',
+  'zhihui.diagram.teacherScriptHint':
+    'తరగతి గది వివరణలు ఈ పేజీలోని దృష్టాంతాలు మరియు మ్యాప్‌ల దృష్టితో సమలేఖనం చేయబడ్డాయి',
   'zhihui.diagram.ttsPlay': 'ఈ పేజీ యొక్క కథనాన్ని బిగ్గరగా చదవడానికి పిల్లి పిల్లపై క్లిక్ చేయండి',
   'zhihui.diagram.ttsStop': 'చదవడం ఆపండి',
   'zhihui.diagram.ttsMute': 'మ్యూట్ కథనం',
@@ -74,7 +83,8 @@ export default {
   'zhihui.sizeButton': 'చిత్రం పరిమాణం',
   'zhihui.sizePanelTitle': 'చిత్రం పరిమాణం',
   'zhihui.sizeOptional': 'ఐచ్ఛికం',
-  'zhihui.sizeHint': 'ఆకృతి వెడల్పు * ఎత్తు. పేర్కొనకపోతే, మోడల్ స్వయంచాలకంగా ప్రాంప్ట్ వర్డ్ ఆధారంగా రిజల్యూషన్‌ను సిఫార్సు చేస్తుంది.',
+  'zhihui.sizeHint':
+    'ఆకృతి వెడల్పు * ఎత్తు. పేర్కొనకపోతే, మోడల్ స్వయంచాలకంగా ప్రాంప్ట్ వర్డ్ ఆధారంగా రిజల్యూషన్‌ను సిఫార్సు చేస్తుంది.',
   'zhihui.sizeLimits': 'పిక్సెల్ ప్రాంతం 512×512–2048×2048; కారక నిష్పత్తి 1:8–8:1',
   'zhihui.size.auto': 'తెలివైన',
   'zhihui.size.autoHint': 'ఆటోమేటిక్',
@@ -102,7 +112,8 @@ export default {
   'zhihui.empty': 'ఇంకా చిత్రం ఏదీ లేదు, దయచేసి దాన్ని ఎగువన రూపొందించడానికి ప్రయత్నించండి.',
   'zhihui.loadFailed': 'చరిత్రను లోడ్ చేయడంలో విఫలమైంది',
   'zhihui.delete': 'తొలగించు',
-  'zhihui.deleteConfirm': 'మీరు ఖచ్చితంగా ఈ చిత్రాన్ని తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
+  'zhihui.deleteConfirm':
+    'మీరు ఖచ్చితంగా ఈ చిత్రాన్ని తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
   'zhihui.deleteTitle': 'చిత్రాన్ని తొలగించండి',
   'zhihui.deleted': 'తొలగించబడింది',
   'zhihui.deleteFailed': 'తొలగించడం విఫలమైంది',

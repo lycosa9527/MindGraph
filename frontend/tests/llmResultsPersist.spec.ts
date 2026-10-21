@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
+import type { LLMResult } from '@/stores/llmResults'
 import {
   attachLlmResultsWithinSizeLimit,
   resolvePersistedSelectedModel,
   splitSavedLlmResultsFromSpec,
 } from '@/stores/llmResultsPersist'
-import type { LLMResult } from '@/stores/llmResults'
 
 function resultOf(topic: string, padChars: number): LLMResult {
   return {
@@ -56,8 +56,7 @@ describe('attachLlmResultsWithinSizeLimit', () => {
         doubao: resultOf('b', 8000),
       },
     }
-    const withAllKb =
-      new Blob([JSON.stringify({ topic: 't', llm_results: persisted })]).size / 1024
+    const withAllKb = new Blob([JSON.stringify({ topic: 't', llm_results: persisted })]).size / 1024
     const twoKb =
       new Blob([
         JSON.stringify({
@@ -76,8 +75,7 @@ describe('attachLlmResultsWithinSizeLimit', () => {
       (twoKb + withAllKb) / 2
     )
     const llm = packed.llm_results as
-      | { results: Record<string, unknown>; selectedModel: string }
-      | undefined
+      { results: Record<string, unknown>; selectedModel: string } | undefined
     expect(llm).toBeDefined()
     expect(llm?.selectedModel).toBe('qwen')
     expect(Object.keys(llm?.results ?? {}).sort()).toEqual(['deepseek', 'qwen'])

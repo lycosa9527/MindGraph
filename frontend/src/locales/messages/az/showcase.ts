@@ -31,7 +31,8 @@ export default {
   'showcase.myFavoritesEmpty': 'Hələ sevimli keys yoxdur',
   'showcase.myFavoritesEmptyHint': 'Əlfəcin etdiyiniz keyslər burada görünəcək',
   'showcase.myCasesModalTitle': 'Dərc etdiyim keyslər',
-  'showcase.myCasesManageHint': 'Bu siyahıdan geri çəkin, siyahıdan çıxarın və ya redaktə edin; ətraflı üçün keysi klikləyin',
+  'showcase.myCasesManageHint':
+    'Bu siyahıdan geri çəkin, siyahıdan çıxarın və ya redaktə edin; ətraflı üçün keysi klikləyin',
   'showcase.myCasesAction.edit': 'Redaktə et',
   'showcase.myCasesEmpty': 'Hələ dərc edilmiş keys yoxdur',
   'showcase.myCasesEmptyHint': 'Dərc edilmiş keyslər və baxış statusu burada görünəcək',
@@ -40,10 +41,12 @@ export default {
   'showcase.publishModal.title': 'Keys dərc et',
   'showcase.publishModal.titleLabel': 'Keys başlığı',
   'showcase.publishModal.titleHint': 'Başlığı qısa saxlayın — ən çox {max} simvol tövsiyə olunur',
-  'showcase.publishModal.titlePlaceholder': 'məs. İki uşaq günəş haqqında mübahisə edir — dərs dizaynı',
+  'showcase.publishModal.titlePlaceholder':
+    'məs. İki uşaq günəş haqqında mübahisə edir — dərs dizaynı',
   'showcase.publishModal.descriptionLabel': 'Təsvir',
   'showcase.publishModal.tagsLabel': 'Teqlər',
-  'showcase.publishModal.tagsHint': 'Teqləri vergüllə ayırın, məs. idraki konflikt, orta riyaziyyat',
+  'showcase.publishModal.tagsHint':
+    'Teqləri vergüllə ayırın, məs. idraki konflikt, orta riyaziyyat',
   'showcase.publishModal.caseTypeLabel': 'Keys növü',
   'showcase.publishModal.subjectLabel': 'Fənn',
   'showcase.publishModal.gradeLabel': 'Sinif',
@@ -53,19 +56,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Fayllar yüklənir ({current}/{total})…',
   'showcase.publishModal.uploadingFile': '{name} yüklənir ({current}/{total})…',
   'showcase.publishModal.finishing': 'Tamamlanır…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Yükləmə uğursuz oldu — qaralama silindi. Yenidən cəhd edin.',
-  'showcase.publishModal.uploadCorsFailed': 'Obyekt yaddaşına yükləmə alınmadı (tez-tez bucket CORS və ya sayt CSP COS hostunu bloklayır). Qaralama silindi — admindən CORS/CSP düzəltməsini xahiş edin, sonra yenidən cəhd edin.',
-  'showcase.publishModal.uploadStorageRejected': 'Obyekt yaddaşı yükləməni rədd etdi. Qaralama silindi — sonra yenidən cəhd edin və ya davam edərsə adminlə əlaqə saxlayın.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Yükləmə uğursuz oldu — qaralama silindi. Yenidən cəhd edin.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Obyekt yaddaşına yükləmə alınmadı (tez-tez bucket CORS və ya sayt CSP COS hostunu bloklayır). Qaralama silindi — admindən CORS/CSP düzəltməsini xahiş edin, sonra yenidən cəhd edin.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Obyekt yaddaşı yükləməni rədd etdi. Qaralama silindi — sonra yenidən cəhd edin və ya davam edərsə adminlə əlaqə saxlayın.',
   'showcase.publishModal.uploadFailed': 'Yükləmə uğursuz oldu. Yenidən cəhd edin.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Üz qabığı şəkli 2MB limitini aşır. Önizləməni sıxışdırın və ya daha kiçik şəkil istifadə edin, sonra yenidən cəhd edin.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'Fayl ölçü limitini aşır (sənəd/şəkil 20MB, video 100MB). Sıxışdırıb yenidən cəhd edin.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Fayl ölçü limitini aşır (sənəd/şəkil 20MB, video 100MB). Qaralama silindi — sıxışdırıb yenidən cəhd edin.',
-  'showcase.publishModal.uploadFileTooLarge': 'Bu yükləmə növü üçün fayl çox böyükdür. Ölçü limitini yoxlayıb yenidən cəhd edin.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Bu yükləmə növü üçün fayl çox böyükdür. Qaralama silindi — ölçü limitini yoxlayıb yenidən cəhd edin.',
-  'showcase.publishModal.coverUploadSkipped': 'Keys göndərildi, amma üz qabığı yüklənmədi. Sonra redaktə edib üz qabığını yeniləyə bilərsiniz.',
-  'showcase.publishModal.coverGenerating': 'Üz qabığı önbaxışı arxa planda yaradılır — tezliklə kartda görünəcək.',
-  'showcase.publishModal.coverFailed': 'Keys göndərildi, amma üz qabığı yaradıla bilmədi. Sonra redaktə edib yeniləyə bilərsiniz.',
-  'showcase.publishModal.coverFailedTimeout': 'Keys göndərildi, amma üz qabığı generasiyası vaxtı bitdi. Sonra redaktə edib yeniləyə bilərsiniz.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Üz qabığı şəkli 2MB limitini aşır. Önizləməni sıxışdırın və ya daha kiçik şəkil istifadə edin, sonra yenidən cəhd edin.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'Fayl ölçü limitini aşır (sənəd/şəkil 20MB, video 100MB). Sıxışdırıb yenidən cəhd edin.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'Fayl ölçü limitini aşır (sənəd/şəkil 20MB, video 100MB). Qaralama silindi — sıxışdırıb yenidən cəhd edin.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'Bu yükləmə növü üçün fayl çox böyükdür. Ölçü limitini yoxlayıb yenidən cəhd edin.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'Bu yükləmə növü üçün fayl çox böyükdür. Qaralama silindi — ölçü limitini yoxlayıb yenidən cəhd edin.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Keys göndərildi, amma üz qabığı yüklənmədi. Sonra redaktə edib üz qabığını yeniləyə bilərsiniz.',
+  'showcase.publishModal.coverGenerating':
+    'Üz qabığı önbaxışı arxa planda yaradılır — tezliklə kartda görünəcək.',
+  'showcase.publishModal.coverFailed':
+    'Keys göndərildi, amma üz qabığı yaradıla bilmədi. Sonra redaktə edib yeniləyə bilərsiniz.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Keys göndərildi, amma üz qabığı generasiyası vaxtı bitdi. Sonra redaktə edib yeniləyə bilərsiniz.',
   'showcase.publishModal.success': 'Keys göndərildi — admin baxışı gözlənilir',
   'showcase.publishModal.fromCanvas': 'Kətandan dərc et',
   'showcase.publishModal.step1Title': 'Əsas məlumat',
@@ -79,26 +94,35 @@ export default {
   'showcase.publishModal.uploadLabel': 'Fayl yüklə',
   'showcase.publishModal.uploadImage': 'Şəkil yüklə',
   'showcase.publishModal.uploadFile': 'Fayl yüklə',
-  'showcase.publishModal.directUploadDisabled': 'Birbaşa fayl yükləmə müvəqqəti əlçatan deyil. Tarixçədən saxlanmış diaqram seçə bilərsiniz.',
-  'showcase.publishModal.uploadViaStorage': 'Fayllar təhlükəsiz yaddaşa birbaşa yüklənir (qısaömürlü URL).',
+  'showcase.publishModal.directUploadDisabled':
+    'Birbaşa fayl yükləmə müvəqqəti əlçatan deyil. Tarixçədən saxlanmış diaqram seçə bilərsiniz.',
+  'showcase.publishModal.uploadViaStorage':
+    'Fayllar təhlükəsiz yaddaşa birbaşa yüklənir (qısaömürlü URL).',
   'showcase.publishModal.pickHistory': 'Tarixçədən seç',
   'showcase.publishModal.removeFile': 'Sil',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: məhdud önbaxış)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: məhdud önbaxış) — sənəd başına maks. {maxMb} MB',
-  'showcase.publishModal.teachingDocTooLarge': 'Sənəd {maxMb} MB limitini aşır. Sıxışdırıb yenidən cəhd edin.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: məhdud önbaxış) — sənəd başına maks. {maxMb} MB',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Sənəd {maxMb} MB limitini aşır. Sıxışdırıb yenidən cəhd edin.',
   'showcase.publishModal.diagramImageHint': 'Dəstək .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Şəkillər yüklə (bir neçə)',
-  'showcase.publishModal.galleryHint': 'Bir neçə şəkil və saxlanmış diaqram əlavə edin, ən çox {max} element',
-  'showcase.publishModal.galleryHintCase': '{max} elementə qədər çoxlu şəkil və tarixi nişanlar əlavə edilə bilər',
-  'showcase.publishModal.galleryHintTemplate': 'Siz .mg faylları yükləyə və {max} elementə qədər çoxlu tarixi nişanlar seçə bilərsiniz',
+  'showcase.publishModal.galleryHint':
+    'Bir neçə şəkil və saxlanmış diaqram əlavə edin, ən çox {max} element',
+  'showcase.publishModal.galleryHintCase':
+    '{max} elementə qədər çoxlu şəkil və tarixi nişanlar əlavə edilə bilər',
+  'showcase.publishModal.galleryHintTemplate':
+    'Siz .mg faylları yükləyə və {max} elementə qədər çoxlu tarixi nişanlar seçə bilərsiniz',
   'showcase.publishModal.galleryCount': '{count}/{max} element əlavə edilib',
   'showcase.publishModal.galleryImageItem': 'Şəkil: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diaqram: {name}',
   'showcase.publishModal.galleryLimit': 'Ən çox {max} element əlavə edə bilərsiniz',
   'showcase.publishModal.galleryDuplicateDiagram': 'Bu saxlanmış diaqram artıq siyahıdadır',
   'showcase.publishModal.galleryPickerDone': 'Hazır',
-  'showcase.publishModal.galleryUploadFailed': 'Qalereya şəkil yükləməsi uğursuz oldu — yenidən dərc etməyə cəhd edin',
-  'showcase.publishModal.galleryReuploadHint': 'Bəzi qalereya şəkilləri saxlanılmayıb — göndərməzdən əvvəl onları yenidən seçin',
+  'showcase.publishModal.galleryUploadFailed':
+    'Qalereya şəkil yükləməsi uğursuz oldu — yenidən dərc etməyə cəhd edin',
+  'showcase.publishModal.galleryReuploadHint':
+    'Bəzi qalereya şəkilləri saxlanılmayıb — göndərməzdən əvvəl onları yenidən seçin',
   'showcase.detail.galleryImage': 'Şəkil',
   'showcase.detail.galleryDiagram': 'Diaqram',
   'showcase.detail.galleryPrev': 'Əvvəlki',
@@ -108,36 +132,49 @@ export default {
   'showcase.publishModal.templateFileHint': 'Yalnız .mg (MindGraph ixracı)',
   'showcase.publishModal.templatePreviewLabel': 'Diaqram önbaxışı',
   'showcase.publishModal.templatePreviewHint': 'Əl aləti — yalnız baxış, redaktə olunmur',
-  'showcase.publishModal.templatePreviewEmpty': 'Önbaxış üçün .mg faylı yükləyin və ya saxlanmış diaqram seçin',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Önbaxış üçün .mg faylı yükləyin və ya saxlanmış diaqram seçin',
   'showcase.publishModal.diagramCasePreviewLabel': 'Diaqram önbaxışı',
   'showcase.publishModal.diagramCasePreviewHint': 'Əl aləti — gəzmək və böyütmək üçün',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Diaqram növü seçilmiş saxlanmış diaqramdan uyğunlaşdırıldı',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Diaqram növü seçilmiş saxlanmış diaqramdan uyğunlaşdırıldı',
   'showcase.publishModal.introLabel': 'Diaqram təqdimatı',
   'showcase.publishModal.teachingIntroLabel': 'Tədris dizaynı təqdimatı',
   'showcase.publishModal.highlightsLabel': 'Dizayn vurğuları',
   'showcase.publishModal.highlightsPlaceholder': 'Hər sətirdə bir vurğu (ixtiyari)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Dərsin fonunu, məqsədlərini və kontekstini qısa təqdim edin',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Dərsin fonunu, məqsədlərini və kontekstini qısa təqdim edin',
   'showcase.publishModal.aiGenerate': 'AI ilə yarat',
   'showcase.publishModal.aiGenerating': 'Yaradılır…',
   'showcase.publishModal.aiGenerateStop': 'Dayandır',
-  'showcase.publishModal.aiGenerateCancelled': 'AI generasiyası ləğv edildi — yenidən yaratmaq üçün klikləyin',
-  'showcase.publishModal.aiGenerateSuccess': 'Təqdimat və vurğular sənəddən dolduruldu — nəzərdən keçirin və redaktə edin; tədris refleksiyasını özünüz yazın',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'İllüstrasiyaya əsaslanaraq illüstrasiya təqdimatı və sinif tətbiqi yaradılmışdır. Zəhmət olmasa yoxlayın və redaktə edin.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'AI generasiyası ləğv edildi — yenidən yaratmaq üçün klikləyin',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Təqdimat və vurğular sənəddən dolduruldu — nəzərdən keçirin və redaktə edin; tədris refleksiyasını özünüz yazın',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'İllüstrasiyaya əsaslanaraq illüstrasiya təqdimatı və sinif tətbiqi yaradılmışdır. Zəhmət olmasa yoxlayın və redaktə edin.',
   'showcase.publishModal.aiGenerateFailed': 'AI generasiyası uğursuz oldu — yenidən cəhd edin',
-  'showcase.publishModal.aiGenerateNeedFile': 'Əvvəlki addımda əvvəlcə tədris dizaynı sənədi yükləyin',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'AI ilə yaratma yalnız tədris dizaynı keysləri üçün əlçatandır',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Əvvəlki addımda əvvəlcə tədris dizaynı sənədi yükləyin',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'AI ilə yaratma yalnız tədris dizaynı keysləri üçün əlçatandır',
   'showcase.publishModal.reflectionLabel': 'Tədris refleksiyası',
-  'showcase.publishModal.introPlaceholder': 'Keysi və nə vaxt istifadə olunacağını qısa təsvir edin',
-  'showcase.publishModal.diagramCorePlaceholder': 'Diaqram məzmununu və vizuallaşdırma vurğularını təsvir edin',
+  'showcase.publishModal.introPlaceholder':
+    'Keysi və nə vaxt istifadə olunacağını qısa təsvir edin',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Diaqram məzmununu və vizuallaşdırma vurğularını təsvir edin',
   'showcase.publishModal.classroomAppPlaceholder': 'Bu diaqramın dərsdə necə istifadə olunduğu',
   'showcase.publishModal.tagInputPlaceholder': 'Teq yazın (maks. 10 simvol), Enter basın',
   'showcase.publishModal.tagRecommended': 'Tövsiyə olunan teqlər',
   'showcase.publishModal.tagCountHint': '(maks. {max})',
   'showcase.publishModal.tagMaxCount': 'Ən çox {max} teq əlavə edə bilərsiniz',
-  'showcase.publishModal.networkError': 'Göndərmə uğursuz oldu — serverin işlədiyini və fayl ölçülərinin limitdə olduğunu yoxlayın',
+  'showcase.publishModal.networkError':
+    'Göndərmə uğursuz oldu — serverin işlədiyini və fayl ölçülərinin limitdə olduğunu yoxlayın',
   'showcase.publishModal.fileTooLarge': '"{name}" {maxMb}MB ölçü limitini aşır',
-  'showcase.publishModal.uploadTotalTooLarge': 'Ümumi yükləmə ölçüsü limiti aşır — əlavə və ya video ölçüsünü azaldın',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'Ümumi yükləmə ölçüsü limiti aşır — əlavə və ya video ölçüsünü azaldın',
   'showcase.publishModal.tagAdd': 'Əlavə et',
   'showcase.publishModal.publishBtn': 'Dərc et',
   'showcase.publishModal.reflectionPlaceholder': 'Bu dərs haqqında refleksiyanızı yazın (ixtiyari)',
@@ -151,17 +188,22 @@ export default {
   'showcase.publishModal.validationFile': 'Fayl yükləyin və ya saxlanmış diaqram seçin',
   'showcase.publishModal.validationDiagramType': 'Diaqram növünü seçin',
   'showcase.publishModal.invalidFileType': 'Dəstəklənməyən fayl növü',
-  'showcase.publishModal.invalidMgFile': 'Bu .mg faylı oxuna bilmədi — əvvəlcə MindGraph-dan ixrac edin',
-  'showcase.publishModal.cannotPreview': 'Üz qabığı önbaxışı yaradıla bilmədi — keys yenə də göndəriləcək. PNG/JPG sınayın və ya saxlanmış diaqram seçin.',
-  'showcase.publishModal.cannotPreviewHistory': 'Bu saxlanmış diaqramdan üz qabığı yaradıla bilmədi — keys yenə də göndəriləcək. Yenidən seçin və ya kətandan yenidən saxlayın.',
-  'showcase.publishModal.cannotPreviewTemplate': 'Üz qabığı yaradıla bilmədi — keys yenə də göndəriləcək. .mg faylını yoxlayın və ya başqa saxlanmış diaqram seçin.',
+  'showcase.publishModal.invalidMgFile':
+    'Bu .mg faylı oxuna bilmədi — əvvəlcə MindGraph-dan ixrac edin',
+  'showcase.publishModal.cannotPreview':
+    'Üz qabığı önbaxışı yaradıla bilmədi — keys yenə də göndəriləcək. PNG/JPG sınayın və ya saxlanmış diaqram seçin.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Bu saxlanmış diaqramdan üz qabığı yaradıla bilmədi — keys yenə də göndəriləcək. Yenidən seçin və ya kətandan yenidən saxlayın.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Üz qabığı yaradıla bilmədi — keys yenə də göndəriləcək. .mg faylını yoxlayın və ya başqa saxlanmış diaqram seçin.',
   'showcase.publishModal.historyTitle': 'Saxlanmış diaqram seçin',
   'showcase.publishModal.historySearch': 'Diaqram adı axtar…',
   'showcase.publishModal.historyEmpty': 'Saxlanmış diaqram yoxdur',
   'showcase.publishModal.historyUncategorized': 'Kateqoriyasız',
   'showcase.publishModal.typeDesc.teachingDesign': 'Düşüncə bacarıqları üçün sinif dərs dizaynı',
   'showcase.publishModal.typeDesc.diagramCase': 'Tədrisdə əla diaqramlar və vizuallaşdırma',
-  'showcase.publishModal.typeDesc.diagramTemplate': 'Təkrar istifadə və ya uyğunlaşdırma üçün diaqramlar',
+  'showcase.publishModal.typeDesc.diagramTemplate':
+    'Təkrar istifadə və ya uyğunlaşdırma üçün diaqramlar',
   'showcase.detail.import': 'Bu keysdən istifadə et',
   'showcase.action.goDraw': 'Birini çək',
   'showcase.action.applyTemplate': 'Şablonu tətbiq et',
@@ -184,9 +226,11 @@ export default {
   'showcase.detail.delist': 'Siyahıdan çıxar',
   'showcase.detail.resubmit': 'Redaktə et və yenidən göndər',
   'showcase.detail.withdrawTitle': 'Keysi geri çək',
-  'showcase.detail.withdrawConfirm': '"{title}" geri çəkilsin? Baxış növbəsindən silinəcək və bərpa edilə bilməz.',
+  'showcase.detail.withdrawConfirm':
+    '"{title}" geri çəkilsin? Baxış növbəsindən silinəcək və bərpa edilə bilməz.',
   'showcase.detail.delistTitle': 'Keysi siyahıdan çıxar',
-  'showcase.detail.delistConfirm': '"{title}" qalereyadan çıxarılsın? Digər istifadəçilər onu artıq görə bilməyəcək.',
+  'showcase.detail.delistConfirm':
+    '"{title}" qalereyadan çıxarılsın? Digər istifadəçilər onu artıq görə bilməyəcək.',
   'showcase.detail.confirm': 'Təsdiq et',
   'showcase.detail.cancel': 'Ləğv et',
   'showcase.withdrawn': 'Geri çəkilib',
@@ -207,7 +251,8 @@ export default {
   'showcase.detail.officePreviewPending': 'Slaydlar önbaxış üçün çevrilir…',
   'showcase.detail.docPreviewLoading': 'Sənəd yüklənir…',
   'showcase.detail.docPreviewFailed': 'Önbaxış yüklənmədi. Yeni tabda açmağa cəhd edin.',
-  'showcase.detail.legacyDocHint': 'Köhnə .doc faylları sətir içində önbaxış edilə bilməz. Faylı açın və ya endirin, ya da brauzer önbaxışı üçün .docx yükləyin.',
+  'showcase.detail.legacyDocHint':
+    'Köhnə .doc faylları sətir içində önbaxış edilə bilməz. Faylı açın və ya endirin, ya da brauzer önbaxışı üçün .docx yükləyin.',
   'showcase.detail.noDocument': 'Sənəd önbaxışı yoxdur',
   'showcase.detail.noDiagramPreview': 'Diaqram önbaxışı yoxdur',
   'showcase.detail.diagramPreviewLoading': 'Diaqram yüklənir…',

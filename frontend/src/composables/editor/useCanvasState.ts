@@ -82,9 +82,7 @@ export function useCanvasState(
 
   const mobileBreakpoint = useBreakpoints({ mobile: BREAKPOINTS.MOBILE })
   const isSmallViewport = mobileBreakpoint.smaller('mobile')
-  const isMobile = computed(
-    () => isSmallViewport.value || isTouchDeviceUserAgent()
-  )
+  const isMobile = computed(() => isSmallViewport.value || isTouchDeviceUserAgent())
   const isTablet = useMediaQuery(`(max-width: ${BREAKPOINTS.TABLET}px)`)
   const isDesktop = computed(() => !isTablet.value)
 

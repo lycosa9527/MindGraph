@@ -44,20 +44,18 @@ describe('mindmateCollabReconnect helpers', () => {
   })
 
   it('maps auth-related 1008 reasons', () => {
-    expect(
-      mindmateCollabPermanentFailureLocaleKey(1008, 'Unauthorized'),
-    ).toBe('mindmate.collabConnectionAuthFailed')
+    expect(mindmateCollabPermanentFailureLocaleKey(1008, 'Unauthorized')).toBe(
+      'mindmate.collabConnectionAuthFailed'
+    )
   })
 
   it('maps invalid room 1008 reasons', () => {
-    expect(
-      mindmateCollabPermanentFailureLocaleKey(1008, 'Invalid room'),
-    ).toBe('mindmate.collabConnectionDenied')
+    expect(mindmateCollabPermanentFailureLocaleKey(1008, 'Invalid room')).toBe(
+      'mindmate.collabConnectionDenied'
+    )
   })
 
   it('maps connection limit close code', () => {
-    expect(mindmateCollabPermanentFailureLocaleKey(4029, '')).toBe(
-      'mindmate.collabConnectionLimit',
-    )
+    expect(mindmateCollabPermanentFailureLocaleKey(4029, '')).toBe('mindmate.collabConnectionLimit')
   })
 })

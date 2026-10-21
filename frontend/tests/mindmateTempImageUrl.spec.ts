@@ -15,7 +15,10 @@ describe('shouldRewriteMindmateTempImageUrl', () => {
 
   it('does not rewrite remote deployment hosts', () => {
     expect(
-      shouldRewriteMindmateTempImageUrl(new URL('https://mindgraph.example.com/x'), 'localhost:41732')
+      shouldRewriteMindmateTempImageUrl(
+        new URL('https://mindgraph.example.com/x'),
+        'localhost:41732'
+      )
     ).toBe(false)
   })
 
@@ -38,11 +41,8 @@ describe('shouldProxyMindmateTempImageUrl', () => {
 
 describe('sameOriginTempImageFetchUrl', () => {
   it('rewrites a test-server temp url to the local api path', () => {
-    const remote =
-      'https://test.mindspringedu.com/api/temp_images/diagram_abc.png?sig=x&exp=1'
-    expect(sameOriginTempImageFetchUrl(remote)).toBe(
-      '/api/temp_images/diagram_abc.png?sig=x&exp=1'
-    )
+    const remote = 'https://test.mindspringedu.com/api/temp_images/diagram_abc.png?sig=x&exp=1'
+    expect(sameOriginTempImageFetchUrl(remote)).toBe('/api/temp_images/diagram_abc.png?sig=x&exp=1')
   })
 
   it('keeps an already-relative temp path', () => {

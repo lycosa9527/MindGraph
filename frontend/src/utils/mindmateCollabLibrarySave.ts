@@ -48,9 +48,7 @@ export function openSavedMindmateSeminar(sessionId: string): void {
 }
 
 /** Drop `saved_seminar` so a personal thread can replace the read-only transcript. */
-export function withoutSavedSeminarQuery<T extends Record<string, unknown>>(
-  query: T
-): T | null {
+export function withoutSavedSeminarQuery<T extends Record<string, unknown>>(query: T): T | null {
   if (typeof query.saved_seminar !== 'string') {
     return null
   }

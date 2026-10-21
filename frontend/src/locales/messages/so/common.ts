@@ -1,5 +1,6 @@
 /**
- * en UI � common
+ * so UI — common
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {
@@ -7,12 +8,13 @@ export default {
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'Log in to use this area',
   'app.browserLocale.body': 'Your browser prefers {name}. Switch the app interface to match?',
-  'app.browserLocale.dontAsk': 'Don\'t ask again',
+  'app.browserLocale.dontAsk': "Don't ask again",
   'app.browserLocale.keepChinese': 'Keep Chinese',
   'app.browserLocale.switch': 'Switch',
   'app.browserLocale.title': 'Switch interface language?',
   'app.testServer.badge': 'TEST',
-  'app.testServer.body': 'Roy, hands on hips, reminds you: you are on the test server. This site goes offline often for testing—use the live site for real work.',
+  'app.testServer.body':
+    'Roy, hands on hips, reminds you: you are on the test server. This site goes offline often for testing—use the live site for real work.',
   'app.testServer.confirm': 'Stay on test',
   'app.testServer.jump': 'Go to live site',
   'app.testServer.productionHost': 'www.mindspringedu.com',
@@ -20,7 +22,8 @@ export default {
   'app.testServer.watermark': 'TEST SERVER',
   'app.schoolExpired.acknowledge': 'OK',
   'app.schoolExpired.badge': 'EXPIRED',
-  'app.schoolExpired.body': 'This school\'s product term has ended. Teachers and school managers are locked out until the platform administrator renews the subscription.',
+  'app.schoolExpired.body':
+    "This school's product term has ended. Teachers and school managers are locked out until the platform administrator renews the subscription.",
   'app.schoolExpired.env': 'SUBSCRIPTION',
   'app.schoolExpired.host': '{school} · ended {date}',
   'app.schoolExpired.signOut': 'Sign out',
@@ -98,6 +101,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.gewe': 'Gewe',
   'meta.pageTitle.knowledgeSpace': 'Knowledge space',
+  'meta.pageTitle.learningSpace': 'Learning Space',
   'meta.pageTitle.library': 'Library',
   'meta.pageTitle.libraryBookmark': 'Bookmark',
   'meta.pageTitle.libraryViewer': 'Library viewer',
@@ -109,8 +113,10 @@ export default {
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'Kitty',
   'meta.pageTitle.orgs': 'Organizations',
-  'canvas.kittyMobileIndicatorHint': 'A phone Kitty session (mic started) is linked to this diagram. Use your phone to talk with Kitty.',
-  'canvas.kittyMobileIndicatorAria': 'Status: Mobile Kitty is connected to this MindGraph canvas. Interact on your phone.',
+  'canvas.kittyMobileIndicatorHint':
+    'A phone Kitty session (mic started) is linked to this diagram. Use your phone to talk with Kitty.',
+  'canvas.kittyMobileIndicatorAria':
+    'Status: Mobile Kitty is connected to this MindGraph canvas. Interact on your phone.',
   'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
   'canvas.kittyMobileIndicatorListening': 'Phone is listening',
   'canvas.kittyMobileIndicatorSpeaking': 'Phone is speaking',
@@ -176,8 +182,10 @@ export default {
   'mobile.kittyKeyboardToggle': 'Text input',
   'mobile.kittyEnd': 'End',
   'mobile.kittyWelcomeLine': 'Share your ideas',
-  'mobile.kittyWelcomeSub': 'Ask by voice or type. Open a saved diagram on your phone or desktop so Kitty stays in sync with MindGraph.',
-  'mobile.kittyNeedsDesktopOwner': 'Open this diagram on desktop MindGraph to apply edits. Phone Kitty can still chat until the canvas is connected.',
+  'mobile.kittyWelcomeSub':
+    'Ask by voice or type. Open a saved diagram on your phone or desktop so Kitty stays in sync with MindGraph.',
+  'mobile.kittyNeedsDesktopOwner':
+    'Open this diagram on desktop MindGraph to apply edits. Phone Kitty can still chat until the canvas is connected.',
   'mobile.kittyConnecting': 'Connecting…',
   'mobile.kittyInputPlaceholder': 'Type a message…',
   'mobile.kittySend': 'Send',
@@ -188,8 +196,10 @@ export default {
   'mobile.kittyDiagramUpdated': 'Diagram updated',
   'mobile.kittyConnectFailed': 'Connection failed. Check your network and try again.',
   'mobile.kittyDisconnected': 'Voice connection lost. Reconnecting…',
-  'mobile.kittyEnableServerHint': 'Enable FEATURE_KITTY_AGENT=True in server .env and restart the API.',
-  'mobile.kittyServerDisabledBanner': 'Kitty voice is disabled in this environment. Enable FEATURE_KITTY_AGENT in server .env and restart.',
+  'mobile.kittyEnableServerHint':
+    'Enable FEATURE_KITTY_AGENT=True in server .env and restart the API.',
+  'mobile.kittyServerDisabledBanner':
+    'Kitty voice is disabled in this environment. Enable FEATURE_KITTY_AGENT in server .env and restart.',
   'mobile.kittyDiagramPickerTitle': 'Choose diagram',
   'mobile.kittyDiagramPickerLoading': 'Loading…',
   'mobile.kittyDiagramPickerEmpty': 'No saved diagrams',
@@ -202,8 +212,10 @@ export default {
   'mobile.kittyNewMindmapDesktopFailed': 'Mind map saved, but desktop could not be notified.',
   'mobile.kittyDiagramPinned': 'Pinned',
   'mobile.kittyDiagramPickFailed': 'Could not load that diagram. Try again later.',
-  'mobile.kittyEphemeralScopePinned': 'Using a temporary session — choose or create a saved diagram to sync with desktop.',
-  'mobile.kittyEphemeralScopeDegraded': 'Desktop pairing may be out of sync. Open a saved diagram to reconnect.',
+  'mobile.kittyEphemeralScopePinned':
+    'Using a temporary session — choose or create a saved diagram to sync with desktop.',
+  'mobile.kittyEphemeralScopeDegraded':
+    'Desktop pairing may be out of sync. Open a saved diagram to reconnect.',
   'mobile.kittyDesktopJumpFailed': 'Diagram switched, but desktop could not be notified.',
   'mobile.kittyDiagramSelected': 'Diagram selected; desktop will open it.',
   'mobile.kittyCurrentDiagramLabel': 'Current diagram',
@@ -212,8 +224,10 @@ export default {
   'mobile.kittyHubSourceLive': 'Hub: live',
   'mobile.kittyHubSourceLibrary': 'Hub: library',
   'mobile.kittyHubSourceEmpty': 'Hub: empty',
-  'mobile.kittyMicPttTitle': 'Hold to speak; release to send. Hold Space when not typing in a field.',
-  'mobile.kittyMicPttAria': 'Hold to speak: press and hold the microphone to talk, release to send. Hold Space when not typing in the message field.',
+  'mobile.kittyMicPttTitle':
+    'Hold to speak; release to send. Hold Space when not typing in a field.',
+  'mobile.kittyMicPttAria':
+    'Hold to speak: press and hold the microphone to talk, release to send. Hold Space when not typing in the message field.',
   'mobile.kittyHoldToSpeak': 'Hold to speak',
   'mobile.kittyReleaseToSend': 'Release to send',
   'mobile.kittyListenManual': 'Hold to talk',
@@ -225,9 +239,12 @@ export default {
   'mobile.kittyThinking': 'Thinking',
   'mobile.kittyTapToListen': 'Tap to listen',
   'mobile.kittyTapToStopListen': 'Tap to stop',
-  'mobile.kittyMicInsecure': 'This page is not a secure connection (HTTPS). The microphone is off — use the keyboard.',
-  'mobile.kittyMicToggleTitle': 'Hold to speak; release to send. Hold Space when not typing in a field.',
-  'mobile.kittyMicToggleAria': 'Hold to speak: press and hold the microphone to talk, release to stop.',
+  'mobile.kittyMicInsecure':
+    'This page is not a secure connection (HTTPS). The microphone is off — use the keyboard.',
+  'mobile.kittyMicToggleTitle':
+    'Hold to speak; release to send. Hold Space when not typing in a field.',
+  'mobile.kittyMicToggleAria':
+    'Hold to speak: press and hold the microphone to talk, release to stop.',
   'mobile.kittyClickWheelAria': 'Swipe or tap to select a node',
   'mobile.kittyClickWheelHint': 'Swipe or tap chips: branch → children',
   'mobile.kittyClickWheelEmptyLabel': 'Untitled node',
@@ -237,18 +254,24 @@ export default {
   'mobile.kittyClickWheelNext': 'Next node',
   'mobile.kittyClickWheelSelect': 'Select current node',
   'mobile.kittyLlmRowAria': 'Choose AI model',
-  'mobile.kittyPhotoNeedsDiagram': 'Open or pick a saved diagram first, then take a photo to extract text.',
+  'mobile.kittyPhotoNeedsDiagram':
+    'Open or pick a saved diagram first, then take a photo to extract text.',
   'mobile.kittyPhotoInvalidType': 'Please choose a JPG, PNG, or WebP photo.',
   'mobile.kittyPhotoTooLarge': 'Photo is too large. Maximum size is 10MB.',
   'mobile.kittyPhotoProgressDetecting': 'Processing photo…',
   'mobile.kittyPhotoUserBubble': '📷 Photo',
   'mobile.kittyPhotoUntitledMap': 'Mind map',
-  'mobile.kittyPhotoHanddrawnReply': 'Detected a hand-drawn mind map “{topic}”. Rebuilt on canvas; outline saved to Document Summary.',
-  'mobile.kittyPhotoHanddrawnLocalReply': 'Detected a hand-drawn mind map “{topic}”. Rebuilt here; outline saved to Document Summary. Library sync did not complete — open the diagram again if the canvas looks stale.',
-  'mobile.kittyPhotoOcrReply': 'Extracted text from the photo:\n{excerpt}\n\nFull text is in Document Summary.',
+  'mobile.kittyPhotoHanddrawnReply':
+    'Detected a hand-drawn mind map “{topic}”. Rebuilt on canvas; outline saved to Document Summary.',
+  'mobile.kittyPhotoHanddrawnLocalReply':
+    'Detected a hand-drawn mind map “{topic}”. Rebuilt here; outline saved to Document Summary. Library sync did not complete — open the diagram again if the canvas looks stale.',
+  'mobile.kittyPhotoOcrReply':
+    'Extracted text from the photo:\n{excerpt}\n\nFull text is in Document Summary.',
   'mobile.kittyPhotoUploadFailed': 'Could not upload the photo.',
-  'mobile.kittyPickDiagramToEdit': 'Open or pick a saved diagram first, then hold to speak or type to edit it.',
-  'mobile.kittyHubSyncFailed': 'Could not sync the diagram to Kitty. Check your connection and try again.',
+  'mobile.kittyPickDiagramToEdit':
+    'Open or pick a saved diagram first, then hold to speak or type to edit it.',
+  'mobile.kittyHubSyncFailed':
+    'Could not sync the diagram to Kitty. Check your connection and try again.',
   'mobile.kittyDesktopDiagramFollowed': 'Switched to the diagram open on desktop',
   'mobile.kittyScopeDivergence': 'Desktop opened a different diagram. Choose how to sync:',
   'mobile.kittyScopeFollowDesktop': 'Follow desktop diagram',
@@ -257,6 +280,38 @@ export default {
   'mobile.kittyScopeKeepSplit': 'Keep phone and desktop on different diagrams',
   'meta.pageTitle.notFound': 'Page not found',
   'meta.pageTitle.privacy': 'Terms & Privacy',
+  'meta.pageTitle.browserPlugin': 'Browser plugin',
+  'browserPlugin.back': 'Back',
+  'browserPlugin.heroMark': 'Mind',
+  'browserPlugin.heroTitle': 'Browser plugin',
+  'browserPlugin.heroBody':
+    'Turn the page you are reading into a mind map, ask MindMate with that page as context, and save documents from teaching sites.',
+  'browserPlugin.downloadChrome': 'Chrome',
+  'browserPlugin.downloadEdge': 'Edge',
+  'browserPlugin.entryTitle': 'From one web page to a map, a chat, and a file',
+  'browserPlugin.entryBody': 'It lives in Chrome or Edge. Open a page, then open the extension.',
+  'browserPlugin.cardMapTitle': 'Mind map',
+  'browserPlugin.cardMapBody':
+    'Read the page or the text you selected, then download a PNG mind map.',
+  'browserPlugin.cardChatTitle': 'Ask with the page',
+  'browserPlugin.cardChatBody': 'The first message of a new chat can include the page you are on.',
+  'browserPlugin.cardDocTitle': 'Teaching documents',
+  'browserPlugin.cardDocBody':
+    'On CNKI, SmartEdu, Baidu Wenku, and similar sites, save the document on this computer.',
+  'browserPlugin.mapTitle': 'Turn a web page into an editable map',
+  'browserPlugin.mapBody':
+    'Start from the toolbar, the right-click menu, or a shortcut. If nothing is selected, the extension takes the article text.',
+  'browserPlugin.chatTitle': 'Ask about this page',
+  'browserPlugin.chatBody':
+    'Turn on include-current-page. On a SmartEdu lesson, text from the slides and the teaching plan is merged in.',
+  'browserPlugin.docTitle': 'Take the document from the site',
+  'browserPlugin.docBody':
+    'It recognizes CNKI reader pages, SmartEdu lessons, and library pages, then saves a PDF or the article text locally.',
+  'browserPlugin.downloadTitle': 'Download the browser plugin',
+  'browserPlugin.downloadLead': 'One package for Chrome and Edge.',
+  'browserPlugin.installHint':
+    'Unzip it, open the extensions page, turn on developer mode, and load the unpacked folder.',
+  'browserPlugin.downloadAction': 'Download',
   'meta.pageTitle.publicDashboard': 'MG National Data Center',
   'meta.pageTitle.schoolDashboard': 'School dashboard',
   'meta.pageTitle.smartResponse': 'Smart response',
@@ -284,7 +339,8 @@ export default {
   'publicDashboard.visualHigh': 'High',
   'publicDashboard.visualLow': 'Low',
   'settings.language.interface': 'Interface language',
-  'settings.language.matchPrompt': 'Keep AI assistant, interface and virtual keyboard language in sync',
+  'settings.language.matchPrompt':
+    'Keep AI assistant, interface and virtual keyboard language in sync',
   'settings.language.prompt': 'AI assistant language',
   'settings.language.promptSelectPlaceholder': 'Search languages…',
   'settings.language.supportsCount': 'Supports {n} languages',
@@ -301,34 +357,51 @@ export default {
   'settings.language.presenterLanguage': 'Presenter language',
   'settings.language.presenterLanguageHint': 'Smaller second line for the demonstrator to read.',
   'settings.language.primaryLanguage': 'Primary language',
-  'settings.language.primaryLanguageHint': 'Regular-size line for the audience; also the interface language.',
+  'settings.language.primaryLanguageHint':
+    'Regular-size line for the audience; also the interface language.',
   'settings.language.secondaryLanguage': 'Second language',
   'settings.language.secondaryLanguageHint': 'Smaller line for the demonstrator to read.',
+  'settings.tabs.account': 'Account',
+  'settings.tabs.security': 'Security',
+  'settings.tabs.language': 'Language',
+  'settings.tabs.plugins': 'Plugins',
+  'settings.tabs.aria': 'Settings sections',
   'settings.version.title': 'UI Version',
   'settings.version.chinese': 'Professional mode',
   'settings.version.international': 'Simplified mode',
-  'landing.international.subtitle': 'The Most Powerful AI Thinking Diagram Software in the Universe',
-  'landing.international.promptPlaceholder': 'Describe a topic and diagram type—e.g. “Use a flow map for density lab steps”…',
+  'landing.international.subtitle':
+    'The Most Powerful AI Thinking Diagram Software in the Universe',
+  'landing.international.promptPlaceholder':
+    'Describe a topic and diagram type—e.g. “Use a flow map for density lab steps”…',
   'landing.international.examplesTitle': 'Inspiration',
   'landing.international.example1': 'Create a mind map about photosynthesis',
-  'landing.international.example2': 'Use a tree map to classify vertebrates: fish, amphibians, reptiles, mammals',
-  'landing.international.example3': 'Use a flow map for a density lab: measure mass, measure volume, calculate, record results',
-  'landing.international.example4': 'Use a double bubble map to compare plant cells and animal cells',
-  'landing.international.example5': 'Use a brace map to break down quadratic equations: standard form, discriminant, quadratic formula, graph and roots',
-  'landing.international.example6': 'Create a bubble map describing key ideas in Newton’s three laws of motion',
+  'landing.international.example2':
+    'Use a tree map to classify vertebrates: fish, amphibians, reptiles, mammals',
+  'landing.international.example3':
+    'Use a flow map for a density lab: measure mass, measure volume, calculate, record results',
+  'landing.international.example4':
+    'Use a double bubble map to compare plant cells and animal cells',
+  'landing.international.example5':
+    'Use a brace map to break down quadratic equations: standard form, discriminant, quadratic formula, graph and roots',
+  'landing.international.example6':
+    'Create a bubble map describing key ideas in Newton’s three laws of motion',
   'landing.international.phaseRequestSent': 'Request sent',
   'landing.international.phaseServerReceived': 'Server received your request',
   'landing.international.phaseGenerating': 'Generating your diagram…',
   'landing.international.phasePleaseWait': 'Please wait — AI is composing content',
-  'landing.international.generatingWithTopic': 'Topic: {topic}. Generating {diagramType} — please wait.',
+  'landing.international.generatingWithTopic':
+    'Topic: {topic}. Generating {diagramType} — please wait.',
   'landing.international.topicUnknown': 'your topic',
   'landing.international.diagramTypePending': 'diagram',
   'landing.international.errorRateLimit': 'Too many requests. Please wait a moment and try again.',
   'landing.international.errorTimeout': 'Generation timed out. Please try again.',
-  'landing.international.errorContentFilter': 'Content could not be processed. Please rephrase your prompt.',
-  'landing.international.errorValidation': 'Could not understand the prompt. Try adding a topic and diagram type.',
+  'landing.international.errorContentFilter':
+    'Content could not be processed. Please rephrase your prompt.',
+  'landing.international.errorValidation':
+    'Could not understand the prompt. Try adding a topic and diagram type.',
   'landing.international.errorGeneration': 'Diagram generation failed. Please try again.',
-  'landing.international.errorInternal': 'Something went wrong on our side. Please try again later.',
+  'landing.international.errorInternal':
+    'Something went wrong on our side. Please try again later.',
   'landing.international.errorStreamEmpty': 'Generation ended without a result. Please try again.',
   'landing.international.phaseCompleteNavigate': 'Diagram generated successfully — opening canvas…',
   'landing.international.sectionTitle': 'Eight Thinking Maps',
@@ -341,12 +414,17 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
+  'swissGlass.hero.userSettings.ribbon': 'Settings',
+  'swissGlass.hero.userSettings.title': 'Settings',
+  'swissGlass.hero.userSettings.line1': 'Manage your account, security, language, and plugins',
   'swissGlass.hero.localeHint.ribbon': 'Language',
   'swissGlass.hero.localeHint.title': 'Switch interface language?',
-  'swissGlass.hero.localeHint.line1': 'Your browser language was detected. Switch the app to match?',
+  'swissGlass.hero.localeHint.line1':
+    'Your browser language was detected. Switch the app to match?',
   'swissGlass.hero.shareExport.ribbon': 'Export',
   'swissGlass.hero.shareExport.title': 'Export conversation',
   'swissGlass.hero.shareExport.line1': 'Select messages and export them as an image',
+  'swissGlass.hero.shareExport.line1Preview': 'Preview and export as an image',
   'swissGlass.hero.imagePreview.ribbon': 'Preview',
   'swissGlass.hero.imagePreview.title': 'View image',
   'swissGlass.hero.imagePreview.line1': 'Browse the current image',
@@ -385,7 +463,7 @@ export default {
   'swissGlass.hero.shortcuts.line1': 'A quick list of common actions',
   'swissGlass.hero.contactProfile.ribbon': 'Workshop',
   'swissGlass.hero.contactProfile.title': 'Contact profile',
-  'swissGlass.hero.contactProfile.line1': 'See this person\'s organization details',
+  'swissGlass.hero.contactProfile.line1': "See this person's organization details",
   'swissGlass.hero.dingtalk.ribbon': 'Account',
   'swissGlass.hero.dingtalk.title': 'Bind DingTalk',
   'swissGlass.hero.dingtalk.line1': 'Pair DingTalk to this account with a rotating code',
@@ -513,13 +591,4 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'Concept map',
   'swissGlass.hero.focusQuestion.title': 'Focus question',
   'swissGlass.hero.focusQuestion.line1': 'Set the core question for this concept map',
-  'meta.pageTitle.learningSpace': 'Learning Space',
-  'settings.tabs.account': 'Account',
-  'settings.tabs.security': 'Security',
-  'settings.tabs.language': 'Language',
-  'settings.tabs.plugins': 'Plugins',
-  'settings.tabs.aria': 'Settings sections',
-  'swissGlass.hero.userSettings.ribbon': 'Settings',
-  'swissGlass.hero.userSettings.title': 'Settings',
-  'swissGlass.hero.userSettings.line1': 'Manage your account, security, language, and plugins',
 } as const

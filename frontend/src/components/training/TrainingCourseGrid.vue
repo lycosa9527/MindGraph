@@ -31,7 +31,7 @@ const emit = defineEmits<{
             class="training-course-card__cover"
             :src="course.cover_url"
             alt=""
-          >
+          />
         </div>
         <h3>{{ course.title }}</h3>
         <p>{{ course.description }}</p>

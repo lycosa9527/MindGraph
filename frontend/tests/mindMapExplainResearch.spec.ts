@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  RESEARCH_IMAGE_MAX,
   applyExplainResearchEvent,
   citedExplainIndexes,
   emptyExplainResearchState,
   lastThinkingLines,
-  RESEARCH_IMAGE_MAX,
   resolveExplainResearchPanelBox,
   resolveExplainResearchSide,
   splitExplainCitationParts,

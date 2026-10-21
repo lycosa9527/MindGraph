@@ -23,7 +23,6 @@ from services.features.mindmate_collab.redis_keys import (
     registry_org_key,
     session_meta_key,
 )
-from services.online_collab.lifecycle.online_collab_expiry import is_online_collab_expired
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
 )
@@ -141,8 +140,7 @@ async def list_org_sessions_sql(user_id: int, org_id: int) -> List[Dict[str, Any
 
     sessions: List[Dict[str, Any]] = []
     for session, owner_name, owner_phone, owner_email in rows:
-        if session.expires_at and is_online_collab_expired(session.expires_at):
-            continue
+        # Duration presets are advisory; live rooms stay listed until host End.
         display = owner_name or owner_phone or owner_email or str(session.owner_user_id)
         sessions.append(
             _session_dict(
@@ -158,18 +156,15 @@ async def list_org_sessions_sql(user_id: int, org_id: int) -> List[Dict[str, Any
     return sessions
 
 
-def _redis_row_from_meta(code: str, meta: Dict[str, str], now: int) -> Optional[Dict[str, Any]]:
+def _redis_row_from_meta(
+    code: str,
+    meta: Dict[str, str],
+    _now: int,
+) -> Optional[Dict[str, Any]]:
     """Map Redis session HASH to a list row, or None when not joinable."""
     visibility = meta.get("visibility") or ONLINE_COLLAB_VISIBILITY_ORGANIZATION
     if visibility != ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
         return None
-    expires_raw = meta.get("expires_at") or ""
-    if expires_raw:
-        try:
-            if int(expires_raw) <= now:
-                return None
-        except (TypeError, ValueError):
-            pass
     owner_raw = meta.get("owner_id") or "0"
     try:
         owner_user_id = int(owner_raw)

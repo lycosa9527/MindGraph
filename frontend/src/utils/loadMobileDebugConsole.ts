@@ -92,11 +92,9 @@ function loadErudaScript(): Promise<void> {
         return
       }
       existing.addEventListener('load', () => resolve(), { once: true })
-      existing.addEventListener(
-        'error',
-        () => reject(new Error('Eruda script failed to load')),
-        { once: true }
-      )
+      existing.addEventListener('error', () => reject(new Error('Eruda script failed to load')), {
+        once: true,
+      })
     })
   }
   return new Promise((resolve, reject) => {
@@ -134,9 +132,7 @@ export async function loadMobileDebugConsole(): Promise<void> {
     const safeTop = 56
     const safeLeft = 12
     window.eruda.position({ x: safeLeft, y: safeTop })
-    console.info(
-      '[MG] Eruda ready (entry top-left) — tap it for Console. Disable: ?eruda=0'
-    )
+    console.info('[MG] Eruda ready (entry top-left) — tap it for Console. Disable: ?eruda=0')
   } catch (err) {
     loadStarted = false
     console.warn('[MG] Failed to load Eruda:', err)

@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Matt öyrənmə üsulu',
-  'maite.subtitle': 'Əks parçalama · Dörd mərhələli diaqnostika · Hədəfli düzəliş · Variant transferi',
+  'maite.subtitle':
+    'Əks parçalama · Dörd mərhələli diaqnostika · Hədəfli düzəliş · Variant transferi',
   'maite.mode.demo': 'Demo',
   'maite.mode.inquiry': 'Sorğu',
   'maite.mode.map': 'Xəritə',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Variant məşqi',
   'maite.inquiry.complete': 'Sessiyanı tamamla',
   'maite.inquiry.completedTitle': 'Sorğu tamamlandı',
-  'maite.inquiry.completedMessage': 'Bu sorğu sessiyası tamamlandı. Aşağıdakı öyrənmə hesabatına baxın.',
+  'maite.inquiry.completedMessage':
+    'Bu sorğu sessiyası tamamlandı. Aşağıdakı öyrənmə hesabatına baxın.',
   'maite.diagnosis.thinkingPlaceholder': 'Düşüncənizi təsvir edin (ixtiyari)…',
   'maite.diagnosis.runAuto': 'Avtomatik diaqnostika',
   'maite.diagnosis.running': 'Diaqnostika aparılır…',
@@ -58,7 +60,8 @@ export default {
   'maite.variant.answerPlaceholder': 'Tam cavabınızı yazın…',
   'maite.variant.strategyPlaceholder': 'Metodun necə uyğunlaşdığını izah edin…',
   'maite.variant.submit': 'Cavabı təqdim et',
-  'maite.variant.completeHint': 'Sessiyanı tamamlamazdan əvvəl ən azı 3 variant cavabı təqdim edin.',
+  'maite.variant.completeHint':
+    'Sessiyanı tamamlamazdan əvvəl ən azı 3 variant cavabı təqdim edin.',
   'maite.practice.title': 'Son məşqlər',
   'maite.practice.loading': 'Yüklənir…',
   'maite.practice.empty': 'Hələ məşq sessiyası yoxdur',

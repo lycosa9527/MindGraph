@@ -97,7 +97,9 @@ export function loadCanvasWorksheetTextOptions(): CanvasWorksheetTextOptions {
       showDate: readBoolean(parsed.showDate, defaults.showDate),
       showInstruction: readBoolean(parsed.showInstruction, defaults.showInstruction),
       instructionText:
-        typeof parsed.instructionText === 'string' ? parsed.instructionText : defaults.instructionText,
+        typeof parsed.instructionText === 'string'
+          ? parsed.instructionText
+          : defaults.instructionText,
       topicText: typeof parsed.topicText === 'string' ? parsed.topicText : defaults.topicText,
       diagramOffsetX: readOffset(parsed.diagramOffsetX, defaults.diagramOffsetX),
       diagramOffsetY: readOffset(parsed.diagramOffsetY, defaults.diagramOffsetY),

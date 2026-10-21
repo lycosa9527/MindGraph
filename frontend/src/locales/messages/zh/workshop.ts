@@ -233,7 +233,7 @@ export default {
   'workshop.personalMenu': '个人菜单',
   'workshop.preview': '预览',
   'workshop.previewEmpty': '没有可预览的内容',
-  'workshop.phase2RoadmapGroupsAlerts': '后续计划：{\'@\'}群组、关键词提醒、消息编辑历史策略。',
+  'workshop.phase2RoadmapGroupsAlerts': "后续计划：{'@'}群组、关键词提醒、消息编辑历史策略。",
   'workshop.phase2RoadmapMovePreview': '后续计划：单条消息移动、链接预览、更丰富的跨频道动态。',
   'workshop.phase2RoadmapPlatform': '平台待办：增量同步、移动推送、邮件摘要、机器人与 Webhook。',
   'workshop.pickColleagueToInvite': '请选择要邀请的同事。',
@@ -355,7 +355,7 @@ export default {
     '课例一般挂在某个课题组下，围绕具体一节课做磨课、观课与反思；可带进度状态，也可关联思维图示。',
   'workshop.welcomeLessonStudyTitle': '课例研究',
   'workshop.welcomeMessagesBody':
-    '消息是会话或频道时间线里的单条发言；回复、{\'@\'}同事、附件等都体现在消息上。',
+    "消息是会话或频道时间线里的单条发言；回复、{'@'}同事、附件等都体现在消息上。",
   'workshop.welcomeMessagesTitle': '消息',
   'workshop.welcomeSubtitle': '在 MindGraph 上与校内同事协作',
   'workshop.welcomeTitle': '欢迎使用研习社',

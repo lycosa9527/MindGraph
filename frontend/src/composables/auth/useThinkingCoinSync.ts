@@ -22,7 +22,9 @@ export function patchEarnTasksFromMutation(
   })
 }
 
-export function applyThinkingCoinMutation(payload: ThinkingCoinMutationPayload | null | undefined): void {
+export function applyThinkingCoinMutation(
+  payload: ThinkingCoinMutationPayload | null | undefined
+): void {
   if (!payload?.eligible) {
     return
   }

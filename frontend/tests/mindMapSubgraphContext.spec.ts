@@ -6,6 +6,7 @@ import {
   formatMindMapSubgraphPrompt,
   isMindMapSubgraphExpandable,
 } from '@/utils/mindMapSubgraphContext'
+import { must } from '@/utils/must'
 
 function node(id: string, text: string): DiagramNode {
   return { id, text, type: 'branch', position: { x: 0, y: 0 } }
@@ -107,7 +108,7 @@ describe('collectMindMapSubgraphContext', () => {
 
     const ctx = collectMindMapSubgraphContext(nodes, connections, 'branch-r-1-0')
     expect(ctx).not.toBeNull()
-    const prompt = formatMindMapSubgraphPrompt(ctx!, 'zh')
+    const prompt = formatMindMapSubgraphPrompt(must(ctx), 'zh')
     expect(prompt).toContain('中心主题：Photosynthesis')
     expect(prompt).toContain('要扩展的分支：Light')
     expect(prompt).toContain('图中其他分支（参考）：Calvin cycle')
@@ -126,7 +127,7 @@ describe('collectMindMapSubgraphContext', () => {
       link('branch-r-1-0', 'branch-r-2-0'),
     ]
     const ctx = collectMindMapSubgraphContext(nodes, connections, 'branch-r-2-0')
-    const prompt = formatMindMapSubgraphPrompt(ctx!, 'zh')
+    const prompt = formatMindMapSubgraphPrompt(must(ctx), 'zh')
     expect(prompt).toContain('上级分支：Ancient')
     expect(prompt).toContain('直接下级节点')
   })

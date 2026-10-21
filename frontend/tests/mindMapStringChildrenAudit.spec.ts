@@ -2,17 +2,18 @@
  * Production-shaped mind map: Doubao returned a nested child as a bare string
  * (``光场重建与相位编码``) and hydrate crashed assigning ``uid``.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
+import { readMindMapNodeUid, rebindMindMapBranchUidsForPaste } from '@/utils/mindMapNodeUid'
 import {
   extractBranchesFromGeneratedSpec,
   normalizeGeneratedBranch,
 } from '@/utils/mindMapSubgraphMerge'
-import { readMindMapNodeUid, rebindMindMapBranchUidsForPaste } from '@/utils/mindMapNodeUid'
 
 /** Six-branch holography map matching the logged autocomplete topic. */
 const HOLOGRAPHY_DOUBAO_SPEC = {
@@ -136,7 +137,9 @@ describe('mind-map string-child audit (holography)', () => {
 
   it('loads the Doubao-shaped holography spec without throwing', () => {
     const loaded = loadMindMapSpec(HOLOGRAPHY_DOUBAO_SPEC)
-    const branchTexts = loaded.nodes.filter((node) => node.type === 'branch').map((node) => node.text)
+    const branchTexts = loaded.nodes
+      .filter((node) => node.type === 'branch')
+      .map((node) => node.text)
     expect(branchTexts).toEqual(expect.arrayContaining(EXPECTED_LABELS))
     expect(branchTexts).toHaveLength(EXPECTED_LABELS.length)
 
@@ -162,7 +165,9 @@ describe('mind-map string-child audit (holography)', () => {
     const holography = reloaded.nodes.find((node) => node.text === '光场重建与相位编码')
     expect(holography).toBeTruthy()
     expect(readMindMapNodeUid(holography)).toBe(holography?.id)
-    expect(reloaded.nodes.filter((node) => node.type === 'branch')).toHaveLength(EXPECTED_LABELS.length)
+    expect(reloaded.nodes.filter((node) => node.type === 'branch')).toHaveLength(
+      EXPECTED_LABELS.length
+    )
   })
 
   it('keeps string children on subgraph extract and paste rebind', () => {
@@ -173,9 +178,7 @@ describe('mind-map string-child audit (holography)', () => {
       expect.arrayContaining(['光场重建与相位编码', '干涉记录', '衍射再现'])
     )
 
-    const mixed = [
-      { text: '光学原理', children: ['光场重建与相位编码'] },
-    ]
+    const mixed = [{ text: '光学原理', children: ['光场重建与相位编码'] }]
     rebindMindMapBranchUidsForPaste(mixed, new Set())
     expect(mixed[0].children?.[0].text).toBe('光场重建与相位编码')
     expect(mixed[0].children?.[0].uid).toBeTruthy()

@@ -44,7 +44,8 @@ export default {
   'maite.inquiry.variantTitle': 'Variantoefening',
   'maite.inquiry.complete': 'Sessie voltooien',
   'maite.inquiry.completedTitle': 'Onderzoek voltooid',
-  'maite.inquiry.completedMessage': 'Deze onderzoekssessie is voltooid. Bekijk het leer rapport hieronder.',
+  'maite.inquiry.completedMessage':
+    'Deze onderzoekssessie is voltooid. Bekijk het leer rapport hieronder.',
   'maite.diagnosis.thinkingPlaceholder': 'Beschrijf je denkproces (optioneel)…',
   'maite.diagnosis.runAuto': 'Automatisch diagnosticeren',
   'maite.diagnosis.running': 'Diagnosticeren…',
@@ -58,7 +59,8 @@ export default {
   'maite.variant.answerPlaceholder': 'Schrijf je volledige antwoord…',
   'maite.variant.strategyPlaceholder': 'Leg uit hoe de methode wordt aangepast…',
   'maite.variant.submit': 'Antwoord indienen',
-  'maite.variant.completeHint': 'Dien minstens 3 variantantwoorden in voordat je de sessie voltooit.',
+  'maite.variant.completeHint':
+    'Dien minstens 3 variantantwoorden in voordat je de sessie voltooit.',
   'maite.practice.title': 'Recente oefening',
   'maite.practice.loading': 'Laden…',
   'maite.practice.empty': 'Nog geen oefensessies',

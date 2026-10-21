@@ -33,7 +33,8 @@ export default {
   'collab.previousSessionsStopped': '終了しました您在其它図上的 {n} 场协同会話。',
   'collab.saveFailed': '保存に失敗しました',
   'collab.scanToJoin': 'スキャン to join',
-  'collab.schoolDescActive': '学校 collaboration is on. Colleagues: use Collaborate → 学校 on the MindGraph home page and pick this diagram — no code 必須.',
+  'collab.schoolDescActive':
+    '学校 collaboration is on. Colleagues: use Collaborate → 学校 on the MindGraph home page and pick this diagram — no code 必須.',
   'collab.schoolStarted': '学校 collaboration is on — colleagues can join from Collaborate → 学校.',
   'collab.sectionNetwork': '合計同コラボ（招待コード）',
   'collab.sectionSchool': '校内コラボ',
@@ -52,18 +53,25 @@ export default {
   'workshop.announceChannels': 'お知らせチャンネル',
   'workshop.announceReadOnlyHint': 'Only administrators can post in this announcements channel。',
   'workshop.archiveLessonStudy': '授業事例をアーカイブ',
-  'workshop.archiveLessonStudyConfirm': 'アーカイブしてよろしいですか此授業事例？メンバー将不再在一覧中看到该授業事例。',
+  'workshop.archiveLessonStudyConfirm':
+    'アーカイブしてよろしいですか此授業事例？メンバー将不再在一覧中看到该授業事例。',
   'workshop.archiveTeachingGroup': '归档教研グループ',
-  'workshop.archiveTeachingGroupConfirm': 'アーカイブしてよろしいですか此教研グループ？归档后将不再出现在教研グループ一覧中。',
+  'workshop.archiveTeachingGroupConfirm':
+    'アーカイブしてよろしいですか此教研グループ？归档后将不再出现在教研グループ一覧中。',
   'workshop.archiveAnnounceChannel': 'アーカイブアナウンスチャンネル',
-  'workshop.archiveAnnounceChannelConfirm': 'このアナウンス チャンネルをアーカイブしてもよろしいですか?サイドバーは表示されなくなりますが、メッセージは残ります。',
+  'workshop.archiveAnnounceChannelConfirm':
+    'このアナウンス チャンネルをアーカイブしてもよろしいですか?サイドバーは表示されなくなりますが、メッセージは残ります。',
   'workshop.deleteTeachingGroup': '教育研究グループを削除する',
-  'workshop.deleteTeachingGroupConfirm': 'この教育研究グループ、そのレッスンとメッセージを完全に削除してもよろしいですか?この操作は元に戻すことができません。',
+  'workshop.deleteTeachingGroupConfirm':
+    'この教育研究グループ、そのレッスンとメッセージを完全に削除してもよろしいですか?この操作は元に戻すことができません。',
   'workshop.deleteAnnounceChannel': 'アナウンスチャンネルの削除',
-  'workshop.deleteAnnounceChannelConfirm': 'このアナウンス チャネルとそのメッセージを完全に削除してもよろしいですか?この操作は元に戻すことができません。',
+  'workshop.deleteAnnounceChannelConfirm':
+    'このアナウンス チャネルとそのメッセージを完全に削除してもよろしいですか?この操作は元に戻すことができません。',
   'workshop.deleteLessonStudy': 'レッスンを削除する',
-  'workshop.deleteLessonStudyConfirm': 'このレッスンとそのメッセージを完全に削除してもよろしいですか?この操作は元に戻すことができません。',
-  'workshop.manageNeedAdmin': '教育グループと研究グループを追加できるのは学校管理者のみです。 管理者またはグループの作成者が削除できます。',
+  'workshop.deleteLessonStudyConfirm':
+    'このレッスンとそのメッセージを完全に削除してもよろしいですか?この操作は元に戻すことができません。',
+  'workshop.manageNeedAdmin':
+    '教育グループと研究グループを追加できるのは学校管理者のみです。 管理者またはグループの作成者が削除できます。',
   'workshop.math': '式',
   'workshop.backToConversations': '← 会話',
   'workshop.bold': '粗体',
@@ -155,7 +163,8 @@ export default {
   'workshop.gearMenu': 'オプション',
   'workshop.generalChat': '総合ディスカッション',
   'workshop.inbox': '受信トレイ',
-  'workshop.inboxHintPickChannel': 'Open a channel or a direct message in the sidebar to read and reply. You can return here anytime from 閲覧数 → 受信トレイ.',
+  'workshop.inboxHintPickChannel':
+    'Open a channel or a direct message in the sidebar to read and reply. You can return here anytime from 閲覧数 → 受信トレイ.',
   'workshop.inboxSummaryTitle': '你的受信トレイ',
   'workshop.inboxUnreadChannels': 'チャンネル内未读',
   'workshop.inboxUnreadDms': 'ダイレクトメッセージ未读',
@@ -181,7 +190,8 @@ export default {
   'workshop.loadMore': '読み込みもっと見る',
   'workshop.mainChannelStream': '主チャンネル',
   'workshop.manageTeachingGroups': '管理教研グループ',
-  'workshop.manageTeachingGroupsBlurb': '追加 or remove groups, set public or private, edit names and descriptions, reorder the list, duplicate a group as a template, and invite colleagues. Use Advanced for posting rules and notification defaults. Archiving removes a group for everyone.',
+  'workshop.manageTeachingGroupsBlurb':
+    '追加 or remove groups, set public or private, edit names and descriptions, reorder the list, duplicate a group as a template, and invite colleagues. Use Advanced for posting rules and notification defaults. Archiving removes a group for everyone.',
   'workshop.manageUser': '管理此ユーザー',
   'workshop.markAllReadChannel': '将すべてメッセージ标为已读',
   'workshop.markAsRead': '既読にする',
@@ -220,18 +230,22 @@ export default {
   'workshop.noTopicsYet': 'まだありませんトピック',
   'workshop.numberedList': '順序付きリスト',
   'workshop.notifications': '通知',
-  'workshop.notificationsSettingsBlurb': 'Browser notifications for mentions and new messages use your system settings. You can also tune desktop and email alerts per channel in channel settings。',
+  'workshop.notificationsSettingsBlurb':
+    'Browser notifications for mentions and new messages use your system settings. You can also tune desktop and email alerts per channel in channel settings。',
   'workshop.offline': 'オフライン',
   'workshop.online': 'オンライン',
   'workshop.openMainChannelStream': '主チャンネル',
   'workshop.others': '其他ユーザー',
   'workshop.permissions': '権限',
+  'workshop.personalMenu': '個人メニュー',
   'workshop.preview': 'プレビュー',
   'workshop.previewEmpty': 'プレビューするコンテンツがありません',
-  'workshop.personalMenu': '個人メニュー',
-  'workshop.phase2RoadmapGroupsAlerts': 'Coming later: {\'@\'}group mentions, alert words, and message edit history policy。',
-  'workshop.phase2RoadmapMovePreview': 'Coming later: move single message, URL link previews, and richer cross-channel activity。',
-  'workshop.phase2RoadmapPlatform': 'プラットフォーム予定：差分同期、モバイルプッシュ、メールダイジェスト、ボット/Webhook。',
+  'workshop.phase2RoadmapGroupsAlerts':
+    "Coming later: {'@'}group mentions, alert words, and message edit history policy。",
+  'workshop.phase2RoadmapMovePreview':
+    'Coming later: move single message, URL link previews, and richer cross-channel activity。',
+  'workshop.phase2RoadmapPlatform':
+    'プラットフォーム予定：差分同期、モバイルプッシュ、メールダイジェスト、ボット/Webhook。',
   'workshop.pickColleagueToInvite': '選択してください要邀请的同事。',
   'workshop.pinChannel': '置顶チャンネル',
   'workshop.policyEveryone': 'みんな',
@@ -239,7 +253,8 @@ export default {
   'workshop.policyMembersOnly': '仅メンバー',
   'workshop.postingPolicy': '投稿権限',
   'workshop.preferences': '設定',
-  'workshop.preferencesSettingsBlurb': 'Language and display preferences apply across the app. More Workshop chat options will appear here over time。',
+  'workshop.preferencesSettingsBlurb':
+    'Language and display preferences apply across the app. More Workshop chat options will appear here over time。',
   'workshop.presenceActive': 'オンライン',
   'workshop.presenceIdle': '離れる',
   'workshop.presenceOffline': 'オフライン',
@@ -248,7 +263,8 @@ export default {
   'workshop.publicChannels': '公開チャンネル',
   'workshop.quote': '引用',
   'workshop.quoteMessage': '引用メッセージ',
-  'workshop.readOnlyProfileBlurb': '同事的档案以简化视图表示。管理者可使用「管理ユーザー」開く后台ユーザー一覧。',
+  'workshop.readOnlyProfileBlurb':
+    '同事的档案以简化视图表示。管理者可使用「管理ユーザー」開く后台ユーザー一覧。',
   'workshop.recentDmActivity': '最近ダイレクトメッセージ',
   'workshop.recentTopics': '最近トピック',
   'workshop.renameTopic': '重命名トピック',
@@ -259,7 +275,8 @@ export default {
   'workshop.roleOwner': '所有者',
   'workshop.searchMembers': '検索メンバー...',
   'workshop.searchMessages': '検索メッセージ...',
-  'workshop.selectChannelForSettings': '選択 a teaching group or lesson study first, then open settings here.',
+  'workshop.selectChannelForSettings':
+    '選択 a teaching group or lesson study first, then open settings here.',
   'workshop.selectConversation': '選択 a conversation',
   'workshop.selectParentGroup': '所属教研グループ',
   'workshop.selectTopic': '選択 conversation',
@@ -285,7 +302,8 @@ export default {
   'workshop.strikethrough': '取り消し線',
   'workshop.table': 'シート',
   'workshop.switchSchool': 'Switch 学校',
-  'workshop.teachingGroupLandingHint': 'Lesson studies and conversations in this teaching group. Pick a row to open the channel or a thread。',
+  'workshop.teachingGroupLandingHint':
+    'Lesson studies and conversations in this teaching group. Pick a row to open the channel or a thread。',
   'workshop.teachingGroupMembers': 'メンバー',
   'workshop.teachingGroupNameRequired': '入力してください教研グループ名前。',
   'workshop.teachingGroupNoLessons': 'いいえ lesson studies in this group yet.',
@@ -316,11 +334,14 @@ export default {
   'workshop.viewProfile': '查看プロフィール',
   'workshop.viewingSchool': '現在閲覧中: {0}',
   'workshop.views': '视图',
-  'workshop.welcomeChannelsBody': 'A “channel” here often corresponds to a teaching research group (教研组) or PLC: one shared space per team (e.g. Math PLC, English PLC). It defines who takes part and how space is grouped。',
+  'workshop.welcomeChannelsBody':
+    'A “channel” here often corresponds to a teaching research group (教研组) or PLC: one shared space per team (e.g. Math PLC, English PLC). It defines who takes part and how space is grouped。',
   'workshop.welcomeChannelsTitle': '研究グループ・教育研究グループ',
-  'workshop.welcomeConversationsBody': 'Inside a lesson study you open titled conversations—for example instructional design, reflection, or follow-up tasks—so threads stay easy to follow。',
+  'workshop.welcomeConversationsBody':
+    'Inside a lesson study you open titled conversations—for example instructional design, reflection, or follow-up tasks—so threads stay easy to follow。',
   'workshop.welcomeConversationsTitle': '会話（トピック）',
-  'workshop.welcomeExampleCaption': 'Illustrative example (fictional school) — Math PLC and English PLC, each with lesson studies and sample conversations。',
+  'workshop.welcomeExampleCaption':
+    'Illustrative example (fictional school) — Math PLC and English PLC, each with lesson studies and sample conversations。',
   'workshop.welcomeExampleConvLabel': '会話',
   'workshop.welcomeExampleGroupEnglish': '英語科目グループ',
   'workshop.welcomeExampleGroupMath': '数学研究グループ',
@@ -339,38 +360,52 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'メッセージ live inside each conversation',
   'workshop.welcomeExampleOrg': '晨曦中学校',
   'workshop.welcomeHowTitle': '概念と階層の関係',
-  'workshop.welcomeIntro': 'Workshop is your school’s space for structured discussion: share announcements, run lesson studies, and keep conversations organized alongside your teaching work。',
-  'workshop.welcomeLessonStudyBody': '授業事例は通常ある研究グループの下に置き、特定の1授業の磨き込み・観察・振り返りを行います。進捗ステータスや思考図の関連付けも可能です。',
+  'workshop.welcomeIntro':
+    'Workshop is your school’s space for structured discussion: share announcements, run lesson studies, and keep conversations organized alongside your teaching work。',
+  'workshop.welcomeLessonStudyBody':
+    '授業事例は通常ある研究グループの下に置き、特定の1授業の磨き込み・観察・振り返りを行います。進捗ステータスや思考図の関連付けも可能です。',
   'workshop.welcomeLessonStudyTitle': '授業事例研究',
-  'workshop.welcomeMessagesBody': 'メッセージ are the individual posts in the main channel stream or inside a conversation. Replies, mentions, and files all ride on messages.',
+  'workshop.welcomeMessagesBody':
+    'メッセージ are the individual posts in the main channel stream or inside a conversation. Replies, mentions, and files all ride on messages.',
   'workshop.welcomeMessagesTitle': 'メッセージ',
   'workshop.welcomeSubtitle': 'MindGraph で校内の同僚と協働',
   'workshop.welcomeTitle': '研究クラブへようこそ',
   'workshop.you': '（你）',
   'workshop.youAnd': '你和',
   'workshopCanvas.connectFailed': '连接オンラインコラボレーション失敗',
-  'workshopCanvas.sessionExpiredReconnect': '您的会話已过期，ページを更新してくださいページ面重新加入协作。',
-  'workshopCanvas.sessionRefreshFailed': '更新できませんでした your collaboration session. Please save your work and sign in again.',
-  'workshopCanvas.outboundQueueDegraded': '共同編集 is falling behind. Some unsent edits could not be kept.',
+  'workshopCanvas.sessionExpiredReconnect':
+    '您的会話已过期，ページを更新してくださいページ面重新加入协作。',
+  'workshopCanvas.sessionRefreshFailed':
+    '更新できませんでした your collaboration session. Please save your work and sign in again.',
+  'workshopCanvas.outboundQueueDegraded':
+    '共同編集 is falling behind. Some unsent edits could not be kept.',
   'workshopCanvas.connectionClosed': '接続が閉じられました',
-  'workshopCanvas.connectionClosedSlow': '接続が切断されました：ネットワーク速度が遅く、コラボセッションに追いつけません。',
+  'workshopCanvas.connectionClosedSlow':
+    '接続が切断されました：ネットワーク速度が遅く、コラボセッションに追いつけません。',
   'workshopCanvas.sessionEndedByHost': '主持人終了しましたオンラインコラボレーション。',
   'workshopCanvas.editingNodeLabel': '{username} が編集中…',
   'workshopCanvas.collabEditorDisplayNameFallback': '他の協力者',
   'workshopCanvas.connectionClosedReason': '共同編集 connection closed: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} がこのノードを編集中',
   'workshopCanvas.errorGeneric': 'オンラインコラボレーションエラー',
-  'workshopCanvas.updatePartialFiltered': 'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes。',
-  'workshopCanvas.reconnectFailed': 'オンラインコラボレーション重连失敗，ページを更新してくださいページ面重试',
-  'workshopCanvas.resyncWaiting': 'Live diagram sync is taking longer than expected. 再試行ing; you can refresh if editing feels stuck.',
-  'workshopCanvas.returnedHomeIdle': 'Returned home — you were disconnected after a long idle period。',
+  'workshopCanvas.updatePartialFiltered':
+    'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes。',
+  'workshopCanvas.reconnectFailed':
+    'オンラインコラボレーション重连失敗，ページを更新してくださいページ面重试',
+  'workshopCanvas.resyncWaiting':
+    'Live diagram sync is taking longer than expected. 再試行ing; you can refresh if editing feels stuck.',
+  'workshopCanvas.returnedHomeIdle':
+    'Returned home — you were disconnected after a long idle period。',
   'workshopCanvas.userJoined': 'ユーザー {username} 已加入',
   'workshopCanvas.usersJoined': '{count} 位ユーザー已加入',
   'workshopCanvas.userLeft': 'ユーザー {username} 已離席中',
   'workshopCanvas.usersLeft': '{count} 位ユーザー已離席中',
   'workshopCanvas.wsError': '共同編集 connection error, please check your network',
-  'workshopCanvas.returnedHomeRoomIdle': '共同編集 ended: no diagram edits in this session for a while.',
-  'workshopCanvas.roomIdleWarningToast': 'しばらく図の共同編集がありません — カウントダウン終了までに誰も編集しない場合、コラボは自動終了します。',
-  'workshopCanvas.otherTabCollaborationActive': '该账号在另一タグページ或窗口中继续オンラインコラボレーション。',
+  'workshopCanvas.returnedHomeRoomIdle':
+    '共同編集 ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'しばらく図の共同編集がありません — カウントダウン終了までに誰も編集しない場合、コラボは自動終了します。',
+  'workshopCanvas.otherTabCollaborationActive':
+    '该账号在另一タグページ或窗口中继续オンラインコラボレーション。',
   'workshopCanvas.joinQrAlt': 'コラボ参加用 QR コード',
 } as const

@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Metode pembelajaran Matt',
-  'maite.subtitle': 'Dekomposisi terbalik · Diagnosis empat tahap · Remediasi terarah · Transfer varian',
+  'maite.subtitle':
+    'Dekomposisi terbalik · Diagnosis empat tahap · Remediasi terarah · Transfer varian',
   'maite.mode.demo': 'Demo',
   'maite.mode.inquiry': 'Penyelidikan',
   'maite.mode.map': 'Peta',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Latihan varian',
   'maite.inquiry.complete': 'Selesaikan sesi',
   'maite.inquiry.completedTitle': 'Inquiry selesai',
-  'maite.inquiry.completedMessage': 'Sesi inquiry ini selesai. Lihat laporan pembelajaran di bawah.',
+  'maite.inquiry.completedMessage':
+    'Sesi inquiry ini selesai. Lihat laporan pembelajaran di bawah.',
   'maite.diagnosis.thinkingPlaceholder': 'Jelaskan pemikiran Anda (opsional)…',
   'maite.diagnosis.runAuto': 'Diagnosis otomatis',
   'maite.diagnosis.running': 'Mendiagnosis…',
@@ -98,7 +100,8 @@ export default {
   'maite.toast.ocr_success': 'Teks soal diekstrak dari gambar.',
   'maite.toast.decompose_started': 'Memulai dekomposisi mentor…',
   'maite.toast.decompose_complete': 'Dekomposisi selesai.',
-  'maite.toast.decompose_fallback': 'Stream langsung terhenti; menyelesaikan dengan respons lengkap…',
+  'maite.toast.decompose_fallback':
+    'Stream langsung terhenti; menyelesaikan dengan respons lengkap…',
   'maite.toast.practice_saved': 'Disimpan ke latihan terbaru.',
   'maite.toast.session_created': 'Sesi inquiry dibuat.',
   'maite.toast.session_completed': 'Sesi inquiry selesai.',

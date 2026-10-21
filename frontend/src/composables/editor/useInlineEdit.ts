@@ -9,8 +9,9 @@
  */
 import { nextTick, ref, watch } from 'vue'
 
-import { eventBus } from '../core/useEventBus'
 import { resolveInlineNodeTextForSave } from '@/utils/nodeEditableText'
+
+import { eventBus } from '../core/useEventBus'
 
 export interface InlineEditOptions {
   /** Initial text value */

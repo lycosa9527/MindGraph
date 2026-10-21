@@ -3,6 +3,7 @@
    Composer width fills the stage (capped at 48rem). */
 
 .mindmate-stage {
+  position: relative;
   flex: 1 1 0;
   min-height: 0;
   min-width: 0;
@@ -11,12 +12,28 @@
   overflow: hidden;
 }
 
+.mm-file-drop {
+  position: absolute;
+  inset: 12px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #c4b5fd;
+  border-radius: 16px;
+  background: rgba(245, 243, 255, 0.92);
+  color: #5b21b6;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
 .mindmate-stage--welcome {
-  --mm-avatar: clamp(64px, 12vh, 128px);
-  --mm-gap-welcome: clamp(8px, 2.2vh, 24px);
-  --mm-gap-suggest: clamp(6px, 1.8vh, 20px);
-  --mm-title: clamp(1.125rem, 2.4vh, 1.5rem);
-  --mm-subtitle: clamp(0.875rem, 2vh, 1.125rem);
+  --mm-avatar: 96px;
+  --mm-gap-welcome: clamp(16px, 2.8vh, 32px);
+  --mm-gap-suggest: clamp(10px, 2vh, 22px);
+  --mm-title: 1.75rem;
+  --mm-subtitle: 1.75rem;
   --mm-suggest-max-h: clamp(168px, 26vh, 220px);
   /* Fill the stage up to 48rem. A 40% container token was too narrow on tablets. */
   --mm-composer-max: min(48rem, 100%);
@@ -29,11 +46,11 @@
 
 @supports (height: 1dvh) {
   .mindmate-stage--welcome {
-    --mm-avatar: clamp(64px, 12dvh, 128px);
-    --mm-gap-welcome: clamp(8px, 2.2dvh, 24px);
-    --mm-gap-suggest: clamp(6px, 1.8dvh, 20px);
-    --mm-title: clamp(1.125rem, 2.4dvh, 1.5rem);
-    --mm-subtitle: clamp(0.875rem, 2dvh, 1.125rem);
+    --mm-avatar: 96px;
+    --mm-gap-welcome: clamp(16px, 2.8dvh, 32px);
+    --mm-gap-suggest: clamp(10px, 2dvh, 22px);
+    --mm-title: 1.75rem;
+    --mm-subtitle: 1.75rem;
     --mm-suggest-max-h: clamp(168px, 26dvh, 220px);
   }
 }
@@ -44,15 +61,26 @@
   }
 }
 
-.mindmate-stage--welcome::before,
-.mindmate-stage--welcome::after {
-  content: '';
-  flex: 1 1 auto;
-  min-height: 0;
+.mindmate-stage--welcome {
+  justify-content: flex-start;
+  align-items: stretch;
+  background: #fff;
+  /* Sit in the upper-middle of the stage, not flush to the top. */
+  padding-top: clamp(48px, 12vh, 120px);
+}
+
+.mindmate-stage--seminar {
+  padding-top: clamp(12px, 2vh, 28px);
+}
+
+.dark .mindmate-stage--welcome {
+  background: transparent;
 }
 
 .mindmate-stage--welcome .messages-container,
 .mindmate-stage--welcome .mindmate-input-section {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
   height: auto;
   min-height: 0;
@@ -60,15 +88,33 @@
   width: 100%;
 }
 
+.mindmate-stage--welcome .messages-container {
+  flex-shrink: 0;
+}
+
+.mindmate-stage--welcome .mindmate-input-section {
+  flex-shrink: 0;
+  margin-top: 12px;
+}
+
 .mindmate-stage--welcome .messages-wrapper,
 .mindmate-stage--welcome .messages-wrapper--welcome {
   padding: 0 var(--mm-gutter);
 }
 
+.mindmate-stage--welcome .messages-wrapper--welcome {
+  padding: 0;
+}
+
 .mindmate-stage--welcome .welcome-fullpage {
   flex: 0 0 auto;
+  align-items: flex-start;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--mm-composer-max);
+  margin-inline: auto;
   min-height: 0;
-  padding: 0;
+  padding: 0 var(--mm-gutter);
   gap: var(--mm-gap-welcome);
 }
 
@@ -76,14 +122,26 @@
   margin-top: 0;
 }
 
-.mindmate-stage--welcome .welcome-fullpage .welcome-title {
+.mindmate-stage--welcome .welcome-fullpage .welcome-title,
+.mindmate-stage--welcome .welcome-fullpage .welcome-subtitle {
   font-size: var(--mm-title);
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
 .mindmate-stage--welcome .welcome-fullpage .welcome-subtitle {
-  font-size: var(--mm-subtitle);
-  line-height: 1.45;
+  font-weight: 400;
+}
+
+.mindmate-stage--welcome .welcome-fullpage .welcome-agent {
+  background-image: linear-gradient(90deg, #9333ea 0%, #6366f1 48%, #2563eb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.mindmate-stage--welcome .welcome-mode-row {
+  margin-bottom: 28px;
 }
 
 .mindmate-stage--welcome .mindmate-agent-avatar-ring {
@@ -96,25 +154,249 @@
   height: 100% !important;
 }
 
-.mindmate-stage--welcome .suggestions-above-input {
+.mindmate-stage--welcome .mm-seminar-brief-host {
   box-sizing: border-box;
-  margin-top: var(--mm-gap-suggest);
+  width: 100%;
   max-width: var(--mm-composer-max);
+  margin-inline: auto;
+  padding: 4px var(--mm-gutter) 32px;
+}
+
+.mindmate-stage--welcome .mm-seminar-compose {
+  display: flex;
+  flex-direction: column;
+  margin-top: 40px;
+}
+
+.mindmate-stage--welcome .mm-seminar-compose .input-area-fullpage {
+  order: 0;
+  padding-bottom: 8px;
+}
+
+.mindmate-stage--welcome .mm-seminar-compose .suggestions-above-input,
+.mindmate-stage--welcome .mm-seminar-compose .suggestions-above-input-panel {
+  order: 1;
+  margin-top: 0;
+}
+
+.mindmate-stage--welcome .mindmate-input-section > .shrink-0 {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.mindmate-stage--welcome .suggestions-above-input {
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+  order: 1;
+  margin-top: var(--mm-gap-suggest);
+  max-width: 100%;
   min-width: 0;
   width: 100%;
   padding: 0 var(--mm-gutter) var(--mm-gap-suggest);
 }
 
 .mindmate-stage--welcome .input-area-fullpage {
+  position: relative;
   box-sizing: border-box;
+  order: 0;
   max-width: var(--mm-composer-max);
   min-width: 0;
   width: 100%;
-  padding: 0 var(--mm-gutter) clamp(8px, 2vh, 20px);
+  padding: 0 var(--mm-gutter) 0;
+  isolation: isolate;
 }
 
-.mindmate-stage--welcome .suggestion-container {
-  max-height: var(--mm-suggest-max-h);
+.mindmate-stage--welcome .input-area-fullpage::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: -22%;
+  right: -22%;
+  top: -80%;
+  bottom: -55%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 52% 68% at 10% 40%, rgba(221, 214, 254, 0.3), transparent 76%),
+    radial-gradient(ellipse 48% 64% at 26% 56%, rgba(216, 210, 245, 0.22), transparent 74%),
+    radial-gradient(ellipse 54% 66% at 80% 46%, rgba(186, 230, 253, 0.26), transparent 76%),
+    radial-gradient(ellipse 50% 60% at 90% 64%, rgba(207, 250, 254, 0.2), transparent 74%),
+    radial-gradient(ellipse 46% 56% at 58% 94%, rgba(220, 252, 231, 0.18), transparent 72%),
+    radial-gradient(ellipse 44% 52% at 34% 90%, rgba(254, 243, 199, 0.14), transparent 72%);
+  filter: blur(52px);
+  opacity: 0.92;
+}
+
+.mindmate-stage--welcome .input-area-fullpage > * {
+  position: relative;
+  z-index: 1;
+}
+
+.mindmate-stage--welcome .suggestion-label {
+  color: #a8a29e;
+}
+
+.mindmate-stage--welcome .suggestion-bubble {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: #eceaf3;
+  color: #44403c;
+  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.03);
+}
+
+.mindmate-stage--welcome .suggestion-bubble:hover {
+  background: #fff;
+  border-color: #ddd6fe;
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.08);
+}
+
+.mindmate-stage--welcome .input-area-fullpage .input-container-fullpage {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  height: 148px;
+  min-height: 148px;
+  max-height: 148px;
+  padding: 18px 16px 12px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.94);
+  overflow: hidden;
+  box-shadow:
+    -36px 8px 72px rgba(221, 214, 254, 0.18),
+    36px 12px 74px rgba(186, 230, 253, 0.16),
+    0 36px 80px rgba(207, 250, 254, 0.12),
+    20px 40px 76px rgba(220, 252, 231, 0.12),
+    0 4px 14px rgba(148, 163, 184, 0.05);
+}
+
+.mindmate-stage--welcome .input-area-fullpage .input-container-fullpage.mindmate-input-compose--expanded {
+  height: 296px;
+  min-height: 296px;
+  max-height: 296px;
+}
+
+.mindmate-stage--welcome .input-area-fullpage .input-container-fullpage:focus-within {
+  border-color: #e9d5ff;
+  box-shadow:
+    -40px 8px 80px rgba(221, 214, 254, 0.22),
+    40px 12px 82px rgba(186, 230, 253, 0.2),
+    0 40px 88px rgba(207, 250, 254, 0.14),
+    20px 44px 84px rgba(220, 252, 231, 0.14),
+    0 0 0 3px rgba(221, 214, 254, 0.1);
+}
+
+.mindmate-stage--welcome .input-area-fullpage .input-field-fullpage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mindmate-stage--welcome .input-area-fullpage .input-bottom {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.mindmate-stage--welcome .input-bottom:not(.input-bottom--seminar) {
+  justify-content: flex-end;
+}
+
+.mindmate-stage--welcome .input-area-fullpage .fullpage-textarea {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.mindmate-stage--welcome .input-area-fullpage .fullpage-textarea.el-textarea,
+.mindmate-stage--welcome .input-area-fullpage .fullpage-textarea .el-textarea__inner {
+  height: 100% !important;
+  max-height: none !important;
+}
+
+.mindmate-stage--welcome .input-area-fullpage .fullpage-textarea .el-textarea__inner {
+  font-size: 15px;
+  color: #44403c;
+  overflow-y: auto !important;
+  box-sizing: border-box;
+  resize: none;
+}
+
+.mindmate-stage--welcome .input-actions-fullpage .send-btn-fullpage:not(.stop) {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border-color: transparent;
+}
+
+/* Enabled only — empty input keeps the native disabled (not-allowed) state. */
+.mindmate-stage--welcome
+  .input-actions-fullpage
+  .send-btn-fullpage:not(.stop):not(:disabled):not(.is-disabled) {
+  --el-button-bg-color: #6d5efc;
+  --el-button-border-color: #6d5efc;
+  --el-button-hover-bg-color: #5b4eeb;
+  --el-button-hover-border-color: #5b4eeb;
+  --el-button-active-bg-color: #4f43e0;
+  --el-button-active-border-color: #4f43e0;
+  --el-button-text-color: #fff;
+  --el-button-hover-text-color: #fff;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(180deg, #8b7cf7 0%, #6d5efc 100%);
+  box-shadow: 0 8px 18px rgba(109, 94, 252, 0.28);
+}
+
+.mindmate-stage--welcome
+  .input-actions-fullpage
+  .send-btn-fullpage:not(.stop):not(:disabled):not(.is-disabled)
+  svg {
+  color: #fff;
+  stroke: #fff;
+}
+
+.mindmate-stage--welcome
+  .input-actions-fullpage
+  .send-btn-fullpage:not(.stop):disabled,
+.mindmate-stage--welcome
+  .input-actions-fullpage
+  .send-btn-fullpage:not(.stop).is-disabled {
+  --el-button-bg-color: #e5e7eb;
+  --el-button-border-color: #e5e7eb;
+  --el-button-text-color: #9ca3af;
+  --el-button-hover-bg-color: #e5e7eb;
+  --el-button-hover-border-color: #e5e7eb;
+  --el-button-hover-text-color: #9ca3af;
+  color: #9ca3af;
+  cursor: not-allowed;
+  background: #e5e7eb;
+  box-shadow: none;
+}
+
+.mindmate-stage--welcome
+  .input-actions-fullpage
+  .send-btn-fullpage:not(.stop):disabled
+  svg,
+.mindmate-stage--welcome
+  .input-actions-fullpage
+  .send-btn-fullpage:not(.stop).is-disabled
+  svg {
+  color: #9ca3af;
+  stroke: #9ca3af;
+}
+
+.dark .mindmate-stage--welcome .input-area-fullpage .input-container-fullpage {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: none;
+}
+
+.dark .mindmate-stage--welcome .suggestion-bubble {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
 }
 
 @media (max-height: 700px) {
@@ -122,4 +404,127 @@
     --mm-avatar: 64px;
     --mm-suggest-max-h: 168px;
   }
+}
+
+/* 1:1 transcript uses the same shell as the seminar room. */
+.mindmate-stage--thread {
+  background: #f7f8fa;
+}
+
+.mindmate-stage--thread .messages-container,
+.mindmate-stage--thread .messages-scrollbar,
+.mindmate-stage--thread .el-scrollbar__wrap,
+.mindmate-stage--thread .el-scrollbar__view {
+  background: #f7f8fa;
+}
+
+.mindmate-stage--thread .messages-wrapper {
+  box-sizing: border-box;
+  width: 80%;
+  max-width: 80%;
+  margin-right: auto;
+  margin-left: auto;
+  padding: 1.25rem 0 1.75rem;
+  gap: 0.5rem;
+}
+
+.mindmate-stage--thread .mm-dm-body,
+.mindmate-stage--thread .mm-dm-body.is-agent {
+  max-width: 100%;
+}
+
+.mindmate-stage--thread .mindmate-input-section {
+  background: transparent;
+}
+
+.mm-dm-select-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 80%;
+  margin: 0 auto 8px;
+  color: #44403c;
+  font-size: 13px;
+}
+
+.mm-dm-select-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #e7e5e4;
+  border-radius: 999px;
+  background: #fff;
+  color: #44403c;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mm-dm-select-bar button:hover {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+.mm-dm-select-bar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mindmate-stage--thread .input-area-fullpage {
+  padding: 0.75rem 0 1.25rem;
+  width: 80% !important;
+  max-width: 80% !important;
+  margin: 0 auto !important;
+}
+
+.mindmate-stage--thread .input-container-fullpage {
+  width: 100%;
+  max-width: none;
+  border-radius: 18px;
+  border-width: 1px;
+  border-color: #e9e5ff;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(109, 94, 252, 0.08);
+}
+
+.mindmate-stage--thread .input-container-fullpage:focus-within {
+  border-color: #c4b5fd;
+  box-shadow: 0 8px 24px rgba(109, 94, 252, 0.14);
+}
+
+.mindmate-stage--thread .input-actions-fullpage .send-btn-fullpage:not(.stop) {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border-color: transparent;
+}
+
+.mindmate-stage--thread
+  .input-actions-fullpage
+  .send-btn-fullpage:not(.stop):not(:disabled):not(.is-disabled) {
+  --el-button-bg-color: #6d5efc;
+  --el-button-border-color: #6d5efc;
+  --el-button-hover-bg-color: #5b4eeb;
+  --el-button-hover-border-color: #5b4eeb;
+  --el-button-text-color: #fff;
+  color: #fff;
+  background: linear-gradient(180deg, #8b7cf7 0%, #6d5efc 100%);
+  box-shadow: 0 8px 18px rgba(109, 94, 252, 0.28);
+}
+
+.dark .mindmate-stage--thread,
+.dark .mindmate-stage--thread .messages-container,
+.dark .mindmate-stage--thread .messages-scrollbar,
+.dark .mindmate-stage--thread .el-scrollbar__wrap,
+.dark .mindmate-stage--thread .el-scrollbar__view {
+  background: #111827;
+}
+
+.dark .mindmate-stage--thread .input-container-fullpage {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: none;
 }

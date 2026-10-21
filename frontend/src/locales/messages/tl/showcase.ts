@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'Case Square',
-  'showcase.subtitle': 'Tumuklas ng AI-powered thinking lessons at ibahagi ang iyong gawaing pagtuturo',
+  'showcase.subtitle':
+    'Tumuklas ng AI-powered thinking lessons at ibahagi ang iyong gawaing pagtuturo',
   'showcase.publish': 'I-publish ang kaso',
   'showcase.searchPlaceholder': 'Hanapin ang pamagat, paglalarawan, o mga tag...',
   'showcase.filter.all': 'Lahat',
@@ -31,7 +32,8 @@ export default {
   'showcase.myFavoritesEmpty': 'Wala pang paboritong kaso',
   'showcase.myFavoritesEmptyHint': 'Lalabas dito ang mga case na na-bookmark mo',
   'showcase.myCasesModalTitle': 'Ang aking mga nai-publish na mga kaso',
-  'showcase.myCasesManageHint': 'I-withdraw, i-delist, o i-edit mula sa listahang ito; i-click ang isang case para sa mga detalye',
+  'showcase.myCasesManageHint':
+    'I-withdraw, i-delist, o i-edit mula sa listahang ito; i-click ang isang case para sa mga detalye',
   'showcase.myCasesAction.edit': 'I-edit',
   'showcase.myCasesEmpty': 'Wala pang nai-publish na mga kaso',
   'showcase.myCasesEmptyHint': 'Lalabas dito ang mga nai-publish na kaso at status ng pagsusuri',
@@ -39,11 +41,13 @@ export default {
   'showcase.pendingReview': 'Nakabinbing pagsusuri',
   'showcase.publishModal.title': 'I-publish ang kaso',
   'showcase.publishModal.titleLabel': 'Pamagat ng kaso',
-  'showcase.publishModal.titleHint': 'Panatilihing maigsi ang pamagat — hanggang {max} character ang inirerekomenda',
+  'showcase.publishModal.titleHint':
+    'Panatilihing maigsi ang pamagat — hanggang {max} character ang inirerekomenda',
   'showcase.publishModal.titlePlaceholder': 'hal. Dalawang Bata Debate the Sun — disenyo ng aralin',
   'showcase.publishModal.descriptionLabel': 'Paglalarawan',
   'showcase.publishModal.tagsLabel': 'Mga tag',
-  'showcase.publishModal.tagsHint': 'Paghiwalayin ang mga tag na may mga kuwit, hal. cognitive conflict, junior math',
+  'showcase.publishModal.tagsHint':
+    'Paghiwalayin ang mga tag na may mga kuwit, hal. cognitive conflict, junior math',
   'showcase.publishModal.caseTypeLabel': 'Uri ng kaso',
   'showcase.publishModal.subjectLabel': 'Paksa',
   'showcase.publishModal.gradeLabel': 'grado',
@@ -53,19 +57,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Nag-a-upload ng mga file ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Ina-upload ang {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Tinatapos…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Nabigo ang pag-upload — na-discard ang draft. Pakisubukang muli.',
-  'showcase.publishModal.uploadCorsFailed': 'Hindi ma-upload sa imbakan ng object (madalas na bucket CORS o site CSP na humaharang sa COS host). Na-discard ang draft — hilingin sa isang admin na ayusin ang CORS/CSP, pagkatapos ay subukang muli.',
-  'showcase.publishModal.uploadStorageRejected': 'Tinanggihan ng imbakan ng bagay ang pag-upload. Na-discard ang draft — subukang muli sa ibang pagkakataon, o makipag-ugnayan sa isang admin kung patuloy itong nabigo.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Nabigo ang pag-upload — na-discard ang draft. Pakisubukang muli.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Hindi ma-upload sa imbakan ng object (madalas na bucket CORS o site CSP na humaharang sa COS host). Na-discard ang draft — hilingin sa isang admin na ayusin ang CORS/CSP, pagkatapos ay subukang muli.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Tinanggihan ng imbakan ng bagay ang pag-upload. Na-discard ang draft — subukang muli sa ibang pagkakataon, o makipag-ugnayan sa isang admin kung patuloy itong nabigo.',
   'showcase.publishModal.uploadFailed': 'Nabigo ang pag-upload. Pakisubukang muli.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Ang larawan sa cover ay lumampas sa 2MB na limitasyon. I-compress ang preview o gumamit ng mas maliit na larawan, pagkatapos ay subukang muli.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'Ang file ay lumampas sa limitasyon sa laki (mga dokumento/mga larawan 20MB, mga video 100MB). I-compress at subukang muli.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Ang file ay lumampas sa limitasyon sa laki (mga dokumento/mga larawan 20MB, mga video 100MB). Ang draft ay itinapon - i-compress at subukang muli.',
-  'showcase.publishModal.uploadFileTooLarge': 'Masyadong malaki ang file para sa ganitong uri ng pag-upload. Suriin ang limitasyon sa laki at subukang muli.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Masyadong malaki ang file para sa ganitong uri ng pag-upload. Ang draft ay itinapon — tingnan ang limitasyon sa laki at subukang muli.',
-  'showcase.publishModal.coverUploadSkipped': 'Naisumite ang kaso, ngunit nabigong ma-upload ang larawan sa pabalat. Maaari mong i-edit ang case sa ibang pagkakataon upang i-refresh ang cover.',
-  'showcase.publishModal.coverGenerating': 'Ang preview ng cover ay nabuo sa background — lalabas ito sa card sa ilang sandali.',
-  'showcase.publishModal.coverFailed': 'Naisumite ang kaso, ngunit hindi mabuo ang pabalat. Maaari mong i-edit ang case sa ibang pagkakataon upang i-refresh ang cover.',
-  'showcase.publishModal.coverFailedTimeout': 'Naisumite ang kaso, ngunit nag-time out ang pagbuo ng cover. Maaari mong i-edit ang case sa ibang pagkakataon upang i-refresh ang cover.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Ang larawan sa cover ay lumampas sa 2MB na limitasyon. I-compress ang preview o gumamit ng mas maliit na larawan, pagkatapos ay subukang muli.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'Ang file ay lumampas sa limitasyon sa laki (mga dokumento/mga larawan 20MB, mga video 100MB). I-compress at subukang muli.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'Ang file ay lumampas sa limitasyon sa laki (mga dokumento/mga larawan 20MB, mga video 100MB). Ang draft ay itinapon - i-compress at subukang muli.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'Masyadong malaki ang file para sa ganitong uri ng pag-upload. Suriin ang limitasyon sa laki at subukang muli.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'Masyadong malaki ang file para sa ganitong uri ng pag-upload. Ang draft ay itinapon — tingnan ang limitasyon sa laki at subukang muli.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Naisumite ang kaso, ngunit nabigong ma-upload ang larawan sa pabalat. Maaari mong i-edit ang case sa ibang pagkakataon upang i-refresh ang cover.',
+  'showcase.publishModal.coverGenerating':
+    'Ang preview ng cover ay nabuo sa background — lalabas ito sa card sa ilang sandali.',
+  'showcase.publishModal.coverFailed':
+    'Naisumite ang kaso, ngunit hindi mabuo ang pabalat. Maaari mong i-edit ang case sa ibang pagkakataon upang i-refresh ang cover.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Naisumite ang kaso, ngunit nag-time out ang pagbuo ng cover. Maaari mong i-edit ang case sa ibang pagkakataon upang i-refresh ang cover.',
   'showcase.publishModal.success': 'Naisumite ang kaso — naghihintay ng pagsusuri ng admin',
   'showcase.publishModal.fromCanvas': 'I-publish mula sa canvas',
   'showcase.publishModal.step1Title': 'Pangunahing impormasyon',
@@ -79,68 +95,95 @@ export default {
   'showcase.publishModal.uploadLabel': 'Mag-upload ng file',
   'showcase.publishModal.uploadImage': 'Mag-upload ng larawan',
   'showcase.publishModal.uploadFile': 'Mag-upload ng file',
-  'showcase.publishModal.directUploadDisabled': 'Pansamantalang hindi available ang direktang pag-upload ng file. Maaari ka pa ring pumili ng naka-save na diagram mula sa kasaysayan.',
-  'showcase.publishModal.uploadViaStorage': 'Direktang ina-upload ang mga file sa secure na storage (short-lived URL).',
+  'showcase.publishModal.directUploadDisabled':
+    'Pansamantalang hindi available ang direktang pag-upload ng file. Maaari ka pa ring pumili ng naka-save na diagram mula sa kasaysayan.',
+  'showcase.publishModal.uploadViaStorage':
+    'Direktang ina-upload ang mga file sa secure na storage (short-lived URL).',
   'showcase.publishModal.pickHistory': 'Pumili mula sa kasaysayan',
   'showcase.publishModal.removeFile': 'Alisin',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: limitadong preview)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: limitadong preview) — max {maxMb} MB bawat dokumento',
-  'showcase.publishModal.teachingDocTooLarge': 'Ang dokumento ay lumampas sa {maxMb} MB na limitasyon. I-compress at subukang muli.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: limitadong preview) — max {maxMb} MB bawat dokumento',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Ang dokumento ay lumampas sa {maxMb} MB na limitasyon. I-compress at subukang muli.',
   'showcase.publishModal.diagramImageHint': 'Suportahan ang .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Mag-upload ng mga larawan (marami)',
-  'showcase.publishModal.galleryHint': 'Magdagdag ng maraming larawan at naka-save na diagram, hanggang {max} item',
-  'showcase.publishModal.galleryHintCase': 'Maaaring magdagdag ng maraming larawan at makasaysayang icon, hanggang {max} item',
-  'showcase.publishModal.galleryHintTemplate': 'Maaari kang mag-upload ng mga .mg na file at pumili ng maraming makasaysayang icon, hanggang sa {max} item',
+  'showcase.publishModal.galleryHint':
+    'Magdagdag ng maraming larawan at naka-save na diagram, hanggang {max} item',
+  'showcase.publishModal.galleryHintCase':
+    'Maaaring magdagdag ng maraming larawan at makasaysayang icon, hanggang {max} item',
+  'showcase.publishModal.galleryHintTemplate':
+    'Maaari kang mag-upload ng mga .mg na file at pumili ng maraming makasaysayang icon, hanggang sa {max} item',
   'showcase.publishModal.galleryCount': '{count}/{max} item ang idinagdag',
   'showcase.publishModal.galleryImageItem': 'Larawan: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Paglalarawan: {name}',
   'showcase.publishModal.galleryLimit': 'Maaari kang magdagdag ng hindi hihigit sa {max} item',
-  'showcase.publishModal.galleryDuplicateDiagram': 'Ang naka-save na diagram na ito ay nasa listahan na',
+  'showcase.publishModal.galleryDuplicateDiagram':
+    'Ang naka-save na diagram na ito ay nasa listahan na',
   'showcase.publishModal.galleryPickerDone': 'Tapos na',
-  'showcase.publishModal.galleryUploadFailed': 'Nabigo ang pag-upload ng larawan sa gallery — pakisubukang i-publish muli',
-  'showcase.publishModal.galleryReuploadHint': 'Ang ilang mga larawan sa gallery ay hindi na-save — mangyaring muling piliin ang mga ito bago isumite',
+  'showcase.publishModal.galleryUploadFailed':
+    'Nabigo ang pag-upload ng larawan sa gallery — pakisubukang i-publish muli',
+  'showcase.publishModal.galleryReuploadHint':
+    'Ang ilang mga larawan sa gallery ay hindi na-save — mangyaring muling piliin ang mga ito bago isumite',
   'showcase.detail.galleryImage': 'Imahe',
   'showcase.detail.galleryDiagram': 'Ilustrasyon',
   'showcase.detail.galleryPrev': 'Nakaraang',
   'showcase.detail.galleryNext': 'Susunod',
   'showcase.detail.gallerySwipeHint': 'Mag-swipe pakaliwa o pakanan',
-  'showcase.detail.galleryImageMissing': 'Nabigong ma-load ang larawan — paki-publish muli ang kaso',
+  'showcase.detail.galleryImageMissing':
+    'Nabigong ma-load ang larawan — paki-publish muli ang kaso',
   'showcase.publishModal.templateFileHint': '.mg lang (MindGraph export)',
   'showcase.publishModal.templatePreviewLabel': 'Preview ng diagram',
   'showcase.publishModal.templatePreviewHint': 'Hand tool — tingnan lamang, hindi nae-edit',
-  'showcase.publishModal.templatePreviewEmpty': 'Mag-upload ng .mg file o pumili ng naka-save na diagram upang i-preview',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Mag-upload ng .mg file o pumili ng naka-save na diagram upang i-preview',
   'showcase.publishModal.diagramCasePreviewLabel': 'Preview ng diagram',
-  'showcase.publishModal.diagramCasePreviewHint': 'Hand tool — mag-pan at mag-zoom para mag-explore',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Itinugma ang uri ng diagram mula sa napiling naka-save na diagram',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'Hand tool — mag-pan at mag-zoom para mag-explore',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Itinugma ang uri ng diagram mula sa napiling naka-save na diagram',
   'showcase.publishModal.introLabel': 'Panimula ng diagram',
   'showcase.publishModal.teachingIntroLabel': 'Intro ng disenyo ng pagtuturo',
   'showcase.publishModal.highlightsLabel': 'Mga highlight ng disenyo',
   'showcase.publishModal.highlightsPlaceholder': 'Isang highlight bawat linya (opsyonal)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Maikling ipakilala ang background ng aralin, mga layunin, at konteksto',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Maikling ipakilala ang background ng aralin, mga layunin, at konteksto',
   'showcase.publishModal.aiGenerate': 'AI bumuo',
   'showcase.publishModal.aiGenerating': 'Binubuo…',
   'showcase.publishModal.aiGenerateStop': 'Tumigil ka',
-  'showcase.publishModal.aiGenerateCancelled': 'Kinansela ang AI henerasyon — i-click muli upang muling buuin',
-  'showcase.publishModal.aiGenerateSuccess': 'Puno ng intro at mga highlight mula sa dokumento — suriin at i-edit; isulat mo mismo ang repleksyon sa pagtuturo',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Ang pagpapakilala ng ilustrasyon at aplikasyon sa silid-aralan ay nabuo batay sa ilustrasyon. Mangyaring suriin at i-edit.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'Kinansela ang AI henerasyon — i-click muli upang muling buuin',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Puno ng intro at mga highlight mula sa dokumento — suriin at i-edit; isulat mo mismo ang repleksyon sa pagtuturo',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'Ang pagpapakilala ng ilustrasyon at aplikasyon sa silid-aralan ay nabuo batay sa ilustrasyon. Mangyaring suriin at i-edit.',
   'showcase.publishModal.aiGenerateFailed': 'Nabigo ang AI henerasyon — pakisubukang muli',
-  'showcase.publishModal.aiGenerateNeedFile': 'Mag-upload muna ng dokumentong disenyo ng pagtuturo sa nakaraang hakbang',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'Ang AI generate ay magagamit para sa mga kaso ng pagtuturo-disenyo lamang',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Mag-upload muna ng dokumentong disenyo ng pagtuturo sa nakaraang hakbang',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'Ang AI generate ay magagamit para sa mga kaso ng pagtuturo-disenyo lamang',
   'showcase.publishModal.reflectionLabel': 'Pagtuturo ng repleksyon',
-  'showcase.publishModal.introPlaceholder': 'Maikling ilarawan ang case at kung kailan ito gagamitin',
-  'showcase.publishModal.diagramCorePlaceholder': 'Ilarawan ang nilalaman ng diagram at mga highlight ng visualization',
+  'showcase.publishModal.introPlaceholder':
+    'Maikling ilarawan ang case at kung kailan ito gagamitin',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Ilarawan ang nilalaman ng diagram at mga highlight ng visualization',
   'showcase.publishModal.classroomAppPlaceholder': 'Paano ginagamit ang diagram na ito sa klase',
   'showcase.publishModal.tagInputPlaceholder': 'Mag-type ng tag (max 10 chars), pindutin ang Enter',
   'showcase.publishModal.tagRecommended': 'Mga iminungkahing tag',
   'showcase.publishModal.tagCountHint': '(Maximum {max})',
   'showcase.publishModal.tagMaxCount': 'Maaari kang magdagdag ng hindi hihigit sa {max} na mga tag',
-  'showcase.publishModal.networkError': 'Nabigo ang pagsumite — tingnan kung tumatakbo ang server at ang mga sukat ng file ay nasa loob ng mga limitasyon',
-  'showcase.publishModal.fileTooLarge': 'Ang "{name}" ay lumampas sa {maxMb}MB na limitasyon sa laki',
-  'showcase.publishModal.uploadTotalTooLarge': 'Lampas sa limitasyon ang kabuuang laki ng pag-upload — bawasan ang attachment o laki ng video',
+  'showcase.publishModal.networkError':
+    'Nabigo ang pagsumite — tingnan kung tumatakbo ang server at ang mga sukat ng file ay nasa loob ng mga limitasyon',
+  'showcase.publishModal.fileTooLarge':
+    'Ang "{name}" ay lumampas sa {maxMb}MB na limitasyon sa laki',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'Lampas sa limitasyon ang kabuuang laki ng pag-upload — bawasan ang attachment o laki ng video',
   'showcase.publishModal.tagAdd': 'Idagdag',
   'showcase.publishModal.publishBtn': 'I-publish',
-  'showcase.publishModal.reflectionPlaceholder': 'Isulat ang iyong repleksyon sa araling ito (opsyonal)',
+  'showcase.publishModal.reflectionPlaceholder':
+    'Isulat ang iyong repleksyon sa araling ito (opsyonal)',
   'showcase.publishModal.classroomAppLabel': 'Paggamit ng silid-aralan',
   'showcase.publishModal.selectSubject': 'Pumili ng paksa',
   'showcase.publishModal.selectGrade': 'Pumili ng grado',
@@ -151,17 +194,24 @@ export default {
   'showcase.publishModal.validationFile': 'Mag-upload ng file o pumili ng naka-save na diagram',
   'showcase.publishModal.validationDiagramType': 'Mangyaring pumili ng uri ng diagram',
   'showcase.publishModal.invalidFileType': 'Hindi sinusuportahang uri ng file',
-  'showcase.publishModal.invalidMgFile': 'Hindi mabasa ang .mg file na ito — i-export muna ito mula sa MindGraph',
-  'showcase.publishModal.cannotPreview': 'Hindi makabuo ng cover preview — isusumite pa rin ang kaso. Subukan ang PNG/JPG o pumili ng naka-save na diagram.',
-  'showcase.publishModal.cannotPreviewHistory': 'Hindi makabuo ng cover mula sa naka-save na diagram na ito — isusumite pa rin ang case. Muli itong piliin o muling i-save mula sa canvas.',
-  'showcase.publishModal.cannotPreviewTemplate': 'Hindi makabuo ng cover — isusumite pa rin ang kaso. Suriin ang .mg file o pumili ng isa pang naka-save na diagram.',
+  'showcase.publishModal.invalidMgFile':
+    'Hindi mabasa ang .mg file na ito — i-export muna ito mula sa MindGraph',
+  'showcase.publishModal.cannotPreview':
+    'Hindi makabuo ng cover preview — isusumite pa rin ang kaso. Subukan ang PNG/JPG o pumili ng naka-save na diagram.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Hindi makabuo ng cover mula sa naka-save na diagram na ito — isusumite pa rin ang case. Muli itong piliin o muling i-save mula sa canvas.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Hindi makabuo ng cover — isusumite pa rin ang kaso. Suriin ang .mg file o pumili ng isa pang naka-save na diagram.',
   'showcase.publishModal.historyTitle': 'Pumili ng naka-save na diagram',
   'showcase.publishModal.historySearch': 'Pangalan ng diagram ng paghahanap...',
   'showcase.publishModal.historyEmpty': 'Walang naka-save na diagram',
   'showcase.publishModal.historyUncategorized': 'Uncategorized',
-  'showcase.publishModal.typeDesc.teachingDesign': 'Disenyo ng aralin sa silid-aralan ng mga kasanayan sa pag-iisip',
-  'showcase.publishModal.typeDesc.diagramCase': 'Napakahusay na mga diagram at visualization sa pagtuturo',
-  'showcase.publishModal.typeDesc.diagramTemplate': 'Mga diagram para sa muling paggamit o pagbagay',
+  'showcase.publishModal.typeDesc.teachingDesign':
+    'Disenyo ng aralin sa silid-aralan ng mga kasanayan sa pag-iisip',
+  'showcase.publishModal.typeDesc.diagramCase':
+    'Napakahusay na mga diagram at visualization sa pagtuturo',
+  'showcase.publishModal.typeDesc.diagramTemplate':
+    'Mga diagram para sa muling paggamit o pagbagay',
   'showcase.detail.import': 'Gamitin ang kasong ito',
   'showcase.action.goDraw': 'Gumuhit ng isa',
   'showcase.action.applyTemplate': 'Ilapat ang template',
@@ -184,9 +234,11 @@ export default {
   'showcase.detail.delist': 'I-delist',
   'showcase.detail.resubmit': 'I-edit at muling isumite',
   'showcase.detail.withdrawTitle': 'Bawiin ang kaso',
-  'showcase.detail.withdrawConfirm': 'Bawiin ang "{title}"? Aalisin ito sa queue ng pagsusuri at hindi na maibabalik.',
+  'showcase.detail.withdrawConfirm':
+    'Bawiin ang "{title}"? Aalisin ito sa queue ng pagsusuri at hindi na maibabalik.',
   'showcase.detail.delistTitle': 'I-delist ang kaso',
-  'showcase.detail.delistConfirm': 'I-delist ang "{title}" sa gallery? Hindi na ito makikita ng ibang mga user.',
+  'showcase.detail.delistConfirm':
+    'I-delist ang "{title}" sa gallery? Hindi na ito makikita ng ibang mga user.',
   'showcase.detail.confirm': 'Kumpirmahin',
   'showcase.detail.cancel': 'Kanselahin',
   'showcase.withdrawn': 'Binawi',
@@ -195,7 +247,8 @@ export default {
   'showcase.publishModal.editTitle': 'I-edit at muling isumite',
   'showcase.publishModal.resubmit': 'Muling isumite para sa pagsusuri',
   'showcase.publishModal.resubmitting': 'Muling isinusumite…',
-  'showcase.publishModal.keepExistingFile': 'Iwanang walang laman upang panatilihin ang kasalukuyang file',
+  'showcase.publishModal.keepExistingFile':
+    'Iwanang walang laman upang panatilihin ang kasalukuyang file',
   'showcase.detail.views': '{n} view',
   'showcase.detail.recommended': 'Inirerekomenda',
   'showcase.detail.askMindmate': 'Magtanong kay MindMate',
@@ -206,8 +259,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Kino-convert ang mga slide para sa preview...',
   'showcase.detail.officePreviewPending': 'Kino-convert ang mga slide para sa preview...',
   'showcase.detail.docPreviewLoading': 'Nilo-load ang dokumento...',
-  'showcase.detail.docPreviewFailed': 'Hindi ma-load ang preview. Subukang magbukas sa isang bagong tab.',
-  'showcase.detail.legacyDocHint': 'Ang mga legacy na .doc na file ay hindi maaaring i-preview nang inline. Buksan o i-download ang file, o i-upload ang .docx para sa in-browser na preview.',
+  'showcase.detail.docPreviewFailed':
+    'Hindi ma-load ang preview. Subukang magbukas sa isang bagong tab.',
+  'showcase.detail.legacyDocHint':
+    'Ang mga legacy na .doc na file ay hindi maaaring i-preview nang inline. Buksan o i-download ang file, o i-upload ang .docx para sa in-browser na preview.',
   'showcase.detail.noDocument': 'Walang preview ng dokumento',
   'showcase.detail.noDiagramPreview': 'Walang preview ng diagram',
   'showcase.detail.diagramPreviewLoading': 'Nilo-load ang diagram...',

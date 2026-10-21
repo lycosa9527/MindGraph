@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  isCanvasVoiceNotesPath,
   VOICE_NOTES_INGEST_SOURCE,
   VOICE_NOTES_LIVE_SAVE_MS,
+  isCanvasVoiceNotesPath,
 } from '@/composables/voiceNotes/mobileVoiceNotesFinish'
 import {
   resolveCanvasDiagramId,

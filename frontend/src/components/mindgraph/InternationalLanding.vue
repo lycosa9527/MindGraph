@@ -67,6 +67,10 @@ const {
   targetLanguage: translationTargetLang,
 } = storeToRefs(liveTranslationStore)
 
+function openBrowserPlugin(): void {
+  void router.push('/browser-plugin')
+}
+
 function handleTranslateCommand(command: string): void {
   if (command === '__toggle__') {
     liveTranslationStore.toggle()
@@ -244,6 +248,26 @@ onMounted(() => {
       <PanelLeftOpen class="w-[18px] h-[18px]" />
     </el-button>
     <div class="intl-landing-chrome">
+      <button
+        type="button"
+        class="intl-plugin-entry"
+        @click="openBrowserPlugin"
+      >
+        <span class="intl-plugin-entry__badge">
+          <I18nText
+            k="mindmate.pluginDownloadBadge"
+            dense
+            primary-only
+          />
+        </span>
+        <span class="intl-plugin-entry__label">
+          <I18nText
+            k="mindmate.pluginDownload"
+            dense
+            primary-only
+          />
+        </span>
+      </button>
       <MindGraphCollabPanel ref="collabPanelRef" />
       <MindGraphLanguageSwitcher variant="floating" />
       <ElDropdown
@@ -505,6 +529,50 @@ onMounted(() => {
   position: static;
   top: auto;
   right: auto;
+}
+
+.intl-plugin-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px 0 3px;
+  border: 1px solid #e7e5e4;
+  border-radius: 999px;
+  background: #fff;
+  color: #44403c;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.intl-plugin-entry:hover {
+  background: #f5f5f4;
+  border-color: #d6d3d1;
+}
+
+.intl-plugin-entry:focus-visible {
+  outline: 2px solid rgba(68, 64, 60, 0.35);
+  outline-offset: 2px;
+}
+
+.intl-plugin-entry__badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #f5f3ff;
+  color: #7c3aed;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.intl-plugin-entry__label {
+  white-space: nowrap;
 }
 
 .intl-landing-chrome :deep(.join-workshop-btn) {

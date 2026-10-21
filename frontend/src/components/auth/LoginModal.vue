@@ -92,7 +92,6 @@ const {
   showSmsLogin,
   showForgotPassword,
   backToLogin,
-  refreshCaptcha,
   retryCaptcha,
   onCaptchaImageError,
   showLegacyCaptcha,

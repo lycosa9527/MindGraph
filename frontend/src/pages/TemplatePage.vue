@@ -9,8 +9,8 @@ import { useRoute } from 'vue-router'
 import { Folder, Search } from '@lucide/vue'
 
 import { LoginModal } from '@/components/auth'
-import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { notify } from '@/composables/core/notifications'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import {
   MARKET_PAY_NEED_LOGIN,
   fetchMarketOrder,
@@ -21,9 +21,9 @@ import {
 } from '@/composables/markets/marketPagePay'
 import {
   MOCK_TEMPLATE_LISTINGS,
-  listingRowToTemplate,
   type MarketListingRow,
   type TemplateResource,
+  listingRowToTemplate,
 } from '@/composables/markets/templateCatalog'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -377,9 +377,13 @@ onMounted(() => {
               {{ template.title }}
             </h3>
             <div class="flex items-center gap-3 text-xs text-stone-400">
-              <span v-if="template.priceMinor !== null">{{ formatListingYuan(template.priceMinor) }}</span>
+              <span v-if="template.priceMinor !== null">{{
+                formatListingYuan(template.priceMinor)
+              }}</span>
               <span v-else>{{ formatNumber(template.views) }} 浏览</span>
-              <span v-if="template.priceMinor === null">{{ formatNumber(template.downloads) }} 使用</span>
+              <span v-if="template.priceMinor === null"
+                >{{ formatNumber(template.downloads) }} 使用</span
+              >
             </div>
           </div>
         </div>

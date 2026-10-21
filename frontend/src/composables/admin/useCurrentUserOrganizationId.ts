@@ -1,9 +1,9 @@
 /**
  * Resolve the signed-in user's primary organization for admin school pickers/filters.
  */
+import { useAuthStore } from '@/stores'
 import { fallbackCapabilitiesForRole } from '@/utils/adminCapabilities'
 import type { AdminCapability } from '@/utils/adminCapabilities'
-import { useAuthStore } from '@/stores'
 
 export function getCurrentUserOrganizationId(): number | null {
   const authStore = useAuthStore()

@@ -30,16 +30,20 @@ export default {
   'collab.noDiagramToSave': 'Kaydedilecek diyagram yok',
   'collab.nodeLocked': 'Başka biri bu düğümü düzenliyor',
   'collab.participants': '{n} katılımcı',
-  'collab.previousSessionsStopped': 'Diğer diyagramlarınızdaki {n} önceki iş birliği oturumu sonlandırıldı.',
+  'collab.previousSessionsStopped':
+    'Diğer diyagramlarınızdaki {n} önceki iş birliği oturumu sonlandırıldı.',
   'collab.saveFailed': 'Diyagram kaydedilemedi',
   'collab.scanToJoin': 'Katılmak için tarayın',
-  'collab.schoolDescActive': "Okul iş birliği açık. Meslektaşlar: MindGraph ana sayfadan İş Birliği → Okul'u kullanın ve bu diyagramı seçin — kod gerekmez.",
-  'collab.schoolStarted': 'Okul iş birliği açık — meslektaşlar İş Birliği → Okul üzerinden katılabilir.',
+  'collab.schoolDescActive':
+    "Okul iş birliği açık. Meslektaşlar: MindGraph ana sayfadan İş Birliği → Okul'u kullanın ve bu diyagramı seçin — kod gerekmez.",
+  'collab.schoolStarted':
+    'Okul iş birliği açık — meslektaşlar İş Birliği → Okul üzerinden katılabilir.',
   'collab.sectionNetwork': 'Paylaşımlı iş birliği (kod)',
   'collab.sectionSchool': 'Okul iş birliği',
   'collab.sessionDuration': 'Oturum süresi',
   'collab.sessionRemaining': 'Oturum bitişine kalan süre',
-  'collab.shareDescNetwork': 'Kodu veya bağlantıyı paylaşın — diğerleri İş Birliği → Paylaşımlı altında girer.',
+  'collab.shareDescNetwork':
+    'Kodu veya bağlantıyı paylaşın — diğerleri İş Birliği → Paylaşımlı altında girer.',
   'collab.start': 'Başlat',
   'collab.startFailed': 'Başlatılamadı: {msg}',
   'collab.title': 'Çevrimiçi iş birliği',
@@ -52,18 +56,25 @@ export default {
   'workshop.announceChannels': 'Duyurular',
   'workshop.announceReadOnlyHint': 'Bu duyuru kanalında yalnızca yöneticiler gönderi paylaşabilir.',
   'workshop.archiveLessonStudy': 'Ders incelemesini arşivle',
-  'workshop.archiveLessonStudyConfirm': 'Bu ders incelemesi arşivlensin mi? Üyeler artık listede göremeyecek.',
+  'workshop.archiveLessonStudyConfirm':
+    'Bu ders incelemesi arşivlensin mi? Üyeler artık listede göremeyecek.',
   'workshop.archiveTeachingGroup': 'Öğretim grubunu arşivle',
-  'workshop.archiveTeachingGroupConfirm': 'Bu öğretim grubu arşivlensin mi? Öğretim grubu listesinden kaldırılacak.',
+  'workshop.archiveTeachingGroupConfirm':
+    'Bu öğretim grubu arşivlensin mi? Öğretim grubu listesinden kaldırılacak.',
   'workshop.archiveAnnounceChannel': 'Arşiv Duyuru Kanalı',
-  'workshop.archiveAnnounceChannelConfirm': 'Bu duyuru kanalını arşivlemek istediğinizden emin misiniz? Kenar çubuğu artık görüntülenmeyecek ancak mesaj kalacak.',
+  'workshop.archiveAnnounceChannelConfirm':
+    'Bu duyuru kanalını arşivlemek istediğinizden emin misiniz? Kenar çubuğu artık görüntülenmeyecek ancak mesaj kalacak.',
   'workshop.deleteTeachingGroup': 'Öğretim ve araştırma grubunu silin',
-  'workshop.deleteTeachingGroupConfirm': 'Bu öğretim ve araştırma grubunu, derslerini ve mesajlarını kalıcı olarak silmek istediğinizden emin misiniz? Bu eylem geri alınamaz.',
+  'workshop.deleteTeachingGroupConfirm':
+    'Bu öğretim ve araştırma grubunu, derslerini ve mesajlarını kalıcı olarak silmek istediğinizden emin misiniz? Bu eylem geri alınamaz.',
   'workshop.deleteAnnounceChannel': 'Duyuru kanalını sil',
-  'workshop.deleteAnnounceChannelConfirm': 'Bu duyuru kanalını ve mesajlarını kalıcı olarak silmek istediğinizden emin misiniz? Bu eylem geri alınamaz.',
+  'workshop.deleteAnnounceChannelConfirm':
+    'Bu duyuru kanalını ve mesajlarını kalıcı olarak silmek istediğinizden emin misiniz? Bu eylem geri alınamaz.',
   'workshop.deleteLessonStudy': 'Dersi sil',
-  'workshop.deleteLessonStudyConfirm': 'Bu dersi ve derse ait mesajları kalıcı olarak silmek istediğinizden emin misiniz? Bu eylem geri alınamaz.',
-  'workshop.manageNeedAdmin': 'Yalnızca okul yöneticileri öğretim ve araştırma grupları ekleyebilir. Yöneticiler veya grubun oluşturucusu silebilir.',
+  'workshop.deleteLessonStudyConfirm':
+    'Bu dersi ve derse ait mesajları kalıcı olarak silmek istediğinizden emin misiniz? Bu eylem geri alınamaz.',
+  'workshop.manageNeedAdmin':
+    'Yalnızca okul yöneticileri öğretim ve araştırma grupları ekleyebilir. Yöneticiler veya grubun oluşturucusu silebilir.',
   'workshop.math': 'formül',
   'workshop.backToConversations': '← Konuşmalar',
   'workshop.bold': 'Kalın',
@@ -77,7 +88,8 @@ export default {
   'workshop.channelAvatarEmoji': 'Simge (isteğe bağlı)',
   'workshop.channelAvatarPlaceholder': 'Emoji veya kısa etiket',
   'workshop.channelColor': 'Kanal rengi',
-  'workshop.channelInviteReceived': '“{name}” grubuna eklendiniz. Görüntülemek için Workshop\'u açın.',
+  'workshop.channelInviteReceived':
+    "“{name}” grubuna eklendiniz. Görüntülemek için Workshop'u açın.",
   'workshop.channelKindGroup': 'Öğretim grubu (üst düzey, örn. 教研组)',
   'workshop.channelKindLessonStudy': 'Grup altında ders incelemesi (课例)',
   'workshop.channelNameLabel': 'Ad',
@@ -113,7 +125,8 @@ export default {
   'workshop.create': 'Oluştur',
   'workshop.createChannelFailed': 'Kanal oluşturulamadı',
   'workshop.createChannelNeedParent': 'Önce bir üst öğretim grubu seçin.',
-  'workshop.createChannelNoGroupsYet': 'Önce bir öğretim grubu oluşturun, ardından altına ders incelemeleri ekleyin.',
+  'workshop.createChannelNoGroupsYet':
+    'Önce bir öğretim grubu oluşturun, ardından altına ders incelemeleri ekleyin.',
   'workshop.createChannelSuccess': 'Kanal oluşturuldu',
   'workshop.createStudyCaseHint': 'Başlamak için bir konuşma başlatın',
   'workshop.cycleStudyStatus': 'Döngü inceleme durumu',
@@ -149,13 +162,14 @@ export default {
   'workshop.emoji': 'ifade',
   'workshop.exitPreview': 'Önizlemeden çık',
   'workshop.expandCollapseGroup': 'Kenar çubuğunda ders listesini genişlet veya daralt',
-  'workshop.filterSidebar': 'Öğretim gruplarını, DM\'leri filtrele',
+  'workshop.filterSidebar': "Öğretim gruplarını, DM'leri filtrele",
   'workshop.filterUsers': 'Kullanıcıları filtrele',
   'workshop.followTopic': 'Konuşmayı takip et',
   'workshop.gearMenu': 'Seçenekler',
   'workshop.generalChat': 'Genel sohbet',
   'workshop.inbox': 'Gelen kutusu',
-  'workshop.inboxHintPickChannel': 'Okumak ve yanıtlamak için kenar çubuğundan bir kanal veya doğrudan mesaj açın. Görünümler → Gelen kutusu üzerinden istediğiniz zaman buraya dönebilirsiniz.',
+  'workshop.inboxHintPickChannel':
+    'Okumak ve yanıtlamak için kenar çubuğundan bir kanal veya doğrudan mesaj açın. Görünümler → Gelen kutusu üzerinden istediğiniz zaman buraya dönebilirsiniz.',
   'workshop.inboxSummaryTitle': 'Gelen kutunuz',
   'workshop.inboxUnreadChannels': 'Kanallarda okunmamış',
   'workshop.inboxUnreadDms': 'Okunmamış doğrudan mesajlar',
@@ -181,14 +195,16 @@ export default {
   'workshop.loadMore': 'Daha fazla yükle',
   'workshop.mainChannelStream': 'Ana kanal',
   'workshop.manageTeachingGroups': 'Öğretim gruplarını yönet',
-  'workshop.manageTeachingGroupsBlurb': 'Grup ekleyin veya kaldırın, herkese açık veya özel ayarlayın, adları ve açıklamaları düzenleyin, listeyi yeniden sıralayın, bir grubu şablon olarak kopyalayın ve meslektaş davet edin. Gönderi kuralları ve bildirim varsayılanları için Gelişmiş\'i kullanın. Arşivleme grubu herkes için kaldırır.',
+  'workshop.manageTeachingGroupsBlurb':
+    "Grup ekleyin veya kaldırın, herkese açık veya özel ayarlayın, adları ve açıklamaları düzenleyin, listeyi yeniden sıralayın, bir grubu şablon olarak kopyalayın ve meslektaş davet edin. Gönderi kuralları ve bildirim varsayılanları için Gelişmiş'i kullanın. Arşivleme grubu herkes için kaldırır.",
   'workshop.manageUser': 'Bu kullanıcıyı yönet',
   'workshop.markAllReadChannel': 'Tüm mesajları okundu işaretle',
   'workshop.markAsRead': 'Okundu işaretle',
   'workshop.markStudyResolved': 'İncelemeyi çözüldü işaretle',
   'workshop.members': 'üye',
   'workshop.mentionAmbiguous': 'Belirsiz adlar — benzersiz görünen adı olan birini seçin: {0}',
-  'workshop.mentionUnknown': 'Bilinmeyen bahsetmeler (yalnızca aynı kurum kullanıcıları ve personel): {0}',
+  'workshop.mentionUnknown':
+    'Bilinmeyen bahsetmeler (yalnızca aynı kurum kullanıcıları ve personel): {0}',
   'workshop.mentionedInChannel': '#{0} kanalında bahsedildiniz',
   'workshop.mentionedInTopic': '{0} içinde bahsedildiniz',
   'workshop.mentions': 'Bahsetmeler',
@@ -220,18 +236,22 @@ export default {
   'workshop.noTopicsYet': 'Henüz konuşma yok',
   'workshop.numberedList': 'sıralı liste',
   'workshop.notifications': 'Bildirimler',
-  'workshop.notificationsSettingsBlurb': 'Bahsetmeler ve yeni mesajlar için tarayıcı bildirimleri sistem ayarlarınızı kullanır. Kanal ayarlarından masaüstü ve e-posta uyarılarını kanal bazında ayarlayabilirsiniz.',
+  'workshop.notificationsSettingsBlurb':
+    'Bahsetmeler ve yeni mesajlar için tarayıcı bildirimleri sistem ayarlarınızı kullanır. Kanal ayarlarından masaüstü ve e-posta uyarılarını kanal bazında ayarlayabilirsiniz.',
   'workshop.offline': 'çevrimdışı',
   'workshop.online': 'çevrimiçi',
   'workshop.openMainChannelStream': 'Ana kanal',
   'workshop.others': 'DİĞERLERİ',
   'workshop.permissions': 'İzinler',
+  'workshop.personalMenu': 'Kişisel menü',
   'workshop.preview': 'Önizleme',
   'workshop.previewEmpty': 'Önizlenecek içerik yok',
-  'workshop.personalMenu': 'Kişisel menü',
-  'workshop.phase2RoadmapGroupsAlerts': 'Yakında: {\'@\'}grup bahsetmeleri, uyarı kelimeleri ve mesaj düzenleme geçmişi politikası.',
-  'workshop.phase2RoadmapMovePreview': 'Yakında: tek mesaj taşıma, URL bağlantı önizlemeleri ve daha zengin kanallar arası etkinlik.',
-  'workshop.phase2RoadmapPlatform': 'Platform yol haritası: artımlı senkronizasyon, mobil anlık bildirimler, e-posta özetleri, botlar/webhook\'lar.',
+  'workshop.phase2RoadmapGroupsAlerts':
+    "Yakında: {'@'}grup bahsetmeleri, uyarı kelimeleri ve mesaj düzenleme geçmişi politikası.",
+  'workshop.phase2RoadmapMovePreview':
+    'Yakında: tek mesaj taşıma, URL bağlantı önizlemeleri ve daha zengin kanallar arası etkinlik.',
+  'workshop.phase2RoadmapPlatform':
+    "Platform yol haritası: artımlı senkronizasyon, mobil anlık bildirimler, e-posta özetleri, botlar/webhook'lar.",
   'workshop.pickColleagueToInvite': 'Davet edilecek bir meslektaş seçin.',
   'workshop.pinChannel': 'Üste sabitle',
   'workshop.policyEveryone': 'Herkes',
@@ -239,7 +259,8 @@ export default {
   'workshop.policyMembersOnly': 'Yalnızca üyeler',
   'workshop.postingPolicy': 'Gönderi politikası',
   'workshop.preferences': 'Tercihler',
-  'workshop.preferencesSettingsBlurb': 'Dil ve görüntüleme tercihleri uygulama genelinde geçerlidir. Zamanla daha fazla Workshop sohbet seçeneği burada görünecek.',
+  'workshop.preferencesSettingsBlurb':
+    'Dil ve görüntüleme tercihleri uygulama genelinde geçerlidir. Zamanla daha fazla Workshop sohbet seçeneği burada görünecek.',
   'workshop.presenceActive': 'Aktif',
   'workshop.presenceIdle': 'Boşta',
   'workshop.presenceOffline': 'Çevrimdışı',
@@ -248,7 +269,8 @@ export default {
   'workshop.publicChannels': 'Herkese açık kanallar',
   'workshop.quote': 'Alıntı',
   'workshop.quoteMessage': 'Mesajı alıntıla',
-  'workshop.readOnlyProfileBlurb': 'Meslektaş profil ayrıntıları basitleştirilmiş görünümde gösterilir. Yönetici dizinini açmak için Kullanıcıyı yönet\'i (yöneticiler) kullanın.',
+  'workshop.readOnlyProfileBlurb':
+    "Meslektaş profil ayrıntıları basitleştirilmiş görünümde gösterilir. Yönetici dizinini açmak için Kullanıcıyı yönet'i (yöneticiler) kullanın.",
   'workshop.recentDmActivity': 'Son doğrudan mesajlar',
   'workshop.recentTopics': 'Son konuşmalar',
   'workshop.renameTopic': 'Konuşmayı yeniden adlandır',
@@ -259,7 +281,8 @@ export default {
   'workshop.roleOwner': 'Sahip',
   'workshop.searchMembers': 'Üye ara...',
   'workshop.searchMessages': 'Mesaj ara...',
-  'workshop.selectChannelForSettings': 'Önce bir öğretim grubu veya ders incelemesi seçin, ardından ayarları buradan açın.',
+  'workshop.selectChannelForSettings':
+    'Önce bir öğretim grubu veya ders incelemesi seçin, ardından ayarları buradan açın.',
   'workshop.selectConversation': 'Bir konuşma seçin',
   'workshop.selectParentGroup': 'Üst öğretim grubu',
   'workshop.selectTopic': 'Konuşma seçin',
@@ -285,7 +308,8 @@ export default {
   'workshop.strikethrough': 'Üstü çizili',
   'workshop.table': 'çarşaf',
   'workshop.switchSchool': 'Okul değiştir',
-  'workshop.teachingGroupLandingHint': 'Bu öğretim grubundaki ders incelemeleri ve konuşmalar. Kanalı veya bir konuyu açmak için bir satır seçin.',
+  'workshop.teachingGroupLandingHint':
+    'Bu öğretim grubundaki ders incelemeleri ve konuşmalar. Kanalı veya bir konuyu açmak için bir satır seçin.',
   'workshop.teachingGroupMembers': 'Üyeler',
   'workshop.teachingGroupNameRequired': 'Lütfen bir öğretim grubu adı girin.',
   'workshop.teachingGroupNoLessons': 'Bu grupta henüz ders incelemesi yok.',
@@ -300,7 +324,8 @@ export default {
   'workshop.topicTitle': 'Başlık',
   'workshop.topicTitlePlaceholder': 'örn. 3. bölüm için tasarım düşüncesi haritası',
   'workshop.topics': 'Konuşmalar',
-  'workshop.typeMessagePlaceholder': 'Mesaj yazın... (Göndermek için Enter, yeni satır için Shift+Enter)',
+  'workshop.typeMessagePlaceholder':
+    'Mesaj yazın... (Göndermek için Enter, yeni satır için Shift+Enter)',
   'workshop.unfollowTopic': 'Konuşmayı takibi bırak',
   'workshop.unknown': 'Bilinmeyen',
   'workshop.unmuteChannel': 'Kanal sesini aç',
@@ -316,11 +341,14 @@ export default {
   'workshop.viewProfile': 'Profili görüntüle',
   'workshop.viewingSchool': 'Görüntülenen: {0}',
   'workshop.views': 'Görünümler',
-  'workshop.welcomeChannelsBody': 'Buradaki bir “kanal” genellikle bir öğretim araştırma grubuna (教研组) veya PLC\'ye karşılık gelir: ekip başına bir paylaşımlı alan (örn. Matematik PLC, İngilizce PLC). Kimin katılacağını ve alanın nasıl gruplandığını belirler.',
+  'workshop.welcomeChannelsBody':
+    "Buradaki bir “kanal” genellikle bir öğretim araştırma grubuna (教研组) veya PLC'ye karşılık gelir: ekip başına bir paylaşımlı alan (örn. Matematik PLC, İngilizce PLC). Kimin katılacağını ve alanın nasıl gruplandığını belirler.",
   'workshop.welcomeChannelsTitle': 'PLC / branş grupları',
-  'workshop.welcomeConversationsBody': 'Bir ders incelemesinde başlıklı konuşmalar açarsınız — örneğin öğretim tasarımı, yansıma veya takip görevleri — böylece konular takip edilmesi kolay kalır.',
+  'workshop.welcomeConversationsBody':
+    'Bir ders incelemesinde başlıklı konuşmalar açarsınız — örneğin öğretim tasarımı, yansıma veya takip görevleri — böylece konular takip edilmesi kolay kalır.',
   'workshop.welcomeConversationsTitle': 'Konuşmalar',
-  'workshop.welcomeExampleCaption': 'Örnek gösterim (kurgusal okul) — Matematik PLC ve İngilizce PLC, her birinde ders incelemeleri ve örnek konuşmalar.',
+  'workshop.welcomeExampleCaption':
+    'Örnek gösterim (kurgusal okul) — Matematik PLC ve İngilizce PLC, her birinde ders incelemeleri ve örnek konuşmalar.',
   'workshop.welcomeExampleConvLabel': 'Konuşmalar',
   'workshop.welcomeExampleGroupEnglish': 'İngilizce PLC',
   'workshop.welcomeExampleGroupMath': 'Matematik PLC',
@@ -339,38 +367,51 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Mesajlar her konuşmanın içinde yer alır',
   'workshop.welcomeExampleOrg': 'Chenxi Ortaokulu',
   'workshop.welcomeHowTitle': 'Nasıl bir araya gelir',
-  'workshop.welcomeIntro': 'Workshop, okulunuzun yapılandırılmış tartışma alanıdır: duyuruları paylaşın, ders incelemeleri yürütün ve konuşmaları öğretim çalışmanızın yanında düzenli tutun.',
-  'workshop.welcomeLessonStudyBody': 'Ders incelemesi kanalları genellikle o grubun altında yer alır. Her biri bir ders döngüsü — planlama, gözlem ve yansıma — için bir mekândır ve diyagramlara veya durumlara bağlanabilir.',
+  'workshop.welcomeIntro':
+    'Workshop, okulunuzun yapılandırılmış tartışma alanıdır: duyuruları paylaşın, ders incelemeleri yürütün ve konuşmaları öğretim çalışmanızın yanında düzenli tutun.',
+  'workshop.welcomeLessonStudyBody':
+    'Ders incelemesi kanalları genellikle o grubun altında yer alır. Her biri bir ders döngüsü — planlama, gözlem ve yansıma — için bir mekândır ve diyagramlara veya durumlara bağlanabilir.',
   'workshop.welcomeLessonStudyTitle': 'Ders incelemeleri',
-  'workshop.welcomeMessagesBody': 'Mesajlar, ana kanal akışındaki veya bir konuşmanın içindeki bireysel gönderilerdir. Yanıtlar, bahsetmeler ve dosyalar mesajlar üzerinden iletilir.',
+  'workshop.welcomeMessagesBody':
+    'Mesajlar, ana kanal akışındaki veya bir konuşmanın içindeki bireysel gönderilerdir. Yanıtlar, bahsetmeler ve dosyalar mesajlar üzerinden iletilir.',
   'workshop.welcomeMessagesTitle': 'Mesajlar',
-  'workshop.welcomeSubtitle': 'MindGraph\'ta okulunuzla iş birliği yapın',
-  'workshop.welcomeTitle': 'Workshop\'a hoş geldiniz',
+  'workshop.welcomeSubtitle': "MindGraph'ta okulunuzla iş birliği yapın",
+  'workshop.welcomeTitle': "Workshop'a hoş geldiniz",
   'workshop.you': '(siz)',
   'workshop.youAnd': 'Siz ve',
   'workshopCanvas.connectFailed': 'İş birliğine bağlanılamadı',
-  'workshopCanvas.sessionExpiredReconnect': 'Oturumunuz sona erdi. İş birliğine yeniden katılmak için sayfayı yenileyin.',
-  'workshopCanvas.sessionRefreshFailed': 'İş birliği oturumunuz yenilenemedi. Lütfen çalışmanızı kaydedin ve tekrar oturum açın.',
-  'workshopCanvas.outboundQueueDegraded': 'İş birliği geride kalıyor. Gönderilemeyen bazı düzenlemeler saklanamadı.',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Oturumunuz sona erdi. İş birliğine yeniden katılmak için sayfayı yenileyin.',
+  'workshopCanvas.sessionRefreshFailed':
+    'İş birliği oturumunuz yenilenemedi. Lütfen çalışmanızı kaydedin ve tekrar oturum açın.',
+  'workshopCanvas.outboundQueueDegraded':
+    'İş birliği geride kalıyor. Gönderilemeyen bazı düzenlemeler saklanamadı.',
   'workshopCanvas.connectionClosed': 'Bağlantı kapandı',
-  'workshopCanvas.connectionClosedSlow': 'Bağlantı kapandı: bağlantınız iş birliği oturumuna yetişmek için çok yavaştı.',
+  'workshopCanvas.connectionClosedSlow':
+    'Bağlantı kapandı: bağlantınız iş birliği oturumuna yetişmek için çok yavaştı.',
   'workshopCanvas.sessionEndedByHost': 'Ev sahibi iş birliği oturumunu sonlandırdı.',
   'workshopCanvas.editingNodeLabel': '{username} düzenliyor…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'Birisi',
   'workshopCanvas.connectionClosedReason': 'İş birliği bağlantısı kapandı: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bu düğümü düzenliyor',
   'workshopCanvas.errorGeneric': 'İş birliği hatası',
-  'workshopCanvas.updatePartialFiltered': 'Başka bir iş birlikçi bu düğümleri düzenlediği için bazı düzenlemeler atlandı ({count} düğüm).',
+  'workshopCanvas.updatePartialFiltered':
+    'Başka bir iş birlikçi bu düğümleri düzenlediği için bazı düzenlemeler atlandı ({count} düğüm).',
   'workshopCanvas.reconnectFailed': 'İş birliğine yeniden bağlanılamadı, lütfen sayfayı yenileyin',
-  'workshopCanvas.resyncWaiting': 'Canlı diyagram senkronizasyonu beklenenden uzun sürüyor. Yeniden deneniyor; düzenleme takılıyorsa sayfayı yenileyebilirsiniz.',
-  'workshopCanvas.returnedHomeIdle': 'Ana sayfaya dönüldü — uzun süre boşta kaldığınız için bağlantınız kesildi.',
+  'workshopCanvas.resyncWaiting':
+    'Canlı diyagram senkronizasyonu beklenenden uzun sürüyor. Yeniden deneniyor; düzenleme takılıyorsa sayfayı yenileyebilirsiniz.',
+  'workshopCanvas.returnedHomeIdle':
+    'Ana sayfaya dönüldü — uzun süre boşta kaldığınız için bağlantınız kesildi.',
   'workshopCanvas.userJoined': '{username} katıldı',
   'workshopCanvas.usersJoined': '{count} kullanıcı katıldı',
   'workshopCanvas.userLeft': '{username} ayrıldı',
   'workshopCanvas.usersLeft': '{count} kullanıcı ayrıldı',
   'workshopCanvas.wsError': 'İş birliği bağlantı hatası, lütfen ağınızı kontrol edin',
-  'workshopCanvas.returnedHomeRoomIdle': 'İş birliği sona erdi: bu oturumda bir süredir diyagram düzenlemesi yapılmadı.',
-  'workshopCanvas.roomIdleWarningToast': 'Son zamanlarda diyagram düzenlemesi yok — biri düzenleme yapmazsa geri sayım sıfıra ulaştığında iş birliği sona erer.',
-  'workshopCanvas.otherTabCollaborationActive': 'Bu hesap için iş birliği başka bir sekme veya pencerede devam ediyor.',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'İş birliği sona erdi: bu oturumda bir süredir diyagram düzenlemesi yapılmadı.',
+  'workshopCanvas.roomIdleWarningToast':
+    'Son zamanlarda diyagram düzenlemesi yok — biri düzenleme yapmazsa geri sayım sıfıra ulaştığında iş birliği sona erer.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Bu hesap için iş birliği başka bir sekme veya pencerede devam ediyor.',
   'workshopCanvas.joinQrAlt': 'İş birliğine katılma QR kodu',
 } as const

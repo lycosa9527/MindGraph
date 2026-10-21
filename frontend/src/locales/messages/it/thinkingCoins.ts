@@ -25,9 +25,10 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.checkedInToday': 'Check-in già effettuato oggi',
   'thinkingCoins.usageDoneToday': 'Completato oggi',
   'thinkingCoins.casePendingHint': 'In arrivo',
-  'thinkingCoins.schoolInfo': 'Contatta l\'amministratore scolastico per i piani scuola',
+  'thinkingCoins.schoolInfo': "Contatta l'amministratore scolastico per i piani scuola",
   'thinkingCoins.school.headline': 'Pensiero con AI · soluzioni scolastiche',
-  'thinkingCoins.school.description': 'Implementazione privata, funzionalità personalizzate e supporto operativo completo per scuole e istituti — pensato per scala, branding e sicurezza dei dati.',
+  'thinkingCoins.school.description':
+    'Implementazione privata, funzionalità personalizzate e supporto operativo completo per scuole e istituti — pensato per scala, branding e sicurezza dei dati.',
   'thinkingCoins.school.feature.accountManager': 'Account manager dedicato',
   'thinkingCoins.school.feature.accountManagerDesc': 'Consulenza individuale',
   'thinkingCoins.school.feature.privateDeploy': 'Implementazione privata',
@@ -63,7 +64,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Ricompensa referral',
   'thinkingCoins.reason.case_reward': 'Ricompensa case',
   'thinkingCoins.reason.subscription_grant': 'Credito abbonamento',
-  'thinkingCoins.dailyExpiresHint': 'I premi di accesso sono validi lo stesso giorno e verranno ripristinati alle 24:00',
+  'thinkingCoins.dailyExpiresHint':
+    'I premi di accesso sono validi lo stesso giorno e verranno ripristinati alle 24:00',
   'thinkingCoins.dailyBalanceRemaining': 'Check-in di oggi rimanente {n}',
   'thinkingCoins.admin.tab': 'Token di pensiero',
   'thinkingCoins.admin.tasksTitle': 'Attività di guadagno',
@@ -75,7 +77,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'Salva',
   'thinkingCoins.admin.signupGrant': 'Credito registrazione',
   'thinkingCoins.admin.dailyEarnCap': 'Limite guadagno giornaliero',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = illimitato; predefinito 135 corrisponde a tutte le attività giornaliere',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = illimitato; predefinito 135 corrisponde a tutte le attività giornaliere',
   'thinkingCoins.admin.costMindmate': 'Costo MindMate',
   'thinkingCoins.admin.costDiagram': 'Costo generazione diagramma',
   'thinkingCoins.admin.costCanvas': 'Costo assistenza canvas',

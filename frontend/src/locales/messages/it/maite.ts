@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Metodo di apprendimento Matt',
-  'maite.subtitle': 'Scomposizione inversa · Diagnosi a quattro fasi · Remedio mirato · Trasferimento varianti',
+  'maite.subtitle':
+    'Scomposizione inversa · Diagnosi a quattro fasi · Remedio mirato · Trasferimento varianti',
   'maite.mode.demo': 'Dimostrazione',
   'maite.mode.inquiry': 'Indagine',
   'maite.mode.map': 'Mappa',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Esercizio varianti',
   'maite.inquiry.complete': 'Completa sessione',
   'maite.inquiry.completedTitle': 'Indagine completata',
-  'maite.inquiry.completedMessage': 'Questa sessione di indagine è completa. Visualizza il rapporto di apprendimento sotto.',
+  'maite.inquiry.completedMessage':
+    'Questa sessione di indagine è completa. Visualizza il rapporto di apprendimento sotto.',
   'maite.diagnosis.thinkingPlaceholder': 'Descrivi il tuo ragionamento (facoltativo)…',
   'maite.diagnosis.runAuto': 'Diagnosi automatica',
   'maite.diagnosis.running': 'Diagnosi…',
@@ -79,7 +81,7 @@ export default {
   'maite.errors.generic': 'Qualcosa è andato storto. Riprova.',
   'maite.errors.decompose_failed': 'Scomposizione non riuscita',
   'maite.errors.follow_up_failed': 'Approfondimento non riuscito',
-  'maite.errors.ocr_failed': 'OCR non riuscito. Prova un\'altra immagine.',
+  'maite.errors.ocr_failed': "OCR non riuscito. Prova un'altra immagine.",
   'maite.errors.create_failed': 'Impossibile creare la sessione di indagine.',
   'maite.errors.submit_failed': 'Impossibile inviare le tabelle di scomposizione.',
   'maite.errors.diagnosis_failed': 'Diagnosi non riuscita.',
@@ -95,7 +97,7 @@ export default {
   'maite.errors.report_failed': 'Impossibile caricare il rapporto.',
   'maite.errors.report_copy_failed': 'Impossibile copiare il rapporto.',
   'maite.toast.ocr_uploading': 'Caricamento immagine ed esecuzione OCR…',
-  'maite.toast.ocr_success': 'Testo del problema estratto dall\'immagine.',
+  'maite.toast.ocr_success': "Testo del problema estratto dall'immagine.",
   'maite.toast.decompose_started': 'Avvio scomposizione mentore…',
   'maite.toast.decompose_complete': 'Scomposizione completata.',
   'maite.toast.decompose_fallback': 'Stream live interrotto; completamento con risposta completa…',

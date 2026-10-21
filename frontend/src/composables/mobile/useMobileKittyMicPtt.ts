@@ -35,11 +35,7 @@ export interface UseMobileKittyMicPttFunAsr {
 }
 
 export type MobileKittyPttAbortReason =
-  | 'released_early'
-  | 'connect_failed'
-  | 'mic_denied'
-  | 'context_dead'
-  | 'start_failed'
+  'released_early' | 'connect_failed' | 'mic_denied' | 'context_dead' | 'start_failed'
 
 export interface UseMobileKittyMicPttOptions {
   funAsr: UseMobileKittyMicPttFunAsr

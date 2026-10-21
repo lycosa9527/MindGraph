@@ -38,6 +38,7 @@ import { usePublishShowcaseAiOrchestration } from '@/composables/showcase/usePub
 import { usePublishShowcaseGalleryDrafts } from '@/composables/showcase/usePublishShowcaseGalleryDrafts'
 import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { must } from '@/utils/must'
 import {
   cloneShowcaseDiagramSpec,
   decodeMgUploadSpec,
@@ -180,7 +181,7 @@ export function usePublishShowcaseModal(
 
     isMgSpecDecoding.value = true
     try {
-      const spec = await decodeMgUploadSpec(file!)
+      const spec = await decodeMgUploadSpec(must(file))
       if (!spec) {
         notify.errorKey('showcase.publishModal.invalidMgFile')
         uploadedFile.value = null
@@ -783,7 +784,7 @@ export function usePublishShowcaseModal(
     step.value = 1
   }
 
-  const { resolveThumbnail, submit } = createPublishShowcaseSubmitHandlers({
+  const { submit } = createPublishShowcaseSubmitHandlers({
     props,
     emit,
     t,

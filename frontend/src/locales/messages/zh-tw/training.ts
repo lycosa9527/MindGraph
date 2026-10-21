@@ -1,6 +1,6 @@
 /**
- * zh-tw UI — training
- * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ * zh UI — training
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export default {
@@ -88,29 +88,37 @@ export default {
   'training.builder.spotlightClear': '清除',
   'training.builder.empty': '還沒有課程，先新建一課。',
   'training.builder.info': '課程信息',
-  'training.builder.menuLabel': 'User menu',
-  'training.builder.menuLabelHint': 'This name shows in the account menu. A click starts this course. Leave it blank to hide it.',
-  'training.builder.menuLabelPlaceholder': 'e.g. October update',
-  'training.builder.menuLabelTooLong': 'The menu name can be at most 40 characters.',
-  'training.builder.menuLabelLimit': 'The user menu is full. Remove one entry before adding another.',
-  'training.october.menu': 'October update',
-  'training.october.ribbon': 'October',
-  'training.october.title': 'October update',
-  'training.october.lead': 'What changed from August through now: the canvas, account, Learning Space, and courses.',
-  'training.october.canvas': 'Canvas and thinking maps',
-  'training.october.canvasBody': 'One canvas|The eight thinking maps and concept maps share its tabs.\nNode shapes|Rounded, rectangular, oval, or underlined, following the rainbow theme. A solid theme paints the whole map.\nBilingual|One generate writes the main language and a smaller second line.\nDouble bubble|Keeps at least one similarity and one difference.\nKeep adding|Enter adds the next node for whatever is selected.\nOutline and gestures|The outline and the gesture guide open on these maps.',
-  'training.october.explain': 'Lectures and blanks',
-  'training.october.explainBody': 'Walk the diagram|One ring, one column, one side of a comparison, one cause or effect, or one bridge pair.\nName the node|Explain calls it an association, attribute, category, step, or bridge.\nBlanks|A single click blanks a node. A double-click edits it.',
-  'training.october.account': 'Account',
-  'training.october.accountBody': 'One settings window|Account, security, language, and plugins. Language applies immediately.\nAvatar|Cropped to a circle and stored online.\nStay signed in|This browser stays signed in while its login is still valid.\nSigned out|A device that was signed out cannot refresh itself back in.\nSchool|The line under the name shows the school.',
-  'training.october.learning': 'Learning Space',
-  'training.october.learningBody': 'Homework images|Stored online. Opening a card lets you select, pan, and zoom.\nFirst password|Shown only while the student still has to change it, and only to the class teacher or a superadmin. After they set one, the plain copy is removed.\nOne deadline|A teacher can extend one student deadline.\nMissing picture|A card with no picture can be filled in.',
-  'training.october.course': 'Courses',
-  'training.october.courseBody': 'Page by page|Voice, music, video, a locked menu or dialog, and a mascot.\nAccount menu|The menu can list the course by name, and a click starts it.\nSame page|During class, teachers can be pulled onto the page you are on.',
-  'training.october.talk': 'MindMate and Workshop',
-  'training.october.talkBody': 'Seminar stays up|It stays connected until its owner ends it.\nOrganize it|Pin, rename, or delete it, and see who has read your line.\nSave the diagram|A diagram in the seminar can be saved to the library and opened again.\nDirect messages|A workshop direct message names the other person.',
-  'training.october.school': 'School plans',
-  'training.october.schoolBody': 'Included on every plan|Trial, basic, standard, and professional include online collaboration, presentation, the browser extension, and API access.\nWhat changes|Seats, and how many diagrams the plan can store.',
+  'training.builder.menuLabel': '用戶菜單',
+  'training.builder.menuLabelHint':
+    '填寫後會出現在用戶頭像菜單裡，點擊就開始這一課。留空則不顯示。',
+  'training.builder.menuLabelPlaceholder': '例如：十月更新介紹',
+  'training.builder.menuLabelTooLong': '菜單名稱最多 40 個字。',
+  'training.builder.menuLabelLimit': '用戶菜單已滿，先刪掉一項再添加。',
+  'training.october.menu': '十月更新',
+  'training.october.ribbon': '十月',
+  'training.october.title': '十月更新',
+  'training.october.lead': '從八月到現在，畫布、賬戶、學習空間和校本培訓的變化。',
+  'training.october.canvas': '畫布與思維圖',
+  'training.october.canvasBody':
+    '唯一畫布|八種思維圖和概念圖共用同一套標籤頁。\\n節點形狀|圓角、矩形、橢圓或下劃線，配色跟隨彩虹主題，實色主題鋪滿整張圖。\\n雙語|生成寫出主語言，並加一行較小的第二語言。\\n雙氣泡|至少保留一對相同點和不同點。\\n繼續添加|按 Enter，順著當前選中的節點添加下一級。\\n大綱與手勢|層級大綱和手勢說明在這些圖上也能打開。',
+  'training.october.explain': '講解與挖空',
+  'training.october.explainBody':
+    '按圖講解|一圈、一列、對比的一側、一個因果，或一對橋。\\n節點怎麼講|說出它是聯想、屬性、類別、步驟還是橋。\\n挖空|單擊留空，雙擊改為編輯。',
+  'training.october.account': '賬戶',
+  'training.october.accountBody':
+    '一個設置窗口|賬戶、安全、語言和插件放在一起，語言馬上生效。\\n頭像|裁成圓形，存在雲端。\\n保持登錄|同一個瀏覽器在登錄還有效時不用再登一次。\\n被擠下線|那臺設備不能靠刷新自己回來。\\n學校名稱|顯示在側欄名字下面。',
+  'training.october.learning': '學習空間',
+  'training.october.learningBody':
+    '作業圖片|存在雲端。打開卡片後可以選擇、平移和縮放。\\n初始密碼|只在學生還沒改過時顯示，而且只給班主任或超級管理員。改完就刪掉明文。\\n延長截止|教師可以只延長某一個學生的截止時間。\\n補圖|缺圖的卡片可以補上一張。',
+  'training.october.course': '校本培訓',
+  'training.october.courseBody':
+    '一頁一頁|旁白、音樂、視頻、鎖定的菜單或彈窗，以及吉祥物。\\n掛到用戶菜單|填上課程名字，點擊就開始這一課。\\n拉到同一頁|上課時可以把老師們拉到正在看的這一頁。',
+  'training.october.talk': 'MindMate 與研習社',
+  'training.october.talkBody':
+    '研討不斷線|保持連接，直到主持人結束。\\n整理會話|可以置頂、重命名、刪除，也能看到誰讀過你的發言。\\n存進圖庫|研討裡的圖可以存進圖庫再打開。\\n私信署名|研習社的私信會寫出對方的名字。',
+  'training.october.school': '學校版本',
+  'training.october.schoolBody':
+    '每個版本都有|試用、基礎、標準和專業都包含在線協作、演示、瀏覽器插件和 API。\\n版本差別|席位數量，以及能存多少張圖。',
   'training.builder.groupFollow': '跟隨',
   'training.builder.groupCanvas': '畫布',
   'training.builder.groupSteps': '步驟',
@@ -122,24 +130,27 @@ export default {
   'training.builder.pageCanvas': '畫布',
   'training.builder.pullUsers': '拉全體教師到此頁',
   'training.builder.mandatory': '強制',
-  'training.builder.mandatoryHint': '未完成的用戶必須先走完這一課。完成後記在賬號上，再次進入不再出現。每一課單獨記錄。',
-  'training.builder.mandatoryConfirm': '保存後立即生效。所有還沒完成這一課的登入用戶都會被帶去走完，完成後不再出現。',
+  'training.builder.mandatoryHint':
+    '未完成的用戶必須先走完這一課。完成後記在賬號上，再次進入不再出現。每一課單獨記錄。',
+  'training.builder.mandatoryConfirm':
+    '保存後立即生效。所有還沒完成這一課的登錄用戶都會被帶去走完，完成後不再出現。',
   'training.builder.alwaysPlay': '演示',
-  'training.builder.alwaysPlayHint': '每次進入都會再走一遍，完成後也不會停。重新整理頁面可以再試。',
-  'training.builder.alwaysPlayConfirm': '保存後立即生效。所有登入用戶每次進入都會再走這一課，完成後也不會停。關掉之後，已經完成的人不再出現。',
-  'training.builder.vodLibrary': '線上視頻庫',
+  'training.builder.alwaysPlayHint': '每次進入都會再走一遍，完成後也不會停。刷新頁面可以再試。',
+  'training.builder.alwaysPlayConfirm':
+    '保存後立即生效。所有登錄用戶每次進入都會再走這一課，完成後也不會停。關掉之後，已經完成的人不再出現。',
+  'training.builder.vodLibrary': '在線視頻庫',
   'training.builder.vodFolder': '文件夾',
   'training.builder.vodVideo': '視頻',
   'training.builder.vodNone': '不選視頻',
   'training.builder.vodAutoplay': '自動播放',
-  'training.builder.voice': 'Voice',
-  'training.builder.music': 'Music',
-  'training.builder.voiceRemove': 'Remove voice',
-  'training.builder.musicRemove': 'Remove music',
-  'training.builder.roleBehind': 'Behind the modal',
-  'training.builder.roleFront': 'In front',
-  'training.builder.mascot': 'Mascot',
-  'training.builder.mascotRemove': 'Remove mascot',
+  'training.builder.voice': '旁白',
+  'training.builder.music': '音樂',
+  'training.builder.voiceRemove': '移除旁白',
+  'training.builder.musicRemove': '移除音樂',
+  'training.builder.roleBehind': '在彈窗後面',
+  'training.builder.roleFront': '在彈窗前面',
+  'training.builder.mascot': '吉祥物',
+  'training.builder.mascotRemove': '移除吉祥物',
   'training.builder.vodEmpty': '這個文件夾裡還沒有可播放的視頻',
   'training.vod.skip': '跳過',
   'training.vod.next': '下一步',

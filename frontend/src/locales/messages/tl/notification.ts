@@ -9,7 +9,8 @@ export default {
   'notification.canvasClearNodes': 'Na-clear ang {count} node',
   'notification.canvasClearNodesLearning': 'Na-empty ang {count} node, idinagdag sa mga sagot',
   'notification.canvasSomeoneEditingNode': 'May ibang nag-e-edit ng node na ito',
-  'notification.collabDeleteBlocked': 'Hindi maaaring mag-delete habang nag-e-edit ang ibang user ng napiling node',
+  'notification.collabDeleteBlocked':
+    'Hindi maaaring mag-delete habang nag-e-edit ang ibang user ng napiling node',
   'notification.collabRedoBlocked': 'Hindi maaaring mag-redo habang nag-e-edit ang ibang user',
   'notification.collabUndoBlocked': 'Hindi maaaring mag-undo habang nag-e-edit ang ibang user',
   'notification.conversationDeleted': 'Na-delete ang usapan',
@@ -21,7 +22,8 @@ export default {
   'notification.feedbackThanks': 'Salamat sa iyong feedback',
   'notification.feedbackThanksDislike': 'Salamat sa feedback — pagbubutihin namin ito',
   'notification.focusQuestionTooShort': 'Maglagay muna ng mas mahabang focus question',
-  'notification.geoLiteMissingIntro': 'I-download ang GeoLite2 Country mula sa MaxMind, i-extract ang GeoLite2-Country.mmdb, at kopyahin sa server data folder:',
+  'notification.geoLiteMissingIntro':
+    'I-download ang GeoLite2 Country mula sa MaxMind, i-extract ang GeoLite2-Country.mmdb, at kopyahin sa server data folder:',
   'notification.geoLiteMissingLink': 'Buksan ang MaxMind GeoLite download page',
   'notification.geoLiteMissingPathLabel': 'Inaasahang path:',
   'notification.geoLiteMissingTitle': 'Nawawala ang GeoLite2 Country database',
@@ -48,7 +50,8 @@ export default {
   'notification.saved': 'Matagumpay na na-save ang mga pagbabago',
   'notification.selectNodeToClear': 'Pumili ng node na i-clear',
   'notification.sessionInvalidated': 'Na-log out ka dahil lumampas sa maximum na bilang ng device',
-  'notification.sessionKicked': 'Na-log ng account na ito ang account na ito nang offline sa iba pang mga device',
+  'notification.sessionKicked':
+    'Na-log ng account na ito ang account na ito nang offline sa iba pang mga device',
   'notification.signInToUse': 'Mag-sign in para gamitin ito',
   'notification.signInToValidateFocus': 'Mag-sign in para i-validate ang focus question',
 } as const

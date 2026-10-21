@@ -44,8 +44,7 @@ export function conversationTurnToMessage(
       status = 'done'
     }
   }
-  const detailChoices =
-    turn.role === 'kitty' ? choicesFromCommandDetail(turn.command_detail) : []
+  const detailChoices = turn.role === 'kitty' ? choicesFromCommandDetail(turn.command_detail) : []
   return {
     id: turnMessageId(turn, fallbackId),
     role: turn.role,

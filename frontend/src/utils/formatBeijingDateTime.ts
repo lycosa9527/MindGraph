@@ -28,11 +28,7 @@ function beijingCalendarDate(value: string): Date | null {
     const month = Number(datePartMatch[2])
     const day = Number(datePartMatch[3])
     const local = new Date(year, month - 1, day)
-    if (
-      local.getFullYear() === year &&
-      local.getMonth() === month - 1 &&
-      local.getDate() === day
-    ) {
+    if (local.getFullYear() === year && local.getMonth() === month - 1 && local.getDate() === day) {
       return local
     }
   }

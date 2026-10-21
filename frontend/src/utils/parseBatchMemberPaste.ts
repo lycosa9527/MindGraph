@@ -48,7 +48,10 @@ function splitSpreadsheetLine(line: string): string[] {
       return commaParts
     }
   }
-  return line.split(/\s{2,}/).map((cell) => cell.trim()).filter(Boolean)
+  return line
+    .split(/\s{2,}/)
+    .map((cell) => cell.trim())
+    .filter(Boolean)
 }
 
 export function looksLikeEmail(value: string): boolean {
@@ -75,7 +78,7 @@ function isHeaderCells(cells: string[]): boolean {
 
 function normalizeExcelPhoneCell(raw: string): string {
   const trimmed = raw.trim()
-  if (/^[\d.]+[eE][+\-]?\d+$/.test(trimmed)) {
+  if (/^[\d.]+[eE][-+]?\d+$/.test(trimmed)) {
     const numeric = Number(trimmed)
     if (Number.isFinite(numeric) && numeric >= 1_000_000_000 && numeric < 100_000_000_000) {
       return String(Math.round(numeric))
@@ -126,11 +129,7 @@ export function isValidMemberContact(value: string): boolean {
 
 export function isValidMemberName(name: string): boolean {
   const trimmed = name.trim()
-  return (
-    trimmed.length >= 2 &&
-    trimmed.length <= MAX_MEMBER_NAME_LENGTH &&
-    !/\d/.test(trimmed)
-  )
+  return trimmed.length >= 2 && trimmed.length <= MAX_MEMBER_NAME_LENGTH && !/\d/.test(trimmed)
 }
 
 export function formatMemberContact(row: Pick<ParsedMemberRow, 'phone' | 'email'>): string {

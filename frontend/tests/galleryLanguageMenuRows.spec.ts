@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { getGalleryLanguageMenuRows } from '@/i18n/galleryLanguageMenuRows'
 import {
-  getLocalesForInterfaceLanguagePicker,
   INTERFACE_LANGUAGE_PICKER_CODES,
   INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT,
+  getLocalesForInterfaceLanguagePicker,
 } from '@/i18n/locales'
 
 describe('getGalleryLanguageMenuRows', () => {

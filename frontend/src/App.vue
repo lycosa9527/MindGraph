@@ -299,6 +299,7 @@ const showQuickAccessRemote = computed(
     route.meta.layout !== 'mobile' &&
     !isMobileAppPath(route.path) &&
     route.path !== '/export-render' &&
+    route.path !== '/browser-plugin' &&
     !isMindgraphHeadlessExportSession()
 )
 

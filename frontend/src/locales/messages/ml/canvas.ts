@@ -31,25 +31,31 @@ export default {
   'canvas.exportOptions.layoutLandscape': 'തിരശ്ചീനമായി',
   'canvas.exportOptions.layoutPortrait': 'ഛായാചിത്രം',
   'canvas.worksheetText.cancel': 'റദ്ദാക്കുക',
-  'canvas.worksheetText.defaultInstruction': 'ഡയഗ്രാമിൻ്റെ മൊത്തത്തിലുള്ള ഘടന മെച്ചപ്പെടുത്തുന്നതിന് ശൂന്യമായ സ്ഥലത്ത് അനുബന്ധ ഉള്ളടക്കം ചേർക്കുക.',
-  'canvas.worksheetText.dragDiagramHint': 'സ്ഥാനം ക്രമീകരിക്കാൻ വലിച്ചിടുക · സൂം ചെയ്യാൻ കോണുകൾ വലിച്ചിടുക',
+  'canvas.worksheetText.defaultInstruction':
+    'ഡയഗ്രാമിൻ്റെ മൊത്തത്തിലുള്ള ഘടന മെച്ചപ്പെടുത്തുന്നതിന് ശൂന്യമായ സ്ഥലത്ത് അനുബന്ധ ഉള്ളടക്കം ചേർക്കുക.',
+  'canvas.worksheetText.dragDiagramHint':
+    'സ്ഥാനം ക്രമീകരിക്കാൻ വലിച്ചിടുക · സൂം ചെയ്യാൻ കോണുകൾ വലിച്ചിടുക',
   'canvas.worksheetText.fieldClass': 'ക്ലാസ്:',
   'canvas.worksheetText.fieldDate': 'തീയതി:',
   'canvas.worksheetText.fieldName': 'പേര്:',
   'canvas.worksheetText.hide': 'മറയ്ക്കുക',
   'canvas.worksheetText.instructionLabel': 'വിവരണ വാചകം',
   'canvas.worksheetText.instructionPrefix': 'ആവശ്യമാണ്:',
-  'canvas.worksheetText.modalHint': 'PDF കയറ്റുമതി ചെയ്യുന്നത് അച്ചടിക്കുന്നതിന് സൗകര്യപ്രദമാണ്; പ്രമാണം എക്‌സ്‌പോർട്ടുചെയ്യുമ്പോൾ, പേര് പോലുള്ള ഫീൽഡുകൾ എഡിറ്റുചെയ്യാനാകും, കൂടാതെ ഐക്കൺ ഒരു ചിത്രമായി തുടരും.',
-  'canvas.worksheetText.headerCaptureFailed': 'പഠന ഷീറ്റ് തലക്കെട്ട് ജനറേഷൻ പരാജയപ്പെട്ടു, തലക്കെട്ടില്ലാത്ത ഒരു PDF കയറ്റുമതി ചെയ്തു.',
+  'canvas.worksheetText.modalHint':
+    'PDF കയറ്റുമതി ചെയ്യുന്നത് അച്ചടിക്കുന്നതിന് സൗകര്യപ്രദമാണ്; പ്രമാണം എക്‌സ്‌പോർട്ടുചെയ്യുമ്പോൾ, പേര് പോലുള്ള ഫീൽഡുകൾ എഡിറ്റുചെയ്യാനാകും, കൂടാതെ ഐക്കൺ ഒരു ചിത്രമായി തുടരും.',
+  'canvas.worksheetText.headerCaptureFailed':
+    'പഠന ഷീറ്റ് തലക്കെട്ട് ജനറേഷൻ പരാജയപ്പെട്ടു, തലക്കെട്ടില്ലാത്ത ഒരു PDF കയറ്റുമതി ചെയ്തു.',
   'canvas.worksheetText.modalTitle': 'DOC/PDF-ലേക്ക് കയറ്റുമതി ചെയ്യുക',
   'canvas.worksheetText.learningSheetMode': 'സിംഗിൾ മോഡ് പഠിക്കുക',
   'canvas.worksheetText.learningSheetModeOn': 'ഓൺ ചെയ്യുക',
   'canvas.worksheetText.learningSheetModeOff': 'അടച്ചുപൂട്ടൽ',
   'canvas.worksheetText.learningSheetPanelTitle': 'ഒറ്റ തലക്കെട്ട് പഠിക്കുക',
-  'canvas.worksheetText.learningSheetPanelHint': 'ഇനിപ്പറയുന്ന ഓപ്ഷനുകൾ സ്റ്റഡി ഷീറ്റ് മോഡിൽ മാത്രമേ ലഭ്യമാകൂ കൂടാതെ ഐക്കണിന് മുകളിൽ ദൃശ്യമാകും.',
+  'canvas.worksheetText.learningSheetPanelHint':
+    'ഇനിപ്പറയുന്ന ഓപ്ഷനുകൾ സ്റ്റഡി ഷീറ്റ് മോഡിൽ മാത്രമേ ലഭ്യമാകൂ കൂടാതെ ഐക്കണിന് മുകളിൽ ദൃശ്യമാകും.',
   'canvas.worksheetText.exportSettings': 'കയറ്റുമതി ഓപ്ഷനുകൾ',
   'canvas.worksheetText.previewDiagram': 'ചിത്രീകരണം',
-  'canvas.worksheetText.previewEmpty': 'ഫീൽഡ് ഓണാക്കിയ ശേഷം, നിങ്ങൾക്ക് പഠന ഷീറ്റ് തലക്കെട്ട് പ്രിവ്യൂ ചെയ്യാം.',
+  'canvas.worksheetText.previewEmpty':
+    'ഫീൽഡ് ഓണാക്കിയ ശേഷം, നിങ്ങൾക്ക് പഠന ഷീറ്റ് തലക്കെട്ട് പ്രിവ്യൂ ചെയ്യാം.',
   'canvas.worksheetText.previewFailed': 'ഗ്രാഫിക്കൽ പ്രിവ്യൂ സൃഷ്‌ടിക്കാനായില്ല.',
   'canvas.worksheetText.previewLabel': 'പ്രിവ്യൂ',
   'canvas.worksheetText.previewLoading': 'ഐക്കൺ ക്യാപ്ചർ ചെയ്യുന്നു...',
@@ -65,14 +71,21 @@ export default {
   'canvas.worksheetText.showName': 'പേര്',
   'canvas.worksheetText.showTopic': 'പദ്ധതിയുടെ പേര്',
   'canvas.worksheetText.topicPreviewLabel': 'മാപ്പ് തീം',
-  'canvas.import.invalidFile': 'അസാധുവായ ഗ്രാഫ് ഫയൽ, MindGraph എക്‌സ്‌പോർട്ട് ചെയ്‌ത MG ഫയലോ CmapTools-ൻ്റെ CMAP ഫയലോ തിരഞ്ഞെടുക്കുക',
+  'canvas.import.invalidFile':
+    'അസാധുവായ ഗ്രാഫ് ഫയൽ, MindGraph എക്‌സ്‌പോർട്ട് ചെയ്‌ത MG ഫയലോ CmapTools-ൻ്റെ CMAP ഫയലോ തിരഞ്ഞെടുക്കുക',
   'canvas.import.parseError': 'ഇമേജ് ഫയൽ പാഴ്‌സ് ചെയ്യാൻ കഴിയുന്നില്ല, ദയവായി വീണ്ടും ശ്രമിക്കുക',
-  'canvas.import.cmapHeuristicSemantics': 'ഈ CmapTools ഫയൽ, കണക്ഷൻ ബന്ധം കുറയ്ക്കുന്നതിന് ടെക്സ്റ്റ് സീക്വൻസ് റിഗ്രഷൻ ഉപയോഗിക്കുന്നു. ക്യാൻവാസിലെ യഥാർത്ഥ ചിത്രത്തിന് എതിരായി ഇത് പരിശോധിക്കുക.',
-  'canvas.import.cmapConnectionFallback': 'പ്രൊപ്പോസിഷണൽ ഒബ്‌ജക്‌റ്റുകളേക്കാൾ ഐഎച്ച്എംസി ഗ്രാഫ് കണക്ഷനുകളെ അടിസ്ഥാനമാക്കിയാണ് സെമാൻ്റിക് ബന്ധങ്ങൾ വീണ്ടെടുക്കുന്നത്.',
-  'canvas.import.cmapEmptyLayout': 'നോഡ് കോർഡിനേറ്റുകൾ പുനഃസ്ഥാപിച്ചിട്ടില്ല കൂടാതെ ലേഔട്ട് വീണ്ടും സ്വയമേവ ജനറേറ്റുചെയ്തു.',
-  'canvas.import.cmapLayoutLabelCollision': 'ഡ്യൂപ്ലിക്കേറ്റ് കൺസെപ്റ്റ് ടാഗുകൾ ലേഔട്ട് ആങ്കറുകൾ പങ്കിടുന്നു, ചില ഇറക്കുമതി സ്ഥാനങ്ങൾ കൃത്യമല്ലായിരിക്കാം.',
-  'canvas.import.cmapLayoutFailed': 'ലേഔട്ട് പാഴ്‌സിംഗിൽ ഒരു അപവാദം സംഭവിച്ചു, പകരം കോർഡിനേറ്റുകൾ സ്വയമേവ സൃഷ്‌ടിക്കപ്പെട്ടു.',
-  'canvas.reset.confirmBody': 'നിങ്ങൾക്ക് പുനഃസജ്ജമാക്കണമെന്ന് തീർച്ചയാണോ? നിലവിലെ പ്രാതിനിധ്യം, നോഡ് പാലറ്റ്, മറ്റെല്ലാം നഷ്ടപ്പെടും, പുനഃസ്ഥാപിക്കാൻ കഴിയില്ല.',
+  'canvas.import.cmapHeuristicSemantics':
+    'ഈ CmapTools ഫയൽ, കണക്ഷൻ ബന്ധം കുറയ്ക്കുന്നതിന് ടെക്സ്റ്റ് സീക്വൻസ് റിഗ്രഷൻ ഉപയോഗിക്കുന്നു. ക്യാൻവാസിലെ യഥാർത്ഥ ചിത്രത്തിന് എതിരായി ഇത് പരിശോധിക്കുക.',
+  'canvas.import.cmapConnectionFallback':
+    'പ്രൊപ്പോസിഷണൽ ഒബ്‌ജക്‌റ്റുകളേക്കാൾ ഐഎച്ച്എംസി ഗ്രാഫ് കണക്ഷനുകളെ അടിസ്ഥാനമാക്കിയാണ് സെമാൻ്റിക് ബന്ധങ്ങൾ വീണ്ടെടുക്കുന്നത്.',
+  'canvas.import.cmapEmptyLayout':
+    'നോഡ് കോർഡിനേറ്റുകൾ പുനഃസ്ഥാപിച്ചിട്ടില്ല കൂടാതെ ലേഔട്ട് വീണ്ടും സ്വയമേവ ജനറേറ്റുചെയ്തു.',
+  'canvas.import.cmapLayoutLabelCollision':
+    'ഡ്യൂപ്ലിക്കേറ്റ് കൺസെപ്റ്റ് ടാഗുകൾ ലേഔട്ട് ആങ്കറുകൾ പങ്കിടുന്നു, ചില ഇറക്കുമതി സ്ഥാനങ്ങൾ കൃത്യമല്ലായിരിക്കാം.',
+  'canvas.import.cmapLayoutFailed':
+    'ലേഔട്ട് പാഴ്‌സിംഗിൽ ഒരു അപവാദം സംഭവിച്ചു, പകരം കോർഡിനേറ്റുകൾ സ്വയമേവ സൃഷ്‌ടിക്കപ്പെട്ടു.',
+  'canvas.reset.confirmBody':
+    'നിങ്ങൾക്ക് പുനഃസജ്ജമാക്കണമെന്ന് തീർച്ചയാണോ? നിലവിലെ പ്രാതിനിധ്യം, നോഡ് പാലറ്റ്, മറ്റെല്ലാം നഷ്ടപ്പെടും, പുനഃസ്ഥാപിക്കാൻ കഴിയില്ല.',
   'canvas.reset.confirmButton': 'പുനഃസജ്ജമാക്കുക',
   'canvas.reset.confirmTitle': 'സ്ഥിരസ്ഥിതി ടെംപ്ലേറ്റിലേക്ക് പുനഃസജ്ജമാക്കുക',
   'canvas.reset.warnSelectType': 'പുനഃസജ്ജമാക്കാനായില്ല: ആദ്യം ഐക്കൺ തരം തിരഞ്ഞെടുക്കുക',
@@ -88,19 +101,25 @@ export default {
   'canvas.voiceCommandGuide.example.update_center': '"തൊഴിൽ വിദ്യാഭ്യാസത്തിലേക്ക് തീം മാറ്റുക"',
   'canvas.voiceCommandGuide.example.delete_node': '"ചൈന ബ്രാഞ്ച് ഇല്ലാതാക്കുക"',
   'canvas.voiceCommandGuide.example.explain_node': '"ചൈന വിശദീകരിക്കുക"',
-  'canvas.voiceCommandGuide.example.start_inline_recommendations': '"ഈ നോഡിനായി അസോസിയേഷൻ ശുപാർശകൾ ഉണ്ടാക്കുക"',
+  'canvas.voiceCommandGuide.example.start_inline_recommendations':
+    '"ഈ നോഡിനായി അസോസിയേഷൻ ശുപാർശകൾ ഉണ്ടാക്കുക"',
   'canvas.shortcutGuide.addChild': 'ചൈൽഡ് നോഡ് ചേർക്കുക',
-  'canvas.shortcutGuide.addChildDesc': 'നിലവിൽ തിരഞ്ഞെടുത്ത നോഡിലേക്ക് ചൈൽഡ് നോഡുകൾ വേഗത്തിൽ ചേർക്കുക.',
+  'canvas.shortcutGuide.addChildDesc':
+    'നിലവിൽ തിരഞ്ഞെടുത്ത നോഡിലേക്ക് ചൈൽഡ് നോഡുകൾ വേഗത്തിൽ ചേർക്കുക.',
   'canvas.shortcutGuide.addSibling': 'സഹോദര നോഡ് ചേർക്കുക',
-  'canvas.shortcutGuide.addSiblingDesc': 'നിലവിൽ തിരഞ്ഞെടുത്ത നോഡിനായി സഹോദര നോഡുകൾ വേഗത്തിൽ ചേർക്കുക.',
+  'canvas.shortcutGuide.addSiblingDesc':
+    'നിലവിൽ തിരഞ്ഞെടുത്ത നോഡിനായി സഹോദര നോഡുകൾ വേഗത്തിൽ ചേർക്കുക.',
   'canvas.shortcutGuide.editText': 'ടെക്സ്റ്റ് എഡിറ്റ് ചെയ്യുക',
-  'canvas.shortcutGuide.editTextDesc': 'ടെക്‌സ്‌റ്റ് പരിഷ്‌ക്കരിക്കാൻ സ്ഥലത്തുള്ള ഇൻപുട്ട് ബോക്‌സിലേക്ക് നേരിട്ട് വിളിക്കുക, സ്വയമേവ സംരക്ഷിക്കുന്നതിനും പുതിയ വലുപ്പം തൽക്ഷണം കണക്കാക്കുന്നതിനും എൻ്റർ അമർത്തുക അല്ലെങ്കിൽ ഫോക്കസ് നഷ്‌ടപ്പെടുത്തുക.',
+  'canvas.shortcutGuide.editTextDesc':
+    'ടെക്‌സ്‌റ്റ് പരിഷ്‌ക്കരിക്കാൻ സ്ഥലത്തുള്ള ഇൻപുട്ട് ബോക്‌സിലേക്ക് നേരിട്ട് വിളിക്കുക, സ്വയമേവ സംരക്ഷിക്കുന്നതിനും പുതിയ വലുപ്പം തൽക്ഷണം കണക്കാക്കുന്നതിനും എൻ്റർ അമർത്തുക അല്ലെങ്കിൽ ഫോക്കസ് നഷ്‌ടപ്പെടുത്തുക.',
   'canvas.shortcutGuide.doubleClick': 'ടെക്‌സ്‌റ്റ് പരിഷ്‌ക്കരിക്കാൻ ഡബിൾ ക്ലിക്ക് ചെയ്യുക',
   'canvas.shortcutGuide.deleteNode': 'നോഡ് ഇല്ലാതാക്കുക',
-  'canvas.shortcutGuide.deleteNodeDesc': 'തിരഞ്ഞെടുത്ത നോഡും അതിൻ്റെ ഉപശാഖകളും വേഗത്തിൽ നീക്കം ചെയ്യുക (റൂട്ട് നോഡ് ആകസ്മികമായി ഇല്ലാതാക്കുന്നതിൽ നിന്ന് സംരക്ഷിക്കപ്പെട്ടിരിക്കുന്നു).',
+  'canvas.shortcutGuide.deleteNodeDesc':
+    'തിരഞ്ഞെടുത്ത നോഡും അതിൻ്റെ ഉപശാഖകളും വേഗത്തിൽ നീക്കം ചെയ്യുക (റൂട്ട് നോഡ് ആകസ്മികമായി ഇല്ലാതാക്കുന്നതിൽ നിന്ന് സംരക്ഷിക്കപ്പെട്ടിരിക്കുന്നു).',
   'canvas.shortcutGuide.arrowNav': 'ആരോ കീ നാവിഗേഷൻ',
   'canvas.shortcutGuide.selectNav': 'നാവിഗേഷൻ തിരഞ്ഞെടുക്കുക',
-  'canvas.shortcutGuide.arrowNavDesc': 'വ്യവസായത്തിലെ പ്രമുഖ യൂക്ലിഡിയൻ ജ്യാമിതി കണക്കുകൂട്ടൽ എഞ്ചിൻ. ടൈപ്പ് സെറ്റിംഗ് മോഡ് പരിഗണിക്കാതെ തന്നെ, ക്യാൻവാസിലെ നോഡിൻ്റെ യഥാർത്ഥ ഫിസിക്കൽ ദ്വിമാന കോർഡിനേറ്റുകളെ അടിസ്ഥാനമാക്കി അമ്പടയാള കീകൾ സ്വയമേവ ഏറ്റവും അടുത്തുള്ള ഏറ്റവും മികച്ച നോഡ് തിരഞ്ഞെടുക്കും, ഇത് ഡെസ്‌ക്‌ടോപ്പിൽ നേറ്റീവ് സോഫ്‌റ്റ്‌വെയർ പ്രവർത്തിപ്പിക്കുന്നത് പോലെയുള്ള തടസ്സമില്ലാത്ത ഷട്ടിൽ അനുഭവം നൽകുന്നു.',
+  'canvas.shortcutGuide.arrowNavDesc':
+    'വ്യവസായത്തിലെ പ്രമുഖ യൂക്ലിഡിയൻ ജ്യാമിതി കണക്കുകൂട്ടൽ എഞ്ചിൻ. ടൈപ്പ് സെറ്റിംഗ് മോഡ് പരിഗണിക്കാതെ തന്നെ, ക്യാൻവാസിലെ നോഡിൻ്റെ യഥാർത്ഥ ഫിസിക്കൽ ദ്വിമാന കോർഡിനേറ്റുകളെ അടിസ്ഥാനമാക്കി അമ്പടയാള കീകൾ സ്വയമേവ ഏറ്റവും അടുത്തുള്ള ഏറ്റവും മികച്ച നോഡ് തിരഞ്ഞെടുക്കും, ഇത് ഡെസ്‌ക്‌ടോപ്പിൽ നേറ്റീവ് സോഫ്‌റ്റ്‌വെയർ പ്രവർത്തിപ്പിക്കുന്നത് പോലെയുള്ള തടസ്സമില്ലാത്ത ഷട്ടിൽ അനുഭവം നൽകുന്നു.',
   'canvas.shortcutGuide.cancel': 'അൺചെക്ക്/എഡിറ്റ്',
   'canvas.shortcutGuide.cancelDesc': 'ഒറ്റ ക്ലിക്കിൽ അൺചെക്ക് ചെയ്യുക അല്ലെങ്കിൽ എഡിറ്റ് ചെയ്യുക.',
   'canvas.shortcutGuide.undo': 'മാറ്റങ്ങൾ പഴയപടിയാക്കുക',
@@ -110,7 +129,8 @@ export default {
   'canvas.shortcutGuide.learningSheetAnswers': 'റഫറൻസ് ഉത്തരങ്ങൾ കാണിക്കുക/മറയ്ക്കുക',
   'canvas.shortcutGuide.recalcLayout': 'ലേഔട്ട് വീണ്ടും കണക്കാക്കുക',
   'canvas.shortcutGuide.multiSelect': 'നോഡ് മൾട്ടിപ്പിൾ സെലക്ഷൻ',
-  'canvas.shortcutGuide.multiSelectDesc': 'പോയിൻ്റർ മോഡിൽ ഒന്നിലധികം നോഡുകൾ തിരഞ്ഞെടുക്കാൻ വലിച്ചിടുക.',
+  'canvas.shortcutGuide.multiSelectDesc':
+    'പോയിൻ്റർ മോഡിൽ ഒന്നിലധികം നോഡുകൾ തിരഞ്ഞെടുക്കാൻ വലിച്ചിടുക.',
   'canvas.shortcutGuide.multiSelectHint': 'തിരഞ്ഞെടുത്തത് വലിച്ചിടുക',
   'canvas.shortcutGuide.canvasPan': 'ക്യാൻവാസ് വലിച്ചിടൽ',
   'canvas.shortcutGuide.canvasPanDesc': 'ക്യാൻവാസ് കാഴ്ച പാൻ ചെയ്യുക.',
@@ -135,9 +155,11 @@ export default {
   'canvas.gestureGuide.contextMenu': 'മെനു തുറക്കുക',
   'canvas.gestureGuide.contextMenuHint': 'ദീർഘനേരം അമർത്തുക',
   'canvas.gestureGuide.slideSwipe': 'സ്ലൈഡുകൾ മാറുക',
-  'canvas.gestureGuide.slideSwipeHint': 'രണ്ട് വിരലുകൾ ഉപയോഗിച്ച് ഇടത്തോട്ടോ വലത്തോട്ടോ സ്വൈപ്പ് ചെയ്യുക',
+  'canvas.gestureGuide.slideSwipeHint':
+    'രണ്ട് വിരലുകൾ ഉപയോഗിച്ച് ഇടത്തോട്ടോ വലത്തോട്ടോ സ്വൈപ്പ് ചെയ്യുക',
   'canvas.gestureGuide.undoRedo': 'പഴയപടിയാക്കുക/വീണ്ടും ചെയ്യുക',
-  'canvas.gestureGuide.undoRedoHint': 'മൂന്ന് വിരലുകൾ ഉപയോഗിച്ച് ഇടത്തോട്ടും വലത്തോട്ടും സ്വൈപ്പ് ചെയ്യുക',
+  'canvas.gestureGuide.undoRedoHint':
+    'മൂന്ന് വിരലുകൾ ഉപയോഗിച്ച് ഇടത്തോട്ടും വലത്തോട്ടും സ്വൈപ്പ് ചെയ്യുക',
   'canvas.gestureGuide.tools': 'ഉപകരണം തുറക്കുക',
   'canvas.gestureGuide.toolsHint': 'നാല് വിരലുകൾ കൊണ്ട് ടാപ്പ് ചെയ്യുക',
   'canvas.gestureGuide.slashDelete': 'Delete node',
@@ -185,13 +207,16 @@ export default {
   'canvas.toolbar.mindMapThemeVibrantRose': 'പർപ്പിൾ',
   'canvas.toolbar.mindMapThemeRainbow': 'മഴവില്ല് ശാഖ',
   'canvas.toolbar.mindMapDiagramStyleClassic': 'ക്ലാസിക്',
-  'canvas.toolbar.mindMapDiagramStyleClassicDesc': 'വലത് ആംഗിൾ സെൻ്റർ · വൃത്താകൃതിയിലുള്ള കോർണർ ലെവൽ 1 · അടിവര ലെവൽ 2',
+  'canvas.toolbar.mindMapDiagramStyleClassicDesc':
+    'വലത് ആംഗിൾ സെൻ്റർ · വൃത്താകൃതിയിലുള്ള കോർണർ ലെവൽ 1 · അടിവര ലെവൽ 2',
   'canvas.toolbar.mindMapDiagramStyleFormal': 'വലത് കോൺ',
-  'canvas.toolbar.mindMapDiagramStyleFormalDesc': 'വലത് ആംഗിൾ സെൻ്റർ · വലത് ആംഗിൾ ലെവൽ 1 · വലത് ആംഗിൾ ലെവൽ 2',
+  'canvas.toolbar.mindMapDiagramStyleFormalDesc':
+    'വലത് ആംഗിൾ സെൻ്റർ · വലത് ആംഗിൾ ലെവൽ 1 · വലത് ആംഗിൾ ലെവൽ 2',
   'canvas.toolbar.mindMapDiagramStyleBubble': 'കുമിള',
   'canvas.toolbar.mindMapDiagramStyleBubbleDesc': 'ബബിൾ സെൻ്റർ · ബബിൾ ലെവൽ 1 · അടിവര ലെവൽ 2',
   'canvas.toolbar.mindMapDiagramStyleUnderline': 'അടിവരയിടുക',
-  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc': 'വലത് ആംഗിൾ സെൻ്റർ · അടിവര ലെവൽ 1 · അടിവര ലെവൽ 2',
+  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc':
+    'വലത് ആംഗിൾ സെൻ്റർ · അടിവര ലെവൽ 1 · അടിവര ലെവൽ 2',
   'canvas.toolbar.mindMapDiagramStyleSoft': 'മൃദുവായ വൃത്താകൃതിയിലുള്ള കോണുകൾ',
   'canvas.toolbar.mindMapDiagramStyleSoftDesc': 'ഫില്ലറ്റ് സെൻ്റർ · എലിപ്‌സ് ലെവൽ 1 · അടിവര ലെവൽ 3',
   'canvas.toolbar.mindMapThemeMorandi': 'ഗംഭീര മൊറാണ്ടി',
@@ -218,10 +243,13 @@ export default {
   'canvas.toolbar.aiGenerateTooltip': 'കേന്ദ്ര തീമിനെ അടിസ്ഥാനമാക്കി സൃഷ്ടിക്കുക',
   'canvas.toolbar.aiGenerating': 'സൃഷ്ടിക്കുന്നു...',
   'canvas.toolbar.professionalContent.label': 'പ്രൊഫഷണൽ ഉള്ളടക്കം',
-  'canvas.toolbar.professionalContent.tooltip': 'AI സൃഷ്ടിച്ച ഉള്ളടക്കത്തിനായി പ്രേക്ഷകരുടെ ബുദ്ധിമുട്ട് തിരഞ്ഞെടുക്കുക',
-  'canvas.toolbar.professionalContent.panelTitle': 'AI സൃഷ്ടിച്ച ഉള്ളടക്കത്തിൻ്റെ ആവശ്യമുള്ള പ്രൊഫഷണലിസം',
+  'canvas.toolbar.professionalContent.tooltip':
+    'AI സൃഷ്ടിച്ച ഉള്ളടക്കത്തിനായി പ്രേക്ഷകരുടെ ബുദ്ധിമുട്ട് തിരഞ്ഞെടുക്കുക',
+  'canvas.toolbar.professionalContent.panelTitle':
+    'AI സൃഷ്ടിച്ച ഉള്ളടക്കത്തിൻ്റെ ആവശ്യമുള്ള പ്രൊഫഷണലിസം',
   'canvas.toolbar.professionalContent.guideTitle': 'പ്രേക്ഷകരുടെ ബുദ്ധിമുട്ട് ആദ്യം തിരഞ്ഞെടുക്കുക',
-  'canvas.toolbar.professionalContent.guideBody': 'ഒരു സ്റ്റേജ് അല്ലെങ്കിൽ സീൻ തിരഞ്ഞെടുക്കാൻ ഇവിടെ ക്ലിക്ക് ചെയ്യുക. AI ജനറേഷൻ, ഡയലോഗ് മാറ്റങ്ങൾ മുതലായവ ബുദ്ധിമുട്ട് അനുസരിച്ച് ഉള്ളടക്കം ക്രമീകരിക്കും. തിരഞ്ഞെടുത്ത ശേഷം, ബട്ടണിന് അക്കാദമിക് സ്റ്റേജ് ലേബൽ ലഭിക്കും.',
+  'canvas.toolbar.professionalContent.guideBody':
+    'ഒരു സ്റ്റേജ് അല്ലെങ്കിൽ സീൻ തിരഞ്ഞെടുക്കാൻ ഇവിടെ ക്ലിക്ക് ചെയ്യുക. AI ജനറേഷൻ, ഡയലോഗ് മാറ്റങ്ങൾ മുതലായവ ബുദ്ധിമുട്ട് അനുസരിച്ച് ഉള്ളടക്കം ക്രമീകരിക്കും. തിരഞ്ഞെടുത്ത ശേഷം, ബട്ടണിന് അക്കാദമിക് സ്റ്റേജ് ലേബൽ ലഭിക്കും.',
   'canvas.toolbar.professionalContent.guideAction': 'തിരഞ്ഞെടുക്കാൻ',
   'canvas.toolbar.professionalContent.guideDismiss': 'അറിഞ്ഞു',
   'canvas.toolbar.professionalContent.level.general.title': 'യൂണിവേഴ്സൽ',
@@ -238,12 +266,17 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': 'പ്രായോഗിക സാഹചര്യങ്ങൾ',
   'canvas.toolbar.professionalContent.level.expert.title': 'വിദഗ്ധൻ',
   'canvas.toolbar.professionalContent.level.expert.description': 'ആഴത്തിൽ ശുദ്ധീകരിച്ചു',
-  'canvas.toolbar.professionalContent.notify.preference': 'തുടർന്നുള്ള AI- സൃഷ്ടിച്ച ഉള്ളടക്കം "{level}" പ്രേക്ഷക അവബോധ തലത്തിന് അനുസൃതമായിരിക്കും',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral': 'തുടർന്നുള്ള AI- ജനറേറ്റഡ് ഉള്ളടക്കം ഒരു "സാർവത്രിക" ശൈലിയിലായിരിക്കും, അധിക ബുദ്ധിമുട്ട് നിയന്ത്രണങ്ങളൊന്നുമില്ല.',
-  'canvas.toolbar.professionalContent.notify.afterGenerated': 'നിലവിലെ ഉള്ളടക്കം "{current}" ബുദ്ധിമുട്ടാണ്; ഭാവിയിൽ, അത് സൃഷ്ടിക്കുന്നതിൽ നിങ്ങളെ സഹായിക്കാൻ ഞാൻ "{next}" അമർത്തും.',
-  'canvas.toolbar.professionalContent.audienceLine': 'നിലവിലെ പ്രേക്ഷകർ: {level} (താഴെ നിന്ന് [പ്രൊഫഷണൽ ഉള്ളടക്കം])',
+  'canvas.toolbar.professionalContent.notify.preference':
+    'തുടർന്നുള്ള AI- സൃഷ്ടിച്ച ഉള്ളടക്കം "{level}" പ്രേക്ഷക അവബോധ തലത്തിന് അനുസൃതമായിരിക്കും',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    'തുടർന്നുള്ള AI- ജനറേറ്റഡ് ഉള്ളടക്കം ഒരു "സാർവത്രിക" ശൈലിയിലായിരിക്കും, അധിക ബുദ്ധിമുട്ട് നിയന്ത്രണങ്ങളൊന്നുമില്ല.',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    'നിലവിലെ ഉള്ളടക്കം "{current}" ബുദ്ധിമുട്ടാണ്; ഭാവിയിൽ, അത് സൃഷ്ടിക്കുന്നതിൽ നിങ്ങളെ സഹായിക്കാൻ ഞാൻ "{next}" അമർത്തും.',
+  'canvas.toolbar.professionalContent.audienceLine':
+    'നിലവിലെ പ്രേക്ഷകർ: {level} (താഴെ നിന്ന് [പ്രൊഫഷണൽ ഉള്ളടക്കം])',
   'canvas.toolbar.educationStage': 'അക്കാദമിക് കാലഘട്ടം',
-  'canvas.toolbar.educationStageTooltip': 'AI സൃഷ്ടിച്ച ഉള്ളടക്കത്തിൻ്റെ ആഴത്തെ ബാധിക്കാൻ അക്കാദമിക് ഘട്ടം തിരഞ്ഞെടുക്കുക.',
+  'canvas.toolbar.educationStageTooltip':
+    'AI സൃഷ്ടിച്ച ഉള്ളടക്കത്തിൻ്റെ ആഴത്തെ ബാധിക്കാൻ അക്കാദമിക് ഘട്ടം തിരഞ്ഞെടുക്കുക.',
   'canvas.toolbar.educationStageClear': 'യൂണിവേഴ്സൽ',
   'canvas.toolbar.educationStagePrimary': 'പ്രാഥമിക വിദ്യാലയം',
   'canvas.toolbar.educationStageMiddle': 'ജൂനിയർ ഹൈസ്കൂൾ',
@@ -269,15 +302,18 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': 'വിഷയ നോഡ് ഇല്ലാതാക്കാൻ കഴിയുന്നില്ല',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference':
+    'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': 'സൃഷ്ടിക്കാൻ കഴിയുന്നില്ല',
   'canvas.toolbar.causeAdded': 'കാരണ നോഡ് ചേർത്തു',
   'canvas.toolbar.childAdded': 'കുട്ടി കൂട്ടിച്ചേർത്തു',
-  'canvas.toolbar.collabAiBlocked': 'സഹകരണ മോഡിൽ, ഐക്കൺ ഉടമയ്ക്ക് മാത്രമേ AI ജനറേഷൻ ഉപയോഗിക്കാൻ കഴിയൂ',
+  'canvas.toolbar.collabAiBlocked':
+    'സഹകരണ മോഡിൽ, ഐക്കൺ ഉടമയ്ക്ക് മാത്രമേ AI ജനറേഷൻ ഉപയോഗിക്കാൻ കഴിയൂ',
   'canvas.toolbar.collabGuestFeatureBlocked': 'സഹകരിച്ച് അതിഥിയായി ചേരുമ്പോൾ ഈ ഫീച്ചർ ലഭ്യമല്ല.',
   'canvas.toolbar.colorLabel': 'നിറം',
   'canvas.toolbar.conceptGeneration': 'ആശയങ്ങൾ സൃഷ്ടിക്കുക',
-  'canvas.toolbar.conceptMapModesDev': 'കൺസെപ്റ്റ് മാപ്പ് മോഡ് പ്രവർത്തനം വികസിപ്പിച്ചുകൊണ്ടിരിക്കുന്നു',
+  'canvas.toolbar.conceptMapModesDev':
+    'കൺസെപ്റ്റ് മാപ്പ് മോഡ് പ്രവർത്തനം വികസിപ്പിച്ചുകൊണ്ടിരിക്കുന്നു',
   'canvas.toolbar.createDiagramFirst': 'ദയവായി ആദ്യം ഒരു ഐക്കൺ സൃഷ്‌ടിക്കുക',
   'canvas.toolbar.deleteAnalogyPairHistory': 'അനലോഗ് ജോഡി ഇല്ലാതാക്കുക',
   'canvas.toolbar.deleteAttributeHistory': 'ആട്രിബ്യൂട്ട് ഇല്ലാതാക്കുക',
@@ -295,11 +331,13 @@ export default {
   'canvas.toolbar.exit': 'ഉപേക്ഷിക്കുക',
   'canvas.toolbar.exitFullscreen': 'പൂർണ്ണ സ്ക്രീനിൽ നിന്ന് പുറത്തുകടക്കുക',
   'canvas.toolbar.highlighter': 'ഹൈലൈറ്റർ പേന',
-  'canvas.toolbar.highlighterTooltip': 'ക്യാൻവാസിൽ വ്യാഖ്യാനങ്ങൾ പ്രയോഗിക്കുകയും ഡെമോയിൽ നിന്ന് പുറത്തുകടക്കുമ്പോൾ അവ സ്വയമേവ മായ്ക്കുകയും ചെയ്യുക',
+  'canvas.toolbar.highlighterTooltip':
+    'ക്യാൻവാസിൽ വ്യാഖ്യാനങ്ങൾ പ്രയോഗിക്കുകയും ഡെമോയിൽ നിന്ന് പുറത്തുകടക്കുമ്പോൾ അവ സ്വയമേവ മായ്ക്കുകയും ചെയ്യുക',
   'canvas.toolbar.highlighterChooseColor': 'ഹൈലൈറ്റർ നിറം',
   'canvas.toolbar.highlighterPaletteAria': 'ഹൈലൈറ്റർ നിറം തിരഞ്ഞെടുക്കുക',
   'canvas.toolbar.insertEquation': 'ഫോർമുല ചേർക്കുക',
-  'canvas.toolbar.insertEquationTooltip': 'കഴ്‌സറിൽ ഒരു ഇൻലൈൻ ഫോർമുല ($...$) ചേർക്കുക; എഡിറ്റ് ചെയ്യുന്നില്ലെങ്കിൽ, തിരഞ്ഞെടുത്ത നോഡിലേക്ക് ചേർക്കുക',
+  'canvas.toolbar.insertEquationTooltip':
+    'കഴ്‌സറിൽ ഒരു ഇൻലൈൻ ഫോർമുല ($...$) ചേർക്കുക; എഡിറ്റ് ചെയ്യുന്നില്ലെങ്കിൽ, തിരഞ്ഞെടുത്ത നോഡിലേക്ക് ചേർക്കുക',
   'canvas.toolbar.insertEquationSelectNode': 'ദയവായി ആദ്യം ഒരു നോഡ് തിരഞ്ഞെടുക്കുക',
   'canvas.toolbar.insertEquationDialogTitle': 'ഫോർമുല ചേർക്കുക',
   'canvas.toolbar.insertEquationLoading': 'സമവാക്യ എഡിറ്റർ ലോഡുചെയ്യുന്നു...',
@@ -333,7 +371,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'മധ്യഭാഗം',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
+  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=1/2bh',
@@ -354,7 +392,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'സൈൻ സിദ്ധാന്തം',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'കോസൈൻ(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'സൈൻ(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
+  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'ഇരട്ട ആംഗിൾ',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'അരിത്മെറ്റിക് പാസ് ടേം',
@@ -420,11 +458,13 @@ export default {
   'canvas.presentationTimer.exitTimer': 'ഉപേക്ഷിക്കുക',
   'canvas.presentationTimer.startPresenting': 'പ്രസംഗം ആരംഭിക്കുക',
   'canvas.presentationTimer.closeHud': 'ടൈമർ അടയ്ക്കുക',
-  'canvas.cachedResult.notice': 'കാഷെ ഫലങ്ങൾ, പുതിയ ഫലങ്ങൾ ലഭിക്കുന്നതിന് ഫംഗ്ഷൻ വീണ്ടും ഉപയോഗിക്കുക',
+  'canvas.cachedResult.notice':
+    'കാഷെ ഫലങ്ങൾ, പുതിയ ഫലങ്ങൾ ലഭിക്കുന്നതിന് ഫംഗ്ഷൻ വീണ്ടും ഉപയോഗിക്കുക',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-    'canvas.classroomRemote.tabTopics': 'Topics',
+  'canvas.classroomRemote.resize': 'Drag to resize',
+  'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
@@ -437,7 +477,8 @@ export default {
   'canvas.classroomRemote.topicsReset': 'Restore defaults',
   'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
   'canvas.presentation.learningSheetConfirmTitle': 'സ്ക്രീനിംഗിൽ പ്രവേശിക്കുകയാണോ?',
-  'canvas.presentation.learningSheetConfirmBody': 'നിങ്ങൾ ഇപ്പോഴും നോക്കൗട്ട് ബ്രാക്കറ്റ് ഡയഗ്രം എഡിറ്റ് ചെയ്യുകയാണ്. ഷോയിൽ പ്രവേശിക്കുന്നത് പൊള്ളയായ എഡിറ്റിംഗ് അവസാനിപ്പിക്കുകയും പൊള്ളയായ ഉള്ളടക്കം നിലനിർത്തുകയും ചെയ്യും. തുടരണോ?',
+  'canvas.presentation.learningSheetConfirmBody':
+    'നിങ്ങൾ ഇപ്പോഴും നോക്കൗട്ട് ബ്രാക്കറ്റ് ഡയഗ്രം എഡിറ്റ് ചെയ്യുകയാണ്. ഷോയിൽ പ്രവേശിക്കുന്നത് പൊള്ളയായ എഡിറ്റിംഗ് അവസാനിപ്പിക്കുകയും പൊള്ളയായ ഉള്ളടക്കം നിലനിർത്തുകയും ചെയ്യും. തുടരണോ?',
   'canvas.presentation.learningSheetConfirmProceed': 'കാണിക്കാൻ പോകുക',
   'canvas.presentationContextMenu.laserPointer': 'ലേസർ പോയിൻ്റർ',
   'canvas.presentationContextMenu.spotlight': 'സ്പോട്ട്ലൈറ്റ്',
@@ -485,65 +526,88 @@ export default {
   'canvas.subgraphPreview.hint': 'AI സബ്ഗ്രാഫ് പ്രിവ്യൂ',
   'canvas.subgraphPreview.accept': 'ദത്തെടുക്കൽ',
   'canvas.subgraphPreview.discard': 'ഒഴിവാക്കി',
-  'canvas.subgraphPreview.previewReady': 'ഉപഗ്രാഫ് സൃഷ്ടിച്ചു, ദയവായി അത് സ്വീകരിക്കുക അല്ലെങ്കിൽ ഉപേക്ഷിക്കുക',
+  'canvas.subgraphPreview.previewReady':
+    'ഉപഗ്രാഫ് സൃഷ്ടിച്ചു, ദയവായി അത് സ്വീകരിക്കുക അല്ലെങ്കിൽ ഉപേക്ഷിക്കുക',
   'canvas.subgraphPreview.accepted': 'AI ഉപഗ്രാഫ് സ്വീകരിച്ചു',
   'canvas.subgraphPreview.discarded': 'AI ഉപഗ്രാഫ് ഒഴിവാക്കി',
   'canvas.subgraphPreview.generationFailed': 'സബ്ഗ്രാഫ് ജനറേഷൻ പരാജയപ്പെട്ടു',
   'canvas.subgraphPreview.emptyResult': 'ലഭ്യമായ ചൈൽഡ് നോഡുകൾ AI തിരികെ നൽകിയില്ല',
   'canvas.subgraphPreview.mergeFailed': 'നിലവിലെ നോഡിലേക്ക് സബ്ഗ്രാഫ് ലയിപ്പിക്കാനായില്ല',
   'canvas.subgraphPreview.enterNodeTextFirst': 'ആദ്യം നോഡിനായി സാധുവായ വിഷയ വാചകം നൽകുക',
-  'canvas.subgraphPreview.topicNodeNotSupported': 'സബ്ഗ്രാഫുകൾ സൃഷ്ടിക്കാൻ ബ്രാഞ്ച് നോഡുകൾ തിരഞ്ഞെടുക്കുക',
+  'canvas.subgraphPreview.topicNodeNotSupported':
+    'സബ്ഗ്രാഫുകൾ സൃഷ്ടിക്കാൻ ബ്രാഞ്ച് നോഡുകൾ തിരഞ്ഞെടുക്കുക',
   'canvas.subgraphPreview.historyLabel': 'സബ്ഗ്രാഫുകളുടെ ഇൻ്റലിജൻ്റ് ജനറേഷൻ',
   'canvas.inlineRecPicker.prevPage': 'മുൻ പേജ്',
   'canvas.inlineRecPicker.nextPage': 'അടുത്ത പേജ്',
-  'canvas.toolbar.formatBrushActivated': 'ശൈലി പകർത്തി, അത് പ്രയോഗിക്കാൻ ടാർഗെറ്റ് നോഡിൽ ഒരിക്കൽ ക്ലിക്ക് ചെയ്യുക. ഫോർമാറ്റ് പെയിൻ്റർ തുടർച്ചയായി പ്രയോഗിക്കുന്നതിന് അതിൽ ഡബിൾ ക്ലിക്ക് ചെയ്യുക (Esc അല്ലെങ്കിൽ റദ്ദാക്കാൻ ശൂന്യമായ സ്ഥലത്ത് ക്ലിക്കുചെയ്യുക)',
+  'canvas.toolbar.formatBrushActivated':
+    'ശൈലി പകർത്തി, അത് പ്രയോഗിക്കാൻ ടാർഗെറ്റ് നോഡിൽ ഒരിക്കൽ ക്ലിക്ക് ചെയ്യുക. ഫോർമാറ്റ് പെയിൻ്റർ തുടർച്ചയായി പ്രയോഗിക്കുന്നതിന് അതിൽ ഡബിൾ ക്ലിക്ക് ചെയ്യുക (Esc അല്ലെങ്കിൽ റദ്ദാക്കാൻ ശൂന്യമായ സ്ഥലത്ത് ക്ലിക്കുചെയ്യുക)',
   'canvas.toolbar.formatBrushApplied': '{count} നോഡുകളിലേക്ക് ഫോർമാറ്റ് പ്രയോഗിച്ചു',
   'canvas.toolbar.formatBrushCancelled': 'ബ്രഷ് ഫോർമാറ്റ് റദ്ദാക്കി',
   'canvas.toolbar.formatBrushSelectSource': 'ആദ്യം സ്റ്റൈൽ ഉറവിടമായി ഒരു നോഡ് തിരഞ്ഞെടുക്കുക',
   'canvas.toolbar.formatLabel': 'ഫോർമാറ്റ്',
-  'canvas.toolbar.formatPainter': 'പെയിൻ്റർ ഫോർമാറ്റ് ചെയ്യുക (തുടർച്ചയായി പ്രയോഗിക്കാൻ ഡബിൾ ക്ലിക്ക് ചെയ്യുക)',
+  'canvas.toolbar.formatPainter':
+    'പെയിൻ്റർ ഫോർമാറ്റ് ചെയ്യുക (തുടർച്ചയായി പ്രയോഗിക്കാൻ ഡബിൾ ക്ലിക്ക് ചെയ്യുക)',
   'canvas.toolbar.layoutDirectionToggled': 'ലേഔട്ട് ദിശ മാറി',
   'canvas.toolbar.learningSheetRestored': 'സ്റ്റഡി ഷീറ്റ് പുനഃസ്ഥാപിച്ചു',
   'canvas.toolbar.moreAppConceptMapModes': 'കൺസെപ്റ്റ് മാപ്പ് പാറ്റേൺ',
-  'canvas.toolbar.moreAppConceptMapModesDesc': 'നിലവിൽ സ്റ്റാൻഡേർഡ് മോഡ്, കൂടുതൽ മോഡുകൾ ഉടൻ പുറത്തിറക്കും',
+  'canvas.toolbar.moreAppConceptMapModesDesc':
+    'നിലവിൽ സ്റ്റാൻഡേർഡ് മോഡ്, കൂടുതൽ മോഡുകൾ ഉടൻ പുറത്തിറക്കും',
   'canvas.toolbar.moreAppLearningSheet': 'പൊള്ളയായ ബ്രാക്കറ്റ് ഡയഗ്രം',
-  'canvas.toolbar.moreAppLearningSheetDesc': 'ക്രമരഹിതമായി ഇത് ശൂന്യമായി വിടുക, ഇത് പഠിക്കാനും അവലോകനം ചെയ്യാനുമുള്ള ഒരു നല്ല മാർഗമാണ്',
+  'canvas.toolbar.moreAppLearningSheetDesc':
+    'ക്രമരഹിതമായി ഇത് ശൂന്യമായി വിടുക, ഇത് പഠിക്കാനും അവലോകനം ചെയ്യാനുമുള്ള ഒരു നല്ല മാർഗമാണ്',
   'canvas.toolbar.moreAppWaterfall': 'AI മസ്തിഷ്കപ്രക്ഷോഭം',
-  'canvas.toolbar.moreAppWaterfallDesc': 'വ്യത്യസ്‌തവും ഒത്തുചേരുന്നതുമായ ചിന്തകൾ വ്യക്തമാക്കുന്നതിന് ബാച്ച് നോഡുകളിൽ നിന്ന് തിരഞ്ഞെടുക്കുക',
+  'canvas.toolbar.moreAppWaterfallDesc':
+    'വ്യത്യസ്‌തവും ഒത്തുചേരുന്നതുമായ ചിന്തകൾ വ്യക്തമാക്കുന്നതിന് ബാച്ച് നോഡുകളിൽ നിന്ന് തിരഞ്ഞെടുക്കുക',
   'canvas.toolbar.moreApps': 'കൂടുതൽ ആപ്ലിക്കേഷനുകൾ',
   'canvas.toolbar.moreAppSnapshot': 'സ്നാപ്പ്ഷോട്ട്',
   'canvas.toolbar.moreAppSnapshotDesc': 'നിലവിലെ ഐക്കണിൻ്റെ ഒരു പതിപ്പ് സംരക്ഷിക്കുക (10 വരെ)',
   'canvas.toolbar.moreAppTranslateLabel': 'വിവർത്തനം ചെയ്യുക',
-  'canvas.toolbar.moreAppTranslateLabelDesc': 'നിലവിലെ ഇൻ്റർഫേസ് ഭാഷ അനുസരിച്ച് ഡയഗ്രാമിലെ എല്ലാ നോഡും കണക്ഷൻ ലേബലുകളും വിവർത്തനം ചെയ്യാൻ AI ഉപയോഗിക്കുക',
+  'canvas.toolbar.moreAppTranslateLabelDesc':
+    'നിലവിലെ ഇൻ്റർഫേസ് ഭാഷ അനുസരിച്ച് ഡയഗ്രാമിലെ എല്ലാ നോഡും കണക്ഷൻ ലേബലുകളും വിവർത്തനം ചെയ്യാൻ AI ഉപയോഗിക്കുക',
   'canvas.toolbar.translateLabelTitle': 'വിവർത്തന ഐക്കൺ',
   'canvas.toolbar.translateLabelSource': 'വിവർത്തനം ചെയ്യേണ്ട ടാഗുകൾ ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'ലക്ഷ്യ ഭാഷ',
   'canvas.toolbar.translateLabelCancel': 'റദ്ദാക്കുക',
   'canvas.toolbar.translateLabelConfirm': 'വിവർത്തനം ചെയ്യുക',
-  'canvas.toolbar.translateLabelSelectOne': 'വിവർത്തനം ചെയ്യുന്നതിന് മുമ്പ് ദയവായി ഒരു നോഡ് മാത്രം തിരഞ്ഞെടുക്കുക',
+  'canvas.toolbar.translateLabelSelectOne':
+    'വിവർത്തനം ചെയ്യുന്നതിന് മുമ്പ് ദയവായി ഒരു നോഡ് മാത്രം തിരഞ്ഞെടുക്കുക',
   'canvas.toolbar.translateLabelEmpty': 'തിരഞ്ഞെടുത്ത നോഡിന് വിവർത്തനം ചെയ്യാവുന്ന വാചകമില്ല',
-  'canvas.toolbar.translateLabelDiagramEmpty': 'നിലവിലെ ഐക്കണിന് വിവർത്തനം ചെയ്യാവുന്ന ടെക്‌സ്‌റ്റ് ഇല്ല',
+  'canvas.toolbar.translateLabelDiagramEmpty':
+    'നിലവിലെ ഐക്കണിന് വിവർത്തനം ചെയ്യാവുന്ന ടെക്‌സ്‌റ്റ് ഇല്ല',
   'canvas.toolbar.translateLabelAndMore': 'അവിടെ {n} ഇനങ്ങൾ കാണിച്ചിട്ടില്ല...',
   'canvas.toolbar.translateLabelInProgress': 'ഐക്കൺ വിവർത്തനം ചെയ്യുന്നു...',
   'canvas.toolbar.translateLabelBannerTitle': 'വിവർത്തന ഐക്കൺ',
-  'canvas.toolbar.translateLabelFallbackEnInfo': 'നിലവിലെ ഇൻ്റർഫേസ് ഭാഷ ഒരു വിവർത്തന ലക്ഷ്യമായി പിന്തുണയ്ക്കുന്നില്ല, കൂടാതെ ഇംഗ്ലീഷ് ഔട്ട്‌പുട്ട് ഉപയോഗിക്കും.',
-  'canvas.toolbar.translateLabelFailed': 'വിവർത്തനം പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
+  'canvas.toolbar.translateLabelFallbackEnInfo':
+    'നിലവിലെ ഇൻ്റർഫേസ് ഭാഷ ഒരു വിവർത്തന ലക്ഷ്യമായി പിന്തുണയ്ക്കുന്നില്ല, കൂടാതെ ഇംഗ്ലീഷ് ഔട്ട്‌പുട്ട് ഉപയോഗിക്കും.',
+  'canvas.toolbar.translateLabelFailed':
+    'വിവർത്തനം പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
   'canvas.toolbar.translateLabelDone': 'വിവർത്തനം പൂർത്തിയായി',
   'canvas.toolbar.moreAppVirtualKeyboard': 'വെർച്വൽ കീബോർഡ്',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'ഇംഗ്ലീഷ് ഓൺ-സ്ക്രീൻ കീബോർഡ്; ചൈനീസ് ഭാഷകൾക്കും മറ്റ് ഭാഷകൾക്കും, ദയവായി സിസ്റ്റം ഇൻപുട്ട് രീതി ഉപയോഗിക്കുക',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'ഇംഗ്ലീഷ് ഓൺ-സ്ക്രീൻ കീബോർഡ്; ചൈനീസ് ഭാഷകൾക്കും മറ്റ് ഭാഷകൾക്കും, ദയവായി സിസ്റ്റം ഇൻപുട്ട് രീതി ഉപയോഗിക്കുക',
   'canvas.toolbar.virtualKeyboardClose': 'കീബോർഡ് അടയ്ക്കുക',
-  'canvas.toolbar.virtualKeyboardFocusHint': 'ഒരു നോഡ് തിരഞ്ഞെടുത്ത് അത് നേരിട്ട് ഇൻപുട്ട് ചെയ്യുന്നത് യഥാർത്ഥ ഉള്ളടക്കം മായ്‌ക്കും; എഡിറ്റിംഗ് നൽകുന്നതിന് നിങ്ങൾക്ക് ലേബലിൽ ഡബിൾ ക്ലിക്ക് ചെയ്യാനും കഴിയും.',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'ഒരു നോഡ് തിരഞ്ഞെടുത്ത് അത് നേരിട്ട് ഇൻപുട്ട് ചെയ്യുന്നത് യഥാർത്ഥ ഉള്ളടക്കം മായ്‌ക്കും; എഡിറ്റിംഗ് നൽകുന്നതിന് നിങ്ങൾക്ക് ലേബലിൽ ഡബിൾ ക്ലിക്ക് ചെയ്യാനും കഴിയും.',
   'canvas.toolbar.virtualKeyboardIme': 'സിസ്റ്റം ഇൻപുട്ട് രീതി',
-  'canvas.toolbar.virtualKeyboardImeHint': 'ഇൻപുട്ട് ചെയ്യുന്നതിന് ദയവായി ഫിസിക്കൽ കീബോർഡോ സിസ്റ്റം കീബോർഡോ ഉപയോഗിക്കുക. സിസ്റ്റം ഇൻപുട്ട് രീതിയാണ് കാൻഡിഡേറ്റ് വിൻഡോ നൽകിയിരിക്കുന്നത്.',
-  'canvas.toolbar.snapshotSaveFirst': 'ദയവായി ആദ്യം ഐക്കൺ സേവ് ചെയ്യുക, തുടർന്ന് ഒരു സ്നാപ്പ്ഷോട്ട് എടുക്കുക',
+  'canvas.toolbar.virtualKeyboardImeHint':
+    'ഇൻപുട്ട് ചെയ്യുന്നതിന് ദയവായി ഫിസിക്കൽ കീബോർഡോ സിസ്റ്റം കീബോർഡോ ഉപയോഗിക്കുക. സിസ്റ്റം ഇൻപുട്ട് രീതിയാണ് കാൻഡിഡേറ്റ് വിൻഡോ നൽകിയിരിക്കുന്നത്.',
+  'canvas.toolbar.snapshotSaveFirst':
+    'ദയവായി ആദ്യം ഐക്കൺ സേവ് ചെയ്യുക, തുടർന്ന് ഒരു സ്നാപ്പ്ഷോട്ട് എടുക്കുക',
   'canvas.toolbar.snapshotTaken': 'സ്നാപ്പ്ഷോട്ട് {n} സംരക്ഷിച്ചു',
-  'canvas.toolbar.snapshotFailed': 'സ്നാപ്പ്ഷോട്ട് സംരക്ഷിക്കുന്നത് പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക',
-  'canvas.toolbar.snapshotTooLarge': 'സ്നാപ്പ്ഷോട്ട് വളരെ വലുതാണ് (പരമാവധി {max} KB). ചിത്രത്തിൻ്റെ ഉള്ളടക്കം ലളിതമാക്കി വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.toolbar.snapshotRateLimited': 'സ്നാപ്പ്ഷോട്ട് പ്രവർത്തനം വളരെ പതിവാണ്, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.toolbar.snapshotDiagramNotFound': 'ഐക്കണൊന്നും കണ്ടെത്തിയില്ല. ദയവായി പേജ് പുതുക്കുക അല്ലെങ്കിൽ ലൈബ്രറിയിൽ നിന്ന് തുറക്കുക.',
-  'canvas.library.diagramNotFound': 'ഐക്കൺ കണ്ടെത്തിയില്ല, ഇല്ലാതാക്കിയിരിക്കാം. ഗാലറിയിൽ നിന്ന് മറ്റ് മാപ്പുകൾ തുറക്കുക.',
-  'canvas.library.saveBeforeSwitchFailed': 'മാറുന്നതിന് മുമ്പ് നിലവിലെ മാപ്പ് സംരക്ഷിക്കാൻ കഴിയില്ല, ദയവായി ഇവിടെ താമസിച്ച് വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.toolbar.snapshotConflict': 'സ്നാപ്പ്ഷോട്ട് (സംഘർഷം) സംരക്ഷിക്കാനായില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.toolbar.snapshotFailed':
+    'സ്നാപ്പ്ഷോട്ട് സംരക്ഷിക്കുന്നത് പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക',
+  'canvas.toolbar.snapshotTooLarge':
+    'സ്നാപ്പ്ഷോട്ട് വളരെ വലുതാണ് (പരമാവധി {max} KB). ചിത്രത്തിൻ്റെ ഉള്ളടക്കം ലളിതമാക്കി വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.toolbar.snapshotRateLimited':
+    'സ്നാപ്പ്ഷോട്ട് പ്രവർത്തനം വളരെ പതിവാണ്, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.toolbar.snapshotDiagramNotFound':
+    'ഐക്കണൊന്നും കണ്ടെത്തിയില്ല. ദയവായി പേജ് പുതുക്കുക അല്ലെങ്കിൽ ലൈബ്രറിയിൽ നിന്ന് തുറക്കുക.',
+  'canvas.library.diagramNotFound':
+    'ഐക്കൺ കണ്ടെത്തിയില്ല, ഇല്ലാതാക്കിയിരിക്കാം. ഗാലറിയിൽ നിന്ന് മറ്റ് മാപ്പുകൾ തുറക്കുക.',
+  'canvas.library.saveBeforeSwitchFailed':
+    'മാറുന്നതിന് മുമ്പ് നിലവിലെ മാപ്പ് സംരക്ഷിക്കാൻ കഴിയില്ല, ദയവായി ഇവിടെ താമസിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.toolbar.snapshotConflict':
+    'സ്നാപ്പ്ഷോട്ട് (സംഘർഷം) സംരക്ഷിക്കാനായില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.',
   'canvas.toolbar.newAssociation': 'പുതിയ ബന്ധം',
   'canvas.toolbar.newAttribute': 'പുതിയ പ്രോപ്പർട്ടികൾ',
   'canvas.toolbar.newBranch': 'പുതിയ ശാഖ',
@@ -569,18 +633,27 @@ export default {
   'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'ദയവായി ആദ്യം ഒരു ശാഖയോ ഉപനോഡോ തിരഞ്ഞെടുക്കുക',
-  'canvas.toolbar.selectCategoryOrLeafDelete': 'ദയവായി ഒരു വിഭാഗമോ ഉപ-ഇന നോഡോ തിരഞ്ഞെടുക്കുക (വിഷയ നോഡുകൾ ഇല്ലാതാക്കാൻ കഴിയില്ല)',
-  'canvas.toolbar.selectCauseOrEffectForAdd': 'ദയവായി ആദ്യം കാരണം അല്ലെങ്കിൽ ഫല നോഡ് തിരഞ്ഞെടുക്കുക (ഇൻ്റർമീഡിയറ്റ് ഇവൻ്റ് തിരഞ്ഞെടുക്കരുത്), തുടർന്ന് അതേ കോളത്തിൽ ചേർക്കാൻ എൻ്റർ അമർത്തുക',
-  'canvas.toolbar.selectTreeBranchForChild': 'ഉപ-ഇനങ്ങൾ ചേർക്കുന്നതിന് ഒരു വിഭാഗത്തിന് കീഴിൽ ഒരു വിഭാഗമോ എൻട്രിയോ തിരഞ്ഞെടുക്കുക അല്ലെങ്കിൽ ഒരു പുതിയ വിഭാഗം ചേർക്കുന്നതിന് ഒരു വിഷയം തിരഞ്ഞെടുക്കുക',
+  'canvas.toolbar.selectCategoryOrLeafDelete':
+    'ദയവായി ഒരു വിഭാഗമോ ഉപ-ഇന നോഡോ തിരഞ്ഞെടുക്കുക (വിഷയ നോഡുകൾ ഇല്ലാതാക്കാൻ കഴിയില്ല)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'ദയവായി ആദ്യം കാരണം അല്ലെങ്കിൽ ഫല നോഡ് തിരഞ്ഞെടുക്കുക (ഇൻ്റർമീഡിയറ്റ് ഇവൻ്റ് തിരഞ്ഞെടുക്കരുത്), തുടർന്ന് അതേ കോളത്തിൽ ചേർക്കാൻ എൻ്റർ അമർത്തുക',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'ഉപ-ഇനങ്ങൾ ചേർക്കുന്നതിന് ഒരു വിഭാഗത്തിന് കീഴിൽ ഒരു വിഭാഗമോ എൻട്രിയോ തിരഞ്ഞെടുക്കുക അല്ലെങ്കിൽ ഒരു പുതിയ വിഭാഗം ചേർക്കുന്നതിന് ഒരു വിഷയം തിരഞ്ഞെടുക്കുക',
   'canvas.toolbar.selectNodesFirst': 'ദയവായി നോഡ് തിരഞ്ഞെടുത്ത് പ്രവർത്തിപ്പിക്കുക',
   'canvas.toolbar.nodeStyleFollow': 'ഫോളോ നോഡ്',
-  'canvas.toolbar.nodeStyleFollowHint': 'ഓൺ ചെയ്യുമ്പോൾ, നോഡ് സ്റ്റൈൽ ബാർ തിരഞ്ഞെടുത്ത നോഡിനെ പിന്തുടരുന്നു; ഓഫ് ചെയ്യുമ്പോൾ, അത് മറഞ്ഞിരിക്കുന്നു.',
+  'canvas.toolbar.nodeStyleFollowHint':
+    'ഓൺ ചെയ്യുമ്പോൾ, നോഡ് സ്റ്റൈൽ ബാർ തിരഞ്ഞെടുത്ത നോഡിനെ പിന്തുടരുന്നു; ഓഫ് ചെയ്യുമ്പോൾ, അത് മറഞ്ഞിരിക്കുന്നു.',
   'canvas.toolbar.selectNodesToDelete': 'ആദ്യം ഇല്ലാതാക്കാനുള്ള നോഡ് തിരഞ്ഞെടുക്കുക',
-  'canvas.toolbar.selectPartForSubpart': 'ആദ്യം നിങ്ങൾ ഒരു ഉപവിഭാഗം ചേർക്കാൻ ആഗ്രഹിക്കുന്ന നോഡ് തിരഞ്ഞെടുക്കുക',
-  'canvas.toolbar.selectPartThenEnter': 'ഉപഭാഗങ്ങൾ ചേർക്കാൻ ദയവായി ചില നോഡുകൾ തിരഞ്ഞെടുത്ത് എൻ്റർ അമർത്തുക',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'ദയവായി ഒരു സാമ്യമോ വ്യത്യാസമോ തിരഞ്ഞെടുക്കുക (വിഷയ നോഡുകൾ ഇല്ലാതാക്കാൻ കഴിയില്ല)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'ആദ്യം സാമ്യമോ വ്യത്യാസമോ ഉള്ള നോഡ് തിരഞ്ഞെടുക്കുക',
-  'canvas.toolbar.selectStepForSubstep': 'ആദ്യം നിങ്ങൾ സബ്സ്റ്റെപ്പുകൾ ചേർക്കാൻ ആഗ്രഹിക്കുന്ന സ്റ്റെപ്പ് നോഡ് തിരഞ്ഞെടുക്കുക',
+  'canvas.toolbar.selectPartForSubpart':
+    'ആദ്യം നിങ്ങൾ ഒരു ഉപവിഭാഗം ചേർക്കാൻ ആഗ്രഹിക്കുന്ന നോഡ് തിരഞ്ഞെടുക്കുക',
+  'canvas.toolbar.selectPartThenEnter':
+    'ഉപഭാഗങ്ങൾ ചേർക്കാൻ ദയവായി ചില നോഡുകൾ തിരഞ്ഞെടുത്ത് എൻ്റർ അമർത്തുക',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
+    'ദയവായി ഒരു സാമ്യമോ വ്യത്യാസമോ തിരഞ്ഞെടുക്കുക (വിഷയ നോഡുകൾ ഇല്ലാതാക്കാൻ കഴിയില്ല)',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
+    'ആദ്യം സാമ്യമോ വ്യത്യാസമോ ഉള്ള നോഡ് തിരഞ്ഞെടുക്കുക',
+  'canvas.toolbar.selectStepForSubstep':
+    'ആദ്യം നിങ്ങൾ സബ്സ്റ്റെപ്പുകൾ ചേർക്കാൻ ആഗ്രഹിക്കുന്ന സ്റ്റെപ്പ് നോഡ് തിരഞ്ഞെടുക്കുക',
   'canvas.toolbar.similarityWithIndex': 'സമാനതകൾ {n}',
   'canvas.toolbar.stepAdded': 'ഘട്ടം ചേർത്തു',
   'canvas.toolbar.styleApplied': 'ശൈലി പ്രയോഗിച്ചു',
@@ -629,7 +702,8 @@ export default {
   'canvas.topBar.shareCommunity': 'സമൂഹത്തിലേക്ക് പങ്കിടുക',
   'canvas.topBar.zhihuiUnavailable': 'സ്മാർട്ട് ഡ്രോയിംഗ് ചാർട്ടുകൾ നിലവിൽ ലഭ്യമല്ല',
   'canvas.topBar.zhihuiNeedMindmap': 'മൈൻഡ് മാപ്പിംഗിനെ മാത്രമേ ചിത്രീകരണം പിന്തുണയ്ക്കൂ',
-  'canvas.topBar.zhihuiSaveFailed': 'മാപ്പ് സംരക്ഷിക്കുന്നതിൽ പരാജയപ്പെട്ടതിനാൽ സൃഷ്ടിച്ച മാപ്പ് തുറക്കാൻ കഴിയില്ല.',
+  'canvas.topBar.zhihuiSaveFailed':
+    'മാപ്പ് സംരക്ഷിക്കുന്നതിൽ പരാജയപ്പെട്ടതിനാൽ സൃഷ്ടിച്ച മാപ്പ് തുറക്കാൻ കഴിയില്ല.',
   'canvas.topBar.sharedCollab': 'ഒരുമിച്ച് സഹകരിക്കുക',
   'canvas.topBar.teachingDesign': 'MindMate AI',
   'canvas.subtitles.tooltip': 'തത്സമയ സബ്ടൈറ്റിലുകൾ (മൈക്രോഫോൺ)',
@@ -637,29 +711,37 @@ export default {
   'canvas.subtitles.listening': 'കേൾക്കുന്നു...',
   'canvas.subtitles.micFailed': 'മൈക്രോഫോൺ ഉപയോഗിക്കാനാവുന്നില്ല.',
   'canvas.subtitles.micUnavailable': 'നിലവിലെ ബ്രൗസറിന് മൈക്രോഫോൺ ഉപയോഗിക്കാൻ കഴിയില്ല.',
-  'canvas.subtitles.wsError': 'സബ്‌ടൈറ്റിൽ കണക്ഷൻ പരാജയപ്പെട്ടു, ദയവായി നെറ്റ്‌വർക്ക് പരിശോധിച്ച് ലോഗിൻ നില.',
+  'canvas.subtitles.wsError':
+    'സബ്‌ടൈറ്റിൽ കണക്ഷൻ പരാജയപ്പെട്ടു, ദയവായി നെറ്റ്‌വർക്ക് പരിശോധിച്ച് ലോഗിൻ നില.',
   'canvas.subtitles.genericError': 'സബ്‌ടൈറ്റിൽ പിശക്',
   'canvas.translation.tooltip': 'തത്സമയ വിവർത്തനം (മൈക്രോഫോൺ)',
   'canvas.translation.aria': 'തത്സമയ വിവർത്തനം മാറുക',
   'canvas.translation.listening': 'വിവർത്തനം കേൾക്കുന്നു...',
   'canvas.translation.micFailed': 'മൈക്രോഫോൺ ഉപയോഗിക്കാനാവുന്നില്ല.',
   'canvas.translation.micUnavailable': 'നിലവിലെ ബ്രൗസറിന് മൈക്രോഫോൺ ഉപയോഗിക്കാൻ കഴിയില്ല.',
-  'canvas.translation.wsError': 'വിവർത്തന കണക്ഷൻ പരാജയപ്പെട്ടു, ദയവായി നെറ്റ്‌വർക്ക് പരിശോധിച്ച് ലോഗിൻ നില.',
+  'canvas.translation.wsError':
+    'വിവർത്തന കണക്ഷൻ പരാജയപ്പെട്ടു, ദയവായി നെറ്റ്‌വർക്ക് പരിശോധിച്ച് ലോഗിൻ നില.',
   'canvas.translation.genericError': 'വിവർത്തന പിശക്',
   'canvas.translation.start': 'വിവർത്തനം ആരംഭിക്കുക',
   'canvas.translation.stop': 'വിവർത്തനം നിർത്തുക',
   'canvas.topBar.snapshotRecallTooltip': 'സ്നാപ്പ്ഷോട്ട് {n} പുനഃസ്ഥാപിക്കുക',
   'canvas.topBar.snapshotRecallTitle': 'സ്നാപ്പ്ഷോട്ട് പുനഃസ്ഥാപിക്കുക',
-  'canvas.topBar.snapshotRecallConfirm': 'സ്നാപ്പ്ഷോട്ട് {n} പുനഃസ്ഥാപിക്കണോ? നിലവിലെ മാറ്റങ്ങൾ മാറ്റിസ്ഥാപിക്കും.',
+  'canvas.topBar.snapshotRecallConfirm':
+    'സ്നാപ്പ്ഷോട്ട് {n} പുനഃസ്ഥാപിക്കണോ? നിലവിലെ മാറ്റങ്ങൾ മാറ്റിസ്ഥാപിക്കും.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'വീണ്ടെടുക്കുക',
   'canvas.topBar.snapshotRecallCancelBtn': 'റദ്ദാക്കുക',
   'canvas.topBar.snapshotRecallHistory': 'പുനഃസ്ഥാപിക്കുന്നതിന് മുമ്പുള്ള സ്നാപ്പ്ഷോട്ട് {n}',
-  'canvas.topBar.snapshotRecallFailed': 'സ്നാപ്പ്ഷോട്ട് വീണ്ടെടുക്കൽ പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക',
-  'canvas.topBar.snapshotRecallNoDiagram': 'ദയവായി ആദ്യം ഗാലറിയിൽ ഐക്കൺ സംരക്ഷിക്കുക, തുടർന്ന് സ്നാപ്പ്ഷോട്ട് പുനഃസ്ഥാപിക്കുക.',
-  'canvas.topBar.snapshotRecallNoType': 'ഐക്കൺ തരം ഇതുവരെ തയ്യാറായിട്ടില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.topBar.snapshotRecallFailed':
+    'സ്നാപ്പ്ഷോട്ട് വീണ്ടെടുക്കൽ പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക',
+  'canvas.topBar.snapshotRecallNoDiagram':
+    'ദയവായി ആദ്യം ഗാലറിയിൽ ഐക്കൺ സംരക്ഷിക്കുക, തുടർന്ന് സ്നാപ്പ്ഷോട്ട് പുനഃസ്ഥാപിക്കുക.',
+  'canvas.topBar.snapshotRecallNoType':
+    'ഐക്കൺ തരം ഇതുവരെ തയ്യാറായിട്ടില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'canvas.topBar.snapshotDeleted': 'ഇല്ലാതാക്കിയ സ്നാപ്പ്ഷോട്ട് {n}',
-  'canvas.topBar.snapshotDeleteFailed': 'സ്നാപ്പ്ഷോട്ട് ഇല്ലാതാക്കുന്നതിൽ പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക',
-  'canvas.topBar.snapshotBadgeTooltip': 'സ്നാപ്പ്ഷോട്ട് പുനഃസ്ഥാപിക്കാൻ ക്ലിക്ക് ചെയ്യുക {n} · Ctrl+click to delete',
+  'canvas.topBar.snapshotDeleteFailed':
+    'സ്നാപ്പ്ഷോട്ട് ഇല്ലാതാക്കുന്നതിൽ പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക',
+  'canvas.topBar.snapshotBadgeTooltip':
+    'സ്നാപ്പ്ഷോട്ട് പുനഃസ്ഥാപിക്കാൻ ക്ലിക്ക് ചെയ്യുക {n} · Ctrl+click to delete',
   'canvas.topBar.snapshotRecallingTooltip': 'സ്നാപ്പ്ഷോട്ട് {n} പുനഃസ്ഥാപിക്കുന്നു...',
   'canvas.zoomControls.exitFullscreen': 'പൂർണ്ണ സ്ക്രീനിൽ നിന്ന് പുറത്തുകടക്കുക',
   'canvas.zoomControls.fitCanvas': 'ക്യാൻവാസിലേക്ക് പൊരുത്തപ്പെടുത്തുക',
@@ -709,7 +791,8 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'ശാഖ',
   'canvas.mindMapSlideOverlay.region': 'സ്ലൈഡ് ഷോ നിയന്ത്രണം',
   'canvas.mindMapSlideOverlay.progress': 'സ്ലൈഡ് പുരോഗതി, ചാടാൻ ക്ലിക്കുചെയ്യുക',
-  'canvas.mindMapSlideOverlay.shortcuts': 'സ്ലൈഡ്‌ഷോയിൽ നിന്ന് പുറത്തുകടക്കാൻ ക്യാൻവാസിൽ ക്ലിക്ക് ചെയ്യുക അല്ലെങ്കിൽ Space/→ അടുത്ത പേജ് · ← മുമ്പത്തെ പേജ് · Home/End Home/End Page · Esc അമർത്തുക',
+  'canvas.mindMapSlideOverlay.shortcuts':
+    'സ്ലൈഡ്‌ഷോയിൽ നിന്ന് പുറത്തുകടക്കാൻ ക്യാൻവാസിൽ ക്ലിക്ക് ചെയ്യുക അല്ലെങ്കിൽ Space/→ അടുത്ത പേജ് · ← മുമ്പത്തെ പേജ് · Home/End Home/End Page · Esc അമർത്തുക',
   'canvas.mindMapSlideOverlay.exit': 'സ്ലൈഡ്ഷോയിൽ നിന്ന് പുറത്തുകടക്കുക',
   'canvas.mindMapSlideOverlay.collapse': 'നിയന്ത്രണ ബാർ ചുരുക്കുക',
   'canvas.mindMapSlideOverlay.expand': 'നിയന്ത്രണ ബാർ വികസിപ്പിക്കുക',
@@ -720,11 +803,15 @@ export default {
   'canvas.zoomControls.collabTurnOff': 'ഓൺലൈൻ സഹകരണം അടയ്ക്കുക',
   'canvasPage.collaborationFooter': 'ഓൺലൈൻ സഹകരണം',
   'canvasPage.collaborationFooterOwner': '{username} എന്നതുമായുള്ള ഓൺലൈൻ സഹകരണം',
-  'canvasPage.collaborationFooterOwnerDiagram': '{username} എന്നതിനായുള്ള "{diagramTitle}" സിനർജി ഐക്കൺ',
+  'canvasPage.collaborationFooterOwnerDiagram':
+    '{username} എന്നതിനായുള്ള "{diagramTitle}" സിനർജി ഐക്കൺ',
   'canvasPage.collaborationFooterNetworkDiagramTitle': '「{diagramTitle}」ഓൺലൈൻ സഹകരണം',
-  'canvasPage.collaborationFooterSchool': 'കാമ്പസ് സഹകരണം പുരോഗമിക്കുകയാണ് - സംഭാഷണ ലിസ്റ്റിൽ നിന്ന് സഹപ്രവർത്തകർക്ക് ചേരാം.',
-  'canvasPage.collaborationFooterSchoolDiagram': '"{diagramTitle}" കാമ്പസ് സഹകരണം പുരോഗമിക്കുകയാണ് - സംഭാഷണ ലിസ്റ്റിൽ നിന്ന് സഹപ്രവർത്തകർക്ക് ചേരാനാകും.',
-  'canvasPage.collabRoomIdleEnding': 'ഏകദേശം {seconds} സെക്കൻഡ് നിഷ്‌ക്രിയമായ ശേഷം ഐക്കൺ സഹകരണം സ്വയമേവ അവസാനിക്കും - ഐക്കണുകൾ എഡിറ്റുചെയ്യുന്നത് വൈകാം',
+  'canvasPage.collaborationFooterSchool':
+    'കാമ്പസ് സഹകരണം പുരോഗമിക്കുകയാണ് - സംഭാഷണ ലിസ്റ്റിൽ നിന്ന് സഹപ്രവർത്തകർക്ക് ചേരാം.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    '"{diagramTitle}" കാമ്പസ് സഹകരണം പുരോഗമിക്കുകയാണ് - സംഭാഷണ ലിസ്റ്റിൽ നിന്ന് സഹപ്രവർത്തകർക്ക് ചേരാനാകും.',
+  'canvasPage.collabRoomIdleEnding':
+    'ഏകദേശം {seconds} സെക്കൻഡ് നിഷ്‌ക്രിയമായ ശേഷം ഐക്കൺ സഹകരണം സ്വയമേവ അവസാനിക്കും - ഐക്കണുകൾ എഡിറ്റുചെയ്യുന്നത് വൈകാം',
   'conceptMap.focus.noResult': 'ഫലങ്ങളൊന്നുമില്ല',
   'conceptMap.focus.validationRequestFailed': 'സ്ഥിരീകരണ അഭ്യർത്ഥന പരാജയപ്പെട്ടു',
   'diagram.aiGenerating': 'AI...',
@@ -755,7 +842,8 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'നോഡ് ഫംഗ്‌ഷൻ ചേർക്കുന്നത് വികസനത്തിലാണ്',
   'diagram.contextMenu.paste': 'ഒട്ടിക്കുക',
   'diagram.contextMenu.warningCreateDiagramFirst': 'ദയവായി ആദ്യം ഒരു ഐക്കൺ സൃഷ്‌ടിക്കുക',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'ആദ്യം സാമ്യമോ വ്യത്യാസമോ ഉള്ള നോഡ് തിരഞ്ഞെടുക്കുക',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff':
+    'ആദ്യം സാമ്യമോ വ്യത്യാസമോ ഉള്ള നോഡ് തിരഞ്ഞെടുക്കുക',
   'diagram.defaultNewConcept': 'പുതിയ ആശയം',
   'diagram.dimension.classificationAz': 'വർഗ്ഗീകരണ അടിസ്ഥാനം',
   'diagram.dimension.classificationEn': 'വർഗ്ഗീകരണ അടിസ്ഥാനം',
@@ -780,31 +868,48 @@ export default {
   'canvas.mindMapSideToolbar.collapse': 'ടൂൾബാർ ചുരുക്കുക',
   'canvas.mindMapSideToolbar.outline': 'ശ്രേണിപരമായ രൂപരേഖ',
   'canvas.mindMapSideToolbar.waterfall': 'AI മസ്തിഷ്കപ്രക്ഷോഭം',
-  'canvas.mindMapWaterfall.panelHint': 'ബ്രാഞ്ച് നിർദ്ദേശങ്ങൾ സൃഷ്ടിക്കാൻ നോഡ് തിരഞ്ഞെടുത്ത് അവ തിരുകാൻ ക്യാൻവാസിലേക്ക് വലിച്ചിടുക.',
-  'canvas.mindMapWaterfall.emptyHint': 'ഇതുവരെ നിർദ്ദേശങ്ങളൊന്നുമില്ല, ദയവായി ആദ്യം ക്യാൻവാസിലെ നോഡ് തിരഞ്ഞെടുക്കുക അല്ലെങ്കിൽ പുനഃസൃഷ്ടിക്കാൻ ക്ലിക്കുചെയ്യുക.',
-  'canvas.mindMapWaterfall.dragHint': 'മൾട്ടി-സെലക്ട് ക്ലിക്ക് ചെയ്ത് അത് മാപ്പ് നോഡിലേക്ക് വലിച്ചിടുക; ഒരു ഫസ്റ്റ്-ലെവൽ ബ്രാഞ്ചായി ചേർക്കാൻ ശൂന്യമായ സ്ഥലത്തേക്ക് വലിച്ചിടുക.',
-  'canvas.mindMapWaterfall.historyAddFromPalette': 'AI ബ്രെയിൻസ്റ്റോമിംഗിൽ നിന്ന് നോഡുകൾ വലിച്ചിടുക',
-  'canvas.mindMapOneSentence.intro': 'വിഷയം നൽകുക, അല്ലെങ്കിൽ ശാഖകളുടെ എണ്ണം, വർഗ്ഗീകരണ അളവുകൾ, ഘട്ടങ്ങൾ മുതലായവ പോലുള്ള ഘടനാപരമായ ആവശ്യകതകൾ വിവരിക്കുക.',
-  'canvas.mindMapOneSentence.requirementsPlaceholder': 'ഉദാഹരണത്തിന്: ബെയ്ജിംഗ് ത്രിദിന ടൂർ പ്ലാൻ, നാല് ശാഖകൾ: വസ്ത്രം, ഭക്ഷണം, താമസം, ഗതാഗതം',
+  'canvas.mindMapWaterfall.panelHint':
+    'ബ്രാഞ്ച് നിർദ്ദേശങ്ങൾ സൃഷ്ടിക്കാൻ നോഡ് തിരഞ്ഞെടുത്ത് അവ തിരുകാൻ ക്യാൻവാസിലേക്ക് വലിച്ചിടുക.',
+  'canvas.mindMapWaterfall.emptyHint':
+    'ഇതുവരെ നിർദ്ദേശങ്ങളൊന്നുമില്ല, ദയവായി ആദ്യം ക്യാൻവാസിലെ നോഡ് തിരഞ്ഞെടുക്കുക അല്ലെങ്കിൽ പുനഃസൃഷ്ടിക്കാൻ ക്ലിക്കുചെയ്യുക.',
+  'canvas.mindMapWaterfall.dragHint':
+    'മൾട്ടി-സെലക്ട് ക്ലിക്ക് ചെയ്ത് അത് മാപ്പ് നോഡിലേക്ക് വലിച്ചിടുക; ഒരു ഫസ്റ്റ്-ലെവൽ ബ്രാഞ്ചായി ചേർക്കാൻ ശൂന്യമായ സ്ഥലത്തേക്ക് വലിച്ചിടുക.',
+  'canvas.mindMapWaterfall.historyAddFromPalette':
+    'AI ബ്രെയിൻസ്റ്റോമിംഗിൽ നിന്ന് നോഡുകൾ വലിച്ചിടുക',
+  'canvas.mindMapOneSentence.intro':
+    'വിഷയം നൽകുക, അല്ലെങ്കിൽ ശാഖകളുടെ എണ്ണം, വർഗ്ഗീകരണ അളവുകൾ, ഘട്ടങ്ങൾ മുതലായവ പോലുള്ള ഘടനാപരമായ ആവശ്യകതകൾ വിവരിക്കുക.',
+  'canvas.mindMapOneSentence.requirementsPlaceholder':
+    'ഉദാഹരണത്തിന്: ബെയ്ജിംഗ് ത്രിദിന ടൂർ പ്ലാൻ, നാല് ശാഖകൾ: വസ്ത്രം, ഭക്ഷണം, താമസം, ഗതാഗതം',
   'canvas.mindMapOneSentence.examplesTitle': 'ശുപാർശ ചെയ്യപ്പെടുന്ന പ്രചോദനം',
   'canvas.mindMapOneSentence.generateButton': 'ഉത്പാദിപ്പിക്കാൻ ആരംഭിക്കുക',
-  'canvas.mindMapOneSentence.example1': 'ബെയ്ജിംഗ് ത്രിദിന യാത്രാ പദ്ധതി, നാല് ശാഖകൾ: വസ്ത്രം, ഭക്ഷണം, താമസം, ഗതാഗതം',
-  'canvas.mindMapOneSentence.example2': '"പുതിയ ഉൽപ്പന്ന സമാരംഭം" വിശകലനം ചെയ്യാൻ SWOT ഉപയോഗിക്കുക: ശക്തികൾ, ബലഹീനതകൾ, അവസരങ്ങൾ, ഭീഷണികൾ',
-  'canvas.mindMapOneSentence.example3': 'പ്രൈമറി സ്കൂൾ സയൻസ് ക്ലാസ് "ജലത്തിൻ്റെ മൂന്ന് സംസ്ഥാന മാറ്റങ്ങൾ", ലളിതമായ ഭാഷ, ഒരു ലെവലിൽ 6 വാക്കുകളിൽ കൂടരുത്',
+  'canvas.mindMapOneSentence.example1':
+    'ബെയ്ജിംഗ് ത്രിദിന യാത്രാ പദ്ധതി, നാല് ശാഖകൾ: വസ്ത്രം, ഭക്ഷണം, താമസം, ഗതാഗതം',
+  'canvas.mindMapOneSentence.example2':
+    '"പുതിയ ഉൽപ്പന്ന സമാരംഭം" വിശകലനം ചെയ്യാൻ SWOT ഉപയോഗിക്കുക: ശക്തികൾ, ബലഹീനതകൾ, അവസരങ്ങൾ, ഭീഷണികൾ',
+  'canvas.mindMapOneSentence.example3':
+    'പ്രൈമറി സ്കൂൾ സയൻസ് ക്ലാസ് "ജലത്തിൻ്റെ മൂന്ന് സംസ്ഥാന മാറ്റങ്ങൾ", ലളിതമായ ഭാഷ, ഒരു ലെവലിൽ 6 വാക്കുകളിൽ കൂടരുത്',
   'canvas.mindMapOneSentence.suggestion.add_node': 'ഒരു ചൈനീസ് ശാഖ ചേർക്കുക',
-  'canvas.mindMapOneSentence.suggestion.update_node': 'പാനീയ വിശകലനം പാനീയ വിശകലനത്തിലേക്ക് മാറ്റുക',
+  'canvas.mindMapOneSentence.suggestion.update_node':
+    'പാനീയ വിശകലനം പാനീയ വിശകലനത്തിലേക്ക് മാറ്റുക',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': '2.1 ഗ്രീൻ ടീയിലേക്ക് മാറ്റുക',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint': 'നമ്പർ സജീവമാക്കിയ ശേഷം, നിങ്ങൾക്ക് "2.1-ലേക്ക് മാറ്റുക..." "രണ്ടാമത്തേത് മാറ്റുക..." എന്ന് പറയാം.',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint':
+    'നമ്പർ സജീവമാക്കിയ ശേഷം, നിങ്ങൾക്ക് "2.1-ലേക്ക് മാറ്റുക..." "രണ്ടാമത്തേത് മാറ്റുക..." എന്ന് പറയാം.',
   'canvas.mindMapOneSentence.suggestion.update_center': 'തീം ചായയാക്കി മാറ്റി',
   'canvas.mindMapOneSentence.suggestion.delete_node': 'പാനീയ വിശകലന ശാഖ ഇല്ലാതാക്കുക',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': 'ചൈനയുടെ ശാഖ പൂർത്തിയാക്കുക',
   'canvas.mindMapOneSentence.suggestion.auto_complete': 'മാപ്പ് പൂർത്തിയാക്കാൻ എന്നെ സഹായിക്കൂ',
-  'canvas.mindMapOneSentence.suggestion.set_content_level': 'പ്രൊഫഷണൽ ഉള്ളടക്കം ജനറൽ, എലിമെൻ്ററി സ്കൂൾ, ജൂനിയർ ഹൈസ്കൂൾ, ഹൈസ്കൂൾ, കോളേജ്, മുതിർന്നവർ അല്ലെങ്കിൽ വിദഗ്ദ്ധർ എന്നിങ്ങനെ മാറ്റുക',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': 'പ്രൊഫഷണൽ ഉള്ളടക്കം {level} എന്നതിലേക്ക് മാറ്റി',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': 'ഏഴാമത്തെ ലെവൽ ചുവടെയുള്ള "പ്രൊഫഷണൽ ഉള്ളടക്കവുമായി" പൊരുത്തപ്പെടുന്നു',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': 'അക്കങ്ങൾ, ചൈനീസ്, സർക്കിളുകൾ, അക്ഷരങ്ങൾ അല്ലെങ്കിൽ അധ്യായ നമ്പറുകൾ പ്രവർത്തനക്ഷമമാക്കുക',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': '{style} നമ്പർ പ്രവർത്തനക്ഷമമാക്കുക',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': 'നിങ്ങൾക്ക് "ഡിജിറ്റൽ നമ്പറിംഗ് പ്രവർത്തനക്ഷമമാക്കുക" "ചൈനീസ് നമ്പറിംഗ് പ്രവർത്തനക്ഷമമാക്കുക" എന്ന് പറയാം',
+  'canvas.mindMapOneSentence.suggestion.set_content_level':
+    'പ്രൊഫഷണൽ ഉള്ളടക്കം ജനറൽ, എലിമെൻ്ററി സ്കൂൾ, ജൂനിയർ ഹൈസ്കൂൾ, ഹൈസ്കൂൾ, കോളേജ്, മുതിർന്നവർ അല്ലെങ്കിൽ വിദഗ്ദ്ധർ എന്നിങ്ങനെ മാറ്റുക',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
+    'പ്രൊഫഷണൽ ഉള്ളടക്കം {level} എന്നതിലേക്ക് മാറ്റി',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
+    'ഏഴാമത്തെ ലെവൽ ചുവടെയുള്ള "പ്രൊഫഷണൽ ഉള്ളടക്കവുമായി" പൊരുത്തപ്പെടുന്നു',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
+    'അക്കങ്ങൾ, ചൈനീസ്, സർക്കിളുകൾ, അക്ഷരങ്ങൾ അല്ലെങ്കിൽ അധ്യായ നമ്പറുകൾ പ്രവർത്തനക്ഷമമാക്കുക',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase':
+    '{style} നമ്പർ പ്രവർത്തനക്ഷമമാക്കുക',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
+    'നിങ്ങൾക്ക് "ഡിജിറ്റൽ നമ്പറിംഗ് പ്രവർത്തനക്ഷമമാക്കുക" "ചൈനീസ് നമ്പറിംഗ് പ്രവർത്തനക്ഷമമാക്കുക" എന്ന് പറയാം',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': 'നമ്പർ',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': 'ചൈനീസ്',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': 'വൃത്തം',
@@ -814,65 +919,101 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': 'മറഞ്ഞിരിക്കുന്ന നമ്പർ',
   'canvas.mindMapOneSentence.suggestion.explain_node': 'ചൈനയുടെ ഈ ശാഖ വിശദീകരിക്കുക',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'ഈ നോഡ് അവതരിപ്പിക്കുക',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint': 'നിങ്ങൾക്ക് "ചൈനയെ വിശദീകരിക്കുക", "ഈ നോഡ് അവതരിപ്പിക്കുക" എന്നിങ്ങനെ പറയാം; ഒരു നോഡ് തിരഞ്ഞെടുത്ത ശേഷം, നിങ്ങൾക്ക് "ഇത് അവതരിപ്പിക്കുക" എന്നും പറയാം.',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
+    'നിങ്ങൾക്ക് "ചൈനയെ വിശദീകരിക്കുക", "ഈ നോഡ് അവതരിപ്പിക്കുക" എന്നിങ്ങനെ പറയാം; ഒരു നോഡ് തിരഞ്ഞെടുത്ത ശേഷം, നിങ്ങൾക്ക് "ഇത് അവതരിപ്പിക്കുക" എന്നും പറയാം.',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'നോഡ് ഓപ്പറേഷൻ ഗൈഡ്',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'ചുരുക്കുക നോഡ് ഓപ്പറേഷൻ ഗൈഡ്',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': 'പേര് പ്രകാരം',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.thisNode': 'ഈ നോഡ്',
-  'canvas.mindMapOneSentence.inputPlaceholder': 'വിഷയം വിവരിക്കുക അല്ലെങ്കിൽ അഭ്യർത്ഥന പരിഷ്കരിക്കുക...',
+  'canvas.mindMapOneSentence.inputPlaceholder':
+    'വിഷയം വിവരിക്കുക അല്ലെങ്കിൽ അഭ്യർത്ഥന പരിഷ്കരിക്കുക...',
   'canvas.mindMapOneSentence.listeningPlaceholder': 'കേൾക്കുന്നു...',
   'canvas.mindMapOneSentence.sendButton': 'അയയ്ക്കുക',
   'canvas.mindMapOneSentence.micButton': 'വോയ്സ് ഇൻപുട്ട്',
   'canvas.mindMapOneSentence.photoButton': 'ചിത്രങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 ഫോട്ടോകൾ',
-  'canvas.mindMapOneSentence.photoNeedsDiagram': 'ചിത്രം അപ്‌ലോഡ് ചെയ്യുന്നതിന് മുമ്പ് ഗാലറിയിൽ ഐക്കൺ സംരക്ഷിക്കുക.',
-  'canvas.mindMapOneSentence.photoInvalidType': 'ദയവായി ഒരു JPG, PNG അല്ലെങ്കിൽ WebP ചിത്രം തിരഞ്ഞെടുക്കുക.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram':
+    'ചിത്രം അപ്‌ലോഡ് ചെയ്യുന്നതിന് മുമ്പ് ഗാലറിയിൽ ഐക്കൺ സംരക്ഷിക്കുക.',
+  'canvas.mindMapOneSentence.photoInvalidType':
+    'ദയവായി ഒരു JPG, PNG അല്ലെങ്കിൽ WebP ചിത്രം തിരഞ്ഞെടുക്കുക.',
   'canvas.mindMapOneSentence.photoTooLarge': 'ചിത്രം വളരെ വലുതാണ്, പരമാവധി 10MB.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'മനസ്സിൻ്റെ ഭൂപടം',
-  'canvas.mindMapOneSentence.photoHanddrawnReply': 'കൈകൊണ്ട് വരച്ച മൈൻഡ് മാപ്പ് "{topic}" കണ്ടെത്തി. ക്യാൻവാസിലേക്ക് പുനർനിർമ്മിച്ചു, ഘടനയുടെ രൂപരേഖ പ്രമാണ സംഗ്രഹത്തിലേക്ക് സംരക്ഷിച്ചു.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'കൈകൊണ്ട് വരച്ച മൈൻഡ് മാപ്പ് "{topic}" കണ്ടെത്തി. നേറ്റീവ് ക്യാൻവാസിൽ പുനർനിർമ്മിച്ചു, ഘടനയുടെ രൂപരേഖ പ്രമാണ സംഗ്രഹത്തിലേക്ക് സംരക്ഷിച്ചു. ഗാലറി സമന്വയം പൂർത്തിയായിട്ടില്ല, ദയവായി സംരക്ഷിക്കുക അല്ലെങ്കിൽ വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.photoOcrReply': 'അംഗീകൃത ചിത്ര വാചകം:\n{excerpt}\n\nമുഴുവൻ വാചകവും പ്രമാണ സംഗ്രഹത്തിൽ സംരക്ഷിച്ചു.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply':
+    'കൈകൊണ്ട് വരച്ച മൈൻഡ് മാപ്പ് "{topic}" കണ്ടെത്തി. ക്യാൻവാസിലേക്ക് പുനർനിർമ്മിച്ചു, ഘടനയുടെ രൂപരേഖ പ്രമാണ സംഗ്രഹത്തിലേക്ക് സംരക്ഷിച്ചു.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
+    'കൈകൊണ്ട് വരച്ച മൈൻഡ് മാപ്പ് "{topic}" കണ്ടെത്തി. നേറ്റീവ് ക്യാൻവാസിൽ പുനർനിർമ്മിച്ചു, ഘടനയുടെ രൂപരേഖ പ്രമാണ സംഗ്രഹത്തിലേക്ക് സംരക്ഷിച്ചു. ഗാലറി സമന്വയം പൂർത്തിയായിട്ടില്ല, ദയവായി സംരക്ഷിക്കുക അല്ലെങ്കിൽ വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    'അംഗീകൃത ചിത്ര വാചകം:\n{excerpt}\n\nമുഴുവൻ വാചകവും പ്രമാണ സംഗ്രഹത്തിൽ സംരക്ഷിച്ചു.',
   'canvas.mindMapOneSentence.photoFailed': 'ചിത്രം പ്രോസസ്സ് ചെയ്യാൻ കഴിയില്ല.',
   'canvas.mindMapOneSentence.micDenied': 'മൈക്രോഫോൺ ലഭ്യമല്ല, ബ്രൗസർ അനുമതികൾ പരിശോധിക്കുക',
   'canvas.mindMapOneSentence.ttsToggle': 'ഉറക്കെ വായിക്കുക സ്വിച്ച്',
-  'canvas.mindMapOneSentence.kittyWelcome': 'ഹലോ, നിങ്ങൾക്ക് എന്ത് മൈൻഡ് ഡയഗ്രമാണ് വരയ്ക്കേണ്ടതെന്ന് എന്നോട് പറയൂ, അല്ലെങ്കിൽ അത് പിന്നീട് പരിഷ്‌ക്കരിക്കാൻ നിങ്ങളെ സഹായിക്കാൻ എന്നെ അനുവദിക്കൂ.',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    'ഹലോ, നിങ്ങൾക്ക് എന്ത് മൈൻഡ് ഡയഗ്രമാണ് വരയ്ക്കേണ്ടതെന്ന് എന്നോട് പറയൂ, അല്ലെങ്കിൽ അത് പിന്നീട് പരിഷ്‌ക്കരിക്കാൻ നിങ്ങളെ സഹായിക്കാൻ എന്നെ അനുവദിക്കൂ.',
   'canvas.mindMapOneSentence.switchDiagramType': 'ശരി, {type} എന്നതിലേക്ക് മാറുന്നു...',
   'canvas.mindMapOneSentence.kittyGenerating': 'ശരി, മാപ്പ് സൃഷ്ടിക്കുന്നു...',
-  'canvas.mindMapOneSentence.kittyGenerateDone': 'മാപ്പ് സൃഷ്ടിച്ചു. ബ്രാഞ്ച് അല്ലെങ്കിൽ നോഡ് പരിഷ്കരിക്കാൻ ടൈപ്പുചെയ്യുന്നത് തുടരുക.',
-  'canvas.mindMapOneSentence.kittyGenerateFailed': 'മാപ്പ് സൃഷ്ടിക്കൽ പരാജയപ്പെട്ടു, ദയവായി വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ വിവരണം ക്രമീകരിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditFailed': 'പരിഷ്ക്കരണം പൂർത്തിയാക്കാൻ കഴിയുന്നില്ല, ദയവായി മറ്റൊരു വാക്ക് ഉപയോഗിച്ച് വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditStale': 'ഈ പരിഷ്‌ക്കരണം ക്യാൻവാസിൽ പ്രാബല്യത്തിൽ വന്നില്ല (അത് കാലഹരണപ്പെട്ടതാകാം അല്ലെങ്കിൽ മാറ്റമൊന്നുമില്ല), ദയവായി വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'ഈ മാറ്റം സ്ഥിരീകരിക്കുന്നതിൽ ക്യാൻവാസ് പരാജയപ്പെട്ടു, മാപ്പ് അതേപടി തുടരുന്നു.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'പ്രാദേശിക ഫയൽ പരിഷ്‌ക്കരിച്ചു, പക്ഷേ സമന്വയം പരാജയപ്പെട്ടു. ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed': 'ക്യാൻവാസ് സമന്വയം പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'ക്യാൻവാസ് സമന്വയം പരാജയപ്പെട്ടു ({detail}), ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditBusy': 'മാപ്പ് ജനറേറ്റുചെയ്യുന്നു, മാറ്റങ്ങൾ വരുത്തുന്നതിന് മുമ്പ് അത് പൂർത്തിയാകുന്നതുവരെ കാത്തിരിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} ൻ്റെ ഫലങ്ങൾ ഇപ്പോഴും ജനറേറ്റ് ചെയ്‌തുകൊണ്ടിരിക്കുന്നു, പൂർത്തിയായതിന് ശേഷം നിങ്ങളുടെ അഭ്യർത്ഥന സ്വയമേവ നടപ്പിലാക്കും.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'മറ്റ് മോഡലുകളുടെ ഫലങ്ങൾ ഇപ്പോഴും ജനറേറ്റ് ചെയ്‌തുകൊണ്ടിരിക്കുന്നു, പൂർത്തിയായതിന് ശേഷം നിങ്ങളുടെ അഭ്യർത്ഥന സ്വയമേവ നടപ്പിലാക്കും.',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming': 'മറ്റ് മോഡലുകൾ പൂർത്തിയായി, നിങ്ങളുടെ അഭ്യർത്ഥന നടപ്പിലാക്കുന്നത് തുടരുകയാണ്...',
+  'canvas.mindMapOneSentence.kittyGenerateDone':
+    'മാപ്പ് സൃഷ്ടിച്ചു. ബ്രാഞ്ച് അല്ലെങ്കിൽ നോഡ് പരിഷ്കരിക്കാൻ ടൈപ്പുചെയ്യുന്നത് തുടരുക.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed':
+    'മാപ്പ് സൃഷ്ടിക്കൽ പരാജയപ്പെട്ടു, ദയവായി വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ വിവരണം ക്രമീകരിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditFailed':
+    'പരിഷ്ക്കരണം പൂർത്തിയാക്കാൻ കഴിയുന്നില്ല, ദയവായി മറ്റൊരു വാക്ക് ഉപയോഗിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    'ഈ പരിഷ്‌ക്കരണം ക്യാൻവാസിൽ പ്രാബല്യത്തിൽ വന്നില്ല (അത് കാലഹരണപ്പെട്ടതാകാം അല്ലെങ്കിൽ മാറ്റമൊന്നുമില്ല), ദയവായി വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    'ഈ മാറ്റം സ്ഥിരീകരിക്കുന്നതിൽ ക്യാൻവാസ് പരാജയപ്പെട്ടു, മാപ്പ് അതേപടി തുടരുന്നു.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    'പ്രാദേശിക ഫയൽ പരിഷ്‌ക്കരിച്ചു, പക്ഷേ സമന്വയം പരാജയപ്പെട്ടു. ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed':
+    'ക്യാൻവാസ് സമന്വയം പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    'ക്യാൻവാസ് സമന്വയം പരാജയപ്പെട്ടു ({detail}), ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditBusy':
+    'മാപ്പ് ജനറേറ്റുചെയ്യുന്നു, മാറ്റങ്ങൾ വരുത്തുന്നതിന് മുമ്പ് അത് പൂർത്തിയാകുന്നതുവരെ കാത്തിരിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    '{models} ൻ്റെ ഫലങ്ങൾ ഇപ്പോഴും ജനറേറ്റ് ചെയ്‌തുകൊണ്ടിരിക്കുന്നു, പൂർത്തിയായതിന് ശേഷം നിങ്ങളുടെ അഭ്യർത്ഥന സ്വയമേവ നടപ്പിലാക്കും.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    'മറ്റ് മോഡലുകളുടെ ഫലങ്ങൾ ഇപ്പോഴും ജനറേറ്റ് ചെയ്‌തുകൊണ്ടിരിക്കുന്നു, പൂർത്തിയായതിന് ശേഷം നിങ്ങളുടെ അഭ്യർത്ഥന സ്വയമേവ നടപ്പിലാക്കും.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming':
+    'മറ്റ് മോഡലുകൾ പൂർത്തിയായി, നിങ്ങളുടെ അഭ്യർത്ഥന നടപ്പിലാക്കുന്നത് തുടരുകയാണ്...',
   'canvas.mindMapOneSentence.requestQueued': 'ക്യൂ നിൽക്കുന്നു',
   'canvas.mindMapOneSentence.requestFailed': 'പൂർത്തിയായിട്ടില്ല',
-  'canvas.mindMapOneSentence.kittyEditAccessDenied': 'ഈ മാപ്പ് പരിഷ്‌ക്കരിക്കാൻ നിങ്ങൾക്ക് നിലവിൽ അനുമതിയില്ല.',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'മാപ്പ് ഇപ്പോൾ അപ്‌ഡേറ്റ് ചെയ്‌തു, ഈ പരിഷ്‌ക്കരണം കാലഹരണപ്പെട്ടു. നിങ്ങളുടെ മാറ്റം വീണ്ടും പ്രസ്താവിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditTimeout': 'ഈ പരിഷ്‌ക്കരണം കാലഹരണപ്പെട്ടു, മാപ്പ് അപ്‌ഡേറ്റ് ചെയ്‌തിട്ടില്ലായിരിക്കാം. ദയവായി വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner': 'എഡിറ്റ് ചെയ്യാവുന്ന ക്യാൻവാസ് ഇപ്പോൾ കണ്ടെത്താൻ കഴിയില്ല. ക്യാൻവാസ് തുറന്നിട്ടുണ്ടെന്ന് സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditAddFailed': 'ക്ഷമിക്കണം, നോഡ് ചേർക്കാൻ കഴിഞ്ഞില്ല. പേര് സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'ക്ഷമിക്കണം, നോഡ് പരിഷ്കരിക്കാൻ കഴിയില്ല. പേര് സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditCenterFailed': 'ക്ഷമിക്കണം, വിഷയം അപ്ഡേറ്റ് ചെയ്യാൻ കഴിഞ്ഞില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'ക്ഷമിക്കണം, നോഡ് ഇല്ലാതാക്കാൻ കഴിഞ്ഞില്ല. പേര് സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'ക്ഷമിക്കണം, ഈ ബ്രാഞ്ചിന് സ്വയമേവ പൂർത്തിയാക്കിയിട്ടില്ല. നിങ്ങൾക്ക് വീണ്ടും "യാന്ത്രിക പൂർത്തീകരണം" എന്ന് പറയാം.',
+  'canvas.mindMapOneSentence.kittyEditAccessDenied':
+    'ഈ മാപ്പ് പരിഷ്‌ക്കരിക്കാൻ നിങ്ങൾക്ക് നിലവിൽ അനുമതിയില്ല.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    'മാപ്പ് ഇപ്പോൾ അപ്‌ഡേറ്റ് ചെയ്‌തു, ഈ പരിഷ്‌ക്കരണം കാലഹരണപ്പെട്ടു. നിങ്ങളുടെ മാറ്റം വീണ്ടും പ്രസ്താവിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditTimeout':
+    'ഈ പരിഷ്‌ക്കരണം കാലഹരണപ്പെട്ടു, മാപ്പ് അപ്‌ഡേറ്റ് ചെയ്‌തിട്ടില്ലായിരിക്കാം. ദയവായി വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    'എഡിറ്റ് ചെയ്യാവുന്ന ക്യാൻവാസ് ഇപ്പോൾ കണ്ടെത്താൻ കഴിയില്ല. ക്യാൻവാസ് തുറന്നിട്ടുണ്ടെന്ന് സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditAddFailed':
+    'ക്ഷമിക്കണം, നോഡ് ചേർക്കാൻ കഴിഞ്ഞില്ല. പേര് സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    'ക്ഷമിക്കണം, നോഡ് പരിഷ്കരിക്കാൻ കഴിയില്ല. പേര് സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditCenterFailed':
+    'ക്ഷമിക്കണം, വിഷയം അപ്ഡേറ്റ് ചെയ്യാൻ കഴിഞ്ഞില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    'ക്ഷമിക്കണം, നോഡ് ഇല്ലാതാക്കാൻ കഴിഞ്ഞില്ല. പേര് സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    'ക്ഷമിക്കണം, ഈ ബ്രാഞ്ചിന് സ്വയമേവ പൂർത്തിയാക്കിയിട്ടില്ല. നിങ്ങൾക്ക് വീണ്ടും "യാന്ത്രിക പൂർത്തീകരണം" എന്ന് പറയാം.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'ഈ ശാഖ പൂർത്തിയായി.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'ഈ ശാഖകൾ പൂർത്തിയായി.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'ചില ശാഖകൾ പൂർത്തീകരിച്ചു, മറ്റുള്ളവ പൂർത്തിയായിട്ടില്ല. നിങ്ങൾക്ക് വീണ്ടും "യാന്ത്രിക പൂർത്തീകരണം" എന്ന് പറയാം.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
+    'ചില ശാഖകൾ പൂർത്തീകരിച്ചു, മറ്റുള്ളവ പൂർത്തിയായിട്ടില്ല. നിങ്ങൾക്ക് വീണ്ടും "യാന്ത്രിക പൂർത്തീകരണം" എന്ന് പറയാം.',
   'canvas.mindMapOneSentence.kittyWorking': 'ശരി, പ്രോസസ്സ് ചെയ്യുന്നു...',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'കിറ്റി നിലവിൽ ലഭ്യമല്ല, ദയവായി FEATURE_KITTY_AGENT ഓണാക്കിയിട്ടുണ്ടെന്ന് ഉറപ്പാക്കുക.',
-  'canvas.mindMapOneSentence.kittyConnectFailed': 'ഇപ്പോൾ ക്യാൻവാസ് കിറ്റിയിലേക്ക് കണക്റ്റുചെയ്യാൻ കഴിയില്ല. കമ്പ്യൂട്ടറിൽ മാപ്പ് തുറന്നിട്ടുണ്ടെന്ന് സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'കിറ്റി നിലവിൽ ലഭ്യമല്ല, ദയവായി FEATURE_KITTY_AGENT ഓണാക്കിയിട്ടുണ്ടെന്ന് ഉറപ്പാക്കുക.',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    'ഇപ്പോൾ ക്യാൻവാസ് കിറ്റിയിലേക്ക് കണക്റ്റുചെയ്യാൻ കഴിയില്ല. കമ്പ്യൂട്ടറിൽ മാപ്പ് തുറന്നിട്ടുണ്ടെന്ന് സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
   'canvas.mindMapOneSentence.clarifyChoices': 'ഒന്ന് തിരഞ്ഞെടുക്കുക',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'സെൽ ഫോൺ കിറ്റിയെ കണ്ടെത്തി, ഈ ചിത്രത്തിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു. നിങ്ങളുടെ മൊബൈൽ ഫോണിൽ സംസാരിക്കാനോ ടൈപ്പ് ചെയ്യാനോ അമർത്തിപ്പിടിക്കുക. കമ്പ്യൂട്ടറിൽ ടൈപ്പ് ചെയ്യുന്നത് താൽക്കാലികമായി നിർത്തി.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint': 'കിറ്റി മൊബൈൽ ഫോണിൽ മറ്റൊരു മാപ്പ് തുറന്നു. ദയവായി ഇത് നിങ്ങളുടെ ഫോണിൽ സമന്വയിപ്പിക്കുക, അല്ലെങ്കിൽ മാപ്പ് ഇവിടെ തുറക്കുക.',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'നിങ്ങളുടെ ഫോണിൽ കിറ്റി എന്ന് നൽകുക...',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    'സെൽ ഫോൺ കിറ്റിയെ കണ്ടെത്തി, ഈ ചിത്രത്തിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു. നിങ്ങളുടെ മൊബൈൽ ഫോണിൽ സംസാരിക്കാനോ ടൈപ്പ് ചെയ്യാനോ അമർത്തിപ്പിടിക്കുക. കമ്പ്യൂട്ടറിൽ ടൈപ്പ് ചെയ്യുന്നത് താൽക്കാലികമായി നിർത്തി.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    'കിറ്റി മൊബൈൽ ഫോണിൽ മറ്റൊരു മാപ്പ് തുറന്നു. ദയവായി ഇത് നിങ്ങളുടെ ഫോണിൽ സമന്വയിപ്പിക്കുക, അല്ലെങ്കിൽ മാപ്പ് ഇവിടെ തുറക്കുക.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder':
+    'നിങ്ങളുടെ ഫോണിൽ കിറ്റി എന്ന് നൽകുക...',
   'canvas.mindMapNodeExplain.titleFallback': 'നോഡ് വിശദീകരണം',
-  'canvas.mindMapNodeExplain.requestFailed': 'ഇപ്പോൾ വിശദീകരിക്കാൻ കഴിയുന്നില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapNodeExplain.requestFailed':
+    'ഇപ്പോൾ വിശദീകരിക്കാൻ കഴിയുന്നില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'canvas.mindMapNodeExplain.thinking': 'ചിന്തിക്കുന്നു',
   'canvas.mindMapNodeExplain.thinkingDone': 'ആലോചിച്ചു തീർന്നു',
   'canvas.mindMapNodeExplain.pageStats': '{found} പേജുകൾ കണ്ടെത്തി, {fetched} പേജുകൾ വായിക്കുക',
@@ -887,17 +1028,22 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': 'ചാറ്റ് ചരിത്രം',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'ഫയൽ അപ്‌ലോഡ്',
   'canvas.mindMapDocumentSummary.tabPaste': 'ടെക്സ്റ്റ് ഒട്ടിക്കൽ',
-  'canvas.mindMapDocumentSummary.pasteHintLite': 'പേപ്പറുകളിലോ കുറിപ്പുകളിലോ മീറ്റിംഗ് മിനിറ്റുകളിലോ ഒട്ടിക്കുക, ഞങ്ങൾ ഘടന പരിഷ്കരിച്ച് ഒരു മൈൻഡ് മാപ്പ് സൃഷ്ടിക്കും.',
+  'canvas.mindMapDocumentSummary.pasteHintLite':
+    'പേപ്പറുകളിലോ കുറിപ്പുകളിലോ മീറ്റിംഗ് മിനിറ്റുകളിലോ ഒട്ടിക്കുക, ഞങ്ങൾ ഘടന പരിഷ്കരിച്ച് ഒരു മൈൻഡ് മാപ്പ് സൃഷ്ടിക്കും.',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'ചാറ്റ് ചരിത്രം',
-  'canvas.mindMapDocumentSummary.intro': 'പ്രധാന പോയിൻ്റുകൾ ശുദ്ധീകരിക്കുകയും കൂടുതൽ കൃത്യമായ മൈൻഡ് മാപ്പുകൾ സൃഷ്ടിക്കുകയും ചെയ്യുന്നു',
+  'canvas.mindMapDocumentSummary.intro':
+    'പ്രധാന പോയിൻ്റുകൾ ശുദ്ധീകരിക്കുകയും കൂടുതൽ കൃത്യമായ മൈൻഡ് മാപ്പുകൾ സൃഷ്ടിക്കുകയും ചെയ്യുന്നു',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'ഫയൽ അപ്‌ലോഡ് ചെയ്യാൻ ക്ലിക്ക് ചെയ്യുക',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, ടെക്സ്റ്റ്, ചിത്രങ്ങൾ, ഓഡിയോ എന്നിവ പിന്തുണയ്ക്കുന്നു; എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്‌ത മാർക്ക്‌ഡൗൺ മാത്രമേ നിലനിർത്തൂ',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint':
+    'PDF, Word, PPT, Excel, ടെക്സ്റ്റ്, ചിത്രങ്ങൾ, ഓഡിയോ എന്നിവ പിന്തുണയ്ക്കുന്നു; എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്‌ത മാർക്ക്‌ഡൗൺ മാത്രമേ നിലനിർത്തൂ',
   'canvas.mindMapDocumentSummary.invalidFileType': 'ഈ ഫയൽ തരം പിന്തുണയ്ക്കുന്നില്ല',
   'canvas.mindMapDocumentSummary.saveContent': 'ഉള്ളടക്കം സംരക്ഷിക്കുക',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'പിടിച്ച് സംരക്ഷിക്കുക',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'വെബ് ഉള്ളടക്കം ക്രാൾ ചെയ്യുന്നു...',
-  'canvas.mindMapDocumentSummary.webLinkHintLite': 'പൊതു വെബ് പേജ് ലിങ്ക് ഒട്ടിക്കുക, ടെക്‌സ്‌റ്റ് ക്രാൾ ചെയ്യാനും അത് മാർക്ക്‌ഡൗൺ ആയി സംരക്ഷിക്കാനും ഞങ്ങൾ പരമാവധി ശ്രമിക്കും.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'ലിങ്ക് നേരിട്ട് ഒട്ടിക്കുന്നത് സെർവർ ക്രോൾ ചെയ്യും, നിങ്ങളുടെ ലോഗിൻ നില ഉപയോഗിക്കാനാവില്ല. ലോഗിൻ അല്ലെങ്കിൽ അനുമതികൾ ആവശ്യമുള്ള ചില പേജുകൾ പൂർണ്ണമായും ക്യാപ്‌ചർ ചെയ്‌തേക്കില്ല. ഒരു സമ്പൂർണ്ണ വെബ് പേജ് സ്നാപ്പ്ഷോട്ടിനായി, ദയവായി Chrome വിപുലീകരണം ഉപയോഗിക്കുക.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite':
+    'പൊതു വെബ് പേജ് ലിങ്ക് ഒട്ടിക്കുക, ടെക്‌സ്‌റ്റ് ക്രാൾ ചെയ്യാനും അത് മാർക്ക്‌ഡൗൺ ആയി സംരക്ഷിക്കാനും ഞങ്ങൾ പരമാവധി ശ്രമിക്കും.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
+    'ലിങ്ക് നേരിട്ട് ഒട്ടിക്കുന്നത് സെർവർ ക്രോൾ ചെയ്യും, നിങ്ങളുടെ ലോഗിൻ നില ഉപയോഗിക്കാനാവില്ല. ലോഗിൻ അല്ലെങ്കിൽ അനുമതികൾ ആവശ്യമുള്ള ചില പേജുകൾ പൂർണ്ണമായും ക്യാപ്‌ചർ ചെയ്‌തേക്കില്ല. ഒരു സമ്പൂർണ്ണ വെബ് പേജ് സ്നാപ്പ്ഷോട്ടിനായി, ദയവായി Chrome വിപുലീകരണം ഉപയോഗിക്കുക.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Chrome വിപുലീകരണം ഡൗൺലോഡ് ചെയ്യുക',
   'canvas.mindMapDocumentSummary.statusExtracting': 'എക്‌സ്‌ട്രാക്റ്റുചെയ്യുന്നു...',
   'canvas.mindMapDocumentSummary.stageStarting': 'തയ്യാറെടുപ്പിലാണ്…',
@@ -906,19 +1052,26 @@ export default {
   'canvas.mindMapDocumentSummary.stageOcr': 'ചിത്ര വാചകം തിരിച്ചറിയുന്നു...',
   'canvas.mindMapDocumentSummary.stageTranscribing': 'ഓഡിയോ ട്രാൻസ്‌ക്രൈബ് ചെയ്യുന്നു...',
   'canvas.mindMapDocumentSummary.stageStoring': 'വേർതിരിച്ചെടുക്കൽ ഫലങ്ങൾ സംരക്ഷിക്കുന്നു...',
-  'canvas.mindMapDocumentSummary.replaceSourceHint': 'വീണ്ടും അപ്‌ലോഡ് ചെയ്യുന്നത് ഈ ചിത്രത്തിൻ്റെ നിലവിലുള്ള ഏക ഉറവിടത്തെ മാറ്റിസ്ഥാപിക്കും',
+  'canvas.mindMapDocumentSummary.replaceSourceHint':
+    'വീണ്ടും അപ്‌ലോഡ് ചെയ്യുന്നത് ഈ ചിത്രത്തിൻ്റെ നിലവിലുള്ള ഏക ഉറവിടത്തെ മാറ്റിസ്ഥാപിക്കും',
   'canvas.mindMapDocumentSummary.fromSource': '{name} മുതൽ',
   'canvas.mindMapDocumentSummary.deleteSource': 'ഉറവിടം നീക്കം ചെയ്യുക',
   'canvas.mindMapDocumentSummary.sourceDeleted': 'ഉറവിടം ഇല്ലാതാക്കി, വീണ്ടും അപ്‌ലോഡ് ചെയ്യാം',
   'canvas.mindMapDocumentSummary.extractStarted': 'ഉള്ളടക്കം എക്‌സ്‌ട്രാക്‌റ്റുചെയ്യുന്നു...',
-  'canvas.mindMapDocumentSummary.extractFailed': 'ഈ ഫയലിൽ നിന്ന് ടെക്‌സ്‌റ്റ് എക്‌സ്‌ട്രാക്‌റ്റുചെയ്യാനായില്ല',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'മാർക്ക്ഡൗൺ തയ്യാറാണ്. മൈൻഡ് മാപ്പുകൾ സൃഷ്ടിക്കാം, അല്ലെങ്കിൽ ഉറവിടം ഇല്ലാതാക്കി വീണ്ടും അപ്‌ലോഡ് ചെയ്യാം.',
-  'canvas.mindMapDocumentSummary.deleteToRetry': 'വെബ് ലിങ്ക് വീണ്ടും അപ്‌ലോഡ് ചെയ്യുന്നതിനോ ഒട്ടിക്കുന്നതിനോ ഒട്ടിക്കുന്നതിനോ മുമ്പ് ദയവായി ഈ ഉറവിടം ഇല്ലാതാക്കുക.',
-  'canvas.mindMapDocumentSummary.chatIntroLite': 'ഫയൽ റീഡിംഗ് ടൂൾ ഡൗൺലോഡ് ചെയ്യുക, ജോടിയാക്കൽ കോഡ് നൽകുക, ഈ ചാർട്ടിലേക്ക് WeChat അല്ലെങ്കിൽ DingTalk ചാറ്റ് ചരിത്രം അയയ്ക്കുക.',
+  'canvas.mindMapDocumentSummary.extractFailed':
+    'ഈ ഫയലിൽ നിന്ന് ടെക്‌സ്‌റ്റ് എക്‌സ്‌ട്രാക്‌റ്റുചെയ്യാനായില്ല',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'മാർക്ക്ഡൗൺ തയ്യാറാണ്. മൈൻഡ് മാപ്പുകൾ സൃഷ്ടിക്കാം, അല്ലെങ്കിൽ ഉറവിടം ഇല്ലാതാക്കി വീണ്ടും അപ്‌ലോഡ് ചെയ്യാം.',
+  'canvas.mindMapDocumentSummary.deleteToRetry':
+    'വെബ് ലിങ്ക് വീണ്ടും അപ്‌ലോഡ് ചെയ്യുന്നതിനോ ഒട്ടിക്കുന്നതിനോ ഒട്ടിക്കുന്നതിനോ മുമ്പ് ദയവായി ഈ ഉറവിടം ഇല്ലാതാക്കുക.',
+  'canvas.mindMapDocumentSummary.chatIntroLite':
+    'ഫയൽ റീഡിംഗ് ടൂൾ ഡൗൺലോഡ് ചെയ്യുക, ജോടിയാക്കൽ കോഡ് നൽകുക, ഈ ചാർട്ടിലേക്ക് WeChat അല്ലെങ്കിൽ DingTalk ചാറ്റ് ചരിത്രം അയയ്ക്കുക.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'ചാറ്റ് ഹിസ്റ്ററി ലഭിച്ചു',
-  'canvas.mindMapDocumentSummary.chatDoneLite': 'ചാറ്റ് ചരിത്രം സംരക്ഷിച്ചു, ക്ലിക്കുചെയ്തുകൊണ്ട് സൃഷ്ടിക്കാൻ കഴിയും',
+  'canvas.mindMapDocumentSummary.chatDoneLite':
+    'ചാറ്റ് ചരിത്രം സംരക്ഷിച്ചു, ക്ലിക്കുചെയ്തുകൊണ്ട് സൃഷ്ടിക്കാൻ കഴിയും',
   'canvas.mindMapDocumentSummary.corpusStatus': 'സൂചികയിലാക്കിയ {completed}/{total} ഉറവിടങ്ങൾ',
-  'canvas.mindMapDocumentSummary.noSources': 'ഇതുവരെ ഉറവിടമില്ല, ദയവായി അത് ചുവടെയുള്ള ടാബിൽ ചേർക്കുക.',
+  'canvas.mindMapDocumentSummary.noSources':
+    'ഇതുവരെ ഉറവിടമില്ല, ദയവായി അത് ചുവടെയുള്ള ടാബിൽ ചേർക്കുക.',
   'canvas.mindMapDocumentSummary.noPackageYet': 'ഇതുവരെ ഒരു ഡാറ്റാബേസും സൃഷ്ടിച്ചിട്ടില്ല',
   'canvas.mindMapDocumentSummary.addSource': 'ഉറവിടം ചേർക്കുക',
   'canvas.mindMapDocumentSummary.addToCorpus': 'ഡാറ്റാബേസിലേക്ക് ചേർക്കുക',
@@ -927,9 +1080,12 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': 'സൂചികയിലാക്കുന്നു...',
   'canvas.mindMapDocumentSummary.statusFailed': 'പരാജയപ്പെടുന്നു',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'വിജ്ഞാന ഇടം പ്രവർത്തനക്ഷമമാക്കിയിട്ടില്ല',
-  'canvas.mindMapDocumentSummary.featureDisabledHint': 'നോളജ് സ്പേസ് ഫീച്ചർ പ്രവർത്തനക്ഷമമാക്കുമ്പോൾ ഡോക്യുമെൻ്റ് സംഗ്രഹങ്ങൾ ലഭ്യമാണ്.',
-  'canvas.mindMapDocumentSummary.saveDiagramHint': 'പാക്കേജുമായി ബന്ധപ്പെടുത്തുന്നതിനും RAG വീണ്ടെടുക്കൽ പ്രവർത്തനക്ഷമമാക്കുന്നതിനും ദയവായി ആദ്യം ചാർട്ട് സംരക്ഷിക്കുക.',
-  'canvas.mindMapDocumentSummary.chatIntro': 'ഫയൽ റീഡിംഗ് ടൂൾ ഡൗൺലോഡ് ചെയ്യുക, ജോടിയാക്കൽ കോഡ് ചുവടെ നൽകുക, ഈ ഡാറ്റാബേസിലേക്ക് WeChat അല്ലെങ്കിൽ DingTalk ചാറ്റ് റെക്കോർഡുകൾ അയയ്ക്കുക.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint':
+    'നോളജ് സ്പേസ് ഫീച്ചർ പ്രവർത്തനക്ഷമമാക്കുമ്പോൾ ഡോക്യുമെൻ്റ് സംഗ്രഹങ്ങൾ ലഭ്യമാണ്.',
+  'canvas.mindMapDocumentSummary.saveDiagramHint':
+    'പാക്കേജുമായി ബന്ധപ്പെടുത്തുന്നതിനും RAG വീണ്ടെടുക്കൽ പ്രവർത്തനക്ഷമമാക്കുന്നതിനും ദയവായി ആദ്യം ചാർട്ട് സംരക്ഷിക്കുക.',
+  'canvas.mindMapDocumentSummary.chatIntro':
+    'ഫയൽ റീഡിംഗ് ടൂൾ ഡൗൺലോഡ് ചെയ്യുക, ജോടിയാക്കൽ കോഡ് ചുവടെ നൽകുക, ഈ ഡാറ്റാബേസിലേക്ക് WeChat അല്ലെങ്കിൽ DingTalk ചാറ്റ് റെക്കോർഡുകൾ അയയ്ക്കുക.',
   'canvas.mindMapDocumentSummary.pairingCode': 'ജോടിയാക്കൽ കോഡ്',
   'canvas.mindMapDocumentSummary.startPairingCode': 'ജോടിയാക്കൽ കോഡ് നേടുക',
   'canvas.mindMapDocumentSummary.pairingExpires': '{minutes} മിനിറ്റിനുള്ളിൽ സാധുവാണ്',
@@ -938,91 +1094,131 @@ export default {
   'canvas.mindMapDocumentSummary.chatReceived': 'ചാറ്റ് ഹിസ്റ്ററി സ്വീകരിച്ച് ഡാറ്റാബേസിൽ ചേർത്തു',
   'canvas.mindMapDocumentSummary.chatIndexing': 'ചാറ്റ് ചരിത്രം സൂചികയിലാക്കുന്നു...',
   'canvas.mindMapDocumentSummary.chatDone': 'ഡാറ്റാബേസിൽ ചാറ്റ് ഹിസ്റ്ററി ചേർത്തു',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'അപ്‌ലോഡ് ചെയ്യുന്നതോ ഇൻഡെക്‌സ് ചെയ്യുന്നതോ പരാജയപ്പെട്ടു, ജോടിയാക്കൽ കോഡ് പുതുക്കി വീണ്ടും ശ്രമിക്കുക',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed':
+    'അപ്‌ലോഡ് ചെയ്യുന്നതോ ഇൻഡെക്‌സ് ചെയ്യുന്നതോ പരാജയപ്പെട്ടു, ജോടിയാക്കൽ കോഡ് പുതുക്കി വീണ്ടും ശ്രമിക്കുക',
   'canvas.mindMapDocumentSummary.chatMintFailed': 'ജോടിയാക്കൽ കോഡ് സൃഷ്‌ടിക്കാനായില്ല',
-  'canvas.mindMapDocumentSummary.chatExpired': 'ജോടിയാക്കൽ കോഡ് കാലഹരണപ്പെട്ടു, ഒരു പുതിയ കോഡ് ലഭിക്കാൻ പുതുക്കുക',
+  'canvas.mindMapDocumentSummary.chatExpired':
+    'ജോടിയാക്കൽ കോഡ് കാലഹരണപ്പെട്ടു, ഒരു പുതിയ കോഡ് ലഭിക്കാൻ പുതുക്കുക',
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'ജോടിയാക്കൽ കോഡ് പുതുക്കുക',
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'ഡോക്യുമെൻ്റ് സംഗ്രഹ സെഷൻ ആരംഭിക്കാനായില്ല',
-  'canvas.mindMapDocumentSummary.imageTooLarge': 'ചിത്രം വളരെ വലുതാണ്, ദയവായി 10MB ഉള്ളിൽ ഒരു ഫയൽ അപ്‌ലോഡ് ചെയ്യുക',
-  'canvas.mindMapDocumentSummary.generateNoCorpus': 'ദയവായി ആദ്യം ഒരു ഉറവിടമെങ്കിലും ചേർക്കുക, തുടർന്ന് സൃഷ്ടിക്കുക ക്ലിക്കുചെയ്യുക',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'ആദ്യം വെബ് ഉള്ളടക്കം അപ്‌ലോഡ് ചെയ്യുക, ഒട്ടിക്കുക അല്ലെങ്കിൽ ക്രാൾ ചെയ്യുക, തുടർന്ന് സൃഷ്ടിക്കുക ക്ലിക്കുചെയ്യുക',
+  'canvas.mindMapDocumentSummary.imageTooLarge':
+    'ചിത്രം വളരെ വലുതാണ്, ദയവായി 10MB ഉള്ളിൽ ഒരു ഫയൽ അപ്‌ലോഡ് ചെയ്യുക',
+  'canvas.mindMapDocumentSummary.generateNoCorpus':
+    'ദയവായി ആദ്യം ഒരു ഉറവിടമെങ്കിലും ചേർക്കുക, തുടർന്ന് സൃഷ്ടിക്കുക ക്ലിക്കുചെയ്യുക',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
+    'ആദ്യം വെബ് ഉള്ളടക്കം അപ്‌ലോഡ് ചെയ്യുക, ഒട്ടിക്കുക അല്ലെങ്കിൽ ക്രാൾ ചെയ്യുക, തുടർന്ന് സൃഷ്ടിക്കുക ക്ലിക്കുചെയ്യുക',
   'canvas.mindMapDocumentSummary.collabDisabled': 'തത്സമയ സഹകരണ സമയത്ത് ലഭ്യമല്ല',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'ഉറവിടം ഡാറ്റാബേസിൽ ചേർത്തു',
-  'canvas.mindMapDocumentSummary.ingestSuccessLite': 'ഉള്ളടക്കം സംരക്ഷിച്ചു, ഒരു മൈൻഡ് മാപ്പ് സൃഷ്ടിക്കാൻ നിങ്ങൾക്ക് ക്ലിക്ക് ചെയ്യാം',
+  'canvas.mindMapDocumentSummary.ingestSuccessLite':
+    'ഉള്ളടക്കം സംരക്ഷിച്ചു, ഒരു മൈൻഡ് മാപ്പ് സൃഷ്ടിക്കാൻ നിങ്ങൾക്ക് ക്ലിക്ക് ചെയ്യാം',
   'canvas.mindMapDocumentSummary.ingestFailed': 'ഉറവിടം ചേർക്കുന്നതിൽ പരാജയപ്പെട്ടു',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'പ്രാദേശിക ഡോക്യുമെൻ്റേഷൻ:',
-  'canvas.mindMapDocumentSummary.uploadDocHint': 'Word അല്ലെങ്കിൽ PDF പ്രമാണങ്ങൾ അപ്‌ലോഡ് ചെയ്യാൻ ക്ലിക്ക് ചെയ്യുക',
-  'canvas.mindMapDocumentSummary.uploadDocSubhint': 'ഞങ്ങൾ ഡോക്യുമെൻ്റ് ഉള്ളടക്കം സ്വയമേവ പാഴ്‌സ് ചെയ്യുകയും ഘടന പരിഷ്കരിക്കുകയും ചെയ്യും',
-  'canvas.mindMapDocumentSummary.pasteLabel': 'അല്ലെങ്കിൽ ഏതെങ്കിലും നീണ്ട വാചക കുറിപ്പ് നേരിട്ട് ഒട്ടിക്കുക:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder': 'നിങ്ങൾക്ക് ഉപന്യാസ ശകലങ്ങൾ, വായന സംഗ്രഹങ്ങൾ, ജോലി ചർച്ച മിനിറ്റ്, ആവശ്യകതകൾ പ്രമാണങ്ങൾ മുതലായവ ഇവിടെ സ്വതന്ത്രമായി ഒട്ടിക്കാം. ഞങ്ങൾ അത് നിങ്ങൾക്കായി ലെയർ പ്രകാരം അടുക്കും!',
+  'canvas.mindMapDocumentSummary.uploadDocHint':
+    'Word അല്ലെങ്കിൽ PDF പ്രമാണങ്ങൾ അപ്‌ലോഡ് ചെയ്യാൻ ക്ലിക്ക് ചെയ്യുക',
+  'canvas.mindMapDocumentSummary.uploadDocSubhint':
+    'ഞങ്ങൾ ഡോക്യുമെൻ്റ് ഉള്ളടക്കം സ്വയമേവ പാഴ്‌സ് ചെയ്യുകയും ഘടന പരിഷ്കരിക്കുകയും ചെയ്യും',
+  'canvas.mindMapDocumentSummary.pasteLabel':
+    'അല്ലെങ്കിൽ ഏതെങ്കിലും നീണ്ട വാചക കുറിപ്പ് നേരിട്ട് ഒട്ടിക്കുക:',
+  'canvas.mindMapDocumentSummary.pastePlaceholder':
+    'നിങ്ങൾക്ക് ഉപന്യാസ ശകലങ്ങൾ, വായന സംഗ്രഹങ്ങൾ, ജോലി ചർച്ച മിനിറ്റ്, ആവശ്യകതകൾ പ്രമാണങ്ങൾ മുതലായവ ഇവിടെ സ്വതന്ത്രമായി ഒട്ടിക്കാം. ഞങ്ങൾ അത് നിങ്ങൾക്കായി ലെയർ പ്രകാരം അടുക്കും!',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'ചിത്രങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക:',
-  'canvas.mindMapDocumentSummary.uploadImageHint': 'JPG, PNG ചിത്രങ്ങൾ അപ്‌ലോഡ് ചെയ്യാൻ ക്ലിക്ക് ചെയ്യുക',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'കൈകൊണ്ട് വരച്ച മൈൻഡ് മാപ്പുകൾ ക്യാൻവാസിലേക്ക് സ്വയമേവ പുനർനിർമ്മിക്കും; സാധാരണ ചിത്രങ്ങൾ ടെക്സ്റ്റ് എക്സ്ട്രാക്റ്റ് ചെയ്യും.',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'കൈകൊണ്ട് വരച്ച മൈൻഡ് മാപ്പുകൾ തിരിച്ചറിഞ്ഞ് ക്യാൻവാസിലേക്ക് പുനർനിർമ്മിച്ചു',
-  'canvas.mindMapDocumentSummary.visionProgressDetecting': 'കൈകൊണ്ട് വരച്ച മൈൻഡ് മാപ്പുകൾ തിരിച്ചറിയുന്നു...',
-  'canvas.mindMapDocumentSummary.imageOcrHint': 'നോട്ട് സ്‌ക്രീൻഷോട്ടുകൾ, വൈറ്റ്‌ബോർഡ് ഫോട്ടോകൾ, സ്‌കാൻ ചെയ്‌ത ഡോക്യുമെൻ്റുകൾ എന്നിവ പോലുള്ള ടെക്‌സ്‌റ്റ് അടങ്ങിയ ചിത്രങ്ങളെ പിന്തുണയ്‌ക്കുന്നു.',
+  'canvas.mindMapDocumentSummary.uploadImageHint':
+    'JPG, PNG ചിത്രങ്ങൾ അപ്‌ലോഡ് ചെയ്യാൻ ക്ലിക്ക് ചെയ്യുക',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    'കൈകൊണ്ട് വരച്ച മൈൻഡ് മാപ്പുകൾ ക്യാൻവാസിലേക്ക് സ്വയമേവ പുനർനിർമ്മിക്കും; സാധാരണ ചിത്രങ്ങൾ ടെക്സ്റ്റ് എക്സ്ട്രാക്റ്റ് ചെയ്യും.',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
+    'കൈകൊണ്ട് വരച്ച മൈൻഡ് മാപ്പുകൾ തിരിച്ചറിഞ്ഞ് ക്യാൻവാസിലേക്ക് പുനർനിർമ്മിച്ചു',
+  'canvas.mindMapDocumentSummary.visionProgressDetecting':
+    'കൈകൊണ്ട് വരച്ച മൈൻഡ് മാപ്പുകൾ തിരിച്ചറിയുന്നു...',
+  'canvas.mindMapDocumentSummary.imageOcrHint':
+    'നോട്ട് സ്‌ക്രീൻഷോട്ടുകൾ, വൈറ്റ്‌ബോർഡ് ഫോട്ടോകൾ, സ്‌കാൻ ചെയ്‌ത ഡോക്യുമെൻ്റുകൾ എന്നിവ പോലുള്ള ടെക്‌സ്‌റ്റ് അടങ്ങിയ ചിത്രങ്ങളെ പിന്തുണയ്‌ക്കുന്നു.',
   'canvas.mindMapDocumentSummary.removeImage': 'ചിത്രം നീക്കം ചെയ്യുക',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'വെബ് ലിങ്ക്:',
-  'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'ലേഖനത്തിലേക്കോ ബ്ലോഗിലേക്കോ വാർത്താ പേജിലേക്കോ ലിങ്ക് ഒട്ടിക്കുക',
-  'canvas.mindMapDocumentSummary.webLinkHint': 'ഞങ്ങൾ വെബ് പേജിൻ്റെ ടെക്‌സ്‌റ്റ് ക്രാൾ ചെയ്യുകയും ഇൻഡെക്‌സിംഗിനായി ഡാറ്റാബേസിലേക്ക് ചേർക്കുകയും ചെയ്യും.',
+  'canvas.mindMapDocumentSummary.webUrlPlaceholder':
+    'ലേഖനത്തിലേക്കോ ബ്ലോഗിലേക്കോ വാർത്താ പേജിലേക്കോ ലിങ്ക് ഒട്ടിക്കുക',
+  'canvas.mindMapDocumentSummary.webLinkHint':
+    'ഞങ്ങൾ വെബ് പേജിൻ്റെ ടെക്‌സ്‌റ്റ് ക്രാൾ ചെയ്യുകയും ഇൻഡെക്‌സിംഗിനായി ഡാറ്റാബേസിലേക്ക് ചേർക്കുകയും ചെയ്യും.',
   'canvas.mindMapDocumentSummary.generateButton': 'മൈൻഡ് മാപ്പുകൾ സൃഷ്ടിക്കുക',
   'canvas.mindMapDocumentSummary.generateSuccess': 'മൈൻഡ് മാപ്പ് തയ്യാറാക്കിയിട്ടുണ്ട്',
-  'canvas.mindMapDocumentSummary.generateFailed': 'ജനറേഷൻ പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
+  'canvas.mindMapDocumentSummary.generateFailed':
+    'ജനറേഷൻ പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
   'canvas.mindMapDocumentSummary.loadFailed': 'സൃഷ്‌ടിച്ച മാപ്പ് ലോഡുചെയ്യാനായില്ല',
-  'canvas.mindMapDocumentSummary.emptyDocument': 'ഒരു ഡോക്യുമെൻ്റ് അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ വാചകം ഒട്ടിക്കുക',
+  'canvas.mindMapDocumentSummary.emptyDocument':
+    'ഒരു ഡോക്യുമെൻ്റ് അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ വാചകം ഒട്ടിക്കുക',
   'canvas.mindMapDocumentSummary.emptyUrl': 'ദയവായി വെബ് ലിങ്ക് നൽകുക',
-  'canvas.mindMapDocumentSummary.invalidDocType': 'Word (.docx), PDF ഫയലുകൾ എന്നിവ മാത്രമേ പിന്തുണയ്ക്കൂ',
+  'canvas.mindMapDocumentSummary.invalidDocType':
+    'Word (.docx), PDF ഫയലുകൾ എന്നിവ മാത്രമേ പിന്തുണയ്ക്കൂ',
   'canvas.mindMapDocumentSummary.invalidImageType': 'JPG, PNG ചിത്രങ്ങൾ മാത്രം പിന്തുണയ്ക്കുന്നു',
-  'canvas.mindMapDocumentSummary.docTooLarge': 'ഡോക്യുമെൻ്റ് വളരെ വലുതാണ്, ദയവായി 20MB ഉള്ളിൽ ഒരു ഫയൽ അപ്‌ലോഡ് ചെയ്യുക',
-  'canvas.mindMapDocumentSummary.pasteTooLong': 'ഒട്ടിച്ച വാചകം മോഡൽ ഇൻപുട്ട് പരിധി കവിയുന്നു (ഏകദേശം 900,000 പ്രതീകങ്ങൾ), ദയവായി അത് ചുരുക്കി വീണ്ടും ശ്രമിക്കുക',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'എക്‌സ്‌ട്രാക്‌റ്റുചെയ്‌ത വാചകം മോഡൽ ഇൻപുട്ട് പരിധി കവിയുന്നു (ഏകദേശം 900,000 പ്രതീകങ്ങൾ / qwen3.6-flash 991K ടോക്കണുകൾ), ദയവായി ഒരു ചെറിയ ഡോക്യുമെൻ്റ് ഉപയോഗിക്കുക.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'ഈ ഫയലിൽ നിന്ന് എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്‌ത ടെക്‌സ്‌റ്റ് ദൈർഘ്യമേറിയതാണ്, മോഡലിലേക്ക് അയയ്‌ക്കാനാകില്ല. ദയവായി ഒരു ചെറിയ പ്രമാണം അപ്‌ലോഡ് ചെയ്യുക (ഏകദേശം 900,000 പ്രതീകങ്ങൾക്കുള്ളിൽ എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്‌ത വാചകം)',
-  'canvas.mindMapDocumentSummary.storageConflictCleared': 'സംരക്ഷിച്ച എക്‌സ്‌ട്രാക്‌റ്റ് നഷ്‌ടമായതോ സ്‌റ്റോറേജുമായി സമന്വയിപ്പിക്കാത്തതോ ആയതിനാൽ സ്വയമേവ ശുദ്ധീകരിക്കപ്പെട്ടു. പ്രമാണം വീണ്ടും അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ഒട്ടിക്കുക.',
-  'canvas.mindMapDocumentSummary.contentFiltered': 'ഉള്ളടക്കം സുരക്ഷാ അവലോകനത്തിൽ വിജയിച്ചില്ല. ദയവായി ടെക്‌സ്‌റ്റ് പരിഷ്‌കരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindMapDocumentSummary.docTooLarge':
+    'ഡോക്യുമെൻ്റ് വളരെ വലുതാണ്, ദയവായി 20MB ഉള്ളിൽ ഒരു ഫയൽ അപ്‌ലോഡ് ചെയ്യുക',
+  'canvas.mindMapDocumentSummary.pasteTooLong':
+    'ഒട്ടിച്ച വാചകം മോഡൽ ഇൻപുട്ട് പരിധി കവിയുന്നു (ഏകദേശം 900,000 പ്രതീകങ്ങൾ), ദയവായി അത് ചുരുക്കി വീണ്ടും ശ്രമിക്കുക',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel':
+    'എക്‌സ്‌ട്രാക്‌റ്റുചെയ്‌ത വാചകം മോഡൽ ഇൻപുട്ട് പരിധി കവിയുന്നു (ഏകദേശം 900,000 പ്രതീകങ്ങൾ / qwen3.6-flash 991K ടോക്കണുകൾ), ദയവായി ഒരു ചെറിയ ഡോക്യുമെൻ്റ് ഉപയോഗിക്കുക.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel':
+    'ഈ ഫയലിൽ നിന്ന് എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്‌ത ടെക്‌സ്‌റ്റ് ദൈർഘ്യമേറിയതാണ്, മോഡലിലേക്ക് അയയ്‌ക്കാനാകില്ല. ദയവായി ഒരു ചെറിയ പ്രമാണം അപ്‌ലോഡ് ചെയ്യുക (ഏകദേശം 900,000 പ്രതീകങ്ങൾക്കുള്ളിൽ എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്‌ത വാചകം)',
+  'canvas.mindMapDocumentSummary.storageConflictCleared':
+    'സംരക്ഷിച്ച എക്‌സ്‌ട്രാക്‌റ്റ് നഷ്‌ടമായതോ സ്‌റ്റോറേജുമായി സമന്വയിപ്പിക്കാത്തതോ ആയതിനാൽ സ്വയമേവ ശുദ്ധീകരിക്കപ്പെട്ടു. പ്രമാണം വീണ്ടും അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ഒട്ടിക്കുക.',
+  'canvas.mindMapDocumentSummary.contentFiltered':
+    'ഉള്ളടക്കം സുരക്ഷാ അവലോകനത്തിൽ വിജയിച്ചില്ല. ദയവായി ടെക്‌സ്‌റ്റ് പരിഷ്‌കരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
   'canvas.mindMapSideToolbar.learningSheet': 'പൊള്ളയായ ബ്രാക്കറ്റ് ഡയഗ്രം',
   'canvas.mobile.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'സംഭാഷണ പരിഷ്ക്കരണം',
   'canvas.mindMapSideToolbar.mindClassroom': 'ചിന്താ പ്രഭാഷണ ഹാൾ',
   'canvas.mindClassroom.title': 'ചിന്താ പ്രഭാഷണ ഹാൾ',
-  'canvas.mindClassroom.intro': 'മാപ്പിന് ചുറ്റും വിശദീകരിക്കുക: നിങ്ങൾക്ക് ക്യാൻവാസ് വോയ്‌സ് ടൂറോ ഡബിൾ കോളം സ്ലൈഡ് വിശദീകരണമോ തിരഞ്ഞെടുക്കാം.',
+  'canvas.mindClassroom.intro':
+    'മാപ്പിന് ചുറ്റും വിശദീകരിക്കുക: നിങ്ങൾക്ക് ക്യാൻവാസ് വോയ്‌സ് ടൂറോ ഡബിൾ കോളം സ്ലൈഡ് വിശദീകരണമോ തിരഞ്ഞെടുക്കാം.',
   'canvas.mindClassroom.lead': 'ഈ മൈൻഡ് മാപ്പിൽ നിങ്ങളുമായി സംസാരിക്കാൻ AI അധ്യാപകനെ അനുവദിക്കുക',
   'canvas.mindClassroom.mascotBubble': 'ചിന്താ പ്രഭാഷണ ഹാൾ ഇവിടെയുണ്ട്!',
   'canvas.mindClassroom.mascotDismiss': 'അടിയിലേക്ക് ഒതുക്കുക',
-  'canvas.mindClassroom.audienceLine': 'നിലവിലെ പ്രേക്ഷകർ: {level} (താഴെ നിന്ന് [പ്രൊഫഷണൽ ഉള്ളടക്കം])',
+  'canvas.mindClassroom.audienceLine':
+    'നിലവിലെ പ്രേക്ഷകർ: {level} (താഴെ നിന്ന് [പ്രൊഫഷണൽ ഉള്ളടക്കം])',
   'canvas.mindClassroom.start': 'വിശദീകരിക്കാൻ തുടങ്ങുക',
-  'canvas.mindClassroom.startPreview': '"{mastery}" · "{presentation}" · "{tone}" · പ്രേക്ഷകർ "{audience}" തിരഞ്ഞെടുത്തു. ലോഗിൻ ചെയ്‌ത ശേഷം, ലെക്ചർ നോട്ടുകൾ/അധ്യാപന പദ്ധതികൾ സൃഷ്‌ടിക്കാൻ ക്യൂ അപ്പ് ചെയ്യുക; സന്ദർശകർ പ്രാദേശിക ടെംപ്ലേറ്റുകൾ ഉപയോഗിക്കുന്നു.',
+  'canvas.mindClassroom.startPreview':
+    '"{mastery}" · "{presentation}" · "{tone}" · പ്രേക്ഷകർ "{audience}" തിരഞ്ഞെടുത്തു. ലോഗിൻ ചെയ്‌ത ശേഷം, ലെക്ചർ നോട്ടുകൾ/അധ്യാപന പദ്ധതികൾ സൃഷ്‌ടിക്കാൻ ക്യൂ അപ്പ് ചെയ്യുക; സന്ദർശകർ പ്രാദേശിക ടെംപ്ലേറ്റുകൾ ഉപയോഗിക്കുന്നു.',
   'canvas.mindClassroom.queue.queued': 'ട്യൂട്ടോറിയൽ ക്യൂവിൽ ഇതിനകം ചേർന്നു...',
   'canvas.mindClassroom.queue.planning': 'പ്രഭാഷണ കുറിപ്പുകൾ/പഠന പദ്ധതികൾ സൃഷ്ടിക്കുന്നു...',
   'canvas.mindClassroom.queue.transcriptBranch': '{name} ബ്രാഞ്ചിനുള്ള പാഠപദ്ധതികൾ എഴുതുന്നു',
-  'canvas.mindClassroom.queue.transcriptRemaining': 'മറ്റ് പാഠ്യപദ്ധതികൾ എഴുതുന്നു ({done}/{total})',
+  'canvas.mindClassroom.queue.transcriptRemaining':
+    'മറ്റ് പാഠ്യപദ്ധതികൾ എഴുതുന്നു ({done}/{total})',
   'canvas.mindClassroom.queue.transcript': 'പ്രഭാഷണ കുറിപ്പുകൾ/പാഠ പദ്ധതികൾ എഴുതുന്നു...',
   'canvas.mindClassroom.queue.generating': 'സ്ലൈഡ്‌ഷോ സൃഷ്‌ടിക്കുന്നു...',
   'canvas.mindClassroom.queue.loadingVoice': 'ശബ്ദങ്ങൾ ലോഡ് ചെയ്യുന്നു...',
   'canvas.mindClassroom.queue.ready': 'ഒരു പ്രഭാഷണം തുടങ്ങാം',
-  'canvas.mindClassroom.queue.readyHint': 'പ്രഭാഷണ കുറിപ്പുകൾ/പാഠ പദ്ധതികൾ തയ്യാറാണ്, പ്രഭാഷണം ആരംഭിക്കാം.',
+  'canvas.mindClassroom.queue.readyHint':
+    'പ്രഭാഷണ കുറിപ്പുകൾ/പാഠ പദ്ധതികൾ തയ്യാറാണ്, പ്രഭാഷണം ആരംഭിക്കാം.',
   'canvas.mindClassroom.queue.failed': 'തയ്യാറെടുപ്പ് പരാജയം വിശദീകരിക്കുക',
   'canvas.mindClassroom.queue.cancel': 'ക്യൂ റദ്ദാക്കുക',
   'canvas.mindClassroom.queue.restart': 'പാഠപദ്ധതികൾ തിരുത്തിയെഴുതുക',
-  'canvas.mindClassroom.queue.restartHint': 'നിലവിലെ തിരഞ്ഞെടുപ്പുകൾക്കൊപ്പം പ്രഭാഷണ കുറിപ്പുകൾ/പാഠ പദ്ധതികൾ പുനഃസൃഷ്ടിക്കുക',
-  'canvas.mindClassroom.queue.guestHint': 'വിശദീകരണങ്ങൾക്കായി സന്ദർശകർ പ്രാദേശിക ടെംപ്ലേറ്റുകൾ ഉപയോഗിക്കുന്നു; ലോഗിൻ ചെയ്ത ശേഷം, എഞ്ചിൻ ലെക്ചർ നോട്ടുകൾ / ടീച്ചിംഗ് പ്ലാനുകൾ സൃഷ്ടിക്കുന്നു.',
-  'canvas.mindClassroom.queue.loginRequired': 'വിശദീകരണം ആരംഭിക്കുന്നതിന് മുമ്പ് ദയവായി ആദ്യം ലോഗിൻ ചെയ്യുക.',
+  'canvas.mindClassroom.queue.restartHint':
+    'നിലവിലെ തിരഞ്ഞെടുപ്പുകൾക്കൊപ്പം പ്രഭാഷണ കുറിപ്പുകൾ/പാഠ പദ്ധതികൾ പുനഃസൃഷ്ടിക്കുക',
+  'canvas.mindClassroom.queue.guestHint':
+    'വിശദീകരണങ്ങൾക്കായി സന്ദർശകർ പ്രാദേശിക ടെംപ്ലേറ്റുകൾ ഉപയോഗിക്കുന്നു; ലോഗിൻ ചെയ്ത ശേഷം, എഞ്ചിൻ ലെക്ചർ നോട്ടുകൾ / ടീച്ചിംഗ് പ്ലാനുകൾ സൃഷ്ടിക്കുന്നു.',
+  'canvas.mindClassroom.queue.loginRequired':
+    'വിശദീകരണം ആരംഭിക്കുന്നതിന് മുമ്പ് ദയവായി ആദ്യം ലോഗിൻ ചെയ്യുക.',
   'canvas.mindClassroom.queue.preparing': 'വിശദീകരിക്കാൻ തയ്യാറെടുക്കുന്നു...',
   'canvas.mindClassroom.settings.masteryTitle': 'ഈ ചിത്രം എനിക്ക് എത്ര പരിചിതമാണ്',
   'canvas.mindClassroom.settings.mastery.first_look.title': 'ആദ്യ പരിചയം',
   'canvas.mindClassroom.settings.mastery.review.title': 'അവലോകനം ചെയ്ത് ഏകീകരിക്കുക',
   'canvas.mindClassroom.settings.mastery.teach.title': 'പാഠം തയ്യാറാക്കലും പഠിപ്പിക്കലും',
-  'canvas.mindClassroom.settings.presentationTitle': 'വിശദീകരണം എങ്ങനെ അവതരിപ്പിക്കണമെന്ന് ഞാൻ ആഗ്രഹിക്കുന്നു',
+  'canvas.mindClassroom.settings.presentationTitle':
+    'വിശദീകരണം എങ്ങനെ അവതരിപ്പിക്കണമെന്ന് ഞാൻ ആഗ്രഹിക്കുന്നു',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'ക്യാൻവാസ് വോയ്സ് ടൂർ',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'മാപ്പ് ക്യാൻവാസിലെ ഓഡിയോ വിശദീകരണത്തിൽ ഫോക്കസ് ചെയ്യുക, പ്രധാന ബ്രാഞ്ച് അല്ലെങ്കിൽ നോഡ് ബൈ നോഡ് തിരഞ്ഞെടുക്കുക.',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    'മാപ്പ് ക്യാൻവാസിലെ ഓഡിയോ വിശദീകരണത്തിൽ ഫോക്കസ് ചെയ്യുക, പ്രധാന ബ്രാഞ്ച് അല്ലെങ്കിൽ നോഡ് ബൈ നോഡ് തിരഞ്ഞെടുക്കുക.',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'സ്ലൈഡ് വിശദീകരണം',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'താരതമ്യത്തിനായി ഇടതുവശത്ത് ഒരു മാപ്പും വലതുവശത്ത് പേജ് തിരിയുന്ന വിശദീകരണവും ഉള്ള സ്ലൈഡുകൾ AI സൃഷ്ടിക്കുന്നു.',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': 'വികസനത്തിലാണ്, ഉടൻ തന്നെ ഓൺലൈനാകും',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    'താരതമ്യത്തിനായി ഇടതുവശത്ത് ഒരു മാപ്പും വലതുവശത്ത് പേജ് തിരിയുന്ന വിശദീകരണവും ഉള്ള സ്ലൈഡുകൾ AI സൃഷ്ടിക്കുന്നു.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
+    'വികസനത്തിലാണ്, ഉടൻ തന്നെ ഓൺലൈനാകും',
   'canvas.mindClassroom.settings.tourScopeTitle': 'ടൂർ ഗ്രാനുലാരിറ്റി',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'മാസ്റ്റർ ബ്രാഞ്ച് വഴി',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'ഒന്നാം നില ശാഖകൾ പടിപടിയായി പഠിപ്പിക്കുകയും താളം കൂടുതൽ സ്ഥിരത കൈവരിക്കുകയും ചെയ്യുന്നു.',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
+    'ഒന്നാം നില ശാഖകൾ പടിപടിയായി പഠിപ്പിക്കുകയും താളം കൂടുതൽ സ്ഥിരത കൈവരിക്കുകയും ചെയ്യുന്നു.',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'നോഡ് ബൈ നോഡ്',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'തീവ്രമായ വായനയ്ക്ക് അനുയോജ്യമായ എല്ലാ നോഡുകളിലേക്കും ആഴത്തിൽ പോകുക.',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc':
+    'തീവ്രമായ വായനയ്ക്ക് അനുയോജ്യമായ എല്ലാ നോഡുകളിലേക്കും ആഴത്തിൽ പോകുക.',
   'canvas.mindClassroom.settings.slideStyleTitle': 'സ്ലൈഡ്ഷോ ശൈലി',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'യൂണിവേഴ്സൽ സ്ലൈഡുകൾ',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'ബ്ലാക്ക്ബോർഡ് റിപ്പോർട്ട്',
@@ -1040,10 +1236,12 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': 'തീവ്രമായ വായന',
   'canvas.mindClassroom.settings.tone.examples': 'സമ്പന്നമായ ഉദാഹരണങ്ങൾ',
   'canvas.mindClassroom.settings.tone.exam_outline': 'പരീക്ഷയുടെ രൂപരേഖ',
-  'canvas.mindClassroom.lecture.needDiagram': 'വിശദീകരണം ആരംഭിക്കുന്നതിന് മുമ്പ് ക്യാൻവാസിൽ ഒരു മൈൻഡ് മാപ്പ് സൃഷ്‌ടിക്കുക.',
+  'canvas.mindClassroom.lecture.needDiagram':
+    'വിശദീകരണം ആരംഭിക്കുന്നതിന് മുമ്പ് ക്യാൻവാസിൽ ഒരു മൈൻഡ് മാപ്പ് സൃഷ്‌ടിക്കുക.',
   'canvas.mindClassroom.lecture.emptySteps': 'നിലവിലെ മാപ്പിൽ വിശദീകരിക്കാൻ നോഡുകളൊന്നുമില്ല.',
   'canvas.mindClassroom.lecture.cancelled': 'ട്യൂട്ടോറിയൽ ക്യൂ റദ്ദാക്കി.',
-  'canvas.mindClassroom.lecture.queueFailed': 'ട്യൂട്ടോറിയൽ തയ്യാറാക്കൽ പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'canvas.mindClassroom.lecture.queueFailed':
+    'ട്യൂട്ടോറിയൽ തയ്യാറാക്കൽ പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'canvas.mindClassroom.lecture.pause': 'താൽക്കാലികമായി നിർത്തുക',
   'canvas.mindClassroom.lecture.resume': 'തുടരുക',
   'canvas.mindClassroom.lecture.prev': 'മുമ്പത്തെ വിഭാഗം',
@@ -1052,34 +1250,56 @@ export default {
   'canvas.mindClassroom.lecture.mute': 'ഉറക്കെ വായിക്കുന്നത് ഓഫാക്കുക',
   'canvas.mindClassroom.lecture.unmute': 'ഉറക്കെ വായിക്കാൻ തുടങ്ങുക',
   'canvas.mindClassroom.lecture.script.noBranches': 'ചില പോയിൻ്റുകൾ',
-  'canvas.mindClassroom.lecture.script.leafNode': 'ഈ ശാഖയെക്കുറിച്ച് ഇതുവരെ കൂടുതൽ വിവരങ്ങളൊന്നുമില്ല.',
-  'canvas.mindClassroom.lecture.script.overview.classroom': 'ഹലോ, സഹപാഠികൾ. ഇന്ന് നമ്മൾ "{topic}" എന്ന ചുറ്റുപാടും "{audience}" പ്രേക്ഷകരെ അഭിമുഖീകരിക്കുകയും "{mastery}" എന്ന വേഗതയിൽ വികസിക്കുകയും ചെയ്യുന്നു. മുഴുവൻ ചിത്രത്തിലും പ്രധാനമായും ഉൾപ്പെടുന്നു: {branches}. ആദ്യം മൊത്തത്തിലുള്ള ചിത്രം നോക്കുക, തുടർന്ന് അത് കഷണങ്ങളായി അടുക്കുക.',
-  'canvas.mindClassroom.lecture.script.overview.story': 'ആദ്യം "{topic}" ഒരു കഥയുടെ തലക്കെട്ടായി കരുതുക. "{audience}" അഭിമുഖീകരിക്കുമ്പോൾ, ഞങ്ങൾ മുഴുവൻ ചിത്രത്തിൽ നിന്നും വിശദാംശങ്ങളിലേക്ക് പോകും: കഥയിൽ ഈ അധ്യായങ്ങളുണ്ട്-{branches}.',
-  'canvas.mindClassroom.lecture.script.overview.dialogue': 'ആദ്യം "{topic}" ഒരുമിച്ച് നോക്കാം. നിങ്ങൾ "{audience}" ആണെങ്കിൽ, നിങ്ങൾ ആദ്യം ശ്രദ്ധിക്കേണ്ട ഭാഗങ്ങൾ ഏതാണ്? മുഴുവൻ ചിത്രത്തിലും ഏകദേശം ഉൾപ്പെടുന്നു: {branches}. ചോദ്യങ്ങൾ ചോദിച്ച് ഉത്തരം നൽകി ഞങ്ങൾ ഇറങ്ങി.',
-  'canvas.mindClassroom.lecture.script.overview.socratic': 'നിഗമനം ഓർമ്മിക്കാൻ തിരക്കുകൂട്ടരുത്. "{topic}" അഭിമുഖീകരിക്കുമ്പോൾ, ഒരു ചിത്രം നിർമ്മിക്കുന്നത് മൂല്യവത്താണെന്ന് നിങ്ങൾ കരുതുന്നത് എന്തുകൊണ്ട്? ഞങ്ങൾ "{mastery}" എന്നതിൻ്റെ ആഴം പിന്തുടരുകയും ഈ ശാഖകളിൽ നിന്ന് ചോദിക്കുകയും ചെയ്യുന്നു: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.fast': '"{topic}" ({audience}) പെട്ടെന്ന് നോക്കൂ. തുമ്പിക്കൈ: {branches}. അടുത്തതായി, പോയിൻ്റ് ഓരോന്നായി എത്തുക.',
-  'canvas.mindClassroom.lecture.script.overview.close_read': 'തീവ്രമായ വായന തുറക്കൽ: തീം "{topic}" ആണ്. ദയവായി മൊത്തത്തിലുള്ള ഘടന ആദ്യം മനസ്സിലാക്കുക - {branches} - തുടർന്ന് ഓരോ ബ്രാഞ്ചിലും ശ്രദ്ധാപൂർവ്വം വായിക്കുക. പ്രേക്ഷക ക്രമീകരണം: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.examples': 'ഒരു ഉദാഹരണം ഉപയോഗിച്ച് ആരംഭിക്കുക. തീം "{topic}" ജീവിതത്തിലോ ക്ലാസ് മുറിയിലോ ഉള്ള ഒരു രംഗമായി കണക്കാക്കാം; മുഴുവൻ ചിത്രത്തിൻ്റെയും ശാഖകൾ വ്യത്യസ്ത ദൃശ്യങ്ങൾ പോലെയാണ്: {branches}. പ്രേക്ഷകർ: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'ടെസ്റ്റ് പോയിൻ്റുകളുടെ അവലോകനം: "{topic}". ഔട്ട്‌ലൈൻ അനുസരിച്ച് പ്രധാന പോയിൻ്റുകൾ രേഖപ്പെടുത്തുക——{branches}. ബുദ്ധിമുട്ട് "{audience}" ലേക്ക് വിന്യസിച്ചിരിക്കുന്നു, താളം "{mastery}" ആണ്.',
-  'canvas.mindClassroom.lecture.script.branch.classroom': 'ബ്രാഞ്ച് {index}/{total}: "{title}" നോക്കുക. അതിനു താഴെയും: {children}. മൊത്തത്തിൽ ഈ വിഭാഗത്തിൻ്റെ പങ്ക് മനസ്സിലാക്കാൻ മാപ്പ് സ്ഥാനം പരിശോധിക്കുക.',
-  'canvas.mindClassroom.lecture.script.branch.story': 'കഥ {index} "{title}" എന്ന അധ്യായത്തിലെത്തി. ഈ അധ്യായത്തിൽ പ്രത്യക്ഷപ്പെട്ടു: {children}. ചിത്രത്തിൻ്റെ മൊത്തത്തിലുള്ള പ്ലോട്ടിനെ അവർ എങ്ങനെ മുന്നോട്ട് കൊണ്ടുപോകുന്നുവെന്ന് ചിന്തിക്കുക.',
-  'canvas.mindClassroom.lecture.script.branch.dialogue': 'ഞാൻ നിങ്ങളോട് ഇത് ചോദിക്കട്ടെ: നിങ്ങൾ "{title}" എന്ന് പരാമർശിക്കുമ്പോൾ, നിങ്ങൾ എന്താണ് ചിന്തിക്കുന്നത്? ഡയഗ്രം നൽകുന്നു: {children}. നമുക്ക് താരതമ്യം ചെയ്യാം ({index}/{total}).',
-  'canvas.mindClassroom.lecture.script.branch.socratic': 'ഫോളോ-അപ്പ് ചോദ്യം: "{title}" ഒരു പ്രത്യേക ബ്രാഞ്ച് ആകേണ്ടത് എന്തുകൊണ്ട്? "{children}" എന്ന സബ്‌പോയിൻ്റുമായി അതിൻ്റെ ബന്ധം എന്താണ്? ദയവായി അതിന് ആദ്യം സ്വയം ഉത്തരം നൽകുക, തുടർന്ന് മാപ്പ് പരിശോധിക്കുക ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.leafNode':
+    'ഈ ശാഖയെക്കുറിച്ച് ഇതുവരെ കൂടുതൽ വിവരങ്ങളൊന്നുമില്ല.',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    'ഹലോ, സഹപാഠികൾ. ഇന്ന് നമ്മൾ "{topic}" എന്ന ചുറ്റുപാടും "{audience}" പ്രേക്ഷകരെ അഭിമുഖീകരിക്കുകയും "{mastery}" എന്ന വേഗതയിൽ വികസിക്കുകയും ചെയ്യുന്നു. മുഴുവൻ ചിത്രത്തിലും പ്രധാനമായും ഉൾപ്പെടുന്നു: {branches}. ആദ്യം മൊത്തത്തിലുള്ള ചിത്രം നോക്കുക, തുടർന്ന് അത് കഷണങ്ങളായി അടുക്കുക.',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    'ആദ്യം "{topic}" ഒരു കഥയുടെ തലക്കെട്ടായി കരുതുക. "{audience}" അഭിമുഖീകരിക്കുമ്പോൾ, ഞങ്ങൾ മുഴുവൻ ചിത്രത്തിൽ നിന്നും വിശദാംശങ്ങളിലേക്ക് പോകും: കഥയിൽ ഈ അധ്യായങ്ങളുണ്ട്-{branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    'ആദ്യം "{topic}" ഒരുമിച്ച് നോക്കാം. നിങ്ങൾ "{audience}" ആണെങ്കിൽ, നിങ്ങൾ ആദ്യം ശ്രദ്ധിക്കേണ്ട ഭാഗങ്ങൾ ഏതാണ്? മുഴുവൻ ചിത്രത്തിലും ഏകദേശം ഉൾപ്പെടുന്നു: {branches}. ചോദ്യങ്ങൾ ചോദിച്ച് ഉത്തരം നൽകി ഞങ്ങൾ ഇറങ്ങി.',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    'നിഗമനം ഓർമ്മിക്കാൻ തിരക്കുകൂട്ടരുത്. "{topic}" അഭിമുഖീകരിക്കുമ്പോൾ, ഒരു ചിത്രം നിർമ്മിക്കുന്നത് മൂല്യവത്താണെന്ന് നിങ്ങൾ കരുതുന്നത് എന്തുകൊണ്ട്? ഞങ്ങൾ "{mastery}" എന്നതിൻ്റെ ആഴം പിന്തുടരുകയും ഈ ശാഖകളിൽ നിന്ന് ചോദിക്കുകയും ചെയ്യുന്നു: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    '"{topic}" ({audience}) പെട്ടെന്ന് നോക്കൂ. തുമ്പിക്കൈ: {branches}. അടുത്തതായി, പോയിൻ്റ് ഓരോന്നായി എത്തുക.',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    'തീവ്രമായ വായന തുറക്കൽ: തീം "{topic}" ആണ്. ദയവായി മൊത്തത്തിലുള്ള ഘടന ആദ്യം മനസ്സിലാക്കുക - {branches} - തുടർന്ന് ഓരോ ബ്രാഞ്ചിലും ശ്രദ്ധാപൂർവ്വം വായിക്കുക. പ്രേക്ഷക ക്രമീകരണം: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    'ഒരു ഉദാഹരണം ഉപയോഗിച്ച് ആരംഭിക്കുക. തീം "{topic}" ജീവിതത്തിലോ ക്ലാസ് മുറിയിലോ ഉള്ള ഒരു രംഗമായി കണക്കാക്കാം; മുഴുവൻ ചിത്രത്തിൻ്റെയും ശാഖകൾ വ്യത്യസ്ത ദൃശ്യങ്ങൾ പോലെയാണ്: {branches}. പ്രേക്ഷകർ: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    'ടെസ്റ്റ് പോയിൻ്റുകളുടെ അവലോകനം: "{topic}". ഔട്ട്‌ലൈൻ അനുസരിച്ച് പ്രധാന പോയിൻ്റുകൾ രേഖപ്പെടുത്തുക——{branches}. ബുദ്ധിമുട്ട് "{audience}" ലേക്ക് വിന്യസിച്ചിരിക്കുന്നു, താളം "{mastery}" ആണ്.',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    'ബ്രാഞ്ച് {index}/{total}: "{title}" നോക്കുക. അതിനു താഴെയും: {children}. മൊത്തത്തിൽ ഈ വിഭാഗത്തിൻ്റെ പങ്ക് മനസ്സിലാക്കാൻ മാപ്പ് സ്ഥാനം പരിശോധിക്കുക.',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    'കഥ {index} "{title}" എന്ന അധ്യായത്തിലെത്തി. ഈ അധ്യായത്തിൽ പ്രത്യക്ഷപ്പെട്ടു: {children}. ചിത്രത്തിൻ്റെ മൊത്തത്തിലുള്ള പ്ലോട്ടിനെ അവർ എങ്ങനെ മുന്നോട്ട് കൊണ്ടുപോകുന്നുവെന്ന് ചിന്തിക്കുക.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    'ഞാൻ നിങ്ങളോട് ഇത് ചോദിക്കട്ടെ: നിങ്ങൾ "{title}" എന്ന് പരാമർശിക്കുമ്പോൾ, നിങ്ങൾ എന്താണ് ചിന്തിക്കുന്നത്? ഡയഗ്രം നൽകുന്നു: {children}. നമുക്ക് താരതമ്യം ചെയ്യാം ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    'ഫോളോ-അപ്പ് ചോദ്യം: "{title}" ഒരു പ്രത്യേക ബ്രാഞ്ച് ആകേണ്ടത് എന്തുകൊണ്ട്? "{children}" എന്ന സബ്‌പോയിൻ്റുമായി അതിൻ്റെ ബന്ധം എന്താണ്? ദയവായി അതിന് ആദ്യം സ്വയം ഉത്തരം നൽകുക, തുടർന്ന് മാപ്പ് പരിശോധിക്കുക ({index}/{total}).',
   'canvas.mindClassroom.lecture.script.branch.fast': '“{title}” → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read': '"{title}" തീവ്രമായി വായിക്കുക. കീഴിലുള്ള വിവരങ്ങൾ ഓരോന്നായി വായിക്കുക: {children}. ഈ ശാഖ {index}/{total} ഖണ്ഡികയിലാണ്. പദാവലിയിലും നിലയിലും ശ്രദ്ധിക്കുക.',
-  'canvas.mindClassroom.lecture.script.branch.examples': '"{title}" മനസിലാക്കാൻ സഹായിക്കുന്നതിന് ഒരു ഉദാഹരണം നൽകുക: നിങ്ങൾക്ക് {children} ഉള്ള ഒരു പ്രത്യേക ദൃശ്യമായി ഇതിനെ കണക്കാക്കാം. ഞങ്ങൾ {index}/{total} ശാഖയിലാണ്.',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'ടെസ്റ്റ് പോയിൻ്റ് {index}/{total}: "{title}". സബോർഡിനേറ്റ് പോയിൻ്റുകൾ: {children}. അവലോകനം ചെയ്യുമ്പോൾ, ആദ്യം തലക്കെട്ട് ഓർമ്മിക്കുക, തുടർന്ന് വിശദാംശങ്ങൾ പൂരിപ്പിക്കുക.',
-  'canvas.mindClassroom.lecture.script.closing.first_look': 'മൊത്തത്തിലുള്ള അവലോകനം: "{topic}" എന്നതിൻ്റെ അസ്ഥികൂടം ഞങ്ങൾ ഇപ്പോൾ അറിഞ്ഞു. മുഴുവൻ ചിത്രവും വീണ്ടും സ്കാൻ ചെയ്യാനും നിങ്ങൾക്ക് ഇപ്പോഴും പരിചിതമല്ലാത്ത രണ്ടോ മൂന്നോ പോയിൻ്റുകൾ അടയാളപ്പെടുത്താനും അടുത്ത തവണ അവിടെ ആരംഭിക്കാനും ശുപാർശ ചെയ്യുന്നു.',
-  'canvas.mindClassroom.lecture.script.closing.review': 'അവലോകന ഉപസംഹാരം: "{topic}" എന്ന പുസ്തകം അടച്ചുകൊണ്ട് നിങ്ങൾക്ക് പ്രധാന പോയിൻ്റുകൾ വീണ്ടും പറയാമോ? ഒരു വിഭാഗം കുടുങ്ങിയാൽ, മാപ്പിലെ വിഭാഗത്തിലേക്ക് തിരികെ പോയി അതിലൂടെ വീണ്ടും പോകുക.',
-  'canvas.mindClassroom.lecture.script.closing.teach': 'പാഠം തയ്യാറാക്കലും സമാപനവും: "{topic}" മുതൽ "{audience}" വരെ പഠിപ്പിക്കുമ്പോൾ, നിങ്ങൾക്ക് മാപ്പിൻ്റെ ക്രമം പിന്തുടരാം: തുറക്കൽ - വിപുലീകരണം - അടയ്ക്കൽ. നിങ്ങൾക്ക് ഒരു പ്രത്യേക ശാഖയെ ക്ലാസ് ചോദ്യങ്ങളായി വിഭജിക്കാനും കഴിയും.',
-  'canvas.mindMapSideToolbar.oneSentenceIntro': 'വിഷയം അല്ലെങ്കിൽ പരിഷ്ക്കരണ ആവശ്യകതകൾ വിവരിക്കുന്നതിന് ഒരു വാചകം ഉപയോഗിക്കുക, കൂടാതെ മാപ്പ് ബുദ്ധിപരമായി സൃഷ്ടിക്കുകയും ക്രമീകരിക്കുകയും ചെയ്യുക',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    '"{title}" തീവ്രമായി വായിക്കുക. കീഴിലുള്ള വിവരങ്ങൾ ഓരോന്നായി വായിക്കുക: {children}. ഈ ശാഖ {index}/{total} ഖണ്ഡികയിലാണ്. പദാവലിയിലും നിലയിലും ശ്രദ്ധിക്കുക.',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    '"{title}" മനസിലാക്കാൻ സഹായിക്കുന്നതിന് ഒരു ഉദാഹരണം നൽകുക: നിങ്ങൾക്ക് {children} ഉള്ള ഒരു പ്രത്യേക ദൃശ്യമായി ഇതിനെ കണക്കാക്കാം. ഞങ്ങൾ {index}/{total} ശാഖയിലാണ്.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    'ടെസ്റ്റ് പോയിൻ്റ് {index}/{total}: "{title}". സബോർഡിനേറ്റ് പോയിൻ്റുകൾ: {children}. അവലോകനം ചെയ്യുമ്പോൾ, ആദ്യം തലക്കെട്ട് ഓർമ്മിക്കുക, തുടർന്ന് വിശദാംശങ്ങൾ പൂരിപ്പിക്കുക.',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    'മൊത്തത്തിലുള്ള അവലോകനം: "{topic}" എന്നതിൻ്റെ അസ്ഥികൂടം ഞങ്ങൾ ഇപ്പോൾ അറിഞ്ഞു. മുഴുവൻ ചിത്രവും വീണ്ടും സ്കാൻ ചെയ്യാനും നിങ്ങൾക്ക് ഇപ്പോഴും പരിചിതമല്ലാത്ത രണ്ടോ മൂന്നോ പോയിൻ്റുകൾ അടയാളപ്പെടുത്താനും അടുത്ത തവണ അവിടെ ആരംഭിക്കാനും ശുപാർശ ചെയ്യുന്നു.',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    'അവലോകന ഉപസംഹാരം: "{topic}" എന്ന പുസ്തകം അടച്ചുകൊണ്ട് നിങ്ങൾക്ക് പ്രധാന പോയിൻ്റുകൾ വീണ്ടും പറയാമോ? ഒരു വിഭാഗം കുടുങ്ങിയാൽ, മാപ്പിലെ വിഭാഗത്തിലേക്ക് തിരികെ പോയി അതിലൂടെ വീണ്ടും പോകുക.',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    'പാഠം തയ്യാറാക്കലും സമാപനവും: "{topic}" മുതൽ "{audience}" വരെ പഠിപ്പിക്കുമ്പോൾ, നിങ്ങൾക്ക് മാപ്പിൻ്റെ ക്രമം പിന്തുടരാം: തുറക്കൽ - വിപുലീകരണം - അടയ്ക്കൽ. നിങ്ങൾക്ക് ഒരു പ്രത്യേക ശാഖയെ ക്ലാസ് ചോദ്യങ്ങളായി വിഭജിക്കാനും കഴിയും.',
+  'canvas.mindMapSideToolbar.oneSentenceIntro':
+    'വിഷയം അല്ലെങ്കിൽ പരിഷ്ക്കരണ ആവശ്യകതകൾ വിവരിക്കുന്നതിന് ഒരു വാചകം ഉപയോഗിക്കുക, കൂടാതെ മാപ്പ് ബുദ്ധിപരമായി സൃഷ്ടിക്കുകയും ക്രമീകരിക്കുകയും ചെയ്യുക',
   'canvas.mindMapSideToolbar.documentSummary': 'പ്രമാണ സംഗ്രഹം',
-  'fileCenter.intro': 'നിലവിലെ ചാർട്ടിനായി സംഘടിപ്പിച്ച ഉറവിടങ്ങളുടെ ഒരു ശേഖരമാണ് പാക്കേജ്. നിങ്ങൾ ഫയലുകളോ കുറിപ്പുകളോ വെബ് പേജുകളോ ചേർക്കുമ്പോൾ, ആ ഉറവിടങ്ങളെ അടിസ്ഥാനമാക്കി ഡയഗ്രം യാന്ത്രികമായി ശാഖകൾ പൂർത്തിയാക്കുന്നു.',
+  'fileCenter.intro':
+    'നിലവിലെ ചാർട്ടിനായി സംഘടിപ്പിച്ച ഉറവിടങ്ങളുടെ ഒരു ശേഖരമാണ് പാക്കേജ്. നിങ്ങൾ ഫയലുകളോ കുറിപ്പുകളോ വെബ് പേജുകളോ ചേർക്കുമ്പോൾ, ആ ഉറവിടങ്ങളെ അടിസ്ഥാനമാക്കി ഡയഗ്രം യാന്ത്രികമായി ശാഖകൾ പൂർത്തിയാക്കുന്നു.',
   'fileCenter.defaultPackageName': 'പേരിടാത്ത ഡാറ്റ പാക്കേജ്',
   'fileCenter.packageNameLabel': 'പാക്കേജിൻ്റെ പേര്',
   'fileCenter.createPackage': 'ഒരു പാക്കേജ് ഉണ്ടാക്കുക',
   'fileCenter.deletePackage': 'പാക്കേജ് ഇല്ലാതാക്കുക',
-  'fileCenter.confirmDeletePackage': 'ഈ പാക്കേജും അതിൻ്റെ എല്ലാ ഉറവിടങ്ങളും ഇല്ലാതാക്കണോ? ഈ പ്രവർത്തനം പഴയപടിയാക്കാനാകില്ല.',
+  'fileCenter.confirmDeletePackage':
+    'ഈ പാക്കേജും അതിൻ്റെ എല്ലാ ഉറവിടങ്ങളും ഇല്ലാതാക്കണോ? ഈ പ്രവർത്തനം പഴയപടിയാക്കാനാകില്ല.',
   'fileCenter.corpusStatus': 'സൂചികയിലാക്കിയ {completed}/{total} ഉറവിടങ്ങൾ',
   'fileCenter.noSources': 'ഇതുവരെ ഉറവിടമില്ല, ദയവായി ചുവടെ ചേർക്കുക.',
   'fileCenter.addSource': 'ഉറവിടം ചേർക്കുക',
@@ -1090,8 +1310,10 @@ export default {
   'fileCenter.pasteTitlePlaceholder': 'പേര് (ഓപ്ഷണൽ)',
   'fileCenter.pastePlaceholder': 'ഉറവിടമായി കുറിപ്പുകളോ വാചകമോ ഒട്ടിക്കുക...',
   'fileCenter.webUrlPlaceholder': 'https://example.com/article',
-  'fileCenter.webContentPlaceholder': 'ഉറവിടമായി വെബ് പേജിൻ്റെ വാചകം ഒട്ടിക്കുക അല്ലെങ്കിൽ നൽകുക...',
-  'fileCenter.saveDiagramForRag': 'പാക്കേജുമായി ബന്ധപ്പെടുത്തുന്നതിനും RAG വീണ്ടെടുക്കൽ പ്രവർത്തനക്ഷമമാക്കുന്നതിനും ദയവായി ആദ്യം ചാർട്ട് സംരക്ഷിക്കുക.',
+  'fileCenter.webContentPlaceholder':
+    'ഉറവിടമായി വെബ് പേജിൻ്റെ വാചകം ഒട്ടിക്കുക അല്ലെങ്കിൽ നൽകുക...',
+  'fileCenter.saveDiagramForRag':
+    'പാക്കേജുമായി ബന്ധപ്പെടുത്തുന്നതിനും RAG വീണ്ടെടുക്കൽ പ്രവർത്തനക്ഷമമാക്കുന്നതിനും ദയവായി ആദ്യം ചാർട്ട് സംരക്ഷിക്കുക.',
   'fileCenter.statusReady': 'തയ്യാർ · RAG പ്രവർത്തനക്ഷമമാക്കി',
   'fileCenter.statusPending': 'ചേർത്തു',
   'fileCenter.statusIndexing': 'സൂചികയിലാക്കുന്നു...',
@@ -1099,7 +1321,8 @@ export default {
   'fileCenter.statusFailed': 'പരാജയപ്പെടുന്നു',
   'fileCenter.chunkingTooltip': 'ചങ്കിംഗ് എഞ്ചിനുകളും മോഡുകളും (H = ശ്രേണി)',
   'fileCenter.featureDisabledTitle': 'വിജ്ഞാന ഇടം പ്രവർത്തനക്ഷമമാക്കിയിട്ടില്ല',
-  'fileCenter.featureDisabledHint': 'നോളജ് സ്പേസ് ഫീച്ചർ പ്രവർത്തനക്ഷമമാക്കുമ്പോൾ ഡോക്യുമെൻ്റ് സംഗ്രഹങ്ങൾ ലഭ്യമാണ്.',
+  'fileCenter.featureDisabledHint':
+    'നോളജ് സ്പേസ് ഫീച്ചർ പ്രവർത്തനക്ഷമമാക്കുമ്പോൾ ഡോക്യുമെൻ്റ് സംഗ്രഹങ്ങൾ ലഭ്യമാണ്.',
   'fileCenter.createFailed': 'പാക്കേജ് സൃഷ്ടിക്കുന്നതിൽ പരാജയപ്പെട്ടു',
   'fileCenter.updateFailed': 'പാക്കേജ് അപ്ഡേറ്റ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു',
   'fileCenter.deleteFailed': 'ഇല്ലാതാക്കൽ പരാജയപ്പെട്ടു',
@@ -1108,10 +1331,14 @@ export default {
   'canvas.mindMapSideToolbar.closeOutline': 'ഔട്ട്ലൈൻ അടയ്ക്കുക',
   'canvas.mindMapSideToolbar.outlineEmpty': 'ഇതുവരെ നോഡ് ഉള്ളടക്കമില്ല',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI ബുദ്ധിയുള്ള തലമുറ',
-  'canvas.mindMapSideToolbar.outlineEditHint': 'നോഡ് ടെക്‌സ്‌റ്റ് തത്സമയം നേരിട്ട് പരിഷ്‌ക്കരിക്കുന്നതിന് അതിൽ ഡബിൾ ക്ലിക്ക് ചെയ്യുക.',
-  'canvas.mindMapSideToolbar.outlineIntro': 'മാപ്പ് ഘടന എഡിറ്റുചെയ്യാൻ ഔട്ട്‌ലൈൻ ഉപയോഗിക്കുക, ഓർഡർ ക്രമീകരിക്കാൻ വലിച്ചിടുക, ബാച്ചുകളിൽ ചേർക്കുന്നതിന് ഒന്നിലധികം വരികൾ ഒട്ടിക്കുക.',
-  'canvas.mindMapSideToolbar.outlineDragHint': 'ഓർഡർ ക്രമീകരിക്കാൻ വലിച്ചിടുക; സഹോദരങ്ങളുടെ സ്ഥാനമാറ്റത്തിനായി ഇത് നോഡിന് മുകളിൽ/താഴെ വയ്ക്കുക, ചൈൽഡ് നോഡിനായി മധ്യഭാഗത്ത് വയ്ക്കുക',
-  'canvas.mindMapSideToolbar.outlinePasteHint': 'നോഡ് തിരഞ്ഞെടുത്ത് ടെക്‌സ്‌റ്റിൻ്റെ ഒന്നിലധികം വരികൾ ഒട്ടിച്ച ശേഷം, ഒരേ ലെവലിൻ്റെ നോഡുകൾ ബാച്ചുകളായി ചേർക്കാം',
+  'canvas.mindMapSideToolbar.outlineEditHint':
+    'നോഡ് ടെക്‌സ്‌റ്റ് തത്സമയം നേരിട്ട് പരിഷ്‌ക്കരിക്കുന്നതിന് അതിൽ ഡബിൾ ക്ലിക്ക് ചെയ്യുക.',
+  'canvas.mindMapSideToolbar.outlineIntro':
+    'മാപ്പ് ഘടന എഡിറ്റുചെയ്യാൻ ഔട്ട്‌ലൈൻ ഉപയോഗിക്കുക, ഓർഡർ ക്രമീകരിക്കാൻ വലിച്ചിടുക, ബാച്ചുകളിൽ ചേർക്കുന്നതിന് ഒന്നിലധികം വരികൾ ഒട്ടിക്കുക.',
+  'canvas.mindMapSideToolbar.outlineDragHint':
+    'ഓർഡർ ക്രമീകരിക്കാൻ വലിച്ചിടുക; സഹോദരങ്ങളുടെ സ്ഥാനമാറ്റത്തിനായി ഇത് നോഡിന് മുകളിൽ/താഴെ വയ്ക്കുക, ചൈൽഡ് നോഡിനായി മധ്യഭാഗത്ത് വയ്ക്കുക',
+  'canvas.mindMapSideToolbar.outlinePasteHint':
+    'നോഡ് തിരഞ്ഞെടുത്ത് ടെക്‌സ്‌റ്റിൻ്റെ ഒന്നിലധികം വരികൾ ഒട്ടിച്ച ശേഷം, ഒരേ ലെവലിൻ്റെ നോഡുകൾ ബാച്ചുകളായി ചേർക്കാം',
   'canvas.mindMapPaste.inserted': '{count} സഹോദര നോഡുകൾ ചേർത്തു',
   'canvas.mindMapPaste.truncated': 'പരിധി കവിഞ്ഞു, ആദ്യത്തെ 50 വരികൾ മാത്രം ചേർത്തു',
   'canvas.mindMapSideToolbar.realtimeSync': 'തത്സമയ സമന്വയം',
@@ -1121,42 +1348,54 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'ശാഖ ഇല്ലാതാക്കുക',
   'canvas.mindMapSideToolbar.expandBranch': 'ശാഖ വികസിപ്പിക്കുക',
   'canvas.mindMapSideToolbar.collapseBranch': 'അടുത്ത ശാഖ',
-  'canvas.mindMapSideToolbar.aiGenerateDesc': 'നിലവിലെ വിഷയത്തെ അടിസ്ഥാനമാക്കി, ഒരു വാചകത്തിൽ മനസ്സ് ഭൂപട ഘടന ബുദ്ധിപരമായി വികസിപ്പിക്കുക.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc':
+    'നിലവിലെ വിഷയത്തെ അടിസ്ഥാനമാക്കി, ഒരു വാചകത്തിൽ മനസ്സ് ഭൂപട ഘടന ബുദ്ധിപരമായി വികസിപ്പിക്കുക.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'പൊള്ളയായ ബ്രാക്കറ്റ് ഡയഗ്രം തുറക്കുക',
-  'canvas.mindMapSideToolbar.exitLearningSheet': 'പൊള്ളയായ ബ്രാക്കറ്റ് ഡയഗ്രാമിൽ നിന്ന് പുറത്തുകടക്കുക',
+  'canvas.mindMapSideToolbar.exitLearningSheet':
+    'പൊള്ളയായ ബ്രാക്കറ്റ് ഡയഗ്രാമിൽ നിന്ന് പുറത്തുകടക്കുക',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'പൂർണ്ണ ചിത്രത്തിലേക്ക് പുനഃസ്ഥാപിക്കുക',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
     'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro': 'ക്ലാസ്റൂം പരിശീലനത്തിനും അവലോകനത്തിനും അനുയോജ്യമായ പൊള്ളയായ സ്കാർഫോൾഡിംഗ് ഡയഗ്രം സൃഷ്ടിക്കുന്നതിനുള്ള ഒരു രീതി തിരഞ്ഞെടുക്കുക.',
+  'canvas.mindMapSideToolbar.learningSheetIntro':
+    'ക്ലാസ്റൂം പരിശീലനത്തിനും അവലോകനത്തിനും അനുയോജ്യമായ പൊള്ളയായ സ്കാർഫോൾഡിംഗ് ഡയഗ്രം സൃഷ്ടിക്കുന്നതിനുള്ള ഒരു രീതി തിരഞ്ഞെടുക്കുക.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
     'Blank every node except the center topic; reference answers appear below the diagram.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'ക്രമരഹിതമായി ശൂന്യമാക്കി',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'സിസ്റ്റം യാന്ത്രികമായി ഏകദേശം 20% നോഡുകളെ ക്രമരഹിതമായി പൊള്ളയാക്കുന്നു, കൂടാതെ റഫറൻസ് ഉത്തരം ഡയഗ്രാമിന് താഴെ പ്രദർശിപ്പിക്കും.',
-  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} നോഡുകൾ പൊള്ളയായിരിക്കുന്നു · അടയ്ക്കാൻ Esc',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
+    'സിസ്റ്റം യാന്ത്രികമായി ഏകദേശം 20% നോഡുകളെ ക്രമരഹിതമായി പൊള്ളയാക്കുന്നു, കൂടാതെ റഫറൻസ് ഉത്തരം ഡയഗ്രാമിന് താഴെ പ്രദർശിപ്പിക്കും.',
+  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint':
+    '{count} നോഡുകൾ പൊള്ളയായിരിക്കുന്നു · അടയ്ക്കാൻ Esc',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'ഇഷ്‌ടാനുസൃത പൊള്ളയെടുക്കൽ',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'മൗസ് ഒരു ചുറ്റികയായി മാറുന്നു, അത് പൊള്ളയാക്കാൻ നോഡിൽ ക്ലിക്ക് ചെയ്യുക; പുനഃസ്ഥാപിക്കാൻ വീണ്ടും ക്ലിക്ക് ചെയ്യുക.',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
+    'മൗസ് ഒരു ചുറ്റികയായി മാറുന്നു, അത് പൊള്ളയാക്കാൻ നോഡിൽ ക്ലിക്ക് ചെയ്യുക; പുനഃസ്ഥാപിക്കാൻ വീണ്ടും ക്ലിക്ക് ചെയ്യുക.',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'തുറന്നത് · ഹോൾ ഔട്ട് {count} നോഡുകൾ',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'പൊള്ളയായ മോഡിൽ · ക്യാൻവാസിലെ നോഡിൽ ക്ലിക്ക് ചെയ്യുക',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
+    'പൊള്ളയായ മോഡിൽ · ക്യാൻവാസിലെ നോഡിൽ ക്ലിക്ക് ചെയ്യുക',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'ഇഷ്‌ടാനുസൃത നോക്കൗട്ട് മോഡ്',
-  'canvas.mindMapSideToolbar.learningSheetPickHint': 'ഹോളോ ഔട്ട് ചെയ്യാൻ നോഡിൽ ക്ലിക്ക് ചെയ്യുക, പുനഃസ്ഥാപിക്കാൻ വീണ്ടും ക്ലിക്ക് ചെയ്യുക · {count} പൊള്ളയായിരിക്കുന്നു · പുറത്തുകടക്കാൻ Esc',
+  'canvas.mindMapSideToolbar.learningSheetPickHint':
+    'ഹോളോ ഔട്ട് ചെയ്യാൻ നോഡിൽ ക്ലിക്ക് ചെയ്യുക, പുനഃസ്ഥാപിക്കാൻ വീണ്ടും ക്ലിക്ക് ചെയ്യുക · {count} പൊള്ളയായിരിക്കുന്നു · പുറത്തുകടക്കാൻ Esc',
   'canvas.mindMapSideToolbar.learningSheetPickDone': 'പൂർത്തിയാക്കുക',
-  'canvas.mindMapSideToolbar.learningSheetProtectedNode': 'സെൻട്രൽ നോഡും സ്ട്രക്ചർ നോഡും പൊള്ളയാക്കാൻ കഴിയില്ല',
+  'canvas.mindMapSideToolbar.learningSheetProtectedNode':
+    'സെൻട്രൽ നോഡും സ്ട്രക്ചർ നോഡും പൊള്ളയാക്കാൻ കഴിയില്ല',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': 'പൊള്ളയായ നോഡുകൾ',
   'canvas.mindMapSideToolbar.learningSheetRandomBlankHistory': 'ക്രമരഹിതമായി പൊള്ളയായ നോഡുകൾ',
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': 'നോഡ് ടെക്സ്റ്റ് പുനഃസ്ഥാപിക്കുക',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': 'റഫറൻസ് ഉത്തരങ്ങൾ മറയ്ക്കുക',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': 'റഫറൻസ് ഉത്തരങ്ങൾ സൂക്ഷിക്കുക',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': 'അടയ്‌ക്കുമ്പോൾ, നോക്കൗട്ട് ഏരിയയിലെ ക്യാൻവാസിൽ ഉത്തരം ദൃശ്യമാകില്ല',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
+    'അടയ്‌ക്കുമ്പോൾ, നോക്കൗട്ട് ഏരിയയിലെ ക്യാൻവാസിൽ ഉത്തരം ദൃശ്യമാകില്ല',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'ക്യാൻവാസ് റഫറൻസ് ഉത്തരങ്ങൾ',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': 'കാണിക്കുക',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': 'മറയ്ക്കുക',
   'canvas.mindMapSideToolbar.learningSheetAnswersShortcut': 'കുറുക്കുവഴി കീ: Ctrl + Shift + H',
   'canvas.mindMapSideToolbar.openMindmate': 'MindMate തുറക്കുക',
-  'canvas.toolbar.learningSheetExportNudgeTitle': 'അവലോകനം കൂടുതൽ കാര്യക്ഷമമാക്കാൻ ഒറ്റ ക്ലിക്കിൽ പഠന ഷീറ്റുകൾ സൃഷ്‌ടിക്കുക',
-  'canvas.toolbar.learningSheetExportNudgeDesc': 'PNG-ലേക്കോ PDF-ലേക്കോ എക്‌സ്‌പോർട്ടുചെയ്യുക, പരിശീലനത്തിനായി വിദ്യാർത്ഥികളുമായി പ്രിൻ്റ് ചെയ്‌ത് പങ്കിടുക.',
+  'canvas.toolbar.learningSheetExportNudgeTitle':
+    'അവലോകനം കൂടുതൽ കാര്യക്ഷമമാക്കാൻ ഒറ്റ ക്ലിക്കിൽ പഠന ഷീറ്റുകൾ സൃഷ്‌ടിക്കുക',
+  'canvas.toolbar.learningSheetExportNudgeDesc':
+    'PNG-ലേക്കോ PDF-ലേക്കോ എക്‌സ്‌പോർട്ടുചെയ്യുക, പരിശീലനത്തിനായി വിദ്യാർത്ഥികളുമായി പ്രിൻ്റ് ചെയ്‌ത് പങ്കിടുക.',
   'canvas.toolbar.learningSheetExportNudgeDismiss': 'അറിഞ്ഞു',
   'canvas.toolbar.learningSheetExportNudgeNeverRemind': 'വീണ്ടും ഓർമ്മിപ്പിക്കരുത്',
   'diagram.flow.newCause': 'പുതിയ കാരണങ്ങൾ',
@@ -1235,10 +1474,13 @@ export default {
   'editor.unsavedChanges': 'സംരക്ഷിക്കപ്പെടാത്ത മാറ്റങ്ങളുണ്ട്',
   'editor.savedSuccess': 'രക്ഷിച്ചു',
   'editor.saveNeedsLogin': 'ദയവായി ലോഗിൻ ചെയ്‌ത് സേവ് ചെയ്യുക',
-  'editor.saveWaitForGeneration': 'സംരക്ഷിക്കുന്നതിന് മുമ്പ് AI ജനറേഷൻ പൂർത്തിയാകുന്നതുവരെ കാത്തിരിക്കുക.',
-  'editor.saveBlockedSubgraphPreview': 'സംരക്ഷിക്കുന്നതിന് മുമ്പ് AI ഉപചിത്ര പ്രിവ്യൂ സ്വീകരിക്കുക അല്ലെങ്കിൽ നിരസിക്കുക.',
+  'editor.saveWaitForGeneration':
+    'സംരക്ഷിക്കുന്നതിന് മുമ്പ് AI ജനറേഷൻ പൂർത്തിയാകുന്നതുവരെ കാത്തിരിക്കുക.',
+  'editor.saveBlockedSubgraphPreview':
+    'സംരക്ഷിക്കുന്നതിന് മുമ്പ് AI ഉപചിത്ര പ്രിവ്യൂ സ്വീകരിക്കുക അല്ലെങ്കിൽ നിരസിക്കുക.',
   'editor.saveBlockedCollabActive': 'തത്സമയ സഹകരണ സമയത്ത് സഹകരണ സെഷൻ വഴി മാറ്റങ്ങൾ സംരക്ഷിക്കുക',
-  'editor.saveBlockedCollabGuest': 'സഹകരിച്ച് പ്രവർത്തിക്കുമ്പോൾ ഹോസ്റ്റിന് മാത്രമേ സംരക്ഷിക്കാനാകൂ',
+  'editor.saveBlockedCollabGuest':
+    'സഹകരിച്ച് പ്രവർത്തിക്കുമ്പോൾ ഹോസ്റ്റിന് മാത്രമേ സംരക്ഷിക്കാനാകൂ',
   'editor.saveNothingToSave': 'സംരക്ഷിക്കാൻ ഇതുവരെ ഉള്ളടക്കമൊന്നുമില്ല',
   'editor.saveFailed': 'സംരക്ഷിക്കൽ പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക',
   'editor.exportImage': 'ചിത്രങ്ങൾ കയറ്റുമതി ചെയ്യുക',
@@ -1247,7 +1489,8 @@ export default {
   'editor.redo': 'വീണ്ടും ചെയ്യുക',
   'editor.saveDiagram': 'ചാർട്ട് സംരക്ഷിക്കുക',
   'editor.selectDiagramType': 'ചാർട്ട് തരം തിരഞ്ഞെടുക്കുക',
-  'editor.slotsFull': 'സ്ഥലം നിറഞ്ഞു, സ്വയമേവ ലാഭിക്കൽ സാധ്യമല്ല. ഇടം സൃഷ്‌ടിക്കാൻ നിലവിലുള്ള ഐക്കണുകൾ ഇല്ലാതാക്കുക.',
+  'editor.slotsFull':
+    'സ്ഥലം നിറഞ്ഞു, സ്വയമേവ ലാഭിക്കൽ സാധ്യമല്ല. ഇടം സൃഷ്‌ടിക്കാൻ നിലവിലുള്ള ഐക്കണുകൾ ഇല്ലാതാക്കുക.',
   'editor.undo': 'റദ്ദാക്കുക',
   'editor.zoomIn': 'വലുതാക്കുക',
   'editor.zoomOut': 'സൂം ഔട്ട്',
@@ -1287,7 +1530,8 @@ export default {
   'landing.diagramGrid.tree_map.title': 'ട്രീ ഡയഗ്രം',
   'landing.diagramGrid.voice_notes.desc': 'സൃഷ്ടിച്ച മാപ്പ് റെക്കോർഡിംഗ്',
   'landing.diagramGrid.voice_notes.title': 'ശബ്ദ കുറിപ്പുകൾ',
-  'landing.template.freePlaceholder': 'ശാഖകൾ, ഘട്ടങ്ങൾ, വിഭാഗങ്ങൾ പോലെയുള്ള വിഷയം അല്ലെങ്കിൽ ഘടനാപരമായ ആവശ്യകതകൾ വിവരിക്കുക... അല്ലെങ്കിൽ താഴെ നിന്ന് ഒരു ചിത്രീകരണ ടെംപ്ലേറ്റ് തിരഞ്ഞെടുക്കുക',
+  'landing.template.freePlaceholder':
+    'ശാഖകൾ, ഘട്ടങ്ങൾ, വിഭാഗങ്ങൾ പോലെയുള്ള വിഷയം അല്ലെങ്കിൽ ഘടനാപരമായ ആവശ്യകതകൾ വിവരിക്കുക... അല്ലെങ്കിൽ താഴെ നിന്ന് ഒരു ചിത്രീകരണ ടെംപ്ലേറ്റ് തിരഞ്ഞെടുക്കുക',
   'landing.template.slot.criterion': 'വർഗ്ഗീകരണ മാനദണ്ഡം',
   'landing.template.slot.event': 'സംഭവം',
   'landing.template.slot.itemA': 'കാര്യം എ',
@@ -1300,7 +1544,8 @@ export default {
   'discovery.gallery.sectionTitle': 'മികച്ച ഐക്കണുകൾ കണ്ടെത്തുക',
   'discovery.gallery.item1.title': 'ശാരീരിക മാറ്റങ്ങൾ വേഴ്സസ് രാസ മാറ്റങ്ങൾ',
   'discovery.gallery.item2.title': 'പ്രോജക്റ്റ് പ്ലാനിംഗ് മൈൻഡ് മാപ്പ്',
-  'discovery.gallery.item3.title': 'ഒരു വേരിയബിളിൻ്റെ ക്വാഡ്രാറ്റിക് സമവാക്യങ്ങൾ പരിഹരിക്കുന്നതിനുള്ള ഘട്ടങ്ങൾ',
+  'discovery.gallery.item3.title':
+    'ഒരു വേരിയബിളിൻ്റെ ക്വാഡ്രാറ്റിക് സമവാക്യങ്ങൾ പരിഹരിക്കുന്നതിനുള്ള ഘട്ടങ്ങൾ',
   'discovery.gallery.item4.title': 'ശക്തിയും ഫീൽഡും തമ്മിലുള്ള ബന്ധം',
   'mindgraphLanding.cancel': 'റദ്ദാക്കുക',
   'mindgraphLanding.codeFormatInvalid': 'ഡെമോ കോഡ് ഫോർമാറ്റ് തെറ്റാണ് (xxx-xxx ആയിരിക്കണം)',
@@ -1310,7 +1555,8 @@ export default {
   'mindgraphLanding.dialogSharedTitle': 'ഒരുമിച്ച് സഹകരിക്കുക',
   'mindgraphLanding.import': 'ഇറക്കുമതി',
   'mindgraphLanding.languageMenuTitle': 'ഭാഷ (AI ഔട്ട്പുട്ടുമായി സമന്വയിപ്പിച്ച ഇൻ്റർഫേസ്)',
-  'mindgraphLanding.inputPlaceholder': 'നിങ്ങളുടെ ഐക്കൺ വിവരിക്കുക, അല്ലെങ്കിൽ ചുവടെയുള്ള ഒരു നിർദ്ദിഷ്ട ഐക്കൺ ടെംപ്ലേറ്റ് തിരഞ്ഞെടുക്കുക...',
+  'mindgraphLanding.inputPlaceholder':
+    'നിങ്ങളുടെ ഐക്കൺ വിവരിക്കുക, അല്ലെങ്കിൽ ചുവടെയുള്ള ഒരു നിർദ്ദിഷ്ട ഐക്കൺ ടെംപ്ലേറ്റ് തിരഞ്ഞെടുക്കുക...',
   'mindgraphLanding.join': 'ചേരുക',
   'mindgraphLanding.joinFailed': 'ചേരുന്നതിൽ പരാജയപ്പെട്ടു',
   'mindgraphLanding.joinPresentationFailed': 'ഡെമോയിൽ ചേരുന്നതിൽ പരാജയപ്പെട്ടു',
@@ -1319,10 +1565,12 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'കാമ്പസ് സെഷൻ ലോഡുചെയ്യാനായില്ല',
   'mindgraphLanding.networkError': 'നെറ്റ്‌വർക്ക് പിശക്',
   'mindgraphLanding.networkErrorJoin': 'നെറ്റ്‌വർക്ക് പിശക്, ചേരുന്നത് പരാജയപ്പെട്ടു',
-  'mindgraphLanding.orgSessionsEmpty': 'ചേരാൻ നിലവിൽ കാമ്പസ് സഹകരണ സെഷനുകളൊന്നുമില്ല (സഹപ്രവർത്തകർക്ക് "ഓൺ-കാമ്പസ് സഹകരണം" ഓണാക്കിയിരിക്കണം).',
+  'mindgraphLanding.orgSessionsEmpty':
+    'ചേരാൻ നിലവിൽ കാമ്പസ് സഹകരണ സെഷനുകളൊന്നുമില്ല (സഹപ്രവർത്തകർക്ക് "ഓൺ-കാമ്പസ് സഹകരണം" ഓണാക്കിയിരിക്കണം).',
   'mindgraphLanding.participantsOnline': '{n} ആളുകൾ ഓൺലൈനിൽ',
   'mindgraphLanding.schoolCollab': 'കാമ്പസ് സഹകരണം',
-  'mindgraphLanding.sharedCodeHint': 'മറ്റൊരു കക്ഷിയുടെ സഹകരണ സെഷനിൽ ചേരുന്നതിന് ക്ഷണ കോഡ് (xxx-xxx) നൽകുക.',
+  'mindgraphLanding.sharedCodeHint':
+    'മറ്റൊരു കക്ഷിയുടെ സഹകരണ സെഷനിൽ ചേരുന്നതിന് ക്ഷണ കോഡ് (xxx-xxx) നൽകുക.',
   'mindgraphLanding.sharedCollab': 'ഒരുമിച്ച് സഹകരിക്കുക',
   'mindgraphLanding.joinDiagramEdit': 'ഐക്കൺ എഡിറ്റർ ചേർക്കുക',
   'mindgraphLanding.welcome': '{username}ഹലോ, ഞാൻ മൈൻഡ്ഗ്രാഫ് MindGraph AI ചിന്താ ഡയഗ്രം സഹായിയാണ്',
@@ -1332,6 +1580,7 @@ export default {
   'canvasPage.collabParticipantsAria': 'സഹകരിച്ച് പങ്കെടുക്കുന്നവർ',
   'canvasPage.collabConnected': 'ബന്ധിപ്പിച്ചു',
   'canvas.topBar.viewOnly': 'കാണുക മാത്രം',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': 'കൂടുതൽ',
   'canvas.ribbon.file': 'പ്രമാണം',
   'canvas.ribbon.nodes': 'നോഡ്',
@@ -1383,10 +1632,12 @@ export default {
   'canvas.ribbon.tip.numbering': 'മാസ്റ്റർ ബ്രാഞ്ച് നമ്പർ കാണിക്കുക അല്ലെങ്കിൽ മറയ്ക്കുക',
   'canvas.ribbon.tip.insert': 'റിലേഷൻഷിപ്പ് ലൈനുകളോ സംഗ്രഹങ്ങളോ ഫോർമുലകളോ ചേർക്കുക',
   'canvas.ribbon.tip.topicGenerate': 'ഒരു കേന്ദ്ര തീമിൽ നിന്ന് ഒരു മുഴുവൻ മാപ്പും സൃഷ്ടിക്കുക',
-  'canvas.ribbon.tip.docGenerate': 'ഒരു മാപ്പ് സൃഷ്ടിക്കാൻ ഒരു ഫയൽ അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ടെക്‌സ്‌റ്റ് ഒട്ടിക്കുക',
+  'canvas.ribbon.tip.docGenerate':
+    'ഒരു മാപ്പ് സൃഷ്ടിക്കാൻ ഒരു ഫയൽ അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ടെക്‌സ്‌റ്റ് ഒട്ടിക്കുക',
   'canvas.ribbon.tip.webGenerate': 'വെബ് പേജുകൾ ക്രോൾ ചെയ്ത് മാപ്പുകൾ സൃഷ്ടിക്കുക',
   'canvas.ribbon.tip.voiceSummary': 'റെക്കോർഡിംഗിന് ശേഷം മാപ്പ് സൃഷ്ടിക്കുക',
-  'canvas.ribbon.tip.waterfall': 'തിരഞ്ഞെടുത്ത നോഡിനായി ശാഖകൾ ശുപാർശ ചെയ്യുക - ക്യാൻവാസിലേക്ക് വലിച്ചിടാം',
+  'canvas.ribbon.tip.waterfall':
+    'തിരഞ്ഞെടുത്ത നോഡിനായി ശാഖകൾ ശുപാർശ ചെയ്യുക - ക്യാൻവാസിലേക്ക് വലിച്ചിടാം',
   'canvas.ribbon.tip.oneSentence': 'ഒരു വാചകത്തിൽ വിഷയം അല്ലെങ്കിൽ പരിഷ്ക്കരണം വിവരിക്കുക',
   'canvas.ribbon.tip.aiSubgraph': 'തിരഞ്ഞെടുത്ത നോഡിൽ നിന്ന് ഉപശാഖ വികസിപ്പിക്കുക',
   'canvas.ribbon.tip.addChild': 'തിരഞ്ഞെടുത്ത നോഡിന് കീഴിൽ ഒരു ഉപവിഷയം ചേർക്കുക',
@@ -1394,13 +1645,26 @@ export default {
   'canvas.ribbon.tip.deleteNode': 'തിരഞ്ഞെടുത്ത നോഡും അതിൻ്റെ ചൈൽഡ് നോഡുകളും ഇല്ലാതാക്കുക',
   'canvas.ribbon.tip.import': 'ഫയലുകളിൽ നിന്ന് മൈൻഡ് മാപ്പുകൾ ഇമ്പോർട്ടുചെയ്യുക',
   'canvas.ribbon.tip.export': 'ചിത്രം, പ്രമാണം അല്ലെങ്കിൽ പങ്കിടൽ ആയി കയറ്റുമതി ചെയ്യുക',
-  'canvas.ribbon.tip.learningSheet': 'ഒരു പഠന ഷീറ്റ് സൃഷ്ടിക്കാൻ മാപ്പിൽ നിന്ന് നോഡുകൾ തിരഞ്ഞെടുക്കുക',
+  'canvas.ribbon.tip.learningSheet':
+    'ഒരു പഠന ഷീറ്റ് സൃഷ്ടിക്കാൻ മാപ്പിൽ നിന്ന് നോഡുകൾ തിരഞ്ഞെടുക്കുക',
   'canvas.ribbon.tip.presentation': 'ഈ മാപ്പ് പൂർണ്ണ സ്ക്രീനിൽ പ്രദർശിപ്പിക്കുക',
   'canvas.ribbon.tip.explain': 'തിരഞ്ഞെടുത്ത നോഡുകൾ വ്യാഖ്യാനിക്കാൻ AI-യെ അനുവദിക്കുക',
   'canvas.ribbon.tip.classroom': 'ഈ മാപ്പിലൂടെ നിങ്ങളെ നയിക്കാൻ AI അധ്യാപകനെ അനുവദിക്കുക',
-  'canvas.ribbon.tip.collabOrg': 'ഒരുമിച്ച് എഡിറ്റ് ചെയ്യാൻ ഞങ്ങളുടെ സ്കൂളിലെ സഹപ്രവർത്തകരെ ക്ഷണിക്കുക',
+  'canvas.ribbon.tip.collabOrg':
+    'ഒരുമിച്ച് എഡിറ്റ് ചെയ്യാൻ ഞങ്ങളുടെ സ്കൂളിലെ സഹപ്രവർത്തകരെ ക്ഷണിക്കുക',
   'canvas.ribbon.tip.collabCross': 'ഈ മാപ്പ് എഡിറ്റ് ചെയ്യാൻ സ്കൂളുകളിലുടനീളം സഹകരിക്കുക',
   'canvas.ribbon.tip.collabOff': 'നിലവിലെ സഹകരണ സെഷൻ അവസാനിപ്പിക്കുക',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': 'തിരഞ്ഞെടുത്ത നോഡ് ടെക്സ്റ്റ് ബോൾഡ് ആക്കുക',
   'canvas.ribbon.tip.italic': 'തിരഞ്ഞെടുത്ത നോഡ് ടെക്സ്റ്റ് ഇറ്റാലിക്സിലേക്ക് സജ്ജമാക്കുക',
   'canvas.ribbon.tip.alignLeft': 'നോഡ് ടെക്സ്റ്റ് ഇടത് വിന്യസിച്ചു',
@@ -1452,23 +1716,28 @@ export default {
   'canvas.ribbon.docGenerate': 'പ്രമാണ നിർമ്മാണം',
   'canvas.ribbon.webGenerate': 'വെബ് ലിങ്ക് ജനറേഷൻ',
   'canvas.ribbon.voiceSummary': 'റെക്കോർഡിംഗ് സംഗ്രഹം',
-  'canvas.ribbon.sourceLocked': 'നിലവിലെ മാപ്പ് ഉറവിടമായി {source} ഉപയോഗിച്ചു. മറ്റൊരു ജനറേഷൻ രീതിയിലേക്ക് മാറുന്നതിന് മുമ്പ് ദയവായി ഒരു പുതിയ മാപ്പ് സൃഷ്‌ടിക്കുക.',
+  'canvas.ribbon.sourceLocked':
+    'നിലവിലെ മാപ്പ് ഉറവിടമായി {source} ഉപയോഗിച്ചു. മറ്റൊരു ജനറേഷൻ രീതിയിലേക്ക് മാറുന്നതിന് മുമ്പ് ദയവായി ഒരു പുതിയ മാപ്പ് സൃഷ്‌ടിക്കുക.',
   'canvas.ribbon.sourceKind.doc': 'പ്രമാണം',
   'canvas.ribbon.sourceKind.web': 'വെബ് ലിങ്ക്',
   'canvas.ribbon.sourceKind.voice': 'റെക്കോർഡിംഗ്',
   'canvas.ribbon.assocLine': 'ബന്ധപ്പെട്ട ലൈൻ',
-  'canvas.ribbon.assocLineHint': 'ബന്ധിപ്പിക്കാൻ മറ്റൊരു നോഡിൽ ക്ലിക്ക് ചെയ്യുക. റദ്ദാക്കാൻ Esc അല്ലെങ്കിൽ ശൂന്യമായ ക്യാൻവാസ്.',
-  'canvas.ribbon.assocLineSameSide': 'അസോസിയേഷൻ ലൈനുകൾക്ക് ഒരേ വശത്തുള്ള നോഡുകൾ മാത്രമേ ബന്ധിപ്പിക്കാൻ കഴിയൂ',
+  'canvas.ribbon.assocLineHint':
+    'ബന്ധിപ്പിക്കാൻ മറ്റൊരു നോഡിൽ ക്ലിക്ക് ചെയ്യുക. റദ്ദാക്കാൻ Esc അല്ലെങ്കിൽ ശൂന്യമായ ക്യാൻവാസ്.',
+  'canvas.ribbon.assocLineSameSide':
+    'അസോസിയേഷൻ ലൈനുകൾക്ക് ഒരേ വശത്തുള്ള നോഡുകൾ മാത്രമേ ബന്ധിപ്പിക്കാൻ കഴിയൂ',
   'canvas.ribbon.assocLineDelete': 'ബന്ധപ്പെട്ട വരികൾ ഇല്ലാതാക്കുക',
   'canvas.ribbon.summary': 'സംഗ്രഹം',
   'canvas.ribbon.insertImage': 'ചിത്രം',
   'canvas.ribbon.insertIcon': 'ഐക്കൺ',
   'canvas.ribbon.insertLink': 'ലിങ്ക്',
   'canvas.ribbon.makeLearningSheet': 'ഒരു പഠന ഷീറ്റ് ഉണ്ടാക്കുക',
-  'canvas.ribbon.makeLearningSheetHint': 'അവലോകനം കൂടുതൽ കാര്യക്ഷമമാക്കാൻ ഒറ്റ ക്ലിക്കിൽ പഠന ഷീറ്റുകൾ സൃഷ്‌ടിക്കുക',
+  'canvas.ribbon.makeLearningSheetHint':
+    'അവലോകനം കൂടുതൽ കാര്യക്ഷമമാക്കാൻ ഒറ്റ ക്ലിക്കിൽ പഠന ഷീറ്റുകൾ സൃഷ്‌ടിക്കുക',
   'canvas.ribbon.selectTwoNodes': 'ആദ്യം രണ്ട് നോഡുകൾ തിരഞ്ഞെടുക്കുക',
   'canvas.ribbon.insertComingSoon': 'ഉൾപ്പെടുത്തൽ ശേഷി ഉടൻ ലഭ്യമാകും',
-  'canvas.ribbon.summaryNeedSiblings': 'ഒരേ പാരൻ്റ് നോഡിന് കീഴിലുള്ള തുടർച്ചയായ നോഡുകൾ തിരഞ്ഞെടുക്കുക',
+  'canvas.ribbon.summaryNeedSiblings':
+    'ഒരേ പാരൻ്റ് നോഡിന് കീഴിലുള്ള തുടർച്ചയായ നോഡുകൾ തിരഞ്ഞെടുക്കുക',
   'canvas.ribbon.summaryDelete': 'സംഗ്രഹം ഇല്ലാതാക്കുക',
   'canvas.ribbon.linkName': 'പേര്',
   'canvas.ribbon.linkUrl': 'ലിങ്ക് വിലാസം',
@@ -1476,15 +1745,18 @@ export default {
   'canvas.ribbon.linkConfirm': 'ലിങ്ക് ചേർക്കുക',
   'canvas.ribbon.imageUrl': 'ചിത്രത്തിൻ്റെ വിലാസം',
   'canvas.ribbon.imagePick': 'ചിത്രം തിരഞ്ഞെടുക്കുക',
-  'canvas.ribbon.imageInvalid': 'ദയവായി ഒരു സാധുവായ ചിത്ര വിലാസം നൽകുക അല്ലെങ്കിൽ ഒരു ഫയൽ തിരഞ്ഞെടുക്കുക',
-  'canvas.ribbon.imageTooLarge': 'ചിത്രം വളരെ വലുതാണ്, ദയവായി ഒരു ചെറിയ ഫയലിലേക്ക് മാറ്റുക അല്ലെങ്കിൽ URL ഉപയോഗിക്കുക',
+  'canvas.ribbon.imageInvalid':
+    'ദയവായി ഒരു സാധുവായ ചിത്ര വിലാസം നൽകുക അല്ലെങ്കിൽ ഒരു ഫയൽ തിരഞ്ഞെടുക്കുക',
+  'canvas.ribbon.imageTooLarge':
+    'ചിത്രം വളരെ വലുതാണ്, ദയവായി ഒരു ചെറിയ ഫയലിലേക്ക് മാറ്റുക അല്ലെങ്കിൽ URL ഉപയോഗിക്കുക',
   'canvas.ribbon.imageConfirm': 'ചിത്രം ചേർക്കുക',
   'canvas.ribbon.clearIcon': 'ഐക്കൺ നീക്കം ചെയ്യുക',
   'canvas.ribbon.openLink': 'ലിങ്ക് തുറക്കുക',
   'canvas.ribbon.enlargeImage': 'ചിത്രം വലുതാക്കാൻ ക്ലിക്ക് ചെയ്യുക',
   'canvas.ribbon.aiHero.doc.ribbon': 'പ്രമാണ ശുദ്ധീകരണം',
   'canvas.ribbon.aiHero.doc.title': 'പ്രമാണങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക',
-  'canvas.ribbon.aiHero.doc.line1': 'പ്രധാന പോയിൻ്റുകൾ ബുദ്ധിപരമായി പരിഷ്കരിക്കുന്നതിന് പ്രമാണങ്ങളെ മൈൻഡ് മാപ്പുകളാക്കി മാറ്റുക',
+  'canvas.ribbon.aiHero.doc.line1':
+    'പ്രധാന പോയിൻ്റുകൾ ബുദ്ധിപരമായി പരിഷ്കരിക്കുന്നതിന് പ്രമാണങ്ങളെ മൈൻഡ് മാപ്പുകളാക്കി മാറ്റുക',
   'canvas.ribbon.aiHero.doc.line2': '',
   'canvas.ribbon.aiHero.web.ribbon': 'മാപ്പ് റീഡിംഗ് വെബ് പേജ്',
   'canvas.ribbon.aiHero.web.title': 'വെബ് ലിങ്ക് ലിപ്യന്തരണം',
@@ -1493,34 +1765,43 @@ export default {
   'canvas.ribbon.aiHero.voice.ribbon': 'മീറ്റിംഗ് ആർട്ടിഫാക്റ്റ്',
   'canvas.ribbon.aiHero.voice.title': 'തത്സമയ റെക്കോർഡിംഗ് ഓണാക്കുക',
   'canvas.ribbon.aiHero.voice.line1': 'തത്സമയ സംഭാഷണം മുതൽ വാചകം വരെ',
-  'canvas.ribbon.aiHero.voice.line2': 'പ്രധാന പോയിൻ്റുകളുടെ ഒരേസമയം വിവർത്തനവും ബുദ്ധിപരമായ സംഗ്രഹവും',
+  'canvas.ribbon.aiHero.voice.line2':
+    'പ്രധാന പോയിൻ്റുകളുടെ ഒരേസമയം വിവർത്തനവും ബുദ്ധിപരമായ സംഗ്രഹവും',
   'canvas.ribbon.aiHero.chat.ribbon': 'ചാറ്റ് ഇറക്കുമതി',
   'canvas.ribbon.aiHero.chat.title': 'ചാറ്റ് ചരിത്രം ഇറക്കുമതി ചെയ്യുക',
   'canvas.ribbon.aiHero.chat.line1': 'ജോടിയാക്കൽ കോഡ് ഉപയോഗിച്ച് റീഡറെ ബന്ധിപ്പിക്കുക',
-  'canvas.ribbon.aiHero.chat.line2': 'ഒറ്റ ക്ലിക്കിൽ സംഭാഷണങ്ങൾ ഇമ്പോർട്ടുചെയ്‌ത് മാപ്പുകൾ സൃഷ്‌ടിക്കുക',
+  'canvas.ribbon.aiHero.chat.line2':
+    'ഒറ്റ ക്ലിക്കിൽ സംഭാഷണങ്ങൾ ഇമ്പോർട്ടുചെയ്‌ത് മാപ്പുകൾ സൃഷ്‌ടിക്കുക',
   'canvas.ribbon.aiHero.classroom.ribbon': 'പഠന പുരാവസ്തു',
   'canvas.ribbon.aiHero.classroom.title': 'ചിന്താ പ്രഭാഷണ ഹാൾ തുറക്കുക',
-  'canvas.ribbon.aiHero.classroom.line1': 'ഈ മൈൻഡ് മാപ്പിൽ നിങ്ങളുമായി സംസാരിക്കാൻ AI അധ്യാപകനെ അനുവദിക്കുക',
+  'canvas.ribbon.aiHero.classroom.line1':
+    'ഈ മൈൻഡ് മാപ്പിൽ നിങ്ങളുമായി സംസാരിക്കാൻ AI അധ്യാപകനെ അനുവദിക്കുക',
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'ബ്രാക്കറ്റ് പൊള്ളയാക്കുക',
   'canvas.ribbon.aiHero.learningSheet.title': 'പൊള്ളയായ ബ്രാക്കറ്റ് ഡയഗ്രം',
-  'canvas.ribbon.aiHero.learningSheet.line1': 'ക്ലാസ്റൂം പരിശീലനത്തിനും അവലോകനത്തിനും അനുയോജ്യമായ, ക്രമരഹിതമായതോ ഇഷ്‌ടാനുസൃതമാക്കിയതോ ആയ ഹോളോ ഔട്ട് തിരഞ്ഞെടുക്കുക',
+  'canvas.ribbon.aiHero.learningSheet.line1':
+    'ക്ലാസ്റൂം പരിശീലനത്തിനും അവലോകനത്തിനും അനുയോജ്യമായ, ക്രമരഹിതമായതോ ഇഷ്‌ടാനുസൃതമാക്കിയതോ ആയ ഹോളോ ഔട്ട് തിരഞ്ഞെടുക്കുക',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'മസ്തിഷ്കപ്രക്ഷോഭം',
   'canvas.ribbon.aiHero.brainstorm.title': 'AI മസ്തിഷ്കപ്രക്ഷോഭം',
   'canvas.ribbon.aiHero.brainstorm.line1': 'ബ്രാഞ്ച് നിർദ്ദേശങ്ങൾ സൃഷ്ടിക്കാൻ നോഡ് തിരഞ്ഞെടുക്കുക',
-  'canvas.ribbon.aiHero.brainstorm.line2': 'അത് പരിശോധിച്ച് മാപ്പിൽ പ്രയോഗിക്കുക അല്ലെങ്കിൽ ക്യാൻവാസിലേക്ക് വലിച്ചിടുക.',
+  'canvas.ribbon.aiHero.brainstorm.line2':
+    'അത് പരിശോധിച്ച് മാപ്പിൽ പ്രയോഗിക്കുക അല്ലെങ്കിൽ ക്യാൻവാസിലേക്ക് വലിച്ചിടുക.',
   'canvas.ribbon.aiHero.oneSentence.ribbon': 'ഡയലോഗ് മാറ്റുക',
   'canvas.ribbon.aiHero.oneSentence.title': 'സംഭാഷണ പരിഷ്ക്കരണം',
-  'canvas.ribbon.aiHero.oneSentence.line1': 'ഒരു വാചകത്തിൽ വിഷയം അല്ലെങ്കിൽ പരിഷ്ക്കരണ അഭ്യർത്ഥന വിവരിക്കുക',
-  'canvas.ribbon.aiHero.oneSentence.line2': 'മാപ്പുകൾ ബുദ്ധിപരമായി സൃഷ്ടിക്കുകയും ക്രമീകരിക്കുകയും ചെയ്യുക',
+  'canvas.ribbon.aiHero.oneSentence.line1':
+    'ഒരു വാചകത്തിൽ വിഷയം അല്ലെങ്കിൽ പരിഷ്ക്കരണ അഭ്യർത്ഥന വിവരിക്കുക',
+  'canvas.ribbon.aiHero.oneSentence.line2':
+    'മാപ്പുകൾ ബുദ്ധിപരമായി സൃഷ്ടിക്കുകയും ക്രമീകരിക്കുകയും ചെയ്യുക',
   'canvas.ribbon.aiHero.link.ribbon': 'തിരുകുക',
   'canvas.ribbon.aiHero.link.title': 'ലിങ്ക് ചേർക്കുക',
-  'canvas.ribbon.aiHero.link.line1': 'നോഡ് ഡിസ്പ്ലേ നാമം, പൂർണ്ണ വിലാസം ലിങ്ക് ഐക്കണിൽ മറച്ചിരിക്കുന്നു',
+  'canvas.ribbon.aiHero.link.line1':
+    'നോഡ് ഡിസ്പ്ലേ നാമം, പൂർണ്ണ വിലാസം ലിങ്ക് ഐക്കണിൽ മറച്ചിരിക്കുന്നു',
   'canvas.ribbon.aiHero.link.line2': '',
   'canvas.hero.image.ribbon': 'തിരുകുക',
   'canvas.hero.image.title': 'ചിത്രം ചേർക്കുക',
-  'canvas.hero.image.line1': 'ഇമേജ് വിലാസം ഒട്ടിക്കുക, അല്ലെങ്കിൽ നിങ്ങളുടെ പ്രാദേശിക കമ്പ്യൂട്ടറിൽ നിന്ന് ഫയൽ തിരഞ്ഞെടുക്കുക',
+  'canvas.hero.image.line1':
+    'ഇമേജ് വിലാസം ഒട്ടിക്കുക, അല്ലെങ്കിൽ നിങ്ങളുടെ പ്രാദേശിക കമ്പ്യൂട്ടറിൽ നിന്ന് ഫയൽ തിരഞ്ഞെടുക്കുക',
   'canvas.hero.image.line2': '',
   'canvas.hero.icon.ribbon': 'തിരുകുക',
   'canvas.hero.icon.title': 'ഐക്കൺ ചേർക്കുക',
@@ -1528,25 +1809,27 @@ export default {
   'canvas.hero.icon.line2': '',
   'canvas.hero.math.ribbon': 'തിരുകുക',
   'canvas.hero.math.title': 'ഫോർമുല ചേർക്കുക',
-  'canvas.hero.math.line1': 'LaTeX നൽകുന്നതിന് ഫോർമുല കീബോർഡ് ഉപയോഗിക്കുക, തുടർന്ന് സ്ഥിരീകരണത്തിന് ശേഷം നോഡ് എഴുതുക.',
+  'canvas.hero.math.line1':
+    'LaTeX നൽകുന്നതിന് ഫോർമുല കീബോർഡ് ഉപയോഗിക്കുക, തുടർന്ന് സ്ഥിരീകരണത്തിന് ശേഷം നോഡ് എഴുതുക.',
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': 'സഹകരണം',
   'canvas.hero.collab.title': 'ഓൺലൈൻ സഹകരണം',
-  'canvas.hero.collab.line1': 'സഹപ്രവർത്തകരെ ഒരുമിച്ച് ചിത്രങ്ങൾ പരിഷ്‌ക്കരിക്കാൻ ക്ഷണിക്കുന്നതിന് ഇൻട്രാ സ്‌കൂൾ അല്ലെങ്കിൽ ക്ഷണ കോഡ് സഹകരണം പ്രവർത്തനക്ഷമമാക്കുക',
+  'canvas.hero.collab.line1':
+    'സഹപ്രവർത്തകരെ ഒരുമിച്ച് ചിത്രങ്ങൾ പരിഷ്‌ക്കരിക്കാൻ ക്ഷണിക്കുന്നതിന് ഇൻട്രാ സ്‌കൂൾ അല്ലെങ്കിൽ ക്ഷണ കോഡ് സഹകരണം പ്രവർത്തനക്ഷമമാക്കുക',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': 'കയറ്റുമതി',
   'canvas.hero.worksheet.title': 'DOC/PDF-ലേക്ക് കയറ്റുമതി ചെയ്യുക',
-  'canvas.hero.worksheet.line1': 'പഠന ഷീറ്റ് തലക്കെട്ടും പേപ്പർ ഓപ്ഷനുകളും സജ്ജമാക്കുക, പ്രിവ്യൂ, കയറ്റുമതി ചെയ്യുക',
+  'canvas.hero.worksheet.line1':
+    'പഠന ഷീറ്റ് തലക്കെട്ടും പേപ്പർ ഓപ്ഷനുകളും സജ്ജമാക്കുക, പ്രിവ്യൂ, കയറ്റുമതി ചെയ്യുക',
   'canvas.hero.worksheet.line2': '',
   'canvas.hero.communityExport.ribbon': 'പങ്കിടുക',
   'canvas.hero.communityExport.title': 'സമൂഹത്തിലേക്ക് പങ്കിടുക',
-  'canvas.hero.communityExport.line1': 'ശീർഷകവും വിഭാഗവും പൂരിപ്പിക്കുക, ഒരു ലഘുചിത്രം സൃഷ്ടിച്ച് പ്രസിദ്ധീകരിക്കുക',
+  'canvas.hero.communityExport.line1':
+    'ശീർഷകവും വിഭാഗവും പൂരിപ്പിക്കുക, ഒരു ലഘുചിത്രം സൃഷ്ടിച്ച് പ്രസിദ്ധീകരിക്കുക',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'കമ്മ്യൂണിറ്റി പോസ്റ്റ് എഡിറ്റ് ചെയ്യുക',
   'canvas.hero.slotFull.ribbon': 'ഗാലറി',
   'canvas.hero.slotFull.title': 'ഗാലറി നിറഞ്ഞിരിക്കുന്നു',
   'canvas.hero.slotFull.line1': 'നിലവിലുള്ള ഒരു ഐക്കൺ ഇല്ലാതാക്കി നിലവിലുള്ള ഐക്കൺ സംരക്ഷിക്കുക',
   'canvas.hero.slotFull.line2': '',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
-  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

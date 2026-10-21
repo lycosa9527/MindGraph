@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'மேட் கற்றல் முறை',
-  'maite.subtitle': 'தலைகீழ் சிதைவு · நான்காவது வரிசை கண்டறிதல் · இலக்கு வைத்தியம் · மாறுபாடு இடம்பெயர்வு',
+  'maite.subtitle':
+    'தலைகீழ் சிதைவு · நான்காவது வரிசை கண்டறிதல் · இலக்கு வைத்தியம் · மாறுபாடு இடம்பெயர்வு',
   'maite.mode.demo': 'டெமோ',
   'maite.mode.inquiry': 'ஆராயுங்கள்',
   'maite.mode.map': 'அட்லஸ்',
@@ -45,7 +46,8 @@ export default {
   'maite.inquiry.complete': 'முழுமையான அமர்வு',
   'maite.inquiry.completedTitle': 'ஆய்வு முடிந்தது',
   'maite.inquiry.completedMessage': 'இந்த ஆய்வு முடிந்து, கற்றல் அறிக்கையை பார்க்கலாம்.',
-  'maite.diagnosis.thinkingPlaceholder': 'சிக்கலைத் தீர்ப்பதற்கான உங்கள் அணுகுமுறையை விவரிக்கவும் (விரும்பினால்)…',
+  'maite.diagnosis.thinkingPlaceholder':
+    'சிக்கலைத் தீர்ப்பதற்கான உங்கள் அணுகுமுறையை விவரிக்கவும் (விரும்பினால்)…',
   'maite.diagnosis.runAuto': 'தானியங்கி நோயறிதல்',
   'maite.diagnosis.running': 'கண்டறிகிறது…',
   'maite.remedy.generate': 'சரிசெய்தல் பணிகளை உருவாக்குங்கள்',
@@ -79,13 +81,15 @@ export default {
   'maite.errors.generic': 'செயல்பாடு தோல்வியடைந்தது, பிறகு முயற்சிக்கவும்',
   'maite.errors.decompose_failed': 'சிதைவு தோல்வியடைந்தது',
   'maite.errors.follow_up_failed': 'கேள்வி கேட்க முடியவில்லை',
-  'maite.errors.ocr_failed': 'OCR அங்கீகாரம் தோல்வியடைந்தது, மற்றொரு படத்துடன் மீண்டும் முயற்சிக்கவும்.',
+  'maite.errors.ocr_failed':
+    'OCR அங்கீகாரம் தோல்வியடைந்தது, மற்றொரு படத்துடன் மீண்டும் முயற்சிக்கவும்.',
   'maite.errors.create_failed': 'ஆய்வு அமர்வை உருவாக்க முடியவில்லை',
   'maite.errors.submit_failed': 'சிதைவு அட்டவணையைச் சமர்ப்பிக்க முடியவில்லை',
   'maite.errors.diagnosis_failed': 'நோய் கண்டறிதல் தோல்வியடைந்தது',
   'maite.errors.remedy_failed': 'இலக்கு திருத்த பணியை உருவாக்குவது தோல்வியடைந்தது',
   'maite.errors.variant_failed': 'மாறுபாடு பணியை உருவாக்குவது தோல்வியடைந்தது',
-  'maite.errors.variants_incomplete': 'அமர்வை முடிக்கும் முன் குறைந்தது 3 மாறுபாடுகளைச் சமர்ப்பிக்கவும்',
+  'maite.errors.variants_incomplete':
+    'அமர்வை முடிக்கும் முன் குறைந்தது 3 மாறுபாடுகளைச் சமர்ப்பிக்கவும்',
   'maite.errors.variant_answer_required': 'பதில்கள் மற்றும் இடம்பெயர்வு உத்திகள் தேவை',
   'maite.errors.variant_submit_failed': 'மாறுபாடு சமர்ப்பிப்பு தோல்வியடைந்தது',
   'maite.errors.load_failed': 'அமர்வு ஏற்றம் தோல்வியடைந்தது',
@@ -98,7 +102,8 @@ export default {
   'maite.toast.ocr_success': 'படத்திலிருந்து கேள்வி உரை பிரித்தெடுக்கப்பட்டது',
   'maite.toast.decompose_started': 'ஆசிரியர் முறிவைத் தொடங்கு...',
   'maite.toast.decompose_complete': 'சிதைவு முடிந்தது',
-  'maite.toast.decompose_fallback': 'ஸ்ட்ரீமிங் நேரம் முடிந்தது, தொடர முழு பதிலைப் பயன்படுத்தவும்...',
+  'maite.toast.decompose_fallback':
+    'ஸ்ட்ரீமிங் நேரம் முடிந்தது, தொடர முழு பதிலைப் பயன்படுத்தவும்...',
   'maite.toast.practice_saved': 'சமீபத்திய பயிற்சிகளில் சேமிக்கப்பட்டது',
   'maite.toast.session_created': 'ஆய்வு அமர்வு உருவாக்கப்பட்டது',
   'maite.toast.session_completed': 'ஆய்வு அமர்வு முடிந்தது',

@@ -1,6 +1,6 @@
 /**
- * zh-tw UI — notification
- * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ * zh UI — notification
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export default {

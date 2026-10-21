@@ -46,7 +46,8 @@ export default {
   'canvas.worksheetText.learningSheetModeOn': 'चालू करो',
   'canvas.worksheetText.learningSheetModeOff': 'बंद',
   'canvas.worksheetText.learningSheetPanelTitle': 'एकल शीर्षलेख का अध्ययन करें',
-  'canvas.worksheetText.learningSheetPanelHint': 'निम्नलिखित विकल्प केवल अध्ययन पत्रक मोड में उपलब्ध हैं और आइकन के ऊपर दिखाई देंगे।',
+  'canvas.worksheetText.learningSheetPanelHint':
+    'निम्नलिखित विकल्प केवल अध्ययन पत्रक मोड में उपलब्ध हैं और आइकन के ऊपर दिखाई देंगे।',
   'canvas.worksheetText.exportSettings': 'निर्यात विकल्प',
   'canvas.worksheetText.previewDiagram': 'आरेख',
   'canvas.worksheetText.previewEmpty': 'अध्ययन पत्र हेडर पूर्वावलोकन फ़ील्ड चालू।',
@@ -65,14 +66,19 @@ export default {
   'canvas.worksheetText.showName': 'नाम',
   'canvas.worksheetText.showTopic': 'विषय शीर्षक',
   'canvas.worksheetText.topicPreviewLabel': 'आरेख विषय',
-  'canvas.import.invalidFile': 'अमान्य diagram file. Please select an MG file exported from MindGraph or a CmapTools .cmap file.',
+  'canvas.import.invalidFile':
+    'अमान्य diagram file. Please select an MG file exported from MindGraph or a CmapTools .cmap file.',
   'canvas.import.parseError': 'विफल: parse diagram file, please try again',
-  'canvas.import.cmapHeuristicSemantics': 'यह CmapTools file used text-order fallback for links—verify relationships against your original map.',
-  'canvas.import.cmapConnectionFallback': 'संबंध IHMC ग्राफ़िकल कनेक्शन से पुनर्निर्मित; proposition ऑब्जेक्ट नहीं।',
+  'canvas.import.cmapHeuristicSemantics':
+    'यह CmapTools file used text-order fallback for links—verify relationships against your original map.',
+  'canvas.import.cmapConnectionFallback':
+    'संबंध IHMC ग्राफ़िकल कनेक्शन से पुनर्निर्मित; proposition ऑब्जेक्ट नहीं।',
   'canvas.import.cmapEmptyLayout': 'आयातित मानचित्र में नोड निर्देशांक नहीं; लेआउट पुनः बनाया।',
-  'canvas.import.cmapLayoutLabelCollision': 'डुप्लिकेट concept labels overlap in layout anchors; some imported positions may be wrong.',
+  'canvas.import.cmapLayoutLabelCollision':
+    'डुप्लिकेट concept labels overlap in layout anchors; some imported positions may be wrong.',
   'canvas.import.cmapLayoutFailed': 'लेआउट पार्स त्रुटि — स्थिति पुनः बनाई।',
-  'canvas.reset.confirmBody': 'क्या आप सुनिश्चित? सारी सामग्री खो जाएगी — आरेख और नोड पैलेट सहित। यह पूर्ववत नहीं हो सकता।',
+  'canvas.reset.confirmBody':
+    'क्या आप सुनिश्चित? सारी सामग्री खो जाएगी — आरेख और नोड पैलेट सहित। यह पूर्ववत नहीं हो सकता।',
   'canvas.reset.confirmButton': 'रीसेट',
   'canvas.reset.confirmTitle': 'रीसेट to Default',
   'canvas.reset.warnSelectType': 'रीसेट नहीं हो सका: पहले आरेख प्रकार चुनें',
@@ -88,19 +94,23 @@ export default {
   'canvas.voiceCommandGuide.example.update_center': '"विषय को व्यावसायिक शिक्षा में बदलें"',
   'canvas.voiceCommandGuide.example.delete_node': '"चीन शाखा हटाएं"',
   'canvas.voiceCommandGuide.example.explain_node': '"चीन को समझाओ"',
-  'canvas.voiceCommandGuide.example.start_inline_recommendations': '"इस नोड के लिए एसोसिएशन अनुशंसाएँ करें"',
+  'canvas.voiceCommandGuide.example.start_inline_recommendations':
+    '"इस नोड के लिए एसोसिएशन अनुशंसाएँ करें"',
   'canvas.shortcutGuide.addChild': 'जोड़ें child',
   'canvas.shortcutGuide.addChildDesc': 'चयनित नोड में शीघ्र बच्चा जोड़ें।',
   'canvas.shortcutGuide.addSibling': 'जोड़ें sibling',
   'canvas.shortcutGuide.addSiblingDesc': 'चयनित नोड के बगल में शीघ्र sibling जोड़ें।',
   'canvas.shortcutGuide.editText': 'संपादित text',
-  'canvas.shortcutGuide.editTextDesc': 'खोलें inline editing in place; Enter or blur saves and recalculates size instantly.',
+  'canvas.shortcutGuide.editTextDesc':
+    'खोलें inline editing in place; Enter or blur saves and recalculates size instantly.',
   'canvas.shortcutGuide.doubleClick': 'संपादन हेतु डबल-क्लिक',
   'canvas.shortcutGuide.deleteNode': 'हटाएँ node',
-  'canvas.shortcutGuide.deleteNodeDesc': 'हटाएँ the selected node and its branches (root node is protected).',
+  'canvas.shortcutGuide.deleteNodeDesc':
+    'हटाएँ the selected node and its branches (root node is protected).',
   'canvas.shortcutGuide.arrowNav': 'तीर कुंजियाँ',
   'canvas.shortcutGuide.selectNav': 'नेविगेट',
-  'canvas.shortcutGuide.arrowNavDesc': 'यूक्लिडीय नेविगेशन: तीर कुंजियाँ कैनवास पर 2D स्थिति के अनुसार निकटतम नोड पर — किसी भी लेआउट में सहज गति।',
+  'canvas.shortcutGuide.arrowNavDesc':
+    'यूक्लिडीय नेविगेशन: तीर कुंजियाँ कैनवास पर 2D स्थिति के अनुसार निकटतम नोड पर — किसी भी लेआउट में सहज गति।',
   'canvas.shortcutGuide.cancel': 'साफ़ selection / edit',
   'canvas.shortcutGuide.cancelDesc': 'रद्द selection or editing.',
   'canvas.shortcutGuide.undo': 'पूर्ववत',
@@ -221,7 +231,8 @@ export default {
   'canvas.toolbar.professionalContent.tooltip': 'एआई-जनित सामग्री के लिए दर्शकों की कठिनाई चुनें',
   'canvas.toolbar.professionalContent.panelTitle': 'Content level',
   'canvas.toolbar.professionalContent.guideTitle': 'पहले दर्शकों की कठिनाई चुनें',
-  'canvas.toolbar.professionalContent.guideBody': 'किसी मंच या दृश्य का चयन करने के लिए यहां क्लिक करें। एआई जेनरेशन, संवाद परिवर्तन आदि कठिनाई के अनुसार सामग्री को व्यवस्थित करेंगे। चयन करने के बाद बटन पर एकेडमिक स्टेज लेबल प्राप्त होगा।',
+  'canvas.toolbar.professionalContent.guideBody':
+    'किसी मंच या दृश्य का चयन करने के लिए यहां क्लिक करें। एआई जेनरेशन, संवाद परिवर्तन आदि कठिनाई के अनुसार सामग्री को व्यवस्थित करेंगे। चयन करने के बाद बटन पर एकेडमिक स्टेज लेबल प्राप्त होगा।',
   'canvas.toolbar.professionalContent.guideAction': 'चुन लेना',
   'canvas.toolbar.professionalContent.guideDismiss': 'जानता था',
   'canvas.toolbar.professionalContent.level.general.title': 'सार्वभौमिक',
@@ -238,12 +249,17 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': 'व्यावहारिक परिदृश्य',
   'canvas.toolbar.professionalContent.level.expert.title': 'विशेषज्ञ',
   'canvas.toolbar.professionalContent.level.expert.description': 'गहराई से परिष्कृत',
-  'canvas.toolbar.professionalContent.notify.preference': 'इसके बाद AI-जनित सामग्री "{level}" दर्शकों के जागरूकता स्तर के अनुरूप होगी',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral': 'इसके बाद एआई-जनरेटेड सामग्री "सार्वभौमिक" शैली में होगी, जिसमें कोई अतिरिक्त कठिनाई बाधा नहीं होगी।',
-  'canvas.toolbar.professionalContent.notify.afterGenerated': 'वर्तमान सामग्री "{current}" कठिनाई है; भविष्य में, इसे उत्पन्न करने में आपकी सहायता के लिए मैं "{next}" दबाऊंगा।',
-  'canvas.toolbar.professionalContent.audienceLine': 'वर्तमान दर्शक: {level} (नीचे से [पेशेवर सामग्री])',
+  'canvas.toolbar.professionalContent.notify.preference':
+    'इसके बाद AI-जनित सामग्री "{level}" दर्शकों के जागरूकता स्तर के अनुरूप होगी',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    'इसके बाद एआई-जनरेटेड सामग्री "सार्वभौमिक" शैली में होगी, जिसमें कोई अतिरिक्त कठिनाई बाधा नहीं होगी।',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    'वर्तमान सामग्री "{current}" कठिनाई है; भविष्य में, इसे उत्पन्न करने में आपकी सहायता के लिए मैं "{next}" दबाऊंगा।',
+  'canvas.toolbar.professionalContent.audienceLine':
+    'वर्तमान दर्शक: {level} (नीचे से [पेशेवर सामग्री])',
   'canvas.toolbar.educationStage': 'शैक्षणिक चरण',
-  'canvas.toolbar.educationStageTooltip': 'एआई-जनित सामग्री की गहराई को प्रभावित करने के लिए शैक्षणिक चरण का चयन करें।',
+  'canvas.toolbar.educationStageTooltip':
+    'एआई-जनित सामग्री की गहराई को प्रभावित करने के लिए शैक्षणिक चरण का चयन करें।',
   'canvas.toolbar.educationStageClear': 'सार्वभौमिक',
   'canvas.toolbar.educationStagePrimary': 'प्राथमिक स्कूल',
   'canvas.toolbar.educationStageMiddle': 'जूनियर हाई स्कूल',
@@ -269,12 +285,14 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': 'विषय नोड नहीं हटा सकते',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference':
+    'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': 'जनरेट नहीं कर सकते',
   'canvas.toolbar.causeAdded': 'कारण नोड जोड़ा',
   'canvas.toolbar.childAdded': 'बच्चा जोड़ा',
   'canvas.toolbar.collabAiBlocked': 'सहयोग में केवल आरेख स्वामी AI जनरेशन उपयोग कर सकता है',
-  'canvas.toolbar.collabGuestFeatureBlocked': 'यह feature is not available while you join as a collaboration guest.',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'यह feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': 'रंग',
   'canvas.toolbar.conceptGeneration': 'संकल्पना जनरेशन',
   'canvas.toolbar.conceptMapModesDev': 'संकल्पना मानचित्र मोड विकास में',
@@ -299,7 +317,8 @@ export default {
   'canvas.toolbar.highlighterChooseColor': 'हाइलाइटर रंग',
   'canvas.toolbar.highlighterPaletteAria': 'चुनें highlighter color',
   'canvas.toolbar.insertEquation': 'डालें equation',
-  'canvas.toolbar.insertEquationTooltip': 'डालें inline math ($...$) at the caret, or append to the selected node if not editing',
+  'canvas.toolbar.insertEquationTooltip':
+    'डालें inline math ($...$) at the caret, or append to the selected node if not editing',
   'canvas.toolbar.insertEquationSelectNode': 'चुनें a node first',
   'canvas.toolbar.insertEquationDialogTitle': 'डालें equation',
   'canvas.toolbar.insertEquationLoading': 'लोड math editor…',
@@ -333,7 +352,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'मध्य',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
+  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
   'canvas.toolbar.mathKeyboardEqCircleArea': 'ए=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'ए=1/2बीएच',
@@ -354,7 +373,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'साइन प्रमेय',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'कोसाइन(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'साइन(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
+  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'दोहरा कोण',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+एन',
   'canvas.toolbar.mathKeyboardEqArithAn': 'अंकगणित पास अवधि',
@@ -420,11 +439,13 @@ export default {
   'canvas.presentationTimer.exitTimer': 'बाहर',
   'canvas.presentationTimer.startPresenting': 'शुरू presenting',
   'canvas.presentationTimer.closeHud': 'बंद timer',
-  'canvas.cachedResult.notice': 'परिणामों को कैश करें और नए परिणाम प्राप्त करने के लिए फ़ंक्शन का दोबारा उपयोग करें',
+  'canvas.cachedResult.notice':
+    'परिणामों को कैश करें और नए परिणाम प्राप्त करने के लिए फ़ंक्शन का दोबारा उपयोग करें',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-    'canvas.classroomRemote.tabTopics': 'Topics',
+  'canvas.classroomRemote.resize': 'Drag to resize',
+  'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
@@ -437,7 +458,8 @@ export default {
   'canvas.classroomRemote.topicsReset': 'Restore defaults',
   'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
   'canvas.presentation.learningSheetConfirmTitle': 'शुरू presentation?',
-  'canvas.presentation.learningSheetConfirmBody': 'आप अभी अध्ययन पत्र संपादित कर रहे हैं। प्रस्तुति शुरू करने पर रिक्त संपादन समाप्त; मौजूदा रिक्त रहेंगे। जारी?',
+  'canvas.presentation.learningSheetConfirmBody':
+    'आप अभी अध्ययन पत्र संपादित कर रहे हैं। प्रस्तुति शुरू करने पर रिक्त संपादन समाप्त; मौजूदा रिक्त रहेंगे। जारी?',
   'canvas.presentation.learningSheetConfirmProceed': 'शुरू presentation',
   'canvas.presentationContextMenu.laserPointer': 'लेज़र पॉइंटर',
   'canvas.presentationContextMenu.spotlight': 'स्पॉटलाइट',
@@ -475,7 +497,8 @@ export default {
   'canvas.floatingToolbar.summaryLineDashed': 'बिंदुयुक्त रेखा',
   'canvas.floatingToolbar.summaryLineDotted': 'बिंदुयुक्त रेखा',
   'canvas.floatingToolbar.assocStyle': 'संबद्ध पंक्ति शैली',
-  'canvas.floatingToolbar.assocCurveDrag': 'रेडियन को समायोजित करने के लिए तीन-बिंदु वृत्त को खींचें',
+  'canvas.floatingToolbar.assocCurveDrag':
+    'रेडियन को समायोजित करने के लिए तीन-बिंदु वृत्त को खींचें',
   'canvas.floatingToolbar.assocShape': 'एसोसिएशन लाइन आकार',
   'canvas.floatingToolbar.assocShapeCurve': 'वक्र',
   'canvas.floatingToolbar.assocStartArrow': 'प्रारंभ तीर',
@@ -509,12 +532,14 @@ export default {
   'canvas.toolbar.moreAppLearningSheet': 'अध्ययन पत्र',
   'canvas.toolbar.moreAppLearningSheetDesc': 'अध्ययन/पुनरावलोकन हेतु यादृच्छिक रिक्त',
   'canvas.toolbar.moreAppWaterfall': 'एआई विचार-मंथन',
-  'canvas.toolbar.moreAppWaterfallDesc': 'चुनें across batch nodes; make divergent and convergent thinking visible',
+  'canvas.toolbar.moreAppWaterfallDesc':
+    'चुनें across batch nodes; make divergent and convergent thinking visible',
   'canvas.toolbar.moreApps': 'और Apps',
   'canvas.toolbar.moreAppSnapshot': 'स्नैपशॉट',
   'canvas.toolbar.moreAppSnapshotDesc': 'सहेजें a version of this diagram (max 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'अनुवाद',
-  'canvas.toolbar.moreAppTranslateLabelDesc': 'AI से सभी नोड और कनेक्शन लेबल वर्तमान इंटरफ़ेस भाषा में अनुवाद',
+  'canvas.toolbar.moreAppTranslateLabelDesc':
+    'AI से सभी नोड और कनेक्शन लेबल वर्तमान इंटरफ़ेस भाषा में अनुवाद',
   'canvas.toolbar.translateLabelTitle': 'आरेख अनुवाद',
   'canvas.toolbar.translateLabelSource': 'अनुवाद हेतु लेबल ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'लक्ष्य भाषा',
@@ -526,23 +551,29 @@ export default {
   'canvas.toolbar.translateLabelAndMore': '{n} और नहीं दिखे…',
   'canvas.toolbar.translateLabelInProgress': 'आरेख अनुवाद…',
   'canvas.toolbar.translateLabelBannerTitle': 'आरेख अनुवाद',
-  'canvas.toolbar.translateLabelFallbackEnInfo': 'आपका interface language is not available as a translation target yet. Labels will be translated to English.',
+  'canvas.toolbar.translateLabelFallbackEnInfo':
+    'आपका interface language is not available as a translation target yet. Labels will be translated to English.',
   'canvas.toolbar.translateLabelFailed': 'अनुवाद विफल। कृपया पुनः प्रयास करें।',
   'canvas.toolbar.translateLabelDone': 'आरेख अनुवादित',
   'canvas.toolbar.moreAppVirtualKeyboard': 'वर्चुअल कीबोर्ड',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'अंग्रेजी ऑन-स्क्रीन कीबोर्ड; चीनी और अन्य भाषाओं के लिए, कृपया सिस्टम इनपुट पद्धति का उपयोग करें',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'अंग्रेजी ऑन-स्क्रीन कीबोर्ड; चीनी और अन्य भाषाओं के लिए, कृपया सिस्टम इनपुट पद्धति का उपयोग करें',
   'canvas.toolbar.virtualKeyboardClose': 'बंद keyboard',
-  'canvas.toolbar.virtualKeyboardFocusHint': 'एक नोड का चयन करना और इसे सीधे इनपुट करना मूल सामग्री को साफ़ कर देगा; आप संपादन दर्ज करने के लिए लेबल पर डबल-क्लिक भी कर सकते हैं।',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'एक नोड का चयन करना और इसे सीधे इनपुट करना मूल सामग्री को साफ़ कर देगा; आप संपादन दर्ज करने के लिए लेबल पर डबल-क्लिक भी कर सकते हैं।',
   'canvas.toolbar.virtualKeyboardIme': 'सिस्टम इनपुट विधि',
-  'canvas.toolbar.virtualKeyboardImeHint': 'कृपया इनपुट के लिए भौतिक कीबोर्ड या सिस्टम कीबोर्ड का उपयोग करें। उम्मीदवार विंडो सिस्टम इनपुट विधि द्वारा प्रदान की जाती है।',
+  'canvas.toolbar.virtualKeyboardImeHint':
+    'कृपया इनपुट के लिए भौतिक कीबोर्ड या सिस्टम कीबोर्ड का उपयोग करें। उम्मीदवार विंडो सिस्टम इनपुट विधि द्वारा प्रदान की जाती है।',
   'canvas.toolbar.snapshotSaveFirst': 'कृपया save the diagram first before taking a snapshot',
   'canvas.toolbar.snapshotTaken': 'स्नैपशॉट {n} सहेजा',
   'canvas.toolbar.snapshotFailed': 'विफल: save snapshot, please try again',
   'canvas.toolbar.snapshotTooLarge': 'स्नैपशॉट बहुत बड़ा (अधिकतम {max} KB)। सामग्री घटाएँ और पुनः।',
   'canvas.toolbar.snapshotRateLimited': 'बहुत सारे स्नैपशॉट। थोड़ा प्रतीक्षा करें और पुनः।',
   'canvas.toolbar.snapshotDiagramNotFound': 'आरेख नहीं मिला। पृष्ठ रीलोड या पुस्तकालय से खोलें।',
-  'canvas.library.diagramNotFound': 'आरेख नहीं मिला। हटाया गया हो सकता है। पुस्तकालय से दूसरा खोलें।',
-  'canvas.library.saveBeforeSwitchFailed': 'वर्तमान मानचित्र को स्विच करने से पहले सहेजा नहीं जा सकता, कृपया यहीं रहें और पुनः प्रयास करें।',
+  'canvas.library.diagramNotFound':
+    'आरेख नहीं मिला। हटाया गया हो सकता है। पुस्तकालय से दूसरा खोलें।',
+  'canvas.library.saveBeforeSwitchFailed':
+    'वर्तमान मानचित्र को स्विच करने से पहले सहेजा नहीं जा सकता, कृपया यहीं रहें और पुनः प्रयास करें।',
   'canvas.toolbar.snapshotConflict': 'नहीं हो सका: save snapshot (conflict). Please try again.',
   'canvas.toolbar.newAssociation': 'नया association',
   'canvas.toolbar.newAttribute': 'नया Attribute',
@@ -569,17 +600,23 @@ export default {
   'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl+एस',
   'canvas.toolbar.selectBranchOrChild': 'कृपया चुनें: a branch or child node',
-  'canvas.toolbar.selectCategoryOrLeafDelete': 'कृपया चुनें: category or leaf nodes (topic node cannot be deleted)',
-  'canvas.toolbar.selectCauseOrEffectForAdd': 'चुनें a cause or effect node (not the event), then press Enter to add another in that column',
-  'canvas.toolbar.selectTreeBranchForChild': 'चुनें a category or an item under a category to add a child, or select the topic to add a category',
+  'canvas.toolbar.selectCategoryOrLeafDelete':
+    'कृपया चुनें: category or leaf nodes (topic node cannot be deleted)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'चुनें a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'चुनें a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': 'कृपया चुनें: node(s) first',
   'canvas.toolbar.nodeStyleFollow': 'नोड का पालन करें',
-  'canvas.toolbar.nodeStyleFollowHint': 'चालू होने पर, नोड स्टाइल बार चयनित नोड का अनुसरण करता है; बंद होने पर यह छिप जाता है।',
+  'canvas.toolbar.nodeStyleFollowHint':
+    'चालू होने पर, नोड स्टाइल बार चयनित नोड का अनुसरण करता है; बंद होने पर यह छिप जाता है।',
   'canvas.toolbar.selectNodesToDelete': 'कृपया चुनें: node(s) to delete',
   'canvas.toolbar.selectPartForSubpart': 'कृपया चुनें: a part to add subpart to',
   'canvas.toolbar.selectPartThenEnter': 'चुनें a part node, then press Enter to add subpart',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'कृपया चुनें: similarity or difference nodes (topic nodes cannot be deleted)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'कृपया चुनें: a similarity or difference node first',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
+    'कृपया चुनें: similarity or difference nodes (topic nodes cannot be deleted)',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
+    'कृपया चुनें: a similarity or difference node first',
   'canvas.toolbar.selectStepForSubstep': 'कृपया चुनें: a step to add substep to',
   'canvas.toolbar.similarityWithIndex': 'सादृश्य {n}',
   'canvas.toolbar.stepAdded': 'चरण जोड़ा',
@@ -629,7 +666,8 @@ export default {
   'canvas.topBar.shareCommunity': 'समुदाय में साझा करें',
   'canvas.topBar.zhihuiUnavailable': 'स्मार्ट ड्राइंग चार्ट वर्तमान में अनुपलब्ध हैं',
   'canvas.topBar.zhihuiNeedMindmap': 'चित्रण केवल माइंड मैपिंग का समर्थन करता है',
-  'canvas.topBar.zhihuiSaveFailed': 'मानचित्र सहेजने में विफल रहा और उत्पन्न मानचित्र नहीं खुल सका.',
+  'canvas.topBar.zhihuiSaveFailed':
+    'मानचित्र सहेजने में विफल रहा और उत्पन्न मानचित्र नहीं खुल सका.',
   'canvas.topBar.sharedCollab': 'साझा सहयोग',
   'canvas.topBar.teachingDesign': 'MindMate AI',
   'canvas.subtitles.tooltip': 'लाइव उपशीर्षक (माइक)',
@@ -655,7 +693,8 @@ export default {
   'canvas.topBar.snapshotRecallCancelBtn': 'रद्द',
   'canvas.topBar.snapshotRecallHistory': 'स्नैपशॉट {n} पुनर्स्थापित से पहले',
   'canvas.topBar.snapshotRecallFailed': 'विफल: restore snapshot, please try again',
-  'canvas.topBar.snapshotRecallNoDiagram': 'सहेजें the diagram to your library first, then restore a snapshot.',
+  'canvas.topBar.snapshotRecallNoDiagram':
+    'सहेजें the diagram to your library first, then restore a snapshot.',
   'canvas.topBar.snapshotRecallNoType': 'आरेख प्रकार तैयार नहीं। थोड़ा प्रतीक्षा करें और पुनः।',
   'canvas.topBar.snapshotDeleted': 'स्नैपशॉट {n} हटाया',
   'canvas.topBar.snapshotDeleteFailed': 'विफल: delete snapshot, please try again',
@@ -709,7 +748,8 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'शाखा',
   'canvas.mindMapSlideOverlay.region': 'स्लाइड शो नियंत्रण',
   'canvas.mindMapSlideOverlay.progress': 'स्लाइड प्रगति — क्लिक से जाएँ',
-  'canvas.mindMapSlideOverlay.shortcuts': 'क्लिक canvas or Space/→ next · ← previous · Home/End first/last · Esc exit slides',
+  'canvas.mindMapSlideOverlay.shortcuts':
+    'क्लिक canvas or Space/→ next · ← previous · Home/End first/last · Esc exit slides',
   'canvas.mindMapSlideOverlay.exit': 'स्लाइड से बाहर',
   'canvas.mindMapSlideOverlay.collapse': 'संक्षिप्त controls',
   'canvas.mindMapSlideOverlay.expand': 'विस्तृत controls',
@@ -723,14 +763,19 @@ export default {
   'canvasPage.collaborationFooterOwnerDiagram': '{username} का आरेख «{diagramTitle}» — सहयोग',
   'canvasPage.collaborationFooterNetworkDiagramTitle': 'सहकारी आरेख «{diagramTitle}»',
   'canvasPage.collaborationFooterSchool': 'स्कूल सहयोग चल रहा — स्कूल सूची से शामिल हों।',
-  'canvasPage.collaborationFooterSchoolDiagram': '«{diagramTitle}» पर स्कूल सहयोग — स्कूल सत्र सूची से शामिल हों।',
-  'canvasPage.collabRoomIdleEnding': 'सत्र निष्क्रिय — ~{seconds}s में सहयोग समाप्त (संपादन से बनाए रखें)',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    '«{diagramTitle}» पर स्कूल सहयोग — स्कूल सत्र सूची से शामिल हों।',
+  'canvasPage.collabRoomIdleEnding':
+    'सत्र निष्क्रिय — ~{seconds}s में सहयोग समाप्त (संपादन से बनाए रखें)',
   'conceptMap.focus.noResult': 'कोई परिणाम नहीं',
   'conceptMap.focus.validationRequestFailed': 'सत्यापन अनुरोध विफल',
   'diagram.aiGenerating': 'ऐ...',
-  'diagram.alternativeDimensions.braceTitle': 'अन्य possible decomposition dimensions for this topic:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'अन्य possible analogy patterns for this topic:',
-  'diagram.alternativeDimensions.treeMapTitle': 'अन्य possible classification dimensions for this topic:',
+  'diagram.alternativeDimensions.braceTitle':
+    'अन्य possible decomposition dimensions for this topic:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
+    'अन्य possible analogy patterns for this topic:',
+  'diagram.alternativeDimensions.treeMapTitle':
+    'अन्य possible classification dimensions for this topic:',
   'diagram.bridgeMap.alternativesEmpty': '[विकल्प यहाँ दिखेंगे]',
   'diagram.conceptMap.focusQuestionPrefix': 'फ़ोकस प्रश्न: ',
   'diagram.conceptMap.focusQuestionSuffix': 'दर्ज',
@@ -755,7 +800,8 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'जोड़ें node feature coming soon',
   'diagram.contextMenu.paste': 'चिपकाएँ',
   'diagram.contextMenu.warningCreateDiagramFirst': 'पहले आरेख बनाएँ',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'कृपया चुनें: a similarity or difference node first',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff':
+    'कृपया चुनें: a similarity or difference node first',
   'diagram.defaultNewConcept': 'नया concept',
   'diagram.dimension.classificationAz': 'वर्गीकरण:',
   'diagram.dimension.classificationEn': 'वर्गीकरण:',
@@ -780,31 +826,45 @@ export default {
   'canvas.mindMapSideToolbar.collapse': 'संक्षिप्त toolbar',
   'canvas.mindMapSideToolbar.outline': 'रूपरेखा',
   'canvas.mindMapSideToolbar.waterfall': 'एआई विचार-मंथन',
-  'canvas.mindMapWaterfall.panelHint': 'चुनें nodes for AI branch ideas, then drag them onto the canvas',
-  'canvas.mindMapWaterfall.emptyHint': 'कोई suggestions yet. Select nodes on the canvas or tap Refresh.',
-  'canvas.mindMapWaterfall.dragHint': 'क्लिक to multi-select, then drag onto a map node to insert. Drop on empty canvas to add a top-level branch.',
+  'canvas.mindMapWaterfall.panelHint':
+    'चुनें nodes for AI branch ideas, then drag them onto the canvas',
+  'canvas.mindMapWaterfall.emptyHint':
+    'कोई suggestions yet. Select nodes on the canvas or tap Refresh.',
+  'canvas.mindMapWaterfall.dragHint':
+    'क्लिक to multi-select, then drag onto a map node to insert. Drop on empty canvas to add a top-level branch.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'जोड़ें nodes from AI brainstorm',
-  'canvas.mindMapOneSentence.intro': 'दर्ज a topic, or specify branch count, categories, steps, or other structure',
-  'canvas.mindMapOneSentence.requirementsPlaceholder': 'उदा. 3-दिन बीजिंग यात्रा — चार शाखाएँ: वस्त्र, भोजन, आवास, परिवहन',
+  'canvas.mindMapOneSentence.intro':
+    'दर्ज a topic, or specify branch count, categories, steps, or other structure',
+  'canvas.mindMapOneSentence.requirementsPlaceholder':
+    'उदा. 3-दिन बीजिंग यात्रा — चार शाखाएँ: वस्त्र, भोजन, आवास, परिवहन',
   'canvas.mindMapOneSentence.examplesTitle': 'प्रेरणा',
   'canvas.mindMapOneSentence.generateButton': 'जनरेट',
-  'canvas.mindMapOneSentence.example1': '3-दिन बीजिंग यात्रा — चार शाखाएँ: वस्त्र, भोजन, आवास, परिवहन',
-  'canvas.mindMapOneSentence.example2': 'नए उत्पाद लॉन्च SWOT: strengths, weaknesses, opportunities, threats',
-  'canvas.mindMapOneSentence.example3': 'प्राथमिक विज्ञान: जल की अवस्थाएँ — सरल लेबल, अधिकतम 6 अक्षर/नोड',
+  'canvas.mindMapOneSentence.example1':
+    '3-दिन बीजिंग यात्रा — चार शाखाएँ: वस्त्र, भोजन, आवास, परिवहन',
+  'canvas.mindMapOneSentence.example2':
+    'नए उत्पाद लॉन्च SWOT: strengths, weaknesses, opportunities, threats',
+  'canvas.mindMapOneSentence.example3':
+    'प्राथमिक विज्ञान: जल की अवस्थाएँ — सरल लेबल, अधिकतम 6 अक्षर/नोड',
   'canvas.mindMapOneSentence.suggestion.add_node': 'एक चीनी शाखा जोड़ें',
   'canvas.mindMapOneSentence.suggestion.update_node': 'पेय विश्लेषण को पेय विश्लेषण में बदलें',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': '2.1 को ग्रीन टी में बदलें',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint': 'नंबर सक्रिय करने के बाद, आप कह सकते हैं "2.1 को बदलें..." "2 को बदलें..."',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint':
+    'नंबर सक्रिय करने के बाद, आप कह सकते हैं "2.1 को बदलें..." "2 को बदलें..."',
   'canvas.mindMapOneSentence.suggestion.update_center': 'थीम बदलकर चाय कर दी गई है',
   'canvas.mindMapOneSentence.suggestion.delete_node': 'पेय विश्लेषण शाखा हटाएँ',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': 'चीन की शाखा पूरी करें',
   'canvas.mindMapOneSentence.suggestion.auto_complete': 'मानचित्र पूरा करने में मेरी सहायता करें',
-  'canvas.mindMapOneSentence.suggestion.set_content_level': 'व्यावसायिक सामग्री को सामान्य, प्राथमिक विद्यालय, जूनियर हाई स्कूल, हाई स्कूल, कॉलेज, वयस्क या विशेषज्ञ में बदलें',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': 'व्यावसायिक सामग्री को {level} में बदल दिया गया',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': 'सातवां स्तर नीचे "व्यावसायिक सामग्री" के अनुरूप है',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': 'संख्याएँ, चीनी, वृत्त, अक्षर या अध्याय संख्याएँ सक्षम करें',
+  'canvas.mindMapOneSentence.suggestion.set_content_level':
+    'व्यावसायिक सामग्री को सामान्य, प्राथमिक विद्यालय, जूनियर हाई स्कूल, हाई स्कूल, कॉलेज, वयस्क या विशेषज्ञ में बदलें',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
+    'व्यावसायिक सामग्री को {level} में बदल दिया गया',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
+    'सातवां स्तर नीचे "व्यावसायिक सामग्री" के अनुरूप है',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
+    'संख्याएँ, चीनी, वृत्त, अक्षर या अध्याय संख्याएँ सक्षम करें',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': '{style} नंबर सक्षम करें',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': 'आप कह सकते हैं "डिजिटल नंबरिंग सक्षम करें" "चीनी नंबरिंग सक्षम करें"',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
+    'आप कह सकते हैं "डिजिटल नंबरिंग सक्षम करें" "चीनी नंबरिंग सक्षम करें"',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': 'संख्या',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': 'चीनी',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': 'घेरा',
@@ -814,7 +874,8 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': 'छिपा हुआ नंबर',
   'canvas.mindMapOneSentence.suggestion.explain_node': 'चीन की इस शाखा को समझाइये',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'इस नोड का परिचय दें',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint': 'आप कह सकते हैं "चीन को समझाएं" और "इस नोड का परिचय दें"; एक नोड का चयन करने के बाद, आप "इसका परिचय दें" भी कह सकते हैं।',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
+    'आप कह सकते हैं "चीन को समझाएं" और "इस नोड का परिचय दें"; एक नोड का चयन करने के बाद, आप "इसका परिचय दें" भी कह सकते हैं।',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'नोड ऑपरेशन गाइड',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'नोड ऑपरेशन गाइड संक्षिप्त करें',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': 'नाम से',
@@ -825,54 +886,79 @@ export default {
   'canvas.mindMapOneSentence.micButton': 'वॉयस इनपुट',
   'canvas.mindMapOneSentence.photoButton': 'अपलोड photo',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 फ़ोटो',
-  'canvas.mindMapOneSentence.photoNeedsDiagram': 'सहेजें this diagram to the library first, then upload a photo.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram':
+    'सहेजें this diagram to the library first, then upload a photo.',
   'canvas.mindMapOneSentence.photoInvalidType': 'JPG, PNG या WebP फ़ोटो चुनें।',
   'canvas.mindMapOneSentence.photoTooLarge': 'फ़ोटो बहुत बड़ी। अधिकतम 10MB।',
   'canvas.mindMapOneSentence.photoUntitledMap': 'Mind Map',
-  'canvas.mindMapOneSentence.photoHanddrawnReply': 'हस्त-चित्रित Mind Map "{topic}" पहचाना। कैनवास पर बनाया; Document Summary में रूपरेखा।',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'हस्त-चित्रित Mind Map "{topic}" पहचाना। कैनवास पर बनाया; Document Summary में रूपरेखा। पुस्तकालय सिंक अधूरा — सहेजें या पुनः।',
-  'canvas.mindMapOneSentence.photoOcrReply': 'फ़ोटो से पाठ:\n{excerpt}\n\nपूरा Document Summary में।',
+  'canvas.mindMapOneSentence.photoHanddrawnReply':
+    'हस्त-चित्रित Mind Map "{topic}" पहचाना। कैनवास पर बनाया; Document Summary में रूपरेखा।',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
+    'हस्त-चित्रित Mind Map "{topic}" पहचाना। कैनवास पर बनाया; Document Summary में रूपरेखा। पुस्तकालय सिंक अधूरा — सहेजें या पुनः।',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    'फ़ोटो से पाठ:\n{excerpt}\n\nपूरा Document Summary में।',
   'canvas.mindMapOneSentence.photoFailed': 'नहीं हो सका: process the photo.',
   'canvas.mindMapOneSentence.micDenied': 'माइक अनुपलब्ध — ब्राउज़र अनुमति जाँचें',
   'canvas.mindMapOneSentence.ttsToggle': 'भाषण चालू/बंद',
-  'canvas.mindMapOneSentence.kittyWelcome': 'नमस्ते — कौन सा आरेख बनाना है बताएँ, या शाखा/नोड संपादन हेतु चैट जारी रखें।',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    'नमस्ते — कौन सा आरेख बनाना है बताएँ, या शाखा/नोड संपादन हेतु चैट जारी रखें।',
   'canvas.mindMapOneSentence.switchDiagramType': '{type} में बदल रहा है…',
   'canvas.mindMapOneSentence.kittyGenerating': 'समझ गया — आरेख जनरेट…',
   'canvas.mindMapOneSentence.kittyGenerateDone': 'आरेख तैयार। शाखा/नोड संपादन हेतु लिखते रहें।',
   'canvas.mindMapOneSentence.kittyGenerateFailed': 'आरेख जनरेशन विफल। पुनः या विवरण सुधारें।',
-  'canvas.mindMapOneSentence.kittyEditFailed': 'नहीं हो सका: apply that edit. Try rephrasing your request.',
+  'canvas.mindMapOneSentence.kittyEditFailed':
+    'नहीं हो सका: apply that edit. Try rephrasing your request.',
   'canvas.mindMapOneSentence.kittyEditStale': 'संपादन कैनवास पर लागू नहीं (stale/no-op)। पुनः।',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'canvas could not verify that edit. Your diagram was left unchanged.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'edit applied locally but failed to sync. Try again in a moment.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed': 'नहीं हो सका: sync the canvas. Please try again in a moment.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'नहीं हो सका: sync the canvas ({detail}). Please try again in a moment.',
-  'canvas.mindMapOneSentence.kittyEditBusy': 'diagram is still generating — please wait, then try again.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} परिणाम स्ट्रीम हो रहे — समाप्त होते ही आपका अनुरोध चलाऊँगा।',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'अन्य model results are still streaming — I will run your request automatically when they finish.',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming': 'अन्य models finished — continuing with your request…',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    'canvas could not verify that edit. Your diagram was left unchanged.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    'edit applied locally but failed to sync. Try again in a moment.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed':
+    'नहीं हो सका: sync the canvas. Please try again in a moment.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    'नहीं हो सका: sync the canvas ({detail}). Please try again in a moment.',
+  'canvas.mindMapOneSentence.kittyEditBusy':
+    'diagram is still generating — please wait, then try again.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    '{models} परिणाम स्ट्रीम हो रहे — समाप्त होते ही आपका अनुरोध चलाऊँगा।',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    'अन्य model results are still streaming — I will run your request automatically when they finish.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming':
+    'अन्य models finished — continuing with your request…',
   'canvas.mindMapOneSentence.requestQueued': 'कतार',
   'canvas.mindMapOneSentence.requestFailed': 'विफल',
   'canvas.mindMapOneSentence.kittyEditAccessDenied': 'इस आरेख को संपादित करने की अनुमति नहीं।',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'diagram was just updated, so that edit is stale. Please repeat your change.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    'diagram was just updated, so that edit is stale. Please repeat your change.',
   'canvas.mindMapOneSentence.kittyEditTimeout': 'संपादन समय समाप्त — आरेख शायद अपरिवर्तित। पुनः।',
-  'canvas.mindMapOneSentence.kittyEditNoOwner': 'संपादन योग्य कैनवास नहीं मिला। कैनवास खोलें, फिर पुनः।',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    'संपादन योग्य कैनवास नहीं मिला। कैनवास खोलें, फिर पुनः।',
   'canvas.mindMapOneSentence.kittyEditAddFailed': 'क्षमा — नोड नहीं जोड़ सका। नाम जाँचें और पुनः।',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'क्षमा — नोड का नाम नहीं बदल सका। नाम जाँचें और पुनः।',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    'क्षमा — नोड का नाम नहीं बदल सका। नाम जाँचें और पुनः।',
   'canvas.mindMapOneSentence.kittyEditCenterFailed': 'क्षमा — विषय अपडेट नहीं। पुनः।',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'क्षमा — नोड नहीं हटा सका। नाम जाँचें और पुनः।',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'क्षमा — शाखा स्वतः पूर्ण नहीं। फिर पूछ सकते हैं।',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    'क्षमा — नोड नहीं हटा सका। नाम जाँचें और पुनः।',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    'क्षमा — शाखा स्वतः पूर्ण नहीं। फिर पूछ सकते हैं।',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'वह शाखा तैयार।',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'वे शाखाएँ तैयार।',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'कुछ branches are ready, but a few didn’t finish. You can ask to auto-complete again.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
+    'कुछ branches are ready, but a few didn’t finish. You can ask to auto-complete again.',
   'canvas.mindMapOneSentence.kittyWorking': 'ठीक — काम कर रहा हूँ…',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty अनुपलब्ध। सर्वर पर FEATURE_KITTY_AGENT सक्षम जाँचें।',
-  'canvas.mindMapOneSentence.kittyConnectFailed': 'नहीं हो सका: connect canvas Kitty. Open this diagram on desktop, then try again.',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'Kitty अनुपलब्ध। सर्वर पर FEATURE_KITTY_AGENT सक्षम जाँचें।',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    'नहीं हो सका: connect canvas Kitty. Open this diagram on desktop, then try again.',
   'canvas.mindMapOneSentence.clarifyChoices': 'चुनें an option',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'मोबाइल Kitty इस आरेख से जुड़ा। फ़ोन से बोलें/लिखें — डेस्कटॉप इनपुट रुका।',
-  'canvas.mindMapOneSentence.scopeDivergenceHint': 'फ़ोन Kitty दूसरे आरेख पर। फ़ोन से सिंक या वह आरेख यहाँ खोलें।',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    'मोबाइल Kitty इस आरेख से जुड़ा। फ़ोन से बोलें/लिखें — डेस्कटॉप इनपुट रुका।',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    'फ़ोन Kitty दूसरे आरेख पर। फ़ोन से सिंक या वह आरेख यहाँ खोलें।',
   'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'उपयोग Mobile Kitty on your phone…',
   'canvas.mindMapNodeExplain.titleFallback': 'नोड स्पष्टीकरण',
-  'canvas.mindMapNodeExplain.requestFailed': 'इस समय समझाने में असमर्थ, कृपया बाद में पुनः प्रयास करें।',
+  'canvas.mindMapNodeExplain.requestFailed':
+    'इस समय समझाने में असमर्थ, कृपया बाद में पुनः प्रयास करें।',
   'canvas.mindMapNodeExplain.thinking': 'सोच',
   'canvas.mindMapNodeExplain.thinkingDone': 'सोच ख़त्म हुई',
   'canvas.mindMapNodeExplain.pageStats': '{found} पेज मिले, {fetched} पेज पढ़ें',
@@ -887,17 +973,21 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': 'चैट इतिहास',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'फ़ाइल अपलोड',
   'canvas.mindMapDocumentSummary.tabPaste': 'पाठ चिपकाना',
-  'canvas.mindMapDocumentSummary.pasteHintLite': 'कागजात, नोट्स या मीटिंग मिनट्स में चिपकाएँ और हम संरचना को परिष्कृत करेंगे और एक माइंड मैप तैयार करेंगे।',
+  'canvas.mindMapDocumentSummary.pasteHintLite':
+    'कागजात, नोट्स या मीटिंग मिनट्स में चिपकाएँ और हम संरचना को परिष्कृत करेंगे और एक माइंड मैप तैयार करेंगे।',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'चैट इतिहास',
   'canvas.mindMapDocumentSummary.intro': 'सटीक Mind Map हेतु मुख्य बिंदु निकालें',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'क्लिक to upload a file',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, text, images, audio — केवल निकाला markdown रखा',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint':
+    'PDF, Word, PPT, Excel, text, images, audio — केवल निकाला markdown रखा',
   'canvas.mindMapDocumentSummary.invalidFileType': 'असमर्थित प्रकार',
   'canvas.mindMapDocumentSummary.saveContent': 'सहेजें content',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'लाएँ और सहेजें',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'पृष्ठ सामग्री ला रहा है…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite': 'सार्वजनिक URL चिपकाएँ — अधिकतम लेख पाठ Markdown में सहेजें।',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'प्रत्यक्ष लिंक सर्वर-साइड है; लॉगिन कुकी नहीं — auth/paywall पृष्ठ अधूरे। पूर्ण स्नैपशॉट हेतु Chrome/Edge एक्सटेंशन।',
+  'canvas.mindMapDocumentSummary.webLinkHintLite':
+    'सार्वजनिक URL चिपकाएँ — अधिकतम लेख पाठ Markdown में सहेजें।',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
+    'प्रत्यक्ष लिंक सर्वर-साइड है; लॉगिन कुकी नहीं — auth/paywall पृष्ठ अधूरे। पूर्ण स्नैपशॉट हेतु Chrome/Edge एक्सटेंशन।',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'डाउनलोड Chrome एक्सटेंशन',
   'canvas.mindMapDocumentSummary.statusExtracting': 'निष्कर्षण…',
   'canvas.mindMapDocumentSummary.stageStarting': 'शुरू…',
@@ -912,9 +1002,12 @@ export default {
   'canvas.mindMapDocumentSummary.sourceDeleted': 'स्रोत हटाया — फिर अपलोड कर सकते हैं',
   'canvas.mindMapDocumentSummary.extractStarted': 'सामग्री निकाल रहा है…',
   'canvas.mindMapDocumentSummary.extractFailed': 'नहीं हो सका: extract text from this file',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown तैयार। Mind Map जनरेट या स्रोत हटाकर दूसरा अपलोड।',
-  'canvas.mindMapDocumentSummary.deleteToRetry': 'हटाएँ this source, then upload, paste, or fetch a page again.',
-  'canvas.mindMapDocumentSummary.chatIntroLite': 'डाउनलोड the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'Markdown तैयार। Mind Map जनरेट या स्रोत हटाकर दूसरा अपलोड।',
+  'canvas.mindMapDocumentSummary.deleteToRetry':
+    'हटाएँ this source, then upload, paste, or fetch a page again.',
+  'canvas.mindMapDocumentSummary.chatIntroLite':
+    'डाउनलोड the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'चैट इतिहास प्राप्त',
   'canvas.mindMapDocumentSummary.chatDoneLite': 'चैट सहेजी — तैयार होने पर Generate',
   'canvas.mindMapDocumentSummary.corpusStatus': '{total} में से {completed} स्रोत अनुक्रमित',
@@ -927,9 +1020,12 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': 'इंडेक्सिंग…',
   'canvas.mindMapDocumentSummary.statusFailed': 'विफल',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'Knowledge Space अक्षम',
-  'canvas.mindMapDocumentSummary.featureDisabledHint': 'सक्षम the Knowledge Space feature to use Document Summary.',
-  'canvas.mindMapDocumentSummary.saveDiagramHint': 'सहेजें this diagram to link the package and enable full RAG retrieval.',
-  'canvas.mindMapDocumentSummary.chatIntro': 'डाउनलोड the file reader, enter the pairing code below, and send WeChat or DingTalk history to this corpus.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint':
+    'सक्षम the Knowledge Space feature to use Document Summary.',
+  'canvas.mindMapDocumentSummary.saveDiagramHint':
+    'सहेजें this diagram to link the package and enable full RAG retrieval.',
+  'canvas.mindMapDocumentSummary.chatIntro':
+    'डाउनलोड the file reader, enter the pairing code below, and send WeChat or DingTalk history to this corpus.',
   'canvas.mindMapDocumentSummary.pairingCode': 'पेयरिंग कोड',
   'canvas.mindMapDocumentSummary.startPairingCode': 'पेयरिंग कोड लें',
   'canvas.mindMapDocumentSummary.pairingExpires': '{minutes} मिनट में समाप्त',
@@ -938,14 +1034,16 @@ export default {
   'canvas.mindMapDocumentSummary.chatReceived': 'चैट इतिहास प्राप्त और corpus में',
   'canvas.mindMapDocumentSummary.chatIndexing': 'चैट ट्रांसक्रिप्ट अनुक्रमित…',
   'canvas.mindMapDocumentSummary.chatDone': 'चैट corpus में',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'अपलोड or indexing failed — refresh to try again',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed':
+    'अपलोड or indexing failed — refresh to try again',
   'canvas.mindMapDocumentSummary.chatMintFailed': 'नहीं हो सका: create pairing code',
   'canvas.mindMapDocumentSummary.chatExpired': 'पेयरिंग कोड समाप्त — नया लें हेतु रीफ़्रेश',
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'रीफ़्रेश pairing code',
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'नहीं हो सका: start Document Summary session',
   'canvas.mindMapDocumentSummary.imageTooLarge': 'छवि बहुत बड़ी। अधिकतम 10MB।',
   'canvas.mindMapDocumentSummary.generateNoCorpus': 'जोड़ें at least one source, then generate',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'पहले अपलोड/चिपकाएँ/पृष्ठ लाएँ, फिर Generate',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
+    'पहले अपलोड/चिपकाएँ/पृष्ठ लाएँ, फिर Generate',
   'canvas.mindMapDocumentSummary.collabDisabled': 'लाइव सहयोग में अनुपलब्ध',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'स्रोत corpus में',
   'canvas.mindMapDocumentSummary.ingestSuccessLite': 'सामग्री सहेजी — Generate जब तैयार',
@@ -954,10 +1052,12 @@ export default {
   'canvas.mindMapDocumentSummary.uploadDocHint': 'क्लिक to upload Word or PDF',
   'canvas.mindMapDocumentSummary.uploadDocSubhint': 'दस्तावेज़ सामग्री स्वतः निकालते हैं',
   'canvas.mindMapDocumentSummary.pasteLabel': 'या लंबे नोट चिपकाएँ:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder': 'पेपर अंश, पुस्तक सार, बैठक नोट, आवश्यकताएँ आदि चिपकाएँ।',
+  'canvas.mindMapDocumentSummary.pastePlaceholder':
+    'पेपर अंश, पुस्तक सार, बैठक नोट, आवश्यकताएँ आदि चिपकाएँ।',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'छवि अपलोड:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'क्लिक to upload JPG or PNG',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'हस्त-चित्रित Mind Map पहचानकर बनाते हैं; अन्यथा पाठ निकालते हैं',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    'हस्त-चित्रित Mind Map पहचानकर बनाते हैं; अन्यथा पाठ निकालते हैं',
   'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'हस्त-चित्रित Mind Map — कैनवास पर बनाया',
   'canvas.mindMapDocumentSummary.visionProgressDetecting': 'हस्त-चित्रित Mind Map पहचान…',
   'canvas.mindMapDocumentSummary.imageOcrHint': 'नोट स्क्रीनशॉट, व्हाइटबोर्ड फ़ोटो, स्कैन के साथ।',
@@ -974,11 +1074,16 @@ export default {
   'canvas.mindMapDocumentSummary.invalidDocType': 'केवल Word (.docx) और PDF समर्थित',
   'canvas.mindMapDocumentSummary.invalidImageType': 'केवल JPG और PNG समर्थित',
   'canvas.mindMapDocumentSummary.docTooLarge': 'फ़ाइल बहुत बड़ी। अधिकतम 20MB।',
-  'canvas.mindMapDocumentSummary.pasteTooLong': 'चिपकाया पाठ मॉडल सीमा (~900,000 अक्षर) से अधिक। छोटा करें।',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'निकाला पाठ मॉडल सीमा (~900,000 अक्षर) से अधिक। छोटा दस्तावेज़ उपयोग करें।',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'यह file’s text is too long for the model. Please upload a shorter document (under ~900,000 characters of text).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared': 'saved extract was missing or out of sync and has been cleared. Please upload or paste the document again.',
-  'canvas.mindMapDocumentSummary.contentFiltered': 'सामग्री सुरक्षा समीक्षा में सफल नहीं हुई. कृपया पाठ को संशोधित करें और पुनः प्रयास करें।',
+  'canvas.mindMapDocumentSummary.pasteTooLong':
+    'चिपकाया पाठ मॉडल सीमा (~900,000 अक्षर) से अधिक। छोटा करें।',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel':
+    'निकाला पाठ मॉडल सीमा (~900,000 अक्षर) से अधिक। छोटा दस्तावेज़ उपयोग करें।',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel':
+    'यह file’s text is too long for the model. Please upload a shorter document (under ~900,000 characters of text).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared':
+    'saved extract was missing or out of sync and has been cleared. Please upload or paste the document again.',
+  'canvas.mindMapDocumentSummary.contentFiltered':
+    'सामग्री सुरक्षा समीक्षा में सफल नहीं हुई. कृपया पाठ को संशोधित करें और पुनः प्रयास करें।',
   'canvas.mindMapSideToolbar.learningSheet': 'अध्ययन पत्र',
   'canvas.mobile.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
@@ -991,7 +1096,8 @@ export default {
   'canvas.mindClassroom.mascotDismiss': 'नीचे तक दबाओ',
   'canvas.mindClassroom.audienceLine': 'वर्तमान दर्शक: {level} (नीचे से [पेशेवर सामग्री])',
   'canvas.mindClassroom.start': 'समझाना शुरू करें',
-  'canvas.mindClassroom.startPreview': 'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
+  'canvas.mindClassroom.startPreview':
+    'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
   'canvas.mindClassroom.queue.queued': 'पहले से ही ट्यूटोरियल कतार में शामिल हो गए हैं...',
   'canvas.mindClassroom.queue.planning': 'व्याख्यान नोट्स/शिक्षण योजनाएँ तैयार करना...',
   'canvas.mindClassroom.queue.transcriptBranch': 'शाखा {name} के लिए पाठ योजनाएँ लिखना',
@@ -1000,12 +1106,15 @@ export default {
   'canvas.mindClassroom.queue.generating': 'स्लाइड शो जनरेट किया जा रहा है...',
   'canvas.mindClassroom.queue.loadingVoice': 'आवाजें लोड हो रही हैं...',
   'canvas.mindClassroom.queue.ready': 'लेक्चर शुरू कर सकते हैं',
-  'canvas.mindClassroom.queue.readyHint': 'व्याख्यान नोट्स/पाठ योजनाएँ तैयार हैं और व्याख्यान शुरू हो सकता है।',
+  'canvas.mindClassroom.queue.readyHint':
+    'व्याख्यान नोट्स/पाठ योजनाएँ तैयार हैं और व्याख्यान शुरू हो सकता है।',
   'canvas.mindClassroom.queue.failed': 'तैयारी की विफलता को स्पष्ट करें',
   'canvas.mindClassroom.queue.cancel': 'कतार रद्द करें',
   'canvas.mindClassroom.queue.restart': 'Restart',
-  'canvas.mindClassroom.queue.restartHint': 'Regenerate the script / lesson plan with the current settings',
-  'canvas.mindClassroom.queue.guestHint': 'आगंतुक स्पष्टीकरण के लिए स्थानीय टेम्पलेट का उपयोग करते हैं; लॉग इन करने के बाद, इंजन व्याख्यान नोट्स/शिक्षण योजनाएँ तैयार करता है।',
+  'canvas.mindClassroom.queue.restartHint':
+    'Regenerate the script / lesson plan with the current settings',
+  'canvas.mindClassroom.queue.guestHint':
+    'आगंतुक स्पष्टीकरण के लिए स्थानीय टेम्पलेट का उपयोग करते हैं; लॉग इन करने के बाद, इंजन व्याख्यान नोट्स/शिक्षण योजनाएँ तैयार करता है।',
   'canvas.mindClassroom.queue.loginRequired': 'कृपया स्पष्टीकरण शुरू करने से पहले लॉग इन करें।',
   'canvas.mindClassroom.queue.preparing': 'समझाने की तैयारी...',
   'canvas.mindClassroom.settings.masteryTitle': 'मैं इस तस्वीर से कितना परिचित हूं',
@@ -1014,15 +1123,20 @@ export default {
   'canvas.mindClassroom.settings.mastery.teach.title': 'पाठ की तैयारी एवं अध्यापन',
   'canvas.mindClassroom.settings.presentationTitle': 'मैं कैसे स्पष्टीकरण प्रस्तुत करना चाहता हूँ',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'कैनवस वॉयस टूर',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'मानचित्र कैनवास पर ऑडियो स्पष्टीकरण पर ध्यान केंद्रित करें, नोड द्वारा मुख्य शाखा या नोड का चयन करें।',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    'मानचित्र कैनवास पर ऑडियो स्पष्टीकरण पर ध्यान केंद्रित करें, नोड द्वारा मुख्य शाखा या नोड का चयन करें।',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'स्लाइड स्पष्टीकरण',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'एआई तुलना के लिए बाईं ओर एक मानचित्र और दाईं ओर पृष्ठ-मोड़ने वाले स्पष्टीकरण के साथ स्लाइड उत्पन्न करता है।',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': 'विकास के तहत, जल्द ही ऑनलाइन होगा',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    'एआई तुलना के लिए बाईं ओर एक मानचित्र और दाईं ओर पृष्ठ-मोड़ने वाले स्पष्टीकरण के साथ स्लाइड उत्पन्न करता है।',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
+    'विकास के तहत, जल्द ही ऑनलाइन होगा',
   'canvas.mindClassroom.settings.tourScopeTitle': 'यात्रा विवरणात्मकता',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'मास्टर शाखा द्वारा',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'प्रथम स्तर की शाखाओं को चरण दर चरण सिखाया जाता है और लय अधिक स्थिर होती है।',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
+    'प्रथम स्तर की शाखाओं को चरण दर चरण सिखाया जाता है और लय अधिक स्थिर होती है।',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'नोड द्वारा नोड',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'गहन पढ़ने के लिए उपयुक्त, प्रत्येक नोड की गहराई में जाएँ।',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc':
+    'गहन पढ़ने के लिए उपयुक्त, प्रत्येक नोड की गहराई में जाएँ।',
   'canvas.mindClassroom.settings.slideStyleTitle': 'स्लाइड शो शैली',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'सार्वभौमिक स्लाइड',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'ब्लैकबोर्ड रिपोर्ट',
@@ -1040,10 +1154,12 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': 'गहन पढ़ना',
   'canvas.mindClassroom.settings.tone.examples': 'समृद्ध उदाहरण',
   'canvas.mindClassroom.settings.tone.exam_outline': 'परीक्षा की रूपरेखा',
-  'canvas.mindClassroom.lecture.needDiagram': 'कृपया स्पष्टीकरण शुरू करने से पहले कैनवास पर एक माइंड मैप बनाएं।',
+  'canvas.mindClassroom.lecture.needDiagram':
+    'कृपया स्पष्टीकरण शुरू करने से पहले कैनवास पर एक माइंड मैप बनाएं।',
   'canvas.mindClassroom.lecture.emptySteps': 'वर्तमान मानचित्र में समझाने के लिए कोई नोड नहीं हैं।',
   'canvas.mindClassroom.lecture.cancelled': 'ट्यूटोरियल कतार रद्द कर दी गई है.',
-  'canvas.mindClassroom.lecture.queueFailed': 'ट्यूटोरियल तैयारी विफल रही, कृपया बाद में पुनः प्रयास करें।',
+  'canvas.mindClassroom.lecture.queueFailed':
+    'ट्यूटोरियल तैयारी विफल रही, कृपया बाद में पुनः प्रयास करें।',
   'canvas.mindClassroom.lecture.pause': 'विराम',
   'canvas.mindClassroom.lecture.resume': 'जारी रखना',
   'canvas.mindClassroom.lecture.prev': 'पिछला अनुभाग',
@@ -1053,33 +1169,53 @@ export default {
   'canvas.mindClassroom.lecture.unmute': 'ज़ोर से पढ़ना शुरू करें',
   'canvas.mindClassroom.lecture.script.noBranches': 'कुछ बिंदु',
   'canvas.mindClassroom.lecture.script.leafNode': 'इस शाखा के बारे में अभी कोई और विवरण नहीं है।',
-  'canvas.mindClassroom.lecture.script.overview.classroom': 'नमस्ते सहपाठियों। आज हम "{topic}" के आसपास सीख रहे हैं, "{audience}" दर्शकों का सामना कर रहे हैं, और "{mastery}" की गति से आगे बढ़ रहे हैं। पूरी तस्वीर में मुख्य रूप से शामिल हैं: {branches}। पहले समग्र चित्र को देखें, और फिर उसे टुकड़े-टुकड़े करके सुलझाएं।',
-  'canvas.mindClassroom.lecture.script.overview.story': 'सबसे पहले कहानी के शीर्षक के रूप में "{topic}" के बारे में सोचें। "{audience}" का सामना करते हुए, हम पूरी तस्वीर से विवरण की ओर बढ़ेंगे: कहानी में ये अध्याय हैं-{branches}।',
-  'canvas.mindClassroom.lecture.script.overview.dialogue': 'आइए पहले "{topic}" को एक साथ देखें। यदि आप "{audience}" होते, तो आप सबसे पहले किन भागों पर ध्यान देते? पूरी तस्वीर में मोटे तौर पर शामिल हैं: {branches}। हम सवाल पूछते और सवालों के जवाब देते हुए नीचे चले गए।',
-  'canvas.mindClassroom.lecture.script.overview.socratic': 'अभी निष्कर्ष याद करने में जल्दबाजी न करें। "{topic}" का सामना करते हुए, आपको क्यों लगता है कि यह चित्र बनाने लायक है? हम "{mastery}" की गहराई का अनुसरण करते हैं और इन शाखाओं से पूछते हैं: {branches}।',
-  'canvas.mindClassroom.lecture.script.overview.fast': '"{topic}" ({audience}) पर एक नज़र डालें। ट्रंक: {branches}। इसके बाद एक-एक करके बिंदु पर पहुंचें।',
-  'canvas.mindClassroom.lecture.script.overview.close_read': 'गहन पठन आरंभ: विषय "{topic}" है। कृपया पहले समग्र संरचना को समझें - {branches} - और फिर प्रत्येक शाखा में इसे ध्यान से पढ़ें। श्रोता सेटिंग: {audience}।',
-  'canvas.mindClassroom.lecture.script.overview.examples': 'एक उदाहरण से आरंभ करें. थीम "{topic}" को जीवन या कक्षा के एक दृश्य के रूप में सोचा जा सकता है; पूरे चित्र की शाखाएँ अलग-अलग दृश्यों की तरह हैं: {branches}। श्रोता: {audience}।',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'परीक्षण बिंदुओं का अवलोकन: "{topic}"। रूपरेखा के अनुसार मुख्य बिंदुओं को रिकॉर्ड करें——{branches}। कठिनाई "{audience}" से संरेखित है और लय "{mastery}" है।',
-  'canvas.mindClassroom.lecture.script.branch.classroom': 'शाखा {index}/{total}: "{title}" को देखें। इसके नीचे भी: {children}। कृपया इस अनुभाग की संपूर्ण भूमिका को समझने के लिए मानचित्र स्थिति देखें।',
-  'canvas.mindClassroom.lecture.script.branch.story': 'कहानी अध्याय {index} "{title}" तक पहुँचती है। इस अध्याय में प्रकट हुआ: {children}। इस बारे में सोचें कि वे चित्र के समग्र कथानक को कैसे आगे बढ़ाते हैं।',
-  'canvas.mindClassroom.lecture.script.branch.dialogue': 'मुझे आपसे यह पूछना है: जब आप "{title}" का उल्लेख करते हैं, तो आप क्या सोचते हैं? आरेख देता है: {children}। आइए तुलना करें ({index}/{total})।',
-  'canvas.mindClassroom.lecture.script.branch.socratic': 'अनुवर्ती प्रश्न: "{title}" को एक अलग शाखा होने की आवश्यकता क्यों है? उपबिंदु "{children}" के साथ इसका क्या संबंध है? कृपया पहले स्वयं इसका उत्तर दें, और फिर मानचित्र ({index}/{total}) देखें।',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    'नमस्ते सहपाठियों। आज हम "{topic}" के आसपास सीख रहे हैं, "{audience}" दर्शकों का सामना कर रहे हैं, और "{mastery}" की गति से आगे बढ़ रहे हैं। पूरी तस्वीर में मुख्य रूप से शामिल हैं: {branches}। पहले समग्र चित्र को देखें, और फिर उसे टुकड़े-टुकड़े करके सुलझाएं।',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    'सबसे पहले कहानी के शीर्षक के रूप में "{topic}" के बारे में सोचें। "{audience}" का सामना करते हुए, हम पूरी तस्वीर से विवरण की ओर बढ़ेंगे: कहानी में ये अध्याय हैं-{branches}।',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    'आइए पहले "{topic}" को एक साथ देखें। यदि आप "{audience}" होते, तो आप सबसे पहले किन भागों पर ध्यान देते? पूरी तस्वीर में मोटे तौर पर शामिल हैं: {branches}। हम सवाल पूछते और सवालों के जवाब देते हुए नीचे चले गए।',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    'अभी निष्कर्ष याद करने में जल्दबाजी न करें। "{topic}" का सामना करते हुए, आपको क्यों लगता है कि यह चित्र बनाने लायक है? हम "{mastery}" की गहराई का अनुसरण करते हैं और इन शाखाओं से पूछते हैं: {branches}।',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    '"{topic}" ({audience}) पर एक नज़र डालें। ट्रंक: {branches}। इसके बाद एक-एक करके बिंदु पर पहुंचें।',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    'गहन पठन आरंभ: विषय "{topic}" है। कृपया पहले समग्र संरचना को समझें - {branches} - और फिर प्रत्येक शाखा में इसे ध्यान से पढ़ें। श्रोता सेटिंग: {audience}।',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    'एक उदाहरण से आरंभ करें. थीम "{topic}" को जीवन या कक्षा के एक दृश्य के रूप में सोचा जा सकता है; पूरे चित्र की शाखाएँ अलग-अलग दृश्यों की तरह हैं: {branches}। श्रोता: {audience}।',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    'परीक्षण बिंदुओं का अवलोकन: "{topic}"। रूपरेखा के अनुसार मुख्य बिंदुओं को रिकॉर्ड करें——{branches}। कठिनाई "{audience}" से संरेखित है और लय "{mastery}" है।',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    'शाखा {index}/{total}: "{title}" को देखें। इसके नीचे भी: {children}। कृपया इस अनुभाग की संपूर्ण भूमिका को समझने के लिए मानचित्र स्थिति देखें।',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    'कहानी अध्याय {index} "{title}" तक पहुँचती है। इस अध्याय में प्रकट हुआ: {children}। इस बारे में सोचें कि वे चित्र के समग्र कथानक को कैसे आगे बढ़ाते हैं।',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    'मुझे आपसे यह पूछना है: जब आप "{title}" का उल्लेख करते हैं, तो आप क्या सोचते हैं? आरेख देता है: {children}। आइए तुलना करें ({index}/{total})।',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    'अनुवर्ती प्रश्न: "{title}" को एक अलग शाखा होने की आवश्यकता क्यों है? उपबिंदु "{children}" के साथ इसका क्या संबंध है? कृपया पहले स्वयं इसका उत्तर दें, और फिर मानचित्र ({index}/{total}) देखें।',
   'canvas.mindClassroom.lecture.script.branch.fast': '"{title}" → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read': '"{title}" को गहनता से पढ़ें। कृपया अधीनस्थ जानकारी को एक-एक करके पढ़ें: {children}। यह शाखा पैराग्राफ {index}/{total} में है। शब्दांकन और स्तर पर ध्यान दें.',
-  'canvas.mindClassroom.lecture.script.branch.examples': '"{title}" को समझने में सहायता के लिए एक उदाहरण दें: आप इसे {children} के साथ एक विशिष्ट दृश्य के रूप में सोच सकते हैं। हम शाखा {index}/{total} पर हैं।',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'परीक्षण बिंदु {index}/{total}: "{title}"। अधीनस्थ बिंदु: {children}। समीक्षा करते समय पहले शीर्षक याद रखें और फिर विवरण भरें।',
-  'canvas.mindClassroom.lecture.script.closing.first_look': 'समग्र समीक्षा: हमें अभी "{topic}" के ढांचे के बारे में पता चला। यह अनुशंसा की जाती है कि आप पूरी तस्वीर को फिर से स्कैन करें, दो या तीन बिंदुओं को चिह्नित करें जो अभी भी आपके लिए अपरिचित हैं, और अगली बार वहीं से शुरू करें।',
-  'canvas.mindClassroom.lecture.script.closing.review': 'समीक्षा निष्कर्ष: क्या आप "{topic}" पुस्तक को बंद करके मुख्य बिंदुओं को दोबारा बता सकते हैं? यदि कोई अनुभाग अटक जाता है, तो बस मानचित्र पर अनुभाग पर वापस जाएँ और उसे फिर से देखें।',
-  'canvas.mindClassroom.lecture.script.closing.teach': 'पाठ की तैयारी और समापन: "{topic}" को "{audience}" पढ़ाते समय, आप मानचित्र के अनुक्रम का पालन कर सकते हैं: उद्घाटन - विस्तार - समापन। आप एक निश्चित शाखा को कक्षा प्रश्नों में भी विभाजित कर सकते हैं।',
-  'canvas.mindMapSideToolbar.oneSentenceIntro': 'एक वाक्य में विषय/संपादन — मानचित्र जनरेट या सुधार',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    '"{title}" को गहनता से पढ़ें। कृपया अधीनस्थ जानकारी को एक-एक करके पढ़ें: {children}। यह शाखा पैराग्राफ {index}/{total} में है। शब्दांकन और स्तर पर ध्यान दें.',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    '"{title}" को समझने में सहायता के लिए एक उदाहरण दें: आप इसे {children} के साथ एक विशिष्ट दृश्य के रूप में सोच सकते हैं। हम शाखा {index}/{total} पर हैं।',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    'परीक्षण बिंदु {index}/{total}: "{title}"। अधीनस्थ बिंदु: {children}। समीक्षा करते समय पहले शीर्षक याद रखें और फिर विवरण भरें।',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    'समग्र समीक्षा: हमें अभी "{topic}" के ढांचे के बारे में पता चला। यह अनुशंसा की जाती है कि आप पूरी तस्वीर को फिर से स्कैन करें, दो या तीन बिंदुओं को चिह्नित करें जो अभी भी आपके लिए अपरिचित हैं, और अगली बार वहीं से शुरू करें।',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    'समीक्षा निष्कर्ष: क्या आप "{topic}" पुस्तक को बंद करके मुख्य बिंदुओं को दोबारा बता सकते हैं? यदि कोई अनुभाग अटक जाता है, तो बस मानचित्र पर अनुभाग पर वापस जाएँ और उसे फिर से देखें।',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    'पाठ की तैयारी और समापन: "{topic}" को "{audience}" पढ़ाते समय, आप मानचित्र के अनुक्रम का पालन कर सकते हैं: उद्घाटन - विस्तार - समापन। आप एक निश्चित शाखा को कक्षा प्रश्नों में भी विभाजित कर सकते हैं।',
+  'canvas.mindMapSideToolbar.oneSentenceIntro':
+    'एक वाक्य में विषय/संपादन — मानचित्र जनरेट या सुधार',
   'canvas.mindMapSideToolbar.documentSummary': 'दस्तावेज़ सारांश',
   'fileCenter.intro': 'पैकेज=this आरेख के स्रोत। फ़ाइल, नोट, वेब — शाखाएँ इनसे पूर्ण।',
   'fileCenter.defaultPackageName': 'शीर्षक रहित package',
   'fileCenter.packageNameLabel': 'पैकेज नाम',
   'fileCenter.createPackage': 'बनाएँ package',
   'fileCenter.deletePackage': 'हटाएँ package',
-  'fileCenter.confirmDeletePackage': 'हटाएँ this package and all of its sources? This cannot be undone.',
+  'fileCenter.confirmDeletePackage':
+    'हटाएँ this package and all of its sources? This cannot be undone.',
   'fileCenter.corpusStatus': '{total} में से {completed} स्रोत अनुक्रमित',
   'fileCenter.noSources': 'कोई sources yet. Add one below.',
   'fileCenter.addSource': 'जोड़ें source',
@@ -1091,7 +1227,8 @@ export default {
   'fileCenter.pastePlaceholder': 'स्रोत हेतु नोट/पाठ चिपकाएँ…',
   'fileCenter.webUrlPlaceholder': 'https://example.com/article',
   'fileCenter.webContentPlaceholder': 'अनुक्रमण हेतु पृष्ठ पाठ चिपकाएँ/लिखें…',
-  'fileCenter.saveDiagramForRag': 'सहेजें this diagram to link the package and enable RAG retrieval.',
+  'fileCenter.saveDiagramForRag':
+    'सहेजें this diagram to link the package and enable RAG retrieval.',
   'fileCenter.statusReady': 'तैयार · RAG सक्रिय',
   'fileCenter.statusPending': 'जोड़ा',
   'fileCenter.statusIndexing': 'इंडेक्सिंग…',
@@ -1109,9 +1246,12 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': 'कोई nodes yet',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI जनरेट',
   'canvas.mindMapSideToolbar.outlineEditHint': 'इनलाइन संपादन हेतु पंक्ति पर डबल-क्लिक',
-  'canvas.mindMapSideToolbar.outlineIntro': 'संपादित structure in the outline — drag to reorder, paste lines to bulk-add',
-  'canvas.mindMapSideToolbar.outlineDragHint': 'खींचें to reorder; drop above/below for siblings, center to nest as child',
-  'canvas.mindMapSideToolbar.outlinePasteHint': 'चुनें a node and paste multi-line text to add sibling nodes in bulk',
+  'canvas.mindMapSideToolbar.outlineIntro':
+    'संपादित structure in the outline — drag to reorder, paste lines to bulk-add',
+  'canvas.mindMapSideToolbar.outlineDragHint':
+    'खींचें to reorder; drop above/below for siblings, center to nest as child',
+  'canvas.mindMapSideToolbar.outlinePasteHint':
+    'चुनें a node and paste multi-line text to add sibling nodes in bulk',
   'canvas.mindMapPaste.inserted': '{count} sibling नोड डाले',
   'canvas.mindMapPaste.truncated': 'पंक्ति सीमा — केवल पहली 50 पंक्तियाँ',
   'canvas.mindMapSideToolbar.realtimeSync': 'लाइव सिंक',
@@ -1121,14 +1261,16 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'हटाएँ branch',
   'canvas.mindMapSideToolbar.expandBranch': 'विस्तृत branch',
   'canvas.mindMapSideToolbar.collapseBranch': 'संक्षिप्त branch',
-  'canvas.mindMapSideToolbar.aiGenerateDesc': 'विस्तृत the mind map from the current topic in one sentence.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc':
+    'विस्तृत the mind map from the current topic in one sentence.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'सक्षम learning sheet',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'अध्ययन पत्र से बाहर',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'पूर्ण आरेख पुनर्स्थापित',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
     'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro': 'चुनें how to create a learning sheet for practice and review.',
+  'canvas.mindMapSideToolbar.learningSheetIntro':
+    'चुनें how to create a learning sheet for practice and review.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
     'Blank every node except the center topic; reference answers appear below the diagram.',
@@ -1137,11 +1279,14 @@ export default {
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': '~20% नोड रिक्त; उत्तर आरेख के नीचे।',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} नोड रिक्त · Esc बंद',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'कस्टम blanks',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'कर्सर हथौड़ा — रिक्त/पुनर्स्थापित हेतु नोड क्लिक।',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
+    'कर्सर हथौड़ा — रिक्त/पुनर्स्थापित हेतु नोड क्लिक।',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'सक्रिय · {count} node(s) blanked',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'चुनें mode · click nodes on the canvas',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
+    'चुनें mode · click nodes on the canvas',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'कस्टम blank mode',
-  'canvas.mindMapSideToolbar.learningSheetPickHint': 'क्लिक to blank, click again to restore · {count} blanked · Esc to exit',
+  'canvas.mindMapSideToolbar.learningSheetPickHint':
+    'क्लिक to blank, click again to restore · {count} blanked · Esc to exit',
   'canvas.mindMapSideToolbar.learningSheetPickDone': 'पूर्ण',
   'canvas.mindMapSideToolbar.learningSheetProtectedNode': 'विषय और संरचनात्मक नोड रिक्त नहीं',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': 'रिक्त नोड',
@@ -1149,7 +1294,8 @@ export default {
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': 'नोड पाठ पुनर्स्थापित',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': 'छिपाएँ reference answers',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': 'संदर्भ उत्तर रखें',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': 'बंद होने पर, उत्तर नॉकआउट क्षेत्र में कैनवास पर प्रदर्शित नहीं होता है',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
+    'बंद होने पर, उत्तर नॉकआउट क्षेत्र में कैनवास पर प्रदर्शित नहीं होता है',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'कैनवास उत्तर',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': 'दिखाएँ',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': 'छिपाएँ',
@@ -1319,7 +1465,8 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'नहीं हो सका: load school sessions',
   'mindgraphLanding.networkError': 'नेटवर्क त्रुटि',
   'mindgraphLanding.networkErrorJoin': 'नेटवर्क त्रुटि, शामिल नहीं',
-  'mindgraphLanding.orgSessionsEmpty': 'कोई school sessions right now. A colleague must start “School collaboration” on the canvas.',
+  'mindgraphLanding.orgSessionsEmpty':
+    'कोई school sessions right now. A colleague must start “School collaboration” on the canvas.',
   'mindgraphLanding.participantsOnline': '{n} ऑनलाइन',
   'mindgraphLanding.schoolCollab': 'स्कूल सहयोग',
   'mindgraphLanding.sharedCodeHint': 'दर्ज the invitation code (xxx-xxx) to join their session.',
@@ -1332,6 +1479,7 @@ export default {
   'canvasPage.collabParticipantsAria': 'सहयोग प्रतिभागी',
   'canvasPage.collabConnected': 'कनेक्ट',
   'canvas.topBar.viewOnly': 'देखें only',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': 'और',
   'canvas.ribbon.file': 'दस्तावेज़',
   'canvas.ribbon.nodes': 'नोड',
@@ -1386,7 +1534,8 @@ export default {
   'canvas.ribbon.tip.docGenerate': 'मानचित्र बनाने के लिए फ़ाइल अपलोड करें या टेक्स्ट पेस्ट करें',
   'canvas.ribbon.tip.webGenerate': 'वेब पेजों को क्रॉल करें और मानचित्र बनाएं',
   'canvas.ribbon.tip.voiceSummary': 'रिकॉर्डिंग के बाद मैप बनाएं',
-  'canvas.ribbon.tip.waterfall': 'चयनित नोड के लिए शाखाओं की अनुशंसा करें - कैनवास पर खींचा जा सकता है',
+  'canvas.ribbon.tip.waterfall':
+    'चयनित नोड के लिए शाखाओं की अनुशंसा करें - कैनवास पर खींचा जा सकता है',
   'canvas.ribbon.tip.oneSentence': 'एक वाक्य में विषय या संशोधन का वर्णन करें',
   'canvas.ribbon.tip.aiSubgraph': 'चयनित नोड से उप-शाखा का विस्तार करें',
   'canvas.ribbon.tip.addChild': 'चयनित नोड के अंतर्गत एक उपविषय जोड़ें',
@@ -1398,9 +1547,21 @@ export default {
   'canvas.ribbon.tip.presentation': 'इस मानचित्र को पूर्ण स्क्रीन में प्रदर्शित करें',
   'canvas.ribbon.tip.explain': 'AI को चयनित नोड्स की व्याख्या करने दें',
   'canvas.ribbon.tip.classroom': 'एआई शिक्षक को इस मानचित्र के माध्यम से आपका मार्गदर्शन करने दें',
-  'canvas.ribbon.tip.collabOrg': 'हमारे विद्यालय के सहकर्मियों को एक साथ संपादित करने के लिए आमंत्रित करें',
+  'canvas.ribbon.tip.collabOrg':
+    'हमारे विद्यालय के सहकर्मियों को एक साथ संपादित करने के लिए आमंत्रित करें',
   'canvas.ribbon.tip.collabCross': 'इस मानचित्र को संपादित करने के लिए सभी स्कूलों में सहयोग करें',
   'canvas.ribbon.tip.collabOff': 'वर्तमान सहयोग सत्र समाप्त करें',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': 'चयनित नोड टेक्स्ट को बोल्ड करें',
   'canvas.ribbon.tip.italic': 'चयनित नोड टेक्स्ट को इटैलिक में सेट करें',
   'canvas.ribbon.tip.alignLeft': 'नोड पाठ बाईं ओर संरेखित',
@@ -1452,12 +1613,14 @@ export default {
   'canvas.ribbon.docGenerate': 'दस्तावेज़ निर्माण',
   'canvas.ribbon.webGenerate': 'वेब लिंक जनरेशन',
   'canvas.ribbon.voiceSummary': 'रिकॉर्डिंग सारांश',
-  'canvas.ribbon.sourceLocked': 'वर्तमान मानचित्र ने स्रोत के रूप में {source} का उपयोग किया है। कृपया किसी अन्य पीढ़ी पद्धति में बदलने से पहले एक नया मानचित्र बनाएं।',
+  'canvas.ribbon.sourceLocked':
+    'वर्तमान मानचित्र ने स्रोत के रूप में {source} का उपयोग किया है। कृपया किसी अन्य पीढ़ी पद्धति में बदलने से पहले एक नया मानचित्र बनाएं।',
   'canvas.ribbon.sourceKind.doc': 'दस्तावेज़',
   'canvas.ribbon.sourceKind.web': 'जाल संपर्क',
   'canvas.ribbon.sourceKind.voice': 'रिकॉर्डिंग',
   'canvas.ribbon.assocLine': 'संबद्ध पंक्ति',
-  'canvas.ribbon.assocLineHint': 'कनेक्ट करने के लिए दूसरे नोड पर क्लिक करें. रद्द करने के लिए Esc या रिक्त कैनवास.',
+  'canvas.ribbon.assocLineHint':
+    'कनेक्ट करने के लिए दूसरे नोड पर क्लिक करें. रद्द करने के लिए Esc या रिक्त कैनवास.',
   'canvas.ribbon.assocLineSameSide': 'एसोसिएशन लाइनें केवल एक ही तरफ के नोड्स को जोड़ सकती हैं',
   'canvas.ribbon.assocLineDelete': 'संबंधित पंक्तियाँ हटाएँ',
   'canvas.ribbon.summary': 'सारांश',
@@ -1465,7 +1628,8 @@ export default {
   'canvas.ribbon.insertIcon': 'आइकन',
   'canvas.ribbon.insertLink': 'जोड़ना',
   'canvas.ribbon.makeLearningSheet': 'एक स्टडी शीट बनाएं',
-  'canvas.ribbon.makeLearningSheetHint': 'समीक्षा को अधिक कुशल बनाने के लिए एक क्लिक से अध्ययन पत्रक बनाएं',
+  'canvas.ribbon.makeLearningSheetHint':
+    'समीक्षा को अधिक कुशल बनाने के लिए एक क्लिक से अध्ययन पत्रक बनाएं',
   'canvas.ribbon.selectTwoNodes': 'कृपया पहले दो नोड चुनें',
   'canvas.ribbon.insertComingSoon': 'प्रविष्टि क्षमता शीघ्र ही उपलब्ध होगी',
   'canvas.ribbon.summaryNeedSiblings': 'कृपया एक ही मूल नोड के अंतर्गत लगातार नोड्स का चयन करें',
@@ -1477,7 +1641,8 @@ export default {
   'canvas.ribbon.imageUrl': 'छवि पता',
   'canvas.ribbon.imagePick': 'चित्र चुनें',
   'canvas.ribbon.imageInvalid': 'कृपया एक वैध छवि पता दर्ज करें या एक फ़ाइल चुनें',
-  'canvas.ribbon.imageTooLarge': 'छवि बहुत बड़ी है, कृपया छोटी फ़ाइल में बदलें या URL का उपयोग करें',
+  'canvas.ribbon.imageTooLarge':
+    'छवि बहुत बड़ी है, कृपया छोटी फ़ाइल में बदलें या URL का उपयोग करें',
   'canvas.ribbon.imageConfirm': 'चित्र जोड़ें',
   'canvas.ribbon.clearIcon': 'आइकन हटाएं',
   'canvas.ribbon.openLink': 'खुला लिंक',
@@ -1500,16 +1665,19 @@ export default {
   'canvas.ribbon.aiHero.chat.line2': 'एक क्लिक से बातचीत आयात करें और मानचित्र तैयार करें',
   'canvas.ribbon.aiHero.classroom.ribbon': 'सीखने की कलाकृति',
   'canvas.ribbon.aiHero.classroom.title': 'थिंकिंग लेक्चर हॉल खोलें',
-  'canvas.ribbon.aiHero.classroom.line1': 'एआई शिक्षक को इस माइंड मैप के बारे में आपसे बात करने दें',
+  'canvas.ribbon.aiHero.classroom.line1':
+    'एआई शिक्षक को इस माइंड मैप के बारे में आपसे बात करने दें',
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'ब्रैकेट को खोखला कर दें',
   'canvas.ribbon.aiHero.learningSheet.title': 'खोखला ब्रैकेट आरेख',
-  'canvas.ribbon.aiHero.learningSheet.line1': 'कक्षा अभ्यास और समीक्षा के लिए उपयुक्त, यादृच्छिक या अनुकूलित खोखलापन चुनें',
+  'canvas.ribbon.aiHero.learningSheet.line1':
+    'कक्षा अभ्यास और समीक्षा के लिए उपयुक्त, यादृच्छिक या अनुकूलित खोखलापन चुनें',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'बुद्धिशीलता',
   'canvas.ribbon.aiHero.brainstorm.title': 'एआई विचार-मंथन',
   'canvas.ribbon.aiHero.brainstorm.line1': 'शाखा सुझाव उत्पन्न करने के लिए नोड का चयन करें',
-  'canvas.ribbon.aiHero.brainstorm.line2': 'इसकी जाँच करें और इसे मानचित्र पर लागू करें, या इसे कैनवास पर खींचें।',
+  'canvas.ribbon.aiHero.brainstorm.line2':
+    'इसकी जाँच करें और इसे मानचित्र पर लागू करें, या इसे कैनवास पर खींचें।',
   'canvas.ribbon.aiHero.oneSentence.ribbon': 'संवाद बदलें',
   'canvas.ribbon.aiHero.oneSentence.title': 'संवादी संशोधन',
   'canvas.ribbon.aiHero.oneSentence.line1': 'विषय या संशोधन अनुरोध का एक वाक्य में वर्णन करें',
@@ -1528,25 +1696,27 @@ export default {
   'canvas.hero.icon.line2': '',
   'canvas.hero.math.ribbon': 'डालना',
   'canvas.hero.math.title': 'सूत्र सम्मिलित करें',
-  'canvas.hero.math.line1': 'LaTeX में प्रवेश करने के लिए फॉर्मूला कीबोर्ड का उपयोग करें, और फिर पुष्टि के बाद नोड लिखें।',
+  'canvas.hero.math.line1':
+    'LaTeX में प्रवेश करने के लिए फॉर्मूला कीबोर्ड का उपयोग करें, और फिर पुष्टि के बाद नोड लिखें।',
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': 'सहयोग',
   'canvas.hero.collab.title': 'ऑनलाइन सहयोग',
-  'canvas.hero.collab.line1': 'सहकर्मियों को एक साथ चित्रों को संशोधित करने के लिए आमंत्रित करने के लिए इंट्रा-स्कूल या आमंत्रण कोड सहयोग सक्षम करें',
+  'canvas.hero.collab.line1':
+    'सहकर्मियों को एक साथ चित्रों को संशोधित करने के लिए आमंत्रित करने के लिए इंट्रा-स्कूल या आमंत्रण कोड सहयोग सक्षम करें',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': 'निर्यात',
   'canvas.hero.worksheet.title': 'डीओसी/पीडीएफ में निर्यात करें',
-  'canvas.hero.worksheet.line1': 'स्टडी शीट हेडर और पेपर विकल्प सेट करें, पूर्वावलोकन करें और निर्यात करें',
+  'canvas.hero.worksheet.line1':
+    'स्टडी शीट हेडर और पेपर विकल्प सेट करें, पूर्वावलोकन करें और निर्यात करें',
   'canvas.hero.worksheet.line2': '',
   'canvas.hero.communityExport.ribbon': 'शेयर करना',
   'canvas.hero.communityExport.title': 'समुदाय में साझा करें',
-  'canvas.hero.communityExport.line1': 'शीर्षक और श्रेणी भरें, एक थंबनेल बनाएं और उसे प्रकाशित करें',
+  'canvas.hero.communityExport.line1':
+    'शीर्षक और श्रेणी भरें, एक थंबनेल बनाएं और उसे प्रकाशित करें',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'सामुदायिक पोस्ट संपादित करें',
   'canvas.hero.slotFull.ribbon': 'गैलरी',
   'canvas.hero.slotFull.title': 'गैलरी भरी हुई है',
   'canvas.hero.slotFull.line1': 'कृपया मौजूदा आइकन हटाएं और वर्तमान आइकन सहेजें',
   'canvas.hero.slotFull.line2': '',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
-  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

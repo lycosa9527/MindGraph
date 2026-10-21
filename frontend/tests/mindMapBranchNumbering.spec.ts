@@ -14,14 +14,14 @@ import {
   formatCircledNumber,
   formatMindMapBranchPrefix,
   formatMindMapOutlinePrefix,
-  mindMapClockwiseL1Index,
+  invalidateMindMapBranchNumberMapCache,
   isMindMapBranchNumberingEnabled,
   joinMindMapBranchDisplayText,
+  mindMapBranchNumberMapFromData,
+  mindMapClockwiseL1Index,
   resolveMindMapBranchNumberingNested,
   resolveMindMapBranchNumberingPrefix,
   stripMatchingBranchNumberPrefix,
-  invalidateMindMapBranchNumberMapCache,
-  mindMapBranchNumberMapFromData,
   writeMindMapNumberingLiveFields,
 } from '@/utils/mindMapBranchNumbering'
 
@@ -76,9 +76,7 @@ describe('mindMapBranchNumbering glyphs', () => {
     expect(formatMindMapBranchPrefix([1], 'decimal', 'outline')).toBe('1.')
     expect(formatMindMapBranchPrefix([1, 1], 'decimal', 'outline')).toBe('1.1')
     expect(formatMindMapBranchPrefix([1, 2], 'chinese', 'outline')).toBe('1.2')
-    expect(formatMindMapOutlinePrefix([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])).toBe(
-      '1.2.3.4.5.6.7.8.9.10'
-    )
+    expect(formatMindMapOutlinePrefix([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])).toBe('1.2.3.4.5.6.7.8.9.10')
     expect(formatMindMapBranchPrefix([2, 1], 'upperAlpha', 'lowerAlpha')).toBe('a.')
   })
 
@@ -92,9 +90,7 @@ describe('mindMapBranchNumbering glyphs', () => {
     expect(formatMindMapBranchPrefix([2], 'chineseChapter', 'outline')).toBe('第二章')
     expect(formatMindMapBranchPrefix([1, 1], 'chineseChapter', 'outline')).toBe('1.1')
     expect(formatMindMapBranchPrefix([1, 2], 'chineseChapter', 'chineseChapter')).toBe('第二节')
-    expect(formatMindMapBranchPrefix([1, 1, 3], 'chineseChapter', 'chineseChapter')).toBe(
-      '第三段'
-    )
+    expect(formatMindMapBranchPrefix([1, 1, 3], 'chineseChapter', 'chineseChapter')).toBe('第三段')
     expect(formatMindMapBranchPrefix([3, 2, 4], 'decimal', 'chineseChapter')).toBe('第四段')
   })
 
@@ -107,9 +103,7 @@ describe('mindMapBranchNumbering glyphs', () => {
     expect(formatMindMapBranchPrefix([1], 'chineseArticle', 'outline')).toBe('第一条')
     expect(formatMindMapBranchPrefix([1, 2], 'chineseArticle', 'outline')).toBe('1.2')
     expect(formatMindMapBranchPrefix([1, 2], 'chineseArticle', 'chineseArticle')).toBe('第二款')
-    expect(formatMindMapBranchPrefix([1, 1, 3], 'chineseArticle', 'chineseArticle')).toBe(
-      '第三项'
-    )
+    expect(formatMindMapBranchPrefix([1, 1, 3], 'chineseArticle', 'chineseArticle')).toBe('第三项')
   })
 })
 
@@ -200,7 +194,10 @@ describe('mindMapBranchNumbering text helpers', () => {
     writeMindMapNumberingLiveFields(data, { branch_numbering_prefix: 'chinese' }, data)
     expect(data._mindmap_branch_numbering).toBe(false)
     expect(data._mindmap_branch_numbering_prefix).toBe('chinese')
-    writeMindMapNumberingLiveFields(data, { branch_numbering: true, branch_numbering_prefix: 'circled' })
+    writeMindMapNumberingLiveFields(data, {
+      branch_numbering: true,
+      branch_numbering_prefix: 'circled',
+    })
     expect(data._mindmap_branch_numbering).toBe(true)
     writeMindMapNumberingLiveFields(data, { branch_numbering: false })
     expect(data._mindmap_branch_numbering).toBe(false)
@@ -235,8 +232,7 @@ describe('mindMapBranchNumbering text helpers', () => {
   })
 
   it('uses a taller wrap estimate for 第一章 than 1. on a long label', () => {
-    const long =
-      '这是一段足够长的思维导图分支文字用来触发换行限制检查一二三四五六七八九十'
+    const long = '这是一段足够长的思维导图分支文字用来触发换行限制检查一二三四五六七八九十'
     const id = 'branch-r-1-0'
     const chapterH = measureNumberedBranchHeight(long, '第一章', id)
     const decimalH = measureNumberedBranchHeight(long, '1.', id)

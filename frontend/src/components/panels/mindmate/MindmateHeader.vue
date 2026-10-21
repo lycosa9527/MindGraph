@@ -6,8 +6,7 @@ import { ElButton, ElDropdown, ElDropdownMenu, ElIcon, ElScrollbar } from 'eleme
 import { Close, Delete, DocumentCopy, Menu } from '@element-plus/icons-vue'
 
 import I18nText from '@/components/common/I18nText.vue'
-import MindmateContactsToggleButton from '@/components/mindmate/MindmateContactsToggleButton.vue'
-import MindmateSeminarFaces from '@/components/mindmate/MindmateSeminarFaces.vue'
+import MindmateSeminarRosterBar from '@/components/mindmate/MindmateSeminarRosterBar.vue'
 import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
 import { useLanguage } from '@/composables'
 import type { LocaleCode } from '@/i18n/locales'
@@ -25,7 +24,7 @@ const props = withDefaults(
     isLoadingHistory?: boolean
     currentConversationId?: string | null
     showContactsToggle?: boolean
-    contactsOpen?: boolean
+    membersOpen?: boolean
   }>(),
   {
     mode: 'panel',
@@ -36,7 +35,7 @@ const props = withDefaults(
     isLoadingHistory: false,
     currentConversationId: null,
     showContactsToggle: false,
-    contactsOpen: false,
+    membersOpen: false,
   }
 )
 
@@ -45,7 +44,8 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'loadHistory', conversationId: string): void
   (e: 'deleteHistory', conversationId: string): void
-  (e: 'toggleContacts'): void
+  (e: 'toggleMembers'): void
+  (e: 'addMembers'): void
 }>()
 
 const { t, currentLanguage } = useLanguage()
@@ -93,20 +93,13 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
   <div
     class="panel-header h-14 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0"
   >
-    <div class="flex items-center gap-2 min-w-0 flex-1">
-      <h1
-        class="text-sm font-semibold text-gray-800 dark:text-white truncate"
-        :class="{ 'typing-cursor': isTyping }"
-      >
-        {{ title }}
-      </h1>
-    </div>
+    <div class="flex-1 min-w-0" />
     <div class="flex items-center gap-2 shrink-0">
-      <MindmateSeminarFaces v-if="showContactsToggle" />
-      <MindmateContactsToggleButton
+      <MindmateSeminarRosterBar
         v-if="showContactsToggle"
-        :open="contactsOpen"
-        @toggle="emit('toggleContacts')"
+        :members-open="membersOpen"
+        @toggle-members="emit('toggleMembers')"
+        @add-members="emit('addMembers')"
       />
       <!-- History dropdown - panel mode only, left of close -->
       <ElDropdown

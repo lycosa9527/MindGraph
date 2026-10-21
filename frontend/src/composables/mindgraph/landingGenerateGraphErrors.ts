@@ -1,14 +1,13 @@
 /**
  * Landing-specific helpers; core error mapping lives in generateGraphErrors.ts.
  */
-import type { GenerateGraphCompletePayload } from '@/utils/generateGraphStream'
 import {
+  type GenerateGraphFailureDetails,
   extractFailureFromPayload,
   extractSpecFailure,
   resolveGenerateGraphErrorMessage,
   shouldNotifyGenerateGraphError,
   shouldSilenceGenerateGraphError,
-  type GenerateGraphFailureDetails,
 } from '@/utils/generateGraphErrors'
 
 export type LandingFailureDetails = GenerateGraphFailureDetails
@@ -42,10 +41,7 @@ export function topicPreviewFromPrompt(prompt: unknown, maxLength = 48): string 
   return `${trimmed.slice(0, maxLength)}…`
 }
 
-export function resolveDiagramTypeLabel(
-  diagramType: unknown,
-  t: (key: string) => string
-): string {
+export function resolveDiagramTypeLabel(diagramType: unknown, t: (key: string) => string): string {
   const normalized = normalizeDiagramTypeForLabel(diagramType)
   if (!normalized) {
     return String(t('landing.international.diagramTypePending'))

@@ -20,12 +20,7 @@ let listenersBound = false
 export const pwaInstallAvailable = readonly(installAvailable)
 
 export type PwaInstallSurface =
-  | 'chromium'
-  | 'ios'
-  | 'android'
-  | 'safari-macos'
-  | 'firefox'
-  | 'unknown'
+  'chromium' | 'ios' | 'android' | 'safari-macos' | 'firefox' | 'unknown'
 
 export type PwaInstallResult =
   | 'installed'
@@ -72,9 +67,7 @@ export function resetPwaInstallStateForTests(): void {
 }
 
 /** @internal Inject a deferred install prompt for Vitest. */
-export function injectDeferredInstallPromptForTests(
-  outcome: 'accepted' | 'dismissed'
-): void {
+export function injectDeferredInstallPromptForTests(outcome: 'accepted' | 'dismissed'): void {
   deferredPrompt = {
     prompt: () => Promise.resolve(),
     userChoice: Promise.resolve({ outcome }),
@@ -102,8 +95,8 @@ function matchStandaloneDisplayMode(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return false
   }
-  return STANDALONE_DISPLAY_MODES.some((mode) =>
-    window.matchMedia(`(display-mode: ${mode})`).matches
+  return STANDALONE_DISPLAY_MODES.some(
+    (mode) => window.matchMedia(`(display-mode: ${mode})`).matches
   )
 }
 
@@ -224,7 +217,12 @@ function surfaceSupportsInstallUi(surface: PwaInstallSurface): boolean {
   if (surface === 'firefox') {
     return false
   }
-  if (surface === 'ios' || surface === 'android' || surface === 'chromium' || surface === 'safari-macos') {
+  if (
+    surface === 'ios' ||
+    surface === 'android' ||
+    surface === 'chromium' ||
+    surface === 'safari-macos'
+  ) {
     return true
   }
   if (surface === 'unknown' && !computeIsMobileClient()) {

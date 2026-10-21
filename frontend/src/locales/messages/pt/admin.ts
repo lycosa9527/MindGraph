@@ -11,7 +11,8 @@ export default {
   'admin.addAdmin': 'Adicionar Admin',
   'admin.addRoleMember': 'Adicione membro',
   'admin.addRoleMemberModalTitle': 'Adicionar membro-{role}',
-  'admin.roleAddMemberSearchHint': 'Introduza pelo menos 2 caracteres para pesquisar por nome ou telefone',
+  'admin.roleAddMemberSearchHint':
+    'Introduza pelo menos 2 caracteres para pesquisar por nome ou telefone',
   'admin.addUser': 'Adicionar utilizador',
   'admin.adminRoleGranted': 'Função de administrador concedida',
   'admin.adminRoleRevoked': 'Função de administrador revogada',
@@ -24,12 +25,15 @@ export default {
   'admin.apiKey': 'Chave da API',
   'admin.apiKeys': 'Chaves da API',
   'admin.cancel': 'Cancelar',
-  'admin.chartPlaceholderDiagramTypes': 'Espaço reservado para gráfico - Distribuição do tipo de diagrama',
-  'admin.chartPlaceholderUserActivity': 'Espaço reservado para gráfico - Atividade do utilizador ao longo do tempo',
+  'admin.chartPlaceholderDiagramTypes':
+    'Espaço reservado para gráfico - Distribuição do tipo de diagrama',
+  'admin.chartPlaceholderUserActivity':
+    'Espaço reservado para gráfico - Atividade do utilizador ao longo do tempo',
   'admin.confirm': 'Confirmar',
   'admin.copyShareMessage': 'Copiar',
   'admin.copyInvitationCode': 'Código de Convite',
-  'admin.schoolInviteCopyPayload': '{orgName}: Bem-vindo à plataforma Mind Thinking & Teaching AI Agent!\nGuiado pelo Centro de Formação de Pensamento do BNU e co-construído com mais de 100 escolas de aliança de pensamento-desenvolvimento — junte-se a nós para desenvolver competências de pensamento na era da IA.\nComo: abra no computador ou telefone; registe-se com o número de telefone + código de convite pela primeira vez e, em seguida, inicie sessão com a verificação por SMS.\nURL: {siteUrl}\nCódigo de convite da organização: {code}',
+  'admin.schoolInviteCopyPayload':
+    '{orgName}: Bem-vindo à plataforma Mind Thinking & Teaching AI Agent!\nGuiado pelo Centro de Formação de Pensamento do BNU e co-construído com mais de 100 escolas de aliança de pensamento-desenvolvimento — junte-se a nós para desenvolver competências de pensamento na era da IA.\nComo: abra no computador ou telefone; registe-se com o número de telefone + código de convite pela primeira vez e, em seguida, inicie sessão com a verificação por SMS.\nURL: {siteUrl}\nCódigo de convite da organização: {code}',
   'admin.createApiKey': 'Criar nova chave de API',
   'admin.createOrganization': 'Criar Nova Organização',
   'admin.createSchool': 'Criar Escola',
@@ -39,14 +43,16 @@ export default {
   'admin.dashboardLoadError': 'Erro de rede, falha ao carregar as estatísticas do painel',
   'admin.delete': 'Excluir',
   'admin.deleteOrgConfirm': 'Excluir organização {name}? Isso não pode ser desfeito.',
-  'admin.deleteOrgConfirmWithUsers': 'Eliminar a organização {name} e todas as contas de utilizador {count}? Isso não pode ser desfeito.',
+  'admin.deleteOrgConfirmWithUsers':
+    'Eliminar a organização {name} e todas as contas de utilizador {count}? Isso não pode ser desfeito.',
   'admin.deleteOrganization': 'Eliminar organização',
   'admin.description': 'Descrição',
   'admin.diagramGeneration': 'Geração de Diagrama',
   'admin.diagramTypes': 'Tipos de Diagrama',
   'admin.disabled': 'Desativado',
   'admin.displayNameLabel': 'Exibiçao de Barra Lateral',
-  'admin.displayNameHint': 'Texto personalizado mostrado na barra lateral do utilizador (por exemplo, MindGraph Pro). Deixe em branco para usar o nome da escola.',
+  'admin.displayNameHint':
+    'Texto personalizado mostrado na barra lateral do utilizador (por exemplo, MindGraph Pro). Deixe em branco para usar o nome da escola.',
   'admin.edit': 'Edit',
   'admin.editApiKey': 'Editar a Chave da API',
   'admin.editSchool': 'Alterar Escola',
@@ -64,19 +70,24 @@ export default {
   'admin.feature.debateverse': 'Para',
   'admin.feature.debateverseHint': 'Fluxos de debate no estilo dos EUA.',
   'admin.feature.mateLearning': 'Para',
-  'admin.feature.mateLearningHint': 'Prática de decomposição reversa, diagnóstico, remediação e variante.',
+  'admin.feature.mateLearningHint':
+    'Prática de decomposição reversa, diagnóstico, remediação e variante.',
   'admin.feature.gewe': 'Integração Gewe WeChat',
   'admin.feature.geweHint': 'Ferramentas de administrador WeChat (requer suporte de back-end).',
   'admin.feature.knowledgeSpace': 'Espaço do conhecimento (RAG)',
-  'admin.feature.knowledgeSpaceHint': 'Base de conhecimento pessoal; precisa de Qdrant e trabalhadores.',
+  'admin.feature.knowledgeSpaceHint':
+    'Base de conhecimento pessoal; precisa de Qdrant e trabalhadores.',
   'admin.feature.library': 'Biblioteca (livros online)',
   'admin.feature.libraryHint': 'Biblioteca de PDF com comentários.',
   'admin.feature.markets': 'Mercado (catálogo e pedidos)',
-  'admin.feature.marketsHint': 'Modelos/cursos/SKUs de assinatura, checkout do Alipay e notificação.',
+  'admin.feature.marketsHint':
+    'Modelos/cursos/SKUs de assinatura, checkout do Alipay e notificação.',
   'admin.feature.mindbot': 'MindBot (DingTalk → Dificar)',
-  'admin.feature.mindbotHint': 'Retorno de chamada HTTP do robô Enterprise __T0 __, por escola Dify e segredos. Requer URL de retorno de chamada https.',
+  'admin.feature.mindbotHint':
+    'Retorno de chamada HTTP do robô Enterprise __T0 __, por escola Dify e segredos. Requer URL de retorno de chamada https.',
   'admin.feature.mindmateExport': 'MindMate exportação de conversa',
-  'admin.feature.mindmateExportHint': 'MindMate Painel de superadministração para visualizar e exportar o histórico da web __T0 __ e __ T1 __ __ T2 __ __ T3__.',
+  'admin.feature.mindmateExportHint':
+    'MindMate Painel de superadministração para visualizar e exportar o histórico da web __T0 __ e __ T1 __ __ T2 __ __ T3__.',
   'admin.feature.ragChunkTest': 'Teste de chunk RAG',
   'admin.feature.ragChunkTestHint': 'Ferramentas de benchmark dentro do espaço do conhecimento.',
   'admin.feature.smartResponse': 'Resposta inteligente (dispositivos)',
@@ -84,25 +95,32 @@ export default {
   'admin.feature.teacherUsage': 'Análise de uso do professor',
   'admin.feature.teacherUsageHint': 'Painéis de administração para envolvimento do professor.',
   'admin.feature.kittyAgent': 'Kitty Agente (voz e tela)',
-  'admin.feature.kittyAgentHint': 'Kitty modifica a tela usando Fun-ASR, CosyVoice e loops de edição digitados; WebSocket e REST são controlados pelas permissões da organização/usuário.',
-  'admin.feature.mindClassroomSlideDeck': 'Sala de aula pensando·Explicação da apresentação de slides',
-  'admin.feature.mindClassroomSlideDeckHint': 'When off, slide lecture stays visible but greyed out. Off by default.',
+  'admin.feature.kittyAgentHint':
+    'Kitty modifica a tela usando Fun-ASR, CosyVoice e loops de edição digitados; WebSocket e REST são controlados pelas permissões da organização/usuário.',
+  'admin.feature.mindClassroomSlideDeck':
+    'Sala de aula pensando·Explicação da apresentação de slides',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Recursos do modelo:',
   'admin.feature.templateHint': 'Galeria de modelos e APIs relacionadas.',
   'admin.feature.workshopChat': 'Oficina (研习社)',
   'admin.feature.workshopChatHint': 'Canais escolares, tópicos e mensagens diretas.',
   'admin.feature.mindmateCollab': 'Colaboração on-line MindMate',
-  'admin.feature.mindmateCollabHint': 'Sala de chat MindMate AI compartilhada (navegação organizacional + código de convite). Requer a modalidade online_collab.',
+  'admin.feature.mindmateCollabHint':
+    'Sala de chat MindMate AI compartilhada (navegação organizacional + código de convite). Requer a modalidade online_collab.',
   'admin.feature.training': 'O treinamento baseado na escola segue',
-  'admin.feature.trainingHint': 'O professor visitante pode puxar o professor da escola para a mesma página do ícone.',
+  'admin.feature.trainingHint':
+    'O professor visitante pode puxar o professor da escola para a mesma página do ícone.',
   'admin.feature.vod': 'Nuvem sob demanda',
-  'admin.feature.vodHint': 'A biblioteca de mídia sob demanda Tencent Cloud no painel de gerenciamento permite que os administradores escolares naveguem e carreguem vídeos.',
+  'admin.feature.vodHint':
+    'A biblioteca de mídia sob demanda Tencent Cloud no painel de gerenciamento permite que os administradores escolares naveguem e carreguem vídeos.',
   'admin.feature.studentLearningSpace': 'Learning Space',
   'admin.feature.studentLearningSpaceHint':
     'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Não foi possível carregar os sinalizadores de recursos',
   'admin.featureSaveFailed': 'Não foi possível gravar a configuração.',
-  'admin.featuresIntro': 'Alternar sinalizadores do módulo. Os valores são gravados em .env e recarregados em todos os trabalhadores da API para que a interface do usuário e a API verifiquem a atualização sem reiniciar. O Espaço do Conhecimento ainda pode precisar de Qdrant/Aipo que foram iniciados com o processo.',
+  'admin.featuresIntro':
+    'Alternar sinalizadores do módulo. Os valores são gravados em .env e recarregados em todos os trabalhadores da API para que a interface do usuário e a API verifiquem a atualização sem reiniciar. O Espaço do Conhecimento ainda pode precisar de Qdrant/Aipo que foram iniciados com o processo.',
   'admin.featuresReloadFailed': 'Não foi possível aplicar as alterações. Reinicie o servidor.',
   'admin.featuresSave': 'Inscrever',
   'admin.featuresSaved': 'As alterações foram aplicadas.',
@@ -121,7 +139,8 @@ export default {
   'admin.teachingDesignTemplate.empty': 'Não há tabela no modelo atual',
   'admin.teachingDesignTemplate.uploadOk': 'O modelo foi adicionado',
   'admin.teachingDesignTemplate.uploadFail': 'Falha no upload, use o arquivo .docx',
-  'admin.teachingDesignTemplate.restoreOk': 'O padrão do sistema foi restaurado para o modelo integrado',
+  'admin.teachingDesignTemplate.restoreOk':
+    'O padrão do sistema foi restaurado para o modelo integrado',
   'admin.teachingDesignTemplate.restoreFail': 'Falha ao restaurar o modelo padrão',
   'admin.teachingDesignTemplate.invalidType': 'Faça upload de um modelo do Word (.docx)',
   'admin.teachingDesignTemplate.loadFail': 'Não foi possível carregar a lista de modelos',
@@ -130,14 +149,16 @@ export default {
   'admin.teachingDesignTemplate.colUpdated': 'Hora de atualização',
   'admin.teachingDesignTemplate.editTitle': 'Editar modelo',
   'admin.teachingDesignTemplate.nameLabel': 'nome',
-  'admin.teachingDesignTemplate.namePlaceholder': 'Por exemplo: Aula de Pensamento da Universidade Normal de Pequim',
+  'admin.teachingDesignTemplate.namePlaceholder':
+    'Por exemplo: Aula de Pensamento da Universidade Normal de Pequim',
   'admin.teachingDesignTemplate.nameRequired': 'Por favor preencha o nome do modelo',
   'admin.teachingDesignTemplate.setDefault': 'Definir como padrão do sistema',
   'admin.teachingDesignTemplate.defaultBadge': 'padrão',
   'admin.teachingDesignTemplate.replaceFile': 'Substituir arquivo do Word',
   'admin.teachingDesignTemplate.replaceOk': 'Arquivo do Word atualizado',
   'admin.teachingDesignTemplate.delete': 'Excluir modelo',
-  'admin.teachingDesignTemplate.deleteConfirm': 'Após a exclusão, as escolas que selecionaram este modelo usarão o padrão do sistema. Tem certeza de que deseja excluir?',
+  'admin.teachingDesignTemplate.deleteConfirm':
+    'Após a exclusão, as escolas que selecionaram este modelo usarão o padrão do sistema. Tem certeza de que deseja excluir?',
   'admin.teachingDesignTemplate.deleteOk': 'Modelo excluído',
   'admin.teachingDesignTemplate.deleteFail': 'Falha na exclusão',
   'admin.teachingDesignTemplate.saveOk': 'Modelo salvo',
@@ -147,9 +168,11 @@ export default {
   'admin.teachingDesignTemplate.previewHint': 'Ver o conteúdo do modelo do Word',
   'admin.teachingDesignTemplate.previewFail': 'O modelo não pode ser visualizado',
   'admin.teachingDesignTemplate.schoolLabel': 'Modelo de Design Instrucional',
-  'admin.teachingDesignTemplate.schoolHint': 'O professor da escola usa o modelo selecionado ao exportar para Word',
+  'admin.teachingDesignTemplate.schoolHint':
+    'O professor da escola usa o modelo selecionado ao exportar para Word',
   'admin.customLlm.sectionTitle': 'Servidor de IA personalizado MindGraph',
-  'admin.customLlm.hint': 'Basta preencher o endereço, chave e nome do modelo da própria escola; o nome do modelo será exibido na tela. A plataforma DashScope/Volcengine continua a ser usada por padrão.',
+  'admin.customLlm.hint':
+    'Basta preencher o endereço, chave e nome do modelo da própria escola; o nome do modelo será exibido na tela. A plataforma DashScope/Volcengine continua a ser usada por padrão.',
   'admin.customLlm.typePlatform': 'DashScope/Volcengine',
   'admin.customLlm.typeOpenAiChat': 'Bate-papo OpenAI',
   'admin.customLlm.typeOpenAiResponse': 'Resposta OpenAI',
@@ -160,10 +183,12 @@ export default {
   'admin.customLlm.apiKeyPlaceholder': 'Chave fornecida pela escola',
   'admin.customLlm.secretSet': 'Chave salva ({masked})',
   'admin.customLlm.modelName': 'Nome do modelo',
-  'admin.customLlm.modelNamePlaceholder': 'O nome do modelo exibido na tela e também serve como modelo de API',
+  'admin.customLlm.modelNamePlaceholder':
+    'O nome do modelo exibido na tela e também serve como modelo de API',
   'admin.customLlm.probe': 'conexão de teste',
   'admin.customLlm.probeOk': 'A conexão do servidor AI da escola foi bem-sucedida.',
-  'admin.customLlm.probeFail': 'A conexão falhou, verifique o protocolo, endereço, chave e nome do modelo.',
+  'admin.customLlm.probeFail':
+    'A conexão falhou, verifique o protocolo, endereço, chave e nome do modelo.',
   'admin.teachingDesignTemplate.optionSystem': 'Siga o sistema (modelo atual)',
   'admin.teachingDesignTemplate.optionBundled': 'Modelo integrado da Universidade Normal de Pequim',
   'admin.teachingDesignTemplate.optionUploaded': '{filename} (carregado)',
@@ -171,7 +196,8 @@ export default {
   'admin.newFeaturesTab': 'Novas funcionalidades',
   'admin.kittyLlmopsTab': 'Coreografia de gatinho',
   'admin.kittyDevicesTitle': 'Dispositivo gatinho',
-  'admin.kittyDevicesEmpty': 'Ainda não há relógios ou telemóveis que tenham sido abalados. Aparece aqui depois que o dispositivo envia uma saudação.',
+  'admin.kittyDevicesEmpty':
+    'Ainda não há relógios ou telemóveis que tenham sido abalados. Aparece aqui depois que o dispositivo envia uma saudação.',
   'admin.kittyDeviceId': 'equipamento',
   'admin.kittyDeviceFirmware': 'firmware',
   'admin.kittyDeviceListenMode': 'modo de escuta',
@@ -186,21 +212,25 @@ export default {
   'admin.kittyDefaultsUserId': 'ID do usuário',
   'admin.kittyDefaultsSave': 'salvar padrão',
   'admin.kittyDefaultsSaved': 'Salvo por padrão.',
-  'admin.featuresIntroAccess': 'Study Club, MindMate Collaboration, MindBot, MindMate Export e Kitty podem usar "Permissões" para restringir organizações e usuários após abri-los. A lista de permissões é salva no banco de dados e entra em vigor imediatamente após ser salva.',
+  'admin.featuresIntroAccess':
+    'Study Club, MindMate Collaboration, MindBot, MindMate Export e Kitty podem usar "Permissões" para restringir organizações e usuários após abri-los. A lista de permissões é salva no banco de dados e entra em vigor imediatamente após ser salva.',
   'admin.featurePermissionsApply': 'salvar permissões',
   'admin.featurePermissionsApplied': 'Permissões de função salvas.',
   'admin.featurePermissionsButton': 'Permissões',
   'admin.featurePermissionsOrgs': 'Escola/Instituição',
   'admin.featurePermissionsOrgsPlaceholder': 'Selecione escolas onde este recurso está disponível',
   'admin.featurePermissionsRestrict': 'Restringir acesso',
-  'admin.featurePermissionsRestrictHint': 'Depois de ativada, apenas as seguintes instituições e usuários (bem como administradores e administradores acadêmicos) podem usar esta função quando ela estiver habilitada globalmente.',
+  'admin.featurePermissionsRestrictHint':
+    'Depois de ativada, apenas as seguintes instituições e usuários (bem como administradores e administradores acadêmicos) podem usar esta função quando ela estiver habilitada globalmente.',
   'admin.featurePermissionsRestrictedBadge': 'Restrito',
   'admin.featurePermissionsSaveFailed': 'Não foi possível salvar as permissões do recurso',
   'admin.featurePermissionsUserIds': 'ID do usuário (opcional)',
-  'admin.featurePermissionsUserIdsHint': 'IDs de usuário numéricos separados por vírgula para contas de exceção (como professores piloto).',
+  'admin.featurePermissionsUserIdsHint':
+    'IDs de usuário numéricos separados por vírgula para contas de exceção (como professores piloto).',
   'admin.featurePermissionsUserIdsPlaceholder': 'Por exemplo: 12, 34, 56',
   'admin.expirationDate': 'data de validade',
-  'admin.expirationDateHint': 'A escola estará fechada após esta data. Deixe em branco para ilimitado.',
+  'admin.expirationDateHint':
+    'A escola estará fechada após esta data. Deixe em branco para ilimitado.',
   'admin.validityPeriod': 'Período de validade',
   'admin.validityPeriodRequired': 'Selecione o período de validade',
   'admin.filterBySchool': 'Filtrar por escola',
@@ -212,11 +242,14 @@ export default {
   'admin.inShort': 'digitar',
   'admin.inputTokens': 'Insira o token (todos)',
   'admin.invitationCode': 'Código de convite',
-  'admin.invitationCodeFormatHint': 'O formato é XXX-XXX (letras e números, excluindo 0, O, 1, I, L).',
-  'admin.invitationCodeMaskedHint': 'O código de convite fica oculto por padrão. Mostre-o através do ícone de olho quando necessário.',
+  'admin.invitationCodeFormatHint':
+    'O formato é XXX-XXX (letras e números, excluindo 0, O, 1, I, L).',
+  'admin.invitationCodeMaskedHint':
+    'O código de convite fica oculto por padrão. Mostre-o através do ícone de olho quando necessário.',
   'admin.sensitiveReveal': 'mostrar',
   'admin.sensitiveHide': 'esconder',
-  'admin.invitationCodeAutoGenerated': 'Após a criação, um código de convite no formato XXX-XXX será gerado automaticamente.',
+  'admin.invitationCodeAutoGenerated':
+    'Após a criação, um código de convite no formato XXX-XXX será gerado automaticamente.',
   'admin.lastUsed': 'usado pela última vez',
   'admin.markets': 'mercado',
   'admin.markets.stats': 'Visão geral',
@@ -243,10 +276,12 @@ export default {
   'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'DingTalk Robot e Dify (por escola)',
   'admin.mindbot.dialogHeaderNote': 'Robô DingTalk【{name}】',
-  'admin.mindbot.introHttpOnly': 'Modo de recepção HTTP: endereço de retorno de chamada independente para cada escola (visível durante a edição). O segredo do cliente é usado para verificação de assinatura; Dify é responsável pelo diálogo e resposta.',
+  'admin.mindbot.introHttpOnly':
+    'Modo de recepção HTTP: endereço de retorno de chamada independente para cada escola (visível durante a edição). O segredo do cliente é usado para verificação de assinatura; Dify é responsável pelo diálogo e resposta.',
   'admin.mindbot.emptyState': 'Nenhum MindBots da escola foi configurado ainda.',
   'admin.mindbot.managerIntro': 'Configure o bot DingTalk HTTP com Dify para esta organização.',
-  'admin.mindbot.managerReadOnlyIntro': 'A seguir está a configuração do MindBot da nossa escola (somente leitura). Se precisar modificá-lo, entre em contato com o administrador da plataforma.',
+  'admin.mindbot.managerReadOnlyIntro':
+    'A seguir está a configuração do MindBot da nossa escola (somente leitura). Se precisar modificá-lo, entre em contato com o administrador da plataforma.',
   'admin.mindbot.managerNoConfig': 'Esta escola ainda não configurou o MindBot.',
   'admin.mindbot.sectionDingTalk': 'DingTalk',
   'admin.mindbot.sectionDify': 'Modificar',
@@ -260,11 +295,13 @@ export default {
   'admin.mindbot.edit': 'editar',
   'admin.mindbot.move': 'migrar',
   'admin.mindbot.moveTitle': 'Mova o robô para outras escolas',
-  'admin.mindbot.moveIntro': 'Transfira esta configuração do robô DingTalk para outra escola. O token no URL de retorno de chamada permanece inalterado.',
+  'admin.mindbot.moveIntro':
+    'Transfira esta configuração do robô DingTalk para outra escola. O token no URL de retorno de chamada permanece inalterado.',
   'admin.mindbot.moveTarget': 'escola alvo',
   'admin.mindbot.moveSuccess': 'Migrado para escola selecionada.',
   'admin.mindbot.moveError': 'A migração falhou, a escola alvo pode estar lotada ou inválida.',
-  'admin.mindbot.moveNoTargets': 'Nenhuma outra escola pode adicionar robôs (máximo cinco por escola).',
+  'admin.mindbot.moveNoTargets':
+    'Nenhuma outra escola pode adicionar robôs (máximo cinco por escola).',
   'admin.mindbot.create': 'Adicionar novo robô',
   'admin.mindbot.botLabel': 'Nome do robô',
   'admin.mindbot.difyServiceOnline': 'Dificar serviço on-line',
@@ -277,42 +314,59 @@ export default {
   'admin.mindbot.delete': 'Excluir configuração',
   'admin.mindbot.rotateConfirmTitle': 'Atualizar endereço de retorno de chamada?',
   'admin.mindbot.deleteConfirmTitle': 'Excluir configuração?',
-  'admin.mindbot.deleteConfirm': 'Tem certeza de que deseja excluir a configuração do MindBot da escola?',
+  'admin.mindbot.deleteConfirm':
+    'Tem certeza de que deseja excluir a configuração do MindBot da escola?',
   'admin.mindbot.orgSelect': 'Escola',
   'admin.mindbot.dingtalkRobotCode': 'Código do Robô',
-  'admin.mindbot.dingtalkRobotCodeHint': 'Visualize-o na DingTalk Open Platform e use-o para chamar o DingTalk OpenAPI para enviar mensagens, etc. O retorno de chamada da mensagem do usuário é identificado pelo caminho da URL de retorno de chamada da escola e não depende de ser consistente com o robotCode no webhook JSON.',
+  'admin.mindbot.dingtalkRobotCodeHint':
+    'Visualize-o na DingTalk Open Platform e use-o para chamar o DingTalk OpenAPI para enviar mensagens, etc. O retorno de chamada da mensagem do usuário é identificado pelo caminho da URL de retorno de chamada da escola e não depende de ser consistente com o robotCode no webhook JSON.',
   'admin.mindbot.dingtalkAppSecret': 'Segredo do cliente',
   'admin.mindbot.dingtalkAppSecretHint': 'Obrigatório ao adicionar uma nova escola.',
-  'admin.mindbot.dingtalkAppSecretMaskedHint': 'Chaves salvas, escondidas no meio. Clique em "Substituir" para inserir um novo segredo do cliente.',
-  'admin.mindbot.dingtalkAppSecretReplaceHint': 'Insira um novo segredo do cliente; deixar em branco e salvar mantém o valor salvo atualmente.',
+  'admin.mindbot.dingtalkAppSecretMaskedHint':
+    'Chaves salvas, escondidas no meio. Clique em "Substituir" para inserir um novo segredo do cliente.',
+  'admin.mindbot.dingtalkAppSecretReplaceHint':
+    'Insira um novo segredo do cliente; deixar em branco e salvar mantém o valor salvo atualmente.',
   'admin.mindbot.dingtalkClientId': 'ID do cliente',
-  'admin.mindbot.dingtalkClientIdPlaceholder': 'AppKey para aplicativos de plataforma aberta (combinado com Client Secret)',
-  'admin.mindbot.dingtalkClientIdHint': 'Usado para obter access_token, chamar atualização de streaming de cartão AI, etc. OpenAPI. Precisa ser salvo junto com "Segredo do Cliente". Se não for preenchido, você não poderá usar "Permissões de teste" e cartões de IA.',
+  'admin.mindbot.dingtalkClientIdPlaceholder':
+    'AppKey para aplicativos de plataforma aberta (combinado com Client Secret)',
+  'admin.mindbot.dingtalkClientIdHint':
+    'Usado para obter access_token, chamar atualização de streaming de cartão AI, etc. OpenAPI. Precisa ser salvo junto com "Segredo do Cliente". Se não for preenchido, você não poderá usar "Permissões de teste" e cartões de IA.',
   'admin.mindbot.difyShowChainOfThought': 'Mostrar cadeia de pensamento',
-  'admin.mindbot.dingtalkAiCardStreamingMaxChars': 'Limite de conteúdo de streaming do cartão AI (caracteres)',
+  'admin.mindbot.dingtalkAiCardStreamingMaxChars':
+    'Limite de conteúdo de streaming do cartão AI (caracteres)',
   'admin.mindbot.dingtalkAiCardTemplateId': 'Modelo de cartão AI (opcional)',
-  'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder': 'Deixe em branco para resposta por texto; exemplo d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
-  'admin.mindbot.dingtalkAiCardTemplateIdHint': 'O modelo foi lançado pela plataforma de cartões DingTalk; O ID do cliente e as permissões do cartão (Card.Instance.Write e Card.Streaming.Write) precisam ser configurados.',
+  'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder':
+    'Deixe em branco para resposta por texto; exemplo d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
+  'admin.mindbot.dingtalkAiCardTemplateIdHint':
+    'O modelo foi lançado pela plataforma de cartões DingTalk; O ID do cliente e as permissões do cartão (Card.Instance.Write e Card.Streaming.Write) precisam ser configurados.',
   'admin.mindbot.dingtalkAiCardStreamCheck': 'Permissões de teste',
-  'admin.mindbot.dingtalkAiCardStreamOk': 'As permissões do OAuth e do cartão de streaming são normais',
+  'admin.mindbot.dingtalkAiCardStreamOk':
+    'As permissões do OAuth e do cartão de streaming são normais',
   'admin.mindbot.dingtalkAiCardStreamFail': 'Falha na detecção',
-  'admin.mindbot.dingtalkAiCardStreamCheckTooltip': 'Verifique as permissões do cartão OAuth e Streaming AI.',
-  'admin.mindbot.dingtalkAiCardStreamCheckNeedEdit': 'Salve primeiro a configuração do MindBot da escola.',
+  'admin.mindbot.dingtalkAiCardStreamCheckTooltip':
+    'Verifique as permissões do cartão OAuth e Streaming AI.',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedEdit':
+    'Salve primeiro a configuração do MindBot da escola.',
   'admin.mindbot.dingtalkAiCardStreamCheckNeedSavedSecret': 'Salve o segredo do cliente primeiro.',
   'admin.mindbot.dingtalkAiCardStreamCheckNeedClientId': 'Preencha o ID do cliente.',
   'admin.mindbot.dingtalkAiCardStreamCheckNeedTemplate': 'Preencha o ID do modelo do cartão AI.',
   'admin.mindbot.difyBaseUrl': 'Dificar endereço raiz da API',
   'admin.mindbot.difyApiKey': 'Chave de API modificada',
   'admin.mindbot.difyApiKeyHint': 'Obrigatório ao adicionar uma nova escola.',
-  'admin.mindbot.difyApiKeyMaskedHint': 'Chaves salvas, escondidas no meio. Clique em "Alterar" para inserir uma nova chave de API.',
-  'admin.mindbot.difyApiKeyReplaceHint': 'Insira uma nova chave API; deixá-lo em branco e salvar manterá o valor salvo atualmente.',
+  'admin.mindbot.difyApiKeyMaskedHint':
+    'Chaves salvas, escondidas no meio. Clique em "Alterar" para inserir uma nova chave de API.',
+  'admin.mindbot.difyApiKeyReplaceHint':
+    'Insira uma nova chave API; deixá-lo em branco e salvar manterá o valor salvo atualmente.',
   'admin.mindbot.replaceSecret': 'substituir',
   'admin.mindbot.difyTimeout': 'Tempo limite de modificação (segundos)',
-  'admin.mindbot.difyInputsJsonHint': 'Se o aplicativo Dify definir uma variável de entrada, preencha o objeto JSON aqui (por exemplo, \'{\'"grade":"7"\'}\').',
+  'admin.mindbot.difyInputsJsonHint':
+    'Se o aplicativo Dify definir uma variável de entrada, preencha o objeto JSON aqui (por exemplo, \'{\'"grade":"7"\'}\').',
   'admin.mindbot.enabled': 'Habilitar MindBot',
   'admin.mindbot.schoolCallbackUrl': 'Endereço de retorno de chamada HTTP DingTalk (nossa escola)',
-  'admin.mindbot.schoolCallbackUrlHint': 'Preencha este endereço na URL de retorno de chamada do robô DingTalk HTTP. Por favor, guarde-o corretamente. Vazá-lo equivale a expor a entrada de retorno de chamada.',
-  'admin.mindbot.callbackUrlAfterSave': 'Salve-o uma vez para gerar e exibir o endereço de retorno de chamada da escola.',
+  'admin.mindbot.schoolCallbackUrlHint':
+    'Preencha este endereço na URL de retorno de chamada do robô DingTalk HTTP. Por favor, guarde-o corretamente. Vazá-lo equivale a expor a entrada de retorno de chamada.',
+  'admin.mindbot.callbackUrlAfterSave':
+    'Salve-o uma vez para gerar e exibir o endereço de retorno de chamada da escola.',
   'admin.mindbot.openSettings': 'Configurações do MindBot',
   'admin.mindbot.copyUrl': 'Copiar',
   'admin.mindbot.copied': 'Copiado',
@@ -324,17 +378,21 @@ export default {
   'admin.mindbot.managerNoOrg': 'A conta corrente não está vinculada a uma escola.',
   'admin.mindbot.tabDingtalk': 'Autenticação DingTalk',
   'admin.oauth.sectionTitle': 'Digitalize o código para fazer login',
-  'admin.oauth.intro': 'Enable WeChat or DingTalk QR login for this school. WeChat AppID/Secret are in server .env; DingTalk requires school IT credentials.',
-  'admin.oauth.officialDocsHint': 'O processo é consistente com a documentação oficial: WeChat usa código WxLogin + para trocar token; DingTalk OAuth 2.0 DTFrameLogin + authCode troca diretamente por userAccessToken (não use oapi.dingtalk.com legado).',
+  'admin.oauth.intro':
+    'Enable WeChat or DingTalk QR login for this school. WeChat AppID/Secret are in server .env; DingTalk requires school IT credentials.',
+  'admin.oauth.officialDocsHint':
+    'O processo é consistente com a documentação oficial: WeChat usa código WxLogin + para trocar token; DingTalk OAuth 2.0 DTFrameLogin + authCode troca diretamente por userAccessToken (não use oapi.dingtalk.com legado).',
   'admin.oauth.wechatToggle': 'Enable WeChat QR login',
-  'admin.oauth.wechatHint': 'Teachers must link WeChat under Account linking first. Platform AppID/Secret are set in server .env.',
+  'admin.oauth.wechatHint':
+    'Teachers must link WeChat under Account linking first. Platform AppID/Secret are set in server .env.',
   'admin.oauth.wechatOn': 'Já ativado',
   'admin.oauth.wechatOff': 'Fechado',
   'admin.oauth.dingtalkToggle': 'Ativar login com código QR do DingTalk',
   'admin.oauth.dingtalkAppKey': 'Chave de aplicativo DingTalk (client_id)',
   'admin.oauth.dingtalkAppSecret': 'DingTalk AppSecret',
   'admin.oauth.dingtalkCorpId': 'DingTalk CorpId (opcional)',
-  'admin.oauth.dingtalkCorpIdPlaceholder': 'Após preencher, verifique se o corpId e o escopo são openid corpid',
+  'admin.oauth.dingtalkCorpIdPlaceholder':
+    'Após preencher, verifique se o corpId e o escopo são openid corpid',
   'admin.oauth.secretSet': 'AppSecret salvo',
   'admin.oauth.replaceSecret': 'substituir',
   'admin.oauth.clearSecret': 'Claro',
@@ -343,18 +401,24 @@ export default {
   'admin.oauth.wechatCallback': 'WeChat',
   'admin.oauth.dingtalkCallback': 'DingTalk',
   'admin.oauth.schoolItChecklistTitle': 'Lista de verificação de TI do DingTalk',
-  'admin.oauth.schoolItChecklist': 'Lista de verificação de TI do DingTalk:\n1. Ative "Faça login em sites de terceiros/Digitalize o código QR para fazer login"\n2. Insira o URL de retorno de chamada do DingTalk na configuração "Login e compartilhamento do DingTalk" (deve ser exatamente o mesmo)\n3. Solicite permissões pessoais: permission-open_app_api_base, Contact.User.Read\n4. Forneça AppKey, AppSecret, CorpId (opcional) ao administrador do MindGraph',
-  'admin.oauth.loadError': 'Não foi possível carregar a configuração de login do código de verificação',
+  'admin.oauth.schoolItChecklist':
+    'Lista de verificação de TI do DingTalk:\n1. Ative "Faça login em sites de terceiros/Digitalize o código QR para fazer login"\n2. Insira o URL de retorno de chamada do DingTalk na configuração "Login e compartilhamento do DingTalk" (deve ser exatamente o mesmo)\n3. Solicite permissões pessoais: permission-open_app_api_base, Contact.User.Read\n4. Forneça AppKey, AppSecret, CorpId (opcional) ao administrador do MindGraph',
+  'admin.oauth.loadError':
+    'Não foi possível carregar a configuração de login do código de verificação',
   'admin.oauth.saveSuccess': 'A configuração de login do código de digitalização foi salva',
   'admin.oauth.saveError': 'Falha ao salvar, tente novamente',
   'admin.mindbot.tabDify': 'Dificar autenticação',
-  'admin.mindbot.standaloneDifySchoolHint': 'Para a maioria das escolas, configure o Dify na autenticação MindMate na janela pop-up de edição da escola; ao salvar a escola, ele será sincronizado com todos os robôs da escola. A configuração separada por robô aqui é usada apenas em casos especiais e pode ser substituída ao salvar a escola.',
+  'admin.mindbot.standaloneDifySchoolHint':
+    'Para a maioria das escolas, configure o Dify na autenticação MindMate na janela pop-up de edição da escola; ao salvar a escola, ele será sincronizado com todos os robôs da escola. A configuração separada por robô aqui é usada apenas em casos especiais e pode ser substituída ao salvar a escola.',
   'admin.mindbot.tabLog': 'registro',
   'admin.mindbot.tabMonitor': 'monitor',
   'admin.mindbot.refreshCallbackUrl': 'Atualizar endereço de retorno de chamada',
-  'admin.mindbot.rotateConfirm': 'Gerar novo endereço de retorno de chamada? O endereço antigo se tornará inválido até que você o atualize para o novo endereço no DingTalk.',
-  'admin.mindbot.callbackRotated': 'O endereço de retorno de chamada foi atualizado, modifique-o simultaneamente no DingTalk.',
-  'admin.mindbot.usageNeedSave': 'Salve a configuração primeiro para gerar endereços de retorno de chamada e usar registro e monitoramento.',
+  'admin.mindbot.rotateConfirm':
+    'Gerar novo endereço de retorno de chamada? O endereço antigo se tornará inválido até que você o atualize para o novo endereço no DingTalk.',
+  'admin.mindbot.callbackRotated':
+    'O endereço de retorno de chamada foi atualizado, modifique-o simultaneamente no DingTalk.',
+  'admin.mindbot.usageNeedSave':
+    'Salve a configuração primeiro para gerar endereços de retorno de chamada e usar registro e monitoramento.',
   'admin.mindbot.usageEmpty': 'Ainda não há registro de uso.',
   'admin.mindbot.usageLoadError': 'Falha ao carregar registros de uso',
   'admin.mindbot.loadMore': 'carregar mais',
@@ -375,18 +439,23 @@ export default {
   'admin.mindbot.exportEmpty': 'Não há registros exportáveis ​​no filtro atual.',
   'admin.mindbot.exportError': 'Falha na exportação. Tente novamente.',
   'admin.mindbot.exportSuccess': 'O download do arquivo de exportação foi iniciado.',
-  'admin.mindbot.exportDisclaimer': 'MindBot utiliza metadados para fins de ensino e pesquisa; o texto da mensagem não é salvo e os registros são apenas dados de telemetria.',
-  'admin.mindbot.logTabHint': 'O registro de uso original do MindBot da nossa escola (o mais recente no topo). Clique em uma linha para visualizar os metadados completos. Os corpos das mensagens do usuário e do bot não são salvos.',
-  'admin.mindbot.monitorTabHint': 'Agregue a mesma sessão pelos dados da página atual. Clique em uma linha para abrir uma sessão; clique em uma rodada para ver os detalhes.',
+  'admin.mindbot.exportDisclaimer':
+    'MindBot utiliza metadados para fins de ensino e pesquisa; o texto da mensagem não é salvo e os registros são apenas dados de telemetria.',
+  'admin.mindbot.logTabHint':
+    'O registro de uso original do MindBot da nossa escola (o mais recente no topo). Clique em uma linha para visualizar os metadados completos. Os corpos das mensagens do usuário e do bot não são salvos.',
+  'admin.mindbot.monitorTabHint':
+    'Agregue a mesma sessão pelos dados da página atual. Clique em uma linha para abrir uma sessão; clique em uma rodada para ver os detalhes.',
   'admin.mindbot.colConvThread': 'sessão',
   'admin.mindbot.colTurnsLoaded': 'Rodadas (esta página)',
   'admin.mindbot.convNoThreadId': '(sem ID de sessão)',
   'admin.mindbot.conversationDrawerTitle': 'turnos de sessão',
-  'admin.mindbot.conversationDrawerHint': 'O corpo da mensagem não foi salvo. A seguir estão os metadados relacionados ao MindBot da escola.',
+  'admin.mindbot.conversationDrawerHint':
+    'O corpo da mensagem não foi salvo. A seguir estão os metadados relacionados ao MindBot da escola.',
   'admin.mindbot.threadEmpty': 'Registro de sessão não encontrado.',
   'admin.mindbot.threadLoadMore': 'Carregar rodadas anteriores',
   'admin.mindbot.usageEventDetailTitle': 'Usar eventos',
-  'admin.mindbot.usageEventDetailPrivacy': 'Por motivos de privacidade, o texto completo das perguntas dos usuários e das respostas do robô não será salvo, apenas os seguintes metadados.',
+  'admin.mindbot.usageEventDetailPrivacy':
+    'Por motivos de privacidade, o texto completo das perguntas dos usuários e das respostas do robô não será salvo, apenas os seguintes metadados.',
   'admin.mindbot.detailId': 'ID do evento',
   'admin.mindbot.detailStreaming': 'transmissão',
   'admin.mindbot.detailYes': 'sim',
@@ -406,10 +475,12 @@ export default {
   'admin.library.colVisible': 'mostrar',
   'admin.library.deleteBook': 'excluir livro',
   'admin.library.deleteBookConfirm': 'Confirme todas as exclusões',
-  'admin.library.deleteBookConfirmMsg': 'Excluir permanentemente todas as imagens da página {count} e registros de banco de dados de "{name}" do disco? Esta ação não pode ser desfeita.',
+  'admin.library.deleteBookConfirmMsg':
+    'Excluir permanentemente todas as imagens da página {count} e registros de banco de dados de "{name}" do disco? Esta ação não pode ser desfeita.',
   'admin.library.deleteBookSuccess': 'Livro excluído',
   'admin.library.deleteBookTitle': 'excluir livro',
-  'admin.library.deleteConfirmMsg': 'Excluir permanentemente o registro do banco de dados para "{name}"? Os arquivos de imagem no disco não são afetados.',
+  'admin.library.deleteConfirmMsg':
+    'Excluir permanentemente o registro do banco de dados para "{name}"? Os arquivos de imagem no disco não são afetados.',
   'admin.library.deleteConfirmTitle': 'Excluir registro do documento',
   'admin.library.deleteError': 'Falha na exclusão',
   'admin.library.deleteRecord': 'excluir registro',
@@ -444,7 +515,8 @@ export default {
   'admin.library.renamePreviewLoading': 'Gerando esquema de renomeação...',
   'admin.library.renameSuccess': 'Arquivos {count} renomeados com sucesso',
   'admin.library.repairError': 'Falha no reparo do caminho',
-  'admin.library.repairNothingToFix': 'Todos os caminhos estão corretos e nenhuma correção é necessária',
+  'admin.library.repairNothingToFix':
+    'Todos os caminhos estão corretos e nenhuma correção é necessária',
   'admin.library.repairPaths': 'caminho de reparo',
   'admin.library.repairSuccess': '{count} caminhos corrigidos',
   'admin.library.scan': 'digitalização',
@@ -470,14 +542,16 @@ export default {
   'admin.managers': 'administrador escolar',
   'admin.addSchoolManagers': 'Selecione os usuários desta escola (múltiplas opções disponíveis)',
   'admin.addSchoolManagersButton': 'adicionar à',
-  'admin.noUsersToAddAsManager': 'Todos os usuários desta escola foram definidos como administradores',
+  'admin.noUsersToAddAsManager':
+    'Todos os usuários desta escola foram definidos como administradores',
   'admin.name': 'Nome',
   'admin.next': 'Próxima página',
   'admin.noData': 'Ainda não há dados',
   'admin.noExpiration': 'Ilimitado',
   'admin.noManagersFound': 'Atualmente não há administrador escolar',
   'admin.noRoleMembersFound': 'Este membro da função ainda não foi configurado',
-  'admin.noRoleMembersEmptyHint': 'Clique em "Adicionar Membro" acima para atribuir esta função ao usuário.',
+  'admin.noRoleMembersEmptyHint':
+    'Clique em "Adicionar Membro" acima para atribuir esta função ao usuário.',
   'admin.inviteOrgsEmpty': 'Você não criou uma escola para convidar',
   'admin.roleAddMemberNoSearchResults': 'Nenhum usuário corresponde aos critérios de pesquisa',
   'admin.noTokenStats': 'Ainda não há estatísticas de token',
@@ -503,7 +577,8 @@ export default {
   'admin.dingtalkCardClickToEditApiKeys': 'Clique em Editar chave de API',
   'admin.dingtalkApiKeysDialogTitle': 'DingTalk image — integration API keys',
   'admin.dingtalkApiKeysDialogNote': 'X-API-Key · generate_dingtalk & temp image URLs',
-  'admin.dingtalkApiKeysDialogIntro': 'Use the X-API-Key header. These keys authenticate public API calls such as diagram PNG generation for DingTalk. Responses are markdown with time-limited image URLs; fetching an image only needs the signed link, not this key.',
+  'admin.dingtalkApiKeysDialogIntro':
+    'Use the X-API-Key header. These keys authenticate public API calls such as diagram PNG generation for DingTalk. Responses are markdown with time-limited image URLs; fetching an image only needs the signed link, not this key.',
   'admin.apiKeysTableStats': 'Token (acumulado)',
   'admin.apiKeysRequestCount': 'Requests',
   'admin.apiKeysDiagramRequestCount': 'mapa',
@@ -512,15 +587,18 @@ export default {
   'admin.apiKeysUnlimited': 'sem limite',
   'admin.apiKeyCopy': 'copiar chave',
   'admin.apiKeysStatus': 'estado',
-  'admin.apiKeysDeleteConfirm': 'Excluir chave de API "{name}"? O encaixe em uso será desativado imediatamente.',
+  'admin.apiKeysDeleteConfirm':
+    'Excluir chave de API "{name}"? O encaixe em uso será desativado imediatamente.',
   'admin.apiKeysDeleteSuccess': 'Chave de API excluída',
   'admin.apiKeysCreateSuccess': 'Chave de API criada',
   'admin.apiKeysLoadError': 'Falha ao carregar a chave de API',
   'admin.apiKeysQuotaPlaceholder': 'Deixe em branco para não ter limite',
   'admin.apiKeysExpiresDays': 'Dias válidos',
-  'admin.apiKeysExpiresDaysHint': 'Opcional; calculado a partir da criação, deixe em branco para não expirar em dias',
+  'admin.apiKeysExpiresDaysHint':
+    'Opcional; calculado a partir da criação, deixe em branco para não expirar em dias',
   'admin.apiKeysCreatedSecretTitle': 'Salve a nova chave',
-  'admin.apiKeysCreatedSecretBody': 'Passe a chave para Dify, retorno de chamada ou script como X-API-Key. Você também pode copiar a chave completa a qualquer momento na lista abaixo, se necessário.',
+  'admin.apiKeysCreatedSecretBody':
+    'Passe a chave para Dify, retorno de chamada ou script como X-API-Key. Você também pode copiar a chave completa a qualquer momento na lista abaixo, se necessário.',
   'admin.apiKeysDisable': 'Desativar',
   'admin.apiKeysEnable': 'habilitar',
   'admin.apiKeysNameRequired': 'O nome é obrigatório',
@@ -528,21 +606,25 @@ export default {
   'admin.pastWeek': 'semana passada',
   'admin.phone': 'Número de telefone',
   'admin.performance.title': 'desempenho em tempo real',
-  'admin.performance.subtitle': 'As métricas de vários trabalhadores são mescladas no cluster · Sondagem de aproximadamente 2 segundos',
+  'admin.performance.subtitle':
+    'As métricas de vários trabalhadores são mescladas no cluster · Sondagem de aproximadamente 2 segundos',
   'admin.performance.tab': 'desempenho',
   'admin.publicDashboard.tab': 'Centro de dados nacional',
   'admin.publicDashboard.title': 'Centro Nacional de Dados de MG',
-  'admin.publicDashboard.subtitle': 'Painel do mapa da China dedicado a superadministradores, mostrando usuários online, uso de tokens e dinâmica em tempo real.',
+  'admin.publicDashboard.subtitle':
+    'Painel do mapa da China dedicado a superadministradores, mostrando usuários online, uso de tokens e dinâmica em tempo real.',
   'admin.publicDashboard.backToAdmin': 'Retornar ao painel de administração',
   'admin.publicDashboard.accessDeniedTitle': 'Acessível apenas para superadministradores',
-  'admin.publicDashboard.accessDeniedHint': 'Somente superadministradores da plataforma podem abrir a página de configurações do data center nacional.',
+  'admin.publicDashboard.accessDeniedHint':
+    'Somente superadministradores da plataforma podem abrir a página de configurações do data center nacional.',
   'admin.errors.tab': 'coleta de erros',
   'admin.errors.groupOverview': 'Visão geral',
   'admin.errors.groupBreakdown': 'Distribuição 24h',
   'admin.errors.groupFeed': 'fluxo de eventos',
   'admin.errors.bySeverity24h': 'por nível',
   'admin.errors.bySource24h': 'por fonte',
-  'admin.errors.feedHint': 'Linhas de registro de largura igual · Clique para abrir detalhes · A visualização do grupo de impressão digital pode silenciar alarmes',
+  'admin.errors.feedHint':
+    'Linhas de registro de largura igual · Clique para abrir detalhes · A visualização do grupo de impressão digital pode silenciar alarmes',
   'admin.errors.viewEvents': 'evento',
   'admin.errors.viewGroups': 'grupo de impressões digitais',
   'admin.errors.viewMode': 'visualizar',
@@ -571,7 +653,8 @@ export default {
   'admin.errors.tags': 'Rótulo',
   'admin.errors.detailTitle': 'Detalhes do erro',
   'admin.errors.detailId': 'ID do evento',
-  'admin.errors.detailPrivacy': 'Armazenamento dessensibilizado; não contém campos confidenciais, como token/senha.',
+  'admin.errors.detailPrivacy':
+    'Armazenamento dessensibilizado; não contém campos confidenciais, como token/senha.',
   'admin.errors.detailLoadError': 'Falha ao carregar detalhes do erro',
   'admin.errors.all': 'todos',
   'admin.errors.emptyFeed': 'Não há registros de erros nas condições atuais do filtro',
@@ -585,10 +668,13 @@ export default {
   'admin.errors.unmuteSuccess': 'O alarme do grupo de impressão digital foi restaurado',
   'admin.errors.muteError': 'Falha ao atualizar o status de silêncio',
   'admin.errors.copyAll': 'copiar tudo',
-  'admin.errors.copyAllHint': 'Copie os detalhes completos do erro (caminho, mensagem, pilha, rótulo, etc.) no filtro atual',
+  'admin.errors.copyAllHint':
+    'Copie os detalhes completos do erro (caminho, mensagem, pilha, rótulo, etc.) no filtro atual',
   'admin.errors.copyAllSuccess': '{count} erros copiados para a área de transferência',
-  'admin.errors.copyAllSuccessTruncated': 'Registros {count}/{total} copiados (máximo {limit}); restrinja o filtro para copiar os registros restantes',
-  'admin.errors.copyAllPartial': 'Copiado, mas a pilha {failed} falhou ao carregar; campos de lista ainda incluídos',
+  'admin.errors.copyAllSuccessTruncated':
+    'Registros {count}/{total} copiados (máximo {limit}); restrinja o filtro para copiar os registros restantes',
+  'admin.errors.copyAllPartial':
+    'Copiado, mas a pilha {failed} falhou ao carregar; campos de lista ainda incluídos',
   'admin.errors.copyAllEmpty': 'Nenhum conteúdo para copiar',
   'admin.errors.copyAllError': 'Erro de cópia falhou',
   'admin.performance.groupCompute': 'Computação e memória',
@@ -600,39 +686,55 @@ export default {
   'admin.performance.sectionRedis': 'Memória Redis',
   'admin.performance.sectionConnections': 'WebSockets e Sessões',
   'admin.performance.sectionAiCardStreaming': 'Streaming de cartão AI (tempo real)',
-  'admin.performance.hintAiCardStreaming': 'Dificar simultaneidade de fluxo de cartões (cluster sum); 24h = valor máximo de pico de cada hora UTC (Redis).',
-  'admin.performance.mindbotStreamingNowError': 'O canal em tempo real não está disponível ({reason}).',
+  'admin.performance.hintAiCardStreaming':
+    'Dificar simultaneidade de fluxo de cartões (cluster sum); 24h = valor máximo de pico de cada hora UTC (Redis).',
+  'admin.performance.mindbotStreamingNowError':
+    'O canal em tempo real não está disponível ({reason}).',
   'admin.performance.streamingMax24hLabel': 'Nível de água alto 24h (simultâneo)·',
-  'admin.performance.streamingMax24hError': 'O nível alto da água fica indisponível por 24h ({reason}).',
+  'admin.performance.streamingMax24hError':
+    'O nível alto da água fica indisponível por 24h ({reason}).',
   'admin.performance.sectionMindmateStreaming': 'MindMate (streaming Dify de conteúdo do site)',
-  'admin.performance.hintMindmateStreaming': 'Conteúdo do site: simultaneidade de streaming MindMate (cluster e soma); 24h = valor máximo de pico horário de cada hora UTC (Redis).',
-  'admin.performance.mindmateStreamingNowError': 'O canal em tempo real não está disponível ({reason}).',
+  'admin.performance.hintMindmateStreaming':
+    'Conteúdo do site: simultaneidade de streaming MindMate (cluster e soma); 24h = valor máximo de pico horário de cada hora UTC (Redis).',
+  'admin.performance.mindmateStreamingNowError':
+    'O canal em tempo real não está disponível ({reason}).',
   'admin.performance.sectionDingtalk': 'Cliente de transmissão DingTalk',
   'admin.performance.sectionMindbotPipelines': 'MindBot (DingTalk) · Atual',
   'admin.performance.convStreaming': 'Streaming (cartão Dify)',
   'admin.performance.convSending': 'Entrega única sem streaming',
   'admin.performance.convReceiving': 'Stream WS recebido',
-  'admin.performance.hintMindbotConv': 'Total dentro do cluster. Streaming = fluxo contínuo do cartão Dify SSE; envio único sem streaming = toda a resposta do Dify é enviada de uma vez; Stream WS = o número de tarefas WebSocket estabelecidas pelo DingTalk Stream SDK e pela plataforma (por chave de aplicativo).',
-  'admin.performance.mindbotConcurrencyUnavailable': 'A métrica de simultaneidade de conversa Dify não está disponível ({reason}).',
-  'admin.performance.dingtalkStreamUnavailable': 'O indicador do cliente DingTalk Stream não está disponível ({reason}).',
+  'admin.performance.hintMindbotConv':
+    'Total dentro do cluster. Streaming = fluxo contínuo do cartão Dify SSE; envio único sem streaming = toda a resposta do Dify é enviada de uma vez; Stream WS = o número de tarefas WebSocket estabelecidas pelo DingTalk Stream SDK e pela plataforma (por chave de aplicativo).',
+  'admin.performance.mindbotConcurrencyUnavailable':
+    'A métrica de simultaneidade de conversa Dify não está disponível ({reason}).',
+  'admin.performance.dingtalkStreamUnavailable':
+    'O indicador do cliente DingTalk Stream não está disponível ({reason}).',
   'admin.performance.mindbotModuleCumulative': 'Cumulativo (banco de dados)',
   'admin.performance.mindbotSchools': 'Número de escolas configuradas',
-  'admin.performance.mindbotRepliesOk': 'Número de respostas bem-sucedidas (acumuladas em todo o banco de dados, OK)',
-  'admin.performance.mindbotModuleStatsError': 'Não foi possível carregar as estatísticas do módulo ({reason}).',
-  'admin.performance.hintMindbotModule': 'Há pelo menos um número de desduplicação configurado pelo MindBot; resposta bem-sucedida é o número cumulativo de error_code=MINDBOT_OK na tabela de uso (histórico completo).',
+  'admin.performance.mindbotRepliesOk':
+    'Número de respostas bem-sucedidas (acumuladas em todo o banco de dados, OK)',
+  'admin.performance.mindbotModuleStatsError':
+    'Não foi possível carregar as estatísticas do módulo ({reason}).',
+  'admin.performance.hintMindbotModule':
+    'Há pelo menos um número de desduplicação configurado pelo MindBot; resposta bem-sucedida é o número cumulativo de error_code=MINDBOT_OK na tabela de uso (histórico completo).',
   'admin.performance.mindbotPeaks24hSection': 'Altos níveis de água nas últimas 24 horas (cluster)',
   'admin.performance.peakStreaming24h': 'Streaming máximo de 24h',
   'admin.performance.peakBlocking24h': 'Máximo de 24h sem streaming',
   'admin.performance.peakWs24h': 'Transmissão WS 24h mais alta',
-  'admin.performance.mindbotPeaks24hError': 'O nível alto da água fica indisponível por 24h ({reason}).',
-  'admin.performance.hintMindbotPeaks24h': 'Registre o valor horário mais alto no Redis em horas UTC e, em seguida, pegue o valor máximo nas últimas 24 horas para comparação com limites superiores, como MINDBOT_MAX_ACTIVE_STREAMING. Requer Redis.',
+  'admin.performance.mindbotPeaks24hError':
+    'O nível alto da água fica indisponível por 24h ({reason}).',
+  'admin.performance.hintMindbotPeaks24h':
+    'Registre o valor horário mais alto no Redis em horas UTC e, em seguida, pegue o valor máximo nas últimas 24 horas para comparação com limites superiores, como MINDBOT_MAX_ACTIVE_STREAMING. Requer Redis.',
   'admin.performance.sectionPools': 'Conjunto de conexões de banco de dados',
   'admin.performance.sectionServices': 'Serviços de hospedagem',
   'admin.performance.sectionLlm': 'Estatísticas LLM (totais de cluster)',
-  'admin.performance.hintProcessCpuSingle': 'Este processo de trabalho% de CPU (psutil). Quando há múltiplos trabalhadores, o total é a soma de cada processo (pode ultrapassar 100%).',
+  'admin.performance.hintProcessCpuSingle':
+    'Este processo de trabalho% de CPU (psutil). Quando há múltiplos trabalhadores, o total é a soma de cada processo (pode ultrapassar 100%).',
   'admin.performance.hintNetwork': 'KB/s estimados com base na contagem de placas de rede nativa.',
-  'admin.performance.hintConnections': 'O número de WS de chat/clube de estudo é o total de cada trabalhador; o total ativo vem do Redis quando disponível.',
-  'admin.performance.hintRedis': 'A legenda é usada e há pico de memória; a barra de progresso é a taxa de fragmentação (dimensionada para exibição).',
+  'admin.performance.hintConnections':
+    'O número de WS de chat/clube de estudo é o total de cada trabalhador; o total ativo vem do Redis quando disponível.',
+  'admin.performance.hintRedis':
+    'A legenda é usada e há pico de memória; a barra de progresso é a taxa de fragmentação (dimensionada para exibição).',
   'admin.performance.diskHint': '{mount} · Usado {used} · Disponível {free} · Total {total}',
   'admin.performance.version': 'Versão {version}',
   'admin.performance.uptimeSec': 'Execute por {sec} segundos',
@@ -672,10 +774,13 @@ export default {
   'admin.performance.no': 'não',
   'admin.performance.open': 'Abrir',
   'admin.performance.closed': 'normal',
-  'admin.performance.noProcessData': 'Atualmente não há dados de monitoramento de processos gerenciados no Trabalhador relatado.',
+  'admin.performance.noProcessData':
+    'Atualmente não há dados de monitoramento de processos gerenciados no Trabalhador relatado.',
   'admin.performance.hostDetail': 'CPU lógica: {cpus} · PID {pid} · Processo RSS {rss}',
-  'admin.performance.redisDetail': '{human} (pico {peak}) · Redis {ver} · Servidor rodando por {uptime} segundos',
-  'admin.performance.poolDetail': 'Capacidade do pool de conexões API {asize} · overflow {aov} · Pool de tarefas/ferramentas {ssize} · overflow {sov}',
+  'admin.performance.redisDetail':
+    '{human} (pico {peak}) · Redis {ver} · Servidor rodando por {uptime} segundos',
+  'admin.performance.poolDetail':
+    'Capacidade do pool de conexões API {asize} · overflow {aov} · Pool de tarefas/ferramentas {ssize} · overflow {sov}',
   'admin.performance.sectionOtherVolumes': 'Outros volumes locais',
   'admin.performance.colVolumeMount': 'ponto de montagem',
   'admin.performance.colVolumePct': '% usado',
@@ -706,11 +811,13 @@ export default {
   'admin.performance.dtClientTable': 'Detalhes do cliente',
   'admin.performance.workersReportingCluster': 'Cluster · {n} Trabalhadores relatados',
   'admin.performance.workersRssHint': '{n} Total de RSS do processo de trabalho',
-  'admin.performance.processCpuSumHint': 'Total de CPU {sum}% (limite superior do gráfico de anel 100%) · Máximo de processo único {max}% · {n} Trabalhadores',
+  'admin.performance.processCpuSumHint':
+    'Total de CPU {sum}% (limite superior do gráfico de anel 100%) · Máximo de processo único {max}% · {n} Trabalhadores',
   'admin.previous': 'Página anterior',
   'admin.refresh': 'atualizar',
   'admin.refreshInvitationCode': 'Atualizar código de convite',
-  'admin.refreshInvitationCodeConfirm': 'O antigo código de convite será inválido após a atualização. Tem certeza de que deseja continuar?',
+  'admin.refreshInvitationCodeConfirm':
+    'O antigo código de convite será inválido após a atualização. Tem certeza de que deseja continuar?',
   'admin.regenerateSchoolCode': 'Gerar novamente o código da escola',
   'admin.regenerateInvitationCode': 'Gerar novamente o código de convite',
   'admin.registrationTime': 'Hora do registro',
@@ -718,16 +825,22 @@ export default {
   'admin.requests': 'solicitações',
   'admin.reset': 'reiniciar',
   'admin.revokeAdmin': 'Remover administrador',
-  'admin.revokeAdminConfirm': 'Confirme que deseja remover privilégios de administrador dos seguintes usuários:',
+  'admin.revokeAdminConfirm':
+    'Confirme que deseja remover privilégios de administrador dos seguintes usuários:',
   'admin.revokeRole': 'Remover personagem',
   'admin.revokeRoleConfirm': 'Confirme que deseja remover as seguintes funções de usuários:',
   'admin.roleControl': 'Controle de personagem',
-  'admin.roleControlDesc': 'Gerenciar privilégios de superadministrador. Os usuários com esta função têm acesso ao painel de administração completo.',
-  'admin.roleControlDescPlatformBd': 'Gerenciar permissões de ensino e pesquisador. A equipe de ensino e pesquisa pode visualizar dados globais e gerenciar convites escolares.',
-  'admin.roleControlDescExpert': 'Gerencie permissões de especialistas. Os especialistas podem criar escolas e gerenciar organizações que convidam.',
-  'admin.roleControlDescManagers': 'Gerenciar administradores escolares. Os administradores escolares podem acessar o painel escolar de sua organização. O usuário deve ter ingressado na escola antes de receber esta função.',
+  'admin.roleControlDesc':
+    'Gerenciar privilégios de superadministrador. Os usuários com esta função têm acesso ao painel de administração completo.',
+  'admin.roleControlDescPlatformBd':
+    'Gerenciar permissões de ensino e pesquisador. A equipe de ensino e pesquisa pode visualizar dados globais e gerenciar convites escolares.',
+  'admin.roleControlDescExpert':
+    'Gerencie permissões de especialistas. Os especialistas podem criar escolas e gerenciar organizações que convidam.',
+  'admin.roleControlDescManagers':
+    'Gerenciar administradores escolares. Os administradores escolares podem acessar o painel escolar de sua organização. O usuário deve ter ingressado na escola antes de receber esta função.',
   'admin.roleAssignmentTab': 'Atribuição de função',
-  'admin.roleAssignmentDesc': 'Atribua aos usuários uma das sete funções. As permissões de função no nível da plataforma, no lado B e no lado C são diferentes.',
+  'admin.roleAssignmentDesc':
+    'Atribua aos usuários uma das sete funções. As permissões de função no nível da plataforma, no lado B e no lado C são diferentes.',
   'admin.roleTierPlatform': 'nível de plataforma',
   'admin.roleTierB2B': 'Nível de organização escolar do lado B',
   'admin.roleTierC2C': 'Usuários individuais finais C',
@@ -740,17 +853,20 @@ export default {
   'admin.save': 'salvar',
   'admin.schoolCode': 'código escolar',
   'admin.schoolCodeAutoGenerated': 'Gerado automaticamente com base no nome da escola',
-  'admin.schoolCodeRequired': 'Não foi possível gerar o código a partir do nome. Insira o código da escola manualmente.',
+  'admin.schoolCodeRequired':
+    'Não foi possível gerar o código a partir do nome. Insira o código da escola manualmente.',
   'admin.schoolDashboard': 'Painel escolar',
   'admin.schoolDashboardNoOrg': 'Você precisa pertencer a uma escola para visualizar o painel.',
-  'admin.usersTabSchoolDashboardHint': 'Gerencie os membros da escola no "Painel da Escola". Vá para esta página para adicionar ou editar usuários desta escola.',
+  'admin.usersTabSchoolDashboardHint':
+    'Gerencie os membros da escola no "Painel da Escola". Vá para esta página para adicionar ou editar usuários desta escola.',
   'admin.memberSeats': 'Assentos de membros',
   'admin.managerSeats': 'Assento de administrador',
   'admin.resourceSpace': 'Espaço de recursos',
   'admin.seatsRemaining': '{count} vagas restantes',
   'admin.storageRemainingGb': '{amount} GB restantes',
   'admin.storageRemaining': 'Restante {amount}',
-  'admin.schoolDeleteUserConfirm': 'Tem certeza de que deseja excluir o usuário {name}? Esta operação é irreversível.',
+  'admin.schoolDeleteUserConfirm':
+    'Tem certeza de que deseja excluir o usuário {name}? Esta operação é irreversível.',
   'admin.schoolUserColumnRole': 'Papel',
   'admin.schoolUsersDeleteError': 'Falha ao excluir usuário',
   'admin.schoolUsersLoadError': 'Falha ao carregar usuário escolar',
@@ -758,32 +874,40 @@ export default {
   'admin.userEditModalTitle': 'Gerenciamento de usuários',
   'admin.accountLogin': 'conta',
   'admin.accountNotSet': 'não definido',
-  'admin.accountPhoneOrEmailRequired': 'Preencha pelo menos um número de celular ou endereço de e-mail',
+  'admin.accountPhoneOrEmailRequired':
+    'Preencha pelo menos um número de celular ou endereço de e-mail',
   'admin.phonePlaceholder': '13812345678',
   'admin.email': 'Correspondência',
-  'admin.emailPlaceholder': 'name{\'@\'}example.com',
+  'admin.emailPlaceholder': "name{'@'}example.com",
   'admin.phoneFormatHint': 'O número do celular deve ter 11 dígitos e começar com 1',
-  'admin.diagramRemainingHint': 'É calculado automaticamente com base no número de ícones salvos e não pode ser modificado diretamente.',
+  'admin.diagramRemainingHint':
+    'É calculado automaticamente com base no número de ícones salvos e não pode ser modificado diretamente.',
   'admin.schoolUsersTab': 'usuário',
   'admin.schoolActivity.tab': 'Análise da atividade do usuário',
   'admin.schoolActivity.sectionTotals': 'Número total de usuários',
   'admin.schoolActivity.sectionActive': 'dados ativos',
   'admin.schoolActivity.sectionFrequency': 'Frequência de uso',
   'admin.schoolActivity.year': 'anos',
-  'admin.schoolActivity.asOf': 'As estatísticas dos dados são baseadas em {time} (horário de Pequim)',
+  'admin.schoolActivity.asOf':
+    'As estatísticas dos dados são baseadas em {time} (horário de Pequim)',
   'admin.schoolActivity.cumulativeRegistered': 'O número total de usuários cadastrados no sistema',
   'admin.schoolActivity.yearNewUsers': 'Número de novos usuários por ano',
   'admin.schoolActivity.yearChurn': 'Número anual de usuários cancelados/desativados',
-  'admin.schoolActivity.churnEmpty': 'Atualmente não há dados históricos de logout ou desativação (os usuários são excluídos diretamente e não podem ser rastreados).',
+  'admin.schoolActivity.churnEmpty':
+    'Atualmente não há dados históricos de logout ou desativação (os usuários são excluídos diretamente e não podem ser rastreados).',
   'admin.schoolActivity.enrolledToday': 'Número total de usuários registrados até hoje',
   'admin.schoolActivity.monthlyActive': 'Número de usuários ativos por mês',
   'admin.schoolActivity.quarterlyActive': 'Número de usuários ativos por trimestre',
   'admin.schoolActivity.avgDailyActive': 'Número médio de usuários ativos diariamente',
   'admin.schoolActivity.avgMonthlyActive': 'Média de usuários ativos mensais',
-  'admin.schoolActivity.loginFrequency': 'Estatísticas gerais de frequência de login para todos os usuários',
-  'admin.schoolActivity.highFreq': 'Características de distribuição de usuários de alta frequência (média de logins diários ≥ 3 vezes)',
-  'admin.schoolActivity.lowFreq': 'Características de distribuição dos usuários de baixa frequência (média de logins ≤ 3 vezes por mês)',
-  'admin.schoolActivity.hourDistribution': 'Características de distribuição dos períodos de login do usuário',
+  'admin.schoolActivity.loginFrequency':
+    'Estatísticas gerais de frequência de login para todos os usuários',
+  'admin.schoolActivity.highFreq':
+    'Características de distribuição de usuários de alta frequência (média de logins diários ≥ 3 vezes)',
+  'admin.schoolActivity.lowFreq':
+    'Características de distribuição dos usuários de baixa frequência (média de logins ≤ 3 vezes por mês)',
+  'admin.schoolActivity.hourDistribution':
+    'Características de distribuição dos períodos de login do usuário',
   'admin.schoolActivity.otherUsers': 'outros usuários',
   'admin.schoolActivity.countWithShare': '{count} ({share}%)',
   'admin.schoolActivity.loadError': 'Falha ao carregar a atividade do usuário',
@@ -807,24 +931,36 @@ export default {
   'admin.schoolFeatureUsage.capacity.tense': 'nervoso',
   'admin.schoolFeatureUsage.capacity.ample': 'adequado',
   'admin.schoolFeatureUsage.capacity.normal': 'geralmente',
-  'admin.schoolFeatureUsage.durationEmpty': 'No handling-duration records (feature events do not store start and end times).',
+  'admin.schoolFeatureUsage.durationEmpty':
+    'No handling-duration records (feature events do not store start and end times).',
   'admin.schoolFeatureUsage.loadError': 'Falha ao carregar o uso do recurso',
   'admin.schoolFeatureUsage.nameSep': ', ',
   'admin.schoolFeatureUsage.noneListed': 'nenhum',
-  'admin.schoolFeatureUsage.bottleneckNone': 'Pass rates are steady this year and no handling bottleneck stands out. Failures are rarely persisted, so capacity reads volume and idle modules first.',
-  'admin.schoolFeatureUsage.bottleneckVolume': 'Pass rates are generally high (failures are rarely persisted). Constraints come from volume mix and idle modules ({idle}), not failed handling.',
-  'admin.schoolFeatureUsage.bottleneckSlow': 'Pass rates are steady. LLM handling is slower than typical on {slow} (includes canvas autocomplete).',
-  'admin.schoolFeatureUsage.bottleneckPass': 'Lower pass-rate processes: {lowest}. Constrained capacity: {tense}. Failures are rarely persisted; read this with volume.',
-  'admin.schoolFeatureUsage.bottleneckPassSlow': 'Lower pass-rate processes: {lowest}. Constrained capacity: {tense}. Slower LLM handling: {slow}.',
+  'admin.schoolFeatureUsage.bottleneckNone':
+    'Pass rates are steady this year and no handling bottleneck stands out. Failures are rarely persisted, so capacity reads volume and idle modules first.',
+  'admin.schoolFeatureUsage.bottleneckVolume':
+    'Pass rates are generally high (failures are rarely persisted). Constraints come from volume mix and idle modules ({idle}), not failed handling.',
+  'admin.schoolFeatureUsage.bottleneckSlow':
+    'Pass rates are steady. LLM handling is slower than typical on {slow} (includes canvas autocomplete).',
+  'admin.schoolFeatureUsage.bottleneckPass':
+    'Lower pass-rate processes: {lowest}. Constrained capacity: {tense}. Failures are rarely persisted; read this with volume.',
+  'admin.schoolFeatureUsage.bottleneckPassSlow':
+    'Lower pass-rate processes: {lowest}. Constrained capacity: {tense}. Slower LLM handling: {slow}.',
   'admin.schoolFeatureUsage.top5Title': '1. Core feature usage-rate ranking (TOP 5)',
   'admin.schoolFeatureUsage.top5Empty': 'Não há módulos para acesso de usuários este ano.',
-  'admin.schoolFeatureUsage.usageRateHint': 'Cobertura = número de visitantes anuais / número de alunos atuais.',
+  'admin.schoolFeatureUsage.usageRateHint':
+    'Cobertura = número de visitantes anuais / número de alunos atuais.',
   'admin.schoolFeatureUsage.highTitle': '2. Lista de funções de alta frequência',
-  'admin.schoolFeatureUsage.lowIdleTitle': '3. Lista de funções ociosas de baixa frequência e longo prazo',
-  'admin.schoolFeatureUsage.lowIdleBody': 'Baixa frequência: {low}. Inatividade de longo prazo: {idle}. As informações ociosas podem incluir funções que não são habilitadas pela escola.',
-  'admin.schoolFeatureUsage.conclusionTitle': '4. Pesquisa abrangente e julgamento sobre o uso da função',
-  'admin.schoolFeatureUsage.conclusionConcentrated': 'O uso está concentrado em {top}. O módulo que está ocioso ou que não gerou evento drop é {idle}. O uso está concentrado em algumas funções principais e os itens ociosos podem incluir funções não ativadas.',
-  'admin.schoolFeatureUsage.conclusionSpread': 'O uso é relativamente disperso e o módulo superior é {top}. O módulo que está ocioso ou que não gerou evento drop é {idle}. Itens ociosos podem conter funções não ativadas.',
+  'admin.schoolFeatureUsage.lowIdleTitle':
+    '3. Lista de funções ociosas de baixa frequência e longo prazo',
+  'admin.schoolFeatureUsage.lowIdleBody':
+    'Baixa frequência: {low}. Inatividade de longo prazo: {idle}. As informações ociosas podem incluir funções que não são habilitadas pela escola.',
+  'admin.schoolFeatureUsage.conclusionTitle':
+    '4. Pesquisa abrangente e julgamento sobre o uso da função',
+  'admin.schoolFeatureUsage.conclusionConcentrated':
+    'O uso está concentrado em {top}. O módulo que está ocioso ou que não gerou evento drop é {idle}. O uso está concentrado em algumas funções principais e os itens ociosos podem incluir funções não ativadas.',
+  'admin.schoolFeatureUsage.conclusionSpread':
+    'O uso é relativamente disperso e o módulo superior é {top}. O módulo que está ocioso ou que não gerou evento drop é {idle}. Itens ociosos podem conter funções não ativadas.',
   'admin.schoolFeatureUsage.usageRate': 'Usage rate',
   'admin.schoolFeatureUsage.module.canvas': 'Tela de ilustração',
   'admin.schoolFeatureUsage.module.mindmate': 'MindMate',
@@ -841,13 +977,17 @@ export default {
   'admin.schoolFeatureUsage.module.dingtalk': 'DingTalk MindBot',
   'admin.schoolFeatureUsage.module.zhihui': 'Chie',
   'admin.schoolFeatureUsage.module.maite': 'Método de aprendizagem Matt',
-  'admin.schoolFeatureUsage.remark.canvas': 'Geração de diagramas mentais, salvamento, exportação e tradução de telas.',
+  'admin.schoolFeatureUsage.remark.canvas':
+    'Geração de diagramas mentais, salvamento, exportação e tradução de telas.',
   'admin.schoolFeatureUsage.remark.mindmate': 'Rodadas de conversa do Web MindMate.',
-  'admin.schoolFeatureUsage.remark.kitty': 'Crie fotos, edite e converse com o assistente de voz em uma frase.',
+  'admin.schoolFeatureUsage.remark.kitty':
+    'Crie fotos, edite e converse com o assistente de voz em uma frase.',
   'admin.schoolFeatureUsage.remark.voice_notes': 'Transcreva gravações e gere mapas mentais.',
-  'admin.schoolFeatureUsage.remark.knowledge': 'Recuperação de base de conhecimento e armazenamento de documentos.',
+  'admin.schoolFeatureUsage.remark.knowledge':
+    'Recuperação de base de conhecimento e armazenamento de documentos.',
   'admin.schoolFeatureUsage.remark.doc_summary': 'Documentação resumindo a sessão.',
-  'admin.schoolFeatureUsage.remark.workshop': 'Colaboração no clube de estudo e bate-papo no campus.',
+  'admin.schoolFeatureUsage.remark.workshop':
+    'Colaboração no clube de estudo e bate-papo no campus.',
   'admin.schoolFeatureUsage.remark.askonce': 'Diálogo multimodelo de uma pergunta.',
   'admin.schoolFeatureUsage.remark.debateverse': 'Rodada de debate situacional.',
   'admin.schoolFeatureUsage.remark.markets': 'Encomenda de produtos e processamento de pedidos.',
@@ -855,7 +995,8 @@ export default {
   'admin.schoolFeatureUsage.remark.showcase': 'Navegue e interaja com os envios no Case Square.',
   'admin.schoolFeatureUsage.remark.dingtalk': 'Geração de ícones DingTalk MindBot.',
   'admin.schoolFeatureUsage.remark.zhihui': 'Pintura e desenhos inteligentes.',
-  'admin.schoolFeatureUsage.remark.maite': 'Prática de decomposição reversa, diagnóstico e variação de Matt.',
+  'admin.schoolFeatureUsage.remark.maite':
+    'Prática de decomposição reversa, diagnóstico e variação de Matt.',
   'admin.schoolUsersUnlockError': 'Falha ao desbloquear conta',
   'admin.schoolUsersUpdateError': 'Falha ao atualizar usuário',
   'admin.schoolAddMemberButton': 'Adicione membro',
@@ -866,17 +1007,25 @@ export default {
   'admin.schoolAddMemberPhone': 'Número de telefone',
   'admin.schoolAddMemberPhonePlaceholder': 'Por favor insira o número do celular',
   'admin.schoolAddMemberContact': 'Número de telemóvel ou e-mail',
-  'admin.schoolAddMemberContactPlaceholder': 'Por favor insira o seu número de telemóvel ou endereço de e-mail',
-  'admin.schoolAddMemberInvalidPhoneForName': 'O formato do número do celular {name} está incorreto.',
+  'admin.schoolAddMemberContactPlaceholder':
+    'Por favor insira o seu número de telemóvel ou endereço de e-mail',
+  'admin.schoolAddMemberInvalidPhoneForName':
+    'O formato do número do celular {name} está incorreto.',
   'admin.schoolAddMemberInvalidEmailForName': 'O formato de e-mail de {name} está incorreto',
-  'admin.schoolAddMemberInvalidNameForName': 'Nome inválido para {name} (pelo menos 2 caracteres e sem números)',
+  'admin.schoolAddMemberInvalidNameForName':
+    'Nome inválido para {name} (pelo menos 2 caracteres e sem números)',
   'admin.schoolAddMemberType': 'tipo',
   'admin.schoolAddMemberBatchTitle': 'Importação em lote',
-  'admin.schoolAddMemberBatchHint': 'Para copiar linhas da tabela do Excel, WPS ou Word, clique aqui e cole (Ctrl+V)',
-  'admin.schoolAddMemberBatchPastePlaceholder': 'Cole o formulário aqui - duas colunas: número de celular/e-mail e nome, em qualquer ordem à esquerda e à direita',
-  'admin.schoolAddMemberBatchPasteHint': 'Dica: Selecione a linha no Excel/WPS/Word e copie-a, clique nesta área e pressione Ctrl+V; o sistema identificará automaticamente o número do celular ou endereço de e-mail e nome',
-  'admin.schoolAddMemberBatchInvalidPaste': 'O conteúdo colado não pode ser reconhecido, use duas colunas: número de celular ou endereço de e-mail e nome (em qualquer ordem)',
-  'admin.schoolAddMemberBatchTooLarge': 'No máximo {max} nomes podem ser importados por vez ({count} itens foram colados)',
+  'admin.schoolAddMemberBatchHint':
+    'Para copiar linhas da tabela do Excel, WPS ou Word, clique aqui e cole (Ctrl+V)',
+  'admin.schoolAddMemberBatchPastePlaceholder':
+    'Cole o formulário aqui - duas colunas: número de celular/e-mail e nome, em qualquer ordem à esquerda e à direita',
+  'admin.schoolAddMemberBatchPasteHint':
+    'Dica: Selecione a linha no Excel/WPS/Word e copie-a, clique nesta área e pressione Ctrl+V; o sistema identificará automaticamente o número do celular ou endereço de e-mail e nome',
+  'admin.schoolAddMemberBatchInvalidPaste':
+    'O conteúdo colado não pode ser reconhecido, use duas colunas: número de celular ou endereço de e-mail e nome (em qualquer ordem)',
+  'admin.schoolAddMemberBatchTooLarge':
+    'No máximo {max} nomes podem ser importados por vez ({count} itens foram colados)',
   'admin.schoolAddMemberBatchDuplicatesRemoved': '(Itens {count} duplicados foram removidos)',
   'admin.schoolAddMemberBatchEmpty': 'Por favor, cole os dados do membro primeiro',
   'admin.schoolAddMemberBatchPreviewMore': 'Existem mais {count}',
@@ -886,28 +1035,38 @@ export default {
   'admin.schoolAddMemberSubmit': 'adicionar à',
   'admin.schoolAddMemberSuccess': 'O membro foi adicionado',
   'admin.schoolAddMemberBatchSuccess': '{created} membros adicionados',
-  'admin.schoolAddMemberBatchSuccessWithSkipped': '{created} membros adicionados ({skipped} registrados, ignorados)',
-  'admin.schoolAddMemberBatchAllSkipped': 'Os contatos {skipped} selecionados foram todos registrados e nenhum novo membro foi adicionado',
+  'admin.schoolAddMemberBatchSuccessWithSkipped':
+    '{created} membros adicionados ({skipped} registrados, ignorados)',
+  'admin.schoolAddMemberBatchAllSkipped':
+    'Os contatos {skipped} selecionados foram todos registrados e nenhum novo membro foi adicionado',
   'admin.schoolAddMemberBatchPartial': '{created} nomes adicionados, {failed} falhou',
   'admin.schoolAddMemberBatchResultTitle': 'Importar resultados',
   'admin.schoolAddMemberBatchResultSuccess': '{created} membros adicionados com sucesso',
-  'admin.schoolAddMemberBatchResultPartial': '{created} nomes foram adicionados, {failed} itens não foram adicionados, veja a lista abaixo para detalhes.',
-  'admin.schoolAddMemberBatchResultAllFailed': 'Falha ao adicionar membros, {failed} falhou, veja a lista abaixo.',
+  'admin.schoolAddMemberBatchResultPartial':
+    '{created} nomes foram adicionados, {failed} itens não foram adicionados, veja a lista abaixo para detalhes.',
+  'admin.schoolAddMemberBatchResultAllFailed':
+    'Falha ao adicionar membros, {failed} falhou, veja a lista abaixo.',
   'admin.schoolAddMemberBatchFailedListTitle': '{count} falhou',
   'admin.schoolAddMemberBatchFailedReason': 'razão',
   'admin.schoolAddMemberBatchResultDone': 'Terminar',
-  'admin.schoolAddMemberBatchInvalidPhoneForName': 'O formato do número do celular {name} está incorreto.',
+  'admin.schoolAddMemberBatchInvalidPhoneForName':
+    'O formato do número do celular {name} está incorreto.',
   'admin.schoolAddMemberBatchInvalidEmailForName': 'O formato de e-mail de {name} está incorreto',
-  'admin.schoolAddMemberBatchInvalidNameForName': 'Nome inválido para {name} (pelo menos 2 caracteres e sem números)',
-  'admin.schoolAddMemberBatchInvalidContactOnLine': 'Linha {line}: O número do celular ou formato do e-mail está incorreto.',
+  'admin.schoolAddMemberBatchInvalidNameForName':
+    'Nome inválido para {name} (pelo menos 2 caracteres e sem números)',
+  'admin.schoolAddMemberBatchInvalidContactOnLine':
+    'Linha {line}: O número do celular ou formato do e-mail está incorreto.',
   'admin.schoolAddMemberBatchInvalidRowsTitle': '{count} linha ignorada devido a malformação',
   'admin.schoolAddMemberCreateError': 'Falha ao adicionar membro',
-  'admin.schoolAddMemberRequired': 'Preencha seu nome e número de celular ou endereço de e-mail ou cole os dados do lote',
+  'admin.schoolAddMemberRequired':
+    'Preencha seu nome e número de celular ou endereço de e-mail ou cole os dados do lote',
   'admin.schoolUserUnlock': 'Desbloquear',
-  'admin.schoolUserUnlockConfirm': 'Tem certeza de que deseja desbloquear esta conta? O bloqueio de falha de login e o número de falhas serão eliminados.',
+  'admin.schoolUserUnlockConfirm':
+    'Tem certeza de que deseja desbloquear esta conta? O bloqueio de falha de login e o número de falhas serão eliminados.',
   'admin.listRange': 'Artigos {start}–{end} de {total}',
   'admin.listRangeEmpty': 'Ainda não há dados',
-  'admin.schoolManagerGrantRequiresOrg': 'Este usuário ainda não ingressou na escola e não pode ser definido como administrador da escola. Adicione primeiro membros na escola correspondente.',
+  'admin.schoolManagerGrantRequiresOrg':
+    'Este usuário ainda não ingressou na escola e não pode ser definido como administrador da escola. Adicione primeiro membros na escola correspondente.',
   'admin.schoolManagersTab': 'administrador escolar',
   'admin.schoolName': 'Nome da escola',
   'admin.schoolNamePlaceholder': 'Por exemplo: Escola Secundária No. 1 de Pequim',
@@ -920,7 +1079,8 @@ export default {
   'admin.schoolModal.tabTeachers': 'professor',
   'admin.schoolModal.tabActivity': 'registro de atividade',
   'admin.expertSchoolBindingLabel': 'Expert school binding',
-  'admin.expertSchoolBindingHint': 'After binding, the expert shows up in those schools contact lists, messages, and online lists. One expert can be bound to several schools at once and does not use a member seat. Schools an expert creates are bound automatically. The expert should refresh to use them.',
+  'admin.expertSchoolBindingHint':
+    'After binding, the expert shows up in those schools contact lists, messages, and online lists. One expert can be bound to several schools at once and does not use a member seat. Schools an expert creates are bound automatically. The expert should refresh to use them.',
   'admin.expertSchoolBindingPlaceholder': 'Select experts to bind',
   'admin.expertSchoolBindingEmpty': 'No expert accounts',
   'admin.expertSchoolBindingLoadError': 'Could not load experts',
@@ -928,92 +1088,127 @@ export default {
   'admin.schoolModal.tabMindmate': 'Autenticação MindMate',
   'admin.schoolVersionLabel': 'versão escolar',
   'admin.extraMemberSeatsLabel': 'Lugares extras',
-  'admin.extraMemberSeatsHint': 'Membros atuais {current} / {effectiveLimit} pessoas (base {base} + {extra} adicional).',
+  'admin.extraMemberSeatsHint':
+    'Membros atuais {current} / {effectiveLimit} pessoas (base {base} + {extra} adicional).',
   'admin.extraMemberSeatsPreset': '+{count}',
-  'admin.schoolVersionHint': 'Selecione a versão da assinatura escolar para determinar o limite de adesão e o espaço de armazenamento de mapas. Membros atuais {current} / {limit} pessoas.',
+  'admin.schoolVersionHint':
+    'Selecione a versão da assinatura escolar para determinar o limite de adesão e o espaço de armazenamento de mapas. Membros atuais {current} / {limit} pessoas.',
   'admin.unlimited': 'Sem limite',
   'admin.unlimitedMembers': 'Sem limite de membros',
-  'admin.schoolManagerNotAvailableTrial': 'As escolas da versão de teste não podem configurar administradores escolares.',
+  'admin.schoolManagerNotAvailableTrial':
+    'As escolas da versão de teste não podem configurar administradores escolares.',
   'admin.noSchoolManagersShort': 'Não configurável',
-  'admin.schoolVersionLiteFeaturesHint': 'A versão de teste e a versão básica de ensino e pesquisa não incluem: colaboração online, ferramentas de demonstração, extensões do Chrome, tokens de API e integração OpenClaw.',
+  'admin.schoolVersionLiteFeaturesHint':
+    'A versão de teste e a versão básica de ensino e pesquisa não incluem: colaboração online, ferramentas de demonstração, extensões do Chrome, tokens de API e integração OpenClaw.',
   'admin.schoolVersionTierTrial': 'Versão de teste',
   'admin.schoolVersionTierLite': 'Edição Básica de Ensino e Pesquisa',
   'admin.schoolVersionTierStandard': 'Edição padrão de ensino e pesquisa',
   'admin.schoolVersionTierProfessional': 'Versão de coconstrução escolar',
-  'admin.schoolVersionTierOption': '{label} · {members} pessoas · {managers} administradores · {storage} GB de armazenamento de mapas por pessoa',
-  'admin.schoolVersionTierOptionTrial': '{label} · Membros ilimitados · Não são permitidos administradores escolares · {diagrams} mapas por professor · {storage} GB de armazenamento por pessoa',
+  'admin.schoolVersionTierOption':
+    '{label} · {members} pessoas · {managers} administradores · {storage} GB de armazenamento de mapas por pessoa',
+  'admin.schoolVersionTierOptionTrial':
+    '{label} · Membros ilimitados · Não são permitidos administradores escolares · {diagrams} mapas por professor · {storage} GB de armazenamento por pessoa',
   'admin.schoolManagerLimitHint': 'Administrador escolar {current} / {limit} pessoas',
-  'admin.schoolManagerLimitReached': 'O número de administradores nesta escola atingiu o limite máximo ({limit} pessoas)',
-  'admin.schoolTierDowngradeBlocked': 'Não é possível mudar para esta versão: Atualmente {members} membros (máximo {memberLimit}), {managers} administradores (máximo {managerLimit})',
+  'admin.schoolManagerLimitReached':
+    'O número de administradores nesta escola atingiu o limite máximo ({limit} pessoas)',
+  'admin.schoolTierDowngradeBlocked':
+    'Não é possível mudar para esta versão: Atualmente {members} membros (máximo {memberLimit}), {managers} administradores (máximo {managerLimit})',
   'admin.schoolModal.tabMindbot': 'MindBot',
-  'admin.schoolModal.mindbotIntro': 'Configure o robô DingTalk da nossa escola. A autenticação Dify in MindMate da escola é usada por padrão; se vários robôs precisarem usar Dify diferentes, você pode selecionar "Configurações de Dify personalizadas" no modelo de cartão AI.',
+  'admin.schoolModal.mindbotIntro':
+    'Configure o robô DingTalk da nossa escola. A autenticação Dify in MindMate da escola é usada por padrão; se vários robôs precisarem usar Dify diferentes, você pode selecionar "Configurações de Dify personalizadas" no modelo de cartão AI.',
   'admin.schoolModal.mindbotSelectBot': 'Selecione o robô',
   'admin.schoolModal.mindbotAddBot': 'Adicionar bot',
-  'admin.schoolModal.mindbotCreateHint': 'Novas configurações do MindBot estão sendo criadas (máximo {cap} por escola).',
+  'admin.schoolModal.mindbotCreateHint':
+    'Novas configurações do MindBot estão sendo criadas (máximo {cap} por escola).',
   'admin.schoolMindmateAgentSection': 'Agente MindMate',
   'admin.schoolMindmateAgentName': 'Nome do agente',
-  'admin.schoolMindmateAgentNameHint': 'Este nome aparece na barra lateral e no MindMate; deixe em branco para exibir o MindMate.',
+  'admin.schoolMindmateAgentNameHint':
+    'Este nome aparece na barra lateral e no MindMate; deixe em branco para exibir o MindMate.',
   'admin.schoolMindmateAgentAlias': 'Agent alias',
-  'admin.schoolMindmateAgentAliasHint': 'Short name sent to MindMate. When the school is privatized and this is empty, the agent name is used.',
+  'admin.schoolMindmateAgentAliasHint':
+    'Short name sent to MindMate. When the school is privatized and this is empty, the agent name is used.',
   'admin.schoolMindmateSchoolName': 'School name',
-  'admin.schoolMindmateSchoolNameHint': 'School name sent to MindMate. Leave empty to use the organization name. Same field as Change organization name on the General tab.',
+  'admin.schoolMindmateSchoolNameHint':
+    'School name sent to MindMate. Leave empty to use the organization name. Same field as Change organization name on the General tab.',
   'admin.schoolMindmateAgentAvatar': 'imagem do agente',
   'admin.schoolMindmateAgentAvatarUpload': 'Carregar imagem',
   'admin.schoolMindmateAgentAvatarRemove': 'remover imagem',
-  'admin.schoolMindmateAgentAvatarHint': 'Suporta PNG, JPG, GIF e WebP; uma única imagem não pode exceder 1MB; o lado mais curto tem pelo menos 64 pixels; suporta GIF animado (até 120 quadros); será automaticamente cortado em um quadrado de 256×256.',
+  'admin.schoolMindmateAgentAvatarHint':
+    'Suporta PNG, JPG, GIF e WebP; uma única imagem não pode exceder 1MB; o lado mais curto tem pelo menos 64 pixels; suporta GIF animado (até 120 quadros); será automaticamente cortado em um quadrado de 256×256.',
   'admin.schoolMindmateAvatarUploaded': 'O avatar foi carregado e processado.',
   'admin.schoolMindmateAvatarRemoved': 'O avatar foi removido.',
   'admin.schoolMindmateAvatarUploadFailed': 'Falha no upload do avatar. Tente novamente.',
   'admin.schoolMindmateAvatarRemoveFailed': 'Falha na remoção do avatar. Tente novamente.',
   'admin.schoolMindmateAvatarErrorTooLarge': 'As imagens não podem exceder 1MB.',
   'admin.schoolMindmateAvatarErrorType': 'Somente imagens PNG, JPG, GIF ou WebP são suportadas.',
-  'admin.schoolMindmateAvatarErrorInvalid': 'A imagem não é reconhecida. Selecione um arquivo de imagem válido.',
-  'admin.schoolMindmateAvatarErrorTooSmall': 'A imagem deve ter pelo menos 64 pixels no lado mais curto.',
-  'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Os GIFs animados não podem exceder 120 quadros.',
+  'admin.schoolMindmateAvatarErrorInvalid':
+    'A imagem não é reconhecida. Selecione um arquivo de imagem válido.',
+  'admin.schoolMindmateAvatarErrorTooSmall':
+    'A imagem deve ter pelo menos 64 pixels no lado mais curto.',
+  'admin.schoolMindmateAvatarErrorGifTooManyFrames':
+    'Os GIFs animados não podem exceder 120 quadros.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Modificar',
   'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
-  'admin.schoolDifyGlobalUnconfigured': 'Global Dify (DIFY_API_URL/DIFY_API_KEY) não está configurado em .env.',
+  'admin.schoolDifyGlobalUnconfigured':
+    'Global Dify (DIFY_API_URL/DIFY_API_KEY) não está configurado em .env.',
   'admin.schoolDifySetOverride': 'Configurar cobertura escolar',
   'admin.schoolDifyCancelOverrideDraft': 'Cancelar',
   'admin.schoolDifyConfigured': 'O MindMate Dify exclusivo da nossa escola foi configurado',
   'admin.schoolDifyClearOverride': 'Use a configuração global',
-  'admin.schoolDifyApiKeyRequired': 'Ao preencher o endereço raiz da API, você também deve preencher a chave da API.',
-  'admin.schoolDifyUrlRequired': 'Ao preencher a Chave API, você também deve preencher o endereço raiz da API.',
-  'admin.schoolDifyPairRequired': 'O endereço raiz da API e a chave da API devem ser preenchidos ao mesmo tempo.',
-  'admin.schoolDifyApiKeyHintOptional': 'Preencher apenas quando a escola necessitar de uma Dificação independente; se ambos os itens forem deixados em branco, use a configuração global .env.',
+  'admin.schoolDifyApiKeyRequired':
+    'Ao preencher o endereço raiz da API, você também deve preencher a chave da API.',
+  'admin.schoolDifyUrlRequired':
+    'Ao preencher a Chave API, você também deve preencher o endereço raiz da API.',
+  'admin.schoolDifyPairRequired':
+    'O endereço raiz da API e a chave da API devem ser preenchidos ao mesmo tempo.',
+  'admin.schoolDifyApiKeyHintOptional':
+    'Preencher apenas quando a escola necessitar de uma Dificação independente; se ambos os itens forem deixados em branco, use a configuração global .env.',
   'admin.schoolDifyBlankUsesGlobal': 'Deixe em branco para usar o endereço global: {url}',
-  'admin.schoolDifyApiKeyBlankUsesGlobal': 'Deixe em branco para usar a chave API global ({masked}).',
+  'admin.schoolDifyApiKeyBlankUsesGlobal':
+    'Deixe em branco para usar a chave API global ({masked}).',
   'admin.schoolDifyAuthTest': 'Teste de autenticação Dify',
   'admin.schoolDifyAuthTestRunning': 'Testando…',
-  'admin.schoolDifyAuthTestTooltip': 'Teste a autenticação Dify usando o endereço e a chave do formulário atual (alterações não salvas também estarão envolvidas).',
+  'admin.schoolDifyAuthTestTooltip':
+    'Teste a autenticação Dify usando o endereço e a chave do formulário atual (alterações não salvas também estarão envolvidas).',
   'admin.schoolDifyAuthTestPassed': 'Autenticação Dify aprovada.',
-  'admin.schoolDifyAuthTestFailed': 'Falha na autenticação Dify, verifique o endereço raiz da API e a chave da API.',
+  'admin.schoolDifyAuthTestFailed':
+    'Falha na autenticação Dify, verifique o endereço raiz da API e a chave da API.',
   'admin.schoolDifyAuthRequiredBeforeSave': 'Passe no teste de autenticação Dify antes de salvar.',
-  'admin.schoolDifyAuthRequiredOnCreate': 'Passe no teste de autenticação Dify antes de criar uma escola.',
+  'admin.schoolDifyAuthRequiredOnCreate':
+    'Passe no teste de autenticação Dify antes de criar uma escola.',
   'admin.copyShortInvite': 'Copiar link curto',
-  'admin.schoolDifyAuthErrorNoKey': 'A chave API não está configurada (preencha ou configure .env global DIFY_API_KEY).',
-  'admin.schoolDifyAuthErrorNoUrl': 'O endereço raiz da API não está configurado (preencha ou configure o .env global DIFY_API_URL).',
-  'admin.schoolDifyAuthErrorTimeout': 'O tempo limite da conexão Dify expirou. Verifique se a rede ou o endereço estão corretos.',
-  'admin.schoolDifyAuthErrorNetwork': 'Não é possível conectar-se ao serviço Dify, verifique a rede ou o endereço raiz da API.',
+  'admin.schoolDifyAuthErrorNoKey':
+    'A chave API não está configurada (preencha ou configure .env global DIFY_API_KEY).',
+  'admin.schoolDifyAuthErrorNoUrl':
+    'O endereço raiz da API não está configurado (preencha ou configure o .env global DIFY_API_URL).',
+  'admin.schoolDifyAuthErrorTimeout':
+    'O tempo limite da conexão Dify expirou. Verifique se a rede ou o endereço estão corretos.',
+  'admin.schoolDifyAuthErrorNetwork':
+    'Não é possível conectar-se ao serviço Dify, verifique a rede ou o endereço raiz da API.',
   'admin.schoolDifyAuthErrorUnauthorized': 'A chave API é inválida ou não autorizada (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Não autorizado a acessar a API Dify (HTTP 403).',
-  'admin.schoolDifyAuthErrorNotFound': 'O endereço da API Dify não existe (HTTP 404), verifique o endereço raiz da API.',
-  'admin.schoolDifyAuthErrorTestFailed': 'Connection test failed. Check the settings and try again.',
+  'admin.schoolDifyAuthErrorNotFound':
+    'O endereço da API Dify não existe (HTTP 404), verifique o endereço raiz da API.',
+  'admin.schoolDifyAuthErrorTestFailed':
+    'Connection test failed. Check the settings and try again.',
   'admin.schoolDifyAuthErrorHttp': 'Dify retorna erro: {detail}',
   'admin.schoolDifyAuthErrorDetail': 'Falha na autenticação Dify: {detail}',
   'admin.schoolDifyServer1': 'Servidor 1',
   'admin.schoolDifyServer2': 'Servidor 2',
   'admin.schoolDifyActiveServer': 'Servidor primário',
   'admin.schoolDifyFailover': 'Comutação automática',
-  'admin.schoolDifyDualServerHint': 'Configure dois servidores Dify por escola. O servidor ativo lida com conversas do MindMate em tempo real; quando a comutação automática estiver habilitada, o tráfego será comutado para o servidor de backup quando o servidor ativo estiver indisponível e será comutado automaticamente após a recuperação.',
+  'admin.schoolDifyDualServerHint':
+    'Configure dois servidores Dify por escola. O servidor ativo lida com conversas do MindMate em tempo real; quando a comutação automática estiver habilitada, o tráfego será comutado para o servidor de backup quando o servidor ativo estiver indisponível e será comutado automaticamente após a recuperação.',
   'admin.mindmateExport.navLabel': 'Exportação de registros MindMate',
   'admin.mindmateExport.tabExport': 'Filtrar e consultar',
   'admin.mindmateExport.tabDumps': 'Arquivo de despejo',
   'admin.mindmateExport.panelModeLabel': 'Modo de exportação MindMate',
   'admin.mindmateExport.title': 'MindMate exportação de conversa',
-  'admin.mindmateExport.description': 'Visualize e exporte transcrições de conversas do MindMate (Dify) por intervalo de tempo para um único usuário, vários usuários ou uma escola inteira. Os registros são mesclados em ambos os servidores Dify.',
-  'admin.mindmateExport.privacyNotice': 'Esta visualização mostra a conversa real. Cada exportação é auditada (quem exportou qual escola/usuário/intervalo de tempo/formato). Por favor, trate os dados exportados corretamente.',
+  'admin.mindmateExport.description':
+    'Visualize e exporte transcrições de conversas do MindMate (Dify) por intervalo de tempo para um único usuário, vários usuários ou uma escola inteira. Os registros são mesclados em ambos os servidores Dify.',
+  'admin.mindmateExport.privacyNotice':
+    'Esta visualização mostra a conversa real. Cada exportação é auditada (quem exportou qual escola/usuário/intervalo de tempo/formato). Por favor, trate os dados exportados corretamente.',
   'admin.mindmateExport.orgLabel': 'Escola',
   'admin.mindmateExport.orgPlaceholder': 'Escolha a escola',
   'admin.mindmateExport.scopeLabel': 'escopo',
@@ -1032,19 +1227,25 @@ export default {
   'admin.mindmateExport.dateRangeLabel': 'intervalo de tempo',
   'admin.mindmateExport.startDateTime': 'hora de início',
   'admin.mindmateExport.endDateTime': 'hora de término',
-  'admin.mindmateExport.dateTimeHint': 'Você pode clicar em Predefinição rápida ou selecionar manualmente as datas e horários de início e término; ao selecionar apenas as datas, as estatísticas serão baseadas no dia inteiro (00h00–23h59). Selecione "Todos" ou deixe em branco para exportar todo o histórico.',
+  'admin.mindmateExport.dateTimeHint':
+    'Você pode clicar em Predefinição rápida ou selecionar manualmente as datas e horários de início e término; ao selecionar apenas as datas, as estatísticas serão baseadas no dia inteiro (00h00–23h59). Selecione "Todos" ou deixe em branco para exportar todo o histórico.',
   'admin.mindmateExport.startDate': 'data de início',
   'admin.mindmateExport.endDate': 'data de término',
   'admin.mindmateExport.loadConversations': 'Carregar conversa',
   'admin.mindmateExport.loading': 'carregando…',
   'admin.mindmateExport.conversationsTitle': 'diálogo',
   'admin.mindmateExport.conversationCount': '{count} conversas',
-  'admin.mindmateExport.noConversations': 'Ainda não há conversas. Ajuste as condições do filtro e recarregue.',
-  'admin.mindmateExport.truncatedNotice': 'Muitos usuários no intervalo (limite {max}), o resultado foi truncado. Limite-se para obter a exportação completa.',
-  'admin.mindmateExport.conversationsTruncatedNotice': 'Muitas sessões correspondentes, lista truncada. Limite o intervalo de tempo ou o intervalo de exportação.',
+  'admin.mindmateExport.noConversations':
+    'Ainda não há conversas. Ajuste as condições do filtro e recarregue.',
+  'admin.mindmateExport.truncatedNotice':
+    'Muitos usuários no intervalo (limite {max}), o resultado foi truncado. Limite-se para obter a exportação completa.',
+  'admin.mindmateExport.conversationsTruncatedNotice':
+    'Muitas sessões correspondentes, lista truncada. Limite o intervalo de tempo ou o intervalo de exportação.',
   'admin.mindmateExport.truncatedDownloadTitle': 'A exportação pode estar incompleta',
-  'admin.mindmateExport.truncatedDownloadConfirm': 'Esta exportação excede o limite de usuário ou sessão de {max}. Você ainda quer fazer o download?',
-  'admin.mindmateExport.loadPrompt': 'Após definir as condições de filtro, clique em “Carregar Lista de Sessões”.',
+  'admin.mindmateExport.truncatedDownloadConfirm':
+    'Esta exportação excede o limite de usuário ou sessão de {max}. Você ainda quer fazer o download?',
+  'admin.mindmateExport.loadPrompt':
+    'Após definir as condições de filtro, clique em “Carregar Lista de Sessões”.',
   'admin.mindmateExport.serverBadge': 'Servidor {server}',
   'admin.mindmateExport.viewTranscript': 'Selecione uma conversa para ver a transcrição.',
   'admin.mindmateExport.transcriptTitle': 'Registro de conversa',
@@ -1070,29 +1271,37 @@ export default {
   'admin.mindmateExport.jobResume': 'continuar',
   'admin.mindmateExport.jobCancel': 'Cancelar tarefa',
   'admin.mindmateExport.jobDownload': 'Baixar exportação',
-  'admin.mindmateExport.requiresJobNotice': 'O intervalo é grande, use a tarefa de exportação em segundo plano, ela não pode ser baixada diretamente.',
+  'admin.mindmateExport.requiresJobNotice':
+    'O intervalo é grande, use a tarefa de exportação em segundo plano, ela não pode ser baixada diretamente.',
   'admin.mindmateExport.loadMore': 'carregar mais',
-  'admin.mindmateExport.dumps.intro': 'Carregue o dify-dump_*.zip de cada host Dify/NeoDify e importe-o. Cada importação será mesclada na biblioteca de acumulação, e a filtragem e a consulta sempre lerão esta biblioteca. Os arquivos de instantâneos são retidos para referência futura.',
+  'admin.mindmateExport.dumps.intro':
+    'Carregue o dify-dump_*.zip de cada host Dify/NeoDify e importe-o. Cada importação será mesclada na biblioteca de acumulação, e a filtragem e a consulta sempre lerão esta biblioteca. Os arquivos de instantâneos são retidos para referência futura.',
   'admin.mindmateExport.dumps.libraryDify': 'Biblioteca Cumulativa Dify (Servidor 1)',
   'admin.mindmateExport.dumps.libraryNeodify': 'Biblioteca Cumulativa NeoDify (Servidor 2)',
-  'admin.mindmateExport.dumps.libraryEmpty': 'Ainda não há biblioteca de acumulação - importe o dump primeiro.',
+  'admin.mindmateExport.dumps.libraryEmpty':
+    'Ainda não há biblioteca de acumulação - importe o dump primeiro.',
   'admin.mindmateExport.dumps.libraryMergedSnapshots': 'Número de instantâneos mesclados',
   'admin.mindmateExport.dumps.libraryConversations': 'Número de conversas',
   'admin.mindmateExport.dumps.libraryLastMerged': 'fusão recente',
-  'admin.mindmateExport.dumps.librarySearchNote': 'Filtros e consultas sempre são lidos nesta biblioteca de mesclagem.',
+  'admin.mindmateExport.dumps.librarySearchNote':
+    'Filtros e consultas sempre são lidos nesta biblioteca de mesclagem.',
   'admin.mindmateExport.dumps.sourceLibrary': 'Biblioteca de acumulação',
   'admin.mindmateExport.dumps.sourceMissing': 'Ausente',
   'admin.mindmateExport.dumps.archiveDify': 'Dificar arquivo de instantâneo',
   'admin.mindmateExport.dumps.archiveNeodify': 'Arquivo de instantâneo NeoDify',
   'admin.mindmateExport.dumps.rootPath': 'Caminho de armazenamento: {path}',
   'admin.mindmateExport.dumps.uploadTitle': 'Carregar pacote compactado de despejo',
-  'admin.mindmateExport.dumps.uploadHint': 'Arraste e solte dify-dump_dify_*.zip e dify-dump_neodify_*.zip',
-  'admin.mindmateExport.dumps.uploadFormats': 'Aceite apenas a saída .zip de dump_raw.sh em cada host Dify',
+  'admin.mindmateExport.dumps.uploadHint':
+    'Arraste e solte dify-dump_dify_*.zip e dify-dump_neodify_*.zip',
+  'admin.mindmateExport.dumps.uploadFormats':
+    'Aceite apenas a saída .zip de dump_raw.sh em cada host Dify',
   'admin.mindmateExport.dumps.uploadSuccess': 'Carregamento bem-sucedido.',
   'admin.mindmateExport.dumps.uploadError': 'Falha no upload.',
-  'admin.mindmateExport.dumps.uploadTooLarge': 'O arquivo excede o limite de tamanho de upload ({limit}).',
+  'admin.mindmateExport.dumps.uploadTooLarge':
+    'O arquivo excede o limite de tamanho de upload ({limit}).',
   'admin.mindmateExport.dumps.incomingTitle': 'Para ser importado',
-  'admin.mindmateExport.dumps.incomingEmpty': 'Atualmente não há nenhum pacote compactado em incoming/.',
+  'admin.mindmateExport.dumps.incomingEmpty':
+    'Atualmente não há nenhum pacote compactado em incoming/.',
   'admin.mindmateExport.dumps.importAll': 'Importar todas as pendências',
   'admin.mindmateExport.dumps.importOne': 'importar',
   'admin.mindmateExport.dumps.importSuccess': 'A importação está concluída.',
@@ -1122,7 +1331,8 @@ export default {
   'admin.userSearchFailed': 'Falha na pesquisa do usuário',
   'admin.selectSchool': 'Escolha a escola',
   'admin.setManager': 'Definir como administrador',
-  'admin.shareInviteMessage': '{orgName}: Bem-vindo à plataforma Mind Thinking & Teaching AI Agent!\nGuiado pelo Centro de Formação de Pensamento do BNU e co-construído com mais de 100 escolas de aliança de pensamento-desenvolvimento — junte-se a nós para desenvolver competências de pensamento na era da IA.\nComo: abra no computador ou telefone; registe-se com o número de telefone + código de convite pela primeira vez e, em seguida, inicie sessão com a verificação por SMS.\nURL: {siteUrl}\nCódigo de convite da organização: {code}',
+  'admin.shareInviteMessage':
+    '{orgName}: Bem-vindo à plataforma Mind Thinking & Teaching AI Agent!\nGuiado pelo Centro de Formação de Pensamento do BNU e co-construído com mais de 100 escolas de aliança de pensamento-desenvolvimento — junte-se a nós para desenvolver competências de pensamento na era da IA.\nComo: abra no computador ou telefone; registe-se com o número de telefone + código de convite pela primeira vez e, em seguida, inicie sessão com a verificação por SMS.\nURL: {siteUrl}\nCódigo de convite da organização: {code}',
   'admin.shareInviteTitle': 'compartilhar convite',
   'admin.source': 'fonte',
   'admin.sourceDatabase': 'banco de dados',
@@ -1140,13 +1350,15 @@ export default {
   'admin.systemSettings': 'Configurações do sistema',
   'admin.readOnly': 'somente leitura',
   'admin.dataCenterGlobal': 'Plataforma (todas as escolas)',
-  'admin.inviteUsersSelectSchool': 'Selecione uma escola para visualizar e copiar o código de convite da organização.',
+  'admin.inviteUsersSelectSchool':
+    'Selecione uma escola para visualizar e copiar o código de convite da organização.',
   'admin.today': 'hoje',
   'admin.todayRegistrations': 'Registre-se hoje',
   'admin.tokenStatsLoadError': 'Falha ao carregar estatísticas de token',
   'admin.tokenStatsNetworkError': 'Erro de rede, falha ao carregar estatísticas de token',
   'admin.tokenUsageByService': 'Estatísticas de uso de token por serviço',
-  'admin.tokenUsageCompare': 'Compare o uso de token do MindGraph (gráfico) e do MindMate (assistente de IA)',
+  'admin.tokenUsageCompare':
+    'Compare o uso de token do MindGraph (gráfico) e do MindMate (assistente de IA)',
   'admin.tokens': 'Uso de token',
   'admin.tokensUsed': 'Uso de token',
   'admin.tokensUsedAllTime': 'Uso de token (todos)',
@@ -1159,8 +1371,10 @@ export default {
   'admin.remainingResourcePoints': 'Pontos de recursos restantes',
   'admin.paidBenefitRemaining': 'Benefícios pagos restantes',
   'admin.paidBenefitPermanent': 'permanente',
-  'admin.rankingBeijingTodayHint': 'A classificação são os dados do dia (0h00 às 24h00, horário de Pequim, UTC+8).',
-  'admin.usersTokensAllTimeHint': 'O token está listado como uso cumulativo. Clique no nome ou número do token para abrir o gráfico de tendências (todo o tempo é exibido por padrão).',
+  'admin.rankingBeijingTodayHint':
+    'A classificação são os dados do dia (0h00 às 24h00, horário de Pequim, UTC+8).',
+  'admin.usersTokensAllTimeHint':
+    'O token está listado como uso cumulativo. Clique no nome ou número do token para abrir o gráfico de tendências (todo o tempo é exibido por padrão).',
   'admin.topSchoolsByTokens': 'Classificação de uso do token escolar',
   'admin.topSchoolsByMindGraphTokens': 'MindGraph · Classificação de uso de token escolar',
   'admin.topSchoolsByMindMateTokens': 'MindMate · Classificação de uso de token escolar',
@@ -1209,7 +1423,8 @@ export default {
   'admin.userActivityTab.empty': 'Ainda não há registro de atividades',
   'admin.userActivityTab.loadError': 'Falha ao carregar registros de atividades',
   'admin.userActivityTab.loadMore': 'carregar mais',
-  'admin.userActivityTab.privacyNotice': 'Apenas trechos truncados são mostrados; conversas completas requerem permissões de exportação separadas.',
+  'admin.userActivityTab.privacyNotice':
+    'Apenas trechos truncados são mostrados; conversas completas requerem permissões de exportação separadas.',
   'admin.schoolTeachersTab.colName': 'Nome',
   'admin.schoolTeachersTab.colRole': 'Papel',
   'admin.schoolTeachersTab.colTokens': 'Token (acumulado)',
@@ -1242,19 +1457,22 @@ export default {
   'admin.orgActivityTab.empty': 'Ainda não há registro de atividades',
   'admin.orgActivityTab.loadError': 'Falha ao carregar registros de atividades',
   'admin.orgActivityTab.loadMore': 'carregar mais',
-  'admin.orgActivityTab.privacyNotice': 'Apenas trechos truncados são mostrados; conversas completas requerem permissões de exportação separadas.',
+  'admin.orgActivityTab.privacyNotice':
+    'Apenas trechos truncados são mostrados; conversas completas requerem permissões de exportação separadas.',
   'admin.trendUsers': 'Tendência total do usuário',
   'admin.unlockOrganization': 'Desbloquear escola',
   'admin.usage': 'Uso',
   'admin.userActivity': 'Atividade do usuário',
   'admin.userManagement': 'Gerenciamento de usuários',
-  'admin.userManagementPlaceholder': 'A interface de gerenciamento de usuários será implementada aqui',
+  'admin.userManagementPlaceholder':
+    'A interface de gerenciamento de usuários será implementada aqui',
   'admin.users': 'usuário',
   'admin.usersCount': 'Número de usuários',
   'admin.viewAll': 'Ver tudo',
   'admin.viewSchool': 'Ver escola',
   'teacher.analytics.chart.autoGen': 'Tempos gerados automaticamente',
-  'teacher.analytics.chart.dailyTrend': 'Modificação/exportação diária/geração automática de tendências',
+  'teacher.analytics.chart.dailyTrend':
+    'Modificação/exportação diária/geração automática de tendências',
   'teacher.analytics.chart.edits': 'Número de modificações por dia',
   'teacher.analytics.chart.exports': 'Tempos de exportação',
   'teacher.analytics.chart.noData': 'Ainda não há dados',
@@ -1278,17 +1496,22 @@ export default {
   'teacher.analytics.form.maxZeroGapMinRej': 'O maior número de dias sem serviço ≥',
   'teacher.analytics.form.maxZeroGapMinStop': 'O maior número de dias sem serviço ≥',
   'teacher.analytics.form.nBursts': 'Número de segmentos ativos ≥',
-  'teacher.analytics.group.continuous.description': 'Quando usado na maior parte do tempo, as meias janelas dianteiras e traseiras estão ativas e o batente mais longo é relativamente curto.',
+  'teacher.analytics.group.continuous.description':
+    'Quando usado na maior parte do tempo, as meias janelas dianteiras e traseiras estão ativas e o batente mais longo é relativamente curto.',
   'teacher.analytics.group.continuous.name': 'Uso contínuo',
-  'teacher.analytics.group.intermittent.description': 'A professora utiliza um ciclo intermitente mostrando “explosão-silêncio”.',
+  'teacher.analytics.group.intermittent.description':
+    'A professora utiliza um ciclo intermitente mostrando “explosão-silêncio”.',
   'teacher.analytics.group.intermittent.name': 'uso intermitente',
-  'teacher.analytics.group.rejection.description': 'Após o teste inicial, não será usado por muito tempo.',
+  'teacher.analytics.group.rejection.description':
+    'Após o teste inicial, não será usado por muito tempo.',
   'teacher.analytics.group.rejection.name': 'recusar-se a usar',
-  'teacher.analytics.group.stopped.description': 'Os professores não o utilizam mais após um período de uso.',
+  'teacher.analytics.group.stopped.description':
+    'Os professores não o utilizam mais após um período de uso.',
   'teacher.analytics.group.stopped.name': 'Pare de usar',
   'teacher.analytics.group.total.description': 'Todos os professores do sistema.',
   'teacher.analytics.group.total.name': 'Número total de professores',
-  'teacher.analytics.group.unused.description': 'Não há nenhum registro de uso na janela de observação.',
+  'teacher.analytics.group.unused.description':
+    'Não há nenhum registro de uso na janela de observação.',
   'teacher.analytics.group.unused.name': 'Não usado',
   'teacher.analytics.groupDistribution': 'Distribuição do grupo de professores',
   'teacher.analytics.modalTitle.continuous': 'Uso contínuo',
@@ -1336,7 +1559,8 @@ export default {
   'admin.llmControl.tokens': 'Tokens',
   'admin.llmControl.requests': 'Requests',
   'admin.llmControl.editTitle': 'Change on the fly',
-  'admin.llmControl.editHint': 'Saved values apply across workers within about 2 seconds and are not written to .env. A value that matches the environment variable clears the override.',
+  'admin.llmControl.editHint':
+    'Saved values apply across workers within about 2 seconds and are not written to .env. A value that matches the environment variable clears the override.',
   'admin.llmControl.envValue': 'Environment',
   'admin.llmControl.overridden': 'Override',
   'admin.llmControl.save': 'Save',
@@ -1358,7 +1582,8 @@ export default {
   'admin.llmControl.field.arkKimi': 'Kimi endpoint',
   'admin.llmControl.invalid': 'Invalid format',
   'admin.llmControl.weight': 'Weight',
-  'admin.llmControl.policyNote': 'The split method and request caps are read from the environment when the process starts. Model names and endpoints apply about 2 seconds after saving.',
+  'admin.llmControl.policyNote':
+    'The split method and request caps are read from the environment when the process starts. Model names and endpoints apply about 2 seconds after saving.',
   'admin.llmControl.strategyTitle': 'Three ways to split',
   'admin.llmControl.strategy.weighted': 'Weighted',
   'admin.llmControl.strategy.weightedHint': 'Each request picks a side using the ratio below.',
@@ -1402,25 +1627,30 @@ export default {
   'admin.database.skipped': 'ignorado',
   'admin.database.orphaned': 'isolado',
   'admin.database.pgExportImport': 'Exportação/importação PostgreSQL',
-  'admin.database.pgExportImportDesc': 'Exporte o banco de dados atual como um arquivo de despejo para backup/ou restaure de um despejo existente.',
+  'admin.database.pgExportImportDesc':
+    'Exporte o banco de dados atual como um arquivo de despejo para backup/ou restaure de um despejo existente.',
   'admin.database.exportNow': 'Exportar agora',
   'admin.database.exportSuccess': 'O banco de dados foi exportado',
   'admin.database.exportError': 'Falha na exportação',
   'admin.database.noDumpFiles': 'arquivo dump não encontrado no backup/',
   'admin.database.restore': 'recuperar',
   'admin.database.importConfirmTitle': 'Confirmar recuperação',
-  'admin.database.importConfirmMsg': 'Aviso: Isto substituirá todos os dados existentes no PostgreSQL pelo conteúdo do arquivo de despejo. Esta ação não pode ser desfeita. Tem certeza de que deseja continuar?',
+  'admin.database.importConfirmMsg':
+    'Aviso: Isto substituirá todos os dados existentes no PostgreSQL pelo conteúdo do arquivo de despejo. Esta ação não pode ser desfeita. Tem certeza de que deseja continuar?',
   'admin.database.importSuccess': 'Recuperação de banco de dados bem-sucedida',
   'admin.database.importError': 'Falha na recuperação',
   'admin.database.orphanCleanup': 'Limpeza de registros órfãos',
-  'admin.database.orphanCleanupDesc': 'Detecte e limpe registros com referências de chave estrangeira inválidas no banco de dados PostgreSQL atual.',
+  'admin.database.orphanCleanupDesc':
+    'Detecte e limpe registros com referências de chave estrangeira inválidas no banco de dados PostgreSQL atual.',
   'admin.database.detectOrphans': 'Detectar registros órfãos',
   'admin.database.orphanDetectError': 'Falha na detecção de registros órfãos',
-  'admin.database.noOrphansFound': 'Nenhum registro órfão encontrado - O banco de dados está em boas condições.',
+  'admin.database.noOrphansFound':
+    'Nenhum registro órfão encontrado - O banco de dados está em boas condições.',
   'admin.database.totalOrphans': 'Número total de registros órfãos',
   'admin.database.cleanOrphans': 'Limpar registros órfãos',
   'admin.database.orphanCleanConfirmTitle': 'Confirme a limpeza',
-  'admin.database.orphanCleanConfirmMsg': 'Os registros órfãos serão excluídos ou deixados em branco. Continuar?',
+  'admin.database.orphanCleanConfirmMsg':
+    'Os registros órfãos serão excluídos ou deixados em branco. Continuar?',
   'admin.database.orphanCleanSuccess': 'Registros órfãos apagados',
   'admin.database.orphanCleanError': 'Falha na limpeza do registro órfão',
   'admin.database.pgAnalyze': 'analisar',
@@ -1432,7 +1662,8 @@ export default {
   'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Mesclar em banco de dados on-line',
   'admin.database.pgMergeConfirmTitle': 'Confirmar mesclagem do PG',
-  'admin.database.pgMergeConfirmMsg': 'Esta operação mesclará os dados do dump no banco de dados online e os registros existentes serão retidos. Continuar?',
+  'admin.database.pgMergeConfirmMsg':
+    'Esta operação mesclará os dados do dump no banco de dados online e os registros existentes serão retidos. Continuar?',
   'admin.database.pgMergeSuccess': 'Mesclagem de despejo PG bem-sucedida',
   'admin.database.pgMergeError': 'Falha na mesclagem de dump PG',
   'admin.database.pgNewRows': 'Novo',
@@ -1484,7 +1715,8 @@ export default {
   'admin.cos.localLastMerge': 'mesclagem final local (unix)',
   'admin.cos.cosLastMerge': 'COS mesclado pela última vez',
   'admin.cos.syncNow': 'Sincronize agora',
-  'admin.cos.confirmCrowdsecSync': 'Executar a sincronização da lista de bloqueio do CrowdSec agora?',
+  'admin.cos.confirmCrowdsecSync':
+    'Executar a sincronização da lista de bloqueio do CrowdSec agora?',
   'admin.cos.syncOk': 'Sincronização CrowdSec concluída',
   'admin.cos.syncFailed': 'Falha na sincronização do CrowdSec',
   'admin.cos.targetVersion': 'versão de destino',
@@ -1524,7 +1756,8 @@ export default {
   'admin.showcase.refreshStatus': 'status de atualização',
   'admin.showcase.refreshStatusOk': 'Colocado novamente na fila para gerar capa/PDF',
   'admin.showcase.refreshStatusFail': 'Não foi possível atualizar a capa/PDF',
-  'admin.showcase.featureDisabled': 'A função case square não está habilitada. Defina FEATURE_SHOWCASE antes de usar este painel.',
+  'admin.showcase.featureDisabled':
+    'A função case square não está habilitada. Defina FEATURE_SHOWCASE antes de usar este painel.',
   'admin.showcase.fieldCategory.grade': 'nota',
   'admin.showcase.fieldCategory.recommended_tag': 'Etiquetas recomendadas',
   'admin.showcase.fieldCategory.subject': 'disciplina',
@@ -1545,7 +1778,8 @@ export default {
   'admin.showcase.fieldsCategoryAria': 'Categoria de campo',
   'admin.showcase.fieldsExisting': 'Já tenho opções',
   'admin.showcase.fieldsIntro': 'Gerencie opções de disciplina, nota e rótulo recomendado.',
-  'admin.showcase.intro': 'Revise envios, gerencie casos publicados, opções de campo e permissões de funcionários.',
+  'admin.showcase.intro':
+    'Revise envios, gerencie casos publicados, opções de campo e permissões de funcionários.',
   'admin.showcase.nextPage': 'Próxima página',
   'admin.showcase.openProxyForm': 'Abra o formulário de proxy',
   'admin.showcase.perm.showcase_dashboard_view': 'Veja o quadro',
@@ -1573,7 +1807,8 @@ export default {
   'admin.showcase.permissions.searchUser': 'Pesquisar usuários',
   'admin.showcase.permissions.selectPerms': 'Selecione permissões',
   'admin.showcase.permissions.userRequired': 'Selecione o usuário',
-  'admin.showcase.permissionsIntro': 'Conceda permissões de funcionário do case square a usuários não administradores.',
+  'admin.showcase.permissionsIntro':
+    'Conceda permissões de funcionário do case square a usuários não administradores.',
   'admin.showcase.prevPage': 'Página anterior',
   'admin.showcase.proxyAttributionRequired': 'Por favor preencha o nome do autor e afiliação',
   'admin.showcase.proxyAttributionTitle': 'Assinatura do autor',
@@ -1582,11 +1817,13 @@ export default {
   'admin.showcase.proxyAutoApprove': 'Publique imediatamente (ignore a fila de revisão)',
   'admin.showcase.proxyBadge': 'Entrega por conta de',
   'admin.showcase.proxyFormTitle': 'Casos de envio',
-  'admin.showcase.proxyIntro': 'Para publicar um caso em nome de um professor, é necessário preencher os dados da assinatura do autor.',
+  'admin.showcase.proxyIntro':
+    'Para publicar um caso em nome de um professor, é necessário preencher os dados da assinatura do autor.',
   'admin.showcase.proxySuccess': 'Casos de remessa foram liberados',
   'admin.showcase.publishSource.proxy': 'Entrega por conta de',
   'admin.showcase.publishSource.self': 'autopublicar',
-  'admin.showcase.published.deleteConfirm': 'Tem certeza de que deseja excluir permanentemente "{title}"? Esta ação não pode ser desfeita.',
+  'admin.showcase.published.deleteConfirm':
+    'Tem certeza de que deseja excluir permanentemente "{title}"? Esta ação não pode ser desfeita.',
   'admin.showcase.published.deleteTitle': 'Excluir caso',
   'admin.showcase.published.empty': 'Ainda não há casos publicados',
   'admin.showcase.published.intro': 'Casos aprovados atualmente exibidos no Case Plaza.',
@@ -1628,7 +1865,8 @@ export default {
   'admin.showcase.stats.totalViews': 'total de visualizações',
   'admin.showcase.statsLoadError': 'Falha ao carregar estatísticas de case square',
   'admin.showcase.statsRetry': 'Tente novamente',
-  'admin.showcase.subtab.dashboard': 'Painel de controlo para acompanhamento da evolução dos indicadores;',
+  'admin.showcase.subtab.dashboard':
+    'Painel de controlo para acompanhamento da evolução dos indicadores;',
   'admin.showcase.subtab.fields': 'Campo',
   'admin.showcase.subtab.moderation': 'análise',
   'admin.showcase.subtab.pending': 'Revisão pendente',
@@ -1655,7 +1893,8 @@ export default {
   'admin.vod.preview': 'Visualização',
   'admin.vod.refresh': 'Atualizar metadados',
   'admin.vod.delete': 'excluir',
-  'admin.vod.deleteConfirm': 'Tem certeza de que deseja excluir este vídeo do Cloud On Demand? Esta operação é irreversível.',
+  'admin.vod.deleteConfirm':
+    'Tem certeza de que deseja excluir este vídeo do Cloud On Demand? Esta operação é irreversível.',
   'admin.vod.viewGrid': 'cartão',
   'admin.vod.viewTable': 'lista',
   'admin.vod.uploadTitle': 'Faça upload para a nuvem sob demanda',
@@ -1663,10 +1902,28 @@ export default {
   'admin.vod.uploadProgress': 'Progresso do upload',
   'admin.vod.uploadSuccess': 'O vídeo foi enviado para processamento',
   'admin.vod.uploadFailed': 'Falha no upload',
-  'admin.vod.notConfigured': 'A chave sob demanda da Tencent Cloud (AppId/PlayKey) não foi configurada.',
+  'admin.vod.notConfigured':
+    'A chave sob demanda da Tencent Cloud (AppId/PlayKey) não foi configurada.',
   'admin.vod.loadFailed': 'Não é possível carregar a biblioteca de mídia sob demanda na nuvem',
   'admin.vod.playFailed': 'O vídeo não pode ser reproduzido',
-  'admin.vod.orgFilter': 'Os superadministradores podem visualizar os ativos de mídia da escola após selecionar a escola na parte superior.',
+  'admin.vod.orgFilter':
+    'Os superadministradores podem visualizar os ativos de mídia da escola após selecionar a escola na parte superior.',
+  'admin.vod.folder': 'Folder',
+  'admin.vod.folderAll': 'All folders',
+  'admin.vod.folderNone': 'Unfiled',
+  'admin.vod.folderName': 'Folder name',
+  'admin.vod.folderCreate': 'New folder',
+  'admin.vod.folderCreated': 'Folder created',
+  'admin.vod.folderDelete': 'Delete folder',
+  'admin.vod.folderDeleteConfirm': 'Delete this folder? Videos in it become unfiled.',
+  'admin.vod.folderDeleted': 'Folder deleted. Videos are now unfiled.',
+  'admin.vod.folderExists': 'A folder with that name already exists',
+  'admin.vod.folderFailed': 'Could not update folders',
+  'admin.vod.folderRename': 'Rename',
+  'admin.vod.folderRenamePrompt': 'Enter a new name for this folder',
+  'admin.vod.folderRenameTitle': 'Rename folder',
+  'admin.vod.folderRenamed': 'Folder renamed',
+  'admin.vod.moveFolder': 'Move to folder',
   'admin.tabs.learningSpace': 'Learning Space',
   'admin.learningSpace.pilots': 'Pilot teachers',
   'admin.learningSpace.classes': 'Classes',
@@ -1737,17 +1994,20 @@ export default {
   'admin.learningSpace.subtabStudents': 'Students',
   'admin.learningSpace.currentPassword': 'Current password',
   'admin.learningSpace.removeFromClass': 'Remove from class',
-  'admin.learningSpace.removeMemberConfirm': '{name} will lose access to Learning Space after removal. Continue?',
+  'admin.learningSpace.removeMemberConfirm':
+    '{name} will lose access to Learning Space after removal. Continue?',
   'admin.learningSpace.memberRemoved': 'Removed {name}',
   'admin.learningSpace.studentList': 'Student list',
-  'admin.learningSpace.studentsIntro': 'Classroom student accounts are excluded from User Management stats; manage them here across all classes.',
+  'admin.learningSpace.studentsIntro':
+    'Classroom student accounts are excluded from User Management stats; manage them here across all classes.',
   'admin.learningSpace.summaryClassroom': 'Class students',
   'admin.learningSpace.summaryEnrolled': 'Imported learners',
   'admin.learningSpace.summaryTotal': 'Total',
   'admin.learningSpace.studentSearchPlaceholder': 'Name or phone',
   'admin.learningSpace.filterAllClasses': 'All classes',
   'admin.learningSpace.filterAllMemberKinds': 'All roles in class',
-  'admin.learningSpace.studentsGlobalEmpty': 'No students yet. Import students or existing accounts from Class management first.',
+  'admin.learningSpace.studentsGlobalEmpty':
+    'No students yet. Import students or existing accounts from Class management first.',
   'admin.learningSpace.addPilotSection': 'Add pilot teacher',
   'admin.learningSpace.pilotList': 'Pilot teachers',
   'admin.learningSpace.pilotsEmpty': 'No pilots yet. Search and grant pilot access above.',
@@ -1763,7 +2023,8 @@ export default {
   'admin.learningSpace.createClassSection': 'Create class',
   'admin.learningSpace.classList': 'Classes',
   'admin.learningSpace.classesEmpty': 'No classes yet. Create one above or from a pilot teacher.',
-  'admin.learningSpace.needEnabledPilot': 'Add and enable at least one pilot on the Pilots tab first.',
+  'admin.learningSpace.needEnabledPilot':
+    'Add and enable at least one pilot on the Pilots tab first.',
   'admin.learningSpace.filterAllTeachers': 'All teachers',
   'admin.learningSpace.filterAllStatus': 'All statuses',
   'admin.learningSpace.statusActive': 'Active',
@@ -1822,24 +2083,9 @@ export default {
   'admin.learningSpace.accountImportError.already_member': 'Already a learner in this class',
   'admin.learningSpace.accountImportError.already_assistant': 'Already an assistant in this class',
   'admin.learningSpace.accountImportError.class_full': 'Class is full',
-  'admin.vod.folder': 'Folder',
-  'admin.vod.folderAll': 'All folders',
-  'admin.vod.folderNone': 'Unfiled',
-  'admin.vod.folderName': 'Folder name',
-  'admin.vod.folderCreate': 'New folder',
-  'admin.vod.folderCreated': 'Folder created',
-  'admin.vod.folderDelete': 'Delete folder',
-  'admin.vod.folderDeleteConfirm': 'Delete this folder? Videos in it become unfiled.',
-  'admin.vod.folderDeleted': 'Folder deleted. Videos are now unfiled.',
-  'admin.vod.folderExists': 'A folder with that name already exists',
-  'admin.vod.folderFailed': 'Could not update folders',
-  'admin.vod.folderRename': 'Rename',
-  'admin.vod.folderRenamePrompt': 'Enter a new name for this folder',
-  'admin.vod.folderRenameTitle': 'Rename folder',
-  'admin.vod.folderRenamed': 'Folder renamed',
-  'admin.vod.moveFolder': 'Move to folder',
   'admin.userDropdown.tab': 'User dropdown list',
-  'admin.userDropdown.intro': 'Manage functions in the user avatar menu. Add, rename, or delete each one, link it to a course you already built, and preview the walkthrough.',
+  'admin.userDropdown.intro':
+    'Manage functions in the user avatar menu. Add, rename, or delete each one, link it to a course you already built, and preview the walkthrough.',
   'admin.userDropdown.add': 'Add function',
   'admin.userDropdown.addOk': 'Added',
   'admin.userDropdown.colName': 'Name',

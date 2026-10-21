@@ -55,8 +55,7 @@ export const useKittyPipelineStore = defineStore('kittyPipeline', () => {
     stepEvents.value = [...stepEvents.value.slice(-(MAX_STEP_EVENTS - 1)), event]
 
     const activeId = activeTurn.value?.requestId
-    const isActiveTurnEvent =
-      activeId != null && event.ctx.requestId === activeId
+    const isActiveTurnEvent = activeId != null && event.ctx.requestId === activeId
 
     // Background / other-request events stay in the ring buffer only so they
     // cannot rewrite mid-turn phase, completedSteps, or lastFail.
@@ -103,9 +102,7 @@ export const useKittyPipelineStore = defineStore('kittyPipeline', () => {
 
   function getTurnStatus(requestId?: string): KittyTurnStatus {
     const id = requestId?.trim() || activeTurn.value?.requestId
-    const events = id
-      ? stepEvents.value.filter((e) => e.ctx.requestId === id)
-      : stepEvents.value
+    const events = id ? stepEvents.value.filter((e) => e.ctx.requestId === id) : stepEvents.value
     const completed = events
       .filter((e) => e.status === 'ok')
       .map((e) => e.step)
@@ -130,7 +127,10 @@ export const useKittyPipelineStore = defineStore('kittyPipeline', () => {
     if (id && activeTurn.value?.requestId !== id) {
       if (fail) {
         phase = 'failed'
-      } else if (completed.includes('S14_history_reply') || completed.includes('S13_mutation_ack')) {
+      } else if (
+        completed.includes('S14_history_reply') ||
+        completed.includes('S13_mutation_ack')
+      ) {
         phase = 'completed'
       }
     }

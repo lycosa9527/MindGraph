@@ -2,9 +2,8 @@
  * Verifies vector export against real PostgreSQL mind-map fixtures
  * (written by frontend/scripts/_tmp_fetch_pg_mindmaps.py).
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { buildMindMapVectorSnapshot } from '@/utils/diagramMindMapVectorModel'
@@ -35,9 +34,7 @@ type FixtureFile = {
 
 function listFixtures(): string[] {
   if (!existsSync(FIXTURE_DIR)) return []
-  return readdirSync(FIXTURE_DIR).filter(
-    (name) => name.endsWith('.json') && !name.startsWith('_')
-  )
+  return readdirSync(FIXTURE_DIR).filter((name) => name.endsWith('.json') && !name.startsWith('_'))
 }
 
 function estimateSizes(fixture: FixtureFile): {
@@ -64,9 +61,7 @@ describe.runIf(files.length > 0)('mind-map vector export from PG fixtures', () =
   })
 
   it.each(files)('builds vector SVG for %s', async (fileName) => {
-    const fixture = JSON.parse(
-      readFileSync(join(FIXTURE_DIR, fileName), 'utf8')
-    ) as FixtureFile
+    const fixture = JSON.parse(readFileSync(join(FIXTURE_DIR, fileName), 'utf8')) as FixtureFile
 
     const nodes = fixture.spec.nodes ?? []
     if (nodes.length === 0) {

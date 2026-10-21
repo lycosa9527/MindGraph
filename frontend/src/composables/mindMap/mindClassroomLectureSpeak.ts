@@ -76,9 +76,12 @@ export function speakLectureCaption(
     return
   }
   eventBus.on('kitty:lecture_tts_done', onKittyDone)
-  safetyTimer = window.setTimeout(() => {
-    settle()
-  }, lectureTtsSafetyMs(text, 0))
+  safetyTimer = window.setTimeout(
+    () => {
+      settle()
+    },
+    lectureTtsSafetyMs(text, 0)
+  )
   eventBus.emit('kitty:lecture_narrate_requested', {
     text,
     stepId,

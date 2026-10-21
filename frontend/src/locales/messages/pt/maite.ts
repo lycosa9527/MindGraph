@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Método de aprendizagem Matt',
-  'maite.subtitle': 'Decomposição inversa · Diagnóstico em quatro fases · Remediação direcionada · Transferência de variantes',
+  'maite.subtitle':
+    'Decomposição inversa · Diagnóstico em quatro fases · Remediação direcionada · Transferência de variantes',
   'maite.mode.demo': 'Demonstração',
   'maite.mode.inquiry': 'Investigação',
   'maite.mode.map': 'Mapa',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Prática de variantes',
   'maite.inquiry.complete': 'Concluir sessão',
   'maite.inquiry.completedTitle': 'Investigação concluída',
-  'maite.inquiry.completedMessage': 'Esta sessão de investigação está concluída. Consulte o relatório de aprendizagem abaixo.',
+  'maite.inquiry.completedMessage':
+    'Esta sessão de investigação está concluída. Consulte o relatório de aprendizagem abaixo.',
   'maite.diagnosis.thinkingPlaceholder': 'Descreva o seu raciocínio (opcional)…',
   'maite.diagnosis.runAuto': 'Diagnóstico automático',
   'maite.diagnosis.running': 'A diagnosticar…',
@@ -58,7 +60,8 @@ export default {
   'maite.variant.answerPlaceholder': 'Escreva a sua resposta completa…',
   'maite.variant.strategyPlaceholder': 'Explique como o método se adapta…',
   'maite.variant.submit': 'Submeter resposta',
-  'maite.variant.completeHint': 'Submeta pelo menos 3 respostas de variantes antes de concluir a sessão.',
+  'maite.variant.completeHint':
+    'Submeta pelo menos 3 respostas de variantes antes de concluir a sessão.',
   'maite.practice.title': 'Prática recente',
   'maite.practice.loading': 'A carregar…',
   'maite.practice.empty': 'Ainda não há sessões de prática',
@@ -85,7 +88,8 @@ export default {
   'maite.errors.diagnosis_failed': 'Diagnóstico falhou.',
   'maite.errors.remedy_failed': 'Falha ao gerar tarefas de remediação.',
   'maite.errors.variant_failed': 'Falha ao gerar tarefas de variantes.',
-  'maite.errors.variants_incomplete': 'Submeta pelo menos 3 respostas de variantes antes de concluir.',
+  'maite.errors.variants_incomplete':
+    'Submeta pelo menos 3 respostas de variantes antes de concluir.',
   'maite.errors.variant_answer_required': 'Resposta e estratégia são obrigatórias.',
   'maite.errors.variant_submit_failed': 'Falha ao submeter resposta de variante.',
   'maite.errors.load_failed': 'Falha ao carregar sessão.',
@@ -98,7 +102,8 @@ export default {
   'maite.toast.ocr_success': 'Texto do problema extraído da imagem.',
   'maite.toast.decompose_started': 'A iniciar decomposição com mentor…',
   'maite.toast.decompose_complete': 'Decomposição concluída.',
-  'maite.toast.decompose_fallback': 'Fluxo em direto interrompido; a concluir com resposta completa…',
+  'maite.toast.decompose_fallback':
+    'Fluxo em direto interrompido; a concluir com resposta completa…',
   'maite.toast.practice_saved': 'Guardado em prática recente.',
   'maite.toast.session_created': 'Sessão de investigação criada.',
   'maite.toast.session_completed': 'Sessão de investigação concluída.',

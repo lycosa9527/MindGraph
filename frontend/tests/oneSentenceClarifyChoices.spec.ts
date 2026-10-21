@@ -104,11 +104,9 @@ describe('applyClarifyChoicesOnHydrate', () => {
     ]
     const hydrated = [
       user('turn-u', '帮我改图'),
-      kitty(
-        'turn-k',
-        '想怎么改这张图？\n1) 改主题\n2) 添加分支\n请回复序号或选项内容。',
-        { requestId: 'req-1' }
-      ),
+      kitty('turn-k', '想怎么改这张图？\n1) 改主题\n2) 添加分支\n请回复序号或选项内容。', {
+        requestId: 'req-1',
+      }),
     ]
     const next = applyClarifyChoicesOnHydrate(hydrated, live)
     expect(next[1]?.choices).toEqual([
@@ -184,10 +182,7 @@ describe('retainInFlightThinkingRows', () => {
 
 describe('resolveMessageClarifyChoices', () => {
   it('parses the latest open kitty offer when stored choices were dropped', () => {
-    const messages = [
-      user('u1', '改图'),
-      kitty('k1', '1) 改主题\n2) 添加分支\n3) 自动补全这张图'),
-    ]
+    const messages = [user('u1', '改图'), kitty('k1', '1) 改主题\n2) 添加分支\n3) 自动补全这张图')]
     expect(resolveMessageClarifyChoices(messages, messages[1])).toEqual([
       { index: 1, label: '改主题' },
       { index: 2, label: '添加分支' },
@@ -196,10 +191,7 @@ describe('resolveMessageClarifyChoices', () => {
   })
 
   it('hides chips after the user already replied', () => {
-    const messages = [
-      kitty('k1', '1) 改主题\n2) 添加分支'),
-      user('u1', '1'),
-    ]
+    const messages = [kitty('k1', '1) 改主题\n2) 添加分支'), user('u1', '1')]
     expect(resolveMessageClarifyChoices(messages, messages[0])).toEqual([])
   })
 })

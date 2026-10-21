@@ -1,5 +1,6 @@
 /**
- * en UI � canvas
+ * ro UI — canvas
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {
@@ -185,7 +186,6 @@ export default {
   'canvas.toolbar.mindMapAppearanceButtonLabel': '{style} · {theme}',
   'canvas.toolbar.mindMapAppearanceDiagramStyle': 'Diagram style',
   'canvas.toolbar.mindMapAppearanceThemeColor': 'Theme color',
-
   'canvas.toolbar.mindMapAppearanceNumbering': 'Numbering',
   'canvas.toolbar.mindMapAppearanceNumberingEnable': 'On',
   'canvas.toolbar.mindMapAppearanceNumberingHide': 'Hide',
@@ -288,7 +288,8 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': 'Cannot delete topic node',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference':
+    'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': 'Cannot generate',
   'canvas.toolbar.causeAdded': 'Cause node added',
   'canvas.toolbar.childAdded': 'Child added',
@@ -447,7 +448,8 @@ export default {
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-    'canvas.classroomRemote.tabTopics': 'Topics',
+  'canvas.classroomRemote.resize': 'Drag to resize',
+  'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
@@ -1500,6 +1502,7 @@ export default {
   'canvasPage.collabParticipantsAria': 'Collaboration participants',
   'canvasPage.collabConnected': 'Connected',
   'canvas.topBar.viewOnly': 'View only',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': 'more',
   'canvas.ribbon.file': 'File',
   'canvas.ribbon.nodes': 'Nodes',
@@ -1569,6 +1572,17 @@ export default {
   'canvas.ribbon.tip.collabOrg': 'Invite colleagues at your school to edit',
   'canvas.ribbon.tip.collabCross': 'Collaborate across schools on this map',
   'canvas.ribbon.tip.collabOff': 'End the current collaboration session',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': 'Bold text on the selected node',
   'canvas.ribbon.tip.italic': 'Italicize text on the selected node',
   'canvas.ribbon.tip.alignLeft': 'Align node text left',
@@ -1718,6 +1732,4 @@ export default {
   'canvas.hero.slotFull.title': 'Library is full',
   'canvas.hero.slotFull.line1': 'Delete an existing diagram to save the current one',
   'canvas.hero.slotFull.line2': '',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
-  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

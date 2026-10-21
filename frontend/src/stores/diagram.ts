@@ -6,11 +6,8 @@ import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 
-import {
-  EDITOR_DIAGRAM_VUE_FLOW_ID,
-  adaptGlobalEventBusAsViewBus,
-} from './diagram/diagramViewBus'
 import { createDiagramSession } from './diagram/createDiagramSession'
+import { EDITOR_DIAGRAM_VUE_FLOW_ID, adaptGlobalEventBusAsViewBus } from './diagram/diagramViewBus'
 
 export { subscribeToDiagramEvents } from './diagram/events'
 export type {

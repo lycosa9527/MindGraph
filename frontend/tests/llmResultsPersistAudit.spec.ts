@@ -10,8 +10,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { SAVE } from '@/config'
-import { attachLlmResultsWithinSizeLimit } from '@/stores/llmResultsPersist'
 import type { LLMResult } from '@/stores/llmResults'
+import { attachLlmResultsWithinSizeLimit } from '@/stores/llmResultsPersist'
 
 function specSizeKb(spec: Record<string, unknown>): number {
   return new Blob([JSON.stringify(spec)]).size / 1024
@@ -125,13 +125,17 @@ describe('auto-complete llm_results persist audit', () => {
     expect(found).not.toBeNull()
     if (!found) return
 
-    const diskAfterTwo = attachAllOrNothing(found.spec, {
-      selectedModel: 'qwen',
-      results: {
-        qwen: found.persisted.results.qwen,
-        deepseek: found.persisted.results.deepseek,
+    const diskAfterTwo = attachAllOrNothing(
+      found.spec,
+      {
+        selectedModel: 'qwen',
+        results: {
+          qwen: found.persisted.results.qwen,
+          deepseek: found.persisted.results.deepseek,
+        },
       },
-    }, SAVE.MAX_SPEC_SIZE_KB)
+      SAVE.MAX_SPEC_SIZE_KB
+    )
     expect(llmModelKeys(diskAfterTwo)).toEqual(['deepseek', 'qwen'])
 
     const wiped = attachAllOrNothing(found.spec, found.persisted, SAVE.MAX_SPEC_SIZE_KB)

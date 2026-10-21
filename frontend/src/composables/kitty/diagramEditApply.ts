@@ -12,19 +12,19 @@ import {
   applyVoiceDiagramUpdateNodes,
 } from '@/composables/editor/diagramVoiceMutations'
 import {
-  persistVerifiedDiagramToHub,
   type DiagramHubPersistDeps,
+  persistVerifiedDiagramToHub,
 } from '@/composables/kitty/diagramEditHubPersist'
 import { reportKittyDiagramEditFailure } from '@/composables/kitty/kittyDiagramEditFeedback'
 import { useDiagramStore } from '@/stores/diagram'
 import { loadSpecForDiagramType } from '@/stores/specLoader'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import {
+  type DiagramEditExpectedEffect,
+  type DiagramFingerprint,
   captureDiagramFingerprint,
   normalizeDiagramText,
   resolveCreatedNodeIds,
-  type DiagramEditExpectedEffect,
-  type DiagramFingerprint,
   verifyDiagramEffect,
 } from '@/utils/diagramEditVerify'
 
@@ -264,8 +264,7 @@ export async function commitVerifiedLocalDiagramMutation(options: {
     }
   }
 
-  const earlyRevision =
-    typeof options.hubRevision === 'number' ? options.hubRevision : undefined
+  const earlyRevision = typeof options.hubRevision === 'number' ? options.hubRevision : undefined
   sendCombinedAck(sendAck, {
     mutationId: options.mutationId,
     verified: true,

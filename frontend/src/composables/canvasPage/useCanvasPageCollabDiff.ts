@@ -201,10 +201,9 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       foreignLockedIds
     )
     const changedConnections = applyForeignLockToOutboundConnections(
-      calculateDiff(
-        previousConnections as Array<{ id: string }>,
-        currentConnections
-      ) as Array<Record<string, unknown>>,
+      calculateDiff(previousConnections as Array<{ id: string }>, currentConnections) as Array<
+        Record<string, unknown>
+      >,
       foreignLockedIds
     )
 

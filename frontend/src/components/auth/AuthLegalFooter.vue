@@ -3,10 +3,6 @@
  * Clickable Terms of Use + Privacy Policy links for /auth and session re-login.
  */
 import { RouterLink } from 'vue-router'
-
-import { useLanguage } from '@/composables'
-
-const { t } = useLanguage()
 </script>
 
 <template>

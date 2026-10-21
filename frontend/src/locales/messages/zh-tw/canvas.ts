@@ -1,6 +1,6 @@
 /**
- * zh-tw UI — canvas
- * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ * zh UI — canvas
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export default {
@@ -545,11 +545,9 @@ export default {
   'canvas.toolbar.moreAppVirtualKeyboard': '虛擬鍵盤',
   'canvas.toolbar.moreAppVirtualKeyboardDesc': '英文屏幕鍵盤；中文等語言請用系統輸入法',
   'canvas.toolbar.virtualKeyboardClose': '關閉鍵盤',
-  'canvas.toolbar.virtualKeyboardFocusHint':
-    '选中节点后直接输入将清空原内容；也可双击标签进入编辑',
+  'canvas.toolbar.virtualKeyboardFocusHint': '选中节点后直接输入将清空原内容；也可双击标签进入编辑',
   'canvas.toolbar.virtualKeyboardIme': '系統輸入法',
-  'canvas.toolbar.virtualKeyboardImeHint':
-    '请用物理键盘或系统键盘输入，候选窗由系统输入法提供',
+  'canvas.toolbar.virtualKeyboardImeHint': '请用物理键盘或系统键盘输入，候选窗由系统输入法提供',
   'canvas.toolbar.snapshotSaveFirst': '請先保存圖示，再拍快照',
   'canvas.toolbar.snapshotTaken': '第 {n} 個快照已保存',
   'canvas.toolbar.snapshotFailed': '快照保存失敗，請重試',
@@ -860,7 +858,8 @@ export default {
     '检测到手绘思维导图「{topic}」。已重建到画布，结构大纲已保存到文档总结。',
   'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
     '检测到手绘思维导图「{topic}」。已在本机画布重建，结构大纲已保存到文档总结。图库同步未完成，请保存或重试。',
-  'canvas.mindMapOneSentence.photoOcrReply': '已識別圖片文字：\\n{excerpt}\\n\\n全文已存入文檔總結。',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    '已識別圖片文字：\\n{excerpt}\\n\\n全文已存入文檔總結。',
   'canvas.mindMapOneSentence.photoFailed': '無法處理該圖片。',
   'canvas.mindMapOneSentence.micDenied': '麥克風不可用，請檢查瀏覽器權限',
   'canvas.mindMapOneSentence.ttsToggle': '朗讀開關',
@@ -1204,12 +1203,12 @@ export default {
   'canvas.mindMapSideToolbar.restoreFullDiagram': '還原為完整圖示',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': '還原圖示',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    '還原會用進入挖空前的圖覆蓋當前圖。已挖空的節點會填回，你改過的文字也會被蓋掉。是否繼續？',
+    '还原会用进入挖空前的图覆盖当前图。已挖空的节点会填回，你改过的文字也会被盖掉。是否继续？',
   'canvas.mindMapSideToolbar.learningSheetIntro':
     '选择一种方式创建挖空支架图，适合课堂练习与复习。',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': '全部留空',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
-    '除中心主題外，其餘節點全部挖空，參考答案顯示在圖示下方。',
+    '除中心主题外，其余节点全部挖空，参考答案显示在图示下方。',
   'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': '全部挖空節點',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': '隨機留空',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc':
@@ -1414,7 +1413,7 @@ export default {
   'canvasPage.collabParticipantsAria': '協同參與者',
   'canvasPage.collabConnected': '已連接',
   'canvas.topBar.viewOnly': '僅查看',
-  'canvas.share.readOnlyBar': '{name} 正在編輯，當前為唯讀',
+  'canvas.share.readOnlyBar': '{name} 正在編輯，當前為只讀',
   'canvasPage.collabParticipantsMore': '更多',
   'canvas.ribbon.file': '文件',
   'canvas.ribbon.nodes': '節點',
@@ -1484,6 +1483,16 @@ export default {
   'canvas.ribbon.tip.collabOrg': '邀請本校同事一起編輯',
   'canvas.ribbon.tip.collabCross': '跨校協作編輯這張導圖',
   'canvas.ribbon.tip.collabOff': '結束當前協作會話',
+  'canvas.ribbon.shareToSeminar': '分享至教研會',
+  'canvas.ribbon.shareToSeminarTip': '把目前已儲存的導圖發到一場進行中的教研會',
+  'canvas.ribbon.shareToSeminarEmpty': '還沒有進行中的教研會',
+  'canvas.ribbon.shareToSeminarHint': '先在 MindMate 發起或加入教研會，再回來分享這張導圖。',
+  'canvas.ribbon.shareToSeminarConfirm': '分享',
+  'canvas.ribbon.shareToSeminarNote': '附言（可選）',
+  'canvas.ribbon.shareToSeminarDone': '已分享到「{title}」',
+  'canvas.ribbon.shareToSeminarFailed': '分享失敗，請重試',
+  'canvas.ribbon.shareToSeminarNeedSave': '請先儲存這張導圖',
+  'canvas.ribbon.shareToSeminarLogin': '登入後才能分享到教研會',
   'canvas.ribbon.tip.bold': '將選中節點文字加粗',
   'canvas.ribbon.tip.italic': '將選中節點文字設為斜體',
   'canvas.ribbon.tip.alignLeft': '節點文字左對齊',
@@ -1535,8 +1544,7 @@ export default {
   'canvas.ribbon.docGenerate': '文檔生成',
   'canvas.ribbon.webGenerate': '網頁鏈接生成',
   'canvas.ribbon.voiceSummary': '錄音總結',
-  'canvas.ribbon.sourceLocked':
-    '当前导图已使用{source}作为来源。请新建导图后再换其他生成方式。',
+  'canvas.ribbon.sourceLocked': '当前导图已使用{source}作为来源。请新建导图后再换其他生成方式。',
   'canvas.ribbon.sourceKind.doc': '文檔',
   'canvas.ribbon.sourceKind.web': '網頁鏈接',
   'canvas.ribbon.sourceKind.voice': '錄音',

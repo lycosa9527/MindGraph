@@ -3,7 +3,6 @@ import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 
 
 import { Brush, PenLine } from '@lucide/vue'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import type { StylePresetColors } from '@/config/colorPalette'
 
 withDefaults(
@@ -24,7 +23,6 @@ withDefaults(
   { compact: false }
 )
 
-const { t } = useLanguage()
 const emit = defineEmits<{
   applyPreset: [preset: StylePresetColors]
   toggleWireframe: []

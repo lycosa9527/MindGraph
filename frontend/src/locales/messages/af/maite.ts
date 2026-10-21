@@ -44,7 +44,8 @@ export default {
   'maite.inquiry.variantTitle': 'Variant-oefening',
   'maite.inquiry.complete': 'Voltooi sessie',
   'maite.inquiry.completedTitle': 'Ondersoek voltooi',
-  'maite.inquiry.completedMessage': 'Hierdie ondersoeksessie is voltooi. Bekyk die leerverslag hieronder.',
+  'maite.inquiry.completedMessage':
+    'Hierdie ondersoeksessie is voltooi. Bekyk die leerverslag hieronder.',
   'maite.diagnosis.thinkingPlaceholder': 'Beskryf jou denke (opsioneel)…',
   'maite.diagnosis.runAuto': 'Outomatiese diagnose',
   'maite.diagnosis.running': 'Diagnoseer…',
@@ -58,7 +59,8 @@ export default {
   'maite.variant.answerPlaceholder': 'Skryf jou volle antwoord…',
   'maite.variant.strategyPlaceholder': 'Verduidelik hoe die metode aangepas word…',
   'maite.variant.submit': 'Dien antwoord in',
-  'maite.variant.completeHint': 'Dien ten minste 3 variant-antwoorde in voordat jy die sessie voltooi.',
+  'maite.variant.completeHint':
+    'Dien ten minste 3 variant-antwoorde in voordat jy die sessie voltooi.',
   'maite.practice.title': 'Onlangse oefening',
   'maite.practice.loading': 'Laai…',
   'maite.practice.empty': 'Nog geen oefensessies nie',
@@ -98,7 +100,8 @@ export default {
   'maite.toast.ocr_success': 'Probleemteks uit beeld onttrek.',
   'maite.toast.decompose_started': 'Begin mentor-ontbinding…',
   'maite.toast.decompose_complete': 'Ontbinding voltooi.',
-  'maite.toast.decompose_fallback': 'Regstreekse stroom het gestagneer; voltooi met volle antwoord…',
+  'maite.toast.decompose_fallback':
+    'Regstreekse stroom het gestagneer; voltooi met volle antwoord…',
   'maite.toast.practice_saved': 'In onlangse oefening gestoor.',
   'maite.toast.session_created': 'Ondersoeksessie geskep.',
   'maite.toast.session_completed': 'Ondersoeksessie voltooi.',

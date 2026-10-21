@@ -9,7 +9,8 @@ export default {
   'notification.canvasClearNodes': 'Đã xóa {count} nút',
   'notification.canvasClearNodesLearning': 'Đã làm trống {count} nút, thêm vào câu trả lời',
   'notification.canvasSomeoneEditingNode': 'Người khác đang chỉnh sửa nút này',
-  'notification.collabDeleteBlocked': 'Không thể xóa khi người dùng khác đang chỉnh sửa nút đã chọn',
+  'notification.collabDeleteBlocked':
+    'Không thể xóa khi người dùng khác đang chỉnh sửa nút đã chọn',
   'notification.collabRedoBlocked': 'Không thể làm lại khi người dùng khác đang chỉnh sửa',
   'notification.collabUndoBlocked': 'Không thể hoàn tác khi người dùng khác đang chỉnh sửa',
   'notification.conversationDeleted': 'Đã xóa cuộc trò chuyện',
@@ -21,7 +22,8 @@ export default {
   'notification.feedbackThanks': 'Cảm ơn phản hồi của bạn',
   'notification.feedbackThanksDislike': 'Cảm ơn phản hồi — chúng tôi sẽ cải thiện',
   'notification.focusQuestionTooShort': 'Hãy nhập câu hỏi trọng tâm dài hơn trước',
-  'notification.geoLiteMissingIntro': 'Tải GeoLite2 Country từ MaxMind, giải nén GeoLite2-Country.mmdb và sao chép vào thư mục dữ liệu máy chủ:',
+  'notification.geoLiteMissingIntro':
+    'Tải GeoLite2 Country từ MaxMind, giải nén GeoLite2-Country.mmdb và sao chép vào thư mục dữ liệu máy chủ:',
   'notification.geoLiteMissingLink': 'Mở trang tải MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'Đường dẫn mong đợi:',
   'notification.geoLiteMissingTitle': 'Thiếu cơ sở dữ liệu GeoLite2 Country',
@@ -48,7 +50,8 @@ export default {
   'notification.saved': 'Đã lưu thay đổi thành công',
   'notification.selectNodeToClear': 'Hãy chọn nút để xóa',
   'notification.sessionInvalidated': 'Bạn đã bị đăng xuất vì vượt quá số thiết bị tối đa',
-  'notification.sessionKicked': 'Tài khoản này đã đăng nhập tài khoản này ngoại tuyến trên các thiết bị khác',
+  'notification.sessionKicked':
+    'Tài khoản này đã đăng nhập tài khoản này ngoại tuyến trên các thiết bị khác',
   'notification.signInToUse': 'Đăng nhập để sử dụng',
   'notification.signInToValidateFocus': 'Đăng nhập để xác minh câu hỏi trọng tâm',
 } as const

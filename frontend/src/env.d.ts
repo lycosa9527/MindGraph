@@ -22,11 +22,7 @@ declare module 'vue3-carousel-3d' {
     Record<string, unknown>,
     unknown
   >
-  export const Slide: DefineComponent<
-    Record<string, unknown>,
-    Record<string, unknown>,
-    unknown
-  >
+  export const Slide: DefineComponent<Record<string, unknown>, Record<string, unknown>, unknown>
 }
 
 /** Loaded at runtime from `/debug/eruda.js` (not bundled). */

@@ -154,7 +154,7 @@ export function persistLocalMindmateCollabSessions(rows: LocalMindmateCollabSess
 
 export function mergeMindmateCollabSessionLists<T extends { code: string }>(
   orgSessions: T[],
-  localSessions: T[],
+  localSessions: T[]
 ): T[] {
   const byCode = new Map<string, T>()
   for (const row of orgSessions) {
@@ -171,11 +171,11 @@ export function mergeMindmateCollabSessionLists<T extends { code: string }>(
 
 function isSameTrackedSession(
   current: LocalMindmateCollabSession,
-  incoming: LocalMindmateCollabSession,
+  incoming: LocalMindmateCollabSession
 ): boolean {
   return (
-    normalizeMindmateCollabCode(current.code) === normalizeMindmateCollabCode(incoming.code)
-    && (current.session_id || '') === (incoming.session_id || '')
+    normalizeMindmateCollabCode(current.code) === normalizeMindmateCollabCode(incoming.code) &&
+    (current.session_id || '') === (incoming.session_id || '')
   )
 }
 

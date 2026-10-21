@@ -1,12 +1,13 @@
 import { createApp, h } from 'vue'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import AdminSwissChartCard from '@/components/admin/swiss/AdminSwissChartCard.vue'
 import SchoolActivityActiveSection from '@/components/school/SchoolActivityActiveSection.vue'
 import SchoolActivityFrequencySection from '@/components/school/SchoolActivityFrequencySection.vue'
 import SchoolActivityTotalsSection from '@/components/school/SchoolActivityTotalsSection.vue'
-import { beijingCalendarYear, formatBeijingSnapshotTime } from '@/utils/schoolActivityAsOf'
 import { fallbackCapabilitiesForRole } from '@/utils/adminCapabilities'
+import { beijingCalendarYear, formatBeijingSnapshotTime } from '@/utils/schoolActivityAsOf'
 
 vi.mock('@/composables', () => ({
   useLanguage: () => ({

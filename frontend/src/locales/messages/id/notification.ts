@@ -5,11 +5,13 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Tidak dapat menghapus node topik atau pusat',
-  'notification.cannotResetSelectDiagramType': 'Tidak dapat reset: pilih jenis diagram terlebih dahulu',
+  'notification.cannotResetSelectDiagramType':
+    'Tidak dapat reset: pilih jenis diagram terlebih dahulu',
   'notification.canvasClearNodes': 'Menghapus {count} node',
   'notification.canvasClearNodesLearning': 'Mengosongkan {count} node, ditambahkan ke jawaban',
   'notification.canvasSomeoneEditingNode': 'Orang lain sedang mengedit node ini',
-  'notification.collabDeleteBlocked': 'Tidak dapat menghapus saat pengguna lain mengedit node yang dipilih',
+  'notification.collabDeleteBlocked':
+    'Tidak dapat menghapus saat pengguna lain mengedit node yang dipilih',
   'notification.collabRedoBlocked': 'Tidak dapat redo saat pengguna lain sedang mengedit',
   'notification.collabUndoBlocked': 'Tidak dapat undo saat pengguna lain sedang mengedit',
   'notification.conversationDeleted': 'Percakapan dihapus',
@@ -20,8 +22,10 @@ export default {
   'notification.feedbackCancelled': 'Umpan balik dihapus',
   'notification.feedbackThanks': 'Terima kasih atas umpan balik Anda',
   'notification.feedbackThanksDislike': 'Terima kasih atas umpan balik — kami akan memperbaiki',
-  'notification.focusQuestionTooShort': 'Masukkan pertanyaan fokus yang lebih panjang terlebih dahulu',
-  'notification.geoLiteMissingIntro': 'Unduh GeoLite2 Country dari MaxMind, ekstrak GeoLite2-Country.mmdb, dan salin ke folder data server:',
+  'notification.focusQuestionTooShort':
+    'Masukkan pertanyaan fokus yang lebih panjang terlebih dahulu',
+  'notification.geoLiteMissingIntro':
+    'Unduh GeoLite2 Country dari MaxMind, ekstrak GeoLite2-Country.mmdb, dan salin ke folder data server:',
   'notification.geoLiteMissingLink': 'Buka halaman unduhan MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'Path yang diharapkan:',
   'notification.geoLiteMissingTitle': 'Database GeoLite2 Country tidak ditemukan',

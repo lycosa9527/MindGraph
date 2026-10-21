@@ -21,13 +21,16 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.personalTab': 'വ്യക്തിഗത പതിപ്പ്',
   'thinkingCoins.schoolTab': 'സ്കൂൾ പതിപ്പ്',
   'thinkingCoins.insufficientTitle': 'മതിയായ ചിന്താ നാണയങ്ങൾ ഇല്ല',
-  'thinkingCoins.insufficientBody': 'ചുവടെയുള്ള ചുമതല പൂർത്തിയാക്കുക അല്ലെങ്കിൽ പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
+  'thinkingCoins.insufficientBody':
+    'ചുവടെയുള്ള ചുമതല പൂർത്തിയാക്കുക അല്ലെങ്കിൽ പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
   'thinkingCoins.checkedInToday': 'ഇന്ന് സൈൻ ഇൻ ചെയ്തു',
   'thinkingCoins.usageDoneToday': 'ഇന്ന് പൂർത്തിയായി',
   'thinkingCoins.casePendingHint': 'ഉടൻ തുറക്കുന്നു',
-  'thinkingCoins.schoolInfo': 'സ്കൂൾ പതിപ്പ് പ്ലാനിനെക്കുറിച്ച് അറിയാൻ നിങ്ങളുടെ സ്കൂൾ അഡ്മിനിസ്ട്രേറ്ററെ ബന്ധപ്പെടുക',
+  'thinkingCoins.schoolInfo':
+    'സ്കൂൾ പതിപ്പ് പ്ലാനിനെക്കുറിച്ച് അറിയാൻ നിങ്ങളുടെ സ്കൂൾ അഡ്മിനിസ്ട്രേറ്ററെ ബന്ധപ്പെടുക',
   'thinkingCoins.school.headline': 'AI ശാക്തീകരിച്ച ചിന്ത·സ്കൂൾ അധിഷ്ഠിത പരിഹാരങ്ങൾ',
-  'thinkingCoins.school.description': 'സ്‌കൂളുകൾക്കും വിദ്യാഭ്യാസ സ്ഥാപനങ്ങൾക്കും വലിയ തോതിലുള്ള ബ്രാൻഡ് ബിൽഡിംഗ്, ഡാറ്റ സെക്യൂരിറ്റി ആവശ്യങ്ങൾ എന്നിവ നിറവേറ്റുന്നതിനായി സ്വകാര്യവൽക്കരിച്ച വിന്യാസം, എക്‌സ്‌ക്ലൂസീവ് ഇഷ്‌ടാനുസൃതമാക്കൽ, സമഗ്രമായ ഓപ്പറേഷൻ, മെയിൻ്റനൻസ് പിന്തുണ എന്നിവ നൽകുക.',
+  'thinkingCoins.school.description':
+    'സ്‌കൂളുകൾക്കും വിദ്യാഭ്യാസ സ്ഥാപനങ്ങൾക്കും വലിയ തോതിലുള്ള ബ്രാൻഡ് ബിൽഡിംഗ്, ഡാറ്റ സെക്യൂരിറ്റി ആവശ്യങ്ങൾ എന്നിവ നിറവേറ്റുന്നതിനായി സ്വകാര്യവൽക്കരിച്ച വിന്യാസം, എക്‌സ്‌ക്ലൂസീവ് ഇഷ്‌ടാനുസൃതമാക്കൽ, സമഗ്രമായ ഓപ്പറേഷൻ, മെയിൻ്റനൻസ് പിന്തുണ എന്നിവ നൽകുക.',
   'thinkingCoins.school.feature.accountManager': 'സമർപ്പിത അക്കൗണ്ട് മാനേജർ',
   'thinkingCoins.school.feature.accountManagerDesc': '1 മുതൽ 1 വരെ കൺസൾട്ടേഷനും ഡോക്കിംഗും',
   'thinkingCoins.school.feature.privateDeploy': 'സ്വകാര്യ വിന്യാസം',
@@ -36,20 +39,27 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.feature.customizationDesc': 'ആവശ്യാനുസരണം ഫ്ലെക്സിബിൾ കോൺഫിഗറേഷൻ',
   'thinkingCoins.school.feature.opsSupport': 'സമഗ്രമായ പ്രവർത്തനവും പരിപാലന പിന്തുണയും',
   'thinkingCoins.school.feature.opsSupportDesc': '7×24 മണിക്കൂർ ഗ്യാരണ്ടി',
-  'thinkingCoins.school.consultTitle': 'കൺസൾട്ടേഷനായി ഒരു അപ്പോയിൻ്റ്മെൻ്റ് നടത്തുക, ഞങ്ങൾ നിങ്ങളെ സജീവമായി ബന്ധപ്പെടും',
+  'thinkingCoins.school.consultTitle':
+    'കൺസൾട്ടേഷനായി ഒരു അപ്പോയിൻ്റ്മെൻ്റ് നടത്തുക, ഞങ്ങൾ നിങ്ങളെ സജീവമായി ബന്ധപ്പെടും',
   'thinkingCoins.school.fieldName': 'നിങ്ങളുടെ പേര്',
   'thinkingCoins.school.fieldPhone': 'ബന്ധപ്പെടേണ്ട നമ്പർ',
   'thinkingCoins.school.fieldOrg': 'സ്കൂൾ/സ്ഥാപനത്തിൻ്റെ പേര്',
   'thinkingCoins.school.fieldNote': 'അനുബന്ധ നിർദ്ദേശങ്ങൾ (ഓപ്ഷണൽ)',
   'thinkingCoins.school.submit': 'അന്വേഷണം സമർപ്പിക്കുക',
-  'thinkingCoins.school.submitSuccess': 'സമർപ്പണം വിജയകരമായിരുന്നു, കഴിയുന്നതും വേഗം ഞങ്ങൾ നിങ്ങളെ ബന്ധപ്പെടുന്നതാണ്',
-  'thinkingCoins.school.submitFailed': 'സമർപ്പിക്കൽ പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
-  'thinkingCoins.school.submitRateLimit': 'ഇടയ്ക്കിടെ സമർപ്പിക്കുക, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
-  'thinkingCoins.school.submitNotConfigured': 'കൺസൾട്ടേഷൻ ചാനൽ ഇതുവരെ കോൺഫിഗർ ചെയ്തിട്ടില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'thinkingCoins.school.submitSuccess':
+    'സമർപ്പണം വിജയകരമായിരുന്നു, കഴിയുന്നതും വേഗം ഞങ്ങൾ നിങ്ങളെ ബന്ധപ്പെടുന്നതാണ്',
+  'thinkingCoins.school.submitFailed':
+    'സമർപ്പിക്കൽ പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
+  'thinkingCoins.school.submitRateLimit':
+    'ഇടയ്ക്കിടെ സമർപ്പിക്കുക, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
+  'thinkingCoins.school.submitNotConfigured':
+    'കൺസൾട്ടേഷൻ ചാനൽ ഇതുവരെ കോൺഫിഗർ ചെയ്തിട്ടില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'thinkingCoins.school.validationRequired': 'ആവശ്യമായ എല്ലാ ഫീൽഡുകളും പൂരിപ്പിക്കുക',
   'thinkingCoins.school.validationPhone': 'ദയവായി ഒരു സാധുവായ കോൺടാക്റ്റ് നമ്പർ നൽകുക',
-  'thinkingCoins.school.validationTooLong': 'ഉള്ളടക്കത്തിൻ്റെ ഒരു ഭാഗം ദൈർഘ്യമേറിയതാണ്, ദയവായി അത് ചുരുക്കി വീണ്ടും ശ്രമിക്കുക',
-  'thinkingCoins.school.validationInvalid': 'ഉള്ളടക്കം അസാധുവാണ്, ദയവായി പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക',
+  'thinkingCoins.school.validationTooLong':
+    'ഉള്ളടക്കത്തിൻ്റെ ഒരു ഭാഗം ദൈർഘ്യമേറിയതാണ്, ദയവായി അത് ചുരുക്കി വീണ്ടും ശ്രമിക്കുക',
+  'thinkingCoins.school.validationInvalid':
+    'ഉള്ളടക്കം അസാധുവാണ്, ദയവായി പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക',
   'thinkingCoins.tier.trial': 'ട്രയൽ പതിപ്പ്',
   'thinkingCoins.tier.monthly': 'സൂപ്പർ മെമ്പർ·ഏക മാസം',
   'thinkingCoins.tier.sub': 'സൂപ്പർ അംഗം·തുടർച്ചയായ പ്രതിമാസ സബ്‌സ്‌ക്രിപ്‌ഷൻ',
@@ -63,7 +73,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'ക്ഷണ റിവാർഡുകൾ',
   'thinkingCoins.reason.case_reward': 'കേസ് പ്രതിഫലം',
   'thinkingCoins.reason.subscription_grant': 'സൗജന്യമായി സബ്സ്ക്രൈബ് ചെയ്യുക',
-  'thinkingCoins.dailyExpiresHint': 'സൈൻ-ഇൻ റിവാർഡുകൾ അതേ ദിവസം തന്നെ സാധുതയുള്ളതാണ്, അത് 24:00-ന് റീസെറ്റ് ചെയ്യും',
+  'thinkingCoins.dailyExpiresHint':
+    'സൈൻ-ഇൻ റിവാർഡുകൾ അതേ ദിവസം തന്നെ സാധുതയുള്ളതാണ്, അത് 24:00-ന് റീസെറ്റ് ചെയ്യും',
   'thinkingCoins.dailyBalanceRemaining': 'ഇന്നത്തെ ചെക്ക്-ഇൻ ശേഷിക്കുന്നു {n}',
   'thinkingCoins.admin.tab': 'ചിന്താ നാണയം',
   'thinkingCoins.admin.tasksTitle': 'ടാസ്ക് പ്രതിഫലം',
@@ -75,7 +86,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'സംരക്ഷിക്കുക',
   'thinkingCoins.admin.signupGrant': 'പുതിയ ഉപയോക്താക്കൾക്ക് സൗജന്യം',
   'thinkingCoins.admin.dailyEarnCap': 'പ്രതിദിന ഏറ്റെടുക്കൽ പരിധി',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 എന്നാൽ പരിധിയില്ല; സ്ഥിരസ്ഥിതി 135 എല്ലാ ദൈനംദിന ജോലികളുടെയും ആകെത്തുകയാണ്',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 എന്നാൽ പരിധിയില്ല; സ്ഥിരസ്ഥിതി 135 എല്ലാ ദൈനംദിന ജോലികളുടെയും ആകെത്തുകയാണ്',
   'thinkingCoins.admin.costMindmate': 'MindMate ഒറ്റ ഉപഭോഗം',
   'thinkingCoins.admin.costDiagram': 'മാപ്പ് ജനറേഷൻ ഉപഭോഗം',
   'thinkingCoins.admin.costCanvas': 'ക്യാൻവാസ് സഹായ ഉപഭോഗം',
@@ -106,9 +118,11 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.free': 'സ്വതന്ത്ര',
   'thinkingCoins.plan.priceMonthly': '¥59/മാസം',
   'thinkingCoins.plan.priceSub': '¥49/മാസം',
-  'thinkingCoins.plan.priceSubNote': 'യഥാർത്ഥ വില ¥59/മാസം, പ്രതിമാസ സബ്‌സ്‌ക്രിപ്‌ഷൻ ¥10 ലാഭിക്കുന്നു',
+  'thinkingCoins.plan.priceSubNote':
+    'യഥാർത്ഥ വില ¥59/മാസം, പ്രതിമാസ സബ്‌സ്‌ക്രിപ്‌ഷൻ ¥10 ലാഭിക്കുന്നു',
   'thinkingCoins.plan.priceAnnual': '¥398/വർഷം',
-  'thinkingCoins.plan.priceAnnualNote': 'ഏകദേശം ¥33.2/മാസം, പ്രതിമാസ പേയ്‌മെൻ്റുമായി താരതമ്യം ചെയ്യുമ്പോൾ 44% ലാഭിക്കുന്നു',
+  'thinkingCoins.plan.priceAnnualNote':
+    'ഏകദേശം ¥33.2/മാസം, പ്രതിമാസ പേയ്‌മെൻ്റുമായി താരതമ്യം ചെയ്യുമ്പോൾ 44% ലാഭിക്കുന്നു',
   'thinkingCoins.plan.currentPlan': 'നിലവിലെ പ്ലാൻ',
   'thinkingCoins.plan.subscribeNow': 'ഇപ്പോൾ സജീവമാക്കുക',
   'thinkingCoins.plan.popular': 'ജനപ്രിയമായത്',

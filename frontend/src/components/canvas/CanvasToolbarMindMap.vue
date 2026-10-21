@@ -30,6 +30,7 @@ import {
   RotateCcw,
   Save,
   School,
+  Share2,
   Sparkles,
   Trash2,
   Undo2,
@@ -43,6 +44,7 @@ import {
 import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
+import CanvasShareToSeminarDialog from '@/components/canvas/CanvasShareToSeminarDialog.vue'
 import CanvasToolbarMindMapFormat from '@/components/canvas/CanvasToolbarMindMapFormat.vue'
 import CanvasToolbarMindMapHistoryVersions from '@/components/canvas/CanvasToolbarMindMapHistoryVersions.vue'
 import CanvasToolbarMindMapInsert from '@/components/canvas/CanvasToolbarMindMapInsert.vue'
@@ -65,12 +67,12 @@ import { useCanvasToolbarFormatting, useFollowNodeStyleToolbar } from '@/composa
 import { toggleCanvasVirtualKeyboard } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -89,6 +91,7 @@ import {
   useCanvasExportStore,
   useDiagramStore,
   useMindClassroomStore,
+  useSavedDiagramsStore,
   useVoiceNotesStore,
 } from '@/stores'
 import {
@@ -110,6 +113,8 @@ const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const { showCanvasAiFeatures } = useLearningAiGate()
 const diagramStore = useDiagramStore()
 const authStore = useAuthStore()
+const savedDiagramsStore = useSavedDiagramsStore()
+const shareSeminarOpen = ref(false)
 const { featureCommunity } = useFeatureFlags()
 const { triggerImportInPlace } = useDiagramImport()
 const { resetToDefaultTemplate } = useCanvasReset()
@@ -345,6 +350,18 @@ function openVoiceSummary(): void {
 
 function openClassroom(): void {
   classroomStore.openModal()
+}
+
+function openShareToSeminar(): void {
+  if (!authStore.isAuthenticated) {
+    notify.warningKey('canvas.ribbon.shareToSeminarLogin')
+    return
+  }
+  if (!savedDiagramsStore.activeDiagramId) {
+    notify.warningKey('canvas.ribbon.shareToSeminarNeedSave')
+    return
+  }
+  shareSeminarOpen.value = true
 }
 
 onMounted(() => {
@@ -1281,8 +1298,27 @@ watch(
               />
             </button>
           </I18nTooltip>
+          <I18nTooltip
+            k="canvas.ribbon.shareToSeminarTip"
+            placement="bottom"
+            :disabled="shortLabels"
+          >
+            <button
+              type="button"
+              class="mm-btn"
+              :aria-label="t('canvas.ribbon.shareToSeminar')"
+              @click="openShareToSeminar"
+            >
+              <Share2 class="w-4 h-4" />
+              <MmToolbarLabel
+                class="mm-btn__label"
+                k="canvas.ribbon.shareToSeminar"
+              />
+            </button>
+          </I18nTooltip>
         </div>
       </template>
+      <CanvasShareToSeminarDialog v-model="shareSeminarOpen" />
     </div>
     <button
       v-show="trackOverflowing"

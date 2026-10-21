@@ -48,8 +48,7 @@ export default {
   'admin.diagramTypes': '图表类型',
   'admin.disabled': '禁用',
   'admin.displayNameLabel': '更改组织名字',
-  'admin.displayNameHint':
-    '在用户侧栏显示的自定义文字（如 MindGraph Pro）。留空则使用学校名称。',
+  'admin.displayNameHint': '在用户侧栏显示的自定义文字（如 MindGraph Pro）。留空则使用学校名称。',
   'admin.edit': '编辑',
   'admin.editApiKey': '编辑 API 密钥',
   'admin.editSchool': '编辑学校',
@@ -79,7 +78,8 @@ export default {
   'admin.feature.mindbot': 'MindBot（钉钉 → Dify）',
   'admin.feature.mindbotHint': '企业机器人 HTTP 回调，按校配置 Dify 与密钥；回调地址需 HTTPS。',
   'admin.feature.mindmateExport': 'MindMate 记录导出',
-  'admin.feature.mindmateExportHint': '超级管理员面板：查看并导出网页 MindMate 与钉钉 MindBot 的 Dify 对话记录。',
+  'admin.feature.mindmateExportHint':
+    '超级管理员面板：查看并导出网页 MindMate 与钉钉 MindBot 的 Dify 对话记录。',
   'admin.feature.ragChunkTest': 'RAG 分块测试',
   'admin.feature.ragChunkTestHint': '知识空间内的评测工具。',
   'admin.feature.smartResponse': '智回（设备）',
@@ -87,7 +87,8 @@ export default {
   'admin.feature.teacherUsage': '教师使用度分析',
   'admin.feature.teacherUsageHint': '教师活跃度管理端统计。',
   'admin.feature.kittyAgent': 'Kitty Agent（语音与画布）',
-  'admin.feature.kittyAgentHint': 'Kitty 用 Fun-ASR、CosyVoice 和类型化编辑循环改画布；WebSocket 与 REST 受机构/用户权限控制。',
+  'admin.feature.kittyAgentHint':
+    'Kitty 用 Fun-ASR、CosyVoice 和类型化编辑循环改画布；WebSocket 与 REST 受机构/用户权限控制。',
   'admin.feature.mindClassroomSlideDeck': '思维讲堂 · 幻灯片讲解',
   'admin.feature.mindClassroomSlideDeckHint':
     '关闭时「幻灯片讲解」在讲堂里保持可见但灰显。默认关闭。',
@@ -96,7 +97,8 @@ export default {
   'admin.feature.workshopChat': '研习社',
   'admin.feature.workshopChatHint': '校级频道、话题与私信。',
   'admin.feature.mindmateCollab': 'MindMate 在线协同',
-  'admin.feature.mindmateCollabHint': '共享 MindMate AI 聊天室（校内浏览 + 邀请码）。各学校版本均可使用。',
+  'admin.feature.mindmateCollabHint':
+    '共享 MindMate AI 聊天室（校内浏览 + 邀请码）。各学校版本均可使用。',
   'admin.feature.training': '校本培训跟随',
   'admin.feature.trainingHint': '到校讲师可将该校教师拉到同一图示页。',
   'admin.feature.vod': '在线视频库',
@@ -142,7 +144,8 @@ export default {
   'admin.teachingDesignTemplate.replaceFile': '更换 Word 文件',
   'admin.teachingDesignTemplate.replaceOk': 'Word 文件已更新',
   'admin.teachingDesignTemplate.delete': '删除模板',
-  'admin.teachingDesignTemplate.deleteConfirm': '删除后，已选择该模板的学校将改用系统默认。确定删除？',
+  'admin.teachingDesignTemplate.deleteConfirm':
+    '删除后，已选择该模板的学校将改用系统默认。确定删除？',
   'admin.teachingDesignTemplate.deleteOk': '模板已删除',
   'admin.teachingDesignTemplate.deleteFail': '删除失败',
   'admin.teachingDesignTemplate.saveOk': '模板已保存',
@@ -342,11 +345,13 @@ export default {
   'admin.mindbot.managerNoOrg': '当前账号未绑定学校。',
   'admin.mindbot.tabDingtalk': '钉钉鉴权',
   'admin.oauth.sectionTitle': '扫码登录',
-  'admin.oauth.intro': '微信扫码登录是全平台的（FEATURE_WECHAT_LOGIN + AppID/Secret；默认关闭，仅生产开启——开放平台只允许一个回调域名）。钉钉按学校配置（FEATURE_DINGTALK_LOGIN + AppKey/AppSecret；默认关闭）。',
+  'admin.oauth.intro':
+    '微信扫码登录是全平台的（FEATURE_WECHAT_LOGIN + AppID/Secret；默认关闭，仅生产开启——开放平台只允许一个回调域名）。钉钉按学校配置（FEATURE_DINGTALK_LOGIN + AppKey/AppSecret；默认关闭）。',
   'admin.oauth.officialDocsHint':
     '流程与官方文档一致：微信网站应用 WxLogin + code 换 token；钉钉 OAuth 2.0 DTFrameLogin + authCode 立即换 userAccessToken（勿用 legacy oapi.dingtalk.com）。',
   'admin.oauth.wechatToggle': '微信扫码登录',
-  'admin.oauth.wechatHint': '仅在服务器 .env 配置。生产环境设置 FEATURE_WECHAT_LOGIN=True。教师须先在账户绑定中关联微信，之后才能扫码登录。',
+  'admin.oauth.wechatHint':
+    '仅在服务器 .env 配置。生产环境设置 FEATURE_WECHAT_LOGIN=True。教师须先在账户绑定中关联微信，之后才能扫码登录。',
   'admin.oauth.wechatOn': '已开启',
   'admin.oauth.wechatOff': '已关闭',
   'admin.oauth.dingtalkToggle': '启用钉钉扫码登录',
@@ -866,7 +871,8 @@ export default {
   'admin.schoolFeatureUsage.usageRateHint': '覆盖率 = 年度访问用户数 / 当前在籍人数。',
   'admin.schoolFeatureUsage.highTitle': '2.高频功能清单',
   'admin.schoolFeatureUsage.lowIdleTitle': '3.低频及长期闲置功能清单',
-  'admin.schoolFeatureUsage.lowIdleBody': '低频：{low}。长期闲置：{idle}。闲置可能包含本校未开通的功能。',
+  'admin.schoolFeatureUsage.lowIdleBody':
+    '低频：{low}。长期闲置：{idle}。闲置可能包含本校未开通的功能。',
   'admin.schoolFeatureUsage.conclusionTitle': '4.功能使用综合研判结论',
   'admin.schoolFeatureUsage.conclusionConcentrated':
     '使用集中在{top}。闲置或未产生落库事件的模块为{idle}。使用量向少数核心功能集中，闲置项可能含未开通功能。',
@@ -919,12 +925,13 @@ export default {
   'admin.schoolAddMemberInvalidNameForName': '{name} 的姓名无效（至少2个字符且不含数字）',
   'admin.schoolAddMemberType': '类型',
   'admin.schoolAddMemberBatchTitle': '批量导入',
-  'admin.schoolAddMemberBatchHint':
-    '从 Excel、WPS 或 Word 复制表格行，点击此处并粘贴（Ctrl+V）',
-  'admin.schoolAddMemberBatchPastePlaceholder': '在此粘贴表格 — 两列：手机号/邮箱与姓名，左右顺序不限',
+  'admin.schoolAddMemberBatchHint': '从 Excel、WPS 或 Word 复制表格行，点击此处并粘贴（Ctrl+V）',
+  'admin.schoolAddMemberBatchPastePlaceholder':
+    '在此粘贴表格 — 两列：手机号/邮箱与姓名，左右顺序不限',
   'admin.schoolAddMemberBatchPasteHint':
     '提示：在 Excel/WPS/Word 中选中行并复制，点击此区域后按 Ctrl+V；系统会自动识别手机号或邮箱与姓名',
-  'admin.schoolAddMemberBatchInvalidPaste': '无法识别粘贴内容，请使用两列：手机号或邮箱与姓名（顺序不限）',
+  'admin.schoolAddMemberBatchInvalidPaste':
+    '无法识别粘贴内容，请使用两列：手机号或邮箱与姓名（顺序不限）',
   'admin.schoolAddMemberBatchTooLarge': '单次最多导入 {max} 名（已粘贴 {count} 条）',
   'admin.schoolAddMemberBatchDuplicatesRemoved': '（已去重 {count} 条）',
   'admin.schoolAddMemberBatchEmpty': '请先粘贴成员数据',
@@ -958,7 +965,8 @@ export default {
   'admin.schoolUserUnlockConfirm': '确定解锁该账户？将清除登录失败锁定与失败次数。',
   'admin.listRange': '第 {start}–{end} 条，共 {total} 条',
   'admin.listRangeEmpty': '暂无数据',
-  'admin.schoolManagerGrantRequiresOrg': '该用户尚未加入学校，无法设为学校管理员。请先在对应学校添加成员。',
+  'admin.schoolManagerGrantRequiresOrg':
+    '该用户尚未加入学校，无法设为学校管理员。请先在对应学校添加成员。',
   'admin.schoolManagersTab': '学校管理员',
   'admin.schoolName': '学校名称',
   'admin.schoolNamePlaceholder': '例如：北京市第一中学',
@@ -971,7 +979,8 @@ export default {
   'admin.schoolModal.tabTeachers': '教师',
   'admin.schoolModal.tabActivity': '活动记录',
   'admin.expertSchoolBindingLabel': '专家学校绑定',
-  'admin.expertSchoolBindingHint': '绑定后，专家会出现在这些学校的通讯录、消息和在线列表中。一位专家可以同时绑定多所学校，不占成员名额。专家创建的学校会自动绑定。专家刷新页面后即可使用。',
+  'admin.expertSchoolBindingHint':
+    '绑定后，专家会出现在这些学校的通讯录、消息和在线列表中。一位专家可以同时绑定多所学校，不占成员名额。专家创建的学校会自动绑定。专家刷新页面后即可使用。',
   'admin.expertSchoolBindingPlaceholder': '选择要绑定的专家',
   'admin.expertSchoolBindingEmpty': '暂无专家账号',
   'admin.expertSchoolBindingLoadError': '无法加载专家列表',
@@ -1069,14 +1078,17 @@ export default {
   'admin.schoolDifyServer2': '服务器 2',
   'admin.schoolDifyActiveServer': '主用服务器',
   'admin.schoolDifyFailover': '自动切换',
-  'admin.schoolDifyDualServerHint': '为每所学校配置两台 Dify 服务器。主用服务器处理实时 MindMate 对话；开启自动切换后，主用服务器不可用时流量将切换到备用服务器，恢复后自动切回。',
+  'admin.schoolDifyDualServerHint':
+    '为每所学校配置两台 Dify 服务器。主用服务器处理实时 MindMate 对话；开启自动切换后，主用服务器不可用时流量将切换到备用服务器，恢复后自动切回。',
   'admin.mindmateExport.navLabel': 'MindMate 记录导出',
   'admin.mindmateExport.tabExport': '筛选与查询',
   'admin.mindmateExport.tabDumps': 'Dump 文件',
   'admin.mindmateExport.panelModeLabel': 'MindMate 导出模式',
   'admin.mindmateExport.title': 'MindMate 记录导出',
-  'admin.mindmateExport.description': '按时间范围查看并导出单个用户、多个用户或整所学校的 MindMate（Dify）对话记录。记录会跨两台 Dify 服务器合并。',
-  'admin.mindmateExport.privacyNotice': '此视图会展示真实对话内容。每次导出都会被审计（谁导出了哪个学校/用户/时间范围/格式）。请妥善处理导出的数据。',
+  'admin.mindmateExport.description':
+    '按时间范围查看并导出单个用户、多个用户或整所学校的 MindMate（Dify）对话记录。记录会跨两台 Dify 服务器合并。',
+  'admin.mindmateExport.privacyNotice':
+    '此视图会展示真实对话内容。每次导出都会被审计（谁导出了哪个学校/用户/时间范围/格式）。请妥善处理导出的数据。',
   'admin.mindmateExport.orgLabel': '学校',
   'admin.mindmateExport.orgPlaceholder': '选择学校',
   'admin.mindmateExport.scopeLabel': '范围',
@@ -1104,10 +1116,13 @@ export default {
   'admin.mindmateExport.conversationsTitle': '对话',
   'admin.mindmateExport.conversationCount': '{count} 条对话',
   'admin.mindmateExport.noConversations': '暂无对话。请调整筛选条件后重新加载。',
-  'admin.mindmateExport.truncatedNotice': '范围内用户过多（上限 {max}），结果已被截断。请缩小范围以获得完整导出。',
-  'admin.mindmateExport.conversationsTruncatedNotice': '匹配的会话过多，列表已被截断。请缩小时间范围或导出范围。',
+  'admin.mindmateExport.truncatedNotice':
+    '范围内用户过多（上限 {max}），结果已被截断。请缩小范围以获得完整导出。',
+  'admin.mindmateExport.conversationsTruncatedNotice':
+    '匹配的会话过多，列表已被截断。请缩小时间范围或导出范围。',
   'admin.mindmateExport.truncatedDownloadTitle': '导出可能不完整',
-  'admin.mindmateExport.truncatedDownloadConfirm': '本次导出超过 {max} 用户或会话上限，是否仍要下载？',
+  'admin.mindmateExport.truncatedDownloadConfirm':
+    '本次导出超过 {max} 用户或会话上限，是否仍要下载？',
   'admin.mindmateExport.loadPrompt': '设置筛选条件后点击「加载会话列表」。',
   'admin.mindmateExport.serverBadge': '服务器 {server}',
   'admin.mindmateExport.viewTranscript': '选择一条对话以查看记录。',
@@ -1404,7 +1419,8 @@ export default {
   'admin.llmControl.tokens': 'Token',
   'admin.llmControl.requests': '请求数',
   'admin.llmControl.editTitle': '即时修改',
-  'admin.llmControl.editHint': '保存后约 2 秒内在各进程生效，不会写入 .env。与环境变量相同则清除覆盖。',
+  'admin.llmControl.editHint':
+    '保存后约 2 秒内在各进程生效，不会写入 .env。与环境变量相同则清除覆盖。',
   'admin.llmControl.envValue': '环境变量',
   'admin.llmControl.overridden': '已覆盖',
   'admin.llmControl.save': '保存',
@@ -1426,7 +1442,8 @@ export default {
   'admin.llmControl.field.arkKimi': 'Kimi 接入点',
   'admin.llmControl.invalid': '格式无效',
   'admin.llmControl.weight': '权重',
-  'admin.llmControl.policyNote': '分流方式和请求上限在进程启动时从环境变量读入。模型名和接入点保存后约 2 秒生效。',
+  'admin.llmControl.policyNote':
+    '分流方式和请求上限在进程启动时从环境变量读入。模型名和接入点保存后约 2 秒生效。',
   'admin.llmControl.strategyTitle': '三种分流方式',
   'admin.llmControl.strategy.weighted': '按权重',
   'admin.llmControl.strategy.weightedHint': '每次按下面的比例随机选择一侧。',
@@ -1827,7 +1844,8 @@ export default {
   'admin.learningSpace.removeMemberConfirm': '移出后，{name} 将无法访问学习空间。确认移出？',
   'admin.learningSpace.memberRemoved': '已移出 {name}',
   'admin.learningSpace.studentList': '学生列表',
-  'admin.learningSpace.studentsIntro': '班级学生帐号不在「用户管理」中统计；在此统一查看、筛选与管理各班级学员。',
+  'admin.learningSpace.studentsIntro':
+    '班级学生帐号不在「用户管理」中统计；在此统一查看、筛选与管理各班级学员。',
   'admin.learningSpace.summaryClassroom': '班级学生',
   'admin.learningSpace.summaryEnrolled': '导入学员',
   'admin.learningSpace.summaryTotal': '合计',
@@ -1875,7 +1893,8 @@ export default {
   'admin.learningSpace.copyCode': '复制班级码',
   'admin.learningSpace.codeCopied': '班级码已复制',
   'admin.learningSpace.rotateCodeConfirm': '轮换后旧班级码立即失效，学生需使用新码登录。确认轮换？',
-  'admin.learningSpace.importHint': '导入后生成初始密码（姓名拼音首字母 + 123），请立刻复制发给学生。',
+  'admin.learningSpace.importHint':
+    '导入后生成初始密码（姓名拼音首字母 + 123），请立刻复制发给学生。',
   'admin.learningSpace.studentsEmpty': '该班暂无学生，请先「导入学生」。',
   'admin.learningSpace.classCodeHint': '班级码仅支持 4–16 位字母与数字',
   'admin.learningSpace.classCodeInvalid': '班级码须为 4–16 位字母或数字组合',
@@ -1904,7 +1923,8 @@ export default {
   'admin.learningSpace.accountImportError.already_assistant': '已是本班助教',
   'admin.learningSpace.accountImportError.class_full': '班级人数已满',
   'admin.userDropdown.tab': '用户下拉列表',
-  'admin.userDropdown.intro': '管理用户头像菜单里的功能。可以添加、重命名、删除，并把每一项链接到已创建的课程，再预览课程讲解。',
+  'admin.userDropdown.intro':
+    '管理用户头像菜单里的功能。可以添加、重命名、删除，并把每一项链接到已创建的课程，再预览课程讲解。',
   'admin.userDropdown.add': '添加功能',
   'admin.userDropdown.addOk': '已添加',
   'admin.userDropdown.colName': '名称',

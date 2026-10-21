@@ -104,7 +104,7 @@ async def test_stop_session_owner_already_ended_is_success() -> None:
     context.__aexit__.return_value = None
 
     with patch(
-        "services.features.mindmate_collab.manager.user_rls_session",
+        "services.features.mindmate_collab.manager.system_rls_session",
         return_value=context,
     ):
         ok = await mgr.stop_session("sess-ended", 3, reason="owner")
@@ -168,7 +168,7 @@ async def test_stop_session_non_owner_already_ended_is_rejected() -> None:
     context.__aexit__.return_value = None
 
     with patch(
-        "services.features.mindmate_collab.manager.user_rls_session",
+        "services.features.mindmate_collab.manager.system_rls_session",
         return_value=context,
     ):
         ok = await mgr.stop_session("sess-ended", 5, reason="owner")

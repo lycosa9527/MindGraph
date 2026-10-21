@@ -1,7 +1,7 @@
 /**
  * @mention picker for MindMate seminar composer (agent + org contacts).
  */
-import { nextTick, ref, type Ref } from 'vue'
+import { type Ref, nextTick, ref } from 'vue'
 
 import {
   type MindmateMentionCandidate,

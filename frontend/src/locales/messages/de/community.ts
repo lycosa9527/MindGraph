@@ -11,7 +11,8 @@ export default {
   'community.category.studyNotes': 'Lernnotizen',
   'community.category.teachingDesign': 'Unterrichtsentwurf',
   'community.category.workSummary': 'Arbeitszusammenfassung',
-  'community.deleteConfirmBody': 'Diesen Beitrag löschen? Dies kann nicht rückgängig gemacht werden.',
+  'community.deleteConfirmBody':
+    'Diesen Beitrag löschen? Dies kann nicht rückgängig gemacht werden.',
   'community.deleteConfirmTitle': 'Beitrag löschen?',
   'community.deleted': 'Gelöscht',
   'community.emptyNoPosts': 'Keine Beiträge gefunden. Passen Sie Filter oder Suche an.',
@@ -76,10 +77,12 @@ export default {
   'debateverse.clickNextHint': 'Bitte klicken Sie auf Weiter, damit die Änderungen wirksam werden',
   'debateverse.coinTossAffirmativeFirst': 'Pro-Seite spricht zuerst',
   'debateverse.coinTossGotIt': 'Verstanden',
-  'debateverse.coinTossModalBody': 'Vor der Debatte Sprechreihenfolge festlegen oder Pro-/Contra-Positionen per Münzwurf bestimmen',
+  'debateverse.coinTossModalBody':
+    'Vor der Debatte Sprechreihenfolge festlegen oder Pro-/Contra-Positionen per Münzwurf bestimmen',
   'debateverse.coinTossNegativeFirst': 'Contra-Seite spricht zuerst',
   'debateverse.coinTossOrder': 'Münzwurf zur Sprechreihenfolge',
-  'debateverse.coinTossRules': 'KI-Modelle wurden zufällig den Debattenrollen zugewiesen. Vor der Debatte Sprechreihenfolge festlegen oder Pro-/Contra-Positionen per Münzwurf bestimmen',
+  'debateverse.coinTossRules':
+    'KI-Modelle wurden zufällig den Debattenrollen zugewiesen. Vor der Debatte Sprechreihenfolge festlegen oder Pro-/Contra-Positionen per Münzwurf bestimmen',
   'debateverse.coinTossStageTitle': 'Münzwurf-Phase',
   'debateverse.debateTopicLabel': 'Debatten-Thema: ',
   'debateverse.executeCoinToss': 'Münzwurf ausführen',
@@ -105,14 +108,16 @@ export default {
   'debateverse.roleLabel.debater': 'Als Debattierende spielen',
   'debateverse.roleLabel.judgeRole': 'Als Schiedsrichter spielen',
   'debateverse.roleLabel.viewer': 'Als Zuschauer spielen',
-  'debateverse.setup.greeting': '{username}, wahre Weisheit entsteht aus dem Zusammenprall von Standpunkten.',
+  'debateverse.setup.greeting':
+    '{username}, wahre Weisheit entsteht aus dem Zusammenprall von Standpunkten.',
   'debateverse.setup.roleDebater': 'Als Debattierende spielen',
   'debateverse.setup.roleJudge': 'Als Schiedsrichter spielen',
   'debateverse.setup.roleViewer': 'Als Zuschauer spielen',
   'debateverse.setup.suggestion1': 'Soll KI Rechtspersönlichkeit erhalten?',
   'debateverse.setup.suggestion2': 'Nutzen oder schaden Videospiele Jugendlichen mehr?',
   'debateverse.setup.suggestion3': 'Sollten Hochschulzugangsprüfungen abgeschafft werden?',
-  'debateverse.setup.suggestion4': 'Sollten Social-Media-Plattformen strengere Inhaltsmoderation haben?',
+  'debateverse.setup.suggestion4':
+    'Sollten Social-Media-Plattformen strengere Inhaltsmoderation haben?',
   'debateverse.setup.suggestion5': 'Sollte Remote-Arbeit zum Standard werden?',
   'debateverse.setup.suggestion6': 'Soll KI-generierter Inhalt urheberrechtlich geschützt sein?',
   'debateverse.setup.suggestion7': 'Soll Bildung stärker Wissen oder Fähigkeiten betonen?',
@@ -138,7 +143,8 @@ export default {
   'library.loading': 'Wird geladen…',
   'library.other': 'Sonstige',
   'library.premiumCollection': 'Empfohlene Sammlung',
-  'library.slotFull.body': 'Sie haben {max} gespeicherte Diagramme. Löschen Sie eines, um ein neues zu speichern.',
+  'library.slotFull.body':
+    'Sie haben {max} gespeicherte Diagramme. Löschen Sie eines, um ein neues zu speichern.',
   'library.slotFull.cancel': 'Abbrechen',
   'library.slotFull.deleteAndSave': 'Löschen & Speichern',
   'library.slotFull.networkError': 'Netzwerkfehler, Vorgang fehlgeschlagen',

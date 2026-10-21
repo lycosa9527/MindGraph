@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  ZHIHUI_MODELS,
-  defaultModelId,
-  isZhihuiImageModel,
-} from '@/components/zhihui/zhihuiModes'
+import { ZHIHUI_MODELS, defaultModelId, isZhihuiImageModel } from '@/components/zhihui/zhihuiModes'
 import { isZhihuiJobActive } from '@/stores/zhihuiHistory'
 
 describe('zhihuiModes', () => {

@@ -177,8 +177,7 @@ export function finishMindMapLoadSession(reason: string): void {
 
   console.info(`${LOG_PREFIX} summary`, {
     total: roundMs(total),
-    fetch:
-      fetchStart != null && fetchDone != null ? roundMs(fetchDone - fetchStart) : undefined,
+    fetch: fetchStart != null && fetchDone != null ? roundMs(fetchDone - fetchStart) : undefined,
     spec: specStart != null && specDone != null ? roundMs(specDone - specStart) : undefined,
     shell: shell != null ? roundMs(shell) : undefined,
     measureFirst: measureFirst != null ? roundMs(measureFirst) : undefined,

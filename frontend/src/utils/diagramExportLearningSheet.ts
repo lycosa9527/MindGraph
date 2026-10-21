@@ -34,9 +34,7 @@ export function learningSheetIncludeAnswers(options?: CanvasExportOptions): bool
 }
 
 /** Capture whatever is on the canvas now — do not toggle learning-sheet answers. */
-export async function runAsShownRasterCapture<T>(
-  capture: () => T | Promise<T>
-): Promise<T> {
+export async function runAsShownRasterCapture<T>(capture: () => T | Promise<T>): Promise<T> {
   await waitForCanvasPaint()
   return capture()
 }

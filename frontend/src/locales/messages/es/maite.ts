@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'método de aprendizaje mate',
-  'maite.subtitle': 'Descomposición inversa · Diagnóstico en cuatro etapas · Remedio dirigido · Transferencia de variantes',
+  'maite.subtitle':
+    'Descomposición inversa · Diagnóstico en cuatro etapas · Remedio dirigido · Transferencia de variantes',
   'maite.mode.demo': 'Demostración',
   'maite.mode.inquiry': 'Indagación',
   'maite.mode.map': 'Mapa',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Práctica de variantes',
   'maite.inquiry.complete': 'Completar sesión',
   'maite.inquiry.completedTitle': 'Indagación completada',
-  'maite.inquiry.completedMessage': 'Esta sesión de indagación ha finalizado. Consulte el informe de aprendizaje a continuación.',
+  'maite.inquiry.completedMessage':
+    'Esta sesión de indagación ha finalizado. Consulte el informe de aprendizaje a continuación.',
   'maite.diagnosis.thinkingPlaceholder': 'Describa su razonamiento (opcional)…',
   'maite.diagnosis.runAuto': 'Diagnosticar automáticamente',
   'maite.diagnosis.running': 'Diagnosticando…',
@@ -58,7 +60,8 @@ export default {
   'maite.variant.answerPlaceholder': 'Escriba su respuesta completa…',
   'maite.variant.strategyPlaceholder': 'Explique cómo se adapta el método…',
   'maite.variant.submit': 'Enviar respuesta',
-  'maite.variant.completeHint': 'Envíe al menos 3 respuestas de variantes antes de completar la sesión.',
+  'maite.variant.completeHint':
+    'Envíe al menos 3 respuestas de variantes antes de completar la sesión.',
   'maite.practice.title': 'Práctica reciente',
   'maite.practice.loading': 'Cargando…',
   'maite.practice.empty': 'Aún no hay sesiones de práctica',
@@ -85,7 +88,8 @@ export default {
   'maite.errors.diagnosis_failed': 'Error en el diagnóstico.',
   'maite.errors.remedy_failed': 'No se pudieron generar las tareas de remedio.',
   'maite.errors.variant_failed': 'No se pudieron generar las tareas de variantes.',
-  'maite.errors.variants_incomplete': 'Envíe al menos 3 respuestas de variantes antes de completar.',
+  'maite.errors.variants_incomplete':
+    'Envíe al menos 3 respuestas de variantes antes de completar.',
   'maite.errors.variant_answer_required': 'La respuesta y la estrategia son obligatorias.',
   'maite.errors.variant_submit_failed': 'No se pudo enviar la respuesta de variante.',
   'maite.errors.load_failed': 'No se pudo cargar la sesión.',
@@ -98,7 +102,8 @@ export default {
   'maite.toast.ocr_success': 'Texto del problema extraído de la imagen.',
   'maite.toast.decompose_started': 'Iniciando descomposición con mentor…',
   'maite.toast.decompose_complete': 'Descomposición completada.',
-  'maite.toast.decompose_fallback': 'Transmisión en vivo interrumpida; finalizando con respuesta completa…',
+  'maite.toast.decompose_fallback':
+    'Transmisión en vivo interrumpida; finalizando con respuesta completa…',
   'maite.toast.practice_saved': 'Guardado en práctica reciente.',
   'maite.toast.session_created': 'Sesión de indagación creada.',
   'maite.toast.session_completed': 'Sesión de indagación completada.',

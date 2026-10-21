@@ -3,7 +3,6 @@ import {
   useConceptMapFocusReviewStore,
   useInlineRecommendationsStore,
   useLLMResultsStore,
-  usePanelsStore,
 } from '@/stores'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 /**
  * Mind-map collapse (−) / expand (count pill) on the connector midpoint, with stub line when collapsed.
  */
@@ -14,12 +13,12 @@ import {
   useMindMapCollapseOverlayPositions,
 } from '@/composables/canvasToolbar/useMindMapCollapseTogglePosition'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { mindMapControlScale } from '@/config/mindMapEBlackboard'
 import { MIND_MAP_GEOMETRY, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
-import { useDiagramStore } from '@/stores/diagram'
 import { isMindMapPathCollapsed, mindMapDescendantCount } from '@/stores/diagram/mindMapCollapse'
-import { mindMapNodeSide } from '@/utils/mindMapLocation'
 import { useUIStore } from '@/stores/ui'
+import { mindMapNodeSide } from '@/utils/mindMapLocation'
 
 const props = defineProps<{
   containerRef: HTMLElement | null

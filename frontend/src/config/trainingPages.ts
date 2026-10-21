@@ -142,7 +142,9 @@ export const TRAINING_PAGES: TrainingPageDef[] = [
 ]
 
 const PAGE_BY_KEY = new Map(TRAINING_PAGES.map((page) => [page.key, page]))
-const PAGES_BY_PATH_LEN = [...TRAINING_PAGES].sort((left, right) => right.path.length - left.path.length)
+const PAGES_BY_PATH_LEN = [...TRAINING_PAGES].sort(
+  (left, right) => right.path.length - left.path.length
+)
 
 export function trainingPageDef(key: string | null | undefined): TrainingPageDef | null {
   if (!key) return null
@@ -160,10 +162,7 @@ export function trainingPageKeyFromPath(path: string): TrainingPageKey | null {
   return null
 }
 
-export function trainingPagePath(
-  routePath: string,
-  key: string | null | undefined
-): string | null {
+export function trainingPagePath(routePath: string, key: string | null | undefined): string | null {
   const page = trainingPageDef(key)
   if (!page) return null
   return isMobileRoutePath(routePath) ? page.mobilePath : page.path

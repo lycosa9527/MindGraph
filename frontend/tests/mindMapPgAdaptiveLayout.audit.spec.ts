@@ -5,30 +5,25 @@
  * Fixtures: ../tmp_pg_mindmaps/*.json
  * Skips when fixtures are absent.
  */
+import { createPinia, setActivePinia } from 'pinia'
+
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPinia, setActivePinia } from 'pinia'
 
 import {
   DEFAULT_MINDMAP_BRANCH_GAP,
   MINDMAP_UNDERLINE_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
-import {
-  mindMapAdaptiveBranchGap,
-  mindMapAdaptiveSiblingGap,
-} from '@/config/mindMapAdaptiveGaps'
+import { mindMapAdaptiveBranchGap, mindMapAdaptiveSiblingGap } from '@/config/mindMapAdaptiveGaps'
 import { MIND_MAP_DIAGRAM_STYLES, type MindMapDiagramStyleId } from '@/config/mindMapDiagramStyles'
 import { recalculateMindMapV2ColumnPositions } from '@/stores/diagram/mindMapLayout'
-import {
-  loadMindMapSpec,
-  nodesAndConnectionsToMindMapSpec,
-} from '@/stores/specLoader/mindMap'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode } from '@/types'
 import { isMindMapL1, mindMapNodeSide } from '@/utils/mindMapLocation'
+import { must } from '@/utils/must'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 const FIXTURE_DIR = resolve(__dirname, '../../tmp_pg_mindmaps')
@@ -92,8 +87,7 @@ function loadStyledFromSpec(spec: Record<string, unknown>, style: MindMapDiagram
     topic: (spec.topic as string) || (spec.central_topic as string) || '',
     children: (spec.children as unknown[]) || [],
     leftBranches: (spec.leftBranches as unknown[]) || (spec.left as unknown[]) || undefined,
-    rightBranches:
-      (spec.rightBranches as unknown[]) || (spec.right as unknown[]) || undefined,
+    rightBranches: (spec.rightBranches as unknown[]) || (spec.right as unknown[]) || undefined,
     _mindmap_diagram_style: style,
   })
 }
@@ -145,7 +139,7 @@ function subtreeBounds(
   let bottom = root.position.y + nodeHeight(root)
   const stack = [...(childrenByParent.get(rootId) ?? [])]
   while (stack.length) {
-    const id = stack.pop()!
+    const id = must(stack.pop())
     const n = byId.get(id)
     if (!n?.position) continue
     top = Math.min(top, n.position.y)
@@ -160,7 +154,7 @@ function firstLeafId(rootId: string, childrenByParent: Map<string, string[]>): s
   for (;;) {
     const kids = childrenByParent.get(cur)
     if (!kids?.length) return cur
-    cur = kids[0]!
+    cur = must(kids[0])
   }
 }
 
@@ -169,7 +163,7 @@ function lastLeafId(rootId: string, childrenByParent: Map<string, string[]>): st
   for (;;) {
     const kids = childrenByParent.get(cur)
     if (!kids?.length) return cur
-    cur = kids[kids.length - 1]!
+    cur = must(kids[kids.length - 1])
   }
 }
 
@@ -210,14 +204,14 @@ function assertSiblingGapMath(
     // Connection / list order is sibling SoT (matches layout packer).
     const ordered = col.kids
     for (let i = 1; i < ordered.length; i++) {
-      const upperId = ordered[i - 1]!
-      const lowerId = ordered[i]!
+      const upperId = must(ordered[i - 1])
+      const lowerId = must(ordered[i])
       const upperB = subtreeBounds(upperId, byId, childrenByParent)
       const lowerB = subtreeBounds(lowerId, byId, childrenByParent)
       if (!upperB || !lowerB) continue
       const gap = lowerB.top - upperB.bottom
-      const upperLeaf = byId.get(lastLeafId(upperId, childrenByParent))!
-      const lowerLeaf = byId.get(firstLeafId(lowerId, childrenByParent))!
+      const upperLeaf = must(byId.get(lastLeafId(upperId, childrenByParent)))
+      const lowerLeaf = must(byId.get(firstLeafId(lowerId, childrenByParent)))
       const expected =
         col.mode === 'branch'
           ? mindMapAdaptiveBranchGap(nodeShapeOf(upperLeaf), nodeShapeOf(lowerLeaf))
@@ -297,10 +291,10 @@ describe.runIf(hasFixtures)('PG mind-map adaptive layout audit', () => {
 
       console.log(`[audit] ${file} side spans`, spans, `siblingPairs=${totalPairs}`)
       expect(totalPairs, `${file}: expected sibling pairs`).toBeGreaterThan(0)
-      expect(spans.underline!).toBeLessThan(spans.formal!)
+      expect(must(spans.underline)).toBeLessThan(must(spans.formal))
       // Box-heavy formal should not beat mixed/underline compactness.
-      expect(spans.classic!).toBeLessThanOrEqual(spans.formal!)
-      expect(spans.bubble!).toBeLessThanOrEqual(spans.formal!)
+      expect(must(spans.classic)).toBeLessThanOrEqual(must(spans.formal))
+      expect(must(spans.bubble)).toBeLessThanOrEqual(must(spans.formal))
     })
   }
 
@@ -345,11 +339,12 @@ describe.runIf(hasFixtures)('PG mind-map adaptive layout audit', () => {
       .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))[0]
     expect(l1).toBeDefined()
     const kids = laidOut
-      .filter((n) => connections.some((c) => c.source === l1!.id && c.target === n.id))
+      .filter((n) => connections.some((c) => c.source === must(l1).id && c.target === n.id))
       .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
     if (kids.length >= 2) {
       const gap =
-        kids[1]!.position!.y - (kids[0]!.position!.y + (heights[kids[0]!.id] ?? 34))
+        must(must(kids[1]).position).y -
+        (must(must(kids[0]).position).y + (heights[must(kids[0]).id] ?? 34))
       expect(gap).toBeGreaterThanOrEqual(MINDMAP_UNDERLINE_SIBLING_GAP - 1)
       expect(gap).toBeLessThan(DEFAULT_MINDMAP_BRANCH_GAP)
     }

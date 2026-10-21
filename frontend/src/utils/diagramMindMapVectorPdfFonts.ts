@@ -55,10 +55,7 @@ const FONT_SOURCES: Array<{
     family: MIND_MAP_VECTOR_PDF_FONT_NOTO,
     style: 'normal',
     vfsName: 'NotoSansSC-Regular.ttf',
-    paths: [
-      '/api/mindmap_export_fonts/NotoSansSC-Regular.ttf',
-      '/fonts/NotoSansSC-Regular.ttf',
-    ],
+    paths: ['/api/mindmap_export_fonts/NotoSansSC-Regular.ttf', '/fonts/NotoSansSC-Regular.ttf'],
     required: true,
   },
   {
@@ -119,9 +116,7 @@ async function loadLocalFontBytes(paths: string[]): Promise<ArrayBuffer> {
       )
 }
 
-async function ensureFontBytes(
-  entry: (typeof FONT_SOURCES)[number]
-): Promise<CachedFontBytes> {
+async function ensureFontBytes(entry: (typeof FONT_SOURCES)[number]): Promise<CachedFontBytes> {
   const hit = fontBytesCache.get(entry.key)
   if (hit) return hit
   const bytes = await loadLocalFontBytes(entry.paths)

@@ -5,10 +5,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { normalizeSchoolTier } from '@/constants/schoolTier'
-import { userRoleLabel } from '@/utils/userRoleDisplay'
 import {
   type LearningClassRow,
   type LearningStudentRow,
@@ -17,6 +16,7 @@ import {
   listAdminStudentsGlobal,
   removeAdminClassMember,
 } from '@/utils/learningSpaceApi'
+import { userRoleLabel } from '@/utils/userRoleDisplay'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -155,15 +155,21 @@ onMounted(async () => {
 
     <div class="ls-summary-cards">
       <div class="ls-summary-card">
-        <span class="ls-summary-card__label"><I18nText k="admin.learningSpace.summaryClassroom" /></span>
+        <span class="ls-summary-card__label"
+          ><I18nText k="admin.learningSpace.summaryClassroom"
+        /></span>
         <strong>{{ summary.classroom_count }}</strong>
       </div>
       <div class="ls-summary-card">
-        <span class="ls-summary-card__label"><I18nText k="admin.learningSpace.summaryEnrolled" /></span>
+        <span class="ls-summary-card__label"
+          ><I18nText k="admin.learningSpace.summaryEnrolled"
+        /></span>
         <strong>{{ summary.enrolled_count }}</strong>
       </div>
       <div class="ls-summary-card">
-        <span class="ls-summary-card__label"><I18nText k="admin.learningSpace.summaryTotal" /></span>
+        <span class="ls-summary-card__label"
+          ><I18nText k="admin.learningSpace.summaryTotal"
+        /></span>
         <strong>{{ summary.total }}</strong>
       </div>
     </div>
@@ -247,13 +253,29 @@ onMounted(async () => {
             <code v-if="row.member_kind === 'classroom' && row.initial_password">
               {{ row.initial_password }}
             </code>
-            <span v-else class="ls-muted">—</span>
+            <span
+              v-else
+              class="ls-muted"
+              >—</span
+            >
           </td>
           <td>
-            <I18nText v-if="row.class_status === 'archived'" k="admin.learningSpace.statusArchived" /><I18nText v-else k="admin.learningSpace.statusActive" />
+            <I18nText
+              v-if="row.class_status === 'archived'"
+              k="admin.learningSpace.statusArchived"
+            /><I18nText
+              v-else
+              k="admin.learningSpace.statusActive"
+            />
           </td>
           <td>
-            <I18nText v-if="row.must_change_password" k="admin.learningSpace.yes" /><I18nText v-else k="admin.learningSpace.no" />
+            <I18nText
+              v-if="row.must_change_password"
+              k="admin.learningSpace.yes"
+            /><I18nText
+              v-else
+              k="admin.learningSpace.no"
+            />
           </td>
           <td v-if="canEdit">
             <div class="ls-row-actions">

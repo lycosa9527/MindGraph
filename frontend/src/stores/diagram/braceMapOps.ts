@@ -9,8 +9,8 @@ import {
   resolveBraceMapSubpartAttachParentId,
 } from './braceMapParentResolve'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
-import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitCtxEvent } from './events'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
 export function useBraceMapOpsSlice(ctx: DiagramContext) {

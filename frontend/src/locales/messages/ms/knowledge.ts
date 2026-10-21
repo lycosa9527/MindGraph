@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'Kanvas',
   'fileCenterLibrary.badgeExtension': 'Sambungan',
   'fileCenterLibrary.badgeUpload': 'Unggah',
-  'chunkTest.history.confirmDeleteBody': 'Adakah anda pasti mahu mengpadam tes ini? Tindakan ini tidak boleh dibuat asal.',
+  'chunkTest.history.confirmDeleteBody':
+    'Adakah anda pasti mahu mengpadam tes ini? Tindakan ini tidak boleh dibuat asal.',
   'chunkTest.history.confirmDeleteTitle': 'Padam Tes',
   'chunkTest.history.delete': 'Padam',
   'chunkTest.history.deleteFailed': 'Gagal mengpadam tes',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'Kualitas Jawaban',
   'chunkTestResults.avgLatency': 'Latensi Rata-rata',
   'chunkTestResults.back': 'Kembali',
-  'chunkTestResults.cancelConfirmBody': 'Adakah anda pasti mahu membatalkan tes ini? Tes akan berhenti di checkpoint berikutnya.',
+  'chunkTestResults.cancelConfirmBody':
+    'Adakah anda pasti mahu membatalkan tes ini? Tes akan berhenti di checkpoint berikutnya.',
   'chunkTestResults.cancelFailed': 'Gagal membatalkan tes',
   'chunkTestResults.cancelRequested': 'Permintaan pembatalan tes dikirim',
   'chunkTestResults.cancelTest': 'Batalkan Tes',
@@ -108,7 +110,8 @@ export default {
   'knowledge.doc.colStatus': 'Keadaan',
   'knowledge.doc.colType': 'Jenis',
   'knowledge.doc.colUploaded': 'Tanggal Unggah',
-  'knowledge.doc.emptyDescription': 'Tiada lagi dokumen. Unggah dokumen untuk membangun basis pengetahuan Anda.',
+  'knowledge.doc.emptyDescription':
+    'Tiada lagi dokumen. Unggah dokumen untuk membangun basis pengetahuan Anda.',
   'knowledge.doc.errorPrefix': 'Kesalahan: ',
   'knowledge.doc.noData': 'Tidak ada data',
   'knowledge.doc.statusCompleted': 'Selesai',
@@ -124,31 +127,42 @@ export default {
   'knowledge.header.title': 'Basis Pengetahuan Pribadi',
   'knowledge.header.upload': 'Unggah Dokumen',
   'knowledge.ragGuide.title': 'Bagaimana paket, RAG, dan wiki bekerja?',
-  'knowledge.ragGuide.subtitle': 'Tanpa jargon — anggap saja folder bahan referensi. Kami mengindeksnya untuk pencarian (RAG), lalu menyusun catatan wiki singkat, dan AI membaca keduanya saat Anda membuat mind map.',
+  'knowledge.ragGuide.subtitle':
+    'Tanpa jargon — anggap saja folder bahan referensi. Kami mengindeksnya untuk pencarian (RAG), lalu menyusun catatan wiki singkat, dan AI membaca keduanya saat Anda membuat mind map.',
   'knowledge.ragGuide.step1.title': 'Pilih paket',
-  'knowledge.ragGuide.step1.body': 'Paket seperti koleksi Zotero. Anda bisa punya hingga 3 di kiri; masing-masing biasanya untuk satu mind map. Klik paket di sidebar untuk mengelola dokumennya.',
+  'knowledge.ragGuide.step1.body':
+    'Paket seperti koleksi Zotero. Anda bisa punya hingga 3 di kiri; masing-masing biasanya untuk satu mind map. Klik paket di sidebar untuk mengelola dokumennya.',
   'knowledge.ragGuide.step2.title': 'Tambahkan sumber dan indekskan (RAG)',
-  'knowledge.ragGuide.step2.body': 'Unggah PDF, Word, catatan, atau halaman web. Kami memecah dokumen panjang menjadi chunk yang dapat dicari dan menyimpan vector embedding — ini indeks RAG dan siap lebih dulu.',
+  'knowledge.ragGuide.step2.body':
+    'Unggah PDF, Word, catatan, atau halaman web. Kami memecah dokumen panjang menjadi chunk yang dapat dicari dan menyimpan vector embedding — ini indeks RAG dan siap lebih dulu.',
   'knowledge.ragGuide.step3.title': 'Catatan wiki disusun otomatis',
-  'knowledge.ragGuide.step3.body': 'Setelah pengindeksan selesai, LLM menyusun halaman wiki ringkasan dan topik di disk. Ini catatan ringkas (bukan transkrip) yang merangkum paket agar orientasi lebih cepat.',
+  'knowledge.ragGuide.step3.body':
+    'Setelah pengindeksan selesai, LLM menyusun halaman wiki ringkasan dan topik di disk. Ini catatan ringkas (bukan transkrip) yang merangkum paket agar orientasi lebih cepat.',
   'knowledge.ragGuide.step4.title': 'Pencarian memakai wiki + chunk',
-  'knowledge.ragGuide.step4.body': 'Saat Anda memperluas cabang atau membuat ringkasan, kami cocokkan halaman wiki relevan dulu, lalu mengambil cuplikan chunk paling relevan (hybrid RAG).',
+  'knowledge.ragGuide.step4.body':
+    'Saat Anda memperluas cabang atau membuat ringkasan, kami cocokkan halaman wiki relevan dulu, lalu mengambil cuplikan chunk paling relevan (hybrid RAG).',
   'knowledge.ragGuide.step5.title': 'Jawaban berdasarkan sumber Anda',
-  'knowledge.ragGuide.step5.body': 'AI menulis dari catatan wiki dan cuplikan yang diambil, bukan menebak — sumber lebih baik, pengindeksan selesai, dan wiki yang disusun berarti peta lebih akurat.',
-  'knowledge.ragGuide.footer': 'Tip: membuka Document Summary di canvas otomatis membuat paket; halaman yang disimpan lewat ekstensi Chrome juga muncul di daftar sidebar.',
+  'knowledge.ragGuide.step5.body':
+    'AI menulis dari catatan wiki dan cuplikan yang diambil, bukan menebak — sumber lebih baik, pengindeksan selesai, dan wiki yang disusun berarti peta lebih akurat.',
+  'knowledge.ragGuide.footer':
+    'Tip: membuka Document Summary di canvas otomatis membuat paket; halaman yang disimpan lewat ekstensi Chrome juga muncul di daftar sidebar.',
   'knowledge.pipeline.title': 'Status pipeline',
   'knowledge.pipeline.ragIdle': 'Indeks RAG',
-  'knowledge.pipeline.ragIdleDetail': 'Tiada lagi paket terindeks. Tambahkan sumber dan jalankan pengindeksan dari paket.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Tiada lagi paket terindeks. Tambahkan sumber dan jalankan pengindeksan dari paket.',
   'knowledge.pipeline.ragProcessing': 'Pengindeksan RAG',
-  'knowledge.pipeline.ragProcessingDetail': '{count} paket masih dalam proses chunking dan embedding sumber.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} paket masih dalam proses chunking dan embedding sumber.',
   'knowledge.pipeline.ragReady': 'RAG siap',
   'knowledge.pipeline.ragReadyDetail': '{count} paket terindeks — pencarian chunk aktif.',
   'knowledge.pipeline.wikiDisabled': 'Wiki compile nonaktif',
   'knowledge.pipeline.wikiDisabledDetail': 'Kompilasi wiki dinonaktifkan di server ini.',
   'knowledge.pipeline.wikiIdle': 'Kompilasi wiki',
-  'knowledge.pipeline.wikiIdleDetail': 'Halaman wiki disusun setelah pengindeksan RAG selesai untuk setiap sumber.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Halaman wiki disusun setelah pengindeksan RAG selesai untuk setiap sumber.',
   'knowledge.pipeline.wikiPending': 'Menyusun wiki',
-  'knowledge.pipeline.wikiPendingDetail': '{count} paket menunggu halaman wiki setelah pengindeksan.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} paket menunggu halaman wiki setelah pengindeksan.',
   'knowledge.pipeline.wikiReady': 'Wiki siap',
   'knowledge.pipeline.wikiReadyDetail': '{count} paket memiliki catatan wiki yang disusun.',
   'knowledge.pipelineBadge.rag.label': 'RAG',
@@ -164,7 +178,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Batalkan Semua Pilihan',
   'knowledge.manualEval.dialogTitle': 'Evaluasi Manual — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Jawaban Ground Truth (Opsional)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Masukkan jawaban ground truth untuk evaluasi relevansi jawaban...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Masukkan jawaban ground truth untuk evaluasi relevansi jawaban...',
   'knowledge.manualEval.metric.answer_coverage': 'Cakupan Jawaban',
   'knowledge.manualEval.metric.answer_faithfulness': 'Kesesuaian Jawaban',
   'knowledge.manualEval.metric.clarity': 'Kejelasan',
@@ -186,7 +201,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Evaluasi Kualitas Chunk',
   'knowledge.manualEval.resultsTitle': 'Hasil Evaluasi',
   'knowledge.manualEval.selectAll': 'Pilih Semua',
-  'knowledge.manualEval.selectChunksHeading': 'Pilih Chunk untuk Dievaluasi (kosongkan untuk mengevaluasi semua)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Pilih Chunk untuk Dievaluasi (kosongkan untuk mengevaluasi semua)',
   'knowledge.manualEval.showingFirst20': 'Menampilkan 20 pertama dari {total} chunk',
   'knowledge.manualEval.startEvaluation': 'Mulai Evaluasi',
   'knowledge.processing.chunking': 'Pemotongan',
@@ -235,7 +251,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Pengaturan Retrieval',
   'knowledge.settings.title': 'Pengaturan Basis Pengetahuan',
   'knowledge.settings.helpTitle': 'Bagaimana tetapan ini diterapkan',
-  'knowledge.settings.helpBody': 'Preferensi retrieval langsung berlaku untuk pencarian dan jawaban AI. Ukuran dan overlap chunk berlaku untuk dokumen yang baru diindeks — jalankan ulang pengindeksan pada sumber yang ada setelah mengubahnya.',
+  'knowledge.settings.helpBody':
+    'Preferensi retrieval langsung berlaku untuk pencarian dan jawaban AI. Ukuran dan overlap chunk berlaku untuk dokumen yang baru diindeks — jalankan ulang pengindeksan pada sumber yang ada setelah mengubahnya.',
   'knowledge.settings.tokens': 'token',
   'knowledge.settings.serverSection': 'Server (hanya baca)',
   'knowledge.settings.rerankingMode': 'Peringkat semula',
@@ -246,7 +263,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Nonaktif',
   'knowledge.settings.saveSuccess': 'Pengaturan disimpan',
   'knowledge.settings.saveFailed': 'Gagal menyimpan tetapan',
-  'knowledge.settings.reindexRequired': 'Pengaturan chunk berubah — indeks ulang dokumen yang ada di paket Anda agar ukuran baru berlaku.',
+  'knowledge.settings.reindexRequired':
+    'Pengaturan chunk berubah — indeks ulang dokumen yang ada di paket Anda agar ukuran baru berlaku.',
   'knowledge.upload.click': 'Klik untuk mengunggah',
   'knowledge.upload.drag': 'atau seret file ke sini',
   'knowledge.upload.fileTooLarge': 'Ukuran file tidak boleh melebihi 10MB',
@@ -254,7 +272,8 @@ export default {
   'knowledge.upload.maxDocs': 'Batas maksimum dokumen tercapai (5)',
   'knowledge.upload.title': 'Unggah Dokumen',
   'knowledge.upload.unsupportedType': 'Jenis file tidak didukung',
-  'knowledgeSpace.confirmDeleteBody': 'Adakah anda pasti mahu mengpadam dokumen ini? Tindakan ini tidak boleh dibuat asal.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Adakah anda pasti mahu mengpadam dokumen ini? Tindakan ini tidak boleh dibuat asal.',
   'knowledgeSpace.confirmDeleteTitle': 'Konfirmasi Padam',
   'knowledgeSpace.deleteFailed': 'Gagal mengpadam',
   'knowledgeSpace.documentDeleted': 'Dokumen dipadam',

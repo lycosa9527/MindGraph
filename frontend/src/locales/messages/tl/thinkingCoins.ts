@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Malapit na',
   'thinkingCoins.schoolInfo': 'Makipag-ugnayan sa admin ng paaralan para sa mga plano',
   'thinkingCoins.school.headline': 'AI-powered na pag-iisip · solusyon para sa paaralan',
-  'thinkingCoins.school.description': 'Private deployment, custom na feature, at buong suportang operasyon para sa mga paaralan at institusyon — para sa scale, branding, at seguridad ng data.',
+  'thinkingCoins.school.description':
+    'Private deployment, custom na feature, at buong suportang operasyon para sa mga paaralan at institusyon — para sa scale, branding, at seguridad ng data.',
   'thinkingCoins.school.feature.accountManager': 'Nakalaang account manager',
   'thinkingCoins.school.feature.accountManagerDesc': 'One-on-one na konsultasyon',
   'thinkingCoins.school.feature.privateDeploy': 'Pribadong deployment',
@@ -42,7 +43,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.fieldOrg': 'Paaralan / organisasyon',
   'thinkingCoins.school.fieldNote': 'Karagdagang tala (opsyonal)',
   'thinkingCoins.school.submit': 'Isumite ang inquiry',
-  'thinkingCoins.school.submitSuccess': 'Naisumite — makikipag-ugnayan kami sa lalong madaling panahon',
+  'thinkingCoins.school.submitSuccess':
+    'Naisumite — makikipag-ugnayan kami sa lalong madaling panahon',
   'thinkingCoins.school.submitFailed': 'Nabigo ang pagsusumite — subukan muli mamaya',
   'thinkingCoins.school.submitRateLimit': 'Masyadong maraming pagsusumite — subukan muli mamaya',
   'thinkingCoins.school.submitNotConfigured': 'Pansamantalang hindi available ang konsultasyon',
@@ -63,7 +65,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Gantimpala sa referral',
   'thinkingCoins.reason.case_reward': 'Gantimpala sa case',
   'thinkingCoins.reason.subscription_grant': 'Grant mula sa subscription',
-  'thinkingCoins.dailyExpiresHint': 'Ang mga reward sa pag-sign in ay may bisa sa parehong araw at ire-reset sa 24:00',
+  'thinkingCoins.dailyExpiresHint':
+    'Ang mga reward sa pag-sign in ay may bisa sa parehong araw at ire-reset sa 24:00',
   'thinkingCoins.dailyBalanceRemaining': 'Ang natitirang check-in ngayong araw {n}',
   'thinkingCoins.admin.tab': 'Mga thinking token',
   'thinkingCoins.admin.tasksTitle': 'Mga gawain para kumita',
@@ -75,7 +78,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'I-save',
   'thinkingCoins.admin.signupGrant': 'Grant sa pag-signup',
   'thinkingCoins.admin.dailyEarnCap': 'Araw-araw na earn cap',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = unlimited; default 135 katumbas ng lahat ng araw-araw na gawain',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = unlimited; default 135 katumbas ng lahat ng araw-araw na gawain',
   'thinkingCoins.admin.costMindmate': 'Gastos sa MindMate',
   'thinkingCoins.admin.costDiagram': 'Gastos sa diagram gen',
   'thinkingCoins.admin.costCanvas': 'Gastos sa canvas assist',

@@ -1,6 +1,6 @@
 /**
- * zh-tw UI — thinkingCoins
- * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ * zh UI — thinkingCoins
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export const thinkingCoinsMessages = {

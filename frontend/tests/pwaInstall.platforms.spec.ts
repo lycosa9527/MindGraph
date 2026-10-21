@@ -4,6 +4,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  type PwaInstallSurface,
   canShowPwaInstallUi,
   detectPwaInstallSurface,
   injectDeferredInstallPromptForTests,
@@ -12,7 +13,6 @@ import {
   isPwaStandalone,
   promptPwaInstall,
   resetPwaInstallStateForTests,
-  type PwaInstallSurface,
 } from '@/utils/pwaInstall'
 
 const PLATFORMS = {

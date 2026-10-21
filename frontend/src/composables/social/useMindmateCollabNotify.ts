@@ -13,6 +13,7 @@ import { usePresenceActivity } from '@/composables/workshop/usePresenceActivity'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { handleMindmateCollabPokeFrame } from '@/utils/mindmateCollabPokeNotify'
+import { loadPendingSeminarInvites } from '@/utils/mindmateSeminarConsent'
 
 const CONNECT_DEBOUNCE_MS = 200
 const PING_MESSAGE = JSON.stringify({ type: 'ping' })
@@ -119,6 +120,7 @@ export function useMindmateCollabNotify(): void {
       }
       connected.value = true
       sendSubscribePresence(send)
+      void loadPendingSeminarInvites(t)
       const userId = Number(authStore.user?.id)
       if (userId) {
         updatePresence(userId, 'active')

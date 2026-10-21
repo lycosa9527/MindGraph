@@ -15,6 +15,7 @@ import {
   LoginModal,
 } from '@/components/auth'
 import { useAuthStore, useUIStore } from '@/stores'
+import '@/styles/authPageCard.css'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 import { clearPersistedOAuthLoginError } from '@/utils/oauthLoginUi'
 import {
@@ -24,7 +25,6 @@ import {
   readStoredQuickRegToken,
   writeStoredQuickRegToken,
 } from '@/utils/quickRegToken'
-import '@/styles/authPageCard.css'
 
 const router = useRouter()
 const route = useRoute()

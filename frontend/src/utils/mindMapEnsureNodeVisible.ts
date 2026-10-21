@@ -83,10 +83,10 @@ export function computePanToKeepNodeInSafeFraction(
 
   const nodeW = Math.max(0, input.node.width) * zoom
   const nodeH = Math.max(0, input.node.height) * zoom
-  let screenLeft = input.node.x * zoom + input.viewport.x
-  let screenTop = input.node.y * zoom + input.viewport.y
-  let screenRight = screenLeft + nodeW
-  let screenBottom = screenTop + nodeH
+  const screenLeft = input.node.x * zoom + input.viewport.x
+  const screenTop = input.node.y * zoom + input.viewport.y
+  const screenRight = screenLeft + nodeW
+  const screenBottom = screenTop + nodeH
 
   let dx = 0
   let dy = 0

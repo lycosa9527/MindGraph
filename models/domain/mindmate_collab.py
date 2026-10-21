@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, false
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, false, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.domain.auth import Base
@@ -38,6 +38,8 @@ class MindmateCollabSession(Base):
         index=True,
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False, default="MindMate Collab")
+    brief_topic: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    brief_goals: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     dify_conversation_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     visibility: Mapped[str] = mapped_column(String(32), nullable=False, default="organization")
     duration_preset: Mapped[str] = mapped_column(String(16), nullable=False, default="today")
@@ -85,6 +87,70 @@ class MindmateCollabMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (Index("ix_mindmate_collab_messages_session_created", "session_id", "created_at"),)
+
+
+class MindmateCollabMember(Base):
+    """Teachers invited into a school seminar. The row is membership, not presence."""
+
+    __tablename__ = "mindmate_collab_members"
+
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("mindmate_collab_sessions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    seminar_role: Mapped[str] = mapped_column(String(32), nullable=False, default="observer")
+    # False until a teacher outside the host school agrees to join.
+    accepted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+
+
+class MindmateCollabBackgroundFile(Base):
+    """A background document shared with everyone in one seminar."""
+
+    __tablename__ = "mindmate_collab_background_files"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("mindmate_collab_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    uploader_user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+    filename: Mapped[str] = mapped_column(String(180), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+    pinned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    listed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+    # True when this file is a seminar artifact (产物), not a folder resource or chat chip.
+    artifact: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+    source_message_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # Set when this row shelves a shared canvas diagram into 资源 or 产物.
+    diagram_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_mindmate_collab_background_files_session_created", "session_id", "created_at"),
+        Index("ix_mindmate_collab_background_files_session_pinned", "session_id", "pinned", "pinned_at"),
+        Index(
+            "uq_mm_collab_bg_artifact_message",
+            "session_id",
+            "source_message_id",
+            unique=True,
+        ),
+    )
 
 
 class MindmateCollabReadCursor(Base):

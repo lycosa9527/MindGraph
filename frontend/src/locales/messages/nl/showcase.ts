@@ -29,9 +29,11 @@ export default {
   'showcase.myFavorites': 'Mijn favorieten',
   'showcase.myFavoritesModalTitle': 'Favoriete gevallen',
   'showcase.myFavoritesEmpty': 'Nog geen favoriete hoesjes',
-  'showcase.myFavoritesEmptyHint': 'Cases waarvoor u een bladwijzer heeft gemaakt, worden hier weergegeven',
+  'showcase.myFavoritesEmptyHint':
+    'Cases waarvoor u een bladwijzer heeft gemaakt, worden hier weergegeven',
   'showcase.myCasesModalTitle': 'Mijn gepubliceerde cases',
-  'showcase.myCasesManageHint': 'Deze lijst verwijderen, verwijderen of bewerken; klik op een casus voor details',
+  'showcase.myCasesManageHint':
+    'Deze lijst verwijderen, verwijderen of bewerken; klik op een casus voor details',
   'showcase.myCasesAction.edit': 'Bewerking',
   'showcase.myCasesEmpty': 'Nog geen gepubliceerde cases',
   'showcase.myCasesEmptyHint': 'Gepubliceerde cases en beoordelingsstatus worden hier weergegeven',
@@ -39,11 +41,14 @@ export default {
   'showcase.pendingReview': 'In afwachting van beoordeling',
   'showcase.publishModal.title': 'Casus publiceren',
   'showcase.publishModal.titleLabel': 'Titel van de casus',
-  'showcase.publishModal.titleHint': 'Houd de titel beknopt; maximaal {max} tekens wordt aanbevolen',
-  'showcase.publishModal.titlePlaceholder': 'bijv. Twee kinderen debatteren over de zon – lesontwerp',
+  'showcase.publishModal.titleHint':
+    'Houd de titel beknopt; maximaal {max} tekens wordt aanbevolen',
+  'showcase.publishModal.titlePlaceholder':
+    'bijv. Twee kinderen debatteren over de zon – lesontwerp',
   'showcase.publishModal.descriptionLabel': 'Beschrijving',
   'showcase.publishModal.tagsLabel': 'Labels',
-  'showcase.publishModal.tagsHint': 'Scheid tags met komma\'s, b.v. cognitief conflict, junior wiskunde',
+  'showcase.publishModal.tagsHint':
+    "Scheid tags met komma's, b.v. cognitief conflict, junior wiskunde",
   'showcase.publishModal.caseTypeLabel': 'Zaaktype',
   'showcase.publishModal.subjectLabel': 'Onderwerp',
   'showcase.publishModal.gradeLabel': 'Cijfer',
@@ -53,20 +58,33 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Bestanden uploaden ({current}/{total})…',
   'showcase.publishModal.uploadingFile': '{name} ({current}/{total}) uploaden…',
   'showcase.publishModal.finishing': 'Afwerking…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Uploaden mislukt: het concept is verwijderd. Probeer het opnieuw.',
-  'showcase.publishModal.uploadCorsFailed': 'Kan niet uploaden naar objectopslag (vaak blokkeert bucket CORS of site CSP de COS host). Het concept is verwijderd. Vraag een beheerder om CORS/CSP te corrigeren en probeer het opnieuw.',
-  'showcase.publishModal.uploadStorageRejected': 'Objectopslag heeft de upload afgewezen. Het concept is verwijderd. Probeer het later opnieuw of neem contact op met een beheerder als het blijft mislukken.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Uploaden mislukt: het concept is verwijderd. Probeer het opnieuw.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Kan niet uploaden naar objectopslag (vaak blokkeert bucket CORS of site CSP de COS host). Het concept is verwijderd. Vraag een beheerder om CORS/CSP te corrigeren en probeer het opnieuw.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Objectopslag heeft de upload afgewezen. Het concept is verwijderd. Probeer het later opnieuw of neem contact op met een beheerder als het blijft mislukken.',
   'showcase.publishModal.uploadFailed': 'Uploaden mislukt. Probeer het opnieuw.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Omslagafbeelding overschrijdt de limiet van 2 MB. Comprimeer het voorbeeld of gebruik een kleinere afbeelding en probeer het opnieuw.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'Bestand overschrijdt de maximale grootte (documenten/afbeeldingen 20 MB, video\'s 100 MB). Comprimeer en probeer het opnieuw.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Bestand overschrijdt de maximale grootte (documenten/afbeeldingen 20 MB, video\'s 100 MB). Het concept is verwijderd. Comprimeer en probeer het opnieuw.',
-  'showcase.publishModal.uploadFileTooLarge': 'Bestand is te groot voor dit uploadtype. Controleer de maximale grootte en probeer het opnieuw.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Bestand is te groot voor dit uploadtype. Het concept is weggegooid. Controleer de maximale grootte en probeer het opnieuw.',
-  'showcase.publishModal.coverUploadSkipped': 'Case ingediend, maar de omslagafbeelding kon niet worden geüpload. U kunt de hoes later bewerken om de omslag te vernieuwen.',
-  'showcase.publishModal.coverGenerating': 'Omslagvoorbeeld wordt op de achtergrond gegenereerd; het zal binnenkort op de kaart verschijnen.',
-  'showcase.publishModal.coverFailed': 'Case ingediend, maar de omslag kon niet worden gegenereerd. U kunt de hoes later bewerken om de omslag te vernieuwen.',
-  'showcase.publishModal.coverFailedTimeout': 'Case ingediend, maar er is een time-out opgetreden voor het genereren van de dekking. U kunt de hoes later bewerken om de omslag te vernieuwen.',
-  'showcase.publishModal.success': 'Case ingediend — in afwachting van beoordeling door de beheerder',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Omslagafbeelding overschrijdt de limiet van 2 MB. Comprimeer het voorbeeld of gebruik een kleinere afbeelding en probeer het opnieuw.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    "Bestand overschrijdt de maximale grootte (documenten/afbeeldingen 20 MB, video's 100 MB). Comprimeer en probeer het opnieuw.",
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    "Bestand overschrijdt de maximale grootte (documenten/afbeeldingen 20 MB, video's 100 MB). Het concept is verwijderd. Comprimeer en probeer het opnieuw.",
+  'showcase.publishModal.uploadFileTooLarge':
+    'Bestand is te groot voor dit uploadtype. Controleer de maximale grootte en probeer het opnieuw.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'Bestand is te groot voor dit uploadtype. Het concept is weggegooid. Controleer de maximale grootte en probeer het opnieuw.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Case ingediend, maar de omslagafbeelding kon niet worden geüpload. U kunt de hoes later bewerken om de omslag te vernieuwen.',
+  'showcase.publishModal.coverGenerating':
+    'Omslagvoorbeeld wordt op de achtergrond gegenereerd; het zal binnenkort op de kaart verschijnen.',
+  'showcase.publishModal.coverFailed':
+    'Case ingediend, maar de omslag kon niet worden gegenereerd. U kunt de hoes later bewerken om de omslag te vernieuwen.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Case ingediend, maar er is een time-out opgetreden voor het genereren van de dekking. U kunt de hoes later bewerken om de omslag te vernieuwen.',
+  'showcase.publishModal.success':
+    'Case ingediend — in afwachting van beoordeling door de beheerder',
   'showcase.publishModal.fromCanvas': 'Publiceer vanaf canvas',
   'showcase.publishModal.step1Title': 'Basisinformatie',
   'showcase.publishModal.step1Desc': 'Type & bestanden',
@@ -79,65 +97,90 @@ export default {
   'showcase.publishModal.uploadLabel': 'Bestand uploaden',
   'showcase.publishModal.uploadImage': 'Afbeelding uploaden',
   'showcase.publishModal.uploadFile': 'Bestand uploaden',
-  'showcase.publishModal.directUploadDisabled': 'Rechtstreeks uploaden van bestanden is tijdelijk niet beschikbaar. U kunt nog steeds een opgeslagen diagram uit de geschiedenis kiezen.',
-  'showcase.publishModal.uploadViaStorage': 'Bestanden worden rechtstreeks naar beveiligde opslag geüpload (kortstondige URL).',
+  'showcase.publishModal.directUploadDisabled':
+    'Rechtstreeks uploaden van bestanden is tijdelijk niet beschikbaar. U kunt nog steeds een opgeslagen diagram uit de geschiedenis kiezen.',
+  'showcase.publishModal.uploadViaStorage':
+    'Bestanden worden rechtstreeks naar beveiligde opslag geüpload (kortstondige URL).',
   'showcase.publishModal.pickHistory': 'Kies uit de geschiedenis',
   'showcase.publishModal.removeFile': 'Verwijderen',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: beperkte preview)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: beperkte preview) — max. {maxMb} MB per document',
-  'showcase.publishModal.teachingDocTooLarge': 'Document overschrijdt de {maxMb} MB-limiet. Comprimeer en probeer het opnieuw.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: beperkte preview) — max. {maxMb} MB per document',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Document overschrijdt de {maxMb} MB-limiet. Comprimeer en probeer het opnieuw.',
   'showcase.publishModal.diagramImageHint': 'Ondersteuning van .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Afbeeldingen uploaden (meerdere)',
-  'showcase.publishModal.galleryHint': 'Voeg meerdere afbeeldingen en opgeslagen diagrammen toe, tot {max} items',
-  'showcase.publishModal.galleryHintCase': 'Er kunnen meerdere afbeeldingen en historische iconen worden toegevoegd, tot {max} items',
-  'showcase.publishModal.galleryHintTemplate': 'U kunt .mg-bestanden uploaden en meerdere historische pictogrammen selecteren, tot {max} items',
+  'showcase.publishModal.galleryHint':
+    'Voeg meerdere afbeeldingen en opgeslagen diagrammen toe, tot {max} items',
+  'showcase.publishModal.galleryHintCase':
+    'Er kunnen meerdere afbeeldingen en historische iconen worden toegevoegd, tot {max} items',
+  'showcase.publishModal.galleryHintTemplate':
+    'U kunt .mg-bestanden uploaden en meerdere historische pictogrammen selecteren, tot {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} artikelen toegevoegd',
   'showcase.publishModal.galleryImageItem': 'Afbeelding: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Illustratie: {name}',
   'showcase.publishModal.galleryLimit': 'Je kunt maximaal {max} items toevoegen',
   'showcase.publishModal.galleryDuplicateDiagram': 'Dit opgeslagen diagram staat al in de lijst',
   'showcase.publishModal.galleryPickerDone': 'Klaar',
-  'showcase.publishModal.galleryUploadFailed': 'Uploaden van galerijafbeelding mislukt. Probeer opnieuw te publiceren',
-  'showcase.publishModal.galleryReuploadHint': 'Sommige galerijafbeeldingen zijn niet opgeslagen. Selecteer ze opnieuw voordat u ze verzendt',
+  'showcase.publishModal.galleryUploadFailed':
+    'Uploaden van galerijafbeelding mislukt. Probeer opnieuw te publiceren',
+  'showcase.publishModal.galleryReuploadHint':
+    'Sommige galerijafbeeldingen zijn niet opgeslagen. Selecteer ze opnieuw voordat u ze verzendt',
   'showcase.detail.galleryImage': 'Afbeelding',
   'showcase.detail.galleryDiagram': 'Illustratie',
   'showcase.detail.galleryPrev': 'Vorig',
   'showcase.detail.galleryNext': 'Volgende',
   'showcase.detail.gallerySwipeHint': 'Veeg naar links of rechts',
-  'showcase.detail.galleryImageMissing': 'Afbeelding kan niet worden geladen. Publiceer de case opnieuw',
+  'showcase.detail.galleryImageMissing':
+    'Afbeelding kan niet worden geladen. Publiceer de case opnieuw',
   'showcase.publishModal.templateFileHint': 'Alleen .mg (MindGraph exporteren)',
   'showcase.publishModal.templatePreviewLabel': 'Diagramvoorbeeld',
-  'showcase.publishModal.templatePreviewHint': 'Gereedschap Handje — alleen bekijken, niet bewerkbaar',
-  'showcase.publishModal.templatePreviewEmpty': 'Upload een .mg-bestand of kies een opgeslagen diagram om een ​​voorbeeld te bekijken',
+  'showcase.publishModal.templatePreviewHint':
+    'Gereedschap Handje — alleen bekijken, niet bewerkbaar',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Upload een .mg-bestand of kies een opgeslagen diagram om een ​​voorbeeld te bekijken',
   'showcase.publishModal.diagramCasePreviewLabel': 'Diagramvoorbeeld',
-  'showcase.publishModal.diagramCasePreviewHint': 'Gereedschap Handje — pannen en zoomen om te verkennen',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Diagramtype dat overeenkomt met het geselecteerde opgeslagen diagram',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'Gereedschap Handje — pannen en zoomen om te verkennen',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Diagramtype dat overeenkomt met het geselecteerde opgeslagen diagram',
   'showcase.publishModal.introLabel': 'Diagraminleiding',
   'showcase.publishModal.teachingIntroLabel': 'Ontwerpintroductie lesgeven',
   'showcase.publishModal.highlightsLabel': 'Ontwerp hoogtepunten',
   'showcase.publishModal.highlightsPlaceholder': 'Eén highlight per regel (optioneel)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Introduceer kort de achtergrond, doelstellingen en context van de les',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Introduceer kort de achtergrond, doelstellingen en context van de les',
   'showcase.publishModal.aiGenerate': 'AI genereren',
   'showcase.publishModal.aiGenerating': 'Genereren…',
   'showcase.publishModal.aiGenerateStop': 'stop',
-  'showcase.publishModal.aiGenerateCancelled': 'AI-generatie geannuleerd: klik opnieuw om opnieuw te genereren',
-  'showcase.publishModal.aiGenerateSuccess': 'Gevulde intro en hoogtepunten uit het document – ​​bekijken en bewerken; schrijf zelf de onderwijsreflectie',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'De illustratie-introductie en klassikale toepassing zijn gegenereerd op basis van de illustratie. Controleer en bewerk.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'AI-generatie geannuleerd: klik opnieuw om opnieuw te genereren',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Gevulde intro en hoogtepunten uit het document – ​​bekijken en bewerken; schrijf zelf de onderwijsreflectie',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'De illustratie-introductie en klassikale toepassing zijn gegenereerd op basis van de illustratie. Controleer en bewerk.',
   'showcase.publishModal.aiGenerateFailed': 'Het genereren van AI is mislukt. Probeer het opnieuw',
-  'showcase.publishModal.aiGenerateNeedFile': 'Upload eerst een onderwijsontwerpdocument in de vorige stap',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'AI-genereren is alleen beschikbaar voor onderwijsontwerpcasussen',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Upload eerst een onderwijsontwerpdocument in de vorige stap',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'AI-genereren is alleen beschikbaar voor onderwijsontwerpcasussen',
   'showcase.publishModal.reflectionLabel': 'Reflectie leren',
-  'showcase.publishModal.introPlaceholder': 'Beschrijf kort de case en wanneer u deze moet gebruiken',
-  'showcase.publishModal.diagramCorePlaceholder': 'Beschrijf de inhoud van het diagram en de highlights van de visualisatie',
+  'showcase.publishModal.introPlaceholder':
+    'Beschrijf kort de case en wanneer u deze moet gebruiken',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Beschrijf de inhoud van het diagram en de highlights van de visualisatie',
   'showcase.publishModal.classroomAppPlaceholder': 'Hoe dit diagram in de klas wordt gebruikt',
   'showcase.publishModal.tagInputPlaceholder': 'Typ een tag (max. 10 tekens), druk op Enter',
   'showcase.publishModal.tagRecommended': 'Voorgestelde tags',
   'showcase.publishModal.tagCountHint': '(max. {max})',
   'showcase.publishModal.tagMaxCount': 'U kunt maximaal {max}-tags toevoegen',
-  'showcase.publishModal.networkError': 'Verzenden mislukt: controleer of de server actief is en de bestandsgrootte binnen de limieten ligt',
+  'showcase.publishModal.networkError':
+    'Verzenden mislukt: controleer of de server actief is en de bestandsgrootte binnen de limieten ligt',
   'showcase.publishModal.fileTooLarge': '"{name}" overschrijdt de maximale grootte van {maxMb}MB',
-  'showcase.publishModal.uploadTotalTooLarge': 'De totale uploadgrootte overschrijdt de limiet: verklein de bijlage- of videogrootte',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'De totale uploadgrootte overschrijdt de limiet: verklein de bijlage- of videogrootte',
   'showcase.publishModal.tagAdd': 'Toevoegen',
   'showcase.publishModal.publishBtn': 'Publiceren',
   'showcase.publishModal.reflectionPlaceholder': 'Schrijf uw reflectie op deze les (optioneel)',
@@ -151,16 +194,21 @@ export default {
   'showcase.publishModal.validationFile': 'Upload een bestand of kies een opgeslagen diagram',
   'showcase.publishModal.validationDiagramType': 'Selecteer een diagramtype',
   'showcase.publishModal.invalidFileType': 'Niet-ondersteund bestandstype',
-  'showcase.publishModal.invalidMgFile': 'Kan dit .mg-bestand niet lezen. Exporteer het eerst vanuit MindGraph',
-  'showcase.publishModal.cannotPreview': 'Kan geen omslagvoorbeeld genereren. De case wordt nog steeds ingediend. Probeer PNG/JPG of kies een opgeslagen diagram.',
-  'showcase.publishModal.cannotPreviewHistory': 'Kan geen omslag genereren op basis van dit opgeslagen diagram. De casus wordt nog steeds ingediend. Kies het opnieuw of sla het opnieuw op vanaf het canvas.',
-  'showcase.publishModal.cannotPreviewTemplate': 'Kan geen dekking genereren. De zaak wordt nog steeds ingediend. Controleer het .mg-bestand of kies een ander opgeslagen diagram.',
+  'showcase.publishModal.invalidMgFile':
+    'Kan dit .mg-bestand niet lezen. Exporteer het eerst vanuit MindGraph',
+  'showcase.publishModal.cannotPreview':
+    'Kan geen omslagvoorbeeld genereren. De case wordt nog steeds ingediend. Probeer PNG/JPG of kies een opgeslagen diagram.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Kan geen omslag genereren op basis van dit opgeslagen diagram. De casus wordt nog steeds ingediend. Kies het opnieuw of sla het opnieuw op vanaf het canvas.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Kan geen dekking genereren. De zaak wordt nog steeds ingediend. Controleer het .mg-bestand of kies een ander opgeslagen diagram.',
   'showcase.publishModal.historyTitle': 'Kies het opgeslagen diagram',
   'showcase.publishModal.historySearch': 'Diagramnaam zoeken...',
   'showcase.publishModal.historyEmpty': 'Geen opgeslagen diagrammen',
   'showcase.publishModal.historyUncategorized': 'Niet gecategoriseerd',
   'showcase.publishModal.typeDesc.teachingDesign': 'Ontwerp van lessen in denkvaardigheden',
-  'showcase.publishModal.typeDesc.diagramCase': 'Excellente diagrammen en visualisaties in het lesgeven',
+  'showcase.publishModal.typeDesc.diagramCase':
+    'Excellente diagrammen en visualisaties in het lesgeven',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagrammen voor hergebruik of aanpassing',
   'showcase.detail.import': 'Gebruik dit hoesje',
   'showcase.action.goDraw': 'Teken er een',
@@ -184,9 +232,11 @@ export default {
   'showcase.detail.delist': 'Verwijderen',
   'showcase.detail.resubmit': 'Bewerken en opnieuw indienen',
   'showcase.detail.withdrawTitle': 'Zaak intrekken',
-  'showcase.detail.withdrawConfirm': '"{title}" intrekken? Het wordt uit de beoordelingswachtrij verwijderd en kan niet worden hersteld.',
+  'showcase.detail.withdrawConfirm':
+    '"{title}" intrekken? Het wordt uit de beoordelingswachtrij verwijderd en kan niet worden hersteld.',
   'showcase.detail.delistTitle': 'Delist-zaak',
-  'showcase.detail.delistConfirm': '\'{title}\' uit de galerij verwijderen? Andere gebruikers kunnen het niet langer bekijken.',
+  'showcase.detail.delistConfirm':
+    "'{title}' uit de galerij verwijderen? Andere gebruikers kunnen het niet langer bekijken.",
   'showcase.detail.confirm': 'Bevestigen',
   'showcase.detail.cancel': 'Annuleren',
   'showcase.withdrawn': 'Ingetrokken',
@@ -203,11 +253,13 @@ export default {
   'showcase.detail.openDocument': 'Openen in nieuw tabblad',
   'showcase.detail.enterFullscreen': 'Volledig scherm',
   'showcase.detail.exitFullscreen': 'Volledig scherm afsluiten',
-  'showcase.detail.pptxPreviewPending': 'Dia\'s converteren voor voorbeeld…',
-  'showcase.detail.officePreviewPending': 'Dia\'s converteren voor voorbeeld…',
+  'showcase.detail.pptxPreviewPending': "Dia's converteren voor voorbeeld…",
+  'showcase.detail.officePreviewPending': "Dia's converteren voor voorbeeld…",
   'showcase.detail.docPreviewLoading': 'Document laden…',
-  'showcase.detail.docPreviewFailed': 'Kan voorbeeld niet laden. Probeer een nieuw tabblad te openen.',
-  'showcase.detail.legacyDocHint': 'Verouderde .doc-bestanden kunnen niet inline worden bekeken. Open of download het bestand, of upload .docx voor een voorbeeld in de browser.',
+  'showcase.detail.docPreviewFailed':
+    'Kan voorbeeld niet laden. Probeer een nieuw tabblad te openen.',
+  'showcase.detail.legacyDocHint':
+    'Verouderde .doc-bestanden kunnen niet inline worden bekeken. Open of download het bestand, of upload .docx voor een voorbeeld in de browser.',
   'showcase.detail.noDocument': 'Geen documentvoorbeeld',
   'showcase.detail.noDiagramPreview': 'Geen diagramvoorbeeld',
   'showcase.detail.diagramPreviewLoading': 'Diagram laden…',

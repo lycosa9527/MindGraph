@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { loadSpecForDiagramType } from '@/stores/specLoader'
 import {
@@ -22,8 +23,7 @@ function topicChildBranchTexts(
   const byId = new Map(nodes.map((n) => [n.id, n.text ?? '']))
   return connections
     .filter(
-      (c) =>
-        c.source === 'topic' && mindMapNodeSide(c.target, { nodes, connections }) === wanted
+      (c) => c.source === 'topic' && mindMapNodeSide(c.target, { nodes, connections }) === wanted
     )
     .map((c) => byId.get(c.target) ?? '')
 }
@@ -104,12 +104,7 @@ describe('mindmap load preserves left/right sides', () => {
   it('rebalances left-only maps after all right branches are removed', () => {
     const initial = loadMindMapSpec({
       topic: 'Topic',
-      children: [
-        { text: 'R1' },
-        { text: 'R2' },
-        { text: 'L1' },
-        { text: 'L2' },
-      ],
+      children: [{ text: 'R1' }, { text: 'R2' }, { text: 'L1' }, { text: 'L2' }],
     })
     const extracted = nodesAndConnectionsToMindMapSpec(initial.nodes, initial.connections)
     expect(extracted.rightBranches.map((b) => b.text)).toEqual(['R1', 'R2'])

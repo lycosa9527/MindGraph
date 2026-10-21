@@ -63,9 +63,7 @@ function frameAtSlideIndex(
 }
 
 /** Flatten planner batches[].frames into a deck-ordered list. */
-export function flattenLessonPlanFrames(
-  plan: Record<string, unknown>
-): Record<string, unknown>[] {
+export function flattenLessonPlanFrames(plan: Record<string, unknown>): Record<string, unknown>[] {
   const batches = plan.batches
   if (Array.isArray(batches)) {
     const frames: Record<string, unknown>[] = []
@@ -85,8 +83,7 @@ export function flattenLessonPlanFrames(
   const top = plan.frames
   if (Array.isArray(top)) {
     return top.filter(
-      (frame): frame is Record<string, unknown> =>
-        Boolean(frame) && typeof frame === 'object'
+      (frame): frame is Record<string, unknown> => Boolean(frame) && typeof frame === 'object'
     )
   }
   return []

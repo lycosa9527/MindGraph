@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': 'Kliknij przycisk Dalej, aby zastosować zmiany',
   'debateverse.coinTossAffirmativeFirst': 'Najpierw mówi strona twierdząca',
   'debateverse.coinTossGotIt': 'Rozumiem',
-  'debateverse.coinTossModalBody': 'Przed debatą ustal kolejność mówienia lub strony twierdzącą/przeczącej przez rzut monetą',
+  'debateverse.coinTossModalBody':
+    'Przed debatą ustal kolejność mówienia lub strony twierdzącą/przeczącej przez rzut monetą',
   'debateverse.coinTossNegativeFirst': 'Najpierw mówi strona przecząca',
   'debateverse.coinTossOrder': 'Rzut monetą — kolejność mówienia',
-  'debateverse.coinTossRules': 'Modele AI zostały losowo przypisane do ról debaty. Przed debatą ustal kolejność mówienia lub strony twierdzącą/przeczącej przez rzut monetą',
+  'debateverse.coinTossRules':
+    'Modele AI zostały losowo przypisane do ról debaty. Przed debatą ustal kolejność mówienia lub strony twierdzącą/przeczącej przez rzut monetą',
   'debateverse.coinTossStageTitle': 'Etap rzutu monetą',
   'debateverse.debateTopicLabel': 'Temat debaty: ',
   'debateverse.executeCoinToss': 'Wykonaj rzut monetą',
@@ -112,10 +114,13 @@ export default {
   'debateverse.setup.suggestion1': 'Czy AI powinno uzyskać osobowość prawną?',
   'debateverse.setup.suggestion2': 'Czy gry wideo bardziej pomagają, czy szkodzą nastolatkom?',
   'debateverse.setup.suggestion3': 'Czy egzaminy wstępne na uczelnie powinny zostać zniesione?',
-  'debateverse.setup.suggestion4': 'Czy platformy społecznościowe powinny mieć surowszą moderację treści?',
+  'debateverse.setup.suggestion4':
+    'Czy platformy społecznościowe powinny mieć surowszą moderację treści?',
   'debateverse.setup.suggestion5': 'Czy praca zdalna powinna stać się mainstreamem?',
-  'debateverse.setup.suggestion6': 'Czy treść generowana przez AI powinna być chroniona prawem autorskim?',
-  'debateverse.setup.suggestion7': 'Czy edukacja powinna bardziej skupiać się na wiedzy, czy umiejętnościach?',
+  'debateverse.setup.suggestion6':
+    'Czy treść generowana przez AI powinna być chroniona prawem autorskim?',
+  'debateverse.setup.suggestion7':
+    'Czy edukacja powinna bardziej skupiać się na wiedzy, czy umiejętnościach?',
   'debateverse.setup.suggestion8': 'Czy edycja genów w ludzkich zarodkach powinna być dozwolona?',
   'debateverse.setup.topicPlaceholder': 'Wpisz temat debaty...',
   'debateverse.side.affirmative': 'Twierdząca',

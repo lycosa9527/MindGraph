@@ -3,9 +3,12 @@
  */
 import type { Ref } from 'vue'
 
-import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
 import { eventBus } from '@/composables/core/useEventBus'
-import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
+import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import type { usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
@@ -87,7 +90,6 @@ export async function streamNodePaletteBatch(
   options?: StreamNodePaletteBatchOptions
 ): Promise<number> {
   const {
-    panelsStore,
     promptLanguage,
     abortController,
     paletteActiveControllers,
@@ -118,8 +120,7 @@ export async function streamNodePaletteBatch(
   let nodeCount = 0
   const onConceptMapDomains = options?.onConceptMapDomains
   const existingIds =
-    options?.sharedExistingIds ??
-    new Set(deps.suggestionSink.getSuggestions().map((s) => s.id))
+    options?.sharedExistingIds ?? new Set(deps.suggestionSink.getSuggestions().map((s) => s.id))
   const doAppend = options?.append ?? false
 
   try {
@@ -222,9 +223,7 @@ export async function streamNodePaletteBatch(
             } else if (data.event === 'batch_complete') {
               // Stream finished for this batch
             } else if (data.event === 'thinking_coins') {
-              applyThinkingCoinMutation(
-                extractThinkingCoinsFooter(data as Record<string, unknown>)
-              )
+              applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
             }
           } catch {
             // Skip malformed lines

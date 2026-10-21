@@ -1,5 +1,6 @@
 /**
- * en UI � maite
+ * xh UI — maite
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {
@@ -43,7 +44,8 @@ export default {
   'maite.inquiry.variantTitle': 'Variant practice',
   'maite.inquiry.complete': 'Complete session',
   'maite.inquiry.completedTitle': 'Inquiry complete',
-  'maite.inquiry.completedMessage': 'This inquiry session is complete. View the learning report below.',
+  'maite.inquiry.completedMessage':
+    'This inquiry session is complete. View the learning report below.',
   'maite.diagnosis.thinkingPlaceholder': 'Describe your thinking (optional)…',
   'maite.diagnosis.runAuto': 'Auto diagnose',
   'maite.diagnosis.running': 'Diagnosing…',

@@ -3,19 +3,14 @@
  * Emits zhihui:* events on the app event bus for studio / sidebar consumers.
  */
 import { computed, ref } from 'vue'
+
 import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { apiDelete, apiGet } from '@/utils/apiClient'
 
 export type ZhihuiConversationStatus =
-  | 'queued'
-  | 'planning'
-  | 'generating'
-  | 'complete'
-  | 'partial'
-  | 'failed'
-  | 'cancelled'
+  'queued' | 'planning' | 'generating' | 'complete' | 'partial' | 'failed' | 'cancelled'
 
 export type ZhihuiGenerationItem = {
   id: string
@@ -315,9 +310,7 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
     )
     if (cached) return cached
 
-    const res = await apiGet(
-      `/api/zhihui/conversations/by-diagram/${encodeURIComponent(cleaned)}`
-    )
+    const res = await apiGet(`/api/zhihui/conversations/by-diagram/${encodeURIComponent(cleaned)}`)
     if (res.status === 404) return null
     if (!res.ok) return null
     const item = (await res.json()) as ZhihuiConversationItem

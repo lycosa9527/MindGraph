@@ -1,13 +1,13 @@
 /**
  * Maite mentor decompose and follow-up API.
  */
-import { consumeMaiteSseStream, MAITE_API_PREFIX, maiteRequestJson } from './client'
-
 import type {
   MaiteDecomposeTables,
   MaiteMentorFollowUpResult,
   MaiteMentorStreamCallbacks,
 } from '@/types/maite'
+
+import { MAITE_API_PREFIX, consumeMaiteSseStream, maiteRequestJson } from './client'
 
 export interface MentorDecomposeInput {
   question: string

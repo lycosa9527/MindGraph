@@ -102,14 +102,14 @@ function resultFromPayload(data: Record<string, unknown>): ShowcaseTeachingCopyR
 }
 
 async function generateShowcaseTeachingCopy(
-  input: ShowcaseTeachingCopyRequest,
+  input: ShowcaseTeachingCopyRequest
 ): Promise<ShowcaseTeachingCopyResult> {
   const response = await apiUpload(
     '/api/showcase/ai/teaching-copy',
     buildTeachingCopyFormData(input),
     {
       signal: input.signal,
-    },
+    }
   )
 
   if (!response.ok) {
@@ -126,8 +126,7 @@ async function generateShowcaseTeachingCopy(
 
   return {
     description: typeof data.description === 'string' ? data.description : '',
-    designHighlights:
-      typeof data.design_highlights === 'string' ? data.design_highlights : '',
+    designHighlights: typeof data.design_highlights === 'string' ? data.design_highlights : '',
     teachingReflection:
       typeof data.teaching_reflection === 'string' ? data.teaching_reflection : '',
     model: typeof data.model === 'string' ? data.model : 'qwen3.7-flash',
@@ -139,14 +138,14 @@ async function generateShowcaseTeachingCopy(
  */
 async function streamShowcaseTeachingCopy(
   input: ShowcaseTeachingCopyRequest,
-  handlers: ShowcaseTeachingCopyStreamHandlers = {},
+  handlers: ShowcaseTeachingCopyStreamHandlers = {}
 ): Promise<ShowcaseTeachingCopyResult> {
   const response = await apiUpload(
     '/api/showcase/ai/teaching-copy/stream',
     buildTeachingCopyFormData(input),
     {
       signal: input.signal,
-    },
+    }
   )
 
   if (!response.ok) {
@@ -198,8 +197,7 @@ async function streamShowcaseTeachingCopy(
             typeof payload.message === 'string' && payload.message.trim()
               ? payload.message
               : 'AI generation failed'
-          const errorType =
-            typeof payload.error_type === 'string' ? payload.error_type : undefined
+          const errorType = typeof payload.error_type === 'string' ? payload.error_type : undefined
           streamError = message
           handlers.onError?.(message, errorType)
         }
@@ -218,7 +216,7 @@ async function streamShowcaseTeachingCopy(
         streamError = message
         handlers.onError?.(
           message,
-          typeof payload.error_type === 'string' ? payload.error_type : undefined,
+          typeof payload.error_type === 'string' ? payload.error_type : undefined
         )
       } else if (payload?.event === 'fields') {
         handlers.onFields?.(fieldsFromPayload(payload))

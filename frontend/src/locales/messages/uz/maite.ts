@@ -4,8 +4,9 @@
  */
 
 export default {
-  'maite.title': 'Mattni o\'rganish usuli',
-  'maite.subtitle': 'Teskari ajratish · To‘rt bosqichli diagnostika · Maqsadli davolash · Variant transferi',
+  'maite.title': "Mattni o'rganish usuli",
+  'maite.subtitle':
+    'Teskari ajratish · To‘rt bosqichli diagnostika · Maqsadli davolash · Variant transferi',
   'maite.mode.demo': 'Namoyish',
   'maite.mode.inquiry': 'So‘rov',
   'maite.mode.map': 'Xarita',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Variant mashqi',
   'maite.inquiry.complete': 'Sessiyani tugatish',
   'maite.inquiry.completedTitle': 'So‘rov tugallandi',
-  'maite.inquiry.completedMessage': 'Bu so‘rov sessiyasi tugallandi. Quyida o‘quv hisobotini ko‘ring.',
+  'maite.inquiry.completedMessage':
+    'Bu so‘rov sessiyasi tugallandi. Quyida o‘quv hisobotini ko‘ring.',
   'maite.diagnosis.thinkingPlaceholder': 'Fikrlashingizni tasvirlang (ixtiyoriy)…',
   'maite.diagnosis.runAuto': 'Avtomatik diagnostika',
   'maite.diagnosis.running': 'Diagnostika…',

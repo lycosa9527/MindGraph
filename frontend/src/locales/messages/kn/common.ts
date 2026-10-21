@@ -7,13 +7,15 @@ export default {
   'app.aiDisclaimer': 'ವಿಷಯವನ್ನು AI ನಿಂದ ರಚಿಸಲಾಗಿದೆ, ದಯವಿಟ್ಟು ಎಚ್ಚರಿಕೆಯಿಂದ ಪರಿಶೀಲಿಸಿ',
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'ಈ ಪ್ರದೇಶವನ್ನು ಬಳಸಲು ಲಾಗ್ ಇನ್ ಮಾಡಿ',
-  'app.browserLocale.body': 'ಬ್ರೌಸರ್ ಭಾಷೆ {name} ಎಂದು ಪತ್ತೆಯಾಗಿದೆ. ನೀವು ಇಂಟರ್ಫೇಸ್ ಅನ್ನು ಅನುಗುಣವಾದ ಭಾಷೆಗೆ ಬದಲಾಯಿಸಲು ಬಯಸುವಿರಾ?',
+  'app.browserLocale.body':
+    'ಬ್ರೌಸರ್ ಭಾಷೆ {name} ಎಂದು ಪತ್ತೆಯಾಗಿದೆ. ನೀವು ಇಂಟರ್ಫೇಸ್ ಅನ್ನು ಅನುಗುಣವಾದ ಭಾಷೆಗೆ ಬದಲಾಯಿಸಲು ಬಯಸುವಿರಾ?',
   'app.browserLocale.dontAsk': 'ಮತ್ತೆ ಪ್ರಾಂಪ್ಟ್ ಮಾಡಬೇಡಿ',
   'app.browserLocale.keepChinese': 'ಚೈನೀಸ್ ಇರಿಸಿಕೊಳ್ಳಿ',
   'app.browserLocale.switch': 'ಸ್ವಿಚ್',
   'app.browserLocale.title': 'ಇಂಟರ್ಫೇಸ್ ಭಾಷೆಯನ್ನು ಬದಲಾಯಿಸುವುದೇ?',
   'app.testServer.badge': 'TEST',
-  'app.testServer.body': 'ನೀವು ಪರೀಕ್ಷಾ ಸರ್ವರ್ ಅನ್ನು ಪ್ರವೇಶಿಸುತ್ತಿರುವಿರಿ ಎಂದು ರಾಯ್ ನಿಮಗೆ ನೆನಪಿಸುತ್ತಾರೆ. ಈ ಸೈಟ್ ಪರೀಕ್ಷೆಗಾಗಿ ಆಗಾಗ್ಗೆ ಆಫ್‌ಲೈನ್ ಆಗಿರುತ್ತದೆ. ದಯವಿಟ್ಟು ಅಧಿಕೃತ ಬಳಕೆಗಾಗಿ ಉತ್ಪಾದನಾ ಪರಿಸರಕ್ಕೆ ಹೋಗಿ.',
+  'app.testServer.body':
+    'ನೀವು ಪರೀಕ್ಷಾ ಸರ್ವರ್ ಅನ್ನು ಪ್ರವೇಶಿಸುತ್ತಿರುವಿರಿ ಎಂದು ರಾಯ್ ನಿಮಗೆ ನೆನಪಿಸುತ್ತಾರೆ. ಈ ಸೈಟ್ ಪರೀಕ್ಷೆಗಾಗಿ ಆಗಾಗ್ಗೆ ಆಫ್‌ಲೈನ್ ಆಗಿರುತ್ತದೆ. ದಯವಿಟ್ಟು ಅಧಿಕೃತ ಬಳಕೆಗಾಗಿ ಉತ್ಪಾದನಾ ಪರಿಸರಕ್ಕೆ ಹೋಗಿ.',
   'app.testServer.confirm': 'ಪರೀಕ್ಷಾ ಸೈಟ್ ಅನ್ನು ಬಳಸುವುದನ್ನು ಮುಂದುವರಿಸಿ',
   'app.testServer.jump': 'ಔಪಚಾರಿಕ ಪರಿಸರಕ್ಕೆ ಹೋಗಿ',
   'app.testServer.productionHost': 'www.mindspringedu.com',
@@ -21,7 +23,8 @@ export default {
   'app.testServer.watermark': 'ಪರೀಕ್ಷಾ ಪರಿಸರ',
   'app.schoolExpired.acknowledge': 'ಗೊತ್ತಿತ್ತು',
   'app.schoolExpired.badge': 'ಅವಧಿ ಮೀರಿದೆ',
-  'app.schoolExpired.body': 'ಶಾಲೆಯ ಉತ್ಪನ್ನಗಳ ಗಡುವು ಮುಗಿದಿದೆ. ಶಿಕ್ಷಕರು ಮತ್ತು ಶಾಲಾ ಆಡಳಿತಾಧಿಕಾರಿಗಳಿಗೆ ಬೀಗ ಹಾಕಲಾಗಿದೆ. ನವೀಕರಿಸಲು, ದಯವಿಟ್ಟು ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ.',
+  'app.schoolExpired.body':
+    'ಶಾಲೆಯ ಉತ್ಪನ್ನಗಳ ಗಡುವು ಮುಗಿದಿದೆ. ಶಿಕ್ಷಕರು ಮತ್ತು ಶಾಲಾ ಆಡಳಿತಾಧಿಕಾರಿಗಳಿಗೆ ಬೀಗ ಹಾಕಲಾಗಿದೆ. ನವೀಕರಿಸಲು, ದಯವಿಟ್ಟು ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ.',
   'app.schoolExpired.env': 'ಚಂದಾದಾರಿಕೆ',
   'app.schoolExpired.host': '{school} · ಮುಕ್ತಾಯ ದಿನಾಂಕ {date}',
   'app.schoolExpired.signOut': 'ಲಾಗ್ ಔಟ್ ಮಾಡಿ',
@@ -38,9 +41,11 @@ export default {
   'askOnce.panel.stopGenerating': 'ಉತ್ಪಾದಿಸುವುದನ್ನು ನಿಲ್ಲಿಸಿ',
   'askOnce.panel.thinking': 'ಯೋಚಿಸುತ್ತಿದೆ...',
   'askOnce.panel.thoughtProcess': 'ಚಿಂತನೆಯ ಪ್ರಕ್ರಿಯೆ',
-  'askOnce.placeholder': 'ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ನಮೂದಿಸಿ... Ctrl+Enter ಒತ್ತಿರಿ ಅಥವಾ ಕಳುಹಿಸು ಕ್ಲಿಕ್ ಮಾಡಿ',
+  'askOnce.placeholder':
+    'ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ನಮೂದಿಸಿ... Ctrl+Enter ಒತ್ತಿರಿ ಅಥವಾ ಕಳುಹಿಸು ಕ್ಲಿಕ್ ಮಾಡಿ',
   'askOnce.promptContent': 'ಪ್ರಾಂಪ್ಟ್ ಪದದ ವಿಷಯ',
-  'askOnce.promptEditPlaceholder': 'ಟೆಂಪ್ಲೇಟ್ ಅನ್ನು ನಮೂದಿಸಿದ ನಂತರ ಅಥವಾ ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ ಸಂಪಾದಿಸಿ...',
+  'askOnce.promptEditPlaceholder':
+    'ಟೆಂಪ್ಲೇಟ್ ಅನ್ನು ನಮೂದಿಸಿದ ನಂತರ ಅಥವಾ ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ ಸಂಪಾದಿಸಿ...',
   'askOnce.promptTemplatesTitle': 'ಪ್ರಾಂಪ್ಟ್ ಪದ ಟೆಂಪ್ಲೇಟ್',
   'askOnce.selectTemplate': 'ಟೆಂಪ್ಲೇಟ್ ಆಯ್ಕೆಮಾಡಿ',
   'askOnce.selectTemplatePlaceholder': 'ಮೊದಲೇ ಹೊಂದಿಸಲಾದ ಟೆಂಪ್ಲೇಟ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ...',
@@ -71,10 +76,12 @@ export default {
   'common.unit.chars': 'ಪಾತ್ರ',
   'common.warning': 'ಎಚ್ಚರಿಸುತ್ತಾರೆ',
   'swissGlass.confirm.ribbon': 'ದೃಢೀಕರಿಸಿ',
-  'diagramTemplate.allModelsFailed': 'ಎಲ್ಲಾ ಮಾದರಿಗಳನ್ನು ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'diagramTemplate.allModelsFailed':
+    'ಎಲ್ಲಾ ಮಾದರಿಗಳನ್ನು ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'diagramTemplate.generated': 'ಚಾರ್ಟ್ ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ರಚಿಸಲಾಗಿದೆ ({model})',
   'diagramTemplate.generationFailed': 'ನಿರ್ಮಾಣ ವಿಫಲವಾಗಿದೆ',
-  'diagramTemplate.promptTooLong': 'ಇನ್‌ಪುಟ್ ವಿಷಯವು ತುಂಬಾ ಉದ್ದವಾಗಿದೆ ({length} ಅಕ್ಷರಗಳು). ಗರಿಷ್ಠ ಅನುಮತಿಸಲಾದ {max} ಅಕ್ಷರಗಳು.',
+  'diagramTemplate.promptTooLong':
+    'ಇನ್‌ಪುಟ್ ವಿಷಯವು ತುಂಬಾ ಉದ್ದವಾಗಿದೆ ({length} ಅಕ್ಷರಗಳು). ಗರಿಷ್ಠ ಅನುಮತಿಸಲಾದ {max} ಅಕ್ಷರಗಳು.',
   'diagramTemplates.brace_map': '[ವಿಷಯ] ವಿಭಜಿಸಲು ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರವನ್ನು ಬಳಸಿ.',
   'diagramTemplates.bridge_map': 'ಅನುಗುಣವಾದ ಸಂಬಂಧದೊಂದಿಗೆ ಸೇತುವೆಯ ರೇಖಾಚಿತ್ರವನ್ನು ಬರೆಯಿರಿ [ಸಂಬಂಧ].',
   'diagramTemplates.bubble_map': '[ವಿಷಯ] ವಿವರಿಸಲು ಬಬಲ್ ಚಾರ್ಟ್ ಬಳಸಿ.',
@@ -99,6 +106,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.gewe': 'ಗೆವೀ',
   'meta.pageTitle.knowledgeSpace': 'ಜ್ಞಾನದ ಜಾಗ',
+  'meta.pageTitle.learningSpace': 'Learning Space',
   'meta.pageTitle.library': 'ಗ್ರಂಥಾಲಯ',
   'meta.pageTitle.libraryBookmark': 'ಬುಕ್ಮಾರ್ಕ್',
   'meta.pageTitle.libraryViewer': 'ಓದಿದೆ',
@@ -110,8 +118,10 @@ export default {
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'ಕಿಟ್ಟಿ',
   'meta.pageTitle.orgs': 'ಸಾಂಸ್ಥಿಕ ನಿರ್ವಹಣೆ',
-  'canvas.kittyMobileIndicatorHint': 'ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಕಿಟ್ಟಿಯನ್ನು ಮೈಕ್ರೊಫೋನ್ ಮತ್ತು ಸಂಭಾಷಣೆಯ ಮೂಲಕ ಪ್ರಾರಂಭಿಸಲಾಗಿದೆ ಮತ್ತು ಪ್ರಸ್ತುತ ಐಕಾನ್‌ನೊಂದಿಗೆ ಸಂಯೋಜಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಮಾತನಾಡಿ ಮತ್ತು ಕಾರ್ಯನಿರ್ವಹಿಸಿ.',
-  'canvas.kittyMobileIndicatorAria': 'ಸ್ಥಿತಿ: MindGraph ಪ್ರಸ್ತುತ ಮೈಂಡ್‌ಗ್ರಾಫ್ ಕ್ಯಾನ್ವಾಸ್‌ನೊಂದಿಗೆ ಮೊಬೈಲ್ ಕಿಟ್ಟಿಯನ್ನು ಸಂಯೋಜಿಸಲಾಗಿದೆ, ದಯವಿಟ್ಟು ನಿಮ್ಮ ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಕಿಟ್ಟಿಯನ್ನು ಬಳಸಿ.',
+  'canvas.kittyMobileIndicatorHint':
+    'ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಕಿಟ್ಟಿಯನ್ನು ಮೈಕ್ರೊಫೋನ್ ಮತ್ತು ಸಂಭಾಷಣೆಯ ಮೂಲಕ ಪ್ರಾರಂಭಿಸಲಾಗಿದೆ ಮತ್ತು ಪ್ರಸ್ತುತ ಐಕಾನ್‌ನೊಂದಿಗೆ ಸಂಯೋಜಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಮಾತನಾಡಿ ಮತ್ತು ಕಾರ್ಯನಿರ್ವಹಿಸಿ.',
+  'canvas.kittyMobileIndicatorAria':
+    'ಸ್ಥಿತಿ: MindGraph ಪ್ರಸ್ತುತ ಮೈಂಡ್‌ಗ್ರಾಫ್ ಕ್ಯಾನ್ವಾಸ್‌ನೊಂದಿಗೆ ಮೊಬೈಲ್ ಕಿಟ್ಟಿಯನ್ನು ಸಂಯೋಜಿಸಲಾಗಿದೆ, ದಯವಿಟ್ಟು ನಿಮ್ಮ ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಕಿಟ್ಟಿಯನ್ನು ಬಳಸಿ.',
   'canvas.kittyMobileIndicatorTitle': 'ಮೊಬೈಲ್ ಕಿಟ್ಟಿ',
   'canvas.kittyMobileIndicatorListening': 'ಫೋನ್ ಕೇಳುತ್ತಿದೆ',
   'canvas.kittyMobileIndicatorSpeaking': 'ಫೋನ್ ಉತ್ತರಿಸುತ್ತಿದೆ',
@@ -133,7 +143,8 @@ export default {
   'canvas.kittyAnchor.aria.speaking': 'ಕಿಟ್ಟಿ ಏಜೆಂಟ್, ಉತ್ತರಿಸುತ್ತಾ, ತೆರೆಯಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
   'canvas.kittyAnchor.aria.thinking': 'ಕಿಟ್ಟಿ ಏಜೆಂಟ್, ಆಲೋಚನೆ, ತೆರೆಯಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
   'canvas.kittyAnchor.aria.active': 'ಕಿಟ್ಟಿ ಏಜೆಂಟ್, ಸಂಪರ್ಕಗೊಂಡಿದೆ, ತೆರೆಯಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
-  'canvas.kittyAnchor.aria.idle': 'ಕಿಟ್ಟಿ ಏಜೆಂಟ್, ಪ್ಯಾನೆಲ್ ಅನ್ನು ಸಂಪರ್ಕಿಸಲು ಅಥವಾ ತೆರೆಯಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
+  'canvas.kittyAnchor.aria.idle':
+    'ಕಿಟ್ಟಿ ಏಜೆಂಟ್, ಪ್ಯಾನೆಲ್ ಅನ್ನು ಸಂಪರ್ಕಿಸಲು ಅಥವಾ ತೆರೆಯಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
   'canvas.kittyVoiceCommandLogTitle': 'ಧ್ವನಿ ಆಜ್ಞೆ',
   'canvas.kittyVoiceCommandLogAria': 'ನಿಮ್ಮ ಫೋನ್‌ನಲ್ಲಿ ಕಿಟ್ಟಿಯಿಂದ ಇತ್ತೀಚಿನ ಧ್ವನಿ ಆದೇಶಗಳು',
   'canvas.kittyWorkflowDebugTitle': 'ಕಿಟ್ಟಿ ವರ್ಕ್‌ಫ್ಲೋ ಟ್ರ್ಯಾಕಿಂಗ್',
@@ -170,15 +181,18 @@ export default {
   'mobile.orgsCopyCode': 'ಆಮಂತ್ರಣ ಕೋಡ್ ನಕಲಿಸಿ',
   'mobile.orgsCopyLink': 'ಆಹ್ವಾನ ಲಿಂಕ್ ನಕಲಿಸಿ',
   'mobile.orgsMemberCount': '{count} ಸದಸ್ಯರು',
-  'mobile.desktopShortcutDesc': 'MindGraph ಮೈಂಡ್‌ಗ್ರಾಫ್ ಐಕಾನ್ ಬಳಸಿ ಸ್ವತಂತ್ರ ಅಪ್ಲಿಕೇಶನ್‌ನಂತೆ ಸ್ಥಾಪಿಸಿ',
+  'mobile.desktopShortcutDesc':
+    'MindGraph ಮೈಂಡ್‌ಗ್ರಾಫ್ ಐಕಾನ್ ಬಳಸಿ ಸ್ವತಂತ್ರ ಅಪ್ಲಿಕೇಶನ್‌ನಂತೆ ಸ್ಥಾಪಿಸಿ',
   'mobile.uiLanguage': 'ಇಂಟರ್ಫೇಸ್ ಭಾಷೆ',
   'mobile.kittyTitle': 'ಕಿಟ್ಟಿ ಏಜೆಂಟ್',
   'mobile.kittyLive': 'ನೈಜ ಸಮಯದ ಸಂಭಾಷಣೆ',
   'mobile.kittyKeyboardToggle': 'ಪಠ್ಯ ಇನ್ಪುಟ್',
   'mobile.kittyEnd': 'ಮುಗಿಸು',
   'mobile.kittyWelcomeLine': 'ನೀವು ಏನು ಯೋಚಿಸುತ್ತೀರಿ ಎಂದು ಹೇಳಿ',
-  'mobile.kittyWelcomeSub': 'MindGraph ನೀವು ಧ್ವನಿ ಅಥವಾ ಪಠ್ಯದ ಮೂಲಕ ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳಬಹುದು. ಕಿಟ್ಟಿಯನ್ನು ಮೈಂಡ್‌ಗ್ರಾಫ್‌ನೊಂದಿಗೆ ಸಿಂಕ್ರೊನೈಸ್ ಮಾಡಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಫೋನ್ ಅಥವಾ ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಉಳಿಸಿದ ಐಕಾನ್ ತೆರೆಯಿರಿ.',
-  'mobile.kittyNeedsDesktopOwner': 'MindGraph ಸಂಪಾದಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಈ ನಕ್ಷೆಯನ್ನು ನಿಮ್ಮ ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಮೈಂಡ್‌ಗ್ರಾಫ್‌ನಲ್ಲಿ ತೆರೆಯಿರಿ. ಕ್ಯಾನ್ವಾಸ್ ಸಂಪರ್ಕವಿಲ್ಲದಿದ್ದಾಗ, ಮೊಬೈಲ್ ಫೋನ್ ಇನ್ನೂ ಸಂವಹನ ಮಾಡಬಹುದು.',
+  'mobile.kittyWelcomeSub':
+    'MindGraph ನೀವು ಧ್ವನಿ ಅಥವಾ ಪಠ್ಯದ ಮೂಲಕ ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳಬಹುದು. ಕಿಟ್ಟಿಯನ್ನು ಮೈಂಡ್‌ಗ್ರಾಫ್‌ನೊಂದಿಗೆ ಸಿಂಕ್ರೊನೈಸ್ ಮಾಡಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಫೋನ್ ಅಥವಾ ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಉಳಿಸಿದ ಐಕಾನ್ ತೆರೆಯಿರಿ.',
+  'mobile.kittyNeedsDesktopOwner':
+    'MindGraph ಸಂಪಾದಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಈ ನಕ್ಷೆಯನ್ನು ನಿಮ್ಮ ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಮೈಂಡ್‌ಗ್ರಾಫ್‌ನಲ್ಲಿ ತೆರೆಯಿರಿ. ಕ್ಯಾನ್ವಾಸ್ ಸಂಪರ್ಕವಿಲ್ಲದಿದ್ದಾಗ, ಮೊಬೈಲ್ ಫೋನ್ ಇನ್ನೂ ಸಂವಹನ ಮಾಡಬಹುದು.',
   'mobile.kittyConnecting': 'ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ...',
   'mobile.kittyInputPlaceholder': 'ಸಂದೇಶವನ್ನು ನಮೂದಿಸಿ...',
   'mobile.kittySend': 'ಕಳುಹಿಸು',
@@ -187,10 +201,13 @@ export default {
   'mobile.kittyCameraDenied': 'ಕ್ಯಾಮರಾ ಅಥವಾ ಚಿತ್ರ ಲಭ್ಯವಿಲ್ಲ',
   'mobile.kittyDiagramCardTapHint': 'ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
   'mobile.kittyDiagramUpdated': 'ಐಕಾನ್ ಅನ್ನು ನವೀಕರಿಸಲಾಗಿದೆ',
-  'mobile.kittyConnectFailed': 'ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನೆಟ್‌ವರ್ಕ್ ಅನ್ನು ಪರಿಶೀಲಿಸಿ ಹಾಗೂ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'mobile.kittyConnectFailed':
+    'ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನೆಟ್‌ವರ್ಕ್ ಅನ್ನು ಪರಿಶೀಲಿಸಿ ಹಾಗೂ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'mobile.kittyDisconnected': 'ಧ್ವನಿ ಸಂಪರ್ಕ ಕಡಿತಗೊಂಡಿದೆ, ಮರುಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ...',
-  'mobile.kittyEnableServerHint': 'ದಯವಿಟ್ಟು ಹೊಂದಿಸಿ FEATURE_KITTY_AGENT=ಸರ್ವರ್ .env ನಲ್ಲಿ ಸರಿ ಮತ್ತು API ಅನ್ನು ಮರುಪ್ರಾರಂಭಿಸಿ.',
-  'mobile.kittyServerDisabledBanner': 'ಪ್ರಸ್ತುತ ಪರಿಸರದಲ್ಲಿ ಕಿಟ್ಟಿ ಧ್ವನಿ ಬ್ಯಾಕೆಂಡ್ ಅನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿಲ್ಲ ಮತ್ತು ಛಾಯಾಗ್ರಹಣ ಮತ್ತು ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಸರ್ವರ್ .env ನಲ್ಲಿ FEATURE_KITTY_AGENT ಅನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ ಮತ್ತು ಮರುಪ್ರಾರಂಭಿಸಿ.',
+  'mobile.kittyEnableServerHint':
+    'ದಯವಿಟ್ಟು ಹೊಂದಿಸಿ FEATURE_KITTY_AGENT=ಸರ್ವರ್ .env ನಲ್ಲಿ ಸರಿ ಮತ್ತು API ಅನ್ನು ಮರುಪ್ರಾರಂಭಿಸಿ.',
+  'mobile.kittyServerDisabledBanner':
+    'ಪ್ರಸ್ತುತ ಪರಿಸರದಲ್ಲಿ ಕಿಟ್ಟಿ ಧ್ವನಿ ಬ್ಯಾಕೆಂಡ್ ಅನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿಲ್ಲ ಮತ್ತು ಛಾಯಾಗ್ರಹಣ ಮತ್ತು ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಸರ್ವರ್ .env ನಲ್ಲಿ FEATURE_KITTY_AGENT ಅನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ ಮತ್ತು ಮರುಪ್ರಾರಂಭಿಸಿ.',
   'mobile.kittyDiagramPickerTitle': 'ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'mobile.kittyDiagramPickerLoading': 'ಲೋಡ್ ಆಗುತ್ತಿದೆ...',
   'mobile.kittyDiagramPickerEmpty': 'ಇನ್ನೂ ಯಾವುದೇ ಉಳಿಸಿದ ನಕ್ಷೆಗಳಿಲ್ಲ',
@@ -198,37 +215,50 @@ export default {
   'mobile.kittyDiagramPickerNoMatch': 'ಯಾವುದೇ ಹೊಂದಾಣಿಕೆಯ ನಕ್ಷೆ ಇಲ್ಲ',
   'mobile.kittyCreateNewMindmap': 'ಹೊಸ ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ರಚಿಸಿ',
   'mobile.kittyNewMindmapTitle': 'ಹೊಸ ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ರಚಿಸಿ',
-  'mobile.kittyNewMindmapCreated': 'ಹೊಸ ಮೈಂಡ್ ಮ್ಯಾಪ್ ಅನ್ನು ರಚಿಸಲಾಗಿದೆ ಮತ್ತು ನಕ್ಷೆಯು ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ತೆರೆಯುತ್ತದೆ.',
-  'mobile.kittyNewMindmapCreateFailed': 'ಹೊಸ ಮೈಂಡ್ ಮ್ಯಾಪ್ ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'mobile.kittyNewMindmapDesktopFailed': 'ಹೊಸ ನಕ್ಷೆಯನ್ನು ರಚಿಸಲಾಗಿದೆ, ಆದರೆ ಅದನ್ನು ತೆರೆಯಲು ಕಂಪ್ಯೂಟರ್‌ಗೆ ಸೂಚಿಸಲಾಗುವುದಿಲ್ಲ.',
+  'mobile.kittyNewMindmapCreated':
+    'ಹೊಸ ಮೈಂಡ್ ಮ್ಯಾಪ್ ಅನ್ನು ರಚಿಸಲಾಗಿದೆ ಮತ್ತು ನಕ್ಷೆಯು ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ತೆರೆಯುತ್ತದೆ.',
+  'mobile.kittyNewMindmapCreateFailed':
+    'ಹೊಸ ಮೈಂಡ್ ಮ್ಯಾಪ್ ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'mobile.kittyNewMindmapDesktopFailed':
+    'ಹೊಸ ನಕ್ಷೆಯನ್ನು ರಚಿಸಲಾಗಿದೆ, ಆದರೆ ಅದನ್ನು ತೆರೆಯಲು ಕಂಪ್ಯೂಟರ್‌ಗೆ ಸೂಚಿಸಲಾಗುವುದಿಲ್ಲ.',
   'mobile.kittyDiagramPinned': 'ಮೇಲಕ್ಕೆ ಪಿನ್ ಮಾಡಿ',
-  'mobile.kittyDiagramPickFailed': 'ನಕ್ಷೆಯನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'mobile.kittyEphemeralScopePinned': 'ಪ್ರಸ್ತುತ ಅವಧಿಯು ತಾತ್ಕಾಲಿಕ ಸೆಶನ್ ಆಗಿದೆ, ದಯವಿಟ್ಟು ಕಂಪ್ಯೂಟರ್‌ನೊಂದಿಗೆ ಸಿಂಕ್ರೊನೈಸ್ ಮಾಡಲು ಹೊಸ ಉಳಿಸಿದ ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ರಚಿಸಿ.',
-  'mobile.kittyEphemeralScopeDegraded': 'ಕಂಪ್ಯೂಟರ್‌ನೊಂದಿಗೆ ಜೋಡಿಸುವಿಕೆಯು ಸಿಂಕ್ ಆಗಿಲ್ಲ, ಮರುಸಂಪರ್ಕಿಸಲು ದಯವಿಟ್ಟು ಉಳಿಸಿದ ನಕ್ಷೆಯನ್ನು ತೆರೆಯಿರಿ.',
+  'mobile.kittyDiagramPickFailed':
+    'ನಕ್ಷೆಯನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'mobile.kittyEphemeralScopePinned':
+    'ಪ್ರಸ್ತುತ ಅವಧಿಯು ತಾತ್ಕಾಲಿಕ ಸೆಶನ್ ಆಗಿದೆ, ದಯವಿಟ್ಟು ಕಂಪ್ಯೂಟರ್‌ನೊಂದಿಗೆ ಸಿಂಕ್ರೊನೈಸ್ ಮಾಡಲು ಹೊಸ ಉಳಿಸಿದ ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ರಚಿಸಿ.',
+  'mobile.kittyEphemeralScopeDegraded':
+    'ಕಂಪ್ಯೂಟರ್‌ನೊಂದಿಗೆ ಜೋಡಿಸುವಿಕೆಯು ಸಿಂಕ್ ಆಗಿಲ್ಲ, ಮರುಸಂಪರ್ಕಿಸಲು ದಯವಿಟ್ಟು ಉಳಿಸಿದ ನಕ್ಷೆಯನ್ನು ತೆರೆಯಿರಿ.',
   'mobile.kittyDesktopJumpFailed': 'ನಕ್ಷೆಯನ್ನು ಬದಲಾಯಿಸಲಾಗಿದೆ, ಆದರೆ ಕಂಪ್ಯೂಟರ್‌ಗೆ ಸೂಚಿಸಲಾಗುವುದಿಲ್ಲ',
-  'mobile.kittyDiagramSelected': 'ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ ಮತ್ತು ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಏಕಕಾಲದಲ್ಲಿ ತೆರೆಯಲಾಗುತ್ತದೆ.',
+  'mobile.kittyDiagramSelected':
+    'ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ ಮತ್ತು ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಏಕಕಾಲದಲ್ಲಿ ತೆರೆಯಲಾಗುತ್ತದೆ.',
   'mobile.kittyCurrentDiagramLabel': 'ಪ್ರಸ್ತುತ ಐಕಾನ್',
   'mobile.kittyDiagramTitleEmpty': 'ಶೀರ್ಷಿಕೆರಹಿತ',
   'mobile.kittyDiagramMetaLine': '{type} · {id}',
   'mobile.kittyHubSourceLive': 'ಹಬ್: ನೈಜ ಸಮಯ',
   'mobile.kittyHubSourceLibrary': 'ಹಬ್: ಲೈಬ್ರರಿ',
   'mobile.kittyHubSourceEmpty': 'ಹಬ್: ಖಾಲಿ',
-  'mobile.kittyMicPttTitle': 'ಮಾತನಾಡಲು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ, ಕಳುಹಿಸಲು ಬಿಡುಗಡೆ ಮಾಡಿ; ಮಾತನಾಡಲು ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್‌ನ ಹೊರಗೆ ಸ್ಪೇಸ್ ಬಾರ್ ಅನ್ನು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ.',
-  'mobile.kittyMicPttAria': 'ಮಾತನಾಡಲು ಒತ್ತಿ ಮತ್ತು ಹಿಡಿದುಕೊಳ್ಳಿ: ಭಾಷಣವನ್ನು ಸಂಗ್ರಹಿಸಲು ಬಟನ್ ಅನ್ನು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ, ನಿಲ್ಲಿಸಲು ಮತ್ತು ಕಳುಹಿಸಲು ಬಿಡುಗಡೆ ಮಾಡಿ. ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್‌ನ ಹೊರಗೆ ನೀವು ಸ್ಪೇಸ್ ಬಾರ್ ಅನ್ನು ಹಿಡಿದಿಟ್ಟುಕೊಳ್ಳಬಹುದು; ಪಠ್ಯ ಇನ್‌ಪುಟ್ ಅನ್ನು ಆನ್ ಮಾಡಿದಾಗ ಮತ್ತು ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್ ಅನ್ನು ಕೇಂದ್ರೀಕರಿಸಿದಾಗ ಸ್ಪೇಸ್‌ಗಳು ಇನ್ನೂ ಇನ್‌ಪುಟ್ ಸ್ಪೇಸ್‌ಗಳಾಗಿವೆ.',
+  'mobile.kittyMicPttTitle':
+    'ಮಾತನಾಡಲು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ, ಕಳುಹಿಸಲು ಬಿಡುಗಡೆ ಮಾಡಿ; ಮಾತನಾಡಲು ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್‌ನ ಹೊರಗೆ ಸ್ಪೇಸ್ ಬಾರ್ ಅನ್ನು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ.',
+  'mobile.kittyMicPttAria':
+    'ಮಾತನಾಡಲು ಒತ್ತಿ ಮತ್ತು ಹಿಡಿದುಕೊಳ್ಳಿ: ಭಾಷಣವನ್ನು ಸಂಗ್ರಹಿಸಲು ಬಟನ್ ಅನ್ನು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ, ನಿಲ್ಲಿಸಲು ಮತ್ತು ಕಳುಹಿಸಲು ಬಿಡುಗಡೆ ಮಾಡಿ. ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್‌ನ ಹೊರಗೆ ನೀವು ಸ್ಪೇಸ್ ಬಾರ್ ಅನ್ನು ಹಿಡಿದಿಟ್ಟುಕೊಳ್ಳಬಹುದು; ಪಠ್ಯ ಇನ್‌ಪುಟ್ ಅನ್ನು ಆನ್ ಮಾಡಿದಾಗ ಮತ್ತು ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್ ಅನ್ನು ಕೇಂದ್ರೀಕರಿಸಿದಾಗ ಸ್ಪೇಸ್‌ಗಳು ಇನ್ನೂ ಇನ್‌ಪುಟ್ ಸ್ಪೇಸ್‌ಗಳಾಗಿವೆ.',
   'mobile.kittyHoldToSpeak': 'ಮಾತನಾಡಲು ಹಿಡಿದುಕೊಳ್ಳಿ',
   'mobile.kittyReleaseToSend': 'ಕಳುಹಿಸಲು ಬಿಡುಗಡೆ ಮಾಡಿ',
   'mobile.kittyListenManual': 'ಹಿಡಿದು ಹೇಳು',
   'mobile.kittyListenAuto': 'ಸ್ವಯಂಚಾಲಿತ ಆಲಿಸುವಿಕೆ',
-  'mobile.kittyListenAutoHint': 'ಅರ್ಧ-ಡ್ಯೂಪ್ಲೆಕ್ಸ್: ಮೈಕ್ ಆಲಿಸುವಾಗ ಮಾತ್ರ ಆನ್ ಆಗಿರುತ್ತದೆ ಮತ್ತು ಕಿಟ್ಟಿ ಮಾತನಾಡುವಾಗ ಆಫ್ ಆಗಿರುತ್ತದೆ.',
+  'mobile.kittyListenAutoHint':
+    'ಅರ್ಧ-ಡ್ಯೂಪ್ಲೆಕ್ಸ್: ಮೈಕ್ ಆಲಿಸುವಾಗ ಮಾತ್ರ ಆನ್ ಆಗಿರುತ್ತದೆ ಮತ್ತು ಕಿಟ್ಟಿ ಮಾತನಾಡುವಾಗ ಆಫ್ ಆಗಿರುತ್ತದೆ.',
   'mobile.kittyListenModeToggle': 'ಸ್ವಯಂಚಾಲಿತ ಆಲಿಸುವಿಕೆಯನ್ನು ಬದಲಿಸಿ',
   'mobile.kittyListening': 'ಕೇಳುತ್ತಿದೆ',
   'mobile.kittySpeaking': 'ಉತ್ತರಿಸುತ್ತಿದ್ದಾರೆ',
   'mobile.kittyThinking': 'ಯೋಚಿಸುತ್ತಿದೆ',
   'mobile.kittyTapToListen': 'ಕೇಳಲು ಪ್ರಾರಂಭಿಸಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
   'mobile.kittyTapToStopListen': 'ನಿಲ್ಲಿಸಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
-  'mobile.kittyMicInsecure': 'ಪ್ರಸ್ತುತ ಪುಟವು ಸುರಕ್ಷಿತ ಸಂಪರ್ಕವಲ್ಲ (HTTPS) ಮತ್ತು ಮೈಕ್ರೊಫೋನ್ ಅನ್ನು ಆಫ್ ಮಾಡಲಾಗಿದೆ. ಬದಲಿಗೆ ಕೀಬೋರ್ಡ್ ಬಳಸಿ.',
-  'mobile.kittyMicToggleTitle': 'ಮಾತನಾಡಲು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ, ಕಳುಹಿಸಲು ಬಿಡುಗಡೆ ಮಾಡಿ; ಮಾತನಾಡಲು ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್‌ನ ಹೊರಗೆ ಸ್ಪೇಸ್ ಬಾರ್ ಅನ್ನು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ.',
-  'mobile.kittyMicToggleAria': 'ಮಾತನಾಡಲು ಒತ್ತಿ ಮತ್ತು ಹಿಡಿದುಕೊಳ್ಳಿ: ಭಾಷಣವನ್ನು ಸಂಗ್ರಹಿಸಲು ಬಟನ್ ಅನ್ನು ಒತ್ತಿ ಮತ್ತು ಹಿಡಿದುಕೊಳ್ಳಿ, ನಿಲ್ಲಿಸಲು ಬಿಡುಗಡೆ ಮಾಡಿ.',
+  'mobile.kittyMicInsecure':
+    'ಪ್ರಸ್ತುತ ಪುಟವು ಸುರಕ್ಷಿತ ಸಂಪರ್ಕವಲ್ಲ (HTTPS) ಮತ್ತು ಮೈಕ್ರೊಫೋನ್ ಅನ್ನು ಆಫ್ ಮಾಡಲಾಗಿದೆ. ಬದಲಿಗೆ ಕೀಬೋರ್ಡ್ ಬಳಸಿ.',
+  'mobile.kittyMicToggleTitle':
+    'ಮಾತನಾಡಲು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ, ಕಳುಹಿಸಲು ಬಿಡುಗಡೆ ಮಾಡಿ; ಮಾತನಾಡಲು ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್‌ನ ಹೊರಗೆ ಸ್ಪೇಸ್ ಬಾರ್ ಅನ್ನು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ.',
+  'mobile.kittyMicToggleAria':
+    'ಮಾತನಾಡಲು ಒತ್ತಿ ಮತ್ತು ಹಿಡಿದುಕೊಳ್ಳಿ: ಭಾಷಣವನ್ನು ಸಂಗ್ರಹಿಸಲು ಬಟನ್ ಅನ್ನು ಒತ್ತಿ ಮತ್ತು ಹಿಡಿದುಕೊಳ್ಳಿ, ನಿಲ್ಲಿಸಲು ಬಿಡುಗಡೆ ಮಾಡಿ.',
   'mobile.kittyClickWheelAria': 'ನೋಡ್‌ಗಳನ್ನು ಸ್ವೈಪ್ ಮಾಡಿ ಅಥವಾ ಟ್ಯಾಪ್ ಮಾಡಿ',
   'mobile.kittyClickWheelHint': 'ಎಡ ಅಥವಾ ಬಲಕ್ಕೆ ಸ್ವೈಪ್ ಮಾಡಿ ಅಥವಾ ಕ್ಲಿಕ್ ಮಾಡಿ: ಶಾಖೆ → ಚೈಲ್ಡ್ ನೋಡ್',
   'mobile.kittyClickWheelEmptyLabel': 'ಹೆಸರಿಲ್ಲದ ನೋಡ್',
@@ -238,26 +268,65 @@ export default {
   'mobile.kittyClickWheelNext': 'ಮುಂದಿನ ನೋಡ್',
   'mobile.kittyClickWheelSelect': 'ಪ್ರಸ್ತುತ ನೋಡ್ ಆಯ್ಕೆಮಾಡಿ',
   'mobile.kittyLlmRowAria': 'AI ಮಾದರಿಯನ್ನು ಆರಿಸಿ',
-  'mobile.kittyPhotoNeedsDiagram': 'ದಯವಿಟ್ಟು ಮೊದಲು ಉಳಿಸಿದ ಐಕಾನ್ ಅನ್ನು ತೆರೆಯಿರಿ ಅಥವಾ ಆಯ್ಕೆಮಾಡಿ, ನಂತರ ಪಠ್ಯವನ್ನು ಹೊರತೆಗೆಯಲು ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ.',
+  'mobile.kittyPhotoNeedsDiagram':
+    'ದಯವಿಟ್ಟು ಮೊದಲು ಉಳಿಸಿದ ಐಕಾನ್ ಅನ್ನು ತೆರೆಯಿರಿ ಅಥವಾ ಆಯ್ಕೆಮಾಡಿ, ನಂತರ ಪಠ್ಯವನ್ನು ಹೊರತೆಗೆಯಲು ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ.',
   'mobile.kittyPhotoInvalidType': 'ದಯವಿಟ್ಟು JPG, PNG ಅಥವಾ WebP ಚಿತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ.',
   'mobile.kittyPhotoTooLarge': 'ಚಿತ್ರ ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ, ಗರಿಷ್ಠ 10MB.',
   'mobile.kittyPhotoProgressDetecting': 'ಫೋಟೋಗಳನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗುತ್ತಿದೆ...',
   'mobile.kittyPhotoUserBubble': '📷 ಫೋಟೋಗಳು',
   'mobile.kittyPhotoUntitledMap': 'ಮನಸ್ಸಿನ ನಕ್ಷೆ',
-  'mobile.kittyPhotoHanddrawnReply': 'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್ "{topic}" ಪತ್ತೆಯಾಗಿದೆ. ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಮರುನಿರ್ಮಿಸಲಾಗಿದೆ, ರಚನೆಯ ಔಟ್‌ಲೈನ್ ಅನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಕ್ಕೆ ಉಳಿಸಲಾಗಿದೆ.',
-  'mobile.kittyPhotoHanddrawnLocalReply': 'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್ "{topic}" ಪತ್ತೆಯಾಗಿದೆ. ಸ್ಥಳೀಯವಾಗಿ ಮರುನಿರ್ಮಾಣ ಮಾಡಲಾಗಿದೆ, ರಚನೆಯ ರೂಪರೇಖೆಯನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಕ್ಕೆ ಉಳಿಸಲಾಗಿದೆ. ಗ್ಯಾಲರಿ ಸಿಂಕ್ರೊನೈಸೇಶನ್ ಪೂರ್ಣಗೊಂಡಿಲ್ಲ. ಕ್ಯಾನ್ವಾಸ್ ಅನ್ನು ನವೀಕರಿಸದಿದ್ದರೆ, ದಯವಿಟ್ಟು ಐಕಾನ್ ಅನ್ನು ಮತ್ತೆ ತೆರೆಯಿರಿ.',
-  'mobile.kittyPhotoOcrReply': 'ಗುರುತಿಸಲಾದ ಚಿತ್ರ ಪಠ್ಯ:\n{excerpt}\n\nಪೂರ್ಣ ಪಠ್ಯವನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶದಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ.',
+  'mobile.kittyPhotoHanddrawnReply':
+    'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್ "{topic}" ಪತ್ತೆಯಾಗಿದೆ. ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಮರುನಿರ್ಮಿಸಲಾಗಿದೆ, ರಚನೆಯ ಔಟ್‌ಲೈನ್ ಅನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಕ್ಕೆ ಉಳಿಸಲಾಗಿದೆ.',
+  'mobile.kittyPhotoHanddrawnLocalReply':
+    'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್ "{topic}" ಪತ್ತೆಯಾಗಿದೆ. ಸ್ಥಳೀಯವಾಗಿ ಮರುನಿರ್ಮಾಣ ಮಾಡಲಾಗಿದೆ, ರಚನೆಯ ರೂಪರೇಖೆಯನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಕ್ಕೆ ಉಳಿಸಲಾಗಿದೆ. ಗ್ಯಾಲರಿ ಸಿಂಕ್ರೊನೈಸೇಶನ್ ಪೂರ್ಣಗೊಂಡಿಲ್ಲ. ಕ್ಯಾನ್ವಾಸ್ ಅನ್ನು ನವೀಕರಿಸದಿದ್ದರೆ, ದಯವಿಟ್ಟು ಐಕಾನ್ ಅನ್ನು ಮತ್ತೆ ತೆರೆಯಿರಿ.',
+  'mobile.kittyPhotoOcrReply':
+    'ಗುರುತಿಸಲಾದ ಚಿತ್ರ ಪಠ್ಯ:\n{excerpt}\n\nಪೂರ್ಣ ಪಠ್ಯವನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶದಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ.',
   'mobile.kittyPhotoUploadFailed': 'ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ವಿಫಲವಾಗಿದೆ.',
-  'mobile.kittyPickDiagramToEdit': 'ದಯವಿಟ್ಟು ಉಳಿಸಿದ ಐಕಾನ್ ಅನ್ನು ತೆರೆಯಿರಿ ಅಥವಾ ಆಯ್ಕೆಮಾಡಿ, ನಂತರ ಮಾತನಾಡಲು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ ಅಥವಾ ಸಂಪಾದಿಸಲು ಪಠ್ಯವನ್ನು ನಮೂದಿಸಿ.',
-  'mobile.kittyHubSyncFailed': 'ಕಿಟ್ಟಿಗೆ ಐಕಾನ್ ಅನ್ನು ಸಿಂಕ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ನೆಟ್‌ವರ್ಕ್ ಅನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'mobile.kittyPickDiagramToEdit':
+    'ದಯವಿಟ್ಟು ಉಳಿಸಿದ ಐಕಾನ್ ಅನ್ನು ತೆರೆಯಿರಿ ಅಥವಾ ಆಯ್ಕೆಮಾಡಿ, ನಂತರ ಮಾತನಾಡಲು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ ಅಥವಾ ಸಂಪಾದಿಸಲು ಪಠ್ಯವನ್ನು ನಮೂದಿಸಿ.',
+  'mobile.kittyHubSyncFailed':
+    'ಕಿಟ್ಟಿಗೆ ಐಕಾನ್ ಅನ್ನು ಸಿಂಕ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ನೆಟ್‌ವರ್ಕ್ ಅನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
   'mobile.kittyDesktopDiagramFollowed': 'ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ತೆರೆಯಲಾದ ಐಕಾನ್‌ಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ',
-  'mobile.kittyScopeDivergence': 'ಕಂಪ್ಯೂಟರಿನಲ್ಲಿ ಇನ್ನೊಂದು ನಕ್ಷೆ ತೆರೆಯಿತು. ದಯವಿಟ್ಟು ಹೇಗೆ ಸಿಂಕ್ ಮಾಡಬೇಕೆಂದು ಆಯ್ಕೆಮಾಡಿ:',
+  'mobile.kittyScopeDivergence':
+    'ಕಂಪ್ಯೂಟರಿನಲ್ಲಿ ಇನ್ನೊಂದು ನಕ್ಷೆ ತೆರೆಯಿತು. ದಯವಿಟ್ಟು ಹೇಗೆ ಸಿಂಕ್ ಮಾಡಬೇಕೆಂದು ಆಯ್ಕೆಮಾಡಿ:',
   'mobile.kittyScopeFollowDesktop': 'ಕಂಪ್ಯೂಟರ್ ನಕ್ಷೆಯನ್ನು ಅನುಸರಿಸಿ',
   'mobile.kittyScopeOpenOnDesktop': 'ನಿಮ್ಮ ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಮೊಬೈಲ್ ನಕ್ಷೆಯನ್ನು ತೆರೆಯಿರಿ',
   'mobile.kittyScopeKeepSplitAction': 'ಇನ್ನೂ ಸಿಂಕ್ರೊನೈಸ್ ಆಗಿಲ್ಲ',
   'mobile.kittyScopeKeepSplit': 'ನಿಮ್ಮ ಫೋನ್ ಮತ್ತು ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ವಿವಿಧ ನಕ್ಷೆಗಳನ್ನು ತೆರೆದಿಡಿ',
   'meta.pageTitle.notFound': 'ಪುಟ ಕಂಡುಬಂದಿಲ್ಲ',
   'meta.pageTitle.privacy': 'ಬಳಕೆದಾರ ಒಪ್ಪಂದ ಮತ್ತು ಗೌಪ್ಯತೆ ನೀತಿ',
+  'meta.pageTitle.browserPlugin': 'Browser plugin',
+  'browserPlugin.back': 'Back',
+  'browserPlugin.heroMark': 'Mind',
+  'browserPlugin.heroTitle': 'Browser plugin',
+  'browserPlugin.heroBody':
+    'Turn the page you are reading into a mind map, ask MindMate with that page as context, and save documents from teaching sites.',
+  'browserPlugin.downloadChrome': 'Chrome',
+  'browserPlugin.downloadEdge': 'Edge',
+  'browserPlugin.entryTitle': 'From one web page to a map, a chat, and a file',
+  'browserPlugin.entryBody': 'It lives in Chrome or Edge. Open a page, then open the extension.',
+  'browserPlugin.cardMapTitle': 'Mind map',
+  'browserPlugin.cardMapBody':
+    'Read the page or the text you selected, then download a PNG mind map.',
+  'browserPlugin.cardChatTitle': 'Ask with the page',
+  'browserPlugin.cardChatBody': 'The first message of a new chat can include the page you are on.',
+  'browserPlugin.cardDocTitle': 'Teaching documents',
+  'browserPlugin.cardDocBody':
+    'On CNKI, SmartEdu, Baidu Wenku, and similar sites, save the document on this computer.',
+  'browserPlugin.mapTitle': 'Turn a web page into an editable map',
+  'browserPlugin.mapBody':
+    'Start from the toolbar, the right-click menu, or a shortcut. If nothing is selected, the extension takes the article text.',
+  'browserPlugin.chatTitle': 'Ask about this page',
+  'browserPlugin.chatBody':
+    'Turn on include-current-page. On a SmartEdu lesson, text from the slides and the teaching plan is merged in.',
+  'browserPlugin.docTitle': 'Take the document from the site',
+  'browserPlugin.docBody':
+    'It recognizes CNKI reader pages, SmartEdu lessons, and library pages, then saves a PDF or the article text locally.',
+  'browserPlugin.downloadTitle': 'Download the browser plugin',
+  'browserPlugin.downloadLead': 'One package for Chrome and Edge.',
+  'browserPlugin.installHint':
+    'Unzip it, open the extensions page, turn on developer mode, and load the unpacked folder.',
+  'browserPlugin.downloadAction': 'Download',
   'meta.pageTitle.publicDashboard': 'MG ರಾಷ್ಟ್ರೀಯ ದತ್ತಾಂಶ ಕೇಂದ್ರ',
   'meta.pageTitle.schoolDashboard': 'ಶಾಲೆಯ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
   'meta.pageTitle.smartResponse': 'ಸ್ಮಾರ್ಟ್ ಪ್ರತಿಕ್ರಿಯೆ',
@@ -285,14 +354,16 @@ export default {
   'publicDashboard.visualHigh': 'ಹೆಚ್ಚು',
   'publicDashboard.visualLow': 'ಕಡಿಮೆ',
   'settings.language.interface': 'ಇಂಟರ್ಫೇಸ್ ಭಾಷೆ',
-  'settings.language.matchPrompt': 'AI ಸಹಾಯಕ ಭಾಷೆ, ಇಂಟರ್ಫೇಸ್ ಮತ್ತು ವರ್ಚುವಲ್ ಕೀಬೋರ್ಡ್ ಭಾಷೆ ಸ್ಥಿರವಾಗಿದೆ',
+  'settings.language.matchPrompt':
+    'AI ಸಹಾಯಕ ಭಾಷೆ, ಇಂಟರ್ಫೇಸ್ ಮತ್ತು ವರ್ಚುವಲ್ ಕೀಬೋರ್ಡ್ ಭಾಷೆ ಸ್ಥಿರವಾಗಿದೆ',
   'settings.language.prompt': 'AI ಸಹಾಯಕ ಭಾಷೆ',
   'settings.language.promptSelectPlaceholder': 'ಭಾಷೆಯನ್ನು ಹುಡುಕಿ...',
   'settings.language.supportsCount': '{n} ಭಾಷೆಗಳನ್ನು ಬೆಂಬಲಿಸುತ್ತದೆ',
   'settings.language.eBlackboardOptimize': 'ಎಲೆಕ್ಟ್ರಾನಿಕ್ ವೈಟ್‌ಬೋರ್ಡ್ ಆಪ್ಟಿಮೈಸೇಶನ್',
   'settings.language.eBlackboardOff': 'ಮುಚ್ಚುವಿಕೆ',
   'settings.language.eBlackboardOn': 'ಆನ್ ಮಾಡಿ',
-  'settings.language.eBlackboardHint': 'ಹೊಸ ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಶಾಖೆಯ ಜೊತೆಗೆ ಚಿಹ್ನೆ ಮತ್ತು ಪಟ್ಟು ನಿಯಂತ್ರಣಗಳನ್ನು ಹಿಗ್ಗಿಸಿ; ಆಯ್ಕೆ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ, ಎಡಿಟ್ ಮಾಡಲು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಿ ಮತ್ತು ತರಗತಿಯ ಎಲೆಕ್ಟ್ರಾನಿಕ್ ವೈಟ್‌ಬೋರ್ಡ್ ಕಾರ್ಯಾಚರಣೆಗಳನ್ನು ಸುಲಭಗೊಳಿಸಲು ಪ್ಯಾನ್/ಜೂಮ್ ಮಾಡಲು ಎರಡು ಬೆರಳುಗಳಿಂದ ಎಳೆಯಿರಿ',
+  'settings.language.eBlackboardHint':
+    'ಹೊಸ ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಶಾಖೆಯ ಜೊತೆಗೆ ಚಿಹ್ನೆ ಮತ್ತು ಪಟ್ಟು ನಿಯಂತ್ರಣಗಳನ್ನು ಹಿಗ್ಗಿಸಿ; ಆಯ್ಕೆ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ, ಎಡಿಟ್ ಮಾಡಲು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಿ ಮತ್ತು ತರಗತಿಯ ಎಲೆಕ್ಟ್ರಾನಿಕ್ ವೈಟ್‌ಬೋರ್ಡ್ ಕಾರ್ಯಾಚರಣೆಗಳನ್ನು ಸುಲಭಗೊಳಿಸಲು ಪ್ಯಾನ್/ಜೂಮ್ ಮಾಡಲು ಎರಡು ಬೆರಳುಗಳಿಂದ ಎಳೆಯಿರಿ',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',
@@ -301,36 +372,56 @@ export default {
   'settings.language.presenterLanguage': 'Presenter language',
   'settings.language.presenterLanguageHint': 'Smaller second line for the demonstrator to read.',
   'settings.language.primaryLanguage': 'Primary language',
-  'settings.language.primaryLanguageHint': 'Regular-size line for the audience; also the interface language.',
+  'settings.language.primaryLanguageHint':
+    'Regular-size line for the audience; also the interface language.',
   'settings.language.secondaryLanguage': 'Second language',
   'settings.language.secondaryLanguageHint': 'Smaller line for the demonstrator to read.',
+  'settings.tabs.account': 'Account',
+  'settings.tabs.security': 'Security',
+  'settings.tabs.language': 'Language',
+  'settings.tabs.plugins': 'Plugins',
+  'settings.tabs.aria': 'Settings sections',
   'settings.version.title': 'ಇಂಟರ್ಫೇಸ್ ಆವೃತ್ತಿ',
   'settings.version.chinese': 'ವೃತ್ತಿಪರ ಮೋಡ್',
   'settings.version.international': 'ಸರಳ ಮೋಡ್',
-  'landing.international.subtitle': 'ವಿಶ್ವದಲ್ಲಿ ಅತ್ಯಂತ ಶಕ್ತಿಶಾಲಿ AI ಚಿಂತನೆಯ ರೇಖಾಚಿತ್ರವನ್ನು ಉತ್ಪಾದಿಸುವ ಸಾಫ್ಟ್‌ವೇರ್',
-  'landing.international.promptPlaceholder': 'ವಿಷಯವನ್ನು ವಿವರಿಸಿ ಮತ್ತು ರೇಖಾಚಿತ್ರದ ಪ್ರಕಾರವನ್ನು ನಿರ್ದಿಷ್ಟಪಡಿಸಿ, ಉದಾಹರಣೆಗೆ "ಸಾಂದ್ರತೆಯನ್ನು ಅಳೆಯಲು ಪ್ರಾಯೋಗಿಕ ಹಂತಗಳನ್ನು ತೋರಿಸಲು ಫ್ಲೋ ಚಾರ್ಟ್ ಅನ್ನು ಬಳಸಿ"...',
+  'landing.international.subtitle':
+    'ವಿಶ್ವದಲ್ಲಿ ಅತ್ಯಂತ ಶಕ್ತಿಶಾಲಿ AI ಚಿಂತನೆಯ ರೇಖಾಚಿತ್ರವನ್ನು ಉತ್ಪಾದಿಸುವ ಸಾಫ್ಟ್‌ವೇರ್',
+  'landing.international.promptPlaceholder':
+    'ವಿಷಯವನ್ನು ವಿವರಿಸಿ ಮತ್ತು ರೇಖಾಚಿತ್ರದ ಪ್ರಕಾರವನ್ನು ನಿರ್ದಿಷ್ಟಪಡಿಸಿ, ಉದಾಹರಣೆಗೆ "ಸಾಂದ್ರತೆಯನ್ನು ಅಳೆಯಲು ಪ್ರಾಯೋಗಿಕ ಹಂತಗಳನ್ನು ತೋರಿಸಲು ಫ್ಲೋ ಚಾರ್ಟ್ ಅನ್ನು ಬಳಸಿ"...',
   'landing.international.examplesTitle': 'ಶಿಫಾರಸು ಮಾಡಿದ ಸ್ಫೂರ್ತಿ',
   'landing.international.example1': '"ದ್ಯುತಿಸಂಶ್ಲೇಷಣೆ" ಕುರಿತು ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ರಚಿಸಿ',
-  'landing.international.example2': '"ಕಶೇರುಕಗಳನ್ನು" ನಾಲ್ಕು ಶಾಖೆಗಳಾಗಿ ವರ್ಗೀಕರಿಸಲು ಮರದ ರೇಖಾಚಿತ್ರವನ್ನು ಬಳಸಿ: ಮೀನು, ಉಭಯಚರಗಳು, ಸರೀಸೃಪಗಳು ಮತ್ತು ಸಸ್ತನಿಗಳು',
-  'landing.international.example3': '"ವಸ್ತುವಿನ ಸಾಂದ್ರತೆಯನ್ನು ಅಳೆಯುವ" ಪ್ರಾಯೋಗಿಕ ಹಂತಗಳನ್ನು ತೋರಿಸಲು ಫ್ಲೋ ಚಾರ್ಟ್ ಅನ್ನು ಬಳಸಿ: ದ್ರವ್ಯರಾಶಿಯನ್ನು ಅಳೆಯಿರಿ, ಪರಿಮಾಣವನ್ನು ಅಳೆಯಿರಿ, ಲೆಕ್ಕಾಚಾರ ಮಾಡಿ ಮತ್ತು ತೀರ್ಮಾನವನ್ನು ರೆಕಾರ್ಡ್ ಮಾಡಿ',
-  'landing.international.example4': '"ಸಸ್ಯ ಕೋಶಗಳು" ಮತ್ತು "ಪ್ರಾಣಿ ಕೋಶಗಳು" ನಡುವಿನ ಹೋಲಿಕೆಗಳು ಮತ್ತು ವ್ಯತ್ಯಾಸಗಳನ್ನು ಹೋಲಿಸಲು ಡಬಲ್ ಬಬಲ್ ಚಾರ್ಟ್ ಅನ್ನು ಬಳಸಿ',
-  'landing.international.example5': '"ಒಂದು ವೇರಿಯಬಲ್‌ನ ಕ್ವಾಡ್ರಾಟಿಕ್ ಸಮೀಕರಣಗಳನ್ನು" ಕೊಳೆಯಲು ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರಗಳನ್ನು ಬಳಸಿ: ಪ್ರಮಾಣಿತ ಸೂತ್ರ, ತಾರತಮ್ಯ, ಮೂಲ ಸೂತ್ರ, ಚಿತ್ರ ಮತ್ತು ಬೇರುಗಳ ನಡುವಿನ ಸಂಬಂಧ',
-  'landing.international.example6': '"ನ್ಯೂಟನ್‌ನ ಮೂರು ನಿಯಮಗಳ" ಪ್ರಮುಖ ಪರಿಕಲ್ಪನೆಗಳನ್ನು ವಿವರಿಸಲು ಬಬಲ್ ಚಾರ್ಟ್ ಅನ್ನು ರಚಿಸಿ',
+  'landing.international.example2':
+    '"ಕಶೇರುಕಗಳನ್ನು" ನಾಲ್ಕು ಶಾಖೆಗಳಾಗಿ ವರ್ಗೀಕರಿಸಲು ಮರದ ರೇಖಾಚಿತ್ರವನ್ನು ಬಳಸಿ: ಮೀನು, ಉಭಯಚರಗಳು, ಸರೀಸೃಪಗಳು ಮತ್ತು ಸಸ್ತನಿಗಳು',
+  'landing.international.example3':
+    '"ವಸ್ತುವಿನ ಸಾಂದ್ರತೆಯನ್ನು ಅಳೆಯುವ" ಪ್ರಾಯೋಗಿಕ ಹಂತಗಳನ್ನು ತೋರಿಸಲು ಫ್ಲೋ ಚಾರ್ಟ್ ಅನ್ನು ಬಳಸಿ: ದ್ರವ್ಯರಾಶಿಯನ್ನು ಅಳೆಯಿರಿ, ಪರಿಮಾಣವನ್ನು ಅಳೆಯಿರಿ, ಲೆಕ್ಕಾಚಾರ ಮಾಡಿ ಮತ್ತು ತೀರ್ಮಾನವನ್ನು ರೆಕಾರ್ಡ್ ಮಾಡಿ',
+  'landing.international.example4':
+    '"ಸಸ್ಯ ಕೋಶಗಳು" ಮತ್ತು "ಪ್ರಾಣಿ ಕೋಶಗಳು" ನಡುವಿನ ಹೋಲಿಕೆಗಳು ಮತ್ತು ವ್ಯತ್ಯಾಸಗಳನ್ನು ಹೋಲಿಸಲು ಡಬಲ್ ಬಬಲ್ ಚಾರ್ಟ್ ಅನ್ನು ಬಳಸಿ',
+  'landing.international.example5':
+    '"ಒಂದು ವೇರಿಯಬಲ್‌ನ ಕ್ವಾಡ್ರಾಟಿಕ್ ಸಮೀಕರಣಗಳನ್ನು" ಕೊಳೆಯಲು ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರಗಳನ್ನು ಬಳಸಿ: ಪ್ರಮಾಣಿತ ಸೂತ್ರ, ತಾರತಮ್ಯ, ಮೂಲ ಸೂತ್ರ, ಚಿತ್ರ ಮತ್ತು ಬೇರುಗಳ ನಡುವಿನ ಸಂಬಂಧ',
+  'landing.international.example6':
+    '"ನ್ಯೂಟನ್‌ನ ಮೂರು ನಿಯಮಗಳ" ಪ್ರಮುಖ ಪರಿಕಲ್ಪನೆಗಳನ್ನು ವಿವರಿಸಲು ಬಬಲ್ ಚಾರ್ಟ್ ಅನ್ನು ರಚಿಸಿ',
   'landing.international.phaseRequestSent': 'ವಿನಂತಿಯನ್ನು ಕಳುಹಿಸಲಾಗಿದೆ',
   'landing.international.phaseServerReceived': 'ಸರ್ವರ್ ವಿನಂತಿಯನ್ನು ಸ್ವೀಕರಿಸಿದೆ',
   'landing.international.phaseGenerating': 'ಐಕಾನ್ ರಚಿಸಲಾಗುತ್ತಿದೆ...',
   'landing.international.phasePleaseWait': 'ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ, AI ವಿಷಯವನ್ನು ಆಯೋಜಿಸುತ್ತಿದೆ',
-  'landing.international.generatingWithTopic': 'ವಿಷಯ: {topic}, {diagramType} ಉತ್ಪಾದಿಸುತ್ತಿದೆ, ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ.',
+  'landing.international.generatingWithTopic':
+    'ವಿಷಯ: {topic}, {diagramType} ಉತ್ಪಾದಿಸುತ್ತಿದೆ, ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ.',
   'landing.international.topicUnknown': 'ನಿಮ್ಮ ವಿಷಯ',
   'landing.international.diagramTypePending': 'ವಿವರಣೆ',
-  'landing.international.errorRateLimit': 'ವಿನಂತಿಯು ತುಂಬಾ ಆಗಾಗ್ಗೆ ಆಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'landing.international.errorRateLimit':
+    'ವಿನಂತಿಯು ತುಂಬಾ ಆಗಾಗ್ಗೆ ಆಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'landing.international.errorTimeout': 'ಜನರೇಷನ್ ಸಮಯ ಮೀರಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'landing.international.errorContentFilter': 'ವಿಷಯವನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ, ದಯವಿಟ್ಟು ವಿವರಣೆಯನ್ನು ಸರಿಹೊಂದಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'landing.international.errorValidation': 'ಪ್ರಾಂಪ್ಟ್ ಅನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ವಿಷಯ ಮತ್ತು ಐಕಾನ್ ಪ್ರಕಾರವನ್ನು ಸೇರಿಸಿ',
+  'landing.international.errorContentFilter':
+    'ವಿಷಯವನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ, ದಯವಿಟ್ಟು ವಿವರಣೆಯನ್ನು ಸರಿಹೊಂದಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'landing.international.errorValidation':
+    'ಪ್ರಾಂಪ್ಟ್ ಅನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ವಿಷಯ ಮತ್ತು ಐಕಾನ್ ಪ್ರಕಾರವನ್ನು ಸೇರಿಸಿ',
   'landing.international.errorGeneration': 'ಐಕಾನ್ ರಚನೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'landing.international.errorInternal': 'ಸೇವೆಯು ತಾತ್ಕಾಲಿಕವಾಗಿ ಅಸಹಜವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'landing.international.errorStreamEmpty': 'ಯಾವುದೇ ಫಲಿತಾಂಶಗಳನ್ನು ಹಿಂತಿರುಗಿಸಲಾಗಿಲ್ಲ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'landing.international.phaseCompleteNavigate': 'ಐಕಾನ್ ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ರಚಿಸಲಾಗಿದೆ, ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಹಾರಿ...',
+  'landing.international.errorInternal':
+    'ಸೇವೆಯು ತಾತ್ಕಾಲಿಕವಾಗಿ ಅಸಹಜವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'landing.international.errorStreamEmpty':
+    'ಯಾವುದೇ ಫಲಿತಾಂಶಗಳನ್ನು ಹಿಂತಿರುಗಿಸಲಾಗಿಲ್ಲ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'landing.international.phaseCompleteNavigate':
+    'ಐಕಾನ್ ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ರಚಿಸಲಾಗಿದೆ, ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಹಾರಿ...',
   'landing.international.sectionTitle': 'ಎಂಟು ಚಿಂತನೆಯ ರೇಖಾಚಿತ್ರಗಳು',
   'landing.international.advancedDiagramsTitle': 'ಸುಧಾರಿತ ಐಕಾನ್',
   'landing.international.modules': 'ಕಾರ್ಯ ಮಾಡ್ಯೂಲ್',
@@ -341,12 +432,17 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'ನೋಂದಣಿ ಲಿಂಕ್ ಅನ್ನು ನಕಲಿಸಿ',
   'landing.international.shareSiteCopied': 'ಲಿಂಕ್ ನಕಲಿಸಲಾಗಿದೆ',
+  'swissGlass.hero.userSettings.ribbon': 'Settings',
+  'swissGlass.hero.userSettings.title': 'Settings',
+  'swissGlass.hero.userSettings.line1': 'Manage your account, security, language, and plugins',
   'swissGlass.hero.localeHint.ribbon': 'ಭಾಷೆ',
   'swissGlass.hero.localeHint.title': 'ಇಂಟರ್ಫೇಸ್ ಭಾಷೆಯನ್ನು ಬದಲಾಯಿಸುವುದೇ?',
-  'swissGlass.hero.localeHint.line1': 'ಬ್ರೌಸರ್ ಭಾಷೆ ಪತ್ತೆಯಾಗಿದೆ. ನೀವು ಅನುಗುಣವಾದ ಇಂಟರ್ಫೇಸ್‌ಗೆ ಬದಲಾಯಿಸಲು ಬಯಸುವಿರಾ?',
+  'swissGlass.hero.localeHint.line1':
+    'ಬ್ರೌಸರ್ ಭಾಷೆ ಪತ್ತೆಯಾಗಿದೆ. ನೀವು ಅನುಗುಣವಾದ ಇಂಟರ್ಫೇಸ್‌ಗೆ ಬದಲಾಯಿಸಲು ಬಯಸುವಿರಾ?',
   'swissGlass.hero.shareExport.ribbon': 'ರಫ್ತು ಮಾಡಿ',
   'swissGlass.hero.shareExport.title': 'ಸಂಭಾಷಣೆಯನ್ನು ರಫ್ತು ಮಾಡಿ',
   'swissGlass.hero.shareExport.line1': 'ಸಂದೇಶವನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಅದನ್ನು ಚಿತ್ರವಾಗಿ ರಫ್ತು ಮಾಡಿ',
+  'swissGlass.hero.shareExport.line1Preview': 'Preview and export as an image',
   'swissGlass.hero.imagePreview.ribbon': 'ಪೂರ್ವವೀಕ್ಷಣೆ',
   'swissGlass.hero.imagePreview.title': 'ಚಿತ್ರಗಳನ್ನು ವೀಕ್ಷಿಸಿ',
   'swissGlass.hero.imagePreview.line1': 'ಪ್ರಸ್ತುತ ಚಿತ್ರವನ್ನು ಬ್ರೌಸ್ ಮಾಡಲು ಎಡ ಮತ್ತು ಬಲಕ್ಕೆ ಬದಲಿಸಿ',
@@ -358,10 +454,12 @@ export default {
   'swissGlass.hero.manualEval.line1': 'ಈ ಹುಡುಕಾಟ ಫಲಿತಾಂಶವನ್ನು ರೇಟ್ ಮಾಡಿ ಮತ್ತು ವಿವರಣೆಯನ್ನು ಬಿಡಿ',
   'swissGlass.hero.createChannel.ribbon': 'ಸ್ಟಡಿ ಕ್ಲಬ್',
   'swissGlass.hero.createChannel.title': 'ಬೋಧನೆ ಮತ್ತು ಸಂಶೋಧನಾ ಗುಂಪು ಅಥವಾ ಪಾಠದ ಉದಾಹರಣೆಯನ್ನು ಸೇರಿಸಿ',
-  'swissGlass.hero.createChannel.line1': 'ಸಂಸ್ಥೆಯೊಳಗೆ ಬೋಧನೆ ಮತ್ತು ಸಂಶೋಧನಾ ಗುಂಪನ್ನು ರಚಿಸಿ ಅಥವಾ ಗುಂಪಿನ ಅಡಿಯಲ್ಲಿ ಹೊಸ ಪಾಠವನ್ನು ಸೇರಿಸಿ',
+  'swissGlass.hero.createChannel.line1':
+    'ಸಂಸ್ಥೆಯೊಳಗೆ ಬೋಧನೆ ಮತ್ತು ಸಂಶೋಧನಾ ಗುಂಪನ್ನು ರಚಿಸಿ ಅಥವಾ ಗುಂಪಿನ ಅಡಿಯಲ್ಲಿ ಹೊಸ ಪಾಠವನ್ನು ಸೇರಿಸಿ',
   'swissGlass.hero.channelSettings.ribbon': 'ಸ್ಟಡಿ ಕ್ಲಬ್',
   'swissGlass.hero.channelSettings.title': 'ಚಾನಲ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳು',
-  'swissGlass.hero.channelSettings.line1': 'ಹೆಸರು, ಪ್ರೊಫೈಲ್ ಮತ್ತು ಸದಸ್ಯರ ಗೋಚರತೆಯ ಮಾಹಿತಿಯನ್ನು ನವೀಕರಿಸಿ',
+  'swissGlass.hero.channelSettings.line1':
+    'ಹೆಸರು, ಪ್ರೊಫೈಲ್ ಮತ್ತು ಸದಸ್ಯರ ಗೋಚರತೆಯ ಮಾಹಿತಿಯನ್ನು ನವೀಕರಿಸಿ',
   'swissGlass.hero.deadline.ribbon': 'ಸ್ಟಡಿ ಕ್ಲಬ್',
   'swissGlass.hero.deadline.title': 'ಗಡುವನ್ನು ಹೊಂದಿಸಿ',
   'swissGlass.hero.deadline.line1': 'ಈ ಪಾಠದ ಉದಾಹರಣೆಗಾಗಿ ಸಲ್ಲಿಕೆ ಗಡುವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
@@ -370,10 +468,12 @@ export default {
   'swissGlass.hero.topicEdit.line1': 'ವಿಷಯದ ಶೀರ್ಷಿಕೆ ಅಥವಾ ವಿವರಣೆಯನ್ನು ಸಂಪಾದಿಸಿ',
   'swissGlass.hero.teachingGroups.ribbon': 'ಸ್ಟಡಿ ಕ್ಲಬ್',
   'swissGlass.hero.teachingGroups.title': 'ನಿರ್ವಹಣಾ ಬೋಧನೆ ಮತ್ತು ಸಂಶೋಧನಾ ಗುಂಪು',
-  'swissGlass.hero.teachingGroups.line1': 'ಬೋಧನೆ ಮತ್ತು ಸಂಶೋಧನಾ ಗುಂಪುಗಳು ಮತ್ತು ಪಾಠದ ಉದಾಹರಣೆಗಳ ಆರ್ಕೈವಿಂಗ್ ಸ್ಥಿತಿಯನ್ನು ಆಯೋಜಿಸಿ',
+  'swissGlass.hero.teachingGroups.line1':
+    'ಬೋಧನೆ ಮತ್ತು ಸಂಶೋಧನಾ ಗುಂಪುಗಳು ಮತ್ತು ಪಾಠದ ಉದಾಹರಣೆಗಳ ಆರ್ಕೈವಿಂಗ್ ಸ್ಥಿತಿಯನ್ನು ಆಯೋಜಿಸಿ',
   'swissGlass.hero.diagramPicker.ribbon': 'ಸ್ಟಡಿ ಕ್ಲಬ್',
   'swissGlass.hero.diagramPicker.title': 'ಐಕಾನ್ ಆಯ್ಕೆಮಾಡಿ',
-  'swissGlass.hero.diagramPicker.line1': 'ಸಂಭಾಷಣೆಗೆ ಲಗತ್ತಿಸಲು ಇತಿಹಾಸ ಐಕಾನ್‌ಗಳಲ್ಲಿ ಒಂದನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'swissGlass.hero.diagramPicker.line1':
+    'ಸಂಭಾಷಣೆಗೆ ಲಗತ್ತಿಸಲು ಇತಿಹಾಸ ಐಕಾನ್‌ಗಳಲ್ಲಿ ಒಂದನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'swissGlass.hero.newTopic.ribbon': 'ಸ್ಟಡಿ ಕ್ಲಬ್',
   'swissGlass.hero.newTopic.title': 'ಹೊಸ ಅಧಿವೇಶನ',
   'swissGlass.hero.newTopic.line1': 'ಪ್ರಸ್ತುತ ಚಾನಲ್‌ಗಾಗಿ ಹೊಸ ವಿಷಯವನ್ನು ಪ್ರಾರಂಭಿಸಿ',
@@ -388,16 +488,19 @@ export default {
   'swissGlass.hero.contactProfile.line1': 'ಇತರ ಪಕ್ಷದ ಸಂಘಟನೆ ಮತ್ತು ಸಂಪರ್ಕ ಮಾಹಿತಿಯನ್ನು ವೀಕ್ಷಿಸಿ',
   'swissGlass.hero.dingtalk.ribbon': 'ಖಾತೆ',
   'swissGlass.hero.dingtalk.title': 'ಬೈಂಡಿಂಗ್ ಡಿಂಗ್ ಟಾಕ್',
-  'swissGlass.hero.dingtalk.line1': 'DingTalk ಖಾತೆಯನ್ನು ಪ್ರಸ್ತುತ ಬಳಕೆದಾರರಿಗೆ ಸಂಪರ್ಕಿಸಲು ಜೋಡಣೆ ಕೋಡ್ ಬಳಸಿ',
+  'swissGlass.hero.dingtalk.line1':
+    'DingTalk ಖಾತೆಯನ್ನು ಪ್ರಸ್ತುತ ಬಳಕೆದಾರರಿಗೆ ಸಂಪರ್ಕಿಸಲು ಜೋಡಣೆ ಕೋಡ್ ಬಳಸಿ',
   'swissGlass.hero.watchAssign.ribbon': 'ಝಿಯಿಂಗ್',
   'swissGlass.hero.watchAssign.title': 'ವೀಕ್ಷಣೆ ಕಾರ್ಯಗಳನ್ನು ನಿಯೋಜಿಸಿ',
-  'swissGlass.hero.watchAssign.line1': 'ವಸ್ತುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ವೀಕ್ಷಣೆ ವೇಳಾಪಟ್ಟಿಯನ್ನು ದೃಢೀಕರಿಸಿ',
+  'swissGlass.hero.watchAssign.line1':
+    'ವಸ್ತುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ವೀಕ್ಷಣೆ ವೇಳಾಪಟ್ಟಿಯನ್ನು ದೃಢೀಕರಿಸಿ',
   'smartResponse.watchId': 'Watch ID',
   'smartResponse.student': 'Student',
   'smartResponse.selectStudent': 'Select student',
   'swissGlass.hero.trainingInfo.ribbon': 'ತರಬೇತಿ',
   'swissGlass.hero.trainingInfo.title': 'ಕೋರ್ಸ್ ಮಾಹಿತಿ',
-  'swissGlass.hero.trainingInfo.line1': 'ತರಬೇತಿ ಕೋರ್ಸ್‌ಗಳಿಗೆ ಮೂಲಭೂತ ಮಾಹಿತಿಯನ್ನು ಭರ್ತಿ ಮಾಡಿ ಅಥವಾ ನವೀಕರಿಸಿ',
+  'swissGlass.hero.trainingInfo.line1':
+    'ತರಬೇತಿ ಕೋರ್ಸ್‌ಗಳಿಗೆ ಮೂಲಭೂತ ಮಾಹಿತಿಯನ್ನು ಭರ್ತಿ ಮಾಡಿ ಅಥವಾ ನವೀಕರಿಸಿ',
   'swissGlass.hero.teacherUsage.ribbon': 'ಡೋಸೇಜ್',
   'swissGlass.hero.teacherUsage.title': 'ಶಿಕ್ಷಕರ ಡೋಸೇಜ್',
   'swissGlass.hero.teacherUsage.line1': 'ಶಿಕ್ಷಕರು ಮತ್ತು ಬಳಕೆದಾರರಿಗಾಗಿ ಬಳಕೆಯ ಸ್ಥಗಿತವನ್ನು ವೀಕ್ಷಿಸಿ',
@@ -406,16 +509,20 @@ export default {
   'swissGlass.hero.askOnce.line1': 'ಟೆಂಪ್ಲೇಟ್ ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಹೊಸ ಪ್ರಶ್ನೋತ್ತರವನ್ನು ಪ್ರಾರಂಭಿಸಿ',
   'swissGlass.hero.login.ribbon': 'ಖಾತೆ',
   'swissGlass.hero.login.title': 'ಮೈಟೆ ಬೋಧನೆ ಮತ್ತು ಸಂಶೋಧನೆಗೆ ಲಾಗಿನ್ ಮಾಡಿ',
-  'swissGlass.hero.login.line1': 'ಮುಂದುವರಿಸಲು ನಿಮ್ಮ ಮೊಬೈಲ್ ಫೋನ್ ಸಂಖ್ಯೆ, ಇಮೇಲ್ ವಿಳಾಸ ಅಥವಾ ಮೂರನೇ ವ್ಯಕ್ತಿಯ ಖಾತೆಯನ್ನು ಬಳಸಿ',
+  'swissGlass.hero.login.line1':
+    'ಮುಂದುವರಿಸಲು ನಿಮ್ಮ ಮೊಬೈಲ್ ಫೋನ್ ಸಂಖ್ಯೆ, ಇಮೇಲ್ ವಿಳಾಸ ಅಥವಾ ಮೂರನೇ ವ್ಯಕ್ತಿಯ ಖಾತೆಯನ್ನು ಬಳಸಿ',
   'swissGlass.hero.register.ribbon': 'ಖಾತೆ',
   'swissGlass.hero.register.title': 'ತ್ವರಿತ ನೋಂದಣಿ',
-  'swissGlass.hero.register.line1': 'ನೋಂದಣಿಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಲು QR ಕೋಡ್ ಅನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ ಮಾಹಿತಿಯನ್ನು ಭರ್ತಿ ಮಾಡಿ',
+  'swissGlass.hero.register.line1':
+    'ನೋಂದಣಿಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಲು QR ಕೋಡ್ ಅನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ ಮಾಹಿತಿಯನ್ನು ಭರ್ತಿ ಮಾಡಿ',
   'swissGlass.hero.oauthQr.ribbon': 'ಖಾತೆ',
   'swissGlass.hero.oauthQr.title': 'ಲಾಗ್ ಇನ್ ಮಾಡಲು ಕೋಡ್ ಅನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ',
-  'swissGlass.hero.oauthQr.line1': 'ಲಾಗಿನ್ ಅನ್ನು ಪೂರ್ಣಗೊಳಿಸಲು QR ಕೋಡ್ ಅನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಲು WeChat ಅಥವಾ DingTalk ಬಳಸಿ',
+  'swissGlass.hero.oauthQr.line1':
+    'ಲಾಗಿನ್ ಅನ್ನು ಪೂರ್ಣಗೊಳಿಸಲು QR ಕೋಡ್ ಅನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಲು WeChat ಅಥವಾ DingTalk ಬಳಸಿ',
   'swissGlass.hero.account.ribbon': 'ಖಾತೆ',
   'swissGlass.hero.account.title': 'ಖಾತೆ ಮಾಹಿತಿ',
-  'swissGlass.hero.account.line1': 'ಮಾಹಿತಿ, ಭದ್ರತಾ ಸೆಟ್ಟಿಂಗ್‌ಗಳು ಮತ್ತು ಬೈಂಡಿಂಗ್ ಸ್ಥಿತಿಯನ್ನು ವೀಕ್ಷಿಸಿ',
+  'swissGlass.hero.account.line1':
+    'ಮಾಹಿತಿ, ಭದ್ರತಾ ಸೆಟ್ಟಿಂಗ್‌ಗಳು ಮತ್ತು ಬೈಂಡಿಂಗ್ ಸ್ಥಿತಿಯನ್ನು ವೀಕ್ಷಿಸಿ',
   'swissGlass.hero.avatar.ribbon': 'ಖಾತೆ',
   'swissGlass.hero.avatar.title': 'ಅವತಾರವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'swissGlass.hero.avatar.line1': 'ನಿಮ್ಮ ಖಾತೆಗಾಗಿ ಎಮೋಜಿ ಅವತಾರವನ್ನು ಆರಿಸಿ',
@@ -430,10 +537,12 @@ export default {
   'swissGlass.hero.setPassword.line1': 'ಖಾತೆಗೆ ಲಾಗಿನ್ ಪಾಸ್‌ವರ್ಡ್ ಹೊಂದಿಸಲು SMS ಪರಿಶೀಲನೆ ಕೋಡ್ ಬಳಸಿ',
   'swissGlass.hero.apiToken.ribbon': 'ಸುರಕ್ಷತೆ',
   'swissGlass.hero.apiToken.title': 'API ಟೋಕನ್',
-  'swissGlass.hero.apiToken.line1': 'ಇಂಟರ್ಫೇಸ್ ಕರೆಗಳಿಗಾಗಿ ಬಳಸಿದ ಟೋಕನ್‌ಗಳನ್ನು ವೀಕ್ಷಿಸಿ ಅಥವಾ ತಿರುಗಿಸಿ',
+  'swissGlass.hero.apiToken.line1':
+    'ಇಂಟರ್ಫೇಸ್ ಕರೆಗಳಿಗಾಗಿ ಬಳಸಿದ ಟೋಕನ್‌ಗಳನ್ನು ವೀಕ್ಷಿಸಿ ಅಥವಾ ತಿರುಗಿಸಿ',
   'swissGlass.hero.loginDevices.ribbon': 'ಸುರಕ್ಷತೆ',
   'swissGlass.hero.loginDevices.title': 'ಸಾಧನಕ್ಕೆ ಲಾಗ್ ಇನ್ ಮಾಡಿ',
-  'swissGlass.hero.loginDevices.line1': 'ಲಾಗ್ ಇನ್ ಮಾಡಿದ ಸಾಧನಗಳನ್ನು ವೀಕ್ಷಿಸಿ ಮತ್ತು ಇತರ ಸಾಧನಗಳನ್ನು ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಲಾಗ್ ಮಾಡಿ',
+  'swissGlass.hero.loginDevices.line1':
+    'ಲಾಗ್ ಇನ್ ಮಾಡಿದ ಸಾಧನಗಳನ್ನು ವೀಕ್ಷಿಸಿ ಮತ್ತು ಇತರ ಸಾಧನಗಳನ್ನು ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಲಾಗ್ ಮಾಡಿ',
   'swissGlass.hero.coins.ribbon': 'ಥಾಟ್ ನಾಣ್ಯ',
   'swissGlass.hero.coins.title': 'ಥಾಟ್ ನಾಣ್ಯ',
   'swissGlass.hero.coins.line1': 'ಸಮತೋಲನ, ಕಾರ್ಯಗಳು ಮತ್ತು ಸ್ವಾಧೀನ ದಾಖಲೆಗಳನ್ನು ವೀಕ್ಷಿಸಿ',
@@ -442,10 +551,12 @@ export default {
   'swissGlass.hero.logoQr.line1': 'ಪ್ರಸ್ತುತ ಸೈಟ್ ತೆರೆಯಲು ನಿಮ್ಮ ಫೋನ್‌ನೊಂದಿಗೆ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ',
   'swissGlass.hero.shareSite.ribbon': 'ಆಹ್ವಾನಿಸಿ',
   'swissGlass.hero.shareSite.title': 'ತ್ವರಿತ ನೋಂದಣಿ',
-  'swissGlass.hero.shareSite.line1': 'ಸಹೋದ್ಯೋಗಿಗಳನ್ನು ಆಹ್ವಾನಿಸಲು ನೋಂದಣಿ ಲಿಂಕ್ ಅಥವಾ QR ಕೋಡ್ ಅನ್ನು ಹಂಚಿಕೊಳ್ಳಿ',
+  'swissGlass.hero.shareSite.line1':
+    'ಸಹೋದ್ಯೋಗಿಗಳನ್ನು ಆಹ್ವಾನಿಸಲು ನೋಂದಣಿ ಲಿಂಕ್ ಅಥವಾ QR ಕೋಡ್ ಅನ್ನು ಹಂಚಿಕೊಳ್ಳಿ',
   'swissGlass.hero.publishShowcase.ribbon': 'ಪ್ರಕರಣ',
   'swissGlass.hero.publishShowcase.title': 'ಪ್ರಕರಣವನ್ನು ಪೋಸ್ಟ್ ಮಾಡಿ',
-  'swissGlass.hero.publishShowcase.line1': 'ತೆರೆದ ಪ್ರಕರಣವನ್ನು ಭರ್ತಿ ಮಾಡಲು ಮತ್ತು ಸಲ್ಲಿಸಲು ಹಂತಗಳನ್ನು ಅನುಸರಿಸಿ',
+  'swissGlass.hero.publishShowcase.line1':
+    'ತೆರೆದ ಪ್ರಕರಣವನ್ನು ಭರ್ತಿ ಮಾಡಲು ಮತ್ತು ಸಲ್ಲಿಸಲು ಹಂತಗಳನ್ನು ಅನುಸರಿಸಿ',
   'swissGlass.hero.showcaseDetail.ribbon': 'ಪ್ರಕರಣ',
   'swissGlass.hero.showcaseDetail.title': 'ಪ್ರಕರಣದ ವಿವರಗಳು',
   'swissGlass.hero.showcaseDetail.line1': 'ಐಕಾನ್‌ಗಳು, ವಿವರಣೆಗಳು ಮತ್ತು ಸಂವಹನಗಳನ್ನು ವೀಕ್ಷಿಸಿ',
@@ -472,10 +583,12 @@ export default {
   'swissGlass.hero.adminUser.line1': 'ಪಾತ್ರಗಳು, ಕೋಟಾಗಳು ಮತ್ತು ಖಾತೆಯ ಸ್ಥಿತಿಯನ್ನು ನವೀಕರಿಸಿ',
   'swissGlass.hero.adminMindbot.ribbon': 'MindBot',
   'swissGlass.hero.adminMindbot.title': 'ರೋಬೋಟ್ ಕಾನ್ಫಿಗರೇಶನ್',
-  'swissGlass.hero.adminMindbot.line1': 'ಮೈಂಡ್‌ಬಾಟ್ ಪ್ರವೇಶ ಮತ್ತು ಪ್ರತ್ಯುತ್ತರ ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಹೊಂದಿಸಿ',
+  'swissGlass.hero.adminMindbot.line1':
+    'ಮೈಂಡ್‌ಬಾಟ್ ಪ್ರವೇಶ ಮತ್ತು ಪ್ರತ್ಯುತ್ತರ ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಹೊಂದಿಸಿ',
   'swissGlass.hero.adminApiKeys.ribbon': 'MindBot',
   'swissGlass.hero.adminApiKeys.title': 'ಇಂಟರ್ಫೇಸ್ ಕೀಲಿಯನ್ನು ರಚಿಸಿ',
-  'swissGlass.hero.adminApiKeys.line1': 'ಇಂಟರ್ಫೇಸ್ ಕೀಗಳನ್ನು ರಚಿಸಲು DingTalk ಅನ್ನು ರಚಿಸಿ ಅಥವಾ ತಿರುಗಿಸಿ',
+  'swissGlass.hero.adminApiKeys.line1':
+    'ಇಂಟರ್ಫೇಸ್ ಕೀಗಳನ್ನು ರಚಿಸಲು DingTalk ಅನ್ನು ರಚಿಸಿ ಅಥವಾ ತಿರುಗಿಸಿ',
   'swissGlass.hero.adminOrgTrend.ribbon': 'ನಿರ್ವಹಿಸಿ',
   'swissGlass.hero.adminOrgTrend.title': 'ಅಂಗಾಂಶ ಡೋಸೇಜ್',
   'swissGlass.hero.adminOrgTrend.line1': 'ನಿಮ್ಮ ಶಾಲೆ ಅಥವಾ ಸಂಸ್ಥೆಗಾಗಿ ಟೋಕನ್ ಟ್ರೆಂಡ್‌ಗಳನ್ನು ವೀಕ್ಷಿಸಿ',
@@ -513,13 +626,4 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'ಪರಿಕಲ್ಪನೆ ನಕ್ಷೆ',
   'swissGlass.hero.focusQuestion.title': 'ಗಮನ ಸಮಸ್ಯೆಗಳು',
   'swissGlass.hero.focusQuestion.line1': 'ಪರಿಕಲ್ಪನೆಯ ನಕ್ಷೆಗಾಗಿ ಪ್ರಮುಖ ಪ್ರಶ್ನೆಯನ್ನು ಹೊಂದಿಸಿ',
-  'meta.pageTitle.learningSpace': 'Learning Space',
-  'settings.tabs.account': 'Account',
-  'settings.tabs.security': 'Security',
-  'settings.tabs.language': 'Language',
-  'settings.tabs.plugins': 'Plugins',
-  'settings.tabs.aria': 'Settings sections',
-  'swissGlass.hero.userSettings.ribbon': 'Settings',
-  'swissGlass.hero.userSettings.title': 'Settings',
-  'swissGlass.hero.userSettings.line1': 'Manage your account, security, language, and plugins',
 } as const

@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted, ref, watch, type CSSProperties, type Ref } from 'vue'
+import { type CSSProperties, type Ref, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { readTrainingPadViewport, trainingPadBox } from './trainingPadAnchor'
 

@@ -90,10 +90,7 @@ export function useTrainingFollow(): void {
     const wasLive = training.snapshot.state === 'live'
     training.applySnapshot(result.snapshot)
     const applied = training.snapshot
-    if (
-      applied.session_id !== result.snapshot.session_id ||
-      applied.seq !== result.snapshot.seq
-    ) {
+    if (applied.session_id !== result.snapshot.session_id || applied.seq !== result.snapshot.seq) {
       return
     }
     if (applied.state !== 'live') {

@@ -9,8 +9,8 @@ import type {
   KittyContextUpdateOptions,
 } from '@/composables/kitty/kittyAgentTypes'
 import type { KittyTranslateFn } from '@/composables/kitty/pipeline/errorCatalog'
-import { ensureKittySessionConnected } from '@/composables/kitty/pipeline/session'
 import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
+import { ensureKittySessionConnected } from '@/composables/kitty/pipeline/session'
 import {
   beginKittyTurn,
   completeKittyTurn,
@@ -19,9 +19,10 @@ import {
   recordPipelineEvent,
 } from '@/composables/kitty/pipeline/trace'
 import type { KittyTurnContext } from '@/composables/kitty/pipeline/types'
-import { beginKittySessionIngress } from '@/composables/kitty/useKittySessionManager'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
+import { beginKittySessionIngress } from '@/composables/kitty/useKittySessionManager'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
+import { must } from '@/utils/must'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 export type RunKittyEditTurnDeps = {
@@ -104,7 +105,7 @@ export async function runKittyEditTurn(
           step: 'S02_session_ready',
           errorCode: 'not_connected',
         })
-        deps.onFailMessage(messageForKittyFail(pipeline.getLastFail()!, deps.t))
+        deps.onFailMessage(messageForKittyFail(must(pipeline.getLastFail()), deps.t))
         return { ok: false, ctx, sent: false }
       }
       recordPipelineEvent({
@@ -245,7 +246,7 @@ export async function runKittyEditTurn(
       step: 'S08_text_send',
       errorCode: 'text_send_failed',
     })
-    deps.onFailMessage(messageForKittyFail(pipeline.getLastFail()!, deps.t))
+    deps.onFailMessage(messageForKittyFail(must(pipeline.getLastFail()), deps.t))
     return { ok: false, ctx, sent: false }
   }
 

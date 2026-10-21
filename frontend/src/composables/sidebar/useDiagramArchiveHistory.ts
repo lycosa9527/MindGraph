@@ -1,7 +1,7 @@
 /**
  * Grouping and persistence helpers for saved-diagram archive folders.
  */
-import { computed, ref, type ComputedRef, type Ref } from 'vue'
+import { type ComputedRef, type Ref, computed, ref } from 'vue'
 
 import type { DiagramFolder, SavedDiagram } from '@/stores/savedDiagrams'
 
@@ -35,10 +35,7 @@ export function persistCollapsedFolderIds(collapsed: Set<string>): void {
   }
 }
 
-export function diagramsInFolder(
-  diagrams: SavedDiagram[],
-  folderId: string
-): SavedDiagram[] {
+export function diagramsInFolder(diagrams: SavedDiagram[], folderId: string): SavedDiagram[] {
   return diagrams
     .filter((diagram) => diagram.folder_id === folderId)
     .sort((a, b) => {

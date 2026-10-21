@@ -24,17 +24,21 @@ export default {
   'zhihui.promptPlaceholder.image': 'Masukkan inspirasi Anda…',
   'zhihui.promptPlaceholder.video': 'Jelaskan adegan, pengambilan gambar, dan ritme...',
   'zhihui.promptPlaceholder.diagram': 'Pilih peta pikiran dan klik Hasilkan',
-  'zhihui.composerHint.image': 'Gunakan teks untuk mendeskripsikan gambar dan menghasilkan ilustrasi pengajaran dan materi visual dengan satu klik',
+  'zhihui.composerHint.image':
+    'Gunakan teks untuk mendeskripsikan gambar dan menghasilkan ilustrasi pengajaran dan materi visual dengan satu klik',
   'zhihui.composerHint.video': 'Kemampuan Wensheng Video dan Tusheng Video akan segera diakses',
-  'zhihui.composerHint.diagram': 'Pilih peta pikiran untuk menghasilkan diagram perangkat pelajaran dari sudut pandang pelajar',
+  'zhihui.composerHint.diagram':
+    'Pilih peta pikiran untuk menghasilkan diagram perangkat pelajaran dari sudut pandang pelajar',
   'zhihui.diagram.selectMindmap': 'Pilih peta pikiran',
   'zhihui.diagram.selectMindmapHint': 'Silakan pilih peta pikiran di atas',
   'zhihui.diagram.selectMindmapFirst': 'Silakan pilih peta pikiran terlebih dahulu',
-  'zhihui.diagram.emptyLibrary': 'Belum ada peta pikiran, harap simpan dulu di perpustakaan diagram.',
+  'zhihui.diagram.emptyLibrary':
+    'Belum ada peta pikiran, harap simpan dulu di perpustakaan diagram.',
   'zhihui.diagram.loadFailed': 'Gagal memuat peta pikiran',
   'zhihui.diagram.emptyDeck': 'Setelah memilih peta pikiran, klik Hasilkan',
   'zhihui.diagram.waitingSlides': 'Courseware sedang dibuat, harap tunggu...',
-  'zhihui.diagram.jobStarted': 'Pembuatan perangkat kursus telah dimulai. Anda dapat memeriksa kemajuan dalam sejarah.',
+  'zhihui.diagram.jobStarted':
+    'Pembuatan perangkat kursus telah dimulai. Anda dapat memeriksa kemajuan dalam sejarah.',
   'zhihui.diagram.phaseQueued': 'Tugas-tugas diantrekan...',
   'zhihui.diagram.phasePlanning': 'Merancang silabus...',
   'zhihui.diagram.phasePlanningBranches': 'Merencanakan berbagai topik...',
@@ -47,7 +51,8 @@ export default {
   'zhihui.diagram.phaseComplete': 'Peralatan kursus sudah siap',
   'zhihui.diagram.phaseCancelled': 'Dibatalkan',
   'zhihui.diagram.toastPlanning': 'Merancang silabus...',
-  'zhihui.diagram.toastGenerating': 'Courseware sedang diambil, mungkin memerlukan waktu beberapa menit',
+  'zhihui.diagram.toastGenerating':
+    'Courseware sedang diambil, mungkin memerlukan waktu beberapa menit',
   'zhihui.diagram.toastComplete': 'Peralatan kursus sudah siap',
   'zhihui.diagram.toastPartial': 'Courseware telah selesai sebagian dan dapat terus dibuat.',
   'zhihui.diagram.toastCancelled': 'Pembuatan perangkat kursus dibatalkan',
@@ -58,7 +63,8 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'Tayangan slide gagal dimuat',
   'zhihui.diagram.retryImage': 'Coba lagi',
   'zhihui.diagram.teacherScript': 'Narasi guru',
-  'zhihui.diagram.teacherScriptHint': 'Penjelasan kelas diselaraskan dengan fokus ilustrasi dan peta di halaman ini',
+  'zhihui.diagram.teacherScriptHint':
+    'Penjelasan kelas diselaraskan dengan fokus ilustrasi dan peta di halaman ini',
   'zhihui.diagram.ttsPlay': 'Klik pada anak kucing untuk membaca narasi halaman ini dengan lantang',
   'zhihui.diagram.ttsStop': 'berhenti membaca',
   'zhihui.diagram.ttsMute': 'narasi bisu',
@@ -68,13 +74,15 @@ export default {
   'zhihui.attachReference': 'Tambahkan gambar referensi',
   'zhihui.attachReferenceHint': 'Maksimal 3 gambar, sebagai referensi Qwen',
   'zhihui.removeReference': 'Hapus gambar referensi',
-  'zhihui.referenceTooLarge': 'Gambar referensi terlalu besar (satu gambar tidak boleh melebihi 4MB)',
+  'zhihui.referenceTooLarge':
+    'Gambar referensi terlalu besar (satu gambar tidak boleh melebihi 4MB)',
   'zhihui.referenceInvalid': 'Silakan pilih gambar PNG / JPG / WEBP',
   'zhihui.referenceLimit': 'Tambahkan hingga 3 gambar referensi',
   'zhihui.sizeButton': 'Ukuran gambar',
   'zhihui.sizePanelTitle': 'Ukuran gambar',
   'zhihui.sizeOptional': 'Opsional',
-  'zhihui.sizeHint': 'Formatnya adalah lebar*tinggi. Jika tidak ditentukan, model akan secara otomatis merekomendasikan resolusi berdasarkan kata yang diminta.',
+  'zhihui.sizeHint':
+    'Formatnya adalah lebar*tinggi. Jika tidak ditentukan, model akan secara otomatis merekomendasikan resolusi berdasarkan kata yang diminta.',
   'zhihui.sizeLimits': 'Luas piksel 512×512–2048×2048; rasio aspek 1:8–8:1',
   'zhihui.size.auto': 'cerdas',
   'zhihui.size.autoHint': 'otomatis',
@@ -102,7 +110,8 @@ export default {
   'zhihui.empty': 'Belum ada gambarnya, silahkan coba generate diatas.',
   'zhihui.loadFailed': 'Gagal memuat riwayat',
   'zhihui.delete': 'menghapus',
-  'zhihui.deleteConfirm': 'Apakah Anda yakin ingin menghapus gambar ini? Tindakan ini tidak dapat dibatalkan.',
+  'zhihui.deleteConfirm':
+    'Apakah Anda yakin ingin menghapus gambar ini? Tindakan ini tidak dapat dibatalkan.',
   'zhihui.deleteTitle': 'Hapus gambar',
   'zhihui.deleted': 'Dihapus',
   'zhihui.deleteFailed': 'Penghapusan gagal',

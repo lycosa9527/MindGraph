@@ -14,8 +14,8 @@
  */
 import type { LocaleCode } from '@/i18n/locales'
 import { AUTH_USER_STORAGE_KEY, useAuthStore } from '@/stores/auth'
-import { hasAuthSessionHint } from '@/utils/authSessionHint'
 import { useUIStore } from '@/stores/ui'
+import { hasAuthSessionHint } from '@/utils/authSessionHint'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { emitSchoolExpiredFromPayload } from '@/utils/schoolExpiredLockout'
 import {
@@ -26,17 +26,17 @@ import {
 
 const API_BASE = '/api'
 
-const SHOWCASE_DEV_DIRECT_UPLOAD_PREFIXES = [
-  '/api/showcase/',
-  '/api/auth/admin/showcase/',
-] as const
+const SHOWCASE_DEV_DIRECT_UPLOAD_PREFIXES = ['/api/showcase/', '/api/auth/admin/showcase/'] as const
 
 /** Dev: bypass Vite proxy only for large showcase multipart publishes. */
 function shouldBypassViteProxyInDev(path: string): boolean {
   return SHOWCASE_DEV_DIRECT_UPLOAD_PREFIXES.some((prefix) => path.startsWith(prefix))
 }
 
-function resolveUploadFetchTarget(endpoint: string): { url: string; credentials: RequestCredentials } {
+function resolveUploadFetchTarget(endpoint: string): {
+  url: string
+  credentials: RequestCredentials
+} {
   const path = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
   const devOrigin = typeof __DEV_API_ORIGIN__ === 'string' ? __DEV_API_ORIGIN__.trim() : ''
   if (import.meta.env.PROD || !devOrigin || !shouldBypassViteProxyInDev(path)) {
@@ -213,9 +213,7 @@ export function parseApiErrorDetail(payload: unknown, fallback: string): string 
         .map((item) => {
           if (!item || typeof item !== 'object') return null
           const loc = Array.isArray((item as { loc?: unknown }).loc)
-            ? (item as { loc: unknown[] }).loc
-                .filter((part) => part !== 'body')
-                .join('.')
+            ? (item as { loc: unknown[] }).loc.filter((part) => part !== 'body').join('.')
             : ''
           const msg = (item as { msg?: unknown }).msg
           if (typeof msg !== 'string' || !msg.trim()) return null
@@ -241,10 +239,7 @@ export function parseApiErrorDetail(payload: unknown, fallback: string): string 
 /**
  * JSON API request — parses the body and throws on non-OK responses.
  */
-export async function apiRequestJson<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+export async function apiRequestJson<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const response = await apiRequest(endpoint, options)
   if (!response.ok) {
     const payload = await response.json().catch(() => null)
@@ -356,7 +351,7 @@ export async function apiUpload(
     response = await uploadOnce()
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to fetch'
-    throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
+    throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message, { cause: err })
   }
 
   // If unauthorized, attempt token refresh and retry
@@ -374,7 +369,7 @@ export async function apiUpload(
         response = await uploadOnce()
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to fetch'
-        throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
+        throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message, { cause: err })
       }
       if (response.status === 401) {
         handleUploadUnauthorizedAfterRetry()
@@ -417,7 +412,7 @@ export async function apiPutFormData(
     response = await uploadOnce()
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to fetch'
-    throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
+    throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message, { cause: err })
   }
 
   if (response.status === 401) {
@@ -434,7 +429,7 @@ export async function apiPutFormData(
         response = await uploadOnce()
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to fetch'
-        throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
+        throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message, { cause: err })
       }
       if (response.status === 401) {
         handleUploadUnauthorizedAfterRetry()
@@ -832,7 +827,11 @@ export interface ShowcasePost {
   } | null
   is_expert_recommended: boolean
   publish_source?: 'self' | 'proxy'
-  attribution?: { display_name?: string; organization?: string | null; is_external?: boolean } | null
+  attribution?: {
+    display_name?: string
+    organization?: string | null
+    is_external?: boolean
+  } | null
   rejection_reason?: string | null
   author: CommunityPostAuthor & { is_proxy?: boolean }
   likes_count: number
@@ -921,9 +920,7 @@ export async function getShowcasePosts(
   }
 }
 
-export async function getShowcasePost(
-  postId: string
-): Promise<ShowcasePost & { spec?: unknown }> {
+export async function getShowcasePost(postId: string): Promise<ShowcasePost & { spec?: unknown }> {
   const response = await apiGet(`/api/showcase/posts/${postId}`)
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to fetch case' }))
@@ -933,13 +930,15 @@ export async function getShowcasePost(
   return normalizeShowcasePost(data)
 }
 
-export async function createShowcasePost(formData: FormData): Promise<{ message: string; post: ShowcasePost }> {
+export async function createShowcasePost(
+  formData: FormData
+): Promise<{ message: string; post: ShowcasePost }> {
   let response: Response
   try {
     response = await apiUpload('/api/showcase/posts', formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
-      throw new Error('NETWORK_ERROR')
+      throw new Error('NETWORK_ERROR', { cause: e })
     }
     throw e
   }
@@ -978,7 +977,7 @@ export async function initShowcaseUpload(
     filename: string
     content_type: string
     size_bytes: number
-  },
+  }
 ): Promise<ShowcaseUploadInitResponse> {
   const id = postId.trim()
   if (!id) throw new Error('Missing case id')
@@ -997,7 +996,7 @@ export async function completeShowcaseUpload(
     key: string
     filename?: string
     file?: File
-  },
+  }
 ): Promise<{ key: string; url: string; post: ShowcasePost }> {
   const id = postId.trim()
   if (!id) throw new Error('Missing case id')
@@ -1050,7 +1049,7 @@ export async function updateShowcasePost(
     response = await apiPutFormData(`/api/showcase/posts/${id}`, formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
-      throw new Error('NETWORK_ERROR')
+      throw new Error('NETWORK_ERROR', { cause: e })
     }
     throw e
   }
@@ -1076,7 +1075,7 @@ export async function uploadShowcaseGalleryImages(
     response = await apiUpload(`/api/showcase/posts/${id}/gallery-images`, formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
-      throw new Error('NETWORK_ERROR')
+      throw new Error('NETWORK_ERROR', { cause: e })
     }
     throw e
   }
@@ -1103,7 +1102,7 @@ export async function uploadShowcaseGalleryImages(
 
 export async function withdrawShowcasePost(
   postId: string,
-  options?: { reason?: string },
+  options?: { reason?: string }
 ): Promise<{ message: string }> {
   const id = postId.trim()
   if (!id) {
@@ -1112,7 +1111,7 @@ export async function withdrawShowcasePost(
   const reason = options?.reason?.trim()
   const response = await apiPost(
     `/api/showcase/posts/${id}/withdraw`,
-    reason ? { reason: reason.slice(0, 200) } : {},
+    reason ? { reason: reason.slice(0, 200) } : {}
   )
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to withdraw case' }))
@@ -1208,9 +1207,7 @@ export async function getShowcaseFavoritePosts(
   }
 }
 
-export async function toggleShowcasePostFavorite(
-  postId: string
-): Promise<{ favorited: boolean }> {
+export async function toggleShowcasePostFavorite(postId: string): Promise<{ favorited: boolean }> {
   const response = await apiPost(`/api/showcase/posts/${postId}/favorite`, {})
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to toggle favorite' }))
@@ -1429,7 +1426,7 @@ export async function proxyCreateShowcasePost(formData: FormData): Promise<{ pos
     response = await apiUpload('/api/auth/admin/showcase/posts/proxy', formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
-      throw new Error('NETWORK_ERROR')
+      throw new Error('NETWORK_ERROR', { cause: e })
     }
     throw e
   }

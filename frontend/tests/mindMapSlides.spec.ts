@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import type { Connection, DiagramNode } from '@/types'
 import { buildMindMapSlides } from '@/utils/mindMapSlides'
+import { must } from '@/utils/must'
 
 function getDescendantIds(rootId: string, connections: Connection[]): Set<string> {
   const result = new Set<string>([rootId])
   const queue = [rootId]
   while (queue.length > 0) {
-    const current = queue.shift()!
+    const current = must(queue.shift())
     for (const conn of connections) {
       if (conn.source === current && !result.has(conn.target)) {
         result.add(conn.target)

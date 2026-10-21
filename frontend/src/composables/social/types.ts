@@ -37,4 +37,5 @@ export interface OrgContactSectionsOptions {
   zulipPresence?: boolean
   collabRoomCode?: () => string
   collabVisibility?: () => string
+  collabSessionId?: () => string
 }

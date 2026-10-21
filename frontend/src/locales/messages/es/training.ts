@@ -10,9 +10,11 @@ export default {
   'training.searchOrg': 'Buscar escuelas',
   'training.teacherTotal': '{n} profesores',
   'training.onlineNow': 'Actualmente en línea {n}',
-  'training.confirmStart': 'Al inicio se despejará el lugar y se comprobará el número de profesores online. Una vez que el aula esté lista, haga clic en el curso para incorporar a todos los profesores en línea a esta clase. Una escuela sólo puede tener una sesión de capacitación a la vez.',
+  'training.confirmStart':
+    'Al inicio se despejará el lugar y se comprobará el número de profesores online. Una vez que el aula esté lista, haga clic en el curso para incorporar a todos los profesores en línea a esta clase. Una escuela sólo puede tener una sesión de capacitación a la vez.',
   'training.moduleReady': 'El aula está lista, haga clic en el curso para comenzar a enseñar.',
-  'training.startFirst': 'Primero haga clic en "Iniciar" y luego seleccione un curso una vez que el aula esté lista.',
+  'training.startFirst':
+    'Primero haga clic en "Iniciar" y luego seleccione un curso una vez que el aula esté lista.',
   'training.start': 'comenzar',
   'training.stop': 'detener',
   'training.pickOrgFirst': 'Por favor seleccione una escuela primero.',
@@ -33,7 +35,8 @@ export default {
   'training.builder.preview': 'Avance',
   'training.builder.previewExit': 'Salir de la vista previa',
   'training.builder.previewHint': 'La perspectiva del profesor.',
-  'training.builder.previewEmpty': 'No hay contenido para mostrar en el lado del profesor de esta página.',
+  'training.builder.previewEmpty':
+    'No hay contenido para mostrar en el lado del profesor de esta página.',
   'training.builder.addSlide': 'Agregar diapositivas',
   'training.builder.addImage': 'agregar imagen',
   'training.builder.uploadFailed': 'Error al subir la imagen',
@@ -81,28 +84,38 @@ export default {
   'training.builder.empty': 'Aún no hay ningún curso, primero crea uno nuevo.',
   'training.builder.info': 'Información del curso',
   'training.builder.menuLabel': 'User menu',
-  'training.builder.menuLabelHint': 'This name shows in the account menu. A click starts this course. Leave it blank to hide it.',
+  'training.builder.menuLabelHint':
+    'This name shows in the account menu. A click starts this course. Leave it blank to hide it.',
   'training.builder.menuLabelPlaceholder': 'e.g. October update',
   'training.builder.menuLabelTooLong': 'The menu name can be at most 40 characters.',
-  'training.builder.menuLabelLimit': 'The user menu is full. Remove one entry before adding another.',
+  'training.builder.menuLabelLimit':
+    'The user menu is full. Remove one entry before adding another.',
   'training.october.menu': 'October update',
   'training.october.ribbon': 'October',
   'training.october.title': 'October update',
-  'training.october.lead': 'What changed from August through now: the canvas, account, Learning Space, and courses.',
+  'training.october.lead':
+    'What changed from August through now: the canvas, account, Learning Space, and courses.',
   'training.october.canvas': 'Canvas and thinking maps',
-  'training.october.canvasBody': 'One canvas|The eight thinking maps and concept maps share its tabs.\nNode shapes|Rounded, rectangular, oval, or underlined, following the rainbow theme. A solid theme paints the whole map.\nBilingual|One generate writes the main language and a smaller second line.\nDouble bubble|Keeps at least one similarity and one difference.\nKeep adding|Enter adds the next node for whatever is selected.\nOutline and gestures|The outline and the gesture guide open on these maps.',
+  'training.october.canvasBody':
+    'One canvas|The eight thinking maps and concept maps share its tabs.\nNode shapes|Rounded, rectangular, oval, or underlined, following the rainbow theme. A solid theme paints the whole map.\nBilingual|One generate writes the main language and a smaller second line.\nDouble bubble|Keeps at least one similarity and one difference.\nKeep adding|Enter adds the next node for whatever is selected.\nOutline and gestures|The outline and the gesture guide open on these maps.',
   'training.october.explain': 'Lectures and blanks',
-  'training.october.explainBody': 'Walk the diagram|One ring, one column, one side of a comparison, one cause or effect, or one bridge pair.\nName the node|Explain calls it an association, attribute, category, step, or bridge.\nBlanks|A single click blanks a node. A double-click edits it.',
+  'training.october.explainBody':
+    'Walk the diagram|One ring, one column, one side of a comparison, one cause or effect, or one bridge pair.\nName the node|Explain calls it an association, attribute, category, step, or bridge.\nBlanks|A single click blanks a node. A double-click edits it.',
   'training.october.account': 'Account',
-  'training.october.accountBody': 'One settings window|Account, security, language, and plugins. Language applies immediately.\nAvatar|Cropped to a circle and stored online.\nStay signed in|This browser stays signed in while its login is still valid.\nSigned out|A device that was signed out cannot refresh itself back in.\nSchool|The line under the name shows the school.',
+  'training.october.accountBody':
+    'One settings window|Account, security, language, and plugins. Language applies immediately.\nAvatar|Cropped to a circle and stored online.\nStay signed in|This browser stays signed in while its login is still valid.\nSigned out|A device that was signed out cannot refresh itself back in.\nSchool|The line under the name shows the school.',
   'training.october.learning': 'Learning Space',
-  'training.october.learningBody': 'Homework images|Stored online. Opening a card lets you select, pan, and zoom.\nFirst password|Shown only while the student still has to change it, and only to the class teacher or a superadmin. After they set one, the plain copy is removed.\nOne deadline|A teacher can extend one student deadline.\nMissing picture|A card with no picture can be filled in.',
+  'training.october.learningBody':
+    'Homework images|Stored online. Opening a card lets you select, pan, and zoom.\nFirst password|Shown only while the student still has to change it, and only to the class teacher or a superadmin. After they set one, the plain copy is removed.\nOne deadline|A teacher can extend one student deadline.\nMissing picture|A card with no picture can be filled in.',
   'training.october.course': 'Courses',
-  'training.october.courseBody': 'Page by page|Voice, music, video, a locked menu or dialog, and a mascot.\nAccount menu|The menu can list the course by name, and a click starts it.\nSame page|During class, teachers can be pulled onto the page you are on.',
+  'training.october.courseBody':
+    'Page by page|Voice, music, video, a locked menu or dialog, and a mascot.\nAccount menu|The menu can list the course by name, and a click starts it.\nSame page|During class, teachers can be pulled onto the page you are on.',
   'training.october.talk': 'MindMate and Workshop',
-  'training.october.talkBody': 'Seminar stays up|It stays connected until its owner ends it.\nOrganize it|Pin, rename, or delete it, and see who has read your line.\nSave the diagram|A diagram in the seminar can be saved to the library and opened again.\nDirect messages|A workshop direct message names the other person.',
+  'training.october.talkBody':
+    'Seminar stays up|It stays connected until its owner ends it.\nOrganize it|Pin, rename, or delete it, and see who has read your line.\nSave the diagram|A diagram in the seminar can be saved to the library and opened again.\nDirect messages|A workshop direct message names the other person.',
   'training.october.school': 'School plans',
-  'training.october.schoolBody': 'Included on every plan|Trial, basic, standard, and professional include online collaboration, presentation, the browser extension, and API access.\nWhat changes|Seats, and how many diagrams the plan can store.',
+  'training.october.schoolBody':
+    'Included on every plan|Trial, basic, standard, and professional include online collaboration, presentation, the browser extension, and API access.\nWhat changes|Seats, and how many diagrams the plan can store.',
   'training.builder.groupFollow': 'seguir',
   'training.builder.groupCanvas': 'lienzo',
   'training.builder.groupSteps': 'paso',
@@ -114,7 +127,8 @@ export default {
   'training.builder.pageCanvas': 'lienzo',
   'training.builder.pullUsers': 'Llevar a todos los profesores a esta página.',
   'training.builder.toolText': 'burbuja de texto',
-  'training.builder.toolTextHint': 'Simplemente haga clic para escribir texto de burbuja en esta página.',
+  'training.builder.toolTextHint':
+    'Simplemente haga clic para escribir texto de burbuja en esta página.',
   'training.builder.textPlaceholder': 'Introduce texto…',
   'training.builder.textBold': 'Atrevido',
   'training.builder.textItalic': 'cursiva',
@@ -135,12 +149,15 @@ export default {
   'training.builder.lockEmpty': 'Open the list on this page, then lock it.',
   'training.builder.lockNeedStep': 'Select this step, open the list, then lock it.',
   'training.builder.notes': 'Notas de la conferencia',
-  'training.builder.notesHint': 'Las notas de clase escritas en esta página solo son visibles para el profesor.',
+  'training.builder.notesHint':
+    'Las notas de clase escritas en esta página solo son visibles para el profesor.',
   'training.builder.topicChoices': 'Opciones de tema',
   'training.builder.topicSingle': 'tema',
   'training.builder.topicRemove': 'borrar',
-  'training.builder.topicDualHint': 'Un gráfico de doble burbuja requiere dos objetos. Los profesores pueden hacer clic en él durante la clase y se generará inmediatamente.',
-  'training.builder.topicSingleHint': 'Elija un tema para cada alternativa. Los profesores pueden hacer clic en él durante la clase y se generará inmediatamente.',
+  'training.builder.topicDualHint':
+    'Un gráfico de doble burbuja requiere dos objetos. Los profesores pueden hacer clic en él durante la clase y se generará inmediatamente.',
+  'training.builder.topicSingleHint':
+    'Elija un tema para cada alternativa. Los profesores pueden hacer clic en él durante la clase y se generará inmediatamente.',
   'training.builder.topicLabel': 'tema',
   'training.builder.topicLabelA': 'Tema A',
   'training.builder.topicLabelB': 'Tema B',
@@ -158,8 +175,10 @@ export default {
   'training.playPad': 'control de lección',
   'training.bannerFree': 'Práctica libre: puedes hacer lo que quieras.',
   'training.takeover': 'tomar el control',
-  'training.takeoverHint': 'La escuela ya cuenta con capacitación continua (moderador: {name}). Una escuela solo puede abrir una sesión a la vez porque se contratarán todos los profesores en línea. Puedes hacer clic en "Tomar control" o esperar hasta que termine el juego antes de comenzar de nuevo.',
-  'training.hostedElsewhere': 'Ya estás organizando una sesión en otra escuela, finalízala primero.',
+  'training.takeoverHint':
+    'La escuela ya cuenta con capacitación continua (moderador: {name}). Una escuela solo puede abrir una sesión a la vez porque se contratarán todos los profesores en línea. Puedes hacer clic en "Tomar control" o esperar hasta que termine el juego antes de comenzar de nuevo.',
+  'training.hostedElsewhere':
+    'Ya estás organizando una sesión en otra escuela, finalízala primero.',
   'training.diagramTypes': 'Tipo de ilustración',
   'training.topicOptions': 'Opciones de preguntas',
   'training.addOption': 'añadir',
@@ -180,24 +199,32 @@ export default {
   'training.moreTeachers': 'y {n} personas',
   'training.loadMore': 'cargar más',
   'training.jump': 'Saltar a esta página',
-  'training.confirmMismatch': 'El número de profesores ha cambiado, actualice y confirme nuevamente.',
-  'training.confirmStop': '¿Terminar este entrenamiento? El profesor permanecerá en la página actual.',
+  'training.confirmMismatch':
+    'El número de profesores ha cambiado, actualice y confirme nuevamente.',
+  'training.confirmStop':
+    '¿Terminar este entrenamiento? El profesor permanecerá en la página actual.',
   'training.startFailed': 'No se puede iniciar la sesión',
   'training.steerFailed': 'No se puede actualizar el aula',
   'training.prevStep': 'Paso anterior',
   'training.nextStep': 'Siguiente paso',
   'training.remoteLive': 'Transmisión en vivo',
-  'training.remoteCardHint': 'Control remoto de pantalla horizontal: control, profesor en línea, apuntes de clase.',
-  'training.remoteWaiting': 'Primero inicie el curso en su computadora, e inmediatamente ésta se convertirá en un control remoto.',
+  'training.remoteCardHint':
+    'Control remoto de pantalla horizontal: control, profesor en línea, apuntes de clase.',
+  'training.remoteWaiting':
+    'Primero inicie el curso en su computadora, e inmediatamente ésta se convertirá en un control remoto.',
   'training.remoteForeign': '{name} está organizando esta capacitación.',
   'training.remoteRotate': 'Gire su teléfono de lado para usar el control remoto.',
   'training.remoteNotesEmpty': 'No hay notas de conferencias en esta página.',
   'training.builder.mandatory': 'Required',
-  'training.builder.mandatoryHint': 'Users who have not finished this course must walk through it. Completion is saved on the account, so this course does not appear again. Each course is tracked on its own.',
-  'training.builder.mandatoryConfirm': 'This takes effect as soon as the course is saved. Every signed-in user who has not finished it will be sent through it, and will not see it again after they finish.',
+  'training.builder.mandatoryHint':
+    'Users who have not finished this course must walk through it. Completion is saved on the account, so this course does not appear again. Each course is tracked on its own.',
+  'training.builder.mandatoryConfirm':
+    'This takes effect as soon as the course is saved. Every signed-in user who has not finished it will be sent through it, and will not see it again after they finish.',
   'training.builder.alwaysPlay': 'Demo',
-  'training.builder.alwaysPlayHint': 'Plays again on every visit, even after someone finishes it. Refresh the page to try it again.',
-  'training.builder.alwaysPlayConfirm': 'This takes effect as soon as the course is saved. Every signed-in user is sent through it on every visit, even after they finish. Turn it off and people who already finished will not see it again.',
+  'training.builder.alwaysPlayHint':
+    'Plays again on every visit, even after someone finishes it. Refresh the page to try it again.',
+  'training.builder.alwaysPlayConfirm':
+    'This takes effect as soon as the course is saved. Every signed-in user is sent through it on every visit, even after they finish. Turn it off and people who already finished will not see it again.',
   'training.builder.vodLibrary': 'Online video library',
   'training.builder.vodFolder': 'Folder',
   'training.builder.vodVideo': 'Video',

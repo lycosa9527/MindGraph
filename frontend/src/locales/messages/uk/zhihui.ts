@@ -20,21 +20,27 @@ export default {
   'zhihui.modeComingSoon': 'Незабаром цей режим буде запущено',
   'zhihui.describe.image': 'Будь ласка, опишіть зображення, яке ви хочете створити',
   'zhihui.describe.video': 'Будь ласка, опишіть відео, яке ви хочете створити',
-  'zhihui.describe.diagram': 'Будь ласка, опишіть екран, який ви хочете створити на основі піктограми',
+  'zhihui.describe.diagram':
+    'Будь ласка, опишіть екран, який ви хочете створити на основі піктограми',
   'zhihui.promptPlaceholder.image': 'Введіть своє натхнення…',
   'zhihui.promptPlaceholder.video': 'Опишіть сцену, операторську роботу та ритм...',
   'zhihui.promptPlaceholder.diagram': 'Виберіть розумову карту та натисніть «Створити».',
-  'zhihui.composerHint.image': 'Використовуйте текст для опису зображення та створюйте навчальні ілюстрації та візуальні матеріали одним клацанням миші',
-  'zhihui.composerHint.video': 'Можливості Wensheng Video та Tusheng Video незабаром будуть доступні',
-  'zhihui.composerHint.diagram': 'Виберіть розумову карту, щоб створити діаграму навчального матеріалу з точки зору учня',
+  'zhihui.composerHint.image':
+    'Використовуйте текст для опису зображення та створюйте навчальні ілюстрації та візуальні матеріали одним клацанням миші',
+  'zhihui.composerHint.video':
+    'Можливості Wensheng Video та Tusheng Video незабаром будуть доступні',
+  'zhihui.composerHint.diagram':
+    'Виберіть розумову карту, щоб створити діаграму навчального матеріалу з точки зору учня',
   'zhihui.diagram.selectMindmap': 'Виберіть розумову карту',
   'zhihui.diagram.selectMindmapHint': 'Будь ласка, виберіть розумову карту вище',
   'zhihui.diagram.selectMindmapFirst': 'Спочатку виберіть інтелектуальну карту',
-  'zhihui.diagram.emptyLibrary': 'Інтелектуальної карти ще немає, спершу збережіть її в бібліотеці діаграм.',
+  'zhihui.diagram.emptyLibrary':
+    'Інтелектуальної карти ще немає, спершу збережіть її в бібліотеці діаграм.',
   'zhihui.diagram.loadFailed': 'Не вдалося завантажити розумну карту',
   'zhihui.diagram.emptyDeck': 'Вибравши інтелект-карту, натисніть «Створити».',
   'zhihui.diagram.waitingSlides': 'Програмне забезпечення для курсу створюється, зачекайте...',
-  'zhihui.diagram.jobStarted': 'Розпочато створення програмного забезпечення. Ви можете перевірити прогрес в історії.',
+  'zhihui.diagram.jobStarted':
+    'Розпочато створення програмного забезпечення. Ви можете перевірити прогрес в історії.',
   'zhihui.diagram.phaseQueued': 'Завдання в черзі...',
   'zhihui.diagram.phasePlanning': 'Оформлення навчального плану...',
   'zhihui.diagram.phasePlanningBranches': 'Планування різних тем...',
@@ -49,7 +55,8 @@ export default {
   'zhihui.diagram.toastPlanning': 'Оформлення навчального плану...',
   'zhihui.diagram.toastGenerating': 'Програма розігрується, це може зайняти кілька хвилин',
   'zhihui.diagram.toastComplete': 'Курси готові',
-  'zhihui.diagram.toastPartial': 'Курсове програмне забезпечення частково завершено, і його можна продовжувати створювати.',
+  'zhihui.diagram.toastPartial':
+    'Курсове програмне забезпечення частково завершено, і його можна продовжувати створювати.',
   'zhihui.diagram.toastCancelled': 'Генерацію курсів скасовано',
   'zhihui.diagram.batchProgress': 'Партія {current}/{total}',
   'zhihui.diagram.slideProgress': 'Згенеровано {current}/{total}',
@@ -58,7 +65,8 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'Не вдалося завантажити слайд-шоу',
   'zhihui.diagram.retryImage': 'Спробуйте знову',
   'zhihui.diagram.teacherScript': 'Розповідь вчителя',
-  'zhihui.diagram.teacherScriptHint': 'Пояснення в класі, узгоджені з фокусом ілюстрацій і карт на цій сторінці',
+  'zhihui.diagram.teacherScriptHint':
+    'Пояснення в класі, узгоджені з фокусом ілюстрацій і карт на цій сторінці',
   'zhihui.diagram.ttsPlay': 'Натисніть на кошеня, щоб прочитати текст цієї сторінки вголос',
   'zhihui.diagram.ttsStop': 'припинити читати',
   'zhihui.diagram.ttsMute': 'без звуку',
@@ -68,13 +76,15 @@ export default {
   'zhihui.attachReference': 'Додати еталонне зображення',
   'zhihui.attachReferenceHint': 'До 3 зображень, як посилання Qwen',
   'zhihui.removeReference': 'Видалити еталонне зображення',
-  'zhihui.referenceTooLarge': 'Еталонне зображення завелике (одне зображення не має перевищувати 4 МБ)',
+  'zhihui.referenceTooLarge':
+    'Еталонне зображення завелике (одне зображення не має перевищувати 4 МБ)',
   'zhihui.referenceInvalid': 'Виберіть зображення PNG/JPG/WEBP',
   'zhihui.referenceLimit': 'Додайте до 3 еталонних зображень',
   'zhihui.sizeButton': 'Розмір зображення',
   'zhihui.sizePanelTitle': 'Розмір зображення',
   'zhihui.sizeOptional': 'Додатково',
-  'zhihui.sizeHint': 'Формат ширина*висота. Якщо не вказано, модель автоматично рекомендуватиме роздільну здатність на основі слова підказки.',
+  'zhihui.sizeHint':
+    'Формат ширина*висота. Якщо не вказано, модель автоматично рекомендуватиме роздільну здатність на основі слова підказки.',
   'zhihui.sizeLimits': 'Площа пікселя 512×512–2048×2048; співвідношення сторін 1:8–8:1',
   'zhihui.size.auto': 'розумний',
   'zhihui.size.autoHint': 'автоматичний',
@@ -102,7 +112,8 @@ export default {
   'zhihui.empty': 'Зображення ще немає, спробуйте створити його вище.',
   'zhihui.loadFailed': 'Не вдалося завантажити історію',
   'zhihui.delete': 'видалити',
-  'zhihui.deleteConfirm': 'Ви впевнені, що хочете видалити це зображення? Цю дію не можна скасувати.',
+  'zhihui.deleteConfirm':
+    'Ви впевнені, що хочете видалити це зображення? Цю дію не можна скасувати.',
   'zhihui.deleteTitle': 'Видалити картинку',
   'zhihui.deleted': 'Видалено',
   'zhihui.deleteFailed': 'Не вдалося видалити',

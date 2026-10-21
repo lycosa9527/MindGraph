@@ -4,13 +4,12 @@
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { KittyConnectCloseError } from '@/composables/kitty/kittyConnectFailure'
 import { arrayBufferToBase64 } from '@/composables/kitty/kittyAgentAudioCodec'
 import {
+  KITTY_TTS_PCM_SAMPLE_RATE,
   createKittyCapture,
   createKittyPlayback,
   handleKittyServerMessage,
-  KITTY_TTS_PCM_SAMPLE_RATE,
 } from '@/composables/kitty/kittyAgentInbound'
 import type {
   KittyAgentContext,
@@ -19,6 +18,7 @@ import type {
   KittyAudioChunk,
   KittyContextUpdateOptions,
 } from '@/composables/kitty/kittyAgentTypes'
+import { KittyConnectCloseError } from '@/composables/kitty/kittyConnectFailure'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useKittySessionStore } from '@/stores/kittySession'
 
@@ -112,11 +112,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       return
     }
     isActive.value = false
-    if (
-      state.value === 'connecting' ||
-      state.value === 'active' ||
-      state.value === 'listening'
-    ) {
+    if (state.value === 'connecting' || state.value === 'active' || state.value === 'listening') {
       state.value = 'idle'
     }
   }
@@ -133,11 +129,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       if (startInFlight !== null) {
         winnerStarted = true
       }
-      if (
-        winnerStarted &&
-        startInFlight === null &&
-        startGeneration === targetGeneration
-      ) {
+      if (winnerStarted && startInFlight === null && startGeneration === targetGeneration) {
         if (isLiveOnScope(scope)) {
           if (context) {
             updateContext(context)

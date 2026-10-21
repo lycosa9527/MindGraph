@@ -6,12 +6,10 @@ import { computed, onMounted } from 'vue'
 
 import MaiteMapNode from '@/components/maite/map/MaiteMapNode.vue'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useMaiteMap } from '@/composables/maite/useMaiteMap'
 import { MAITE_MAP_CURRICULUM } from '@/data/maite/mapCurriculum'
 import type { MaiteGraphNode } from '@/types/maite'
 
-const { t } = useLanguage()
 const { graph, loading, refreshGraph } = useMaiteMap()
 
 onMounted(() => {

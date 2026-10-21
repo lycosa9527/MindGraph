@@ -5,7 +5,6 @@ import { onScopeDispose, ref } from 'vue'
 
 import { decomposeStream, followUpStream } from '@/api/maite/mentor'
 import { eventBus, useEventBus } from '@/composables/core/useEventBus'
-
 import type { MaiteDecomposeTables, MaiteMentorFollowUpResult } from '@/types/maite'
 
 /**

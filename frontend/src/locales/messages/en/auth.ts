@@ -32,7 +32,8 @@ export default {
   'auth.voiceNotes.micLost': 'Microphone was disconnected — voice notes stopped.',
   'auth.voiceNotes.authFailed': 'Voice notes auth failed. Please sign in again.',
   'auth.voiceNotes.wsClosed': 'Voice notes connection closed — session stopped.',
-  'auth.voiceNotes.budgetExceeded': 'Voice notes blocked: daily AI usage limit or thinking coins exhausted.',
+  'auth.voiceNotes.budgetExceeded':
+    'Voice notes blocked: daily AI usage limit or thinking coins exhausted.',
   'auth.voiceNotes.sessionBusy': 'Another voice notes session is already active. Stop it first.',
   'auth.voiceNotes.recording': 'Recording',
   'auth.voiceNotes.paused': 'Paused',
@@ -78,8 +79,10 @@ export default {
   'auth.voiceNotes.tencentAuth': 'Speech recognition auth failed. Check the Tencent Cloud keys.',
   'auth.voiceNotes.tencentService': 'Tencent Cloud ASR is not enabled. Open it in the console.',
   'auth.voiceNotes.tencentQuota': 'ASR quota is exhausted. Enable postpay or buy a resource pack.',
-  'auth.voiceNotes.tencentArrears': 'Tencent Cloud account is in arrears; speech recognition is paused.',
-  'auth.voiceNotes.tencentConcurrency': 'Speech recognition is at its concurrency limit. Try again shortly.',
+  'auth.voiceNotes.tencentArrears':
+    'Tencent Cloud account is in arrears; speech recognition is paused.',
+  'auth.voiceNotes.tencentConcurrency':
+    'Speech recognition is at its concurrency limit. Try again shortly.',
   'auth.voiceNotes.tencentAudio': 'Audio could not be recognized. Try again.',
   'auth.voiceNotes.tencentSendRate': 'Audio was sent too fast. Keep realtime recording.',
   'auth.voiceNotes.tencentIdle': 'Recording was silent too long; recognition disconnected.',
@@ -102,13 +105,19 @@ export default {
   'privacy.backToSignIn': 'Back to sign in',
   'auth.downloadDesktopShortcut': 'Add to desktop',
   'auth.platformQuickGuide': 'Platform quick start guide',
-  'auth.pwaIosInstallHint': 'Tap Share in Safari, Chrome, or Edge, then choose “Add to Home Screen”.',
-  'auth.pwaAndroidInstallHint': 'Open the browser menu (⋮) and tap Install app or Add to Home screen.',
-  'auth.pwaSafariMacInstallHint': 'In Safari, choose File → Add to Dock, or Share → Add to Dock (macOS Sonoma or later).',
-  'auth.pwaDesktopInstallHint': 'Use the browser menu (⋮) or the install icon in the address bar (Chrome, Edge, or Brave).',
+  'auth.pwaIosInstallHint':
+    'Tap Share in Safari, Chrome, or Edge, then choose “Add to Home Screen”.',
+  'auth.pwaAndroidInstallHint':
+    'Open the browser menu (⋮) and tap Install app or Add to Home screen.',
+  'auth.pwaSafariMacInstallHint':
+    'In Safari, choose File → Add to Dock, or Share → Add to Dock (macOS Sonoma or later).',
+  'auth.pwaDesktopInstallHint':
+    'Use the browser menu (⋮) or the install icon in the address bar (Chrome, Edge, or Brave).',
   'auth.pwaInstallSuccess': 'MindGraph has been added to your desktop.',
-  'auth.pwaDevInstallHint': 'PWA install is off in normal dev mode. Use production build (npm run build + backend) or run npm run dev:pwa, then use Chrome/Edge on HTTPS or localhost.',
-  'auth.pwaInsecureOriginHint': 'Open MindGraph in the browser at its HTTPS address (not a saved HTML file) before installing to desktop.',
+  'auth.pwaDevInstallHint':
+    'PWA install is off in normal dev mode. Use production build (npm run build + backend) or run npm run dev:pwa, then use Chrome/Edge on HTTPS or localhost.',
+  'auth.pwaInsecureOriginHint':
+    'Open MindGraph in the browser at its HTTPS address (not a saved HTML file) before installing to desktop.',
   'auth.backToLogin': 'Back to Login',
   'auth.captcha': 'Captcha',
   'auth.captchaLength4': 'Please enter the 4-character captcha',
@@ -142,11 +151,15 @@ export default {
   'auth.downloadWordAddin': 'Word add-in',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable': 'This feature requires the Standard or Professional school tier (Basic tier excluded).',
-  'auth.schoolSubscriptionExpiredDowngraded': 'Your school subscription has ended. Teachers and school managers are locked out. Contact the platform administrator to renew.',
-  'auth.diagramLimitReached': 'Trial schools allow up to {max} saved diagrams per teacher. Delete one to save a new diagram.',
+  'auth.schoolTierFeatureUnavailable':
+    'This feature requires the Standard or Professional school tier (Basic tier excluded).',
+  'auth.schoolSubscriptionExpiredDowngraded':
+    'Your school subscription has ended. Teachers and school managers are locked out. Contact the platform administrator to renew.',
+  'auth.diagramLimitReached':
+    'Trial schools allow up to {max} saved diagrams per teacher. Delete one to save a new diagram.',
   'auth.downloadOpenclawSkill': 'WorkBuddy skill',
-  'auth.downloadOpenclawSkillHint': 'Includes your account and the current token. Regenerating the token invalidates old skill packs and the Chrome extension.',
+  'auth.downloadOpenclawSkillHint':
+    'Includes your account and the current token. Regenerating the token invalidates old skill packs and the Chrome extension.',
   'auth.changePhoneButton': 'Change phone',
   'auth.passwordChangeSuccess': 'Password changed successfully',
   'auth.passwordChangeFailed': 'Password change failed',
@@ -275,7 +288,8 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'Education email',
   'auth.modal.hybridRegisterEmailTabAny': 'Email',
   'auth.modal.hybridRegisterPhoneTab': 'Phone + invitation code',
-  'auth.modal.mainlandSalesNotice': 'Need access in mainland China? Use your mobile number and invitation code, or contact customer support.',
+  'auth.modal.mainlandSalesNotice':
+    'Need access in mainland China? Use your mobile number and invitation code, or contact customer support.',
   'auth.modal.registrationEmailLabel': 'Educational email only',
   'auth.modal.registrationEmailLabelAny': 'Email address',
   'auth.modal.registrationEmailHint': '',
@@ -288,9 +302,11 @@ export default {
   'auth.modal.sendEmailCode': 'Send email code',
   'auth.modal.sendingEmailCode': 'Sending...',
   'auth.modal.emailCodePlaceholder': '6-digit code from email',
-  'auth.modal.acknowledgeOverseas': 'I understand and will use the software for educational purposes only.',
+  'auth.modal.acknowledgeOverseas':
+    'I understand and will use the software for educational purposes only.',
   'auth.modal.acknowledgeOverseasAny': 'I understand and agree to the overseas registration terms.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser': 'I understand and agree to the overseas registration terms, and that Simplified Chinese is not available on this path.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser':
+    'I understand and agree to the overseas registration terms, and that Simplified Chinese is not available on this path.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Please confirm the notice above.',
   'auth.loginPhoneOrEmail': 'Phone or email',
@@ -311,13 +327,17 @@ export default {
   'auth.username': 'Username',
   'auth.waitCaptchaLoad': 'Please wait for captcha to load',
   'auth.quickRegPageTitle': 'Quick registration',
-  'auth.quickRegPageHint': 'Open this page from the link your school shared. Enter your phone and the 6-digit room code shown in the facilitator’s quick registration window (it refreshes about every 30 seconds). The code shows you are in the session; it does not verify phone ownership the way an SMS code would.',
-  'auth.quickRegLinkInvalid': 'This registration link is not active (expired or closed). Open the current link from the facilitator again.',
-  'auth.quickRegProbeRateLimited': 'Too many checks from this page. Wait a moment and refresh, or try again later.',
+  'auth.quickRegPageHint':
+    'Open this page from the link your school shared. Enter your phone and the 6-digit room code shown in the facilitator’s quick registration window (it refreshes about every 30 seconds). The code shows you are in the session; it does not verify phone ownership the way an SMS code would.',
+  'auth.quickRegLinkInvalid':
+    'This registration link is not active (expired or closed). Open the current link from the facilitator again.',
+  'auth.quickRegProbeRateLimited':
+    'Too many checks from this page. Wait a moment and refresh, or try again later.',
   'auth.quickRegSessionSignups': 'Signed up this session: {n}',
   'auth.quickRegRoomCodeLabel': 'Room code',
   'auth.quickRegRoomCodePlaceholder': '6 digits',
-  'auth.quickRegRoomCodeHint': 'Match the large digits on the facilitator’s quick registration dialog; enter the code before it changes.',
+  'auth.quickRegRoomCodeHint':
+    'Match the large digits on the facilitator’s quick registration dialog; enter the code before it changes.',
   'auth.quickRegRoomCodeEnter6': 'Enter the 6-digit room code',
   'auth.quickRegMaxUses': 'Max signups for this link',
   'auth.quickRegHeadcount': 'Max',
@@ -327,7 +347,8 @@ export default {
   'auth.quickRegSubmit': 'Complete registration',
   'auth.quickRegSubmitting': 'Registering…',
   'auth.quickRegRegisterSuccess': 'Registration successful',
-  'auth.quickRegSessionUnsure': 'Registration may have succeeded. If you are not signed in, go back and use verification code login, or refresh this page.',
+  'auth.quickRegSessionUnsure':
+    'Registration may have succeeded. If you are not signed in, go back and use verification code login, or refresh this page.',
   'auth.quickRegBackToSignIn': 'Use standard login / register',
   'auth.quickRegSelectOrg': 'Select school',
   'auth.quickRegOrgLoadError': 'Could not load schools. Please try again.',
@@ -337,7 +358,8 @@ export default {
     'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Set login password',
   'auth.setPasswordWithSmsTitle': 'Set password via SMS',
-  'auth.setPasswordWithSmsHint': 'We send a code to your bound phone. After setting a password you can sign in with password or a verification code.',
+  'auth.setPasswordWithSmsHint':
+    'We send a code to your bound phone. After setting a password you can sign in with password or a verification code.',
   'auth.setPasswordWithSmsSubmit': 'Save password',
   'auth.setPasswordWithSmsSubmitting': 'Saving…',
   'auth.accountAvatar': 'Avatar',
@@ -365,7 +387,8 @@ export default {
   'auth.dingtalkBindUnbindError': 'Could not unlink. Please try again.',
   'auth.dingtalkBindRebind': 'Link again',
   'auth.dingtalkBindTitle': 'Link DingTalk account',
-  'auth.dingtalkBindInstructions': 'Send the 6-digit code shown below (for example 123-456) as a text message to your school DingTalk MindBot.',
+  'auth.dingtalkBindInstructions':
+    'Send the 6-digit code shown below (for example 123-456) as a text message to your school DingTalk MindBot.',
   'auth.dingtalkBindPairWaiting': 'Waiting for MindBot to receive your code…',
   'auth.dingtalkBindCodeHint': 'Send this code only — no extra text.',
   'auth.dingtalkBindCountdown': 'Session expires in {s}s',
@@ -380,7 +403,8 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Linked ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Currently linked: {staff}',
   'auth.dingtalkUnbindTitle': 'Unlink DingTalk account',
-  'auth.dingtalkUnbindInstructions': 'Send the code below from your linked DingTalk account to MindBot to confirm unlinking.',
+  'auth.dingtalkUnbindInstructions':
+    'Send the code below from your linked DingTalk account to MindBot to confirm unlinking.',
   'auth.dingtalkUnbindPairWaiting': 'Waiting for your linked DingTalk account to confirm…',
   'auth.dingtalkUnbindCodeHint': 'Send this code only from your linked DingTalk account.',
   'auth.dingtalkUnbindExpiredHint': 'Unlink session expired. Start again.',
@@ -393,20 +417,25 @@ export default {
   'auth.qrLoginInviteRequired': 'Enter your school invitation code before using QR login',
   'auth.qrLoginProvidersFailed': 'Could not load QR login settings. Please try again.',
   'auth.qrLoginProviderDisabled': 'This sign-in method is not available',
-  'auth.qrLoginNotLinked': 'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again. If you forgot the password, use Forgot password.',
+  'auth.qrLoginNotLinked':
+    'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again. If you forgot the password, use Forgot password.',
   'auth.qrLoginExchangeFailed': 'QR sign-in failed. Please try again.',
   'auth.qrLoginInvalidState': 'QR session expired. Close and scan again.',
-  'auth.qrLoginInvalidCode': 'WeChat authorization expired or was already used. Close the QR and scan again.',
+  'auth.qrLoginInvalidCode':
+    'WeChat authorization expired or was already used. Close the QR and scan again.',
   'auth.qrLoginRateLimited': 'WeChat login is busy. Wait a minute and try again.',
-  'auth.qrLoginMisconfigured': 'WeChat login is not configured correctly. Contact your administrator.',
+  'auth.qrLoginMisconfigured':
+    'WeChat login is not configured correctly. Contact your administrator.',
   'auth.qrLoginCorpMismatch': 'DingTalk organization does not match your school settings.',
   'auth.oauthExternalTaken': 'This WeChat is already linked to another user.',
-  'auth.oauthAlreadyBound': 'This account already has WeChat linked. Unlink it first to bind a different one.',
+  'auth.oauthAlreadyBound':
+    'This account already has WeChat linked. Unlink it first to bind a different one.',
   'auth.qrLoginDisabled': 'QR sign-in is not available.',
   'auth.qrLoginStartFailed': 'Could not start QR sign-in. Please try again.',
   'auth.qrLoginSuccess': 'Signed in successfully',
   'auth.accountBindingsSection': 'Account linking',
-  'auth.accountBindingsHint': 'MindBot saves to DingTalk; WeChat/DingTalk are for QR sign-in (bind here first)',
+  'auth.accountBindingsHint':
+    'MindBot saves to DingTalk; WeChat/DingTalk are for QR sign-in (bind here first)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',

@@ -97,3 +97,94 @@ async def test_ai_message_end_omits_conversation_id() -> None:
     assert sent["mg_agent_name"] == "MindMate"
     assert sent["mg_school_name"] == "Demo School"
     assert "mg_school_blurb" not in sent
+    persisted = mgr.persist_message.await_args.kwargs["content"]
+    assert persisted == "Hi"
+    assert "mg-reply-kind" not in persisted
+
+
+@pytest.mark.asyncio
+async def test_workflow_flag_stamps_word_template_marker() -> None:
+    """Seminar replies flagged only in workflow outputs still show the Word button."""
+    broadcasts: list[dict] = []
+
+    async def _capture(_code: str, message: dict) -> None:
+        broadcasts.append(message)
+
+    mock_client = MagicMock()
+
+    with (
+        patch(
+            "services.features.mindmate_collab.dify_stream.resolve_mindmate_dify_client_short_lived",
+            AsyncMock(return_value=mock_client),
+        ),
+        patch(
+            "services.features.mindmate_collab.dify_stream.apply_persona_inputs_for_organization_id",
+            AsyncMock(side_effect=_apply_persona),
+        ),
+        patch(
+            "services.features.mindmate_collab.dify_stream.is_dify_stream_aborted",
+            AsyncMock(return_value=False),
+        ),
+        patch(
+            "services.features.mindmate_collab.dify_stream.broadcast_to_all",
+            side_effect=_capture,
+        ),
+        patch(
+            "services.features.mindmate_collab.dify_stream.release_dify_stream_lock",
+            AsyncMock(),
+        ),
+        patch(
+            "services.features.mindmate_collab.dify_stream.clear_dify_stream_abort",
+            AsyncMock(),
+        ),
+        patch(
+            "services.features.mindmate_collab.dify_stream.clear_dify_stream_task",
+            MagicMock(),
+        ),
+        patch(
+            "services.features.mindmate_collab.dify_stream.get_mindmate_collab_manager",
+        ) as mgr_factory,
+        patch(
+            "services.features.mindmate_collab.dify_stream.schedule_teaching_reply_artifact",
+        ) as schedule_artifact,
+    ):
+        mgr = MagicMock()
+        saved = MagicMock()
+        saved.id = 12
+        saved.prev_id = 3
+        saved.created_at = None
+        mgr.persist_message = AsyncMock(return_value=saved)
+        mgr.set_dify_conversation_id = AsyncMock()
+        mgr_factory.return_value = mgr
+
+        async def _flagged_stream(*_args, **_kwargs):
+            yield {"event": "message", "answer": "课例正文"}
+            yield {
+                "event": "workflow_finished",
+                "data": {"outputs": {"export_word_template": True}},
+            }
+
+        mock_client.stream_chat.return_value = _flagged_stream()
+
+        await stream_assistant_reply(
+            code="ABC-DEF",
+            session_id="sess-1",
+            org_id=1,
+            user_message="写一节课",
+            sender_user_id=7,
+            conversation_id=None,
+        )
+        schedule_artifact.assert_called_once_with(
+            code="ABC-DEF",
+            session_id="sess-1",
+            message_id=12,
+            uploader_user_id=7,
+        )
+
+    end_frames = [msg for msg in broadcasts if msg.get("type") == "ai_message_end"]
+    assert len(end_frames) == 1
+    assert "<!-- mg-reply-kind:teaching_instruction -->" in end_frames[0]["content"]
+    persisted = mgr.persist_message.await_args.kwargs["content"]
+    assert persisted == end_frames[0]["content"]
+    chunks = [msg for msg in broadcasts if msg.get("type") == "ai_message_chunk"]
+    assert chunks[0]["content"] == "课例正文"

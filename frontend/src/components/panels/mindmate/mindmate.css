@@ -829,6 +829,28 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.input-bottom {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.input-bottom--seminar {
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mm-seminar-toolslot {
+  flex: 1;
+  min-width: 0;
+}
+
+.mindmate-input-compose--seminar {
+  flex-direction: column;
+  align-items: stretch;
+}
+
 .input-actions-fullpage {
   display: flex;
   align-items: center;
@@ -900,9 +922,28 @@
   font-size: 18px;
 }
 
-.send-btn-fullpage:not(.stop):disabled {
+.send-btn-fullpage:not(.stop):not(:disabled):not(.is-disabled) {
+  color: #fff;
+  cursor: pointer;
+}
+
+.send-btn-fullpage:not(.stop):not(:disabled):not(.is-disabled) svg {
+  color: #fff;
+  stroke: #fff;
+}
+
+.send-btn-fullpage:not(.stop):disabled,
+.send-btn-fullpage:not(.stop).is-disabled {
   background: #e5e7eb;
   color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.send-btn-fullpage:not(.stop):disabled svg,
+.send-btn-fullpage:not(.stop).is-disabled svg {
+  color: #9ca3af;
+  stroke: #9ca3af;
 }
 
 .send-btn-fullpage.stop {
@@ -1141,6 +1182,21 @@
   flex: 0 0 auto;
   min-height: auto;
   padding: clamp(24px, 8vh, 80px) 0 0;
+}
+
+.mm-seminar-compose {
+  display: flex;
+  flex-direction: column;
+  margin-top: 40px;
+}
+
+.mm-seminar-compose .input-area-fullpage {
+  order: 0;
+}
+
+.mm-seminar-compose .suggestions-above-input,
+.mm-seminar-compose .suggestions-above-input-panel {
+  order: 1;
 }
 
 /* Suggestion Bubbles - Above Input (Fullpage) */

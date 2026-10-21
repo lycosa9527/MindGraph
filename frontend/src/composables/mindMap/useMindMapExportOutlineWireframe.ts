@@ -1,12 +1,11 @@
-import { computed, type ComputedRef } from 'vue'
-
+import { type ComputedRef, computed } from 'vue'
 import type { CSSProperties } from 'vue'
 
+import { useUIStore } from '@/stores/ui'
 import {
   applyMindMapOutlineWireframeNodeStyle,
   applyMindMapOutlineWireframeUnderlineBar,
 } from '@/utils/mindMapOutlineWireframeStyle'
-import { useUIStore } from '@/stores/ui'
 
 export function useMindMapExportOutlineWireframeActive(): ComputedRef<boolean> {
   const uiStore = useUIStore()

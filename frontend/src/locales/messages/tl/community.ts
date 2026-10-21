@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': 'I-click ang susunod na button para magkabisa ang mga pagbabago',
   'debateverse.coinTossAffirmativeFirst': 'Unang magsasalita ang affirmative',
   'debateverse.coinTossGotIt': 'Naintindihan',
-  'debateverse.coinTossModalBody': 'Bago ang debate, tukuyin ang pagkakasunod ng pagsasalita o piliin ang posisyon ng affirmative/negative sa pamamagitan ng coin toss',
+  'debateverse.coinTossModalBody':
+    'Bago ang debate, tukuyin ang pagkakasunod ng pagsasalita o piliin ang posisyon ng affirmative/negative sa pamamagitan ng coin toss',
   'debateverse.coinTossNegativeFirst': 'Unang magsasalita ang negative',
   'debateverse.coinTossOrder': 'Coin toss para sa pagkakasunod ng pagsasalita',
-  'debateverse.coinTossRules': 'Random na naitalaga ang mga AI model sa mga tungkulin sa debate. Bago ang debate, tukuyin ang pagkakasunod ng pagsasalita o piliin ang posisyon sa pamamagitan ng coin toss',
+  'debateverse.coinTossRules':
+    'Random na naitalaga ang mga AI model sa mga tungkulin sa debate. Bago ang debate, tukuyin ang pagkakasunod ng pagsasalita o piliin ang posisyon sa pamamagitan ng coin toss',
   'debateverse.coinTossStageTitle': 'Yugto ng coin toss',
   'debateverse.debateTopicLabel': 'Paksa ng debate: ',
   'debateverse.executeCoinToss': 'Gawin ang coin toss',
@@ -105,14 +107,17 @@ export default {
   'debateverse.roleLabel.debater': 'Maglaro bilang debater',
   'debateverse.roleLabel.judgeRole': 'Maglaro bilang hukom',
   'debateverse.roleLabel.viewer': 'Maglaro bilang manonood',
-  'debateverse.setup.greeting': '{username}, ang tunay na karunungan ay ipinanganak mula sa banggaan ng mga pananaw.',
+  'debateverse.setup.greeting':
+    '{username}, ang tunay na karunungan ay ipinanganak mula sa banggaan ng mga pananaw.',
   'debateverse.setup.roleDebater': 'Maglaro bilang debater',
   'debateverse.setup.roleJudge': 'Maglaro bilang hukom',
   'debateverse.setup.roleViewer': 'Maglaro bilang manonood',
   'debateverse.setup.suggestion1': 'Dapat ba bigyan ang AI ng legal na personalidad?',
-  'debateverse.setup.suggestion2': 'Mas nakabubuti o nakakasama ba ang video games sa mga teenager?',
+  'debateverse.setup.suggestion2':
+    'Mas nakabubuti o nakakasama ba ang video games sa mga teenager?',
   'debateverse.setup.suggestion3': 'Dapat bang buwagin ang college entrance exams?',
-  'debateverse.setup.suggestion4': 'Dapat ba magkaroon ng mas mahigpit na content moderation ang social media?',
+  'debateverse.setup.suggestion4':
+    'Dapat ba magkaroon ng mas mahigpit na content moderation ang social media?',
   'debateverse.setup.suggestion5': 'Dapat bang maging mainstream ang remote work?',
   'debateverse.setup.suggestion6': 'Dapat bang protektahan ng copyright ang AI-generated content?',
   'debateverse.setup.suggestion7': 'Dapat bang magtuon ang edukasyon sa kaalaman o kasanayan?',
@@ -138,7 +143,8 @@ export default {
   'library.loading': 'Naglo-load…',
   'library.other': 'Iba pa',
   'library.premiumCollection': 'Tampok na koleksyon',
-  'library.slotFull.body': 'Mayroon ka nang {max} na naka-save na diagram. Magbura ng isa para mag-save ng bago.',
+  'library.slotFull.body':
+    'Mayroon ka nang {max} na naka-save na diagram. Magbura ng isa para mag-save ng bago.',
   'library.slotFull.cancel': 'Kanselahin',
   'library.slotFull.deleteAndSave': 'Burahin at i-save',
   'library.slotFull.networkError': 'Error sa network, nabigo ang operasyon',

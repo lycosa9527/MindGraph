@@ -1,10 +1,10 @@
 /**
  * Format school dashboard quota data from the stats API.
  */
-import { computed, type Ref } from 'vue'
+import { type Ref, computed } from 'vue'
 
-import { formatStorageBytes, formatStorageRemainingBytes } from '@/utils/formatStorageBytes'
 import { isManagerAssignmentUnavailable, isUnlimitedMemberLimit } from '@/constants/schoolTier'
+import { formatStorageBytes, formatStorageRemainingBytes } from '@/utils/formatStorageBytes'
 
 export interface SchoolDashboardQuotas {
   schoolTier: string

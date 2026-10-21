@@ -5,11 +5,13 @@
 import { type ComputedRef, type Ref, onUnmounted, ref, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
 import {
   applyKittyDiagramUpdate,
   executeKittyAgentAction,
 } from '@/composables/kitty/kittyAgentActions'
 import { formatKittyDiagramUpdateDebug } from '@/composables/kitty/kittyAgentDebug'
+import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
 import {
   acquireKittyMobileActiveHub,
   isKittyMobileActiveHubFresh,
@@ -19,17 +21,15 @@ import {
   getKittyDiagramContentFingerprint,
   getKittyVoiceDiagramFingerprint,
 } from '@/composables/kitty/kittyDiagramFingerprint'
-import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
 import { applyKittyRemoteCanvasSelection } from '@/composables/kitty/kittySelectionApply'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
-import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
 import { syncDiagramStoreFromVoiceContext } from '@/composables/kitty/syncDiagramStoreFromVoiceContext'
 import { useDiagramStore } from '@/stores/diagram'
+import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import { useKittySessionStore } from '@/stores/kittySession'
 import { useLLMResultsStore } from '@/stores/llmResults'
-import { apiRequest } from '@/utils/apiClient'
-import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import type { DiagramType } from '@/types'
+import { apiRequest } from '@/utils/apiClient'
 
 function canonicalDiagramKind(t: DiagramType | null): string {
   if (!t) {
@@ -248,10 +248,7 @@ export function useKittyDesktopRemoteSync(options: {
       return
     }
     const appliedUpdatedAt: number = ua
-    if (
-      lastAppliedUpdatedAt.value !== null &&
-      appliedUpdatedAt <= lastAppliedUpdatedAt.value
-    ) {
+    if (lastAppliedUpdatedAt.value !== null && appliedUpdatedAt <= lastAppliedUpdatedAt.value) {
       return
     }
     const dt = diagramTypeFromLivePayload(data.diagram_type)
@@ -297,17 +294,13 @@ export function useKittyDesktopRemoteSync(options: {
     // Owning tab Pinia is SoT (verified apply + autocomplete paste). Reloading
     // Redis live_context here clobbers branches that were never (or not yet) in Hub.
     if (kittySession.ownsKittySession) {
-      applyLiveMetaOnly(
-        `owning_tab — keep Pinia SoT updated_at=${appliedUpdatedAt}`
-      )
+      applyLiveMetaOnly(`owning_tab — keep Pinia SoT updated_at=${appliedUpdatedAt}`)
       return
     }
 
     // Children-only Hub snapshots (server voice preview) must not overwrite Pinia SoT.
     if (!hubHasCanonicalNodes && localNodes.length > 0) {
-      applyLiveMetaOnly(
-        `hub lacks nodes[] — keep Pinia SoT updated_at=${appliedUpdatedAt}`
-      )
+      applyLiveMetaOnly(`hub lacks nodes[] — keep Pinia SoT updated_at=${appliedUpdatedAt}`)
       return
     }
 

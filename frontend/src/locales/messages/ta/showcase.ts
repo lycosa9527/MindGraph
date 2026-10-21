@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'வழக்கு சதுரம்',
-  'showcase.subtitle': 'உயர்தர AI- அதிகாரம் பெற்ற சிந்தனை கற்பித்தலைக் கண்டறிந்து, உங்கள் கற்பித்தல் மற்றும் ஆராய்ச்சி முடிவுகளைப் பகிரவும்',
+  'showcase.subtitle':
+    'உயர்தர AI- அதிகாரம் பெற்ற சிந்தனை கற்பித்தலைக் கண்டறிந்து, உங்கள் கற்பித்தல் மற்றும் ஆராய்ச்சி முடிவுகளைப் பகிரவும்',
   'showcase.publish': 'ஒரு வழக்கை இடுங்கள்',
   'showcase.searchPlaceholder': 'வழக்குகளைத் தேடு…',
   'showcase.filter.all': 'அனைத்து',
@@ -19,7 +20,8 @@ export default {
   'showcase.sort.default': 'இயல்புநிலை வரிசை',
   'showcase.sort.hot': 'வெப்பத்தை அழுத்தவும்',
   'showcase.sort.newest': 'வெளியீட்டு நேரம் மூலம்',
-  'showcase.empty': 'இதுவரை பொருந்தக்கூடிய வழக்குகள் எதுவும் இல்லை. வடிகட்டி நிலைமைகளை சரிசெய்ய முயற்சிக்கவும்.',
+  'showcase.empty':
+    'இதுவரை பொருந்தக்கூடிய வழக்குகள் எதுவும் இல்லை. வடிகட்டி நிலைமைகளை சரிசெய்ய முயற்சிக்கவும்.',
   'showcase.status.pending': 'மதிப்பாய்வில் உள்ளது',
   'showcase.status.approved': 'தேர்ச்சி பெற்றார்',
   'showcase.status.rejected': 'நிராகரிக்கப்பட்டது',
@@ -29,21 +31,27 @@ export default {
   'showcase.myFavorites': 'என் சேகரிப்பு',
   'showcase.myFavoritesModalTitle': 'சேகரிக்கப்பட்ட வழக்குகள்',
   'showcase.myFavoritesEmpty': 'இதுவரை சேகரிக்கப்பட்ட வழக்குகள் எதுவும் இல்லை',
-  'showcase.myFavoritesEmptyHint': 'கேஸ் விவரம் அல்லது கார்டில் பிடித்தவை என்பதைக் கிளிக் செய்தால், அது இங்கே தோன்றும்',
+  'showcase.myFavoritesEmptyHint':
+    'கேஸ் விவரம் அல்லது கார்டில் பிடித்தவை என்பதைக் கிளிக் செய்தால், அது இங்கே தோன்றும்',
   'showcase.myCasesModalTitle': 'நான் பதிவிட்ட வழக்குகள்',
-  'showcase.myCasesManageHint': 'பட்டியலில் நேரடியாக நீங்கள் திரும்பப் பெறலாம், அகற்றலாம் அல்லது மாற்றலாம்; விவரங்களைக் காண வழக்கில் கிளிக் செய்யவும்',
+  'showcase.myCasesManageHint':
+    'பட்டியலில் நேரடியாக நீங்கள் திரும்பப் பெறலாம், அகற்றலாம் அல்லது மாற்றலாம்; விவரங்களைக் காண வழக்கில் கிளிக் செய்யவும்',
   'showcase.myCasesAction.edit': 'திருத்தவும்',
   'showcase.myCasesEmpty': 'இதுவரை வெளியிடப்பட்ட வழக்குகள் எதுவும் இல்லை',
-  'showcase.myCasesEmptyHint': 'வழக்கு வெளியிடப்பட்டதும், மதிப்பாய்வு முன்னேற்றம் இங்கே பார்க்கப்படும்',
+  'showcase.myCasesEmptyHint':
+    'வழக்கு வெளியிடப்பட்டதும், மதிப்பாய்வு முன்னேற்றம் இங்கே பார்க்கப்படும்',
   'showcase.caseCount': 'மொத்த {n} வழக்குகள்',
   'showcase.pendingReview': 'மதிப்பாய்வு நிலுவையில் உள்ளது',
   'showcase.publishModal.title': 'ஒரு வழக்கை இடுங்கள்',
   'showcase.publishModal.titleLabel': 'வழக்கு தலைப்பு',
-  'showcase.publishModal.titleHint': 'தலைப்பு சுருக்கமாகவும் தெளிவாகவும் இருக்க வேண்டும், மேலும் {max} சொற்களுக்கு மிகாமல் இருக்க பரிந்துரைக்கப்படுகிறது.',
-  'showcase.publishModal.titlePlaceholder': 'எடுத்துக்காட்டாக: "இரண்டு குழந்தைகள் விவாத நாள்" வடிவமைப்பு கற்பித்தல்',
+  'showcase.publishModal.titleHint':
+    'தலைப்பு சுருக்கமாகவும் தெளிவாகவும் இருக்க வேண்டும், மேலும் {max} சொற்களுக்கு மிகாமல் இருக்க பரிந்துரைக்கப்படுகிறது.',
+  'showcase.publishModal.titlePlaceholder':
+    'எடுத்துக்காட்டாக: "இரண்டு குழந்தைகள் விவாத நாள்" வடிவமைப்பு கற்பித்தல்',
   'showcase.publishModal.descriptionLabel': 'அறிமுகம்',
   'showcase.publishModal.tagsLabel': 'லேபிள்',
-  'showcase.publishModal.tagsHint': 'பல குறிச்சொற்களை காற்புள்ளிகளுடன் பிரிக்கவும், அதாவது: அறிவாற்றல் மோதல், ஜூனியர் உயர்நிலைப் பள்ளி கணிதம்',
+  'showcase.publishModal.tagsHint':
+    'பல குறிச்சொற்களை காற்புள்ளிகளுடன் பிரிக்கவும், அதாவது: அறிவாற்றல் மோதல், ஜூனியர் உயர்நிலைப் பள்ளி கணிதம்',
   'showcase.publishModal.caseTypeLabel': 'வழக்கு வகை',
   'showcase.publishModal.subjectLabel': 'ஒழுக்கம்',
   'showcase.publishModal.gradeLabel': 'தரம்',
@@ -53,20 +61,33 @@ export default {
   'showcase.publishModal.uploadingFiles': 'கோப்புகளைப் பதிவேற்றுகிறது ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'பதிவேற்றுகிறது {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'கிட்டத்தட்ட முடிந்தது…',
-  'showcase.publishModal.uploadFailedRolledBack': 'பதிவேற்றம் தோல்வியடைந்தது, வரைவு திரும்பப் பெறப்பட்டது, மீண்டும் முயற்சிக்கவும்.',
-  'showcase.publishModal.uploadCorsFailed': 'பொருள் சேமிப்பகத்தில் கோப்பு பதிவேற்றம் செய்யப்படுவதில் தோல்வி (பொதுவான காரணங்கள்: பக்கெட் CORS தற்போதைய வலைத்தளத்தை அனுமதிக்காது அல்லது CSP வலைத்தளம் COS டொமைன் பெயரை வெளியிடாது). வரைவு திரும்பப் பெறப்பட்டது, உள்ளமைக்க நிர்வாகியைத் தொடர்புகொண்டு மீண்டும் முயற்சிக்கவும்.',
-  'showcase.publishModal.uploadStorageRejected': 'ஆப்ஜெக்ட் ஸ்டோரேஜ் இந்தப் பதிவேற்றத்தை நிராகரித்தது. வரைவு திரும்பப் பெறப்பட்டது, பிறகு முயற்சிக்கவும்; இது மீண்டும் மீண்டும் தோல்வியுற்றால், தயவுசெய்து நிர்வாகியைத் தொடர்பு கொள்ளவும்.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'பதிவேற்றம் தோல்வியடைந்தது, வரைவு திரும்பப் பெறப்பட்டது, மீண்டும் முயற்சிக்கவும்.',
+  'showcase.publishModal.uploadCorsFailed':
+    'பொருள் சேமிப்பகத்தில் கோப்பு பதிவேற்றம் செய்யப்படுவதில் தோல்வி (பொதுவான காரணங்கள்: பக்கெட் CORS தற்போதைய வலைத்தளத்தை அனுமதிக்காது அல்லது CSP வலைத்தளம் COS டொமைன் பெயரை வெளியிடாது). வரைவு திரும்பப் பெறப்பட்டது, உள்ளமைக்க நிர்வாகியைத் தொடர்புகொண்டு மீண்டும் முயற்சிக்கவும்.',
+  'showcase.publishModal.uploadStorageRejected':
+    'ஆப்ஜெக்ட் ஸ்டோரேஜ் இந்தப் பதிவேற்றத்தை நிராகரித்தது. வரைவு திரும்பப் பெறப்பட்டது, பிறகு முயற்சிக்கவும்; இது மீண்டும் மீண்டும் தோல்வியுற்றால், தயவுசெய்து நிர்வாகியைத் தொடர்பு கொள்ளவும்.',
   'showcase.publishModal.uploadFailed': 'பதிவேற்றம் தோல்வியடைந்தது, மீண்டும் முயற்சிக்கவும்.',
-  'showcase.publishModal.uploadCoverTooLarge': 'அட்டைப் படம் 2MB வரம்பை மீறுகிறது. முன்னோட்டப் படத்தை சுருக்கவும் அல்லது சிறிய படத்தைப் பயன்படுத்தி மீண்டும் முயற்சிக்கவும்.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'கோப்பு அளவு வரம்பை மீறுகிறது (ஆவணங்கள்/படங்களுக்கு 20MB, வீடியோக்களுக்கு 100MB). சுருக்கி மீண்டும் முயற்சிக்கவும்.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'கோப்பு அளவு வரம்பை மீறுகிறது (ஆவணங்கள்/படங்களுக்கு 20MB, வீடியோக்களுக்கு 100MB). வரைவு திரும்பப் பெறப்பட்டது, அதை சுருக்கி மீண்டும் முயற்சிக்கவும்.',
-  'showcase.publishModal.uploadFileTooLarge': 'கோப்பு மிகவும் பெரியது மற்றும் தற்போதைய பதிவேற்ற வகையின் வரம்பை மீறுகிறது. அளவை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'கோப்பு மிகவும் பெரியது மற்றும் தற்போதைய பதிவேற்ற வகையின் வரம்பை மீறுகிறது. வரைவு திரும்பப் பெறப்பட்டது, அளவை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
-  'showcase.publishModal.coverUploadSkipped': 'வழக்கு சமர்ப்பிக்கப்பட்டது, ஆனால் கவர் பதிவேற்றம் தோல்வியடைந்தது. அட்டைப் பக்கத்தைப் புதுப்பிக்க வழக்கை பின்னர் திருத்தலாம்.',
-  'showcase.publishModal.coverGenerating': 'கவர் பின்னணியில் உருவாக்கப்படுகிறது, பின்னர் கார்டில் காட்டப்படும்.',
-  'showcase.publishModal.coverFailed': 'வழக்கு சமர்ப்பிக்கப்பட்டது, ஆனால் கவர் உருவாக்கம் தோல்வியடைந்தது. அட்டையைப் புதுப்பிக்க, வழக்கை பின்னர் திருத்தலாம்.',
-  'showcase.publishModal.coverFailedTimeout': 'வழக்கு சமர்ப்பிக்கப்பட்டது, ஆனால் கவர் உருவாக்க நேரம் முடிந்தது. அட்டையைப் புதுப்பிக்க, வழக்கை பின்னர் திருத்தலாம்.',
-  'showcase.publishModal.success': 'வழக்கு சமர்ப்பிக்கப்பட்டு, நிர்வாகியின் மறுபரிசீலனைக்காகக் காத்திருக்கிறது',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'அட்டைப் படம் 2MB வரம்பை மீறுகிறது. முன்னோட்டப் படத்தை சுருக்கவும் அல்லது சிறிய படத்தைப் பயன்படுத்தி மீண்டும் முயற்சிக்கவும்.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'கோப்பு அளவு வரம்பை மீறுகிறது (ஆவணங்கள்/படங்களுக்கு 20MB, வீடியோக்களுக்கு 100MB). சுருக்கி மீண்டும் முயற்சிக்கவும்.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'கோப்பு அளவு வரம்பை மீறுகிறது (ஆவணங்கள்/படங்களுக்கு 20MB, வீடியோக்களுக்கு 100MB). வரைவு திரும்பப் பெறப்பட்டது, அதை சுருக்கி மீண்டும் முயற்சிக்கவும்.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'கோப்பு மிகவும் பெரியது மற்றும் தற்போதைய பதிவேற்ற வகையின் வரம்பை மீறுகிறது. அளவை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'கோப்பு மிகவும் பெரியது மற்றும் தற்போதைய பதிவேற்ற வகையின் வரம்பை மீறுகிறது. வரைவு திரும்பப் பெறப்பட்டது, அளவை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
+  'showcase.publishModal.coverUploadSkipped':
+    'வழக்கு சமர்ப்பிக்கப்பட்டது, ஆனால் கவர் பதிவேற்றம் தோல்வியடைந்தது. அட்டைப் பக்கத்தைப் புதுப்பிக்க வழக்கை பின்னர் திருத்தலாம்.',
+  'showcase.publishModal.coverGenerating':
+    'கவர் பின்னணியில் உருவாக்கப்படுகிறது, பின்னர் கார்டில் காட்டப்படும்.',
+  'showcase.publishModal.coverFailed':
+    'வழக்கு சமர்ப்பிக்கப்பட்டது, ஆனால் கவர் உருவாக்கம் தோல்வியடைந்தது. அட்டையைப் புதுப்பிக்க, வழக்கை பின்னர் திருத்தலாம்.',
+  'showcase.publishModal.coverFailedTimeout':
+    'வழக்கு சமர்ப்பிக்கப்பட்டது, ஆனால் கவர் உருவாக்க நேரம் முடிந்தது. அட்டையைப் புதுப்பிக்க, வழக்கை பின்னர் திருத்தலாம்.',
+  'showcase.publishModal.success':
+    'வழக்கு சமர்ப்பிக்கப்பட்டு, நிர்வாகியின் மறுபரிசீலனைக்காகக் காத்திருக்கிறது',
   'showcase.publishModal.fromCanvas': 'கேன்வாஸிலிருந்து வெளியிடவும்',
   'showcase.publishModal.step1Title': 'அடிப்படை தகவல்',
   'showcase.publishModal.step1Desc': 'வகைகள் மற்றும் கோப்புகள்',
@@ -79,68 +100,98 @@ export default {
   'showcase.publishModal.uploadLabel': 'கோப்புகளைப் பதிவேற்றவும்',
   'showcase.publishModal.uploadImage': 'படங்களை பதிவேற்றவும்',
   'showcase.publishModal.uploadFile': 'கோப்புகளைப் பதிவேற்றவும்',
-  'showcase.publishModal.directUploadDisabled': 'உள்ளூர் நேரடி பரிமாற்றம் தற்காலிகமாக கிடைக்கவில்லை, ஆனால் வரலாற்றில் இருந்து ஐகானை நீங்கள் இன்னும் தேர்ந்தெடுக்கலாம்.',
-  'showcase.publishModal.uploadViaStorage': 'பாதுகாப்பான குறுகிய கால இணைப்புகள் மூலம் கோப்புகள் பொருள் சேமிப்பகத்தில் பதிவேற்றப்படும்.',
-  'showcase.publishModal.pickHistory': 'உங்கள் தனிப்பட்ட நூலகத்திலிருந்து ஒரு ஐகானைத் தேர்ந்தெடுக்கவும்',
+  'showcase.publishModal.directUploadDisabled':
+    'உள்ளூர் நேரடி பரிமாற்றம் தற்காலிகமாக கிடைக்கவில்லை, ஆனால் வரலாற்றில் இருந்து ஐகானை நீங்கள் இன்னும் தேர்ந்தெடுக்கலாம்.',
+  'showcase.publishModal.uploadViaStorage':
+    'பாதுகாப்பான குறுகிய கால இணைப்புகள் மூலம் கோப்புகள் பொருள் சேமிப்பகத்தில் பதிவேற்றப்படும்.',
+  'showcase.publishModal.pickHistory':
+    'உங்கள் தனிப்பட்ட நூலகத்திலிருந்து ஒரு ஐகானைத் தேர்ந்தெடுக்கவும்',
   'showcase.publishModal.removeFile': 'அகற்று',
-  'showcase.publishModal.teachingDocHint': 'ஆதரவு .docx / .pdf / .pptx / .doc (மாற்றத்திற்குப் பிறகு முழு முன்னோட்டம்)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx / .doc ஐ ஆதரிக்கிறது (மாற்றத்திற்குப் பிறகு முழு முன்னோட்டம்), ஒரு ஆவணம் {maxMb} MB ஐ விட அதிகமாக இல்லை',
-  'showcase.publishModal.teachingDocTooLarge': 'ஆவணத்தின் அளவு {maxMb} MB வரம்பை மீறுகிறது, அதை சுருக்கி மீண்டும் பதிவேற்றவும்.',
+  'showcase.publishModal.teachingDocHint':
+    'ஆதரவு .docx / .pdf / .pptx / .doc (மாற்றத்திற்குப் பிறகு முழு முன்னோட்டம்)',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx / .doc ஐ ஆதரிக்கிறது (மாற்றத்திற்குப் பிறகு முழு முன்னோட்டம்), ஒரு ஆவணம் {maxMb} MB ஐ விட அதிகமாக இல்லை',
+  'showcase.publishModal.teachingDocTooLarge':
+    'ஆவணத்தின் அளவு {maxMb} MB வரம்பை மீறுகிறது, அதை சுருக்கி மீண்டும் பதிவேற்றவும்.',
   'showcase.publishModal.diagramImageHint': 'ஆதரவு .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'படங்களை பதிவேற்றவும் (பல தேர்வுகள் உள்ளன)',
-  'showcase.publishModal.galleryHint': 'விளக்கப்படங்கள் பல படங்கள் மற்றும் பல வரலாற்று சின்னங்கள், {max} உருப்படிகள் வரை சேர்க்கலாம்',
-  'showcase.publishModal.galleryHintCase': '{max} உருப்படிகள் வரை பல படங்கள் மற்றும் வரலாற்று சின்னங்களைச் சேர்க்கலாம்',
-  'showcase.publishModal.galleryHintTemplate': 'நீங்கள் .mg கோப்புகளைப் பதிவேற்றலாம் மற்றும் {max} உருப்படிகள் வரை பல வரலாற்று சின்னங்களைத் தேர்ந்தெடுக்கலாம்',
+  'showcase.publishModal.galleryHint':
+    'விளக்கப்படங்கள் பல படங்கள் மற்றும் பல வரலாற்று சின்னங்கள், {max} உருப்படிகள் வரை சேர்க்கலாம்',
+  'showcase.publishModal.galleryHintCase':
+    '{max} உருப்படிகள் வரை பல படங்கள் மற்றும் வரலாற்று சின்னங்களைச் சேர்க்கலாம்',
+  'showcase.publishModal.galleryHintTemplate':
+    'நீங்கள் .mg கோப்புகளைப் பதிவேற்றலாம் மற்றும் {max} உருப்படிகள் வரை பல வரலாற்று சின்னங்களைத் தேர்ந்தெடுக்கலாம்',
   'showcase.publishModal.galleryCount': '{count}/{max} உருப்படிகள் சேர்க்கப்பட்டன',
   'showcase.publishModal.galleryImageItem': 'படம்: {name}',
   'showcase.publishModal.galleryDiagramItem': 'விளக்கம்: {name}',
   'showcase.publishModal.galleryLimit': '{max} உருப்படிகள் வரை சேர்க்கவும்',
   'showcase.publishModal.galleryDuplicateDiagram': 'வரலாற்றின் ஐகான் ஏற்கனவே பட்டியலில் உள்ளது',
   'showcase.publishModal.galleryPickerDone': 'முழுமையான தேர்வு',
-  'showcase.publishModal.galleryUploadFailed': 'கேலரி படத்தைப் பதிவேற்ற முடியவில்லை, தயவுசெய்து மீண்டும் இடுகையிடவும்',
-  'showcase.publishModal.galleryReuploadHint': 'சில கேலரி படங்கள் வெற்றிகரமாகச் சேமிக்கப்படவில்லை, சமர்ப்பிக்கும் முன் படங்களை மீண்டும் தேர்ந்தெடுக்கவும்.',
+  'showcase.publishModal.galleryUploadFailed':
+    'கேலரி படத்தைப் பதிவேற்ற முடியவில்லை, தயவுசெய்து மீண்டும் இடுகையிடவும்',
+  'showcase.publishModal.galleryReuploadHint':
+    'சில கேலரி படங்கள் வெற்றிகரமாகச் சேமிக்கப்படவில்லை, சமர்ப்பிக்கும் முன் படங்களை மீண்டும் தேர்ந்தெடுக்கவும்.',
   'showcase.detail.galleryImage': 'படம்',
   'showcase.detail.galleryDiagram': 'விளக்கம்',
   'showcase.detail.galleryPrev': 'முந்தைய படம்',
   'showcase.detail.galleryNext': 'அடுத்து',
   'showcase.detail.gallerySwipeHint': 'மாற இடது அல்லது வலதுபுறமாக ஸ்லைடு செய்யவும்',
   'showcase.detail.galleryImageMissing': 'படத்தை ஏற்ற முடியவில்லை, வழக்கை மீண்டும் இடுகையிடவும்',
-  'showcase.publishModal.templateFileHint': '.mg வடிவமைப்பை மட்டுமே ஆதரிக்கிறது (MindGraph ஏற்றுமதி கோப்புகள்)',
+  'showcase.publishModal.templateFileHint':
+    '.mg வடிவமைப்பை மட்டுமே ஆதரிக்கிறது (MindGraph ஏற்றுமதி கோப்புகள்)',
   'showcase.publishModal.templatePreviewLabel': 'ஐகான் முன்னோட்டம்',
   'showcase.publishModal.templatePreviewHint': 'கிரிப்பர் பயன்முறையில் உலாவவும், திருத்த முடியாது',
-  'showcase.publishModal.templatePreviewEmpty': 'கேன்வாஸை முன்னோட்டமிட .mg கோப்பைப் பதிவேற்றவும் அல்லது வரலாற்று ஐகானைத் தேர்ந்தெடுக்கவும்',
+  'showcase.publishModal.templatePreviewEmpty':
+    'கேன்வாஸை முன்னோட்டமிட .mg கோப்பைப் பதிவேற்றவும் அல்லது வரலாற்று ஐகானைத் தேர்ந்தெடுக்கவும்',
   'showcase.publishModal.diagramCasePreviewLabel': 'ஐகான் முன்னோட்டம்',
-  'showcase.publishModal.diagramCasePreviewHint': 'கிரிப்பர் பயன்முறையில் உலாவவும், பார்க்க பெரிதாக்கவும்',
-  'showcase.publishModal.diagramTypeAutoMatched': 'தேர்ந்தெடுக்கப்பட்ட வரலாற்று ஐகானின் அடிப்படையில் தானாகவே பொருந்தும் ஐகான் வகை',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'கிரிப்பர் பயன்முறையில் உலாவவும், பார்க்க பெரிதாக்கவும்',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'தேர்ந்தெடுக்கப்பட்ட வரலாற்று ஐகானின் அடிப்படையில் தானாகவே பொருந்தும் ஐகான் வகை',
   'showcase.publishModal.introLabel': 'கிராஃபிக் அறிமுகம்',
   'showcase.publishModal.teachingIntroLabel': 'அறிவுறுத்தல் வடிவமைப்பு அறிமுகம்',
   'showcase.publishModal.highlightsLabel': 'வடிவமைப்பு சிறப்பம்சங்கள்',
-  'showcase.publishModal.highlightsPlaceholder': 'இந்த பாடத்திட்டத்தின் சிறப்பம்சங்களை ஒவ்வொன்றாக விவரிக்கவும், ஒரு வரிக்கு ஒரு வரி (விரும்பினால்)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'இந்தப் பாடத்திட்டத்தின் கற்பித்தல் வடிவமைப்பின் பின்னணி, இலக்குகள் மற்றும் பொருந்தக்கூடிய காட்சிகளை சுருக்கமாக அறிமுகப்படுத்துங்கள்',
+  'showcase.publishModal.highlightsPlaceholder':
+    'இந்த பாடத்திட்டத்தின் சிறப்பம்சங்களை ஒவ்வொன்றாக விவரிக்கவும், ஒரு வரிக்கு ஒரு வரி (விரும்பினால்)',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'இந்தப் பாடத்திட்டத்தின் கற்பித்தல் வடிவமைப்பின் பின்னணி, இலக்குகள் மற்றும் பொருந்தக்கூடிய காட்சிகளை சுருக்கமாக அறிமுகப்படுத்துங்கள்',
   'showcase.publishModal.aiGenerate': 'AI உருவாக்கியது',
   'showcase.publishModal.aiGenerating': 'AI உருவாக்குகிறது…',
   'showcase.publishModal.aiGenerateStop': 'நிறுத்து',
-  'showcase.publishModal.aiGenerateCancelled': 'AI உருவாக்கம் நிறுத்தப்பட்டது - அழிக்க மற்றும் மீண்டும் உருவாக்க மீண்டும் கிளிக் செய்யவும்',
-  'showcase.publishModal.aiGenerateSuccess': 'கற்பித்தல் வடிவமைப்பு அறிமுகம் மற்றும் வடிவமைப்பு சிறப்பம்சங்கள் ஆவணத்தின் அடிப்படையில் உருவாக்கப்பட்டுள்ளன. சரிபார்த்து திருத்தவும்; கற்பித்தல் பிரதிபலிப்பை நீங்களே நிரப்பவும்.',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'விளக்கப்படத்தின் அறிமுகம் மற்றும் வகுப்பறை பயன்பாடு ஆகியவை விளக்கப்படத்தின் அடிப்படையில் உருவாக்கப்பட்டுள்ளன. சரிபார்த்து திருத்தவும்.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'AI உருவாக்கம் நிறுத்தப்பட்டது - அழிக்க மற்றும் மீண்டும் உருவாக்க மீண்டும் கிளிக் செய்யவும்',
+  'showcase.publishModal.aiGenerateSuccess':
+    'கற்பித்தல் வடிவமைப்பு அறிமுகம் மற்றும் வடிவமைப்பு சிறப்பம்சங்கள் ஆவணத்தின் அடிப்படையில் உருவாக்கப்பட்டுள்ளன. சரிபார்த்து திருத்தவும்; கற்பித்தல் பிரதிபலிப்பை நீங்களே நிரப்பவும்.',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'விளக்கப்படத்தின் அறிமுகம் மற்றும் வகுப்பறை பயன்பாடு ஆகியவை விளக்கப்படத்தின் அடிப்படையில் உருவாக்கப்பட்டுள்ளன. சரிபார்த்து திருத்தவும்.',
   'showcase.publishModal.aiGenerateFailed': 'AI உருவாக்கம் தோல்வியடைந்தது, பிறகு முயற்சிக்கவும்',
-  'showcase.publishModal.aiGenerateNeedFile': 'முதலில் முந்தைய படியில் உள்ள அறிவுறுத்தல் வடிவமைப்பு ஆவணத்தை பதிவேற்றவும்',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'படத்தைப் பதிவேற்றவும், தனிப்பட்ட நூலக ஐகானைத் தேர்ந்தெடுக்கவும் அல்லது முந்தைய படியில் .mg கோப்பைப் பதிவேற்றவும்.',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'AI தலைமுறை தற்போது அறிவுறுத்தல் வடிவமைப்பு நிகழ்வுகளை மட்டுமே ஆதரிக்கிறது',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'முதலில் முந்தைய படியில் உள்ள அறிவுறுத்தல் வடிவமைப்பு ஆவணத்தை பதிவேற்றவும்',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'படத்தைப் பதிவேற்றவும், தனிப்பட்ட நூலக ஐகானைத் தேர்ந்தெடுக்கவும் அல்லது முந்தைய படியில் .mg கோப்பைப் பதிவேற்றவும்.',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'AI தலைமுறை தற்போது அறிவுறுத்தல் வடிவமைப்பு நிகழ்வுகளை மட்டுமே ஆதரிக்கிறது',
   'showcase.publishModal.reflectionLabel': 'கற்பித்தல் பிரதிபலிப்பு',
-  'showcase.publishModal.introPlaceholder': 'வழக்கு உள்ளடக்கம் மற்றும் பொருந்தக்கூடிய காட்சிகளை சுருக்கமாக விவரிக்கவும்',
-  'showcase.publishModal.diagramCorePlaceholder': 'இந்த வரைபடத்தின் முக்கிய உள்ளடக்கம் மற்றும் சிந்தனை காட்சிப்படுத்தல் பண்புகளை விவரிக்கவும்',
-  'showcase.publishModal.classroomAppPlaceholder': 'வகுப்பறையில் இந்த விளக்கப்படம் எவ்வாறு பயன்படுத்தப்படலாம் என்பதை விவரிக்கவும்',
-  'showcase.publishModal.tagInputPlaceholder': 'லேபிளை (10 எழுத்துகள் வரை) உள்ளிட்டு, சேர்க்க Enter ஐ அழுத்தவும்',
+  'showcase.publishModal.introPlaceholder':
+    'வழக்கு உள்ளடக்கம் மற்றும் பொருந்தக்கூடிய காட்சிகளை சுருக்கமாக விவரிக்கவும்',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'இந்த வரைபடத்தின் முக்கிய உள்ளடக்கம் மற்றும் சிந்தனை காட்சிப்படுத்தல் பண்புகளை விவரிக்கவும்',
+  'showcase.publishModal.classroomAppPlaceholder':
+    'வகுப்பறையில் இந்த விளக்கப்படம் எவ்வாறு பயன்படுத்தப்படலாம் என்பதை விவரிக்கவும்',
+  'showcase.publishModal.tagInputPlaceholder':
+    'லேபிளை (10 எழுத்துகள் வரை) உள்ளிட்டு, சேர்க்க Enter ஐ அழுத்தவும்',
   'showcase.publishModal.tagRecommended': 'பரிந்துரைக்கப்பட்ட குறிச்சொற்கள்',
   'showcase.publishModal.tagCountHint': '(அதிகபட்சம் {max})',
   'showcase.publishModal.tagMaxCount': 'அதிகபட்சம் {max} குறிச்சொற்களை மட்டுமே சேர்க்க முடியும்',
-  'showcase.publishModal.networkError': 'சமர்ப்பிப்பு தோல்வி: பதிவேற்ற இணைப்பு தடைபட்டது. Ctrl+F5 ஐப் புதுப்பித்து மீண்டும் முயற்சிக்கவும்; அதில் வீடியோ இருந்தால், ஒற்றைக் கோப்பு ≤100MB மற்றும் மொத்தம் ≤105MB என்பதை உறுதிப்படுத்தவும்.',
+  'showcase.publishModal.networkError':
+    'சமர்ப்பிப்பு தோல்வி: பதிவேற்ற இணைப்பு தடைபட்டது. Ctrl+F5 ஐப் புதுப்பித்து மீண்டும் முயற்சிக்கவும்; அதில் வீடியோ இருந்தால், ஒற்றைக் கோப்பு ≤100MB மற்றும் மொத்தம் ≤105MB என்பதை உறுதிப்படுத்தவும்.',
   'showcase.publishModal.fileTooLarge': '"{name}" {maxMb}MB அளவு வரம்பை மீறுகிறது',
-  'showcase.publishModal.uploadTotalTooLarge': 'பதிவேற்றிய கோப்புகளின் மொத்த அளவு வரம்பை மீறுகிறது. இணைப்புகள் அல்லது வீடியோக்களின் அளவைக் குறைக்கவும்.',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'பதிவேற்றிய கோப்புகளின் மொத்த அளவு வரம்பை மீறுகிறது. இணைப்புகள் அல்லது வீடியோக்களின் அளவைக் குறைக்கவும்.',
   'showcase.publishModal.tagAdd': 'சேர்',
   'showcase.publishModal.publishBtn': 'விடுதலை',
-  'showcase.publishModal.reflectionPlaceholder': 'இந்த பாடத்தின் கற்பித்தல் பற்றிய உங்கள் பிரதிபலிப்பு மற்றும் சுருக்கத்தை எழுதுங்கள் (விரும்பினால்)',
+  'showcase.publishModal.reflectionPlaceholder':
+    'இந்த பாடத்தின் கற்பித்தல் பற்றிய உங்கள் பிரதிபலிப்பு மற்றும் சுருக்கத்தை எழுதுங்கள் (விரும்பினால்)',
   'showcase.publishModal.classroomAppLabel': 'வகுப்பறை விண்ணப்பம்',
   'showcase.publishModal.selectSubject': 'ஒரு பாடத்தைத் தேர்ந்தெடுக்கவும்',
   'showcase.publishModal.selectGrade': 'தரத்தைத் தேர்ந்தெடுக்கவும்',
@@ -148,20 +199,28 @@ export default {
   'showcase.publishModal.validationTitle': 'வழக்கின் தலைப்பை நிரப்பவும்',
   'showcase.publishModal.validationSubject': 'ஒரு பாடத்தைத் தேர்ந்தெடுக்கவும்',
   'showcase.publishModal.validationGrade': 'தரத்தைத் தேர்ந்தெடுக்கவும்',
-  'showcase.publishModal.validationFile': 'கோப்பைப் பதிவேற்றவும் அல்லது வரலாற்று ஐகானைத் தேர்ந்தெடுக்கவும்',
+  'showcase.publishModal.validationFile':
+    'கோப்பைப் பதிவேற்றவும் அல்லது வரலாற்று ஐகானைத் தேர்ந்தெடுக்கவும்',
   'showcase.publishModal.validationDiagramType': 'ஐகான் வகையைத் தேர்ந்தெடுக்கவும்',
   'showcase.publishModal.invalidFileType': 'கோப்பு வடிவம் ஆதரிக்கப்படவில்லை',
-  'showcase.publishModal.invalidMgFile': 'MindGraph .mg கோப்பைப் படிக்க முடியவில்லை, மைண்ட் கிராஃப் ஏற்றுமதியிலிருந்து கோப்பு என்பதை உறுதிப்படுத்தவும்',
-  'showcase.publishModal.cannotPreview': 'கவர் மாதிரிக்காட்சியை உருவாக்க முடியவில்லை, வழக்கு இன்னும் சமர்ப்பிக்கப்படும்; PNG/JPG ஐ முயற்சிக்கவும் அல்லது வரலாற்று சின்னங்களில் இருந்து தேர்ந்தெடுக்கவும்',
-  'showcase.publishModal.cannotPreviewHistory': 'இந்த வரலாற்று விளக்கத்திலிருந்து கவர் உருவாக்க முடியவில்லை, வழக்கு இன்னும் சமர்ப்பிக்கப்படும்; தயவுசெய்து மீண்டும் தேர்ந்தெடுக்கவும் அல்லது முதலில் கேன்வாஸில் திறந்து மீண்டும் சேமிக்கவும்',
-  'showcase.publishModal.cannotPreviewTemplate': 'கவர் மாதிரிக்காட்சியை உருவாக்க முடியவில்லை, வழக்கு இன்னும் சமர்ப்பிக்கப்படும்; .mg கோப்பு சரியானதா என்பதை உறுதிப்படுத்தவும் அல்லது வரலாற்று ஐகானை மீண்டும் தேர்ந்தெடுக்கவும்',
+  'showcase.publishModal.invalidMgFile':
+    'MindGraph .mg கோப்பைப் படிக்க முடியவில்லை, மைண்ட் கிராஃப் ஏற்றுமதியிலிருந்து கோப்பு என்பதை உறுதிப்படுத்தவும்',
+  'showcase.publishModal.cannotPreview':
+    'கவர் மாதிரிக்காட்சியை உருவாக்க முடியவில்லை, வழக்கு இன்னும் சமர்ப்பிக்கப்படும்; PNG/JPG ஐ முயற்சிக்கவும் அல்லது வரலாற்று சின்னங்களில் இருந்து தேர்ந்தெடுக்கவும்',
+  'showcase.publishModal.cannotPreviewHistory':
+    'இந்த வரலாற்று விளக்கத்திலிருந்து கவர் உருவாக்க முடியவில்லை, வழக்கு இன்னும் சமர்ப்பிக்கப்படும்; தயவுசெய்து மீண்டும் தேர்ந்தெடுக்கவும் அல்லது முதலில் கேன்வாஸில் திறந்து மீண்டும் சேமிக்கவும்',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'கவர் மாதிரிக்காட்சியை உருவாக்க முடியவில்லை, வழக்கு இன்னும் சமர்ப்பிக்கப்படும்; .mg கோப்பு சரியானதா என்பதை உறுதிப்படுத்தவும் அல்லது வரலாற்று ஐகானை மீண்டும் தேர்ந்தெடுக்கவும்',
   'showcase.publishModal.historyTitle': 'தனிப்பட்ட நூலகம்',
   'showcase.publishModal.historySearch': 'ஐகான் பெயரைத் தேடு…',
   'showcase.publishModal.historyEmpty': 'தனிப்பட்ட நூலகத்தில் இதுவரை ஐகான் இல்லை',
   'showcase.publishModal.historyUncategorized': 'வகைப்படுத்தப்படாத',
-  'showcase.publishModal.typeDesc.teachingDesign': 'சிந்தனை வளர்ச்சி வகுப்பறை கற்பித்தல் வடிவமைப்பு',
-  'showcase.publishModal.typeDesc.diagramCase': 'சிறந்த விளக்கப் பகிர்வு அல்லது சிந்தனை காட்சிப்படுத்தல் கற்பித்தல் பயன்பாடு',
-  'showcase.publishModal.typeDesc.diagramTemplate': 'மீண்டும் பயன்படுத்தக்கூடிய அல்லது மீண்டும் உருவாக்கக்கூடிய சின்னங்கள்',
+  'showcase.publishModal.typeDesc.teachingDesign':
+    'சிந்தனை வளர்ச்சி வகுப்பறை கற்பித்தல் வடிவமைப்பு',
+  'showcase.publishModal.typeDesc.diagramCase':
+    'சிறந்த விளக்கப் பகிர்வு அல்லது சிந்தனை காட்சிப்படுத்தல் கற்பித்தல் பயன்பாடு',
+  'showcase.publishModal.typeDesc.diagramTemplate':
+    'மீண்டும் பயன்படுத்தக்கூடிய அல்லது மீண்டும் உருவாக்கக்கூடிய சின்னங்கள்',
   'showcase.detail.import': 'இந்த வழக்கைப் பயன்படுத்தவும்',
   'showcase.action.goDraw': 'சென்று படம் வரையுங்கள்',
   'showcase.action.applyTemplate': 'இந்த டெம்ப்ளேட்டைப் பயன்படுத்தவும்',
@@ -184,9 +243,11 @@ export default {
   'showcase.detail.delist': 'அலமாரிகளில் இருந்து அகற்றப்பட்டது',
   'showcase.detail.resubmit': 'மறுபரிசீலனை செய்து மீண்டும் சமர்ப்பிக்கவும்',
   'showcase.detail.withdrawTitle': 'வழக்கை வாபஸ் பெறுங்கள்',
-  'showcase.detail.withdrawConfirm': '"{title}" ஐ நிச்சயமாக திரும்பப் பெற விரும்புகிறீர்களா? திரும்பப் பெறப்பட்டதும், மதிப்பாய்வு வரிசையில் இருந்து அகற்றப்படும், அதை மீட்டெடுக்க முடியாது.',
+  'showcase.detail.withdrawConfirm':
+    '"{title}" ஐ நிச்சயமாக திரும்பப் பெற விரும்புகிறீர்களா? திரும்பப் பெறப்பட்டதும், மதிப்பாய்வு வரிசையில் இருந்து அகற்றப்படும், அதை மீட்டெடுக்க முடியாது.',
   'showcase.detail.delistTitle': 'அகற்றும் வழக்குகள்',
-  'showcase.detail.delistConfirm': 'கேஸ் ஸ்கொயரில் இருந்து "{title}" ஐ நிச்சயமாக அகற்ற விரும்புகிறீர்களா? இது அகற்றப்பட்ட பிறகு, பிற பயனர்களால் அதை உலாவ முடியாது.',
+  'showcase.detail.delistConfirm':
+    'கேஸ் ஸ்கொயரில் இருந்து "{title}" ஐ நிச்சயமாக அகற்ற விரும்புகிறீர்களா? இது அகற்றப்பட்ட பிறகு, பிற பயனர்களால் அதை உலாவ முடியாது.',
   'showcase.detail.confirm': 'நிச்சயமாக',
   'showcase.detail.cancel': 'ரத்து செய்',
   'showcase.withdrawn': 'திரும்பப் பெறப்பட்டது',
@@ -195,7 +256,8 @@ export default {
   'showcase.publishModal.editTitle': 'மறுபரிசீலனை செய்து மீண்டும் சமர்ப்பிக்கவும்',
   'showcase.publishModal.resubmit': 'மதிப்பாய்விற்கு மீண்டும் சமர்ப்பிக்கவும்',
   'showcase.publishModal.resubmitting': 'மீண்டும் சமர்ப்பிக்கிறது…',
-  'showcase.publishModal.keepExistingFile': 'நீங்கள் பதிவேற்றவில்லை என்றால், அசல் கோப்பை வைத்திருங்கள்.',
+  'showcase.publishModal.keepExistingFile':
+    'நீங்கள் பதிவேற்றவில்லை என்றால், அசல் கோப்பை வைத்திருங்கள்.',
   'showcase.detail.views': '{n} பார்வைகள்',
   'showcase.detail.recommended': 'பரிந்துரைக்கப்படுகிறது',
   'showcase.detail.askMindmate': 'MindMate மைண்ட்மேட்டைக் கேளுங்கள்',
@@ -206,8 +268,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'மாதிரிக்காட்சிக்காக ஆவணத்தை மாற்றுகிறது...',
   'showcase.detail.officePreviewPending': 'மாதிரிக்காட்சிக்காக ஆவணத்தை மாற்றுகிறது...',
   'showcase.detail.docPreviewLoading': 'ஆவணங்களை ஏற்றுகிறது…',
-  'showcase.detail.docPreviewFailed': 'ஆவண முன்னோட்டத்தை ஏற்ற முடியவில்லை, புதிய தாவலில் திறக்க முயற்சிக்கவும்.',
-  'showcase.detail.legacyDocHint': 'இந்த அலுவலக ஆவண முன்னோட்ட மாற்றம் இன்னும் கிடைக்கவில்லை. புதிய தாவலில் பதிவிறக்கம்/திறக்கவும் அல்லது முன்னோட்டத்தை மீண்டும் உருவாக்க மீண்டும் பதிவேற்றவும்.',
+  'showcase.detail.docPreviewFailed':
+    'ஆவண முன்னோட்டத்தை ஏற்ற முடியவில்லை, புதிய தாவலில் திறக்க முயற்சிக்கவும்.',
+  'showcase.detail.legacyDocHint':
+    'இந்த அலுவலக ஆவண முன்னோட்ட மாற்றம் இன்னும் கிடைக்கவில்லை. புதிய தாவலில் பதிவிறக்கம்/திறக்கவும் அல்லது முன்னோட்டத்தை மீண்டும் உருவாக்க மீண்டும் பதிவேற்றவும்.',
   'showcase.detail.noDocument': 'இதுவரை ஆவண முன்னோட்டம் இல்லை',
   'showcase.detail.noDiagramPreview': 'இதுவரை ஐகான் மாதிரிக்காட்சி இல்லை',
   'showcase.detail.diagramPreviewLoading': 'ஐகானை ஏற்றுகிறது…',

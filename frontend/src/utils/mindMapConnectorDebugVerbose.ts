@@ -19,7 +19,10 @@ export function setMindMapVerboseRecalcGen(recalcGen: number): void {
   activeRecalcGen = recalcGen
 }
 
-export function logMindMapProcess(stage: MindMapProcessStage, payload: Record<string, unknown>): void {
+export function logMindMapProcess(
+  stage: MindMapProcessStage,
+  payload: Record<string, unknown>
+): void {
   if (!isMindMapConnectorVerboseDebugEnabled()) return
   console.info(`[MindMap:${stage}]`, {
     recalcGen: activeRecalcGen,

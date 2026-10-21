@@ -14,7 +14,8 @@ export default {
   'learningSpace.instructionUploadFailed': 'Could not upload instruction image',
   'learningSpace.resubmitPolicy': 'Resubmit policy',
   'learningSpace.allowResubmitSwitch': 'Allow resubmit before deadline',
-  'learningSpace.allowResubmitHint': 'When on, students can edit and resubmit before the due date. Resubmitting clears existing teacher feedback.',
+  'learningSpace.allowResubmitHint':
+    'When on, students can edit and resubmit before the due date. Resubmitting clears existing teacher feedback.',
   'learningSpace.allowResubmitYes': 'Resubmit allowed before deadline',
   'learningSpace.allowResubmitNo': 'Locked after first submit',
   'learningSpace.studentReqResubmit': 'Resubmit',
@@ -22,12 +23,14 @@ export default {
   'learningSpace.studentReqResubmitNo': 'Locked after first submit',
   'learningSpace.classWallSubmitFirst': 'Submit your work to view the class work wall',
   'learningSpace.resubmit': 'Resubmit',
-  'learningSpace.resubmitConfirm': 'This replaces your submitted version with the current canvas. Teacher feedback will be cleared. Continue?',
+  'learningSpace.resubmitConfirm':
+    'This replaces your submitted version with the current canvas. Teacher feedback will be cleared. Continue?',
   'learningSpace.resubmitSuccess': 'Resubmitted',
   'learningSpace.editAndResubmit': 'Edit and resubmit',
   'learningSpace.submitConfirm':
     'After submitting, your teacher will review and score it. Submit now?',
-  'learningSpace.fillAssignment': 'Enter a title and choose/upload a diagram template (library or .mg)',
+  'learningSpace.fillAssignment':
+    'Enter a title and choose/upload a diagram template (library or .mg)',
   'learningSpace.fillTitle': 'Enter an assignment title',
   'learningSpace.fillClasses': 'Select at least one class',
   'learningSpace.fillSchedule': 'Pick a scheduled publish time',
@@ -56,8 +59,7 @@ export default {
     'Delete “{title}”? Student submissions will also be removed and cannot be recovered.',
   'learningSpace.assignmentDeleted': 'Assignment deleted',
   'learningSpace.deleteFailed': 'Could not delete assignment',
-  'learningSpace.noPublishableClass':
-    'No class you can publish to (you must own an active class)',
+  'learningSpace.noPublishableClass': 'No class you can publish to (you must own an active class)',
   'learningSpace.homeworkClosed': 'Assignment closed',
   'learningSpace.reqOverview': 'Overview',
   'learningSpace.reqAi': 'AI permissions',
@@ -157,10 +159,10 @@ export default {
   'learningSpace.diagramType.mind_map': 'Mind map',
   'learningSpace.assign.next': 'Next',
   'learningSpace.assign.prev': 'Back',
-  'learningSpace.assign.titlePlaceholder': 'e.g. Compare plant and animal cells with a double bubble map',
+  'learningSpace.assign.titlePlaceholder':
+    'e.g. Compare plant and animal cells with a double bubble map',
   'learningSpace.assign.reqPlaceholder': 'Requirements, focus areas, or reference materials…',
-  'learningSpace.assign.selectedSummary':
-    '{classes} classes selected, {students} students total.',
+  'learningSpace.assign.selectedSummary': '{classes} classes selected, {students} students total.',
   'learningSpace.optional': 'Optional',
   'learningSpace.attachmentsHint': 'Pick from library, upload .mg or images — preview after attach',
   'learningSpace.aiAssistSwitch': 'Allow AI-assisted diagram tools',
@@ -176,6 +178,10 @@ export default {
   'learningSpace.eval.customHint': 'Pick presets or add your own dimensions',
   'learningSpace.eval.customPlaceholder': 'Custom evaluation dimension',
   'learningSpace.eval.addCustom': 'Add',
+  'learningSpace.eval.title': 'Evaluation dimensions',
+  'learningSpace.eval.hint': 'Reserved for thinking-analysis features; multi-select.',
+  'learningSpace.eval.infoExtract': 'Information extraction',
+  'learningSpace.eval.classify': 'Classify & organize',
   'learningSpace.viewRequirements': 'Requirements',
   'learningSpace.goReview': 'Review',
   'learningSpace.reviewed': 'Reviewed',
@@ -186,10 +192,6 @@ export default {
   'learningSpace.reviewPin': 'Pin',
   'learningSpace.reviewSubmit': 'Save review',
   'learningSpace.reviewSaved': 'Review saved',
-  'learningSpace.eval.title': 'Evaluation dimensions',
-  'learningSpace.eval.hint': 'Reserved for thinking-analysis features; multi-select.',
-  'learningSpace.eval.infoExtract': 'Information extraction',
-  'learningSpace.eval.classify': 'Classify & organize',
   'learningSpace.eval.compare': 'Compare & contrast',
   'learningSpace.eval.causeEffect': 'Cause & effect',
   'learningSpace.eval.problemSolve': 'Problem solving',
@@ -212,8 +214,7 @@ export default {
   'learningSpace.noAccess': 'This account cannot use Learning Space.',
   'learningSpace.modeLearn': 'Do homework',
   'learningSpace.modeReview': 'Review',
-  'learningSpace.useAdminPanel':
-    'Configure pilot teachers and classes in Admin → Learning Space.',
+  'learningSpace.useAdminPanel': 'Configure pilot teachers and classes in Admin → Learning Space.',
   'learningSpace.tabDashboard': 'Dashboard',
   'learningSpace.tabAssignments': 'Assignments',
   'learningSpace.tabClasses': 'Classes',
@@ -251,7 +252,8 @@ export default {
   'learningSpace.studentReqMaterials': 'Reference materials',
   'learningSpace.studentReqScaffold': 'Starting diagram',
   'learningSpace.studentReqMaterialsHint': 'Preview the teacher’s reference diagram and images.',
-  'learningSpace.studentReqScaffoldHint': 'When you start the assignment, you will work on a copy of this diagram.',
+  'learningSpace.studentReqScaffoldHint':
+    'When you start the assignment, you will work on a copy of this diagram.',
   'learningSpace.studentReqOpenTemplate': 'Open reference on canvas',
   'learningSpace.studentReqBrief': 'What your teacher asks you to do',
   'learningSpace.studentReqNoBrief':

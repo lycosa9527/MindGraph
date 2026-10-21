@@ -8,6 +8,10 @@ import { X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import type {
+  ExplainBubblePosition,
+  ExplainBubbleSize,
+} from '@/composables/canvasToolbar/useNodeExplainBubblePosition'
+import type {
   ExplainResearchSource,
   MindMapNodeExplainTarget,
 } from '@/composables/mindMap/useMindMapNodeExplain'
@@ -17,10 +21,6 @@ import {
   lastThinkingLines,
   splitExplainCitationParts,
 } from '@/utils/mindMapExplainResearch'
-import type {
-  ExplainBubblePosition,
-  ExplainBubbleSize,
-} from '@/composables/canvasToolbar/useNodeExplainBubblePosition'
 
 const visible = defineModel<boolean>('visible', { required: true })
 
@@ -79,9 +79,7 @@ const pageStats = computed(() => {
   })
 })
 
-const thinkingLive = computed(
-  () => props.loading && !bodyText.value && !props.thinkingDone
-)
+const thinkingLive = computed(() => props.loading && !bodyText.value && !props.thinkingDone)
 
 const thinkingLabel = computed(() =>
   thinkingLive.value
@@ -89,9 +87,7 @@ const thinkingLabel = computed(() =>
     : t('canvas.mindMapNodeExplain.thinkingDone')
 )
 
-const showThinking = computed(
-  () => props.loading || !!thinkingText.value || !!pageStats.value
-)
+const showThinking = computed(() => props.loading || !!thinkingText.value || !!pageStats.value)
 
 const thinkingExpanded = ref(true)
 const thinkBodyEl = ref<HTMLElement | null>(null)

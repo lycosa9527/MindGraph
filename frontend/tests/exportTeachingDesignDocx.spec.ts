@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { authFetch } from '@/utils/api'
 import {
+  TeachingDesignExportError,
   downloadTeachingDesignDocx,
   filenameFromDisposition,
-  TeachingDesignExportError,
   teachingDesignExportFailI18nKey,
 } from '@/utils/exportTeachingDesignDocx'
 
@@ -30,7 +30,9 @@ describe('exportTeachingDesignDocx', () => {
 
   it('reads RFC 5987 filenames from Content-Disposition', () => {
     expect(
-      filenameFromDisposition("attachment; filename=\"lesson.docx\"; filename*=UTF-8''%E6%95%99%E5%AD%A6%E8%AE%BE%E8%AE%A1.docx")
+      filenameFromDisposition(
+        'attachment; filename="lesson.docx"; filename*=UTF-8\'\'%E6%95%99%E5%AD%A6%E8%AE%BE%E8%AE%A1.docx'
+      )
     ).toBe('教学设计.docx')
     expect(filenameFromDisposition(null)).toBe('教学设计.docx')
   })

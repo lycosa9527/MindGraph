@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Mate ඉගෙනුම',
-  'maite.subtitle': 'ප්‍රතිලෝම විභජනය · සිව් අංශ නිර්ණය · ඉලක්කගත නිවැරදි කිරීම · වරියංට් සංක්‍රමණය',
+  'maite.subtitle':
+    'ප්‍රතිලෝම විභජනය · සිව් අංශ නිර්ණය · ඉලක්කගත නිවැරදි කිරීම · වරියංට් සංක්‍රමණය',
   'maite.mode.demo': 'ආදර්ශනය',
   'maite.mode.inquiry': 'පරීක්‍ෂණය',
   'maite.mode.map': 'සිතියම',
@@ -58,7 +59,8 @@ export default {
   'maite.variant.answerPlaceholder': 'සම්පූර්ණ පිළිතුර ලියන්න…',
   'maite.variant.strategyPlaceholder': 'ක්‍රමය සකස් වන ආකාරය පැහැදිලි කරන්න…',
   'maite.variant.submit': 'පිළිතුර ඉදිරිපත් කරන්න',
-  'maite.variant.completeHint': 'සැසිය සම්පූර්ණ කිරීමට පෙර වරියංට් පිළිතුරු අවම වශයෙන් 3ක් ඉදිරිපත් කරන්න.',
+  'maite.variant.completeHint':
+    'සැසිය සම්පූර්ණ කිරීමට පෙර වරියංට් පිළිතුරු අවම වශයෙන් 3ක් ඉදිරිපත් කරන්න.',
   'maite.practice.title': 'මෑත පුහුණුව',
   'maite.practice.loading': 'පූරණය වෙමින්…',
   'maite.practice.empty': 'තවම පුහුණු සැසි නැත',
@@ -85,7 +87,8 @@ export default {
   'maite.errors.diagnosis_failed': 'නිර්ණය අසාර්ථක විය.',
   'maite.errors.remedy_failed': 'නිවැරදි කිරීමේ කාර්යයන් සෑදීම අසාර්ථක විය.',
   'maite.errors.variant_failed': 'වරියංට් කාර්යයන් සෑදීම අසාර්ථක විය.',
-  'maite.errors.variants_incomplete': 'සම්පූර්ණ කිරීමට පෙර වරියංට් පිළිතුරු අවම වශයෙන් 3ක් ඉදිරිපත් කරන්න.',
+  'maite.errors.variants_incomplete':
+    'සම්පූර්ණ කිරීමට පෙර වරියංට් පිළිතුරු අවම වශයෙන් 3ක් ඉදිරිපත් කරන්න.',
   'maite.errors.variant_answer_required': 'පිළිතුර සහ උපාය අවශ්‍යය.',
   'maite.errors.variant_submit_failed': 'වරියංට් පිළිතුර ඉදිරිපත් කිරීම අසාර්ථක විය.',
   'maite.errors.load_failed': 'සැසිය පූරණය කිරීම අසාර්ථක විය.',

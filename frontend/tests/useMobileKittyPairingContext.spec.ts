@@ -1,10 +1,15 @@
 /**
  * Mobile Kitty pairing: desktop_focus follow while connected + library hydrate helpers.
  */
-import { computed, effectScope, ref, type EffectScope } from 'vue'
+import { type EffectScope, computed, effectScope, ref } from 'vue'
 
 import { createPinia, setActivePinia } from 'pinia'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
+import { useOneSentenceStore } from '@/stores/oneSentence'
+import { must } from '@/utils/must'
 
 const shouldUseEditFlowMock = vi.hoisted(() => vi.fn(() => true))
 const setActiveDiagramMock = vi.hoisted(() => vi.fn())
@@ -40,7 +45,10 @@ vi.mock('@/composables/kitty/useKittyDesktopFocus', async () => {
   const vue = await import('vue')
   const diagramLibraryId = vue.ref<string | null>(null)
   const updatedAt = vue.ref<number | null>(null)
-  focusApi.setLibraryId = (id: string | null, ts: number | null = Math.floor(Date.now() / 1000)) => {
+  focusApi.setLibraryId = (
+    id: string | null,
+    ts: number | null = Math.floor(Date.now() / 1000)
+  ) => {
     diagramLibraryId.value = id
     updatedAt.value = id == null ? null : ts
   }
@@ -181,9 +189,6 @@ vi.mock('pinia', async () => {
   }
 })
 
-import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
-import { useOneSentenceStore } from '@/stores/oneSentence'
-
 describe('useMobileKittyPairing one-sentence context', () => {
   let scope: EffectScope
 
@@ -234,11 +239,13 @@ describe('useMobileKittyPairing one-sentence context', () => {
       updateContext: vi.fn(),
     } as unknown as Parameters<typeof useMobileKittyPairing>[0]
 
-    const { buildMobileKittyContext, resolveMobileOneSentencePhase } = scope.run(() =>
-      useMobileKittyPairing(kitty, {
-        kittyServerEnabled: computed(() => true),
-      })
-    )!
+    const { buildMobileKittyContext, resolveMobileOneSentencePhase } = must(
+      scope.run(() =>
+        useMobileKittyPairing(kitty, {
+          kittyServerEnabled: computed(() => true),
+        })
+      )
+    )
 
     expect(resolveMobileOneSentencePhase()).toBe('edit')
     const ctx = buildMobileKittyContext()
@@ -261,11 +268,13 @@ describe('useMobileKittyPairing one-sentence context', () => {
       updateContext: vi.fn(),
     } as unknown as Parameters<typeof useMobileKittyPairing>[0]
 
-    const { buildMobileKittyContext, resolveMobileOneSentencePhase } = scope.run(() =>
-      useMobileKittyPairing(kitty, {
-        kittyServerEnabled: computed(() => true),
-      })
-    )!
+    const { buildMobileKittyContext, resolveMobileOneSentencePhase } = must(
+      scope.run(() =>
+        useMobileKittyPairing(kitty, {
+          kittyServerEnabled: computed(() => true),
+        })
+      )
+    )
 
     expect(resolveMobileOneSentencePhase()).toBe('create')
     const ctx = buildMobileKittyContext()
@@ -284,11 +293,13 @@ describe('useMobileKittyPairing one-sentence context', () => {
       updateContext: vi.fn(),
     } as unknown as Parameters<typeof useMobileKittyPairing>[0]
 
-    const { buildMobileKittyContext, resolveMobileOneSentencePhase } = scope.run(() =>
-      useMobileKittyPairing(kitty, {
-        kittyServerEnabled: computed(() => true),
-      })
-    )!
+    const { buildMobileKittyContext, resolveMobileOneSentencePhase } = must(
+      scope.run(() =>
+        useMobileKittyPairing(kitty, {
+          kittyServerEnabled: computed(() => true),
+        })
+      )
+    )
 
     expect(resolveMobileOneSentencePhase()).toBe('edit')
     const ctx = buildMobileKittyContext()
@@ -304,12 +315,14 @@ describe('useMobileKittyPairing one-sentence context', () => {
       updateContext: vi.fn(),
     } as unknown as Parameters<typeof useMobileKittyPairing>[0]
 
-    const { applyDesktopFocusLibrary } = scope.run(() =>
-      useMobileKittyPairing(kitty, {
-        kittyServerEnabled: computed(() => true),
-        onDesktopDiagramFollow: onFollow,
-      })
-    )!
+    const { applyDesktopFocusLibrary } = must(
+      scope.run(() =>
+        useMobileKittyPairing(kitty, {
+          kittyServerEnabled: computed(() => true),
+          onDesktopDiagramFollow: onFollow,
+        })
+      )
+    )
 
     await applyDesktopFocusLibrary('lib-diagram-2')
 
@@ -370,12 +383,14 @@ describe('useMobileKittyPairing one-sentence context', () => {
       startNewEphemeralMindmapSession,
       kittyPairScope,
       kittyPairScopeWarning,
-    } = scope.run(() =>
-      useMobileKittyPairing(kitty, {
-        kittyServerEnabled: computed(() => true),
-        onDesktopDiagramFollow: onFollow,
-      })
-    )!
+    } = must(
+      scope.run(() =>
+        useMobileKittyPairing(kitty, {
+          kittyServerEnabled: computed(() => true),
+          onDesktopDiagramFollow: onFollow,
+        })
+      )
+    )
 
     const ephemeralScope = startNewEphemeralMindmapSession()
     expect(kittyPairScopeIsEphemeral.value).toBe(true)
@@ -400,11 +415,13 @@ describe('useMobileKittyPairing one-sentence context', () => {
       updateContext: vi.fn(),
     } as unknown as Parameters<typeof useMobileKittyPairing>[0]
 
-    const { kittyPairScopeIsEphemeral, startNewEphemeralMindmapSession } = scope.run(() =>
-      useMobileKittyPairing(kitty, {
-        kittyServerEnabled: computed(() => true),
-      })
-    )!
+    const { kittyPairScopeIsEphemeral, startNewEphemeralMindmapSession } = must(
+      scope.run(() =>
+        useMobileKittyPairing(kitty, {
+          kittyServerEnabled: computed(() => true),
+        })
+      )
+    )
 
     focusApi.setLibraryId('lib-diagram-2', Math.floor(Date.now() / 1000))
     await vi.waitFor(() => {
@@ -447,13 +464,18 @@ describe('useMobileKittyPairing one-sentence context', () => {
       updateContext: vi.fn(),
     } as unknown as Parameters<typeof useMobileKittyPairing>[0]
 
-    const { ensureMobileKittyBootstrap, kittyPairScopeIsEphemeral, kittyPairScope, kittyPairScopeWarning } =
-      scope.run(
-      () =>
+    const {
+      ensureMobileKittyBootstrap,
+      kittyPairScopeIsEphemeral,
+      kittyPairScope,
+      kittyPairScopeWarning,
+    } = must(
+      scope.run(() =>
         useMobileKittyPairing(kitty, {
           kittyServerEnabled: computed(() => true),
         })
-    )!
+      )
+    )
 
     await ensureMobileKittyBootstrap()
     // Cold open must not send sticky local library id as suggested_scope.
@@ -497,11 +519,13 @@ describe('useMobileKittyPairing one-sentence context', () => {
       updateContext: vi.fn(),
     } as unknown as Parameters<typeof useMobileKittyPairing>[0]
 
-    const { ensureMobileKittyBootstrap } = scope.run(() =>
-      useMobileKittyPairing(kitty, {
-        kittyServerEnabled: computed(() => true),
-      })
-    )!
+    const { ensureMobileKittyBootstrap } = must(
+      scope.run(() =>
+        useMobileKittyPairing(kitty, {
+          kittyServerEnabled: computed(() => true),
+        })
+      )
+    )
 
     await ensureMobileKittyBootstrap()
     expect(setActiveDiagramMock).not.toHaveBeenCalledWith('desktop-open-lib')
@@ -515,11 +539,13 @@ describe('useMobileKittyPairing one-sentence context', () => {
       updateContext: vi.fn(),
     } as unknown as Parameters<typeof useMobileKittyPairing>[0]
 
-    const { hydrateLibraryScopeIfNeeded } = scope.run(() =>
-      useMobileKittyPairing(kitty, {
-        kittyServerEnabled: computed(() => true),
-      })
-    )!
+    const { hydrateLibraryScopeIfNeeded } = must(
+      scope.run(() =>
+        useMobileKittyPairing(kitty, {
+          kittyServerEnabled: computed(() => true),
+        })
+      )
+    )
 
     await hydrateLibraryScopeIfNeeded('lib-diagram-1')
     expect(hydrateFromLibraryMock).toHaveBeenCalledWith('lib-diagram-1')

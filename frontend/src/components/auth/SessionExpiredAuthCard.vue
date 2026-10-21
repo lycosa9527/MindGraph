@@ -46,9 +46,8 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: max(1.25rem, env(safe-area-inset-top, 0px))
-    max(1rem, env(safe-area-inset-right, 0px)) max(1.5rem, env(safe-area-inset-bottom, 0px))
-    max(1rem, env(safe-area-inset-left, 0px));
+  padding: max(1.25rem, env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px))
+    max(1.5rem, env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px));
   background: rgb(15 23 42 / 0.45);
   backdrop-filter: blur(10px);
 }

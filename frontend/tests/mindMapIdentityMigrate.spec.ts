@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
+import type { Connection, DiagramNode } from '@/types'
 import {
   migrateMindMapIdentityIds,
   mindMapIdentityAliases,
@@ -13,7 +14,6 @@ import {
   mindMapNodeDepth,
   mindMapNodeSide,
 } from '@/utils/mindMapLocation'
-import type { Connection, DiagramNode } from '@/types'
 
 function positionalTree(): { nodes: DiagramNode[]; connections: Connection[] } {
   return {
@@ -50,12 +50,12 @@ describe('mind-map identity invert', () => {
     }
     const migrated = migrateMindMapIdentityIds(nodes, connections)
     expect(migrated.idMap['branch-r-1-0']).toBe('uid-diy')
-    expect(mindMapNodeSide('uid-diy', { nodes: migrated.nodes, connections: migrated.connections })).toBe(
-      before.side
-    )
-    expect(mindMapNodeDepth('uid-diy', { nodes: migrated.nodes, connections: migrated.connections })).toBe(
-      before.depth
-    )
+    expect(
+      mindMapNodeSide('uid-diy', { nodes: migrated.nodes, connections: migrated.connections })
+    ).toBe(before.side)
+    expect(
+      mindMapNodeDepth('uid-diy', { nodes: migrated.nodes, connections: migrated.connections })
+    ).toBe(before.depth)
     expect(isMindMapL1('uid-diy', migrated.connections)).toBe(before.l1)
     expect(mindMapLocationPathKey('uid-diy', migrated.connections, { nodes: migrated.nodes })).toBe(
       before.path
@@ -116,10 +116,7 @@ describe('mind-map identity invert', () => {
       { id: 'uid-paint', type: 'branch', text: 'Paint' },
     ]
     expect(resolveMindMapIdentityId('DIY', nodes)).toBe('uid-diy')
-    const dupes: DiagramNode[] = [
-      ...nodes,
-      { id: 'uid-diy-2', type: 'branch', text: 'DIY' },
-    ]
+    const dupes: DiagramNode[] = [...nodes, { id: 'uid-diy-2', type: 'branch', text: 'DIY' }]
     expect(resolveMindMapIdentityId('DIY', dupes)).toBeNull()
   })
 

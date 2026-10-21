@@ -2,37 +2,31 @@
  * Kitty conversation history — shared messages + REST turns for desktop and mobile.
  */
 import { type Ref, ref } from 'vue'
+import { nextTick } from 'vue'
 
-import {
-  applyClarifyChoicesOnHydrate,
-  choicesFromCommandDetail,
-  retainInFlightThinkingRows,
-} from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import {
   pickOneSentenceGenerateDone,
   pickOneSentenceWelcome,
 } from '@/composables/canvasToolbar/oneSentenceChatLines'
 import {
-  type OneSentenceReplyPayload,
-  createOneSentenceReplyState,
-} from '@/composables/canvasToolbar/oneSentenceReplyState'
+  applyClarifyChoicesOnHydrate,
+  choicesFromCommandDetail,
+  retainInFlightThinkingRows,
+} from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
+import { createOneSentenceReplyState } from '@/composables/canvasToolbar/oneSentenceReplyState'
 import {
   appendOneSentenceTurn,
   fetchOneSentenceTurns,
   migrateOneSentenceScope,
 } from '@/composables/canvasToolbar/useOneSentenceSessionTurns'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { failKittyTurn, recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
-import type { KittyTurnContext } from '@/composables/kitty/pipeline/types'
 import {
   type KittyConversationTurnPayload,
   mergeKittyConversationTurn,
 } from '@/composables/kitty/applyKittyConversationTurn'
-import type {
-  OneSentenceChatMessage,
-  OneSentencePhase,
-} from '@/stores/oneSentence'
-import { nextTick } from 'vue'
+import { failKittyTurn, recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
+import type { KittyTurnContext } from '@/composables/kitty/pipeline/types'
+import type { OneSentenceChatMessage, OneSentencePhase } from '@/stores/oneSentence'
 
 export function useKittyConversationHistory(options: {
   diagramScope: Ref<string> | { value: string }

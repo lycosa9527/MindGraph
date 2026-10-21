@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { nodesAndConnectionsToMindMapSpec, findBranchByNodeId } from '@/stores/specLoader/mindMap'
+import { findBranchByNodeId, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 import type { Connection, DiagramNode } from '@/types'
 import {
   extractBranchesFromGeneratedSpec,
@@ -22,10 +22,12 @@ describe('mergeGeneratedBranchesIntoSpec', () => {
     const nodes: DiagramNode[] = [node('topic', 'Photosynthesis'), node('branch-r-1-0', 'Light')]
     const connections: Connection[] = [link('topic', 'branch-r-1-0')]
     const current = nodesAndConnectionsToMindMapSpec(nodes, connections)
-    const merged = mergeGeneratedBranchesIntoSpec(current, 'branch-r-1-0', [
-      { text: 'Photosystem II' },
-      { text: 'Electron transport' },
-    ], connections)
+    const merged = mergeGeneratedBranchesIntoSpec(
+      current,
+      'branch-r-1-0',
+      [{ text: 'Photosystem II' }, { text: 'Electron transport' }],
+      connections
+    )
     expect(merged).not.toBeNull()
     if (!merged) return
     const branch = merged.rightBranches.find((b) => b.text === 'Light')
@@ -45,11 +47,12 @@ describe('mergeGeneratedBranchesIntoSpec', () => {
       link('branch-r-1-0', 'branch-r-2-1'),
     ]
     const current = nodesAndConnectionsToMindMapSpec(nodes, connections)
-    const merged = mergeGeneratedBranchesIntoSpec(current, 'branch-r-1-0', [
-      { text: 'Dynasties' },
-      { text: 'Culture' },
-      { text: 'Economy' },
-    ], connections)
+    const merged = mergeGeneratedBranchesIntoSpec(
+      current,
+      'branch-r-1-0',
+      [{ text: 'Dynasties' }, { text: 'Culture' }, { text: 'Economy' }],
+      connections
+    )
     expect(merged).not.toBeNull()
     if (!merged) return
     const branch = merged.rightBranches.find((b) => b.text === 'Ancient')
@@ -69,7 +72,12 @@ describe('mergeGeneratedBranchesIntoSpec', () => {
       link('branch-r-1-0', 'branch-r-2-1'),
     ]
     const current = nodesAndConnectionsToMindMapSpec(nodes, connections)
-    const merged = mergeGeneratedBranchesIntoSpec(current, 'branch-r-1-0', [{ text: 'Culture' }], connections)
+    const merged = mergeGeneratedBranchesIntoSpec(
+      current,
+      'branch-r-1-0',
+      [{ text: 'Culture' }],
+      connections
+    )
     expect(merged).not.toBeNull()
     if (!merged) return
     const branch = merged.rightBranches.find((b) => b.text === 'Ancient')
@@ -82,10 +90,7 @@ describe('mergeGeneratedBranchesIntoSpec', () => {
       node('branch-r-1-0', '历史'),
       node('branch-r-1-2', '喂养'),
     ]
-    const connections: Connection[] = [
-      link('topic', 'branch-r-1-0'),
-      link('topic', 'branch-r-1-2'),
-    ]
+    const connections: Connection[] = [link('topic', 'branch-r-1-0'), link('topic', 'branch-r-1-2')]
     const current = nodesAndConnectionsToMindMapSpec(nodes, connections)
     const merged = mergeGeneratedBranchesIntoSpec(
       current,
@@ -107,10 +112,7 @@ describe('findBranchByNodeId', () => {
       node('branch-r-1-0', '历史'),
       node('branch-r-1-2', '喂养'),
     ]
-    const connections: Connection[] = [
-      link('topic', 'branch-r-1-0'),
-      link('topic', 'branch-r-1-2'),
-    ]
+    const connections: Connection[] = [link('topic', 'branch-r-1-0'), link('topic', 'branch-r-1-2')]
     const spec = nodesAndConnectionsToMindMapSpec(nodes, connections)
     const found = findBranchByNodeId(
       spec.rightBranches,
@@ -129,10 +131,7 @@ describe('normalizeGeneratedBranch', () => {
       children: ['光场重建与相位编码', { text: '干涉记录' }],
     })
     expect(branch?.text).toBe('光学原理')
-    expect(branch?.children?.map((child) => child.text)).toEqual([
-      '光场重建与相位编码',
-      '干涉记录',
-    ])
+    expect(branch?.children?.map((child) => child.text)).toEqual(['光场重建与相位编码', '干涉记录'])
     const fromSpec = extractBranchesFromGeneratedSpec({
       topic: '全息投影是什么',
       children: ['光场重建与相位编码'],

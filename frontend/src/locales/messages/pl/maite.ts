@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Metoda uczenia się Matta',
-  'maite.subtitle': 'Odwrotny rozkład · Czterostopniowa diagnoza · Celowane wsparcie · Transfer wariantów',
+  'maite.subtitle':
+    'Odwrotny rozkład · Czterostopniowa diagnoza · Celowane wsparcie · Transfer wariantów',
   'maite.mode.demo': 'Demonstracja',
   'maite.mode.inquiry': 'Badanie',
   'maite.mode.map': 'Mapa',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Ćwiczenia wariantowe',
   'maite.inquiry.complete': 'Zakończ sesję',
   'maite.inquiry.completedTitle': 'Badanie zakończone',
-  'maite.inquiry.completedMessage': 'Ta sesja badania jest zakończona. Zobacz raport uczenia poniżej.',
+  'maite.inquiry.completedMessage':
+    'Ta sesja badania jest zakończona. Zobacz raport uczenia poniżej.',
   'maite.diagnosis.thinkingPlaceholder': 'Opisz swoje rozumowanie (opcjonalnie)…',
   'maite.diagnosis.runAuto': 'Auto diagnoza',
   'maite.diagnosis.running': 'Diagnozowanie…',
@@ -58,7 +60,8 @@ export default {
   'maite.variant.answerPlaceholder': 'Napisz pełną odpowiedź…',
   'maite.variant.strategyPlaceholder': 'Wyjaśnij, jak dostosowuje się metoda…',
   'maite.variant.submit': 'Prześlij odpowiedź',
-  'maite.variant.completeHint': 'Prześlij co najmniej 3 odpowiedzi wariantowe przed zakończeniem sesji.',
+  'maite.variant.completeHint':
+    'Prześlij co najmniej 3 odpowiedzi wariantowe przed zakończeniem sesji.',
   'maite.practice.title': 'Ostatnie ćwiczenia',
   'maite.practice.loading': 'Ładowanie…',
   'maite.practice.empty': 'Brak sesji ćwiczeń',
@@ -85,7 +88,8 @@ export default {
   'maite.errors.diagnosis_failed': 'Diagnoza nie powiodła się.',
   'maite.errors.remedy_failed': 'Nie udało się wygenerować zadań wsparcia.',
   'maite.errors.variant_failed': 'Nie udało się wygenerować zadań wariantowych.',
-  'maite.errors.variants_incomplete': 'Przed zakończeniem prześlij co najmniej 3 odpowiedzi wariantowe.',
+  'maite.errors.variants_incomplete':
+    'Przed zakończeniem prześlij co najmniej 3 odpowiedzi wariantowe.',
   'maite.errors.variant_answer_required': 'Wymagane są odpowiedź i strategia.',
   'maite.errors.variant_submit_failed': 'Nie udało się przesłać odpowiedzi wariantowej.',
   'maite.errors.load_failed': 'Nie udało się wczytać sesji.',

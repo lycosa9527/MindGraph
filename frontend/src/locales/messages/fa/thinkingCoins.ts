@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'به زودی افتتاح می شود',
   'thinkingCoins.schoolInfo': 'لطفاً برای اطلاع از طرح نسخه مدرسه با مدیر مدرسه خود تماس بگیرید',
   'thinkingCoins.school.headline': 'راه حل های مبتنی بر مدرسه تفکر توانمند هوش مصنوعی',
-  'thinkingCoins.school.description': 'ارائه استقرار خصوصی، سفارشی سازی انحصاری و پشتیبانی جامع عملیات و نگهداری برای مدارس و مؤسسات آموزشی برای برآورده ساختن برند در مقیاس بزرگ و نیازهای امنیت داده ها.',
+  'thinkingCoins.school.description':
+    'ارائه استقرار خصوصی، سفارشی سازی انحصاری و پشتیبانی جامع عملیات و نگهداری برای مدارس و مؤسسات آموزشی برای برآورده ساختن برند در مقیاس بزرگ و نیازهای امنیت داده ها.',
   'thinkingCoins.school.feature.accountManager': 'مدیر حساب اختصاصی',
   'thinkingCoins.school.feature.accountManagerDesc': '1 به 1 مشاوره و داک',
   'thinkingCoins.school.feature.privateDeploy': 'استقرار خصوصی',
@@ -36,20 +37,25 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.feature.customizationDesc': 'پیکربندی انعطاف پذیر در صورت تقاضا',
   'thinkingCoins.school.feature.opsSupport': 'پشتیبانی جامع عملیات و تعمیر و نگهداری',
   'thinkingCoins.school.feature.opsSupportDesc': 'ضمانت 7×24 ساعته',
-  'thinkingCoins.school.consultTitle': 'برای مشاوره وقت بگیرید و ما فعالانه با شما تماس خواهیم گرفت',
+  'thinkingCoins.school.consultTitle':
+    'برای مشاوره وقت بگیرید و ما فعالانه با شما تماس خواهیم گرفت',
   'thinkingCoins.school.fieldName': 'نام شما',
   'thinkingCoins.school.fieldPhone': 'شماره تماس',
   'thinkingCoins.school.fieldOrg': 'نام مدرسه/موسسه',
   'thinkingCoins.school.fieldNote': 'دستورالعمل های تکمیلی (اختیاری)',
   'thinkingCoins.school.submit': 'ارسال استعلام',
-  'thinkingCoins.school.submitSuccess': 'ارسال با موفقیت انجام شد، ما در اسرع وقت با شما تماس خواهیم گرفت',
+  'thinkingCoins.school.submitSuccess':
+    'ارسال با موفقیت انجام شد، ما در اسرع وقت با شما تماس خواهیم گرفت',
   'thinkingCoins.school.submitFailed': 'ارسال ناموفق بود، لطفاً بعداً دوباره امتحان کنید',
   'thinkingCoins.school.submitRateLimit': 'خیلی مکرر ارسال کنید، لطفاً بعداً دوباره امتحان کنید',
-  'thinkingCoins.school.submitNotConfigured': 'کانال مشاوره هنوز پیکربندی نشده است، لطفاً بعداً دوباره امتحان کنید.',
+  'thinkingCoins.school.submitNotConfigured':
+    'کانال مشاوره هنوز پیکربندی نشده است، لطفاً بعداً دوباره امتحان کنید.',
   'thinkingCoins.school.validationRequired': 'لطفا تمام فیلدهای الزامی را پر کنید',
   'thinkingCoins.school.validationPhone': 'لطفا یک شماره تماس معتبر وارد کنید',
-  'thinkingCoins.school.validationTooLong': 'بخشی از محتوا خیلی طولانی است، لطفا آن را کوتاه کنید و دوباره امتحان کنید',
-  'thinkingCoins.school.validationInvalid': 'محتوای نامعتبر است، لطفاً بررسی کنید و دوباره امتحان کنید',
+  'thinkingCoins.school.validationTooLong':
+    'بخشی از محتوا خیلی طولانی است، لطفا آن را کوتاه کنید و دوباره امتحان کنید',
+  'thinkingCoins.school.validationInvalid':
+    'محتوای نامعتبر است، لطفاً بررسی کنید و دوباره امتحان کنید',
   'thinkingCoins.tier.trial': 'نسخه آزمایشی',
   'thinkingCoins.tier.monthly': 'سوپر عضو · یک ماهه',
   'thinkingCoins.tier.sub': 'عضو فوق العاده · اشتراک ماهانه مستمر',
@@ -63,7 +69,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'جوایز دعوت',
   'thinkingCoins.reason.case_reward': 'پاداش موردی',
   'thinkingCoins.reason.subscription_grant': 'اشتراک رایگان',
-  'thinkingCoins.dailyExpiresHint': 'جوایز ورود به سیستم در همان روز معتبر است و در ساعت 24:00 بازنشانی می شود',
+  'thinkingCoins.dailyExpiresHint':
+    'جوایز ورود به سیستم در همان روز معتبر است و در ساعت 24:00 بازنشانی می شود',
   'thinkingCoins.dailyBalanceRemaining': 'اعلام حضور امروز باقی مانده {n}',
   'thinkingCoins.admin.tab': 'سکه فکر',
   'thinkingCoins.admin.tasksTitle': 'پاداش وظیفه',
@@ -75,7 +82,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'ذخیره',
   'thinkingCoins.admin.signupGrant': 'رایگان برای کاربران جدید',
   'thinkingCoins.admin.dailyEarnCap': 'محدودیت کسب روزانه',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 به معنای بدون محدودیت است. پیش فرض 135 مربوط به مجموع تمام کارهای روزانه است',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 به معنای بدون محدودیت است. پیش فرض 135 مربوط به مجموع تمام کارهای روزانه است',
   'thinkingCoins.admin.costMindmate': 'MindMate تک مصرفی',
   'thinkingCoins.admin.costDiagram': 'مصرف تولید نقشه',
   'thinkingCoins.admin.costCanvas': 'مصرف کمکی بوم',
@@ -106,9 +114,11 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.free': 'رایگان',
   'thinkingCoins.plan.priceMonthly': '59 ین در ماه',
   'thinkingCoins.plan.priceSub': '49 ین در ماه',
-  'thinkingCoins.plan.priceSubNote': 'قیمت اصلی 59 ین در ماه، اشتراک ماهیانه 10 ین صرفه جویی می کند',
+  'thinkingCoins.plan.priceSubNote':
+    'قیمت اصلی 59 ین در ماه، اشتراک ماهیانه 10 ین صرفه جویی می کند',
   'thinkingCoins.plan.priceAnnual': '398 ین در سال',
-  'thinkingCoins.plan.priceAnnualNote': 'حدود 33.2 ین در ماه، 44٪ در مقایسه با پرداخت ماهانه صرفه جویی می کند',
+  'thinkingCoins.plan.priceAnnualNote':
+    'حدود 33.2 ین در ماه، 44٪ در مقایسه با پرداخت ماهانه صرفه جویی می کند',
   'thinkingCoins.plan.currentPlan': 'طرح فعلی',
   'thinkingCoins.plan.subscribeNow': 'اکنون فعال کنید',
   'thinkingCoins.plan.popular': 'محبوب',

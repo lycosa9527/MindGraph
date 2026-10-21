@@ -2,7 +2,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const messagesRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/locales/messages')
+const messagesRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../src/locales/messages'
+)
 const reexport = "export { default } from '../en/showcase.ts'\n"
 
 let indexUpdates = 0

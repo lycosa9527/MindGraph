@@ -2,19 +2,14 @@
  * Showcase media upload: init → (presigned PUT | local multipart) → complete.
  */
 import {
-  completeShowcaseUpload,
-  initShowcaseUpload,
   type ShowcasePost,
   type ShowcaseUploadInitResponse,
+  completeShowcaseUpload,
+  initShowcaseUpload,
 } from '@/utils/apiClient'
 
 export type ShowcaseUploadRole =
-  | 'thumbnail'
-  | 'attachment'
-  | 'source'
-  | 'reflection'
-  | 'classroom'
-  | `gallery_${number}`
+  'thumbnail' | 'attachment' | 'source' | 'reflection' | 'classroom' | `gallery_${number}`
 
 function contentTypeFromExtension(name: string): string {
   const lower = name.toLowerCase()
@@ -39,8 +34,7 @@ function contentTypeFromExtension(name: string): string {
 
 function guessContentType(file: File): string {
   const raw = (file.type || '').trim().toLowerCase()
-  const unusable =
-    !raw || raw === 'application/octet-stream' || raw === 'binary/octet-stream'
+  const unusable = !raw || raw === 'application/octet-stream' || raw === 'binary/octet-stream'
   if (!unusable) return file.type
   return contentTypeFromExtension(file.name)
 }
@@ -60,7 +54,7 @@ async function putToPresignedUrl(
   putUrl: string,
   file: File,
   headers: Record<string, string>,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<void> {
   const contentType = headers['Content-Type'] || guessContentType(file)
   let response: Response
@@ -80,7 +74,7 @@ async function putToPresignedUrl(
     }
     if (isBrowserCorsOrNetworkFailure(error)) {
       // Browser→COS blocked: bucket CORS, CSP connect-src, or offline
-      throw new Error('SHOWCASE_STORAGE_CORS_OR_NETWORK')
+      throw new Error('SHOWCASE_STORAGE_CORS_OR_NETWORK', { cause: error })
     }
     throw error
   }
@@ -131,7 +125,7 @@ export async function uploadShowcaseFile(options: {
 
 export async function uploadShowcaseFilesSequential(
   postId: string,
-  items: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
+  items: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>
 ): Promise<ShowcasePost | null> {
   let lastPost: ShowcasePost | null = null
   for (const item of items) {

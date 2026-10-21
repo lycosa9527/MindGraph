@@ -1,9 +1,9 @@
 /**
  * Maite diagnosis API.
  */
-import { maiteRequestJson } from './client'
-
 import type { MaiteDiagnosisStageResult } from '@/types/maite'
+
+import { maiteRequestJson } from './client'
 
 export interface DiagnosisStageInput {
   student_input?: string
@@ -23,26 +23,20 @@ export async function diagnoseAuto(
   sessionId: number,
   input: DiagnosisStageInput = {}
 ): Promise<MaiteDiagnosisStageResult> {
-  return maiteRequestJson<MaiteDiagnosisStageResult>(
-    `/inquiry/${sessionId}/diagnose/auto`,
-    {
-      method: 'POST',
-      body: JSON.stringify(input),
-    }
-  )
+  return maiteRequestJson<MaiteDiagnosisStageResult>(`/inquiry/${sessionId}/diagnose/auto`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
 }
 
 export async function diagnoseStage1(
   sessionId: number,
   input: DiagnosisStageInput = {}
 ): Promise<MaiteDiagnosisStageResult> {
-  return maiteRequestJson<MaiteDiagnosisStageResult>(
-    `/inquiry/${sessionId}/diagnose/stage-1`,
-    {
-      method: 'POST',
-      body: JSON.stringify(input),
-    }
-  )
+  return maiteRequestJson<MaiteDiagnosisStageResult>(`/inquiry/${sessionId}/diagnose/stage-1`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
 }
 
 export async function diagnoseStage2Interaction(
@@ -100,11 +94,8 @@ export async function diagnoseFinalize(
   sessionId: number,
   finalBlockReport: Record<string, unknown>[] = []
 ): Promise<Record<string, unknown>> {
-  return maiteRequestJson<Record<string, unknown>>(
-    `/inquiry/${sessionId}/diagnose/finalize`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ final_block_report: finalBlockReport }),
-    }
-  )
+  return maiteRequestJson<Record<string, unknown>>(`/inquiry/${sessionId}/diagnose/finalize`, {
+    method: 'POST',
+    body: JSON.stringify({ final_block_report: finalBlockReport }),
+  })
 }

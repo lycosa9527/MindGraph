@@ -20,6 +20,7 @@ from models.domain.auth import User
 from services.features.mindmate_collab.config import MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS
 from services.features.mindmate_collab.dify_stream_control import acquire_dify_stream_lock
 from services.features.mindmate_collab.dify_stream import schedule_assistant_reply
+from services.features.mindmate_collab.group_members import user_observes_seminar
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
 from services.features.mindmate_collab.mention import (
     collab_message_targets_mindmate,
@@ -27,6 +28,7 @@ from services.features.mindmate_collab.mention import (
     mention_aliases_from_org,
 )
 from services.features.mindmate_collab.message_cursor import read_latest_collab_message_id
+from services.features.mindmate_collab.message_files import strip_seminar_message_file_tokens
 from services.features.mindmate_collab.message_history import catchup_frames, history_row_ids
 from services.features.mindmate_collab.participant_faces import (
     load_participant_faces,
@@ -205,6 +207,65 @@ async def _handle_ping(handle: MindmateCollabWsHandle, code: str, user_id: int) 
     await mgr.refresh_participant_ttl(code, user_id)
     await mgr.touch_activity(code)
     _send_client(handle, {"type": "pong"})
+
+
+async def _handle_seminar_minutes(
+    handle: MindmateCollabWsHandle,
+    code: str,
+    session_id: str,
+    user: User,
+    msg: Dict[str, Any],
+) -> None:
+    """Persist a minutes card as 教研助手 and fan it out. Observers cannot post one."""
+    if await user_observes_seminar(session_id, int(user.id)):
+        _send_client(
+            handle,
+            {
+                "type": "error",
+                "code": "observer_readonly",
+                "message": "Observers can watch and share only",
+            },
+        )
+        return
+    content = str(msg.get("content") or "").strip()
+    if not content.startswith("[[seminar-summary]]"):
+        _send_client(
+            handle,
+            {"type": "error", "code": "invalid_payload", "message": "Invalid payload"},
+        )
+        return
+    if len(content) > MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS:
+        _send_client(
+            handle,
+            {"type": "error", "code": "content_too_long", "message": "Message too long"},
+        )
+        return
+    mgr = get_mindmate_collab_manager()
+    if not await mgr.session_accepts_chat(code):
+        _send_client(
+            handle,
+            {"type": "error", "code": "room_closed", "message": "Room is no longer active"},
+        )
+        return
+    await mgr.refresh_participant_ttl(code, int(user.id))
+    await mgr.touch_activity(code)
+    saved = await mgr.persist_message(
+        session_id,
+        role="assistant",
+        content=content,
+        sender_user_id=None,
+        room_code=code,
+    )
+    await broadcast_to_all(
+        code,
+        {
+            "type": "seminar_minutes",
+            "id": saved.id,
+            "prev_id": saved.prev_id,
+            "created_at": saved.created_at,
+            "content": content,
+        },
+    )
 
 
 async def _handle_socket_ping(handle: MindmateCollabWsHandle, code: str, user_id: int) -> None:
@@ -444,7 +505,20 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                     if msg_type == "read":
                         await _handle_read(norm_code, session.id, user, msg.get("message_id"))
                         continue
+                    if msg_type == "seminar_minutes":
+                        await _handle_seminar_minutes(handle, norm_code, session.id, user, msg)
+                        continue
                     if msg_type != "chat":
+                        continue
+                    if await user_observes_seminar(session.id, int(user.id)):
+                        _send_client(
+                            handle,
+                            {
+                                "type": "error",
+                                "code": "observer_readonly",
+                                "message": "Observers can watch and share only",
+                            },
+                        )
                         continue
                     if not await mgr.session_accepts_chat(norm_code):
                         _send_client(
@@ -511,7 +585,10 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                         )
                         continue
 
-                    dify_query = extract_mindmate_query(content, mention_aliases)
+                    dify_query = extract_mindmate_query(
+                        strip_seminar_message_file_tokens(content),
+                        mention_aliases,
+                    )
                     conv_id = await mgr.resolve_dify_conversation_id(
                         norm_code,
                         fallback=session.dify_conversation_id,

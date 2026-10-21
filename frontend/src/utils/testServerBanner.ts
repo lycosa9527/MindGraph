@@ -8,7 +8,6 @@
  *
  * Modal: @/components/common/SwissWarningModal.vue
  */
-
 import { isGuestAuthPath } from '@/utils/authRedirect'
 
 export const TEST_SERVER_BANNER_DAY_KEY = 'mg_test_server_banner_day'

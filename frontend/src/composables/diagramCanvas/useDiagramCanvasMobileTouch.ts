@@ -9,18 +9,18 @@ import {
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { ZOOM } from '@/config/uiConfig'
 import {
+  type NodeScreenRect,
+  type NodeSlashAction,
+  type NodeSlashHit,
+  TOUCH_GESTURE,
+  type TouchPoint,
+  type TwoFingerLock,
   classifyNodeSlash,
   classifySwipe,
   isDoubleTap,
   isNodeSlashTravel,
   isStationaryMultiTap,
   lockTwoFingerMove,
-  TOUCH_GESTURE,
-  type NodeScreenRect,
-  type NodeSlashAction,
-  type NodeSlashHit,
-  type TouchPoint,
-  type TwoFingerLock,
 } from '@/utils/canvasTouchGestures'
 
 /** Panes do not always emit click after touch; dispatch pane-dismiss when the gesture was a tap, not a pan. */
@@ -81,10 +81,7 @@ export function nextTouchGesturePhase(
   return 'idle'
 }
 
-function maxCentroidMove(
-  start: { x: number; y: number },
-  touches: TouchList
-): number {
+function maxCentroidMove(start: { x: number; y: number }, touches: TouchList): number {
   if (touches.length === 0) {
     return 0
   }
@@ -414,18 +411,16 @@ export function useDiagramCanvasMobileTouch(options: {
 
     function finishTwoFinger(touches: TouchList, changed: TouchList): void {
       const elapsed = Date.now() - twoFingerStartAt
-      const dx = (touches.length >= 2
-        ? (touches[0].clientX + touches[1].clientX) / 2
-        : pinchStartCenterX) - pinchStartCenterX
-      const dy = (touches.length >= 2
-        ? (touches[0].clientY + touches[1].clientY) / 2
-        : pinchStartCenterY) - pinchStartCenterY
-      const endDx = changed.length > 0
-        ? ((changed[0]?.clientX ?? pinchStartCenterX) - pinchStartCenterX)
-        : dx
-      const endDy = changed.length > 0
-        ? ((changed[0]?.clientY ?? pinchStartCenterY) - pinchStartCenterY)
-        : dy
+      const dx =
+        (touches.length >= 2 ? (touches[0].clientX + touches[1].clientX) / 2 : pinchStartCenterX) -
+        pinchStartCenterX
+      const dy =
+        (touches.length >= 2 ? (touches[0].clientY + touches[1].clientY) / 2 : pinchStartCenterY) -
+        pinchStartCenterY
+      const endDx =
+        changed.length > 0 ? (changed[0]?.clientX ?? pinchStartCenterX) - pinchStartCenterX : dx
+      const endDy =
+        changed.length > 0 ? (changed[0]?.clientY ?? pinchStartCenterY) - pinchStartCenterY : dy
 
       if (twoFingerLock === 'undecided' && isStationaryMultiTap(twoFingerMaxMove, elapsed)) {
         eventBus.emit('view:zoom_set_requested', { zoom: ZOOM.DEFAULT })
@@ -697,11 +692,13 @@ export function useDiagramCanvasMobileTouch(options: {
     const root = canvasContainer.value
     if (!root) return () => {}
     const el = root
-    let stroke: (SlashStroke & {
-      pointerId: number
-      rects: NodeScreenRect[] | null
-      hit: NodeSlashHit | null
-    }) | null = null
+    let stroke:
+      | (SlashStroke & {
+          pointerId: number
+          rects: NodeScreenRect[] | null
+          hit: NodeSlashHit | null
+        })
+      | null = null
 
     function detachWindow(): void {
       window.removeEventListener('pointermove', onPointerMove, true)

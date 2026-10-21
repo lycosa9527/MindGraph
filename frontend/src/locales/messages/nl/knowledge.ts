@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'canvas',
   'fileCenterLibrary.badgeExtension': 'Verlenging',
   'fileCenterLibrary.badgeUpload': 'Uploaden',
-  'chunkTest.history.confirmDeleteBody': 'Weet u zeker dat u deze test wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  'chunkTest.history.confirmDeleteBody':
+    'Weet u zeker dat u deze test wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
   'chunkTest.history.confirmDeleteTitle': 'Test verwijderen',
   'chunkTest.history.delete': 'Verwijderen',
   'chunkTest.history.deleteFailed': 'Kan de test niet verwijderen',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'Antwoordkwaliteit',
   'chunkTestResults.avgLatency': 'Gem. latentie',
   'chunkTestResults.back': 'Rug',
-  'chunkTestResults.cancelConfirmBody': 'Weet u zeker dat u deze test wilt annuleren? De test stopt bij het volgende controlepunt.',
+  'chunkTestResults.cancelConfirmBody':
+    'Weet u zeker dat u deze test wilt annuleren? De test stopt bij het volgende controlepunt.',
   'chunkTestResults.cancelFailed': 'Kan de test niet annuleren',
   'chunkTestResults.cancelRequested': 'Annulering van de test aangevraagd',
   'chunkTestResults.cancelTest': 'Test annuleren',
@@ -79,7 +81,8 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Standaard IR-statistieken',
   'chunkTestResults.storageEff': 'Opslageffect.',
   'chunkTestResults.testFailed': 'Test mislukt',
-  'chunkTestResults.testFailedHint': 'Er is een fout opgetreden tijdens de uitvoering van de test. Probeer het opnieuw.',
+  'chunkTestResults.testFailedHint':
+    'Er is een fout opgetreden tijdens de uitvoering van de test. Probeer het opnieuw.',
   'chunkTestResults.testingInProgress': 'Testen bezig...',
   'chunkTestResults.totalChunks': 'Totaal {n} stukjes',
   'chunkTestResults.viewChunks': 'Bekijk brokken',
@@ -89,7 +92,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Test alle datasets',
   'knowledge.chunkHeader.testUpload': 'Testuploaddocumenten',
   'knowledge.chunkHeader.title': 'RAG Chunk-test',
-  'knowledge.chunkHeader.waitForProcessing': 'Wacht tot de documenten zijn verwerkt voordat u gaat testen',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Wacht tot de documenten zijn verwerkt voordat u gaat testen',
   'knowledge.chunkPreview.empty': 'Geen stukjes gevonden',
   'knowledge.chunkPreview.pageLabel': 'Pagina {n}',
   'knowledge.chunkPreview.title': 'Documentblokken — {fileName}',
@@ -108,7 +112,8 @@ export default {
   'knowledge.doc.colStatus': 'staat',
   'knowledge.doc.colType': 'type',
   'knowledge.doc.colUploaded': 'Uploaddatum',
-  'knowledge.doc.emptyDescription': 'Nog geen documenten. Upload documenten om uw kennisbank op te bouwen.',
+  'knowledge.doc.emptyDescription':
+    'Nog geen documenten. Upload documenten om uw kennisbank op te bouwen.',
   'knowledge.doc.errorPrefix': 'Fout:',
   'knowledge.doc.noData': 'Geen gegevens',
   'knowledge.doc.statusCompleted': 'Voltooid',
@@ -124,33 +129,46 @@ export default {
   'knowledge.header.title': 'Persoonlijke kennisbank',
   'knowledge.header.upload': 'Documenten uploaden',
   'knowledge.ragGuide.title': 'Hoe werken pakketten, RAG en wiki?',
-  'knowledge.ragGuide.subtitle': 'Er is geen jargon nodig: beschouw het als een map met referentiemateriaal. We indexeren het voor zoeken (RAG), stellen vervolgens korte wiki-aantekeningen samen, en de AI leest beide wanneer je een mindmap maakt.',
+  'knowledge.ragGuide.subtitle':
+    'Er is geen jargon nodig: beschouw het als een map met referentiemateriaal. We indexeren het voor zoeken (RAG), stellen vervolgens korte wiki-aantekeningen samen, en de AI leest beide wanneer je een mindmap maakt.',
   'knowledge.ragGuide.step1.title': 'Kies een pakket',
-  'knowledge.ragGuide.step1.body': 'Een pakket is als een Zotero-collectie. Je kunt er maximaal 3 aan de linkerkant hebben; elk behoort meestal tot één mindmap. Klik op een pakket in de zijbalk om de documenten ervan te beheren.',
+  'knowledge.ragGuide.step1.body':
+    'Een pakket is als een Zotero-collectie. Je kunt er maximaal 3 aan de linkerkant hebben; elk behoort meestal tot één mindmap. Klik op een pakket in de zijbalk om de documenten ervan te beheren.',
   'knowledge.ragGuide.step2.title': 'Bronnen toevoegen en indexeren (RAG)',
-  'knowledge.ragGuide.step2.body': 'Upload pdf\'s, Word-bestanden, notities of webpagina\'s. We splitsen lange documenten op in doorzoekbare stukken en slaan vectorinsluitingen op. Dit is de RAG-index en wordt als eerste gereed gemaakt.',
+  'knowledge.ragGuide.step2.body':
+    "Upload pdf's, Word-bestanden, notities of webpagina's. We splitsen lange documenten op in doorzoekbare stukken en slaan vectorinsluitingen op. Dit is de RAG-index en wordt als eerste gereed gemaakt.",
   'knowledge.ragGuide.step3.title': 'Wiki-notities worden automatisch samengesteld',
-  'knowledge.ragGuide.step3.body': 'Nadat het indexeren is voltooid, compileert een LLM overzichts- en onderwerpwikipagina\'s op schijf. Dit zijn beknopte aantekeningen (geen transcripties) die het pakket samenvatten voor snellere oriëntatie.',
+  'knowledge.ragGuide.step3.body':
+    "Nadat het indexeren is voltooid, compileert een LLM overzichts- en onderwerpwikipagina's op schijf. Dit zijn beknopte aantekeningen (geen transcripties) die het pakket samenvatten voor snellere oriëntatie.",
   'knowledge.ragGuide.step4.title': 'Opzoeken gebruikt wiki + chunks',
-  'knowledge.ragGuide.step4.body': 'Wanneer u een vertakking uitvouwt of een samenvatting genereert, matchen we eerst de relevante wikipagina\'s en halen vervolgens de meest relevante fragmentpassages op (hybride RAG).',
+  'knowledge.ragGuide.step4.body':
+    "Wanneer u een vertakking uitvouwt of een samenvatting genereert, matchen we eerst de relevante wikipagina's en halen vervolgens de meest relevante fragmentpassages op (hybride RAG).",
   'knowledge.ragGuide.step5.title': 'Antwoorden gebaseerd op uw bronnen',
-  'knowledge.ragGuide.step5.body': 'De AI schrijft op basis van wiki-aantekeningen en haalt fragmenten op in plaats van te raden: betere bronnen, voltooide indexering en gecompileerde wiki-pagina\'s betekenen nauwkeurigere kaarten.',
-  'knowledge.ragGuide.footer': 'Tip: als u Document Summary op het canvas opent, wordt er automatisch een pakket gemaakt; pagina\'s die zijn opgeslagen via de Chrome extension verschijnen ook in de zijbalklijst.',
+  'knowledge.ragGuide.step5.body':
+    "De AI schrijft op basis van wiki-aantekeningen en haalt fragmenten op in plaats van te raden: betere bronnen, voltooide indexering en gecompileerde wiki-pagina's betekenen nauwkeurigere kaarten.",
+  'knowledge.ragGuide.footer':
+    "Tip: als u Document Summary op het canvas opent, wordt er automatisch een pakket gemaakt; pagina's die zijn opgeslagen via de Chrome extension verschijnen ook in de zijbalklijst.",
   'knowledge.pipeline.title': 'Pijplijnstatus',
   'knowledge.pipeline.ragIdle': 'RAG-index',
-  'knowledge.pipeline.ragIdleDetail': 'Nog geen geïndexeerde pakketten. Voeg bronnen toe en voer indexering uit vanuit een pakket.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Nog geen geïndexeerde pakketten. Voeg bronnen toe en voer indexering uit vanuit een pakket.',
   'knowledge.pipeline.ragProcessing': 'RAG-indexering',
-  'knowledge.pipeline.ragProcessingDetail': '{count} pakket(ten) zijn nog steeds bezig met het chunken en insluiten van bronnen.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} pakket(ten) zijn nog steeds bezig met het chunken en insluiten van bronnen.',
   'knowledge.pipeline.ragReady': 'RAG klaar',
-  'knowledge.pipeline.ragReadyDetail': '{count} pakket(ten) geïndexeerd — zoeken naar segmenten is actief.',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count} pakket(ten) geïndexeerd — zoeken naar segmenten is actief.',
   'knowledge.pipeline.wikiDisabled': 'Wiki-compilatie uitgeschakeld',
   'knowledge.pipeline.wikiDisabledDetail': 'Wiki-compilatie is uitgeschakeld op deze server.',
   'knowledge.pipeline.wikiIdle': 'Wiki-compilatie',
-  'knowledge.pipeline.wikiIdleDetail': 'Wiki-pagina\'s worden samengesteld nadat de RAG-indexering voor elke bron is voltooid.',
+  'knowledge.pipeline.wikiIdleDetail':
+    "Wiki-pagina's worden samengesteld nadat de RAG-indexering voor elke bron is voltooid.",
   'knowledge.pipeline.wikiPending': 'Wiki-compilatie',
-  'knowledge.pipeline.wikiPendingDetail': '{count} pakket(ten) wachten op wikipagina\'s na indexering.',
+  'knowledge.pipeline.wikiPendingDetail':
+    "{count} pakket(ten) wachten op wikipagina's na indexering.",
   'knowledge.pipeline.wikiReady': 'Wiki klaar',
-  'knowledge.pipeline.wikiReadyDetail': '{count} pakket(ten) hebben wiki-aantekeningen samengesteld.',
+  'knowledge.pipeline.wikiReadyDetail':
+    '{count} pakket(ten) hebben wiki-aantekeningen samengesteld.',
   'knowledge.pipelineBadge.rag.label': 'VOD',
   'knowledge.pipelineBadge.rag.notYet': 'Nog niet',
   'knowledge.pipelineBadge.rag.processing': 'In uitvoering',
@@ -164,7 +182,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Deselecteer Alles',
   'knowledge.manualEval.dialogTitle': 'Handmatige evaluatie — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Grondwaarheidsantwoord (optioneel)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Enter grondwaarheidsantwoord voor antwoordrelevantie-evaluatie...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Enter grondwaarheidsantwoord voor antwoordrelevantie-evaluatie...',
   'knowledge.manualEval.metric.answer_coverage': 'Antwoord dekking',
   'knowledge.manualEval.metric.answer_faithfulness': 'Antwoord Trouw',
   'knowledge.manualEval.metric.clarity': 'Helderheid',
@@ -186,7 +205,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Evaluatie van de brokkwaliteit',
   'knowledge.manualEval.resultsTitle': 'Evaluatieresultaten',
   'knowledge.manualEval.selectAll': 'Selecteer Alles',
-  'knowledge.manualEval.selectChunksHeading': 'Selecteer brokken om te evalueren (laat leeg om alles te evalueren)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Selecteer brokken om te evalueren (laat leeg om alles te evalueren)',
   'knowledge.manualEval.showingFirst20': 'Toont de eerste 20 van {total} chunks',
   'knowledge.manualEval.startEvaluation': 'Evaluatie starten',
   'knowledge.processing.chunking': 'Chunken',
@@ -235,7 +255,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Ophaalinstellingen',
   'knowledge.settings.title': 'Kennisbankinstellingen',
   'knowledge.settings.helpTitle': 'Hoe deze instellingen van toepassing zijn',
-  'knowledge.settings.helpBody': 'Ophaalvoorkeuren zijn onmiddellijk van toepassing op zoek- en AI-antwoorden. Chunkgrootte en overlap zijn van toepassing op nieuw geïndexeerde documenten. Voer de indexering opnieuw uit op bestaande bronnen nadat u deze hebt gewijzigd.',
+  'knowledge.settings.helpBody':
+    'Ophaalvoorkeuren zijn onmiddellijk van toepassing op zoek- en AI-antwoorden. Chunkgrootte en overlap zijn van toepassing op nieuw geïndexeerde documenten. Voer de indexering opnieuw uit op bestaande bronnen nadat u deze hebt gewijzigd.',
   'knowledge.settings.tokens': 'teken',
   'knowledge.settings.serverSection': 'Server (alleen-lezen)',
   'knowledge.settings.rerankingMode': 'Herrangschikking',
@@ -246,7 +267,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Gehandicapt',
   'knowledge.settings.saveSuccess': 'Instellingen opgeslagen',
   'knowledge.settings.saveFailed': 'Kan instellingen niet opslaan',
-  'knowledge.settings.reindexRequired': 'Chunk-instellingen gewijzigd: indexeer bestaande documenten in uw pakketten opnieuw zodat de nieuwe formaten van kracht worden.',
+  'knowledge.settings.reindexRequired':
+    'Chunk-instellingen gewijzigd: indexeer bestaande documenten in uw pakketten opnieuw zodat de nieuwe formaten van kracht worden.',
   'knowledge.upload.click': 'Klik om te uploaden',
   'knowledge.upload.drag': 'of sleep het bestand hierheen',
   'knowledge.upload.fileTooLarge': 'De bestandsgrootte mag niet groter zijn dan 10 MB',
@@ -254,7 +276,8 @@ export default {
   'knowledge.upload.maxDocs': 'Maximale documentlimiet bereikt (5)',
   'knowledge.upload.title': 'Document uploaden',
   'knowledge.upload.unsupportedType': 'Niet-ondersteund bestandstype',
-  'knowledgeSpace.confirmDeleteBody': 'Weet u zeker dat u dit document wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Weet u zeker dat u dit document wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
   'knowledgeSpace.confirmDeleteTitle': 'Bevestig verwijderen',
   'knowledgeSpace.deleteFailed': 'Verwijderen is mislukt',
   'knowledgeSpace.documentDeleted': 'Document verwijderd',

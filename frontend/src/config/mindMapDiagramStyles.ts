@@ -3,12 +3,7 @@ import type { DiagramNode } from '@/types'
 import { isMindMapBranchNode } from '@/utils/mindMapLocation'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
-export type MindMapDiagramStyleId =
-  | 'classic'
-  | 'formal'
-  | 'bubble'
-  | 'underline'
-  | 'soft'
+export type MindMapDiagramStyleId = 'classic' | 'formal' | 'bubble' | 'underline' | 'soft'
 
 export interface MindMapDiagramStylePreset {
   id: MindMapDiagramStyleId

@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'แคนวาส',
   'fileCenterLibrary.badgeExtension': 'ส่วนขยาย',
   'fileCenterLibrary.badgeUpload': 'อัปโหลด',
-  'chunkTest.history.confirmDeleteBody': 'คุณแน่ใจหรือไม่ที่จะลบการทดสอบนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
+  'chunkTest.history.confirmDeleteBody':
+    'คุณแน่ใจหรือไม่ที่จะลบการทดสอบนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
   'chunkTest.history.confirmDeleteTitle': 'ลบการทดสอบ',
   'chunkTest.history.delete': 'ลบ',
   'chunkTest.history.deleteFailed': 'ไม่สามารถลบการทดสอบ',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'คุณภาพคำตอบ',
   'chunkTestResults.avgLatency': 'เวลาแฝงเฉลี่ย',
   'chunkTestResults.back': 'กลับ',
-  'chunkTestResults.cancelConfirmBody': 'คุณแน่ใจหรือไม่ที่จะยกเลิกการทดสอบนี้? การทดสอบจะหยุดที่จุดตรวจถัดไป',
+  'chunkTestResults.cancelConfirmBody':
+    'คุณแน่ใจหรือไม่ที่จะยกเลิกการทดสอบนี้? การทดสอบจะหยุดที่จุดตรวจถัดไป',
   'chunkTestResults.cancelFailed': 'ไม่สามารถยกเลิกการทดสอบ',
   'chunkTestResults.cancelRequested': 'ร้องขอยกเลิกการทดสอบแล้ว',
   'chunkTestResults.cancelTest': 'ยกเลิกการทดสอบ',
@@ -124,21 +126,29 @@ export default {
   'knowledge.header.title': 'คลังความรู้',
   'knowledge.header.upload': 'อัปโหลดเอกสาร',
   'knowledge.ragGuide.title': 'แพ็กเกจ RAG และ Wiki ทำงานอย่างไร?',
-  'knowledge.ragGuide.subtitle': 'ไม่ต้องรู้ศัพท์เทคนิค — นึกเหมือนโฟลเดอร์เอกสารอ้างอิง เราจัดทำดัชนีเพื่อค้นหา (RAG) จากนั้นคอมไพล์โน้ต Wiki สั้น ๆ และ AI อ่านทั้งสองอย่างเมื่อคุณสร้างแผนที่ความคิด',
+  'knowledge.ragGuide.subtitle':
+    'ไม่ต้องรู้ศัพท์เทคนิค — นึกเหมือนโฟลเดอร์เอกสารอ้างอิง เราจัดทำดัชนีเพื่อค้นหา (RAG) จากนั้นคอมไพล์โน้ต Wiki สั้น ๆ และ AI อ่านทั้งสองอย่างเมื่อคุณสร้างแผนที่ความคิด',
   'knowledge.ragGuide.step1.title': 'เลือกแพ็กเกจ',
-  'knowledge.ragGuide.step1.body': 'แพ็กเกจเหมือนคอลเลกชันใน Zotero ทางซ้ายมีได้สูงสุด 3 รายการ โดยปกติแต่ละอันผูกกับแผนที่ความคิดหนึ่งอัน คลิกแพ็กเกจในแถบด้านข้างเพื่อจัดการเอกสาร',
+  'knowledge.ragGuide.step1.body':
+    'แพ็กเกจเหมือนคอลเลกชันใน Zotero ทางซ้ายมีได้สูงสุด 3 รายการ โดยปกติแต่ละอันผูกกับแผนที่ความคิดหนึ่งอัน คลิกแพ็กเกจในแถบด้านข้างเพื่อจัดการเอกสาร',
   'knowledge.ragGuide.step2.title': 'เพิ่มแหล่งและทำดัชนี (RAG)',
-  'knowledge.ragGuide.step2.body': 'อัปโหลด PDF ไฟล์ Word บันทึก หรือหน้าเว็บ เราจะแยกเอกสารยาวเป็นชิ้นที่ค้นหาได้และเก็บเวกเตอร์ฝังตัว — นี่คือดัชนี RAG และพร้อมก่อน',
+  'knowledge.ragGuide.step2.body':
+    'อัปโหลด PDF ไฟล์ Word บันทึก หรือหน้าเว็บ เราจะแยกเอกสารยาวเป็นชิ้นที่ค้นหาได้และเก็บเวกเตอร์ฝังตัว — นี่คือดัชนี RAG และพร้อมก่อน',
   'knowledge.ragGuide.step3.title': 'โน้ต Wiki คอมไพล์อัตโนมัติ',
-  'knowledge.ragGuide.step3.body': 'เมื่อทำดัชนีเสร็จ LLM จะคอมไพล์หน้า Wiki ภาพรวมและตามหัวข้อลงดิสก์ เป็นโน้ตกระชับ (ไม่ใช่ถอดความเต็ม) ที่สรุปแพ็กเกจให้เข้าใจเร็วขึ้น',
+  'knowledge.ragGuide.step3.body':
+    'เมื่อทำดัชนีเสร็จ LLM จะคอมไพล์หน้า Wiki ภาพรวมและตามหัวข้อลงดิสก์ เป็นโน้ตกระชับ (ไม่ใช่ถอดความเต็ม) ที่สรุปแพ็กเกจให้เข้าใจเร็วขึ้น',
   'knowledge.ragGuide.step4.title': 'การค้นหาใช้ Wiki + ชิ้นส่วน',
-  'knowledge.ragGuide.step4.body': 'เมื่อขยายกิ่งหรือสร้างสรุป เราจับคู่หน้า Wiki ที่เกี่ยวข้องก่อน แล้วดึงชิ้นส่วนที่ตรงที่สุด (RAG แบบผสม)',
+  'knowledge.ragGuide.step4.body':
+    'เมื่อขยายกิ่งหรือสร้างสรุป เราจับคู่หน้า Wiki ที่เกี่ยวข้องก่อน แล้วดึงชิ้นส่วนที่ตรงที่สุด (RAG แบบผสม)',
   'knowledge.ragGuide.step5.title': 'คำตอบอิงจากแหล่งของคุณ',
-  'knowledge.ragGuide.step5.body': 'AI เขียนจากโน้ต Wiki และชิ้นส่วนที่ดึงมา แทนการเดา — แหล่งที่ดีกว่า ดัชนีครบ และหน้า Wiki ที่คอมไพล์แล้ว ทำให้แผนที่แม่นยำขึ้น',
-  'knowledge.ragGuide.footer': 'เคล็ดลับ: เปิด Document Summary บนแคนวาสจะสร้างแพ็กเกจอัตโนมัติ หน้าเว็บที่บันทึกผ่านส่วนขยาย Chrome ก็ปรากฏในรายการแถบด้านข้างด้วย',
+  'knowledge.ragGuide.step5.body':
+    'AI เขียนจากโน้ต Wiki และชิ้นส่วนที่ดึงมา แทนการเดา — แหล่งที่ดีกว่า ดัชนีครบ และหน้า Wiki ที่คอมไพล์แล้ว ทำให้แผนที่แม่นยำขึ้น',
+  'knowledge.ragGuide.footer':
+    'เคล็ดลับ: เปิด Document Summary บนแคนวาสจะสร้างแพ็กเกจอัตโนมัติ หน้าเว็บที่บันทึกผ่านส่วนขยาย Chrome ก็ปรากฏในรายการแถบด้านข้างด้วย',
   'knowledge.pipeline.title': 'สถานะไปป์ไลน์',
   'knowledge.pipeline.ragIdle': 'ดัชนี RAG',
-  'knowledge.pipeline.ragIdleDetail': 'ยังไม่มีแพ็กเกจที่ทำดัชนี เพิ่มแหล่งแล้วรันการทำดัชนีจากแพ็กเกจ',
+  'knowledge.pipeline.ragIdleDetail':
+    'ยังไม่มีแพ็กเกจที่ทำดัชนี เพิ่มแหล่งแล้วรันการทำดัชนีจากแพ็กเกจ',
   'knowledge.pipeline.ragProcessing': 'กำลังทำดัชนี RAG',
   'knowledge.pipeline.ragProcessingDetail': '{count} แพ็กเกจยังกำลังแบ่งชิ้นและฝังเวกเตอร์แหล่ง',
   'knowledge.pipeline.ragReady': 'RAG พร้อม',
@@ -164,7 +174,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'ยกเลิกการเลือกทั้งหมด',
   'knowledge.manualEval.dialogTitle': 'การประเมินด้วยตนเอง — {method}',
   'knowledge.manualEval.groundTruthLabel': 'คำตอบที่ถูกต้อง (ไม่บังคับ)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'ใส่คำตอบที่ถูกต้องสำหรับการประเมินความเกี่ยวข้องของคำตอบ...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'ใส่คำตอบที่ถูกต้องสำหรับการประเมินความเกี่ยวข้องของคำตอบ...',
   'knowledge.manualEval.metric.answer_coverage': 'ความครอบคลุมของคำตอบ',
   'knowledge.manualEval.metric.answer_faithfulness': 'ความซื่อสัตย์ของคำตอบ',
   'knowledge.manualEval.metric.clarity': 'ความชัดเจน',
@@ -186,7 +197,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'การประเมินคุณภาพ Chunk',
   'knowledge.manualEval.resultsTitle': 'ผลการประเมิน',
   'knowledge.manualEval.selectAll': 'เลือกทั้งหมด',
-  'knowledge.manualEval.selectChunksHeading': 'เลือก Chunk เพื่อประเมิน (เว้นว่างเพื่อประเมินทั้งหมด)',
+  'knowledge.manualEval.selectChunksHeading':
+    'เลือก Chunk เพื่อประเมิน (เว้นว่างเพื่อประเมินทั้งหมด)',
   'knowledge.manualEval.showingFirst20': 'แสดง 20 รายการแรกจาก {total} chunk',
   'knowledge.manualEval.startEvaluation': 'เริ่มการประเมิน',
   'knowledge.processing.chunking': 'การแบ่ง Chunk',
@@ -235,7 +247,8 @@ export default {
   'knowledge.settings.retrievalSection': 'การตั้งค่าการค้นคืน',
   'knowledge.settings.title': 'การตั้งค่าคลังความรู้',
   'knowledge.settings.helpTitle': 'การตั้งค่าเหล่านี้มีผลอย่างไร',
-  'knowledge.settings.helpBody': 'ค่าการค้นคืนมีผลทันทีกับการค้นหาและคำตอบ AI ขนาดชิ้นและการซ้อนทับใช้กับเอกสารที่ทำดัชนีใหม่ — เปลี่ยนแล้วให้รันการทำดัชนีซ้ำกับแหล่งเดิม',
+  'knowledge.settings.helpBody':
+    'ค่าการค้นคืนมีผลทันทีกับการค้นหาและคำตอบ AI ขนาดชิ้นและการซ้อนทับใช้กับเอกสารที่ทำดัชนีใหม่ — เปลี่ยนแล้วให้รันการทำดัชนีซ้ำกับแหล่งเดิม',
   'knowledge.settings.tokens': 'โทเค็น',
   'knowledge.settings.serverSection': 'เซิร์ฟเวอร์ (อ่านอย่างเดียว)',
   'knowledge.settings.rerankingMode': 'การจัดอันดับใหม่',
@@ -246,7 +259,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'ปิดใช้',
   'knowledge.settings.saveSuccess': 'บันทึกการตั้งค่าแล้ว',
   'knowledge.settings.saveFailed': 'บันทึกการตั้งค่าไม่สำเร็จ',
-  'knowledge.settings.reindexRequired': 'เปลี่ยนการตั้งค่าชิ้นแล้ว — ทำดัชนีเอกสารในแพ็กเกจของคุณใหม่เพื่อให้ขนาดใหม่มีผล',
+  'knowledge.settings.reindexRequired':
+    'เปลี่ยนการตั้งค่าชิ้นแล้ว — ทำดัชนีเอกสารในแพ็กเกจของคุณใหม่เพื่อให้ขนาดใหม่มีผล',
   'knowledge.upload.click': 'คลิกเพื่ออัปโหลด',
   'knowledge.upload.drag': 'หรือลากไฟล์มาที่นี่',
   'knowledge.upload.fileTooLarge': 'ขนาดไฟล์ต้องไม่เกิน 10MB',
@@ -254,7 +268,8 @@ export default {
   'knowledge.upload.maxDocs': 'ถึงจำนวนเอกสารสูงสุดแล้ว (5)',
   'knowledge.upload.title': 'อัปโหลดเอกสาร',
   'knowledge.upload.unsupportedType': 'ประเภทไฟล์ไม่รองรับ',
-  'knowledgeSpace.confirmDeleteBody': 'คุณแน่ใจหรือไม่ที่จะลบเอกสารนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
+  'knowledgeSpace.confirmDeleteBody':
+    'คุณแน่ใจหรือไม่ที่จะลบเอกสารนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
   'knowledgeSpace.confirmDeleteTitle': 'ยืนยันการลบ',
   'knowledgeSpace.deleteFailed': 'ลบล้มเหลว',
   'knowledgeSpace.documentDeleted': 'ลบเอกสารแล้ว',

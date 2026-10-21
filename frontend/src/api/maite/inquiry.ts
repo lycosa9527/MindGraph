@@ -1,14 +1,14 @@
 /**
  * Maite inquiry session API.
  */
-import { maiteRequestJson } from './client'
-
 import type {
   MaiteSelfAssessmentItem,
   MaiteSession,
   MaiteSessionSnapshot,
   MaiteTableRow,
 } from '@/types/maite'
+
+import { maiteRequestJson } from './client'
 
 export interface CreateSessionInput {
   problem_id: number
@@ -80,11 +80,8 @@ export async function submitDecompose(
   sessionId: number,
   payload: DecomposeSubmissionInput
 ): Promise<Record<string, unknown>> {
-  return maiteRequestJson<Record<string, unknown>>(
-    `/inquiry/${sessionId}/decompose-submission`,
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }
-  )
+  return maiteRequestJson<Record<string, unknown>>(`/inquiry/${sessionId}/decompose-submission`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }

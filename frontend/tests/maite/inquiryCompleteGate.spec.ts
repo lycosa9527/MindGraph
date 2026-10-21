@@ -10,11 +10,7 @@ function canComplete(tasks: Array<{ status: string }>): boolean {
 describe('maite inquiry complete gate', () => {
   it('blocks complete when fewer than 3 variants are submitted', () => {
     expect(
-      canComplete([
-        { status: 'submitted' },
-        { status: 'pending' },
-        { status: 'submitted' },
-      ])
+      canComplete([{ status: 'submitted' }, { status: 'pending' }, { status: 'submitted' }])
     ).toBe(false)
   })
 

@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': 'වෙනස්කම් ක්‍රියාත්මක කිරීමට ඊළඟ බොත්තම ක්‍ලික් කරන්න',
   'debateverse.coinTossAffirmativeFirst': 'අනුමත පක්ෂය පළමුව කතා කරයි',
   'debateverse.coinTossGotIt': 'තේරුණා',
-  'debateverse.coinTossModalBody': 'වාදයට පෙර, කතා කිරීමේ අනුපිළිවෙල හෝ අනුමත/ප්‍රතිවාදී ස්ථාවරය කාසියක් දමා තෝරා ගන්න',
+  'debateverse.coinTossModalBody':
+    'වාදයට පෙර, කතා කිරීමේ අනුපිළිවෙල හෝ අනුමත/ප්‍රතිවාදී ස්ථාවරය කාසියක් දමා තෝරා ගන්න',
   'debateverse.coinTossNegativeFirst': 'ප්‍රතිවාදී පළමුව කතා කරයි',
   'debateverse.coinTossOrder': 'කතා කිරීමේ අනුපිළිවෙල තීරණය කිරීමට කාසිය දමන්න',
-  'debateverse.coinTossRules': 'AI මාදිලි වාද භූමිකාවලට අහඹු ලෙස පවරා ඇත. වාදයට පෙර, කතා කිරීමේ අනුපිළිවෙල හෝ අනුමත/ප්‍රතිවාදී ස්ථාවරය කාසියක් දමා තෝරා ගන්න',
+  'debateverse.coinTossRules':
+    'AI මාදිලි වාද භූමිකාවලට අහඹු ලෙස පවරා ඇත. වාදයට පෙර, කතා කිරීමේ අනුපිළිවෙල හෝ අනුමත/ප්‍රතිවාදී ස්ථාවරය කාසියක් දමා තෝරා ගන්න',
   'debateverse.coinTossStageTitle': 'කාසිය දැමීමේ අදියර',
   'debateverse.debateTopicLabel': 'වාද මාතෘකාව: ',
   'debateverse.executeCoinToss': 'කාසිය දමන්න',

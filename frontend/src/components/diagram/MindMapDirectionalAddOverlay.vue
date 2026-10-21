@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 /**
  * Canvas-level four-directional + overlay (Teleport) — avoids per-node mount/clipping issues.
  */
@@ -8,8 +7,8 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useLanguage } from '@/composables'
 import { useMindMapDirectionalAddPosition } from '@/composables/canvasToolbar/useMindMapDirectionalAddPosition'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { mindMapControlScale } from '@/config/mindMapEBlackboard'
-import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
 import { mindMapNodeSide } from '@/utils/mindMapLocation'
 

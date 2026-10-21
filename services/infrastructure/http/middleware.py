@@ -85,6 +85,9 @@ TRAINING_ASSET_MAX_BODY_SIZE = 105 * 1024 * 1024
 # MindMate / Dify chat upload: Dify video cap 100MB + multipart overhead
 DIFY_FILES_UPLOAD_MAX_BODY_SIZE = 105 * 1024 * 1024
 DIFY_FILES_UPLOAD_PATH = "/api/dify/files/upload"
+# Seminar shared folder: 20MB file + multipart overhead (see MAX_BACKGROUND_BYTES)
+SEMINAR_BACKGROUND_UPLOAD_MAX_BODY_SIZE = 22 * 1024 * 1024
+SEMINAR_BACKGROUND_UPLOAD_PATH = "/api/mindmate/collab/background-files"
 
 
 def _is_document_upload_path(path: str) -> bool:
@@ -148,6 +151,8 @@ def max_request_body_size_for_path(path: str) -> int:
         return TRAINING_ASSET_MAX_BODY_SIZE
     if path == DIFY_FILES_UPLOAD_PATH:
         return DIFY_FILES_UPLOAD_MAX_BODY_SIZE
+    if path == SEMINAR_BACKGROUND_UPLOAD_PATH:
+        return SEMINAR_BACKGROUND_UPLOAD_MAX_BODY_SIZE
     if _is_document_upload_path(path):
         return DOC_SUMMARY_UPLOAD_MAX_BODY_SIZE
     showcase_paths = (

@@ -28,11 +28,9 @@ describe('prepareConversationImageCapture', () => {
   })
 
   it('rejects files over the conversation image upload gate', () => {
-    const big = new File(
-      [new Uint8Array(CONVERSATION_IMAGE_MAX_UPLOAD_BYTES + 1)],
-      'huge.jpg',
-      { type: 'image/jpeg' }
-    )
+    const big = new File([new Uint8Array(CONVERSATION_IMAGE_MAX_UPLOAD_BYTES + 1)], 'huge.jpg', {
+      type: 'image/jpeg',
+    })
     expect(prepareConversationImageCapture(big)).toEqual({
       ok: false,
       reason: 'too_large',

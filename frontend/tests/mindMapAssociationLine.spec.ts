@@ -4,6 +4,7 @@ import {
   associationLineHoverId,
   setAssociationLineHover,
 } from '@/composables/mindMap/useMindMapAssociationLine'
+import { mindMapConnectionAnchorY, mindMapTextCenterAnchorY } from '@/config/mindMapGeometry'
 import { recalculateMindMapV2ColumnPositions } from '@/stores/diagram/mindMapLayout'
 import { buildMindMapChildrenMapByConnectionOrder } from '@/stores/diagram/mindMapStylePreservation'
 import type { Connection, DiagramNode } from '@/types'
@@ -12,10 +13,6 @@ import {
   classicMindMapTopicSideConnections,
   withClassicMindMapTopicSourceHandle,
 } from '@/utils/classicMindMapTopicHandles'
-import {
-  mindMapConnectionAnchorY,
-  mindMapTextCenterAnchorY,
-} from '@/config/mindMapGeometry'
 import {
   applyAssociationChromePatch,
   associationArrowheadFromEnds,
@@ -36,12 +33,7 @@ import {
   mindMapTreeParentId,
 } from '@/utils/mindMapLocation'
 
-function branch(
-  id: string,
-  side: 'left' | 'right',
-  x: number,
-  y = 0
-): DiagramNode {
+function branch(id: string, side: 'left' | 'right', x: number, y = 0): DiagramNode {
   return {
     id,
     text: id,
@@ -81,11 +73,7 @@ describe('mind map association connections', () => {
       position: { x: 400, y: 0 },
       data: { estimatedHeight: 40, estimatedWidth: 120 },
     }
-    const left = (
-      id: string,
-      depth: number,
-      y: number
-    ): DiagramNode => ({
+    const left = (id: string, depth: number, y: number): DiagramNode => ({
       id,
       text: id,
       type: 'branch',
@@ -319,10 +307,12 @@ describe('mind map association connections', () => {
       style: { nodeShape: 'rounded' },
     }
     const midY = mindMapTextCenterAnchorY(80, 36, 'rounded')
-    expect(snapMindMapAssociationEndpoint(node, { x: 200, y: 99 }, { measuredHeight: 36 })).toEqual({
-      x: 200,
-      y: midY,
-    })
+    expect(snapMindMapAssociationEndpoint(node, { x: 200, y: 99 }, { measuredHeight: 36 })).toEqual(
+      {
+        x: 200,
+        y: midY,
+      }
+    )
   })
 
   it('routes the association curve from text-center Y', () => {

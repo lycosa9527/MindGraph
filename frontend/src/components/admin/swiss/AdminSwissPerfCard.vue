@@ -4,8 +4,8 @@
  */
 import { computed } from 'vue'
 
-import type { AdminSwissStatTheme } from '@/constants/adminSwissStatTheme'
 import { useSwissStatCardClasses } from '@/composables/admin/useSwissStatCardClasses'
+import type { AdminSwissStatTheme } from '@/constants/adminSwissStatTheme'
 
 const props = withDefaults(
   defineProps<{
@@ -56,11 +56,23 @@ const cardClasses = useSwissStatCardClasses(
       <h3 class="swiss-stat-card__title">
         {{ label }}
       </h3>
-      <span v-if="pct != null" class="swiss-stat-card__pct">{{ clampedPct }}%</span>
+      <span
+        v-if="pct != null"
+        class="swiss-stat-card__pct"
+        >{{ clampedPct }}%</span
+      >
     </div>
 
-    <div v-if="progressVariant === 'gauge'" class="swiss-stat-card__gauge">
-      <el-progress type="dashboard" :percentage="clampedPct" :width="88" :stroke-width="8" />
+    <div
+      v-if="progressVariant === 'gauge'"
+      class="swiss-stat-card__gauge"
+    >
+      <el-progress
+        type="dashboard"
+        :percentage="clampedPct"
+        :width="88"
+        :stroke-width="8"
+      />
     </div>
     <div
       v-else-if="progressVariant === 'linear' && pct != null"
@@ -70,21 +82,36 @@ const cardClasses = useSwissStatCardClasses(
       aria-valuemin="0"
       aria-valuemax="100"
     >
-      <div class="swiss-stat-card__fill" :style="{ width: `${fillWidth}%` }" />
+      <div
+        class="swiss-stat-card__fill"
+        :style="{ width: `${fillWidth}%` }"
+      />
     </div>
 
-    <p v-if="$slots.kpi" class="swiss-stat-card__sub">
+    <p
+      v-if="$slots.kpi"
+      class="swiss-stat-card__sub"
+    >
       <slot name="kpi" />
     </p>
-    <p v-if="$slots.sub" class="swiss-stat-card__sub">
+    <p
+      v-if="$slots.sub"
+      class="swiss-stat-card__sub"
+    >
       <slot name="sub" />
     </p>
 
-    <div v-if="$slots.default" class="swiss-stat-card__body">
+    <div
+      v-if="$slots.default"
+      class="swiss-stat-card__body"
+    >
       <slot />
     </div>
 
-    <p v-if="$slots.hint" class="swiss-stat-card__hint">
+    <p
+      v-if="$slots.hint"
+      class="swiss-stat-card__hint"
+    >
       <slot name="hint" />
     </p>
   </article>

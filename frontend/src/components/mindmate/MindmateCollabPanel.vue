@@ -7,13 +7,21 @@
 import { onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElPopover } from 'element-plus'
+import {
+  ElButton,
+  ElDialog,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElPopover,
+} from 'element-plus'
 
 import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import MindmateCollabStartPicker from '@/components/mindmate/MindmateCollabStartPicker.vue'
+import MindmateSeminarBriefForm from '@/components/mindmate/MindmateSeminarBriefForm.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import {
@@ -27,6 +35,8 @@ import {
   formatMindmateCollabCode,
   trackLocalMindmateCollabSession,
 } from '@/utils/mindmateCollabSessions'
+import type { SeminarBrief } from '@/utils/mindmateSeminarBrief'
+import { seminarTitleFromTopic } from '@/utils/mindmateSeminarHome'
 
 const props = withDefaults(
   defineProps<{
@@ -55,6 +65,7 @@ const emit = defineEmits<{
       seedMessages?: Array<{ role: string; content: string }>
     }
   ): void
+  (e: 'launchBrief', brief: SeminarBrief): void
 }>()
 
 const CODE_SAFE_RE = /[^2-9A-HJ-KM-NP-Z]/g
@@ -65,6 +76,7 @@ const router = useRouter()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 
 const collabPopoverVisible = ref(false)
+const briefDialogOpen = ref(false)
 const collabPanelMode = ref<'organization' | 'network' | 'start'>('network')
 const orgSessionsLoading = ref(false)
 const orgSessions = ref<
@@ -181,10 +193,10 @@ async function startSeminar(
     title?: string
     seedMessages?: Array<{ role: string; content: string }>
   }
-) {
+): Promise<{ code: string; sessionId: string } | null> {
   const fromLibrary = source != null
   if (!fromLibrary && !props.inConversation) {
-    return
+    return null
   }
   isJoining.value = true
   try {
@@ -209,11 +221,17 @@ async function startSeminar(
       applyThinkingCoinMutation(extractThinkingCoinsFooter(data))
       notify.successKey('mindmate.collabStarted')
       notifyMindmateCollabLibraryChanged()
-      navigateToRoom(String(data.code || ''), data, {
+      const code = String(data.code || '')
+      const sessionId = String(data.session_id || '')
+      navigateToRoom(code, data, {
         seedThread: !fromLibrary,
         title: fromLibrary ? title : undefined,
         seedMessages: fromLibrary ? seedMessages : undefined,
       })
+      if (!code) {
+        return null
+      }
+      return { code, sessionId }
     } else {
       const err = await response.json().catch(() => ({}))
       const detail = (err as { detail?: string }).detail
@@ -228,6 +246,42 @@ async function startSeminar(
   } finally {
     isJoining.value = false
   }
+  return null
+}
+
+async function startFromTopic(
+  topic: string,
+  visibility: 'organization' | 'network' = 'organization'
+): Promise<{ code: string; sessionId: string } | null> {
+  const text = topic.trim()
+  if (!text) {
+    return null
+  }
+  return startSeminar(visibility, {
+    title: seminarTitleFromTopic(text),
+    seedMessages: [{ role: 'user', content: text }],
+  })
+}
+
+async function startSharedThread(source: {
+  visibility: 'organization' | 'network'
+  title: string
+  seedMessages: Array<{ role: string; content: string }>
+}): Promise<{ code: string; sessionId: string } | null> {
+  return startSeminar(source.visibility, {
+    title: source.title,
+    seedMessages: source.seedMessages,
+  })
+}
+
+function openJoinPanel(): void {
+  collabPanelMode.value = 'network'
+  collabPopoverVisible.value = true
+}
+
+function openStartPanel(): void {
+  collabPanelMode.value = 'start'
+  collabPopoverVisible.value = true
 }
 
 async function fetchOrgSessions(showSpinner = true) {
@@ -285,6 +339,11 @@ function onStartFromLibrary(payload: {
   void startSeminar(payload.visibility, payload)
 }
 
+function onLaunchBrief(brief: SeminarBrief): void {
+  briefDialogOpen.value = false
+  emit('launchBrief', brief)
+}
+
 function onCollabDropdownCommand(command: string) {
   if (command === 'start') {
     collabPanelMode.value = 'start'
@@ -339,12 +398,41 @@ onUnmounted(() => {
   }
 })
 
-defineExpose({ prefillAndAutoJoin })
+defineExpose({
+  prefillAndAutoJoin,
+  startFromTopic,
+  startSharedThread,
+  openJoinPanel,
+  openStartPanel,
+})
 </script>
 
 <template>
+  <template v-if="canUseOnlineCollab && inConversation">
+    <ElButton
+      type="default"
+      class="join-workshop-btn join-workshop-btn--label"
+      @click="briefDialogOpen = true"
+    >
+      {{ t('mindmate.collabLaunchTooltip') }}
+    </ElButton>
+    <ElDialog
+      v-model="briefDialogOpen"
+      append-to-body
+      :title="t('mindmate.collabLaunchTooltip')"
+      width="min(760px, 94vw)"
+      class="mm-launch-brief"
+      :close-on-click-modal="false"
+    >
+      <p class="mm-launch-brief__hint">{{ t('mindmate.collabLaunchHistoryHint') }}</p>
+      <MindmateSeminarBriefForm
+        v-if="briefDialogOpen"
+        @start="onLaunchBrief"
+      />
+    </ElDialog>
+  </template>
   <ElPopover
-    v-if="canUseOnlineCollab"
+    v-else-if="canUseOnlineCollab"
     v-model:visible="collabPopoverVisible"
     :trigger="'manual' as 'click'"
     placement="bottom-end"
@@ -405,12 +493,6 @@ defineExpose({ prefillAndAutoJoin })
                 <ElDropdownItem command="organization">
                   <I18nText
                     k="mindmate.collabJoinOrgSeminar"
-                    dense
-                  />
-                </ElDropdownItem>
-                <ElDropdownItem command="network">
-                  <I18nText
-                    k="mindmate.collabJoinPublicSeminar"
                     dense
                   />
                 </ElDropdownItem>
@@ -618,6 +700,22 @@ defineExpose({ prefillAndAutoJoin })
 </template>
 
 <style scoped>
+.join-workshop-btn.join-workshop-btn--label {
+  --el-button-bg-color: #ede9fe;
+  --el-button-border-color: #c4b5fd;
+  --el-button-hover-bg-color: #ddd6fe;
+  --el-button-hover-border-color: #a78bfa;
+  --el-button-hover-text-color: #4c1d95;
+  --el-button-active-bg-color: #c4b5fd;
+  --el-button-text-color: #5b21b6;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #ede9fe;
+}
+
 .join-workshop-btn.join-workshop-btn--pill {
   --el-button-bg-color: #e7e5e4;
   --el-button-border-color: #d6d3d1;
@@ -1033,5 +1131,25 @@ defineExpose({ prefillAndAutoJoin })
 
 .collab-trigger-dropdown-popper .el-dropdown-menu__item:active {
   background: #e7e5e4;
+}
+
+.mm-launch-brief.el-dialog {
+  border-radius: 16px;
+}
+
+.mm-launch-brief .el-dialog__body {
+  max-height: min(72vh, 760px);
+  overflow: auto;
+  padding-top: 8px;
+}
+
+.mm-launch-brief__hint {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #e7edfb;
+  color: #5c6eb5;
+  font-size: 13px;
+  line-height: 1.45;
 }
 </style>

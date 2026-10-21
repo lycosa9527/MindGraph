@@ -1,7 +1,7 @@
 /**
  * Document Summary lite: save pending draft (file / paste / URL) then generate.
  */
-import { ref, type Ref } from 'vue'
+import { type Ref, ref } from 'vue'
 
 import type { usePackageDetail } from '@/composables/fileCenter/useFileCenter'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'

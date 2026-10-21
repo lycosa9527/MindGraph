@@ -1,11 +1,10 @@
 /**
  * Persist a Maite practice conversation (problem + session) and refresh 最近练习.
  */
-import { createProblem } from '@/api/maite/problems'
 import { createSession } from '@/api/maite/inquiry'
+import { createProblem } from '@/api/maite/problems'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useMaiteStore } from '@/stores/maite'
-
 import type { MaiteMode, MaitePracticeItem, MaiteSession } from '@/types/maite'
 
 function sessionTitle(question: string): string {

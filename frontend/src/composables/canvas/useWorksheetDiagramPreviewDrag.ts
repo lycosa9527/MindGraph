@@ -2,7 +2,7 @@
  * Drag / resize worksheet diagram in the A4 preview.
  * Offsets [-1, 1] (0 = centered); scale (0.25–1) relative to max-fit size.
  */
-import { computed, onUnmounted, ref, type Ref } from 'vue'
+import { type Ref, computed, onUnmounted, ref } from 'vue'
 
 export const WORKSHEET_DIAGRAM_SCALE_MIN = 0.25
 export const WORKSHEET_DIAGRAM_SCALE_MAX = 1
@@ -27,10 +27,7 @@ function clampScale(value: number): number {
   return Math.max(WORKSHEET_DIAGRAM_SCALE_MIN, Math.min(WORKSHEET_DIAGRAM_SCALE_MAX, value))
 }
 
-function maxFitSize(
-  img: HTMLImageElement,
-  body: HTMLElement
-): { width: number; height: number } {
+function maxFitSize(img: HTMLImageElement, body: HTMLElement): { width: number; height: number } {
   const boxW = body.clientWidth
   const boxH = body.clientHeight
   const naturalW = img.naturalWidth
@@ -198,10 +195,8 @@ export function useWorksheetDiagramPreviewDrag(options: {
     }
 
     if (mode === 'resize' && resizing.value && startFrameW > 0 && startFrameH > 0) {
-      const signedDx =
-        resizeHandle === 'ne' || resizeHandle === 'se' ? dx : -dx
-      const signedDy =
-        resizeHandle === 'sw' || resizeHandle === 'se' ? dy : -dy
+      const signedDx = resizeHandle === 'ne' || resizeHandle === 'se' ? dx : -dx
+      const signedDy = resizeHandle === 'sw' || resizeHandle === 'se' ? dy : -dy
       const factor = 1 + (signedDx / startFrameW + signedDy / startFrameH) / 2
       const nextScale = clampScale(startScale * factor)
       options.scale.value = nextScale

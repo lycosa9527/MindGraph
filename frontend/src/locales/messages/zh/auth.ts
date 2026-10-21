@@ -101,10 +101,8 @@ export default {
   'privacy.backToSignIn': '返回登录',
   'auth.downloadDesktopShortcut': '添加到桌面',
   'auth.platformQuickGuide': '快速指南',
-  'auth.pwaIosInstallHint':
-    '在 Safari、Chrome 或 Edge 中点分享，再选择「添加到主屏幕」。',
-  'auth.pwaAndroidInstallHint':
-    '打开浏览器菜单（⋮），选择「安装应用」或「添加到主屏幕」。',
+  'auth.pwaIosInstallHint': '在 Safari、Chrome 或 Edge 中点分享，再选择「添加到主屏幕」。',
+  'auth.pwaAndroidInstallHint': '打开浏览器菜单（⋮），选择「安装应用」或「添加到主屏幕」。',
   'auth.pwaSafariMacInstallHint':
     '在 Safari 中选择「文件 → 添加到程序坞」，或使用「共享 → 添加到程序坞」（macOS Sonoma 及以上）。',
   'auth.pwaDesktopInstallHint':
@@ -151,10 +149,10 @@ export default {
     '当前学校版本不支持此功能，请升级至标准教研版或校本共建版（基础教研版不含此功能）',
   'auth.schoolSubscriptionExpiredDowngraded':
     '学校订阅已到期，教师与学校管理员均已锁定。如需续订请联系平台管理员。',
-  'auth.diagramLimitReached':
-    '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
+  'auth.diagramLimitReached': '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
   'auth.downloadOpenclawSkill': 'WorkBuddy技能包',
-  'auth.downloadOpenclawSkillHint': '下载即含账号与当前令牌。重新生成令牌后，旧技能包与扩展会失效。',
+  'auth.downloadOpenclawSkillHint':
+    '下载即含账号与当前令牌。重新生成令牌后，旧技能包与扩展会失效。',
   'auth.changePhoneButton': '更换手机',
   'auth.passwordChangeSuccess': '密码修改成功',
   'auth.passwordChangeFailed': '密码修改失败',
@@ -409,7 +407,8 @@ export default {
   'auth.qrLoginInviteRequired': '请先填写学校邀请码后再使用扫码登录',
   'auth.qrLoginProvidersFailed': '无法加载扫码登录配置，请稍后重试',
   'auth.qrLoginProviderDisabled': '此扫码登录方式暂不可用',
-  'auth.qrLoginNotLinked': '请先绑定账号。请用密码登录后，在「账户绑定」中绑定微信，再扫码登录。如果忘记密码，请使用「忘记密码」。',
+  'auth.qrLoginNotLinked':
+    '请先绑定账号。请用密码登录后，在「账户绑定」中绑定微信，再扫码登录。如果忘记密码，请使用「忘记密码」。',
   'auth.qrLoginExchangeFailed': '扫码登录失败，请重试',
   'auth.qrLoginInvalidState': '扫码会话已过期，请关闭后重新扫码',
   'auth.qrLoginInvalidCode': '微信授权码已过期或已使用，请关闭二维码后重新扫码',

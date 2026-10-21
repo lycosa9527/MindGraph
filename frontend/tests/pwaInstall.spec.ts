@@ -5,7 +5,6 @@ import {
   canShowPwaInstallUi,
   detectPwaInstallSurface,
   getPwaInstallFeedback,
-  injectDeferredInstallPromptForTests,
   isInstallablePwaOrigin,
   isIosAddToHomeScreenEligible,
   isIosDevice,

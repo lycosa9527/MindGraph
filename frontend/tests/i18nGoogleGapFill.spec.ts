@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { collectGaps } from '../i18n-google/gapFill.ts'
-import { googleToForLocale, protectPlaceholders, restorePlaceholders } from '../i18n-google/googleBatch.ts'
+import {
+  googleToForLocale,
+  protectPlaceholders,
+  restorePlaceholders,
+} from '../i18n-google/googleBatch.ts'
 import { isKeepFill } from '../i18n-google/keepFill.ts'
 
 describe('i18n-google keep-fill', () => {

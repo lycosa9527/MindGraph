@@ -1,6 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  handleKittyDesktopQueuedAction,
+  handleKittyExplainNodeAction,
+} from '@/composables/kitty/kittyDesktopActionHandlers'
 import { peekKittyPendingDesktopExplain } from '@/composables/kitty/kittyPendingCanvasAction'
 
 const emitMock = vi.hoisted(() => vi.fn())
@@ -22,17 +27,13 @@ vi.mock('@/composables/kitty/kittyWorkflowTrace', () => ({
 }))
 
 vi.mock('@/composables/canvasPage/canvasLibraryDiagramOpen', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('@/composables/canvasPage/canvasLibraryDiagramOpen')>()
+  const mod =
+    await importOriginal<typeof import('@/composables/canvasPage/canvasLibraryDiagramOpen')>()
   return {
     ...mod,
     confirmCanvasLibraryDiagramOpen: (...args: unknown[]) => confirmOpenMock(...args),
   }
 })
-
-import {
-  handleKittyDesktopQueuedAction,
-  handleKittyExplainNodeAction,
-} from '@/composables/kitty/kittyDesktopActionHandlers'
 
 describe('handleKittyExplainNodeAction', () => {
   beforeEach(() => {

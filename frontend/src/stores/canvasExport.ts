@@ -8,26 +8,24 @@ import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import {
-  DEFAULT_CANVAS_EXPORT_OPTIONS,
-  loadCanvasExportOptions,
-  saveCanvasExportOptions,
   type CanvasExportColorMode,
   type CanvasExportLayout,
   type CanvasExportOptions,
+  DEFAULT_CANVAS_EXPORT_OPTIONS,
+  loadCanvasExportOptions,
+  saveCanvasExportOptions,
 } from '@/config/canvasExportOptions'
 import {
+  type CanvasWorksheetTextOptions,
   DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
   loadCanvasWorksheetTextOptions,
   saveCanvasWorksheetTextOptions,
-  type CanvasWorksheetTextOptions,
 } from '@/config/canvasWorksheetText'
 import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 
 export const useCanvasExportStore = defineStore('canvasExport', () => {
   const exportOptions = ref<CanvasExportOptions>(loadCanvasExportOptions())
-  const worksheetTextOptions = ref<CanvasWorksheetTextOptions>(
-    loadCanvasWorksheetTextOptions()
-  )
+  const worksheetTextOptions = ref<CanvasWorksheetTextOptions>(loadCanvasWorksheetTextOptions())
   const worksheetTextModalOpen = ref(false)
   const worksheetModalPreferLearningSheet = ref(false)
   const exportSessionActive = ref(false)
@@ -35,9 +33,7 @@ export const useCanvasExportStore = defineStore('canvasExport', () => {
   let exportSessionChain: Promise<unknown> = Promise.resolve()
 
   /** Plain export payload — never injects worksheet headers. */
-  const mergedExportOptions = computed(() =>
-    mergeCanvasExportOptions(exportOptions.value)
-  )
+  const mergedExportOptions = computed(() => mergeCanvasExportOptions(exportOptions.value))
 
   /** Worksheet DOCX/PDF payload — includes persisted worksheet header/placement. */
   const worksheetExportOptions = computed(() =>

@@ -11,10 +11,10 @@ import { fileURLToPath } from 'node:url'
 
 import { INTERFACE_LANGUAGE_PICKER_CODES } from '../src/i18n/locales.ts'
 import {
+  I18N_NS_FILES,
   applyIndexBanner,
   applyNamespaceBanner,
   fileHasExpectedBanner,
-  I18N_NS_FILES,
 } from './i18nFileBanner.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))

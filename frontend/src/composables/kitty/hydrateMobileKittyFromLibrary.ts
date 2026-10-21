@@ -41,11 +41,7 @@ export async function hydrateMobileKittyFromLibrary(diagramId: string): Promise<
   savedDiagramsStore.setActiveDiagram(trimmed)
   diagramStore.clearHistory()
   const specRecord = spec as Record<string, unknown>
-  const ok = diagramStore.loadFromSpec(
-    specRecord,
-    dt,
-    mindMapLibraryLoadOptions(dt, specRecord)
-  )
+  const ok = diagramStore.loadFromSpec(specRecord, dt, mindMapLibraryLoadOptions(dt, specRecord))
   traceKittyWorkflow('mobile', 'library_hydrate', ok ? `ok type=${dt}` : 'load failed', {
     scope: trimmed,
   })

@@ -32,6 +32,8 @@ const props = defineProps<{
   messages: MindMateMessage[]
   userAvatar: string
   showWelcome?: boolean
+  showModeSwitch?: boolean
+  homeMode?: 'dialogue' | 'seminar'
   isLoading?: boolean
   isStreaming?: boolean
   loadPhase?: ModelLoadPhase
@@ -42,16 +44,20 @@ const props = defineProps<{
   isLastAssistantMessage?: (messageId: string) => boolean
   hasPreviousUserMessage?: (messageId: string) => boolean
   exportingWordTemplateId?: string | null
+  selectMode?: boolean
+  selectedMessageIds?: string[]
 }>()
 
 const emit = defineEmits<{
+  (e: 'update:homeMode', mode: 'dialogue' | 'seminar'): void
   (e: 'edit', message: MindMateMessage): void
   (e: 'cancelEdit'): void
   (e: 'saveEdit', content: string): void
   (e: 'copy', content: string): void
   (e: 'regenerate', messageId: string): void
   (e: 'feedback', messageId: string, rating: 'like' | 'dislike' | null): void
-  (e: 'share'): void
+  (e: 'share', messageId: string): void
+  (e: 'toggleSelect', messageId: string): void
   (e: 'exportWordTemplate', message: MindMateMessage): void
   (e: 'messageHover', messageId: string | null): void
   (e: 'scrollToBottom', force?: boolean): void
@@ -166,7 +172,12 @@ watch(
       v-if="showWelcome"
       class="messages-wrapper messages-wrapper--welcome"
     >
-      <MindmateWelcome :mode="mode" />
+      <MindmateWelcome
+        :mode="mode"
+        :show-mode-switch="showModeSwitch"
+        :home-mode="homeMode"
+        @update:home-mode="emit('update:homeMode', $event)"
+      />
     </div>
 
     <template v-else>
@@ -176,7 +187,7 @@ watch(
       >
         <div
           ref="messagesWrapperRef"
-          class="messages-wrapper p-4 space-y-6"
+          class="messages-wrapper p-4"
         >
           <MessageBubble
             v-for="message in messages"
@@ -191,6 +202,8 @@ watch(
             :has-previous-user-message="hasPreviousUserMessage?.(message.id) ?? false"
             :is-loading="isLoading"
             :exporting-word-template="exportingWordTemplateId === message.id"
+            :select-mode="selectMode"
+            :selected="selectedMessageIds?.includes(message.id) ?? false"
             @edit="emit('edit', $event)"
             @cancel-edit="emit('cancelEdit')"
             @save-edit="emit('saveEdit', $event)"
@@ -200,7 +213,8 @@ watch(
               (messageId: string, rating: 'like' | 'dislike' | null) =>
                 emit('feedback', messageId, rating)
             "
-            @share="emit('share')"
+            @share="emit('share', $event)"
+            @toggle-select="emit('toggleSelect', message.id)"
             @export-word-template="emit('exportWordTemplate', $event)"
             @mouseenter="emit('messageHover', message.id)"
             @mouseleave="emit('messageHover', null)"
@@ -208,11 +222,11 @@ watch(
 
           <div
             v-if="loadPhase === 'sending'"
-            class="message flex gap-3"
+            class="flex items-start gap-2.5"
           >
             <MindmateAgentAvatar
-              :size="40"
-              avatar-class="mindmate-avatar flex-shrink-0"
+              :size="36"
+              avatar-class="mindmate-avatar"
               phase="sending"
             />
           </div>

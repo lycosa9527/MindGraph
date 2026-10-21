@@ -15,8 +15,7 @@ export const PUBLIC_DASHBOARD_ADMIN_LOCATION: RouteLocationRaw = {
 }
 
 /** Absolute path+query for redirects and docs. */
-export const PUBLIC_DASHBOARD_ADMIN_HREF =
-  '/admin?tab=settings&subtab=public_dashboard'
+export const PUBLIC_DASHBOARD_ADMIN_HREF = '/admin?tab=settings&subtab=public_dashboard'
 
 export function isAdminPublicDashboardRoute(
   route: Pick<RouteLocationNormalizedLoaded, 'path' | 'query'>

@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'ඉක්මනින්',
   'thinkingCoins.schoolInfo': 'පාසල් සැලසුම් සඳහා ඔබේ පාසල් පරිපාලක අමතන්න',
   'thinkingCoins.school.headline': 'AI-බලගැන්වූ චින්තන · පාසල් විසඳුම්',
-  'thinkingCoins.school.description': 'පාසල් සහ ආයතන සඳහා පෞද්‍ගලික deployment, අභිරුචි විශේෂාංග සහ සම්පූර්ණ මෙහෙයුම් සහාය — විශාල පරිමාණය, වෙළඳ නාමය සහ දත්ත ආරක්‍ෂාව සඳහා.',
+  'thinkingCoins.school.description':
+    'පාසල් සහ ආයතන සඳහා පෞද්‍ගලික deployment, අභිරුචි විශේෂාංග සහ සම්පූර්ණ මෙහෙයුම් සහාය — විශාල පරිමාණය, වෙළඳ නාමය සහ දත්ත ආරක්‍ෂාව සඳහා.',
   'thinkingCoins.school.feature.accountManager': 'කැපී ගිණුම් කලමනාකරු',
   'thinkingCoins.school.feature.accountManagerDesc': 'එක-සඳහා-එක උපදේශන',
   'thinkingCoins.school.feature.privateDeploy': 'පෞද්‍ගලික deployment',
@@ -49,7 +50,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.validationRequired': 'අවශ්‍ය සියලු ක්‍ෂේත්‍ර පුරවන්න',
   'thinkingCoins.school.validationPhone': 'වලංගු දුරකථන අංකයක් ඇතුළත් කරන්න',
   'thinkingCoins.school.validationTooLong': 'එක් හෝ වැඩි ක්‍ෂේත්‍ර දිග වැඩිය',
-  'thinkingCoins.school.validationInvalid': 'සමහර ක්‍ෂේත්‍ර වලංගු නොවේ — පරීක්‍ෂා කර නැවත උත්සාහ කරන්න',
+  'thinkingCoins.school.validationInvalid':
+    'සමහර ක්‍ෂේත්‍ර වලංගු නොවේ — පරීක්‍ෂා කර නැවත උත්සාහ කරන්න',
   'thinkingCoins.tier.trial': 'අත්‍හදා ගැනීම',
   'thinkingCoins.tier.monthly': 'මාසික',
   'thinkingCoins.tier.sub': 'මාසික දායකත්වය',
@@ -63,7 +65,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Referral ත්‍යාග',
   'thinkingCoins.reason.case_reward': 'Case ත්‍යාග',
   'thinkingCoins.reason.subscription_grant': 'දායකත්ව grant',
-  'thinkingCoins.dailyExpiresHint': 'පුරනය වීමේ ත්‍යාග එදිනම වලංගු වන අතර 24:00 ට යළි පිහිටුවනු ලැබේ',
+  'thinkingCoins.dailyExpiresHint':
+    'පුරනය වීමේ ත්‍යාග එදිනම වලංගු වන අතර 24:00 ට යළි පිහිටුවනු ලැබේ',
   'thinkingCoins.dailyBalanceRemaining': 'අද දින ඇතුල්වීම ඉතිරිව ඇත්තේ {n}',
   'thinkingCoins.admin.tab': 'චින්තන ටෝකන්',
   'thinkingCoins.admin.tasksTitle': 'ටෝකන් උපයන කාර්ය',

@@ -6,12 +6,9 @@ import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 export const SIDEBAR_TASK_PROMO_ROTATE_MS = 5_000
 
 export type SidebarPromoSlide =
-  | { key: string; kind: 'task'; task: ThinkingCoinEarnTask }
-  | { key: string; kind: 'invite' }
+  { key: string; kind: 'task'; task: ThinkingCoinEarnTask } | { key: string; kind: 'invite' }
 
-export function thinkingCoinPromoTaskPool(
-  tasks: ThinkingCoinEarnTask[]
-): ThinkingCoinEarnTask[] {
+export function thinkingCoinPromoTaskPool(tasks: ThinkingCoinEarnTask[]): ThinkingCoinEarnTask[] {
   if (tasks.length === 0) {
     return []
   }

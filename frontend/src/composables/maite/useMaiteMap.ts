@@ -5,7 +5,6 @@ import { onScopeDispose, ref } from 'vue'
 
 import { getGraph } from '@/api/maite/map'
 import { eventBus } from '@/composables/core/useEventBus'
-
 import type { MaiteGraphResponse } from '@/types/maite'
 
 export function useMaiteMap() {

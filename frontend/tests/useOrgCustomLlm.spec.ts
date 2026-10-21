@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
+
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => ({
     user: {
@@ -8,8 +10,6 @@ vi.mock('@/stores/auth', () => ({
     },
   }),
 }))
-
-import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 
 describe('useOrgCustomLlm', () => {
   it('exposes one canvas slot and the school model name', () => {

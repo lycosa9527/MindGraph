@@ -6,13 +6,10 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import {
+  type AdminTeacherUsageConfig,
   addAdminOrganizationManager,
   analyzeAdminDatabaseDump,
   cleanupAdminDatabaseOrphans,
-  installAdminCosQdrant,
-  publishAdminCosQdrant,
-  triggerAdminCosBackup,
-  triggerAdminCosCrowdsecSync,
   createAdminApiKey,
   createAdminMindbotConfig,
   createAdminOrganization,
@@ -27,20 +24,24 @@ import {
   exportAdminDatabase,
   generateAdminLibraryDocumentCover,
   importAdminDatabaseDump,
+  installAdminCosQdrant,
   mergeAdminDatabaseDump,
   moveAdminMindbotConfig,
   probeAdminMindmateDifyHealthDraft,
   probeAdminOrganizationMindmateDifyHealth,
+  publishAdminCosQdrant,
+  recomputeAdminTeacherUsage,
   registerAdminLibraryBook,
   registerAdminLibraryBooksBatch,
   reloadAdminEnvRuntime,
   removeAdminOrganizationManager,
   renameAdminLibraryPages,
   repairAdminLibrary,
-  recomputeAdminTeacherUsage,
   rotateAdminMindbotCallbackToken,
   scanAdminDatabase,
   scanAdminLibrary,
+  triggerAdminCosBackup,
+  triggerAdminCosCrowdsecSync,
   updateAdminEnvSettings,
   updateAdminFeatureOrgAccess,
   updateAdminLibraryDocumentVisibility,
@@ -51,7 +52,6 @@ import {
   updateAdminUser,
   updateAdminUserRole,
   uploadAdminOrganizationMindmateAvatar,
-  type AdminTeacherUsageConfig,
 } from './adminApi'
 import { adminKeys } from './adminKeys'
 
@@ -95,13 +95,8 @@ function organizationUpdateAffectsTierOrQuotas(body: Record<string, unknown>): b
 export function useUpdateAdminOrganization() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      orgId,
-      body,
-    }: {
-      orgId: number
-      body: Record<string, unknown>
-    }) => updateAdminOrganization(orgId, body),
+    mutationFn: ({ orgId, body }: { orgId: number; body: Record<string, unknown> }) =>
+      updateAdminOrganization(orgId, body),
     onSuccess: (_data, { orgId, body }) => {
       invalidateOrganizations(queryClient)
       queryClient.invalidateQueries({ queryKey: adminKeys.organization(orgId) })
@@ -173,13 +168,8 @@ export function useProbeAdminMindmateDifyHealthDraft() {
 
 export function useProbeAdminOrganizationMindmateDifyHealth() {
   return useMutation({
-    mutationFn: ({
-      orgId,
-      body = {},
-    }: {
-      orgId: number
-      body?: Record<string, string>
-    }) => probeAdminOrganizationMindmateDifyHealth(orgId, body),
+    mutationFn: ({ orgId, body = {} }: { orgId: number; body?: Record<string, string> }) =>
+      probeAdminOrganizationMindmateDifyHealth(orgId, body),
   })
 }
 
@@ -190,13 +180,8 @@ export function useProbeAdminOrganizationMindmateDifyHealth() {
 export function useUpdateAdminUser() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      userId,
-      body,
-    }: {
-      userId: number
-      body: Record<string, unknown>
-    }) => updateAdminUser(userId, body),
+    mutationFn: ({ userId, body }: { userId: number; body: Record<string, unknown> }) =>
+      updateAdminUser(userId, body),
     onSuccess: (_data, { userId }) => {
       invalidateUsers(queryClient)
       queryClient.invalidateQueries({ queryKey: adminKeys.user(userId) })
@@ -284,13 +269,8 @@ export function useUpdateAdminSchoolUser() {
 export function useDeleteAdminSchoolUser() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      userId,
-      organizationId,
-    }: {
-      userId: number
-      organizationId: number
-    }) => deleteAdminSchoolUser(userId, organizationId),
+    mutationFn: ({ userId, organizationId }: { userId: number; organizationId: number }) =>
+      deleteAdminSchoolUser(userId, organizationId),
     onSuccess: () => {
       invalidateUsers(queryClient)
       invalidateStats(queryClient)
@@ -339,13 +319,8 @@ export function useCreateAdminMindbotConfig() {
 export function useUpdateAdminMindbotConfig() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      configId,
-      body,
-    }: {
-      configId: number
-      body: Record<string, unknown>
-    }) => updateAdminMindbotConfig(configId, body),
+    mutationFn: ({ configId, body }: { configId: number; body: Record<string, unknown> }) =>
+      updateAdminMindbotConfig(configId, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.mindbot.all() })
     },
@@ -365,13 +340,8 @@ export function useDeleteAdminMindbotConfig() {
 export function useMoveAdminMindbotConfig() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      configId,
-      body,
-    }: {
-      configId: number
-      body: Record<string, unknown>
-    }) => moveAdminMindbotConfig(configId, body),
+    mutationFn: ({ configId, body }: { configId: number; body: Record<string, unknown> }) =>
+      moveAdminMindbotConfig(configId, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.mindbot.all() })
     },
@@ -577,13 +547,8 @@ export function useRepairAdminLibrary() {
 
 export function useUpdateAdminLibraryDocumentVisibility() {
   return useMutation({
-    mutationFn: ({
-      docId,
-      body,
-    }: {
-      docId: number
-      body: Record<string, unknown>
-    }) => updateAdminLibraryDocumentVisibility(docId, body),
+    mutationFn: ({ docId, body }: { docId: number; body: Record<string, unknown> }) =>
+      updateAdminLibraryDocumentVisibility(docId, body),
   })
 }
 
@@ -595,13 +560,8 @@ export function useGenerateAdminLibraryDocumentCover() {
 
 export function useDeleteAdminLibraryDocument() {
   return useMutation({
-    mutationFn: ({
-      docId,
-      deleteFiles,
-    }: {
-      docId: number
-      deleteFiles?: boolean
-    }) => deleteAdminLibraryDocument(docId, deleteFiles),
+    mutationFn: ({ docId, deleteFiles }: { docId: number; deleteFiles?: boolean }) =>
+      deleteAdminLibraryDocument(docId, deleteFiles),
   })
 }
 

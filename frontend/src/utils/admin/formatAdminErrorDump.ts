@@ -1,7 +1,6 @@
 /**
  * Format admin error-collection rows into a plain-text dump for clipboard / Cursor.
  */
-
 import type {
   AdminErrorEventItem,
   AdminErrorGroupItem,

@@ -123,15 +123,24 @@ function renderPdfBlobIframe(data: Uint8Array, container: HTMLElement): () => vo
   return () => URL.revokeObjectURL(objectUrl)
 }
 
-export async function renderPdfPreview(options: RenderPdfPreviewOptions): Promise<() => void> {
-  const { url, container, scale = 1.5, signal, watermarkText } = options
-  const data = await fetchPdfBytes(url, signal)
-
+export async function renderPdfFromBytes(
+  data: Uint8Array,
+  container: HTMLElement,
+  options: { scale?: number; signal?: AbortSignal; watermarkText?: string } = {}
+): Promise<() => void> {
+  const { scale = 1.5, signal, watermarkText } = options
+  const normalized = normalizePdfBytes(data)
   try {
-    await renderPdfCanvas(data, container, scale, signal, watermarkText)
+    await renderPdfCanvas(normalized, container, scale, signal, watermarkText)
     return () => {}
   } catch {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-    return renderPdfBlobIframe(data, container)
+    return renderPdfBlobIframe(normalized, container)
   }
+}
+
+export async function renderPdfPreview(options: RenderPdfPreviewOptions): Promise<() => void> {
+  const { url, container, scale = 1.5, signal, watermarkText } = options
+  const data = await fetchPdfBytes(url, signal)
+  return renderPdfFromBytes(data, container, { scale, signal, watermarkText })
 }

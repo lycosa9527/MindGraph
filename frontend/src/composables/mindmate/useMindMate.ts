@@ -17,6 +17,10 @@ import { computed, onActivated, onUnmounted, ref, shallowRef, watch } from 'vue'
 
 import { useQueryClient } from '@tanstack/vue-query'
 
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore, useMindMateStore } from '@/stores'
 import type { ModelLoadPhase } from '@/stores/llmResults'
@@ -26,17 +30,12 @@ import type {
   MindMateFile,
   MindMateMessage,
 } from '@/stores/mindmateActiveThread'
+import { mapDifyMessagesToMindMate, shouldApplyDifyHistory } from '@/stores/mindmateActiveThread'
 import {
-  mapDifyMessagesToMindMate,
-  shouldApplyDifyHistory,
-} from '@/stores/mindmateActiveThread'
-import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
+  appendDifyConversationRouteQuery,
+  buildDifyConversationRouteSearchParams,
+} from '@/utils/difyConversationRoute'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
-import {
-  isTeachingInstructionOutputs,
-  isTeachingInstructionReply,
-  TEACHING_INSTRUCTION_KIND,
-} from '@/utils/mindmateTeachingDesignFlag'
 import {
   difyUploadMaxBytes,
   isDifyGatewayUploadableFile,
@@ -50,9 +49,11 @@ import {
 } from '@/utils/mindmateDiagramPreviewPersist'
 import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
 import {
-  appendDifyConversationRouteQuery,
-  buildDifyConversationRouteSearchParams,
-} from '@/utils/difyConversationRoute'
+  TEACHING_INSTRUCTION_KIND,
+  isTeachingInstructionOutputs,
+  isTeachingInstructionReply,
+} from '@/utils/mindmateTeachingDesignFlag'
+import { must } from '@/utils/must'
 
 import { eventBus } from '../core/useEventBus'
 import { difyKeys, useAppParameters, useGenerateTitle } from '../queries'
@@ -110,7 +111,7 @@ interface SSEData {
   export_word_template?: boolean
 }
 
-interface DifyMessage extends DifyHistoryMessage {}
+type DifyMessage = DifyHistoryMessage
 
 export function useMindMate(options: MindMateOptions = {}) {
   const {
@@ -231,7 +232,11 @@ export function useMindMate(options: MindMateOptions = {}) {
     abortController.value = null
   }
 
-  function finalizeStreamError(generation: number, errorMsg: string, removePlaceholder: boolean): void {
+  function finalizeStreamError(
+    generation: number,
+    errorMsg: string,
+    removePlaceholder: boolean
+  ): void {
     if (!isActiveStreamGeneration(generation)) {
       return
     }
@@ -385,9 +390,7 @@ export function useMindMate(options: MindMateOptions = {}) {
         content,
         isStreaming,
         ...(difyMessageId && { difyMessageId }),
-        ...(flagged
-          ? { exportWordTemplate: true, replyKind: TEACHING_INSTRUCTION_KIND }
-          : {}),
+        ...(flagged ? { exportWordTemplate: true, replyKind: TEACHING_INSTRUCTION_KIND } : {}),
       }
     }
   }
@@ -675,9 +678,7 @@ export function useMindMate(options: MindMateOptions = {}) {
 
     try {
       const route =
-        conversationId.value != null
-          ? mindMateStore.getConversationRoute(conversationId.value)
-          : {}
+        conversationId.value != null ? mindMateStore.getConversationRoute(conversationId.value) : {}
       const response = await fetch(
         appendDifyConversationRouteQuery(`/api/dify/messages/${msg.difyMessageId}/feedback`, route),
         {
@@ -741,8 +742,8 @@ export function useMindMate(options: MindMateOptions = {}) {
           const now = Math.floor(Date.now() / 1000) // Use seconds like Dify
           const webDifyUser = mindmateDifyUserIdFromSession(
             authStore.mode,
-            authStore.user!.id,
-            authStore.user!.phone
+            must(authStore.user).id,
+            must(authStore.user).phone
           )
           const newConv = {
             id: data.conversation_id,
@@ -804,10 +805,7 @@ export function useMindMate(options: MindMateOptions = {}) {
         break
 
       case 'mindmate_meta':
-        if (
-          data.reply_kind === TEACHING_INSTRUCTION_KIND ||
-          data.export_word_template === true
-        ) {
+        if (data.reply_kind === TEACHING_INSTRUCTION_KIND || data.export_word_template === true) {
           applyTeachingInstructionFlag(currentStreamingId.value)
         }
         break
@@ -979,7 +977,10 @@ export function useMindMate(options: MindMateOptions = {}) {
         route.mindbotConfigId ?? undefined
       ),
       queryFn: async () => {
-        const params = buildDifyConversationRouteSearchParams(route, new URLSearchParams({ limit: '100' }))
+        const params = buildDifyConversationRouteSearchParams(
+          route,
+          new URLSearchParams({ limit: '100' })
+        )
         const response = await fetch(
           `/api/dify/conversations/${convId}/messages?${params.toString()}`,
           {
@@ -1087,13 +1088,12 @@ export function useMindMate(options: MindMateOptions = {}) {
         onError?.('Failed to load conversation')
       }
     } finally {
-      if (disposed.value) {
-        return
+      if (!disposed.value) {
+        isLoadingFromServer.value = false
+        state.value = 'idle'
+        applyLoadPhase(mindMateLoadPhaseOnComplete())
+        isLoadingHistory.value = false
       }
-      isLoadingFromServer.value = false
-      state.value = 'idle'
-      applyLoadPhase(mindMateLoadPhaseOnComplete())
-      isLoadingHistory.value = false
     }
   }
 
@@ -1272,8 +1272,7 @@ export function useMindMate(options: MindMateOptions = {}) {
       }
       return
     }
-    const convId =
-      mindMateStore.currentConversationId ?? mindMateStore.activeThreadConversationId
+    const convId = mindMateStore.currentConversationId ?? mindMateStore.activeThreadConversationId
     if (convId && !hasMessages.value) {
       void loadConversation(convId)
     }

@@ -1,8 +1,8 @@
 /**
  * Kitty session connect module — ensure WS ready for a scope (S02).
  */
-import { recordPipelineEvent, failKittyTurn } from '@/composables/kitty/pipeline/trace'
 import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
+import { failKittyTurn, recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
 import type { KittyTurnContext } from '@/composables/kitty/pipeline/types'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'

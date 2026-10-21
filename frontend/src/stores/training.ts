@@ -32,7 +32,7 @@ import {
   stepTrainingCourse,
   takeoverTraining,
 } from '@/utils/trainingApi'
-import { emptyTrainingSnapshot, TRAINING_RAIL_PAGE_SIZE } from '@/utils/trainingClient'
+import { TRAINING_RAIL_PAGE_SIZE, emptyTrainingSnapshot } from '@/utils/trainingClient'
 
 const STEER_GAP_MS = 120
 
@@ -49,12 +49,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 export type TrainingStartCode =
-  | 'ok'
-  | 'pick_org'
-  | 'instructor_busy'
-  | 'confirm_mismatch'
-  | 'org_busy'
-  | 'failed'
+  'ok' | 'pick_org' | 'instructor_busy' | 'confirm_mismatch' | 'org_busy' | 'failed'
 
 export const useTrainingStore = defineStore('training', () => {
   const snapshot = ref<TrainingSnapshot>(emptyTrainingSnapshot())

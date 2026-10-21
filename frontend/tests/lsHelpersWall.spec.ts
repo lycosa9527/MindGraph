@@ -9,6 +9,7 @@ import {
   studentCanViewAssignmentWall,
 } from '@/composables/learningSpace/lsHelpers'
 import type { LearningAssignment } from '@/utils/learningSpaceApi'
+import { must } from '@/utils/must'
 
 describe('lsHelpers learning space wall', () => {
   it('formats student name with organization', () => {
@@ -33,10 +34,18 @@ describe('lsHelpers learning space wall', () => {
       status: 'active',
       created_by: 1,
       created_at: null,
-      submission: { id: 1, assignment_id: 1, student_user_id: 2, diagram_id: 'd1', status: 'draft', submitted_at: null, due_at_override: null },
+      submission: {
+        id: 1,
+        assignment_id: 1,
+        student_user_id: 2,
+        diagram_id: 'd1',
+        status: 'draft',
+        submitted_at: null,
+        due_at_override: null,
+      },
     }
     expect(studentCanViewAssignmentWall(draft)).toBe(false)
-    draft.submission!.status = 'submitted'
+    must(draft.submission).status = 'submitted'
     expect(studentCanViewAssignmentWall(draft)).toBe(true)
   })
 

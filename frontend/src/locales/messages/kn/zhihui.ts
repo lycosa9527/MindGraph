@@ -24,17 +24,22 @@ export default {
   'zhihui.promptPlaceholder.image': 'ನಿಮ್ಮ ಸ್ಫೂರ್ತಿಯನ್ನು ನಮೂದಿಸಿ...',
   'zhihui.promptPlaceholder.video': 'ದೃಶ್ಯ, ಕ್ಯಾಮರಾವರ್ಕ್ ಮತ್ತು ಲಯವನ್ನು ವಿವರಿಸಿ...',
   'zhihui.promptPlaceholder.diagram': 'ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿ ಮತ್ತು ರಚಿಸಿ ಕ್ಲಿಕ್ ಮಾಡಿ',
-  'zhihui.composerHint.image': 'ಚಿತ್ರವನ್ನು ವಿವರಿಸಲು ಪಠ್ಯವನ್ನು ಬಳಸಿ ಮತ್ತು ಒಂದೇ ಕ್ಲಿಕ್‌ನಲ್ಲಿ ಬೋಧನಾ ವಿವರಣೆಗಳು ಮತ್ತು ದೃಶ್ಯ ಸಾಮಗ್ರಿಗಳನ್ನು ರಚಿಸಿ',
-  'zhihui.composerHint.video': 'Wensheng ವೀಡಿಯೊ ಮತ್ತು Tusheng ವೀಡಿಯೊ ಸಾಮರ್ಥ್ಯಗಳನ್ನು ಪ್ರವೇಶಿಸಲಾಗುವುದು',
-  'zhihui.composerHint.diagram': 'ಕಲಿಯುವವರ ದೃಷ್ಟಿಕೋನದಿಂದ ಕೋರ್ಸ್‌ವೇರ್ ರೇಖಾಚಿತ್ರವನ್ನು ರಚಿಸಲು ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'zhihui.composerHint.image':
+    'ಚಿತ್ರವನ್ನು ವಿವರಿಸಲು ಪಠ್ಯವನ್ನು ಬಳಸಿ ಮತ್ತು ಒಂದೇ ಕ್ಲಿಕ್‌ನಲ್ಲಿ ಬೋಧನಾ ವಿವರಣೆಗಳು ಮತ್ತು ದೃಶ್ಯ ಸಾಮಗ್ರಿಗಳನ್ನು ರಚಿಸಿ',
+  'zhihui.composerHint.video':
+    'Wensheng ವೀಡಿಯೊ ಮತ್ತು Tusheng ವೀಡಿಯೊ ಸಾಮರ್ಥ್ಯಗಳನ್ನು ಪ್ರವೇಶಿಸಲಾಗುವುದು',
+  'zhihui.composerHint.diagram':
+    'ಕಲಿಯುವವರ ದೃಷ್ಟಿಕೋನದಿಂದ ಕೋರ್ಸ್‌ವೇರ್ ರೇಖಾಚಿತ್ರವನ್ನು ರಚಿಸಲು ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'zhihui.diagram.selectMindmap': 'ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ಆರಿಸಿ',
   'zhihui.diagram.selectMindmapHint': 'ದಯವಿಟ್ಟು ಮೇಲಿನ ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'zhihui.diagram.selectMindmapFirst': 'ದಯವಿಟ್ಟು ಮೊದಲು ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-  'zhihui.diagram.emptyLibrary': 'ಇನ್ನೂ ಯಾವುದೇ ಮೈಂಡ್ ಮ್ಯಾಪ್ ಇಲ್ಲ, ದಯವಿಟ್ಟು ಅದನ್ನು ಮೊದಲು ರೇಖಾಚಿತ್ರ ಲೈಬ್ರರಿಯಲ್ಲಿ ಉಳಿಸಿ.',
+  'zhihui.diagram.emptyLibrary':
+    'ಇನ್ನೂ ಯಾವುದೇ ಮೈಂಡ್ ಮ್ಯಾಪ್ ಇಲ್ಲ, ದಯವಿಟ್ಟು ಅದನ್ನು ಮೊದಲು ರೇಖಾಚಿತ್ರ ಲೈಬ್ರರಿಯಲ್ಲಿ ಉಳಿಸಿ.',
   'zhihui.diagram.loadFailed': 'ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ',
   'zhihui.diagram.emptyDeck': 'ಮನಸ್ಸಿನ ನಕ್ಷೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ, ರಚಿಸಿ ಕ್ಲಿಕ್ ಮಾಡಿ',
   'zhihui.diagram.waitingSlides': 'ಕೋರ್ಸ್‌ವೇರ್ ಅನ್ನು ರಚಿಸಲಾಗುತ್ತಿದೆ, ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ...',
-  'zhihui.diagram.jobStarted': 'ಕೋರ್ಸ್‌ವೇರ್ ಉತ್ಪಾದನೆ ಪ್ರಾರಂಭವಾಗಿದೆ. ನೀವು ಇತಿಹಾಸದಲ್ಲಿ ಪ್ರಗತಿಯನ್ನು ಪರಿಶೀಲಿಸಬಹುದು.',
+  'zhihui.diagram.jobStarted':
+    'ಕೋರ್ಸ್‌ವೇರ್ ಉತ್ಪಾದನೆ ಪ್ರಾರಂಭವಾಗಿದೆ. ನೀವು ಇತಿಹಾಸದಲ್ಲಿ ಪ್ರಗತಿಯನ್ನು ಪರಿಶೀಲಿಸಬಹುದು.',
   'zhihui.diagram.phaseQueued': 'ಕಾರ್ಯಗಳು ಸರದಿಯಲ್ಲಿವೆ...',
   'zhihui.diagram.phasePlanning': 'ಪಠ್ಯಕ್ರಮದ ವಿನ್ಯಾಸ...',
   'zhihui.diagram.phasePlanningBranches': 'ವಿವಿಧ ವಿಷಯಗಳ ಯೋಜನೆ...',
@@ -47,9 +52,11 @@ export default {
   'zhihui.diagram.phaseComplete': 'ಕೋರ್ಸ್‌ವೇರ್ ಸಿದ್ಧವಾಗಿದೆ',
   'zhihui.diagram.phaseCancelled': 'ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ',
   'zhihui.diagram.toastPlanning': 'ಪಠ್ಯಕ್ರಮದ ವಿನ್ಯಾಸ...',
-  'zhihui.diagram.toastGenerating': 'ಕೋರ್ಸ್‌ವೇರ್ ಅನ್ನು ಎಳೆಯಲಾಗುತ್ತಿದೆ, ಇದು ಕೆಲವು ನಿಮಿಷಗಳನ್ನು ತೆಗೆದುಕೊಳ್ಳಬಹುದು',
+  'zhihui.diagram.toastGenerating':
+    'ಕೋರ್ಸ್‌ವೇರ್ ಅನ್ನು ಎಳೆಯಲಾಗುತ್ತಿದೆ, ಇದು ಕೆಲವು ನಿಮಿಷಗಳನ್ನು ತೆಗೆದುಕೊಳ್ಳಬಹುದು',
   'zhihui.diagram.toastComplete': 'ಕೋರ್ಸ್‌ವೇರ್ ಸಿದ್ಧವಾಗಿದೆ',
-  'zhihui.diagram.toastPartial': 'ಕೋರ್ಸ್‌ವೇರ್ ಭಾಗಶಃ ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ಉತ್ಪಾದಿಸುವುದನ್ನು ಮುಂದುವರಿಸಬಹುದು.',
+  'zhihui.diagram.toastPartial':
+    'ಕೋರ್ಸ್‌ವೇರ್ ಭಾಗಶಃ ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ಉತ್ಪಾದಿಸುವುದನ್ನು ಮುಂದುವರಿಸಬಹುದು.',
   'zhihui.diagram.toastCancelled': 'ಕೋರ್ಸ್‌ವೇರ್ ಉತ್ಪಾದನೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ',
   'zhihui.diagram.batchProgress': 'ಬ್ಯಾಚ್ {current}/{total}',
   'zhihui.diagram.slideProgress': '{current}/{total} ರಚಿಸಲಾಗಿದೆ',
@@ -58,7 +65,8 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'ಸ್ಲೈಡ್‌ಶೋ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ',
   'zhihui.diagram.retryImage': 'ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'zhihui.diagram.teacherScript': 'ಶಿಕ್ಷಕರ ನಿರೂಪಣೆ',
-  'zhihui.diagram.teacherScriptHint': 'ಈ ಪುಟದಲ್ಲಿನ ವಿವರಣೆಗಳು ಮತ್ತು ನಕ್ಷೆಗಳ ಗಮನದಲ್ಲಿ ತರಗತಿಯ ವಿವರಣೆಗಳನ್ನು ಜೋಡಿಸಲಾಗಿದೆ',
+  'zhihui.diagram.teacherScriptHint':
+    'ಈ ಪುಟದಲ್ಲಿನ ವಿವರಣೆಗಳು ಮತ್ತು ನಕ್ಷೆಗಳ ಗಮನದಲ್ಲಿ ತರಗತಿಯ ವಿವರಣೆಗಳನ್ನು ಜೋಡಿಸಲಾಗಿದೆ',
   'zhihui.diagram.ttsPlay': 'ಈ ಪುಟದ ನಿರೂಪಣೆಯನ್ನು ಗಟ್ಟಿಯಾಗಿ ಓದಲು ಕಿಟನ್ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ',
   'zhihui.diagram.ttsStop': 'ಓದುವುದನ್ನು ನಿಲ್ಲಿಸಿ',
   'zhihui.diagram.ttsMute': 'ಮೂಕ ನಿರೂಪಣೆ',
@@ -74,7 +82,8 @@ export default {
   'zhihui.sizeButton': 'ಚಿತ್ರದ ಗಾತ್ರ',
   'zhihui.sizePanelTitle': 'ಚಿತ್ರದ ಗಾತ್ರ',
   'zhihui.sizeOptional': 'ಐಚ್ಛಿಕ',
-  'zhihui.sizeHint': 'ಸ್ವರೂಪವು ಅಗಲ * ಎತ್ತರವಾಗಿದೆ. ನಿರ್ದಿಷ್ಟಪಡಿಸದಿದ್ದರೆ, ಪ್ರಾಂಪ್ಟ್ ಪದದ ಆಧಾರದ ಮೇಲೆ ಮಾದರಿಯು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ರೆಸಲ್ಯೂಶನ್ ಅನ್ನು ಶಿಫಾರಸು ಮಾಡುತ್ತದೆ.',
+  'zhihui.sizeHint':
+    'ಸ್ವರೂಪವು ಅಗಲ * ಎತ್ತರವಾಗಿದೆ. ನಿರ್ದಿಷ್ಟಪಡಿಸದಿದ್ದರೆ, ಪ್ರಾಂಪ್ಟ್ ಪದದ ಆಧಾರದ ಮೇಲೆ ಮಾದರಿಯು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ರೆಸಲ್ಯೂಶನ್ ಅನ್ನು ಶಿಫಾರಸು ಮಾಡುತ್ತದೆ.',
   'zhihui.sizeLimits': 'ಪಿಕ್ಸೆಲ್ ಪ್ರದೇಶ 512×512–2048×2048; ಆಕಾರ ಅನುಪಾತ 1:8–8:1',
   'zhihui.size.auto': 'ಬುದ್ಧಿವಂತ',
   'zhihui.size.autoHint': 'ಸ್ವಯಂಚಾಲಿತ',
@@ -102,7 +111,8 @@ export default {
   'zhihui.empty': 'ಇನ್ನೂ ಯಾವುದೇ ಚಿತ್ರವಿಲ್ಲ, ದಯವಿಟ್ಟು ಅದನ್ನು ಮೇಲೆ ರಚಿಸಲು ಪ್ರಯತ್ನಿಸಿ.',
   'zhihui.loadFailed': 'ಇತಿಹಾಸವನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ',
   'zhihui.delete': 'ಅಳಿಸಿ',
-  'zhihui.deleteConfirm': 'ಈ ಚಿತ್ರವನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
+  'zhihui.deleteConfirm':
+    'ಈ ಚಿತ್ರವನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
   'zhihui.deleteTitle': 'ಚಿತ್ರವನ್ನು ಅಳಿಸಿ',
   'zhihui.deleted': 'ಅಳಿಸಲಾಗಿದೆ',
   'zhihui.deleteFailed': 'ಅಳಿಸುವಿಕೆ ವಿಫಲವಾಗಿದೆ',

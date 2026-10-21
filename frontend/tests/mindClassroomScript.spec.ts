@@ -179,7 +179,11 @@ describe('buildMindClassroomLectureSteps', () => {
       { id: 'ctx-1', text: '蒸发', type: 'bubble', position: { x: 80, y: 0 } },
       { id: 'ctx-2', text: '降雨', type: 'bubble', position: { x: -80, y: 0 } },
     ]
-    const diagram = { connections: [] as Connection[], nodes: circleNodes, diagramType: 'circle_map' }
+    const diagram = {
+      connections: [] as Connection[],
+      nodes: circleNodes,
+      diagramType: 'circle_map',
+    }
     expect(
       lectureStepFitNodeIds(
         { kind: 'overview', focusNodeIds: ['topic'] },

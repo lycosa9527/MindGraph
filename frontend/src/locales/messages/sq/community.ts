@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': 'Ju lutemi klikoni butonin tjetër që ndryshimet të hyjnë në fuqi',
   'debateverse.coinTossAffirmativeFirst': 'Afirmativi flet i pari',
   'debateverse.coinTossGotIt': 'E kuptova',
-  'debateverse.coinTossModalBody': 'Para debatit, përcaktoni rendin e fjalës ose zgjidhni pozicionet afirmative/negative me hedhje monedhe',
+  'debateverse.coinTossModalBody':
+    'Para debatit, përcaktoni rendin e fjalës ose zgjidhni pozicionet afirmative/negative me hedhje monedhe',
   'debateverse.coinTossNegativeFirst': 'Negativi flet i pari',
   'debateverse.coinTossOrder': 'Hedhje monedhe për rendin e fjalës',
-  'debateverse.coinTossRules': 'Modelet AI u caktuan rastësisht në rolet e debatit. Para debatit, përcaktoni rendin e fjalës ose zgjidhni pozicionet me hedhje monedhe',
+  'debateverse.coinTossRules':
+    'Modelet AI u caktuan rastësisht në rolet e debatit. Para debatit, përcaktoni rendin e fjalës ose zgjidhni pozicionet me hedhje monedhe',
   'debateverse.coinTossStageTitle': 'Faza e hedhjes së monedhës',
   'debateverse.debateTopicLabel': 'Tema e debatit: ',
   'debateverse.executeCoinToss': 'Kryej hedhjen e monedhës',
@@ -109,13 +111,16 @@ export default {
   'debateverse.setup.roleDebater': 'Luaj si debatues',
   'debateverse.setup.roleJudge': 'Luaj si gjyqtar',
   'debateverse.setup.roleViewer': 'Luaj si shikues',
-  'debateverse.setup.suggestion1': 'A duhet t\'i jepet AI statusi i personit juridik?',
+  'debateverse.setup.suggestion1': "A duhet t'i jepet AI statusi i personit juridik?",
   'debateverse.setup.suggestion2': 'A i bëjnë lojërat video më shumë dobi apo dëm adoleshentëve?',
   'debateverse.setup.suggestion3': 'A duhet të shfuqizohen provimet e pranimit në kolegj?',
-  'debateverse.setup.suggestion4': 'A duhet platformat e mediave sociale të kenë moderim më të rreptë të përmbajtjes?',
+  'debateverse.setup.suggestion4':
+    'A duhet platformat e mediave sociale të kenë moderim më të rreptë të përmbajtjes?',
   'debateverse.setup.suggestion5': 'A duhet puna në distancë të bëhet mainstream?',
-  'debateverse.setup.suggestion6': 'A duhet përmbajtja e gjeneruar nga AI të mbrohet me të drejtë autor?',
-  'debateverse.setup.suggestion7': 'A duhet arsimi të fokusohet më shumë te njohuritë apo aftësitë?',
+  'debateverse.setup.suggestion6':
+    'A duhet përmbajtja e gjeneruar nga AI të mbrohet me të drejtë autor?',
+  'debateverse.setup.suggestion7':
+    'A duhet arsimi të fokusohet më shumë te njohuritë apo aftësitë?',
   'debateverse.setup.suggestion8': 'A duhet lejuar editimi gjenetik i embrioneve njerëzore?',
   'debateverse.setup.topicPlaceholder': 'Shkruani temën e debatit...',
   'debateverse.side.affirmative': 'Afirmativ',

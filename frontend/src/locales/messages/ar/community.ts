@@ -14,7 +14,8 @@ export default {
   'community.deleteConfirmBody': 'هل أنت متأكد أنك تريد حذف هذه المشاركة؟',
   'community.deleteConfirmTitle': 'تأكيد الحذف',
   'community.deleted': 'تم الحذف',
-  'community.emptyNoPosts': 'لم يتم العثور على أعمال مطابقة، حاول تعديل شروط التصفية أو البحث عن الكلمات الرئيسية',
+  'community.emptyNoPosts':
+    'لم يتم العثور على أعمال مطابقة، حاول تعديل شروط التصفية أو البحث عن الكلمات الرئيسية',
   'community.filter.all': 'الجميع',
   'community.filter.mine': 'مِلكِي',
   'community.filterCategory': 'تصنيف',
@@ -76,10 +77,12 @@ export default {
   'debateverse.clickNextHint': 'الرجاء النقر فوق الزر "التالي" لتصبح التغييرات سارية المفعول',
   'debateverse.coinTossAffirmativeFirst': 'الإيجابي يتحدث أولاً',
   'debateverse.coinTossGotIt': 'عرف',
-  'debateverse.coinTossModalBody': 'قبل اللعبة، اقلب العملة لتقرر ترتيب التحدث أو اختر الإيجابيات والسلبيات.',
+  'debateverse.coinTossModalBody':
+    'قبل اللعبة، اقلب العملة لتقرر ترتيب التحدث أو اختر الإيجابيات والسلبيات.',
   'debateverse.coinTossNegativeFirst': 'الجانب السلبي يتحدث أولا',
   'debateverse.coinTossOrder': 'إرم عملة معدنية لتحديد ترتيب التحدث',
-  'debateverse.coinTossRules': 'تم تخصيص نموذج الذكاء الاصطناعي بشكل عشوائي لكل دور مناظرة. قبل المباراة، يتم استخدام رمية العملة لتحديد ترتيب التحدث أو لاختيار الإيجابيات والسلبيات.',
+  'debateverse.coinTossRules':
+    'تم تخصيص نموذج الذكاء الاصطناعي بشكل عشوائي لكل دور مناظرة. قبل المباراة، يتم استخدام رمية العملة لتحديد ترتيب التحدث أو لاختيار الإيجابيات والسلبيات.',
   'debateverse.coinTossStageTitle': 'مرحلة رمي العملة',
   'debateverse.debateTopicLabel': 'موضوع النقاش:',
   'debateverse.executeCoinToss': 'أداء إرم العملة',
@@ -110,13 +113,17 @@ export default {
   'debateverse.setup.roleJudge': 'كحكم',
   'debateverse.setup.roleViewer': 'شاهد كمتفرج',
   'debateverse.setup.suggestion1': 'هل ينبغي منح الذكاء الاصطناعي شخصية قانونية؟',
-  'debateverse.setup.suggestion2': 'هل الألعاب عبر الإنترنت مفيدة للمراهقين أكثر من ضررها أم أنها تضر أكثر مما تنفع؟',
+  'debateverse.setup.suggestion2':
+    'هل الألعاب عبر الإنترنت مفيدة للمراهقين أكثر من ضررها أم أنها تضر أكثر مما تنفع؟',
   'debateverse.setup.suggestion3': 'هل يجب إلغاء امتحان القبول بالجامعة أو الاحتفاظ به؟',
-  'debateverse.setup.suggestion4': 'هل ينبغي لوسائل التواصل الاجتماعي أن تفرض رقابة أكثر صرامة على محتوى المستخدم؟',
+  'debateverse.setup.suggestion4':
+    'هل ينبغي لوسائل التواصل الاجتماعي أن تفرض رقابة أكثر صرامة على محتوى المستخدم؟',
   'debateverse.setup.suggestion5': 'هل ينبغي أن يصبح العمل عن بعد وسيلة سائدة للعمل؟',
-  'debateverse.setup.suggestion6': 'هل يجب أن يكون المحتوى الناتج عن الذكاء الاصطناعي محميًا بحقوق الطبع والنشر؟',
+  'debateverse.setup.suggestion6':
+    'هل يجب أن يكون المحتوى الناتج عن الذكاء الاصطناعي محميًا بحقوق الطبع والنشر؟',
   'debateverse.setup.suggestion7': 'هل يجب أن يركز التعليم أكثر على نقل المعرفة أو تنمية القدرات؟',
-  'debateverse.setup.suggestion8': 'هل ينبغي السماح باستخدام تكنولوجيا تحرير الجينات على الأجنة البشرية؟',
+  'debateverse.setup.suggestion8':
+    'هل ينبغي السماح باستخدام تكنولوجيا تحرير الجينات على الأجنة البشرية؟',
   'debateverse.setup.topicPlaceholder': 'أدخل موضوع النقاش...',
   'debateverse.side.affirmative': 'مربع',
   'debateverse.side.judge': 'الحكم',

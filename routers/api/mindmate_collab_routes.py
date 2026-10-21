@@ -13,13 +13,18 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from models.domain.auth import User
+from models.domain.auth import Organization, User
 from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.mindmate_collab_library_mutations import router as saved_seminar_mutation_router
+from routers.api.mindmate_collab_background_files import router as seminar_files_router
+from routers.api.mindmate_collab_reply_artifacts import router as seminar_reply_artifacts_router
+from routers.api.mindmate_collab_share_canvas import router as seminar_share_router
+from routers.api.mindmate_collab_members import router as seminar_members_router
 from routers.auth.dependencies import get_language_dependency
 from routers.features.workshop_chat.dependencies import resolve_social_org_id
 from routers.features.workshop_chat.schemas import OrgMembersPage
@@ -34,13 +39,15 @@ from services.features.mindmate_collab.diagram_library import (
     COPY_NO_SPEC,
     save_collab_diagram_for_user,
 )
+from services.features.mindmate_collab.brief_edit import update_seminar_brief
+from services.features.mindmate_collab.group_members import list_group_member_ids
 from services.features.mindmate_collab.library_archive import (
     list_saved_seminars,
     load_saved_seminar,
     save_finished_seminar_for_owner,
 )
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
-from services.features.mindmate_collab.poke_notify import send_mindmate_collab_poke
+from services.features.mindmate_collab.poke_notify import send_seminar_member_poke
 from services.features.mindmate_collab.visibility import user_may_join_mindmate_collab
 from services.features.org_member_roster import (
     fetch_org_members_page,
@@ -56,7 +63,7 @@ from utils.auth.school_tier import (
     assert_user_has_school_tier_feature,
 )
 from utils.auth.thinking_coin_config import EVENT_WORKSHOP_JOIN
-from utils.db.session_open import actor_rls_session
+from utils.db.session_open import actor_rls_session, system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +82,10 @@ router = APIRouter(
     dependencies=[Depends(_require_mindmate_collab_access)],
 )
 router.include_router(saved_seminar_mutation_router)
+router.include_router(seminar_members_router)
+router.include_router(seminar_files_router)
+router.include_router(seminar_reply_artifacts_router)
+router.include_router(seminar_share_router)
 
 
 class CollabSeedMessage(BaseModel):
@@ -91,6 +102,27 @@ class StartCollabRequest(BaseModel):
     title: Optional[str] = None
     duration: str = Field(default=MINDMATE_COLLAB_DEFAULT_DURATION)
     seed_messages: List[CollabSeedMessage] = Field(default_factory=list)
+    member_user_ids: List[int] = Field(default_factory=list, max_length=50)
+    member_roles: dict[str, str] = Field(default_factory=dict)
+    brief_topic: Optional[str] = None
+    brief_goals: List[str] = Field(default_factory=list)
+    close_group: bool = False
+
+
+class RenameCollabRequest(BaseModel):
+    """Body for PATCH /mindmate/collab/title."""
+
+    session_id: str
+    title: str = Field(min_length=1, max_length=200)
+
+
+class UpdateCollabBriefRequest(BaseModel):
+    """Body for PATCH /mindmate/collab/brief. Goals are optional. Topic may change."""
+
+    session_id: str
+    topic: Optional[str] = Field(default=None, max_length=200)
+    goals: List[str] = Field(default_factory=list, max_length=12)
+    resources: Optional[List[str]] = Field(default=None, max_length=30)
 
 
 class StopCollabRequest(BaseModel):
@@ -147,15 +179,85 @@ async def start_collab_room(
     ):
         raise HTTPException(status_code=400, detail="Invalid visibility mode")
 
+    role_map: dict[int, str] = {}
+    for raw_id, raw_role in body.member_roles.items():
+        try:
+            user_id = int(raw_id)
+        except (TypeError, ValueError):
+            continue
+        if user_id > 0:
+            role_map[user_id] = str(raw_role or "").strip()
+
     payload, error = await get_mindmate_collab_manager().start_session(
         current_user.id,
         visibility=body.visibility,
         title=body.title,
         duration=body.duration,
         seed_messages=[item.model_dump() for item in body.seed_messages],
+        member_user_ids=body.member_user_ids,
+        member_roles=role_map,
+        brief_topic=body.brief_topic,
+        brief_goals=body.brief_goals,
+        close_group=body.close_group or bool(body.member_user_ids) or bool(body.member_roles),
     )
     if not payload:
         raise HTTPException(status_code=400, detail=error or "Failed to start room")
+    return {"success": True, **payload}
+
+
+@router.patch("/title")
+async def rename_collab_room(
+    request: Request,
+    body: RenameCollabRequest,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Rename a live seminar. Host only."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_rename",
+        identifier,
+        max_requests=30,
+        window_seconds=60,
+    )
+    payload = await get_mindmate_collab_manager().update_session_title(
+        body.session_id,
+        current_user.id,
+        body.title,
+    )
+    if not payload:
+        raise HTTPException(status_code=404, detail="Room not found or not authorized")
+    return {"success": True, **payload}
+
+
+@router.patch("/brief")
+async def update_collab_brief(
+    request: Request,
+    body: UpdateCollabBriefRequest,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Let the host fill in or change goals and materials on the pinned brief."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_brief",
+        identifier,
+        max_requests=30,
+        window_seconds=60,
+    )
+    payload, error = await update_seminar_brief(
+        body.session_id,
+        current_user.id,
+        body.goals,
+        body.resources,
+        body.topic,
+    )
+    if error in {"invalid", "too_long"}:
+        raise HTTPException(status_code=400, detail="Invalid seminar brief")
+    if not payload:
+        raise HTTPException(status_code=404, detail="Room not found or not authorized")
     return {"success": True, **payload}
 
 
@@ -260,26 +362,29 @@ async def poke_collab_member(
     if not is_host and not await mgr.is_participant(session.code, current_user.id):
         raise HTTPException(status_code=403, detail="Join the room before poking others")
 
-    async with actor_rls_session(current_user) as db:
-        target_may_join = await user_may_join_mindmate_collab(
-            db,
-            visibility=session.visibility,
-            owner_user_id=session.owner_user_id,
-            owner_org_id=session.organization_id,
-            joiner_id=body.target_user_id,
-        )
-    if not target_may_join:
-        raise HTTPException(status_code=403, detail="Target cannot join this room")
+    member_ids = {int(item) for item in await list_group_member_ids(session.id)}
+    closed = bool(member_ids) or session.visibility == ONLINE_COLLAB_VISIBILITY_NETWORK
+    if closed:
+        if int(body.target_user_id) not in member_ids:
+            raise HTTPException(status_code=403, detail="Target is not a member of this seminar")
+    else:
+        async with actor_rls_session(current_user) as db:
+            target_may_join = await user_may_join_mindmate_collab(
+                db,
+                visibility=session.visibility,
+                owner_user_id=session.owner_user_id,
+                owner_org_id=session.organization_id,
+                joiner_id=body.target_user_id,
+            )
+        if not target_may_join:
+            raise HTTPException(status_code=403, detail="Target cannot join this room")
 
     from_name = getattr(current_user, "name", None) or getattr(current_user, "username", None) or "Teacher"
-    delivered = await send_mindmate_collab_poke(
+    delivered = await send_seminar_member_poke(
+        session=session,
         target_user_id=body.target_user_id,
         from_user_id=current_user.id,
         from_name=str(from_name),
-        session_id=session.id,
-        room_code=session.code,
-        room_title=session.title or "MindMate Collab",
-        visibility=session.visibility,
     )
     return {"success": True, "delivered": delivered}
 
@@ -360,6 +465,65 @@ async def list_collab_org_members(
     )
 
 
+@router.get("/lookup-phone")
+async def lookup_collab_user_by_phone(
+    request: Request,
+    phone: str = Query(..., min_length=11, max_length=11),
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Look up a platform account by phone for cross-school seminar invites."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_lookup_phone",
+        identifier,
+        max_requests=30,
+        window_seconds=60,
+    )
+    digits = "".join(ch for ch in phone if ch.isdigit())
+    if len(digits) != 11 or not digits.startswith("1"):
+        raise HTTPException(status_code=400, detail="Invalid phone number")
+    if digits == (current_user.phone or "").strip():
+        raise HTTPException(status_code=400, detail="Cannot invite yourself")
+
+    async with system_rls_session() as db:
+        row = (
+            await db.execute(
+                select(
+                    User.id,
+                    User.name,
+                    User.phone,
+                    User.avatar,
+                    User.organization_id,
+                    Organization.name,
+                    Organization.display_name,
+                )
+                .outerjoin(Organization, Organization.id == User.organization_id)
+                .where(User.phone == digits)
+                .limit(1)
+            )
+        ).one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_id, name, user_phone, avatar, org_id, org_name, org_display = row
+    masked = f"{digits[:3]}****{digits[-4:]}"
+    org_label = (org_display or org_name or "").strip()
+    return {
+        "id": int(user_id),
+        "name": (name or user_phone or masked).strip(),
+        "avatar": avatar,
+        "org_name": org_label,
+        "phone_masked": masked,
+        "same_org": bool(
+            current_user.organization_id
+            and org_id
+            and int(current_user.organization_id) == int(org_id)
+        ),
+    }
+
+
 @router.get("/organization/sessions")
 async def list_organization_sessions(
     request: Request,
@@ -398,17 +562,8 @@ async def collab_status(
     session = await mgr.load_session_by_code(code)
     if not session:
         raise HTTPException(status_code=404, detail="Room not found")
-    if session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK:
-        async with actor_rls_session(current_user) as db:
-            allowed = await user_may_join_mindmate_collab(
-                db,
-                visibility=session.visibility,
-                owner_user_id=session.owner_user_id,
-                owner_org_id=session.organization_id,
-                joiner_id=current_user.id,
-            )
-        if not allowed:
-            raise HTTPException(status_code=404, detail="Room not found")
+    if not await mgr.user_may_connect(current_user.id, session):
+        raise HTTPException(status_code=404, detail="Room not found")
     status = await mgr.get_status(code)
     if not status:
         raise HTTPException(status_code=404, detail="Room not found")
@@ -421,7 +576,7 @@ async def my_hosted_session(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ):
-    """Return the caller's currently hosted MindMate collab session, if any."""
+    """Return live seminars the caller hosts or has agreed to join."""
     await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
@@ -430,8 +585,8 @@ async def my_hosted_session(
         max_requests=60,
         window_seconds=60,
     )
-    hosted = await get_mindmate_collab_manager().get_hosted_session(current_user.id)
-    return {"session": hosted}
+    sessions = await get_mindmate_collab_manager().list_accessible_live_sessions(current_user.id)
+    return {"session": sessions[0] if sessions else None, "sessions": sessions}
 
 
 @router.get("/my/library")

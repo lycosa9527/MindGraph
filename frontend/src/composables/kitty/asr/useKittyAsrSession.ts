@@ -2,7 +2,7 @@
  * Shared Kitty ASR commit policy — utterance correlation, dedupe, release-only vs final.
  * Emits kitty:edit_turn_requested; does not hub-sync or sendText.
  */
-import { onUnmounted, ref, type Ref } from 'vue'
+import { type Ref, onUnmounted, ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { failKittyTurn, recordPipelineEvent } from '@/composables/kitty/pipeline/trace'

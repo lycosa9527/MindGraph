@@ -4,16 +4,19 @@
  */
 
 export default {
-  'app.aiDisclaimer': 'Контент генерируется искусственным интеллектом, пожалуйста, проверьте внимательно',
+  'app.aiDisclaimer':
+    'Контент генерируется искусственным интеллектом, пожалуйста, проверьте внимательно',
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'Войдите, чтобы использовать эту область',
-  'app.browserLocale.body': 'Обнаружено, что язык браузера — {name}. Хотите переключить интерфейс на соответствующий язык?',
+  'app.browserLocale.body':
+    'Обнаружено, что язык браузера — {name}. Хотите переключить интерфейс на соответствующий язык?',
   'app.browserLocale.dontAsk': 'Больше не предлагать',
   'app.browserLocale.keepChinese': 'держи китайский',
   'app.browserLocale.switch': 'выключатель',
   'app.browserLocale.title': 'Переключить язык интерфейса?',
   'app.testServer.badge': 'TEST',
-  'app.testServer.body': 'Рой напоминает вам, что вы обращаетесь к тестовому серверу. Этот сайт будет часто отключаться для тестирования. Пожалуйста, перейдите в производственную среду для официального использования.',
+  'app.testServer.body':
+    'Рой напоминает вам, что вы обращаетесь к тестовому серверу. Этот сайт будет часто отключаться для тестирования. Пожалуйста, перейдите в производственную среду для официального использования.',
   'app.testServer.confirm': 'Продолжайте использовать тестовый сайт',
   'app.testServer.jump': 'Перейти в формальную среду',
   'app.testServer.productionHost': 'www.mindspringedu.com',
@@ -21,7 +24,8 @@ export default {
   'app.testServer.watermark': 'тестовая среда',
   'app.schoolExpired.acknowledge': 'знал',
   'app.schoolExpired.badge': 'Истекший',
-  'app.schoolExpired.body': 'Срок выпуска школьной продукции истек. Учителя и администрация школы были заблокированы. Для продления обратитесь к администратору платформы.',
+  'app.schoolExpired.body':
+    'Срок выпуска школьной продукции истек. Учителя и администрация школы были заблокированы. Для продления обратитесь к администратору платформы.',
   'app.schoolExpired.env': 'подписка',
   'app.schoolExpired.host': '{school} · Дата истечения срока действия {date}',
   'app.schoolExpired.signOut': 'Выйти',
@@ -74,7 +78,8 @@ export default {
   'diagramTemplate.allModelsFailed': 'Все модели потерпели неудачу, попробуйте еще раз',
   'diagramTemplate.generated': 'Сгенерированная схема ({model})',
   'diagramTemplate.generationFailed': 'Создание не выполнено.',
-  'diagramTemplate.promptTooLong': 'Слишком длинная подсказка ({length} символов). Максимальное количество символов: {max}.',
+  'diagramTemplate.promptTooLong':
+    'Слишком длинная подсказка ({length} символов). Максимальное количество символов: {max}.',
   'diagramTemplates.brace_map': 'Разбейте 【тему】 с помощью карты скобок.',
   'diagramTemplates.bridge_map': 'Нарисуйте карту моста для 【отношения отношений】.',
   'diagramTemplates.bubble_map': 'Используйте карту пузырьков для описания 【темы】.',
@@ -99,6 +104,7 @@ export default {
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.gewe': 'Гевей',
   'meta.pageTitle.knowledgeSpace': 'Пространство знаний',
+  'meta.pageTitle.learningSpace': 'Learning Space',
   'meta.pageTitle.library': 'библиотека',
   'meta.pageTitle.libraryBookmark': 'Добавить в избранное',
   'meta.pageTitle.libraryViewer': 'Средство просмотра библиотек',
@@ -110,8 +116,10 @@ export default {
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'T0',
   'meta.pageTitle.orgs': 'Организационное управление',
-  'canvas.kittyMobileIndicatorHint': 'К этой схеме привязан телефонный сеанс Kitty (Mic started). Поговорите с Kitty по телефону.',
-  'canvas.kittyMobileIndicatorAria': 'Статус: мобильный Kitty подключен к этому холсту MindGraph. Общайтесь по телефону.',
+  'canvas.kittyMobileIndicatorHint':
+    'К этой схеме привязан телефонный сеанс Kitty (Mic started). Поговорите с Kitty по телефону.',
+  'canvas.kittyMobileIndicatorAria':
+    'Статус: мобильный Kitty подключен к этому холсту MindGraph. Общайтесь по телефону.',
   'canvas.kittyMobileIndicatorTitle': 'Мобильный Kitty',
   'canvas.kittyMobileIndicatorListening': 'Телефон прослушивает',
   'canvas.kittyMobileIndicatorSpeaking': 'Телефон отвечает',
@@ -177,8 +185,10 @@ export default {
   'mobile.kittyKeyboardToggle': 'Текстовое поле',
   'mobile.kittyEnd': 'Заканчивать',
   'mobile.kittyWelcomeLine': 'Поделитесь своими идеями',
-  'mobile.kittyWelcomeSub': 'Спрашивайте по голосу или типу. Откройте сохраненную диаграмму на телефоне или компьютере, чтобы синхронизировать Kitty с MindGraph.',
-  'mobile.kittyNeedsDesktopOwner': 'Откройте эту схему на рабочем столе MindGraph, чтобы применить изменения. Телефон Kitty все еще может общаться, пока не будет подключен холст.',
+  'mobile.kittyWelcomeSub':
+    'Спрашивайте по голосу или типу. Откройте сохраненную диаграмму на телефоне или компьютере, чтобы синхронизировать Kitty с MindGraph.',
+  'mobile.kittyNeedsDesktopOwner':
+    'Откройте эту схему на рабочем столе MindGraph, чтобы применить изменения. Телефон Kitty все еще может общаться, пока не будет подключен холст.',
   'mobile.kittyConnecting': 'Подключение…',
   'mobile.kittyInputPlaceholder': 'Введите сообщение',
   'mobile.kittySend': 'отправлять',
@@ -189,8 +199,10 @@ export default {
   'mobile.kittyDiagramUpdated': 'Схема обновлена',
   'mobile.kittyConnectFailed': 'Не удалось подключиться. Проверьте сеть и повторите попытку.',
   'mobile.kittyDisconnected': 'Голосовое соединение потеряно. Повторное подключение...',
-  'mobile.kittyEnableServerHint': 'Enable FEATURE_KITTY_AGENT=True in server .env и перезапустите API.',
-  'mobile.kittyServerDisabledBanner': 'Kitty голос отключен в этой среде. Включите FEATURE_KITTY_AGENT в сервере .env и перезапустите.',
+  'mobile.kittyEnableServerHint':
+    'Enable FEATURE_KITTY_AGENT=True in server .env и перезапустите API.',
+  'mobile.kittyServerDisabledBanner':
+    'Kitty голос отключен в этой среде. Включите FEATURE_KITTY_AGENT в сервере .env и перезапустите.',
   'mobile.kittyDiagramPickerTitle': 'Выбрать схему',
   'mobile.kittyDiagramPickerLoading': 'загрузка…',
   'mobile.kittyDiagramPickerEmpty': 'Нет сохраненных диаграмм',
@@ -198,13 +210,17 @@ export default {
   'mobile.kittyDiagramPickerNoMatch': 'Нет подходящих диаграмм',
   'mobile.kittyCreateNewMindmap': 'Создать новую интеллектуальную карту',
   'mobile.kittyNewMindmapTitle': 'Новая интеллектуальная карта',
-  'mobile.kittyNewMindmapCreated': 'Новая интеллектуальная карта сохранена; ее откроет рабочий стол.',
+  'mobile.kittyNewMindmapCreated':
+    'Новая интеллектуальная карта сохранена; ее откроет рабочий стол.',
   'mobile.kittyNewMindmapCreateFailed': 'Не удалось создать ментальную карту. Повторите попытку.',
-  'mobile.kittyNewMindmapDesktopFailed': 'Интеллектуальная карта сохранена, но рабочий стол не может быть уведомлен.',
+  'mobile.kittyNewMindmapDesktopFailed':
+    'Интеллектуальная карта сохранена, но рабочий стол не может быть уведомлен.',
   'mobile.kittyDiagramPinned': 'Закреплённые',
   'mobile.kittyDiagramPickFailed': 'Не удалось загрузить эту диаграмму. Повторите попытку позже.',
-  'mobile.kittyEphemeralScopePinned': 'Использование временного сеанса — выберите или создайте сохраненную диаграмму для синхронизации с рабочим столом.',
-  'mobile.kittyEphemeralScopeDegraded': 'Сопряжение рабочего стола может быть не синхронизировано. Откройте сохраненную диаграмму для повторного подключения.',
+  'mobile.kittyEphemeralScopePinned':
+    'Использование временного сеанса — выберите или создайте сохраненную диаграмму для синхронизации с рабочим столом.',
+  'mobile.kittyEphemeralScopeDegraded':
+    'Сопряжение рабочего стола может быть не синхронизировано. Откройте сохраненную диаграмму для повторного подключения.',
   'mobile.kittyDesktopJumpFailed': 'Схема переключена, но рабочий стол не может быть уведомлен.',
   'mobile.kittyDiagramSelected': 'Выбрана диаграмма; откроется на рабочем столе.',
   'mobile.kittyCurrentDiagramLabel': 'ПРОФИЛЯ БЛАНКЕТЫ',
@@ -213,22 +229,28 @@ export default {
   'mobile.kittyHubSourceLive': 'Хаб: в реальном времени',
   'mobile.kittyHubSourceLibrary': 'Hub: библиотека',
   'mobile.kittyHubSourceEmpty': 'Концентратор: пустой',
-  'mobile.kittyMicPttTitle': 'Держите, чтобы говорить; отпустите, чтобы отправить. Удерживайте пробел, если не вводите текст в поле.',
-  'mobile.kittyMicPttAria': 'Удерживайте, чтобы говорить: нажмите и удерживайте микрофон, чтобы говорить, отпустите, чтобы отправить. Удерживайте пробел, если не вводите текст в поле сообщения.',
+  'mobile.kittyMicPttTitle':
+    'Держите, чтобы говорить; отпустите, чтобы отправить. Удерживайте пробел, если не вводите текст в поле.',
+  'mobile.kittyMicPttAria':
+    'Удерживайте, чтобы говорить: нажмите и удерживайте микрофон, чтобы говорить, отпустите, чтобы отправить. Удерживайте пробел, если не вводите текст в поле сообщения.',
   'mobile.kittyHoldToSpeak': '"Держи и говори"',
   'mobile.kittyReleaseToSend': 'Отпустите для отправки',
   'mobile.kittyListenManual': 'подожди и скажи',
   'mobile.kittyListenAuto': 'автоматическое прослушивание',
-  'mobile.kittyListenAutoHint': 'Полудуплекс: микрофон включен только во время прослушивания и выключен, когда Китти говорит.',
+  'mobile.kittyListenAutoHint':
+    'Полудуплекс: микрофон включен только во время прослушивания и выключен, когда Китти говорит.',
   'mobile.kittyListenModeToggle': 'Включить автоматическое прослушивание',
   'mobile.kittyListening': 'слушаю',
   'mobile.kittySpeaking': 'Ответ',
   'mobile.kittyThinking': 'мышление',
   'mobile.kittyTapToListen': 'Нажмите, чтобы начать слушать',
   'mobile.kittyTapToStopListen': 'Нажмите, чтобы остановить',
-  'mobile.kittyMicInsecure': 'Текущая страница не имеет защищенного соединения (HTTPS), и микрофон выключен. Вместо этого используйте клавиатуру.',
-  'mobile.kittyMicToggleTitle': 'Держите, чтобы говорить; отпустите, чтобы отправить. Удерживайте пробел, если не вводите текст в поле.',
-  'mobile.kittyMicToggleAria': 'Удерживайте, чтобы говорить: нажмите и удерживайте микрофон, чтобы говорить, отпустите, чтобы остановиться.',
+  'mobile.kittyMicInsecure':
+    'Текущая страница не имеет защищенного соединения (HTTPS), и микрофон выключен. Вместо этого используйте клавиатуру.',
+  'mobile.kittyMicToggleTitle':
+    'Держите, чтобы говорить; отпустите, чтобы отправить. Удерживайте пробел, если не вводите текст в поле.',
+  'mobile.kittyMicToggleAria':
+    'Удерживайте, чтобы говорить: нажмите и удерживайте микрофон, чтобы говорить, отпустите, чтобы остановиться.',
   'mobile.kittyClickWheelAria': 'Проведите пальцем или коснитесь, чтобы выбрать узел',
   'mobile.kittyClickWheelHint': 'Смахните или коснитесь фишек: → дочерние ветки',
   'mobile.kittyClickWheelEmptyLabel': 'Узел без названия',
@@ -238,26 +260,65 @@ export default {
   'mobile.kittyClickWheelNext': 'Следующий узел',
   'mobile.kittyClickWheelSelect': 'Выберите Текущий',
   'mobile.kittyLlmRowAria': 'Выберите модель ИИ',
-  'mobile.kittyPhotoNeedsDiagram': 'Сначала откройте или выберите сохраненную диаграмму, а затем сделайте фотографию, чтобы извлечь текст.',
+  'mobile.kittyPhotoNeedsDiagram':
+    'Сначала откройте или выберите сохраненную диаграмму, а затем сделайте фотографию, чтобы извлечь текст.',
   'mobile.kittyPhotoInvalidType': 'Выберите изображение в формате JPG, PNG или WebP.',
   'mobile.kittyPhotoTooLarge': 'Изображение слишком большое, максимум 10 МБ.',
   'mobile.kittyPhotoProgressDetecting': 'Обработка фото…',
   'mobile.kittyPhotoUserBubble': '📷 Фотографии',
   'mobile.kittyPhotoUntitledMap': 'интеллектуальная карта',
-  'mobile.kittyPhotoHanddrawnReply': 'Обнаружена нарисованная от руки интеллектуальная карта «{topic}». Перестроен на холст, схема структуры сохранена в сводке документа.',
-  'mobile.kittyPhotoHanddrawnLocalReply': 'Обнаружена нарисованная от руки интеллектуальная карта «{topic}». Перестроено здесь; структура сохранена в сводке документа. Синхронизация библиотеки не завершена — откройте диаграмму снова, если полотно выглядит устаревшим.',
-  'mobile.kittyPhotoOcrReply': 'Распознанный текст изображения:\n{excerpt}\n\nПолный текст сохранен в сводке документа.',
+  'mobile.kittyPhotoHanddrawnReply':
+    'Обнаружена нарисованная от руки интеллектуальная карта «{topic}». Перестроен на холст, схема структуры сохранена в сводке документа.',
+  'mobile.kittyPhotoHanddrawnLocalReply':
+    'Обнаружена нарисованная от руки интеллектуальная карта «{topic}». Перестроено здесь; структура сохранена в сводке документа. Синхронизация библиотеки не завершена — откройте диаграмму снова, если полотно выглядит устаревшим.',
+  'mobile.kittyPhotoOcrReply':
+    'Распознанный текст изображения:\n{excerpt}\n\nПолный текст сохранен в сводке документа.',
   'mobile.kittyPhotoUploadFailed': 'Не удалось загрузить фотографию.',
-  'mobile.kittyPickDiagramToEdit': 'Сначала откройте или выберите сохраненную диаграмму, затем удерживайте, чтобы говорить, или введите, чтобы отредактировать ее.',
-  'mobile.kittyHubSyncFailed': 'Не удалось синхронизировать диаграмму с Kitty. Проверьте подключение и повторите попытку.',
+  'mobile.kittyPickDiagramToEdit':
+    'Сначала откройте или выберите сохраненную диаграмму, затем удерживайте, чтобы говорить, или введите, чтобы отредактировать ее.',
+  'mobile.kittyHubSyncFailed':
+    'Не удалось синхронизировать диаграмму с Kitty. Проверьте подключение и повторите попытку.',
   'mobile.kittyDesktopDiagramFollowed': 'Переключился на схему, открытую на рабочем столе',
-  'mobile.kittyScopeDivergence': 'Рабочий стол открыл другую диаграмму. Выберите способ синхронизации:',
+  'mobile.kittyScopeDivergence':
+    'Рабочий стол открыл другую диаграмму. Выберите способ синхронизации:',
   'mobile.kittyScopeFollowDesktop': 'Следуйте схеме рабочего стола',
   'mobile.kittyScopeOpenOnDesktop': 'Открыть схему телефона на рабочем столе',
   'mobile.kittyScopeKeepSplitAction': 'Держать отдельно',
   'mobile.kittyScopeKeepSplit': 'Держите телефон и рабочий стол на разных диаграммах',
   'meta.pageTitle.notFound': 'Страница не найдена',
   'meta.pageTitle.privacy': 'Условия использования',
+  'meta.pageTitle.browserPlugin': 'Browser plugin',
+  'browserPlugin.back': 'Back',
+  'browserPlugin.heroMark': 'Mind',
+  'browserPlugin.heroTitle': 'Browser plugin',
+  'browserPlugin.heroBody':
+    'Turn the page you are reading into a mind map, ask MindMate with that page as context, and save documents from teaching sites.',
+  'browserPlugin.downloadChrome': 'Chrome',
+  'browserPlugin.downloadEdge': 'Edge',
+  'browserPlugin.entryTitle': 'From one web page to a map, a chat, and a file',
+  'browserPlugin.entryBody': 'It lives in Chrome or Edge. Open a page, then open the extension.',
+  'browserPlugin.cardMapTitle': 'Mind map',
+  'browserPlugin.cardMapBody':
+    'Read the page or the text you selected, then download a PNG mind map.',
+  'browserPlugin.cardChatTitle': 'Ask with the page',
+  'browserPlugin.cardChatBody': 'The first message of a new chat can include the page you are on.',
+  'browserPlugin.cardDocTitle': 'Teaching documents',
+  'browserPlugin.cardDocBody':
+    'On CNKI, SmartEdu, Baidu Wenku, and similar sites, save the document on this computer.',
+  'browserPlugin.mapTitle': 'Turn a web page into an editable map',
+  'browserPlugin.mapBody':
+    'Start from the toolbar, the right-click menu, or a shortcut. If nothing is selected, the extension takes the article text.',
+  'browserPlugin.chatTitle': 'Ask about this page',
+  'browserPlugin.chatBody':
+    'Turn on include-current-page. On a SmartEdu lesson, text from the slides and the teaching plan is merged in.',
+  'browserPlugin.docTitle': 'Take the document from the site',
+  'browserPlugin.docBody':
+    'It recognizes CNKI reader pages, SmartEdu lessons, and library pages, then saves a PDF or the article text locally.',
+  'browserPlugin.downloadTitle': 'Download the browser plugin',
+  'browserPlugin.downloadLead': 'One package for Chrome and Edge.',
+  'browserPlugin.installHint':
+    'Unzip it, open the extensions page, turn on developer mode, and load the unpacked folder.',
+  'browserPlugin.downloadAction': 'Download',
   'meta.pageTitle.publicDashboard': 'Национальный центр обработки данных MG',
   'meta.pageTitle.schoolDashboard': 'Личный кабинет школы',
   'meta.pageTitle.smartResponse': 'Интеллектуальный ответ',
@@ -285,14 +346,16 @@ export default {
   'publicDashboard.visualHigh': 'Высокий',
   'publicDashboard.visualLow': 'Низкий',
   'settings.language.interface': 'Язык интерфейса',
-  'settings.language.matchPrompt': 'Синхронизация ИИ-ассистента, интерфейса и языка виртуальной клавиатуры',
+  'settings.language.matchPrompt':
+    'Синхронизация ИИ-ассистента, интерфейса и языка виртуальной клавиатуры',
   'settings.language.prompt': 'Язык ИИ-ассистента',
   'settings.language.promptSelectPlaceholder': 'Поиск языка',
   'settings.language.supportsCount': 'Поддерживает {n} языков',
   'settings.language.eBlackboardOptimize': 'Оптимизация электронной доски',
   'settings.language.eBlackboardOff': 'закрытие',
   'settings.language.eBlackboardOn': 'включать',
-  'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',
@@ -301,21 +364,34 @@ export default {
   'settings.language.presenterLanguage': 'Presenter language',
   'settings.language.presenterLanguageHint': 'Smaller second line for the demonstrator to read.',
   'settings.language.primaryLanguage': 'Primary language',
-  'settings.language.primaryLanguageHint': 'Regular-size line for the audience; also the interface language.',
+  'settings.language.primaryLanguageHint':
+    'Regular-size line for the audience; also the interface language.',
   'settings.language.secondaryLanguage': 'Second language',
   'settings.language.secondaryLanguageHint': 'Smaller line for the demonstrator to read.',
+  'settings.tabs.account': 'Account',
+  'settings.tabs.security': 'Security',
+  'settings.tabs.language': 'Language',
+  'settings.tabs.plugins': 'Plugins',
+  'settings.tabs.aria': 'Settings sections',
   'settings.version.title': 'Версия пользовательского интерфейса',
   'settings.version.chinese': 'Профессиональный режим',
   'settings.version.international': 'Режим «Упрощенный»',
-  'landing.international.subtitle': 'Самое мощное программное обеспечение для построения диаграммы мышления ИИ во Вселенной',
-  'landing.international.promptPlaceholder': 'Опишите тему и тип диаграммы - например, «Используйте карту потока для лабораторных этапов плотности»...',
+  'landing.international.subtitle':
+    'Самое мощное программное обеспечение для построения диаграммы мышления ИИ во Вселенной',
+  'landing.international.promptPlaceholder':
+    'Опишите тему и тип диаграммы - например, «Используйте карту потока для лабораторных этапов плотности»...',
   'landing.international.examplesTitle': 'Рекомендуемое вдохновение',
   'landing.international.example1': 'Создайте ментальную карту фотосинтеза',
-  'landing.international.example2': 'Используйте карту деревьев для классификации позвоночных: рыбы, амфибии, рептилии, млекопитающие',
-  'landing.international.example3': 'Используйте карту потока для лаборатории плотности: измерьте массу, измерьте объем, рассчитайте, запишите результаты',
-  'landing.international.example4': 'Используйте двойную карту пузырей для сравнения растительных и животных клеток',
-  'landing.international.example5': 'Используйте карту скобок для разбивки квадратных уравнений: стандартная форма, дискриминант, квадратная формула, граф и корни',
-  'landing.international.example6': 'Создайте карту пузырей, описывающую ключевые идеи в трех законах движения Ньютона',
+  'landing.international.example2':
+    'Используйте карту деревьев для классификации позвоночных: рыбы, амфибии, рептилии, млекопитающие',
+  'landing.international.example3':
+    'Используйте карту потока для лаборатории плотности: измерьте массу, измерьте объем, рассчитайте, запишите результаты',
+  'landing.international.example4':
+    'Используйте двойную карту пузырей для сравнения растительных и животных клеток',
+  'landing.international.example5':
+    'Используйте карту скобок для разбивки квадратных уравнений: стандартная форма, дискриминант, квадратная формула, граф и корни',
+  'landing.international.example6':
+    'Создайте карту пузырей, описывающую ключевые идеи в трех законах движения Ньютона',
   'landing.international.phaseRequestSent': 'Обращение отправлено',
   'landing.international.phaseServerReceived': 'Сервер получил ваш запрос',
   'landing.international.phaseGenerating': 'Создание диаграммы...',
@@ -323,14 +399,19 @@ export default {
   'landing.international.generatingWithTopic': 'Тема: {topic}. Создание {diagramType} — подождите.',
   'landing.international.topicUnknown': 'Изменение темы',
   'landing.international.diagramTypePending': 'диаграммы',
-  'landing.international.errorRateLimit': 'Слишком много запросов. Подождите немного и повторите попытку.',
+  'landing.international.errorRateLimit':
+    'Слишком много запросов. Подождите немного и повторите попытку.',
   'landing.international.errorTimeout': 'Время ожидания генерации истекло. Повторите попытку.',
-  'landing.international.errorContentFilter': 'Контент не может быть обработан. Пожалуйста, перефразируйте подсказку.',
-  'landing.international.errorValidation': 'Не удалось понять подсказку. Попробуйте добавить тему и тип диаграммы.',
+  'landing.international.errorContentFilter':
+    'Контент не может быть обработан. Пожалуйста, перефразируйте подсказку.',
+  'landing.international.errorValidation':
+    'Не удалось понять подсказку. Попробуйте добавить тему и тип диаграммы.',
   'landing.international.errorGeneration': 'Не удалось создать диаграмму. Повторите попытку.',
   'landing.international.errorInternal': 'Something went wrong. Please try again later',
-  'landing.international.errorStreamEmpty': 'Генерация завершилась безрезультатно. Повторите попытку.',
-  'landing.international.phaseCompleteNavigate': 'Диаграмма успешно сгенерирована — открытие холста...',
+  'landing.international.errorStreamEmpty':
+    'Генерация завершилась безрезультатно. Повторите попытку.',
+  'landing.international.phaseCompleteNavigate':
+    'Диаграмма успешно сгенерирована — открытие холста...',
   'landing.international.sectionTitle': 'Восемь карт мышления',
   'landing.international.advancedDiagramsTitle': 'Расширенные диаграммы',
   'landing.international.modules': 'Модули',
@@ -341,27 +422,37 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Копировать ссылку',
   'landing.international.shareSiteCopied': 'Ваша ссылка скопирована',
+  'swissGlass.hero.userSettings.ribbon': 'Settings',
+  'swissGlass.hero.userSettings.title': 'Settings',
+  'swissGlass.hero.userSettings.line1': 'Manage your account, security, language, and plugins',
   'swissGlass.hero.localeHint.ribbon': 'язык',
   'swissGlass.hero.localeHint.title': 'Переключить язык интерфейса?',
-  'swissGlass.hero.localeHint.line1': 'Язык браузера определен. Хотите переключиться на соответствующий интерфейс?',
+  'swissGlass.hero.localeHint.line1':
+    'Язык браузера определен. Хотите переключиться на соответствующий интерфейс?',
   'swissGlass.hero.shareExport.ribbon': 'Экспорт',
   'swissGlass.hero.shareExport.title': 'Экспортировать разговор',
   'swissGlass.hero.shareExport.line1': 'Проверьте сообщение и экспортируйте его как изображение.',
+  'swissGlass.hero.shareExport.line1Preview': 'Preview and export as an image',
   'swissGlass.hero.imagePreview.ribbon': 'Предварительный просмотр',
   'swissGlass.hero.imagePreview.title': 'Посмотреть фотографии',
-  'swissGlass.hero.imagePreview.line1': 'Переключайтесь влево и вправо, чтобы просмотреть текущее изображение.',
+  'swissGlass.hero.imagePreview.line1':
+    'Переключайтесь влево и вправо, чтобы просмотреть текущее изображение.',
   'swissGlass.hero.chunkPreview.ribbon': 'база знаний',
   'swissGlass.hero.chunkPreview.title': 'Частичный предварительный просмотр',
-  'swissGlass.hero.chunkPreview.line1': 'Просмотр исходного текста и метаданных извлеченных фрагментов',
+  'swissGlass.hero.chunkPreview.line1':
+    'Просмотр исходного текста и метаданных извлеченных фрагментов',
   'swissGlass.hero.manualEval.ribbon': 'Обзор',
   'swissGlass.hero.manualEval.title': 'Человеческий обзор',
   'swissGlass.hero.manualEval.line1': 'Оцените этот результат поиска и оставьте описание',
   'swissGlass.hero.createChannel.ribbon': 'Учебный клуб',
-  'swissGlass.hero.createChannel.title': 'Добавьте учебно-исследовательскую группу или пример урока',
-  'swissGlass.hero.createChannel.line1': 'Создайте обучающую и исследовательскую группу внутри организации или добавьте новый урок в группу.',
+  'swissGlass.hero.createChannel.title':
+    'Добавьте учебно-исследовательскую группу или пример урока',
+  'swissGlass.hero.createChannel.line1':
+    'Создайте обучающую и исследовательскую группу внутри организации или добавьте новый урок в группу.',
   'swissGlass.hero.channelSettings.ribbon': 'Учебный клуб',
   'swissGlass.hero.channelSettings.title': 'Настройки канала',
-  'swissGlass.hero.channelSettings.line1': 'Обновить имя, профиль и информацию о видимости участников.',
+  'swissGlass.hero.channelSettings.line1':
+    'Обновить имя, профиль и информацию о видимости участников.',
   'swissGlass.hero.deadline.ribbon': 'Учебный клуб',
   'swissGlass.hero.deadline.title': 'Установить срок',
   'swissGlass.hero.deadline.line1': 'Выберите крайний срок подачи для примера этого урока',
@@ -370,10 +461,12 @@ export default {
   'swissGlass.hero.topicEdit.line1': 'Изменить название или описание темы',
   'swissGlass.hero.teachingGroups.ribbon': 'Учебный клуб',
   'swissGlass.hero.teachingGroups.title': 'Группа преподавания и исследования менеджмента',
-  'swissGlass.hero.teachingGroups.line1': 'Организовать архивирование статуса учебно-исследовательских групп и примеров уроков.',
+  'swissGlass.hero.teachingGroups.line1':
+    'Организовать архивирование статуса учебно-исследовательских групп и примеров уроков.',
   'swissGlass.hero.diagramPicker.ribbon': 'Учебный клуб',
   'swissGlass.hero.diagramPicker.title': 'Выберите значок',
-  'swissGlass.hero.diagramPicker.line1': 'Выберите один из значков истории, чтобы прикрепить его к разговору.',
+  'swissGlass.hero.diagramPicker.line1':
+    'Выберите один из значков истории, чтобы прикрепить его к разговору.',
   'swissGlass.hero.newTopic.ribbon': 'Учебный клуб',
   'swissGlass.hero.newTopic.title': 'Новая сессия',
   'swissGlass.hero.newTopic.line1': 'Создать новую тему для текущего канала',
@@ -385,10 +478,12 @@ export default {
   'swissGlass.hero.shortcuts.line1': 'Список общих операций',
   'swissGlass.hero.contactProfile.ribbon': 'Учебный клуб',
   'swissGlass.hero.contactProfile.title': 'Контактная информация',
-  'swissGlass.hero.contactProfile.line1': 'Просмотр организации и контактной информации другой стороны',
+  'swissGlass.hero.contactProfile.line1':
+    'Просмотр организации и контактной информации другой стороны',
   'swissGlass.hero.dingtalk.ribbon': 'счет',
   'swissGlass.hero.dingtalk.title': 'Привязка DingTalk',
-  'swissGlass.hero.dingtalk.line1': 'Используйте код сопряжения, чтобы подключить учетную запись DingTalk к текущему пользователю.',
+  'swissGlass.hero.dingtalk.line1':
+    'Используйте код сопряжения, чтобы подключить учетную запись DingTalk к текущему пользователю.',
   'swissGlass.hero.watchAssign.ribbon': 'Чжиин',
   'swissGlass.hero.watchAssign.title': 'Назначение задач просмотра',
   'swissGlass.hero.watchAssign.line1': 'Выберите объекты и подтвердите график просмотра',
@@ -397,22 +492,27 @@ export default {
   'smartResponse.selectStudent': 'Select student',
   'swissGlass.hero.trainingInfo.ribbon': 'обучение',
   'swissGlass.hero.trainingInfo.title': 'Информация о курсе',
-  'swissGlass.hero.trainingInfo.line1': 'Заполните или обновите основную информацию для обучающих курсов',
+  'swissGlass.hero.trainingInfo.line1':
+    'Заполните или обновите основную информацию для обучающих курсов',
   'swissGlass.hero.teacherUsage.ribbon': 'Дозировка',
   'swissGlass.hero.teacherUsage.title': 'Дозировка учителя',
-  'swissGlass.hero.teacherUsage.line1': 'Просмотр разбивки использования для преподавателей и пользователей',
+  'swissGlass.hero.teacherUsage.line1':
+    'Просмотр разбивки использования для преподавателей и пользователей',
   'swissGlass.hero.askOnce.ribbon': 'Дуойинг',
   'swissGlass.hero.askOnce.title': 'Новый разговор',
   'swissGlass.hero.askOnce.line1': 'Выберите шаблон и начните новый вопрос и ответ.',
   'swissGlass.hero.login.ribbon': 'счет',
   'swissGlass.hero.login.title': 'Войти в систему преподавания и исследований Майте',
-  'swissGlass.hero.login.line1': 'Чтобы продолжить, используйте номер своего мобильного телефона, адрес электронной почты или стороннюю учетную запись.',
+  'swissGlass.hero.login.line1':
+    'Чтобы продолжить, используйте номер своего мобильного телефона, адрес электронной почты или стороннюю учетную запись.',
   'swissGlass.hero.register.ribbon': 'счет',
   'swissGlass.hero.register.title': 'Быстрая регистрация',
-  'swissGlass.hero.register.line1': 'Отсканируйте QR-код или заполните информацию для завершения регистрации.',
+  'swissGlass.hero.register.line1':
+    'Отсканируйте QR-код или заполните информацию для завершения регистрации.',
   'swissGlass.hero.oauthQr.ribbon': 'счет',
   'swissGlass.hero.oauthQr.title': 'Сканируйте код, чтобы войти',
-  'swissGlass.hero.oauthQr.line1': 'Используйте WeChat или DingTalk для сканирования QR-кода для завершения входа в систему.',
+  'swissGlass.hero.oauthQr.line1':
+    'Используйте WeChat или DingTalk для сканирования QR-кода для завершения входа в систему.',
   'swissGlass.hero.account.ribbon': 'счет',
   'swissGlass.hero.account.title': 'Информация об аккаунте',
   'swissGlass.hero.account.line1': 'Просмотр информации, настроек безопасности и статуса привязки',
@@ -427,13 +527,16 @@ export default {
   'swissGlass.hero.phone.line1': 'Сменить привязанный мобильный телефон через код подтверждения',
   'swissGlass.hero.setPassword.ribbon': 'Безопасность',
   'swissGlass.hero.setPassword.title': 'Установить пароль',
-  'swissGlass.hero.setPassword.line1': 'Используйте код подтверждения по SMS, чтобы установить пароль для входа в учетную запись',
+  'swissGlass.hero.setPassword.line1':
+    'Используйте код подтверждения по SMS, чтобы установить пароль для входа в учетную запись',
   'swissGlass.hero.apiToken.ribbon': 'Безопасность',
   'swissGlass.hero.apiToken.title': 'API-токен',
-  'swissGlass.hero.apiToken.line1': 'Просмотр или ротация токенов, используемых для вызовов интерфейса.',
+  'swissGlass.hero.apiToken.line1':
+    'Просмотр или ротация токенов, используемых для вызовов интерфейса.',
   'swissGlass.hero.loginDevices.ribbon': 'Безопасность',
   'swissGlass.hero.loginDevices.title': 'Войти в устройство',
-  'swissGlass.hero.loginDevices.line1': 'Просматривайте устройства, на которых выполнен вход, и регистрируйте другие устройства в автономном режиме.',
+  'swissGlass.hero.loginDevices.line1':
+    'Просматривайте устройства, на которых выполнен вход, и регистрируйте другие устройства в автономном режиме.',
   'swissGlass.hero.coins.ribbon': 'Мыслемонета',
   'swissGlass.hero.coins.title': 'Мыслемонета',
   'swissGlass.hero.coins.line1': 'Просмотр баланса, задач и записей приобретений',
@@ -442,10 +545,12 @@ export default {
   'swissGlass.hero.logoQr.line1': 'Отсканируйте с помощью телефона, чтобы открыть текущий сайт.',
   'swissGlass.hero.shareSite.ribbon': 'приглашать',
   'swissGlass.hero.shareSite.title': 'Быстрая регистрация',
-  'swissGlass.hero.shareSite.line1': 'Поделитесь ссылкой на регистрацию или QR-кодом, чтобы пригласить коллег',
+  'swissGlass.hero.shareSite.line1':
+    'Поделитесь ссылкой на регистрацию или QR-кодом, чтобы пригласить коллег',
   'swissGlass.hero.publishShowcase.ribbon': 'Случай',
   'swissGlass.hero.publishShowcase.title': 'Опубликовать обращение',
-  'swissGlass.hero.publishShowcase.line1': 'Следуйте инструкциям, чтобы заполнить и отправить открытое обращение.',
+  'swissGlass.hero.publishShowcase.line1':
+    'Следуйте инструкциям, чтобы заполнить и отправить открытое обращение.',
   'swissGlass.hero.showcaseDetail.ribbon': 'Случай',
   'swissGlass.hero.showcaseDetail.title': 'Подробности дела',
   'swissGlass.hero.showcaseDetail.line1': 'Просмотр значков, описаний и взаимодействий',
@@ -460,13 +565,15 @@ export default {
   'swissGlass.hero.historyPicker.line1': 'Выберите одно из сохраненных изображений для публикации.',
   'swissGlass.hero.communityPost.ribbon': 'Сообщество',
   'swissGlass.hero.communityPost.title': 'Подробности публикации',
-  'swissGlass.hero.communityPost.line1': 'Просмотр изображений и описаний, опубликованных сообществом',
+  'swissGlass.hero.communityPost.line1':
+    'Просмотр изображений и описаний, опубликованных сообществом',
   'swissGlass.hero.lightbox.ribbon': 'Предварительный просмотр',
   'swissGlass.hero.lightbox.title': 'Посмотреть фотографии',
   'swissGlass.hero.lightbox.line1': 'Нажмите пустое место или кнопку закрытия, чтобы выйти.',
   'swissGlass.hero.adminTrend.ribbon': 'управлять',
   'swissGlass.hero.adminTrend.title': 'Тенденции использования',
-  'swissGlass.hero.adminTrend.line1': 'Просмотр использования организации или пользователя по периоду',
+  'swissGlass.hero.adminTrend.line1':
+    'Просмотр использования организации или пользователя по периоду',
   'swissGlass.hero.adminUser.ribbon': 'управлять',
   'swissGlass.hero.adminUser.title': 'Изменить пользователя',
   'swissGlass.hero.adminUser.line1': 'Обновление ролей, квот и статуса учетной записи',
@@ -475,10 +582,12 @@ export default {
   'swissGlass.hero.adminMindbot.line1': 'Настройте параметры доступа и ответа MindBot',
   'swissGlass.hero.adminApiKeys.ribbon': 'MindBot',
   'swissGlass.hero.adminApiKeys.title': 'Создать ключ интерфейса',
-  'swissGlass.hero.adminApiKeys.line1': 'Создайте или поверните DingTalk для генерации ключей интерфейса.',
+  'swissGlass.hero.adminApiKeys.line1':
+    'Создайте или поверните DingTalk для генерации ключей интерфейса.',
   'swissGlass.hero.adminOrgTrend.ribbon': 'управлять',
   'swissGlass.hero.adminOrgTrend.title': 'Дозировка тканей',
-  'swissGlass.hero.adminOrgTrend.line1': 'Просмотр тенденций токенов для вашей школы или организации',
+  'swissGlass.hero.adminOrgTrend.line1':
+    'Просмотр тенденций токенов для вашей школы или организации',
   'swissGlass.hero.adminEvent.ribbon': 'управлять',
   'swissGlass.hero.adminEvent.title': 'Подробности мероприятия',
   'swissGlass.hero.adminEvent.line1': 'Просмотр отдельных событий использования или ошибок',
@@ -496,14 +605,16 @@ export default {
   'swissGlass.hero.adminRoleMember.line1': 'Добавить пользователя к текущей роли',
   'swissGlass.hero.schoolMember.ribbon': 'Школа',
   'swissGlass.hero.schoolMember.title': 'Добавить участника',
-  'swissGlass.hero.schoolMember.line1': 'Пригласите учителей или администраторов присоединиться к нашей школе.',
+  'swissGlass.hero.schoolMember.line1':
+    'Пригласите учителей или администраторов присоединиться к нашей школе.',
   'swissGlass.hero.adminInline.ribbon': 'управлять',
   'swissGlass.hero.adminInline.title': 'Управленческие операции',
   'swissGlass.hero.adminInline.line1': 'Сохраните после завершения этой настройки.',
   'swissGlass.hero.warning.ribbon': 'Уведомление',
   'swissGlass.hero.updateLog.ribbon': 'возобновлять',
   'swissGlass.hero.updateLog.title': 'Журнал изменений',
-  'swissGlass.hero.updateLog.line1': 'Просмотрите примечания к изменениям для самой последней версии.',
+  'swissGlass.hero.updateLog.line1':
+    'Просмотрите примечания к изменениям для самой последней версии.',
   'swissGlass.hero.agreement.ribbon': 'протокол',
   'swissGlass.hero.agreement.title': 'соглашение о программном обеспечении',
   'swissGlass.hero.agreement.line1': 'Прочтите и подтвердите условия использования',
@@ -513,13 +624,4 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'концептуальная карта',
   'swissGlass.hero.focusQuestion.title': 'проблемы с фокусом',
   'swissGlass.hero.focusQuestion.line1': 'Установите основной вопрос для концептуальной карты.',
-  'meta.pageTitle.learningSpace': 'Learning Space',
-  'settings.tabs.account': 'Account',
-  'settings.tabs.security': 'Security',
-  'settings.tabs.language': 'Language',
-  'settings.tabs.plugins': 'Plugins',
-  'settings.tabs.aria': 'Settings sections',
-  'swissGlass.hero.userSettings.ribbon': 'Settings',
-  'swissGlass.hero.userSettings.title': 'Settings',
-  'swissGlass.hero.userSettings.line1': 'Manage your account, security, language, and plugins',
 } as const

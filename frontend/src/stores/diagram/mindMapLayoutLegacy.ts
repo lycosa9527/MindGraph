@@ -12,7 +12,6 @@ import {
   mindMapNodeDepth,
   mindMapNodeSide,
 } from '@/utils/mindMapLocation'
-import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 // ---------------------------------------------------------------------------
 // Pure helper: recalculate X positions from measured widths (classic / main)

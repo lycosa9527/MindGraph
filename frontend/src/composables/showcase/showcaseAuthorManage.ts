@@ -21,8 +21,6 @@ export function postCanResubmit(post: ShowcasePost, ownPost = true): boolean {
 
 export function postHasAuthorManageActions(post: ShowcasePost, ownPost = true): boolean {
   return (
-    postCanWithdraw(post, ownPost) ||
-    postCanDelist(post, ownPost) ||
-    postCanResubmit(post, ownPost)
+    postCanWithdraw(post, ownPost) || postCanDelist(post, ownPost) || postCanResubmit(post, ownPost)
   )
 }

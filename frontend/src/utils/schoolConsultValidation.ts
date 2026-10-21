@@ -7,10 +7,7 @@ export const SCHOOL_CONSULT_LIMITS = {
   note: 500,
 } as const
 
-export type SchoolConsultValidationError =
-  | 'required'
-  | 'invalidPhone'
-  | 'tooLong'
+export type SchoolConsultValidationError = 'required' | 'invalidPhone' | 'tooLong'
 
 export interface SchoolConsultFormValues {
   name: string
@@ -32,6 +29,17 @@ function collapseWhitespace(value: string, keepNewlines: boolean): string {
   return value.replace(/\s+/g, ' ').trim()
 }
 
+function stripDisallowedControls(value: string): string {
+  let out = ''
+  for (const char of value) {
+    const code = char.charCodeAt(0)
+    const whitespace = code === 9 || code === 10 || code === 13
+    if (!whitespace && (code <= 0x1f || code === 0x7f)) continue
+    out += char
+  }
+  return out
+}
+
 function sanitizeField(
   value: string,
   maxLen: number,
@@ -41,7 +49,7 @@ function sanitizeField(
   if (!cleaned) {
     return { ok: false, error: 'required' }
   }
-  cleaned = cleaned.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
+  cleaned = stripDisallowedControls(cleaned)
   cleaned = cleaned.replace(/<@[^>\s]+>/g, '')
   cleaned = collapseWhitespace(cleaned, keepNewlines)
   if (!cleaned) {
@@ -53,7 +61,9 @@ function sanitizeField(
   return { ok: true, value: cleaned }
 }
 
-function validatePhone(value: string): { ok: true; value: string } | { ok: false; error: SchoolConsultValidationError } {
+function validatePhone(
+  value: string
+): { ok: true; value: string } | { ok: false; error: SchoolConsultValidationError } {
   const cleaned = value.trim()
   if (!cleaned) {
     return { ok: false, error: 'required' }
@@ -112,9 +122,7 @@ export function validateSchoolConsultForm(
   }
 }
 
-export function schoolConsultValidationMessageKey(
-  error: SchoolConsultValidationError
-): string {
+export function schoolConsultValidationMessageKey(error: SchoolConsultValidationError): string {
   switch (error) {
     case 'required':
       return 'thinkingCoins.school.validationRequired'

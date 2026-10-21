@@ -15,10 +15,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function liveContextFingerprint(
-  diagramType: string,
-  diagramData: Record<string, unknown>
-): string {
+function liveContextFingerprint(diagramType: string, diagramData: Record<string, unknown>): string {
   const nodes = diagramData.nodes
   if (Array.isArray(nodes) && nodes.length > 0) {
     return `${diagramType}:${getKittyDiagramContentFingerprint({
@@ -81,8 +78,7 @@ export async function applyKittyLiveContextPayload(
   ) {
     const remote = data.selected_nodes as string[]
     const local = diagramStore.selectedNodes
-    const same =
-      remote.length === local.length && remote.every((nodeId, i) => nodeId === local[i])
+    const same = remote.length === local.length && remote.every((nodeId, i) => nodeId === local[i])
     if (!same) {
       applyKittyRemoteCanvasSelection(remote, {
         canvasHighlight: options?.canvasHighlight === true,

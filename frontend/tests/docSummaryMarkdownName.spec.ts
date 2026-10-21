@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  docSummarySourceLabel,
-  toDocSummaryMarkdownName,
-} from '@/utils/docSummaryMarkdownName'
+import { docSummarySourceLabel, toDocSummaryMarkdownName } from '@/utils/docSummaryMarkdownName'
 
 describe('toDocSummaryMarkdownName', () => {
   it('turns office/pdf names into .md', () => {

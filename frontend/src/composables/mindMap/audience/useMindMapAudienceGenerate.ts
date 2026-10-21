@@ -2,10 +2,10 @@
  * Mind-map AI generate — 专业程度 instructions, not classic 学段.
  */
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import {
   mergeMindMapAudienceInstructions,
   resolveMindMapAudienceInstructions,

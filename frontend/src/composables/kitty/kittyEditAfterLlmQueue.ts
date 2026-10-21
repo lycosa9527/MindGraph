@@ -10,11 +10,7 @@ const MODEL_DISPLAY_NAMES: Record<string, string> = {
   doubao: 'Doubao',
 }
 
-const IN_FLIGHT_PHASES: ReadonlySet<ModelLoadPhase> = new Set([
-  'sending',
-  'waiting',
-  'streaming',
-])
+const IN_FLIGHT_PHASES: ReadonlySet<ModelLoadPhase> = new Set(['sending', 'waiting', 'streaming'])
 
 export function listInFlightAutocompleteDisplayNames(
   modelStates: Record<string, ModelState>,

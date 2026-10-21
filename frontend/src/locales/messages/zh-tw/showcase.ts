@@ -1,6 +1,6 @@
 /**
- * zh-tw UI — showcase
- * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ * zh UI — showcase
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export default {
@@ -53,8 +53,7 @@ export default {
   'showcase.publishModal.uploadingFiles': '正在上傳文件（{current}/{total}）…',
   'showcase.publishModal.uploadingFile': '正在上傳 {name}（{current}/{total}）…',
   'showcase.publishModal.finishing': '即將完成…',
-  'showcase.publishModal.uploadFailedRolledBack':
-    '上传失败，草稿已撤销，请重试。',
+  'showcase.publishModal.uploadFailedRolledBack': '上传失败，草稿已撤销，请重试。',
   'showcase.publishModal.uploadCorsFailed':
     '文件未能上传到对象存储（常见原因：存储桶 CORS 未允许当前网站，或网站 CSP 未放行 COS 域名）。草稿已撤销，请联系管理员配置后重试。',
   'showcase.publishModal.uploadStorageRejected':
@@ -72,10 +71,8 @@ export default {
     '文件过大，超出当前上传类型的限制。草稿已撤销，请确认大小后重试。',
   'showcase.publishModal.coverUploadSkipped':
     '案例已提交，但封面上传失败。可稍后编辑案例以更新封面。',
-  'showcase.publishModal.coverGenerating':
-    '封面正在后台生成，稍后会显示在卡片上。',
-  'showcase.publishModal.coverFailed':
-    '案例已提交，但封面生成失败。可稍后编辑案例以刷新封面。',
+  'showcase.publishModal.coverGenerating': '封面正在后台生成，稍后会显示在卡片上。',
+  'showcase.publishModal.coverFailed': '案例已提交，但封面生成失败。可稍后编辑案例以刷新封面。',
   'showcase.publishModal.coverFailedTimeout':
     '案例已提交，但封面生成超时。可稍后编辑案例以刷新封面。',
   'showcase.publishModal.success': '案例已提交，等待管理員審核',
@@ -91,10 +88,8 @@ export default {
   'showcase.publishModal.uploadLabel': '上傳文件',
   'showcase.publishModal.uploadImage': '上傳圖片',
   'showcase.publishModal.uploadFile': '上傳文件',
-  'showcase.publishModal.directUploadDisabled':
-    '本地直传暂时不可用，仍可从历史记录选择图示。',
-  'showcase.publishModal.uploadViaStorage':
-    '文件将通过安全短时链接上传至对象存储。',
+  'showcase.publishModal.directUploadDisabled': '本地直传暂时不可用，仍可从历史记录选择图示。',
+  'showcase.publishModal.uploadViaStorage': '文件将通过安全短时链接上传至对象存储。',
   'showcase.publishModal.pickHistory': '從個人庫中選擇圖示',
   'showcase.publishModal.removeFile': '移除',
   'showcase.publishModal.teachingDocHint': '支持 .docx / .pdf / .pptx / .doc（轉換後完整預覽）',
@@ -136,11 +131,14 @@ export default {
   'showcase.publishModal.aiGenerating': 'AI生成中…',
   'showcase.publishModal.aiGenerateStop': '停止',
   'showcase.publishModal.aiGenerateCancelled': '已停止 AI 生成 — 再點一次可清空並重新生成',
-  'showcase.publishModal.aiGenerateSuccess': '已根據文檔生成教學設計簡介與設計亮點，請核對後編輯；教學反思請自行填寫',
-  'showcase.publishModal.aiGenerateDiagramSuccess': '已根據圖示生成圖示簡介與課堂應用，請核對後編輯',
+  'showcase.publishModal.aiGenerateSuccess':
+    '已根據文檔生成教學設計簡介與設計亮點，請核對後編輯；教學反思請自行填寫',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    '已根據圖示生成圖示簡介與課堂應用，請核對後編輯',
   'showcase.publishModal.aiGenerateFailed': 'AI生成失敗，請稍後重試',
   'showcase.publishModal.aiGenerateNeedFile': '請先在上一步上傳教學設計文檔',
-  'showcase.publishModal.aiGenerateNeedDiagram': '請先在上一步上傳圖片、選擇個人庫圖示或上傳 .mg 文件',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    '請先在上一步上傳圖片、選擇個人庫圖示或上傳 .mg 文件',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI生成目前僅支持教學設計案例',
   'showcase.publishModal.reflectionLabel': '教學反思',
   'showcase.publishModal.introPlaceholder': '簡要描述案例內容和適用場景',

@@ -9,12 +9,11 @@
  * After vendoring, publish once:
  *   python scripts/db/publish_mindmap_export_fonts_to_cos.py
  */
+import fontverter from 'fontverter'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
-import fontverter from 'fontverter'
 
 const require = createRequire(import.meta.url)
 const __dirname = dirname(fileURLToPath(import.meta.url))

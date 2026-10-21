@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': 'Haga clic en el botón siguiente para aplicar los cambios',
   'debateverse.coinTossAffirmativeFirst': 'La afirmativa habla primero',
   'debateverse.coinTossGotIt': 'Entendido',
-  'debateverse.coinTossModalBody': 'Antes del debate, determine el orden de intervención o elija posiciones afirmativa/negativa mediante sorteo',
+  'debateverse.coinTossModalBody':
+    'Antes del debate, determine el orden de intervención o elija posiciones afirmativa/negativa mediante sorteo',
   'debateverse.coinTossNegativeFirst': 'La negativa habla primero',
   'debateverse.coinTossOrder': 'Sorteo para determinar el orden de intervención',
-  'debateverse.coinTossRules': 'Los modelos de IA se han asignado aleatoriamente a roles de debate. Antes del debate, determine el orden de intervención o elija posiciones afirmativa/negativa mediante sorteo',
+  'debateverse.coinTossRules':
+    'Los modelos de IA se han asignado aleatoriamente a roles de debate. Antes del debate, determine el orden de intervención o elija posiciones afirmativa/negativa mediante sorteo',
   'debateverse.coinTossStageTitle': 'Etapa de sorteo',
   'debateverse.debateTopicLabel': 'Tema del debate: ',
   'debateverse.executeCoinToss': 'Ejecutar sorteo',
@@ -105,17 +107,22 @@ export default {
   'debateverse.roleLabel.debater': 'Jugar como debatiente',
   'debateverse.roleLabel.judgeRole': 'Jugar como juez',
   'debateverse.roleLabel.viewer': 'Jugar como espectador',
-  'debateverse.setup.greeting': '{username}, la verdadera sabiduría nace del choque de puntos de vista.',
+  'debateverse.setup.greeting':
+    '{username}, la verdadera sabiduría nace del choque de puntos de vista.',
   'debateverse.setup.roleDebater': 'Jugar como debatiente',
   'debateverse.setup.roleJudge': 'Jugar como juez',
   'debateverse.setup.roleViewer': 'Jugar como espectador',
   'debateverse.setup.suggestion1': '¿Debería concederse personalidad jurídica a la IA?',
-  'debateverse.setup.suggestion2': '¿Los videojuegos benefician o perjudican más a los adolescentes?',
+  'debateverse.setup.suggestion2':
+    '¿Los videojuegos benefician o perjudican más a los adolescentes?',
   'debateverse.setup.suggestion3': '¿Deberían abolirse los exámenes de ingreso universitario?',
-  'debateverse.setup.suggestion4': '¿Deberían las plataformas de redes sociales tener moderación de contenido más estricta?',
+  'debateverse.setup.suggestion4':
+    '¿Deberían las plataformas de redes sociales tener moderación de contenido más estricta?',
   'debateverse.setup.suggestion5': '¿Debería el trabajo remoto convertirse en la norma?',
-  'debateverse.setup.suggestion6': '¿Debería protegerse por derechos de autor el contenido generado por IA?',
-  'debateverse.setup.suggestion7': '¿Debería la educación centrarse más en el conocimiento o en las habilidades?',
+  'debateverse.setup.suggestion6':
+    '¿Debería protegerse por derechos de autor el contenido generado por IA?',
+  'debateverse.setup.suggestion7':
+    '¿Debería la educación centrarse más en el conocimiento o en las habilidades?',
   'debateverse.setup.suggestion8': '¿Debería permitirse la edición genética en embriones humanos?',
   'debateverse.setup.topicPlaceholder': 'Ingrese el tema del debate…',
   'debateverse.side.affirmative': 'Afirmativa',
@@ -138,7 +145,8 @@ export default {
   'library.loading': 'Cargando…',
   'library.other': 'Otro',
   'library.premiumCollection': 'Colección destacada',
-  'library.slotFull.body': 'Tiene {max} diagramas guardados. Elimine uno para guardar un diagrama nuevo.',
+  'library.slotFull.body':
+    'Tiene {max} diagramas guardados. Elimine uno para guardar un diagrama nuevo.',
   'library.slotFull.cancel': 'Cancelar',
   'library.slotFull.deleteAndSave': 'Eliminar y guardar',
   'library.slotFull.networkError': 'Error de red; operación fallida',

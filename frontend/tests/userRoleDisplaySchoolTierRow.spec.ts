@@ -16,7 +16,11 @@ describe('userRolePillView with school tier row', () => {
   const translate = (key: string) => key
 
   it('shows trial edition pill for teachers in trial org rows', () => {
-    const pill = userRolePillView(translate, 'teacher', schoolTierFromUserRow({ school_tier: 'trial' }))
+    const pill = userRolePillView(
+      translate,
+      'teacher',
+      schoolTierFromUserRow({ school_tier: 'trial' })
+    )
     expect(pill?.label).toBe('sidebar.roleTrialEdition')
   })
 })

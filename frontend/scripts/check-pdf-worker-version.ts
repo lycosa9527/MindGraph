@@ -19,9 +19,7 @@ const depVersion = dep.replace(/^[^\d]*/, '')
 const pinnedVersion = expected.replace(/^pdfjs-dist@/, '')
 
 if (depVersion && pinnedVersion && !depVersion.startsWith(pinnedVersion)) {
-  console.error(
-    `pdf.worker.version (${expected}) does not match package.json pdfjs-dist (${dep})`
-  )
+  console.error(`pdf.worker.version (${expected}) does not match package.json pdfjs-dist (${dep})`)
   process.exit(1)
 }
 

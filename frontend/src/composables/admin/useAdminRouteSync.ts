@@ -1,22 +1,14 @@
 /**
  * Sync admin panel store with route query (tab, subtab, view, organization_id).
  */
-import { watch, type Ref } from 'vue'
-
-import { storeToRefs } from 'pinia'
+import { type Ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import {
-  defaultDataCenterView,
-  isDataCenterView,
-} from '@/composables/admin/adminDataCenterViews'
+import { storeToRefs } from 'pinia'
+
+import { defaultDataCenterView, isDataCenterView } from '@/composables/admin/adminDataCenterViews'
 import { LEGACY_FEATURE_DEV_SETTINGS_SUBTABS } from '@/composables/admin/adminFeatureDevNav'
-import {
-  defaultShowcaseSubtab,
-  isShowcaseSubtab,
-  resolveShowcaseSubtab,
-  showcaseSubtabLabelKey,
-} from '@/composables/admin/adminShowcaseNav'
+import { defaultShowcaseSubtab, isShowcaseSubtab } from '@/composables/admin/adminShowcaseNav'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAdminPanelStore, useAuthStore } from '@/stores'
@@ -41,13 +33,11 @@ export function useAdminRouteSync(options: UseAdminRouteSyncOptions) {
   const authStore = useAuthStore()
   const { can } = useAdminAccess()
   const adminPanel = useAdminPanelStore()
-  const { activeTab, activeSubtab, activeDataCenterView, selectedOrgId } =
-    storeToRefs(adminPanel)
+  const { activeTab, activeSubtab, activeDataCenterView, selectedOrgId } = storeToRefs(adminPanel)
 
   activeTab.value = (route.query.tab as string) || 'data_center'
   activeSubtab.value = typeof route.query.subtab === 'string' ? route.query.subtab : null
-  activeDataCenterView.value =
-    typeof route.query.view === 'string' ? route.query.view : null
+  activeDataCenterView.value = typeof route.query.view === 'string' ? route.query.view : null
   selectedOrgId.value = parseRouteOrgId(route.query.organization_id)
 
   function emitTabActivated(): void {
@@ -130,9 +120,7 @@ export function useAdminRouteSync(options: UseAdminRouteSyncOptions) {
       delete query.view
       activeDataCenterView.value = null
     } else if (typeof query.view !== 'string' || !isDataCenterView(query.view)) {
-      const defaultView = defaultDataCenterView(
-        can('scope.global') && can('tab.data_center.view')
-      )
+      const defaultView = defaultDataCenterView(can('scope.global') && can('tab.data_center.view'))
       query.view = defaultView
       activeDataCenterView.value = defaultView
     }
@@ -177,8 +165,7 @@ export function useAdminRouteSync(options: UseAdminRouteSyncOptions) {
 
     const current = route.query.organization_id
     const next = orgId == null ? undefined : String(orgId)
-    const currentNorm =
-      typeof current === 'string' && current.trim() ? current : undefined
+    const currentNorm = typeof current === 'string' && current.trim() ? current : undefined
     if (next === currentNorm) {
       return
     }

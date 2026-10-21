@@ -1,5 +1,6 @@
 /**
- * en UI � knowledge
+ * ca UI — knowledge
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {
@@ -9,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'Canvas',
   'fileCenterLibrary.badgeExtension': 'Extension',
   'fileCenterLibrary.badgeUpload': 'Upload',
-  'chunkTest.history.confirmDeleteBody': 'Are you sure you want to delete this test? This cannot be undone.',
+  'chunkTest.history.confirmDeleteBody':
+    'Are you sure you want to delete this test? This cannot be undone.',
   'chunkTest.history.confirmDeleteTitle': 'Delete Test',
   'chunkTest.history.delete': 'Delete',
   'chunkTest.history.deleteFailed': 'Failed to delete test',
@@ -48,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'Answer Quality',
   'chunkTestResults.avgLatency': 'Avg Latency',
   'chunkTestResults.back': 'Back',
-  'chunkTestResults.cancelConfirmBody': 'Are you sure you want to cancel this test? The test will stop at the next checkpoint.',
+  'chunkTestResults.cancelConfirmBody':
+    'Are you sure you want to cancel this test? The test will stop at the next checkpoint.',
   'chunkTestResults.cancelFailed': 'Failed to cancel test',
   'chunkTestResults.cancelRequested': 'Test cancellation requested',
   'chunkTestResults.cancelTest': 'Cancel Test',
@@ -88,7 +91,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Test All Datasets',
   'knowledge.chunkHeader.testUpload': 'Test Upload Documents',
   'knowledge.chunkHeader.title': 'RAG Chunk Test',
-  'knowledge.chunkHeader.waitForProcessing': 'Please wait for documents to finish processing before testing',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Please wait for documents to finish processing before testing',
   'knowledge.chunkPreview.empty': 'No chunks found',
   'knowledge.chunkPreview.pageLabel': 'Page {n}',
   'knowledge.chunkPreview.title': 'Document Chunks — {fileName}',
@@ -107,7 +111,8 @@ export default {
   'knowledge.doc.colStatus': 'Status',
   'knowledge.doc.colType': 'Type',
   'knowledge.doc.colUploaded': 'Upload Date',
-  'knowledge.doc.emptyDescription': 'No documents yet. Upload documents to build your knowledge base.',
+  'knowledge.doc.emptyDescription':
+    'No documents yet. Upload documents to build your knowledge base.',
   'knowledge.doc.errorPrefix': 'Error: ',
   'knowledge.doc.noData': 'No data',
   'knowledge.doc.statusCompleted': 'Completed',
@@ -123,31 +128,42 @@ export default {
   'knowledge.header.title': 'Personal Knowledge Base',
   'knowledge.header.upload': 'Upload Documents',
   'knowledge.ragGuide.title': 'How do packages, RAG, and wiki work?',
-  'knowledge.ragGuide.subtitle': 'No jargon needed — think of it as a folder of reference material. We index it for search (RAG), then compile short wiki notes, and the AI reads both when you build a mind map.',
+  'knowledge.ragGuide.subtitle':
+    'No jargon needed — think of it as a folder of reference material. We index it for search (RAG), then compile short wiki notes, and the AI reads both when you build a mind map.',
   'knowledge.ragGuide.step1.title': 'Pick a package',
-  'knowledge.ragGuide.step1.body': 'A package is like a Zotero collection. You can have up to 3 on the left; each usually belongs to one mind map. Click a package in the sidebar to manage its documents.',
+  'knowledge.ragGuide.step1.body':
+    'A package is like a Zotero collection. You can have up to 3 on the left; each usually belongs to one mind map. Click a package in the sidebar to manage its documents.',
   'knowledge.ragGuide.step2.title': 'Add sources and index them (RAG)',
-  'knowledge.ragGuide.step2.body': 'Upload PDFs, Word files, notes, or web pages. We split long documents into searchable chunks and store vector embeddings — this is the RAG index and becomes ready first.',
+  'knowledge.ragGuide.step2.body':
+    'Upload PDFs, Word files, notes, or web pages. We split long documents into searchable chunks and store vector embeddings — this is the RAG index and becomes ready first.',
   'knowledge.ragGuide.step3.title': 'Wiki notes compile automatically',
-  'knowledge.ragGuide.step3.body': 'After indexing finishes, an LLM compiles overview and topic wiki pages on disk. These are concise notes (not transcripts) that summarize the package for faster orientation.',
+  'knowledge.ragGuide.step3.body':
+    'After indexing finishes, an LLM compiles overview and topic wiki pages on disk. These are concise notes (not transcripts) that summarize the package for faster orientation.',
   'knowledge.ragGuide.step4.title': 'Lookup uses wiki + chunks',
-  'knowledge.ragGuide.step4.body': 'When you expand a branch or generate a summary, we match relevant wiki pages first, then retrieve the most relevant chunk passages (hybrid RAG).',
+  'knowledge.ragGuide.step4.body':
+    'When you expand a branch or generate a summary, we match relevant wiki pages first, then retrieve the most relevant chunk passages (hybrid RAG).',
   'knowledge.ragGuide.step5.title': 'Answers grounded in your sources',
-  'knowledge.ragGuide.step5.body': 'The AI writes from wiki notes and retrieved snippets instead of guessing — better sources, completed indexing, and compiled wiki pages mean more accurate maps.',
-  'knowledge.ragGuide.footer': 'Tip: opening Document Summary on the canvas creates a package automatically; pages saved via the Chrome extension also appear in the sidebar list.',
+  'knowledge.ragGuide.step5.body':
+    'The AI writes from wiki notes and retrieved snippets instead of guessing — better sources, completed indexing, and compiled wiki pages mean more accurate maps.',
+  'knowledge.ragGuide.footer':
+    'Tip: opening Document Summary on the canvas creates a package automatically; pages saved via the Chrome extension also appear in the sidebar list.',
   'knowledge.pipeline.title': 'Pipeline status',
   'knowledge.pipeline.ragIdle': 'RAG index',
-  'knowledge.pipeline.ragIdleDetail': 'No indexed packages yet. Add sources and run indexing from a package.',
+  'knowledge.pipeline.ragIdleDetail':
+    'No indexed packages yet. Add sources and run indexing from a package.',
   'knowledge.pipeline.ragProcessing': 'RAG indexing',
-  'knowledge.pipeline.ragProcessingDetail': '{count} package(s) still chunking and embedding sources.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} package(s) still chunking and embedding sources.',
   'knowledge.pipeline.ragReady': 'RAG ready',
   'knowledge.pipeline.ragReadyDetail': '{count} package(s) indexed — chunk search is active.',
   'knowledge.pipeline.wikiDisabled': 'Wiki compile off',
   'knowledge.pipeline.wikiDisabledDetail': 'Wiki compilation is disabled on this server.',
   'knowledge.pipeline.wikiIdle': 'Wiki compile',
-  'knowledge.pipeline.wikiIdleDetail': 'Wiki pages compile after RAG indexing completes for each source.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Wiki pages compile after RAG indexing completes for each source.',
   'knowledge.pipeline.wikiPending': 'Wiki compiling',
-  'knowledge.pipeline.wikiPendingDetail': '{count} package(s) waiting for wiki pages after indexing.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} package(s) waiting for wiki pages after indexing.',
   'knowledge.pipeline.wikiReady': 'Wiki ready',
   'knowledge.pipeline.wikiReadyDetail': '{count} package(s) have compiled wiki notes.',
   'knowledge.pipelineBadge.rag.label': 'RAG',
@@ -163,7 +179,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Deselect All',
   'knowledge.manualEval.dialogTitle': 'Manual Evaluation — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Ground Truth Answer (Optional)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Enter ground truth answer for answer relevance evaluation...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Enter ground truth answer for answer relevance evaluation...',
   'knowledge.manualEval.metric.answer_coverage': 'Answer Coverage',
   'knowledge.manualEval.metric.answer_faithfulness': 'Answer Faithfulness',
   'knowledge.manualEval.metric.clarity': 'Clarity',
@@ -185,7 +202,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Chunk Quality Evaluation',
   'knowledge.manualEval.resultsTitle': 'Evaluation Results',
   'knowledge.manualEval.selectAll': 'Select All',
-  'knowledge.manualEval.selectChunksHeading': 'Select Chunks to Evaluate (leave empty to evaluate all)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Select Chunks to Evaluate (leave empty to evaluate all)',
   'knowledge.manualEval.showingFirst20': 'Showing first 20 of {total} chunks',
   'knowledge.manualEval.startEvaluation': 'Start Evaluation',
   'knowledge.processing.chunking': 'Chunking',
@@ -234,7 +252,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Retrieval Settings',
   'knowledge.settings.title': 'Knowledge Base Settings',
   'knowledge.settings.helpTitle': 'How these settings apply',
-  'knowledge.settings.helpBody': 'Retrieval preferences apply immediately to search and AI answers. Chunk size and overlap apply to newly indexed documents — re-run indexing on existing sources after you change them.',
+  'knowledge.settings.helpBody':
+    'Retrieval preferences apply immediately to search and AI answers. Chunk size and overlap apply to newly indexed documents — re-run indexing on existing sources after you change them.',
   'knowledge.settings.tokens': 'tokens',
   'knowledge.settings.serverSection': 'Server (read-only)',
   'knowledge.settings.rerankingMode': 'Reranking',
@@ -245,7 +264,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Disabled',
   'knowledge.settings.saveSuccess': 'Settings saved',
   'knowledge.settings.saveFailed': 'Failed to save settings',
-  'knowledge.settings.reindexRequired': 'Chunk settings changed — re-index existing documents in your packages for the new sizes to take effect.',
+  'knowledge.settings.reindexRequired':
+    'Chunk settings changed — re-index existing documents in your packages for the new sizes to take effect.',
   'knowledge.upload.click': 'Click to upload',
   'knowledge.upload.drag': 'or drag file here',
   'knowledge.upload.fileTooLarge': 'File size cannot exceed 10MB',
@@ -253,7 +273,8 @@ export default {
   'knowledge.upload.maxDocs': 'Maximum document limit reached (5)',
   'knowledge.upload.title': 'Upload Document',
   'knowledge.upload.unsupportedType': 'Unsupported file type',
-  'knowledgeSpace.confirmDeleteBody': 'Are you sure you want to delete this document? This action cannot be undone.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Are you sure you want to delete this document? This action cannot be undone.',
   'knowledgeSpace.confirmDeleteTitle': 'Confirm Delete',
   'knowledgeSpace.deleteFailed': 'Delete failed',
   'knowledgeSpace.documentDeleted': 'Document deleted',

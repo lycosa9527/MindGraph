@@ -10,9 +10,9 @@ import {
 
 describe('mindmateTeachingDesignFlag', () => {
   it('parses HTML comment and bracket markers', () => {
-    expect(
-      parseTeachingInstructionKind('正文\n<!-- mg-reply-kind:teaching_instruction -->')
-    ).toBe('teaching_instruction')
+    expect(parseTeachingInstructionKind('正文\n<!-- mg-reply-kind:teaching_instruction -->')).toBe(
+      'teaching_instruction'
+    )
     expect(isTeachingInstructionReply('正文\n[mg-reply-kind:teaching_instruction]')).toBe(true)
     expect(isTeachingInstructionReply('普通问答')).toBe(false)
   })

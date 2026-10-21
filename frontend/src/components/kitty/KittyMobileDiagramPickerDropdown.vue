@@ -26,7 +26,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'select', diagram: SavedDiagram): void
-  (e: 'create-new'): void
+  (e: 'createNew'): void
 }>()
 
 const { t } = useLanguage()
@@ -81,7 +81,7 @@ function handleCreateNew(): void {
   if (props.selecting) {
     return
   }
-  emit('create-new')
+  emit('createNew')
   open.value = false
 }
 </script>

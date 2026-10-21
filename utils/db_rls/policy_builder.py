@@ -300,10 +300,48 @@ MINDMATE_COLLAB_READ_EXPR = (
 MINDMATE_COLLAB_READ_CHECK = (
     MINDMATE_COLLAB_READ_EXPR + " AND (user_id = rls_current_user_id() OR rls_is_system_mode())"
 )
+MINDMATE_COLLAB_MEMBER_EXPR = (
+    "rls_is_system_mode() OR rls_platform_admin_only() OR EXISTS ("
+    "SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
+    "s.owner_user_id = rls_current_user_id() "
+    "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
+    "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
+    "OR rls_user_bound_to_org(s.owner_user_id, rls_current_org_id()) "
+    "OR rls_is_system_mode()"
+    "))"
+)
+MINDMATE_COLLAB_MEMBER_CHECK = "rls_is_system_mode() OR rls_platform_admin_only()"
+_FILE_SESSION = (
+    "EXISTS (SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
+    "s.owner_user_id = rls_current_user_id() "
+    "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
+    "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
+    "OR rls_user_bound_to_org(s.owner_user_id, rls_current_org_id()) "
+    "OR rls_platform_admin_only() "
+    "OR rls_is_system_mode()"
+    "))"
+)
+_FILE_MEMBER = (
+    "NOT EXISTS (SELECT 1 FROM mindmate_collab_members m WHERE m.session_id = session_id) "
+    "OR EXISTS (SELECT 1 FROM mindmate_collab_members m "
+    "WHERE m.session_id = session_id AND m.user_id = rls_current_user_id()) "
+    "OR EXISTS (SELECT 1 FROM mindmate_collab_sessions s "
+    "WHERE s.id = session_id AND s.owner_user_id = rls_current_user_id())"
+)
+MINDMATE_COLLAB_FILE_EXPR = (
+    "rls_is_system_mode() OR rls_platform_admin_only() OR (" + _FILE_SESSION + " AND (" + _FILE_MEMBER + "))"
+)
+MINDMATE_COLLAB_FILE_CHECK = (
+    "("
+    + MINDMATE_COLLAB_FILE_EXPR
+    + ") AND (uploader_user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only())"
+)
 MINDMATE_COLLAB_TABLES = [
     ("mindmate_collab_sessions", MINDMATE_COLLAB_SESSION_EXPR, MINDMATE_COLLAB_SESSION_CHECK),
     ("mindmate_collab_messages", MINDMATE_COLLAB_MESSAGE_EXPR, MINDMATE_COLLAB_MESSAGE_EXPR),
     ("mindmate_collab_read_cursors", MINDMATE_COLLAB_READ_EXPR, MINDMATE_COLLAB_READ_CHECK),
+    ("mindmate_collab_members", MINDMATE_COLLAB_MEMBER_EXPR, MINDMATE_COLLAB_MEMBER_CHECK),
+    ("mindmate_collab_background_files", MINDMATE_COLLAB_FILE_EXPR, MINDMATE_COLLAB_FILE_CHECK),
 ]
 
 # Group C — users: id is NULL on INSERT; panel school managers set organization_id on the new row.

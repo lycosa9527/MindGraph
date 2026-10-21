@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const pushMock = vi.fn()
 const saveDiagramMock = vi.fn()
@@ -47,9 +48,8 @@ describe('useShowcaseDiagramAction', () => {
   })
 
   it('saves template to library and opens canvas without pre-setting activeDiagramId', async () => {
-    const { useShowcaseDiagramAction } = await import(
-      '@/composables/showcase/useShowcaseDiagramAction'
-    )
+    const { useShowcaseDiagramAction } =
+      await import('@/composables/showcase/useShowcaseDiagramAction')
     saveDiagramMock.mockResolvedValue({
       id: 'lib-1',
       title: 'Template A',
@@ -94,9 +94,8 @@ describe('useShowcaseDiagramAction', () => {
   })
 
   it('labels apply_template action', async () => {
-    const { useShowcaseDiagramAction } = await import(
-      '@/composables/showcase/useShowcaseDiagramAction'
-    )
+    const { useShowcaseDiagramAction } =
+      await import('@/composables/showcase/useShowcaseDiagramAction')
     const { actionLabel, resolveActionForPost } = useShowcaseDiagramAction()
     const action = resolveActionForPost({
       id: 'post-1',
@@ -122,9 +121,8 @@ describe('useShowcaseDiagramAction', () => {
   })
 
   it('hides open action for image-only diagram cases', async () => {
-    const { useShowcaseDiagramAction } = await import(
-      '@/composables/showcase/useShowcaseDiagramAction'
-    )
+    const { useShowcaseDiagramAction } =
+      await import('@/composables/showcase/useShowcaseDiagramAction')
     const { resolveActionForPost } = useShowcaseDiagramAction()
     const action = resolveActionForPost(
       {
@@ -160,9 +158,8 @@ describe('useShowcaseDiagramAction', () => {
   })
 
   it('opens .mg and personal-library diagram cases for secondary edit', async () => {
-    const { useShowcaseDiagramAction } = await import(
-      '@/composables/showcase/useShowcaseDiagramAction'
-    )
+    const { useShowcaseDiagramAction } =
+      await import('@/composables/showcase/useShowcaseDiagramAction')
     const { resolveActionForPost, actionLabel } = useShowcaseDiagramAction()
 
     const mgAction = resolveActionForPost({
@@ -234,9 +231,8 @@ describe('useShowcaseDiagramAction', () => {
   })
 
   it('useShowcaseActionLabel tracks post case type', async () => {
-    const { useShowcaseActionLabel } = await import(
-      '@/composables/showcase/useShowcaseDiagramAction'
-    )
+    const { useShowcaseActionLabel } =
+      await import('@/composables/showcase/useShowcaseDiagramAction')
     const post = ref({
       id: 'post-1',
       title: 'T',

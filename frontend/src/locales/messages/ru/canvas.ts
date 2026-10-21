@@ -15,7 +15,8 @@ export default {
   'canvas.export.docxSuccess': 'Документ успешно экспортирован',
   'canvas.export.pdfError': 'Не удалось экспортировать PDF-файл. Повторите попытку.',
   'canvas.export.pdfSuccess': 'Экспорт PDF выполнен успешно',
-  'canvas.export.clipboardFallback': 'Не удалось скопировать в буфер обмена; вместо этого скачан PNG',
+  'canvas.export.clipboardFallback':
+    'Не удалось скопировать в буфер обмена; вместо этого скачан PNG',
   'canvas.export.pngError': 'Не удалось экспортировать PNG. Повторите попытку.',
   'canvas.export.pngSuccess': 'Изображение PNG успешно экспортировано.',
   'canvas.export.svgError': 'Не удалось экспортировать SVG. Повторите попытку.',
@@ -31,25 +32,31 @@ export default {
   'canvas.exportOptions.layoutLandscape': 'Горизонтальный',
   'canvas.exportOptions.layoutPortrait': 'портрет',
   'canvas.worksheetText.cancel': 'Отмена',
-  'canvas.worksheetText.defaultInstruction': 'Добавьте соответствующее содержимое в пустое пространство, чтобы улучшить общую структуру диаграммы.',
-  'canvas.worksheetText.dragDiagramHint': 'Перетащите, чтобы отрегулировать положение · Перетащите углы, чтобы увеличить масштаб',
+  'canvas.worksheetText.defaultInstruction':
+    'Добавьте соответствующее содержимое в пустое пространство, чтобы улучшить общую структуру диаграммы.',
+  'canvas.worksheetText.dragDiagramHint':
+    'Перетащите, чтобы отрегулировать положение · Перетащите углы, чтобы увеличить масштаб',
   'canvas.worksheetText.fieldClass': 'сорт:',
   'canvas.worksheetText.fieldDate': 'дата:',
   'canvas.worksheetText.fieldName': 'Имя:',
   'canvas.worksheetText.hide': 'скрывать',
   'canvas.worksheetText.instructionLabel': 'Текст описания',
   'canvas.worksheetText.instructionPrefix': 'Требовать:',
-  'canvas.worksheetText.modalHint': 'Экспорт PDF удобен для печати; при экспорте документа такие поля, как имя, можно редактировать, а значки остаются картинками.',
-  'canvas.worksheetText.headerCaptureFailed': 'Не удалось создать заголовок листа исследования, и был экспортирован PDF-файл без заголовка.',
+  'canvas.worksheetText.modalHint':
+    'Экспорт PDF удобен для печати; при экспорте документа такие поля, как имя, можно редактировать, а значки остаются картинками.',
+  'canvas.worksheetText.headerCaptureFailed':
+    'Не удалось создать заголовок листа исследования, и был экспортирован PDF-файл без заголовка.',
   'canvas.worksheetText.modalTitle': 'Экспорт как DOC/PDF',
   'canvas.worksheetText.learningSheetMode': 'Исследование одиночного режима',
   'canvas.worksheetText.learningSheetModeOn': 'включать',
   'canvas.worksheetText.learningSheetModeOff': 'закрытие',
   'canvas.worksheetText.learningSheetPanelTitle': 'Изучите отдельный заголовок',
-  'canvas.worksheetText.learningSheetPanelHint': 'Следующие параметры доступны только в режиме листа исследования и отображаются над значком.',
+  'canvas.worksheetText.learningSheetPanelHint':
+    'Следующие параметры доступны только в режиме листа исследования и отображаются над значком.',
   'canvas.worksheetText.exportSettings': 'Параметры экспорта',
   'canvas.worksheetText.previewDiagram': 'Иллюстрация',
-  'canvas.worksheetText.previewEmpty': 'После включения поля вы можете просмотреть заголовок листа исследования.',
+  'canvas.worksheetText.previewEmpty':
+    'После включения поля вы можете просмотреть заголовок листа исследования.',
   'canvas.worksheetText.previewFailed': 'Невозможно создать графический предварительный просмотр.',
   'canvas.worksheetText.previewLabel': 'Предварительный просмотр',
   'canvas.worksheetText.previewLoading': 'Захват значка…',
@@ -65,14 +72,21 @@ export default {
   'canvas.worksheetText.showName': 'Имя',
   'canvas.worksheetText.showTopic': 'Название проекта',
   'canvas.worksheetText.topicPreviewLabel': 'Тема карты',
-  'canvas.import.invalidFile': 'Неверный файл графика. Выберите файл MG, экспортированный MindGraph, или файл CMAP CmapTools.',
+  'canvas.import.invalidFile':
+    'Неверный файл графика. Выберите файл MG, экспортированный MindGraph, или файл CMAP CmapTools.',
   'canvas.import.parseError': 'Не удалось проанализировать файл изображения. Повторите попытку.',
-  'canvas.import.cmapHeuristicSemantics': 'Этот файл CmapTools использует регрессию текстовой последовательности для определения связи соединения. Пожалуйста, сверьте его с исходным изображением на холсте.',
-  'canvas.import.cmapConnectionFallback': 'Семантические отношения восстанавливаются на основе графовых связей IHMC, а не на основе пропозициональных объектов.',
-  'canvas.import.cmapEmptyLayout': 'Координаты узла не были восстановлены, а макет автоматически сгенерирован заново.',
-  'canvas.import.cmapLayoutLabelCollision': 'Дублирующиеся теги концепций имеют общие привязки макета, и некоторые позиции импорта могут быть неточными.',
-  'canvas.import.cmapLayoutFailed': 'При анализе макета произошло исключение, и вместо этого координаты были сгенерированы автоматически.',
-  'canvas.reset.confirmBody': 'Вы уверены, что хотите выполнить сброс? Текущее представление, палитра узлов и все остальное будет потеряно и не подлежит восстановлению.',
+  'canvas.import.cmapHeuristicSemantics':
+    'Этот файл CmapTools использует регрессию текстовой последовательности для определения связи соединения. Пожалуйста, сверьте его с исходным изображением на холсте.',
+  'canvas.import.cmapConnectionFallback':
+    'Семантические отношения восстанавливаются на основе графовых связей IHMC, а не на основе пропозициональных объектов.',
+  'canvas.import.cmapEmptyLayout':
+    'Координаты узла не были восстановлены, а макет автоматически сгенерирован заново.',
+  'canvas.import.cmapLayoutLabelCollision':
+    'Дублирующиеся теги концепций имеют общие привязки макета, и некоторые позиции импорта могут быть неточными.',
+  'canvas.import.cmapLayoutFailed':
+    'При анализе макета произошло исключение, и вместо этого координаты были сгенерированы автоматически.',
+  'canvas.reset.confirmBody':
+    'Вы уверены, что хотите выполнить сброс? Текущее представление, палитра узлов и все остальное будет потеряно и не подлежит восстановлению.',
   'canvas.reset.confirmButton': 'перезагрузить',
   'canvas.reset.confirmTitle': 'Сбросить шаблон по умолчанию',
   'canvas.reset.warnSelectType': 'Невозможно выполнить сброс: сначала выберите тип значка.',
@@ -85,22 +99,29 @@ export default {
   'canvas.voiceCommandGuide.example.auto_complete_branch': '«Завершить эту китайскую ветку»',
   'canvas.voiceCommandGuide.example.auto_complete': '«Автоматически завершить всю картину»',
   'canvas.voiceCommandGuide.example.select_node': '«Выбери Китай»',
-  'canvas.voiceCommandGuide.example.update_center': '«Сменить тему на профессиональное образование»',
+  'canvas.voiceCommandGuide.example.update_center':
+    '«Сменить тему на профессиональное образование»',
   'canvas.voiceCommandGuide.example.delete_node': '«Удалить китайскую ветку»',
   'canvas.voiceCommandGuide.example.explain_node': '«Объясните Китай»',
-  'canvas.voiceCommandGuide.example.start_inline_recommendations': '«Сделать рекомендации по ассоциации для этого узла»',
+  'canvas.voiceCommandGuide.example.start_inline_recommendations':
+    '«Сделать рекомендации по ассоциации для этого узла»',
   'canvas.shortcutGuide.addChild': 'Добавить дочерний узел',
-  'canvas.shortcutGuide.addChildDesc': 'Быстро добавляйте дочерние узлы к текущему выбранному узлу.',
+  'canvas.shortcutGuide.addChildDesc':
+    'Быстро добавляйте дочерние узлы к текущему выбранному узлу.',
   'canvas.shortcutGuide.addSibling': 'Добавить родственный узел',
-  'canvas.shortcutGuide.addSiblingDesc': 'Быстро вставляйте одноуровневые узлы для выбранного в данный момент узла.',
+  'canvas.shortcutGuide.addSiblingDesc':
+    'Быстро вставляйте одноуровневые узлы для выбранного в данный момент узла.',
   'canvas.shortcutGuide.editText': 'Редактировать текст',
-  'canvas.shortcutGuide.editTextDesc': 'Непосредственно вызовите поле ввода, чтобы изменить текст, нажмите Enter или потеряйте фокус, чтобы автоматически сохранить и мгновенно рассчитать новый размер.',
+  'canvas.shortcutGuide.editTextDesc':
+    'Непосредственно вызовите поле ввода, чтобы изменить текст, нажмите Enter или потеряйте фокус, чтобы автоматически сохранить и мгновенно рассчитать новый размер.',
   'canvas.shortcutGuide.doubleClick': 'Дважды щелкните, чтобы изменить текст',
   'canvas.shortcutGuide.deleteNode': 'Удалить узел',
-  'canvas.shortcutGuide.deleteNodeDesc': 'Быстро удалить выбранный узел и его ветки (корневой узел защищен от случайного удаления).',
+  'canvas.shortcutGuide.deleteNodeDesc':
+    'Быстро удалить выбранный узел и его ветки (корневой узел защищен от случайного удаления).',
   'canvas.shortcutGuide.arrowNav': 'Навигация по клавишам со стрелками',
   'canvas.shortcutGuide.selectNav': 'Выберите навигацию',
-  'canvas.shortcutGuide.arrowNavDesc': 'Ведущий в отрасли механизм расчета евклидовой геометрии. Независимо от режима набора текста, клавиши со стрелками автоматически перейдут к ближайшему лучшему узлу и выберут его на основе фактических физических двумерных координат узла на холсте, создавая ощущение плавного перемещения, как при работе с собственным программным обеспечением на рабочем столе.',
+  'canvas.shortcutGuide.arrowNavDesc':
+    'Ведущий в отрасли механизм расчета евклидовой геометрии. Независимо от режима набора текста, клавиши со стрелками автоматически перейдут к ближайшему лучшему узлу и выберут его на основе фактических физических двумерных координат узла на холсте, создавая ощущение плавного перемещения, как при работе с собственным программным обеспечением на рабочем столе.',
   'canvas.shortcutGuide.cancel': 'Снимите флажок/Изменить',
   'canvas.shortcutGuide.cancelDesc': 'Снимите флажок или отредактируйте одним щелчком мыши.',
   'canvas.shortcutGuide.undo': 'Отменить изменения',
@@ -110,7 +131,8 @@ export default {
   'canvas.shortcutGuide.learningSheetAnswers': 'Показать/скрыть справочные ответы',
   'canvas.shortcutGuide.recalcLayout': 'Пересчитать макет',
   'canvas.shortcutGuide.multiSelect': 'Множественный выбор узлов',
-  'canvas.shortcutGuide.multiSelectDesc': 'Перетащите, чтобы выбрать несколько узлов в режиме указателя.',
+  'canvas.shortcutGuide.multiSelectDesc':
+    'Перетащите, чтобы выбрать несколько узлов в режиме указателя.',
   'canvas.shortcutGuide.multiSelectHint': 'Перетащите выбор',
   'canvas.shortcutGuide.canvasPan': 'Перетаскивание холста',
   'canvas.shortcutGuide.canvasPanDesc': 'Панорамируйте вид холста.',
@@ -185,15 +207,20 @@ export default {
   'canvas.toolbar.mindMapThemeVibrantRose': 'Фиолетовый',
   'canvas.toolbar.mindMapThemeRainbow': 'Радужная ветка',
   'canvas.toolbar.mindMapDiagramStyleClassic': 'классический',
-  'canvas.toolbar.mindMapDiagramStyleClassicDesc': 'Прямоугольный центр · Закругленный угол, уровень 1 · Подчеркивание, уровень 2',
+  'canvas.toolbar.mindMapDiagramStyleClassicDesc':
+    'Прямоугольный центр · Закругленный угол, уровень 1 · Подчеркивание, уровень 2',
   'canvas.toolbar.mindMapDiagramStyleFormal': 'прямой угол',
-  'canvas.toolbar.mindMapDiagramStyleFormalDesc': 'Прямоугольный центр · Прямоугольный уровень 1 · Прямоугольный уровень 2',
+  'canvas.toolbar.mindMapDiagramStyleFormalDesc':
+    'Прямоугольный центр · Прямоугольный уровень 1 · Прямоугольный уровень 2',
   'canvas.toolbar.mindMapDiagramStyleBubble': 'пузырь',
-  'canvas.toolbar.mindMapDiagramStyleBubbleDesc': 'Центр пузырька · Уровень пузырька 1 · Уровень подчеркивания 2',
+  'canvas.toolbar.mindMapDiagramStyleBubbleDesc':
+    'Центр пузырька · Уровень пузырька 1 · Уровень подчеркивания 2',
   'canvas.toolbar.mindMapDiagramStyleUnderline': 'Подчеркнуть',
-  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc': 'Прямой угол по центру · Уровень подчеркивания 1 · Уровень подчеркивания 2',
+  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc':
+    'Прямой угол по центру · Уровень подчеркивания 1 · Уровень подчеркивания 2',
   'canvas.toolbar.mindMapDiagramStyleSoft': 'Мягко закругленные углы',
-  'canvas.toolbar.mindMapDiagramStyleSoftDesc': 'Центр скругления · Уровень эллипса 1 · Уровень подчеркивания 3',
+  'canvas.toolbar.mindMapDiagramStyleSoftDesc':
+    'Центр скругления · Уровень эллипса 1 · Уровень подчеркивания 3',
   'canvas.toolbar.mindMapThemeMorandi': 'Элегантный Моранди',
   'canvas.toolbar.mindMapThemeNordicBlue': 'Классический нордический синий',
   'canvas.toolbar.mindMapThemeObsidianDark': 'Компьютерщик Темный',
@@ -218,10 +245,12 @@ export default {
   'canvas.toolbar.aiGenerateTooltip': 'Создать на основе центральной темы',
   'canvas.toolbar.aiGenerating': 'Создание…',
   'canvas.toolbar.professionalContent.label': 'Content level',
-  'canvas.toolbar.professionalContent.tooltip': 'Выберите сложность аудитории для контента, созданного искусственным интеллектом.',
+  'canvas.toolbar.professionalContent.tooltip':
+    'Выберите сложность аудитории для контента, созданного искусственным интеллектом.',
   'canvas.toolbar.professionalContent.panelTitle': 'Content level',
   'canvas.toolbar.professionalContent.guideTitle': 'Сначала выберите сложность аудитории',
-  'canvas.toolbar.professionalContent.guideBody': 'Нажмите здесь, чтобы выбрать сцену или сцену. Генерация ИИ, изменения диалогов и т. д. организуют контент в соответствии со сложностью. После выбора кнопка получит метку академической ступени.',
+  'canvas.toolbar.professionalContent.guideBody':
+    'Нажмите здесь, чтобы выбрать сцену или сцену. Генерация ИИ, изменения диалогов и т. д. организуют контент в соответствии со сложностью. После выбора кнопка получит метку академической ступени.',
   'canvas.toolbar.professionalContent.guideAction': 'выбирать',
   'canvas.toolbar.professionalContent.guideDismiss': 'знал',
   'canvas.toolbar.professionalContent.level.general.title': 'Универсальный',
@@ -238,12 +267,17 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': 'Практические сценарии',
   'canvas.toolbar.professionalContent.level.expert.title': 'эксперт',
   'canvas.toolbar.professionalContent.level.expert.description': 'Глубоко усовершенствованный',
-  'canvas.toolbar.professionalContent.notify.preference': 'Последующий контент, созданный с помощью ИИ, будет больше соответствовать уровню осведомленности аудитории «{level}».',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral': 'Последующий контент, созданный ИИ, будет выполнен в «универсальном» стиле без каких-либо дополнительных ограничений сложности.',
-  'canvas.toolbar.professionalContent.notify.afterGenerated': 'Текущий контент имеет сложность «{current}»; в будущем я нажму «{next}», чтобы помочь вам его создать.',
-  'canvas.toolbar.professionalContent.audienceLine': 'Текущая аудитория: {level} (снизу [Профессиональный контент])',
+  'canvas.toolbar.professionalContent.notify.preference':
+    'Последующий контент, созданный с помощью ИИ, будет больше соответствовать уровню осведомленности аудитории «{level}».',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    'Последующий контент, созданный ИИ, будет выполнен в «универсальном» стиле без каких-либо дополнительных ограничений сложности.',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    'Текущий контент имеет сложность «{current}»; в будущем я нажму «{next}», чтобы помочь вам его создать.',
+  'canvas.toolbar.professionalContent.audienceLine':
+    'Текущая аудитория: {level} (снизу [Профессиональный контент])',
   'canvas.toolbar.educationStage': 'академический этап',
-  'canvas.toolbar.educationStageTooltip': 'Выберите академический этап, чтобы повлиять на глубину контента, создаваемого ИИ.',
+  'canvas.toolbar.educationStageTooltip':
+    'Выберите академический этап, чтобы повлиять на глубину контента, создаваемого ИИ.',
   'canvas.toolbar.educationStageClear': 'Универсальный',
   'canvas.toolbar.educationStagePrimary': 'Начальная школа',
   'canvas.toolbar.educationStageMiddle': 'неполная средняя школа',
@@ -269,15 +303,19 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': 'Невозможно удалить узел темы',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference':
+    'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': 'Не удалось сгенерировать',
   'canvas.toolbar.causeAdded': 'Узел причины добавлен',
   'canvas.toolbar.childAdded': 'Ребенок добавлен',
-  'canvas.toolbar.collabAiBlocked': 'В совместном режиме только владелец значка может использовать генерацию ИИ.',
-  'canvas.toolbar.collabGuestFeatureBlocked': 'Эта функция недоступна при присоединении в качестве гостя для совместной работы.',
+  'canvas.toolbar.collabAiBlocked':
+    'В совместном режиме только владелец значка может использовать генерацию ИИ.',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'Эта функция недоступна при присоединении в качестве гостя для совместной работы.',
   'canvas.toolbar.colorLabel': 'цвет',
   'canvas.toolbar.conceptGeneration': 'генерировать концепции',
-  'canvas.toolbar.conceptMapModesDev': 'Функция режима концептуальной карты находится в стадии разработки.',
+  'canvas.toolbar.conceptMapModesDev':
+    'Функция режима концептуальной карты находится в стадии разработки.',
   'canvas.toolbar.createDiagramFirst': 'Пожалуйста, сначала создайте значок',
   'canvas.toolbar.deleteAnalogyPairHistory': 'Удалить аналоговую пару',
   'canvas.toolbar.deleteAttributeHistory': 'Удалить атрибут',
@@ -295,11 +333,13 @@ export default {
   'canvas.toolbar.exit': 'покидать',
   'canvas.toolbar.exitFullscreen': 'Выйти из полноэкранного режима',
   'canvas.toolbar.highlighter': 'маркер-ручка',
-  'canvas.toolbar.highlighterTooltip': 'Применяйте аннотации к холсту и автоматически удаляйте их при выходе из демо-версии.',
+  'canvas.toolbar.highlighterTooltip':
+    'Применяйте аннотации к холсту и автоматически удаляйте их при выходе из демо-версии.',
   'canvas.toolbar.highlighterChooseColor': 'цвет маркера',
   'canvas.toolbar.highlighterPaletteAria': 'Выберите цвет хайлайтера',
   'canvas.toolbar.insertEquation': 'Вставить формулу',
-  'canvas.toolbar.insertEquationTooltip': 'Вставьте встроенную формулу ($...$) в курсор; если не редактировать, добавить к выбранному узлу',
+  'canvas.toolbar.insertEquationTooltip':
+    'Вставьте встроенную формулу ($...$) в курсор; если не редактировать, добавить к выбранному узлу',
   'canvas.toolbar.insertEquationSelectNode': 'Пожалуйста, сначала выберите узел',
   'canvas.toolbar.insertEquationDialogTitle': 'Вставить формулу',
   'canvas.toolbar.insertEquationLoading': 'Загрузка редактора уравнений...',
@@ -333,7 +373,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'середина',
   'canvas.toolbar.mathKeyboardEqYmxb': 'у=мх+б',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
+  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
   'canvas.toolbar.mathKeyboardEqCircleArea': 'А=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'С=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'А=1/2бч',
@@ -354,7 +394,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'Теорема о синусе',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'Косинус(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'Синус(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': 'е^{\'{\'}iθ{\'}\'}',
+  'canvas.toolbar.mathKeyboardEqEuler': "е^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'Двойной угол',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+н',
   'canvas.toolbar.mathKeyboardEqArithAn': 'Арифметический срок прохождения',
@@ -420,11 +460,13 @@ export default {
   'canvas.presentationTimer.exitTimer': 'покидать',
   'canvas.presentationTimer.startPresenting': 'начать речь',
   'canvas.presentationTimer.closeHud': 'Закрыть таймер',
-  'canvas.cachedResult.notice': 'Кэшируйте результаты и используйте функцию снова, чтобы получить новые результаты.',
+  'canvas.cachedResult.notice':
+    'Кэшируйте результаты и используйте функцию снова, чтобы получить новые результаты.',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-    'canvas.classroomRemote.tabTopics': 'Topics',
+  'canvas.classroomRemote.resize': 'Drag to resize',
+  'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
@@ -437,7 +479,8 @@ export default {
   'canvas.classroomRemote.topicsReset': 'Restore defaults',
   'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
   'canvas.presentation.learningSheetConfirmTitle': 'Идете на показ?',
-  'canvas.presentation.learningSheetConfirmBody': 'Вы все еще редактируете схему выбивного кронштейна. Вход в шоу завершит редактирование с пустым изображением, а пустое содержимое сохранится. Продолжать?',
+  'canvas.presentation.learningSheetConfirmBody':
+    'Вы все еще редактируете схему выбивного кронштейна. Вход в шоу завершит редактирование с пустым изображением, а пустое содержимое сохранится. Продолжать?',
   'canvas.presentation.learningSheetConfirmProceed': 'Перейти к показу',
   'canvas.presentationContextMenu.laserPointer': 'лазерная указка',
   'canvas.presentationContextMenu.spotlight': 'прожектор',
@@ -475,7 +518,8 @@ export default {
   'canvas.floatingToolbar.summaryLineDashed': 'пунктирная линия',
   'canvas.floatingToolbar.summaryLineDotted': 'пунктирная линия',
   'canvas.floatingToolbar.assocStyle': 'Связанный стиль линии',
-  'canvas.floatingToolbar.assocCurveDrag': 'Перетащите трехточечный круг, чтобы отрегулировать радиан.',
+  'canvas.floatingToolbar.assocCurveDrag':
+    'Перетащите трехточечный круг, чтобы отрегулировать радиан.',
   'canvas.floatingToolbar.assocShape': 'Форма линии ассоциации',
   'canvas.floatingToolbar.assocShapeCurve': 'изгиб',
   'canvas.floatingToolbar.assocStartArrow': 'стрелка начала',
@@ -491,12 +535,15 @@ export default {
   'canvas.subgraphPreview.generationFailed': 'Не удалось создать подграф',
   'canvas.subgraphPreview.emptyResult': 'ИИ не вернул доступные дочерние узлы',
   'canvas.subgraphPreview.mergeFailed': 'Невозможно объединить подграф в текущий узел',
-  'canvas.subgraphPreview.enterNodeTextFirst': 'Сначала введите действительный текст темы для узла.',
-  'canvas.subgraphPreview.topicNodeNotSupported': 'Пожалуйста, выберите узлы ветвления для создания подграфов',
+  'canvas.subgraphPreview.enterNodeTextFirst':
+    'Сначала введите действительный текст темы для узла.',
+  'canvas.subgraphPreview.topicNodeNotSupported':
+    'Пожалуйста, выберите узлы ветвления для создания подграфов',
   'canvas.subgraphPreview.historyLabel': 'Интеллектуальная генерация подграфов',
   'canvas.inlineRecPicker.prevPage': 'Предыдущая страница',
   'canvas.inlineRecPicker.nextPage': 'Следующая страница',
-  'canvas.toolbar.formatBrushActivated': 'Style copied — select target nodes and click again to apply',
+  'canvas.toolbar.formatBrushActivated':
+    'Style copied — select target nodes and click again to apply',
   'canvas.toolbar.formatBrushApplied': 'Формат применен к узлам {count}',
   'canvas.toolbar.formatBrushCancelled': 'Форматировать кисть отменено',
   'canvas.toolbar.formatBrushSelectSource': 'Сначала выберите узел в качестве источника стиля.',
@@ -505,16 +552,20 @@ export default {
   'canvas.toolbar.layoutDirectionToggled': 'Направление макета изменено',
   'canvas.toolbar.learningSheetRestored': 'Учебный лист восстановлен.',
   'canvas.toolbar.moreAppConceptMapModes': 'шаблон концептуальной карты',
-  'canvas.toolbar.moreAppConceptMapModesDesc': 'В настоящее время это стандартный режим, скоро будут выпущены другие режимы.',
+  'canvas.toolbar.moreAppConceptMapModesDesc':
+    'В настоящее время это стандартный режим, скоро будут выпущены другие режимы.',
   'canvas.toolbar.moreAppLearningSheet': 'Схема полого кронштейна',
-  'canvas.toolbar.moreAppLearningSheetDesc': 'Оставьте это поле пустым в случайном порядке, это хороший способ изучить и пересмотреть',
+  'canvas.toolbar.moreAppLearningSheetDesc':
+    'Оставьте это поле пустым в случайном порядке, это хороший способ изучить и пересмотреть',
   'canvas.toolbar.moreAppWaterfall': 'Мозговой штурм с использованием искусственного интеллекта',
-  'canvas.toolbar.moreAppWaterfallDesc': 'Выбирайте среди пакетных узлов, чтобы сделать дивергентное и конвергентное мышление явным.',
+  'canvas.toolbar.moreAppWaterfallDesc':
+    'Выбирайте среди пакетных узлов, чтобы сделать дивергентное и конвергентное мышление явным.',
   'canvas.toolbar.moreApps': 'Больше приложений',
   'canvas.toolbar.moreAppSnapshot': 'Снимок',
   'canvas.toolbar.moreAppSnapshotDesc': 'Сохраните версию текущего значка (до 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'переводить',
-  'canvas.toolbar.moreAppTranslateLabelDesc': 'Используйте искусственный интеллект для перевода всех меток узлов и соединений на схеме в соответствии с текущим языком интерфейса.',
+  'canvas.toolbar.moreAppTranslateLabelDesc':
+    'Используйте искусственный интеллект для перевода всех меток узлов и соединений на схеме в соответствии с текущим языком интерфейса.',
   'canvas.toolbar.translateLabelTitle': 'Значок перевода',
   'canvas.toolbar.translateLabelSource': 'Теги для перевода ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'целевой язык',
@@ -526,24 +577,35 @@ export default {
   'canvas.toolbar.translateLabelAndMore': 'Не показаны {n} элементов...',
   'canvas.toolbar.translateLabelInProgress': 'Перевод значка…',
   'canvas.toolbar.translateLabelBannerTitle': 'Значок перевода',
-  'canvas.toolbar.translateLabelFallbackEnInfo': 'Текущий язык интерфейса не поддерживается в качестве цели перевода, и будет использоваться английский вывод.',
+  'canvas.toolbar.translateLabelFallbackEnInfo':
+    'Текущий язык интерфейса не поддерживается в качестве цели перевода, и будет использоваться английский вывод.',
   'canvas.toolbar.translateLabelFailed': 'Не удалось выполнить перевод. Повторите попытку позже.',
   'canvas.toolbar.translateLabelDone': 'Перевод завершен',
   'canvas.toolbar.moreAppVirtualKeyboard': 'виртуальная клавиатура',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'Английская экранная клавиатура; для китайского и других языков используйте системный метод ввода',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'Английская экранная клавиатура; для китайского и других языков используйте системный метод ввода',
   'canvas.toolbar.virtualKeyboardClose': 'Закрыть клавиатуру',
-  'canvas.toolbar.virtualKeyboardFocusHint': 'Выбор узла и его непосредственный ввод очистят исходное содержимое; вы также можете дважды щелкнуть метку, чтобы начать редактирование.',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'Выбор узла и его непосредственный ввод очистят исходное содержимое; вы также можете дважды щелкнуть метку, чтобы начать редактирование.',
   'canvas.toolbar.virtualKeyboardIme': 'Системный метод ввода',
-  'canvas.toolbar.virtualKeyboardImeHint': 'Для ввода используйте физическую клавиатуру или системную клавиатуру. Окно кандидата предоставляется системным методом ввода.',
-  'canvas.toolbar.snapshotSaveFirst': 'Пожалуйста, сначала сохраните значок, а затем сделайте снимок.',
+  'canvas.toolbar.virtualKeyboardImeHint':
+    'Для ввода используйте физическую клавиатуру или системную клавиатуру. Окно кандидата предоставляется системным методом ввода.',
+  'canvas.toolbar.snapshotSaveFirst':
+    'Пожалуйста, сначала сохраните значок, а затем сделайте снимок.',
   'canvas.toolbar.snapshotTaken': 'Снимок {n} сохранен.',
   'canvas.toolbar.snapshotFailed': 'Не удалось сохранить снимок. Повторите попытку.',
-  'canvas.toolbar.snapshotTooLarge': 'Снимок слишком велик (максимум {max} КБ). Упростите содержимое изображения и повторите попытку.',
-  'canvas.toolbar.snapshotRateLimited': 'Операция моментального снимка выполняется слишком часто. Повторите попытку позже.',
-  'canvas.toolbar.snapshotDiagramNotFound': 'Значок не найден. Пожалуйста, обновите страницу или откройте из библиотеки.',
-  'canvas.library.diagramNotFound': 'Значок не найден, возможно, он был удален. Пожалуйста, откройте другие карты из галереи.',
-  'canvas.library.saveBeforeSwitchFailed': 'Текущую карту невозможно сохранить перед переключением. Оставайтесь здесь и повторите попытку.',
-  'canvas.toolbar.snapshotConflict': 'Невозможно сохранить снимок (конфликт). Пожалуйста, попробуйте еще раз.',
+  'canvas.toolbar.snapshotTooLarge':
+    'Снимок слишком велик (максимум {max} КБ). Упростите содержимое изображения и повторите попытку.',
+  'canvas.toolbar.snapshotRateLimited':
+    'Операция моментального снимка выполняется слишком часто. Повторите попытку позже.',
+  'canvas.toolbar.snapshotDiagramNotFound':
+    'Значок не найден. Пожалуйста, обновите страницу или откройте из библиотеки.',
+  'canvas.library.diagramNotFound':
+    'Значок не найден, возможно, он был удален. Пожалуйста, откройте другие карты из галереи.',
+  'canvas.library.saveBeforeSwitchFailed':
+    'Текущую карту невозможно сохранить перед переключением. Оставайтесь здесь и повторите попытку.',
+  'canvas.toolbar.snapshotConflict':
+    'Невозможно сохранить снимок (конфликт). Пожалуйста, попробуйте еще раз.',
   'canvas.toolbar.newAssociation': 'Новая ассоциация',
   'canvas.toolbar.newAttribute': 'новые объекты недвижимости',
   'canvas.toolbar.newBranch': 'новая ветка',
@@ -569,18 +631,27 @@ export default {
   'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + С',
   'canvas.toolbar.selectBranchOrChild': 'Пожалуйста, сначала выберите ветку или подузел',
-  'canvas.toolbar.selectCategoryOrLeafDelete': 'Пожалуйста, выберите узел категории или подпункта (узлы тем нельзя удалить)',
-  'canvas.toolbar.selectCauseOrEffectForAdd': 'Сначала выберите узел причины или результата (не выбирайте промежуточное событие), затем нажмите Enter, чтобы добавить его в тот же столбец.',
-  'canvas.toolbar.selectTreeBranchForChild': 'Пожалуйста, выберите категорию или запись в категории, чтобы добавить подпункты, или выберите тему, чтобы добавить новую категорию.',
+  'canvas.toolbar.selectCategoryOrLeafDelete':
+    'Пожалуйста, выберите узел категории или подпункта (узлы тем нельзя удалить)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Сначала выберите узел причины или результата (не выбирайте промежуточное событие), затем нажмите Enter, чтобы добавить его в тот же столбец.',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Пожалуйста, выберите категорию или запись в категории, чтобы добавить подпункты, или выберите тему, чтобы добавить новую категорию.',
   'canvas.toolbar.selectNodesFirst': 'Please select node(s) first',
   'canvas.toolbar.nodeStyleFollow': 'следовать за узлом',
-  'canvas.toolbar.nodeStyleFollowHint': 'Если этот параметр включен, панель стиля узла следует за выбранным узлом; при выключении он скрыт.',
+  'canvas.toolbar.nodeStyleFollowHint':
+    'Если этот параметр включен, панель стиля узла следует за выбранным узлом; при выключении он скрыт.',
   'canvas.toolbar.selectNodesToDelete': 'Пожалуйста, выберите узел для удаления первым',
-  'canvas.toolbar.selectPartForSubpart': 'Сначала выберите узел, к которому вы хотите добавить подраздел.',
-  'canvas.toolbar.selectPartThenEnter': 'Пожалуйста, выберите несколько узлов и нажмите Enter, чтобы добавить подчасти.',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'Пожалуйста, выберите узел сходства или различия (узлы тем нельзя удалить)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'Пожалуйста, сначала выберите узел сходства или различия',
-  'canvas.toolbar.selectStepForSubstep': 'Сначала выберите узел шага, в который вы хотите добавить подэтапы.',
+  'canvas.toolbar.selectPartForSubpart':
+    'Сначала выберите узел, к которому вы хотите добавить подраздел.',
+  'canvas.toolbar.selectPartThenEnter':
+    'Пожалуйста, выберите несколько узлов и нажмите Enter, чтобы добавить подчасти.',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
+    'Пожалуйста, выберите узел сходства или различия (узлы тем нельзя удалить)',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
+    'Пожалуйста, сначала выберите узел сходства или различия',
+  'canvas.toolbar.selectStepForSubstep':
+    'Сначала выберите узел шага, в который вы хотите добавить подэтапы.',
   'canvas.toolbar.similarityWithIndex': 'Сходства {n}',
   'canvas.toolbar.stepAdded': 'Шаг добавлен',
   'canvas.toolbar.styleApplied': 'Стиль применен',
@@ -629,7 +700,8 @@ export default {
   'canvas.topBar.shareCommunity': 'Поделиться в сообществе',
   'canvas.topBar.zhihuiUnavailable': 'Умные диаграммы для рисования в настоящее время недоступны.',
   'canvas.topBar.zhihuiNeedMindmap': 'Иллюстрация поддерживает только интеллект-карты',
-  'canvas.topBar.zhihuiSaveFailed': 'Не удалось сохранить карту, невозможно открыть сгенерированную карту.',
+  'canvas.topBar.zhihuiSaveFailed':
+    'Не удалось сохранить карту, невозможно открыть сгенерированную карту.',
   'canvas.topBar.sharedCollab': 'Сотрудничайте вместе',
   'canvas.topBar.teachingDesign': 'MindMate AI',
   'canvas.subtitles.tooltip': 'Живые субтитры (микрофон)',
@@ -644,22 +716,26 @@ export default {
   'canvas.translation.listening': 'Слушаю перевод…',
   'canvas.translation.micFailed': 'Невозможно использовать микрофон.',
   'canvas.translation.micUnavailable': 'Текущий браузер не может использовать микрофон.',
-  'canvas.translation.wsError': 'Не удалось установить соединение для перевода. Проверьте сеть и статус входа.',
+  'canvas.translation.wsError':
+    'Не удалось установить соединение для перевода. Проверьте сеть и статус входа.',
   'canvas.translation.genericError': 'Ошибка перевода',
   'canvas.translation.start': 'Начать перевод',
   'canvas.translation.stop': 'Остановить перевод',
   'canvas.topBar.snapshotRecallTooltip': 'Восстановить снимок {n}',
   'canvas.topBar.snapshotRecallTitle': 'Восстановить снимок',
-  'canvas.topBar.snapshotRecallConfirm': 'Восстановить снимок {n}? Текущие изменения будут заменены.',
+  'canvas.topBar.snapshotRecallConfirm':
+    'Восстановить снимок {n}? Текущие изменения будут заменены.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'восстанавливаться',
   'canvas.topBar.snapshotRecallCancelBtn': 'Отмена',
   'canvas.topBar.snapshotRecallHistory': 'Снимок {n} перед восстановлением',
   'canvas.topBar.snapshotRecallFailed': 'Не удалось восстановить снимок. Повторите попытку.',
-  'canvas.topBar.snapshotRecallNoDiagram': 'Сначала сохраните значок в галерее, а затем восстановите снимок.',
+  'canvas.topBar.snapshotRecallNoDiagram':
+    'Сначала сохраните значок в галерее, а затем восстановите снимок.',
   'canvas.topBar.snapshotRecallNoType': 'Тип значка еще не готов. Повторите попытку позже.',
   'canvas.topBar.snapshotDeleted': 'Удален снимок {n}.',
   'canvas.topBar.snapshotDeleteFailed': 'Не удалось удалить снимок. Повторите попытку.',
-  'canvas.topBar.snapshotBadgeTooltip': 'Нажмите, чтобы восстановить снимок {n} · Ctrl+щелкните, чтобы удалить',
+  'canvas.topBar.snapshotBadgeTooltip':
+    'Нажмите, чтобы восстановить снимок {n} · Ctrl+щелкните, чтобы удалить',
   'canvas.topBar.snapshotRecallingTooltip': 'Восстановление снимка {n}…',
   'canvas.zoomControls.exitFullscreen': 'Выйти из полноэкранного режима',
   'canvas.zoomControls.fitCanvas': 'Адаптироваться к холсту',
@@ -709,7 +785,8 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'ветвь',
   'canvas.mindMapSlideOverlay.region': 'Управление слайд-шоу',
   'canvas.mindMapSlideOverlay.progress': 'Слайд-прогресс, нажмите, чтобы прыгнуть',
-  'canvas.mindMapSlideOverlay.shortcuts': 'Нажмите на холст или нажмите пробел/→ Следующая страница · ← Предыдущая страница · Главная/Конечная страница/Конечная страница · Esc, чтобы выйти из слайд-шоу',
+  'canvas.mindMapSlideOverlay.shortcuts':
+    'Нажмите на холст или нажмите пробел/→ Следующая страница · ← Предыдущая страница · Главная/Конечная страница/Конечная страница · Esc, чтобы выйти из слайд-шоу',
   'canvas.mindMapSlideOverlay.exit': 'Выйти из слайд-шоу',
   'canvas.mindMapSlideOverlay.collapse': 'Свернуть панель управления',
   'canvas.mindMapSlideOverlay.expand': 'Развернуть панель управления',
@@ -722,15 +799,19 @@ export default {
   'canvasPage.collaborationFooterOwner': 'Онлайн сотрудничество с {username}',
   'canvasPage.collaborationFooterOwnerDiagram': 'Значок синергии «{diagramTitle}» для {username}',
   'canvasPage.collaborationFooterNetworkDiagramTitle': '「{diagramTitle}」Онлайн-сотрудничество',
-  'canvasPage.collaborationFooterSchool': 'Идет совместная работа на территории кампуса — коллеги могут присоединиться к беседе из списка.',
-  'canvasPage.collaborationFooterSchoolDiagram': 'Сотрудничество в кампусе «{diagramTitle}» продолжается — коллеги могут присоединиться к нему из списка бесед.',
-  'canvasPage.collabRoomIdleEnding': 'Совместная работа со значками автоматически завершится после бездействия в течение примерно {seconds} секунд. Редактирование значков может быть отложено.',
+  'canvasPage.collaborationFooterSchool':
+    'Идет совместная работа на территории кампуса — коллеги могут присоединиться к беседе из списка.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    'Сотрудничество в кампусе «{diagramTitle}» продолжается — коллеги могут присоединиться к нему из списка бесед.',
+  'canvasPage.collabRoomIdleEnding':
+    'Совместная работа со значками автоматически завершится после бездействия в течение примерно {seconds} секунд. Редактирование значков может быть отложено.',
   'conceptMap.focus.noResult': 'Нет результатов',
   'conceptMap.focus.validationRequestFailed': 'Запрос на проверку не выполнен',
   'diagram.aiGenerating': 'ИИ...',
   'diagram.alternativeDimensions.braceTitle': 'Другие возможные аспекты этой темы:',
   'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'Другие возможные аналогии по этой теме:',
-  'diagram.alternativeDimensions.treeMapTitle': 'Другие возможные параметры классификации по этой теме:',
+  'diagram.alternativeDimensions.treeMapTitle':
+    'Другие возможные параметры классификации по этой теме:',
   'diagram.bridgeMap.alternativesEmpty': '[Альтернативные отношения будут показаны здесь]',
   'diagram.conceptMap.focusQuestionPrefix': 'Фокусный вопрос: ',
   'diagram.conceptMap.focusQuestionSuffix': 'Пожалуйста, введите',
@@ -755,7 +836,8 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'Добавление функции узла находится в стадии разработки',
   'diagram.contextMenu.paste': 'Вставить',
   'diagram.contextMenu.warningCreateDiagramFirst': 'Пожалуйста, сначала создайте значок',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'Пожалуйста, сначала выберите узел сходства или различия',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff':
+    'Пожалуйста, сначала выберите узел сходства или различия',
   'diagram.defaultNewConcept': 'новая концепция',
   'diagram.dimension.classificationAz': 'Основа классификации',
   'diagram.dimension.classificationEn': 'Основа классификации',
@@ -779,32 +861,47 @@ export default {
   'canvas.mindMapSideToolbar.expand': 'Развернуть панель инструментов',
   'canvas.mindMapSideToolbar.collapse': 'Свернуть панель инструментов',
   'canvas.mindMapSideToolbar.outline': 'иерархическая структура',
-  'canvas.mindMapSideToolbar.waterfall': 'Мозговой штурм с использованием искусственного интеллекта',
-  'canvas.mindMapWaterfall.panelHint': 'Выберите узел для создания предложений ветвей и перетащите их на холст, чтобы вставить.',
-  'canvas.mindMapWaterfall.emptyHint': 'Предложений пока нет. Сначала выберите узел на холсте или нажмите, чтобы создать заново.',
-  'canvas.mindMapWaterfall.dragHint': 'Нажмите «Выбрать несколько» и перетащите его в узел карты для вставки; перетащите его на пустое место, чтобы добавить в качестве ветки первого уровня.',
+  'canvas.mindMapSideToolbar.waterfall':
+    'Мозговой штурм с использованием искусственного интеллекта',
+  'canvas.mindMapWaterfall.panelHint':
+    'Выберите узел для создания предложений ветвей и перетащите их на холст, чтобы вставить.',
+  'canvas.mindMapWaterfall.emptyHint':
+    'Предложений пока нет. Сначала выберите узел на холсте или нажмите, чтобы создать заново.',
+  'canvas.mindMapWaterfall.dragHint':
+    'Нажмите «Выбрать несколько» и перетащите его в узел карты для вставки; перетащите его на пустое место, чтобы добавить в качестве ветки первого уровня.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'Перетащите узлы из AI Brainstorm.',
-  'canvas.mindMapOneSentence.intro': 'Введите тему или опишите структурные требования, такие как количество ветвей, размеры классификации, шаги и т. д.',
-  'canvas.mindMapOneSentence.requirementsPlaceholder': 'Например: план трехдневного тура по Пекину, четыре направления: одежда, питание, проживание и транспорт.',
+  'canvas.mindMapOneSentence.intro':
+    'Введите тему или опишите структурные требования, такие как количество ветвей, размеры классификации, шаги и т. д.',
+  'canvas.mindMapOneSentence.requirementsPlaceholder':
+    'Например: план трехдневного тура по Пекину, четыре направления: одежда, питание, проживание и транспорт.',
   'canvas.mindMapOneSentence.examplesTitle': 'Рекомендуемое вдохновение',
   'canvas.mindMapOneSentence.generateButton': 'Начать генерировать',
-  'canvas.mindMapOneSentence.example1': 'Трехдневный план путешествия по Пекину, четыре направления: одежда, питание, проживание и транспорт.',
-  'canvas.mindMapOneSentence.example2': 'Используйте SWOT для анализа «запуска нового продукта»: сильные и слабые стороны, возможности, угрозы.',
-  'canvas.mindMapOneSentence.example3': 'Урок естествознания в начальной школе «Три состояния воды», простой язык, не более 6 слов на уровень.',
+  'canvas.mindMapOneSentence.example1':
+    'Трехдневный план путешествия по Пекину, четыре направления: одежда, питание, проживание и транспорт.',
+  'canvas.mindMapOneSentence.example2':
+    'Используйте SWOT для анализа «запуска нового продукта»: сильные и слабые стороны, возможности, угрозы.',
+  'canvas.mindMapOneSentence.example3':
+    'Урок естествознания в начальной школе «Три состояния воды», простой язык, не более 6 слов на уровень.',
   'canvas.mindMapOneSentence.suggestion.add_node': 'Добавить китайскую ветку',
   'canvas.mindMapOneSentence.suggestion.update_node': 'Изменить анализ напитков на анализ напитков',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': 'Замените 2.1 на зеленый чай',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint': 'После активации номера можно сказать «Измени 2.1 на...», «Измени 2-й на...».',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint':
+    'После активации номера можно сказать «Измени 2.1 на...», «Измени 2-й на...».',
   'canvas.mindMapOneSentence.suggestion.update_center': 'Тема изменена на чай.',
   'canvas.mindMapOneSentence.suggestion.delete_node': 'Удалить ветку анализа напитков',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': 'Завершить ветку Китая',
   'canvas.mindMapOneSentence.suggestion.auto_complete': 'Помогите мне заполнить карту',
-  'canvas.mindMapOneSentence.suggestion.set_content_level': 'Измените профессиональный контент на общий, начальную школу, неполную среднюю школу, старшую школу, колледж, взрослый или эксперт.',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': 'Профессиональный контент изменен на {level}.',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': 'Седьмой уровень соответствует «Профессиональному контенту» внизу.',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': 'Включить цифры, китайский язык, круги, буквы или номера глав',
+  'canvas.mindMapOneSentence.suggestion.set_content_level':
+    'Измените профессиональный контент на общий, начальную школу, неполную среднюю школу, старшую школу, колледж, взрослый или эксперт.',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
+    'Профессиональный контент изменен на {level}.',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
+    'Седьмой уровень соответствует «Профессиональному контенту» внизу.',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
+    'Включить цифры, китайский язык, круги, буквы или номера глав',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': 'Включить номер {style}',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': 'Вы можете сказать «включить цифровую нумерацию», «включить китайскую нумерацию».',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
+    'Вы можете сказать «включить цифровую нумерацию», «включить китайскую нумерацию».',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': 'число',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': 'китайский',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': 'круг',
@@ -814,7 +911,8 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': 'Скрытый номер',
   'canvas.mindMapOneSentence.suggestion.explain_node': 'Объясните эту ветвь Китая',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'Представьте этот узел',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint': 'Вы можете сказать «Объясните Китай» и «Представьте этот узел»; после выбора узла вы также можете сказать «Представьте это».',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
+    'Вы можете сказать «Объясните Китай» и «Представьте этот узел»; после выбора узла вы также можете сказать «Представьте это».',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'Руководство по эксплуатации узла',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'Свернуть руководство по работе с узлом',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': 'по имени',
@@ -825,54 +923,87 @@ export default {
   'canvas.mindMapOneSentence.micButton': 'Голосовой ввод',
   'canvas.mindMapOneSentence.photoButton': 'Загрузить фотографии',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 Фотографии',
-  'canvas.mindMapOneSentence.photoNeedsDiagram': 'Пожалуйста, сохраните значок в галерее перед загрузкой изображения.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram':
+    'Пожалуйста, сохраните значок в галерее перед загрузкой изображения.',
   'canvas.mindMapOneSentence.photoInvalidType': 'Выберите изображение в формате JPG, PNG или WebP.',
   'canvas.mindMapOneSentence.photoTooLarge': 'Изображение слишком большое, максимум 10 МБ.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'интеллектуальная карта',
-  'canvas.mindMapOneSentence.photoHanddrawnReply': 'Обнаружена нарисованная от руки интеллектуальная карта «{topic}». Перестроен на холст, схема структуры сохранена в сводке документа.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'Обнаружена нарисованная от руки интеллектуальная карта «{topic}». Восстановлено на собственном холсте, структура структуры сохранена в сводке документа. Синхронизация галереи не завершена. Сохраните или повторите попытку.',
-  'canvas.mindMapOneSentence.photoOcrReply': 'Распознанный текст изображения:\n{excerpt}\n\nПолный текст сохранен в сводке документа.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply':
+    'Обнаружена нарисованная от руки интеллектуальная карта «{topic}». Перестроен на холст, схема структуры сохранена в сводке документа.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
+    'Обнаружена нарисованная от руки интеллектуальная карта «{topic}». Восстановлено на собственном холсте, структура структуры сохранена в сводке документа. Синхронизация галереи не завершена. Сохраните или повторите попытку.',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    'Распознанный текст изображения:\n{excerpt}\n\nПолный текст сохранен в сводке документа.',
   'canvas.mindMapOneSentence.photoFailed': 'Изображение не может быть обработано.',
   'canvas.mindMapOneSentence.micDenied': 'Микрофон недоступен, проверьте разрешения браузера',
   'canvas.mindMapOneSentence.ttsToggle': 'Переключатель чтения вслух',
-  'canvas.mindMapOneSentence.kittyWelcome': 'Здравствуйте, скажите мне, какую диаграмму разума вы хотите нарисовать, или позвольте мне помочь вам изменить ее позже.',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    'Здравствуйте, скажите мне, какую диаграмму разума вы хотите нарисовать, или позвольте мне помочь вам изменить ее позже.',
   'canvas.mindMapOneSentence.switchDiagramType': 'Хорошо, перехожу на {type}…',
   'canvas.mindMapOneSentence.kittyGenerating': 'Хорошо, создаю карту...',
-  'canvas.mindMapOneSentence.kittyGenerateDone': 'Карта создана. Продолжайте вводить текст, чтобы изменить ветвь или узел.',
-  'canvas.mindMapOneSentence.kittyGenerateFailed': 'Не удалось создать карту. Повторите попытку или измените описание.',
-  'canvas.mindMapOneSentence.kittyEditFailed': 'Не удалось завершить изменение. Повторите попытку, введя другое слово.',
-  'canvas.mindMapOneSentence.kittyEditStale': 'Эта модификация не вступила в силу на холсте (возможно, срок ее действия истек или изменений нет), попробуйте еще раз.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'Canvas не смог подтвердить это изменение, и карта осталась без изменений.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'Локальный файл был изменен, но синхронизация не удалась. Пожалуйста, повторите попытку позже.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed': 'Не удалось синхронизировать холст. Повторите попытку позже.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'Не удалось синхронизировать холст ({detail}), повторите попытку позже.',
-  'canvas.mindMapOneSentence.kittyEditBusy': 'Карта генерируется, пожалуйста, дождитесь завершения, прежде чем вносить изменения.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued': 'Результаты {models} все еще генерируются, и ваш запрос будет автоматически выполнен после завершения.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'Результаты других моделей еще формируются, и ваш запрос будет автоматически выполнен после завершения.',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming': 'Остальные модели уже достроены и продолжают выполнять ваш запрос...',
+  'canvas.mindMapOneSentence.kittyGenerateDone':
+    'Карта создана. Продолжайте вводить текст, чтобы изменить ветвь или узел.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed':
+    'Не удалось создать карту. Повторите попытку или измените описание.',
+  'canvas.mindMapOneSentence.kittyEditFailed':
+    'Не удалось завершить изменение. Повторите попытку, введя другое слово.',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    'Эта модификация не вступила в силу на холсте (возможно, срок ее действия истек или изменений нет), попробуйте еще раз.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    'Canvas не смог подтвердить это изменение, и карта осталась без изменений.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    'Локальный файл был изменен, но синхронизация не удалась. Пожалуйста, повторите попытку позже.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed':
+    'Не удалось синхронизировать холст. Повторите попытку позже.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    'Не удалось синхронизировать холст ({detail}), повторите попытку позже.',
+  'canvas.mindMapOneSentence.kittyEditBusy':
+    'Карта генерируется, пожалуйста, дождитесь завершения, прежде чем вносить изменения.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    'Результаты {models} все еще генерируются, и ваш запрос будет автоматически выполнен после завершения.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    'Результаты других моделей еще формируются, и ваш запрос будет автоматически выполнен после завершения.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming':
+    'Остальные модели уже достроены и продолжают выполнять ваш запрос...',
   'canvas.mindMapOneSentence.requestQueued': 'Очередь',
   'canvas.mindMapOneSentence.requestFailed': 'Не завершено',
-  'canvas.mindMapOneSentence.kittyEditAccessDenied': 'В настоящее время у вас нет разрешения на изменение этой карты.',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'Карта только что была обновлена, и срок действия этой модификации истек. Пожалуйста, укажите ваши изменения еще раз.',
-  'canvas.mindMapOneSentence.kittyEditTimeout': 'Срок действия этой модификации истек, и карта, возможно, не была обновлена. Пожалуйста, попробуйте еще раз.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner': 'Редактируемый холст в данный момент не найден. Пожалуйста, подтвердите, что холст открыт, и повторите попытку.',
-  'canvas.mindMapOneSentence.kittyEditAddFailed': 'К сожалению, узел не удалось добавить. Пожалуйста, подтвердите имя и повторите попытку.',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'К сожалению, узел не может быть изменен. Пожалуйста, подтвердите имя и повторите попытку.',
-  'canvas.mindMapOneSentence.kittyEditCenterFailed': 'К сожалению, тему не удалось обновить. Пожалуйста, попробуйте еще раз.',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'К сожалению, узел не удалось удалить. Пожалуйста, подтвердите имя и повторите попытку.',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'К сожалению, для этой ветки нет автозаполнения. Вы можете еще раз сказать «автозаполнение».',
+  'canvas.mindMapOneSentence.kittyEditAccessDenied':
+    'В настоящее время у вас нет разрешения на изменение этой карты.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    'Карта только что была обновлена, и срок действия этой модификации истек. Пожалуйста, укажите ваши изменения еще раз.',
+  'canvas.mindMapOneSentence.kittyEditTimeout':
+    'Срок действия этой модификации истек, и карта, возможно, не была обновлена. Пожалуйста, попробуйте еще раз.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    'Редактируемый холст в данный момент не найден. Пожалуйста, подтвердите, что холст открыт, и повторите попытку.',
+  'canvas.mindMapOneSentence.kittyEditAddFailed':
+    'К сожалению, узел не удалось добавить. Пожалуйста, подтвердите имя и повторите попытку.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    'К сожалению, узел не может быть изменен. Пожалуйста, подтвердите имя и повторите попытку.',
+  'canvas.mindMapOneSentence.kittyEditCenterFailed':
+    'К сожалению, тему не удалось обновить. Пожалуйста, попробуйте еще раз.',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    'К сожалению, узел не удалось удалить. Пожалуйста, подтвердите имя и повторите попытку.',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    'К сожалению, для этой ветки нет автозаполнения. Вы можете еще раз сказать «автозаполнение».',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'Эта ветка завершена.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'Эти ветки завершены.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'Некоторые филиалы завершены, а другие нет. Вы можете еще раз сказать «автозаполнение».',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
+    'Некоторые филиалы завершены, а другие нет. Вы можете еще раз сказать «автозаполнение».',
   'canvas.mindMapOneSentence.kittyWorking': 'ОК, обработка...',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'Китти в настоящее время недоступна, убедитесь, что функция FEATURE_KITTY_AGENT включена.',
-  'canvas.mindMapOneSentence.kittyConnectFailed': 'В данный момент не удается подключиться к Canvas Kitty. Пожалуйста, подтвердите, что карта открыта на компьютере, и повторите попытку.',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'Китти в настоящее время недоступна, убедитесь, что функция FEATURE_KITTY_AGENT включена.',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    'В данный момент не удается подключиться к Canvas Kitty. Пожалуйста, подтвердите, что карта открыта на компьютере, и повторите попытку.',
   'canvas.mindMapOneSentence.clarifyChoices': 'Пожалуйста, выберите один',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'Сотовый телефон Китти был обнаружен и подключается к этому изображению. Пожалуйста, нажмите и удерживайте, чтобы говорить или печатать на своем мобильном телефоне. Набор текста на компьютере приостановлен.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint': 'Китти открыла на своем мобильном телефоне еще одну карту. Пожалуйста, синхронизируйте его на своем телефоне или откройте карту здесь.',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Пожалуйста, введите Китти на своем телефоне…',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    'Сотовый телефон Китти был обнаружен и подключается к этому изображению. Пожалуйста, нажмите и удерживайте, чтобы говорить или печатать на своем мобильном телефоне. Набор текста на компьютере приостановлен.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    'Китти открыла на своем мобильном телефоне еще одну карту. Пожалуйста, синхронизируйте его на своем телефоне или откройте карту здесь.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder':
+    'Пожалуйста, введите Китти на своем телефоне…',
   'canvas.mindMapNodeExplain.titleFallback': 'Объяснение узла',
-  'canvas.mindMapNodeExplain.requestFailed': 'На данный момент невозможно объяснить, повторите попытку позже.',
+  'canvas.mindMapNodeExplain.requestFailed':
+    'На данный момент невозможно объяснить, повторите попытку позже.',
   'canvas.mindMapNodeExplain.thinking': 'мышление',
   'canvas.mindMapNodeExplain.thinkingDone': 'Закончил думать',
   'canvas.mindMapNodeExplain.pageStats': 'Найдено {found} страниц, прочитано {fetched} страниц.',
@@ -887,17 +1018,22 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': 'История чата',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'Загрузка файла',
   'canvas.mindMapDocumentSummary.tabPaste': 'Вставка текста',
-  'canvas.mindMapDocumentSummary.pasteHintLite': 'Вставьте документы, заметки или протоколы встреч, и мы уточним структуру и создадим карту связей.',
+  'canvas.mindMapDocumentSummary.pasteHintLite':
+    'Вставьте документы, заметки или протоколы встреч, и мы уточним структуру и создадим карту связей.',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'История чата',
-  'canvas.mindMapDocumentSummary.intro': 'Уточнение основных моментов и создание более точных интеллект-карт',
+  'canvas.mindMapDocumentSummary.intro':
+    'Уточнение основных моментов и создание более точных интеллект-карт',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'Нажмите, чтобы загрузить файл',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'Поддерживает PDF, Word, PPT, Excel, текст, изображения, аудио; сохраняется только извлеченный Markdown',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint':
+    'Поддерживает PDF, Word, PPT, Excel, текст, изображения, аудио; сохраняется только извлеченный Markdown',
   'canvas.mindMapDocumentSummary.invalidFileType': 'Этот тип файла не поддерживается',
   'canvas.mindMapDocumentSummary.saveContent': 'Сохранить контент',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'Возьмите и сохраните',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'Сканирование веб-контента...',
-  'canvas.mindMapDocumentSummary.webLinkHintLite': 'Вставьте ссылку на общедоступную веб-страницу, и мы сделаем все возможное, чтобы просканировать текст и сохранить его как Markdown.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Непосредственное вставление ссылки будет просканировано сервером, и ваш статус входа в систему будет невозможен. Некоторые страницы, требующие входа в систему или разрешений, могут быть захвачены не полностью. Для полного снимка веб-страницы используйте расширение Chrome.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite':
+    'Вставьте ссылку на общедоступную веб-страницу, и мы сделаем все возможное, чтобы просканировать текст и сохранить его как Markdown.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
+    'Непосредственное вставление ссылки будет просканировано сервером, и ваш статус входа в систему будет невозможен. Некоторые страницы, требующие входа в систему или разрешений, могут быть захвачены не полностью. Для полного снимка веб-страницы используйте расширение Chrome.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Загрузите расширение Chrome',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Извлечение…',
   'canvas.mindMapDocumentSummary.stageStarting': 'В подготовке…',
@@ -906,15 +1042,19 @@ export default {
   'canvas.mindMapDocumentSummary.stageOcr': 'Распознавание текста изображения...',
   'canvas.mindMapDocumentSummary.stageTranscribing': 'Расшифровка аудио…',
   'canvas.mindMapDocumentSummary.stageStoring': 'Сохранение результатов извлечения…',
-  'canvas.mindMapDocumentSummary.replaceSourceHint': 'Повторная загрузка заменит текущий единственный источник этого изображения.',
+  'canvas.mindMapDocumentSummary.replaceSourceHint':
+    'Повторная загрузка заменит текущий единственный источник этого изображения.',
   'canvas.mindMapDocumentSummary.fromSource': 'От {name}',
   'canvas.mindMapDocumentSummary.deleteSource': 'Удалить источник',
   'canvas.mindMapDocumentSummary.sourceDeleted': 'Источник удален, его можно загрузить снова.',
   'canvas.mindMapDocumentSummary.extractStarted': 'Извлечение контента...',
   'canvas.mindMapDocumentSummary.extractFailed': 'Невозможно извлечь текст из этого файла',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Маркдаун готов. Интеллект-карты можно создавать, а исходный код можно удалить и загрузить заново.',
-  'canvas.mindMapDocumentSummary.deleteToRetry': 'Пожалуйста, удалите этот источник перед загрузкой, вставкой или повторной вставкой веб-ссылки.',
-  'canvas.mindMapDocumentSummary.chatIntroLite': 'Загрузите инструмент чтения файлов, введите код сопряжения и отправьте историю чата WeChat или DingTalk на эту диаграмму.',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'Маркдаун готов. Интеллект-карты можно создавать, а исходный код можно удалить и загрузить заново.',
+  'canvas.mindMapDocumentSummary.deleteToRetry':
+    'Пожалуйста, удалите этот источник перед загрузкой, вставкой или повторной вставкой веб-ссылки.',
+  'canvas.mindMapDocumentSummary.chatIntroLite':
+    'Загрузите инструмент чтения файлов, введите код сопряжения и отправьте историю чата WeChat или DingTalk на эту диаграмму.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'История чата получена',
   'canvas.mindMapDocumentSummary.chatDoneLite': 'История чата сохранена и ее можно создать, нажав',
   'canvas.mindMapDocumentSummary.corpusStatus': 'Проиндексированные источники {completed}/{total}',
@@ -927,9 +1067,12 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': 'Индексирование…',
   'canvas.mindMapDocumentSummary.statusFailed': 'неудача',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'Пространство знаний не включено',
-  'canvas.mindMapDocumentSummary.featureDisabledHint': 'Сводки документов доступны, если включена функция «Пространство знаний».',
-  'canvas.mindMapDocumentSummary.saveDiagramHint': 'Сначала сохраните диаграмму, чтобы связать пакет и включить извлечение RAG.',
-  'canvas.mindMapDocumentSummary.chatIntro': 'Загрузите инструмент чтения файлов, введите приведенный ниже код сопряжения и отправьте записи чата WeChat или DingTalk в эту базу данных.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint':
+    'Сводки документов доступны, если включена функция «Пространство знаний».',
+  'canvas.mindMapDocumentSummary.saveDiagramHint':
+    'Сначала сохраните диаграмму, чтобы связать пакет и включить извлечение RAG.',
+  'canvas.mindMapDocumentSummary.chatIntro':
+    'Загрузите инструмент чтения файлов, введите приведенный ниже код сопряжения и отправьте записи чата WeChat или DingTalk в эту базу данных.',
   'canvas.mindMapDocumentSummary.pairingCode': 'код сопряжения',
   'canvas.mindMapDocumentSummary.startPairingCode': 'Получить код сопряжения',
   'canvas.mindMapDocumentSummary.pairingExpires': 'Действительно в течение {minutes} минут',
@@ -938,47 +1081,71 @@ export default {
   'canvas.mindMapDocumentSummary.chatReceived': 'История чата получена и добавлена ​​в базу данных',
   'canvas.mindMapDocumentSummary.chatIndexing': 'Индексирование истории чата...',
   'canvas.mindMapDocumentSummary.chatDone': 'История чата добавлена ​​в базу данных',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'Не удалось загрузить или индексировать. Обновите код сопряжения и повторите попытку.',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed':
+    'Не удалось загрузить или индексировать. Обновите код сопряжения и повторите попытку.',
   'canvas.mindMapDocumentSummary.chatMintFailed': 'Невозможно создать код сопряжения',
-  'canvas.mindMapDocumentSummary.chatExpired': 'Срок действия кода сопряжения истек. Обновите страницу, чтобы получить новый код.',
+  'canvas.mindMapDocumentSummary.chatExpired':
+    'Срок действия кода сопряжения истек. Обновите страницу, чтобы получить новый код.',
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'Обновить код сопряжения',
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'Невозможно начать сеанс сводки документов',
-  'canvas.mindMapDocumentSummary.imageTooLarge': 'Изображение слишком велико, загрузите файл размером не более 10 МБ.',
-  'canvas.mindMapDocumentSummary.generateNoCorpus': 'Сначала добавьте хотя бы один источник, затем нажмите «Создать».',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'Сначала загрузите, вставьте или просканируйте веб-контент, а затем нажмите «Создать».',
-  'canvas.mindMapDocumentSummary.collabDisabled': 'Недоступно во время совместной работы в реальном времени.',
+  'canvas.mindMapDocumentSummary.imageTooLarge':
+    'Изображение слишком велико, загрузите файл размером не более 10 МБ.',
+  'canvas.mindMapDocumentSummary.generateNoCorpus':
+    'Сначала добавьте хотя бы один источник, затем нажмите «Создать».',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
+    'Сначала загрузите, вставьте или просканируйте веб-контент, а затем нажмите «Создать».',
+  'canvas.mindMapDocumentSummary.collabDisabled':
+    'Недоступно во время совместной работы в реальном времени.',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'Источник добавлен в базу данных.',
-  'canvas.mindMapDocumentSummary.ingestSuccessLite': 'Содержимое сохранено, вы можете нажать, чтобы создать интеллект-карту.',
+  'canvas.mindMapDocumentSummary.ingestSuccessLite':
+    'Содержимое сохранено, вы можете нажать, чтобы создать интеллект-карту.',
   'canvas.mindMapDocumentSummary.ingestFailed': 'Не удалось добавить источник',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'Местная документация:',
   'canvas.mindMapDocumentSummary.uploadDocHint': 'Нажмите, чтобы загрузить документы Word или PDF',
-  'canvas.mindMapDocumentSummary.uploadDocSubhint': 'Мы автоматически разберем содержимое документа и уточним структуру',
-  'canvas.mindMapDocumentSummary.pasteLabel': 'Или вставьте любую длинную текстовую заметку напрямую:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder': 'Сюда вы можете свободно вставлять фрагменты эссе, конспекты прочитанного, протоколы рабочих обсуждений, документы с требованиями и т.д. Мы разберем его для вас слой за слоем!',
+  'canvas.mindMapDocumentSummary.uploadDocSubhint':
+    'Мы автоматически разберем содержимое документа и уточним структуру',
+  'canvas.mindMapDocumentSummary.pasteLabel':
+    'Или вставьте любую длинную текстовую заметку напрямую:',
+  'canvas.mindMapDocumentSummary.pastePlaceholder':
+    'Сюда вы можете свободно вставлять фрагменты эссе, конспекты прочитанного, протоколы рабочих обсуждений, документы с требованиями и т.д. Мы разберем его для вас слой за слоем!',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'Загрузить фотографии:',
-  'canvas.mindMapDocumentSummary.uploadImageHint': 'Нажмите, чтобы загрузить изображения в формате JPG, PNG',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'Нарисованные от руки интеллект-карты будут автоматически реконструированы на холсте; обычные картинки извлекут текст.',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'Нарисованные от руки интеллект-карты определены и реконструированы на холсте',
-  'canvas.mindMapDocumentSummary.visionProgressDetecting': 'Распознавание нарисованных от руки интеллект-карт...',
-  'canvas.mindMapDocumentSummary.imageOcrHint': 'Поддерживает текстовые изображения, такие как снимки экрана заметок, фотографии на доске и отсканированные документы.',
+  'canvas.mindMapDocumentSummary.uploadImageHint':
+    'Нажмите, чтобы загрузить изображения в формате JPG, PNG',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    'Нарисованные от руки интеллект-карты будут автоматически реконструированы на холсте; обычные картинки извлекут текст.',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
+    'Нарисованные от руки интеллект-карты определены и реконструированы на холсте',
+  'canvas.mindMapDocumentSummary.visionProgressDetecting':
+    'Распознавание нарисованных от руки интеллект-карт...',
+  'canvas.mindMapDocumentSummary.imageOcrHint':
+    'Поддерживает текстовые изображения, такие как снимки экрана заметок, фотографии на доске и отсканированные документы.',
   'canvas.mindMapDocumentSummary.removeImage': 'Удалить изображение',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'Веб-ссылка:',
-  'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'Вставьте ссылку на статью, блог или страницу новостей',
-  'canvas.mindMapDocumentSummary.webLinkHint': 'Мы просканируем текст веб-страницы и добавим его в базу данных для индексации.',
+  'canvas.mindMapDocumentSummary.webUrlPlaceholder':
+    'Вставьте ссылку на статью, блог или страницу новостей',
+  'canvas.mindMapDocumentSummary.webLinkHint':
+    'Мы просканируем текст веб-страницы и добавим его в базу данных для индексации.',
   'canvas.mindMapDocumentSummary.generateButton': 'Создавайте интеллект-карты',
   'canvas.mindMapDocumentSummary.generateSuccess': 'Интеллект-карта создана.',
   'canvas.mindMapDocumentSummary.generateFailed': 'Генерация не удалась. Повторите попытку позже.',
   'canvas.mindMapDocumentSummary.loadFailed': 'Невозможно загрузить сгенерированную карту.',
-  'canvas.mindMapDocumentSummary.emptyDocument': 'Пожалуйста, загрузите документ или вставьте текст',
+  'canvas.mindMapDocumentSummary.emptyDocument':
+    'Пожалуйста, загрузите документ или вставьте текст',
   'canvas.mindMapDocumentSummary.emptyUrl': 'Пожалуйста, введите веб-ссылку',
   'canvas.mindMapDocumentSummary.invalidDocType': 'Поддерживается только файлы Word (.docx) и PDF.',
   'canvas.mindMapDocumentSummary.invalidImageType': 'Поддерживается только изображения JPG и PNG.',
-  'canvas.mindMapDocumentSummary.docTooLarge': 'Документ слишком большой, загрузите файл размером не более 20 МБ.',
-  'canvas.mindMapDocumentSummary.pasteTooLong': 'Вставленный текст превышает лимит ввода модели (около 900 000 символов), сократите его и повторите попытку.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Извлеченный текст превышает лимит ввода модели (около 900 000 символов / 991 тыс. токенов qwen3.6-flash), используйте более короткий документ.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Текст, извлеченный из этого файла, слишком длинный и не может быть отправлен в модель. Пожалуйста, загрузите более короткий документ (извлеченный текст длиной примерно 900 000 символов).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared': 'Сохраненный фрагмент отсутствовал или не синхронизировался с хранилищем и был автоматически удален. Пожалуйста, повторно загрузите или вставьте документ.',
-  'canvas.mindMapDocumentSummary.contentFiltered': 'Содержимое не прошло проверку безопасности. Пожалуйста, измените текст и повторите попытку.',
+  'canvas.mindMapDocumentSummary.docTooLarge':
+    'Документ слишком большой, загрузите файл размером не более 20 МБ.',
+  'canvas.mindMapDocumentSummary.pasteTooLong':
+    'Вставленный текст превышает лимит ввода модели (около 900 000 символов), сократите его и повторите попытку.',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel':
+    'Извлеченный текст превышает лимит ввода модели (около 900 000 символов / 991 тыс. токенов qwen3.6-flash), используйте более короткий документ.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel':
+    'Текст, извлеченный из этого файла, слишком длинный и не может быть отправлен в модель. Пожалуйста, загрузите более короткий документ (извлеченный текст длиной примерно 900 000 символов).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared':
+    'Сохраненный фрагмент отсутствовал или не синхронизировался с хранилищем и был автоматически удален. Пожалуйста, повторно загрузите или вставьте документ.',
+  'canvas.mindMapDocumentSummary.contentFiltered':
+    'Содержимое не прошло проверку безопасности. Пожалуйста, измените текст и повторите попытку.',
   'canvas.mindMapSideToolbar.learningSheet': 'Схема полого кронштейна',
   'canvas.mobile.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
@@ -986,43 +1153,57 @@ export default {
   'canvas.mindMapSideToolbar.mindClassroom': 'Думающий лекционный зал',
   'canvas.mindClassroom.title': 'Думающий лекционный зал',
   'canvas.mindClassroom.intro': 'Lecture around the map — set familiarity, presentation, and tone.',
-  'canvas.mindClassroom.lead': 'Позвольте учителю искусственного интеллекта поговорить с вами об этой карте разума.',
+  'canvas.mindClassroom.lead':
+    'Позвольте учителю искусственного интеллекта поговорить с вами об этой карте разума.',
   'canvas.mindClassroom.mascotBubble': 'Мыслящий лекционный зал уже здесь!',
   'canvas.mindClassroom.mascotDismiss': 'Подвернуть на дно',
-  'canvas.mindClassroom.audienceLine': 'Текущая аудитория: {level} (снизу [Профессиональный контент])',
+  'canvas.mindClassroom.audienceLine':
+    'Текущая аудитория: {level} (снизу [Профессиональный контент])',
   'canvas.mindClassroom.start': 'Начните объяснять',
-  'canvas.mindClassroom.startPreview': 'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
+  'canvas.mindClassroom.startPreview':
+    'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
   'canvas.mindClassroom.queue.queued': 'Уже присоединился к очереди на обучение…',
   'canvas.mindClassroom.queue.planning': 'Создание конспектов лекций/планов обучения...',
   'canvas.mindClassroom.queue.transcriptBranch': 'Написание планов уроков для филиала {name}',
-  'canvas.mindClassroom.queue.transcriptRemaining': 'Написание других планов уроков ({done}/{total})',
+  'canvas.mindClassroom.queue.transcriptRemaining':
+    'Написание других планов уроков ({done}/{total})',
   'canvas.mindClassroom.queue.transcript': 'Написание конспектов лекций/планов уроков...',
   'canvas.mindClassroom.queue.generating': 'Создание слайд-шоу…',
   'canvas.mindClassroom.queue.loadingVoice': 'Загрузка голосов…',
   'canvas.mindClassroom.queue.ready': 'Можно начать лекцию',
-  'canvas.mindClassroom.queue.readyHint': 'Конспекты лекций/планы уроков готовы, и лекция может начаться.',
+  'canvas.mindClassroom.queue.readyHint':
+    'Конспекты лекций/планы уроков готовы, и лекция может начаться.',
   'canvas.mindClassroom.queue.failed': 'Объясните неудачу подготовки',
   'canvas.mindClassroom.queue.cancel': 'Отменить очередь',
   'canvas.mindClassroom.queue.restart': 'Restart',
-  'canvas.mindClassroom.queue.restartHint': 'Regenerate the script / lesson plan with the current settings',
-  'canvas.mindClassroom.queue.guestHint': 'Посетители используют местные шаблоны для объяснений; после входа в систему движок генерирует конспекты лекций/планы обучения.',
-  'canvas.mindClassroom.queue.loginRequired': 'Пожалуйста, войдите в систему, прежде чем начать объяснение.',
+  'canvas.mindClassroom.queue.restartHint':
+    'Regenerate the script / lesson plan with the current settings',
+  'canvas.mindClassroom.queue.guestHint':
+    'Посетители используют местные шаблоны для объяснений; после входа в систему движок генерирует конспекты лекций/планы обучения.',
+  'canvas.mindClassroom.queue.loginRequired':
+    'Пожалуйста, войдите в систему, прежде чем начать объяснение.',
   'canvas.mindClassroom.queue.preparing': 'Готовлюсь объяснить...',
   'canvas.mindClassroom.settings.masteryTitle': 'Насколько мне знакома эта картинка',
   'canvas.mindClassroom.settings.mastery.first_look.title': 'Первое знакомство',
   'canvas.mindClassroom.settings.mastery.review.title': 'Обзор и консолидация',
   'canvas.mindClassroom.settings.mastery.teach.title': 'Подготовка и преподавание урока',
-  'canvas.mindClassroom.settings.presentationTitle': 'Как я хочу, чтобы объяснение было представлено',
+  'canvas.mindClassroom.settings.presentationTitle':
+    'Как я хочу, чтобы объяснение было представлено',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'Голосовой тур по холсту',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'Сосредоточьтесь на аудиообъяснении на холсте карты, выберите основную ветвь или узел за узлом.',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    'Сосредоточьтесь на аудиообъяснении на холсте карты, выберите основную ветвь или узел за узлом.',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'Объяснение слайда',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'ИИ генерирует слайды с картой слева для сравнения и пояснениями справа.',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': 'В разработке, скоро будет онлайн',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    'ИИ генерирует слайды с картой слева для сравнения и пояснениями справа.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
+    'В разработке, скоро будет онлайн',
   'canvas.mindClassroom.settings.tourScopeTitle': 'Детализация тура',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'По основной ветке',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'Ветви первого уровня преподаются шаг за шагом, и ритм становится более стабильным.',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
+    'Ветви первого уровня преподаются шаг за шагом, и ритм становится более стабильным.',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'Узел за узлом',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'Углубляйтесь в каждый узел, подходящий для интенсивного чтения.',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc':
+    'Углубляйтесь в каждый узел, подходящий для интенсивного чтения.',
   'canvas.mindClassroom.settings.slideStyleTitle': 'Стиль слайд-шоу',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'Универсальные слайды',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'отчет на доске',
@@ -1040,10 +1221,12 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': 'интенсивное чтение',
   'canvas.mindClassroom.settings.tone.examples': 'Богатые примеры',
   'canvas.mindClassroom.settings.tone.exam_outline': 'Схема экзамена',
-  'canvas.mindClassroom.lecture.needDiagram': 'Прежде чем приступить к объяснению, пожалуйста, создайте интеллектуальную карту на холсте.',
+  'canvas.mindClassroom.lecture.needDiagram':
+    'Прежде чем приступить к объяснению, пожалуйста, создайте интеллектуальную карту на холсте.',
   'canvas.mindClassroom.lecture.emptySteps': 'На текущей карте нет узлов, требующих объяснения.',
   'canvas.mindClassroom.lecture.cancelled': 'Очередь на обучение отменена.',
-  'canvas.mindClassroom.lecture.queueFailed': 'Не удалось подготовить руководство. Повторите попытку позже.',
+  'canvas.mindClassroom.lecture.queueFailed':
+    'Не удалось подготовить руководство. Повторите попытку позже.',
   'canvas.mindClassroom.lecture.pause': 'пауза',
   'canvas.mindClassroom.lecture.resume': 'продолжать',
   'canvas.mindClassroom.lecture.prev': 'Предыдущий раздел',
@@ -1053,33 +1236,54 @@ export default {
   'canvas.mindClassroom.lecture.unmute': 'Начните читать вслух',
   'canvas.mindClassroom.lecture.script.noBranches': 'Некоторые моменты',
   'canvas.mindClassroom.lecture.script.leafNode': 'Подробностей об этой ветке пока нет.',
-  'canvas.mindClassroom.lecture.script.overview.classroom': 'Здравствуйте, одноклассники. Сегодня мы изучаем «{topic}», сталкиваясь с аудиторией «{audience}», и развиваемся в темпе «{mastery}». Вся картина в основном включает в себя: {branches}. Сначала посмотрите на общую картину, а затем разбирайте ее по частям.',
-  'canvas.mindClassroom.lecture.script.overview.story': 'Сначала подумайте о «{topic}» как о названии истории. Столкнувшись с «{audience}», мы перейдем от всей картины к деталям: в рассказе есть такие главы — {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.dialogue': 'Давайте сначала вместе посмотрим на «{topic}». Если бы вы были «{audience}», какие части вы бы заметили в первую очередь? Вся картина примерно включает в себя: {branches}. Мы спустились, задавая вопросы и отвечая на вопросы.',
-  'canvas.mindClassroom.lecture.script.overview.socratic': 'Пока не спешите запоминать вывод. Столкнувшись с "{topic}", как вы думаете, почему стоит сделать картинку? Идем в глубину "{mastery}" и спрашиваем из этих веток: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.fast': 'Взгляните на «{topic}» ({audience}). Ствол: {branches}. Далее доходите до точки одну за другой.',
-  'canvas.mindClassroom.lecture.script.overview.close_read': 'Начало интенсивного чтения: Тема «{topic}». Пожалуйста, сначала поймите общую структуру - {branches} - а затем внимательно прочтите каждую ветку. Настройка аудитории: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.examples': 'Начните с примера. Тему «{topic}» можно рассматривать как сцену из жизни или учебы; ветви всей картины похожи на разные сцены: {branches}. Аудитория: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'Обзор тестовых точек: «{topic}». Запишите основные моменты согласно схеме——{branches}. Сложность соответствует «{audience}», а ритм — «{mastery}».',
-  'canvas.mindClassroom.lecture.script.branch.classroom': 'Ветка {index}/{total}: посмотрите «{title}». Также под ним: {children}. Пожалуйста, обратитесь к положению на карте, чтобы понять роль этого раздела в целом.',
-  'canvas.mindClassroom.lecture.script.branch.story': 'История достигает главы {index} «{title}». В этой главе появился: {children}. Подумайте, как они продвигают общий сюжет картины.',
-  'canvas.mindClassroom.lecture.script.branch.dialogue': 'Позвольте мне спросить вас: когда вы упоминаете «{title}», о чем вы думаете? На диаграмме указано: {children}. Давайте сравним ({index}/{total}).',
-  'canvas.mindClassroom.lecture.script.branch.socratic': 'Дополнительный вопрос: почему «{title}» должна быть отдельной веткой? Каково его отношение к подпункту «{children}»? Пожалуйста, сначала ответьте на него сами, а затем обратитесь к карте ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    'Здравствуйте, одноклассники. Сегодня мы изучаем «{topic}», сталкиваясь с аудиторией «{audience}», и развиваемся в темпе «{mastery}». Вся картина в основном включает в себя: {branches}. Сначала посмотрите на общую картину, а затем разбирайте ее по частям.',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    'Сначала подумайте о «{topic}» как о названии истории. Столкнувшись с «{audience}», мы перейдем от всей картины к деталям: в рассказе есть такие главы — {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    'Давайте сначала вместе посмотрим на «{topic}». Если бы вы были «{audience}», какие части вы бы заметили в первую очередь? Вся картина примерно включает в себя: {branches}. Мы спустились, задавая вопросы и отвечая на вопросы.',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    'Пока не спешите запоминать вывод. Столкнувшись с "{topic}", как вы думаете, почему стоит сделать картинку? Идем в глубину "{mastery}" и спрашиваем из этих веток: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    'Взгляните на «{topic}» ({audience}). Ствол: {branches}. Далее доходите до точки одну за другой.',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    'Начало интенсивного чтения: Тема «{topic}». Пожалуйста, сначала поймите общую структуру - {branches} - а затем внимательно прочтите каждую ветку. Настройка аудитории: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    'Начните с примера. Тему «{topic}» можно рассматривать как сцену из жизни или учебы; ветви всей картины похожи на разные сцены: {branches}. Аудитория: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    'Обзор тестовых точек: «{topic}». Запишите основные моменты согласно схеме——{branches}. Сложность соответствует «{audience}», а ритм — «{mastery}».',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    'Ветка {index}/{total}: посмотрите «{title}». Также под ним: {children}. Пожалуйста, обратитесь к положению на карте, чтобы понять роль этого раздела в целом.',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    'История достигает главы {index} «{title}». В этой главе появился: {children}. Подумайте, как они продвигают общий сюжет картины.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    'Позвольте мне спросить вас: когда вы упоминаете «{title}», о чем вы думаете? На диаграмме указано: {children}. Давайте сравним ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    'Дополнительный вопрос: почему «{title}» должна быть отдельной веткой? Каково его отношение к подпункту «{children}»? Пожалуйста, сначала ответьте на него сами, а затем обратитесь к карте ({index}/{total}).',
   'canvas.mindClassroom.lecture.script.branch.fast': '«{title}» → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read': 'Прочтите «{title}» внимательно. Пожалуйста, прочитайте подчиненную информацию одну за другой: {children}. Эта ветвь находится в пункте {index}/{total}. Обратите внимание на формулировку и уровень.',
-  'canvas.mindClassroom.lecture.script.branch.examples': 'Приведите пример, который поможет понять «{title}»: вы можете думать об этом как о конкретной сцене с {children} в ней. Мы находимся в филиале {index}/{total}.',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'Тестовая точка {index}/{total}: «{title}». Подчиненные пункты: {children}. При просмотре сначала запомните название, а затем заполняйте детали.',
-  'canvas.mindClassroom.lecture.script.closing.first_look': 'Общий обзор: Мы только что познакомились со скелетом «{topic}». Рекомендуется еще раз отсканировать всю картинку, отметить две-три точки, которые вам еще незнакомы, и начать с них в следующий раз.',
-  'canvas.mindClassroom.lecture.script.closing.review': 'Вывод рецензии: Сможете ли вы пересказать основные моменты, закрыв книгу «{topic}»? Если какой-то участок застрял, просто вернитесь к участку на карте и пройдите его снова.',
-  'canvas.mindClassroom.lecture.script.closing.teach': 'Подготовка и закрытие урока: При обучении от «{topic}» до «{audience}» вы можете соблюдать последовательность карты: открытие – раскрытие – закрытие. Вы также можете разделить определенную ветку на вопросы класса.',
-  'canvas.mindMapSideToolbar.oneSentenceIntro': 'Используйте одно предложение, чтобы описать тему или требования к модификации, а также разумно создавайте и корректируйте карту.',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    'Прочтите «{title}» внимательно. Пожалуйста, прочитайте подчиненную информацию одну за другой: {children}. Эта ветвь находится в пункте {index}/{total}. Обратите внимание на формулировку и уровень.',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    'Приведите пример, который поможет понять «{title}»: вы можете думать об этом как о конкретной сцене с {children} в ней. Мы находимся в филиале {index}/{total}.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    'Тестовая точка {index}/{total}: «{title}». Подчиненные пункты: {children}. При просмотре сначала запомните название, а затем заполняйте детали.',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    'Общий обзор: Мы только что познакомились со скелетом «{topic}». Рекомендуется еще раз отсканировать всю картинку, отметить две-три точки, которые вам еще незнакомы, и начать с них в следующий раз.',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    'Вывод рецензии: Сможете ли вы пересказать основные моменты, закрыв книгу «{topic}»? Если какой-то участок застрял, просто вернитесь к участку на карте и пройдите его снова.',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    'Подготовка и закрытие урока: При обучении от «{topic}» до «{audience}» вы можете соблюдать последовательность карты: открытие – раскрытие – закрытие. Вы также можете разделить определенную ветку на вопросы класса.',
+  'canvas.mindMapSideToolbar.oneSentenceIntro':
+    'Используйте одно предложение, чтобы описать тему или требования к модификации, а также разумно создавайте и корректируйте карту.',
   'canvas.mindMapSideToolbar.documentSummary': 'Краткое описание документа',
-  'fileCenter.intro': 'Пакет — это коллекция источников, организованная для текущей диаграммы. Когда вы добавляете файлы, заметки или веб-страницы, диаграмма автоматически дополняет ветви на основе этих источников.',
+  'fileCenter.intro':
+    'Пакет — это коллекция источников, организованная для текущей диаграммы. Когда вы добавляете файлы, заметки или веб-страницы, диаграмма автоматически дополняет ветви на основе этих источников.',
   'fileCenter.defaultPackageName': 'Безымянный пакет данных',
   'fileCenter.packageNameLabel': 'Имя пакета',
   'fileCenter.createPackage': 'Создать пакет',
   'fileCenter.deletePackage': 'Удалить пакет',
-  'fileCenter.confirmDeletePackage': 'Удалить этот пакет и все его исходники? Это действие невозможно отменить.',
+  'fileCenter.confirmDeletePackage':
+    'Удалить этот пакет и все его исходники? Это действие невозможно отменить.',
   'fileCenter.corpusStatus': 'Проиндексированные источники {completed}/{total}',
   'fileCenter.noSources': 'Источника пока нет, добавьте ниже.',
   'fileCenter.addSource': 'добавить источник',
@@ -1090,8 +1294,10 @@ export default {
   'fileCenter.pasteTitlePlaceholder': 'Название (необязательно)',
   'fileCenter.pastePlaceholder': 'Вставить заметки или текст в качестве источника…',
   'fileCenter.webUrlPlaceholder': 'https://example.com/article',
-  'fileCenter.webContentPlaceholder': 'Вставьте или введите текст веб-страницы в качестве источника…',
-  'fileCenter.saveDiagramForRag': 'Сначала сохраните диаграмму, чтобы связать пакет и включить извлечение RAG.',
+  'fileCenter.webContentPlaceholder':
+    'Вставьте или введите текст веб-страницы в качестве источника…',
+  'fileCenter.saveDiagramForRag':
+    'Сначала сохраните диаграмму, чтобы связать пакет и включить извлечение RAG.',
   'fileCenter.statusReady': 'Готово · RAG включен',
   'fileCenter.statusPending': 'Добавлен',
   'fileCenter.statusIndexing': 'Индексирование…',
@@ -1099,7 +1305,8 @@ export default {
   'fileCenter.statusFailed': 'неудача',
   'fileCenter.chunkingTooltip': 'Механизмы и режимы фрагментации (H = Иерархия)',
   'fileCenter.featureDisabledTitle': 'Пространство знаний не включено',
-  'fileCenter.featureDisabledHint': 'Сводки документов доступны, если включена функция «Пространство знаний».',
+  'fileCenter.featureDisabledHint':
+    'Сводки документов доступны, если включена функция «Пространство знаний».',
   'fileCenter.createFailed': 'Не удалось создать пакет',
   'fileCenter.updateFailed': 'Не удалось обновить пакет',
   'fileCenter.deleteFailed': 'Удаление не удалось',
@@ -1108,10 +1315,14 @@ export default {
   'canvas.mindMapSideToolbar.closeOutline': 'Закрыть контур',
   'canvas.mindMapSideToolbar.outlineEmpty': 'Содержимого узла пока нет',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'Интеллектуальное поколение ИИ',
-  'canvas.mindMapSideToolbar.outlineEditHint': 'Дважды щелкните текст узла, чтобы напрямую изменить его в реальном времени.',
-  'canvas.mindMapSideToolbar.outlineIntro': 'Используйте контур, чтобы редактировать структуру карты, перетаскивайте его, чтобы изменить порядок, и вставляйте несколько строк, чтобы добавлять их группами.',
-  'canvas.mindMapSideToolbar.outlineDragHint': 'Перетащите, чтобы изменить порядок; поместите его выше/ниже узла для транспозиции одного уровня и поместите его посередине для дочернего узла',
-  'canvas.mindMapSideToolbar.outlinePasteHint': 'После выбора узла и вставки нескольких строк текста узлы одного уровня можно добавлять пакетно.',
+  'canvas.mindMapSideToolbar.outlineEditHint':
+    'Дважды щелкните текст узла, чтобы напрямую изменить его в реальном времени.',
+  'canvas.mindMapSideToolbar.outlineIntro':
+    'Используйте контур, чтобы редактировать структуру карты, перетаскивайте его, чтобы изменить порядок, и вставляйте несколько строк, чтобы добавлять их группами.',
+  'canvas.mindMapSideToolbar.outlineDragHint':
+    'Перетащите, чтобы изменить порядок; поместите его выше/ниже узла для транспозиции одного уровня и поместите его посередине для дочернего узла',
+  'canvas.mindMapSideToolbar.outlinePasteHint':
+    'После выбора узла и вставки нескольких строк текста узлы одного уровня можно добавлять пакетно.',
   'canvas.mindMapPaste.inserted': 'Вставлено {count} родственных узлов',
   'canvas.mindMapPaste.truncated': 'Превышен лимит, вставлены только первые 50 строк.',
   'canvas.mindMapSideToolbar.realtimeSync': 'Синхронизация в реальном времени',
@@ -1121,42 +1332,52 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'удалить ветку',
   'canvas.mindMapSideToolbar.expandBranch': 'Развернуть ветку',
   'canvas.mindMapSideToolbar.collapseBranch': 'закрыть ветку',
-  'canvas.mindMapSideToolbar.aiGenerateDesc': 'Опираясь на текущую тему, разумно расширьте структуру интеллект-карты в одном предложении.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc':
+    'Опираясь на текущую тему, разумно расширьте структуру интеллект-карты в одном предложении.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Откройте схему полого кронштейна',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Выйдите из диаграммы полых кронштейнов',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Восстановить полный образ',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
     'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro': 'Выберите метод создания полой схемы строительных лесов, подходящий для практики в классе и для повторения.',
+  'canvas.mindMapSideToolbar.learningSheetIntro':
+    'Выберите метод создания полой схемы строительных лесов, подходящий для практики в классе и для повторения.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
     'Blank every node except the center topic; reference answers appear below the diagram.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Случайно оставлено пустым',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Система автоматически случайным образом удаляет около 20% узлов, а справочный ответ отображается под диаграммой.',
-  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} узлов пусты · Esc, чтобы закрыть',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
+    'Система автоматически случайным образом удаляет около 20% узлов, а справочный ответ отображается под диаграммой.',
+  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint':
+    '{count} узлов пусты · Esc, чтобы закрыть',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'Пользовательское выдалбливание',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'Мышь превращается в молоток, нажмите на узел, чтобы выдолбить его; нажмите еще раз, чтобы восстановить.',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
+    'Мышь превращается в молоток, нажмите на узел, чтобы выдолбить его; нажмите еще раз, чтобы восстановить.',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'Открыто · Пропущено {count} узлов',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'В режиме полости · Щелкните узел на холсте.',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
+    'В режиме полости · Щелкните узел на холсте.',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'Пользовательский режим нокаута',
-  'canvas.mindMapSideToolbar.learningSheetPickHint': 'Щелкните узел, чтобы очистить его, щелкните еще раз, чтобы восстановить · {count} был пуст · Esc для выхода',
+  'canvas.mindMapSideToolbar.learningSheetPickHint':
+    'Щелкните узел, чтобы очистить его, щелкните еще раз, чтобы восстановить · {count} был пуст · Esc для выхода',
   'canvas.mindMapSideToolbar.learningSheetPickDone': 'Заканчивать',
-  'canvas.mindMapSideToolbar.learningSheetProtectedNode': 'Центральный узел и узел структуры не могут быть выдолблены.',
+  'canvas.mindMapSideToolbar.learningSheetProtectedNode':
+    'Центральный узел и узел структуры не могут быть выдолблены.',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': 'Полые узлы',
   'canvas.mindMapSideToolbar.learningSheetRandomBlankHistory': 'Случайным образом вырезать узлы',
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': 'Восстановить текст узла',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': 'Скрыть справочные ответы',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': 'Сохраняйте справочные ответы',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': 'В закрытом состоянии ответ не отображается на полотне в области выбивания',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
+    'В закрытом состоянии ответ не отображается на полотне в области выбивания',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'Справочные ответы на холсте',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': 'показывать',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': 'скрывать',
   'canvas.mindMapSideToolbar.learningSheetAnswersShortcut': 'Сочетание клавиш: Ctrl + Shift + H.',
   'canvas.mindMapSideToolbar.openMindmate': 'Открыть MindMate',
   'canvas.toolbar.learningSheetExportNudgeTitle': 'Export as a learning sheet',
-  'canvas.toolbar.learningSheetExportNudgeDesc': 'Экспортируйте в PNG или PDF, распечатывайте и делитесь учащимися для практики.',
+  'canvas.toolbar.learningSheetExportNudgeDesc':
+    'Экспортируйте в PNG или PDF, распечатывайте и делитесь учащимися для практики.',
   'canvas.toolbar.learningSheetExportNudgeDismiss': 'знал',
   'canvas.toolbar.learningSheetExportNudgeNeverRemind': 'Больше не напоминать',
   'diagram.flow.newCause': 'новые причины',
@@ -1235,9 +1456,12 @@ export default {
   'editor.unsavedChanges': 'Есть несохраненные изменения',
   'editor.savedSuccess': 'сохранено',
   'editor.saveNeedsLogin': 'Пожалуйста, войдите и сохраните',
-  'editor.saveWaitForGeneration': 'Пожалуйста, подождите, пока генерация ИИ завершится, прежде чем сохранять.',
-  'editor.saveBlockedSubgraphPreview': 'Перед сохранением выберите или отмените предварительный просмотр фрагмента изображения AI.',
-  'editor.saveBlockedCollabActive': 'Сохраняйте изменения в ходе сеанса совместной работы во время совместной работы в реальном времени.',
+  'editor.saveWaitForGeneration':
+    'Пожалуйста, подождите, пока генерация ИИ завершится, прежде чем сохранять.',
+  'editor.saveBlockedSubgraphPreview':
+    'Перед сохранением выберите или отмените предварительный просмотр фрагмента изображения AI.',
+  'editor.saveBlockedCollabActive':
+    'Сохраняйте изменения в ходе сеанса совместной работы во время совместной работы в реальном времени.',
   'editor.saveBlockedCollabGuest': 'Сохранять во время совместной работы может только организатор',
   'editor.saveNothingToSave': 'Пока нет контента для сохранения',
   'editor.saveFailed': 'Не удалось сохранить, попробуйте еще раз',
@@ -1247,7 +1471,8 @@ export default {
   'editor.redo': 'Повторить',
   'editor.saveDiagram': 'Сохранить диаграмму',
   'editor.selectDiagramType': 'Выберите тип диаграммы',
-  'editor.slotsFull': 'Пространство заполнено, и автоматическое сохранение невозможно. Пожалуйста, удалите существующие значки, чтобы освободить место.',
+  'editor.slotsFull':
+    'Пространство заполнено, и автоматическое сохранение невозможно. Пожалуйста, удалите существующие значки, чтобы освободить место.',
   'editor.undo': 'Отмена',
   'editor.zoomIn': 'увеличить',
   'editor.zoomOut': 'уменьшить масштаб',
@@ -1287,7 +1512,8 @@ export default {
   'landing.diagramGrid.tree_map.title': 'древовидная диаграмма',
   'landing.diagramGrid.voice_notes.desc': 'Запись созданной карты',
   'landing.diagramGrid.voice_notes.title': 'Голосовые заметки',
-  'landing.template.freePlaceholder': 'Опишите тему или структурные требования, например ветви, этапы, категории... или выберите шаблон иллюстрации ниже.',
+  'landing.template.freePlaceholder':
+    'Опишите тему или структурные требования, например ветви, этапы, категории... или выберите шаблон иллюстрации ниже.',
   'landing.template.slot.criterion': 'Критерии классификации',
   'landing.template.slot.event': 'событие',
   'landing.template.slot.itemA': 'Вещь А',
@@ -1310,7 +1536,8 @@ export default {
   'mindgraphLanding.dialogSharedTitle': 'Сотрудничайте вместе',
   'mindgraphLanding.import': 'импортировать',
   'mindgraphLanding.languageMenuTitle': 'Язык (интерфейс синхронизирован с выходом AI)',
-  'mindgraphLanding.inputPlaceholder': 'Опишите свой значок или выберите конкретный шаблон значка ниже...',
+  'mindgraphLanding.inputPlaceholder':
+    'Опишите свой значок или выберите конкретный шаблон значка ниже...',
   'mindgraphLanding.join': 'присоединиться',
   'mindgraphLanding.joinFailed': 'Не удалось присоединиться',
   'mindgraphLanding.joinPresentationFailed': 'Не удалось присоединиться к демоверсии',
@@ -1319,19 +1546,23 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'Невозможно загрузить сеанс в кампусе',
   'mindgraphLanding.networkError': 'сетевая ошибка',
   'mindgraphLanding.networkErrorJoin': 'Ошибка сети, не удалось присоединиться.',
-  'mindgraphLanding.orgSessionsEmpty': 'В настоящее время нет сеансов совместной работы на территории кампуса, к которым можно присоединиться (у коллег должна быть включена функция «Совместная работа на территории кампуса»).',
+  'mindgraphLanding.orgSessionsEmpty':
+    'В настоящее время нет сеансов совместной работы на территории кампуса, к которым можно присоединиться (у коллег должна быть включена функция «Совместная работа на территории кампуса»).',
   'mindgraphLanding.participantsOnline': '{n} человек онлайн',
   'mindgraphLanding.schoolCollab': 'Сотрудничество на территории кампуса',
-  'mindgraphLanding.sharedCodeHint': 'Введите код приглашения (xxx-xxx), чтобы присоединиться к совместному сеансу другой стороны.',
+  'mindgraphLanding.sharedCodeHint':
+    'Введите код приглашения (xxx-xxx), чтобы присоединиться к совместному сеансу другой стороны.',
   'mindgraphLanding.sharedCollab': 'Сотрудничайте вместе',
   'mindgraphLanding.joinDiagramEdit': 'Добавить редактор иконок',
-  'mindgraphLanding.welcome': '{username}Здравствуйте, я помощник по диаграммам мышления MindGraph AI.',
+  'mindgraphLanding.welcome':
+    '{username}Здравствуйте, я помощник по диаграммам мышления MindGraph AI.',
   'canvasPage.collabReconnecting': 'Возобновляем сотрудничество...',
   'canvasPage.collabConnectionFailed': 'Соединение для совместной работы прервано.',
   'canvasPage.collabRetryConnection': 'Попробуйте еще раз',
   'canvasPage.collabParticipantsAria': 'Совместные участники',
   'canvasPage.collabConnected': 'Подключено',
   'canvas.topBar.viewOnly': 'Только просмотр',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': 'Более',
   'canvas.ribbon.file': 'документ',
   'canvas.ribbon.nodes': 'узел',
@@ -1386,7 +1617,8 @@ export default {
   'canvas.ribbon.tip.docGenerate': 'Загрузите файл или вставьте текст, чтобы создать карту.',
   'canvas.ribbon.tip.webGenerate': 'Сканирование веб-страниц и создание карт',
   'canvas.ribbon.tip.voiceSummary': 'Создать карту после записи',
-  'canvas.ribbon.tip.waterfall': 'Рекомендовать ветки для выбранного узла — можно перетащить на холст',
+  'canvas.ribbon.tip.waterfall':
+    'Рекомендовать ветки для выбранного узла — можно перетащить на холст',
   'canvas.ribbon.tip.oneSentence': 'Опишите тему или модификацию одним предложением',
   'canvas.ribbon.tip.aiSubgraph': 'Развернуть подветвь от выбранного узла',
   'canvas.ribbon.tip.addChild': 'Добавить подтему под выбранным узлом',
@@ -1401,6 +1633,17 @@ export default {
   'canvas.ribbon.tip.collabOrg': 'Пригласите коллег из нашей школы для совместного редактирования.',
   'canvas.ribbon.tip.collabCross': 'Редактируйте эту карту совместно со школами.',
   'canvas.ribbon.tip.collabOff': 'Завершить текущий сеанс совместной работы',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': 'Сделать текст выделенного узла жирным',
   'canvas.ribbon.tip.italic': 'Установить выделенный текст узла курсивом',
   'canvas.ribbon.tip.alignLeft': 'Текст узла выровнен по левому краю',
@@ -1452,23 +1695,28 @@ export default {
   'canvas.ribbon.docGenerate': 'Генерация документов',
   'canvas.ribbon.webGenerate': 'Генерация веб-ссылок',
   'canvas.ribbon.voiceSummary': 'Сводка записи',
-  'canvas.ribbon.sourceLocked': 'Текущая карта использует {source} в качестве источника. Пожалуйста, создайте новую карту, прежде чем переходить на другой метод генерации.',
+  'canvas.ribbon.sourceLocked':
+    'Текущая карта использует {source} в качестве источника. Пожалуйста, создайте новую карту, прежде чем переходить на другой метод генерации.',
   'canvas.ribbon.sourceKind.doc': 'документ',
   'canvas.ribbon.sourceKind.web': 'Веб-ссылка',
   'canvas.ribbon.sourceKind.voice': 'запись',
   'canvas.ribbon.assocLine': 'связанная линия',
-  'canvas.ribbon.assocLineHint': 'Нажмите на другой узел, чтобы подключиться. Esc или пустой холст для отмены.',
-  'canvas.ribbon.assocLineSameSide': 'Линии ассоциации могут соединять узлы только на одной стороне.',
+  'canvas.ribbon.assocLineHint':
+    'Нажмите на другой узел, чтобы подключиться. Esc или пустой холст для отмены.',
+  'canvas.ribbon.assocLineSameSide':
+    'Линии ассоциации могут соединять узлы только на одной стороне.',
   'canvas.ribbon.assocLineDelete': 'Удалить связанные строки',
   'canvas.ribbon.summary': 'краткое содержание',
   'canvas.ribbon.insertImage': 'картина',
   'canvas.ribbon.insertIcon': 'икона',
   'canvas.ribbon.insertLink': 'Связь',
   'canvas.ribbon.makeLearningSheet': 'Сделать учебный лист',
-  'canvas.ribbon.makeLearningSheetHint': 'Создавайте учебные листы одним щелчком мыши, чтобы сделать обзор более эффективным.',
+  'canvas.ribbon.makeLearningSheetHint':
+    'Создавайте учебные листы одним щелчком мыши, чтобы сделать обзор более эффективным.',
   'canvas.ribbon.selectTwoNodes': 'Пожалуйста, сначала выберите два узла',
   'canvas.ribbon.insertComingSoon': 'Возможность вставки будет доступна в ближайшее время',
-  'canvas.ribbon.summaryNeedSiblings': 'Пожалуйста, выберите последовательные узлы в одном родительском узле.',
+  'canvas.ribbon.summaryNeedSiblings':
+    'Пожалуйста, выберите последовательные узлы в одном родительском узле.',
   'canvas.ribbon.summaryDelete': 'Удалить сводку',
   'canvas.ribbon.linkName': 'имя',
   'canvas.ribbon.linkUrl': 'Адрес ссылки',
@@ -1476,8 +1724,10 @@ export default {
   'canvas.ribbon.linkConfirm': 'Добавить ссылку',
   'canvas.ribbon.imageUrl': 'Адрес изображения',
   'canvas.ribbon.imagePick': 'Выберите изображение',
-  'canvas.ribbon.imageInvalid': 'Пожалуйста, введите действительный адрес изображения или выберите файл.',
-  'canvas.ribbon.imageTooLarge': 'Изображение слишком велико. Измените файл на меньший или используйте URL-адрес.',
+  'canvas.ribbon.imageInvalid':
+    'Пожалуйста, введите действительный адрес изображения или выберите файл.',
+  'canvas.ribbon.imageTooLarge':
+    'Изображение слишком велико. Измените файл на меньший или используйте URL-адрес.',
   'canvas.ribbon.imageConfirm': 'добавить изображение',
   'canvas.ribbon.clearIcon': 'удалить значок',
   'canvas.ribbon.openLink': 'открыть ссылку',
@@ -1493,26 +1743,33 @@ export default {
   'canvas.ribbon.aiHero.voice.ribbon': 'Артефакт встречи',
   'canvas.ribbon.aiHero.voice.title': 'Включите запись в реальном времени',
   'canvas.ribbon.aiHero.voice.line1': 'Преобразование речи в текст в реальном времени',
-  'canvas.ribbon.aiHero.voice.line2': 'Синхронный перевод и интеллектуальное изложение ключевых моментов',
+  'canvas.ribbon.aiHero.voice.line2':
+    'Синхронный перевод и интеллектуальное изложение ключевых моментов',
   'canvas.ribbon.aiHero.chat.ribbon': 'Импорт чата',
   'canvas.ribbon.aiHero.chat.title': 'Импортировать историю чата',
   'canvas.ribbon.aiHero.chat.line1': 'Подключите считыватель, используя код сопряжения',
-  'canvas.ribbon.aiHero.chat.line2': 'Импортируйте разговоры и создавайте карты одним щелчком мыши.',
+  'canvas.ribbon.aiHero.chat.line2':
+    'Импортируйте разговоры и создавайте карты одним щелчком мыши.',
   'canvas.ribbon.aiHero.classroom.ribbon': 'обучающий артефакт',
   'canvas.ribbon.aiHero.classroom.title': 'Откройте лекционный зал «Мышление»',
-  'canvas.ribbon.aiHero.classroom.line1': 'Позвольте учителю искусственного интеллекта поговорить с вами об этой карте разума.',
+  'canvas.ribbon.aiHero.classroom.line1':
+    'Позвольте учителю искусственного интеллекта поговорить с вами об этой карте разума.',
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'Выдолбить кронштейн',
   'canvas.ribbon.aiHero.learningSheet.title': 'Схема полого кронштейна',
-  'canvas.ribbon.aiHero.learningSheet.line1': 'Выберите произвольное или индивидуальное вырезание, подходящее для практики в классе и просмотра.',
+  'canvas.ribbon.aiHero.learningSheet.line1':
+    'Выберите произвольное или индивидуальное вырезание, подходящее для практики в классе и просмотра.',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'мозговой штурм',
-  'canvas.ribbon.aiHero.brainstorm.title': 'Мозговой штурм с использованием искусственного интеллекта',
+  'canvas.ribbon.aiHero.brainstorm.title':
+    'Мозговой штурм с использованием искусственного интеллекта',
   'canvas.ribbon.aiHero.brainstorm.line1': 'Выберите узел для создания предложений ветвей.',
-  'canvas.ribbon.aiHero.brainstorm.line2': 'Проверьте его и примените к карте или перетащите на холст.',
+  'canvas.ribbon.aiHero.brainstorm.line2':
+    'Проверьте его и примените к карте или перетащите на холст.',
   'canvas.ribbon.aiHero.oneSentence.ribbon': 'Изменить диалог',
   'canvas.ribbon.aiHero.oneSentence.title': 'Разговорная модификация',
-  'canvas.ribbon.aiHero.oneSentence.line1': 'Опишите тему или запрос на модификацию одним предложением.',
+  'canvas.ribbon.aiHero.oneSentence.line1':
+    'Опишите тему или запрос на модификацию одним предложением.',
   'canvas.ribbon.aiHero.oneSentence.line2': 'Интеллектуальное создание и корректировка карт',
   'canvas.ribbon.aiHero.link.ribbon': 'вставлять',
   'canvas.ribbon.aiHero.link.title': 'Добавить ссылку',
@@ -1520,7 +1777,8 @@ export default {
   'canvas.ribbon.aiHero.link.line2': '',
   'canvas.hero.image.ribbon': 'вставлять',
   'canvas.hero.image.title': 'добавить изображение',
-  'canvas.hero.image.line1': 'Вставьте адрес изображения или выберите файл на локальном компьютере.',
+  'canvas.hero.image.line1':
+    'Вставьте адрес изображения или выберите файл на локальном компьютере.',
   'canvas.hero.image.line2': '',
   'canvas.hero.icon.ribbon': 'вставлять',
   'canvas.hero.icon.title': 'добавить значок',
@@ -1528,25 +1786,28 @@ export default {
   'canvas.hero.icon.line2': '',
   'canvas.hero.math.ribbon': 'вставлять',
   'canvas.hero.math.title': 'Вставить формулу',
-  'canvas.hero.math.line1': 'Используйте клавиатуру формул для ввода LaTeX, а затем после подтверждения введите узел.',
+  'canvas.hero.math.line1':
+    'Используйте клавиатуру формул для ввода LaTeX, а затем после подтверждения введите узел.',
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': 'сотрудничество',
   'canvas.hero.collab.title': 'Онлайн сотрудничество',
-  'canvas.hero.collab.line1': 'Включите совместную работу внутри школы или код приглашения, чтобы пригласить коллег вместе редактировать изображения.',
+  'canvas.hero.collab.line1':
+    'Включите совместную работу внутри школы или код приглашения, чтобы пригласить коллег вместе редактировать изображения.',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': 'Экспорт',
   'canvas.hero.worksheet.title': 'Экспорт в DOC/PDF',
-  'canvas.hero.worksheet.line1': 'Настройка заголовка учебного листа и параметров бумаги, предварительный просмотр и экспорт',
+  'canvas.hero.worksheet.line1':
+    'Настройка заголовка учебного листа и параметров бумаги, предварительный просмотр и экспорт',
   'canvas.hero.worksheet.line2': '',
   'canvas.hero.communityExport.ribbon': 'делиться',
   'canvas.hero.communityExport.title': 'Поделиться в сообществе',
-  'canvas.hero.communityExport.line1': 'Заполните заголовок и категорию, создайте миниатюру и опубликуйте ее.',
+  'canvas.hero.communityExport.line1':
+    'Заполните заголовок и категорию, создайте миниатюру и опубликуйте ее.',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'Изменить публикацию в сообществе',
   'canvas.hero.slotFull.ribbon': 'Галерея',
   'canvas.hero.slotFull.title': 'Галерея заполнена',
-  'canvas.hero.slotFull.line1': 'Пожалуйста, удалите существующий значок и сохраните текущий значок.',
+  'canvas.hero.slotFull.line1':
+    'Пожалуйста, удалите существующий значок и сохраните текущий значок.',
   'canvas.hero.slotFull.line2': '',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
-  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

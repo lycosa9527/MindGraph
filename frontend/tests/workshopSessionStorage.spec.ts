@@ -57,9 +57,9 @@ describe('shouldClearWorkshopSessionOnNavigate', () => {
   })
 
   it('clears canvas → new type without a diagram id', () => {
-    expect(
-      shouldClearWorkshopSessionOnNavigate('/canvas', '/canvas', { type: 'mindmap' })
-    ).toBe(true)
+    expect(shouldClearWorkshopSessionOnNavigate('/canvas', '/canvas', { type: 'mindmap' })).toBe(
+      true
+    )
   })
 
   it('clears canvas → a different saved diagram', () => {

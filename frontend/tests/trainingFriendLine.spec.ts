@@ -35,9 +35,12 @@ describe('training friend line', () => {
     expect(trainingActivityPageKey('/library', snapshot({ pull_users: false }))).toBe('library')
     expect(trainingActivityPageKey('/library', snapshot())).toBe('mindmate')
     expect(
-      trainingActivityPageKey('/mindgraph', snapshot({
-        step: { position: 0, type: 'slide', asset_url: '/s.png' },
-      }))
+      trainingActivityPageKey(
+        '/mindgraph',
+        snapshot({
+          step: { position: 0, type: 'slide', asset_url: '/s.png' },
+        })
+      )
     ).toBe('slide')
   })
 

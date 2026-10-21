@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  canAccessZhihui,
-  type AdminCapability,
-} from '@/utils/adminCapabilities'
+import { type AdminCapability, canAccessZhihui } from '@/utils/adminCapabilities'
 
 describe('canAccessZhihui', () => {
   it('allows feature.zhihui capability', () => {

@@ -9,6 +9,9 @@ import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindM
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
+import { bindClassroomPrepToDiagram } from '@/composables/mindMap/bindClassroomPrepToDiagram'
+import { bindClassroomPrepToSettings } from '@/composables/mindMap/bindClassroomPrepToSettings'
+import { bindClassroomReadyToast } from '@/composables/mindMap/bindClassroomReadyToast'
 import {
   ClassroomJobsBusyError,
   type MindClassroomJobDetail,
@@ -23,7 +26,6 @@ import {
 import {
   isLectureInteractiveTarget,
   isLectureTypingInInput,
-  lectureSpeakGeneration,
   speakLectureCaption,
   stopLectureSpeech,
 } from '@/composables/mindMap/mindClassroomLectureSpeak'
@@ -35,12 +37,7 @@ import {
   resetLectureTtsCatchup,
   tryWarmupFromJobSteps,
 } from '@/composables/mindMap/warmupLectureTts'
-
-export { lectureSpeakGeneration } from '@/composables/mindMap/mindClassroomLectureSpeak'
 import { setPresentationDiagramEditLocked } from '@/composables/presentation/presentationDiagramEdit'
-import { bindClassroomPrepToDiagram } from '@/composables/mindMap/bindClassroomPrepToDiagram'
-import { bindClassroomPrepToSettings } from '@/composables/mindMap/bindClassroomPrepToSettings'
-import { bindClassroomReadyToast } from '@/composables/mindMap/bindClassroomReadyToast'
 import {
   useAiContentLevelStore,
   useAuthStore,
@@ -63,10 +60,9 @@ import {
   preparedLectureFitsLive,
   remapPreparedStepsToLive,
 } from '@/utils/mindClassroomRemoteSteps'
-import {
-  lectureStepFitNodeIds,
-  type MindClassroomLectureStep,
-} from '@/utils/mindClassroomScript'
+import { type MindClassroomLectureStep, lectureStepFitNodeIds } from '@/utils/mindClassroomScript'
+
+export { lectureSpeakGeneration } from '@/composables/mindMap/mindClassroomLectureSpeak'
 
 const FIT_MS = 1100
 
@@ -232,11 +228,17 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       classroomStore.setNarrating(true)
       const preferKitty = useAuthStore().isAuthenticated
       const upcoming = steps.value[index + 1]
-      const prefetch =
-        upcoming?.caption.trim()
-          ? { text: upcoming.caption, stepId: upcoming.id }
-          : undefined
-      speakLectureCaption(step.caption, currentLanguage.value, settle, step.id, preferKitty, prefetch)
+      const prefetch = upcoming?.caption.trim()
+        ? { text: upcoming.caption, stepId: upcoming.id }
+        : undefined
+      speakLectureCaption(
+        step.caption,
+        currentLanguage.value,
+        settle,
+        step.id,
+        preferKitty,
+        prefetch
+      )
       return
     }
 
@@ -304,9 +306,8 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     }
     if (settings.audience_level !== aiLevelStore.level) return false
     if (
-      classroomPrepLanguage(
-        typeof settings.language === 'string' ? settings.language : 'zh'
-      ) !== classroomPrepLanguage(currentLanguage.value)
+      classroomPrepLanguage(typeof settings.language === 'string' ? settings.language : 'zh') !==
+      classroomPrepLanguage(currentLanguage.value)
     ) {
       return false
     }
@@ -547,10 +548,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       if (remapped.length && preparedFitsSettings && preparedFitsLive) {
         classroomStore.setPreparedSteps(remapped, [...collectLiveNodeIds(liveNodes)])
         const played = playPreparedSteps(remapped, mode)
-        return publishQueueResult(
-          'start',
-          played.ok ? { ok: true, phase: 'playing' } : played
-        )
+        return publishQueueResult('start', played.ok ? { ok: true, phase: 'playing' } : played)
       }
       if (classroomStore.preparedSteps.length && (!preparedFitsSettings || !preparedFitsLive)) {
         classroomStore.setPreparedSteps([], [])
@@ -558,12 +556,11 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       const attached = await restorePreparedFromServer()
       if (
         classroomStore.preparedSteps.length &&
-        classroomPrepSettingsMatch(classroomStore.prepSettings, classroomStore.livePrepSettings()) &&
-        preparedLectureFitsLive(
-          classroomStore.preparedSteps,
-          liveNodes,
-          classroomStore.specNodeIds
-        )
+        classroomPrepSettingsMatch(
+          classroomStore.prepSettings,
+          classroomStore.livePrepSettings()
+        ) &&
+        preparedLectureFitsLive(classroomStore.preparedSteps, liveNodes, classroomStore.specNodeIds)
       ) {
         return publishQueueResult('start', { ok: true, phase: 'prepared' })
       }

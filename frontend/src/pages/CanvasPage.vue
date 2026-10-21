@@ -80,7 +80,6 @@ import {
   useSnapshotHistory,
 } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import {
   diagramShareEditorName,
   diagramShareRole,
@@ -149,6 +148,7 @@ import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesk
 import { useKittyDesktopSelectionPublish } from '@/composables/kitty/useKittyDesktopSelectionPublish'
 import { useKittyDesktopVoicePhase } from '@/composables/kitty/useKittyDesktopVoicePhase'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { requestClassroomStop } from '@/composables/mindMap/classroomCommands'
 import { createSlideRemoteDesktopPlay } from '@/composables/mindMap/createSlideRemoteDesktopPlay'
 import {

@@ -8,7 +8,7 @@ import { renderMathText } from '@/utils/maite/mathText'
 
 const props = defineProps<{
   text: string
-  tag?: keyof HTMLElementTagNameMap
+  tag?: string
 }>()
 
 const rendered = computed(() => renderMathText(props.text))
@@ -16,7 +16,11 @@ const tagName = computed(() => props.tag ?? 'span')
 </script>
 
 <template>
-  <component :is="tagName" class="maite-math-text">{{ rendered }}</component>
+  <component
+    :is="tagName"
+    class="maite-math-text"
+    >{{ rendered }}</component
+  >
 </template>
 
 <style scoped>

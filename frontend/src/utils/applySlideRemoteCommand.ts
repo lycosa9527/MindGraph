@@ -1,5 +1,5 @@
-import type { SlideRemoteCommandRow } from '@/utils/slideRemoteApi'
 import type { MindMapSlideTraversalMode } from '@/utils/mindMapSlides'
+import type { SlideRemoteCommandRow } from '@/utils/slideRemoteApi'
 
 export interface SlideRemoteHandlers {
   nextSlide: () => void

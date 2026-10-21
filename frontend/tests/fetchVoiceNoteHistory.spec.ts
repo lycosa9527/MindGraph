@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { fetchVoiceNoteHistoryDiagrams } from '@/composables/voiceNotes/fetchVoiceNoteHistory'
+
 const authFetchMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/utils/api', () => ({
   authFetch: authFetchMock,
 }))
-
-import { fetchVoiceNoteHistoryDiagrams } from '@/composables/voiceNotes/fetchVoiceNoteHistory'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

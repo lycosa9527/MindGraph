@@ -1,5 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/auth'
+import { ensureFreshSessionAfterAuthFailure } from '@/utils/sessionRefresh'
 
 vi.mock('@/utils/sessionRefresh', () => ({
   refreshSessionAccessToken: vi.fn(),
@@ -7,10 +11,6 @@ vi.mock('@/utils/sessionRefresh', () => ({
   getSessionRefreshEpoch: vi.fn(() => 0),
   ensureFreshSessionAfterAuthFailure: vi.fn(async () => false),
 }))
-
-import { ensureFreshSessionAfterAuthFailure } from '@/utils/sessionRefresh'
-
-import { useAuthStore } from '@/stores/auth'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -38,8 +38,7 @@ function memoryStorage(): Storage {
 }
 
 function meCallCount(fetchMock: ReturnType<typeof vi.fn>): number {
-  return fetchMock.mock.calls.filter((call) => String(call[0]).includes('/api/auth/me'))
-    .length
+  return fetchMock.mock.calls.filter((call) => String(call[0]).includes('/api/auth/me')).length
 }
 
 function capabilitiesCallCount(fetchMock: ReturnType<typeof vi.fn>): number {
@@ -224,9 +223,7 @@ describe('auth bootstrap dedupe', () => {
     const authStore = useAuthStore()
     expect(await authStore.checkAuth()).toBe(false)
     expect(meCallCount(fetchMock)).toBe(1)
-    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/refresh'))).toBe(
-      false
-    )
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/refresh'))).toBe(false)
   })
 
   it('refreshes /me after restart when only the session hint remains', async () => {

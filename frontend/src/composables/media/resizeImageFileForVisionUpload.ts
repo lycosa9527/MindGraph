@@ -38,8 +38,7 @@ export async function resizeImageFileForVisionUpload(
 
   const mime = (file.type || '').toLowerCase()
   const isImage =
-    mime.startsWith('image/') ||
-    ['.jpg', '.jpeg', '.png', '.webp'].includes(extensionOf(file.name))
+    mime.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp'].includes(extensionOf(file.name))
   if (!isImage) {
     return file
   }

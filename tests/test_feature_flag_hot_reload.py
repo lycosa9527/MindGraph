@@ -42,6 +42,19 @@ def _request(path: str, method: str = "GET") -> Request:
 
 
 @pytest.mark.asyncio
+async def test_feature_flag_gate_allows_mindmate_org_roster_when_collab_off():
+    """Seminar colleague list is not behind FEATURE_MINDMATE_COLLAB."""
+    call_next = AsyncMock(return_value=MagicMock(status_code=200))
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_MINDMATE_COLLAB=False, FEATURE_WORKSHOP_CHAT=False),
+    ):
+        response = await feature_flag_gate(_request("/api/mindmate/org-members"), call_next)
+    call_next.assert_awaited_once()
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
 async def test_feature_flag_gate_blocks_markets_when_disabled():
     """Hot-off markets via gate without per-route Depends."""
     call_next = AsyncMock(return_value=MagicMock(status_code=200))

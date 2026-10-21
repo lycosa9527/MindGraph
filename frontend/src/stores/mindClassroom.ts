@@ -32,19 +32,16 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useUIStore } from '@/stores/ui'
-import { collectLiveNodeIds } from '@/utils/mindClassroomRemoteSteps'
 import {
-  classroomPrepSettingsOf,
-  emptyMindClassroomPrep,
-  parkMindClassroomPrep,
   type MindClassroomPrepSettings,
   type MindClassroomPrepSnapshot,
   type MindClassroomVoiceWarmup,
+  classroomPrepSettingsOf,
+  emptyMindClassroomPrep,
+  parkMindClassroomPrep,
 } from '@/utils/mindClassroomPrepSlot'
-import {
-  lectureStepFitNodeIds,
-  type MindClassroomLectureStep,
-} from '@/utils/mindClassroomScript'
+import { collectLiveNodeIds } from '@/utils/mindClassroomRemoteSteps'
+import { type MindClassroomLectureStep, lectureStepFitNodeIds } from '@/utils/mindClassroomScript'
 
 export type { MindClassroomVoiceWarmup } from '@/utils/mindClassroomPrepSlot'
 export type MindClassroomLectureStatus = 'idle' | 'running' | 'paused'
@@ -103,9 +100,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   })
 
   const isLecturing = computed(() => status.value !== 'idle')
-  const isLaunchActive = computed(
-    () => modalOpen.value || isLecturing.value || startInFlight.value
-  )
+  const isLaunchActive = computed(() => modalOpen.value || isLecturing.value || startInFlight.value)
   const isSlideDeckMode = computed(() => isLecturing.value && activeMode.value === 'slide_deck')
   const isCanvasTourMode = computed(() => isLecturing.value && activeMode.value === 'canvas_tour')
   const currentStep = computed(() => steps.value[stepIndex.value] ?? null)

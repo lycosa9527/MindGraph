@@ -53,7 +53,8 @@ export function isTeachingInstructionOutputs(outputs: unknown): boolean {
   if (flag === true || flag === 1) {
     return true
   }
-  return typeof flag === 'string' && ['1', 'true', 'yes', 'on', TEACHING_INSTRUCTION_KIND].includes(
-    flag.trim().toLowerCase()
+  return (
+    typeof flag === 'string' &&
+    ['1', 'true', 'yes', 'on', TEACHING_INSTRUCTION_KIND].includes(flag.trim().toLowerCase())
   )
 }

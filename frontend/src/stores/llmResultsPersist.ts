@@ -37,9 +37,7 @@ export function resolvePersistedSelectedModel(
   return keys[0] ?? null
 }
 
-export function clonePersistedLlmResults(
-  persisted: PersistedLlmResults
-): PersistedLlmResults {
+export function clonePersistedLlmResults(persisted: PersistedLlmResults): PersistedLlmResults {
   return cloneJson(persisted)
 }
 

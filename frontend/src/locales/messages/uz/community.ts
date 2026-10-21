@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': 'O’zgartirishiklikleri quvveye minmek uchun keyingi duymeni bosing',
   'debateverse.coinTossAffirmativeFirst': 'Musbet teref avval danishir',
   'debateverse.coinTossGotIt': 'Anladim',
-  'debateverse.coinTossModalBody': 'Muzakireden avval suhbat qaydasini mueyyenleshdirin yoki sikke atmaqla musbet/menfi movqeleri tanlang',
+  'debateverse.coinTossModalBody':
+    'Muzakireden avval suhbat qaydasini mueyyenleshdirin yoki sikke atmaqla musbet/menfi movqeleri tanlang',
   'debateverse.coinTossNegativeFirst': 'Menfi teref avval danishir',
   'debateverse.coinTossOrder': 'Danishma qaydasini mueyyen etmek uchun sikke atma',
-  'debateverse.coinTossRules': 'Suni intellekt modelleri mubahise rollarina tesadufi olaraq teyin etilib. Muzakireden avval suhbat qaydasini mueyyenleshdirin yoki sikke atmaqla musbet/menfi movqeleri tanlang',
+  'debateverse.coinTossRules':
+    'Suni intellekt modelleri mubahise rollarina tesadufi olaraq teyin etilib. Muzakireden avval suhbat qaydasini mueyyenleshdirin yoki sikke atmaqla musbet/menfi movqeleri tanlang',
   'debateverse.coinTossStageTitle': 'Sikke atma merhalisi',
   'debateverse.debateTopicLabel': 'Munozara mavzusu: ',
   'debateverse.executeCoinToss': 'Sikkeni at',
@@ -101,7 +103,7 @@ export default {
   'debateverse.page.create': 'Yangi Munozara yaradin',
   'debateverse.page.empty': 'Hali mubahise yo’q',
   'debateverse.page.newDebate': 'Yangi Munozara',
-  'debateverse.page.title': 'Vaziyat bo\'yicha',
+  'debateverse.page.title': "Vaziyat bo'yicha",
   'debateverse.roleLabel.debater': 'Munozarochishi kimi oynayin',
   'debateverse.roleLabel.judgeRole': 'Hakim kimi oynayin',
   'debateverse.roleLabel.viewer': 'Izleyici kimi oynayin',
@@ -110,12 +112,16 @@ export default {
   'debateverse.setup.roleJudge': 'Hakim kimi oynayin',
   'debateverse.setup.roleViewer': 'Izleyici kimi oynayin',
   'debateverse.setup.suggestion1': 'Suni intellekte huquqi shexs holati verilmelidirmi?',
-  'debateverse.setup.suggestion2': 'Video oyunlari yeniyetmelere daha chox fayda getirir, yoxsa zerer verir?',
+  'debateverse.setup.suggestion2':
+    'Video oyunlari yeniyetmelere daha chox fayda getirir, yoxsa zerer verir?',
   'debateverse.setup.suggestion3': 'Kolleclere qebul imtahanlari bekor qilish etilmelidirmi?',
-  'debateverse.setup.suggestion4': 'Sosial media platformalarinda mazmun moderasiyasi daha sert olmalidir?',
+  'debateverse.setup.suggestion4':
+    'Sosial media platformalarinda mazmun moderasiyasi daha sert olmalidir?',
   'debateverse.setup.suggestion5': 'Uzaqdan ish esas istiqamete chevrilmelidirmi?',
-  'debateverse.setup.suggestion6': 'Suni intellekt tomonidan yaradilan mazmun muellif huquqlari bilan qorunmalidirmi?',
-  'debateverse.setup.suggestion7': 'Teho’chirish daha chox biliye yoki bacariqlara diqqet yetirmelidir?',
+  'debateverse.setup.suggestion6':
+    'Suni intellekt tomonidan yaradilan mazmun muellif huquqlari bilan qorunmalidirmi?',
+  'debateverse.setup.suggestion7':
+    'Teho’chirish daha chox biliye yoki bacariqlara diqqet yetirmelidir?',
   'debateverse.setup.suggestion8': 'Ins embrionlari uchun gen tahrirsine icaze verilmelidirmi?',
   'debateverse.setup.topicPlaceholder': 'Muzakire mavzusunu kiriting...',
   'debateverse.side.affirmative': 'Musbet',

@@ -20,8 +20,9 @@ export default {
   'collab.endFailed': 'Kan de samenwerking niet beëindigen',
   'collab.ended': 'Samenwerking beëindigd',
   'collab.galleryFull': 'Galerij is vol. Verwijder eerst een diagram',
-  'collab.hintNetworkInactive': 'Genereer een code zodat anderen zich kunnen aansluiten en samen met u kunnen bewerken.',
-  'collab.hintSchoolInactive': 'Collega\'s nemen deel via Collaborate → School op de startpagina.',
+  'collab.hintNetworkInactive':
+    'Genereer een code zodat anderen zich kunnen aansluiten en samen met u kunnen bewerken.',
+  'collab.hintSchoolInactive': "Collega's nemen deel via Collaborate → School op de startpagina.",
   'collab.invalidDiagramData': 'Ongeldige diagramgegevens',
   'collab.linkCopied': 'Link gekopieerd',
   'collab.networkError': 'Netwerkfout',
@@ -30,16 +31,20 @@ export default {
   'collab.noDiagramToSave': 'Geen diagram om op te slaan',
   'collab.nodeLocked': 'Iemand anders bewerkt dit knooppunt',
   'collab.participants': '{n} deelnemers',
-  'collab.previousSessionsStopped': '{n} eerdere samenwerkingssessie(s) voor uw andere diagrammen beëindigd.',
+  'collab.previousSessionsStopped':
+    '{n} eerdere samenwerkingssessie(s) voor uw andere diagrammen beëindigd.',
   'collab.saveFailed': 'Kan diagram niet opslaan',
   'collab.scanToJoin': 'Scan om mee te doen',
-  'collab.schoolDescActive': "De samenwerking tussen scholen is ingeschakeld. Collega's: MindGraph gebruik Samenwerken → School op de startpagina en kies dit diagram — geen code vereist.",
-  'collab.schoolStarted': 'Samenwerking tussen scholen is ingeschakeld: collega\'s kunnen deelnemen via Collaborate → School.',
+  'collab.schoolDescActive':
+    "De samenwerking tussen scholen is ingeschakeld. Collega's: MindGraph gebruik Samenwerken → School op de startpagina en kies dit diagram — geen code vereist.",
+  'collab.schoolStarted':
+    "Samenwerking tussen scholen is ingeschakeld: collega's kunnen deelnemen via Collaborate → School.",
   'collab.sectionNetwork': 'Gedeelde samenwerking (code)',
   'collab.sectionSchool': 'Samenwerking tussen scholen',
   'collab.sessionDuration': 'Sessie duur',
   'collab.sessionRemaining': 'Sessie eindigt over',
-  'collab.shareDescNetwork': 'Deel de code of link; anderen voeren deze in onder Samenwerken → Gedeeld.',
+  'collab.shareDescNetwork':
+    'Deel de code of link; anderen voeren deze in onder Samenwerken → Gedeeld.',
   'collab.start': 'Begin',
   'collab.startFailed': 'Kan niet starten: {msg}',
   'collab.title': 'Online samenwerking',
@@ -50,20 +55,28 @@ export default {
   'workshop.addReaction': 'Reactie toevoegen',
   'workshop.allSchools': 'Alle scholen',
   'workshop.announceChannels': 'Aankondigingen',
-  'workshop.announceReadOnlyHint': 'Alleen beheerders kunnen berichten plaatsen in dit aankondigingskanaal.',
+  'workshop.announceReadOnlyHint':
+    'Alleen beheerders kunnen berichten plaatsen in dit aankondigingskanaal.',
   'workshop.archiveLessonStudy': 'Archief lesstudie',
-  'workshop.archiveLessonStudyConfirm': 'Deze lesstudie archiveren? Leden zullen het niet langer in de lijst zien.',
+  'workshop.archiveLessonStudyConfirm':
+    'Deze lesstudie archiveren? Leden zullen het niet langer in de lijst zien.',
   'workshop.archiveTeachingGroup': 'Archief lesgroep',
-  'workshop.archiveTeachingGroupConfirm': 'Deze lesgroep archiveren? Het verdwijnt uit de lesgroeplijst.',
+  'workshop.archiveTeachingGroupConfirm':
+    'Deze lesgroep archiveren? Het verdwijnt uit de lesgroeplijst.',
   'workshop.archiveAnnounceChannel': 'Archiefaankondigingskanaal',
-  'workshop.archiveAnnounceChannelConfirm': 'Weet je zeker dat je dit aankondigingskanaal wilt archiveren? De zijbalk wordt niet langer weergegeven, maar het bericht blijft staan.',
+  'workshop.archiveAnnounceChannelConfirm':
+    'Weet je zeker dat je dit aankondigingskanaal wilt archiveren? De zijbalk wordt niet langer weergegeven, maar het bericht blijft staan.',
   'workshop.deleteTeachingGroup': 'Onderwijs- en onderzoeksgroep verwijderen',
-  'workshop.deleteTeachingGroupConfirm': 'Weet u zeker dat u deze onderwijs- en onderzoeksgroep, haar lessen en berichten definitief wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
+  'workshop.deleteTeachingGroupConfirm':
+    'Weet u zeker dat u deze onderwijs- en onderzoeksgroep, haar lessen en berichten definitief wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
   'workshop.deleteAnnounceChannel': 'Meldingskanaal verwijderen',
-  'workshop.deleteAnnounceChannelConfirm': 'Weet je zeker dat je dit aankondigingskanaal en de bijbehorende berichten definitief wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
+  'workshop.deleteAnnounceChannelConfirm':
+    'Weet je zeker dat je dit aankondigingskanaal en de bijbehorende berichten definitief wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
   'workshop.deleteLessonStudy': 'Les verwijderen',
-  'workshop.deleteLessonStudyConfirm': 'Weet u zeker dat u deze les en de bijbehorende berichten definitief wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
-  'workshop.manageNeedAdmin': 'Alleen schoolbestuurders kunnen onderwijs- en onderzoeksgroepen toevoegen. Beheerders of de maker van de groep kunnen verwijderen.',
+  'workshop.deleteLessonStudyConfirm':
+    'Weet u zeker dat u deze les en de bijbehorende berichten definitief wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
+  'workshop.manageNeedAdmin':
+    'Alleen schoolbestuurders kunnen onderwijs- en onderzoeksgroepen toevoegen. Beheerders of de maker van de groep kunnen verwijderen.',
   'workshop.math': 'formule',
   'workshop.backToConversations': '← Gesprekken',
   'workshop.bold': 'Vetgedrukt',
@@ -77,7 +90,8 @@ export default {
   'workshop.channelAvatarEmoji': 'Pictogram (optioneel)',
   'workshop.channelAvatarPlaceholder': 'Emoji of kort label',
   'workshop.channelColor': 'Kanaal kleur',
-  'workshop.channelInviteReceived': 'Je bent toegevoegd aan “{name}”. Open Workshop om het te bekijken.',
+  'workshop.channelInviteReceived':
+    'Je bent toegevoegd aan “{name}”. Open Workshop om het te bekijken.',
   'workshop.channelKindGroup': 'Lesgroep (topniveau, bijvoorbeeld 教研组)',
   'workshop.channelKindLessonStudy': 'Lesstudie onder een groep (课例)',
   'workshop.channelNameLabel': 'Naam',
@@ -113,7 +127,8 @@ export default {
   'workshop.create': 'Creëren',
   'workshop.createChannelFailed': 'Kan kanaal niet maken',
   'workshop.createChannelNeedParent': 'Kies eerst een ouderlesgroep.',
-  'workshop.createChannelNoGroupsYet': 'Maak eerst een lesgroep aan en voeg daaronder lesstudies toe.',
+  'workshop.createChannelNoGroupsYet':
+    'Maak eerst een lesgroep aan en voeg daaronder lesstudies toe.',
   'workshop.createChannelSuccess': 'Kanaal gemaakt',
   'workshop.createStudyCaseHint': 'Begin een gesprek om aan de slag te gaan',
   'workshop.cycleStudyStatus': 'Status van cyclusstudie',
@@ -131,12 +146,13 @@ export default {
   'workshop.diagram': 'Illustratie',
   'workshop.diagramInsertFailed': 'Kan het pictogram niet invoegen',
   'workshop.diagramInserting': 'Pictogram invoegen…',
-  'workshop.diagramPickerEmpty': 'De afbeeldingenbibliotheek is leeg. Sla eerst een afbeelding op in het canvas.',
+  'workshop.diagramPickerEmpty':
+    'De afbeeldingenbibliotheek is leeg. Sla eerst een afbeelding op in het canvas.',
   'workshop.diagramPickerTitle': 'Kies uit mijn iconenbibliotheek',
   'workshop.directMessage': 'Direct bericht',
   'workshop.directMessages': 'Directe berichten',
   'workshop.dismiss': 'Afwijzen',
-  'workshop.dms': 'DM\'s',
+  'workshop.dms': "DM's",
   'workshop.download': 'Downloaden',
   'workshop.duplicateFailed': 'Kan deze groep niet dupliceren.',
   'workshop.duplicateSuccess': 'Lesgroep gedupliceerd.',
@@ -149,13 +165,14 @@ export default {
   'workshop.emoji': 'uitdrukking',
   'workshop.exitPreview': 'Voorbeeld afsluiten',
   'workshop.expandCollapseGroup': 'Vouw de lessenlijst in de zijbalk uit of samen',
-  'workshop.filterSidebar': 'Filter lesgroepen, DM\'s',
+  'workshop.filterSidebar': "Filter lesgroepen, DM's",
   'workshop.filterUsers': 'Filter gebruikers',
   'workshop.followTopic': 'Volg gesprek',
   'workshop.gearMenu': 'Opties',
   'workshop.generalChat': 'Algemene chat',
   'workshop.inbox': 'Postvak IN',
-  'workshop.inboxHintPickChannel': 'Open een kanaal of een direct bericht in de zijbalk om het te lezen en te beantwoorden. Je kunt hier op elk moment terugkeren vanuit Weergaven → Inbox.',
+  'workshop.inboxHintPickChannel':
+    'Open een kanaal of een direct bericht in de zijbalk om het te lezen en te beantwoorden. Je kunt hier op elk moment terugkeren vanuit Weergaven → Inbox.',
   'workshop.inboxSummaryTitle': 'Je inbox',
   'workshop.inboxUnreadChannels': 'Ongelezen in kanalen',
   'workshop.inboxUnreadDms': 'Ongelezen directe berichten',
@@ -181,14 +198,16 @@ export default {
   'workshop.loadMore': 'Laad meer',
   'workshop.mainChannelStream': 'Hoofdkanaal',
   'workshop.manageTeachingGroups': 'Beheer lesgroepen',
-  'workshop.manageTeachingGroupsBlurb': 'Voeg groepen toe of verwijder ze, stel openbaar of privé in, bewerk namen en beschrijvingen, herschik de lijst, dupliceer een groep als sjabloon en nodig collega\'s uit. Gebruik Geavanceerd voor het plaatsen van regels en standaardinstellingen voor meldingen. Bij archiveren wordt voor iedereen een groep verwijderd.',
+  'workshop.manageTeachingGroupsBlurb':
+    "Voeg groepen toe of verwijder ze, stel openbaar of privé in, bewerk namen en beschrijvingen, herschik de lijst, dupliceer een groep als sjabloon en nodig collega's uit. Gebruik Geavanceerd voor het plaatsen van regels en standaardinstellingen voor meldingen. Bij archiveren wordt voor iedereen een groep verwijderd.",
   'workshop.manageUser': 'Beheer deze gebruiker',
   'workshop.markAllReadChannel': 'Markeer alle berichten als gelezen',
   'workshop.markAsRead': 'Markeer als gelezen',
   'workshop.markStudyResolved': 'Mark-onderzoek opgelost',
   'workshop.members': 'leden',
   'workshop.mentionAmbiguous': 'Dubbelzinnige namen: kies iemand met een unieke weergavenaam: {0}',
-  'workshop.mentionUnknown': 'Onbekende vermeldingen (alleen gebruikers en personeel van dezelfde organisatie): {0}',
+  'workshop.mentionUnknown':
+    'Onbekende vermeldingen (alleen gebruikers en personeel van dezelfde organisatie): {0}',
   'workshop.mentionedInChannel': 'Je werd vermeld in #{0}',
   'workshop.mentionedInTopic': 'Je werd vermeld in {0}',
   'workshop.mentions': 'Vermeldingen',
@@ -220,18 +239,22 @@ export default {
   'workshop.noTopicsYet': 'Nog geen gesprekken',
   'workshop.numberedList': 'geordende lijst',
   'workshop.notifications': 'Meldingen',
-  'workshop.notificationsSettingsBlurb': 'Browsermeldingen voor vermeldingen en nieuwe berichten maken gebruik van uw systeeminstellingen. Je kunt ook desktop- en e-mailwaarschuwingen per kanaal afstemmen in de kanaalinstellingen.',
+  'workshop.notificationsSettingsBlurb':
+    'Browsermeldingen voor vermeldingen en nieuwe berichten maken gebruik van uw systeeminstellingen. Je kunt ook desktop- en e-mailwaarschuwingen per kanaal afstemmen in de kanaalinstellingen.',
   'workshop.offline': 'Offline',
   'workshop.online': 'online',
   'workshop.openMainChannelStream': 'Hoofdkanaal',
   'workshop.others': 'ANDEREN',
   'workshop.permissions': 'Machtigingen',
+  'workshop.personalMenu': 'Persoonlijk menu',
   'workshop.preview': 'Voorbeeld',
   'workshop.previewEmpty': 'Geen inhoud om te bekijken',
-  'workshop.personalMenu': 'Persoonlijk menu',
-  'workshop.phase2RoadmapGroupsAlerts': 'Later beschikbaar: {\'@\'}groepvermeldingen, waarschuwingswoorden en beleid voor het bewerken van berichten.',
-  'workshop.phase2RoadmapMovePreview': 'Later beschikbaar: verplaats één bericht, voorbeelden van URL-links en rijkere cross-channel-activiteit.',
-  'workshop.phase2RoadmapPlatform': 'Platformachterstand: incrementele synchronisatie, mobiele push, e-mailsamenvattingen, bots/webhooks.',
+  'workshop.phase2RoadmapGroupsAlerts':
+    "Later beschikbaar: {'@'}groepvermeldingen, waarschuwingswoorden en beleid voor het bewerken van berichten.",
+  'workshop.phase2RoadmapMovePreview':
+    'Later beschikbaar: verplaats één bericht, voorbeelden van URL-links en rijkere cross-channel-activiteit.',
+  'workshop.phase2RoadmapPlatform':
+    'Platformachterstand: incrementele synchronisatie, mobiele push, e-mailsamenvattingen, bots/webhooks.',
   'workshop.pickColleagueToInvite': 'Kies een collega om uit te nodigen.',
   'workshop.pinChannel': 'Vastzetten naar boven',
   'workshop.policyEveryone': 'Iedereen',
@@ -239,7 +262,8 @@ export default {
   'workshop.policyMembersOnly': 'Alleen leden',
   'workshop.postingPolicy': 'Beleid voor posten',
   'workshop.preferences': 'Voorkeuren',
-  'workshop.preferencesSettingsBlurb': 'Taal- en weergavevoorkeuren zijn van toepassing op de hele app. In de loop van de tijd zullen hier meer Workshop chatopties verschijnen.',
+  'workshop.preferencesSettingsBlurb':
+    'Taal- en weergavevoorkeuren zijn van toepassing op de hele app. In de loop van de tijd zullen hier meer Workshop chatopties verschijnen.',
   'workshop.presenceActive': 'Actief',
   'workshop.presenceIdle': 'Inactief',
   'workshop.presenceOffline': 'Offline',
@@ -248,7 +272,8 @@ export default {
   'workshop.publicChannels': 'Openbare kanalen',
   'workshop.quote': 'Citaat',
   'workshop.quoteMessage': 'Citaat bericht',
-  'workshop.readOnlyProfileBlurb': 'Profielgegevens van collega\'s worden vereenvoudigd weergegeven. Gebruik Gebruiker beheren (beheerders) om de beheerdersmap te openen.',
+  'workshop.readOnlyProfileBlurb':
+    "Profielgegevens van collega's worden vereenvoudigd weergegeven. Gebruik Gebruiker beheren (beheerders) om de beheerdersmap te openen.",
   'workshop.recentDmActivity': 'Recente directe berichten',
   'workshop.recentTopics': 'Recente gesprekken',
   'workshop.renameTopic': 'Hernoem het gesprek',
@@ -259,7 +284,8 @@ export default {
   'workshop.roleOwner': 'Eigenaar',
   'workshop.searchMembers': 'Leden zoeken...',
   'workshop.searchMessages': 'Berichten zoeken...',
-  'workshop.selectChannelForSettings': 'Selecteer eerst een lesgroep of lesstudie en open vervolgens hier de instellingen.',
+  'workshop.selectChannelForSettings':
+    'Selecteer eerst een lesgroep of lesstudie en open vervolgens hier de instellingen.',
   'workshop.selectConversation': 'Selecteer een gesprek',
   'workshop.selectParentGroup': 'Ouderlesgroep',
   'workshop.selectTopic': 'Selecteer gesprek',
@@ -273,7 +299,7 @@ export default {
   'workshop.starMessage': 'Ster bericht',
   'workshop.starred': 'Met ster',
   'workshop.startConversation': 'Begin het gesprek!',
-  'workshop.startConversationHint': 'Start een gesprek om met uw collega\'s te bespreken',
+  'workshop.startConversationHint': "Start een gesprek om met uw collega's te bespreken",
   'workshop.startDM': 'Bericht verzenden',
   'workshop.startNewConversation': 'Begin een nieuw gesprek',
   'workshop.statusArchived': 'Gearchiveerd',
@@ -285,7 +311,8 @@ export default {
   'workshop.strikethrough': 'Doorhalen',
   'workshop.table': 'laken',
   'workshop.switchSchool': 'Van school wisselen',
-  'workshop.teachingGroupLandingHint': 'Lesstudies en gesprekken in deze lesgroep. Kies een rij om het kanaal of een draad te openen.',
+  'workshop.teachingGroupLandingHint':
+    'Lesstudies en gesprekken in deze lesgroep. Kies een rij om het kanaal of een draad te openen.',
   'workshop.teachingGroupMembers': 'Leden',
   'workshop.teachingGroupNameRequired': 'Voer een naam voor de lesgroep in.',
   'workshop.teachingGroupNoLessons': 'Er zijn nog geen lesstudies in deze groep.',
@@ -300,7 +327,8 @@ export default {
   'workshop.topicTitle': 'Titel',
   'workshop.topicTitlePlaceholder': 'bijv. Ontwerpdenkkaart voor hoofdstuk 3',
   'workshop.topics': 'Gesprekken',
-  'workshop.typeMessagePlaceholder': 'Typ een bericht... (Enter om te verzenden, Shift+Enter voor nieuwe regel)',
+  'workshop.typeMessagePlaceholder':
+    'Typ een bericht... (Enter om te verzenden, Shift+Enter voor nieuwe regel)',
   'workshop.unfollowTopic': 'Gesprek niet meer volgen',
   'workshop.unknown': 'Onbekend',
   'workshop.unmuteChannel': 'Kanaal dempen',
@@ -316,11 +344,14 @@ export default {
   'workshop.viewProfile': 'Bekijk profiel',
   'workshop.viewingSchool': 'Bekijken: {0}',
   'workshop.views': 'Bekeken',
-  'workshop.welcomeChannelsBody': 'Een ‘kanaal’ komt hier vaak overeen met een onderwijsonderzoeksgroep (教研组) of PLC: één gedeelde ruimte per team (bijvoorbeeld Math PLC, English PLC). Het bepaalt wie deelneemt en hoe de ruimte wordt gegroepeerd.',
+  'workshop.welcomeChannelsBody':
+    'Een ‘kanaal’ komt hier vaak overeen met een onderwijsonderzoeksgroep (教研组) of PLC: één gedeelde ruimte per team (bijvoorbeeld Math PLC, English PLC). Het bepaalt wie deelneemt en hoe de ruimte wordt gegroepeerd.',
   'workshop.welcomeChannelsTitle': 'PLC / onderwerpgroepen',
-  'workshop.welcomeConversationsBody': 'Binnen een lesstudie open je gesprekken met een titel, bijvoorbeeld instructieontwerp, reflectie of vervolgtaken, zodat de discussies gemakkelijk te volgen blijven.',
+  'workshop.welcomeConversationsBody':
+    'Binnen een lesstudie open je gesprekken met een titel, bijvoorbeeld instructieontwerp, reflectie of vervolgtaken, zodat de discussies gemakkelijk te volgen blijven.',
   'workshop.welcomeConversationsTitle': 'Gesprekken',
-  'workshop.welcomeExampleCaption': 'Illustratief voorbeeld (fictieve school) — Wiskunde PLC en Engelse PLC, elk met lesstudies en voorbeeldgesprekken.',
+  'workshop.welcomeExampleCaption':
+    'Illustratief voorbeeld (fictieve school) — Wiskunde PLC en Engelse PLC, elk met lesstudies en voorbeeldgesprekken.',
   'workshop.welcomeExampleConvLabel': 'Gesprekken',
   'workshop.welcomeExampleGroupEnglish': 'Engelse PLC',
   'workshop.welcomeExampleGroupMath': 'Wiskundige PLC',
@@ -339,38 +370,52 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Berichten leven in elk gesprek',
   'workshop.welcomeExampleOrg': 'Chenxi middelbare school',
   'workshop.welcomeHowTitle': 'Hoe het in elkaar steekt',
-  'workshop.welcomeIntro': 'Workshop is de ruimte op uw school voor gestructureerde discussies: deel aankondigingen, voer lesstudies uit en houd gesprekken georganiseerd naast uw onderwijswerk.',
-  'workshop.welcomeLessonStudyBody': 'Les-studiekanalen vallen meestal onder die groep. Elk daarvan is een locatie voor één lescyclus (planning, observatie en reflectie) en kan gekoppeld zijn aan diagrammen of statussen.',
+  'workshop.welcomeIntro':
+    'Workshop is de ruimte op uw school voor gestructureerde discussies: deel aankondigingen, voer lesstudies uit en houd gesprekken georganiseerd naast uw onderwijswerk.',
+  'workshop.welcomeLessonStudyBody':
+    'Les-studiekanalen vallen meestal onder die groep. Elk daarvan is een locatie voor één lescyclus (planning, observatie en reflectie) en kan gekoppeld zijn aan diagrammen of statussen.',
   'workshop.welcomeLessonStudyTitle': 'Lesstudies',
-  'workshop.welcomeMessagesBody': 'Berichten zijn de afzonderlijke berichten in de hoofdkanaalstream of in een gesprek. Antwoorden, vermeldingen en bestanden zijn allemaal gebaseerd op berichten.',
+  'workshop.welcomeMessagesBody':
+    'Berichten zijn de afzonderlijke berichten in de hoofdkanaalstream of in een gesprek. Antwoorden, vermeldingen en bestanden zijn allemaal gebaseerd op berichten.',
   'workshop.welcomeMessagesTitle': 'Berichten',
   'workshop.welcomeSubtitle': 'Werk samen met uw school aan MindGraph',
   'workshop.welcomeTitle': 'Welkom bij Workshop',
   'workshop.you': '(Jij)',
   'workshop.youAnd': 'Jij en',
   'workshopCanvas.connectFailed': 'Kan geen verbinding maken met samenwerking',
-  'workshopCanvas.sessionExpiredReconnect': 'Uw sessie is verlopen. Vernieuw de pagina om opnieuw deel te nemen aan de samenwerking.',
-  'workshopCanvas.sessionRefreshFailed': 'Kan uw samenwerkingssessie niet vernieuwen. Sla uw werk op en log opnieuw in.',
-  'workshopCanvas.outboundQueueDegraded': 'De samenwerking raakt achterop. Sommige niet-verzonden bewerkingen konden niet worden bewaard.',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Uw sessie is verlopen. Vernieuw de pagina om opnieuw deel te nemen aan de samenwerking.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Kan uw samenwerkingssessie niet vernieuwen. Sla uw werk op en log opnieuw in.',
+  'workshopCanvas.outboundQueueDegraded':
+    'De samenwerking raakt achterop. Sommige niet-verzonden bewerkingen konden niet worden bewaard.',
   'workshopCanvas.connectionClosed': 'Verbinding gesloten',
-  'workshopCanvas.connectionClosedSlow': 'Verbinding gesloten: uw verbinding was te traag om de samenwerkingssessie bij te houden.',
+  'workshopCanvas.connectionClosedSlow':
+    'Verbinding gesloten: uw verbinding was te traag om de samenwerkingssessie bij te houden.',
   'workshopCanvas.sessionEndedByHost': 'De host heeft de samenwerkingssessie beëindigd.',
   'workshopCanvas.editingNodeLabel': '{username} is aan het bewerken…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'Iemand',
   'workshopCanvas.connectionClosedReason': 'Samenwerkingsverbinding gesloten: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bewerkt dit knooppunt',
   'workshopCanvas.errorGeneric': 'Samenwerkingsfout',
-  'workshopCanvas.updatePartialFiltered': 'Sommige bewerkingen zijn overgeslagen ({count} knooppunt(en)) omdat een andere bijdrager deze knooppunten bewerkt.',
-  'workshopCanvas.reconnectFailed': 'Kan geen verbinding maken met de samenwerking. Vernieuw de pagina',
-  'workshopCanvas.resyncWaiting': 'Live diagramsynchronisatie duurt langer dan verwacht. Opnieuw proberen; je kunt vernieuwen als het bewerken vastloopt.',
-  'workshopCanvas.returnedHomeIdle': 'Thuisgekomen: de verbinding werd verbroken na een lange periode van inactiviteit.',
+  'workshopCanvas.updatePartialFiltered':
+    'Sommige bewerkingen zijn overgeslagen ({count} knooppunt(en)) omdat een andere bijdrager deze knooppunten bewerkt.',
+  'workshopCanvas.reconnectFailed':
+    'Kan geen verbinding maken met de samenwerking. Vernieuw de pagina',
+  'workshopCanvas.resyncWaiting':
+    'Live diagramsynchronisatie duurt langer dan verwacht. Opnieuw proberen; je kunt vernieuwen als het bewerken vastloopt.',
+  'workshopCanvas.returnedHomeIdle':
+    'Thuisgekomen: de verbinding werd verbroken na een lange periode van inactiviteit.',
   'workshopCanvas.userJoined': 'Gebruiker {username} is lid geworden',
   'workshopCanvas.usersJoined': '{count} gebruikers zijn lid geworden',
   'workshopCanvas.userLeft': 'Gebruiker {username} over',
   'workshopCanvas.usersLeft': '{count} gebruikers zijn vertrokken',
   'workshopCanvas.wsError': 'Fout bij samenwerkingsverbinding. Controleer uw netwerk',
-  'workshopCanvas.returnedHomeRoomIdle': 'Samenwerking beëindigd: er zijn een tijdje geen diagrambewerkingen uitgevoerd in deze sessie.',
-  'workshopCanvas.roomIdleWarningToast': 'Er zijn de laatste tijd geen diagrambewerkingen uitgevoerd: de samenwerking eindigt wanneer het aftellen op nul staat, tenzij iemand wijzigingen aanbrengt.',
-  'workshopCanvas.otherTabCollaborationActive': 'De samenwerking gaat verder op een ander tabblad of venster voor dit account.',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Samenwerking beëindigd: er zijn een tijdje geen diagrambewerkingen uitgevoerd in deze sessie.',
+  'workshopCanvas.roomIdleWarningToast':
+    'Er zijn de laatste tijd geen diagrambewerkingen uitgevoerd: de samenwerking eindigt wanneer het aftellen op nul staat, tenzij iemand wijzigingen aanbrengt.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'De samenwerking gaat verder op een ander tabblad of venster voor dit account.',
   'workshopCanvas.joinQrAlt': 'Sluit u aan bij de QR-code voor samenwerking',
 } as const

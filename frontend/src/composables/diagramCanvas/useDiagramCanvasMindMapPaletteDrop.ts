@@ -2,18 +2,18 @@ import { onUnmounted, ref } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
+import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { BranchMoveGhostPreview, DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import { PALETTE_MINDMAP_DRAG_MIME } from '@/composables/nodePalette/constants'
 import {
+  type MindMapPaletteDragItem,
   endMindMapPaletteDrag,
   getMindMapPaletteDragSession,
-  type MindMapPaletteDragItem,
 } from '@/composables/nodePalette/mindMapPaletteDragSession'
-import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { estimateNodeWidth, measureBranchNodeHeight } from '@/stores/specLoader/mindMap'
 import type { MindGraphNode } from '@/types'
@@ -165,11 +165,7 @@ export function useDiagramCanvasMindMapPaletteDrop(
     previewActive.value = true
     previewCursorPos.value = { x: flowPos.x, y: flowPos.y }
     previewDraggedGhost.value = buildPaletteDragGhost(session.items, diagramStore.data)
-    previewDropTarget.value = resolvePaletteDropTarget(
-      event.clientX,
-      event.clientY,
-      vfNodes
-    )
+    previewDropTarget.value = resolvePaletteDropTarget(event.clientX, event.clientY, vfNodes)
     syncPreviewStateRef()
   }
 

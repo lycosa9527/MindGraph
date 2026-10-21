@@ -12,10 +12,14 @@ describe('dingtalkPairAuditLog', () => {
 
   it('uses client prefix and token tail helper', () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined)
-    logPairAudit('mint_ok', {
-      purpose: 'bind',
-      token: pairTokenTail('abcdefghijklmnopqrstuvwxyz'),
-    }, { reportToServer: false })
+    logPairAudit(
+      'mint_ok',
+      {
+        purpose: 'bind',
+        token: pairTokenTail('abcdefghijklmnopqrstuvwxyz'),
+      },
+      { reportToServer: false }
+    )
 
     expect(infoSpy).toHaveBeenCalledOnce()
     const line = String(infoSpy.mock.calls[0]?.[0])

@@ -5,12 +5,14 @@
 
 export default {
   'fileCenterLibrary.title': 'Paketet',
-  'fileCenterLibrary.subtitle': 'Koleksione burimesh të grupuara sipas diagramit (Document Summary).',
+  'fileCenterLibrary.subtitle':
+    'Koleksione burimesh të grupuara sipas diagramit (Document Summary).',
   'fileCenterLibrary.openDiagram': 'Hap diagramin',
   'fileCenterLibrary.badgeCanvas': 'Kanavaca',
   'fileCenterLibrary.badgeExtension': 'Shtesë',
   'fileCenterLibrary.badgeUpload': 'Ngarkim',
-  'chunkTest.history.confirmDeleteBody': 'Jeni i sigurt që doni ta fshini këtë test? Kjo nuk mund të zhbëhet.',
+  'chunkTest.history.confirmDeleteBody':
+    'Jeni i sigurt që doni ta fshini këtë test? Kjo nuk mund të zhbëhet.',
   'chunkTest.history.confirmDeleteTitle': 'Fshi testin',
   'chunkTest.history.delete': 'Fshi',
   'chunkTest.history.deleteFailed': 'Nuk u fshi testi',
@@ -49,7 +51,8 @@ export default {
   'chunkTestResults.answerQuality': 'Cilësia e përgjigjes',
   'chunkTestResults.avgLatency': 'Vonesa mesatare',
   'chunkTestResults.back': 'Prapa',
-  'chunkTestResults.cancelConfirmBody': 'Jeni i sigurt që doni ta anuloni këtë test? Testi do të ndalet në pikën tjetër kontrolli.',
+  'chunkTestResults.cancelConfirmBody':
+    'Jeni i sigurt që doni ta anuloni këtë test? Testi do të ndalet në pikën tjetër kontrolli.',
   'chunkTestResults.cancelFailed': 'Nuk u anulua testi',
   'chunkTestResults.cancelRequested': 'U kërkua anulimi i testit',
   'chunkTestResults.cancelTest': 'Anulo testin',
@@ -79,7 +82,8 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Metrika standarde IR',
   'chunkTestResults.storageEff': 'Efik. ruajtjes',
   'chunkTestResults.testFailed': 'Testi dështoi',
-  'chunkTestResults.testFailedHint': 'Ndodhi një gabim gjatë ekzekutimit të testit. Ju lutemi provoni përsëri.',
+  'chunkTestResults.testFailedHint':
+    'Ndodhi një gabim gjatë ekzekutimit të testit. Ju lutemi provoni përsëri.',
   'chunkTestResults.testingInProgress': 'Testimi në progres…',
   'chunkTestResults.totalChunks': 'Gjithsej {n} copëza',
   'chunkTestResults.viewChunks': 'Shiko copëzat',
@@ -89,7 +93,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Testo të gjitha grupet e të dhënave',
   'knowledge.chunkHeader.testUpload': 'Testo dokumentet e ngarkuara',
   'knowledge.chunkHeader.title': 'Test RAG i copëzave',
-  'knowledge.chunkHeader.waitForProcessing': 'Ju lutemi prisni që dokumentet të përfundojnë përpunimin para testimit',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Ju lutemi prisni që dokumentet të përfundojnë përpunimin para testimit',
   'knowledge.chunkPreview.empty': 'Nuk u gjetën copëza',
   'knowledge.chunkPreview.pageLabel': 'Faqja {n}',
   'knowledge.chunkPreview.title': 'Copëzat e dokumentit — {fileName}',
@@ -108,7 +113,8 @@ export default {
   'knowledge.doc.colStatus': 'Statusi',
   'knowledge.doc.colType': 'Lloji',
   'knowledge.doc.colUploaded': 'Data e ngarkimit',
-  'knowledge.doc.emptyDescription': 'Ende nuk ka dokumente. Ngarkoni dokumente për të ndërtuar bazën tuaj të njohurive.',
+  'knowledge.doc.emptyDescription':
+    'Ende nuk ka dokumente. Ngarkoni dokumente për të ndërtuar bazën tuaj të njohurive.',
   'knowledge.doc.errorPrefix': 'Gabim: ',
   'knowledge.doc.noData': 'Nuk ka të dhëna',
   'knowledge.doc.statusCompleted': 'Përfunduar',
@@ -124,29 +130,40 @@ export default {
   'knowledge.header.title': 'Baza personale e njohurive',
   'knowledge.header.upload': 'Ngarko dokumente',
   'knowledge.ragGuide.title': 'Si funksionojnë paketet, RAG dhe wiki?',
-  'knowledge.ragGuide.subtitle': 'Pa terma të vështirë — mendojeni si një dosje materialesh referuese. E indeksojmë për kërkim (RAG), pastaj kompilojmë shënime wiki të shkurtra, dhe AI lexon të dyja kur ndërtoni një hartë mendore.',
+  'knowledge.ragGuide.subtitle':
+    'Pa terma të vështirë — mendojeni si një dosje materialesh referuese. E indeksojmë për kërkim (RAG), pastaj kompilojmë shënime wiki të shkurtra, dhe AI lexon të dyja kur ndërtoni një hartë mendore.',
   'knowledge.ragGuide.step1.title': 'Zgjidhni një paketë',
-  'knowledge.ragGuide.step1.body': 'Një paketë është si një koleksion Zotero. Mund të keni deri në 3 majtas; zakonisht secila i përket një harte mendore. Klikoni një paketë në shiritin anësor për të menaxhuar dokumentet e saj.',
+  'knowledge.ragGuide.step1.body':
+    'Një paketë është si një koleksion Zotero. Mund të keni deri në 3 majtas; zakonisht secila i përket një harte mendore. Klikoni një paketë në shiritin anësor për të menaxhuar dokumentet e saj.',
   'knowledge.ragGuide.step2.title': 'Shtoni burime dhe indeksoni (RAG)',
-  'knowledge.ragGuide.step2.body': 'Ngarkoni PDF, Word, shënime ose faqe web. Dokumentet e gjata i ndajmë në copëza të kërkueshme dhe ruajmë embedding-et vektoriale — ky është indeksi RAG dhe bëhet gati i pari.',
+  'knowledge.ragGuide.step2.body':
+    'Ngarkoni PDF, Word, shënime ose faqe web. Dokumentet e gjata i ndajmë në copëza të kërkueshme dhe ruajmë embedding-et vektoriale — ky është indeksi RAG dhe bëhet gati i pari.',
   'knowledge.ragGuide.step3.title': 'Shënimet wiki kompilohen automatikisht',
-  'knowledge.ragGuide.step3.body': 'Pas indeksimit, LLM kompilon faqe wiki përmbledhëse dhe tematike në disk. Këto janë shënime të shkurtra (jo transkripte) që përmbledhin paketën për orientim më të shpejtë.',
+  'knowledge.ragGuide.step3.body':
+    'Pas indeksimit, LLM kompilon faqe wiki përmbledhëse dhe tematike në disk. Këto janë shënime të shkurtra (jo transkripte) që përmbledhin paketën për orientim më të shpejtë.',
   'knowledge.ragGuide.step4.title': 'Kërkimi përdor wiki + copëza',
-  'knowledge.ragGuide.step4.body': 'Kur zgjeroni një degë ose gjeneroni një përmbledhje, përputhim fillimisht faqet wiki relevante, pastaj marrim copëzat më relevante (RAG hibrid).',
+  'knowledge.ragGuide.step4.body':
+    'Kur zgjeroni një degë ose gjeneroni një përmbledhje, përputhim fillimisht faqet wiki relevante, pastaj marrim copëzat më relevante (RAG hibrid).',
   'knowledge.ragGuide.step5.title': 'Përgjigje të bazuara në burimet tuaja',
-  'knowledge.ragGuide.step5.body': 'AI shkruan nga shënimet wiki dhe copëzat e gjetura në vend që të hamendësojë — burime më të mira, indeksim i përfunduar dhe faqe wiki të kompiluara do të thotë harta më të sakta.',
-  'knowledge.ragGuide.footer': 'Këshillë: hapja e Document Summary në kanavacë krijon automatikisht një paketë; faqet e ruajtura përmes shtesës Chrome shfaqen gjithashtu në listën e shiritit anësor.',
+  'knowledge.ragGuide.step5.body':
+    'AI shkruan nga shënimet wiki dhe copëzat e gjetura në vend që të hamendësojë — burime më të mira, indeksim i përfunduar dhe faqe wiki të kompiluara do të thotë harta më të sakta.',
+  'knowledge.ragGuide.footer':
+    'Këshillë: hapja e Document Summary në kanavacë krijon automatikisht një paketë; faqet e ruajtura përmes shtesës Chrome shfaqen gjithashtu në listën e shiritit anësor.',
   'knowledge.pipeline.title': 'Statusi i pipeline-it',
   'knowledge.pipeline.ragIdle': 'Indeksi RAG',
-  'knowledge.pipeline.ragIdleDetail': 'Ende nuk ka paketa të indeksuara. Shtoni burime dhe ekzekutoni indeksimin nga një paketë.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Ende nuk ka paketa të indeksuara. Shtoni burime dhe ekzekutoni indeksimin nga një paketë.',
   'knowledge.pipeline.ragProcessing': 'Indeksim RAG',
-  'knowledge.pipeline.ragProcessingDetail': '{count} paket(a) ende po ndajnë dhe embedojnë burimet.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} paket(a) ende po ndajnë dhe embedojnë burimet.',
   'knowledge.pipeline.ragReady': 'RAG gati',
-  'knowledge.pipeline.ragReadyDetail': '{count} paket(a) të indeksuara — kërkimi i copëzave është aktiv.',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count} paket(a) të indeksuara — kërkimi i copëzave është aktiv.',
   'knowledge.pipeline.wikiDisabled': 'Kompilimi wiki i çaktivizuar',
   'knowledge.pipeline.wikiDisabledDetail': 'Kompilimi wiki është i çaktivizuar në këtë server.',
   'knowledge.pipeline.wikiIdle': 'Kompilim wiki',
-  'knowledge.pipeline.wikiIdleDetail': 'Faqet wiki kompilohen pasi RAG-indeksimi përfundon për çdo burim.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Faqet wiki kompilohen pasi RAG-indeksimi përfundon për çdo burim.',
   'knowledge.pipeline.wikiPending': 'Duke kompiluar wiki',
   'knowledge.pipeline.wikiPendingDetail': '{count} paket(a) presin faqe wiki pas indeksimit.',
   'knowledge.pipeline.wikiReady': 'Wiki gati',
@@ -164,7 +181,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Hiq të gjitha zgjedhjet',
   'knowledge.manualEval.dialogTitle': 'Vlerësim manual — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Përgjigja e vërtetë (opsionale)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Shkruani përgjigjen e vërtetë për vlerësimin e relevancës…',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Shkruani përgjigjen e vërtetë për vlerësimin e relevancës…',
   'knowledge.manualEval.metric.answer_coverage': 'Mbulimi i përgjigjes',
   'knowledge.manualEval.metric.answer_faithfulness': 'Besueshmëria e përgjigjes',
   'knowledge.manualEval.metric.clarity': 'Qartësia',
@@ -186,7 +204,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Vlerësimi i cilësisë së copëzave',
   'knowledge.manualEval.resultsTitle': 'Rezultatet e vlerësimit',
   'knowledge.manualEval.selectAll': 'Zgjidh të gjitha',
-  'knowledge.manualEval.selectChunksHeading': 'Zgjidhni copëzat për vlerësim (lëreni bosh për të vlerësuar të gjitha)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Zgjidhni copëzat për vlerësim (lëreni bosh për të vlerësuar të gjitha)',
   'knowledge.manualEval.showingFirst20': 'Duke shfaqur 20 të parat nga {total} copëza',
   'knowledge.manualEval.startEvaluation': 'Fillo vlerësimin',
   'knowledge.processing.chunking': 'Ndarje',
@@ -235,7 +254,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Cilësimet e kërkimit',
   'knowledge.settings.title': 'Cilësimet e bazës së njohurive',
   'knowledge.settings.helpTitle': 'Si zbatohen këto cilësime',
-  'knowledge.settings.helpBody': 'Preferencat e kërkimit zbatohen menjëherë për kërkimin dhe përgjigjet e AI. Madhësia dhe mbivendosja e copëzave zbatohen për dokumentet e indeksuara rishtazi — ri-indeksoni burimet ekzistuese pasi t\'i ndryshoni.',
+  'knowledge.settings.helpBody':
+    "Preferencat e kërkimit zbatohen menjëherë për kërkimin dhe përgjigjet e AI. Madhësia dhe mbivendosja e copëzave zbatohen për dokumentet e indeksuara rishtazi — ri-indeksoni burimet ekzistuese pasi t'i ndryshoni.",
   'knowledge.settings.tokens': 'tokenë',
   'knowledge.settings.serverSection': 'Serveri (vetëm lexim)',
   'knowledge.settings.rerankingMode': 'Porosit përsëri',
@@ -246,7 +266,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Çaktivizuar',
   'knowledge.settings.saveSuccess': 'Cilësimet u ruajtën',
   'knowledge.settings.saveFailed': 'Nuk u ruajtën cilësimet',
-  'knowledge.settings.reindexRequired': 'Cilësimet e copëzave u ndryshuan — ri-indeksoni dokumentet ekzistuese në paketat tuaja që madhësitë e reja të hyjnë në fuqi.',
+  'knowledge.settings.reindexRequired':
+    'Cilësimet e copëzave u ndryshuan — ri-indeksoni dokumentet ekzistuese në paketat tuaja që madhësitë e reja të hyjnë në fuqi.',
   'knowledge.upload.click': 'Klikoni për të ngarkuar',
   'knowledge.upload.drag': 'ose tërhiqni skedarin këtu',
   'knowledge.upload.fileTooLarge': 'Madhësia e skedarit nuk mund të tejkalojë 10 MB',
@@ -254,7 +275,8 @@ export default {
   'knowledge.upload.maxDocs': 'U arrit kufiri maksimal i dokumenteve (5)',
   'knowledge.upload.title': 'Ngarko dokument',
   'knowledge.upload.unsupportedType': 'Lloj skedari i pambështetur',
-  'knowledgeSpace.confirmDeleteBody': 'Jeni i sigurt që doni ta fshini këtë dokument? Ky veprim nuk mund të zhbëhet.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Jeni i sigurt që doni ta fshini këtë dokument? Ky veprim nuk mund të zhbëhet.',
   'knowledgeSpace.confirmDeleteTitle': 'Konfirmo fshirjen',
   'knowledgeSpace.deleteFailed': 'Fshirja dështoi',
   'knowledgeSpace.documentDeleted': 'Dokumenti u fshi',

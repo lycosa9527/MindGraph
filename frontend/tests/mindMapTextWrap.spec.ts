@@ -46,8 +46,7 @@ describe('mindMapTextWrap', () => {
   })
 
   it('caps long branch wrap column at 200', () => {
-    const long =
-      '这是一段足够长的思维导图分支文字用来触发换行限制检查一二三四五六七八九十'
+    const long = '这是一段足够长的思维导图分支文字用来触发换行限制检查一二三四五六七八九十'
     const max = resolveMindMapBranchTextMaxWidthPx(long, 14)
     expect(max).toBe(MIND_MAP_BRANCH_MAX_TEXT_WIDTH)
   })

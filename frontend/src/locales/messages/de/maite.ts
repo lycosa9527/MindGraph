@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Matt-Lernmethode',
-  'maite.subtitle': 'Umgekehrte Zerlegung · Vierstufige Diagnose · Gezielte Remedur · Varianten-Transfer',
+  'maite.subtitle':
+    'Umgekehrte Zerlegung · Vierstufige Diagnose · Gezielte Remedur · Varianten-Transfer',
   'maite.mode.demo': 'Demo',
   'maite.mode.inquiry': 'Anfrage',
   'maite.mode.map': 'Karte',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Varianten-Übung',
   'maite.inquiry.complete': 'Sitzung abschließen',
   'maite.inquiry.completedTitle': 'Anfrage abgeschlossen',
-  'maite.inquiry.completedMessage': 'Diese Anfragesitzung ist abgeschlossen. Sehen Sie sich den Lernbericht unten an.',
+  'maite.inquiry.completedMessage':
+    'Diese Anfragesitzung ist abgeschlossen. Sehen Sie sich den Lernbericht unten an.',
   'maite.diagnosis.thinkingPlaceholder': 'Beschreiben Sie Ihre Überlegungen (optional)…',
   'maite.diagnosis.runAuto': 'Automatisch diagnostizieren',
   'maite.diagnosis.running': 'Diagnose läuft…',
@@ -58,7 +60,8 @@ export default {
   'maite.variant.answerPlaceholder': 'Schreiben Sie Ihre vollständige Antwort…',
   'maite.variant.strategyPlaceholder': 'Erklären Sie, wie sich die Methode anpasst…',
   'maite.variant.submit': 'Antwort einreichen',
-  'maite.variant.completeHint': 'Reichen Sie mindestens 3 Variantenantworten ein, bevor Sie die Sitzung abschließen.',
+  'maite.variant.completeHint':
+    'Reichen Sie mindestens 3 Variantenantworten ein, bevor Sie die Sitzung abschließen.',
   'maite.practice.title': 'Letzte Übungen',
   'maite.practice.loading': 'Wird geladen…',
   'maite.practice.empty': 'Noch keine Übungssitzungen',
@@ -85,7 +88,8 @@ export default {
   'maite.errors.diagnosis_failed': 'Diagnose fehlgeschlagen.',
   'maite.errors.remedy_failed': 'Remedur-Aufgaben konnten nicht generiert werden.',
   'maite.errors.variant_failed': 'Varianten-Aufgaben konnten nicht generiert werden.',
-  'maite.errors.variants_incomplete': 'Reichen Sie mindestens 3 Variantenantworten ein, bevor Sie abschließen.',
+  'maite.errors.variants_incomplete':
+    'Reichen Sie mindestens 3 Variantenantworten ein, bevor Sie abschließen.',
   'maite.errors.variant_answer_required': 'Antwort und Strategie sind erforderlich.',
   'maite.errors.variant_submit_failed': 'Variantenantwort konnte nicht eingereicht werden.',
   'maite.errors.load_failed': 'Sitzung konnte nicht geladen werden.',
@@ -98,7 +102,8 @@ export default {
   'maite.toast.ocr_success': 'Aufgabentext aus dem Bild extrahiert.',
   'maite.toast.decompose_started': 'Mentor-Zerlegung wird gestartet…',
   'maite.toast.decompose_complete': 'Zerlegung abgeschlossen.',
-  'maite.toast.decompose_fallback': 'Live-Stream unterbrochen; wird mit vollständiger Antwort abgeschlossen…',
+  'maite.toast.decompose_fallback':
+    'Live-Stream unterbrochen; wird mit vollständiger Antwort abgeschlossen…',
   'maite.toast.practice_saved': 'In letzte Übungen gespeichert.',
   'maite.toast.session_created': 'Anfragesitzung erstellt.',
   'maite.toast.session_completed': 'Anfragesitzung abgeschlossen.',

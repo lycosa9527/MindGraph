@@ -3,7 +3,6 @@
  * MaiteMentorChat — demo mentor conversation thread.
  */
 import MaiteMathText from '@/components/maite/shared/MaiteMathText.vue'
-
 import type { MaiteChatMessage } from '@/types/maite'
 
 defineProps<{
@@ -19,7 +18,10 @@ defineProps<{
       class="maite-mentor-chat__message"
       :class="`maite-mentor-chat__message--${message.role}`"
     >
-      <MaiteMathText :text="message.content" tag="p" />
+      <MaiteMathText
+        :text="message.content"
+        tag="p"
+      />
     </div>
   </div>
 </template>

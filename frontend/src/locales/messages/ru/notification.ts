@@ -5,13 +5,17 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Невозможно очистить тему или центральный узел',
-  'notification.cannotResetSelectDiagramType': 'Невозможно выполнить сброс: сначала выберите тип значка.',
+  'notification.cannotResetSelectDiagramType':
+    'Невозможно выполнить сброс: сначала выберите тип значка.',
   'notification.canvasClearNodes': 'Очищены узлы {count}.',
   'notification.canvasClearNodesLearning': '{count} узлов осталось пустыми, ответ добавлен',
   'notification.canvasSomeoneEditingNode': 'Другой пользователь редактирует этот узел',
-  'notification.collabDeleteBlocked': 'Невозможно удалить: другие пользователи редактируют связанные узлы.',
-  'notification.collabRedoBlocked': 'Невозможно повторить: другие пользователи редактируют связанный узел.',
-  'notification.collabUndoBlocked': 'Невозможно отменить: другие пользователи редактируют связанные узлы.',
+  'notification.collabDeleteBlocked':
+    'Невозможно удалить: другие пользователи редактируют связанные узлы.',
+  'notification.collabRedoBlocked':
+    'Невозможно повторить: другие пользователи редактируют связанный узел.',
+  'notification.collabUndoBlocked':
+    'Невозможно отменить: другие пользователи редактируют связанные узлы.',
   'notification.conversationDeleted': 'Разговор удален.',
   'notification.copied': 'Скопировано в буфер обмена',
   'notification.copyFailed': 'Не удалось скопировать',
@@ -21,22 +25,26 @@ export default {
   'notification.feedbackThanks': 'Спасибо за ваш отзыв',
   'notification.feedbackThanksDislike': 'Спасибо за ваш отзыв, мы будем работать над улучшением',
   'notification.focusQuestionTooShort': 'Пожалуйста, сначала введите более длинный вопрос',
-  'notification.geoLiteMissingIntro': 'Загрузите GeoLite2 Country с MaxMind, разархивируйте и скопируйте GeoLite2-Country.mmdb в каталог данных сервера:',
+  'notification.geoLiteMissingIntro':
+    'Загрузите GeoLite2 Country с MaxMind, разархивируйте и скопируйте GeoLite2-Country.mmdb в каталог данных сервера:',
   'notification.geoLiteMissingLink': 'Откройте страницу загрузки MaxMind GeoLite.',
   'notification.geoLiteMissingPathLabel': 'Ожидаемый путь:',
   'notification.geoLiteMissingTitle': 'Отсутствует база данных стран GeoLite2.',
   'notification.fullscreenFailed': 'Не могу войти в полноэкранный режим',
   'notification.generationCancelled': 'Генерация отменена',
-  'notification.conceptMapTabNeedsAi': 'Пожалуйста, включите «Запустить AI» на верхней панели, прежде чем использовать рекомендации по вкладкам.',
+  'notification.conceptMapTabNeedsAi':
+    'Пожалуйста, включите «Запустить AI» на верхней панели, прежде чем использовать рекомендации по вкладкам.',
   'notification.historyClearNodes': 'Очистить текст узла',
   'notification.historyEmptyLearning': 'Оставьте узел пустым и добавьте ответ',
   'notification.importInvalidData': 'Не удалось импортировать, данные значка недействительны.',
   'notification.importLoadFailed': 'Импорт не удался, и данные значка не удалось загрузить.',
   'notification.importSavePartial': 'Импорт прошел успешно, но сохранить в галерею не удалось.',
-  'notification.importSlotsFull': 'Галерея заполнена. Значок был импортирован, но не сохранен в галерее.',
+  'notification.importSlotsFull':
+    'Галерея заполнена. Значок был импортирован, но не сохранен в галерее.',
   'notification.importSuccess': 'Значок был импортирован и сохранен в галерее.',
   'notification.importUnsupportedType': 'Не удалось импортировать, неподдерживаемый тип значка',
-  'notification.inlineRecEmpty': 'Рекомендуемый контент не был создан. Повторите попытку или измените тему и повторите попытку.',
+  'notification.inlineRecEmpty':
+    'Рекомендуемый контент не был создан. Повторите попытку или измените тему и повторите попытку.',
   'notification.loadMoreFailed': 'Не удалось загрузить больше',
   'notification.networkError': 'сетевая ошибка',
   'notification.nodeNotEligible': 'Этот узел не поддерживает рекомендации вкладок.',
@@ -47,8 +55,11 @@ export default {
   'notification.rootConceptLinkNotFound': 'Провод корневой концепции не найден',
   'notification.saved': 'Сохранено успешно.',
   'notification.selectNodeToClear': 'Пожалуйста, выберите узел, который нужно очистить первым',
-  'notification.sessionInvalidated': 'Вы вышли из системы, поскольку количество подключенных устройств превысило лимит.',
-  'notification.sessionKicked': 'Эта учетная запись выполнила вход в эту учетную запись в автономном режиме на других устройствах',
+  'notification.sessionInvalidated':
+    'Вы вышли из системы, поскольку количество подключенных устройств превысило лимит.',
+  'notification.sessionKicked':
+    'Эта учетная запись выполнила вход в эту учетную запись в автономном режиме на других устройствах',
   'notification.signInToUse': 'Пожалуйста, войдите, чтобы использовать',
-  'notification.signInToValidateFocus': 'Пожалуйста, войдите в систему, чтобы проверить проблемы с фокусировкой',
+  'notification.signInToValidateFocus':
+    'Пожалуйста, войдите в систему, чтобы проверить проблемы с фокусировкой',
 } as const

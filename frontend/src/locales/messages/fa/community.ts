@@ -76,16 +76,19 @@ export default {
   'debateverse.clickNextHint': 'لطفا برای اعمال تغییرات، روی دکمه بعدی کلیک کنید',
   'debateverse.coinTossAffirmativeFirst': 'مثبت حرف اول را می‌زند',
   'debateverse.coinTossGotIt': 'می دانست',
-  'debateverse.coinTossModalBody': 'قبل از مناظره، ترتیب صحبت کردن را مشخص کنید یا با پرتاب سکه، مواضع مثبت/منفی را انتخاب کنید.',
+  'debateverse.coinTossModalBody':
+    'قبل از مناظره، ترتیب صحبت کردن را مشخص کنید یا با پرتاب سکه، مواضع مثبت/منفی را انتخاب کنید.',
   'debateverse.coinTossNegativeFirst': 'حرف اول را منفی‌ها می‌زنند',
   'debateverse.coinTossOrder': 'برای تعیین ترتیب صحبت کردن، سکه پرتاب کنید',
-  'debateverse.coinTossRules': 'مدل‌های هوش مصنوعی به صورت تصادفی برای نقش‌های مناظره تعیین شده‌اند. قبل از مناظره، ترتیب صحبت کردن را مشخص کنید یا با پرتاب سکه، مواضع مثبت/منفی را انتخاب کنید.',
+  'debateverse.coinTossRules':
+    'مدل‌های هوش مصنوعی به صورت تصادفی برای نقش‌های مناظره تعیین شده‌اند. قبل از مناظره، ترتیب صحبت کردن را مشخص کنید یا با پرتاب سکه، مواضع مثبت/منفی را انتخاب کنید.',
   'debateverse.coinTossStageTitle': 'مرحله پرتاب سکه',
   'debateverse.debateTopicLabel': 'موضوع مناظره:',
   'debateverse.executeCoinToss': 'اجرای پرتاب سکه',
   'debateverse.generatingPositions': 'تولید موقعیت‌های ...',
   'debateverse.input.spectator': 'شما به عنوان یک تماشاگر به این مناظره نگاه می‌کنید',
-  'debateverse.input.speechPlaceholder': 'متن خود را وارد کنید... (برای ارسال، Ctrl+Enter را فشار دهید)',
+  'debateverse.input.speechPlaceholder':
+    'متن خود را وارد کنید... (برای ارسال، Ctrl+Enter را فشار دهید)',
   'debateverse.input.waitTurn': '• در نوبت خود حرف زدن ',
   'debateverse.message.hideThinking': 'پنهان کردن تفکر',
   'debateverse.message.judge': 'قاضی',
@@ -110,11 +113,14 @@ export default {
   'debateverse.setup.roleJudge': 'بازی به عنوان قاضی',
   'debateverse.setup.roleViewer': 'به عنوان بیننده بازی کنید',
   'debateverse.setup.suggestion1': 'آیا باید به هوش مصنوعی شخصیت حقوقی داده شود؟',
-  'debateverse.setup.suggestion2': 'آیا بازی‌های ویدیویی بیشتر به نفع نوجوانان است یا به آنها آسیب می‌رساند؟',
+  'debateverse.setup.suggestion2':
+    'آیا بازی‌های ویدیویی بیشتر به نفع نوجوانان است یا به آنها آسیب می‌رساند؟',
   'debateverse.setup.suggestion3': 'آیا کنکور دانشگاه‌ها باید حذف شود؟',
-  'debateverse.setup.suggestion4': 'آیا پلتفرم‌های رسانه‌های اجتماعی باید نظارت سختگیرانه‌تری بر محتوا داشته باشند؟',
+  'debateverse.setup.suggestion4':
+    'آیا پلتفرم‌های رسانه‌های اجتماعی باید نظارت سختگیرانه‌تری بر محتوا داشته باشند؟',
   'debateverse.setup.suggestion5': 'آیا دورکاری باید به جریان اصلی تبدیل شود؟',
-  'debateverse.setup.suggestion6': 'آیا محتوای تولید شده توسط هوش مصنوعی باید تحت حمایت حق چاپ باشد؟',
+  'debateverse.setup.suggestion6':
+    'آیا محتوای تولید شده توسط هوش مصنوعی باید تحت حمایت حق چاپ باشد؟',
   'debateverse.setup.suggestion7': 'آیا آموزش و پرورش باید بیشتر بر دانش یا مهارت تمرکز کند؟',
   'debateverse.setup.suggestion8': 'آیا ویرایش ژن برای جنین انسان مجاز است؟',
   'debateverse.setup.topicPlaceholder': 'موضوع بحث را وارد کنید...',
@@ -138,7 +144,8 @@ export default {
   'library.loading': 'در حال بارگذاری...',
   'library.other': 'دیگر',
   'library.premiumCollection': 'مجموعه ویژه',
-  'library.slotFull.body': 'شما {max} نمودار ذخیره شده دارید. برای ذخیره نمودار جدید، یکی را حذف کنید.',
+  'library.slotFull.body':
+    'شما {max} نمودار ذخیره شده دارید. برای ذخیره نمودار جدید، یکی را حذف کنید.',
   'library.slotFull.cancel': 'لغو کنید',
   'library.slotFull.deleteAndSave': 'حذف و ذخیره',
   'library.slotFull.networkError': 'خطای شبکه، عملیات ناموفق بود',

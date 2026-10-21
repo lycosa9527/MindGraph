@@ -1,8 +1,7 @@
 export const MIND_MAP_PASTE_MAX_LINES = 50
 export const MIND_MAP_PASTE_MAX_LINE_LENGTH = 200
 
-const LIST_PREFIX_RE =
-  /^(?:[-*•●○▪▫]\s+|\(\d+\)\s+|\d+[.)）、]\s*)/u
+const LIST_PREFIX_RE = /^(?:[-*•●○▪▫]\s+|\(\d+\)\s+|\d+[.)）、]\s*)/u
 
 /** Strip common bullet / numbered-list prefixes from a pasted line. */
 export function stripListPrefix(line: string): string {

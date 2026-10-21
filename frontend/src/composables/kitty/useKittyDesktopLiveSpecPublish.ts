@@ -7,10 +7,7 @@ import { type ComputedRef, type Ref, watch } from 'vue'
 import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
-import {
-  attachMindMapLiveSpecExtras,
-  isMindMapDiagramType,
-} from '@/utils/mindMapLiveSpecExtras'
+import { attachMindMapLiveSpecExtras, isMindMapDiagramType } from '@/utils/mindMapLiveSpecExtras'
 
 const DEBOUNCE_MS = 700
 

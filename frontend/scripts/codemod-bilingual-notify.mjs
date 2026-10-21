@@ -210,7 +210,7 @@ function selfTest() {
     ["notify.success(String(t('a.b')))", "notify.successKey('a.b')"],
     ["notify.warning(t('a.b', { n: 1 }))", "notify.warningKey('a.b', { n: 1 })"],
     ["notify.info(t('a.b'), 5000)", "notify.infoKey('a.b', 5000)"],
-    ["notify.error(t(dynamicKey))", "notify.errorKey(dynamicKey)"],
+    ['notify.error(t(dynamicKey))', 'notify.errorKey(dynamicKey)'],
     ["notify.error(err || t('a.b'))", "notify.error(err || t('a.b'))"],
     [
       "ElMessage.success(t('workshop.linkCopied'))",

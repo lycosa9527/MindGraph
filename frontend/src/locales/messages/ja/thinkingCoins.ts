@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': '近日公開',
   'thinkingCoins.schoolInfo': '学校プランについては学校管理者にお問い合わせください',
   'thinkingCoins.school.headline': 'AI 思考 · 学校向けソリューション',
-  'thinkingCoins.school.description': '学校・教育機関向けに、プライベートデプロイ、カスタム機能、運用サポートを提供 — 規模、ブランディング、データセキュリティに対応します。',
+  'thinkingCoins.school.description':
+    '学校・教育機関向けに、プライベートデプロイ、カスタム機能、運用サポートを提供 — 規模、ブランディング、データセキュリティに対応します。',
   'thinkingCoins.school.feature.accountManager': '専任アカウントマネージャー',
   'thinkingCoins.school.feature.accountManagerDesc': '1 対 1 のコンサルティング',
   'thinkingCoins.school.feature.privateDeploy': 'プライベートデプロイ',

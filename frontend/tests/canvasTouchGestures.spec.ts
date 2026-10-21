@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  type NodeScreenRect,
+  TOUCH_GESTURE,
   classifyNodeSlash,
   classifySwipe,
   isDoubleTap,
@@ -13,14 +15,17 @@ import {
   shouldEnableDesktopTouchPanPinch,
   touchCentroid,
   touchDistance,
-  TOUCH_GESTURE,
-  type NodeScreenRect,
 } from '@/utils/canvasTouchGestures'
 
 describe('canvasTouchGestures', () => {
   it('measures distance and centroid', () => {
     expect(touchDistance({ x: 0, y: 0 }, { x: 3, y: 4 })).toBe(5)
-    expect(touchCentroid([{ x: 0, y: 0 }, { x: 10, y: 10 }])).toEqual({ x: 5, y: 5 })
+    expect(
+      touchCentroid([
+        { x: 0, y: 0 },
+        { x: 10, y: 10 },
+      ])
+    ).toEqual({ x: 5, y: 5 })
     expect(touchCentroid([])).toEqual({ x: 0, y: 0 })
   })
 
@@ -93,9 +98,9 @@ describe('canvasTouchGestures', () => {
     const first = { x: 20, y: 20, at: 1000 }
     expect(isDoubleTap(null, first)).toBe(false)
     expect(isDoubleTap(first, { x: 24, y: 22, at: 1200 })).toBe(true)
-    expect(isDoubleTap(first, { x: 24, y: 22, at: 1000 + TOUCH_GESTURE.DOUBLE_TAP_MAX_MS + 1 })).toBe(
-      false
-    )
+    expect(
+      isDoubleTap(first, { x: 24, y: 22, at: 1000 + TOUCH_GESTURE.DOUBLE_TAP_MAX_MS + 1 })
+    ).toBe(false)
     expect(isDoubleTap(first, { x: 80, y: 80, at: 1100 })).toBe(false)
   })
 
@@ -193,8 +198,14 @@ describe('node slash actions', () => {
       { x: 280, y: 108 },
     ]
     const left = [...right].reverse()
-    expect(classifyNodeSlash(right, 180, [node])).toEqual({ action: 'sibling', nodeIds: ['branch-1'] })
-    expect(classifyNodeSlash(left, 180, [node])).toEqual({ action: 'sibling', nodeIds: ['branch-1'] })
+    expect(classifyNodeSlash(right, 180, [node])).toEqual({
+      action: 'sibling',
+      nodeIds: ['branch-1'],
+    })
+    expect(classifyNodeSlash(left, 180, [node])).toEqual({
+      action: 'sibling',
+      nodeIds: ['branch-1'],
+    })
     expect(isNodeSlashTravel(right, 180)).toBe(true)
     expect(nodesCutByDownwardSlash(right, 180, [node])).toEqual([])
   })
@@ -205,7 +216,10 @@ describe('node slash actions', () => {
       { x: 160, y: 300 },
       { x: 160, y: 20 },
     ]
-    expect(classifyNodeSlash(up, 220, [node, lower])).toEqual({ action: 'child', nodeIds: ['branch-2'] })
+    expect(classifyNodeSlash(up, 220, [node, lower])).toEqual({
+      action: 'child',
+      nodeIds: ['branch-2'],
+    })
     expect(isDownwardSlashTravel(up, 220)).toBe(false)
   })
 
@@ -214,6 +228,9 @@ describe('node slash actions', () => {
       { x: 160, y: 40 },
       { x: 160, y: 190 },
     ]
-    expect(classifyNodeSlash(down, 180, [node])).toEqual({ action: 'delete', nodeIds: ['branch-1'] })
+    expect(classifyNodeSlash(down, 180, [node])).toEqual({
+      action: 'delete',
+      nodeIds: ['branch-1'],
+    })
   })
 })

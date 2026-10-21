@@ -115,12 +115,7 @@ export function lastThinkingLines(text: string, max = THINKING_LINE_MAX): string
 export type ExplainResearchPhase = 'searching' | 'extracting' | 'images' | 'summarizing' | ''
 
 export type ExplainResearchStepKind =
-  | 'searching'
-  | 'found'
-  | 'reading'
-  | 'read'
-  | 'images'
-  | 'summarizing'
+  'searching' | 'found' | 'reading' | 'read' | 'images' | 'summarizing'
 
 export type ExplainResearchStep = {
   id: string
@@ -194,7 +189,8 @@ function mergeSources(
   incoming.forEach((item) => {
     const url = typeof item.url === 'string' ? item.url.trim() : ''
     if (!url) return
-    const title = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : hostFromUrl(url)
+    const title =
+      typeof item.title === 'string' && item.title.trim() ? item.title.trim() : hostFromUrl(url)
     const index = next.findIndex((source) => source.url === url)
     if (index >= 0) {
       const current = next[index]

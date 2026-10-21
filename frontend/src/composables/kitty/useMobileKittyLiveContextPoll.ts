@@ -6,8 +6,8 @@ import { type ComputedRef, type Ref, onUnmounted, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import {
-  applyKittyLiveContextPayload,
   type KittyLiveContextApplyState,
+  applyKittyLiveContextPayload,
 } from '@/composables/kitty/applyKittyLiveContextPayload'
 import { apiRequest } from '@/utils/apiClient'
 

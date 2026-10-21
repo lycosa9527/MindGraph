@@ -1,5 +1,4 @@
 /** Copy MindMate assistant messages — image bytes for diagram answers, text otherwise. */
-
 import {
   hasGeneratedDiagramImage,
   isImagePrimaryAnswer,
@@ -13,7 +12,9 @@ async function copyBlobToClipboard(blob: Blob): Promise<boolean> {
     return false
   }
   const type = blob.type.startsWith('image/') ? blob.type : 'image/png'
-  const imageBlob = blob.type.startsWith('image/') ? blob : new Blob([await blob.arrayBuffer()], { type })
+  const imageBlob = blob.type.startsWith('image/')
+    ? blob
+    : new Blob([await blob.arrayBuffer()], { type })
   await navigator.clipboard.write([new ClipboardItem({ [type]: imageBlob })])
   return true
 }

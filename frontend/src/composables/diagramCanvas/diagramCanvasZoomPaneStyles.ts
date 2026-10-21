@@ -1,13 +1,13 @@
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { GraphNode } from '@vue-flow/core'
 
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { BranchMoveGhostPreview } from '@/composables/editor/useBranchMoveDrag'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import type { DiagramNode, NodeStyle } from '@/types'
 import type { MindGraphNode } from '@/types/vueflow'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
-import { nodeShapeBorderRadius, type NodeShape } from '@/utils/nodeShapeStyle'
+import { type NodeShape, nodeShapeBorderRadius } from '@/utils/nodeShapeStyle'
 
 import {
   BRANCH_MOVE_NODE_HEIGHT,
@@ -248,17 +248,13 @@ export function getDropTargetStyle(
 ): Record<string, string> {
   const nodes = getNodes()
   const node = nodes.find((n) => n.id === target.nodeId) as
-    | (MindGraphNode & NodeWithDimensions)
-    | undefined
+    (MindGraphNode & NodeWithDimensions) | undefined
   if (!node?.position) return { display: 'none' }
 
   const { width: nodeW, height: nodeH } = getTargetNodeDimensions(node)
 
   if (target.type === 'before' || target.type === 'after') {
-    const y =
-      target.type === 'before'
-        ? node.position.y - 2
-        : node.position.y + nodeH - 2
+    const y = target.type === 'before' ? node.position.y - 2 : node.position.y + nodeH - 2
     return {
       position: 'absolute',
       left: `${node.position.x}px`,

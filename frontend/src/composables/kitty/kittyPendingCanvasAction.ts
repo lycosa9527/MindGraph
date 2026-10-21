@@ -83,7 +83,8 @@ export function stashKittyPendingDesktopExplain(nodeId: string, libraryId?: stri
     return
   }
   const lib = libraryId?.trim() ?? ''
-  const payload: KittyPendingDesktopExplain = lib !== '' ? { nodeId: id, libraryId: lib } : { nodeId: id }
+  const payload: KittyPendingDesktopExplain =
+    lib !== '' ? { nodeId: id, libraryId: lib } : { nodeId: id }
   sessionStorage.setItem(KITTY_PENDING_DESKTOP_EXPLAIN_KEY, JSON.stringify(payload))
 }
 

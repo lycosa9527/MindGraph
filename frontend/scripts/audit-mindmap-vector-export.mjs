@@ -6,20 +6,11 @@
  *
  * Prefers fixture JSON under tests/fixtures/pg_mindmaps/; else prints how to fetch.
  */
-import { createRequire } from 'node:module'
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync,
-  statSync,
-} from 'node:fs'
+import { JSDOM } from 'jsdom'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { JSDOM } from 'jsdom'
 
-const require = createRequire(import.meta.url)
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const frontendRoot = join(__dirname, '..')
 const repoRoot = join(frontendRoot, '..')
@@ -55,10 +46,7 @@ function installFontFetchMock() {
       : url.includes('NotoSansCJKsc-Regular')
         ? 'NotoSansCJKsc-Regular.otf'
         : null
-    if (
-      name &&
-      (url.includes('/api/mindmap_export_fonts/') || url.includes('/fonts/'))
-    ) {
+    if (name && (url.includes('/api/mindmap_export_fonts/') || url.includes('/fonts/'))) {
       const path = join(fontsDir, name)
       if (!existsSync(path)) {
         return new Response('missing', { status: 404 })
@@ -107,14 +95,6 @@ function estimateSizes(nodes) {
     heights[node.id] = isTopic ? 40 : 34
   }
   return { widths, heights }
-}
-
-async function loadTs(specifierFromSrc) {
-  // Resolve via Vite-less relative import from compiled path using tsx/vite-node if present.
-  // Prefer dynamic import through vitest's vite pipeline by spawning — here we use
-  // relative file URLs under src with Node experimental TypeScript if available.
-  const abs = join(frontendRoot, 'src', specifierFromSrc)
-  return import(pathToFileURL(abs).href)
 }
 
 async function main() {
@@ -178,9 +158,7 @@ async function main() {
     // tsx register path
     const { register } = await import('tsx/esm/api')
     register()
-    return import(
-      pathToFileURL(join(frontendRoot, 'src/utils/diagramMindMapVectorModel.ts')).href
-    )
+    return import(pathToFileURL(join(frontendRoot, 'src/utils/diagramMindMapVectorModel.ts')).href)
   })
 
   const { buildMindMapVectorSvg } = await import(
@@ -248,16 +226,18 @@ async function main() {
     buildMs: pdfMs,
   }
   check('pdf_magic', pdfBuf.subarray(0, 4).toString() === '%PDF', 'PDF header')
-  check('pdf_not_huge', pdfBuf.length < 5 * 1024 * 1024, `${pdfKb.toFixed(1)} KB (subset expected << 16MB font)`)
+  check(
+    'pdf_not_huge',
+    pdfBuf.length < 5 * 1024 * 1024,
+    `${pdfKb.toFixed(1)} KB (subset expected << 16MB font)`
+  )
   check('pdf_not_empty', pdfBuf.length > 10_000, `${pdfKb.toFixed(1)} KB`)
 
   // DOCX path: high-DPI PNG from SVG via sharp (geometry check); then python-docx builder
   let pngBuf
   try {
     const sharp = (await import('sharp')).default
-    pngBuf = await sharp(Buffer.from(vector.svg), { density: 300 })
-      .png()
-      .toBuffer()
+    pngBuf = await sharp(Buffer.from(vector.svg), { density: 300 }).png().toBuffer()
     const pngPath = join(outDir, 'audit-docx-diagram.png')
     writeFileSync(pngPath, pngBuf)
     audit.docxPng = {

@@ -14,7 +14,8 @@ export default {
   'community.deleteConfirmBody': 'இந்தப் பகிர்வை நிச்சயமாக நீக்க விரும்புகிறீர்களா?',
   'community.deleteConfirmTitle': 'நீக்குவதை உறுதிப்படுத்தவும்',
   'community.deleted': 'நீக்கப்பட்டது',
-  'community.emptyNoPosts': 'பொருந்தக்கூடிய படைப்புகள் எதுவும் இல்லை, வடிகட்டி நிலைமைகளை சரிசெய்ய அல்லது முக்கிய வார்த்தைகளைத் தேட முயற்சிக்கவும்',
+  'community.emptyNoPosts':
+    'பொருந்தக்கூடிய படைப்புகள் எதுவும் இல்லை, வடிகட்டி நிலைமைகளை சரிசெய்ய அல்லது முக்கிய வார்த்தைகளைத் தேட முயற்சிக்கவும்',
   'community.filter.all': 'அனைத்து',
   'community.filter.mine': 'என்னுடையது',
   'community.filterCategory': 'வகைப்பாடு',
@@ -76,10 +77,12 @@ export default {
   'debateverse.clickNextHint': 'மாற்றங்கள் நடைமுறைக்கு வர அடுத்த பொத்தானைக் கிளிக் செய்யவும்',
   'debateverse.coinTossAffirmativeFirst': 'உறுதிமொழி முதலில் பேசுகிறது',
   'debateverse.coinTossGotIt': 'தெரிந்தது',
-  'debateverse.coinTossModalBody': 'விளையாட்டுக்கு முன், பேசும் வரிசையைத் தீர்மானிக்க நாணயத்தைப் புரட்டவும் அல்லது நன்மை தீமைகளைத் தேர்ந்தெடுக்கவும்.',
+  'debateverse.coinTossModalBody':
+    'விளையாட்டுக்கு முன், பேசும் வரிசையைத் தீர்மானிக்க நாணயத்தைப் புரட்டவும் அல்லது நன்மை தீமைகளைத் தேர்ந்தெடுக்கவும்.',
   'debateverse.coinTossNegativeFirst': 'எதிர்மறையான பக்கம் முதலில் பேசுகிறது',
   'debateverse.coinTossOrder': 'பேசும் வரிசையைத் தீர்மானிக்க ஒரு நாணயத்தைத் தூக்கி எறியுங்கள்',
-  'debateverse.coinTossRules': 'ஒவ்வொரு விவாதப் பாத்திரத்திற்கும் AI மாதிரி தோராயமாக ஒதுக்கப்பட்டுள்ளது. விளையாட்டுக்கு முன், பேசும் வரிசையை தீர்மானிக்க அல்லது நன்மை தீமைகளை தேர்வு செய்ய நாணயம் டாஸ் பயன்படுத்தப்படுகிறது.',
+  'debateverse.coinTossRules':
+    'ஒவ்வொரு விவாதப் பாத்திரத்திற்கும் AI மாதிரி தோராயமாக ஒதுக்கப்பட்டுள்ளது. விளையாட்டுக்கு முன், பேசும் வரிசையை தீர்மானிக்க அல்லது நன்மை தீமைகளை தேர்வு செய்ய நாணயம் டாஸ் பயன்படுத்தப்படுகிறது.',
   'debateverse.coinTossStageTitle': 'நாணய சுழற்சி நிலை',
   'debateverse.debateTopicLabel': 'விவாத தலைப்பு:',
   'debateverse.executeCoinToss': 'ஒரு நாணயம் டாஸ் செய்யவும்',
@@ -105,18 +108,24 @@ export default {
   'debateverse.roleLabel.debater': 'விவாதம் செய்பவராக பங்கேற்கவும்',
   'debateverse.roleLabel.judgeRole': 'நடுவராக',
   'debateverse.roleLabel.viewer': 'பார்வையாளராக பார்க்கவும்',
-  'debateverse.setup.greeting': '{username} வணக்கம், கருத்துகளின் மோதலில் இருந்துதான் உண்மையான ஞானம் பிறக்கிறது.',
+  'debateverse.setup.greeting':
+    '{username} வணக்கம், கருத்துகளின் மோதலில் இருந்துதான் உண்மையான ஞானம் பிறக்கிறது.',
   'debateverse.setup.roleDebater': 'விவாதம் செய்பவராக பங்கேற்கவும்',
   'debateverse.setup.roleJudge': 'நடுவராக',
   'debateverse.setup.roleViewer': 'பார்வையாளராகப் பாருங்கள்',
   'debateverse.setup.suggestion1': 'செயற்கை நுண்ணறிவுக்கு சட்ட ஆளுமை வழங்கப்பட வேண்டுமா?',
-  'debateverse.setup.suggestion2': 'ஆன்லைன் கேம்கள் பதின்ம வயதினருக்கு தீங்கு செய்வதை விட அதிக நன்மை செய்கிறதா அல்லது நல்லதை விட அதிக தீங்கு விளைவிக்குமா?',
-  'debateverse.setup.suggestion3': 'கல்லூரி நுழைவுத் தேர்வை ரத்து செய்ய வேண்டுமா அல்லது தக்கவைக்க வேண்டுமா?',
-  'debateverse.setup.suggestion4': 'சமூக ஊடகங்கள் பயனர் உள்ளடக்கத்தின் மீது கடுமையான தணிக்கையை விதிக்க வேண்டுமா?',
+  'debateverse.setup.suggestion2':
+    'ஆன்லைன் கேம்கள் பதின்ம வயதினருக்கு தீங்கு செய்வதை விட அதிக நன்மை செய்கிறதா அல்லது நல்லதை விட அதிக தீங்கு விளைவிக்குமா?',
+  'debateverse.setup.suggestion3':
+    'கல்லூரி நுழைவுத் தேர்வை ரத்து செய்ய வேண்டுமா அல்லது தக்கவைக்க வேண்டுமா?',
+  'debateverse.setup.suggestion4':
+    'சமூக ஊடகங்கள் பயனர் உள்ளடக்கத்தின் மீது கடுமையான தணிக்கையை விதிக்க வேண்டுமா?',
   'debateverse.setup.suggestion5': 'தொலைதொடர்பு ஒரு முக்கிய வேலை வழியாக மாற வேண்டுமா?',
   'debateverse.setup.suggestion6': 'AI-உருவாக்கிய உள்ளடக்கம் பதிப்புரிமை பெற வேண்டுமா?',
-  'debateverse.setup.suggestion7': 'கல்வி அறிவை வழங்குவதில் அல்லது திறன்களை வளர்ப்பதில் அதிக கவனம் செலுத்த வேண்டுமா?',
-  'debateverse.setup.suggestion8': 'மரபணு எடிட்டிங் தொழில்நுட்பத்தை மனித கருக்களில் பயன்படுத்த அனுமதிக்க வேண்டுமா?',
+  'debateverse.setup.suggestion7':
+    'கல்வி அறிவை வழங்குவதில் அல்லது திறன்களை வளர்ப்பதில் அதிக கவனம் செலுத்த வேண்டுமா?',
+  'debateverse.setup.suggestion8':
+    'மரபணு எடிட்டிங் தொழில்நுட்பத்தை மனித கருக்களில் பயன்படுத்த அனுமதிக்க வேண்டுமா?',
   'debateverse.setup.topicPlaceholder': 'விவாத தலைப்பை உள்ளிடவும்...',
   'debateverse.side.affirmative': 'சதுரம்',
   'debateverse.side.judge': 'நடுவர்',
@@ -138,7 +147,8 @@ export default {
   'library.loading': 'ஏற்றுகிறது...',
   'library.other': 'மற்றவை',
   'library.premiumCollection': 'அருமையான வழக்கு தொகுப்பு',
-  'library.slotFull.body': 'நீங்கள் {max} ஐகான்களைச் சேமித்துள்ளீர்கள், புதிய ஐகானைச் சேமிக்க ஒன்றை நீக்கவும்',
+  'library.slotFull.body':
+    'நீங்கள் {max} ஐகான்களைச் சேமித்துள்ளீர்கள், புதிய ஐகானைச் சேமிக்க ஒன்றை நீக்கவும்',
   'library.slotFull.cancel': 'ரத்து செய்',
   'library.slotFull.deleteAndSave': 'நீக்கி சேமிக்கவும்',
   'library.slotFull.networkError': 'நெட்வொர்க் பிழை, செயல்பாடு தோல்வியடைந்தது',

@@ -2,11 +2,11 @@
  * Maite workspace mode binding via event bus.
  */
 import { onScopeDispose } from 'vue'
+
 import { storeToRefs } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useMaiteStore } from '@/stores/maite'
-
 import type { MaiteMode } from '@/types/maite'
 
 export function useMaiteWorkspace() {

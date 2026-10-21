@@ -14,7 +14,8 @@ export default {
   'community.deleteConfirmBody': 'ഈ പങ്കിടൽ ഇല്ലാതാക്കണമെന്ന് തീർച്ചയാണോ?',
   'community.deleteConfirmTitle': 'ഇല്ലാതാക്കൽ സ്ഥിരീകരിക്കുക',
   'community.deleted': 'ഇല്ലാതാക്കി',
-  'community.emptyNoPosts': 'പൊരുത്തപ്പെടുന്ന വർക്കുകളൊന്നും കണ്ടെത്തിയില്ല, ഫിൽട്ടർ അവസ്ഥകൾ ക്രമീകരിക്കാനോ കീവേഡുകൾ തിരയാനോ ശ്രമിക്കുക',
+  'community.emptyNoPosts':
+    'പൊരുത്തപ്പെടുന്ന വർക്കുകളൊന്നും കണ്ടെത്തിയില്ല, ഫിൽട്ടർ അവസ്ഥകൾ ക്രമീകരിക്കാനോ കീവേഡുകൾ തിരയാനോ ശ്രമിക്കുക',
   'community.filter.all': 'എല്ലാം',
   'community.filter.mine': 'എൻ്റേത്',
   'community.filterCategory': 'വർഗ്ഗീകരണം',
@@ -73,13 +74,16 @@ export default {
   'debateverse.advanceStage': 'അടുത്ത ഘട്ടത്തിലേക്ക് പ്രവേശിക്കുക',
   'debateverse.affirmativePositionLabel': 'പോസിറ്റീവ് സ്ഥാനം:',
   'debateverse.avatar.viewer': 'പ്രേക്ഷകർ',
-  'debateverse.clickNextHint': 'മാറ്റങ്ങൾ പ്രാബല്യത്തിൽ വരുന്നതിന് ദയവായി അടുത്ത ബട്ടൺ ക്ലിക്കുചെയ്യുക',
+  'debateverse.clickNextHint':
+    'മാറ്റങ്ങൾ പ്രാബല്യത്തിൽ വരുന്നതിന് ദയവായി അടുത്ത ബട്ടൺ ക്ലിക്കുചെയ്യുക',
   'debateverse.coinTossAffirmativeFirst': 'സ്ഥിരീകരണമാണ് ആദ്യം സംസാരിക്കുന്നത്',
   'debateverse.coinTossGotIt': 'അറിഞ്ഞു',
-  'debateverse.coinTossModalBody': 'ഗെയിമിന് മുമ്പ്, സംസാരിക്കുന്നതിൻ്റെ ക്രമം തീരുമാനിക്കാൻ ഒരു നാണയം ഫ്ലിപ്പുചെയ്യുക അല്ലെങ്കിൽ ഗുണദോഷങ്ങൾ തിരഞ്ഞെടുക്കുക.',
+  'debateverse.coinTossModalBody':
+    'ഗെയിമിന് മുമ്പ്, സംസാരിക്കുന്നതിൻ്റെ ക്രമം തീരുമാനിക്കാൻ ഒരു നാണയം ഫ്ലിപ്പുചെയ്യുക അല്ലെങ്കിൽ ഗുണദോഷങ്ങൾ തിരഞ്ഞെടുക്കുക.',
   'debateverse.coinTossNegativeFirst': 'നെഗറ്റീവ് സൈഡ് ആദ്യം സംസാരിക്കുന്നു',
   'debateverse.coinTossOrder': 'സംസാരിക്കുന്നതിൻ്റെ ക്രമം നിർണ്ണയിക്കാൻ ഒരു നാണയം എറിയുക',
-  'debateverse.coinTossRules': 'ഓരോ ഡിബേറ്റ് റോളിനും AI മോഡൽ ക്രമരഹിതമായി നൽകിയിട്ടുണ്ട്. ഗെയിമിന് മുമ്പ്, സംസാരിക്കുന്നതിൻ്റെ ക്രമം നിർണ്ണയിക്കുന്നതിനോ ഗുണദോഷങ്ങൾ തിരഞ്ഞെടുക്കുന്നതിനോ ഒരു കോയിൻ ടോസ് ഉപയോഗിക്കുന്നു.',
+  'debateverse.coinTossRules':
+    'ഓരോ ഡിബേറ്റ് റോളിനും AI മോഡൽ ക്രമരഹിതമായി നൽകിയിട്ടുണ്ട്. ഗെയിമിന് മുമ്പ്, സംസാരിക്കുന്നതിൻ്റെ ക്രമം നിർണ്ണയിക്കുന്നതിനോ ഗുണദോഷങ്ങൾ തിരഞ്ഞെടുക്കുന്നതിനോ ഒരു കോയിൻ ടോസ് ഉപയോഗിക്കുന്നു.',
   'debateverse.coinTossStageTitle': 'കോയിൻ ടോസ് ഘട്ടം',
   'debateverse.debateTopicLabel': 'സംവാദ വിഷയം:',
   'debateverse.executeCoinToss': 'ഒരു കോയിൻ ടോസ് നടത്തുക',
@@ -105,18 +109,24 @@ export default {
   'debateverse.roleLabel.debater': 'ഒരു സംവാദകനായി പങ്കെടുക്കുക',
   'debateverse.roleLabel.judgeRole': 'റഫറിയായി',
   'debateverse.roleLabel.viewer': 'ഒരു കാഴ്ചക്കാരനായി കാണുക',
-  'debateverse.setup.greeting': '{username} ഹലോ, അഭിപ്രായങ്ങളുടെ ഏറ്റുമുട്ടലിൽ നിന്നാണ് യഥാർത്ഥ ജ്ഞാനം ജനിക്കുന്നത്.',
+  'debateverse.setup.greeting':
+    '{username} ഹലോ, അഭിപ്രായങ്ങളുടെ ഏറ്റുമുട്ടലിൽ നിന്നാണ് യഥാർത്ഥ ജ്ഞാനം ജനിക്കുന്നത്.',
   'debateverse.setup.roleDebater': 'ഒരു സംവാദകനായി പങ്കെടുക്കുക',
   'debateverse.setup.roleJudge': 'റഫറിയായി',
   'debateverse.setup.roleViewer': 'ഒരു കാഴ്ചക്കാരനായി കാണുക',
   'debateverse.setup.suggestion1': 'ആർട്ടിഫിഷ്യൽ ഇൻ്റലിജൻസിന് നിയമപരമായ വ്യക്തിത്വം നൽകേണ്ടതുണ്ടോ?',
-  'debateverse.setup.suggestion2': 'ഓൺലൈൻ ഗെയിമുകൾ കൗമാരക്കാർക്ക് ദോഷത്തേക്കാൾ കൂടുതൽ ഗുണം ചെയ്യുന്നുണ്ടോ അതോ ഗുണത്തേക്കാൾ കൂടുതൽ ദോഷം ചെയ്യുന്നുണ്ടോ?',
+  'debateverse.setup.suggestion2':
+    'ഓൺലൈൻ ഗെയിമുകൾ കൗമാരക്കാർക്ക് ദോഷത്തേക്കാൾ കൂടുതൽ ഗുണം ചെയ്യുന്നുണ്ടോ അതോ ഗുണത്തേക്കാൾ കൂടുതൽ ദോഷം ചെയ്യുന്നുണ്ടോ?',
   'debateverse.setup.suggestion3': 'കോളേജ് പ്രവേശന പരീക്ഷ റദ്ദാക്കണോ അതോ നിലനിർത്തണോ?',
-  'debateverse.setup.suggestion4': 'സോഷ്യൽ മീഡിയ ഉപയോക്തൃ ഉള്ളടക്കത്തിൽ കർശനമായ സെൻസർഷിപ്പ് ഏർപ്പെടുത്തണോ?',
-  'debateverse.setup.suggestion5': 'ടെലികമ്മ്യൂട്ടിംഗ് ഒരു മുഖ്യധാരാ പ്രവർത്തന മാർഗമായി മാറേണ്ടതുണ്ടോ?',
+  'debateverse.setup.suggestion4':
+    'സോഷ്യൽ മീഡിയ ഉപയോക്തൃ ഉള്ളടക്കത്തിൽ കർശനമായ സെൻസർഷിപ്പ് ഏർപ്പെടുത്തണോ?',
+  'debateverse.setup.suggestion5':
+    'ടെലികമ്മ്യൂട്ടിംഗ് ഒരു മുഖ്യധാരാ പ്രവർത്തന മാർഗമായി മാറേണ്ടതുണ്ടോ?',
   'debateverse.setup.suggestion6': 'AI സൃഷ്ടിച്ച ഉള്ളടക്കം പകർപ്പവകാശമുള്ളതാണോ?',
-  'debateverse.setup.suggestion7': 'അറിവ് പകരുന്നതിലോ കഴിവുകൾ വളർത്തിയെടുക്കുന്നതിലോ വിദ്യാഭ്യാസം കൂടുതൽ ശ്രദ്ധ കേന്ദ്രീകരിക്കേണ്ടതുണ്ടോ?',
-  'debateverse.setup.suggestion8': 'മനുഷ്യ ഭ്രൂണങ്ങളിൽ ജീൻ എഡിറ്റിംഗ് സാങ്കേതികവിദ്യ ഉപയോഗിക്കാൻ അനുവദിക്കണമോ?',
+  'debateverse.setup.suggestion7':
+    'അറിവ് പകരുന്നതിലോ കഴിവുകൾ വളർത്തിയെടുക്കുന്നതിലോ വിദ്യാഭ്യാസം കൂടുതൽ ശ്രദ്ധ കേന്ദ്രീകരിക്കേണ്ടതുണ്ടോ?',
+  'debateverse.setup.suggestion8':
+    'മനുഷ്യ ഭ്രൂണങ്ങളിൽ ജീൻ എഡിറ്റിംഗ് സാങ്കേതികവിദ്യ ഉപയോഗിക്കാൻ അനുവദിക്കണമോ?',
   'debateverse.setup.topicPlaceholder': 'സംവാദ വിഷയം നൽകുക...',
   'debateverse.side.affirmative': 'ചതുരം',
   'debateverse.side.judge': 'റഫറി',
@@ -138,7 +148,8 @@ export default {
   'library.loading': 'ലോഡ് ചെയ്യുന്നു...',
   'library.other': 'മറ്റുള്ളവ',
   'library.premiumCollection': 'മികച്ച കേസ് ശേഖരണം',
-  'library.slotFull.body': 'നിങ്ങൾ {max} ഐക്കണുകൾ സംരക്ഷിച്ചു, ഒരു പുതിയ ഐക്കൺ സംരക്ഷിക്കാൻ ദയവായി ഒരെണ്ണം ഇല്ലാതാക്കുക',
+  'library.slotFull.body':
+    'നിങ്ങൾ {max} ഐക്കണുകൾ സംരക്ഷിച്ചു, ഒരു പുതിയ ഐക്കൺ സംരക്ഷിക്കാൻ ദയവായി ഒരെണ്ണം ഇല്ലാതാക്കുക',
   'library.slotFull.cancel': 'റദ്ദാക്കുക',
   'library.slotFull.deleteAndSave': 'ഇല്ലാതാക്കി സംരക്ഷിക്കുക',
   'library.slotFull.networkError': 'നെറ്റ്‌വർക്ക് പിശക്, പ്രവർത്തനം പരാജയപ്പെട്ടു',

@@ -29,6 +29,7 @@ import type {
   TrainingRoleDepth,
   TrainingSpotlightShape,
 } from '@/types/training'
+import { assignTrainingStepField } from '@/utils/trainingStepPatch'
 
 const BUILDER_DIAGRAM_TYPES = VALID_DIAGRAM_TYPES.filter((type) => type !== 'mind_map')
 
@@ -97,13 +98,13 @@ function onPage(value: string): void {
 
 function onDiagram(value: string): void {
   emit('awake')
-  props.step.diagram_type = value === 'mind_map' ? 'mindmap' : value
+  assignTrainingStepField(props.step, 'diagram_type', value === 'mind_map' ? 'mindmap' : value)
 }
 
 async function onMandatory(value: boolean | string | number): Promise<void> {
   const next = Boolean(value)
   if (!next) {
-    props.step.mandatory = false
+    assignTrainingStepField(props.step, 'mandatory', false)
     return
   }
   if (props.step.mandatory) return
@@ -113,16 +114,16 @@ async function onMandatory(value: boolean | string | number): Promise<void> {
       String(t('training.builder.mandatory')),
       { type: 'warning' }
     )
-    props.step.mandatory = true
+    assignTrainingStepField(props.step, 'mandatory', true)
   } catch {
-    props.step.mandatory = false
+    assignTrainingStepField(props.step, 'mandatory', false)
   }
 }
 
 async function onAlwaysPlay(value: boolean | string | number): Promise<void> {
   const next = Boolean(value)
   if (!next) {
-    props.step.always_play = false
+    assignTrainingStepField(props.step, 'always_play', false)
     return
   }
   if (props.step.always_play) return
@@ -132,9 +133,9 @@ async function onAlwaysPlay(value: boolean | string | number): Promise<void> {
       String(t('training.builder.alwaysPlay')),
       { type: 'warning' }
     )
-    props.step.always_play = true
+    assignTrainingStepField(props.step, 'always_play', true)
   } catch {
-    props.step.always_play = false
+    assignTrainingStepField(props.step, 'always_play', false)
   }
 }
 
@@ -146,11 +147,19 @@ function onImage(event: Event): void {
 }
 
 function onVodVideo(id: string | null): void {
-  props.step.vod_media_id = id
+  assignTrainingStepField(props.step, 'vod_media_id', id)
   if (id) return
-  props.step.vod_autoplay = false
-  props.step.vod_width = null
-  props.step.vod_height = null
+  assignTrainingStepField(props.step, 'vod_autoplay', false)
+  assignTrainingStepField(props.step, 'vod_width', null)
+  assignTrainingStepField(props.step, 'vod_height', null)
+}
+
+function onPullUsers(value: boolean | string | number): void {
+  assignTrainingStepField(props.step, 'pull_users', Boolean(value))
+}
+
+function onVodAutoplay(value: boolean): void {
+  assignTrainingStepField(props.step, 'vod_autoplay', value)
 }
 
 function pickEmoji(glyph: string): void {
@@ -234,7 +243,11 @@ function onSpotRadius(event: Event): void {
 
 function clearSpotlight(): void {
   const spot = spotlight.value
-  props.step.overlays = (props.step.overlays || []).filter((overlay) => overlay !== spot)
+  assignTrainingStepField(
+    props.step,
+    'overlays',
+    (props.step.overlays || []).filter((overlay) => overlay !== spot)
+  )
   spotOpen.value = false
 }
 </script>
@@ -306,11 +319,7 @@ function clearSpotlight(): void {
       <label class="builder-toolbar__pull">
         <ElCheckbox
           :model-value="Boolean(step.pull_users)"
-          @change="
-            (value: boolean | string | number) => {
-              step.pull_users = Boolean(value)
-            }
-          "
+          @change="onPullUsers"
         />
         <span><I18nText k="training.builder.pullUsers" /></span>
       </label>
@@ -342,7 +351,7 @@ function clearSpotlight(): void {
       <TrainingBuilderVodPicker
         :step="step"
         @video="onVodVideo"
-        @autoplay="step.vod_autoplay = $event"
+        @autoplay="onVodAutoplay"
       />
       <div class="builder-toolbar__tail">
         <ElButton

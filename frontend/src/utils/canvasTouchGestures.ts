@@ -102,8 +102,7 @@ export function lockTwoFingerMove(options: {
 
 export function isStationaryMultiTap(maxMovePx: number, elapsedMs: number): boolean {
   return (
-    maxMovePx <= TOUCH_GESTURE.MULTI_TAP_MAX_MOVE_PX &&
-    elapsedMs <= TOUCH_GESTURE.MULTI_TAP_MAX_MS
+    maxMovePx <= TOUCH_GESTURE.MULTI_TAP_MAX_MOVE_PX && elapsedMs <= TOUCH_GESTURE.MULTI_TAP_MAX_MS
   )
 }
 
@@ -203,7 +202,12 @@ function crossCoord(
   return null
 }
 
-function slashCrossesNode(points: TouchPoint[], rect: NodeScreenRect, action: NodeSlashAction, dx: number): boolean {
+function slashCrossesNode(
+  points: TouchPoint[],
+  rect: NodeScreenRect,
+  action: NodeSlashAction,
+  dx: number
+): boolean {
   if (points.length < 2) return false
   const start = points[0]
   const end = points[points.length - 1]
@@ -231,9 +235,12 @@ function slashCrossesNode(points: TouchPoint[], rect: NodeScreenRect, action: No
 function slashActionOf(dx: number, dy: number): NodeSlashAction | null {
   const absX = Math.abs(dx)
   const absY = Math.abs(dy)
-  if (dy >= TOUCH_GESTURE.SLASH_MIN_PX && dy >= absX * TOUCH_GESTURE.SLASH_AXIS_RATIO) return 'delete'
-  if (-dy >= TOUCH_GESTURE.SLASH_MIN_PX && -dy >= absX * TOUCH_GESTURE.SLASH_AXIS_RATIO) return 'child'
-  if (absX >= TOUCH_GESTURE.SLASH_MIN_PX && absX >= absY * TOUCH_GESTURE.SLASH_AXIS_RATIO) return 'sibling'
+  if (dy >= TOUCH_GESTURE.SLASH_MIN_PX && dy >= absX * TOUCH_GESTURE.SLASH_AXIS_RATIO)
+    return 'delete'
+  if (-dy >= TOUCH_GESTURE.SLASH_MIN_PX && -dy >= absX * TOUCH_GESTURE.SLASH_AXIS_RATIO)
+    return 'child'
+  if (absX >= TOUCH_GESTURE.SLASH_MIN_PX && absX >= absY * TOUCH_GESTURE.SLASH_AXIS_RATIO)
+    return 'sibling'
   return null
 }
 
@@ -256,9 +263,7 @@ export function classifyNodeSlash(
   if (action === 'delete') {
     return {
       action,
-      nodeIds: crossed
-        .sort((a, b) => a.top - b.top || a.left - b.left)
-        .map((node) => node.id),
+      nodeIds: crossed.sort((a, b) => a.top - b.top || a.left - b.left).map((node) => node.id),
     }
   }
   const first =

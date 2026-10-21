@@ -13,9 +13,7 @@ export type TrainingBuilderSyncState = 'idle' | 'saving' | 'saved' | 'error'
 
 const AUTOSAVE_MS = 700
 
-export function useTrainingBuilderAutosave(options: {
-  persistAllPending: () => Promise<void>
-}): {
+export function useTrainingBuilderAutosave(options: { persistAllPending: () => Promise<void> }): {
   flush: () => Promise<void>
   markClean: () => void
   syncState: ReturnType<typeof ref<TrainingBuilderSyncState>>

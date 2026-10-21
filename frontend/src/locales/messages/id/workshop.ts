@@ -20,7 +20,8 @@ export default {
   'collab.endFailed': 'Gagal mengakhiri kolaborasi',
   'collab.ended': 'Kolaborasi berakhir',
   'collab.galleryFull': 'Galeri penuh. Harap hapus diagram terlebih dahulu',
-  'collab.hintNetworkInactive': 'Buat kode agar orang lain dapat bergabung dan mengedit bersama Anda.',
+  'collab.hintNetworkInactive':
+    'Buat kode agar orang lain dapat bergabung dan mengedit bersama Anda.',
   'collab.hintSchoolInactive': 'Kolega bergabung dari Kolaborasi → Sekolah di halaman beranda.',
   'collab.invalidDiagramData': 'Data diagram tidak valid',
   'collab.linkCopied': 'Tautan disalin',
@@ -30,16 +31,20 @@ export default {
   'collab.noDiagramToSave': 'Tidak ada diagram untuk disimpan',
   'collab.nodeLocked': 'Orang lain sedang mengedit simpul ini',
   'collab.participants': 'peserta {n}',
-  'collab.previousSessionsStopped': 'Mengakhiri {n} sesi kolaborasi sebelumnya pada diagram Anda yang lain.',
+  'collab.previousSessionsStopped':
+    'Mengakhiri {n} sesi kolaborasi sebelumnya pada diagram Anda yang lain.',
   'collab.saveFailed': 'Gagal menyimpan diagram',
   'collab.scanToJoin': 'Pindai untuk bergabung',
-  'collab.schoolDescActive': 'Kolaborasi sekolah aktif. Kolega: MindGraph gunakan Kolaborasi → Sekolah di halaman beranda dan pilih diagram ini — tidak diperlukan kode.',
-  'collab.schoolStarted': 'Kolaborasi sekolah aktif — kolega dapat bergabung dari Kolaborasi → Sekolah.',
+  'collab.schoolDescActive':
+    'Kolaborasi sekolah aktif. Kolega: MindGraph gunakan Kolaborasi → Sekolah di halaman beranda dan pilih diagram ini — tidak diperlukan kode.',
+  'collab.schoolStarted':
+    'Kolaborasi sekolah aktif — kolega dapat bergabung dari Kolaborasi → Sekolah.',
   'collab.sectionNetwork': 'Kolaborasi bersama (kode)',
   'collab.sectionSchool': 'Kolaborasi sekolah',
   'collab.sessionDuration': 'Durasi sesi',
   'collab.sessionRemaining': 'Sesi berakhir pada',
-  'collab.shareDescNetwork': 'Bagikan kode atau tautan — orang lain memasukkannya pada Kolaborasi → Dibagikan.',
+  'collab.shareDescNetwork':
+    'Bagikan kode atau tautan — orang lain memasukkannya pada Kolaborasi → Dibagikan.',
   'collab.start': 'Awal',
   'collab.startFailed': 'Gagal memulai: {msg}',
   'collab.title': 'Kolaborasi daring',
@@ -50,20 +55,28 @@ export default {
   'workshop.addReaction': 'Tambahkan reaksi',
   'workshop.allSchools': 'Semua Sekolah',
   'workshop.announceChannels': 'Pengumuman',
-  'workshop.announceReadOnlyHint': 'Hanya administrator yang dapat memposting di saluran pengumuman ini.',
+  'workshop.announceReadOnlyHint':
+    'Hanya administrator yang dapat memposting di saluran pengumuman ini.',
   'workshop.archiveLessonStudy': 'Studi pelajaran arsip',
-  'workshop.archiveLessonStudyConfirm': 'Arsipkan pelajaran ini? Anggota tidak akan melihatnya lagi di daftar.',
+  'workshop.archiveLessonStudyConfirm':
+    'Arsipkan pelajaran ini? Anggota tidak akan melihatnya lagi di daftar.',
   'workshop.archiveTeachingGroup': 'Kelompok pengajar arsip',
-  'workshop.archiveTeachingGroupConfirm': 'Arsipkan grup pengajar ini? Itu akan hilang dari daftar kelompok pengajaran.',
+  'workshop.archiveTeachingGroupConfirm':
+    'Arsipkan grup pengajar ini? Itu akan hilang dari daftar kelompok pengajaran.',
   'workshop.archiveAnnounceChannel': 'Saluran Pengumuman Arsip',
-  'workshop.archiveAnnounceChannelConfirm': 'Yakin ingin mengarsipkan saluran pengumuman ini? Sidebar tidak lagi ditampilkan, tetapi pesannya akan tetap ada.',
+  'workshop.archiveAnnounceChannelConfirm':
+    'Yakin ingin mengarsipkan saluran pengumuman ini? Sidebar tidak lagi ditampilkan, tetapi pesannya akan tetap ada.',
   'workshop.deleteTeachingGroup': 'Hapus kelompok pengajaran dan penelitian',
-  'workshop.deleteTeachingGroupConfirm': 'Apakah Anda yakin ingin menghapus grup pengajaran dan penelitian ini secara permanen, pelajaran dan pesannya? Tindakan ini tidak dapat dibatalkan.',
+  'workshop.deleteTeachingGroupConfirm':
+    'Apakah Anda yakin ingin menghapus grup pengajaran dan penelitian ini secara permanen, pelajaran dan pesannya? Tindakan ini tidak dapat dibatalkan.',
   'workshop.deleteAnnounceChannel': 'Hapus saluran pengumuman',
-  'workshop.deleteAnnounceChannelConfirm': 'Apakah Anda yakin ingin menghapus saluran pengumuman ini dan pesan-pesannya secara permanen? Tindakan ini tidak dapat dibatalkan.',
+  'workshop.deleteAnnounceChannelConfirm':
+    'Apakah Anda yakin ingin menghapus saluran pengumuman ini dan pesan-pesannya secara permanen? Tindakan ini tidak dapat dibatalkan.',
   'workshop.deleteLessonStudy': 'Hapus pelajaran',
-  'workshop.deleteLessonStudyConfirm': 'Apakah Anda yakin ingin menghapus pelajaran ini dan pesan-pesannya secara permanen? Tindakan ini tidak dapat dibatalkan.',
-  'workshop.manageNeedAdmin': 'Hanya administrator sekolah yang dapat menambahkan kelompok pengajaran dan penelitian. Administrator atau pembuat grup dapat menghapus.',
+  'workshop.deleteLessonStudyConfirm':
+    'Apakah Anda yakin ingin menghapus pelajaran ini dan pesan-pesannya secara permanen? Tindakan ini tidak dapat dibatalkan.',
+  'workshop.manageNeedAdmin':
+    'Hanya administrator sekolah yang dapat menambahkan kelompok pengajaran dan penelitian. Administrator atau pembuat grup dapat menghapus.',
   'workshop.math': 'rumus',
   'workshop.backToConversations': '← Percakapan',
   'workshop.bold': 'Berani',
@@ -77,7 +90,8 @@ export default {
   'workshop.channelAvatarEmoji': 'Ikon (opsional)',
   'workshop.channelAvatarPlaceholder': 'Emoji atau label pendek',
   'workshop.channelColor': 'Warna saluran',
-  'workshop.channelInviteReceived': 'Anda telah ditambahkan ke “{name}”. Buka Lokakarya untuk melihatnya.',
+  'workshop.channelInviteReceived':
+    'Anda telah ditambahkan ke “{name}”. Buka Lokakarya untuk melihatnya.',
   'workshop.channelKindGroup': 'Kelompok pengajar (tingkat atas, misalnya 教研组)',
   'workshop.channelKindLessonStudy': 'Pelajaran belajar dalam kelompok (课例)',
   'workshop.channelNameLabel': 'Nama',
@@ -106,14 +120,16 @@ export default {
   'workshop.contactsOnlineNow': 'On line',
   'workshop.contactsRecentlyOnline': 'Baru-baru ini daring',
   'workshop.conversationTitle': 'Judul Percakapan',
-  'workshop.conversationTitlePlaceholder': 'misalnya Diskusi rencana pembelajaran, Refleksi pengajaran',
+  'workshop.conversationTitlePlaceholder':
+    'misalnya Diskusi rencana pembelajaran, Refleksi pengajaran',
   'workshop.conversations': 'Percakapan',
   'workshop.copyLink': 'Salin tautan',
   'workshop.copyMentionSyntax': 'Salin sintaks penyebutan',
   'workshop.create': 'Membuat',
   'workshop.createChannelFailed': 'Tidak dapat membuat saluran',
   'workshop.createChannelNeedParent': 'Pilih kelompok pengajar orang tua terlebih dahulu.',
-  'workshop.createChannelNoGroupsYet': 'Buatlah kelompok pengajaran terlebih dahulu, kemudian tambahkan pelajaran di bawahnya.',
+  'workshop.createChannelNoGroupsYet':
+    'Buatlah kelompok pengajaran terlebih dahulu, kemudian tambahkan pelajaran di bawahnya.',
   'workshop.createChannelSuccess': 'Saluran dibuat',
   'workshop.createStudyCaseHint': 'Mulailah percakapan untuk memulai',
   'workshop.cycleStudyStatus': 'Status studi siklus',
@@ -131,7 +147,8 @@ export default {
   'workshop.diagram': 'Ilustrasi',
   'workshop.diagramInsertFailed': 'Gagal menyisipkan ikon',
   'workshop.diagramInserting': 'Memasukkan ikon…',
-  'workshop.diagramPickerEmpty': 'Perpustakaan gambar kosong, harap simpan gambar di kanvas terlebih dahulu.',
+  'workshop.diagramPickerEmpty':
+    'Perpustakaan gambar kosong, harap simpan gambar di kanvas terlebih dahulu.',
   'workshop.diagramPickerTitle': 'Pilih dari perpustakaan ikon saya',
   'workshop.directMessage': 'Pesan Langsung',
   'workshop.directMessages': 'Pesan Langsung',
@@ -155,7 +172,8 @@ export default {
   'workshop.gearMenu': 'Pilihan',
   'workshop.generalChat': 'Obrolan Umum',
   'workshop.inbox': 'Kotak masuk',
-  'workshop.inboxHintPickChannel': 'Buka saluran atau pesan langsung di sidebar untuk membaca dan membalas. Anda dapat kembali ke sini kapan saja dari Tampilan → Kotak Masuk.',
+  'workshop.inboxHintPickChannel':
+    'Buka saluran atau pesan langsung di sidebar untuk membaca dan membalas. Anda dapat kembali ke sini kapan saja dari Tampilan → Kotak Masuk.',
   'workshop.inboxSummaryTitle': 'Kotak masuk Anda',
   'workshop.inboxUnreadChannels': 'Belum dibaca di saluran',
   'workshop.inboxUnreadDms': 'Pesan langsung yang belum dibaca',
@@ -181,14 +199,16 @@ export default {
   'workshop.loadMore': 'Muat lebih banyak',
   'workshop.mainChannelStream': 'Saluran utama',
   'workshop.manageTeachingGroups': 'Kelola kelompok pengajaran',
-  'workshop.manageTeachingGroupsBlurb': 'Menambah atau menghapus grup, menetapkan publik atau pribadi, mengedit nama dan deskripsi, menyusun ulang daftar, menggandakan grup sebagai templat, dan mengundang kolega. Gunakan Tingkat Lanjut untuk memposting aturan dan default notifikasi. Pengarsipan menghapus grup untuk semua orang.',
+  'workshop.manageTeachingGroupsBlurb':
+    'Menambah atau menghapus grup, menetapkan publik atau pribadi, mengedit nama dan deskripsi, menyusun ulang daftar, menggandakan grup sebagai templat, dan mengundang kolega. Gunakan Tingkat Lanjut untuk memposting aturan dan default notifikasi. Pengarsipan menghapus grup untuk semua orang.',
   'workshop.manageUser': 'Kelola pengguna ini',
   'workshop.markAllReadChannel': 'Tandai semua pesan telah dibaca',
   'workshop.markAsRead': 'Tandai sebagai telah dibaca',
   'workshop.markStudyResolved': 'Tandai studi terselesaikan',
   'workshop.members': 'anggota',
   'workshop.mentionAmbiguous': 'Nama yang ambigu — pilih seseorang dengan nama tampilan unik: {0}',
-  'workshop.mentionUnknown': 'Sebutan yang tidak diketahui (hanya pengguna dan staf dari organisasi yang sama): {0}',
+  'workshop.mentionUnknown':
+    'Sebutan yang tidak diketahui (hanya pengguna dan staf dari organisasi yang sama): {0}',
   'workshop.mentionedInChannel': 'Anda disebutkan di #{0}',
   'workshop.mentionedInTopic': 'Anda disebutkan di {0}',
   'workshop.mentions': 'Sebutan',
@@ -220,18 +240,22 @@ export default {
   'workshop.noTopicsYet': 'Belum ada percakapan',
   'workshop.numberedList': 'daftar pesanan',
   'workshop.notifications': 'Pemberitahuan',
-  'workshop.notificationsSettingsBlurb': 'Pemberitahuan browser untuk sebutan dan pesan baru menggunakan pengaturan sistem Anda. Anda juga dapat menyetel peringatan desktop dan email per saluran di pengaturan saluran.',
+  'workshop.notificationsSettingsBlurb':
+    'Pemberitahuan browser untuk sebutan dan pesan baru menggunakan pengaturan sistem Anda. Anda juga dapat menyetel peringatan desktop dan email per saluran di pengaturan saluran.',
   'workshop.offline': 'luring',
   'workshop.online': 'on line',
   'workshop.openMainChannelStream': 'Saluran utama',
   'workshop.others': 'YANG LAIN',
   'workshop.permissions': 'Izin',
+  'workshop.personalMenu': 'Menu Pribadi',
   'workshop.preview': 'Pratinjau',
   'workshop.previewEmpty': 'Tidak ada konten untuk dipratinjau',
-  'workshop.personalMenu': 'Menu Pribadi',
-  'workshop.phase2RoadmapGroupsAlerts': 'Nanti: sebutan {\'@\'}group, kata-kata peringatan, dan kebijakan riwayat edit pesan.',
-  'workshop.phase2RoadmapMovePreview': 'Nantikan: pindahkan satu pesan, pratinjau tautan URL, dan aktivitas lintas saluran yang lebih kaya.',
-  'workshop.phase2RoadmapPlatform': 'Backlog platform: sinkronisasi tambahan, mobile push, ringkasan email, bot/webhook.',
+  'workshop.phase2RoadmapGroupsAlerts':
+    "Nanti: sebutan {'@'}group, kata-kata peringatan, dan kebijakan riwayat edit pesan.",
+  'workshop.phase2RoadmapMovePreview':
+    'Nantikan: pindahkan satu pesan, pratinjau tautan URL, dan aktivitas lintas saluran yang lebih kaya.',
+  'workshop.phase2RoadmapPlatform':
+    'Backlog platform: sinkronisasi tambahan, mobile push, ringkasan email, bot/webhook.',
   'workshop.pickColleagueToInvite': 'Pilih kolega untuk diundang.',
   'workshop.pinChannel': 'Sematkan ke atas',
   'workshop.policyEveryone': 'Setiap orang',
@@ -239,7 +263,8 @@ export default {
   'workshop.policyMembersOnly': 'Hanya anggota',
   'workshop.postingPolicy': 'Kebijakan Pengeposan',
   'workshop.preferences': 'Preferensi',
-  'workshop.preferencesSettingsBlurb': 'Preferensi bahasa dan tampilan berlaku di seluruh aplikasi. Opsi obrolan Lokakarya lainnya akan muncul di sini seiring waktu.',
+  'workshop.preferencesSettingsBlurb':
+    'Preferensi bahasa dan tampilan berlaku di seluruh aplikasi. Opsi obrolan Lokakarya lainnya akan muncul di sini seiring waktu.',
   'workshop.presenceActive': 'Aktif',
   'workshop.presenceIdle': 'Menganggur',
   'workshop.presenceOffline': 'Luring',
@@ -248,7 +273,8 @@ export default {
   'workshop.publicChannels': 'Saluran Publik',
   'workshop.quote': 'Mengutip',
   'workshop.quoteMessage': 'Pesan kutipan',
-  'workshop.readOnlyProfileBlurb': 'Detail profil kolega ditampilkan dalam tampilan yang disederhanakan. Gunakan Kelola pengguna (admin) untuk membuka direktori admin.',
+  'workshop.readOnlyProfileBlurb':
+    'Detail profil kolega ditampilkan dalam tampilan yang disederhanakan. Gunakan Kelola pengguna (admin) untuk membuka direktori admin.',
   'workshop.recentDmActivity': 'Pesan langsung terbaru',
   'workshop.recentTopics': 'Percakapan Terkini',
   'workshop.renameTopic': 'Ganti nama percakapan',
@@ -259,7 +285,8 @@ export default {
   'workshop.roleOwner': 'Pemilik',
   'workshop.searchMembers': 'Cari anggota...',
   'workshop.searchMessages': 'Telusuri pesan...',
-  'workshop.selectChannelForSettings': 'Pilih kelompok pengajaran atau pembelajaran terlebih dahulu, lalu buka pengaturan di sini.',
+  'workshop.selectChannelForSettings':
+    'Pilih kelompok pengajaran atau pembelajaran terlebih dahulu, lalu buka pengaturan di sini.',
   'workshop.selectConversation': 'Pilih percakapan',
   'workshop.selectParentGroup': 'Kelompok pengajar orang tua',
   'workshop.selectTopic': 'Pilih percakapan',
@@ -285,7 +312,8 @@ export default {
   'workshop.strikethrough': 'Dicoret',
   'workshop.table': 'lembaran',
   'workshop.switchSchool': 'Pindah Sekolah',
-  'workshop.teachingGroupLandingHint': 'Pelajaran dan percakapan dalam kelompok pengajaran ini. Pilih baris untuk membuka saluran atau utas.',
+  'workshop.teachingGroupLandingHint':
+    'Pelajaran dan percakapan dalam kelompok pengajaran ini. Pilih baris untuk membuka saluran atau utas.',
   'workshop.teachingGroupMembers': 'Anggota',
   'workshop.teachingGroupNameRequired': 'Silakan masukkan nama grup pengajar.',
   'workshop.teachingGroupNoLessons': 'Belum ada pembelajaran di grup ini.',
@@ -300,7 +328,8 @@ export default {
   'workshop.topicTitle': 'Judul',
   'workshop.topicTitlePlaceholder': 'misalnya Desain peta pemikiran untuk Bab 3',
   'workshop.topics': 'Percakapan',
-  'workshop.typeMessagePlaceholder': 'Ketik pesan... (Enter untuk mengirim, Shift+Enter untuk baris baru)',
+  'workshop.typeMessagePlaceholder':
+    'Ketik pesan... (Enter untuk mengirim, Shift+Enter untuk baris baru)',
   'workshop.unfollowTopic': 'Berhenti mengikuti percakapan',
   'workshop.unknown': 'Tidak dikenal',
   'workshop.unmuteChannel': 'Suarakan saluran',
@@ -316,11 +345,14 @@ export default {
   'workshop.viewProfile': 'Lihat profil',
   'workshop.viewingSchool': 'Melihat: {0}',
   'workshop.views': 'Tampilan',
-  'workshop.welcomeChannelsBody': 'Sebuah “saluran” di sini sering kali berhubungan dengan kelompok penelitian pengajaran (教研组) atau PLC: satu ruang bersama per tim (misalnya PLC Matematika, PLC Bahasa Inggris). Ini mendefinisikan siapa yang mengambil bagian dan bagaimana ruang dikelompokkan.',
+  'workshop.welcomeChannelsBody':
+    'Sebuah “saluran” di sini sering kali berhubungan dengan kelompok penelitian pengajaran (教研组) atau PLC: satu ruang bersama per tim (misalnya PLC Matematika, PLC Bahasa Inggris). Ini mendefinisikan siapa yang mengambil bagian dan bagaimana ruang dikelompokkan.',
   'workshop.welcomeChannelsTitle': 'PLC / kelompok mata pelajaran',
-  'workshop.welcomeConversationsBody': 'Di dalam studi pelajaran, Anda membuka percakapan berjudul—misalnya desain instruksional, refleksi, atau tugas tindak lanjut—sehingga rangkaian pesan tetap mudah diikuti.',
+  'workshop.welcomeConversationsBody':
+    'Di dalam studi pelajaran, Anda membuka percakapan berjudul—misalnya desain instruksional, refleksi, atau tugas tindak lanjut—sehingga rangkaian pesan tetap mudah diikuti.',
   'workshop.welcomeConversationsTitle': 'Percakapan',
-  'workshop.welcomeExampleCaption': 'Contoh ilustratif (sekolah fiksi) — PLC Matematika dan PLC Bahasa Inggris, masing-masing dengan studi pelajaran dan contoh percakapan.',
+  'workshop.welcomeExampleCaption':
+    'Contoh ilustratif (sekolah fiksi) — PLC Matematika dan PLC Bahasa Inggris, masing-masing dengan studi pelajaran dan contoh percakapan.',
   'workshop.welcomeExampleConvLabel': 'Percakapan',
   'workshop.welcomeExampleGroupEnglish': 'PLC bahasa Inggris',
   'workshop.welcomeExampleGroupMath': 'PLC Matematika',
@@ -328,7 +360,8 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Lembar panduan & desain lembar kerja',
   'workshop.welcomeExampleLSEng1C2': 'Tugas & transfer pasca-membaca',
   'workshop.welcomeExampleLSEng1C3': 'Umpan balik & refleksi observasi',
-  'workshop.welcomeExampleLSEng2': 'Pelajaran yang dipelajari: Menulis — pelajaran yang sama, guru yang berbeda',
+  'workshop.welcomeExampleLSEng2':
+    'Pelajaran yang dipelajari: Menulis — pelajaran yang sama, guru yang berbeda',
   'workshop.welcomeExampleLSEng2C1': 'Percontohan & revisi rubrik',
   'workshop.welcomeExampleLSMath1': 'Pelajaran pelajaran: Minggu pemolesan “Konsep fungsi”.',
   'workshop.welcomeExampleLSMath1C1': 'Tujuan & desain aktivitas',
@@ -339,38 +372,51 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Pesan ada di dalam setiap percakapan',
   'workshop.welcomeExampleOrg': 'Sekolah Menengah Chenxi',
   'workshop.welcomeHowTitle': 'Bagaimana hal itu cocok satu sama lain',
-  'workshop.welcomeIntro': 'Lokakarya adalah ruang di sekolah Anda untuk diskusi terstruktur: berbagi pengumuman, menjalankan pembelajaran, dan menjaga percakapan tetap teratur seiring dengan tugas mengajar Anda.',
-  'workshop.welcomeLessonStudyBody': 'Saluran pembelajaran-pelajaran biasanya berada di bawah kelompok itu. Masing-masing merupakan tempat untuk satu siklus pembelajaran—perencanaan, observasi, dan refleksi—dan dapat dihubungkan ke diagram atau status.',
+  'workshop.welcomeIntro':
+    'Lokakarya adalah ruang di sekolah Anda untuk diskusi terstruktur: berbagi pengumuman, menjalankan pembelajaran, dan menjaga percakapan tetap teratur seiring dengan tugas mengajar Anda.',
+  'workshop.welcomeLessonStudyBody':
+    'Saluran pembelajaran-pelajaran biasanya berada di bawah kelompok itu. Masing-masing merupakan tempat untuk satu siklus pembelajaran—perencanaan, observasi, dan refleksi—dan dapat dihubungkan ke diagram atau status.',
   'workshop.welcomeLessonStudyTitle': 'Studi pelajaran',
-  'workshop.welcomeMessagesBody': 'Pesan adalah postingan individual di aliran saluran utama atau di dalam percakapan. Balasan, sebutan, dan file semuanya ada dalam pesan.',
+  'workshop.welcomeMessagesBody':
+    'Pesan adalah postingan individual di aliran saluran utama atau di dalam percakapan. Balasan, sebutan, dan file semuanya ada dalam pesan.',
   'workshop.welcomeMessagesTitle': 'Pesan',
   'workshop.welcomeSubtitle': 'Berkolaborasi dengan sekolah Anda di MindGraph',
   'workshop.welcomeTitle': 'Selamat datang di Bengkel',
   'workshop.you': '(Anda)',
   'workshop.youAnd': 'Anda dan',
   'workshopCanvas.connectFailed': 'Gagal terhubung ke kolaborasi',
-  'workshopCanvas.sessionExpiredReconnect': 'Sesi Anda telah berakhir. Harap segarkan halaman untuk bergabung kembali dengan kolaborasi.',
-  'workshopCanvas.sessionRefreshFailed': 'Tidak dapat menyegarkan sesi kolaborasi Anda. Silakan simpan pekerjaan Anda dan masuk lagi.',
-  'workshopCanvas.outboundQueueDegraded': 'Kolaborasi tertinggal. Beberapa hasil edit yang belum terkirim tidak dapat disimpan.',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Sesi Anda telah berakhir. Harap segarkan halaman untuk bergabung kembali dengan kolaborasi.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Tidak dapat menyegarkan sesi kolaborasi Anda. Silakan simpan pekerjaan Anda dan masuk lagi.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Kolaborasi tertinggal. Beberapa hasil edit yang belum terkirim tidak dapat disimpan.',
   'workshopCanvas.connectionClosed': 'Koneksi ditutup',
-  'workshopCanvas.connectionClosedSlow': 'Koneksi ditutup: koneksi Anda terlalu lambat untuk mengikuti sesi kolaborasi.',
+  'workshopCanvas.connectionClosedSlow':
+    'Koneksi ditutup: koneksi Anda terlalu lambat untuk mengikuti sesi kolaborasi.',
   'workshopCanvas.sessionEndedByHost': 'Tuan rumah telah mengakhiri sesi kolaborasi.',
   'workshopCanvas.editingNodeLabel': '{username} sedang mengedit…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'Seseorang',
   'workshopCanvas.connectionClosedReason': 'Koneksi kolaborasi ditutup: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} sedang mengedit node ini',
   'workshopCanvas.errorGeneric': 'Kesalahan kolaborasi',
-  'workshopCanvas.updatePartialFiltered': 'Beberapa pengeditan dilewati (node ​​{count}) karena kolaborator lain sedang mengedit node tersebut.',
+  'workshopCanvas.updatePartialFiltered':
+    'Beberapa pengeditan dilewati (node ​​{count}) karena kolaborator lain sedang mengedit node tersebut.',
   'workshopCanvas.reconnectFailed': 'Gagal terhubung kembali ke kolaborasi, segarkan halaman',
-  'workshopCanvas.resyncWaiting': 'Sinkronisasi diagram langsung memakan waktu lebih lama dari yang diperkirakan. Mencoba lagi; Anda dapat menyegarkan kembali jika pengeditan terasa macet.',
-  'workshopCanvas.returnedHomeIdle': 'Kembali ke rumah — sambungan Anda terputus setelah lama tidak aktif.',
+  'workshopCanvas.resyncWaiting':
+    'Sinkronisasi diagram langsung memakan waktu lebih lama dari yang diperkirakan. Mencoba lagi; Anda dapat menyegarkan kembali jika pengeditan terasa macet.',
+  'workshopCanvas.returnedHomeIdle':
+    'Kembali ke rumah — sambungan Anda terputus setelah lama tidak aktif.',
   'workshopCanvas.userJoined': 'Pengguna {username} bergabung',
   'workshopCanvas.usersJoined': 'Pengguna {count} bergabung',
   'workshopCanvas.userLeft': 'Pengguna {username} tersisa',
   'workshopCanvas.usersLeft': 'Pengguna {count} tersisa',
   'workshopCanvas.wsError': 'Kesalahan koneksi kolaborasi, harap periksa jaringan Anda',
-  'workshopCanvas.returnedHomeRoomIdle': 'Kolaborasi berakhir: tidak ada pengeditan diagram pada sesi ini untuk sementara waktu.',
-  'workshopCanvas.roomIdleWarningToast': 'Tidak ada pengeditan diagram akhir-akhir ini — kolaborasi berakhir ketika hitungan mundur mencapai nol kecuali ada yang mengedit.',
-  'workshopCanvas.otherTabCollaborationActive': 'Kolaborasi berlanjut di tab atau jendela lain untuk akun ini.',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Kolaborasi berakhir: tidak ada pengeditan diagram pada sesi ini untuk sementara waktu.',
+  'workshopCanvas.roomIdleWarningToast':
+    'Tidak ada pengeditan diagram akhir-akhir ini — kolaborasi berakhir ketika hitungan mundur mencapai nol kecuali ada yang mengedit.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Kolaborasi berlanjut di tab atau jendela lain untuk akun ini.',
   'workshopCanvas.joinQrAlt': 'Bergabunglah dengan kode QR kolaborasi',
 } as const

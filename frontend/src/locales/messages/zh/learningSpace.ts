@@ -14,7 +14,8 @@ export default {
   'learningSpace.instructionUploadFailed': '说明图片上传失败',
   'learningSpace.resubmitPolicy': '重新提交',
   'learningSpace.allowResubmitSwitch': '截止前允许重新提交',
-  'learningSpace.allowResubmitHint': '开启后，学生提交后可在截止时间前修改并再次提交；重新提交会清空已有老师评价。',
+  'learningSpace.allowResubmitHint':
+    '开启后，学生提交后可在截止时间前修改并再次提交；重新提交会清空已有老师评价。',
   'learningSpace.allowResubmitYes': '截止前允许重新提交',
   'learningSpace.allowResubmitNo': '提交后不可修改',
   'learningSpace.studentReqResubmit': '重新提交',
@@ -50,7 +51,8 @@ export default {
   'learningSpace.noSubmissions': '还没有学生打开或提交作业',
   'learningSpace.noInstructions': '暂无说明',
   'learningSpace.deleteAssignment': '删除作业',
-  'learningSpace.deleteAssignmentConfirm': '确定删除「{title}」？学生提交与作品将一并删除，且无法恢复。',
+  'learningSpace.deleteAssignmentConfirm':
+    '确定删除「{title}」？学生提交与作品将一并删除，且无法恢复。',
   'learningSpace.assignmentDeleted': '作业已删除',
   'learningSpace.deleteFailed': '删除作业失败',
   'learningSpace.noPublishableClass': '没有可布置作业的班级（需为启用中的班级负责人）',
@@ -214,11 +216,13 @@ export default {
   'learningSpace.tabHome': '首页',
   'learningSpace.tabMyAssignments': '我的作业',
   'learningSpace.tabClassAssignments': '班级作业',
-  'learningSpace.classAssignmentsHint': '查看班级发布的作业；进入后可看要求、同学作品墙，并开始作答。',
+  'learningSpace.classAssignmentsHint':
+    '查看班级发布的作业；进入后可看要求、同学作品墙，并开始作答。',
   'learningSpace.tabMyWorks': '我的作品',
   'learningSpace.tabClassWall': '班级作品墙',
   'learningSpace.tabMyPortfolio': '我的作品集',
-  'learningSpace.classWallHint': '查看同班已提交的作品与老师评价；点击封面预览，保存至图库后再进入画布。',
+  'learningSpace.classWallHint':
+    '查看同班已提交的作品与老师评价；点击封面预览，保存至图库后再进入画布。',
   'learningSpace.myPortfolioHint': '这里汇总你已提交的全部作业作品，点击可预览。',
   'learningSpace.assignmentWall': '班级作业墙',
   'learningSpace.mySubmission': '我的作业',
@@ -253,8 +257,7 @@ export default {
   'learningSpace.teacherReview': '老师评价',
   'learningSpace.waitingTeacherReview': '老师尚未评价此作业。',
   'learningSpace.noTeacherComment': '暂无评语',
-  'learningSpace.templateMgHint':
-    '作答图示可预览并在画布中打开；对照图示与参考图片列在下方。',
+  'learningSpace.templateMgHint': '作答图示可预览并在画布中打开；对照图示与参考图片列在下方。',
   'learningSpace.noTemplatePreview': '暂无模板预览',
   'learningSpace.openTemplateInCanvas': '在画布中打开',
   'learningSpace.pendingBadge': '{n}待批',

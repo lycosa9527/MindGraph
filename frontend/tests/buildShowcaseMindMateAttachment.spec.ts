@@ -5,12 +5,11 @@ import {
   formatShowcaseCaseMarkdown,
 } from '@/composables/showcase/buildShowcaseMindMateAttachment'
 import type { ShowcasePost } from '@/utils/apiClient'
+import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 
 vi.mock('@/utils/fetchShowcaseAsset', () => ({
   fetchShowcaseAsset: vi.fn(),
 }))
-
-import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 
 function basePost(overrides: Partial<ShowcasePost> & { spec?: unknown } = {}): ShowcasePost & {
   spec?: unknown

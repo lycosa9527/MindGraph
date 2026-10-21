@@ -1,10 +1,10 @@
+import { createPinia, setActivePinia } from 'pinia'
+
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPinia, setActivePinia } from 'pinia'
 
-import type { Connection, DiagramNode } from '@/types'
 import {
   distributeBranchesClockwise,
   loadMindMapSpec,
@@ -12,6 +12,7 @@ import {
   nodesAndConnectionsToMindMapSpec,
 } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
+import type { Connection, DiagramNode } from '@/types'
 import {
   buildMindMapOutlineTree,
   flattenMindMapOutline,
@@ -85,9 +86,7 @@ describe('buildMindMapOutlineTree', () => {
       nodes: DiagramNode[]
       connections: Connection[]
     }
-    const flat = flattenMindMapOutline(
-      buildMindMapOutlineTree(spec.nodes, spec.connections)
-    )
+    const flat = flattenMindMapOutline(buildMindMapOutlineTree(spec.nodes, spec.connections))
     expect(flat[0]?.text).toBe('山姆会员商店')
     expect(flat.filter((row) => row.depth === 1).map((row) => row.text)).toEqual(
       SAMS_CLUB_EXPECTED_L1
@@ -114,7 +113,7 @@ describe('buildMindMapOutlineTree', () => {
     expect(flat.map((r) => r.text)).toEqual(['中心', '右上', '右下', '左下', '左上'])
   })
 
-  it('matches Sam\'s Club style 8-branch clockwise reading order', () => {
+  it("matches Sam's Club style 8-branch clockwise reading order", () => {
     // Right top→bottom, then left bottom→top (connection order scrambled).
     const nodes: DiagramNode[] = [
       node('topic', '山姆会员商店', 400, 'topic', 0),
@@ -310,9 +309,7 @@ describe('buildMindMapOutlineTree', () => {
       node('topic', 'Old topic', 0, 'topic'),
       node('uid-branch', 'Old branch', 40),
     ]
-    const connections: Connection[] = [
-      { id: 'e1', source: 'topic', target: 'uid-branch' },
-    ]
+    const connections: Connection[] = [{ id: 'e1', source: 'topic', target: 'uid-branch' }]
 
     nodes[0] = { ...nodes[0], text: 'New topic' }
     nodes[1] = { ...nodes[1], text: 'New branch' }

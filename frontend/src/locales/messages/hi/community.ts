@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': 'बदलाव लागू करने के लिए अगला बटन दबाएँ',
   'debateverse.coinTossAffirmativeFirst': 'सकारात्मक पक्ष पहले बोलेगा',
   'debateverse.coinTossGotIt': 'समझ गया',
-  'debateverse.coinTossModalBody': 'वाद-विवाद से पहले, सिक्का उछालकर बोलने का क्रम या सकारात्मक/नकारात्मक पक्ष तय करें',
+  'debateverse.coinTossModalBody':
+    'वाद-विवाद से पहले, सिक्का उछालकर बोलने का क्रम या सकारात्मक/नकारात्मक पक्ष तय करें',
   'debateverse.coinTossNegativeFirst': 'नकारात्मक पक्ष पहले बोलेगा',
   'debateverse.coinTossOrder': 'बोलने का क्रम तय करने के लिए सिक्का उछाल',
-  'debateverse.coinTossRules': 'AI मॉडल वाद-विवाद भूमिकाओं में यादृच्छिक रूप से नियुक्त किए गए हैं। वाद-विवाद से पहले, सिक्का उछालकर बोलने का क्रम या पक्ष चुनें',
+  'debateverse.coinTossRules':
+    'AI मॉडल वाद-विवाद भूमिकाओं में यादृच्छिक रूप से नियुक्त किए गए हैं। वाद-विवाद से पहले, सिक्का उछालकर बोलने का क्रम या पक्ष चुनें',
   'debateverse.coinTossStageTitle': 'सिक्का उछाल चरण',
   'debateverse.debateTopicLabel': 'वाद-विवाद विषय: ',
   'debateverse.executeCoinToss': 'सिक्का उछालें',
@@ -112,7 +114,8 @@ export default {
   'debateverse.setup.suggestion1': 'क्या AI को कानूनी व्यक्तित्व दिया जाना चाहिए?',
   'debateverse.setup.suggestion2': 'क्या वीडियो गेम किशोरों के लिए अधिक लाभकारी हैं या हानिकारक?',
   'debateverse.setup.suggestion3': 'क्या कॉलेज प्रवेश परीक्षाएँ समाप्त होनी चाहिए?',
-  'debateverse.setup.suggestion4': 'क्या सोशल मीडिया प्लेटफ़ॉर्म पर सख्त सामग्री मॉडरेशन होना चाहिए?',
+  'debateverse.setup.suggestion4':
+    'क्या सोशल मीडिया प्लेटफ़ॉर्म पर सख्त सामग्री मॉडरेशन होना चाहिए?',
   'debateverse.setup.suggestion5': 'क्या दूरस्थ कार्य मुख्यधारा बन जाना चाहिए?',
   'debateverse.setup.suggestion6': 'क्या AI-जनित सामग्री पर कॉपीराइट सुरक्षा होनी चाहिए?',
   'debateverse.setup.suggestion7': 'क्या शिक्षा में ज्ञान या कौशल पर अधिक ध्यान देना चाहिए?',

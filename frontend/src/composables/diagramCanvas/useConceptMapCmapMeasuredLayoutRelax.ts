@@ -1,7 +1,6 @@
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { watch } from 'vue'
 
-import type { useDiagramStore } from '@/stores/diagram'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { DiagramNode } from '@/types'
 import { normalizeLabel } from '@/utils/cmapLabels'
 import type { LayoutPositionsByLabel } from '@/utils/cmapLayoutExtract'

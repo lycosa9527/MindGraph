@@ -3,6 +3,8 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { dispatchKittyDiagramUpdateInbound } from '@/composables/kitty/kittyAgentInbound'
+
 const { emitMock } = vi.hoisted(() => ({
   emitMock: vi.fn(),
 }))
@@ -33,8 +35,6 @@ vi.mock('@/composables/kitty/kittyWorkflowTrace', () => ({
   traceKittyWorkflow: vi.fn(),
 }))
 
-import { dispatchKittyDiagramUpdateInbound } from '@/composables/kitty/kittyAgentInbound'
-
 describe('dispatchKittyDiagramUpdateInbound', () => {
   beforeEach(() => {
     emitMock.mockClear()
@@ -55,9 +55,7 @@ describe('dispatchKittyDiagramUpdateInbound', () => {
       'kitty:one_sentence_reply',
       expect.objectContaining({ text: '已添加', kind: 'final' })
     )
-    expect(
-      emitMock.mock.calls.some((c) => c[0] === 'kitty:diagram_mutation_requested')
-    ).toBe(false)
+    expect(emitMock.mock.calls.some((c) => c[0] === 'kitty:diagram_mutation_requested')).toBe(false)
   })
 
   it('desktop lane emits mutation bus with hubPersist when builders present', () => {

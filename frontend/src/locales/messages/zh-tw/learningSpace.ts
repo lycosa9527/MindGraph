@@ -1,6 +1,6 @@
 /**
- * zh-tw UI — learningSpace
- * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ * zh UI — learningSpace
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export default {
@@ -10,11 +10,12 @@ export default {
   'learningSpace.openFailed': '無法打開作業',
   'learningSpace.submitSuccess': '作業已提交',
   'learningSpace.submitFailed': '提交失敗',
-  'learningSpace.publishNetworkError': '網路錯誤，作業發布失敗',
+  'learningSpace.publishNetworkError': '網絡錯誤，作業發佈失敗',
   'learningSpace.instructionUploadFailed': '說明圖片上傳失敗',
   'learningSpace.resubmitPolicy': '重新提交',
   'learningSpace.allowResubmitSwitch': '截止前允許重新提交',
-  'learningSpace.allowResubmitHint': '開啟後，學生提交後可在截止時間前修改並再次提交；重新提交會清空已有老師評價。',
+  'learningSpace.allowResubmitHint':
+    '開啟後，學生提交後可在截止時間前修改並再次提交；重新提交會清空已有老師評價。',
   'learningSpace.allowResubmitYes': '截止前允許重新提交',
   'learningSpace.allowResubmitNo': '提交後不可修改',
   'learningSpace.studentReqResubmit': '重新提交',
@@ -22,7 +23,7 @@ export default {
   'learningSpace.studentReqResubmitNo': '提交後不可修改',
   'learningSpace.classWallSubmitFirst': '提交作業後可查看班級作業牆',
   'learningSpace.resubmit': '重新提交',
-  'learningSpace.resubmitConfirm': '將用目前畫布內容覆蓋已提交版本，老師評價會清空，是否繼續？',
+  'learningSpace.resubmitConfirm': '將用當前畫布內容覆蓋已提交版本，老師評價會清空，是否繼續？',
   'learningSpace.resubmitSuccess': '已重新提交',
   'learningSpace.editAndResubmit': '修改並重新提交',
   'learningSpace.submitConfirm': '提交後老師將進行批改與打分，確認提交？',
@@ -50,7 +51,8 @@ export default {
   'learningSpace.noSubmissions': '還沒有學生打開或提交作業',
   'learningSpace.noInstructions': '暫無說明',
   'learningSpace.deleteAssignment': '刪除作業',
-  'learningSpace.deleteAssignmentConfirm': '確定刪除「{title}」？學生提交與作品將一併刪除，且無法恢復。',
+  'learningSpace.deleteAssignmentConfirm':
+    '確定刪除「{title}」？學生提交與作品將一併刪除，且無法恢復。',
   'learningSpace.assignmentDeleted': '作業已刪除',
   'learningSpace.deleteFailed': '刪除作業失敗',
   'learningSpace.noPublishableClass': '沒有可佈置作業的班級（需為啟用中的班級負責人）',
@@ -214,11 +216,13 @@ export default {
   'learningSpace.tabHome': '首頁',
   'learningSpace.tabMyAssignments': '我的作業',
   'learningSpace.tabClassAssignments': '班級作業',
-  'learningSpace.classAssignmentsHint': '查看班級發佈的作業；進入後可看要求、同學作品牆，並開始作答。',
+  'learningSpace.classAssignmentsHint':
+    '查看班級發佈的作業；進入後可看要求、同學作品牆，並開始作答。',
   'learningSpace.tabMyWorks': '我的作品',
   'learningSpace.tabClassWall': '班級作品牆',
   'learningSpace.tabMyPortfolio': '我的作品集',
-  'learningSpace.classWallHint': '查看同班已提交的作品與老師評價；點擊封面預覽，保存至圖庫後再進入畫布。',
+  'learningSpace.classWallHint':
+    '查看同班已提交的作品與老師評價；點擊封面預覽，保存至圖庫後再進入畫布。',
   'learningSpace.myPortfolioHint': '這裡彙總你已提交的全部作業作品，點擊可預覽。',
   'learningSpace.assignmentWall': '班級作業牆',
   'learningSpace.mySubmission': '我的作業',
@@ -253,8 +257,7 @@ export default {
   'learningSpace.teacherReview': '老師評價',
   'learningSpace.waitingTeacherReview': '老師尚未評價此作業。',
   'learningSpace.noTeacherComment': '暫無評語',
-  'learningSpace.templateMgHint':
-    '作答图示可预览并在画布中打开；对照图示与参考图片列在下方。',
+  'learningSpace.templateMgHint': '作答图示可预览并在画布中打开；对照图示与参考图片列在下方。',
   'learningSpace.noTemplatePreview': '暫無模板預覽',
   'learningSpace.openTemplateInCanvas': '在畫布中打開',
   'learningSpace.pendingBadge': '{n}待批',

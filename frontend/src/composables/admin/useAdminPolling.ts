@@ -2,10 +2,9 @@
  * Visibility-aware admin polling — registers poll keys in adminPanel store.
  */
 import { onBeforeUnmount, onMounted } from 'vue'
-
 import { onBeforeRouteLeave } from 'vue-router'
 
-import { useAdminPanelStore, type AdminPollKey } from '@/stores/adminPanel'
+import { type AdminPollKey, useAdminPanelStore } from '@/stores/adminPanel'
 
 export interface UseAdminPollingOptions {
   pollKey: AdminPollKey

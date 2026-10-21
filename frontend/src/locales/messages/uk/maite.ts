@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Метод навчання Метта',
-  'maite.subtitle': 'Зворотна декомпозиція · Чотири етапи діагностики · Цільова допомога · Перенесення варіантів',
+  'maite.subtitle':
+    'Зворотна декомпозиція · Чотири етапи діагностики · Цільова допомога · Перенесення варіантів',
   'maite.mode.demo': 'Демо',
   'maite.mode.inquiry': 'Запит',
   'maite.mode.map': 'Карта',
@@ -44,8 +45,9 @@ export default {
   'maite.inquiry.variantTitle': 'Практика з варіантами',
   'maite.inquiry.complete': 'Завершити сесію',
   'maite.inquiry.completedTitle': 'Запит завершено',
-  'maite.inquiry.completedMessage': 'Цю сесію запиту завершено. Перегляньте звіт про навчання нижче.',
-  'maite.diagnosis.thinkingPlaceholder': 'Опишіть свої думки (необов\'язково)…',
+  'maite.inquiry.completedMessage':
+    'Цю сесію запиту завершено. Перегляньте звіт про навчання нижче.',
+  'maite.diagnosis.thinkingPlaceholder': "Опишіть свої думки (необов'язково)…",
   'maite.diagnosis.runAuto': 'Автодіагностика',
   'maite.diagnosis.running': 'Діагностика…',
   'maite.remedy.generate': 'Згенерувати завдання допомоги',
@@ -58,7 +60,8 @@ export default {
   'maite.variant.answerPlaceholder': 'Напишіть повну відповідь…',
   'maite.variant.strategyPlaceholder': 'Поясніть, як адаптується метод…',
   'maite.variant.submit': 'Надіслати відповідь',
-  'maite.variant.completeHint': 'Надішліть щонайменше 3 відповіді на варіанти перед завершенням сесії.',
+  'maite.variant.completeHint':
+    'Надішліть щонайменше 3 відповіді на варіанти перед завершенням сесії.',
   'maite.practice.title': 'Остання практика',
   'maite.practice.loading': 'Завантаження…',
   'maite.practice.empty': 'Сесій практики ще немає',
@@ -85,7 +88,8 @@ export default {
   'maite.errors.diagnosis_failed': 'Діагностика не вдалася.',
   'maite.errors.remedy_failed': 'Не вдалося згенерувати завдання допомоги.',
   'maite.errors.variant_failed': 'Не вдалося згенерувати завдання з варіантами.',
-  'maite.errors.variants_incomplete': 'Надішліть щонайменше 3 відповіді на варіанти перед завершенням.',
+  'maite.errors.variants_incomplete':
+    'Надішліть щонайменше 3 відповіді на варіанти перед завершенням.',
   'maite.errors.variant_answer_required': 'Потрібні відповідь і стратегія.',
   'maite.errors.variant_submit_failed': 'Не вдалося надіслати відповідь на варіант.',
   'maite.errors.load_failed': 'Не вдалося завантажити сесію.',

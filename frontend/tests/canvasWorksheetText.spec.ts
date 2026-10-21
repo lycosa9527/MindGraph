@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  CANVAS_WORKSHEET_TEXT_MENU_ITEM,
-} from '@/config/canvasExportMenu'
+import { CANVAS_WORKSHEET_TEXT_MENU_ITEM } from '@/config/canvasExportMenu'
 import {
   CLASSROOM_WORKSHEET_TEXT_PRESET,
   DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
@@ -11,8 +9,8 @@ import {
   resolveWorksheetTopicText,
   saveCanvasWorksheetTextOptions,
 } from '@/config/canvasWorksheetText'
-import { buildWorksheetHeaderElement } from '@/utils/diagramWorksheetHeader'
 import { fitImageRectInA4Region } from '@/utils/diagramPdfExport'
+import { buildWorksheetHeaderElement } from '@/utils/diagramWorksheetHeader'
 import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 
 describe('canvasWorksheetText', () => {
@@ -80,17 +78,13 @@ describe('canvasWorksheetText', () => {
 
 describe('diagramWorksheetHeader', () => {
   it('builds header DOM with topic, meta row, and instruction', () => {
-    const element = buildWorksheetHeaderElement(
-      'Photosynthesis',
-      CLASSROOM_WORKSHEET_TEXT_PRESET,
-      {
-        name: 'Name:',
-        className: 'Class:',
-        date: 'Date:',
-        instructionPrefix: 'Task:',
-        defaultInstruction: 'Fill in the blanks.',
-      }
-    )
+    const element = buildWorksheetHeaderElement('Photosynthesis', CLASSROOM_WORKSHEET_TEXT_PRESET, {
+      name: 'Name:',
+      className: 'Class:',
+      date: 'Date:',
+      instructionPrefix: 'Task:',
+      defaultInstruction: 'Fill in the blanks.',
+    })
     expect(element).not.toBeNull()
     expect(element?.textContent).toContain('Photosynthesis')
     expect(element?.textContent).toContain('Name:')

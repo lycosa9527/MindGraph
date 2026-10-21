@@ -44,7 +44,8 @@ export default {
   'maite.inquiry.variantTitle': 'Varyant alıştırması',
   'maite.inquiry.complete': 'Oturumu tamamla',
   'maite.inquiry.completedTitle': 'Sorgulama tamamlandı',
-  'maite.inquiry.completedMessage': 'Bu sorgulama oturumu tamamlandı. Aşağıdaki öğrenme raporunu inceleyin.',
+  'maite.inquiry.completedMessage':
+    'Bu sorgulama oturumu tamamlandı. Aşağıdaki öğrenme raporunu inceleyin.',
   'maite.diagnosis.thinkingPlaceholder': 'Düşüncenizi açıklayın (isteğe bağlı)…',
   'maite.diagnosis.runAuto': 'Otomatik tanı',
   'maite.diagnosis.running': 'Tanı konuyor…',

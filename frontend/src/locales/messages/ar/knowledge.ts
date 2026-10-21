@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'قماش',
   'fileCenterLibrary.badgeExtension': 'يوسع',
   'fileCenterLibrary.badgeUpload': 'رفع',
-  'chunkTest.history.confirmDeleteBody': 'هل أنت متأكد أنك تريد حذف سجل الاختبار هذا؟ لا يمكن التراجع عن هذا الإجراء.',
+  'chunkTest.history.confirmDeleteBody':
+    'هل أنت متأكد أنك تريد حذف سجل الاختبار هذا؟ لا يمكن التراجع عن هذا الإجراء.',
   'chunkTest.history.confirmDeleteTitle': 'حذف الاختبار',
   'chunkTest.history.delete': 'يمسح',
   'chunkTest.history.deleteFailed': 'فشل الحذف',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'جودة الإجابة',
   'chunkTestResults.avgLatency': 'متوسط ​​الكمون (ملي ثانية)',
   'chunkTestResults.back': 'يعود',
-  'chunkTestResults.cancelConfirmBody': 'هل أنت متأكد أنك تريد إلغاء هذا الاختبار؟ سيتوقف الاختبار عند نقطة التفتيش التالية.',
+  'chunkTestResults.cancelConfirmBody':
+    'هل أنت متأكد أنك تريد إلغاء هذا الاختبار؟ سيتوقف الاختبار عند نقطة التفتيش التالية.',
   'chunkTestResults.cancelFailed': 'فشل الإلغاء',
   'chunkTestResults.cancelRequested': 'تم إرسال طلب إلغاء الاختبار',
   'chunkTestResults.cancelTest': 'إلغاء الاختبار',
@@ -89,7 +91,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'اختبار كافة مجموعات البيانات',
   'knowledge.chunkHeader.testUpload': 'اختبار تحميل الوثيقة',
   'knowledge.chunkHeader.title': 'اختبار كتلة RAG',
-  'knowledge.chunkHeader.waitForProcessing': 'يرجى الانتظار حتى اكتمال معالجة المستندات قبل الاختبار',
+  'knowledge.chunkHeader.waitForProcessing':
+    'يرجى الانتظار حتى اكتمال معالجة المستندات قبل الاختبار',
   'knowledge.chunkPreview.empty': 'لا توجد بيانات مقسمة حتى الآن',
   'knowledge.chunkPreview.pageLabel': 'الصفحة {n}',
   'knowledge.chunkPreview.title': 'معاينة جزء المستند — {fileName}',
@@ -108,7 +111,8 @@ export default {
   'knowledge.doc.colStatus': 'ولاية',
   'knowledge.doc.colType': 'يكتب',
   'knowledge.doc.colUploaded': 'وقت التحميل',
-  'knowledge.doc.emptyDescription': 'لا توجد وثيقة حتى الآن. يرجى تحميل المستند للبدء في بناء قاعدة المعرفة.',
+  'knowledge.doc.emptyDescription':
+    'لا توجد وثيقة حتى الآن. يرجى تحميل المستند للبدء في بناء قاعدة المعرفة.',
   'knowledge.doc.errorPrefix': 'خطأ:',
   'knowledge.doc.noData': 'لا توجد بيانات حتى الآن',
   'knowledge.doc.statusCompleted': 'مكتمل',
@@ -124,21 +128,29 @@ export default {
   'knowledge.header.title': 'قاعدة المعرفة الشخصية',
   'knowledge.header.upload': 'تحميل المستندات',
   'knowledge.ragGuide.title': 'كيف تعمل الحزم و RAGs و wiki؟',
-  'knowledge.ragGuide.subtitle': 'ليست هناك حاجة لفهم المصطلحات التقنية، ضع المواد المرجعية في الحزمة أولاً. سيقوم النظام أولاً بإنشاء فهرس RAG قابل للبحث ثم يقوم تلقائيًا بتجميع ملاحظات Wiki القصيرة؛ سيشير الذكاء الاصطناعي إلى كليهما في نفس الوقت عند إنشاء الخريطة.',
+  'knowledge.ragGuide.subtitle':
+    'ليست هناك حاجة لفهم المصطلحات التقنية، ضع المواد المرجعية في الحزمة أولاً. سيقوم النظام أولاً بإنشاء فهرس RAG قابل للبحث ثم يقوم تلقائيًا بتجميع ملاحظات Wiki القصيرة؛ سيشير الذكاء الاصطناعي إلى كليهما في نفس الوقت عند إنشاء الخريطة.',
   'knowledge.ragGuide.step1.title': 'اختر حزمة',
-  'knowledge.ragGuide.step1.body': 'الحزم تشبه المفضلة في Zotero. يمكنك إنشاء ما يصل إلى 3 على اليسار، كل منها عادةً ما يتوافق مع الخريطة الذهنية. انقر على حزمة البيانات في الشريط الجانبي لإدارة المستندات الموجودة فيها.',
+  'knowledge.ragGuide.step1.body':
+    'الحزم تشبه المفضلة في Zotero. يمكنك إنشاء ما يصل إلى 3 على اليسار، كل منها عادةً ما يتوافق مع الخريطة الذهنية. انقر على حزمة البيانات في الشريط الجانبي لإدارة المستندات الموجودة فيها.',
   'knowledge.ragGuide.step2.title': 'إضافة المستندات وفهرستها (RAG)',
-  'knowledge.ragGuide.step2.body': 'تحميل PDF أو Word أو الملاحظات أو صفحات الويب. سيقوم النظام بتقطيع المستندات الطويلة إلى أجزاء يمكن البحث فيها وكتابتها في فهارس متجهة - وهذه هي طبقة RAG التي ستكون جاهزة أولاً.',
+  'knowledge.ragGuide.step2.body':
+    'تحميل PDF أو Word أو الملاحظات أو صفحات الويب. سيقوم النظام بتقطيع المستندات الطويلة إلى أجزاء يمكن البحث فيها وكتابتها في فهارس متجهة - وهذه هي طبقة RAG التي ستكون جاهزة أولاً.',
   'knowledge.ragGuide.step3.title': 'التجميع التلقائي لـ Wikinotes',
-  'knowledge.ragGuide.step3.body': 'بعد اكتمال الفهرسة، تقوم LLM بتجميع صفحات الويكي العامة والموضوعية على القرص. هذه ملاحظات مكثفة (وليست مقتطفات من النص الأصلي) لمساعدتك على فهم بنية الحزمة بسرعة.',
+  'knowledge.ragGuide.step3.body':
+    'بعد اكتمال الفهرسة، تقوم LLM بتجميع صفحات الويكي العامة والموضوعية على القرص. هذه ملاحظات مكثفة (وليست مقتطفات من النص الأصلي) لمساعدتك على فهم بنية الحزمة بسرعة.',
   'knowledge.ragGuide.step4.title': 'استخدم كلاً من wiki وchunking عند البحث',
-  'knowledge.ragGuide.step4.body': 'عند توسيع فرع أو إنشاء ملخص، يقوم النظام أولاً بمطابقة صفحات wiki ذات الصلة ثم يسترد الفقرات المقسمة الأكثر صلة (RAG المختلطة).',
+  'knowledge.ragGuide.step4.body':
+    'عند توسيع فرع أو إنشاء ملخص، يقوم النظام أولاً بمطابقة صفحات wiki ذات الصلة ثم يسترد الفقرات المقسمة الأكثر صلة (RAG المختلطة).',
   'knowledge.ragGuide.step5.title': 'إجابات منظمة العفو الدولية على أساس المصدر',
-  'knowledge.ragGuide.step5.body': 'يقوم الذكاء الاصطناعي بإنشاء المحتوى من خلال الإشارة إلى ملاحظات Wiki والمقتطفات المسترجعة، بدلاً من اختلاقه من لا شيء - كلما كان المصدر أكثر صلة، كلما كان الفهرس والويكي أكثر اكتمالاً، وكانت الخريطة أكثر دقة.',
-  'knowledge.ragGuide.footer': 'نصيحة: سيؤدي فتح "ملخص المستند" في اللوحة أيضًا إلى إنشاء حزمة بيانات تلقائيًا؛ ستظهر أيضًا صفحات الويب المحفوظة بواسطة ملحق Chrome في القائمة الموجودة على اليسار.',
+  'knowledge.ragGuide.step5.body':
+    'يقوم الذكاء الاصطناعي بإنشاء المحتوى من خلال الإشارة إلى ملاحظات Wiki والمقتطفات المسترجعة، بدلاً من اختلاقه من لا شيء - كلما كان المصدر أكثر صلة، كلما كان الفهرس والويكي أكثر اكتمالاً، وكانت الخريطة أكثر دقة.',
+  'knowledge.ragGuide.footer':
+    'نصيحة: سيؤدي فتح "ملخص المستند" في اللوحة أيضًا إلى إنشاء حزمة بيانات تلقائيًا؛ ستظهر أيضًا صفحات الويب المحفوظة بواسطة ملحق Chrome في القائمة الموجودة على اليسار.',
   'knowledge.pipeline.title': 'حالة خط الأنابيب',
   'knowledge.pipeline.ragIdle': 'مؤشر راج',
-  'knowledge.pipeline.ragIdleDetail': 'لا توجد حزم مفهرسة حتى الآن. الرجاء إضافة مصادر إلى الحزمة وإجراء الفهرسة.',
+  'knowledge.pipeline.ragIdleDetail':
+    'لا توجد حزم مفهرسة حتى الآن. الرجاء إضافة مصادر إلى الحزمة وإجراء الفهرسة.',
   'knowledge.pipeline.ragProcessing': 'فهرسة RAG',
   'knowledge.pipeline.ragProcessingDetail': 'لا تزال حزم {count} مقسمة ومتجهة.',
   'knowledge.pipeline.ragReady': 'RAG جاهز',
@@ -164,7 +176,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'قم بإلغاء تحديد الكل',
   'knowledge.manualEval.dialogTitle': 'التقييم اليدوي — {method}',
   'knowledge.manualEval.groundTruthLabel': 'الإجابة القياسية (اختياري)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'أدخل الإجابات القياسية لتقييم مدى ملاءمة الإجابة...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'أدخل الإجابات القياسية لتقييم مدى ملاءمة الإجابة...',
   'knowledge.manualEval.metric.answer_coverage': 'تغطية الإجابة',
   'knowledge.manualEval.metric.answer_faithfulness': 'الإجابة الإخلاص',
   'knowledge.manualEval.metric.clarity': 'الوضوح',
@@ -186,7 +199,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'كتلة تقييم الجودة',
   'knowledge.manualEval.resultsTitle': 'نتائج التقييم',
   'knowledge.manualEval.selectAll': 'حدد الكل',
-  'knowledge.manualEval.selectChunksHeading': 'حدد الأجزاء المراد تقييمها (اتركها فارغة لتقييم الكل)',
+  'knowledge.manualEval.selectChunksHeading':
+    'حدد الأجزاء المراد تقييمها (اتركها فارغة لتقييم الكل)',
   'knowledge.manualEval.showingFirst20': 'يتم عرض أول 20 من بلاطات {total}',
   'knowledge.manualEval.startEvaluation': 'ابدأ التقييم',
   'knowledge.processing.chunking': 'التقطيع',
@@ -235,7 +249,8 @@ export default {
   'knowledge.settings.retrievalSection': 'استرداد الإعدادات',
   'knowledge.settings.title': 'إعدادات قاعدة المعرفة',
   'knowledge.settings.helpTitle': 'كيفية تفعيل هذه الإعدادات',
-  'knowledge.settings.helpBody': 'تتوفر الخيارات ذات الصلة بالاسترجاع على الفور للبحث وإجابات الذكاء الاصطناعي. لا ينطبق حجم القطعة والتداخل إلا على المستندات المفهرسة حديثًا - يرجى إعادة فهرسة المصادر الموجودة بعد التعديلات.',
+  'knowledge.settings.helpBody':
+    'تتوفر الخيارات ذات الصلة بالاسترجاع على الفور للبحث وإجابات الذكاء الاصطناعي. لا ينطبق حجم القطعة والتداخل إلا على المستندات المفهرسة حديثًا - يرجى إعادة فهرسة المصادر الموجودة بعد التعديلات.',
   'knowledge.settings.tokens': 'رمز مميز',
   'knowledge.settings.serverSection': 'الخادم (للقراءة فقط)',
   'knowledge.settings.rerankingMode': 'إعادة الترتيب',
@@ -246,7 +261,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'مغلق',
   'knowledge.settings.saveSuccess': 'تم حفظ الإعدادات',
   'knowledge.settings.saveFailed': 'فشل في حفظ الإعدادات',
-  'knowledge.settings.reindexRequired': 'تم تغيير معلمات التقطيع - يرجى إعادة فهرسة المستندات الموجودة في الحزمة لتصبح سارية المفعول.',
+  'knowledge.settings.reindexRequired':
+    'تم تغيير معلمات التقطيع - يرجى إعادة فهرسة المستندات الموجودة في الحزمة لتصبح سارية المفعول.',
   'knowledge.upload.click': 'انقر للتحميل',
   'knowledge.upload.drag': 'أو قم بسحب وإسقاط الملفات هنا',
   'knowledge.upload.fileTooLarge': 'لا يمكن أن يتجاوز حجم الملف 10 ميغابايت',
@@ -254,7 +270,8 @@ export default {
   'knowledge.upload.maxDocs': 'تم الوصول إلى الحد الأقصى لعدد المستندات (5)',
   'knowledge.upload.title': 'تحميل المستندات',
   'knowledge.upload.unsupportedType': 'أنواع الملفات غير المدعومة',
-  'knowledgeSpace.confirmDeleteBody': 'هل أنت متأكد أنك تريد حذف هذا المستند؟ ولا يمكن استعادتها بعد الحذف.',
+  'knowledgeSpace.confirmDeleteBody':
+    'هل أنت متأكد أنك تريد حذف هذا المستند؟ ولا يمكن استعادتها بعد الحذف.',
   'knowledgeSpace.confirmDeleteTitle': 'تأكيد الحذف',
   'knowledgeSpace.deleteFailed': 'فشل الحذف',
   'knowledgeSpace.documentDeleted': 'تم حذف المستند',

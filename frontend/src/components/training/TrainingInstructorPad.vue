@@ -4,8 +4,8 @@ import { useRoute } from 'vue-router'
 
 import TrainingPlayControls from '@/components/training/TrainingPlayControls.vue'
 import {
-  trainingSteerMode,
   type TrainingSteerMode,
+  trainingSteerMode,
 } from '@/composables/training/applyTrainingSnapshot'
 import {
   requestTrainingEnd,
@@ -37,9 +37,7 @@ function onMode(next: TrainingSteerMode): void {
   requestTrainingFree(next === 'free')
 }
 
-const railOpen = computed(() =>
-  isTrainingRailVisible(authStore.isPlatformLevel, training.isActive)
-)
+const railOpen = computed(() => isTrainingRailVisible(authStore.isPlatformLevel, training.isActive))
 const { padStyle } = useTrainingPadAnchor(railOpen)
 </script>
 

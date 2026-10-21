@@ -69,9 +69,7 @@ function withinSuccessfulRefreshGrace(): boolean {
  * ``epochAtFailure`` (or a successful refresh is still within grace), return
  * true without rotating again; else refresh once.
  */
-export async function ensureFreshSessionAfterAuthFailure(
-  epochAtFailure: number
-): Promise<boolean> {
+export async function ensureFreshSessionAfterAuthFailure(epochAtFailure: number): Promise<boolean> {
   if (isMindgraphHeadlessExportSession()) {
     return false
   }

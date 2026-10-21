@@ -14,11 +14,15 @@ const MIND_MAP_RIBBON_TAB_ALIASES: Record<string, MindMapRibbonTabId> = {
 
 const MIND_MAP_RIBBON_TAB_SET = new Set<string>(MIND_MAP_RIBBON_TABS)
 
-export function isMindMapRibbonTabId(value: string | null | undefined): value is MindMapRibbonTabId {
+export function isMindMapRibbonTabId(
+  value: string | null | undefined
+): value is MindMapRibbonTabId {
   return typeof value === 'string' && MIND_MAP_RIBBON_TAB_SET.has(value)
 }
 
-export function normalizeMindMapRibbonTabId(value: string | null | undefined): MindMapRibbonTabId | null {
+export function normalizeMindMapRibbonTabId(
+  value: string | null | undefined
+): MindMapRibbonTabId | null {
   if (typeof value !== 'string') return null
   const id = value.trim().toLowerCase()
   const mapped = MIND_MAP_RIBBON_TAB_ALIASES[id] ?? id

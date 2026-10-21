@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Метод обучения Мэтта',
-  'maite.subtitle': 'Обратная декомпозиция · Диагностика четвертого порядка · Целенаправленная коррекция · Вариантная миграция',
+  'maite.subtitle':
+    'Обратная декомпозиция · Диагностика четвертого порядка · Целенаправленная коррекция · Вариантная миграция',
   'maite.mode.demo': 'Демо',
   'maite.mode.inquiry': 'Исследовать',
   'maite.mode.map': 'Атлас',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Вариации',
   'maite.inquiry.complete': 'Завершить сеанс',
   'maite.inquiry.completedTitle': 'Исследование завершено',
-  'maite.inquiry.completedMessage': 'Исследование завершено, и отчет об обучении можно просмотреть.',
+  'maite.inquiry.completedMessage':
+    'Исследование завершено, и отчет об обучении можно просмотреть.',
   'maite.diagnosis.thinkingPlaceholder': 'Опишите свой подход к решению проблемы (необязательно)…',
   'maite.diagnosis.runAuto': 'Автоматическая диагностика',
   'maite.diagnosis.running': 'Диагностика…',
@@ -79,13 +81,15 @@ export default {
   'maite.errors.generic': 'Операция не удалась, повторите попытку позже.',
   'maite.errors.decompose_failed': 'Разложение не удалось',
   'maite.errors.follow_up_failed': 'Допрос не удался',
-  'maite.errors.ocr_failed': 'Не удалось распознать OCR. Повторите попытку, используя другое изображение.',
+  'maite.errors.ocr_failed':
+    'Не удалось распознать OCR. Повторите попытку, используя другое изображение.',
   'maite.errors.create_failed': 'Не удалось создать сеанс исследования.',
   'maite.errors.submit_failed': 'Не удалось отправить таблицу разложения.',
   'maite.errors.diagnosis_failed': 'Диагностика не удалась',
   'maite.errors.remedy_failed': 'Не удалось создать целевую задачу исправления.',
   'maite.errors.variant_failed': 'Задача создания варианта не удалась',
-  'maite.errors.variants_incomplete': 'Пожалуйста, отправьте как минимум 3 варианта до завершения сеанса.',
+  'maite.errors.variants_incomplete':
+    'Пожалуйста, отправьте как минимум 3 варианта до завершения сеанса.',
   'maite.errors.variant_answer_required': 'Требуются ответы и стратегии миграции',
   'maite.errors.variant_submit_failed': 'Не удалось отправить вариант',
   'maite.errors.load_failed': 'Загрузка сеанса не удалась',
@@ -98,7 +102,8 @@ export default {
   'maite.toast.ocr_success': 'Текст вопроса извлечен из изображения.',
   'maite.toast.decompose_started': 'Начать разбор репетиторов...',
   'maite.toast.decompose_complete': 'Разложение завершено',
-  'maite.toast.decompose_fallback': 'Время потоковой передачи истекло. Вместо этого используйте полный ответ, чтобы продолжить...',
+  'maite.toast.decompose_fallback':
+    'Время потоковой передачи истекло. Вместо этого используйте полный ответ, чтобы продолжить...',
   'maite.toast.practice_saved': 'Сохранено в недавних упражнениях.',
   'maite.toast.session_created': 'Изучите сеанс, созданный',
   'maite.toast.session_completed': 'Сеанс изучения завершен',

@@ -9,14 +9,7 @@
  */
 import { onUnmounted, ref } from 'vue'
 
-import {
-  ElButton,
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-  ElPopover,
-  ElTooltip,
-} from 'element-plus'
+import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElPopover } from 'element-plus'
 
 import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 

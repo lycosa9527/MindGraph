@@ -8,18 +8,19 @@ Proprietary License
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 from uuid import uuid4
 
 from redis.exceptions import RedisError
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from models.domain.auth import User
-from models.domain.mindmate_collab import MindmateCollabSession
+from models.domain.mindmate_collab import MindmateCollabMember, MindmateCollabSession
 from services.auth.expert_live_scope import bound_org_label
 from services.auth.expert_school_binding import bound_org_ids_for_user
 from services.features.mindmate_collab.config import (
@@ -31,6 +32,12 @@ from services.features.mindmate_collab.config import (
     MINDMATE_COLLAB_SESSION_TTL,
 )
 from services.features.mindmate_collab.dify_stream_control import abort_dify_stream
+from services.features.mindmate_collab.group_members import (
+    accepted_member_ids,
+    actor_is_seminar_leader,
+    list_group_member_ids,
+    seed_closed_group,
+)
 from services.features.mindmate_collab.message_cursor import remember_latest_collab_message_id
 from services.features.mindmate_collab.message_history import (
     CollabHistoryPage,
@@ -63,7 +70,6 @@ from services.online_collab.lifecycle.online_collab_expiry import (
     compute_online_collab_expires_at,
     duration_allowed_for_visibility,
     expires_at_to_unix,
-    is_online_collab_expired,
     redis_ttl_seconds_for_expires_at,
 )
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
@@ -91,8 +97,7 @@ class MindmateCollabManager:
     """Orchestrates MindMate shared chatroom sessions."""
 
     async def _count_live_org_sessions(self, org_id: int) -> int:
-        """Count non-expired organization-visible rooms for one org."""
-        now_naive = datetime.now(tz=UTC).replace(tzinfo=None)
+        """Count live organization-visible rooms for one org (host End sets ended_at)."""
         async with system_rls_session() as db:
             result = await db.execute(
                 select(func.count())
@@ -101,10 +106,6 @@ class MindmateCollabManager:
                     MindmateCollabSession.organization_id == org_id,
                     MindmateCollabSession.visibility == ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
                     MindmateCollabSession.ended_at.is_(None),
-                    or_(
-                        MindmateCollabSession.expires_at.is_(None),
-                        MindmateCollabSession.expires_at > now_naive,
-                    ),
                 ),
             )
             return int(result.scalar_one() or 0)
@@ -133,6 +134,11 @@ class MindmateCollabManager:
         title: Optional[str] = None,
         duration: str = MINDMATE_COLLAB_DEFAULT_DURATION,
         seed_messages: Optional[List[Dict[str, Any]]] = None,
+        member_user_ids: Optional[List[int]] = None,
+        member_roles: Optional[Mapping[int, str]] = None,
+        brief_topic: Optional[str] = None,
+        brief_goals: Optional[List[str]] = None,
+        close_group: bool = False,
     ) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
         """Create a MindMate collab room; return (payload, error message)."""
         if not duration_allowed_for_visibility(visibility, duration):
@@ -149,8 +155,6 @@ class MindmateCollabManager:
             return None, "Please retry starting the room"
 
         try:
-            await self.stop_hosted_sessions_for_user(user_id)
-
             async with user_rls_session(user_id) as db:
                 user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
                 if not user:
@@ -176,12 +180,22 @@ class MindmateCollabManager:
                     candidate = await _allocate_unique_online_collab_code(redis)
                     if not candidate:
                         candidate = generate_online_collab_code()
+                    topic = (brief_topic or title or "").strip()[:200] or None
+                    goals_raw = [
+                        str(item).strip()
+                        for item in (brief_goals or [])
+                        if str(item).strip()
+                    ][:20]
+                    goals_json = json.dumps(goals_raw, ensure_ascii=False) if goals_raw else None
                     row = MindmateCollabSession(
                         id=session_id,
                         code=candidate,
                         organization_id=org_id,
                         owner_user_id=user_id,
-                        title=(title or "").strip() or "MindMate Collab",
+                        title=(title or topic or "MindMate Collab").strip()[:200]
+                        or "MindMate Collab",
+                        brief_topic=topic,
+                        brief_goals=goals_json,
                         visibility=visibility,
                         duration_preset=duration,
                         started_at=started_at,
@@ -204,6 +218,21 @@ class MindmateCollabManager:
                     return None, seed_error
                 if normalized_seed:
                     await persist_seed_messages(db, session_id, normalized_seed)
+
+            # Public rooms are always a closed group. School colleagues are
+            # accepted immediately; teachers outside the host school stay pending.
+            if code and (
+                close_group
+                or member_user_ids
+                or visibility == ONLINE_COLLAB_VISIBILITY_NETWORK
+            ):
+                await seed_closed_group(
+                    session_id,
+                    user_id,
+                    member_user_ids or [],
+                    roles_by_user=member_roles,
+                    organization_id=org_id,
+                )
 
             redis_ok = await self._write_redis_session(
                 code=code,
@@ -328,11 +357,20 @@ class MindmateCollabManager:
         session = await self.load_session_by_code(code)
         if not session:
             return None
-        if session.expires_at and is_online_collab_expired(session.expires_at):
-            return None
+        # Duration presets are advisory; seminars end only when the host clicks End.
         if not await self._validate_join_permissions(session, user_id):
             return None
         return await self._session_payload(session)
+
+    async def _closed_group_allows(self, session: MindmateCollabSession, user_id: int) -> bool:
+        """Membership gate. Public rooms are never open to a code holder."""
+        member_ids = await list_group_member_ids(session.id)
+        if session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK and not member_ids:
+            return True
+        if int(user_id) == int(session.owner_user_id):
+            return True
+        accepted = await accepted_member_ids(session.id)
+        return int(user_id) in set(accepted)
 
     async def _validate_join_permissions(
         self,
@@ -341,6 +379,8 @@ class MindmateCollabManager:
     ) -> bool:
         """Return True when the user may join; participant registration happens on WS connect."""
         if await self.session_is_closing(session.code):
+            return False
+        if not await self._closed_group_allows(session, user_id):
             return False
         async with user_rls_session(user_id, organization_id=session.organization_id) as db:
             allowed = await user_may_join_mindmate_collab(
@@ -367,9 +407,13 @@ class MindmateCollabManager:
 
     async def user_may_connect(self, user_id: int, session: MindmateCollabSession) -> bool:
         """Return True when user may open a WebSocket to this room."""
-        if session.expires_at and is_online_collab_expired(session.expires_at):
+        # Duration presets are advisory; a seminar ends only when its leader stops it.
+        if not await self._closed_group_allows(session, user_id):
             return False
         if session.visibility == ONLINE_COLLAB_VISIBILITY_NETWORK:
+            return True
+        member_ids = await list_group_member_ids(session.id)
+        if member_ids:
             return True
         async with user_rls_session(user_id, organization_id=session.organization_id) as db:
             return await user_may_join_mindmate_collab(
@@ -382,16 +426,51 @@ class MindmateCollabManager:
 
     async def _session_payload(self, session: MindmateCollabSession) -> Dict[str, Any]:
         count = await self.participant_count(session.code)
+        goals: list[str] = []
+        if session.brief_goals:
+            try:
+                parsed = json.loads(session.brief_goals)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                parsed = []
+            if isinstance(parsed, list):
+                goals = [str(item).strip() for item in parsed if str(item).strip()]
         return {
             "session_id": session.id,
             "code": session.code,
             "title": session.title,
+            "brief_topic": (session.brief_topic or "").strip() or None,
+            "brief_goals": goals,
             "visibility": session.visibility,
             "owner_user_id": session.owner_user_id,
             "organization_id": session.organization_id,
             "participant_count": count,
             "expires_at": session.expires_at.isoformat() + "Z" if session.expires_at else None,
         }
+
+    async def update_session_title(
+        self,
+        session_id: str,
+        actor_user_id: int,
+        title: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Rename a live seminar. Only the host may change the title."""
+        cleaned = (title or "").strip()[:200]
+        if not cleaned:
+            return None
+        async with system_rls_session() as db:
+            session = (
+                await db.execute(
+                    select(MindmateCollabSession).where(MindmateCollabSession.id == session_id),
+                )
+            ).scalar_one_or_none()
+            if session is None or session.ended_at is not None:
+                return None
+            if int(session.owner_user_id) != int(actor_user_id):
+                return None
+            session.title = cleaned
+            await db.commit()
+            await db.refresh(session)
+        return await self._session_payload(session)
 
     async def _host_stop_already_settled(
         self,
@@ -434,7 +513,7 @@ class MindmateCollabManager:
                 org_id = session.organization_id
                 visibility = session.visibility
         else:
-            async with user_rls_session(actor_user_id) as db:
+            async with system_rls_session() as db:
                 session = (
                     await db.execute(
                         select(MindmateCollabSession).where(MindmateCollabSession.id == session_id),
@@ -447,11 +526,23 @@ class MindmateCollabManager:
                         reason,
                     )
                 if session.ended_at is not None:
-                    if session.owner_user_id != actor_user_id:
+                    if reason not in {"owner", "single_host"}:
                         return False
-                    return reason in {"owner", "single_host"}
-                if reason == "owner" and session.owner_user_id != actor_user_id:
-                    return False
+                    if session.owner_user_id == actor_user_id:
+                        return True
+                    return await actor_is_seminar_leader(
+                        session_id,
+                        session.owner_user_id,
+                        actor_user_id,
+                    )
+                if reason == "owner":
+                    is_leader = await actor_is_seminar_leader(
+                        session_id,
+                        session.owner_user_id,
+                        actor_user_id,
+                    )
+                    if not is_leader:
+                        return False
                 code = session.code
                 org_id = session.organization_id
                 visibility = session.visibility
@@ -515,19 +606,57 @@ class MindmateCollabManager:
         }
 
     async def get_hosted_session(self, user_id: int) -> Optional[Dict[str, Any]]:
-        """Return payload for the user's active hosted session, if any."""
+        """Return payload for the user's newest live hosted session, if any."""
         async with user_rls_session(user_id) as db:
             session = (
                 await db.execute(
-                    select(MindmateCollabSession).where(
+                    select(MindmateCollabSession)
+                    .where(
                         MindmateCollabSession.owner_user_id == user_id,
                         MindmateCollabSession.ended_at.is_(None),
-                    ),
+                    )
+                    .order_by(MindmateCollabSession.started_at.desc())
+                    .limit(1),
                 )
             ).scalar_one_or_none()
         if not session:
             return None
         return await self._session_payload(session)
+
+    async def list_accessible_live_sessions(self, user_id: int) -> List[Dict[str, Any]]:
+        """Live rooms this user hosts, plus rooms they have already agreed to join."""
+        async with user_rls_session(user_id) as db:
+            owned = (
+                await db.execute(
+                    select(MindmateCollabSession)
+                    .where(
+                        MindmateCollabSession.owner_user_id == user_id,
+                        MindmateCollabSession.ended_at.is_(None),
+                    )
+                    .order_by(MindmateCollabSession.started_at.desc()),
+                )
+            ).scalars().all()
+        async with system_rls_session() as db:
+            joined = (
+                await db.execute(
+                    select(MindmateCollabSession)
+                    .join(
+                        MindmateCollabMember,
+                        MindmateCollabMember.session_id == MindmateCollabSession.id,
+                    )
+                    .where(
+                        MindmateCollabMember.user_id == user_id,
+                        MindmateCollabMember.accepted.is_(True),
+                        MindmateCollabSession.ended_at.is_(None),
+                        MindmateCollabSession.owner_user_id != user_id,
+                    )
+                    .order_by(MindmateCollabSession.started_at.desc()),
+                )
+            ).scalars().all()
+        payloads: List[Dict[str, Any]] = []
+        for session in list(owned) + list(joined):
+            payloads.append(await self._session_payload(session))
+        return payloads
 
     async def session_is_closing(self, code: str) -> bool:
         """True when the room is in a stop/teardown window and must reject new joins."""
@@ -676,25 +805,15 @@ class MindmateCollabManager:
                 pass
             return
         now = int(time.time())
-        safety_ttl_sec = MINDMATE_COLLAB_PARTICIPANTS_TTL
+        # Keep live Redis meta alive while the room has activity; host End clears it.
+        safety_ttl_sec = MINDMATE_COLLAB_SESSION_TTL * 14
         try:
             pipe = redis.pipeline(transaction=False)
             pipe.hset(meta_key, "last_activity", str(now))
             pipe.zadd(idle_scores_key(), {norm: now})
+            pipe.expire(meta_key, safety_ttl_sec)
+            pipe.expire(code_to_session_key(norm), safety_ttl_sec)
             await pipe.execute()
-            try:
-                await redis.execute_command(
-                    "EXPIRE",
-                    meta_key,
-                    safety_ttl_sec,
-                    "GT",
-                )
-            except RedisError as exp_exc:
-                logger.debug(
-                    "[MindmateCollab] touch_activity EXPIRE GT skipped code=%s: %s",
-                    norm,
-                    exp_exc,
-                )
         except REDIS_ERRORS:
             pass
 

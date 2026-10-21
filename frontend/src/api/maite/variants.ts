@@ -1,9 +1,9 @@
 /**
  * Maite variant practice API.
  */
-import { maiteRequestJson } from './client'
-
 import type { MaiteVariantTask } from '@/types/maite'
+
+import { maiteRequestJson } from './client'
 
 export interface VariantSubmissionInput {
   student_answer: string

@@ -1,9 +1,14 @@
 /**
  * Canvas owner must clear ownsKittySession when disabled or scope emptied.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPinia, setActivePinia } from 'pinia'
 import { computed, effectScope, nextTick, ref } from 'vue'
+
+import { createPinia, setActivePinia } from 'pinia'
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useKittyCanvasOwnerAgent } from '@/composables/kitty/useKittyCanvasOwnerAgent'
+import { useKittySessionStore } from '@/stores/kittySession'
 
 const { startConversation, stopConversation, isConnected, isLiveForScope } = vi.hoisted(() => {
   const isConnected = { value: false }
@@ -67,9 +72,6 @@ vi.mock('@/composables/core/useEventBus', () => ({
     emit: vi.fn(),
   },
 }))
-
-import { useKittyCanvasOwnerAgent } from '@/composables/kitty/useKittyCanvasOwnerAgent'
-import { useKittySessionStore } from '@/stores/kittySession'
 
 describe('useKittyCanvasOwnerAgent ownership reset', () => {
   beforeEach(() => {

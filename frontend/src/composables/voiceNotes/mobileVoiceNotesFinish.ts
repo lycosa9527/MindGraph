@@ -129,12 +129,12 @@ export function resolveVoiceNotesActions(input: {
     canCopy: input.hasTranscript,
     canJump: !input.bootstrapping && !pipelineBusy,
     canGenerate:
-      sessionOn
-      && !pipelineBusy
-      && !handshake
-      && input.hasTranscript
-      && !input.hasActiveCapture
-      && !input.recording,
+      sessionOn &&
+      !pipelineBusy &&
+      !handshake &&
+      input.hasTranscript &&
+      !input.hasActiveCapture &&
+      !input.recording,
   }
 }
 

@@ -5,7 +5,8 @@
 
 export default {
   'collab.codeCopied': 'código copiado',
-  'collab.codeGenerated': 'O código de colaboração foi gerado e pode ser compartilhado com outras pessoas para edição conjunta.',
+  'collab.codeGenerated':
+    'O código de colaboração foi gerado e pode ser compartilhado com outras pessoas para edição conjunta.',
   'collab.copy': 'Copiar',
   'collab.copyFailed': 'Falha na cópia',
   'collab.copyLink': 'Copiar link',
@@ -20,8 +21,10 @@ export default {
   'collab.endFailed': 'Falha ao encerrar a colaboração',
   'collab.ended': 'Colaboração encerrada',
   'collab.galleryFull': 'A galeria está cheia, exclua um ícone e tente novamente',
-  'collab.hintNetworkInactive': 'Depois de gerar o código de convite, outras pessoas podem usar o código para ingressar e editar juntas.',
-  'collab.hintSchoolInactive': 'Depois de ativá-lo, os colegas podem adicioná-lo à lista da página inicial “Colaboração → Colaboração no Campus”.',
+  'collab.hintNetworkInactive':
+    'Depois de gerar o código de convite, outras pessoas podem usar o código para ingressar e editar juntas.',
+  'collab.hintSchoolInactive':
+    'Depois de ativá-lo, os colegas podem adicioná-lo à lista da página inicial “Colaboração → Colaboração no Campus”.',
   'collab.invalidDiagramData': 'Os dados do ícone são inválidos',
   'collab.linkCopied': 'Link copiado',
   'collab.networkError': 'erro de rede',
@@ -33,13 +36,16 @@ export default {
   'collab.previousSessionsStopped': 'Suas sessões de colaboração {n} em outros ícones terminaram.',
   'collab.saveFailed': 'Falha ao salvar',
   'collab.scanToJoin': 'Digitalize o código para participar',
-  'collab.schoolDescActive': 'A colaboração na escola foi iniciada. Colegas, abram "Colaboração → Colaboração no Campus" na página inicial do MindGraph e selecionem este ícone na lista para ingressar (não é necessário código de convite).',
-  'collab.schoolStarted': 'A colaboração no campus foi habilitada. Os colegas podem participar em "Colaboração → Colaboração no Campus"',
+  'collab.schoolDescActive':
+    'A colaboração na escola foi iniciada. Colegas, abram "Colaboração → Colaboração no Campus" na página inicial do MindGraph e selecionem este ícone na lista para ingressar (não é necessário código de convite).',
+  'collab.schoolStarted':
+    'A colaboração no campus foi habilitada. Os colegas podem participar em "Colaboração → Colaboração no Campus"',
   'collab.sectionNetwork': 'Colaborar juntos (código de convite)',
   'collab.sectionSchool': 'Colaboração no campus',
   'collab.sessionDuration': 'Duração da sessão',
   'collab.sessionRemaining': 'Sessão restante',
-  'collab.shareDescNetwork': 'Compartilhe o código ou link do convite e a outra parte poderá participar digitando seu número em "Colaboração → Colaboração".',
+  'collab.shareDescNetwork':
+    'Compartilhe o código ou link do convite e a outra parte poderá participar digitando seu número em "Colaboração → Colaboração".',
   'collab.start': 'Habilite a colaboração',
   'collab.startFailed': 'Falha ao iniciar a colaboração: {msg}',
   'collab.title': 'Colaboração on-line',
@@ -52,18 +58,25 @@ export default {
   'workshop.announceChannels': 'Anúncios',
   'workshop.announceReadOnlyHint': 'Somente administradores podem falar neste canal de anúncios.',
   'workshop.archiveLessonStudy': 'Arquivar exemplos de aulas',
-  'workshop.archiveLessonStudyConfirm': 'Tem certeza de que deseja arquivar esta lição? Os membros não verão mais a lição na lista.',
+  'workshop.archiveLessonStudyConfirm':
+    'Tem certeza de que deseja arquivar esta lição? Os membros não verão mais a lição na lista.',
   'workshop.archiveTeachingGroup': 'Grupo de ensino e pesquisa em arquivo',
-  'workshop.archiveTeachingGroupConfirm': 'Tem certeza de que deseja arquivar este grupo de ensino e pesquisa? Após o arquivamento, não aparecerá mais na lista dos grupos de ensino e pesquisa.',
+  'workshop.archiveTeachingGroupConfirm':
+    'Tem certeza de que deseja arquivar este grupo de ensino e pesquisa? Após o arquivamento, não aparecerá mais na lista dos grupos de ensino e pesquisa.',
   'workshop.archiveAnnounceChannel': 'Canal de anúncio de arquivo',
-  'workshop.archiveAnnounceChannelConfirm': 'Tem certeza de que deseja arquivar este canal de anúncios? A barra lateral não será mais exibida, mas a mensagem permanecerá.',
+  'workshop.archiveAnnounceChannelConfirm':
+    'Tem certeza de que deseja arquivar este canal de anúncios? A barra lateral não será mais exibida, mas a mensagem permanecerá.',
   'workshop.deleteTeachingGroup': 'Excluir grupo de ensino e pesquisa',
-  'workshop.deleteTeachingGroupConfirm': 'Tem certeza de que deseja excluir permanentemente este grupo de ensino e pesquisa, suas aulas e mensagens? Esta ação não pode ser desfeita.',
+  'workshop.deleteTeachingGroupConfirm':
+    'Tem certeza de que deseja excluir permanentemente este grupo de ensino e pesquisa, suas aulas e mensagens? Esta ação não pode ser desfeita.',
   'workshop.deleteAnnounceChannel': 'Excluir canal de anúncios',
-  'workshop.deleteAnnounceChannelConfirm': 'Tem certeza de que deseja excluir permanentemente este canal de anúncios e suas mensagens? Esta ação não pode ser desfeita.',
+  'workshop.deleteAnnounceChannelConfirm':
+    'Tem certeza de que deseja excluir permanentemente este canal de anúncios e suas mensagens? Esta ação não pode ser desfeita.',
   'workshop.deleteLessonStudy': 'Excluir lição',
-  'workshop.deleteLessonStudyConfirm': 'Tem certeza de que deseja excluir permanentemente esta lição e suas mensagens? Esta ação não pode ser desfeita.',
-  'workshop.manageNeedAdmin': 'Somente administradores escolares podem adicionar grupos de ensino e pesquisa. Os administradores ou o criador do grupo podem excluir.',
+  'workshop.deleteLessonStudyConfirm':
+    'Tem certeza de que deseja excluir permanentemente esta lição e suas mensagens? Esta ação não pode ser desfeita.',
+  'workshop.manageNeedAdmin':
+    'Somente administradores escolares podem adicionar grupos de ensino e pesquisa. Os administradores ou o criador do grupo podem excluir.',
   'workshop.math': 'fórmula',
   'workshop.backToConversations': '← Lista de Conversas',
   'workshop.bold': 'Audacioso',
@@ -77,9 +90,11 @@ export default {
   'workshop.channelAvatarEmoji': 'ícone (opcional)',
   'workshop.channelAvatarPlaceholder': 'Emoticons ou tags curtas',
   'workshop.channelColor': 'cor do canal',
-  'workshop.channelInviteReceived': 'Você foi adicionado ao grupo de ensino e pesquisa "{name}". Abra o clube de estudos para visualizar.',
+  'workshop.channelInviteReceived':
+    'Você foi adicionado ao grupo de ensino e pesquisa "{name}". Abra o clube de estudos para visualizar.',
   'workshop.channelKindGroup': 'Grupo de ensino e pesquisa (grupo superior)',
-  'workshop.channelKindLessonStudy': 'Exemplos de aulas (pendurados em um determinado grupo de ensino e pesquisa)',
+  'workshop.channelKindLessonStudy':
+    'Exemplos de aulas (pendurados em um determinado grupo de ensino e pesquisa)',
   'workshop.channelNameLabel': 'nome',
   'workshop.channelNamePlaceholder': 'Por exemplo: grupo de ensino e pesquisa STEM',
   'workshop.channelSearchNoMatches': 'Nenhuma mensagem correspondente.',
@@ -106,14 +121,16 @@ export default {
   'workshop.contactsOnlineNow': 'on-line',
   'workshop.contactsRecentlyOnline': 'On-line recentemente',
   'workshop.conversationTitle': 'título do tópico',
-  'workshop.conversationTitlePlaceholder': 'Por exemplo: discussão coletiva de preparação de aula, reflexão docente',
+  'workshop.conversationTitlePlaceholder':
+    'Por exemplo: discussão coletiva de preparação de aula, reflexão docente',
   'workshop.conversations': 'diálogo',
   'workshop.copyLink': 'Copiar link',
   'workshop.copyMentionSyntax': 'copiar sintaxe de menção',
   'workshop.create': 'criar',
   'workshop.createChannelFailed': 'Falha na criação',
   'workshop.createChannelNeedParent': 'Selecione primeiro seu grupo de ensino e pesquisa.',
-  'workshop.createChannelNoGroupsYet': 'Crie primeiro um grupo de ensino e pesquisa e depois adicione exemplos de aulas.',
+  'workshop.createChannelNoGroupsYet':
+    'Crie primeiro um grupo de ensino e pesquisa e depois adicione exemplos de aulas.',
   'workshop.createChannelSuccess': 'Canal criado',
   'workshop.createStudyCaseHint': 'Crie um tópico para começar',
   'workshop.cycleStudyStatus': 'Mudar status de treinamento',
@@ -131,7 +148,8 @@ export default {
   'workshop.diagram': 'Ilustração',
   'workshop.diagramInsertFailed': 'Falha ao inserir ícone',
   'workshop.diagramInserting': 'Inserindo ícone…',
-  'workshop.diagramPickerEmpty': 'A biblioteca de imagens está vazia, primeiro salve uma imagem na tela.',
+  'workshop.diagramPickerEmpty':
+    'A biblioteca de imagens está vazia, primeiro salve uma imagem na tela.',
   'workshop.diagramPickerTitle': 'Escolha na minha biblioteca de ícones',
   'workshop.directMessage': 'mensagem privada',
   'workshop.directMessages': 'mensagem privada',
@@ -155,7 +173,8 @@ export default {
   'workshop.gearMenu': 'Opções',
   'workshop.generalChat': 'Discussão abrangente',
   'workshop.inbox': 'Caixa de entrada',
-  'workshop.inboxHintPickChannel': 'Abra o grupo de tópicos, exemplo de lição ou mensagem privada na barra lateral para ler e responder. Você pode retornar a esta página a qualquer momento em Visualizar → Caixa de entrada.',
+  'workshop.inboxHintPickChannel':
+    'Abra o grupo de tópicos, exemplo de lição ou mensagem privada na barra lateral para ler e responder. Você pode retornar a esta página a qualquer momento em Visualizar → Caixa de entrada.',
   'workshop.inboxSummaryTitle': 'sua caixa de entrada',
   'workshop.inboxUnreadChannels': 'Canal não lido',
   'workshop.inboxUnreadDms': 'Mensagem privada não lida',
@@ -181,14 +200,17 @@ export default {
   'workshop.loadMore': 'carregar mais',
   'workshop.mainChannelStream': 'canal principal',
   'workshop.manageTeachingGroups': 'Grupo de ensino e pesquisa em administração',
-  'workshop.manageTeachingGroupsBlurb': 'Você pode adicionar ou arquivar grupos de ensino e pesquisa, defini-los como públicos ou privados, modificar o nome e a introdução, ajustar a ordem da lista, copiar o grupo de ensino e pesquisa como modelo e convidar colegas para participar. Use "Configurações avançadas" para permissões e notificações de postagem. Após o arquivamento, o grupo não ficará mais visível para toda a escola.',
+  'workshop.manageTeachingGroupsBlurb':
+    'Você pode adicionar ou arquivar grupos de ensino e pesquisa, defini-los como públicos ou privados, modificar o nome e a introdução, ajustar a ordem da lista, copiar o grupo de ensino e pesquisa como modelo e convidar colegas para participar. Use "Configurações avançadas" para permissões e notificações de postagem. Após o arquivamento, o grupo não ficará mais visível para toda a escola.',
   'workshop.manageUser': 'Gerenciar este usuário',
   'workshop.markAllReadChannel': 'Marcar todas as mensagens como lidas',
   'workshop.markAsRead': 'Marcar como lido',
   'workshop.markStudyResolved': 'Marcar treinamento como concluído',
   'workshop.members': 'membro',
-  'workshop.mentionAmbiguous': 'Usuários com o mesmo nome devem usar um nome de exibição exclusivo: {0}',
-  'workshop.mentionUnknown': 'Menções não reconhecidas (apenas para membros da escola e contas oficiais): {0}',
+  'workshop.mentionAmbiguous':
+    'Usuários com o mesmo nome devem usar um nome de exibição exclusivo: {0}',
+  'workshop.mentionUnknown':
+    'Menções não reconhecidas (apenas para membros da escola e contas oficiais): {0}',
   'workshop.mentionedInChannel': 'Você foi mencionado em #{0}',
   'workshop.mentionedInTopic': 'Você foi mencionado em {0}',
   'workshop.mentions': 'mencione o meu',
@@ -220,18 +242,22 @@ export default {
   'workshop.noTopicsYet': 'Nenhum tópico ainda',
   'workshop.numberedList': 'lista ordenada',
   'workshop.notifications': 'notificar',
-  'workshop.notificationsSettingsBlurb': 'As notificações do navegador para menções e novas mensagens dependem das configurações do sistema. Você também pode ativar lembretes na área de trabalho e por e-mail separadamente nas configurações de cada canal.',
+  'workshop.notificationsSettingsBlurb':
+    'As notificações do navegador para menções e novas mensagens dependem das configurações do sistema. Você também pode ativar lembretes na área de trabalho e por e-mail separadamente nas configurações de cada canal.',
   'workshop.offline': 'Off-line',
   'workshop.online': 'on-line',
   'workshop.openMainChannelStream': 'canal principal',
   'workshop.others': 'outros usuários',
   'workshop.permissions': 'Permissões',
+  'workshop.personalMenu': 'menu pessoal',
   'workshop.preview': 'Visualização',
   'workshop.previewEmpty': 'Nenhum conteúdo para visualizar',
-  'workshop.personalMenu': 'menu pessoal',
-  'workshop.phase2RoadmapGroupsAlerts': 'Planos de acompanhamento: {\'@\'}grupo, lembrete de palavras-chave, estratégia de histórico de edição de mensagens.',
-  'workshop.phase2RoadmapMovePreview': 'Planos de acompanhamento: movimentação de mensagem única, visualização de link e dinâmica entre canais mais rica.',
-  'workshop.phase2RoadmapPlatform': 'Tarefas da plataforma: sincronização incremental, push móvel, resumos por e-mail, robôs e webhooks.',
+  'workshop.phase2RoadmapGroupsAlerts':
+    "Planos de acompanhamento: {'@'}grupo, lembrete de palavras-chave, estratégia de histórico de edição de mensagens.",
+  'workshop.phase2RoadmapMovePreview':
+    'Planos de acompanhamento: movimentação de mensagem única, visualização de link e dinâmica entre canais mais rica.',
+  'workshop.phase2RoadmapPlatform':
+    'Tarefas da plataforma: sincronização incremental, push móvel, resumos por e-mail, robôs e webhooks.',
   'workshop.pickColleagueToInvite': 'Selecione colegas para convidar.',
   'workshop.pinChannel': 'Canal fixado',
   'workshop.policyEveryone': 'todos',
@@ -239,7 +265,8 @@ export default {
   'workshop.policyMembersOnly': 'apenas membros',
   'workshop.postingPolicy': 'Permissões de publicação',
   'workshop.preferences': 'Preferências',
-  'workshop.preferencesSettingsBlurb': 'As preferências de idioma e interface se aplicam a todo o aplicativo. Mais opções relacionadas à colaboração em clubes de estudo serão fornecidas aqui.',
+  'workshop.preferencesSettingsBlurb':
+    'As preferências de idioma e interface se aplicam a todo o aplicativo. Mais opções relacionadas à colaboração em clubes de estudo serão fornecidas aqui.',
   'workshop.presenceActive': 'on-line',
   'workshop.presenceIdle': 'deixar',
   'workshop.presenceOffline': 'Off-line',
@@ -248,7 +275,8 @@ export default {
   'workshop.publicChannels': 'canal público',
   'workshop.quote': 'Citar',
   'workshop.quoteMessage': 'Mensagem de citação',
-  'workshop.readOnlyProfileBlurb': 'Os perfis dos colegas são exibidos em uma visualização simplificada. Os administradores podem usar "Gerenciar usuários" para abrir a lista de usuários de back-end.',
+  'workshop.readOnlyProfileBlurb':
+    'Os perfis dos colegas são exibidos em uma visualização simplificada. Os administradores podem usar "Gerenciar usuários" para abrir a lista de usuários de back-end.',
   'workshop.recentDmActivity': 'Mensagens privadas recentes',
   'workshop.recentTopics': 'tópicos recentes',
   'workshop.renameTopic': 'Renomear tópico',
@@ -259,7 +287,8 @@ export default {
   'workshop.roleOwner': 'proprietário',
   'workshop.searchMembers': 'Pesquisar membros...',
   'workshop.searchMessages': 'Pesquisar mensagens...',
-  'workshop.selectChannelForSettings': 'Selecione primeiro um grupo ou aula de ensino e pesquisa à esquerda e depois abra as configurações.',
+  'workshop.selectChannelForSettings':
+    'Selecione primeiro um grupo ou aula de ensino e pesquisa à esquerda e depois abra as configurações.',
   'workshop.selectConversation': 'Selecione uma conversa',
   'workshop.selectParentGroup': 'Grupo afiliado de ensino e pesquisa',
   'workshop.selectTopic': 'Selecione o tópico',
@@ -285,7 +314,8 @@ export default {
   'workshop.strikethrough': 'tachado',
   'workshop.table': 'folha',
   'workshop.switchSchool': 'mudar de escola',
-  'workshop.teachingGroupLandingHint': 'Exemplos de aulas e conversas neste grupo de ensino e pesquisa. Clique na lição para entrar no canal ou clique na conversa para entrar no tópico correspondente.',
+  'workshop.teachingGroupLandingHint':
+    'Exemplos de aulas e conversas neste grupo de ensino e pesquisa. Clique na lição para entrar no canal ou clique na conversa para entrar no tópico correspondente.',
   'workshop.teachingGroupMembers': 'membro',
   'workshop.teachingGroupNameRequired': 'Preencha o nome do grupo de ensino e pesquisa.',
   'workshop.teachingGroupNoLessons': 'Não há exemplos de aulas neste grupo de ensino e pesquisa.',
@@ -298,9 +328,11 @@ export default {
   'workshop.topicDescriptionPlaceholder': 'Descreva o conteúdo do tópico...',
   'workshop.topicSettings': 'Configurações de tópico',
   'workshop.topicTitle': 'título',
-  'workshop.topicTitlePlaceholder': 'Por exemplo: discussão coletiva de preparação de aula, observação de sala de aula',
+  'workshop.topicTitlePlaceholder':
+    'Por exemplo: discussão coletiva de preparação de aula, observação de sala de aula',
   'workshop.topics': 'tópico',
-  'workshop.typeMessagePlaceholder': 'Digite a mensagem...(Pressione Enter para enviar, Shift+Enter e avanço de linha)',
+  'workshop.typeMessagePlaceholder':
+    'Digite a mensagem...(Pressione Enter para enviar, Shift+Enter e avanço de linha)',
   'workshop.unfollowTopic': 'Deixar de seguir tópico',
   'workshop.unknown': 'desconhecido',
   'workshop.unmuteChannel': 'Ativar som',
@@ -316,61 +348,82 @@ export default {
   'workshop.viewProfile': 'Ver perfil',
   'workshop.viewingSchool': 'Visualizando atualmente: {0}',
   'workshop.views': 'visualizar',
-  'workshop.welcomeChannelsBody': 'Os "canais" do sistema correspondem principalmente a grupos de pesquisa da vida real ou grupos de ensino e pesquisa: um espaço de colaboração é dividido de acordo com assuntos ou projetos (como o grupo de pesquisa em matemática e o grupo de pesquisa em inglês no exemplo abaixo), e os membros e o escopo de discussão são definidos.',
+  'workshop.welcomeChannelsBody':
+    'Os "canais" do sistema correspondem principalmente a grupos de pesquisa da vida real ou grupos de ensino e pesquisa: um espaço de colaboração é dividido de acordo com assuntos ou projetos (como o grupo de pesquisa em matemática e o grupo de pesquisa em inglês no exemplo abaixo), e os membros e o escopo de discussão são definidos.',
   'workshop.welcomeChannelsTitle': 'Grupo de pesquisa/grupo de ensino e pesquisa',
-  'workshop.welcomeConversationsBody': 'Várias sessões intituladas podem ser criadas no exemplo de lição, como design instrucional, implementação em sala de aula, reflexão e melhoria, etc., para separar diferentes tópicos e evitar misturá-los em uma linha do tempo.',
+  'workshop.welcomeConversationsBody':
+    'Várias sessões intituladas podem ser criadas no exemplo de lição, como design instrucional, implementação em sala de aula, reflexão e melhoria, etc., para separar diferentes tópicos e evitar misturá-los em uma linha do tempo.',
   'workshop.welcomeConversationsTitle': 'Conversa (tópico)',
-  'workshop.welcomeExampleCaption': 'A seguir estão exemplos fictícios para fácil compreensão: o grupo de disciplinas de matemática e o grupo de disciplinas de inglês têm, cada um, exemplos de aulas e tópicos de conversação.',
+  'workshop.welcomeExampleCaption':
+    'A seguir estão exemplos fictícios para fácil compreensão: o grupo de disciplinas de matemática e o grupo de disciplinas de inglês têm, cada um, exemplos de aulas e tópicos de conversação.',
   'workshop.welcomeExampleConvLabel': 'sessão',
   'workshop.welcomeExampleGroupEnglish': 'Grupo de disciplinas de inglês',
   'workshop.welcomeExampleGroupMath': 'Grupo de pesquisa em matemática',
-  'workshop.welcomeExampleLSEng1': 'Exemplo de aula: aula de estratégias de leitura da sétima série',
+  'workshop.welcomeExampleLSEng1':
+    'Exemplo de aula: aula de estratégias de leitura da sétima série',
   'workshop.welcomeExampleLSEng1C1': 'Folha de leitura e design de folha de estudo',
   'workshop.welcomeExampleLSEng1C2': 'Atividades pós-leitura e transferência de idioma',
   'workshop.welcomeExampleLSEng1C3': 'Feedback de observação de aula e reflexão de ensino',
-  'workshop.welcomeExampleLSEng2': 'Exemplo de aula: aulas de redação estão na mesma turma, mas são heterogêneas',
+  'workshop.welcomeExampleLSEng2':
+    'Exemplo de aula: aulas de redação estão na mesma turma, mas são heterogêneas',
   'workshop.welcomeExampleLSEng2C1': 'Teste e revisão da escala de avaliação',
   'workshop.welcomeExampleLSMath1': 'Exemplo de aula: Semana de aula "O conceito de função"',
   'workshop.welcomeExampleLSMath1C1': 'Discussão sobre objetivos de ensino e desenho de atividades',
   'workshop.welcomeExampleLSMath1C2': 'Perguntas em sala de aula e escrita no quadro negro',
   'workshop.welcomeExampleLSMath1C3': 'Reflexão após a aula e ideias de melhoria',
-  'workshop.welcomeExampleLSMath2': 'Exemplo de aula: Revisão do ensino médio · Aplicação abrangente de derivativos',
+  'workshop.welcomeExampleLSMath2':
+    'Exemplo de aula: Revisão do ensino médio · Aplicação abrangente de derivativos',
   'workshop.welcomeExampleLSMath2C1': 'Atribuição em camadas e design de avaliação',
-  'workshop.welcomeExampleMsgLabel': 'Cada conversa contém mensagens enviadas uma a uma pelos colegas.',
+  'workshop.welcomeExampleMsgLabel':
+    'Cada conversa contém mensagens enviadas uma a uma pelos colegas.',
   'workshop.welcomeExampleOrg': 'Escola Secundária de Chenxi',
   'workshop.welcomeHowTitle': 'Conceitos e relações hierárquicas',
-  'workshop.welcomeIntro': 'O Clube de Estudos é um espaço colaborativo para escolas: publica comunicados, realiza estudos de caso e organiza discussões de forma estruturada junto aos cenários de ensino.',
-  'workshop.welcomeLessonStudyBody': 'Os exemplos de aulas são geralmente agrupados em um determinado grupo de tópicos e podem ser usados ​​para praticar, observar e refletir sobre uma lição específica; eles podem ser acompanhados por status de progresso ou associados a diagramas de pensamento.',
+  'workshop.welcomeIntro':
+    'O Clube de Estudos é um espaço colaborativo para escolas: publica comunicados, realiza estudos de caso e organiza discussões de forma estruturada junto aos cenários de ensino.',
+  'workshop.welcomeLessonStudyBody':
+    'Os exemplos de aulas são geralmente agrupados em um determinado grupo de tópicos e podem ser usados ​​para praticar, observar e refletir sobre uma lição específica; eles podem ser acompanhados por status de progresso ou associados a diagramas de pensamento.',
   'workshop.welcomeLessonStudyTitle': 'Estudo da lição',
-  'workshop.welcomeMessagesBody': 'Uma mensagem é uma declaração única em uma linha do tempo de conversa ou canal; respostas, {\'@\'}colegas, anexos, etc. são todos refletidos na mensagem.',
+  'workshop.welcomeMessagesBody':
+    "Uma mensagem é uma declaração única em uma linha do tempo de conversa ou canal; respostas, {'@'}colegas, anexos, etc. são todos refletidos na mensagem.",
   'workshop.welcomeMessagesTitle': 'Informação',
   'workshop.welcomeSubtitle': 'Colabore com colegas de todo o campus no MindGraph',
   'workshop.welcomeTitle': 'Bem-vindo ao Clube de Estudos',
   'workshop.you': '(você)',
   'workshop.youAnd': 'você e',
   'workshopCanvas.connectFailed': 'Falha ao conectar-se à colaboração on-line',
-  'workshopCanvas.sessionExpiredReconnect': 'Sua sessão expirou. Atualize a página para voltar à colaboração.',
-  'workshopCanvas.sessionRefreshFailed': 'Não foi possível atualizar a sessão de colaboração online. Salve o conteúdo atual e faça login novamente.',
-  'workshopCanvas.outboundQueueDegraded': 'A sincronização da colaboração online ficou para trás e algumas edições não enviadas não podem ser retidas.',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Sua sessão expirou. Atualize a página para voltar à colaboração.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Não foi possível atualizar a sessão de colaboração online. Salve o conteúdo atual e faça login novamente.',
+  'workshopCanvas.outboundQueueDegraded':
+    'A sincronização da colaboração online ficou para trás e algumas edições não enviadas não podem ser retidas.',
   'workshopCanvas.connectionClosed': 'A conexão foi perdida',
-  'workshopCanvas.connectionClosedSlow': 'Conexão perdida: sua rede está muito lenta para acompanhar a sessão de colaboração.',
+  'workshopCanvas.connectionClosedSlow':
+    'Conexão perdida: sua rede está muito lenta para acompanhar a sessão de colaboração.',
   'workshopCanvas.sessionEndedByHost': 'O anfitrião encerrou a colaboração online.',
   'workshopCanvas.editingNodeLabel': '{username} Editando…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'Outros colaboradores',
   'workshopCanvas.connectionClosedReason': 'Conexão de colaboração online desconectada: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} está editando este nó',
   'workshopCanvas.errorGeneric': 'Erro de colaboração online',
-  'workshopCanvas.updatePartialFiltered': 'Algumas edições estão fora de sincronia (nós {count}): esses nós estão sendo editados por outros colaboradores.',
-  'workshopCanvas.reconnectFailed': 'Falha ao reconectar a colaboração on-line. Atualize a página e tente novamente',
-  'workshopCanvas.resyncWaiting': 'A sincronização da arte está demorando mais que o esperado e está sendo tentada novamente; se a edição for anormal, tente atualizar a página.',
-  'workshopCanvas.returnedHomeIdle': 'A colaboração foi desconectada devido a um tempo ocioso muito longo e a página inicial foi retornada.',
+  'workshopCanvas.updatePartialFiltered':
+    'Algumas edições estão fora de sincronia (nós {count}): esses nós estão sendo editados por outros colaboradores.',
+  'workshopCanvas.reconnectFailed':
+    'Falha ao reconectar a colaboração on-line. Atualize a página e tente novamente',
+  'workshopCanvas.resyncWaiting':
+    'A sincronização da arte está demorando mais que o esperado e está sendo tentada novamente; se a edição for anormal, tente atualizar a página.',
+  'workshopCanvas.returnedHomeIdle':
+    'A colaboração foi desconectada devido a um tempo ocioso muito longo e a página inicial foi retornada.',
   'workshopCanvas.userJoined': 'O usuário {username} entrou',
   'workshopCanvas.usersJoined': '{count} usuários aderiram',
   'workshopCanvas.userLeft': 'O usuário {username} saiu',
   'workshopCanvas.usersLeft': '{count} usuários saíram',
   'workshopCanvas.wsError': 'Erro de conexão de colaboração online, verifique a conexão de rede',
-  'workshopCanvas.returnedHomeRoomIdle': 'Este ícone de sessão não é editado de forma colaborativa há muito tempo. A colaboração foi encerrada automaticamente e retornou à página inicial.',
-  'workshopCanvas.roomIdleWarningToast': 'O ícone não é editado de forma colaborativa há muito tempo - se ninguém editar o ícone antes do final da contagem regressiva, a colaboração terminará automaticamente.',
-  'workshopCanvas.otherTabCollaborationActive': 'A conta continua a colaborar online em outra guia ou janela.',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Este ícone de sessão não é editado de forma colaborativa há muito tempo. A colaboração foi encerrada automaticamente e retornou à página inicial.',
+  'workshopCanvas.roomIdleWarningToast':
+    'O ícone não é editado de forma colaborativa há muito tempo - se ninguém editar o ícone antes do final da contagem regressiva, a colaboração terminará automaticamente.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'A conta continua a colaborar online em outra guia ou janela.',
   'workshopCanvas.joinQrAlt': 'Código QR para participar da colaboração online',
 } as const

@@ -54,15 +54,21 @@ export default {
   'showcase.publishModal.uploadingFile': '{name} अपलोड ({current}/{total})…',
   'showcase.publishModal.finishing': 'समाप्त…',
   'showcase.publishModal.uploadFailedRolledBack': 'अपलोड विफल — ड्राफ्ट हटाया। पुनः प्रयास।',
-  'showcase.publishModal.uploadCorsFailed': 'ऑब्जेक्ट स्टोरेज पर अपलोड नहीं (अक्सर CORS/CSP COS होस्ट ब्लॉक)। ड्राफ्ट हटाया — व्यवस्थापक से CORS/CSP ठीक करवाएँ।',
-  'showcase.publishModal.uploadStorageRejected': 'स्टोरेज ने अपलोड अस्वीकार। ड्राफ्ट हटाया — बाद में या व्यवस्थापक।',
+  'showcase.publishModal.uploadCorsFailed':
+    'ऑब्जेक्ट स्टोरेज पर अपलोड नहीं (अक्सर CORS/CSP COS होस्ट ब्लॉक)। ड्राफ्ट हटाया — व्यवस्थापक से CORS/CSP ठीक करवाएँ।',
+  'showcase.publishModal.uploadStorageRejected':
+    'स्टोरेज ने अपलोड अस्वीकार। ड्राफ्ट हटाया — बाद में या व्यवस्थापक।',
   'showcase.publishModal.uploadFailed': 'अपलोड विफल। पुनः प्रयास।',
   'showcase.publishModal.uploadCoverTooLarge': 'कवर 2MB से अधिक। संपीड़ित करें या छोटी छवि।',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'फ़ाइल सीमा से अधिक (दस्तावेज़/छवि 20MB, वीडियो 100MB)। संपीड़ित करें।',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'फ़ाइल सीमा से अधिक। ड्राफ्ट हटाया — संपीड़ित करें।',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'फ़ाइल सीमा से अधिक (दस्तावेज़/छवि 20MB, वीडियो 100MB)। संपीड़ित करें।',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'फ़ाइल सीमा से अधिक। ड्राफ्ट हटाया — संपीड़ित करें।',
   'showcase.publishModal.uploadFileTooLarge': 'फ़ाइल इस प्रकार के लिए बहुत बड़ी। सीमा जाँचें।',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'फ़ाइल बहुत बड़ी। ड्राफ्ट हटाया — सीमा जाँचें।',
-  'showcase.publishModal.coverUploadSkipped': 'केस जमा, कवर अपलोड विफल। बाद में संपादित कर कवर रीफ़्रेश।',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'फ़ाइल बहुत बड़ी। ड्राफ्ट हटाया — सीमा जाँचें।',
+  'showcase.publishModal.coverUploadSkipped':
+    'केस जमा, कवर अपलोड विफल। बाद में संपादित कर कवर रीफ़्रेश।',
   'showcase.publishModal.coverGenerating': 'कवर पूर्वावलोकन पृष्ठभूमि में — कार्ड पर जल्द।',
   'showcase.publishModal.coverFailed': 'केस जमा, कवर नहीं बना। बाद में संपादित।',
   'showcase.publishModal.coverFailedTimeout': 'केस जमा, कवर समय समाप्त। बाद में संपादित।',
@@ -79,7 +85,8 @@ export default {
   'showcase.publishModal.uploadLabel': 'फ़ाइल अपलोड',
   'showcase.publishModal.uploadImage': 'छवि अपलोड',
   'showcase.publishModal.uploadFile': 'फ़ाइल अपलोड',
-  'showcase.publishModal.directUploadDisabled': 'प्रत्यक्ष अपलोड अस्थायी अनुपलब्ध। इतिहास से सहेजा आरेख चुन सकते हैं।',
+  'showcase.publishModal.directUploadDisabled':
+    'प्रत्यक्ष अपलोड अस्थायी अनुपलब्ध। इतिहास से सहेजा आरेख चुन सकते हैं।',
   'showcase.publishModal.uploadViaStorage': 'फ़ाइलें सुरक्षित स्टोरेज पर सीधे (अल्पकालिक URL)।',
   'showcase.publishModal.pickHistory': 'इतिहास से चुनें',
   'showcase.publishModal.removeFile': 'हटाएँ',
@@ -89,8 +96,10 @@ export default {
   'showcase.publishModal.diagramImageHint': 'समर्थन .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'छवियाँ अपलोड (कई)',
   'showcase.publishModal.galleryHint': 'कई छवियाँ और आरेख, {max} तक',
-  'showcase.publishModal.galleryHintCase': '{max} आइटम तक अनेक चित्र और ऐतिहासिक चिह्न जोड़े जा सकते हैं',
-  'showcase.publishModal.galleryHintTemplate': 'आप .mg फ़ाइलें अपलोड कर सकते हैं और {max} आइटम तक अनेक ऐतिहासिक चिह्न चुन सकते हैं',
+  'showcase.publishModal.galleryHintCase':
+    '{max} आइटम तक अनेक चित्र और ऐतिहासिक चिह्न जोड़े जा सकते हैं',
+  'showcase.publishModal.galleryHintTemplate':
+    'आप .mg फ़ाइलें अपलोड कर सकते हैं और {max} आइटम तक अनेक ऐतिहासिक चिह्न चुन सकते हैं',
   'showcase.publishModal.galleryCount': '{count}/{max} जोड़े',
   'showcase.publishModal.galleryImageItem': 'छवि: {name}',
   'showcase.publishModal.galleryDiagramItem': 'आरेख: {name}',
@@ -121,11 +130,14 @@ export default {
   'showcase.publishModal.aiGenerating': 'जनरेट…',
   'showcase.publishModal.aiGenerateStop': 'रोकें',
   'showcase.publishModal.aiGenerateCancelled': 'AI रद्द — फिर क्लिक',
-  'showcase.publishModal.aiGenerateSuccess': 'दस्तावेज़ से परिचय/मुख्य बिंदु — समीक्षा; चिंतन स्वयं लिखें',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'चित्रण परिचय और कक्षा अनुप्रयोग चित्रण के आधार पर तैयार किया गया है। कृपया जांचें और संपादित करें.',
+  'showcase.publishModal.aiGenerateSuccess':
+    'दस्तावेज़ से परिचय/मुख्य बिंदु — समीक्षा; चिंतन स्वयं लिखें',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'चित्रण परिचय और कक्षा अनुप्रयोग चित्रण के आधार पर तैयार किया गया है। कृपया जांचें और संपादित करें.',
   'showcase.publishModal.aiGenerateFailed': 'AI विफल — पुनः',
   'showcase.publishModal.aiGenerateNeedFile': 'पहले चरण में शिक्षण दस्तावेज़',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI केवल शिक्षण-डिज़ाइन केस',
   'showcase.publishModal.reflectionLabel': 'शिक्षण चिंतन',
   'showcase.publishModal.introPlaceholder': 'केस और उपयोग संक्षेप',
@@ -152,8 +164,10 @@ export default {
   'showcase.publishModal.validationDiagramType': 'आरेख प्रकार',
   'showcase.publishModal.invalidFileType': 'असमर्थित प्रकार',
   'showcase.publishModal.invalidMgFile': '.mg नहीं पढ़ा — MindGraph से निर्यात',
-  'showcase.publishModal.cannotPreview': 'कवर पूर्वावलोकन नहीं — केस जमा होगा। PNG/JPG या सहेजा आरेख।',
-  'showcase.publishModal.cannotPreviewHistory': 'सहेजे आरेख से कवर नहीं — केस जमा। फिर चुनें या कैनवास से सहेजें।',
+  'showcase.publishModal.cannotPreview':
+    'कवर पूर्वावलोकन नहीं — केस जमा होगा। PNG/JPG या सहेजा आरेख।',
+  'showcase.publishModal.cannotPreviewHistory':
+    'सहेजे आरेख से कवर नहीं — केस जमा। फिर चुनें या कैनवास से सहेजें।',
   'showcase.publishModal.cannotPreviewTemplate': 'कवर नहीं — केस जमा। .mg जाँच या दूसरा आरेख।',
   'showcase.publishModal.historyTitle': 'सहेजा आरेख',
   'showcase.publishModal.historySearch': 'आरेख नाम…',

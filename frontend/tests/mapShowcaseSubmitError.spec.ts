@@ -25,8 +25,8 @@ describe('mapShowcaseSubmitError', () => {
       mapShowcaseSubmitError(
         new Error('SHOWCASE_UPLOAD_ROLLED_BACK:SHOWCASE_STORAGE_CORS_OR_NETWORK'),
         t,
-        () => false,
-      ),
+        () => false
+      )
     ).toBe('cors-failed')
   })
 
@@ -35,8 +35,8 @@ describe('mapShowcaseSubmitError', () => {
       mapShowcaseSubmitError(
         new Error('SHOWCASE_UPLOAD_ROLLED_BACK:SHOWCASE_STORAGE_PUT_FAILED:403'),
         t,
-        () => false,
-      ),
+        () => false
+      )
     ).toBe('storage-rejected')
   })
 
@@ -45,8 +45,8 @@ describe('mapShowcaseSubmitError', () => {
       mapShowcaseSubmitError(
         new Error('SHOWCASE_UPLOAD_ROLLED_BACK:File too large. Max 2MB'),
         t,
-        () => false,
-      ),
+        () => false
+      )
     ).toBe('cover-too-large')
   })
 
@@ -55,26 +55,26 @@ describe('mapShowcaseSubmitError', () => {
       mapShowcaseSubmitError(
         new Error('SHOWCASE_UPLOAD_ROLLED_BACK:File too large. Max 20MB'),
         t,
-        () => false,
-      ),
+        () => false
+      )
     ).toBe('attachment-too-large-rolled')
   })
 
   it('maps cover too large without rollback', () => {
-    expect(
-      mapShowcaseSubmitError(new Error('File too large. Max 2MB'), t, () => false),
-    ).toBe('cover-too-large')
+    expect(mapShowcaseSubmitError(new Error('File too large. Max 2MB'), t, () => false)).toBe(
+      'cover-too-large'
+    )
   })
 
   it('maps generic rollback', () => {
     expect(
-      mapShowcaseSubmitError(new Error('SHOWCASE_UPLOAD_ROLLED_BACK:other'), t, () => false),
+      mapShowcaseSubmitError(new Error('SHOWCASE_UPLOAD_ROLLED_BACK:other'), t, () => false)
     ).toBe('rolled-back')
   })
 
   it('maps session expiry', () => {
     expect(
-      mapShowcaseSubmitError(new Error('SESSION_EXPIRED'), t, (m) => m === 'SESSION_EXPIRED'),
+      mapShowcaseSubmitError(new Error('SESSION_EXPIRED'), t, (m) => m === 'SESSION_EXPIRED')
     ).toBe('session-expired')
   })
 })

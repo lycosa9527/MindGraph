@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'മാറ്റ് പഠന രീതി',
-  'maite.subtitle': 'വിപരീത വിഘടനം · നാലാമത്തെ ക്രമ രോഗനിർണയം · ടാർഗേറ്റഡ് റെമഡിയേഷൻ · വേരിയൻ്റ് മൈഗ്രേഷൻ',
+  'maite.subtitle':
+    'വിപരീത വിഘടനം · നാലാമത്തെ ക്രമ രോഗനിർണയം · ടാർഗേറ്റഡ് റെമഡിയേഷൻ · വേരിയൻ്റ് മൈഗ്രേഷൻ',
   'maite.mode.demo': 'ഡെമോ',
   'maite.mode.inquiry': 'പര്യവേക്ഷണം ചെയ്യുക',
   'maite.mode.map': 'അറ്റ്ലസ്',
@@ -45,7 +46,8 @@ export default {
   'maite.inquiry.complete': 'സെഷൻ പൂർത്തിയാക്കുക',
   'maite.inquiry.completedTitle': 'പര്യവേക്ഷണം പൂർത്തിയായി',
   'maite.inquiry.completedMessage': 'ഈ പഠനം പൂർത്തിയായി, പഠന റിപ്പോർട്ട് കാണാൻ കഴിയും.',
-  'maite.diagnosis.thinkingPlaceholder': 'പ്രശ്നം പരിഹരിക്കുന്നതിനുള്ള നിങ്ങളുടെ സമീപനം വിവരിക്കുക (ഓപ്ഷണൽ)...',
+  'maite.diagnosis.thinkingPlaceholder':
+    'പ്രശ്നം പരിഹരിക്കുന്നതിനുള്ള നിങ്ങളുടെ സമീപനം വിവരിക്കുക (ഓപ്ഷണൽ)...',
   'maite.diagnosis.runAuto': 'യാന്ത്രിക രോഗനിർണയം',
   'maite.diagnosis.running': 'രോഗനിർണയം നടത്തുന്നു...',
   'maite.remedy.generate': 'പരിഹാര ചുമതലകൾ സൃഷ്ടിക്കുക',
@@ -79,13 +81,15 @@ export default {
   'maite.errors.generic': 'പ്രവർത്തനം പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
   'maite.errors.decompose_failed': 'വിഘടനം പരാജയപ്പെട്ടു',
   'maite.errors.follow_up_failed': 'ചോദ്യം ചെയ്യൽ പരാജയപ്പെട്ടു',
-  'maite.errors.ocr_failed': 'OCR തിരിച്ചറിയൽ പരാജയപ്പെട്ടു, ദയവായി മറ്റൊരു ചിത്രം ഉപയോഗിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'maite.errors.ocr_failed':
+    'OCR തിരിച്ചറിയൽ പരാജയപ്പെട്ടു, ദയവായി മറ്റൊരു ചിത്രം ഉപയോഗിച്ച് വീണ്ടും ശ്രമിക്കുക.',
   'maite.errors.create_failed': 'പര്യവേക്ഷണ സെഷൻ സൃഷ്ടിക്കുന്നതിൽ പരാജയപ്പെട്ടു',
   'maite.errors.submit_failed': 'വിഘടിപ്പിക്കൽ പട്ടിക സമർപ്പിക്കുന്നതിൽ പരാജയപ്പെട്ടു',
   'maite.errors.diagnosis_failed': 'രോഗനിർണയം പരാജയപ്പെട്ടു',
   'maite.errors.remedy_failed': 'ടാർഗെറ്റുചെയ്‌ത പരിഹാര ടാസ്‌ക് സൃഷ്‌ടിക്കുന്നത് പരാജയപ്പെട്ടു',
   'maite.errors.variant_failed': 'വേരിയൻ്റ് ടാസ്‌ക് സൃഷ്‌ടിക്കുന്നത് പരാജയപ്പെട്ടു',
-  'maite.errors.variants_incomplete': 'സെഷൻ പൂർത്തിയാക്കുന്നതിന് മുമ്പ് കുറഞ്ഞത് 3 വേരിയേഷനുകളെങ്കിലും സമർപ്പിക്കുക',
+  'maite.errors.variants_incomplete':
+    'സെഷൻ പൂർത്തിയാക്കുന്നതിന് മുമ്പ് കുറഞ്ഞത് 3 വേരിയേഷനുകളെങ്കിലും സമർപ്പിക്കുക',
   'maite.errors.variant_answer_required': 'ഉത്തരങ്ങളും മൈഗ്രേഷൻ തന്ത്രങ്ങളും ആവശ്യമാണ്',
   'maite.errors.variant_submit_failed': 'വേരിയൻ്റ് സമർപ്പിക്കൽ പരാജയപ്പെട്ടു',
   'maite.errors.load_failed': 'സെഷൻ ലോഡ് പരാജയപ്പെട്ടു',
@@ -94,11 +98,13 @@ export default {
   'maite.errors.list_failed': 'റെക്കോർഡ് ലോഡിംഗ് പ്രാക്ടീസ് ചെയ്യാനായില്ല',
   'maite.errors.report_failed': 'റിപ്പോർട്ട് ലോഡുചെയ്യുന്നത് പരാജയപ്പെട്ടു',
   'maite.errors.report_copy_failed': 'റെപ്ലിക്കേഷൻ പരാജയം റിപ്പോർട്ട് ചെയ്യുക',
-  'maite.toast.ocr_uploading': 'ചിത്രങ്ങൾ അപ്‌ലോഡ് ചെയ്യുകയും ടെക്‌സ്‌റ്റ് തിരിച്ചറിയുകയും ചെയ്യുന്നു...',
+  'maite.toast.ocr_uploading':
+    'ചിത്രങ്ങൾ അപ്‌ലോഡ് ചെയ്യുകയും ടെക്‌സ്‌റ്റ് തിരിച്ചറിയുകയും ചെയ്യുന്നു...',
   'maite.toast.ocr_success': 'ചിത്രത്തിൽ നിന്ന് ചോദ്യ വാചകം വേർതിരിച്ചെടുത്തു',
   'maite.toast.decompose_started': 'ട്യൂട്ടർ ബ്രേക്ക്‌ഡൗൺ ആരംഭിക്കുക...',
   'maite.toast.decompose_complete': 'വിഘടനം പൂർത്തിയായി',
-  'maite.toast.decompose_fallback': 'സ്ട്രീമിംഗ് സമയം കഴിഞ്ഞു, തുടരുന്നതിന് പകരം പൂർണ്ണ പ്രതികരണം ഉപയോഗിക്കുക...',
+  'maite.toast.decompose_fallback':
+    'സ്ട്രീമിംഗ് സമയം കഴിഞ്ഞു, തുടരുന്നതിന് പകരം പൂർണ്ണ പ്രതികരണം ഉപയോഗിക്കുക...',
   'maite.toast.practice_saved': 'സമീപകാല വ്യായാമങ്ങളിലേക്ക് സംരക്ഷിച്ചു',
   'maite.toast.session_created': 'എക്സ്പ്ലോർ സെഷൻ സൃഷ്ടിച്ചു',
   'maite.toast.session_completed': 'പര്യവേക്ഷണ സെഷൻ പൂർത്തിയായി',

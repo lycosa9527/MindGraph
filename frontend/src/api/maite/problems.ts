@@ -1,11 +1,10 @@
 /**
  * Maite problem and OCR API.
  */
+import type { MaiteOcrResult, MaiteProblem, MaiteProblemBankItem } from '@/types/maite'
 import { apiUpload } from '@/utils/apiClient'
 
 import { maiteRequestJson } from './client'
-
-import type { MaiteOcrResult, MaiteProblem, MaiteProblemBankItem } from '@/types/maite'
 
 export interface CreateProblemInput {
   raw_text: string

@@ -89,9 +89,9 @@ const isServerOne = computed(() => selectedServer.value === 1)
 
 const baseUrl = ref('')
 const apiKey = ref('')
-const difyTimeoutSeconds = ref(300)
+const timeoutDraft = ref(300)
 const aiCardStreamingMaxChars = ref(6500)
-const showChainOfThought = ref(false)
+const chainOfThoughtDraft = ref(false)
 const agentName = ref('')
 const agentAlias = ref('')
 const agentAvatarUrl = ref<string | null>(null)
@@ -343,9 +343,9 @@ watch(
     selectedServer.value = props.difyActiveServer === 2 ? 2 : 1
     failoverEnabled.value = Boolean(props.difyFailoverEnabled)
     loadSelectedServerCreds()
-    difyTimeoutSeconds.value = props.difyTimeoutSeconds ?? 300
+    timeoutDraft.value = props.difyTimeoutSeconds ?? 300
     aiCardStreamingMaxChars.value = props.dingtalkAiCardStreamingMaxChars ?? 6500
-    showChainOfThought.value = Boolean(props.showChainOfThought)
+    chainOfThoughtDraft.value = Boolean(props.showChainOfThought)
   },
   { immediate: true }
 )
@@ -440,9 +440,9 @@ async function saveSettings() {
     mindmate_agent_name: agentName.value.trim() || null,
     mindmate_agent_alias: agentAlias.value.trim() || null,
     display_name: schoolDisplayName.value.trim() || null,
-    dify_timeout_seconds: difyTimeoutSeconds.value,
+    dify_timeout_seconds: timeoutDraft.value,
     dingtalk_ai_card_streaming_max_chars: aiCardStreamingMaxChars.value,
-    show_chain_of_thought: showChainOfThought.value,
+    show_chain_of_thought: chainOfThoughtDraft.value,
     dify_active_server: selectedServer.value,
     dify_failover_enabled: failoverEnabled.value,
   }
@@ -846,7 +846,7 @@ defineExpose({
               <I18nText k="admin.mindbot.difyTimeout" />
             </template>
             <el-input-number
-              v-model="difyTimeoutSeconds"
+              v-model="timeoutDraft"
               :min="5"
               :max="600"
               class="mindbot-swiss-input-number w-full sm:w-40"
@@ -871,7 +871,7 @@ defineExpose({
               ><I18nText k="admin.mindbot.difyShowChainOfThought"
             /></span>
             <el-switch
-              v-model="showChainOfThought"
+              v-model="chainOfThoughtDraft"
               class="mindbot-cot-switch mindbot-footer-enabled-switch shrink-0"
             />
           </div>

@@ -10,14 +10,12 @@ import {
   FileText,
   Hammer,
   Languages,
-  Share2,
   Sparkles,
   Users,
 } from '@lucide/vue'
 
-import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
-
 import { buildSidebarPromoSlides } from '@/composables/sidebar/sidebarThinkingCoinTaskPromo'
+import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 
 export const UPGRADE_PAGE_INVITE_REWARD_DEFAULT = 100
 
@@ -142,10 +140,7 @@ export function planBadgeKeys(tier: PersonalPlanTier): string[] {
 }
 
 export function planFeatureKeys(tier: PersonalPlanTier): string[] {
-  const common = [
-    'thinkingCoins.plan.feature.nonAi',
-    'thinkingCoins.plan.feature.showcase',
-  ]
+  const common = ['thinkingCoins.plan.feature.nonAi', 'thinkingCoins.plan.feature.showcase']
   if (tier === 'trial') {
     return [
       'thinkingCoins.plan.feature.trialCoins',

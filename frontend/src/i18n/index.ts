@@ -1,5 +1,4 @@
 import { ref } from 'vue'
-
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/messages/en'
@@ -130,4 +129,30 @@ export async function syncI18nLocale(locale: LocaleCode): Promise<void> {
 /** BCP 47–friendly value for the document element. */
 export function htmlLangForLocale(locale: LocaleCode): string {
   return htmlLangForUiCode(locale)
+}
+
+/** Drop a cached catalog so the next load picks up HMR / newly authored keys. */
+export function invalidateLocaleMessages(locale: LocaleCode): void {
+  loadedLocales.delete(locale)
+}
+
+if (import.meta.hot) {
+  import.meta.hot.accept('../locales/messages/en.ts', (mod) => {
+    const next = (mod as LocaleModule | undefined)?.default
+    if (!next) {
+      return
+    }
+    i18n.global.setLocaleMessage('en', next as Record<string, string>)
+    localeCatalogRevision.value += 1
+    notifyLocaleLoaded()
+  })
+
+  import.meta.hot.accept(Object.keys(lazyLocaleModules), async () => {
+    const active = (i18n.global.locale as { value: LocaleCode }).value
+    if (active === 'en') {
+      return
+    }
+    invalidateLocaleMessages(active)
+    await loadLocaleMessages(active)
+  })
 }

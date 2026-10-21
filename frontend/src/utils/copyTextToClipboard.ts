@@ -21,14 +21,12 @@ function fallbackCopyText(text: string): void {
   textarea.focus()
   textarea.select()
   textarea.setSelectionRange(0, textarea.value.length)
-  let ok = false
   try {
-    ok = document.execCommand('copy')
+    if (!document.execCommand('copy')) {
+      throw new Error('Clipboard copy failed')
+    }
   } finally {
     document.body.removeChild(textarea)
-  }
-  if (!ok) {
-    throw new Error('Clipboard copy failed')
   }
 }
 

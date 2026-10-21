@@ -1,5 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/auth'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { must } from '@/utils/must'
 
 const authFetchMock = vi.hoisted(() => vi.fn())
 
@@ -10,9 +15,6 @@ vi.mock('@/utils/api', () => ({
 vi.mock('@/composables/core/notifications', () => ({
   notify: { warning: vi.fn(), error: vi.fn(), success: vi.fn(), info: vi.fn() },
 }))
-
-import { useAuthStore } from '@/stores/auth'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -97,7 +99,10 @@ describe('savedDiagrams detail cache after update', () => {
     let putBody: Record<string, unknown> | null = null
     authFetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       const path = String(url)
-      if (path === `/api/diagrams/${diagramId}` && (!init || !init.method || init.method === 'GET')) {
+      if (
+        path === `/api/diagrams/${diagramId}` &&
+        (!init || !init.method || init.method === 'GET')
+      ) {
         return jsonResponse(fullDiagram(diagramId, 57))
       }
       if (path === `/api/diagrams/${diagramId}` && init?.method === 'PUT') {
@@ -132,14 +137,14 @@ describe('savedDiagrams detail cache after update', () => {
     const diagramId = 'd-conflict'
     authFetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       const path = String(url)
-      if (path === `/api/diagrams/${diagramId}` && (!init || !init.method || init.method === 'GET')) {
+      if (
+        path === `/api/diagrams/${diagramId}` &&
+        (!init || !init.method || init.method === 'GET')
+      ) {
         return jsonResponse(fullDiagram(diagramId, 3))
       }
       if (path === `/api/diagrams/${diagramId}` && init?.method === 'PUT') {
-        return jsonResponse(
-          { detail: 'Diagram was modified elsewhere; reload and retry.' },
-          409
-        )
+        return jsonResponse({ detail: 'Diagram was modified elsewhere; reload and retry.' }, 409)
       }
       return jsonResponse({ detail: 'unexpected' }, 500)
     })
@@ -158,7 +163,10 @@ describe('savedDiagrams detail cache after update', () => {
     const diagramId = 'd-delete'
     authFetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       const path = String(url)
-      if (path === `/api/diagrams/${diagramId}` && (!init || !init.method || init.method === 'GET')) {
+      if (
+        path === `/api/diagrams/${diagramId}` &&
+        (!init || !init.method || init.method === 'GET')
+      ) {
         return jsonResponse(fullDiagram(diagramId, 3))
       }
       if (path === `/api/diagrams/${diagramId}` && init?.method === 'DELETE') {
@@ -189,7 +197,10 @@ describe('savedDiagrams detail cache after update', () => {
     const diagramId = 'd-force'
     authFetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       const path = String(url)
-      if (path === `/api/diagrams/${diagramId}` && (!init || !init.method || init.method === 'GET')) {
+      if (
+        path === `/api/diagrams/${diagramId}` &&
+        (!init || !init.method || init.method === 'GET')
+      ) {
         return jsonResponse(fullDiagram(diagramId, 5, { updated_at: '2026-01-01T00:00:00Z' }))
       }
       return jsonResponse({ detail: 'unexpected' }, 500)
@@ -201,7 +212,10 @@ describe('savedDiagrams detail cache after update', () => {
 
     authFetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       const path = String(url)
-      if (path === `/api/diagrams/${diagramId}` && (!init || !init.method || init.method === 'GET')) {
+      if (
+        path === `/api/diagrams/${diagramId}` &&
+        (!init || !init.method || init.method === 'GET')
+      ) {
         return jsonResponse(fullDiagram(diagramId, 9, { updated_at: '2026-01-01T00:02:00Z' }))
       }
       return jsonResponse({ detail: 'unexpected' }, 500)
@@ -219,7 +233,10 @@ describe('savedDiagrams detail cache after update', () => {
     const diagramId = 'd-force-fail'
     authFetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       const path = String(url)
-      if (path === `/api/diagrams/${diagramId}` && (!init || !init.method || init.method === 'GET')) {
+      if (
+        path === `/api/diagrams/${diagramId}` &&
+        (!init || !init.method || init.method === 'GET')
+      ) {
         return jsonResponse(fullDiagram(diagramId, 4))
       }
       return jsonResponse({ detail: 'unexpected' }, 500)
@@ -242,7 +259,10 @@ describe('savedDiagrams detail cache after update', () => {
 
     authFetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       const path = String(url)
-      if (path === `/api/diagrams/${diagramId}` && (!init || !init.method || init.method === 'GET')) {
+      if (
+        path === `/api/diagrams/${diagramId}` &&
+        (!init || !init.method || init.method === 'GET')
+      ) {
         return new Promise<Response>((resolve) => {
           resolveSlowGet = resolve
         })
@@ -268,7 +288,7 @@ describe('savedDiagrams detail cache after update', () => {
     expect(store.getCachedDiagram(diagramId)?.updated_at).toBe('2026-01-01T00:05:00Z')
     expect((store.getCachedDiagram(diagramId)?.spec.nodes as unknown[]).length).toBe(13)
 
-    resolveSlowGet!(
+    must(resolveSlowGet)(
       jsonResponse(fullDiagram(diagramId, 57, { updated_at: '2026-01-01T00:00:00Z' }))
     )
     const late = await slowGet
@@ -287,7 +307,10 @@ describe('savedDiagrams detail cache after update', () => {
       if (path === `/api/diagrams/${diagramId}` && init?.method === 'PUT') {
         return jsonResponse(fullDiagram(diagramId, 13, { updated_at: '2026-01-01T00:05:00Z' }))
       }
-      if (path === `/api/diagrams/${diagramId}` && (!init || !init.method || init.method === 'GET')) {
+      if (
+        path === `/api/diagrams/${diagramId}` &&
+        (!init || !init.method || init.method === 'GET')
+      ) {
         return jsonResponse(fullDiagram(diagramId, 2, { updated_at: '2026-01-01T00:00:00Z' }))
       }
       return jsonResponse({ detail: 'unexpected' }, 500)

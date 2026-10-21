@@ -1,10 +1,12 @@
 /**
  * Document Summary session clear vs discard (COS cleanup on diagram reset).
  */
-import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick, ref } from 'vue'
+
+import { createPinia, setActivePinia } from 'pinia'
+
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createFileCenterActivePackage } from '@/composables/fileCenter/useFileCenterActivePackage'
 import { DOC_SUMMARY_API_BASE } from '@/config/docSummaryApi'

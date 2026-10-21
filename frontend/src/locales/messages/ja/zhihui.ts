@@ -24,13 +24,17 @@ export default {
   'zhihui.promptPlaceholder.image': 'あなたのインスピレーションを入力してください…',
   'zhihui.promptPlaceholder.video': 'シーン、カメラワーク、リズムを説明してください...',
   'zhihui.promptPlaceholder.diagram': 'マインドマップを選択し、「生成」をクリックします。',
-  'zhihui.composerHint.image': 'テキストを使用して画像を説明し、ワンクリックで教育イラストや視覚資料を生成します',
-  'zhihui.composerHint.video': 'Wensheng Video および Tusheng Video 機能にアクセスしようとしています',
-  'zhihui.composerHint.diagram': 'マインド マップを選択して、学習者の視点からコースウェア図を生成します',
+  'zhihui.composerHint.image':
+    'テキストを使用して画像を説明し、ワンクリックで教育イラストや視覚資料を生成します',
+  'zhihui.composerHint.video':
+    'Wensheng Video および Tusheng Video 機能にアクセスしようとしています',
+  'zhihui.composerHint.diagram':
+    'マインド マップを選択して、学習者の視点からコースウェア図を生成します',
   'zhihui.diagram.selectMindmap': 'マインドマップを選択してください',
   'zhihui.diagram.selectMindmapHint': '上からマインドマップを選択してください',
   'zhihui.diagram.selectMindmapFirst': '最初にマインドマップを選択してください',
-  'zhihui.diagram.emptyLibrary': 'マインド マップはまだありません。まず図ライブラリに保存してください。',
+  'zhihui.diagram.emptyLibrary':
+    'マインド マップはまだありません。まず図ライブラリに保存してください。',
   'zhihui.diagram.loadFailed': 'マインドマップの読み込みに失敗しました',
   'zhihui.diagram.emptyDeck': 'マインドマップを選択したら、「生成」をクリックします。',
   'zhihui.diagram.waitingSlides': 'コースウェアを生成中です。お待​​ちください...',
@@ -74,7 +78,8 @@ export default {
   'zhihui.sizeButton': '画像サイズ',
   'zhihui.sizePanelTitle': '画像サイズ',
   'zhihui.sizeOptional': 'オプション',
-  'zhihui.sizeHint': '形式は幅*高さです。 指定しない場合、モデルはプロンプトの単語に基づいて解像度を自動的に推奨します。',
+  'zhihui.sizeHint':
+    '形式は幅*高さです。 指定しない場合、モデルはプロンプトの単語に基づいて解像度を自動的に推奨します。',
   'zhihui.sizeLimits': 'ピクセル領域 512×512 ～ 2048×2048。アスペクト比 1:8 ～ 8:1',
   'zhihui.size.auto': '知的',
   'zhihui.size.autoHint': '自動',

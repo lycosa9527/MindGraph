@@ -1,6 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
+
+import { createPinia, setActivePinia } from 'pinia'
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useMindMapLayoutSlice } from '@/stores/diagram/mindMapLayout'
 import type { DiagramContext } from '@/stores/diagram/types'
@@ -159,9 +161,9 @@ describe('mind-map load debug sessions', () => {
     expect(info.mock.calls.filter((c) => String(c[0]).includes('session:start')).length).toBe(1)
 
     beginMindMapSpecLoadSession()
-    expect(info.mock.calls.filter((c) => String(c[0]).includes('session:start reason=spec')).length).toBe(
-      1
-    )
+    expect(
+      info.mock.calls.filter((c) => String(c[0]).includes('session:start reason=spec')).length
+    ).toBe(1)
 
     info.mockRestore()
   })

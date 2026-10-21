@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'Mostrar',
-  'showcase.subtitle': 'Descubra um ensino de pensamento baseado em IA de alta qualidade e compartilhe seus resultados de ensino e pesquisa',
+  'showcase.subtitle':
+    'Descubra um ensino de pensamento baseado em IA de alta qualidade e compartilhe seus resultados de ensino e pesquisa',
   'showcase.publish': 'Postar um caso',
   'showcase.searchPlaceholder': 'Pesquisar casos…',
   'showcase.filter.all': 'todos',
@@ -29,21 +30,27 @@ export default {
   'showcase.myFavorites': 'minha coleção',
   'showcase.myFavoritesModalTitle': 'Casos coletados',
   'showcase.myFavoritesEmpty': 'Ainda não há casos coletados',
-  'showcase.myFavoritesEmptyHint': 'Quando você clica em Favorito em um detalhe ou cartão de caso, ele aparecerá aqui',
+  'showcase.myFavoritesEmptyHint':
+    'Quando você clica em Favorito em um detalhe ou cartão de caso, ele aparecerá aqui',
   'showcase.myCasesModalTitle': 'Casos que postei',
-  'showcase.myCasesManageHint': 'Você pode retirá-lo, removê-lo ou modificá-lo diretamente na lista; clique no caso para ver detalhes',
+  'showcase.myCasesManageHint':
+    'Você pode retirá-lo, removê-lo ou modificá-lo diretamente na lista; clique no caso para ver detalhes',
   'showcase.myCasesAction.edit': 'Rever',
   'showcase.myCasesEmpty': 'Nenhum caso publicado ainda',
-  'showcase.myCasesEmptyHint': 'Assim que o caso for publicado, o progresso da revisão será visualizado aqui',
+  'showcase.myCasesEmptyHint':
+    'Assim que o caso for publicado, o progresso da revisão será visualizado aqui',
   'showcase.caseCount': 'Total de {n} casos',
   'showcase.pendingReview': 'Revisão pendente',
   'showcase.publishModal.title': 'Postar um caso',
   'showcase.publishModal.titleLabel': 'Título do caso',
-  'showcase.publishModal.titleHint': 'O título deve ser conciso e claro, sendo recomendado não ultrapassar {max} palavras.',
-  'showcase.publishModal.titlePlaceholder': 'Por exemplo: Projeto de ensino do "Dia de Debate entre Duas Crianças"',
+  'showcase.publishModal.titleHint':
+    'O título deve ser conciso e claro, sendo recomendado não ultrapassar {max} palavras.',
+  'showcase.publishModal.titlePlaceholder':
+    'Por exemplo: Projeto de ensino do "Dia de Debate entre Duas Crianças"',
   'showcase.publishModal.descriptionLabel': 'Descrição',
   'showcase.publishModal.tagsLabel': 'Rótulo',
-  'showcase.publishModal.tagsHint': 'Separe várias tags com vírgulas, como: conflito cognitivo, matemática do ensino médio',
+  'showcase.publishModal.tagsHint':
+    'Separe várias tags com vírgulas, como: conflito cognitivo, matemática do ensino médio',
   'showcase.publishModal.caseTypeLabel': 'Tipo de caso',
   'showcase.publishModal.subjectLabel': 'disciplina',
   'showcase.publishModal.gradeLabel': 'nota',
@@ -53,19 +60,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Fazendo upload de arquivos ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Enviando {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Quase pronto…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Falha no upload, o rascunho foi retirado. Tente novamente.',
-  'showcase.publishModal.uploadCorsFailed': 'O arquivo não foi carregado no armazenamento de objetos (motivos comuns: o bucket CORS não permite o site atual ou o CSP do site não libera o nome de domínio COS). O rascunho foi retirado, entre em contato com o administrador para configurar e tente novamente.',
-  'showcase.publishModal.uploadStorageRejected': 'O Object Storage rejeitou este upload. O rascunho foi retirado. Tente novamente mais tarde; se falhar repetidamente, entre em contato com o administrador.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Falha no upload, o rascunho foi retirado. Tente novamente.',
+  'showcase.publishModal.uploadCorsFailed':
+    'O arquivo não foi carregado no armazenamento de objetos (motivos comuns: o bucket CORS não permite o site atual ou o CSP do site não libera o nome de domínio COS). O rascunho foi retirado, entre em contato com o administrador para configurar e tente novamente.',
+  'showcase.publishModal.uploadStorageRejected':
+    'O Object Storage rejeitou este upload. O rascunho foi retirado. Tente novamente mais tarde; se falhar repetidamente, entre em contato com o administrador.',
   'showcase.publishModal.uploadFailed': 'Falha no upload. Tente novamente.',
-  'showcase.publishModal.uploadCoverTooLarge': 'A imagem da capa excede o limite de 2 MB. Compacte a imagem de visualização ou use uma imagem menor e tente novamente.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'O arquivo excede o limite de tamanho (20 MB para documentos/imagens, 100 MB para vídeos). Comprima e tente novamente.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'O arquivo excede o limite de tamanho (20 MB para documentos/imagens, 100 MB para vídeos). O rascunho foi retirado. Compacte-o e tente novamente.',
-  'showcase.publishModal.uploadFileTooLarge': 'O arquivo é muito grande e excede o limite do tipo de upload atual. Confirme o tamanho e tente novamente.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'O arquivo é muito grande e excede o limite do tipo de upload atual. O rascunho foi retirado. Confirme o tamanho e tente novamente.',
-  'showcase.publishModal.coverUploadSkipped': 'O caso foi enviado, mas o upload da capa falhou. O caso pode ser editado posteriormente para atualizar a página de rosto.',
-  'showcase.publishModal.coverGenerating': 'A capa está sendo gerada em segundo plano e será exibida no cartão posteriormente.',
-  'showcase.publishModal.coverFailed': 'O caso foi submetido, mas a geração da capa falhou. Você pode editar o caso posteriormente para atualizar a capa.',
-  'showcase.publishModal.coverFailedTimeout': 'O caso foi enviado, mas a geração da capa expirou. Você pode editar o caso posteriormente para atualizar a capa.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'A imagem da capa excede o limite de 2 MB. Compacte a imagem de visualização ou use uma imagem menor e tente novamente.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'O arquivo excede o limite de tamanho (20 MB para documentos/imagens, 100 MB para vídeos). Comprima e tente novamente.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'O arquivo excede o limite de tamanho (20 MB para documentos/imagens, 100 MB para vídeos). O rascunho foi retirado. Compacte-o e tente novamente.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'O arquivo é muito grande e excede o limite do tipo de upload atual. Confirme o tamanho e tente novamente.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'O arquivo é muito grande e excede o limite do tipo de upload atual. O rascunho foi retirado. Confirme o tamanho e tente novamente.',
+  'showcase.publishModal.coverUploadSkipped':
+    'O caso foi enviado, mas o upload da capa falhou. O caso pode ser editado posteriormente para atualizar a página de rosto.',
+  'showcase.publishModal.coverGenerating':
+    'A capa está sendo gerada em segundo plano e será exibida no cartão posteriormente.',
+  'showcase.publishModal.coverFailed':
+    'O caso foi submetido, mas a geração da capa falhou. Você pode editar o caso posteriormente para atualizar a capa.',
+  'showcase.publishModal.coverFailedTimeout':
+    'O caso foi enviado, mas a geração da capa expirou. Você pode editar o caso posteriormente para atualizar a capa.',
   'showcase.publishModal.success': 'O caso foi submetido e aguarda análise do administrador',
   'showcase.publishModal.fromCanvas': 'Publicar na tela',
   'showcase.publishModal.step1Title': 'Informações básicas',
@@ -79,68 +98,95 @@ export default {
   'showcase.publishModal.uploadLabel': 'Carregar arquivos',
   'showcase.publishModal.uploadImage': 'Carregar fotos',
   'showcase.publishModal.uploadFile': 'Carregar arquivos',
-  'showcase.publishModal.directUploadDisabled': 'A transmissão direta local está temporariamente indisponível, mas você ainda pode selecionar o ícone no histórico.',
-  'showcase.publishModal.uploadViaStorage': 'Os arquivos serão carregados no armazenamento de objetos por meio de links seguros de curta duração.',
+  'showcase.publishModal.directUploadDisabled':
+    'A transmissão direta local está temporariamente indisponível, mas você ainda pode selecionar o ícone no histórico.',
+  'showcase.publishModal.uploadViaStorage':
+    'Os arquivos serão carregados no armazenamento de objetos por meio de links seguros de curta duração.',
   'showcase.publishModal.pickHistory': 'Pick from history',
   'showcase.publishModal.removeFile': 'Remover',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: limited preview)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: limited preview) — max {maxMb} MB per document',
-  'showcase.publishModal.teachingDocTooLarge': 'O tamanho do documento excede o limite de {maxMb} MB. Compacte-o e carregue-o novamente.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: limited preview) — max {maxMb} MB per document',
+  'showcase.publishModal.teachingDocTooLarge':
+    'O tamanho do documento excede o limite de {maxMb} MB. Compacte-o e carregue-o novamente.',
   'showcase.publishModal.diagramImageHint': 'Suporte .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Carregar fotos (múltiplas opções disponíveis)',
   'showcase.publishModal.galleryHint': 'Add multiple images and saved diagrams, up to {max} items',
-  'showcase.publishModal.galleryHintCase': 'Várias imagens e ícones históricos podem ser adicionados, até {max} itens',
-  'showcase.publishModal.galleryHintTemplate': 'Você pode fazer upload de arquivos .mg e selecionar vários ícones históricos, até {max} itens',
+  'showcase.publishModal.galleryHintCase':
+    'Várias imagens e ícones históricos podem ser adicionados, até {max} itens',
+  'showcase.publishModal.galleryHintTemplate':
+    'Você pode fazer upload de arquivos .mg e selecionar vários ícones históricos, até {max} itens',
   'showcase.publishModal.galleryCount': '{count}/{max} itens adicionados',
   'showcase.publishModal.galleryImageItem': 'Imagem: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Ilustração: {name}',
   'showcase.publishModal.galleryLimit': 'Adicione até {max} itens',
   'showcase.publishModal.galleryDuplicateDiagram': 'O ícone do histórico já está na lista',
   'showcase.publishModal.galleryPickerDone': 'Seleção completa',
-  'showcase.publishModal.galleryUploadFailed': 'Falha no upload da imagem da galeria. Publique novamente',
-  'showcase.publishModal.galleryReuploadHint': 'Algumas fotos da galeria não foram salvas com sucesso. Selecione novamente as fotos antes de enviar.',
+  'showcase.publishModal.galleryUploadFailed':
+    'Falha no upload da imagem da galeria. Publique novamente',
+  'showcase.publishModal.galleryReuploadHint':
+    'Algumas fotos da galeria não foram salvas com sucesso. Selecione novamente as fotos antes de enviar.',
   'showcase.detail.galleryImage': 'foto',
   'showcase.detail.galleryDiagram': 'Ilustração',
   'showcase.detail.galleryPrev': 'Foto anterior',
   'showcase.detail.galleryNext': 'Próximo',
   'showcase.detail.gallerySwipeHint': 'Deslize para a esquerda ou para a direita para alternar',
   'showcase.detail.galleryImageMissing': 'A imagem não foi carregada, repasse o caso',
-  'showcase.publishModal.templateFileHint': 'Suporta apenas o formato .mg (arquivos de exportação MindGraph)',
+  'showcase.publishModal.templateFileHint':
+    'Suporta apenas o formato .mg (arquivos de exportação MindGraph)',
   'showcase.publishModal.templatePreviewLabel': 'Visualização do ícone',
   'showcase.publishModal.templatePreviewHint': 'Navegue no modo pinça, não editável',
-  'showcase.publishModal.templatePreviewEmpty': 'Faça upload de um arquivo .mg ou selecione um ícone de histórico para visualizar a tela',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Faça upload de um arquivo .mg ou selecione um ícone de histórico para visualizar a tela',
   'showcase.publishModal.diagramCasePreviewLabel': 'Visualização do ícone',
-  'showcase.publishModal.diagramCasePreviewHint': 'Navegue no modo pinça, aplique zoom para visualizar',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Tipo de ícone correspondente automaticamente com base no ícone histórico selecionado',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'Navegue no modo pinça, aplique zoom para visualizar',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Tipo de ícone correspondente automaticamente com base no ícone histórico selecionado',
   'showcase.publishModal.introLabel': 'Introdução gráfica',
   'showcase.publishModal.teachingIntroLabel': 'Introdução ao Design Instrucional',
   'showcase.publishModal.highlightsLabel': 'Destaques do design',
-  'showcase.publishModal.highlightsPlaceholder': 'Descreva os destaques do design deste curso, um por um, uma linha por linha (opcional)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Apresente resumidamente os antecedentes, objetivos e cenários aplicáveis ​​do design de ensino deste curso',
+  'showcase.publishModal.highlightsPlaceholder':
+    'Descreva os destaques do design deste curso, um por um, uma linha por linha (opcional)',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Apresente resumidamente os antecedentes, objetivos e cenários aplicáveis ​​do design de ensino deste curso',
   'showcase.publishModal.aiGenerate': 'IA gerada',
   'showcase.publishModal.aiGenerating': 'A IA está gerando…',
   'showcase.publishModal.aiGenerateStop': 'parar',
-  'showcase.publishModal.aiGenerateCancelled': 'A geração de IA foi interrompida – clique novamente para limpar e regenerar',
-  'showcase.publishModal.aiGenerateSuccess': 'A introdução do design de ensino e os destaques do design foram gerados com base no documento. Por favor, verifique e edite; por favor preencha a reflexão de ensino sozinho.',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'A introdução da ilustração e a aplicação em sala de aula foram geradas com base na ilustração. Por favor, verifique e edite.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'A geração de IA foi interrompida – clique novamente para limpar e regenerar',
+  'showcase.publishModal.aiGenerateSuccess':
+    'A introdução do design de ensino e os destaques do design foram gerados com base no documento. Por favor, verifique e edite; por favor preencha a reflexão de ensino sozinho.',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'A introdução da ilustração e a aplicação em sala de aula foram geradas com base na ilustração. Por favor, verifique e edite.',
   'showcase.publishModal.aiGenerateFailed': 'Falha na geração de IA. Tente novamente mais tarde',
-  'showcase.publishModal.aiGenerateNeedFile': 'Faça upload do documento de design instrucional na etapa anterior primeiro',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'A geração de IA atualmente suporta apenas casos de design instrucional',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Faça upload do documento de design instrucional na etapa anterior primeiro',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'A geração de IA atualmente suporta apenas casos de design instrucional',
   'showcase.publishModal.reflectionLabel': 'Reflexão docente',
-  'showcase.publishModal.introPlaceholder': 'Descreva resumidamente o conteúdo do caso e os cenários aplicáveis',
-  'showcase.publishModal.diagramCorePlaceholder': 'Descreva o conteúdo principal e as características de visualização pensante deste diagrama',
-  'showcase.publishModal.classroomAppPlaceholder': 'Descreva como esta ilustração pode ser usada em sala de aula',
-  'showcase.publishModal.tagInputPlaceholder': 'Insira o rótulo (até 10 caracteres) e pressione Enter para adicionar',
+  'showcase.publishModal.introPlaceholder':
+    'Descreva resumidamente o conteúdo do caso e os cenários aplicáveis',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Descreva o conteúdo principal e as características de visualização pensante deste diagrama',
+  'showcase.publishModal.classroomAppPlaceholder':
+    'Descreva como esta ilustração pode ser usada em sala de aula',
+  'showcase.publishModal.tagInputPlaceholder':
+    'Insira o rótulo (até 10 caracteres) e pressione Enter para adicionar',
   'showcase.publishModal.tagRecommended': 'Etiquetas recomendadas',
   'showcase.publishModal.tagCountHint': '(Máximo {max})',
   'showcase.publishModal.tagMaxCount': 'Apenas um máximo de tags {max} podem ser adicionadas',
-  'showcase.publishModal.networkError': 'Falha no envio: conexão de upload interrompida. Por favor Ctrl+F5 para atualizar e tente novamente; se contiver vídeo, confirme se o arquivo único tem ≤100 MB e o total é ≤105 MB.',
+  'showcase.publishModal.networkError':
+    'Falha no envio: conexão de upload interrompida. Por favor Ctrl+F5 para atualizar e tente novamente; se contiver vídeo, confirme se o arquivo único tem ≤100 MB e o total é ≤105 MB.',
   'showcase.publishModal.fileTooLarge': '"{name}" excede o limite de tamanho de {maxMb}MB',
-  'showcase.publishModal.uploadTotalTooLarge': 'O tamanho total dos arquivos enviados excede o limite. Reduza o tamanho dos anexos ou vídeos.',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'O tamanho total dos arquivos enviados excede o limite. Reduza o tamanho dos anexos ou vídeos.',
   'showcase.publishModal.tagAdd': 'adicionar à',
   'showcase.publishModal.publishBtn': 'liberar',
-  'showcase.publishModal.reflectionPlaceholder': 'Escreva sua reflexão e resumo sobre o ensino desta lição (opcional)',
+  'showcase.publishModal.reflectionPlaceholder':
+    'Escreva sua reflexão e resumo sobre o ensino desta lição (opcional)',
   'showcase.publishModal.classroomAppLabel': 'Aplicação em sala de aula',
   'showcase.publishModal.selectSubject': 'Por favor selecione um assunto',
   'showcase.publishModal.selectGrade': 'Selecione a nota',
@@ -148,20 +194,28 @@ export default {
   'showcase.publishModal.validationTitle': 'Preencha o título do caso',
   'showcase.publishModal.validationSubject': 'Por favor selecione um assunto',
   'showcase.publishModal.validationGrade': 'Selecione a nota',
-  'showcase.publishModal.validationFile': 'Faça upload de um arquivo ou selecione um ícone de histórico',
+  'showcase.publishModal.validationFile':
+    'Faça upload de um arquivo ou selecione um ícone de histórico',
   'showcase.publishModal.validationDiagramType': 'Selecione o tipo de ícone',
   'showcase.publishModal.invalidFileType': 'Formato de arquivo não suportado',
-  'showcase.publishModal.invalidMgFile': 'Não foi possível ler o arquivo .mg. Confirme se o arquivo é da exportação do MindGraph',
-  'showcase.publishModal.cannotPreview': 'Não foi possível gerar a visualização da capa. O caso ainda será enviado; experimente PNG/JPG ou selecione um dos ícones históricos',
-  'showcase.publishModal.cannotPreviewHistory': 'Não foi possível gerar cobertura a partir desta ilustração histórica, o caso ainda será submetido; selecione novamente ou abra primeiro na tela e salve novamente',
-  'showcase.publishModal.cannotPreviewTemplate': 'Não foi possível gerar a visualização da capa. O caso ainda será enviado; confirme se o arquivo .mg é válido ou selecione novamente o ícone do histórico',
+  'showcase.publishModal.invalidMgFile':
+    'Não foi possível ler o arquivo .mg. Confirme se o arquivo é da exportação do MindGraph',
+  'showcase.publishModal.cannotPreview':
+    'Não foi possível gerar a visualização da capa. O caso ainda será enviado; experimente PNG/JPG ou selecione um dos ícones históricos',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Não foi possível gerar cobertura a partir desta ilustração histórica, o caso ainda será submetido; selecione novamente ou abra primeiro na tela e salve novamente',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Não foi possível gerar a visualização da capa. O caso ainda será enviado; confirme se o arquivo .mg é válido ou selecione novamente o ícone do histórico',
   'showcase.publishModal.historyTitle': 'Pick saved diagram',
   'showcase.publishModal.historySearch': 'Nome do ícone de pesquisa…',
   'showcase.publishModal.historyEmpty': 'No saved diagrams',
   'showcase.publishModal.historyUncategorized': 'Sem categoria',
-  'showcase.publishModal.typeDesc.teachingDesign': 'Pensando no desenvolvimento do design de ensino em sala de aula',
-  'showcase.publishModal.typeDesc.diagramCase': 'Excelente aplicativo de ensino de visualização de pensamento ou compartilhamento de ilustrações',
-  'showcase.publishModal.typeDesc.diagramTemplate': 'Ícones que podem ser reutilizados ou recriados',
+  'showcase.publishModal.typeDesc.teachingDesign':
+    'Pensando no desenvolvimento do design de ensino em sala de aula',
+  'showcase.publishModal.typeDesc.diagramCase':
+    'Excelente aplicativo de ensino de visualização de pensamento ou compartilhamento de ilustrações',
+  'showcase.publishModal.typeDesc.diagramTemplate':
+    'Ícones que podem ser reutilizados ou recriados',
   'showcase.detail.import': 'Use este caso',
   'showcase.action.goDraw': 'Vá e faça um desenho',
   'showcase.action.applyTemplate': 'Aplicar este modelo',
@@ -184,9 +238,11 @@ export default {
   'showcase.detail.delist': 'Retirado das prateleiras',
   'showcase.detail.resubmit': 'Revisar e reenviar',
   'showcase.detail.withdrawTitle': 'Caso de retirada',
-  'showcase.detail.withdrawConfirm': 'Tem certeza de que deseja retirar "{title}"? Uma vez retirado, ele será removido da fila de revisão e não poderá ser recuperado.',
+  'showcase.detail.withdrawConfirm':
+    'Tem certeza de que deseja retirar "{title}"? Uma vez retirado, ele será removido da fila de revisão e não poderá ser recuperado.',
   'showcase.detail.delistTitle': 'Casos de remoção',
-  'showcase.detail.delistConfirm': 'Tem certeza de que deseja remover "{title}" do Case Square? Depois de removido, outros usuários não poderão navegar nele.',
+  'showcase.detail.delistConfirm':
+    'Tem certeza de que deseja remover "{title}" do Case Square? Depois de removido, outros usuários não poderão navegar nele.',
   'showcase.detail.confirm': 'Confirmar',
   'showcase.detail.cancel': 'Cancelar',
   'showcase.withdrawn': 'Retirado',
@@ -195,7 +251,8 @@ export default {
   'showcase.publishModal.editTitle': 'Revisar e reenviar',
   'showcase.publishModal.resubmit': 'Reenviar para revisão',
   'showcase.publishModal.resubmitting': 'Reenviando…',
-  'showcase.publishModal.keepExistingFile': 'Se você não fizer upload, mantenha o arquivo original.',
+  'showcase.publishModal.keepExistingFile':
+    'Se você não fizer upload, mantenha o arquivo original.',
   'showcase.detail.views': '{n} visualizações',
   'showcase.detail.recommended': 'Recomendado',
   'showcase.detail.askMindmate': 'Pergunte ao MindMate',
@@ -206,8 +263,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Converting slides for preview…',
   'showcase.detail.officePreviewPending': 'Converting slides for preview…',
   'showcase.detail.docPreviewLoading': 'Carregando documentos…',
-  'showcase.detail.docPreviewFailed': 'Falha ao carregar a visualização do documento. Tente abri-lo em uma nova guia.',
-  'showcase.detail.legacyDocHint': 'Legacy .doc files cannot be previewed inline. Open or download the file, or upload .docx for in-browser preview.',
+  'showcase.detail.docPreviewFailed':
+    'Falha ao carregar a visualização do documento. Tente abri-lo em uma nova guia.',
+  'showcase.detail.legacyDocHint':
+    'Legacy .doc files cannot be previewed inline. Open or download the file, or upload .docx for in-browser preview.',
   'showcase.detail.noDocument': 'Ainda não há visualização do documento',
   'showcase.detail.noDiagramPreview': 'Ainda não há visualização de ícones',
   'showcase.detail.diagramPreviewLoading': 'Carregando ícone…',

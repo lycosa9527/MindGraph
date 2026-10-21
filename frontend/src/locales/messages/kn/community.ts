@@ -14,7 +14,8 @@ export default {
   'community.deleteConfirmBody': 'ಈ ಹಂಚಿಕೆಯನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ?',
   'community.deleteConfirmTitle': 'ಅಳಿಸುವಿಕೆಯನ್ನು ದೃಢೀಕರಿಸಿ',
   'community.deleted': 'ಅಳಿಸಲಾಗಿದೆ',
-  'community.emptyNoPosts': 'ಯಾವುದೇ ಹೊಂದಾಣಿಕೆಯ ಕೆಲಸಗಳು ಕಂಡುಬಂದಿಲ್ಲ, ಫಿಲ್ಟರ್ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ಸರಿಹೊಂದಿಸಲು ಅಥವಾ ಕೀವರ್ಡ್ಗಳನ್ನು ಹುಡುಕಲು ಪ್ರಯತ್ನಿಸಿ',
+  'community.emptyNoPosts':
+    'ಯಾವುದೇ ಹೊಂದಾಣಿಕೆಯ ಕೆಲಸಗಳು ಕಂಡುಬಂದಿಲ್ಲ, ಫಿಲ್ಟರ್ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ಸರಿಹೊಂದಿಸಲು ಅಥವಾ ಕೀವರ್ಡ್ಗಳನ್ನು ಹುಡುಕಲು ಪ್ರಯತ್ನಿಸಿ',
   'community.filter.all': 'ಎಲ್ಲಾ',
   'community.filter.mine': 'ನನ್ನದು',
   'community.filterCategory': 'ವರ್ಗೀಕರಣ',
@@ -76,10 +77,12 @@ export default {
   'debateverse.clickNextHint': 'ಬದಲಾವಣೆಗಳು ಕಾರ್ಯರೂಪಕ್ಕೆ ಬರಲು ದಯವಿಟ್ಟು ಮುಂದಿನ ಬಟನ್ ಕ್ಲಿಕ್ ಮಾಡಿ',
   'debateverse.coinTossAffirmativeFirst': 'ದೃಢೀಕರಣವು ಮೊದಲು ಮಾತನಾಡುತ್ತದೆ',
   'debateverse.coinTossGotIt': 'ಗೊತ್ತಿತ್ತು',
-  'debateverse.coinTossModalBody': 'ಆಟದ ಮೊದಲು, ಮಾತನಾಡುವ ಕ್ರಮವನ್ನು ನಿರ್ಧರಿಸಲು ಅಥವಾ ಸಾಧಕ-ಬಾಧಕಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ನಾಣ್ಯವನ್ನು ತಿರುಗಿಸಿ.',
+  'debateverse.coinTossModalBody':
+    'ಆಟದ ಮೊದಲು, ಮಾತನಾಡುವ ಕ್ರಮವನ್ನು ನಿರ್ಧರಿಸಲು ಅಥವಾ ಸಾಧಕ-ಬಾಧಕಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ನಾಣ್ಯವನ್ನು ತಿರುಗಿಸಿ.',
   'debateverse.coinTossNegativeFirst': 'ನಕಾರಾತ್ಮಕ ಭಾಗವು ಮೊದಲು ಮಾತನಾಡುತ್ತದೆ',
   'debateverse.coinTossOrder': 'ಮಾತನಾಡುವ ಕ್ರಮವನ್ನು ನಿರ್ಧರಿಸಲು ನಾಣ್ಯವನ್ನು ಟಾಸ್ ಮಾಡಿ',
-  'debateverse.coinTossRules': 'ಪ್ರತಿ ಚರ್ಚೆಯ ಪಾತ್ರಕ್ಕೆ AI ಮಾದರಿಯನ್ನು ಯಾದೃಚ್ಛಿಕವಾಗಿ ನಿಯೋಜಿಸಲಾಗಿದೆ. ಆಟದ ಮೊದಲು, ಮಾತನಾಡುವ ಕ್ರಮವನ್ನು ನಿರ್ಧರಿಸಲು ಅಥವಾ ಸಾಧಕ-ಬಾಧಕಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ನಾಣ್ಯ ಟಾಸ್ ಅನ್ನು ಬಳಸಲಾಗುತ್ತದೆ.',
+  'debateverse.coinTossRules':
+    'ಪ್ರತಿ ಚರ್ಚೆಯ ಪಾತ್ರಕ್ಕೆ AI ಮಾದರಿಯನ್ನು ಯಾದೃಚ್ಛಿಕವಾಗಿ ನಿಯೋಜಿಸಲಾಗಿದೆ. ಆಟದ ಮೊದಲು, ಮಾತನಾಡುವ ಕ್ರಮವನ್ನು ನಿರ್ಧರಿಸಲು ಅಥವಾ ಸಾಧಕ-ಬಾಧಕಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ನಾಣ್ಯ ಟಾಸ್ ಅನ್ನು ಬಳಸಲಾಗುತ್ತದೆ.',
   'debateverse.coinTossStageTitle': 'ನಾಣ್ಯ ಟಾಸ್ ಹಂತ',
   'debateverse.debateTopicLabel': 'ಚರ್ಚಾ ವಿಷಯ:',
   'debateverse.executeCoinToss': 'ನಾಣ್ಯ ಟಾಸ್ ಮಾಡಿ',
@@ -105,18 +108,23 @@ export default {
   'debateverse.roleLabel.debater': 'ಚರ್ಚೆಗಾರರಾಗಿ ಭಾಗವಹಿಸಿ',
   'debateverse.roleLabel.judgeRole': 'ತೀರ್ಪುಗಾರರಾಗಿ',
   'debateverse.roleLabel.viewer': 'ವೀಕ್ಷಕನಾಗಿ ವೀಕ್ಷಿಸಿ',
-  'debateverse.setup.greeting': '{username} ಹಲೋ, ನಿಜವಾದ ಬುದ್ಧಿವಂತಿಕೆಯು ಅಭಿಪ್ರಾಯಗಳ ಮುಖಾಮುಖಿಯಿಂದ ಹುಟ್ಟಿದೆ.',
+  'debateverse.setup.greeting':
+    '{username} ಹಲೋ, ನಿಜವಾದ ಬುದ್ಧಿವಂತಿಕೆಯು ಅಭಿಪ್ರಾಯಗಳ ಮುಖಾಮುಖಿಯಿಂದ ಹುಟ್ಟಿದೆ.',
   'debateverse.setup.roleDebater': 'ಚರ್ಚೆಗಾರರಾಗಿ ಭಾಗವಹಿಸಿ',
   'debateverse.setup.roleJudge': 'ತೀರ್ಪುಗಾರರಾಗಿ',
   'debateverse.setup.roleViewer': 'ವೀಕ್ಷಕನಾಗಿ ವೀಕ್ಷಿಸಿ',
   'debateverse.setup.suggestion1': 'ಕೃತಕ ಬುದ್ಧಿಮತ್ತೆಗೆ ಕಾನೂನು ವ್ಯಕ್ತಿತ್ವವನ್ನು ನೀಡಬೇಕೇ?',
-  'debateverse.setup.suggestion2': 'ಆನ್‌ಲೈನ್ ಆಟಗಳು ಹದಿಹರೆಯದವರಿಗೆ ಹಾನಿಗಿಂತ ಹೆಚ್ಚು ಒಳ್ಳೆಯದನ್ನು ಮಾಡುತ್ತವೆಯೇ ಅಥವಾ ಒಳ್ಳೆಯದಕ್ಕಿಂತ ಹೆಚ್ಚು ಹಾನಿ ಮಾಡುತ್ತವೆಯೇ?',
+  'debateverse.setup.suggestion2':
+    'ಆನ್‌ಲೈನ್ ಆಟಗಳು ಹದಿಹರೆಯದವರಿಗೆ ಹಾನಿಗಿಂತ ಹೆಚ್ಚು ಒಳ್ಳೆಯದನ್ನು ಮಾಡುತ್ತವೆಯೇ ಅಥವಾ ಒಳ್ಳೆಯದಕ್ಕಿಂತ ಹೆಚ್ಚು ಹಾನಿ ಮಾಡುತ್ತವೆಯೇ?',
   'debateverse.setup.suggestion3': 'ಕಾಲೇಜು ಪ್ರವೇಶ ಪರೀಕ್ಷೆಯನ್ನು ರದ್ದುಗೊಳಿಸಬೇಕೇ ಅಥವಾ ಉಳಿಸಿಕೊಳ್ಳಬೇಕೇ?',
-  'debateverse.setup.suggestion4': 'ಸಾಮಾಜಿಕ ಮಾಧ್ಯಮವು ಬಳಕೆದಾರರ ವಿಷಯದ ಮೇಲೆ ಕಟ್ಟುನಿಟ್ಟಾದ ಸೆನ್ಸಾರ್ಶಿಪ್ ಅನ್ನು ವಿಧಿಸಬೇಕೇ?',
+  'debateverse.setup.suggestion4':
+    'ಸಾಮಾಜಿಕ ಮಾಧ್ಯಮವು ಬಳಕೆದಾರರ ವಿಷಯದ ಮೇಲೆ ಕಟ್ಟುನಿಟ್ಟಾದ ಸೆನ್ಸಾರ್ಶಿಪ್ ಅನ್ನು ವಿಧಿಸಬೇಕೇ?',
   'debateverse.setup.suggestion5': 'ದೂರಸಂಪರ್ಕವು ಕೆಲಸ ಮಾಡುವ ಮುಖ್ಯವಾಹಿನಿಯ ಮಾರ್ಗವಾಗಬೇಕೇ?',
   'debateverse.setup.suggestion6': 'AI- ರಚಿತವಾದ ವಿಷಯವು ಹಕ್ಕುಸ್ವಾಮ್ಯಕ್ಕೆ ಒಳಪಡಬೇಕೇ?',
-  'debateverse.setup.suggestion7': 'ಶಿಕ್ಷಣವು ಜ್ಞಾನವನ್ನು ನೀಡುವುದರ ಮೇಲೆ ಅಥವಾ ಸಾಮರ್ಥ್ಯಗಳನ್ನು ಬೆಳೆಸುವುದರ ಮೇಲೆ ಹೆಚ್ಚು ಗಮನಹರಿಸಬೇಕೇ?',
-  'debateverse.setup.suggestion8': 'ಜೀನ್ ಎಡಿಟಿಂಗ್ ತಂತ್ರಜ್ಞಾನವನ್ನು ಮಾನವ ಭ್ರೂಣಗಳ ಮೇಲೆ ಬಳಸಲು ಅನುಮತಿಸಬೇಕೇ?',
+  'debateverse.setup.suggestion7':
+    'ಶಿಕ್ಷಣವು ಜ್ಞಾನವನ್ನು ನೀಡುವುದರ ಮೇಲೆ ಅಥವಾ ಸಾಮರ್ಥ್ಯಗಳನ್ನು ಬೆಳೆಸುವುದರ ಮೇಲೆ ಹೆಚ್ಚು ಗಮನಹರಿಸಬೇಕೇ?',
+  'debateverse.setup.suggestion8':
+    'ಜೀನ್ ಎಡಿಟಿಂಗ್ ತಂತ್ರಜ್ಞಾನವನ್ನು ಮಾನವ ಭ್ರೂಣಗಳ ಮೇಲೆ ಬಳಸಲು ಅನುಮತಿಸಬೇಕೇ?',
   'debateverse.setup.topicPlaceholder': 'ಚರ್ಚೆಯ ವಿಷಯವನ್ನು ನಮೂದಿಸಿ...',
   'debateverse.side.affirmative': 'ಚೌಕ',
   'debateverse.side.judge': 'ತೀರ್ಪುಗಾರ',
@@ -138,7 +146,8 @@ export default {
   'library.loading': 'ಲೋಡ್ ಆಗುತ್ತಿದೆ...',
   'library.other': 'ಇತರೆ',
   'library.premiumCollection': 'ಅತ್ಯುತ್ತಮ ಕೇಸ್ ಸಂಗ್ರಹ',
-  'library.slotFull.body': 'ನೀವು {max} ಐಕಾನ್‌ಗಳನ್ನು ಉಳಿಸಿದ್ದೀರಿ, ದಯವಿಟ್ಟು ಹೊಸ ಐಕಾನ್ ಅನ್ನು ಉಳಿಸಲು ಒಂದನ್ನು ಅಳಿಸಿ',
+  'library.slotFull.body':
+    'ನೀವು {max} ಐಕಾನ್‌ಗಳನ್ನು ಉಳಿಸಿದ್ದೀರಿ, ದಯವಿಟ್ಟು ಹೊಸ ಐಕಾನ್ ಅನ್ನು ಉಳಿಸಲು ಒಂದನ್ನು ಅಳಿಸಿ',
   'library.slotFull.cancel': 'ರದ್ದುಮಾಡಿ',
   'library.slotFull.deleteAndSave': 'ಅಳಿಸಿ ಮತ್ತು ಉಳಿಸಿ',
   'library.slotFull.networkError': 'ನೆಟ್‌ವರ್ಕ್ ದೋಷ, ಕಾರ್ಯಾಚರಣೆ ವಿಫಲವಾಗಿದೆ',

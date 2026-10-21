@@ -7,7 +7,6 @@ import { listSessions } from '@/api/maite/inquiry'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores/auth'
 import { useMaiteStore } from '@/stores/maite'
-
 import type { MaitePracticeItem } from '@/types/maite'
 
 function toPracticeItem(session: {

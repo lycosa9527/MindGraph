@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': 'Натисніть кнопку «Далі», щоб застосувати зміни',
   'debateverse.coinTossAffirmativeFirst': 'Афірматив виступає першим',
   'debateverse.coinTossGotIt': 'Зрозуміло',
-  'debateverse.coinTossModalBody': 'Перед дебатами визначте порядок виступів або оберіть позиції афірмативу/негативу через жереб',
+  'debateverse.coinTossModalBody':
+    'Перед дебатами визначте порядок виступів або оберіть позиції афірмативу/негативу через жереб',
   'debateverse.coinTossNegativeFirst': 'Негатив виступає першим',
   'debateverse.coinTossOrder': 'Жереб для визначення порядку виступів',
-  'debateverse.coinTossRules': 'Моделі ШІ випадково розподілені за ролями дебатів. Перед дебатами визначте порядок виступів або оберіть позиції через жереб',
+  'debateverse.coinTossRules':
+    'Моделі ШІ випадково розподілені за ролями дебатів. Перед дебатами визначте порядок виступів або оберіть позиції через жереб',
   'debateverse.coinTossStageTitle': 'Етап жеребу',
   'debateverse.debateTopicLabel': 'Тема дебатів: ',
   'debateverse.executeCoinToss': 'Провести жереб',

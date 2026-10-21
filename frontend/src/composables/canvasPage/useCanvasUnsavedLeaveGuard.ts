@@ -1,8 +1,8 @@
 /**
  * Warn when leaving canvas with unsaved diagram changes (route + tab close).
  */
+import { type Ref, onMounted, onUnmounted } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
-import { onMounted, onUnmounted, type Ref } from 'vue'
 
 import { useLanguage } from '../core/useLanguage'
 
@@ -12,9 +12,7 @@ export interface UseCanvasUnsavedLeaveGuardOptions {
   shouldBypassLeaveConfirm?: () => boolean
 }
 
-export function useCanvasUnsavedLeaveGuard(
-  options: UseCanvasUnsavedLeaveGuardOptions
-): void {
+export function useCanvasUnsavedLeaveGuard(options: UseCanvasUnsavedLeaveGuardOptions): void {
   const { isDirty, shouldBypassLeaveConfirm } = options
   const { t } = useLanguage()
 

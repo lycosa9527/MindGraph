@@ -17,9 +17,9 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { useUIStore } from '@/stores/ui'
 import type {
-  ConceptMapTab,
   AiBrainstormPanelState,
   AiBrainstormSessionSnapshot,
+  ConceptMapTab,
   MindmateMessage,
   MindmatePanelState,
   NodePalettePanelState,
@@ -61,9 +61,7 @@ export const usePanelsStore = defineStore('panels', () => {
     stage_data: null,
   })
 
-  const aiBrainstormSessionsByDiagram = ref<Map<string, AiBrainstormSessionSnapshot>>(
-    new Map()
-  )
+  const aiBrainstormSessionsByDiagram = ref<Map<string, AiBrainstormSessionSnapshot>>(new Map())
 
   const property = ref<PropertyPanelState>({
     open: false,

@@ -54,7 +54,11 @@ export function tsecUserLanguage(uiLocale: string): string {
   if (normalized === 'zh' || normalized.startsWith('zh-cn') || normalized.startsWith('zh-hans')) {
     return 'zh-cn'
   }
-  if (normalized.startsWith('zh-tw') || normalized.startsWith('zh-hk') || normalized.startsWith('zh-hant')) {
+  if (
+    normalized.startsWith('zh-tw') ||
+    normalized.startsWith('zh-hk') ||
+    normalized.startsWith('zh-hant')
+  ) {
     return 'zh-tw'
   }
   return 'en'

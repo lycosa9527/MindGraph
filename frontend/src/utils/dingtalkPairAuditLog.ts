@@ -11,12 +11,7 @@ export type DingTalkPairPurpose = 'bind' | 'unbind'
 
 type PairAuditFields = Record<string, string | number | boolean | undefined | null>
 
-const SERVER_INFO_EVENTS = new Set([
-  'modal_open',
-  'mint_ok',
-  'pairing_completed',
-  'session_cancel',
-])
+const SERVER_INFO_EVENTS = new Set(['modal_open', 'mint_ok', 'pairing_completed', 'session_cancel'])
 
 const SERVER_WARN_EVENTS = new Set(['mint_failed', 'session_expired', 'room_code_invalid'])
 
@@ -53,7 +48,7 @@ function reportToServer(event: string, line: string): void {
 export function logPairAudit(
   event: string,
   fields: PairAuditFields = {},
-  options?: { reportToServer?: boolean },
+  options?: { reportToServer?: boolean }
 ): void {
   const line = formatLine(event, fields)
   if (import.meta.env.DEV) {
@@ -63,9 +58,8 @@ export function logPairAudit(
       console.info(line)
     }
   }
-  const shouldReport = options?.reportToServer ?? (
-    SERVER_INFO_EVENTS.has(event) || SERVER_WARN_EVENTS.has(event)
-  )
+  const shouldReport =
+    options?.reportToServer ?? (SERVER_INFO_EVENTS.has(event) || SERVER_WARN_EVENTS.has(event))
   if (shouldReport) {
     reportToServer(event, line)
   }

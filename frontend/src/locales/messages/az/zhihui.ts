@@ -24,17 +24,21 @@ export default {
   'zhihui.promptPlaceholder.image': 'İlhamınızı daxil edin...',
   'zhihui.promptPlaceholder.video': 'Səhnəni, kamera işini və ritmi təsvir edin...',
   'zhihui.promptPlaceholder.diagram': 'Ağıl xəritəsini seçin və Yarat klikləyin',
-  'zhihui.composerHint.image': 'Şəkili təsvir etmək üçün mətndən istifadə edin və bir kliklə tədris illüstrasiyaları və vizual materiallar yaradın',
+  'zhihui.composerHint.image':
+    'Şəkili təsvir etmək üçün mətndən istifadə edin və bir kliklə tədris illüstrasiyaları və vizual materiallar yaradın',
   'zhihui.composerHint.video': 'Wensheng Video və Tusheng Video imkanlarına daxil olmaq üzrədir',
-  'zhihui.composerHint.diagram': 'Tələbənin nöqteyi-nəzərindən kurs proqramı diaqramını yaratmaq üçün ağıl xəritəsini seçin',
+  'zhihui.composerHint.diagram':
+    'Tələbənin nöqteyi-nəzərindən kurs proqramı diaqramını yaratmaq üçün ağıl xəritəsini seçin',
   'zhihui.diagram.selectMindmap': 'Ağıl xəritəsi seçin',
   'zhihui.diagram.selectMindmapHint': 'Zəhmət olmasa yuxarıda ağıl xəritəsi seçin',
   'zhihui.diagram.selectMindmapFirst': 'Zəhmət olmasa əvvəlcə ağıl xəritəsi seçin',
-  'zhihui.diagram.emptyLibrary': 'Hələ ağıl xəritəsi yoxdur, zəhmət olmasa əvvəlcə onu diaqram kitabxanasında yadda saxlayın.',
+  'zhihui.diagram.emptyLibrary':
+    'Hələ ağıl xəritəsi yoxdur, zəhmət olmasa əvvəlcə onu diaqram kitabxanasında yadda saxlayın.',
   'zhihui.diagram.loadFailed': 'Ağıl xəritəsini yükləmək alınmadı',
   'zhihui.diagram.emptyDeck': 'Ağıl xəritəsini seçdikdən sonra Yarat düyməsini klikləyin',
   'zhihui.diagram.waitingSlides': 'Kurs proqramı yaradılır, zəhmət olmasa gözləyin...',
-  'zhihui.diagram.jobStarted': 'Kurs proqramlarının yaradılmasına başlanılıb. Tarixdəki tərəqqini yoxlaya bilərsiniz.',
+  'zhihui.diagram.jobStarted':
+    'Kurs proqramlarının yaradılmasına başlanılıb. Tarixdəki tərəqqini yoxlaya bilərsiniz.',
   'zhihui.diagram.phaseQueued': 'Tapşırıqlar növbədədir...',
   'zhihui.diagram.phasePlanning': 'Proqramın layihələndirilməsi...',
   'zhihui.diagram.phasePlanningBranches': 'Müxtəlif mövzuların planlaşdırılması...',
@@ -58,8 +62,10 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'Slayd şousunu yükləmək alınmadı',
   'zhihui.diagram.retryImage': 'Yenidən cəhd edin',
   'zhihui.diagram.teacherScript': 'Müəllimin rəvayəti',
-  'zhihui.diagram.teacherScriptHint': 'Sinif izahatları bu səhifədəki illüstrasiyalar və xəritələrin diqqət mərkəzindədir',
-  'zhihui.diagram.ttsPlay': 'Bu səhifənin hekayəsini ucadan oxumaq üçün pişik balasının üzərinə klikləyin',
+  'zhihui.diagram.teacherScriptHint':
+    'Sinif izahatları bu səhifədəki illüstrasiyalar və xəritələrin diqqət mərkəzindədir',
+  'zhihui.diagram.ttsPlay':
+    'Bu səhifənin hekayəsini ucadan oxumaq üçün pişik balasının üzərinə klikləyin',
   'zhihui.diagram.ttsStop': 'oxumağı dayandırın',
   'zhihui.diagram.ttsMute': 'səssiz rəvayət',
   'zhihui.diagram.ttsUnmute': 'Hekayənin oxunmasını yandırın',
@@ -74,7 +80,8 @@ export default {
   'zhihui.sizeButton': 'Şəkil ölçüsü',
   'zhihui.sizePanelTitle': 'Şəkil ölçüsü',
   'zhihui.sizeOptional': 'Könüllü',
-  'zhihui.sizeHint': 'Format en* hündürlükdür. Müəyyən edilmədikdə, model tez sözə əsaslanan qətnaməni avtomatik olaraq tövsiyə edəcəkdir.',
+  'zhihui.sizeHint':
+    'Format en* hündürlükdür. Müəyyən edilmədikdə, model tez sözə əsaslanan qətnaməni avtomatik olaraq tövsiyə edəcəkdir.',
   'zhihui.sizeLimits': 'Piksel sahəsi 512×512–2048×2048; aspekt nisbəti 1:8–8:1',
   'zhihui.size.auto': 'ağıllı',
   'zhihui.size.autoHint': 'avtomatik',
@@ -102,7 +109,8 @@ export default {
   'zhihui.empty': 'Hələ şəkil yoxdur, lütfən yuxarıda onu yaratmağa çalışın.',
   'zhihui.loadFailed': 'Tarixçəni yükləmək alınmadı',
   'zhihui.delete': 'silin',
-  'zhihui.deleteConfirm': 'Bu şəkli silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.',
+  'zhihui.deleteConfirm':
+    'Bu şəkli silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.',
   'zhihui.deleteTitle': 'Şəkli silin',
   'zhihui.deleted': 'Silindi',
   'zhihui.deleteFailed': 'Silmək alınmadı',

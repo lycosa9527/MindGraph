@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { KittyConnectCloseError } from '@/composables/kitty/kittyConnectFailure'
+import {
+  classifyKittyConnectError,
+  createKittyWsAuthReconnectGate,
+  isKittyConnectAbortError,
+  runKittyConnectWithAuthRecovery,
+} from '@/composables/kitty/kittyWsAuthReconnect'
+
 const {
   ensureFreshSessionAfterAuthFailure,
   awaitSessionRefreshIdle,
@@ -19,14 +27,6 @@ vi.mock('@/utils/sessionRefresh', () => ({
   isSessionRefreshRateLimited,
 }))
 
-import { KittyConnectCloseError } from '@/composables/kitty/kittyConnectFailure'
-import {
-  classifyKittyConnectError,
-  createKittyWsAuthReconnectGate,
-  isKittyConnectAbortError,
-  runKittyConnectWithAuthRecovery,
-} from '@/composables/kitty/kittyWsAuthReconnect'
-
 describe('isKittyConnectAbortError', () => {
   it('detects superseded / stop / cleanup messages', () => {
     expect(isKittyConnectAbortError(new Error('Connection superseded by a newer socket'))).toBe(
@@ -44,7 +44,9 @@ describe('classifyKittyConnectError', () => {
     expect(classifyKittyConnectError(new KittyConnectCloseError(4003, 'denied'))).toBe(
       'access_denied'
     )
-    expect(classifyKittyConnectError(new KittyConnectCloseError(4403, 'scope'))).toBe('scope_denied')
+    expect(classifyKittyConnectError(new KittyConnectCloseError(4403, 'scope'))).toBe(
+      'scope_denied'
+    )
     expect(classifyKittyConnectError(new KittyConnectCloseError(1006, ''))).toBe('failed')
     expect(classifyKittyConnectError(new Error('Connection superseded by a newer socket'))).toBe(
       'aborted'

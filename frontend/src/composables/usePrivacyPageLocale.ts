@@ -8,10 +8,10 @@ import {
   softwareAgreementForUiCode,
 } from '@/content/authSoftwareAgreement'
 import {
+  type PrivacyPageUiCode,
   detectPrivacyPageUiCode,
   privacyPageChrome,
   privacyPageUpdatedLabel,
-  type PrivacyPageUiCode,
 } from '@/utils/privacyPageLocale'
 
 /** Shared ref so App.vue can sync document.title when the user toggles language. */

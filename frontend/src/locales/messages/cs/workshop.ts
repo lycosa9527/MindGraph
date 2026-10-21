@@ -1,5 +1,6 @@
 /**
- * en UI � workshop
+ * cs UI — workshop
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {
@@ -29,11 +30,14 @@ export default {
   'collab.noDiagramToSave': 'No diagram to save',
   'collab.nodeLocked': 'Someone else is editing this node',
   'collab.participants': '{n} participants',
-  'collab.previousSessionsStopped': 'Ended {n} previous collaboration session(s) on your other diagrams.',
+  'collab.previousSessionsStopped':
+    'Ended {n} previous collaboration session(s) on your other diagrams.',
   'collab.saveFailed': 'Failed to save diagram',
   'collab.scanToJoin': 'Scan to join',
-  'collab.schoolDescActive': 'School collaboration is on. Colleagues: use Collaborate → School on the MindGraph home page and pick this diagram — no code required.',
-  'collab.schoolStarted': 'School collaboration is on — colleagues can join from Collaborate → School.',
+  'collab.schoolDescActive':
+    'School collaboration is on. Colleagues: use Collaborate → School on the MindGraph home page and pick this diagram — no code required.',
+  'collab.schoolStarted':
+    'School collaboration is on — colleagues can join from Collaborate → School.',
   'collab.sectionNetwork': 'Shared collaboration (code)',
   'collab.sectionSchool': 'School collaboration',
   'collab.sessionDuration': 'Session duration',
@@ -51,18 +55,25 @@ export default {
   'workshop.announceChannels': 'Announcements',
   'workshop.announceReadOnlyHint': 'Only administrators can post in this announcements channel.',
   'workshop.archiveLessonStudy': 'Archive lesson study',
-  'workshop.archiveLessonStudyConfirm': 'Archive this lesson study? Members will no longer see it in the list.',
+  'workshop.archiveLessonStudyConfirm':
+    'Archive this lesson study? Members will no longer see it in the list.',
   'workshop.archiveTeachingGroup': 'Archive teaching group',
-  'workshop.archiveTeachingGroupConfirm': 'Archive this teaching group? It will disappear from the teaching group list.',
+  'workshop.archiveTeachingGroupConfirm':
+    'Archive this teaching group? It will disappear from the teaching group list.',
   'workshop.archiveAnnounceChannel': 'Archive announcement',
-  'workshop.archiveAnnounceChannelConfirm': 'Archive this announcement channel? It leaves the sidebar. Messages stay stored.',
+  'workshop.archiveAnnounceChannelConfirm':
+    'Archive this announcement channel? It leaves the sidebar. Messages stay stored.',
   'workshop.deleteTeachingGroup': 'Delete teaching group',
-  'workshop.deleteTeachingGroupConfirm': 'Permanently delete this teaching group, its lesson studies, and their messages? This cannot be undone.',
+  'workshop.deleteTeachingGroupConfirm':
+    'Permanently delete this teaching group, its lesson studies, and their messages? This cannot be undone.',
   'workshop.deleteAnnounceChannel': 'Delete announcement',
-  'workshop.deleteAnnounceChannelConfirm': 'Permanently delete this announcement channel and its messages? This cannot be undone.',
+  'workshop.deleteAnnounceChannelConfirm':
+    'Permanently delete this announcement channel and its messages? This cannot be undone.',
   'workshop.deleteLessonStudy': 'Delete lesson study',
-  'workshop.deleteLessonStudyConfirm': 'Permanently delete this lesson study and its messages? This cannot be undone.',
-  'workshop.manageNeedAdmin': 'Only school admins can add teaching groups. Admins or the group creator can delete them.',
+  'workshop.deleteLessonStudyConfirm':
+    'Permanently delete this lesson study and its messages? This cannot be undone.',
+  'workshop.manageNeedAdmin':
+    'Only school admins can add teaching groups. Admins or the group creator can delete them.',
   'workshop.math': 'Math (LaTeX)',
   'workshop.backToConversations': '← Conversations',
   'workshop.bold': 'Bold',
@@ -112,7 +123,8 @@ export default {
   'workshop.create': 'Create',
   'workshop.createChannelFailed': 'Could not create channel',
   'workshop.createChannelNeedParent': 'Choose a parent teaching group first.',
-  'workshop.createChannelNoGroupsYet': 'Create a teaching group first, then add lesson studies under it.',
+  'workshop.createChannelNoGroupsYet':
+    'Create a teaching group first, then add lesson studies under it.',
   'workshop.createChannelSuccess': 'Channel created',
   'workshop.createStudyCaseHint': 'Start a conversation to get started',
   'workshop.cycleStudyStatus': 'Cycle study status',
@@ -154,7 +166,8 @@ export default {
   'workshop.gearMenu': 'Options',
   'workshop.generalChat': 'General Chat',
   'workshop.inbox': 'Inbox',
-  'workshop.inboxHintPickChannel': 'Open a channel or a direct message in the sidebar to read and reply. You can return here anytime from Views → Inbox.',
+  'workshop.inboxHintPickChannel':
+    'Open a channel or a direct message in the sidebar to read and reply. You can return here anytime from Views → Inbox.',
   'workshop.inboxSummaryTitle': 'Your inbox',
   'workshop.inboxUnreadChannels': 'Unread in channels',
   'workshop.inboxUnreadDms': 'Unread direct messages',
@@ -180,7 +193,8 @@ export default {
   'workshop.loadMore': 'Load more',
   'workshop.mainChannelStream': 'Main channel',
   'workshop.manageTeachingGroups': 'Manage teaching groups',
-  'workshop.manageTeachingGroupsBlurb': 'Add or remove groups, set public or private, edit names and descriptions, reorder the list, duplicate a group as a template, and invite colleagues. Use Advanced for posting rules and notification defaults. Archiving removes a group for everyone.',
+  'workshop.manageTeachingGroupsBlurb':
+    'Add or remove groups, set public or private, edit names and descriptions, reorder the list, duplicate a group as a template, and invite colleagues. Use Advanced for posting rules and notification defaults. Archiving removes a group for everyone.',
   'workshop.manageUser': 'Manage this user',
   'workshop.markAllReadChannel': 'Mark all messages read',
   'workshop.markAsRead': 'Mark as read',
@@ -219,18 +233,22 @@ export default {
   'workshop.noTopicsYet': 'No conversations yet',
   'workshop.numberedList': 'Numbered list',
   'workshop.notifications': 'Notifications',
-  'workshop.notificationsSettingsBlurb': 'Browser notifications for mentions and new messages use your system settings. You can also tune desktop and email alerts per channel in channel settings.',
+  'workshop.notificationsSettingsBlurb':
+    'Browser notifications for mentions and new messages use your system settings. You can also tune desktop and email alerts per channel in channel settings.',
   'workshop.offline': 'offline',
   'workshop.online': 'online',
   'workshop.openMainChannelStream': 'Main channel',
   'workshop.others': 'OTHERS',
   'workshop.permissions': 'Permissions',
+  'workshop.personalMenu': 'Personal Menu',
   'workshop.preview': 'Preview',
   'workshop.previewEmpty': 'Nothing to preview',
-  'workshop.personalMenu': 'Personal Menu',
-  'workshop.phase2RoadmapGroupsAlerts': 'Coming later: {\'@\'}group mentions, alert words, and message edit history policy.',
-  'workshop.phase2RoadmapMovePreview': 'Coming later: move single message, URL link previews, and richer cross-channel activity.',
-  'workshop.phase2RoadmapPlatform': 'Platform backlog: incremental sync, mobile push, email digests, bots/webhooks.',
+  'workshop.phase2RoadmapGroupsAlerts':
+    "Coming later: {'@'}group mentions, alert words, and message edit history policy.",
+  'workshop.phase2RoadmapMovePreview':
+    'Coming later: move single message, URL link previews, and richer cross-channel activity.',
+  'workshop.phase2RoadmapPlatform':
+    'Platform backlog: incremental sync, mobile push, email digests, bots/webhooks.',
   'workshop.pickColleagueToInvite': 'Choose a colleague to invite.',
   'workshop.pinChannel': 'Pin to top',
   'workshop.policyEveryone': 'Everyone',
@@ -238,7 +256,8 @@ export default {
   'workshop.policyMembersOnly': 'Members only',
   'workshop.postingPolicy': 'Posting Policy',
   'workshop.preferences': 'Preferences',
-  'workshop.preferencesSettingsBlurb': 'Language and display preferences apply across the app. More Workshop chat options will appear here over time.',
+  'workshop.preferencesSettingsBlurb':
+    'Language and display preferences apply across the app. More Workshop chat options will appear here over time.',
   'workshop.presenceActive': 'Active',
   'workshop.presenceIdle': 'Idle',
   'workshop.presenceOffline': 'Offline',
@@ -247,7 +266,8 @@ export default {
   'workshop.publicChannels': 'Public Channels',
   'workshop.quote': 'Quote',
   'workshop.quoteMessage': 'Quote message',
-  'workshop.readOnlyProfileBlurb': 'Profile details for colleagues are shown in a simplified view. Use Manage user (admins) to open the admin directory.',
+  'workshop.readOnlyProfileBlurb':
+    'Profile details for colleagues are shown in a simplified view. Use Manage user (admins) to open the admin directory.',
   'workshop.recentDmActivity': 'Recent direct messages',
   'workshop.recentTopics': 'Recent Conversations',
   'workshop.renameTopic': 'Rename conversation',
@@ -258,7 +278,8 @@ export default {
   'workshop.roleOwner': 'Owner',
   'workshop.searchMembers': 'Search members...',
   'workshop.searchMessages': 'Search messages...',
-  'workshop.selectChannelForSettings': 'Select a teaching group or lesson study first, then open settings here.',
+  'workshop.selectChannelForSettings':
+    'Select a teaching group or lesson study first, then open settings here.',
   'workshop.selectConversation': 'Select a conversation',
   'workshop.selectParentGroup': 'Parent teaching group',
   'workshop.selectTopic': 'Select conversation',
@@ -284,7 +305,8 @@ export default {
   'workshop.strikethrough': 'Strikethrough',
   'workshop.table': 'Table',
   'workshop.switchSchool': 'Switch School',
-  'workshop.teachingGroupLandingHint': 'Lesson studies and conversations in this teaching group. Pick a row to open the channel or a thread.',
+  'workshop.teachingGroupLandingHint':
+    'Lesson studies and conversations in this teaching group. Pick a row to open the channel or a thread.',
   'workshop.teachingGroupMembers': 'Members',
   'workshop.teachingGroupNameRequired': 'Please enter a teaching group name.',
   'workshop.teachingGroupNoLessons': 'No lesson studies in this group yet.',
@@ -315,11 +337,14 @@ export default {
   'workshop.viewProfile': 'View profile',
   'workshop.viewingSchool': 'Viewing: {0}',
   'workshop.views': 'Views',
-  'workshop.welcomeChannelsBody': 'A “channel” here often corresponds to a teaching research group (教研组) or PLC: one shared space per team (e.g. Math PLC, English PLC). It defines who takes part and how space is grouped.',
+  'workshop.welcomeChannelsBody':
+    'A “channel” here often corresponds to a teaching research group (教研组) or PLC: one shared space per team (e.g. Math PLC, English PLC). It defines who takes part and how space is grouped.',
   'workshop.welcomeChannelsTitle': 'PLC / subject groups',
-  'workshop.welcomeConversationsBody': 'Inside a lesson study you open titled conversations—for example instructional design, reflection, or follow-up tasks—so threads stay easy to follow.',
+  'workshop.welcomeConversationsBody':
+    'Inside a lesson study you open titled conversations—for example instructional design, reflection, or follow-up tasks—so threads stay easy to follow.',
   'workshop.welcomeConversationsTitle': 'Conversations',
-  'workshop.welcomeExampleCaption': 'Illustrative example (fictional school) — Math PLC and English PLC, each with lesson studies and sample conversations.',
+  'workshop.welcomeExampleCaption':
+    'Illustrative example (fictional school) — Math PLC and English PLC, each with lesson studies and sample conversations.',
   'workshop.welcomeExampleConvLabel': 'Conversations',
   'workshop.welcomeExampleGroupEnglish': 'English PLC',
   'workshop.welcomeExampleGroupMath': 'Math PLC',
@@ -338,38 +363,51 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Messages live inside each conversation',
   'workshop.welcomeExampleOrg': 'Chenxi Middle School',
   'workshop.welcomeHowTitle': 'How it fits together',
-  'workshop.welcomeIntro': 'Workshop is your school’s space for structured discussion: share announcements, run lesson studies, and keep conversations organized alongside your teaching work.',
-  'workshop.welcomeLessonStudyBody': 'Lesson-study channels usually sit under that group. Each one is a venue for one lesson cycle—planning, observation, and reflection—and may link to diagrams or statuses.',
+  'workshop.welcomeIntro':
+    'Workshop is your school’s space for structured discussion: share announcements, run lesson studies, and keep conversations organized alongside your teaching work.',
+  'workshop.welcomeLessonStudyBody':
+    'Lesson-study channels usually sit under that group. Each one is a venue for one lesson cycle—planning, observation, and reflection—and may link to diagrams or statuses.',
   'workshop.welcomeLessonStudyTitle': 'Lesson studies',
-  'workshop.welcomeMessagesBody': 'Messages are the individual posts in the main channel stream or inside a conversation. Replies, mentions, and files all ride on messages.',
+  'workshop.welcomeMessagesBody':
+    'Messages are the individual posts in the main channel stream or inside a conversation. Replies, mentions, and files all ride on messages.',
   'workshop.welcomeMessagesTitle': 'Messages',
   'workshop.welcomeSubtitle': 'Collaborate with your school on MindGraph',
   'workshop.welcomeTitle': 'Welcome to Workshop',
   'workshop.you': '(you)',
   'workshop.youAnd': 'You and',
   'workshopCanvas.connectFailed': 'Failed to connect to collaboration',
-  'workshopCanvas.sessionExpiredReconnect': 'Your session has expired. Please refresh the page to re-join the collaboration.',
-  'workshopCanvas.sessionRefreshFailed': 'Could not refresh your collaboration session. Please save your work and sign in again.',
-  'workshopCanvas.outboundQueueDegraded': 'Collaboration is falling behind. Some unsent edits could not be kept.',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Your session has expired. Please refresh the page to re-join the collaboration.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Could not refresh your collaboration session. Please save your work and sign in again.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Collaboration is falling behind. Some unsent edits could not be kept.',
   'workshopCanvas.connectionClosed': 'Connection closed',
-  'workshopCanvas.connectionClosedSlow': 'Connection closed: your connection was too slow to keep up with the collaboration session.',
+  'workshopCanvas.connectionClosedSlow':
+    'Connection closed: your connection was too slow to keep up with the collaboration session.',
   'workshopCanvas.sessionEndedByHost': 'The host has ended the collaboration session.',
   'workshopCanvas.editingNodeLabel': '{username} is editing…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'Someone',
   'workshopCanvas.connectionClosedReason': 'Collaboration connection closed: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} is editing this node',
   'workshopCanvas.errorGeneric': 'Collaboration error',
-  'workshopCanvas.updatePartialFiltered': 'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes.',
+  'workshopCanvas.updatePartialFiltered':
+    'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes.',
   'workshopCanvas.reconnectFailed': 'Failed to reconnect to collaboration, please refresh the page',
-  'workshopCanvas.resyncWaiting': 'Live diagram sync is taking longer than expected. Retrying; you can refresh if editing feels stuck.',
-  'workshopCanvas.returnedHomeIdle': 'Returned home — you were disconnected after a long idle period.',
+  'workshopCanvas.resyncWaiting':
+    'Live diagram sync is taking longer than expected. Retrying; you can refresh if editing feels stuck.',
+  'workshopCanvas.returnedHomeIdle':
+    'Returned home — you were disconnected after a long idle period.',
   'workshopCanvas.userJoined': 'User {username} joined',
   'workshopCanvas.usersJoined': '{count} users joined',
   'workshopCanvas.userLeft': 'User {username} left',
   'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'Collaboration connection error, please check your network',
-  'workshopCanvas.returnedHomeRoomIdle': 'Collaboration ended: no diagram edits in this session for a while.',
-  'workshopCanvas.roomIdleWarningToast': 'No diagram edits lately — collaboration ends when the countdown hits zero unless someone edits.',
-  'workshopCanvas.otherTabCollaborationActive': 'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately — collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
   'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 } as const

@@ -1,6 +1,6 @@
 /**
- * zh-tw UI — auth
- * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ * zh UI — auth
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export default {
@@ -101,10 +101,8 @@ export default {
   'privacy.backToSignIn': '返回登錄',
   'auth.downloadDesktopShortcut': '添加到桌面',
   'auth.platformQuickGuide': '快速指南',
-  'auth.pwaIosInstallHint':
-    '在 Safari、Chrome 或 Edge 中点分享，再选择「添加到主屏幕」。',
-  'auth.pwaAndroidInstallHint':
-    '打开浏览器菜单（⋮），选择「安装应用」或「添加到主屏幕」。',
+  'auth.pwaIosInstallHint': '在 Safari、Chrome 或 Edge 中点分享，再选择「添加到主屏幕」。',
+  'auth.pwaAndroidInstallHint': '打开浏览器菜单（⋮），选择「安装应用」或「添加到主屏幕」。',
   'auth.pwaSafariMacInstallHint':
     '在 Safari 中选择「文件 → 添加到程序坞」，或使用「共享 → 添加到程序坞」（macOS Sonoma 及以上）。',
   'auth.pwaDesktopInstallHint':
@@ -151,10 +149,10 @@ export default {
     '当前学校版本不支持此功能，请升级至标准教研版或校本共建版（基础教研版不含此功能）',
   'auth.schoolSubscriptionExpiredDowngraded':
     '学校订阅已到期，教师与学校管理员均已锁定。如需续订请联系平台管理员。',
-  'auth.diagramLimitReached':
-    '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
+  'auth.diagramLimitReached': '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
   'auth.downloadOpenclawSkill': 'WorkBuddy技能包',
-  'auth.downloadOpenclawSkillHint': '下載即含賬號與當前令牌。重新生成令牌後，舊技能包與擴展會失效。',
+  'auth.downloadOpenclawSkillHint':
+    '下載即含賬號與當前令牌。重新生成令牌後，舊技能包與擴展會失效。',
   'auth.changePhoneButton': '更換手機',
   'auth.passwordChangeSuccess': '密碼修改成功',
   'auth.passwordChangeFailed': '密碼修改失敗',
@@ -273,7 +271,7 @@ export default {
   'auth.landing.noAccount': '還沒有賬號？',
   'auth.landing.registerNow': '立即註冊',
   'auth.landing.legalPrefix': '登錄即表示同意',
-  'auth.landing.userAgreementLink': '《使用者協議》',
+  'auth.landing.userAgreementLink': '《用戶協議》',
   'auth.landing.privacyPolicyLink': '《隱私政策》',
   'auth.landing.legalJoin': '和',
   'auth.modal.waitCaptchaLoad': '請等待驗證碼加載',
@@ -355,12 +353,12 @@ export default {
   'auth.setPasswordWithSmsSubmit': '設置密碼',
   'auth.setPasswordWithSmsSubmitting': '保存中…',
   'auth.accountAvatar': '頭像',
-  'auth.avatarCustomize': '自訂',
+  'auth.avatarCustomize': '自定義',
   'auth.avatarCropRibbon': '頭像',
   'auth.avatarCropTitle': '裁剪頭像',
   'auth.avatarCropLine': '拖動調整位置，滾輪或滑桿縮放',
   'auth.avatarCropZoom': '縮放',
-  'auth.avatarImageInvalid': '請選擇圖片檔案',
+  'auth.avatarImageInvalid': '請選擇圖片文件',
   'auth.avatarImageTooLarge': '圖片不能超過 4 MB',
   'auth.avatarUploadFailed': '頭像上傳失敗',
   'auth.avatarUploadSuccess': '頭像已更新',
@@ -370,7 +368,7 @@ export default {
   'auth.accountNameSave': '保存姓名',
   'auth.accountNameSaveSuccess': '姓名已更新',
   'auth.accountNameSaveError': '保存失敗，請重試',
-  'auth.bayiNamePrompt.toast': '請在帳戶資訊中保存您的真實姓名。',
+  'auth.bayiNamePrompt.toast': '請在賬戶信息中保存您的真實姓名。',
   'auth.dingtalkBindSection': '釘釘 MindBot',
   'auth.dingtalkBindButton': '綁定釘釘',
   'auth.dingtalkBindLinkedButton': '釘釘已綁定',
@@ -409,7 +407,8 @@ export default {
   'auth.qrLoginInviteRequired': '請先填寫學校邀請碼後再使用掃碼登錄',
   'auth.qrLoginProvidersFailed': '無法加載掃碼登錄配置，請稍後重試',
   'auth.qrLoginProviderDisabled': '此掃碼登錄方式暫不可用',
-  'auth.qrLoginNotLinked': '請先綁定賬號。請用密碼登錄後，在「賬戶綁定」中綁定微信，再掃碼登錄。如果忘記密碼，請使用「忘記密碼」。',
+  'auth.qrLoginNotLinked':
+    '請先綁定賬號。請用密碼登錄後，在「賬戶綁定」中綁定微信，再掃碼登錄。如果忘記密碼，請使用「忘記密碼」。',
   'auth.qrLoginExchangeFailed': '掃碼登錄失敗，請重試',
   'auth.qrLoginInvalidState': '掃碼會話已過期，請關閉後重新掃碼',
   'auth.qrLoginInvalidCode': '微信授權碼已過期或已使用，請關閉二維碼後重新掃碼',

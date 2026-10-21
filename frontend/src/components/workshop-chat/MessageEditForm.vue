@@ -140,8 +140,8 @@ defineExpose({ markSaveFailed })
       </p>
       <div
         v-else
-        v-html="previewHtml"
         @click="handleMarkdownImageClick"
+        v-html="previewHtml"
       />
     </div>
     <textarea

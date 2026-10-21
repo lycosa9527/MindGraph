@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   remapMindMapCollapsedPathsAfterReload,
@@ -17,9 +18,9 @@ import {
   rebalanceMindMapBranchesIfLeftOnly,
 } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
+import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import { mindMapNodeSide } from '@/utils/mindMapLocation'
 import { readMindMapNodeUid } from '@/utils/mindMapNodeUid'
-import type { Connection, DiagramNode, NodeStyle } from '@/types'
 
 function uidOf(nodes: DiagramNode[], text: string): string {
   const node = nodes.find((n) => n.text === text && n.type === 'branch')
@@ -93,11 +94,7 @@ describe('left-only rebalance identity (uid / style / collapse / dims)', () => {
 
     const extracted = nodesAndConnectionsToMindMapSpec(initial.nodes, initial.connections)
     expect(extracted.rightBranches.map((b) => b.text)).toEqual(['RightGone'])
-    expect(extracted.leftBranches.map((b) => b.text)).toEqual([
-      'StayLeft',
-      'MoveRight',
-      'AlsoLeft',
-    ])
+    expect(extracted.leftBranches.map((b) => b.text)).toEqual(['StayLeft', 'MoveRight', 'AlsoLeft'])
 
     const balanced = rebalanceMindMapBranchesIfLeftOnly(extracted.leftBranches, [])
     expect(balanced.redistributed).toBe(true)
@@ -154,13 +151,7 @@ describe('left-only rebalance identity (uid / style / collapse / dims)', () => {
     } = buildLeftHeavyMap()
 
     expect(
-      remapMindMapNodeIdAfterReload(
-        movedOldId,
-        oldNodes,
-        oldConnections,
-        newNodes,
-        newConnections
-      )
+      remapMindMapNodeIdAfterReload(movedOldId, oldNodes, oldConnections, newNodes, newConnections)
     ).toBe(idByUid(newNodes, movedUid))
 
     expect(

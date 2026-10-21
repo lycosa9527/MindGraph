@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Metoda e të mësuarit mat',
-  'maite.subtitle': 'Dekompozim i kundërt · Diagnostikë me katër faza · Ndihmë e synuar · Transferim variantesh',
+  'maite.subtitle':
+    'Dekompozim i kundërt · Diagnostikë me katër faza · Ndihmë e synuar · Transferim variantesh',
   'maite.mode.demo': 'Demo',
   'maite.mode.inquiry': 'Pyetje',
   'maite.mode.map': 'Hartë',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Praktikë me variacione',
   'maite.inquiry.complete': 'Përfundo sesionin',
   'maite.inquiry.completedTitle': 'Pyetja përfundoi',
-  'maite.inquiry.completedMessage': 'Ky sesion pyetjesh përfundoi. Shikoni raportin e mësimit më poshtë.',
+  'maite.inquiry.completedMessage':
+    'Ky sesion pyetjesh përfundoi. Shikoni raportin e mësimit më poshtë.',
   'maite.diagnosis.thinkingPlaceholder': 'Përshkruani mendimin tuaj (opsionale)…',
   'maite.diagnosis.runAuto': 'Diagnostikë automatike',
   'maite.diagnosis.running': 'Duke diagnostikuar…',
@@ -58,7 +60,8 @@ export default {
   'maite.variant.answerPlaceholder': 'Shkruani përgjigjen e plotë…',
   'maite.variant.strategyPlaceholder': 'Shpjegoni si përshtatet metoda…',
   'maite.variant.submit': 'Dërgo përgjigjen',
-  'maite.variant.completeHint': 'Dërgoni të paktën 3 përgjigje variacionesh para se të përfundoni sesionin.',
+  'maite.variant.completeHint':
+    'Dërgoni të paktën 3 përgjigje variacionesh para se të përfundoni sesionin.',
   'maite.practice.title': 'Praktika e fundit',
   'maite.practice.loading': 'Duke u ngarkuar…',
   'maite.practice.empty': 'Ende nuk ka sesione praktike',
@@ -85,7 +88,8 @@ export default {
   'maite.errors.diagnosis_failed': 'Diagnostika dështoi.',
   'maite.errors.remedy_failed': 'Gjenerimi i detyrave ndihmëse dështoi.',
   'maite.errors.variant_failed': 'Gjenerimi i detyrave me variacione dështoi.',
-  'maite.errors.variants_incomplete': 'Dërgoni të paktën 3 përgjigje variacionesh para përfundimit.',
+  'maite.errors.variants_incomplete':
+    'Dërgoni të paktën 3 përgjigje variacionesh para përfundimit.',
   'maite.errors.variant_answer_required': 'Kërkohen përgjigja dhe strategjia.',
   'maite.errors.variant_submit_failed': 'Dërgimi i përgjigjes së variacionit dështoi.',
   'maite.errors.load_failed': 'Ngarkimi i sesionit dështoi.',

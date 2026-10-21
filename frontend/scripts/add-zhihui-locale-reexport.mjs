@@ -11,17 +11,17 @@ const messagesRoot = path.resolve(
   '../src/locales/messages'
 )
 const SIDEBAR_KEYS_EN = [
-  ["sidebar.zhihui", 'ZhiHui'],
-  ["sidebar.zhihuiHistory.title", 'Generation history'],
-  ["sidebar.zhihuiHistory.empty", 'No generations yet'],
-  ["sidebar.zhihuiHistory.deleteConfirm", 'Delete this generation? This cannot be undone.'],
+  ['sidebar.zhihui', 'ZhiHui'],
+  ['sidebar.zhihuiHistory.title', 'Generation history'],
+  ['sidebar.zhihuiHistory.empty', 'No generations yet'],
+  ['sidebar.zhihuiHistory.deleteConfirm', 'Delete this generation? This cannot be undone.'],
 ]
 
 const SIDEBAR_KEYS_ZH_TW = [
-  ["sidebar.zhihui", '智繪'],
-  ["sidebar.zhihuiHistory.title", '生成歷史'],
-  ["sidebar.zhihuiHistory.empty", '暫無生成記錄'],
-  ["sidebar.zhihuiHistory.deleteConfirm", '確定刪除這條生成記錄嗎？此操作不可撤銷。'],
+  ['sidebar.zhihui', '智繪'],
+  ['sidebar.zhihuiHistory.title', '生成歷史'],
+  ['sidebar.zhihuiHistory.empty', '暫無生成記錄'],
+  ['sidebar.zhihuiHistory.deleteConfirm', '確定刪除這條生成記錄嗎？此操作不可撤銷。'],
 ]
 
 let indexUpdates = 0

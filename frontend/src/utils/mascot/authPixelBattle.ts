@@ -1,3 +1,5 @@
+import { must } from '@/utils/must'
+
 /**
  * Full-screen retro pixel battle for /auth — black cat vs Ultraman with laser beams.
  * Gated by FEATURE_AUTH_PIXEL_BATTLE on the server.
@@ -261,7 +263,7 @@ function drawSky(ctx: CanvasRenderingContext2D, tick: number): void {
     const sx = (i * 47 + tick * 0.15) % W
     const sy = (i * 31) % (H - 40)
     if ((i + Math.floor(tick / 30)) % 5 === 0) {
-      ctx.fillStyle = PALETTE[17]!
+      ctx.fillStyle = must(PALETTE[17])
       ctx.fillRect(Math.floor(sx), Math.floor(sy), 1, 1)
     }
   }
@@ -270,10 +272,10 @@ function drawSky(ctx: CanvasRenderingContext2D, tick: number): void {
 function drawGround(ctx: CanvasRenderingContext2D): void {
   for (let x = 0; x < W; x += 1) {
     const stripe = Math.floor(x / 8) % 2 === 0 ? 15 : 16
-    ctx.fillStyle = PALETTE[stripe]!
+    ctx.fillStyle = must(PALETTE[stripe])
     ctx.fillRect(x, H - 28, 1, 28)
   }
-  ctx.fillStyle = PALETTE[1]!
+  ctx.fillStyle = must(PALETTE[1])
   ctx.fillRect(0, H - 6, W, 6)
 }
 
@@ -318,7 +320,7 @@ function spawnSparks(sparks: Spark[], cx: number, cy: number, count: number): vo
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       life: 14 + Math.floor(Math.random() * 20),
-      color: Math.random() > 0.5 ? PALETTE[13]! : PALETTE[14]!,
+      color: Math.random() > 0.5 ? must(PALETTE[13]) : must(PALETTE[14]),
     })
   }
 }
@@ -356,7 +358,7 @@ function drawSpriteScaled(
       if (!idx) {
         continue
       }
-      ctx.fillStyle = PALETTE[idx]!
+      ctx.fillStyle = must(PALETTE[idx])
       ctx.fillRect(x + sx * scale, y + sy * scale, scale, scale)
     }
   }
@@ -367,7 +369,7 @@ function drawHud(ctx: CanvasRenderingContext2D, phase: FightPhase, tick: number)
   const label = `${phase.label}  ${sec}s`
   ctx.fillStyle = 'rgba(0,0,0,0.45)'
   ctx.fillRect(4, 4, label.length * 5 + 8, 11)
-  ctx.fillStyle = PALETTE[11]!
+  ctx.fillStyle = must(PALETTE[11])
   for (let i = 0; i < label.length; i += 1) {
     const ch = label.charCodeAt(i)
     drawMiniChar(ctx, 8 + i * 5, 6, ch)
@@ -414,12 +416,7 @@ function drawMiniChar(ctx: CanvasRenderingContext2D, ox: number, oy: number, cod
       [1, 1, 0],
       [1, 0, 0],
     ],
-    73: [
-      [1],
-      [1],
-      [1],
-      [1],
-    ],
+    73: [[1], [1], [1], [1]],
     76: [
       [1, 0, 0],
       [1, 0, 0],
@@ -536,8 +533,8 @@ function drawMiniChar(ctx: CanvasRenderingContext2D, ox: number, oy: number, cod
       [1, 1, 0],
     ],
   }
-  const g = glyphs[code] ?? glyphs[32]!
-  ctx.fillStyle = PALETTE[11]!
+  const g = glyphs[code] ?? must(glyphs[32])
+  ctx.fillStyle = must(PALETTE[11])
   for (let y = 0; y < g.length; y += 1) {
     for (let x = 0; x < g[y].length; x += 1) {
       if (g[y][x]) {
@@ -574,7 +571,7 @@ function computePose(ctx: PhaseContext, tick: number): FighterPose {
   let catX = baseCatX
   let ultraX = baseUltraX
   let catYOffset = 0
-  let ultraYOffset = 0
+  const ultraYOffset = 0
   let catBeam = true
   let ultraBeam = true
   let beamPower = 1
@@ -721,8 +718,8 @@ function renderFrame(ctx: CanvasRenderingContext2D, state: BattleState, showHud:
       catEyeY,
       pose.clashX,
       pose.clashY,
-      PALETTE[6]!,
-      PALETTE[7]!,
+      must(PALETTE[6]),
+      must(PALETTE[7]),
       beamW
     )
   }
@@ -733,8 +730,8 @@ function renderFrame(ctx: CanvasRenderingContext2D, state: BattleState, showHud:
       ultraArmY,
       pose.clashX,
       pose.clashY,
-      PALETTE[9]!,
-      PALETTE[11]!,
+      must(PALETTE[9]),
+      must(PALETTE[11]),
       beamW
     )
   }
@@ -780,7 +777,7 @@ export function initAuthPixelBattle(
   if (reducedMotion) {
     const ctx = canvas.getContext('2d')
     if (ctx) {
-      ctx.fillStyle = PALETTE[1]!
+      ctx.fillStyle = must(PALETTE[1])
       ctx.fillRect(0, 0, W, H)
       plotSprite(ctx, CAT_IDLE, 24, H - 70, 5)
       plotSprite(ctx, ULTRA_IDLE, W - 70, H - 72, 5)

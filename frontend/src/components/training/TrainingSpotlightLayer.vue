@@ -2,18 +2,18 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import {
+  clampSpotlightScale,
+  overlayClientPercent,
+  spotlightRadius,
+  spotlightShape,
+  translateOverlay,
+} from '@/composables/training/trainingOverlayDrag'
+import {
   presentationRectSpotlightStyle,
   presentationSpotlightBackground,
   presentationSpotlightHoleSize,
   presentationSpotlightVisualScale,
 } from '@/config/presentationSpotlight'
-import {
-  overlayClientPercent,
-  clampSpotlightScale,
-  spotlightRadius,
-  spotlightShape,
-  translateOverlay,
-} from '@/composables/training/trainingOverlayDrag'
 import type { TrainingStepOverlay } from '@/types/training'
 
 const props = defineProps<{
@@ -127,7 +127,10 @@ function moveDrag(event: PointerEvent): void {
   if (resizing) {
     const rect = rootRef.value.getBoundingClientRect()
     const center = centerPx(overlay)
-    const dist = Math.hypot(event.clientX - rect.left - center.x, event.clientY - rect.top - center.y)
+    const dist = Math.hypot(
+      event.clientX - rect.left - center.x,
+      event.clientY - rect.top - center.y
+    )
     const unit = presentationSpotlightHoleSize(1, spotlightShape(overlay)).halfW
     const factor = visualScale(overlay) / spotlightRadius(overlay)
     overlay.r = clampSpotlightScale(dist / unit / (factor || 1))

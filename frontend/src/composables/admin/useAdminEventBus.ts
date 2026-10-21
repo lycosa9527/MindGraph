@@ -3,11 +3,7 @@
  */
 import { onUnmounted } from 'vue'
 
-import {
-  eventBus,
-  type EventHandler,
-  type EventTypes,
-} from '@/composables/core/useEventBus'
+import { type EventHandler, type EventTypes, eventBus } from '@/composables/core/useEventBus'
 
 type AdminEventKey = Extract<
   keyof EventTypes,
@@ -22,22 +18,15 @@ export type AdminEventPayload<K extends AdminEventKey> = EventTypes[K]
 
 export function useAdminEventBus(owner?: string) {
   const unsubscribers: (() => void)[] = []
-  const composableOwner =
-    owner ?? `admin_${Date.now()}_${Math.random().toString(36).slice(2)}`
+  const composableOwner = owner ?? `admin_${Date.now()}_${Math.random().toString(36).slice(2)}`
 
-  function on<K extends AdminEventKey>(
-    event: K,
-    handler: EventHandler<K>
-  ): () => void {
+  function on<K extends AdminEventKey>(event: K, handler: EventHandler<K>): () => void {
     const unsubscribe = eventBus.onWithOwner(event, handler, composableOwner)
     unsubscribers.push(unsubscribe)
     return unsubscribe
   }
 
-  function once<K extends AdminEventKey>(
-    event: K,
-    handler: EventHandler<K>
-  ): () => void {
+  function once<K extends AdminEventKey>(event: K, handler: EventHandler<K>): () => void {
     const wrapped: EventHandler<K> = (data) => {
       off(event, wrapped)
       handler(data)

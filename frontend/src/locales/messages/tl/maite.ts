@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Matt paraan ng pag-aaral',
-  'maite.subtitle': 'Baliktad na pag-decompose · Apat na yugto ng diagnosis · Targeted na remedy · Variant transfer',
+  'maite.subtitle':
+    'Baliktad na pag-decompose · Apat na yugto ng diagnosis · Targeted na remedy · Variant transfer',
   'maite.mode.demo': 'Demo',
   'maite.mode.inquiry': 'Pagtatanong',
   'maite.mode.map': 'Mapa',
@@ -44,7 +45,8 @@ export default {
   'maite.inquiry.variantTitle': 'Pag-eensayo ng variant',
   'maite.inquiry.complete': 'Tapusin ang session',
   'maite.inquiry.completedTitle': 'Tapos na ang inquiry',
-  'maite.inquiry.completedMessage': 'Tapos na ang inquiry session na ito. Tingnan ang learning report sa ibaba.',
+  'maite.inquiry.completedMessage':
+    'Tapos na ang inquiry session na ito. Tingnan ang learning report sa ibaba.',
   'maite.diagnosis.thinkingPlaceholder': 'Ilarawan ang iyong pag-iisip (opsyonal)…',
   'maite.diagnosis.runAuto': 'Awtomatikong diyagnosis',
   'maite.diagnosis.running': 'Nagdi-diagnose…',
@@ -58,7 +60,8 @@ export default {
   'maite.variant.answerPlaceholder': 'Isulat ang buong sagot…',
   'maite.variant.strategyPlaceholder': 'Ipaliwanag kung paano ina-adjust ang method…',
   'maite.variant.submit': 'Isumite ang sagot',
-  'maite.variant.completeHint': 'Mag-submit ng hindi bababa sa 3 variant answers bago tapusin ang session.',
+  'maite.variant.completeHint':
+    'Mag-submit ng hindi bababa sa 3 variant answers bago tapusin ang session.',
   'maite.practice.title': 'Kamakailang practice',
   'maite.practice.loading': 'Naglo-load…',
   'maite.practice.empty': 'Wala pang practice sessions',
@@ -85,7 +88,8 @@ export default {
   'maite.errors.diagnosis_failed': 'Nabigo ang diagnosis.',
   'maite.errors.remedy_failed': 'Nabigong gumawa ng remedy tasks.',
   'maite.errors.variant_failed': 'Nabigong gumawa ng variant tasks.',
-  'maite.errors.variants_incomplete': 'Mag-submit ng hindi bababa sa 3 variant answers bago tapusin.',
+  'maite.errors.variants_incomplete':
+    'Mag-submit ng hindi bababa sa 3 variant answers bago tapusin.',
   'maite.errors.variant_answer_required': 'Kailangan ang sagot at strategy.',
   'maite.errors.variant_submit_failed': 'Nabigong isumite ang variant answer.',
   'maite.errors.load_failed': 'Nabigong i-load ang session.',

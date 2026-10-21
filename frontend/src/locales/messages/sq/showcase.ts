@@ -31,7 +31,8 @@ export default {
   'showcase.myFavoritesEmpty': 'Ende nuk ka raste të preferuara',
   'showcase.myFavoritesEmptyHint': 'Rastet që ruani do të shfaqen këtu',
   'showcase.myCasesModalTitle': 'Rastet e mia të publikuara',
-  'showcase.myCasesManageHint': 'Tërhiqni, hiqni ose redaktoni nga kjo listë; klikoni një rast për detaje',
+  'showcase.myCasesManageHint':
+    'Tërhiqni, hiqni ose redaktoni nga kjo listë; klikoni një rast për detaje',
   'showcase.myCasesAction.edit': 'Redakto',
   'showcase.myCasesEmpty': 'Ende nuk ka raste të publikuara',
   'showcase.myCasesEmptyHint': 'Rastet e publikuara dhe statusi i shqyrtimit do të shfaqen këtu',
@@ -39,11 +40,14 @@ export default {
   'showcase.pendingReview': 'Në pritje të shqyrtimit',
   'showcase.publishModal.title': 'Publiko rastin',
   'showcase.publishModal.titleLabel': 'Titulli i rastit',
-  'showcase.publishModal.titleHint': 'Mbajeni titullin të shkurtër — rekomandohen deri në {max} karaktere',
-  'showcase.publishModal.titlePlaceholder': 'p.sh. Dy fëmijë debatojnë për Diellin — dizajn mësimor',
+  'showcase.publishModal.titleHint':
+    'Mbajeni titullin të shkurtër — rekomandohen deri në {max} karaktere',
+  'showcase.publishModal.titlePlaceholder':
+    'p.sh. Dy fëmijë debatojnë për Diellin — dizajn mësimor',
   'showcase.publishModal.descriptionLabel': 'Përshkrimi',
   'showcase.publishModal.tagsLabel': 'Etiketat',
-  'showcase.publishModal.tagsHint': 'Ndani etiketat me presje, p.sh. konflikt kognitiv, matematikë e ulët',
+  'showcase.publishModal.tagsHint':
+    'Ndani etiketat me presje, p.sh. konflikt kognitiv, matematikë e ulët',
   'showcase.publishModal.caseTypeLabel': 'Lloji i rastit',
   'showcase.publishModal.subjectLabel': 'Lënda',
   'showcase.publishModal.gradeLabel': 'Klasa',
@@ -53,19 +57,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Duke ngarkuar skedarët ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Duke ngarkuar {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Duke përfunduar…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Ngarkimi dështoi — drafti u anulua. Ju lutemi provoni përsëri.',
-  'showcase.publishModal.uploadCorsFailed': 'Nuk u ngarkua në ruajtjen e objekteve (shpesh CORS i bucket-it ose CSP e faqes bllokon hostin COS). Drafti u anulua — kërkoni një administrator të rregullojë CORS/CSP, pastaj provoni përsëri.',
-  'showcase.publishModal.uploadStorageRejected': 'Ruajtja e objekteve refuzoi ngarkimin. Drafti u anulua — provoni më vonë ose kontaktoni administratorin nëse vazhdon.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Ngarkimi dështoi — drafti u anulua. Ju lutemi provoni përsëri.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Nuk u ngarkua në ruajtjen e objekteve (shpesh CORS i bucket-it ose CSP e faqes bllokon hostin COS). Drafti u anulua — kërkoni një administrator të rregullojë CORS/CSP, pastaj provoni përsëri.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Ruajtja e objekteve refuzoi ngarkimin. Drafti u anulua — provoni më vonë ose kontaktoni administratorin nëse vazhdon.',
   'showcase.publishModal.uploadFailed': 'Ngarkimi dështoi. Ju lutemi provoni përsëri.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Imazhi i kopertinës tejkalon kufirin 2 MB. Kompresoni pamjen ose përdorni një imazh më të vogël, pastaj provoni përsëri.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'Skedari tejkalon kufirin e madhësisë (dokumente/imazhe 20 MB, video 100 MB). Kompresoni dhe provoni përsëri.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Skedari tejkalon kufirin e madhësisë (dokumente/imazhe 20 MB, video 100 MB). Drafti u anulua — kompresoni dhe provoni përsëri.',
-  'showcase.publishModal.uploadFileTooLarge': 'Skedari është shumë i madh për këtë lloj ngarkimi. Kontrolloni kufirin e madhësisë dhe provoni përsëri.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Skedari është shumë i madh për këtë lloj ngarkimi. Drafti u anulua — kontrolloni kufirin e madhësisë dhe provoni përsëri.',
-  'showcase.publishModal.coverUploadSkipped': 'Rasti u dërgua, por imazhi i kopertinës nuk u ngarkua. Mund ta redaktoni rastin më vonë për të rifreskuar kopertinën.',
-  'showcase.publishModal.coverGenerating': 'Pamja paraprake e kopertinës po gjenerohet në sfond — do të shfaqet në kartë së shpejti.',
-  'showcase.publishModal.coverFailed': 'Rasti u dërgua, por kopertina nuk u gjenerua. Mund ta redaktoni rastin më vonë për të rifreskuar kopertinën.',
-  'showcase.publishModal.coverFailedTimeout': 'Rasti u dërgua, por gjenerimi i kopertinës skadoi. Mund ta redaktoni rastin më vonë për të rifreskuar kopertinën.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Imazhi i kopertinës tejkalon kufirin 2 MB. Kompresoni pamjen ose përdorni një imazh më të vogël, pastaj provoni përsëri.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'Skedari tejkalon kufirin e madhësisë (dokumente/imazhe 20 MB, video 100 MB). Kompresoni dhe provoni përsëri.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'Skedari tejkalon kufirin e madhësisë (dokumente/imazhe 20 MB, video 100 MB). Drafti u anulua — kompresoni dhe provoni përsëri.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'Skedari është shumë i madh për këtë lloj ngarkimi. Kontrolloni kufirin e madhësisë dhe provoni përsëri.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'Skedari është shumë i madh për këtë lloj ngarkimi. Drafti u anulua — kontrolloni kufirin e madhësisë dhe provoni përsëri.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Rasti u dërgua, por imazhi i kopertinës nuk u ngarkua. Mund ta redaktoni rastin më vonë për të rifreskuar kopertinën.',
+  'showcase.publishModal.coverGenerating':
+    'Pamja paraprake e kopertinës po gjenerohet në sfond — do të shfaqet në kartë së shpejti.',
+  'showcase.publishModal.coverFailed':
+    'Rasti u dërgua, por kopertina nuk u gjenerua. Mund ta redaktoni rastin më vonë për të rifreskuar kopertinën.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Rasti u dërgua, por gjenerimi i kopertinës skadoi. Mund ta redaktoni rastin më vonë për të rifreskuar kopertinën.',
   'showcase.publishModal.success': 'Rasti u dërgua — në pritje të shqyrtimit nga administratori',
   'showcase.publishModal.fromCanvas': 'Publiko nga kanavaca',
   'showcase.publishModal.step1Title': 'Informacioni bazë',
@@ -79,26 +95,35 @@ export default {
   'showcase.publishModal.uploadLabel': 'Ngarko skedar',
   'showcase.publishModal.uploadImage': 'Ngarko imazh',
   'showcase.publishModal.uploadFile': 'Ngarko skedar',
-  'showcase.publishModal.directUploadDisabled': 'Ngarkimi i drejtpërdrejtë i skedarëve është përkohësisht i padisponueshëm. Mund të zgjidhni një diagram të ruajtur nga historiku.',
-  'showcase.publishModal.uploadViaStorage': 'Skedarët ngarkohen direkt në ruajtje të sigurt (URL me jetë të shkurtër).',
+  'showcase.publishModal.directUploadDisabled':
+    'Ngarkimi i drejtpërdrejtë i skedarëve është përkohësisht i padisponueshëm. Mund të zgjidhni një diagram të ruajtur nga historiku.',
+  'showcase.publishModal.uploadViaStorage':
+    'Skedarët ngarkohen direkt në ruajtje të sigurt (URL me jetë të shkurtër).',
   'showcase.publishModal.pickHistory': 'Zgjidh nga historiku',
   'showcase.publishModal.removeFile': 'Hiq',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: pamje e kufizuar)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: pamje e kufizuar) — maks. {maxMb} MB për dokument',
-  'showcase.publishModal.teachingDocTooLarge': 'Dokumenti tejkalon kufirin {maxMb} MB. Kompresoni dhe provoni përsëri.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: pamje e kufizuar) — maks. {maxMb} MB për dokument',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Dokumenti tejkalon kufirin {maxMb} MB. Kompresoni dhe provoni përsëri.',
   'showcase.publishModal.diagramImageHint': 'Mbështetje .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Ngarko imazhe (të shumta)',
-  'showcase.publishModal.galleryHint': 'Shtoni imazhe dhe diagrame të ruajtura, deri në {max} artikuj',
-  'showcase.publishModal.galleryHintCase': 'Mund të shtohen shumë fotografi dhe ikona historike, deri në {max} artikuj',
-  'showcase.publishModal.galleryHintTemplate': 'Mund të ngarkoni skedarë .mg dhe të zgjidhni ikona të shumta historike, deri në {max} artikuj',
+  'showcase.publishModal.galleryHint':
+    'Shtoni imazhe dhe diagrame të ruajtura, deri në {max} artikuj',
+  'showcase.publishModal.galleryHintCase':
+    'Mund të shtohen shumë fotografi dhe ikona historike, deri në {max} artikuj',
+  'showcase.publishModal.galleryHintTemplate':
+    'Mund të ngarkoni skedarë .mg dhe të zgjidhni ikona të shumta historike, deri në {max} artikuj',
   'showcase.publishModal.galleryCount': '{count}/{max} artikuj të shtuar',
   'showcase.publishModal.galleryImageItem': 'Imazh: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Ilustrimi: {name}',
   'showcase.publishModal.galleryLimit': 'Mund të shtoni më së shumti {max} artikuj',
   'showcase.publishModal.galleryDuplicateDiagram': 'Ky diagram i ruajtur është tashmë në listë',
   'showcase.publishModal.galleryPickerDone': 'U krye',
-  'showcase.publishModal.galleryUploadFailed': 'Ngarkimi i imazhit të galerisë dështoi — provoni të publikoni përsëri',
-  'showcase.publishModal.galleryReuploadHint': 'Disa imazhe të galerisë nuk u ruajtën — ri-zgjidheni para dërgimit',
+  'showcase.publishModal.galleryUploadFailed':
+    'Ngarkimi i imazhit të galerisë dështoi — provoni të publikoni përsëri',
+  'showcase.publishModal.galleryReuploadHint':
+    'Disa imazhe të galerisë nuk u ruajtën — ri-zgjidheni para dërgimit',
   'showcase.detail.galleryImage': 'Imazh',
   'showcase.detail.galleryDiagram': 'Ilustrim',
   'showcase.detail.galleryPrev': 'Paraardhës',
@@ -108,39 +133,54 @@ export default {
   'showcase.publishModal.templateFileHint': 'vetëm .mg (eksport MindGraph)',
   'showcase.publishModal.templatePreviewLabel': 'Pamja paraprake e diagramit',
   'showcase.publishModal.templatePreviewHint': 'Mjeti dorë — vetëm shikim, jo i redaktueshëm',
-  'showcase.publishModal.templatePreviewEmpty': 'Ngarkoni një skedar .mg ose zgjidhni një diagram të ruajtur për pamje',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Ngarkoni një skedar .mg ose zgjidhni një diagram të ruajtur për pamje',
   'showcase.publishModal.diagramCasePreviewLabel': 'Pamja paraprake e diagramit',
-  'showcase.publishModal.diagramCasePreviewHint': 'Mjeti dorë — lëvizni dhe zmadhoni për të eksploruar',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Lloji i diagramit u përputh nga diagrami i ruajtur i zgjedhur',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'Mjeti dorë — lëvizni dhe zmadhoni për të eksploruar',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Lloji i diagramit u përputh nga diagrami i ruajtur i zgjedhur',
   'showcase.publishModal.introLabel': 'Hyrje në diagram',
   'showcase.publishModal.teachingIntroLabel': 'Hyrje në dizajnin mësimor',
   'showcase.publishModal.highlightsLabel': 'Pikat kryesore të dizajnit',
   'showcase.publishModal.highlightsPlaceholder': 'Një pikë për rresht (opsionale)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Prezantoni shkurt sfondin e mësimit, qëllimet dhe kontekstin',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Prezantoni shkurt sfondin e mësimit, qëllimet dhe kontekstin',
   'showcase.publishModal.aiGenerate': 'Gjenero me AI',
   'showcase.publishModal.aiGenerating': 'Duke gjeneruar…',
   'showcase.publishModal.aiGenerateStop': 'Ndalo',
-  'showcase.publishModal.aiGenerateCancelled': 'Gjenerimi me AI u anulua — klikoni përsëri për të rigjeneruar',
-  'showcase.publishModal.aiGenerateSuccess': 'Hyrja dhe pikat kryesore u plotësuan nga dokumenti — rishikoni dhe redaktoni; reflektimin mësimor shkruajeni vetë',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Prezantimi i ilustrimit dhe aplikimi në klasë janë krijuar në bazë të ilustrimit. Ju lutemi kontrolloni dhe modifikoni.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'Gjenerimi me AI u anulua — klikoni përsëri për të rigjeneruar',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Hyrja dhe pikat kryesore u plotësuan nga dokumenti — rishikoni dhe redaktoni; reflektimin mësimor shkruajeni vetë',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'Prezantimi i ilustrimit dhe aplikimi në klasë janë krijuar në bazë të ilustrimit. Ju lutemi kontrolloni dhe modifikoni.',
   'showcase.publishModal.aiGenerateFailed': 'Gjenerimi me AI dështoi — provoni përsëri',
-  'showcase.publishModal.aiGenerateNeedFile': 'Së pari ngarkoni një dokument dizajni mësimor në hapin e mëparshëm',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'Gjenerimi me AI është i disponueshëm vetëm për rastet e dizajnit mësimor',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Së pari ngarkoni një dokument dizajni mësimor në hapin e mëparshëm',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'Gjenerimi me AI është i disponueshëm vetëm për rastet e dizajnit mësimor',
   'showcase.publishModal.reflectionLabel': 'Reflektim mësimor',
   'showcase.publishModal.introPlaceholder': 'Përshkruani shkurt rastin dhe kur ta përdorni',
-  'showcase.publishModal.diagramCorePlaceholder': 'Përshkruani përmbajtjen e diagramit dhe pikat e vizualizimit',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Përshkruani përmbajtjen e diagramit dhe pikat e vizualizimit',
   'showcase.publishModal.classroomAppPlaceholder': 'Si përdoret ky diagram në klasë',
-  'showcase.publishModal.tagInputPlaceholder': 'Shkruani një etiketë (maks. 10 karaktere), shtypni Enter',
+  'showcase.publishModal.tagInputPlaceholder':
+    'Shkruani një etiketë (maks. 10 karaktere), shtypni Enter',
   'showcase.publishModal.tagRecommended': 'Etiketa të sugjeruara',
   'showcase.publishModal.tagCountHint': '(maks. {max})',
   'showcase.publishModal.tagMaxCount': 'Mund të shtoni më së shumti {max} etiketa',
-  'showcase.publishModal.networkError': 'Dërgimi dështoi — kontrolloni që serveri të jetë aktiv dhe madhësitë e skedarëve brenda kufijve',
+  'showcase.publishModal.networkError':
+    'Dërgimi dështoi — kontrolloni që serveri të jetë aktiv dhe madhësitë e skedarëve brenda kufijve',
   'showcase.publishModal.fileTooLarge': '«{name}» tejkalon kufirin {maxMb} MB',
-  'showcase.publishModal.uploadTotalTooLarge': 'Madhësia totale e ngarkimit tejkalon kufirin — zvogëloni bashkëngjitjen ose videon',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'Madhësia totale e ngarkimit tejkalon kufirin — zvogëloni bashkëngjitjen ose videon',
   'showcase.publishModal.tagAdd': 'Shto',
   'showcase.publishModal.publishBtn': 'Publiko',
-  'showcase.publishModal.reflectionPlaceholder': 'Shkruani reflektimin tuaj për këtë mësim (opsionale)',
+  'showcase.publishModal.reflectionPlaceholder':
+    'Shkruani reflektimin tuaj për këtë mësim (opsionale)',
   'showcase.publishModal.classroomAppLabel': 'Përdorimi në klasë',
   'showcase.publishModal.selectSubject': 'Zgjidh lëndën',
   'showcase.publishModal.selectGrade': 'Zgjidh klasën',
@@ -151,10 +191,14 @@ export default {
   'showcase.publishModal.validationFile': 'Ngarkoni një skedar ose zgjidhni një diagram të ruajtur',
   'showcase.publishModal.validationDiagramType': 'Ju lutemi zgjidhni llojin e diagramit',
   'showcase.publishModal.invalidFileType': 'Lloj skedari i pambështetur',
-  'showcase.publishModal.invalidMgFile': 'Nuk u lexua ky skedar .mg — eksportojeni fillimisht nga MindGraph',
-  'showcase.publishModal.cannotPreview': 'Nuk u gjenerua pamja paraprake e kopertinës — rasti do të dërgohet gjithsesi. Provoni PNG/JPG ose zgjidhni një diagram të ruajtur.',
-  'showcase.publishModal.cannotPreviewHistory': 'Nuk u gjenerua kopertina nga ky diagram i ruajtur — rasti do të dërgohet gjithsesi. Ri-zgjidheni ose ri-ruajeni nga kanavaca.',
-  'showcase.publishModal.cannotPreviewTemplate': 'Nuk u gjenerua kopertina — rasti do të dërgohet gjithsesi. Kontrolloni skedarin .mg ose zgjidhni një diagram tjetër të ruajtur.',
+  'showcase.publishModal.invalidMgFile':
+    'Nuk u lexua ky skedar .mg — eksportojeni fillimisht nga MindGraph',
+  'showcase.publishModal.cannotPreview':
+    'Nuk u gjenerua pamja paraprake e kopertinës — rasti do të dërgohet gjithsesi. Provoni PNG/JPG ose zgjidhni një diagram të ruajtur.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Nuk u gjenerua kopertina nga ky diagram i ruajtur — rasti do të dërgohet gjithsesi. Ri-zgjidheni ose ri-ruajeni nga kanavaca.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Nuk u gjenerua kopertina — rasti do të dërgohet gjithsesi. Kontrolloni skedarin .mg ose zgjidhni një diagram tjetër të ruajtur.',
   'showcase.publishModal.historyTitle': 'Zgjidh diagram të ruajtur',
   'showcase.publishModal.historySearch': 'Kërko emrin e diagramit…',
   'showcase.publishModal.historyEmpty': 'Nuk ka diagrame të ruajtura',
@@ -184,9 +228,11 @@ export default {
   'showcase.detail.delist': 'Hiq nga lista',
   'showcase.detail.resubmit': 'Redakto dhe ridërgo',
   'showcase.detail.withdrawTitle': 'Tërhiq rastin',
-  'showcase.detail.withdrawConfirm': 'Tërhiq «{title}»? Do të hiqet nga radha e shqyrtimit dhe nuk mund të rikthehet.',
+  'showcase.detail.withdrawConfirm':
+    'Tërhiq «{title}»? Do të hiqet nga radha e shqyrtimit dhe nuk mund të rikthehet.',
   'showcase.detail.delistTitle': 'Hiq rastin nga lista',
-  'showcase.detail.delistConfirm': 'Hiq «{title}» nga galeria? Përdoruesit e tjerë nuk do të mund ta shohin më.',
+  'showcase.detail.delistConfirm':
+    'Hiq «{title}» nga galeria? Përdoruesit e tjerë nuk do të mund ta shohin më.',
   'showcase.detail.confirm': 'Konfirmo',
   'showcase.detail.cancel': 'Anulo',
   'showcase.withdrawn': 'Tërhequr',
@@ -207,7 +253,8 @@ export default {
   'showcase.detail.officePreviewPending': 'Duke konvertuar slajdet për pamje…',
   'showcase.detail.docPreviewLoading': 'Duke ngarkuar dokumentin…',
   'showcase.detail.docPreviewFailed': 'Nuk u ngarkua pamja. Provoni ta hapni në skedë të re.',
-  'showcase.detail.legacyDocHint': 'Skedarët e vjetër .doc nuk mund të shfaqen këtu. Hapni ose shkarkoni skedarin, ose ngarkoni .docx për pamje në shfletues.',
+  'showcase.detail.legacyDocHint':
+    'Skedarët e vjetër .doc nuk mund të shfaqen këtu. Hapni ose shkarkoni skedarin, ose ngarkoni .docx për pamje në shfletues.',
   'showcase.detail.noDocument': 'Nuk ka pamje paraprake të dokumentit',
   'showcase.detail.noDiagramPreview': 'Nuk ka pamje paraprake të diagramit',
   'showcase.detail.diagramPreviewLoading': 'Duke ngarkuar diagramin…',

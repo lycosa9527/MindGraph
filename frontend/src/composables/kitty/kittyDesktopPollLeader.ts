@@ -1,5 +1,4 @@
 /** One desktop tab per browser profile polls Kitty desktop pairing (BroadcastChannel). */
-
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 const CHANNEL_NAME = 'mindgraph-kitty-desktop-poll-leader'

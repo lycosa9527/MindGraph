@@ -8,14 +8,14 @@ import type {
   KittyAgentContext,
   KittyContextUpdateOptions,
 } from '@/composables/kitty/kittyAgentTypes'
+import { resolveKittyErrorCode } from '@/composables/kitty/pipeline/errorCatalog'
+import { failKittyTurn, recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
+import type { KittyStep, KittyTurnContext } from '@/composables/kitty/pipeline/types'
 import {
   KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS,
   KITTY_HUB_EDIT_GATE_TIMEOUT_MS,
   syncKittyHubContext,
 } from '@/composables/kitty/syncKittyHubContext'
-import { failKittyTurn, recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
-import type { KittyStep, KittyTurnContext } from '@/composables/kitty/pipeline/types'
-import { resolveKittyErrorCode } from '@/composables/kitty/pipeline/errorCatalog'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 import { useKittySessionStore } from '@/stores/kittySession'
 
@@ -35,8 +35,7 @@ export async function runKittyHubSync(options: {
   timeoutMs?: number
 }): Promise<{ ok: boolean; revision?: number; errorCode?: string }> {
   const step: KittyStep =
-    options.step ??
-    (options.reason === 'post_mutation' ? 'S12_post_hub_persist' : 'S07_hub_sync')
+    options.step ?? (options.reason === 'post_mutation' ? 'S12_post_hub_persist' : 'S07_hub_sync')
   const timeoutMs =
     options.timeoutMs ??
     (options.reason === 'edit_gate'

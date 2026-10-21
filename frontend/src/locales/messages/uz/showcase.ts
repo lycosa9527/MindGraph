@@ -31,7 +31,8 @@ export default {
   'showcase.myFavoritesEmpty': 'Hali sevimli keys yo’q',
   'showcase.myFavoritesEmptyHint': 'Xatcho’p qilgan keyslaringiz shu yerda ko’rinadi',
   'showcase.myCasesModalTitle': 'Nashr qilgan keyslar',
-  'showcase.myCasesManageHint': 'Ushbu ro’yxatdan olib tashlash, ro’yxatdan chiqarish yoki tahrirlash; tafsilotlar uchun keysni bosing',
+  'showcase.myCasesManageHint':
+    'Ushbu ro’yxatdan olib tashlash, ro’yxatdan chiqarish yoki tahrirlash; tafsilotlar uchun keysni bosing',
   'showcase.myCasesAction.edit': 'Tahrirlash',
   'showcase.myCasesEmpty': 'Hali nashr qilingan keys yo’q',
   'showcase.myCasesEmptyHint': 'Nashr qilingan keys va ko’rish holati burada ko’rinadi',
@@ -40,10 +41,12 @@ export default {
   'showcase.publishModal.title': 'Keys nashr qilish',
   'showcase.publishModal.titleLabel': 'Keys bashligi',
   'showcase.publishModal.titleHint': 'Bashligi qisa saqlang — eng ko’p {max} belgi tovsiye olunur',
-  'showcase.publishModal.titlePlaceholder': 'mes. Iki ushaq gunesh haqqinda mubahise edir — dars dizayni',
+  'showcase.publishModal.titlePlaceholder':
+    'mes. Iki ushaq gunesh haqqinda mubahise edir — dars dizayni',
   'showcase.publishModal.descriptionLabel': 'Tavsif',
   'showcase.publishModal.tagsLabel': 'Teqler',
-  'showcase.publishModal.tagsHint': 'Teqleri vergulle ayirin, mes. idraki konflikt, o’rta ripostyyat',
+  'showcase.publishModal.tagsHint':
+    'Teqleri vergulle ayirin, mes. idraki konflikt, o’rta ripostyyat',
   'showcase.publishModal.caseTypeLabel': 'Keys novu',
   'showcase.publishModal.subjectLabel': 'Fan',
   'showcase.publishModal.gradeLabel': 'Sinf',
@@ -53,19 +56,32 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Fayllar yuklanmoqda ({current}/{total})…',
   'showcase.publishModal.uploadingFile': '{name} yuklanmoqda ({current}/{total})…',
   'showcase.publishModal.finishing': 'Tamamlanir…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Yuklash muvaffaqiyatsiz — qoralama bekor qilindi. Qayta urining.',
-  'showcase.publishModal.uploadCorsFailed': 'Ob’ekt xotirasiga yuklab bo‘lmadi (ko‘pincha bucket CORS yoki sayt CSP COS hostini bloklaydi). Qoralama bekor qilindi — admin CORS/CSP ni tuzatsin, keyin qayta urining.',
-  'showcase.publishModal.uploadStorageRejected': 'Ob’ekt xotirasi yuklashni rad etdi. Qoralama bekor qilindi — keyinroq qayta urining yoki muammo davom etsa adminga murojaat qiling.',
-  'showcase.publishModal.uploadFailed': 'Yuklashme muvaffaqiyatsiz bo’ldi. Qayta qayta urinib ko’ring.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Muqova rasmi 2MB chegarasidan oshdi. Ko‘rinishni siqiting yoki kichikroq rasm ishlating, keyin qayta urining.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'Fayl hajm chegarasidan oshdi (hujjat/rasm 20MB, video 100MB). Siqib qayta urining.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Fayl hajm chegarasidan oshdi (hujjat/rasm 20MB, video 100MB). Qoralama bekor qilindi — siqib qayta urining.',
-  'showcase.publishModal.uploadFileTooLarge': 'Fayl bu yuklash turi uchun juda katta. Hajm chegarasini tekshirib qayta urining.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Fayl bu yuklash turi uchun juda katta. Qoralama bekor qilindi — hajm chegarasini tekshirib qayta urining.',
-  'showcase.publishModal.coverUploadSkipped': 'Keys yuborildi, lekin muqova rasmi yuklanmadi. Muqovani yangilash uchun keyinroq tahrirlashingiz mumkin.',
-  'showcase.publishModal.coverGenerating': 'Muqova ko‘rinishi fon rejimida yaratilmoqda — tez orada kartada paydo bo‘ladi.',
-  'showcase.publishModal.coverFailed': 'Keys yuborildi, lekin muqova yaratilmadi. Muqovani yangilash uchun keyinroq tahrirlashingiz mumkin.',
-  'showcase.publishModal.coverFailedTimeout': 'Keys yuborildi, lekin muqova yaratish vaqti tugadi. Muqovani yangilash uchun keyinroq tahrirlashingiz mumkin.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Yuklash muvaffaqiyatsiz — qoralama bekor qilindi. Qayta urining.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Ob’ekt xotirasiga yuklab bo‘lmadi (ko‘pincha bucket CORS yoki sayt CSP COS hostini bloklaydi). Qoralama bekor qilindi — admin CORS/CSP ni tuzatsin, keyin qayta urining.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Ob’ekt xotirasi yuklashni rad etdi. Qoralama bekor qilindi — keyinroq qayta urining yoki muammo davom etsa adminga murojaat qiling.',
+  'showcase.publishModal.uploadFailed':
+    'Yuklashme muvaffaqiyatsiz bo’ldi. Qayta qayta urinib ko’ring.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Muqova rasmi 2MB chegarasidan oshdi. Ko‘rinishni siqiting yoki kichikroq rasm ishlating, keyin qayta urining.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'Fayl hajm chegarasidan oshdi (hujjat/rasm 20MB, video 100MB). Siqib qayta urining.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'Fayl hajm chegarasidan oshdi (hujjat/rasm 20MB, video 100MB). Qoralama bekor qilindi — siqib qayta urining.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'Fayl bu yuklash turi uchun juda katta. Hajm chegarasini tekshirib qayta urining.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'Fayl bu yuklash turi uchun juda katta. Qoralama bekor qilindi — hajm chegarasini tekshirib qayta urining.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Keys yuborildi, lekin muqova rasmi yuklanmadi. Muqovani yangilash uchun keyinroq tahrirlashingiz mumkin.',
+  'showcase.publishModal.coverGenerating':
+    'Muqova ko‘rinishi fon rejimida yaratilmoqda — tez orada kartada paydo bo‘ladi.',
+  'showcase.publishModal.coverFailed':
+    'Keys yuborildi, lekin muqova yaratilmadi. Muqovani yangilash uchun keyinroq tahrirlashingiz mumkin.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Keys yuborildi, lekin muqova yaratish vaqti tugadi. Muqovani yangilash uchun keyinroq tahrirlashingiz mumkin.',
   'showcase.publishModal.success': 'Keys yuborishildi — admin ko’rishi kutishnilir',
   'showcase.publishModal.fromCanvas': 'Kanvasdan nashr qilish',
   'showcase.publishModal.step1Title': 'Esas ma’lumot',
@@ -79,26 +95,36 @@ export default {
   'showcase.publishModal.uploadLabel': 'Fayl yuklash',
   'showcase.publishModal.uploadImage': 'Shekil yuklash',
   'showcase.publishModal.uploadFile': 'Fayl yuklash',
-  'showcase.publishModal.directUploadDisabled': 'To‘g‘ridan-to‘g‘ri fayl yuklash vaqtincha mavjud emas. Tarixdan saqlangan diagrammani tanlashingiz mumkin.',
-  'showcase.publishModal.uploadViaStorage': 'Fayllar to‘g‘ridan-to‘g‘ri xavfsiz xotiraga yuklanadi (qisqa muddatli URL).',
+  'showcase.publishModal.directUploadDisabled':
+    'To‘g‘ridan-to‘g‘ri fayl yuklash vaqtincha mavjud emas. Tarixdan saqlangan diagrammani tanlashingiz mumkin.',
+  'showcase.publishModal.uploadViaStorage':
+    'Fayllar to‘g‘ridan-to‘g‘ri xavfsiz xotiraga yuklanadi (qisqa muddatli URL).',
   'showcase.publishModal.pickHistory': 'Tarixden tanlash',
   'showcase.publishModal.removeFile': 'O’chirish',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: mehdud onko’rish)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: mehdud onko’rish) — hujjat bashina maks. {maxMb} MB',
-  'showcase.publishModal.teachingDocTooLarge': 'Hujjat {maxMb} MB limitini ashir. Sixishdirib qayta urinib ko’ring.',
-  'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gifni qo\'llab-quvvatlash',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: mehdud onko’rish) — hujjat bashina maks. {maxMb} MB',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Hujjat {maxMb} MB limitini ashir. Sixishdirib qayta urinib ko’ring.',
+  'showcase.publishModal.diagramImageHint':
+    ".png / .jpg / .jpeg / .webp / .gifni qo'llab-quvvatlash",
   'showcase.publishModal.uploadImages': 'Shekiller yuklash (bir neche)',
-  'showcase.publishModal.galleryHint': 'Bir neche shekil va saqlangan diagramma qo’shing, eng ko’p {max} element',
-  'showcase.publishModal.galleryHintCase': '{max} tagacha bir nechta rasm va tarixiy piktogramma qo\'shilishi mumkin',
-  'showcase.publishModal.galleryHintTemplate': 'Siz .mg fayllarni yuklashingiz va bir nechta tarixiy piktogrammalarni tanlashingiz mumkin, {max} elementgacha',
+  'showcase.publishModal.galleryHint':
+    'Bir neche shekil va saqlangan diagramma qo’shing, eng ko’p {max} element',
+  'showcase.publishModal.galleryHintCase':
+    "{max} tagacha bir nechta rasm va tarixiy piktogramma qo'shilishi mumkin",
+  'showcase.publishModal.galleryHintTemplate':
+    'Siz .mg fayllarni yuklashingiz va bir nechta tarixiy piktogrammalarni tanlashingiz mumkin, {max} elementgacha',
   'showcase.publishModal.galleryCount': '{count}/{max} element elave etilib',
   'showcase.publishModal.galleryImageItem': 'Shekil: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diagramma: {name}',
   'showcase.publishModal.galleryLimit': 'Eng ko’p {max} element elave ede bilersiniz',
   'showcase.publishModal.galleryDuplicateDiagram': 'Bu saqlangan diagramma artiq siyahidadir',
   'showcase.publishModal.galleryPickerDone': 'Hazir',
-  'showcase.publishModal.galleryUploadFailed': 'Qalereya shekil yuklashmesi muvaffaqiyatsiz bo’ldi — qayta nashr qilishmeye qayta urinib ko’ring',
-  'showcase.publishModal.galleryReuploadHint': 'Bezi qolingereya shekilleri saqlashnilmayib — yuborishmezden avval onlari qayta tanlang',
+  'showcase.publishModal.galleryUploadFailed':
+    'Qalereya shekil yuklashmesi muvaffaqiyatsiz bo’ldi — qayta nashr qilishmeye qayta urinib ko’ring',
+  'showcase.publishModal.galleryReuploadHint':
+    'Bezi qolingereya shekilleri saqlashnilmayib — yuborishmezden avval onlari qayta tanlang',
   'showcase.detail.galleryImage': 'Shekil',
   'showcase.detail.galleryDiagram': 'Diagramma',
   'showcase.detail.galleryPrev': 'Oldingi',
@@ -108,39 +134,55 @@ export default {
   'showcase.publishModal.templateFileHint': 'Yalniz .mg (MindGraph eksporti)',
   'showcase.publishModal.templatePreviewLabel': 'Diagramma onko’rishi',
   'showcase.publishModal.templatePreviewHint': 'El aleti — faqat ko’rish, tahrir olunmur',
-  'showcase.publishModal.templatePreviewEmpty': 'Onko’rish uchun .mg fayli yuklashyin yoki saqlangan diagramma tanlang',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Onko’rish uchun .mg fayli yuklashyin yoki saqlangan diagramma tanlang',
   'showcase.publishModal.diagramCasePreviewLabel': 'Diagramma onko’rishi',
   'showcase.publishModal.diagramCasePreviewHint': 'El aleti — gezmek va boyutmek uchun',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Diagramma turi tanlashilmish saqlangan diagrammadan uygunlashdirildi',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Diagramma turi tanlashilmish saqlangan diagrammadan uygunlashdirildi',
   'showcase.publishModal.introLabel': 'Diagramma teqdimati',
   'showcase.publishModal.teachingIntroLabel': 'O’qitish dizayni teqdimati',
   'showcase.publishModal.highlightsLabel': 'Dizayn vurgulari',
   'showcase.publishModal.highlightsPlaceholder': 'Her setirde bir vurgu (ixtiyari)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Darsin fonunu, meqsedlerini va kontekstini qisa teqdim edin',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Darsin fonunu, meqsedlerini va kontekstini qisa teqdim edin',
   'showcase.publishModal.aiGenerate': 'AI bilan yarat',
   'showcase.publishModal.aiGenerating': 'Yaradilir…',
   'showcase.publishModal.aiGenerateStop': 'To’xtatish',
-  'showcase.publishModal.aiGenerateCancelled': 'AI generatsiyasi bekor qilindi — qayta yaratmaq uchun bosing',
-  'showcase.publishModal.aiGenerateSuccess': 'Hujjatdan kirish va vurgular to‘ldirildi — ko‘rib chiqing va tahrirlang; o‘qitish refleksiyasini o‘zingiz yozing',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Illyustratsiyalar asosida taqdimot va sinf ilovasi yaratilgan. Iltimos, tekshiring va tahrirlang.',
-  'showcase.publishModal.aiGenerateFailed': 'AI generatsiyasi muvaffaqiyatsiz bo’ldi — qayta urinib ko’ring',
-  'showcase.publishModal.aiGenerateNeedFile': 'Oldingi addimda avval o’qitish dizayni hujjati yuklashyin',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'AI bilan yaratma faqat o’qitish dizayni keysi uchun elchatandir',
+  'showcase.publishModal.aiGenerateCancelled':
+    'AI generatsiyasi bekor qilindi — qayta yaratmaq uchun bosing',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Hujjatdan kirish va vurgular to‘ldirildi — ko‘rib chiqing va tahrirlang; o‘qitish refleksiyasini o‘zingiz yozing',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'Illyustratsiyalar asosida taqdimot va sinf ilovasi yaratilgan. Iltimos, tekshiring va tahrirlang.',
+  'showcase.publishModal.aiGenerateFailed':
+    'AI generatsiyasi muvaffaqiyatsiz bo’ldi — qayta urinib ko’ring',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Oldingi addimda avval o’qitish dizayni hujjati yuklashyin',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'AI bilan yaratma faqat o’qitish dizayni keysi uchun elchatandir',
   'showcase.publishModal.reflectionLabel': 'O’qitish refleksiyasi',
-  'showcase.publishModal.introPlaceholder': 'Keys va ne vaxt foydalanish olunacagini qisa tavsif edin',
-  'showcase.publishModal.diagramCorePlaceholder': 'Diagramma mazmununu va vizuallashdirma vurgularini tavsif edin',
-  'showcase.publishModal.classroomAppPlaceholder': 'Bu diagrammanin darsde nece foydalanish olundugu',
+  'showcase.publishModal.introPlaceholder':
+    'Keys va ne vaxt foydalanish olunacagini qisa tavsif edin',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Diagramma mazmununu va vizuallashdirma vurgularini tavsif edin',
+  'showcase.publishModal.classroomAppPlaceholder':
+    'Bu diagrammanin darsde nece foydalanish olundugu',
   'showcase.publishModal.tagInputPlaceholder': 'Teq yozing (maks. 10 belgi), Enter bosing',
   'showcase.publishModal.tagRecommended': 'Tovsiye olunan teqler',
   'showcase.publishModal.tagCountHint': '(maks. {max})',
   'showcase.publishModal.tagMaxCount': 'Eng ko’p {max} teq elave ede bilersiniz',
-  'showcase.publishModal.networkError': 'Yuborishme muvaffaqiyatsiz bo’ldi — serverin ishlediyini va fayl olchulerinin limitde oldugunu tekshiring',
+  'showcase.publishModal.networkError':
+    'Yuborishme muvaffaqiyatsiz bo’ldi — serverin ishlediyini va fayl olchulerinin limitde oldugunu tekshiring',
   'showcase.publishModal.fileTooLarge': '"{name}" {maxMb}MB olchu limitini ashir',
-  'showcase.publishModal.uploadTotalTooLarge': 'Umumi yuklashme olchusu limiti ashir — elave yoki video olchusunu azaldin',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'Umumi yuklashme olchusu limiti ashir — elave yoki video olchusunu azaldin',
   'showcase.publishModal.tagAdd': 'Qo’shish',
   'showcase.publishModal.publishBtn': 'Derc et',
-  'showcase.publishModal.reflectionPlaceholder': 'Bu dars haqqinda refleksiyanizi yozing (ixtiyari)',
+  'showcase.publishModal.reflectionPlaceholder':
+    'Bu dars haqqinda refleksiyanizi yozing (ixtiyari)',
   'showcase.publishModal.classroomAppLabel': 'Sinfde foydalanish',
   'showcase.publishModal.selectSubject': 'Fan tanlang',
   'showcase.publishModal.selectGrade': 'Sinf tanlang',
@@ -151,17 +193,22 @@ export default {
   'showcase.publishModal.validationFile': 'Fayl yuklashyin yoki saqlangan diagramma tanlang',
   'showcase.publishModal.validationDiagramType': 'Diagramma turinu tanlang',
   'showcase.publishModal.invalidFileType': 'Desteklenmeyen fayl novu',
-  'showcase.publishModal.invalidMgFile': 'Bu .mg fayli oxuna bilmedi — avval MindGraph-dan eksport edin',
-  'showcase.publishModal.cannotPreview': 'Muqova ko‘rinishi yaratilmadi — keys baribir yuboriladi. PNG/JPG sinab ko‘ring yoki saqlangan diagramma tanlang.',
-  'showcase.publishModal.cannotPreviewHistory': 'Bu saqlangan diagrammadan muqova yaratilmadi — keys baribir yuboriladi. Qayta tanlang yoki kanvasdan qayta saqlang.',
-  'showcase.publishModal.cannotPreviewTemplate': 'Muqova yaratilmadi — keys baribir yuboriladi. .mg faylini tekshiring yoki boshqa diagramma tanlang.',
+  'showcase.publishModal.invalidMgFile':
+    'Bu .mg fayli oxuna bilmedi — avval MindGraph-dan eksport edin',
+  'showcase.publishModal.cannotPreview':
+    'Muqova ko‘rinishi yaratilmadi — keys baribir yuboriladi. PNG/JPG sinab ko‘ring yoki saqlangan diagramma tanlang.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Bu saqlangan diagrammadan muqova yaratilmadi — keys baribir yuboriladi. Qayta tanlang yoki kanvasdan qayta saqlang.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Muqova yaratilmadi — keys baribir yuboriladi. .mg faylini tekshiring yoki boshqa diagramma tanlang.',
   'showcase.publishModal.historyTitle': 'Saqlangan diagramma tanlang',
   'showcase.publishModal.historySearch': 'Diagramma nomi qidirish…',
   'showcase.publishModal.historyEmpty': 'Saqlangan diagramma yo’q',
   'showcase.publishModal.historyUncategorized': 'Kategoriyasiz',
   'showcase.publishModal.typeDesc.teachingDesign': 'Fikr bacariqlari uchun sinf dars dizayni',
   'showcase.publishModal.typeDesc.diagramCase': 'O’qitishde ela diagrammalar va vizuallashdirma',
-  'showcase.publishModal.typeDesc.diagramTemplate': 'Qayta foydalanish yoki uygunlashdirma uchun diagrammalar',
+  'showcase.publishModal.typeDesc.diagramTemplate':
+    'Qayta foydalanish yoki uygunlashdirma uchun diagrammalar',
   'showcase.detail.import': 'Bu keysden foydalanish et',
   'showcase.action.goDraw': 'Birini chek',
   'showcase.action.applyTemplate': 'Shablonu qo’llash',
@@ -184,9 +231,11 @@ export default {
   'showcase.detail.delist': 'Siyahidan olib tashlash',
   'showcase.detail.resubmit': 'Tahrirlash va qayta yuborish',
   'showcase.detail.withdrawTitle': 'Keys geri chek',
-  'showcase.detail.withdrawConfirm': '"{title}" ni qaytarib olish? U ko‘rib chiqish navbatidan olib tashlanadi va tiklanmaydi.',
+  'showcase.detail.withdrawConfirm':
+    '"{title}" ni qaytarib olish? U ko‘rib chiqish navbatidan olib tashlanadi va tiklanmaydi.',
   'showcase.detail.delistTitle': 'Keys siyahidan olib tashlash',
-  'showcase.detail.delistConfirm': '"{title}" ni galereyadan olib tashlash? Boshqa foydalanuvchilar endi ko‘ra olmaydi.',
+  'showcase.detail.delistConfirm':
+    '"{title}" ni galereyadan olib tashlash? Boshqa foydalanuvchilar endi ko‘ra olmaydi.',
   'showcase.detail.confirm': 'Tasdiqlash',
   'showcase.detail.cancel': 'Bekor qilish',
   'showcase.withdrawn': 'Geri chekilib',
@@ -206,8 +255,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Slaydlar onko’rish uchun chevrilir…',
   'showcase.detail.officePreviewPending': 'Slaydlar onko’rish uchun chevrilir…',
   'showcase.detail.docPreviewLoading': 'Hujjat yuklanmoqda…',
-  'showcase.detail.docPreviewFailed': 'Onko’rish yuklanmadi. Yangi tabda ochishmaga qayta urinib ko’ring.',
-  'showcase.detail.legacyDocHint': 'Eski .doc fayllar brauzerda ko‘rinmaydi. Faylni oching yoki yuklab oling, yoki brauzer ko‘rinishi uchun .docx yuklang.',
+  'showcase.detail.docPreviewFailed':
+    'Onko’rish yuklanmadi. Yangi tabda ochishmaga qayta urinib ko’ring.',
+  'showcase.detail.legacyDocHint':
+    'Eski .doc fayllar brauzerda ko‘rinmaydi. Faylni oching yoki yuklab oling, yoki brauzer ko‘rinishi uchun .docx yuklang.',
   'showcase.detail.noDocument': 'Hujjat onko’rishi yo’q',
   'showcase.detail.noDiagramPreview': 'Diagramma onko’rishi yo’q',
   'showcase.detail.diagramPreviewLoading': 'Diagramma yuklanmoqda…',

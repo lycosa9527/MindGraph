@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-import { nodesAndConnectionsToMindMapSpec, loadMindMapSpec } from '@/stores/specLoader/mindMap'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
 import { MINDMAP_LEGACY_ID_DATA_KEY } from '@/utils/mindMapIdentityMigrate'
 import {
@@ -10,6 +11,7 @@ import {
   readMindMapNodeUid,
   rebindMindMapBranchUidsForPaste,
 } from '@/utils/mindMapNodeUid'
+import { must } from '@/utils/must'
 
 function enableMindMapV2Canvas(): void {
   const flagsStore = useFeatureFlagsStore()
@@ -102,13 +104,11 @@ describe('mindMapUid round-trip', () => {
     })
 
     const byUid = new Map(
-      reloaded.nodes
-        .filter((n) => n.type === 'branch')
-        .map((n) => [readMindMapNodeUid(n), n])
+      reloaded.nodes.filter((n) => n.type === 'branch').map((n) => [readMindMapNodeUid(n), n])
     )
-    expect(byUid.get(uidA!)?.text).toBe('你好')
-    expect(byUid.get(uidB!)?.text).toBe('你好')
-    expect(byUid.get(uidA!)?.data?.[MINDMAP_NODE_UID_DATA_KEY]).toBe(uidA)
+    expect(byUid.get(must(uidA))?.text).toBe('你好')
+    expect(byUid.get(must(uidB))?.text).toBe('你好')
+    expect(byUid.get(must(uidA))?.data?.[MINDMAP_NODE_UID_DATA_KEY]).toBe(uidA)
     // First L1 is former second branch (uidB) — canvas id is the uid.
     const firstL1 = reloaded.connections.find((c) => c.source === 'topic')?.target
     expect(firstL1).toBe(uidB)
@@ -155,7 +155,9 @@ describe('mindMapUid round-trip', () => {
   })
 
   it('rebinds paste uids when source still exists (copy) but keeps cut uids', () => {
-    const copyBranches = [{ text: '你好', uid: 'live-uid', children: [{ text: '子', uid: 'live-child' }] }]
+    const copyBranches = [
+      { text: '你好', uid: 'live-uid', children: [{ text: '子', uid: 'live-child' }] },
+    ]
     rebindMindMapBranchUidsForPaste(copyBranches, new Set(['live-uid', 'live-child']))
     expect(copyBranches[0].uid).not.toBe('live-uid')
     expect(copyBranches[0].children?.[0].uid).not.toBe('live-child')

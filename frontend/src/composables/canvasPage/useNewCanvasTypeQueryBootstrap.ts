@@ -25,9 +25,7 @@ export type NewCanvasTypeQueryBootstrapOptions = {
   afterBlankLoad?: (diagramType: DiagramType, query: LocationQuery) => void
 }
 
-export function useNewCanvasTypeQueryBootstrap(
-  options: NewCanvasTypeQueryBootstrapOptions
-): void {
+export function useNewCanvasTypeQueryBootstrap(options: NewCanvasTypeQueryBootstrapOptions): void {
   watch(
     () => resolveDiagramTypeFromQuery(options.route.query),
     (type, prevType) => {

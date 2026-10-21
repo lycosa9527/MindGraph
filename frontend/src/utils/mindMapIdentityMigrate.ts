@@ -170,9 +170,7 @@ function nodeResolveLabel(node: DiagramNode): string {
   return typeof label === 'string' ? label.trim() : ''
 }
 
-export function mindMapIdentityAliases(
-  nodes: readonly DiagramNode[]
-): Record<string, string> {
+export function mindMapIdentityAliases(nodes: readonly DiagramNode[]): Record<string, string> {
   const aliases: Record<string, string> = {}
   for (const node of nodes) {
     if (!node.id) continue

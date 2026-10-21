@@ -3,6 +3,8 @@
  */
 import type { useNotifications } from '@/composables'
 import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
+import { trackLocalMindmateCollabSession } from '@/utils/mindmateCollabSessions'
+import { enqueueSeminarConsent } from '@/utils/mindmateSeminarConsent'
 
 type Notify = ReturnType<typeof useNotifications>
 
@@ -93,6 +95,30 @@ export function handleMindmateCollabPokeFrame(
   const seminarLabel =
     roomTitle ||
     (visibility === 'network' ? t('mindmate.collabSeminarPublic') : t('mindmate.collabSeminarOrg'))
+  if (data.needs_consent === true) {
+    enqueueSeminarConsent(
+      {
+        sessionId: String(data.session_id || ''),
+        fromName,
+        seminar: seminarLabel,
+        topic: String(data.brief_topic || ''),
+        org: String(data.host_org || ''),
+        visibility,
+      },
+      t
+    )
+    return true
+  }
+  const roomCode = String(data.room_code || '').trim()
+  if (roomCode) {
+    trackLocalMindmateCollabSession({
+      session_id: String(data.session_id || ''),
+      code: roomCode,
+      title: seminarLabel,
+      owner_user_id: Number(data.from_user_id || 0) || undefined,
+      visibility,
+    })
+  }
   playMindmateCollabPokeCue()
   notify.infoKey('mindmate.collabPokeToast', { name: fromName, seminar: seminarLabel }, 7000)
   return true

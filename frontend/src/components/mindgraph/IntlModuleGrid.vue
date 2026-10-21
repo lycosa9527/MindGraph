@@ -14,11 +14,10 @@ import {
   Reading,
   Share,
   Tools,
-  TrendCharts,
   VideoPlay,
 } from '@element-plus/icons-vue'
 
-import { GraduationCap, LayoutGrid, MessageSquare, Settings, Watch } from '@lucide/vue'
+import { GraduationCap, LayoutGrid, MessageSquare, Settings } from '@lucide/vue'
 
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -39,9 +38,6 @@ const {
   featureDebateverse,
   featureKnowledgeSpace,
   featureLibrary,
-  featureGewe,
-  featureSmartResponse,
-  featureTeacherUsage,
   featureWorkshopChat,
   workshopChatPreviewOrgIds,
   featureOrgAccess,

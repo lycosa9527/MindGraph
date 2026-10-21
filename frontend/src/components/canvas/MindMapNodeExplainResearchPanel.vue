@@ -10,12 +10,12 @@ import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import { useLanguage } from '@/composables'
 import type { ExplainResearchImage } from '@/composables/mindMap/useMindMapNodeExplain'
 import {
+  type ExplainResearchSide,
   RESEARCH_IMAGE_REVEAL_MS,
   RESEARCH_IMAGE_SCROLL_PX_PER_SEC,
   researchStripMaxScroll,
   resolveExplainResearchPanelBox,
   stepResearchStripScroll,
-  type ExplainResearchSide,
 } from '@/utils/mindMapExplainResearch'
 
 const props = withDefaults(
@@ -40,9 +40,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 
-const title = computed(
-  () => props.nodeLabel.trim() || t('canvas.mindMapNodeExplain.titleFallback')
-)
+const title = computed(() => props.nodeLabel.trim() || t('canvas.mindMapNodeExplain.titleFallback'))
 
 const incomingImages = computed(() => props.images.filter((image) => image.url))
 const revealedImages = ref<ExplainResearchImage[]>([])

@@ -1,5 +1,4 @@
 /** Session-scoped toast when a MindMate diagram preview cannot be resolved locally. */
-
 import type { useNotifications } from '@/composables/core/useNotifications'
 
 type NotifyApi = Pick<ReturnType<typeof useNotifications>, 'showNotification'>

@@ -4,8 +4,8 @@
  * fallback) provides worksheetText — plain PDF export stays header-free.
  */
 import {
-  DEFAULT_CANVAS_EXPORT_OPTIONS,
   type CanvasExportOptions,
+  DEFAULT_CANVAS_EXPORT_OPTIONS,
 } from '@/config/canvasExportOptions'
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 

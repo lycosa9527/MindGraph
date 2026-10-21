@@ -31,7 +31,8 @@ export default {
   'canvas.exportOptions.layoutLandscape': 'Nằm ngang',
   'canvas.exportOptions.layoutPortrait': 'Thẳng đứng',
   'canvas.worksheetText.cancel': 'Hủy bỏ',
-  'canvas.worksheetText.defaultInstruction': 'Điền nội dung phù hợp vào chỗ trống để hoàn thành cấu trúc sơ đồ.',
+  'canvas.worksheetText.defaultInstruction':
+    'Điền nội dung phù hợp vào chỗ trống để hoàn thành cấu trúc sơ đồ.',
   'canvas.worksheetText.dragDiagramHint': 'Kéo để di chuyển · kéo góc để thay đổi kích thước',
   'canvas.worksheetText.fieldClass': 'Lớp học:',
   'canvas.worksheetText.fieldDate': 'Ngày:',
@@ -39,14 +40,17 @@ export default {
   'canvas.worksheetText.hide': 'Trốn',
   'canvas.worksheetText.instructionLabel': 'Hướng dẫn',
   'canvas.worksheetText.instructionPrefix': 'Nhiệm vụ:',
-  'canvas.worksheetText.modalHint': 'Xuất PDF để in. Xuất tài liệu cho các trường tên/lớp có thể chỉnh sửa; sơ đồ vẫn là một hình ảnh.',
-  'canvas.worksheetText.headerCaptureFailed': 'Không thể hiển thị tiêu đề trang tính; đã xuất PDF mà không có nó.',
+  'canvas.worksheetText.modalHint':
+    'Xuất PDF để in. Xuất tài liệu cho các trường tên/lớp có thể chỉnh sửa; sơ đồ vẫn là một hình ảnh.',
+  'canvas.worksheetText.headerCaptureFailed':
+    'Không thể hiển thị tiêu đề trang tính; đã xuất PDF mà không có nó.',
   'canvas.worksheetText.modalTitle': 'Xuất dưới dạng DOCX/PDF',
   'canvas.worksheetText.learningSheetMode': 'Học chế độ đơn',
   'canvas.worksheetText.learningSheetModeOn': 'bật lên',
   'canvas.worksheetText.learningSheetModeOff': 'đóng cửa',
   'canvas.worksheetText.learningSheetPanelTitle': 'Nghiên cứu tiêu đề đơn',
-  'canvas.worksheetText.learningSheetPanelHint': 'Các tùy chọn sau chỉ khả dụng ở chế độ trang học tập và sẽ xuất hiện phía trên biểu tượng.',
+  'canvas.worksheetText.learningSheetPanelHint':
+    'Các tùy chọn sau chỉ khả dụng ở chế độ trang học tập và sẽ xuất hiện phía trên biểu tượng.',
   'canvas.worksheetText.exportSettings': 'Tùy chọn xuất',
   'canvas.worksheetText.previewDiagram': 'Sơ đồ',
   'canvas.worksheetText.previewEmpty': 'Bật các trường để xem trước tiêu đề trang học tập.',
@@ -65,14 +69,21 @@ export default {
   'canvas.worksheetText.showName': 'Tên',
   'canvas.worksheetText.showTopic': 'Tiêu đề chủ đề',
   'canvas.worksheetText.topicPreviewLabel': 'chủ đề sơ đồ',
-  'canvas.import.invalidFile': 'Tệp sơ đồ không hợp lệ. Vui lòng chọn tệp MG được xuất từ ​​MindGraph hoặc tệp CmapTools .cmap.',
+  'canvas.import.invalidFile':
+    'Tệp sơ đồ không hợp lệ. Vui lòng chọn tệp MG được xuất từ ​​MindGraph hoặc tệp CmapTools .cmap.',
   'canvas.import.parseError': 'Không thể phân tích cú pháp tệp sơ đồ, vui lòng thử lại',
-  'canvas.import.cmapHeuristicSemantics': 'Tệp CmapTools này sử dụng tính năng dự phòng theo thứ tự văn bản cho các liên kết—xác minh mối quan hệ với bản đồ gốc của bạn.',
-  'canvas.import.cmapConnectionFallback': 'Các mối quan hệ được xây dựng lại từ IHMC kết nối đồ họa hơn là các đối tượng mệnh đề.',
-  'canvas.import.cmapEmptyLayout': 'Bản đồ đã nhập không có tọa độ nút được khôi phục; bố cục đã được tái tạo.',
-  'canvas.import.cmapLayoutLabelCollision': 'Các nhãn khái niệm trùng lặp chồng lên nhau trong các neo bố cục; một số vị trí đã nhập có thể sai.',
-  'canvas.import.cmapLayoutFailed': 'Việc trích xuất bố cục gặp phải lỗi phân tích cú pháp—các vị trí đã được tạo lại.',
-  'canvas.reset.confirmBody': 'Bạn có chắc không? Tất cả nội dung hiện tại sẽ bị mất, bao gồm sơ đồ và bảng nút. Điều này không thể hoàn tác được.',
+  'canvas.import.cmapHeuristicSemantics':
+    'Tệp CmapTools này sử dụng tính năng dự phòng theo thứ tự văn bản cho các liên kết—xác minh mối quan hệ với bản đồ gốc của bạn.',
+  'canvas.import.cmapConnectionFallback':
+    'Các mối quan hệ được xây dựng lại từ IHMC kết nối đồ họa hơn là các đối tượng mệnh đề.',
+  'canvas.import.cmapEmptyLayout':
+    'Bản đồ đã nhập không có tọa độ nút được khôi phục; bố cục đã được tái tạo.',
+  'canvas.import.cmapLayoutLabelCollision':
+    'Các nhãn khái niệm trùng lặp chồng lên nhau trong các neo bố cục; một số vị trí đã nhập có thể sai.',
+  'canvas.import.cmapLayoutFailed':
+    'Việc trích xuất bố cục gặp phải lỗi phân tích cú pháp—các vị trí đã được tạo lại.',
+  'canvas.reset.confirmBody':
+    'Bạn có chắc không? Tất cả nội dung hiện tại sẽ bị mất, bao gồm sơ đồ và bảng nút. Điều này không thể hoàn tác được.',
   'canvas.reset.confirmButton': 'Cài lại',
   'canvas.reset.confirmTitle': 'Đặt lại về mặc định',
   'canvas.reset.warnSelectType': 'Không thể đặt lại: trước tiên hãy chọn loại sơ đồ',
@@ -82,7 +93,8 @@ export default {
   'canvas.voiceCommandGuide.title': 'Hướng dẫn ra lệnh bằng giọng nói',
   'canvas.voiceCommandGuide.collapse': 'Thu gọn hướng dẫn ra lệnh bằng giọng nói',
   'canvas.voiceCommandGuide.example.add_node': '“Thêm chi nhánh Trung Quốc”',
-  'canvas.voiceCommandGuide.example.auto_complete_branch': '“Tự động hoàn thiện chi nhánh Trung Quốc”',
+  'canvas.voiceCommandGuide.example.auto_complete_branch':
+    '“Tự động hoàn thiện chi nhánh Trung Quốc”',
   'canvas.voiceCommandGuide.example.auto_complete': '“Tự động hoàn thành toàn bộ bản đồ”',
   'canvas.voiceCommandGuide.example.select_node': '“Chọn Trung Quốc”',
   'canvas.voiceCommandGuide.example.update_center': '“Đổi chủ đề sang giáo dục nghề nghiệp”',
@@ -94,13 +106,16 @@ export default {
   'canvas.shortcutGuide.addSibling': 'Thêm anh chị em',
   'canvas.shortcutGuide.addSiblingDesc': 'Nhanh chóng chèn anh chị em bên cạnh nút đã chọn.',
   'canvas.shortcutGuide.editText': 'Chỉnh sửa văn bản',
-  'canvas.shortcutGuide.editTextDesc': 'Mở chỉnh sửa nội tuyến tại chỗ; Nhập hoặc làm mờ sẽ lưu và tính toán lại kích thước ngay lập tức.',
+  'canvas.shortcutGuide.editTextDesc':
+    'Mở chỉnh sửa nội tuyến tại chỗ; Nhập hoặc làm mờ sẽ lưu và tính toán lại kích thước ngay lập tức.',
   'canvas.shortcutGuide.doubleClick': 'Nhấp đúp để chỉnh sửa',
   'canvas.shortcutGuide.deleteNode': 'Xóa nút',
-  'canvas.shortcutGuide.deleteNodeDesc': 'Xóa nút đã chọn và các nhánh của nó (nút gốc được bảo vệ).',
+  'canvas.shortcutGuide.deleteNodeDesc':
+    'Xóa nút đã chọn và các nhánh của nó (nút gốc được bảo vệ).',
   'canvas.shortcutGuide.arrowNav': 'Phím mũi tên',
   'canvas.shortcutGuide.selectNav': 'Điều hướng',
-  'canvas.shortcutGuide.arrowNavDesc': 'Điều hướng Euclide: các phím mũi tên chuyển đến nút gần nhất theo vị trí 2D vật lý trên canvas, để chuyển động liền mạch giống như máy tính để bàn trong mọi bố cục.',
+  'canvas.shortcutGuide.arrowNavDesc':
+    'Điều hướng Euclide: các phím mũi tên chuyển đến nút gần nhất theo vị trí 2D vật lý trên canvas, để chuyển động liền mạch giống như máy tính để bàn trong mọi bố cục.',
   'canvas.shortcutGuide.cancel': 'Xóa lựa chọn/chỉnh sửa',
   'canvas.shortcutGuide.cancelDesc': 'Hủy lựa chọn hoặc chỉnh sửa.',
   'canvas.shortcutGuide.undo': 'Hoàn tác',
@@ -189,9 +204,11 @@ export default {
   'canvas.toolbar.mindMapDiagramStyleFormal': 'hình chữ nhật',
   'canvas.toolbar.mindMapDiagramStyleFormalDesc': 'Trực tâm · trực tiếp L1 · trực tràng L2',
   'canvas.toolbar.mindMapDiagramStyleBubble': 'bong bóng',
-  'canvas.toolbar.mindMapDiagramStyleBubbleDesc': 'Trung tâm bong bóng · bong bóng L1 · gạch chân L2',
+  'canvas.toolbar.mindMapDiagramStyleBubbleDesc':
+    'Trung tâm bong bóng · bong bóng L1 · gạch chân L2',
   'canvas.toolbar.mindMapDiagramStyleUnderline': 'gạch chân',
-  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc': 'Trung tâm trực tràng · gạch chân L1 · gạch chân L2',
+  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc':
+    'Trung tâm trực tràng · gạch chân L1 · gạch chân L2',
   'canvas.toolbar.mindMapDiagramStyleSoft': 'bo tròn mềm mại',
   'canvas.toolbar.mindMapDiagramStyleSoftDesc': 'Tâm tròn · hình bầu dục L1 · gạch chân L3+',
   'canvas.toolbar.mindMapThemeMorandi': 'Sự thanh lịch của Morandi',
@@ -221,7 +238,8 @@ export default {
   'canvas.toolbar.professionalContent.tooltip': 'Chọn độ khó của khán giả cho nội dung do AI tạo',
   'canvas.toolbar.professionalContent.panelTitle': 'Content level',
   'canvas.toolbar.professionalContent.guideTitle': 'Chọn độ khó của đối tượng trước',
-  'canvas.toolbar.professionalContent.guideBody': 'Bấm vào đây để chọn một sân khấu hoặc cảnh. Tạo AI, thay đổi hội thoại, v.v. sẽ sắp xếp nội dung theo độ khó. Sau khi chọn, nút sẽ nhận được nhãn giai đoạn học tập.',
+  'canvas.toolbar.professionalContent.guideBody':
+    'Bấm vào đây để chọn một sân khấu hoặc cảnh. Tạo AI, thay đổi hội thoại, v.v. sẽ sắp xếp nội dung theo độ khó. Sau khi chọn, nút sẽ nhận được nhãn giai đoạn học tập.',
   'canvas.toolbar.professionalContent.guideAction': 'để lựa chọn',
   'canvas.toolbar.professionalContent.guideDismiss': 'biết',
   'canvas.toolbar.professionalContent.level.general.title': 'Phổ quát',
@@ -238,12 +256,17 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': 'Tình huống thực tế',
   'canvas.toolbar.professionalContent.level.expert.title': 'chuyên gia',
   'canvas.toolbar.professionalContent.level.expert.description': 'Tinh chế sâu sắc',
-  'canvas.toolbar.professionalContent.notify.preference': 'Nội dung do AI tạo tiếp theo sẽ phù hợp hơn với mức độ nhận thức của khán giả "{level}"',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral': 'Nội dung do AI tạo tiếp theo sẽ theo phong cách "phổ quát", không có giới hạn độ khó bổ sung.',
-  'canvas.toolbar.professionalContent.notify.afterGenerated': 'Nội dung hiện tại có độ khó "{current}"; trong tương lai, tôi sẽ nhấn "{next}" để hỗ trợ bạn tạo nó.',
-  'canvas.toolbar.professionalContent.audienceLine': 'Khán giả hiện tại: {level} (từ dưới lên [Nội dung chuyên nghiệp])',
+  'canvas.toolbar.professionalContent.notify.preference':
+    'Nội dung do AI tạo tiếp theo sẽ phù hợp hơn với mức độ nhận thức của khán giả "{level}"',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    'Nội dung do AI tạo tiếp theo sẽ theo phong cách "phổ quát", không có giới hạn độ khó bổ sung.',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    'Nội dung hiện tại có độ khó "{current}"; trong tương lai, tôi sẽ nhấn "{next}" để hỗ trợ bạn tạo nó.',
+  'canvas.toolbar.professionalContent.audienceLine':
+    'Khán giả hiện tại: {level} (từ dưới lên [Nội dung chuyên nghiệp])',
   'canvas.toolbar.educationStage': 'giai đoạn học tập',
-  'canvas.toolbar.educationStageTooltip': 'Chọn giai đoạn học thuật để tác động đến chiều sâu của nội dung do AI tạo ra.',
+  'canvas.toolbar.educationStageTooltip':
+    'Chọn giai đoạn học thuật để tác động đến chiều sâu của nội dung do AI tạo ra.',
   'canvas.toolbar.educationStageClear': 'Phổ quát',
   'canvas.toolbar.educationStagePrimary': 'trường tiểu học',
   'canvas.toolbar.educationStageMiddle': 'trường trung học cơ sở',
@@ -269,12 +292,15 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': 'Không thể xóa nút chủ đề',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference':
+    'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': 'Không thể tạo',
   'canvas.toolbar.causeAdded': 'Nguyên nhân nút được thêm vào',
   'canvas.toolbar.childAdded': 'Đã thêm trẻ em',
-  'canvas.toolbar.collabAiBlocked': 'Chỉ chủ sở hữu sơ đồ mới có thể sử dụng tính năng tạo AI trong quá trình cộng tác',
-  'canvas.toolbar.collabGuestFeatureBlocked': 'Tính năng này không khả dụng khi bạn tham gia với tư cách là khách cộng tác.',
+  'canvas.toolbar.collabAiBlocked':
+    'Chỉ chủ sở hữu sơ đồ mới có thể sử dụng tính năng tạo AI trong quá trình cộng tác',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'Tính năng này không khả dụng khi bạn tham gia với tư cách là khách cộng tác.',
   'canvas.toolbar.colorLabel': 'Màu sắc',
   'canvas.toolbar.conceptGeneration': 'Thế hệ ý tưởng',
   'canvas.toolbar.conceptMapModesDev': 'Chế độ bản đồ khái niệm đang được phát triển',
@@ -295,11 +321,13 @@ export default {
   'canvas.toolbar.exit': 'Ra',
   'canvas.toolbar.exitFullscreen': 'Thoát toàn màn hình',
   'canvas.toolbar.highlighter': 'Bút đánh dấu',
-  'canvas.toolbar.highlighterTooltip': 'Vẽ trên canvas như bút tô sáng; bị xóa khi bạn thoát khỏi bài thuyết trình',
+  'canvas.toolbar.highlighterTooltip':
+    'Vẽ trên canvas như bút tô sáng; bị xóa khi bạn thoát khỏi bài thuyết trình',
   'canvas.toolbar.highlighterChooseColor': 'Màu highlighter',
   'canvas.toolbar.highlighterPaletteAria': 'Chọn màu highlighter',
   'canvas.toolbar.insertEquation': 'Chèn phương trình',
-  'canvas.toolbar.insertEquationTooltip': 'Chèn phép toán nội tuyến ($...$) vào dấu mũ hoặc nối vào nút đã chọn nếu không chỉnh sửa',
+  'canvas.toolbar.insertEquationTooltip':
+    'Chèn phép toán nội tuyến ($...$) vào dấu mũ hoặc nối vào nút đã chọn nếu không chỉnh sửa',
   'canvas.toolbar.insertEquationSelectNode': 'Chọn một nút đầu tiên',
   'canvas.toolbar.insertEquationDialogTitle': 'Chèn phương trình',
   'canvas.toolbar.insertEquationLoading': 'Đang tải trình soạn thảo toán học…',
@@ -333,7 +361,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'Điểm giữa',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax2+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
+  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=1/2bh',
@@ -354,7 +382,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'Định luật sin',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'Cosin(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'tội lỗi(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
+  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'Góc đôi',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'Số học aₙ',
@@ -424,7 +452,8 @@ export default {
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-    'canvas.classroomRemote.tabTopics': 'Topics',
+  'canvas.classroomRemote.resize': 'Drag to resize',
+  'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
@@ -437,7 +466,8 @@ export default {
   'canvas.classroomRemote.topicsReset': 'Restore defaults',
   'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
   'canvas.presentation.learningSheetConfirmTitle': 'Bắt đầu trình bày?',
-  'canvas.presentation.learningSheetConfirmBody': 'Bạn vẫn đang chỉnh sửa phiếu học tập. Bắt đầu trình bày sẽ kết thúc chỉnh sửa trống; khoảng trống hiện có sẽ được giữ lại. Tiếp tục?',
+  'canvas.presentation.learningSheetConfirmBody':
+    'Bạn vẫn đang chỉnh sửa phiếu học tập. Bắt đầu trình bày sẽ kết thúc chỉnh sửa trống; khoảng trống hiện có sẽ được giữ lại. Tiếp tục?',
   'canvas.presentation.learningSheetConfirmProceed': 'Bắt đầu trình bày',
   'canvas.presentationContextMenu.laserPointer': 'Con trỏ laser',
   'canvas.presentationContextMenu.spotlight': 'Điểm sáng',
@@ -491,12 +521,14 @@ export default {
   'canvas.subgraphPreview.generationFailed': 'Tạo sơ đồ con không thành công',
   'canvas.subgraphPreview.emptyResult': 'AI trả về không có nút con nào có thể sử dụng được',
   'canvas.subgraphPreview.mergeFailed': 'Không thể hợp nhất sơ đồ con vào nút này',
-  'canvas.subgraphPreview.enterNodeTextFirst': 'Trước tiên hãy nhập văn bản chủ đề hợp lệ cho nút này',
+  'canvas.subgraphPreview.enterNodeTextFirst':
+    'Trước tiên hãy nhập văn bản chủ đề hợp lệ cho nút này',
   'canvas.subgraphPreview.topicNodeNotSupported': 'Chọn một nút nhánh để tạo biểu đồ con',
   'canvas.subgraphPreview.historyLabel': 'biểu đồ con AI',
   'canvas.inlineRecPicker.prevPage': 'Trang trước',
   'canvas.inlineRecPicker.nextPage': 'Trang tiếp theo',
-  'canvas.toolbar.formatBrushActivated': 'Đã sao chép kiểu - chọn nút mục tiêu và nhấp lại để áp dụng',
+  'canvas.toolbar.formatBrushActivated':
+    'Đã sao chép kiểu - chọn nút mục tiêu và nhấp lại để áp dụng',
   'canvas.toolbar.formatBrushApplied': 'Định dạng được áp dụng cho {count} nút',
   'canvas.toolbar.formatBrushCancelled': 'Họa sĩ định dạng đã bị hủy',
   'canvas.toolbar.formatBrushSelectSource': 'Vui lòng chọn nút nguồn trước',
@@ -505,16 +537,19 @@ export default {
   'canvas.toolbar.layoutDirectionToggled': 'Hướng bố cục đã được chuyển đổi',
   'canvas.toolbar.learningSheetRestored': 'Đã khôi phục bảng học tập',
   'canvas.toolbar.moreAppConceptMapModes': 'Chế độ bản đồ khái niệm',
-  'canvas.toolbar.moreAppConceptMapModesDesc': 'Chế độ tiêu chuẩn hiện nay; sắp có thêm nhiều chế độ',
+  'canvas.toolbar.moreAppConceptMapModesDesc':
+    'Chế độ tiêu chuẩn hiện nay; sắp có thêm nhiều chế độ',
   'canvas.toolbar.moreAppLearningSheet': 'Phiếu học tập',
   'canvas.toolbar.moreAppLearningSheetDesc': 'Khoảng trống ngẫu nhiên để nghiên cứu và xem xét',
   'canvas.toolbar.moreAppWaterfall': 'Động não AI',
-  'canvas.toolbar.moreAppWaterfallDesc': 'Chọn trên các nút hàng loạt; làm cho suy nghĩ khác biệt và hội tụ trở nên rõ ràng',
+  'canvas.toolbar.moreAppWaterfallDesc':
+    'Chọn trên các nút hàng loạt; làm cho suy nghĩ khác biệt và hội tụ trở nên rõ ràng',
   'canvas.toolbar.moreApps': 'Nhiều ứng dụng hơn',
   'canvas.toolbar.moreAppSnapshot': 'Ảnh chụp nhanh',
   'canvas.toolbar.moreAppSnapshotDesc': 'Lưu một phiên bản của sơ đồ này (tối đa 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'Dịch',
-  'canvas.toolbar.moreAppTranslateLabelDesc': 'Dịch tất cả nhãn nút và kết nối sang ngôn ngữ giao diện hiện tại của bạn bằng AI',
+  'canvas.toolbar.moreAppTranslateLabelDesc':
+    'Dịch tất cả nhãn nút và kết nối sang ngôn ngữ giao diện hiện tại của bạn bằng AI',
   'canvas.toolbar.translateLabelTitle': 'Dịch sơ đồ',
   'canvas.toolbar.translateLabelSource': 'Nhãn cần dịch ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'Ngôn ngữ mục tiêu',
@@ -526,23 +561,32 @@ export default {
   'canvas.toolbar.translateLabelAndMore': '{n} thêm không được hiển thị…',
   'canvas.toolbar.translateLabelInProgress': 'Dịch sơ đồ…',
   'canvas.toolbar.translateLabelBannerTitle': 'Sơ đồ dịch',
-  'canvas.toolbar.translateLabelFallbackEnInfo': 'Ngôn ngữ giao diện của bạn chưa có sẵn làm mục tiêu dịch. Nhãn sẽ được dịch sang tiếng Anh.',
+  'canvas.toolbar.translateLabelFallbackEnInfo':
+    'Ngôn ngữ giao diện của bạn chưa có sẵn làm mục tiêu dịch. Nhãn sẽ được dịch sang tiếng Anh.',
   'canvas.toolbar.translateLabelFailed': 'Bản dịch không thành công. Vui lòng thử lại.',
   'canvas.toolbar.translateLabelDone': 'Sơ đồ được dịch',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Bàn phím ảo',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'Bàn phím ảo tiếng Anh; đối với tiếng Trung và các ngôn ngữ khác, vui lòng sử dụng phương thức nhập hệ thống',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'Bàn phím ảo tiếng Anh; đối với tiếng Trung và các ngôn ngữ khác, vui lòng sử dụng phương thức nhập hệ thống',
   'canvas.toolbar.virtualKeyboardClose': 'Đóng bàn phím',
-  'canvas.toolbar.virtualKeyboardFocusHint': 'Việc chọn một nút và nhập trực tiếp vào nút đó sẽ xóa nội dung gốc; bạn cũng có thể nhấp đúp vào nhãn để bắt đầu chỉnh sửa.',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'Việc chọn một nút và nhập trực tiếp vào nút đó sẽ xóa nội dung gốc; bạn cũng có thể nhấp đúp vào nhãn để bắt đầu chỉnh sửa.',
   'canvas.toolbar.virtualKeyboardIme': 'Phương thức nhập hệ thống',
-  'canvas.toolbar.virtualKeyboardImeHint': 'Vui lòng sử dụng bàn phím vật lý hoặc bàn phím hệ thống để nhập. Cửa sổ ứng viên được cung cấp bởi phương thức nhập của hệ thống.',
+  'canvas.toolbar.virtualKeyboardImeHint':
+    'Vui lòng sử dụng bàn phím vật lý hoặc bàn phím hệ thống để nhập. Cửa sổ ứng viên được cung cấp bởi phương thức nhập của hệ thống.',
   'canvas.toolbar.snapshotSaveFirst': 'Vui lòng lưu sơ đồ trước khi chụp nhanh',
   'canvas.toolbar.snapshotTaken': 'Đã lưu ảnh chụp nhanh {n}',
   'canvas.toolbar.snapshotFailed': 'Không lưu được ảnh chụp nhanh, vui lòng thử lại',
-  'canvas.toolbar.snapshotTooLarge': 'Ảnh chụp nhanh quá lớn (tối đa {max} KB). Giảm nội dung sơ đồ và thử lại.',
-  'canvas.toolbar.snapshotRateLimited': 'Quá nhiều hành động chụp nhanh. Hãy đợi một lát và thử lại.',
-  'canvas.toolbar.snapshotDiagramNotFound': 'Không tìm thấy sơ đồ. Tải lại trang hoặc mở nó từ thư viện của bạn.',
-  'canvas.library.diagramNotFound': 'Không tìm thấy sơ đồ. Nó có thể đã bị xóa. Mở một sơ đồ khác từ thư viện của bạn.',
-  'canvas.library.saveBeforeSwitchFailed': 'Không thể lưu bản đồ hiện tại trước khi chuyển đổi, vui lòng ở lại đây và thử lại.',
+  'canvas.toolbar.snapshotTooLarge':
+    'Ảnh chụp nhanh quá lớn (tối đa {max} KB). Giảm nội dung sơ đồ và thử lại.',
+  'canvas.toolbar.snapshotRateLimited':
+    'Quá nhiều hành động chụp nhanh. Hãy đợi một lát và thử lại.',
+  'canvas.toolbar.snapshotDiagramNotFound':
+    'Không tìm thấy sơ đồ. Tải lại trang hoặc mở nó từ thư viện của bạn.',
+  'canvas.library.diagramNotFound':
+    'Không tìm thấy sơ đồ. Nó có thể đã bị xóa. Mở một sơ đồ khác từ thư viện của bạn.',
+  'canvas.library.saveBeforeSwitchFailed':
+    'Không thể lưu bản đồ hiện tại trước khi chuyển đổi, vui lòng ở lại đây và thử lại.',
   'canvas.toolbar.snapshotConflict': 'Không thể lưu ảnh chụp nhanh (xung đột). Vui lòng thử lại.',
   'canvas.toolbar.newAssociation': 'Liên tưởng mới',
   'canvas.toolbar.newAttribute': 'Thuộc tính mới',
@@ -569,17 +613,23 @@ export default {
   'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Vui lòng chọn một nhánh hoặc nút con',
-  'canvas.toolbar.selectCategoryOrLeafDelete': 'Vui lòng chọn danh mục hoặc nút lá (không thể xóa nút chủ đề)',
-  'canvas.toolbar.selectCauseOrEffectForAdd': 'Chọn một nút nguyên nhân hoặc kết quả (không phải sự kiện), sau đó nhấn Enter để thêm nút khác vào cột đó',
-  'canvas.toolbar.selectTreeBranchForChild': 'Chọn một danh mục hoặc một mục trong danh mục để thêm con hoặc chọn chủ đề để thêm danh mục',
+  'canvas.toolbar.selectCategoryOrLeafDelete':
+    'Vui lòng chọn danh mục hoặc nút lá (không thể xóa nút chủ đề)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Chọn một nút nguyên nhân hoặc kết quả (không phải sự kiện), sau đó nhấn Enter để thêm nút khác vào cột đó',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Chọn một danh mục hoặc một mục trong danh mục để thêm con hoặc chọn chủ đề để thêm danh mục',
   'canvas.toolbar.selectNodesFirst': 'Vui lòng chọn (các) nút trước',
   'canvas.toolbar.nodeStyleFollow': 'nút theo dõi',
-  'canvas.toolbar.nodeStyleFollowHint': 'Khi được bật, thanh kiểu nút sẽ đi theo nút đã chọn; khi tắt đi thì nó bị ẩn đi.',
+  'canvas.toolbar.nodeStyleFollowHint':
+    'Khi được bật, thanh kiểu nút sẽ đi theo nút đã chọn; khi tắt đi thì nó bị ẩn đi.',
   'canvas.toolbar.selectNodesToDelete': 'Vui lòng chọn (các) nút để xóa',
   'canvas.toolbar.selectPartForSubpart': 'Vui lòng chọn một phần để thêm phần phụ vào',
   'canvas.toolbar.selectPartThenEnter': 'Chọn một nút phần, sau đó nhấn Enter để thêm phần phụ',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'Vui lòng chọn các nút giống hoặc khác nhau (không thể xóa các nút chủ đề)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'Vui lòng chọn nút tương tự hoặc khác biệt trước',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
+    'Vui lòng chọn các nút giống hoặc khác nhau (không thể xóa các nút chủ đề)',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
+    'Vui lòng chọn nút tương tự hoặc khác biệt trước',
   'canvas.toolbar.selectStepForSubstep': 'Vui lòng chọn một bước để thêm bước phụ vào',
   'canvas.toolbar.similarityWithIndex': 'Điểm tương đồng {n}',
   'canvas.toolbar.stepAdded': 'Đã thêm bước',
@@ -650,12 +700,14 @@ export default {
   'canvas.translation.stop': 'Dừng dịch',
   'canvas.topBar.snapshotRecallTooltip': 'Khôi phục ảnh chụp nhanh {n}',
   'canvas.topBar.snapshotRecallTitle': 'Khôi phục ảnh chụp nhanh',
-  'canvas.topBar.snapshotRecallConfirm': 'Khôi phục ảnh chụp nhanh {n}? Những thay đổi hiện tại của bạn sẽ được thay thế.',
+  'canvas.topBar.snapshotRecallConfirm':
+    'Khôi phục ảnh chụp nhanh {n}? Những thay đổi hiện tại của bạn sẽ được thay thế.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'Khôi phục',
   'canvas.topBar.snapshotRecallCancelBtn': 'Hủy bỏ',
   'canvas.topBar.snapshotRecallHistory': 'Trước khi chụp nhanh {n} khôi phục',
   'canvas.topBar.snapshotRecallFailed': 'Không khôi phục được ảnh chụp nhanh, vui lòng thử lại',
-  'canvas.topBar.snapshotRecallNoDiagram': 'Trước tiên hãy lưu sơ đồ vào thư viện của bạn, sau đó khôi phục ảnh chụp nhanh.',
+  'canvas.topBar.snapshotRecallNoDiagram':
+    'Trước tiên hãy lưu sơ đồ vào thư viện của bạn, sau đó khôi phục ảnh chụp nhanh.',
   'canvas.topBar.snapshotRecallNoType': 'Loại sơ đồ chưa sẵn sàng. Hãy đợi một lát và thử lại.',
   'canvas.topBar.snapshotDeleted': 'Ảnh chụp nhanh {n} đã bị xóa',
   'canvas.topBar.snapshotDeleteFailed': 'Không xóa được ảnh chụp nhanh, vui lòng thử lại',
@@ -709,7 +761,8 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'Chi nhánh',
   'canvas.mindMapSlideOverlay.region': 'Điều khiển trình chiếu',
   'canvas.mindMapSlideOverlay.progress': 'Tiến trình trượt - bấm để nhảy',
-  'canvas.mindMapSlideOverlay.shortcuts': 'Nhấp vào canvas hoặc Space/→ tiếp theo · ← trước · Trang chủ/Kết thúc đầu tiên/cuối cùng · Esc thoát slide',
+  'canvas.mindMapSlideOverlay.shortcuts':
+    'Nhấp vào canvas hoặc Space/→ tiếp theo · ← trước · Trang chủ/Kết thúc đầu tiên/cuối cùng · Esc thoát slide',
   'canvas.mindMapSlideOverlay.exit': 'Thoát khỏi slide',
   'canvas.mindMapSlideOverlay.collapse': 'Thu gọn điều khiển',
   'canvas.mindMapSlideOverlay.expand': 'Mở rộng điều khiển',
@@ -722,15 +775,21 @@ export default {
   'canvasPage.collaborationFooterOwner': 'Sự hợp tác của {username}',
   'canvasPage.collaborationFooterOwnerDiagram': 'Sơ đồ của {username} «{diagramTitle}» — cộng tác',
   'canvasPage.collaborationFooterNetworkDiagramTitle': 'Sơ đồ cộng tác «{diagramTitle}»',
-  'canvasPage.collaborationFooterSchool': 'Đang tiến hành cộng tác với trường — tham gia từ danh sách trường.',
-  'canvasPage.collaborationFooterSchoolDiagram': 'Hợp tác trường học trên «{diagramTitle}» — tham gia từ danh sách phiên học.',
-  'canvasPage.collabRoomIdleEnding': 'Phiên không hoạt động — cộng tác sẽ kết thúc sau khoảng {seconds} giây (chỉnh sửa để giữ lại)',
+  'canvasPage.collaborationFooterSchool':
+    'Đang tiến hành cộng tác với trường — tham gia từ danh sách trường.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    'Hợp tác trường học trên «{diagramTitle}» — tham gia từ danh sách phiên học.',
+  'canvasPage.collabRoomIdleEnding':
+    'Phiên không hoạt động — cộng tác sẽ kết thúc sau khoảng {seconds} giây (chỉnh sửa để giữ lại)',
   'conceptMap.focus.noResult': 'Không có kết quả',
   'conceptMap.focus.validationRequestFailed': 'Yêu cầu xác thực không thành công',
   'diagram.aiGenerating': 'AI...',
-  'diagram.alternativeDimensions.braceTitle': 'Các kích thước phân rã có thể có khác cho chủ đề này:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'Các mẫu tương tự khác có thể có cho chủ đề này:',
-  'diagram.alternativeDimensions.treeMapTitle': 'Các khía cạnh phân loại có thể có khác cho chủ đề này:',
+  'diagram.alternativeDimensions.braceTitle':
+    'Các kích thước phân rã có thể có khác cho chủ đề này:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
+    'Các mẫu tương tự khác có thể có cho chủ đề này:',
+  'diagram.alternativeDimensions.treeMapTitle':
+    'Các khía cạnh phân loại có thể có khác cho chủ đề này:',
   'diagram.bridgeMap.alternativesEmpty': '[Các lựa chọn thay thế sẽ xuất hiện ở đây]',
   'diagram.conceptMap.focusQuestionPrefix': 'Câu hỏi trọng tâm: ',
   'diagram.conceptMap.focusQuestionSuffix': 'Nhập',
@@ -755,7 +814,8 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'Thêm tính năng nút sắp ra mắt',
   'diagram.contextMenu.paste': 'Dán',
   'diagram.contextMenu.warningCreateDiagramFirst': 'Vui lòng tạo sơ đồ trước',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'Vui lòng chọn nút tương tự hoặc khác biệt trước',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff':
+    'Vui lòng chọn nút tương tự hoặc khác biệt trước',
   'diagram.defaultNewConcept': 'Khái niệm mới',
   'diagram.dimension.classificationAz': 'Phân loại theo',
   'diagram.dimension.classificationEn': 'Phân loại theo',
@@ -780,31 +840,46 @@ export default {
   'canvas.mindMapSideToolbar.collapse': 'Thu gọn thanh công cụ',
   'canvas.mindMapSideToolbar.outline': 'phác thảo',
   'canvas.mindMapSideToolbar.waterfall': 'Động não AI',
-  'canvas.mindMapWaterfall.panelHint': 'Chọn các nút cho ý tưởng nhánh AI, sau đó kéo chúng vào khung vẽ',
-  'canvas.mindMapWaterfall.emptyHint': 'Chưa có đề xuất nào. Chọn các nút trên khung vẽ hoặc nhấn vào Làm mới.',
-  'canvas.mindMapWaterfall.dragHint': 'Nhấp để chọn nhiều mục, sau đó kéo vào nút bản đồ để chèn. Thả vào canvas trống để thêm nhánh cấp cao nhất.',
+  'canvas.mindMapWaterfall.panelHint':
+    'Chọn các nút cho ý tưởng nhánh AI, sau đó kéo chúng vào khung vẽ',
+  'canvas.mindMapWaterfall.emptyHint':
+    'Chưa có đề xuất nào. Chọn các nút trên khung vẽ hoặc nhấn vào Làm mới.',
+  'canvas.mindMapWaterfall.dragHint':
+    'Nhấp để chọn nhiều mục, sau đó kéo vào nút bản đồ để chèn. Thả vào canvas trống để thêm nhánh cấp cao nhất.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'Thêm các nút từ AI brainstorm',
-  'canvas.mindMapOneSentence.intro': 'Nhập chủ đề hoặc chỉ định số nhánh, danh mục, bước hoặc cấu trúc khác',
-  'canvas.mindMapOneSentence.requirementsPlaceholder': 'ví dụ. Chuyến đi Bắc Kinh 3 ngày với 4 chi nhánh: quần áo, ẩm thực, chỗ ở, phương tiện đi lại',
+  'canvas.mindMapOneSentence.intro':
+    'Nhập chủ đề hoặc chỉ định số nhánh, danh mục, bước hoặc cấu trúc khác',
+  'canvas.mindMapOneSentence.requirementsPlaceholder':
+    'ví dụ. Chuyến đi Bắc Kinh 3 ngày với 4 chi nhánh: quần áo, ẩm thực, chỗ ở, phương tiện đi lại',
   'canvas.mindMapOneSentence.examplesTitle': 'Cảm hứng',
   'canvas.mindMapOneSentence.generateButton': 'Phát ra',
-  'canvas.mindMapOneSentence.example1': 'Kế hoạch chuyến đi Bắc Kinh 3 ngày với 4 chi nhánh: quần áo, ẩm thực, chỗ ở, phương tiện đi lại',
-  'canvas.mindMapOneSentence.example2': 'SWOT phân tích khi ra mắt sản phẩm mới: điểm mạnh, điểm yếu, cơ hội, mối đe dọa',
-  'canvas.mindMapOneSentence.example3': 'Khoa học cơ bản: trạng thái của nước - nhãn đơn giản, tối đa 6 ký tự cho mỗi nút',
+  'canvas.mindMapOneSentence.example1':
+    'Kế hoạch chuyến đi Bắc Kinh 3 ngày với 4 chi nhánh: quần áo, ẩm thực, chỗ ở, phương tiện đi lại',
+  'canvas.mindMapOneSentence.example2':
+    'SWOT phân tích khi ra mắt sản phẩm mới: điểm mạnh, điểm yếu, cơ hội, mối đe dọa',
+  'canvas.mindMapOneSentence.example3':
+    'Khoa học cơ bản: trạng thái của nước - nhãn đơn giản, tối đa 6 ký tự cho mỗi nút',
   'canvas.mindMapOneSentence.suggestion.add_node': 'Thêm chi nhánh Trung Quốc',
-  'canvas.mindMapOneSentence.suggestion.update_node': 'Thay đổi phân tích đồ uống sang phân tích đồ uống',
+  'canvas.mindMapOneSentence.suggestion.update_node':
+    'Thay đổi phân tích đồ uống sang phân tích đồ uống',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': 'Đổi 2.1 sang trà xanh',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint': 'Sau khi kích hoạt số, bạn có thể nói "Đổi 2.1 thành ..." "Đổi số thứ 2 thành ..."',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint':
+    'Sau khi kích hoạt số, bạn có thể nói "Đổi 2.1 thành ..." "Đổi số thứ 2 thành ..."',
   'canvas.mindMapOneSentence.suggestion.update_center': 'Chủ đề được thay đổi thành trà',
   'canvas.mindMapOneSentence.suggestion.delete_node': 'Xóa nhánh phân tích đồ uống',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': 'Hoàn thiện chi nhánh Trung Quốc',
   'canvas.mindMapOneSentence.suggestion.auto_complete': 'Giúp tôi hoàn thành bản đồ',
-  'canvas.mindMapOneSentence.suggestion.set_content_level': 'Thay đổi nội dung chuyên môn thành phổ thông, tiểu học, trung học cơ sở, trung học phổ thông, đại học, người lớn hoặc chuyên gia',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': 'Nội dung chuyên nghiệp đã thay đổi thành {level}',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': 'Cấp độ thứ bảy phù hợp với "Nội dung chuyên nghiệp" ở phía dưới',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': 'Kích hoạt số, tiếng Trung, hình tròn, chữ cái hoặc số chương',
+  'canvas.mindMapOneSentence.suggestion.set_content_level':
+    'Thay đổi nội dung chuyên môn thành phổ thông, tiểu học, trung học cơ sở, trung học phổ thông, đại học, người lớn hoặc chuyên gia',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
+    'Nội dung chuyên nghiệp đã thay đổi thành {level}',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
+    'Cấp độ thứ bảy phù hợp với "Nội dung chuyên nghiệp" ở phía dưới',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
+    'Kích hoạt số, tiếng Trung, hình tròn, chữ cái hoặc số chương',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': 'Kích hoạt số {style}',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': 'Bạn có thể nói "bật đánh số kỹ thuật số" "bật đánh số tiếng Trung"',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
+    'Bạn có thể nói "bật đánh số kỹ thuật số" "bật đánh số tiếng Trung"',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': 'con số',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': 'Tiếng Trung',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': 'vòng tròn',
@@ -814,7 +889,8 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': 'Số ẩn',
   'canvas.mindMapOneSentence.suggestion.explain_node': 'Giải thích chi nhánh này của Trung Quốc',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'Giới thiệu nút này',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint': 'Bạn có thể nói "Giải thích về Trung Quốc" và "Giới thiệu nút này"; sau khi chọn nút, bạn cũng có thể nói "Giới thiệu cái này".',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
+    'Bạn có thể nói "Giải thích về Trung Quốc" và "Giới thiệu nút này"; sau khi chọn nút, bạn cũng có thể nói "Giới thiệu cái này".',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'Hướng dẫn vận hành nút',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'Thu gọn hướng dẫn vận hành nút',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': 'theo tên',
@@ -825,54 +901,85 @@ export default {
   'canvas.mindMapOneSentence.micButton': 'Nhập bằng giọng nói',
   'canvas.mindMapOneSentence.photoButton': 'Tải ảnh lên',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 Ảnh',
-  'canvas.mindMapOneSentence.photoNeedsDiagram': 'Lưu sơ đồ này vào thư viện trước, sau đó tải ảnh lên.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram':
+    'Lưu sơ đồ này vào thư viện trước, sau đó tải ảnh lên.',
   'canvas.mindMapOneSentence.photoInvalidType': 'Vui lòng chọn ảnh JPG, PNG hoặc WebP.',
   'canvas.mindMapOneSentence.photoTooLarge': 'Ảnh quá lớn. Kích thước tối đa là 10MB.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'Bản đồ tư duy',
-  'canvas.mindMapOneSentence.photoHanddrawnReply': 'Đã phát hiện bản đồ tư duy vẽ tay “{topic}”. Xây dựng lại trên canvas; phác thảo được lưu vào Tóm tắt Tài liệu.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'Đã phát hiện bản đồ tư duy vẽ tay “{topic}”. Được xây dựng lại trên canvas này; phác thảo được lưu vào Tóm tắt Tài liệu. Đồng bộ hóa thư viện chưa hoàn tất — lưu hoặc thử lại nếu cần.',
-  'canvas.mindMapOneSentence.photoOcrReply': 'Trích văn bản từ ảnh:\\n{excerpt}\\n\\nToàn văn nằm trong Tóm tắt tài liệu.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply':
+    'Đã phát hiện bản đồ tư duy vẽ tay “{topic}”. Xây dựng lại trên canvas; phác thảo được lưu vào Tóm tắt Tài liệu.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
+    'Đã phát hiện bản đồ tư duy vẽ tay “{topic}”. Được xây dựng lại trên canvas này; phác thảo được lưu vào Tóm tắt Tài liệu. Đồng bộ hóa thư viện chưa hoàn tất — lưu hoặc thử lại nếu cần.',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    'Trích văn bản từ ảnh:\\n{excerpt}\\n\\nToàn văn nằm trong Tóm tắt tài liệu.',
   'canvas.mindMapOneSentence.photoFailed': 'Không thể xử lý ảnh.',
   'canvas.mindMapOneSentence.micDenied': 'Không có micrô - kiểm tra quyền của trình duyệt',
   'canvas.mindMapOneSentence.ttsToggle': 'Chuyển đổi lời nói',
-  'canvas.mindMapOneSentence.kittyWelcome': 'Xin chào - hãy cho tôi biết cần tạo sơ đồ nào hoặc tiếp tục trò chuyện để chỉnh sửa các nhánh và nút.',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    'Xin chào - hãy cho tôi biết cần tạo sơ đồ nào hoặc tiếp tục trò chuyện để chỉnh sửa các nhánh và nút.',
   'canvas.mindMapOneSentence.switchDiagramType': 'Đang chuyển sang {type}…',
   'canvas.mindMapOneSentence.kittyGenerating': 'Hiểu rồi — đang tạo sơ đồ của bạn…',
-  'canvas.mindMapOneSentence.kittyGenerateDone': 'Sơ đồ đã sẵn sàng. Tiếp tục gõ để chỉnh sửa các nhánh hoặc nút.',
-  'canvas.mindMapOneSentence.kittyGenerateFailed': 'Tạo sơ đồ không thành công. Hãy thử lại hoặc tinh chỉnh mô tả của bạn.',
-  'canvas.mindMapOneSentence.kittyEditFailed': 'Không thể áp dụng chỉnh sửa đó. Hãy thử diễn đạt lại yêu cầu của bạn.',
-  'canvas.mindMapOneSentence.kittyEditStale': 'Chỉnh sửa đó không có hiệu lực trên canvas (cũ hoặc không hoạt động). Hãy thử lại.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'Canvas không thể xác minh chỉnh sửa đó. Sơ đồ của bạn không thay đổi.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'Chỉnh sửa được áp dụng cục bộ nhưng không đồng bộ hóa được. Hãy thử lại sau giây lát.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed': 'Không thể đồng bộ hóa canvas. Vui lòng thử lại sau giây lát.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'Không thể đồng bộ hóa canvas ({detail}). Vui lòng thử lại sau giây lát.',
+  'canvas.mindMapOneSentence.kittyGenerateDone':
+    'Sơ đồ đã sẵn sàng. Tiếp tục gõ để chỉnh sửa các nhánh hoặc nút.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed':
+    'Tạo sơ đồ không thành công. Hãy thử lại hoặc tinh chỉnh mô tả của bạn.',
+  'canvas.mindMapOneSentence.kittyEditFailed':
+    'Không thể áp dụng chỉnh sửa đó. Hãy thử diễn đạt lại yêu cầu của bạn.',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    'Chỉnh sửa đó không có hiệu lực trên canvas (cũ hoặc không hoạt động). Hãy thử lại.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    'Canvas không thể xác minh chỉnh sửa đó. Sơ đồ của bạn không thay đổi.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    'Chỉnh sửa được áp dụng cục bộ nhưng không đồng bộ hóa được. Hãy thử lại sau giây lát.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed':
+    'Không thể đồng bộ hóa canvas. Vui lòng thử lại sau giây lát.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    'Không thể đồng bộ hóa canvas ({detail}). Vui lòng thử lại sau giây lát.',
   'canvas.mindMapOneSentence.kittyEditBusy': 'Sơ đồ vẫn đang tạo - vui lòng đợi rồi thử lại.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} kết quả vẫn đang phát trực tuyến — Tôi sẽ tự động chạy yêu cầu của bạn khi kết quả hoàn tất.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'Các kết quả mô hình khác vẫn đang phát trực tuyến — tôi sẽ tự động chạy yêu cầu của bạn khi chúng kết thúc.',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming': 'Các mô hình khác đã hoàn tất - tiếp tục với yêu cầu của bạn…',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    '{models} kết quả vẫn đang phát trực tuyến — Tôi sẽ tự động chạy yêu cầu của bạn khi kết quả hoàn tất.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    'Các kết quả mô hình khác vẫn đang phát trực tuyến — tôi sẽ tự động chạy yêu cầu của bạn khi chúng kết thúc.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming':
+    'Các mô hình khác đã hoàn tất - tiếp tục với yêu cầu của bạn…',
   'canvas.mindMapOneSentence.requestQueued': 'Đã xếp hàng',
   'canvas.mindMapOneSentence.requestFailed': 'Thất bại',
   'canvas.mindMapOneSentence.kittyEditAccessDenied': 'Bạn không có quyền chỉnh sửa sơ đồ này.',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'Sơ đồ vừa được cập nhật nên bản chỉnh sửa đó đã cũ. Vui lòng lặp lại thay đổi của bạn.',
-  'canvas.mindMapOneSentence.kittyEditTimeout': 'Chỉnh sửa đó đã hết thời gian - sơ đồ có thể không thay đổi. Vui lòng thử lại.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner': 'Tôi không thể tìm thấy canvas có thể chỉnh sửa. Mở canvas rồi thử lại.',
-  'canvas.mindMapOneSentence.kittyEditAddFailed': 'Xin lỗi — tôi không thể thêm nút đó. Hãy kiểm tra tên và thử lại.',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'Xin lỗi - tôi không thể đổi tên nút đó. Hãy kiểm tra tên và thử lại.',
-  'canvas.mindMapOneSentence.kittyEditCenterFailed': 'Xin lỗi - tôi không thể cập nhật chủ đề. Vui lòng thử lại.',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'Xin lỗi — tôi không thể xóa nút đó. Hãy kiểm tra tên và thử lại.',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'Xin lỗi — tôi không thể tự động hoàn thành nhánh đó. Bạn có thể hỏi lại.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    'Sơ đồ vừa được cập nhật nên bản chỉnh sửa đó đã cũ. Vui lòng lặp lại thay đổi của bạn.',
+  'canvas.mindMapOneSentence.kittyEditTimeout':
+    'Chỉnh sửa đó đã hết thời gian - sơ đồ có thể không thay đổi. Vui lòng thử lại.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    'Tôi không thể tìm thấy canvas có thể chỉnh sửa. Mở canvas rồi thử lại.',
+  'canvas.mindMapOneSentence.kittyEditAddFailed':
+    'Xin lỗi — tôi không thể thêm nút đó. Hãy kiểm tra tên và thử lại.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    'Xin lỗi - tôi không thể đổi tên nút đó. Hãy kiểm tra tên và thử lại.',
+  'canvas.mindMapOneSentence.kittyEditCenterFailed':
+    'Xin lỗi - tôi không thể cập nhật chủ đề. Vui lòng thử lại.',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    'Xin lỗi — tôi không thể xóa nút đó. Hãy kiểm tra tên và thử lại.',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    'Xin lỗi — tôi không thể tự động hoàn thành nhánh đó. Bạn có thể hỏi lại.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'Chi nhánh đó đã sẵn sàng.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'Những nhánh đó đã sẵn sàng.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'Một số chi nhánh đã sẵn sàng, nhưng một số chi nhánh vẫn chưa hoàn thành. Bạn có thể yêu cầu tự động hoàn thành lại.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
+    'Một số chi nhánh đã sẵn sàng, nhưng một số chi nhánh vẫn chưa hoàn thành. Bạn có thể yêu cầu tự động hoàn thành lại.',
   'canvas.mindMapOneSentence.kittyWorking': 'Được rồi - đang xử lý việc đó…',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty không có sẵn. Kiểm tra xem FEATURE_KITTY_AGENT đã được bật trên máy chủ chưa.',
-  'canvas.mindMapOneSentence.kittyConnectFailed': 'Không thể kết nối canvas Kitty. Hãy mở sơ đồ này trên máy tính để bàn rồi thử lại.',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'Kitty không có sẵn. Kiểm tra xem FEATURE_KITTY_AGENT đã được bật trên máy chủ chưa.',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    'Không thể kết nối canvas Kitty. Hãy mở sơ đồ này trên máy tính để bàn rồi thử lại.',
   'canvas.mindMapOneSentence.clarifyChoices': 'Chọn một tùy chọn',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'Điện thoại di động Kitty được kết nối với sơ đồ này. Sử dụng điện thoại của bạn để nói hoặc gõ - hoạt động nhập trên máy tính để bàn bị tạm dừng.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint': 'Điện thoại Kitty nằm trên sơ đồ khác. Đồng bộ từ điện thoại hoặc mở sơ đồ đó tại đây.',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Sử dụng Điện thoại di động Kitty trên điện thoại của bạn…',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    'Điện thoại di động Kitty được kết nối với sơ đồ này. Sử dụng điện thoại của bạn để nói hoặc gõ - hoạt động nhập trên máy tính để bàn bị tạm dừng.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    'Điện thoại Kitty nằm trên sơ đồ khác. Đồng bộ từ điện thoại hoặc mở sơ đồ đó tại đây.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder':
+    'Sử dụng Điện thoại di động Kitty trên điện thoại của bạn…',
   'canvas.mindMapNodeExplain.titleFallback': 'Giải thích nút',
-  'canvas.mindMapNodeExplain.requestFailed': 'Không thể giải thích vào lúc này, vui lòng thử lại sau.',
+  'canvas.mindMapNodeExplain.requestFailed':
+    'Không thể giải thích vào lúc này, vui lòng thử lại sau.',
   'canvas.mindMapNodeExplain.thinking': 'suy nghĩ',
   'canvas.mindMapNodeExplain.thinkingDone': 'Suy nghĩ xong',
   'canvas.mindMapNodeExplain.pageStats': 'Đã tìm thấy {found} trang, đã đọc {fetched} trang',
@@ -887,17 +994,22 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': 'Lịch sử trò chuyện',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'Tải tập tin lên',
   'canvas.mindMapDocumentSummary.tabPaste': 'Dán văn bản',
-  'canvas.mindMapDocumentSummary.pasteHintLite': 'Dán giấy tờ, ghi chú hoặc biên bản cuộc họp và chúng tôi sẽ tinh chỉnh cấu trúc và tạo bản đồ tư duy.',
+  'canvas.mindMapDocumentSummary.pasteHintLite':
+    'Dán giấy tờ, ghi chú hoặc biên bản cuộc họp và chúng tôi sẽ tinh chỉnh cấu trúc và tạo bản đồ tư duy.',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'Lịch sử trò chuyện',
-  'canvas.mindMapDocumentSummary.intro': 'Trích xuất các điểm chính để tạo bản đồ tư duy chính xác hơn',
+  'canvas.mindMapDocumentSummary.intro':
+    'Trích xuất các điểm chính để tạo bản đồ tư duy chính xác hơn',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'Bấm để tải lên một tập tin',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, văn bản, hình ảnh, âm thanh — chỉ giữ lại phần đánh dấu đã trích xuất',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint':
+    'PDF, Word, PPT, Excel, văn bản, hình ảnh, âm thanh — chỉ giữ lại phần đánh dấu đã trích xuất',
   'canvas.mindMapDocumentSummary.invalidFileType': 'Loại tệp không được hỗ trợ',
   'canvas.mindMapDocumentSummary.saveContent': 'Lưu nội dung',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'Tìm nạp và lưu',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'Đang tìm nạp nội dung trang…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite': 'Dán URL trang công khai — chúng tôi thu thập tối đa văn bản bài viết và lưu dưới dạng Markdown.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Tải liên kết trực tiếp chạy phía máy chủ và không dùng được cookie đăng nhập của bạn, nên các trang có xác thực hoặc trả phí thường không đầy đủ. Để có ảnh chụp toàn trang như bạn thấy, hãy dùng tiện ích Chrome / Edge.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite':
+    'Dán URL trang công khai — chúng tôi thu thập tối đa văn bản bài viết và lưu dưới dạng Markdown.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
+    'Tải liên kết trực tiếp chạy phía máy chủ và không dùng được cookie đăng nhập của bạn, nên các trang có xác thực hoặc trả phí thường không đầy đủ. Để có ảnh chụp toàn trang như bạn thấy, hãy dùng tiện ích Chrome / Edge.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Tải xuống tiện ích mở rộng Chrome',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Đang trích xuất…',
   'canvas.mindMapDocumentSummary.stageStarting': 'Bắt đầu…',
@@ -906,18 +1018,23 @@ export default {
   'canvas.mindMapDocumentSummary.stageOcr': 'Đọc văn bản hình ảnh…',
   'canvas.mindMapDocumentSummary.stageTranscribing': 'Phiên âm âm thanh…',
   'canvas.mindMapDocumentSummary.stageStoring': 'Đang lưu văn bản được trích xuất…',
-  'canvas.mindMapDocumentSummary.replaceSourceHint': 'Tải lên lại thay thế nguồn hiện tại cho sơ đồ này',
+  'canvas.mindMapDocumentSummary.replaceSourceHint':
+    'Tải lên lại thay thế nguồn hiện tại cho sơ đồ này',
   'canvas.mindMapDocumentSummary.fromSource': 'Từ {name}',
   'canvas.mindMapDocumentSummary.deleteSource': 'Xóa nguồn',
   'canvas.mindMapDocumentSummary.sourceDeleted': 'Đã xóa nguồn - bạn có thể tải lên lại',
   'canvas.mindMapDocumentSummary.extractStarted': 'Đang trích xuất nội dung…',
   'canvas.mindMapDocumentSummary.extractFailed': 'Không thể trích xuất văn bản từ tệp này',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown đã sẵn sàng. Tạo sơ đồ tư duy hoặc xóa nguồn để tải lên nội dung khác.',
-  'canvas.mindMapDocumentSummary.deleteToRetry': 'Xóa nguồn này, sau đó tải lên, dán hoặc tìm nạp lại trang.',
-  'canvas.mindMapDocumentSummary.chatIntroLite': 'Tải xuống trình đọc tệp, nhập mã ghép nối và gửi lịch sử WeChat hoặc DingTalk cho sơ đồ này.',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'Markdown đã sẵn sàng. Tạo sơ đồ tư duy hoặc xóa nguồn để tải lên nội dung khác.',
+  'canvas.mindMapDocumentSummary.deleteToRetry':
+    'Xóa nguồn này, sau đó tải lên, dán hoặc tìm nạp lại trang.',
+  'canvas.mindMapDocumentSummary.chatIntroLite':
+    'Tải xuống trình đọc tệp, nhập mã ghép nối và gửi lịch sử WeChat hoặc DingTalk cho sơ đồ này.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'Đã nhận được lịch sử trò chuyện',
   'canvas.mindMapDocumentSummary.chatDoneLite': 'Đã lưu cuộc trò chuyện - nhấn Tạo khi sẵn sàng',
-  'canvas.mindMapDocumentSummary.corpusStatus': '{completed} trong số {total} nguồn được lập chỉ mục',
+  'canvas.mindMapDocumentSummary.corpusStatus':
+    '{completed} trong số {total} nguồn được lập chỉ mục',
   'canvas.mindMapDocumentSummary.noSources': 'Chưa có nguồn. Thêm một trong các tab bên dưới.',
   'canvas.mindMapDocumentSummary.noPackageYet': 'Chưa có kho văn bản nào',
   'canvas.mindMapDocumentSummary.addSource': 'Thêm nguồn',
@@ -927,44 +1044,58 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': 'Lập chỉ mục…',
   'canvas.mindMapDocumentSummary.statusFailed': 'Thất bại',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'Kiến thức Space bị vô hiệu hóa',
-  'canvas.mindMapDocumentSummary.featureDisabledHint': 'Kích hoạt tính năng Kiến thức Space để sử dụng Tóm tắt tài liệu.',
-  'canvas.mindMapDocumentSummary.saveDiagramHint': 'Lưu sơ đồ này để liên kết gói và cho phép truy xuất RAG đầy đủ.',
-  'canvas.mindMapDocumentSummary.chatIntro': 'Tải xuống trình đọc tệp, nhập mã ghép nối bên dưới và gửi lịch sử WeChat hoặc DingTalk tới kho dữ liệu này.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint':
+    'Kích hoạt tính năng Kiến thức Space để sử dụng Tóm tắt tài liệu.',
+  'canvas.mindMapDocumentSummary.saveDiagramHint':
+    'Lưu sơ đồ này để liên kết gói và cho phép truy xuất RAG đầy đủ.',
+  'canvas.mindMapDocumentSummary.chatIntro':
+    'Tải xuống trình đọc tệp, nhập mã ghép nối bên dưới và gửi lịch sử WeChat hoặc DingTalk tới kho dữ liệu này.',
   'canvas.mindMapDocumentSummary.pairingCode': 'Mã ghép nối',
   'canvas.mindMapDocumentSummary.startPairingCode': 'Nhận mã ghép nối',
   'canvas.mindMapDocumentSummary.pairingExpires': 'Hết hạn sau {minutes} phút',
   'canvas.mindMapDocumentSummary.downloadReader': 'Tải xuống trình đọc tệp (Windows)',
   'canvas.mindMapDocumentSummary.chatWaiting': 'Đang chờ tải lên…',
-  'canvas.mindMapDocumentSummary.chatReceived': 'Lịch sử trò chuyện đã nhận và được thêm vào kho dữ liệu',
+  'canvas.mindMapDocumentSummary.chatReceived':
+    'Lịch sử trò chuyện đã nhận và được thêm vào kho dữ liệu',
   'canvas.mindMapDocumentSummary.chatIndexing': 'Đang lập chỉ mục bản ghi cuộc trò chuyện...',
   'canvas.mindMapDocumentSummary.chatDone': 'Đã thêm cuộc trò chuyện vào kho dữ liệu',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'Tải lên hoặc lập chỉ mục không thành công — hãy làm mới để thử lại',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed':
+    'Tải lên hoặc lập chỉ mục không thành công — hãy làm mới để thử lại',
   'canvas.mindMapDocumentSummary.chatMintFailed': 'Không thể tạo mã ghép nối',
-  'canvas.mindMapDocumentSummary.chatExpired': 'Mã ghép nối đã hết hạn — hãy làm mới để nhận mã mới',
+  'canvas.mindMapDocumentSummary.chatExpired':
+    'Mã ghép nối đã hết hạn — hãy làm mới để nhận mã mới',
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'Làm mới mã ghép nối',
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'Không thể bắt đầu phiên Tóm tắt tài liệu',
   'canvas.mindMapDocumentSummary.imageTooLarge': 'Hình ảnh quá lớn. Kích thước tối đa là 10MB.',
   'canvas.mindMapDocumentSummary.generateNoCorpus': 'Thêm ít nhất một nguồn, sau đó tạo',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'Trước tiên hãy tải lên, dán hoặc tìm nạp trang rồi nhấn vào Tạo',
-  'canvas.mindMapDocumentSummary.collabDisabled': 'Không khả dụng trong quá trình cộng tác trực tiếp',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
+    'Trước tiên hãy tải lên, dán hoặc tìm nạp trang rồi nhấn vào Tạo',
+  'canvas.mindMapDocumentSummary.collabDisabled':
+    'Không khả dụng trong quá trình cộng tác trực tiếp',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'Nguồn được thêm vào kho văn bản',
   'canvas.mindMapDocumentSummary.ingestSuccessLite': 'Đã lưu nội dung - nhấn Tạo khi sẵn sàng',
   'canvas.mindMapDocumentSummary.ingestFailed': 'Không thể thêm nguồn',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'Tài liệu địa phương:',
   'canvas.mindMapDocumentSummary.uploadDocHint': 'Bấm để tải lên Word hoặc PDF',
-  'canvas.mindMapDocumentSummary.uploadDocSubhint': 'Chúng tôi tự động trích xuất nội dung tài liệu',
+  'canvas.mindMapDocumentSummary.uploadDocSubhint':
+    'Chúng tôi tự động trích xuất nội dung tài liệu',
   'canvas.mindMapDocumentSummary.pasteLabel': 'Hoặc dán ghi chú dài:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder': 'Dán các đoạn trích trên giấy, tóm tắt sách, ghi chú cuộc họp, yêu cầu, v.v.',
+  'canvas.mindMapDocumentSummary.pastePlaceholder':
+    'Dán các đoạn trích trên giấy, tóm tắt sách, ghi chú cuộc họp, yêu cầu, v.v.',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'Tải hình ảnh lên:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'Bấm để tải lên JPG hoặc PNG',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'Chúng tôi phát hiện các bản đồ tư duy vẽ tay và xây dựng lại chúng; nếu không chúng tôi sẽ trích xuất văn bản',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'Đã phát hiện bản đồ tư duy vẽ tay - được xây dựng lại trên canvas',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    'Chúng tôi phát hiện các bản đồ tư duy vẽ tay và xây dựng lại chúng; nếu không chúng tôi sẽ trích xuất văn bản',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
+    'Đã phát hiện bản đồ tư duy vẽ tay - được xây dựng lại trên canvas',
   'canvas.mindMapDocumentSummary.visionProgressDetecting': 'Đang phát hiện bản đồ tư duy vẽ tay…',
-  'canvas.mindMapDocumentSummary.imageOcrHint': 'Hoạt động với ảnh chụp màn hình ghi chú, ảnh bảng trắng và bản quét.',
+  'canvas.mindMapDocumentSummary.imageOcrHint':
+    'Hoạt động với ảnh chụp màn hình ghi chú, ảnh bảng trắng và bản quét.',
   'canvas.mindMapDocumentSummary.removeImage': 'Xóa hình ảnh',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'Liên kết web:',
   'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'Dán URL bài viết, blog hoặc tin tức',
-  'canvas.mindMapDocumentSummary.webLinkHint': 'Chúng tôi tìm nạp trang và thêm nó vào kho dữ liệu của bạn để lập chỉ mục.',
+  'canvas.mindMapDocumentSummary.webLinkHint':
+    'Chúng tôi tìm nạp trang và thêm nó vào kho dữ liệu của bạn để lập chỉ mục.',
   'canvas.mindMapDocumentSummary.generateButton': 'Tạo bản đồ tư duy',
   'canvas.mindMapDocumentSummary.generateSuccess': 'Bản đồ tư duy được tạo',
   'canvas.mindMapDocumentSummary.generateFailed': 'Thế hệ thất bại. Vui lòng thử lại.',
@@ -974,11 +1105,16 @@ export default {
   'canvas.mindMapDocumentSummary.invalidDocType': 'Chỉ hỗ trợ tệp Word (.docx) và PDF',
   'canvas.mindMapDocumentSummary.invalidImageType': 'Chỉ hỗ trợ hình ảnh JPG và PNG',
   'canvas.mindMapDocumentSummary.docTooLarge': 'Tệp quá lớn. Kích thước tối đa là 20 MB.',
-  'canvas.mindMapDocumentSummary.pasteTooLong': 'Văn bản đã dán vượt quá giới hạn đầu vào của mô hình (khoảng 900.000 ký tự). Hãy rút ngắn nó.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Văn bản được trích xuất vượt quá giới hạn đầu vào của mô hình (~900.000 ký tự / mã thông báo qwen3.6-flash 991K). Vui lòng sử dụng một tài liệu ngắn hơn.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Văn bản của tệp này quá dài đối với mô hình. Vui lòng tải lên một tài liệu ngắn hơn (dưới ~900.000 ký tự văn bản).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared': 'Bản trích xuất đã lưu bị thiếu hoặc không đồng bộ và đã bị xóa. Vui lòng tải lên hoặc dán lại tài liệu.',
-  'canvas.mindMapDocumentSummary.contentFiltered': 'Nội dung không vượt qua được đánh giá bảo mật. Vui lòng sửa đổi văn bản và thử lại.',
+  'canvas.mindMapDocumentSummary.pasteTooLong':
+    'Văn bản đã dán vượt quá giới hạn đầu vào của mô hình (khoảng 900.000 ký tự). Hãy rút ngắn nó.',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel':
+    'Văn bản được trích xuất vượt quá giới hạn đầu vào của mô hình (~900.000 ký tự / mã thông báo qwen3.6-flash 991K). Vui lòng sử dụng một tài liệu ngắn hơn.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel':
+    'Văn bản của tệp này quá dài đối với mô hình. Vui lòng tải lên một tài liệu ngắn hơn (dưới ~900.000 ký tự văn bản).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared':
+    'Bản trích xuất đã lưu bị thiếu hoặc không đồng bộ và đã bị xóa. Vui lòng tải lên hoặc dán lại tài liệu.',
+  'canvas.mindMapDocumentSummary.contentFiltered':
+    'Nội dung không vượt qua được đánh giá bảo mật. Vui lòng sửa đổi văn bản và thử lại.',
   'canvas.mindMapSideToolbar.learningSheet': 'Phiếu học tập',
   'canvas.mobile.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
@@ -986,12 +1122,15 @@ export default {
   'canvas.mindMapSideToolbar.mindClassroom': 'Giảng đường tư duy',
   'canvas.mindClassroom.title': 'Giảng đường tư duy',
   'canvas.mindClassroom.intro': 'Lecture around the map — set familiarity, presentation, and tone.',
-  'canvas.mindClassroom.lead': 'Hãy để giáo viên AI nói chuyện với bạn xung quanh bản đồ tư duy này',
+  'canvas.mindClassroom.lead':
+    'Hãy để giáo viên AI nói chuyện với bạn xung quanh bản đồ tư duy này',
   'canvas.mindClassroom.mascotBubble': 'Giảng đường tư duy là đây!',
   'canvas.mindClassroom.mascotDismiss': 'Nhét xuống đáy',
-  'canvas.mindClassroom.audienceLine': 'Khán giả hiện tại: {level} (từ dưới lên [Nội dung chuyên nghiệp])',
+  'canvas.mindClassroom.audienceLine':
+    'Khán giả hiện tại: {level} (từ dưới lên [Nội dung chuyên nghiệp])',
   'canvas.mindClassroom.start': 'Bắt đầu giải thích',
-  'canvas.mindClassroom.startPreview': 'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
+  'canvas.mindClassroom.startPreview':
+    'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
   'canvas.mindClassroom.queue.queued': 'Đã tham gia hàng đợi hướng dẫn…',
   'canvas.mindClassroom.queue.planning': 'Soạn bài giảng/kế hoạch giảng dạy...',
   'canvas.mindClassroom.queue.transcriptBranch': 'Viết giáo án cho chi nhánh {name}',
@@ -1000,29 +1139,39 @@ export default {
   'canvas.mindClassroom.queue.generating': 'Đang tạo trình chiếu…',
   'canvas.mindClassroom.queue.loadingVoice': 'Đang tải giọng nói…',
   'canvas.mindClassroom.queue.ready': 'Có thể bắt đầu bài giảng',
-  'canvas.mindClassroom.queue.readyHint': 'Các ghi chú bài giảng/kế hoạch bài học đã sẵn sàng và bài giảng có thể bắt đầu.',
+  'canvas.mindClassroom.queue.readyHint':
+    'Các ghi chú bài giảng/kế hoạch bài học đã sẵn sàng và bài giảng có thể bắt đầu.',
   'canvas.mindClassroom.queue.failed': 'Giải thích sự thất bại trong việc chuẩn bị',
   'canvas.mindClassroom.queue.cancel': 'Hủy hàng đợi',
   'canvas.mindClassroom.queue.restart': 'Restart',
-  'canvas.mindClassroom.queue.restartHint': 'Regenerate the script / lesson plan with the current settings',
-  'canvas.mindClassroom.queue.guestHint': 'Khách truy cập sử dụng các mẫu địa phương để giải thích; sau khi đăng nhập, công cụ sẽ tạo ghi chú bài giảng/kế hoạch giảng dạy.',
+  'canvas.mindClassroom.queue.restartHint':
+    'Regenerate the script / lesson plan with the current settings',
+  'canvas.mindClassroom.queue.guestHint':
+    'Khách truy cập sử dụng các mẫu địa phương để giải thích; sau khi đăng nhập, công cụ sẽ tạo ghi chú bài giảng/kế hoạch giảng dạy.',
   'canvas.mindClassroom.queue.loginRequired': 'Vui lòng đăng nhập trước khi bắt đầu giải thích.',
   'canvas.mindClassroom.queue.preparing': 'Đang chuẩn bị giải thích...',
   'canvas.mindClassroom.settings.masteryTitle': 'Tôi thấy hình ảnh này quen quen biết bao',
   'canvas.mindClassroom.settings.mastery.first_look.title': 'Lần đầu làm quen',
   'canvas.mindClassroom.settings.mastery.review.title': 'Xem xét và tổng hợp',
   'canvas.mindClassroom.settings.mastery.teach.title': 'Chuẩn bị bài học và giảng dạy',
-  'canvas.mindClassroom.settings.presentationTitle': 'Tôi muốn lời giải thích được trình bày như thế nào',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'Chuyến tham quan bằng giọng nói trên Canvas',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'Tập trung vào phần giải thích bằng âm thanh trên khung bản đồ, chọn nhánh chính hoặc từng nút một.',
+  'canvas.mindClassroom.settings.presentationTitle':
+    'Tôi muốn lời giải thích được trình bày như thế nào',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.title':
+    'Chuyến tham quan bằng giọng nói trên Canvas',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    'Tập trung vào phần giải thích bằng âm thanh trên khung bản đồ, chọn nhánh chính hoặc từng nút một.',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'Giải thích slide',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'AI tạo các slide, với bản đồ ở bên trái để so sánh và phần giải thích khi lật trang ở bên phải.',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': 'Đang được phát triển, sẽ sớm trực tuyến',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    'AI tạo các slide, với bản đồ ở bên trái để so sánh và phần giải thích khi lật trang ở bên phải.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
+    'Đang được phát triển, sẽ sớm trực tuyến',
   'canvas.mindClassroom.settings.tourScopeTitle': 'Chi tiết về chuyến tham quan',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'Theo nhánh chính',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'Các nhánh cấp 1 được dạy từng bước và nhịp điệu ổn định hơn.',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
+    'Các nhánh cấp 1 được dạy từng bước và nhịp điệu ổn định hơn.',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'Nút theo nút',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'Đi sâu vào từng nút, thích hợp cho việc đọc chuyên sâu.',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc':
+    'Đi sâu vào từng nút, thích hợp cho việc đọc chuyên sâu.',
   'canvas.mindClassroom.settings.slideStyleTitle': 'Kiểu trình chiếu',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'Cầu trượt phổ thông',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'báo cáo bảng đen',
@@ -1040,10 +1189,13 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': 'đọc chuyên sâu',
   'canvas.mindClassroom.settings.tone.examples': 'Ví dụ phong phú',
   'canvas.mindClassroom.settings.tone.exam_outline': 'đề cương thi',
-  'canvas.mindClassroom.lecture.needDiagram': 'Vui lòng tạo bản đồ tư duy trên khung vẽ trước khi bắt đầu giải thích.',
-  'canvas.mindClassroom.lecture.emptySteps': 'Không có nút nào để giải thích trong bản đồ hiện tại.',
+  'canvas.mindClassroom.lecture.needDiagram':
+    'Vui lòng tạo bản đồ tư duy trên khung vẽ trước khi bắt đầu giải thích.',
+  'canvas.mindClassroom.lecture.emptySteps':
+    'Không có nút nào để giải thích trong bản đồ hiện tại.',
   'canvas.mindClassroom.lecture.cancelled': 'Hàng đợi hướng dẫn đã bị hủy.',
-  'canvas.mindClassroom.lecture.queueFailed': 'Việc chuẩn bị hướng dẫn không thành công, vui lòng thử lại sau.',
+  'canvas.mindClassroom.lecture.queueFailed':
+    'Việc chuẩn bị hướng dẫn không thành công, vui lòng thử lại sau.',
   'canvas.mindClassroom.lecture.pause': 'tạm dừng',
   'canvas.mindClassroom.lecture.resume': 'Tiếp tục',
   'canvas.mindClassroom.lecture.prev': 'Phần trước',
@@ -1052,34 +1204,56 @@ export default {
   'canvas.mindClassroom.lecture.mute': 'Tắt đọc to',
   'canvas.mindClassroom.lecture.unmute': 'Bắt đầu đọc to',
   'canvas.mindClassroom.lecture.script.noBranches': 'Một số điểm',
-  'canvas.mindClassroom.lecture.script.leafNode': 'Hiện chưa có thêm thông tin chi tiết về chi nhánh này.',
-  'canvas.mindClassroom.lecture.script.overview.classroom': 'Xin chào các bạn cùng lớp. Hôm nay chúng ta sẽ tìm hiểu về "{topic}", đối mặt với khán giả "{audience}" và diễn ra với tốc độ "{mastery}". Toàn bộ bức tranh chủ yếu bao gồm: {branches}. Trước tiên hãy nhìn vào bức tranh tổng thể, sau đó sắp xếp từng phần một.',
-  'canvas.mindClassroom.lecture.script.overview.story': 'Đầu tiên hãy nghĩ đến "{topic}" làm tiêu đề của một câu chuyện. Đối mặt với "{audience}", chúng ta sẽ đi từ tổng thể đến chi tiết: trong truyện có những chương này-{branches}.',
-  'canvas.mindClassroom.lecture.script.overview.dialogue': 'Trước tiên chúng ta hãy cùng nhau xem xét "{topic}". Nếu bạn là "{audience}", bạn sẽ chú ý đến phần nào đầu tiên? Toàn bộ bức tranh đại khái bao gồm: {branches}. Chúng tôi đi xuống đặt câu hỏi và trả lời câu hỏi.',
-  'canvas.mindClassroom.lecture.script.overview.socratic': 'Đừng vội ghi nhớ phần kết luận. Đối mặt với "{topic}", bạn nghĩ tại sao nên chụp ảnh? Chúng tôi theo dõi độ sâu của "{mastery}" và hỏi từ các nhánh này: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.fast': 'Hãy xem nhanh "{topic}" ({audience}). Thân cây: {branches}. Tiếp theo, đạt đến điểm từng điểm một.',
-  'canvas.mindClassroom.lecture.script.overview.close_read': 'Phần mở đầu đọc chuyên sâu: Chủ đề là "{topic}". Hãy nắm rõ cấu trúc tổng thể trước - {branches} - rồi đọc kỹ từng nhánh. Cài đặt đối tượng: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.examples': 'Bắt đầu với một ví dụ. Chủ đề “{topic}” có thể được coi là một khung cảnh trong cuộc sống hoặc lớp học; các nhánh của toàn bộ bức tranh giống như những cảnh khác nhau: {branches}. Khán giả: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'Tổng quan về điểm kiểm tra: "{topic}". Ghi lại những ý chính theo dàn ý——{branches}. Độ khó được điều chỉnh theo "{audience}" và nhịp điệu là "{mastery}".',
-  'canvas.mindClassroom.lecture.script.branch.classroom': 'Nhánh {index}/{total}: Nhìn vào "{title}". Ngoài ra bên dưới nó: {children}. Hãy tham khảo vị trí bản đồ để hiểu được vai trò tổng thể của phần này.',
-  'canvas.mindClassroom.lecture.script.branch.story': 'Truyện đến chương {index} "{title}". Xuất hiện trong chương này: {children}. Hãy suy nghĩ về cách họ nâng cao cốt truyện tổng thể của bức tranh.',
-  'canvas.mindClassroom.lecture.script.branch.dialogue': 'Hãy để tôi hỏi bạn điều này: Khi bạn nhắc đến "{title}", bạn nghĩ đến điều gì? Sơ đồ cho biết: {children}. Hãy so sánh ({index}/{total}).',
-  'canvas.mindClassroom.lecture.script.branch.socratic': 'Câu hỏi tiếp theo: Tại sao "{title}" cần phải là một nhánh riêng biệt? Mối quan hệ của nó với điểm phụ "{children}" là gì? Hãy tự trả lời trước, sau đó tham khảo bản đồ ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.leafNode':
+    'Hiện chưa có thêm thông tin chi tiết về chi nhánh này.',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    'Xin chào các bạn cùng lớp. Hôm nay chúng ta sẽ tìm hiểu về "{topic}", đối mặt với khán giả "{audience}" và diễn ra với tốc độ "{mastery}". Toàn bộ bức tranh chủ yếu bao gồm: {branches}. Trước tiên hãy nhìn vào bức tranh tổng thể, sau đó sắp xếp từng phần một.',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    'Đầu tiên hãy nghĩ đến "{topic}" làm tiêu đề của một câu chuyện. Đối mặt với "{audience}", chúng ta sẽ đi từ tổng thể đến chi tiết: trong truyện có những chương này-{branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    'Trước tiên chúng ta hãy cùng nhau xem xét "{topic}". Nếu bạn là "{audience}", bạn sẽ chú ý đến phần nào đầu tiên? Toàn bộ bức tranh đại khái bao gồm: {branches}. Chúng tôi đi xuống đặt câu hỏi và trả lời câu hỏi.',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    'Đừng vội ghi nhớ phần kết luận. Đối mặt với "{topic}", bạn nghĩ tại sao nên chụp ảnh? Chúng tôi theo dõi độ sâu của "{mastery}" và hỏi từ các nhánh này: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    'Hãy xem nhanh "{topic}" ({audience}). Thân cây: {branches}. Tiếp theo, đạt đến điểm từng điểm một.',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    'Phần mở đầu đọc chuyên sâu: Chủ đề là "{topic}". Hãy nắm rõ cấu trúc tổng thể trước - {branches} - rồi đọc kỹ từng nhánh. Cài đặt đối tượng: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    'Bắt đầu với một ví dụ. Chủ đề “{topic}” có thể được coi là một khung cảnh trong cuộc sống hoặc lớp học; các nhánh của toàn bộ bức tranh giống như những cảnh khác nhau: {branches}. Khán giả: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    'Tổng quan về điểm kiểm tra: "{topic}". Ghi lại những ý chính theo dàn ý——{branches}. Độ khó được điều chỉnh theo "{audience}" và nhịp điệu là "{mastery}".',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    'Nhánh {index}/{total}: Nhìn vào "{title}". Ngoài ra bên dưới nó: {children}. Hãy tham khảo vị trí bản đồ để hiểu được vai trò tổng thể của phần này.',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    'Truyện đến chương {index} "{title}". Xuất hiện trong chương này: {children}. Hãy suy nghĩ về cách họ nâng cao cốt truyện tổng thể của bức tranh.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    'Hãy để tôi hỏi bạn điều này: Khi bạn nhắc đến "{title}", bạn nghĩ đến điều gì? Sơ đồ cho biết: {children}. Hãy so sánh ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    'Câu hỏi tiếp theo: Tại sao "{title}" cần phải là một nhánh riêng biệt? Mối quan hệ của nó với điểm phụ "{children}" là gì? Hãy tự trả lời trước, sau đó tham khảo bản đồ ({index}/{total}).',
   'canvas.mindClassroom.lecture.script.branch.fast': '"{title}" → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read': 'Đọc kỹ "{title}". Vui lòng đọc từng thông tin phụ: {children}. Nhánh này nằm trong đoạn {index}/{total}. Hãy chú ý đến cách diễn đạt và mức độ.',
-  'canvas.mindClassroom.lecture.script.branch.examples': 'Đưa ra ví dụ để giúp hiểu "{title}": bạn có thể coi đó là một cảnh cụ thể có {children} trong đó. Chúng tôi đang ở chi nhánh {index}/{total}.',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'Điểm kiểm tra {index}/{total}: "{title}". Điểm phụ: {children}. Khi ôn tập hãy ghi nhớ tựa đề trước rồi mới điền chi tiết.',
-  'canvas.mindClassroom.lecture.script.closing.first_look': 'Đánh giá chung: Chúng ta mới biết đến bộ xương của "{topic}". Bạn nên quét lại toàn bộ bức tranh, đánh dấu hai hoặc ba điểm mà bạn vẫn chưa quen và bắt đầu từ đó vào lần sau.',
-  'canvas.mindClassroom.lecture.script.closing.review': 'Kết luận ôn tập: Bạn có thể kể lại những ý chính bằng cách đóng sách “{topic}” được không? Nếu một phần bị kẹt, bạn chỉ cần quay lại phần đó trên bản đồ và xem lại phần đó.',
-  'canvas.mindClassroom.lecture.script.closing.teach': 'Chuẩn bị và kết bài: Khi dạy “{topic}” đến “{audience}”, bạn có thể làm theo trình tự của sơ đồ: mở – mở rộng – đóng. Bạn cũng có thể chia một nhánh nhất định thành các câu hỏi của lớp.',
-  'canvas.mindMapSideToolbar.oneSentenceIntro': 'Mô tả chủ đề hoặc yêu cầu chỉnh sửa trong một câu để tạo hoặc tinh chỉnh sơ đồ',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    'Đọc kỹ "{title}". Vui lòng đọc từng thông tin phụ: {children}. Nhánh này nằm trong đoạn {index}/{total}. Hãy chú ý đến cách diễn đạt và mức độ.',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    'Đưa ra ví dụ để giúp hiểu "{title}": bạn có thể coi đó là một cảnh cụ thể có {children} trong đó. Chúng tôi đang ở chi nhánh {index}/{total}.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    'Điểm kiểm tra {index}/{total}: "{title}". Điểm phụ: {children}. Khi ôn tập hãy ghi nhớ tựa đề trước rồi mới điền chi tiết.',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    'Đánh giá chung: Chúng ta mới biết đến bộ xương của "{topic}". Bạn nên quét lại toàn bộ bức tranh, đánh dấu hai hoặc ba điểm mà bạn vẫn chưa quen và bắt đầu từ đó vào lần sau.',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    'Kết luận ôn tập: Bạn có thể kể lại những ý chính bằng cách đóng sách “{topic}” được không? Nếu một phần bị kẹt, bạn chỉ cần quay lại phần đó trên bản đồ và xem lại phần đó.',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    'Chuẩn bị và kết bài: Khi dạy “{topic}” đến “{audience}”, bạn có thể làm theo trình tự của sơ đồ: mở – mở rộng – đóng. Bạn cũng có thể chia một nhánh nhất định thành các câu hỏi của lớp.',
+  'canvas.mindMapSideToolbar.oneSentenceIntro':
+    'Mô tả chủ đề hoặc yêu cầu chỉnh sửa trong một câu để tạo hoặc tinh chỉnh sơ đồ',
   'canvas.mindMapSideToolbar.documentSummary': 'Tóm tắt tài liệu',
-  'fileCenter.intro': 'Gói là một tập hợp các nguồn được tuyển chọn cho sơ đồ này. Thêm tệp, ghi chú hoặc trang web — sơ đồ hoàn thành các nhánh từ các nguồn này.',
+  'fileCenter.intro':
+    'Gói là một tập hợp các nguồn được tuyển chọn cho sơ đồ này. Thêm tệp, ghi chú hoặc trang web — sơ đồ hoàn thành các nhánh từ các nguồn này.',
   'fileCenter.defaultPackageName': 'Gói không có tiêu đề',
   'fileCenter.packageNameLabel': 'Tên gói',
   'fileCenter.createPackage': 'Tạo gói',
   'fileCenter.deletePackage': 'Xóa gói',
-  'fileCenter.confirmDeletePackage': 'Xóa gói này và tất cả các nguồn của nó? Điều này không thể hoàn tác được.',
+  'fileCenter.confirmDeletePackage':
+    'Xóa gói này và tất cả các nguồn của nó? Điều này không thể hoàn tác được.',
   'fileCenter.corpusStatus': '{completed} trong số {total} nguồn được lập chỉ mục',
   'fileCenter.noSources': 'Chưa có nguồn. Thêm một cái bên dưới.',
   'fileCenter.addSource': 'Thêm nguồn',
@@ -1099,7 +1273,8 @@ export default {
   'fileCenter.statusFailed': 'Thất bại',
   'fileCenter.chunkingTooltip': 'Công cụ và chế độ phân chia (H = phân cấp)',
   'fileCenter.featureDisabledTitle': 'Kiến thức Space bị vô hiệu hóa',
-  'fileCenter.featureDisabledHint': 'Kích hoạt tính năng Kiến thức Space để sử dụng Tóm tắt tài liệu.',
+  'fileCenter.featureDisabledHint':
+    'Kích hoạt tính năng Kiến thức Space để sử dụng Tóm tắt tài liệu.',
   'fileCenter.createFailed': 'Không tạo được gói',
   'fileCenter.updateFailed': 'Không thể cập nhật gói',
   'fileCenter.deleteFailed': 'Xóa không thành công',
@@ -1109,9 +1284,12 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': 'Chưa có nút nào',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'Tạo AI',
   'canvas.mindMapSideToolbar.outlineEditHint': 'Bấm đúp vào bất kỳ hàng nào để chỉnh sửa nội tuyến',
-  'canvas.mindMapSideToolbar.outlineIntro': 'Chỉnh cấu trúc trong dàn ý — kéo để sắp xếp lại, dán các dòng để thêm hàng loạt',
-  'canvas.mindMapSideToolbar.outlineDragHint': 'Kéo để sắp xếp lại; thả lên trên/dưới cho anh chị em, ở giữa để làm tổ khi còn nhỏ',
-  'canvas.mindMapSideToolbar.outlinePasteHint': 'Chọn một nút và dán văn bản nhiều dòng để thêm hàng loạt nút anh em',
+  'canvas.mindMapSideToolbar.outlineIntro':
+    'Chỉnh cấu trúc trong dàn ý — kéo để sắp xếp lại, dán các dòng để thêm hàng loạt',
+  'canvas.mindMapSideToolbar.outlineDragHint':
+    'Kéo để sắp xếp lại; thả lên trên/dưới cho anh chị em, ở giữa để làm tổ khi còn nhỏ',
+  'canvas.mindMapSideToolbar.outlinePasteHint':
+    'Chọn một nút và dán văn bản nhiều dòng để thêm hàng loạt nút anh em',
   'canvas.mindMapPaste.inserted': 'Đã chèn {count} nút anh em',
   'canvas.mindMapPaste.truncated': 'Đã đạt đến giới hạn dòng - chỉ 50 dòng đầu tiên được chèn',
   'canvas.mindMapSideToolbar.realtimeSync': 'Đồng bộ trực tiếp',
@@ -1121,35 +1299,45 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'Xóa chi nhánh',
   'canvas.mindMapSideToolbar.expandBranch': 'Mở rộng chi nhánh',
   'canvas.mindMapSideToolbar.collapseBranch': 'Thu gọn nhánh',
-  'canvas.mindMapSideToolbar.aiGenerateDesc': 'Mở rộng bản đồ tư duy từ chủ đề hiện tại trong một câu.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc':
+    'Mở rộng bản đồ tư duy từ chủ đề hiện tại trong một câu.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Bật bảng học tập',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Thoát khỏi bảng học tập',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Khôi phục toàn bộ sơ đồ',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
     'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro': 'Chọn cách tạo phiếu học tập để thực hành và ôn tập.',
+  'canvas.mindMapSideToolbar.learningSheetIntro':
+    'Chọn cách tạo phiếu học tập để thực hành và ôn tập.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
     'Blank every node except the center topic; reference answers appear below the diagram.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Khoảng trống ngẫu nhiên',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Khoảng trống ngẫu nhiên khoảng 20% ​​số nút; câu trả lời xuất hiện bên dưới sơ đồ.',
-  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} nút bị bỏ trống · Esc loại bỏ',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
+    'Khoảng trống ngẫu nhiên khoảng 20% ​​số nút; câu trả lời xuất hiện bên dưới sơ đồ.',
+  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint':
+    '{count} nút bị bỏ trống · Esc loại bỏ',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'Khoảng trống tùy chỉnh',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'Con trỏ trở thành một cái búa - nhấp vào các nút để trống; bấm lại để khôi phục.',
-  'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'Đang hoạt động · {count} nút được để trống',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'Chế độ chọn · nhấp vào nút trên khung vẽ',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
+    'Con trỏ trở thành một cái búa - nhấp vào các nút để trống; bấm lại để khôi phục.',
+  'canvas.mindMapSideToolbar.learningSheetActiveStatus':
+    'Đang hoạt động · {count} nút được để trống',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
+    'Chế độ chọn · nhấp vào nút trên khung vẽ',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'Chế độ trống tùy chỉnh',
-  'canvas.mindMapSideToolbar.learningSheetPickHint': 'Bấm để trống, bấm lần nữa để khôi phục · {count} để trống · Esc để thoát',
+  'canvas.mindMapSideToolbar.learningSheetPickHint':
+    'Bấm để trống, bấm lần nữa để khôi phục · {count} để trống · Esc để thoát',
   'canvas.mindMapSideToolbar.learningSheetPickDone': 'Xong',
-  'canvas.mindMapSideToolbar.learningSheetProtectedNode': 'Các nút chủ đề và cấu trúc không thể để trống',
+  'canvas.mindMapSideToolbar.learningSheetProtectedNode':
+    'Các nút chủ đề và cấu trúc không thể để trống',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': 'Nút trống',
   'canvas.mindMapSideToolbar.learningSheetRandomBlankHistory': 'Các nút trống ngẫu nhiên',
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': 'Khôi phục văn bản nút',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': 'Ẩn câu trả lời tham khảo',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': 'Giữ câu trả lời tham khảo',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': 'Khi đóng, câu trả lời không được hiển thị trên khung vẽ ở khu vực loại trực tiếp',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
+    'Khi đóng, câu trả lời không được hiển thị trên khung vẽ ở khu vực loại trực tiếp',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'Câu trả lời trên canvas',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': 'Trình diễn',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': 'Trốn',
@@ -1236,7 +1424,8 @@ export default {
   'editor.savedSuccess': 'Đã lưu',
   'editor.saveNeedsLogin': 'Vui lòng đăng nhập để lưu',
   'editor.saveWaitForGeneration': 'Đợi quá trình tạo AI kết thúc trước khi lưu',
-  'editor.saveBlockedSubgraphPreview': 'Chấp nhận hoặc loại bỏ bản xem trước sơ đồ con AI trước khi lưu',
+  'editor.saveBlockedSubgraphPreview':
+    'Chấp nhận hoặc loại bỏ bản xem trước sơ đồ con AI trước khi lưu',
   'editor.saveBlockedCollabActive': 'Việc lưu được xử lý thông qua phiên cộng tác trực tiếp',
   'editor.saveBlockedCollabGuest': 'Chỉ người tổ chức mới có thể lưu trong phiên cộng tác',
   'editor.saveNothingToSave': 'Chưa có gì để lưu',
@@ -1247,7 +1436,8 @@ export default {
   'editor.redo': 'Làm lại',
   'editor.saveDiagram': 'Lưu sơ đồ',
   'editor.selectDiagramType': 'Chọn loại sơ đồ',
-  'editor.slotsFull': 'Space đã đầy, tính năng tự động lưu hiện không khả dụng. Vui lòng xóa sơ đồ hiện có để giải phóng thêm không gian.',
+  'editor.slotsFull':
+    'Space đã đầy, tính năng tự động lưu hiện không khả dụng. Vui lòng xóa sơ đồ hiện có để giải phóng thêm không gian.',
   'editor.undo': 'Hoàn tác',
   'editor.zoomIn': 'Phóng to',
   'editor.zoomOut': 'Thu nhỏ',
@@ -1287,7 +1477,8 @@ export default {
   'landing.diagramGrid.tree_map.title': 'Bản đồ cây',
   'landing.diagramGrid.voice_notes.desc': 'Ghi lại bản đồ được tạo',
   'landing.diagramGrid.voice_notes.title': 'Ghi chú bằng giọng nói',
-  'landing.template.freePlaceholder': 'Mô tả chủ đề hoặc cấu trúc của bạn (các nhánh, các bước, danh mục…) hoặc chọn mẫu bên dưới…',
+  'landing.template.freePlaceholder':
+    'Mô tả chủ đề hoặc cấu trúc của bạn (các nhánh, các bước, danh mục…) hoặc chọn mẫu bên dưới…',
   'landing.template.slot.criterion': 'Phân loại',
   'landing.template.slot.event': 'Sự kiện',
   'landing.template.slot.itemA': 'Mục A',
@@ -1319,19 +1510,22 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'Không thể tải các buổi học',
   'mindgraphLanding.networkError': 'Lỗi mạng',
   'mindgraphLanding.networkErrorJoin': 'Lỗi mạng, không tham gia được',
-  'mindgraphLanding.orgSessionsEmpty': 'Hiện tại không có buổi học nào. Đồng nghiệp phải bắt đầu “Cộng tác với trường học” trên canvas.',
+  'mindgraphLanding.orgSessionsEmpty':
+    'Hiện tại không có buổi học nào. Đồng nghiệp phải bắt đầu “Cộng tác với trường học” trên canvas.',
   'mindgraphLanding.participantsOnline': '{n} trực tuyến',
   'mindgraphLanding.schoolCollab': 'Hợp tác trường học',
   'mindgraphLanding.sharedCodeHint': 'Nhập mã mời (xxx-xxx) để tham gia phiên của họ.',
   'mindgraphLanding.sharedCollab': 'Cộng tác chia sẻ',
   'mindgraphLanding.joinDiagramEdit': 'Tham gia chỉnh sửa sơ đồ',
-  'mindgraphLanding.welcome': 'Xin chào {username}, tôi là trợ lý tư duy trực quan MindGraph AI của bạn',
+  'mindgraphLanding.welcome':
+    'Xin chào {username}, tôi là trợ lý tư duy trực quan MindGraph AI của bạn',
   'canvasPage.collabReconnecting': 'Đang kết nối lại với hoạt động cộng tác…',
   'canvasPage.collabConnectionFailed': 'Đã mất kết nối cộng tác.',
   'canvasPage.collabRetryConnection': 'Thử lại',
   'canvasPage.collabParticipantsAria': 'Người tham gia cộng tác',
   'canvasPage.collabConnected': 'Đã kết nối',
   'canvas.topBar.viewOnly': 'Chỉ xem',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': 'hơn',
   'canvas.ribbon.file': 'tài liệu',
   'canvas.ribbon.nodes': 'nút',
@@ -1401,6 +1595,17 @@ export default {
   'canvas.ribbon.tip.collabOrg': 'Mời đồng nghiệp từ trường của chúng tôi cùng chỉnh sửa',
   'canvas.ribbon.tip.collabCross': 'Cộng tác giữa các trường để chỉnh sửa bản đồ này',
   'canvas.ribbon.tip.collabOff': 'Kết thúc phiên cộng tác hiện tại',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': 'Làm đậm văn bản nút đã chọn',
   'canvas.ribbon.tip.italic': 'Đặt văn bản nút đã chọn thành in nghiêng',
   'canvas.ribbon.tip.alignLeft': 'Văn bản nút được căn trái',
@@ -1452,20 +1657,23 @@ export default {
   'canvas.ribbon.docGenerate': 'Tạo tài liệu',
   'canvas.ribbon.webGenerate': 'Tạo liên kết web',
   'canvas.ribbon.voiceSummary': 'Ghi tóm tắt',
-  'canvas.ribbon.sourceLocked': 'Bản đồ hiện tại đã sử dụng {source} làm nguồn. Vui lòng tạo bản đồ mới trước khi thay đổi sang phương pháp tạo khác.',
+  'canvas.ribbon.sourceLocked':
+    'Bản đồ hiện tại đã sử dụng {source} làm nguồn. Vui lòng tạo bản đồ mới trước khi thay đổi sang phương pháp tạo khác.',
   'canvas.ribbon.sourceKind.doc': 'tài liệu',
   'canvas.ribbon.sourceKind.web': 'Liên kết web',
   'canvas.ribbon.sourceKind.voice': 'ghi âm',
   'canvas.ribbon.assocLine': 'đường liên kết',
   'canvas.ribbon.assocLineHint': 'Nhấp vào nút khác để kết nối. Esc hoặc canvas trống để hủy.',
-  'canvas.ribbon.assocLineSameSide': 'Các đường liên kết chỉ có thể kết nối các nút ở cùng một phía',
+  'canvas.ribbon.assocLineSameSide':
+    'Các đường liên kết chỉ có thể kết nối các nút ở cùng một phía',
   'canvas.ribbon.assocLineDelete': 'Xóa các dòng liên quan',
   'canvas.ribbon.summary': 'bản tóm tắt',
   'canvas.ribbon.insertImage': 'hình ảnh',
   'canvas.ribbon.insertIcon': 'biểu tượng',
   'canvas.ribbon.insertLink': 'liên kết',
   'canvas.ribbon.makeLearningSheet': 'Lập phiếu học tập',
-  'canvas.ribbon.makeLearningSheetHint': 'Tạo phiếu học tập chỉ bằng một cú nhấp chuột để ôn tập hiệu quả hơn',
+  'canvas.ribbon.makeLearningSheetHint':
+    'Tạo phiếu học tập chỉ bằng một cú nhấp chuột để ôn tập hiệu quả hơn',
   'canvas.ribbon.selectTwoNodes': 'Vui lòng chọn hai nút trước',
   'canvas.ribbon.insertComingSoon': 'Khả năng chèn sẽ sớm có sẵn',
   'canvas.ribbon.summaryNeedSiblings': 'Vui lòng chọn các nút liên tiếp dưới cùng một nút cha',
@@ -1500,23 +1708,27 @@ export default {
   'canvas.ribbon.aiHero.chat.line2': 'Nhập cuộc hội thoại và tạo bản đồ chỉ bằng một cú nhấp chuột',
   'canvas.ribbon.aiHero.classroom.ribbon': 'hiện vật học tập',
   'canvas.ribbon.aiHero.classroom.title': 'Mở giảng đường tư duy',
-  'canvas.ribbon.aiHero.classroom.line1': 'Hãy để giáo viên AI nói chuyện với bạn xung quanh bản đồ tư duy này',
+  'canvas.ribbon.aiHero.classroom.line1':
+    'Hãy để giáo viên AI nói chuyện với bạn xung quanh bản đồ tư duy này',
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'Làm rỗng khung',
   'canvas.ribbon.aiHero.learningSheet.title': 'Sơ đồ khung rỗng',
-  'canvas.ribbon.aiHero.learningSheet.line1': 'Chọn rỗng ngẫu nhiên hoặc tùy chỉnh, phù hợp cho việc thực hành và ôn tập trong lớp',
+  'canvas.ribbon.aiHero.learningSheet.line1':
+    'Chọn rỗng ngẫu nhiên hoặc tùy chỉnh, phù hợp cho việc thực hành và ôn tập trong lớp',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'động não',
   'canvas.ribbon.aiHero.brainstorm.title': 'Động não AI',
   'canvas.ribbon.aiHero.brainstorm.line1': 'Chọn nút để tạo đề xuất nhánh',
-  'canvas.ribbon.aiHero.brainstorm.line2': 'Kiểm tra nó và áp dụng nó vào bản đồ hoặc kéo nó vào khung vẽ.',
+  'canvas.ribbon.aiHero.brainstorm.line2':
+    'Kiểm tra nó và áp dụng nó vào bản đồ hoặc kéo nó vào khung vẽ.',
   'canvas.ribbon.aiHero.oneSentence.ribbon': 'Thay đổi đoạn hội thoại',
   'canvas.ribbon.aiHero.oneSentence.title': 'Sửa đổi hội thoại',
   'canvas.ribbon.aiHero.oneSentence.line1': 'Mô tả chủ đề hoặc yêu cầu sửa đổi trong một câu',
   'canvas.ribbon.aiHero.oneSentence.line2': 'Tạo và điều chỉnh bản đồ một cách thông minh',
   'canvas.ribbon.aiHero.link.ribbon': 'chèn',
   'canvas.ribbon.aiHero.link.title': 'Thêm liên kết',
-  'canvas.ribbon.aiHero.link.line1': 'Tên hiển thị của nút, địa chỉ đầy đủ được ẩn trong biểu tượng liên kết',
+  'canvas.ribbon.aiHero.link.line1':
+    'Tên hiển thị của nút, địa chỉ đầy đủ được ẩn trong biểu tượng liên kết',
   'canvas.ribbon.aiHero.link.line2': '',
   'canvas.hero.image.ribbon': 'chèn',
   'canvas.hero.image.title': 'thêm hình ảnh',
@@ -1528,15 +1740,18 @@ export default {
   'canvas.hero.icon.line2': '',
   'canvas.hero.math.ribbon': 'chèn',
   'canvas.hero.math.title': 'Chèn công thức',
-  'canvas.hero.math.line1': 'Sử dụng bàn phím công thức để nhập LaTeX, sau đó viết nút sau khi xác nhận.',
+  'canvas.hero.math.line1':
+    'Sử dụng bàn phím công thức để nhập LaTeX, sau đó viết nút sau khi xác nhận.',
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': 'sự hợp tác',
   'canvas.hero.collab.title': 'Hợp tác trực tuyến',
-  'canvas.hero.collab.line1': 'Cho phép cộng tác trong nội bộ trường học hoặc mã lời mời để mời đồng nghiệp cùng sửa đổi ảnh',
+  'canvas.hero.collab.line1':
+    'Cho phép cộng tác trong nội bộ trường học hoặc mã lời mời để mời đồng nghiệp cùng sửa đổi ảnh',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': 'Xuất khẩu',
   'canvas.hero.worksheet.title': 'Xuất sang DOC/PDF',
-  'canvas.hero.worksheet.line1': 'Đặt tiêu đề trang nghiên cứu và các tùy chọn giấy, xem trước và xuất',
+  'canvas.hero.worksheet.line1':
+    'Đặt tiêu đề trang nghiên cứu và các tùy chọn giấy, xem trước và xuất',
   'canvas.hero.worksheet.line2': '',
   'canvas.hero.communityExport.ribbon': 'chia sẻ',
   'canvas.hero.communityExport.title': 'Chia sẻ tới cộng đồng',
@@ -1547,6 +1762,4 @@ export default {
   'canvas.hero.slotFull.title': 'Thư viện đã đầy',
   'canvas.hero.slotFull.line1': 'Vui lòng xóa biểu tượng hiện có và lưu biểu tượng hiện tại',
   'canvas.hero.slotFull.line2': '',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
-  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

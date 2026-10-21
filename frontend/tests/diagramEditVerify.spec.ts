@@ -22,9 +22,9 @@ describe('diagramEditVerify', () => {
       ],
       [{ source: 'topic', target: 'uid-diy' }]
     )
-    expect(
-      resolveCreatedNodeIds(before, after, { op: 'add_branch', text: 'DIY' })
-    ).toEqual(['uid-diy'])
+    expect(resolveCreatedNodeIds(before, after, { op: 'add_branch', text: 'DIY' })).toEqual([
+      'uid-diy',
+    ])
   })
 
   it('verifies add_branch with topic edge', () => {

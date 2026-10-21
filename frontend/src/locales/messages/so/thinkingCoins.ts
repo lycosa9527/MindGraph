@@ -1,5 +1,6 @@
 /**
- * en UI � thinkingCoins
+ * so UI — thinkingCoins
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export const thinkingCoinsMessages = {
@@ -26,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Coming soon',
   'thinkingCoins.schoolInfo': 'Contact your school admin for school plans',
   'thinkingCoins.school.headline': 'AI-powered thinking · school solutions',
-  'thinkingCoins.school.description': 'Private deployment, custom features, and full operations support for schools and institutions — built for scale, branding, and data security.',
+  'thinkingCoins.school.description':
+    'Private deployment, custom features, and full operations support for schools and institutions — built for scale, branding, and data security.',
   'thinkingCoins.school.feature.accountManager': 'Dedicated account manager',
   'thinkingCoins.school.feature.accountManagerDesc': 'One-on-one consultation',
   'thinkingCoins.school.feature.privateDeploy': 'Private deployment',

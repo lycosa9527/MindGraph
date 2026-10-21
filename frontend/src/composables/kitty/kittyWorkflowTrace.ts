@@ -51,8 +51,6 @@ export function traceKittyWorkflow(
   if (kittyPipelineTraceEnabled()) {
     const scope = options?.scope ? ` scope=${options.scope.slice(0, 12)}` : ''
     const action = options?.action ? ` action=${options.action}` : ''
-    console.debug(
-      `[KittyWF:legacy] lane=${lane} stage=${stage}${scope}${action} | ${row.detail}`
-    )
+    console.debug(`[KittyWF:legacy] lane=${lane} stage=${stage}${scope}${action} | ${row.detail}`)
   }
 }

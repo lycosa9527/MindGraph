@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': 'Нажмите кнопку «Далее», чтобы внести изменения',
   'debateverse.coinTossAffirmativeFirst': 'Сторона, утверждающая свою позицию, говорит первой.',
   'debateverse.coinTossGotIt': 'знал',
-  'debateverse.coinTossModalBody': 'Перед дебатами определите порядок выступлений или выберите утвердительные/отрицательные позиции с помощью подбрасывания монеты',
+  'debateverse.coinTossModalBody':
+    'Перед дебатами определите порядок выступлений или выберите утвердительные/отрицательные позиции с помощью подбрасывания монеты',
   'debateverse.coinTossNegativeFirst': 'Отрицательный говорит первым',
   'debateverse.coinTossOrder': 'Подбрасывание монеты для определения порядка речи',
-  'debateverse.coinTossRules': 'Модели ИИ были случайным образом назначены для обсуждения ролей. Перед дебатами определите порядок выступлений или выберите утвердительные/отрицательные позиции с помощью подбрасывания монеты',
+  'debateverse.coinTossRules':
+    'Модели ИИ были случайным образом назначены для обсуждения ролей. Перед дебатами определите порядок выступлений или выберите утвердительные/отрицательные позиции с помощью подбрасывания монеты',
   'debateverse.coinTossStageTitle': 'Этап подбрасывания монеты',
   'debateverse.debateTopicLabel': 'Тема дебатов:',
   'debateverse.executeCoinToss': 'Выполнить подбрасывание монеты',
@@ -105,18 +107,23 @@ export default {
   'debateverse.roleLabel.debater': 'Играть за участника дебатов',
   'debateverse.roleLabel.judgeRole': 'Играть за судью',
   'debateverse.roleLabel.viewer': 'Воспроизвести как просмотрщик',
-  'debateverse.setup.greeting': '{username}, истинная мудрость рождается из столкновения точек зрения.',
+  'debateverse.setup.greeting':
+    '{username}, истинная мудрость рождается из столкновения точек зрения.',
   'debateverse.setup.roleDebater': 'Играть за участника дебатов',
   'debateverse.setup.roleJudge': 'Играть за судью',
   'debateverse.setup.roleViewer': 'Воспроизвести как просмотрщик',
   'debateverse.setup.suggestion1': 'Следует ли предоставлять ИИ статус юридического лица?',
   'debateverse.setup.suggestion2': 'Приносят ли видеоигры больше пользы или вреда подросткам?',
   'debateverse.setup.suggestion3': 'Следует ли отменить вступительные экзамены в колледж?',
-  'debateverse.setup.suggestion4': 'Должны ли платформы социальных сетей иметь более строгую модерацию контента?',
+  'debateverse.setup.suggestion4':
+    'Должны ли платформы социальных сетей иметь более строгую модерацию контента?',
   'debateverse.setup.suggestion5': 'Должна ли удаленная работа стать мейнстримом?',
-  'debateverse.setup.suggestion6': 'Должен ли контент, созданный ИИ, быть защищен авторским правом?',
-  'debateverse.setup.suggestion7': 'Должно ли образование больше фокусироваться на знаниях или навыках?',
-  'debateverse.setup.suggestion8': 'Следует ли разрешить редактирование генов для человеческих эмбрионов?',
+  'debateverse.setup.suggestion6':
+    'Должен ли контент, созданный ИИ, быть защищен авторским правом?',
+  'debateverse.setup.suggestion7':
+    'Должно ли образование больше фокусироваться на знаниях или навыках?',
+  'debateverse.setup.suggestion8':
+    'Следует ли разрешить редактирование генов для человеческих эмбрионов?',
   'debateverse.setup.topicPlaceholder': 'Введите тему дебатов...',
   'debateverse.side.affirmative': 'Подтверждено',
   'debateverse.side.judge': 'судья',
@@ -138,7 +145,8 @@ export default {
   'library.loading': 'загрузка...',
   'library.other': 'Прочее',
   'library.premiumCollection': 'Популярная коллекция',
-  'library.slotFull.body': 'У вас {max} сохраненных диаграмм. Удалите одну из них, чтобы сохранить новую диаграмму.',
+  'library.slotFull.body':
+    'У вас {max} сохраненных диаграмм. Удалите одну из них, чтобы сохранить новую диаграмму.',
   'library.slotFull.cancel': 'Отмена',
   'library.slotFull.deleteAndSave': 'УДАЛИТЬ СОХРАНЕНИЕ',
   'library.slotFull.networkError': 'Ошибка сети, сбой операции',

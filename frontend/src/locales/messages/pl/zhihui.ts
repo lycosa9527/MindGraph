@@ -24,17 +24,22 @@ export default {
   'zhihui.promptPlaceholder.image': 'Wpisz swoją inspirację…',
   'zhihui.promptPlaceholder.video': 'Opisz scenę, pracę kamery i rytm...',
   'zhihui.promptPlaceholder.diagram': 'Wybierz mapę myśli i kliknij opcję Generuj',
-  'zhihui.composerHint.image': 'Użyj tekstu, aby opisać obraz i wygenerować ilustracje dydaktyczne i materiały wizualne jednym kliknięciem',
-  'zhihui.composerHint.video': 'Wkrótce dostępny będzie dostęp do funkcji Wensheng Video i Tusheng Video',
-  'zhihui.composerHint.diagram': 'Wybierz mapę myśli, aby wygenerować diagram materiałów szkoleniowych z perspektywy ucznia',
+  'zhihui.composerHint.image':
+    'Użyj tekstu, aby opisać obraz i wygenerować ilustracje dydaktyczne i materiały wizualne jednym kliknięciem',
+  'zhihui.composerHint.video':
+    'Wkrótce dostępny będzie dostęp do funkcji Wensheng Video i Tusheng Video',
+  'zhihui.composerHint.diagram':
+    'Wybierz mapę myśli, aby wygenerować diagram materiałów szkoleniowych z perspektywy ucznia',
   'zhihui.diagram.selectMindmap': 'Wybierz mapę myśli',
   'zhihui.diagram.selectMindmapHint': 'Wybierz mapę myśli powyżej',
   'zhihui.diagram.selectMindmapFirst': 'Najpierw wybierz mapę myśli',
-  'zhihui.diagram.emptyLibrary': 'Nie ma jeszcze mapy myśli. Najpierw zapisz ją w bibliotece diagramów.',
+  'zhihui.diagram.emptyLibrary':
+    'Nie ma jeszcze mapy myśli. Najpierw zapisz ją w bibliotece diagramów.',
   'zhihui.diagram.loadFailed': 'Nie udało się załadować mapy myśli',
   'zhihui.diagram.emptyDeck': 'Po wybraniu mapy myśli kliknij opcję Generuj',
   'zhihui.diagram.waitingSlides': 'Trwa generowanie materiałów szkoleniowych. Proszę czekać...',
-  'zhihui.diagram.jobStarted': 'Rozpoczęło się generowanie oprogramowania szkoleniowego. Postęp możesz sprawdzić w historii.',
+  'zhihui.diagram.jobStarted':
+    'Rozpoczęło się generowanie oprogramowania szkoleniowego. Postęp możesz sprawdzić w historii.',
   'zhihui.diagram.phaseQueued': 'Zadania czekają w kolejce...',
   'zhihui.diagram.phasePlanning': 'Projektowanie programu nauczania...',
   'zhihui.diagram.phasePlanningBranches': 'Planowanie różnych tematów...',
@@ -47,9 +52,11 @@ export default {
   'zhihui.diagram.phaseComplete': 'Materiały szkoleniowe są gotowe',
   'zhihui.diagram.phaseCancelled': 'Odwołany',
   'zhihui.diagram.toastPlanning': 'Projektowanie programu nauczania...',
-  'zhihui.diagram.toastGenerating': 'Trwa rysowanie materiałów szkoleniowych. Może to potrwać kilka minut',
+  'zhihui.diagram.toastGenerating':
+    'Trwa rysowanie materiałów szkoleniowych. Może to potrwać kilka minut',
   'zhihui.diagram.toastComplete': 'Materiały szkoleniowe są gotowe',
-  'zhihui.diagram.toastPartial': 'Materiały szkoleniowe zostały częściowo ukończone i można je nadal generować.',
+  'zhihui.diagram.toastPartial':
+    'Materiały szkoleniowe zostały częściowo ukończone i można je nadal generować.',
   'zhihui.diagram.toastCancelled': 'Generowanie materiałów szkoleniowych zostało anulowane',
   'zhihui.diagram.batchProgress': 'Partia {current}/{total}',
   'zhihui.diagram.slideProgress': 'Wygenerowano {current}/{total}',
@@ -58,7 +65,8 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'Nie udało się załadować pokazu slajdów',
   'zhihui.diagram.retryImage': 'Spróbuj ponownie',
   'zhihui.diagram.teacherScript': 'Narracja nauczyciela',
-  'zhihui.diagram.teacherScriptHint': 'Objaśnienia do zajęć odpowiadają tematyce ilustracji i map znajdujących się na tej stronie',
+  'zhihui.diagram.teacherScriptHint':
+    'Objaśnienia do zajęć odpowiadają tematyce ilustracji i map znajdujących się na tej stronie',
   'zhihui.diagram.ttsPlay': 'Kliknij na kotka, aby przeczytać na głos narrację na tej stronie',
   'zhihui.diagram.ttsStop': 'przestań czytać',
   'zhihui.diagram.ttsMute': 'niema narracja',
@@ -68,13 +76,15 @@ export default {
   'zhihui.attachReference': 'Dodaj obraz referencyjny',
   'zhihui.attachReferenceHint': 'Maksymalnie 3 zdjęcia jako odniesienie dla Qwen',
   'zhihui.removeReference': 'Usuń obraz referencyjny',
-  'zhihui.referenceTooLarge': 'Obraz referencyjny jest za duży (pojedynczy obraz nie powinien przekraczać 4MB)',
+  'zhihui.referenceTooLarge':
+    'Obraz referencyjny jest za duży (pojedynczy obraz nie powinien przekraczać 4MB)',
   'zhihui.referenceInvalid': 'Wybierz obraz PNG/JPG/WEBP',
   'zhihui.referenceLimit': 'Dodaj maksymalnie 3 zdjęcia referencyjne',
   'zhihui.sizeButton': 'Rozmiar obrazu',
   'zhihui.sizePanelTitle': 'Rozmiar obrazu',
   'zhihui.sizeOptional': 'Fakultatywny',
-  'zhihui.sizeHint': 'Format to szerokość*wysokość. Jeśli nie zostanie określony, model automatycznie zaproponuje rozdzielczość na podstawie słowa podpowiedzi.',
+  'zhihui.sizeHint':
+    'Format to szerokość*wysokość. Jeśli nie zostanie określony, model automatycznie zaproponuje rozdzielczość na podstawie słowa podpowiedzi.',
   'zhihui.sizeLimits': 'Obszar pikseli 512×512–2048×2048; współczynnik proporcji 1:8–8:1',
   'zhihui.size.auto': 'inteligentny',
   'zhihui.size.autoHint': 'automatyczny',

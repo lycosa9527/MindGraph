@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -9,20 +10,24 @@ import {
   toggleLearningSheetAnswersVisibility,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
-import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
 import { useDiagramStore } from '@/stores/diagram'
+import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
+import { must } from '@/utils/must'
 
 describe('learning sheet persistence', () => {
   beforeEach(() => {
-    vi.stubGlobal('matchMedia', vi.fn(() => ({
-      matches: false,
-      media: '',
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })))
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        media: '',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+    )
     setActivePinia(createPinia())
     learningSheetPickActive.value = false
     learningSheetFloatBarOpen.value = false
@@ -59,16 +64,16 @@ describe('learning sheet persistence', () => {
 
     const spec = diagramStore.getSpecForSave()
     expect(spec).toBeTruthy()
-    expect(spec!.is_learning_sheet).toBe(true)
-    expect(spec!.learning_sheet_show_answers).toBe(false)
+    expect(must(spec).is_learning_sheet).toBe(true)
+    expect(must(spec).learning_sheet_show_answers).toBe(false)
 
-    const blankedNode = (spec!.nodes as { id: string; text?: string; data?: Record<string, unknown> }[]).find(
-      (node) => node.id === branchId
-    )
+    const blankedNode = (
+      must(spec).nodes as { id: string; text?: string; data?: Record<string, unknown> }[]
+    ).find((node) => node.id === branchId)
     expect(blankedNode?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
     expect(blankedNode?.data?.hiddenAnswer).toBe(branchText)
 
-    diagramStore.loadFromSpec(spec!, diagramStore.type!)
+    diagramStore.loadFromSpec(must(spec), must(diagramStore.type))
 
     expect(diagramStore.isLearningSheet).toBe(true)
     expect(diagramStore.learningSheetShowAnswers).toBe(false)

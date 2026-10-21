@@ -24,12 +24,8 @@ describe('kitty surface import guards', () => {
   it('chat/pairing surfaces do not import diagramEditHubPersist runtime APIs', () => {
     for (const rel of SURFACE_FILES) {
       const src = readSurface(rel)
-      expect(src, rel).not.toMatch(
-        /from\s+['"]@\/composables\/kitty\/diagramEditHubPersist['"]/
-      )
-      expect(src, rel).not.toMatch(
-        /persistVerifiedDiagramToHub\s*\(/
-      )
+      expect(src, rel).not.toMatch(/from\s+['"]@\/composables\/kitty\/diagramEditHubPersist['"]/)
+      expect(src, rel).not.toMatch(/persistVerifiedDiagramToHub\s*\(/)
     }
   })
 
@@ -97,23 +93,15 @@ describe('kitty surface import guards', () => {
 
   it('desktop action poll lazy-loads handlers and statically imports savedDiagrams', () => {
     const src = readSurface('composables/kitty/useKittyDesktopActionPoll.ts')
-    expect(src).not.toMatch(
-      /from\s+['"]@\/composables\/kitty\/kittyDesktopActionHandlers['"]/
-    )
+    expect(src).not.toMatch(/from\s+['"]@\/composables\/kitty\/kittyDesktopActionHandlers['"]/)
     expect(src).toMatch(/from\s+['"]@\/stores\/savedDiagrams['"]/)
-    expect(src).toMatch(
-      /import\(\s*['"]@\/composables\/kitty\/kittyDesktopActionHandlers['"]\s*\)/
-    )
+    expect(src).toMatch(/import\(\s*['"]@\/composables\/kitty\/kittyDesktopActionHandlers['"]\s*\)/)
     expect(src).not.toMatch(/import\(\s*['"]@\/stores\/savedDiagrams['"]\s*\)/)
   })
 
   it('canvas kitty seed imports scope helper not full action handlers', () => {
     const src = readSurface('composables/canvasPage/applyCanvasKittySeedFromRoute.ts')
-    expect(src).toMatch(
-      /from\s+['"]@\/composables\/kitty\/adoptOpenCanvasSessionScope['"]/
-    )
-    expect(src).not.toMatch(
-      /from\s+['"]@\/composables\/kitty\/kittyDesktopActionHandlers['"]/
-    )
+    expect(src).toMatch(/from\s+['"]@\/composables\/kitty\/adoptOpenCanvasSessionScope['"]/)
+    expect(src).not.toMatch(/from\s+['"]@\/composables\/kitty\/kittyDesktopActionHandlers['"]/)
   })
 })

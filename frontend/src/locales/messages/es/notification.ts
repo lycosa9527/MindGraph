@@ -5,11 +5,14 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'No se pueden borrar los nodos de tema o centro',
-  'notification.cannotResetSelectDiagramType': 'No se puede restablecer: seleccione primero un tipo de diagrama',
+  'notification.cannotResetSelectDiagramType':
+    'No se puede restablecer: seleccione primero un tipo de diagrama',
   'notification.canvasClearNodes': 'Se borraron {count} nodo(s)',
-  'notification.canvasClearNodesLearning': 'Se vaciaron {count} nodo(s) y se añadieron a las respuestas',
+  'notification.canvasClearNodesLearning':
+    'Se vaciaron {count} nodo(s) y se añadieron a las respuestas',
   'notification.canvasSomeoneEditingNode': 'Otra persona está editando este nodo',
-  'notification.collabDeleteBlocked': 'No se puede eliminar mientras otro usuario edita un nodo seleccionado',
+  'notification.collabDeleteBlocked':
+    'No se puede eliminar mientras otro usuario edita un nodo seleccionado',
   'notification.collabRedoBlocked': 'No se puede rehacer mientras otro usuario está editando',
   'notification.collabUndoBlocked': 'No se puede deshacer mientras otro usuario está editando',
   'notification.conversationDeleted': 'Conversación eliminada',
@@ -21,22 +24,26 @@ export default {
   'notification.feedbackThanks': 'Gracias por su comentario',
   'notification.feedbackThanksDislike': 'Gracias por su comentario — lo mejoraremos',
   'notification.focusQuestionTooShort': 'Introduzca primero una pregunta de enfoque más larga',
-  'notification.geoLiteMissingIntro': 'Descargue GeoLite2 Country de MaxMind, extraiga GeoLite2-Country.mmdb y cópielo en la carpeta de datos del servidor:',
+  'notification.geoLiteMissingIntro':
+    'Descargue GeoLite2 Country de MaxMind, extraiga GeoLite2-Country.mmdb y cópielo en la carpeta de datos del servidor:',
   'notification.geoLiteMissingLink': 'Abrir página de descarga GeoLite de MaxMind',
   'notification.geoLiteMissingPathLabel': 'Ruta esperada:',
   'notification.geoLiteMissingTitle': 'Falta la base de datos GeoLite2 Country',
   'notification.fullscreenFailed': 'No se pudo entrar en pantalla completa',
   'notification.generationCancelled': 'Generación cancelada',
-  'notification.conceptMapTabNeedsAi': 'Active la IA en la barra antes de usar las recomendaciones con Tab.',
+  'notification.conceptMapTabNeedsAi':
+    'Active la IA en la barra antes de usar las recomendaciones con Tab.',
   'notification.historyClearNodes': 'Borrar texto del nodo',
   'notification.historyEmptyLearning': 'Vaciar nodo y añadir respuesta',
   'notification.importInvalidData': 'Importación fallida: datos de diagrama no válidos',
   'notification.importLoadFailed': 'Importación fallida: no se pudo cargar el diagrama',
   'notification.importSavePartial': 'Importado, pero no se pudo guardar en la biblioteca',
-  'notification.importSlotsFull': 'Biblioteca llena; diagrama importado pero no guardado en la biblioteca',
+  'notification.importSlotsFull':
+    'Biblioteca llena; diagrama importado pero no guardado en la biblioteca',
   'notification.importSuccess': 'Diagrama importado y guardado en la biblioteca',
   'notification.importUnsupportedType': 'Importación fallida: tipo de diagrama no compatible',
-  'notification.inlineRecEmpty': 'No se generaron recomendaciones. Inténtelo de nuevo o edite el tema.',
+  'notification.inlineRecEmpty':
+    'No se generaron recomendaciones. Inténtelo de nuevo o edite el tema.',
   'notification.loadMoreFailed': 'No se pudo cargar más',
   'notification.networkError': 'Error de red',
   'notification.nodeNotEligible': 'Este nodo no admite recomendaciones con Tab.',
@@ -47,7 +54,8 @@ export default {
   'notification.rootConceptLinkNotFound': 'No se encontró el enlace del concepto raíz',
   'notification.saved': 'Cambios guardados correctamente',
   'notification.selectNodeToClear': 'Seleccione un nodo para borrar',
-  'notification.sessionInvalidated': 'Se ha cerrado su sesión porque superó el número máximo de dispositivos',
+  'notification.sessionInvalidated':
+    'Se ha cerrado su sesión porque superó el número máximo de dispositivos',
   'notification.sessionKicked': 'Esta cuenta ha iniciado sesión sin conexión en otros dispositivos',
   'notification.signInToUse': 'Inicie sesión para usar esto',
   'notification.signInToValidateFocus': 'Inicie sesión para validar la pregunta de enfoque',

@@ -1,11 +1,7 @@
 /**
  * Gallery language-menu labels: native name plus Chinese, matching the caption dropdown.
  */
-import {
-  PROMPT_LANGUAGE_OPTIONS,
-  isUiLocale,
-  matchedPromptLanguageForUiLocale,
-} from './locales'
+import { PROMPT_LANGUAGE_OPTIONS, isUiLocale, matchedPromptLanguageForUiLocale } from './locales'
 
 const ZH_GALLERY_MENU_CODES = new Set(['zh', 'zh-tw', 'zh-hant'])
 

@@ -76,10 +76,12 @@ export default {
   'debateverse.clickNextHint': '변경을 적용하려면 다음 버튼을 클릭하세요',
   'debateverse.coinTossAffirmativeFirst': '찬성 측이 먼저 발언',
   'debateverse.coinTossGotIt': '확인',
-  'debateverse.coinTossModalBody': '토론 전에 동전 던지기로 발언 순서를 정하거나 찬반 입장을 선택합니다',
+  'debateverse.coinTossModalBody':
+    '토론 전에 동전 던지기로 발언 순서를 정하거나 찬반 입장을 선택합니다',
   'debateverse.coinTossNegativeFirst': '반대 측이 먼저 발언',
   'debateverse.coinTossOrder': '동전 던지기로 발언 순서 결정',
-  'debateverse.coinTossRules': 'AI 모델이 토론 역할에 무작위 배정되었습니다. 토론 전에 동전 던지기로 발언 순서를 정하거나 찬반 입장을 선택하세요',
+  'debateverse.coinTossRules':
+    'AI 모델이 토론 역할에 무작위 배정되었습니다. 토론 전에 동전 던지기로 발언 순서를 정하거나 찬반 입장을 선택하세요',
   'debateverse.coinTossStageTitle': '동전 던지기 단계',
   'debateverse.debateTopicLabel': '토론 주제: ',
   'debateverse.executeCoinToss': '동전 던지기 실행',

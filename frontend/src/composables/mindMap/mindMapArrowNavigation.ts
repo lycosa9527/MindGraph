@@ -56,12 +56,7 @@ export function buildMindMapNavRects(
   return nodes
     .filter((node) => node.position)
     .map((node) => {
-      const { width, height } = resolveNodeSize(
-        node,
-        dimensions,
-        mindMapWidths,
-        mindMapHeights
-      )
+      const { width, height } = resolveNodeSize(node, dimensions, mindMapWidths, mindMapHeights)
       const x = node.position?.x ?? 0
       const y = node.position?.y ?? 0
       return {

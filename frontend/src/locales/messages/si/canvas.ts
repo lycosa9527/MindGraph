@@ -31,7 +31,8 @@ export default {
   'canvas.exportOptions.layoutLandscape': 'තිරස්',
   'canvas.exportOptions.layoutPortrait': 'සිරස් අතට',
   'canvas.worksheetText.cancel': 'අවලංගු කරන්න',
-  'canvas.worksheetText.defaultInstruction': 'රූප සටහන් ව්‍යුහය සම්පූර්ණ කිරීම සඳහා ගැළපෙන අන්තර්ගතය සමඟ හිස් තැන් පුරවන්න.',
+  'canvas.worksheetText.defaultInstruction':
+    'රූප සටහන් ව්‍යුහය සම්පූර්ණ කිරීම සඳහා ගැළපෙන අන්තර්ගතය සමඟ හිස් තැන් පුරවන්න.',
   'canvas.worksheetText.dragDiagramHint': 'ගෙන යාමට අදින්න · ප්‍රතිප්‍රමාණ කිරීමට කොන් අදින්න',
   'canvas.worksheetText.fieldClass': 'පන්තිය:',
   'canvas.worksheetText.fieldDate': 'දිනය:',
@@ -39,17 +40,21 @@ export default {
   'canvas.worksheetText.hide': 'සඟවන්න',
   'canvas.worksheetText.instructionLabel': 'උපදෙස්',
   'canvas.worksheetText.instructionPrefix': 'කාර්යය:',
-  'canvas.worksheetText.modalHint': 'මුද්‍රණය සඳහා PDF අපනයනය කරන්න. සංස්කරණය කළ හැකි නම/පන්ති ක්ෂේත්‍ර සඳහා අපනයන ලේඛනය; රූප සටහන රූපයක් ලෙස පවතී.',
-  'canvas.worksheetText.headerCaptureFailed': 'වැඩ පත්‍රිකා ශීර්ෂය විදැහුම් කළ නොහැකි විය; එය නොමැතිව PDF අපනයනය කරන ලදී.',
+  'canvas.worksheetText.modalHint':
+    'මුද්‍රණය සඳහා PDF අපනයනය කරන්න. සංස්කරණය කළ හැකි නම/පන්ති ක්ෂේත්‍ර සඳහා අපනයන ලේඛනය; රූප සටහන රූපයක් ලෙස පවතී.',
+  'canvas.worksheetText.headerCaptureFailed':
+    'වැඩ පත්‍රිකා ශීර්ෂය විදැහුම් කළ නොහැකි විය; එය නොමැතිව PDF අපනයනය කරන ලදී.',
   'canvas.worksheetText.modalTitle': 'DOCX/PDF ලෙස අපනයනය කරන්න',
   'canvas.worksheetText.learningSheetMode': 'තනි මාදිලිය අධ්‍යයනය කරන්න',
   'canvas.worksheetText.learningSheetModeOn': 'ක්රියාත්මක කරන්න',
   'canvas.worksheetText.learningSheetModeOff': 'වසා දැමීම',
   'canvas.worksheetText.learningSheetPanelTitle': 'තනි ශීර්ෂය අධ්‍යයනය කරන්න',
-  'canvas.worksheetText.learningSheetPanelHint': 'පහත විකල්ප ලබා ගත හැක්කේ අධ්‍යයන පත්‍ර මාදිලියේ පමණක් වන අතර අයිකනයට ඉහළින් දිස් වනු ඇත.',
+  'canvas.worksheetText.learningSheetPanelHint':
+    'පහත විකල්ප ලබා ගත හැක්කේ අධ්‍යයන පත්‍ර මාදිලියේ පමණක් වන අතර අයිකනයට ඉහළින් දිස් වනු ඇත.',
   'canvas.worksheetText.exportSettings': 'අපනයන විකල්ප',
   'canvas.worksheetText.previewDiagram': 'රූප සටහන',
-  'canvas.worksheetText.previewEmpty': 'ඉගෙනුම් පත්‍ර ශීර්ෂය පෙරදසුන් කිරීමට ක්ෂේත්‍ර ක්‍රියාත්මක කරන්න.',
+  'canvas.worksheetText.previewEmpty':
+    'ඉගෙනුම් පත්‍ර ශීර්ෂය පෙරදසුන් කිරීමට ක්ෂේත්‍ර ක්‍රියාත්මක කරන්න.',
   'canvas.worksheetText.previewFailed': 'රූප සටහන් පෙරදසුන ග්‍රහණය කර ගැනීමට නොහැකි විය.',
   'canvas.worksheetText.previewLabel': 'පෙරදසුන',
   'canvas.worksheetText.previewLoading': 'රූප සටහන ග්‍රහණය කරමින්...',
@@ -65,14 +70,21 @@ export default {
   'canvas.worksheetText.showName': 'නම',
   'canvas.worksheetText.showTopic': 'මාතෘකා මාතෘකාව',
   'canvas.worksheetText.topicPreviewLabel': 'රූප සටහන මාතෘකාව',
-  'canvas.import.invalidFile': 'වලංගු නොවන රූප සටහන් ගොනුවක්. කරුණාකර MindGraph වෙතින් අපනයනය කරන ලද MG ගොනුවක් හෝ CmapTools .cmap ගොනුවක් තෝරන්න.',
+  'canvas.import.invalidFile':
+    'වලංගු නොවන රූප සටහන් ගොනුවක්. කරුණාකර MindGraph වෙතින් අපනයනය කරන ලද MG ගොනුවක් හෝ CmapTools .cmap ගොනුවක් තෝරන්න.',
   'canvas.import.parseError': 'රූප සටහන් ගොනුව විග්‍රහ කිරීමට අසමත් විය, කරුණාකර නැවත උත්සාහ කරන්න',
-  'canvas.import.cmapHeuristicSemantics': 'මෙම CmapTools ගොනුව සබැඳි සඳහා පෙළ-ඇණවුම් පසුබැසීම භාවිතා කරයි—ඔබේ මුල් සිතියමට එරෙහිව සම්බන්ධතා සත්‍යාපනය කරන්න.',
-  'canvas.import.cmapConnectionFallback': 'ප්‍රස්තුත වස්තූන් වෙනුවට IHMC චිත්‍රක සම්බන්ධතා වලින් සබඳතා ප්‍රතිනිර්මාණය කරන ලදී.',
-  'canvas.import.cmapEmptyLayout': 'ආයාත කළ සිතියම ප්‍රතිසාධන නෝඩ් ඛණ්ඩාංක නොමැත; පිරිසැලසුම නැවත උත්පාදනය කරන ලදී.',
-  'canvas.import.cmapLayoutLabelCollision': 'අනුපිටපත් සංකල්ප ලේබල පිරිසැලසුම් නැංගුරම්වල අතිච්ඡාදනය වේ; සමහර ආනයනික තනතුරු වැරදි විය හැක.',
-  'canvas.import.cmapLayoutFailed': 'පිරිසැලසුම් නිස්සාරණය විග්‍රහ කිරීමේ දෝෂයක් ඇති විය - ස්ථාන නැවත උත්පාදනය කරන ලදී.',
-  'canvas.reset.confirmBody': 'ඔයාට විශ්වාස ද? රූප සටහන සහ නෝඩ් තලය ඇතුළුව සියලුම වත්මන් අන්තර්ගතය නැති වනු ඇත. මෙය ආපසු හැරවිය නොහැක.',
+  'canvas.import.cmapHeuristicSemantics':
+    'මෙම CmapTools ගොනුව සබැඳි සඳහා පෙළ-ඇණවුම් පසුබැසීම භාවිතා කරයි—ඔබේ මුල් සිතියමට එරෙහිව සම්බන්ධතා සත්‍යාපනය කරන්න.',
+  'canvas.import.cmapConnectionFallback':
+    'ප්‍රස්තුත වස්තූන් වෙනුවට IHMC චිත්‍රක සම්බන්ධතා වලින් සබඳතා ප්‍රතිනිර්මාණය කරන ලදී.',
+  'canvas.import.cmapEmptyLayout':
+    'ආයාත කළ සිතියම ප්‍රතිසාධන නෝඩ් ඛණ්ඩාංක නොමැත; පිරිසැලසුම නැවත උත්පාදනය කරන ලදී.',
+  'canvas.import.cmapLayoutLabelCollision':
+    'අනුපිටපත් සංකල්ප ලේබල පිරිසැලසුම් නැංගුරම්වල අතිච්ඡාදනය වේ; සමහර ආනයනික තනතුරු වැරදි විය හැක.',
+  'canvas.import.cmapLayoutFailed':
+    'පිරිසැලසුම් නිස්සාරණය විග්‍රහ කිරීමේ දෝෂයක් ඇති විය - ස්ථාන නැවත උත්පාදනය කරන ලදී.',
+  'canvas.reset.confirmBody':
+    'ඔයාට විශ්වාස ද? රූප සටහන සහ නෝඩ් තලය ඇතුළුව සියලුම වත්මන් අන්තර්ගතය නැති වනු ඇත. මෙය ආපසු හැරවිය නොහැක.',
   'canvas.reset.confirmButton': 'යළි පිහිටුවන්න',
   'canvas.reset.confirmTitle': 'පෙරනිමියට යළි පිහිටුවන්න',
   'canvas.reset.warnSelectType': 'නැවත සැකසිය නොහැක: පළමුව රූප සටහන් වර්ගයක් තෝරන්න',
@@ -82,25 +94,29 @@ export default {
   'canvas.voiceCommandGuide.title': 'හඬ විධාන මාර්ගෝපදේශය',
   'canvas.voiceCommandGuide.collapse': 'හකුළන්න හඬ විධාන මාර්ගෝපදේශය',
   'canvas.voiceCommandGuide.example.add_node': '"චීන ශාඛාවක් එක් කරන්න"',
-  'canvas.voiceCommandGuide.example.auto_complete_branch': '"චීන ශාඛාව ස්වයංක්‍රීයව සම්පූර්ණ කරන්න"',
+  'canvas.voiceCommandGuide.example.auto_complete_branch':
+    '"චීන ශාඛාව ස්වයංක්‍රීයව සම්පූර්ණ කරන්න"',
   'canvas.voiceCommandGuide.example.auto_complete': '"සම්පූර්ණ සිතියම ස්වයංක්‍රීයව සම්පූර්ණ කරන්න"',
   'canvas.voiceCommandGuide.example.select_node': '"චීනය තෝරන්න"',
   'canvas.voiceCommandGuide.example.update_center': '"වෘත්තීය අධ්‍යාපනයට මාතෘකාව වෙනස් කරන්න"',
   'canvas.voiceCommandGuide.example.delete_node': '"චීන ශාඛාව මකන්න"',
   'canvas.voiceCommandGuide.example.explain_node': '"චීනය පැහැදිලි කරන්න"',
-  'canvas.voiceCommandGuide.example.start_inline_recommendations': '"මෙම නෝඩය සඳහා අදහස් යෝජනා කරන්න"',
+  'canvas.voiceCommandGuide.example.start_inline_recommendations':
+    '"මෙම නෝඩය සඳහා අදහස් යෝජනා කරන්න"',
   'canvas.shortcutGuide.addChild': 'දරුවා එකතු කරන්න',
   'canvas.shortcutGuide.addChildDesc': 'තෝරාගත් නෝඩයට ඉක්මනින් දරුවෙකු එක් කරන්න.',
   'canvas.shortcutGuide.addSibling': 'සහෝදර සහෝදරියන් එකතු කරන්න',
   'canvas.shortcutGuide.addSiblingDesc': 'තෝරාගත් නෝඩය අසල ඉක්මනින් සහෝදරයෙකු ඇතුළු කරන්න.',
   'canvas.shortcutGuide.editText': 'පෙළ සංස්කරණය කරන්න',
-  'canvas.shortcutGuide.editTextDesc': 'පේළිගත සංස්කරණය විවෘත කරන්න; ඇතුළු කිරීම හෝ බොඳ කිරීම සුරැකීම සහ ප්‍රමාණය ක්ෂණිකව නැවත ගණනය කිරීම.',
+  'canvas.shortcutGuide.editTextDesc':
+    'පේළිගත සංස්කරණය විවෘත කරන්න; ඇතුළු කිරීම හෝ බොඳ කිරීම සුරැකීම සහ ප්‍රමාණය ක්ෂණිකව නැවත ගණනය කිරීම.',
   'canvas.shortcutGuide.doubleClick': 'සංස්කරණය කිරීමට දෙවරක් ක්ලික් කරන්න',
   'canvas.shortcutGuide.deleteNode': 'නෝඩය මකන්න',
   'canvas.shortcutGuide.deleteNodeDesc': 'තෝරාගත් නෝඩය සහ එහි අතු ඉවත් කරන්න (මූල නෝඩය ආරක්ෂිතයි).',
   'canvas.shortcutGuide.arrowNav': 'ඊතල යතුරු',
   'canvas.shortcutGuide.selectNav': 'සැරිසරන්න',
-  'canvas.shortcutGuide.arrowNavDesc': 'යුක්ලීඩියානු සංචලනය: ඕනෑම පිරිසැලසුමක බාධාවකින් තොරව ඩෙස්ක්ටොප් වැනි චලනය සඳහා කැන්වසය මත භෞතික 2D පිහිටුමෙන් ඊතල යතුරු ළඟම ඇති නෝඩයට පනියි.',
+  'canvas.shortcutGuide.arrowNavDesc':
+    'යුක්ලීඩියානු සංචලනය: ඕනෑම පිරිසැලසුමක බාධාවකින් තොරව ඩෙස්ක්ටොප් වැනි චලනය සඳහා කැන්වසය මත භෞතික 2D පිහිටුමෙන් ඊතල යතුරු ළඟම ඇති නෝඩයට පනියි.',
   'canvas.shortcutGuide.cancel': 'පිරිසිදු තේරීම / සංස්කරණය කරන්න',
   'canvas.shortcutGuide.cancelDesc': 'තේරීම හෝ සංස්කරණය කිරීම අවලංගු කරන්න.',
   'canvas.shortcutGuide.undo': 'අහෝසි කරන්න',
@@ -218,10 +234,12 @@ export default {
   'canvas.toolbar.aiGenerateTooltip': 'කේන්ද්‍රීය මාතෘකාවෙන් උත්පාදනය කරන්න',
   'canvas.toolbar.aiGenerating': 'උත්පාදනය කරමින්...',
   'canvas.toolbar.professionalContent.label': 'Content level',
-  'canvas.toolbar.professionalContent.tooltip': 'AI-ජනනය කරන ලද අන්තර්ගතය සඳහා ප්‍රේක්ෂක දුෂ්කරතා තෝරන්න',
+  'canvas.toolbar.professionalContent.tooltip':
+    'AI-ජනනය කරන ලද අන්තර්ගතය සඳහා ප්‍රේක්ෂක දුෂ්කරතා තෝරන්න',
   'canvas.toolbar.professionalContent.panelTitle': 'Content level',
   'canvas.toolbar.professionalContent.guideTitle': 'පළමුව ප්‍රේක්ෂක දුෂ්කරතාව තෝරන්න',
-  'canvas.toolbar.professionalContent.guideBody': 'වේදිකාවක් හෝ දර්ශනයක් තේරීමට මෙතන ක්ලික් කරන්න. AI උත්පාදනය, සංවාද වෙනස්කම් ආදිය දුෂ්කරතාවයට අනුව අන්තර්ගතය සංවිධානය කරනු ඇත. තේරීමෙන් පසු, බොත්තමට ශාස්ත්‍රීය අදියර ලේබලය ලැබෙනු ඇත.',
+  'canvas.toolbar.professionalContent.guideBody':
+    'වේදිකාවක් හෝ දර්ශනයක් තේරීමට මෙතන ක්ලික් කරන්න. AI උත්පාදනය, සංවාද වෙනස්කම් ආදිය දුෂ්කරතාවයට අනුව අන්තර්ගතය සංවිධානය කරනු ඇත. තේරීමෙන් පසු, බොත්තමට ශාස්ත්‍රීය අදියර ලේබලය ලැබෙනු ඇත.',
   'canvas.toolbar.professionalContent.guideAction': 'තෝරා ගැනීමට',
   'canvas.toolbar.professionalContent.guideDismiss': 'දැන සිටියේය',
   'canvas.toolbar.professionalContent.level.general.title': 'විශ්වීය',
@@ -238,12 +256,17 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': 'ප්රායෝගික අවස්ථා',
   'canvas.toolbar.professionalContent.level.expert.title': 'විශේෂඥ',
   'canvas.toolbar.professionalContent.level.expert.description': 'ගැඹුරින් පිරිපහදු කර ඇත',
-  'canvas.toolbar.professionalContent.notify.preference': 'පසුකාලීන AI-ජනනය කරන ලද අන්තර්ගතය "{level}" ප්‍රේක්ෂක දැනුවත් කිරීමේ මට්ටමට වඩා ගැළපේ',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral': 'පසුව AI-උත්පාදනය කරන ලද අන්තර්ගතය "විශ්වීය" ශෛලියකින්, අමතර දුෂ්කරතා බාධාවකින් තොරව වනු ඇත.',
-  'canvas.toolbar.professionalContent.notify.afterGenerated': 'වත්මන් අන්තර්ගතය "{current}" දුෂ්කරතාවයි; අනාගතයේදී, එය උත්පාදනය කිරීමට ඔබට සහාය වීමට මම "{next}" ඔබන්නෙමි.',
-  'canvas.toolbar.professionalContent.audienceLine': 'වත්මන් ප්‍රේක්ෂකයින්: {level} (පහළ සිට [වෘත්තීය අන්තර්ගතය])',
+  'canvas.toolbar.professionalContent.notify.preference':
+    'පසුකාලීන AI-ජනනය කරන ලද අන්තර්ගතය "{level}" ප්‍රේක්ෂක දැනුවත් කිරීමේ මට්ටමට වඩා ගැළපේ',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    'පසුව AI-උත්පාදනය කරන ලද අන්තර්ගතය "විශ්වීය" ශෛලියකින්, අමතර දුෂ්කරතා බාධාවකින් තොරව වනු ඇත.',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    'වත්මන් අන්තර්ගතය "{current}" දුෂ්කරතාවයි; අනාගතයේදී, එය උත්පාදනය කිරීමට ඔබට සහාය වීමට මම "{next}" ඔබන්නෙමි.',
+  'canvas.toolbar.professionalContent.audienceLine':
+    'වත්මන් ප්‍රේක්ෂකයින්: {level} (පහළ සිට [වෘත්තීය අන්තර්ගතය])',
   'canvas.toolbar.educationStage': 'අධ්යයන අදියර',
-  'canvas.toolbar.educationStageTooltip': 'AI-ජනනය කරන ලද අන්තර්ගතයේ ගැඹුරට බලපෑම් කිරීමට අධ්‍යයන අදියර තෝරන්න.',
+  'canvas.toolbar.educationStageTooltip':
+    'AI-ජනනය කරන ලද අන්තර්ගතයේ ගැඹුරට බලපෑම් කිරීමට අධ්‍යයන අදියර තෝරන්න.',
   'canvas.toolbar.educationStageClear': 'විශ්වීය',
   'canvas.toolbar.educationStagePrimary': 'ප්රාථමික පාසල',
   'canvas.toolbar.educationStageMiddle': 'කනිෂ්ඨ උසස් පාසල',
@@ -269,12 +292,15 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': 'මාතෘකා නෝඩය මකා දැමිය නොහැක',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference':
+    'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': 'උත්පාදනය කළ නොහැක',
   'canvas.toolbar.causeAdded': 'හේතු නෝඩය එකතු කරන ලදී',
   'canvas.toolbar.childAdded': 'දරුවා එකතු කළා',
-  'canvas.toolbar.collabAiBlocked': 'සහයෝගිතාව අතරතුර AI උත්පාදනය භාවිත කළ හැක්කේ රූප සටහන් හිමිකරුට පමණි',
-  'canvas.toolbar.collabGuestFeatureBlocked': 'ඔබ සහයෝගිතා ආගන්තුකයෙකු ලෙස එක් වන විට මෙම විශේෂාංගය නොලැබේ.',
+  'canvas.toolbar.collabAiBlocked':
+    'සහයෝගිතාව අතරතුර AI උත්පාදනය භාවිත කළ හැක්කේ රූප සටහන් හිමිකරුට පමණි',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'ඔබ සහයෝගිතා ආගන්තුකයෙකු ලෙස එක් වන විට මෙම විශේෂාංගය නොලැබේ.',
   'canvas.toolbar.colorLabel': 'වර්ණය',
   'canvas.toolbar.conceptGeneration': 'සංකල්ප පරම්පරාව',
   'canvas.toolbar.conceptMapModesDev': 'සංකල්ප සිතියම් මාදිලි සංවර්ධනය වෙමින් පවතී',
@@ -295,11 +321,13 @@ export default {
   'canvas.toolbar.exit': 'පිටවීම',
   'canvas.toolbar.exitFullscreen': 'සම්පූර්ණ තිරයෙන් පිටවන්න',
   'canvas.toolbar.highlighter': 'උද්දීපනය කරන්නා',
-  'canvas.toolbar.highlighterTooltip': 'උද්දීපනයක් මෙන් කැන්වසය මත අඳින්න; ඔබ ඉදිරිපත් කිරීමෙන් ඉවත් වූ විට හිස් කර ඇත',
+  'canvas.toolbar.highlighterTooltip':
+    'උද්දීපනයක් මෙන් කැන්වසය මත අඳින්න; ඔබ ඉදිරිපත් කිරීමෙන් ඉවත් වූ විට හිස් කර ඇත',
   'canvas.toolbar.highlighterChooseColor': 'උද්දීපනය කරන වර්ණය',
   'canvas.toolbar.highlighterPaletteAria': 'උද්දීපනය කරන වර්ණය තෝරන්න',
   'canvas.toolbar.insertEquation': 'සමීකරණය ඇතුල් කරන්න',
-  'canvas.toolbar.insertEquationTooltip': 'කැරැට්ටුවේ පේළිගත ගණිතය ($...$) ඇතුළු කරන්න, නැතහොත් සංස්කරණය නොකරන්නේ නම් තෝරාගත් නෝඩයට එකතු කරන්න',
+  'canvas.toolbar.insertEquationTooltip':
+    'කැරැට්ටුවේ පේළිගත ගණිතය ($...$) ඇතුළු කරන්න, නැතහොත් සංස්කරණය නොකරන්නේ නම් තෝරාගත් නෝඩයට එකතු කරන්න',
   'canvas.toolbar.insertEquationSelectNode': 'මුලින්ම node එකක් තෝරන්න',
   'canvas.toolbar.insertEquationDialogTitle': 'සමීකරණය ඇතුල් කරන්න',
   'canvas.toolbar.insertEquationLoading': 'ගණිත සංස්කාරකය පූරණය කරමින්...',
@@ -333,7 +361,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'මැද ලක්ෂ්‍යය',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
+  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=1/2bh',
@@ -354,7 +382,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'සයිනස් නීතිය',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'කොසයින්(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'පාපය (α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
+  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'ද්විත්ව කෝණය',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'අංක ගණිතය aₙ',
@@ -420,11 +448,13 @@ export default {
   'canvas.presentationTimer.exitTimer': 'පිටවීම',
   'canvas.presentationTimer.startPresenting': 'ඉදිරිපත් කිරීම ආරම්භ කරන්න',
   'canvas.presentationTimer.closeHud': 'ටයිමරය වසන්න',
-  'canvas.cachedResult.notice': 'හැඹිලිගත ප්‍රතිඵලය. නැවුම් ප්‍රතිඵලයක් සඳහා නැවත ශ්‍රිතය භාවිතා කරන්න.',
+  'canvas.cachedResult.notice':
+    'හැඹිලිගත ප්‍රතිඵලය. නැවුම් ප්‍රතිඵලයක් සඳහා නැවත ශ්‍රිතය භාවිතා කරන්න.',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-    'canvas.classroomRemote.tabTopics': 'Topics',
+  'canvas.classroomRemote.resize': 'Drag to resize',
+  'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
@@ -437,7 +467,8 @@ export default {
   'canvas.classroomRemote.topicsReset': 'Restore defaults',
   'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
   'canvas.presentation.learningSheetConfirmTitle': 'ඉදිරිපත් කිරීම ආරම්භ කරන්නද?',
-  'canvas.presentation.learningSheetConfirmBody': 'ඔබ තවමත් ඉගෙනුම් පත්‍රය සංස්කරණය කරමින් සිටී. ඉදිරිපත් කිරීම ආරම්භ කිරීමෙන් හිස් සංස්කරණය අවසන් වනු ඇත; පවතින හිස් තැන් තබනු ඇත. දිගටම කරගෙන යන්නද?',
+  'canvas.presentation.learningSheetConfirmBody':
+    'ඔබ තවමත් ඉගෙනුම් පත්‍රය සංස්කරණය කරමින් සිටී. ඉදිරිපත් කිරීම ආරම්භ කිරීමෙන් හිස් සංස්කරණය අවසන් වනු ඇත; පවතින හිස් තැන් තබනු ඇත. දිගටම කරගෙන යන්නද?',
   'canvas.presentation.learningSheetConfirmProceed': 'ඉදිරිපත් කිරීම ආරම්භ කරන්න',
   'canvas.presentationContextMenu.laserPointer': 'ලේසර් දර්ශකය',
   'canvas.presentationContextMenu.spotlight': 'අවධානය යොමු කරන්න',
@@ -496,7 +527,8 @@ export default {
   'canvas.subgraphPreview.historyLabel': 'AI උප ප්‍රස්ථාරය',
   'canvas.inlineRecPicker.prevPage': 'පෙර පිටුව',
   'canvas.inlineRecPicker.nextPage': 'ඊළඟ පිටුව',
-  'canvas.toolbar.formatBrushActivated': 'විලාසය පිටපත් කරන ලදී - ඉලක්ක නෝඩ් තෝරා අයදුම් කිරීමට නැවත ක්ලික් කරන්න',
+  'canvas.toolbar.formatBrushActivated':
+    'විලාසය පිටපත් කරන ලදී - ඉලක්ක නෝඩ් තෝරා අයදුම් කිරීමට නැවත ක්ලික් කරන්න',
   'canvas.toolbar.formatBrushApplied': 'ආකෘතිය {count} node(s) වෙත යොදන ලදී',
   'canvas.toolbar.formatBrushCancelled': 'පින්තාරුකරු ආකෘතිය අවලංගු කරන ලදී',
   'canvas.toolbar.formatBrushSelectSource': 'කරුණාකර පළමුව මූලාශ්‍ර නෝඩයක් තෝරන්න',
@@ -509,12 +541,14 @@ export default {
   'canvas.toolbar.moreAppLearningSheet': 'ඉගෙනුම් පත්රය',
   'canvas.toolbar.moreAppLearningSheetDesc': 'අධ්‍යයනය සහ සමාලෝචනය සඳහා අහඹු හිස් තැන්',
   'canvas.toolbar.moreAppWaterfall': 'AI මොළය අවුල් කිරීම',
-  'canvas.toolbar.moreAppWaterfallDesc': 'කණ්ඩායම් නෝඩ් හරහා තෝරන්න; අපසාරී සහ අභිසාරී චින්තනය දෘශ්‍යමාන කරන්න',
+  'canvas.toolbar.moreAppWaterfallDesc':
+    'කණ්ඩායම් නෝඩ් හරහා තෝරන්න; අපසාරී සහ අභිසාරී චින්තනය දෘශ්‍යමාන කරන්න',
   'canvas.toolbar.moreApps': 'තවත් යෙදුම්',
   'canvas.toolbar.moreAppSnapshot': 'ස්නැප්ෂොට්',
   'canvas.toolbar.moreAppSnapshotDesc': 'මෙම රූප සටහනේ අනුවාදයක් සුරකින්න (උපරිම 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'පරිවර්තනය කරන්න',
-  'canvas.toolbar.moreAppTranslateLabelDesc': 'AI භාවිතයෙන් සියලුම නෝඩ් සහ සම්බන්ධතා ලේබල ඔබගේ වත්මන් අතුරු මුහුණත් භාෂාවට පරිවර්තනය කරන්න',
+  'canvas.toolbar.moreAppTranslateLabelDesc':
+    'AI භාවිතයෙන් සියලුම නෝඩ් සහ සම්බන්ධතා ලේබල ඔබගේ වත්මන් අතුරු මුහුණත් භාෂාවට පරිවර්තනය කරන්න',
   'canvas.toolbar.translateLabelTitle': 'රූප සටහන පරිවර්තනය කරන්න',
   'canvas.toolbar.translateLabelSource': 'පරිවර්තනය කිරීමට ලේබල ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'ඉලක්ක භාෂාව',
@@ -526,24 +560,35 @@ export default {
   'canvas.toolbar.translateLabelAndMore': '{n} තවත් නොපෙන්වයි...',
   'canvas.toolbar.translateLabelInProgress': 'රූප සටහන පරිවර්තනය කරමින්...',
   'canvas.toolbar.translateLabelBannerTitle': 'රූප සටහන පරිවර්තනය කිරීම',
-  'canvas.toolbar.translateLabelFallbackEnInfo': 'පරිවර්තන ඉලක්කයක් ලෙස ඔබගේ අතුරුමුහුණත භාෂාව තවමත් නොමැත. ලේබල් ඉංග්රීසි භාෂාවට පරිවර්තනය කරනු ලැබේ.',
+  'canvas.toolbar.translateLabelFallbackEnInfo':
+    'පරිවර්තන ඉලක්කයක් ලෙස ඔබගේ අතුරුමුහුණත භාෂාව තවමත් නොමැත. ලේබල් ඉංග්රීසි භාෂාවට පරිවර්තනය කරනු ලැබේ.',
   'canvas.toolbar.translateLabelFailed': 'පරිවර්තනය අසාර්ථක විය. කරුණාකර නැවත උත්සාහ කරන්න.',
   'canvas.toolbar.translateLabelDone': 'රූප සටහන පරිවර්තනය කර ඇත',
   'canvas.toolbar.moreAppVirtualKeyboard': 'අතථ්‍ය යතුරුපුවරුව',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'ඉංග්රීසි තිරයේ යතුරු පුවරුව; චීන සහ අනෙකුත් භාෂා සඳහා, කරුණාකර පද්ධති ආදාන ක්‍රමය භාවිතා කරන්න',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'ඉංග්රීසි තිරයේ යතුරු පුවරුව; චීන සහ අනෙකුත් භාෂා සඳහා, කරුණාකර පද්ධති ආදාන ක්‍රමය භාවිතා කරන්න',
   'canvas.toolbar.virtualKeyboardClose': 'යතුරු පුවරුව වසන්න',
-  'canvas.toolbar.virtualKeyboardFocusHint': 'නෝඩයක් තෝරා එය සෘජුව ඇතුල් කිරීම මුල් අන්තර්ගතය ඉවත් කරයි; සංස්කරණයට ඇතුළු වීමට ඔබට ලේබලය දෙවරක් ක්ලික් කළ හැකිය.',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'නෝඩයක් තෝරා එය සෘජුව ඇතුල් කිරීම මුල් අන්තර්ගතය ඉවත් කරයි; සංස්කරණයට ඇතුළු වීමට ඔබට ලේබලය දෙවරක් ක්ලික් කළ හැකිය.',
   'canvas.toolbar.virtualKeyboardIme': 'පද්ධති ආදාන ක්රමය',
-  'canvas.toolbar.virtualKeyboardImeHint': 'කරුණාකර ආදානය කිරීමට භෞතික යතුරු පුවරුව හෝ පද්ධති යතුරු පුවරුව භාවිතා කරන්න. අපේක්ෂක කවුළුව පද්ධති ආදාන ක්‍රමය මඟින් සපයනු ලැබේ.',
-  'canvas.toolbar.snapshotSaveFirst': 'ස්නැප්ෂොට් එකක් ගැනීමට පෙර කරුණාකර මුලින්ම රූප සටහන සුරකින්න',
+  'canvas.toolbar.virtualKeyboardImeHint':
+    'කරුණාකර ආදානය කිරීමට භෞතික යතුරු පුවරුව හෝ පද්ධති යතුරු පුවරුව භාවිතා කරන්න. අපේක්ෂක කවුළුව පද්ධති ආදාන ක්‍රමය මඟින් සපයනු ලැබේ.',
+  'canvas.toolbar.snapshotSaveFirst':
+    'ස්නැප්ෂොට් එකක් ගැනීමට පෙර කරුණාකර මුලින්ම රූප සටහන සුරකින්න',
   'canvas.toolbar.snapshotTaken': 'ස්නැප්ෂොට් {n} සුරකින ලදී',
   'canvas.toolbar.snapshotFailed': 'ස්නැප්ෂොට් සුරැකීමට අසමත් විය, කරුණාකර නැවත උත්සාහ කරන්න',
-  'canvas.toolbar.snapshotTooLarge': 'Snapshot ඉතා විශාලයි (උපරිම {max} KB). රූප සටහන් අන්තර්ගතය අඩු කර නැවත උත්සාහ කරන්න.',
-  'canvas.toolbar.snapshotRateLimited': 'ස්නැප්ෂොට් ක්‍රියා වැඩියි. මොහොතක් රැඳී සිට නැවත උත්සාහ කරන්න.',
-  'canvas.toolbar.snapshotDiagramNotFound': 'රූප සටහන හමු නොවීය. පිටුව නැවත පූරණය කරන්න හෝ ඔබේ පුස්තකාලයෙන් එය විවෘත කරන්න.',
-  'canvas.library.diagramNotFound': 'රූප සටහන හමු නොවීය. එය මකා දමා තිබිය හැක. ඔබේ පුස්තකාලයෙන් තවත් රූප සටහනක් විවෘත කරන්න.',
-  'canvas.library.saveBeforeSwitchFailed': 'මාරු වීමට පෙර වත්මන් සිතියම සුරැකිය නොහැක, කරුණාකර මෙහි රැඳී නැවත උත්සාහ කරන්න.',
-  'canvas.toolbar.snapshotConflict': 'ස්නැප්ෂොට් (ගැටුම්) සුරැකීමට නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න.',
+  'canvas.toolbar.snapshotTooLarge':
+    'Snapshot ඉතා විශාලයි (උපරිම {max} KB). රූප සටහන් අන්තර්ගතය අඩු කර නැවත උත්සාහ කරන්න.',
+  'canvas.toolbar.snapshotRateLimited':
+    'ස්නැප්ෂොට් ක්‍රියා වැඩියි. මොහොතක් රැඳී සිට නැවත උත්සාහ කරන්න.',
+  'canvas.toolbar.snapshotDiagramNotFound':
+    'රූප සටහන හමු නොවීය. පිටුව නැවත පූරණය කරන්න හෝ ඔබේ පුස්තකාලයෙන් එය විවෘත කරන්න.',
+  'canvas.library.diagramNotFound':
+    'රූප සටහන හමු නොවීය. එය මකා දමා තිබිය හැක. ඔබේ පුස්තකාලයෙන් තවත් රූප සටහනක් විවෘත කරන්න.',
+  'canvas.library.saveBeforeSwitchFailed':
+    'මාරු වීමට පෙර වත්මන් සිතියම සුරැකිය නොහැක, කරුණාකර මෙහි රැඳී නැවත උත්සාහ කරන්න.',
+  'canvas.toolbar.snapshotConflict':
+    'ස්නැප්ෂොට් (ගැටුම්) සුරැකීමට නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න.',
   'canvas.toolbar.newAssociation': 'නව සබැඳිය',
   'canvas.toolbar.newAttribute': 'නව ගුණාංගය',
   'canvas.toolbar.newBranch': 'නව ශාඛාව',
@@ -569,17 +614,23 @@ export default {
   'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'කරුණාකර ශාඛාවක් හෝ ළමා නෝඩයක් තෝරන්න',
-  'canvas.toolbar.selectCategoryOrLeafDelete': 'කරුණාකර ප්‍රවර්ගය හෝ පත්‍ර නෝඩ් තෝරන්න (මාතෘකා නෝඩය මකා දැමිය නොහැක)',
-  'canvas.toolbar.selectCauseOrEffectForAdd': 'හේතුව හෝ ඵල නෝඩයක් තෝරන්න (සිදුවීම නොවේ), ඉන්පසු එම තීරුවේ තවත් එකක් එක් කිරීමට Enter ඔබන්න',
-  'canvas.toolbar.selectTreeBranchForChild': 'දරුවෙකු එක් කිරීමට ප්‍රවර්ගයක් හෝ ප්‍රවර්ගයක් යටතේ අයිතමයක් තෝරන්න, නැතහොත් ප්‍රවර්ගයක් එක් කිරීමට මාතෘකාව තෝරන්න',
+  'canvas.toolbar.selectCategoryOrLeafDelete':
+    'කරුණාකර ප්‍රවර්ගය හෝ පත්‍ර නෝඩ් තෝරන්න (මාතෘකා නෝඩය මකා දැමිය නොහැක)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'හේතුව හෝ ඵල නෝඩයක් තෝරන්න (සිදුවීම නොවේ), ඉන්පසු එම තීරුවේ තවත් එකක් එක් කිරීමට Enter ඔබන්න',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'දරුවෙකු එක් කිරීමට ප්‍රවර්ගයක් හෝ ප්‍රවර්ගයක් යටතේ අයිතමයක් තෝරන්න, නැතහොත් ප්‍රවර්ගයක් එක් කිරීමට මාතෘකාව තෝරන්න',
   'canvas.toolbar.selectNodesFirst': 'කරුණාකර පළමුව node(s) තෝරන්න',
   'canvas.toolbar.nodeStyleFollow': 'නෝඩය අනුගමනය කරන්න',
-  'canvas.toolbar.nodeStyleFollowHint': 'සක්‍රිය කළ විට, නෝඩ් විලාස තීරුව තෝරාගත් නෝඩය අනුගමනය කරයි; නිවා දැමූ විට එය සැඟවී ඇත.',
+  'canvas.toolbar.nodeStyleFollowHint':
+    'සක්‍රිය කළ විට, නෝඩ් විලාස තීරුව තෝරාගත් නෝඩය අනුගමනය කරයි; නිවා දැමූ විට එය සැඟවී ඇත.',
   'canvas.toolbar.selectNodesToDelete': 'මැකීමට කරුණාකර node(s) තෝරන්න',
   'canvas.toolbar.selectPartForSubpart': 'කරුණාකර උප කොටස එක් කිරීමට කොටසක් තෝරන්න',
   'canvas.toolbar.selectPartThenEnter': 'කොටස් නෝඩයක් තෝරන්න, උප කොටස එක් කිරීමට Enter ඔබන්න',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'කරුණාකර සමාන හෝ වෙනස් නෝඩ් තෝරන්න (මාතෘකා නෝඩ් මකා දැමිය නොහැක)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'කරුණාකර පළමුව සමානතා හෝ වෙනස්කම් නෝඩයක් තෝරන්න',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
+    'කරුණාකර සමාන හෝ වෙනස් නෝඩ් තෝරන්න (මාතෘකා නෝඩ් මකා දැමිය නොහැක)',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
+    'කරුණාකර පළමුව සමානතා හෝ වෙනස්කම් නෝඩයක් තෝරන්න',
   'canvas.toolbar.selectStepForSubstep': 'කරුණාකර උප පියවරක් එක් කිරීමට පියවරක් තෝරන්න',
   'canvas.toolbar.similarityWithIndex': 'සමානකම {n}',
   'canvas.toolbar.stepAdded': 'පියවර එකතු කරන ලදී',
@@ -629,7 +680,8 @@ export default {
   'canvas.topBar.shareCommunity': 'ප්‍රජාවට බෙදා ගන්න',
   'canvas.topBar.zhihuiUnavailable': 'ස්මාර්ට් ඇඳීම් ප්‍රස්ථාර දැනට නොමැත',
   'canvas.topBar.zhihuiNeedMindmap': 'චිත්‍ර සිතියම්කරණයට පමණක් නිදර්ශන සහාය දක්වයි',
-  'canvas.topBar.zhihuiSaveFailed': 'සිතියම සුරැකීමට අපොහොසත් වූ අතර ජනනය කළ සිතියම විවෘත කළ නොහැක.',
+  'canvas.topBar.zhihuiSaveFailed':
+    'සිතියම සුරැකීමට අපොහොසත් වූ අතර ජනනය කළ සිතියම විවෘත කළ නොහැක.',
   'canvas.topBar.sharedCollab': 'හවුල් සහයෝගීතාව',
   'canvas.topBar.teachingDesign': 'MindMate AI',
   'canvas.subtitles.tooltip': 'සජීවී උපසිරැසි (මයික්‍රොෆෝනය)',
@@ -650,16 +702,21 @@ export default {
   'canvas.translation.stop': 'පරිවර්තනය නවත්වන්න',
   'canvas.topBar.snapshotRecallTooltip': 'ස්නැප්ෂොට් {n} ප්‍රතිසාධනය කරන්න',
   'canvas.topBar.snapshotRecallTitle': 'Snapshot ප්‍රතිසාධනය කරන්න',
-  'canvas.topBar.snapshotRecallConfirm': 'ස්නැප්ෂොට් {n} ප්‍රතිසාධන කරන්නද? ඔබගේ වත්මන් වෙනස්කම් ප්‍රතිස්ථාපනය වනු ඇත.',
+  'canvas.topBar.snapshotRecallConfirm':
+    'ස්නැප්ෂොට් {n} ප්‍රතිසාධන කරන්නද? ඔබගේ වත්මන් වෙනස්කම් ප්‍රතිස්ථාපනය වනු ඇත.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'ප්‍රතිෂ්ඨාපනය කරන්න',
   'canvas.topBar.snapshotRecallCancelBtn': 'අවලංගු කරන්න',
   'canvas.topBar.snapshotRecallHistory': 'ස්නැප්ෂොට් {n} ප්‍රතිසාධනයට පෙර',
-  'canvas.topBar.snapshotRecallFailed': 'ස්නැප්ෂොට් ප්‍රතිසාධනය කිරීමට අසමත් විය, කරුණාකර නැවත උත්සාහ කරන්න',
-  'canvas.topBar.snapshotRecallNoDiagram': 'ප්‍රථමයෙන් රූප සටහන ඔබේ පුස්තකාලයට සුරකින්න, පසුව ස්නැප්ෂොට් එකක් ප්‍රතිසාධන කරන්න.',
-  'canvas.topBar.snapshotRecallNoType': 'රූප සටහන් වර්ගය තවම සූදානම් නැත. මොහොතක් රැඳී සිට නැවත උත්සාහ කරන්න.',
+  'canvas.topBar.snapshotRecallFailed':
+    'ස්නැප්ෂොට් ප්‍රතිසාධනය කිරීමට අසමත් විය, කරුණාකර නැවත උත්සාහ කරන්න',
+  'canvas.topBar.snapshotRecallNoDiagram':
+    'ප්‍රථමයෙන් රූප සටහන ඔබේ පුස්තකාලයට සුරකින්න, පසුව ස්නැප්ෂොට් එකක් ප්‍රතිසාධන කරන්න.',
+  'canvas.topBar.snapshotRecallNoType':
+    'රූප සටහන් වර්ගය තවම සූදානම් නැත. මොහොතක් රැඳී සිට නැවත උත්සාහ කරන්න.',
   'canvas.topBar.snapshotDeleted': 'ස්නැප්ෂොට් {n} මකා ඇත',
   'canvas.topBar.snapshotDeleteFailed': 'ස්නැප්ෂොට් මැකීමට අසමත් විය, කරුණාකර නැවත උත්සාහ කරන්න',
-  'canvas.topBar.snapshotBadgeTooltip': 'ස්නැප්ෂොට් ප්‍රතිසාධනය කිරීමට ක්ලික් කරන්න {n} · Ctrl+මැකීමට ක්ලික් කරන්න',
+  'canvas.topBar.snapshotBadgeTooltip':
+    'ස්නැප්ෂොට් ප්‍රතිසාධනය කිරීමට ක්ලික් කරන්න {n} · Ctrl+මැකීමට ක්ලික් කරන්න',
   'canvas.topBar.snapshotRecallingTooltip': 'ස්නැප්ෂොට් ප්‍රතිසාධනය කරමින් {n}...',
   'canvas.zoomControls.exitFullscreen': 'සම්පූර්ණ තිරයෙන් පිටවන්න',
   'canvas.zoomControls.fitCanvas': 'ගැලපෙන කැන්වස්',
@@ -720,11 +777,15 @@ export default {
   'canvas.zoomControls.collabTurnOff': 'සබැඳි සහයෝගීතාවය අක්‍රිය කරන්න',
   'canvasPage.collaborationFooter': 'සහයෝගීතාව',
   'canvasPage.collaborationFooterOwner': '{username}ගේ සහයෝගිතාව',
-  'canvasPage.collaborationFooterOwnerDiagram': '{username} ගේ රූප සටහන «{diagramTitle}» — සහයෝගිතාව',
+  'canvasPage.collaborationFooterOwnerDiagram':
+    '{username} ගේ රූප සටහන «{diagramTitle}» — සහයෝගිතාව',
   'canvasPage.collaborationFooterNetworkDiagramTitle': 'සහයෝගීතා රූප සටහන «{diagramTitle}»',
-  'canvasPage.collaborationFooterSchool': 'පාසල් සහයෝගිතාව ක්‍රියාත්මක වෙමින් පවතී - පාසල් ලැයිස්තුවෙන් එක්වන්න.',
-  'canvasPage.collaborationFooterSchoolDiagram': '«{diagramTitle}» මත පාසල් සහයෝගීතාව — පාසල් සැසි ලැයිස්තුවෙන් එක්වන්න.',
-  'canvasPage.collabRoomIdleEnding': 'සැසිය නිෂ්ක්‍රීය - සහයෝගිතාව {seconds}s පමණ අවසන් වේ (එය තබා ගැනීමට සංස්කරණය කරන්න)',
+  'canvasPage.collaborationFooterSchool':
+    'පාසල් සහයෝගිතාව ක්‍රියාත්මක වෙමින් පවතී - පාසල් ලැයිස්තුවෙන් එක්වන්න.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    '«{diagramTitle}» මත පාසල් සහයෝගීතාව — පාසල් සැසි ලැයිස්තුවෙන් එක්වන්න.',
+  'canvasPage.collabRoomIdleEnding':
+    'සැසිය නිෂ්ක්‍රීය - සහයෝගිතාව {seconds}s පමණ අවසන් වේ (එය තබා ගැනීමට සංස්කරණය කරන්න)',
   'conceptMap.focus.noResult': 'ප්‍රතිඵලයක් නෑ',
   'conceptMap.focus.validationRequestFailed': 'වලංගු කිරීමේ ඉල්ලීම අසාර්ථක විය',
   'diagram.aiGenerating': 'AI...',
@@ -755,7 +816,8 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'නෝඩ් විශේෂාංගය ඉක්මනින් එකතු කරන්න',
   'diagram.contextMenu.paste': 'අලවන්න',
   'diagram.contextMenu.warningCreateDiagramFirst': 'කරුණාකර පළමුව රූප සටහනක් සාදන්න',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'කරුණාකර පළමුව සමානතා හෝ වෙනස්කම් නෝඩයක් තෝරන්න',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff':
+    'කරුණාකර පළමුව සමානතා හෝ වෙනස්කම් නෝඩයක් තෝරන්න',
   'diagram.defaultNewConcept': 'නව සංකල්පය',
   'diagram.dimension.classificationAz': 'විසින් වර්ගීකරණය',
   'diagram.dimension.classificationEn': 'විසින් වර්ගීකරණය',
@@ -780,31 +842,45 @@ export default {
   'canvas.mindMapSideToolbar.collapse': 'මෙවලම් තීරුව හකුළන්න',
   'canvas.mindMapSideToolbar.outline': 'දළ සටහන',
   'canvas.mindMapSideToolbar.waterfall': 'AI මොළය අවුල් කිරීම',
-  'canvas.mindMapWaterfall.panelHint': 'AI ශාඛා අදහස් සඳහා නෝඩ් තෝරන්න, ඉන්පසු ඒවා කැන්වසය මතට ඇද දමන්න',
-  'canvas.mindMapWaterfall.emptyHint': 'තවම යෝජනා නැත. කැන්වසය මත නෝඩ් තෝරන්න හෝ නැවුම් කරන්න තට්ටු කරන්න.',
-  'canvas.mindMapWaterfall.dragHint': 'බහු තේරීමට ක්ලික් කරන්න, පසුව ඇතුළු කිරීමට සිතියම් නෝඩයක් මතට අදින්න. ඉහළ මට්ටමේ ශාඛාවක් එක් කිරීමට හිස් කැන්වසය මත පතිත කරන්න.',
+  'canvas.mindMapWaterfall.panelHint':
+    'AI ශාඛා අදහස් සඳහා නෝඩ් තෝරන්න, ඉන්පසු ඒවා කැන්වසය මතට ඇද දමන්න',
+  'canvas.mindMapWaterfall.emptyHint':
+    'තවම යෝජනා නැත. කැන්වසය මත නෝඩ් තෝරන්න හෝ නැවුම් කරන්න තට්ටු කරන්න.',
+  'canvas.mindMapWaterfall.dragHint':
+    'බහු තේරීමට ක්ලික් කරන්න, පසුව ඇතුළු කිරීමට සිතියම් නෝඩයක් මතට අදින්න. ඉහළ මට්ටමේ ශාඛාවක් එක් කිරීමට හිස් කැන්වසය මත පතිත කරන්න.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'AI මොළ කුණාටුවෙන් නෝඩ් එක් කරන්න',
-  'canvas.mindMapOneSentence.intro': 'මාතෘකාවක් ඇතුළත් කරන්න, නැතහොත් ශාඛා ගණන, ප්‍රවර්ග, පියවර, හෝ වෙනත් ව්‍යුහයක් සඳහන් කරන්න',
-  'canvas.mindMapOneSentence.requirementsPlaceholder': 'උදා. ශාඛා හතරක් සහිත දින 3 ක බීජිං සංචාරය: ඇඳුම්, ආහාර, නවාතැන්, ප්‍රවාහනය',
+  'canvas.mindMapOneSentence.intro':
+    'මාතෘකාවක් ඇතුළත් කරන්න, නැතහොත් ශාඛා ගණන, ප්‍රවර්ග, පියවර, හෝ වෙනත් ව්‍යුහයක් සඳහන් කරන්න',
+  'canvas.mindMapOneSentence.requirementsPlaceholder':
+    'උදා. ශාඛා හතරක් සහිත දින 3 ක බීජිං සංචාරය: ඇඳුම්, ආහාර, නවාතැන්, ප්‍රවාහනය',
   'canvas.mindMapOneSentence.examplesTitle': 'ආශ්වාදයක්',
   'canvas.mindMapOneSentence.generateButton': 'උත්පාදනය කරන්න',
-  'canvas.mindMapOneSentence.example1': 'ශාඛා හතරක් සහිත 3-දින බීජිං චාරිකා සැලැස්ම: ඇඳුම්, ආහාර, නවාතැන්, ප්‍රවාහනය',
-  'canvas.mindMapOneSentence.example2': 'නව නිෂ්පාදන දියත් කිරීමක් සඳහා SWOT විශ්ලේෂණය: ශක්තීන්, දුර්වලතා, අවස්ථා, තර්ජන',
-  'canvas.mindMapOneSentence.example3': 'මූලික විද්‍යාව: ජල තත්වයන් - සරල ලේබල්, නෝඩයකට උපරිම අක්ෂර 6 ක්',
+  'canvas.mindMapOneSentence.example1':
+    'ශාඛා හතරක් සහිත 3-දින බීජිං චාරිකා සැලැස්ම: ඇඳුම්, ආහාර, නවාතැන්, ප්‍රවාහනය',
+  'canvas.mindMapOneSentence.example2':
+    'නව නිෂ්පාදන දියත් කිරීමක් සඳහා SWOT විශ්ලේෂණය: ශක්තීන්, දුර්වලතා, අවස්ථා, තර්ජන',
+  'canvas.mindMapOneSentence.example3':
+    'මූලික විද්‍යාව: ජල තත්වයන් - සරල ලේබල්, නෝඩයකට උපරිම අක්ෂර 6 ක්',
   'canvas.mindMapOneSentence.suggestion.add_node': 'චීන ශාඛාවක් එකතු කරන්න',
   'canvas.mindMapOneSentence.suggestion.update_node': 'බීම විශ්ලේෂණය බීම විශ්ලේෂණයට වෙනස් කරන්න',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': '2.1 හරිත තේ ලෙස වෙනස් කරන්න',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint': 'අංකය සක්‍රිය කිරීමෙන් පසු, ඔබට "2.1 වෙත වෙනස් කරන්න..." "2 වෙනි එක වෙනස් කරන්න..." යැයි පැවසිය හැකිය.',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint':
+    'අංකය සක්‍රිය කිරීමෙන් පසු, ඔබට "2.1 වෙත වෙනස් කරන්න..." "2 වෙනි එක වෙනස් කරන්න..." යැයි පැවසිය හැකිය.',
   'canvas.mindMapOneSentence.suggestion.update_center': 'තේමාව තේ ලෙස වෙනස් කර ඇත',
   'canvas.mindMapOneSentence.suggestion.delete_node': 'බීම විශ්ලේෂණ ශාඛාව මකන්න',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': 'චීනයේ ශාඛාව සම්පූර්ණ කරන්න',
   'canvas.mindMapOneSentence.suggestion.auto_complete': 'සිතියම සම්පූර්ණ කිරීමට මට උදවු කරන්න',
-  'canvas.mindMapOneSentence.suggestion.set_content_level': 'වෘත්තීය අන්තර්ගතය සාමාන්‍ය, ප්‍රාථමික පාසල, කනිෂ්ඨ උසස් පාසල, උසස් පාසල, විද්‍යාලය, වැඩිහිටි හෝ විශේෂඥ ලෙස වෙනස් කරන්න',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': 'වෘත්තීය අන්තර්ගතය {level} වෙත වෙනස් කරන ලදී',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': 'හත්වන මට්ටම පතුලේ ඇති "වෘත්තීය අන්තර්ගතය" සමඟ අනුකූල වේ',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': 'අංක, චීන, කව, අකුරු හෝ පරිච්ඡේද අංක සබල කරන්න',
+  'canvas.mindMapOneSentence.suggestion.set_content_level':
+    'වෘත්තීය අන්තර්ගතය සාමාන්‍ය, ප්‍රාථමික පාසල, කනිෂ්ඨ උසස් පාසල, උසස් පාසල, විද්‍යාලය, වැඩිහිටි හෝ විශේෂඥ ලෙස වෙනස් කරන්න',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
+    'වෘත්තීය අන්තර්ගතය {level} වෙත වෙනස් කරන ලදී',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
+    'හත්වන මට්ටම පතුලේ ඇති "වෘත්තීය අන්තර්ගතය" සමඟ අනුකූල වේ',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
+    'අංක, චීන, කව, අකුරු හෝ පරිච්ඡේද අංක සබල කරන්න',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': '{style} අංකය සබල කරන්න',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': 'ඔබට "ඩිජිටල් අංකනය සක්‍රීය කරන්න" "චීන අංක කිරීම සබල කරන්න" යැයි පැවසිය හැක.',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
+    'ඔබට "ඩිජිටල් අංකනය සක්‍රීය කරන්න" "චීන අංක කිරීම සබල කරන්න" යැයි පැවසිය හැක.',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': 'අංකය',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': 'චීන',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': 'කවය',
@@ -814,65 +890,99 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': 'සැඟවුණු අංකය',
   'canvas.mindMapOneSentence.suggestion.explain_node': 'චීනයේ මෙම ශාඛාව පැහැදිලි කරන්න',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'මෙම නෝඩය හඳුන්වා දෙන්න',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint': 'ඔබට "චීනය පැහැදිලි කරන්න" සහ "මෙම නෝඩය හඳුන්වා දෙන්න" යැයි පැවසිය හැකිය; node එකක් තෝරා ගැනීමෙන් පසුව, ඔබට "මෙය හඳුන්වා දෙන්න" යනුවෙන්ද පැවසිය හැක.',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
+    'ඔබට "චීනය පැහැදිලි කරන්න" සහ "මෙම නෝඩය හඳුන්වා දෙන්න" යැයි පැවසිය හැකිය; node එකක් තෝරා ගැනීමෙන් පසුව, ඔබට "මෙය හඳුන්වා දෙන්න" යනුවෙන්ද පැවසිය හැක.',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'නෝඩ් මෙහෙයුම් මාර්ගෝපදේශය',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'හකුළන නෝඩ් මෙහෙයුම් මාර්ගෝපදේශය',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': 'නමින්',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.thisNode': 'මෙම නෝඩය',
-  'canvas.mindMapOneSentence.inputPlaceholder': 'මාතෘකාවක් විස්තර කරන්න හෝ ඉල්ලීම සංස්කරණය කරන්න...',
+  'canvas.mindMapOneSentence.inputPlaceholder':
+    'මාතෘකාවක් විස්තර කරන්න හෝ ඉල්ලීම සංස්කරණය කරන්න...',
   'canvas.mindMapOneSentence.listeningPlaceholder': 'සවන් දෙමින්...',
   'canvas.mindMapOneSentence.sendButton': 'යවන්න',
   'canvas.mindMapOneSentence.micButton': 'හඬ ආදානය',
   'canvas.mindMapOneSentence.photoButton': 'ඡායාරූපය උඩුගත කරන්න',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 ඡායාරූපය',
-  'canvas.mindMapOneSentence.photoNeedsDiagram': 'මෙම රූප සටහන පළමුව පුස්තකාලයට සුරකින්න, පසුව ඡායාරූපයක් උඩුගත කරන්න.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram':
+    'මෙම රූප සටහන පළමුව පුස්තකාලයට සුරකින්න, පසුව ඡායාරූපයක් උඩුගත කරන්න.',
   'canvas.mindMapOneSentence.photoInvalidType': 'කරුණාකර JPG, PNG, හෝ WebP ඡායාරූපයක් තෝරන්න.',
   'canvas.mindMapOneSentence.photoTooLarge': 'ඡායාරූපය විශාල වැඩියි. උපරිම ප්‍රමාණය 10MB වේ.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'මනස සිතියම',
-  'canvas.mindMapOneSentence.photoHanddrawnReply': 'අතින් අඳින ලද "{topic}" චිත්ත සිතියමක් අනාවරණය විය. කැන්වස් මත නැවත ගොඩනඟා ඇත; දළ සටහන ලේඛන සාරාංශයට සුරකින ලදී.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'අතින් අඳින ලද "{topic}" චිත්ත සිතියමක් අනාවරණය විය. මෙම කැන්වසය මත නැවත ගොඩනගා ඇත; දළ සටහන ලේඛන සාරාංශයට සුරකින ලදී. පුස්තකාල සමමුහුර්ත කිරීම සම්පූර්ණ නොවීය - අවශ්‍ය නම් සුරකින්න හෝ නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.photoOcrReply': 'ඡායාරූපයෙන් උපුටා ගත් පෙළ:\\\n{excerpt}\\\n\\\nසම්පූර්ණ පෙළ ලේඛන සාරාංශයේ ඇත.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply':
+    'අතින් අඳින ලද "{topic}" චිත්ත සිතියමක් අනාවරණය විය. කැන්වස් මත නැවත ගොඩනඟා ඇත; දළ සටහන ලේඛන සාරාංශයට සුරකින ලදී.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
+    'අතින් අඳින ලද "{topic}" චිත්ත සිතියමක් අනාවරණය විය. මෙම කැන්වසය මත නැවත ගොඩනගා ඇත; දළ සටහන ලේඛන සාරාංශයට සුරකින ලදී. පුස්තකාල සමමුහුර්ත කිරීම සම්පූර්ණ නොවීය - අවශ්‍ය නම් සුරකින්න හෝ නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    'ඡායාරූපයෙන් උපුටා ගත් පෙළ:\\\n{excerpt}\\\n\\\nසම්පූර්ණ පෙළ ලේඛන සාරාංශයේ ඇත.',
   'canvas.mindMapOneSentence.photoFailed': 'ඡායාරූපය සැකසීමට නොහැකි විය.',
   'canvas.mindMapOneSentence.micDenied': 'මයික්‍රෆෝනය නොමැත - බ්‍රවුසර අවසරය පරීක්ෂා කරන්න',
   'canvas.mindMapOneSentence.ttsToggle': 'කථාව ටොගල් කරන්න',
-  'canvas.mindMapOneSentence.kittyWelcome': 'හායි — කුමන රූප සටහනක් සෑදිය යුතුද යන්න මට කියන්න, නැතහොත් ශාඛා සහ නෝඩ් සංස්කරණය කිරීමට දිගටම කතාබස් කරන්න.',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    'හායි — කුමන රූප සටහනක් සෑදිය යුතුද යන්න මට කියන්න, නැතහොත් ශාඛා සහ නෝඩ් සංස්කරණය කිරීමට දිගටම කතාබස් කරන්න.',
   'canvas.mindMapOneSentence.switchDiagramType': '{type} වෙත මාරු වෙමින්…',
   'canvas.mindMapOneSentence.kittyGenerating': 'තේරුණා - ඔබේ රූප සටහන ජනනය කරමින්...',
-  'canvas.mindMapOneSentence.kittyGenerateDone': 'රූප සටහන සූදානම්. ශාඛා හෝ නෝඩ් සංස්කරණය කිරීමට ටයිප් කරන්න.',
-  'canvas.mindMapOneSentence.kittyGenerateFailed': 'රූප සටහන් උත්පාදනය අසාර්ථක විය. නැවත උත්සාහ කරන්න හෝ ඔබේ විස්තරය පිරිපහදු කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditFailed': 'එම සංස්කරණය යෙදිය නොහැකි විය. ඔබගේ ඉල්ලීම නැවත ලිවීමට උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditStale': 'එම සංස්කරණය කැන්වසය මත ක්‍රියාත්මක නොවීය (අස්ථිර හෝ නැත). නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'කැන්වසයට එම සංස්කරණය සත්‍යාපනය කළ නොහැකි විය. ඔබගේ රූප සටහන නොවෙනස්ව තබා ඇත.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'සංස්කරණය දේශීයව යෙදූ නමුත් සමමුහුර්ත කිරීමට අසමත් විය. මොහොතකින් නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed': 'කැන්වසය සමමුහුර්ත කිරීමට නොහැකි විය. කරුණාකර මොහොතකින් නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'කැන්වසය සමමුහුර්ත කිරීමට නොහැකි විය ({detail}). කරුණාකර මොහොතකින් නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditBusy': 'රූප සටහන තවමත් ජනනය වෙමින් පවතී - කරුණාකර රැඳී සිටින්න, පසුව නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} ප්‍රතිඵල තවමත් ප්‍රවාහ වේ — ඒවා අවසන් වූ විට මම ඔබේ ඉල්ලීම ස්වයංක්‍රීයව ක්‍රියාත්මක කරමි.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'අනෙකුත් ආදර්ශ ප්‍රතිඵල තවමත් ප්‍රවාහය වෙමින් පවතී — ඒවා අවසන් වූ විට මම ඔබගේ ඉල්ලීම ස්වයංක්‍රීයව ක්‍රියාත්මක කරමි.',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming': 'අනෙකුත් මාදිලි අවසන් - ඔබගේ ඉල්ලීම සමඟ දිගටම...',
+  'canvas.mindMapOneSentence.kittyGenerateDone':
+    'රූප සටහන සූදානම්. ශාඛා හෝ නෝඩ් සංස්කරණය කිරීමට ටයිප් කරන්න.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed':
+    'රූප සටහන් උත්පාදනය අසාර්ථක විය. නැවත උත්සාහ කරන්න හෝ ඔබේ විස්තරය පිරිපහදු කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditFailed':
+    'එම සංස්කරණය යෙදිය නොහැකි විය. ඔබගේ ඉල්ලීම නැවත ලිවීමට උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    'එම සංස්කරණය කැන්වසය මත ක්‍රියාත්මක නොවීය (අස්ථිර හෝ නැත). නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    'කැන්වසයට එම සංස්කරණය සත්‍යාපනය කළ නොහැකි විය. ඔබගේ රූප සටහන නොවෙනස්ව තබා ඇත.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    'සංස්කරණය දේශීයව යෙදූ නමුත් සමමුහුර්ත කිරීමට අසමත් විය. මොහොතකින් නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed':
+    'කැන්වසය සමමුහුර්ත කිරීමට නොහැකි විය. කරුණාකර මොහොතකින් නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    'කැන්වසය සමමුහුර්ත කිරීමට නොහැකි විය ({detail}). කරුණාකර මොහොතකින් නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditBusy':
+    'රූප සටහන තවමත් ජනනය වෙමින් පවතී - කරුණාකර රැඳී සිටින්න, පසුව නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    '{models} ප්‍රතිඵල තවමත් ප්‍රවාහ වේ — ඒවා අවසන් වූ විට මම ඔබේ ඉල්ලීම ස්වයංක්‍රීයව ක්‍රියාත්මක කරමි.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    'අනෙකුත් ආදර්ශ ප්‍රතිඵල තවමත් ප්‍රවාහය වෙමින් පවතී — ඒවා අවසන් වූ විට මම ඔබගේ ඉල්ලීම ස්වයංක්‍රීයව ක්‍රියාත්මක කරමි.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming':
+    'අනෙකුත් මාදිලි අවසන් - ඔබගේ ඉල්ලීම සමඟ දිගටම...',
   'canvas.mindMapOneSentence.requestQueued': 'පෝලිමේ',
   'canvas.mindMapOneSentence.requestFailed': 'අසාර්ථකයි',
   'canvas.mindMapOneSentence.kittyEditAccessDenied': 'ඔබට මෙම රූප සටහන සංස්කරණය කිරීමට අවසර නැත.',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'රූප සටහන දැන් යාවත්කාලීන කර ඇත, එබැවින් එම සංස්කරණය යල් පැන ඇත. කරුණාකර ඔබේ වෙනස නැවත කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditTimeout': 'එම සංස්කරණයේ කාලය අවසන් විය - රූප සටහන නොවෙනස් විය හැක. කරුණාකර නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner': 'මට සංස්කරණය කළ හැකි කැන්වසයක් සොයා ගැනීමට නොහැකි විය. කැන්වසය විවෘත කරන්න, ඉන්පසු නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditAddFailed': 'සමාවන්න — මට එම නෝඩය එක් කළ නොහැකි විය. නම පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'සමාවන්න — මට එම නෝඩය නැවත නම් කළ නොහැකි විය. නම පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditCenterFailed': 'සමාවන්න — මට මාතෘකාව යාවත්කාලීන කිරීමට නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'සමාවන්න — මට එම නෝඩය ඉවත් කිරීමට නොහැකි විය. නම පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'සමාවන්න — මට එම ශාඛාව ස්වයංක්‍රීයව සම්පූර්ණ කළ නොහැකි විය. ඔබට නැවත ඇසිය හැක.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    'රූප සටහන දැන් යාවත්කාලීන කර ඇත, එබැවින් එම සංස්කරණය යල් පැන ඇත. කරුණාකර ඔබේ වෙනස නැවත කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditTimeout':
+    'එම සංස්කරණයේ කාලය අවසන් විය - රූප සටහන නොවෙනස් විය හැක. කරුණාකර නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    'මට සංස්කරණය කළ හැකි කැන්වසයක් සොයා ගැනීමට නොහැකි විය. කැන්වසය විවෘත කරන්න, ඉන්පසු නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditAddFailed':
+    'සමාවන්න — මට එම නෝඩය එක් කළ නොහැකි විය. නම පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    'සමාවන්න — මට එම නෝඩය නැවත නම් කළ නොහැකි විය. නම පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditCenterFailed':
+    'සමාවන්න — මට මාතෘකාව යාවත්කාලීන කිරීමට නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    'සමාවන්න — මට එම නෝඩය ඉවත් කිරීමට නොහැකි විය. නම පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    'සමාවන්න — මට එම ශාඛාව ස්වයංක්‍රීයව සම්පූර්ණ කළ නොහැකි විය. ඔබට නැවත ඇසිය හැක.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'ඒ ශාඛාව සූදානම්.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'එම ශාඛා සූදානම්.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'සමහර ශාඛා සූදානම්, නමුත් කිහිපයක් අවසන් කර නැත. ඔබට නැවත ස්වයංක්‍රීයව සම්පූර්ණ කිරීමට ඉල්ලා සිටිය හැක.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
+    'සමහර ශාඛා සූදානම්, නමුත් කිහිපයක් අවසන් කර නැත. ඔබට නැවත ස්වයංක්‍රීයව සම්පූර්ණ කිරීමට ඉල්ලා සිටිය හැක.',
   'canvas.mindMapOneSentence.kittyWorking': 'හරි - ඒ සඳහා වැඩ කරමින්...',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty නොමැත. සේවාදායකයේ FEATURE_KITTY_AGENT සබල කර ඇත්දැයි පරීක්ෂා කරන්න.',
-  'canvas.mindMapOneSentence.kittyConnectFailed': 'කැන්වස් Kitty සම්බන්ධ කිරීමට නොහැකි විය. ඩෙස්ක්ටොප් එකේ මෙම රූප සටහන විවෘත කරන්න, ඉන්පසු නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'Kitty නොමැත. සේවාදායකයේ FEATURE_KITTY_AGENT සබල කර ඇත්දැයි පරීක්ෂා කරන්න.',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    'කැන්වස් Kitty සම්බන්ධ කිරීමට නොහැකි විය. ඩෙස්ක්ටොප් එකේ මෙම රූප සටහන විවෘත කරන්න, ඉන්පසු නැවත උත්සාහ කරන්න.',
   'canvas.mindMapOneSentence.clarifyChoices': 'විකල්පයක් තෝරන්න',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'ජංගම Kitty මෙම රූප සටහනට සම්බන්ධ කර ඇත. කතා කිරීමට හෝ ටයිප් කිරීමට ඔබගේ දුරකථනය භාවිතා කරන්න - ඩෙස්ක්ටොප් ආදානය විරාම කර ඇත.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint': 'දුරකථනය Kitty වෙනස් රූප සටහනක ඇත. දුරකථනයෙන් සමමුහුර්ත කරන්න, නැතහොත් එම රූප සටහන මෙතැනින් විවෘත කරන්න.',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'ඔබගේ දුරකථනයේ ජංගම Kitty භාවිත කරන්න...',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    'ජංගම Kitty මෙම රූප සටහනට සම්බන්ධ කර ඇත. කතා කිරීමට හෝ ටයිප් කිරීමට ඔබගේ දුරකථනය භාවිතා කරන්න - ඩෙස්ක්ටොප් ආදානය විරාම කර ඇත.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    'දුරකථනය Kitty වෙනස් රූප සටහනක ඇත. දුරකථනයෙන් සමමුහුර්ත කරන්න, නැතහොත් එම රූප සටහන මෙතැනින් විවෘත කරන්න.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder':
+    'ඔබගේ දුරකථනයේ ජංගම Kitty භාවිත කරන්න...',
   'canvas.mindMapNodeExplain.titleFallback': 'නෝඩ් පැහැදිලි කිරීම',
-  'canvas.mindMapNodeExplain.requestFailed': 'මේ මොහොතේ පැහැදිලි කළ නොහැක, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapNodeExplain.requestFailed':
+    'මේ මොහොතේ පැහැදිලි කළ නොහැක, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
   'canvas.mindMapNodeExplain.thinking': 'කල්පනා කරනවා',
   'canvas.mindMapNodeExplain.thinkingDone': 'සිතීම සම්පූර්ණයි',
   'canvas.mindMapNodeExplain.pageStats': '{found} පිටු හමු විය, {fetched} පිටු කියවා ඇත',
@@ -887,17 +997,22 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': 'කතාබස් ඉතිහාසය',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'ගොනු උඩුගත කිරීම',
   'canvas.mindMapDocumentSummary.tabPaste': 'පෙළ ඇලවීම',
-  'canvas.mindMapDocumentSummary.pasteHintLite': 'කඩදාසි, සටහන් හෝ රැස්වීම් මිනිත්තු වල අලවන්න, අපි ව්‍යුහය පිරිපහදු කර මනස සිතියමක් ජනනය කරන්නෙමු.',
+  'canvas.mindMapDocumentSummary.pasteHintLite':
+    'කඩදාසි, සටහන් හෝ රැස්වීම් මිනිත්තු වල අලවන්න, අපි ව්‍යුහය පිරිපහදු කර මනස සිතියමක් ජනනය කරන්නෙමු.',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'කතාබස් ඉතිහාසය',
-  'canvas.mindMapDocumentSummary.intro': 'වඩාත් නිවැරදි මනස සිතියමක් ජනනය කිරීමට ප්‍රධාන කරුණු උපුටා ගන්න',
+  'canvas.mindMapDocumentSummary.intro':
+    'වඩාත් නිවැරදි මනස සිතියමක් ජනනය කිරීමට ප්‍රධාන කරුණු උපුටා ගන්න',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'ගොනුවක් උඩුගත කිරීමට ක්ලික් කරන්න',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, පෙළ, රූප, ශ්‍රව්‍ය — උපුටා ගත් සලකුණු පමණක් තබා ඇත',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint':
+    'PDF, Word, PPT, Excel, පෙළ, රූප, ශ්‍රව්‍ය — උපුටා ගත් සලකුණු පමණක් තබා ඇත',
   'canvas.mindMapDocumentSummary.invalidFileType': 'සහාය නොදක්වන ගොනු වර්ගය',
   'canvas.mindMapDocumentSummary.saveContent': 'අන්තර්ගතය සුරකින්න',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'ගෙනැවිත් සුරකින්න',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'පිටු අන්තර්ගතය ලබා ගනිමින්...',
-  'canvas.mindMapDocumentSummary.webLinkHintLite': 'පොදු පිටු URL එකක් අලවන්න — අපි ලබා ගත හැකි ලිපි පෙළ උපුටා ගෙන Markdown ලෙස සුරකිමු.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'සෘජු සබැඳි ලබා ගැනීම සර්වර-පැත්තේ වන අතර ඔබේ පිවිසුම් කුකීස් භාවිතා කළ නොහැක, එබැවින් auth හෝ paywall පිටු බොහෝ විට අසම්පූර්ණ වේ. ඔබ දකින පරිදි සම්පූර්ණ වෙබ් පිටු snapshot එකක් සඳහා Chrome / Edge extension භාවිතා කරන්න.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite':
+    'පොදු පිටු URL එකක් අලවන්න — අපි ලබා ගත හැකි ලිපි පෙළ උපුටා ගෙන Markdown ලෙස සුරකිමු.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
+    'සෘජු සබැඳි ලබා ගැනීම සර්වර-පැත්තේ වන අතර ඔබේ පිවිසුම් කුකීස් භාවිතා කළ නොහැක, එබැවින් auth හෝ paywall පිටු බොහෝ විට අසම්පූර්ණ වේ. ඔබ දකින පරිදි සම්පූර්ණ වෙබ් පිටු snapshot එකක් සඳහා Chrome / Edge extension භාවිතා කරන්න.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Chrome දිගුව බාගන්න',
   'canvas.mindMapDocumentSummary.statusExtracting': 'උපුටා ගනිමින්...',
   'canvas.mindMapDocumentSummary.stageStarting': 'ආරම්භ කරමින්...',
@@ -906,17 +1021,22 @@ export default {
   'canvas.mindMapDocumentSummary.stageOcr': 'පින්තූර පෙළ කියවීම...',
   'canvas.mindMapDocumentSummary.stageTranscribing': 'ශ්‍රව්‍ය පිටපත් කරමින්...',
   'canvas.mindMapDocumentSummary.stageStoring': 'උපුටා ගත් පෙළ සුරකිමින්...',
-  'canvas.mindMapDocumentSummary.replaceSourceHint': 'නැවත උඩුගත කිරීම මෙම රූප සටහන සඳහා වත්මන් මූලාශ්‍රය ප්‍රතිස්ථාපනය කරයි',
+  'canvas.mindMapDocumentSummary.replaceSourceHint':
+    'නැවත උඩුගත කිරීම මෙම රූප සටහන සඳහා වත්මන් මූලාශ්‍රය ප්‍රතිස්ථාපනය කරයි',
   'canvas.mindMapDocumentSummary.fromSource': '{name} සිට',
   'canvas.mindMapDocumentSummary.deleteSource': 'මූලාශ්රය මකන්න',
   'canvas.mindMapDocumentSummary.sourceDeleted': 'මූලාශ්රය මකා ඇත - ඔබට නැවත උඩුගත කළ හැක',
   'canvas.mindMapDocumentSummary.extractStarted': 'අන්තර්ගතය උපුටා ගනිමින්...',
   'canvas.mindMapDocumentSummary.extractFailed': 'මෙම ගොනුවෙන් පෙළ උපුටා ගැනීමට නොහැකි විය',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'සලකුණු කිරීම සූදානම්. මනස සිතියමක් ජනනය කරන්න, නැතහොත් වෙනත් දෙයක් උඩුගත කිරීමට මූලාශ්‍රය මකන්න.',
-  'canvas.mindMapDocumentSummary.deleteToRetry': 'මෙම මූලාශ්‍රය මකන්න, පසුව උඩුගත කරන්න, අලවන්න, හෝ නැවත පිටුවක් ලබා ගන්න.',
-  'canvas.mindMapDocumentSummary.chatIntroLite': 'ගොනු කියවනය බාගන්න, යුගල කිරීමේ කේතය ඇතුළු කරන්න, සහ මෙම රූප සටහන සඳහා WeChat හෝ DingTalk ඉතිහාසය යවන්න.',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'සලකුණු කිරීම සූදානම්. මනස සිතියමක් ජනනය කරන්න, නැතහොත් වෙනත් දෙයක් උඩුගත කිරීමට මූලාශ්‍රය මකන්න.',
+  'canvas.mindMapDocumentSummary.deleteToRetry':
+    'මෙම මූලාශ්‍රය මකන්න, පසුව උඩුගත කරන්න, අලවන්න, හෝ නැවත පිටුවක් ලබා ගන්න.',
+  'canvas.mindMapDocumentSummary.chatIntroLite':
+    'ගොනු කියවනය බාගන්න, යුගල කිරීමේ කේතය ඇතුළු කරන්න, සහ මෙම රූප සටහන සඳහා WeChat හෝ DingTalk ඉතිහාසය යවන්න.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'කතාබස් ඉතිහාසය ලැබිණි',
-  'canvas.mindMapDocumentSummary.chatDoneLite': 'කතාබස් සුරැකිණි - සූදානම් වූ විට උත්පාදනය තට්ටු කරන්න',
+  'canvas.mindMapDocumentSummary.chatDoneLite':
+    'කතාබස් සුරැකිණි - සූදානම් වූ විට උත්පාදනය තට්ටු කරන්න',
   'canvas.mindMapDocumentSummary.corpusStatus': '{total} මූලාශ්‍රවලින් {completed} සුචිගත කර ඇත',
   'canvas.mindMapDocumentSummary.noSources': 'තවමත් මූලාශ්‍ර නැත. පහත ටැබ් තුළ එකක් එක් කරන්න.',
   'canvas.mindMapDocumentSummary.noPackageYet': 'තවම corpus නැත',
@@ -927,9 +1047,12 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': 'සුචිගත කරමින්...',
   'canvas.mindMapDocumentSummary.statusFailed': 'අසාර්ථකයි',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'දැනුම Space අබල කර ඇත',
-  'canvas.mindMapDocumentSummary.featureDisabledHint': 'ලේඛන සාරාංශය භාවිතා කිරීමට දැනුම Space විශේෂාංගය සබල කරන්න.',
-  'canvas.mindMapDocumentSummary.saveDiagramHint': 'පැකේජය සම්බන්ධ කිරීමට මෙම රූප සටහන සුරකින්න සහ සම්පූර්ණ RAG ලබා ගැනීම සබල කරන්න.',
-  'canvas.mindMapDocumentSummary.chatIntro': 'ගොනු කියවනය බාගන්න, පහත යුගල කිරීමේ කේතය ඇතුළු කරන්න, සහ WeChat හෝ DingTalk ඉතිහාසය මෙම කෝපස් වෙත යවන්න.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint':
+    'ලේඛන සාරාංශය භාවිතා කිරීමට දැනුම Space විශේෂාංගය සබල කරන්න.',
+  'canvas.mindMapDocumentSummary.saveDiagramHint':
+    'පැකේජය සම්බන්ධ කිරීමට මෙම රූප සටහන සුරකින්න සහ සම්පූර්ණ RAG ලබා ගැනීම සබල කරන්න.',
+  'canvas.mindMapDocumentSummary.chatIntro':
+    'ගොනු කියවනය බාගන්න, පහත යුගල කිරීමේ කේතය ඇතුළු කරන්න, සහ WeChat හෝ DingTalk ඉතිහාසය මෙම කෝපස් වෙත යවන්න.',
   'canvas.mindMapDocumentSummary.pairingCode': 'යුගල කිරීමේ කේතය',
   'canvas.mindMapDocumentSummary.startPairingCode': 'යුගල කිරීමේ කේතය ලබා ගන්න',
   'canvas.mindMapDocumentSummary.pairingExpires': 'මිනිත්තු {minutes} කින් කල් ඉකුත් වේ',
@@ -938,33 +1061,44 @@ export default {
   'canvas.mindMapDocumentSummary.chatReceived': 'කතාබස් ඉතිහාසය ලැබුණු අතර corpus වෙත එක් කරන ලදී',
   'canvas.mindMapDocumentSummary.chatIndexing': 'කතාබස් පිටපත සුචිගත කරමින්...',
   'canvas.mindMapDocumentSummary.chatDone': 'කෝපස් වෙත කතාබස් එක් කරන ලදී',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'උඩුගත කිරීම හෝ සුචිගත කිරීම අසාර්ථක විය - නැවත උත්සාහ කිරීමට නැවුම් කරන්න',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed':
+    'උඩුගත කිරීම හෝ සුචිගත කිරීම අසාර්ථක විය - නැවත උත්සාහ කිරීමට නැවුම් කරන්න',
   'canvas.mindMapDocumentSummary.chatMintFailed': 'යුගල කිරීමේ කේතය තැනීමට නොහැකි විය',
-  'canvas.mindMapDocumentSummary.chatExpired': 'යුගල කිරීමේ කේතය කල් ඉකුත් විය - නව එකක් ලබා ගැනීමට නැවුම් කරන්න',
+  'canvas.mindMapDocumentSummary.chatExpired':
+    'යුගල කිරීමේ කේතය කල් ඉකුත් විය - නව එකක් ලබා ගැනීමට නැවුම් කරන්න',
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'යුගල කිරීමේ කේතය නැවුම් කරන්න',
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'ලේඛන සාරාංශ සැසිය ආරම්භ කිරීමට නොහැකි විය',
   'canvas.mindMapDocumentSummary.imageTooLarge': 'රූපය ඉතා විශාලයි. උපරිම ප්‍රමාණය 10MB වේ.',
-  'canvas.mindMapDocumentSummary.generateNoCorpus': 'අවම වශයෙන් එක් මූලාශ්‍රයක් එක් කරන්න, ඉන්පසු උත්පාදනය කරන්න',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'පළමුව පිටුවක් උඩුගත කරන්න, අලවන්න, හෝ ලබා ගන්න, ඉන්පසු උත්පාදනය තට්ටු කරන්න',
+  'canvas.mindMapDocumentSummary.generateNoCorpus':
+    'අවම වශයෙන් එක් මූලාශ්‍රයක් එක් කරන්න, ඉන්පසු උත්පාදනය කරන්න',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
+    'පළමුව පිටුවක් උඩුගත කරන්න, අලවන්න, හෝ ලබා ගන්න, ඉන්පසු උත්පාදනය තට්ටු කරන්න',
   'canvas.mindMapDocumentSummary.collabDisabled': 'සජීවී සහයෝගීතාවය අතරතුර ලබා ගත නොහැක',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'මූලාශ්‍රය corpus වෙත එක් කරන ලදී',
-  'canvas.mindMapDocumentSummary.ingestSuccessLite': 'අන්තර්ගතය සුරකින ලදී - සූදානම් වූ විට උත්පාදනය තට්ටු කරන්න',
+  'canvas.mindMapDocumentSummary.ingestSuccessLite':
+    'අන්තර්ගතය සුරකින ලදී - සූදානම් වූ විට උත්පාදනය තට්ටු කරන්න',
   'canvas.mindMapDocumentSummary.ingestFailed': 'මූලාශ්‍රය එක් කිරීමට අසමත් විය',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'දේශීය ලේඛනය:',
   'canvas.mindMapDocumentSummary.uploadDocHint': 'Word හෝ PDF උඩුගත කිරීමට ක්ලික් කරන්න',
   'canvas.mindMapDocumentSummary.uploadDocSubhint': 'අපි ලේඛන අන්තර්ගතය ස්වයංක්‍රීයව උපුටා ගනිමු',
   'canvas.mindMapDocumentSummary.pasteLabel': 'හෝ දිගු ආකෘති සටහන් අලවන්න:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder': 'කඩදාසි උපුටා ගැනීම්, පොත් සාරාංශ, රැස්වීම් සටහන්, අවශ්‍යතා සහ තවත් දේ අලවන්න.',
+  'canvas.mindMapDocumentSummary.pastePlaceholder':
+    'කඩදාසි උපුටා ගැනීම්, පොත් සාරාංශ, රැස්වීම් සටහන්, අවශ්‍යතා සහ තවත් දේ අලවන්න.',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'රූපය උඩුගත කරන්න:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'JPG හෝ PNG උඩුගත කිරීමට ක්ලික් කරන්න',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'අපි අතින් අඳින ලද මනස සිතියම් හඳුනාගෙන ඒවා නැවත ගොඩනඟමු; එසේ නොමැතිනම් අපි පෙළ උපුටා ගනිමු',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'අතින් අඳින ලද මනස සිතියම අනාවරණය විය - කැන්වසය මත නැවත ගොඩනගා ඇත',
-  'canvas.mindMapDocumentSummary.visionProgressDetecting': 'අතින් අඳින ලද මනස සිතියම හඳුනා ගනිමින්...',
-  'canvas.mindMapDocumentSummary.imageOcrHint': 'සටහන් තිරපිටපත්, වයිට්බෝඩ් ඡායාරූප සහ ස්කෑන් සමඟ ක්‍රියා කරයි.',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    'අපි අතින් අඳින ලද මනස සිතියම් හඳුනාගෙන ඒවා නැවත ගොඩනඟමු; එසේ නොමැතිනම් අපි පෙළ උපුටා ගනිමු',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
+    'අතින් අඳින ලද මනස සිතියම අනාවරණය විය - කැන්වසය මත නැවත ගොඩනගා ඇත',
+  'canvas.mindMapDocumentSummary.visionProgressDetecting':
+    'අතින් අඳින ලද මනස සිතියම හඳුනා ගනිමින්...',
+  'canvas.mindMapDocumentSummary.imageOcrHint':
+    'සටහන් තිරපිටපත්, වයිට්බෝඩ් ඡායාරූප සහ ස්කෑන් සමඟ ක්‍රියා කරයි.',
   'canvas.mindMapDocumentSummary.removeImage': 'රූපය ඉවත් කරන්න',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'වෙබ් සබැඳිය:',
   'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'ලිපියක්, බ්ලොගයක් හෝ පුවත් URL එකක් අලවන්න',
-  'canvas.mindMapDocumentSummary.webLinkHint': 'අපි පිටුව ගෙන එය සුචිගත කිරීම සඳහා ඔබේ corpus වෙත එක් කරන්නෙමු.',
+  'canvas.mindMapDocumentSummary.webLinkHint':
+    'අපි පිටුව ගෙන එය සුචිගත කිරීම සඳහා ඔබේ corpus වෙත එක් කරන්නෙමු.',
   'canvas.mindMapDocumentSummary.generateButton': 'මනස සිතියම ජනනය කරන්න',
   'canvas.mindMapDocumentSummary.generateSuccess': 'මනස සිතියම ජනනය කර ඇත',
   'canvas.mindMapDocumentSummary.generateFailed': 'පරම්පරාව අසාර්ථකයි. කරුණාකර නැවත උත්සාහ කරන්න.',
@@ -974,11 +1108,16 @@ export default {
   'canvas.mindMapDocumentSummary.invalidDocType': 'Word (.docx) සහ PDF ගොනු පමණක් සහය දක්වයි',
   'canvas.mindMapDocumentSummary.invalidImageType': 'JPG සහ PNG පින්තූර පමණක් සහය දක්වයි',
   'canvas.mindMapDocumentSummary.docTooLarge': 'ගොනුව ඉතා විශාලයි. උපරිම ප්‍රමාණය 20MB වේ.',
-  'canvas.mindMapDocumentSummary.pasteTooLong': 'අලවන ලද පෙළ ආකෘති ආදාන සීමාව (අක්ෂර 900,000 පමණ) ඉක්මවයි. කරුණාකර එය කෙටි කරන්න.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'උපුටා ගත් පෙළ ආදර්ශ ආදාන සීමාව ඉක්මවයි (~900,000 අක්ෂර / qwen3.6-flash 991K ටෝකන). කරුණාකර කෙටි ලේඛනයක් භාවිතා කරන්න.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'මෙම ගොනුවේ පෙළ ආකෘතියට දිගු වැඩිය. කරුණාකර කෙටි ලේඛනයක් උඩුගත කරන්න (පෙළ අකුරු ~900,000 යටතේ).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared': 'සුරකින ලද උධෘතය අස්ථානගත වී හෝ සමමුහුර්ත නොවී ඇති අතර එය හිස් කර ඇත. කරුණාකර ලේඛනය නැවත උඩුගත කරන්න හෝ අලවන්න.',
-  'canvas.mindMapDocumentSummary.contentFiltered': 'අන්තර්ගතය ආරක්ෂක සමාලෝචනය සමත් නොවීය. කරුණාකර පෙළ වෙනස් කර නැවත උත්සාහ කරන්න.',
+  'canvas.mindMapDocumentSummary.pasteTooLong':
+    'අලවන ලද පෙළ ආකෘති ආදාන සීමාව (අක්ෂර 900,000 පමණ) ඉක්මවයි. කරුණාකර එය කෙටි කරන්න.',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel':
+    'උපුටා ගත් පෙළ ආදර්ශ ආදාන සීමාව ඉක්මවයි (~900,000 අක්ෂර / qwen3.6-flash 991K ටෝකන). කරුණාකර කෙටි ලේඛනයක් භාවිතා කරන්න.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel':
+    'මෙම ගොනුවේ පෙළ ආකෘතියට දිගු වැඩිය. කරුණාකර කෙටි ලේඛනයක් උඩුගත කරන්න (පෙළ අකුරු ~900,000 යටතේ).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared':
+    'සුරකින ලද උධෘතය අස්ථානගත වී හෝ සමමුහුර්ත නොවී ඇති අතර එය හිස් කර ඇත. කරුණාකර ලේඛනය නැවත උඩුගත කරන්න හෝ අලවන්න.',
+  'canvas.mindMapDocumentSummary.contentFiltered':
+    'අන්තර්ගතය ආරක්ෂක සමාලෝචනය සමත් නොවීය. කරුණාකර පෙළ වෙනස් කර නැවත උත්සාහ කරන්න.',
   'canvas.mindMapSideToolbar.learningSheet': 'ඉගෙනුම් පත්රය',
   'canvas.mobile.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
@@ -989,9 +1128,11 @@ export default {
   'canvas.mindClassroom.lead': 'AI ගුරුවරයාට මෙම මනස සිතියම වටා ඔබ සමඟ කතා කිරීමට ඉඩ දෙන්න',
   'canvas.mindClassroom.mascotBubble': 'චින්තන දේශන ශාලාව මෙහි ඇත!',
   'canvas.mindClassroom.mascotDismiss': 'පහළට තට්ටු කරන්න',
-  'canvas.mindClassroom.audienceLine': 'වත්මන් ප්‍රේක්ෂකයින්: {level} (පහළ සිට [වෘත්තීය අන්තර්ගතය])',
+  'canvas.mindClassroom.audienceLine':
+    'වත්මන් ප්‍රේක්ෂකයින්: {level} (පහළ සිට [වෘත්තීය අන්තර්ගතය])',
   'canvas.mindClassroom.start': 'පැහැදිලි කිරීම ආරම්භ කරන්න',
-  'canvas.mindClassroom.startPreview': 'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
+  'canvas.mindClassroom.startPreview':
+    'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
   'canvas.mindClassroom.queue.queued': 'දැනටමත් නිබන්ධන පෝලිමට එකතු වී ඇත...',
   'canvas.mindClassroom.queue.planning': 'දේශන සටහන්/ඉගැන්වීම් සැලසුම් ජනනය කරමින්...',
   'canvas.mindClassroom.queue.transcriptBranch': '{name} ශාඛාව සඳහා පාඩම් සැලසුම් ලිවීම',
@@ -1000,29 +1141,39 @@ export default {
   'canvas.mindClassroom.queue.generating': 'විනිවිදක දර්ශනය උත්පාදනය කරමින්...',
   'canvas.mindClassroom.queue.loadingVoice': 'හඬවල් පූරණය වෙමින්...',
   'canvas.mindClassroom.queue.ready': 'දේශනයක් ආරම්භ කළ හැකිය',
-  'canvas.mindClassroom.queue.readyHint': 'දේශන සටහන්/පාඩම් සැලසුම් සූදානම් කර ඇති අතර දේශනය ආරම්භ කළ හැක.',
+  'canvas.mindClassroom.queue.readyHint':
+    'දේශන සටහන්/පාඩම් සැලසුම් සූදානම් කර ඇති අතර දේශනය ආරම්භ කළ හැක.',
   'canvas.mindClassroom.queue.failed': 'සූදානම් වීමේ අසාර්ථකත්වය පැහැදිලි කරන්න',
   'canvas.mindClassroom.queue.cancel': 'පෝලිම අවලංගු කරන්න',
   'canvas.mindClassroom.queue.restart': 'Restart',
-  'canvas.mindClassroom.queue.restartHint': 'Regenerate the script / lesson plan with the current settings',
-  'canvas.mindClassroom.queue.guestHint': 'අමුත්තන් පැහැදිලි කිරීම් සඳහා දේශීය සැකිලි භාවිතා කරයි; ලොග් වීමෙන් පසුව, එන්ජිම දේශන සටහන්/ඉගැන්වීම් සැලසුම් ජනනය කරයි.',
-  'canvas.mindClassroom.queue.loginRequired': 'පැහැදිලි කිරීම ආරම්භ කිරීමට පෙර කරුණාකර පළමුව ලොග් වන්න.',
+  'canvas.mindClassroom.queue.restartHint':
+    'Regenerate the script / lesson plan with the current settings',
+  'canvas.mindClassroom.queue.guestHint':
+    'අමුත්තන් පැහැදිලි කිරීම් සඳහා දේශීය සැකිලි භාවිතා කරයි; ලොග් වීමෙන් පසුව, එන්ජිම දේශන සටහන්/ඉගැන්වීම් සැලසුම් ජනනය කරයි.',
+  'canvas.mindClassroom.queue.loginRequired':
+    'පැහැදිලි කිරීම ආරම්භ කිරීමට පෙර කරුණාකර පළමුව ලොග් වන්න.',
   'canvas.mindClassroom.queue.preparing': 'පැහැදිලි කිරීමට සූදානම් වෙමින්...',
   'canvas.mindClassroom.settings.masteryTitle': 'මේ පින්තූරය මට කොතරම් හුරුපුරුදුද',
   'canvas.mindClassroom.settings.mastery.first_look.title': 'පළමු දැන හඳුනා ගැනීම',
   'canvas.mindClassroom.settings.mastery.review.title': 'සමාලෝචනය කර ඒකාබද්ධ කරන්න',
   'canvas.mindClassroom.settings.mastery.teach.title': 'පාඩම් සකස් කිරීම සහ ඉගැන්වීම',
-  'canvas.mindClassroom.settings.presentationTitle': 'පැහැදිලි කිරීම ඉදිරිපත් කිරීමට මට අවශ්‍ය ආකාරය',
+  'canvas.mindClassroom.settings.presentationTitle':
+    'පැහැදිලි කිරීම ඉදිරිපත් කිරීමට මට අවශ්‍ය ආකාරය',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'කැන්වස් හඬ චාරිකාව',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'සිතියම් කැන්වසයේ ඇති ශ්‍රව්‍ය පැහැදිලි කිරීම කෙරෙහි අවධානය යොමු කරන්න, ප්‍රධාන ශාඛාව හෝ නෝඩයෙන් නෝඩය තෝරන්න.',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    'සිතියම් කැන්වසයේ ඇති ශ්‍රව්‍ය පැහැදිලි කිරීම කෙරෙහි අවධානය යොමු කරන්න, ප්‍රධාන ශාඛාව හෝ නෝඩයෙන් නෝඩය තෝරන්න.',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'විනිවිදක පැහැදිලි කිරීම',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'AI ස්ලයිඩ ජනනය කරයි, සැසඳීම සඳහා වම් පසින් සිතියමක් සහ දකුණු පසින් පිටු හැරවීමේ පැහැදිලි කිරීමක් ඇත.',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': 'සංවර්ධනය වෙමින් පවතී, ඉක්මනින් සබැඳි වනු ඇත',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    'AI ස්ලයිඩ ජනනය කරයි, සැසඳීම සඳහා වම් පසින් සිතියමක් සහ දකුණු පසින් පිටු හැරවීමේ පැහැදිලි කිරීමක් ඇත.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
+    'සංවර්ධනය වෙමින් පවතී, ඉක්මනින් සබැඳි වනු ඇත',
   'canvas.mindClassroom.settings.tourScopeTitle': 'චාරිකා කැටිති',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'මාස්ටර් ශාඛාව මගින්',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'පළමු මට්ටමේ ශාඛා පියවරෙන් පියවර උගන්වනු ලබන අතර රිද්මය වඩාත් ස්ථායී වේ.',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
+    'පළමු මට්ටමේ ශාඛා පියවරෙන් පියවර උගන්වනු ලබන අතර රිද්මය වඩාත් ස්ථායී වේ.',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'Node by node',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'තීව්‍ර කියවීම සඳහා සුදුසු සෑම නෝඩයකටම ගැඹුරට යන්න.',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc':
+    'තීව්‍ර කියවීම සඳහා සුදුසු සෑම නෝඩයකටම ගැඹුරට යන්න.',
   'canvas.mindClassroom.settings.slideStyleTitle': 'Slideshow style',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'විශ්ව විනිවිදක',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'කළු පුවරු වාර්තාව',
@@ -1040,10 +1191,12 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': 'දැඩි කියවීම',
   'canvas.mindClassroom.settings.tone.examples': 'පොහොසත් උදාහරණ',
   'canvas.mindClassroom.settings.tone.exam_outline': 'විභාග දළ සටහන',
-  'canvas.mindClassroom.lecture.needDiagram': 'පැහැදිලි කිරීම ආරම්භ කිරීමට පෙර කැන්වසය මත මනස සිතියමක් සාදන්න.',
+  'canvas.mindClassroom.lecture.needDiagram':
+    'පැහැදිලි කිරීම ආරම්භ කිරීමට පෙර කැන්වසය මත මනස සිතියමක් සාදන්න.',
   'canvas.mindClassroom.lecture.emptySteps': 'වත්මන් සිතියමේ පැහැදිලි කිරීමට නෝඩ් නොමැත.',
   'canvas.mindClassroom.lecture.cancelled': 'නිබන්ධන පෝලිම අවලංගු කර ඇත.',
-  'canvas.mindClassroom.lecture.queueFailed': 'නිබන්ධන සකස් කිරීම අසාර්ථක විය, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
+  'canvas.mindClassroom.lecture.queueFailed':
+    'නිබන්ධන සකස් කිරීම අසාර්ථක විය, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
   'canvas.mindClassroom.lecture.pause': 'විරාමයක්',
   'canvas.mindClassroom.lecture.resume': 'දිගටම',
   'canvas.mindClassroom.lecture.prev': 'පෙර කොටස',
@@ -1053,33 +1206,54 @@ export default {
   'canvas.mindClassroom.lecture.unmute': 'ශබ්ද නඟා කියවීම ආරම්භ කරන්න',
   'canvas.mindClassroom.lecture.script.noBranches': 'සමහර කරුණු',
   'canvas.mindClassroom.lecture.script.leafNode': 'මෙම ශාඛාව පිළිබඳ වැඩිදුර විස්තර තවමත් නොමැත.',
-  'canvas.mindClassroom.lecture.script.overview.classroom': 'හෙලෝ, පන්තියේ මිතුරන්. අද අපි "{topic}" අවට ඉගෙන ගනිමින්, "{audience}" ප්‍රේක්ෂකයන්ට මුහුණ දෙමින්, "{mastery}" වේගයෙන් දිගහැරෙමින් සිටිමු. සම්පූර්ණ පින්තූරයට ප්‍රධාන වශයෙන් ඇතුළත් වන්නේ: {branches}. මුලින්ම සමස්ත පින්තූරය දෙස බලන්න, ඉන්පසු එය කෑල්ලෙන් වෙන් කරන්න.',
-  'canvas.mindClassroom.lecture.script.overview.story': 'මුලින්ම කතාවක මාතෘකාව ලෙස "{topic}" සිතන්න. "{audience}" ට මුහුණ දෙමින්, අපි සම්පූර්ණ පින්තූරයේ සිට විස්තර වෙත යන්නෙමු: කතාවේ මෙම පරිච්ඡේද ඇත-{branches}.',
-  'canvas.mindClassroom.lecture.script.overview.dialogue': 'අපි මුලින්ම "{topic}" එකට බලමු. ඔබ "{audience}" නම්, ඔබ මුලින්ම දකින්නේ කුමන කොටස්ද? සම්පූර්ණ පින්තූරයේ දළ වශයෙන් ඇතුළත් වන්නේ: {branches}. අපි ප්‍රශ්න අසමින් ප්‍රශ්නවලට පිළිතුරු දෙමින් පහළට ගියෙමු.',
-  'canvas.mindClassroom.lecture.script.overview.socratic': 'නිගමනය තවමත් මතක තබා ගැනීමට ඉක්මන් නොවන්න. "{topic}" සමඟ මුහුණ දී ඇති, පින්තූරයක් සෑදීම වටී යැයි ඔබ සිතන්නේ ඇයි? අපි "{mastery}" හි ගැඹුර අනුගමනය කර මෙම ශාඛා වලින් අසන්නෙමු: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.fast': '"{topic}" ({audience}) ඉක්මනින් බලන්න. කඳ: {branches}. ඊළඟට, එකින් එක ලක්ෂ්යයට ළඟා වන්න.',
-  'canvas.mindClassroom.lecture.script.overview.close_read': 'දැඩි කියවීම විවෘත කිරීම: තේමාව "{topic}" වේ. කරුණාකර සමස්ත ව්‍යුහය පළමුව ග්‍රහණය කර ගන්න - {branches} - ඉන්පසු එය එක් එක් ශාඛාව තුළ ප්‍රවේශමෙන් කියවන්න. ප්‍රේක්ෂක සැකසුම: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.examples': 'උදාහරණයක් සමඟ ආරම්භ කරන්න. "{topic}" තේමාව ජීවිතයේ හෝ පන්ති කාමරයේ දර්ශනයක් ලෙස සැලකිය හැකිය; සම්පූර්ණ පින්තූරයේ අතු විවිධ දර්ශන වැනි ය: {branches}. ප්‍රේක්ෂකයින්: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'පරීක්ෂණ ලකුණු පිළිබඳ දළ විශ්ලේෂණය: "{topic}". දළ සටහනට අනුව ප්‍රධාන කරුණු සටහන් කරන්න——{branches}. දුෂ්කරතාව "{audience}" වෙත පෙළගස්වා ඇති අතර රිද්මය "{mastery}" වේ.',
-  'canvas.mindClassroom.lecture.script.branch.classroom': 'ශාඛාව {index}/{total}: "{title}" බලන්න. ඊට යටින්: {children}. සමස්තයක් ලෙස මෙම කොටසෙහි කාර්යභාරය අවබෝධ කර ගැනීමට කරුණාකර සිතියම් ස්ථානය වෙත යොමු වන්න.',
-  'canvas.mindClassroom.lecture.script.branch.story': 'කතාව {index} "{title}" පරිච්ඡේදයට ළඟා වේ. මෙම පරිච්ඡේදයේ දිස් විය: {children}. ඔවුන් පින්තූරයේ සමස්ත කුමන්ත්රණය ඉදිරියට ගෙන යන ආකාරය ගැන සිතා බලන්න.',
-  'canvas.mindClassroom.lecture.script.branch.dialogue': 'මම මෙය ඔබෙන් අසමි: ඔබ "{title}" සඳහන් කරන විට, ඔබ සිතන්නේ කුමක්ද? රූප සටහන ලබා දෙන්නේ: {children}. අපි සංසන්දනය කරමු ({index}/{total}).',
-  'canvas.mindClassroom.lecture.script.branch.socratic': 'පසු විපරම් ප්‍රශ්නය: "{title}" වෙනම ශාඛාවක් විය යුත්තේ ඇයි? "{children}" උප ලක්ෂ්‍යය සමඟ එහි සම්බන්ධය කුමක්ද? කරුණාකර පළමුව ඔබම පිළිතුරු දෙන්න, ඉන්පසු සිතියම වෙත යොමු වන්න ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    'හෙලෝ, පන්තියේ මිතුරන්. අද අපි "{topic}" අවට ඉගෙන ගනිමින්, "{audience}" ප්‍රේක්ෂකයන්ට මුහුණ දෙමින්, "{mastery}" වේගයෙන් දිගහැරෙමින් සිටිමු. සම්පූර්ණ පින්තූරයට ප්‍රධාන වශයෙන් ඇතුළත් වන්නේ: {branches}. මුලින්ම සමස්ත පින්තූරය දෙස බලන්න, ඉන්පසු එය කෑල්ලෙන් වෙන් කරන්න.',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    'මුලින්ම කතාවක මාතෘකාව ලෙස "{topic}" සිතන්න. "{audience}" ට මුහුණ දෙමින්, අපි සම්පූර්ණ පින්තූරයේ සිට විස්තර වෙත යන්නෙමු: කතාවේ මෙම පරිච්ඡේද ඇත-{branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    'අපි මුලින්ම "{topic}" එකට බලමු. ඔබ "{audience}" නම්, ඔබ මුලින්ම දකින්නේ කුමන කොටස්ද? සම්පූර්ණ පින්තූරයේ දළ වශයෙන් ඇතුළත් වන්නේ: {branches}. අපි ප්‍රශ්න අසමින් ප්‍රශ්නවලට පිළිතුරු දෙමින් පහළට ගියෙමු.',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    'නිගමනය තවමත් මතක තබා ගැනීමට ඉක්මන් නොවන්න. "{topic}" සමඟ මුහුණ දී ඇති, පින්තූරයක් සෑදීම වටී යැයි ඔබ සිතන්නේ ඇයි? අපි "{mastery}" හි ගැඹුර අනුගමනය කර මෙම ශාඛා වලින් අසන්නෙමු: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    '"{topic}" ({audience}) ඉක්මනින් බලන්න. කඳ: {branches}. ඊළඟට, එකින් එක ලක්ෂ්යයට ළඟා වන්න.',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    'දැඩි කියවීම විවෘත කිරීම: තේමාව "{topic}" වේ. කරුණාකර සමස්ත ව්‍යුහය පළමුව ග්‍රහණය කර ගන්න - {branches} - ඉන්පසු එය එක් එක් ශාඛාව තුළ ප්‍රවේශමෙන් කියවන්න. ප්‍රේක්ෂක සැකසුම: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    'උදාහරණයක් සමඟ ආරම්භ කරන්න. "{topic}" තේමාව ජීවිතයේ හෝ පන්ති කාමරයේ දර්ශනයක් ලෙස සැලකිය හැකිය; සම්පූර්ණ පින්තූරයේ අතු විවිධ දර්ශන වැනි ය: {branches}. ප්‍රේක්ෂකයින්: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    'පරීක්ෂණ ලකුණු පිළිබඳ දළ විශ්ලේෂණය: "{topic}". දළ සටහනට අනුව ප්‍රධාන කරුණු සටහන් කරන්න——{branches}. දුෂ්කරතාව "{audience}" වෙත පෙළගස්වා ඇති අතර රිද්මය "{mastery}" වේ.',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    'ශාඛාව {index}/{total}: "{title}" බලන්න. ඊට යටින්: {children}. සමස්තයක් ලෙස මෙම කොටසෙහි කාර්යභාරය අවබෝධ කර ගැනීමට කරුණාකර සිතියම් ස්ථානය වෙත යොමු වන්න.',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    'කතාව {index} "{title}" පරිච්ඡේදයට ළඟා වේ. මෙම පරිච්ඡේදයේ දිස් විය: {children}. ඔවුන් පින්තූරයේ සමස්ත කුමන්ත්රණය ඉදිරියට ගෙන යන ආකාරය ගැන සිතා බලන්න.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    'මම මෙය ඔබෙන් අසමි: ඔබ "{title}" සඳහන් කරන විට, ඔබ සිතන්නේ කුමක්ද? රූප සටහන ලබා දෙන්නේ: {children}. අපි සංසන්දනය කරමු ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    'පසු විපරම් ප්‍රශ්නය: "{title}" වෙනම ශාඛාවක් විය යුත්තේ ඇයි? "{children}" උප ලක්ෂ්‍යය සමඟ එහි සම්බන්ධය කුමක්ද? කරුණාකර පළමුව ඔබම පිළිතුරු දෙන්න, ඉන්පසු සිතියම වෙත යොමු වන්න ({index}/{total}).',
   'canvas.mindClassroom.lecture.script.branch.fast': '"{title}" → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read': '"{title}" දැඩි ලෙස කියවන්න. කරුණාකර යටත් තොරතුරු එකින් එක කියවන්න: {children}. මෙම ශාඛාව {index}/{total} ඡේදයේ ඇත. වචන සහ මට්ටම කෙරෙහි අවධානය යොමු කරන්න.',
-  'canvas.mindClassroom.lecture.script.branch.examples': '"{title}" තේරුම් ගැනීමට උදවු කිරීමට උදාහරණයක් දෙන්න: ඔබට එය {children} සමඟ නිශ්චිත දර්ශනයක් ලෙස සිතිය හැක. අපි {index}/{total} ශාඛාවේ සිටිමු.',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'පරීක්ෂණ ලක්ෂ්‍යය {index}/{total}: "{title}". යටත් ලකුණු: {children}. සමාලෝචනය කරන විට, පළමුව මාතෘකාව කටපාඩම් කර පසුව විස්තර පුරවන්න.',
-  'canvas.mindClassroom.lecture.script.closing.first_look': 'සමස්ත සමාලෝචනය: අපි දැන් "{topic}" හි ඇටසැකිල්ල දැන ගත්තෙමු. ඔබ සම්පූර්ණ පින්තූරය නැවත පරිලෝකනය කර, ඔබට තවමත් නුහුරු කරුණු දෙකක් හෝ තුනක් සලකුණු කර ඊළඟ වතාවේ එය ආරම්භ කිරීම රෙකමදාරු කරනු ලැබේ.',
-  'canvas.mindClassroom.lecture.script.closing.review': 'සමාලෝචන නිගමනය: "{topic}" පොත වසා දැමීමෙන් ඔබට ප්‍රධාන කරුණු නැවත පැවසිය හැකිද? එක් කොටසක් සිරවී ඇත්නම්, සිතියමේ ඇති කොටස වෙත ආපසු ගොස් නැවත එය හරහා යන්න.',
-  'canvas.mindClassroom.lecture.script.closing.teach': 'පාඩම් සකස් කිරීම සහ අවසන් කිරීම: "{topic}" සිට "{audience}" දක්වා උගන්වන විට, ඔබට සිතියමේ අනුපිළිවෙල අනුගමනය කළ හැකිය: විවෘත කිරීම - පුළුල් කිරීම - වසා දැමීම. ඔබට යම් ශාඛාවක් පන්ති ප්‍රශ්න වලට බෙදිය හැකිය.',
-  'canvas.mindMapSideToolbar.oneSentenceIntro': 'මාතෘකාවක් හෝ සංස්කරණ ඉල්ලීමක් එක් වාක්‍යයකින් විස්තර කර සිතියම සෑදීම හෝ පිරිමැසීම',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    '"{title}" දැඩි ලෙස කියවන්න. කරුණාකර යටත් තොරතුරු එකින් එක කියවන්න: {children}. මෙම ශාඛාව {index}/{total} ඡේදයේ ඇත. වචන සහ මට්ටම කෙරෙහි අවධානය යොමු කරන්න.',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    '"{title}" තේරුම් ගැනීමට උදවු කිරීමට උදාහරණයක් දෙන්න: ඔබට එය {children} සමඟ නිශ්චිත දර්ශනයක් ලෙස සිතිය හැක. අපි {index}/{total} ශාඛාවේ සිටිමු.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    'පරීක්ෂණ ලක්ෂ්‍යය {index}/{total}: "{title}". යටත් ලකුණු: {children}. සමාලෝචනය කරන විට, පළමුව මාතෘකාව කටපාඩම් කර පසුව විස්තර පුරවන්න.',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    'සමස්ත සමාලෝචනය: අපි දැන් "{topic}" හි ඇටසැකිල්ල දැන ගත්තෙමු. ඔබ සම්පූර්ණ පින්තූරය නැවත පරිලෝකනය කර, ඔබට තවමත් නුහුරු කරුණු දෙකක් හෝ තුනක් සලකුණු කර ඊළඟ වතාවේ එය ආරම්භ කිරීම රෙකමදාරු කරනු ලැබේ.',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    'සමාලෝචන නිගමනය: "{topic}" පොත වසා දැමීමෙන් ඔබට ප්‍රධාන කරුණු නැවත පැවසිය හැකිද? එක් කොටසක් සිරවී ඇත්නම්, සිතියමේ ඇති කොටස වෙත ආපසු ගොස් නැවත එය හරහා යන්න.',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    'පාඩම් සකස් කිරීම සහ අවසන් කිරීම: "{topic}" සිට "{audience}" දක්වා උගන්වන විට, ඔබට සිතියමේ අනුපිළිවෙල අනුගමනය කළ හැකිය: විවෘත කිරීම - පුළුල් කිරීම - වසා දැමීම. ඔබට යම් ශාඛාවක් පන්ති ප්‍රශ්න වලට බෙදිය හැකිය.',
+  'canvas.mindMapSideToolbar.oneSentenceIntro':
+    'මාතෘකාවක් හෝ සංස්කරණ ඉල්ලීමක් එක් වාක්‍යයකින් විස්තර කර සිතියම සෑදීම හෝ පිරිමැසීම',
   'canvas.mindMapSideToolbar.documentSummary': 'ලේඛන සාරාංශය',
-  'fileCenter.intro': 'පැකේජයක් යනු මෙම රූප සටහන සඳහා සකස් කරන ලද මූලාශ්‍ර සමූහයකි. ගොනු, සටහන් හෝ වෙබ් පිටු එකතු කරන්න - රූප සටහන මෙම මූලාශ්‍රවලින් එහි ශාඛා සම්පූර්ණ කරයි.',
+  'fileCenter.intro':
+    'පැකේජයක් යනු මෙම රූප සටහන සඳහා සකස් කරන ලද මූලාශ්‍ර සමූහයකි. ගොනු, සටහන් හෝ වෙබ් පිටු එකතු කරන්න - රූප සටහන මෙම මූලාශ්‍රවලින් එහි ශාඛා සම්පූර්ණ කරයි.',
   'fileCenter.defaultPackageName': 'නම් නොකළ පැකේජය',
   'fileCenter.packageNameLabel': 'පැකේජයේ නම',
   'fileCenter.createPackage': 'පැකේජයක් සාදන්න',
   'fileCenter.deletePackage': 'පැකේජය මකන්න',
-  'fileCenter.confirmDeletePackage': 'මෙම පැකේජය සහ එහි සියලු මූලාශ්‍ර මකන්නද? මෙය ආපසු හැරවිය නොහැක.',
+  'fileCenter.confirmDeletePackage':
+    'මෙම පැකේජය සහ එහි සියලු මූලාශ්‍ර මකන්නද? මෙය ආපසු හැරවිය නොහැක.',
   'fileCenter.corpusStatus': '{total} මූලාශ්‍රවලින් {completed} සුචිගත කර ඇත',
   'fileCenter.noSources': 'තවමත් මූලාශ්‍ර නැත. එකක් පහතින් එකතු කරන්න.',
   'fileCenter.addSource': 'මූලාශ්රය එකතු කරන්න',
@@ -1090,8 +1264,10 @@ export default {
   'fileCenter.pasteTitlePlaceholder': 'මාතෘකාව (විකල්ප)',
   'fileCenter.pastePlaceholder': 'මූලාශ්‍රයක් ලෙස එක් කිරීමට සටහන් හෝ පෙළ අලවන්න...',
   'fileCenter.webUrlPlaceholder': 'https://example.com/article',
-  'fileCenter.webContentPlaceholder': 'මූලාශ්‍රයක් ලෙස සුචිගත කිරීමට පිටු පෙළ අලවන්න හෝ ටයිප් කරන්න...',
-  'fileCenter.saveDiagramForRag': 'පැකේජය සම්බන්ධ කිරීමට මෙම රූප සටහන සුරකින්න සහ RAG ලබා ගැනීම සබල කරන්න.',
+  'fileCenter.webContentPlaceholder':
+    'මූලාශ්‍රයක් ලෙස සුචිගත කිරීමට පිටු පෙළ අලවන්න හෝ ටයිප් කරන්න...',
+  'fileCenter.saveDiagramForRag':
+    'පැකේජය සම්බන්ධ කිරීමට මෙම රූප සටහන සුරකින්න සහ RAG ලබා ගැනීම සබල කරන්න.',
   'fileCenter.statusReady': 'සූදානම් · RAG සක්‍රීයයි',
   'fileCenter.statusPending': 'එකතු කරන ලදී',
   'fileCenter.statusIndexing': 'සුචිගත කරමින්...',
@@ -1108,10 +1284,14 @@ export default {
   'canvas.mindMapSideToolbar.closeOutline': 'දළ සටහන වසන්න',
   'canvas.mindMapSideToolbar.outlineEmpty': 'තවම නෝඩ් නැත',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI ජනනය',
-  'canvas.mindMapSideToolbar.outlineEditHint': 'පේළිගතව සංස්කරණය කිරීමට ඕනෑම පේළියක් දෙවරක් ක්ලික් කරන්න',
-  'canvas.mindMapSideToolbar.outlineIntro': 'රූපරේඛාවේ ව්‍යුහය සංස්කරණය කරන්න — නැවත ඇණවුම් කිරීමට අදින්න, තොඩිපිටිතුව එකතු කිරීමට පේළි අලවන්න',
-  'canvas.mindMapSideToolbar.outlineDragHint': 'නැවත ඇණවුම් කිරීමට අදින්න; සහෝදර සහෝදරියන් සඳහා උඩින්/පහළින් වැටෙන්න, කුඩා කාලයේ සිට කූඩුවට මැදට',
-  'canvas.mindMapSideToolbar.outlinePasteHint': 'තොග වශයෙන් සහෝදර නෝඩ් එක් කිරීමට නෝඩයක් තෝරා බහු පේළි පෙළ අලවන්න',
+  'canvas.mindMapSideToolbar.outlineEditHint':
+    'පේළිගතව සංස්කරණය කිරීමට ඕනෑම පේළියක් දෙවරක් ක්ලික් කරන්න',
+  'canvas.mindMapSideToolbar.outlineIntro':
+    'රූපරේඛාවේ ව්‍යුහය සංස්කරණය කරන්න — නැවත ඇණවුම් කිරීමට අදින්න, තොඩිපිටිතුව එකතු කිරීමට පේළි අලවන්න',
+  'canvas.mindMapSideToolbar.outlineDragHint':
+    'නැවත ඇණවුම් කිරීමට අදින්න; සහෝදර සහෝදරියන් සඳහා උඩින්/පහළින් වැටෙන්න, කුඩා කාලයේ සිට කූඩුවට මැදට',
+  'canvas.mindMapSideToolbar.outlinePasteHint':
+    'තොග වශයෙන් සහෝදර නෝඩ් එක් කිරීමට නෝඩයක් තෝරා බහු පේළි පෙළ අලවන්න',
   'canvas.mindMapPaste.inserted': '{count} සහෝදර නෝඩ(ය) ඇතුළු කරන ලදී',
   'canvas.mindMapPaste.truncated': 'රේඛා සීමාවට ළඟා විය - පළමු පේළි 50 පමණක් ඇතුළත් කරන ලදී',
   'canvas.mindMapSideToolbar.realtimeSync': 'සජීවී සමමුහුර්තකරණය',
@@ -1121,42 +1301,52 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'ශාඛාව මකන්න',
   'canvas.mindMapSideToolbar.expandBranch': 'ශාඛාව පුළුල් කරන්න',
   'canvas.mindMapSideToolbar.collapseBranch': 'ශාඛාව හකුළන්න',
-  'canvas.mindMapSideToolbar.aiGenerateDesc': 'වත්මන් මාතෘකාවෙන් මනස සිතියම එක වාක්‍යයකින් පුළුල් කරන්න.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc':
+    'වත්මන් මාතෘකාවෙන් මනස සිතියම එක වාක්‍යයකින් පුළුල් කරන්න.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'ඉගෙනුම් පත්‍රිකාව සබල කරන්න',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'ඉගෙනුම් පත්‍රිකාවෙන් පිටවන්න',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'සම්පූර්ණ රූප සටහන ප්‍රතිසාධනය කරන්න',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
     'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro': 'පුහුණුවීම් සහ සමාලෝචනය සඳහා ඉගෙනුම් පත්‍රිකාවක් සාදන ආකාරය තෝරන්න.',
+  'canvas.mindMapSideToolbar.learningSheetIntro':
+    'පුහුණුවීම් සහ සමාලෝචනය සඳහා ඉගෙනුම් පත්‍රිකාවක් සාදන ආකාරය තෝරන්න.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
     'Blank every node except the center topic; reference answers appear below the diagram.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'අහඹු හිස් තැන්',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'නෝඩ් වලින් 20% ක් පමණ අහඹු ලෙස හිස් කරයි; පිළිතුරු රූප සටහනට පහළින් දිස්වේ.',
-  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} නෝඩ(ය) හිස් කර ඇත · Esc ඉවත් කිරීමට',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
+    'නෝඩ් වලින් 20% ක් පමණ අහඹු ලෙස හිස් කරයි; පිළිතුරු රූප සටහනට පහළින් දිස්වේ.',
+  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint':
+    '{count} නෝඩ(ය) හිස් කර ඇත · Esc ඉවත් කිරීමට',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'අභිරුචි හිස්',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'කර්සරය මිටියක් බවට පත් වේ - හිස් කිරීමට නෝඩ් ක්ලික් කරන්න; ප්‍රතිසාධනය කිරීමට නැවත ක්ලික් කරන්න.',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
+    'කර්සරය මිටියක් බවට පත් වේ - හිස් කිරීමට නෝඩ් ක්ලික් කරන්න; ප්‍රතිසාධනය කිරීමට නැවත ක්ලික් කරන්න.',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'සක්‍රිය · {count} නෝඩ(ය) හිස් කර ඇත',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'ප්‍රකාරය තෝරන්න · කැන්වසය මත නෝඩ් ක්ලික් කරන්න',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
+    'ප්‍රකාරය තෝරන්න · කැන්වසය මත නෝඩ් ක්ලික් කරන්න',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'අභිරුචි හිස් මාදිලිය',
-  'canvas.mindMapSideToolbar.learningSheetPickHint': 'හිස් කිරීමට ක්ලික් කරන්න, ප්‍රතිසාධනය කිරීමට නැවත ක්ලික් කරන්න · {count} හිස් කළ · පිටවීමට Esc',
+  'canvas.mindMapSideToolbar.learningSheetPickHint':
+    'හිස් කිරීමට ක්ලික් කරන්න, ප්‍රතිසාධනය කිරීමට නැවත ක්ලික් කරන්න · {count} හිස් කළ · පිටවීමට Esc',
   'canvas.mindMapSideToolbar.learningSheetPickDone': 'කළා',
-  'canvas.mindMapSideToolbar.learningSheetProtectedNode': 'මාතෘකාව සහ ව්‍යුහාත්මක නෝඩ් හිස් කළ නොහැක',
+  'canvas.mindMapSideToolbar.learningSheetProtectedNode':
+    'මාතෘකාව සහ ව්‍යුහාත්මක නෝඩ් හිස් කළ නොහැක',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': 'හිස් නෝඩය',
   'canvas.mindMapSideToolbar.learningSheetRandomBlankHistory': 'අහඹු හිස් නෝඩ්',
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': 'නෝඩ් පෙළ ප්‍රතිසාධනය කරන්න',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': 'යොමු පිළිතුරු සඟවන්න',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': 'යොමු පිළිතුරු තබා ගන්න',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': 'වසා ඇති විට, පිළිතුර knockout ප්රදේශයේ කැන්වසය මත දර්ශනය නොවේ',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
+    'වසා ඇති විට, පිළිතුර knockout ප්රදේශයේ කැන්වසය මත දර්ශනය නොවේ',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'කැන්වස් පිළිතුරු',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': 'පෙන්වන්න',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': 'සඟවන්න',
   'canvas.mindMapSideToolbar.learningSheetAnswersShortcut': 'කෙටි මග: Ctrl + Shift + H',
   'canvas.mindMapSideToolbar.openMindmate': 'MindMate විවෘත කරන්න',
   'canvas.toolbar.learningSheetExportNudgeTitle': 'ඉගෙනුම් පත්‍රිකාවක් ලෙස අපනයනය කරන්න',
-  'canvas.toolbar.learningSheetExportNudgeDesc': 'මුද්‍රණය කිරීමට හෝ බෙදා ගැනීමට PNG හෝ PDF අපනයනය කරන්න.',
+  'canvas.toolbar.learningSheetExportNudgeDesc':
+    'මුද්‍රණය කිරීමට හෝ බෙදා ගැනීමට PNG හෝ PDF අපනයනය කරන්න.',
   'canvas.toolbar.learningSheetExportNudgeDismiss': 'තේරුම් ගත්තා ද',
   'canvas.toolbar.learningSheetExportNudgeNeverRemind': 'ආයෙ මතක් කරන්න එපා',
   'diagram.flow.newCause': 'නව හේතුව',
@@ -1247,7 +1437,8 @@ export default {
   'editor.redo': 'නැවත කරන්න',
   'editor.saveDiagram': 'රූප සටහන සුරකින්න',
   'editor.selectDiagramType': 'රූප සටහන් වර්ගය තෝරන්න',
-  'editor.slotsFull': 'Space සම්පුර්ණයි, මේ මොහොතේ ස්වයංක්‍රීයව සුරැකිය නොහැක. වැඩි ඉඩක් නිදහස් කිරීමට කරුණාකර පවතින රූප සටහන් මකන්න.',
+  'editor.slotsFull':
+    'Space සම්පුර්ණයි, මේ මොහොතේ ස්වයංක්‍රීයව සුරැකිය නොහැක. වැඩි ඉඩක් නිදහස් කිරීමට කරුණාකර පවතින රූප සටහන් මකන්න.',
   'editor.undo': 'අහෝසි කරන්න',
   'editor.zoomIn': 'විශාලනය කරන්න',
   'editor.zoomOut': 'විශාලනය කරන්න',
@@ -1287,7 +1478,8 @@ export default {
   'landing.diagramGrid.tree_map.title': 'වෘක්ෂ සිතියම',
   'landing.diagramGrid.voice_notes.desc': 'ජනනය කළ සිතියම පටිගත කිරීම',
   'landing.diagramGrid.voice_notes.title': 'හඬ සටහන්',
-  'landing.template.freePlaceholder': 'ඔබේ මාතෘකාව හෝ ව්‍යුහය විස්තර කරන්න (ශාඛා, පියවර, ප්‍රවර්ග...) නැතහොත් පහත අච්චුවක් තෝරන්න...',
+  'landing.template.freePlaceholder':
+    'ඔබේ මාතෘකාව හෝ ව්‍යුහය විස්තර කරන්න (ශාඛා, පියවර, ප්‍රවර්ග...) නැතහොත් පහත අච්චුවක් තෝරන්න...',
   'landing.template.slot.criterion': 'වර්ගීකරණය',
   'landing.template.slot.event': 'සිදුවීම',
   'landing.template.slot.itemA': 'අයිතමය A',
@@ -1319,10 +1511,12 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'පාසල් සැසි පූරණය කළ නොහැකි විය',
   'mindgraphLanding.networkError': 'ජාල දෝෂයකි',
   'mindgraphLanding.networkErrorJoin': 'ජාල දෝෂයක්, සම්බන්ධ වීමට අසමත් විය',
-  'mindgraphLanding.orgSessionsEmpty': 'දැන් පාසල් සැසි නැත. සගයකු කැන්වසය මත "පාසල් සහයෝගීතාවය" ආරම්භ කළ යුතුය.',
+  'mindgraphLanding.orgSessionsEmpty':
+    'දැන් පාසල් සැසි නැත. සගයකු කැන්වසය මත "පාසල් සහයෝගීතාවය" ආරම්භ කළ යුතුය.',
   'mindgraphLanding.participantsOnline': '{n} සමඟ අමුත්තන්',
   'mindgraphLanding.schoolCollab': 'පාසල් සහයෝගීතාව',
-  'mindgraphLanding.sharedCodeHint': 'ඔවුන්ගේ සැසියට සම්බන්ධ වීමට ආරාධනා කේතය (xxx-xxx) ඇතුළු කරන්න.',
+  'mindgraphLanding.sharedCodeHint':
+    'ඔවුන්ගේ සැසියට සම්බන්ධ වීමට ආරාධනා කේතය (xxx-xxx) ඇතුළු කරන්න.',
   'mindgraphLanding.sharedCollab': 'හවුල් සහයෝගීතාව',
   'mindgraphLanding.joinDiagramEdit': 'රූප සටහන් සංස්කරණයට සම්බන්ධ වන්න',
   'mindgraphLanding.welcome': 'ආයුබෝවන් {username}, මම ඔබේ MindGraph AI දෘශ්‍ය චින්තන සහායකයා',
@@ -1332,6 +1526,7 @@ export default {
   'canvasPage.collabParticipantsAria': 'සහයෝගීතා සහභාගිවන්නන්',
   'canvasPage.collabConnected': 'සම්බන්ධයි',
   'canvas.topBar.viewOnly': 'බැලීම පමණි',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': 'තව',
   'canvas.ribbon.file': 'ලේඛනය',
   'canvas.ribbon.nodes': 'නෝඩය',
@@ -1401,6 +1596,17 @@ export default {
   'canvas.ribbon.tip.collabOrg': 'අපගේ පාසලේ සගයන්ට එකට සංස්කරණය කිරීමට ආරාධනා කරන්න',
   'canvas.ribbon.tip.collabCross': 'මෙම සිතියම සංස්කරණය කිරීමට පාසල් හරහා සහයෝගයෙන් කටයුතු කරන්න',
   'canvas.ribbon.tip.collabOff': 'වත්මන් සහයෝගිතා සැසිය අවසන් කරන්න',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': 'තෝරාගත් නෝඩ් පෙළ තද කරන්න',
   'canvas.ribbon.tip.italic': 'තෝරාගත් නෝඩ් පෙළ ඇල අකුරු වලට සකසන්න',
   'canvas.ribbon.tip.alignLeft': 'නෝඩ් පෙළ වමට පෙළගස්වා ඇත',
@@ -1452,12 +1658,14 @@ export default {
   'canvas.ribbon.docGenerate': 'ලේඛන උත්පාදනය',
   'canvas.ribbon.webGenerate': 'වෙබ් සබැඳි උත්පාදනය',
   'canvas.ribbon.voiceSummary': 'පටිගත කිරීමේ සාරාංශය',
-  'canvas.ribbon.sourceLocked': 'වත්මන් සිතියම මූලාශ්‍රය ලෙස {source} භාවිතා කර ඇත. වෙනත් උත්පාදන ක්‍රමයකට වෙනස් වීමට පෙර කරුණාකර නව සිතියමක් සාදන්න.',
+  'canvas.ribbon.sourceLocked':
+    'වත්මන් සිතියම මූලාශ්‍රය ලෙස {source} භාවිතා කර ඇත. වෙනත් උත්පාදන ක්‍රමයකට වෙනස් වීමට පෙර කරුණාකර නව සිතියමක් සාදන්න.',
   'canvas.ribbon.sourceKind.doc': 'ලේඛනය',
   'canvas.ribbon.sourceKind.web': 'වෙබ් සබැඳිය',
   'canvas.ribbon.sourceKind.voice': 'පටිගත කිරීම',
   'canvas.ribbon.assocLine': 'ආශ්රිත රේඛාව',
-  'canvas.ribbon.assocLineHint': 'සම්බන්ධ වීමට වෙනත් නෝඩයක් මත ක්ලික් කරන්න. අවලංගු කිරීමට Esc හෝ හිස් කැන්වසය.',
+  'canvas.ribbon.assocLineHint':
+    'සම්බන්ධ වීමට වෙනත් නෝඩයක් මත ක්ලික් කරන්න. අවලංගු කිරීමට Esc හෝ හිස් කැන්වසය.',
   'canvas.ribbon.assocLineSameSide': 'සංගම් රේඛා සම්බන්ධ කළ හැක්කේ එකම පැත්තේ ඇති නෝඩ් පමණි',
   'canvas.ribbon.assocLineDelete': 'සම්බන්ධිත රේඛා මකන්න',
   'canvas.ribbon.summary': 'සාරාංශය',
@@ -1465,7 +1673,8 @@ export default {
   'canvas.ribbon.insertIcon': 'නිරූපකය',
   'canvas.ribbon.insertLink': 'සබැඳිය',
   'canvas.ribbon.makeLearningSheet': 'පාඩම් පත්‍රිකාවක් සාදන්න',
-  'canvas.ribbon.makeLearningSheetHint': 'සමාලෝචනය වඩාත් කාර්යක්ෂම කිරීමට එක් ක්ලික් කිරීමකින් අධ්‍යයන පත්‍රිකා සාදන්න',
+  'canvas.ribbon.makeLearningSheetHint':
+    'සමාලෝචනය වඩාත් කාර්යක්ෂම කිරීමට එක් ක්ලික් කිරීමකින් අධ්‍යයන පත්‍රිකා සාදන්න',
   'canvas.ribbon.selectTwoNodes': 'කරුණාකර පළමුව නෝඩ් දෙකක් තෝරන්න',
   'canvas.ribbon.insertComingSoon': 'ඇතුළත් කිරීමේ හැකියාව ඉක්මනින් ලබා ගත හැකි වනු ඇත',
   'canvas.ribbon.summaryNeedSiblings': 'කරුණාකර එකම මාපිය නෝඩය යටතේ අඛණ්ඩ නෝඩ් තෝරන්න',
@@ -1477,7 +1686,8 @@ export default {
   'canvas.ribbon.imageUrl': 'රූප ලිපිනය',
   'canvas.ribbon.imagePick': 'පින්තූරය තෝරන්න',
   'canvas.ribbon.imageInvalid': 'කරුණාකර වලංගු රූප ලිපිනයක් ඇතුළු කරන්න හෝ ගොනුවක් තෝරන්න',
-  'canvas.ribbon.imageTooLarge': 'රූපය විශාල වැඩියි, කරුණාකර කුඩා ගොනුවකට වෙනස් කරන්න හෝ URL භාවිතා කරන්න',
+  'canvas.ribbon.imageTooLarge':
+    'රූපය විශාල වැඩියි, කරුණාකර කුඩා ගොනුවකට වෙනස් කරන්න හෝ URL භාවිතා කරන්න',
   'canvas.ribbon.imageConfirm': 'පින්තූරය එකතු කරන්න',
   'canvas.ribbon.clearIcon': 'නිරූපකය ඉවත් කරන්න',
   'canvas.ribbon.openLink': 'සබැඳිය විවෘත කරන්න',
@@ -1500,19 +1710,23 @@ export default {
   'canvas.ribbon.aiHero.chat.line2': 'සංවාද ආයාත කර එක් ක්ලික් කිරීමකින් සිතියම් ජනනය කරන්න',
   'canvas.ribbon.aiHero.classroom.ribbon': 'ඉගෙනුම් කෞතුක වස්තුව',
   'canvas.ribbon.aiHero.classroom.title': 'චින්තන දේශන ශාලාව විවෘත කරන්න',
-  'canvas.ribbon.aiHero.classroom.line1': 'AI ගුරුවරයාට මෙම මනස සිතියම වටා ඔබ සමඟ කතා කිරීමට ඉඩ දෙන්න',
+  'canvas.ribbon.aiHero.classroom.line1':
+    'AI ගුරුවරයාට මෙම මනස සිතියම වටා ඔබ සමඟ කතා කිරීමට ඉඩ දෙන්න',
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'වරහන හිස් කරන්න',
   'canvas.ribbon.aiHero.learningSheet.title': 'හිස් වරහන් රූප සටහන',
-  'canvas.ribbon.aiHero.learningSheet.line1': 'පන්තිකාමර පුහුණුවීම් සහ සමාලෝචනය සඳහා සුදුසු අහඹු හෝ අභිරුචි කළ හිස් කිරීම තෝරන්න',
+  'canvas.ribbon.aiHero.learningSheet.line1':
+    'පන්තිකාමර පුහුණුවීම් සහ සමාලෝචනය සඳහා සුදුසු අහඹු හෝ අභිරුචි කළ හිස් කිරීම තෝරන්න',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'මොළය අවුල් කිරීම',
   'canvas.ribbon.aiHero.brainstorm.title': 'AI මොළය අවුල් කිරීම',
   'canvas.ribbon.aiHero.brainstorm.line1': 'ශාඛා යෝජනා උත්පාදනය කිරීමට නෝඩය තෝරන්න',
-  'canvas.ribbon.aiHero.brainstorm.line2': 'එය පරීක්ෂා කර එය සිතියමට යොදන්න, නැතහොත් එය කැන්වසයට ඇද දමන්න.',
+  'canvas.ribbon.aiHero.brainstorm.line2':
+    'එය පරීක්ෂා කර එය සිතියමට යොදන්න, නැතහොත් එය කැන්වසයට ඇද දමන්න.',
   'canvas.ribbon.aiHero.oneSentence.ribbon': 'සංවාදය වෙනස් කරන්න',
   'canvas.ribbon.aiHero.oneSentence.title': 'සංවාද වෙනස් කිරීම',
-  'canvas.ribbon.aiHero.oneSentence.line1': 'මාතෘකාව හෝ වෙනස් කිරීමේ ඉල්ලීම එක වාක්‍යයකින් විස්තර කරන්න',
+  'canvas.ribbon.aiHero.oneSentence.line1':
+    'මාතෘකාව හෝ වෙනස් කිරීමේ ඉල්ලීම එක වාක්‍යයකින් විස්තර කරන්න',
   'canvas.ribbon.aiHero.oneSentence.line2': 'සිතියම් බුද්ධිමත්ව ජනනය කර සකස් කරන්න',
   'canvas.ribbon.aiHero.link.ribbon': 'ඇතුල් කරන්න',
   'canvas.ribbon.aiHero.link.title': 'සබැඳිය එක් කරන්න',
@@ -1528,25 +1742,27 @@ export default {
   'canvas.hero.icon.line2': '',
   'canvas.hero.math.ribbon': 'ඇතුල් කරන්න',
   'canvas.hero.math.title': 'සූත්‍රය ඇතුළු කරන්න',
-  'canvas.hero.math.line1': 'LaTeX ඇතුළු කිරීමට සූත්‍ර යතුරු පුවරුව භාවිතා කරන්න, පසුව තහවුරු කිරීමෙන් පසු නෝඩය ලියන්න.',
+  'canvas.hero.math.line1':
+    'LaTeX ඇතුළු කිරීමට සූත්‍ර යතුරු පුවරුව භාවිතා කරන්න, පසුව තහවුරු කිරීමෙන් පසු නෝඩය ලියන්න.',
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': 'සහයෝගීතාව',
   'canvas.hero.collab.title': 'මාර්ගගත සහයෝගීතාව',
-  'canvas.hero.collab.line1': 'එකට පින්තූර වෙනස් කිරීමට සගයන්ට ආරාධනා කිරීමට අභ්‍යන්තර පාසල හෝ ආරාධනා කේත සහයෝගීතාව සබල කරන්න',
+  'canvas.hero.collab.line1':
+    'එකට පින්තූර වෙනස් කිරීමට සගයන්ට ආරාධනා කිරීමට අභ්‍යන්තර පාසල හෝ ආරාධනා කේත සහයෝගීතාව සබල කරන්න',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': 'අපනයනය කරන්න',
   'canvas.hero.worksheet.title': 'DOC/PDF වෙත අපනයනය කරන්න',
-  'canvas.hero.worksheet.line1': 'අධ්‍යයන පත්‍ර ශීර්ෂකය සහ කඩදාසි විකල්ප සකසන්න, පෙරදසුන සහ අපනයනය කරන්න',
+  'canvas.hero.worksheet.line1':
+    'අධ්‍යයන පත්‍ර ශීර්ෂකය සහ කඩදාසි විකල්ප සකසන්න, පෙරදසුන සහ අපනයනය කරන්න',
   'canvas.hero.worksheet.line2': '',
   'canvas.hero.communityExport.ribbon': 'බෙදාගන්න',
   'canvas.hero.communityExport.title': 'ප්රජාව වෙත බෙදා ගන්න',
-  'canvas.hero.communityExport.line1': 'මාතෘකාව සහ ප්‍රවර්ගය පුරවන්න, සිඟිති රූපයක් ජනනය කර එය ප්‍රකාශ කරන්න',
+  'canvas.hero.communityExport.line1':
+    'මාතෘකාව සහ ප්‍රවර්ගය පුරවන්න, සිඟිති රූපයක් ජනනය කර එය ප්‍රකාශ කරන්න',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'ප්‍රජා පළ කිරීම සංස්කරණය කරන්න',
   'canvas.hero.slotFull.ribbon': 'ගැලරිය',
   'canvas.hero.slotFull.title': 'ගැලරිය පිරී ඇත',
   'canvas.hero.slotFull.line1': 'කරුණාකර පවතින නිරූපකයක් මකා වත්මන් නිරූපකය සුරකින්න',
   'canvas.hero.slotFull.line2': '',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
-  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

@@ -5,7 +5,8 @@
 
 export default {
   'maite.title': 'Phương pháp học tập của Matt',
-  'maite.subtitle': 'Phân rã ngược · Chẩn đoán bốn giai đoạn · Khắc phục có mục tiêu · Chuyển dạng biến thể',
+  'maite.subtitle':
+    'Phân rã ngược · Chẩn đoán bốn giai đoạn · Khắc phục có mục tiêu · Chuyển dạng biến thể',
   'maite.mode.demo': 'Thử nghiệm',
   'maite.mode.inquiry': 'Khám phá',
   'maite.mode.map': 'Bản đồ',

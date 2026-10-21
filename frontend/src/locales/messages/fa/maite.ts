@@ -98,7 +98,8 @@ export default {
   'maite.toast.ocr_success': 'متن سوال از تصویر استخراج شده است',
   'maite.toast.decompose_started': 'شروع خرابی معلم...',
   'maite.toast.decompose_complete': 'تجزیه تکمیل شد',
-  'maite.toast.decompose_fallback': 'زمان پخش جریانی تمام شد، به جای آن از پاسخ کامل برای ادامه استفاده کنید...',
+  'maite.toast.decompose_fallback':
+    'زمان پخش جریانی تمام شد، به جای آن از پاسخ کامل برای ادامه استفاده کنید...',
   'maite.toast.practice_saved': 'در تمرینات اخیر ذخیره شده است',
   'maite.toast.session_created': 'جلسه کاوش ایجاد شد',
   'maite.toast.session_completed': 'جلسه کاوش کامل شد',

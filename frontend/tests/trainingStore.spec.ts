@@ -129,9 +129,7 @@ describe('training store', () => {
   })
 
   it('hydrates the hosted session so the phone remote has org_id', async () => {
-    fetchActiveTraining.mockResolvedValue(
-      snapshot({ org_id: 44, course_id: 'c1', seq: 2 })
-    )
+    fetchActiveTraining.mockResolvedValue(snapshot({ org_id: 44, course_id: 'c1', seq: 2 }))
     const store = useTrainingStore()
     await store.hydrateHostedSession()
     expect(store.snapshot.org_id).toBe(44)

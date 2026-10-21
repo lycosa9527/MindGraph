@@ -21,13 +21,15 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.personalTab': 'Şəxsi',
   'thinkingCoins.schoolTab': 'Məktəb',
   'thinkingCoins.insufficientTitle': 'Tokenlər kifayət deyil',
-  'thinkingCoins.insufficientBody': 'Aşağıdakı tapşırıqları tamamlayın və ya sonra yenidən cəhd edin',
+  'thinkingCoins.insufficientBody':
+    'Aşağıdakı tapşırıqları tamamlayın və ya sonra yenidən cəhd edin',
   'thinkingCoins.checkedInToday': 'Bu gün giriş edilib',
   'thinkingCoins.usageDoneToday': 'Bu gün tamamlanıb',
   'thinkingCoins.casePendingHint': 'Tezliklə',
   'thinkingCoins.schoolInfo': 'Məktəb planları üçün məktəb admininizlə əlaqə saxlayın',
   'thinkingCoins.school.headline': 'AI ilə düşüncə · məktəb həlləri',
-  'thinkingCoins.school.description': 'Məktəblər və təhsil müəssisələri üçün özəl yerləşdirmə, xüsusi funksiyalar və tam əməliyyat dəstəyi — miqyas, brend və məlumat təhlükəsizliyi üçün.',
+  'thinkingCoins.school.description':
+    'Məktəblər və təhsil müəssisələri üçün özəl yerləşdirmə, xüsusi funksiyalar və tam əməliyyat dəstəyi — miqyas, brend və məlumat təhlükəsizliyi üçün.',
   'thinkingCoins.school.feature.accountManager': 'Xüsusi müştəri meneceri',
   'thinkingCoins.school.feature.accountManagerDesc': 'Birəbir məsləhət',
   'thinkingCoins.school.feature.privateDeploy': 'Özəl yerləşdirmə',
@@ -63,7 +65,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Tövsiyə mükafatı',
   'thinkingCoins.reason.case_reward': 'Keys mükafatı',
   'thinkingCoins.reason.subscription_grant': 'Abunəlik krediti',
-  'thinkingCoins.dailyExpiresHint': 'Giriş mükafatları eyni gündə etibarlıdır və saat 24:00-da sıfırlanacaq',
+  'thinkingCoins.dailyExpiresHint':
+    'Giriş mükafatları eyni gündə etibarlıdır və saat 24:00-da sıfırlanacaq',
   'thinkingCoins.dailyBalanceRemaining': 'Bugünkü qeydiyyat qalıb {n}',
   'thinkingCoins.admin.tab': 'Düşüncə tokenləri',
   'thinkingCoins.admin.tasksTitle': 'Qazanc tapşırıqları',
@@ -75,7 +78,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'Saxla',
   'thinkingCoins.admin.signupGrant': 'Qeydiyyat krediti',
   'thinkingCoins.admin.dailyEarnCap': 'Gündəlik qazanc limiti',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = limitsiz; standart 135 bütün gündəlik tapşırıqlara uyğundur',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = limitsiz; standart 135 bütün gündəlik tapşırıqlara uyğundur',
   'thinkingCoins.admin.costMindmate': 'MindMate dəyəri',
   'thinkingCoins.admin.costDiagram': 'Diaqram generasiya dəyəri',
   'thinkingCoins.admin.costCanvas': 'Kətan kömək dəyəri',

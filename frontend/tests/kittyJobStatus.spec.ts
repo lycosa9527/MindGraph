@@ -118,12 +118,14 @@ describe('Kitty job status vs chat bubble', () => {
     const { messages, replyState } = makeReplyState(canvasOpen)
 
     replyState.showProgressReply('正在思考')
-    expect(resolveKittyJobStatus({
-      replyKind: 'progress',
-      hasThinkingBubble: messages.value.some((row) => row.thinking),
-      canvasGenerating: canvasOpen.value,
-      agentState: 'thinking',
-    }).bubble).toBe('thinking')
+    expect(
+      resolveKittyJobStatus({
+        replyKind: 'progress',
+        hasThinkingBubble: messages.value.some((row) => row.thinking),
+        canvasGenerating: canvasOpen.value,
+        agentState: 'thinking',
+      }).bubble
+    ).toBe('thinking')
 
     replyState.showProgressReply('主题换成「中国高等教育」了。')
     canvasOpen.value = true
@@ -153,7 +155,12 @@ describe('Kitty job status vs chat bubble', () => {
 
     replyState.showProgressReply('跟着你，全图自动补全…')
     expect(
-      replyState.showFinalReply('主题换成「中国高等教育」了。', undefined, undefined, 'update_center')
+      replyState.showFinalReply(
+        '主题换成「中国高等教育」了。',
+        undefined,
+        undefined,
+        'update_center'
+      )
     ).toBe(false)
     expect(messages.value[0]?.thinking).toBe(true)
 

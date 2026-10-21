@@ -10,7 +10,8 @@ export default {
   'training.searchOrg': '학교 검색',
   'training.teacherTotal': '{n} 선생님',
   'training.onlineNow': '현재 온라인 {n}',
-  'training.confirmStart': '처음에는 장소를 정리하고 온라인 선생님의 인원수를 확인하게 됩니다. 교실이 준비되면 강좌를 클릭하여 모든 온라인 교사를 이 수업에 참여시키세요. 학교에서는 한 번에 하나의 교육 세션만 가질 수 있습니다.',
+  'training.confirmStart':
+    '처음에는 장소를 정리하고 온라인 선생님의 인원수를 확인하게 됩니다. 교실이 준비되면 강좌를 클릭하여 모든 온라인 교사를 이 수업에 참여시키세요. 학교에서는 한 번에 하나의 교육 세션만 가질 수 있습니다.',
   'training.moduleReady': '강의실이 준비되었습니다. 강의를 시작하려면 강의를 클릭하세요.',
   'training.startFirst': '먼저 "시작"을 클릭한 후 강의실이 준비되면 강좌를 선택하세요.',
   'training.start': '시작',
@@ -81,28 +82,38 @@ export default {
   'training.builder.empty': '아직 강좌가 없습니다. 먼저 새 강좌를 만드세요.',
   'training.builder.info': '코스정보',
   'training.builder.menuLabel': 'User menu',
-  'training.builder.menuLabelHint': 'This name shows in the account menu. A click starts this course. Leave it blank to hide it.',
+  'training.builder.menuLabelHint':
+    'This name shows in the account menu. A click starts this course. Leave it blank to hide it.',
   'training.builder.menuLabelPlaceholder': 'e.g. October update',
   'training.builder.menuLabelTooLong': 'The menu name can be at most 40 characters.',
-  'training.builder.menuLabelLimit': 'The user menu is full. Remove one entry before adding another.',
+  'training.builder.menuLabelLimit':
+    'The user menu is full. Remove one entry before adding another.',
   'training.october.menu': 'October update',
   'training.october.ribbon': 'October',
   'training.october.title': 'October update',
-  'training.october.lead': 'What changed from August through now: the canvas, account, Learning Space, and courses.',
+  'training.october.lead':
+    'What changed from August through now: the canvas, account, Learning Space, and courses.',
   'training.october.canvas': 'Canvas and thinking maps',
-  'training.october.canvasBody': 'One canvas|The eight thinking maps and concept maps share its tabs.\nNode shapes|Rounded, rectangular, oval, or underlined, following the rainbow theme. A solid theme paints the whole map.\nBilingual|One generate writes the main language and a smaller second line.\nDouble bubble|Keeps at least one similarity and one difference.\nKeep adding|Enter adds the next node for whatever is selected.\nOutline and gestures|The outline and the gesture guide open on these maps.',
+  'training.october.canvasBody':
+    'One canvas|The eight thinking maps and concept maps share its tabs.\nNode shapes|Rounded, rectangular, oval, or underlined, following the rainbow theme. A solid theme paints the whole map.\nBilingual|One generate writes the main language and a smaller second line.\nDouble bubble|Keeps at least one similarity and one difference.\nKeep adding|Enter adds the next node for whatever is selected.\nOutline and gestures|The outline and the gesture guide open on these maps.',
   'training.october.explain': 'Lectures and blanks',
-  'training.october.explainBody': 'Walk the diagram|One ring, one column, one side of a comparison, one cause or effect, or one bridge pair.\nName the node|Explain calls it an association, attribute, category, step, or bridge.\nBlanks|A single click blanks a node. A double-click edits it.',
+  'training.october.explainBody':
+    'Walk the diagram|One ring, one column, one side of a comparison, one cause or effect, or one bridge pair.\nName the node|Explain calls it an association, attribute, category, step, or bridge.\nBlanks|A single click blanks a node. A double-click edits it.',
   'training.october.account': 'Account',
-  'training.october.accountBody': 'One settings window|Account, security, language, and plugins. Language applies immediately.\nAvatar|Cropped to a circle and stored online.\nStay signed in|This browser stays signed in while its login is still valid.\nSigned out|A device that was signed out cannot refresh itself back in.\nSchool|The line under the name shows the school.',
+  'training.october.accountBody':
+    'One settings window|Account, security, language, and plugins. Language applies immediately.\nAvatar|Cropped to a circle and stored online.\nStay signed in|This browser stays signed in while its login is still valid.\nSigned out|A device that was signed out cannot refresh itself back in.\nSchool|The line under the name shows the school.',
   'training.october.learning': 'Learning Space',
-  'training.october.learningBody': 'Homework images|Stored online. Opening a card lets you select, pan, and zoom.\nFirst password|Shown only while the student still has to change it, and only to the class teacher or a superadmin. After they set one, the plain copy is removed.\nOne deadline|A teacher can extend one student deadline.\nMissing picture|A card with no picture can be filled in.',
+  'training.october.learningBody':
+    'Homework images|Stored online. Opening a card lets you select, pan, and zoom.\nFirst password|Shown only while the student still has to change it, and only to the class teacher or a superadmin. After they set one, the plain copy is removed.\nOne deadline|A teacher can extend one student deadline.\nMissing picture|A card with no picture can be filled in.',
   'training.october.course': 'Courses',
-  'training.october.courseBody': 'Page by page|Voice, music, video, a locked menu or dialog, and a mascot.\nAccount menu|The menu can list the course by name, and a click starts it.\nSame page|During class, teachers can be pulled onto the page you are on.',
+  'training.october.courseBody':
+    'Page by page|Voice, music, video, a locked menu or dialog, and a mascot.\nAccount menu|The menu can list the course by name, and a click starts it.\nSame page|During class, teachers can be pulled onto the page you are on.',
   'training.october.talk': 'MindMate and Workshop',
-  'training.october.talkBody': 'Seminar stays up|It stays connected until its owner ends it.\nOrganize it|Pin, rename, or delete it, and see who has read your line.\nSave the diagram|A diagram in the seminar can be saved to the library and opened again.\nDirect messages|A workshop direct message names the other person.',
+  'training.october.talkBody':
+    'Seminar stays up|It stays connected until its owner ends it.\nOrganize it|Pin, rename, or delete it, and see who has read your line.\nSave the diagram|A diagram in the seminar can be saved to the library and opened again.\nDirect messages|A workshop direct message names the other person.',
   'training.october.school': 'School plans',
-  'training.october.schoolBody': 'Included on every plan|Trial, basic, standard, and professional include online collaboration, presentation, the browser extension, and API access.\nWhat changes|Seats, and how many diagrams the plan can store.',
+  'training.october.schoolBody':
+    'Included on every plan|Trial, basic, standard, and professional include online collaboration, presentation, the browser extension, and API access.\nWhat changes|Seats, and how many diagrams the plan can store.',
   'training.builder.groupFollow': '따르다',
   'training.builder.groupCanvas': '캔버스',
   'training.builder.groupSteps': '단계',
@@ -139,8 +150,10 @@ export default {
   'training.builder.topicChoices': '테마 옵션',
   'training.builder.topicSingle': '주제',
   'training.builder.topicRemove': '삭제',
-  'training.builder.topicDualHint': '이중 거품형 차트에는 두 개의 개체가 필요합니다. 교사는 수업 중에 이를 클릭할 수 있으며 즉시 생성됩니다.',
-  'training.builder.topicSingleHint': '각 대안에 대해 하나의 주제를 선택하십시오. 교사는 수업 중에 이를 클릭할 수 있으며 즉시 생성됩니다.',
+  'training.builder.topicDualHint':
+    '이중 거품형 차트에는 두 개의 개체가 필요합니다. 교사는 수업 중에 이를 클릭할 수 있으며 즉시 생성됩니다.',
+  'training.builder.topicSingleHint':
+    '각 대안에 대해 하나의 주제를 선택하십시오. 교사는 수업 중에 이를 클릭할 수 있으며 즉시 생성됩니다.',
   'training.builder.topicLabel': '주제',
   'training.builder.topicLabelA': '주제 A',
   'training.builder.topicLabelB': '주제 B',
@@ -158,8 +171,10 @@ export default {
   'training.playPad': '레슨 제어',
   'training.bannerFree': '무료 연습 - 원하는 것은 무엇이든 할 수 있습니다',
   'training.takeover': '인수하다',
-  'training.takeoverHint': '학교에서는 이미 지속적인 교육을 진행하고 있습니다(사회자: {name}). 온라인 교사는 모두 모집되기 때문에 학교는 한 번에 하나의 세션만 열 수 있습니다. "인계"를 클릭하거나 게임이 끝날 때까지 기다렸다가 다시 시작할 수 있습니다.',
-  'training.hostedElsewhere': '이미 다른 학교에서 세션을 주최하고 있습니다. 먼저 세션을 종료해 주세요.',
+  'training.takeoverHint':
+    '학교에서는 이미 지속적인 교육을 진행하고 있습니다(사회자: {name}). 온라인 교사는 모두 모집되기 때문에 학교는 한 번에 하나의 세션만 열 수 있습니다. "인계"를 클릭하거나 게임이 끝날 때까지 기다렸다가 다시 시작할 수 있습니다.',
+  'training.hostedElsewhere':
+    '이미 다른 학교에서 세션을 주최하고 있습니다. 먼저 세션을 종료해 주세요.',
   'training.diagramTypes': '일러스트레이션 종류',
   'training.topicOptions': '질문 옵션',
   'training.addOption': '다음에 추가',
@@ -193,11 +208,15 @@ export default {
   'training.remoteRotate': '리모컨을 사용하려면 휴대폰을 옆으로 돌려주세요.',
   'training.remoteNotesEmpty': '해당 페이지에는 강의노트가 없습니다.',
   'training.builder.mandatory': 'Required',
-  'training.builder.mandatoryHint': 'Users who have not finished this course must walk through it. Completion is saved on the account, so this course does not appear again. Each course is tracked on its own.',
-  'training.builder.mandatoryConfirm': 'This takes effect as soon as the course is saved. Every signed-in user who has not finished it will be sent through it, and will not see it again after they finish.',
+  'training.builder.mandatoryHint':
+    'Users who have not finished this course must walk through it. Completion is saved on the account, so this course does not appear again. Each course is tracked on its own.',
+  'training.builder.mandatoryConfirm':
+    'This takes effect as soon as the course is saved. Every signed-in user who has not finished it will be sent through it, and will not see it again after they finish.',
   'training.builder.alwaysPlay': 'Demo',
-  'training.builder.alwaysPlayHint': 'Plays again on every visit, even after someone finishes it. Refresh the page to try it again.',
-  'training.builder.alwaysPlayConfirm': 'This takes effect as soon as the course is saved. Every signed-in user is sent through it on every visit, even after they finish. Turn it off and people who already finished will not see it again.',
+  'training.builder.alwaysPlayHint':
+    'Plays again on every visit, even after someone finishes it. Refresh the page to try it again.',
+  'training.builder.alwaysPlayConfirm':
+    'This takes effect as soon as the course is saved. Every signed-in user is sent through it on every visit, even after they finish. Turn it off and people who already finished will not see it again.',
   'training.builder.vodLibrary': 'Online video library',
   'training.builder.vodFolder': 'Folder',
   'training.builder.vodVideo': 'Video',

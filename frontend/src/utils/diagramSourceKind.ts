@@ -30,9 +30,7 @@ export function diagramSourceKindFromIngest(
   return 'doc'
 }
 
-export function diagramSourceKindFromDocument(
-  document: SourceKindDocument
-): DiagramSourceKind {
+export function diagramSourceKindFromDocument(document: SourceKindDocument): DiagramSourceKind {
   const fromIngest = diagramSourceKindFromIngest(document.ingest_source)
   if (fromIngest) return fromIngest
   const name = (document.file_name || '').trim().toLowerCase()

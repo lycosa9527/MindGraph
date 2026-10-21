@@ -2,20 +2,18 @@
  * Full AABB overlap audit on Postgres-exported mind-maps × all five 导图样式.
  * Skips when fixtures under tmp_pg_mindmaps/ are absent.
  */
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { resolve } from 'node:path'
-
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { MIND_MAP_DIAGRAM_STYLES, type MindMapDiagramStyleId } from '@/config/mindMapDiagramStyles'
-import {
-  loadMindMapSpec,
-  nodesAndConnectionsToMindMapSpec,
-} from '@/stores/specLoader/mindMap'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode } from '@/types'
+import { must } from '@/utils/must'
 
 const FIXTURE_DIR = resolve(__dirname, '../../tmp_pg_mindmaps')
 const STYLES = MIND_MAP_DIAGRAM_STYLES.map((s) => s.id) as MindMapDiagramStyleId[]
@@ -100,10 +98,10 @@ function boxesOf(nodes: DiagramNode[]): Box[] {
     .filter((n) => n.position)
     .map((n) => ({
       id: n.id,
-      x1: n.position!.x,
-      y1: n.position!.y,
-      x2: n.position!.x + nodeWidth(n),
-      y2: n.position!.y + nodeHeight(n),
+      x1: must(n.position).x,
+      y1: must(n.position).y,
+      x2: must(n.position).x + nodeWidth(n),
+      y2: must(n.position).y + nodeHeight(n),
     }))
 }
 
@@ -156,8 +154,8 @@ describe.runIf(hasFixtures)('PG mind-map no AABB overlap', () => {
         const hits: string[] = []
         for (let i = 0; i < boxes.length; i++) {
           for (let j = i + 1; j < boxes.length; j++) {
-            const a = boxes[i]!
-            const b = boxes[j]!
+            const a = must(boxes[i])
+            const b = must(boxes[j])
             const area = overlapArea(a, b)
             if (area > 0.5) {
               overlaps += 1

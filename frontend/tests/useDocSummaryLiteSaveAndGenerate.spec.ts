@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   DOC_SUMMARY_WEB_URL_MAX_CHARS,
@@ -20,9 +21,9 @@ describe('isValidDocSummaryWebUrl', () => {
     expect(isValidDocSummaryWebUrl('')).toBe(false)
     expect(isValidDocSummaryWebUrl('ftp://example.com')).toBe(false)
     expect(isValidDocSummaryWebUrl('not a url')).toBe(false)
-    expect(isValidDocSummaryWebUrl(`https://example.com/${'x'.repeat(DOC_SUMMARY_WEB_URL_MAX_CHARS)}`)).toBe(
-      false
-    )
+    expect(
+      isValidDocSummaryWebUrl(`https://example.com/${'x'.repeat(DOC_SUMMARY_WEB_URL_MAX_CHARS)}`)
+    ).toBe(false)
   })
 })
 
@@ -139,9 +140,7 @@ describe('waitForDocSummarySourceReady', () => {
   })
 
   it('returns failed when extract fails', async () => {
-    const documents = ref<KnowledgeDocument[]>([
-      { id: 1, status: 'failed' } as KnowledgeDocument,
-    ])
+    const documents = ref<KnowledgeDocument[]>([{ id: 1, status: 'failed' } as KnowledgeDocument])
     const detailQuery = {
       refetch: vi.fn().mockResolvedValue(undefined),
     }

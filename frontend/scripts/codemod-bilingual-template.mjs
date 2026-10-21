@@ -9,11 +9,11 @@
  *   node scripts/codemod-bilingual-template.mjs
  *   node scripts/codemod-bilingual-template.mjs --check
  */
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { parse } from '@vue/compiler-sfc'
+
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-
-import { parse } from '@vue/compiler-sfc'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src')
 const CHECK = process.argv.includes('--check')
@@ -285,7 +285,10 @@ function branchTag(kind, cond, expr) {
     }
     return `<template v-else>${nested}</template>`
   }
-  if (kind === 'if') return textBranch('v-if', cond) ? `<template ${vueAttr('v-if', cond)}>{{ ${expr} }}</template>` : null
+  if (kind === 'if')
+    return textBranch('v-if', cond)
+      ? `<template ${vueAttr('v-if', cond)}>{{ ${expr} }}</template>`
+      : null
   return `<template v-else>{{ ${expr} }}</template>`
 }
 
@@ -398,7 +401,7 @@ function readTagName(tag) {
 }
 
 function extractLabelAttr(tag) {
-  const patterns = [':label="', ':label=\'', 'v-bind:label="', "v-bind:label='"]
+  const patterns = [':label="', ":label='", 'v-bind:label="', "v-bind:label='"]
   for (const prefix of patterns) {
     const at = tag.indexOf(prefix)
     if (at < 0) continue
@@ -518,7 +521,7 @@ function labelBindingFromI18n(tag) {
   const lit = /(?<!:)k="([^"]*)"/.exec(tag) ?? /(?<!:)k='([^']*)'/.exec(tag)
   const dyn = /:k="([^"]*)"/.exec(tag) ?? /:k='([^']*)'/.exec(tag)
   const params = /:params="([^"]*)"/.exec(tag) ?? /:params='([^']*)'/.exec(tag)
-  let call = ''
+  let call
   if (lit) call = `t('${lit[1].replace(/'/g, "\\'")}')`
   else if (dyn) call = `t(${dyn[1]})`
   else return null
@@ -546,7 +549,13 @@ function repairOptions(input) {
     }
     const name = input.startsWith('<ElOption', optionAt) ? 'ElOption' : 'el-option'
     const boundary = input[optionAt + name.length + 1]
-    if (boundary !== ' ' && boundary !== '\n' && boundary !== '\r' && boundary !== '>' && boundary !== '/') {
+    if (
+      boundary !== ' ' &&
+      boundary !== '\n' &&
+      boundary !== '\r' &&
+      boundary !== '>' &&
+      boundary !== '/'
+    ) {
       out += input.slice(i, optionAt + name.length)
       i = optionAt + name.length
       continue
@@ -657,13 +666,18 @@ function injectLabelKeys(source) {
     const callText = rest.slice(0, close + 1)
     const parsed = parseTExpression(callText)
     const ahead = rest.slice(callEnd, callEnd + 80)
-    if (!parsed || ahead.includes('labelKey') || enclosingObjectHas(source, at, ['borderColor', 'pointRadius'])) {
+    if (
+      !parsed ||
+      ahead.includes('labelKey') ||
+      enclosingObjectHas(source, at, ['borderColor', 'pointRadius'])
+    ) {
       out += 'label:'
       i = at + 'label:'.length
       continue
     }
     const keyBit = parsed.key != null ? attrQuote(parsed.key)?.slice(1, -1) : null
-    const keyCode = parsed.key != null && keyBit != null ? `'${parsed.key.replace(/'/g, "\\'")}'` : parsed.keyExpr
+    const keyCode =
+      parsed.key != null && keyBit != null ? `'${parsed.key.replace(/'/g, "\\'")}'` : parsed.keyExpr
     let extra = `, labelKey: ${keyCode}`
     if (parsed.params) extra += `, labelParams: ${parsed.params}`
     out += `label:${ws}${rest.slice(0, callEnd)}${extra}`
@@ -682,7 +696,7 @@ function assertFixture(name, actual, expected) {
 function selfTest() {
   assertFixture(
     'simple',
-    transformTextMustaches('<p>{{ t(\'admin.save\') }}</p>').text,
+    transformTextMustaches("<p>{{ t('admin.save') }}</p>").text,
     '<p><I18nText k="admin.save" /></p>'
   )
   assertFixture(
@@ -692,24 +706,22 @@ function selfTest() {
   )
   assertFixture(
     'params',
-    transformTextMustaches('{{ t(\'a.b\', { n: 1 }) }}').text,
+    transformTextMustaches("{{ t('a.b', { n: 1 }) }}").text,
     '<I18nText k="a.b" :params="{ n: 1 }" />'
   )
   assertFixture(
     'lowercase becomes bilingual text',
-    transformTextMustaches('{{ t(\'a\').toLowerCase() }}').text,
+    transformTextMustaches("{{ t('a').toLowerCase() }}").text,
     '<I18nText k="a" />'
   )
   assertFixture(
     'ternary',
-    transformTextMustaches('{{ loading ? t(\'a.on\') : t(\'a.off\') }}').text,
+    transformTextMustaches("{{ loading ? t('a.on') : t('a.off') }}").text,
     '<I18nText v-if="loading" k="a.on" /><I18nText v-else k="a.off" />'
   )
   assertFixture(
     'nested ternary',
-    transformTextMustaches(
-      "{{ on ? t('a.on') : off ? t('a.off') : t('a.idle') }}"
-    ).text,
+    transformTextMustaches("{{ on ? t('a.on') : off ? t('a.off') : t('a.idle') }}").text,
     '<I18nText v-if="on" k="a.on" /><template v-else><I18nText v-if="off" k="a.off" /><I18nText v-else k="a.idle" /></template>'
   )
   assertFixture(
@@ -719,21 +731,26 @@ function selfTest() {
   )
   assertFixture(
     'fallback or',
-    transformTextMustaches('{{ title || t(\'a.untitled\') }}').text,
+    transformTextMustaches("{{ title || t('a.untitled') }}").text,
     '<template v-if="title">{{ title }}</template><I18nText v-else k="a.untitled" />'
   )
   assertFixture(
     'fallback key',
-    transformTextMustaches('{{ t(`maite.errors.${errorMessage}`, t(\'maite.errors.generic\')) }}').text,
+    transformTextMustaches("{{ t(`maite.errors.${errorMessage}`, t('maite.errors.generic')) }}")
+      .text,
     '<I18nText :k="`maite.errors.${errorMessage}`" fallback-key="maite.errors.generic" />'
   )
   assertFixture(
     'fallback string',
-    transformTextMustaches('{{ t(\'canvas.toolbar.save\', \'保存\') }}').text,
+    transformTextMustaches("{{ t('canvas.toolbar.save', '保存') }}").text,
     '<I18nText k="canvas.toolbar.save" />'
   )
   const column = transformLabelProps('<el-table-column prop="a" :label="t(\'admin.name\')" />').text
-  if (!column.includes('#header') || !column.includes('k="admin.name"') || column.includes(':label=')) {
+  if (
+    !column.includes('#header') ||
+    !column.includes('k="admin.name"') ||
+    column.includes(':label=')
+  ) {
     throw new Error(`column rewrite failed: ${column}`)
   }
   const injected = injectLabelKeys("{ label: t('admin.today'), value: 'today' }").text
@@ -792,9 +809,7 @@ let filesChanged = 0
 let edits = 0
 for (const file of walk(ROOT)) {
   const source = readFileSync(file, 'utf8')
-  const result = file.endsWith('.vue')
-    ? transformVue(source, file)
-    : transformTs(source)
+  const result = file.endsWith('.vue') ? transformVue(source, file) : transformTs(source)
   if (!result.changed || result.text === source) continue
   filesChanged += 1
   edits += result.changed

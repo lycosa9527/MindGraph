@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'Кейс-Сквер',
-  'showcase.subtitle': 'Откройте для себя высококачественное обучение мышлению с использованием искусственного интеллекта и поделитесь результатами своего преподавания и исследований.',
+  'showcase.subtitle':
+    'Откройте для себя высококачественное обучение мышлению с использованием искусственного интеллекта и поделитесь результатами своего преподавания и исследований.',
   'showcase.publish': 'Опубликовать обращение',
   'showcase.searchPlaceholder': 'Поиск дел…',
   'showcase.filter.all': 'все',
@@ -29,21 +30,27 @@ export default {
   'showcase.myFavorites': 'моя коллекция',
   'showcase.myFavoritesModalTitle': 'Собранные дела',
   'showcase.myFavoritesEmpty': 'Собранных дел пока нет',
-  'showcase.myFavoritesEmptyHint': 'Когда вы нажмете «Избранное» на детали обращения или карточке, оно появится здесь.',
+  'showcase.myFavoritesEmptyHint':
+    'Когда вы нажмете «Избранное» на детали обращения или карточке, оно появится здесь.',
   'showcase.myCasesModalTitle': 'Случаи, которые я опубликовал',
-  'showcase.myCasesManageHint': 'Вы можете отозвать, удалить или изменить его прямо в списке; нажмите на дело, чтобы просмотреть подробности',
+  'showcase.myCasesManageHint':
+    'Вы можете отозвать, удалить или изменить его прямо в списке; нажмите на дело, чтобы просмотреть подробности',
   'showcase.myCasesAction.edit': 'Исправлять',
   'showcase.myCasesEmpty': 'Опубликованных случаев пока нет',
-  'showcase.myCasesEmptyHint': 'Как только дело будет опубликовано, здесь можно будет увидеть ход рассмотрения.',
+  'showcase.myCasesEmptyHint':
+    'Как только дело будет опубликовано, здесь можно будет увидеть ход рассмотрения.',
   'showcase.caseCount': 'Всего {n} случаев',
   'showcase.pendingReview': 'Ожидает рассмотрения',
   'showcase.publishModal.title': 'Опубликовать обращение',
   'showcase.publishModal.titleLabel': 'Название дела',
-  'showcase.publishModal.titleHint': 'Название должно быть кратким и ясным, его рекомендуется не превышать {max} слов.',
-  'showcase.publishModal.titlePlaceholder': 'Например: Обучение проектированию «Дня дебатов двух детей».',
+  'showcase.publishModal.titleHint':
+    'Название должно быть кратким и ясным, его рекомендуется не превышать {max} слов.',
+  'showcase.publishModal.titlePlaceholder':
+    'Например: Обучение проектированию «Дня дебатов двух детей».',
   'showcase.publishModal.descriptionLabel': 'Введение',
   'showcase.publishModal.tagsLabel': 'Этикетка',
-  'showcase.publishModal.tagsHint': 'Разделяйте несколько тегов запятыми, например: когнитивный конфликт, математика в средней школе.',
+  'showcase.publishModal.tagsHint':
+    'Разделяйте несколько тегов запятыми, например: когнитивный конфликт, математика в средней школе.',
   'showcase.publishModal.caseTypeLabel': 'Тип корпуса',
   'showcase.publishModal.subjectLabel': 'дисциплина',
   'showcase.publishModal.gradeLabel': 'оценка',
@@ -53,19 +60,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Загрузка файлов ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Загрузка {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Почти готово…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Не удалось загрузить, черновик был отозван. Повторите попытку.',
-  'showcase.publishModal.uploadCorsFailed': 'Не удалось загрузить файл в хранилище объектов (частые причины: корзина CORS не разрешает текущий веб-сайт или CSP веб-сайта не освобождает доменное имя COS). Черновик отозван, обратитесь к администратору для настройки и повторите попытку.',
-  'showcase.publishModal.uploadStorageRejected': 'Объектное хранилище отклонило эту загрузку. Черновик был отозван, повторите попытку позже; в случае повторного сбоя обратитесь к администратору.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Не удалось загрузить, черновик был отозван. Повторите попытку.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Не удалось загрузить файл в хранилище объектов (частые причины: корзина CORS не разрешает текущий веб-сайт или CSP веб-сайта не освобождает доменное имя COS). Черновик отозван, обратитесь к администратору для настройки и повторите попытку.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Объектное хранилище отклонило эту загрузку. Черновик был отозван, повторите попытку позже; в случае повторного сбоя обратитесь к администратору.',
   'showcase.publishModal.uploadFailed': 'Загрузка не удалась, попробуйте еще раз.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Размер обложки превышает лимит в 2 МБ. Сожмите изображение предварительного просмотра или используйте изображение меньшего размера и повторите попытку.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'Размер файла превышает ограничение (20 МБ для документов/изображений, 100 МБ для видео). Пожалуйста, сожмите и повторите попытку.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Размер файла превышает ограничение (20 МБ для документов/изображений, 100 МБ для видео). Черновик был отозван. Пожалуйста, сожмите его и повторите попытку.',
-  'showcase.publishModal.uploadFileTooLarge': 'Файл слишком велик и превышает ограничение текущего типа загрузки. Пожалуйста, подтвердите размер и повторите попытку.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Файл слишком велик и превышает ограничение текущего типа загрузки. Черновик был отозван. Подтвердите размер и повторите попытку.',
-  'showcase.publishModal.coverUploadSkipped': 'Дело было отправлено, но загрузить обложку не удалось. Дело можно будет отредактировать позже, чтобы обновить титульную страницу.',
-  'showcase.publishModal.coverGenerating': 'Обложка создается в фоновом режиме и позже будет отображена на карточке.',
-  'showcase.publishModal.coverFailed': 'Дело было передано, но создать прикрытие не удалось. Вы можете отредактировать дело позже, чтобы обновить обложку.',
-  'showcase.publishModal.coverFailedTimeout': 'Дело было отправлено, но время создания обложки истекло. Вы можете отредактировать дело позже, чтобы обновить обложку.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Размер обложки превышает лимит в 2 МБ. Сожмите изображение предварительного просмотра или используйте изображение меньшего размера и повторите попытку.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'Размер файла превышает ограничение (20 МБ для документов/изображений, 100 МБ для видео). Пожалуйста, сожмите и повторите попытку.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'Размер файла превышает ограничение (20 МБ для документов/изображений, 100 МБ для видео). Черновик был отозван. Пожалуйста, сожмите его и повторите попытку.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'Файл слишком велик и превышает ограничение текущего типа загрузки. Пожалуйста, подтвердите размер и повторите попытку.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'Файл слишком велик и превышает ограничение текущего типа загрузки. Черновик был отозван. Подтвердите размер и повторите попытку.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Дело было отправлено, но загрузить обложку не удалось. Дело можно будет отредактировать позже, чтобы обновить титульную страницу.',
+  'showcase.publishModal.coverGenerating':
+    'Обложка создается в фоновом режиме и позже будет отображена на карточке.',
+  'showcase.publishModal.coverFailed':
+    'Дело было передано, но создать прикрытие не удалось. Вы можете отредактировать дело позже, чтобы обновить обложку.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Дело было отправлено, но время создания обложки истекло. Вы можете отредактировать дело позже, чтобы обновить обложку.',
   'showcase.publishModal.success': 'Заявление отправлено и ожидает рассмотрения администратором.',
   'showcase.publishModal.fromCanvas': 'Публикация с холста',
   'showcase.publishModal.step1Title': 'Основная информация',
@@ -79,68 +98,96 @@ export default {
   'showcase.publishModal.uploadLabel': 'Загрузить файлы',
   'showcase.publishModal.uploadImage': 'Загрузить фотографии',
   'showcase.publishModal.uploadFile': 'Загрузить файлы',
-  'showcase.publishModal.directUploadDisabled': 'Локальная прямая передача временно недоступна, но вы все равно можете выбрать значок из истории.',
-  'showcase.publishModal.uploadViaStorage': 'Файлы будут загружаться в объектное хранилище по безопасным недолговечным ссылкам.',
+  'showcase.publishModal.directUploadDisabled':
+    'Локальная прямая передача временно недоступна, но вы все равно можете выбрать значок из истории.',
+  'showcase.publishModal.uploadViaStorage':
+    'Файлы будут загружаться в объектное хранилище по безопасным недолговечным ссылкам.',
   'showcase.publishModal.pickHistory': 'Pick from history',
   'showcase.publishModal.removeFile': 'Удалять',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: limited preview)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: limited preview) — max {maxMb} MB per document',
-  'showcase.publishModal.teachingDocTooLarge': 'Размер документа превышает ограничение в {maxMb} МБ. Сожмите его и загрузите еще раз.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: limited preview) — max {maxMb} MB per document',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Размер документа превышает ограничение в {maxMb} МБ. Сожмите его и загрузите еще раз.',
   'showcase.publishModal.diagramImageHint': 'Поддержка .png/.jpg/.jpeg/.webp/.gif.',
   'showcase.publishModal.uploadImages': 'Загрузите фотографии (возможны несколько вариантов)',
   'showcase.publishModal.galleryHint': 'Add multiple images and saved diagrams, up to {max} items',
-  'showcase.publishModal.galleryHintCase': 'Можно добавить несколько изображений и исторических значков, до {max} элементов.',
-  'showcase.publishModal.galleryHintTemplate': 'Вы можете загрузить файлы .mg и выбрать несколько исторических значков, до {max} элементов.',
+  'showcase.publishModal.galleryHintCase':
+    'Можно добавить несколько изображений и исторических значков, до {max} элементов.',
+  'showcase.publishModal.galleryHintTemplate':
+    'Вы можете загрузить файлы .mg и выбрать несколько исторических значков, до {max} элементов.',
   'showcase.publishModal.galleryCount': 'Добавлено {count}/{max} элементов',
   'showcase.publishModal.galleryImageItem': 'Изображение: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Иллюстрация: {name}',
   'showcase.publishModal.galleryLimit': 'Добавьте до {max} элементов',
   'showcase.publishModal.galleryDuplicateDiagram': 'Значок истории уже есть в списке',
   'showcase.publishModal.galleryPickerDone': 'Полный выбор',
-  'showcase.publishModal.galleryUploadFailed': 'Не удалось загрузить изображение из галереи. Пожалуйста, сделайте репост.',
-  'showcase.publishModal.galleryReuploadHint': 'Некоторые изображения галереи не были сохранены. Пожалуйста, повторно выберите изображения перед отправкой.',
+  'showcase.publishModal.galleryUploadFailed':
+    'Не удалось загрузить изображение из галереи. Пожалуйста, сделайте репост.',
+  'showcase.publishModal.galleryReuploadHint':
+    'Некоторые изображения галереи не были сохранены. Пожалуйста, повторно выберите изображения перед отправкой.',
   'showcase.detail.galleryImage': 'картина',
   'showcase.detail.galleryDiagram': 'Иллюстрация',
   'showcase.detail.galleryPrev': 'Предыдущее изображение',
   'showcase.detail.galleryNext': 'Следующий',
   'showcase.detail.gallerySwipeHint': 'Слайд влево или вправо для переключения',
-  'showcase.detail.galleryImageMissing': 'Изображение не загрузилось, пожалуйста, сделайте репост дела.',
-  'showcase.publishModal.templateFileHint': 'Поддерживается только формат .mg (файлы экспорта MindGraph).',
+  'showcase.detail.galleryImageMissing':
+    'Изображение не загрузилось, пожалуйста, сделайте репост дела.',
+  'showcase.publishModal.templateFileHint':
+    'Поддерживается только формат .mg (файлы экспорта MindGraph).',
   'showcase.publishModal.templatePreviewLabel': 'Предварительный просмотр значка',
-  'showcase.publishModal.templatePreviewHint': 'Просмотр в режиме захвата, недоступен для редактирования',
-  'showcase.publishModal.templatePreviewEmpty': 'Загрузите файл .mg или выберите значок истории, чтобы просмотреть холст.',
+  'showcase.publishModal.templatePreviewHint':
+    'Просмотр в режиме захвата, недоступен для редактирования',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Загрузите файл .mg или выберите значок истории, чтобы просмотреть холст.',
   'showcase.publishModal.diagramCasePreviewLabel': 'Предварительный просмотр значка',
-  'showcase.publishModal.diagramCasePreviewHint': 'Просмотрите в режиме захвата, увеличьте масштаб для просмотра',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Автоматически подобранный тип значка на основе выбранного исторического значка',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'Просмотрите в режиме захвата, увеличьте масштаб для просмотра',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Автоматически подобранный тип значка на основе выбранного исторического значка',
   'showcase.publishModal.introLabel': 'Графическое введение',
   'showcase.publishModal.teachingIntroLabel': 'Введение в учебный дизайн',
   'showcase.publishModal.highlightsLabel': 'Особенности дизайна',
-  'showcase.publishModal.highlightsPlaceholder': 'Опишите основные моменты этого курса по одному, по одной строке в строке (необязательно).',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Кратко представьте предысторию, цели и применимые сценарии преподавания этого курса.',
+  'showcase.publishModal.highlightsPlaceholder':
+    'Опишите основные моменты этого курса по одному, по одной строке в строке (необязательно).',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Кратко представьте предысторию, цели и применимые сценарии преподавания этого курса.',
   'showcase.publishModal.aiGenerate': 'ИИ сгенерировал',
   'showcase.publishModal.aiGenerating': 'ИИ генерирует…',
   'showcase.publishModal.aiGenerateStop': 'останавливаться',
-  'showcase.publishModal.aiGenerateCancelled': 'Генерация ИИ остановлена. Нажмите еще раз, чтобы очистить и восстановить данные.',
-  'showcase.publishModal.aiGenerateSuccess': 'Введение в учебный дизайн и основные моменты дизайна были созданы на основе этого документа. Пожалуйста, проверьте и отредактируйте; пожалуйста, заполните форму обучения самостоятельно.',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Введение в иллюстрацию и приложение для занятий в классе были созданы на основе иллюстрации. Пожалуйста, проверьте и отредактируйте.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'Генерация ИИ остановлена. Нажмите еще раз, чтобы очистить и восстановить данные.',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Введение в учебный дизайн и основные моменты дизайна были созданы на основе этого документа. Пожалуйста, проверьте и отредактируйте; пожалуйста, заполните форму обучения самостоятельно.',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'Введение в иллюстрацию и приложение для занятий в классе были созданы на основе иллюстрации. Пожалуйста, проверьте и отредактируйте.',
   'showcase.publishModal.aiGenerateFailed': 'Не удалось создать ИИ. Повторите попытку позже.',
-  'showcase.publishModal.aiGenerateNeedFile': 'Сначала загрузите проектный документ с инструкциями, полученный на предыдущем шаге.',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'Генерация искусственного интеллекта в настоящее время поддерживает только сценарии обучения.',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Сначала загрузите проектный документ с инструкциями, полученный на предыдущем шаге.',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'Генерация искусственного интеллекта в настоящее время поддерживает только сценарии обучения.',
   'showcase.publishModal.reflectionLabel': 'Обучение размышлению',
   'showcase.publishModal.introPlaceholder': 'Кратко опишите содержание дела и применимые сценарии.',
-  'showcase.publishModal.diagramCorePlaceholder': 'Опишите основное содержание и характеристики визуализации мышления этой диаграммы.',
-  'showcase.publishModal.classroomAppPlaceholder': 'Опишите, как эту иллюстрацию можно использовать в классе.',
-  'showcase.publishModal.tagInputPlaceholder': 'Введите метку (до 10 символов) и нажмите Enter, чтобы добавить.',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Опишите основное содержание и характеристики визуализации мышления этой диаграммы.',
+  'showcase.publishModal.classroomAppPlaceholder':
+    'Опишите, как эту иллюстрацию можно использовать в классе.',
+  'showcase.publishModal.tagInputPlaceholder':
+    'Введите метку (до 10 символов) и нажмите Enter, чтобы добавить.',
   'showcase.publishModal.tagRecommended': 'Рекомендуемые теги',
   'showcase.publishModal.tagCountHint': '(Максимум {max})',
   'showcase.publishModal.tagMaxCount': 'Можно добавить не более {max} тегов.',
-  'showcase.publishModal.networkError': 'Не удалось отправить: соединение для загрузки прервано. Пожалуйста, нажмите Ctrl+F5, чтобы обновить страницу и повторить попытку; если он содержит видео, подтвердите, что размер одного файла составляет ≤100 МБ, а общая сумма составляет ≤105 МБ.',
+  'showcase.publishModal.networkError':
+    'Не удалось отправить: соединение для загрузки прервано. Пожалуйста, нажмите Ctrl+F5, чтобы обновить страницу и повторить попытку; если он содержит видео, подтвердите, что размер одного файла составляет ≤100 МБ, а общая сумма составляет ≤105 МБ.',
   'showcase.publishModal.fileTooLarge': 'Размер «{name}» превышает ограничение размера {maxMb}MB',
-  'showcase.publishModal.uploadTotalTooLarge': 'Общий размер загружаемых файлов превышает лимит. Пожалуйста, уменьшите размер вложений или видео.',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'Общий размер загружаемых файлов превышает лимит. Пожалуйста, уменьшите размер вложений или видео.',
   'showcase.publishModal.tagAdd': 'добавить в',
   'showcase.publishModal.publishBtn': 'Опубликовать',
-  'showcase.publishModal.reflectionPlaceholder': 'Запишите свои размышления и краткое изложение преподавания этого урока (по желанию).',
+  'showcase.publishModal.reflectionPlaceholder':
+    'Запишите свои размышления и краткое изложение преподавания этого урока (по желанию).',
   'showcase.publishModal.classroomAppLabel': 'Классное приложение',
   'showcase.publishModal.selectSubject': 'Пожалуйста, выберите тему',
   'showcase.publishModal.selectGrade': 'Пожалуйста, выберите оценку',
@@ -151,17 +198,23 @@ export default {
   'showcase.publishModal.validationFile': 'Пожалуйста, загрузите файл или выберите значок истории.',
   'showcase.publishModal.validationDiagramType': 'Пожалуйста, выберите тип значка',
   'showcase.publishModal.invalidFileType': 'Формат файла не поддерживается',
-  'showcase.publishModal.invalidMgFile': 'Невозможно прочитать файл .mg. Подтвердите, что файл получен из экспорта MindGraph.',
-  'showcase.publishModal.cannotPreview': 'Невозможно создать предварительный просмотр обложки, дело все равно будет отправлено; попробуйте PNG/JPG или выберите исторические значки',
-  'showcase.publishModal.cannotPreviewHistory': 'Невозможно создать прикрытие на основе этой исторической иллюстрации, дело все равно будет передано; пожалуйста, выберите еще раз или сначала откройте на холсте и сохраните заново',
-  'showcase.publishModal.cannotPreviewTemplate': 'Невозможно создать предварительный просмотр обложки, дело все равно будет отправлено; пожалуйста, подтвердите, что файл .mg действителен, или повторно выберите значок истории',
+  'showcase.publishModal.invalidMgFile':
+    'Невозможно прочитать файл .mg. Подтвердите, что файл получен из экспорта MindGraph.',
+  'showcase.publishModal.cannotPreview':
+    'Невозможно создать предварительный просмотр обложки, дело все равно будет отправлено; попробуйте PNG/JPG или выберите исторические значки',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Невозможно создать прикрытие на основе этой исторической иллюстрации, дело все равно будет передано; пожалуйста, выберите еще раз или сначала откройте на холсте и сохраните заново',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Невозможно создать предварительный просмотр обложки, дело все равно будет отправлено; пожалуйста, подтвердите, что файл .mg действителен, или повторно выберите значок истории',
   'showcase.publishModal.historyTitle': 'Pick saved diagram',
   'showcase.publishModal.historySearch': 'Название значка поиска…',
   'showcase.publishModal.historyEmpty': 'Нет сохраненных диаграмм',
   'showcase.publishModal.historyUncategorized': 'Без категории',
   'showcase.publishModal.typeDesc.teachingDesign': 'Дизайн обучения в классе развития мышления',
-  'showcase.publishModal.typeDesc.diagramCase': 'Отличное приложение для обучения обмену иллюстрациями или визуализацией мышления',
-  'showcase.publishModal.typeDesc.diagramTemplate': 'Значки, которые можно использовать повторно или воссоздавать.',
+  'showcase.publishModal.typeDesc.diagramCase':
+    'Отличное приложение для обучения обмену иллюстрациями или визуализацией мышления',
+  'showcase.publishModal.typeDesc.diagramTemplate':
+    'Значки, которые можно использовать повторно или воссоздавать.',
   'showcase.detail.import': 'Используйте этот случай',
   'showcase.action.goDraw': 'Иди и нарисуй картинку',
   'showcase.action.applyTemplate': 'Применить этот шаблон',
@@ -184,9 +237,11 @@ export default {
   'showcase.detail.delist': 'Убрано с полок',
   'showcase.detail.resubmit': 'Пересмотреть и отправить повторно',
   'showcase.detail.withdrawTitle': 'Отозвать дело',
-  'showcase.detail.withdrawConfirm': 'Вы уверены, что хотите вывести «{title}»? После отзыва оно будет удалено из очереди на рассмотрение и не может быть восстановлено.',
+  'showcase.detail.withdrawConfirm':
+    'Вы уверены, что хотите вывести «{title}»? После отзыва оно будет удалено из очереди на рассмотрение и не может быть восстановлено.',
   'showcase.detail.delistTitle': 'Случаи удаления',
-  'showcase.detail.delistConfirm': 'Вы уверены, что хотите удалить «{title}» из Case Square? После его удаления другие пользователи не смогут его просматривать.',
+  'showcase.detail.delistConfirm':
+    'Вы уверены, что хотите удалить «{title}» из Case Square? После его удаления другие пользователи не смогут его просматривать.',
   'showcase.detail.confirm': 'Конечно',
   'showcase.detail.cancel': 'Отмена',
   'showcase.withdrawn': 'снято',
@@ -206,8 +261,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Converting slides for preview…',
   'showcase.detail.officePreviewPending': 'Converting slides for preview…',
   'showcase.detail.docPreviewLoading': 'Загрузка документов…',
-  'showcase.detail.docPreviewFailed': 'Не удалось загрузить предварительный просмотр документа. Попробуйте открыть его в новой вкладке.',
-  'showcase.detail.legacyDocHint': 'Legacy .doc files cannot be previewed inline. Open or download the file, or upload .docx for in-browser preview.',
+  'showcase.detail.docPreviewFailed':
+    'Не удалось загрузить предварительный просмотр документа. Попробуйте открыть его в новой вкладке.',
+  'showcase.detail.legacyDocHint':
+    'Legacy .doc files cannot be previewed inline. Open or download the file, or upload .docx for in-browser preview.',
   'showcase.detail.noDocument': 'Предварительного просмотра документа пока нет',
   'showcase.detail.noDiagramPreview': 'Предварительного просмотра значков пока нет',
   'showcase.detail.diagramPreviewLoading': 'Загрузка значка…',

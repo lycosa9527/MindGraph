@@ -1,6 +1,6 @@
 /**
- * zh-tw UI — common
- * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ * zh UI — common
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export default {
@@ -22,8 +22,7 @@ export default {
   'app.testServer.watermark': '測試環境',
   'app.schoolExpired.acknowledge': '知道了',
   'app.schoolExpired.badge': '已到期',
-  'app.schoolExpired.body':
-    '该校产品期限已到。教师与学校管理员均已锁定，续订请联系平台管理员。',
+  'app.schoolExpired.body': '该校产品期限已到。教师与学校管理员均已锁定，续订请联系平台管理员。',
   'app.schoolExpired.env': '訂閱',
   'app.schoolExpired.host': '{school} · 到期日 {date}',
   'app.schoolExpired.signOut': '退出登錄',
@@ -211,10 +210,8 @@ export default {
   'mobile.kittyNewMindmapDesktopFailed': '已新建導圖，但無法通知電腦端打開',
   'mobile.kittyDiagramPinned': '置頂',
   'mobile.kittyDiagramPickFailed': '無法加載該導圖，請稍後重試',
-  'mobile.kittyEphemeralScopePinned':
-    '当前为临时会话，请选择或新建已保存的导图以与电脑端同步。',
-  'mobile.kittyEphemeralScopeDegraded':
-    '与电脑端的配对可能不同步，请打开已保存的导图以重新连接。',
+  'mobile.kittyEphemeralScopePinned': '当前为临时会话，请选择或新建已保存的导图以与电脑端同步。',
+  'mobile.kittyEphemeralScopeDegraded': '与电脑端的配对可能不同步，请打开已保存的导图以重新连接。',
   'mobile.kittyDesktopJumpFailed': '已切換導圖，但無法通知電腦端',
   'mobile.kittyDiagramSelected': '已選擇導圖，電腦端將同步打開',
   'mobile.kittyCurrentDiagramLabel': '當前圖示',
@@ -259,8 +256,7 @@ export default {
     '检测到手绘思维导图「{topic}」。已重建到画布，结构大纲已保存到文档总结。',
   'mobile.kittyPhotoHanddrawnLocalReply':
     '检测到手绘思维导图「{topic}」。已在本机重建，结构大纲已保存到文档总结。图库同步未完成，若画布未更新请重新打开图示。',
-  'mobile.kittyPhotoOcrReply':
-    '已识别图片文字：\n{excerpt}\n\n全文已存入文档总结。',
+  'mobile.kittyPhotoOcrReply': '已识别图片文字：\n{excerpt}\n\n全文已存入文档总结。',
   'mobile.kittyPhotoUploadFailed': '照片上傳失敗。',
   'mobile.kittyPickDiagramToEdit': '請先打開或選擇一張已保存的圖示，再按住說話或輸入文字進行編輯。',
   'mobile.kittyHubSyncFailed': '無法將圖示同步到 Kitty，請檢查網絡後重試。',
@@ -272,6 +268,33 @@ export default {
   'mobile.kittyScopeKeepSplit': '保持手機與電腦各自打開不同導圖',
   'meta.pageTitle.notFound': '頁面未找到',
   'meta.pageTitle.privacy': '用戶協議與隱私政策',
+  'meta.pageTitle.browserPlugin': '瀏覽器插件',
+  'browserPlugin.back': '返回',
+  'browserPlugin.heroMark': '邁特',
+  'browserPlugin.heroTitle': '瀏覽器插件',
+  'browserPlugin.heroBody':
+    '把正在看的網頁收成思維導圖，帶著這一頁問 MindMate，也可以從教學網站提取文檔。',
+  'browserPlugin.downloadChrome': 'Chrome 瀏覽器',
+  'browserPlugin.downloadEdge': 'Edge 瀏覽器',
+  'browserPlugin.entryTitle': '從一篇網頁到導圖、對話和文檔',
+  'browserPlugin.entryBody': '裝在 Chrome 或 Edge 裡。打開頁面，再點擴展圖標。',
+  'browserPlugin.cardMapTitle': '生成思維導圖',
+  'browserPlugin.cardMapBody': '讀取當前頁面或你選中的文字，下載一張 PNG 導圖。',
+  'browserPlugin.cardChatTitle': '帶著網頁提問',
+  'browserPlugin.cardChatBody': '新對話的第一條可以附上當前網頁，就著文章或課例提問。',
+  'browserPlugin.cardDocTitle': '提取教學文檔',
+  'browserPlugin.cardDocBody': '在知網、國家智慧教育平台、百度文庫等站點，把文檔保存到本機。',
+  'browserPlugin.mapTitle': '一鍵把網頁轉換為可編輯導圖',
+  'browserPlugin.mapBody': '從工具欄、右鍵菜單或快捷鍵開始。沒有選中文字時，會盡量取正文。',
+  'browserPlugin.chatTitle': '就著這一頁提問',
+  'browserPlugin.chatBody':
+    '勾選包含當前網頁內容。國家智慧教育平台的課例會合併課件和教學設計裡的文字。',
+  'browserPlugin.docTitle': '在教學網站上直接取文檔',
+  'browserPlugin.docBody': '識別知網閱讀頁、智慧教育課例和文庫頁面，把 PDF 或正文保存到本地。',
+  'browserPlugin.downloadTitle': '下載瀏覽器插件',
+  'browserPlugin.downloadLead': '同一個安裝包，可用於 Chrome 和 Edge。',
+  'browserPlugin.installHint': '解壓後打開擴展管理頁，開啟開發者模式，選擇加載未打包的擴展程序。',
+  'browserPlugin.downloadAction': '下載安裝包',
   'meta.pageTitle.publicDashboard': 'MG全國數據中心',
   'meta.pageTitle.schoolDashboard': '學校儀表盤',
   'meta.pageTitle.smartResponse': '智能應答',
@@ -344,8 +367,7 @@ export default {
   'landing.international.phaseServerReceived': '服務器已收到請求',
   'landing.international.phaseGenerating': '正在生成圖示…',
   'landing.international.phasePleaseWait': '請稍候，AI 正在組織內容',
-  'landing.international.generatingWithTopic':
-    '主题：{topic}，正在生成{diagramType}，请稍候',
+  'landing.international.generatingWithTopic': '主题：{topic}，正在生成{diagramType}，请稍候',
   'landing.international.topicUnknown': '您的主題',
   'landing.international.diagramTypePending': '圖示',
   'landing.international.errorRateLimit': '請求過於頻繁，請稍後再試',
@@ -375,6 +397,7 @@ export default {
   'swissGlass.hero.shareExport.ribbon': '導出',
   'swissGlass.hero.shareExport.title': '導出對話',
   'swissGlass.hero.shareExport.line1': '勾選消息並導出為圖片',
+  'swissGlass.hero.shareExport.line1Preview': '預覽並導出為圖片',
   'swissGlass.hero.imagePreview.ribbon': '預覽',
   'swissGlass.hero.imagePreview.title': '查看圖片',
   'swissGlass.hero.imagePreview.line1': '左右切換瀏覽當前圖片',
@@ -512,7 +535,7 @@ export default {
   'swissGlass.hero.adminEvent.line1': '查看單條用量或錯誤事件',
   'swissGlass.hero.adminVod.ribbon': '管理',
   'swissGlass.hero.adminVod.title': '上傳視頻',
-  'swissGlass.hero.adminVod.line1': '將視頻上傳到線上視頻庫',
+  'swissGlass.hero.adminVod.line1': '將視頻上傳到在線視頻庫',
   'swissGlass.hero.adminSchool.ribbon': '學校',
   'swissGlass.hero.adminSchool.title': '創建學校',
   'swissGlass.hero.adminSchool.line1': '填寫學校資料並生成邀請',

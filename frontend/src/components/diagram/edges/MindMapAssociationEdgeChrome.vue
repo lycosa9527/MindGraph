@@ -110,9 +110,7 @@ const toolbarAnchor = computed(() => {
   if (!toolbarOpen.value || typeof window === 'undefined') return null
   void viewport.value
   void handlePoint.value
-  const handle = document.querySelector(
-    `[data-mg-assoc-handle="${props.connectionId}"]`
-  )
+  const handle = document.querySelector(`[data-mg-assoc-handle="${props.connectionId}"]`)
   if (!(handle instanceof HTMLElement)) return null
   const rect = handle.getBoundingClientRect()
   let left = rect.right + TOOLBAR_GAP

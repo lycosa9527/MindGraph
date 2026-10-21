@@ -13,6 +13,8 @@ export function withOrgGenerationCacheBypass(
   return { ...body, skip_cache: true }
 }
 
-export function noteOrgGenerationCacheResult(payload: { cached?: unknown } | null | undefined): void {
+export function noteOrgGenerationCacheResult(
+  payload: { cached?: unknown } | null | undefined
+): void {
   useOrgGenerationCacheNoticeStore().applyCachedFlag(payload?.cached)
 }

@@ -1,9 +1,14 @@
 /**
  * runKittyEditTurn: desktop hub fail blocks text; mobile skips S07 and sends text.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
+
+import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { runKittyEditTurn } from '@/composables/kitty/pipeline/editTurn'
+import { getLastFail } from '@/composables/kitty/pipeline/trace'
 
 const { syncKittyHubContextMock } = vi.hoisted(() => ({
   syncKittyHubContextMock: vi.fn(),
@@ -39,9 +44,6 @@ vi.mock('@/stores/diagram', () => ({
 vi.mock('@/composables/kitty/kittyDiagramFingerprint', () => ({
   getKittyDiagramContentFingerprint: () => 'fp-1',
 }))
-
-import { runKittyEditTurn } from '@/composables/kitty/pipeline/editTurn'
-import { getLastFail } from '@/composables/kitty/pipeline/trace'
 
 describe('runKittyEditTurn', () => {
   beforeEach(() => {

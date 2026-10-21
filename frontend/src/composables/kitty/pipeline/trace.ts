@@ -4,11 +4,12 @@
 import { getActivePinia } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { normalizeKittyDebugText } from '@/composables/kitty/kittyAgentDebug'
 import {
+  type KittyTranslateFn,
   getKittyErrorCatalogEntry,
   resolveKittyErrorCode,
   resolveKittyFailMessage,
-  type KittyTranslateFn,
 } from '@/composables/kitty/pipeline/errorCatalog'
 import type {
   KittyErrorCode,
@@ -20,7 +21,6 @@ import type {
   KittyTurnFail,
   KittyTurnStatus,
 } from '@/composables/kitty/pipeline/types'
-import { normalizeKittyDebugText } from '@/composables/kitty/kittyAgentDebug'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 
 const STORAGE_KEY = 'kitty_workflow_trace'
@@ -201,10 +201,7 @@ export function dumpTurnTrace(requestId: string): KittyPipelineEvent[] {
   return useKittyPipelineStore().dumpTurnTrace(requestId)
 }
 
-export function messageForKittyFail(
-  fail: KittyTurnFail,
-  t: KittyTranslateFn
-): string {
+export function messageForKittyFail(fail: KittyTurnFail, t: KittyTranslateFn): string {
   return resolveKittyFailMessage(fail.errorCode, t, fail.detail)
 }
 

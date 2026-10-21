@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 
 import { useLanguage } from '@/composables'
 import type { TrainingCourseStep } from '@/types/training'
+import { assignTrainingStepField } from '@/utils/trainingStepPatch'
 
 const NOTES_MAX = 4000
 
@@ -29,7 +30,7 @@ function toggle(): void {
 function onInput(event: Event): void {
   const field = event.target
   if (!(field instanceof HTMLTextAreaElement) || props.readonly) return
-  props.step.notes = field.value
+  assignTrainingStepField(props.step, 'notes', field.value)
 }
 </script>
 

@@ -2,6 +2,7 @@
  * Shared verified commit used by WS diagram_update and Kitty branch autocomplete.
  */
 import { createPinia, setActivePinia } from 'pinia'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -101,8 +102,7 @@ describe('commitVerifiedLocalDiagramMutation', () => {
     })
 
     const result = await commitVerifiedLocalDiagramMutation({
-      apply: () =>
-        store.pasteMindMapClipboardBranches('branch-r-1-0', [{ text: 'Brush' }], 'test'),
+      apply: () => store.pasteMindMapClipboardBranches('branch-r-1-0', [{ text: 'Brush' }], 'test'),
       mutationId: 'mut-ac-1',
       verify: (_b, after) => verifySubgraphChildTextsPresent(after, ['Brush']),
       hubPersist: {
@@ -142,8 +142,7 @@ describe('commitVerifiedLocalDiagramMutation', () => {
     })
 
     const result = await commitVerifiedLocalDiagramMutation({
-      apply: () =>
-        store.pasteMindMapClipboardBranches('branch-r-1-0', [{ text: 'Brush' }], 'test'),
+      apply: () => store.pasteMindMapClipboardBranches('branch-r-1-0', [{ text: 'Brush' }], 'test'),
       mutationId: 'mut-ac-2',
       verify: (_b, after) => verifySubgraphChildTextsPresent(after, ['Brush']),
       hubPersist: {

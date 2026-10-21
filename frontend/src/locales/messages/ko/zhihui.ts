@@ -24,17 +24,21 @@ export default {
   'zhihui.promptPlaceholder.image': '영감을 입력하세요…',
   'zhihui.promptPlaceholder.video': '장면, 카메라워크, 리듬을 설명하세요.',
   'zhihui.promptPlaceholder.diagram': '마인드맵을 선택하고 생성을 클릭하세요.',
-  'zhihui.composerHint.image': '한 번의 클릭으로 텍스트를 사용하여 그림을 설명하고 교육용 일러스트레이션과 시각 자료를 생성합니다.',
+  'zhihui.composerHint.image':
+    '한 번의 클릭으로 텍스트를 사용하여 그림을 설명하고 교육용 일러스트레이션과 시각 자료를 생성합니다.',
   'zhihui.composerHint.video': 'Wensheng Video 및 Tusheng Video 기능에 곧 액세스됩니다.',
-  'zhihui.composerHint.diagram': '학습자 관점에서 코스웨어 다이어그램을 생성하려면 마인드맵을 선택하세요.',
+  'zhihui.composerHint.diagram':
+    '학습자 관점에서 코스웨어 다이어그램을 생성하려면 마인드맵을 선택하세요.',
   'zhihui.diagram.selectMindmap': '마인드맵을 선택하세요',
   'zhihui.diagram.selectMindmapHint': '위의 마인드맵을 선택해주세요',
   'zhihui.diagram.selectMindmapFirst': '먼저 마인드맵을 선택해주세요',
-  'zhihui.diagram.emptyLibrary': '아직 마인드맵이 없습니다. 먼저 다이어그램 라이브러리에 저장해주세요.',
+  'zhihui.diagram.emptyLibrary':
+    '아직 마인드맵이 없습니다. 먼저 다이어그램 라이브러리에 저장해주세요.',
   'zhihui.diagram.loadFailed': '마인드맵을 로드하지 못했습니다.',
   'zhihui.diagram.emptyDeck': '마인드맵을 선택한 후 생성을 클릭하세요.',
   'zhihui.diagram.waitingSlides': '코스웨어를 생성하는 중입니다. 잠시 기다려 주십시오...',
-  'zhihui.diagram.jobStarted': '코스웨어 생성이 시작되었습니다. 히스토리에서 진행상황을 확인할 수 있습니다.',
+  'zhihui.diagram.jobStarted':
+    '코스웨어 생성이 시작되었습니다. 히스토리에서 진행상황을 확인할 수 있습니다.',
   'zhihui.diagram.phaseQueued': '작업이 대기열에 추가되었습니다...',
   'zhihui.diagram.phasePlanning': '강의 계획서를 디자인하다...',
   'zhihui.diagram.phasePlanningBranches': '다양한 주제로 기획…',
@@ -74,7 +78,8 @@ export default {
   'zhihui.sizeButton': '이미지 크기',
   'zhihui.sizePanelTitle': '이미지 크기',
   'zhihui.sizeOptional': '선택 과목',
-  'zhihui.sizeHint': '형식은 너비*높이입니다. 지정하지 않으면 모델은 프롬프트 단어를 기반으로 해결 방법을 자동으로 추천합니다.',
+  'zhihui.sizeHint':
+    '형식은 너비*높이입니다. 지정하지 않으면 모델은 프롬프트 단어를 기반으로 해결 방법을 자동으로 추천합니다.',
   'zhihui.sizeLimits': '픽셀 영역 512×512–2048×2048; 화면비 1:8~8:1',
   'zhihui.size.auto': '지능적인',
   'zhihui.size.autoHint': '오토매틱',

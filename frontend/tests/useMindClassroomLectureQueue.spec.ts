@@ -409,10 +409,7 @@ describe('useMindClassroomLecture queued start', () => {
     expect(classroom.jobStatus).toBe('queued')
     expect(enqueueMindClassroomJob).not.toHaveBeenCalled()
     classroom.closeModal()
-    expect(emitSpy).not.toHaveBeenCalledWith(
-      'kitty:lecture_prefetch_requested',
-      expect.anything()
-    )
+    expect(emitSpy).not.toHaveBeenCalledWith('kitty:lecture_prefetch_requested', expect.anything())
 
     finishPoll?.(
       readyClassroomJob('job-keep', {
@@ -427,10 +424,7 @@ describe('useMindClassroomLecture queued start', () => {
       expect(classroom.preparedSteps[0]?.id).toBe('kept')
     })
     expect(classroom.jobStatus).toBe('ready')
-    expect(emitSpy).not.toHaveBeenCalledWith(
-      'kitty:lecture_prefetch_requested',
-      expect.anything()
-    )
+    expect(emitSpy).not.toHaveBeenCalledWith('kitty:lecture_prefetch_requested', expect.anything())
     emitSpy.mockRestore()
 
     const started = await lecture?.startLecture()
@@ -642,7 +636,10 @@ describe('useMindClassroomLecture queued start', () => {
 
   it('does not attach another map job when the per-user cap returns 429', async () => {
     enqueueMindClassroomJob.mockRejectedValue(
-      new ClassroomJobsBusyError('Too many active classroom jobs (1/1). Wait or cancel.', 'job-busy')
+      new ClassroomJobsBusyError(
+        'Too many active classroom jobs (1/1). Wait or cancel.',
+        'job-busy'
+      )
     )
     fetchMindClassroomJobByDiagram.mockRejectedValue(new Error('HTTP 404'))
 
@@ -684,7 +681,13 @@ describe('useMindClassroomLecture queued start', () => {
       },
       result_json: {
         steps: [
-          { id: 'qwen-s1', kind: 'overview', title: 'Qwen', caption: 'Hi', focus_node_ids: ['topic'] },
+          {
+            id: 'qwen-s1',
+            kind: 'overview',
+            title: 'Qwen',
+            caption: 'Hi',
+            focus_node_ids: ['topic'],
+          },
         ],
       },
     })
@@ -766,7 +769,13 @@ describe('useMindClassroomLecture queued start', () => {
       },
       result_json: {
         steps: [
-          { id: 'stale', kind: 'overview', title: 'Stale', caption: 'Hi', focus_node_ids: ['topic'] },
+          {
+            id: 'stale',
+            kind: 'overview',
+            title: 'Stale',
+            caption: 'Hi',
+            focus_node_ids: ['topic'],
+          },
         ],
       },
     })

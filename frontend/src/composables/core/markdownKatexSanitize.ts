@@ -124,7 +124,7 @@ const MARKDOWN_KATEX_ATTR = [
  * generate_dingtalk previews (``URL.createObjectURL``) without stripping ``src``.
  */
 export const MARKDOWN_ALLOWED_URI_REGEXP =
-  /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+  /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|blob):|[^a-z]|[a-z+.-]+(?:[^a-z+.:-]|$))/i
 
 export const markdownKatexDomPurifyConfig: {
   ADD_TAGS: string[]

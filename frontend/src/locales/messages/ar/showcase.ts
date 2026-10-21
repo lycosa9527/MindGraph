@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'ساحة القضية',
-  'showcase.subtitle': 'اكتشف تدريس التفكير عالي الجودة والمدعم بالذكاء الاصطناعي وشارك نتائج التدريس والبحث الخاصة بك',
+  'showcase.subtitle':
+    'اكتشف تدريس التفكير عالي الجودة والمدعم بالذكاء الاصطناعي وشارك نتائج التدريس والبحث الخاصة بك',
   'showcase.publish': 'انشر قضية',
   'showcase.searchPlaceholder': 'بحث عن الحالات...',
   'showcase.filter.all': 'الجميع',
@@ -29,9 +30,11 @@ export default {
   'showcase.myFavorites': 'مجموعتي',
   'showcase.myFavoritesModalTitle': 'الحالات المجمعة',
   'showcase.myFavoritesEmpty': 'لا توجد حالات تم جمعها حتى الآن',
-  'showcase.myFavoritesEmptyHint': 'عند النقر فوق "المفضلة" على تفاصيل الحالة أو البطاقة، ستظهر هنا',
+  'showcase.myFavoritesEmptyHint':
+    'عند النقر فوق "المفضلة" على تفاصيل الحالة أو البطاقة، ستظهر هنا',
   'showcase.myCasesModalTitle': 'الحالات التي قمت بنشرها',
-  'showcase.myCasesManageHint': 'ويمكنك سحبها أو إزالتها أو تعديلها مباشرة في القائمة؛ انقر على الحالة لعرض التفاصيل',
+  'showcase.myCasesManageHint':
+    'ويمكنك سحبها أو إزالتها أو تعديلها مباشرة في القائمة؛ انقر على الحالة لعرض التفاصيل',
   'showcase.myCasesAction.edit': 'يراجع',
   'showcase.myCasesEmpty': 'لم يتم نشر أي حالات حتى الآن',
   'showcase.myCasesEmptyHint': 'بمجرد نشر الحالة، سيتم عرض تقدم المراجعة هنا',
@@ -39,11 +42,13 @@ export default {
   'showcase.pendingReview': 'في انتظار المراجعة',
   'showcase.publishModal.title': 'انشر قضية',
   'showcase.publishModal.titleLabel': 'عنوان القضية',
-  'showcase.publishModal.titleHint': 'يجب أن يكون العنوان موجزًا ​​وواضحًا، ويفضل ألا يتجاوز {max} كلمة.',
+  'showcase.publishModal.titleHint':
+    'يجب أن يكون العنوان موجزًا ​​وواضحًا، ويفضل ألا يتجاوز {max} كلمة.',
   'showcase.publishModal.titlePlaceholder': 'على سبيل المثال: تصميم التدريس لـ "يوم مناظرة طفلين"',
   'showcase.publishModal.descriptionLabel': 'مقدمة',
   'showcase.publishModal.tagsLabel': 'ملصق',
-  'showcase.publishModal.tagsHint': 'افصل بين العلامات المتعددة بفواصل، مثل: الصراع المعرفي، ورياضيات المدرسة الإعدادية',
+  'showcase.publishModal.tagsHint':
+    'افصل بين العلامات المتعددة بفواصل، مثل: الصراع المعرفي، ورياضيات المدرسة الإعدادية',
   'showcase.publishModal.caseTypeLabel': 'نوع القضية',
   'showcase.publishModal.subjectLabel': 'تأديب',
   'showcase.publishModal.gradeLabel': 'درجة',
@@ -53,19 +58,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'جارٍ تحميل الملفات ({current}/{total})...',
   'showcase.publishModal.uploadingFile': 'جارٍ التحميل {name} ({current}/{total})...',
   'showcase.publishModal.finishing': 'أوشكت على الانتهاء…',
-  'showcase.publishModal.uploadFailedRolledBack': 'فشل التحميل، وتم سحب المسودة، يرجى المحاولة مرة أخرى.',
-  'showcase.publishModal.uploadCorsFailed': 'فشل تحميل الملف إلى مخزن الكائنات (الأسباب الشائعة: لا تسمح مجموعة CORS بموقع الويب الحالي، أو أن موقع CSP الخاص بموقع الويب لا يحرر اسم مجال COS). تم سحب المسودة، يرجى الاتصال بالمسؤول لتكوينها والمحاولة مرة أخرى.',
-  'showcase.publishModal.uploadStorageRejected': 'رفض تخزين الكائنات هذا التحميل. لقد تم سحب المسودة، يرجى المحاولة مرة أخرى لاحقاً؛ إذا فشلت بشكل متكرر، يرجى الاتصال بالمسؤول.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'فشل التحميل، وتم سحب المسودة، يرجى المحاولة مرة أخرى.',
+  'showcase.publishModal.uploadCorsFailed':
+    'فشل تحميل الملف إلى مخزن الكائنات (الأسباب الشائعة: لا تسمح مجموعة CORS بموقع الويب الحالي، أو أن موقع CSP الخاص بموقع الويب لا يحرر اسم مجال COS). تم سحب المسودة، يرجى الاتصال بالمسؤول لتكوينها والمحاولة مرة أخرى.',
+  'showcase.publishModal.uploadStorageRejected':
+    'رفض تخزين الكائنات هذا التحميل. لقد تم سحب المسودة، يرجى المحاولة مرة أخرى لاحقاً؛ إذا فشلت بشكل متكرر، يرجى الاتصال بالمسؤول.',
   'showcase.publishModal.uploadFailed': 'فشل التحميل، يرجى المحاولة مرة أخرى.',
-  'showcase.publishModal.uploadCoverTooLarge': 'تتجاوز صورة الغلاف الحد المسموح به وهو 2 ميجابايت. يرجى ضغط صورة المعاينة أو استخدام صورة أصغر والمحاولة مرة أخرى.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'يتجاوز الملف الحد الأقصى للحجم (20 ميجابايت للمستندات/الصور، 100 ميجابايت لمقاطع الفيديو). الرجاء الضغط والمحاولة مرة أخرى.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'يتجاوز الملف الحد الأقصى للحجم (20 ميغابايت للمستندات/الصور، و100 ميغابايت لمقاطع الفيديو). لقد تم سحب المسودة، يرجى ضغطها والمحاولة مرة أخرى.',
-  'showcase.publishModal.uploadFileTooLarge': 'الملف كبير جدًا ويتجاوز الحد الأقصى لنوع التحميل الحالي. يرجى تأكيد الحجم والمحاولة مرة أخرى.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'الملف كبير جدًا ويتجاوز الحد الأقصى لنوع التحميل الحالي. تم سحب المسودة، يرجى التأكد من الحجم والمحاولة مرة أخرى.',
-  'showcase.publishModal.coverUploadSkipped': 'تم إرسال الحالة، ولكن فشل تحميل الغلاف. يمكن تحرير الحالة لاحقًا لتحديث صفحة الغلاف.',
-  'showcase.publishModal.coverGenerating': 'يتم إنشاء الغلاف في الخلفية وسيتم عرضه على البطاقة لاحقًا.',
-  'showcase.publishModal.coverFailed': 'تم تقديم الحالة، لكن فشل إنشاء الغلاف. يمكنك تعديل الحالة لاحقًا لتحديث الغلاف.',
-  'showcase.publishModal.coverFailedTimeout': 'تم إرسال الحالة، ولكن انتهت مهلة إنشاء الغلاف. يمكنك تعديل الحالة لاحقًا لتحديث الغلاف.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'تتجاوز صورة الغلاف الحد المسموح به وهو 2 ميجابايت. يرجى ضغط صورة المعاينة أو استخدام صورة أصغر والمحاولة مرة أخرى.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'يتجاوز الملف الحد الأقصى للحجم (20 ميجابايت للمستندات/الصور، 100 ميجابايت لمقاطع الفيديو). الرجاء الضغط والمحاولة مرة أخرى.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'يتجاوز الملف الحد الأقصى للحجم (20 ميغابايت للمستندات/الصور، و100 ميغابايت لمقاطع الفيديو). لقد تم سحب المسودة، يرجى ضغطها والمحاولة مرة أخرى.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'الملف كبير جدًا ويتجاوز الحد الأقصى لنوع التحميل الحالي. يرجى تأكيد الحجم والمحاولة مرة أخرى.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'الملف كبير جدًا ويتجاوز الحد الأقصى لنوع التحميل الحالي. تم سحب المسودة، يرجى التأكد من الحجم والمحاولة مرة أخرى.',
+  'showcase.publishModal.coverUploadSkipped':
+    'تم إرسال الحالة، ولكن فشل تحميل الغلاف. يمكن تحرير الحالة لاحقًا لتحديث صفحة الغلاف.',
+  'showcase.publishModal.coverGenerating':
+    'يتم إنشاء الغلاف في الخلفية وسيتم عرضه على البطاقة لاحقًا.',
+  'showcase.publishModal.coverFailed':
+    'تم تقديم الحالة، لكن فشل إنشاء الغلاف. يمكنك تعديل الحالة لاحقًا لتحديث الغلاف.',
+  'showcase.publishModal.coverFailedTimeout':
+    'تم إرسال الحالة، ولكن انتهت مهلة إنشاء الغلاف. يمكنك تعديل الحالة لاحقًا لتحديث الغلاف.',
   'showcase.publishModal.success': 'تم رفع الحالة وهي في انتظار المراجعة من قبل المسؤول',
   'showcase.publishModal.fromCanvas': 'النشر من القماش',
   'showcase.publishModal.step1Title': 'المعلومات الأساسية',
@@ -79,18 +96,24 @@ export default {
   'showcase.publishModal.uploadLabel': 'تحميل الملفات',
   'showcase.publishModal.uploadImage': 'تحميل الصور',
   'showcase.publishModal.uploadFile': 'تحميل الملفات',
-  'showcase.publishModal.directUploadDisabled': 'النقل المباشر المحلي غير متاح مؤقتًا، ولكن لا يزال بإمكانك تحديد الرمز من السجل.',
-  'showcase.publishModal.uploadViaStorage': 'سيتم تحميل الملفات إلى وحدة تخزين الكائنات عبر روابط آمنة قصيرة العمر.',
+  'showcase.publishModal.directUploadDisabled':
+    'النقل المباشر المحلي غير متاح مؤقتًا، ولكن لا يزال بإمكانك تحديد الرمز من السجل.',
+  'showcase.publishModal.uploadViaStorage':
+    'سيتم تحميل الملفات إلى وحدة تخزين الكائنات عبر روابط آمنة قصيرة العمر.',
   'showcase.publishModal.pickHistory': 'Pick from history',
   'showcase.publishModal.removeFile': 'يزيل',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: limited preview)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: limited preview) — max {maxMb} MB per document',
-  'showcase.publishModal.teachingDocTooLarge': 'يتجاوز حجم المستند الحد المسموح به وهو {maxMb} ميغابايت، يرجى ضغطه وتحميله مرة أخرى.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: limited preview) — max {maxMb} MB per document',
+  'showcase.publishModal.teachingDocTooLarge':
+    'يتجاوز حجم المستند الحد المسموح به وهو {maxMb} ميغابايت، يرجى ضغطه وتحميله مرة أخرى.',
   'showcase.publishModal.diagramImageHint': 'دعم .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'تحميل الصور (تتوفر خيارات متعددة)',
   'showcase.publishModal.galleryHint': 'Add multiple images and saved diagrams, up to {max} items',
-  'showcase.publishModal.galleryHintCase': 'يمكن إضافة صور متعددة وأيقونات تاريخية، بما يصل إلى {max} من العناصر',
-  'showcase.publishModal.galleryHintTemplate': 'يمكنك تحميل ملفات ‎.mg وتحديد العديد من الرموز التاريخية، بما يصل إلى {max} من العناصر',
+  'showcase.publishModal.galleryHintCase':
+    'يمكن إضافة صور متعددة وأيقونات تاريخية، بما يصل إلى {max} من العناصر',
+  'showcase.publishModal.galleryHintTemplate':
+    'يمكنك تحميل ملفات ‎.mg وتحديد العديد من الرموز التاريخية، بما يصل إلى {max} من العناصر',
   'showcase.publishModal.galleryCount': 'تمت إضافة {count}/{max} العناصر',
   'showcase.publishModal.galleryImageItem': 'الصورة: {name}',
   'showcase.publishModal.galleryDiagramItem': 'الرسم التوضيحي: {name}',
@@ -98,7 +121,8 @@ export default {
   'showcase.publishModal.galleryDuplicateDiagram': 'رمز التاريخ موجود بالفعل في القائمة',
   'showcase.publishModal.galleryPickerDone': 'اختيار كامل',
   'showcase.publishModal.galleryUploadFailed': 'فشل تحميل صورة المعرض، يرجى إعادة النشر',
-  'showcase.publishModal.galleryReuploadHint': 'لم يتم حفظ بعض صور المعرض بنجاح، يرجى إعادة تحديد الصور قبل الإرسال.',
+  'showcase.publishModal.galleryReuploadHint':
+    'لم يتم حفظ بعض صور المعرض بنجاح، يرجى إعادة تحديد الصور قبل الإرسال.',
   'showcase.detail.galleryImage': 'صورة',
   'showcase.detail.galleryDiagram': 'توضيح',
   'showcase.detail.galleryPrev': 'الصورة السابقة',
@@ -108,36 +132,50 @@ export default {
   'showcase.publishModal.templateFileHint': 'يدعم فقط تنسيق .mg (ملفات تصدير MindGraph)',
   'showcase.publishModal.templatePreviewLabel': 'معاينة الأيقونة',
   'showcase.publishModal.templatePreviewHint': 'تصفح في وضع القابض، غير قابل للتحرير',
-  'showcase.publishModal.templatePreviewEmpty': 'قم بتحميل ملف .mg أو حدد أيقونة السجل لمعاينة اللوحة القماشية',
+  'showcase.publishModal.templatePreviewEmpty':
+    'قم بتحميل ملف .mg أو حدد أيقونة السجل لمعاينة اللوحة القماشية',
   'showcase.publishModal.diagramCasePreviewLabel': 'معاينة الأيقونة',
   'showcase.publishModal.diagramCasePreviewHint': 'تصفح في وضع القابض، وقم بالتكبير للعرض',
-  'showcase.publishModal.diagramTypeAutoMatched': 'نوع الرمز المطابق تلقائيًا بناءً على الرمز التاريخي المحدد',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'نوع الرمز المطابق تلقائيًا بناءً على الرمز التاريخي المحدد',
   'showcase.publishModal.introLabel': 'مقدمة رسومية',
   'showcase.publishModal.teachingIntroLabel': 'مقدمة في التصميم التعليمي',
   'showcase.publishModal.highlightsLabel': 'يسلط الضوء على التصميم',
-  'showcase.publishModal.highlightsPlaceholder': 'وصف النقاط البارزة في تصميم هذه الدورة واحدًا تلو الآخر، سطرًا واحدًا في كل سطر (اختياري)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'قدم بإيجاز الخلفية والأهداف والسيناريوهات القابلة للتطبيق لتصميم التدريس لهذه الدورة',
+  'showcase.publishModal.highlightsPlaceholder':
+    'وصف النقاط البارزة في تصميم هذه الدورة واحدًا تلو الآخر، سطرًا واحدًا في كل سطر (اختياري)',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'قدم بإيجاز الخلفية والأهداف والسيناريوهات القابلة للتطبيق لتصميم التدريس لهذه الدورة',
   'showcase.publishModal.aiGenerate': 'تم إنشاء الذكاء الاصطناعي',
   'showcase.publishModal.aiGenerating': 'الذكاء الاصطناعي يولد…',
   'showcase.publishModal.aiGenerateStop': 'قف',
-  'showcase.publishModal.aiGenerateCancelled': 'توقف إنشاء الذكاء الاصطناعي - انقر مرة أخرى للمسح والتجديد',
-  'showcase.publishModal.aiGenerateSuccess': 'تم إنشاء مقدمة تصميم التدريس وإبرازات التصميم بناءً على الوثيقة. يرجى التحقق والتحرير. يرجى ملء انعكاس التدريس بنفسك.',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'تم إنشاء مقدمة الرسم التوضيحي وتطبيق الفصل الدراسي بناءً على الرسم التوضيحي. يرجى التحقق والتحرير.',
-  'showcase.publishModal.aiGenerateFailed': 'فشل إنشاء الذكاء الاصطناعي، يرجى المحاولة مرة أخرى لاحقًا',
-  'showcase.publishModal.aiGenerateNeedFile': 'يرجى تحميل مستند التصميم التعليمي في الخطوة السابقة أولاً',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'يدعم إنشاء الذكاء الاصطناعي حاليًا حالات التصميم التعليمي فقط',
+  'showcase.publishModal.aiGenerateCancelled':
+    'توقف إنشاء الذكاء الاصطناعي - انقر مرة أخرى للمسح والتجديد',
+  'showcase.publishModal.aiGenerateSuccess':
+    'تم إنشاء مقدمة تصميم التدريس وإبرازات التصميم بناءً على الوثيقة. يرجى التحقق والتحرير. يرجى ملء انعكاس التدريس بنفسك.',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'تم إنشاء مقدمة الرسم التوضيحي وتطبيق الفصل الدراسي بناءً على الرسم التوضيحي. يرجى التحقق والتحرير.',
+  'showcase.publishModal.aiGenerateFailed':
+    'فشل إنشاء الذكاء الاصطناعي، يرجى المحاولة مرة أخرى لاحقًا',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'يرجى تحميل مستند التصميم التعليمي في الخطوة السابقة أولاً',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'يدعم إنشاء الذكاء الاصطناعي حاليًا حالات التصميم التعليمي فقط',
   'showcase.publishModal.reflectionLabel': 'تعليم التأمل',
   'showcase.publishModal.introPlaceholder': 'صف بإيجاز محتوى الحالة والسيناريوهات القابلة للتطبيق',
-  'showcase.publishModal.diagramCorePlaceholder': 'وصف المحتوى الأساسي وخصائص تصور التفكير لهذا المخطط',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'وصف المحتوى الأساسي وخصائص تصور التفكير لهذا المخطط',
   'showcase.publishModal.classroomAppPlaceholder': 'كيفية استخدام هذا الرسم التخطيطي في الفصل',
   'showcase.publishModal.tagInputPlaceholder': 'اكتب علامة (بحد أقصى 10 أحرف)، واضغط على Enter',
   'showcase.publishModal.tagRecommended': 'وسوم مقترحة',
   'showcase.publishModal.tagCountHint': '(الحد الأقصى {max})',
   'showcase.publishModal.tagMaxCount': 'يمكنك إضافة __ T0 __وسوم على الأكثر',
-  'showcase.publishModal.networkError': 'فشل الإرسال — تحقق من تشغيل الخادم وأن أحجام الملفات ضمن الحدود',
+  'showcase.publishModal.networkError':
+    'فشل الإرسال — تحقق من تشغيل الخادم وأن أحجام الملفات ضمن الحدود',
   'showcase.publishModal.fileTooLarge': '"{name}" يتجاوز حد حجم __T1 __ميجابايت',
-  'showcase.publishModal.uploadTotalTooLarge': 'يتجاوز إجمالي حجم التحميل الحد — تقليل حجم المرفق أو الفيديو',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'يتجاوز إجمالي حجم التحميل الحد — تقليل حجم المرفق أو الفيديو',
   'showcase.publishModal.tagAdd': 'اضف إليه',
   'showcase.publishModal.publishBtn': 'يطلق',
   'showcase.publishModal.reflectionPlaceholder': 'اكتب رأيك في هذا الدرس (اختياري)',
@@ -152,9 +190,12 @@ export default {
   'showcase.publishModal.validationDiagramType': 'يرجى تحديد نوع الرسم التخطيطي',
   'showcase.publishModal.invalidFileType': 'تنسيق الملف غير مدعوم',
   'showcase.publishModal.invalidMgFile': 'تعذر قراءة ملف .mg هذا — قم بتصديره من MindGraph أولاً',
-  'showcase.publishModal.cannotPreview': 'تعذر إنشاء معاينة للغلاف — ستظل الحالة قيد الإرسال. جرب PNG/JPG أو اختر مخططًا محفوظًا.',
-  'showcase.publishModal.cannotPreviewHistory': 'تعذر إنشاء غطاء من هذا الرسم التخطيطي المحفوظ — ستظل الحالة قيد الإرسال. أعد اختياره أو أعد الحفظ من اللوحة القماشية.',
-  'showcase.publishModal.cannotPreviewTemplate': 'تعذر إنشاء غطاء — ستظل الحالة قيد الإرسال. تحقق من ملف .mg أو اختر مخططًا آخر محفوظًا.',
+  'showcase.publishModal.cannotPreview':
+    'تعذر إنشاء معاينة للغلاف — ستظل الحالة قيد الإرسال. جرب PNG/JPG أو اختر مخططًا محفوظًا.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'تعذر إنشاء غطاء من هذا الرسم التخطيطي المحفوظ — ستظل الحالة قيد الإرسال. أعد اختياره أو أعد الحفظ من اللوحة القماشية.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'تعذر إنشاء غطاء — ستظل الحالة قيد الإرسال. تحقق من ملف .mg أو اختر مخططًا آخر محفوظًا.',
   'showcase.publishModal.historyTitle': 'اختر الرسم التخطيطي المحفوظ',
   'showcase.publishModal.historySearch': 'اسم مخطط البحث...',
   'showcase.publishModal.historyEmpty': 'No saved diagrams',
@@ -184,9 +225,11 @@ export default {
   'showcase.detail.delist': 'إزالة من القائمة',
   'showcase.detail.resubmit': 'تعديل وإعادة الإرسال',
   'showcase.detail.withdrawTitle': 'ترك دعوى',
-  'showcase.detail.withdrawConfirm': 'سحب "__T0 __" ؟ ستتم إزالته من قائمة انتظار المراجعة ولا يمكن استعادته.',
+  'showcase.detail.withdrawConfirm':
+    'سحب "__T0 __" ؟ ستتم إزالته من قائمة انتظار المراجعة ولا يمكن استعادته.',
   'showcase.detail.delistTitle': 'حالة الرفع من القائمة',
-  'showcase.detail.delistConfirm': 'حذف "{title}" من المعرض ؟ لن يتمكن المستخدمون الآخرون من مشاهدته بعد الآن.',
+  'showcase.detail.delistConfirm':
+    'حذف "{title}" من المعرض ؟ لن يتمكن المستخدمون الآخرون من مشاهدته بعد الآن.',
   'showcase.detail.confirm': 'بالتأكيد',
   'showcase.detail.cancel': 'يلغي',
   'showcase.withdrawn': 'منسحب',
@@ -207,7 +250,8 @@ export default {
   'showcase.detail.officePreviewPending': 'تحويل الشرائح للمعاينة...',
   'showcase.detail.docPreviewLoading': 'جاري تحميل المستند...',
   'showcase.detail.docPreviewFailed': 'تعذر تحميل المعاينة. حاول الفتح في علامة تبويب جديدة.',
-  'showcase.detail.legacyDocHint': 'لا يمكن معاينة ملفات .doc القديمة مضمنة. افتح الملف أو قم بتنزيله، أو قم بتحميل .docx للمعاينة داخل المتصفح.',
+  'showcase.detail.legacyDocHint':
+    'لا يمكن معاينة ملفات .doc القديمة مضمنة. افتح الملف أو قم بتنزيله، أو قم بتحميل .docx للمعاينة داخل المتصفح.',
   'showcase.detail.noDocument': 'معاينة المستند',
   'showcase.detail.noDiagramPreview': 'لا توجد معاينة للرسم التخطيطي',
   'showcase.detail.diagramPreviewLoading': 'جارٍ تحميل الرسم التخطيطي...',

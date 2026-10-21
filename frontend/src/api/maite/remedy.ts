@@ -1,9 +1,9 @@
 /**
  * Maite remedy API.
  */
-import { maiteRequestJson } from './client'
-
 import type { MaiteRemedyTask } from '@/types/maite'
+
+import { maiteRequestJson } from './client'
 
 export type RemedyConfidence = 'unclear' | 'partial' | 'clear'
 

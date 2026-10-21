@@ -5,13 +5,17 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Mavzu yoki markaz tugunlarini tozalab bo‘lmaydi',
-  'notification.cannotResetSelectDiagramType': 'Qayta tiklab bo‘lmadi: avval diagramma turini tanlang',
+  'notification.cannotResetSelectDiagramType':
+    'Qayta tiklab bo‘lmadi: avval diagramma turini tanlang',
   'notification.canvasClearNodes': '{count} ta tugun tozalandi',
   'notification.canvasClearNodesLearning': '{count} ta tugun bo‘shatildi, javoblarga qo‘shildi',
   'notification.canvasSomeoneEditingNode': 'Boshqa foydalanuvchi bu tugunni tahrir qilmoqda',
-  'notification.collabDeleteBlocked': 'Tanlangan tugunni boshqa foydalanuvchi tahrir qilayotganda o‘chirib bo‘lmaydi',
-  'notification.collabRedoBlocked': 'Boshqa foydalanuvchi tahrir qilayotganda qayta bajarib bo‘lmaydi',
-  'notification.collabUndoBlocked': 'Boshqa foydalanuvchi tahrir qilayotganda bekor qilib bo‘lmaydi',
+  'notification.collabDeleteBlocked':
+    'Tanlangan tugunni boshqa foydalanuvchi tahrir qilayotganda o‘chirib bo‘lmaydi',
+  'notification.collabRedoBlocked':
+    'Boshqa foydalanuvchi tahrir qilayotganda qayta bajarib bo‘lmaydi',
+  'notification.collabUndoBlocked':
+    'Boshqa foydalanuvchi tahrir qilayotganda bekor qilib bo‘lmaydi',
   'notification.conversationDeleted': 'Suhbat o‘chirildi',
   'notification.copied': 'Buferga nusxalandi',
   'notification.copyFailed': 'Nusxalash muvaffaqiyatsiz',
@@ -21,7 +25,8 @@ export default {
   'notification.feedbackThanks': 'Fikr-mulohazangiz uchun rahmat',
   'notification.feedbackThanksDislike': 'Fikr-mulohazangiz uchun rahmat — yaxshilaymiz',
   'notification.focusQuestionTooShort': 'Avval uzunroq markaz savol kiriting',
-  'notification.geoLiteMissingIntro': 'MaxMind dan GeoLite2 Country ni yuklab oling, GeoLite2-Country.mmdb ni ajratib, server ma’lumotlar papkasiga nusxalang:',
+  'notification.geoLiteMissingIntro':
+    'MaxMind dan GeoLite2 Country ni yuklab oling, GeoLite2-Country.mmdb ni ajratib, server ma’lumotlar papkasiga nusxalang:',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite yuklab olish sahifasini ochish',
   'notification.geoLiteMissingPathLabel': 'Kutilgan yo‘l:',
   'notification.geoLiteMissingTitle': 'GeoLite2 Country ma’lumotlar bazasi topilmadi',
@@ -33,9 +38,11 @@ export default {
   'notification.importInvalidData': 'Import muvaffaqiyatsiz: diagramma ma’lumotlari noto‘g‘ri',
   'notification.importLoadFailed': 'Import muvaffaqiyatsiz: diagramma yuklanmadi',
   'notification.importSavePartial': 'Import qilindi, lekin kutubxonaga saqlash muvaffaqiyatsiz',
-  'notification.importSlotsFull': 'Kutubxona to‘ldi; diagramma import qilindi, lekin kutubxonaga saqlanmadi',
+  'notification.importSlotsFull':
+    'Kutubxona to‘ldi; diagramma import qilindi, lekin kutubxonaga saqlanmadi',
   'notification.importSuccess': 'Diagramma import qilindi va kutubxonaga saqlandi',
-  'notification.importUnsupportedType': 'Import muvaffaqiyatsiz: diagramma turi qo‘llab-quvvatlanmaydi',
+  'notification.importUnsupportedType':
+    'Import muvaffaqiyatsiz: diagramma turi qo‘llab-quvvatlanmaydi',
   'notification.inlineRecEmpty': 'Tavsiyalar yaratilmadi. Qayta urining yoki mavzuni tahrirlang.',
   'notification.loadMoreFailed': 'Ko‘proq yuklab bo‘lmadi',
   'notification.networkError': 'Tarmoq xatosi',
@@ -47,7 +54,8 @@ export default {
   'notification.rootConceptLinkNotFound': 'Ildiz tushuncha havolasi topilmadi',
   'notification.saved': 'O‘zgarishlar muvaffaqiyatli saqlandi',
   'notification.selectNodeToClear': 'Tozalash uchun tugun tanlang',
-  'notification.sessionInvalidated': 'Ruxsat etilgan qurilmalar sonidan oshganingiz uchun tizimdan chiqarildingiz',
+  'notification.sessionInvalidated':
+    'Ruxsat etilgan qurilmalar sonidan oshganingiz uchun tizimdan chiqarildingiz',
   'notification.sessionKicked': 'Bu hisob boshqa qurilmalarda ushbu hisobdan oflayn rejimda kirdi',
   'notification.signInToUse': 'Foydalanish uchun tizimga kiring',
   'notification.signInToValidateFocus': 'Markaz savolni tasdiqlash uchun tizimga kiring',

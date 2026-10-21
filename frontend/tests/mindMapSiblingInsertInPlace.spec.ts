@@ -4,9 +4,9 @@ import { insertMindMapSiblingInPlace } from '@/stores/diagram/mindMapSiblingInse
 import type { Connection, DiagramNode } from '@/types'
 import { isMindMapL1, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { MINDMAP_NODE_UID_DATA_KEY } from '@/utils/mindMapNodeUid'
+import { must } from '@/utils/must'
 
-const IDENTITY_ID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const IDENTITY_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function topicTargets(
   connections: Connection[],
@@ -142,8 +142,8 @@ describe('insertMindMapSiblingInPlace', () => {
       themeId: 'vibrantBlue',
       diagramStyleId: 'bubble',
       nodeStyles: {
-        'branch-r-1-0': nodes[1].style!,
-        'branch-l-1-0': nodes[2].style!,
+        'branch-r-1-0': must(nodes[1].style),
+        'branch-l-1-0': must(nodes[2].style),
       },
     })
     expect(result).toBeTruthy()

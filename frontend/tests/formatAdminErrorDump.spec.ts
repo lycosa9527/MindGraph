@@ -1,5 +1,4 @@
 /** Vitest — admin error collection clipboard dump formatting. */
-
 import { describe, expect, it } from 'vitest'
 
 import {

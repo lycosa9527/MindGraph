@@ -1,6 +1,6 @@
 /** Diagram-case / diagram-template gallery items (images + saved diagrams). */
-
 import { isRenderableShowcaseSpec } from '@/components/showcase/showcaseShared'
+import { must } from '@/utils/must'
 
 export const DIAGRAM_GALLERY_MAX_ITEMS = 15
 
@@ -94,7 +94,10 @@ export type ShowcaseCarouselSlide =
       spec?: Record<string, unknown>
     }
 
-function staticUrlFromPath(path: string, resolveUrl: (url: string) => string | null): string | null {
+function staticUrlFromPath(
+  path: string,
+  resolveUrl: (url: string) => string | null
+): string | null {
   const normalized = path.replace(/^\/+/, '')
   return resolveUrl(`/static/${normalized}`)
 }
@@ -293,7 +296,7 @@ export function resolveCarouselSlides(params: {
   if (sourceUrl && /\.(png|jpe?g|webp|gif)(\?|$)/i.test(sourceUrl)) {
     slides.push({ kind: 'image', url: sourceUrl })
   } else if (params.resolveUrl(params.thumbnailUrl)) {
-    const thumb = params.resolveUrl(params.thumbnailUrl)!
+    const thumb = must(params.resolveUrl(params.thumbnailUrl))
     slides.push({ kind: 'image', url: thumb })
   }
 

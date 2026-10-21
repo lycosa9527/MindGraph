@@ -1,7 +1,10 @@
-import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { effectScope, nextTick, ref } from 'vue'
 import { createApp } from 'vue'
+
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useChatHandoff } from '@/composables/mindMap/useChatHandoff'
 
 const { apiRequest, apiRequestJson } = vi.hoisted(() => ({
   apiRequest: vi.fn(),
@@ -12,8 +15,6 @@ vi.mock('@/utils/apiClient', () => ({
   apiRequest: (...args: unknown[]) => apiRequest(...args),
   apiRequestJson: (...args: unknown[]) => apiRequestJson(...args),
 }))
-
-import { useChatHandoff } from '@/composables/mindMap/useChatHandoff'
 
 function withQueryApp<T>(run: () => T): { result: T; stop: () => void } {
   const app = createApp({ render: () => null })

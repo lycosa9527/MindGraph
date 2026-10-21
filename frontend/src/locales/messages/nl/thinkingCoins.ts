@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Binnenkort beschikbaar',
   'thinkingCoins.schoolInfo': 'Neem contact op met je schoolbeheerder voor schoolplannen',
   'thinkingCoins.school.headline': 'AI-gestuurd denken · schooloplossingen',
-  'thinkingCoins.school.description': 'Private implementatie, maatwerkfuncties en volledige operationele ondersteuning voor scholen en instellingen — gebouwd voor schaal, branding en gegevensbeveiliging.',
+  'thinkingCoins.school.description':
+    'Private implementatie, maatwerkfuncties en volledige operationele ondersteuning voor scholen en instellingen — gebouwd voor schaal, branding en gegevensbeveiliging.',
   'thinkingCoins.school.feature.accountManager': 'Toegewijde accountmanager',
   'thinkingCoins.school.feature.accountManagerDesc': 'Persoonlijk advies',
   'thinkingCoins.school.feature.privateDeploy': 'Private implementatie',
@@ -49,7 +50,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.validationRequired': 'Vul alle verplichte velden in',
   'thinkingCoins.school.validationPhone': 'Voer een geldig telefoonnummer in',
   'thinkingCoins.school.validationTooLong': 'Een of meer velden zijn te lang',
-  'thinkingCoins.school.validationInvalid': 'Sommige velden zijn ongeldig — controleer en probeer opnieuw',
+  'thinkingCoins.school.validationInvalid':
+    'Sommige velden zijn ongeldig — controleer en probeer opnieuw',
   'thinkingCoins.tier.trial': 'Proef',
   'thinkingCoins.tier.monthly': 'Maandelijks',
   'thinkingCoins.tier.sub': 'Maandabonnement',
@@ -63,7 +65,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Verwijzingsbeloning',
   'thinkingCoins.reason.case_reward': 'Casebeloning',
   'thinkingCoins.reason.subscription_grant': 'Abonnementstoekenning',
-  'thinkingCoins.dailyExpiresHint': 'Inlogbeloningen zijn dezelfde dag geldig en worden om 24:00 uur gereset',
+  'thinkingCoins.dailyExpiresHint':
+    'Inlogbeloningen zijn dezelfde dag geldig en worden om 24:00 uur gereset',
   'thinkingCoins.dailyBalanceRemaining': 'Resterende check-in van vandaag {n}',
   'thinkingCoins.admin.tab': 'Denktokens',
   'thinkingCoins.admin.tasksTitle': 'Verdientaken',
@@ -75,7 +78,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'Opslaan',
   'thinkingCoins.admin.signupGrant': 'Registratiebonus',
   'thinkingCoins.admin.dailyEarnCap': 'Dagelijkse verdienlimiet',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = onbeperkt; standaard 135 komt overeen met alle dagelijkse taken',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = onbeperkt; standaard 135 komt overeen met alle dagelijkse taken',
   'thinkingCoins.admin.costMindmate': 'MindMate-kosten',
   'thinkingCoins.admin.costDiagram': 'Diagramgeneratiekosten',
   'thinkingCoins.admin.costCanvas': 'Canvas-assistentkosten',

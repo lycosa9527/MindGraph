@@ -3,7 +3,6 @@
  * survive server temp_images cleanup even when the user never scrolls the bubble
  * into view or closes the tab before lazy MessageBubble resolution runs.
  */
-
 import {
   hasGeneratedDiagramImage,
   parseMindmateDiagramLibraryId,

@@ -4,9 +4,9 @@
  */
 import { ref } from 'vue'
 
-import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import { Loading } from '@element-plus/icons-vue'
 
+import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import { useLanguage } from '@/composables'
 
 defineProps<{

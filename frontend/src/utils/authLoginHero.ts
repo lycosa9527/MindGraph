@@ -1,5 +1,4 @@
 /** /auth video rotation. Local Vite uses one still (no COS). */
-
 import { isTouchDeviceUserAgent } from '@/utils/isMobileClient'
 
 export const AUTH_LOGIN_HERO_IDS = [
@@ -50,15 +49,17 @@ export function authLoginHeroViewportNarrow(width: number): boolean {
  * Phone or tablet, including iOS desktop-site mode (Mac UA, phone-sized screen).
  * Those clients cover the hero with the login card, so the COS clip is wasted.
  */
-export function authLoginHeroHandheld(input: {
-  userAgent?: string
-  platform?: string
-  maxTouchPoints?: number
-  pointerCoarse?: boolean
-  hoverNone?: boolean
-  screenWidth?: number
-  screenHeight?: number
-} = {}): boolean {
+export function authLoginHeroHandheld(
+  input: {
+    userAgent?: string
+    platform?: string
+    maxTouchPoints?: number
+    pointerCoarse?: boolean
+    hoverNone?: boolean
+    screenWidth?: number
+    screenHeight?: number
+  } = {}
+): boolean {
   if (isTouchDeviceUserAgent(input.userAgent)) {
     return true
   }
@@ -70,17 +71,19 @@ export function authLoginHeroHandheld(input: {
   const shortSide = Math.min(input.screenWidth ?? 0, input.screenHeight ?? 0)
   return Boolean(
     input.pointerCoarse &&
-      input.hoverNone &&
-      shortSide > 0 &&
-      shortSide <= AUTH_LOGIN_HERO_PHONE_SHORT_SIDE_MAX_PX
+    input.hoverNone &&
+    shortSide > 0 &&
+    shortSide <= AUTH_LOGIN_HERO_PHONE_SHORT_SIDE_MAX_PX
   )
 }
 
-export function authLoginHeroShouldAnimate(options: {
-  reduceMotion?: boolean
-  narrowViewport?: boolean
-  handheld?: boolean
-} = {}): boolean {
+export function authLoginHeroShouldAnimate(
+  options: {
+    reduceMotion?: boolean
+    narrowViewport?: boolean
+    handheld?: boolean
+  } = {}
+): boolean {
   if (options.reduceMotion || options.narrowViewport || options.handheld) {
     return false
   }
@@ -98,10 +101,7 @@ export function authLoginHeroSrc(
 }
 
 function isHeroId(value: unknown): value is AuthLoginHeroId {
-  return (
-    typeof value === 'string' &&
-    (AUTH_LOGIN_HERO_IDS as readonly string[]).includes(value)
-  )
+  return typeof value === 'string' && (AUTH_LOGIN_HERO_IDS as readonly string[]).includes(value)
 }
 
 export function shuffleAuthLoginHeroIds(
@@ -136,9 +136,7 @@ function readBag(durable: Pick<Storage, 'getItem' | 'setItem'>): HeroBagState {
   }
 }
 
-export function pickAuthLoginHeroId(
-  options: AuthLoginHeroPickOptions = {}
-): AuthLoginHeroId {
+export function pickAuthLoginHeroId(options: AuthLoginHeroPickOptions = {}): AuthLoginHeroId {
   const durable = options.durable ?? window.localStorage
   const session = options.session ?? window.sessionStorage
   const random = options.random ?? Math.random
@@ -147,13 +145,9 @@ export function pickAuthLoginHeroId(
     return sessionClip
   }
   const state = readBag(durable)
-  const bag =
-    state.bag.length > 0 ? state.bag : shuffleAuthLoginHeroIds(state.last, random)
+  const bag = state.bag.length > 0 ? state.bag : shuffleAuthLoginHeroIds(state.last, random)
   const next = bag[0]
-  durable.setItem(
-    AUTH_LOGIN_HERO_STORAGE_KEY,
-    JSON.stringify({ bag: bag.slice(1), last: next })
-  )
+  durable.setItem(AUTH_LOGIN_HERO_STORAGE_KEY, JSON.stringify({ bag: bag.slice(1), last: next }))
   session.setItem(AUTH_LOGIN_HERO_SESSION_KEY, next)
   return next
 }

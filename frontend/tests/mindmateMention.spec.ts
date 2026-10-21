@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  appendMention,
   collabRoutesToMindmate,
   contentMentionsMindmate,
+  ensureMindmateMention,
   filterMentionCandidates,
   findMentionQueryAtCaret,
   insertMentionToken,
@@ -47,12 +49,26 @@ describe('mindmateMention', () => {
     expect(contentMentionsMindmate('@小思，你好', ['小思'])).toBe(true)
   })
 
-  it('routes the MindMate segment to the AI and still honors @mindmate for everyone', () => {
-    expect(collabRoutesToMindmate('mindmate', '只给老师看')).toBe(true)
-    expect(collabRoutesToMindmate('mindmate', '联系 user@mindmate.com')).toBe(true)
-    expect(collabRoutesToMindmate('all', '只给老师看')).toBe(false)
-    expect(collabRoutesToMindmate('all', '联系 user@mindmate.com')).toBe(false)
-    expect(collabRoutesToMindmate('all', '@mindmate帮我写教案')).toBe(true)
-    expect(collabRoutesToMindmate('all', '@迈特教研 帮我', ['迈特教研'])).toBe(true)
+  it('asks MindMate only when the line @mentions it', () => {
+    expect(collabRoutesToMindmate('只给老师看')).toBe(false)
+    expect(collabRoutesToMindmate('联系 user@mindmate.com')).toBe(false)
+    expect(collabRoutesToMindmate('@mindmate帮我写教案')).toBe(true)
+    expect(collabRoutesToMindmate('@迈特教研 帮我', ['迈特教研'])).toBe(true)
+  })
+
+  it('appends an @ mention from an avatar', () => {
+    expect(appendMention('', '王老师')).toBe('@王老师 ')
+    expect(appendMention('大家看一下', '王老师')).toBe('大家看一下 @王老师 ')
+    expect(appendMention('大家看一下 @王老师', '王老师')).toBe('大家看一下 @王老师 ')
+    expect(appendMention('大家好 @王老师 ', '@王老师')).toBe('大家好 @王老师 ')
+    expect(appendMention('@李老师 你好', '王老师')).toBe('@李老师 你好 @王老师 ')
+    expect(appendMention('草稿', '  ')).toBe('草稿')
+  })
+
+  it('inserts an @ mention once', () => {
+    expect(ensureMindmateMention('', 'MindMate')).toBe('@MindMate ')
+    expect(ensureMindmateMention('大家看一下', 'MindMate')).toBe('大家看一下 @MindMate ')
+    expect(ensureMindmateMention('大家看一下 @MindMate ', 'MindMate')).toBe('大家看一下 @MindMate ')
+    expect(ensureMindmateMention('@迈特教研 帮我', '迈特教研')).toBe('@迈特教研 帮我')
   })
 })

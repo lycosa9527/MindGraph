@@ -3,7 +3,7 @@
  * `data.mindMapSide` / `data.mindMapDepth` are stamped at layout; positional
  * `branch-{l|r}-{depth}-{idx}` ids remain a fallback for unsaved specs.
  */
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection } from '@/types'
 
 export const MINDMAP_SIDE_DATA_KEY = 'mindMapSide'
 export const MINDMAP_DEPTH_DATA_KEY = 'mindMapDepth'
@@ -74,9 +74,7 @@ export function isLeftoverMindMapBranchId(nodeId: string): boolean {
   return isPositionalMindMapBranchId(nodeId) || INVENTED_MINDMAP_PREFIX_ID_RE.test(nodeId)
 }
 
-export function parsePositionalMindMapBranchId(
-  nodeId: string
-): PositionalMindMapBranchId | null {
+export function parsePositionalMindMapBranchId(nodeId: string): PositionalMindMapBranchId | null {
   const match = POSITIONAL_MINDMAP_BRANCH_ID_RE.exec(nodeId)
   if (!match) return null
   return {
@@ -190,10 +188,7 @@ export function mindMapNodeDepthFromConnections(
   return depth > 0 ? depth : null
 }
 
-export function isMindMapL1(
-  nodeId: string,
-  connections: readonly ConnectionLike[]
-): boolean {
+export function isMindMapL1(nodeId: string, connections: readonly ConnectionLike[]): boolean {
   if (nodeId === MINDMAP_TOPIC_ID) return false
   const parentOf = parentOfMap(connections)
   return parentOf.get(nodeId) === MINDMAP_TOPIC_ID
@@ -313,7 +308,8 @@ export function resolveMindMapDepthFromIdOrData(
 ): number {
   return mindMapNodeDepth(nodeId, {
     nodeData: nodeDataFromUnknown(nodeOrData),
-    node: nodeOrData && typeof nodeOrData === 'object' && 'id' in nodeOrData ? nodeOrData : undefined,
+    node:
+      nodeOrData && typeof nodeOrData === 'object' && 'id' in nodeOrData ? nodeOrData : undefined,
   })
 }
 
@@ -329,10 +325,7 @@ export function resolveMindMapSideFromIdOrData(
   return mindMapNodeSide(nodeId, { node })
 }
 
-export function mindMapBranchDataFields(
-  side: MindMapSide,
-  depth: number
-): Record<string, unknown> {
+export function mindMapBranchDataFields(side: MindMapSide, depth: number): Record<string, unknown> {
   return {
     [MINDMAP_SIDE_DATA_KEY]: side,
     [MINDMAP_DEPTH_DATA_KEY]: depth,

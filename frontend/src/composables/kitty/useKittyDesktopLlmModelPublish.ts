@@ -57,12 +57,7 @@ export function useKittyDesktopLlmModelPublish(options: {
   }
 
   watch(
-    () =>
-      [
-        options.enabled.value,
-        options.scopeId.value,
-        llmResultsStore.selectedModel,
-      ] as const,
+    () => [options.enabled.value, options.scopeId.value, llmResultsStore.selectedModel] as const,
     () => {
       schedule()
     },

@@ -101,11 +101,7 @@ export function showcaseMediaStatusChipClass(status: ShowcaseMediaStatus): strin
     return 'bg-amber-50 text-amber-800'
   }
   if (status === 'preview_ready') return 'bg-sky-50 text-sky-800'
-  if (
-    status === 'conversion_failed' ||
-    status === 'preview_failed' ||
-    status === 'cover_failed'
-  ) {
+  if (status === 'conversion_failed' || status === 'preview_failed' || status === 'cover_failed') {
     return 'bg-red-50 text-red-700'
   }
   return 'bg-emerald-50 text-emerald-800'
@@ -129,9 +125,7 @@ export function showcaseCoverJobTooltip(post: ShowcasePost): string {
     job.status === 'failed'
   const busy = showcaseCoverRefreshBusy(post)
   const terminalOk =
-    mediaStatus === 'cover_ready' ||
-    mediaStatus === 'ready' ||
-    mediaStatus === 'preview_ready'
+    mediaStatus === 'cover_ready' || mediaStatus === 'ready' || mediaStatus === 'preview_ready'
 
   // Stale queued/running after paths are ready: hide dead stage noise.
   if (terminalOk && !failed && !busy) {

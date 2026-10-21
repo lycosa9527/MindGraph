@@ -14,7 +14,8 @@ export default {
   'community.deleteConfirmBody': 'Tem certeza de que deseja excluir este compartilhamento?',
   'community.deleteConfirmTitle': 'Confirmar exclusão',
   'community.deleted': 'Excluído',
-  'community.emptyNoPosts': 'Nenhum trabalho correspondente foi encontrado. Tente ajustar as condições do filtro ou pesquisar palavras-chave',
+  'community.emptyNoPosts':
+    'Nenhum trabalho correspondente foi encontrado. Tente ajustar as condições do filtro ou pesquisar palavras-chave',
   'community.filter.all': 'todos',
   'community.filter.mine': 'meu',
   'community.filterCategory': 'Classificação',
@@ -76,10 +77,12 @@ export default {
   'debateverse.clickNextHint': 'Clique no botão Avançar para que as alterações tenham efeito',
   'debateverse.coinTossAffirmativeFirst': 'A afirmativa fala primeiro',
   'debateverse.coinTossGotIt': 'sabia',
-  'debateverse.coinTossModalBody': 'Antes do jogo, jogue uma moeda para decidir a ordem de fala ou escolha os prós e os contras.',
+  'debateverse.coinTossModalBody':
+    'Antes do jogo, jogue uma moeda para decidir a ordem de fala ou escolha os prós e os contras.',
   'debateverse.coinTossNegativeFirst': 'O lado negativo fala primeiro',
   'debateverse.coinTossOrder': 'Jogue uma moeda para determinar a ordem de falar',
-  'debateverse.coinTossRules': 'O modelo de IA foi atribuído aleatoriamente a cada função de debate. Antes do jogo, o sorteio é usado para determinar a ordem de fala ou para escolher os prós e os contras.',
+  'debateverse.coinTossRules':
+    'O modelo de IA foi atribuído aleatoriamente a cada função de debate. Antes do jogo, o sorteio é usado para determinar a ordem de fala ou para escolher os prós e os contras.',
   'debateverse.coinTossStageTitle': 'Estágio de lançamento de moeda',
   'debateverse.debateTopicLabel': 'Tópico de debate:',
   'debateverse.executeCoinToss': 'Execute um sorteio',
@@ -105,18 +108,25 @@ export default {
   'debateverse.roleLabel.debater': 'Participe como debatedor',
   'debateverse.roleLabel.judgeRole': 'como árbitro',
   'debateverse.roleLabel.viewer': 'Assista como espectador',
-  'debateverse.setup.greeting': '{username} Olá, a verdadeira sabedoria nasce do confronto de opiniões.',
+  'debateverse.setup.greeting':
+    '{username} Olá, a verdadeira sabedoria nasce do confronto de opiniões.',
   'debateverse.setup.roleDebater': 'Participe como debatedor',
   'debateverse.setup.roleJudge': 'como árbitro',
   'debateverse.setup.roleViewer': 'Assista como espectador',
   'debateverse.setup.suggestion1': 'Deve a inteligência artificial ter personalidade jurídica?',
-  'debateverse.setup.suggestion2': 'Os jogos online fazem mais bem do que mal aos adolescentes ou fazem mais mal do que bem?',
+  'debateverse.setup.suggestion2':
+    'Os jogos online fazem mais bem do que mal aos adolescentes ou fazem mais mal do que bem?',
   'debateverse.setup.suggestion3': 'O vestibular deve ser cancelado ou mantido?',
-  'debateverse.setup.suggestion4': 'As redes sociais deveriam impor uma censura mais rigorosa ao conteúdo do usuário?',
-  'debateverse.setup.suggestion5': 'O teletrabalho deveria se tornar uma forma convencional de trabalhar?',
-  'debateverse.setup.suggestion6': 'O conteúdo gerado pela IA deve ser protegido por direitos autorais?',
-  'debateverse.setup.suggestion7': 'A educação deveria se concentrar mais na transmissão de conhecimentos ou no cultivo de habilidades?',
-  'debateverse.setup.suggestion8': 'A tecnologia de edição genética deveria ser permitida para uso em embriões humanos?',
+  'debateverse.setup.suggestion4':
+    'As redes sociais deveriam impor uma censura mais rigorosa ao conteúdo do usuário?',
+  'debateverse.setup.suggestion5':
+    'O teletrabalho deveria se tornar uma forma convencional de trabalhar?',
+  'debateverse.setup.suggestion6':
+    'O conteúdo gerado pela IA deve ser protegido por direitos autorais?',
+  'debateverse.setup.suggestion7':
+    'A educação deveria se concentrar mais na transmissão de conhecimentos ou no cultivo de habilidades?',
+  'debateverse.setup.suggestion8':
+    'A tecnologia de edição genética deveria ser permitida para uso em embriões humanos?',
   'debateverse.setup.topicPlaceholder': 'Insira o tópico do debate...',
   'debateverse.side.affirmative': 'quadrado',
   'debateverse.side.judge': 'árbitro',

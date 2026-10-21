@@ -21,13 +21,11 @@ export function parseZhihuiDiagramHandoffQuery(
   query: Record<string, unknown>
 ): ZhihuiDiagramHandoffQuery {
   const modeRaw = firstQueryValue(query.mode)
-  const diagramId =
-    firstQueryValue(query.diagramId) || firstQueryValue(query.diagram_id)
+  const diagramId = firstQueryValue(query.diagramId) || firstQueryValue(query.diagram_id)
   const diagramTitle = firstQueryValue(query.diagramTitle)
   const conversationId =
     firstQueryValue(query.conversationId) || firstQueryValue(query.conversation_id)
-  const mode =
-    modeRaw === 'diagram' || diagramId || conversationId ? 'diagram' : null
+  const mode = modeRaw === 'diagram' || diagramId || conversationId ? 'diagram' : null
   return { mode, diagramId, diagramTitle, conversationId }
 }
 

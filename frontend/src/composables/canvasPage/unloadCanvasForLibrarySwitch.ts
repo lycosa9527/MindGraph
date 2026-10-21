@@ -3,10 +3,10 @@
  * toolbar / nodes never paint across the await. Callers must flush dirty
  * autosave first when a save API is available.
  */
-import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
-import { resetMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { applyDiagramTypeForCanvasChrome } from '@/composables/canvasPage/diagramTypeMaps'
 import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
+import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
+import { resetMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { resetLearningSheetCustomModeUi } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { teardownMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import {
@@ -53,9 +53,7 @@ function clearEphemeralUiForLibrarySwitch(): void {
   useMindClassroomStore().closeModal()
 }
 
-export function unloadCanvasForLibrarySwitch(
-  nextDiagramType: string | null | undefined
-): void {
+export function unloadCanvasForLibrarySwitch(nextDiagramType: string | null | undefined): void {
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
 

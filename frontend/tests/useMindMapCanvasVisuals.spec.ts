@@ -2,8 +2,9 @@
  * Showcase isolation: mind-map v2 visuals must key off the injected preview session
  * (type + session-owned canvas mode), not the editor Pinia store / viewer UI preference.
  */
-import { createPinia, setActivePinia } from 'pinia'
 import { createApp, defineComponent, h, nextTick } from 'vue'
+
+import { createPinia, setActivePinia } from 'pinia'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

@@ -1,12 +1,10 @@
-import { defineAsyncComponent, type Component } from 'vue'
+import { type Component, defineAsyncComponent } from 'vue'
 
 import type { TrainingPageKey } from '@/config/trainingPages'
 
 const LIVE_PAGES: Partial<Record<TrainingPageKey, Component>> = {
   auth: defineAsyncComponent(() => import('@/pages/AuthPage.vue')),
-  mindgraph: defineAsyncComponent(
-    () => import('@/components/mindgraph/MindGraphContainer.vue')
-  ),
+  mindgraph: defineAsyncComponent(() => import('@/components/mindgraph/MindGraphContainer.vue')),
   mindmate: defineAsyncComponent(() => import('@/pages/MindMatePage.vue')),
   askonce: defineAsyncComponent(() => import('@/pages/AskOncePage.vue')),
   maite: defineAsyncComponent(() => import('@/pages/MaiteLearningPage.vue')),
@@ -19,9 +17,7 @@ const LIVE_PAGES: Partial<Record<TrainingPageKey, Component>> = {
   showcase: defineAsyncComponent(() => import('@/pages/ShowcasePage.vue')),
   community: defineAsyncComponent(() => import('@/pages/CommunityPage.vue')),
   'voice-notes': defineAsyncComponent(() => import('@/pages/VoiceNotesPage.vue')),
-  'thinking-coins': defineAsyncComponent(
-    () => import('@/pages/ThinkingCoinsUpgradePage.vue')
-  ),
+  'thinking-coins': defineAsyncComponent(() => import('@/pages/ThinkingCoinsUpgradePage.vue')),
 }
 
 export function trainingLivePage(key: string | null | undefined): Component | null {

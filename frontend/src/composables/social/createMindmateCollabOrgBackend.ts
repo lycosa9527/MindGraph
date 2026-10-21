@@ -17,6 +17,7 @@ export function createMindmateCollabOrgBackend(
   getRoomCode: () => string,
   getVisibility: () => string,
   onFetchError?: (messageKey: string) => void,
+  getSessionId: () => string = () => ''
 ): OrgRosterBackend {
   const members = ref<OrgMembersPage['items']>([])
   const membersTotal = ref(0)
@@ -38,16 +39,29 @@ export function createMindmateCollabOrgBackend(
 
     const visibility = getVisibility()
     const roomCode = getRoomCode().trim()
-    const useSessionRoster = visibility === 'network' && roomCode.length > 0
-    if (useSessionRoster) {
+    const sessionId = getSessionId().trim()
+    const useNetworkRoster = visibility === 'network' && roomCode.length > 0
+    let endpoint = '/api/mindmate/collab/org-members'
+    if (useNetworkRoster) {
       params.set('code', formatMindmateCollabCode(roomCode))
+      endpoint = '/api/mindmate/collab/session-members'
     }
 
-    const endpoint = useSessionRoster
-      ? '/api/mindmate/collab/session-members'
-      : '/api/mindmate/collab/org-members'
-
     try {
+      if (!useNetworkRoster && sessionId) {
+        const groupParams = new URLSearchParams(params)
+        groupParams.set('session_id', sessionId)
+        const groupResponse = await authFetch(`/api/mindmate/collab/group-members?${groupParams}`)
+        if (groupResponse.ok) {
+          const group = (await groupResponse.json()) as OrgMembersPage & { closed?: boolean }
+          if (group.closed) {
+            listQuery.value = q
+            members.value = append ? [...members.value, ...group.items] : group.items
+            membersTotal.value = group.total
+            return
+          }
+        }
+      }
       const response = await authFetch(`${endpoint}?${params}`)
       if (!response.ok) {
         if (!append && offset === 0) {

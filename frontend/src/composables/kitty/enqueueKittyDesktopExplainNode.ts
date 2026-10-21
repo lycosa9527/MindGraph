@@ -1,9 +1,7 @@
 /**
  * Mobile Kitty → desktop SPA action queue (library jump, 节点解释).
  */
-export async function enqueueKittyDesktopAction(
-  payload: Record<string, string>
-): Promise<boolean> {
+export async function enqueueKittyDesktopAction(payload: Record<string, string>): Promise<boolean> {
   try {
     const res = await fetch('/api/kitty/desktop_action/enqueue', {
       method: 'POST',

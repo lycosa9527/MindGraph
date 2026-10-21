@@ -21,22 +21,26 @@ export default {
   'notification.feedbackThanks': 'フィードバックありがとうございます',
   'notification.feedbackThanksDislike': 'フィードバックありがとうございます。改善に努めます',
   'notification.focusQuestionTooShort': '先により長い焦点質問を入力してください',
-  'notification.geoLiteMissingIntro': 'MaxMind から GeoLite2 Country をダウンロードし、GeoLite2-Country.mmdb を展開してサーバーの data フォルダに配置してください：',
+  'notification.geoLiteMissingIntro':
+    'MaxMind から GeoLite2 Country をダウンロードし、GeoLite2-Country.mmdb を展開してサーバーの data フォルダに配置してください：',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite ダウンロードページを開く',
   'notification.geoLiteMissingPathLabel': '想定パス：',
   'notification.geoLiteMissingTitle': 'GeoLite2 Country データベースがありません',
   'notification.fullscreenFailed': '全画面表示に入れませんでした',
   'notification.generationCancelled': '生成をキャンセルしました',
-  'notification.conceptMapTabNeedsAi': 'Tab おすすめを使う前に、ツールバーで AI を有効にしてください。',
+  'notification.conceptMapTabNeedsAi':
+    'Tab おすすめを使う前に、ツールバーで AI を有効にしてください。',
   'notification.historyClearNodes': 'ノードのテキストをクリア',
   'notification.historyEmptyLearning': 'ノードを空にして解答欄に追加',
   'notification.importInvalidData': 'インポート失敗：図データが無効です',
   'notification.importLoadFailed': 'インポート失敗：図を読み込めませんでした',
   'notification.importSavePartial': 'インポートしましたが、ライブラリへの保存に失敗しました',
-  'notification.importSlotsFull': 'ライブラリが満杯です。図はインポートされましたがライブラリには保存されません',
+  'notification.importSlotsFull':
+    'ライブラリが満杯です。図はインポートされましたがライブラリには保存されません',
   'notification.importSuccess': '図をインポートし、ライブラリに保存しました',
   'notification.importUnsupportedType': 'インポート失敗：サポートされていない図の種類です',
-  'notification.inlineRecEmpty': 'おすすめは生成されませんでした。もう一度試すか、トピックを編集してください。',
+  'notification.inlineRecEmpty':
+    'おすすめは生成されませんでした。もう一度試すか、トピックを編集してください。',
   'notification.loadMoreFailed': 'さらに読み込めませんでした',
   'notification.networkError': 'ネットワークエラー',
   'notification.nodeNotEligible': 'このノードは Tab おすすめに対応していません。',
@@ -48,7 +52,8 @@ export default {
   'notification.saved': '変更を保存しました',
   'notification.selectNodeToClear': 'クリアするノードを選択してください',
   'notification.sessionInvalidated': 'デバイス数の上限を超えたため、ログアウトされました',
-  'notification.sessionKicked': 'このアカウントは他のデバイスでこのアカウントをオフラインに記録しています',
+  'notification.sessionKicked':
+    'このアカウントは他のデバイスでこのアカウントをオフラインに記録しています',
   'notification.signInToUse': '利用するにはサインインしてください',
   'notification.signInToValidateFocus': '焦点質問を検証するにはサインインしてください',
 } as const

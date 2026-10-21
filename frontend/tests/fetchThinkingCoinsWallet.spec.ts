@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   fetchThinkingCoinsWallet,
@@ -9,12 +10,11 @@ import {
 } from '@/composables/auth/fetchThinkingCoinsWallet'
 import { useAuthStore } from '@/stores/auth'
 import type { ThinkingCoinsWallet } from '@/types/thinkingCoins'
+import { apiRequestJson } from '@/utils/apiClient'
 
 vi.mock('@/utils/apiClient', () => ({
   apiRequestJson: vi.fn(),
 }))
-
-import { apiRequestJson } from '@/utils/apiClient'
 
 const walletFixture: ThinkingCoinsWallet = {
   balance: 120,

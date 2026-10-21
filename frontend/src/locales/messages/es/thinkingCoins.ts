@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Próximamente',
   'thinkingCoins.schoolInfo': 'Contacte al administrador de su escuela para planes escolares',
   'thinkingCoins.school.headline': 'Pensamiento con IA · soluciones escolares',
-  'thinkingCoins.school.description': 'Implementación privada, funciones personalizadas y soporte operativo completo para escuelas e instituciones — pensado para escala, marca y seguridad de datos.',
+  'thinkingCoins.school.description':
+    'Implementación privada, funciones personalizadas y soporte operativo completo para escuelas e instituciones — pensado para escala, marca y seguridad de datos.',
   'thinkingCoins.school.feature.accountManager': 'Gestor de cuenta dedicado',
   'thinkingCoins.school.feature.accountManagerDesc': 'Consulta personalizada',
   'thinkingCoins.school.feature.privateDeploy': 'Implementación privada',
@@ -49,7 +50,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.validationRequired': 'Complete todos los campos obligatorios',
   'thinkingCoins.school.validationPhone': 'Introduzca un número de teléfono válido',
   'thinkingCoins.school.validationTooLong': 'Uno o más campos son demasiado largos',
-  'thinkingCoins.school.validationInvalid': 'Algunos campos no son válidos — revíselos e inténtelo de nuevo',
+  'thinkingCoins.school.validationInvalid':
+    'Algunos campos no son válidos — revíselos e inténtelo de nuevo',
   'thinkingCoins.tier.trial': 'Prueba',
   'thinkingCoins.tier.monthly': 'Mensual',
   'thinkingCoins.tier.sub': 'Suscripción mensual',
@@ -63,7 +65,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Recompensa por referido',
   'thinkingCoins.reason.case_reward': 'Recompensa de caso',
   'thinkingCoins.reason.subscription_grant': 'Concesión de suscripción',
-  'thinkingCoins.dailyExpiresHint': 'Las recompensas de inicio de sesión son válidas el mismo día y se restablecerán a las 24:00',
+  'thinkingCoins.dailyExpiresHint':
+    'Las recompensas de inicio de sesión son válidas el mismo día y se restablecerán a las 24:00',
   'thinkingCoins.dailyBalanceRemaining': 'Queda el check-in de hoy {n}',
   'thinkingCoins.admin.tab': 'Tokens de pensamiento',
   'thinkingCoins.admin.tasksTitle': 'Tareas para ganar',
@@ -75,7 +78,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'Guardar',
   'thinkingCoins.admin.signupGrant': 'Concesión de registro',
   'thinkingCoins.admin.dailyEarnCap': 'Límite diario de ganancia',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = ilimitado; 135 por defecto coincide con todas las tareas diarias',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = ilimitado; 135 por defecto coincide con todas las tareas diarias',
   'thinkingCoins.admin.costMindmate': 'Costo MindMate',
   'thinkingCoins.admin.costDiagram': 'Costo generación de diagrama',
   'thinkingCoins.admin.costCanvas': 'Costo asistencia en lienzo',

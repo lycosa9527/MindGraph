@@ -25,9 +25,11 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.checkedInToday': 'ఈరోజు సైన్ ఇన్ చేసారు',
   'thinkingCoins.usageDoneToday': 'ఈరోజు పూర్తయింది',
   'thinkingCoins.casePendingHint': 'త్వరలో తెరవబడుతుంది',
-  'thinkingCoins.schoolInfo': 'దయచేసి పాఠశాల వెర్షన్ ప్లాన్ గురించి తెలుసుకోవడానికి మీ పాఠశాల నిర్వాహకుడిని సంప్రదించండి',
+  'thinkingCoins.schoolInfo':
+    'దయచేసి పాఠశాల వెర్షన్ ప్లాన్ గురించి తెలుసుకోవడానికి మీ పాఠశాల నిర్వాహకుడిని సంప్రదించండి',
   'thinkingCoins.school.headline': 'AI సాధికారత ఆలోచన·పాఠశాల ఆధారిత పరిష్కారాలు',
-  'thinkingCoins.school.description': 'పెద్ద ఎత్తున బ్రాండ్ బిల్డింగ్ మరియు డేటా సెక్యూరిటీ అవసరాలను తీర్చడానికి పాఠశాలలు మరియు విద్యా సంస్థలకు ప్రైవేటీకరించబడిన విస్తరణ, ప్రత్యేకమైన అనుకూలీకరణ మరియు సమగ్ర కార్యాచరణ మరియు నిర్వహణ మద్దతును అందించండి.',
+  'thinkingCoins.school.description':
+    'పెద్ద ఎత్తున బ్రాండ్ బిల్డింగ్ మరియు డేటా సెక్యూరిటీ అవసరాలను తీర్చడానికి పాఠశాలలు మరియు విద్యా సంస్థలకు ప్రైవేటీకరించబడిన విస్తరణ, ప్రత్యేకమైన అనుకూలీకరణ మరియు సమగ్ర కార్యాచరణ మరియు నిర్వహణ మద్దతును అందించండి.',
   'thinkingCoins.school.feature.accountManager': 'అంకితమైన ఖాతా మేనేజర్',
   'thinkingCoins.school.feature.accountManagerDesc': '1 నుండి 1 సంప్రదింపులు మరియు డాకింగ్',
   'thinkingCoins.school.feature.privateDeploy': 'ప్రైవేట్ విస్తరణ',
@@ -36,20 +38,27 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.feature.customizationDesc': 'డిమాండ్‌పై సౌకర్యవంతమైన కాన్ఫిగరేషన్',
   'thinkingCoins.school.feature.opsSupport': 'సమగ్ర ఆపరేషన్ మరియు నిర్వహణ మద్దతు',
   'thinkingCoins.school.feature.opsSupportDesc': '7×24 గంటల హామీ',
-  'thinkingCoins.school.consultTitle': 'సంప్రదింపుల కోసం అపాయింట్‌మెంట్ తీసుకోండి మరియు మేము ముందస్తుగా మిమ్మల్ని సంప్రదిస్తాము',
+  'thinkingCoins.school.consultTitle':
+    'సంప్రదింపుల కోసం అపాయింట్‌మెంట్ తీసుకోండి మరియు మేము ముందస్తుగా మిమ్మల్ని సంప్రదిస్తాము',
   'thinkingCoins.school.fieldName': 'మీ పేరు',
   'thinkingCoins.school.fieldPhone': 'సంప్రదింపు నంబర్',
   'thinkingCoins.school.fieldOrg': 'పాఠశాల/సంస్థ పేరు',
   'thinkingCoins.school.fieldNote': 'అనుబంధ సూచనలు (ఐచ్ఛికం)',
   'thinkingCoins.school.submit': 'విచారణను సమర్పించండి',
-  'thinkingCoins.school.submitSuccess': 'సమర్పణ విజయవంతమైంది, మేము వీలైనంత త్వరగా మిమ్మల్ని సంప్రదిస్తాము',
+  'thinkingCoins.school.submitSuccess':
+    'సమర్పణ విజయవంతమైంది, మేము వీలైనంత త్వరగా మిమ్మల్ని సంప్రదిస్తాము',
   'thinkingCoins.school.submitFailed': 'సమర్పణ విఫలమైంది, దయచేసి తర్వాత మళ్లీ ప్రయత్నించండి',
-  'thinkingCoins.school.submitRateLimit': 'చాలా తరచుగా సమర్పించండి, దయచేసి తర్వాత మళ్లీ ప్రయత్నించండి',
-  'thinkingCoins.school.submitNotConfigured': 'సంప్రదింపు ఛానెల్ ఇంకా కాన్ఫిగర్ చేయబడలేదు, దయచేసి తర్వాత మళ్లీ ప్రయత్నించండి.',
+  'thinkingCoins.school.submitRateLimit':
+    'చాలా తరచుగా సమర్పించండి, దయచేసి తర్వాత మళ్లీ ప్రయత్నించండి',
+  'thinkingCoins.school.submitNotConfigured':
+    'సంప్రదింపు ఛానెల్ ఇంకా కాన్ఫిగర్ చేయబడలేదు, దయచేసి తర్వాత మళ్లీ ప్రయత్నించండి.',
   'thinkingCoins.school.validationRequired': 'దయచేసి అవసరమైన అన్ని ఫీల్డ్‌లను పూరించండి',
-  'thinkingCoins.school.validationPhone': 'దయచేసి చెల్లుబాటు అయ్యే సంప్రదింపు నంబర్‌ను నమోదు చేయండి',
-  'thinkingCoins.school.validationTooLong': 'కంటెంట్‌లో కొంత భాగం చాలా పొడవుగా ఉంది, దయచేసి దాన్ని కుదించి, మళ్లీ ప్రయత్నించండి',
-  'thinkingCoins.school.validationInvalid': 'కంటెంట్ చెల్లదు, దయచేసి తనిఖీ చేసి, మళ్లీ ప్రయత్నించండి',
+  'thinkingCoins.school.validationPhone':
+    'దయచేసి చెల్లుబాటు అయ్యే సంప్రదింపు నంబర్‌ను నమోదు చేయండి',
+  'thinkingCoins.school.validationTooLong':
+    'కంటెంట్‌లో కొంత భాగం చాలా పొడవుగా ఉంది, దయచేసి దాన్ని కుదించి, మళ్లీ ప్రయత్నించండి',
+  'thinkingCoins.school.validationInvalid':
+    'కంటెంట్ చెల్లదు, దయచేసి తనిఖీ చేసి, మళ్లీ ప్రయత్నించండి',
   'thinkingCoins.tier.trial': 'ట్రయల్ వెర్షన్',
   'thinkingCoins.tier.monthly': 'సూపర్ సభ్యుడు·ఒకే నెల',
   'thinkingCoins.tier.sub': 'సూపర్ సభ్యుడు·నిరంతర నెలవారీ సభ్యత్వం',
@@ -63,7 +72,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'ఆహ్వాన రివార్డులు',
   'thinkingCoins.reason.case_reward': 'కేసు బహుమతి',
   'thinkingCoins.reason.subscription_grant': 'ఉచితంగా సభ్యత్వం పొందండి',
-  'thinkingCoins.dailyExpiresHint': 'సైన్-ఇన్ రివార్డ్‌లు అదే రోజు చెల్లుబాటు అవుతాయి మరియు 24:00కి రీసెట్ చేయబడతాయి',
+  'thinkingCoins.dailyExpiresHint':
+    'సైన్-ఇన్ రివార్డ్‌లు అదే రోజు చెల్లుబాటు అవుతాయి మరియు 24:00కి రీసెట్ చేయబడతాయి',
   'thinkingCoins.dailyBalanceRemaining': 'నేటి చెక్-ఇన్ మిగిలి ఉంది {n}',
   'thinkingCoins.admin.tab': 'థాట్ కాయిన్',
   'thinkingCoins.admin.tasksTitle': 'టాస్క్ రివార్డ్',
@@ -75,7 +85,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'సేవ్',
   'thinkingCoins.admin.signupGrant': 'కొత్త వినియోగదారులకు ఉచితం',
   'thinkingCoins.admin.dailyEarnCap': 'రోజువారీ సముపార్జన పరిమితి',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 అంటే పరిమితి లేదు; డిఫాల్ట్ 135 అన్ని రోజువారీ పనుల మొత్తానికి అనుగుణంగా ఉంటుంది',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 అంటే పరిమితి లేదు; డిఫాల్ట్ 135 అన్ని రోజువారీ పనుల మొత్తానికి అనుగుణంగా ఉంటుంది',
   'thinkingCoins.admin.costMindmate': 'MindMate ఒకే వినియోగం',
   'thinkingCoins.admin.costDiagram': 'మ్యాప్ ఉత్పత్తి వినియోగం',
   'thinkingCoins.admin.costCanvas': 'కాన్వాస్ సహాయక వినియోగం',
@@ -108,7 +119,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.priceSub': '¥49/నెలకు',
   'thinkingCoins.plan.priceSubNote': 'అసలు ధర ¥59/నెలకు, నెలవారీ సభ్యత్వం ¥10 ఆదా చేస్తుంది',
   'thinkingCoins.plan.priceAnnual': '¥398/సంవత్సరం',
-  'thinkingCoins.plan.priceAnnualNote': 'నెలవారీ చెల్లింపుతో పోలిస్తే దాదాపు ¥33.2/నెలకు 44% ఆదా అవుతుంది',
+  'thinkingCoins.plan.priceAnnualNote':
+    'నెలవారీ చెల్లింపుతో పోలిస్తే దాదాపు ¥33.2/నెలకు 44% ఆదా అవుతుంది',
   'thinkingCoins.plan.currentPlan': 'ప్రస్తుత ప్రణాళిక',
   'thinkingCoins.plan.subscribeNow': 'ఇప్పుడే యాక్టివేట్ చేయండి',
   'thinkingCoins.plan.popular': 'జనాదరణ పొందినది',

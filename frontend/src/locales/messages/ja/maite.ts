@@ -44,7 +44,8 @@ export default {
   'maite.inquiry.variantTitle': '類題演習',
   'maite.inquiry.complete': 'セッションを完了',
   'maite.inquiry.completedTitle': '探究完了',
-  'maite.inquiry.completedMessage': 'この探究セッションは完了しました。下の学習レポートをご覧ください。',
+  'maite.inquiry.completedMessage':
+    'この探究セッションは完了しました。下の学習レポートをご覧ください。',
   'maite.diagnosis.thinkingPlaceholder': '考えを記述してください（任意）…',
   'maite.diagnosis.runAuto': '自動診断',
   'maite.diagnosis.running': '診断中…',
@@ -58,7 +59,8 @@ export default {
   'maite.variant.answerPlaceholder': '完全な回答を書いてください…',
   'maite.variant.strategyPlaceholder': '方法がどう調整されるか説明してください…',
   'maite.variant.submit': '回答を提出',
-  'maite.variant.completeHint': 'セッションを完了する前に、少なくとも 3 つの類題回答を提出してください。',
+  'maite.variant.completeHint':
+    'セッションを完了する前に、少なくとも 3 つの類題回答を提出してください。',
   'maite.practice.title': '最近の演習',
   'maite.practice.loading': '読み込み中…',
   'maite.practice.empty': '演習セッションはまだありません',

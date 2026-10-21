@@ -19,6 +19,7 @@ import {
   parseMindMapExportText,
   wrapMindMapExportLines,
 } from '@/utils/diagramMindMapVectorText'
+import { must } from '@/utils/must'
 
 vi.mock('@/utils/diagramExportHtmlToImage', () => ({
   loadHtmlToImageModule: async () => ({
@@ -165,7 +166,7 @@ describe('diagramMindMapVector numbering chrome', () => {
     const branch = snapshot.nodes.find((node) => node.id === 'uid-intro')
     expect(branch?.text).toBe('引言')
     expect(branch?.numberPrefix).toBe('第一章')
-    const nodeSvg = renderMindMapVectorNode(branch!, {
+    const nodeSvg = renderMindMapVectorNode(must(branch), {
       diagramStyleId: 'classic',
       outlineWireframe: false,
     })

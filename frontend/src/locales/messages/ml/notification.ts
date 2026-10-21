@@ -5,13 +5,18 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'വിഷയമോ സെൻട്രൽ നോഡോ മായ്‌ക്കാനായില്ല',
-  'notification.cannotResetSelectDiagramType': 'പുനഃസജ്ജമാക്കാനായില്ല: ആദ്യം ഐക്കൺ തരം തിരഞ്ഞെടുക്കുക',
+  'notification.cannotResetSelectDiagramType':
+    'പുനഃസജ്ജമാക്കാനായില്ല: ആദ്യം ഐക്കൺ തരം തിരഞ്ഞെടുക്കുക',
   'notification.canvasClearNodes': '{count} നോഡുകൾ മായ്ച്ചു',
-  'notification.canvasClearNodesLearning': '{count} നോഡുകൾ ശൂന്യമായി അവശേഷിക്കുന്നു, ഉത്തരം ചേർത്തു',
+  'notification.canvasClearNodesLearning':
+    '{count} നോഡുകൾ ശൂന്യമായി അവശേഷിക്കുന്നു, ഉത്തരം ചേർത്തു',
   'notification.canvasSomeoneEditingNode': 'മറ്റൊരു ഉപയോക്താവ് ഈ നോഡ് എഡിറ്റ് ചെയ്യുന്നു',
-  'notification.collabDeleteBlocked': 'ഇല്ലാതാക്കാൻ കഴിയില്ല: മറ്റ് ഉപയോക്താക്കൾ ബന്ധപ്പെട്ട നോഡുകൾ എഡിറ്റ് ചെയ്യുന്നു',
-  'notification.collabRedoBlocked': 'വീണ്ടും ചെയ്യാൻ കഴിയില്ല: മറ്റ് ഉപയോക്താക്കൾ ബന്ധപ്പെട്ട നോഡ് എഡിറ്റുചെയ്യുന്നു',
-  'notification.collabUndoBlocked': 'പഴയപടിയാക്കാനായില്ല: മറ്റ് ഉപയോക്താക്കൾ ബന്ധപ്പെട്ട നോഡുകൾ എഡിറ്റുചെയ്യുന്നു',
+  'notification.collabDeleteBlocked':
+    'ഇല്ലാതാക്കാൻ കഴിയില്ല: മറ്റ് ഉപയോക്താക്കൾ ബന്ധപ്പെട്ട നോഡുകൾ എഡിറ്റ് ചെയ്യുന്നു',
+  'notification.collabRedoBlocked':
+    'വീണ്ടും ചെയ്യാൻ കഴിയില്ല: മറ്റ് ഉപയോക്താക്കൾ ബന്ധപ്പെട്ട നോഡ് എഡിറ്റുചെയ്യുന്നു',
+  'notification.collabUndoBlocked':
+    'പഴയപടിയാക്കാനായില്ല: മറ്റ് ഉപയോക്താക്കൾ ബന്ധപ്പെട്ട നോഡുകൾ എഡിറ്റുചെയ്യുന്നു',
   'notification.conversationDeleted': 'സംഭാഷണം ഇല്ലാതാക്കി',
   'notification.copied': 'ക്ലിപ്പ്ബോർഡിലേക്ക് പകർത്തി',
   'notification.copyFailed': 'പകർത്താനായില്ല',
@@ -19,24 +24,30 @@ export default {
   'notification.deleted': 'ഇല്ലാതാക്കുക',
   'notification.feedbackCancelled': 'ഫീഡ്‌ബാക്ക് റദ്ദാക്കി',
   'notification.feedbackThanks': 'നിങ്ങളുടെ ഫീഡ്‌ബാക്കിന് നന്ദി',
-  'notification.feedbackThanksDislike': 'നിങ്ങളുടെ ഫീഡ്‌ബാക്കിന് നന്ദി, മെച്ചപ്പെടുത്താൻ ഞങ്ങൾ കഠിനമായി പരിശ്രമിക്കും',
+  'notification.feedbackThanksDislike':
+    'നിങ്ങളുടെ ഫീഡ്‌ബാക്കിന് നന്ദി, മെച്ചപ്പെടുത്താൻ ഞങ്ങൾ കഠിനമായി പരിശ്രമിക്കും',
   'notification.focusQuestionTooShort': 'ദൈർഘ്യമേറിയ ഫോക്കസ് ചോദ്യം ആദ്യം നൽകുക',
-  'notification.geoLiteMissingIntro': 'MaxMind-ൽ നിന്ന് GeoLite2 രാജ്യം ഡൗൺലോഡ് ചെയ്യുക, GeoLite2-Country.mmdb അൺസിപ്പ് ചെയ്ത് സെർവർ ഡാറ്റ ഡയറക്‌ടറിയിലേക്ക് പകർത്തുക:',
+  'notification.geoLiteMissingIntro':
+    'MaxMind-ൽ നിന്ന് GeoLite2 രാജ്യം ഡൗൺലോഡ് ചെയ്യുക, GeoLite2-Country.mmdb അൺസിപ്പ് ചെയ്ത് സെർവർ ഡാറ്റ ഡയറക്‌ടറിയിലേക്ക് പകർത്തുക:',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite ഡൗൺലോഡ് പേജ് തുറക്കുക',
   'notification.geoLiteMissingPathLabel': 'പ്രതീക്ഷിക്കുന്ന പാത:',
   'notification.geoLiteMissingTitle': 'ജിയോലൈറ്റ്2 രാജ്യ ഡാറ്റാബേസ് വിട്ടുപോയിരിക്കുന്നു',
   'notification.fullscreenFailed': 'പൂർണ്ണ സ്‌ക്രീൻ മോഡിൽ പ്രവേശിക്കാൻ കഴിയില്ല',
   'notification.generationCancelled': 'ജനറേഷൻ റദ്ദാക്കി',
-  'notification.conceptMapTabNeedsAi': 'ടാബ് ശുപാർശകൾ ഉപയോഗിക്കുന്നതിന് മുമ്പ് മുകളിലെ ബാറിൽ "ആരംഭിക്കുക AI" പ്രവർത്തനക്ഷമമാക്കുക',
+  'notification.conceptMapTabNeedsAi':
+    'ടാബ് ശുപാർശകൾ ഉപയോഗിക്കുന്നതിന് മുമ്പ് മുകളിലെ ബാറിൽ "ആരംഭിക്കുക AI" പ്രവർത്തനക്ഷമമാക്കുക',
   'notification.historyClearNodes': 'നോഡ് ടെക്‌സ്‌റ്റ് മായ്‌ക്കുക',
   'notification.historyEmptyLearning': 'നോഡ് ശൂന്യമാക്കി ഉത്തരം ചേർക്കുക',
   'notification.importInvalidData': 'ഇറക്കുമതി പരാജയപ്പെട്ടു, ഐക്കൺ ഡാറ്റ അസാധുവാണ്',
   'notification.importLoadFailed': 'ഇറക്കുമതി പരാജയപ്പെട്ടു, ഐക്കൺ ഡാറ്റ ലോഡുചെയ്യാൻ കഴിഞ്ഞില്ല.',
-  'notification.importSavePartial': 'ഇറക്കുമതി വിജയകരമായിരുന്നു, പക്ഷേ ഗാലറിയിലേക്ക് സംരക്ഷിക്കുന്നത് പരാജയപ്പെട്ടു.',
-  'notification.importSlotsFull': 'ഗാലറി നിറഞ്ഞിരിക്കുന്നു. ഐക്കൺ ഇറക്കുമതി ചെയ്‌തെങ്കിലും ഗാലറിയിൽ സംരക്ഷിച്ചിട്ടില്ല.',
+  'notification.importSavePartial':
+    'ഇറക്കുമതി വിജയകരമായിരുന്നു, പക്ഷേ ഗാലറിയിലേക്ക് സംരക്ഷിക്കുന്നത് പരാജയപ്പെട്ടു.',
+  'notification.importSlotsFull':
+    'ഗാലറി നിറഞ്ഞിരിക്കുന്നു. ഐക്കൺ ഇറക്കുമതി ചെയ്‌തെങ്കിലും ഗാലറിയിൽ സംരക്ഷിച്ചിട്ടില്ല.',
   'notification.importSuccess': 'ഐക്കൺ ഇറക്കുമതി ചെയ്‌ത് ഗാലറിയിൽ സംരക്ഷിച്ചു',
   'notification.importUnsupportedType': 'ഇറക്കുമതി പരാജയപ്പെട്ടു, ഐക്കൺ തരം പിന്തുണയ്ക്കുന്നില്ല',
-  'notification.inlineRecEmpty': 'ശുപാർശ ചെയ്‌ത ഉള്ളടക്കമൊന്നും സൃഷ്‌ടിച്ചിട്ടില്ല, ദയവായി വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ തീം ക്രമീകരിച്ച് വീണ്ടും ശ്രമിക്കുക',
+  'notification.inlineRecEmpty':
+    'ശുപാർശ ചെയ്‌ത ഉള്ളടക്കമൊന്നും സൃഷ്‌ടിച്ചിട്ടില്ല, ദയവായി വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ തീം ക്രമീകരിച്ച് വീണ്ടും ശ്രമിക്കുക',
   'notification.loadMoreFailed': 'കൂടുതൽ ലോഡ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു',
   'notification.networkError': 'നെറ്റ്‌വർക്ക് പിശക്',
   'notification.nodeNotEligible': 'ഈ നോഡ് ടാബ് ശുപാർശകളെ പിന്തുണയ്ക്കുന്നില്ല',
@@ -47,7 +58,8 @@ export default {
   'notification.rootConceptLinkNotFound': 'റൂട്ട് കൺസെപ്റ്റ് വയർ കണ്ടെത്തിയില്ല',
   'notification.saved': 'വിജയകരമായി സംരക്ഷിച്ചു',
   'notification.selectNodeToClear': 'ആദ്യം മായ്‌ക്കേണ്ട നോഡ് തിരഞ്ഞെടുക്കുക',
-  'notification.sessionInvalidated': 'ലോഗിൻ ചെയ്‌ത ഉപകരണങ്ങളുടെ എണ്ണം പരിധി കവിഞ്ഞതിനാൽ നിങ്ങൾ ലോഗ് ഔട്ട് ചെയ്‌തു',
+  'notification.sessionInvalidated':
+    'ലോഗിൻ ചെയ്‌ത ഉപകരണങ്ങളുടെ എണ്ണം പരിധി കവിഞ്ഞതിനാൽ നിങ്ങൾ ലോഗ് ഔട്ട് ചെയ്‌തു',
   'notification.sessionKicked': 'ഈ അക്കൗണ്ട് മറ്റ് ഉപകരണങ്ങളിൽ ഈ അക്കൗണ്ട് ഓഫ്‌ലൈനായി ലോഗ് ചെയ്തു',
   'notification.signInToUse': 'ഉപയോഗിക്കുന്നതിന് ദയവായി ലോഗിൻ ചെയ്യുക',
   'notification.signInToValidateFocus': 'ഫോക്കസ് പ്രശ്നങ്ങൾ പരിശോധിക്കാൻ ലോഗിൻ ചെയ്യുക',

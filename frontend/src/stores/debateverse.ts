@@ -28,12 +28,7 @@ export type DebateStage =
   | 'completed'
 
 export type ParticipantRole =
-  | 'affirmative_1'
-  | 'affirmative_2'
-  | 'negative_1'
-  | 'negative_2'
-  | 'judge'
-  | 'viewer'
+  'affirmative_1' | 'affirmative_2' | 'negative_1' | 'negative_2' | 'judge' | 'viewer'
 
 export type UserRole = 'debater' | 'judge' | 'viewer'
 

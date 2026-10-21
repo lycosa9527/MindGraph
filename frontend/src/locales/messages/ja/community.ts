@@ -79,7 +79,8 @@ export default {
   'debateverse.coinTossModalBody': 'ディベート前に、コイントスで発言順または正反の立場を決めます',
   'debateverse.coinTossNegativeFirst': '反方が先に発言',
   'debateverse.coinTossOrder': 'コイントスで発言順を決定',
-  'debateverse.coinTossRules': 'AI モデルはディベート役にランダム割り当て済みです。ディベート前にコイントスで発言順または正反の立場を決めてください',
+  'debateverse.coinTossRules':
+    'AI モデルはディベート役にランダム割り当て済みです。ディベート前にコイントスで発言順または正反の立場を決めてください',
   'debateverse.coinTossStageTitle': 'コイントスステージ',
   'debateverse.debateTopicLabel': 'ディベートテーマ：',
   'debateverse.executeCoinToss': 'コイントスを実行',
@@ -112,7 +113,8 @@ export default {
   'debateverse.setup.suggestion1': 'AI に法的人格を与えるべきか？',
   'debateverse.setup.suggestion2': 'ビデオゲームは青少年に利益か害か？',
   'debateverse.setup.suggestion3': '大学入試は廃止すべきか？',
-  'debateverse.setup.suggestion4': 'SNS プラットフォームはより厳しいコンテンツモデレーションが必要か？',
+  'debateverse.setup.suggestion4':
+    'SNS プラットフォームはより厳しいコンテンツモデレーションが必要か？',
   'debateverse.setup.suggestion5': 'リモートワークは主流になるべきか？',
   'debateverse.setup.suggestion6': 'AI 生成コンテンツは著作権保護されるべきか？',
   'debateverse.setup.suggestion7': '教育は知識と技能のどちらを重視すべきか？',
@@ -138,7 +140,8 @@ export default {
   'library.loading': '読み込み中…',
   'library.other': 'その他',
   'library.premiumCollection': '特集コレクション',
-  'library.slotFull.body': '保存済み図は {max} 件です。新しい図を保存するには 1 件削除してください。',
+  'library.slotFull.body':
+    '保存済み図は {max} 件です。新しい図を保存するには 1 件削除してください。',
   'library.slotFull.cancel': 'キャンセル',
   'library.slotFull.deleteAndSave': '削除して保存',
   'library.slotFull.networkError': 'ネットワークエラー。操作に失敗しました',

@@ -5,7 +5,8 @@
 
 export default {
   'collab.codeCopied': 'کد کپی شد',
-  'collab.codeGenerated': 'کد همکاری ایجاد شده است و می توان آن را با دیگران برای ویرایش با هم به اشتراک گذاشت.',
+  'collab.codeGenerated':
+    'کد همکاری ایجاد شده است و می توان آن را با دیگران برای ویرایش با هم به اشتراک گذاشت.',
   'collab.copy': 'کپی',
   'collab.copyFailed': 'کپی ناموفق بود',
   'collab.copyLink': 'لینک را کپی کنید',
@@ -20,8 +21,10 @@ export default {
   'collab.endFailed': 'پایان همکاری ناموفق بود',
   'collab.ended': 'همکاری به پایان رسید',
   'collab.galleryFull': 'گالری پر است، لطفا یک نماد را حذف کنید و دوباره امتحان کنید',
-  'collab.hintNetworkInactive': 'پس از ایجاد کد دعوت، دیگران می توانند از کد برای پیوستن و ویرایش با هم استفاده کنند.',
-  'collab.hintSchoolInactive': 'پس از روشن کردن آن، همکاران می توانند آن را از صفحه اصلی "همکاری → همکاری پردیس" به لیست اضافه کنند.',
+  'collab.hintNetworkInactive':
+    'پس از ایجاد کد دعوت، دیگران می توانند از کد برای پیوستن و ویرایش با هم استفاده کنند.',
+  'collab.hintSchoolInactive':
+    'پس از روشن کردن آن، همکاران می توانند آن را از صفحه اصلی "همکاری → همکاری پردیس" به لیست اضافه کنند.',
   'collab.invalidDiagramData': 'داده های نماد نامعتبر است',
   'collab.linkCopied': 'لینک کپی شد',
   'collab.networkError': 'خطای شبکه',
@@ -33,13 +36,16 @@ export default {
   'collab.previousSessionsStopped': 'جلسات همکاری {n} شما در نمادهای دیگر به پایان رسیده است.',
   'collab.saveFailed': 'ذخیره انجام نشد',
   'collab.scanToJoin': 'برای عضویت کد را اسکن کنید',
-  'collab.schoolDescActive': 'همکاری درون مدرسه ای آغاز شده است. همکاران، لطفاً "Colaboration → Campus Collaboration" را در صفحه اصلی MindGraph باز کنید و این نماد را در لیست برای پیوستن انتخاب کنید (بدون نیاز به کد دعوت).',
-  'collab.schoolStarted': 'همکاری پردیس فعال شده است. همکاران می توانند در "همکاری → همکاری پردیس" بپیوندند',
+  'collab.schoolDescActive':
+    'همکاری درون مدرسه ای آغاز شده است. همکاران، لطفاً "Colaboration → Campus Collaboration" را در صفحه اصلی MindGraph باز کنید و این نماد را در لیست برای پیوستن انتخاب کنید (بدون نیاز به کد دعوت).',
+  'collab.schoolStarted':
+    'همکاری پردیس فعال شده است. همکاران می توانند در "همکاری → همکاری پردیس" بپیوندند',
   'collab.sectionNetwork': 'همکاری با هم (کد دعوت)',
   'collab.sectionSchool': 'همکاری در محوطه دانشگاه',
   'collab.sessionDuration': 'طول جلسه',
   'collab.sessionRemaining': 'جلسه باقی مانده است',
-  'collab.shareDescNetwork': 'کد یا پیوند دعوت را به اشتراک بگذارید و طرف مقابل می تواند با وارد کردن شماره خود در "همکاری → همکاری" به آن ملحق شود.',
+  'collab.shareDescNetwork':
+    'کد یا پیوند دعوت را به اشتراک بگذارید و طرف مقابل می تواند با وارد کردن شماره خود در "همکاری → همکاری" به آن ملحق شود.',
   'collab.start': 'همکاری را فعال کنید',
   'collab.startFailed': 'شروع همکاری ناموفق بود: {msg}',
   'collab.title': 'همکاری آنلاین',
@@ -52,18 +58,25 @@ export default {
   'workshop.announceChannels': 'اطلاعیه ها',
   'workshop.announceReadOnlyHint': 'فقط مدیران می توانند در این کانال اطلاعیه صحبت کنند.',
   'workshop.archiveLessonStudy': 'نمونه های درس را بایگانی کنید',
-  'workshop.archiveLessonStudyConfirm': 'آیا مطمئن هستید که می خواهید این درس را بایگانی کنید؟ اعضا دیگر درس را در لیست نخواهند دید.',
+  'workshop.archiveLessonStudyConfirm':
+    'آیا مطمئن هستید که می خواهید این درس را بایگانی کنید؟ اعضا دیگر درس را در لیست نخواهند دید.',
   'workshop.archiveTeachingGroup': 'گروه آموزشی و پژوهشی آرشیو',
-  'workshop.archiveTeachingGroupConfirm': 'آیا مطمئن هستید که می خواهید این گروه آموزشی و پژوهشی را بایگانی کنید؟ پس از بایگانی، دیگر در لیست گروه آموزشی و پژوهشی قرار نخواهد گرفت.',
+  'workshop.archiveTeachingGroupConfirm':
+    'آیا مطمئن هستید که می خواهید این گروه آموزشی و پژوهشی را بایگانی کنید؟ پس از بایگانی، دیگر در لیست گروه آموزشی و پژوهشی قرار نخواهد گرفت.',
   'workshop.archiveAnnounceChannel': 'کانال اطلاعیه آرشیو',
-  'workshop.archiveAnnounceChannelConfirm': 'آیا مطمئنید که می خواهید این کانال اعلامیه را بایگانی کنید؟ نوار کناری دیگر نمایش داده نمی شود، اما پیام باقی می ماند.',
+  'workshop.archiveAnnounceChannelConfirm':
+    'آیا مطمئنید که می خواهید این کانال اعلامیه را بایگانی کنید؟ نوار کناری دیگر نمایش داده نمی شود، اما پیام باقی می ماند.',
   'workshop.deleteTeachingGroup': 'حذف گروه آموزشی و پژوهشی',
-  'workshop.deleteTeachingGroupConfirm': 'آیا مطمئن هستید که می خواهید این گروه آموزشی و پژوهشی، درس ها و پیام های آن را برای همیشه حذف کنید؟ این عمل قابل لغو نیست.',
+  'workshop.deleteTeachingGroupConfirm':
+    'آیا مطمئن هستید که می خواهید این گروه آموزشی و پژوهشی، درس ها و پیام های آن را برای همیشه حذف کنید؟ این عمل قابل لغو نیست.',
   'workshop.deleteAnnounceChannel': 'حذف کانال اطلاعیه',
-  'workshop.deleteAnnounceChannelConfirm': 'آیا مطمئنید که می‌خواهید برای همیشه این کانال اعلامیه و پیام‌های آن را حذف کنید؟ این عمل قابل لغو نیست.',
+  'workshop.deleteAnnounceChannelConfirm':
+    'آیا مطمئنید که می‌خواهید برای همیشه این کانال اعلامیه و پیام‌های آن را حذف کنید؟ این عمل قابل لغو نیست.',
   'workshop.deleteLessonStudy': 'حذف درس',
-  'workshop.deleteLessonStudyConfirm': 'آیا مطمئن هستید که می خواهید این درس و پیام های آن را برای همیشه حذف کنید؟ این عمل قابل لغو نیست.',
-  'workshop.manageNeedAdmin': 'فقط مدیران مدرسه می توانند گروه های آموزشی و پژوهشی را اضافه کنند. مدیران یا سازنده گروه می توانند حذف کنند.',
+  'workshop.deleteLessonStudyConfirm':
+    'آیا مطمئن هستید که می خواهید این درس و پیام های آن را برای همیشه حذف کنید؟ این عمل قابل لغو نیست.',
+  'workshop.manageNeedAdmin':
+    'فقط مدیران مدرسه می توانند گروه های آموزشی و پژوهشی را اضافه کنند. مدیران یا سازنده گروه می توانند حذف کنند.',
   'workshop.math': 'فرمول',
   'workshop.backToConversations': '← لیست مکالمات',
   'workshop.bold': 'پررنگ',
@@ -77,9 +90,11 @@ export default {
   'workshop.channelAvatarEmoji': 'نماد (اختیاری)',
   'workshop.channelAvatarPlaceholder': 'شکلک ها یا برچسب های کوتاه',
   'workshop.channelColor': 'رنگ کانال',
-  'workshop.channelInviteReceived': 'شما به گروه آموزشی و پژوهشی "{name}" اضافه شدید. برای مشاهده باشگاه مطالعه را باز کنید.',
+  'workshop.channelInviteReceived':
+    'شما به گروه آموزشی و پژوهشی "{name}" اضافه شدید. برای مشاهده باشگاه مطالعه را باز کنید.',
   'workshop.channelKindGroup': 'گروه آموزشی و پژوهشی (گروه برتر)',
-  'workshop.channelKindLessonStudy': 'نمونه های درسی (به دار آویخته شده در یک گروه آموزشی و پژوهشی خاص)',
+  'workshop.channelKindLessonStudy':
+    'نمونه های درسی (به دار آویخته شده در یک گروه آموزشی و پژوهشی خاص)',
   'workshop.channelNameLabel': 'نام',
   'workshop.channelNamePlaceholder': 'به عنوان مثال: گروه آموزشی و پژوهشی STEM',
   'workshop.channelSearchNoMatches': 'هیچ پیام منطبقی وجود ندارد.',
@@ -113,7 +128,8 @@ export default {
   'workshop.create': 'ایجاد کنید',
   'workshop.createChannelFailed': 'ایجاد ناموفق بود',
   'workshop.createChannelNeedParent': 'لطفا ابتدا گروه آموزشی و پژوهشی خود را انتخاب کنید.',
-  'workshop.createChannelNoGroupsYet': 'لطفا ابتدا یک گروه آموزشی و پژوهشی ایجاد کنید و سپس نمونه های درسی را اضافه کنید.',
+  'workshop.createChannelNoGroupsYet':
+    'لطفا ابتدا یک گروه آموزشی و پژوهشی ایجاد کنید و سپس نمونه های درسی را اضافه کنید.',
   'workshop.createChannelSuccess': 'کانال ایجاد شد',
   'workshop.createStudyCaseHint': 'برای شروع یک موضوع ایجاد کنید',
   'workshop.cycleStudyStatus': 'وضعیت آموزش را تغییر دهید',
@@ -131,7 +147,8 @@ export default {
   'workshop.diagram': 'تصویرسازی',
   'workshop.diagramInsertFailed': 'نماد درج نشد',
   'workshop.diagramInserting': 'در حال درج نماد…',
-  'workshop.diagramPickerEmpty': 'کتابخانه تصویر خالی است، لطفاً ابتدا یک عکس را در بوم ذخیره کنید.',
+  'workshop.diagramPickerEmpty':
+    'کتابخانه تصویر خالی است، لطفاً ابتدا یک عکس را در بوم ذخیره کنید.',
   'workshop.diagramPickerTitle': 'از کتابخانه نماد من انتخاب کنید',
   'workshop.directMessage': 'پیام خصوصی',
   'workshop.directMessages': 'پیام خصوصی',
@@ -155,7 +172,8 @@ export default {
   'workshop.gearMenu': 'گزینه ها',
   'workshop.generalChat': 'بحث جامع',
   'workshop.inbox': 'صندوق ورودی',
-  'workshop.inboxHintPickChannel': 'گروه موضوع، مثال درس یا پیام خصوصی را در نوار کناری باز کنید تا بخوانید و پاسخ دهید. می توانید در هر زمان از طریق View → Inbox به این صفحه بازگردید.',
+  'workshop.inboxHintPickChannel':
+    'گروه موضوع، مثال درس یا پیام خصوصی را در نوار کناری باز کنید تا بخوانید و پاسخ دهید. می توانید در هر زمان از طریق View → Inbox به این صفحه بازگردید.',
   'workshop.inboxSummaryTitle': 'صندوق ورودی شما',
   'workshop.inboxUnreadChannels': 'کانال خوانده نشده',
   'workshop.inboxUnreadDms': 'پیام خصوصی خوانده نشده',
@@ -181,13 +199,15 @@ export default {
   'workshop.loadMore': 'بارگذاری بیشتر',
   'workshop.mainChannelStream': 'کانال اصلی',
   'workshop.manageTeachingGroups': 'گروه آموزشی و پژوهشی مدیریت',
-  'workshop.manageTeachingGroupsBlurb': 'می‌توانید گروه‌های آموزشی و پژوهشی را اضافه یا بایگانی کنید، آن‌ها را عمومی یا خصوصی کنید، نام و مقدمه را تغییر دهید، ترتیب فهرست را تنظیم کنید، گروه آموزشی و پژوهشی را به‌عنوان یک الگو کپی کنید و همکاران را برای پیوستن دعوت کنید. لطفاً از "تنظیمات پیشرفته" برای ارسال مجوزها و اعلان ها استفاده کنید. پس از بایگانی، گروه دیگر برای کل مدرسه قابل مشاهده نخواهد بود.',
+  'workshop.manageTeachingGroupsBlurb':
+    'می‌توانید گروه‌های آموزشی و پژوهشی را اضافه یا بایگانی کنید، آن‌ها را عمومی یا خصوصی کنید، نام و مقدمه را تغییر دهید، ترتیب فهرست را تنظیم کنید، گروه آموزشی و پژوهشی را به‌عنوان یک الگو کپی کنید و همکاران را برای پیوستن دعوت کنید. لطفاً از "تنظیمات پیشرفته" برای ارسال مجوزها و اعلان ها استفاده کنید. پس از بایگانی، گروه دیگر برای کل مدرسه قابل مشاهده نخواهد بود.',
   'workshop.manageUser': 'این کاربر را مدیریت کنید',
   'workshop.markAllReadChannel': 'علامت گذاری همه پیام ها به عنوان خوانده شده',
   'workshop.markAsRead': 'علامت گذاری به عنوان خوانده شده',
   'workshop.markStudyResolved': 'آموزش علامت گذاری به پایان رسید',
   'workshop.members': 'عضو',
-  'workshop.mentionAmbiguous': 'کاربرانی با همین نام، لطفاً از یک نام نمایشی منحصر به فرد استفاده کنند: {0}',
+  'workshop.mentionAmbiguous':
+    'کاربرانی با همین نام، لطفاً از یک نام نمایشی منحصر به فرد استفاده کنند: {0}',
   'workshop.mentionUnknown': 'ذکر نامشخص (فقط برای اعضای مدرسه و حساب های رسمی): {0}',
   'workshop.mentionedInChannel': 'شما در #{0} نام برده شده اید',
   'workshop.mentionedInTopic': 'شما در {0} نام برده شده اید',
@@ -220,18 +240,22 @@ export default {
   'workshop.noTopicsYet': 'هنوز موضوعی وجود ندارد',
   'workshop.numberedList': 'لیست سفارش داده شده',
   'workshop.notifications': 'اطلاع دهد',
-  'workshop.notificationsSettingsBlurb': 'اعلان های مرورگر برای اشاره و پیام های جدید به تنظیمات سیستم بستگی دارد. همچنین می توانید یادآورهای دسکتاپ و ایمیل را به طور جداگانه در تنظیمات هر کانال روشن کنید.',
+  'workshop.notificationsSettingsBlurb':
+    'اعلان های مرورگر برای اشاره و پیام های جدید به تنظیمات سیستم بستگی دارد. همچنین می توانید یادآورهای دسکتاپ و ایمیل را به طور جداگانه در تنظیمات هر کانال روشن کنید.',
   'workshop.offline': 'آفلاین',
   'workshop.online': 'آنلاین',
   'workshop.openMainChannelStream': 'کانال اصلی',
   'workshop.others': 'سایر کاربران',
   'workshop.permissions': 'مجوزها',
+  'workshop.personalMenu': 'منوی شخصی',
   'workshop.preview': 'پیش نمایش',
   'workshop.previewEmpty': 'محتوایی برای پیش نمایش وجود ندارد',
-  'workshop.personalMenu': 'منوی شخصی',
-  'workshop.phase2RoadmapGroupsAlerts': 'برنامه های پیگیری: {\'@\'}group، یادآوری کلمه کلیدی، استراتژی تاریخچه ویرایش پیام.',
-  'workshop.phase2RoadmapMovePreview': 'برنامه‌های پیگیری: حرکت تک پیام، پیش‌نمایش پیوند، و پویایی بین کانالی غنی‌تر.',
-  'workshop.phase2RoadmapPlatform': 'کارهای پلت فرم: همگام سازی افزایشی، فشار موبایل، خلاصه ایمیل، روبات ها و وبکهک ها.',
+  'workshop.phase2RoadmapGroupsAlerts':
+    "برنامه های پیگیری: {'@'}group، یادآوری کلمه کلیدی، استراتژی تاریخچه ویرایش پیام.",
+  'workshop.phase2RoadmapMovePreview':
+    'برنامه‌های پیگیری: حرکت تک پیام، پیش‌نمایش پیوند، و پویایی بین کانالی غنی‌تر.',
+  'workshop.phase2RoadmapPlatform':
+    'کارهای پلت فرم: همگام سازی افزایشی، فشار موبایل، خلاصه ایمیل، روبات ها و وبکهک ها.',
   'workshop.pickColleagueToInvite': 'لطفا همکاران را برای دعوت انتخاب کنید.',
   'workshop.pinChannel': 'کانال پین شده',
   'workshop.policyEveryone': 'همه',
@@ -239,7 +263,8 @@ export default {
   'workshop.policyMembersOnly': 'فقط اعضا',
   'workshop.postingPolicy': 'مجوزهای انتشار',
   'workshop.preferences': 'ترجیحات',
-  'workshop.preferencesSettingsBlurb': 'ترجیحات زبان و رابط برای کل برنامه اعمال می شود. گزینه های بیشتر مرتبط با همکاری باشگاه مطالعه در اینجا ارائه خواهد شد.',
+  'workshop.preferencesSettingsBlurb':
+    'ترجیحات زبان و رابط برای کل برنامه اعمال می شود. گزینه های بیشتر مرتبط با همکاری باشگاه مطالعه در اینجا ارائه خواهد شد.',
   'workshop.presenceActive': 'فعال',
   'workshop.presenceIdle': 'ترک',
   'workshop.presenceOffline': 'آفلاین',
@@ -248,7 +273,8 @@ export default {
   'workshop.publicChannels': 'کانال عمومی',
   'workshop.quote': 'نقل قول',
   'workshop.quoteMessage': 'پیام نقل قول',
-  'workshop.readOnlyProfileBlurb': 'نمایه های همکاران در یک نمای ساده نمایش داده می شود. مدیران می توانند از "Manage Users" برای باز کردن لیست کاربران باطن استفاده کنند.',
+  'workshop.readOnlyProfileBlurb':
+    'نمایه های همکاران در یک نمای ساده نمایش داده می شود. مدیران می توانند از "Manage Users" برای باز کردن لیست کاربران باطن استفاده کنند.',
   'workshop.recentDmActivity': 'پیام های خصوصی اخیر',
   'workshop.recentTopics': 'موضوعات اخیر',
   'workshop.renameTopic': 'تغییر نام موضوع',
@@ -259,7 +285,8 @@ export default {
   'workshop.roleOwner': 'مالک',
   'workshop.searchMembers': 'جستجوی اعضا...',
   'workshop.searchMessages': 'جستجوی پیام ها...',
-  'workshop.selectChannelForSettings': 'لطفا ابتدا یک گروه آموزشی و پژوهشی یا درس سمت چپ انتخاب کنید و سپس تنظیمات را باز کنید.',
+  'workshop.selectChannelForSettings':
+    'لطفا ابتدا یک گروه آموزشی و پژوهشی یا درس سمت چپ انتخاب کنید و سپس تنظیمات را باز کنید.',
   'workshop.selectConversation': 'یک مکالمه را انتخاب کنید',
   'workshop.selectParentGroup': 'گروه آموزشی و پژوهشی وابسته',
   'workshop.selectTopic': 'موضوع را انتخاب کنید',
@@ -285,7 +312,8 @@ export default {
   'workshop.strikethrough': 'خط خطی',
   'workshop.table': 'ورق',
   'workshop.switchSchool': 'تغییر مدارس',
-  'workshop.teachingGroupLandingHint': 'نمونه های درسی و گفتگوهای زیر این گروه آموزشی و پژوهشی. برای ورود به کانال روی درس کلیک کنید یا برای ورود به موضوع مربوطه بر روی گفتگو کلیک کنید.',
+  'workshop.teachingGroupLandingHint':
+    'نمونه های درسی و گفتگوهای زیر این گروه آموزشی و پژوهشی. برای ورود به کانال روی درس کلیک کنید یا برای ورود به موضوع مربوطه بر روی گفتگو کلیک کنید.',
   'workshop.teachingGroupMembers': 'عضو',
   'workshop.teachingGroupNameRequired': 'لطفا نام گروه آموزشی و پژوهشی را وارد نمایید.',
   'workshop.teachingGroupNoLessons': 'در این گروه آموزشی و پژوهشی نمونه درسی وجود ندارد.',
@@ -300,7 +328,8 @@ export default {
   'workshop.topicTitle': 'عنوان',
   'workshop.topicTitlePlaceholder': 'به عنوان مثال: بحث آماده سازی درسی جمعی، مشاهده کلاس درس',
   'workshop.topics': 'موضوع',
-  'workshop.typeMessagePlaceholder': 'پیام را وارد کنید...(برای ارسال، Shift+Enter و فید خط را فشار دهید)',
+  'workshop.typeMessagePlaceholder':
+    'پیام را وارد کنید...(برای ارسال، Shift+Enter و فید خط را فشار دهید)',
   'workshop.unfollowTopic': 'لغو دنبال کردن موضوع',
   'workshop.unknown': 'نامعلوم',
   'workshop.unmuteChannel': 'باصدا کردن',
@@ -316,11 +345,14 @@ export default {
   'workshop.viewProfile': 'مشاهده نمایه',
   'workshop.viewingSchool': 'در حال مشاهده: {0}',
   'workshop.views': 'مشاهده کنید',
-  'workshop.welcomeChannelsBody': '«کانال‌ها» در سیستم بیشتر با گروه‌های تحقیقاتی واقعی یا گروه‌های آموزشی و پژوهشی مطابقت دارند: یک فضای همکاری بر اساس موضوعات یا پروژه‌ها (مانند گروه تحقیقاتی ریاضیات و گروه تحقیقاتی انگلیسی در مثال زیر) تقسیم می‌شود و اعضا و محدوده بحث تعریف می‌شوند.',
+  'workshop.welcomeChannelsBody':
+    '«کانال‌ها» در سیستم بیشتر با گروه‌های تحقیقاتی واقعی یا گروه‌های آموزشی و پژوهشی مطابقت دارند: یک فضای همکاری بر اساس موضوعات یا پروژه‌ها (مانند گروه تحقیقاتی ریاضیات و گروه تحقیقاتی انگلیسی در مثال زیر) تقسیم می‌شود و اعضا و محدوده بحث تعریف می‌شوند.',
   'workshop.welcomeChannelsTitle': 'گروه پژوهشی/گروه آموزشی و پژوهشی',
-  'workshop.welcomeConversationsBody': 'برای جداسازی موضوعات مختلف و اجتناب از اختلاط آنها در یک جدول زمانی، می توان جلسات متعددی با عنوان در مثال درس ایجاد کرد، مانند طراحی آموزشی، اجرای کلاس درس، تأمل و بهبود و غیره.',
+  'workshop.welcomeConversationsBody':
+    'برای جداسازی موضوعات مختلف و اجتناب از اختلاط آنها در یک جدول زمانی، می توان جلسات متعددی با عنوان در مثال درس ایجاد کرد، مانند طراحی آموزشی، اجرای کلاس درس، تأمل و بهبود و غیره.',
   'workshop.welcomeConversationsTitle': 'گفتگو (موضوع)',
-  'workshop.welcomeExampleCaption': 'در زیر مثال‌های ساختگی برای درک آسان آمده است: گروه موضوعی ریاضیات و گروه موضوعی انگلیسی هر کدام دارای مثال‌های درسی و موضوعات مکالمه هستند.',
+  'workshop.welcomeExampleCaption':
+    'در زیر مثال‌های ساختگی برای درک آسان آمده است: گروه موضوعی ریاضیات و گروه موضوعی انگلیسی هر کدام دارای مثال‌های درسی و موضوعات مکالمه هستند.',
   'workshop.welcomeExampleConvLabel': 'جلسه',
   'workshop.welcomeExampleGroupEnglish': 'گروه موضوعی انگلیسی',
   'workshop.welcomeExampleGroupMath': 'گروه تحقیقات ریاضی',
@@ -339,38 +371,52 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'هر مکالمه حاوی پیام هایی است که توسط همکاران ارسال می شود.',
   'workshop.welcomeExampleOrg': 'مدرسه راهنمایی چنشی',
   'workshop.welcomeHowTitle': 'مفاهیم و روابط سلسله مراتبی',
-  'workshop.welcomeIntro': 'باشگاه مطالعه فضایی مشترک برای مدارس است: اطلاعیه‌ها را منتشر می‌کند، مطالعات موردی را انجام می‌دهد، و بحث‌ها را به روشی ساختارمند در کنار صحنه‌های آموزشی سازمان‌دهی می‌کند.',
-  'workshop.welcomeLessonStudyBody': 'نمونه‌های درسی معمولاً در یک گروه موضوعی خاص آویزان می‌شوند و می‌توان از آنها برای تمرین، مشاهده و تأمل در یک درس خاص استفاده کرد. آنها می توانند با وضعیت پیشرفت همراه باشند یا با نمودارهای تفکر مرتبط باشند.',
+  'workshop.welcomeIntro':
+    'باشگاه مطالعه فضایی مشترک برای مدارس است: اطلاعیه‌ها را منتشر می‌کند، مطالعات موردی را انجام می‌دهد، و بحث‌ها را به روشی ساختارمند در کنار صحنه‌های آموزشی سازمان‌دهی می‌کند.',
+  'workshop.welcomeLessonStudyBody':
+    'نمونه‌های درسی معمولاً در یک گروه موضوعی خاص آویزان می‌شوند و می‌توان از آنها برای تمرین، مشاهده و تأمل در یک درس خاص استفاده کرد. آنها می توانند با وضعیت پیشرفت همراه باشند یا با نمودارهای تفکر مرتبط باشند.',
   'workshop.welcomeLessonStudyTitle': 'درس پژوهی',
-  'workshop.welcomeMessagesBody': 'پیام یک عبارت واحد در خط زمانی مکالمه یا کانال است. پاسخ ها، همکاران {\'@\'}، پیوست ها و غیره همه در پیام منعکس می شوند.',
+  'workshop.welcomeMessagesBody':
+    "پیام یک عبارت واحد در خط زمانی مکالمه یا کانال است. پاسخ ها، همکاران {'@'}، پیوست ها و غیره همه در پیام منعکس می شوند.",
   'workshop.welcomeMessagesTitle': 'اطلاعات',
   'workshop.welcomeSubtitle': 'با همکاران در سراسر دانشگاه در MindGraph همکاری کنید',
   'workshop.welcomeTitle': 'به باشگاه مطالعه خوش آمدید',
   'workshop.you': '(شما)',
   'workshop.youAnd': 'شما و',
   'workshopCanvas.connectFailed': 'اتصال به همکاری آنلاین انجام نشد',
-  'workshopCanvas.sessionExpiredReconnect': 'جلسه شما منقضی شده است، لطفاً صفحه را بازخوانی کنید تا دوباره به همکاری بپیوندید.',
-  'workshopCanvas.sessionRefreshFailed': 'بازخوانی جلسه همکاری آنلاین ممکن نیست، لطفاً محتوای فعلی را ذخیره کرده و دوباره وارد شوید.',
-  'workshopCanvas.outboundQueueDegraded': 'همگام سازی همکاری آنلاین عقب افتاده است و برخی از ویرایش های ارسال نشده نمی توانند حفظ شوند.',
+  'workshopCanvas.sessionExpiredReconnect':
+    'جلسه شما منقضی شده است، لطفاً صفحه را بازخوانی کنید تا دوباره به همکاری بپیوندید.',
+  'workshopCanvas.sessionRefreshFailed':
+    'بازخوانی جلسه همکاری آنلاین ممکن نیست، لطفاً محتوای فعلی را ذخیره کرده و دوباره وارد شوید.',
+  'workshopCanvas.outboundQueueDegraded':
+    'همگام سازی همکاری آنلاین عقب افتاده است و برخی از ویرایش های ارسال نشده نمی توانند حفظ شوند.',
   'workshopCanvas.connectionClosed': 'ارتباط قطع شده است',
-  'workshopCanvas.connectionClosedSlow': 'اتصال از دست رفته: شبکه شما بسیار کند است و نمی‌تواند با جلسه همکاری هماهنگ باشد.',
+  'workshopCanvas.connectionClosedSlow':
+    'اتصال از دست رفته: شبکه شما بسیار کند است و نمی‌تواند با جلسه همکاری هماهنگ باشد.',
   'workshopCanvas.sessionEndedByHost': 'میزبان به همکاری آنلاین پایان داده است.',
   'workshopCanvas.editingNodeLabel': '{username} در حال ویرایش…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'سایر همکاران',
   'workshopCanvas.connectionClosedReason': 'اتصال همکاری آنلاین قطع شد: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} در حال ویرایش این گره است',
   'workshopCanvas.errorGeneric': 'خطای همکاری آنلاین',
-  'workshopCanvas.updatePartialFiltered': 'برخی از ویرایش ها همگام نیستند ({count} گره ها): این گره ها توسط همکاران دیگر ویرایش می شوند.',
-  'workshopCanvas.reconnectFailed': 'همکاری آنلاین دوباره وصل نشد، لطفاً صفحه را بازخوانی کنید و دوباره امتحان کنید',
-  'workshopCanvas.resyncWaiting': 'همگام سازی آثار هنری بیش از حد انتظار طول می کشد و در حال امتحان مجدد است. اگر ویرایش غیرعادی است، لطفاً صفحه را بازخوانی کنید.',
-  'workshopCanvas.returnedHomeIdle': 'همکاری به دلیل زمان بیکاری بسیار طولانی قطع شده است و صفحه اصلی بازگردانده شده است.',
+  'workshopCanvas.updatePartialFiltered':
+    'برخی از ویرایش ها همگام نیستند ({count} گره ها): این گره ها توسط همکاران دیگر ویرایش می شوند.',
+  'workshopCanvas.reconnectFailed':
+    'همکاری آنلاین دوباره وصل نشد، لطفاً صفحه را بازخوانی کنید و دوباره امتحان کنید',
+  'workshopCanvas.resyncWaiting':
+    'همگام سازی آثار هنری بیش از حد انتظار طول می کشد و در حال امتحان مجدد است. اگر ویرایش غیرعادی است، لطفاً صفحه را بازخوانی کنید.',
+  'workshopCanvas.returnedHomeIdle':
+    'همکاری به دلیل زمان بیکاری بسیار طولانی قطع شده است و صفحه اصلی بازگردانده شده است.',
   'workshopCanvas.userJoined': 'کاربر {username} ملحق شده است',
   'workshopCanvas.usersJoined': 'کاربران {count} پیوسته اند',
   'workshopCanvas.userLeft': 'کاربر {username} ترک کرده است',
   'workshopCanvas.usersLeft': 'کاربران {count} ترک کرده اند',
   'workshopCanvas.wsError': 'خطای اتصال همکاری آنلاین، لطفاً اتصال شبکه را بررسی کنید',
-  'workshopCanvas.returnedHomeRoomIdle': 'این نماد جلسه برای مدت طولانی به طور مشترک ویرایش نشده است. همکاری به طور خودکار به پایان رسید و به صفحه اصلی بازگشت.',
-  'workshopCanvas.roomIdleWarningToast': 'این نماد برای مدت طولانی به طور مشترک ویرایش نشده است - اگر هیچ کس قبل از پایان شمارش معکوس نماد را ویرایش نکند، همکاری به طور خودکار پایان می یابد.',
-  'workshopCanvas.otherTabCollaborationActive': 'این حساب به همکاری آنلاین در برگه یا پنجره دیگری ادامه می دهد.',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'این نماد جلسه برای مدت طولانی به طور مشترک ویرایش نشده است. همکاری به طور خودکار به پایان رسید و به صفحه اصلی بازگشت.',
+  'workshopCanvas.roomIdleWarningToast':
+    'این نماد برای مدت طولانی به طور مشترک ویرایش نشده است - اگر هیچ کس قبل از پایان شمارش معکوس نماد را ویرایش نکند، همکاری به طور خودکار پایان می یابد.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'این حساب به همکاری آنلاین در برگه یا پنجره دیگری ادامه می دهد.',
   'workshopCanvas.joinQrAlt': 'کد QR برای پیوستن به همکاری آنلاین',
 } as const

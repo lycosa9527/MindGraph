@@ -23,9 +23,7 @@ function parseChineseJsonl(raw: string): MindgrowthChineseLine[] {
   return rows
 }
 
-export function normalizeMindgrowthQuotesZhFromFile(
-  path = VENDOR_MINDGROWTH_ZH
-): SidebarQuote[] {
+export function normalizeMindgrowthQuotesZhFromFile(path = VENDOR_MINDGROWTH_ZH): SidebarQuote[] {
   const raw = readFileSync(path, 'utf8')
   const lines = parseChineseJsonl(raw)
   const quotes: SidebarQuote[] = []

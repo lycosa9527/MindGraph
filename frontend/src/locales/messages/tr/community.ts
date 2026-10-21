@@ -73,13 +73,16 @@ export default {
   'debateverse.advanceStage': 'Aşamayı ilerlet',
   'debateverse.affirmativePositionLabel': 'Olumlu taraf: ',
   'debateverse.avatar.viewer': 'İzleyici',
-  'debateverse.clickNextHint': 'Değişikliklerin geçerli olması için lütfen İleri düğmesine tıklayın',
+  'debateverse.clickNextHint':
+    'Değişikliklerin geçerli olması için lütfen İleri düğmesine tıklayın',
   'debateverse.coinTossAffirmativeFirst': 'Önce olumlu taraf konuşur',
   'debateverse.coinTossGotIt': 'Anladım',
-  'debateverse.coinTossModalBody': 'Tartışmadan önce yazı tura ile konuşma sırasını veya olumlu/olumsuz tarafları belirleyin',
+  'debateverse.coinTossModalBody':
+    'Tartışmadan önce yazı tura ile konuşma sırasını veya olumlu/olumsuz tarafları belirleyin',
   'debateverse.coinTossNegativeFirst': 'Önce olumsuz taraf konuşur',
   'debateverse.coinTossOrder': 'Konuşma sırasını yazı tura ile belirle',
-  'debateverse.coinTossRules': 'YZ modelleri tartışma rollerine rastgele atandı. Tartışmadan önce yazı tura ile konuşma sırasını veya olumlu/olumsuz tarafları belirleyin',
+  'debateverse.coinTossRules':
+    'YZ modelleri tartışma rollerine rastgele atandı. Tartışmadan önce yazı tura ile konuşma sırasını veya olumlu/olumsuz tarafları belirleyin',
   'debateverse.coinTossStageTitle': 'Yazı tura aşaması',
   'debateverse.debateTopicLabel': 'Tartışma konusu: ',
   'debateverse.executeCoinToss': 'Yazı turayı çalıştır',
@@ -109,10 +112,11 @@ export default {
   'debateverse.setup.roleDebater': 'Tartışmacı olarak oyna',
   'debateverse.setup.roleJudge': 'Hakem olarak oyna',
   'debateverse.setup.roleViewer': 'İzleyici olarak oyna',
-  'debateverse.setup.suggestion1': 'YZ\'ye yasal kişilik tanınmalı mı?',
+  'debateverse.setup.suggestion1': "YZ'ye yasal kişilik tanınmalı mı?",
   'debateverse.setup.suggestion2': 'Video oyunları ergenlere daha çok yarar mı zarar mı verir?',
   'debateverse.setup.suggestion3': 'Üniversite giriş sınavları kaldırılmalı mı?',
-  'debateverse.setup.suggestion4': 'Sosyal medya platformlarında içerik denetimi daha sıkı olmalı mı?',
+  'debateverse.setup.suggestion4':
+    'Sosyal medya platformlarında içerik denetimi daha sıkı olmalı mı?',
   'debateverse.setup.suggestion5': 'Uzaktan çalışma ana akım olmalı mı?',
   'debateverse.setup.suggestion6': 'YZ ile üretilen içerik telif korumalı olmalı mı?',
   'debateverse.setup.suggestion7': 'Eğitim bilgiye mi yoksa becerilere mi daha çok odaklanmalı?',
@@ -138,7 +142,8 @@ export default {
   'library.loading': 'Yükleniyor…',
   'library.other': 'Diğer',
   'library.premiumCollection': 'Öne çıkan koleksiyon',
-  'library.slotFull.body': '{max} kayıtlı diyagramınız var. Yeni bir diyagram kaydetmek için birini silin.',
+  'library.slotFull.body':
+    '{max} kayıtlı diyagramınız var. Yeni bir diyagram kaydetmek için birini silin.',
   'library.slotFull.cancel': 'İptal',
   'library.slotFull.deleteAndSave': 'Sil ve kaydet',
   'library.slotFull.networkError': 'Ağ hatası, işlem başarısız',

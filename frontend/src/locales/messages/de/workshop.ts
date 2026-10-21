@@ -5,7 +5,8 @@
 
 export default {
   'collab.codeCopied': 'Code kopiert',
-  'collab.codeGenerated': 'Collaborationscode erstellt — teilen Sie ihn, um gemeinsam zu bearbeiten.',
+  'collab.codeGenerated':
+    'Collaborationscode erstellt — teilen Sie ihn, um gemeinsam zu bearbeiten.',
   'collab.copy': 'Kopieren',
   'collab.copyFailed': 'Kopieren fehlgeschlagen',
   'collab.copyLink': 'Link kopieren',
@@ -20,8 +21,10 @@ export default {
   'collab.endFailed': 'Collaboration konnte nicht beendet werden',
   'collab.ended': 'Collaboration beendet',
   'collab.galleryFull': 'Galerie ist voll. Bitte löschen Sie zuerst ein Diagramm',
-  'collab.hintNetworkInactive': 'Erstellen Sie einen Code, damit andere beitreten und mit Ihnen bearbeiten können.',
-  'collab.hintSchoolInactive': 'Kolleginnen und Kollegen treten über Collaborate → Schule auf der Startseite bei.',
+  'collab.hintNetworkInactive':
+    'Erstellen Sie einen Code, damit andere beitreten und mit Ihnen bearbeiten können.',
+  'collab.hintSchoolInactive':
+    'Kolleginnen und Kollegen treten über Collaborate → Schule auf der Startseite bei.',
   'collab.invalidDiagramData': 'Ungültige Diagrammdaten',
   'collab.linkCopied': 'Link kopiert',
   'collab.networkError': 'Netzwerkfehler',
@@ -30,16 +33,20 @@ export default {
   'collab.noDiagramToSave': 'Kein Diagramm zum Speichern',
   'collab.nodeLocked': 'Jemand anderes bearbeitet diesen Knoten',
   'collab.participants': '{n} Teilnehmende',
-  'collab.previousSessionsStopped': '{n} frühere Collaboration-Sitzung(en) auf Ihren anderen Diagrammen beendet.',
+  'collab.previousSessionsStopped':
+    '{n} frühere Collaboration-Sitzung(en) auf Ihren anderen Diagrammen beendet.',
   'collab.saveFailed': 'Diagramm konnte nicht gespeichert werden',
   'collab.scanToJoin': 'Scannen zum Beitreten',
-  'collab.schoolDescActive': 'Schul-Collaboration ist aktiv. Kolleginnen und Kollegen: MindGraph verwenden Sie Collaborate → Schule auf der Startseite und wählen Sie dieses Diagramm — kein Code erforderlich.',
-  'collab.schoolStarted': 'Schul-Collaboration ist aktiv — Kolleginnen und Kollegen können über Collaborate → Schule beitreten.',
+  'collab.schoolDescActive':
+    'Schul-Collaboration ist aktiv. Kolleginnen und Kollegen: MindGraph verwenden Sie Collaborate → Schule auf der Startseite und wählen Sie dieses Diagramm — kein Code erforderlich.',
+  'collab.schoolStarted':
+    'Schul-Collaboration ist aktiv — Kolleginnen und Kollegen können über Collaborate → Schule beitreten.',
   'collab.sectionNetwork': 'Geteilte Collaboration (Code)',
   'collab.sectionSchool': 'Schul-Collaboration',
   'collab.sessionDuration': 'Sitzungsdauer',
   'collab.sessionRemaining': 'Sitzung endet in',
-  'collab.shareDescNetwork': 'Teilen Sie den Code oder Link — andere geben ihn unter Collaborate → Geteilt ein.',
+  'collab.shareDescNetwork':
+    'Teilen Sie den Code oder Link — andere geben ihn unter Collaborate → Geteilt ein.',
   'collab.start': 'Starten',
   'collab.startFailed': 'Start fehlgeschlagen: {msg}',
   'collab.title': 'Online-Collaboration',
@@ -52,18 +59,25 @@ export default {
   'workshop.announceChannels': 'Ankündigungen',
   'workshop.announceReadOnlyHint': 'Nur Administratoren können in diesem Ankündigungskanal posten.',
   'workshop.archiveLessonStudy': 'Unterrichtsstudie archivieren',
-  'workshop.archiveLessonStudyConfirm': 'Diese Unterrichtsstudie archivieren? Mitglieder sehen sie nicht mehr in der Liste.',
+  'workshop.archiveLessonStudyConfirm':
+    'Diese Unterrichtsstudie archivieren? Mitglieder sehen sie nicht mehr in der Liste.',
   'workshop.archiveTeachingGroup': 'Lehrgruppe archivieren',
-  'workshop.archiveTeachingGroupConfirm': 'Diese Lehrgruppe archivieren? Sie verschwindet aus der Lehrgruppenliste.',
+  'workshop.archiveTeachingGroupConfirm':
+    'Diese Lehrgruppe archivieren? Sie verschwindet aus der Lehrgruppenliste.',
   'workshop.archiveAnnounceChannel': 'Archivankündigungskanal',
-  'workshop.archiveAnnounceChannelConfirm': 'Sind Sie sicher, dass Sie diesen Ankündigungskanal archivieren möchten? Die Seitenleiste wird nicht mehr angezeigt, die Meldung bleibt jedoch bestehen.',
+  'workshop.archiveAnnounceChannelConfirm':
+    'Sind Sie sicher, dass Sie diesen Ankündigungskanal archivieren möchten? Die Seitenleiste wird nicht mehr angezeigt, die Meldung bleibt jedoch bestehen.',
   'workshop.deleteTeachingGroup': 'Lehr- und Forschungsgruppe löschen',
-  'workshop.deleteTeachingGroupConfirm': 'Sind Sie sicher, dass Sie diese Lehr- und Forschungsgruppe, ihre Lektionen und Nachrichten dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
+  'workshop.deleteTeachingGroupConfirm':
+    'Sind Sie sicher, dass Sie diese Lehr- und Forschungsgruppe, ihre Lektionen und Nachrichten dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
   'workshop.deleteAnnounceChannel': 'Ankündigungskanal löschen',
-  'workshop.deleteAnnounceChannelConfirm': 'Sind Sie sicher, dass Sie diesen Ankündigungskanal und seine Nachrichten dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
+  'workshop.deleteAnnounceChannelConfirm':
+    'Sind Sie sicher, dass Sie diesen Ankündigungskanal und seine Nachrichten dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
   'workshop.deleteLessonStudy': 'Lektion löschen',
-  'workshop.deleteLessonStudyConfirm': 'Sind Sie sicher, dass Sie diese Lektion und ihre Nachrichten dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
-  'workshop.manageNeedAdmin': 'Nur Schulverwalter können Lehr- und Forschungsgruppen hinzufügen. Administratoren oder der Ersteller der Gruppe können löschen.',
+  'workshop.deleteLessonStudyConfirm':
+    'Sind Sie sicher, dass Sie diese Lektion und ihre Nachrichten dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
+  'workshop.manageNeedAdmin':
+    'Nur Schulverwalter können Lehr- und Forschungsgruppen hinzufügen. Administratoren oder der Ersteller der Gruppe können löschen.',
   'workshop.math': 'Formel',
   'workshop.backToConversations': '← Unterhaltungen',
   'workshop.bold': 'Fett',
@@ -77,7 +91,8 @@ export default {
   'workshop.channelAvatarEmoji': 'Symbol (optional)',
   'workshop.channelAvatarPlaceholder': 'Emoji oder kurze Bezeichnung',
   'workshop.channelColor': 'Kanalfarbe',
-  'workshop.channelInviteReceived': 'Sie wurden zu „{name}“ hinzugefügt. Öffnen Sie Workshop, um es anzuzeigen.',
+  'workshop.channelInviteReceived':
+    'Sie wurden zu „{name}“ hinzugefügt. Öffnen Sie Workshop, um es anzuzeigen.',
   'workshop.channelKindGroup': 'Lehrgruppe (oberste Ebene, z. B. Fachgruppe)',
   'workshop.channelKindLessonStudy': 'Unterrichtsstudie unter einer Gruppe',
   'workshop.channelNameLabel': 'Name',
@@ -113,7 +128,8 @@ export default {
   'workshop.create': 'Erstellen',
   'workshop.createChannelFailed': 'Kanal konnte nicht erstellt werden',
   'workshop.createChannelNeedParent': 'Wählen Sie zuerst eine übergeordnete Lehrgruppe.',
-  'workshop.createChannelNoGroupsYet': 'Erstellen Sie zuerst eine Lehrgruppe, dann fügen Sie Unterrichtsstudien hinzu.',
+  'workshop.createChannelNoGroupsYet':
+    'Erstellen Sie zuerst eine Lehrgruppe, dann fügen Sie Unterrichtsstudien hinzu.',
   'workshop.createChannelSuccess': 'Kanal erstellt',
   'workshop.createStudyCaseHint': 'Starten Sie eine Unterhaltung, um loszulegen',
   'workshop.cycleStudyStatus': 'Studienstatus wechseln',
@@ -131,7 +147,8 @@ export default {
   'workshop.diagram': 'Diagramm',
   'workshop.diagramInsertFailed': 'Das Symbol konnte nicht eingefügt werden',
   'workshop.diagramInserting': 'Symbol wird eingefügt…',
-  'workshop.diagramPickerEmpty': 'Die Bildbibliothek ist leer. Bitte speichern Sie zunächst ein Bild im Canvas.',
+  'workshop.diagramPickerEmpty':
+    'Die Bildbibliothek ist leer. Bitte speichern Sie zunächst ein Bild im Canvas.',
   'workshop.diagramPickerTitle': 'Wählen Sie aus meiner Symbolbibliothek',
   'workshop.directMessage': 'Direktnachricht',
   'workshop.directMessages': 'Direktnachrichten',
@@ -155,7 +172,8 @@ export default {
   'workshop.gearMenu': 'Optionen',
   'workshop.generalChat': 'Allgemeiner Chat',
   'workshop.inbox': 'Posteingang',
-  'workshop.inboxHintPickChannel': 'Öffnen Sie einen Kanal oder eine Direktnachricht in der Seitenleiste zum Lesen und Antworten. Sie können jederzeit über Ansichten → Posteingang hierher zurückkehren.',
+  'workshop.inboxHintPickChannel':
+    'Öffnen Sie einen Kanal oder eine Direktnachricht in der Seitenleiste zum Lesen und Antworten. Sie können jederzeit über Ansichten → Posteingang hierher zurückkehren.',
   'workshop.inboxSummaryTitle': 'Ihr Posteingang',
   'workshop.inboxUnreadChannels': 'Ungelesen in Kanälen',
   'workshop.inboxUnreadDms': 'Ungelesene Direktnachrichten',
@@ -181,14 +199,17 @@ export default {
   'workshop.loadMore': 'Mehr laden',
   'workshop.mainChannelStream': 'Hauptkanal',
   'workshop.manageTeachingGroups': 'Lehrgruppen verwalten',
-  'workshop.manageTeachingGroupsBlurb': 'Gruppen hinzufügen oder entfernen, öffentlich oder privat setzen, Namen und Beschreibungen bearbeiten, Liste neu ordnen, eine Gruppe als Vorlage duplizieren und Kolleginnen und Kollegen einladen. Erweitert für Posting-Regeln und Benachrichtigungsstandards. Archivieren entfernt eine Gruppe für alle.',
+  'workshop.manageTeachingGroupsBlurb':
+    'Gruppen hinzufügen oder entfernen, öffentlich oder privat setzen, Namen und Beschreibungen bearbeiten, Liste neu ordnen, eine Gruppe als Vorlage duplizieren und Kolleginnen und Kollegen einladen. Erweitert für Posting-Regeln und Benachrichtigungsstandards. Archivieren entfernt eine Gruppe für alle.',
   'workshop.manageUser': 'Diesen Nutzer verwalten',
   'workshop.markAllReadChannel': 'Alle Nachrichten als gelesen markieren',
   'workshop.markAsRead': 'Als gelesen markieren',
   'workshop.markStudyResolved': 'Studie als erledigt markieren',
   'workshop.members': 'Mitglieder',
-  'workshop.mentionAmbiguous': 'Mehrdeutige Namen — wählen Sie jemanden mit eindeutigem Anzeigenamen: {0}',
-  'workshop.mentionUnknown': 'Unbekannte Erwähnungen (nur Nutzer und Mitarbeitende derselben Organisation): {0}',
+  'workshop.mentionAmbiguous':
+    'Mehrdeutige Namen — wählen Sie jemanden mit eindeutigem Anzeigenamen: {0}',
+  'workshop.mentionUnknown':
+    'Unbekannte Erwähnungen (nur Nutzer und Mitarbeitende derselben Organisation): {0}',
   'workshop.mentionedInChannel': 'Sie wurden in #{0} erwähnt',
   'workshop.mentionedInTopic': 'Sie wurden in {0} erwähnt',
   'workshop.mentions': 'Erwähnungen',
@@ -220,18 +241,22 @@ export default {
   'workshop.noTopicsYet': 'Noch keine Unterhaltungen',
   'workshop.numberedList': 'geordnete Liste',
   'workshop.notifications': 'Benachrichtigungen',
-  'workshop.notificationsSettingsBlurb': 'Browser-Benachrichtigungen für Erwähnungen und neue Nachrichten nutzen Ihre Systemeinstellungen. Sie können Desktop- und E-Mail-Hinweise pro Kanal in den Kanaleinstellungen anpassen.',
+  'workshop.notificationsSettingsBlurb':
+    'Browser-Benachrichtigungen für Erwähnungen und neue Nachrichten nutzen Ihre Systemeinstellungen. Sie können Desktop- und E-Mail-Hinweise pro Kanal in den Kanaleinstellungen anpassen.',
   'workshop.offline': 'Offline',
   'workshop.online': 'online',
   'workshop.openMainChannelStream': 'Hauptkanal',
   'workshop.others': 'ANDERE',
   'workshop.permissions': 'Berechtigungen',
+  'workshop.personalMenu': 'Persönliches Menü',
   'workshop.preview': 'Vorschau',
   'workshop.previewEmpty': 'Kein Inhalt zur Vorschau verfügbar',
-  'workshop.personalMenu': 'Persönliches Menü',
-  'workshop.phase2RoadmapGroupsAlerts': 'Demnächst: {\'@\'}Gruppen-Erwähnungen, Alarmwörter und Richtlinie für Nachrichtenbearbeitungsverlauf.',
-  'workshop.phase2RoadmapMovePreview': 'Demnächst: einzelne Nachricht verschieben, URL-Linkvorschauen und reichere kanalübergreifende Aktivität.',
-  'workshop.phase2RoadmapPlatform': 'Plattform-Backlog: inkrementelle Synchronisation, Mobile Push, E-Mail-Digest, Bots/Webhooks.',
+  'workshop.phase2RoadmapGroupsAlerts':
+    "Demnächst: {'@'}Gruppen-Erwähnungen, Alarmwörter und Richtlinie für Nachrichtenbearbeitungsverlauf.",
+  'workshop.phase2RoadmapMovePreview':
+    'Demnächst: einzelne Nachricht verschieben, URL-Linkvorschauen und reichere kanalübergreifende Aktivität.',
+  'workshop.phase2RoadmapPlatform':
+    'Plattform-Backlog: inkrementelle Synchronisation, Mobile Push, E-Mail-Digest, Bots/Webhooks.',
   'workshop.pickColleagueToInvite': 'Wählen Sie eine Person zum Einladen.',
   'workshop.pinChannel': 'Oben anheften',
   'workshop.policyEveryone': 'Alle',
@@ -239,7 +264,8 @@ export default {
   'workshop.policyMembersOnly': 'Nur Mitglieder',
   'workshop.postingPolicy': 'Posting-Richtlinie',
   'workshop.preferences': 'Einstellungen',
-  'workshop.preferencesSettingsBlurb': 'Sprach- und Anzeigeeinstellungen gelten app-weit. Weitere Workshop-Chat-Optionen folgen hier.',
+  'workshop.preferencesSettingsBlurb':
+    'Sprach- und Anzeigeeinstellungen gelten app-weit. Weitere Workshop-Chat-Optionen folgen hier.',
   'workshop.presenceActive': 'Aktiv',
   'workshop.presenceIdle': 'Inaktiv',
   'workshop.presenceOffline': 'Offline',
@@ -248,7 +274,8 @@ export default {
   'workshop.publicChannels': 'Öffentliche Kanäle',
   'workshop.quote': 'Zitat',
   'workshop.quoteMessage': 'Nachricht zitieren',
-  'workshop.readOnlyProfileBlurb': 'Profildetails für Kolleginnen und Kollegen werden vereinfacht angezeigt. Nutzen Sie Nutzer verwalten (Admins), um das Admin-Verzeichnis zu öffnen.',
+  'workshop.readOnlyProfileBlurb':
+    'Profildetails für Kolleginnen und Kollegen werden vereinfacht angezeigt. Nutzen Sie Nutzer verwalten (Admins), um das Admin-Verzeichnis zu öffnen.',
   'workshop.recentDmActivity': 'Aktuelle Direktnachrichten',
   'workshop.recentTopics': 'Aktuelle Unterhaltungen',
   'workshop.renameTopic': 'Unterhaltung umbenennen',
@@ -259,7 +286,8 @@ export default {
   'workshop.roleOwner': 'Inhaber',
   'workshop.searchMembers': 'Mitglieder suchen …',
   'workshop.searchMessages': 'Nachrichten suchen …',
-  'workshop.selectChannelForSettings': 'Wählen Sie zuerst eine Lehrgruppe oder Unterrichtsstudie, dann öffnen Sie hier die Einstellungen.',
+  'workshop.selectChannelForSettings':
+    'Wählen Sie zuerst eine Lehrgruppe oder Unterrichtsstudie, dann öffnen Sie hier die Einstellungen.',
   'workshop.selectConversation': 'Unterhaltung wählen',
   'workshop.selectParentGroup': 'Übergeordnete Lehrgruppe',
   'workshop.selectTopic': 'Unterhaltung wählen',
@@ -273,7 +301,8 @@ export default {
   'workshop.starMessage': 'Nachricht markieren',
   'workshop.starred': 'Markiert',
   'workshop.startConversation': 'Starten Sie die Unterhaltung!',
-  'workshop.startConversationHint': 'Starten Sie eine Unterhaltung, um mit Kolleginnen und Kollegen zu diskutieren',
+  'workshop.startConversationHint':
+    'Starten Sie eine Unterhaltung, um mit Kolleginnen und Kollegen zu diskutieren',
   'workshop.startDM': 'Nachricht senden',
   'workshop.startNewConversation': 'Neue Unterhaltung starten',
   'workshop.statusArchived': 'Archiviert',
@@ -285,7 +314,8 @@ export default {
   'workshop.strikethrough': 'Durchgestrichen',
   'workshop.table': 'Blatt',
   'workshop.switchSchool': 'Schule wechseln',
-  'workshop.teachingGroupLandingHint': 'Unterrichtsstudien und Unterhaltungen in dieser Lehrgruppe. Wählen Sie eine Zeile, um den Kanal oder einen Thread zu öffnen.',
+  'workshop.teachingGroupLandingHint':
+    'Unterrichtsstudien und Unterhaltungen in dieser Lehrgruppe. Wählen Sie eine Zeile, um den Kanal oder einen Thread zu öffnen.',
   'workshop.teachingGroupMembers': 'Mitglieder',
   'workshop.teachingGroupNameRequired': 'Bitte geben Sie einen Lehrgruppennamen ein.',
   'workshop.teachingGroupNoLessons': 'In dieser Gruppe gibt es noch keine Unterrichtsstudien.',
@@ -300,7 +330,8 @@ export default {
   'workshop.topicTitle': 'Titel',
   'workshop.topicTitlePlaceholder': 'z. B. Design-Thinking-Karte für Kapitel 3',
   'workshop.topics': 'Unterhaltungen',
-  'workshop.typeMessagePlaceholder': 'Nachricht eingeben … (Enter senden, Umschalt+Enter neue Zeile)',
+  'workshop.typeMessagePlaceholder':
+    'Nachricht eingeben … (Enter senden, Umschalt+Enter neue Zeile)',
   'workshop.unfollowTopic': 'Unterhaltung nicht mehr folgen',
   'workshop.unknown': 'Unbekannt',
   'workshop.unmuteChannel': 'Kanal-Stummschaltung aufheben',
@@ -316,11 +347,14 @@ export default {
   'workshop.viewProfile': 'Profil ansehen',
   'workshop.viewingSchool': 'Angezeigt: {0}',
   'workshop.views': 'Ansichten',
-  'workshop.welcomeChannelsBody': 'Ein „Kanal“ entspricht hier oft einer Lehrforschungsgruppe oder PLC: ein gemeinsamer Raum pro Team (z. B. Mathe-PLC, Englisch-PLC). Er legt fest, wer teilnimmt und wie der Raum gruppiert ist.',
+  'workshop.welcomeChannelsBody':
+    'Ein „Kanal“ entspricht hier oft einer Lehrforschungsgruppe oder PLC: ein gemeinsamer Raum pro Team (z. B. Mathe-PLC, Englisch-PLC). Er legt fest, wer teilnimmt und wie der Raum gruppiert ist.',
   'workshop.welcomeChannelsTitle': 'PLC / Fachgruppen',
-  'workshop.welcomeConversationsBody': 'In einer Unterrichtsstudie öffnen Sie betitelte Unterhaltungen — z. B. Unterrichtsgestaltung, Reflexion oder Folgeaufgaben — damit Threads übersichtlich bleiben.',
+  'workshop.welcomeConversationsBody':
+    'In einer Unterrichtsstudie öffnen Sie betitelte Unterhaltungen — z. B. Unterrichtsgestaltung, Reflexion oder Folgeaufgaben — damit Threads übersichtlich bleiben.',
   'workshop.welcomeConversationsTitle': 'Unterhaltungen',
-  'workshop.welcomeExampleCaption': 'Illustratives Beispiel (fiktive Schule) — Mathe-PLC und Englisch-PLC, jeweils mit Unterrichtsstudien und Beispiel-Unterhaltungen.',
+  'workshop.welcomeExampleCaption':
+    'Illustratives Beispiel (fiktive Schule) — Mathe-PLC und Englisch-PLC, jeweils mit Unterrichtsstudien und Beispiel-Unterhaltungen.',
   'workshop.welcomeExampleConvLabel': 'Unterhaltungen',
   'workshop.welcomeExampleGroupEnglish': 'Englisch-PLC',
   'workshop.welcomeExampleGroupMath': 'Mathe-PLC',
@@ -328,7 +362,8 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Leitfaden & Arbeitsblatt-Design',
   'workshop.welcomeExampleLSEng1C2': 'Aufgaben nach dem Lesen & Transfer',
   'workshop.welcomeExampleLSEng1C3': 'Beobachtungsfeedback & Reflexion',
-  'workshop.welcomeExampleLSEng2': 'Unterrichtsstudie: Schreiben — gleiche Stunde, verschiedene Lehrkräfte',
+  'workshop.welcomeExampleLSEng2':
+    'Unterrichtsstudie: Schreiben — gleiche Stunde, verschiedene Lehrkräfte',
   'workshop.welcomeExampleLSEng2C1': 'Rubrik-Pilot & Überarbeitung',
   'workshop.welcomeExampleLSMath1': 'Unterrichtsstudie: „Funktionsbegriff“ — Feinschliff-Woche',
   'workshop.welcomeExampleLSMath1C1': 'Ziele & Aktivitätsdesign',
@@ -339,38 +374,52 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Nachrichten leben in jeder Unterhaltung',
   'workshop.welcomeExampleOrg': 'Chenxi Mittelschule',
   'workshop.welcomeHowTitle': 'Wie es zusammenpasst',
-  'workshop.welcomeIntro': 'Workshop ist der strukturierte Diskussionsraum Ihrer Schule: Ankündigungen teilen, Unterrichtsstudien durchführen und Unterhaltungen organisiert neben Ihrer Unterrichtsarbeit halten.',
-  'workshop.welcomeLessonStudyBody': 'Unterrichtsstudie-Kanäle liegen meist unter dieser Gruppe. Jeder ist ein Ort für einen Unterrichtszyklus — Planung, Beobachtung und Reflexion — und kann mit Diagrammen oder Status verknüpft sein.',
+  'workshop.welcomeIntro':
+    'Workshop ist der strukturierte Diskussionsraum Ihrer Schule: Ankündigungen teilen, Unterrichtsstudien durchführen und Unterhaltungen organisiert neben Ihrer Unterrichtsarbeit halten.',
+  'workshop.welcomeLessonStudyBody':
+    'Unterrichtsstudie-Kanäle liegen meist unter dieser Gruppe. Jeder ist ein Ort für einen Unterrichtszyklus — Planung, Beobachtung und Reflexion — und kann mit Diagrammen oder Status verknüpft sein.',
   'workshop.welcomeLessonStudyTitle': 'Unterrichtsstudien',
-  'workshop.welcomeMessagesBody': 'Nachrichten sind einzelne Beiträge im Hauptkanal oder in einer Unterhaltung. Antworten, Erwähnungen und Dateien hängen an Nachrichten.',
+  'workshop.welcomeMessagesBody':
+    'Nachrichten sind einzelne Beiträge im Hauptkanal oder in einer Unterhaltung. Antworten, Erwähnungen und Dateien hängen an Nachrichten.',
   'workshop.welcomeMessagesTitle': 'Nachrichten',
   'workshop.welcomeSubtitle': 'Collaborate mit Ihrer Schule auf MindGraph',
   'workshop.welcomeTitle': 'Willkommen bei Workshop',
   'workshop.you': '(Sie)',
   'workshop.youAnd': 'Sie und',
   'workshopCanvas.connectFailed': 'Verbindung zur Collaboration fehlgeschlagen',
-  'workshopCanvas.sessionExpiredReconnect': 'Ihre Sitzung ist abgelaufen. Bitte aktualisieren Sie die Seite, um der Collaboration erneut beizutreten.',
-  'workshopCanvas.sessionRefreshFailed': 'Ihre Collaboration-Sitzung konnte nicht aktualisiert werden. Bitte speichern Sie Ihre Arbeit und melden Sie sich erneut an.',
-  'workshopCanvas.outboundQueueDegraded': 'Collaboration hinkt hinterher. Einige nicht gesendete Bearbeitungen konnten nicht behalten werden.',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Ihre Sitzung ist abgelaufen. Bitte aktualisieren Sie die Seite, um der Collaboration erneut beizutreten.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Ihre Collaboration-Sitzung konnte nicht aktualisiert werden. Bitte speichern Sie Ihre Arbeit und melden Sie sich erneut an.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Collaboration hinkt hinterher. Einige nicht gesendete Bearbeitungen konnten nicht behalten werden.',
   'workshopCanvas.connectionClosed': 'Verbindung geschlossen',
-  'workshopCanvas.connectionClosedSlow': 'Verbindung geschlossen: Ihre Verbindung war zu langsam, um mit der Collaboration-Sitzung mitzuhalten.',
-  'workshopCanvas.sessionEndedByHost': 'Die Gastgeberin/der Gastgeber hat die Collaboration-Sitzung beendet.',
+  'workshopCanvas.connectionClosedSlow':
+    'Verbindung geschlossen: Ihre Verbindung war zu langsam, um mit der Collaboration-Sitzung mitzuhalten.',
+  'workshopCanvas.sessionEndedByHost':
+    'Die Gastgeberin/der Gastgeber hat die Collaboration-Sitzung beendet.',
   'workshopCanvas.editingNodeLabel': '{username} bearbeitet …',
   'workshopCanvas.collabEditorDisplayNameFallback': 'Jemand',
   'workshopCanvas.connectionClosedReason': 'Collaboration-Verbindung geschlossen: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bearbeitet diesen Knoten',
   'workshopCanvas.errorGeneric': 'Collaboration-Fehler',
-  'workshopCanvas.updatePartialFiltered': 'Einige Bearbeitungen wurden übersprungen ({count} Knoten), weil eine andere Person diese Knoten bearbeitet.',
-  'workshopCanvas.reconnectFailed': 'Erneute Verbindung zur Collaboration fehlgeschlagen, bitte Seite aktualisieren',
-  'workshopCanvas.resyncWaiting': 'Live-Diagramm-Sync dauert länger als erwartet. Wird erneut versucht; aktualisieren Sie bei hängendem Bearbeiten.',
+  'workshopCanvas.updatePartialFiltered':
+    'Einige Bearbeitungen wurden übersprungen ({count} Knoten), weil eine andere Person diese Knoten bearbeitet.',
+  'workshopCanvas.reconnectFailed':
+    'Erneute Verbindung zur Collaboration fehlgeschlagen, bitte Seite aktualisieren',
+  'workshopCanvas.resyncWaiting':
+    'Live-Diagramm-Sync dauert länger als erwartet. Wird erneut versucht; aktualisieren Sie bei hängendem Bearbeiten.',
   'workshopCanvas.returnedHomeIdle': 'Zur Startseite zurück — nach langer Inaktivität getrennt.',
   'workshopCanvas.userJoined': 'Nutzer {username} ist beigetreten',
   'workshopCanvas.usersJoined': '{count} Nutzer sind beigetreten',
   'workshopCanvas.userLeft': 'Nutzer {username} hat verlassen',
   'workshopCanvas.usersLeft': '{count} Nutzer haben verlassen',
   'workshopCanvas.wsError': 'Collaboration-Verbindungsfehler, bitte Netzwerk prüfen',
-  'workshopCanvas.returnedHomeRoomIdle': 'Collaboration beendet: längere Zeit keine Diagrammbearbeitung in dieser Sitzung.',
-  'workshopCanvas.roomIdleWarningToast': 'Keine Diagrammbearbeitung in letzter Zeit — Collaboration endet beim Countdown-Null, sofern niemand bearbeitet.',
-  'workshopCanvas.otherTabCollaborationActive': 'Collaboration läuft in einem anderen Tab oder Fenster für dieses Konto weiter.',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration beendet: längere Zeit keine Diagrammbearbeitung in dieser Sitzung.',
+  'workshopCanvas.roomIdleWarningToast':
+    'Keine Diagrammbearbeitung in letzter Zeit — Collaboration endet beim Countdown-Null, sofern niemand bearbeitet.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration läuft in einem anderen Tab oder Fenster für dieses Konto weiter.',
   'workshopCanvas.joinQrAlt': 'QR-Code zum Beitreten zur Collaboration',
 } as const

@@ -7,7 +7,7 @@ import { computed } from 'vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
-import { useLLMResultsStore, type LLMModel } from '@/stores/llmResults'
+import { type LLMModel, useLLMResultsStore } from '@/stores/llmResults'
 
 const props = defineProps<{
   onModelChange?: () => void

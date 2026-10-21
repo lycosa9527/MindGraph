@@ -34,8 +34,12 @@ describe('kitty pending desktop explain', () => {
     const pending = { nodeId: 'topic', libraryId: 'lib-1' }
     const topic = { id: 'topic', text: '中国' }
     expect(shouldFlushKittyPendingDesktopExplain(pending, 'lib-2', [topic])).toBeNull()
-    expect(shouldFlushKittyPendingDesktopExplain(pending, 'lib-1', [{ id: 'other', text: 'x' }])).toBeNull()
-    expect(shouldFlushKittyPendingDesktopExplain(pending, 'lib-1', [{ id: 'topic', text: '  ' }])).toBeNull()
+    expect(
+      shouldFlushKittyPendingDesktopExplain(pending, 'lib-1', [{ id: 'other', text: 'x' }])
+    ).toBeNull()
+    expect(
+      shouldFlushKittyPendingDesktopExplain(pending, 'lib-1', [{ id: 'topic', text: '  ' }])
+    ).toBeNull()
     expect(shouldFlushKittyPendingDesktopExplain(pending, 'lib-1', [topic])).toBe('topic')
     expect(shouldFlushKittyPendingDesktopExplain({ nodeId: 'topic' }, null, [topic])).toBe('topic')
   })

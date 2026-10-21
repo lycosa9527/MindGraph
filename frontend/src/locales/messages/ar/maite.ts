@@ -79,7 +79,8 @@ export default {
   'maite.errors.generic': 'فشلت العملية، يرجى المحاولة مرة أخرى في وقت لاحق',
   'maite.errors.decompose_failed': 'فشل التحلل',
   'maite.errors.follow_up_failed': 'فشل الاستجواب',
-  'maite.errors.ocr_failed': 'فشل التعرف الضوئي على الحروف، يرجى المحاولة مرة أخرى باستخدام صورة أخرى.',
+  'maite.errors.ocr_failed':
+    'فشل التعرف الضوئي على الحروف، يرجى المحاولة مرة أخرى باستخدام صورة أخرى.',
   'maite.errors.create_failed': 'فشل إنشاء جلسة الاستكشاف',
   'maite.errors.submit_failed': 'فشل في تقديم جدول التحلل',
   'maite.errors.diagnosis_failed': 'فشل التشخيص',
@@ -98,7 +99,8 @@ export default {
   'maite.toast.ocr_success': 'تم استخراج نص السؤال من الصورة',
   'maite.toast.decompose_started': 'بداية تقسيم المعلم...',
   'maite.toast.decompose_complete': 'اكتمل التحلل',
-  'maite.toast.decompose_fallback': 'انتهت مهلة البث، استخدم الاستجابة الكاملة بدلاً من ذلك للمتابعة...',
+  'maite.toast.decompose_fallback':
+    'انتهت مهلة البث، استخدم الاستجابة الكاملة بدلاً من ذلك للمتابعة...',
   'maite.toast.practice_saved': 'تم الحفظ في التمارين الأخيرة',
   'maite.toast.session_created': 'استكشاف الجلسة التي تم إنشاؤها',
   'maite.toast.session_completed': 'اكتملت جلسة الاستكشاف',

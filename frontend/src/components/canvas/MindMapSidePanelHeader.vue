@@ -19,7 +19,9 @@ function handleClose(): void {
 </script>
 
 <template>
-  <header class="mind-map-side-panel-header shrink-0 border-b border-(--swiss-border,#e7e5e4) px-3 py-3">
+  <header
+    class="mind-map-side-panel-header shrink-0 border-b border-(--swiss-border,#e7e5e4) px-3 py-3"
+  >
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0 flex-1">
         <h3 class="truncate text-base font-semibold leading-snug text-(--swiss-ink,#1c1917)">

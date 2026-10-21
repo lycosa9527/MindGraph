@@ -8,9 +8,9 @@ import {
 
 describe('generateGraphErrors', () => {
   it('silences thinking_coin_insufficient by error type', () => {
-    expect(shouldSilenceGenerateGraphError('Insufficient balance', 'thinking_coin_insufficient')).toBe(
-      true
-    )
+    expect(
+      shouldSilenceGenerateGraphError('Insufficient balance', 'thinking_coin_insufficient')
+    ).toBe(true)
     expect(shouldNotifyGenerateGraphError('', 'thinking_coin_insufficient')).toBe(false)
   })
 

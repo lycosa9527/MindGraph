@@ -32,7 +32,8 @@ export default {
   'maite.demo.nextQuestion': 'ಮಾರ್ಗದರ್ಶನ ಪ್ರಶ್ನೆಗಳು',
   'maite.demo.guidingQuestionPrefix': 'ಬೂಟ್ ಪ್ರಶ್ನೆ:',
   'maite.demo.followUpPrefix': 'ಅನುಸರಣಾ ಪ್ರಶ್ನೆ:',
-  'maite.demo.decomposeComplete': 'ವಿಭಜನೆಯು ಪೂರ್ಣಗೊಂಡಿದೆ, ದಯವಿಟ್ಟು ಕೆಳಗಿನ ಮೂರು ಕೋಷ್ಟಕಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.',
+  'maite.demo.decomposeComplete':
+    'ವಿಭಜನೆಯು ಪೂರ್ಣಗೊಂಡಿದೆ, ದಯವಿಟ್ಟು ಕೆಳಗಿನ ಮೂರು ಕೋಷ್ಟಕಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.',
   'maite.demo.replyPlaceholder': 'ನಿಮ್ಮ ಆಲೋಚನೆಗಳು ಅಥವಾ ಉತ್ತರಗಳನ್ನು ಬರೆಯಿರಿ ...',
   'maite.inquiry.startTitle': 'ಪರಿಶೋಧನಾ ಅಧಿವೇಶನವನ್ನು ಪ್ರಾರಂಭಿಸಿ',
   'maite.inquiry.start': 'ಅಧಿವೇಶನವನ್ನು ರಚಿಸಿ',
@@ -45,7 +46,8 @@ export default {
   'maite.inquiry.complete': 'ಅಧಿವೇಶನವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ',
   'maite.inquiry.completedTitle': 'ಪರಿಶೋಧನೆ ಪೂರ್ಣಗೊಂಡಿದೆ',
   'maite.inquiry.completedMessage': 'ಈ ಅಧ್ಯಯನ ಪೂರ್ಣಗೊಂಡಿದ್ದು, ಕಲಿಕಾ ವರದಿಯನ್ನು ವೀಕ್ಷಿಸಬಹುದಾಗಿದೆ.',
-  'maite.diagnosis.thinkingPlaceholder': 'ಸಮಸ್ಯೆಯನ್ನು ಪರಿಹರಿಸಲು ನಿಮ್ಮ ವಿಧಾನವನ್ನು ವಿವರಿಸಿ (ಐಚ್ಛಿಕ)...',
+  'maite.diagnosis.thinkingPlaceholder':
+    'ಸಮಸ್ಯೆಯನ್ನು ಪರಿಹರಿಸಲು ನಿಮ್ಮ ವಿಧಾನವನ್ನು ವಿವರಿಸಿ (ಐಚ್ಛಿಕ)...',
   'maite.diagnosis.runAuto': 'ಸ್ವಯಂಚಾಲಿತ ರೋಗನಿರ್ಣಯ',
   'maite.diagnosis.running': 'ರೋಗನಿರ್ಣಯ ಮಾಡಲಾಗುತ್ತಿದೆ...',
   'maite.remedy.generate': 'ಪರಿಹಾರ ಕಾರ್ಯಗಳನ್ನು ರಚಿಸಿ',
@@ -79,13 +81,15 @@ export default {
   'maite.errors.generic': 'ಕಾರ್ಯಾಚರಣೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'maite.errors.decompose_failed': 'ವಿಭಜನೆ ವಿಫಲವಾಗಿದೆ',
   'maite.errors.follow_up_failed': 'ಪ್ರಶ್ನಿಸುವುದು ವಿಫಲವಾಗಿದೆ',
-  'maite.errors.ocr_failed': 'OCR ಗುರುತಿಸುವಿಕೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಇನ್ನೊಂದು ಚಿತ್ರದೊಂದಿಗೆ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'maite.errors.ocr_failed':
+    'OCR ಗುರುತಿಸುವಿಕೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಇನ್ನೊಂದು ಚಿತ್ರದೊಂದಿಗೆ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
   'maite.errors.create_failed': 'ಪರಿಶೋಧನೆ ಸೆಶನ್ ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ',
   'maite.errors.submit_failed': 'ವಿಭಜನೆ ಕೋಷ್ಟಕವನ್ನು ಸಲ್ಲಿಸಲು ವಿಫಲವಾಗಿದೆ',
   'maite.errors.diagnosis_failed': 'ರೋಗನಿರ್ಣಯ ವಿಫಲವಾಗಿದೆ',
   'maite.errors.remedy_failed': 'ಉದ್ದೇಶಿತ ಪರಿಹಾರ ಕಾರ್ಯವನ್ನು ರಚಿಸುವಲ್ಲಿ ವಿಫಲವಾಗಿದೆ',
   'maite.errors.variant_failed': 'ರೂಪಾಂತರ ಕಾರ್ಯವನ್ನು ರಚಿಸುವುದು ವಿಫಲವಾಗಿದೆ',
-  'maite.errors.variants_incomplete': 'ಅಧಿವೇಶನವನ್ನು ಪೂರ್ಣಗೊಳಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಕನಿಷ್ಠ 3 ಮಾರ್ಪಾಡುಗಳನ್ನು ಸಲ್ಲಿಸಿ',
+  'maite.errors.variants_incomplete':
+    'ಅಧಿವೇಶನವನ್ನು ಪೂರ್ಣಗೊಳಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಕನಿಷ್ಠ 3 ಮಾರ್ಪಾಡುಗಳನ್ನು ಸಲ್ಲಿಸಿ',
   'maite.errors.variant_answer_required': 'ಉತ್ತರಗಳು ಮತ್ತು ವಲಸೆ ತಂತ್ರಗಳು ಅಗತ್ಯವಿದೆ',
   'maite.errors.variant_submit_failed': 'ರೂಪಾಂತರ ಸಲ್ಲಿಕೆ ವಿಫಲವಾಗಿದೆ',
   'maite.errors.load_failed': 'ಸೆಷನ್ ಲೋಡ್ ವಿಫಲವಾಗಿದೆ',
@@ -94,11 +98,13 @@ export default {
   'maite.errors.list_failed': 'ಅಭ್ಯಾಸ ದಾಖಲೆ ಲೋಡ್ ವಿಫಲವಾಗಿದೆ',
   'maite.errors.report_failed': 'ವರದಿ ಲೋಡ್ ವಿಫಲವಾಗಿದೆ',
   'maite.errors.report_copy_failed': 'ಪುನರಾವರ್ತನೆ ವೈಫಲ್ಯವನ್ನು ವರದಿ ಮಾಡಿ',
-  'maite.toast.ocr_uploading': 'ಚಿತ್ರಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ ಮತ್ತು ಪಠ್ಯವನ್ನು ಗುರುತಿಸಲಾಗುತ್ತಿದೆ...',
+  'maite.toast.ocr_uploading':
+    'ಚಿತ್ರಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ ಮತ್ತು ಪಠ್ಯವನ್ನು ಗುರುತಿಸಲಾಗುತ್ತಿದೆ...',
   'maite.toast.ocr_success': 'ಚಿತ್ರದಿಂದ ಪ್ರಶ್ನೆ ಪಠ್ಯವನ್ನು ಹೊರತೆಗೆಯಲಾಗಿದೆ',
   'maite.toast.decompose_started': 'ಶಿಕ್ಷಕರ ಸ್ಥಗಿತವನ್ನು ಪ್ರಾರಂಭಿಸಿ...',
   'maite.toast.decompose_complete': 'ವಿಭಜನೆ ಪೂರ್ಣಗೊಂಡಿದೆ',
-  'maite.toast.decompose_fallback': 'ಸ್ಟ್ರೀಮಿಂಗ್ ಸಮಯ ಮೀರಿದೆ, ಮುಂದುವರಿಯಲು ಪೂರ್ಣ ಪ್ರತಿಕ್ರಿಯೆಯನ್ನು ಬಳಸಿ...',
+  'maite.toast.decompose_fallback':
+    'ಸ್ಟ್ರೀಮಿಂಗ್ ಸಮಯ ಮೀರಿದೆ, ಮುಂದುವರಿಯಲು ಪೂರ್ಣ ಪ್ರತಿಕ್ರಿಯೆಯನ್ನು ಬಳಸಿ...',
   'maite.toast.practice_saved': 'ಇತ್ತೀಚಿನ ವ್ಯಾಯಾಮಗಳಿಗೆ ಉಳಿಸಲಾಗಿದೆ',
   'maite.toast.session_created': 'ಎಕ್ಸ್‌ಪ್ಲೋರ್ ಸೆಶನ್ ರಚಿಸಲಾಗಿದೆ',
   'maite.toast.session_completed': 'ಎಕ್ಸ್‌ಪ್ಲೋರ್ ಸೆಶನ್ ಪೂರ್ಣಗೊಂಡಿದೆ',

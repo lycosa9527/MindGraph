@@ -15,7 +15,8 @@ export default {
   'sidebar.actions.unpin': 'Unpin',
   'sidebar.actions.moveToFolder': 'Move to folder',
   'sidebar.actions.removeFromFolder': 'Remove from folder',
-  'sidebar.askOnceHistory.deleteConfirm': 'Are you sure you want to delete this conversation? This cannot be undone.',
+  'sidebar.askOnceHistory.deleteConfirm':
+    'Are you sure you want to delete this conversation? This cannot be undone.',
   'sidebar.askOnceHistory.empty': 'No conversations yet',
   'sidebar.askOnceHistory.renamePrompt': 'Enter a new name for this conversation',
   'sidebar.askOnceHistory.renameTitle': 'Rename Conversation',
@@ -29,7 +30,8 @@ export default {
   'sidebar.bookmarks.title': 'Recent Bookmarks',
   'sidebar.bookmarks.unknownDoc': 'Unknown Document',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm': 'Are you sure you want to delete this conversation? This cannot be undone.',
+  'sidebar.chatHistory.deleteConfirm':
+    'Are you sure you want to delete this conversation? This cannot be undone.',
   'sidebar.chatHistory.deleteTitle': 'Delete Conversation',
   'sidebar.chatHistory.empty': 'No conversations yet',
   'sidebar.chatHistory.loginPrompt': 'Login to view history',
@@ -44,7 +46,8 @@ export default {
   'sidebar.chatHistory.folderCreatePrompt': 'Enter a name for the new folder',
   'sidebar.chatHistory.folderCreateTitle': 'New folder',
   'sidebar.chatHistory.folderCreated': 'Folder created',
-  'sidebar.chatHistory.folderDeleteConfirm': 'Delete this folder? Conversations inside will move to Uncategorized.',
+  'sidebar.chatHistory.folderDeleteConfirm':
+    'Delete this folder? Conversations inside will move to Uncategorized.',
   'sidebar.chatHistory.folderDeleteFailed': 'Failed to delete folder',
   'sidebar.chatHistory.folderDeleteTitle': 'Delete folder',
   'sidebar.chatHistory.folderDeleted': 'Folder deleted',
@@ -70,7 +73,8 @@ export default {
   'sidebar.community': 'Community',
   'sidebar.courses': 'Thinking courses',
   'sidebar.mateLearning': 'Mate Learning',
-  'sidebar.debateHistory.deleteConfirm': 'Are you sure you want to delete this debate? This cannot be undone.',
+  'sidebar.debateHistory.deleteConfirm':
+    'Are you sure you want to delete this debate? This cannot be undone.',
   'sidebar.debateHistory.empty': 'No debates yet',
   'sidebar.debateHistory.loginPrompt': 'Login to view debates',
   'sidebar.debateHistory.renamePrompt': 'Enter a new topic for this debate',
@@ -93,7 +97,8 @@ export default {
   'sidebar.diagramHistory.folderCreatePrompt': 'Enter a name for the new folder',
   'sidebar.diagramHistory.folderCreateTitle': 'New folder',
   'sidebar.diagramHistory.folderCreated': 'Folder created',
-  'sidebar.diagramHistory.folderDeleteConfirm': 'Delete this folder? Diagrams inside will move to Uncategorized.',
+  'sidebar.diagramHistory.folderDeleteConfirm':
+    'Delete this folder? Diagrams inside will move to Uncategorized.',
   'sidebar.diagramHistory.folderDeleteFailed': 'Failed to delete folder',
   'sidebar.diagramHistory.folderDeleteTitle': 'Delete folder',
   'sidebar.diagramHistory.folderDeleted': 'Folder deleted',
@@ -162,7 +167,8 @@ export default {
   'sidebar.logoSiteQrHint': 'Scan with your phone camera or WeChat',
   'sidebar.mindmateCollabHistory.title': 'Online collab',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'End seminar',
-  'sidebar.mindmateCollabHistory.stopConfirm': 'This will end the session for everyone. Participants will leave the room.',
+  'sidebar.mindmateCollabHistory.stopConfirm':
+    'This will end the session for everyone. Participants will leave the room.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Org',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Network',
   'sidebar.share.ribbon': 'Organization',
@@ -186,7 +192,8 @@ export default {
   'sidebar.demo.menu': 'Demo mode',
   'sidebar.demo.ribbon': 'Demo',
   'sidebar.demo.title': 'Choose diagrams',
-  'sidebar.demo.line1': 'Pick diagrams from your library, write a caption, then play them full screen',
+  'sidebar.demo.line1':
+    'Pick diagrams from your library, write a caption, then play them full screen',
   'sidebar.demo.search': 'Search diagrams',
   'sidebar.demo.empty': 'No diagrams in your library yet',
   'sidebar.demo.hint': 'Select a diagram to write its caption',

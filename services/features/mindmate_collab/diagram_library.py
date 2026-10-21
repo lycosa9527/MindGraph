@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy import select
 
@@ -20,6 +20,13 @@ from models.domain.mindmate_collab import MindmateCollabMessage, MindmateCollabS
 from services.diagram.generation_library_save import SAVE_LIMIT_REACHED, try_save_diagram_to_library
 from services.diagram.generation_skip_registry import get_generation_preview_outcome
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
+from services.features.mindmate_collab.share_canvas import (
+    canvas_share_sender_id,
+    normalize_canvas_diagram_id,
+    session_contains_canvas_diagram,
+    user_may_open_shared_canvas,
+)
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.utils.error_types import DATABASE_ERRORS
 from utils.db.session_open import system_rls_session, user_rls_session
 
@@ -240,6 +247,150 @@ async def save_collab_diagram_for_user(
         return existing, ""
     return await _insert_preview_copy(
         preview_id=preview,
+        user_id=user_id,
+        organization_id=org_id,
+        conversation_id=conversation_id,
+    )
+
+
+def canvas_copy_conversation_id(diagram_id: str) -> str:
+    """Stable library marker so a second open reuses the same personal copy."""
+    return f"mmcollab:canvas:{diagram_id}"
+
+
+async def _insert_canvas_copy(
+    record: dict,
+    *,
+    user_id: int,
+    organization_id: Optional[int],
+    conversation_id: str,
+) -> tuple[Optional[str], str]:
+    """Save another teacher's canvas spec into this user's library."""
+    spec = record.get("spec")
+    if not isinstance(spec, dict) or not spec:
+        return None, COPY_NO_SPEC
+    diagram_type = str(record.get("diagram_type") or "mind_map").strip() or "mind_map"
+    coerced = coerce_prompt_to_diagram_spec(spec, diagram_type)
+    if not coerced:
+        return None, COPY_NO_SPEC
+    title = str(record.get("title") or "Diagram").strip()[:200] or "Diagram"
+    language = str(record.get("language") or "zh").strip() or "zh"
+    saved_id = await try_save_diagram_to_library(
+        user_id,
+        title=title,
+        diagram_type=diagram_type,
+        spec=coerced,
+        language=language,
+        organization_id=organization_id,
+        log_prefix="mindmate_collab_canvas",
+        source_channel="mindmate",
+        conversation_id=conversation_id,
+    )
+    if saved_id == SAVE_LIMIT_REACHED:
+        return None, COPY_LIMIT
+    if not saved_id:
+        return None, COPY_FAILED
+    return saved_id, ""
+
+
+def canvas_diagram_preview_payload(
+    record: dict,
+    diagram_id: str,
+) -> tuple[Optional[dict[str, Any]], str]:
+    """Shape a library record into the seminar bubble preview body."""
+    spec = record.get("spec")
+    if not isinstance(spec, dict) or not spec:
+        return None, COPY_NO_SPEC
+    diagram_type = str(record.get("diagram_type") or "mind_map").strip() or "mind_map"
+    coerced = coerce_prompt_to_diagram_spec(spec, diagram_type)
+    if not coerced:
+        return None, COPY_NO_SPEC
+    title = str(record.get("title") or "Diagram").strip()[:200] or "Diagram"
+    return {
+        "diagram_id": diagram_id,
+        "title": title,
+        "diagram_type": diagram_type,
+        "spec": coerced,
+    }, ""
+
+
+async def load_shared_canvas_diagram_preview(
+    session_id: str,
+    diagram_id: str,
+    current_user: User,
+) -> tuple[Optional[dict[str, Any]], str]:
+    """
+    Return the shared diagram spec for an inline seminar preview.
+
+    Does not copy the diagram into the viewer's library.
+    """
+    cleaned = normalize_canvas_diagram_id(diagram_id)
+    if cleaned is None:
+        return None, COPY_NOT_FOUND
+    mgr = get_mindmate_collab_manager()
+    session = await mgr.load_session_by_id_any(session_id)
+    if session is None:
+        return None, COPY_NOT_FOUND
+    if not await session_contains_canvas_diagram(session.id, cleaned):
+        return None, COPY_NOT_FOUND
+    if not await user_may_open_shared_canvas(session, current_user):
+        return None, COPY_FORBIDDEN
+
+    cache = get_diagram_cache()
+    record = await cache.get_diagram(int(current_user.id), cleaned)
+    if not record:
+        sender_id = await canvas_share_sender_id(session.id, cleaned)
+        if sender_id is None:
+            return None, COPY_NOT_FOUND
+        record = await cache.get_diagram(sender_id, cleaned)
+    if not record:
+        return None, COPY_NOT_FOUND
+    return canvas_diagram_preview_payload(record, cleaned)
+
+
+async def save_shared_canvas_diagram_for_user(
+    session_id: str,
+    diagram_id: str,
+    current_user: User,
+) -> tuple[Optional[str], str]:
+    """
+    Open a canvas diagram that was shared into this seminar.
+
+    The message keeps the posted diagram. Every editor, including the sender,
+    receives a personal library copy.
+    """
+    cleaned = normalize_canvas_diagram_id(diagram_id)
+    if cleaned is None:
+        return None, COPY_NOT_FOUND
+    mgr = get_mindmate_collab_manager()
+    session = await mgr.load_session_by_id_any(session_id)
+    if session is None:
+        return None, COPY_NOT_FOUND
+    if not await session_contains_canvas_diagram(session.id, cleaned):
+        return None, COPY_NOT_FOUND
+    if not await user_may_open_shared_canvas(session, current_user):
+        return None, COPY_FORBIDDEN
+
+    user_id = int(current_user.id)
+    cache = get_diagram_cache()
+    source = await cache.get_diagram(user_id, cleaned)
+    if not source:
+        sender_id = await canvas_share_sender_id(session.id, cleaned)
+        if sender_id is None:
+            return None, COPY_NOT_FOUND
+        source = await cache.get_diagram(sender_id, cleaned)
+    if not source:
+        return None, COPY_NOT_FOUND
+
+    org_id = _organization_id(current_user)
+    conversation_id = canvas_copy_conversation_id(cleaned)
+    existing, lookup_ok = await _find_user_copy(user_id, org_id, conversation_id)
+    if not lookup_ok:
+        return None, COPY_FAILED
+    if existing:
+        return existing, ""
+    return await _insert_canvas_copy(
+        source,
         user_id=user_id,
         organization_id=org_id,
         conversation_id=conversation_id,

@@ -1,7 +1,8 @@
 import { computed, nextTick, ref } from 'vue'
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKittyConversationHistory } from '@/composables/kitty/conversation/useKittyConversationHistory'
 
@@ -68,10 +69,14 @@ describe('useKittyConversationHistory', () => {
       diagramScope: computed(() => 'scope-1'),
       phase: ref('edit'),
     })
-    history.replyState.showFinalReply('想怎么改这张图？', [
-      { index: 1, label: '改主题' },
-      { index: 2, label: '添加分支' },
-    ], 'req-1')
+    history.replyState.showFinalReply(
+      '想怎么改这张图？',
+      [
+        { index: 1, label: '改主题' },
+        { index: 2, label: '添加分支' },
+      ],
+      'req-1'
+    )
 
     fetchOneSentenceTurnsMock.mockResolvedValue([
       {

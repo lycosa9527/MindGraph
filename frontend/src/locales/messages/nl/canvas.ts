@@ -31,25 +31,31 @@ export default {
   'canvas.exportOptions.layoutLandscape': 'Horizontaal',
   'canvas.exportOptions.layoutPortrait': 'Verticaal',
   'canvas.worksheetText.cancel': 'Annuleren',
-  'canvas.worksheetText.defaultInstruction': 'Vul de lege plekken in met de overeenkomende inhoud om de diagramstructuur te voltooien.',
-  'canvas.worksheetText.dragDiagramHint': 'Sleep om te verplaatsen · sleep hoeken om het formaat te wijzigen',
+  'canvas.worksheetText.defaultInstruction':
+    'Vul de lege plekken in met de overeenkomende inhoud om de diagramstructuur te voltooien.',
+  'canvas.worksheetText.dragDiagramHint':
+    'Sleep om te verplaatsen · sleep hoeken om het formaat te wijzigen',
   'canvas.worksheetText.fieldClass': 'Klas:',
   'canvas.worksheetText.fieldDate': 'Datum:',
   'canvas.worksheetText.fieldName': 'Naam:',
   'canvas.worksheetText.hide': 'Verbergen',
   'canvas.worksheetText.instructionLabel': 'Instructies',
   'canvas.worksheetText.instructionPrefix': 'Taak:',
-  'canvas.worksheetText.modalHint': 'Exporteer PDF om af te drukken. Exportdocument voor bewerkbare naam-/klassevelden; het diagram blijft een afbeelding.',
-  'canvas.worksheetText.headerCaptureFailed': 'Kon de werkbladkop niet weergeven; PDF geëxporteerd zonder.',
+  'canvas.worksheetText.modalHint':
+    'Exporteer PDF om af te drukken. Exportdocument voor bewerkbare naam-/klassevelden; het diagram blijft een afbeelding.',
+  'canvas.worksheetText.headerCaptureFailed':
+    'Kon de werkbladkop niet weergeven; PDF geëxporteerd zonder.',
   'canvas.worksheetText.modalTitle': 'Exporteren als DOCX/PDF',
   'canvas.worksheetText.learningSheetMode': 'Bestudeer de enkele modus',
   'canvas.worksheetText.learningSheetModeOn': 'inschakelen',
   'canvas.worksheetText.learningSheetModeOff': 'sluiting',
   'canvas.worksheetText.learningSheetPanelTitle': 'Bestudeer enkele header',
-  'canvas.worksheetText.learningSheetPanelHint': 'De volgende opties zijn alleen beschikbaar in de studiebladmodus en verschijnen boven het pictogram.',
+  'canvas.worksheetText.learningSheetPanelHint':
+    'De volgende opties zijn alleen beschikbaar in de studiebladmodus en verschijnen boven het pictogram.',
   'canvas.worksheetText.exportSettings': 'Exporteer opties',
   'canvas.worksheetText.previewDiagram': 'Illustratie',
-  'canvas.worksheetText.previewEmpty': 'Schakel velden in om een ​​voorbeeld van de koptekst van het leerblad te bekijken.',
+  'canvas.worksheetText.previewEmpty':
+    'Schakel velden in om een ​​voorbeeld van de koptekst van het leerblad te bekijken.',
   'canvas.worksheetText.previewFailed': 'Kan diagramvoorbeeld niet vastleggen.',
   'canvas.worksheetText.previewLabel': 'Voorbeeld',
   'canvas.worksheetText.previewLoading': 'Diagram vastleggen…',
@@ -65,14 +71,21 @@ export default {
   'canvas.worksheetText.showName': 'Naam',
   'canvas.worksheetText.showTopic': 'Onderwerp titel',
   'canvas.worksheetText.topicPreviewLabel': 'Diagramonderwerp',
-  'canvas.import.invalidFile': 'Ongeldig diagrambestand. Selecteer een MG-bestand dat is geëxporteerd vanuit MindGraph of een CmapTools .cmap-bestand.',
+  'canvas.import.invalidFile':
+    'Ongeldig diagrambestand. Selecteer een MG-bestand dat is geëxporteerd vanuit MindGraph of een CmapTools .cmap-bestand.',
   'canvas.import.parseError': 'Kan het diagrambestand niet parseren. Probeer het opnieuw',
-  'canvas.import.cmapHeuristicSemantics': 'Dit CmapTools-bestand gebruikte een terugval in tekstvolgorde voor links: verifieer relaties met uw originele kaart.',
-  'canvas.import.cmapConnectionFallback': 'Relaties werden gereconstrueerd op basis van IHMC grafische verbindingen in plaats van propositieobjecten.',
-  'canvas.import.cmapEmptyLayout': 'Geïmporteerde kaart heeft geen herstelde knooppuntcoördinaten; lay-out is opnieuw gegenereerd.',
-  'canvas.import.cmapLayoutLabelCollision': 'Dubbele conceptlabels overlappen elkaar in lay-outankers; sommige geïmporteerde posities kunnen verkeerd zijn.',
-  'canvas.import.cmapLayoutFailed': 'Bij het extraheren van de lay-out is er een parseerfout opgetreden: de posities zijn opnieuw gegenereerd.',
-  'canvas.reset.confirmBody': 'Weet je het zeker? Alle huidige inhoud gaat verloren, inclusief het diagram en het knooppuntenpalet. Dit kan niet ongedaan worden gemaakt.',
+  'canvas.import.cmapHeuristicSemantics':
+    'Dit CmapTools-bestand gebruikte een terugval in tekstvolgorde voor links: verifieer relaties met uw originele kaart.',
+  'canvas.import.cmapConnectionFallback':
+    'Relaties werden gereconstrueerd op basis van IHMC grafische verbindingen in plaats van propositieobjecten.',
+  'canvas.import.cmapEmptyLayout':
+    'Geïmporteerde kaart heeft geen herstelde knooppuntcoördinaten; lay-out is opnieuw gegenereerd.',
+  'canvas.import.cmapLayoutLabelCollision':
+    'Dubbele conceptlabels overlappen elkaar in lay-outankers; sommige geïmporteerde posities kunnen verkeerd zijn.',
+  'canvas.import.cmapLayoutFailed':
+    'Bij het extraheren van de lay-out is er een parseerfout opgetreden: de posities zijn opnieuw gegenereerd.',
+  'canvas.reset.confirmBody':
+    'Weet je het zeker? Alle huidige inhoud gaat verloren, inclusief het diagram en het knooppuntenpalet. Dit kan niet ongedaan worden gemaakt.',
   'canvas.reset.confirmButton': 'Opnieuw instellen',
   'canvas.reset.confirmTitle': 'Terugzetten naar standaard',
   'canvas.reset.warnSelectType': 'Kan niet resetten: selecteer eerst een diagramtype',
@@ -82,25 +95,32 @@ export default {
   'canvas.voiceCommandGuide.title': 'Gids voor spraakopdrachten',
   'canvas.voiceCommandGuide.collapse': 'Gids voor spraakopdrachten samenvouwen',
   'canvas.voiceCommandGuide.example.add_node': '“Voeg een Chinese vestiging toe”',
-  'canvas.voiceCommandGuide.example.auto_complete_branch': '“Het Chinese filiaal automatisch aanvullen”',
+  'canvas.voiceCommandGuide.example.auto_complete_branch':
+    '“Het Chinese filiaal automatisch aanvullen”',
   'canvas.voiceCommandGuide.example.auto_complete': '“Automatisch de hele kaart aanvullen”',
   'canvas.voiceCommandGuide.example.select_node': '“Selecteer China”',
-  'canvas.voiceCommandGuide.example.update_center': '“Verander het onderwerp naar beroepsonderwijs”',
+  'canvas.voiceCommandGuide.example.update_center':
+    '“Verander het onderwerp naar beroepsonderwijs”',
   'canvas.voiceCommandGuide.example.delete_node': '“Verwijder de Chinese vestiging”',
   'canvas.voiceCommandGuide.example.explain_node': '“China uitleggen”',
-  'canvas.voiceCommandGuide.example.start_inline_recommendations': '“Ideeën voor dit knooppunt voorstellen”',
+  'canvas.voiceCommandGuide.example.start_inline_recommendations':
+    '“Ideeën voor dit knooppunt voorstellen”',
   'canvas.shortcutGuide.addChild': 'Kind toevoegen',
   'canvas.shortcutGuide.addChildDesc': 'Voeg snel een kind toe aan het geselecteerde knooppunt.',
   'canvas.shortcutGuide.addSibling': 'Voeg broer of zus toe',
-  'canvas.shortcutGuide.addSiblingDesc': 'Voeg snel een broer of zus in naast het geselecteerde knooppunt.',
+  'canvas.shortcutGuide.addSiblingDesc':
+    'Voeg snel een broer of zus in naast het geselecteerde knooppunt.',
   'canvas.shortcutGuide.editText': 'Tekst bewerken',
-  'canvas.shortcutGuide.editTextDesc': 'Open inline bewerken; Met Enter of vervagen wordt de grootte onmiddellijk opgeslagen en opnieuw berekend.',
+  'canvas.shortcutGuide.editTextDesc':
+    'Open inline bewerken; Met Enter of vervagen wordt de grootte onmiddellijk opgeslagen en opnieuw berekend.',
   'canvas.shortcutGuide.doubleClick': 'Dubbelklik om te bewerken',
   'canvas.shortcutGuide.deleteNode': 'Knooppunt verwijderen',
-  'canvas.shortcutGuide.deleteNodeDesc': 'Verwijder het geselecteerde knooppunt en zijn vertakkingen (het hoofdknooppunt is beschermd).',
+  'canvas.shortcutGuide.deleteNodeDesc':
+    'Verwijder het geselecteerde knooppunt en zijn vertakkingen (het hoofdknooppunt is beschermd).',
   'canvas.shortcutGuide.arrowNav': 'Pijltjestoetsen',
   'canvas.shortcutGuide.selectNav': 'Navigeren',
-  'canvas.shortcutGuide.arrowNavDesc': 'Euclidische navigatie: de pijltoetsen springen naar het dichtstbijzijnde knooppunt via de fysieke 2D-positie op het canvas, voor naadloze bureaubladachtige bewegingen in elke lay-out.',
+  'canvas.shortcutGuide.arrowNavDesc':
+    'Euclidische navigatie: de pijltoetsen springen naar het dichtstbijzijnde knooppunt via de fysieke 2D-positie op het canvas, voor naadloze bureaubladachtige bewegingen in elke lay-out.',
   'canvas.shortcutGuide.cancel': 'Selectie wissen/bewerken',
   'canvas.shortcutGuide.cancelDesc': 'Selectie of bewerking annuleren.',
   'canvas.shortcutGuide.undo': 'Ongedaan maken',
@@ -110,7 +130,8 @@ export default {
   'canvas.shortcutGuide.learningSheetAnswers': 'Toon/verberg antwoorden op het leerblad',
   'canvas.shortcutGuide.recalcLayout': 'Layout herberekenen',
   'canvas.shortcutGuide.multiSelect': 'Meervoudig selecteren',
-  'canvas.shortcutGuide.multiSelectDesc': 'Sleep een vak in de aanwijzermodus om meerdere knooppunten te selecteren.',
+  'canvas.shortcutGuide.multiSelectDesc':
+    'Sleep een vak in de aanwijzermodus om meerdere knooppunten te selecteren.',
   'canvas.shortcutGuide.multiSelectHint': 'Sleep naar vakselectie',
   'canvas.shortcutGuide.canvasPan': 'Pannendoek',
   'canvas.shortcutGuide.canvasPanDesc': 'Verplaats de canvasweergave.',
@@ -191,7 +212,8 @@ export default {
   'canvas.toolbar.mindMapDiagramStyleBubble': 'Bel',
   'canvas.toolbar.mindMapDiagramStyleBubbleDesc': 'Bel midden · bel L1 · onderstreping L2',
   'canvas.toolbar.mindMapDiagramStyleUnderline': 'Onderstrepen',
-  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc': 'Rect midden · onderstrepen L1 · onderstrepen L2',
+  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc':
+    'Rect midden · onderstrepen L1 · onderstrepen L2',
   'canvas.toolbar.mindMapDiagramStyleSoft': 'Zacht afgerond',
   'canvas.toolbar.mindMapDiagramStyleSoftDesc': 'Rond midden · ovaal L1 · onderstreping L3+',
   'canvas.toolbar.mindMapThemeMorandi': 'Morandi-elegantie',
@@ -201,7 +223,8 @@ export default {
   'canvas.toolbar.mindMapThemeOceanTeal': 'Oceaan Wintertaling',
   'canvas.toolbar.mindMapThemeSunsetBreeze': 'Zonsondergangbries',
   'canvas.toolbar.mindMapThemeRoseWarm': 'Roos Warm',
-  'canvas.toolbar.selectBranchForSibling': 'Selecteer eerst een vertakking of onderliggend knooppunt',
+  'canvas.toolbar.selectBranchForSibling':
+    'Selecteer eerst een vertakking of onderliggend knooppunt',
   'canvas.toolbar.siblingAdded': 'Broeder-knooppunt toegevoegd',
   'canvas.toolbar.addCause': 'Oorzaak toevoegen',
   'canvas.toolbar.addCauseHistory': 'Oorzaak toevoegen',
@@ -218,10 +241,13 @@ export default {
   'canvas.toolbar.aiGenerateTooltip': 'Genereer vanuit het centrale onderwerp',
   'canvas.toolbar.aiGenerating': 'Genereren…',
   'canvas.toolbar.professionalContent.label': 'Content level',
-  'canvas.toolbar.professionalContent.tooltip': 'Kies de moeilijkheidsgraad van het publiek voor door AI gegenereerde inhoud',
+  'canvas.toolbar.professionalContent.tooltip':
+    'Kies de moeilijkheidsgraad van het publiek voor door AI gegenereerde inhoud',
   'canvas.toolbar.professionalContent.panelTitle': 'Content level',
-  'canvas.toolbar.professionalContent.guideTitle': 'Selecteer eerst de moeilijkheidsgraad van het publiek',
-  'canvas.toolbar.professionalContent.guideBody': 'Klik hier om een ​​podium of scène te selecteren. AI-generatie, dialoogwijzigingen, enz. zullen de inhoud ordenen op basis van de moeilijkheidsgraad. Na selectie krijgt de knop het academisch podiumlabel.',
+  'canvas.toolbar.professionalContent.guideTitle':
+    'Selecteer eerst de moeilijkheidsgraad van het publiek',
+  'canvas.toolbar.professionalContent.guideBody':
+    'Klik hier om een ​​podium of scène te selecteren. AI-generatie, dialoogwijzigingen, enz. zullen de inhoud ordenen op basis van de moeilijkheidsgraad. Na selectie krijgt de knop het academisch podiumlabel.',
   'canvas.toolbar.professionalContent.guideAction': 'kiezen',
   'canvas.toolbar.professionalContent.guideDismiss': 'wist',
   'canvas.toolbar.professionalContent.level.general.title': 'Universeel',
@@ -235,15 +261,20 @@ export default {
   'canvas.toolbar.professionalContent.level.university.title': 'Universiteit',
   'canvas.toolbar.professionalContent.level.university.description': 'disciplinair kader',
   'canvas.toolbar.professionalContent.level.adult.title': 'volwassen',
-  'canvas.toolbar.professionalContent.level.adult.description': 'Praktische scenario\'s',
+  'canvas.toolbar.professionalContent.level.adult.description': "Praktische scenario's",
   'canvas.toolbar.professionalContent.level.expert.title': 'deskundige',
   'canvas.toolbar.professionalContent.level.expert.description': 'Diep verfijnd',
-  'canvas.toolbar.professionalContent.notify.preference': 'Daaropvolgende door AI gegenereerde inhoud zal meer in overeenstemming zijn met het bewustzijnsniveau van het publiek "{level}".',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral': 'Daaropvolgende door AI gegenereerde inhoud zal in een "universele" stijl zijn, zonder extra moeilijkheidsbeperkingen.',
-  'canvas.toolbar.professionalContent.notify.afterGenerated': 'De huidige inhoud heeft de moeilijkheidsgraad "{current}"; in de toekomst zal ik op "{next}" drukken om u te helpen bij het genereren ervan.',
-  'canvas.toolbar.professionalContent.audienceLine': 'Huidig ​​publiek: {level} (van onderen [Professionele inhoud])',
+  'canvas.toolbar.professionalContent.notify.preference':
+    'Daaropvolgende door AI gegenereerde inhoud zal meer in overeenstemming zijn met het bewustzijnsniveau van het publiek "{level}".',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    'Daaropvolgende door AI gegenereerde inhoud zal in een "universele" stijl zijn, zonder extra moeilijkheidsbeperkingen.',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    'De huidige inhoud heeft de moeilijkheidsgraad "{current}"; in de toekomst zal ik op "{next}" drukken om u te helpen bij het genereren ervan.',
+  'canvas.toolbar.professionalContent.audienceLine':
+    'Huidig ​​publiek: {level} (van onderen [Professionele inhoud])',
   'canvas.toolbar.educationStage': 'academische fase',
-  'canvas.toolbar.educationStageTooltip': 'Selecteer de academische fase om de diepgang van door AI gegenereerde inhoud te beïnvloeden.',
+  'canvas.toolbar.educationStageTooltip':
+    'Selecteer de academische fase om de diepgang van door AI gegenereerde inhoud te beïnvloeden.',
   'canvas.toolbar.educationStageClear': 'Universeel',
   'canvas.toolbar.educationStagePrimary': 'basisschool',
   'canvas.toolbar.educationStageMiddle': 'lagere middelbare school',
@@ -269,12 +300,15 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': 'Kan onderwerpknooppunt niet verwijderen',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference':
+    'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': 'Kan niet genereren',
   'canvas.toolbar.causeAdded': 'Oorzaakknooppunt toegevoegd',
   'canvas.toolbar.childAdded': 'Kind toegevoegd',
-  'canvas.toolbar.collabAiBlocked': 'Alleen de eigenaar van het diagram kan AI-generatie gebruiken tijdens samenwerking',
-  'canvas.toolbar.collabGuestFeatureBlocked': 'Deze functie is niet beschikbaar als u deelneemt als samenwerkingsgast.',
+  'canvas.toolbar.collabAiBlocked':
+    'Alleen de eigenaar van het diagram kan AI-generatie gebruiken tijdens samenwerking',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'Deze functie is niet beschikbaar als u deelneemt als samenwerkingsgast.',
   'canvas.toolbar.colorLabel': 'Kleur',
   'canvas.toolbar.conceptGeneration': 'Conceptgeneratie',
   'canvas.toolbar.conceptMapModesDev': 'Conceptmapmodi zijn in ontwikkeling',
@@ -295,11 +329,13 @@ export default {
   'canvas.toolbar.exit': 'Uitgang',
   'canvas.toolbar.exitFullscreen': 'Sluit Volledig scherm af',
   'canvas.toolbar.highlighter': 'Markeerstift',
-  'canvas.toolbar.highlighterTooltip': 'Teken op het canvas als een markeerstift; gewist wanneer u de presentatie afsluit',
+  'canvas.toolbar.highlighterTooltip':
+    'Teken op het canvas als een markeerstift; gewist wanneer u de presentatie afsluit',
   'canvas.toolbar.highlighterChooseColor': 'Kleur markeerstift',
   'canvas.toolbar.highlighterPaletteAria': 'Kies de kleur van de markeerstift',
   'canvas.toolbar.insertEquation': 'Vergelijking invoegen',
-  'canvas.toolbar.insertEquationTooltip': 'Voeg inline wiskunde ($...$) in bij het dakje, of voeg het toe aan het geselecteerde knooppunt als u het niet bewerkt',
+  'canvas.toolbar.insertEquationTooltip':
+    'Voeg inline wiskunde ($...$) in bij het dakje, of voeg het toe aan het geselecteerde knooppunt als u het niet bewerkt',
   'canvas.toolbar.insertEquationSelectNode': 'Selecteer eerst een knooppunt',
   'canvas.toolbar.insertEquationDialogTitle': 'Vergelijking invoegen',
   'canvas.toolbar.insertEquationLoading': 'Wiskunde-editor laden…',
@@ -333,7 +369,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'Middelpunt',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
+  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=1/2 bh',
@@ -354,7 +390,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'Wet van sinussen',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'Cosinus(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'zonde(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
+  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'Dubbele hoek',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'Rekenkunde aₙ',
@@ -420,11 +456,13 @@ export default {
   'canvas.presentationTimer.exitTimer': 'Uitgang',
   'canvas.presentationTimer.startPresenting': 'Begin met presenteren',
   'canvas.presentationTimer.closeHud': 'Timer sluiten',
-  'canvas.cachedResult.notice': 'Cache resultaten en gebruik de functie opnieuw om nieuwe resultaten te krijgen',
+  'canvas.cachedResult.notice':
+    'Cache resultaten en gebruik de functie opnieuw om nieuwe resultaten te krijgen',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-    'canvas.classroomRemote.tabTopics': 'Topics',
+  'canvas.classroomRemote.resize': 'Drag to resize',
+  'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
@@ -437,7 +475,8 @@ export default {
   'canvas.classroomRemote.topicsReset': 'Restore defaults',
   'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
   'canvas.presentation.learningSheetConfirmTitle': 'Presentatie starten?',
-  'canvas.presentation.learningSheetConfirmBody': 'Je bent nog steeds bezig met het bewerken van het leerblad. Als u de presentatie start, wordt de blanco bewerking beëindigd; bestaande spaties blijven behouden. Doorgaan?',
+  'canvas.presentation.learningSheetConfirmBody':
+    'Je bent nog steeds bezig met het bewerken van het leerblad. Als u de presentatie start, wordt de blanco bewerking beëindigd; bestaande spaties blijven behouden. Doorgaan?',
   'canvas.presentation.learningSheetConfirmProceed': 'Presentatie starten',
   'canvas.presentationContextMenu.laserPointer': 'Laseraanwijzer',
   'canvas.presentationContextMenu.spotlight': 'schijnwerper',
@@ -475,7 +514,8 @@ export default {
   'canvas.floatingToolbar.summaryLineDashed': 'stippellijn',
   'canvas.floatingToolbar.summaryLineDotted': 'stippellijn',
   'canvas.floatingToolbar.assocStyle': 'Bijbehorende lijnstijl',
-  'canvas.floatingToolbar.assocCurveDrag': 'Versleep de driepuntscirkel om de radiaal aan te passen',
+  'canvas.floatingToolbar.assocCurveDrag':
+    'Versleep de driepuntscirkel om de radiaal aan te passen',
   'canvas.floatingToolbar.assocShape': 'Associatielijnvorm',
   'canvas.floatingToolbar.assocShapeCurve': 'kromme',
   'canvas.floatingToolbar.assocStartArrow': 'startpijl',
@@ -489,14 +529,18 @@ export default {
   'canvas.subgraphPreview.accepted': 'AI-subgrafiek geaccepteerd',
   'canvas.subgraphPreview.discarded': 'AI-subgrafiek verwijderd',
   'canvas.subgraphPreview.generationFailed': 'Het genereren van subgrafieken is mislukt',
-  'canvas.subgraphPreview.emptyResult': 'AI heeft geen bruikbare onderliggende knooppunten geretourneerd',
+  'canvas.subgraphPreview.emptyResult':
+    'AI heeft geen bruikbare onderliggende knooppunten geretourneerd',
   'canvas.subgraphPreview.mergeFailed': 'Kan subgraaf niet samenvoegen met dit knooppunt',
-  'canvas.subgraphPreview.enterNodeTextFirst': 'Enter eerst geldige onderwerptekst voor dit knooppunt',
-  'canvas.subgraphPreview.topicNodeNotSupported': 'Selecteer een vertakkingsknooppunt om een ​​subgrafiek te genereren',
+  'canvas.subgraphPreview.enterNodeTextFirst':
+    'Enter eerst geldige onderwerptekst voor dit knooppunt',
+  'canvas.subgraphPreview.topicNodeNotSupported':
+    'Selecteer een vertakkingsknooppunt om een ​​subgrafiek te genereren',
   'canvas.subgraphPreview.historyLabel': 'AI-subgrafiek',
   'canvas.inlineRecPicker.prevPage': 'Vorige pagina',
   'canvas.inlineRecPicker.nextPage': 'Volgende pagina',
-  'canvas.toolbar.formatBrushActivated': 'Stijl gekopieerd: selecteer doelknooppunten en klik opnieuw om toe te passen',
+  'canvas.toolbar.formatBrushActivated':
+    'Stijl gekopieerd: selecteer doelknooppunten en klik opnieuw om toe te passen',
   'canvas.toolbar.formatBrushApplied': 'Formaat toegepast op {count} knooppunt(en)',
   'canvas.toolbar.formatBrushCancelled': 'Formaatschilder geannuleerd',
   'canvas.toolbar.formatBrushSelectSource': 'Selecteer eerst een bronknooppunt',
@@ -507,43 +551,56 @@ export default {
   'canvas.toolbar.moreAppConceptMapModes': 'Conceptmapmodi',
   'canvas.toolbar.moreAppConceptMapModesDesc': 'Standaardmodus nu; binnenkort meer modi',
   'canvas.toolbar.moreAppLearningSheet': 'Leerblad',
-  'canvas.toolbar.moreAppLearningSheetDesc': 'Willekeurige blanco\'s voor studie en beoordeling',
+  'canvas.toolbar.moreAppLearningSheetDesc': "Willekeurige blanco's voor studie en beoordeling",
   'canvas.toolbar.moreAppWaterfall': 'AI-brainstorm',
-  'canvas.toolbar.moreAppWaterfallDesc': 'Selecteer tussen batchknooppunten; maak divergent en convergent denken zichtbaar',
+  'canvas.toolbar.moreAppWaterfallDesc':
+    'Selecteer tussen batchknooppunten; maak divergent en convergent denken zichtbaar',
   'canvas.toolbar.moreApps': 'Meer apps',
   'canvas.toolbar.moreAppSnapshot': 'Momentopname',
   'canvas.toolbar.moreAppSnapshotDesc': 'Bewaar een versie van dit diagram (max. 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'Vertalen',
-  'canvas.toolbar.moreAppTranslateLabelDesc': 'Vertaal alle knooppunt- en verbindingslabels naar uw huidige interfacetaal met behulp van AI',
+  'canvas.toolbar.moreAppTranslateLabelDesc':
+    'Vertaal alle knooppunt- en verbindingslabels naar uw huidige interfacetaal met behulp van AI',
   'canvas.toolbar.translateLabelTitle': 'Vertaal diagram',
   'canvas.toolbar.translateLabelSource': 'Te vertalen labels ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'Doeltaal',
   'canvas.toolbar.translateLabelCancel': 'Annuleren',
   'canvas.toolbar.translateLabelConfirm': 'Vertalen',
   'canvas.toolbar.translateLabelSelectOne': 'Selecteer precies één knooppunt om te vertalen',
-  'canvas.toolbar.translateLabelEmpty': 'Het geselecteerde knooppunt heeft geen tekst om te vertalen',
+  'canvas.toolbar.translateLabelEmpty':
+    'Het geselecteerde knooppunt heeft geen tekst om te vertalen',
   'canvas.toolbar.translateLabelDiagramEmpty': 'Er is geen tekst om te vertalen in dit diagram',
   'canvas.toolbar.translateLabelAndMore': '{n} meer niet getoond…',
   'canvas.toolbar.translateLabelInProgress': 'Diagram vertalen…',
   'canvas.toolbar.translateLabelBannerTitle': 'Diagram vertalen',
-  'canvas.toolbar.translateLabelFallbackEnInfo': 'Uw interfacetaal is nog niet beschikbaar als vertaaldoel. Etiketten worden naar het Engels vertaald.',
+  'canvas.toolbar.translateLabelFallbackEnInfo':
+    'Uw interfacetaal is nog niet beschikbaar als vertaaldoel. Etiketten worden naar het Engels vertaald.',
   'canvas.toolbar.translateLabelFailed': 'Vertaling mislukt. Probeer het opnieuw.',
   'canvas.toolbar.translateLabelDone': 'Diagram vertaald',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Virtueel toetsenbord',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'Engels schermtoetsenbord; voor Chinees en andere talen gebruikt u de systeeminvoermethode',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'Engels schermtoetsenbord; voor Chinees en andere talen gebruikt u de systeeminvoermethode',
   'canvas.toolbar.virtualKeyboardClose': 'Sluit toetsenbord',
-  'canvas.toolbar.virtualKeyboardFocusHint': 'Als u een knooppunt selecteert en deze rechtstreeks invoert, wordt de originele inhoud gewist; U kunt ook dubbelklikken op het label om de bewerking in te voeren.',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'Als u een knooppunt selecteert en deze rechtstreeks invoert, wordt de originele inhoud gewist; U kunt ook dubbelklikken op het label om de bewerking in te voeren.',
   'canvas.toolbar.virtualKeyboardIme': 'Systeeminvoermethode',
-  'canvas.toolbar.virtualKeyboardImeHint': 'Gebruik het fysieke toetsenbord of het systeemtoetsenbord om in te voeren. Het kandidaatvenster wordt geleverd door de systeeminvoermethode.',
+  'canvas.toolbar.virtualKeyboardImeHint':
+    'Gebruik het fysieke toetsenbord of het systeemtoetsenbord om in te voeren. Het kandidaatvenster wordt geleverd door de systeeminvoermethode.',
   'canvas.toolbar.snapshotSaveFirst': 'Sla het diagram eerst op voordat u een momentopname maakt',
   'canvas.toolbar.snapshotTaken': 'Momentopname {n} opgeslagen',
   'canvas.toolbar.snapshotFailed': 'Kan momentopname niet opslaan. Probeer het opnieuw',
-  'canvas.toolbar.snapshotTooLarge': 'Momentopname is te groot (max. {max} KB). Verminder de inhoud van het diagram en probeer het opnieuw.',
-  'canvas.toolbar.snapshotRateLimited': 'Te veel momentopnameacties. Wacht even en probeer het opnieuw.',
-  'canvas.toolbar.snapshotDiagramNotFound': 'Diagram niet gevonden. Laad de pagina opnieuw of open deze vanuit uw bibliotheek.',
-  'canvas.library.diagramNotFound': 'Diagram niet gevonden. Mogelijk is deze verwijderd. Open een ander diagram uit uw bibliotheek.',
-  'canvas.library.saveBeforeSwitchFailed': 'De huidige kaart kan niet worden opgeslagen voordat u overstapt. Blijf hier en probeer het opnieuw.',
-  'canvas.toolbar.snapshotConflict': 'Kan momentopname niet opslaan (conflict). Probeer het opnieuw.',
+  'canvas.toolbar.snapshotTooLarge':
+    'Momentopname is te groot (max. {max} KB). Verminder de inhoud van het diagram en probeer het opnieuw.',
+  'canvas.toolbar.snapshotRateLimited':
+    'Te veel momentopnameacties. Wacht even en probeer het opnieuw.',
+  'canvas.toolbar.snapshotDiagramNotFound':
+    'Diagram niet gevonden. Laad de pagina opnieuw of open deze vanuit uw bibliotheek.',
+  'canvas.library.diagramNotFound':
+    'Diagram niet gevonden. Mogelijk is deze verwijderd. Open een ander diagram uit uw bibliotheek.',
+  'canvas.library.saveBeforeSwitchFailed':
+    'De huidige kaart kan niet worden opgeslagen voordat u overstapt. Blijf hier en probeer het opnieuw.',
+  'canvas.toolbar.snapshotConflict':
+    'Kan momentopname niet opslaan (conflict). Probeer het opnieuw.',
   'canvas.toolbar.newAssociation': 'Nieuwe associatie',
   'canvas.toolbar.newAttribute': 'Nieuw attribuut',
   'canvas.toolbar.newBranch': 'Nieuwe vestiging',
@@ -569,17 +626,25 @@ export default {
   'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Selecteer een vertakking of onderliggend knooppunt',
-  'canvas.toolbar.selectCategoryOrLeafDelete': 'Selecteer categorie- of leaf-knooppunten (onderwerpknooppunt kan niet worden verwijderd)',
-  'canvas.toolbar.selectCauseOrEffectForAdd': 'Selecteer een oorzaak- of gevolgknooppunt (niet de gebeurtenis) en druk vervolgens op Enter om een ​​ander knooppunt aan die kolom toe te voegen',
-  'canvas.toolbar.selectTreeBranchForChild': 'Selecteer een categorie of een item onder een categorie om een ​​kind toe te voegen, of selecteer het onderwerp om een ​​categorie toe te voegen',
+  'canvas.toolbar.selectCategoryOrLeafDelete':
+    'Selecteer categorie- of leaf-knooppunten (onderwerpknooppunt kan niet worden verwijderd)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Selecteer een oorzaak- of gevolgknooppunt (niet de gebeurtenis) en druk vervolgens op Enter om een ​​ander knooppunt aan die kolom toe te voegen',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Selecteer een categorie of een item onder een categorie om een ​​kind toe te voegen, of selecteer het onderwerp om een ​​categorie toe te voegen',
   'canvas.toolbar.selectNodesFirst': 'Selecteer eerst knooppunt(en).',
   'canvas.toolbar.nodeStyleFollow': 'volg knooppunt',
-  'canvas.toolbar.nodeStyleFollowHint': 'Indien ingeschakeld volgt de knooppuntstijlbalk het geselecteerde knooppunt; wanneer uitgeschakeld, is het verborgen.',
+  'canvas.toolbar.nodeStyleFollowHint':
+    'Indien ingeschakeld volgt de knooppuntstijlbalk het geselecteerde knooppunt; wanneer uitgeschakeld, is het verborgen.',
   'canvas.toolbar.selectNodesToDelete': 'Selecteer knooppunt(en) die u wilt verwijderen',
-  'canvas.toolbar.selectPartForSubpart': 'Selecteer een onderdeel waaraan u een subonderdeel wilt toevoegen',
-  'canvas.toolbar.selectPartThenEnter': 'Selecteer een onderdeelknooppunt en druk vervolgens op Enter om een ​​subonderdeel toe te voegen',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'Selecteer overeenkomsten- of verschilknooppunten (onderwerpknooppunten kunnen niet worden verwijderd)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'Selecteer eerst een overeenkomst- of verschilknooppunt',
+  'canvas.toolbar.selectPartForSubpart':
+    'Selecteer een onderdeel waaraan u een subonderdeel wilt toevoegen',
+  'canvas.toolbar.selectPartThenEnter':
+    'Selecteer een onderdeelknooppunt en druk vervolgens op Enter om een ​​subonderdeel toe te voegen',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
+    'Selecteer overeenkomsten- of verschilknooppunten (onderwerpknooppunten kunnen niet worden verwijderd)',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
+    'Selecteer eerst een overeenkomst- of verschilknooppunt',
   'canvas.toolbar.selectStepForSubstep': 'Selecteer een stap waaraan u een substap wilt toevoegen',
   'canvas.toolbar.similarityWithIndex': 'Gelijkenis {n}',
   'canvas.toolbar.stepAdded': 'Stap toegevoegd',
@@ -629,7 +694,8 @@ export default {
   'canvas.topBar.shareCommunity': 'Deel met de gemeenschap',
   'canvas.topBar.zhihuiUnavailable': 'Slimme tekengrafieken zijn momenteel niet beschikbaar',
   'canvas.topBar.zhihuiNeedMindmap': 'Illustratie ondersteunt alleen mindmapping',
-  'canvas.topBar.zhihuiSaveFailed': 'Kan de kaart niet opslaan en kan de gegenereerde kaart niet openen.',
+  'canvas.topBar.zhihuiSaveFailed':
+    'Kan de kaart niet opslaan en kan de gegenereerde kaart niet openen.',
   'canvas.topBar.sharedCollab': 'Gedeelde samenwerking',
   'canvas.topBar.teachingDesign': 'MindMate AI',
   'canvas.subtitles.tooltip': 'Live ondertiteling (microfoon)',
@@ -637,7 +703,8 @@ export default {
   'canvas.subtitles.listening': 'Luisteren…',
   'canvas.subtitles.micFailed': 'Kon geen toegang krijgen tot de microfoon.',
   'canvas.subtitles.micUnavailable': 'Microfoon is niet beschikbaar in deze browser.',
-  'canvas.subtitles.wsError': 'Verbinding ondertiteling mislukt. Controleer het netwerk en meld u aan.',
+  'canvas.subtitles.wsError':
+    'Verbinding ondertiteling mislukt. Controleer het netwerk en meld u aan.',
   'canvas.subtitles.genericError': 'Fout in ondertiteling',
   'canvas.translation.tooltip': 'Live vertaling (microfoon)',
   'canvas.translation.aria': 'Schakel live vertaling in',
@@ -650,16 +717,20 @@ export default {
   'canvas.translation.stop': 'Stop met vertalen',
   'canvas.topBar.snapshotRecallTooltip': 'Momentopname herstellen {n}',
   'canvas.topBar.snapshotRecallTitle': 'Momentopname herstellen',
-  'canvas.topBar.snapshotRecallConfirm': 'Momentopname {n} herstellen? Uw huidige wijzigingen worden vervangen.',
+  'canvas.topBar.snapshotRecallConfirm':
+    'Momentopname {n} herstellen? Uw huidige wijzigingen worden vervangen.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'Herstellen',
   'canvas.topBar.snapshotRecallCancelBtn': 'Annuleren',
   'canvas.topBar.snapshotRecallHistory': 'Vóór momentopname {n} herstel',
   'canvas.topBar.snapshotRecallFailed': 'Kan de momentopname niet herstellen. Probeer het opnieuw',
-  'canvas.topBar.snapshotRecallNoDiagram': 'Sla het diagram eerst op in uw bibliotheek en herstel vervolgens een momentopname.',
-  'canvas.topBar.snapshotRecallNoType': 'Diagramtype is nog niet gereed. Wacht even en probeer het opnieuw.',
+  'canvas.topBar.snapshotRecallNoDiagram':
+    'Sla het diagram eerst op in uw bibliotheek en herstel vervolgens een momentopname.',
+  'canvas.topBar.snapshotRecallNoType':
+    'Diagramtype is nog niet gereed. Wacht even en probeer het opnieuw.',
   'canvas.topBar.snapshotDeleted': 'Momentopname {n} verwijderd',
   'canvas.topBar.snapshotDeleteFailed': 'Kan momentopname niet verwijderen. Probeer het opnieuw',
-  'canvas.topBar.snapshotBadgeTooltip': 'Klik om momentopname te herstellen {n} · Ctrl+Klik om te verwijderen',
+  'canvas.topBar.snapshotBadgeTooltip':
+    'Klik om momentopname te herstellen {n} · Ctrl+Klik om te verwijderen',
   'canvas.topBar.snapshotRecallingTooltip': 'Momentopname herstellen {n}…',
   'canvas.zoomControls.exitFullscreen': 'Volledig scherm afsluiten',
   'canvas.zoomControls.fitCanvas': 'Geschikt canvas',
@@ -709,8 +780,9 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'Tak',
   'canvas.mindMapSlideOverlay.region': 'Bedieningselementen voor diavoorstellingen',
   'canvas.mindMapSlideOverlay.progress': 'Diavoortgang: klik om te springen',
-  'canvas.mindMapSlideOverlay.shortcuts': 'Klik op canvas of Space/→ volgende · ← vorige · Home/Einde eerste/laatste · Esc dia\'s afsluiten',
-  'canvas.mindMapSlideOverlay.exit': 'Verlaat dia\'s',
+  'canvas.mindMapSlideOverlay.shortcuts':
+    "Klik op canvas of Space/→ volgende · ← vorige · Home/Einde eerste/laatste · Esc dia's afsluiten",
+  'canvas.mindMapSlideOverlay.exit': "Verlaat dia's",
   'canvas.mindMapSlideOverlay.collapse': 'Besturingselementen samenvouwen',
   'canvas.mindMapSlideOverlay.expand': 'Vouw de bedieningselementen uit',
   'canvas.zoomControls.hand': 'Handgereedschap',
@@ -720,22 +792,29 @@ export default {
   'canvas.zoomControls.collabTurnOff': 'Schakel online samenwerking uit',
   'canvasPage.collaborationFooter': 'Samenwerking',
   'canvasPage.collaborationFooterOwner': 'De samenwerking van {username}',
-  'canvasPage.collaborationFooterOwnerDiagram': '{username}\'s diagram «{diagramTitle}» — samenwerking',
+  'canvasPage.collaborationFooterOwnerDiagram':
+    "{username}'s diagram «{diagramTitle}» — samenwerking",
   'canvasPage.collaborationFooterNetworkDiagramTitle': 'Samenwerkingsdiagram «{diagramTitle}»',
-  'canvasPage.collaborationFooterSchool': 'Samenwerking tussen scholen wordt uitgevoerd: schrijf je in via de schoollijst.',
-  'canvasPage.collaborationFooterSchoolDiagram': 'Samenwerking tussen scholen op «{diagramTitle}» — neem deel vanuit de lijst met schoolsessies.',
-  'canvasPage.collabRoomIdleEnding': 'Sessie inactief: samenwerking eindigt over ongeveer {seconds}s (bewerk dit om dit te behouden)',
+  'canvasPage.collaborationFooterSchool':
+    'Samenwerking tussen scholen wordt uitgevoerd: schrijf je in via de schoollijst.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    'Samenwerking tussen scholen op «{diagramTitle}» — neem deel vanuit de lijst met schoolsessies.',
+  'canvasPage.collabRoomIdleEnding':
+    'Sessie inactief: samenwerking eindigt over ongeveer {seconds}s (bewerk dit om dit te behouden)',
   'conceptMap.focus.noResult': 'Geen resultaat',
   'conceptMap.focus.validationRequestFailed': 'Validatieverzoek is mislukt',
   'diagram.aiGenerating': 'AI...',
-  'diagram.alternativeDimensions.braceTitle': 'Andere mogelijke decompositiedimensies voor dit onderwerp:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'Andere mogelijke analogiepatronen voor dit onderwerp:',
-  'diagram.alternativeDimensions.treeMapTitle': 'Andere mogelijke classificatiedimensies voor dit onderwerp:',
+  'diagram.alternativeDimensions.braceTitle':
+    'Andere mogelijke decompositiedimensies voor dit onderwerp:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
+    'Andere mogelijke analogiepatronen voor dit onderwerp:',
+  'diagram.alternativeDimensions.treeMapTitle':
+    'Andere mogelijke classificatiedimensies voor dit onderwerp:',
   'diagram.bridgeMap.alternativesEmpty': '[Alternatieven verschijnen hier]',
   'diagram.conceptMap.focusQuestionPrefix': 'Focusvraag: ',
   'diagram.conceptMap.focusQuestionSuffix': 'Voer alstublieft in',
   'diagram.conceptMap.rootConcept': 'Wortelconcept',
-  'diagram.conceptMap.topicRootRelationship': '\'s wortelconcept',
+  'diagram.conceptMap.topicRootRelationship': "'s wortelconcept",
   'diagram.contextMenu.addAttribute': 'Kenmerk toevoegen',
   'diagram.contextMenu.addBranch': 'Filiaal toevoegen',
   'diagram.contextMenu.addCause': 'Oorzaak toevoegen',
@@ -755,7 +834,8 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'Voeg binnenkort een knooppuntfunctie toe',
   'diagram.contextMenu.paste': 'Plakken',
   'diagram.contextMenu.warningCreateDiagramFirst': 'Maak eerst een diagram',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'Selecteer eerst een overeenkomst- of verschilknooppunt',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff':
+    'Selecteer eerst een overeenkomst- of verschilknooppunt',
   'diagram.defaultNewConcept': 'Nieuw concept',
   'diagram.dimension.classificationAz': 'Classificatie door',
   'diagram.dimension.classificationEn': 'Classificatie door',
@@ -780,31 +860,45 @@ export default {
   'canvas.mindMapSideToolbar.collapse': 'Werkbalk samenvouwen',
   'canvas.mindMapSideToolbar.outline': 'Overzicht',
   'canvas.mindMapSideToolbar.waterfall': 'AI-brainstorm',
-  'canvas.mindMapWaterfall.panelHint': 'Selecteer knooppunten voor AI-vertakkingsideeën en sleep ze vervolgens naar het canvas',
-  'canvas.mindMapWaterfall.emptyHint': 'Nog geen suggesties. Selecteer knooppunten op het canvas of tik op Vernieuwen.',
-  'canvas.mindMapWaterfall.dragHint': 'Klik om meervoudig te selecteren en sleep vervolgens naar een kaartknooppunt om in te voegen. Zet het op een leeg canvas neer om een ​​vertakking op het hoogste niveau toe te voegen.',
+  'canvas.mindMapWaterfall.panelHint':
+    'Selecteer knooppunten voor AI-vertakkingsideeën en sleep ze vervolgens naar het canvas',
+  'canvas.mindMapWaterfall.emptyHint':
+    'Nog geen suggesties. Selecteer knooppunten op het canvas of tik op Vernieuwen.',
+  'canvas.mindMapWaterfall.dragHint':
+    'Klik om meervoudig te selecteren en sleep vervolgens naar een kaartknooppunt om in te voegen. Zet het op een leeg canvas neer om een ​​vertakking op het hoogste niveau toe te voegen.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'Voeg knooppunten toe uit AI-brainstorm',
-  'canvas.mindMapOneSentence.intro': 'Enter een onderwerp, of specificeer het aantal vertakkingen, categorieën, stappen of een andere structuur',
-  'canvas.mindMapOneSentence.requirementsPlaceholder': 'bijv. 3-daagse Beijing reis met vier takken: kleding, eten, accommodatie, transport',
+  'canvas.mindMapOneSentence.intro':
+    'Enter een onderwerp, of specificeer het aantal vertakkingen, categorieën, stappen of een andere structuur',
+  'canvas.mindMapOneSentence.requirementsPlaceholder':
+    'bijv. 3-daagse Beijing reis met vier takken: kleding, eten, accommodatie, transport',
   'canvas.mindMapOneSentence.examplesTitle': 'Inspiratie',
   'canvas.mindMapOneSentence.generateButton': 'Genereer',
-  'canvas.mindMapOneSentence.example1': '3-daags Beijing reisplan met vier takken: kleding, eten, accommodatie, transport',
-  'canvas.mindMapOneSentence.example2': 'SWOT-analyse voor een nieuwe productlancering: sterke en zwakke punten, kansen, bedreigingen',
-  'canvas.mindMapOneSentence.example3': 'Elementaire wetenschap: toestanden van water — eenvoudige labels, maximaal 6 tekens per knooppunt',
+  'canvas.mindMapOneSentence.example1':
+    '3-daags Beijing reisplan met vier takken: kleding, eten, accommodatie, transport',
+  'canvas.mindMapOneSentence.example2':
+    'SWOT-analyse voor een nieuwe productlancering: sterke en zwakke punten, kansen, bedreigingen',
+  'canvas.mindMapOneSentence.example3':
+    'Elementaire wetenschap: toestanden van water — eenvoudige labels, maximaal 6 tekens per knooppunt',
   'canvas.mindMapOneSentence.suggestion.add_node': 'Voeg een Chinese tak toe',
   'canvas.mindMapOneSentence.suggestion.update_node': 'Verander de drankanalyse in de drankanalyse',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': 'Verander 2.1 in groene thee',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint': 'Nadat je het nummer hebt geactiveerd, kun je zeggen: "Wijzig 2.1 in..." "Wijzig de 2e in..."',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint':
+    'Nadat je het nummer hebt geactiveerd, kun je zeggen: "Wijzig 2.1 in..." "Wijzig de 2e in..."',
   'canvas.mindMapOneSentence.suggestion.update_center': 'Het thema is veranderd in thee',
   'canvas.mindMapOneSentence.suggestion.delete_node': 'Tak voor drankanalyse verwijderen',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': 'Voltooi de tak van China',
   'canvas.mindMapOneSentence.suggestion.auto_complete': 'Help mij de kaart te voltooien',
-  'canvas.mindMapOneSentence.suggestion.set_content_level': 'Wijzig de professionele inhoud in algemeen, basisschool, middelbare school, middelbare school, universiteit, volwassene of expert',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': 'Professionele inhoud gewijzigd in {level}',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': 'Het zevende niveau komt overeen met \'Professionele inhoud\' onderaan',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': 'Schakel cijfers, Chinees, cirkels, letters of hoofdstuknummers in',
+  'canvas.mindMapOneSentence.suggestion.set_content_level':
+    'Wijzig de professionele inhoud in algemeen, basisschool, middelbare school, middelbare school, universiteit, volwassene of expert',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
+    'Professionele inhoud gewijzigd in {level}',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
+    "Het zevende niveau komt overeen met 'Professionele inhoud' onderaan",
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
+    'Schakel cijfers, Chinees, cirkels, letters of hoofdstuknummers in',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': 'Schakel {style} nummer in',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': 'U kunt zeggen: \'schakel digitale nummering in\', \'schakel Chinese nummering in\'',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
+    "U kunt zeggen: 'schakel digitale nummering in', 'schakel Chinese nummering in'",
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': 'nummer',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': 'Chinese',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': 'cirkel',
@@ -814,9 +908,11 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': 'Verborgen nummer',
   'canvas.mindMapOneSentence.suggestion.explain_node': 'Leg deze tak van China uit',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'Introduceer dit knooppunt',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint': 'Je kunt zeggen "Leg China uit" en "Introduceer dit knooppunt"; nadat je een knooppunt hebt geselecteerd, kun je ook "Introduceer dit" zeggen.',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
+    'Je kunt zeggen "Leg China uit" en "Introduceer dit knooppunt"; nadat je een knooppunt hebt geselecteerd, kun je ook "Introduceer dit" zeggen.',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'Handleiding voor knooppuntbediening',
-  'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'Handleiding voor knooppuntbediening samenvouwen',
+  'canvas.mindMapOneSentence.nodeActionGuide.collapse':
+    'Handleiding voor knooppuntbediening samenvouwen',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': 'op naam',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.thisNode': 'dit knooppunt',
   'canvas.mindMapOneSentence.inputPlaceholder': 'Beschrijf een onderwerp of bewerkingsverzoek...',
@@ -825,79 +921,118 @@ export default {
   'canvas.mindMapOneSentence.micButton': 'Spraakinvoer',
   'canvas.mindMapOneSentence.photoButton': 'Foto uploaden',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 Foto',
-  'canvas.mindMapOneSentence.photoNeedsDiagram': 'Sla dit diagram eerst op in de bibliotheek en upload vervolgens een foto.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram':
+    'Sla dit diagram eerst op in de bibliotheek en upload vervolgens een foto.',
   'canvas.mindMapOneSentence.photoInvalidType': 'Kies een JPG-, PNG- of WebP-foto.',
   'canvas.mindMapOneSentence.photoTooLarge': 'Foto is te groot. Maximale grootte is 10 MB.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'Mindmap',
-  'canvas.mindMapOneSentence.photoHanddrawnReply': 'Een handgetekende mindmap “{topic}” gedetecteerd. Herbouwd op canvas; overzicht opgeslagen in Document Summary.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'Een handgetekende mindmap “{topic}” gedetecteerd. Herbouwd op dit canvas; overzicht opgeslagen in Document Summary. Synchronisatie van bibliotheek is niet voltooid. Sla op of probeer het opnieuw indien nodig.',
-  'canvas.mindMapOneSentence.photoOcrReply': 'Tekst uit de foto gehaald:\n{excerpt}\n\nDe volledige tekst staat in Document Summary.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply':
+    'Een handgetekende mindmap “{topic}” gedetecteerd. Herbouwd op canvas; overzicht opgeslagen in Document Summary.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
+    'Een handgetekende mindmap “{topic}” gedetecteerd. Herbouwd op dit canvas; overzicht opgeslagen in Document Summary. Synchronisatie van bibliotheek is niet voltooid. Sla op of probeer het opnieuw indien nodig.',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    'Tekst uit de foto gehaald:\n{excerpt}\n\nDe volledige tekst staat in Document Summary.',
   'canvas.mindMapOneSentence.photoFailed': 'Kan de foto niet verwerken.',
-  'canvas.mindMapOneSentence.micDenied': 'Microfoon niet beschikbaar: controleer de browsertoestemming',
+  'canvas.mindMapOneSentence.micDenied':
+    'Microfoon niet beschikbaar: controleer de browsertoestemming',
   'canvas.mindMapOneSentence.ttsToggle': 'Schakel spraak in',
-  'canvas.mindMapOneSentence.kittyWelcome': 'Hallo, vertel me welk diagram ik moet maken, of blijf chatten om takken en knooppunten te bewerken.',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    'Hallo, vertel me welk diagram ik moet maken, of blijf chatten om takken en knooppunten te bewerken.',
   'canvas.mindMapOneSentence.switchDiagramType': 'Overschakelen naar {type}…',
   'canvas.mindMapOneSentence.kittyGenerating': 'Begrepen: uw diagram genereren...',
-  'canvas.mindMapOneSentence.kittyGenerateDone': 'Diagram klaar. Blijf typen om vertakkingen of knooppunten te bewerken.',
-  'canvas.mindMapOneSentence.kittyGenerateFailed': 'Het genereren van diagrammen is mislukt. Probeer het opnieuw of verfijn uw beschrijving.',
-  'canvas.mindMapOneSentence.kittyEditFailed': 'Kan deze bewerking niet toepassen. Probeer uw verzoek opnieuw te formuleren.',
-  'canvas.mindMapOneSentence.kittyEditStale': 'Die bewerking heeft geen effect gehad op het canvas (verouderd of niet actief). Probeer het opnieuw.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'Het canvas kon die bewerking niet verifiëren. Uw diagram is ongewijzigd gelaten.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'De bewerking is lokaal toegepast, maar kan niet worden gesynchroniseerd. Probeer het zo nog eens.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed': 'Kan het canvas niet synchroniseren. Probeer het over enkele ogenblikken opnieuw.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'Kan het canvas niet synchroniseren ({detail}). Probeer het over enkele ogenblikken opnieuw.',
-  'canvas.mindMapOneSentence.kittyEditBusy': 'Het diagram wordt nog steeds gegenereerd. Wacht even en probeer het opnieuw.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} resultaten worden nog steeds gestreamd. Ik zal uw verzoek automatisch uitvoeren wanneer ze klaar zijn.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'Andere modelresultaten worden nog steeds gestreamd. Ik zal uw verzoek automatisch uitvoeren wanneer ze klaar zijn.',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming': 'Andere modellen zijn klaar — ga verder met uw verzoek...',
+  'canvas.mindMapOneSentence.kittyGenerateDone':
+    'Diagram klaar. Blijf typen om vertakkingen of knooppunten te bewerken.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed':
+    'Het genereren van diagrammen is mislukt. Probeer het opnieuw of verfijn uw beschrijving.',
+  'canvas.mindMapOneSentence.kittyEditFailed':
+    'Kan deze bewerking niet toepassen. Probeer uw verzoek opnieuw te formuleren.',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    'Die bewerking heeft geen effect gehad op het canvas (verouderd of niet actief). Probeer het opnieuw.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    'Het canvas kon die bewerking niet verifiëren. Uw diagram is ongewijzigd gelaten.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    'De bewerking is lokaal toegepast, maar kan niet worden gesynchroniseerd. Probeer het zo nog eens.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed':
+    'Kan het canvas niet synchroniseren. Probeer het over enkele ogenblikken opnieuw.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    'Kan het canvas niet synchroniseren ({detail}). Probeer het over enkele ogenblikken opnieuw.',
+  'canvas.mindMapOneSentence.kittyEditBusy':
+    'Het diagram wordt nog steeds gegenereerd. Wacht even en probeer het opnieuw.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    '{models} resultaten worden nog steeds gestreamd. Ik zal uw verzoek automatisch uitvoeren wanneer ze klaar zijn.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    'Andere modelresultaten worden nog steeds gestreamd. Ik zal uw verzoek automatisch uitvoeren wanneer ze klaar zijn.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming':
+    'Andere modellen zijn klaar — ga verder met uw verzoek...',
   'canvas.mindMapOneSentence.requestQueued': 'In de wachtrij',
   'canvas.mindMapOneSentence.requestFailed': 'Mislukt',
-  'canvas.mindMapOneSentence.kittyEditAccessDenied': 'U heeft geen toestemming om dit diagram te bewerken.',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'Het diagram is zojuist bijgewerkt, dus die bewerking is verouderd. Herhaal uw wijziging.',
-  'canvas.mindMapOneSentence.kittyEditTimeout': 'Er is een time-out opgetreden bij die bewerking; het diagram is mogelijk ongewijzigd. Probeer het opnieuw.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner': 'Ik kon geen bewerkbaar canvas vinden. Open het canvas en probeer het opnieuw.',
-  'canvas.mindMapOneSentence.kittyEditAddFailed': 'Sorry, ik kon dat knooppunt niet toevoegen. Controleer de naam en probeer het opnieuw.',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'Sorry, ik kon de naam van dat knooppunt niet wijzigen. Controleer de naam en probeer het opnieuw.',
-  'canvas.mindMapOneSentence.kittyEditCenterFailed': 'Sorry — ik kon het onderwerp niet updaten. Probeer het opnieuw.',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'Sorry, ik kon dat knooppunt niet verwijderen. Controleer de naam en probeer het opnieuw.',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'Sorry — ik kon die vertakking niet automatisch aanvullen. Je kunt het opnieuw vragen.',
+  'canvas.mindMapOneSentence.kittyEditAccessDenied':
+    'U heeft geen toestemming om dit diagram te bewerken.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    'Het diagram is zojuist bijgewerkt, dus die bewerking is verouderd. Herhaal uw wijziging.',
+  'canvas.mindMapOneSentence.kittyEditTimeout':
+    'Er is een time-out opgetreden bij die bewerking; het diagram is mogelijk ongewijzigd. Probeer het opnieuw.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    'Ik kon geen bewerkbaar canvas vinden. Open het canvas en probeer het opnieuw.',
+  'canvas.mindMapOneSentence.kittyEditAddFailed':
+    'Sorry, ik kon dat knooppunt niet toevoegen. Controleer de naam en probeer het opnieuw.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    'Sorry, ik kon de naam van dat knooppunt niet wijzigen. Controleer de naam en probeer het opnieuw.',
+  'canvas.mindMapOneSentence.kittyEditCenterFailed':
+    'Sorry — ik kon het onderwerp niet updaten. Probeer het opnieuw.',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    'Sorry, ik kon dat knooppunt niet verwijderen. Controleer de naam en probeer het opnieuw.',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    'Sorry — ik kon die vertakking niet automatisch aanvullen. Je kunt het opnieuw vragen.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'Dat filiaal is klaar.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'Die takken zijn klaar.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'Sommige takken zijn klaar, maar een paar zijn nog niet klaar. U kunt vragen om opnieuw automatisch aan te vullen.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
+    'Sommige takken zijn klaar, maar een paar zijn nog niet klaar. U kunt vragen om opnieuw automatisch aan te vullen.',
   'canvas.mindMapOneSentence.kittyWorking': 'Oké, daar wordt aan gewerkt...',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty is niet beschikbaar. Controleer of FEATURE_KITTY_AGENT is ingeschakeld op de server.',
-  'canvas.mindMapOneSentence.kittyConnectFailed': 'Kon canvas Kitty niet verbinden. Open dit diagram op het bureaublad en probeer het opnieuw.',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'Kitty is niet beschikbaar. Controleer of FEATURE_KITTY_AGENT is ingeschakeld op de server.',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    'Kon canvas Kitty niet verbinden. Open dit diagram op het bureaublad en probeer het opnieuw.',
   'canvas.mindMapOneSentence.clarifyChoices': 'Kies een optie',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'Mobiel Kitty is aangesloten op dit schema. Gebruik uw telefoon om te spreken of te typen: de bureaubladinvoer is gepauzeerd.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint': 'Telefoon Kitty staat in een ander diagram. Synchroniseer vanaf de telefoon of open dat diagram hier.',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Gebruik mobiel Kitty op uw telefoon…',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    'Mobiel Kitty is aangesloten op dit schema. Gebruik uw telefoon om te spreken of te typen: de bureaubladinvoer is gepauzeerd.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    'Telefoon Kitty staat in een ander diagram. Synchroniseer vanaf de telefoon of open dat diagram hier.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder':
+    'Gebruik mobiel Kitty op uw telefoon…',
   'canvas.mindMapNodeExplain.titleFallback': 'Knooppunt uitleg',
-  'canvas.mindMapNodeExplain.requestFailed': 'Kan het momenteel niet uitleggen. Probeer het later opnieuw.',
+  'canvas.mindMapNodeExplain.requestFailed':
+    'Kan het momenteel niet uitleggen. Probeer het later opnieuw.',
   'canvas.mindMapNodeExplain.thinking': 'Denken',
   'canvas.mindMapNodeExplain.thinkingDone': 'Klaar met denken',
-  'canvas.mindMapNodeExplain.pageStats': '{found} pagina\'s gevonden, {fetched} pagina\'s gelezen',
+  'canvas.mindMapNodeExplain.pageStats': "{found} pagina's gevonden, {fetched} pagina's gelezen",
   'canvas.mindMapNodeExplain.citation': 'Bron {n}',
   'canvas.mindMapNodeExplain.research.title': 'Internetgegevens',
-  'canvas.mindMapNodeExplain.research.images': 'Met foto\'s',
+  'canvas.mindMapNodeExplain.research.images': "Met foto's",
   'canvas.mindMapNodeExplain.research.imagesLoading': 'Afbeeldingen trekken',
-  'canvas.mindMapNodeExplain.research.imagesEmpty': 'Nog geen foto\'s',
+  'canvas.mindMapNodeExplain.research.imagesEmpty': "Nog geen foto's",
   'canvas.mindMapDocumentSummary.tabDocument': 'Documentuittreksel',
   'canvas.mindMapDocumentSummary.tabImage': 'Afbeelding uploaden',
   'canvas.mindMapDocumentSummary.tabWeb': 'Weblink',
   'canvas.mindMapDocumentSummary.tabChat': 'Chatgeschiedenis',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'Bestand uploaden',
   'canvas.mindMapDocumentSummary.tabPaste': 'Tekst plakken',
-  'canvas.mindMapDocumentSummary.pasteHintLite': 'Plak er papieren, aantekeningen of notulen in en wij verfijnen de structuur en genereren een mindmap.',
+  'canvas.mindMapDocumentSummary.pasteHintLite':
+    'Plak er papieren, aantekeningen of notulen in en wij verfijnen de structuur en genereren een mindmap.',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'Chatgeschiedenis',
-  'canvas.mindMapDocumentSummary.intro': 'Haal de belangrijkste punten eruit om een ​​nauwkeurigere mindmap te genereren',
+  'canvas.mindMapDocumentSummary.intro':
+    'Haal de belangrijkste punten eruit om een ​​nauwkeurigere mindmap te genereren',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'Klik om een ​​bestand te uploaden',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, tekst, afbeeldingen, audio: alleen de geëxtraheerde prijsverlaging blijft behouden',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint':
+    'PDF, Word, PPT, Excel, tekst, afbeeldingen, audio: alleen de geëxtraheerde prijsverlaging blijft behouden',
   'canvas.mindMapDocumentSummary.invalidFileType': 'Niet-ondersteund bestandstype',
   'canvas.mindMapDocumentSummary.saveContent': 'Inhoud opslaan',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'Ophalen en opslaan',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'Pagina-inhoud ophalen…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite': 'Plak een openbare pagina-URL. We halen zoveel mogelijk artikeltekst op en slaan deze op als Markdown.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Het direct ophalen van links vindt plaats op de server en kan uw login-cookies niet gebruiken, dus pagina\'s achter auth- of betaalmuren zijn vaak onvolledig. Voor een volledige momentopname van de webpagina zoals u die ziet, gebruikt u de extensie Chrome / Edge.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite':
+    'Plak een openbare pagina-URL. We halen zoveel mogelijk artikeltekst op en slaan deze op als Markdown.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
+    "Het direct ophalen van links vindt plaats op de server en kan uw login-cookies niet gebruiken, dus pagina's achter auth- of betaalmuren zijn vaak onvolledig. Voor een volledige momentopname van de webpagina zoals u die ziet, gebruikt u de extensie Chrome / Edge.",
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Downloaden Chrome extension',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Extraheren…',
   'canvas.mindMapDocumentSummary.stageStarting': 'Beginnen…',
@@ -906,19 +1041,25 @@ export default {
   'canvas.mindMapDocumentSummary.stageOcr': 'Afbeeldingstekst lezen…',
   'canvas.mindMapDocumentSummary.stageTranscribing': 'Audio transcriberen…',
   'canvas.mindMapDocumentSummary.stageStoring': 'Geëxtraheerde tekst opslaan…',
-  'canvas.mindMapDocumentSummary.replaceSourceHint': 'Als u opnieuw uploadt, wordt de huidige bron voor dit diagram vervangen',
+  'canvas.mindMapDocumentSummary.replaceSourceHint':
+    'Als u opnieuw uploadt, wordt de huidige bron voor dit diagram vervangen',
   'canvas.mindMapDocumentSummary.fromSource': 'Vanaf {name}',
   'canvas.mindMapDocumentSummary.deleteSource': 'Bron verwijderen',
   'canvas.mindMapDocumentSummary.sourceDeleted': 'Bron verwijderd: je kunt opnieuw uploaden',
   'canvas.mindMapDocumentSummary.extractStarted': 'Inhoud extraheren…',
   'canvas.mindMapDocumentSummary.extractFailed': 'Kan tekst uit dit bestand niet extraheren',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Afwaardering is klaar. Genereer een mindmap of verwijder de bron om iets anders te uploaden.',
-  'canvas.mindMapDocumentSummary.deleteToRetry': 'Verwijder deze bron en upload, plak of haal een pagina opnieuw op.',
-  'canvas.mindMapDocumentSummary.chatIntroLite': 'Download de bestandslezer, voer de koppelingscode in en verzend de WeChat- of DingTalk-geschiedenis voor dit diagram.',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'Afwaardering is klaar. Genereer een mindmap of verwijder de bron om iets anders te uploaden.',
+  'canvas.mindMapDocumentSummary.deleteToRetry':
+    'Verwijder deze bron en upload, plak of haal een pagina opnieuw op.',
+  'canvas.mindMapDocumentSummary.chatIntroLite':
+    'Download de bestandslezer, voer de koppelingscode in en verzend de WeChat- of DingTalk-geschiedenis voor dit diagram.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'Chatgeschiedenis ontvangen',
-  'canvas.mindMapDocumentSummary.chatDoneLite': 'Chat opgeslagen: tik op Genereren als u klaar bent',
+  'canvas.mindMapDocumentSummary.chatDoneLite':
+    'Chat opgeslagen: tik op Genereren als u klaar bent',
   'canvas.mindMapDocumentSummary.corpusStatus': '{completed} van {total} bronnen geïndexeerd',
-  'canvas.mindMapDocumentSummary.noSources': 'Nog geen bronnen. Voeg er een toe op de onderstaande tabbladen.',
+  'canvas.mindMapDocumentSummary.noSources':
+    'Nog geen bronnen. Voeg er een toe op de onderstaande tabbladen.',
   'canvas.mindMapDocumentSummary.noPackageYet': 'Nog geen corpus',
   'canvas.mindMapDocumentSummary.addSource': 'Bron toevoegen',
   'canvas.mindMapDocumentSummary.addToCorpus': 'Toevoegen aan corpus',
@@ -927,58 +1068,80 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': 'Indexeren…',
   'canvas.mindMapDocumentSummary.statusFailed': 'Mislukt',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'Knowledge Space is uitgeschakeld',
-  'canvas.mindMapDocumentSummary.featureDisabledHint': 'Schakel de functie Knowledge Space in om Document Summary te gebruiken.',
-  'canvas.mindMapDocumentSummary.saveDiagramHint': 'Bewaar dit diagram om het pakket te koppelen en het volledige RAG-ophalen mogelijk te maken.',
-  'canvas.mindMapDocumentSummary.chatIntro': 'Download de bestandslezer, voer de onderstaande koppelingscode in en stuur de WeChat- of DingTalk-geschiedenis naar dit corpus.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint':
+    'Schakel de functie Knowledge Space in om Document Summary te gebruiken.',
+  'canvas.mindMapDocumentSummary.saveDiagramHint':
+    'Bewaar dit diagram om het pakket te koppelen en het volledige RAG-ophalen mogelijk te maken.',
+  'canvas.mindMapDocumentSummary.chatIntro':
+    'Download de bestandslezer, voer de onderstaande koppelingscode in en stuur de WeChat- of DingTalk-geschiedenis naar dit corpus.',
   'canvas.mindMapDocumentSummary.pairingCode': 'Koppelingscode',
   'canvas.mindMapDocumentSummary.startPairingCode': 'Koppelingscode ophalen',
   'canvas.mindMapDocumentSummary.pairingExpires': 'Verloopt over {minutes} min',
   'canvas.mindMapDocumentSummary.downloadReader': 'Bestandslezer downloaden (Windows)',
   'canvas.mindMapDocumentSummary.chatWaiting': 'Wachten op uploaden…',
-  'canvas.mindMapDocumentSummary.chatReceived': 'Chatgeschiedenis ontvangen en toegevoegd aan corpus',
+  'canvas.mindMapDocumentSummary.chatReceived':
+    'Chatgeschiedenis ontvangen en toegevoegd aan corpus',
   'canvas.mindMapDocumentSummary.chatIndexing': 'Chattranscriptie indexeren…',
   'canvas.mindMapDocumentSummary.chatDone': 'Chat toegevoegd aan corpus',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'Uploaden of indexeren is mislukt. Vernieuw om het opnieuw te proberen',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed':
+    'Uploaden of indexeren is mislukt. Vernieuw om het opnieuw te proberen',
   'canvas.mindMapDocumentSummary.chatMintFailed': 'Kan koppelingscode niet aanmaken',
-  'canvas.mindMapDocumentSummary.chatExpired': 'Koppelingscode verlopen. Vernieuw om een ​​nieuwe te krijgen',
+  'canvas.mindMapDocumentSummary.chatExpired':
+    'Koppelingscode verlopen. Vernieuw om een ​​nieuwe te krijgen',
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'Vernieuw de koppelingscode',
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'Kan Document Summary sessie niet starten',
-  'canvas.mindMapDocumentSummary.imageTooLarge': 'Afbeelding is te groot. Maximale grootte is 10 MB.',
-  'canvas.mindMapDocumentSummary.generateNoCorpus': 'Voeg ten minste één bron toe en genereer vervolgens',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'Upload, plak of haal eerst een pagina op en tik vervolgens op Genereren',
+  'canvas.mindMapDocumentSummary.imageTooLarge':
+    'Afbeelding is te groot. Maximale grootte is 10 MB.',
+  'canvas.mindMapDocumentSummary.generateNoCorpus':
+    'Voeg ten minste één bron toe en genereer vervolgens',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
+    'Upload, plak of haal eerst een pagina op en tik vervolgens op Genereren',
   'canvas.mindMapDocumentSummary.collabDisabled': 'Niet beschikbaar tijdens live samenwerking',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'Bron toegevoegd aan corpus',
-  'canvas.mindMapDocumentSummary.ingestSuccessLite': 'Inhoud opgeslagen: tik op Genereren als u klaar bent',
+  'canvas.mindMapDocumentSummary.ingestSuccessLite':
+    'Inhoud opgeslagen: tik op Genereren als u klaar bent',
   'canvas.mindMapDocumentSummary.ingestFailed': 'Kan bron niet toevoegen',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'Lokaal document:',
   'canvas.mindMapDocumentSummary.uploadDocHint': 'Klik om Word of PDF te uploaden',
   'canvas.mindMapDocumentSummary.uploadDocSubhint': 'We extraheren documentinhoud automatisch',
   'canvas.mindMapDocumentSummary.pasteLabel': 'Of plak lange notities:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder': 'Plak papieren uittreksels, boeksamenvattingen, vergadernotities, vereisten en meer.',
+  'canvas.mindMapDocumentSummary.pastePlaceholder':
+    'Plak papieren uittreksels, boeksamenvattingen, vergadernotities, vereisten en meer.',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'Afbeelding uploaden:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'Klik om JPG of PNG te uploaden',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'We detecteren handgetekende mindmaps en herbouwen deze; anders extraheren we tekst',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'Handgetekende mindmap gedetecteerd – opnieuw opgebouwd op canvas',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    'We detecteren handgetekende mindmaps en herbouwen deze; anders extraheren we tekst',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
+    'Handgetekende mindmap gedetecteerd – opnieuw opgebouwd op canvas',
   'canvas.mindMapDocumentSummary.visionProgressDetecting': 'Handgetekende mindmap detecteren…',
-  'canvas.mindMapDocumentSummary.imageOcrHint': 'Werkt met notitieschermafbeeldingen, whiteboardfoto\'s en scans.',
+  'canvas.mindMapDocumentSummary.imageOcrHint':
+    "Werkt met notitieschermafbeeldingen, whiteboardfoto's en scans.",
   'canvas.mindMapDocumentSummary.removeImage': 'Afbeelding verwijderen',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'Weblink:',
   'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'Plak een artikel-, blog- of nieuws-URL',
-  'canvas.mindMapDocumentSummary.webLinkHint': 'Wij halen de pagina op en voegen deze toe aan uw corpus voor indexering.',
+  'canvas.mindMapDocumentSummary.webLinkHint':
+    'Wij halen de pagina op en voegen deze toe aan uw corpus voor indexering.',
   'canvas.mindMapDocumentSummary.generateButton': 'Mindmap genereren',
   'canvas.mindMapDocumentSummary.generateSuccess': 'Mindmap gegenereerd',
   'canvas.mindMapDocumentSummary.generateFailed': 'Generatie mislukt. Probeer het opnieuw.',
   'canvas.mindMapDocumentSummary.loadFailed': 'Kan het gegenereerde diagram niet laden',
   'canvas.mindMapDocumentSummary.emptyDocument': 'Upload een document of plak tekst',
   'canvas.mindMapDocumentSummary.emptyUrl': 'Enter een webpagina-URL',
-  'canvas.mindMapDocumentSummary.invalidDocType': 'Alleen Word (.docx) en PDF-bestanden worden ondersteund',
-  'canvas.mindMapDocumentSummary.invalidImageType': 'Alleen JPG- en PNG-afbeeldingen worden ondersteund',
+  'canvas.mindMapDocumentSummary.invalidDocType':
+    'Alleen Word (.docx) en PDF-bestanden worden ondersteund',
+  'canvas.mindMapDocumentSummary.invalidImageType':
+    'Alleen JPG- en PNG-afbeeldingen worden ondersteund',
   'canvas.mindMapDocumentSummary.docTooLarge': 'Bestand is te groot. Maximale grootte is 20 MB.',
-  'canvas.mindMapDocumentSummary.pasteTooLong': 'Geplakte tekst overschrijdt de invoerlimiet van het model (ongeveer 900.000 tekens). Kort het alstublieft in.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'De geëxtraheerde tekst overschrijdt de invoerlimiet van het model (~900.000 tekens / qwen3.6-flash 991K tokens). Gebruik een korter document.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'De tekst van dit bestand is te lang voor het model. Upload een korter document (minder dan ongeveer 900.000 tekens aan tekst).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared': 'Het opgeslagen uittreksel ontbrak of was niet gesynchroniseerd en is gewist. Upload of plak het document opnieuw.',
-  'canvas.mindMapDocumentSummary.contentFiltered': 'De inhoud heeft de veiligheidsbeoordeling niet doorstaan. Pas de tekst aan en probeer het opnieuw.',
+  'canvas.mindMapDocumentSummary.pasteTooLong':
+    'Geplakte tekst overschrijdt de invoerlimiet van het model (ongeveer 900.000 tekens). Kort het alstublieft in.',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel':
+    'De geëxtraheerde tekst overschrijdt de invoerlimiet van het model (~900.000 tekens / qwen3.6-flash 991K tokens). Gebruik een korter document.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel':
+    'De tekst van dit bestand is te lang voor het model. Upload een korter document (minder dan ongeveer 900.000 tekens aan tekst).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared':
+    'Het opgeslagen uittreksel ontbrak of was niet gesynchroniseerd en is gewist. Upload of plak het document opnieuw.',
+  'canvas.mindMapDocumentSummary.contentFiltered':
+    'De inhoud heeft de veiligheidsbeoordeling niet doorstaan. Pas de tekst aan en probeer het opnieuw.',
   'canvas.mindMapSideToolbar.learningSheet': 'Leerblad',
   'canvas.mobile.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
@@ -989,24 +1152,30 @@ export default {
   'canvas.mindClassroom.lead': 'Laat de AI-leraar met je praten over deze mindmap',
   'canvas.mindClassroom.mascotBubble': 'De denkende collegezaal is er!',
   'canvas.mindClassroom.mascotDismiss': 'Plooi naar de bodem',
-  'canvas.mindClassroom.audienceLine': 'Huidig ​​publiek: {level} (van onderen [Professionele inhoud])',
+  'canvas.mindClassroom.audienceLine':
+    'Huidig ​​publiek: {level} (van onderen [Professionele inhoud])',
   'canvas.mindClassroom.start': 'Begin met uitleggen',
-  'canvas.mindClassroom.startPreview': 'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
+  'canvas.mindClassroom.startPreview':
+    'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
   'canvas.mindClassroom.queue.queued': 'Ben al lid van de wachtrij voor tutorials…',
-  'canvas.mindClassroom.queue.planning': 'Collegenota\'s/lesplannen genereren...',
+  'canvas.mindClassroom.queue.planning': "Collegenota's/lesplannen genereren...",
   'canvas.mindClassroom.queue.transcriptBranch': 'Lesplannen schrijven voor vestiging {name}',
   'canvas.mindClassroom.queue.transcriptRemaining': 'Andere lesplannen schrijven ({done}/{total})',
   'canvas.mindClassroom.queue.transcript': 'Aantekeningen/lesplannen schrijven...',
   'canvas.mindClassroom.queue.generating': 'Diavoorstelling genereren…',
   'canvas.mindClassroom.queue.loadingVoice': 'Stemmen laden…',
   'canvas.mindClassroom.queue.ready': 'Kan een lezing beginnen',
-  'canvas.mindClassroom.queue.readyHint': 'De collegeaantekeningen/lesplannen zijn klaar en het college kan beginnen.',
+  'canvas.mindClassroom.queue.readyHint':
+    'De collegeaantekeningen/lesplannen zijn klaar en het college kan beginnen.',
   'canvas.mindClassroom.queue.failed': 'Verklaar het falen van de voorbereiding',
   'canvas.mindClassroom.queue.cancel': 'Wachtrij annuleren',
   'canvas.mindClassroom.queue.restart': 'Restart',
-  'canvas.mindClassroom.queue.restartHint': 'Regenerate the script / lesson plan with the current settings',
-  'canvas.mindClassroom.queue.guestHint': 'Bezoekers gebruiken lokale sjablonen voor uitleg; na het inloggen genereert de engine collegeaantekeningen/lesplannen.',
-  'canvas.mindClassroom.queue.loginRequired': 'Gelieve eerst in te loggen voordat u met de uitleg begint.',
+  'canvas.mindClassroom.queue.restartHint':
+    'Regenerate the script / lesson plan with the current settings',
+  'canvas.mindClassroom.queue.guestHint':
+    'Bezoekers gebruiken lokale sjablonen voor uitleg; na het inloggen genereert de engine collegeaantekeningen/lesplannen.',
+  'canvas.mindClassroom.queue.loginRequired':
+    'Gelieve eerst in te loggen voordat u met de uitleg begint.',
   'canvas.mindClassroom.queue.preparing': 'Klaar om uit te leggen...',
   'canvas.mindClassroom.settings.masteryTitle': 'Wat ben ik bekend met deze foto',
   'canvas.mindClassroom.settings.mastery.first_look.title': 'Eerste kennismaking',
@@ -1014,15 +1183,20 @@ export default {
   'canvas.mindClassroom.settings.mastery.teach.title': 'Lesvoorbereiding en lesgeven',
   'canvas.mindClassroom.settings.presentationTitle': 'Hoe ik wil dat de uitleg wordt gepresenteerd',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'Canvas Voice Tour',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'Focus op de audio-uitleg op het kaartvenster, selecteer hoofdtak of knooppunt voor knooppunt.',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    'Focus op de audio-uitleg op het kaartvenster, selecteer hoofdtak of knooppunt voor knooppunt.',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'Dia uitleg',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'AI genereert dia\'s, met aan de linkerkant een kaart ter vergelijking en aan de rechterkant een uitleg over het omslaan van pagina\'s.',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': 'In ontwikkeling, zal binnenkort online komen',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    "AI genereert dia's, met aan de linkerkant een kaart ter vergelijking en aan de rechterkant een uitleg over het omslaan van pagina's.",
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
+    'In ontwikkeling, zal binnenkort online komen',
   'canvas.mindClassroom.settings.tourScopeTitle': 'Granulariteit van de tour',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'Per hoofdtak',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'De takken van het eerste niveau worden stap voor stap aangeleerd en het ritme is stabieler.',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
+    'De takken van het eerste niveau worden stap voor stap aangeleerd en het ritme is stabieler.',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'Knooppunt voor knooppunt',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'Ga diep in elk knooppunt, geschikt voor intensief lezen.',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc':
+    'Ga diep in elk knooppunt, geschikt voor intensief lezen.',
   'canvas.mindClassroom.settings.slideStyleTitle': 'Stijl van diavoorstelling',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'Universele glijbanen',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'schoolbordrapport',
@@ -1040,10 +1214,13 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': 'intensief lezen',
   'canvas.mindClassroom.settings.tone.examples': 'Rijke voorbeelden',
   'canvas.mindClassroom.settings.tone.exam_outline': 'Examenoverzicht',
-  'canvas.mindClassroom.lecture.needDiagram': 'Maak een mindmap op het canvas voordat u met de uitleg begint.',
-  'canvas.mindClassroom.lecture.emptySteps': 'Er zijn geen knooppunten om uit te leggen op de huidige kaart.',
+  'canvas.mindClassroom.lecture.needDiagram':
+    'Maak een mindmap op het canvas voordat u met de uitleg begint.',
+  'canvas.mindClassroom.lecture.emptySteps':
+    'Er zijn geen knooppunten om uit te leggen op de huidige kaart.',
   'canvas.mindClassroom.lecture.cancelled': 'De tutorialwachtrij is geannuleerd.',
-  'canvas.mindClassroom.lecture.queueFailed': 'Voorbereiding van de tutorial is mislukt. Probeer het later opnieuw.',
+  'canvas.mindClassroom.lecture.queueFailed':
+    'Voorbereiding van de tutorial is mislukt. Probeer het later opnieuw.',
   'canvas.mindClassroom.lecture.pause': 'pauze',
   'canvas.mindClassroom.lecture.resume': 'doorgaan',
   'canvas.mindClassroom.lecture.prev': 'Vorige sectie',
@@ -1053,33 +1230,54 @@ export default {
   'canvas.mindClassroom.lecture.unmute': 'Begin hardop te lezen',
   'canvas.mindClassroom.lecture.script.noBranches': 'Enkele punten',
   'canvas.mindClassroom.lecture.script.leafNode': 'Er zijn nog geen verdere details over deze tak.',
-  'canvas.mindClassroom.lecture.script.overview.classroom': 'Hallo, klasgenoten. Vandaag leren we over "{topic}", tegenover het publiek van "{audience}", en ontvouwen we ons in het tempo van "{mastery}". Het hele plaatje omvat voornamelijk: {branches}. Kijk eerst naar het totaalbeeld en sorteer het dan stukje voor stukje.',
-  'canvas.mindClassroom.lecture.script.overview.story': 'Denk eerst aan "{topic}" als de titel van een verhaal. Als we kijken naar "{audience}", gaan we van het hele plaatje naar de details: er zijn deze hoofdstukken in het verhaal: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.dialogue': 'Laten we eerst samen naar "{topic}" kijken. Als jij "{audience}" was, welke onderdelen zou je dan als eerste opmerken? Het hele plaatje omvat grofweg: {branches}. We gingen naar beneden om vragen te stellen en vragen te beantwoorden.',
-  'canvas.mindClassroom.lecture.script.overview.socratic': 'Haast je nog niet om de conclusie uit je hoofd te leren. Geconfronteerd met "{topic}", waarom denk je dat het de moeite waard is om een ​​foto te maken? We volgen de diepte van "{mastery}" en vragen vanuit deze takken: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.fast': 'Kijk snel naar "{topic}" ({audience}). Kofferbak: {branches}. Bereik vervolgens het punt één voor één.',
-  'canvas.mindClassroom.lecture.script.overview.close_read': 'Intensieve leesopening: Het thema is "{topic}". Begrijp eerst de algemene structuur - {branches} - en lees deze vervolgens zorgvuldig per onderdeel. Publiekinstelling: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.examples': 'Begin met een voorbeeld. Het thema "{topic}" kan worden gezien als een scène in het leven of in de klas; de takken van het hele beeld lijken op verschillende scènes: {branches}. Publiek: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'Overzicht van testpunten: "{topic}". Noteer de belangrijkste punten volgens het schema—{branches}. De moeilijkheidsgraad is afgestemd op "{audience}" en het ritme is "{mastery}".',
-  'canvas.mindClassroom.lecture.script.branch.classroom': 'Tak {index}/{total}: Kijk naar "{title}". Ook eronder: {children}. Raadpleeg de kaartpositie om de rol van deze sectie in het geheel te begrijpen.',
-  'canvas.mindClassroom.lecture.script.branch.story': 'Het verhaal bereikt hoofdstuk {index} "{title}". Verscheen in dit hoofdstuk: {children}. Bedenk hoe ze de algehele plot van de foto bevorderen.',
-  'canvas.mindClassroom.lecture.script.branch.dialogue': 'Laat me je dit vragen: waar denk je aan als je "{title}" noemt? Het diagram geeft: {children}. Laten we vergelijken ({index}/{total}).',
-  'canvas.mindClassroom.lecture.script.branch.socratic': 'Vervolgvraag: Waarom moet "{title}" een afzonderlijke vertakking zijn? Wat is de relatie met het subpunt "{children}"? Beantwoord deze vraag eerst zelf en raadpleeg vervolgens de kaart ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    'Hallo, klasgenoten. Vandaag leren we over "{topic}", tegenover het publiek van "{audience}", en ontvouwen we ons in het tempo van "{mastery}". Het hele plaatje omvat voornamelijk: {branches}. Kijk eerst naar het totaalbeeld en sorteer het dan stukje voor stukje.',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    'Denk eerst aan "{topic}" als de titel van een verhaal. Als we kijken naar "{audience}", gaan we van het hele plaatje naar de details: er zijn deze hoofdstukken in het verhaal: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    'Laten we eerst samen naar "{topic}" kijken. Als jij "{audience}" was, welke onderdelen zou je dan als eerste opmerken? Het hele plaatje omvat grofweg: {branches}. We gingen naar beneden om vragen te stellen en vragen te beantwoorden.',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    'Haast je nog niet om de conclusie uit je hoofd te leren. Geconfronteerd met "{topic}", waarom denk je dat het de moeite waard is om een ​​foto te maken? We volgen de diepte van "{mastery}" en vragen vanuit deze takken: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    'Kijk snel naar "{topic}" ({audience}). Kofferbak: {branches}. Bereik vervolgens het punt één voor één.',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    'Intensieve leesopening: Het thema is "{topic}". Begrijp eerst de algemene structuur - {branches} - en lees deze vervolgens zorgvuldig per onderdeel. Publiekinstelling: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    'Begin met een voorbeeld. Het thema "{topic}" kan worden gezien als een scène in het leven of in de klas; de takken van het hele beeld lijken op verschillende scènes: {branches}. Publiek: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    'Overzicht van testpunten: "{topic}". Noteer de belangrijkste punten volgens het schema—{branches}. De moeilijkheidsgraad is afgestemd op "{audience}" en het ritme is "{mastery}".',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    'Tak {index}/{total}: Kijk naar "{title}". Ook eronder: {children}. Raadpleeg de kaartpositie om de rol van deze sectie in het geheel te begrijpen.',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    'Het verhaal bereikt hoofdstuk {index} "{title}". Verscheen in dit hoofdstuk: {children}. Bedenk hoe ze de algehele plot van de foto bevorderen.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    'Laat me je dit vragen: waar denk je aan als je "{title}" noemt? Het diagram geeft: {children}. Laten we vergelijken ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    'Vervolgvraag: Waarom moet "{title}" een afzonderlijke vertakking zijn? Wat is de relatie met het subpunt "{children}"? Beantwoord deze vraag eerst zelf en raadpleeg vervolgens de kaart ({index}/{total}).',
   'canvas.mindClassroom.lecture.script.branch.fast': '"{title}" → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read': 'Lees "{title}" intensief. Lees de onderliggende informatie één voor één: {children}. Deze aftakking staat in paragraaf {index}/{total}. Let op de formulering en het niveau.',
-  'canvas.mindClassroom.lecture.script.branch.examples': 'Geef een voorbeeld om "{title}" te helpen begrijpen: je kunt het zien als een specifieke scène met {children} erin. Wij bevinden ons op filiaal {index}/{total}.',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'Testpunt {index}/{total}: "{title}". Ondergeschikte punten: {children}. Onthoud bij het beoordelen eerst de titel en vul vervolgens de details in.',
-  'canvas.mindClassroom.lecture.script.closing.first_look': 'Algemene beoordeling: We hebben zojuist het skelet van "{topic}" leren kennen. Het is aan te raden de hele afbeelding opnieuw te scannen, twee of drie punten te markeren die u nog niet kent, en daar de volgende keer te beginnen.',
-  'canvas.mindClassroom.lecture.script.closing.review': 'Conclusie van de recensie: Kunt u de belangrijkste punten opnieuw vertellen door het boek "{topic}" te sluiten? Als een sectie vastloopt, ga dan gewoon terug naar de sectie op de kaart en loop er opnieuw doorheen.',
-  'canvas.mindClassroom.lecture.script.closing.teach': 'Lesvoorbereiding en afsluiting: Bij het lesgeven van "{topic}" tot "{audience}", kunt u de volgorde van de kaart volgen: openen - uitbreiden - sluiten. Je kunt een bepaalde tak ook opsplitsen in klasvragen.',
-  'canvas.mindMapSideToolbar.oneSentenceIntro': 'Beschrijf een onderwerp of bewerkingsverzoek in één zin om de kaart te genereren of te verfijnen',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    'Lees "{title}" intensief. Lees de onderliggende informatie één voor één: {children}. Deze aftakking staat in paragraaf {index}/{total}. Let op de formulering en het niveau.',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    'Geef een voorbeeld om "{title}" te helpen begrijpen: je kunt het zien als een specifieke scène met {children} erin. Wij bevinden ons op filiaal {index}/{total}.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    'Testpunt {index}/{total}: "{title}". Ondergeschikte punten: {children}. Onthoud bij het beoordelen eerst de titel en vul vervolgens de details in.',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    'Algemene beoordeling: We hebben zojuist het skelet van "{topic}" leren kennen. Het is aan te raden de hele afbeelding opnieuw te scannen, twee of drie punten te markeren die u nog niet kent, en daar de volgende keer te beginnen.',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    'Conclusie van de recensie: Kunt u de belangrijkste punten opnieuw vertellen door het boek "{topic}" te sluiten? Als een sectie vastloopt, ga dan gewoon terug naar de sectie op de kaart en loop er opnieuw doorheen.',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    'Lesvoorbereiding en afsluiting: Bij het lesgeven van "{topic}" tot "{audience}", kunt u de volgorde van de kaart volgen: openen - uitbreiden - sluiten. Je kunt een bepaalde tak ook opsplitsen in klasvragen.',
+  'canvas.mindMapSideToolbar.oneSentenceIntro':
+    'Beschrijf een onderwerp of bewerkingsverzoek in één zin om de kaart te genereren of te verfijnen',
   'canvas.mindMapSideToolbar.documentSummary': 'Documentoverzicht',
-  'fileCenter.intro': 'Een pakket is een samengestelde set bronnen voor dit diagram. Voeg bestanden, notities of webpagina\'s toe: het diagram voltooit zijn vertakkingen vanuit deze bronnen.',
+  'fileCenter.intro':
+    "Een pakket is een samengestelde set bronnen voor dit diagram. Voeg bestanden, notities of webpagina's toe: het diagram voltooit zijn vertakkingen vanuit deze bronnen.",
   'fileCenter.defaultPackageName': 'Naamloos pakket',
   'fileCenter.packageNameLabel': 'Pakketnaam',
   'fileCenter.createPackage': 'Pakket maken',
   'fileCenter.deletePackage': 'Pakket verwijderen',
-  'fileCenter.confirmDeletePackage': 'Dit pakket en alle bronnen verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  'fileCenter.confirmDeletePackage':
+    'Dit pakket en alle bronnen verwijderen? Dit kan niet ongedaan worden gemaakt.',
   'fileCenter.corpusStatus': '{completed} van {total} bronnen geïndexeerd',
   'fileCenter.noSources': 'Nog geen bronnen. Voeg er hieronder één toe.',
   'fileCenter.addSource': 'Bron toevoegen',
@@ -1091,7 +1289,8 @@ export default {
   'fileCenter.pastePlaceholder': 'Plak notities of tekst om toe te voegen als bron...',
   'fileCenter.webUrlPlaceholder': 'https://example.com/article',
   'fileCenter.webContentPlaceholder': 'Plak of typ de paginatekst die u als bron wilt indexeren...',
-  'fileCenter.saveDiagramForRag': 'Bewaar dit diagram om het pakket te koppelen en het ophalen van RAG mogelijk te maken.',
+  'fileCenter.saveDiagramForRag':
+    'Bewaar dit diagram om het pakket te koppelen en het ophalen van RAG mogelijk te maken.',
   'fileCenter.statusReady': 'Gereed · RAG actief',
   'fileCenter.statusPending': 'Toegevoegd',
   'fileCenter.statusIndexing': 'Indexeren…',
@@ -1099,7 +1298,8 @@ export default {
   'fileCenter.statusFailed': 'Mislukt',
   'fileCenter.chunkingTooltip': 'Chunking-engine en -modus (H = hiërarchisch)',
   'fileCenter.featureDisabledTitle': 'Knowledge Space is uitgeschakeld',
-  'fileCenter.featureDisabledHint': 'Schakel de functie Knowledge Space in om Document Summary te gebruiken.',
+  'fileCenter.featureDisabledHint':
+    'Schakel de functie Knowledge Space in om Document Summary te gebruiken.',
   'fileCenter.createFailed': 'Kan pakket niet maken',
   'fileCenter.updateFailed': 'Kan het pakket niet updaten',
   'fileCenter.deleteFailed': 'Verwijderen is mislukt',
@@ -1109,9 +1309,12 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': 'Nog geen knooppunten',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI genereren',
   'canvas.mindMapSideToolbar.outlineEditHint': 'Dubbelklik op een rij om inline te bewerken',
-  'canvas.mindMapSideToolbar.outlineIntro': 'Bewerk de structuur in de omtrek: sleep om de volgorde te wijzigen, plak lijnen om bulksgewijs toe te voegen',
-  'canvas.mindMapSideToolbar.outlineDragHint': 'Sleep om de volgorde te wijzigen; drop boven/onder voor broers en zussen, midden om als kind te nestelen',
-  'canvas.mindMapSideToolbar.outlinePasteHint': 'Selecteer een knooppunt en plak tekst met meerdere regels om verwante knooppunten in bulk toe te voegen',
+  'canvas.mindMapSideToolbar.outlineIntro':
+    'Bewerk de structuur in de omtrek: sleep om de volgorde te wijzigen, plak lijnen om bulksgewijs toe te voegen',
+  'canvas.mindMapSideToolbar.outlineDragHint':
+    'Sleep om de volgorde te wijzigen; drop boven/onder voor broers en zussen, midden om als kind te nestelen',
+  'canvas.mindMapSideToolbar.outlinePasteHint':
+    'Selecteer een knooppunt en plak tekst met meerdere regels om verwante knooppunten in bulk toe te voegen',
   'canvas.mindMapPaste.inserted': '{count} zusterknooppunt(en) ingevoegd',
   'canvas.mindMapPaste.truncated': 'Regellimiet bereikt: alleen de eerste 50 regels zijn ingevoegd',
   'canvas.mindMapSideToolbar.realtimeSync': 'Live-synchronisatie',
@@ -1121,42 +1324,52 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'Tak verwijderen',
   'canvas.mindMapSideToolbar.expandBranch': 'Vertakking uitbreiden',
   'canvas.mindMapSideToolbar.collapseBranch': 'Tak samenvouwen',
-  'canvas.mindMapSideToolbar.aiGenerateDesc': 'Vouw de mindmap van het huidige onderwerp in één zin uit.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc':
+    'Vouw de mindmap van het huidige onderwerp in één zin uit.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Schakel het leerblad in',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Verlaat het leerblad',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Herstel het volledige diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
     'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro': 'Kies hoe u een leerblad maakt om te oefenen en te beoordelen.',
+  'canvas.mindMapSideToolbar.learningSheetIntro':
+    'Kies hoe u een leerblad maakt om te oefenen en te beoordelen.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
     'Blank every node except the center topic; reference answers appear below the diagram.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Willekeurige spaties',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Maakt willekeurig ongeveer 20% van de knooppunten leeg; antwoorden verschijnen onder het diagram.',
-  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} knooppunt(en) blanco gemaakt · Esc om te negeren',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
+    'Maakt willekeurig ongeveer 20% van de knooppunten leeg; antwoorden verschijnen onder het diagram.',
+  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint':
+    '{count} knooppunt(en) blanco gemaakt · Esc om te negeren',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'Aangepaste spaties',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'Cursor wordt een hamer – klik op knooppunten om leeg te maken; klik nogmaals om te herstellen.',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
+    'Cursor wordt een hamer – klik op knooppunten om leeg te maken; klik nogmaals om te herstellen.',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'Actief · {count} knooppunt(en) blanco',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'Kiesmodus · klik op knooppunten op het canvas',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
+    'Kiesmodus · klik op knooppunten op het canvas',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'Aangepaste lege modus',
-  'canvas.mindMapSideToolbar.learningSheetPickHint': 'Klik om te wissen, klik nogmaals om te herstellen · {count} blanco · Esc om af te sluiten',
+  'canvas.mindMapSideToolbar.learningSheetPickHint':
+    'Klik om te wissen, klik nogmaals om te herstellen · {count} blanco · Esc om af te sluiten',
   'canvas.mindMapSideToolbar.learningSheetPickDone': 'Klaar',
-  'canvas.mindMapSideToolbar.learningSheetProtectedNode': 'Onderwerp- en structurele knooppunten kunnen niet worden blanco gemaakt',
+  'canvas.mindMapSideToolbar.learningSheetProtectedNode':
+    'Onderwerp- en structurele knooppunten kunnen niet worden blanco gemaakt',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': 'Leeg knooppunt',
   'canvas.mindMapSideToolbar.learningSheetRandomBlankHistory': 'Willekeurige lege knooppunten',
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': 'Knooppunttekst herstellen',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': 'Referentie-antwoorden verbergen',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': 'Bewaar referentie-antwoorden',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': 'Wanneer gesloten, wordt het antwoord niet weergegeven op het canvas in het knock-outgebied',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
+    'Wanneer gesloten, wordt het antwoord niet weergegeven op het canvas in het knock-outgebied',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'Canvas-antwoorden',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': 'show',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': 'Verbergen',
   'canvas.mindMapSideToolbar.learningSheetAnswersShortcut': 'Sneltoets: Ctrl + Shift + H',
   'canvas.mindMapSideToolbar.openMindmate': 'Open MindMate',
   'canvas.toolbar.learningSheetExportNudgeTitle': 'Exporteer als leerblad',
-  'canvas.toolbar.learningSheetExportNudgeDesc': 'Exporteer PNG of PDF om af te drukken of te delen.',
+  'canvas.toolbar.learningSheetExportNudgeDesc':
+    'Exporteer PNG of PDF om af te drukken of te delen.',
   'canvas.toolbar.learningSheetExportNudgeDismiss': 'Ik heb het',
   'canvas.toolbar.learningSheetExportNudgeNeverRemind': 'Niet meer herinneren',
   'diagram.flow.newCause': 'Nieuwe oorzaak',
@@ -1236,7 +1449,8 @@ export default {
   'editor.savedSuccess': 'Opgeslagen',
   'editor.saveNeedsLogin': 'Log in om op te slaan',
   'editor.saveWaitForGeneration': 'Wacht tot het genereren van AI is voltooid voordat u opslaat',
-  'editor.saveBlockedSubgraphPreview': 'Accepteer of verwijder het AI-subgrafiekvoorbeeld voordat u het opslaat',
+  'editor.saveBlockedSubgraphPreview':
+    'Accepteer of verwijder het AI-subgrafiekvoorbeeld voordat u het opslaat',
   'editor.saveBlockedCollabActive': 'Het opslaan gebeurt via de live samenwerkingssessie',
   'editor.saveBlockedCollabGuest': 'Alleen de host kan opslaan tijdens een samenwerkingssessie',
   'editor.saveNothingToSave': 'Er valt nog niets te redden',
@@ -1247,7 +1461,8 @@ export default {
   'editor.redo': 'Opnieuw uitvoeren',
   'editor.saveDiagram': 'Diagram opslaan',
   'editor.selectDiagramType': 'Selecteer Diagramtype',
-  'editor.slotsFull': 'Space vol, automatisch opslaan momenteel niet beschikbaar. Verwijder bestaande diagrammen om meer ruimte vrij te maken.',
+  'editor.slotsFull':
+    'Space vol, automatisch opslaan momenteel niet beschikbaar. Verwijder bestaande diagrammen om meer ruimte vrij te maken.',
   'editor.undo': 'Ongedaan maken',
   'editor.zoomIn': 'Inzoomen',
   'editor.zoomOut': 'Uitzoomen',
@@ -1287,7 +1502,8 @@ export default {
   'landing.diagramGrid.tree_map.title': 'Boomkaart',
   'landing.diagramGrid.voice_notes.desc': 'Opname gegenereerde kaart',
   'landing.diagramGrid.voice_notes.title': 'Spraaknotities',
-  'landing.template.freePlaceholder': 'Beschrijf uw onderwerp of structuur (takken, stappen, categorieën…) of kies hieronder een sjabloon…',
+  'landing.template.freePlaceholder':
+    'Beschrijf uw onderwerp of structuur (takken, stappen, categorieën…) of kies hieronder een sjabloon…',
   'landing.template.slot.criterion': 'Classificatie',
   'landing.template.slot.event': 'Evenement',
   'landing.template.slot.itemA': 'Artikel A',
@@ -1319,19 +1535,23 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'Kan schoolsessies niet laden',
   'mindgraphLanding.networkError': 'Netwerkfout',
   'mindgraphLanding.networkErrorJoin': 'Netwerkfout, kan niet deelnemen',
-  'mindgraphLanding.orgSessionsEmpty': 'Er zijn momenteel geen schoolsessies. Een collega moet \'Schoolsamenwerking\' starten op het canvas.',
+  'mindgraphLanding.orgSessionsEmpty':
+    "Er zijn momenteel geen schoolsessies. Een collega moet 'Schoolsamenwerking' starten op het canvas.",
   'mindgraphLanding.participantsOnline': '{n} mensen online',
   'mindgraphLanding.schoolCollab': 'Samenwerking tussen scholen',
-  'mindgraphLanding.sharedCodeHint': 'Enter de uitnodigingscode (xxx-xxx) om deel te nemen aan hun sessie.',
+  'mindgraphLanding.sharedCodeHint':
+    'Enter de uitnodigingscode (xxx-xxx) om deel te nemen aan hun sessie.',
   'mindgraphLanding.sharedCollab': 'Gedeelde samenwerking',
   'mindgraphLanding.joinDiagramEdit': 'Sluit u aan bij het bewerken van diagrammen',
-  'mindgraphLanding.welcome': 'Hallo {username}, ik ben je MindGraph AI-assistent voor visueel denken',
+  'mindgraphLanding.welcome':
+    'Hallo {username}, ik ben je MindGraph AI-assistent voor visueel denken',
   'canvasPage.collabReconnecting': 'Opnieuw verbinding maken met samenwerking…',
   'canvasPage.collabConnectionFailed': 'Samenwerkingsverbinding verbroken.',
   'canvasPage.collabRetryConnection': 'Opnieuw proberen',
   'canvasPage.collabParticipantsAria': 'Samenwerking deelnemers',
   'canvasPage.collabConnected': 'Aangesloten',
   'canvas.topBar.viewOnly': 'Alleen bekijken',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': 'meer',
   'canvas.ribbon.file': 'document',
   'canvas.ribbon.nodes': 'knooppunt',
@@ -1371,7 +1591,7 @@ export default {
   'canvas.ribbon.tabResearch': 'Onderwijs en onderzoek',
   'canvas.ribbon.tabFileHint': 'Opslaan, importeren en exporteren',
   'canvas.ribbon.tabDrawHint': 'Lay-out, knooppunten en AI-generatie',
-  'canvas.ribbon.tabEditHint': 'Uiterlijk, tekst en thema\'s van knooppunten',
+  'canvas.ribbon.tabEditHint': "Uiterlijk, tekst en thema's van knooppunten",
   'canvas.ribbon.tabLearnHint': 'Knooppuntuitleg en denkklasse',
   'canvas.ribbon.tabTeachingHint': 'Werkbladen en demonstraties',
   'canvas.ribbon.tabResearchHint': 'Samenwerking binnen en tussen scholen',
@@ -1384,23 +1604,37 @@ export default {
   'canvas.ribbon.tip.insert': 'Voeg relatielijnen, samenvattingen of formules toe',
   'canvas.ribbon.tip.topicGenerate': 'Genereer een volledige kaart vanuit een centraal thema',
   'canvas.ribbon.tip.docGenerate': 'Upload een bestand of plak tekst om een ​​kaart te genereren',
-  'canvas.ribbon.tip.webGenerate': 'Crawl webpagina\'s en genereer kaarten',
+  'canvas.ribbon.tip.webGenerate': "Crawl webpagina's en genereer kaarten",
   'canvas.ribbon.tip.voiceSummary': 'Genereer een kaart na opname',
-  'canvas.ribbon.tip.waterfall': 'Aanbevolen vertakkingen voor het geselecteerde knooppunt - kunnen naar het canvas worden gesleept',
+  'canvas.ribbon.tip.waterfall':
+    'Aanbevolen vertakkingen voor het geselecteerde knooppunt - kunnen naar het canvas worden gesleept',
   'canvas.ribbon.tip.oneSentence': 'Beschrijf het onderwerp of de wijziging in één zin',
   'canvas.ribbon.tip.aiSubgraph': 'Vouw de subtak van het geselecteerde knooppunt uit',
   'canvas.ribbon.tip.addChild': 'Voeg een subonderwerp toe onder het geselecteerde knooppunt',
   'canvas.ribbon.tip.addSibling': 'Voeg onderwerpen op hetzelfde niveau toe',
-  'canvas.ribbon.tip.deleteNode': 'Verwijder het geselecteerde knooppunt en de onderliggende knooppunten',
+  'canvas.ribbon.tip.deleteNode':
+    'Verwijder het geselecteerde knooppunt en de onderliggende knooppunten',
   'canvas.ribbon.tip.import': 'Importeer mindmaps uit bestanden',
   'canvas.ribbon.tip.export': 'Exporteer als afbeelding, document of deel',
-  'canvas.ribbon.tip.learningSheet': 'Selecteer knooppunten op de kaart om een ​​studieblad te maken',
+  'canvas.ribbon.tip.learningSheet':
+    'Selecteer knooppunten op de kaart om een ​​studieblad te maken',
   'canvas.ribbon.tip.presentation': 'Demonstreer deze kaart op volledig scherm',
   'canvas.ribbon.tip.explain': 'Laat AI geselecteerde knooppunten interpreteren',
   'canvas.ribbon.tip.classroom': 'Laat de AI-leraar je door deze kaart leiden',
-  'canvas.ribbon.tip.collabOrg': 'Nodig collega\'s van onze school uit om samen te editen',
+  'canvas.ribbon.tip.collabOrg': "Nodig collega's van onze school uit om samen te editen",
   'canvas.ribbon.tip.collabCross': 'Werk samen met alle scholen om deze kaart te bewerken',
   'canvas.ribbon.tip.collabOff': 'Beëindig de huidige samenwerkingssessie',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': 'Maak de geselecteerde knooppunttekst vetgedrukt',
   'canvas.ribbon.tip.italic': 'Stel de geselecteerde knooppunttekst cursief in',
   'canvas.ribbon.tip.alignLeft': 'Knooppunttekst links uitgelijnd',
@@ -1452,23 +1686,28 @@ export default {
   'canvas.ribbon.docGenerate': 'Documentgeneratie',
   'canvas.ribbon.webGenerate': 'Generatie van weblinks',
   'canvas.ribbon.voiceSummary': 'Samenvatting van de opname',
-  'canvas.ribbon.sourceLocked': 'De huidige kaart heeft {source} als bron gebruikt. Maak een nieuwe kaart voordat u overschakelt naar een andere generatiemethode.',
+  'canvas.ribbon.sourceLocked':
+    'De huidige kaart heeft {source} als bron gebruikt. Maak een nieuwe kaart voordat u overschakelt naar een andere generatiemethode.',
   'canvas.ribbon.sourceKind.doc': 'document',
   'canvas.ribbon.sourceKind.web': 'Weblink',
   'canvas.ribbon.sourceKind.voice': 'opname',
   'canvas.ribbon.assocLine': 'bijbehorende lijn',
-  'canvas.ribbon.assocLineHint': 'Klik op een ander knooppunt om verbinding te maken. Esc of leeg canvas om te annuleren.',
-  'canvas.ribbon.assocLineSameSide': 'Associatielijnen kunnen alleen knooppunten aan dezelfde kant verbinden',
+  'canvas.ribbon.assocLineHint':
+    'Klik op een ander knooppunt om verbinding te maken. Esc of leeg canvas om te annuleren.',
+  'canvas.ribbon.assocLineSameSide':
+    'Associatielijnen kunnen alleen knooppunten aan dezelfde kant verbinden',
   'canvas.ribbon.assocLineDelete': 'Verwijder bijbehorende regels',
   'canvas.ribbon.summary': 'samenvatting',
   'canvas.ribbon.insertImage': 'afbeelding',
   'canvas.ribbon.insertIcon': 'icon',
   'canvas.ribbon.insertLink': 'Link',
   'canvas.ribbon.makeLearningSheet': 'Maak een studieblad',
-  'canvas.ribbon.makeLearningSheetHint': 'Maak met één klik studiebladen om de beoordeling efficiënter te maken',
+  'canvas.ribbon.makeLearningSheetHint':
+    'Maak met één klik studiebladen om de beoordeling efficiënter te maken',
   'canvas.ribbon.selectTwoNodes': 'Selecteer eerst twee knooppunten',
   'canvas.ribbon.insertComingSoon': 'De invoegmogelijkheid zal binnenkort beschikbaar zijn',
-  'canvas.ribbon.summaryNeedSiblings': 'Selecteer opeenvolgende knooppunten onder hetzelfde bovenliggende knooppunt',
+  'canvas.ribbon.summaryNeedSiblings':
+    'Selecteer opeenvolgende knooppunten onder hetzelfde bovenliggende knooppunt',
   'canvas.ribbon.summaryDelete': 'Samenvatting verwijderen',
   'canvas.ribbon.linkName': 'naam',
   'canvas.ribbon.linkUrl': 'Link-adres',
@@ -1477,7 +1716,8 @@ export default {
   'canvas.ribbon.imageUrl': 'Afbeelding adres',
   'canvas.ribbon.imagePick': 'Selecteer afbeelding',
   'canvas.ribbon.imageInvalid': 'Voer een geldig afbeeldingsadres in of selecteer een bestand',
-  'canvas.ribbon.imageTooLarge': 'De afbeelding is te groot. Wijzig het bestand naar een kleiner bestand of gebruik de URL',
+  'canvas.ribbon.imageTooLarge':
+    'De afbeelding is te groot. Wijzig het bestand naar een kleiner bestand of gebruik de URL',
   'canvas.ribbon.imageConfirm': 'afbeelding toevoegen',
   'canvas.ribbon.clearIcon': 'pictogram verwijderen',
   'canvas.ribbon.openLink': 'koppeling openen',
@@ -1493,7 +1733,8 @@ export default {
   'canvas.ribbon.aiHero.voice.ribbon': 'Ontmoeting artefact',
   'canvas.ribbon.aiHero.voice.title': 'Schakel realtime opnemen in',
   'canvas.ribbon.aiHero.voice.line1': 'Realtime spraak naar tekst',
-  'canvas.ribbon.aiHero.voice.line2': 'Simultaanvertaling en intelligente samenvatting van de belangrijkste punten',
+  'canvas.ribbon.aiHero.voice.line2':
+    'Simultaanvertaling en intelligente samenvatting van de belangrijkste punten',
   'canvas.ribbon.aiHero.chat.ribbon': 'Chatimport',
   'canvas.ribbon.aiHero.chat.title': 'Chatgeschiedenis importeren',
   'canvas.ribbon.aiHero.chat.line1': 'Verbind de lezer met behulp van de koppelingscode',
@@ -1504,23 +1745,29 @@ export default {
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'Hol de beugel uit',
   'canvas.ribbon.aiHero.learningSheet.title': 'Uitgeholde beugeldiagram',
-  'canvas.ribbon.aiHero.learningSheet.line1': 'Kies een willekeurige of op maat gemaakte uitholling, geschikt voor oefenen en beoordelen in de klas',
+  'canvas.ribbon.aiHero.learningSheet.line1':
+    'Kies een willekeurige of op maat gemaakte uitholling, geschikt voor oefenen en beoordelen in de klas',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'brainstormen',
   'canvas.ribbon.aiHero.brainstorm.title': 'AI-brainstormen',
-  'canvas.ribbon.aiHero.brainstorm.line1': 'Selecteer het knooppunt om vertakkingssuggesties te genereren',
-  'canvas.ribbon.aiHero.brainstorm.line2': 'Vink het aan en pas het toe op de kaart, of sleep het naar het canvas.',
+  'canvas.ribbon.aiHero.brainstorm.line1':
+    'Selecteer het knooppunt om vertakkingssuggesties te genereren',
+  'canvas.ribbon.aiHero.brainstorm.line2':
+    'Vink het aan en pas het toe op de kaart, of sleep het naar het canvas.',
   'canvas.ribbon.aiHero.oneSentence.ribbon': 'Verander de dialoog',
   'canvas.ribbon.aiHero.oneSentence.title': 'Conversatiemodificatie',
-  'canvas.ribbon.aiHero.oneSentence.line1': 'Omschrijf het onderwerp of wijzigingsverzoek in één zin',
+  'canvas.ribbon.aiHero.oneSentence.line1':
+    'Omschrijf het onderwerp of wijzigingsverzoek in één zin',
   'canvas.ribbon.aiHero.oneSentence.line2': 'Genereer en pas kaarten op intelligente wijze aan',
   'canvas.ribbon.aiHero.link.ribbon': 'invoegen',
   'canvas.ribbon.aiHero.link.title': 'Koppeling toevoegen',
-  'canvas.ribbon.aiHero.link.line1': 'De weergavenaam van het knooppunt, het volledige adres is verborgen in het linkpictogram',
+  'canvas.ribbon.aiHero.link.line1':
+    'De weergavenaam van het knooppunt, het volledige adres is verborgen in het linkpictogram',
   'canvas.ribbon.aiHero.link.line2': '',
   'canvas.hero.image.ribbon': 'invoegen',
   'canvas.hero.image.title': 'afbeelding toevoegen',
-  'canvas.hero.image.line1': 'Plak het afbeeldingsadres of selecteer het bestand op uw lokale computer',
+  'canvas.hero.image.line1':
+    'Plak het afbeeldingsadres of selecteer het bestand op uw lokale computer',
   'canvas.hero.image.line2': '',
   'canvas.hero.icon.ribbon': 'invoegen',
   'canvas.hero.icon.title': 'pictogram toevoegen',
@@ -1528,25 +1775,27 @@ export default {
   'canvas.hero.icon.line2': '',
   'canvas.hero.math.ribbon': 'invoegen',
   'canvas.hero.math.title': 'Formule invoegen',
-  'canvas.hero.math.line1': 'Gebruik het formuletoetsenbord om LaTeX in te voeren en schrijf vervolgens het knooppunt na bevestiging.',
+  'canvas.hero.math.line1':
+    'Gebruik het formuletoetsenbord om LaTeX in te voeren en schrijf vervolgens het knooppunt na bevestiging.',
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': 'samenwerking',
   'canvas.hero.collab.title': 'Online samenwerking',
-  'canvas.hero.collab.line1': 'Schakel samenwerking tussen scholen of uitnodigingscodes in om collega\'s uit te nodigen om samen afbeeldingen te wijzigen',
+  'canvas.hero.collab.line1':
+    "Schakel samenwerking tussen scholen of uitnodigingscodes in om collega's uit te nodigen om samen afbeeldingen te wijzigen",
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': 'Exporteren',
   'canvas.hero.worksheet.title': 'Exporteren naar DOC/PDF',
-  'canvas.hero.worksheet.line1': 'Stel kop- en papieropties voor het studieblad in, bekijk een voorbeeld en exporteer',
+  'canvas.hero.worksheet.line1':
+    'Stel kop- en papieropties voor het studieblad in, bekijk een voorbeeld en exporteer',
   'canvas.hero.worksheet.line2': '',
   'canvas.hero.communityExport.ribbon': 'deel',
   'canvas.hero.communityExport.title': 'Deel met de gemeenschap',
-  'canvas.hero.communityExport.line1': 'Vul de titel en categorie in, genereer een thumbnail en publiceer deze',
+  'canvas.hero.communityExport.line1':
+    'Vul de titel en categorie in, genereer een thumbnail en publiceer deze',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'Communitypost bewerken',
   'canvas.hero.slotFull.ribbon': 'Galerij',
   'canvas.hero.slotFull.title': 'Galerij is vol',
   'canvas.hero.slotFull.line1': 'Verwijder een bestaand pictogram en sla het huidige pictogram op',
   'canvas.hero.slotFull.line2': '',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
-  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

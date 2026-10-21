@@ -8,12 +8,7 @@ export type MaiteOcrScene = 'demo' | 'question'
 
 export type MaiteStreamStatus = 'idle' | 'streaming' | 'complete' | 'error'
 
-export type MaiteInquiryStage =
-  | 'decompose'
-  | 'diagnosis'
-  | 'remedy'
-  | 'variant'
-  | 'completed'
+export type MaiteInquiryStage = 'decompose' | 'diagnosis' | 'remedy' | 'variant' | 'completed'
 
 export type MaiteTableRow = Record<string, string | number | boolean | null | undefined>
 

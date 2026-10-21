@@ -350,7 +350,7 @@ async function onGenerateDiagram(): Promise<void> {
           <AdminSwissSegmented
             v-model="mode"
             :options="modeOptions"
-            :ariaLabel="String(t('zhihui.modeAria'))"
+            :aria-label="String(t('zhihui.modeAria'))"
             fit
             @select="onStudioModeSelect"
           />

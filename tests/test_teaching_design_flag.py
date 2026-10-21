@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from services.diagram.assistant_markdown import strip_diagram_id_html_comments
 from services.mindmate.teaching_design_flag import (
+    ensure_teaching_instruction_marker,
     is_teaching_instruction_text,
     mindmate_meta_from_workflow_chunk,
     parse_reply_kind_from_outputs,
@@ -47,3 +48,11 @@ def test_workflow_outputs_and_request_gate() -> None:
     assert meta is not None
     assert meta["event"] == "mindmate_meta"
     assert mindmate_meta_from_workflow_chunk({"event": "node_finished"}) is None
+
+
+def test_ensure_marker_is_idempotent() -> None:
+    """Workflow-only flags still leave a marker the seminar button can read."""
+    stamped = ensure_teaching_instruction_marker("课例正文")
+    assert is_teaching_instruction_text(stamped) is True
+    assert ensure_teaching_instruction_marker(stamped) == stamped
+    assert ensure_teaching_instruction_marker("  ") == "  "

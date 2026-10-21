@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setPresentationDiagramEditLocked } from '@/composables/presentation/presentationDiagramEdit'
 import { requestDiagramLayoutRecalc } from '@/stores/diagram/requestDiagramLayoutRecalc'

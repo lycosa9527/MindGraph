@@ -107,9 +107,11 @@ export const MAITE_MAP_CURRICULUM: MaiteCurriculumModule[] = [
   },
 ]
 
-export function findCurriculumNode(
-  nodeKey: string
-): { module: MaiteCurriculumModule; node: MaiteCurriculumNode; graphType: 'knowledge' | 'thinking' } | null {
+export function findCurriculumNode(nodeKey: string): {
+  module: MaiteCurriculumModule
+  node: MaiteCurriculumNode
+  graphType: 'knowledge' | 'thinking'
+} | null {
   for (const module of MAITE_MAP_CURRICULUM) {
     const knowledge = module.knowledgeNodes.find((node) => node.key === nodeKey)
     if (knowledge) {

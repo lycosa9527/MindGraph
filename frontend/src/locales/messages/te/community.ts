@@ -14,7 +14,8 @@ export default {
   'community.deleteConfirmBody': 'మీరు ఖచ్చితంగా ఈ భాగస్వామ్యాన్ని తొలగించాలనుకుంటున్నారా?',
   'community.deleteConfirmTitle': 'తొలగింపును నిర్ధారించండి',
   'community.deleted': 'తొలగించబడింది',
-  'community.emptyNoPosts': 'సరిపోలే పనులు ఏవీ కనుగొనబడలేదు, ఫిల్టర్ పరిస్థితులను సర్దుబాటు చేయడానికి లేదా కీలకపదాలను శోధించడానికి ప్రయత్నించండి',
+  'community.emptyNoPosts':
+    'సరిపోలే పనులు ఏవీ కనుగొనబడలేదు, ఫిల్టర్ పరిస్థితులను సర్దుబాటు చేయడానికి లేదా కీలకపదాలను శోధించడానికి ప్రయత్నించండి',
   'community.filter.all': 'అన్ని',
   'community.filter.mine': 'నాది',
   'community.filterCategory': 'వర్గీకరణ',
@@ -76,10 +77,12 @@ export default {
   'debateverse.clickNextHint': 'మార్పులు అమలులోకి రావడానికి దయచేసి తదుపరి బటన్‌ను క్లిక్ చేయండి',
   'debateverse.coinTossAffirmativeFirst': 'నిశ్చయాత్మకమైనది మొదట మాట్లాడుతుంది',
   'debateverse.coinTossGotIt': 'తెలుసు',
-  'debateverse.coinTossModalBody': 'ఆటకు ముందు, మాట్లాడే క్రమాన్ని నిర్ణయించడానికి లేదా లాభాలు మరియు నష్టాలను ఎంచుకోవడానికి నాణేన్ని తిప్పండి.',
+  'debateverse.coinTossModalBody':
+    'ఆటకు ముందు, మాట్లాడే క్రమాన్ని నిర్ణయించడానికి లేదా లాభాలు మరియు నష్టాలను ఎంచుకోవడానికి నాణేన్ని తిప్పండి.',
   'debateverse.coinTossNegativeFirst': 'ప్రతికూల వైపు మొదట మాట్లాడుతుంది',
   'debateverse.coinTossOrder': 'మాట్లాడే క్రమాన్ని గుర్తించడానికి ఒక నాణెం వేయండి',
-  'debateverse.coinTossRules': 'ప్రతి చర్చా పాత్రకు AI మోడల్ యాదృచ్ఛికంగా కేటాయించబడింది. ఆటకు ముందు, మాట్లాడే క్రమాన్ని నిర్ణయించడానికి లేదా లాభాలు మరియు నష్టాలను ఎంచుకోవడానికి కాయిన్ టాస్ ఉపయోగించబడుతుంది.',
+  'debateverse.coinTossRules':
+    'ప్రతి చర్చా పాత్రకు AI మోడల్ యాదృచ్ఛికంగా కేటాయించబడింది. ఆటకు ముందు, మాట్లాడే క్రమాన్ని నిర్ణయించడానికి లేదా లాభాలు మరియు నష్టాలను ఎంచుకోవడానికి కాయిన్ టాస్ ఉపయోగించబడుతుంది.',
   'debateverse.coinTossStageTitle': 'కాయిన్ టాస్ దశ',
   'debateverse.debateTopicLabel': 'చర్చా అంశం:',
   'debateverse.executeCoinToss': 'నాణెం టాస్‌ను నిర్వహించండి',
@@ -110,13 +113,17 @@ export default {
   'debateverse.setup.roleJudge': 'రిఫరీగా',
   'debateverse.setup.roleViewer': 'ప్రేక్షకుడిగా చూడండి',
   'debateverse.setup.suggestion1': 'కృత్రిమ మేధస్సుకు చట్టపరమైన వ్యక్తిత్వం ఇవ్వాలా?',
-  'debateverse.setup.suggestion2': 'ఆన్‌లైన్ గేమ్‌లు యువకులకు హాని కంటే ఎక్కువ మేలు చేస్తాయా లేదా మంచి కంటే ఎక్కువ హాని చేస్తాయా?',
+  'debateverse.setup.suggestion2':
+    'ఆన్‌లైన్ గేమ్‌లు యువకులకు హాని కంటే ఎక్కువ మేలు చేస్తాయా లేదా మంచి కంటే ఎక్కువ హాని చేస్తాయా?',
   'debateverse.setup.suggestion3': 'కళాశాల ప్రవేశ పరీక్షను రద్దు చేయాలా లేక అలాగే ఉంచాలా?',
-  'debateverse.setup.suggestion4': 'సోషల్ మీడియా వినియోగదారు కంటెంట్‌పై కఠినమైన సెన్సార్‌షిప్‌ను విధించాలా?',
+  'debateverse.setup.suggestion4':
+    'సోషల్ మీడియా వినియోగదారు కంటెంట్‌పై కఠినమైన సెన్సార్‌షిప్‌ను విధించాలా?',
   'debateverse.setup.suggestion5': 'టెలికమ్యుటింగ్ ప్రధాన స్రవంతి పని మార్గంగా మారుతుందా?',
   'debateverse.setup.suggestion6': 'AI రూపొందించిన కంటెంట్ కాపీరైట్ చేయబడాలా?',
-  'debateverse.setup.suggestion7': 'విద్య జ్ఞానాన్ని అందించడం లేదా సామర్థ్యాలను పెంపొందించడంపై ఎక్కువ దృష్టి పెట్టాలా?',
-  'debateverse.setup.suggestion8': 'మానవ పిండాలపై జీన్ ఎడిటింగ్ టెక్నాలజీని ఉపయోగించడానికి అనుమతించాలా?',
+  'debateverse.setup.suggestion7':
+    'విద్య జ్ఞానాన్ని అందించడం లేదా సామర్థ్యాలను పెంపొందించడంపై ఎక్కువ దృష్టి పెట్టాలా?',
+  'debateverse.setup.suggestion8':
+    'మానవ పిండాలపై జీన్ ఎడిటింగ్ టెక్నాలజీని ఉపయోగించడానికి అనుమతించాలా?',
   'debateverse.setup.topicPlaceholder': 'చర్చా అంశాన్ని నమోదు చేయండి...',
   'debateverse.side.affirmative': 'చతురస్రం',
   'debateverse.side.judge': 'రిఫరీ',
@@ -138,7 +145,8 @@ export default {
   'library.loading': 'లోడ్ అవుతోంది...',
   'library.other': 'ఇతర',
   'library.premiumCollection': 'అద్భుతమైన కేసు సేకరణ',
-  'library.slotFull.body': 'మీరు {max} చిహ్నాలను సేవ్ చేసారు, దయచేసి కొత్త చిహ్నాన్ని సేవ్ చేయడానికి ఒకదాన్ని తొలగించండి',
+  'library.slotFull.body':
+    'మీరు {max} చిహ్నాలను సేవ్ చేసారు, దయచేసి కొత్త చిహ్నాన్ని సేవ్ చేయడానికి ఒకదాన్ని తొలగించండి',
   'library.slotFull.cancel': 'రద్దు చేయి',
   'library.slotFull.deleteAndSave': 'తొలగించండి మరియు సేవ్ చేయండి',
   'library.slotFull.networkError': 'నెట్‌వర్క్ లోపం, ఆపరేషన్ విఫలమైంది',

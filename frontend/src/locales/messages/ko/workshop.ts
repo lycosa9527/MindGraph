@@ -33,7 +33,8 @@ export default {
   'collab.previousSessionsStopped': '다른 다이어그램의 이전 협업 세션 {n}개를 종료했습니다.',
   'collab.saveFailed': '다이어그램 저장에 실패했습니다',
   'collab.scanToJoin': '스캔하여 참여',
-  'collab.schoolDescActive': '학교 협업이 켜져 있습니다. 동료: MindGraph 홈에서 협업 → 학교를 열고 이 다이어그램을 선택 — 코드 불필요.',
+  'collab.schoolDescActive':
+    '학교 협업이 켜져 있습니다. 동료: MindGraph 홈에서 협업 → 학교를 열고 이 다이어그램을 선택 — 코드 불필요.',
   'collab.schoolStarted': '학교 협업이 켜졌습니다 — 동료는 협업 → 학교에서 참여할 수 있습니다.',
   'collab.sectionNetwork': '공유 협업(코드)',
   'collab.sectionSchool': '학교 협업',
@@ -52,18 +53,25 @@ export default {
   'workshop.announceChannels': '공지',
   'workshop.announceReadOnlyHint': '이 공지 채널에는 관리자만 게시할 수 있습니다.',
   'workshop.archiveLessonStudy': '수업 연구 보관',
-  'workshop.archiveLessonStudyConfirm': '이 수업 연구를 보관하시겠습니까? 멤버는 목록에서 더 이상 볼 수 없습니다.',
+  'workshop.archiveLessonStudyConfirm':
+    '이 수업 연구를 보관하시겠습니까? 멤버는 목록에서 더 이상 볼 수 없습니다.',
   'workshop.archiveTeachingGroup': '교수 그룹 보관',
-  'workshop.archiveTeachingGroupConfirm': '이 교수 그룹을 보관하시겠습니까? 교수 그룹 목록에서 사라집니다.',
+  'workshop.archiveTeachingGroupConfirm':
+    '이 교수 그룹을 보관하시겠습니까? 교수 그룹 목록에서 사라집니다.',
   'workshop.archiveAnnounceChannel': '아카이브 공지 채널',
-  'workshop.archiveAnnounceChannelConfirm': '이 공지 채널을 보관하시겠습니까? 사이드바는 더 이상 표시되지 않지만 메시지는 그대로 유지됩니다.',
+  'workshop.archiveAnnounceChannelConfirm':
+    '이 공지 채널을 보관하시겠습니까? 사이드바는 더 이상 표시되지 않지만 메시지는 그대로 유지됩니다.',
   'workshop.deleteTeachingGroup': '교육 및 연구 그룹 삭제',
-  'workshop.deleteTeachingGroupConfirm': '이 교육 및 연구 그룹, 해당 강의 및 메시지를 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
+  'workshop.deleteTeachingGroupConfirm':
+    '이 교육 및 연구 그룹, 해당 강의 및 메시지를 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
   'workshop.deleteAnnounceChannel': '공지 채널 삭제',
-  'workshop.deleteAnnounceChannelConfirm': '이 공지 채널과 해당 메시지를 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
+  'workshop.deleteAnnounceChannelConfirm':
+    '이 공지 채널과 해당 메시지를 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
   'workshop.deleteLessonStudy': '강의 삭제',
-  'workshop.deleteLessonStudyConfirm': '이 강의와 해당 메시지를 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
-  'workshop.manageNeedAdmin': '학교 관리자만 교육 및 연구 그룹을 추가할 수 있습니다. 관리자나 그룹 생성자가 삭제할 수 있습니다.',
+  'workshop.deleteLessonStudyConfirm':
+    '이 강의와 해당 메시지를 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.',
+  'workshop.manageNeedAdmin':
+    '학교 관리자만 교육 및 연구 그룹을 추가할 수 있습니다. 관리자나 그룹 생성자가 삭제할 수 있습니다.',
   'workshop.math': '공식',
   'workshop.backToConversations': '← 대화',
   'workshop.bold': '굵게',
@@ -131,7 +139,8 @@ export default {
   'workshop.diagram': '다이어그램',
   'workshop.diagramInsertFailed': '아이콘을 삽입하지 못했습니다.',
   'workshop.diagramInserting': '아이콘 삽입 중…',
-  'workshop.diagramPickerEmpty': '이미지 라이브러리가 비어 있습니다. 먼저 캔버스에 그림을 저장하세요.',
+  'workshop.diagramPickerEmpty':
+    '이미지 라이브러리가 비어 있습니다. 먼저 캔버스에 그림을 저장하세요.',
   'workshop.diagramPickerTitle': '내 아이콘 라이브러리에서 선택',
   'workshop.directMessage': 'DM',
   'workshop.directMessages': 'DM',
@@ -155,7 +164,8 @@ export default {
   'workshop.gearMenu': '옵션',
   'workshop.generalChat': '일반 채팅',
   'workshop.inbox': '받은편지함',
-  'workshop.inboxHintPickChannel': '사이드바에서 채널 또는 DM을 열어 읽고 답장하세요. 보기 → 받은편지함으로 언제든 돌아올 수 있습니다.',
+  'workshop.inboxHintPickChannel':
+    '사이드바에서 채널 또는 DM을 열어 읽고 답장하세요. 보기 → 받은편지함으로 언제든 돌아올 수 있습니다.',
   'workshop.inboxSummaryTitle': '받은편지함',
   'workshop.inboxUnreadChannels': '채널 미읽음',
   'workshop.inboxUnreadDms': 'DM 미읽음',
@@ -181,7 +191,8 @@ export default {
   'workshop.loadMore': '더 불러오기',
   'workshop.mainChannelStream': '메인 채널',
   'workshop.manageTeachingGroups': '교수 그룹 관리',
-  'workshop.manageTeachingGroupsBlurb': '그룹 추가/제거, 공개/비공개 설정, 이름 및 설명 편집, 목록 순서, 템플릿으로 그룹 복제, 동료 초대. 고급에서 게시 규칙 및 알림 기본값. 보관 시 모든 사용자에게 제거됩니다.',
+  'workshop.manageTeachingGroupsBlurb':
+    '그룹 추가/제거, 공개/비공개 설정, 이름 및 설명 편집, 목록 순서, 템플릿으로 그룹 복제, 동료 초대. 고급에서 게시 규칙 및 알림 기본값. 보관 시 모든 사용자에게 제거됩니다.',
   'workshop.manageUser': '이 사용자 관리',
   'workshop.markAllReadChannel': '모든 메시지 읽음',
   'workshop.markAsRead': '읽음으로 표시',
@@ -220,18 +231,20 @@ export default {
   'workshop.noTopicsYet': '아직 대화 없음',
   'workshop.numberedList': '주문 목록',
   'workshop.notifications': '알림',
-  'workshop.notificationsSettingsBlurb': '멘션 및 새 메시지 브라우저 알림은 시스템 설정을 사용합니다. 채널 설정에서 데스크톱 및 이메일 알림을 조정할 수 있습니다.',
+  'workshop.notificationsSettingsBlurb':
+    '멘션 및 새 메시지 브라우저 알림은 시스템 설정을 사용합니다. 채널 설정에서 데스크톱 및 이메일 알림을 조정할 수 있습니다.',
   'workshop.offline': '오프라인',
   'workshop.online': '온라인',
   'workshop.openMainChannelStream': '메인 채널',
   'workshop.others': '기타',
   'workshop.permissions': '권한',
+  'workshop.personalMenu': '개인 메뉴',
   'workshop.preview': '시사',
   'workshop.previewEmpty': '미리 볼 콘텐츠가 없습니다.',
-  'workshop.personalMenu': '개인 메뉴',
-  'workshop.phase2RoadmapGroupsAlerts': '예정: {\'@\'}그룹 멘션, 알림 단어, 메시지 편집 기록 정책.',
+  'workshop.phase2RoadmapGroupsAlerts': "예정: {'@'}그룹 멘션, 알림 단어, 메시지 편집 기록 정책.",
   'workshop.phase2RoadmapMovePreview': '예정: 단일 메시지 이동, URL 미리보기, 풍부한 채널 간 활동.',
-  'workshop.phase2RoadmapPlatform': '플랫폼 백로그: 증분 동기화, 모바일 푸시, 이메일 다이제스트, 봇/webhook.',
+  'workshop.phase2RoadmapPlatform':
+    '플랫폼 백로그: 증분 동기화, 모바일 푸시, 이메일 다이제스트, 봇/webhook.',
   'workshop.pickColleagueToInvite': '초대할 동료를 선택하세요.',
   'workshop.pinChannel': '상단 고정',
   'workshop.policyEveryone': '모두',
@@ -239,7 +252,8 @@ export default {
   'workshop.policyMembersOnly': '멤버만',
   'workshop.postingPolicy': '게시 정책',
   'workshop.preferences': '환경설정',
-  'workshop.preferencesSettingsBlurb': '언어 및 표시 환경설정은 앱 전체에 적용됩니다. Workshop 채팅 옵션이 점차 추가됩니다.',
+  'workshop.preferencesSettingsBlurb':
+    '언어 및 표시 환경설정은 앱 전체에 적용됩니다. Workshop 채팅 옵션이 점차 추가됩니다.',
   'workshop.presenceActive': '활성',
   'workshop.presenceIdle': '자리 비움',
   'workshop.presenceOffline': '오프라인',
@@ -248,7 +262,8 @@ export default {
   'workshop.publicChannels': '공개 채널',
   'workshop.quote': '인용하다',
   'workshop.quoteMessage': '메시지 인용',
-  'workshop.readOnlyProfileBlurb': '동료 프로필은 간단한 보기로 표시됩니다. 관리 사용자(관리자)로 관리자 디렉터리를 엽니다.',
+  'workshop.readOnlyProfileBlurb':
+    '동료 프로필은 간단한 보기로 표시됩니다. 관리 사용자(관리자)로 관리자 디렉터리를 엽니다.',
   'workshop.recentDmActivity': '최근 DM',
   'workshop.recentTopics': '최근 대화',
   'workshop.renameTopic': '대화 이름 변경',
@@ -259,7 +274,8 @@ export default {
   'workshop.roleOwner': '소유자',
   'workshop.searchMembers': '멤버 검색...',
   'workshop.searchMessages': '메시지 검색...',
-  'workshop.selectChannelForSettings': '먼저 교수 그룹 또는 수업 연구를 선택한 뒤 여기서 설정을 여세요.',
+  'workshop.selectChannelForSettings':
+    '먼저 교수 그룹 또는 수업 연구를 선택한 뒤 여기서 설정을 여세요.',
   'workshop.selectConversation': '대화 선택',
   'workshop.selectParentGroup': '상위 교수 그룹',
   'workshop.selectTopic': '대화 선택',
@@ -285,7 +301,8 @@ export default {
   'workshop.strikethrough': '취소선',
   'workshop.table': '시트',
   'workshop.switchSchool': '학교 전환',
-  'workshop.teachingGroupLandingHint': '이 교수 그룹의 수업 연구 및 대화. 행을 선택해 채널 또는 스레드를 엽니다.',
+  'workshop.teachingGroupLandingHint':
+    '이 교수 그룹의 수업 연구 및 대화. 행을 선택해 채널 또는 스레드를 엽니다.',
   'workshop.teachingGroupMembers': '멤버',
   'workshop.teachingGroupNameRequired': '교수 그룹 이름을 입력하세요.',
   'workshop.teachingGroupNoLessons': '이 그룹에 아직 수업 연구가 없습니다.',
@@ -316,11 +333,14 @@ export default {
   'workshop.viewProfile': '프로필 보기',
   'workshop.viewingSchool': '보는 중: {0}',
   'workshop.views': '보기',
-  'workshop.welcomeChannelsBody': '여기서 「채널」은 교연组 또는 PLC에 해당합니다: 팀당 하나의 공유 공간(예: 수학 PLC, 영어 PLC). 참여자와 공간 그룹을 정의합니다.',
+  'workshop.welcomeChannelsBody':
+    '여기서 「채널」은 교연组 또는 PLC에 해당합니다: 팀당 하나의 공유 공간(예: 수학 PLC, 영어 PLC). 참여자와 공간 그룹을 정의합니다.',
   'workshop.welcomeChannelsTitle': 'PLC / 과목 그룹',
-  'workshop.welcomeConversationsBody': '수업 연구 안에서 제목이 있는 대화를 엽니다 — 수업 설계, 성찰, 후속 과제 등 — 스레드를 따라가기 쉽게 합니다.',
+  'workshop.welcomeConversationsBody':
+    '수업 연구 안에서 제목이 있는 대화를 엽니다 — 수업 설계, 성찰, 후속 과제 등 — 스레드를 따라가기 쉽게 합니다.',
   'workshop.welcomeConversationsTitle': '대화',
-  'workshop.welcomeExampleCaption': '설명용 예시(가상 학교) — 수학 PLC와 영어 PLC, 각각 수업 연구 및 샘플 대화.',
+  'workshop.welcomeExampleCaption':
+    '설명용 예시(가상 학교) — 수학 PLC와 영어 PLC, 각각 수업 연구 및 샘플 대화.',
   'workshop.welcomeExampleConvLabel': '대화',
   'workshop.welcomeExampleGroupEnglish': '영어 PLC',
   'workshop.welcomeExampleGroupMath': '수학 PLC',
@@ -339,38 +359,49 @@ export default {
   'workshop.welcomeExampleMsgLabel': '각 대화 안의 메시지',
   'workshop.welcomeExampleOrg': '천시 중학교',
   'workshop.welcomeHowTitle': '구조',
-  'workshop.welcomeIntro': 'Workshop은 학교의 구조화된 토론 공간입니다: 공지 공유, 수업 연구, 교수 업무와 함께 대화를 정리합니다.',
-  'workshop.welcomeLessonStudyBody': '수업 연구 채널은 보통 그 그룹 아래에 있습니다. 하나의 수업 주기 — 계획, 관찰, 성찰 — 에 대한 장소이며 다이어그램이나 상태와 연결될 수 있습니다.',
+  'workshop.welcomeIntro':
+    'Workshop은 학교의 구조화된 토론 공간입니다: 공지 공유, 수업 연구, 교수 업무와 함께 대화를 정리합니다.',
+  'workshop.welcomeLessonStudyBody':
+    '수업 연구 채널은 보통 그 그룹 아래에 있습니다. 하나의 수업 주기 — 계획, 관찰, 성찰 — 에 대한 장소이며 다이어그램이나 상태와 연결될 수 있습니다.',
   'workshop.welcomeLessonStudyTitle': '수업 연구',
-  'workshop.welcomeMessagesBody': '메시지는 메인 채널 스트림 또는 대화 안의 개별 게시물입니다. 답장, 멘션, 파일이 모두 메시지에 포함됩니다.',
+  'workshop.welcomeMessagesBody':
+    '메시지는 메인 채널 스트림 또는 대화 안의 개별 게시물입니다. 답장, 멘션, 파일이 모두 메시지에 포함됩니다.',
   'workshop.welcomeMessagesTitle': '메시지',
   'workshop.welcomeSubtitle': 'MindGraph에서 학교와 협업',
   'workshop.welcomeTitle': 'Workshop에 오신 것을 환영합니다',
   'workshop.you': '(나)',
   'workshop.youAnd': '나와',
   'workshopCanvas.connectFailed': '협업 연결에 실패했습니다',
-  'workshopCanvas.sessionExpiredReconnect': '세션이 만료되었습니다. 페이지를 새로고침하여 협업에 다시 참여하세요.',
-  'workshopCanvas.sessionRefreshFailed': '협업 세션을 갱신할 수 없습니다. 작업을 저장하고 다시 로그인하세요.',
-  'workshopCanvas.outboundQueueDegraded': '협업이 지연되고 있습니다. 일부 미전송 편집을 유지하지 못했습니다.',
+  'workshopCanvas.sessionExpiredReconnect':
+    '세션이 만료되었습니다. 페이지를 새로고침하여 협업에 다시 참여하세요.',
+  'workshopCanvas.sessionRefreshFailed':
+    '협업 세션을 갱신할 수 없습니다. 작업을 저장하고 다시 로그인하세요.',
+  'workshopCanvas.outboundQueueDegraded':
+    '협업이 지연되고 있습니다. 일부 미전송 편집을 유지하지 못했습니다.',
   'workshopCanvas.connectionClosed': '연결이 닫혔습니다',
-  'workshopCanvas.connectionClosedSlow': '연결이 닫혔습니다: 협업 세션을 따라가기에 연결이 너무 느렸습니다.',
+  'workshopCanvas.connectionClosedSlow':
+    '연결이 닫혔습니다: 협업 세션을 따라가기에 연결이 너무 느렸습니다.',
   'workshopCanvas.sessionEndedByHost': '호스트가 협업 세션을 종료했습니다.',
   'workshopCanvas.editingNodeLabel': '{username} 편집 중…',
   'workshopCanvas.collabEditorDisplayNameFallback': '누군가',
   'workshopCanvas.connectionClosedReason': '협업 연결 종료: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} 이 노드를 편집 중',
   'workshopCanvas.errorGeneric': '협업 오류',
-  'workshopCanvas.updatePartialFiltered': '다른 협업자가 해당 노드를 편집 중이라 일부 편집이 건너뛰어졌습니다({count}개 노드).',
+  'workshopCanvas.updatePartialFiltered':
+    '다른 협업자가 해당 노드를 편집 중이라 일부 편집이 건너뛰어졌습니다({count}개 노드).',
   'workshopCanvas.reconnectFailed': '협업 재연결에 실패했습니다. 페이지를 새로고침하세요',
-  'workshopCanvas.resyncWaiting': '실시간 다이어그램 동기화가 예상보다 오래 걸립니다. 재시도 중; 편집이 멈춘 것 같으면 새로고침하세요.',
+  'workshopCanvas.resyncWaiting':
+    '실시간 다이어그램 동기화가 예상보다 오래 걸립니다. 재시도 중; 편집이 멈춘 것 같으면 새로고침하세요.',
   'workshopCanvas.returnedHomeIdle': '홈으로 돌아왔습니다 — 오래 유휴 상태여서 연결이 끊겼습니다.',
   'workshopCanvas.userJoined': '사용자 {username} 참여',
   'workshopCanvas.usersJoined': '사용자 {count}명 참여',
   'workshopCanvas.userLeft': '사용자 {username} 나감',
   'workshopCanvas.usersLeft': '사용자 {count}명 나감',
   'workshopCanvas.wsError': '협업 연결 오류, 네트워크를 확인하세요',
-  'workshopCanvas.returnedHomeRoomIdle': '협업 종료: 이 세션에서 다이어그램 편집이 한동안 없었습니다.',
-  'workshopCanvas.roomIdleWarningToast': '최근 다이어그램 편집 없음 — 카운트다운이 0이 되면 누군가 편집하지 않는 한 협업이 종료됩니다.',
+  'workshopCanvas.returnedHomeRoomIdle':
+    '협업 종료: 이 세션에서 다이어그램 편집이 한동안 없었습니다.',
+  'workshopCanvas.roomIdleWarningToast':
+    '최근 다이어그램 편집 없음 — 카운트다운이 0이 되면 누군가 편집하지 않는 한 협업이 종료됩니다.',
   'workshopCanvas.otherTabCollaborationActive': '이 계정의 다른 탭 또는 창에서 협업이 계속됩니다.',
   'workshopCanvas.joinQrAlt': '협업 참여 QR 코드',
 } as const

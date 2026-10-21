@@ -1,16 +1,12 @@
 /**
  * Maite API base helpers and SSE consumer.
  */
-import { apiRequest } from '@/utils/apiClient'
-
 import type { MaiteMentorStreamCallbacks } from '@/types/maite'
+import { apiRequest } from '@/utils/apiClient'
 
 export const MAITE_API_PREFIX = '/api/maite'
 
-export async function maiteRequestJson<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+export async function maiteRequestJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const endpoint = path.startsWith('/api/') ? path : `${MAITE_API_PREFIX}${path}`
   const response = await apiRequest(endpoint, options)
   if (!response.ok) {
@@ -97,9 +93,10 @@ export async function consumeMaiteSseStream(
       if (!frame.trim()) {
         continue
       }
-      currentEvent = processMaiteSseChunk(frame, callbacks, (event) => {
-        currentEvent = event
-      }) ?? currentEvent
+      currentEvent =
+        processMaiteSseChunk(frame, callbacks, (event) => {
+          currentEvent = event
+        }) ?? currentEvent
     }
   }
 }
@@ -149,7 +146,7 @@ function processMaiteSseChunk(
     return eventName
   }
 
-  let parsed: Record<string, unknown> = {}
+  let parsed: Record<string, unknown>
   try {
     parsed = JSON.parse(dataLine) as Record<string, unknown>
   } catch {

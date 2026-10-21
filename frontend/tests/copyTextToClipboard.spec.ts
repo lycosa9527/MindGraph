@@ -1,5 +1,4 @@
 /** Vitest — clipboard helper with Clipboard API + DOM fallback. */
-
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { copyTextToClipboard } from '@/utils/copyTextToClipboard'

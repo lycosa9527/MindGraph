@@ -15,7 +15,8 @@ export default {
   'canvas.export.docxSuccess': '文書エクスポートに成功しました',
   'canvas.export.pdfError': 'PDF のエクスポートに失敗しました。もう一度お試しください。',
   'canvas.export.pdfSuccess': 'PDFエクスポートに成功しました',
-  'canvas.export.clipboardFallback': 'クリップボードにコピーできないため、PNG をダウンロードしました',
+  'canvas.export.clipboardFallback':
+    'クリップボードにコピーできないため、PNG をダウンロードしました',
   'canvas.export.pngError': 'PNG のエクスポートに失敗しました。もう一度お試しください。',
   'canvas.export.pngSuccess': 'PNG画像のエクスポートに成功しました',
   'canvas.export.svgError': 'SVG のエクスポートに失敗しました。もう一度お試しください。',
@@ -31,7 +32,8 @@ export default {
   'canvas.exportOptions.layoutLandscape': '横向き',
   'canvas.exportOptions.layoutPortrait': '縦向き',
   'canvas.worksheetText.cancel': 'キャンセル',
-  'canvas.worksheetText.defaultInstruction': 'Fill in the blanks with the matching content to complete the diagram structure。',
+  'canvas.worksheetText.defaultInstruction':
+    'Fill in the blanks with the matching content to complete the diagram structure。',
   'canvas.worksheetText.dragDiagramHint': 'ドラッグで移動 · 角をドラッグでサイズ変更',
   'canvas.worksheetText.fieldClass': 'クラス：',
   'canvas.worksheetText.fieldDate': '日付：',
@@ -39,14 +41,17 @@ export default {
   'canvas.worksheetText.hide': '非表示',
   'canvas.worksheetText.instructionLabel': '説明文',
   'canvas.worksheetText.instructionPrefix': '要件：',
-  'canvas.worksheetText.modalHint': 'エクスポート PDF for printing. エクスポート document for editable name/class fields; the diagram stays an image.',
-  'canvas.worksheetText.headerCaptureFailed': '学習シートページ眉生成失敗，已エクスポート不含ページ眉的 PDF。',
+  'canvas.worksheetText.modalHint':
+    'エクスポート PDF for printing. エクスポート document for editable name/class fields; the diagram stays an image.',
+  'canvas.worksheetText.headerCaptureFailed':
+    '学習シートページ眉生成失敗，已エクスポート不含ページ眉的 PDF。',
   'canvas.worksheetText.modalTitle': 'DOC/PDFとしてエクスポート',
   'canvas.worksheetText.learningSheetMode': '学習シングルモード',
   'canvas.worksheetText.learningSheetModeOn': 'オンにする',
   'canvas.worksheetText.learningSheetModeOff': '閉鎖',
   'canvas.worksheetText.learningSheetPanelTitle': 'シングルヘッダーの研究',
-  'canvas.worksheetText.learningSheetPanelHint': '次のオプションはスタディ シート モードでのみ使用でき、アイコンの上に表示されます。',
+  'canvas.worksheetText.learningSheetPanelHint':
+    '次のオプションはスタディ シート モードでのみ使用でき、アイコンの上に表示されます。',
   'canvas.worksheetText.exportSettings': 'エクスポートオプション',
   'canvas.worksheetText.previewDiagram': '図',
   'canvas.worksheetText.previewEmpty': 'Turn on fields to preview the learning sheet header。',
@@ -65,14 +70,21 @@ export default {
   'canvas.worksheetText.showName': '氏名',
   'canvas.worksheetText.showTopic': 'テーマ名',
   'canvas.worksheetText.topicPreviewLabel': 'マインドマップトピック',
-  'canvas.import.invalidFile': '無効な図ファイルです。MindGraph からエクスポートした MG ファイルまたは CmapTools の .cmap ファイルを選択してください。',
+  'canvas.import.invalidFile':
+    '無効な図ファイルです。MindGraph からエクスポートした MG ファイルまたは CmapTools の .cmap ファイルを選択してください。',
   'canvas.import.parseError': '図ファイルを解析できません，もう一度お試しください',
-  'canvas.import.cmapHeuristicSemantics': 'この CmapTools ファイルはリンクにテキスト順フォールバックを使用しています。キャンバス上で原図と照合してください。',
-  'canvas.import.cmapConnectionFallback': '関係は IHMC グラフ接続から復元され、命題オブジェクトではありません。',
-  'canvas.import.cmapEmptyLayout': 'ノード座標を復元できませんでした。レイアウトを自動再生成しました。',
-  'canvas.import.cmapLayoutLabelCollision': '重複する概念ラベルがレイアウトアンカーを共有しています。一部のインポート位置が不正確な場合があります。',
-  'canvas.import.cmapLayoutFailed': 'レイアウト抽出で解析エラーが発生しました — 座標は再生成されました。',
-  'canvas.reset.confirmBody': 'リセットしてよろしいですか？現在の図、ノードパレットなどすべての内容が失われ、復元できません。',
+  'canvas.import.cmapHeuristicSemantics':
+    'この CmapTools ファイルはリンクにテキスト順フォールバックを使用しています。キャンバス上で原図と照合してください。',
+  'canvas.import.cmapConnectionFallback':
+    '関係は IHMC グラフ接続から復元され、命題オブジェクトではありません。',
+  'canvas.import.cmapEmptyLayout':
+    'ノード座標を復元できませんでした。レイアウトを自動再生成しました。',
+  'canvas.import.cmapLayoutLabelCollision':
+    '重複する概念ラベルがレイアウトアンカーを共有しています。一部のインポート位置が不正確な場合があります。',
+  'canvas.import.cmapLayoutFailed':
+    'レイアウト抽出で解析エラーが発生しました — 座標は再生成されました。',
+  'canvas.reset.confirmBody':
+    'リセットしてよろしいですか？現在の図、ノードパレットなどすべての内容が失われ、復元できません。',
   'canvas.reset.confirmButton': 'リセット',
   'canvas.reset.confirmTitle': 'デフォルトテンプレートにリセット',
   'canvas.reset.warnSelectType': 'リセットできません：先に図の種類を選択してください',
@@ -94,13 +106,16 @@ export default {
   'canvas.shortcutGuide.addSibling': '兄弟ノードを追加',
   'canvas.shortcutGuide.addSiblingDesc': 'Quickly insert a sibling next to the selected node。',
   'canvas.shortcutGuide.editText': 'テキストを編集',
-  'canvas.shortcutGuide.editTextDesc': 'その場でインライン編集を開きます。Enter またはフォーカス外れで保存し、サイズを即座に再計算します。',
+  'canvas.shortcutGuide.editTextDesc':
+    'その場でインライン編集を開きます。Enter またはフォーカス外れで保存し、サイズを即座に再計算します。',
   'canvas.shortcutGuide.doubleClick': 'ダブルクリックで文字を編集',
   'canvas.shortcutGuide.deleteNode': 'ノードを削除',
-  'canvas.shortcutGuide.deleteNodeDesc': '削除 the selected node and its branches (root node is protected).',
+  'canvas.shortcutGuide.deleteNodeDesc':
+    '削除 the selected node and its branches (root node is protected).',
   'canvas.shortcutGuide.arrowNav': '方向キーナビゲーション',
   'canvas.shortcutGuide.selectNav': '選択ナビゲーション',
-  'canvas.shortcutGuide.arrowNavDesc': '業界をリードするユークリッド幾何エンジン。方向キーはキャンバス上の物理的 2D 座標に基づき、最も近いノードへシームレスに移動します。',
+  'canvas.shortcutGuide.arrowNavDesc':
+    '業界をリードするユークリッド幾何エンジン。方向キーはキャンバス上の物理的 2D 座標に基づき、最も近いノードへシームレスに移動します。',
   'canvas.shortcutGuide.cancel': '選択解除 / 編集キャンセル',
   'canvas.shortcutGuide.cancelDesc': 'キャンセル selection or editing.',
   'canvas.shortcutGuide.undo': '変更を元に戻す',
@@ -221,7 +236,8 @@ export default {
   'canvas.toolbar.professionalContent.tooltip': 'AI 生成コンテンツの視聴者の難易度を選択する',
   'canvas.toolbar.professionalContent.panelTitle': 'Content level',
   'canvas.toolbar.professionalContent.guideTitle': '最初に視聴者の難易度を選択してください',
-  'canvas.toolbar.professionalContent.guideBody': 'ここをクリックしてステージまたはシーンを選択します。 AIの生成やセリフの変更など、難易度に応じて内容を整理していきます。 選択すると、ボタンに学術段階のラベルが表示されます。',
+  'canvas.toolbar.professionalContent.guideBody':
+    'ここをクリックしてステージまたはシーンを選択します。 AIの生成やセリフの変更など、難易度に応じて内容を整理していきます。 選択すると、ボタンに学術段階のラベルが表示されます。',
   'canvas.toolbar.professionalContent.guideAction': '選択する',
   'canvas.toolbar.professionalContent.guideDismiss': '知っていた',
   'canvas.toolbar.professionalContent.level.general.title': 'ユニバーサル',
@@ -238,12 +254,17 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': '実践的なシナリオ',
   'canvas.toolbar.professionalContent.level.expert.title': '専門家',
   'canvas.toolbar.professionalContent.level.expert.description': '深く洗練された',
-  'canvas.toolbar.professionalContent.notify.preference': '後続の AI 生成コンテンツは、視聴者の意識レベル「{level}」とより一致するものになります。',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral': '後続の AI 生成コンテンツは「ユニバーサル」スタイルとなり、追加の難易度の制約はありません。',
-  'canvas.toolbar.professionalContent.notify.afterGenerated': '現在のコンテンツの難易度は「{current}」です。今後は、「{next}」を押して生成をお手伝いします。',
-  'canvas.toolbar.professionalContent.audienceLine': '現在の視聴者: {level} (下から [プロフェッショナルなコンテンツ])',
+  'canvas.toolbar.professionalContent.notify.preference':
+    '後続の AI 生成コンテンツは、視聴者の意識レベル「{level}」とより一致するものになります。',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    '後続の AI 生成コンテンツは「ユニバーサル」スタイルとなり、追加の難易度の制約はありません。',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    '現在のコンテンツの難易度は「{current}」です。今後は、「{next}」を押して生成をお手伝いします。',
+  'canvas.toolbar.professionalContent.audienceLine':
+    '現在の視聴者: {level} (下から [プロフェッショナルなコンテンツ])',
   'canvas.toolbar.educationStage': '学業段階',
-  'canvas.toolbar.educationStageTooltip': 'AI が生成するコンテンツの深さに影響を与える学術段階を選択します。',
+  'canvas.toolbar.educationStageTooltip':
+    'AI が生成するコンテンツの深さに影響を与える学術段階を選択します。',
   'canvas.toolbar.educationStageClear': 'ユニバーサル',
   'canvas.toolbar.educationStagePrimary': '小学校',
   'canvas.toolbar.educationStageMiddle': '中学校',
@@ -269,12 +290,14 @@ export default {
   'canvas.toolbar.cannotDeleteTopicGeneric': '削除できませんトピックノード',
   'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
   'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference': 'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneSimilarityAndDifference':
+    'Keep at least one similarity and one difference',
   'canvas.toolbar.cannotGenerate': '生成できません',
   'canvas.toolbar.causeAdded': '追加しました原因ノード',
   'canvas.toolbar.childAdded': '追加しました子项',
   'canvas.toolbar.collabAiBlocked': 'コラボ中は図の所有者のみ AI 生成を利用できます',
-  'canvas.toolbar.collabGuestFeatureBlocked': 'This feature is not available while you join as a collaboration guest。',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'This feature is not available while you join as a collaboration guest。',
   'canvas.toolbar.colorLabel': '色',
   'canvas.toolbar.conceptGeneration': '概念生成',
   'canvas.toolbar.conceptMapModesDev': 'コンセプトマップ modes are in development',
@@ -299,7 +322,8 @@ export default {
   'canvas.toolbar.highlighterChooseColor': '蛍光ペン color',
   'canvas.toolbar.highlighterPaletteAria': 'ハイライターの色を選択してください',
   'canvas.toolbar.insertEquation': '数式を挿入',
-  'canvas.toolbar.insertEquationTooltip': '在光标处插入行内公式（$...$）；若未在編集，则追加到所选ノード',
+  'canvas.toolbar.insertEquationTooltip':
+    '在光标处插入行内公式（$...$）；若未在編集，则追加到所选ノード',
   'canvas.toolbar.insertEquationSelectNode': '選択 a node first',
   'canvas.toolbar.insertEquationDialogTitle': '数式を挿入',
   'canvas.toolbar.insertEquationLoading': '読み込み中公式編集器…',
@@ -333,7 +357,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': '中点',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
+  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=1/2bh',
@@ -354,7 +378,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': '正弦定理',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': '余弦(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': '正弦(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
+  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': '倍角',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': '等差通项',
@@ -424,7 +448,8 @@ export default {
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-    'canvas.classroomRemote.tabTopics': 'Topics',
+  'canvas.classroomRemote.resize': 'Drag to resize',
+  'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
@@ -437,7 +462,8 @@ export default {
   'canvas.classroomRemote.topicsReset': 'Restore defaults',
   'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
   'canvas.presentation.learningSheetConfirmTitle': '開始 presentation?',
-  'canvas.presentation.learningSheetConfirmBody': '您仍在挖空支架图編集中。进入放映将结束挖空編集，已挖空的コンテンツ会保留。是否继续？',
+  'canvas.presentation.learningSheetConfirmBody':
+    '您仍在挖空支架图編集中。进入放映将结束挖空編集，已挖空的コンテンツ会保留。是否继续？',
   'canvas.presentation.learningSheetConfirmProceed': '開始 presentation',
   'canvas.presentationContextMenu.laserPointer': 'レーザーポインター',
   'canvas.presentationContextMenu.spotlight': 'スポットライト',
@@ -507,14 +533,17 @@ export default {
   'canvas.toolbar.moreAppConceptMapModes': 'コンセプトマップ modes',
   'canvas.toolbar.moreAppConceptMapModesDesc': '現在为标准模式，もっと見る模式即将推出',
   'canvas.toolbar.moreAppLearningSheet': '学習シート',
-  'canvas.toolbar.moreAppLearningSheetDesc': 'ランダムに空白のままにしておきます。勉強と復習に良い方法です',
+  'canvas.toolbar.moreAppLearningSheetDesc':
+    'ランダムに空白のままにしておきます。勉強と復習に良い方法です',
   'canvas.toolbar.moreAppWaterfall': 'AI头脑风暴',
-  'canvas.toolbar.moreAppWaterfallDesc': '選択 across batch nodes; make divergent and convergent thinking visible',
+  'canvas.toolbar.moreAppWaterfallDesc':
+    '選択 across batch nodes; make divergent and convergent thinking visible',
   'canvas.toolbar.moreApps': 'もっと見る应用',
   'canvas.toolbar.moreAppSnapshot': '快照',
   'canvas.toolbar.moreAppSnapshotDesc': '保存現在図的一個バージョン（最多10個）',
   'canvas.toolbar.moreAppTranslateLabel': '翻译',
-  'canvas.toolbar.moreAppTranslateLabelDesc': '使用 AI 按現在界面语言翻译图中すべてノード与连线タグ',
+  'canvas.toolbar.moreAppTranslateLabelDesc':
+    '使用 AI 按現在界面语言翻译图中すべてノード与连线タグ',
   'canvas.toolbar.translateLabelTitle': '翻译図',
   'canvas.toolbar.translateLabelSource': '待翻译タグ（{count}）',
   'canvas.toolbar.translateLabelTargetLanguage': 'ターゲット言語',
@@ -526,23 +555,29 @@ export default {
   'canvas.toolbar.translateLabelAndMore': '{n} アイテムが表示されていません...',
   'canvas.toolbar.translateLabelInProgress': 'アイコンを翻訳中…',
   'canvas.toolbar.translateLabelBannerTitle': '翻訳アイコン',
-  'canvas.toolbar.translateLabelFallbackEnInfo': 'Your interface language is not available as a translation target yet. Labels will be translated to English。',
+  'canvas.toolbar.translateLabelFallbackEnInfo':
+    'Your interface language is not available as a translation target yet. Labels will be translated to English。',
   'canvas.toolbar.translateLabelFailed': '翻译失敗，しばらくしてからもう一度お試しください',
   'canvas.toolbar.translateLabelDone': '翻訳完了',
   'canvas.toolbar.moreAppVirtualKeyboard': '仮想キーボード',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc': '英語のオンスクリーンキーボード。中国語およびその他の言語の場合は、システムの入力方法を使用してください。',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    '英語のオンスクリーンキーボード。中国語およびその他の言語の場合は、システムの入力方法を使用してください。',
   'canvas.toolbar.virtualKeyboardClose': '閉じる键盘',
-  'canvas.toolbar.virtualKeyboardFocusHint': 'ノードを選択して直接入力すると、元のコンテンツがクリアされます。ラベルをダブルクリックして編集を開始することもできます。',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'ノードを選択して直接入力すると、元のコンテンツがクリアされます。ラベルをダブルクリックして編集を開始することもできます。',
   'canvas.toolbar.virtualKeyboardIme': 'システム入力方式',
-  'canvas.toolbar.virtualKeyboardImeHint': '物理キーボードまたはシステムキーボードを使用して入力してください。候補ウィンドウはシステム入力メソッドによって提供されます。',
+  'canvas.toolbar.virtualKeyboardImeHint':
+    '物理キーボードまたはシステムキーボードを使用して入力してください。候補ウィンドウはシステム入力メソッドによって提供されます。',
   'canvas.toolbar.snapshotSaveFirst': 'まずアイコンを保存してからスナップショットを撮ってください',
   'canvas.toolbar.snapshotTaken': '第 {n} 個快照保存しました',
   'canvas.toolbar.snapshotFailed': '快照保存に失敗しました，もう一度お試しください',
   'canvas.toolbar.snapshotTooLarge': '快照过大（最大 {max} KB）。请精简図コンテンツ后重试。',
   'canvas.toolbar.snapshotRateLimited': 'Too many snapshot actions. Wait a moment and try again。',
-  'canvas.toolbar.snapshotDiagramNotFound': '未找到図。ページを更新してくださいページ面或从资料库開く。',
+  'canvas.toolbar.snapshotDiagramNotFound':
+    '未找到図。ページを更新してくださいページ面或从资料库開く。',
   'canvas.library.diagramNotFound': '未找到図，可能已被削除。请从图库開く其他マインドマップ。',
-  'canvas.library.saveBeforeSwitchFailed': '現在のマップは切り替える前に保存できません。ここに留まってもう一度お試しください。',
+  'canvas.library.saveBeforeSwitchFailed':
+    '現在のマップは切り替える前に保存できません。ここに留まってもう一度お試しください。',
   'canvas.toolbar.snapshotConflict': '保存できません快照（冲突）。もう一度お試しください。',
   'canvas.toolbar.newAssociation': '新しい連想',
   'canvas.toolbar.newAttribute': '新規 Attribute',
@@ -569,16 +604,21 @@ export default {
   'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': '先に选择ブランチ或子ノード',
-  'canvas.toolbar.selectCategoryOrLeafDelete': '選択してください分类或子项ノード（トピックノード不可削除）',
-  'canvas.toolbar.selectCauseOrEffectForAdd': '選択 a cause or effect node (not the event), then press Enter to add another in that column',
-  'canvas.toolbar.selectTreeBranchForChild': '選択 a category or an item under a category to add a child, or select the topic to add a category',
+  'canvas.toolbar.selectCategoryOrLeafDelete':
+    '選択してください分类或子项ノード（トピックノード不可削除）',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    '選択 a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild':
+    '選択 a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': '先に选择ノード',
   'canvas.toolbar.nodeStyleFollow': 'ノードをフォローする',
-  'canvas.toolbar.nodeStyleFollowHint': 'オンにすると、ノード スタイル バーは選択したノードに従います。オフにすると非表示になります。',
+  'canvas.toolbar.nodeStyleFollowHint':
+    'オンにすると、ノード スタイル バーは選択したノードに従います。オフにすると非表示になります。',
   'canvas.toolbar.selectNodesToDelete': '先に选择要削除的ノード',
   'canvas.toolbar.selectPartForSubpart': '先に选择要追加子部分的ノード',
   'canvas.toolbar.selectPartThenEnter': '選択してください部分ノード后按 Enter 追加子部分',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete': '選択してください相似点或不同点ノード（トピックノード不可削除）',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
+    '選択してください相似点或不同点ノード（トピックノード不可削除）',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst': '先に选择相似点或不同点ノード',
   'canvas.toolbar.selectStepForSubstep': '先に选择要追加子步骤的步骤ノード',
   'canvas.toolbar.similarityWithIndex': '相似点 {n}',
@@ -629,7 +669,8 @@ export default {
   'canvas.topBar.shareCommunity': '共有 to コミュニティ',
   'canvas.topBar.zhihuiUnavailable': 'スマート描画チャートは現在利用できません',
   'canvas.topBar.zhihuiNeedMindmap': 'イラストはマインド マッピングのみをサポートします',
-  'canvas.topBar.zhihuiSaveFailed': 'マップの保存に失敗したため、生成されたマップを開くことができません。',
+  'canvas.topBar.zhihuiSaveFailed':
+    'マップの保存に失敗したため、生成されたマップを開くことができません。',
   'canvas.topBar.sharedCollab': '合計同コラボ',
   'canvas.topBar.teachingDesign': 'MindMate AI',
   'canvas.subtitles.tooltip': 'ライブ字幕（マイク）',
@@ -650,16 +691,20 @@ export default {
   'canvas.translation.stop': '停止 translation',
   'canvas.topBar.snapshotRecallTooltip': '復元 snapshot {n}',
   'canvas.topBar.snapshotRecallTitle': '復元 Snapshot',
-  'canvas.topBar.snapshotRecallConfirm': '復元 snapshot {n}? Your current changes will be replaced.',
+  'canvas.topBar.snapshotRecallConfirm':
+    '復元 snapshot {n}? Your current changes will be replaced.',
   'canvas.topBar.snapshotRecallConfirmBtn': '恢复',
   'canvas.topBar.snapshotRecallCancelBtn': 'キャンセル',
   'canvas.topBar.snapshotRecallHistory': '復元前のスナップショット {n}',
   'canvas.topBar.snapshotRecallFailed': '快照恢复失敗，もう一度お試しください',
-  'canvas.topBar.snapshotRecallNoDiagram': '保存 the diagram to your library first, then restore a snapshot.',
-  'canvas.topBar.snapshotRecallNoType': 'Diagram type is not ready yet. Wait a moment and try again。',
+  'canvas.topBar.snapshotRecallNoDiagram':
+    '保存 the diagram to your library first, then restore a snapshot.',
+  'canvas.topBar.snapshotRecallNoType':
+    'Diagram type is not ready yet. Wait a moment and try again。',
   'canvas.topBar.snapshotDeleted': '削除しました快照 {n}',
   'canvas.topBar.snapshotDeleteFailed': '削除快照失敗，もう一度お試しください',
-  'canvas.topBar.snapshotBadgeTooltip': 'クリックしてスナップショットを復元します {n} · Ctrl キーを押しながらクリックして削除します',
+  'canvas.topBar.snapshotBadgeTooltip':
+    'クリックしてスナップショットを復元します {n} · Ctrl キーを押しながらクリックして削除します',
   'canvas.topBar.snapshotRecallingTooltip': 'スナップショット {n} を復元中…',
   'canvas.zoomControls.exitFullscreen': '全画面表示を終了する',
   'canvas.zoomControls.fitCanvas': '适应キャンバス',
@@ -709,7 +754,8 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'ブランチ',
   'canvas.mindMapSlideOverlay.region': 'スライドショーコントロール',
   'canvas.mindMapSlideOverlay.progress': 'スライドの進行状況、クリックしてジャンプ',
-  'canvas.mindMapSlideOverlay.shortcuts': 'キャンバスをクリックするか、Space/→ 次のページ · ← 前のページ · ホーム/終了 ホーム/終了ページ · Esc を押してスライドショーを終了します',
+  'canvas.mindMapSlideOverlay.shortcuts':
+    'キャンバスをクリックするか、Space/→ 次のページ · ← 前のページ · ホーム/終了 ホーム/終了ページ · Esc を押してスライドショーを終了します',
   'canvas.mindMapSlideOverlay.exit': 'スライドショーを終了する',
   'canvas.mindMapSlideOverlay.collapse': '折りたたむ控制栏',
   'canvas.mindMapSlideOverlay.expand': 'コントロールバーを展開する',
@@ -721,10 +767,13 @@ export default {
   'canvasPage.collaborationFooter': 'オンラインコラボレーション',
   'canvasPage.collaborationFooterOwner': '{username} 的オンラインコラボレーション',
   'canvasPage.collaborationFooterOwnerDiagram': '{username}の「{diagramTitle}」シナジーアイコン',
-  'canvasPage.collaborationFooterNetworkDiagramTitle': '「{diagramTitle}」オンラインコラボレーション',
+  'canvasPage.collaborationFooterNetworkDiagramTitle':
+    '「{diagramTitle}」オンラインコラボレーション',
   'canvasPage.collaborationFooterSchool': '校内コラボ进行中——同事可从会話一覧加入。',
-  'canvasPage.collaborationFooterSchoolDiagram': '校内コラボ「{diagramTitle}」进行中——同事可从会話一覧加入。',
-  'canvasPage.collabRoomIdleEnding': 'アイコンのコラボレーションは約 {seconds} 秒間アイドル状態になると自動的に終了します - アイコンの編集は遅れる可能性があります',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    '校内コラボ「{diagramTitle}」进行中——同事可从会話一覧加入。',
+  'canvasPage.collabRoomIdleEnding':
+    'アイコンのコラボレーションは約 {seconds} 秒間アイドル状態になると自動的に終了します - アイコンの編集は遅れる可能性があります',
   'conceptMap.focus.noResult': 'いいえ result',
   'conceptMap.focus.validationRequestFailed': 'Validation requestに失敗しました',
   'diagram.aiGenerating': 'AI..。',
@@ -780,31 +829,43 @@ export default {
   'canvas.mindMapSideToolbar.collapse': '折りたたむ工具栏',
   'canvas.mindMapSideToolbar.outline': '层级大纲',
   'canvas.mindMapSideToolbar.waterfall': 'AI头脑风暴',
-  'canvas.mindMapWaterfall.panelHint': '選択 nodes for AI branch ideas, then drag them onto the canvas',
-  'canvas.mindMapWaterfall.emptyHint': 'いいえ suggestions yet. 選択 nodes on the canvas or tap 更新.',
-  'canvas.mindMapWaterfall.dragHint': 'Click to multi-select, then drag onto a map node to insert. Drop on empty canvas to add a top-level branch。',
+  'canvas.mindMapWaterfall.panelHint':
+    '選択 nodes for AI branch ideas, then drag them onto the canvas',
+  'canvas.mindMapWaterfall.emptyHint':
+    'いいえ suggestions yet. 選択 nodes on the canvas or tap 更新.',
+  'canvas.mindMapWaterfall.dragHint':
+    'Click to multi-select, then drag onto a map node to insert. Drop on empty canvas to add a top-level branch。',
   'canvas.mindMapWaterfall.historyAddFromPalette': '从AI头脑风暴拖入ノード',
   'canvas.mindMapOneSentence.intro': '输入トピック，或说明ブランチ数量、分类维度、步骤等结构要件',
-  'canvas.mindMapOneSentence.requirementsPlaceholder': '例如：北京三日游计划，四個ブランチ：衣、食、住、行',
+  'canvas.mindMapOneSentence.requirementsPlaceholder':
+    '例如：北京三日游计划，四個ブランチ：衣、食、住、行',
   'canvas.mindMapOneSentence.examplesTitle': '灵感おすすめ',
   'canvas.mindMapOneSentence.generateButton': '开始生成',
   'canvas.mindMapOneSentence.example1': '北京三日游计划，四個ブランチ：衣、食、住、行',
-  'canvas.mindMapOneSentence.example2': 'SWOT を使用して「新製品の発売」: 強み、弱み、機会、脅威を分析する',
-  'canvas.mindMapOneSentence.example3': 'Elementary science: states of water — simple labels, max 6 文字 per node',
+  'canvas.mindMapOneSentence.example2':
+    'SWOT を使用して「新製品の発売」: 強み、弱み、機会、脅威を分析する',
+  'canvas.mindMapOneSentence.example3':
+    'Elementary science: states of water — simple labels, max 6 文字 per node',
   'canvas.mindMapOneSentence.suggestion.add_node': '中国支店を追加',
   'canvas.mindMapOneSentence.suggestion.update_node': '飲料分析を飲料分析に変更する',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': '2.1を緑茶に変更',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint': '番号を有効にした後、「2.1 を…に変更」「2.1 を…に変更」と言うことができます。',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint':
+    '番号を有効にした後、「2.1 を…に変更」「2.1 を…に変更」と言うことができます。',
   'canvas.mindMapOneSentence.suggestion.update_center': 'テーマがお茶に変わりました',
   'canvas.mindMapOneSentence.suggestion.delete_node': '飲料分析ブランチの削除',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': '中国支店を完了する',
   'canvas.mindMapOneSentence.suggestion.auto_complete': '地図を完成させるのを手伝ってください',
-  'canvas.mindMapOneSentence.suggestion.set_content_level': '専門内容を一般、小学生、中学生、高校生、大学、社会人、専門家に変更します',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': '専門的なコンテンツが {level} に変更されました',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': '7 番目のレベルは、一番下の「プロフェッショナル コンテンツ」と一致しています。',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': '数字、中国語、丸、文字、または章番号を有効にする',
+  'canvas.mindMapOneSentence.suggestion.set_content_level':
+    '専門内容を一般、小学生、中学生、高校生、大学、社会人、専門家に変更します',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
+    '専門的なコンテンツが {level} に変更されました',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
+    '7 番目のレベルは、一番下の「プロフェッショナル コンテンツ」と一致しています。',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
+    '数字、中国語、丸、文字、または章番号を有効にする',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': '{style} 番号を有効にする',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': '「デジタル番号付けを有効にする」「中国語番号付けを有効にする」と言うことができます。',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
+    '「デジタル番号付けを有効にする」「中国語番号付けを有効にする」と言うことができます。',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': '番号',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': '中国語',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': '丸',
@@ -814,7 +875,8 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': '隠し番号',
   'canvas.mindMapOneSentence.suggestion.explain_node': '中国のこの支部について説明してください',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'このノードを紹介します',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint': '「中国について説明してください」「このノードを紹介してください」と言うことができます。ノードを選択した後、「これを紹介します」と言う事もできます。',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
+    '「中国について説明してください」「このノードを紹介してください」と言うことができます。ノードを選択した後、「これを紹介します」と言う事もできます。',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'ノード操作ガイド',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'Collapseノード操作ガイド',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': '名前で',
@@ -829,53 +891,82 @@ export default {
   'canvas.mindMapOneSentence.photoInvalidType': '選択してください JPG、PNG 或 WebP 画像。',
   'canvas.mindMapOneSentence.photoTooLarge': 'Photo is too large. Maximum size is 10MB。',
   'canvas.mindMapOneSentence.photoUntitledMap': '思维マインドマップ',
-  'canvas.mindMapOneSentence.photoHanddrawnReply': 'Detected a hand-drawn mind map “{topic}”. Rebuilt on canvas; outline saved to ドキュメント要約.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'Detected a hand-drawn mind map “{topic}”. Rebuilt on this canvas; outline saved to ドキュメント要約. ライブラリ sync did not complete — save or retry if needed.',
-  'canvas.mindMapOneSentence.photoOcrReply': 'Extracted text from the photo:\n{excerpt}\n\nFull text is in ドキュメント要約.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply':
+    'Detected a hand-drawn mind map “{topic}”. Rebuilt on canvas; outline saved to ドキュメント要約.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
+    'Detected a hand-drawn mind map “{topic}”. Rebuilt on this canvas; outline saved to ドキュメント要約. ライブラリ sync did not complete — save or retry if needed.',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    'Extracted text from the photo:\n{excerpt}\n\nFull text is in ドキュメント要約.',
   'canvas.mindMapOneSentence.photoFailed': '処理できませんでした the photo.',
   'canvas.mindMapOneSentence.micDenied': '麦克风不可用，ご確認ください閲覧器権限',
   'canvas.mindMapOneSentence.ttsToggle': '読み上げスイッチ',
-  'canvas.mindMapOneSentence.kittyWelcome': 'Hi — tell me what diagram to create, or keep chatting to edit branches and nodes。',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    'Hi — tell me what diagram to create, or keep chatting to edit branches and nodes。',
   'canvas.mindMapOneSentence.switchDiagramType': 'OK、{type} に切り替えます…',
   'canvas.mindMapOneSentence.kittyGenerating': '好的，生成中マインドマップ…',
-  'canvas.mindMapOneSentence.kittyGenerateDone': 'マインドマップ已生成。继续输入即可修改ブランチ或ノード。',
-  'canvas.mindMapOneSentence.kittyGenerateFailed': 'マインドマップ生成失敗，もう一度お試しください或调整説明。',
-  'canvas.mindMapOneSentence.kittyEditFailed': '適用できませんでした that edit. Try rephrasing your request.',
-  'canvas.mindMapOneSentence.kittyEditStale': 'That edit did not take effect on the canvas (stale or no-op). 再試行.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'The canvas could not verify that edit. Your diagram was left unchanged。',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'The edit applied locally but failed to sync. 再試行 in a moment.',
+  'canvas.mindMapOneSentence.kittyGenerateDone':
+    'マインドマップ已生成。继续输入即可修改ブランチ或ノード。',
+  'canvas.mindMapOneSentence.kittyGenerateFailed':
+    'マインドマップ生成失敗，もう一度お試しください或调整説明。',
+  'canvas.mindMapOneSentence.kittyEditFailed':
+    '適用できませんでした that edit. Try rephrasing your request.',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    'That edit did not take effect on the canvas (stale or no-op). 再試行.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    'The canvas could not verify that edit. Your diagram was left unchanged。',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    'The edit applied locally but failed to sync. 再試行 in a moment.',
   'canvas.mindMapOneSentence.kittyContextSyncFailed': 'キャンバス同步失敗，请稍后再试一回。',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'キャンバス同步失敗（{detail}），请稍后再试一回。',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    'キャンバス同步失敗（{detail}），请稍后再试一回。',
   'canvas.mindMapOneSentence.kittyEditBusy': 'マインドマップ生成中中，请稍等完了后再改。',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} results are still streaming — I will run your request automatically when they finish。',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'Other model results are still streaming — I will run your request automatically when they finish。',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming': '他のモデルは完了しており、引き続きリクエストを実行しています...',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    '{models} results are still streaming — I will run your request automatically when they finish。',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    'Other model results are still streaming — I will run your request automatically when they finish。',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming':
+    '他のモデルは完了しており、引き続きリクエストを実行しています...',
   'canvas.mindMapOneSentence.requestQueued': '排队中',
   'canvas.mindMapOneSentence.requestFailed': '失敗',
-  'canvas.mindMapOneSentence.kittyEditAccessDenied': 'You don\'t have permission to edit this diagram。',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'The diagram was just updated, so that edit is stale. Please repeat your change。',
-  'canvas.mindMapOneSentence.kittyEditTimeout': 'That edit timed out — the diagram may be unchanged. もう一度お試しください.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner': 'I couldn\'t find an editable canvas. Open the canvas, then try again。',
-  'canvas.mindMapOneSentence.kittyEditAddFailed': '抱歉，没能追加该ノード。ご確認ください名前后再试。',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed': '抱歉，没能修改该ノード。ご確認ください名前后再试。',
+  'canvas.mindMapOneSentence.kittyEditAccessDenied':
+    "You don't have permission to edit this diagram。",
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    'The diagram was just updated, so that edit is stale. Please repeat your change。',
+  'canvas.mindMapOneSentence.kittyEditTimeout':
+    'That edit timed out — the diagram may be unchanged. もう一度お試しください.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    "I couldn't find an editable canvas. Open the canvas, then try again。",
+  'canvas.mindMapOneSentence.kittyEditAddFailed':
+    '抱歉，没能追加该ノード。ご確認ください名前后再试。',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    '抱歉，没能修改该ノード。ご確認ください名前后再试。',
   'canvas.mindMapOneSentence.kittyEditCenterFailed': '抱歉，没能更新トピック。请再试一回。',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed': '抱歉，没能削除该ノード。ご確認ください名前后再试。',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': '抱歉，没能为该ブランチ自动补全。你可以再说一回「自动补全」。',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    '抱歉，没能削除该ノード。ご確認ください名前后再试。',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    '抱歉，没能为该ブランチ自动补全。你可以再说一回「自动补全」。',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'That branch is ready。',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'Those branches are ready。',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': '有的ブランチ补全好了，有的没成功。你可以再说一回「自动补全」。',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
+    '有的ブランチ补全好了，有的没成功。你可以再说一回「自动补全」。',
   'canvas.mindMapOneSentence.kittyWorking': 'OK、処理中...',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty is unavailable. Check that FEATURE_KITTY_AGENT is enabled on the server。',
-  'canvas.mindMapOneSentence.kittyConnectFailed': '接続できませんでした canvas Kitty. Open this diagram on desktop, then try again.',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'Kitty is unavailable. Check that FEATURE_KITTY_AGENT is enabled on the server。',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    '接続できませんでした canvas Kitty. Open this diagram on desktop, then try again.',
   'canvas.mindMapOneSentence.clarifyChoices': '選択してください一项',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused。',
-  'canvas.mindMapOneSentence.scopeDivergenceHint': '手机 Kitty 開く了另一张マインドマップ。请在手机上同步，或在此開く那张マインドマップ。',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': '携帯電話で「キティ」と入力してください…',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused。',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    '手机 Kitty 開く了另一张マインドマップ。请在手机上同步，或在此開く那张マインドマップ。',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder':
+    '携帯電話で「キティ」と入力してください…',
   'canvas.mindMapNodeExplain.titleFallback': 'ノード説明',
   'canvas.mindMapNodeExplain.requestFailed': '説明を取得できませんでした。もう一度お試しください。',
   'canvas.mindMapNodeExplain.thinking': '考え',
   'canvas.mindMapNodeExplain.thinkingDone': '考え終わった',
-  'canvas.mindMapNodeExplain.pageStats': '{found} ページが見つかりました。{fetched} ページを読んでください',
+  'canvas.mindMapNodeExplain.pageStats':
+    '{found} ページが見つかりました。{fetched} ページを読んでください',
   'canvas.mindMapNodeExplain.citation': 'ソース {n}',
   'canvas.mindMapNodeExplain.research.title': 'インターネットデータ',
   'canvas.mindMapNodeExplain.research.images': '写真付き',
@@ -887,17 +978,21 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': 'チャット履歴',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'ファイルアップロード',
   'canvas.mindMapDocumentSummary.tabPaste': 'テキストの貼り付け',
-  'canvas.mindMapDocumentSummary.pasteHintLite': '書類、メモ、または会議議事録を貼り付けると、構造が修正され、マインド マップが生成されます。',
+  'canvas.mindMapDocumentSummary.pasteHintLite':
+    '書類、メモ、または会議議事録を貼り付けると、構造が修正され、マインド マップが生成されます。',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'チャット履歴',
   'canvas.mindMapDocumentSummary.intro': '提炼核心要点，生成更准确的思维マインドマップ',
   'canvas.mindMapDocumentSummary.uploadFileHint': '点击アップロードファイル',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF、Word、PPT、Excel、テキスト、写真、オーディオをサポート。抽出されたマークダウンのみが保持されます',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint':
+    'PDF、Word、PPT、Excel、テキスト、写真、オーディオをサポート。抽出されたマークダウンのみが保持されます',
   'canvas.mindMapDocumentSummary.invalidFileType': 'このファイル形式はサポートされていません',
   'canvas.mindMapDocumentSummary.saveContent': '保存コンテンツ',
   'canvas.mindMapDocumentSummary.fetchAndSave': '取得して保存',
   'canvas.mindMapDocumentSummary.webFetchStarted': '正在抓取网ページコンテンツ…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite': 'Paste a public page URL — we fetch as much article text as we can and save it as Markdown。',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Direct link fetch is server-side and cannot use your login cookies, so ページ behind auth or paywalls are often incomplete. For a full webpage snapshot as you see it, use the Chrome / Edge extension.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite':
+    'Paste a public page URL — we fetch as much article text as we can and save it as Markdown。',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
+    'Direct link fetch is server-side and cannot use your login cookies, so ページ behind auth or paywalls are often incomplete. For a full webpage snapshot as you see it, use the Chrome / Edge extension.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'ダウンロード Chrome 扩展',
   'canvas.mindMapDocumentSummary.statusExtracting': '提取中…',
   'canvas.mindMapDocumentSummary.stageStarting': '開始ing…',
@@ -912,9 +1007,12 @@ export default {
   'canvas.mindMapDocumentSummary.sourceDeleted': '削除しました来源，可以重新アップロード',
   'canvas.mindMapDocumentSummary.extractStarted': '正在提取コンテンツ…',
   'canvas.mindMapDocumentSummary.extractFailed': 'extract text from this fileできませんでした',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown 已就绪。可生成思维マインドマップ，或削除后来源后重新アップロード。',
-  'canvas.mindMapDocumentSummary.deleteToRetry': '削除 this source, then upload, paste, or fetch a page again.',
-  'canvas.mindMapDocumentSummary.chatIntroLite': 'ダウンロード the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'Markdown 已就绪。可生成思维マインドマップ，或削除后来源后重新アップロード。',
+  'canvas.mindMapDocumentSummary.deleteToRetry':
+    '削除 this source, then upload, paste, or fetch a page again.',
+  'canvas.mindMapDocumentSummary.chatIntroLite':
+    'ダウンロード the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'チャット履歴を受信しました',
   'canvas.mindMapDocumentSummary.chatDoneLite': '聊日记录保存しました，可点击生成',
   'canvas.mindMapDocumentSummary.corpusStatus': 'インデックス付き {completed}/{total} ソース',
@@ -927,58 +1025,80 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': '索引中…',
   'canvas.mindMapDocumentSummary.statusFailed': '失敗',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'ナレッジスペース未有効',
-  'canvas.mindMapDocumentSummary.featureDisabledHint': '有効ナレッジスペース功能后即可使用文書总结。',
-  'canvas.mindMapDocumentSummary.saveDiagramHint': '保存 this diagram to link the package and enable full RAG retrieval.',
-  'canvas.mindMapDocumentSummary.chatIntro': 'ダウンロード the file reader, enter the pairing code below, and send WeChat or DingTalk history to this corpus.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint':
+    '有効ナレッジスペース功能后即可使用文書总结。',
+  'canvas.mindMapDocumentSummary.saveDiagramHint':
+    '保存 this diagram to link the package and enable full RAG retrieval.',
+  'canvas.mindMapDocumentSummary.chatIntro':
+    'ダウンロード the file reader, enter the pairing code below, and send WeChat or DingTalk history to this corpus.',
   'canvas.mindMapDocumentSummary.pairingCode': '配对码',
   'canvas.mindMapDocumentSummary.startPairingCode': 'ペアリングコードを取得する',
   'canvas.mindMapDocumentSummary.pairingExpires': '{minutes} 分以内に有効です',
   'canvas.mindMapDocumentSummary.downloadReader': 'ダウンロードファイル读取工具（Windows）',
   'canvas.mindMapDocumentSummary.chatWaiting': '等待アップロード…',
-  'canvas.mindMapDocumentSummary.chatReceived': 'チャット履歴が受信され、データベースに追加されました',
+  'canvas.mindMapDocumentSummary.chatReceived':
+    'チャット履歴が受信され、データベースに追加されました',
   'canvas.mindMapDocumentSummary.chatIndexing': 'チャット履歴のインデックスを作成しています...',
   'canvas.mindMapDocumentSummary.chatDone': 'チャット履歴がデータベースに追加されました',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'アップロード or indexing failed — refresh to try again',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed':
+    'アップロード or indexing failed — refresh to try again',
   'canvas.mindMapDocumentSummary.chatMintFailed': '作成できませんでした pairing code',
   'canvas.mindMapDocumentSummary.chatExpired': '配对码已过期，ページを更新してください获取新码',
   'canvas.mindMapDocumentSummary.refreshPairingCode': '更新 pairing code',
-  'canvas.mindMapDocumentSummary.sessionStartFailed': '開始できませんでした ドキュメント要約 session',
-  'canvas.mindMapDocumentSummary.imageTooLarge': '画像过大，アップロードしてください 10MB 以内的ファイル',
+  'canvas.mindMapDocumentSummary.sessionStartFailed':
+    '開始できませんでした ドキュメント要約 session',
+  'canvas.mindMapDocumentSummary.imageTooLarge':
+    '画像过大，アップロードしてください 10MB 以内的ファイル',
   'canvas.mindMapDocumentSummary.generateNoCorpus': '追加 at least one source, then generate',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'アップロード, paste, or fetch a page first, then tap Generate',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
+    'アップロード, paste, or fetch a page first, then tap Generate',
   'canvas.mindMapDocumentSummary.collabDisabled': 'ライブコラボレーション中は利用できません',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'ソース added to corpus',
-  'canvas.mindMapDocumentSummary.ingestSuccessLite': 'コンテンツ保存しました，可点击生成思维マインドマップ',
+  'canvas.mindMapDocumentSummary.ingestSuccessLite':
+    'コンテンツ保存しました，可点击生成思维マインドマップ',
   'canvas.mindMapDocumentSummary.ingestFailed': '失敗 to add source',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'ローカルドキュメント:',
   'canvas.mindMapDocumentSummary.uploadDocHint': '点击アップロード Word、PDF 文書',
   'canvas.mindMapDocumentSummary.uploadDocSubhint': '我们将自动解析文書コンテンツ并提炼结构',
   'canvas.mindMapDocumentSummary.pasteLabel': 'または、長いテキストのメモを直接貼り付けます。',
-  'canvas.mindMapDocumentSummary.pastePlaceholder': 'Paste paper excerpts, book summaries, meeting notes, requirements, and more。',
+  'canvas.mindMapDocumentSummary.pastePlaceholder':
+    'Paste paper excerpts, book summaries, meeting notes, requirements, and more。',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'アップロード画像：',
   'canvas.mindMapDocumentSummary.uploadImageHint': '点击アップロード JPG、PNG 画像',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': '手绘思维マインドマップ将自动重建到キャンバス；普通画像则提取文字',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess': '已识别手绘思维マインドマップ并重建到キャンバス',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    '手绘思维マインドマップ将自动重建到キャンバス；普通画像则提取文字',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
+    '已识别手绘思维マインドマップ并重建到キャンバス',
   'canvas.mindMapDocumentSummary.visionProgressDetecting': '正在识别手绘思维マインドマップ…',
-  'canvas.mindMapDocumentSummary.imageOcrHint': 'Works with note screenshots, whiteboard photos, and scans。',
+  'canvas.mindMapDocumentSummary.imageOcrHint':
+    'Works with note screenshots, whiteboard photos, and scans。',
   'canvas.mindMapDocumentSummary.removeImage': '削除 image',
   'canvas.mindMapDocumentSummary.webLinkLabel': '网ページ链接：',
   'canvas.mindMapDocumentSummary.webUrlPlaceholder': '粘贴文章、博客或新闻ページ面链接',
-  'canvas.mindMapDocumentSummary.webLinkHint': 'We fetch the page and add it to your corpus for indexing。',
+  'canvas.mindMapDocumentSummary.webLinkHint':
+    'We fetch the page and add it to your corpus for indexing。',
   'canvas.mindMapDocumentSummary.generateButton': '生成思维マインドマップ',
   'canvas.mindMapDocumentSummary.generateSuccess': '思维マインドマップ已生成',
-  'canvas.mindMapDocumentSummary.generateFailed': '生成失敗，しばらくしてからもう一度お試しください',
+  'canvas.mindMapDocumentSummary.generateFailed':
+    '生成失敗，しばらくしてからもう一度お試しください',
   'canvas.mindMapDocumentSummary.loadFailed': '読み込めません生成的マインドマップ',
   'canvas.mindMapDocumentSummary.emptyDocument': 'アップロードしてください文書或粘贴文本',
   'canvas.mindMapDocumentSummary.emptyUrl': '入力してください网ページ链接',
-  'canvas.mindMapDocumentSummary.invalidDocType': 'Word (.docx) と PDF ファイルのみをサポートします',
+  'canvas.mindMapDocumentSummary.invalidDocType':
+    'Word (.docx) と PDF ファイルのみをサポートします',
   'canvas.mindMapDocumentSummary.invalidImageType': 'JPG および PNG 画像のみをサポートします',
-  'canvas.mindMapDocumentSummary.docTooLarge': '文書过大，アップロードしてください 20MB 以内的ファイル',
-  'canvas.mindMapDocumentSummary.pasteTooLong': 'Pasted text exceeds the model input limit (about 900,000 文字). Please shorten it.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Extracted text exceeds the model input limit (~900,000 文字 / qwen3.6-flash 991K トークン). Please use a shorter document.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'This file’s text is too long for the model. Please upload a shorter document (under ~900,000 文字 of text).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared': '保存しました的提取コンテンツ缺失或与存储不同步，已自动清除。请重新アップロード或粘贴文書。',
-  'canvas.mindMapDocumentSummary.contentFiltered': 'コンテンツはセキュリティ レビューに合格しませんでした。テキストを変更して再試行してください。',
+  'canvas.mindMapDocumentSummary.docTooLarge':
+    '文書过大，アップロードしてください 20MB 以内的ファイル',
+  'canvas.mindMapDocumentSummary.pasteTooLong':
+    'Pasted text exceeds the model input limit (about 900,000 文字). Please shorten it.',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel':
+    'Extracted text exceeds the model input limit (~900,000 文字 / qwen3.6-flash 991K トークン). Please use a shorter document.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel':
+    'This file’s text is too long for the model. Please upload a shorter document (under ~900,000 文字 of text).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared':
+    '保存しました的提取コンテンツ缺失或与存储不同步，已自动清除。请重新アップロード或粘贴文書。',
+  'canvas.mindMapDocumentSummary.contentFiltered':
+    'コンテンツはセキュリティ レビューに合格しませんでした。テキストを変更して再試行してください。',
   'canvas.mindMapSideToolbar.learningSheet': '学習シート',
   'canvas.mobile.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
@@ -989,9 +1109,11 @@ export default {
   'canvas.mindClassroom.lead': 'このマインドマップを中心にAI先生に話しかけてもらいましょう',
   'canvas.mindClassroom.mascotBubble': '思考の講堂がここにある！',
   'canvas.mindClassroom.mascotDismiss': '底に押し込みます',
-  'canvas.mindClassroom.audienceLine': '現在の視聴者: {level} (下から [プロフェッショナルなコンテンツ])',
+  'canvas.mindClassroom.audienceLine':
+    '現在の視聴者: {level} (下から [プロフェッショナルなコンテンツ])',
   'canvas.mindClassroom.start': '説明を始める',
-  'canvas.mindClassroom.startPreview': 'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
+  'canvas.mindClassroom.startPreview':
+    'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
   'canvas.mindClassroom.queue.queued': 'すでにチュートリアルのキューに参加しています…',
   'canvas.mindClassroom.queue.planning': '講義ノート/指導計画を作成しています...',
   'canvas.mindClassroom.queue.transcriptBranch': 'ブランチ {name} のレッスン計画を作成しています',
@@ -1004,8 +1126,10 @@ export default {
   'canvas.mindClassroom.queue.failed': '準備の失敗を説明する',
   'canvas.mindClassroom.queue.cancel': 'キューをキャンセルする',
   'canvas.mindClassroom.queue.restart': 'Restart',
-  'canvas.mindClassroom.queue.restartHint': 'Regenerate the script / lesson plan with the current settings',
-  'canvas.mindClassroom.queue.guestHint': '訪問者は説明にローカルのテンプレートを使用します。ログイン後、エンジンは講義ノート/指導計画を生成します。',
+  'canvas.mindClassroom.queue.restartHint':
+    'Regenerate the script / lesson plan with the current settings',
+  'canvas.mindClassroom.queue.guestHint':
+    '訪問者は説明にローカルのテンプレートを使用します。ログイン後、エンジンは講義ノート/指導計画を生成します。',
   'canvas.mindClassroom.queue.loginRequired': '説明を始める前に、まずログインしてください。',
   'canvas.mindClassroom.queue.preparing': '説明の準備をしています...',
   'canvas.mindClassroom.settings.masteryTitle': '私はこの写真にどれほど慣れていますか',
@@ -1014,15 +1138,20 @@ export default {
   'canvas.mindClassroom.settings.mastery.teach.title': '授業の準備と指導',
   'canvas.mindClassroom.settings.presentationTitle': '説明をどのように表示してほしいか',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'キャンバス音声ツアー',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'マップ キャンバス上の音声説明に注目して、メイン ブランチまたはノードごとに選択します。',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    'マップ キャンバス上の音声説明に注目して、メイン ブランチまたはノードごとに選択します。',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'スライド説明',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'AI がスライドを生成し、左側に比較用の地図、右側にページめくりの説明が表示されます。',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': '開発中、近日中にオンラインになる予定',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    'AI がスライドを生成し、左側に比較用の地図、右側にページめくりの説明が表示されます。',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
+    '開発中、近日中にオンラインになる予定',
   'canvas.mindClassroom.settings.tourScopeTitle': 'ツアーの粒度',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'マスターブランチによる',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc': '最初のレベルの分岐はステップバイステップで教えられ、リズムがより安定します。',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
+    '最初のレベルの分岐はステップバイステップで教えられ、リズムがより安定します。',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'ノードごと',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'すべてのノードを深く掘り下げて、集中的に読むのに適しています。',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc':
+    'すべてのノードを深く掘り下げて、集中的に読むのに適しています。',
   'canvas.mindClassroom.settings.slideStyleTitle': 'スライドショースタイル',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'ユニバーサルスライド',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': '黒板レポート',
@@ -1040,10 +1169,12 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': '精読',
   'canvas.mindClassroom.settings.tone.examples': '豊富な例',
   'canvas.mindClassroom.settings.tone.exam_outline': '試験概要',
-  'canvas.mindClassroom.lecture.needDiagram': '説明を始める前に、キャンバス上にマインドマップを作成してください。',
+  'canvas.mindClassroom.lecture.needDiagram':
+    '説明を始める前に、キャンバス上にマインドマップを作成してください。',
   'canvas.mindClassroom.lecture.emptySteps': '現在のマップには説明するノードはありません。',
   'canvas.mindClassroom.lecture.cancelled': 'チュートリアルのキューがキャンセルされました。',
-  'canvas.mindClassroom.lecture.queueFailed': 'チュートリアルの準備に失敗しました。後でもう一度お試しください。',
+  'canvas.mindClassroom.lecture.queueFailed':
+    'チュートリアルの準備に失敗しました。後でもう一度お試しください。',
   'canvas.mindClassroom.lecture.pause': '一時停止',
   'canvas.mindClassroom.lecture.resume': '続く',
   'canvas.mindClassroom.lecture.prev': '前のセクション',
@@ -1053,28 +1184,48 @@ export default {
   'canvas.mindClassroom.lecture.unmute': '音読を始める',
   'canvas.mindClassroom.lecture.script.noBranches': 'いくつかのポイント',
   'canvas.mindClassroom.lecture.script.leafNode': 'このブランチに関する詳細はまだありません。',
-  'canvas.mindClassroom.lecture.script.overview.classroom': 'こんにちは、クラスメートの皆さん。 今日は「{topic}」を中心に学び、「{audience}」の観客と向き合い、「{mastery}」のペースで展開していきます。 全体像には主に {branches} が含まれます。 まずは全体像を見て、それから一つ一つ整理していきます。',
-  'canvas.mindClassroom.lecture.script.overview.story': 'まず、「{topic}」をストーリーのタイトルとして考えてください。 「{audience}」に直面して、全体像から詳細に進みます。物語にはこれらの章があります-{branches}。',
-  'canvas.mindClassroom.lecture.script.overview.dialogue': 'まずは「{topic}」を一緒に見ていきましょう。 あなたが「{audience}」だったら、どの部分に最初に気づきますか?全体像には大まかに次のものが含まれます: {branches}。 私たちは質問をしたり、質問に答えたりしました。',
-  'canvas.mindClassroom.lecture.script.overview.socratic': 'まだ結論を急いで暗記しないでください。 「{topic}」に直面して、なぜ絵を描く価値があると思いますか? 「{mastery}」の深さをたどり、{branches} というブランチから質問します。',
-  'canvas.mindClassroom.lecture.script.overview.fast': '「{topic}」({audience}) をざっと見てみましょう。 トランク: {branches}。 次に、一つずつポイントに到達します。',
-  'canvas.mindClassroom.lecture.script.overview.close_read': '精読オープニング：テーマは「{topic}」。 まず全体の構造を把握してください - {branches} - それから各ブランチで注意深く読んでください。 視聴者設定: {audience}。',
-  'canvas.mindClassroom.lecture.script.overview.examples': '例から始めましょう。 テーマ「{topic}」は、生活や教室のワンシーンとして考えることができます。全体像の分岐はさまざまなシーンのようなものです: {branches}。 聴衆: {audience}。',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'テスト ポイントの概要:「{topic}」。 概要に従って要点を記録します——{branches}。 難易度は「{audience}」、リズムは「{mastery}」に揃えられています。',
-  'canvas.mindClassroom.lecture.script.branch.classroom': 'ブランチ {index}/{total}: 「{title}」を見てください。 その下にも: {children} があります。 全体におけるこのセクションの役割を理解するには、地図の位置を参照してください。',
-  'canvas.mindClassroom.lecture.script.branch.story': 'ストーリーは{index}「{title}」章まで進みます。 この章に登場: {children}。 絵全体のプロットをどのように進めていくかを考えてみましょう。',
-  'canvas.mindClassroom.lecture.script.branch.dialogue': '質問させてください。 「{title}」というと何を思い浮かべますか?図では、{children} が示されています。 ({index}/{total}) を比較してみましょう。',
-  'canvas.mindClassroom.lecture.script.branch.socratic': 'フォローアップの質問: 「{title}」を別のブランチにする必要があるのはなぜですか?サブポイント「{children}」との関係は何ですか?まず自分で答えてから、地図 ({index}/{total}) を参照してください。',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    'こんにちは、クラスメートの皆さん。 今日は「{topic}」を中心に学び、「{audience}」の観客と向き合い、「{mastery}」のペースで展開していきます。 全体像には主に {branches} が含まれます。 まずは全体像を見て、それから一つ一つ整理していきます。',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    'まず、「{topic}」をストーリーのタイトルとして考えてください。 「{audience}」に直面して、全体像から詳細に進みます。物語にはこれらの章があります-{branches}。',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    'まずは「{topic}」を一緒に見ていきましょう。 あなたが「{audience}」だったら、どの部分に最初に気づきますか?全体像には大まかに次のものが含まれます: {branches}。 私たちは質問をしたり、質問に答えたりしました。',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    'まだ結論を急いで暗記しないでください。 「{topic}」に直面して、なぜ絵を描く価値があると思いますか? 「{mastery}」の深さをたどり、{branches} というブランチから質問します。',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    '「{topic}」({audience}) をざっと見てみましょう。 トランク: {branches}。 次に、一つずつポイントに到達します。',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    '精読オープニング：テーマは「{topic}」。 まず全体の構造を把握してください - {branches} - それから各ブランチで注意深く読んでください。 視聴者設定: {audience}。',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    '例から始めましょう。 テーマ「{topic}」は、生活や教室のワンシーンとして考えることができます。全体像の分岐はさまざまなシーンのようなものです: {branches}。 聴衆: {audience}。',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    'テスト ポイントの概要:「{topic}」。 概要に従って要点を記録します——{branches}。 難易度は「{audience}」、リズムは「{mastery}」に揃えられています。',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    'ブランチ {index}/{total}: 「{title}」を見てください。 その下にも: {children} があります。 全体におけるこのセクションの役割を理解するには、地図の位置を参照してください。',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    'ストーリーは{index}「{title}」章まで進みます。 この章に登場: {children}。 絵全体のプロットをどのように進めていくかを考えてみましょう。',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    '質問させてください。 「{title}」というと何を思い浮かべますか?図では、{children} が示されています。 ({index}/{total}) を比較してみましょう。',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    'フォローアップの質問: 「{title}」を別のブランチにする必要があるのはなぜですか?サブポイント「{children}」との関係は何ですか?まず自分で答えてから、地図 ({index}/{total}) を参照してください。',
   'canvas.mindClassroom.lecture.script.branch.fast': '「{title}」→{children}。 ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read': '「{title}」を集中的に読んでください。 下位情報を 1 つずつ読んでください: {children}。 この分岐は段落 {index}/{total} にあります。言葉遣いとレベルに注意してください。',
-  'canvas.mindClassroom.lecture.script.branch.examples': '「{title}」を理解するのに役立つ例を挙げてください。これは、{children} が含まれる特定のシーンと考えることができます。 私たちはブランチ {index}/{total} にいます。',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'テスト ポイント {index}/{total}: "{title}"。 従属ポイント: {children}。 復習するときは、まずタイトルを覚えてから詳細を記入してください。',
-  'canvas.mindClassroom.lecture.script.closing.first_look': '総評：「{topic}」の骨格が見えてきたところです。 画像全体を再度スキャンし、まだよく分からない 2 つまたは 3 つの点にマークを付けて、次回はそこから始めることをお勧めします。',
-  'canvas.mindClassroom.lecture.script.closing.review': 'レビューの結論: 本「{topic}」を閉じて要点をもう一度話してもらえますか? 1 つのセクションが行き詰まった場合は、マップ上のそのセクションに戻って再度確認してください。',
-  'canvas.mindClassroom.lecture.script.closing.teach': 'レッスンの準備と終了: 「{topic}」を「{audience}」に教えるときは、マップの開始 - 展開 - 終了の順序に従うことができます。 特定のブランチをクラスの質問に分割することもできます。',
-  'canvas.mindMapSideToolbar.oneSentenceIntro': '用一句话説明トピック或修改要件，智能生成并调整マインドマップ',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    '「{title}」を集中的に読んでください。 下位情報を 1 つずつ読んでください: {children}。 この分岐は段落 {index}/{total} にあります。言葉遣いとレベルに注意してください。',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    '「{title}」を理解するのに役立つ例を挙げてください。これは、{children} が含まれる特定のシーンと考えることができます。 私たちはブランチ {index}/{total} にいます。',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    'テスト ポイント {index}/{total}: "{title}"。 従属ポイント: {children}。 復習するときは、まずタイトルを覚えてから詳細を記入してください。',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    '総評：「{topic}」の骨格が見えてきたところです。 画像全体を再度スキャンし、まだよく分からない 2 つまたは 3 つの点にマークを付けて、次回はそこから始めることをお勧めします。',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    'レビューの結論: 本「{topic}」を閉じて要点をもう一度話してもらえますか? 1 つのセクションが行き詰まった場合は、マップ上のそのセクションに戻って再度確認してください。',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    'レッスンの準備と終了: 「{topic}」を「{audience}」に教えるときは、マップの開始 - 展開 - 終了の順序に従うことができます。 特定のブランチをクラスの質問に分割することもできます。',
+  'canvas.mindMapSideToolbar.oneSentenceIntro':
+    '用一句话説明トピック或修改要件，智能生成并调整マインドマップ',
   'canvas.mindMapSideToolbar.documentSummary': 'ドキュメント要約',
-  'fileCenter.intro': 'A package is a curated set of sources for this diagram. 追加 files, notes, or web ページ — the diagram completes its branches from these sources.',
+  'fileCenter.intro':
+    'A package is a curated set of sources for this diagram. 追加 files, notes, or web ページ — the diagram completes its branches from these sources.',
   'fileCenter.defaultPackageName': '名前のないデータ パッケージ',
   'fileCenter.packageNameLabel': 'パッケージ名',
   'fileCenter.createPackage': '作成 package',
@@ -1091,7 +1242,8 @@ export default {
   'fileCenter.pastePlaceholder': 'メモまたはテキストをソースとして貼り付けます…',
   'fileCenter.webUrlPlaceholder': 'https://example.com/article',
   'fileCenter.webContentPlaceholder': '粘贴或输入网ページ正文作为来源…',
-  'fileCenter.saveDiagramForRag': '保存 this diagram to link the package and enable full RAG retrieval.',
+  'fileCenter.saveDiagramForRag':
+    '保存 this diagram to link the package and enable full RAG retrieval.',
   'fileCenter.statusReady': '已就绪 · RAG 有効です',
   'fileCenter.statusPending': '追加しました',
   'fileCenter.statusIndexing': '索引中…',
@@ -1109,9 +1261,12 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': 'まだありませんノードコンテンツ',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI 生成',
   'canvas.mindMapSideToolbar.outlineEditHint': '双击ノード文字可以直接实时修改噢',
-  'canvas.mindMapSideToolbar.outlineIntro': '編集 structure in the outline — drag to reorder, paste lines to bulk-add',
-  'canvas.mindMapSideToolbar.outlineDragHint': '拖拽调整顺序；放到ノード上方/下方为同级换位，放到中间为子ノード',
-  'canvas.mindMapSideToolbar.outlinePasteHint': '選択 a node and paste multi-line text to add sibling nodes in bulk',
+  'canvas.mindMapSideToolbar.outlineIntro':
+    '編集 structure in the outline — drag to reorder, paste lines to bulk-add',
+  'canvas.mindMapSideToolbar.outlineDragHint':
+    '拖拽调整顺序；放到ノード上方/下方为同级换位，放到中间为子ノード',
+  'canvas.mindMapSideToolbar.outlinePasteHint':
+    '選択 a node and paste multi-line text to add sibling nodes in bulk',
   'canvas.mindMapPaste.inserted': '已插入 {count} 個同级ノード',
   'canvas.mindMapPaste.truncated': '制限を超えました。最初の 50 行のみが挿入されました',
   'canvas.mindMapSideToolbar.realtimeSync': 'リアルタイム同期',
@@ -1121,27 +1276,34 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': '削除ブランチ',
   'canvas.mindMapSideToolbar.expandBranch': '展開ブランチ',
   'canvas.mindMapSideToolbar.collapseBranch': '折りたたむブランチ',
-  'canvas.mindMapSideToolbar.aiGenerateDesc': 'Expand the mind map from the current topic in one sentence。',
+  'canvas.mindMapSideToolbar.aiGenerateDesc':
+    'Expand the mind map from the current topic in one sentence。',
   'canvas.mindMapSideToolbar.enterLearningSheet': '中空括弧の図を開く',
   'canvas.mindMapSideToolbar.exitLearningSheet': '中抜き括弧図を終了します',
   'canvas.mindMapSideToolbar.restoreFullDiagram': '復元 full diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
     'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro': 'Choose how to create a learning sheet for practice and review。',
+  'canvas.mindMapSideToolbar.learningSheetIntro':
+    'Choose how to create a learning sheet for practice and review。',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
   'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
     'Blank every node except the center topic; reference answers appear below the diagram.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'ランダムに空白のままにする',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc': '系统自动随机挖空约 20% 的ノード，参考答案表示在図下方。',
-  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '已挖空 {count} 個ノード · Esc 折りたたむ',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
+    '系统自动随机挖空约 20% 的ノード，参考答案表示在図下方。',
+  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint':
+    '已挖空 {count} 個ノード · Esc 折りたたむ',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'カスタム挖空',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'Cursor becomes a hammer — click nodes to blank; click again to restore。',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
+    'Cursor becomes a hammer — click nodes to blank; click again to restore。',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': '有効 · {count} node(s) blanked',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': '挖空模式中 · 请在キャンバス上点击ノード',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
+    '挖空模式中 · 请在キャンバス上点击ノード',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'カスタム挖空模式',
-  'canvas.mindMapSideToolbar.learningSheetPickHint': '点击ノード挖空，再回点击恢复 · 已挖空 {count} 個 · Esc 退出',
+  'canvas.mindMapSideToolbar.learningSheetPickHint':
+    '点击ノード挖空，再回点击恢复 · 已挖空 {count} 個 · Esc 退出',
   'canvas.mindMapSideToolbar.learningSheetPickDone': '完了',
   'canvas.mindMapSideToolbar.learningSheetProtectedNode': '中心ノード与结构ノード不能挖空',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': '挖空ノード',
@@ -1149,7 +1311,8 @@ export default {
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': '恢复ノード文字',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': '参考回答を非表示にする',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': '参考回答を残しておく',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': '閉じると、ノックアウトエリアのキャンバスに答えが表示されません',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
+    '閉じると、ノックアウトエリアのキャンバスに答えが表示されません',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'キャンバス参考答案',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': '表示',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': '非表示',
@@ -1237,7 +1400,8 @@ export default {
   'editor.saveNeedsLogin': 'ログインして保存してください',
   'editor.saveWaitForGeneration': 'AI生成が完了するまで待ってから保存してください。',
   'editor.saveBlockedSubgraphPreview': '先に采纳或弃用 AI 子图プレビュー后再保存',
-  'editor.saveBlockedCollabActive': 'ライブコラボレーション中にコラボレーションセッションごとに変更を保存する',
+  'editor.saveBlockedCollabActive':
+    'ライブコラボレーション中にコラボレーションセッションごとに変更を保存する',
   'editor.saveBlockedCollabGuest': 'コラボレーション中に保存できるのはホストのみです',
   'editor.saveNothingToSave': 'まだありません可保存的コンテンツ',
   'editor.saveFailed': '保存に失敗しました，もう一度お試しください',
@@ -1287,7 +1451,8 @@ export default {
   'landing.diagramGrid.tree_map.title': '树形图',
   'landing.diagramGrid.voice_notes.desc': '録音してマインドマップ',
   'landing.diagramGrid.voice_notes.title': 'ボイスノート',
-  'landing.template.freePlaceholder': '説明トピック或结构要件，例如ブランチ、步骤、分类…或从下方选择図テンプレート',
+  'landing.template.freePlaceholder':
+    '説明トピック或结构要件，例如ブランチ、步骤、分类…或从下方选择図テンプレート',
   'landing.template.slot.criterion': '分类标准',
   'landing.template.slot.event': '事件',
   'landing.template.slot.itemA': '事物A',
@@ -1303,7 +1468,8 @@ export default {
   'discovery.gallery.item3.title': '1 変数の 2 次方程式を解く手順',
   'discovery.gallery.item4.title': '力と場の関係',
   'mindgraphLanding.cancel': 'キャンセル',
-  'mindgraphLanding.codeFormatInvalid': 'デモ コードの形式が正しくありません (xxx-xxx である必要があります)',
+  'mindgraphLanding.codeFormatInvalid':
+    'デモ コードの形式が正しくありません (xxx-xxx である必要があります)',
   'mindgraphLanding.codeIncomplete': '入力してください完整的演示代码',
   'mindgraphLanding.collaborate': '协同',
   'mindgraphLanding.dialogSchoolTitle': '校内コラボ',
@@ -1319,7 +1485,8 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': '読み込めません校内会話',
   'mindgraphLanding.networkError': 'ネットワークエラー',
   'mindgraphLanding.networkErrorJoin': 'ネットワークエラー，加入失敗',
-  'mindgraphLanding.orgSessionsEmpty': 'いいえ school sessions right now. A colleague must start “学校 collaboration” on the canvas.',
+  'mindgraphLanding.orgSessionsEmpty':
+    'いいえ school sessions right now. A colleague must start “学校 collaboration” on the canvas.',
   'mindgraphLanding.participantsOnline': '{n} 人オンライン',
   'mindgraphLanding.schoolCollab': '校内コラボ',
   'mindgraphLanding.sharedCodeHint': 'Enter the invitation code (xxx-xxx) to join their session。',
@@ -1332,6 +1499,7 @@ export default {
   'canvasPage.collabParticipantsAria': '共同編集 参加者',
   'canvasPage.collabConnected': '接続済み',
   'canvas.topBar.viewOnly': '仅查看',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': 'もっと見る',
   'canvas.ribbon.file': '書類',
   'canvas.ribbon.nodes': 'ノード',
@@ -1383,7 +1551,8 @@ export default {
   'canvas.ribbon.tip.numbering': 'マスターブランチ番号を表示または非表示にする',
   'canvas.ribbon.tip.insert': '関係線、集計、または数式を追加する',
   'canvas.ribbon.tip.topicGenerate': '中心的なテーマからマップ全体を生成する',
-  'canvas.ribbon.tip.docGenerate': 'ファイルをアップロードするかテキストを貼り付けて地図を生成します',
+  'canvas.ribbon.tip.docGenerate':
+    'ファイルをアップロードするかテキストを貼り付けて地図を生成します',
   'canvas.ribbon.tip.webGenerate': 'Webページをクロールして地図を生成する',
   'canvas.ribbon.tip.voiceSummary': '記録後にマップを生成',
   'canvas.ribbon.tip.waterfall': '選択したノードの推奨ブランチ - キャンバスにドラッグできます',
@@ -1401,6 +1570,17 @@ export default {
   'canvas.ribbon.tip.collabOrg': '学校の同僚を招待して一緒に編集しましょう',
   'canvas.ribbon.tip.collabCross': '学校間で協力してこのマップを編集します',
   'canvas.ribbon.tip.collabOff': '現在のコラボレーション セッションを終了する',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': '選択したノードのテキストを太字にします',
   'canvas.ribbon.tip.italic': '選択したノードのテキストを斜体に設定します',
   'canvas.ribbon.tip.alignLeft': 'ノードテキストを左揃えにする',
@@ -1452,12 +1632,14 @@ export default {
   'canvas.ribbon.docGenerate': 'ドキュメントの生成',
   'canvas.ribbon.webGenerate': 'Webリンクの生成',
   'canvas.ribbon.voiceSummary': '録音概要',
-  'canvas.ribbon.sourceLocked': '現在のマップはソースとして {source} を使用しています。 別の生成方法に変更する前に、新しいマップを作成してください。',
+  'canvas.ribbon.sourceLocked':
+    '現在のマップはソースとして {source} を使用しています。 別の生成方法に変更する前に、新しいマップを作成してください。',
   'canvas.ribbon.sourceKind.doc': '書類',
   'canvas.ribbon.sourceKind.web': 'ウェブリンク',
   'canvas.ribbon.sourceKind.voice': '録音',
   'canvas.ribbon.assocLine': '関連ライン',
-  'canvas.ribbon.assocLineHint': '別のノードをクリックして接続します。 キャンセルするには Esc または空白のキャンバスを押します。',
+  'canvas.ribbon.assocLineHint':
+    '別のノードをクリックして接続します。 キャンセルするには Esc または空白のキャンバスを押します。',
   'canvas.ribbon.assocLineSameSide': '関連線は同じ側のノードのみを接続できます',
   'canvas.ribbon.assocLineDelete': '関連する行を削除する',
   'canvas.ribbon.summary': 'まとめ',
@@ -1477,7 +1659,8 @@ export default {
   'canvas.ribbon.imageUrl': '画像アドレス',
   'canvas.ribbon.imagePick': '画像を選択',
   'canvas.ribbon.imageInvalid': '有効な画像アドレスを入力するか、ファイルを選択してください',
-  'canvas.ribbon.imageTooLarge': '画像が大きすぎます。小さいファイルに変更するか、URL を使用してください。',
+  'canvas.ribbon.imageTooLarge':
+    '画像が大きすぎます。小さいファイルに変更するか、URL を使用してください。',
   'canvas.ribbon.imageConfirm': '画像を追加',
   'canvas.ribbon.clearIcon': 'アイコンを削除',
   'canvas.ribbon.openLink': 'リンクを開く',
@@ -1500,27 +1683,32 @@ export default {
   'canvas.ribbon.aiHero.chat.line2': 'ワンクリックで会話をインポートし、マップを生成します',
   'canvas.ribbon.aiHero.classroom.ribbon': '学習成果物',
   'canvas.ribbon.aiHero.classroom.title': '思考講堂を開く',
-  'canvas.ribbon.aiHero.classroom.line1': 'このマインドマップを中心にAI先生に話しかけてもらいましょう',
+  'canvas.ribbon.aiHero.classroom.line1':
+    'このマインドマップを中心にAI先生に話しかけてもらいましょう',
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'ブラケットをくり抜きます',
   'canvas.ribbon.aiHero.learningSheet.title': '中抜き括弧の図',
-  'canvas.ribbon.aiHero.learningSheet.line1': '教室での練習や復習に適した、ランダムまたはカスタマイズされたくり抜きを選択します',
+  'canvas.ribbon.aiHero.learningSheet.line1':
+    '教室での練習や復習に適した、ランダムまたはカスタマイズされたくり抜きを選択します',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'ブレーンストーミング',
   'canvas.ribbon.aiHero.brainstorm.title': 'AI ブレインストーミング',
   'canvas.ribbon.aiHero.brainstorm.line1': '分岐候補を生成するノードを選択してください',
-  'canvas.ribbon.aiHero.brainstorm.line2': 'チェックを入れて地図に適用するか、キャンバスにドラッグします。',
+  'canvas.ribbon.aiHero.brainstorm.line2':
+    'チェックを入れて地図に適用するか、キャンバスにドラッグします。',
   'canvas.ribbon.aiHero.oneSentence.ribbon': 'ダイアログを変更する',
   'canvas.ribbon.aiHero.oneSentence.title': '会話の修正',
   'canvas.ribbon.aiHero.oneSentence.line1': 'トピックまたは修正リクエストを一文で説明してください',
   'canvas.ribbon.aiHero.oneSentence.line2': 'マップをインテリジェントに生成および調整する',
   'canvas.ribbon.aiHero.link.ribbon': '入れる',
   'canvas.ribbon.aiHero.link.title': 'リンクを追加',
-  'canvas.ribbon.aiHero.link.line1': 'ノードの表示名、完全なアドレスはリンク アイコンに表示されません。',
+  'canvas.ribbon.aiHero.link.line1':
+    'ノードの表示名、完全なアドレスはリンク アイコンに表示されません。',
   'canvas.ribbon.aiHero.link.line2': '',
   'canvas.hero.image.ribbon': '入れる',
   'canvas.hero.image.title': '画像を追加',
-  'canvas.hero.image.line1': '画像アドレスを貼り付けるか、ローカル コンピューターからファイルを選択します',
+  'canvas.hero.image.line1':
+    '画像アドレスを貼り付けるか、ローカル コンピューターからファイルを選択します',
   'canvas.hero.image.line2': '',
   'canvas.hero.icon.ribbon': '入れる',
   'canvas.hero.icon.title': 'アイコンを追加',
@@ -1528,15 +1716,18 @@ export default {
   'canvas.hero.icon.line2': '',
   'canvas.hero.math.ribbon': '入れる',
   'canvas.hero.math.title': '数式を挿入',
-  'canvas.hero.math.line1': '数式キーボードを使用して LaTeX を入力し、確認後にノードを書き込みます。',
+  'canvas.hero.math.line1':
+    '数式キーボードを使用して LaTeX を入力し、確認後にノードを書き込みます。',
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': '協力',
   'canvas.hero.collab.title': 'オンラインコラボレーション',
-  'canvas.hero.collab.line1': '学校内または招待コードによるコラボレーションを有効にして、同僚を招待して一緒に写真を変更できるようにします',
+  'canvas.hero.collab.line1':
+    '学校内または招待コードによるコラボレーションを有効にして、同僚を招待して一緒に写真を変更できるようにします',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': '輸出',
   'canvas.hero.worksheet.title': 'DOC/PDF にエクスポート',
-  'canvas.hero.worksheet.line1': 'スタディシートのヘッダーと用紙オプションを設定し、プレビューしてエクスポートします',
+  'canvas.hero.worksheet.line1':
+    'スタディシートのヘッダーと用紙オプションを設定し、プレビューしてエクスポートします',
   'canvas.hero.worksheet.line2': '',
   'canvas.hero.communityExport.ribbon': '共有',
   'canvas.hero.communityExport.title': 'コミュニティに共有する',
@@ -1547,6 +1738,4 @@ export default {
   'canvas.hero.slotFull.title': 'ギャラリーがいっぱいです',
   'canvas.hero.slotFull.line1': '既存のアイコンを削除し、現在のアイコンを保存してください',
   'canvas.hero.slotFull.line2': '',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
-  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

@@ -158,10 +158,7 @@ function scriptsStillWriting(
   return status === 'generating'
 }
 
-function waitingForVoice(options: {
-  hasPrepared?: boolean
-  voiceWarmup?: string | null
-}): boolean {
+function waitingForVoice(options: { hasPrepared?: boolean; voiceWarmup?: string | null }): boolean {
   return options.hasPrepared === true && options.voiceWarmup === 'loading'
 }
 

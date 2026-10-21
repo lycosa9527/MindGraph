@@ -5,7 +5,8 @@
 import { INTERFACE_LANGUAGE_PICKER_CODES } from '../src/i18n/locales.ts'
 
 export const I18N_SOURCE_MARKER = 'SOURCE — author new keys here in Simplified Chinese first.'
-export const I18N_ZHTW_MARKER = 'SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.'
+export const I18N_ZHTW_MARKER =
+  'SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.'
 export const I18N_FILL_MARKER =
   'FILL — English of zh. Copy into other locales only for keys that do not exist yet.'
 export const I18N_TRANSLATED_MARKER =
