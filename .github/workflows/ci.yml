@@ -58,7 +58,8 @@ jobs:
             tests/test_workshop_collab_backend.py tests/test_online_collab_partial_jsonb.py \
             tests/test_generate_graph_stream_collab.py tests/test_collab_palette_sync.py \
             tests/test_workshop_editor_redis_merge.py tests/test_ws_fanout.py \
-            tests/test_mindmate_collab_library_archive.py tests/test_mindmate_notify_presence.py \
+            tests/test_mindmate_collab_library_archive.py tests/test_mindmate_collab_group_members.py \
+            tests/test_mindmate_notify_presence.py \
             tests/test_collab_synthetic_probe.py tests/test_workshop_join_resume_tokens.py \
             tests/test_organization_mindmate_avatar.py tests/test_org_subscription.py \
             tests/test_school_tier.py \

@@ -34,14 +34,16 @@ const suggestionBubblesVue = readFileSync(
 )
 
 describe('mindmate welcome layout', () => {
-  it('centers the welcome cluster without size containment', () => {
+  it('keeps the seminar welcome card in the upper middle of the stage', () => {
     expect(welcomeLayoutCss).toContain('.mindmate-stage--welcome')
     expect(welcomeLayoutCss).toContain('container-type: inline-size')
     expect(welcomeLayoutCss).not.toContain('container-type: size')
-    expect(welcomeLayoutCss).toContain('--mm-avatar: clamp(')
-    expect(welcomeLayoutCss).toContain('12dvh')
-    expect(welcomeLayoutCss).toContain('.mindmate-stage--welcome::before')
-    expect(welcomeLayoutCss).toContain('.mindmate-stage--welcome::after')
+    expect(welcomeLayoutCss).toContain('--mm-avatar: 96px')
+    expect(welcomeLayoutCss).toContain('--mm-title: 1.75rem')
+    expect(welcomeLayoutCss).toContain('padding-top: clamp(48px, 12vh, 120px)')
+    expect(welcomeLayoutCss).toContain('height: 148px')
+    expect(welcomeLayoutCss).toContain('.input-area-fullpage::before')
+    expect(welcomeLayoutCss).not.toContain('.mindmate-stage--welcome::before')
   })
 
   it('does not pin the fullpage welcome block with fixed 140px / 50vh offsets', () => {
@@ -82,7 +84,7 @@ describe('mindmate layout budget across common resolutions', () => {
     '$name ($width×$height) keeps welcome cluster, composer, and account row on screen',
     ({ width, height }) => {
       const { stageWidth, stageHeight } = mindmateStageSize(width, height)
-      const cluster = welcomeClusterHeight(height, stageHeight)
+      const cluster = welcomeClusterHeight(height)
       const composer = welcomeComposerWidth(stageWidth)
 
       expect(stageHeight).toBeGreaterThan(0)

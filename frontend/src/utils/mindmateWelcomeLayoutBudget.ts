@@ -44,13 +44,15 @@ export function mindmateStageSize(
   }
 }
 
-export function welcomeClusterHeight(viewportHeight: number, stageHeight: number): number {
-  const avatar = viewportHeight <= 700 ? 64 : clamp(64, stageHeight * 0.14, 128)
-  const titleBlock = 72
-  const suggest = viewportHeight <= 700 ? 108 : clamp(108, stageHeight * 0.18, 140)
-  const input = 88
-  const gaps = clamp(20, viewportHeight * 0.05, 64)
-  return avatar + titleBlock + suggest + input + gaps
+export function welcomeClusterHeight(viewportHeight: number): number {
+  const avatar = viewportHeight <= 700 ? 64 : 96
+  const padTop = clamp(48, viewportHeight * 0.12, 120)
+  const gap = clamp(16, viewportHeight * 0.028, 32)
+  const modeRow = 74
+  const input = 160
+  const suggestGap = clamp(10, viewportHeight * 0.02, 22)
+  const suggest = viewportHeight <= 700 ? 88 : 96
+  return padTop + avatar + gap + modeRow + input + suggestGap + suggest
 }
 
 export function welcomeComposerWidth(stageWidth: number): number {
@@ -64,7 +66,7 @@ export function sidebarAccountFits(viewportHeight: number): boolean {
 
 export function welcomeFitsViewport(width: number, height: number): boolean {
   const { stageWidth, stageHeight } = mindmateStageSize(width, height)
-  const cluster = welcomeClusterHeight(height, stageHeight)
+  const cluster = welcomeClusterHeight(height)
   const composer = welcomeComposerWidth(stageWidth)
   return (
     stageHeight >= cluster &&

@@ -147,6 +147,7 @@ run_backend() {
     tests/test_workshop_editor_redis_merge.py \
     tests/test_ws_fanout.py \
     tests/test_mindmate_collab_library_archive.py \
+    tests/test_mindmate_collab_group_members.py \
     tests/test_mindmate_notify_presence.py \
     tests/test_collab_synthetic_probe.py \
     tests/test_workshop_join_resume_tokens.py \

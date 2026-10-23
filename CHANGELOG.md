@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.183] - 2026-10-23
+
+> **The MindMate home uses the seminar welcome card again.**
+
+### Fixed
+
+- **MindMate home** — The greeting, the mode switch, and the composer sit in the upper middle of the stage. The composer is the rounded card with the soft color wash. Suggestion chips stay under the card and keep a height limit.
+- **Pending seminar invite** — The invite list starts from the membership row, so the host and school joins compile.
+
+### Tests
+
+- [`frontend/tests/mindmateWelcomeLayout.spec.ts`](frontend/tests/mindmateWelcomeLayout.spec.ts)
+- [`tests/test_mindmate_collab_group_members.py`](tests/test_mindmate_collab_group_members.py)
+
 ## [5.180.182] - 2026-10-23
 
 > **A saved seminar can be deleted, and a teacher who accepted a cross-school invite can use the shelf.**

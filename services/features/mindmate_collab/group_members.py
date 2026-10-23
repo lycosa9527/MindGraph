@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from typing import Mapping, Sequence
 
 from sqlalchemy import delete, select
+from sqlalchemy.sql import Select
 
 from models.domain.auth import Organization, User
 from models.domain.mindmate_collab import MindmateCollabMember, MindmateCollabSession
@@ -343,34 +344,43 @@ async def remove_group_member(session_id: str, user_id: int) -> bool:
         return result_rowcount(result) > 0
 
 
+def pending_seminar_invites_statement(user_id: int) -> Select:
+    """Pending invites for one teacher, joined from the membership row.
+
+    The selected session, owner, and school tables can each join the others.
+    SQLAlchemy needs the membership table as the explicit FROM.
+    """
+    return (
+        select(
+            MindmateCollabSession.id,
+            MindmateCollabSession.title,
+            MindmateCollabSession.visibility,
+            MindmateCollabSession.brief_topic,
+            MindmateCollabSession.owner_user_id,
+            User.name,
+            Organization.display_name,
+            Organization.name,
+        )
+        .select_from(MindmateCollabMember)
+        .join(
+            MindmateCollabSession,
+            MindmateCollabSession.id == MindmateCollabMember.session_id,
+        )
+        .join(User, User.id == MindmateCollabSession.owner_user_id)
+        .outerjoin(Organization, Organization.id == MindmateCollabSession.organization_id)
+        .where(
+            MindmateCollabMember.user_id == int(user_id),
+            MindmateCollabMember.accepted.is_(False),
+            MindmateCollabSession.ended_at.is_(None),
+        )
+        .order_by(MindmateCollabMember.joined_at.asc())
+    )
+
+
 async def list_pending_seminar_invites(user_id: int) -> list[dict[str, str | int]]:
     """Basic seminar info for invites this teacher has not answered."""
     async with system_rls_session() as db:
-        rows = (
-            await db.execute(
-                select(
-                    MindmateCollabSession.id,
-                    MindmateCollabSession.title,
-                    MindmateCollabSession.visibility,
-                    MindmateCollabSession.brief_topic,
-                    MindmateCollabSession.owner_user_id,
-                    User.name,
-                    Organization.display_name,
-                    Organization.name,
-                )
-                .join(
-                    MindmateCollabSession,
-                    MindmateCollabSession.id == MindmateCollabMember.session_id,
-                )
-                .join(User, User.id == MindmateCollabSession.owner_user_id)
-                .outerjoin(Organization, Organization.id == MindmateCollabSession.organization_id)
-                .where(
-                    MindmateCollabMember.user_id == int(user_id),
-                    MindmateCollabMember.accepted.is_(False),
-                    MindmateCollabSession.ended_at.is_(None),
-                )
-            )
-        ).all()
+        rows = (await db.execute(pending_seminar_invites_statement(user_id))).all()
     invites: list[dict[str, str | int]] = []
     for session_id, title, visibility, topic, owner_id, owner_name, org_display, org_name in rows:
         invites.append(
