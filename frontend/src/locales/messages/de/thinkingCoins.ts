@@ -21,13 +21,15 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.personalTab': 'Persönlich',
   'thinkingCoins.schoolTab': 'Schule',
   'thinkingCoins.insufficientTitle': 'Nicht genügend Tokens',
-  'thinkingCoins.insufficientBody': 'Erledigen Sie die Aufgaben unten oder versuchen Sie es später erneut',
+  'thinkingCoins.insufficientBody':
+    'Erledigen Sie die Aufgaben unten oder versuchen Sie es später erneut',
   'thinkingCoins.checkedInToday': 'Heute eingecheckt',
   'thinkingCoins.usageDoneToday': 'Heute abgeschlossen',
   'thinkingCoins.casePendingHint': 'Demnächst verfügbar',
   'thinkingCoins.schoolInfo': 'Wenden Sie sich an Ihren Schuladministrator für Schulpläne',
   'thinkingCoins.school.headline': 'KI-gestütztes Denken · Schul-Lösungen',
-  'thinkingCoins.school.description': 'Private Bereitstellung, individuelle Funktionen und vollständiger Betriebssupport für Schulen und Institutionen — ausgelegt für Skalierung, Branding und Datensicherheit.',
+  'thinkingCoins.school.description':
+    'Private Bereitstellung, individuelle Funktionen und vollständiger Betriebssupport für Schulen und Institutionen — ausgelegt für Skalierung, Branding und Datensicherheit.',
   'thinkingCoins.school.feature.accountManager': 'Persönlicher Ansprechpartner',
   'thinkingCoins.school.feature.accountManagerDesc': 'Individuelle Beratung',
   'thinkingCoins.school.feature.privateDeploy': 'Private Bereitstellung',
@@ -43,13 +45,16 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.fieldNote': 'Zusätzliche Hinweise (optional)',
   'thinkingCoins.school.submit': 'Anfrage senden',
   'thinkingCoins.school.submitSuccess': 'Gesendet — wir melden uns in Kürze bei Ihnen',
-  'thinkingCoins.school.submitFailed': 'Senden fehlgeschlagen — bitte versuchen Sie es später erneut',
-  'thinkingCoins.school.submitRateLimit': 'Zu viele Anfragen — bitte versuchen Sie es später erneut',
+  'thinkingCoins.school.submitFailed':
+    'Senden fehlgeschlagen — bitte versuchen Sie es später erneut',
+  'thinkingCoins.school.submitRateLimit':
+    'Zu viele Anfragen — bitte versuchen Sie es später erneut',
   'thinkingCoins.school.submitNotConfigured': 'Beratung vorübergehend nicht verfügbar',
   'thinkingCoins.school.validationRequired': 'Bitte füllen Sie alle Pflichtfelder aus',
   'thinkingCoins.school.validationPhone': 'Bitte geben Sie eine gültige Telefonnummer ein',
   'thinkingCoins.school.validationTooLong': 'Ein oder mehrere Felder sind zu lang',
-  'thinkingCoins.school.validationInvalid': 'Einige Felder sind ungültig — bitte prüfen Sie Ihre Eingaben',
+  'thinkingCoins.school.validationInvalid':
+    'Einige Felder sind ungültig — bitte prüfen Sie Ihre Eingaben',
   'thinkingCoins.tier.trial': 'Testversion',
   'thinkingCoins.tier.monthly': 'Monatlich',
   'thinkingCoins.tier.sub': 'Monatsabonnement',
@@ -63,7 +68,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Empfehlungsbelohnung',
   'thinkingCoins.reason.case_reward': 'Fallbelohnung',
   'thinkingCoins.reason.subscription_grant': 'Abonnement-Gutschrift',
-  'thinkingCoins.dailyExpiresHint': 'Anmeldeprämien sind am selben Tag gültig und werden um 24:00 Uhr zurückgesetzt',
+  'thinkingCoins.dailyExpiresHint':
+    'Anmeldeprämien sind am selben Tag gültig und werden um 24:00 Uhr zurückgesetzt',
   'thinkingCoins.dailyBalanceRemaining': 'Der heutige Check-in dauert noch {n}',
   'thinkingCoins.admin.tab': 'Thinking Tokens',
   'thinkingCoins.admin.tasksTitle': 'Verdien-Aufgaben',
@@ -75,7 +81,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'Speichern',
   'thinkingCoins.admin.signupGrant': 'Registrierungs-Gutschrift',
   'thinkingCoins.admin.dailyEarnCap': 'Tägliches Verdienstlimit',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = unbegrenzt; Standard 135 entspricht allen täglichen Aufgaben',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = unbegrenzt; Standard 135 entspricht allen täglichen Aufgaben',
   'thinkingCoins.admin.costMindmate': 'MindMate-Kosten',
   'thinkingCoins.admin.costDiagram': 'Diagramm-Generierungskosten',
   'thinkingCoins.admin.costCanvas': 'Canvas-Assistenz-Kosten',

@@ -1,4 +1,4 @@
-import { nextTick, onUnmounted, ref, watch, type Ref } from 'vue'
+import { type Ref, nextTick, onUnmounted, ref, watch } from 'vue'
 
 const TOOLBAR_GAP_PX = 10
 const VIEW_PAD_PX = 8
@@ -79,7 +79,7 @@ export function resolveFloatingToolbarAnchor(options: {
   const halfWidth = width / 2
   const minCenterX = containerBounds.left + pad + halfWidth
   const maxCenterX = containerBounds.right - pad - halfWidth
-  let left = centerX
+  let left: number
   if (minCenterX <= maxCenterX) {
     left = Math.min(Math.max(centerX, minCenterX), maxCenterX)
   } else {

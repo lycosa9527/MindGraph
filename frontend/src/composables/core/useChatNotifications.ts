@@ -115,12 +115,7 @@ export function useChatNotifications() {
   function dmSenderDisplayName(msg: DirectMessageItem): string {
     const conv = store.dmConversations.find((row) => row.partner_id === msg.sender_id)
     const directory = orgMemberById(store.orgMembers, msg.sender_id)
-    return resolveDmPersonName(
-      msg.sender_id,
-      msg.sender_name,
-      conv?.partner_name,
-      directory?.name
-    )
+    return resolveDmPersonName(msg.sender_id, msg.sender_name, conv?.partner_name, directory?.name)
   }
 
   function dmSenderAvatar(msg: DirectMessageItem): string | null {

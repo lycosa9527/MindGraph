@@ -5,12 +5,14 @@
 
 export default {
   'fileCenterLibrary.title': 'വിവര പാക്കേജ്',
-  'fileCenterLibrary.subtitle': 'ഡയഗ്രം പ്രകാരം ഗ്രൂപ്പുചെയ്‌ത ഉറവിടങ്ങളുടെ ശേഖരം (പ്രമാണത്തിൻ്റെ സംഗ്രഹം).',
+  'fileCenterLibrary.subtitle':
+    'ഡയഗ്രം പ്രകാരം ഗ്രൂപ്പുചെയ്‌ത ഉറവിടങ്ങളുടെ ശേഖരം (പ്രമാണത്തിൻ്റെ സംഗ്രഹം).',
   'fileCenterLibrary.openDiagram': 'ചാർട്ട് തുറക്കുക',
   'fileCenterLibrary.badgeCanvas': 'ക്യാൻവാസ്',
   'fileCenterLibrary.badgeExtension': 'വികസിപ്പിക്കുക',
   'fileCenterLibrary.badgeUpload': 'അപ്ലോഡ്',
-  'chunkTest.history.confirmDeleteBody': 'ഈ ടെസ്റ്റ് റെക്കോർഡ് ഇല്ലാതാക്കണമെന്ന് തീർച്ചയാണോ? ഈ പ്രവർത്തനം പഴയപടിയാക്കാനാകില്ല.',
+  'chunkTest.history.confirmDeleteBody':
+    'ഈ ടെസ്റ്റ് റെക്കോർഡ് ഇല്ലാതാക്കണമെന്ന് തീർച്ചയാണോ? ഈ പ്രവർത്തനം പഴയപടിയാക്കാനാകില്ല.',
   'chunkTest.history.confirmDeleteTitle': 'ടെസ്റ്റ് ഇല്ലാതാക്കുക',
   'chunkTest.history.delete': 'ഇല്ലാതാക്കുക',
   'chunkTest.history.deleteFailed': 'ഇല്ലാതാക്കൽ പരാജയപ്പെട്ടു',
@@ -32,9 +34,11 @@ export default {
   'chunkTest.page.myDocuments': 'എൻ്റെ രേഖകൾ',
   'chunkTest.page.noDatasets': 'ഡാറ്റാഗണമൊന്നും ലഭ്യമല്ല',
   'chunkTest.page.noDocsToTest': 'പരിശോധിക്കാവുന്ന ഡോക്യുമെൻ്റേഷൻ ഇല്ല',
-  'chunkTest.page.selectCompletedDocs': 'പരിശോധനയ്ക്കായി പൂർത്തിയാക്കിയ ഒരു ഡോക്യുമെൻ്റ് തിരഞ്ഞെടുക്കുക',
+  'chunkTest.page.selectCompletedDocs':
+    'പരിശോധനയ്ക്കായി പൂർത്തിയാക്കിയ ഒരു ഡോക്യുമെൻ്റ് തിരഞ്ഞെടുക്കുക',
   'chunkTest.page.startingDatasetTest': 'ഡാറ്റാ സെറ്റ് പരിശോധിക്കുന്നത് ആരംഭിക്കുക: {name}...',
-  'chunkTest.page.startingUserDocTest': 'ഡോക്യുമെൻ്റുകൾ അപ്‌ലോഡ് ചെയ്യുന്നത് പരീക്ഷിക്കാൻ ആരംഭിക്കുക...',
+  'chunkTest.page.startingUserDocTest':
+    'ഡോക്യുമെൻ്റുകൾ അപ്‌ലോഡ് ചെയ്യുന്നത് പരീക്ഷിക്കാൻ ആരംഭിക്കുക...',
   'chunkTest.page.testFailed': 'പരീക്ഷ പരാജയപ്പെട്ടു',
   'chunkTest.page.testStartNoId': 'ടെസ്റ്റ് ആരംഭം പരാജയപ്പെട്ടു: ടെസ്റ്റ് ഐഡി ലഭിച്ചില്ല',
   'chunkTest.page.updateDatasets': 'ഡാറ്റാസെറ്റ് അപ്ഡേറ്റ് ചെയ്യുക',
@@ -49,7 +53,8 @@ export default {
   'chunkTestResults.answerQuality': 'ഉത്തരം ഗുണനിലവാരം',
   'chunkTestResults.avgLatency': 'ശരാശരി ലേറ്റൻസി (മിസെ)',
   'chunkTestResults.back': 'മടങ്ങുക',
-  'chunkTestResults.cancelConfirmBody': 'ഈ ടെസ്റ്റ് റദ്ദാക്കണമെന്ന് തീർച്ചയാണോ? അടുത്ത ചെക്ക് പോയിൻ്റിൽ പരിശോധന നിർത്തും.',
+  'chunkTestResults.cancelConfirmBody':
+    'ഈ ടെസ്റ്റ് റദ്ദാക്കണമെന്ന് തീർച്ചയാണോ? അടുത്ത ചെക്ക് പോയിൻ്റിൽ പരിശോധന നിർത്തും.',
   'chunkTestResults.cancelFailed': 'റദ്ദാക്കൽ പരാജയപ്പെട്ടു',
   'chunkTestResults.cancelRequested': 'ടെസ്റ്റ് റദ്ദാക്കൽ അഭ്യർത്ഥന അയച്ചു',
   'chunkTestResults.cancelTest': 'പരീക്ഷ റദ്ദാക്കുക',
@@ -79,7 +84,8 @@ export default {
   'chunkTestResults.standardIrMetrics': 'സ്റ്റാൻഡേർഡ് ഐആർ ഇൻഡിക്കേറ്റർ',
   'chunkTestResults.storageEff': 'സംഭരണ ​​കാര്യക്ഷമത',
   'chunkTestResults.testFailed': 'പരീക്ഷ പരാജയപ്പെട്ടു',
-  'chunkTestResults.testFailedHint': 'ടെസ്റ്റ് എക്സിക്യൂഷൻ സമയത്ത് ഒരു പിശക് സംഭവിച്ചു, ദയവായി വീണ്ടും ശ്രമിക്കുക.',
+  'chunkTestResults.testFailedHint':
+    'ടെസ്റ്റ് എക്സിക്യൂഷൻ സമയത്ത് ഒരു പിശക് സംഭവിച്ചു, ദയവായി വീണ്ടും ശ്രമിക്കുക.',
   'chunkTestResults.testingInProgress': 'പരിശോധന പുരോഗമിക്കുന്നു...',
   'chunkTestResults.totalChunks': 'ആകെ {n} കഷണങ്ങൾ',
   'chunkTestResults.viewChunks': 'ഭാഗങ്ങൾ കാണുക',
@@ -89,7 +95,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'എല്ലാ ഡാറ്റാസെറ്റുകളും പരിശോധിക്കുക',
   'knowledge.chunkHeader.testUpload': 'ടെസ്റ്റ് അപ്‌ലോഡ് ഡോക്യുമെൻ്റ്',
   'knowledge.chunkHeader.title': 'RAG ബ്ലോക്ക് ടെസ്റ്റിംഗ്',
-  'knowledge.chunkHeader.waitForProcessing': 'പരിശോധിക്കുന്നതിന് മുമ്പ് ഡോക്യുമെൻ്റ് പ്രോസസ്സിംഗ് പൂർത്തിയാകുന്നതുവരെ കാത്തിരിക്കുക',
+  'knowledge.chunkHeader.waitForProcessing':
+    'പരിശോധിക്കുന്നതിന് മുമ്പ് ഡോക്യുമെൻ്റ് പ്രോസസ്സിംഗ് പൂർത്തിയാകുന്നതുവരെ കാത്തിരിക്കുക',
   'knowledge.chunkPreview.empty': 'ഇതുവരെ ചങ്ക് ചെയ്ത ഡാറ്റകളൊന്നുമില്ല',
   'knowledge.chunkPreview.pageLabel': 'പേജ് {n}',
   'knowledge.chunkPreview.title': 'ഡോക്യുമെൻ്റ് ചങ്ക് പ്രിവ്യൂ — {fileName}',
@@ -108,7 +115,8 @@ export default {
   'knowledge.doc.colStatus': 'സംസ്ഥാനം',
   'knowledge.doc.colType': 'തരം',
   'knowledge.doc.colUploaded': 'അപ്‌ലോഡ് സമയം',
-  'knowledge.doc.emptyDescription': 'ഇതുവരെ ഒരു രേഖയുമില്ല. വിജ്ഞാന അടിത്തറ കെട്ടിപ്പടുക്കാൻ പ്രമാണം അപ്‌ലോഡ് ചെയ്യുക.',
+  'knowledge.doc.emptyDescription':
+    'ഇതുവരെ ഒരു രേഖയുമില്ല. വിജ്ഞാന അടിത്തറ കെട്ടിപ്പടുക്കാൻ പ്രമാണം അപ്‌ലോഡ് ചെയ്യുക.',
   'knowledge.doc.errorPrefix': 'തെറ്റ്:',
   'knowledge.doc.noData': 'ഇതുവരെ ഡാറ്റയില്ല',
   'knowledge.doc.statusCompleted': 'പൂർത്തിയാക്കി',
@@ -124,33 +132,46 @@ export default {
   'knowledge.header.title': 'വ്യക്തിഗത വിജ്ഞാന അടിത്തറ',
   'knowledge.header.upload': 'പ്രമാണങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക',
   'knowledge.ragGuide.title': 'പാക്കേജുകളും RAG-കളും വിക്കികളും എങ്ങനെ പ്രവർത്തിക്കും?',
-  'knowledge.ragGuide.subtitle': 'സാങ്കേതിക പദപ്രയോഗം മനസ്സിലാക്കേണ്ട ആവശ്യമില്ല - റഫറൻസ് മെറ്റീരിയലുകൾ ആദ്യം പാക്കറ്റിൽ ഇടുക. സിസ്റ്റം ആദ്യം തിരയാൻ കഴിയുന്ന ഒരു RAG സൂചിക നിർമ്മിക്കുകയും തുടർന്ന് ചെറിയ വിക്കി കുറിപ്പുകൾ സ്വയമേവ സമാഹരിക്കുകയും ചെയ്യും; മാപ്പ് സൃഷ്ടിക്കുമ്പോൾ AI ഒരേ സമയം രണ്ടും പരാമർശിക്കും.',
+  'knowledge.ragGuide.subtitle':
+    'സാങ്കേതിക പദപ്രയോഗം മനസ്സിലാക്കേണ്ട ആവശ്യമില്ല - റഫറൻസ് മെറ്റീരിയലുകൾ ആദ്യം പാക്കറ്റിൽ ഇടുക. സിസ്റ്റം ആദ്യം തിരയാൻ കഴിയുന്ന ഒരു RAG സൂചിക നിർമ്മിക്കുകയും തുടർന്ന് ചെറിയ വിക്കി കുറിപ്പുകൾ സ്വയമേവ സമാഹരിക്കുകയും ചെയ്യും; മാപ്പ് സൃഷ്ടിക്കുമ്പോൾ AI ഒരേ സമയം രണ്ടും പരാമർശിക്കും.',
   'knowledge.ragGuide.step1.title': 'ഒരു പാക്കറ്റ് തിരഞ്ഞെടുക്കുക',
-  'knowledge.ragGuide.step1.body': 'പായ്ക്കുകൾ Zotero-യിലെ പ്രിയപ്പെട്ടവ പോലെയാണ്. നിങ്ങൾക്ക് ഇടതുവശത്ത് 3 വരെ സൃഷ്ടിക്കാൻ കഴിയും, ഓരോന്നും സാധാരണയായി ഒരു മൈൻഡ് മാപ്പുമായി ബന്ധപ്പെട്ടിരിക്കുന്നു. സൈഡ്‌ബാറിലെ ഡാറ്റാ പാക്കേജിലെ ഡോക്യുമെൻ്റുകൾ കൈകാര്യം ചെയ്യാൻ അതിൽ ക്ലിക്ക് ചെയ്യുക.',
+  'knowledge.ragGuide.step1.body':
+    'പായ്ക്കുകൾ Zotero-യിലെ പ്രിയപ്പെട്ടവ പോലെയാണ്. നിങ്ങൾക്ക് ഇടതുവശത്ത് 3 വരെ സൃഷ്ടിക്കാൻ കഴിയും, ഓരോന്നും സാധാരണയായി ഒരു മൈൻഡ് മാപ്പുമായി ബന്ധപ്പെട്ടിരിക്കുന്നു. സൈഡ്‌ബാറിലെ ഡാറ്റാ പാക്കേജിലെ ഡോക്യുമെൻ്റുകൾ കൈകാര്യം ചെയ്യാൻ അതിൽ ക്ലിക്ക് ചെയ്യുക.',
   'knowledge.ragGuide.step2.title': 'ഡോക്യുമെൻ്റുകൾ ചേർക്കുകയും സൂചികയും (RAG)',
-  'knowledge.ragGuide.step2.body': 'PDF, Word, കുറിപ്പുകൾ അല്ലെങ്കിൽ വെബ് പേജുകൾ അപ്‌ലോഡ് ചെയ്യുക. സിസ്റ്റം ദൈർഘ്യമേറിയ ഡോക്യുമെൻ്റുകളെ തിരയാൻ കഴിയുന്ന ഭാഗങ്ങളായി മുറിച്ച് വെക്റ്റർ സൂചികകളിലേക്ക് എഴുതും - ഇതാണ് ആദ്യം തയ്യാറാകുന്ന RAG ലെയർ.',
+  'knowledge.ragGuide.step2.body':
+    'PDF, Word, കുറിപ്പുകൾ അല്ലെങ്കിൽ വെബ് പേജുകൾ അപ്‌ലോഡ് ചെയ്യുക. സിസ്റ്റം ദൈർഘ്യമേറിയ ഡോക്യുമെൻ്റുകളെ തിരയാൻ കഴിയുന്ന ഭാഗങ്ങളായി മുറിച്ച് വെക്റ്റർ സൂചികകളിലേക്ക് എഴുതും - ഇതാണ് ആദ്യം തയ്യാറാകുന്ന RAG ലെയർ.',
   'knowledge.ragGuide.step3.title': 'വിക്കിനോട്ടുകളുടെ യാന്ത്രിക സമാഹാരം',
-  'knowledge.ragGuide.step3.body': 'ഇൻഡെക്സിംഗ് പൂർത്തിയായ ശേഷം, ഡിസ്കിലെ അവലോകനവും വിഷയ വിക്കി പേജുകളും LLM സമാഹരിക്കുന്നു. പാക്കേജിൻ്റെ ഘടന പെട്ടെന്ന് മനസ്സിലാക്കാൻ നിങ്ങളെ സഹായിക്കുന്നതിന്, ഇവ ബാഷ്പീകരിച്ച കുറിപ്പുകളാണ് (യഥാർത്ഥ വാചകത്തിൽ നിന്നുള്ള ഉദ്ധരണികളല്ല).',
+  'knowledge.ragGuide.step3.body':
+    'ഇൻഡെക്സിംഗ് പൂർത്തിയായ ശേഷം, ഡിസ്കിലെ അവലോകനവും വിഷയ വിക്കി പേജുകളും LLM സമാഹരിക്കുന്നു. പാക്കേജിൻ്റെ ഘടന പെട്ടെന്ന് മനസ്സിലാക്കാൻ നിങ്ങളെ സഹായിക്കുന്നതിന്, ഇവ ബാഷ്പീകരിച്ച കുറിപ്പുകളാണ് (യഥാർത്ഥ വാചകത്തിൽ നിന്നുള്ള ഉദ്ധരണികളല്ല).',
   'knowledge.ragGuide.step4.title': 'തിരയുമ്പോൾ വിക്കിയും ചങ്കിംഗും ഉപയോഗിക്കുക',
-  'knowledge.ragGuide.step4.body': 'ഒരു ശാഖ വികസിപ്പിക്കുമ്പോഴോ ഒരു സംഗ്രഹം സൃഷ്ടിക്കുമ്പോഴോ, സിസ്റ്റം ആദ്യം പ്രസക്തമായ വിക്കി പേജുകളുമായി പൊരുത്തപ്പെടുന്നു, തുടർന്ന് ഏറ്റവും പ്രസക്തമായ ചങ്ക്ഡ് പാരഗ്രാഫുകൾ (ഹൈബ്രിഡ് RAG) വീണ്ടെടുക്കുന്നു.',
+  'knowledge.ragGuide.step4.body':
+    'ഒരു ശാഖ വികസിപ്പിക്കുമ്പോഴോ ഒരു സംഗ്രഹം സൃഷ്ടിക്കുമ്പോഴോ, സിസ്റ്റം ആദ്യം പ്രസക്തമായ വിക്കി പേജുകളുമായി പൊരുത്തപ്പെടുന്നു, തുടർന്ന് ഏറ്റവും പ്രസക്തമായ ചങ്ക്ഡ് പാരഗ്രാഫുകൾ (ഹൈബ്രിഡ് RAG) വീണ്ടെടുക്കുന്നു.',
   'knowledge.ragGuide.step5.title': 'ഉറവിടത്തെ അടിസ്ഥാനമാക്കി AI ഉത്തരങ്ങൾ നൽകുന്നു',
-  'knowledge.ragGuide.step5.body': 'AI ഉള്ളടക്കം സൃഷ്ടിക്കുന്നത് വിക്കി കുറിപ്പുകളും വീണ്ടെടുത്ത സ്‌നിപ്പെറ്റുകളും പരാമർശിച്ചുകൊണ്ടാണ്, അത് വായുവിൽ നിന്ന് നിർമ്മിക്കുന്നതിനുപകരം - കൂടുതൽ പ്രസക്തമായ ഉറവിടം, സൂചികയും വിക്കിയും കൂടുതൽ പൂർണ്ണമാകുമ്പോൾ, മാപ്പ് കൂടുതൽ കൃത്യതയുള്ളതാണ്.',
-  'knowledge.ragGuide.footer': 'നുറുങ്ങ്: ക്യാൻവാസിൽ "ഡോക്യുമെൻ്റ് സംഗ്രഹം" തുറക്കുന്നത് ഒരു ഡാറ്റ പാക്കേജും സ്വയമേവ സൃഷ്ടിക്കും; Chrome വിപുലീകരണം സംരക്ഷിച്ച വെബ് പേജുകളും ഇടതുവശത്തുള്ള പട്ടികയിൽ ദൃശ്യമാകും.',
+  'knowledge.ragGuide.step5.body':
+    'AI ഉള്ളടക്കം സൃഷ്ടിക്കുന്നത് വിക്കി കുറിപ്പുകളും വീണ്ടെടുത്ത സ്‌നിപ്പെറ്റുകളും പരാമർശിച്ചുകൊണ്ടാണ്, അത് വായുവിൽ നിന്ന് നിർമ്മിക്കുന്നതിനുപകരം - കൂടുതൽ പ്രസക്തമായ ഉറവിടം, സൂചികയും വിക്കിയും കൂടുതൽ പൂർണ്ണമാകുമ്പോൾ, മാപ്പ് കൂടുതൽ കൃത്യതയുള്ളതാണ്.',
+  'knowledge.ragGuide.footer':
+    'നുറുങ്ങ്: ക്യാൻവാസിൽ "ഡോക്യുമെൻ്റ് സംഗ്രഹം" തുറക്കുന്നത് ഒരു ഡാറ്റ പാക്കേജും സ്വയമേവ സൃഷ്ടിക്കും; Chrome വിപുലീകരണം സംരക്ഷിച്ച വെബ് പേജുകളും ഇടതുവശത്തുള്ള പട്ടികയിൽ ദൃശ്യമാകും.',
   'knowledge.pipeline.title': 'പൈപ്പ്ലൈൻ നില',
   'knowledge.pipeline.ragIdle': 'RAG സൂചിക',
-  'knowledge.pipeline.ragIdleDetail': 'ഇതുവരെ സൂചികയിലാക്കിയ പാക്കേജുകളൊന്നുമില്ല. പാക്കേജിലേക്ക് ഉറവിടങ്ങൾ ചേർക്കുകയും ഇൻഡെക്സിംഗ് നടത്തുകയും ചെയ്യുക.',
+  'knowledge.pipeline.ragIdleDetail':
+    'ഇതുവരെ സൂചികയിലാക്കിയ പാക്കേജുകളൊന്നുമില്ല. പാക്കേജിലേക്ക് ഉറവിടങ്ങൾ ചേർക്കുകയും ഇൻഡെക്സിംഗ് നടത്തുകയും ചെയ്യുക.',
   'knowledge.pipeline.ragProcessing': 'RAG ഇൻഡക്‌സിംഗ്',
-  'knowledge.pipeline.ragProcessingDetail': '{count} പാക്കറ്റുകൾ ഇപ്പോഴും അരിഞ്ഞതും വെക്‌ടറൈസ് ചെയ്തതുമാണ്.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} പാക്കറ്റുകൾ ഇപ്പോഴും അരിഞ്ഞതും വെക്‌ടറൈസ് ചെയ്തതുമാണ്.',
   'knowledge.pipeline.ragReady': 'RAG തയ്യാറാണ്',
-  'knowledge.pipeline.ragReadyDetail': '{count} പാക്കേജുകൾ ഇൻഡക്‌സ് ചെയ്‌തു - ചങ്ക് ചെയ്‌ത വീണ്ടെടുക്കൽ ലഭ്യമാണ്.',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count} പാക്കേജുകൾ ഇൻഡക്‌സ് ചെയ്‌തു - ചങ്ക് ചെയ്‌ത വീണ്ടെടുക്കൽ ലഭ്യമാണ്.',
   'knowledge.pipeline.wikiDisabled': 'വിക്കി സമാഹാരം അടച്ചു',
   'knowledge.pipeline.wikiDisabledDetail': 'ഈ സെർവറിൽ വിക്കി സമാഹാരം പ്രവർത്തനക്ഷമമാക്കിയിട്ടില്ല.',
   'knowledge.pipeline.wikiIdle': 'വിക്കി സമാഹാരം',
-  'knowledge.pipeline.wikiIdleDetail': 'ഓരോ സോഴ്‌സ് RAG സൂചികയും പൂർത്തിയാകുമ്പോൾ വിക്കി പേജുകൾ സ്വയമേവ സമാഹരിക്കുന്നു.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'ഓരോ സോഴ്‌സ് RAG സൂചികയും പൂർത്തിയാകുമ്പോൾ വിക്കി പേജുകൾ സ്വയമേവ സമാഹരിക്കുന്നു.',
   'knowledge.pipeline.wikiPending': 'വിക്കി കംപൈലിംഗ്',
-  'knowledge.pipeline.wikiPendingDetail': '{count} പാക്കേജുകൾ സൂചികയിലാക്കിയ ശേഷം വിക്കി പേജ് സൃഷ്ടിക്കുന്നതിനായി കാത്തിരിക്കുന്നു.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} പാക്കേജുകൾ സൂചികയിലാക്കിയ ശേഷം വിക്കി പേജ് സൃഷ്ടിക്കുന്നതിനായി കാത്തിരിക്കുന്നു.',
   'knowledge.pipeline.wikiReady': 'വിക്കി തയ്യാറാണ്',
-  'knowledge.pipeline.wikiReadyDetail': '{count} പാക്കേജുകൾ വിക്കി കുറിപ്പുകൾ സമാഹരിച്ചിരിക്കുന്നു.',
+  'knowledge.pipeline.wikiReadyDetail':
+    '{count} പാക്കേജുകൾ വിക്കി കുറിപ്പുകൾ സമാഹരിച്ചിരിക്കുന്നു.',
   'knowledge.pipelineBadge.rag.label': 'RAG',
   'knowledge.pipelineBadge.rag.notYet': 'ആരംഭിച്ചിട്ടില്ല',
   'knowledge.pipelineBadge.rag.processing': 'പുരോഗതിയിൽ',
@@ -164,7 +185,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'എല്ലാം തിരഞ്ഞെടുത്തത് മാറ്റുക',
   'knowledge.manualEval.dialogTitle': 'മാനുവൽ മൂല്യനിർണ്ണയം - {method}',
   'knowledge.manualEval.groundTruthLabel': 'സാധാരണ ഉത്തരം (ഓപ്ഷണൽ)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'ഉത്തരത്തിൻ്റെ പ്രസക്തി വിലയിരുത്താൻ സാധാരണ ഉത്തരങ്ങൾ നൽകുക...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'ഉത്തരത്തിൻ്റെ പ്രസക്തി വിലയിരുത്താൻ സാധാരണ ഉത്തരങ്ങൾ നൽകുക...',
   'knowledge.manualEval.metric.answer_coverage': 'ഉത്തരം കവറേജ്',
   'knowledge.manualEval.metric.answer_faithfulness': 'ഉത്തരം വിശ്വസ്തത',
   'knowledge.manualEval.metric.clarity': 'വ്യക്തത',
@@ -186,7 +208,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'ഗുണനിലവാര വിലയിരുത്തൽ തടയുക',
   'knowledge.manualEval.resultsTitle': 'മൂല്യനിർണ്ണയ ഫലങ്ങൾ',
   'knowledge.manualEval.selectAll': 'എല്ലാം തിരഞ്ഞെടുക്കുക',
-  'knowledge.manualEval.selectChunksHeading': 'വിലയിരുത്താൻ ഭാഗങ്ങൾ തിരഞ്ഞെടുക്കുക (എല്ലാം വിലയിരുത്തുന്നതിന് ശൂന്യമായി വിടുക)',
+  'knowledge.manualEval.selectChunksHeading':
+    'വിലയിരുത്താൻ ഭാഗങ്ങൾ തിരഞ്ഞെടുക്കുക (എല്ലാം വിലയിരുത്തുന്നതിന് ശൂന്യമായി വിടുക)',
   'knowledge.manualEval.showingFirst20': '{total} ടൈലുകളുടെ ആദ്യ 20 കാണിക്കുന്നു',
   'knowledge.manualEval.startEvaluation': 'വിലയിരുത്തൽ ആരംഭിക്കുക',
   'knowledge.processing.chunking': 'ചങ്കിംഗ്',
@@ -235,7 +258,8 @@ export default {
   'knowledge.settings.retrievalSection': 'ക്രമീകരണങ്ങൾ വീണ്ടെടുക്കുക',
   'knowledge.settings.title': 'അറിവിൻ്റെ അടിസ്ഥാന ക്രമീകരണങ്ങൾ',
   'knowledge.settings.helpTitle': 'ഈ ക്രമീകരണങ്ങൾ എങ്ങനെ പ്രാബല്യത്തിൽ വരും',
-  'knowledge.settings.helpBody': 'തിരയലിനും AI ഉത്തരങ്ങൾക്കും വീണ്ടെടുക്കലുമായി ബന്ധപ്പെട്ട ഓപ്ഷനുകൾ ഉടനടി ലഭ്യമാണ്. ചങ്ക് വലുപ്പവും ഓവർലാപ്പും പുതുതായി ഇൻഡക്‌സ് ചെയ്‌ത പ്രമാണങ്ങൾക്ക് മാത്രമേ ബാധകമാകൂ - പരിഷ്‌ക്കരണങ്ങൾക്ക് ശേഷം നിലവിലുള്ള ഉറവിടങ്ങൾ വീണ്ടും സൂചികയിലാക്കുക.',
+  'knowledge.settings.helpBody':
+    'തിരയലിനും AI ഉത്തരങ്ങൾക്കും വീണ്ടെടുക്കലുമായി ബന്ധപ്പെട്ട ഓപ്ഷനുകൾ ഉടനടി ലഭ്യമാണ്. ചങ്ക് വലുപ്പവും ഓവർലാപ്പും പുതുതായി ഇൻഡക്‌സ് ചെയ്‌ത പ്രമാണങ്ങൾക്ക് മാത്രമേ ബാധകമാകൂ - പരിഷ്‌ക്കരണങ്ങൾക്ക് ശേഷം നിലവിലുള്ള ഉറവിടങ്ങൾ വീണ്ടും സൂചികയിലാക്കുക.',
   'knowledge.settings.tokens': 'ടോക്കൺ',
   'knowledge.settings.serverSection': 'സെർവർ (വായന മാത്രം)',
   'knowledge.settings.rerankingMode': 'പുനഃക്രമീകരിക്കുക',
@@ -246,7 +270,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'അടച്ചു',
   'knowledge.settings.saveSuccess': 'ക്രമീകരണങ്ങൾ സംരക്ഷിച്ചു',
   'knowledge.settings.saveFailed': 'ക്രമീകരണങ്ങൾ സംരക്ഷിക്കുന്നതിൽ പരാജയപ്പെട്ടു',
-  'knowledge.settings.reindexRequired': 'ചങ്കിംഗ് പാരാമീറ്ററുകൾ മാറ്റി - പ്രാബല്യത്തിൽ വരുന്നതിന് പാക്കേജിൽ നിലവിലുള്ള പ്രമാണങ്ങൾ വീണ്ടും സൂചികയിലാക്കുക.',
+  'knowledge.settings.reindexRequired':
+    'ചങ്കിംഗ് പാരാമീറ്ററുകൾ മാറ്റി - പ്രാബല്യത്തിൽ വരുന്നതിന് പാക്കേജിൽ നിലവിലുള്ള പ്രമാണങ്ങൾ വീണ്ടും സൂചികയിലാക്കുക.',
   'knowledge.upload.click': 'അപ്‌ലോഡ് ചെയ്യാൻ ക്ലിക്ക് ചെയ്യുക',
   'knowledge.upload.drag': 'അല്ലെങ്കിൽ ഫയലുകൾ ഇവിടെ വലിച്ചിടുക',
   'knowledge.upload.fileTooLarge': 'ഫയൽ വലുപ്പം 10MB കവിയാൻ പാടില്ല',
@@ -254,7 +279,8 @@ export default {
   'knowledge.upload.maxDocs': 'പ്രമാണങ്ങളുടെ പരമാവധി എണ്ണം എത്തി (5)',
   'knowledge.upload.title': 'പ്രമാണങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക',
   'knowledge.upload.unsupportedType': 'പിന്തുണയ്ക്കാത്ത ഫയൽ തരങ്ങൾ',
-  'knowledgeSpace.confirmDeleteBody': 'ഈ പ്രമാണം ഇല്ലാതാക്കണമെന്ന് തീർച്ചയാണോ? ഇല്ലാതാക്കിയ ശേഷം ഇത് പുനഃസ്ഥാപിക്കാൻ കഴിയില്ല.',
+  'knowledgeSpace.confirmDeleteBody':
+    'ഈ പ്രമാണം ഇല്ലാതാക്കണമെന്ന് തീർച്ചയാണോ? ഇല്ലാതാക്കിയ ശേഷം ഇത് പുനഃസ്ഥാപിക്കാൻ കഴിയില്ല.',
   'knowledgeSpace.confirmDeleteTitle': 'ഇല്ലാതാക്കൽ സ്ഥിരീകരിക്കുക',
   'knowledgeSpace.deleteFailed': 'ഇല്ലാതാക്കൽ പരാജയപ്പെട്ടു',
   'knowledgeSpace.documentDeleted': 'പ്രമാണം ഇല്ലാതാക്കി',
@@ -263,7 +289,8 @@ export default {
   'knowledgeSpace.startProcessingFailed': 'പ്രോസസ്സിംഗ് ആരംഭിക്കുന്നത് പരാജയപ്പെട്ടു',
   'knowledgeSpace.uploadFailed': 'ഡോക്യുമെൻ്റ് അപ്‌ലോഡ് പരാജയപ്പെട്ടു',
   'knowledgeSpace.uploadSuccess': 'പ്രമാണം അപ്‌ലോഡ് ചെയ്‌തു',
-  'knowledgeSpace.uploadSuccessProcessing': 'പ്രമാണം അപ്‌ലോഡ് ചെയ്‌തു, പ്രോസസ്സ് ചെയ്‌തു കൊണ്ടിരിക്കുകയാണ്...',
+  'knowledgeSpace.uploadSuccessProcessing':
+    'പ്രമാണം അപ്‌ലോഡ് ചെയ്‌തു, പ്രോസസ്സ് ചെയ്‌തു കൊണ്ടിരിക്കുകയാണ്...',
   'rag.retrievalTest.failed': 'വീണ്ടെടുക്കൽ പരിശോധന പരാജയപ്പെട്ടു',
   'rag.retrievalTest.success': 'വീണ്ടെടുക്കൽ പരിശോധന പൂർത്തിയായി',
 } as const

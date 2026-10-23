@@ -1,19 +1,19 @@
 /**
  * Audit: shared wrap SoT vs old box-only wrap on a real PG mind map fixture.
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import {
   MIND_MAP_GEOMETRY,
   mindMapBranchFontSize,
   mindMapHorizontalPadding,
 } from '@/config/mindMapGeometry'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { buildMindMapVectorSnapshot } from '@/utils/diagramMindMapVectorModel'
 import { buildMindMapVectorSvg } from '@/utils/diagramMindMapVectorSvg'
-import { parseMindMapExportText, estimateTextWidth } from '@/utils/diagramMindMapVectorText'
+import { estimateTextWidth, parseMindMapExportText } from '@/utils/diagramMindMapVectorText'
 import {
   resolveMindMapBranchTextMaxWidthPx,
   resolveMindMapExportWrapColumnPx,
@@ -157,8 +157,9 @@ describe.runIf(Boolean(picked))('mindMapTextWrap audit (real PG fixture)', () =>
       // Settled canvas: label that fits host maxWidth stays one line.
       const fitsHost =
         !plain.includes('\n') &&
-        estimateTextWidth(plain, fontSize, { isTopic: Boolean(isTopic || fontWeight === 'bold') }) <=
-          hostMax
+        estimateTextWidth(plain, fontSize, {
+          isTopic: Boolean(isTopic || fontWeight === 'bold'),
+        }) <= hostMax
       if (fitsHost) {
         expect(lines.length).toBe(1)
         shortSingleLineOk += 1
@@ -193,7 +194,7 @@ describe.runIf(Boolean(picked))('mindMapTextWrap audit (real PG fixture)', () =>
 
     expect(report.svgHasText).toBe(true)
     expect(shortSingleLineOk).toBeGreaterThan(0)
-    // eslint-disable-next-line no-console
+
     console.log('[WRAP AUDIT]', {
       fixture: report.fixture,
       nodes: report.nodes,

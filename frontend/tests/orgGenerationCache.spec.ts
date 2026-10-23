@@ -1,8 +1,12 @@
 import { createPinia, setActivePinia } from 'pinia'
+
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useOrgGenerationCacheNoticeStore } from '@/stores/orgGenerationCacheNotice'
-import { noteOrgGenerationCacheResult, withOrgGenerationCacheBypass } from '@/utils/orgGenerationCache'
+import {
+  noteOrgGenerationCacheResult,
+  withOrgGenerationCacheBypass,
+} from '@/utils/orgGenerationCache'
 
 describe('org generation cache notice', () => {
   beforeEach(() => {

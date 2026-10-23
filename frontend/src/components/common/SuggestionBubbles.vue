@@ -16,13 +16,8 @@ const DEFAULT_SUGGESTION_KEYS = [
   'mindmate.defaultSuggestion3',
   'mindmate.defaultSuggestion4',
   'mindmate.defaultSuggestion5',
-  'mindmate.defaultSuggestion6',
   'mindmate.defaultSuggestion7',
   'mindmate.defaultSuggestion8',
-  'mindmate.defaultSuggestion9',
-  'mindmate.defaultSuggestion10',
-  'mindmate.defaultSuggestion11',
-  'mindmate.defaultSuggestion12',
 ] as const
 
 const props = withDefaults(
@@ -31,10 +26,16 @@ const props = withDefaults(
     suggestionKeys?: string[]
     /** Raw prompt text. No presenter line — these are not message keys. */
     suggestions?: string[]
+    /** Wrap in place. Bubble width follows the label, with no sideways scroll. */
+    flow?: boolean
+    /** Row sizes for flow layout, e.g. [3, 4] means three then four. */
+    flowRows?: number[]
   }>(),
   {
     suggestionKeys: () => [],
     suggestions: () => [],
+    flow: false,
+    flowRows: () => [],
   }
 )
 
@@ -55,6 +56,26 @@ const displaySuggestions = computed((): SuggestionBubble[] => {
     return props.suggestions.map((text) => ({ key: '', text }))
   }
   return DEFAULT_SUGGESTION_KEYS.map((key) => ({ key, text: t(key) }))
+})
+
+const suggestionRows = computed((): SuggestionBubble[][] => {
+  const items = displaySuggestions.value
+  if (!props.flow || props.flowRows.length === 0) {
+    return [items]
+  }
+  const rows: SuggestionBubble[][] = []
+  let offset = 0
+  for (const size of props.flowRows) {
+    if (offset >= items.length) {
+      break
+    }
+    rows.push(items.slice(offset, offset + size))
+    offset += size
+  }
+  if (offset < items.length) {
+    rows.push(items.slice(offset))
+  }
+  return rows
 })
 
 // Animation state
@@ -97,6 +118,9 @@ const startAutoScroll = () => {
 }
 
 onMounted(() => {
+  if (props.flow) {
+    return
+  }
   startAutoScroll()
 })
 
@@ -120,23 +144,48 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
     <div
       ref="containerRef"
       class="suggestion-container"
+      :class="{ 'is-flow': flow, 'is-flow-rows': flow && flowRows.length > 0 }"
       @mouseenter="isHovering = true"
       @mouseleave="isHovering = false"
     >
-      <button
-        v-for="(suggestion, index) in displaySuggestions"
-        :key="index"
-        class="suggestion-bubble"
-        :disabled="!isAuthenticated"
-        @click="handleClick(suggestion)"
-      >
-        <I18nText
-          v-if="suggestion.key"
-          :k="suggestion.key"
-          dense
-        />
-        <template v-else>{{ suggestion.text }}</template>
-      </button>
+      <template v-if="flow && flowRows.length > 0">
+        <div
+          v-for="(row, rowIndex) in suggestionRows"
+          :key="rowIndex"
+          class="suggestion-row"
+        >
+          <button
+            v-for="(suggestion, index) in row"
+            :key="`${rowIndex}-${index}`"
+            class="suggestion-bubble"
+            :disabled="!isAuthenticated"
+            @click="handleClick(suggestion)"
+          >
+            <I18nText
+              v-if="suggestion.key"
+              :k="suggestion.key"
+              dense
+            />
+            <template v-else>{{ suggestion.text }}</template>
+          </button>
+        </div>
+      </template>
+      <template v-else>
+        <button
+          v-for="(suggestion, index) in displaySuggestions"
+          :key="index"
+          class="suggestion-bubble"
+          :disabled="!isAuthenticated"
+          @click="handleClick(suggestion)"
+        >
+          <I18nText
+            v-if="suggestion.key"
+            :k="suggestion.key"
+            dense
+          />
+          <template v-else>{{ suggestion.text }}</template>
+        </button>
+      </template>
     </div>
   </div>
 </template>
@@ -181,6 +230,32 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 /* Pause animation on hover */
 .suggestion-container:hover {
   scroll-behavior: auto;
+}
+
+.suggestion-container.is-flow {
+  max-height: none;
+  overflow: visible;
+  justify-content: center;
+}
+
+.suggestion-container.is-flow-rows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.suggestion-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.suggestion-container.is-flow .suggestion-bubble {
+  width: max-content;
+  max-width: 100%;
 }
 
 .suggestion-bubble {

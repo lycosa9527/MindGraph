@@ -31,6 +31,7 @@ import {
   withClassicMindMapTopicSourceHandle,
 } from '@/utils/classicMindMapTopicHandles'
 import { isMindMapBranchNode, mindMapNodeSide } from '@/utils/mindMapLocation'
+import { must } from '@/utils/must'
 
 function enableMindMapV2CanvasFlag(): void {
   const flagsStore = useFeatureFlagsStore()
@@ -344,7 +345,7 @@ describe('mind map classic vs v2 separation', () => {
       _mindmap_theme: 'vibrantBlue',
       _mindmap_diagram_style: 'classic',
       _node_styles: {
-        [loadedBranch!.id]: { textColor: '#2a3d66', backgroundColor: '#eef2fb' },
+        [must(loadedBranch).id]: { textColor: '#2a3d66', backgroundColor: '#eef2fb' },
       },
       _mindmap_canvas: {
         v2: {

@@ -5,6 +5,8 @@ import { computed, ref } from 'vue'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useKittyDesktopSelectionPublish } from '@/composables/kitty/useKittyDesktopSelectionPublish'
+
 const selectedNodesRef = vi.hoisted(() => {
   // Plain holder; composable reads via getter each watch flush.
   return { value: [] as string[] }
@@ -17,8 +19,6 @@ vi.mock('@/stores/diagram', () => ({
     },
   }),
 }))
-
-import { useKittyDesktopSelectionPublish } from '@/composables/kitty/useKittyDesktopSelectionPublish'
 
 describe('useKittyDesktopSelectionPublish', () => {
   beforeEach(() => {

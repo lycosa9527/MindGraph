@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -11,6 +12,7 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 import type { NodeStyle } from '@/types'
+import { must } from '@/utils/must'
 
 function enableMindMapV2Canvas(): void {
   const flagsStore = useFeatureFlagsStore()
@@ -163,14 +165,14 @@ describe('mind map undo/redo', () => {
       (node) => !beforeIds.has(node.id) && String(node.text ?? '').includes('Styled sibling')
     )
     expect(newNode).toBeTruthy()
-    const seeded = diagramStore.data?._node_styles?.[newNode!.id]
+    const seeded = diagramStore.data?._node_styles?.[must(newNode).id]
     expect(seeded?.backgroundColor).toBe('#dbeafe')
     expect(seeded?.borderColor).toBe('#0f766e')
     expect(seeded?.nodeShape).toBe('oval')
     expect(newNode?.style?.backgroundColor).toBe('#dbeafe')
 
     tryCollabGuardedUndo()
-    expect(diagramStore.data?.nodes.some((node) => node.id === newNode!.id)).toBe(false)
-    expect(diagramStore.data?._node_styles?.[newNode!.id]).toBeUndefined()
+    expect(diagramStore.data?.nodes.some((node) => node.id === must(newNode).id)).toBe(false)
+    expect(diagramStore.data?._node_styles?.[must(newNode).id]).toBeUndefined()
   })
 })

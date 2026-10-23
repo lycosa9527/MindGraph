@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Binnekort beskikbaar',
   'thinkingCoins.schoolInfo': 'Kontak jou skooladministrateur vir skoolplanne',
   'thinkingCoins.school.headline': 'KI-gedrewe denke · skooloplossings',
-  'thinkingCoins.school.description': 'Privaat ontplooiing, pasgemaakte funksies en volle bedryfsondersteuning vir skole en instellings — gebou vir skaal, handelsmerk en datasekuriteit.',
+  'thinkingCoins.school.description':
+    'Privaat ontplooiing, pasgemaakte funksies en volle bedryfsondersteuning vir skole en instellings — gebou vir skaal, handelsmerk en datasekuriteit.',
   'thinkingCoins.school.feature.accountManager': 'Toegewyde rekeningbestuurder',
   'thinkingCoins.school.feature.accountManagerDesc': 'Een-tot-een konsultasie',
   'thinkingCoins.school.feature.privateDeploy': 'Privaat ontplooiing',
@@ -49,7 +50,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.validationRequired': 'Vul asseblief alle verpligte velde in',
   'thinkingCoins.school.validationPhone': 'Voer asseblief ’n geldige telefoonnommer in',
   'thinkingCoins.school.validationTooLong': 'Een of meer velde is te lank',
-  'thinkingCoins.school.validationInvalid': 'Sommige velde is ongeldig — kontroleer en probeer weer',
+  'thinkingCoins.school.validationInvalid':
+    'Sommige velde is ongeldig — kontroleer en probeer weer',
   'thinkingCoins.tier.trial': 'Proef',
   'thinkingCoins.tier.monthly': 'Maandeliks',
   'thinkingCoins.tier.sub': 'Maandelikse intekening',
@@ -63,7 +65,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Verwysingsbeloning',
   'thinkingCoins.reason.case_reward': 'Gevalbeloning',
   'thinkingCoins.reason.subscription_grant': 'Intekeningtoekenning',
-  'thinkingCoins.dailyExpiresHint': 'Aantekenbelonings is op dieselfde dag geldig en sal om 24:00 teruggestel word',
+  'thinkingCoins.dailyExpiresHint':
+    'Aantekenbelonings is op dieselfde dag geldig en sal om 24:00 teruggestel word',
   'thinkingCoins.dailyBalanceRemaining': 'Vandag se inklok bly {n}',
   'thinkingCoins.admin.tab': 'Denktekens',
   'thinkingCoins.admin.tasksTitle': 'Verdienste-take',

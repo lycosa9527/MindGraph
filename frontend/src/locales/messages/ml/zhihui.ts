@@ -20,21 +20,26 @@ export default {
   'zhihui.modeComingSoon': 'ഈ മോഡ് ഉടൻ ലോഞ്ച് ചെയ്യും',
   'zhihui.describe.image': 'നിങ്ങൾ സൃഷ്ടിക്കാൻ ആഗ്രഹിക്കുന്ന ചിത്രം വിവരിക്കുക',
   'zhihui.describe.video': 'നിങ്ങൾ സൃഷ്ടിക്കാൻ ആഗ്രഹിക്കുന്ന വീഡിയോ വിവരിക്കുക',
-  'zhihui.describe.diagram': 'ഐക്കണിനെ അടിസ്ഥാനമാക്കി നിങ്ങൾ സൃഷ്ടിക്കാൻ ആഗ്രഹിക്കുന്ന സ്‌ക്രീൻ വിവരിക്കുക',
+  'zhihui.describe.diagram':
+    'ഐക്കണിനെ അടിസ്ഥാനമാക്കി നിങ്ങൾ സൃഷ്ടിക്കാൻ ആഗ്രഹിക്കുന്ന സ്‌ക്രീൻ വിവരിക്കുക',
   'zhihui.promptPlaceholder.image': 'നിങ്ങളുടെ പ്രചോദനം നൽകുക...',
   'zhihui.promptPlaceholder.video': 'ദൃശ്യം, ക്യാമറ, താളം എന്നിവ വിവരിക്കുക...',
   'zhihui.promptPlaceholder.diagram': 'മൈൻഡ് മാപ്പ് തിരഞ്ഞെടുത്ത് ജനറേറ്റ് ക്ലിക്ക് ചെയ്യുക',
-  'zhihui.composerHint.image': 'ചിത്രം വിവരിക്കുന്നതിനും ഒരു ക്ലിക്കിൽ ടീച്ചിംഗ് ചിത്രീകരണങ്ങളും ദൃശ്യ സാമഗ്രികളും സൃഷ്ടിക്കാനും ടെക്‌സ്‌റ്റ് ഉപയോഗിക്കുക',
+  'zhihui.composerHint.image':
+    'ചിത്രം വിവരിക്കുന്നതിനും ഒരു ക്ലിക്കിൽ ടീച്ചിംഗ് ചിത്രീകരണങ്ങളും ദൃശ്യ സാമഗ്രികളും സൃഷ്ടിക്കാനും ടെക്‌സ്‌റ്റ് ഉപയോഗിക്കുക',
   'zhihui.composerHint.video': 'Wensheng വീഡിയോ, Tusheng വീഡിയോ കഴിവുകൾ ആക്‌സസ് ചെയ്യാൻ പോകുകയാണ്',
-  'zhihui.composerHint.diagram': 'പഠിതാവിൻ്റെ വീക്ഷണകോണിൽ നിന്ന് ഒരു കോഴ്‌സ്‌വെയർ ഡയഗ്രം സൃഷ്‌ടിക്കാൻ മൈൻഡ് മാപ്പ് തിരഞ്ഞെടുക്കുക',
+  'zhihui.composerHint.diagram':
+    'പഠിതാവിൻ്റെ വീക്ഷണകോണിൽ നിന്ന് ഒരു കോഴ്‌സ്‌വെയർ ഡയഗ്രം സൃഷ്‌ടിക്കാൻ മൈൻഡ് മാപ്പ് തിരഞ്ഞെടുക്കുക',
   'zhihui.diagram.selectMindmap': 'ഒരു മൈൻഡ് മാപ്പ് തിരഞ്ഞെടുക്കുക',
   'zhihui.diagram.selectMindmapHint': 'മുകളിൽ ഒരു മൈൻഡ് മാപ്പ് തിരഞ്ഞെടുക്കുക',
   'zhihui.diagram.selectMindmapFirst': 'ദയവായി ആദ്യം ഒരു മൈൻഡ് മാപ്പ് തിരഞ്ഞെടുക്കുക',
-  'zhihui.diagram.emptyLibrary': 'ഇതുവരെ മൈൻഡ് മാപ്പ് ഒന്നുമില്ല, ദയവായി ആദ്യം അത് ഡയഗ്രം ലൈബ്രറിയിൽ സംരക്ഷിക്കുക.',
+  'zhihui.diagram.emptyLibrary':
+    'ഇതുവരെ മൈൻഡ് മാപ്പ് ഒന്നുമില്ല, ദയവായി ആദ്യം അത് ഡയഗ്രം ലൈബ്രറിയിൽ സംരക്ഷിക്കുക.',
   'zhihui.diagram.loadFailed': 'മൈൻഡ് മാപ്പ് ലോഡ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു',
   'zhihui.diagram.emptyDeck': 'മൈൻഡ് മാപ്പ് തിരഞ്ഞെടുത്ത ശേഷം, ജനറേറ്റ് ക്ലിക്ക് ചെയ്യുക',
   'zhihui.diagram.waitingSlides': 'കോഴ്‌സ്‌വെയർ സൃഷ്‌ടിക്കുന്നു, ദയവായി കാത്തിരിക്കൂ...',
-  'zhihui.diagram.jobStarted': 'കോഴ്‌സ്‌വെയർ ഉൽപ്പാദനം ആരംഭിച്ചു. ചരിത്രത്തിലെ പുരോഗതി നിങ്ങൾക്ക് പരിശോധിക്കാം.',
+  'zhihui.diagram.jobStarted':
+    'കോഴ്‌സ്‌വെയർ ഉൽപ്പാദനം ആരംഭിച്ചു. ചരിത്രത്തിലെ പുരോഗതി നിങ്ങൾക്ക് പരിശോധിക്കാം.',
   'zhihui.diagram.phaseQueued': 'ജോലികൾ ക്യൂവിലാണ്...',
   'zhihui.diagram.phasePlanning': 'സിലബസ് രൂപകൽപ്പന ചെയ്യുന്നു...',
   'zhihui.diagram.phasePlanningBranches': 'വിവിധ വിഷയങ്ങൾ ആസൂത്രണം ചെയ്യുന്നു...',
@@ -47,7 +52,8 @@ export default {
   'zhihui.diagram.phaseComplete': 'കോഴ്‌സ്‌വെയർ തയ്യാറാണ്',
   'zhihui.diagram.phaseCancelled': 'റദ്ദാക്കി',
   'zhihui.diagram.toastPlanning': 'സിലബസ് രൂപകൽപ്പന ചെയ്യുന്നു...',
-  'zhihui.diagram.toastGenerating': 'കോഴ്‌സ്‌വെയർ വരയ്ക്കുന്നു, ഇതിന് കുറച്ച് മിനിറ്റുകൾ എടുത്തേക്കാം',
+  'zhihui.diagram.toastGenerating':
+    'കോഴ്‌സ്‌വെയർ വരയ്ക്കുന്നു, ഇതിന് കുറച്ച് മിനിറ്റുകൾ എടുത്തേക്കാം',
   'zhihui.diagram.toastComplete': 'കോഴ്‌സ്‌വെയർ തയ്യാറാണ്',
   'zhihui.diagram.toastPartial': 'കോഴ്‌സ്‌വെയർ ഭാഗികമായി പൂർത്തിയായി, തുടർന്നും സൃഷ്‌ടിക്കാനാകും.',
   'zhihui.diagram.toastCancelled': 'കോഴ്‌സ്‌വെയർ ഉൽപ്പാദനം റദ്ദാക്കി',
@@ -58,12 +64,14 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'സ്ലൈഡ്‌ഷോ ലോഡുചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു',
   'zhihui.diagram.retryImage': 'വീണ്ടും ശ്രമിക്കുക',
   'zhihui.diagram.teacherScript': 'അധ്യാപകൻ്റെ വിവരണം',
-  'zhihui.diagram.teacherScriptHint': 'ഈ പേജിലെ ചിത്രീകരണങ്ങളുടെയും മാപ്പുകളുടെയും ഫോക്കസ് ഉപയോഗിച്ച് ക്ലാസ് റൂം വിശദീകരണങ്ങൾ വിന്യസിച്ചിരിക്കുന്നു',
+  'zhihui.diagram.teacherScriptHint':
+    'ഈ പേജിലെ ചിത്രീകരണങ്ങളുടെയും മാപ്പുകളുടെയും ഫോക്കസ് ഉപയോഗിച്ച് ക്ലാസ് റൂം വിശദീകരണങ്ങൾ വിന്യസിച്ചിരിക്കുന്നു',
   'zhihui.diagram.ttsPlay': 'ഈ പേജിൻ്റെ വിവരണം ഉറക്കെ വായിക്കാൻ പൂച്ചക്കുട്ടിയിൽ ക്ലിക്ക് ചെയ്യുക',
   'zhihui.diagram.ttsStop': 'വായന നിർത്തുക',
   'zhihui.diagram.ttsMute': 'നിശബ്ദമായ ആഖ്യാനം',
   'zhihui.diagram.ttsUnmute': 'ആഖ്യാന വായന ഓണാക്കുക',
-  'zhihui.diagram.ttsFailed': 'ആഖ്യാതാവിൻ്റെ വായന പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'zhihui.diagram.ttsFailed':
+    'ആഖ്യാതാവിൻ്റെ വായന പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'zhihui.refUploadSoon': 'റഫറൻസ് ഇമേജ് അപ്‌ലോഡ് ഉടൻ പിന്തുണയ്‌ക്കും',
   'zhihui.attachReference': 'റഫറൻസ് ചിത്രം ചേർക്കുക',
   'zhihui.attachReferenceHint': 'ക്വെൻ റഫറൻസ് പോലെ 3 ചിത്രങ്ങൾ വരെ',
@@ -74,7 +82,8 @@ export default {
   'zhihui.sizeButton': 'ചിത്രത്തിൻ്റെ വലുപ്പം',
   'zhihui.sizePanelTitle': 'ചിത്രത്തിൻ്റെ വലുപ്പം',
   'zhihui.sizeOptional': 'ഓപ്ഷണൽ',
-  'zhihui.sizeHint': 'വീതി* ഉയരമാണ് ഫോർമാറ്റ്. വ്യക്തമാക്കിയിട്ടില്ലെങ്കിൽ, പ്രോംപ്റ്റ് പദത്തെ അടിസ്ഥാനമാക്കി മോഡൽ സ്വയമേ റെസല്യൂഷൻ ശുപാർശ ചെയ്യും.',
+  'zhihui.sizeHint':
+    'വീതി* ഉയരമാണ് ഫോർമാറ്റ്. വ്യക്തമാക്കിയിട്ടില്ലെങ്കിൽ, പ്രോംപ്റ്റ് പദത്തെ അടിസ്ഥാനമാക്കി മോഡൽ സ്വയമേ റെസല്യൂഷൻ ശുപാർശ ചെയ്യും.',
   'zhihui.sizeLimits': 'പിക്സൽ ഏരിയ 512×512–2048×2048; വീക്ഷണാനുപാതം 1:8–8:1',
   'zhihui.size.auto': 'ബുദ്ധിയുള്ള',
   'zhihui.size.autoHint': 'ഓട്ടോമാറ്റിക്',
@@ -102,7 +111,8 @@ export default {
   'zhihui.empty': 'ഇതുവരെ ഒരു ചിത്രവുമില്ല, അത് മുകളിൽ ജനറേറ്റ് ചെയ്യാൻ ശ്രമിക്കുക.',
   'zhihui.loadFailed': 'ചരിത്രം ലോഡുചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു',
   'zhihui.delete': 'ഇല്ലാതാക്കുക',
-  'zhihui.deleteConfirm': 'ഈ ചിത്രം ഇല്ലാതാക്കണമെന്ന് തീർച്ചയാണോ? ഈ പ്രവർത്തനം പഴയപടിയാക്കാനാകില്ല.',
+  'zhihui.deleteConfirm':
+    'ഈ ചിത്രം ഇല്ലാതാക്കണമെന്ന് തീർച്ചയാണോ? ഈ പ്രവർത്തനം പഴയപടിയാക്കാനാകില്ല.',
   'zhihui.deleteTitle': 'ചിത്രം ഇല്ലാതാക്കുക',
   'zhihui.deleted': 'ഇല്ലാതാക്കി',
   'zhihui.deleteFailed': 'ഇല്ലാതാക്കൽ പരാജയപ്പെട്ടു',

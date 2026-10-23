@@ -34,12 +34,7 @@ export interface GroupStats {
 }
 
 export type StatCardType =
-  | 'total'
-  | 'unused'
-  | 'continuous'
-  | 'rejection'
-  | 'stopped'
-  | 'intermittent'
+  'total' | 'unused' | 'continuous' | 'rejection' | 'stopped' | 'intermittent'
 
 export interface WeeklyDataPoint {
   date: string

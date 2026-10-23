@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  parseZhihuiDiagramHandoffQuery,
   ZHIHUI_DIAGRAM_HANDOFF_QUERY_KEYS,
+  parseZhihuiDiagramHandoffQuery,
 } from '@/composables/zhihui/zhihuiDiagramHandoffQuery'
 
 describe('parseZhihuiDiagramHandoffQuery', () => {
@@ -45,9 +45,7 @@ describe('parseZhihuiDiagramHandoffQuery', () => {
   })
 
   it('accepts snake_case conversation_id', () => {
-    expect(
-      parseZhihuiDiagramHandoffQuery({ conversation_id: 'conv-snake' })
-    ).toEqual({
+    expect(parseZhihuiDiagramHandoffQuery({ conversation_id: 'conv-snake' })).toEqual({
       mode: 'diagram',
       diagramId: null,
       diagramTitle: null,

@@ -4,8 +4,6 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
-
 import AdminCosBackupsPanel from '@/components/admin/AdminCosBackupsPanel.vue'
 import AdminCosCrowdsecPanel from '@/components/admin/AdminCosCrowdsecPanel.vue'
 import AdminCosOverviewPanel from '@/components/admin/AdminCosOverviewPanel.vue'

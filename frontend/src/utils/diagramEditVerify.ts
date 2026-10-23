@@ -103,10 +103,7 @@ export function resolveCreatedNodeIds(
   if (created.length === 0) {
     return []
   }
-  const want =
-    effect?.text && effect.text.trim() !== ''
-      ? normalizeDiagramText(effect.text)
-      : ''
+  const want = effect?.text && effect.text.trim() !== '' ? normalizeDiagramText(effect.text) : ''
   if (want) {
     const matching = created.filter((n) => nodeText(n) === want)
     if (matching.length > 0) {
@@ -173,9 +170,7 @@ export function verifyMindMapEffect(
         const parentRef = effect.parent_ref?.trim() ?? ''
         if (parentRef !== '' && parentRef !== 'topic') {
           const parentWant = normalizeDiagramText(parentRef)
-          const parentNode = nodes.find(
-            (n) => n.id === parentRef || nodeText(n) === parentWant
-          )
+          const parentNode = nodes.find((n) => n.id === parentRef || nodeText(n) === parentWant)
           const parentId = parentNode?.id
           const hasParent = parentId
             ? connections.some((c) => c.source === parentId && c.target === newId)
@@ -218,9 +213,7 @@ export function verifyMindMapEffect(
       record('node_absent', absent)
     }
     const ids = new Set(nodes.map((n) => n.id))
-    const dangling = connections.some(
-      (c) => !ids.has(c.source) || !ids.has(c.target)
-    )
+    const dangling = connections.some((c) => !ids.has(c.source) || !ids.has(c.target))
     record('no_dangling_edges', !dangling)
     record('tree_rooted_at_topic', topicNodes(nodes).length === 1)
     return report(passed, failed)

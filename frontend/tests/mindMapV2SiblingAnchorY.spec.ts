@@ -326,11 +326,7 @@ describe('v2 sibling Enter anchor Y stability', () => {
       node('branch-r-2-10', 246, { height: 34, x: 700, uid: 'sic' }),
       node('branch-r-2-11', 292, { height: 34, x: 700, uid: '800v' }),
       node('branch-r-2-12', 338, { height: 34, x: 700, uid: 'aero' }),
-    ].map((n) =>
-      n.type === 'branch'
-        ? { ...n, style: { nodeShape: 'rectangle' as const } }
-        : n
-    )
+    ].map((n) => (n.type === 'branch' ? { ...n, style: { nodeShape: 'rectangle' as const } } : n))
     const connections: Connection[] = [
       { id: 'c0', source: 'topic', target: 'branch-r-1-0' },
       { id: 'c1', source: 'branch-r-1-0', target: 'branch-r-2-5' },
@@ -359,8 +355,7 @@ describe('v2 sibling Enter anchor Y stability', () => {
       'formal'
     )
 
-    const upperBottom =
-      requirePosition(requireNode(laidOut, 'branch-r-2-7'), 'branch-r-2-7').y + 34
+    const upperBottom = requirePosition(requireNode(laidOut, 'branch-r-2-7'), 'branch-r-2-7').y + 34
     const lowerTop = requirePosition(requireNode(laidOut, 'branch-r-2-9'), 'branch-r-2-9').y
     expect(lowerTop).toBeGreaterThanOrEqual(upperBottom + DEFAULT_MINDMAP_BRANCH_GAP - 0.5)
   })
@@ -407,11 +402,7 @@ describe('v2 sibling Enter anchor Y stability', () => {
       node('branch-l-2-2', -48, { uid: 'uid-a1', height: 40, x: 40 }),
       node('branch-l-1-3', 120, { uid: 'uid-b', height: 40, x: 100 }),
       node('branch-l-2-4', 120, { uid: 'uid-b0', height: 40, x: 40 }),
-    ].map((n) =>
-      n.id === 'topic'
-        ? n
-        : { ...n, style: { nodeShape: 'underline' as const } }
-    )
+    ].map((n) => (n.id === 'topic' ? n : { ...n, style: { nodeShape: 'underline' as const } }))
     const connections: Connection[] = [
       { id: 'c0', source: 'topic', target: 'branch-l-1-0' },
       { id: 'c1', source: 'branch-l-1-0', target: 'branch-l-2-1' },
@@ -445,8 +436,7 @@ describe('v2 sibling Enter anchor Y stability', () => {
     )
 
     expect(laidOut.find((n) => n.id === 'topic')?.position?.y).toBeCloseTo(0, 5)
-    const upperBottom =
-      requirePosition(requireNode(laidOut, 'branch-l-2-2'), 'branch-l-2-2').y + 40
+    const upperBottom = requirePosition(requireNode(laidOut, 'branch-l-2-2'), 'branch-l-2-2').y + 40
     const lowerTop = requirePosition(requireNode(laidOut, 'branch-l-2-4'), 'branch-l-2-4').y
     // Underline↔underline branch gap is 14 — much tighter than the pinned 100+ air.
     expect(lowerTop - upperBottom).toBeGreaterThanOrEqual(14 - 0.5)

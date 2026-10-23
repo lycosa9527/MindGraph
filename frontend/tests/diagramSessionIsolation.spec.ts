@@ -59,9 +59,7 @@ describe('diagram session isolation (Showcase vs editor)', () => {
     expect(preview.isReadonly).toBe(true)
     expect(editor.isReadonly).toBe(false)
 
-    expect(
-      preview.loadFromSpec(pollutedCircleSpec, 'circle_map', { emitLoaded: false })
-    ).toBe(true)
+    expect(preview.loadFromSpec(pollutedCircleSpec, 'circle_map', { emitLoaded: false })).toBe(true)
 
     expect(preview.type).toBe('circle_map')
     expect(preview.data?.nodes?.some((n) => n.text.includes('Xiaomi'))).toBe(true)
@@ -148,9 +146,7 @@ describe('diagram session isolation (Showcase vs editor)', () => {
         emitDiagramEvents: false,
       })
     )
-    expect(
-      preview.loadFromSpec(pollutedCircleSpec, 'circle_map', { emitLoaded: true })
-    ).toBe(true)
+    expect(preview.loadFromSpec(pollutedCircleSpec, 'circle_map', { emitLoaded: true })).toBe(true)
 
     expect(hits).toEqual([])
     off()

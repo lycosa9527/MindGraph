@@ -44,8 +44,7 @@ export function useCanvasKittyDesktopPairing(options: {
     ) {
       return false
     }
-    const openScope =
-      options.currentDiagramId.value?.trim() || oneSentence.ephemeralScope
+    const openScope = options.currentDiagramId.value?.trim() || oneSentence.ephemeralScope
     return scopeMatchesKittyMobileActive(openScope, {
       active: userMobileKittyActive.value,
       scopes: userMobileKittyScopes.value,

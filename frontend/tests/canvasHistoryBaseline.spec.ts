@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { applyCanvasHistoryNavigationSync } from '@/composables/canvasPage/applyCanvasHistoryNavigationSync'
@@ -10,15 +11,18 @@ import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 
 describe('canvas undo/redo baseline', () => {
   beforeEach(() => {
-    vi.stubGlobal('matchMedia', vi.fn(() => ({
-      matches: false,
-      media: '',
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })))
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        media: '',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+    )
   })
 
   it('seeds baseline so the first edit is undoable', () => {

@@ -5,12 +5,14 @@
 
 export default {
   'fileCenterLibrary.title': 'தகவல் தொகுப்பு',
-  'fileCenterLibrary.subtitle': 'வரைபடத்தின் மூலம் தொகுக்கப்பட்ட ஆதாரங்களின் தொகுப்பு (ஆவணச் சுருக்கம்).',
+  'fileCenterLibrary.subtitle':
+    'வரைபடத்தின் மூலம் தொகுக்கப்பட்ட ஆதாரங்களின் தொகுப்பு (ஆவணச் சுருக்கம்).',
   'fileCenterLibrary.openDiagram': 'திறந்த விளக்கப்படம்',
   'fileCenterLibrary.badgeCanvas': 'கேன்வாஸ்',
   'fileCenterLibrary.badgeExtension': 'விரிவாக்கு',
   'fileCenterLibrary.badgeUpload': 'பதிவேற்றம்',
-  'chunkTest.history.confirmDeleteBody': 'இந்த சோதனைப் பதிவை நிச்சயமாக நீக்க விரும்புகிறீர்களா? இந்தச் செயலைச் செயல்தவிர்க்க முடியாது.',
+  'chunkTest.history.confirmDeleteBody':
+    'இந்த சோதனைப் பதிவை நிச்சயமாக நீக்க விரும்புகிறீர்களா? இந்தச் செயலைச் செயல்தவிர்க்க முடியாது.',
   'chunkTest.history.confirmDeleteTitle': 'சோதனையை நீக்கு',
   'chunkTest.history.delete': 'நீக்கவும்',
   'chunkTest.history.deleteFailed': 'நீக்குவது தோல்வியடைந்தது',
@@ -32,7 +34,8 @@ export default {
   'chunkTest.page.myDocuments': 'எனது ஆவணங்கள்',
   'chunkTest.page.noDatasets': 'தரவுத்தொகுப்பு இல்லை',
   'chunkTest.page.noDocsToTest': 'சோதனைக்குரிய ஆவணங்கள் இல்லை',
-  'chunkTest.page.selectCompletedDocs': 'சோதனைக்கு பூர்த்தி செய்யப்பட்ட ஆவணத்தைத் தேர்ந்தெடுக்கவும்',
+  'chunkTest.page.selectCompletedDocs':
+    'சோதனைக்கு பூர்த்தி செய்யப்பட்ட ஆவணத்தைத் தேர்ந்தெடுக்கவும்',
   'chunkTest.page.startingDatasetTest': 'தரவுத் தொகுப்பைச் சோதிக்கத் தொடங்குங்கள்: {name}...',
   'chunkTest.page.startingUserDocTest': 'ஆவணங்களைப் பதிவேற்றும் சோதனையைத் தொடங்கவும்...',
   'chunkTest.page.testFailed': 'சோதனை தோல்வியடைந்தது',
@@ -49,7 +52,8 @@ export default {
   'chunkTestResults.answerQuality': 'பதில் தரம்',
   'chunkTestResults.avgLatency': 'சராசரி தாமதம் (மிவி)',
   'chunkTestResults.back': 'திரும்ப',
-  'chunkTestResults.cancelConfirmBody': 'இந்தச் சோதனையை நிச்சயமாக ரத்துசெய்ய விரும்புகிறீர்களா? அடுத்த சோதனைச் சாவடியில் சோதனை நிறுத்தப்படும்.',
+  'chunkTestResults.cancelConfirmBody':
+    'இந்தச் சோதனையை நிச்சயமாக ரத்துசெய்ய விரும்புகிறீர்களா? அடுத்த சோதனைச் சாவடியில் சோதனை நிறுத்தப்படும்.',
   'chunkTestResults.cancelFailed': 'ரத்துசெய்ய முடியவில்லை',
   'chunkTestResults.cancelRequested': 'சோதனை ரத்து கோரிக்கை அனுப்பப்பட்டது',
   'chunkTestResults.cancelTest': 'சோதனையை ரத்துசெய்',
@@ -79,7 +83,8 @@ export default {
   'chunkTestResults.standardIrMetrics': 'நிலையான ஐஆர் காட்டி',
   'chunkTestResults.storageEff': 'சேமிப்பு திறன்',
   'chunkTestResults.testFailed': 'சோதனை தோல்வியடைந்தது',
-  'chunkTestResults.testFailedHint': 'சோதனைச் செயல்பாட்டின் போது பிழை ஏற்பட்டது, மீண்டும் முயற்சிக்கவும்.',
+  'chunkTestResults.testFailedHint':
+    'சோதனைச் செயல்பாட்டின் போது பிழை ஏற்பட்டது, மீண்டும் முயற்சிக்கவும்.',
   'chunkTestResults.testingInProgress': 'சோதனை நடந்து கொண்டிருக்கிறது...',
   'chunkTestResults.totalChunks': 'மொத்தம் {n} துண்டுகள்',
   'chunkTestResults.viewChunks': 'பகுதிகளைக் காண்க',
@@ -89,7 +94,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'அனைத்து தரவுத்தொகுப்புகளையும் சோதிக்கவும்',
   'knowledge.chunkHeader.testUpload': 'சோதனை பதிவேற்ற ஆவணம்',
   'knowledge.chunkHeader.title': 'RAG தொகுதி சோதனை',
-  'knowledge.chunkHeader.waitForProcessing': 'சோதனைக்கு முன் ஆவணச் செயலாக்கம் முடியும் வரை காத்திருக்கவும்',
+  'knowledge.chunkHeader.waitForProcessing':
+    'சோதனைக்கு முன் ஆவணச் செயலாக்கம் முடியும் வரை காத்திருக்கவும்',
   'knowledge.chunkPreview.empty': 'இதுவரை துண்டிக்கப்பட்ட தரவு இல்லை',
   'knowledge.chunkPreview.pageLabel': 'பக்கம் {n}',
   'knowledge.chunkPreview.title': 'ஆவணத் துண்டு மாதிரிக்காட்சி — {fileName}',
@@ -108,7 +114,8 @@ export default {
   'knowledge.doc.colStatus': 'மாநில',
   'knowledge.doc.colType': 'வகை',
   'knowledge.doc.colUploaded': 'பதிவேற்ற நேரம்',
-  'knowledge.doc.emptyDescription': 'இதுவரை எந்த ஆவணமும் இல்லை. அறிவுத் தளத்தை உருவாக்கத் தொடங்க ஆவணத்தைப் பதிவேற்றவும்.',
+  'knowledge.doc.emptyDescription':
+    'இதுவரை எந்த ஆவணமும் இல்லை. அறிவுத் தளத்தை உருவாக்கத் தொடங்க ஆவணத்தைப் பதிவேற்றவும்.',
   'knowledge.doc.errorPrefix': 'தவறு:',
   'knowledge.doc.noData': 'இன்னும் தரவு இல்லை',
   'knowledge.doc.statusCompleted': 'முடிக்கப்பட்டது',
@@ -124,31 +131,43 @@ export default {
   'knowledge.header.title': 'தனிப்பட்ட அறிவு அடிப்படை',
   'knowledge.header.upload': 'ஆவணங்களைப் பதிவேற்றவும்',
   'knowledge.ragGuide.title': 'தொகுப்புகள், RAGகள் மற்றும் விக்கிகள் எவ்வாறு செயல்படுகின்றன?',
-  'knowledge.ragGuide.subtitle': 'தொழில்நுட்ப வாசகங்களைப் புரிந்து கொள்ள வேண்டிய அவசியமில்லை - குறிப்புப் பொருட்களை முதலில் பாக்கெட்டில் வைக்கவும். கணினி முதலில் தேடக்கூடிய RAG குறியீட்டை உருவாக்கி, பின்னர் தானாகவே குறுகிய விக்கி குறிப்புகளை தொகுக்கும்; வரைபடத்தை உருவாக்கும் போது AI இரண்டையும் ஒரே நேரத்தில் குறிக்கும்.',
+  'knowledge.ragGuide.subtitle':
+    'தொழில்நுட்ப வாசகங்களைப் புரிந்து கொள்ள வேண்டிய அவசியமில்லை - குறிப்புப் பொருட்களை முதலில் பாக்கெட்டில் வைக்கவும். கணினி முதலில் தேடக்கூடிய RAG குறியீட்டை உருவாக்கி, பின்னர் தானாகவே குறுகிய விக்கி குறிப்புகளை தொகுக்கும்; வரைபடத்தை உருவாக்கும் போது AI இரண்டையும் ஒரே நேரத்தில் குறிக்கும்.',
   'knowledge.ragGuide.step1.title': 'ஒரு பாக்கெட்டைத் தேர்ந்தெடுக்கவும்',
-  'knowledge.ragGuide.step1.body': 'பொதிகள் Zotero இல் பிடித்தவை போன்றவை. நீங்கள் இடதுபுறத்தில் 3 வரை உருவாக்கலாம், ஒவ்வொன்றும் பொதுவாக மன வரைபடத்துடன் தொடர்புடையது. பக்கப்பட்டியில் உள்ள தரவுத் தொகுப்பைக் கிளிக் செய்து அதில் உள்ள ஆவணங்களை நிர்வகிக்கவும்.',
+  'knowledge.ragGuide.step1.body':
+    'பொதிகள் Zotero இல் பிடித்தவை போன்றவை. நீங்கள் இடதுபுறத்தில் 3 வரை உருவாக்கலாம், ஒவ்வொன்றும் பொதுவாக மன வரைபடத்துடன் தொடர்புடையது. பக்கப்பட்டியில் உள்ள தரவுத் தொகுப்பைக் கிளிக் செய்து அதில் உள்ள ஆவணங்களை நிர்வகிக்கவும்.',
   'knowledge.ragGuide.step2.title': 'சேர் மற்றும் குறியீட்டு ஆவணங்கள் (RAG)',
-  'knowledge.ragGuide.step2.body': 'PDF, Word, குறிப்புகள் அல்லது இணையப் பக்கங்களைப் பதிவேற்றவும். கணினி நீண்ட ஆவணங்களைத் தேடக்கூடிய துண்டுகளாக நறுக்கி அவற்றை வெக்டார் இன்டெக்ஸ்களில் எழுதும் - இது முதலில் தயாராக இருக்கும் RAG லேயர்.',
+  'knowledge.ragGuide.step2.body':
+    'PDF, Word, குறிப்புகள் அல்லது இணையப் பக்கங்களைப் பதிவேற்றவும். கணினி நீண்ட ஆவணங்களைத் தேடக்கூடிய துண்டுகளாக நறுக்கி அவற்றை வெக்டார் இன்டெக்ஸ்களில் எழுதும் - இது முதலில் தயாராக இருக்கும் RAG லேயர்.',
   'knowledge.ragGuide.step3.title': 'விக்கி நோட்டுகளின் தானியங்கி தொகுப்பு',
-  'knowledge.ragGuide.step3.body': 'அட்டவணைப்படுத்தல் முடிந்ததும், எல்எல்எம் மேலோட்டப் பார்வை மற்றும் தலைப்பு விக்கி பக்கங்களை வட்டில் தொகுக்கிறது. தொகுப்பின் கட்டமைப்பை விரைவாகப் புரிந்துகொள்ள உதவும் சுருக்கப்பட்ட குறிப்புகள் (அசல் உரையிலிருந்து பகுதிகள் அல்ல).',
+  'knowledge.ragGuide.step3.body':
+    'அட்டவணைப்படுத்தல் முடிந்ததும், எல்எல்எம் மேலோட்டப் பார்வை மற்றும் தலைப்பு விக்கி பக்கங்களை வட்டில் தொகுக்கிறது. தொகுப்பின் கட்டமைப்பை விரைவாகப் புரிந்துகொள்ள உதவும் சுருக்கப்பட்ட குறிப்புகள் (அசல் உரையிலிருந்து பகுதிகள் அல்ல).',
   'knowledge.ragGuide.step4.title': 'தேடும்போது விக்கி மற்றும் சங்கிங் இரண்டையும் பயன்படுத்தவும்',
-  'knowledge.ragGuide.step4.body': 'ஒரு கிளையை விரிவுபடுத்தும் போது அல்லது சுருக்கத்தை உருவாக்கும் போது, ​​கணினி முதலில் தொடர்புடைய விக்கி பக்கங்களுடன் பொருந்துகிறது, பின்னர் மிகவும் பொருத்தமான துண்டிக்கப்பட்ட பத்திகளை (ஹைப்ரிட் RAG) மீட்டெடுக்கிறது.',
+  'knowledge.ragGuide.step4.body':
+    'ஒரு கிளையை விரிவுபடுத்தும் போது அல்லது சுருக்கத்தை உருவாக்கும் போது, ​​கணினி முதலில் தொடர்புடைய விக்கி பக்கங்களுடன் பொருந்துகிறது, பின்னர் மிகவும் பொருத்தமான துண்டிக்கப்பட்ட பத்திகளை (ஹைப்ரிட் RAG) மீட்டெடுக்கிறது.',
   'knowledge.ragGuide.step5.title': 'மூலத்தின் அடிப்படையில் AI பதில்கள்',
-  'knowledge.ragGuide.step5.body': 'AI ஆனது விக்கி குறிப்புகள் மற்றும் மீட்டெடுக்கப்பட்ட துணுக்குகளைக் குறிப்பிடுவதன் மூலம் உள்ளடக்கத்தை உருவாக்குகிறது, மாறாக அதை மெல்லிய காற்றில் இருந்து உருவாக்குகிறது-எவ்வளவு பொருத்தமான ஆதாரம், குறியீட்டு மற்றும் விக்கி மிகவும் முழுமையானது, வரைபடம் மிகவும் துல்லியமானது.',
-  'knowledge.ragGuide.footer': 'உதவிக்குறிப்பு: கேன்வாஸில் "ஆவணச் சுருக்கத்தை" திறப்பது தானாகவே தரவுத் தொகுப்பை உருவாக்கும்; குரோம் நீட்டிப்பு மூலம் சேமிக்கப்பட்ட இணையப் பக்கங்களும் இடதுபுறத்தில் உள்ள பட்டியலில் தோன்றும்.',
+  'knowledge.ragGuide.step5.body':
+    'AI ஆனது விக்கி குறிப்புகள் மற்றும் மீட்டெடுக்கப்பட்ட துணுக்குகளைக் குறிப்பிடுவதன் மூலம் உள்ளடக்கத்தை உருவாக்குகிறது, மாறாக அதை மெல்லிய காற்றில் இருந்து உருவாக்குகிறது-எவ்வளவு பொருத்தமான ஆதாரம், குறியீட்டு மற்றும் விக்கி மிகவும் முழுமையானது, வரைபடம் மிகவும் துல்லியமானது.',
+  'knowledge.ragGuide.footer':
+    'உதவிக்குறிப்பு: கேன்வாஸில் "ஆவணச் சுருக்கத்தை" திறப்பது தானாகவே தரவுத் தொகுப்பை உருவாக்கும்; குரோம் நீட்டிப்பு மூலம் சேமிக்கப்பட்ட இணையப் பக்கங்களும் இடதுபுறத்தில் உள்ள பட்டியலில் தோன்றும்.',
   'knowledge.pipeline.title': 'குழாய் நிலை',
   'knowledge.pipeline.ragIdle': 'RAG இன்டெக்ஸ்',
-  'knowledge.pipeline.ragIdleDetail': 'இன்னும் அட்டவணைப்படுத்தப்பட்ட தொகுப்புகள் எதுவும் இல்லை. தொகுப்பில் ஆதாரங்களைச் சேர்த்து, அட்டவணைப்படுத்தவும்.',
+  'knowledge.pipeline.ragIdleDetail':
+    'இன்னும் அட்டவணைப்படுத்தப்பட்ட தொகுப்புகள் எதுவும் இல்லை. தொகுப்பில் ஆதாரங்களைச் சேர்த்து, அட்டவணைப்படுத்தவும்.',
   'knowledge.pipeline.ragProcessing': 'RAG அட்டவணைப்படுத்தல்',
-  'knowledge.pipeline.ragProcessingDetail': '{count} பாக்கெட்டுகள் இன்னும் துண்டிக்கப்பட்டு வெக்டரைஸ் செய்யப்படுகின்றன.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} பாக்கெட்டுகள் இன்னும் துண்டிக்கப்பட்டு வெக்டரைஸ் செய்யப்படுகின்றன.',
   'knowledge.pipeline.ragReady': 'RAG தயாராக உள்ளது',
-  'knowledge.pipeline.ragReadyDetail': '{count} தொகுப்புகள் அட்டவணையிடப்பட்டது - துண்டிக்கப்பட்ட மீட்டெடுப்பு உள்ளது.',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count} தொகுப்புகள் அட்டவணையிடப்பட்டது - துண்டிக்கப்பட்ட மீட்டெடுப்பு உள்ளது.',
   'knowledge.pipeline.wikiDisabled': 'விக்கி தொகுப்பு மூடப்பட்டுள்ளது',
   'knowledge.pipeline.wikiDisabledDetail': 'இந்த சர்வரில் விக்கி தொகுப்பு இயக்கப்படவில்லை.',
   'knowledge.pipeline.wikiIdle': 'விக்கி தொகுப்பு',
-  'knowledge.pipeline.wikiIdleDetail': 'ஒவ்வொரு மூல RAG இன்டெக்ஸ் முடிந்ததும் விக்கி பக்கங்கள் தானாகவே தொகுக்கப்படும்.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'ஒவ்வொரு மூல RAG இன்டெக்ஸ் முடிந்ததும் விக்கி பக்கங்கள் தானாகவே தொகுக்கப்படும்.',
   'knowledge.pipeline.wikiPending': 'விக்கி தொகுத்தல்',
-  'knowledge.pipeline.wikiPendingDetail': '{count} தொகுப்புகள் அட்டவணைப்படுத்திய பிறகு விக்கி பக்க உருவாக்கத்திற்காக காத்திருக்கின்றன.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} தொகுப்புகள் அட்டவணைப்படுத்திய பிறகு விக்கி பக்க உருவாக்கத்திற்காக காத்திருக்கின்றன.',
   'knowledge.pipeline.wikiReady': 'விக்கி தயாராக உள்ளது',
   'knowledge.pipeline.wikiReadyDetail': '{count} தொகுப்புகள் விக்கி குறிப்புகளைத் தொகுத்துள்ளன.',
   'knowledge.pipelineBadge.rag.label': 'RAG',
@@ -164,7 +183,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'அனைத்தையும் தேர்வுநீக்கவும்',
   'knowledge.manualEval.dialogTitle': 'கைமுறை மதிப்பீடு — {method}',
   'knowledge.manualEval.groundTruthLabel': 'நிலையான பதில் (விரும்பினால்)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'பதில் பொருத்தத்தை மதிப்பிடுவதற்கு நிலையான பதில்களை உள்ளிடவும்...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'பதில் பொருத்தத்தை மதிப்பிடுவதற்கு நிலையான பதில்களை உள்ளிடவும்...',
   'knowledge.manualEval.metric.answer_coverage': 'பதில் கவரேஜ்',
   'knowledge.manualEval.metric.answer_faithfulness': 'பதில் நம்பகத்தன்மை',
   'knowledge.manualEval.metric.clarity': 'தெளிவு',
@@ -186,7 +206,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'தர மதிப்பீட்டைத் தடுக்கவும்',
   'knowledge.manualEval.resultsTitle': 'மதிப்பீட்டு முடிவுகள்',
   'knowledge.manualEval.selectAll': 'அனைத்தையும் தேர்ந்தெடுக்கவும்',
-  'knowledge.manualEval.selectChunksHeading': 'மதிப்பீடு செய்ய துகள்களைத் தேர்ந்தெடுக்கவும் (அனைத்தையும் மதிப்பிடுவதற்கு காலியாக விடவும்)',
+  'knowledge.manualEval.selectChunksHeading':
+    'மதிப்பீடு செய்ய துகள்களைத் தேர்ந்தெடுக்கவும் (அனைத்தையும் மதிப்பிடுவதற்கு காலியாக விடவும்)',
   'knowledge.manualEval.showingFirst20': '{total} டைல்களில் முதல் 20ஐக் காட்டுகிறது',
   'knowledge.manualEval.startEvaluation': 'மதிப்பீட்டைத் தொடங்கவும்',
   'knowledge.processing.chunking': 'துண்டித்தல்',
@@ -235,7 +256,8 @@ export default {
   'knowledge.settings.retrievalSection': 'அமைப்புகளை மீட்டெடுக்கவும்',
   'knowledge.settings.title': 'அறிவு அடிப்படை அமைப்புகள்',
   'knowledge.settings.helpTitle': 'இந்த அமைப்புகள் எவ்வாறு செயல்படுகின்றன',
-  'knowledge.settings.helpBody': 'தேடல் மற்றும் AI பதில்களுக்கு மீட்டெடுப்பு தொடர்பான விருப்பங்கள் உடனடியாகக் கிடைக்கும். துண்டு அளவு மற்றும் ஒன்றுடன் ஒன்று புதிதாக அட்டவணைப்படுத்தப்பட்ட ஆவணங்களுக்கு மட்டுமே பொருந்தும் - மாற்றங்களுக்குப் பிறகு ஏற்கனவே உள்ள ஆதாரங்களை மீண்டும் அட்டவணைப்படுத்தவும்.',
+  'knowledge.settings.helpBody':
+    'தேடல் மற்றும் AI பதில்களுக்கு மீட்டெடுப்பு தொடர்பான விருப்பங்கள் உடனடியாகக் கிடைக்கும். துண்டு அளவு மற்றும் ஒன்றுடன் ஒன்று புதிதாக அட்டவணைப்படுத்தப்பட்ட ஆவணங்களுக்கு மட்டுமே பொருந்தும் - மாற்றங்களுக்குப் பிறகு ஏற்கனவே உள்ள ஆதாரங்களை மீண்டும் அட்டவணைப்படுத்தவும்.',
   'knowledge.settings.tokens': 'டோக்கன்',
   'knowledge.settings.serverSection': 'சேவையகம் (படிக்க மட்டும்)',
   'knowledge.settings.rerankingMode': 'மறுவரிசைப்படுத்து',
@@ -246,7 +268,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'மூடப்பட்டது',
   'knowledge.settings.saveSuccess': 'அமைப்புகள் சேமிக்கப்பட்டன',
   'knowledge.settings.saveFailed': 'அமைப்புகளைச் சேமிக்க முடியவில்லை',
-  'knowledge.settings.reindexRequired': 'துண்டித்தல் அளவுருக்கள் மாற்றப்பட்டுள்ளன - நடைமுறைக்கு வர, தொகுப்பில் இருக்கும் ஆவணங்களை மீண்டும் அட்டவணைப்படுத்தவும்.',
+  'knowledge.settings.reindexRequired':
+    'துண்டித்தல் அளவுருக்கள் மாற்றப்பட்டுள்ளன - நடைமுறைக்கு வர, தொகுப்பில் இருக்கும் ஆவணங்களை மீண்டும் அட்டவணைப்படுத்தவும்.',
   'knowledge.upload.click': 'பதிவேற்ற கிளிக் செய்யவும்',
   'knowledge.upload.drag': 'அல்லது கோப்புகளை இங்கே இழுத்து விடவும்',
   'knowledge.upload.fileTooLarge': 'கோப்பு அளவு 10MB ஐ விட அதிகமாக இருக்கக்கூடாது',
@@ -254,7 +277,8 @@ export default {
   'knowledge.upload.maxDocs': 'ஆவணங்களின் அதிகபட்ச எண்ணிக்கையை எட்டியுள்ளது (5)',
   'knowledge.upload.title': 'ஆவணங்களைப் பதிவேற்றவும்',
   'knowledge.upload.unsupportedType': 'ஆதரிக்கப்படாத கோப்பு வகைகள்',
-  'knowledgeSpace.confirmDeleteBody': 'இந்த ஆவணத்தை நிச்சயமாக நீக்க விரும்புகிறீர்களா? நீக்கிய பிறகு அதை மீட்டெடுக்க முடியாது.',
+  'knowledgeSpace.confirmDeleteBody':
+    'இந்த ஆவணத்தை நிச்சயமாக நீக்க விரும்புகிறீர்களா? நீக்கிய பிறகு அதை மீட்டெடுக்க முடியாது.',
   'knowledgeSpace.confirmDeleteTitle': 'நீக்குவதை உறுதிப்படுத்தவும்',
   'knowledgeSpace.deleteFailed': 'நீக்குவது தோல்வியடைந்தது',
   'knowledgeSpace.documentDeleted': 'ஆவணம் நீக்கப்பட்டது',
@@ -263,7 +287,8 @@ export default {
   'knowledgeSpace.startProcessingFailed': 'செயலாக்கத்தைத் தொடங்குவது தோல்வியடைந்தது',
   'knowledgeSpace.uploadFailed': 'ஆவணப் பதிவேற்றம் தோல்வியடைந்தது',
   'knowledgeSpace.uploadSuccess': 'ஆவணம் பதிவேற்றப்பட்டது',
-  'knowledgeSpace.uploadSuccessProcessing': 'ஆவணம் வெற்றிகரமாக பதிவேற்றப்பட்டு செயலாக்கப்படுகிறது...',
+  'knowledgeSpace.uploadSuccessProcessing':
+    'ஆவணம் வெற்றிகரமாக பதிவேற்றப்பட்டு செயலாக்கப்படுகிறது...',
   'rag.retrievalTest.failed': 'மீட்டெடுப்பு சோதனை தோல்வியடைந்தது',
   'rag.retrievalTest.success': 'மீட்டெடுப்பு சோதனை முடிந்தது',
 } as const

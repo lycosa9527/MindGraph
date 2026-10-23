@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'เร็วๆ นี้',
   'thinkingCoins.schoolInfo': 'ติดต่อผู้ดูแลโรงเรียนเพื่อดูแผนโรงเรียน',
   'thinkingCoins.school.headline': 'การคิดด้วย AI · โซลูชันโรงเรียน',
-  'thinkingCoins.school.description': 'การติดตั้งแบบส่วนตัว ฟีเจอร์ตามสั่ง และการสนับสนุนปฏิบัติการเต็มรูปแบบสำหรับโรงเรียนและสถาบัน — รองรับการขยายตัว แบรนด์ และความปลอดภัยของข้อมูล',
+  'thinkingCoins.school.description':
+    'การติดตั้งแบบส่วนตัว ฟีเจอร์ตามสั่ง และการสนับสนุนปฏิบัติการเต็มรูปแบบสำหรับโรงเรียนและสถาบัน — รองรับการขยายตัว แบรนด์ และความปลอดภัยของข้อมูล',
   'thinkingCoins.school.feature.accountManager': 'ผู้จัดการบัญชีเฉพาะ',
   'thinkingCoins.school.feature.accountManagerDesc': 'ปรึกษาแบบตัวต่อตัว',
   'thinkingCoins.school.feature.privateDeploy': 'ติดตั้งแบบส่วนตัว',
@@ -63,7 +64,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'รางวัลแนะนำเพื่อน',
   'thinkingCoins.reason.case_reward': 'รางวัลเคส',
   'thinkingCoins.reason.subscription_grant': 'สิทธิ์จากสมาชิก',
-  'thinkingCoins.dailyExpiresHint': 'รางวัลการลงชื่อเข้าใช้จะใช้ได้ในวันเดียวกันและจะถูกรีเซ็ตเวลา 24:00 น',
+  'thinkingCoins.dailyExpiresHint':
+    'รางวัลการลงชื่อเข้าใช้จะใช้ได้ในวันเดียวกันและจะถูกรีเซ็ตเวลา 24:00 น',
   'thinkingCoins.dailyBalanceRemaining': 'เช็คอินวันนี้เหลือ {n}',
   'thinkingCoins.admin.tab': 'โทเค็นความคิด',
   'thinkingCoins.admin.tasksTitle': 'ภารกิจรับโทเค็น',

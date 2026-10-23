@@ -47,10 +47,6 @@ export function buildMindMapChildrenMapByConnectionOrder(
   return buildMindMapTreeChildrenMap(connections)
 }
 
-function buildChildrenMap(connections: Connection[]): Map<string, string[]> {
-  return buildMindMapChildrenMapByConnectionOrder(connections)
-}
-
 /** Stable tree path (side + sibling indices). */
 export function mindMapNodePathKey(nodeId: string, connections: Connection[]): string | null {
   return mindMapLocationPathKey(nodeId, connections)
@@ -350,7 +346,7 @@ export function buildMindMapStyleForNewBranchNode(
   const presetShape = mindMapNodeShapeFromPreset(node, diagramStyle)
   const nodeShape = options.nodeShape ?? options.siblingStyle?.nodeShape ?? presetShape
 
-  let style: NodeStyle = {
+  const style: NodeStyle = {
     ...mindMapStyleFromTheme(node, theme, options.diagramStyleId, connections),
     nodeShape,
   }

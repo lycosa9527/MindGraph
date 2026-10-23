@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.181] - 2026-10-23
+
+> **A seminar keeps a brief, roles, a shared shelf, and a 教研助手 minutes card. Right-click an avatar to @ that person.**
+
+### Added
+
+- **研讨** — MindMate home switches between 开启对话 and 群聊研讨. A seminar opens from a brief with a topic, goals, and roles, including 组长 and 观摩学习. A member from another school stays pending until they accept. Migrations `0150` and `0153`.
+- **资源与产物** — A file sent in chat stays on that message until someone shelves it. Shelving makes it a 资源. A generated file, a teaching-design Word, or a diagram put on the shelf is a 产物. Pin, rename, and remove leave a line in the transcript. Migrations `0149`, `0151`, `0152`, `0154`, and `0155`.
+- **教研纪要** — 会话总结 asks for a range: 全部消息, 自上次纪要之后, 已设为精华的消息, or 自选消息. The minutes open for editing before anyone else sees them. 仅自己留存 keeps a draft. 发送至教研会 posts a 教研助手 card with its own avatar. The card shows status, host, people, progress, and todos. 查看详情 opens the minutes. 导出 downloads the text. 观摩学习 can open and export that card, and cannot generate, edit, or send it.
+- **精华** — A message can be marked 精华. Sharing those lines saves an image headed 协同教研 · 群聊精华语录.
+- **@ 对方** — Right-click another person's avatar in the transcript, the header, or the member list and choose @名字. The name is added at the end of the draft. MindMate's avatar uses the school agent name, so the line still reaches MindMate. Your own avatar, the 教研助手 avatar, and a MindGraph reply do not offer it. 观摩学习 does not see the menu.
+- **面聊与语音** — The seminar composer can hold to send a voice message, and can start 记录面聊 for an in-person meeting.
+- **分享至教研会** — The mind-map ribbon can send the saved diagram into a seminar that is already open.
+
+### Changed
+
+- **观摩学习** — An observer can watch the room and share highlights. They cannot send, record voice or face chat, upload, invite, or download, rename, pin, or delete a shelf file.
+- **一对一对话** — A private MindMate reply has no 转为文档 action. In a seminar, 转为文档 saves that reply as a Word file under 产物. 导出 Word 模板 still appears on a teaching-design reply.
+- **浏览器插件** — The Chrome and Edge buttons use those browsers' marks and read Chrome浏览器 and Edge浏览器. The two sample cards in the hero are mind maps. The section title is 一键把网页转换为可编辑导图.
+
+### Tests
+
+- [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py)
+
 ## [5.180.180] - 2026-10-20
 
 > **Canvas input is mouse, laptop, phone, or a classroom board. Bilingual diagrams follow the interface languages. Old Word .doc files are refused.**

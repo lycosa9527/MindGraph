@@ -6,7 +6,6 @@
  * (scope) instead of opaque HTTP 403 → 1006. Transport failures reconnect
  * without rotating cookies.
  */
-
 import {
   classifyKittyWsCloseCode,
   isKittyConnectCloseError,
@@ -20,12 +19,7 @@ import {
 
 /** Outcome of one Kitty connect attempt (before any auth refresh). */
 export type KittyConnectAttemptResult =
-  | 'connected'
-  | 'aborted'
-  | 'auth_failed'
-  | 'access_denied'
-  | 'scope_denied'
-  | 'failed'
+  'connected' | 'aborted' | 'auth_failed' | 'access_denied' | 'scope_denied' | 'failed'
 
 export function isKittyConnectAbortError(error: unknown): boolean {
   if (!(error instanceof Error)) {

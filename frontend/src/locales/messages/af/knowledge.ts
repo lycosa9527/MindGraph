@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'Doek',
   'fileCenterLibrary.badgeExtension': 'Uitbreiding',
   'fileCenterLibrary.badgeUpload': 'Oplaai',
-  'chunkTest.history.confirmDeleteBody': 'Is u seker dat u hierdie toets wil skrap? Hierdie kan nie ongedaan gemaak word nie.',
+  'chunkTest.history.confirmDeleteBody':
+    'Is u seker dat u hierdie toets wil skrap? Hierdie kan nie ongedaan gemaak word nie.',
   'chunkTest.history.confirmDeleteTitle': 'Skrap Toets',
   'chunkTest.history.delete': 'Skrap',
   'chunkTest.history.deleteFailed': 'Kon nie toets skrap nie',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'Antwoordkwaliteit',
   'chunkTestResults.avgLatency': 'Gemiddelde vertragingsduur',
   'chunkTestResults.back': 'Terug',
-  'chunkTestResults.cancelConfirmBody': 'Is u seker dat u hierdie toets wil kanselleer? Die toets sal by die volgende kontrolpunt stop.',
+  'chunkTestResults.cancelConfirmBody':
+    'Is u seker dat u hierdie toets wil kanselleer? Die toets sal by die volgende kontrolpunt stop.',
   'chunkTestResults.cancelFailed': 'Kon nie toets kanselleer nie',
   'chunkTestResults.cancelRequested': 'Toetskansellasie versoek',
   'chunkTestResults.cancelTest': 'Kanselleer toets',
@@ -79,7 +81,8 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Standaard IR-metriek',
   'chunkTestResults.storageEff': 'Bergingseff.',
   'chunkTestResults.testFailed': 'Toets misluk',
-  'chunkTestResults.testFailedHint': '\'n Fout het tydens die uitvoering van die toets voorgekom. Probeer asseblief weer.',
+  'chunkTestResults.testFailedHint':
+    "'n Fout het tydens die uitvoering van die toets voorgekom. Probeer asseblief weer.",
   'chunkTestResults.testingInProgress': 'Toetsing aan die gang...',
   'chunkTestResults.totalChunks': 'Totaal {n} stukke',
   'chunkTestResults.viewChunks': 'Bekyk Stukke',
@@ -89,7 +92,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Toets Alle Steldata',
   'knowledge.chunkHeader.testUpload': 'Toets Laai Dokumente Op',
   'knowledge.chunkHeader.title': 'RAG-stuktoets',
-  'knowledge.chunkHeader.waitForProcessing': 'Wag asseblief dat die dokumente volledig verwerk word voor toetsing',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Wag asseblief dat die dokumente volledig verwerk word voor toetsing',
   'knowledge.chunkPreview.empty': 'Geen stukke gevind nie',
   'knowledge.chunkPreview.pageLabel': 'Bladsy {n}',
   'knowledge.chunkPreview.title': 'Dokumentstukke — {fileName}',
@@ -108,7 +112,8 @@ export default {
   'knowledge.doc.colStatus': 'Toestand',
   'knowledge.doc.colType': 'Tipe',
   'knowledge.doc.colUploaded': 'Laai datum op',
-  'knowledge.doc.emptyDescription': 'Nog geen dokumente nie. Laai dokumente op om u kennisbasis te bou.',
+  'knowledge.doc.emptyDescription':
+    'Nog geen dokumente nie. Laai dokumente op om u kennisbasis te bou.',
   'knowledge.doc.errorPrefix': 'Fout: ',
   'knowledge.doc.noData': 'Geen data nie',
   'knowledge.doc.statusCompleted': 'Voltooi',
@@ -124,29 +129,39 @@ export default {
   'knowledge.header.title': 'Kennisbasis',
   'knowledge.header.upload': 'Laai dokumente op',
   'knowledge.ragGuide.title': 'Hoe werk pakkette, RAG en Wiki?',
-  'knowledge.ragGuide.subtitle': 'Geen jargon nodig nie — dink daaraan as ’n gids met verwysingsmateriaal. Ons indekseer dit vir soektog (RAG), stel dan kort Wiki-notas saam, en die KI lees albei wanneer u ’n gedagtekaart bou.',
+  'knowledge.ragGuide.subtitle':
+    'Geen jargon nodig nie — dink daaraan as ’n gids met verwysingsmateriaal. Ons indekseer dit vir soektog (RAG), stel dan kort Wiki-notas saam, en die KI lees albei wanneer u ’n gedagtekaart bou.',
   'knowledge.ragGuide.step1.title': 'Kies ’n pakket',
-  'knowledge.ragGuide.step1.body': '’n Pakket is soos ’n Zotero-versameling. U kan tot 3 links hê; elkeen behoort gewoonlik aan een gedagtekaart. Klik ’n pakket in die sybalk om sy dokumente te bestuur.',
+  'knowledge.ragGuide.step1.body':
+    '’n Pakket is soos ’n Zotero-versameling. U kan tot 3 links hê; elkeen behoort gewoonlik aan een gedagtekaart. Klik ’n pakket in die sybalk om sy dokumente te bestuur.',
   'knowledge.ragGuide.step2.title': 'Voeg bronne by en indekseer dit (RAG)',
-  'knowledge.ragGuide.step2.body': 'Laai PDF’s, Word-lêers, notas of webbladsye op. Ons verdeel lang dokumente in soekbare stukkies en stoor vektor-embeddings — dit is die RAG-indeks en is eerste gereed.',
+  'knowledge.ragGuide.step2.body':
+    'Laai PDF’s, Word-lêers, notas of webbladsye op. Ons verdeel lang dokumente in soekbare stukkies en stoor vektor-embeddings — dit is die RAG-indeks en is eerste gereed.',
   'knowledge.ragGuide.step3.title': 'Wiki-notas word outomaties saamgestel',
-  'knowledge.ragGuide.step3.body': 'Nadat indeksering klaar is, stel ’n LLM oorsig- en onderwerp-Wiki-bladsye op skyf saam. Dit is bondige notas (nie transkripsies nie) wat die pakket opsom vir vinniger oriëntasie.',
+  'knowledge.ragGuide.step3.body':
+    'Nadat indeksering klaar is, stel ’n LLM oorsig- en onderwerp-Wiki-bladsye op skyf saam. Dit is bondige notas (nie transkripsies nie) wat die pakket opsom vir vinniger oriëntasie.',
   'knowledge.ragGuide.step4.title': 'Opsoek gebruik Wiki + stukkies',
-  'knowledge.ragGuide.step4.body': 'Wanneer u ’n tak uitbrei of ’n opsomming genereer, pas ons eers relevante Wiki-bladsye, en haal dan die mees relevante stukkiedeeltes op (hibriede RAG).',
+  'knowledge.ragGuide.step4.body':
+    'Wanneer u ’n tak uitbrei of ’n opsomming genereer, pas ons eers relevante Wiki-bladsye, en haal dan die mees relevante stukkiedeeltes op (hibriede RAG).',
   'knowledge.ragGuide.step5.title': 'Antwoorde gegrond op u bronne',
-  'knowledge.ragGuide.step5.body': 'Die KI skryf uit Wiki-notas en opgehaalde snitte in plaas daarvan om te raai — beter bronne, voltooide indeksering en saamgestelde Wiki-bladsye beteken meer akkurate kaarte.',
-  'knowledge.ragGuide.footer': 'Wenk: as u Dokumentopsomming op die doek oopmaak, word ’n pakket outomaties geskep; bladsye wat via die Chrome-uitbreiding gestoor is, verskyn ook in die sybalklys.',
+  'knowledge.ragGuide.step5.body':
+    'Die KI skryf uit Wiki-notas en opgehaalde snitte in plaas daarvan om te raai — beter bronne, voltooide indeksering en saamgestelde Wiki-bladsye beteken meer akkurate kaarte.',
+  'knowledge.ragGuide.footer':
+    'Wenk: as u Dokumentopsomming op die doek oopmaak, word ’n pakket outomaties geskep; bladsye wat via die Chrome-uitbreiding gestoor is, verskyn ook in die sybalklys.',
   'knowledge.pipeline.title': 'Pyplynstatus',
   'knowledge.pipeline.ragIdle': 'RAG-indeks',
-  'knowledge.pipeline.ragIdleDetail': 'Nog geen geïndekseerde pakkette nie. Voeg bronne by en begin indeksering vanaf ’n pakket.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Nog geen geïndekseerde pakkette nie. Voeg bronne by en begin indeksering vanaf ’n pakket.',
   'knowledge.pipeline.ragProcessing': 'RAG-indeksering',
-  'knowledge.pipeline.ragProcessingDetail': '{count} pakket(te) verdeel nog stukkies en bed bronne in.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} pakket(te) verdeel nog stukkies en bed bronne in.',
   'knowledge.pipeline.ragReady': 'RAG gereed',
   'knowledge.pipeline.ragReadyDetail': '{count} pakket(te) geïndekseer — stukkiesoektog is aktief.',
   'knowledge.pipeline.wikiDisabled': 'Wiki-samestelling af',
   'knowledge.pipeline.wikiDisabledDetail': 'Wiki-samestelling is op hierdie bediener gedeaktiveer.',
   'knowledge.pipeline.wikiIdle': 'Wiki-samestelling',
-  'knowledge.pipeline.wikiIdleDetail': 'Wiki-bladsye word saamgestel nadat RAG-indeksering vir elke bron voltooi is.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Wiki-bladsye word saamgestel nadat RAG-indeksering vir elke bron voltooi is.',
   'knowledge.pipeline.wikiPending': 'Wiki word saamgestel',
   'knowledge.pipeline.wikiPendingDetail': '{count} pakket(te) wag ná indeksering vir Wiki-bladsye.',
   'knowledge.pipeline.wikiReady': 'Wiki gereed',
@@ -164,7 +179,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Dien alle keuses uit',
   'knowledge.manualEval.dialogTitle': 'Handmatige evaluasie — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Grondwaarheid-antwoord (opsioneel)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Voer die grondwaarheid-antwoord in vir antwoord-relevansie-evaluasie...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Voer die grondwaarheid-antwoord in vir antwoord-relevansie-evaluasie...',
   'knowledge.manualEval.metric.answer_coverage': 'Antwoorddekking',
   'knowledge.manualEval.metric.answer_faithfulness': 'Antwoordgetrouheid',
   'knowledge.manualEval.metric.clarity': 'Duidelikheid',
@@ -178,7 +194,7 @@ export default {
   'knowledge.manualEval.modelLabel': 'KI-model',
   'knowledge.manualEval.noChunks': 'Geen stukke gevind nie',
   'knowledge.manualEval.notify.completed': 'Evaluering voltooi',
-  'knowledge.manualEval.notify.enterQuery': 'Voer asseblief \'n navraag in',
+  'knowledge.manualEval.notify.enterQuery': "Voer asseblief 'n navraag in",
   'knowledge.manualEval.notify.failed': 'Evaluering het misluk',
   'knowledge.manualEval.queryLabel': 'Navraag',
   'knowledge.manualEval.queryPlaceholder': 'Voer die navraag in om te evalueer...',
@@ -186,7 +202,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Stukkwaliteit-Evaluering',
   'knowledge.manualEval.resultsTitle': 'Evalueringresultate',
   'knowledge.manualEval.selectAll': 'Kies alles',
-  'knowledge.manualEval.selectChunksHeading': 'Kies stukke om te evalueer (laat leeg om almal te evalueer)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Kies stukke om te evalueer (laat leeg om almal te evalueer)',
   'knowledge.manualEval.showingFirst20': 'Wys eerste 20 van {total} stukke',
   'knowledge.manualEval.startEvaluation': 'Begin evaluering',
   'knowledge.processing.chunking': 'Stukkering',
@@ -205,7 +222,7 @@ export default {
   'knowledge.retrieval.colContent': 'Inhoud',
   'knowledge.retrieval.colDocument': 'Dokument',
   'knowledge.retrieval.colScore': 'Telling',
-  'knowledge.retrieval.enterQuery': 'Voer asseblief \'n toetsnavraag in',
+  'knowledge.retrieval.enterQuery': "Voer asseblief 'n toetsnavraag in",
   'knowledge.retrieval.hybrid': 'Hibriede soektog',
   'knowledge.retrieval.keyword': ' Sleutelwoordsoektog',
   'knowledge.retrieval.method': 'Ophalingmetode',
@@ -235,7 +252,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Ophalingsinstellings',
   'knowledge.settings.title': 'Kennisbasisinstellings',
   'knowledge.settings.helpTitle': 'Hoe hierdie instellings geld',
-  'knowledge.settings.helpBody': 'Ophalingvoorkeure geld dadelik vir soektog en KI-antwoorde. Stukkiegrootte en -oorvleueling geld vir nuut geïndekseerde dokumente — herbegin indeksering op bestaande bronne nadat u dit verander.',
+  'knowledge.settings.helpBody':
+    'Ophalingvoorkeure geld dadelik vir soektog en KI-antwoorde. Stukkiegrootte en -oorvleueling geld vir nuut geïndekseerde dokumente — herbegin indeksering op bestaande bronne nadat u dit verander.',
   'knowledge.settings.tokens': 'tekens',
   'knowledge.settings.serverSection': 'Bediener (leesalleen)',
   'knowledge.settings.rerankingMode': 'Herklassifisering',
@@ -246,7 +264,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Gedeaktiveer',
   'knowledge.settings.saveSuccess': 'Instellings gestoor',
   'knowledge.settings.saveFailed': 'Kon nie instellings stoor nie',
-  'knowledge.settings.reindexRequired': 'Stukkie-instellings verander — herindekseer bestaande dokumente in u pakkette sodat die nuwe groottes geld.',
+  'knowledge.settings.reindexRequired':
+    'Stukkie-instellings verander — herindekseer bestaande dokumente in u pakkette sodat die nuwe groottes geld.',
   'knowledge.upload.click': 'Klik om te laai',
   'knowledge.upload.drag': 'of sleep lêer hierheen',
   'knowledge.upload.fileTooLarge': 'Lêergrootte mag nie 10 MB oorskry nie',
@@ -254,7 +273,8 @@ export default {
   'knowledge.upload.maxDocs': 'Maksimum dokumentlimiet bereik (5)',
   'knowledge.upload.title': 'Laai dokument op',
   'knowledge.upload.unsupportedType': 'Nie-ondersteunde lêertipe nie',
-  'knowledgeSpace.confirmDeleteBody': 'Is u seker dat u hierdie dokument wil verwyder? Hierdie aksie kan nie ongedaan gemaak word nie.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Is u seker dat u hierdie dokument wil verwyder? Hierdie aksie kan nie ongedaan gemaak word nie.',
   'knowledgeSpace.confirmDeleteTitle': 'Bevestig Verwydering',
   'knowledgeSpace.deleteFailed': 'Verwydering het misluk',
   'knowledgeSpace.documentDeleted': 'Dokument is verwyder',
@@ -263,7 +283,8 @@ export default {
   'knowledgeSpace.startProcessingFailed': 'Kon nie begin verwerk nie',
   'knowledgeSpace.uploadFailed': 'Dokumentoplaai het misluk',
   'knowledgeSpace.uploadSuccess': 'Dokument is suksesvol opgelaai',
-  'knowledgeSpace.uploadSuccessProcessing': 'Dokument is suksesvol opgelaai, besig met verwerking...',
+  'knowledgeSpace.uploadSuccessProcessing':
+    'Dokument is suksesvol opgelaai, besig met verwerking...',
   'rag.retrievalTest.failed': 'Oproep-toets het misluk',
   'rag.retrievalTest.success': 'Oproep-toets is voltooi',
 } as const

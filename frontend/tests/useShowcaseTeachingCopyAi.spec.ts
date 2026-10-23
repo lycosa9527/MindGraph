@@ -1,17 +1,18 @@
 import { nextTick, ref } from 'vue'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useShowcaseTeachingCopyAi } from '@/composables/showcase/useShowcaseTeachingCopyAi'
 
 const streamShowcaseTeachingCopy = vi.hoisted(() => vi.fn())
 
 vi.mock('@/composables/showcase/generateShowcaseTeachingCopy', () => ({
   teachingCopyFingerprint: vi.fn(
     (input: { file: File; title: string; subject: string; grade: string }) =>
-      `${input.file.name}|${input.title}|${input.subject}|${input.grade}`,
+      `${input.file.name}|${input.title}|${input.subject}|${input.grade}`
   ),
   streamShowcaseTeachingCopy,
 }))
-
-import { useShowcaseTeachingCopyAi } from '@/composables/showcase/useShowcaseTeachingCopyAi'
 
 function collectUnhandledRejections(run: () => Promise<void>): Promise<unknown[]> {
   const reasons: unknown[] = []
@@ -43,8 +44,8 @@ describe('useShowcaseTeachingCopyAi', () => {
   it('handles Invalid API key without unhandledrejection', async () => {
     streamShowcaseTeachingCopy.mockRejectedValue(
       new Error(
-        'Invalid API key. Common causes: environment variable read error, incorrect key, region mismatch.',
-      ),
+        'Invalid API key. Common causes: environment variable read error, incorrect key, region mismatch.'
+      )
     )
 
     const notify = {
@@ -93,7 +94,7 @@ describe('useShowcaseTeachingCopyAi', () => {
           queueMicrotask(() => {
             reject(new DOMException('The user aborted a request.', 'AbortError'))
           })
-        }),
+        })
     )
 
     const notify = {

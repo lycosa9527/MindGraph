@@ -8,27 +8,43 @@ import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { ElButton, ElIcon } from 'element-plus'
+import { ElButton, ElDialog, ElIcon } from 'element-plus'
 
 import { Plus } from '@element-plus/icons-vue'
 
-import { PanelLeftOpen } from '@lucide/vue'
+import { PanelLeftOpen, Share2, X } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
-import MindmateContactsToggleButton from '@/components/mindmate/MindmateContactsToggleButton.vue'
-import MindmateSeminarFaces from '@/components/mindmate/MindmateSeminarFaces.vue'
+import MindmateCollabStartPicker from '@/components/mindmate/MindmateCollabStartPicker.vue'
+import MindmateSeminarMemberDialog from '@/components/mindmate/MindmateSeminarMemberDialog.vue'
+import MindmateSeminarRosterBar from '@/components/mindmate/MindmateSeminarRosterBar.vue'
+import MindmateSeminarShareDialog from '@/components/mindmate/MindmateSeminarShareDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
 import {
   embeddedCollabRoomCode,
   hydrateEmbeddedCollabRoomCode,
   setEmbeddedCollabRoomCode,
 } from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
 import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateCollabLiveSession'
+import {
+  applySeminarGroup,
+  bumpSeminarFolderReload,
+  closeSeminarChrome,
+  openSeminarTaskPane,
+  seminarMembersPaneOpen,
+  toggleSeminarMembersPane,
+} from '@/composables/mindmate/mindmateSeminarChrome'
 import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
 import { useMindmateSavedSeminar } from '@/composables/mindmate/useMindmateSavedSeminar'
+import { useMindmateSeminarFaces } from '@/composables/mindmate/useMindmateSeminarFaces'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore, useTeachingDesignExportStore } from '@/stores'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
@@ -56,11 +72,38 @@ import {
   shouldRemoveCollabFromHistory,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
-import { isMindmateBlockedDocUpload } from '@/utils/mindmateComposerUpload'
+import {
+  isMindmateBlockedDocUpload,
+  isMindmateComposerUploadableFile,
+} from '@/utils/mindmateComposerUpload'
+import {
+  hasGeneratedDiagramImage,
+  parseMindmateDiagramLibraryId,
+} from '@/utils/mindmateDiagramMeta'
 import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
+import {
+  type SeminarBrief,
+  type SeminarBriefRole,
+  filledBriefLines,
+  seminarBriefMissing,
+  seminarSeedFromBrief,
+} from '@/utils/mindmateSeminarBrief'
+import {
+  seminarBubblePlainText,
+  seminarFolderErrorKey,
+  uploadSeminarBackgroundFile,
+} from '@/utils/mindmateSeminarFolder'
+import {
+  type SeminarGroupMember,
+  addSeminarGroupMembers,
+  fetchSeminarGroup,
+  removeSeminarGroupMember,
+  renameSeminarSession,
+  updateSeminarMemberRole,
+} from '@/utils/mindmateSeminarGroup'
+import { startSeminarRoom } from '@/utils/mindmateSeminarStart'
 import { canContinueSavedSeminar } from '@/utils/mindmateSeminarTranscript'
 
-import ShareExportModal from './ShareExportModal.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
 import MindmateInput from './mindmate/MindmateInput.vue'
 import MindmateMessages from './mindmate/MindmateMessages.vue'
@@ -78,8 +121,28 @@ const MindmateCollabSavedTranscript = defineAsyncComponent(
   () => import('@/components/mindmate/MindmateCollabSavedTranscript.vue')
 )
 
+interface StartedSeminarRoom {
+  code: string
+  sessionId: string
+}
+
 interface MindmateCollabPanelHandle {
   prefillAndAutoJoin: (rawCode: string) => void
+  startFromTopic: (
+    topic: string,
+    visibility?: 'organization' | 'network'
+  ) => Promise<StartedSeminarRoom | null>
+  startSharedThread: (source: {
+    visibility: 'organization' | 'network'
+    title: string
+    seedMessages: Array<{ role: string; content: string }>
+  }) => Promise<StartedSeminarRoom | null>
+  openJoinPanel: () => void
+  openStartPanel: () => void
+}
+
+interface MindmateInputHandle {
+  focus: () => void
 }
 
 // Props for different display modes
@@ -110,6 +173,15 @@ const teachingDesignExport = useTeachingDesignExportStore()
 const { exportingMessageId: exportingWordTemplateId } = storeToRefs(teachingDesignExport)
 
 const showMindmateCollab = computed(() => featureFlagsStore.getFeatureMindmateCollab())
+const { canUseOnlineCollab } = useSchoolTierFeatures()
+const homeMode = ref<'dialogue' | 'seminar'>('dialogue')
+const mindmateInputRef = ref<MindmateInputHandle | null>(null)
+const memberDialogOpen = ref(false)
+const memberDialogMode = ref<'create' | 'expand'>('create')
+const memberBusy = ref(false)
+const { faces: seminarFaces } = useMindmateSeminarFaces()
+const historyDialogOpen = ref(false)
+const historyStarting = ref(false)
 
 const { displayName: defaultMindMateTitle } = useMindMateBranding()
 
@@ -133,7 +205,10 @@ const inputText = ref('')
 const editingMessageId = ref<string | null>(null)
 const editingContent = ref('')
 const hoveredMessageId = ref<string | null>(null)
-const showShareModal = ref(false)
+const shareDialogOpen = ref(false)
+const fileDragActive = ref(false)
+const shareSelectMode = ref(false)
+const selectedMessageIds = ref<string[]>([])
 const collabPanelRef = ref<MindmateCollabPanelHandle | null>(null)
 const collabRoomCode = ref<string | null>(null)
 const collabRoomTitle = ref<string | null>(null)
@@ -141,8 +216,39 @@ const collabVisibility = ref<'organization' | 'network'>('organization')
 const collabSessionId = ref('')
 const collabOwnerId = ref<number | null>(null)
 const collabSeedMessages = ref<MindmateCollabMessage[]>([])
-const showCollabContacts = ref(false)
+const seminarGroupMembers = ref<SeminarGroupMember[]>([])
+const seminarBriefTopic = ref('')
+const seminarBriefGoals = ref<string[]>([])
+
+function onSeminarBriefGoals(goals: string[]): void {
+  seminarBriefGoals.value = goals
+}
+
+function onSeminarBriefTopic(topic: string): void {
+  seminarBriefTopic.value = topic
+}
+
+const renamingSeminar = ref(false)
 const savedSeminar = useMindmateSavedSeminar()
+
+const isSeminarHost = computed(() => {
+  const ownerId = Number(collabOwnerId.value)
+  const selfId = Number(authStore.user?.id)
+  return ownerId > 0 && selfId > 0 && ownerId === selfId
+})
+
+/** Seminar leader role (transferable); falls back to session owner. */
+const isSeminarLeader = computed(() => {
+  const selfId = Number(authStore.user?.id)
+  if (!selfId) {
+    return false
+  }
+  const leader = seminarGroupMembers.value.find((row) => row.isLeader || row.role === 'leader')
+  if (leader) {
+    return leader.userId === selfId
+  }
+  return isSeminarHost.value
+})
 
 function saveEndedSeminar(sessionId: string, openAfterSave: boolean): void {
   void saveFinishedSeminar(sessionId, { openAfterSave }).then((outcome) => {
@@ -234,51 +340,21 @@ const inConversation = computed(
 
 const isCollabChatroomMode = computed(() => Boolean(collabRoomCode.value))
 
+const showHomeModeSwitch = computed(() => showWelcome.value && !isCollabChatroomMode.value)
+
+function requireCollabTier(): boolean {
+  if (canUseOnlineCollab.value) {
+    return true
+  }
+  notify.warningKey('auth.schoolTierFeatureUnavailable')
+  return false
+}
+
 const collabSessionTitle = computed(
   () => collabRoomTitle.value || mindMateStore.conversationTitle || t('mindmate.collabPill')
 )
 
-const canStopCollabSession = computed(() => {
-  const userId = Number(authStore.user?.id)
-  if (!userId || collabOwnerId.value == null) {
-    return false
-  }
-  return collabOwnerId.value === userId
-})
-
-function enterLiveSeminar(payload: {
-  code: string
-  visibility?: string
-  ownerUserId?: number
-  title?: string
-  sessionId?: string
-  expiresAt?: string | null
-}): void {
-  const code = formatMindmateCollabCode(payload.code)
-  clearMindmateCollabCodeEnded(code)
-  trackLocalMindmateCollabSession({
-    session_id: payload.sessionId || '',
-    code,
-    title: payload.title || t('mindmate.collabPill'),
-    owner_user_id: payload.ownerUserId,
-    visibility: payload.visibility,
-    expires_at: payload.expiresAt,
-    live: true,
-  })
-  if (payload.sessionId) {
-    collabSessionId.value = payload.sessionId
-  }
-  notifyMindmateCollabLibraryChanged()
-  handleCollabSessionStarted({
-    code,
-    visibility:
-      payload.visibility === 'network' || payload.visibility === 'organization'
-        ? payload.visibility
-        : 'organization',
-    ownerUserId: payload.ownerUserId,
-    title: payload.title,
-  })
-}
+const canStopCollabSession = computed(() => isSeminarLeader.value)
 
 function handleCollabSessionStarted(payload: {
   code: string
@@ -321,7 +397,10 @@ function exitCollabChatroomMode(options: { removeFromHistory?: boolean } = {}) {
   collabSessionId.value = ''
   collabOwnerId.value = null
   collabSeedMessages.value = []
-  showCollabContacts.value = false
+  seminarGroupMembers.value = []
+  seminarBriefTopic.value = ''
+  seminarBriefGoals.value = []
+  closeSeminarChrome()
   teardownMindmateCollabClient(code, options)
 }
 
@@ -366,6 +445,40 @@ function onSavedSeminarOwnership(owned: boolean): void {
   savedSeminarOwned.value = owned
 }
 
+function enterLiveSeminar(payload: {
+  code: string
+  visibility?: string
+  ownerUserId?: number
+  title?: string
+  sessionId?: string
+  expiresAt?: string | null
+}): void {
+  const code = formatMindmateCollabCode(payload.code)
+  clearMindmateCollabCodeEnded(code)
+  trackLocalMindmateCollabSession({
+    session_id: payload.sessionId || '',
+    code,
+    title: payload.title || t('mindmate.collabPill'),
+    owner_user_id: payload.ownerUserId,
+    visibility: payload.visibility,
+    expires_at: payload.expiresAt,
+    live: true,
+  })
+  if (payload.sessionId) {
+    collabSessionId.value = payload.sessionId
+  }
+  notifyMindmateCollabLibraryChanged()
+  handleCollabSessionStarted({
+    code,
+    visibility:
+      payload.visibility === 'network' || payload.visibility === 'organization'
+        ? payload.visibility
+        : 'organization',
+    ownerUserId: payload.ownerUserId,
+    title: payload.title,
+  })
+}
+
 function onSavedSeminarLive(payload: {
   code: string
   visibility?: string
@@ -383,10 +496,7 @@ function onSavedSeminarLive(payload: {
 
 async function continueSavedSeminar(): Promise<void> {
   const sessionId = savedSeminar.sessionId.value
-  if (
-    !sessionId ||
-    !canContinueSavedSeminar(sessionId, savedSeminarOwned.value, isCollabChatroomMode.value)
-  ) {
+  if (!canContinueSavedSeminar(sessionId, savedSeminarOwned.value, isCollabChatroomMode.value)) {
     return
   }
   try {
@@ -421,7 +531,7 @@ async function continueSavedSeminar(): Promise<void> {
       visibility: data.visibility,
       title: data.title,
       ownerUserId: data.owner_user_id,
-      sessionId: data.session_id || sessionId,
+      sessionId: data.session_id || sessionId || undefined,
       expiresAt: data.expires_at,
     })
   } catch {
@@ -586,28 +696,13 @@ async function startNewConversation() {
     authStore.handleTokenExpired(undefined, undefined)
     return
   }
-  if (isCollabChatroomMode.value && canStopCollabSession.value) {
-    const confirmed = await confirmMindmateCollabStop(t)
-    if (!confirmed) {
-      return
-    }
-    const sessionId = resolveMindmateCollabSessionId(collabSessionId.value, collabRoomCode.value)
-    dropLiveCollabRoom(collabRoomCode.value || '')
-    exitCollabChatroomMode({ removeFromHistory: true })
-    if (sessionId) {
-      void requestMindmateCollabStop(sessionId).then((ok) => {
-        if (ok) {
-          saveEndedSeminar(sessionId, false)
-        } else {
-          notify.errorKey('collab.endFailed')
-        }
-      })
-    }
-  } else if (isCollabChatroomMode.value) {
+  if (isCollabChatroomMode.value) {
     exitCollabChatroomMode()
   }
   savedSeminar.clear()
+  homeMode.value = 'dialogue'
   mindMate.startNewConversation()
+  cancelShareSelect()
   displayTitle.value = defaultMindMateTitle.value
 }
 
@@ -617,6 +712,7 @@ async function loadConversationFromHistory(convId: string) {
     exitCollabChatroomMode()
   }
   savedSeminar.clear()
+  cancelShareSelect()
   await mindMate.loadConversation(convId)
 }
 
@@ -636,9 +732,382 @@ async function sendMessage() {
     return
 
   const message = inputText.value.trim()
-  inputText.value = ''
+  if (showHomeModeSwitch.value && homeMode.value === 'seminar') {
+    return
+  }
 
+  inputText.value = ''
   await mindMate.sendMessage(message)
+}
+
+const pendingSeminarBrief = ref<SeminarBrief | null>(null)
+
+function seminarLabels() {
+  const roleLabels = {
+    leader: t('mindmate.home.brief.role.leader'),
+    leadPrep: t('mindmate.home.brief.role.leadPrep'),
+    coPrep: t('mindmate.home.brief.role.coPrep'),
+    expert: t('mindmate.home.brief.role.expert'),
+    researcher: t('mindmate.home.brief.role.researcher'),
+    observer: t('mindmate.home.brief.role.observer'),
+    none: t('mindmate.home.brief.role.none'),
+  } as Record<SeminarBriefRole, string>
+  return {
+    topic: t('mindmate.home.brief.topic'),
+    goals: t('mindmate.home.brief.goals'),
+    participants: t('mindmate.home.brief.participants'),
+    resources: t('mindmate.home.brief.resources'),
+    roleLabels,
+    visibilityOrg: t('mindmate.home.brief.visibilityOrg'),
+    visibilityNetwork: t('mindmate.home.brief.visibilityNetwork'),
+    skipRoles: t('mindmate.home.brief.skipRoles'),
+    skipResources: t('mindmate.home.brief.skipResources'),
+    pendingConsent: t('mindmate.home.brief.pendingConsent'),
+  }
+}
+
+function takeSeminarBrief(brief: SeminarBrief): SeminarBrief | null {
+  const hostUserId = Number(authStore.user?.id) || 0
+  const missing = seminarBriefMissing(brief, hostUserId)
+  if (missing.length === 0) {
+    pendingSeminarBrief.value = brief
+    return brief
+  }
+  const labels = seminarLabels()
+  const titleBySection = {
+    topic: labels.topic,
+    goals: labels.goals,
+    participants: labels.participants,
+    resources: labels.resources,
+  }
+  const parts = missing
+    .map((section) => titleBySection[section])
+    .join(t('mindmate.home.brief.joiner'))
+  notify.warningKey('mindmate.home.brief.required', { parts })
+  return null
+}
+
+async function uploadBriefResources(sessionId: string, files: File[]): Promise<boolean> {
+  if (files.length === 0) {
+    return true
+  }
+  for (const file of files) {
+    let lastError: unknown = null
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        await uploadSeminarBackgroundFile(sessionId, file)
+        lastError = null
+        break
+      } catch (error) {
+        lastError = error
+      }
+    }
+    if (lastError != null) {
+      notify.errorKey(seminarFolderErrorKey(lastError))
+      return false
+    }
+  }
+  return true
+}
+
+const seminarMemberIds = computed(() => seminarFaces.value.map((face) => face.userId))
+
+watch(collabSessionId, (sessionId) => {
+  if (!sessionId) {
+    return
+  }
+  void loadSeminarGroup(sessionId)
+})
+
+async function loadSeminarGroup(sessionId: string): Promise<void> {
+  const group = await fetchSeminarGroup(sessionId)
+  if (!group || collabSessionId.value !== sessionId) {
+    return
+  }
+  seminarGroupMembers.value = group.members
+  if (group.ownerUserId > 0) {
+    collabOwnerId.value = group.ownerUserId
+  }
+  if (group.title) {
+    collabRoomTitle.value = group.title
+  }
+  if (group.briefTopic) {
+    seminarBriefTopic.value = group.briefTopic
+  }
+  if (group.briefGoals.length) {
+    seminarBriefGoals.value = group.briefGoals
+  }
+  applySeminarGroup(
+    group.members
+      .filter((member) => member.online)
+      .map((member) => ({
+        userId: member.userId,
+        name: member.name,
+        avatar: member.avatar,
+      }))
+  )
+}
+
+async function openSeminarFromBrief(
+  brief: SeminarBrief,
+  options?: { includeThread?: boolean }
+): Promise<void> {
+  if (!requireCollabTier() || !takeSeminarBrief(brief) || memberBusy.value) {
+    return
+  }
+  memberBusy.value = true
+  try {
+    const seeded = seminarSeedFromBrief(brief, seminarLabels())
+    const threadSeed = options?.includeThread
+      ? mapThreadToCollabSeed(mindMate.messages.value).map((message) => ({
+          role: message.role,
+          content: message.content,
+        }))
+      : []
+    const selfUserId = Number(authStore.user?.id)
+    const userIds = brief.participants
+      .map((row) => row.userId)
+      .filter((userId) => userId !== selfUserId)
+    const memberRoles: Record<number, SeminarBriefRole> = {}
+    for (const row of brief.participants) {
+      memberRoles[row.userId] = row.role
+    }
+    const goals = filledBriefLines(brief.goals)
+    const topic = brief.topic.trim()
+    seminarBriefTopic.value = topic
+    seminarBriefGoals.value = goals
+    const room = await openStartedSeminar(brief.visibility, {
+      ...seeded,
+      seedMessages: [...threadSeed, ...seeded.seedMessages],
+      memberUserIds: userIds,
+      memberRoles,
+      briefTopic: topic,
+      briefGoals: goals,
+      closeGroup: true,
+    })
+    if (!room) {
+      return
+    }
+    const uploaded = await uploadBriefResources(room.sessionId, brief.resourceFiles)
+    if (uploaded && brief.resourceFiles.length > 0) {
+      bumpSeminarFolderReload()
+    }
+    openSeminarTaskPane('files')
+    pendingSeminarBrief.value = null
+    inputText.value = ''
+    await Promise.all(userIds.map((userId) => pokeSeminarMember(room.sessionId, userId)))
+    await loadSeminarGroup(room.sessionId)
+  } finally {
+    memberBusy.value = false
+  }
+}
+
+function openAddSeminarMembers(): void {
+  memberDialogMode.value = 'expand'
+  memberDialogOpen.value = true
+}
+
+async function pokeSeminarMember(sessionId: string, userId: number): Promise<void> {
+  try {
+    await authFetch('/api/mindmate/collab/poke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, target_user_id: userId }),
+    })
+  } catch {
+    // The room is already open. A missed nudge does not undo the group.
+  }
+}
+
+async function openStartedSeminar(
+  visibility: 'organization' | 'network',
+  source: {
+    title: string
+    seedMessages: Array<{ role: string; content: string }>
+    memberUserIds?: number[]
+    memberRoles?: Record<number, SeminarBriefRole>
+    briefTopic?: string
+    briefGoals?: string[]
+    closeGroup?: boolean
+  }
+): Promise<StartedSeminarRoom | null> {
+  const result = await startSeminarRoom({
+    visibility,
+    title: source.title,
+    seedMessages: source.seedMessages,
+    memberUserIds: source.memberUserIds,
+    memberRoles: source.memberRoles,
+    briefTopic: source.briefTopic,
+    briefGoals: source.briefGoals,
+    closeGroup: source.closeGroup,
+  })
+  if (!result.ok) {
+    if (result.detail) {
+      notify.error(result.detail)
+    } else {
+      notify.errorKey('mindmate.collabStartFailed')
+    }
+    return null
+  }
+  const formatted = formatMindmateCollabCode(result.room.code)
+  applyThinkingCoinMutation(extractThinkingCoinsFooter(result.room.body))
+  notify.successKey('mindmate.collabStarted')
+  notifyMindmateCollabLibraryChanged()
+  trackLocalMindmateCollabSession({
+    session_id: result.room.sessionId,
+    code: formatted,
+    title: result.room.title || source.title || t('mindmate.collabPill'),
+    owner_user_id: result.room.ownerUserId,
+    participant_count: result.room.participantCount,
+    visibility: result.room.visibility || visibility,
+    expires_at: result.room.expiresAt,
+  })
+  if (result.room.briefTopic) {
+    seminarBriefTopic.value = result.room.briefTopic
+  }
+  if (result.room.briefGoals.length) {
+    seminarBriefGoals.value = result.room.briefGoals
+  }
+  handleCollabSessionStarted({
+    code: formatted,
+    visibility,
+    ownerUserId: result.room.ownerUserId > 0 ? result.room.ownerUserId : undefined,
+    title: result.room.title || source.title,
+    seedMessages: source.seedMessages,
+  })
+  collabSessionId.value = result.room.sessionId
+  return { code: formatted, sessionId: result.room.sessionId }
+}
+
+async function renameCurrentSeminar(title: string): Promise<void> {
+  const sessionId = collabSessionId.value
+  if (!sessionId || !isSeminarHost.value || renamingSeminar.value) {
+    return
+  }
+  renamingSeminar.value = true
+  try {
+    const next = await renameSeminarSession(sessionId, title)
+    if (!next) {
+      notify.errorKey('mindmate.home.renameSeminarFailed')
+      return
+    }
+    collabRoomTitle.value = next
+    notify.successKey('mindmate.home.renameSeminarSaved')
+  } finally {
+    renamingSeminar.value = false
+  }
+}
+
+async function onSeminarMemberRoleChange(userId: number, role: SeminarBriefRole): Promise<void> {
+  const sessionId = collabSessionId.value
+  if (!sessionId || !isSeminarLeader.value || memberBusy.value) {
+    return
+  }
+  memberBusy.value = true
+  try {
+    const ok = await updateSeminarMemberRole(sessionId, userId, role)
+    if (!ok) {
+      notify.errorKey('mindmate.group.roleUpdateFailed')
+      return
+    }
+    await loadSeminarGroup(sessionId)
+  } finally {
+    memberBusy.value = false
+  }
+}
+
+async function onSeminarMemberRemove(userId: number): Promise<void> {
+  const sessionId = collabSessionId.value
+  if (!sessionId || !isSeminarLeader.value || memberBusy.value) {
+    return
+  }
+  memberBusy.value = true
+  try {
+    const ok = await removeSeminarGroupMember(sessionId, userId)
+    if (!ok) {
+      notify.errorKey('mindmate.group.memberRemoveFailed')
+      return
+    }
+    await loadSeminarGroup(sessionId)
+  } finally {
+    memberBusy.value = false
+  }
+}
+
+async function onSeminarMembersConfirm(userIds: number[]): Promise<void> {
+  if (memberDialogMode.value === 'expand') {
+    await expandSeminarGroup(userIds)
+    return
+  }
+  await formSeminarGroup(userIds)
+}
+
+async function expandSeminarGroup(userIds: number[]): Promise<void> {
+  const sessionId = collabSessionId.value
+  if (!sessionId || memberBusy.value || userIds.length === 0) {
+    return
+  }
+  memberBusy.value = true
+  try {
+    const ok = await addSeminarGroupMembers(sessionId, userIds)
+    if (!ok) {
+      notify.errorKey('mindmate.group.membersAddFailed')
+      return
+    }
+    memberDialogOpen.value = false
+    notify.successKey('mindmate.group.membersAdded')
+    await loadSeminarGroup(sessionId)
+  } finally {
+    memberBusy.value = false
+  }
+}
+
+async function formSeminarGroup(userIds: number[]): Promise<void> {
+  const brief = pendingSeminarBrief.value
+  if (!brief || memberBusy.value) {
+    return
+  }
+  memberBusy.value = true
+  try {
+    const seeded = seminarSeedFromBrief(brief, seminarLabels())
+    const room = await openStartedSeminar('organization', {
+      ...seeded,
+      memberUserIds: userIds,
+    })
+    if (!room) {
+      return
+    }
+    const uploaded = await uploadBriefResources(room.sessionId, brief.resourceFiles)
+    if (uploaded && brief.resourceFiles.length > 0) {
+      bumpSeminarFolderReload()
+    }
+    openSeminarTaskPane('files')
+    pendingSeminarBrief.value = null
+    inputText.value = ''
+    memberDialogOpen.value = false
+    await Promise.all(userIds.map((userId) => pokeSeminarMember(room.sessionId, userId)))
+  } finally {
+    memberBusy.value = false
+  }
+}
+
+async function startSeminarFromHistory(payload: {
+  visibility: 'organization' | 'network'
+  title: string
+  seedMessages: Array<{ role: string; content: string }>
+}): Promise<void> {
+  historyStarting.value = true
+  try {
+    const room = await openStartedSeminar(payload.visibility, {
+      title: payload.title,
+      seedMessages: payload.seedMessages,
+    })
+    if (room) {
+      historyDialogOpen.value = false
+    }
+  } finally {
+    historyStarting.value = false
+  }
 }
 
 // Handle suggestion bubble click
@@ -657,6 +1126,67 @@ async function handleFileSelect(files: FileList) {
   for (const file of Array.from(files)) {
     await mindMate.uploadFile(file)
   }
+}
+
+function dragHasFiles(event: DragEvent): boolean {
+  return Array.from(event.dataTransfer?.types ?? []).includes('Files')
+}
+
+function fileDragBlocked(): boolean {
+  return showWelcome.value && homeMode.value === 'seminar'
+}
+
+function onFileDragEnter(event: DragEvent): void {
+  if (fileDragBlocked() || !dragHasFiles(event)) {
+    return
+  }
+  const root = event.currentTarget
+  const previous = event.relatedTarget
+  if (root instanceof HTMLElement && previous instanceof Node && root.contains(previous)) {
+    return
+  }
+  fileDragActive.value = true
+}
+
+function onFileDragOver(event: DragEvent): void {
+  if (!fileDragActive.value || !event.dataTransfer) {
+    return
+  }
+  event.dataTransfer.dropEffect = 'copy'
+}
+
+function onFileDragLeave(event: DragEvent): void {
+  const root = event.currentTarget
+  const next = event.relatedTarget
+  if (root instanceof HTMLElement && next instanceof Node && root.contains(next)) {
+    return
+  }
+  fileDragActive.value = false
+}
+
+function onFileDrop(event: DragEvent): void {
+  fileDragActive.value = false
+  if (fileDragBlocked()) {
+    return
+  }
+  if (!authStore.isAuthenticated) {
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
+  const files = event.dataTransfer?.files
+  if (!files || files.length === 0) {
+    return
+  }
+  const allowed = Array.from(files).filter((file) => isMindmateComposerUploadableFile(file))
+  if (allowed.length < files.length) {
+    notify.errorKey('mindmate.input.unsupportedFile')
+  }
+  if (allowed.length === 0) {
+    return
+  }
+  const transfer = new DataTransfer()
+  allowed.forEach((file) => transfer.items.add(file))
+  void handleFileSelect(transfer.files)
 }
 
 // Stop generation
@@ -703,9 +1233,68 @@ async function handleFeedback(messageId: string, rating: FeedbackRating) {
 }
 
 // Open share modal
-function openShareModal() {
-  showShareModal.value = true
+function cancelShareSelect(): void {
+  shareSelectMode.value = false
+  selectedMessageIds.value = []
+  shareDialogOpen.value = false
 }
+
+function beginShareSelect(messageId: string): void {
+  shareSelectMode.value = true
+  if (!selectedMessageIds.value.includes(messageId)) {
+    selectedMessageIds.value = [...selectedMessageIds.value, messageId]
+  }
+}
+
+function toggleShareSelect(messageId: string): void {
+  selectedMessageIds.value = selectedMessageIds.value.includes(messageId)
+    ? selectedMessageIds.value.filter((id) => id !== messageId)
+    : [...selectedMessageIds.value, messageId]
+}
+
+function openSelectedShare(): void {
+  if (selectedMessageIds.value.length === 0) {
+    return
+  }
+  shareDialogOpen.value = true
+}
+
+const shareLines = computed(() => {
+  const chosen = new Set(selectedMessageIds.value)
+  const selfName = authStore.user?.username || t('mindmate.highlights.you')
+  return mindMate.messages.value
+    .filter(
+      (message) =>
+        chosen.has(message.id) && (message.role === 'user' || message.role === 'assistant')
+    )
+    .map((message) => {
+      const mindgraph =
+        message.role === 'assistant' &&
+        (hasGeneratedDiagramImage(message.content) ||
+          parseMindmateDiagramLibraryId(message.content) !== null)
+      const authorName =
+        message.role === 'user'
+          ? selfName
+          : mindgraph
+            ? t('mindmate.composer.mindgraph')
+            : defaultMindMateTitle.value
+      return {
+        key: message.id,
+        role: message.role === 'user' ? ('user' as const) : ('assistant' as const),
+        authorName,
+        content: seminarBubblePlainText(
+          message.role === 'user' ? displayMindmateUserQueryForUi(message.content) : message.content
+        ),
+        createdAt: message.timestamp ? new Date(message.timestamp).toISOString() : '',
+        highlighted: false,
+      }
+    })
+    .filter((line) => line.content.trim().length > 0)
+})
+
+const shareMemberCount = computed(
+  () => new Set(shareLines.value.map((line) => line.authorName)).size
+)
 
 function previousUserPrompt(messageId: string): string | undefined {
   const msgIndex = mindMate.messages.value.findIndex((item) => item.id === messageId)
@@ -786,62 +1375,82 @@ function isLastAssistantMessage(messageId: string): boolean {
     <!-- Full page: expand when sidebar hidden + left-aligned title + new chat -->
     <div
       v-if="isFullpageMode"
-      class="mindmate-fullpage-toolbar flex items-center h-14 px-4 gap-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0"
+      class="mindmate-fullpage-toolbar flex items-center h-12 px-3 gap-2 border-b border-stone-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0"
+      :class="{ 'mindmate-fullpage-toolbar--welcome': showWelcome && !isCollabChatroomMode }"
     >
-      <el-button
+      <button
         v-if="uiStore.sidebarCollapsed"
-        text
-        circle
-        size="small"
-        class="mindmate-sidebar-toggle shrink-0"
+        type="button"
+        class="mindmate-toolbar-icon shrink-0"
         :title="t('sidebar.expandSidebar')"
         :aria-label="t('sidebar.expandSidebar')"
         @click="uiStore.toggleSidebar()"
       >
-        <PanelLeftOpen class="w-4.5 h-4.5" />
-      </el-button>
+        <PanelLeftOpen
+          :size="16"
+          aria-hidden="true"
+        />
+      </button>
       <MindmateCollabBreadcrumb
         v-if="isCollabChatroomMode"
         class="flex-1 min-w-0 text-left"
         tone="toolbar"
         :visibility="collabVisibility"
         :session-title="collabSessionTitle"
-        :invite-code="collabRoomCode || ''"
+        :can-rename="isSeminarHost"
+        :renaming="renamingSeminar"
+        @rename="renameCurrentSeminar"
       />
       <h1
-        v-else
-        class="flex-1 min-w-0 text-sm font-semibold text-gray-800 dark:text-white truncate text-left"
+        v-else-if="!showWelcome"
+        class="mindmate-toolbar-title flex-1 min-w-0 truncate text-left"
         :class="{ 'typing-cursor': isTypingTitle }"
       >
         {{ displayTitle }}
       </h1>
+      <div
+        v-else
+        class="flex-1"
+      />
       <MindmateCollabPanel
-        v-if="showMindmateCollab && !isCollabChatroomMode && !savedSeminar.sessionId.value"
+        v-if="
+          showMindmateCollab &&
+          !isCollabChatroomMode &&
+          !showWelcome &&
+          !savedSeminar.sessionId.value
+        "
         ref="collabPanelRef"
         :in-conversation="inConversation"
         :conversation-title="mindMateStore.conversationTitle || displayTitle"
         :get-seed-messages="() => mapThreadToCollabSeed(mindMate.messages.value)"
         embed-in-panel
         @session-started="handleCollabSessionStarted"
+        @launch-brief="openSeminarFromBrief($event, { includeThread: true })"
       />
-      <div class="mindmate-toolbar-actions flex items-center gap-2 shrink-0">
-        <MindmateSeminarFaces v-if="isCollabChatroomMode" />
-        <MindmateContactsToggleButton
+      <div class="mindmate-toolbar-actions flex items-center gap-1.5 shrink-0">
+        <MindmateSeminarRosterBar
           v-if="isCollabChatroomMode"
-          :open="showCollabContacts"
-          @toggle="showCollabContacts = !showCollabContacts"
+          :members-open="seminarMembersPaneOpen"
+          :members="seminarGroupMembers"
+          :is-leader="isSeminarLeader"
+          :self-user-id="Number(authStore.user?.id) || 0"
+          :busy="memberBusy"
+          @toggle-members="toggleSeminarMembersPane"
+          @add-members="openAddSeminarMembers"
+          @change-role="onSeminarMemberRoleChange"
+          @remove-member="onSeminarMemberRemove"
         />
-        <el-button
+        <button
           v-if="isCollabChatroomMode && canStopCollabSession"
-          class="end-seminar-btn shrink-0"
-          size="small"
+          type="button"
+          class="mindmate-toolbar-text mindmate-toolbar-end shrink-0"
           @click="endCollabSession"
         >
           <I18nText
             k="mindmate.collabEndSeminar"
             dense
           />
-        </el-button>
+        </button>
         <el-button
           v-if="showContinueSession"
           class="continue-session-btn shrink-0"
@@ -855,7 +1464,6 @@ function isLastAssistantMessage(messageId: string): boolean {
         </el-button>
         <el-button
           class="new-chat-btn shrink-0"
-          size="small"
           :disabled="!authStore.isAuthenticated"
           @click="startNewConversation"
         >
@@ -868,7 +1476,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       </div>
     </div>
     <MindmateHeader
-      v-else
+      v-if="!isFullpageMode"
       :mode="mode"
       :title="displayTitle"
       :is-typing="isTypingTitle"
@@ -877,49 +1485,72 @@ function isLastAssistantMessage(messageId: string): boolean {
       :is-loading-history="historyLoading"
       :current-conversation-id="mindMateStore.currentConversationId"
       :show-contacts-toggle="isCollabChatroomMode"
-      :contacts-open="showCollabContacts"
+      :members-open="seminarMembersPaneOpen"
       :show-continue-session="showContinueSession"
       @continue-session="continueSavedSeminar"
       @new-conversation="startNewConversation"
       @close="emit('close')"
       @load-history="loadConversationFromHistory"
       @delete-history="deleteConversationFromHistory"
-      @toggle-contacts="showCollabContacts = !showCollabContacts"
+      @toggle-members="toggleSeminarMembersPane"
+      @add-members="openAddSeminarMembers"
     />
 
-    <div
+    <MindmateCollabSavedTranscript
       v-if="savedSeminar.sessionId.value && !isCollabChatroomMode"
-      class="flex flex-col flex-1 min-h-0 min-w-0"
-    >
-      <MindmateCollabSavedTranscript
-        class="flex-1 min-h-0 min-w-0"
-        :session-id="savedSeminar.sessionId.value"
-        @ownership="onSavedSeminarOwnership"
-        @live="onSavedSeminarLive"
-      />
-    </div>
+      class="flex-1 min-h-0 min-w-0"
+      :session-id="savedSeminar.sessionId.value"
+      @ownership="onSavedSeminarOwnership"
+      @live="onSavedSeminarLive"
+    />
 
     <!-- Collab chatroom mode (chat + right member column) -->
     <MindmateCollabEmbed
       v-else-if="isCollabChatroomMode && collabRoomCode"
-      v-model:show-contacts="showCollabContacts"
       class="flex-1 min-h-0 min-w-0"
       :room-code="collabRoomCode"
       :seed-messages="collabSeedMessages"
+      :members="seminarGroupMembers"
+      :is-leader="isSeminarLeader"
+      :self-user-id="Number(authStore.user?.id) || 0"
+      :member-busy="memberBusy"
+      :brief-topic="seminarBriefTopic"
+      :brief-goals="seminarBriefGoals"
       @ended="handleCollabEnded"
       @room-meta="handleCollabRoomMeta"
+      @goals-change="onSeminarBriefGoals"
+      @topic-change="onSeminarBriefTopic"
+      @add-members="openAddSeminarMembers"
+      @change-role="onSeminarMemberRoleChange"
+      @remove-member="onSeminarMemberRemove"
     />
 
     <template v-else>
       <div
         class="mindmate-stage"
-        :class="{ 'mindmate-stage--welcome': showWelcome && isFullpageMode }"
+        :class="{
+          'mindmate-stage--welcome': showWelcome && isFullpageMode,
+          'mindmate-stage--seminar': showWelcome && isFullpageMode && homeMode === 'seminar',
+          'mindmate-stage--thread': !showWelcome && isFullpageMode,
+        }"
+        @dragenter.prevent="onFileDragEnter"
+        @dragover.prevent="onFileDragOver"
+        @dragleave="onFileDragLeave"
+        @drop.prevent="onFileDrop"
       >
+        <div
+          v-if="fileDragActive"
+          class="mm-file-drop"
+        >
+          <I18nText k="mindmate.input.dropHint" />
+        </div>
         <MindmateMessages
           :mode="mode"
           :messages="mindMate.messages.value"
           :user-avatar="userAvatar"
           :show-welcome="showWelcome"
+          :show-mode-switch="showHomeModeSwitch"
+          :home-mode="homeMode"
           :is-loading="mindMate.isLoading.value"
           :is-streaming="mindMate.isStreaming.value"
           :load-phase="mindMateLoadPhase"
@@ -927,22 +1558,58 @@ function isLastAssistantMessage(messageId: string): boolean {
           :editing-message-id="editingMessageId"
           :editing-content="editingContent"
           :hovered-message-id="hoveredMessageId"
+          :select-mode="shareSelectMode"
+          :selected-message-ids="selectedMessageIds"
           :is-last-assistant-message="isLastAssistantMessage"
           :has-previous-user-message="hasPreviousUserMessage"
           :exporting-word-template-id="exportingWordTemplateId"
+          @update:home-mode="homeMode = $event"
           @edit="startEdit"
           @cancel-edit="cancelEdit"
           @save-edit="saveEdit"
           @copy="copyMessage"
           @regenerate="regenerateMessage"
           @feedback="handleFeedback"
-          @share="openShareModal"
+          @share="beginShareSelect"
+          @toggle-select="toggleShareSelect"
           @export-word-template="exportWordTemplate"
           @message-hover="hoveredMessageId = $event"
         />
 
         <div class="mindmate-input-section">
+          <div
+            v-if="shareSelectMode"
+            class="mm-dm-select-bar"
+          >
+            <span
+              ><I18nText
+                k="mindmate.bubble.selected"
+                :params="{ n: selectedMessageIds.length }"
+            /></span>
+            <button
+              type="button"
+              :disabled="selectedMessageIds.length === 0"
+              @click="openSelectedShare"
+            >
+              <Share2
+                :size="14"
+                aria-hidden="true"
+              />
+              <I18nText k="mindmate.tooltip.share" />
+            </button>
+            <button
+              type="button"
+              @click="cancelShareSelect"
+            >
+              <X
+                :size="14"
+                aria-hidden="true"
+              />
+              <I18nText k="mindmate.bubble.cancelSelect" />
+            </button>
+          </div>
           <MindmateInput
+            ref="mindmateInputRef"
             v-model:input-text="inputText"
             :mode="mode"
             :is-loading="isLoading"
@@ -950,22 +1617,65 @@ function isLastAssistantMessage(messageId: string): boolean {
             :is-uploading="mindMate.isUploading.value"
             :pending-files="mindMate.pendingFiles.value"
             :show-suggestions="showWelcome"
-            :show-file-upload="isFullpageMode"
+            :home-mode="homeMode"
+            :show-file-upload="isFullpageMode && !(showWelcome && homeMode === 'seminar')"
+            :placeholder="
+              showWelcome && homeMode === 'seminar' ? t('mindmate.home.seminarPlaceholder') : ''
+            "
             @send="sendMessage"
             @stop="stopGeneration"
             @upload="handleFileSelect"
             @remove-file="mindMate.removeFile"
             @suggestion-select="handleSuggestionSelect"
+            @seminar-start="openSeminarFromBrief"
           />
         </div>
       </div>
+
+      <MindmateSeminarShareDialog
+        :open="shareDialogOpen"
+        :title="mindMate.conversationTitle.value || displayTitle"
+        :lines="shareLines"
+        :member-count="shareMemberCount"
+        @close="shareDialogOpen = false"
+      />
     </template>
 
-    <ShareExportModal
-      v-model:visible="showShareModal"
-      :messages="mindMate.messages.value"
-      :conversation-title="mindMate.conversationTitle.value"
+    <MindmateSeminarMemberDialog
+      v-model="memberDialogOpen"
+      :busy="memberBusy"
+      :allow-external="true"
+      :exclude-ids="memberDialogMode === 'expand' ? seminarMemberIds : []"
+      :title-key="
+        memberDialogMode === 'expand'
+          ? 'mindmate.home.addMembers'
+          : 'mindmate.home.memberDialogTitle'
+      "
+      :hint-key="
+        memberDialogMode === 'expand'
+          ? 'mindmate.home.addMembersHint'
+          : 'mindmate.home.memberDialogHint'
+      "
+      :confirm-key="
+        memberDialogMode === 'expand'
+          ? 'mindmate.home.addMembersConfirm'
+          : 'mindmate.home.memberDialogConfirm'
+      "
+      @confirm="onSeminarMembersConfirm"
     />
+    <ElDialog
+      v-model="historyDialogOpen"
+      width="420px"
+      append-to-body
+      :title="t('mindmate.home.seminarSuggestHistory')"
+    >
+      <MindmateCollabStartPicker
+        :show-header="false"
+        :starting="historyStarting"
+        @start="startSeminarFromHistory"
+        @back="historyDialogOpen = false"
+      />
+    </ElDialog>
   </div>
 </template>
 
@@ -976,74 +1686,163 @@ function isLastAssistantMessage(messageId: string): boolean {
 <style scoped>
 @import './mindmate/mindmate.css';
 
-.mindmate-toolbar-actions :deep(.el-button + .el-button) {
-  margin-left: 0;
+.mindmate-toolbar-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #1c1917;
 }
 
-.mindmate-sidebar-toggle {
-  --el-button-text-color: #57534e;
-  --el-button-hover-text-color: #1c1917;
-  --el-button-hover-bg-color: #f5f5f4;
-  font-weight: 500;
+.dark .mindmate-toolbar-title {
+  color: #f9fafb;
 }
 
-.new-chat-btn,
-.continue-session-btn {
-  --el-button-bg-color: #e7e5e4;
-  --el-button-border-color: #d6d3d1;
-  --el-button-hover-bg-color: #d6d3d1;
-  --el-button-hover-border-color: #a8a29e;
-  --el-button-hover-text-color: #1c1917;
-  --el-button-active-bg-color: #a8a29e;
-  --el-button-active-border-color: #78716c;
-  --el-button-text-color: #1c1917;
+.mindmate-toolbar-icon,
+.mindmate-toolbar-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border: 1px solid #e9e5ff;
+  border-radius: 10px;
+  background: #fff;
+  color: #6d5efc;
+  cursor: pointer;
+  font-size: 13px;
   font-weight: 500;
-  border-radius: 9999px;
-  height: auto;
+  line-height: 1.2;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.mindmate-toolbar-icon {
+  width: 32px;
+  padding: 0;
+}
+
+.mindmate-toolbar-text {
+  padding: 0 10px;
+}
+
+.mindmate-toolbar-icon:hover,
+.mindmate-toolbar-text:hover {
+  border-color: #c4b5fd;
+  color: #5b4eeb;
+  background: #f5f3ff;
+}
+
+.mindmate-toolbar-text.mindmate-toolbar-end:hover {
+  border-color: #fca5a5;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.mindmate-toolbar-icon:disabled,
+.mindmate-toolbar-text:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dark .mindmate-toolbar-icon,
+.dark .mindmate-toolbar-text {
+  border-color: #5b21b6;
+  background: #2e1065;
+  color: #ddd6fe;
+}
+
+.dark .mindmate-toolbar-icon:hover,
+.dark .mindmate-toolbar-text:hover {
+  border-color: #7c3aed;
+  background: #4c1d95;
+  color: #ede9fe;
+}
+
+.dark .mindmate-toolbar-text.mindmate-toolbar-end:hover {
+  border-color: #f87171;
+  color: #fecaca;
+  background: #7f1d1d;
+}
+
+.mindmate-panel.welcome-mode .mindmate-fullpage-toolbar--welcome {
+  position: relative;
+  z-index: 20;
+  background: transparent;
+  border-bottom-color: transparent;
+}
+
+.mindmate-panel.welcome-mode .mindmate-toolbar-actions {
+  position: relative;
+  z-index: 21;
+}
+
+.mindmate-panel.welcome-mode .new-chat-btn.el-button,
+.mindmate-panel.welcome-mode .continue-session-btn.el-button {
+  --el-button-bg-color: #ede9fe;
+  --el-button-border-color: #c4b5fd;
+  --el-button-hover-bg-color: #ddd6fe;
+  --el-button-hover-border-color: #a78bfa;
+  --el-button-hover-text-color: #4c1d95;
+  --el-button-active-bg-color: #c4b5fd;
+  --el-button-active-border-color: #8b5cf6;
+  --el-button-text-color: #5b21b6;
+  height: 32px;
   min-height: 32px;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  line-height: 1.15;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  border-width: 1px;
+  border-style: solid;
+  background: #ede9fe;
+  box-shadow: 0 1px 2px rgba(91, 33, 182, 0.08);
 }
 
-.end-seminar-btn {
-  --el-button-bg-color: #fef3c7;
-  --el-button-border-color: #fcd34d;
-  --el-button-hover-bg-color: #fde68a;
-  --el-button-hover-border-color: #fbbf24;
-  --el-button-hover-text-color: #78350f;
-  --el-button-active-bg-color: #fcd34d;
-  --el-button-active-border-color: #f59e0b;
-  --el-button-text-color: #92400e;
-  font-weight: 500;
-  border-radius: 9999px;
-  height: auto;
+.new-chat-btn.el-button,
+.continue-session-btn.el-button {
+  --el-button-bg-color: #ede9fe;
+  --el-button-border-color: #c4b5fd;
+  --el-button-hover-bg-color: #ddd6fe;
+  --el-button-hover-border-color: #a78bfa;
+  --el-button-hover-text-color: #4c1d95;
+  --el-button-active-bg-color: #c4b5fd;
+  --el-button-active-border-color: #8b5cf6;
+  --el-button-text-color: #5b21b6;
+  font-weight: 600;
+  border-radius: 10px;
+  height: 32px;
   min-height: 32px;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  line-height: 1.15;
+  padding: 0 12px;
+  font-size: 13px;
+  line-height: 1.2;
+  background: #ede9fe;
+  box-shadow: 0 1px 2px rgba(91, 33, 182, 0.08);
 }
 
-.dark .end-seminar-btn {
-  --el-button-bg-color: #78350f;
-  --el-button-border-color: #b45309;
-  --el-button-hover-bg-color: #92400e;
-  --el-button-hover-border-color: #d97706;
-  --el-button-hover-text-color: #fef3c7;
-  --el-button-active-bg-color: #b45309;
-  --el-button-active-border-color: #f59e0b;
-  --el-button-text-color: #fde68a;
+.dark .new-chat-btn.el-button,
+.dark .continue-session-btn.el-button {
+  --el-button-bg-color: #312e81;
+  --el-button-border-color: #6366f1;
+  --el-button-hover-bg-color: #3730a3;
+  --el-button-hover-border-color: #818cf8;
+  --el-button-hover-text-color: #e0e7ff;
+  --el-button-active-bg-color: #4338ca;
+  --el-button-active-border-color: #a5b4fc;
+  --el-button-text-color: #e0e7ff;
+  background: #312e81;
 }
 
-.dark .new-chat-btn,
-.dark .continue-session-btn {
-  --el-button-bg-color: #4b5563;
-  --el-button-border-color: #6b7280;
-  --el-button-hover-bg-color: #6b7280;
-  --el-button-hover-border-color: #9ca3af;
-  --el-button-hover-text-color: #f9fafb;
-  --el-button-active-bg-color: #52525b;
-  --el-button-active-border-color: #a1a1aa;
-  --el-button-text-color: #f9fafb;
+.dark .mindmate-panel.welcome-mode .new-chat-btn.el-button,
+.dark .mindmate-panel.welcome-mode .continue-session-btn.el-button {
+  --el-button-bg-color: #312e81;
+  --el-button-border-color: #6366f1;
+  --el-button-hover-bg-color: #3730a3;
+  --el-button-hover-border-color: #818cf8;
+  --el-button-hover-text-color: #e0e7ff;
+  --el-button-active-bg-color: #4338ca;
+  --el-button-active-border-color: #a5b4fc;
+  --el-button-text-color: #e0e7ff;
+  background: #312e81;
 }
 </style>

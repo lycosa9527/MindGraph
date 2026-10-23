@@ -14,11 +14,7 @@ function spotlightSize(scale: number): number {
   return Number.isFinite(scale) && scale > 0 ? scale : 1
 }
 
-export function presentationSpotlightBackground(
-  xPx: number,
-  yPx: number,
-  scale: number
-): string {
+export function presentationSpotlightBackground(xPx: number, yPx: number, scale: number): string {
   const size = spotlightSize(scale)
   const inner = SPOTLIGHT_INNER_RADIUS_PX * size
   const outer = SPOTLIGHT_OUTER_RADIUS_PX * size

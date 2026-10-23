@@ -1,6 +1,10 @@
 """
 Idle / zombie monitor for MindMate collab rooms.
 
+Seminars end only when the host clicks End. This loop only drops orphan idle
+scores for rooms whose live Redis meta is already gone — it never auto-stops
+a live session for silence, empty roster, or duration expiry.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -16,8 +20,6 @@ from typing import Optional
 from redis.exceptions import RedisError
 
 from services.features.mindmate_collab.config import (
-    MINDMATE_COLLAB_IDLE_GRACE_SECONDS,
-    MINDMATE_COLLAB_IDLE_SILENCE_SECONDS,
     MINDMATE_COLLAB_MONITOR_CONCURRENCY,
     MINDMATE_COLLAB_MONITOR_INTERVAL_SECONDS,
     MINDMATE_COLLAB_ZOMBIE_GRACE_SECONDS,
@@ -26,14 +28,9 @@ from services.features.mindmate_collab.manager_access import get_mindmate_collab
 from services.features.mindmate_collab.redis_keys import (
     idle_scores_key,
     normalize_collab_code,
-    participants_key,
-    room_idle_kick_lock_key,
-    room_idle_warning_key,
     session_meta_key,
 )
-from services.features.mindmate_collab.ws_broadcast import broadcast_to_all
 from services.infrastructure.monitoring.ws_metrics import record_ws_idle_monitor_cycle
-from services.online_collab.redis.online_collab_redis_locks import acquire_nx_lock, new_lock_token
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 
@@ -67,6 +64,7 @@ async def drop_orphan_mindmate_collab_idle_score(code: str) -> None:
 
 
 async def _evaluate_code(code: str) -> None:
+    """Keep orphan scores tidy; never auto-end a live seminar."""
     mgr = get_mindmate_collab_manager()
     redis = get_async_redis()
     if not redis:
@@ -75,54 +73,6 @@ async def _evaluate_code(code: str) -> None:
     session_id = (meta.get("session_id") or "") if meta else ""
     if not session_id:
         await drop_orphan_mindmate_collab_idle_score(code)
-        return
-
-    expires_raw = meta.get("expires_at")
-    now = int(time.time())
-    if expires_raw:
-        try:
-            if int(expires_raw) <= now:
-                await mgr.stop_session(session_id, int(meta.get("owner_id") or 0), reason="expired")
-                return
-        except ValueError:
-            pass
-
-    try:
-        participants = int(await redis.hlen(participants_key(code)) or 0)
-    except (RedisError, OSError, RuntimeError, TypeError, ValueError):
-        participants = 0
-
-    last_raw = meta.get("last_activity") or "0"
-    try:
-        last_activity = int(last_raw)
-    except ValueError:
-        last_activity = now
-
-    if participants == 0 and now - last_activity >= MINDMATE_COLLAB_ZOMBIE_GRACE_SECONDS:
-        await mgr.stop_session(session_id, int(meta.get("owner_id") or 0), reason="zombie")
-        return
-
-    silence = now - last_activity
-    if silence >= MINDMATE_COLLAB_IDLE_SILENCE_SECONDS + MINDMATE_COLLAB_IDLE_GRACE_SECONDS:
-        lock = await acquire_nx_lock(redis, room_idle_kick_lock_key(code), 300, new_lock_token())
-        if lock:
-            await mgr.stop_session(session_id, int(meta.get("owner_id") or 0), reason="idle")
-        return
-
-    if silence >= MINDMATE_COLLAB_IDLE_SILENCE_SECONDS:
-        warn_key = room_idle_warning_key(code)
-        try:
-            sent = await redis.set(warn_key, "1", nx=True, ex=MINDMATE_COLLAB_IDLE_GRACE_SECONDS)
-        except REDIS_ERRORS:
-            sent = False
-        if sent:
-            await broadcast_to_all(
-                code,
-                {
-                    "type": "room_idle_warning",
-                    "grace_seconds": MINDMATE_COLLAB_IDLE_GRACE_SECONDS,
-                },
-            )
 
 
 async def _monitor_loop(stop_event: asyncio.Event) -> None:

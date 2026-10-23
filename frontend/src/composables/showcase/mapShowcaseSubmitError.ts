@@ -26,16 +26,15 @@ function isAttachmentTooLargeCause(message: string): boolean {
 
 function isGenericTooLargeCause(message: string): boolean {
   return (
-    /file too large|request.?entity.?too.?large|content.?too.?large|\b413\b/i.test(
-      message,
-    ) || message.includes('SHOWCASE_STORAGE_PUT_FAILED:413')
+    /file too large|request.?entity.?too.?large|content.?too.?large|\b413\b/i.test(message) ||
+    message.includes('SHOWCASE_STORAGE_PUT_FAILED:413')
   )
 }
 
 function mapSizeOrStorageMessage(
   message: string,
   t: UseLanguageTranslate,
-  options: { rolledBack: boolean },
+  options: { rolledBack: boolean }
 ): string | null {
   if (isCoverTooLargeCause(message)) {
     return String(t('showcase.publishModal.uploadCoverTooLarge'))
@@ -45,8 +44,8 @@ function mapSizeOrStorageMessage(
       t(
         options.rolledBack
           ? 'showcase.publishModal.uploadAttachmentTooLargeRolledBack'
-          : 'showcase.publishModal.uploadAttachmentTooLarge',
-      ),
+          : 'showcase.publishModal.uploadAttachmentTooLarge'
+      )
     )
   }
   if (isGenericTooLargeCause(message)) {
@@ -54,8 +53,8 @@ function mapSizeOrStorageMessage(
       t(
         options.rolledBack
           ? 'showcase.publishModal.uploadFileTooLargeRolledBack'
-          : 'showcase.publishModal.uploadFileTooLarge',
-      ),
+          : 'showcase.publishModal.uploadFileTooLarge'
+      )
     )
   }
   return null
@@ -64,7 +63,7 @@ function mapSizeOrStorageMessage(
 export function mapShowcaseSubmitError(
   error: unknown,
   t: UseLanguageTranslate,
-  isSessionExpiredMessage: (message: string) => boolean,
+  isSessionExpiredMessage: (message: string) => boolean
 ): string {
   const message = error instanceof Error ? error.message : ''
   if (isSessionExpiredMessage(message)) {

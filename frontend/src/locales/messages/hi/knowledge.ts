@@ -124,18 +124,25 @@ export default {
   'knowledge.header.title': 'व्यक्तिगत ज्ञान आधार',
   'knowledge.header.upload': 'दस्तावेज़ अपलोड',
   'knowledge.ragGuide.title': 'पैकेज, RAG और wiki कैसे?',
-  'knowledge.ragGuide.subtitle': 'शब्दजाल नहीं — संदर्भ सामग्री का फ़ोल्डर। खोज इंडेक्स (RAG), wiki नोट्स, AI दोनों पढ़ता है।',
+  'knowledge.ragGuide.subtitle':
+    'शब्दजाल नहीं — संदर्भ सामग्री का फ़ोल्डर। खोज इंडेक्स (RAG), wiki नोट्स, AI दोनों पढ़ता है।',
   'knowledge.ragGuide.step1.title': 'पैकेज चुनें',
-  'knowledge.ragGuide.step1.body': 'Zotero संग्रह जैसा। बाएँ 3 तक; प्रत्येक एक माइंड मैप। साइडबार से प्रबंधन।',
+  'knowledge.ragGuide.step1.body':
+    'Zotero संग्रह जैसा। बाएँ 3 तक; प्रत्येक एक माइंड मैप। साइडबार से प्रबंधन।',
   'knowledge.ragGuide.step2.title': 'स्रोत और इंडेक्स (RAG)',
-  'knowledge.ragGuide.step2.body': 'PDF, Word, नोट, वेब। लंबे दस्तावेज़ खोज योग्य चंक; वेक्टर एम्बेडिंग — RAG इंडेक्स।',
+  'knowledge.ragGuide.step2.body':
+    'PDF, Word, नोट, वेब। लंबे दस्तावेज़ खोज योग्य चंक; वेक्टर एम्बेडिंग — RAG इंडेक्स।',
   'knowledge.ragGuide.step3.title': 'Wiki नोट्स स्वतः',
-  'knowledge.ragGuide.step3.body': 'इंडेक्स के बाद LLM overview और wiki पृष्ठ — संक्षिप्त नोट (ट्रांसक्रिप्ट नहीं)।',
+  'knowledge.ragGuide.step3.body':
+    'इंडेक्स के बाद LLM overview और wiki पृष्ठ — संक्षिप्त नोट (ट्रांसक्रिप्ट नहीं)।',
   'knowledge.ragGuide.step4.title': 'Wiki + चंक खोज',
-  'knowledge.ragGuide.step4.body': 'शाखा विस्तार/सारांश: wiki पहले, फिर प्रासंगिक चंक (हाइब्रिड RAG)।',
+  'knowledge.ragGuide.step4.body':
+    'शाखा विस्तार/सारांश: wiki पहले, फिर प्रासंगिक चंक (हाइब्रिड RAG)।',
   'knowledge.ragGuide.step5.title': 'स्रोत-आधारित उत्तर',
-  'knowledge.ragGuide.step5.body': 'AI wiki और स्निपेट से लिखता — अनुमान नहीं; बेहतर स्रोत = सटीक मानचित्र।',
-  'knowledge.ragGuide.footer': 'Document Summary से पैकेज स्वतः; Chrome एक्सटेंशन पृष्ठ साइडबार में।',
+  'knowledge.ragGuide.step5.body':
+    'AI wiki और स्निपेट से लिखता — अनुमान नहीं; बेहतर स्रोत = सटीक मानचित्र।',
+  'knowledge.ragGuide.footer':
+    'Document Summary से पैकेज स्वतः; Chrome एक्सटेंशन पृष्ठ साइडबार में।',
   'knowledge.pipeline.title': 'पाइपलाइन स्थिति',
   'knowledge.pipeline.ragIdle': 'RAG इंडेक्स',
   'knowledge.pipeline.ragIdleDetail': 'कोई इंडेक्स नहीं। स्रोत जोड़ें और इंडेक्स।',
@@ -235,7 +242,8 @@ export default {
   'knowledge.settings.retrievalSection': 'पुनर्प्राप्ति सेटिंग',
   'knowledge.settings.title': 'ज्ञान आधार सेटिंग',
   'knowledge.settings.helpTitle': 'सेटिंग कैसे लागू',
-  'knowledge.settings.helpBody': 'पुनर्प्राप्ति तुरंत। चंक आकार/ओवरलैप नए इंडेक्स — बदलने के बाद पुनः इंडेक्स।',
+  'knowledge.settings.helpBody':
+    'पुनर्प्राप्ति तुरंत। चंक आकार/ओवरलैप नए इंडेक्स — बदलने के बाद पुनः इंडेक्स।',
   'knowledge.settings.tokens': 'टोकन',
   'knowledge.settings.serverSection': 'सर्वर (केवल पढ़ें)',
   'knowledge.settings.rerankingMode': 'रीरैंकिंग',

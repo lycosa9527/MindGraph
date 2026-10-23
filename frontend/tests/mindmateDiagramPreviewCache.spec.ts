@@ -8,8 +8,7 @@ import {
 
 describe('extractMindmatePreviewCacheKey', () => {
   it('extracts dingtalk temp filename from preview markdown', () => {
-    const content =
-      '![](https://host/api/temp_images/dingtalk_DeadBeef_1710000000.png?sig=x&exp=1)'
+    const content = '![](https://host/api/temp_images/dingtalk_DeadBeef_1710000000.png?sig=x&exp=1)'
     expect(extractMindmatePreviewCacheKey(content)).toBe('dingtalk_deadbeef_1710000000.png')
   })
 
@@ -26,11 +25,8 @@ describe('extractMindmatePreviewCacheKey', () => {
 
 describe('replaceMindmatePreviewImageUrl', () => {
   it('replaces temp preview markdown src with blob url', () => {
-    const content =
-      '![mg:abc](https://host/temp_images/dingtalk_deadbeef_1710000000.png?sig=x)'
-    expect(replaceMindmatePreviewImageUrl(content, 'blob:cached')).toBe(
-      '![mg:abc](blob:cached)'
-    )
+    const content = '![mg:abc](https://host/temp_images/dingtalk_deadbeef_1710000000.png?sig=x)'
+    expect(replaceMindmatePreviewImageUrl(content, 'blob:cached')).toBe('![mg:abc](blob:cached)')
   })
 
   it('replaces same-origin rewritten preview src with blob url', () => {

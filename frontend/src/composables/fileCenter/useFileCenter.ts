@@ -197,10 +197,7 @@ export function useFileCenterMutations(options?: { apiMode?: FileCenterApiMode }
 
   function mutationErrorMessage(error: Error, fallback: string): string {
     const raw = error.message || ''
-    if (
-      raw.includes(DOC_SUMMARY_CONTENT_TOO_LONG_CODE) ||
-      raw.includes('model input limit')
-    ) {
+    if (raw.includes(DOC_SUMMARY_CONTENT_TOO_LONG_CODE) || raw.includes('model input limit')) {
       return t('canvas.mindMapDocumentSummary.contentTooLongForModel')
     }
     if (raw.includes('browser_file_extract_required')) {
@@ -266,10 +263,10 @@ export function useFileCenterMutations(options?: { apiMode?: FileCenterApiMode }
 
   const ingestText = useMutation({
     mutationFn: (vars: { packageId: number; payload: IngestTextPayload }) =>
-      apiRequestJson<KnowledgeDocument>(
-        `${packagesBase}/${vars.packageId}/documents/ingest-text`,
-        { method: 'POST', body: JSON.stringify(vars.payload) }
-      ),
+      apiRequestJson<KnowledgeDocument>(`${packagesBase}/${vars.packageId}/documents/ingest-text`, {
+        method: 'POST',
+        body: JSON.stringify(vars.payload),
+      }),
     onSuccess: (_data, vars) => invalidatePackage(vars.packageId),
     onError: (error: Error) =>
       notify.error(mutationErrorMessage(error, t('fileCenter.ingestFailed'))),

@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'කැන්වස්',
   'fileCenterLibrary.badgeExtension': 'දිගුම',
   'fileCenterLibrary.badgeUpload': 'උඩුගත කිරීම',
-  'chunkTest.history.confirmDeleteBody': 'මෙම පරීක්‍ෂණය මකා දැමීමට අවශ‍ය බව ඔබට විශ්වාසද? මෙය අහෝසි කළ නොහැක.',
+  'chunkTest.history.confirmDeleteBody':
+    'මෙම පරීක්‍ෂණය මකා දැමීමට අවශ‍ය බව ඔබට විශ්වාසද? මෙය අහෝසි කළ නොහැක.',
   'chunkTest.history.confirmDeleteTitle': 'පරීක්‍ෂණය මකන්න',
   'chunkTest.history.delete': 'මකන්න',
   'chunkTest.history.deleteFailed': 'පරීක්‍ෂණය මැකීම අසාර්ථක විය',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'පිළිතුරු ගුණත්වය',
   'chunkTestResults.avgLatency': 'සා. ප්‍රමාදය',
   'chunkTestResults.back': 'ආපසු',
-  'chunkTestResults.cancelConfirmBody': 'මෙම පරීක්‍ෂණය අවලංගු කිරීමට අවශ‍ය බව ඔබට විශ්වාසද? ඊළඟ checkpoint හි නතර වේ.',
+  'chunkTestResults.cancelConfirmBody':
+    'මෙම පරීක්‍ෂණය අවලංගු කිරීමට අවශ‍ය බව ඔබට විශ්වාසද? ඊළඟ checkpoint හි නතර වේ.',
   'chunkTestResults.cancelFailed': 'අවලංගු කිරීම අසාර්ථක විය',
   'chunkTestResults.cancelRequested': 'පරීක්‍ෂණ අවලංගු කිරීම ඉල්ලා ඇත',
   'chunkTestResults.cancelTest': 'පරීක්‍ෂණය අවලංගු කරන්න',
@@ -89,7 +91,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'සියලු දත්ත කට්‍ටල පරීක්‍ෂණය',
   'knowledge.chunkHeader.testUpload': 'උඩුගත ලේඛන පරීක්‍ෂණය',
   'knowledge.chunkHeader.title': 'RAG Chunk පරීක්‍ෂණය',
-  'knowledge.chunkHeader.waitForProcessing': 'පරීක්‍ෂණයට පෙර ලේඛන සැකසීම අවසන් වන තෙක් රැඳී සිටින්න',
+  'knowledge.chunkHeader.waitForProcessing':
+    'පරීක්‍ෂණයට පෙර ලේඛන සැකසීම අවසන් වන තෙක් රැඳී සිටින්න',
   'knowledge.chunkPreview.empty': 'Chunks හමු නොවීය',
   'knowledge.chunkPreview.pageLabel': 'පිටුව {n}',
   'knowledge.chunkPreview.title': 'ලේඛන Chunks — {fileName}',
@@ -124,21 +127,29 @@ export default {
   'knowledge.header.title': 'පෞද්ගලික දැනුම් පදනම',
   'knowledge.header.upload': 'ලේඛන උඩුගත කරන්න',
   'knowledge.ragGuide.title': 'පැකේජ, RAG සහ wiki ක්‍රමය ක්‍රියා කරන්නේ කෙසේද?',
-  'knowledge.ragGuide.subtitle': 'technical terms අවශ‍ය නැත — reference material ෆෝල්‍ඩරයක් ලෙස සිතන්න. search (RAG) සඳහා index කරමු, පසුව කෙටi wiki notes compile කරමු, mind map සෑදීමේදී AI දෙකම කියවයි.',
+  'knowledge.ragGuide.subtitle':
+    'technical terms අවශ‍ය නැත — reference material ෆෝල්‍ඩරයක් ලෙස සිතන්න. search (RAG) සඳහා index කරමු, පසුව කෙටi wiki notes compile කරමු, mind map සෑදීමේදී AI දෙකම කියවයි.',
   'knowledge.ragGuide.step1.title': 'පැකේජයක් තෝරන්න',
-  'knowledge.ragGuide.step1.body': 'පැකේජයක් Zotero collection එකක් වැනිය. වම් පැත්‍තේ උපරිම 3ක්; සෑම එකක්ම සාමාන්‍යයෙන් mind map එකකට අයත්. sidebar හි පැකේජයක් click කර ලේඛන කළමනාකරණය කරන්න.',
+  'knowledge.ragGuide.step1.body':
+    'පැකේජයක් Zotero collection එකක් වැනිය. වම් පැත්‍තේ උපරිම 3ක්; සෑම එකක්ම සාමාන්‍යයෙන් mind map එකකට අයත්. sidebar හි පැකේජයක් click කර ලේඛන කළමනාකරණය කරන්න.',
   'knowledge.ragGuide.step2.title': 'මූලාශ්‍ර එකතු කර index කරන්න (RAG)',
-  'knowledge.ragGuide.step2.body': 'PDF, Word, notes හෝ web pages උඩුගත කරන්න. දිගු ලේඛන searchable chunks බවට split කර vector embeddings ගබ‍ඩා කරමු — මෙය RAG index වන අතර පළමුව සූදානම් වේ.',
+  'knowledge.ragGuide.step2.body':
+    'PDF, Word, notes හෝ web pages උඩුගත කරන්න. දිගු ලේඛන searchable chunks බවට split කර vector embeddings ගබ‍ඩා කරමු — මෙය RAG index වන අතර පළමුව සූදානම් වේ.',
   'knowledge.ragGuide.step3.title': 'Wiki notes ස්‍වයංක්‍රීයව compile වේ',
-  'knowledge.ragGuide.step3.body': 'Indexing අවසන් වූ පසු LLM overview සහ topic wiki pages disk හි compile කරයි. transcripts නොවන concise notes ලෙස package එක summarize කර orientation වේගවත් කරයි.',
+  'knowledge.ragGuide.step3.body':
+    'Indexing අවසන් වූ පසු LLM overview සහ topic wiki pages disk හි compile කරයි. transcripts නොවන concise notes ලෙස package එක summarize කර orientation වේගවත් කරයි.',
   'knowledge.ragGuide.step4.title': 'Lookup wiki + chunks භාවිත කරයි',
-  'knowledge.ragGuide.step4.body': 'branch expand කරන විට හෝ summary generate කරන විට, පළමුව relevant wiki pages match කර, පසුව hybrid RAG මගින් chunk passages retrieve කරමු.',
+  'knowledge.ragGuide.step4.body':
+    'branch expand කරන විට හෝ summary generate කරන විට, පළමුව relevant wiki pages match කර, පසුව hybrid RAG මගින් chunk passages retrieve කරමු.',
   'knowledge.ragGuide.step5.title': 'පිළිතුරු ඔබේ මූලාශ්‍ර වලට අනුරූප',
-  'knowledge.ragGuide.step5.body': 'AI guessing වෙනුවට wiki notes සහ retrieved snippets වලින් ලියයි — හොඳ මූලාශ්‍ර, සම්පූර්ණ indexing සහ compiled wiki pages වඩා නිවැරදි maps අදහස් කරයි.',
-  'knowledge.ragGuide.footer': 'Tip: Canvas හි Document Summary විවෘත කිරීමෙන් package ස්‍වයංක්‍රීයව සෑදේ; Chrome extension හරහා save කළ pages sidebar list හි ද දිස්වේ.',
+  'knowledge.ragGuide.step5.body':
+    'AI guessing වෙනුවට wiki notes සහ retrieved snippets වලින් ලියයි — හොඳ මූලාශ්‍ර, සම්පූර්ණ indexing සහ compiled wiki pages වඩා නිවැරදි maps අදහස් කරයි.',
+  'knowledge.ragGuide.footer':
+    'Tip: Canvas හි Document Summary විවෘත කිරීමෙන් package ස්‍වයංක්‍රීයව සෑදේ; Chrome extension හරහා save කළ pages sidebar list හි ද දිස්වේ.',
   'knowledge.pipeline.title': 'Pipeline තත්‍වය',
   'knowledge.pipeline.ragIdle': 'RAG එන්ඩෙක්ස්',
-  'knowledge.pipeline.ragIdleDetail': 'indexed packages තවම නැත. package එකකින් මූලාශ්‍ර එකතු කර indexing කරන්න.',
+  'knowledge.pipeline.ragIdleDetail':
+    'indexed packages තවම නැත. package එකකින් මූලාශ්‍ර එකතු කර indexing කරන්න.',
   'knowledge.pipeline.ragProcessing': 'RAG එන්ඩෙක්ස් කිරීම',
   'knowledge.pipeline.ragProcessingDetail': 'packages {count}ක් තවම chunking සහ embedding කරමින්.',
   'knowledge.pipeline.ragReady': 'RAG සුදාන',
@@ -164,7 +175,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'සියල්ල deselect කරන්න',
   'knowledge.manualEval.dialogTitle': 'අතින් ඇගයුම — {method}',
   'knowledge.manualEval.groundTruthLabel': 'නිවැත පිළිතුර (විකල්ප)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'answer relevance evaluation සඳහා ground truth answer ඇතුළත් කරන්න...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'answer relevance evaluation සඳහා ground truth answer ඇතුළත් කරන්න...',
   'knowledge.manualEval.metric.answer_coverage': 'පිළිතුරු ආවරණය',
   'knowledge.manualEval.metric.answer_faithfulness': 'පිළිතුරු විශ්වසනීයත්වය',
   'knowledge.manualEval.metric.clarity': 'පැහැදිලිම',
@@ -186,7 +198,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'කොටස් ගුණාත්මක ඇගයුම',
   'knowledge.manualEval.resultsTitle': 'ඇගයුම් ප්‍රතිඵල',
   'knowledge.manualEval.selectAll': 'සියල්ල තෝරන්න',
-  'knowledge.manualEval.selectChunksHeading': 'Evaluate කිරීමට Chunks තෝරන්න (සියල්ල evaluate කිරීමට හිස්ව තබන්න)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Evaluate කිරීමට Chunks තෝරන්න (සියල්ල evaluate කිරීමට හිස්ව තබන්න)',
   'knowledge.manualEval.showingFirst20': '{total} chunks වලින් පළමු 20 පෙන්වයි',
   'knowledge.manualEval.startEvaluation': 'Evaluation ආරම්භ කරන්න',
   'knowledge.processing.chunking': 'කොටස් කිරීම',
@@ -235,7 +248,8 @@ export default {
   'knowledge.settings.retrievalSection': 'ලැබීමේ සැකසුම්',
   'knowledge.settings.title': 'දැනුම් පදනම සැකසුම්',
   'knowledge.settings.helpTitle': 'මෙම settings apply වන්නේ කෙසේද',
-  'knowledge.settings.helpBody': 'Retrieval settings search සහ AI answers වලට වmediately apply වේ. Chunk size සහ overlap newly indexed documents වලට apply වේ — වෙනස් කළ පසු existing sources re-index කරන්න.',
+  'knowledge.settings.helpBody':
+    'Retrieval settings search සහ AI answers වලට වmediately apply වේ. Chunk size සහ overlap newly indexed documents වලට apply වේ — වෙනස් කළ පසු existing sources re-index කරන්න.',
   'knowledge.settings.tokens': 'ටෝකන්',
   'knowledge.settings.serverSection': 'සේවාදායකය (කියවීමට පමණි)',
   'knowledge.settings.rerankingMode': 'නැවත පෙළගස්කිරීම',
@@ -246,7 +260,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'අක්‍රීය',
   'knowledge.settings.saveSuccess': 'සැකසුම් සුරකින ලදී',
   'knowledge.settings.saveFailed': 'Settings save failed',
-  'knowledge.settings.reindexRequired': 'Chunk settings changed — packages වල existing documents re-index කරන්න.',
+  'knowledge.settings.reindexRequired':
+    'Chunk settings changed — packages වල existing documents re-index කරන්න.',
   'knowledge.upload.click': 'උඩුගත කිරීමට click කරන්න',
   'knowledge.upload.drag': 'හෝ file මෙහි drag කරන්න',
   'knowledge.upload.fileTooLarge': 'File size 10MB ඉක්‍ම නොවිය යුතුය',
@@ -254,7 +269,8 @@ export default {
   'knowledge.upload.maxDocs': 'උපරිම ලේඛන සීමාවට ශ්‍රේණිය (5)',
   'knowledge.upload.title': 'ලේඛනය එකතු කරන්න',
   'knowledge.upload.unsupportedType': 'සහාය නොදෙන ගොනු වර්ගය',
-  'knowledgeSpace.confirmDeleteBody': 'මෙම ලේඛනය මකා දැමීමට අවශ‍ය බව ඔබට විශ්වාසද? මෙය අහෝසි කළ නොහැක.',
+  'knowledgeSpace.confirmDeleteBody':
+    'මෙම ලේඛනය මකා දැමීමට අවශ‍ය බව ඔබට විශ්වාසද? මෙය අහෝසි කළ නොහැක.',
   'knowledgeSpace.confirmDeleteTitle': 'මකා දැමීම තහවුරු කරන්න',
   'knowledgeSpace.deleteFailed': 'මකා දැමීම අසාර්ථක විය',
   'knowledgeSpace.documentDeleted': 'ලේඛනය මකා ඇත',

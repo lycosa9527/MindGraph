@@ -108,9 +108,7 @@ export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
         notify.error(typeof data.detail === 'string' ? data.detail : 'Failed to save preferences')
         return false
       }
-      const saved = isAiContentLevelId(data.ai_content_level)
-        ? data.ai_content_level
-        : next
+      const saved = isAiContentLevelId(data.ai_content_level) ? data.ai_content_level : next
       patchAuthPersistedAiContentLevel(saved)
       return true
     } catch {

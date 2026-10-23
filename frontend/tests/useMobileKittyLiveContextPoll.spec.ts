@@ -3,8 +3,12 @@
  */
 import { computed, ref } from 'vue'
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { eventBus } from '@/composables/core/useEventBus'
+import { useMobileKittyLiveContextPoll } from '@/composables/kitty/useMobileKittyLiveContextPoll'
 
 const syncMock = vi.hoisted(() => vi.fn(() => true))
 const applySelectionMock = vi.hoisted(() => vi.fn())
@@ -37,9 +41,6 @@ vi.mock('@/stores/diagram', () => ({
     selectedNodes: [] as string[],
   }),
 }))
-
-import { eventBus } from '@/composables/core/useEventBus'
-import { useMobileKittyLiveContextPoll } from '@/composables/kitty/useMobileKittyLiveContextPoll'
 
 describe('useMobileKittyLiveContextPoll', () => {
   beforeEach(() => {

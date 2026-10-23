@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Segera hadir',
   'thinkingCoins.schoolInfo': 'Hubungi admin sekolah untuk paket sekolah',
   'thinkingCoins.school.headline': 'Berpikir dengan AI · solusi sekolah',
-  'thinkingCoins.school.description': 'Deployment privat, fitur kustom, dan dukungan operasional penuh untuk sekolah dan institusi — dirancang untuk skala, branding, dan keamanan data.',
+  'thinkingCoins.school.description':
+    'Deployment privat, fitur kustom, dan dukungan operasional penuh untuk sekolah dan institusi — dirancang untuk skala, branding, dan keamanan data.',
   'thinkingCoins.school.feature.accountManager': 'Manajer akun khusus',
   'thinkingCoins.school.feature.accountManagerDesc': 'Konsultasi satu-satu',
   'thinkingCoins.school.feature.privateDeploy': 'Deployment privat',
@@ -63,7 +64,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Hadiah referral',
   'thinkingCoins.reason.case_reward': 'Hadiah kasus',
   'thinkingCoins.reason.subscription_grant': 'Grant langganan',
-  'thinkingCoins.dailyExpiresHint': 'Hadiah masuk berlaku pada hari yang sama dan akan direset pada pukul 24:00',
+  'thinkingCoins.dailyExpiresHint':
+    'Hadiah masuk berlaku pada hari yang sama dan akan direset pada pukul 24:00',
   'thinkingCoins.dailyBalanceRemaining': 'Check-in hari ini tersisa {n}',
   'thinkingCoins.admin.tab': 'Token pemikiran',
   'thinkingCoins.admin.tasksTitle': 'Tugas dapat token',

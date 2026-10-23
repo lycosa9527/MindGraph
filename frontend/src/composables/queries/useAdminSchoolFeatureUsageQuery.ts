@@ -1,12 +1,12 @@
 /**
  * TanStack Query hook for school-dashboard feature-usage analytics.
  */
-import { computed, type MaybeRefOrGetter, toValue } from 'vue'
+import { type MaybeRefOrGetter, computed, toValue } from 'vue'
 
 import { useQuery } from '@tanstack/vue-query'
 
-import { fetchAdminSchoolFeatureUsage } from './adminSchoolFeatureUsageApi'
 import { ADMIN_STALE_MS, adminKeys } from './adminKeys'
+import { fetchAdminSchoolFeatureUsage } from './adminSchoolFeatureUsageApi'
 
 export function useAdminSchoolFeatureUsageQuery(
   organizationId: MaybeRefOrGetter<number | null | undefined>,

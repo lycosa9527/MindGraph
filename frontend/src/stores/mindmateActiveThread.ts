@@ -6,8 +6,8 @@
  */
 import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
 import {
-  isTeachingInstructionReply,
   TEACHING_INSTRUCTION_KIND,
+  isTeachingInstructionReply,
 } from '@/utils/mindmateTeachingDesignFlag'
 
 export type FeedbackRating = 'like' | 'dislike' | null

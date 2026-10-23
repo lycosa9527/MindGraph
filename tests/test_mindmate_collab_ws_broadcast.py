@@ -56,29 +56,76 @@ async def test_dispatch_local_session_ended_force_closes_4011() -> None:
 
 
 @pytest.mark.asyncio
-async def test_user_may_connect_allows_network_without_db() -> None:
-    """Network-visible rooms allow any authenticated joiner at the WS gate."""
+async def test_user_may_connect_denies_network_without_membership() -> None:
+    """Public seminars are closed: a code holder who was not added cannot connect."""
     mgr = MindmateCollabManager()
     session = MagicMock()
+    session.id = "sess-net"
     session.expires_at = None
     session.visibility = "network"
-    allowed = await mgr.user_may_connect(99, session)
+    session.owner_user_id = 1
+
+    with (
+        patch(
+            "services.features.mindmate_collab.manager.list_group_member_ids",
+            AsyncMock(return_value=[]),
+        ),
+        patch(
+            "services.features.mindmate_collab.manager.accepted_member_ids",
+            AsyncMock(return_value=[]),
+        ),
+    ):
+        allowed = await mgr.user_may_connect(99, session)
+
+    assert allowed is False
+
+
+@pytest.mark.asyncio
+async def test_user_may_connect_allows_accepted_network_member() -> None:
+    """A school or accepted member can open the public seminar."""
+    mgr = MindmateCollabManager()
+    session = MagicMock()
+    session.id = "sess-net"
+    session.expires_at = None
+    session.visibility = "network"
+    session.owner_user_id = 1
+
+    with (
+        patch(
+            "services.features.mindmate_collab.manager.list_group_member_ids",
+            AsyncMock(return_value=[99]),
+        ),
+        patch(
+            "services.features.mindmate_collab.manager.accepted_member_ids",
+            AsyncMock(return_value=[99]),
+        ),
+    ):
+        allowed = await mgr.user_may_connect(99, session)
+
     assert allowed is True
 
 
 @pytest.mark.asyncio
-async def test_user_may_connect_denies_expired_session() -> None:
-    """Expired sessions are rejected before WebSocket accept."""
+async def test_user_may_connect_denies_pending_network_member() -> None:
+    """Cross-school invitees stay out until they agree."""
     mgr = MindmateCollabManager()
     session = MagicMock()
-    session.expires_at = MagicMock()
+    session.id = "sess-net"
+    session.expires_at = None
     session.visibility = "network"
+    session.owner_user_id = 1
 
-    with patch(
-        "services.features.mindmate_collab.manager.is_online_collab_expired",
-        return_value=True,
+    with (
+        patch(
+            "services.features.mindmate_collab.manager.list_group_member_ids",
+            AsyncMock(return_value=[99]),
+        ),
+        patch(
+            "services.features.mindmate_collab.manager.accepted_member_ids",
+            AsyncMock(return_value=[]),
+        ),
     ):
-        allowed = await mgr.user_may_connect(1, session)
+        allowed = await mgr.user_may_connect(99, session)
 
     assert allowed is False
 

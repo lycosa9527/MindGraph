@@ -4,11 +4,11 @@
  *
  * Skip (pass) when fixtures are missing so CI without local PG stays green.
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
-
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { loadSpecForDiagramType } from '@/stores/specLoader'
 import { useUIStore } from '@/stores/ui'

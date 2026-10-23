@@ -48,7 +48,7 @@ function diagramCopyFingerprint(input: {
   grade: string
   diagramType: string
 }): string {
-  let specFingerprint = ''
+  let specFingerprint: string
   try {
     specFingerprint = JSON.stringify(input.specs)
   } catch {
@@ -149,7 +149,7 @@ function resultFromPayload(data: Record<string, unknown>): ShowcaseDiagramCopyRe
 }
 
 async function generateShowcaseDiagramCopy(
-  input: ShowcaseDiagramCopyRequest,
+  input: ShowcaseDiagramCopyRequest
 ): Promise<ShowcaseDiagramCopyResult> {
   const response = await authFetch('/api/showcase/ai/diagram-copy', {
     method: 'POST',
@@ -180,7 +180,7 @@ async function generateShowcaseDiagramCopy(
 async function consumeDiagramCopySse(
   response: Response,
   handlers: ShowcaseDiagramCopyStreamHandlers,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<ShowcaseDiagramCopyResult> {
   const contentType = response.headers.get('content-type') ?? ''
   if (!contentType.includes('text/event-stream')) {
@@ -226,8 +226,7 @@ async function consumeDiagramCopySse(
             typeof payload.message === 'string' && payload.message.trim()
               ? payload.message
               : 'AI generation failed'
-          const errorType =
-            typeof payload.error_type === 'string' ? payload.error_type : undefined
+          const errorType = typeof payload.error_type === 'string' ? payload.error_type : undefined
           streamError = message
           handlers.onError?.(message, errorType)
         }
@@ -246,7 +245,7 @@ async function consumeDiagramCopySse(
         streamError = message
         handlers.onError?.(
           message,
-          typeof payload.error_type === 'string' ? payload.error_type : undefined,
+          typeof payload.error_type === 'string' ? payload.error_type : undefined
         )
       } else if (payload?.event === 'fields') {
         handlers.onFields?.(fieldsFromPayload(payload))
@@ -273,7 +272,7 @@ async function consumeDiagramCopySse(
  */
 async function streamShowcaseDiagramCopy(
   input: ShowcaseDiagramCopyRequest,
-  handlers: ShowcaseDiagramCopyStreamHandlers = {},
+  handlers: ShowcaseDiagramCopyStreamHandlers = {}
 ): Promise<ShowcaseDiagramCopyResult> {
   const response = await authFetch('/api/showcase/ai/diagram-copy/stream', {
     method: 'POST',
@@ -295,7 +294,7 @@ async function streamShowcaseDiagramCopy(
  */
 async function streamShowcaseDiagramCopyFromImages(
   input: ShowcaseDiagramCopyImagesRequest,
-  handlers: ShowcaseDiagramCopyStreamHandlers = {},
+  handlers: ShowcaseDiagramCopyStreamHandlers = {}
 ): Promise<ShowcaseDiagramCopyResult> {
   if (!input.images.length) {
     throw new Error('At least one gallery image required')
@@ -303,7 +302,7 @@ async function streamShowcaseDiagramCopyFromImages(
   const response = await apiUpload(
     '/api/showcase/ai/diagram-copy/images/stream',
     buildDiagramCopyImagesFormData(input),
-    { signal: input.signal },
+    { signal: input.signal }
   )
 
   if (!response.ok) {

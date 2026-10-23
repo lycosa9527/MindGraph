@@ -3,16 +3,13 @@
  * Connection-list order under a parent is the sibling SoT — no full spec reload.
  */
 import { BRANCH_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
-import {
-  mindMapAdaptiveBranchGap,
-  mindMapAdaptiveSiblingGap,
-} from '@/config/mindMapAdaptiveGaps'
+import { mindMapAdaptiveBranchGap, mindMapAdaptiveSiblingGap } from '@/config/mindMapAdaptiveGaps'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import {
-  isMindMapAssociationConnection,
   type MindMapSideChar,
+  isMindMapAssociationConnection,
   mindMapBranchDataFields,
   mindMapNodeDepth,
   mindMapNodeSide,
@@ -85,7 +82,7 @@ function parseBranchId(
   if (!side && !positional) return null
   const depth = mindMapNodeDepth(nodeId, { node, nodes, connections })
   return {
-    side: side ? mindMapSideToChar(side) : positional?.side ?? 'r',
+    side: side ? mindMapSideToChar(side) : (positional?.side ?? 'r'),
     depth,
   }
 }
@@ -209,12 +206,8 @@ function resolveInsertContext(
   if (typeof options.insertIndex === 'number' && options.insertIndex >= 0) {
     const parentId =
       options.parentId ??
-      (options.anchorNodeId
-        ? mindMapTreeParentId(connections, options.anchorNodeId)
-        : undefined) ??
-      (options.afterNodeId
-        ? mindMapTreeParentId(connections, options.afterNodeId)
-        : undefined)
+      (options.anchorNodeId ? mindMapTreeParentId(connections, options.anchorNodeId) : undefined) ??
+      (options.afterNodeId ? mindMapTreeParentId(connections, options.afterNodeId) : undefined)
     if (!parentId) {
       recordMindMapSiblingInsertFailure('insert_index_missing_parent', {
         insertIndex: options.insertIndex,
@@ -398,10 +391,7 @@ function spliceParentConnections(
   return result
 }
 
-function shapeOfNode(
-  node: DiagramNode | undefined,
-  diagramStyleId?: string | null
-): NodeShape {
+function shapeOfNode(node: DiagramNode | undefined, diagramStyleId?: string | null): NodeShape {
   if (!node) return 'rounded'
   return resolveMindMapNodeShape(
     { id: node.id, type: node.type ?? 'branch', style: node.style },

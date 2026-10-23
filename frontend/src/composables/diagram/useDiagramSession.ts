@@ -2,9 +2,9 @@
  * Injectable diagram session — canvas/nodes use this instead of assuming a single Pinia store.
  * Editor provides the Pinia diagram store; Showcase provides a readonly createDiagramSession().
  */
-import { type InjectionKey, inject, toRef, type Ref } from 'vue'
+import { type InjectionKey, type Ref, inject, toRef } from 'vue'
 
-import { useDiagramStore, type DiagramSession } from '@/stores/diagram'
+import { type DiagramSession, useDiagramStore } from '@/stores/diagram'
 
 export const DiagramSessionKey: InjectionKey<DiagramSession> = Symbol('DiagramSession')
 

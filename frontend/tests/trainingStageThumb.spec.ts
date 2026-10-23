@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  dataUrlToPngFile,
+  isPersistedTrainingThumb,
+} from '@/composables/training/persistTrainingThumb'
+import {
   isTrainingMediaStep,
   shouldAwakeOnSelect,
   shouldRecaptureThumb,
 } from '@/composables/training/trainingBuilderHibernate'
 import { blankPageStep, blankSlideStep } from '@/composables/training/trainingBuilderSteps'
-import {
-  dataUrlToPngFile,
-  isPersistedTrainingThumb,
-} from '@/composables/training/persistTrainingThumb'
 import {
   captureTrainingStage,
   raceCapture,

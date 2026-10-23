@@ -46,5 +46,8 @@ export const PRESENTATION_BOARD_THICKNESS_SCALE: Record<PresentationBoardThickne
 }
 
 export function presentationBoardColorStroke(id: PresentationBoardColorId): string {
-  return PRESENTATION_BOARD_COLORS.find((c) => c.id === id)?.stroke ?? PRESENTATION_BOARD_COLORS[0].stroke
+  return (
+    PRESENTATION_BOARD_COLORS.find((c) => c.id === id)?.stroke ??
+    PRESENTATION_BOARD_COLORS[0].stroke
+  )
 }

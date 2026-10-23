@@ -5,7 +5,6 @@
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
 
 import { INTERFACE_LANGUAGE_PICKER_CODES } from '@/i18n/locales'

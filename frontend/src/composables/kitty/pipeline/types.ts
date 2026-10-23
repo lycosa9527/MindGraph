@@ -60,13 +60,7 @@ export type KittyErrorCode =
   | 'unknown'
 
 export type KittyPipelinePhase =
-  | 'idle'
-  | 'committing'
-  | 'hub_syncing'
-  | 'sending'
-  | 'awaiting_result'
-  | 'completed'
-  | 'failed'
+  'idle' | 'committing' | 'hub_syncing' | 'sending' | 'awaiting_result' | 'completed' | 'failed'
 
 export type KittyPipelineEventStatus = 'started' | 'ok' | 'fail' | 'skip'
 

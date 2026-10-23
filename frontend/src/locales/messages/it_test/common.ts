@@ -112,4 +112,11 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Copia collegamento',
   'landing.international.shareSiteCopied': 'Collegamento copiato',
+  'askonce.title': 'AskOnce',
+  'meta.pageTitle.askOnce': 'AskOnce',
+  'meta.pageTitle.community': 'Community',
+  'meta.pageTitle.course': 'Course',
+  'meta.pageTitle.debateverse': 'DebateVerse',
+  'meta.pageTitle.gewe': 'Gewe',
+  'meta.pageTitle.template': 'Templates',
 }

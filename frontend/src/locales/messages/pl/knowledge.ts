@@ -5,12 +5,14 @@
 
 export default {
   'fileCenterLibrary.title': 'Pakiety',
-  'fileCenterLibrary.subtitle': 'Kolekcje źródeł pogrupowane według diagramu (Podsumowanie dokumentu).',
+  'fileCenterLibrary.subtitle':
+    'Kolekcje źródeł pogrupowane według diagramu (Podsumowanie dokumentu).',
   'fileCenterLibrary.openDiagram': 'Otwórz diagram',
   'fileCenterLibrary.badgeCanvas': 'Płótno',
   'fileCenterLibrary.badgeExtension': 'Rozszerzenie',
   'fileCenterLibrary.badgeUpload': 'Prześlij',
-  'chunkTest.history.confirmDeleteBody': 'Czy na pewno chcesz usunąć ten test? Tej operacji nie można cofnąć.',
+  'chunkTest.history.confirmDeleteBody':
+    'Czy na pewno chcesz usunąć ten test? Tej operacji nie można cofnąć.',
   'chunkTest.history.confirmDeleteTitle': 'Usuń test',
   'chunkTest.history.delete': 'Usuń',
   'chunkTest.history.deleteFailed': 'Nie udało się usunąć testu',
@@ -49,7 +51,8 @@ export default {
   'chunkTestResults.answerQuality': 'Jakość odpowiedzi',
   'chunkTestResults.avgLatency': 'Śr. opóźnienie',
   'chunkTestResults.back': 'Wstecz',
-  'chunkTestResults.cancelConfirmBody': 'Czy na pewno chcesz anulować ten test? Test zatrzyma się przy następnym punkcie kontrolnym.',
+  'chunkTestResults.cancelConfirmBody':
+    'Czy na pewno chcesz anulować ten test? Test zatrzyma się przy następnym punkcie kontrolnym.',
   'chunkTestResults.cancelFailed': 'Nie udało się anulować testu',
   'chunkTestResults.cancelRequested': 'Zażądano anulowania testu',
   'chunkTestResults.cancelTest': 'Anuluj test',
@@ -89,7 +92,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Testuj wszystkie zbiory',
   'knowledge.chunkHeader.testUpload': 'Testuj przesłane dokumenty',
   'knowledge.chunkHeader.title': 'Test fragmentów RAG',
-  'knowledge.chunkHeader.waitForProcessing': 'Przed testem poczekaj na zakończenie przetwarzania dokumentów',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Przed testem poczekaj na zakończenie przetwarzania dokumentów',
   'knowledge.chunkPreview.empty': 'Nie znaleziono fragmentów',
   'knowledge.chunkPreview.pageLabel': 'Strona {n}',
   'knowledge.chunkPreview.title': 'Fragmenty dokumentu — {fileName}',
@@ -108,7 +112,8 @@ export default {
   'knowledge.doc.colStatus': 'państwo',
   'knowledge.doc.colType': 'Typ',
   'knowledge.doc.colUploaded': 'Data przesłania',
-  'knowledge.doc.emptyDescription': 'Brak dokumentów. Prześlij dokumenty, aby zbudować bazę wiedzy.',
+  'knowledge.doc.emptyDescription':
+    'Brak dokumentów. Prześlij dokumenty, aby zbudować bazę wiedzy.',
   'knowledge.doc.errorPrefix': 'Błąd: ',
   'knowledge.doc.noData': 'Brak danych',
   'knowledge.doc.statusCompleted': 'Ukończono',
@@ -124,31 +129,42 @@ export default {
   'knowledge.header.title': 'Osobista baza wiedzy',
   'knowledge.header.upload': 'Prześlij dokumenty',
   'knowledge.ragGuide.title': 'Jak działają pakiety, RAG i wiki?',
-  'knowledge.ragGuide.subtitle': 'Bez żargonu — pomyśl o tym jak o folderze materiałów referencyjnych. Indeksujemy je do wyszukiwania (RAG), kompilujemy krótkie notatki wiki, a AI czyta obie przy budowie mapy myśli.',
+  'knowledge.ragGuide.subtitle':
+    'Bez żargonu — pomyśl o tym jak o folderze materiałów referencyjnych. Indeksujemy je do wyszukiwania (RAG), kompilujemy krótkie notatki wiki, a AI czyta obie przy budowie mapy myśli.',
   'knowledge.ragGuide.step1.title': 'Wybierz pakiet',
-  'knowledge.ragGuide.step1.body': 'Pakiet jest jak kolekcja Zotero. Po lewej możesz mieć do 3; każdy zwykle należy do jednej mapy myśli. Kliknij pakiet na pasku bocznym, aby zarządzać jego dokumentami.',
+  'knowledge.ragGuide.step1.body':
+    'Pakiet jest jak kolekcja Zotero. Po lewej możesz mieć do 3; każdy zwykle należy do jednej mapy myśli. Kliknij pakiet na pasku bocznym, aby zarządzać jego dokumentami.',
   'knowledge.ragGuide.step2.title': 'Dodaj źródła i zindeksuj je (RAG)',
-  'knowledge.ragGuide.step2.body': 'Prześlij PDF, Word, notatki lub strony WWW. Dzielimy długie dokumenty na przeszukiwalne fragmenty i przechowujemy wektory — to indeks RAG i jest gotowy jako pierwszy.',
+  'knowledge.ragGuide.step2.body':
+    'Prześlij PDF, Word, notatki lub strony WWW. Dzielimy długie dokumenty na przeszukiwalne fragmenty i przechowujemy wektory — to indeks RAG i jest gotowy jako pierwszy.',
   'knowledge.ragGuide.step3.title': 'Notatki wiki kompilują się automatycznie',
-  'knowledge.ragGuide.step3.body': 'Po indeksowaniu LLM kompiluje na dysku strony wiki przeglądu i tematów. To zwięzłe notatki (nie transkrypty) podsumowujące pakiet dla szybszej orientacji.',
+  'knowledge.ragGuide.step3.body':
+    'Po indeksowaniu LLM kompiluje na dysku strony wiki przeglądu i tematów. To zwięzłe notatki (nie transkrypty) podsumowujące pakiet dla szybszej orientacji.',
   'knowledge.ragGuide.step4.title': 'Wyszukiwanie używa wiki + fragmentów',
-  'knowledge.ragGuide.step4.body': 'Gdy rozszerzasz gałąź lub generujesz podsumowanie, najpierw dopasowujemy odpowiednie strony wiki, potem pobieramy najbardziej trafne fragmenty (hybrydowy RAG).',
+  'knowledge.ragGuide.step4.body':
+    'Gdy rozszerzasz gałąź lub generujesz podsumowanie, najpierw dopasowujemy odpowiednie strony wiki, potem pobieramy najbardziej trafne fragmenty (hybrydowy RAG).',
   'knowledge.ragGuide.step5.title': 'Odpowiedzi oparte na Twoich źródłach',
-  'knowledge.ragGuide.step5.body': 'AI pisze z notatek wiki i pobranych fragmentów zamiast zgadywać — lepsze źródła, ukończone indeksowanie i skompilowane wiki oznaczają dokładniejsze mapy.',
-  'knowledge.ragGuide.footer': 'Wskazówka: otwarcie Podsumowania dokumentu na płótnie tworzy pakiet automatycznie; strony zapisane przez rozszerzenie Chrome też pojawiają się na liście paska bocznego.',
+  'knowledge.ragGuide.step5.body':
+    'AI pisze z notatek wiki i pobranych fragmentów zamiast zgadywać — lepsze źródła, ukończone indeksowanie i skompilowane wiki oznaczają dokładniejsze mapy.',
+  'knowledge.ragGuide.footer':
+    'Wskazówka: otwarcie Podsumowania dokumentu na płótnie tworzy pakiet automatycznie; strony zapisane przez rozszerzenie Chrome też pojawiają się na liście paska bocznego.',
   'knowledge.pipeline.title': 'Status potoku',
   'knowledge.pipeline.ragIdle': 'Indeks RAG',
-  'knowledge.pipeline.ragIdleDetail': 'Brak zindeksowanych pakietów. Dodaj źródła i uruchom indeksowanie z pakietu.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Brak zindeksowanych pakietów. Dodaj źródła i uruchom indeksowanie z pakietu.',
   'knowledge.pipeline.ragProcessing': 'Indeksowanie RAG',
   'knowledge.pipeline.ragProcessingDetail': '{count} pakiet(ów) nadal dzieli i osadza źródła.',
   'knowledge.pipeline.ragReady': 'RAG gotowy',
-  'knowledge.pipeline.ragReadyDetail': '{count} pakiet(ów) zindeksowanych — wyszukiwanie fragmentów aktywne.',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count} pakiet(ów) zindeksowanych — wyszukiwanie fragmentów aktywne.',
   'knowledge.pipeline.wikiDisabled': 'Kompilacja wiki wyłączona',
   'knowledge.pipeline.wikiDisabledDetail': 'Kompilacja wiki jest wyłączona na tym serwerze.',
   'knowledge.pipeline.wikiIdle': 'Kompilacja wiki',
-  'knowledge.pipeline.wikiIdleDetail': 'Strony wiki kompilują się po zakończeniu indeksowania RAG dla każdego źródła.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Strony wiki kompilują się po zakończeniu indeksowania RAG dla każdego źródła.',
   'knowledge.pipeline.wikiPending': 'Kompilacja wiki',
-  'knowledge.pipeline.wikiPendingDetail': '{count} pakiet(ów) czeka na strony wiki po indeksowaniu.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} pakiet(ów) czeka na strony wiki po indeksowaniu.',
   'knowledge.pipeline.wikiReady': 'Wiki gotowa',
   'knowledge.pipeline.wikiReadyDetail': '{count} pakiet(ów) ma skompilowane notatki wiki.',
   'knowledge.pipelineBadge.rag.label': 'SZMATA',
@@ -164,7 +180,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Odznacz wszystkie',
   'knowledge.manualEval.dialogTitle': 'Ocena ręczna — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Odpowiedź wzorcowa (opcjonalnie)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Wpisz odpowiedź wzorcową do oceny trafności odpowiedzi...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Wpisz odpowiedź wzorcową do oceny trafności odpowiedzi...',
   'knowledge.manualEval.metric.answer_coverage': 'Pokrycie odpowiedzi',
   'knowledge.manualEval.metric.answer_faithfulness': 'Wierność odpowiedzi',
   'knowledge.manualEval.metric.clarity': 'Jasność',
@@ -186,7 +203,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Ocena jakości fragmentu',
   'knowledge.manualEval.resultsTitle': 'Wyniki oceny',
   'knowledge.manualEval.selectAll': 'Zaznacz wszystkie',
-  'knowledge.manualEval.selectChunksHeading': 'Wybierz fragmenty do oceny (zostaw puste, aby ocenić wszystkie)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Wybierz fragmenty do oceny (zostaw puste, aby ocenić wszystkie)',
   'knowledge.manualEval.showingFirst20': 'Pokazano pierwsze 20 z {total} fragmentów',
   'knowledge.manualEval.startEvaluation': 'Rozpocznij ocenę',
   'knowledge.processing.chunking': 'Fragmentacja',
@@ -235,7 +253,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Ustawienia pobierania',
   'knowledge.settings.title': 'Ustawienia bazy wiedzy',
   'knowledge.settings.helpTitle': 'Jak stosują się te ustawienia',
-  'knowledge.settings.helpBody': 'Preferencje pobierania obowiązują od razu w wyszukiwaniu i odpowiedziach AI. Rozmiar i nakładanie fragmentów dotyczą nowo indeksowanych dokumentów — po zmianie uruchom ponownie indeksowanie istniejących źródeł.',
+  'knowledge.settings.helpBody':
+    'Preferencje pobierania obowiązują od razu w wyszukiwaniu i odpowiedziach AI. Rozmiar i nakładanie fragmentów dotyczą nowo indeksowanych dokumentów — po zmianie uruchom ponownie indeksowanie istniejących źródeł.',
   'knowledge.settings.tokens': 'tokeny',
   'knowledge.settings.serverSection': 'Serwer (tylko odczyt)',
   'knowledge.settings.rerankingMode': 'Zmień kolejność',
@@ -246,7 +265,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Wyłączone',
   'knowledge.settings.saveSuccess': 'Ustawienia zapisane',
   'knowledge.settings.saveFailed': 'Nie udało się zapisać ustawień',
-  'knowledge.settings.reindexRequired': 'Zmieniono ustawienia fragmentów — ponownie zindeksuj istniejące dokumenty w pakietach, aby nowe rozmiary zadziałały.',
+  'knowledge.settings.reindexRequired':
+    'Zmieniono ustawienia fragmentów — ponownie zindeksuj istniejące dokumenty w pakietach, aby nowe rozmiary zadziałały.',
   'knowledge.upload.click': 'Kliknij, aby przesłać',
   'knowledge.upload.drag': 'lub przeciągnij plik tutaj',
   'knowledge.upload.fileTooLarge': 'Rozmiar pliku nie może przekroczyć 10MB',
@@ -254,7 +274,8 @@ export default {
   'knowledge.upload.maxDocs': 'Osiągnięto limit dokumentów (5)',
   'knowledge.upload.title': 'Prześlij dokument',
   'knowledge.upload.unsupportedType': 'Nieobsługiwany typ pliku',
-  'knowledgeSpace.confirmDeleteBody': 'Czy na pewno chcesz usunąć ten dokument? Tej operacji nie można cofnąć.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Czy na pewno chcesz usunąć ten dokument? Tej operacji nie można cofnąć.',
   'knowledgeSpace.confirmDeleteTitle': 'Potwierdź usunięcie',
   'knowledgeSpace.deleteFailed': 'Usuwanie nieudane',
   'knowledgeSpace.documentDeleted': 'Dokument usunięty',

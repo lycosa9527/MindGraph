@@ -2,11 +2,11 @@
  * Rotating one-sentence chat lines (welcome / generating / generate-done).
  */
 import {
+  type OneSentenceChatLocale,
   poolGenerateDone,
   poolGenerating,
   poolWelcome,
   resolveOneSentenceChatLocale,
-  type OneSentenceChatLocale,
 } from '@/composables/canvasToolbar/oneSentenceChatPools'
 
 const lastPicked = new Map<string, string>()

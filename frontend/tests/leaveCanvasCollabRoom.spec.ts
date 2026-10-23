@@ -2,10 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
 import { eventBus } from '@/composables/core/useEventBus'
-import {
-  persistWorkshopSession,
-  readWorkshopSession,
-} from '@/utils/workshopSessionStorage'
+import { persistWorkshopSession, readWorkshopSession } from '@/utils/workshopSessionStorage'
 
 afterEach(() => {
   sessionStorage.clear()

@@ -48,10 +48,12 @@ describe('userCanAccessWorkshopChat', () => {
   it('requires a matching grant when the DB row is restricted', () => {
     const restricted = { restrict: true, organization_ids: [5], user_ids: [] }
     expect(userCanAccessWorkshopChat(false, '5', '10', PREVIEW, restricted)).toBe(true)
-    expect(userCanAccessWorkshopChat(false, '5', '10', PREVIEW, {
-      restrict: true,
-      organization_ids: [9],
-      user_ids: [],
-    })).toBe(false)
+    expect(
+      userCanAccessWorkshopChat(false, '5', '10', PREVIEW, {
+        restrict: true,
+        organization_ids: [9],
+        user_ids: [],
+      })
+    ).toBe(false)
   })
 })

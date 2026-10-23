@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { findMindMapNodeIdByLabel } from '@/utils/findMindMapNodeIdByLabel'
 import type { Connection, DiagramNode } from '@/types'
+import { findMindMapNodeIdByLabel } from '@/utils/findMindMapNodeIdByLabel'
 
 describe('findMindMapNodeIdByLabel', () => {
   it('returns the matching non-topic node id', () => {

@@ -1,21 +1,19 @@
 /**
  * Edge path SVG for mind-map vector export (v2 orthogonal + legacy bezier).
  */
-import { getBezierPath, Position } from '@vue-flow/core'
+import { Position, getBezierPath } from '@vue-flow/core'
 
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import {
-  MIND_MAP_GEOMETRY,
   MINDMAP_UNDERLINE_STROKE_WIDTH,
+  MIND_MAP_GEOMETRY,
   mindMapConnectionAnchorY,
   resolveMindMapTopicBorderColor,
   resolveMindMapTopicStemWidth,
 } from '@/config/mindMapGeometry'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import type { Connection, MindGraphNodeType, NodeStyle } from '@/types'
-import {
-  mindMapBranchSide,
-  resolveMindMapEdgeEndpoint,
-} from '@/utils/mindMapEdgeEndpoints'
+import type { MindMapVectorNodeDraw } from '@/utils/diagramMindMapVectorNodes'
+import { mindMapBranchSide, resolveMindMapEdgeEndpoint } from '@/utils/mindMapEdgeEndpoints'
 import {
   buildMindMapBracketBusPath,
   computeMindMapSharedTrunkX,
@@ -26,7 +24,6 @@ import {
   mindMapOrthogonalSpineEdgeId,
 } from '@/utils/mindMapOrthogonalSiblings'
 import { resolveMindMapOutlineWireframeEdgeStroke } from '@/utils/mindMapOutlineWireframeStyle'
-import type { MindMapVectorNodeDraw } from '@/utils/diagramMindMapVectorNodes'
 
 type NodeMap = Map<string, MindMapVectorNodeDraw>
 
@@ -41,9 +38,7 @@ function vectorBranchSide(nodeId: string, nodes: NodeMap): 'left' | 'right' | nu
 
 function toFlowNode(node: MindMapVectorNodeDraw, side?: 'left' | 'right' | null) {
   const nodeType: MindGraphNodeType =
-    node.id === 'topic' || node.type === 'topic' || node.type === 'center'
-      ? 'topic'
-      : 'branch'
+    node.id === 'topic' || node.type === 'topic' || node.type === 'center' ? 'topic' : 'branch'
   return {
     id: node.id,
     position: { x: node.x, y: node.y },
@@ -145,12 +140,8 @@ function renderV2Edges(
   outlineWireframe: boolean,
   topicActualWidth?: number | null
 ): string {
-  const visible = connections.filter(
-    (c) => nodes.has(c.source) && nodes.has(c.target)
-  )
-  const siblingMap = buildMindMapOrthogonalSiblingMap(visible, (id) =>
-    vectorBranchSide(id, nodes)
-  )
+  const visible = connections.filter((c) => nodes.has(c.source) && nodes.has(c.target))
+  const siblingMap = buildMindMapOrthogonalSiblingMap(visible, (id) => vectorBranchSide(id, nodes))
   const topic = nodes.get('topic')
   const chunks: string[] = []
   const drawnUnderlineBars = new Set<string>()
@@ -178,10 +169,8 @@ function renderV2Edges(
       nodes
     )
 
-    const groupKey = mindMapOrthogonalSiblingGroupKey(
-      connection.source,
-      connection.target,
-      (id) => vectorBranchSide(id, nodes)
+    const groupKey = mindMapOrthogonalSiblingGroupKey(connection.source, connection.target, (id) =>
+      vectorBranchSide(id, nodes)
     )
     const siblings = siblingMap.get(groupKey) ?? [connection]
     const siblingTargets = siblings
@@ -189,13 +178,7 @@ function renderV2Edges(
       .filter((n): n is MindMapVectorNodeDraw => Boolean(n))
 
     const siblingPoints = siblingTargets.map((node) =>
-      endpointFor(
-        node,
-        'target',
-        { x: node.x, y: node.y + node.height / 2 },
-        diagramStyleId,
-        nodes
-      )
+      endpointFor(node, 'target', { x: node.x, y: node.y + node.height / 2 }, diagramStyleId, nodes)
     )
     const siblingYs = siblingPoints.map((p) => p.y)
     const siblingXs = siblingPoints.map((p) => p.x)

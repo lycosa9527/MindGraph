@@ -60,8 +60,6 @@ export function spotlightRadius(overlay: TrainingStepOverlay): number {
   return clampSpotlightScale(legacy / 22)
 }
 
-export function spotlightShape(
-  overlay?: TrainingStepOverlay | null
-): TrainingSpotlightShape {
+export function spotlightShape(overlay?: TrainingStepOverlay | null): TrainingSpotlightShape {
   return overlay?.shape === 'rect' ? 'rect' : 'circle'
 }

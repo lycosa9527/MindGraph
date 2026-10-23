@@ -11,6 +11,7 @@ import { Search } from '@lucide/vue'
 
 import UserCardPopover from '@/components/workshop-chat/UserCardPopover.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { seminarRosterVersion } from '@/composables/mindmate/mindmateSeminarChrome'
 import { type OrgRosterSource, useOrgRosterPanel } from '@/composables/social'
 import { authFetch } from '@/utils/api'
 
@@ -57,6 +58,7 @@ const rosterPanel = useOrgRosterPanel({
   zulipPresence: effectiveZulipPresence.value,
   collabRoomCode: () => props.collabRoomCode ?? '',
   collabVisibility: () => props.collabVisibility ?? 'organization',
+  collabSessionId: () => props.sessionId ?? '',
 })
 
 const {
@@ -112,7 +114,13 @@ onUnmounted(() => {
 })
 
 watch(
-  () => [props.sessionId, props.collabRoomCode, props.collabVisibility] as const,
+  () =>
+    [
+      props.sessionId,
+      props.collabRoomCode,
+      props.collabVisibility,
+      seminarRosterVersion.value,
+    ] as const,
   () => {
     void refreshContacts()
   }
@@ -178,7 +186,7 @@ async function handlePoke(targetUserId: number): Promise<void> {
       </div>
 
       <div
-        v-if="isCompact && isPublicCollabSeminar"
+        v-if="isCompact && collabContext"
         class="mb-2 text-[11px] font-medium text-stone-500"
       >
         <I18nText k="mindmate.collabSessionMembersTitle" />

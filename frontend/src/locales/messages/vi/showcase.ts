@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'trường hợp vuông',
-  'showcase.subtitle': 'Khám phá các bài học tư duy được hỗ trợ bởi AI và chia sẻ công việc giảng dạy của bạn',
+  'showcase.subtitle':
+    'Khám phá các bài học tư duy được hỗ trợ bởi AI và chia sẻ công việc giảng dạy của bạn',
   'showcase.publish': 'Trường hợp xuất bản',
   'showcase.searchPlaceholder': 'Tìm kiếm tiêu đề, mô tả hoặc thẻ…',
   'showcase.filter.all': 'Tất cả',
@@ -31,19 +32,23 @@ export default {
   'showcase.myFavoritesEmpty': 'Chưa có trường hợp yêu thích nào',
   'showcase.myFavoritesEmptyHint': 'Những trường hợp bạn đánh dấu sẽ xuất hiện ở đây',
   'showcase.myCasesModalTitle': 'Các trường hợp đã xuất bản của tôi',
-  'showcase.myCasesManageHint': 'Rút, xóa hoặc chỉnh sửa khỏi danh sách này; bấm vào một trường hợp để biết chi tiết',
+  'showcase.myCasesManageHint':
+    'Rút, xóa hoặc chỉnh sửa khỏi danh sách này; bấm vào một trường hợp để biết chi tiết',
   'showcase.myCasesAction.edit': 'Biên tập',
   'showcase.myCasesEmpty': 'Chưa có trường hợp nào được công bố',
-  'showcase.myCasesEmptyHint': 'Các trường hợp đã xuất bản và trạng thái đánh giá sẽ xuất hiện ở đây',
+  'showcase.myCasesEmptyHint':
+    'Các trường hợp đã xuất bản và trạng thái đánh giá sẽ xuất hiện ở đây',
   'showcase.caseCount': '{n} trường hợp',
   'showcase.pendingReview': 'Đang chờ xem xét',
   'showcase.publishModal.title': 'Trường hợp xuất bản',
   'showcase.publishModal.titleLabel': 'Tiêu đề vụ việc',
   'showcase.publishModal.titleHint': 'Giữ tiêu đề ngắn gọn — khuyến nghị tối đa {max} ký tự',
-  'showcase.publishModal.titlePlaceholder': 'ví dụ. Hai đứa trẻ tranh luận về mặt trời — thiết kế bài học',
+  'showcase.publishModal.titlePlaceholder':
+    'ví dụ. Hai đứa trẻ tranh luận về mặt trời — thiết kế bài học',
   'showcase.publishModal.descriptionLabel': 'Sự miêu tả',
   'showcase.publishModal.tagsLabel': 'Thẻ',
-  'showcase.publishModal.tagsHint': 'Phân tách các thẻ bằng dấu phẩy, ví dụ: xung đột nhận thức, toán tiểu học',
+  'showcase.publishModal.tagsHint':
+    'Phân tách các thẻ bằng dấu phẩy, ví dụ: xung đột nhận thức, toán tiểu học',
   'showcase.publishModal.caseTypeLabel': 'Loại vỏ',
   'showcase.publishModal.subjectLabel': 'Chủ thể',
   'showcase.publishModal.gradeLabel': 'Cấp',
@@ -53,19 +58,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Đang tải tệp lên ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Đang tải lên {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Đang hoàn tất…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Tải lên không thành công — bản nháp đã bị loại bỏ. Vui lòng thử lại.',
-  'showcase.publishModal.uploadCorsFailed': 'Không thể tải lên bộ lưu trữ đối tượng (thường là nhóm CORS hoặc trang CSP chặn máy chủ COS). Bản nháp đã bị loại bỏ — hãy yêu cầu quản trị viên sửa CORS/CSP, sau đó thử lại.',
-  'showcase.publishModal.uploadStorageRejected': 'Bộ nhớ đối tượng đã từ chối tải lên. Bản nháp đã bị loại bỏ — hãy thử lại sau hoặc liên hệ với quản trị viên nếu nó tiếp tục bị lỗi.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Tải lên không thành công — bản nháp đã bị loại bỏ. Vui lòng thử lại.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Không thể tải lên bộ lưu trữ đối tượng (thường là nhóm CORS hoặc trang CSP chặn máy chủ COS). Bản nháp đã bị loại bỏ — hãy yêu cầu quản trị viên sửa CORS/CSP, sau đó thử lại.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Bộ nhớ đối tượng đã từ chối tải lên. Bản nháp đã bị loại bỏ — hãy thử lại sau hoặc liên hệ với quản trị viên nếu nó tiếp tục bị lỗi.',
   'showcase.publishModal.uploadFailed': 'Tải lên không thành công. Vui lòng thử lại.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Ảnh bìa vượt quá giới hạn 2MB. Nén bản xem trước hoặc sử dụng hình ảnh nhỏ hơn, sau đó thử lại.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'Tệp vượt quá giới hạn kích thước (tài liệu/hình ảnh 20MB, video 100MB). Nén và thử lại.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Tệp vượt quá giới hạn kích thước (tài liệu/hình ảnh 20MB, video 100MB). Bản nháp đã bị loại bỏ — hãy nén và thử lại.',
-  'showcase.publishModal.uploadFileTooLarge': 'Tệp quá lớn đối với kiểu tải lên này. Hãy kiểm tra giới hạn kích thước và thử lại.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Tệp quá lớn đối với kiểu tải lên này. Bản nháp đã bị loại bỏ — hãy kiểm tra giới hạn kích thước và thử lại.',
-  'showcase.publishModal.coverUploadSkipped': 'Trường hợp đã được gửi nhưng ảnh bìa không tải lên được. Bạn có thể chỉnh sửa trường hợp này sau để làm mới bìa.',
-  'showcase.publishModal.coverGenerating': 'Bản xem trước bìa đang được tạo ở chế độ nền — nó sẽ sớm xuất hiện trên thẻ.',
-  'showcase.publishModal.coverFailed': 'Trường hợp đã được gửi nhưng không thể tạo bìa. Bạn có thể chỉnh sửa trường hợp này sau để làm mới bìa.',
-  'showcase.publishModal.coverFailedTimeout': 'Trường hợp đã được gửi nhưng quá trình tạo bìa đã hết thời gian chờ. Bạn có thể chỉnh sửa trường hợp này sau để làm mới bìa.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Ảnh bìa vượt quá giới hạn 2MB. Nén bản xem trước hoặc sử dụng hình ảnh nhỏ hơn, sau đó thử lại.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'Tệp vượt quá giới hạn kích thước (tài liệu/hình ảnh 20MB, video 100MB). Nén và thử lại.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'Tệp vượt quá giới hạn kích thước (tài liệu/hình ảnh 20MB, video 100MB). Bản nháp đã bị loại bỏ — hãy nén và thử lại.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'Tệp quá lớn đối với kiểu tải lên này. Hãy kiểm tra giới hạn kích thước và thử lại.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'Tệp quá lớn đối với kiểu tải lên này. Bản nháp đã bị loại bỏ — hãy kiểm tra giới hạn kích thước và thử lại.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Trường hợp đã được gửi nhưng ảnh bìa không tải lên được. Bạn có thể chỉnh sửa trường hợp này sau để làm mới bìa.',
+  'showcase.publishModal.coverGenerating':
+    'Bản xem trước bìa đang được tạo ở chế độ nền — nó sẽ sớm xuất hiện trên thẻ.',
+  'showcase.publishModal.coverFailed':
+    'Trường hợp đã được gửi nhưng không thể tạo bìa. Bạn có thể chỉnh sửa trường hợp này sau để làm mới bìa.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Trường hợp đã được gửi nhưng quá trình tạo bìa đã hết thời gian chờ. Bạn có thể chỉnh sửa trường hợp này sau để làm mới bìa.',
   'showcase.publishModal.success': 'Trường hợp đã gửi - đang chờ quản trị viên xem xét',
   'showcase.publishModal.fromCanvas': 'Xuất bản từ canvas',
   'showcase.publishModal.step1Title': 'Thông tin cơ bản',
@@ -79,36 +96,46 @@ export default {
   'showcase.publishModal.uploadLabel': 'Tải tập tin lên',
   'showcase.publishModal.uploadImage': 'Tải hình ảnh lên',
   'showcase.publishModal.uploadFile': 'Tải tập tin lên',
-  'showcase.publishModal.directUploadDisabled': 'Tải lên tệp trực tiếp tạm thời không khả dụng. Bạn vẫn có thể chọn sơ đồ đã lưu từ lịch sử.',
-  'showcase.publishModal.uploadViaStorage': 'Tệp được tải trực tiếp lên bộ lưu trữ an toàn (URL tồn tại trong thời gian ngắn).',
+  'showcase.publishModal.directUploadDisabled':
+    'Tải lên tệp trực tiếp tạm thời không khả dụng. Bạn vẫn có thể chọn sơ đồ đã lưu từ lịch sử.',
+  'showcase.publishModal.uploadViaStorage':
+    'Tệp được tải trực tiếp lên bộ lưu trữ an toàn (URL tồn tại trong thời gian ngắn).',
   'showcase.publishModal.pickHistory': 'Chọn từ lịch sử',
   'showcase.publishModal.removeFile': 'Di dời',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: bản xem trước có giới hạn)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: xem trước có giới hạn) — tối đa {maxMb} MB cho mỗi tài liệu',
-  'showcase.publishModal.teachingDocTooLarge': 'Tài liệu vượt quá giới hạn {maxMb} MB. Nén và thử lại.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: xem trước có giới hạn) — tối đa {maxMb} MB cho mỗi tài liệu',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Tài liệu vượt quá giới hạn {maxMb} MB. Nén và thử lại.',
   'showcase.publishModal.diagramImageHint': 'Hỗ trợ .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Tải lên hình ảnh (nhiều)',
   'showcase.publishModal.galleryHint': 'Thêm nhiều hình ảnh và sơ đồ đã lưu, tối đa {max} mục',
-  'showcase.publishModal.galleryHintCase': 'Có thể thêm nhiều hình ảnh và biểu tượng lịch sử, tối đa {max} mục',
-  'showcase.publishModal.galleryHintTemplate': 'Bạn có thể tải lên tệp .mg và chọn nhiều biểu tượng lịch sử, tối đa {max} mục',
+  'showcase.publishModal.galleryHintCase':
+    'Có thể thêm nhiều hình ảnh và biểu tượng lịch sử, tối đa {max} mục',
+  'showcase.publishModal.galleryHintTemplate':
+    'Bạn có thể tải lên tệp .mg và chọn nhiều biểu tượng lịch sử, tối đa {max} mục',
   'showcase.publishModal.galleryCount': '{count}/{max} mục đã được thêm',
   'showcase.publishModal.galleryImageItem': 'Hình ảnh: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Sơ đồ: {name}',
   'showcase.publishModal.galleryLimit': 'Bạn có thể thêm tối đa {max} mục',
   'showcase.publishModal.galleryDuplicateDiagram': 'Sơ đồ đã lưu này đã có trong danh sách',
   'showcase.publishModal.galleryPickerDone': 'Xong',
-  'showcase.publishModal.galleryUploadFailed': 'Tải lên hình ảnh thư viện không thành công - vui lòng thử xuất bản lại',
-  'showcase.publishModal.galleryReuploadHint': 'Một số hình ảnh thư viện chưa được lưu - vui lòng chọn lại chúng trước khi gửi',
+  'showcase.publishModal.galleryUploadFailed':
+    'Tải lên hình ảnh thư viện không thành công - vui lòng thử xuất bản lại',
+  'showcase.publishModal.galleryReuploadHint':
+    'Một số hình ảnh thư viện chưa được lưu - vui lòng chọn lại chúng trước khi gửi',
   'showcase.detail.galleryImage': 'Hình ảnh',
   'showcase.detail.galleryDiagram': 'Sơ đồ',
   'showcase.detail.galleryPrev': 'Trước',
   'showcase.detail.galleryNext': 'Kế tiếp',
   'showcase.detail.gallerySwipeHint': 'Vuốt sang trái hoặc phải',
-  'showcase.detail.galleryImageMissing': 'Không tải được hình ảnh - vui lòng xuất bản lại trường hợp này',
+  'showcase.detail.galleryImageMissing':
+    'Không tải được hình ảnh - vui lòng xuất bản lại trường hợp này',
   'showcase.publishModal.templateFileHint': 'Chỉ .mg (MindGraph xuất)',
   'showcase.publishModal.templatePreviewLabel': 'Xem trước sơ đồ',
   'showcase.publishModal.templatePreviewHint': 'Công cụ cầm tay - chỉ xem, không thể chỉnh sửa',
-  'showcase.publishModal.templatePreviewEmpty': 'Tải tệp .mg lên hoặc chọn sơ đồ đã lưu để xem trước',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Tải tệp .mg lên hoặc chọn sơ đồ đã lưu để xem trước',
   'showcase.publishModal.diagramCasePreviewLabel': 'Xem trước sơ đồ',
   'showcase.publishModal.diagramCasePreviewHint': 'Công cụ cầm tay - xoay và thu phóng để khám phá',
   'showcase.publishModal.diagramTypeAutoMatched': 'Loại sơ đồ khớp với sơ đồ đã lưu đã chọn',
@@ -116,28 +143,36 @@ export default {
   'showcase.publishModal.teachingIntroLabel': 'Giới thiệu thiết kế dạy học',
   'showcase.publishModal.highlightsLabel': 'Điểm nổi bật về thiết kế',
   'showcase.publishModal.highlightsPlaceholder': 'Một điểm nổi bật trên mỗi dòng (tùy chọn)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Giới thiệu ngắn gọn nội dung bài học, mục tiêu và bối cảnh',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Giới thiệu ngắn gọn nội dung bài học, mục tiêu và bối cảnh',
   'showcase.publishModal.aiGenerate': 'AI tạo',
   'showcase.publishModal.aiGenerating': 'Đang tạo…',
   'showcase.publishModal.aiGenerateStop': 'Dừng lại',
   'showcase.publishModal.aiGenerateCancelled': 'Việc tạo AI đã bị hủy — nhấp lại để tạo lại',
-  'showcase.publishModal.aiGenerateSuccess': 'Phần giới thiệu đầy đủ và những điểm nổi bật từ tài liệu — xem lại và chỉnh sửa; tự mình viết phản ánh giảng dạy',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Phần giới thiệu minh họa và ứng dụng trong lớp học đã được tạo ra dựa trên hình minh họa. Vui lòng kiểm tra và chỉnh sửa.',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Phần giới thiệu đầy đủ và những điểm nổi bật từ tài liệu — xem lại và chỉnh sửa; tự mình viết phản ánh giảng dạy',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'Phần giới thiệu minh họa và ứng dụng trong lớp học đã được tạo ra dựa trên hình minh họa. Vui lòng kiểm tra và chỉnh sửa.',
   'showcase.publishModal.aiGenerateFailed': 'Thế hệ AI không thành công — vui lòng thử lại',
   'showcase.publishModal.aiGenerateNeedFile': 'Tải lên tài liệu thiết kế giảng dạy ở bước trước',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'AI tạo chỉ khả dụng cho các trường hợp thiết kế giảng dạy',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'AI tạo chỉ khả dụng cho các trường hợp thiết kế giảng dạy',
   'showcase.publishModal.reflectionLabel': 'Dạy phản ánh',
   'showcase.publishModal.introPlaceholder': 'Mô tả ngắn gọn trường hợp và khi nào sử dụng nó',
-  'showcase.publishModal.diagramCorePlaceholder': 'Mô tả nội dung sơ đồ và những điểm nổi bật trực quan',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Mô tả nội dung sơ đồ và những điểm nổi bật trực quan',
   'showcase.publishModal.classroomAppPlaceholder': 'Cách sử dụng sơ đồ này trong lớp',
   'showcase.publishModal.tagInputPlaceholder': 'Nhập thẻ (tối đa 10 ký tự), nhấn Enter',
   'showcase.publishModal.tagRecommended': 'Thẻ được đề xuất',
   'showcase.publishModal.tagCountHint': '(tối đa {max})',
   'showcase.publishModal.tagMaxCount': 'Bạn có thể thêm tối đa thẻ {max}',
-  'showcase.publishModal.networkError': 'Gửi không thành công - kiểm tra xem máy chủ có đang chạy không và kích thước tệp có nằm trong giới hạn không',
+  'showcase.publishModal.networkError':
+    'Gửi không thành công - kiểm tra xem máy chủ có đang chạy không và kích thước tệp có nằm trong giới hạn không',
   'showcase.publishModal.fileTooLarge': '"{name}" vượt quá giới hạn kích thước {maxMb}MB',
-  'showcase.publishModal.uploadTotalTooLarge': 'Tổng kích thước tải lên vượt quá giới hạn — giảm kích thước tệp đính kèm hoặc video',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'Tổng kích thước tải lên vượt quá giới hạn — giảm kích thước tệp đính kèm hoặc video',
   'showcase.publishModal.tagAdd': 'Thêm vào',
   'showcase.publishModal.publishBtn': 'Xuất bản',
   'showcase.publishModal.reflectionPlaceholder': 'Viết suy nghĩ của bạn về bài học này (tùy chọn)',
@@ -151,10 +186,14 @@ export default {
   'showcase.publishModal.validationFile': 'Tải tệp lên hoặc chọn sơ đồ đã lưu',
   'showcase.publishModal.validationDiagramType': 'Vui lòng chọn loại sơ đồ',
   'showcase.publishModal.invalidFileType': 'Loại tệp không được hỗ trợ',
-  'showcase.publishModal.invalidMgFile': 'Không thể đọc tệp .mg này - trước tiên hãy xuất nó từ MindGraph',
-  'showcase.publishModal.cannotPreview': 'Không thể tạo bản xem trước bìa - trường hợp sẽ vẫn được gửi. Hãy thử PNG/JPG hoặc chọn sơ đồ đã lưu.',
-  'showcase.publishModal.cannotPreviewHistory': 'Không thể tạo bìa từ sơ đồ đã lưu này — trường hợp sẽ vẫn được gửi. Chọn lại nó hoặc lưu lại từ khung vẽ.',
-  'showcase.publishModal.cannotPreviewTemplate': 'Không thể tạo bìa - trường hợp sẽ vẫn được gửi. Kiểm tra tệp .mg hoặc chọn một sơ đồ đã lưu khác.',
+  'showcase.publishModal.invalidMgFile':
+    'Không thể đọc tệp .mg này - trước tiên hãy xuất nó từ MindGraph',
+  'showcase.publishModal.cannotPreview':
+    'Không thể tạo bản xem trước bìa - trường hợp sẽ vẫn được gửi. Hãy thử PNG/JPG hoặc chọn sơ đồ đã lưu.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Không thể tạo bìa từ sơ đồ đã lưu này — trường hợp sẽ vẫn được gửi. Chọn lại nó hoặc lưu lại từ khung vẽ.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Không thể tạo bìa - trường hợp sẽ vẫn được gửi. Kiểm tra tệp .mg hoặc chọn một sơ đồ đã lưu khác.',
   'showcase.publishModal.historyTitle': 'Chọn sơ đồ đã lưu',
   'showcase.publishModal.historySearch': 'Tìm kiếm tên sơ đồ…',
   'showcase.publishModal.historyEmpty': 'Không có sơ đồ nào được lưu',
@@ -184,9 +223,11 @@ export default {
   'showcase.detail.delist': 'Xóa',
   'showcase.detail.resubmit': 'Chỉnh sửa và gửi lại',
   'showcase.detail.withdrawTitle': 'Trường hợp rút tiền',
-  'showcase.detail.withdrawConfirm': 'Rút "{title}"? Nó sẽ bị xóa khỏi hàng đợi xem xét và không thể khôi phục được.',
+  'showcase.detail.withdrawConfirm':
+    'Rút "{title}"? Nó sẽ bị xóa khỏi hàng đợi xem xét và không thể khôi phục được.',
   'showcase.detail.delistTitle': 'Xóa trường hợp',
-  'showcase.detail.delistConfirm': 'Xóa "{title}" khỏi thư viện? Những người dùng khác sẽ không thể xem nó nữa.',
+  'showcase.detail.delistConfirm':
+    'Xóa "{title}" khỏi thư viện? Những người dùng khác sẽ không thể xem nó nữa.',
   'showcase.detail.confirm': 'Xác nhận',
   'showcase.detail.cancel': 'Hủy bỏ',
   'showcase.withdrawn': 'Đã rút',
@@ -207,7 +248,8 @@ export default {
   'showcase.detail.officePreviewPending': 'Đang chuyển đổi trang trình bày để xem trước…',
   'showcase.detail.docPreviewLoading': 'Đang tải tài liệu…',
   'showcase.detail.docPreviewFailed': 'Không thể tải bản xem trước. Hãy thử mở trong một tab mới.',
-  'showcase.detail.legacyDocHint': 'Không thể xem trước các tệp .doc cũ. Mở hoặc tải xuống tệp hoặc tải lên .docx để xem trước trong trình duyệt.',
+  'showcase.detail.legacyDocHint':
+    'Không thể xem trước các tệp .doc cũ. Mở hoặc tải xuống tệp hoặc tải lên .docx để xem trước trong trình duyệt.',
   'showcase.detail.noDocument': 'Không có bản xem trước tài liệu',
   'showcase.detail.noDiagramPreview': 'Không có bản xem trước sơ đồ',
   'showcase.detail.diagramPreviewLoading': 'Đang tải sơ đồ…',

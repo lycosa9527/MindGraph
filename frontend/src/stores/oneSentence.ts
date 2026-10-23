@@ -103,9 +103,7 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
   const activeRequestId = ref<string | null>(null)
   const flushingBusyQueue = ref(false)
 
-  const diagramScope = computed(
-    () => libraryScope.value ?? ephemeralScope.value
-  )
+  const diagramScope = computed(() => libraryScope.value ?? ephemeralScope.value)
 
   function getRequest(requestId: string): OneSentenceRequestState | null {
     return requests.value[requestId] ?? null

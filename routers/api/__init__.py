@@ -34,6 +34,7 @@ from . import (
     diagram_shares,
     diagram_share_ws,
     mindmate_folders,
+    mindmate_org_members,
     dify_conversations,
     dify_files,
     extension_pdf_text,
@@ -129,6 +130,7 @@ router.include_router(diagram_folders.router)
 router.include_router(diagram_shares.router)
 router.include_router(diagram_share_ws.router)
 router.include_router(mindmate_folders.router)
+router.include_router(mindmate_org_members.router)
 router.include_router(diagram_node_ops.router)
 router.include_router(workshop_ws.router)
 router.include_router(training_routes.router)

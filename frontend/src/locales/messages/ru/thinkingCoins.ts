@@ -25,16 +25,20 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.checkedInToday': 'Вошёл сегодня',
   'thinkingCoins.usageDoneToday': 'Завершено сегодня',
   'thinkingCoins.casePendingHint': 'Скоро открытие',
-  'thinkingCoins.schoolInfo': 'Чтобы узнать о плане школьной версии, обратитесь к администратору школы.',
-  'thinkingCoins.school.headline': 'Мышление, основанное на искусственном интеллекте · решения для школ',
-  'thinkingCoins.school.description': 'Обеспечить приватизированное развертывание, эксклюзивную настройку, а также комплексную поддержку эксплуатации и обслуживания для школ и образовательных учреждений для удовлетворения крупномасштабных потребностей в создании бренда и безопасности данных.',
+  'thinkingCoins.schoolInfo':
+    'Чтобы узнать о плане школьной версии, обратитесь к администратору школы.',
+  'thinkingCoins.school.headline':
+    'Мышление, основанное на искусственном интеллекте · решения для школ',
+  'thinkingCoins.school.description':
+    'Обеспечить приватизированное развертывание, эксклюзивную настройку, а также комплексную поддержку эксплуатации и обслуживания для школ и образовательных учреждений для удовлетворения крупномасштабных потребностей в создании бренда и безопасности данных.',
   'thinkingCoins.school.feature.accountManager': 'Выделенный менеджер по работе с клиентами',
   'thinkingCoins.school.feature.accountManagerDesc': '1 к 1 консультация и стыковка',
   'thinkingCoins.school.feature.privateDeploy': 'Частное развертывание',
   'thinkingCoins.school.feature.privateDeployDesc': 'Безопасность и управляемость данных',
   'thinkingCoins.school.feature.customization': 'Индивидуальные функции',
   'thinkingCoins.school.feature.customizationDesc': 'Гибкая конфигурация по требованию',
-  'thinkingCoins.school.feature.opsSupport': 'Комплексная поддержка в эксплуатации и техническом обслуживании.',
+  'thinkingCoins.school.feature.opsSupport':
+    'Комплексная поддержка в эксплуатации и техническом обслуживании.',
   'thinkingCoins.school.feature.opsSupportDesc': 'Гарантия 7×24 часа',
   'thinkingCoins.school.consultTitle': 'Запишитесь на консультацию и мы оперативно свяжемся с вами',
   'thinkingCoins.school.fieldName': 'Ваше имя',
@@ -42,13 +46,16 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.fieldOrg': 'Название школы/учреждения',
   'thinkingCoins.school.fieldNote': 'Дополнительные инструкции (необязательно)',
   'thinkingCoins.school.submit': 'Отправить запрос',
-  'thinkingCoins.school.submitSuccess': 'Отправка прошла успешно, мы свяжемся с вами как можно скорее',
+  'thinkingCoins.school.submitSuccess':
+    'Отправка прошла успешно, мы свяжемся с вами как можно скорее',
   'thinkingCoins.school.submitFailed': 'Не удалось отправить сообщение. Повторите попытку позже.',
   'thinkingCoins.school.submitRateLimit': 'Отправляете слишком часто. Повторите попытку позже.',
-  'thinkingCoins.school.submitNotConfigured': 'Канал консультаций еще не настроен, повторите попытку позже.',
+  'thinkingCoins.school.submitNotConfigured':
+    'Канал консультаций еще не настроен, повторите попытку позже.',
   'thinkingCoins.school.validationRequired': 'Пожалуйста, заполните все обязательные поля',
   'thinkingCoins.school.validationPhone': 'Пожалуйста, введите действительный контактный номер',
-  'thinkingCoins.school.validationTooLong': 'Часть контента слишком длинная. Сократите ее и повторите попытку.',
+  'thinkingCoins.school.validationTooLong':
+    'Часть контента слишком длинная. Сократите ее и повторите попытку.',
   'thinkingCoins.school.validationInvalid': 'Недопустимый контент. Проверьте и повторите попытку.',
   'thinkingCoins.tier.trial': 'Пробная версия',
   'thinkingCoins.tier.monthly': 'Суперучастник · Один месяц',
@@ -63,7 +70,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Награды за приглашение',
   'thinkingCoins.reason.case_reward': 'Награда за кейс',
   'thinkingCoins.reason.subscription_grant': 'Подпишитесь бесплатно',
-  'thinkingCoins.dailyExpiresHint': 'Награды за вход действительны в тот же день и будут сброшены в 24:00.',
+  'thinkingCoins.dailyExpiresHint':
+    'Награды за вход действительны в тот же день и будут сброшены в 24:00.',
   'thinkingCoins.dailyBalanceRemaining': 'На сегодняшний день осталось {n}',
   'thinkingCoins.admin.tab': 'Мыслемонета',
   'thinkingCoins.admin.tasksTitle': 'Награда за задание',
@@ -75,7 +83,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'сохранять',
   'thinkingCoins.admin.signupGrant': 'Бесплатно для новых пользователей',
   'thinkingCoins.admin.dailyEarnCap': 'Дневной лимит приобретения',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 означает отсутствие ограничений; значение по умолчанию 135 соответствует сумме всех ежедневных задач',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 означает отсутствие ограничений; значение по умолчанию 135 соответствует сумме всех ежедневных задач',
   'thinkingCoins.admin.costMindmate': 'MindMate разовое потребление',
   'thinkingCoins.admin.costDiagram': 'Потребление генерации карты',
   'thinkingCoins.admin.costCanvas': 'Вспомогательное потребление холста',
@@ -106,9 +115,11 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.free': 'бесплатно',
   'thinkingCoins.plan.priceMonthly': '59 иен/месяц',
   'thinkingCoins.plan.priceSub': '49 иен/месяц',
-  'thinkingCoins.plan.priceSubNote': 'Первоначальная цена 59 иен в месяц, ежемесячная подписка экономит 10 иен.',
+  'thinkingCoins.plan.priceSubNote':
+    'Первоначальная цена 59 иен в месяц, ежемесячная подписка экономит 10 иен.',
   'thinkingCoins.plan.priceAnnual': '398 иен/год',
-  'thinkingCoins.plan.priceAnnualNote': 'Около 33,2 иен в месяц, экономия 44 % по сравнению с ежемесячной оплатой.',
+  'thinkingCoins.plan.priceAnnualNote':
+    'Около 33,2 иен в месяц, экономия 44 % по сравнению с ежемесячной оплатой.',
   'thinkingCoins.plan.currentPlan': 'Текущий план',
   'thinkingCoins.plan.subscribeNow': 'Активировать сейчас',
   'thinkingCoins.plan.popular': 'Популярный',

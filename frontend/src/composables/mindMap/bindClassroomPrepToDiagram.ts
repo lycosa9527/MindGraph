@@ -5,8 +5,13 @@
 import { watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { useDiagramStore, useLLMResultsStore, useMindClassroomStore, useSavedDiagramsStore } from '@/stores'
 import { resetLectureTtsCatchup } from '@/composables/mindMap/warmupLectureTts'
+import {
+  useDiagramStore,
+  useLLMResultsStore,
+  useMindClassroomStore,
+  useSavedDiagramsStore,
+} from '@/stores'
 import { mindClassroomPrepKey } from '@/utils/mindClassroomPrepSlot'
 import {
   collectLiveNodeIds,

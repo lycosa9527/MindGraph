@@ -10,9 +10,7 @@ export function toDocSummaryMarkdownName(fileName: string | null | undefined): s
   const raw = (fileName || '').trim()
   if (!raw) return 'document.md'
 
-  const base = raw.includes('/') || raw.includes('\\')
-    ? raw.split(/[/\\]/).pop() || raw
-    : raw
+  const base = raw.includes('/') || raw.includes('\\') ? raw.split(/[/\\]/).pop() || raw : raw
 
   const withoutExt = base.replace(SOURCE_EXT, '').trim() || 'document'
   if (withoutExt.toLowerCase().endsWith('.md')) {
@@ -24,8 +22,6 @@ export function toDocSummaryMarkdownName(fileName: string | null | undefined): s
 export function docSummarySourceLabel(fileName: string | null | undefined): string | null {
   const raw = (fileName || '').trim()
   if (!raw) return null
-  const base = raw.includes('/') || raw.includes('\\')
-    ? raw.split(/[/\\]/).pop() || raw
-    : raw
+  const base = raw.includes('/') || raw.includes('\\') ? raw.split(/[/\\]/).pop() || raw : raw
   return base || null
 }

@@ -1,7 +1,7 @@
-import { nextTick, watch, type Ref } from 'vue'
+import { type Ref, nextTick, watch } from 'vue'
 
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import type { MindGraphEdge, MindGraphNode, MindGraphNodeData } from '@/types'
+import type { MindGraphEdge, MindGraphNode } from '@/types'
 import { dumpMindMapConnectorDebug } from '@/utils/mindMapConnectorDebug'
 import { isMindMapConnectorVerboseDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { setMindMapVerboseRecalcGen } from '@/utils/mindMapConnectorDebugVerbose'

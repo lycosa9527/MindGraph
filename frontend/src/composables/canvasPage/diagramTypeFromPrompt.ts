@@ -110,13 +110,17 @@ function cleanTopicFragment(raw: string): string {
 }
 
 function extractDoubleBubblePair(text: string): { left?: string; right?: string } {
-  const compare = text.match(/比较\s*[「"']?([^「」"'“”和与]+)[「"']?\s*(?:和|与)\s*[「"']?([^「」"'“”]+)/)
+  const compare = text.match(
+    /比较\s*[「"']?([^「」"'“”和与]+)[「"']?\s*(?:和|与)\s*[「"']?([^「」"'“”]+)/
+  )
   if (compare) {
     const left = cleanTopicFragment(compare[1])
     const right = cleanTopicFragment(compare[2])
     if (left && right) return { left, right }
   }
-  const reverse = text.match(/[「"']?([^「」"'“”和与]+)[「"']?\s*(?:和|与)\s*[「"']?([^「」"'“”]+)[「"']?\s*(?:的)?(?:对比|比较|双气泡)/)
+  const reverse = text.match(
+    /[「"']?([^「」"'“”和与]+)[「"']?\s*(?:和|与)\s*[「"']?([^「」"'“”]+)[「"']?\s*(?:的)?(?:对比|比较|双气泡)/
+  )
   if (reverse) {
     const left = cleanTopicFragment(reverse[1])
     const right = cleanTopicFragment(reverse[2])

@@ -5,12 +5,14 @@
 
 export default {
   'fileCenterLibrary.title': 'Pakete',
-  'fileCenterLibrary.subtitle': 'Quellsammlungen nach Diagramm gruppiert (Dokumentenzusammenfassung).',
+  'fileCenterLibrary.subtitle':
+    'Quellsammlungen nach Diagramm gruppiert (Dokumentenzusammenfassung).',
   'fileCenterLibrary.openDiagram': 'Diagramm öffnen',
   'fileCenterLibrary.badgeCanvas': 'Leinwand',
   'fileCenterLibrary.badgeExtension': 'Erweiterung',
   'fileCenterLibrary.badgeUpload': 'hochladen',
-  'chunkTest.history.confirmDeleteBody': 'Möchten Sie diesen Test wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
+  'chunkTest.history.confirmDeleteBody':
+    'Möchten Sie diesen Test wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
   'chunkTest.history.confirmDeleteTitle': 'Test löschen',
   'chunkTest.history.delete': 'Löschen',
   'chunkTest.history.deleteFailed': 'Test konnte nicht gelöscht werden',
@@ -49,7 +51,8 @@ export default {
   'chunkTestResults.answerQuality': 'Antwortqualität',
   'chunkTestResults.avgLatency': 'Durchschn. Latenz',
   'chunkTestResults.back': 'Zurück',
-  'chunkTestResults.cancelConfirmBody': 'Möchten Sie diesen Test wirklich abbrechen? Der Test stoppt am nächsten Kontrollpunkt.',
+  'chunkTestResults.cancelConfirmBody':
+    'Möchten Sie diesen Test wirklich abbrechen? Der Test stoppt am nächsten Kontrollpunkt.',
   'chunkTestResults.cancelFailed': 'Test konnte nicht abgebrochen werden',
   'chunkTestResults.cancelRequested': 'Testabbruch angefordert',
   'chunkTestResults.cancelTest': 'Test abbrechen',
@@ -79,7 +82,8 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Standard-IR-Metriken',
   'chunkTestResults.storageEff': 'Speicher-Eff.',
   'chunkTestResults.testFailed': 'Test fehlgeschlagen',
-  'chunkTestResults.testFailedHint': 'Bei der Testausführung ist ein Fehler aufgetreten. Bitte erneut versuchen.',
+  'chunkTestResults.testFailedHint':
+    'Bei der Testausführung ist ein Fehler aufgetreten. Bitte erneut versuchen.',
   'chunkTestResults.testingInProgress': 'Test läuft …',
   'chunkTestResults.totalChunks': 'Insgesamt {n} Chunks',
   'chunkTestResults.viewChunks': 'Chunks anzeigen',
@@ -89,7 +93,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Alle Datensätze testen',
   'knowledge.chunkHeader.testUpload': 'Hochgeladene Dokumente testen',
   'knowledge.chunkHeader.title': 'RAG-Chunk-Test',
-  'knowledge.chunkHeader.waitForProcessing': 'Bitte warten Sie, bis die Dokumente verarbeitet sind, bevor Sie testen',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Bitte warten Sie, bis die Dokumente verarbeitet sind, bevor Sie testen',
   'knowledge.chunkPreview.empty': 'Keine Chunks gefunden',
   'knowledge.chunkPreview.pageLabel': 'Seite {n}',
   'knowledge.chunkPreview.title': 'Dokument-Chunks — {fileName}',
@@ -108,7 +113,8 @@ export default {
   'knowledge.doc.colStatus': 'Zustand',
   'knowledge.doc.colType': 'Typ',
   'knowledge.doc.colUploaded': 'Upload-Datum',
-  'knowledge.doc.emptyDescription': 'Noch keine Dokumente. Laden Sie Dokumente hoch, um Ihre Wissensbasis aufzubauen.',
+  'knowledge.doc.emptyDescription':
+    'Noch keine Dokumente. Laden Sie Dokumente hoch, um Ihre Wissensbasis aufzubauen.',
   'knowledge.doc.errorPrefix': 'Fehler: ',
   'knowledge.doc.noData': 'Keine Daten',
   'knowledge.doc.statusCompleted': 'Abgeschlossen',
@@ -124,21 +130,29 @@ export default {
   'knowledge.header.title': 'Persönliche Wissensbasis',
   'knowledge.header.upload': 'Dokumente hochladen',
   'knowledge.ragGuide.title': 'Wie funktionieren Pakete, RAG und Wiki?',
-  'knowledge.ragGuide.subtitle': 'Ohne Fachjargon — stellen Sie sich einen Ordner mit Referenzmaterial vor. Wir indexieren ihn für die Suche (RAG), erstellen kurze Wiki-Notizen, und die KI liest beides beim Erstellen einer Mindmap.',
+  'knowledge.ragGuide.subtitle':
+    'Ohne Fachjargon — stellen Sie sich einen Ordner mit Referenzmaterial vor. Wir indexieren ihn für die Suche (RAG), erstellen kurze Wiki-Notizen, und die KI liest beides beim Erstellen einer Mindmap.',
   'knowledge.ragGuide.step1.title': 'Paket wählen',
-  'knowledge.ragGuide.step1.body': 'Ein Paket ist wie eine Zotero-Sammlung. Links können Sie bis zu 3 haben; jedes gehört meist zu einer Mindmap. Klicken Sie in der Seitenleiste auf ein Paket, um dessen Dokumente zu verwalten.',
+  'knowledge.ragGuide.step1.body':
+    'Ein Paket ist wie eine Zotero-Sammlung. Links können Sie bis zu 3 haben; jedes gehört meist zu einer Mindmap. Klicken Sie in der Seitenleiste auf ein Paket, um dessen Dokumente zu verwalten.',
   'knowledge.ragGuide.step2.title': 'Quellen hinzufügen und indexieren (RAG)',
-  'knowledge.ragGuide.step2.body': 'Laden Sie PDFs, Word-Dateien, Notizen oder Webseiten hoch. Lange Dokumente werden in durchsuchbare Chunks geteilt und Vektoreinbettungen gespeichert — das ist der RAG-Index und wird zuerst bereit.',
+  'knowledge.ragGuide.step2.body':
+    'Laden Sie PDFs, Word-Dateien, Notizen oder Webseiten hoch. Lange Dokumente werden in durchsuchbare Chunks geteilt und Vektoreinbettungen gespeichert — das ist der RAG-Index und wird zuerst bereit.',
   'knowledge.ragGuide.step3.title': 'Wiki-Notizen werden automatisch erstellt',
-  'knowledge.ragGuide.step3.body': 'Nach der Indexierung erstellt ein LLM Übersichts- und Themen-Wiki-Seiten auf der Festplatte. Das sind knappe Notizen (keine Transkripte), die das Paket zur schnellen Orientierung zusammenfassen.',
+  'knowledge.ragGuide.step3.body':
+    'Nach der Indexierung erstellt ein LLM Übersichts- und Themen-Wiki-Seiten auf der Festplatte. Das sind knappe Notizen (keine Transkripte), die das Paket zur schnellen Orientierung zusammenfassen.',
   'knowledge.ragGuide.step4.title': 'Abfrage nutzt Wiki + Chunks',
-  'knowledge.ragGuide.step4.body': 'Wenn Sie einen Zweig erweitern oder eine Zusammenfassung generieren, passen wir zuerst relevante Wiki-Seiten an und rufen dann die passendsten Chunk-Abschnitte ab (hybrides RAG).',
+  'knowledge.ragGuide.step4.body':
+    'Wenn Sie einen Zweig erweitern oder eine Zusammenfassung generieren, passen wir zuerst relevante Wiki-Seiten an und rufen dann die passendsten Chunk-Abschnitte ab (hybrides RAG).',
   'knowledge.ragGuide.step5.title': 'Antworten basieren auf Ihren Quellen',
-  'knowledge.ragGuide.step5.body': 'Die KI schreibt aus Wiki-Notizen und abgerufenen Snippets statt zu raten — bessere Quellen, abgeschlossene Indexierung und erstellte Wiki-Seiten bedeuten genauere Maps.',
-  'knowledge.ragGuide.footer': 'Tipp: Dokumentenzusammenfassung auf der Zeichenfläche erstellt automatisch ein Paket; über die Chrome-Erweiterung gespeicherte Seiten erscheinen ebenfalls in der Seitenleiste.',
+  'knowledge.ragGuide.step5.body':
+    'Die KI schreibt aus Wiki-Notizen und abgerufenen Snippets statt zu raten — bessere Quellen, abgeschlossene Indexierung und erstellte Wiki-Seiten bedeuten genauere Maps.',
+  'knowledge.ragGuide.footer':
+    'Tipp: Dokumentenzusammenfassung auf der Zeichenfläche erstellt automatisch ein Paket; über die Chrome-Erweiterung gespeicherte Seiten erscheinen ebenfalls in der Seitenleiste.',
   'knowledge.pipeline.title': 'Pipeline-Status',
   'knowledge.pipeline.ragIdle': 'RAG-Index',
-  'knowledge.pipeline.ragIdleDetail': 'Noch keine indexierten Pakete. Quellen hinzufügen und Indexierung aus einem Paket starten.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Noch keine indexierten Pakete. Quellen hinzufügen und Indexierung aus einem Paket starten.',
   'knowledge.pipeline.ragProcessing': 'RAG-Indexierung',
   'knowledge.pipeline.ragProcessingDetail': '{count} Paket(e) chunken und embedden Quellen noch.',
   'knowledge.pipeline.ragReady': 'RAG bereit',
@@ -146,9 +160,11 @@ export default {
   'knowledge.pipeline.wikiDisabled': 'Wiki-Erstellung aus',
   'knowledge.pipeline.wikiDisabledDetail': 'Wiki-Erstellung ist auf diesem Server deaktiviert.',
   'knowledge.pipeline.wikiIdle': 'Wiki-Erstellung',
-  'knowledge.pipeline.wikiIdleDetail': 'Wiki-Seiten werden nach abgeschlossener RAG-Indexierung pro Quelle erstellt.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Wiki-Seiten werden nach abgeschlossener RAG-Indexierung pro Quelle erstellt.',
   'knowledge.pipeline.wikiPending': 'Wiki wird erstellt',
-  'knowledge.pipeline.wikiPendingDetail': '{count} Paket(e) warten nach Indexierung auf Wiki-Seiten.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} Paket(e) warten nach Indexierung auf Wiki-Seiten.',
   'knowledge.pipeline.wikiReady': 'Wiki bereit',
   'knowledge.pipeline.wikiReadyDetail': '{count} Paket(e) haben erstellte Wiki-Notizen.',
   'knowledge.pipelineBadge.rag.label': 'LAPPEN',
@@ -164,7 +180,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Alle abwählen',
   'knowledge.manualEval.dialogTitle': 'Manuelle Auswertung — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Referenzantwort (optional)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Referenzantwort für Antwortrelevanz-Auswertung eingeben …',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Referenzantwort für Antwortrelevanz-Auswertung eingeben …',
   'knowledge.manualEval.metric.answer_coverage': 'Antwortabdeckung',
   'knowledge.manualEval.metric.answer_faithfulness': 'Antwort-Treue',
   'knowledge.manualEval.metric.clarity': 'Klarheit',
@@ -235,7 +252,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Abruf-Einstellungen',
   'knowledge.settings.title': 'Wissensbasis-Einstellungen',
   'knowledge.settings.helpTitle': 'Wie diese Einstellungen wirken',
-  'knowledge.settings.helpBody': 'Abrufeinstellungen gelten sofort für Suche und KI-Antworten. Chunk-Größe und -Überlappung gelten für neu indexierte Dokumente — nach Änderung bestehende Quellen erneut indexieren.',
+  'knowledge.settings.helpBody':
+    'Abrufeinstellungen gelten sofort für Suche und KI-Antworten. Chunk-Größe und -Überlappung gelten für neu indexierte Dokumente — nach Änderung bestehende Quellen erneut indexieren.',
   'knowledge.settings.tokens': 'Tokens',
   'knowledge.settings.serverSection': 'Server (schreibgeschützt)',
   'knowledge.settings.rerankingMode': 'Neu anordnen',
@@ -246,7 +264,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Deaktiviert',
   'knowledge.settings.saveSuccess': 'Einstellungen gespeichert',
   'knowledge.settings.saveFailed': 'Einstellungen konnten nicht gespeichert werden',
-  'knowledge.settings.reindexRequired': 'Chunk-Einstellungen geändert — indexieren Sie bestehende Dokumente in Ihren Paketen neu, damit die neuen Größen wirksam werden.',
+  'knowledge.settings.reindexRequired':
+    'Chunk-Einstellungen geändert — indexieren Sie bestehende Dokumente in Ihren Paketen neu, damit die neuen Größen wirksam werden.',
   'knowledge.upload.click': 'Klicken zum Hochladen',
   'knowledge.upload.drag': 'oder Datei hierher ziehen',
   'knowledge.upload.fileTooLarge': 'Dateigröße darf 10 MB nicht überschreiten',
@@ -254,7 +273,8 @@ export default {
   'knowledge.upload.maxDocs': 'Maximale Dokumentanzahl erreicht (5)',
   'knowledge.upload.title': 'Dokument hochladen',
   'knowledge.upload.unsupportedType': 'Nicht unterstützter Dateityp',
-  'knowledgeSpace.confirmDeleteBody': 'Möchten Sie dieses Dokument wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Möchten Sie dieses Dokument wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
   'knowledgeSpace.confirmDeleteTitle': 'Löschen bestätigen',
   'knowledgeSpace.deleteFailed': 'Löschen fehlgeschlagen',
   'knowledgeSpace.documentDeleted': 'Dokument gelöscht',

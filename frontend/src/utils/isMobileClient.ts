@@ -5,13 +5,11 @@
 import { BREAKPOINTS } from '@/config/uiConfig'
 import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
 
-const TOUCH_DEVICE_UA =
-  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
+const TOUCH_DEVICE_UA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
 
 /** True when user agent looks like a phone/tablet touch device. */
 export function isTouchDeviceUserAgent(userAgent?: string): boolean {
-  const ua =
-    userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '')
+  const ua = userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '')
   return TOUCH_DEVICE_UA.test(ua)
 }
 
@@ -24,18 +22,11 @@ export function isSmallViewportWidth(width: number): boolean {
  * Imperative mobile check (resize handlers, one-off calls).
  * Uses current window dimensions when width is omitted.
  */
-export function computeIsMobileClient(
-  width?: number,
-  userAgent?: string
-): boolean {
+export function computeIsMobileClient(width?: number, userAgent?: string): boolean {
   if (isOfficeEmbedDesktop()) {
     return false
   }
   const resolvedWidth =
-    width ??
-    (typeof window !== 'undefined' ? window.innerWidth : BREAKPOINTS.MOBILE)
-  return (
-    isSmallViewportWidth(resolvedWidth) ||
-    isTouchDeviceUserAgent(userAgent)
-  )
+    width ?? (typeof window !== 'undefined' ? window.innerWidth : BREAKPOINTS.MOBILE)
+  return isSmallViewportWidth(resolvedWidth) || isTouchDeviceUserAgent(userAgent)
 }

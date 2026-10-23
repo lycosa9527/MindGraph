@@ -1,4 +1,4 @@
-import { computed, type ComputedRef } from 'vue'
+import { type ComputedRef, computed } from 'vue'
 
 import { useTrainingStore } from '@/stores/training'
 import type { TrainingCourseStep, TrainingTopicOption } from '@/types/training'

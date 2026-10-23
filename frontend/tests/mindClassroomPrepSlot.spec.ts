@@ -82,9 +82,7 @@ describe('mindClassroomPrepSlot', () => {
     expect(classroomPrepFitsLiveView(['qwen-a', 'qwen-b'], new Set(['qwen-a']))).toBe(true)
     expect(classroomPrepFitsLiveView(['deepseek-a'], new Set(['qwen-a', 'qwen-b']))).toBe(false)
     expect(classroomPrepFitsLiveView([], new Set(['qwen-a']))).toBe(false)
-    expect(
-      classroomPrepFitsLiveView(['a', 'b', 'c', 'd'], new Set(['a']))
-    ).toBe(false)
+    expect(classroomPrepFitsLiveView(['a', 'b', 'c', 'd'], new Set(['a']))).toBe(false)
   })
 
   it('does not play a parked script after tone or audience changes', () => {
@@ -98,15 +96,9 @@ describe('mindClassroomPrepSlot', () => {
       llmModel: 'qwen',
     })
     expect(classroomPrepSettingsMatch(stored, stored)).toBe(true)
-    expect(
-      classroomPrepSettingsMatch(stored, { ...stored, tone: 'story' })
-    ).toBe(false)
-    expect(
-      classroomPrepSettingsMatch(stored, { ...stored, audience_level: 'primary' })
-    ).toBe(false)
-    expect(
-      classroomPrepSettingsMatch(stored, { ...stored, language: 'en' })
-    ).toBe(false)
+    expect(classroomPrepSettingsMatch(stored, { ...stored, tone: 'story' })).toBe(false)
+    expect(classroomPrepSettingsMatch(stored, { ...stored, audience_level: 'primary' })).toBe(false)
+    expect(classroomPrepSettingsMatch(stored, { ...stored, language: 'en' })).toBe(false)
     expect(classroomPrepSettingsMatch(null, stored)).toBe(false)
   })
 })

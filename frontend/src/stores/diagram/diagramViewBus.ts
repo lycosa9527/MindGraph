@@ -35,7 +35,10 @@ type ViewEventMap = {
 
 export interface DiagramViewBus {
   on<K extends DiagramViewEventKey>(event: K, handler: (data: ViewEventMap[K]) => void): () => void
-  once<K extends DiagramViewEventKey>(event: K, handler: (data: ViewEventMap[K]) => void): () => void
+  once<K extends DiagramViewEventKey>(
+    event: K,
+    handler: (data: ViewEventMap[K]) => void
+  ): () => void
   off<K extends DiagramViewEventKey>(event: K, handler?: (data: ViewEventMap[K]) => void): void
   emit<K extends DiagramViewEventKey>(event: K, data: ViewEventMap[K]): void
   clear: () => void
@@ -88,7 +91,10 @@ export function createDiagramViewBus(): DiagramViewBus {
 /** Minimal surface of the app eventBus used for editor view-bus forwarding. */
 type GlobalEventBusViewAdapter = {
   // EnhancedEventBus methods are generic; keep this adapter structurally loose.
-  on: (event: DiagramViewEventKey, handler: (data: ViewEventMap[DiagramViewEventKey]) => void) => () => void
+  on: (
+    event: DiagramViewEventKey,
+    handler: (data: ViewEventMap[DiagramViewEventKey]) => void
+  ) => () => void
   once: (
     event: DiagramViewEventKey,
     handler: (data: ViewEventMap[DiagramViewEventKey]) => void

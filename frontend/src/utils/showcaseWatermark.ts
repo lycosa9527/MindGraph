@@ -10,7 +10,10 @@ function tileCountForElement(pageEl: HTMLElement): number {
   return WATERMARK_COLS * rows
 }
 
-export function buildWatermarkLayer(text: string, tileCount = WATERMARK_COLS * WATERMARK_MIN_ROWS): HTMLElement {
+export function buildWatermarkLayer(
+  text: string,
+  tileCount = WATERMARK_COLS * WATERMARK_MIN_ROWS
+): HTMLElement {
   const layer = document.createElement('div')
   layer.className = 'showcase-page-watermark'
   layer.setAttribute('aria-hidden', 'true')

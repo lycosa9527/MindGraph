@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Bientôt disponible',
   'thinkingCoins.schoolInfo': 'Contactez l’administrateur de votre école pour les offres école',
   'thinkingCoins.school.headline': 'Pensée assistée par l’IA · solutions scolaires',
-  'thinkingCoins.school.description': 'Déploiement privé, fonctionnalités sur mesure et support opérationnel complet pour les écoles et institutions — conçu pour l’échelle, l’image de marque et la sécurité des données.',
+  'thinkingCoins.school.description':
+    'Déploiement privé, fonctionnalités sur mesure et support opérationnel complet pour les écoles et institutions — conçu pour l’échelle, l’image de marque et la sécurité des données.',
   'thinkingCoins.school.feature.accountManager': 'Chargé de compte dédié',
   'thinkingCoins.school.feature.accountManagerDesc': 'Consultation en tête-à-tête',
   'thinkingCoins.school.feature.privateDeploy': 'Déploiement privé',
@@ -49,7 +50,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.validationRequired': 'Veuillez remplir tous les champs obligatoires',
   'thinkingCoins.school.validationPhone': 'Veuillez saisir un numéro de téléphone valide',
   'thinkingCoins.school.validationTooLong': 'Un ou plusieurs champs sont trop longs',
-  'thinkingCoins.school.validationInvalid': 'Certains champs sont invalides — vérifiez et réessayez',
+  'thinkingCoins.school.validationInvalid':
+    'Certains champs sont invalides — vérifiez et réessayez',
   'thinkingCoins.tier.trial': 'Essai',
   'thinkingCoins.tier.monthly': 'Mensuel',
   'thinkingCoins.tier.sub': 'Abonnement mensuel',
@@ -63,8 +65,9 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Récompense de parrainage',
   'thinkingCoins.reason.case_reward': 'Récompense de cas',
   'thinkingCoins.reason.subscription_grant': 'Attribution d’abonnement',
-  'thinkingCoins.dailyExpiresHint': 'Les récompenses de connexion sont valables le même jour et seront réinitialisées à minuit',
-  'thinkingCoins.dailyBalanceRemaining': 'Il reste {n} pour l\'enregistrement d\'aujourd\'hui.',
+  'thinkingCoins.dailyExpiresHint':
+    'Les récompenses de connexion sont valables le même jour et seront réinitialisées à minuit',
+  'thinkingCoins.dailyBalanceRemaining': "Il reste {n} pour l'enregistrement d'aujourd'hui.",
   'thinkingCoins.admin.tab': 'Jetons de pensée',
   'thinkingCoins.admin.tasksTitle': 'Tâches à accomplir',
   'thinkingCoins.admin.settingsTitle': 'Paramètres globaux',
@@ -75,7 +78,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'Enregistrer',
   'thinkingCoins.admin.signupGrant': 'Attribution à l’inscription',
   'thinkingCoins.admin.dailyEarnCap': 'Plafond de gains quotidiens',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = illimité ; 135 par défaut correspond à toutes les tâches quotidiennes',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = illimité ; 135 par défaut correspond à toutes les tâches quotidiennes',
   'thinkingCoins.admin.costMindmate': 'Coût MindMate',
   'thinkingCoins.admin.costDiagram': 'Coût génération de diagramme',
   'thinkingCoins.admin.costCanvas': 'Coût assistance canevas',

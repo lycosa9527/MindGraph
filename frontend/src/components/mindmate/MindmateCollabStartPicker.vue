@@ -17,9 +17,15 @@ import { difyConversationRouteQuerySuffix } from '@/utils/difyConversationRoute'
 import { type CollabSeedDraft, difyMessagesToCollabSeed } from '@/utils/mindmateCollabSeed'
 import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
 
-const props = defineProps<{
-  starting: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    starting: boolean
+    showHeader?: boolean
+  }>(),
+  {
+    showHeader: true,
+  }
+)
 
 const emit = defineEmits<{
   (e: 'back'): void
@@ -104,7 +110,10 @@ async function startFrom(conv: DifyConversation): Promise<void> {
 
 <template>
   <div class="sw-panel">
-    <div class="sw-panel__header">
+    <div
+      v-if="showHeader"
+      class="sw-panel__header"
+    >
       <button
         type="button"
         class="sw-panel__back"

@@ -1,7 +1,7 @@
 /**
  * Mobile Kitty page mount/teardown, WS reconnect, and Pinia pipeline cleanup.
  */
-import { onMounted, onUnmounted, watch, type Ref } from 'vue'
+import { type Ref, onMounted, onUnmounted, watch } from 'vue'
 import type { Router } from 'vue-router'
 
 import { eventBus } from '@/composables/core/useEventBus'
@@ -12,10 +12,10 @@ import {
   isKittyWsPolicyDenyClose,
 } from '@/composables/kitty/kittyConnectFailure'
 import type { createKittyWsAuthReconnectGate } from '@/composables/kitty/kittyWsAuthReconnect'
-import type { useAuthStore } from '@/stores/auth'
-import type { useFeatureFlagsStore } from '@/stores/featureFlags'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import type { MobileKittyBootstrapPayload } from '@/composables/kitty/useMobileKittyPairing'
+import type { useAuthStore } from '@/stores/auth'
+import type { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 import { useKittySessionStore } from '@/stores/kittySession'
 
@@ -159,12 +159,7 @@ export function useMobileKittyPageLifecycle(options: UseMobileKittyPageLifecycle
         }
         // Drop mid-turn pipeline so unclean reconnect cannot stick awaiting_result.
         resetLocalKittyUiState()
-        notifyWarning(
-          translate(
-            'mobile.kittyDisconnected',
-            'Voice connection lost. Reconnecting…'
-          )
-        )
+        notifyWarning(translate('mobile.kittyDisconnected', 'Voice connection lost. Reconnecting…'))
         scheduleReconnect()
       },
       'MobileKittyPage_WsClosed'

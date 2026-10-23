@@ -7,9 +7,9 @@ import { eventBus } from '@/composables/core/useEventBus'
 import type { MindClassroomRemoteStep } from '@/composables/mindMap/mindClassroomJobApi'
 import { useMindClassroomStore } from '@/stores/mindClassroom'
 import {
+  type LectureLiveRef,
   collectLiveNodeIds,
   mapRemoteLectureSteps,
-  type LectureLiveRef,
 } from '@/utils/mindClassroomRemoteSteps'
 import type { MindClassroomLectureStep } from '@/utils/mindClassroomScript'
 
@@ -32,9 +32,7 @@ export function requestLectureSlidePrefetch(step: MindClassroomLectureStep | und
   })
 }
 
-export function requestFirstLectureSlidePrefetch(
-  steps: readonly MindClassroomLectureStep[]
-): void {
+export function requestFirstLectureSlidePrefetch(steps: readonly MindClassroomLectureStep[]): void {
   requestLectureSlidePrefetch(steps[0])
 }
 
@@ -107,8 +105,7 @@ export function tryWarmupFromJobSteps(
   if (!mapped[0]?.caption.trim()) return false
   const grew = mapped.length > store.preparedSteps.length
   if (grew || store.preparedSteps.length === 0) {
-    const snapshotIds =
-      live instanceof Set ? [...live] : [...collectLiveNodeIds(live)]
+    const snapshotIds = live instanceof Set ? [...live] : [...collectLiveNodeIds(live)]
     store.setPreparedSteps(mapped, snapshotIds)
   }
   if (store.voiceWarmup === 'idle' && store.isLaunchActive) {

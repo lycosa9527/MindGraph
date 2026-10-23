@@ -36,7 +36,9 @@ describe('staleChunkReload', () => {
 
   it('detects dynamic import failures', () => {
     expect(
-      isStaleChunkLoadError(new Error('Failed to fetch dynamically imported module: https://x/a.js'))
+      isStaleChunkLoadError(
+        new Error('Failed to fetch dynamically imported module: https://x/a.js')
+      )
     ).toBe(true)
     expect(isStaleChunkLoadError(new Error('Unable to preload CSS for /assets/x.css'))).toBe(true)
     expect(isStaleChunkLoadError(new Error('boom'))).toBe(false)
@@ -47,7 +49,9 @@ describe('staleChunkReload', () => {
     vi.stubGlobal('location', { reload })
     expect(reloadForStaleChunk(new Error('Failed to fetch dynamically imported module'))).toBe(true)
     expect(reload).toHaveBeenCalledTimes(1)
-    expect(reloadForStaleChunk(new Error('Failed to fetch dynamically imported module'))).toBe(false)
+    expect(reloadForStaleChunk(new Error('Failed to fetch dynamically imported module'))).toBe(
+      false
+    )
     expect(reload).toHaveBeenCalledTimes(1)
   })
 })

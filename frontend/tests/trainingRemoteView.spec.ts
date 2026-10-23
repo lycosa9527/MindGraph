@@ -25,9 +25,7 @@ describe('trainingRemoteView', () => {
   it('waits until this instructor has a playing course', () => {
     expect(trainingRemotePhase(snapshot({ course_id: null }), 1)).toBe('waiting')
     expect(trainingRemotePhase(snapshot({ state: 'ended' }), 1)).toBe('waiting')
-    expect(trainingRemotePhase(snapshot({ state: 'none', course_id: null }), 1)).toBe(
-      'waiting'
-    )
+    expect(trainingRemotePhase(snapshot({ state: 'none', course_id: null }), 1)).toBe('waiting')
   })
 
   it('shows a foreign host instead of steer controls', () => {
@@ -44,5 +42,4 @@ describe('trainingRemoteView', () => {
       trainingRemotePrompterKey(snapshot({ seq: 5 }))
     )
   })
-
 })

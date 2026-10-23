@@ -18,9 +18,8 @@ import { type Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useDebounceFn, useElementSize } from '@vueuse/core'
 
-import { ANIMATION, BREAKPOINTS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
+import { ANIMATION, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import { usePanelsStore } from '@/stores'
-
 import { computeIsMobileClient } from '@/utils/isMobileClient'
 
 import { eventBus } from '../core/useEventBus'

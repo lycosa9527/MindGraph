@@ -3,10 +3,7 @@ import { computed } from 'vue'
 
 import TrainingBuilderFilmstrip from '@/components/training/TrainingBuilderFilmstrip.vue'
 import TrainingTeacherPreview from '@/components/training/TrainingTeacherPreview.vue'
-import {
-  advancePlayCursor,
-  canAdvancePlayCursor,
-} from '@/composables/training/trainingMarkSteps'
+import { advancePlayCursor, canAdvancePlayCursor } from '@/composables/training/trainingMarkSteps'
 import type { TrainingCourse } from '@/types/training'
 
 const props = defineProps<{
@@ -21,9 +18,7 @@ const emit = defineEmits<{
 
 const steps = computed(() => props.course.steps || [])
 const current = computed(() => steps.value[props.index] || null)
-const thumbs = computed(() =>
-  steps.value.map((step) => step.thumb_url || step.asset_url || null)
-)
+const thumbs = computed(() => steps.value.map((step) => step.thumb_url || step.asset_url || null))
 const canPrev = computed(() => canAdvancePlayCursor(steps.value, props.index, -1))
 const canNext = computed(() => canAdvancePlayCursor(steps.value, props.index, 1))
 

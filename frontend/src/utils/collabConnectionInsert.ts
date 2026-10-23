@@ -66,10 +66,7 @@ export function collabConnectionInsertIndex(
   return conns.length
 }
 
-export function spliceCollabConnection(
-  conns: ConnRow[],
-  patch: Record<string, unknown>
-): void {
+export function spliceCollabConnection(conns: ConnRow[], patch: Record<string, unknown>): void {
   const clean = stripCollabInsertAfterTarget(patch)
   const connId = typeof clean.id === 'string' ? clean.id : ''
   const source = typeof clean.source === 'string' ? clean.source : ''

@@ -19,7 +19,7 @@ export default {
   'showcase.sort.default': 'Domyślne',
   'showcase.sort.hot': 'Popularne',
   'showcase.sort.newest': 'Najnowsze',
-  'showcase.empty': 'Brak case\'ów pasujących do filtrów',
+  'showcase.empty': "Brak case'ów pasujących do filtrów",
   'showcase.status.pending': 'W trakcie weryfikacji',
   'showcase.status.approved': 'Zatwierdzony',
   'showcase.status.rejected': 'Odrzucony',
@@ -27,45 +27,59 @@ export default {
   'showcase.expertBadge': 'Wybór eksperta',
   'showcase.myCases': 'Moje opublikowane',
   'showcase.myFavorites': 'Moje ulubione',
-  'showcase.myFavoritesModalTitle': 'Ulubione case\'y',
-  'showcase.myFavoritesEmpty': 'Brak ulubionych case\'ów',
-  'showcase.myFavoritesEmptyHint': 'Case\'y, które dodasz do zakładek, pojawią się tutaj',
-  'showcase.myCasesModalTitle': 'Moje opublikowane case\'y',
-  'showcase.myCasesManageHint': 'Wycofaj, zdejmij z listy lub edytuj z tej listy; kliknij case, aby zobaczyć szczegóły',
+  'showcase.myFavoritesModalTitle': "Ulubione case'y",
+  'showcase.myFavoritesEmpty': "Brak ulubionych case'ów",
+  'showcase.myFavoritesEmptyHint': "Case'y, które dodasz do zakładek, pojawią się tutaj",
+  'showcase.myCasesModalTitle': "Moje opublikowane case'y",
+  'showcase.myCasesManageHint':
+    'Wycofaj, zdejmij z listy lub edytuj z tej listy; kliknij case, aby zobaczyć szczegóły',
   'showcase.myCasesAction.edit': 'Edytuj',
-  'showcase.myCasesEmpty': 'Brak opublikowanych case\'ów',
-  'showcase.myCasesEmptyHint': 'Opublikowane case\'y i status weryfikacji pojawią się tutaj',
-  'showcase.caseCount': '{n} case\'ów',
+  'showcase.myCasesEmpty': "Brak opublikowanych case'ów",
+  'showcase.myCasesEmptyHint': "Opublikowane case'y i status weryfikacji pojawią się tutaj",
+  'showcase.caseCount': "{n} case'ów",
   'showcase.pendingReview': 'Oczekuje na weryfikację',
   'showcase.publishModal.title': 'Opublikuj case',
-  'showcase.publishModal.titleLabel': 'Tytuł case\'a',
+  'showcase.publishModal.titleLabel': "Tytuł case'a",
   'showcase.publishModal.titleHint': 'Zachowaj zwięzły tytuł — zalecane do {max} znaków',
   'showcase.publishModal.titlePlaceholder': 'np. Dwoje dzieci debata o Słońcu — projekt lekcji',
   'showcase.publishModal.descriptionLabel': 'Opis',
   'showcase.publishModal.tagsLabel': 'Tagi',
-  'showcase.publishModal.tagsHint': 'Oddziel tagi przecinkami, np. konflikt poznawczy, matematyka gimnazjum',
-  'showcase.publishModal.caseTypeLabel': 'Typ case\'a',
+  'showcase.publishModal.tagsHint':
+    'Oddziel tagi przecinkami, np. konflikt poznawczy, matematyka gimnazjum',
+  'showcase.publishModal.caseTypeLabel': "Typ case'a",
   'showcase.publishModal.subjectLabel': 'Przedmiot',
   'showcase.publishModal.gradeLabel': 'Klasa',
   'showcase.publishModal.submit': 'Prześlij do weryfikacji',
   'showcase.publishModal.submitting': 'Przesyłanie…',
-  'showcase.publishModal.creatingCase': 'Tworzenie case\'a…',
+  'showcase.publishModal.creatingCase': "Tworzenie case'a…",
   'showcase.publishModal.uploadingFiles': 'Przesyłanie plików ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Przesyłanie {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Kończenie…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Przesyłanie nieudane — szkic usunięto. Spróbuj ponownie.',
-  'showcase.publishModal.uploadCorsFailed': 'Nie udało się przesłać do magazynu obiektów (często CORS bucketu lub CSP witryny blokuje host COS). Szkic usunięto — poproś admina o poprawę CORS/CSP, potem spróbuj ponownie.',
-  'showcase.publishModal.uploadStorageRejected': 'Magazyn obiektów odrzucił przesyłanie. Szkic usunięto — spróbuj później lub skontaktuj się z adminem, jeśli problem się utrzymuje.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Przesyłanie nieudane — szkic usunięto. Spróbuj ponownie.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Nie udało się przesłać do magazynu obiektów (często CORS bucketu lub CSP witryny blokuje host COS). Szkic usunięto — poproś admina o poprawę CORS/CSP, potem spróbuj ponownie.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Magazyn obiektów odrzucił przesyłanie. Szkic usunięto — spróbuj później lub skontaktuj się z adminem, jeśli problem się utrzymuje.',
   'showcase.publishModal.uploadFailed': 'Przesyłanie nieudane. Spróbuj ponownie.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Okładka przekracza limit 2MB. Skompresuj podgląd lub użyj mniejszego obrazu, potem spróbuj ponownie.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'Plik przekracza limit rozmiaru (dokumenty/obrazy 20MB, wideo 100MB). Skompresuj i spróbuj ponownie.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Plik przekracza limit rozmiaru (dokumenty/obrazy 20MB, wideo 100MB). Szkic usunięto — skompresuj i spróbuj ponownie.',
-  'showcase.publishModal.uploadFileTooLarge': 'Plik jest za duży dla tego typu przesyłania. Sprawdź limit rozmiaru i spróbuj ponownie.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Plik jest za duży dla tego typu przesyłania. Szkic usunięto — sprawdź limit rozmiaru i spróbuj ponownie.',
-  'showcase.publishModal.coverUploadSkipped': 'Case przesłany, ale nie udało się przesłać okładki. Możesz później edytować case, aby odświeżyć okładkę.',
-  'showcase.publishModal.coverGenerating': 'Podgląd okładki generuje się w tle — wkrótce pojawi się na karcie.',
-  'showcase.publishModal.coverFailed': 'Case przesłany, ale nie udało się wygenerować okładki. Możesz później edytować case, aby odświeżyć okładkę.',
-  'showcase.publishModal.coverFailedTimeout': 'Case przesłany, ale generowanie okładki przekroczyło limit czasu. Możesz później edytować case, aby odświeżyć okładkę.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Okładka przekracza limit 2MB. Skompresuj podgląd lub użyj mniejszego obrazu, potem spróbuj ponownie.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'Plik przekracza limit rozmiaru (dokumenty/obrazy 20MB, wideo 100MB). Skompresuj i spróbuj ponownie.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'Plik przekracza limit rozmiaru (dokumenty/obrazy 20MB, wideo 100MB). Szkic usunięto — skompresuj i spróbuj ponownie.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'Plik jest za duży dla tego typu przesyłania. Sprawdź limit rozmiaru i spróbuj ponownie.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'Plik jest za duży dla tego typu przesyłania. Szkic usunięto — sprawdź limit rozmiaru i spróbuj ponownie.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Case przesłany, ale nie udało się przesłać okładki. Możesz później edytować case, aby odświeżyć okładkę.',
+  'showcase.publishModal.coverGenerating':
+    'Podgląd okładki generuje się w tle — wkrótce pojawi się na karcie.',
+  'showcase.publishModal.coverFailed':
+    'Case przesłany, ale nie udało się wygenerować okładki. Możesz później edytować case, aby odświeżyć okładkę.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Case przesłany, ale generowanie okładki przekroczyło limit czasu. Możesz później edytować case, aby odświeżyć okładkę.',
   'showcase.publishModal.success': 'Case przesłany — oczekuje na weryfikację admina',
   'showcase.publishModal.fromCanvas': 'Publikuj z płótna',
   'showcase.publishModal.step1Title': 'Podstawowe informacje',
@@ -79,26 +93,35 @@ export default {
   'showcase.publishModal.uploadLabel': 'Prześlij plik',
   'showcase.publishModal.uploadImage': 'Prześlij obraz',
   'showcase.publishModal.uploadFile': 'Prześlij plik',
-  'showcase.publishModal.directUploadDisabled': 'Bezpośrednie przesyłanie plików jest tymczasowo niedostępne. Nadal możesz wybrać zapisany diagram z historii.',
-  'showcase.publishModal.uploadViaStorage': 'Pliki trafiają bezpośrednio do bezpiecznego magazynu (krótkotrwały URL).',
+  'showcase.publishModal.directUploadDisabled':
+    'Bezpośrednie przesyłanie plików jest tymczasowo niedostępne. Nadal możesz wybrać zapisany diagram z historii.',
+  'showcase.publishModal.uploadViaStorage':
+    'Pliki trafiają bezpośrednio do bezpiecznego magazynu (krótkotrwały URL).',
   'showcase.publishModal.pickHistory': 'Wybierz z historii',
   'showcase.publishModal.removeFile': 'Usuń',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: ograniczony podgląd)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: ograniczony podgląd) — maks. {maxMb} MB na dokument',
-  'showcase.publishModal.teachingDocTooLarge': 'Dokument przekracza limit {maxMb} MB. Skompresuj i spróbuj ponownie.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: ograniczony podgląd) — maks. {maxMb} MB na dokument',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Dokument przekracza limit {maxMb} MB. Skompresuj i spróbuj ponownie.',
   'showcase.publishModal.diagramImageHint': 'Obsługa plików .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Prześlij obrazy (wiele)',
-  'showcase.publishModal.galleryHint': 'Dodaj wiele obrazów i zapisanych diagramów, do {max} elementów',
-  'showcase.publishModal.galleryHintCase': 'Można dodać wiele obrazów i ikon historycznych, maksymalnie {max} elementów',
-  'showcase.publishModal.galleryHintTemplate': 'Możesz przesyłać pliki .mg i wybierać wiele ikon historycznych, aż do {max} elementów',
+  'showcase.publishModal.galleryHint':
+    'Dodaj wiele obrazów i zapisanych diagramów, do {max} elementów',
+  'showcase.publishModal.galleryHintCase':
+    'Można dodać wiele obrazów i ikon historycznych, maksymalnie {max} elementów',
+  'showcase.publishModal.galleryHintTemplate':
+    'Możesz przesyłać pliki .mg i wybierać wiele ikon historycznych, aż do {max} elementów',
   'showcase.publishModal.galleryCount': 'Dodano {count}/{max} elementów',
   'showcase.publishModal.galleryImageItem': 'Obraz: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Ilustracja: {name}',
   'showcase.publishModal.galleryLimit': 'Możesz dodać co najwyżej {max} elementów',
   'showcase.publishModal.galleryDuplicateDiagram': 'Ten zapisany diagram jest już na liście',
   'showcase.publishModal.galleryPickerDone': 'Gotowe',
-  'showcase.publishModal.galleryUploadFailed': 'Przesyłanie obrazu galerii nieudane — spróbuj opublikować ponownie',
-  'showcase.publishModal.galleryReuploadHint': 'Niektóre obrazy galerii nie zostały zapisane — wybierz je ponownie przed przesłaniem',
+  'showcase.publishModal.galleryUploadFailed':
+    'Przesyłanie obrazu galerii nieudane — spróbuj opublikować ponownie',
+  'showcase.publishModal.galleryReuploadHint':
+    'Niektóre obrazy galerii nie zostały zapisane — wybierz je ponownie przed przesłaniem',
   'showcase.detail.galleryImage': 'Obraz',
   'showcase.detail.galleryDiagram': 'Ilustracja',
   'showcase.detail.galleryPrev': 'Poprzedni',
@@ -108,10 +131,13 @@ export default {
   'showcase.publishModal.templateFileHint': 'Tylko .mg (eksport MindGraph)',
   'showcase.publishModal.templatePreviewLabel': 'Podgląd diagramu',
   'showcase.publishModal.templatePreviewHint': 'Narzędzie ręki — tylko podgląd, bez edycji',
-  'showcase.publishModal.templatePreviewEmpty': 'Prześlij plik .mg lub wybierz zapisany diagram do podglądu',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Prześlij plik .mg lub wybierz zapisany diagram do podglądu',
   'showcase.publishModal.diagramCasePreviewLabel': 'Podgląd diagramu',
-  'showcase.publishModal.diagramCasePreviewHint': 'Narzędzie ręki — przesuwaj i powiększaj, aby eksplorować',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Typ diagramu dopasowany z wybranego zapisanego diagramu',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'Narzędzie ręki — przesuwaj i powiększaj, aby eksplorować',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Typ diagramu dopasowany z wybranego zapisanego diagramu',
   'showcase.publishModal.introLabel': 'Wstęp do diagramu',
   'showcase.publishModal.teachingIntroLabel': 'Wstęp do projektu nauczania',
   'showcase.publishModal.highlightsLabel': 'Mocne strony projektu',
@@ -120,24 +146,33 @@ export default {
   'showcase.publishModal.aiGenerate': 'Generuj AI',
   'showcase.publishModal.aiGenerating': 'Generowanie…',
   'showcase.publishModal.aiGenerateStop': 'zatrzymywać się',
-  'showcase.publishModal.aiGenerateCancelled': 'Generowanie AI anulowane — kliknij ponownie, aby wygenerować',
-  'showcase.publishModal.aiGenerateSuccess': 'Wypełniono wstęp i mocne strony z dokumentu — przejrzyj i edytuj; refleksję dydaktyczną napisz samodzielnie',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Na podstawie ilustracji wygenerowano wprowadzenie ilustracyjne i zastosowanie w klasie. Proszę sprawdzić i edytować.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'Generowanie AI anulowane — kliknij ponownie, aby wygenerować',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Wypełniono wstęp i mocne strony z dokumentu — przejrzyj i edytuj; refleksję dydaktyczną napisz samodzielnie',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'Na podstawie ilustracji wygenerowano wprowadzenie ilustracyjne i zastosowanie w klasie. Proszę sprawdzić i edytować.',
   'showcase.publishModal.aiGenerateFailed': 'Generowanie AI nieudane — spróbuj ponownie',
-  'showcase.publishModal.aiGenerateNeedFile': 'Najpierw prześlij dokument projektu nauczania w poprzednim kroku',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'Generowanie AI jest dostępne tylko dla case\'ów projektu nauczania',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Najpierw prześlij dokument projektu nauczania w poprzednim kroku',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    "Generowanie AI jest dostępne tylko dla case'ów projektu nauczania",
   'showcase.publishModal.reflectionLabel': 'Refleksja dydaktyczna',
   'showcase.publishModal.introPlaceholder': 'Krótko opisz case i kiedy go używać',
-  'showcase.publishModal.diagramCorePlaceholder': 'Opisz treść diagramu i mocne strony wizualizacji',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Opisz treść diagramu i mocne strony wizualizacji',
   'showcase.publishModal.classroomAppPlaceholder': 'Jak ten diagram jest używany na lekcji',
   'showcase.publishModal.tagInputPlaceholder': 'Wpisz tag (maks. 10 znaków), naciśnij Enter',
   'showcase.publishModal.tagRecommended': 'Sugerowane tagi',
   'showcase.publishModal.tagCountHint': '(maks. {max})',
   'showcase.publishModal.tagMaxCount': 'Możesz dodać co najwyżej {max} tagów',
-  'showcase.publishModal.networkError': 'Przesyłanie nieudane — sprawdź, czy serwer działa i rozmiary plików są w limitach',
+  'showcase.publishModal.networkError':
+    'Przesyłanie nieudane — sprawdź, czy serwer działa i rozmiary plików są w limitach',
   'showcase.publishModal.fileTooLarge': '"{name}" przekracza limit {maxMb}MB',
-  'showcase.publishModal.uploadTotalTooLarge': 'Całkowity rozmiar przesyłania przekracza limit — zmniejsz załącznik lub wideo',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'Całkowity rozmiar przesyłania przekracza limit — zmniejsz załącznik lub wideo',
   'showcase.publishModal.tagAdd': 'Dodaj',
   'showcase.publishModal.publishBtn': 'Opublikuj',
   'showcase.publishModal.reflectionPlaceholder': 'Napisz refleksję o tej lekcji (opcjonalnie)',
@@ -151,22 +186,27 @@ export default {
   'showcase.publishModal.validationFile': 'Prześlij plik lub wybierz zapisany diagram',
   'showcase.publishModal.validationDiagramType': 'Wybierz typ diagramu',
   'showcase.publishModal.invalidFileType': 'Nieobsługiwany typ pliku',
-  'showcase.publishModal.invalidMgFile': 'Nie udało się odczytać tego pliku .mg — najpierw wyeksportuj go z MindGraph',
-  'showcase.publishModal.cannotPreview': 'Nie udało się wygenerować podglądu okładki — case i tak zostanie przesłany. Spróbuj PNG/JPG lub wybierz zapisany diagram.',
-  'showcase.publishModal.cannotPreviewHistory': 'Nie udało się wygenerować okładki z tego zapisanego diagramu — case i tak zostanie przesłany. Wybierz ponownie lub zapisz z płótna.',
-  'showcase.publishModal.cannotPreviewTemplate': 'Nie udało się wygenerować okładki — case i tak zostanie przesłany. Sprawdź plik .mg lub wybierz inny zapisany diagram.',
+  'showcase.publishModal.invalidMgFile':
+    'Nie udało się odczytać tego pliku .mg — najpierw wyeksportuj go z MindGraph',
+  'showcase.publishModal.cannotPreview':
+    'Nie udało się wygenerować podglądu okładki — case i tak zostanie przesłany. Spróbuj PNG/JPG lub wybierz zapisany diagram.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Nie udało się wygenerować okładki z tego zapisanego diagramu — case i tak zostanie przesłany. Wybierz ponownie lub zapisz z płótna.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Nie udało się wygenerować okładki — case i tak zostanie przesłany. Sprawdź plik .mg lub wybierz inny zapisany diagram.',
   'showcase.publishModal.historyTitle': 'Wybierz zapisany diagram',
   'showcase.publishModal.historySearch': 'Szukaj nazwy diagramu…',
   'showcase.publishModal.historyEmpty': 'Brak zapisanych diagramów',
   'showcase.publishModal.historyUncategorized': 'Bez kategorii',
-  'showcase.publishModal.typeDesc.teachingDesign': 'Projekt lekcji rozwijającej umiejętności myślenia',
+  'showcase.publishModal.typeDesc.teachingDesign':
+    'Projekt lekcji rozwijającej umiejętności myślenia',
   'showcase.publishModal.typeDesc.diagramCase': 'Doskonałe diagramy i wizualizacja w nauczaniu',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagramy do ponownego użycia lub adaptacji',
-  'showcase.detail.import': 'Użyj tego case\'a',
+  'showcase.detail.import': "Użyj tego case'a",
   'showcase.action.goDraw': 'Narysuj',
   'showcase.action.applyTemplate': 'Zastosuj szablon',
   'showcase.action.openDiagram': 'Otwórz diagram',
-  'showcase.detail.loadFailed': 'Nie udało się wczytać szczegółów case\'a',
+  'showcase.detail.loadFailed': "Nie udało się wczytać szczegółów case'a",
   'showcase.detail.like': 'Lubię',
   'showcase.detail.liked': 'Polubiono',
   'showcase.detail.favorite': 'Zapisz',
@@ -184,9 +224,11 @@ export default {
   'showcase.detail.delist': 'Zdejmij z listy',
   'showcase.detail.resubmit': 'Edytuj i prześlij ponownie',
   'showcase.detail.withdrawTitle': 'Wycofaj case',
-  'showcase.detail.withdrawConfirm': 'Wycofać "{title}"? Zostanie usunięty z kolejki weryfikacji i nie będzie można go przywrócić.',
+  'showcase.detail.withdrawConfirm':
+    'Wycofać "{title}"? Zostanie usunięty z kolejki weryfikacji i nie będzie można go przywrócić.',
   'showcase.detail.delistTitle': 'Zdejmij case z listy',
-  'showcase.detail.delistConfirm': 'Zdjąć "{title}" z galerii? Inni użytkownicy nie będą już mogli go zobaczyć.',
+  'showcase.detail.delistConfirm':
+    'Zdjąć "{title}" z galerii? Inni użytkownicy nie będą już mogli go zobaczyć.',
   'showcase.detail.confirm': 'Potwierdź',
   'showcase.detail.cancel': 'Anuluj',
   'showcase.withdrawn': 'Wycofano',
@@ -206,8 +248,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Konwertowanie slajdów do podglądu…',
   'showcase.detail.officePreviewPending': 'Konwertowanie slajdów do podglądu…',
   'showcase.detail.docPreviewLoading': 'Ładowanie dokumentu…',
-  'showcase.detail.docPreviewFailed': 'Nie udało się wczytać podglądu. Spróbuj otworzyć w nowej karcie.',
-  'showcase.detail.legacyDocHint': 'Starsze pliki .doc nie mogą być podglądane w linii. Otwórz lub pobierz plik albo prześlij .docx do podglądu w przeglądarce.',
+  'showcase.detail.docPreviewFailed':
+    'Nie udało się wczytać podglądu. Spróbuj otworzyć w nowej karcie.',
+  'showcase.detail.legacyDocHint':
+    'Starsze pliki .doc nie mogą być podglądane w linii. Otwórz lub pobierz plik albo prześlij .docx do podglądu w przeglądarce.',
   'showcase.detail.noDocument': 'Brak podglądu dokumentu',
   'showcase.detail.noDiagramPreview': 'Brak podglądu diagramu',
   'showcase.detail.diagramPreviewLoading': 'Ładowanie diagramu…',

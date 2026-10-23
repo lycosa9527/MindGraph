@@ -107,10 +107,7 @@ export function useMindmateDiagramPreviewImage(options: {
   })
 
   const displayContent = computed(() => {
-    let text = rewriteMindmateTempImageUrls(
-      options.content(),
-      options.pageHost?.()
-    )
+    let text = rewriteMindmateTempImageUrls(options.content(), options.pageHost?.())
     if (previewBlobUrl.value) {
       text = replaceMindmatePreviewImageUrl(text, previewBlobUrl.value)
     } else if (previewUnavailable.value) {

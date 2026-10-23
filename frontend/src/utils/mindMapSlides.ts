@@ -1,9 +1,5 @@
 import type { Connection, DiagramNode } from '@/types'
-
-import {
-  buildMindMapOutlineTree,
-  type MindMapOutlineNode,
-} from '@/utils/mindMapOutlineTree'
+import { type MindMapOutlineNode, buildMindMapOutlineTree } from '@/utils/mindMapOutlineTree'
 
 export type MindMapSlideKind = 'overview' | 'branch'
 
@@ -33,10 +29,7 @@ function collectDeepTraversalNodes(root: MindMapOutlineNode): MindMapOutlineNode
   return result
 }
 
-export function findMindMapBreadcrumb(
-  root: MindMapOutlineNode,
-  targetId: string
-): string[] | null {
+export function findMindMapBreadcrumb(root: MindMapOutlineNode, targetId: string): string[] | null {
   if (root.id === targetId) return [root.text]
   for (const child of root.children) {
     const sub = findMindMapBreadcrumb(child, targetId)
@@ -83,8 +76,7 @@ export function buildMindMapSlides(
     },
   ]
 
-  const branchNodes =
-    mode === 'deep' ? collectDeepTraversalNodes(root) : root.children
+  const branchNodes = mode === 'deep' ? collectDeepTraversalNodes(root) : root.children
 
   for (const branch of branchNodes) {
     slides.push(slideForBranch(branch, root, getDescendantIds))

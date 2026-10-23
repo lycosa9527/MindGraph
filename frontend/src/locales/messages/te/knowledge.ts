@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'కాన్వాస్',
   'fileCenterLibrary.badgeExtension': 'విస్తరించు',
   'fileCenterLibrary.badgeUpload': 'అప్లోడ్',
-  'chunkTest.history.confirmDeleteBody': 'మీరు ఈ పరీక్ష రికార్డును ఖచ్చితంగా తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
+  'chunkTest.history.confirmDeleteBody':
+    'మీరు ఈ పరీక్ష రికార్డును ఖచ్చితంగా తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
   'chunkTest.history.confirmDeleteTitle': 'పరీక్షను తొలగించండి',
   'chunkTest.history.delete': 'తొలగించు',
   'chunkTest.history.deleteFailed': 'తొలగించడం విఫలమైంది',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'సమాధానం నాణ్యత',
   'chunkTestResults.avgLatency': 'సగటు జాప్యం (మిసె)',
   'chunkTestResults.back': 'తిరిగి',
-  'chunkTestResults.cancelConfirmBody': 'మీరు ఖచ్చితంగా ఈ పరీక్షను రద్దు చేయాలనుకుంటున్నారా? తదుపరి చెక్‌పాయింట్ వద్ద పరీక్ష ఆగిపోతుంది.',
+  'chunkTestResults.cancelConfirmBody':
+    'మీరు ఖచ్చితంగా ఈ పరీక్షను రద్దు చేయాలనుకుంటున్నారా? తదుపరి చెక్‌పాయింట్ వద్ద పరీక్ష ఆగిపోతుంది.',
   'chunkTestResults.cancelFailed': 'రద్దు విఫలమైంది',
   'chunkTestResults.cancelRequested': 'పరీక్ష రద్దు అభ్యర్థన పంపబడింది',
   'chunkTestResults.cancelTest': 'పరీక్షను రద్దు చేయండి',
@@ -89,7 +91,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'అన్ని డేటాసెట్‌లను పరీక్షించండి',
   'knowledge.chunkHeader.testUpload': 'అప్‌లోడ్ పత్రాన్ని పరీక్షించండి',
   'knowledge.chunkHeader.title': 'RAG బ్లాక్ టెస్టింగ్',
-  'knowledge.chunkHeader.waitForProcessing': 'దయచేసి పరీక్షించడానికి ముందు డాక్యుమెంట్ ప్రాసెసింగ్ పూర్తయ్యే వరకు వేచి ఉండండి',
+  'knowledge.chunkHeader.waitForProcessing':
+    'దయచేసి పరీక్షించడానికి ముందు డాక్యుమెంట్ ప్రాసెసింగ్ పూర్తయ్యే వరకు వేచి ఉండండి',
   'knowledge.chunkPreview.empty': 'ఇంకా చంక్డ్ డేటా లేదు',
   'knowledge.chunkPreview.pageLabel': 'పేజీ {n}',
   'knowledge.chunkPreview.title': 'డాక్యుమెంట్ భాగం ప్రివ్యూ — {fileName}',
@@ -108,7 +111,8 @@ export default {
   'knowledge.doc.colStatus': 'రాష్ట్రం',
   'knowledge.doc.colType': 'రకం',
   'knowledge.doc.colUploaded': 'అప్‌లోడ్ సమయం',
-  'knowledge.doc.emptyDescription': 'ఇంకా పత్రం లేదు. జ్ఞాన స్థావరాన్ని నిర్మించడం ప్రారంభించడానికి దయచేసి పత్రాన్ని అప్‌లోడ్ చేయండి.',
+  'knowledge.doc.emptyDescription':
+    'ఇంకా పత్రం లేదు. జ్ఞాన స్థావరాన్ని నిర్మించడం ప్రారంభించడానికి దయచేసి పత్రాన్ని అప్‌లోడ్ చేయండి.',
   'knowledge.doc.errorPrefix': 'తప్పు:',
   'knowledge.doc.noData': 'ఇంకా డేటా లేదు',
   'knowledge.doc.statusCompleted': 'పూర్తయింది',
@@ -124,31 +128,43 @@ export default {
   'knowledge.header.title': 'వ్యక్తిగత జ్ఞానం బేస్',
   'knowledge.header.upload': 'పత్రాలను అప్‌లోడ్ చేయండి',
   'knowledge.ragGuide.title': 'ప్యాకేజీలు, RAGలు మరియు వికీలు ఎలా పని చేస్తాయి?',
-  'knowledge.ragGuide.subtitle': 'సాంకేతిక పరిభాషను అర్థం చేసుకోవలసిన అవసరం లేదు - ముందుగా ప్యాకెట్‌లో సూచన పదార్థాలను ఉంచండి. సిస్టమ్ మొదట శోధించదగిన RAG సూచికను నిర్మిస్తుంది మరియు చిన్న వికీ గమనికలను స్వయంచాలకంగా కంపైల్ చేస్తుంది; మ్యాప్‌ను రూపొందించేటప్పుడు AI ఒకే సమయంలో రెండింటినీ సూచిస్తుంది.',
+  'knowledge.ragGuide.subtitle':
+    'సాంకేతిక పరిభాషను అర్థం చేసుకోవలసిన అవసరం లేదు - ముందుగా ప్యాకెట్‌లో సూచన పదార్థాలను ఉంచండి. సిస్టమ్ మొదట శోధించదగిన RAG సూచికను నిర్మిస్తుంది మరియు చిన్న వికీ గమనికలను స్వయంచాలకంగా కంపైల్ చేస్తుంది; మ్యాప్‌ను రూపొందించేటప్పుడు AI ఒకే సమయంలో రెండింటినీ సూచిస్తుంది.',
   'knowledge.ragGuide.step1.title': 'ఒక ప్యాకెట్ ఎంచుకోండి',
-  'knowledge.ragGuide.step1.body': 'జోటెరోలో ప్యాక్‌లు ఇష్టమైనవి వంటివి. మీరు ఎడమవైపు 3 వరకు సృష్టించవచ్చు, ప్రతి ఒక్కటి సాధారణంగా మైండ్ మ్యాప్‌కు అనుగుణంగా ఉంటుంది. సైడ్‌బార్‌లోని డాక్యుమెంట్‌లను నిర్వహించడానికి దానిలోని డేటా ప్యాకేజీపై క్లిక్ చేయండి.',
+  'knowledge.ragGuide.step1.body':
+    'జోటెరోలో ప్యాక్‌లు ఇష్టమైనవి వంటివి. మీరు ఎడమవైపు 3 వరకు సృష్టించవచ్చు, ప్రతి ఒక్కటి సాధారణంగా మైండ్ మ్యాప్‌కు అనుగుణంగా ఉంటుంది. సైడ్‌బార్‌లోని డాక్యుమెంట్‌లను నిర్వహించడానికి దానిలోని డేటా ప్యాకేజీపై క్లిక్ చేయండి.',
   'knowledge.ragGuide.step2.title': 'యాడ్ మరియు ఇండెక్స్ పత్రాలు (RAG)',
-  'knowledge.ragGuide.step2.body': 'PDF, Word, గమనికలు లేదా వెబ్ పేజీలను అప్‌లోడ్ చేయండి. సిస్టమ్ పొడవైన పత్రాలను శోధించదగిన భాగాలుగా కత్తిరించి, వాటిని వెక్టర్ సూచికలలోకి వ్రాస్తుంది - ఇది ముందుగా సిద్ధంగా ఉండే RAG లేయర్.',
+  'knowledge.ragGuide.step2.body':
+    'PDF, Word, గమనికలు లేదా వెబ్ పేజీలను అప్‌లోడ్ చేయండి. సిస్టమ్ పొడవైన పత్రాలను శోధించదగిన భాగాలుగా కత్తిరించి, వాటిని వెక్టర్ సూచికలలోకి వ్రాస్తుంది - ఇది ముందుగా సిద్ధంగా ఉండే RAG లేయర్.',
   'knowledge.ragGuide.step3.title': 'వికినోట్‌ల స్వయంచాలక సంకలనం',
-  'knowledge.ragGuide.step3.body': 'ఇండెక్సింగ్ పూర్తయిన తర్వాత, LLM డిస్క్‌లో ఓవర్‌వ్యూ మరియు టాపిక్ వికీ పేజీలను కంపైల్ చేస్తుంది. ప్యాకేజీ యొక్క నిర్మాణాన్ని త్వరగా గ్రహించడంలో మీకు సహాయపడటానికి ఇవి ఘనీభవించిన గమనికలు (అసలు టెక్స్ట్ నుండి సారాంశాలు కాదు).',
+  'knowledge.ragGuide.step3.body':
+    'ఇండెక్సింగ్ పూర్తయిన తర్వాత, LLM డిస్క్‌లో ఓవర్‌వ్యూ మరియు టాపిక్ వికీ పేజీలను కంపైల్ చేస్తుంది. ప్యాకేజీ యొక్క నిర్మాణాన్ని త్వరగా గ్రహించడంలో మీకు సహాయపడటానికి ఇవి ఘనీభవించిన గమనికలు (అసలు టెక్స్ట్ నుండి సారాంశాలు కాదు).',
   'knowledge.ragGuide.step4.title': 'శోధిస్తున్నప్పుడు వికీ మరియు చంకింగ్ రెండింటినీ ఉపయోగించండి',
-  'knowledge.ragGuide.step4.body': 'శాఖను విస్తరించేటప్పుడు లేదా సారాంశాన్ని రూపొందించేటప్పుడు, సిస్టమ్ మొదట సంబంధిత వికీ పేజీలతో సరిపోలుతుంది మరియు తర్వాత అత్యంత సంబంధిత భాగమైన పేరాగ్రాఫ్‌లను (హైబ్రిడ్ RAG) తిరిగి పొందుతుంది.',
+  'knowledge.ragGuide.step4.body':
+    'శాఖను విస్తరించేటప్పుడు లేదా సారాంశాన్ని రూపొందించేటప్పుడు, సిస్టమ్ మొదట సంబంధిత వికీ పేజీలతో సరిపోలుతుంది మరియు తర్వాత అత్యంత సంబంధిత భాగమైన పేరాగ్రాఫ్‌లను (హైబ్రిడ్ RAG) తిరిగి పొందుతుంది.',
   'knowledge.ragGuide.step5.title': 'మూలం ఆధారంగా AI సమాధానాలు',
-  'knowledge.ragGuide.step5.body': 'AI వికీ నోట్స్ మరియు రిట్రీవ్డ్ స్నిప్పెట్‌లను సూచించడం ద్వారా కంటెంట్‌ను ఉత్పత్తి చేస్తుంది, దానిని గాలి నుండి రూపొందించడం కంటే-మరింత సంబంధితమైన మూలం, ఇండెక్స్ మరియు వికీని పూర్తి చేయడం, మ్యాప్ మరింత ఖచ్చితమైనది.',
-  'knowledge.ragGuide.footer': 'చిట్కా: కాన్వాస్‌లో "డాక్యుమెంట్ సారాంశం" తెరవడం వలన స్వయంచాలకంగా డేటా ప్యాకేజీ కూడా సృష్టించబడుతుంది; Chrome పొడిగింపు ద్వారా సేవ్ చేయబడిన వెబ్ పేజీలు ఎడమ వైపున ఉన్న జాబితాలో కూడా కనిపిస్తాయి.',
+  'knowledge.ragGuide.step5.body':
+    'AI వికీ నోట్స్ మరియు రిట్రీవ్డ్ స్నిప్పెట్‌లను సూచించడం ద్వారా కంటెంట్‌ను ఉత్పత్తి చేస్తుంది, దానిని గాలి నుండి రూపొందించడం కంటే-మరింత సంబంధితమైన మూలం, ఇండెక్స్ మరియు వికీని పూర్తి చేయడం, మ్యాప్ మరింత ఖచ్చితమైనది.',
+  'knowledge.ragGuide.footer':
+    'చిట్కా: కాన్వాస్‌లో "డాక్యుమెంట్ సారాంశం" తెరవడం వలన స్వయంచాలకంగా డేటా ప్యాకేజీ కూడా సృష్టించబడుతుంది; Chrome పొడిగింపు ద్వారా సేవ్ చేయబడిన వెబ్ పేజీలు ఎడమ వైపున ఉన్న జాబితాలో కూడా కనిపిస్తాయి.',
   'knowledge.pipeline.title': 'పైప్లైన్ స్థితి',
   'knowledge.pipeline.ragIdle': 'RAG సూచిక',
-  'knowledge.pipeline.ragIdleDetail': 'ఇంకా ఇండెక్స్డ్ ప్యాకేజీలు ఏవీ లేవు. దయచేసి ప్యాకేజీకి మూలాధారాలను జోడించి, ఇండెక్సింగ్ చేయండి.',
+  'knowledge.pipeline.ragIdleDetail':
+    'ఇంకా ఇండెక్స్డ్ ప్యాకేజీలు ఏవీ లేవు. దయచేసి ప్యాకేజీకి మూలాధారాలను జోడించి, ఇండెక్సింగ్ చేయండి.',
   'knowledge.pipeline.ragProcessing': 'RAG ఇండెక్సింగ్',
-  'knowledge.pipeline.ragProcessingDetail': '{count} ప్యాకెట్లు ఇప్పటికీ ముక్కలుగా మరియు వెక్టరైజ్ చేయబడ్డాయి.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} ప్యాకెట్లు ఇప్పటికీ ముక్కలుగా మరియు వెక్టరైజ్ చేయబడ్డాయి.',
   'knowledge.pipeline.ragReady': 'RAG సిద్ధంగా ఉంది',
-  'knowledge.pipeline.ragReadyDetail': '{count} ప్యాకేజీలు ఇండెక్స్ చేయబడ్డాయి - భాగాలుగా తిరిగి పొందడం అందుబాటులో ఉంది.',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count} ప్యాకేజీలు ఇండెక్స్ చేయబడ్డాయి - భాగాలుగా తిరిగి పొందడం అందుబాటులో ఉంది.',
   'knowledge.pipeline.wikiDisabled': 'వికీ సంకలనం మూసివేయబడింది',
   'knowledge.pipeline.wikiDisabledDetail': 'ఈ సర్వర్‌లో వికీ సంకలనం ప్రారంభించబడలేదు.',
   'knowledge.pipeline.wikiIdle': 'వికీ సంకలనం',
-  'knowledge.pipeline.wikiIdleDetail': 'ప్రతి మూలం RAG సూచిక పూర్తయిన తర్వాత వికీ పేజీలు స్వయంచాలకంగా సంకలనం చేయబడతాయి.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'ప్రతి మూలం RAG సూచిక పూర్తయిన తర్వాత వికీ పేజీలు స్వయంచాలకంగా సంకలనం చేయబడతాయి.',
   'knowledge.pipeline.wikiPending': 'వికీ కంపైలింగ్',
-  'knowledge.pipeline.wikiPendingDetail': 'ఇండెక్సింగ్ తర్వాత {count} ప్యాకేజీలు వికీ పేజీ ఉత్పత్తి కోసం వేచి ఉన్నాయి.',
+  'knowledge.pipeline.wikiPendingDetail':
+    'ఇండెక్సింగ్ తర్వాత {count} ప్యాకేజీలు వికీ పేజీ ఉత్పత్తి కోసం వేచి ఉన్నాయి.',
   'knowledge.pipeline.wikiReady': 'వికీ సిద్ధంగా ఉంది',
   'knowledge.pipeline.wikiReadyDetail': '{count} ప్యాకేజీలు వికీ గమనికలను సంకలనం చేశాయి.',
   'knowledge.pipelineBadge.rag.label': 'RAG',
@@ -164,7 +180,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'అన్నీ ఎంపికను తీసివేయండి',
   'knowledge.manualEval.dialogTitle': 'మాన్యువల్ మూల్యాంకనం — {method}',
   'knowledge.manualEval.groundTruthLabel': 'ప్రామాణిక సమాధానం (ఐచ్ఛికం)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'సమాధాన ఔచిత్యాన్ని అంచనా వేయడానికి ప్రామాణిక సమాధానాలను నమోదు చేయండి...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'సమాధాన ఔచిత్యాన్ని అంచనా వేయడానికి ప్రామాణిక సమాధానాలను నమోదు చేయండి...',
   'knowledge.manualEval.metric.answer_coverage': 'జవాబు కవరేజ్',
   'knowledge.manualEval.metric.answer_faithfulness': 'విశ్వసనీయత సమాధానం',
   'knowledge.manualEval.metric.clarity': 'స్పష్టత',
@@ -186,7 +203,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'నాణ్యత అంచనాను నిరోధించండి',
   'knowledge.manualEval.resultsTitle': 'మూల్యాంకన ఫలితాలు',
   'knowledge.manualEval.selectAll': 'అన్నింటినీ ఎంచుకోండి',
-  'knowledge.manualEval.selectChunksHeading': 'మూల్యాంకనం చేయడానికి భాగాలను ఎంచుకోండి (అన్నీ మూల్యాంకనం చేయడానికి ఖాళీగా ఉంచండి)',
+  'knowledge.manualEval.selectChunksHeading':
+    'మూల్యాంకనం చేయడానికి భాగాలను ఎంచుకోండి (అన్నీ మూల్యాంకనం చేయడానికి ఖాళీగా ఉంచండి)',
   'knowledge.manualEval.showingFirst20': '{total} టైల్స్‌లో మొదటి 20ని చూపుతోంది',
   'knowledge.manualEval.startEvaluation': 'మూల్యాంకనం ప్రారంభించండి',
   'knowledge.processing.chunking': 'చంకింగ్',
@@ -235,7 +253,8 @@ export default {
   'knowledge.settings.retrievalSection': 'సెట్టింగ్‌లను తిరిగి పొందండి',
   'knowledge.settings.title': 'నాలెడ్జ్ బేస్ సెట్టింగులు',
   'knowledge.settings.helpTitle': 'ఈ సెట్టింగ్‌లు ఎలా ప్రభావం చూపుతాయి',
-  'knowledge.settings.helpBody': 'శోధన మరియు AI సమాధానాల కోసం రిట్రీవల్ సంబంధిత ఎంపికలు వెంటనే అందుబాటులో ఉంటాయి. భాగం పరిమాణం మరియు అతివ్యాప్తి కొత్తగా సూచించబడిన పత్రాలకు మాత్రమే వర్తిస్తాయి - దయచేసి సవరణల తర్వాత ఇప్పటికే ఉన్న మూలాలను మళ్లీ ఇండెక్స్ చేయండి.',
+  'knowledge.settings.helpBody':
+    'శోధన మరియు AI సమాధానాల కోసం రిట్రీవల్ సంబంధిత ఎంపికలు వెంటనే అందుబాటులో ఉంటాయి. భాగం పరిమాణం మరియు అతివ్యాప్తి కొత్తగా సూచించబడిన పత్రాలకు మాత్రమే వర్తిస్తాయి - దయచేసి సవరణల తర్వాత ఇప్పటికే ఉన్న మూలాలను మళ్లీ ఇండెక్స్ చేయండి.',
   'knowledge.settings.tokens': 'టోకెన్',
   'knowledge.settings.serverSection': 'సర్వర్ (చదవడానికి మాత్రమే)',
   'knowledge.settings.rerankingMode': 'క్రమాన్ని మార్చండి',
@@ -246,7 +265,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'మూసివేయబడింది',
   'knowledge.settings.saveSuccess': 'సెట్టింగ్‌లు సేవ్ చేయబడ్డాయి',
   'knowledge.settings.saveFailed': 'సెట్టింగ్‌లను సేవ్ చేయడంలో విఫలమైంది',
-  'knowledge.settings.reindexRequired': 'చంకింగ్ పారామితులు మార్చబడ్డాయి - దయచేసి అమలులోకి రావడానికి ప్యాకేజీలో ఇప్పటికే ఉన్న పత్రాలను మళ్లీ ఇండెక్స్ చేయండి.',
+  'knowledge.settings.reindexRequired':
+    'చంకింగ్ పారామితులు మార్చబడ్డాయి - దయచేసి అమలులోకి రావడానికి ప్యాకేజీలో ఇప్పటికే ఉన్న పత్రాలను మళ్లీ ఇండెక్స్ చేయండి.',
   'knowledge.upload.click': 'అప్‌లోడ్ చేయడానికి క్లిక్ చేయండి',
   'knowledge.upload.drag': 'లేదా ఫైల్‌లను ఇక్కడకు లాగి వదలండి',
   'knowledge.upload.fileTooLarge': 'ఫైల్ పరిమాణం 10MB మించకూడదు',
@@ -254,7 +274,8 @@ export default {
   'knowledge.upload.maxDocs': 'పత్రాల గరిష్ట సంఖ్యను చేరుకున్నారు (5)',
   'knowledge.upload.title': 'పత్రాలను అప్‌లోడ్ చేయండి',
   'knowledge.upload.unsupportedType': 'మద్దతు లేని ఫైల్ రకాలు',
-  'knowledgeSpace.confirmDeleteBody': 'మీరు ఖచ్చితంగా ఈ పత్రాన్ని తొలగించాలనుకుంటున్నారా? ఇది తొలగించిన తర్వాత పునరుద్ధరించబడదు.',
+  'knowledgeSpace.confirmDeleteBody':
+    'మీరు ఖచ్చితంగా ఈ పత్రాన్ని తొలగించాలనుకుంటున్నారా? ఇది తొలగించిన తర్వాత పునరుద్ధరించబడదు.',
   'knowledgeSpace.confirmDeleteTitle': 'తొలగింపును నిర్ధారించండి',
   'knowledgeSpace.deleteFailed': 'తొలగించడం విఫలమైంది',
   'knowledgeSpace.documentDeleted': 'పత్రం తొలగించబడింది',
@@ -263,7 +284,8 @@ export default {
   'knowledgeSpace.startProcessingFailed': 'ప్రాసెసింగ్ ప్రారంభించడం విఫలమైంది',
   'knowledgeSpace.uploadFailed': 'పత్రం అప్‌లోడ్ విఫలమైంది',
   'knowledgeSpace.uploadSuccess': 'పత్రం విజయవంతంగా అప్‌లోడ్ చేయబడింది',
-  'knowledgeSpace.uploadSuccessProcessing': 'పత్రం విజయవంతంగా అప్‌లోడ్ చేయబడింది మరియు ప్రాసెస్ చేయబడుతోంది...',
+  'knowledgeSpace.uploadSuccessProcessing':
+    'పత్రం విజయవంతంగా అప్‌లోడ్ చేయబడింది మరియు ప్రాసెస్ చేయబడుతోంది...',
   'rag.retrievalTest.failed': 'తిరిగి పొందే పరీక్ష విఫలమైంది',
   'rag.retrievalTest.success': 'తిరిగి పొందే పరీక్ష పూర్తయింది',
 } as const

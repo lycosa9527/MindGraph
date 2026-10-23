@@ -10,8 +10,8 @@ describe('withShowcaseAssetProxy', () => {
   })
 
   it('preserves existing query params', () => {
-    expect(
-      withShowcaseAssetProxy('/api/showcase/assets/showcase/posts/a/preview.pdf?x=1')
-    ).toBe('/api/showcase/assets/showcase/posts/a/preview.pdf?x=1&proxy=1')
+    expect(withShowcaseAssetProxy('/api/showcase/assets/showcase/posts/a/preview.pdf?x=1')).toBe(
+      '/api/showcase/assets/showcase/posts/a/preview.pdf?x=1&proxy=1'
+    )
   })
 })

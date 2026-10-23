@@ -2,10 +2,7 @@
  * Diagram write lock — one writer: llm | tool | null.
  * Delegates to Pinia ``useKittySessionStore`` (Kitty session SoT).
  */
-import {
-  useKittySessionStore,
-  type KittyWriteLockHolder,
-} from '@/stores/kittySession'
+import { type KittyWriteLockHolder, useKittySessionStore } from '@/stores/kittySession'
 
 export type DiagramWriteLockHolder = KittyWriteLockHolder
 

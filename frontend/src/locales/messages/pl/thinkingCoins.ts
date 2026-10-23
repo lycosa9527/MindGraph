@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Wkrótce',
   'thinkingCoins.schoolInfo': 'Skontaktuj się z administratorem szkoły w sprawie planów szkolnych',
   'thinkingCoins.school.headline': 'Myślenie z AI · rozwiązania dla szkół',
-  'thinkingCoins.school.description': 'Prywatne wdrożenie, funkcje na zamówienie i pełne wsparcie operacyjne dla szkół i instytucji — pod skalę, markę i bezpieczeństwo danych.',
+  'thinkingCoins.school.description':
+    'Prywatne wdrożenie, funkcje na zamówienie i pełne wsparcie operacyjne dla szkół i instytucji — pod skalę, markę i bezpieczeństwo danych.',
   'thinkingCoins.school.feature.accountManager': 'Dedykowany opiekun konta',
   'thinkingCoins.school.feature.accountManagerDesc': 'Konsultacja jeden na jeden',
   'thinkingCoins.school.feature.privateDeploy': 'Prywatne wdrożenie',
@@ -49,7 +50,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.validationRequired': 'Wypełnij wszystkie wymagane pola',
   'thinkingCoins.school.validationPhone': 'Podaj prawidłowy numer telefonu',
   'thinkingCoins.school.validationTooLong': 'Jedno lub więcej pól jest zbyt długich',
-  'thinkingCoins.school.validationInvalid': 'Niektóre pola są nieprawidłowe — sprawdź i spróbuj ponownie',
+  'thinkingCoins.school.validationInvalid':
+    'Niektóre pola są nieprawidłowe — sprawdź i spróbuj ponownie',
   'thinkingCoins.tier.trial': 'Próbny',
   'thinkingCoins.tier.monthly': 'Miesięczny',
   'thinkingCoins.tier.sub': 'Subskrypcja miesięczna',
@@ -63,7 +65,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Nagroda za polecenie',
   'thinkingCoins.reason.case_reward': 'Nagroda za case',
   'thinkingCoins.reason.subscription_grant': 'Przyznanie z subskrypcji',
-  'thinkingCoins.dailyExpiresHint': 'Nagrody za logowanie są ważne tego samego dnia i zostaną zresetowane o godzinie 24:00',
+  'thinkingCoins.dailyExpiresHint':
+    'Nagrody za logowanie są ważne tego samego dnia i zostaną zresetowane o godzinie 24:00',
   'thinkingCoins.dailyBalanceRemaining': 'Pozostało do dzisiejszego zameldowania {n}',
   'thinkingCoins.admin.tab': 'Tokeny myślenia',
   'thinkingCoins.admin.tasksTitle': 'Zadania zarabiania',
@@ -75,7 +78,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'Zapisz',
   'thinkingCoins.admin.signupGrant': 'Przyznanie przy rejestracji',
   'thinkingCoins.admin.dailyEarnCap': 'Dzienny limit zarabiania',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = bez limitu; domyślnie 135 odpowiada wszystkim dziennym zadaniom',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = bez limitu; domyślnie 135 odpowiada wszystkim dziennym zadaniom',
   'thinkingCoins.admin.costMindmate': 'Koszt MindMate',
   'thinkingCoins.admin.costDiagram': 'Koszt generowania diagramu',
   'thinkingCoins.admin.costCanvas': 'Koszt pomocy na płótnie',
@@ -119,7 +123,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.feature.trialCoins': '200 tokenów myślenia',
   'thinkingCoins.plan.feature.trialDiagrams': '20 slotów na diagramy',
   'thinkingCoins.plan.feature.nonAi': 'Wszystkie funkcje bez AI',
-  'thinkingCoins.plan.feature.showcase': 'Galeria case\'ów',
+  'thinkingCoins.plan.feature.showcase': "Galeria case'ów",
   'thinkingCoins.plan.feature.paidCoins800': '800 tokenów / miesiąc',
   'thinkingCoins.plan.feature.paidCoins900': '900 tokenów / miesiąc',
   'thinkingCoins.plan.feature.storage1gb': '1 GB chmury',

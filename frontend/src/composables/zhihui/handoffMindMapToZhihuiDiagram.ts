@@ -8,9 +8,9 @@
  */
 import type { Router } from 'vue-router'
 
+import { notify } from '@/composables/core/notifications'
 import type { SaveFlushResult } from '@/composables/editor/useDiagramAutoSave'
 import { useDiagramSpecForPersist } from '@/composables/editor/useDiagramSpecForSave'
-import { notify } from '@/composables/core/notifications'
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'

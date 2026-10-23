@@ -508,4 +508,59 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'コンセプトマップ',
   'swissGlass.hero.focusQuestion.title': '焦点の問題',
   'swissGlass.hero.focusQuestion.line1': 'コンセプトマップの中核となる質問を設定する',
+  'askonce.title': 'デュオイング',
+  'meta.pageTitle.askOnce': 'デュオイング',
+  'meta.pageTitle.community': 'コミュニティ',
+  'meta.pageTitle.course': 'コース',
+  'meta.pageTitle.debateverse': '投機的な分野',
+  'meta.pageTitle.mateLearning': 'マット学習法',
+  'meta.pageTitle.gewe': 'ゲウェイ',
+  'meta.pageTitle.browserPlugin': 'Browser plugin',
+  'browserPlugin.back': 'Back',
+  'browserPlugin.heroMark': 'Mind',
+  'browserPlugin.heroTitle': 'Browser plugin',
+  'browserPlugin.heroBody':
+    'Turn the page you are reading into a mind map, ask MindMate with that page as context, and save documents from teaching sites.',
+  'browserPlugin.downloadChrome': 'Chrome',
+  'browserPlugin.downloadEdge': 'Edge',
+  'browserPlugin.entryTitle': 'From one web page to a map, a chat, and a file',
+  'browserPlugin.entryBody': 'It lives in Chrome or Edge. Open a page, then open the extension.',
+  'browserPlugin.cardMapTitle': 'Mind map',
+  'browserPlugin.cardMapBody':
+    'Read the page or the text you selected, then download a PNG mind map.',
+  'browserPlugin.cardChatTitle': 'Ask with the page',
+  'browserPlugin.cardChatBody': 'The first message of a new chat can include the page you are on.',
+  'browserPlugin.cardDocTitle': 'Teaching documents',
+  'browserPlugin.cardDocBody':
+    'On CNKI, SmartEdu, Baidu Wenku, and similar sites, save the document on this computer.',
+  'browserPlugin.mapTitle': 'Turn a web page into an editable map',
+  'browserPlugin.mapBody':
+    'Start from the toolbar, the right-click menu, or a shortcut. If nothing is selected, the extension takes the article text.',
+  'browserPlugin.chatTitle': 'Ask about this page',
+  'browserPlugin.chatBody':
+    'Turn on include-current-page. On a SmartEdu lesson, text from the slides and the teaching plan is merged in.',
+  'browserPlugin.docTitle': 'Take the document from the site',
+  'browserPlugin.docBody':
+    'It recognizes CNKI reader pages, SmartEdu lessons, and library pages, then saves a PDF or the article text locally.',
+  'browserPlugin.downloadTitle': 'Download the browser plugin',
+  'browserPlugin.downloadLead': 'One package for Chrome and Edge.',
+  'browserPlugin.installHint':
+    'Unzip it, open the extensions page, turn on developer mode, and load the unpacked folder.',
+  'browserPlugin.downloadAction': 'Download',
+  'meta.pageTitle.template': 'テンプレート',
+  'settings.language.eBlackboardOptimize': '電子黒板の最適化',
+  'settings.language.eBlackboardOff': '閉鎖',
+  'settings.language.eBlackboardOn': 'オンにする',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
+  'settings.language.bilingualUiHint':
+    'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',
+  'settings.language.presenterLanguage': 'Presenter language',
+  'settings.language.presenterLanguageHint': 'Smaller second line for the demonstrator to read.',
+  'settings.language.primaryLanguageHint':
+    'Regular-size line for the audience; also the interface language.',
+  'swissGlass.hero.shareExport.line1Preview': 'Preview and export as an image',
+  'swissGlass.hero.askOnce.ribbon': 'デュオイング',
+  'swissGlass.hero.askOnce.title': '新しい会話',
+  'swissGlass.hero.askOnce.line1': 'テンプレートを選択して新しい Q&A を開始します',
 } as const

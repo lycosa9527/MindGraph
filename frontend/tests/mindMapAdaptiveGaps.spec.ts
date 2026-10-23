@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   DEFAULT_MINDMAP_BRANCH_GAP,
@@ -15,11 +16,12 @@ import {
   normalizeMindMapPackGaps,
   sumMindMapPairGaps,
 } from '@/config/mindMapAdaptiveGaps'
-import { loadMindMapSpec } from '@/stores/specLoader/mindMap'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { loadMindMapSpec } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
 import { mindMapNodeDepth, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
+import { must } from '@/utils/must'
 
 function enableMindMapV2Canvas(): void {
   const flagsStore = useFeatureFlagsStore()
@@ -49,7 +51,9 @@ function enableMindMapV2Canvas(): void {
   useUIStore().mindMapCanvasMode = 'v2'
 }
 
-function sideSpan(nodes: { id: string; position?: { y: number }; data?: { estimatedHeight?: number } }[]): number {
+function sideSpan(
+  nodes: { id: string; position?: { y: number }; data?: { estimatedHeight?: number } }[]
+): number {
   const right = nodes.filter(
     (n) => n.position && mindMapNodeSide(n.id, { nodes: nodes as never }) === 'right'
   )
@@ -83,18 +87,13 @@ describe('mindMapAdaptiveGaps', () => {
     expect(normalizeMindMapPackGaps(3, [14, 20])).toEqual([14, 20])
     const starts = computeSymmetricRootStartYs([40, 40, 40], 100, 28)
     expect(starts).toHaveLength(3)
-    expect(starts[1]! - starts[0]!).toBe(40 + 28)
+    expect(must(starts[1]) - must(starts[0])).toBe(40 + 28)
   })
 
   it('sumMindMapPairGaps sums consecutive pairs', () => {
     expect(
-      sumMindMapPairGaps(
-        ['underline', 'underline', 'oval', 'underline'],
-        mindMapAdaptiveSiblingGap
-      )
-    ).toBe(
-      MINDMAP_UNDERLINE_SIBLING_GAP + MINDMAP_MIXED_SIBLING_GAP + MINDMAP_MIXED_SIBLING_GAP
-    )
+      sumMindMapPairGaps(['underline', 'underline', 'oval', 'underline'], mindMapAdaptiveSiblingGap)
+    ).toBe(MINDMAP_UNDERLINE_SIBLING_GAP + MINDMAP_MIXED_SIBLING_GAP + MINDMAP_MIXED_SIBLING_GAP)
   })
 })
 
@@ -152,12 +151,7 @@ describe('adaptive layout across 导图样式', () => {
       children: [
         {
           text: 'L1',
-          children: [
-            { text: 'u1' },
-            { text: 'u2' },
-            { text: 'oval-node' },
-            { text: 'u3' },
-          ],
+          children: [{ text: 'u1' }, { text: 'u2' }, { text: 'oval-node' }, { text: 'u3' }],
         },
       ],
     })
@@ -173,9 +167,15 @@ describe('adaptive layout across 导图样式', () => {
         : { ...n, style: { ...n.style, nodeShape: 'underline' as const } }
     )
     const h = (n: (typeof withOval)[0]) => (n.data?.estimatedHeight as number) ?? 22
-    const gap01 = (withOval[1]!.position!.y) - (withOval[0]!.position!.y + h(withOval[0]!))
-    const gap12 = (withOval[2]!.position!.y) - (withOval[1]!.position!.y + h(withOval[1]!))
-    const gap23 = (withOval[3]!.position!.y) - (withOval[2]!.position!.y + h(withOval[2]!))
+    const gap01 =
+      must(must(withOval[1]).position).y -
+      (must(must(withOval[0]).position).y + h(must(withOval[0])))
+    const gap12 =
+      must(must(withOval[2]).position).y -
+      (must(must(withOval[1]).position).y + h(must(withOval[1])))
+    const gap23 =
+      must(must(withOval[3]).position).y -
+      (must(must(withOval[2]).position).y + h(must(withOval[2])))
 
     // Initial load is all-underline: gaps between L2 should be underline sibling gap.
     expect(gap01).toBeCloseTo(MINDMAP_UNDERLINE_SIBLING_GAP, 0)

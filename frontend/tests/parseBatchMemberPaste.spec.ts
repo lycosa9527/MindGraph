@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  MAX_BATCH_MEMBERS,
   dedupeMemberRows,
   isValidMemberContact,
   isValidMemberEmail,
   isValidMemberPhone,
-  MAX_BATCH_MEMBERS,
   normalizeMemberEmail,
   normalizeMemberPhone,
   parseBatchMemberPaste,
@@ -36,14 +36,20 @@ describe('parseExcelMemberPaste', () => {
   it('skips header row and accepts name-first columns', () => {
     const result = parseExcelMemberPaste('姓名\t手机号\n张三\t13800000001')
     expect(result.skippedHeader).toBe(true)
-    expect(result.rows).toEqual([{ phone: '13800000001', contactType: 'phone', name: '张三', line: 2 }])
+    expect(result.rows).toEqual([
+      { phone: '13800000001', contactType: 'phone', name: '张三', line: 2 },
+    ])
   })
 
   it('accepts phone-first or name-first without a header row', () => {
     const phoneFirst = parseExcelMemberPaste('13800000001\t张三')
     const nameFirst = parseExcelMemberPaste('李四\t13800000002')
-    expect(phoneFirst.rows).toEqual([{ phone: '13800000001', contactType: 'phone', name: '张三', line: 1 }])
-    expect(nameFirst.rows).toEqual([{ phone: '13800000002', contactType: 'phone', name: '李四', line: 1 }])
+    expect(phoneFirst.rows).toEqual([
+      { phone: '13800000001', contactType: 'phone', name: '张三', line: 1 },
+    ])
+    expect(nameFirst.rows).toEqual([
+      { phone: '13800000002', contactType: 'phone', name: '李四', line: 1 },
+    ])
   })
 
   it('parses three-column sheets by finding the phone cell', () => {
@@ -64,12 +70,16 @@ describe('parseExcelMemberPaste', () => {
 
   it('accepts Excel scientific notation phone cells', () => {
     const result = parseExcelMemberPaste('1.3800138000E+10\t张三')
-    expect(result.rows).toEqual([{ phone: '13800138000', contactType: 'phone', name: '张三', line: 1 }])
+    expect(result.rows).toEqual([
+      { phone: '13800138000', contactType: 'phone', name: '张三', line: 1 },
+    ])
   })
 
   it('accepts Excel trailing .0 phone cells', () => {
     const result = parseExcelMemberPaste('13800138000.0\t张三')
-    expect(result.rows).toEqual([{ phone: '13800138000', contactType: 'phone', name: '张三', line: 1 }])
+    expect(result.rows).toEqual([
+      { phone: '13800138000', contactType: 'phone', name: '张三', line: 1 },
+    ])
   })
 
   it('accepts semicolon-separated rows', () => {
@@ -79,12 +89,16 @@ describe('parseExcelMemberPaste', () => {
 
   it('accepts two-part comma-separated rows only', () => {
     const result = parseExcelMemberPaste('13800000001,Alice')
-    expect(result.rows).toEqual([{ phone: '13800000001', contactType: 'phone', name: 'Alice', line: 1 }])
+    expect(result.rows).toEqual([
+      { phone: '13800000001', contactType: 'phone', name: 'Alice', line: 1 },
+    ])
   })
 
   it('falls back to multi-space split when comma line has extra parts', () => {
     const result = parseExcelMemberPaste('13800000001    张三 San')
-    expect(result.rows).toEqual([{ phone: '13800000001', contactType: 'phone', name: '张三 San', line: 1 }])
+    expect(result.rows).toEqual([
+      { phone: '13800000001', contactType: 'phone', name: '张三 San', line: 1 },
+    ])
   })
 
   it('reports invalid paste when rows cannot be parsed', () => {

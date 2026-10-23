@@ -14,6 +14,7 @@ import {
   topicOptionDraft,
 } from '@/composables/training/trainingTopicOptions'
 import type { TrainingCourseStep, TrainingTopicOption } from '@/types/training'
+import { assignTrainingStepField } from '@/utils/trainingStepPatch'
 
 const props = defineProps<{
   step: TrainingCourseStep
@@ -67,7 +68,11 @@ function removeRow(index: number): void {
 }
 
 function apply(): void {
-  props.step.topic_options = normalizeTopicOptions(drafts.value, dual.value)
+  assignTrainingStepField(
+    props.step,
+    'topic_options',
+    normalizeTopicOptions(drafts.value, dual.value)
+  )
   open.value = false
 }
 

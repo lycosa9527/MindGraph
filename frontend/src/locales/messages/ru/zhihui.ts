@@ -24,17 +24,22 @@ export default {
   'zhihui.promptPlaceholder.image': 'Введите свое вдохновение…',
   'zhihui.promptPlaceholder.video': 'Опишите сцену, операторскую работу и ритм...',
   'zhihui.promptPlaceholder.diagram': 'Выберите интеллект-карту и нажмите «Создать».',
-  'zhihui.composerHint.image': 'Используйте текст для описания изображения и создавайте обучающие иллюстрации и наглядные материалы одним щелчком мыши.',
-  'zhihui.composerHint.video': 'Доступ к возможностям Wensheng Video и Tusheng Video скоро будет открыт.',
-  'zhihui.composerHint.diagram': 'Выберите интеллект-карту, чтобы создать диаграмму учебного материала с точки зрения учащегося.',
+  'zhihui.composerHint.image':
+    'Используйте текст для описания изображения и создавайте обучающие иллюстрации и наглядные материалы одним щелчком мыши.',
+  'zhihui.composerHint.video':
+    'Доступ к возможностям Wensheng Video и Tusheng Video скоро будет открыт.',
+  'zhihui.composerHint.diagram':
+    'Выберите интеллект-карту, чтобы создать диаграмму учебного материала с точки зрения учащегося.',
   'zhihui.diagram.selectMindmap': 'Выберите интеллект-карту',
   'zhihui.diagram.selectMindmapHint': 'Пожалуйста, выберите интеллект-карту выше',
   'zhihui.diagram.selectMindmapFirst': 'Пожалуйста, сначала выберите интеллект-карту',
-  'zhihui.diagram.emptyLibrary': 'Интеллект-карты пока нет, пожалуйста, сначала сохраните ее в библиотеке диаграмм.',
+  'zhihui.diagram.emptyLibrary':
+    'Интеллект-карты пока нет, пожалуйста, сначала сохраните ее в библиотеке диаграмм.',
   'zhihui.diagram.loadFailed': 'Не удалось загрузить интеллект-карту.',
   'zhihui.diagram.emptyDeck': 'После выбора интеллект-карты нажмите «Создать».',
   'zhihui.diagram.waitingSlides': 'Курсовые материалы создаются, подождите...',
-  'zhihui.diagram.jobStarted': 'Началась разработка учебных материалов. Вы можете проверить прогресс в истории.',
+  'zhihui.diagram.jobStarted':
+    'Началась разработка учебных материалов. Вы можете проверить прогресс в истории.',
   'zhihui.diagram.phaseQueued': 'Задачи поставлены в очередь...',
   'zhihui.diagram.phasePlanning': 'Составление учебной программы...',
   'zhihui.diagram.phasePlanningBranches': 'Планирование различных тем...',
@@ -47,9 +52,11 @@ export default {
   'zhihui.diagram.phaseComplete': 'Учебное пособие готово',
   'zhihui.diagram.phaseCancelled': 'Отменено',
   'zhihui.diagram.toastPlanning': 'Составление учебной программы...',
-  'zhihui.diagram.toastGenerating': 'Курсовые материалы разрабатываются, это может занять несколько минут.',
+  'zhihui.diagram.toastGenerating':
+    'Курсовые материалы разрабатываются, это может занять несколько минут.',
   'zhihui.diagram.toastComplete': 'Учебное пособие готово',
-  'zhihui.diagram.toastPartial': 'Учебное обеспечение частично завершено, и его можно продолжать создавать.',
+  'zhihui.diagram.toastPartial':
+    'Учебное обеспечение частично завершено, и его можно продолжать создавать.',
   'zhihui.diagram.toastCancelled': 'Создание учебных материалов отменено',
   'zhihui.diagram.batchProgress': 'Пакет {current}/{total}',
   'zhihui.diagram.slideProgress': 'Сгенерировано {current}/{total}',
@@ -58,8 +65,10 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'Слайд-шоу не удалось загрузить',
   'zhihui.diagram.retryImage': 'Попробуйте еще раз',
   'zhihui.diagram.teacherScript': 'Рассказ учителя',
-  'zhihui.diagram.teacherScriptHint': 'Объяснения в классе соответствуют тематике иллюстраций и карт на этой странице.',
-  'zhihui.diagram.ttsPlay': 'Нажмите на котенка, чтобы прочитать вслух повествование на этой странице.',
+  'zhihui.diagram.teacherScriptHint':
+    'Объяснения в классе соответствуют тематике иллюстраций и карт на этой странице.',
+  'zhihui.diagram.ttsPlay':
+    'Нажмите на котенка, чтобы прочитать вслух повествование на этой странице.',
   'zhihui.diagram.ttsStop': 'хватит читать',
   'zhihui.diagram.ttsMute': 'немое повествование',
   'zhihui.diagram.ttsUnmute': 'Включить чтение повествования',
@@ -68,13 +77,15 @@ export default {
   'zhihui.attachReference': 'Добавить эталонное изображение',
   'zhihui.attachReferenceHint': 'До 3 изображений по ссылке Qwen',
   'zhihui.removeReference': 'Удалить эталонное изображение',
-  'zhihui.referenceTooLarge': 'Эталонное изображение слишком велико (размер одного изображения не должен превышать 4 МБ).',
+  'zhihui.referenceTooLarge':
+    'Эталонное изображение слишком велико (размер одного изображения не должен превышать 4 МБ).',
   'zhihui.referenceInvalid': 'Пожалуйста, выберите изображение PNG / JPG / WEBP.',
   'zhihui.referenceLimit': 'Добавьте до 3 эталонных изображений',
   'zhihui.sizeButton': 'Размер изображения',
   'zhihui.sizePanelTitle': 'Размер изображения',
   'zhihui.sizeOptional': 'Необязательный',
-  'zhihui.sizeHint': 'Формат: ширина*высота. Если не указано, модель автоматически порекомендует разрешение на основе слова-подсказки.',
+  'zhihui.sizeHint':
+    'Формат: ширина*высота. Если не указано, модель автоматически порекомендует разрешение на основе слова-подсказки.',
   'zhihui.sizeLimits': 'Площадь пикселей 512×512–2048×2048; соотношение сторон 1:8–8:1',
   'zhihui.size.auto': 'разумный',
   'zhihui.size.autoHint': 'автоматический',
@@ -102,7 +113,8 @@ export default {
   'zhihui.empty': 'Изображения пока нет, попробуйте создать его выше.',
   'zhihui.loadFailed': 'Не удалось загрузить историю',
   'zhihui.delete': 'удалить',
-  'zhihui.deleteConfirm': 'Вы уверены, что хотите удалить это изображение? Это действие невозможно отменить.',
+  'zhihui.deleteConfirm':
+    'Вы уверены, что хотите удалить это изображение? Это действие невозможно отменить.',
   'zhihui.deleteTitle': 'Удалить изображение',
   'zhihui.deleted': 'Удалено',
   'zhihui.deleteFailed': 'Удаление не удалось',

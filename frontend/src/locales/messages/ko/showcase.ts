@@ -31,7 +31,8 @@ export default {
   'showcase.myFavoritesEmpty': '즐겨찾는 사례가 없습니다',
   'showcase.myFavoritesEmptyHint': '북마크한 사례가 여기에 표시됩니다',
   'showcase.myCasesModalTitle': '내가 게시한 사례',
-  'showcase.myCasesManageHint': '목록에서 철회, 내림 또는 편집할 수 있습니다. 사례를 클릭하면 상세를 볼 수 있습니다',
+  'showcase.myCasesManageHint':
+    '목록에서 철회, 내림 또는 편집할 수 있습니다. 사례를 클릭하면 상세를 볼 수 있습니다',
   'showcase.myCasesAction.edit': '편집',
   'showcase.myCasesEmpty': '게시한 사례가 없습니다',
   'showcase.myCasesEmptyHint': '게시한 사례와 검토 상태가 여기에 표시됩니다',
@@ -53,19 +54,31 @@ export default {
   'showcase.publishModal.uploadingFiles': '파일 업로드 중 ({current}/{total})…',
   'showcase.publishModal.uploadingFile': '{name} 업로드 중 ({current}/{total})…',
   'showcase.publishModal.finishing': '마무리 중…',
-  'showcase.publishModal.uploadFailedRolledBack': '업로드에 실패했습니다 — 초안이 삭제되었습니다. 다시 시도해 주세요.',
-  'showcase.publishModal.uploadCorsFailed': '객체 스토리지에 업로드할 수 없습니다(버킷 CORS 또는 사이트 CSP가 COS 호스트를 차단하는 경우가 많음). 초안이 삭제되었습니다 — 관리자에게 CORS/CSP 수정을 요청한 뒤 다시 시도하세요.',
-  'showcase.publishModal.uploadStorageRejected': '객체 스토리지가 업로드를 거부했습니다. 초안이 삭제되었습니다 — 나중에 다시 시도하거나 계속 실패하면 관리자에게 문의하세요.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    '업로드에 실패했습니다 — 초안이 삭제되었습니다. 다시 시도해 주세요.',
+  'showcase.publishModal.uploadCorsFailed':
+    '객체 스토리지에 업로드할 수 없습니다(버킷 CORS 또는 사이트 CSP가 COS 호스트를 차단하는 경우가 많음). 초안이 삭제되었습니다 — 관리자에게 CORS/CSP 수정을 요청한 뒤 다시 시도하세요.',
+  'showcase.publishModal.uploadStorageRejected':
+    '객체 스토리지가 업로드를 거부했습니다. 초안이 삭제되었습니다 — 나중에 다시 시도하거나 계속 실패하면 관리자에게 문의하세요.',
   'showcase.publishModal.uploadFailed': '업로드에 실패했습니다. 다시 시도해 주세요.',
-  'showcase.publishModal.uploadCoverTooLarge': '커버 이미지가 2MB 제한을 초과합니다. 미리보기를 압축하거나 더 작은 이미지를 사용한 뒤 다시 시도하세요.',
-  'showcase.publishModal.uploadAttachmentTooLarge': '파일이 크기 제한을 초과합니다(문서/이미지 20MB, 동영상 100MB). 압축 후 다시 시도하세요.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': '파일이 크기 제한을 초과합니다(문서/이미지 20MB, 동영상 100MB). 초안이 삭제되었습니다 — 압축 후 다시 시도하세요.',
-  'showcase.publishModal.uploadFileTooLarge': '이 업로드 유형에 파일이 너무 큽니다. 크기 제한을 확인하고 다시 시도하세요.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': '이 업로드 유형에 파일이 너무 큽니다. 초안이 삭제되었습니다 — 크기 제한을 확인하고 다시 시도하세요.',
-  'showcase.publishModal.coverUploadSkipped': '사례는 제출되었지만 커버 이미지 업로드에 실패했습니다. 나중에 사례를 편집해 커버를 갱신할 수 있습니다.',
-  'showcase.publishModal.coverGenerating': '커버 미리보기가 백그라운드에서 생성 중입니다 — 곧 카드에 표시됩니다.',
-  'showcase.publishModal.coverFailed': '사례는 제출되었지만 커버를 생성할 수 없습니다. 나중에 사례를 편집해 커버를 갱신할 수 있습니다.',
-  'showcase.publishModal.coverFailedTimeout': '사례는 제출되었지만 커버 생성 시간이 초과되었습니다. 나중에 사례를 편집해 커버를 갱신할 수 있습니다.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    '커버 이미지가 2MB 제한을 초과합니다. 미리보기를 압축하거나 더 작은 이미지를 사용한 뒤 다시 시도하세요.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    '파일이 크기 제한을 초과합니다(문서/이미지 20MB, 동영상 100MB). 압축 후 다시 시도하세요.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    '파일이 크기 제한을 초과합니다(문서/이미지 20MB, 동영상 100MB). 초안이 삭제되었습니다 — 압축 후 다시 시도하세요.',
+  'showcase.publishModal.uploadFileTooLarge':
+    '이 업로드 유형에 파일이 너무 큽니다. 크기 제한을 확인하고 다시 시도하세요.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    '이 업로드 유형에 파일이 너무 큽니다. 초안이 삭제되었습니다 — 크기 제한을 확인하고 다시 시도하세요.',
+  'showcase.publishModal.coverUploadSkipped':
+    '사례는 제출되었지만 커버 이미지 업로드에 실패했습니다. 나중에 사례를 편집해 커버를 갱신할 수 있습니다.',
+  'showcase.publishModal.coverGenerating':
+    '커버 미리보기가 백그라운드에서 생성 중입니다 — 곧 카드에 표시됩니다.',
+  'showcase.publishModal.coverFailed':
+    '사례는 제출되었지만 커버를 생성할 수 없습니다. 나중에 사례를 편집해 커버를 갱신할 수 있습니다.',
+  'showcase.publishModal.coverFailedTimeout':
+    '사례는 제출되었지만 커버 생성 시간이 초과되었습니다. 나중에 사례를 편집해 커버를 갱신할 수 있습니다.',
   'showcase.publishModal.success': '사례가 제출되었습니다 — 관리자 검토를 기다리는 중입니다',
   'showcase.publishModal.fromCanvas': '캔버스에서 게시',
   'showcase.publishModal.step1Title': '기본 정보',
@@ -79,26 +92,33 @@ export default {
   'showcase.publishModal.uploadLabel': '파일 업로드',
   'showcase.publishModal.uploadImage': '이미지 업로드',
   'showcase.publishModal.uploadFile': '파일 업로드',
-  'showcase.publishModal.directUploadDisabled': '직접 파일 업로드는 일시적으로 사용할 수 없습니다. 기록에서 저장된 다이어그램을 선택할 수 있습니다.',
+  'showcase.publishModal.directUploadDisabled':
+    '직접 파일 업로드는 일시적으로 사용할 수 없습니다. 기록에서 저장된 다이어그램을 선택할 수 있습니다.',
   'showcase.publishModal.uploadViaStorage': '파일은 보안 스토리지에 직접 업로드됩니다(단기 URL).',
   'showcase.publishModal.pickHistory': '기록에서 선택',
   'showcase.publishModal.removeFile': '제거',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: 미리보기 제한)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: 미리보기 제한) — 문서당 최대 {maxMb} MB',
-  'showcase.publishModal.teachingDocTooLarge': '문서가 {maxMb} MB 제한을 초과합니다. 압축 후 다시 시도하세요.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: 미리보기 제한) — 문서당 최대 {maxMb} MB',
+  'showcase.publishModal.teachingDocTooLarge':
+    '문서가 {maxMb} MB 제한을 초과합니다. 압축 후 다시 시도하세요.',
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif 지원',
   'showcase.publishModal.uploadImages': '이미지 업로드(여러 개)',
   'showcase.publishModal.galleryHint': '여러 이미지와 저장된 다이어그램 추가, 최대 {max}개',
-  'showcase.publishModal.galleryHintCase': '여러 사진과 역사적 아이콘을 최대 {max} 항목까지 추가할 수 있습니다.',
-  'showcase.publishModal.galleryHintTemplate': '.mg 파일을 업로드하고 최대 {max} 항목까지 여러 기록 아이콘을 선택할 수 있습니다.',
+  'showcase.publishModal.galleryHintCase':
+    '여러 사진과 역사적 아이콘을 최대 {max} 항목까지 추가할 수 있습니다.',
+  'showcase.publishModal.galleryHintTemplate':
+    '.mg 파일을 업로드하고 최대 {max} 항목까지 여러 기록 아이콘을 선택할 수 있습니다.',
   'showcase.publishModal.galleryCount': '{count}/{max}개 추가됨',
   'showcase.publishModal.galleryImageItem': '이미지: {name}',
   'showcase.publishModal.galleryDiagramItem': '다이어그램: {name}',
   'showcase.publishModal.galleryLimit': '최대 {max}개까지 추가할 수 있습니다',
   'showcase.publishModal.galleryDuplicateDiagram': '이 저장된 다이어그램은 이미 목록에 있습니다',
   'showcase.publishModal.galleryPickerDone': '완료',
-  'showcase.publishModal.galleryUploadFailed': '갤러리 이미지 업로드에 실패했습니다 — 다시 게시해 주세요',
-  'showcase.publishModal.galleryReuploadHint': '일부 갤러리 이미지가 저장되지 않았습니다 — 제출 전에 다시 선택하세요',
+  'showcase.publishModal.galleryUploadFailed':
+    '갤러리 이미지 업로드에 실패했습니다 — 다시 게시해 주세요',
+  'showcase.publishModal.galleryReuploadHint':
+    '일부 갤러리 이미지가 저장되지 않았습니다 — 제출 전에 다시 선택하세요',
   'showcase.detail.galleryImage': '이미지',
   'showcase.detail.galleryDiagram': '다이어그램',
   'showcase.detail.galleryPrev': '이전',
@@ -108,10 +128,12 @@ export default {
   'showcase.publishModal.templateFileHint': '.mg만(MindGraph 내보내기)',
   'showcase.publishModal.templatePreviewLabel': '다이어그램 미리보기',
   'showcase.publishModal.templatePreviewHint': '손 도구 — 보기 전용, 편집 불가',
-  'showcase.publishModal.templatePreviewEmpty': '.mg 파일을 업로드하거나 저장된 다이어그램을 선택해 미리보기',
+  'showcase.publishModal.templatePreviewEmpty':
+    '.mg 파일을 업로드하거나 저장된 다이어그램을 선택해 미리보기',
   'showcase.publishModal.diagramCasePreviewLabel': '다이어그램 미리보기',
   'showcase.publishModal.diagramCasePreviewHint': '손 도구 — 이동 및 확대/축소',
-  'showcase.publishModal.diagramTypeAutoMatched': '선택한 저장 다이어그램에서 다이어그램 유형이 자동 매칭되었습니다',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    '선택한 저장 다이어그램에서 다이어그램 유형이 자동 매칭되었습니다',
   'showcase.publishModal.introLabel': '다이어그램 소개',
   'showcase.publishModal.teachingIntroLabel': '수업 설계 소개',
   'showcase.publishModal.highlightsLabel': '설계 하이라이트',
@@ -121,15 +143,20 @@ export default {
   'showcase.publishModal.aiGenerating': '생성 중…',
   'showcase.publishModal.aiGenerateStop': '중지',
   'showcase.publishModal.aiGenerateCancelled': 'AI 생성이 취소되었습니다 — 다시 클릭하여 재생성',
-  'showcase.publishModal.aiGenerateSuccess': '문서에서 소개와 하이라이트를 채웠습니다 — 검토 후 편집하세요. 수업 성찰은 직접 작성하세요',
-  'showcase.publishModal.aiGenerateDiagramSuccess': '일러스트레이션 소개와 수업 신청은 일러스트레이션을 기반으로 제작되었습니다. 확인하시고 수정해주세요.',
+  'showcase.publishModal.aiGenerateSuccess':
+    '문서에서 소개와 하이라이트를 채웠습니다 — 검토 후 편집하세요. 수업 성찰은 직접 작성하세요',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    '일러스트레이션 소개와 수업 신청은 일러스트레이션을 기반으로 제작되었습니다. 확인하시고 수정해주세요.',
   'showcase.publishModal.aiGenerateFailed': 'AI 생성에 실패했습니다 — 다시 시도해 주세요',
   'showcase.publishModal.aiGenerateNeedFile': '먼저 이전 단계에서 수업 설계 문서를 업로드하세요',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'AI 생성은 수업 설계 사례에서만 사용할 수 있습니다',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'AI 생성은 수업 설계 사례에서만 사용할 수 있습니다',
   'showcase.publishModal.reflectionLabel': '수업 성찰',
   'showcase.publishModal.introPlaceholder': '사례와 사용 시점을 간략히 설명하세요',
-  'showcase.publishModal.diagramCorePlaceholder': '다이어그램 내용과 시각화 하이라이트를 설명하세요',
+  'showcase.publishModal.diagramCorePlaceholder':
+    '다이어그램 내용과 시각화 하이라이트를 설명하세요',
   'showcase.publishModal.classroomAppPlaceholder': '수업에서 이 다이어그램을 어떻게 사용하는지',
   'showcase.publishModal.tagInputPlaceholder': '태그 입력(최대 10자), Enter',
   'showcase.publishModal.tagRecommended': '추천 태그',
@@ -137,7 +164,8 @@ export default {
   'showcase.publishModal.tagMaxCount': '태그는 최대 {max}개까지 추가할 수 있습니다',
   'showcase.publishModal.networkError': '제출 실패 — 서버 실행 및 파일 크기 제한을 확인하세요',
   'showcase.publishModal.fileTooLarge': '"{name}"이(가) {maxMb}MB 크기 제한을 초과합니다',
-  'showcase.publishModal.uploadTotalTooLarge': '총 업로드 크기가 제한을 초과합니다 — 첨부 또는 동영상 크기를 줄이세요',
+  'showcase.publishModal.uploadTotalTooLarge':
+    '총 업로드 크기가 제한을 초과합니다 — 첨부 또는 동영상 크기를 줄이세요',
   'showcase.publishModal.tagAdd': '추가',
   'showcase.publishModal.publishBtn': '게시',
   'showcase.publishModal.reflectionPlaceholder': '이 수업에 대한 성찰을 작성하세요(선택)',
@@ -151,10 +179,14 @@ export default {
   'showcase.publishModal.validationFile': '파일을 업로드하거나 저장된 다이어그램을 선택하세요',
   'showcase.publishModal.validationDiagramType': '다이어그램 유형을 선택하세요',
   'showcase.publishModal.invalidFileType': '지원하지 않는 파일 형식입니다',
-  'showcase.publishModal.invalidMgFile': '이 .mg 파일을 읽을 수 없습니다 — MindGraph에서 먼저 내보내세요',
-  'showcase.publishModal.cannotPreview': '커버 미리보기를 생성할 수 없습니다 — 사례는 제출됩니다. PNG/JPG를 시도하거나 저장된 다이어그램을 선택하세요.',
-  'showcase.publishModal.cannotPreviewHistory': '이 저장 다이어그램에서 커버를 생성할 수 없습니다 — 사례는 제출됩니다. 다시 선택하거나 캔버스에서 다시 저장하세요.',
-  'showcase.publishModal.cannotPreviewTemplate': '커버를 생성할 수 없습니다 — 사례는 제출됩니다. .mg 파일을 확인하거나 다른 저장 다이어그램을 선택하세요.',
+  'showcase.publishModal.invalidMgFile':
+    '이 .mg 파일을 읽을 수 없습니다 — MindGraph에서 먼저 내보내세요',
+  'showcase.publishModal.cannotPreview':
+    '커버 미리보기를 생성할 수 없습니다 — 사례는 제출됩니다. PNG/JPG를 시도하거나 저장된 다이어그램을 선택하세요.',
+  'showcase.publishModal.cannotPreviewHistory':
+    '이 저장 다이어그램에서 커버를 생성할 수 없습니다 — 사례는 제출됩니다. 다시 선택하거나 캔버스에서 다시 저장하세요.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    '커버를 생성할 수 없습니다 — 사례는 제출됩니다. .mg 파일을 확인하거나 다른 저장 다이어그램을 선택하세요.',
   'showcase.publishModal.historyTitle': '저장된 다이어그램 선택',
   'showcase.publishModal.historySearch': '다이어그램 이름 검색…',
   'showcase.publishModal.historyEmpty': '저장된 다이어그램 없음',
@@ -184,9 +216,11 @@ export default {
   'showcase.detail.delist': '내림',
   'showcase.detail.resubmit': '편집 후 재제출',
   'showcase.detail.withdrawTitle': '사례 철회',
-  'showcase.detail.withdrawConfirm': '"{title}"을(를) 철회하시겠습니까? 검토 대기열에서 제거되며 복구할 수 없습니다.',
+  'showcase.detail.withdrawConfirm':
+    '"{title}"을(를) 철회하시겠습니까? 검토 대기열에서 제거되며 복구할 수 없습니다.',
   'showcase.detail.delistTitle': '사례 내림',
-  'showcase.detail.delistConfirm': '"{title}"을(를) 갤러리에서 내리시겠습니까? 다른 사용자는 더 이상 볼 수 없습니다.',
+  'showcase.detail.delistConfirm':
+    '"{title}"을(를) 갤러리에서 내리시겠습니까? 다른 사용자는 더 이상 볼 수 없습니다.',
   'showcase.detail.confirm': '확인',
   'showcase.detail.cancel': '취소',
   'showcase.withdrawn': '철회됨',
@@ -207,7 +241,8 @@ export default {
   'showcase.detail.officePreviewPending': '미리보기용 슬라이드 변환 중…',
   'showcase.detail.docPreviewLoading': '문서 로딩 중…',
   'showcase.detail.docPreviewFailed': '미리보기를 불러올 수 없습니다. 새 탭에서 열어 보세요.',
-  'showcase.detail.legacyDocHint': '레거시 .doc 파일은 인라인 미리보기를 지원하지 않습니다. 파일을 열거나 다운로드하거나 .docx를 업로드하세요.',
+  'showcase.detail.legacyDocHint':
+    '레거시 .doc 파일은 인라인 미리보기를 지원하지 않습니다. 파일을 열거나 다운로드하거나 .docx를 업로드하세요.',
   'showcase.detail.noDocument': '문서 미리보기 없음',
   'showcase.detail.noDiagramPreview': '다이어그램 미리보기 없음',
   'showcase.detail.diagramPreviewLoading': '다이어그램 로딩 중…',

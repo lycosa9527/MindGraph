@@ -61,7 +61,10 @@ function rightX(box: { x: number; w: number }): number {
   return box.x + box.w
 }
 
-function boxCenter(box: { x: number; y: number; w: number; h: number }): { cx: number; cy: number } {
+function boxCenter(box: { x: number; y: number; w: number; h: number }): {
+  cx: number
+  cy: number
+} {
   return { cx: box.x + box.w / 2, cy: box.y + box.h / 2 }
 }
 
@@ -209,9 +212,7 @@ const lineJoin = computed(() => (props.preset.id === 'formal' ? 'miter' : 'round
         :width="box.w"
         :height="box.h"
         :rx="
-          preset.branchDepth1Shape === 'rounded'
-            ? roundedRectRx(box.h, preset.id === 'soft')
-            : 0
+          preset.branchDepth1Shape === 'rounded' ? roundedRectRx(box.h, preset.id === 'soft') : 0
         "
         :fill="nodeFill(preset.branchDepth1Shape)"
         :stroke="nodeStroke(preset.branchDepth1Shape)"

@@ -29,11 +29,25 @@ from services.features.mindmate_collab.dify_stream_control import (
 )
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
 from services.features.mindmate_collab.redis_keys import normalize_collab_code
+from services.features.mindmate_collab.reply_artifacts import schedule_teaching_reply_artifact
 from services.features.mindmate_collab.ws_broadcast import broadcast_to_all
 from services.infrastructure.http.sse_upstream_keepalive import iter_upstream_with_keepalive
+from services.mindmate.teaching_design_flag import (
+    ensure_teaching_instruction_marker,
+    is_teaching_instruction_text,
+    mindmate_meta_from_workflow_chunk,
+)
 from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
+
+
+def _answer_with_teaching_flag(parts: list[str], teaching_flagged: bool) -> str:
+    """Stamp the durable marker when workflow outputs flag a lesson-design reply."""
+    text = "".join(parts)
+    if not teaching_flagged:
+        return text
+    return ensure_teaching_instruction_marker(text)
 
 
 def mindmate_collab_dify_user_id(org_id: Optional[int], session_id: str) -> str:
@@ -100,6 +114,7 @@ async def stream_assistant_reply(
     mgr = get_mindmate_collab_manager()
     dify_user = mindmate_collab_dify_user_id(org_id, session_id)
     full_answer: list[str] = []
+    teaching_flagged = False
     aborted = False
 
     try:
@@ -161,6 +176,9 @@ async def stream_assistant_reply(
                     conversation_id,
                     server=saved_server,
                 )
+            if isinstance(chunk, dict) and not teaching_flagged:
+                if mindmate_meta_from_workflow_chunk(chunk):
+                    teaching_flagged = True
             if answer:
                 await refresh_dify_stream_lock(code)
                 full_answer.append(str(answer))
@@ -173,11 +191,11 @@ async def stream_assistant_reply(
                     },
                 )
         if aborted:
-            partial = "".join(full_answer)
+            partial = _answer_with_teaching_flag(full_answer, teaching_flagged)
             message_id, prev_id = await _store_partial_assistant(session_id, partial, code)
             await _broadcast_aborted_end(code, partial, message_id, prev_id)
             return
-        final_text = "".join(full_answer)
+        final_text = _answer_with_teaching_flag(full_answer, teaching_flagged)
         assistant_id: Optional[int] = None
         assistant_prev_id: Optional[int] = None
         created_stamp: Optional[str] = None
@@ -203,8 +221,15 @@ async def stream_assistant_reply(
             if created_stamp:
                 end_frame["created_at"] = created_stamp
         await broadcast_to_all(code, end_frame)
+        if assistant_id is not None and is_teaching_instruction_text(final_text):
+            schedule_teaching_reply_artifact(
+                code=code,
+                session_id=session_id,
+                message_id=assistant_id,
+                uploader_user_id=sender_user_id,
+            )
     except asyncio.CancelledError:
-        partial = "".join(full_answer)
+        partial = _answer_with_teaching_flag(full_answer, teaching_flagged)
         message_id, prev_id = await _store_partial_assistant(session_id, partial, code)
         await _broadcast_aborted_end(code, partial, message_id, prev_id)
         raise

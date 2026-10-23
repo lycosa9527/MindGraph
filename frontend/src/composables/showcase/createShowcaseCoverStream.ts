@@ -56,7 +56,7 @@ function parseCoverPayload(raw: unknown): ShowcaseCoverReadyEvent | ShowcaseCove
  */
 export function createShowcaseCoverStream(
   postId: string,
-  options: ShowcaseCoverStreamOptions,
+  options: ShowcaseCoverStreamOptions
 ): () => void {
   if (typeof EventSource === 'undefined' || !postId) {
     return () => undefined

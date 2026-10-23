@@ -5,7 +5,8 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': '주제 또는 중심 노드는 지울 수 없습니다',
-  'notification.cannotResetSelectDiagramType': '초기화할 수 없습니다. 먼저 다이어그램 유형을 선택하세요',
+  'notification.cannotResetSelectDiagramType':
+    '초기화할 수 없습니다. 먼저 다이어그램 유형을 선택하세요',
   'notification.canvasClearNodes': '{count}개 노드를 지웠습니다',
   'notification.canvasClearNodesLearning': '{count}개 노드를 비우고 정답에 추가했습니다',
   'notification.canvasSomeoneEditingNode': '다른 사용자가 이 노드를 편집 중입니다',
@@ -21,7 +22,8 @@ export default {
   'notification.feedbackThanks': '피드백 감사합니다',
   'notification.feedbackThanksDislike': '피드백 감사합니다 — 개선하겠습니다',
   'notification.focusQuestionTooShort': '먼저 더 긴 초점 질문을 입력하세요',
-  'notification.geoLiteMissingIntro': 'MaxMind에서 GeoLite2 Country를 다운로드하고 GeoLite2-Country.mmdb를 추출한 뒤 서버 data 폴더에 복사하세요:',
+  'notification.geoLiteMissingIntro':
+    'MaxMind에서 GeoLite2 Country를 다운로드하고 GeoLite2-Country.mmdb를 추출한 뒤 서버 data 폴더에 복사하세요:',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite 다운로드 페이지 열기',
   'notification.geoLiteMissingPathLabel': '예상 경로:',
   'notification.geoLiteMissingTitle': 'GeoLite2 Country 데이터베이스 없음',
@@ -33,7 +35,8 @@ export default {
   'notification.importInvalidData': '가져오기 실패: 잘못된 다이어그램 데이터',
   'notification.importLoadFailed': '가져오기 실패: 다이어그램을 불러올 수 없습니다',
   'notification.importSavePartial': '가져왔지만 라이브러리 저장에 실패했습니다',
-  'notification.importSlotsFull': '라이브러리가 가득 찼습니다. 다이어그램은 가져왔지만 라이브러리에 저장되지 않았습니다',
+  'notification.importSlotsFull':
+    '라이브러리가 가득 찼습니다. 다이어그램은 가져왔지만 라이브러리에 저장되지 않았습니다',
   'notification.importSuccess': '다이어그램을 가져와 라이브러리에 저장했습니다',
   'notification.importUnsupportedType': '가져오기 실패: 지원하지 않는 다이어그램 유형',
   'notification.loadMoreFailed': '더 불러올 수 없습니다',

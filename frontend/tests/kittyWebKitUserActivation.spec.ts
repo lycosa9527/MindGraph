@@ -28,9 +28,7 @@ describe('kittyWebKitUserActivation', () => {
     expect(isActivationTriggeringEvent(mouseUp)).toBe(false)
     expect(isActivationTriggeringEvent(touchUp)).toBe(true)
     expect(isActivationTriggeringEvent(new KeyboardEvent('keydown', { key: 'a' }))).toBe(true)
-    expect(isActivationTriggeringEvent(new KeyboardEvent('keydown', { key: 'Escape' }))).toBe(
-      false
-    )
+    expect(isActivationTriggeringEvent(new KeyboardEvent('keydown', { key: 'Escape' }))).toBe(false)
     expect(isActivationTriggeringEvent(new Event('touchend'))).toBe(true)
     expect(isActivationTriggeringEvent(new Event('mousedown'))).toBe(true)
     expect(isActivationTriggeringEvent(new Event('click'))).toBe(true)

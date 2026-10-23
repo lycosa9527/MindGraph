@@ -1,7 +1,7 @@
 /**
  * Mobile Kitty listen mode — PTT default, opt-in half-duplex auto.
  */
-import { computed, onUnmounted, ref, watch, type Ref } from 'vue'
+import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 

@@ -43,16 +43,12 @@ function isOfficeJsHost(): boolean {
  * Sync embed client from URL query / Office host / sessionStorage.
  * Call on boot and each navigation.
  */
-export function syncOfficeEmbedFromSearch(
-  search?: string | Record<string, unknown>
-): string {
+export function syncOfficeEmbedFromSearch(search?: string | Record<string, unknown>): string {
   let embedParam: string | null = null
   let clientParam: string | null = null
 
   if (typeof search === 'string') {
-    const params = new URLSearchParams(
-      search.startsWith('?') ? search : `?${search}`
-    )
+    const params = new URLSearchParams(search.startsWith('?') ? search : `?${search}`)
     embedParam = params.get('embed')
     clientParam = params.get('client')
   } else if (search && typeof search === 'object') {
@@ -74,11 +70,7 @@ export function syncOfficeEmbedFromSearch(
     clientParam = params.get('client')
   }
 
-  const fromQuery =
-    embedParam === 'word-addin' ||
-    clientParam === 'word-addin'
-      ? 'word-addin'
-      : ''
+  const fromQuery = embedParam === 'word-addin' || clientParam === 'word-addin' ? 'word-addin' : ''
 
   if (fromQuery) {
     embedClientActive = fromQuery

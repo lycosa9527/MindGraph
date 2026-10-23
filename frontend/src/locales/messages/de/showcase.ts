@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'Fallquadrat',
-  'showcase.subtitle': 'Entdecken Sie KI-gestützte Denkunterrichtsbeispiele und teilen Sie Ihre Unterrichtsarbeit',
+  'showcase.subtitle':
+    'Entdecken Sie KI-gestützte Denkunterrichtsbeispiele und teilen Sie Ihre Unterrichtsarbeit',
   'showcase.publish': 'Fall veröffentlichen',
   'showcase.searchPlaceholder': 'Titel, Beschreibung oder Tags suchen …',
   'showcase.filter.all': 'Alle',
@@ -31,7 +32,8 @@ export default {
   'showcase.myFavoritesEmpty': 'Noch keine Favoritenfälle',
   'showcase.myFavoritesEmptyHint': 'Fälle, die Sie markieren, erscheinen hier',
   'showcase.myCasesModalTitle': 'Meine veröffentlichten Fälle',
-  'showcase.myCasesManageHint': 'Zurückziehen, entfernen oder bearbeiten Sie aus dieser Liste; klicken Sie einen Fall für Details',
+  'showcase.myCasesManageHint':
+    'Zurückziehen, entfernen oder bearbeiten Sie aus dieser Liste; klicken Sie einen Fall für Details',
   'showcase.myCasesAction.edit': 'Bearbeiten',
   'showcase.myCasesEmpty': 'Noch keine veröffentlichten Fälle',
   'showcase.myCasesEmptyHint': 'Veröffentlichte Fälle und Prüfstatus erscheinen hier',
@@ -40,10 +42,12 @@ export default {
   'showcase.publishModal.title': 'Fall veröffentlichen',
   'showcase.publishModal.titleLabel': 'Falltitel',
   'showcase.publishModal.titleHint': 'Halten Sie den Titel knapp — bis zu {max} Zeichen empfohlen',
-  'showcase.publishModal.titlePlaceholder': 'z. B. Zwei Kinder debattieren über die Sonne — Unterrichtsentwurf',
+  'showcase.publishModal.titlePlaceholder':
+    'z. B. Zwei Kinder debattieren über die Sonne — Unterrichtsentwurf',
   'showcase.publishModal.descriptionLabel': 'Beschreibung',
   'showcase.publishModal.tagsLabel': 'Etikett',
-  'showcase.publishModal.tagsHint': 'Tags durch Kommas trennen, z. B. kognitiver Konflikt, Mathematik Unterstufe',
+  'showcase.publishModal.tagsHint':
+    'Tags durch Kommas trennen, z. B. kognitiver Konflikt, Mathematik Unterstufe',
   'showcase.publishModal.caseTypeLabel': 'Falltyp',
   'showcase.publishModal.subjectLabel': 'Fach',
   'showcase.publishModal.gradeLabel': 'Klasse',
@@ -53,19 +57,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Dateien werden hochgeladen ({current}/{total}) …',
   'showcase.publishModal.uploadingFile': '{name} wird hochgeladen ({current}/{total}) …',
   'showcase.publishModal.finishing': 'Wird abgeschlossen …',
-  'showcase.publishModal.uploadFailedRolledBack': 'Upload fehlgeschlagen — der Entwurf wurde verworfen. Bitte versuchen Sie es erneut.',
-  'showcase.publishModal.uploadCorsFailed': 'Upload in den Objektspeicher nicht möglich (häufig: Bucket-CORS oder CSP blockiert den COS-Host). Der Entwurf wurde verworfen — bitten Sie einen Administrator, CORS/CSP zu korrigieren, und versuchen Sie es erneut.',
-  'showcase.publishModal.uploadStorageRejected': 'Der Objektspeicher hat den Upload abgelehnt. Der Entwurf wurde verworfen — versuchen Sie es später erneut oder wenden Sie sich an einen Administrator.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Upload fehlgeschlagen — der Entwurf wurde verworfen. Bitte versuchen Sie es erneut.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Upload in den Objektspeicher nicht möglich (häufig: Bucket-CORS oder CSP blockiert den COS-Host). Der Entwurf wurde verworfen — bitten Sie einen Administrator, CORS/CSP zu korrigieren, und versuchen Sie es erneut.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Der Objektspeicher hat den Upload abgelehnt. Der Entwurf wurde verworfen — versuchen Sie es später erneut oder wenden Sie sich an einen Administrator.',
   'showcase.publishModal.uploadFailed': 'Upload fehlgeschlagen. Bitte versuchen Sie es erneut.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Das Titelbild überschreitet das Limit von 2 MB. Komprimieren Sie die Vorschau oder verwenden Sie ein kleineres Bild und versuchen Sie es erneut.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'Die Datei überschreitet das Größenlimit (Dokumente/Bilder 20 MB, Videos 100 MB). Komprimieren Sie sie und versuchen Sie es erneut.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Die Datei überschreitet das Größenlimit (Dokumente/Bilder 20 MB, Videos 100 MB). Der Entwurf wurde verworfen — komprimieren Sie sie und versuchen Sie es erneut.',
-  'showcase.publishModal.uploadFileTooLarge': 'Die Datei ist für diesen Upload-Typ zu groß. Prüfen Sie das Größenlimit und versuchen Sie es erneut.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Die Datei ist für diesen Upload-Typ zu groß. Der Entwurf wurde verworfen — prüfen Sie das Größenlimit und versuchen Sie es erneut.',
-  'showcase.publishModal.coverUploadSkipped': 'Fall eingereicht, aber das Titelbild konnte nicht hochgeladen werden. Sie können den Fall später bearbeiten, um das Titelbild zu aktualisieren.',
-  'showcase.publishModal.coverGenerating': 'Die Titelbildvorschau wird im Hintergrund erstellt — sie erscheint in Kürze auf der Karte.',
-  'showcase.publishModal.coverFailed': 'Fall eingereicht, aber das Titelbild konnte nicht erstellt werden. Sie können den Fall später bearbeiten, um das Titelbild zu aktualisieren.',
-  'showcase.publishModal.coverFailedTimeout': 'Fall eingereicht, aber die Titelbilderstellung hat das Zeitlimit überschritten. Sie können den Fall später bearbeiten, um das Titelbild zu aktualisieren.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Das Titelbild überschreitet das Limit von 2 MB. Komprimieren Sie die Vorschau oder verwenden Sie ein kleineres Bild und versuchen Sie es erneut.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'Die Datei überschreitet das Größenlimit (Dokumente/Bilder 20 MB, Videos 100 MB). Komprimieren Sie sie und versuchen Sie es erneut.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'Die Datei überschreitet das Größenlimit (Dokumente/Bilder 20 MB, Videos 100 MB). Der Entwurf wurde verworfen — komprimieren Sie sie und versuchen Sie es erneut.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'Die Datei ist für diesen Upload-Typ zu groß. Prüfen Sie das Größenlimit und versuchen Sie es erneut.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'Die Datei ist für diesen Upload-Typ zu groß. Der Entwurf wurde verworfen — prüfen Sie das Größenlimit und versuchen Sie es erneut.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Fall eingereicht, aber das Titelbild konnte nicht hochgeladen werden. Sie können den Fall später bearbeiten, um das Titelbild zu aktualisieren.',
+  'showcase.publishModal.coverGenerating':
+    'Die Titelbildvorschau wird im Hintergrund erstellt — sie erscheint in Kürze auf der Karte.',
+  'showcase.publishModal.coverFailed':
+    'Fall eingereicht, aber das Titelbild konnte nicht erstellt werden. Sie können den Fall später bearbeiten, um das Titelbild zu aktualisieren.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Fall eingereicht, aber die Titelbilderstellung hat das Zeitlimit überschritten. Sie können den Fall später bearbeiten, um das Titelbild zu aktualisieren.',
   'showcase.publishModal.success': 'Fall eingereicht — wartet auf Administratorprüfung',
   'showcase.publishModal.fromCanvas': 'Vom Canvas veröffentlichen',
   'showcase.publishModal.step1Title': 'Grundinformationen',
@@ -79,68 +95,96 @@ export default {
   'showcase.publishModal.uploadLabel': 'Datei hochladen',
   'showcase.publishModal.uploadImage': 'Bild hochladen',
   'showcase.publishModal.uploadFile': 'Datei hochladen',
-  'showcase.publishModal.directUploadDisabled': 'Direkter Datei-Upload ist vorübergehend nicht verfügbar. Sie können weiterhin ein gespeichertes Diagramm aus dem Verlauf wählen.',
-  'showcase.publishModal.uploadViaStorage': 'Dateien werden direkt in sicheren Speicher hochgeladen (kurzlebige URL).',
+  'showcase.publishModal.directUploadDisabled':
+    'Direkter Datei-Upload ist vorübergehend nicht verfügbar. Sie können weiterhin ein gespeichertes Diagramm aus dem Verlauf wählen.',
+  'showcase.publishModal.uploadViaStorage':
+    'Dateien werden direkt in sicheren Speicher hochgeladen (kurzlebige URL).',
   'showcase.publishModal.pickHistory': 'Aus Verlauf wählen',
   'showcase.publishModal.removeFile': 'Entfernen',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: eingeschränkte Vorschau)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: eingeschränkte Vorschau) — max. {maxMb} MB pro Dokument',
-  'showcase.publishModal.teachingDocTooLarge': 'Das Dokument überschreitet das Limit von {maxMb} MB. Komprimieren Sie es und versuchen Sie es erneut.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: eingeschränkte Vorschau) — max. {maxMb} MB pro Dokument',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Das Dokument überschreitet das Limit von {maxMb} MB. Komprimieren Sie es und versuchen Sie es erneut.',
   'showcase.publishModal.diagramImageHint': 'Unterstützt .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Bilder hochladen (mehrere)',
-  'showcase.publishModal.galleryHint': 'Fügen Sie mehrere Bilder und gespeicherte Diagramme hinzu, bis zu {max} Einträge',
-  'showcase.publishModal.galleryHintCase': 'Es können mehrere Bilder und historische Symbole hinzugefügt werden, bis zu {max} Elemente',
-  'showcase.publishModal.galleryHintTemplate': 'Sie können .mg-Dateien hochladen und mehrere historische Symbole auswählen, bis zu {max} Elemente',
+  'showcase.publishModal.galleryHint':
+    'Fügen Sie mehrere Bilder und gespeicherte Diagramme hinzu, bis zu {max} Einträge',
+  'showcase.publishModal.galleryHintCase':
+    'Es können mehrere Bilder und historische Symbole hinzugefügt werden, bis zu {max} Elemente',
+  'showcase.publishModal.galleryHintTemplate':
+    'Sie können .mg-Dateien hochladen und mehrere historische Symbole auswählen, bis zu {max} Elemente',
   'showcase.publishModal.galleryCount': '{count}/{max} Einträge hinzugefügt',
   'showcase.publishModal.galleryImageItem': 'Bild: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diagramm: {name}',
   'showcase.publishModal.galleryLimit': 'Sie können höchstens {max} Einträge hinzufügen',
-  'showcase.publishModal.galleryDuplicateDiagram': 'Dieses gespeicherte Diagramm ist bereits in der Liste',
+  'showcase.publishModal.galleryDuplicateDiagram':
+    'Dieses gespeicherte Diagramm ist bereits in der Liste',
   'showcase.publishModal.galleryPickerDone': 'Fertig',
-  'showcase.publishModal.galleryUploadFailed': 'Galeriebild-Upload fehlgeschlagen — bitte veröffentlichen Sie erneut',
-  'showcase.publishModal.galleryReuploadHint': 'Einige Galeriebilder wurden nicht gespeichert — wählen Sie sie vor dem Einreichen erneut aus',
+  'showcase.publishModal.galleryUploadFailed':
+    'Galeriebild-Upload fehlgeschlagen — bitte veröffentlichen Sie erneut',
+  'showcase.publishModal.galleryReuploadHint':
+    'Einige Galeriebilder wurden nicht gespeichert — wählen Sie sie vor dem Einreichen erneut aus',
   'showcase.detail.galleryImage': 'Bild',
   'showcase.detail.galleryDiagram': 'Diagramm',
   'showcase.detail.galleryPrev': 'Zurück',
   'showcase.detail.galleryNext': 'Weiter',
   'showcase.detail.gallerySwipeHint': 'Nach links oder rechts wischen',
-  'showcase.detail.galleryImageMissing': 'Bild konnte nicht geladen werden — bitte veröffentlichen Sie den Fall erneut',
+  'showcase.detail.galleryImageMissing':
+    'Bild konnte nicht geladen werden — bitte veröffentlichen Sie den Fall erneut',
   'showcase.publishModal.templateFileHint': 'nur .mg (MindGraph-Export)',
   'showcase.publishModal.templatePreviewLabel': 'Diagrammvorschau',
   'showcase.publishModal.templatePreviewHint': 'Handwerkzeug — nur ansehen, nicht bearbeitbar',
-  'showcase.publishModal.templatePreviewEmpty': 'Laden Sie eine .mg-Datei hoch oder wählen Sie ein gespeichertes Diagramm zur Vorschau',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Laden Sie eine .mg-Datei hoch oder wählen Sie ein gespeichertes Diagramm zur Vorschau',
   'showcase.publishModal.diagramCasePreviewLabel': 'Diagrammvorschau',
-  'showcase.publishModal.diagramCasePreviewHint': 'Handwerkzeug — schwenken und zoomen zum Erkunden',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Diagrammtyp wurde aus dem gewählten gespeicherten Diagramm übernommen',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'Handwerkzeug — schwenken und zoomen zum Erkunden',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Diagrammtyp wurde aus dem gewählten gespeicherten Diagramm übernommen',
   'showcase.publishModal.introLabel': 'Diagrammeinleitung',
   'showcase.publishModal.teachingIntroLabel': 'Einleitung zum Unterrichtsentwurf',
   'showcase.publishModal.highlightsLabel': 'Design-Highlights',
   'showcase.publishModal.highlightsPlaceholder': 'Ein Highlight pro Zeile (optional)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Stellen Sie kurz Hintergrund, Ziele und Kontext der Unterrichtsstunde vor',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Stellen Sie kurz Hintergrund, Ziele und Kontext der Unterrichtsstunde vor',
   'showcase.publishModal.aiGenerate': 'KI generieren',
   'showcase.publishModal.aiGenerating': 'Wird generiert …',
   'showcase.publishModal.aiGenerateStop': 'Stoppen',
-  'showcase.publishModal.aiGenerateCancelled': 'KI-Generierung abgebrochen — klicken Sie erneut zum Neu generieren',
-  'showcase.publishModal.aiGenerateSuccess': 'Einleitung und Highlights aus dem Dokument ausgefüllt — prüfen und bearbeiten Sie; schreiben Sie die Unterrichtsreflexion selbst',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Die Illustrationseinführung und die Unterrichtsanwendung wurden basierend auf der Illustration erstellt. Bitte überprüfen und bearbeiten.',
-  'showcase.publishModal.aiGenerateFailed': 'KI-Generierung fehlgeschlagen — bitte versuchen Sie es erneut',
-  'showcase.publishModal.aiGenerateNeedFile': 'Laden Sie zuerst im vorherigen Schritt ein Unterrichtsentwurfs-Dokument hoch',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'KI-Generierung ist nur für Unterrichtsentwurfs-Fälle verfügbar',
+  'showcase.publishModal.aiGenerateCancelled':
+    'KI-Generierung abgebrochen — klicken Sie erneut zum Neu generieren',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Einleitung und Highlights aus dem Dokument ausgefüllt — prüfen und bearbeiten Sie; schreiben Sie die Unterrichtsreflexion selbst',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'Die Illustrationseinführung und die Unterrichtsanwendung wurden basierend auf der Illustration erstellt. Bitte überprüfen und bearbeiten.',
+  'showcase.publishModal.aiGenerateFailed':
+    'KI-Generierung fehlgeschlagen — bitte versuchen Sie es erneut',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Laden Sie zuerst im vorherigen Schritt ein Unterrichtsentwurfs-Dokument hoch',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'KI-Generierung ist nur für Unterrichtsentwurfs-Fälle verfügbar',
   'showcase.publishModal.reflectionLabel': 'Unterrichtsreflexion',
-  'showcase.publishModal.introPlaceholder': 'Beschreiben Sie kurz den Fall und wann er eingesetzt werden soll',
-  'showcase.publishModal.diagramCorePlaceholder': 'Beschreiben Sie Diagramminhalt und Visualisierungs-Highlights',
-  'showcase.publishModal.classroomAppPlaceholder': 'Wie dieses Diagramm im Unterricht eingesetzt wird',
+  'showcase.publishModal.introPlaceholder':
+    'Beschreiben Sie kurz den Fall und wann er eingesetzt werden soll',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Beschreiben Sie Diagramminhalt und Visualisierungs-Highlights',
+  'showcase.publishModal.classroomAppPlaceholder':
+    'Wie dieses Diagramm im Unterricht eingesetzt wird',
   'showcase.publishModal.tagInputPlaceholder': 'Tag eingeben (max. 10 Zeichen), Enter drücken',
   'showcase.publishModal.tagRecommended': 'Vorgeschlagene Tags',
   'showcase.publishModal.tagCountHint': '(max. {max})',
   'showcase.publishModal.tagMaxCount': 'Sie können höchstens {max} Tags hinzufügen',
-  'showcase.publishModal.networkError': 'Einreichen fehlgeschlagen — prüfen Sie, ob der Server läuft und Dateigrößen innerhalb der Limits liegen',
+  'showcase.publishModal.networkError':
+    'Einreichen fehlgeschlagen — prüfen Sie, ob der Server läuft und Dateigrößen innerhalb der Limits liegen',
   'showcase.publishModal.fileTooLarge': '„{name}“ überschreitet das Größenlimit von {maxMb} MB',
-  'showcase.publishModal.uploadTotalTooLarge': 'Gesamtgröße des Uploads überschreitet das Limit — verkleinern Sie Anhänge oder Videos',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'Gesamtgröße des Uploads überschreitet das Limit — verkleinern Sie Anhänge oder Videos',
   'showcase.publishModal.tagAdd': 'Hinzufügen',
   'showcase.publishModal.publishBtn': 'Veröffentlichen',
-  'showcase.publishModal.reflectionPlaceholder': 'Schreiben Sie Ihre Reflexion zu dieser Unterrichtsstunde (optional)',
+  'showcase.publishModal.reflectionPlaceholder':
+    'Schreiben Sie Ihre Reflexion zu dieser Unterrichtsstunde (optional)',
   'showcase.publishModal.classroomAppLabel': 'Einsatz im Unterricht',
   'showcase.publishModal.selectSubject': 'Fach wählen',
   'showcase.publishModal.selectGrade': 'Klasse wählen',
@@ -148,19 +192,26 @@ export default {
   'showcase.publishModal.validationTitle': 'Bitte geben Sie einen Titel ein',
   'showcase.publishModal.validationSubject': 'Bitte wählen Sie ein Fach',
   'showcase.publishModal.validationGrade': 'Bitte wählen Sie eine Klasse',
-  'showcase.publishModal.validationFile': 'Laden Sie eine Datei hoch oder wählen Sie ein gespeichertes Diagramm',
+  'showcase.publishModal.validationFile':
+    'Laden Sie eine Datei hoch oder wählen Sie ein gespeichertes Diagramm',
   'showcase.publishModal.validationDiagramType': 'Bitte wählen Sie einen Diagrammtyp',
   'showcase.publishModal.invalidFileType': 'Nicht unterstützter Dateityp',
-  'showcase.publishModal.invalidMgFile': 'Diese .mg-Datei konnte nicht gelesen werden — exportieren Sie sie zuerst aus MindGraph',
-  'showcase.publishModal.cannotPreview': 'Titelbildvorschau konnte nicht erstellt werden — der Fall wird trotzdem eingereicht. Versuchen Sie PNG/JPG oder wählen Sie ein gespeichertes Diagramm.',
-  'showcase.publishModal.cannotPreviewHistory': 'Aus diesem gespeicherten Diagramm konnte kein Titelbild erstellt werden — der Fall wird trotzdem eingereicht. Wählen Sie es erneut oder speichern Sie es im Canvas neu.',
-  'showcase.publishModal.cannotPreviewTemplate': 'Titelbild konnte nicht erstellt werden — der Fall wird trotzdem eingereicht. Prüfen Sie die .mg-Datei oder wählen Sie ein anderes gespeichertes Diagramm.',
+  'showcase.publishModal.invalidMgFile':
+    'Diese .mg-Datei konnte nicht gelesen werden — exportieren Sie sie zuerst aus MindGraph',
+  'showcase.publishModal.cannotPreview':
+    'Titelbildvorschau konnte nicht erstellt werden — der Fall wird trotzdem eingereicht. Versuchen Sie PNG/JPG oder wählen Sie ein gespeichertes Diagramm.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Aus diesem gespeicherten Diagramm konnte kein Titelbild erstellt werden — der Fall wird trotzdem eingereicht. Wählen Sie es erneut oder speichern Sie es im Canvas neu.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Titelbild konnte nicht erstellt werden — der Fall wird trotzdem eingereicht. Prüfen Sie die .mg-Datei oder wählen Sie ein anderes gespeichertes Diagramm.',
   'showcase.publishModal.historyTitle': 'Gespeichertes Diagramm wählen',
   'showcase.publishModal.historySearch': 'Diagrammname suchen …',
   'showcase.publishModal.historyEmpty': 'Keine gespeicherten Diagramme',
   'showcase.publishModal.historyUncategorized': 'Nicht kategorisiert',
-  'showcase.publishModal.typeDesc.teachingDesign': 'Unterrichtsentwurf für Denkfähigkeiten im Klassenzimmer',
-  'showcase.publishModal.typeDesc.diagramCase': 'Hervorragende Diagramme und Visualisierung im Unterricht',
+  'showcase.publishModal.typeDesc.teachingDesign':
+    'Unterrichtsentwurf für Denkfähigkeiten im Klassenzimmer',
+  'showcase.publishModal.typeDesc.diagramCase':
+    'Hervorragende Diagramme und Visualisierung im Unterricht',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagramme zur Wiederverwendung oder Anpassung',
   'showcase.detail.import': 'Diesen Fall verwenden',
   'showcase.action.goDraw': 'Selbst zeichnen',
@@ -184,9 +235,11 @@ export default {
   'showcase.detail.delist': 'Entfernen',
   'showcase.detail.resubmit': 'Bearbeiten und erneut einreichen',
   'showcase.detail.withdrawTitle': 'Fall zurückziehen',
-  'showcase.detail.withdrawConfirm': '„{title}“ zurückziehen? Er wird aus der Prüfwarteschlange entfernt und kann nicht wiederhergestellt werden.',
+  'showcase.detail.withdrawConfirm':
+    '„{title}“ zurückziehen? Er wird aus der Prüfwarteschlange entfernt und kann nicht wiederhergestellt werden.',
   'showcase.detail.delistTitle': 'Fall entfernen',
-  'showcase.detail.delistConfirm': '„{title}“ aus der Galerie entfernen? Andere Nutzer können ihn dann nicht mehr ansehen.',
+  'showcase.detail.delistConfirm':
+    '„{title}“ aus der Galerie entfernen? Andere Nutzer können ihn dann nicht mehr ansehen.',
   'showcase.detail.confirm': 'Bestätigen',
   'showcase.detail.cancel': 'Abbrechen',
   'showcase.withdrawn': 'Zurückgezogen',
@@ -206,8 +259,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Folien werden für die Vorschau konvertiert …',
   'showcase.detail.officePreviewPending': 'Folien werden für die Vorschau konvertiert …',
   'showcase.detail.docPreviewLoading': 'Dokument wird geladen …',
-  'showcase.detail.docPreviewFailed': 'Vorschau konnte nicht geladen werden. Versuchen Sie, in einem neuen Tab zu öffnen.',
-  'showcase.detail.legacyDocHint': 'Legacy-.doc-Dateien können nicht inline angezeigt werden. Öffnen oder laden Sie die Datei herunter, oder laden Sie .docx für die Browser-Vorschau hoch.',
+  'showcase.detail.docPreviewFailed':
+    'Vorschau konnte nicht geladen werden. Versuchen Sie, in einem neuen Tab zu öffnen.',
+  'showcase.detail.legacyDocHint':
+    'Legacy-.doc-Dateien können nicht inline angezeigt werden. Öffnen oder laden Sie die Datei herunter, oder laden Sie .docx für die Browser-Vorschau hoch.',
   'showcase.detail.noDocument': 'Keine Dokumentvorschau',
   'showcase.detail.noDiagramPreview': 'Keine Diagrammvorschau',
   'showcase.detail.diagramPreviewLoading': 'Diagramm wird geladen …',

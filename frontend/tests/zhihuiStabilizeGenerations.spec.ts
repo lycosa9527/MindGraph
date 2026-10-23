@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  type ZhihuiGenerationItem,
   isZhihuiPollTerminalHttpStatus,
   stabilizeZhihuiGenerations,
-  type ZhihuiGenerationItem,
 } from '@/stores/zhihuiHistory'
 
 function slide(id: string, imageUrl: string): ZhihuiGenerationItem {

@@ -7,7 +7,10 @@
  */
 import { ref } from 'vue'
 
-import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
 import { authFetch } from '@/utils/api'
 
 export interface SnapshotMetadata {
@@ -17,12 +20,10 @@ export interface SnapshotMetadata {
 }
 
 export type SnapshotTakeResult =
-  | { ok: true; snapshot: SnapshotMetadata }
-  | { ok: false; status: number; message: string }
+  { ok: true; snapshot: SnapshotMetadata } | { ok: false; status: number; message: string }
 
 export type SnapshotRecallResult =
-  | { ok: true; spec: Record<string, unknown> }
-  | { ok: false; status: number; message: string }
+  { ok: true; spec: Record<string, unknown> } | { ok: false; status: number; message: string }
 
 export type SnapshotDeleteResult = { ok: true } | { ok: false; status: number; message: string }
 
@@ -106,7 +107,9 @@ async function takeSnapshot(
       return { ok: false, status: res.status, message }
     }
     const snapshot: SnapshotMetadata = await res.json()
-    applyThinkingCoinMutation(extractThinkingCoinsFooter(snapshot as unknown as Record<string, unknown>))
+    applyThinkingCoinMutation(
+      extractThinkingCoinsFooter(snapshot as unknown as Record<string, unknown>)
+    )
     await loadSnapshots(diagramId)
     return { ok: true, snapshot }
   } catch (err) {

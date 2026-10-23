@@ -9,8 +9,7 @@
  */
 import { isTrainingRoleId, trainingRoleSrc } from '@/config/trainingRoles'
 
-const ROLE_IMAGE_MD =
-  /!\[[^\]]*\]\(\/api\/training\/assets\/roles\/[^)\s]+\)/
+const ROLE_IMAGE_MD = /!\[[^\]]*\]\(\/api\/training\/assets\/roles\/[^)\s]+\)/
 
 export function buildWorkshopRoleMarkdown(roleId: string, alt: string): string {
   const id = isTrainingRoleId(roleId) ? roleId : '01-look-here'

@@ -40,8 +40,7 @@ function analyzeOne(filePath: string): void {
   const concepts = Array.isArray(spec.concepts) ? (spec.concepts as string[]) : []
   const rel = spec.relationships as unknown[]
   const layout = spec._layout_positions_by_label as
-    | Record<string, { x: number; y: number }>
-    | undefined
+    Record<string, { x: number; y: number }> | undefined
   const layoutKeys = layout ? Object.keys(layout) : []
   const matched = concepts.filter((c) => layoutKeys.includes(c)).length
 

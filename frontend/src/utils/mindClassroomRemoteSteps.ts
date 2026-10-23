@@ -1,18 +1,17 @@
 /**
  * Map queued lecture steps onto the live canvas (drop missing focus ids).
  */
-import type { MindClassroomJobDetail, MindClassroomRemoteStep } from '@/composables/mindMap/mindClassroomJobApi'
+import type {
+  MindClassroomJobDetail,
+  MindClassroomRemoteStep,
+} from '@/composables/mindMap/mindClassroomJobApi'
 import type { DiagramNode } from '@/types'
 import { classroomPrepFitsLiveView } from '@/utils/mindClassroomPrepSlot'
-import {
-  lectureCaptionDwellMs,
-  type MindClassroomLectureStep,
-} from '@/utils/mindClassroomScript'
+import { type MindClassroomLectureStep, lectureCaptionDwellMs } from '@/utils/mindClassroomScript'
 import { resolveMindMapIdentityId } from '@/utils/mindMapIdentityMigrate'
 
 export type LectureLiveRef =
-  | Set<string>
-  | ReadonlyArray<{ id?: string; data?: Record<string, unknown> | null }>
+  Set<string> | ReadonlyArray<{ id?: string; data?: Record<string, unknown> | null }>
 
 export function collectLiveNodeIds(
   nodes: ReadonlyArray<{ id?: string }> | null | undefined
@@ -50,10 +49,7 @@ function remapIdList(ids: readonly string[] | null | undefined, live: LectureLiv
   return out
 }
 
-
-export function lectureStepNodeIds(
-  raw: MindClassroomRemoteStep[] | null | undefined
-): string[] {
+export function lectureStepNodeIds(raw: MindClassroomRemoteStep[] | null | undefined): string[] {
   const refs: string[] = []
   for (const step of raw ?? []) {
     for (const id of step.focus_node_ids ?? []) {

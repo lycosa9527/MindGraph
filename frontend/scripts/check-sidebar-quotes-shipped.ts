@@ -11,6 +11,7 @@ import {
   MIN_EN_QUOTES,
   MIN_EXTRACTED_ECHOES_EN,
   MIN_EXTRACTED_ECHOES_ZH,
+  MIN_MINDGROWTH_ZH_QUOTES,
   MIN_ZH_QUOTES,
   OUTPUT_EN,
   OUTPUT_ZH,
@@ -19,7 +20,6 @@ import {
   VENDOR_WISDOM_EN,
   VENDOR_WISDOM_ZH,
   WISDOM_QUOTES_REF,
-  MIN_MINDGROWTH_ZH_QUOTES,
 } from './import-sidebar-quotes/config.ts'
 
 const frontendDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -67,10 +67,10 @@ function assertLazyLoadImplementation(): void {
   assertRequiredFile(VITE_CONFIG_PATH, 'vite config')
 
   const picker = readFileSync(PICKER_PATH, 'utf8')
-  if (!picker.includes("@/assets/sidebar-quotes-zh.json?url")) {
+  if (!picker.includes('@/assets/sidebar-quotes-zh.json?url')) {
     throw new Error('sidebarQuotePicker must load zh quotes via ?url dynamic import')
   }
-  if (!picker.includes("@/assets/sidebar-quotes-en.json?url")) {
+  if (!picker.includes('@/assets/sidebar-quotes-en.json?url')) {
     throw new Error('sidebarQuotePicker must load en quotes via ?url dynamic import')
   }
   if (!picker.includes('fetch(')) {
@@ -81,8 +81,7 @@ function assertLazyLoadImplementation(): void {
   if (eagerJsonImport) {
     throw new Error('sidebarQuotePicker must not use eager JSON dynamic import (use ?url + fetch)')
   }
-  const staticJsonImport =
-    /from\s+['"]@\/assets\/sidebar-quotes-(?:zh|en)\.json['"]/.test(picker)
+  const staticJsonImport = /from\s+['"]@\/assets\/sidebar-quotes-(?:zh|en)\.json['"]/.test(picker)
   if (staticJsonImport) {
     throw new Error('sidebarQuotePicker must not statically import quote JSON')
   }

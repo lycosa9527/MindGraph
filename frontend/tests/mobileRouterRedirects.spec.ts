@@ -22,9 +22,7 @@ describe('mobileRouteRedirect', () => {
   })
 
   it('sends training leads to the phone remote and teachers to the hub', () => {
-    expect(resolveMobileRouteRedirect('/training', { isTrainingLead: true })).toBe(
-      '/m/training'
-    )
+    expect(resolveMobileRouteRedirect('/training', { isTrainingLead: true })).toBe('/m/training')
     expect(resolveMobileRouteRedirect('/training', { isTrainingLead: false })).toBe('/m')
     expect(resolveMobileRouteRedirect('/training')).toBe('/m')
   })

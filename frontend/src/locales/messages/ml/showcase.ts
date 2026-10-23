@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'കേസ് സ്ക്വയർ',
-  'showcase.subtitle': 'ഉയർന്ന നിലവാരമുള്ള AI-ശാക്തീകരിക്കപ്പെട്ട ചിന്താ പഠിപ്പിക്കൽ കണ്ടെത്തുകയും നിങ്ങളുടെ അധ്യാപന, ഗവേഷണ ഫലങ്ങൾ പങ്കിടുകയും ചെയ്യുക',
+  'showcase.subtitle':
+    'ഉയർന്ന നിലവാരമുള്ള AI-ശാക്തീകരിക്കപ്പെട്ട ചിന്താ പഠിപ്പിക്കൽ കണ്ടെത്തുകയും നിങ്ങളുടെ അധ്യാപന, ഗവേഷണ ഫലങ്ങൾ പങ്കിടുകയും ചെയ്യുക',
   'showcase.publish': 'ഒരു കേസ് പോസ്റ്റ് ചെയ്യുക',
   'showcase.searchPlaceholder': 'കേസുകൾ തിരയുക...',
   'showcase.filter.all': 'എല്ലാം',
@@ -19,7 +20,8 @@ export default {
   'showcase.sort.default': 'ഡിഫോൾട്ട് അടുക്കുക',
   'showcase.sort.hot': 'ചൂട് അമർത്തുക',
   'showcase.sort.newest': 'റിലീസ് സമയം പ്രകാരം',
-  'showcase.empty': 'ഇതുവരെ പൊരുത്തപ്പെടുന്ന കേസുകളൊന്നുമില്ല. ഫിൽട്ടർ വ്യവസ്ഥകൾ ക്രമീകരിക്കാൻ ശ്രമിക്കുക.',
+  'showcase.empty':
+    'ഇതുവരെ പൊരുത്തപ്പെടുന്ന കേസുകളൊന്നുമില്ല. ഫിൽട്ടർ വ്യവസ്ഥകൾ ക്രമീകരിക്കാൻ ശ്രമിക്കുക.',
   'showcase.status.pending': 'അവലോകനത്തിലാണ്',
   'showcase.status.approved': 'പാസ്സായി',
   'showcase.status.rejected': 'നിരസിച്ചു',
@@ -29,9 +31,11 @@ export default {
   'showcase.myFavorites': 'എൻ്റെ ശേഖരം',
   'showcase.myFavoritesModalTitle': 'ശേഖരിച്ച കേസുകൾ',
   'showcase.myFavoritesEmpty': 'ഇതുവരെ ശേഖരിച്ച കേസുകളൊന്നുമില്ല',
-  'showcase.myFavoritesEmptyHint': 'ഒരു കേസിൻ്റെ വിശദാംശങ്ങളിലോ കാർഡിലോ നിങ്ങൾ പ്രിയപ്പെട്ടത് ക്ലിക്ക് ചെയ്യുമ്പോൾ, അത് ഇവിടെ ദൃശ്യമാകും',
+  'showcase.myFavoritesEmptyHint':
+    'ഒരു കേസിൻ്റെ വിശദാംശങ്ങളിലോ കാർഡിലോ നിങ്ങൾ പ്രിയപ്പെട്ടത് ക്ലിക്ക് ചെയ്യുമ്പോൾ, അത് ഇവിടെ ദൃശ്യമാകും',
   'showcase.myCasesModalTitle': 'ഞാൻ പോസ്റ്റ് ചെയ്ത കേസുകൾ',
-  'showcase.myCasesManageHint': 'നിങ്ങൾക്ക് ഇത് ലിസ്റ്റിൽ നേരിട്ട് പിൻവലിക്കാനോ നീക്കം ചെയ്യാനോ പരിഷ്ക്കരിക്കാനോ കഴിയും; വിശദാംശങ്ങൾ കാണുന്നതിന് കേസിൽ ക്ലിക്ക് ചെയ്യുക',
+  'showcase.myCasesManageHint':
+    'നിങ്ങൾക്ക് ഇത് ലിസ്റ്റിൽ നേരിട്ട് പിൻവലിക്കാനോ നീക്കം ചെയ്യാനോ പരിഷ്ക്കരിക്കാനോ കഴിയും; വിശദാംശങ്ങൾ കാണുന്നതിന് കേസിൽ ക്ലിക്ക് ചെയ്യുക',
   'showcase.myCasesAction.edit': 'പുനഃപരിശോധിക്കുക',
   'showcase.myCasesEmpty': 'ഇതുവരെ പ്രസിദ്ധീകരിച്ച കേസുകളൊന്നുമില്ല',
   'showcase.myCasesEmptyHint': 'കേസ് പ്രസിദ്ധീകരിച്ചുകഴിഞ്ഞാൽ, അവലോകന പുരോഗതി ഇവിടെ കാണും',
@@ -39,11 +43,14 @@ export default {
   'showcase.pendingReview': 'ശേഷിക്കുന്ന അവലോകനം',
   'showcase.publishModal.title': 'ഒരു കേസ് പോസ്റ്റ് ചെയ്യുക',
   'showcase.publishModal.titleLabel': 'കേസിൻ്റെ തലക്കെട്ട്',
-  'showcase.publishModal.titleHint': 'ശീർഷകം സംക്ഷിപ്തവും വ്യക്തവുമായിരിക്കണം, കൂടാതെ {max} വാക്കുകളിൽ കവിയരുതെന്ന് ശുപാർശ ചെയ്യുന്നു.',
-  'showcase.publishModal.titlePlaceholder': 'ഉദാഹരണത്തിന്: "രണ്ട് കുട്ടികളുടെ സംവാദ ദിനം" പഠിപ്പിക്കൽ രൂപകൽപ്പന',
+  'showcase.publishModal.titleHint':
+    'ശീർഷകം സംക്ഷിപ്തവും വ്യക്തവുമായിരിക്കണം, കൂടാതെ {max} വാക്കുകളിൽ കവിയരുതെന്ന് ശുപാർശ ചെയ്യുന്നു.',
+  'showcase.publishModal.titlePlaceholder':
+    'ഉദാഹരണത്തിന്: "രണ്ട് കുട്ടികളുടെ സംവാദ ദിനം" പഠിപ്പിക്കൽ രൂപകൽപ്പന',
   'showcase.publishModal.descriptionLabel': 'ആമുഖം',
   'showcase.publishModal.tagsLabel': 'ലേബൽ',
-  'showcase.publishModal.tagsHint': 'കോമകൾ ഉപയോഗിച്ച് ഒന്നിലധികം ടാഗുകൾ വേർതിരിക്കുക, ഉദാഹരണത്തിന്: കോഗ്നിറ്റീവ് വൈരുദ്ധ്യം, ജൂനിയർ ഹൈസ്കൂൾ മാത്തമാറ്റിക്സ്',
+  'showcase.publishModal.tagsHint':
+    'കോമകൾ ഉപയോഗിച്ച് ഒന്നിലധികം ടാഗുകൾ വേർതിരിക്കുക, ഉദാഹരണത്തിന്: കോഗ്നിറ്റീവ് വൈരുദ്ധ്യം, ജൂനിയർ ഹൈസ്കൂൾ മാത്തമാറ്റിക്സ്',
   'showcase.publishModal.caseTypeLabel': 'കേസ് തരം',
   'showcase.publishModal.subjectLabel': 'അച്ചടക്കം',
   'showcase.publishModal.gradeLabel': 'ഗ്രേഡ്',
@@ -53,20 +60,33 @@ export default {
   'showcase.publishModal.uploadingFiles': 'ഫയലുകൾ അപ്‌ലോഡ് ചെയ്യുന്നു ({current}/{total})...',
   'showcase.publishModal.uploadingFile': '{name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'ഏതാണ്ട് പൂർത്തിയായി...',
-  'showcase.publishModal.uploadFailedRolledBack': 'അപ്‌ലോഡ് പരാജയപ്പെട്ടു, ഡ്രാഫ്റ്റ് പിൻവലിച്ചു, വീണ്ടും ശ്രമിക്കുക.',
-  'showcase.publishModal.uploadCorsFailed': 'ഒബ്‌ജക്റ്റ് സ്റ്റോറേജിലേക്ക് ഫയൽ അപ്‌ലോഡ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു (പൊതുവായ കാരണങ്ങൾ: ബക്കറ്റ് CORS നിലവിലെ വെബ്‌സൈറ്റിനെ അനുവദിക്കുന്നില്ല, അല്ലെങ്കിൽ വെബ്‌സൈറ്റ് CSP COS ഡൊമെയ്ൻ നാമം റിലീസ് ചെയ്യുന്നില്ല). ഡ്രാഫ്റ്റ് പിൻവലിച്ചു, കോൺഫിഗർ ചെയ്ത് വീണ്ടും ശ്രമിക്കുന്നതിന് അഡ്മിനിസ്ട്രേറ്ററെ ബന്ധപ്പെടുക.',
-  'showcase.publishModal.uploadStorageRejected': 'ഒബ്‌ജക്റ്റ് സ്റ്റോറേജ് ഈ അപ്‌ലോഡ് നിരസിച്ചു. ഡ്രാഫ്റ്റ് പിൻവലിച്ചു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക; ഇത് ആവർത്തിച്ച് പരാജയപ്പെടുകയാണെങ്കിൽ, ദയവായി അഡ്മിനിസ്ട്രേറ്ററെ ബന്ധപ്പെടുക.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'അപ്‌ലോഡ് പരാജയപ്പെട്ടു, ഡ്രാഫ്റ്റ് പിൻവലിച്ചു, വീണ്ടും ശ്രമിക്കുക.',
+  'showcase.publishModal.uploadCorsFailed':
+    'ഒബ്‌ജക്റ്റ് സ്റ്റോറേജിലേക്ക് ഫയൽ അപ്‌ലോഡ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു (പൊതുവായ കാരണങ്ങൾ: ബക്കറ്റ് CORS നിലവിലെ വെബ്‌സൈറ്റിനെ അനുവദിക്കുന്നില്ല, അല്ലെങ്കിൽ വെബ്‌സൈറ്റ് CSP COS ഡൊമെയ്ൻ നാമം റിലീസ് ചെയ്യുന്നില്ല). ഡ്രാഫ്റ്റ് പിൻവലിച്ചു, കോൺഫിഗർ ചെയ്ത് വീണ്ടും ശ്രമിക്കുന്നതിന് അഡ്മിനിസ്ട്രേറ്ററെ ബന്ധപ്പെടുക.',
+  'showcase.publishModal.uploadStorageRejected':
+    'ഒബ്‌ജക്റ്റ് സ്റ്റോറേജ് ഈ അപ്‌ലോഡ് നിരസിച്ചു. ഡ്രാഫ്റ്റ് പിൻവലിച്ചു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക; ഇത് ആവർത്തിച്ച് പരാജയപ്പെടുകയാണെങ്കിൽ, ദയവായി അഡ്മിനിസ്ട്രേറ്ററെ ബന്ധപ്പെടുക.',
   'showcase.publishModal.uploadFailed': 'അപ്‌ലോഡ് പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക.',
-  'showcase.publishModal.uploadCoverTooLarge': 'കവർ ചിത്രം 2MB പരിധി കവിഞ്ഞു. ദയവായി പ്രിവ്യൂ ചിത്രം കംപ്രസ് ചെയ്യുക അല്ലെങ്കിൽ ഒരു ചെറിയ ചിത്രം ഉപയോഗിച്ച് വീണ്ടും ശ്രമിക്കുക.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'ഫയൽ വലുപ്പ പരിധി കവിയുന്നു (രേഖകൾ/ചിത്രങ്ങൾക്ക് 20MB, വീഡിയോകൾക്ക് 100MB). ദയവായി കംപ്രസ് ചെയ്‌ത് വീണ്ടും ശ്രമിക്കുക.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'ഫയൽ വലുപ്പ പരിധി കവിയുന്നു (രേഖകൾ/ചിത്രങ്ങൾക്ക് 20MB, വീഡിയോകൾക്ക് 100MB). ഡ്രാഫ്റ്റ് പിൻവലിച്ചു, ദയവായി അത് കംപ്രസ്സുചെയ്‌ത് വീണ്ടും ശ്രമിക്കുക.',
-  'showcase.publishModal.uploadFileTooLarge': 'ഫയൽ വളരെ വലുതാണ് കൂടാതെ നിലവിലെ അപ്‌ലോഡ് തരത്തിൻ്റെ പരിധി കവിയുന്നു. ദയവായി വലിപ്പം സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'ഫയൽ വളരെ വലുതാണ് കൂടാതെ നിലവിലെ അപ്‌ലോഡ് തരത്തിൻ്റെ പരിധി കവിയുന്നു. ഡ്രാഫ്റ്റ് പിൻവലിച്ചു, ദയവായി വലിപ്പം സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
-  'showcase.publishModal.coverUploadSkipped': 'കേസ് സമർപ്പിച്ചെങ്കിലും കവർ അപ്‌ലോഡ് പരാജയപ്പെട്ടു. കവർ പേജ് അപ്ഡേറ്റ് ചെയ്യാൻ കേസ് പിന്നീട് എഡിറ്റ് ചെയ്യാം.',
-  'showcase.publishModal.coverGenerating': 'പശ്ചാത്തലത്തിൽ കവർ ജനറേറ്റുചെയ്യുന്നു, അത് പിന്നീട് കാർഡിൽ പ്രദർശിപ്പിക്കും.',
-  'showcase.publishModal.coverFailed': 'കേസ് സമർപ്പിച്ചെങ്കിലും കവർ ജനറേഷൻ പരാജയപ്പെട്ടു. കവർ പുതുക്കാൻ നിങ്ങൾക്ക് കേസ് പിന്നീട് എഡിറ്റ് ചെയ്യാം.',
-  'showcase.publishModal.coverFailedTimeout': 'കേസ് സമർപ്പിച്ചെങ്കിലും കവർ ജനറേഷൻ സമയപരിധി കഴിഞ്ഞു. കവർ പുതുക്കാൻ നിങ്ങൾക്ക് കേസ് പിന്നീട് എഡിറ്റ് ചെയ്യാം.',
-  'showcase.publishModal.success': 'കേസ് സമർപ്പിച്ചു, അഡ്മിനിസ്ട്രേറ്ററുടെ അവലോകനത്തിനായി കാത്തിരിക്കുകയാണ്',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'കവർ ചിത്രം 2MB പരിധി കവിഞ്ഞു. ദയവായി പ്രിവ്യൂ ചിത്രം കംപ്രസ് ചെയ്യുക അല്ലെങ്കിൽ ഒരു ചെറിയ ചിത്രം ഉപയോഗിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'ഫയൽ വലുപ്പ പരിധി കവിയുന്നു (രേഖകൾ/ചിത്രങ്ങൾക്ക് 20MB, വീഡിയോകൾക്ക് 100MB). ദയവായി കംപ്രസ് ചെയ്‌ത് വീണ്ടും ശ്രമിക്കുക.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'ഫയൽ വലുപ്പ പരിധി കവിയുന്നു (രേഖകൾ/ചിത്രങ്ങൾക്ക് 20MB, വീഡിയോകൾക്ക് 100MB). ഡ്രാഫ്റ്റ് പിൻവലിച്ചു, ദയവായി അത് കംപ്രസ്സുചെയ്‌ത് വീണ്ടും ശ്രമിക്കുക.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'ഫയൽ വളരെ വലുതാണ് കൂടാതെ നിലവിലെ അപ്‌ലോഡ് തരത്തിൻ്റെ പരിധി കവിയുന്നു. ദയവായി വലിപ്പം സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'ഫയൽ വളരെ വലുതാണ് കൂടാതെ നിലവിലെ അപ്‌ലോഡ് തരത്തിൻ്റെ പരിധി കവിയുന്നു. ഡ്രാഫ്റ്റ് പിൻവലിച്ചു, ദയവായി വലിപ്പം സ്ഥിരീകരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+  'showcase.publishModal.coverUploadSkipped':
+    'കേസ് സമർപ്പിച്ചെങ്കിലും കവർ അപ്‌ലോഡ് പരാജയപ്പെട്ടു. കവർ പേജ് അപ്ഡേറ്റ് ചെയ്യാൻ കേസ് പിന്നീട് എഡിറ്റ് ചെയ്യാം.',
+  'showcase.publishModal.coverGenerating':
+    'പശ്ചാത്തലത്തിൽ കവർ ജനറേറ്റുചെയ്യുന്നു, അത് പിന്നീട് കാർഡിൽ പ്രദർശിപ്പിക്കും.',
+  'showcase.publishModal.coverFailed':
+    'കേസ് സമർപ്പിച്ചെങ്കിലും കവർ ജനറേഷൻ പരാജയപ്പെട്ടു. കവർ പുതുക്കാൻ നിങ്ങൾക്ക് കേസ് പിന്നീട് എഡിറ്റ് ചെയ്യാം.',
+  'showcase.publishModal.coverFailedTimeout':
+    'കേസ് സമർപ്പിച്ചെങ്കിലും കവർ ജനറേഷൻ സമയപരിധി കഴിഞ്ഞു. കവർ പുതുക്കാൻ നിങ്ങൾക്ക് കേസ് പിന്നീട് എഡിറ്റ് ചെയ്യാം.',
+  'showcase.publishModal.success':
+    'കേസ് സമർപ്പിച്ചു, അഡ്മിനിസ്ട്രേറ്ററുടെ അവലോകനത്തിനായി കാത്തിരിക്കുകയാണ്',
   'showcase.publishModal.fromCanvas': 'ക്യാൻവാസിൽ നിന്ന് പ്രസിദ്ധീകരിക്കുക',
   'showcase.publishModal.step1Title': 'അടിസ്ഥാന വിവരങ്ങൾ',
   'showcase.publishModal.step1Desc': 'തരങ്ങളും ഫയലുകളും',
@@ -79,68 +99,102 @@ export default {
   'showcase.publishModal.uploadLabel': 'ഫയലുകൾ അപ്‌ലോഡ് ചെയ്യുക',
   'showcase.publishModal.uploadImage': 'ചിത്രങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക',
   'showcase.publishModal.uploadFile': 'ഫയലുകൾ അപ്‌ലോഡ് ചെയ്യുക',
-  'showcase.publishModal.directUploadDisabled': 'ലോക്കൽ ഡയറക്ട് ട്രാൻസ്മിഷൻ താൽക്കാലികമായി ലഭ്യമല്ല, എന്നാൽ ചരിത്രത്തിൽ നിന്ന് നിങ്ങൾക്ക് ഇപ്പോഴും ഐക്കൺ തിരഞ്ഞെടുക്കാനാകും.',
-  'showcase.publishModal.uploadViaStorage': 'സുരക്ഷിതമായ ഹ്രസ്വകാല ലിങ്കുകൾ വഴി ഫയലുകൾ ഒബ്‌ജക്റ്റ് സ്റ്റോറേജിലേക്ക് അപ്‌ലോഡ് ചെയ്യും.',
-  'showcase.publishModal.pickHistory': 'നിങ്ങളുടെ സ്വകാര്യ ലൈബ്രറിയിൽ നിന്ന് ഒരു ഐക്കൺ തിരഞ്ഞെടുക്കുക',
+  'showcase.publishModal.directUploadDisabled':
+    'ലോക്കൽ ഡയറക്ട് ട്രാൻസ്മിഷൻ താൽക്കാലികമായി ലഭ്യമല്ല, എന്നാൽ ചരിത്രത്തിൽ നിന്ന് നിങ്ങൾക്ക് ഇപ്പോഴും ഐക്കൺ തിരഞ്ഞെടുക്കാനാകും.',
+  'showcase.publishModal.uploadViaStorage':
+    'സുരക്ഷിതമായ ഹ്രസ്വകാല ലിങ്കുകൾ വഴി ഫയലുകൾ ഒബ്‌ജക്റ്റ് സ്റ്റോറേജിലേക്ക് അപ്‌ലോഡ് ചെയ്യും.',
+  'showcase.publishModal.pickHistory':
+    'നിങ്ങളുടെ സ്വകാര്യ ലൈബ്രറിയിൽ നിന്ന് ഒരു ഐക്കൺ തിരഞ്ഞെടുക്കുക',
   'showcase.publishModal.removeFile': 'നീക്കം ചെയ്യുക',
-  'showcase.publishModal.teachingDocHint': 'പിന്തുണ .docx / .pdf / .pptx / .doc (പരിവർത്തനത്തിന് ശേഷം പൂർണ്ണ പ്രിവ്യൂ)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx / .doc (പരിവർത്തനത്തിനു ശേഷമുള്ള പൂർണ്ണ പ്രിവ്യൂ) പിന്തുണയ്ക്കുന്നു, ഒരൊറ്റ പ്രമാണം {maxMb} MB കവിയരുത്',
-  'showcase.publishModal.teachingDocTooLarge': 'ഡോക്യുമെൻ്റ് വലുപ്പം {maxMb} MB പരിധി കവിയുന്നു, ദയവായി അത് കംപ്രസ്സുചെയ്‌ത് വീണ്ടും അപ്‌ലോഡ് ചെയ്യുക.',
+  'showcase.publishModal.teachingDocHint':
+    'പിന്തുണ .docx / .pdf / .pptx / .doc (പരിവർത്തനത്തിന് ശേഷം പൂർണ്ണ പ്രിവ്യൂ)',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx / .doc (പരിവർത്തനത്തിനു ശേഷമുള്ള പൂർണ്ണ പ്രിവ്യൂ) പിന്തുണയ്ക്കുന്നു, ഒരൊറ്റ പ്രമാണം {maxMb} MB കവിയരുത്',
+  'showcase.publishModal.teachingDocTooLarge':
+    'ഡോക്യുമെൻ്റ് വലുപ്പം {maxMb} MB പരിധി കവിയുന്നു, ദയവായി അത് കംപ്രസ്സുചെയ്‌ത് വീണ്ടും അപ്‌ലോഡ് ചെയ്യുക.',
   'showcase.publishModal.diagramImageHint': 'പിന്തുണ .png / .jpg / .jpeg / .webp / .gif',
-  'showcase.publishModal.uploadImages': 'ചിത്രങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക (ഒന്നിലധികം ചോയ്‌സുകൾ ലഭ്യമാണ്)',
-  'showcase.publishModal.galleryHint': 'ചിത്രീകരണ കേസുകൾക്ക് ഒന്നിലധികം ചിത്രങ്ങളും ഒന്നിലധികം ചരിത്ര ഐക്കണുകളും ചേർക്കാൻ കഴിയും, {max} ഇനങ്ങൾ വരെ',
-  'showcase.publishModal.galleryHintCase': 'ഒന്നിലധികം ചിത്രങ്ങളും ചരിത്രപരമായ ഐക്കണുകളും ചേർക്കാൻ കഴിയും, {max} ഇനങ്ങൾ വരെ',
-  'showcase.publishModal.galleryHintTemplate': 'നിങ്ങൾക്ക് .mg ഫയലുകൾ അപ്‌ലോഡ് ചെയ്യാനും ഒന്നിലധികം ചരിത്ര ഐക്കണുകൾ തിരഞ്ഞെടുക്കാനും കഴിയും, {max} ഇനങ്ങൾ വരെ',
+  'showcase.publishModal.uploadImages':
+    'ചിത്രങ്ങൾ അപ്‌ലോഡ് ചെയ്യുക (ഒന്നിലധികം ചോയ്‌സുകൾ ലഭ്യമാണ്)',
+  'showcase.publishModal.galleryHint':
+    'ചിത്രീകരണ കേസുകൾക്ക് ഒന്നിലധികം ചിത്രങ്ങളും ഒന്നിലധികം ചരിത്ര ഐക്കണുകളും ചേർക്കാൻ കഴിയും, {max} ഇനങ്ങൾ വരെ',
+  'showcase.publishModal.galleryHintCase':
+    'ഒന്നിലധികം ചിത്രങ്ങളും ചരിത്രപരമായ ഐക്കണുകളും ചേർക്കാൻ കഴിയും, {max} ഇനങ്ങൾ വരെ',
+  'showcase.publishModal.galleryHintTemplate':
+    'നിങ്ങൾക്ക് .mg ഫയലുകൾ അപ്‌ലോഡ് ചെയ്യാനും ഒന്നിലധികം ചരിത്ര ഐക്കണുകൾ തിരഞ്ഞെടുക്കാനും കഴിയും, {max} ഇനങ്ങൾ വരെ',
   'showcase.publishModal.galleryCount': '{count}/{max} ഇനങ്ങൾ ചേർത്തു',
   'showcase.publishModal.galleryImageItem': 'ചിത്രം: {name}',
   'showcase.publishModal.galleryDiagramItem': 'ചിത്രീകരണം: {name}',
   'showcase.publishModal.galleryLimit': '{max} ഇനങ്ങൾ വരെ ചേർക്കുക',
   'showcase.publishModal.galleryDuplicateDiagram': 'ചരിത്ര ഐക്കൺ ഇതിനകം പട്ടികയിലുണ്ട്',
   'showcase.publishModal.galleryPickerDone': 'സമ്പൂർണ്ണ തിരഞ്ഞെടുപ്പ്',
-  'showcase.publishModal.galleryUploadFailed': 'ഗാലറി ഇമേജ് അപ്‌ലോഡ് പരാജയപ്പെട്ടു, ദയവായി വീണ്ടും പോസ്റ്റ് ചെയ്യുക',
-  'showcase.publishModal.galleryReuploadHint': 'ചില ഗാലറി ചിത്രങ്ങൾ വിജയകരമായി സംരക്ഷിച്ചില്ല, സമർപ്പിക്കുന്നതിന് മുമ്പ് ചിത്രങ്ങൾ വീണ്ടും തിരഞ്ഞെടുക്കുക.',
+  'showcase.publishModal.galleryUploadFailed':
+    'ഗാലറി ഇമേജ് അപ്‌ലോഡ് പരാജയപ്പെട്ടു, ദയവായി വീണ്ടും പോസ്റ്റ് ചെയ്യുക',
+  'showcase.publishModal.galleryReuploadHint':
+    'ചില ഗാലറി ചിത്രങ്ങൾ വിജയകരമായി സംരക്ഷിച്ചില്ല, സമർപ്പിക്കുന്നതിന് മുമ്പ് ചിത്രങ്ങൾ വീണ്ടും തിരഞ്ഞെടുക്കുക.',
   'showcase.detail.galleryImage': 'ചിത്രം',
   'showcase.detail.galleryDiagram': 'ചിത്രീകരണം',
   'showcase.detail.galleryPrev': 'മുമ്പത്തെ ചിത്രം',
   'showcase.detail.galleryNext': 'അടുത്തത്',
   'showcase.detail.gallerySwipeHint': 'സ്വിച്ചുചെയ്യാൻ ഇടത്തോട്ടോ വലത്തോട്ടോ സ്ലൈഡുചെയ്യുക',
-  'showcase.detail.galleryImageMissing': 'ചിത്രം ലോഡ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു, കേസ് വീണ്ടും പോസ്റ്റ് ചെയ്യുക',
-  'showcase.publishModal.templateFileHint': '.mg ഫോർമാറ്റ് മാത്രം പിന്തുണയ്ക്കുന്നു (MindGraph എക്സ്പോർട്ട് ഫയലുകൾ)',
+  'showcase.detail.galleryImageMissing':
+    'ചിത്രം ലോഡ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു, കേസ് വീണ്ടും പോസ്റ്റ് ചെയ്യുക',
+  'showcase.publishModal.templateFileHint':
+    '.mg ഫോർമാറ്റ് മാത്രം പിന്തുണയ്ക്കുന്നു (MindGraph എക്സ്പോർട്ട് ഫയലുകൾ)',
   'showcase.publishModal.templatePreviewLabel': 'ഐക്കൺ പ്രിവ്യൂ',
-  'showcase.publishModal.templatePreviewHint': 'ഗ്രിപ്പർ മോഡിൽ ബ്രൗസ് ചെയ്യുക, എഡിറ്റ് ചെയ്യാൻ കഴിയില്ല',
-  'showcase.publishModal.templatePreviewEmpty': 'ക്യാൻവാസ് പ്രിവ്യൂ ചെയ്യുന്നതിന് ഒരു .mg ഫയൽ അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ഒരു ചരിത്ര ഐക്കൺ തിരഞ്ഞെടുക്കുക',
+  'showcase.publishModal.templatePreviewHint':
+    'ഗ്രിപ്പർ മോഡിൽ ബ്രൗസ് ചെയ്യുക, എഡിറ്റ് ചെയ്യാൻ കഴിയില്ല',
+  'showcase.publishModal.templatePreviewEmpty':
+    'ക്യാൻവാസ് പ്രിവ്യൂ ചെയ്യുന്നതിന് ഒരു .mg ഫയൽ അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ഒരു ചരിത്ര ഐക്കൺ തിരഞ്ഞെടുക്കുക',
   'showcase.publishModal.diagramCasePreviewLabel': 'ഐക്കൺ പ്രിവ്യൂ',
-  'showcase.publishModal.diagramCasePreviewHint': 'ഗ്രിപ്പർ മോഡിൽ ബ്രൗസ് ചെയ്യുക, കാണാൻ സൂം ചെയ്യുക',
-  'showcase.publishModal.diagramTypeAutoMatched': 'തിരഞ്ഞെടുത്ത ചരിത്ര ഐക്കണിനെ അടിസ്ഥാനമാക്കി യാന്ത്രികമായി പൊരുത്തപ്പെടുന്ന ഐക്കൺ തരം',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'ഗ്രിപ്പർ മോഡിൽ ബ്രൗസ് ചെയ്യുക, കാണാൻ സൂം ചെയ്യുക',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'തിരഞ്ഞെടുത്ത ചരിത്ര ഐക്കണിനെ അടിസ്ഥാനമാക്കി യാന്ത്രികമായി പൊരുത്തപ്പെടുന്ന ഐക്കൺ തരം',
   'showcase.publishModal.introLabel': 'ഗ്രാഫിക് ആമുഖം',
   'showcase.publishModal.teachingIntroLabel': 'ഇൻസ്ട്രക്ഷണൽ ഡിസൈനിലേക്കുള്ള ആമുഖം',
   'showcase.publishModal.highlightsLabel': 'ഡിസൈൻ ഹൈലൈറ്റുകൾ',
-  'showcase.publishModal.highlightsPlaceholder': 'ഈ കോഴ്‌സ് ഡിസൈനിൻ്റെ ഹൈലൈറ്റുകൾ ഓരോന്നായി വിവരിക്കുക, ഓരോ വരിയിലും ഒരു വരി (ഓപ്ഷണൽ)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'ഈ കോഴ്‌സിൻ്റെ അധ്യാപന രൂപകൽപ്പനയുടെ പശ്ചാത്തലവും ലക്ഷ്യങ്ങളും ബാധകമായ സാഹചര്യങ്ങളും ഹ്രസ്വമായി അവതരിപ്പിക്കുക',
+  'showcase.publishModal.highlightsPlaceholder':
+    'ഈ കോഴ്‌സ് ഡിസൈനിൻ്റെ ഹൈലൈറ്റുകൾ ഓരോന്നായി വിവരിക്കുക, ഓരോ വരിയിലും ഒരു വരി (ഓപ്ഷണൽ)',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'ഈ കോഴ്‌സിൻ്റെ അധ്യാപന രൂപകൽപ്പനയുടെ പശ്ചാത്തലവും ലക്ഷ്യങ്ങളും ബാധകമായ സാഹചര്യങ്ങളും ഹ്രസ്വമായി അവതരിപ്പിക്കുക',
   'showcase.publishModal.aiGenerate': 'AI സൃഷ്ടിച്ചു',
   'showcase.publishModal.aiGenerating': 'AI സൃഷ്ടിക്കുന്നു...',
   'showcase.publishModal.aiGenerateStop': 'നിർത്തുക',
-  'showcase.publishModal.aiGenerateCancelled': 'AI ജനറേഷൻ നിർത്തി - മായ്‌ക്കാനും പുനഃസൃഷ്ടിക്കാനും വീണ്ടും ക്ലിക്ക് ചെയ്യുക',
-  'showcase.publishModal.aiGenerateSuccess': 'ഡോക്യുമെൻ്റിനെ അടിസ്ഥാനമാക്കി ടീച്ചിംഗ് ഡിസൈൻ ആമുഖവും ഡിസൈൻ ഹൈലൈറ്റുകളും സൃഷ്ടിച്ചു. ദയവായി പരിശോധിച്ച് എഡിറ്റ് ചെയ്യുക; പഠിപ്പിക്കുന്ന പ്രതിഫലനം സ്വയം പൂരിപ്പിക്കുക.',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'ചിത്രീകരണത്തെ അടിസ്ഥാനമാക്കിയാണ് ചിത്രീകരണ ആമുഖവും ക്ലാസ് റൂം ആപ്ലിക്കേഷനും സൃഷ്ടിച്ചിരിക്കുന്നത്. ദയവായി പരിശോധിച്ച് എഡിറ്റ് ചെയ്യുക.',
-  'showcase.publishModal.aiGenerateFailed': 'AI ജനറേഷൻ പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
-  'showcase.publishModal.aiGenerateNeedFile': 'മുമ്പത്തെ ഘട്ടത്തിലെ നിർദ്ദേശാധിഷ്ഠിത ഡിസൈൻ ഡോക്യുമെൻ്റ് ആദ്യം അപ്‌ലോഡ് ചെയ്യുക',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'ദയവായി ഒരു ചിത്രം അപ്‌ലോഡ് ചെയ്യുക, ഒരു സ്വകാര്യ ലൈബ്രറി ഐക്കൺ തിരഞ്ഞെടുക്കുക അല്ലെങ്കിൽ മുമ്പത്തെ ഘട്ടത്തിൽ ഒരു .mg ഫയൽ അപ്‌ലോഡ് ചെയ്യുക.',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'AI ജനറേഷൻ നിലവിൽ ഇൻസ്ട്രക്ഷണൽ ഡിസൈൻ കേസുകൾ മാത്രമേ പിന്തുണയ്ക്കുന്നുള്ളൂ',
+  'showcase.publishModal.aiGenerateCancelled':
+    'AI ജനറേഷൻ നിർത്തി - മായ്‌ക്കാനും പുനഃസൃഷ്ടിക്കാനും വീണ്ടും ക്ലിക്ക് ചെയ്യുക',
+  'showcase.publishModal.aiGenerateSuccess':
+    'ഡോക്യുമെൻ്റിനെ അടിസ്ഥാനമാക്കി ടീച്ചിംഗ് ഡിസൈൻ ആമുഖവും ഡിസൈൻ ഹൈലൈറ്റുകളും സൃഷ്ടിച്ചു. ദയവായി പരിശോധിച്ച് എഡിറ്റ് ചെയ്യുക; പഠിപ്പിക്കുന്ന പ്രതിഫലനം സ്വയം പൂരിപ്പിക്കുക.',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'ചിത്രീകരണത്തെ അടിസ്ഥാനമാക്കിയാണ് ചിത്രീകരണ ആമുഖവും ക്ലാസ് റൂം ആപ്ലിക്കേഷനും സൃഷ്ടിച്ചിരിക്കുന്നത്. ദയവായി പരിശോധിച്ച് എഡിറ്റ് ചെയ്യുക.',
+  'showcase.publishModal.aiGenerateFailed':
+    'AI ജനറേഷൻ പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'മുമ്പത്തെ ഘട്ടത്തിലെ നിർദ്ദേശാധിഷ്ഠിത ഡിസൈൻ ഡോക്യുമെൻ്റ് ആദ്യം അപ്‌ലോഡ് ചെയ്യുക',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'ദയവായി ഒരു ചിത്രം അപ്‌ലോഡ് ചെയ്യുക, ഒരു സ്വകാര്യ ലൈബ്രറി ഐക്കൺ തിരഞ്ഞെടുക്കുക അല്ലെങ്കിൽ മുമ്പത്തെ ഘട്ടത്തിൽ ഒരു .mg ഫയൽ അപ്‌ലോഡ് ചെയ്യുക.',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'AI ജനറേഷൻ നിലവിൽ ഇൻസ്ട്രക്ഷണൽ ഡിസൈൻ കേസുകൾ മാത്രമേ പിന്തുണയ്ക്കുന്നുള്ളൂ',
   'showcase.publishModal.reflectionLabel': 'പഠിപ്പിക്കൽ പ്രതിഫലനം',
-  'showcase.publishModal.introPlaceholder': 'കേസിൻ്റെ ഉള്ളടക്കവും ബാധകമായ സാഹചര്യങ്ങളും സംക്ഷിപ്തമായി വിവരിക്കുക',
-  'showcase.publishModal.diagramCorePlaceholder': 'ഈ ഡയഗ്രാമിൻ്റെ പ്രധാന ഉള്ളടക്കവും ചിന്താ ദൃശ്യവൽക്കരണ സവിശേഷതകളും വിവരിക്കുക',
-  'showcase.publishModal.classroomAppPlaceholder': 'ക്ലാസ് മുറിയിൽ ഈ ചിത്രീകരണം എങ്ങനെ ഉപയോഗിക്കാമെന്ന് വിവരിക്കുക',
-  'showcase.publishModal.tagInputPlaceholder': 'ലേബൽ നൽകുക (10 പ്രതീകങ്ങൾ വരെ) ചേർക്കാൻ എൻ്റർ അമർത്തുക',
+  'showcase.publishModal.introPlaceholder':
+    'കേസിൻ്റെ ഉള്ളടക്കവും ബാധകമായ സാഹചര്യങ്ങളും സംക്ഷിപ്തമായി വിവരിക്കുക',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'ഈ ഡയഗ്രാമിൻ്റെ പ്രധാന ഉള്ളടക്കവും ചിന്താ ദൃശ്യവൽക്കരണ സവിശേഷതകളും വിവരിക്കുക',
+  'showcase.publishModal.classroomAppPlaceholder':
+    'ക്ലാസ് മുറിയിൽ ഈ ചിത്രീകരണം എങ്ങനെ ഉപയോഗിക്കാമെന്ന് വിവരിക്കുക',
+  'showcase.publishModal.tagInputPlaceholder':
+    'ലേബൽ നൽകുക (10 പ്രതീകങ്ങൾ വരെ) ചേർക്കാൻ എൻ്റർ അമർത്തുക',
   'showcase.publishModal.tagRecommended': 'ശുപാർശ ചെയ്യുന്ന ടാഗുകൾ',
   'showcase.publishModal.tagCountHint': '(പരമാവധി {max})',
   'showcase.publishModal.tagMaxCount': 'പരമാവധി {max} ടാഗുകൾ മാത്രമേ ചേർക്കാനാവൂ',
-  'showcase.publishModal.networkError': 'സമർപ്പിക്കൽ പരാജയപ്പെട്ടു: അപ്‌ലോഡ് കണക്ഷൻ തടസ്സപ്പെട്ടു. പുതുക്കി വീണ്ടും ശ്രമിക്കുന്നതിന് ദയവായി Ctrl+F5; അതിൽ വീഡിയോ അടങ്ങിയിട്ടുണ്ടെങ്കിൽ, ഒരൊറ്റ ഫയൽ ≤100MB ആണെന്നും ആകെ ≤105MB ആണെന്നും സ്ഥിരീകരിക്കുക.',
+  'showcase.publishModal.networkError':
+    'സമർപ്പിക്കൽ പരാജയപ്പെട്ടു: അപ്‌ലോഡ് കണക്ഷൻ തടസ്സപ്പെട്ടു. പുതുക്കി വീണ്ടും ശ്രമിക്കുന്നതിന് ദയവായി Ctrl+F5; അതിൽ വീഡിയോ അടങ്ങിയിട്ടുണ്ടെങ്കിൽ, ഒരൊറ്റ ഫയൽ ≤100MB ആണെന്നും ആകെ ≤105MB ആണെന്നും സ്ഥിരീകരിക്കുക.',
   'showcase.publishModal.fileTooLarge': '"{name}" {maxMb}MB വലുപ്പ പരിധി കവിഞ്ഞു',
-  'showcase.publishModal.uploadTotalTooLarge': 'അപ്‌ലോഡ് ചെയ്ത ഫയലുകളുടെ ആകെ വലുപ്പം പരിധി കവിയുന്നു. അറ്റാച്ച്‌മെൻ്റുകളുടെയോ വീഡിയോകളുടെയോ വലുപ്പം കുറയ്ക്കുക.',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'അപ്‌ലോഡ് ചെയ്ത ഫയലുകളുടെ ആകെ വലുപ്പം പരിധി കവിയുന്നു. അറ്റാച്ച്‌മെൻ്റുകളുടെയോ വീഡിയോകളുടെയോ വലുപ്പം കുറയ്ക്കുക.',
   'showcase.publishModal.tagAdd': 'ഇതിലേക്ക് ചേർക്കുക',
   'showcase.publishModal.publishBtn': 'റിലീസ്',
-  'showcase.publishModal.reflectionPlaceholder': 'ഈ പാഠത്തിൻ്റെ അധ്യാപനത്തെക്കുറിച്ചുള്ള നിങ്ങളുടെ പ്രതിഫലനവും സംഗ്രഹവും എഴുതുക (ഓപ്ഷണൽ)',
+  'showcase.publishModal.reflectionPlaceholder':
+    'ഈ പാഠത്തിൻ്റെ അധ്യാപനത്തെക്കുറിച്ചുള്ള നിങ്ങളുടെ പ്രതിഫലനവും സംഗ്രഹവും എഴുതുക (ഓപ്ഷണൽ)',
   'showcase.publishModal.classroomAppLabel': 'ക്ലാസ്റൂം ആപ്ലിക്കേഷൻ',
   'showcase.publishModal.selectSubject': 'ദയവായി ഒരു വിഷയം തിരഞ്ഞെടുക്കുക',
   'showcase.publishModal.selectGrade': 'ഗ്രേഡ് തിരഞ്ഞെടുക്കുക',
@@ -148,20 +202,27 @@ export default {
   'showcase.publishModal.validationTitle': 'കേസിൻ്റെ പേര് ദയവായി പൂരിപ്പിക്കുക',
   'showcase.publishModal.validationSubject': 'ദയവായി ഒരു വിഷയം തിരഞ്ഞെടുക്കുക',
   'showcase.publishModal.validationGrade': 'ഗ്രേഡ് തിരഞ്ഞെടുക്കുക',
-  'showcase.publishModal.validationFile': 'ദയവായി ഒരു ഫയൽ അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ഒരു ചരിത്ര ഐക്കൺ തിരഞ്ഞെടുക്കുക',
+  'showcase.publishModal.validationFile':
+    'ദയവായി ഒരു ഫയൽ അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ഒരു ചരിത്ര ഐക്കൺ തിരഞ്ഞെടുക്കുക',
   'showcase.publishModal.validationDiagramType': 'ദയവായി ഐക്കൺ തരം തിരഞ്ഞെടുക്കുക',
   'showcase.publishModal.invalidFileType': 'ഫയൽ ഫോർമാറ്റ് പിന്തുണയ്ക്കുന്നില്ല',
-  'showcase.publishModal.invalidMgFile': '.mg ഫയൽ വായിക്കാൻ കഴിയുന്നില്ല, ഫയൽ MindGraph കയറ്റുമതിയിൽ നിന്നുള്ളതാണെന്ന് ദയവായി സ്ഥിരീകരിക്കുക',
-  'showcase.publishModal.cannotPreview': 'കവർ പ്രിവ്യൂ സൃഷ്‌ടിക്കാൻ കഴിയുന്നില്ല, കേസ് തുടർന്നും സമർപ്പിക്കും; PNG/JPG പരീക്ഷിക്കുക അല്ലെങ്കിൽ ചരിത്രപരമായ ഐക്കണുകളിൽ നിന്ന് തിരഞ്ഞെടുക്കുക',
-  'showcase.publishModal.cannotPreviewHistory': 'ഈ ചരിത്ര ചിത്രീകരണത്തിൽ നിന്ന് കവർ സൃഷ്ടിക്കാൻ കഴിയുന്നില്ല, കേസ് ഇപ്പോഴും സമർപ്പിക്കും; ദയവായി വീണ്ടും തിരഞ്ഞെടുക്കുക, അല്ലെങ്കിൽ ആദ്യം ക്യാൻവാസിൽ തുറന്ന് വീണ്ടും സംരക്ഷിക്കുക',
-  'showcase.publishModal.cannotPreviewTemplate': 'കവർ പ്രിവ്യൂ സൃഷ്ടിക്കാൻ കഴിയുന്നില്ല, കേസ് ഇപ്പോഴും സമർപ്പിക്കും; .mg ഫയൽ സാധുതയുള്ളതാണെന്ന് ദയവായി സ്ഥിരീകരിക്കുക അല്ലെങ്കിൽ ചരിത്ര ഐക്കൺ വീണ്ടും തിരഞ്ഞെടുക്കുക',
+  'showcase.publishModal.invalidMgFile':
+    '.mg ഫയൽ വായിക്കാൻ കഴിയുന്നില്ല, ഫയൽ MindGraph കയറ്റുമതിയിൽ നിന്നുള്ളതാണെന്ന് ദയവായി സ്ഥിരീകരിക്കുക',
+  'showcase.publishModal.cannotPreview':
+    'കവർ പ്രിവ്യൂ സൃഷ്‌ടിക്കാൻ കഴിയുന്നില്ല, കേസ് തുടർന്നും സമർപ്പിക്കും; PNG/JPG പരീക്ഷിക്കുക അല്ലെങ്കിൽ ചരിത്രപരമായ ഐക്കണുകളിൽ നിന്ന് തിരഞ്ഞെടുക്കുക',
+  'showcase.publishModal.cannotPreviewHistory':
+    'ഈ ചരിത്ര ചിത്രീകരണത്തിൽ നിന്ന് കവർ സൃഷ്ടിക്കാൻ കഴിയുന്നില്ല, കേസ് ഇപ്പോഴും സമർപ്പിക്കും; ദയവായി വീണ്ടും തിരഞ്ഞെടുക്കുക, അല്ലെങ്കിൽ ആദ്യം ക്യാൻവാസിൽ തുറന്ന് വീണ്ടും സംരക്ഷിക്കുക',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'കവർ പ്രിവ്യൂ സൃഷ്ടിക്കാൻ കഴിയുന്നില്ല, കേസ് ഇപ്പോഴും സമർപ്പിക്കും; .mg ഫയൽ സാധുതയുള്ളതാണെന്ന് ദയവായി സ്ഥിരീകരിക്കുക അല്ലെങ്കിൽ ചരിത്ര ഐക്കൺ വീണ്ടും തിരഞ്ഞെടുക്കുക',
   'showcase.publishModal.historyTitle': 'വ്യക്തിഗത ലൈബ്രറി',
   'showcase.publishModal.historySearch': 'ഐക്കൺ പേര് തിരയുക...',
   'showcase.publishModal.historyEmpty': 'സ്വകാര്യ ലൈബ്രറിയിൽ ഇതുവരെ ഒരു ഐക്കണും ഇല്ല',
   'showcase.publishModal.historyUncategorized': 'വർഗ്ഗീകരിക്കാത്തത്',
   'showcase.publishModal.typeDesc.teachingDesign': 'ചിന്താ വികസനം ക്ലാസ്റൂം ടീച്ചിംഗ് ഡിസൈൻ',
-  'showcase.publishModal.typeDesc.diagramCase': 'മികച്ച ചിത്രീകരണ പങ്കിടൽ അല്ലെങ്കിൽ ചിന്താ വിഷ്വലൈസേഷൻ ടീച്ചിംഗ് ആപ്ലിക്കേഷൻ',
-  'showcase.publishModal.typeDesc.diagramTemplate': 'വീണ്ടും ഉപയോഗിക്കാനോ പുനഃസൃഷ്ടിക്കാനോ കഴിയുന്ന ഐക്കണുകൾ',
+  'showcase.publishModal.typeDesc.diagramCase':
+    'മികച്ച ചിത്രീകരണ പങ്കിടൽ അല്ലെങ്കിൽ ചിന്താ വിഷ്വലൈസേഷൻ ടീച്ചിംഗ് ആപ്ലിക്കേഷൻ',
+  'showcase.publishModal.typeDesc.diagramTemplate':
+    'വീണ്ടും ഉപയോഗിക്കാനോ പുനഃസൃഷ്ടിക്കാനോ കഴിയുന്ന ഐക്കണുകൾ',
   'showcase.detail.import': 'ഈ കേസ് ഉപയോഗിക്കുക',
   'showcase.action.goDraw': 'പോയി ഒരു ചിത്രം വരയ്ക്കുക',
   'showcase.action.applyTemplate': 'ഈ ടെംപ്ലേറ്റ് പ്രയോഗിക്കുക',
@@ -184,9 +245,11 @@ export default {
   'showcase.detail.delist': 'അലമാരയിൽ നിന്ന് നീക്കം ചെയ്തു',
   'showcase.detail.resubmit': 'പുനഃപരിശോധിച്ച് വീണ്ടും സമർപ്പിക്കുക',
   'showcase.detail.withdrawTitle': 'കേസ് പിൻവലിക്കുക',
-  'showcase.detail.withdrawConfirm': '"{title}" പിൻവലിക്കണമെന്ന് തീർച്ചയാണോ? ഒരിക്കൽ പിൻവലിച്ചാൽ, അത് റിവ്യൂ ക്യൂവിൽ നിന്ന് നീക്കം ചെയ്യപ്പെടും, വീണ്ടെടുക്കാൻ കഴിയില്ല.',
+  'showcase.detail.withdrawConfirm':
+    '"{title}" പിൻവലിക്കണമെന്ന് തീർച്ചയാണോ? ഒരിക്കൽ പിൻവലിച്ചാൽ, അത് റിവ്യൂ ക്യൂവിൽ നിന്ന് നീക്കം ചെയ്യപ്പെടും, വീണ്ടെടുക്കാൻ കഴിയില്ല.',
   'showcase.detail.delistTitle': 'നീക്കംചെയ്യൽ കേസുകൾ',
-  'showcase.detail.delistConfirm': 'കേസ് സ്ക്വയറിൽ നിന്ന് "{title}" നീക്കം ചെയ്യണമെന്ന് തീർച്ചയാണോ? ഇത് നീക്കം ചെയ്‌ത ശേഷം, മറ്റ് ഉപയോക്താക്കൾക്ക് ഇത് ബ്രൗസ് ചെയ്യാൻ കഴിയില്ല.',
+  'showcase.detail.delistConfirm':
+    'കേസ് സ്ക്വയറിൽ നിന്ന് "{title}" നീക്കം ചെയ്യണമെന്ന് തീർച്ചയാണോ? ഇത് നീക്കം ചെയ്‌ത ശേഷം, മറ്റ് ഉപയോക്താക്കൾക്ക് ഇത് ബ്രൗസ് ചെയ്യാൻ കഴിയില്ല.',
   'showcase.detail.confirm': 'തീർച്ചയായും',
   'showcase.detail.cancel': 'റദ്ദാക്കുക',
   'showcase.withdrawn': 'പിൻവലിച്ചു',
@@ -195,7 +258,8 @@ export default {
   'showcase.publishModal.editTitle': 'പുനഃപരിശോധിച്ച് വീണ്ടും സമർപ്പിക്കുക',
   'showcase.publishModal.resubmit': 'അവലോകനത്തിനായി വീണ്ടും സമർപ്പിക്കുക',
   'showcase.publishModal.resubmitting': 'വീണ്ടും സമർപ്പിക്കുന്നു...',
-  'showcase.publishModal.keepExistingFile': 'നിങ്ങൾ അപ്‌ലോഡ് ചെയ്യുന്നില്ലെങ്കിൽ, യഥാർത്ഥ ഫയൽ സൂക്ഷിക്കുക.',
+  'showcase.publishModal.keepExistingFile':
+    'നിങ്ങൾ അപ്‌ലോഡ് ചെയ്യുന്നില്ലെങ്കിൽ, യഥാർത്ഥ ഫയൽ സൂക്ഷിക്കുക.',
   'showcase.detail.views': '{n} കാഴ്‌ചകൾ',
   'showcase.detail.recommended': 'ശുപാർശ ചെയ്തത്',
   'showcase.detail.askMindmate': 'MindMate മൈൻഡ്‌മേറ്റ് ചോദിക്കൂ',
@@ -206,8 +270,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'പ്രിവ്യൂവിനായി പ്രമാണം പരിവർത്തനം ചെയ്യുന്നു...',
   'showcase.detail.officePreviewPending': 'പ്രിവ്യൂവിനായി പ്രമാണം പരിവർത്തനം ചെയ്യുന്നു...',
   'showcase.detail.docPreviewLoading': 'പ്രമാണങ്ങൾ ലോഡ് ചെയ്യുന്നു...',
-  'showcase.detail.docPreviewFailed': 'ഡോക്യുമെൻ്റ് പ്രിവ്യൂ ലോഡുചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു, ദയവായി അത് ഒരു പുതിയ ടാബിൽ തുറക്കാൻ ശ്രമിക്കുക.',
-  'showcase.detail.legacyDocHint': 'ഈ ഓഫീസ് ഡോക്യുമെൻ്റ് പ്രിവ്യൂ കൺവേർഷൻ ഇതുവരെ ലഭ്യമല്ല. പുതിയ ടാബിൽ ഡൗൺലോഡ്/തുറക്കുക, അല്ലെങ്കിൽ പ്രിവ്യൂ പുനഃസൃഷ്ടിക്കുന്നതിന് വീണ്ടും അപ്‌ലോഡ് ചെയ്യുക.',
+  'showcase.detail.docPreviewFailed':
+    'ഡോക്യുമെൻ്റ് പ്രിവ്യൂ ലോഡുചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു, ദയവായി അത് ഒരു പുതിയ ടാബിൽ തുറക്കാൻ ശ്രമിക്കുക.',
+  'showcase.detail.legacyDocHint':
+    'ഈ ഓഫീസ് ഡോക്യുമെൻ്റ് പ്രിവ്യൂ കൺവേർഷൻ ഇതുവരെ ലഭ്യമല്ല. പുതിയ ടാബിൽ ഡൗൺലോഡ്/തുറക്കുക, അല്ലെങ്കിൽ പ്രിവ്യൂ പുനഃസൃഷ്ടിക്കുന്നതിന് വീണ്ടും അപ്‌ലോഡ് ചെയ്യുക.',
   'showcase.detail.noDocument': 'ഇതുവരെ ഡോക്യുമെൻ്റ് പ്രിവ്യൂ ഒന്നുമില്ല',
   'showcase.detail.noDiagramPreview': 'ഇതുവരെ ഐക്കൺ പ്രിവ്യൂ ഒന്നുമില്ല',
   'showcase.detail.diagramPreviewLoading': 'ഐക്കൺ ലോഡുചെയ്യുന്നു...',

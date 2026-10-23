@@ -57,6 +57,19 @@ def is_teaching_instruction_text(text: str) -> bool:
     return parse_reply_kind_from_text(text) == REPLY_KIND_TEACHING_INSTRUCTION
 
 
+_TEACHING_MARKER = f"<!-- mg-reply-kind:{REPLY_KIND_TEACHING_INSTRUCTION} -->"
+
+
+def ensure_teaching_instruction_marker(text: str) -> str:
+    """Keep the Word-template button after reload when the workflow flagged the reply."""
+    if is_teaching_instruction_text(text):
+        return text
+    body = (text or "").rstrip()
+    if not body:
+        return text or ""
+    return f"{body}\n\n{_TEACHING_MARKER}\n"
+
+
 def _is_truthy_flag(value: Any) -> bool:
     if value is True:
         return True

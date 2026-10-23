@@ -218,6 +218,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'canvas', ...pageTitle('privacy') },
   },
   {
+    path: '/browser-plugin',
+    name: 'BrowserPlugin',
+    component: () => import('@/pages/BrowserPluginPage.vue'),
+    meta: { layout: 'canvas', ...pageTitle('browserPlugin') },
+  },
+  {
     path: '/privacy/extension',
     redirect: { path: '/privacy', hash: '#browser-extension' },
   },

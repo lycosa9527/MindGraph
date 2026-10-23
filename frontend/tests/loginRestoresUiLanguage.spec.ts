@@ -1,5 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/auth'
+import { useUIStore } from '@/stores/ui'
 
 vi.mock('@/utils/sessionRefresh', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/utils/sessionRefresh')>()
@@ -8,9 +12,6 @@ vi.mock('@/utils/sessionRefresh', async (importOriginal) => {
     refreshSessionAccessToken: vi.fn(),
   }
 })
-
-import { useAuthStore } from '@/stores/auth'
-import { useUIStore } from '@/stores/ui'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -96,7 +97,9 @@ describe('login restores persisted UI language', () => {
     expect(authStore.user?.uiLanguage).toBe('zh')
     expect(uiStore.language).toBe('zh')
     expect(
-      fetchMock.mock.calls.some((call) => String(call[0]).includes('/api/auth/language-preferences'))
+      fetchMock.mock.calls.some((call) =>
+        String(call[0]).includes('/api/auth/language-preferences')
+      )
     ).toBe(false)
   })
 
@@ -213,7 +216,9 @@ describe('login restores persisted UI language', () => {
     expect(authStore.user?.uiLanguage).toBe('zh')
     expect(uiStore.language).toBe('zh')
     expect(
-      fetchMock.mock.calls.some((call) => String(call[0]).includes('/api/auth/language-preferences'))
+      fetchMock.mock.calls.some((call) =>
+        String(call[0]).includes('/api/auth/language-preferences')
+      )
     ).toBe(false)
 
     authStore.setUser({
@@ -279,7 +284,9 @@ describe('login restores persisted UI language', () => {
       expect(authStore.user?.id).toBe('10')
     })
     expect(
-      fetchMock.mock.calls.some((call) => String(call[0]).includes('/api/auth/language-preferences'))
+      fetchMock.mock.calls.some((call) =>
+        String(call[0]).includes('/api/auth/language-preferences')
+      )
     ).toBe(false)
   })
 })

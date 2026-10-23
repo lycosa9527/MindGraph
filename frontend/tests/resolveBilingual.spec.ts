@@ -1,5 +1,6 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { computed, nextTick } from 'vue'
+
+import { createPinia, setActivePinia } from 'pinia'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 

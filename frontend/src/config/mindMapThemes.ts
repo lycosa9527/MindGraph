@@ -1,5 +1,6 @@
 import type { StylePresetColors } from '@/config/colorPalette'
 import { mindMapDiagramStyleUsesLayeredBranchColors } from '@/config/mindMapDiagramStyles'
+import { MIND_MAP_GEOMETRY, mindMapBranchFontSize } from '@/config/mindMapGeometry'
 import {
   MIND_MAP_RAINBOW_THEME_ID,
   MIND_MAP_RAINBOW_TOPIC_COLORS,
@@ -9,15 +10,9 @@ import {
   mindMapLayeredCenterTopicColors,
   mindMapRainbowColorsForNode,
 } from '@/config/mindMapVibrantThemes'
-import { MIND_MAP_GEOMETRY, mindMapBranchFontSize } from '@/config/mindMapGeometry'
+import { NORD, mindMapColorsFromNord, nordMindMapSourceNote } from '@/config/nordMindMapPresets'
 import {
-  mindMapColorsFromNord,
-  NORD,
-  nordMindMapSourceNote,
-} from '@/config/nordMindMapPresets'
-import {
-  mindMapColorsFromRadixScale,
-  radixMindMapSourceNote,
+  RADIX_COLORS_URL,
   RADIX_LIGHT_AMBER,
   RADIX_LIGHT_CRIMSON,
   RADIX_LIGHT_CYAN,
@@ -25,7 +20,8 @@ import {
   RADIX_LIGHT_MAUVE,
   RADIX_LIGHT_TEAL,
   RADIX_LIGHT_VIOLET,
-  RADIX_COLORS_URL,
+  mindMapColorsFromRadixScale,
+  radixMindMapSourceNote,
 } from '@/config/radixMindMapPresets'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
 
@@ -378,7 +374,9 @@ export function getMindMapCommonThemes(): MindMapThemePreset[] {
   return MIND_MAP_COMMON_THEME_IDS.map((id) => getMindMapThemeById(id))
 }
 
-export function getMindMapThemeById(id: MindMapThemeId = DEFAULT_MIND_MAP_THEME_ID): MindMapThemePreset {
+export function getMindMapThemeById(
+  id: MindMapThemeId = DEFAULT_MIND_MAP_THEME_ID
+): MindMapThemePreset {
   return MIND_MAP_THEMES.find((item) => item.id === id) ?? MIND_MAP_THEMES[0]
 }
 
@@ -411,7 +409,10 @@ export function inferMindMapThemeIdFromNodes(
 
 /** Theme for rendering / new nodes — respects user-applied `_mindmap_theme` on the diagram. */
 export function getMindMapThemeForDiagram(
-  data?: { _mindmap_theme?: string | null; nodes?: Pick<DiagramNode, 'id' | 'type' | 'style'>[] } | null
+  data?: {
+    _mindmap_theme?: string | null
+    nodes?: Pick<DiagramNode, 'id' | 'type' | 'style'>[]
+  } | null
 ): MindMapThemePreset {
   if (data?._mindmap_theme) {
     return getMindMapThemeById(resolveMindMapThemeId(data._mindmap_theme))
@@ -422,7 +423,10 @@ export function getMindMapThemeForDiagram(
 
 /** Active theme id for styling new nodes after tree reload (persisted or inferred). */
 export function resolveActiveMindMapThemeId(
-  data?: { _mindmap_theme?: string | null; nodes?: Pick<DiagramNode, 'id' | 'type' | 'style'>[] } | null
+  data?: {
+    _mindmap_theme?: string | null
+    nodes?: Pick<DiagramNode, 'id' | 'type' | 'style'>[]
+  } | null
 ): MindMapThemeId {
   if (data?._mindmap_theme) {
     return resolveMindMapThemeId(data._mindmap_theme)
@@ -487,12 +491,7 @@ export function mindMapStyleFromTheme(
   }
 
   if (mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)) {
-    const layered = mindMapLayeredBranchColorsForNode(
-      node.id,
-      theme.borderColor,
-      connections,
-      node
-    )
+    const layered = mindMapLayeredBranchColorsForNode(node.id, theme.borderColor, connections, node)
     if (layered) {
       return {
         ...geometry,

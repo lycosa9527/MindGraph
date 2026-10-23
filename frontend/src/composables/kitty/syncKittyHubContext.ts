@@ -3,14 +3,14 @@
  * Used by desktop edit-gate / background hub sync. Mobile edit turns skip this gate.
  * Pipeline Eruda/status comes from hubSyncWorker → recordPipelineEvent (#trace), not #hub.
  */
-import type {
-  KittyAgentContext,
-  KittyContextUpdateOptions,
-} from '@/composables/kitty/kittyAgentTypes'
 import {
   type HubPersistResult,
   persistVerifiedDiagramToHub,
 } from '@/composables/kitty/diagramEditHubPersist'
+import type {
+  KittyAgentContext,
+  KittyContextUpdateOptions,
+} from '@/composables/kitty/kittyAgentTypes'
 
 /** Pre-edit gate: must finish before sendTextMessage; matches BE diagram_edit budget. */
 export const KITTY_HUB_EDIT_GATE_TIMEOUT_MS = 8000

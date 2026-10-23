@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LocationQuery } from 'vue-router'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   clearBlankCanvasLoadDedupe,

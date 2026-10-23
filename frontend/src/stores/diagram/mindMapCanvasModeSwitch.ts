@@ -1,6 +1,9 @@
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { syncMindMapConnectionStrokeColorsForCanvasMode } from '@/config/mindMapGeometry'
-import { isRainbowMindMapTheme, syncRainbowMindMapConnectionColors } from '@/config/mindMapVibrantThemes'
+import {
+  isRainbowMindMapTheme,
+  syncRainbowMindMapConnectionColors,
+} from '@/config/mindMapVibrantThemes'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type {
   DiagramData,

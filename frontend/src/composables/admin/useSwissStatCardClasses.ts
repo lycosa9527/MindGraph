@@ -1,4 +1,4 @@
-import { computed, type ComputedRef } from 'vue'
+import { type ComputedRef, computed } from 'vue'
 
 import type { AdminSwissStatTheme } from '@/constants/adminSwissStatTheme'
 
@@ -15,10 +15,7 @@ export function useSwissStatCardClasses(
 ): ComputedRef<string[]> {
   return computed(() => {
     const opts = options.value
-    const classes = [
-      'swiss-stat-card',
-      `swiss-stat-card--theme-${theme.value}`,
-    ]
+    const classes = ['swiss-stat-card', `swiss-stat-card--theme-${theme.value}`]
     const stripe = opts.stripe ?? 'left'
     if (stripe === 'left') {
       classes.push('swiss-stat-card--stripe-left')

@@ -3,8 +3,9 @@
  */
 import { computed, nextTick, ref } from 'vue'
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
 import { useOneSentenceStore } from '@/stores/oneSentence'

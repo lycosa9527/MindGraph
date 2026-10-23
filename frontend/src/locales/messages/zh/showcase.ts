@@ -53,8 +53,7 @@ export default {
   'showcase.publishModal.uploadingFiles': '正在上传文件（{current}/{total}）…',
   'showcase.publishModal.uploadingFile': '正在上传 {name}（{current}/{total}）…',
   'showcase.publishModal.finishing': '即将完成…',
-  'showcase.publishModal.uploadFailedRolledBack':
-    '上传失败，草稿已撤销，请重试。',
+  'showcase.publishModal.uploadFailedRolledBack': '上传失败，草稿已撤销，请重试。',
   'showcase.publishModal.uploadCorsFailed':
     '文件未能上传到对象存储（常见原因：存储桶 CORS 未允许当前网站，或网站 CSP 未放行 COS 域名）。草稿已撤销，请联系管理员配置后重试。',
   'showcase.publishModal.uploadStorageRejected':
@@ -72,10 +71,8 @@ export default {
     '文件过大，超出当前上传类型的限制。草稿已撤销，请确认大小后重试。',
   'showcase.publishModal.coverUploadSkipped':
     '案例已提交，但封面上传失败。可稍后编辑案例以更新封面。',
-  'showcase.publishModal.coverGenerating':
-    '封面正在后台生成，稍后会显示在卡片上。',
-  'showcase.publishModal.coverFailed':
-    '案例已提交，但封面生成失败。可稍后编辑案例以刷新封面。',
+  'showcase.publishModal.coverGenerating': '封面正在后台生成，稍后会显示在卡片上。',
+  'showcase.publishModal.coverFailed': '案例已提交，但封面生成失败。可稍后编辑案例以刷新封面。',
   'showcase.publishModal.coverFailedTimeout':
     '案例已提交，但封面生成超时。可稍后编辑案例以刷新封面。',
   'showcase.publishModal.success': '案例已提交，等待管理员审核',
@@ -91,10 +88,8 @@ export default {
   'showcase.publishModal.uploadLabel': '上传文件',
   'showcase.publishModal.uploadImage': '上传图片',
   'showcase.publishModal.uploadFile': '上传文件',
-  'showcase.publishModal.directUploadDisabled':
-    '本地直传暂时不可用，仍可从历史记录选择图示。',
-  'showcase.publishModal.uploadViaStorage':
-    '文件将通过安全短时链接上传至对象存储。',
+  'showcase.publishModal.directUploadDisabled': '本地直传暂时不可用，仍可从历史记录选择图示。',
+  'showcase.publishModal.uploadViaStorage': '文件将通过安全短时链接上传至对象存储。',
   'showcase.publishModal.pickHistory': '从个人库中选择图示',
   'showcase.publishModal.removeFile': '移除',
   'showcase.publishModal.teachingDocHint': '支持 .docx / .pdf / .pptx / .doc（转换后完整预览）',
@@ -136,11 +131,14 @@ export default {
   'showcase.publishModal.aiGenerating': 'AI生成中…',
   'showcase.publishModal.aiGenerateStop': '停止',
   'showcase.publishModal.aiGenerateCancelled': '已停止 AI 生成 — 再点一次可清空并重新生成',
-  'showcase.publishModal.aiGenerateSuccess': '已根据文档生成教学设计简介与设计亮点，请核对后编辑；教学反思请自行填写',
-  'showcase.publishModal.aiGenerateDiagramSuccess': '已根据图示生成图示简介与课堂应用，请核对后编辑',
+  'showcase.publishModal.aiGenerateSuccess':
+    '已根据文档生成教学设计简介与设计亮点，请核对后编辑；教学反思请自行填写',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    '已根据图示生成图示简介与课堂应用，请核对后编辑',
   'showcase.publishModal.aiGenerateFailed': 'AI生成失败，请稍后重试',
   'showcase.publishModal.aiGenerateNeedFile': '请先在上一步上传教学设计文档',
-  'showcase.publishModal.aiGenerateNeedDiagram': '请先在上一步上传图片、选择个人库图示或上传 .mg 文件',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    '请先在上一步上传图片、选择个人库图示或上传 .mg 文件',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI生成目前仅支持教学设计案例',
   'showcase.publishModal.reflectionLabel': '教学反思',
   'showcase.publishModal.introPlaceholder': '简要描述案例内容和适用场景',

@@ -8,6 +8,12 @@ import { useWebSocket } from '@vueuse/core'
 import { useLanguage, useNotifications } from '@/composables'
 import { createCollabSocketHeartbeat } from '@/composables/mindmate/mindmateCollabHeartbeat'
 import {
+  bumpSeminarFolderReload,
+  dropSeminarServerArtifact,
+  pushSeminarHighlightNotice,
+  upsertSeminarServerArtifact,
+} from '@/composables/mindmate/mindmateSeminarChrome'
+import {
   loadOlderSeminarPage,
   pullMindmateCollabHistory,
 } from '@/composables/mindmate/pullMindmateCollabHistory'
@@ -49,6 +55,7 @@ import {
   seminarFacesFromJoined,
   upsertSeminarFace,
 } from '@/utils/mindmateSeminarFaces'
+import { seminarArtifactFromPayload } from '@/utils/mindmateSeminarFolder'
 
 export interface MindmateCollabMessage {
   id?: number
@@ -452,6 +459,21 @@ export function useMindmateCollab(
     isStreaming.value = true
   }
 
+  function replaceMessageContent(messageId: number, content: string): void {
+    const current = messages.value
+    let changed = false
+    const next = current.map((row) => {
+      if (row.id !== messageId || row.content === content) {
+        return row
+      }
+      changed = true
+      return { ...row, content }
+    })
+    if (changed) {
+      messages.value = next
+    }
+  }
+
   function applyUserMessageFrame(parsed: Record<string, unknown>): void {
     noteMessageChain(collabPrevId(parsed.prev_id))
     const msgId = collabPrevId(parsed.id)
@@ -580,6 +602,14 @@ export function useMindmateCollab(
       dropLocalFace(Number(parsed.user_id || 0))
       return
     }
+    if (type === 'brief_updated') {
+      const messageId = collabPrevId(parsed.message_id)
+      const content = typeof parsed.content === 'string' ? parsed.content : ''
+      if (messageId != null && content) {
+        replaceMessageContent(messageId, content)
+      }
+      return
+    }
     if (type === 'user_message') {
       applyUserMessageFrame(parsed)
       return
@@ -594,6 +624,58 @@ export function useMindmateCollab(
     }
     if (type === 'ai_message_chunk') {
       appendAssistantChunk(String(parsed.content || ''))
+      return
+    }
+    if (type === 'seminar_artifact') {
+      const file = seminarArtifactFromPayload(parsed.file)
+      if (file) {
+        upsertSeminarServerArtifact(file)
+      }
+      return
+    }
+    if (type === 'seminar_minutes') {
+      const messageId = collabPrevId(parsed.id)
+      if (messageId == null) {
+        return
+      }
+      messages.value = insertMissingCollabMessages(messages.value, [
+        {
+          id: messageId,
+          role: 'assistant',
+          content: String(parsed.content || ''),
+          created_at: collabFrameCreatedAt(parsed.created_at),
+        },
+      ])
+      return
+    }
+    if (type === 'seminar_shelf') {
+      const file = seminarArtifactFromPayload(parsed.file)
+      bumpSeminarFolderReload()
+      const destination =
+        parsed.destination === 'resource'
+          ? 'resource'
+          : parsed.destination === 'removed'
+            ? 'removed'
+            : 'artifact'
+      if (file && destination === 'artifact') {
+        upsertSeminarServerArtifact(file)
+      } else if (file) {
+        dropSeminarServerArtifact(file.id)
+      }
+      const sessionId = room.value?.sessionId ?? ''
+      const actorId = Number(parsed.actor_user_id || 0)
+      const shelf =
+        parsed.shelf === 'resource' || parsed.shelf === 'artifact' ? parsed.shelf : undefined
+      if (file && sessionId) {
+        pushSeminarHighlightNotice(sessionId, {
+          kind: 'shelf',
+          ownMessage: actorId > 0 && actorId === Number(authStore.user?.id || 0),
+          authorName: String(parsed.actor_name || ''),
+          title: file.filename,
+          destination,
+          shelf,
+        })
+      }
       return
     }
     if (type === 'ai_message_end') {
@@ -733,6 +815,17 @@ export function useMindmateCollab(
     clearLocalFaces()
   }
 
+  function sendSeminarMinutes(content: string): void {
+    const trimmed = content.trim()
+    if (!trimmed || !connected.value) {
+      if (!connected.value) {
+        notify.warningKey('mindmate.collabNotConnected')
+      }
+      return
+    }
+    send(JSON.stringify({ type: 'seminar_minutes', content: trimmed }))
+  }
+
   function sendChat(content: string, sendOptions?: { toMindmate?: boolean }) {
     const trimmed = content.trim()
     if (!trimmed || isStreaming.value) {
@@ -801,6 +894,8 @@ export function useMindmateCollab(
     connect,
     disconnect,
     sendChat,
+    sendSeminarMinutes,
+    replaceMessageContent,
     seedRoom,
     loadOlderMessages,
     resetForRoomChange,

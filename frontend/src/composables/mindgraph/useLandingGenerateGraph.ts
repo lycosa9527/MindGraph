@@ -238,7 +238,8 @@ export function useLandingGenerateGraph(options: {
 
   async function generateLandingGraph(
     requestBody: Record<string, unknown>,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    surface: { announceNavigation?: boolean } = {}
   ): Promise<
     | { ok: true; result: GenerateGraphCompletePayload; diagramType: string }
     | { ok: false; error: string; errorType?: string }
@@ -320,7 +321,9 @@ export function useLandingGenerateGraph(options: {
             )
           }
           loadPhase.value = 'ready'
-          notifySuccessNavigate()
+          if (surface.announceNavigation !== false) {
+            notifySuccessNavigate()
+          }
           return parsed
         }
       } else if (streamResponse.status >= 500) {
@@ -362,7 +365,9 @@ export function useLandingGenerateGraph(options: {
       }
 
       loadPhase.value = 'ready'
-      notifySuccessNavigate()
+      if (surface.announceNavigation !== false) {
+        notifySuccessNavigate()
+      }
       return parsed
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {

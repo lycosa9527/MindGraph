@@ -34,18 +34,18 @@ function basePost(overrides: Partial<ShowcasePost> = {}): ShowcasePost {
 
 describe('resolveShowcaseMediaStatus', () => {
   it('prefers API media_status', () => {
-    expect(
-      resolveShowcaseMediaStatus(basePost({ media_status: 'conversion_failed' }))
-    ).toBe('conversion_failed')
-    expect(
-      resolveShowcaseMediaStatus(basePost({ media_status: 'preview_failed' }))
-    ).toBe('preview_failed')
-    expect(
-      resolveShowcaseMediaStatus(basePost({ media_status: 'cover_failed' }))
-    ).toBe('cover_failed')
-    expect(
-      resolveShowcaseMediaStatus(basePost({ media_status: 'generating_cover' }))
-    ).toBe('generating_cover')
+    expect(resolveShowcaseMediaStatus(basePost({ media_status: 'conversion_failed' }))).toBe(
+      'conversion_failed'
+    )
+    expect(resolveShowcaseMediaStatus(basePost({ media_status: 'preview_failed' }))).toBe(
+      'preview_failed'
+    )
+    expect(resolveShowcaseMediaStatus(basePost({ media_status: 'cover_failed' }))).toBe(
+      'cover_failed'
+    )
+    expect(resolveShowcaseMediaStatus(basePost({ media_status: 'generating_cover' }))).toBe(
+      'generating_cover'
+    )
   })
 
   it('derives converting_preview for Office attachments', () => {

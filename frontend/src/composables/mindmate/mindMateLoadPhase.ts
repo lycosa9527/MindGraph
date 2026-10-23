@@ -1,5 +1,4 @@
 import type { ModelLoadPhase } from '@/stores/llmResults'
-
 import { isActiveLlmPhaseRing, isLlmGenerating } from '@/utils/llmLoadPhase'
 
 export { isActiveLlmPhaseRing, isLlmGenerating }

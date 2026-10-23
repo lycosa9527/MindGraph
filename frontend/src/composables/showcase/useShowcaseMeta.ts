@@ -5,8 +5,12 @@ import { computed } from 'vue'
 
 import { useQuery } from '@tanstack/vue-query'
 
-import { GRADE_OPTIONS, SUBJECT_OPTIONS, sortShowcaseFieldValues } from '@/components/showcase/showcaseShared'
-import { getShowcaseMeta, type ShowcaseMeta } from '@/utils/apiClient'
+import {
+  GRADE_OPTIONS,
+  SUBJECT_OPTIONS,
+  sortShowcaseFieldValues,
+} from '@/components/showcase/showcaseShared'
+import { type ShowcaseMeta, getShowcaseMeta } from '@/utils/apiClient'
 
 export function useShowcaseMeta() {
   const query = useQuery({

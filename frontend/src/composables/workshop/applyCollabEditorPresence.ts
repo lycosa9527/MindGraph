@@ -89,10 +89,7 @@ export function shouldFlashStructuralLock(options: {
 }
 
 /** One-shot: the first structural flash after editor close is the commit write-back. */
-export function consumeRecentlyClosedFlash(
-  recentlyClosed: Set<string>,
-  nodeId: string
-): boolean {
+export function consumeRecentlyClosedFlash(recentlyClosed: Set<string>, nodeId: string): boolean {
   if (!recentlyClosed.has(nodeId)) {
     return false
   }

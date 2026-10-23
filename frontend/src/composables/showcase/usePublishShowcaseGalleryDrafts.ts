@@ -3,11 +3,9 @@
  */
 import { computed, ref } from 'vue'
 
-import {
-  DIAGRAM_GALLERY_MAX_ITEMS,
-} from '@/components/showcase/showcaseGallery'
+import { DIAGRAM_GALLERY_MAX_ITEMS } from '@/components/showcase/showcaseGallery'
+import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { cloneShowcaseDiagramSpec } from '@/utils/showcaseDiagramThumbnail'
-import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
 
 export type GalleryImageDraft = { id: string; file: File; filename: string; previewUrl: string }
 export type GalleryDiagramDraft = {
@@ -95,7 +93,7 @@ export function usePublishShowcaseGalleryDrafts() {
     diagram: SavedDiagram,
     diagramTypeValue: string,
     setDiagramType: (value: string) => void,
-    diagramTypeFromSaved: (raw: string) => string,
+    diagramTypeFromSaved: (raw: string) => string
   ): Promise<GalleryDiagramDraft | null> {
     if (galleryDiagramDrafts.value.some((entry) => entry.diagram.id === diagram.id)) {
       return null

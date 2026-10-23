@@ -10,9 +10,11 @@ export default {
   'training.searchOrg': 'Kërkoni shkolla',
   'training.teacherTotal': '{n} mësues',
   'training.onlineNow': 'Aktualisht në linjë {n}',
-  'training.confirmStart': 'Në fillim do të pastrohet vendi dhe do të kontrollohet numri i mësuesve online. Pasi klasa të jetë gati, klikoni në kurs për të sjellë të gjithë mësuesit online në këtë klasë. Një shkollë mund të ketë vetëm një seancë trajnimi në të njëjtën kohë.',
+  'training.confirmStart':
+    'Në fillim do të pastrohet vendi dhe do të kontrollohet numri i mësuesve online. Pasi klasa të jetë gati, klikoni në kurs për të sjellë të gjithë mësuesit online në këtë klasë. Një shkollë mund të ketë vetëm një seancë trajnimi në të njëjtën kohë.',
   'training.moduleReady': 'Klasa është gati, ju lutemi klikoni në kurs për të filluar mësimin.',
-  'training.startFirst': 'Ju lutemi klikoni fillimisht "Start" dhe më pas zgjidhni një kurs pasi klasa të jetë gati.',
+  'training.startFirst':
+    'Ju lutemi klikoni fillimisht "Start" dhe më pas zgjidhni një kurs pasi klasa të jetë gati.',
   'training.start': 'filloni',
   'training.stop': 'ndaloni',
   'training.pickOrgFirst': 'Ju lutemi zgjidhni fillimisht një shkollë.',
@@ -33,7 +35,8 @@ export default {
   'training.builder.preview': 'Parapamje',
   'training.builder.previewExit': 'Dil nga pamja paraprake',
   'training.builder.previewHint': 'Këndvështrimi i mësuesit',
-  'training.builder.previewEmpty': 'Nuk ka përmbajtje për t\'u shfaqur në anën e mësuesit të kësaj faqeje.',
+  'training.builder.previewEmpty':
+    "Nuk ka përmbajtje për t'u shfaqur në anën e mësuesit të kësaj faqeje.",
   'training.builder.addSlide': 'Shto rrëshqitje',
   'training.builder.addImage': 'shtoni foto',
   'training.builder.uploadFailed': 'Ngarkimi i imazhit dështoi',
@@ -55,7 +58,7 @@ export default {
   'training.builder.toolRoles': 'Roli',
   'training.builder.role.01-look-here': 'shikoni këtu',
   'training.builder.role.02-listen': 'hapni veshët dhe dëgjoni',
-  'training.builder.role.03-raise-hand': 'Ngrini dorën për t\'u përgjigjur',
+  'training.builder.role.03-raise-hand': "Ngrini dorën për t'u përgjigjur",
   'training.builder.role.04-secret': 'pëshpërit',
   'training.builder.role.05-open-book': 'Kthejeni librin',
   'training.builder.role.06-eureka': 'Llamba u ndez',
@@ -81,28 +84,38 @@ export default {
   'training.builder.empty': 'Nuk ka ende asnjë kurs, më parë krijoni një të ri.',
   'training.builder.info': 'Informacioni i kursit',
   'training.builder.menuLabel': 'User menu',
-  'training.builder.menuLabelHint': 'This name shows in the account menu. A click starts this course. Leave it blank to hide it.',
+  'training.builder.menuLabelHint':
+    'This name shows in the account menu. A click starts this course. Leave it blank to hide it.',
   'training.builder.menuLabelPlaceholder': 'e.g. October update',
   'training.builder.menuLabelTooLong': 'The menu name can be at most 40 characters.',
-  'training.builder.menuLabelLimit': 'The user menu is full. Remove one entry before adding another.',
+  'training.builder.menuLabelLimit':
+    'The user menu is full. Remove one entry before adding another.',
   'training.october.menu': 'October update',
   'training.october.ribbon': 'October',
   'training.october.title': 'October update',
-  'training.october.lead': 'What changed from August through now: the canvas, account, Learning Space, and courses.',
+  'training.october.lead':
+    'What changed from August through now: the canvas, account, Learning Space, and courses.',
   'training.october.canvas': 'Canvas and thinking maps',
-  'training.october.canvasBody': 'One canvas|The eight thinking maps and concept maps share its tabs.\nNode shapes|Rounded, rectangular, oval, or underlined, following the rainbow theme. A solid theme paints the whole map.\nBilingual|One generate writes the main language and a smaller second line.\nDouble bubble|Keeps at least one similarity and one difference.\nKeep adding|Enter adds the next node for whatever is selected.\nOutline and gestures|The outline and the gesture guide open on these maps.',
+  'training.october.canvasBody':
+    'One canvas|The eight thinking maps and concept maps share its tabs.\nNode shapes|Rounded, rectangular, oval, or underlined, following the rainbow theme. A solid theme paints the whole map.\nBilingual|One generate writes the main language and a smaller second line.\nDouble bubble|Keeps at least one similarity and one difference.\nKeep adding|Enter adds the next node for whatever is selected.\nOutline and gestures|The outline and the gesture guide open on these maps.',
   'training.october.explain': 'Lectures and blanks',
-  'training.october.explainBody': 'Walk the diagram|One ring, one column, one side of a comparison, one cause or effect, or one bridge pair.\nName the node|Explain calls it an association, attribute, category, step, or bridge.\nBlanks|A single click blanks a node. A double-click edits it.',
+  'training.october.explainBody':
+    'Walk the diagram|One ring, one column, one side of a comparison, one cause or effect, or one bridge pair.\nName the node|Explain calls it an association, attribute, category, step, or bridge.\nBlanks|A single click blanks a node. A double-click edits it.',
   'training.october.account': 'Account',
-  'training.october.accountBody': 'One settings window|Account, security, language, and plugins. Language applies immediately.\nAvatar|Cropped to a circle and stored online.\nStay signed in|This browser stays signed in while its login is still valid.\nSigned out|A device that was signed out cannot refresh itself back in.\nSchool|The line under the name shows the school.',
+  'training.october.accountBody':
+    'One settings window|Account, security, language, and plugins. Language applies immediately.\nAvatar|Cropped to a circle and stored online.\nStay signed in|This browser stays signed in while its login is still valid.\nSigned out|A device that was signed out cannot refresh itself back in.\nSchool|The line under the name shows the school.',
   'training.october.learning': 'Learning Space',
-  'training.october.learningBody': 'Homework images|Stored online. Opening a card lets you select, pan, and zoom.\nFirst password|Shown only while the student still has to change it, and only to the class teacher or a superadmin. After they set one, the plain copy is removed.\nOne deadline|A teacher can extend one student deadline.\nMissing picture|A card with no picture can be filled in.',
+  'training.october.learningBody':
+    'Homework images|Stored online. Opening a card lets you select, pan, and zoom.\nFirst password|Shown only while the student still has to change it, and only to the class teacher or a superadmin. After they set one, the plain copy is removed.\nOne deadline|A teacher can extend one student deadline.\nMissing picture|A card with no picture can be filled in.',
   'training.october.course': 'Courses',
-  'training.october.courseBody': 'Page by page|Voice, music, video, a locked menu or dialog, and a mascot.\nAccount menu|The menu can list the course by name, and a click starts it.\nSame page|During class, teachers can be pulled onto the page you are on.',
+  'training.october.courseBody':
+    'Page by page|Voice, music, video, a locked menu or dialog, and a mascot.\nAccount menu|The menu can list the course by name, and a click starts it.\nSame page|During class, teachers can be pulled onto the page you are on.',
   'training.october.talk': 'MindMate and Workshop',
-  'training.october.talkBody': 'Seminar stays up|It stays connected until its owner ends it.\nOrganize it|Pin, rename, or delete it, and see who has read your line.\nSave the diagram|A diagram in the seminar can be saved to the library and opened again.\nDirect messages|A workshop direct message names the other person.',
+  'training.october.talkBody':
+    'Seminar stays up|It stays connected until its owner ends it.\nOrganize it|Pin, rename, or delete it, and see who has read your line.\nSave the diagram|A diagram in the seminar can be saved to the library and opened again.\nDirect messages|A workshop direct message names the other person.',
   'training.october.school': 'School plans',
-  'training.october.schoolBody': 'Included on every plan|Trial, basic, standard, and professional include online collaboration, presentation, the browser extension, and API access.\nWhat changes|Seats, and how many diagrams the plan can store.',
+  'training.october.schoolBody':
+    'Included on every plan|Trial, basic, standard, and professional include online collaboration, presentation, the browser extension, and API access.\nWhat changes|Seats, and how many diagrams the plan can store.',
   'training.builder.groupFollow': 'ndjekin',
   'training.builder.groupCanvas': 'kanavacë',
   'training.builder.groupSteps': 'hap',
@@ -135,12 +148,15 @@ export default {
   'training.builder.lockEmpty': 'Open the list on this page, then lock it.',
   'training.builder.lockNeedStep': 'Select this step, open the list, then lock it.',
   'training.builder.notes': 'Shënime Leksioni',
-  'training.builder.notesHint': 'Shënimet e leksioneve të shkruara në këtë faqe janë të dukshme vetëm për pedagogun.',
+  'training.builder.notesHint':
+    'Shënimet e leksioneve të shkruara në këtë faqe janë të dukshme vetëm për pedagogun.',
   'training.builder.topicChoices': 'Opsionet e temave',
   'training.builder.topicSingle': 'temë',
   'training.builder.topicRemove': 'fshij',
-  'training.builder.topicDualHint': 'Një tabelë me flluskë të dyfishtë kërkon dy objekte. Mësuesit mund të klikojnë mbi të gjatë orës së mësimit dhe ai do të gjenerohet menjëherë.',
-  'training.builder.topicSingleHint': 'Zgjidhni një temë për secilën alternativë. Mësuesit mund të klikojnë mbi të gjatë orës së mësimit dhe ai do të gjenerohet menjëherë.',
+  'training.builder.topicDualHint':
+    'Një tabelë me flluskë të dyfishtë kërkon dy objekte. Mësuesit mund të klikojnë mbi të gjatë orës së mësimit dhe ai do të gjenerohet menjëherë.',
+  'training.builder.topicSingleHint':
+    'Zgjidhni një temë për secilën alternativë. Mësuesit mund të klikojnë mbi të gjatë orës së mësimit dhe ai do të gjenerohet menjëherë.',
   'training.builder.topicLabel': 'temë',
   'training.builder.topicLabelA': 'Tema A',
   'training.builder.topicLabelB': 'Tema B',
@@ -158,8 +174,10 @@ export default {
   'training.playPad': 'Kontrolli i mësimit',
   'training.bannerFree': 'Praktikë falas - ju mund të bëni çfarë të doni',
   'training.takeover': 'marrë përsipër',
-  'training.takeoverHint': 'Shkolla tashmë ka trajnime të vazhdueshme (moderator: {name}). Një shkollë mund të hapë vetëm një sesion në një kohë, sepse të gjithë mësuesit në internet do të rekrutohen. Mund të klikoni "Take Over" ose të prisni derisa loja të përfundojë përpara se të filloni përsëri.',
-  'training.hostedElsewhere': 'Ju tashmë po organizoni një sesion në një shkollë tjetër, ju lutemi, së pari përfundoni atë.',
+  'training.takeoverHint':
+    'Shkolla tashmë ka trajnime të vazhdueshme (moderator: {name}). Një shkollë mund të hapë vetëm një sesion në një kohë, sepse të gjithë mësuesit në internet do të rekrutohen. Mund të klikoni "Take Over" ose të prisni derisa loja të përfundojë përpara se të filloni përsëri.',
+  'training.hostedElsewhere':
+    'Ju tashmë po organizoni një sesion në një shkollë tjetër, ju lutemi, së pari përfundoni atë.',
   'training.diagramTypes': 'Lloji i ilustrimit',
   'training.topicOptions': 'Opsionet e pyetjeve',
   'training.addOption': 'Shtoni në',
@@ -180,24 +198,31 @@ export default {
   'training.moreTeachers': 'dhe {n} persona',
   'training.loadMore': 'ngarkoni më shumë',
   'training.jump': 'Shkoni në këtë faqe',
-  'training.confirmMismatch': 'Numri i mësuesve ka ndryshuar, ju lutemi rifreskojeni dhe konfirmoni sërish.',
+  'training.confirmMismatch':
+    'Numri i mësuesve ka ndryshuar, ju lutemi rifreskojeni dhe konfirmoni sërish.',
   'training.confirmStop': 'Të përfundojë ky trajnim? Mësuesi do të mbetet në faqen aktuale.',
   'training.startFailed': 'Sesioni nuk mund të fillojë',
   'training.steerFailed': 'Klasa nuk mund të përditësohet',
   'training.prevStep': 'Hapi i mëparshëm',
   'training.nextStep': 'Hapi tjetër',
   'training.remoteLive': 'Transmetim i drejtpërdrejtë',
-  'training.remoteCardHint': 'Telekomanda e ekranit horizontal: kontrolli, mësuesi në internet, shënimet e leksioneve.',
-  'training.remoteWaiting': 'Ju lutemi, fillimisht filloni kursin në kompjuterin tuaj dhe kjo do të bëhet menjëherë një telekomandë.',
+  'training.remoteCardHint':
+    'Telekomanda e ekranit horizontal: kontrolli, mësuesi në internet, shënimet e leksioneve.',
+  'training.remoteWaiting':
+    'Ju lutemi, fillimisht filloni kursin në kompjuterin tuaj dhe kjo do të bëhet menjëherë një telekomandë.',
   'training.remoteForeign': '{name} po pret këtë trajnim.',
   'training.remoteRotate': 'Kthejeni telefonin anash për të përdorur telekomandën.',
   'training.remoteNotesEmpty': 'Nuk ka asnjë shënim leksioni në këtë faqe.',
   'training.builder.mandatory': 'Required',
-  'training.builder.mandatoryHint': 'Users who have not finished this course must walk through it. Completion is saved on the account, so this course does not appear again. Each course is tracked on its own.',
-  'training.builder.mandatoryConfirm': 'This takes effect as soon as the course is saved. Every signed-in user who has not finished it will be sent through it, and will not see it again after they finish.',
+  'training.builder.mandatoryHint':
+    'Users who have not finished this course must walk through it. Completion is saved on the account, so this course does not appear again. Each course is tracked on its own.',
+  'training.builder.mandatoryConfirm':
+    'This takes effect as soon as the course is saved. Every signed-in user who has not finished it will be sent through it, and will not see it again after they finish.',
   'training.builder.alwaysPlay': 'Demo',
-  'training.builder.alwaysPlayHint': 'Plays again on every visit, even after someone finishes it. Refresh the page to try it again.',
-  'training.builder.alwaysPlayConfirm': 'This takes effect as soon as the course is saved. Every signed-in user is sent through it on every visit, even after they finish. Turn it off and people who already finished will not see it again.',
+  'training.builder.alwaysPlayHint':
+    'Plays again on every visit, even after someone finishes it. Refresh the page to try it again.',
+  'training.builder.alwaysPlayConfirm':
+    'This takes effect as soon as the course is saved. Every signed-in user is sent through it on every visit, even after they finish. Turn it off and people who already finished will not see it again.',
   'training.builder.vodLibrary': 'Online video library',
   'training.builder.vodFolder': 'Folder',
   'training.builder.vodVideo': 'Video',

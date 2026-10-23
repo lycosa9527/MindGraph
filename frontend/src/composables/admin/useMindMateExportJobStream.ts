@@ -1,7 +1,7 @@
 /**
  * SSE stream for MindMate export job progress (replaces HTTP polling).
  */
-import { onUnmounted, ref, watch, type Ref } from 'vue'
+import { type Ref, onUnmounted, ref, watch } from 'vue'
 
 import { useSSE } from '@/composables/core/useSSE'
 import type { MindMateExportJob, MindMateExportJobStatus } from '@/composables/queries/adminApi'

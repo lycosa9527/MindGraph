@@ -11,7 +11,9 @@ import { UI_LOCALE_CODES } from '../src/i18n/locales.ts'
 const MESSAGE_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../src/locales/messages')
 
 function hasMessageEntry(code: string): boolean {
-  return existsSync(join(MESSAGE_ROOT, `${code}.ts`)) || existsSync(join(MESSAGE_ROOT, code, 'index.ts'))
+  return (
+    existsSync(join(MESSAGE_ROOT, `${code}.ts`)) || existsSync(join(MESSAGE_ROOT, code, 'index.ts'))
+  )
 }
 
 function main(): void {

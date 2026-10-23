@@ -1,17 +1,13 @@
 /**
  * Numbered Kitty clarify options — persist tap chips across history hydrate.
  */
-import type {
-  OneSentenceChatMessage,
-  OneSentenceClarifyChoice,
-} from '@/stores/oneSentence'
+import type { OneSentenceChatMessage, OneSentenceClarifyChoice } from '@/stores/oneSentence'
 
 export const MAX_CLARIFY_CHOICES = 8
 
 const LINE_OPTION_RE = /^\s*(\d+)\s*[)）.、.]\s*(.+?)\s*$/
 const INLINE_OPTION_RE = /(\d+)\s*[)）.、.]\s*(.+?)(?=\s+\d+\s*[)）.、.]|$)/g
-const CLARIFY_FOOTER_RE =
-  /(?:请回复序号或选项内容。?|Reply with the number or option text\.?)\s*$/i
+const CLARIFY_FOOTER_RE = /(?:请回复序号或选项内容。?|Reply with the number or option text\.?)\s*$/i
 
 function asConsecutiveChoices(
   rows: Array<{ index: number; label: string }>
@@ -67,9 +63,7 @@ function stripClarifyFooter(text: string): string {
   return text.replace(CLARIFY_FOOTER_RE, '').trim()
 }
 
-function stripFooterFromChoices(
-  choices: OneSentenceClarifyChoice[]
-): OneSentenceClarifyChoice[] {
+function stripFooterFromChoices(choices: OneSentenceClarifyChoice[]): OneSentenceClarifyChoice[] {
   if (choices.length === 0) {
     return choices
   }

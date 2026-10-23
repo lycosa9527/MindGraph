@@ -8,23 +8,17 @@ describe('getRolePillStyle with school tier', () => {
   })
 
   it('keeps school admin label in trial orgs', () => {
-    expect(getRolePillStyle('school_admin', 'trial')?.labelKey).toBe(
-      'sidebar.roleSchoolAdmin'
-    )
+    expect(getRolePillStyle('school_admin', 'trial')?.labelKey).toBe('sidebar.roleSchoolAdmin')
   })
 
   it('shows school edition pill for teachers in paid tiers', () => {
     expect(getRolePillStyle('teacher', 'lite')?.labelKey).toBe('sidebar.roleSchoolEdition')
     expect(getRolePillStyle('teacher', 'standard')?.labelKey).toBe('sidebar.roleSchoolEdition')
-    expect(getRolePillStyle('teacher', 'professional')?.labelKey).toBe(
-      'sidebar.roleSchoolEdition'
-    )
+    expect(getRolePillStyle('teacher', 'professional')?.labelKey).toBe('sidebar.roleSchoolEdition')
   })
 
   it('keeps school admin label in paid tiers', () => {
-    expect(getRolePillStyle('school_admin', 'standard')?.labelKey).toBe(
-      'sidebar.roleSchoolAdmin'
-    )
+    expect(getRolePillStyle('school_admin', 'standard')?.labelKey).toBe('sidebar.roleSchoolAdmin')
   })
 
   it('does not override platform roles with school tier', () => {

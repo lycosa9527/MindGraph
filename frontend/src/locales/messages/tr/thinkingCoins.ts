@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Yakında',
   'thinkingCoins.schoolInfo': 'Okul planları için okul yöneticinizle iletişime geçin',
   'thinkingCoins.school.headline': 'YZ destekli düşünme · okul çözümleri',
-  'thinkingCoins.school.description': 'Okullar ve kurumlar için özel kurulum, özel özellikler ve tam operasyon desteği — ölçek, marka ve veri güvenliği için tasarlandı.',
+  'thinkingCoins.school.description':
+    'Okullar ve kurumlar için özel kurulum, özel özellikler ve tam operasyon desteği — ölçek, marka ve veri güvenliği için tasarlandı.',
   'thinkingCoins.school.feature.accountManager': 'Özel hesap yöneticisi',
   'thinkingCoins.school.feature.accountManagerDesc': 'Bire bir danışmanlık',
   'thinkingCoins.school.feature.privateDeploy': 'Özel kurulum',
@@ -63,7 +64,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Davet ödülü',
   'thinkingCoins.reason.case_reward': 'Örnek ödülü',
   'thinkingCoins.reason.subscription_grant': 'Abonelik tahsisi',
-  'thinkingCoins.dailyExpiresHint': 'Giriş ödülleri aynı gün geçerlidir ve saat 24:00\'te sıfırlanacaktır.',
+  'thinkingCoins.dailyExpiresHint':
+    "Giriş ödülleri aynı gün geçerlidir ve saat 24:00'te sıfırlanacaktır.",
   'thinkingCoins.dailyBalanceRemaining': 'Bugünün check-in işlemi kaldı {n}',
   'thinkingCoins.admin.tab': 'Düşünme jetonları',
   'thinkingCoins.admin.tasksTitle': 'Kazanç görevleri',
@@ -75,7 +77,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'Kaydet',
   'thinkingCoins.admin.signupGrant': 'Kayıt tahsisi',
   'thinkingCoins.admin.dailyEarnCap': 'Günlük kazanç üst sınırı',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = sınırsız; varsayılan 135 tüm günlük görevlerle eşleşir',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = sınırsız; varsayılan 135 tüm günlük görevlerle eşleşir',
   'thinkingCoins.admin.costMindmate': 'MindMate maliyeti',
   'thinkingCoins.admin.costDiagram': 'Diyagram oluşturma maliyeti',
   'thinkingCoins.admin.costCanvas': 'Tuval yardım maliyeti',

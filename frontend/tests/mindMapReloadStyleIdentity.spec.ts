@@ -1,6 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { remapMindMapNodeIdAfterReload } from '@/stores/diagram/mindMapCollapse'
 import {
   applyMindMapStylesByPath,
   buildMindMapStyleForNewBranchNode,
@@ -9,11 +11,11 @@ import {
   mindMapNodePathKey,
   resolveMindMapLiveSiblingStyle,
 } from '@/stores/diagram/mindMapStylePreservation'
-import { remapMindMapNodeIdAfterReload } from '@/stores/diagram/mindMapCollapse'
-import { loadMindMapSpec } from '@/stores/specLoader/mindMap'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { loadMindMapSpec } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
+import { must } from '@/utils/must'
 
 function enableMindMapV2Canvas(): void {
   const flagsStore = useFeatureFlagsStore()
@@ -88,9 +90,9 @@ describe('mindmap reload style identity', () => {
       textColor: '#881337',
       nodeShape: 'rounded',
     }
-    branchA!.style = { ...custom }
+    must(branchA).style = { ...custom }
     const existingStyles: Record<string, NodeStyle> = {
-      [branchA!.id]: { ...custom },
+      [must(branchA).id]: { ...custom },
     }
 
     // Reparent 分支A under 分支B (depth 1 → 2).
@@ -124,11 +126,11 @@ describe('mindmap reload style identity', () => {
 
     const moved = after.nodes.find((n) => n.text === '分支A')
     expect(moved).toBeTruthy()
-    expect(merged[moved!.id]?.backgroundColor).toBe('#ffe4e6')
-    expect(merged[moved!.id]?.borderColor).toBe('#be123c')
+    expect(merged[must(moved).id]?.backgroundColor).toBe('#ffe4e6')
+    expect(merged[must(moved).id]?.borderColor).toBe('#be123c')
     // Classic L2 uses underline when depth changes.
-    expect(merged[moved!.id]?.nodeShape).toBe('underline')
-    expect(moved!.style?.nodeShape).toBe('underline')
+    expect(merged[must(moved).id]?.nodeShape).toBe('underline')
+    expect(must(moved).style?.nodeShape).toBe('underline')
   })
 
   it('new same-row path inherits sibling colors and shape (not parent)', () => {
@@ -312,13 +314,7 @@ describe('mindmap reload style identity', () => {
       { id: 'c1', source: 'topic', target: 'branch-r-1-1' },
     ]
     const stylesByPath = collectMindMapStylesByPath(nodes.slice(0, 2), connections)
-    const merged = applyMindMapStylesByPath(
-      nodes,
-      connections,
-      stylesByPath,
-      'rainbow',
-      'classic'
-    )
+    const merged = applyMindMapStylesByPath(nodes, connections, stylesByPath, 'rainbow', 'classic')
     expect(merged['branch-r-1-1']?.backgroundColor).toBeTruthy()
     expect(merged['branch-r-1-1']?.backgroundColor).not.toBe('#FA8055')
 
@@ -344,13 +340,13 @@ describe('mindmap reload style identity', () => {
     })
     const parent = before.nodes.find((n) => n.text === '父分支')
     expect(parent).toBeTruthy()
-    parent!.style = {
+    must(parent).style = {
       backgroundColor: '#dbeafe',
       borderColor: '#0f766e',
       nodeShape: 'oval',
     }
     const existingStyles: Record<string, NodeStyle> = {
-      [parent!.id]: { ...parent!.style! },
+      [must(parent).id]: { ...must(must(parent).style) },
     }
 
     const after = loadMindMapSpec({
@@ -372,8 +368,8 @@ describe('mindmap reload style identity', () => {
     )
     const child = after.nodes.find((n) => n.text === '子项')
     expect(child).toBeTruthy()
-    expect(merged[child!.id]?.nodeShape).toBe('underline')
-    expect(merged[child!.id]?.backgroundColor).not.toBe('#dbeafe')
+    expect(merged[must(child).id]?.nodeShape).toBe('underline')
+    expect(merged[must(child).id]?.backgroundColor).not.toBe('#dbeafe')
   })
 
   it('reload new sibling keeps sibling shape over loader depth stub', () => {

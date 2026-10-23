@@ -5,6 +5,7 @@ import { nextTick, onBeforeUnmount, ref } from 'vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
 
+import { useLanguage, useNotifications } from '@/composables'
 import {
   ADMIN_TREND_CHART_MOUNT_DELAY_MS,
   ADMIN_TREND_DAYS_MAP,
@@ -13,13 +14,12 @@ import {
 } from '@/composables/admin/useAdminTrendChart'
 import { queryErrorMessage } from '@/composables/admin/useQueryErrorNotification'
 import { useScopedAbort } from '@/composables/core/useScopedAbort'
-import { useLanguage, useNotifications } from '@/composables'
 import {
+  type AdminPlatformTokenStats,
   fetchAdminSchoolTokenStats,
   fetchAdminSchoolTrends,
   fetchAdminStatsTrendsOrganization,
   fetchAdminTokenStats,
-  type AdminPlatformTokenStats,
 } from '@/composables/queries'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useUIStore } from '@/stores/ui'
@@ -199,9 +199,7 @@ export function useOrgTokenTrendModal() {
         signal
       )
       const resolvedOrgId =
-        options.orgId ??
-        (chartData as { organization_id?: number }).organization_id ??
-        null
+        options.orgId ?? (chartData as { organization_id?: number }).organization_id ?? null
       if (resolvedOrgId != null) {
         trendOrgId.value = resolvedOrgId
       }

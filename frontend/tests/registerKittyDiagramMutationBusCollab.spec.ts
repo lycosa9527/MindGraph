@@ -1,8 +1,11 @@
 /**
  * Verified Kitty mutations nack for collab guests (not silent-drop / ack_timeout).
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
 
 const {
   emitMock,
@@ -13,14 +16,14 @@ const {
   diagramType,
   onHandlers,
 } = vi.hoisted(() => ({
-    emitMock: vi.fn(),
-    applyVerifiedMock: vi.fn(),
-    reportFailMock: vi.fn(),
-    collabActive: { value: true },
-    collabIsOwner: { value: false },
-    diagramType: { value: 'mindmap' as string },
-    onHandlers: new Map<string, (payload: unknown) => void>(),
-  }))
+  emitMock: vi.fn(),
+  applyVerifiedMock: vi.fn(),
+  reportFailMock: vi.fn(),
+  collabActive: { value: true },
+  collabIsOwner: { value: false },
+  diagramType: { value: 'mindmap' as string },
+  onHandlers: new Map<string, (payload: unknown) => void>(),
+}))
 
 vi.mock('@/composables/core/useEventBus', () => ({
   eventBus: {
@@ -69,8 +72,6 @@ vi.mock('@/stores/diagram', () => ({
     },
   }),
 }))
-
-import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
 
 describe('registerKittyDiagramMutationBus collab gate', () => {
   beforeEach(() => {
@@ -188,9 +189,7 @@ describe('registerKittyDiagramMutationBus collab gate', () => {
       })
     )
 
-    const executed = emitMock.mock.calls.find(
-      (call) => call[0] === 'voice:diagram_update_executed'
-    )
+    const executed = emitMock.mock.calls.find((call) => call[0] === 'voice:diagram_update_executed')
     expect(executed?.[1]).toMatchObject({
       action: 'add_node',
       verified: true,

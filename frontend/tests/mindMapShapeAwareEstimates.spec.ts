@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { mindMapNodeHorizontalExtra } from '@/config/mindMapGeometry'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { loadMindMapSpec } from '@/stores/specLoader/mindMap'
 import {
   estimateNodeWidthForCanvasMode,
@@ -9,7 +11,6 @@ import {
   measureBranchNodeHeightForCanvasMode,
   measureMindMapUnderlineBoxMetrics,
 } from '@/stores/specLoader/mindMapMeasurements'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 
 function enableMindMapV2Canvas(): void {
@@ -68,8 +69,7 @@ describe('mind-map shape-aware size estimates', () => {
     const rounded = estimateNodeWidthForCanvasMode(text, 'branch-r-1-0', 'v2', 'rounded')
     const rectangle = estimateNodeWidthForCanvasMode(text, 'branch-r-1-0', 'v2', 'rectangle')
     const oval = estimateNodeWidthForCanvasMode(text, 'branch-r-1-0', 'v2', 'oval')
-    const padDelta =
-      mindMapNodeHorizontalExtra('oval') - mindMapNodeHorizontalExtra('rounded')
+    const padDelta = mindMapNodeHorizontalExtra('oval') - mindMapNodeHorizontalExtra('rounded')
 
     expect(rectangle).toBe(rounded)
     expect(oval).toBe(rounded + padDelta)

@@ -12,9 +12,9 @@ import {
   shouldEnforceTrainingPageLock,
   shouldForceNavigate,
   teachersSeeTrainingBanner,
-  trainingFreeLockDecision,
   trainingCanvasLocation,
   trainingFollowCursorResets,
+  trainingFreeLockDecision,
   trainingSteerMode,
 } from '@/composables/training/applyTrainingSnapshot'
 import type { TrainingSnapshot } from '@/types/training'
@@ -104,9 +104,7 @@ describe('shouldAcceptTrainingSnapshot', () => {
   })
 
   it('still drops an older seq on the same session', () => {
-    expect(shouldAcceptTrainingSnapshot(snapshot({ seq: 6 }), snapshot({ seq: 5 }))).toBe(
-      false
-    )
+    expect(shouldAcceptTrainingSnapshot(snapshot({ seq: 6 }), snapshot({ seq: 5 }))).toBe(false)
   })
 
   it('does not replace a live session with a different ended tombstone', () => {

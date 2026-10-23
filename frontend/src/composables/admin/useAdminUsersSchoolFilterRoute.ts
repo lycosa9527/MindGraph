@@ -24,8 +24,7 @@ export function useAdminUsersSchoolFilterRoute() {
   function syncOrgFilterToRoute(value: number | ''): void {
     const current = route.query.organization_id
     const next = value === '' ? undefined : String(value)
-    const currentNorm =
-      typeof current === 'string' && current.trim() ? current : undefined
+    const currentNorm = typeof current === 'string' && current.trim() ? current : undefined
     if (next === currentNorm) {
       return
     }

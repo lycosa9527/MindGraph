@@ -11,8 +11,7 @@ export type AutoCompleteValidationReason =
   | 'enter_topic_first'
 
 export type AutoCompleteValidationResult =
-  | { valid: true }
-  | { valid: false; reason: AutoCompleteValidationReason }
+  { valid: true } | { valid: false; reason: AutoCompleteValidationReason }
 
 export interface AutoCompleteValidationInput {
   isGenerating: boolean

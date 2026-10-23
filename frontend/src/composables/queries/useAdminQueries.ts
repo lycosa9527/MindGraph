@@ -3,25 +3,37 @@
  *
  * Vue Query composables for admin panel read operations with domain stale times.
  */
-import { computed, type MaybeRefOrGetter, toValue } from 'vue'
+import { type MaybeRefOrGetter, computed, toValue } from 'vue'
 
 import { useQuery } from '@tanstack/vue-query'
 
 import {
+  type AdminErrorEventsQuery,
+  type AdminErrorGroupsQuery,
+  type AdminUsersQuery,
+  type MindMateExportFilters,
+  type MindMateExportJobStatus,
   fetchAdminAdmins,
   fetchAdminApiKeys,
   fetchAdminConfigFeatures,
-  fetchAdminDatabaseOrphans,
-  fetchAdminDatabaseStats,
   fetchAdminCosBackups,
   fetchAdminCosCrowdsecStatus,
   fetchAdminCosQdrantStatus,
   fetchAdminCosStatus,
+  fetchAdminDatabaseOrphans,
+  fetchAdminDatabaseStats,
+  fetchAdminErrorEvents,
+  fetchAdminErrorGroups,
+  fetchAdminErrorSummary,
   fetchAdminFeatureOrgAccess,
-  fetchAdminKittyLlmopsArchitecture,
   fetchAdminKittyDevices,
+  fetchAdminKittyLlmopsArchitecture,
   fetchAdminKittySessions,
   fetchAdminManagers,
+  fetchAdminMarketsListings,
+  fetchAdminMarketsOrders,
+  fetchAdminMarketsStats,
+  fetchAdminMarketsSubscriptions,
   fetchAdminMindbotConfigs,
   fetchAdminMindbotStreamingStatus,
   fetchAdminMindbotUsageEvents,
@@ -29,17 +41,11 @@ import {
   fetchAdminMindmateDifyDefault,
   fetchAdminOrganization,
   fetchAdminOrganizationInvites,
-  fetchMobileOrganizations,
   fetchAdminOrganizationManagers,
   fetchAdminOrganizationMindmateDifyHealth,
-  fetchAdminOrganizations,
   fetchAdminOrganizationUsers,
+  fetchAdminOrganizations,
   fetchAdminPerformanceLive,
-  fetchAdminErrorSummary,
-  fetchAdminErrorEvents,
-  fetchAdminErrorGroups,
-  type AdminErrorEventsQuery,
-  type AdminErrorGroupsQuery,
   fetchAdminPlatformRoleMembers,
   fetchAdminSchoolStats,
   fetchAdminSchoolTokenStats,
@@ -56,16 +62,10 @@ import {
   fetchAdminTokenStats,
   fetchAdminUser,
   fetchAdminUsers,
-  fetchAdminMarketsListings,
-  fetchAdminMarketsOrders,
-  fetchAdminMarketsStats,
-  fetchAdminMarketsSubscriptions,
   fetchMindMateExportConversations,
   fetchMindMateExportJob,
   fetchMindMateExportUsers,
-  type AdminUsersQuery,
-  type MindMateExportFilters,
-  type MindMateExportJobStatus,
+  fetchMobileOrganizations,
 } from './adminApi'
 import { ADMIN_STALE_MS, adminKeys } from './adminKeys'
 
@@ -201,9 +201,7 @@ export function useAdminUser(
   options?: { enabled?: MaybeRefOrGetter<boolean> }
 ) {
   return useQuery({
-    queryKey: computed(() =>
-      adminKeys.user(toValue(userId) ?? 0, toValue(organizationId))
-    ),
+    queryKey: computed(() => adminKeys.user(toValue(userId) ?? 0, toValue(organizationId))),
     queryFn: () => {
       const id = toValue(userId)
       if (id == null) {
@@ -436,9 +434,7 @@ export function useAdminMindbotUsageEvents(
   options?: { enabled?: MaybeRefOrGetter<boolean> }
 ) {
   return useQuery({
-    queryKey: computed(() =>
-      adminKeys.mindbot.usageEvents(toValue(orgId) ?? 0, toValue(params))
-    ),
+    queryKey: computed(() => adminKeys.mindbot.usageEvents(toValue(orgId) ?? 0, toValue(params))),
     queryFn: () => {
       const id = toValue(orgId)
       if (id == null) {
@@ -744,7 +740,9 @@ export function useAdminErrorEvents(
   options?: { enabled?: MaybeRefOrGetter<boolean> }
 ) {
   return useQuery({
-    queryKey: computed(() => adminKeys.errors.events(toValue(query) as Record<string, string | number>)),
+    queryKey: computed(() =>
+      adminKeys.errors.events(toValue(query) as Record<string, string | number>)
+    ),
     queryFn: ({ signal }) => fetchAdminErrorEvents(toValue(query), signal),
     staleTime: ADMIN_STALE_MS.default,
     enabled: options?.enabled,
@@ -756,7 +754,9 @@ export function useAdminErrorGroups(
   options?: { enabled?: MaybeRefOrGetter<boolean> }
 ) {
   return useQuery({
-    queryKey: computed(() => adminKeys.errors.groups(toValue(query) as Record<string, string | number>)),
+    queryKey: computed(() =>
+      adminKeys.errors.groups(toValue(query) as Record<string, string | number>)
+    ),
     queryFn: ({ signal }) => fetchAdminErrorGroups(toValue(query), signal),
     staleTime: ADMIN_STALE_MS.default,
     enabled: options?.enabled,
@@ -767,9 +767,7 @@ export function useAdminErrorGroups(
 // Kitty LLMOps
 // ============================================================================
 
-export function useAdminKittyLlmopsArchitecture(options?: {
-  enabled?: MaybeRefOrGetter<boolean>
-}) {
+export function useAdminKittyLlmopsArchitecture(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
   return useQuery({
     queryKey: adminKeys.kittyLlmops.architecture(),
     queryFn: fetchAdminKittyLlmopsArchitecture,
@@ -855,10 +853,7 @@ export function useMindMateExportConversations(
   })
 }
 
-const ACTIVE_MINDMATE_EXPORT_JOB_STATUSES: MindMateExportJobStatus[] = [
-  'pending',
-  'running',
-]
+const ACTIVE_MINDMATE_EXPORT_JOB_STATUSES: MindMateExportJobStatus[] = ['pending', 'running']
 
 export function useMindMateExportJob(
   jobId: MaybeRefOrGetter<number | null | undefined>,

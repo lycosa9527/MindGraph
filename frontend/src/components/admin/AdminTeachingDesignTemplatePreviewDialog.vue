@@ -10,9 +10,9 @@ import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import ShowcaseTeachingDocPreview from '@/components/showcase/ShowcaseTeachingDocPreview.vue'
 import { useLanguage } from '@/composables'
 import {
+  type TeachingDesignTemplateRow,
   teachingDesignTemplateDownloadUrl,
   teachingDesignTemplatePreviewUrl,
-  type TeachingDesignTemplateRow,
 } from '@/composables/admin/teachingDesignTemplateApi'
 
 const visible = defineModel<boolean>({ required: true })

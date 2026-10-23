@@ -256,8 +256,8 @@ async function saveInlineEdit(content: string): Promise<void> {
             ref="contentRef"
             class="msg-content"
             :class="{ 'msg-content--condensed': isCondensed }"
-            v-html="renderedContent"
             @click="handleMarkdownImageClick"
+            v-html="renderedContent"
           />
           <button
             v-if="canCondense"

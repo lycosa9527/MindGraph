@@ -5,8 +5,8 @@
  */
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import {
-  formatMindMapSubgraphPrompt,
   type MindMapSubgraphContext,
+  formatMindMapSubgraphPrompt,
 } from '@/utils/mindMapSubgraphContext'
 
 export function buildMindMapSubgraphGenerateBody(options: {

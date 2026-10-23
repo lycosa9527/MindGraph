@@ -4,8 +4,8 @@
  */
 import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
-import { eventBus } from '@/composables/core/useEventBus'
 import { shouldLockDesktopOneSentenceForMobileKitty } from '@/composables/canvasToolbar/desktopOneSentenceMobileKittyLock'
+import { eventBus } from '@/composables/core/useEventBus'
 import type { KittyMobileActiveSnapshot } from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import type { OneSentencePhase } from '@/stores/oneSentence'
 import { apiRequest } from '@/utils/apiClient'

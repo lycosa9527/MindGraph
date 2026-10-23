@@ -20,21 +20,29 @@ export default {
   'zhihui.modeComingSoon': 'Dieser Modus wird bald eingeführt',
   'zhihui.describe.image': 'Bitte beschreiben Sie das Bild, das Sie generieren möchten',
   'zhihui.describe.video': 'Bitte beschreiben Sie das Video, das Sie erstellen möchten',
-  'zhihui.describe.diagram': 'Bitte beschreiben Sie anhand des Symbols den Bildschirm, den Sie generieren möchten',
+  'zhihui.describe.diagram':
+    'Bitte beschreiben Sie anhand des Symbols den Bildschirm, den Sie generieren möchten',
   'zhihui.promptPlaceholder.image': 'Geben Sie Ihre Inspiration ein …',
-  'zhihui.promptPlaceholder.video': 'Beschreiben Sie die Szene, die Kameraführung und den Rhythmus ...',
-  'zhihui.promptPlaceholder.diagram': 'Wählen Sie die Mindmap aus und klicken Sie auf „Generieren“.',
-  'zhihui.composerHint.image': 'Beschreiben Sie das Bild mit Text und erstellen Sie mit einem Klick Lehrillustrationen und visuelle Materialien',
-  'zhihui.composerHint.video': 'Der Zugriff auf die Funktionen Wensheng Video und Tusheng Video steht kurz bevor',
-  'zhihui.composerHint.diagram': 'Wählen Sie „Mind Map“, um ein Kursdiagramm aus der Perspektive des Lernenden zu erstellen',
+  'zhihui.promptPlaceholder.video':
+    'Beschreiben Sie die Szene, die Kameraführung und den Rhythmus ...',
+  'zhihui.promptPlaceholder.diagram':
+    'Wählen Sie die Mindmap aus und klicken Sie auf „Generieren“.',
+  'zhihui.composerHint.image':
+    'Beschreiben Sie das Bild mit Text und erstellen Sie mit einem Klick Lehrillustrationen und visuelle Materialien',
+  'zhihui.composerHint.video':
+    'Der Zugriff auf die Funktionen Wensheng Video und Tusheng Video steht kurz bevor',
+  'zhihui.composerHint.diagram':
+    'Wählen Sie „Mind Map“, um ein Kursdiagramm aus der Perspektive des Lernenden zu erstellen',
   'zhihui.diagram.selectMindmap': 'Wählen Sie eine Mindmap',
   'zhihui.diagram.selectMindmapHint': 'Bitte wählen Sie oben eine Mindmap aus',
   'zhihui.diagram.selectMindmapFirst': 'Bitte wählen Sie zunächst eine Mindmap aus',
-  'zhihui.diagram.emptyLibrary': 'Es gibt noch keine Mindmap, bitte speichern Sie diese zunächst in der Diagrammbibliothek.',
+  'zhihui.diagram.emptyLibrary':
+    'Es gibt noch keine Mindmap, bitte speichern Sie diese zunächst in der Diagrammbibliothek.',
   'zhihui.diagram.loadFailed': 'Mindmap konnte nicht geladen werden',
   'zhihui.diagram.emptyDeck': 'Klicken Sie nach Auswahl der Mindmap auf „Generieren“.',
   'zhihui.diagram.waitingSlides': 'Kursunterlagen werden generiert, bitte warten...',
-  'zhihui.diagram.jobStarted': 'Die Erstellung der Kursunterlagen hat begonnen. Sie können den Fortschritt im Verlauf überprüfen.',
+  'zhihui.diagram.jobStarted':
+    'Die Erstellung der Kursunterlagen hat begonnen. Sie können den Fortschritt im Verlauf überprüfen.',
   'zhihui.diagram.phaseQueued': 'Aufgaben stehen in der Warteschlange...',
   'zhihui.diagram.phasePlanning': 'Gestaltung des Lehrplans...',
   'zhihui.diagram.phasePlanningBranches': 'Verschiedene Themen planen...',
@@ -47,9 +55,11 @@ export default {
   'zhihui.diagram.phaseComplete': 'Die Kursunterlagen sind fertig',
   'zhihui.diagram.phaseCancelled': 'Abgesagt',
   'zhihui.diagram.toastPlanning': 'Gestaltung des Lehrplans...',
-  'zhihui.diagram.toastGenerating': 'Die Kursunterlagen werden erstellt. Dies kann einige Minuten dauern',
+  'zhihui.diagram.toastGenerating':
+    'Die Kursunterlagen werden erstellt. Dies kann einige Minuten dauern',
   'zhihui.diagram.toastComplete': 'Die Kursunterlagen sind fertig',
-  'zhihui.diagram.toastPartial': 'Die Kursunterlagen sind teilweise fertig und können weiterhin generiert werden.',
+  'zhihui.diagram.toastPartial':
+    'Die Kursunterlagen sind teilweise fertig und können weiterhin generiert werden.',
   'zhihui.diagram.toastCancelled': 'Die Erstellung der Kursunterlagen wurde abgebrochen',
   'zhihui.diagram.batchProgress': 'Charge {current}/{total}',
   'zhihui.diagram.slideProgress': 'Generiert {current}/{total}',
@@ -58,23 +68,28 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'Die Diashow konnte nicht geladen werden',
   'zhihui.diagram.retryImage': 'Versuchen Sie es erneut',
   'zhihui.diagram.teacherScript': 'Lehrererzählung',
-  'zhihui.diagram.teacherScriptHint': 'Erklärungen für den Unterricht, abgestimmt auf den Schwerpunkt der Abbildungen und Karten auf dieser Seite',
-  'zhihui.diagram.ttsPlay': 'Klicken Sie auf das Kätzchen, um die Erzählung dieser Seite vorzulesen',
+  'zhihui.diagram.teacherScriptHint':
+    'Erklärungen für den Unterricht, abgestimmt auf den Schwerpunkt der Abbildungen und Karten auf dieser Seite',
+  'zhihui.diagram.ttsPlay':
+    'Klicken Sie auf das Kätzchen, um die Erzählung dieser Seite vorzulesen',
   'zhihui.diagram.ttsStop': 'Hör auf zu lesen',
   'zhihui.diagram.ttsMute': 'stumme Erzählung',
   'zhihui.diagram.ttsUnmute': 'Aktivieren Sie das Vorlesen von Erzählungen',
-  'zhihui.diagram.ttsFailed': 'Das Vorlesen durch den Erzähler ist fehlgeschlagen. Bitte versuchen Sie es später noch einmal.',
+  'zhihui.diagram.ttsFailed':
+    'Das Vorlesen durch den Erzähler ist fehlgeschlagen. Bitte versuchen Sie es später noch einmal.',
   'zhihui.refUploadSoon': 'Das Hochladen von Referenzbildern wird bald unterstützt',
   'zhihui.attachReference': 'Referenzbild hinzufügen',
   'zhihui.attachReferenceHint': 'Bis zu 3 Bilder, als Qwen-Referenz',
   'zhihui.removeReference': 'Referenzbild entfernen',
-  'zhihui.referenceTooLarge': 'Das Referenzbild ist zu groß (Einzelbild sollte 4 MB nicht überschreiten)',
+  'zhihui.referenceTooLarge':
+    'Das Referenzbild ist zu groß (Einzelbild sollte 4 MB nicht überschreiten)',
   'zhihui.referenceInvalid': 'Bitte wählen Sie ein PNG-/JPG-/WEBP-Bild aus',
   'zhihui.referenceLimit': 'Fügen Sie bis zu 3 Referenzbilder hinzu',
   'zhihui.sizeButton': 'Bildgröße',
   'zhihui.sizePanelTitle': 'Bildgröße',
   'zhihui.sizeOptional': 'Optional',
-  'zhihui.sizeHint': 'Das Format ist Breite*Höhe. Wenn nichts angegeben wird, empfiehlt das Modell automatisch die Auflösung basierend auf dem Eingabeaufforderungswort.',
+  'zhihui.sizeHint':
+    'Das Format ist Breite*Höhe. Wenn nichts angegeben wird, empfiehlt das Modell automatisch die Auflösung basierend auf dem Eingabeaufforderungswort.',
   'zhihui.sizeLimits': 'Pixelbereich 512×512–2048×2048; Seitenverhältnis 1:8–8:1',
   'zhihui.size.auto': 'intelligent',
   'zhihui.size.autoHint': 'automatisch',
@@ -102,7 +117,8 @@ export default {
   'zhihui.empty': 'Es ist noch kein Bild vorhanden, bitte versuchen Sie es oben zu generieren.',
   'zhihui.loadFailed': 'Der Verlauf konnte nicht geladen werden',
   'zhihui.delete': 'löschen',
-  'zhihui.deleteConfirm': 'Möchten Sie dieses Bild wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+  'zhihui.deleteConfirm':
+    'Möchten Sie dieses Bild wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
   'zhihui.deleteTitle': 'Bild löschen',
   'zhihui.deleted': 'Gelöscht',
   'zhihui.deleteFailed': 'Das Löschen ist fehlgeschlagen',

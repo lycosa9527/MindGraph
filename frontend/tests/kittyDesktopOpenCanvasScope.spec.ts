@@ -1,5 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { switchCanvasDiagramType } from '@/composables/canvasPage/switchCanvasDiagramType'
+import { adoptOpenCanvasSessionScope } from '@/composables/kitty/adoptOpenCanvasSessionScope'
+import { handleKittyOpenCanvasAction } from '@/composables/kitty/kittyDesktopActionHandlers'
+import { useOneSentenceStore } from '@/stores/oneSentence'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 vi.stubGlobal(
   'matchMedia',
@@ -36,12 +43,6 @@ vi.mock('@/composables/canvasPage/switchCanvasDiagramType', () => ({
 vi.mock('@/composables/canvasPage/applyCanvasSessionReset', () => ({
   applyCanvasSessionReset: vi.fn(),
 }))
-
-import { switchCanvasDiagramType } from '@/composables/canvasPage/switchCanvasDiagramType'
-import { adoptOpenCanvasSessionScope } from '@/composables/kitty/adoptOpenCanvasSessionScope'
-import { handleKittyOpenCanvasAction } from '@/composables/kitty/kittyDesktopActionHandlers'
-import { useOneSentenceStore } from '@/stores/oneSentence'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 describe('kittyDesktopActionHandlers open_canvas session_scope', () => {
   beforeEach(() => {

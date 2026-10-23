@@ -5,8 +5,8 @@ import type { MindMapBranchSpec } from '@/utils/mindMapSubgraphMerge'
 
 import { extractHierarchicalClipboard } from './hierarchicalClipboardExtract'
 import {
-  pasteHierarchicalClipboard,
   type HierarchicalClipboardPasteDeps,
+  pasteHierarchicalClipboard,
 } from './hierarchicalClipboardPaste'
 import type { HierarchicalClipboard } from './hierarchicalClipboardTypes'
 import type { DiagramContext } from './types'
@@ -23,10 +23,7 @@ export type CopyPasteDeleteDeps = {
   ) => boolean
 }
 
-export function useCopyPasteSlice(
-  ctx: DiagramContext,
-  deps: CopyPasteDeleteDeps
-) {
+export function useCopyPasteSlice(ctx: DiagramContext, deps: CopyPasteDeleteDeps) {
   const { data, selectedNodes, copiedNodes } = ctx
   const hierarchicalClipboard = ref<HierarchicalClipboard | null>(null)
 
@@ -79,9 +76,7 @@ export function useCopyPasteSlice(
     if (!diagramType) return
 
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-      deps.removeMindMapNodes(
-        nodeIds.filter((id) => isMindMapBranchId(id, ctx.data.value?.nodes))
-      )
+      deps.removeMindMapNodes(nodeIds.filter((id) => isMindMapBranchId(id, ctx.data.value?.nodes)))
       return
     }
     if (diagramType === 'tree_map') {

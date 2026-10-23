@@ -75,9 +75,9 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
     } catch {
       closeSource()
       if (
-        handoffStatus.value === 'waiting'
-        || handoffStatus.value === 'received'
-        || handoffStatus.value === 'indexing'
+        handoffStatus.value === 'waiting' ||
+        handoffStatus.value === 'received' ||
+        handoffStatus.value === 'indexing'
       ) {
         handoffStatus.value = 'expired'
       }
@@ -126,21 +126,14 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
     source = next
   }
 
-  function resetHandoff(options?: {
-    revoke?: boolean
-    packageIdForRevoke?: number | null
-  }): void {
+  function resetHandoff(options?: { revoke?: boolean; packageIdForRevoke?: number | null }): void {
     const code = pairingCode.value
     const status = handoffStatus.value
     const packageIdForRevoke = options?.packageIdForRevoke ?? unref(packageId)
     // Keep in-flight ingest (claimed / indexing); revoke unused or expired waits.
     const claimedOrFinished =
-      status === 'received'
-      || status === 'indexing'
-      || status === 'done'
-      || status === 'failed'
-    const shouldRevoke =
-      options?.revoke !== false && Boolean(code) && !claimedOrFinished
+      status === 'received' || status === 'indexing' || status === 'done' || status === 'failed'
+    const shouldRevoke = options?.revoke !== false && Boolean(code) && !claimedOrFinished
 
     closeSource()
     pairingCode.value = null

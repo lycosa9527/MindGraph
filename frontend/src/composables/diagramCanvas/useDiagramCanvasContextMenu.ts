@@ -166,11 +166,7 @@ export function useDiagramCanvasContextMenu(options: {
     contextMenuNode.value = null
   }
 
-  function handleContextMenuPaste(position: {
-    x: number
-    y: number
-    anchorNodeId?: string
-  }) {
+  function handleContextMenuPaste(position: { x: number; y: number; anchorNodeId?: string }) {
     const flowPos = screenToFlowCoordinate({ x: position.x, y: position.y })
     diagramStore.pasteClipboardAt({
       anchorNodeId: position.anchorNodeId,

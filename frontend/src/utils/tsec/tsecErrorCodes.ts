@@ -19,10 +19,7 @@ export const TSEC_FRONTEND_ERROR_CODES: Readonly<Record<number, string>> = {
   1085: 'silent_verify_timeout',
 }
 
-export function tsecFrontendErrorReason(
-  errorCode?: number,
-  errorMessage?: string
-): string {
+export function tsecFrontendErrorReason(errorCode?: number, errorMessage?: string): string {
   if (errorCode != null && TSEC_FRONTEND_ERROR_CODES[errorCode]) {
     return `tsec_${errorCode}_${TSEC_FRONTEND_ERROR_CODES[errorCode]}`
   }

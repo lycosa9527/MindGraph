@@ -71,13 +71,11 @@ export async function fetchActiveSlideRemote(): Promise<SlideRemoteSnapshot | nu
 export async function drainSlideRemoteCommands(): Promise<SlideRemoteCommandRow[]> {
   const res = await apiRequest(`${API}/commands`)
   if (!res.ok) return []
-  const body = (await readJson<{ items?: SlideRemoteCommandRow[] }>(res))
+  const body = await readJson<{ items?: SlideRemoteCommandRow[] }>(res)
   return Array.isArray(body.items) ? body.items : []
 }
 
-export async function postSlideRemoteCommand(
-  command: SlideRemoteCommand
-): Promise<boolean> {
+export async function postSlideRemoteCommand(command: SlideRemoteCommand): Promise<boolean> {
   const res = await apiRequest(`${API}/command`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

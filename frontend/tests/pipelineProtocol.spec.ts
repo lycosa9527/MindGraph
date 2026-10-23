@@ -1,7 +1,19 @@
 /**
  * Kitty pipeline protocol: record steps, fail turns, query status.
  */
+import { createPinia, setActivePinia } from 'pinia'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  beginKittyTurn,
+  dumpTurnTrace,
+  failKittyTurn,
+  getLastFail,
+  getTurnStatus,
+  recordPipelineEvent,
+} from '@/composables/kitty/pipeline'
+import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 
 const { emitMock } = vi.hoisted(() => ({
   emitMock: vi.fn(),
@@ -20,18 +32,6 @@ vi.mock('@/composables/core/useEventBus', () => ({
 vi.mock('@/composables/kitty/kittyAgentDebug', () => ({
   normalizeKittyDebugText: (s: string) => s,
 }))
-
-import { createPinia, setActivePinia } from 'pinia'
-
-import {
-  beginKittyTurn,
-  dumpTurnTrace,
-  failKittyTurn,
-  getLastFail,
-  getTurnStatus,
-  recordPipelineEvent,
-} from '@/composables/kitty/pipeline'
-import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 
 describe('kitty pipeline protocol', () => {
   beforeEach(() => {

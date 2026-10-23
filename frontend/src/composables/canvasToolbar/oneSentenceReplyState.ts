@@ -6,10 +6,7 @@ import type { Ref } from 'vue'
 
 import { resolveClarifyChoices } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { shouldPromoteKittyReplyToResponse } from '@/composables/kitty/kittyJobStatus'
-import type {
-  OneSentenceChatMessage,
-  OneSentenceClarifyChoice,
-} from '@/stores/oneSentence'
+import type { OneSentenceChatMessage, OneSentenceClarifyChoice } from '@/stores/oneSentence'
 
 export type OneSentenceReplyKind = 'progress' | 'final' | 'conversational'
 
@@ -29,17 +26,12 @@ export type OneSentencePushExtras = {
 
 export function createOneSentenceReplyState(options: {
   messages: Ref<OneSentenceChatMessage[]>
-  pushKittyMessage: (
-    text: string,
-    streaming?: boolean,
-    extras?: OneSentencePushExtras
-  ) => string
+  pushKittyMessage: (text: string, streaming?: boolean, extras?: OneSentencePushExtras) => string
   replaceKittyMessage: (messageId: string, text: string, streaming?: boolean) => void
   scrollChatToBottom: () => void
   isCanvasJobOpen?: () => boolean
 }) {
   let lastFinalReplyText = ''
-  let streamingMessageId: string | null = null
   let thinkingMessageId: string | null = null
   let pendingFinal: {
     text: string
@@ -53,9 +45,7 @@ export function createOneSentenceReplyState(options: {
       return
     }
     options.messages.value = rows.map((row) =>
-      row.choices?.length && !row.choicesConsumed
-        ? { ...row, choicesConsumed: true }
-        : row
+      row.choices?.length && !row.choicesConsumed ? { ...row, choicesConsumed: true } : row
     )
   }
 
@@ -75,9 +65,7 @@ export function createOneSentenceReplyState(options: {
     if (!options.messages.value.some((row) => row.thinking || row.id === id)) {
       return
     }
-    options.messages.value = options.messages.value.filter(
-      (row) => !row.thinking && row.id !== id
-    )
+    options.messages.value = options.messages.value.filter((row) => !row.thinking && row.id !== id)
   }
 
   function finalizeConversationalStream(): void {
@@ -87,7 +75,6 @@ export function createOneSentenceReplyState(options: {
         row.streaming && !row.thinking ? { ...row, streaming: false } : row
       )
     }
-    streamingMessageId = null
   }
 
   function showFinalReply(

@@ -3,31 +3,25 @@
  */
 import { type ComputedRef, type Ref, onUnmounted, ref, watch } from 'vue'
 
-import type { KittyAsrCommitMode } from '@/composables/kitty/asr/useKittyAsrSession'
-
 import { storeToRefs } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
+import type { KittyAsrCommitMode } from '@/composables/kitty/asr/useKittyAsrSession'
 import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { useKittyConversationHistory } from '@/composables/kitty/conversation/useKittyConversationHistory'
 import { useKittyEditReplyBus } from '@/composables/kitty/conversation/useKittyEditReplyBus'
 import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
-import { processConversationImageUpload } from '@/composables/kitty/processConversationImageUpload'
-import {
-  runKittyEditTurn,
-} from '@/composables/kitty/pipeline/editTurn'
+import { runKittyEditTurn } from '@/composables/kitty/pipeline/editTurn'
 import { adaptKittyTranslate } from '@/composables/kitty/pipeline/errorCatalog'
+import { processConversationImageUpload } from '@/composables/kitty/processConversationImageUpload'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import type { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
 import { reportKittySessionIngress } from '@/composables/kitty/useKittySessionManager'
 import { useDiagramStore } from '@/stores/diagram'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 import { useOneSentenceStore } from '@/stores/oneSentence'
-import type {
-  OneSentenceClarifyChoice,
-  OneSentencePhase,
-} from '@/stores/oneSentence'
+import type { OneSentenceClarifyChoice, OneSentencePhase } from '@/stores/oneSentence'
 import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecExtras'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
@@ -217,8 +211,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
 
       let reply: string
       if (result.mode === 'handdrawn') {
-        const topic =
-          result.topic?.trim() || t('mobile.kittyPhotoUntitledMap', 'Mind map')
+        const topic = result.topic?.trim() || t('mobile.kittyPhotoUntitledMap', 'Mind map')
         if (result.appliedToLibrary) {
           reply = t(
             'mobile.kittyPhotoHanddrawnReply',
@@ -327,7 +320,11 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
       return
     }
     const requestId = payload.requestId?.trim() || payload.turn.request_id?.trim() || ''
-    if (pipelineStore.editPipelineActive && requestId && requestId === history.activeRequestId.value) {
+    if (
+      pipelineStore.editPipelineActive &&
+      requestId &&
+      requestId === history.activeRequestId.value
+    ) {
       return
     }
     history.applyPeerTurn(payload.turn)

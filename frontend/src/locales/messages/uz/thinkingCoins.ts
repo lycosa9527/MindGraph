@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Tez orada',
   'thinkingCoins.schoolInfo': 'Maktab rejaları uchun maktab administratoringiz bilan bog‘laning',
   'thinkingCoins.school.headline': 'AI bilan fikrlash · maktab yechimlari',
-  'thinkingCoins.school.description': 'Maktablar va muassasalar uchun xususiy joylashtirish, maxsus funksiyalar va to‘liq operatsion qo‘llab-quvvatlash — miqyos, brend va ma’lumotlar xavfsizligi uchun.',
+  'thinkingCoins.school.description':
+    'Maktablar va muassasalar uchun xususiy joylashtirish, maxsus funksiyalar va to‘liq operatsion qo‘llab-quvvatlash — miqyos, brend va ma’lumotlar xavfsizligi uchun.',
   'thinkingCoins.school.feature.accountManager': 'Maxsus hisob menejeri',
   'thinkingCoins.school.feature.accountManagerDesc': 'Yuzma-yuz maslahat',
   'thinkingCoins.school.feature.privateDeploy': 'Xususiy joylashtirish',
@@ -63,8 +64,9 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Tavsiya mukofoti',
   'thinkingCoins.reason.case_reward': 'Keys mukofoti',
   'thinkingCoins.reason.subscription_grant': 'Obuna krediti',
-  'thinkingCoins.dailyExpiresHint': 'Kirish mukofotlari shu kuni amal qiladi va 24:00 da qayta tiklanadi',
-  'thinkingCoins.dailyBalanceRemaining': 'Bugungi ro\'yxatdan o\'tish vaqti qoldi {n}',
+  'thinkingCoins.dailyExpiresHint':
+    'Kirish mukofotlari shu kuni amal qiladi va 24:00 da qayta tiklanadi',
+  'thinkingCoins.dailyBalanceRemaining': "Bugungi ro'yxatdan o'tish vaqti qoldi {n}",
   'thinkingCoins.admin.tab': 'Fikrlash tokenlari',
   'thinkingCoins.admin.tasksTitle': 'Daromad vazifalari',
   'thinkingCoins.admin.settingsTitle': 'Global sozlamalar',

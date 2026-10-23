@@ -64,10 +64,7 @@ export function trainingEventsUrl(orgId: number | null, isPlatformLevel: boolean
   return '/api/training/events'
 }
 
-export function canOpenTrainingEvents(
-  isPlatformLevel: boolean,
-  orgId: number | null
-): boolean {
+export function canOpenTrainingEvents(isPlatformLevel: boolean, orgId: number | null): boolean {
   if (isPlatformLevel) return true
   return orgId != null
 }

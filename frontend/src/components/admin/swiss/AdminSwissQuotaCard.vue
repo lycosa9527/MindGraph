@@ -2,14 +2,14 @@
 /**
  * Quota usage card — seats or storage with progress bar.
  */
-import { computed, type Component } from 'vue'
+import { type Component, computed } from 'vue'
 
+import { useSwissStatCardClasses } from '@/composables/admin/useSwissStatCardClasses'
 import {
-  quotaAccentToTheme,
   type AdminSwissQuotaAccent,
   type AdminSwissStatTheme,
+  quotaAccentToTheme,
 } from '@/constants/adminSwissStatTheme'
-import { useSwissStatCardClasses } from '@/composables/admin/useSwissStatCardClasses'
 
 const props = withDefaults(
   defineProps<{
@@ -75,11 +75,14 @@ const fillWidth = computed(() => {
 const isNearLimit = computed(() => percentage.value >= 85 && percentage.value < 100)
 const isAtLimit = computed(() => props.limit > 0 && props.used >= props.limit)
 
-const cardClasses = useSwissStatCardClasses(resolvedTheme, computed(() => ({
-  stripe: 'left',
-  nearLimit: isNearLimit.value,
-  atLimit: isAtLimit.value,
-})))
+const cardClasses = useSwissStatCardClasses(
+  resolvedTheme,
+  computed(() => ({
+    stripe: 'left',
+    nearLimit: isNearLimit.value,
+    atLimit: isAtLimit.value,
+  }))
+)
 
 const usedDisplay = computed(() => {
   if (props.usedDisplayOverride) {
@@ -110,7 +113,10 @@ const limitDisplay = computed(() => {
       <h3 class="swiss-stat-card__title">
         {{ title }}
       </h3>
-      <span class="swiss-stat-card__badge" :aria-label="percentageBadge">
+      <span
+        class="swiss-stat-card__badge"
+        :aria-label="percentageBadge"
+      >
         {{ percentageBadge }}
       </span>
     </div>
@@ -128,11 +134,17 @@ const limitDisplay = computed(() => {
       aria-valuemin="0"
       aria-valuemax="100"
     >
-      <div class="swiss-stat-card__fill" :style="{ width: `${fillWidth}%` }" />
+      <div
+        class="swiss-stat-card__fill"
+        :style="{ width: `${fillWidth}%` }"
+      />
     </div>
 
     <p class="swiss-stat-card__footer">
-      <span class="swiss-stat-card__footer-dot" aria-hidden="true" />
+      <span
+        class="swiss-stat-card__footer-dot"
+        aria-hidden="true"
+      />
       {{ remainingLabel }}
     </p>
   </article>

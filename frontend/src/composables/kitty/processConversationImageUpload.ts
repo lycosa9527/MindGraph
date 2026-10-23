@@ -80,34 +80,26 @@ export async function processConversationImageUpload(options: {
   if (options.diagramTitle?.trim()) {
     formData.append('diagram_title', options.diagramTitle.trim())
   }
-  formData.append(
-    'apply_to_library',
-    options.applyToLibrary === false ? 'false' : 'true'
-  )
+  formData.append('apply_to_library', options.applyToLibrary === false ? 'false' : 'true')
 
   const response = await apiUpload('/api/kitty/conversation_image', formData)
   const result = (await response.json().catch(() => ({}))) as ApiResult
   if (!response.ok || !result.success) {
-    throw new Error(
-      detailMessage(result.detail, result.error || 'Image processing failed')
-    )
+    throw new Error(detailMessage(result.detail, result.error || 'Image processing failed'))
   }
 
-  const mode: ConversationImageMode =
-    result.mode === 'handdrawn' ? 'handdrawn' : 'text'
+  const mode: ConversationImageMode = result.mode === 'handdrawn' ? 'handdrawn' : 'text'
 
   return {
     mode,
     isMindmap: mode === 'handdrawn',
     topic: typeof result.topic === 'string' ? result.topic : undefined,
-    packageId:
-      typeof result.package_id === 'number' ? result.package_id : undefined,
+    packageId: typeof result.package_id === 'number' ? result.package_id : undefined,
     docSummarySaved: Boolean(
       result.doc_summary_saved === true ||
-        (typeof result.package_id === 'number' && result.package_id > 0)
+      (typeof result.package_id === 'number' && result.package_id > 0)
     ),
-    ocrExcerpt:
-      typeof result.ocr_excerpt === 'string' ? result.ocr_excerpt : undefined,
+    ocrExcerpt: typeof result.ocr_excerpt === 'string' ? result.ocr_excerpt : undefined,
     ocrText: typeof result.ocr_text === 'string' ? result.ocr_text : undefined,
     spec: result.spec,
     library: result.library,

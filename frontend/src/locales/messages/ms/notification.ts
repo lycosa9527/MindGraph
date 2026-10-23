@@ -5,11 +5,13 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Tidak boleh mengpadam nod topik atau pusat',
-  'notification.cannotResetSelectDiagramType': 'Tidak boleh reset: pilih jenis rajah terlebih dahulu',
+  'notification.cannotResetSelectDiagramType':
+    'Tidak boleh reset: pilih jenis rajah terlebih dahulu',
   'notification.canvasClearNodes': 'Mengpadam {count} nod',
   'notification.canvasClearNodesLearning': 'Mengosongkan {count} nod, ditambahkan ke jawaban',
   'notification.canvasSomeoneEditingNode': 'Orang lain sedang mengedit nod ini',
-  'notification.collabDeleteBlocked': 'Tidak boleh mengpadam saat pengguna lain mengedit nod yang dipilih',
+  'notification.collabDeleteBlocked':
+    'Tidak boleh mengpadam saat pengguna lain mengedit nod yang dipilih',
   'notification.collabRedoBlocked': 'Tidak boleh redo saat pengguna lain sedang mengedit',
   'notification.collabUndoBlocked': 'Tidak boleh undo saat pengguna lain sedang mengedit',
   'notification.conversationDeleted': 'Perbualan dipadam',
@@ -20,8 +22,10 @@ export default {
   'notification.feedbackCancelled': 'Umpan balik dipadam',
   'notification.feedbackThanks': 'Terima kasih atas umpan balik Anda',
   'notification.feedbackThanksDislike': 'Terima kasih atas umpan balik — kami akan memperbaiki',
-  'notification.focusQuestionTooShort': 'Masukkan pertanyaan fokus yang lebih panjang terlebih dahulu',
-  'notification.geoLiteMissingIntro': 'Unduh GeoLite2 Country dari MaxMind, ekstrak GeoLite2-Country.mmdb, dan salin ke folder data server:',
+  'notification.focusQuestionTooShort':
+    'Masukkan pertanyaan fokus yang lebih panjang terlebih dahulu',
+  'notification.geoLiteMissingIntro':
+    'Unduh GeoLite2 Country dari MaxMind, ekstrak GeoLite2-Country.mmdb, dan salin ke folder data server:',
   'notification.geoLiteMissingLink': 'Buka halaman unduhan MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'Path yang diharapkan:',
   'notification.geoLiteMissingTitle': 'Database GeoLite2 Country tidak ditemukan',

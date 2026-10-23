@@ -15,9 +15,9 @@ describe('isOrgPrivatized', () => {
   it('falls back to raw fields when is_privatized is missing', () => {
     expect(isOrgPrivatized({})).toBe(false)
     expect(isOrgPrivatized({ mindmate_agent_name: '小助手' })).toBe(false)
-    expect(isOrgPrivatized({ mindmate_agent_avatar_url: '/static/org_mindmate_avatars/1/avatar.png' })).toBe(
-      false
-    )
+    expect(
+      isOrgPrivatized({ mindmate_agent_avatar_url: '/static/org_mindmate_avatars/1/avatar.png' })
+    ).toBe(false)
     expect(isOrgPrivatized({ dify_api_key_masked: 'app-****' })).toBe(false)
     expect(
       isOrgPrivatized({

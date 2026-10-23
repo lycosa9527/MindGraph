@@ -49,7 +49,8 @@ export default {
   'chunkTestResults.answerQuality': 'Якість відповіді',
   'chunkTestResults.avgLatency': 'Сер. затримка',
   'chunkTestResults.back': 'Назад',
-  'chunkTestResults.cancelConfirmBody': 'Скасувати цей тест? Тест зупиниться на наступній контрольній точці.',
+  'chunkTestResults.cancelConfirmBody':
+    'Скасувати цей тест? Тест зупиниться на наступній контрольній точці.',
   'chunkTestResults.cancelFailed': 'Не вдалося скасувати тест',
   'chunkTestResults.cancelRequested': 'Запит на скасування тесту надіслано',
   'chunkTestResults.cancelTest': 'Скасувати тест',
@@ -89,7 +90,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Тестувати всі набори даних',
   'knowledge.chunkHeader.testUpload': 'Тестувати завантажені документи',
   'knowledge.chunkHeader.title': 'RAG-тест фрагментів',
-  'knowledge.chunkHeader.waitForProcessing': 'Зачекайте завершення обробки документів перед тестуванням',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Зачекайте завершення обробки документів перед тестуванням',
   'knowledge.chunkPreview.empty': 'Фрагментів не знайдено',
   'knowledge.chunkPreview.pageLabel': 'Сторінка {n}',
   'knowledge.chunkPreview.title': 'Фрагменти документа — {fileName}',
@@ -108,7 +110,8 @@ export default {
   'knowledge.doc.colStatus': 'Статус',
   'knowledge.doc.colType': 'Тип',
   'knowledge.doc.colUploaded': 'Дата завантаження',
-  'knowledge.doc.emptyDescription': 'Поки немає документів. Завантажте документи, щоб створити базу знань.',
+  'knowledge.doc.emptyDescription':
+    'Поки немає документів. Завантажте документи, щоб створити базу знань.',
   'knowledge.doc.errorPrefix': 'Помилка: ',
   'knowledge.doc.noData': 'Немає даних',
   'knowledge.doc.statusCompleted': 'Завершено',
@@ -124,31 +127,42 @@ export default {
   'knowledge.header.title': 'Особиста база знань',
   'knowledge.header.upload': 'Завантажити документи',
   'knowledge.ragGuide.title': 'Як працюють пакети, RAG і wiki?',
-  'knowledge.ragGuide.subtitle': 'Без складних термінів — уявіть папку довідкових матеріалів. Ми індексуємо її для пошуку (RAG), потім компілюємо короткі wiki-нотатки, і ШІ читає обидва під час створення ментальної карти.',
+  'knowledge.ragGuide.subtitle':
+    'Без складних термінів — уявіть папку довідкових матеріалів. Ми індексуємо її для пошуку (RAG), потім компілюємо короткі wiki-нотатки, і ШІ читає обидва під час створення ментальної карти.',
   'knowledge.ragGuide.step1.title': 'Оберіть пакет',
-  'knowledge.ragGuide.step1.body': 'Пакет схожий на колекцію Zotero. Зліва може бути до 3; зазвичай кожен належить одній ментальній карті. Натисніть пакет на бічній панелі, щоб керувати його документами.',
+  'knowledge.ragGuide.step1.body':
+    'Пакет схожий на колекцію Zotero. Зліва може бути до 3; зазвичай кожен належить одній ментальній карті. Натисніть пакет на бічній панелі, щоб керувати його документами.',
   'knowledge.ragGuide.step2.title': 'Додайте джерела та проіндексуйте (RAG)',
-  'knowledge.ragGuide.step2.body': 'Завантажуйте PDF, Word, нотатки або веб-сторінки. Довгі документи розбиваємо на фрагменти для пошуку та зберігаємо векторні вкладення — це RAG-індекс, який стає готовим першим.',
+  'knowledge.ragGuide.step2.body':
+    'Завантажуйте PDF, Word, нотатки або веб-сторінки. Довгі документи розбиваємо на фрагменти для пошуку та зберігаємо векторні вкладення — це RAG-індекс, який стає готовим першим.',
   'knowledge.ragGuide.step3.title': 'Wiki-нотатки компілюються автоматично',
-  'knowledge.ragGuide.step3.body': 'Після індексації LLM компілює оглядові та тематичні wiki-сторінки на диску. Це стислі нотатки (не стенограми), що підсумовують пакет для швидшої орієнтації.',
+  'knowledge.ragGuide.step3.body':
+    'Після індексації LLM компілює оглядові та тематичні wiki-сторінки на диску. Це стислі нотатки (не стенограми), що підсумовують пакет для швидшої орієнтації.',
   'knowledge.ragGuide.step4.title': 'Пошук використовує wiki + фрагменти',
-  'knowledge.ragGuide.step4.body': 'Коли ви розгортаєте гілку або генеруєте підсумок, спочатку підбираємо релевантні wiki-сторінки, потім найрелевантніші фрагменти (гібридний RAG).',
+  'knowledge.ragGuide.step4.body':
+    'Коли ви розгортаєте гілку або генеруєте підсумок, спочатку підбираємо релевантні wiki-сторінки, потім найрелевантніші фрагменти (гібридний RAG).',
   'knowledge.ragGuide.step5.title': 'Відповіді на основі ваших джерел',
-  'knowledge.ragGuide.step5.body': 'ШІ пише з wiki-нотаток і знайдених уривків, а не здогадується — кращі джерела, завершена індексація та скомпільовані wiki-сторінки дають точніші карти.',
-  'knowledge.ragGuide.footer': 'Порада: відкриття Document Summary на полотні створює пакет автоматично; сторінки, збережені через розширення Chrome, також з\'являються у списку бічної панелі.',
+  'knowledge.ragGuide.step5.body':
+    'ШІ пише з wiki-нотаток і знайдених уривків, а не здогадується — кращі джерела, завершена індексація та скомпільовані wiki-сторінки дають точніші карти.',
+  'knowledge.ragGuide.footer':
+    "Порада: відкриття Document Summary на полотні створює пакет автоматично; сторінки, збережені через розширення Chrome, також з'являються у списку бічної панелі.",
   'knowledge.pipeline.title': 'Статус конвеєра',
   'knowledge.pipeline.ragIdle': 'RAG-індекс',
-  'knowledge.pipeline.ragIdleDetail': 'Поки немає проіндексованих пакетів. Додайте джерела та запустіть індексацію з пакета.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Поки немає проіндексованих пакетів. Додайте джерела та запустіть індексацію з пакета.',
   'knowledge.pipeline.ragProcessing': 'RAG-індексація',
   'knowledge.pipeline.ragProcessingDetail': '{count} пакет(ів) ще розбивають і вкладують джерела.',
   'knowledge.pipeline.ragReady': 'RAG готовий',
-  'knowledge.pipeline.ragReadyDetail': '{count} пакет(ів) проіндексовано — пошук по фрагментах активний.',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count} пакет(ів) проіндексовано — пошук по фрагментах активний.',
   'knowledge.pipeline.wikiDisabled': 'Компіляція wiki вимкнена',
   'knowledge.pipeline.wikiDisabledDetail': 'Компіляція wiki вимкнена на цьому сервері.',
   'knowledge.pipeline.wikiIdle': 'Компіляція wiki',
-  'knowledge.pipeline.wikiIdleDetail': 'Wiki-сторінки компілюються після завершення RAG-індексації для кожного джерела.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Wiki-сторінки компілюються після завершення RAG-індексації для кожного джерела.',
   'knowledge.pipeline.wikiPending': 'Компіляція wiki',
-  'knowledge.pipeline.wikiPendingDetail': '{count} пакет(ів) очікують wiki-сторінки після індексації.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} пакет(ів) очікують wiki-сторінки після індексації.',
   'knowledge.pipeline.wikiReady': 'Wiki готовий',
   'knowledge.pipeline.wikiReadyDetail': '{count} пакет(ів) мають скомпільовані wiki-нотатки.',
   'knowledge.pipelineBadge.rag.label': 'ганчірка',
@@ -163,8 +177,9 @@ export default {
   'knowledge.pipelineBadge.wiki.complete': 'Завершено',
   'knowledge.manualEval.deselectAll': 'Зняти все',
   'knowledge.manualEval.dialogTitle': 'Ручне оцінювання — {method}',
-  'knowledge.manualEval.groundTruthLabel': 'Еталонна відповідь (необов\'язково)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Введіть еталонну відповідь для оцінювання релевантності…',
+  'knowledge.manualEval.groundTruthLabel': "Еталонна відповідь (необов'язково)",
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Введіть еталонну відповідь для оцінювання релевантності…',
   'knowledge.manualEval.metric.answer_coverage': 'Покриття відповіді',
   'knowledge.manualEval.metric.answer_faithfulness': 'Достовірність відповіді',
   'knowledge.manualEval.metric.clarity': 'Ясність',
@@ -186,7 +201,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Оцінювання якості фрагментів',
   'knowledge.manualEval.resultsTitle': 'Результати оцінювання',
   'knowledge.manualEval.selectAll': 'Обрати все',
-  'knowledge.manualEval.selectChunksHeading': 'Оберіть фрагменти для оцінювання (залиште порожнім для оцінювання всіх)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Оберіть фрагменти для оцінювання (залиште порожнім для оцінювання всіх)',
   'knowledge.manualEval.showingFirst20': 'Показано перші 20 з {total} фрагментів',
   'knowledge.manualEval.startEvaluation': 'Почати оцінювання',
   'knowledge.processing.chunking': 'Розбиття',
@@ -235,7 +251,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Налаштування пошуку',
   'knowledge.settings.title': 'Налаштування бази знань',
   'knowledge.settings.helpTitle': 'Як застосовуються ці налаштування',
-  'knowledge.settings.helpBody': 'Параметри пошуку застосовуються одразу до пошуку та відповідей ШІ. Розмір і перекриття фрагментів — до нових індексацій; після зміни перезапустіть індексацію існуючих джерел.',
+  'knowledge.settings.helpBody':
+    'Параметри пошуку застосовуються одразу до пошуку та відповідей ШІ. Розмір і перекриття фрагментів — до нових індексацій; після зміни перезапустіть індексацію існуючих джерел.',
   'knowledge.settings.tokens': 'токенів',
   'knowledge.settings.serverSection': 'Сервер (лише читання)',
   'knowledge.settings.rerankingMode': 'Змінити порядок',
@@ -246,7 +263,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Вимкнено',
   'knowledge.settings.saveSuccess': 'Налаштування збережено',
   'knowledge.settings.saveFailed': 'Не вдалося зберегти налаштування',
-  'knowledge.settings.reindexRequired': 'Параметри фрагментів змінено — переіндексуйте існуючі документи в пакетах, щоб нові розміри набули чинності.',
+  'knowledge.settings.reindexRequired':
+    'Параметри фрагментів змінено — переіндексуйте існуючі документи в пакетах, щоб нові розміри набули чинності.',
   'knowledge.upload.click': 'Натисніть для завантаження',
   'knowledge.upload.drag': 'або перетягніть файл сюди',
   'knowledge.upload.fileTooLarge': 'Розмір файлу не може перевищувати 10 МБ',

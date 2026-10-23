@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  getLocalesForInterfaceLanguagePicker,
   INTERFACE_LANGUAGE_PICKER_CODES,
   INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT,
+  getLocalesForInterfaceLanguagePicker,
 } from '@/i18n/locales'
 import { SUPPORTED_UI_LOCALES } from '@/i18n/supportedUiLocales'
 

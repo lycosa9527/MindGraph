@@ -9,11 +9,7 @@ import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
 import { createShowcaseCoverStream } from '@/composables/showcase/createShowcaseCoverStream'
 import { i18n } from '@/i18n'
-import {
-  type ShowcasePost,
-  type ShowcasePostList,
-  getShowcasePosts,
-} from '@/utils/apiClient'
+import { type ShowcasePost, type ShowcasePostList, getShowcasePosts } from '@/utils/apiClient'
 
 export type ShowcaseFeedQuery = {
   caseType?: string
@@ -61,7 +57,7 @@ export const useShowcaseStore = defineStore('showcase', () => {
   function emitCoverReady(
     postId: string,
     thumbnailUrl?: string | null,
-    previewUrl?: string | null,
+    previewUrl?: string | null
   ) {
     eventBus.emit('showcase:cover_ready', { postId, thumbnailUrl, previewUrl })
   }
@@ -106,10 +102,7 @@ export const useShowcaseStore = defineStore('showcase', () => {
     coverAuthorNotifyIds.value = {}
   }
 
-  function markCoverPending(
-    postId: string,
-    options?: { notifyAuthorOnFail?: boolean },
-  ) {
+  function markCoverPending(postId: string, options?: { notifyAuthorOnFail?: boolean }) {
     if (!postId) return
     if (options?.notifyAuthorOnFail) {
       coverAuthorNotifyIds.value = { ...coverAuthorNotifyIds.value, [postId]: true }

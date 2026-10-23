@@ -19,10 +19,7 @@ describe('kittyEditAfterLlmQueue helpers', () => {
       deepseek: 'streaming',
       doubao: 'waiting',
     }
-    expect(listInFlightAutocompleteDisplayNames(states, phases)).toEqual([
-      'DeepSeek',
-      'Doubao',
-    ])
+    expect(listInFlightAutocompleteDisplayNames(states, phases)).toEqual(['DeepSeek', 'Doubao'])
   })
 
   it('joins names for zh and en', () => {

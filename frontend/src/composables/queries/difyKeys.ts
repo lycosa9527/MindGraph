@@ -11,5 +11,12 @@ export const difyKeys = {
   pinned: () => [...difyKeys.all, 'pinned'] as const,
   mindmateFolders: () => [...difyKeys.all, 'mindmateFolders'] as const,
   messages: (convId: string, difyUser?: string, server?: number, mindbotConfigId?: number) =>
-    [...difyKeys.all, 'messages', convId, difyUser || '', server ?? '', mindbotConfigId ?? ''] as const,
+    [
+      ...difyKeys.all,
+      'messages',
+      convId,
+      difyUser || '',
+      server ?? '',
+      mindbotConfigId ?? '',
+    ] as const,
 }

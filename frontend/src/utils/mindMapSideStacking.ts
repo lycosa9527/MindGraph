@@ -134,8 +134,7 @@ export function centerMindMapSidePackOnTopic(
   const l1Ids = connections
     .filter(
       (conn) =>
-        conn.source === 'topic' &&
-        mindMapNodeSide(conn.target, { nodes, connections }) === wanted
+        conn.source === 'topic' && mindMapNodeSide(conn.target, { nodes, connections }) === wanted
     )
     .map((conn) => conn.target)
   if (l1Ids.length === 0) return nodes
@@ -174,13 +173,7 @@ export function centerMindMapSidePacksOnTopic(
   nodeHeights?: Record<string, number>,
   diagramStyleId?: string | null
 ): DiagramNode[] {
-  const left = centerMindMapSidePackOnTopic(
-    nodes,
-    connections,
-    'l',
-    nodeHeights,
-    diagramStyleId
-  )
+  const left = centerMindMapSidePackOnTopic(nodes, connections, 'l', nodeHeights, diagramStyleId)
   return centerMindMapSidePackOnTopic(left, connections, 'r', nodeHeights, diagramStyleId)
 }
 
@@ -250,12 +243,7 @@ export function settleMindMapPreserveYLayout(
       diagramStyleId
     )
   }
-  return centerMindMapSidePacksOnTopic(
-    result,
-    connections,
-    nodeHeights,
-    diagramStyleId
-  )
+  return centerMindMapSidePacksOnTopic(result, connections, nodeHeights, diagramStyleId)
 }
 
 /**
@@ -278,7 +266,10 @@ export function resolveMindMapSiblingSubtreeOverlaps(
   // Deeper packs first, then L1 sides (fans may grow after inner pushes + re-center).
   const parents = [...childrenMap.keys()]
     .filter((id) => id !== 'topic' && !collapsedNodeIds.has(id))
-    .sort((a, b) => mindMapNodeDepth(b, { nodes, connections }) - mindMapNodeDepth(a, { nodes, connections }))
+    .sort(
+      (a, b) =>
+        mindMapNodeDepth(b, { nodes, connections }) - mindMapNodeDepth(a, { nodes, connections })
+    )
 
   for (const parentId of parents) {
     const kids = (childrenMap.get(parentId) ?? []).filter((id) => !collapsedNodeIds.has(id))
@@ -294,7 +285,9 @@ export function resolveMindMapSiblingSubtreeOverlaps(
   }
 
   const topicKids = childrenMap.get('topic') ?? []
-  const leftL1 = topicKids.filter((id) => mindMapNodeSide(id, { nodes: result, connections }) === 'left')
+  const leftL1 = topicKids.filter(
+    (id) => mindMapNodeSide(id, { nodes: result, connections }) === 'left'
+  )
   const rightL1 = topicKids.filter(
     (id) => mindMapNodeSide(id, { nodes: result, connections }) === 'right'
   )
@@ -516,13 +509,7 @@ function adaptiveGapForSiblingPacks(
   diagramStyleId: string | null | undefined,
   role: 'sibling' | 'branch'
 ): number {
-  const upper = contactingBottomShape(
-    prevId,
-    nodeById,
-    childrenMap,
-    nodeHeights,
-    diagramStyleId
-  )
+  const upper = contactingBottomShape(prevId, nodeById, childrenMap, nodeHeights, diagramStyleId)
   const lower = contactingTopShape(currId, nodeById, childrenMap, nodeHeights, diagramStyleId)
   return role === 'branch'
     ? mindMapAdaptiveBranchGap(upper, lower)
@@ -677,7 +664,10 @@ export function applyMindMapIncrementalTopLevelSiblingLayout(
   const shiftDelta = options.insert === 'below' ? newH + gap : -(newH + gap)
   const idsToShift = new Set<string>()
   for (const node of nodes) {
-    if (!sameSideAs(node.id, anchorId, nodes, connections) || !isTopLevelBranch(node.id, connections)) {
+    if (
+      !sameSideAs(node.id, anchorId, nodes, connections) ||
+      !isTopLevelBranch(node.id, connections)
+    ) {
       continue
     }
     if (node.id === anchorId || node.id === newId) continue
@@ -784,9 +774,7 @@ export function applyMindMapIncrementalDeleteLayout(
     diagramStyleId?: string | null
   }
 ): { nodes: DiagramNode[]; usedIncremental: boolean } {
-  const survivors = afterNodes.filter(
-    (node) => isMindMapBranchNode(node)
-  )
+  const survivors = afterNodes.filter((node) => isMindMapBranchNode(node))
   if (survivors.length > 0) {
     const withUid = survivors.filter((node) => Boolean(readMindMapNodeUid(node)))
     if (withUid.length / survivors.length < MIN_DELETE_UID_COVERAGE) {
@@ -819,10 +807,7 @@ export function applyMindMapIncrementalDeleteLayout(
     if (!uid) return node
     const prev = beforeByUid.get(uid)
     if (!prev) return node
-    if (
-      Math.abs(node.position.x - prev.x) < 0.5
-      && Math.abs(node.position.y - prev.y) < 0.5
-    ) {
+    if (Math.abs(node.position.x - prev.x) < 0.5 && Math.abs(node.position.y - prev.y) < 0.5) {
       return node
     }
     return { ...node, position: { x: prev.x, y: prev.y } }
@@ -844,12 +829,7 @@ export function applyMindMapIncrementalDeleteLayout(
   const deletedRoots = collectDeletedSubtreeRoots(options.deletedNodeIds, beforeChildren)
 
   for (const deletedId of deletedRoots) {
-    const bounds = subtreeVerticalBounds(
-      deletedId,
-      beforeById,
-      beforeChildren,
-      options.nodeHeights
-    )
+    const bounds = subtreeVerticalBounds(deletedId, beforeById, beforeChildren, options.nodeHeights)
     const deletedNode = beforeById.get(deletedId)
     if (!bounds || !deletedNode?.position) continue
 

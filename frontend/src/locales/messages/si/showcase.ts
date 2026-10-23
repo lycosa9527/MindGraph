@@ -31,7 +31,8 @@ export default {
   'showcase.myFavoritesEmpty': 'තවම ප්‍රියතම නඩු නැත',
   'showcase.myFavoritesEmptyHint': 'ඔබ සලකුණු කරන නඩු මෙහි පෙනෙනු ඇත',
   'showcase.myCasesModalTitle': 'මගේ ප්‍රකාශිත නඩු',
-  'showcase.myCasesManageHint': 'මෙම ලැයිස්තුවෙන් ඉවත් කරන්න, ලැයිස්තුවෙන් ඉවත් කරන්න හෝ සංස්කරණය කරන්න; විස්තර සඳහා නඩුවක් ක්‍ලික් කරන්න',
+  'showcase.myCasesManageHint':
+    'මෙම ලැයිස්තුවෙන් ඉවත් කරන්න, ලැයිස්තුවෙන් ඉවත් කරන්න හෝ සංස්කරණය කරන්න; විස්තර සඳහා නඩුවක් ක්‍ලික් කරන්න',
   'showcase.myCasesAction.edit': 'සංස්කරණය',
   'showcase.myCasesEmpty': 'තවම ප්‍රකාශිත නඩු නැත',
   'showcase.myCasesEmptyHint': 'ප්‍රකාශිත නඩු සහ සමාලෝචන තත්‍වය මෙහි පෙනෙනු ඇත',
@@ -43,7 +44,8 @@ export default {
   'showcase.publishModal.titlePlaceholder': 'උදා: ළමයින් දෙදෙනෙක් හිරු ගැන වාදය — පාඩම් නිර්මාණය',
   'showcase.publishModal.descriptionLabel': 'විස්තරය',
   'showcase.publishModal.tagsLabel': 'ටැග්',
-  'showcase.publishModal.tagsHint': 'ටැග් කොමාවකින් වෙන් කරන්න, උදා: cognitive conflict, junior math',
+  'showcase.publishModal.tagsHint':
+    'ටැග් කොමාවකින් වෙන් කරන්න, උදා: cognitive conflict, junior math',
   'showcase.publishModal.caseTypeLabel': 'නඩු වර්ගය',
   'showcase.publishModal.subjectLabel': 'විෂය',
   'showcase.publishModal.gradeLabel': 'ශ්‍රේණිය',
@@ -53,19 +55,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'ගොනු උඩුගත කරමින් ({current}/{total})…',
   'showcase.publishModal.uploadingFile': '{name} උඩුගත කරමින් ({current}/{total})…',
   'showcase.publishModal.finishing': 'අවසන් කරමින්…',
-  'showcase.publishModal.uploadFailedRolledBack': 'උඩුගත කිරීම අසාර්ථක විය - කෙටුම්පත ඉවත දමන ලදී. කරුණාකර නැවත උත්සාහ කරන්න.',
-  'showcase.publishModal.uploadCorsFailed': 'වස්තු ගබඩාව වෙත උඩුගත කළ නොහැක (බොහෝ විට බාල්දිය CORS හෝ අඩවිය COS ධාරකය අවහිර කරයි). කෙටුම්පත ඉවත දමන ලදී - CORS/CSP නිවැරදි කිරීමට පරිපාලකයෙකුගෙන් ඉල්ලා, පසුව නැවත උත්සාහ කරන්න.',
-  'showcase.publishModal.uploadStorageRejected': 'වස්තු ගබඩාව උඩුගත කිරීම ප්‍රතික්ෂේප කරන ලදී. කෙටුම්පත ඉවත දමන ලදී - පසුව නැවත උත්සාහ කරන්න, නැතහොත් එය දිගටම අසාර්ථක වුවහොත් පරිපාලක අමතන්න.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'උඩුගත කිරීම අසාර්ථක විය - කෙටුම්පත ඉවත දමන ලදී. කරුණාකර නැවත උත්සාහ කරන්න.',
+  'showcase.publishModal.uploadCorsFailed':
+    'වස්තු ගබඩාව වෙත උඩුගත කළ නොහැක (බොහෝ විට බාල්දිය CORS හෝ අඩවිය COS ධාරකය අවහිර කරයි). කෙටුම්පත ඉවත දමන ලදී - CORS/CSP නිවැරදි කිරීමට පරිපාලකයෙකුගෙන් ඉල්ලා, පසුව නැවත උත්සාහ කරන්න.',
+  'showcase.publishModal.uploadStorageRejected':
+    'වස්තු ගබඩාව උඩුගත කිරීම ප්‍රතික්ෂේප කරන ලදී. කෙටුම්පත ඉවත දමන ලදී - පසුව නැවත උත්සාහ කරන්න, නැතහොත් එය දිගටම අසාර්ථක වුවහොත් පරිපාලක අමතන්න.',
   'showcase.publishModal.uploadFailed': 'උඩුගත කිරීම අසාර්ථක. නැවත උත්සාහ කරන්න.',
-  'showcase.publishModal.uploadCoverTooLarge': 'ආවරණ රූපය 2MB සීමාව ඉක්මවයි. පෙරදසුන සම්පීඩනය කරන්න හෝ කුඩා රූපයක් භාවිතා කරන්න, ඉන්පසු නැවත උත්සාහ කරන්න.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'ගොනුව ප්‍රමාණයේ සීමාව ඉක්මවයි (ලේඛන/රූප 20MB, වීඩියෝ 100MB). සම්පීඩනය කර නැවත උත්සාහ කරන්න.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'ගොනුව ප්‍රමාණයේ සීමාව ඉක්මවයි (ලේඛන/රූප 20MB, වීඩියෝ 100MB). කෙටුම්පත ඉවත දමන ලදී - සම්පීඩනය කර නැවත උත්සාහ කරන්න.',
-  'showcase.publishModal.uploadFileTooLarge': 'මෙම උඩුගත කිරීමේ වර්ගය සඳහා ගොනුව විශාල වැඩිය. ප්‍රමාණයේ සීමාව පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'මෙම උඩුගත කිරීමේ වර්ගය සඳහා ගොනුව විශාල වැඩිය. කෙටුම්පත ඉවත දමන ලදී - ප්‍රමාණයේ සීමාව පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
-  'showcase.publishModal.coverUploadSkipped': 'නඩුව ඉදිරිපත් කළ නමුත් කවරයේ රූපය උඩුගත කිරීමට අසමත් විය. කවරය නැවුම් කිරීමට ඔබට පසුව නඩුව සංස්කරණය කළ හැක.',
-  'showcase.publishModal.coverGenerating': 'ආවරණ පෙරදසුන පසුබිමේ ජනනය වේ - එය ඉක්මනින් කාඩ්පතේ දිස් වනු ඇත.',
-  'showcase.publishModal.coverFailed': 'නඩුව ඉදිරිපත් කළ නමුත් ආවරණය ජනනය කළ නොහැකි විය. කවරය නැවුම් කිරීමට ඔබට පසුව නඩුව සංස්කරණය කළ හැක.',
-  'showcase.publishModal.coverFailedTimeout': 'නඩුව ඉදිරිපත් කර ඇත, නමුත් ආවරණ උත්පාදනය කල් ඉකුත් විය. කවරය නැවුම් කිරීමට ඔබට පසුව නඩුව සංස්කරණය කළ හැක.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'ආවරණ රූපය 2MB සීමාව ඉක්මවයි. පෙරදසුන සම්පීඩනය කරන්න හෝ කුඩා රූපයක් භාවිතා කරන්න, ඉන්පසු නැවත උත්සාහ කරන්න.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'ගොනුව ප්‍රමාණයේ සීමාව ඉක්මවයි (ලේඛන/රූප 20MB, වීඩියෝ 100MB). සම්පීඩනය කර නැවත උත්සාහ කරන්න.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'ගොනුව ප්‍රමාණයේ සීමාව ඉක්මවයි (ලේඛන/රූප 20MB, වීඩියෝ 100MB). කෙටුම්පත ඉවත දමන ලදී - සම්පීඩනය කර නැවත උත්සාහ කරන්න.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'මෙම උඩුගත කිරීමේ වර්ගය සඳහා ගොනුව විශාල වැඩිය. ප්‍රමාණයේ සීමාව පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'මෙම උඩුගත කිරීමේ වර්ගය සඳහා ගොනුව විශාල වැඩිය. කෙටුම්පත ඉවත දමන ලදී - ප්‍රමාණයේ සීමාව පරීක්ෂා කර නැවත උත්සාහ කරන්න.',
+  'showcase.publishModal.coverUploadSkipped':
+    'නඩුව ඉදිරිපත් කළ නමුත් කවරයේ රූපය උඩුගත කිරීමට අසමත් විය. කවරය නැවුම් කිරීමට ඔබට පසුව නඩුව සංස්කරණය කළ හැක.',
+  'showcase.publishModal.coverGenerating':
+    'ආවරණ පෙරදසුන පසුබිමේ ජනනය වේ - එය ඉක්මනින් කාඩ්පතේ දිස් වනු ඇත.',
+  'showcase.publishModal.coverFailed':
+    'නඩුව ඉදිරිපත් කළ නමුත් ආවරණය ජනනය කළ නොහැකි විය. කවරය නැවුම් කිරීමට ඔබට පසුව නඩුව සංස්කරණය කළ හැක.',
+  'showcase.publishModal.coverFailedTimeout':
+    'නඩුව ඉදිරිපත් කර ඇත, නමුත් ආවරණ උත්පාදනය කල් ඉකුත් විය. කවරය නැවුම් කිරීමට ඔබට පසුව නඩුව සංස්කරණය කළ හැක.',
   'showcase.publishModal.success': 'නඩුව යවන ලදි — පරිපාලක සමාලෝචනය බලාපොරොත්තු',
   'showcase.publishModal.fromCanvas': 'canvas වෙතින් ප්‍රකාශ කරන්න',
   'showcase.publishModal.step1Title': 'මූලික තොරතුරු',
@@ -79,25 +93,32 @@ export default {
   'showcase.publishModal.uploadLabel': 'ගොනුව උඩුගත කරන්න',
   'showcase.publishModal.uploadImage': 'රූපය උඩුගත කරන්න',
   'showcase.publishModal.uploadFile': 'ගොනුව උඩුගත කරන්න',
-  'showcase.publishModal.directUploadDisabled': 'සෘජු ගොනු උඩුගත කිරීම තාවකාලිකව නොමැත. ඔබට තවමත් ඉතිහාසයෙන් සුරැකි රූප සටහනක් තෝරා ගත හැක.',
-  'showcase.publishModal.uploadViaStorage': 'ගොනු සෘජුවම ආරක්ෂිත ගබඩාවට උඩුගත කරයි (කෙටි කාලීන URL).',
+  'showcase.publishModal.directUploadDisabled':
+    'සෘජු ගොනු උඩුගත කිරීම තාවකාලිකව නොමැත. ඔබට තවමත් ඉතිහාසයෙන් සුරැකි රූප සටහනක් තෝරා ගත හැක.',
+  'showcase.publishModal.uploadViaStorage':
+    'ගොනු සෘජුවම ආරක්ෂිත ගබඩාවට උඩුගත කරයි (කෙටි කාලීන URL).',
   'showcase.publishModal.pickHistory': 'ඉතිහාසයෙන් තෝරන්න',
   'showcase.publishModal.removeFile': 'ඉවත් කරන්න',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: සීමිත preview)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: සීමිත preview) — ලේඛනයකට උපරිම {maxMb} MB',
-  'showcase.publishModal.teachingDocTooLarge': 'ලේඛනය {maxMb} MB සීමාව ඉක්මවයි. සංකෝචනය කර නැවත උත්සාහ කරන්න.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: සීමිත preview) — ලේඛනයකට උපරිම {maxMb} MB',
+  'showcase.publishModal.teachingDocTooLarge':
+    'ලේඛනය {maxMb} MB සීමාව ඉක්මවයි. සංකෝචනය කර නැවත උත්සාහ කරන්න.',
   'showcase.publishModal.diagramImageHint': 'සහාය .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'රූප උඩුගත කරන්න (බහු)',
   'showcase.publishModal.galleryHint': 'රූප සහ සුරැකි රූප සටහන් කිහිපයක් එක් කරන්න, {max} දක්වා',
-  'showcase.publishModal.galleryHintCase': 'අයිතම {max} දක්වා බහු පින්තූර සහ ඓතිහාසික අයිකන එක් කළ හැක',
-  'showcase.publishModal.galleryHintTemplate': 'ඔබට .mg ගොනු උඩුගත කිරීමට සහ {max} අයිතම දක්වා බහු ඓතිහාසික අයිකන තෝරාගත හැක.',
+  'showcase.publishModal.galleryHintCase':
+    'අයිතම {max} දක්වා බහු පින්තූර සහ ඓතිහාසික අයිකන එක් කළ හැක',
+  'showcase.publishModal.galleryHintTemplate':
+    'ඔබට .mg ගොනු උඩුගත කිරීමට සහ {max} අයිතම දක්වා බහු ඓතිහාසික අයිකන තෝරාගත හැක.',
   'showcase.publishModal.galleryCount': '{count}/{max} අයිතම එක් කරන ලදි',
   'showcase.publishModal.galleryImageItem': 'රූපය: {name}',
   'showcase.publishModal.galleryDiagramItem': 'රූප සටහන: {name}',
   'showcase.publishModal.galleryLimit': 'ඔබට {max} දක්වා අයිතම එක් කළ හැක',
   'showcase.publishModal.galleryDuplicateDiagram': 'මෙම සුරැකි රූප සටහන දැනටමත් ලැයිස්තුවේ ඇත',
   'showcase.publishModal.galleryPickerDone': 'අවසන්',
-  'showcase.publishModal.galleryUploadFailed': 'ගැලරි රූප උඩුගත කිරීම අසාර්ථක — නැවත ප්‍රකාශ කිරීමට උත්සාහ කරන්න',
+  'showcase.publishModal.galleryUploadFailed':
+    'ගැලරි රූප උඩුගත කිරීම අසාර්ථක — නැවත ප්‍රකාශ කිරීමට උත්සාහ කරන්න',
   'showcase.publishModal.galleryReuploadHint': 'සමහර ගැලරි රූප සුරැකි නැත — යැවීමට පෙර නැවත තෝරන්න',
   'showcase.detail.galleryImage': 'රූපය',
   'showcase.detail.galleryDiagram': 'රූප සටහන',
@@ -108,36 +129,47 @@ export default {
   'showcase.publishModal.templateFileHint': '.mg පමණි (MindGraph export)',
   'showcase.publishModal.templatePreviewLabel': 'රූප සටහන preview',
   'showcase.publishModal.templatePreviewHint': 'Hand tool — බලන්න පමණි, සංස්කරණය කළ නොහැක',
-  'showcase.publishModal.templatePreviewEmpty': 'preview සඳහා .mg ගොනුවක් උඩුගත කරන්න හෝ සුරැකි රූප සටහනක් තෝරන්න',
+  'showcase.publishModal.templatePreviewEmpty':
+    'preview සඳහා .mg ගොනුවක් උඩුගත කරන්න හෝ සුරැකි රූප සටහනක් තෝරන්න',
   'showcase.publishModal.diagramCasePreviewLabel': 'රූප සටහන preview',
   'showcase.publishModal.diagramCasePreviewHint': 'Hand tool — pan සහ zoom කර ගවේෂණය කරන්න',
-  'showcase.publishModal.diagramTypeAutoMatched': 'තෝරාගත් සුරැකි රූප සටහනෙන් රූප සටහන වර්ගය ගැලපිණි',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'තෝරාගත් සුරැකි රූප සටහනෙන් රූප සටහන වර්ගය ගැලපිණි',
   'showcase.publishModal.introLabel': 'රූප සටහන හැඳින්වීම',
   'showcase.publishModal.teachingIntroLabel': 'උගන්වන නිර්මාණ හැඳින්වීම',
   'showcase.publishModal.highlightsLabel': 'නිර්මාණ highlights',
   'showcase.publishModal.highlightsPlaceholder': 'පේළියකට highlight එකක් (විකල්ප)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'පාඩම් පසුබිම, ඉලක්‍ක goals සහ සන්දර්භය කෙටියෙන් හැඳින්වන්න',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'පාඩම් පසුබිම, ඉලක්‍ක goals සහ සන්දර්භය කෙටියෙන් හැඳින්වන්න',
   'showcase.publishModal.aiGenerate': 'AI ජනනය',
   'showcase.publishModal.aiGenerating': 'ජනනය වෙමින්…',
   'showcase.publishModal.aiGenerateStop': 'නවත්වන්න',
-  'showcase.publishModal.aiGenerateCancelled': 'AI ජනනය අවලංගු — නැවත ජනනය කිරීමට නැවත ක්‍ලික් කරන්න',
-  'showcase.publishModal.aiGenerateSuccess': 'ලේඛනයෙන් පිරවූ හැඳින්වීම සහ උද්දීපනය - සමාලෝචනය සහ සංස්කරණය කිරීම; ඉගැන්වීමේ පරාවර්තනය ඔබම ලියන්න',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'නිදර්ශන හැඳින්වීම සහ පන්තිකාමර යෙදුම නිදර්ශනය මත පදනම්ව ජනනය කර ඇත. කරුණාකර පරීක්ෂා කර සංස්කරණය කරන්න.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'AI ජනනය අවලංගු — නැවත ජනනය කිරීමට නැවත ක්‍ලික් කරන්න',
+  'showcase.publishModal.aiGenerateSuccess':
+    'ලේඛනයෙන් පිරවූ හැඳින්වීම සහ උද්දීපනය - සමාලෝචනය සහ සංස්කරණය කිරීම; ඉගැන්වීමේ පරාවර්තනය ඔබම ලියන්න',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'නිදර්ශන හැඳින්වීම සහ පන්තිකාමර යෙදුම නිදර්ශනය මත පදනම්ව ජනනය කර ඇත. කරුණාකර පරීක්ෂා කර සංස්කරණය කරන්න.',
   'showcase.publishModal.aiGenerateFailed': 'AI ජනනය අසාර්ථක — නැවත උත්සාහ කරන්න',
-  'showcase.publishModal.aiGenerateNeedFile': 'පළමුව පෙර පියවරෙන් උගන්වන-නිර්මාණ ලේඛනයක් උඩුගත කරන්න',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'පළමුව පෙර පියවරෙන් උගන්වන-නිර්මාණ ලේඛනයක් උඩුගත කරන්න',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI ජනනය උගන්වන-නිර්මාණ නඩු සඳහා පමණක්',
   'showcase.publishModal.reflectionLabel': 'උගන්වන reflection',
   'showcase.publishModal.introPlaceholder': 'නඩුව සහ භාවිතා කරන අවස්ථාව කෙටියෙන් විස්තර කරන්න',
-  'showcase.publishModal.diagramCorePlaceholder': 'රූප සටහන අන්තර්ගතය සහ visualization highlights විස්තර කරන්න',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'රූප සටහන අන්තර්ගතය සහ visualization highlights විස්තර කරන්න',
   'showcase.publishModal.classroomAppPlaceholder': 'පන්‍තියේදී මෙම රූප සටහන භාවිතා කරන ආකාරය',
   'showcase.publishModal.tagInputPlaceholder': 'ටැගයක් ටයිප් කරන්න (උපරිම අක්‍ෂර 10), Enter ඔබන්න',
   'showcase.publishModal.tagRecommended': 'යෝජිත ටැග්',
   'showcase.publishModal.tagCountHint': '(උපරිම {max})',
   'showcase.publishModal.tagMaxCount': 'ඔබට {max} දක්වා ටැග් එක් කළ හැක',
-  'showcase.publishModal.networkError': 'යැවීම අසාර්ථක — server ක්‍රියාත්‍මකද සහ ගොනු ප්‍රමාණ සීමාව ඇතුළතදැයි පරීක්‍ෂා කරන්න',
+  'showcase.publishModal.networkError':
+    'යැවීම අසාර්ථක — server ක්‍රියාත්‍මකද සහ ගොනු ප්‍රමාණ සීමාව ඇතුළතදැයි පරීක්‍ෂා කරන්න',
   'showcase.publishModal.fileTooLarge': '"{name}" {maxMb}MB ප්‍රමාණ සීමාව ඉක්මවයි',
-  'showcase.publishModal.uploadTotalTooLarge': 'මුළු උඩුගත ප්‍රමාණය සීමාව ඉක්මවයි — ඇමුණුම් හෝ වීඩියෝ ප්‍රමාණය අඩු කරන්න',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'මුළු උඩුගත ප්‍රමාණය සීමාව ඉක්මවයි — ඇමුණුම් හෝ වීඩියෝ ප්‍රමාණය අඩු කරන්න',
   'showcase.publishModal.tagAdd': 'එක් කරන්න',
   'showcase.publishModal.publishBtn': 'ප්‍රකාශ කරන්න',
   'showcase.publishModal.reflectionPlaceholder': 'මෙම පාඩම ගැන reflection ලියන්න (විකල්ප)',
@@ -151,10 +183,14 @@ export default {
   'showcase.publishModal.validationFile': 'ගොනුවක් උඩුගත කරන්න හෝ සුරැකි රූප සටහනක් තෝරන්න',
   'showcase.publishModal.validationDiagramType': 'රූප සටහන වර්ගයක් තෝරන්න',
   'showcase.publishModal.invalidFileType': 'සහාය නොදක්වන ගොනු වර්ගය',
-  'showcase.publishModal.invalidMgFile': 'මෙම .mg ගොනුව කියවිය නොහැක — පළමුව MindGraph වෙතින් export කරන්න',
-  'showcase.publishModal.cannotPreview': 'ආවරණ පෙරදසුනක් ජනනය කළ නොහැක - නඩුව තවමත් ඉදිරිපත් කරනු ඇත. PNG/JPG උත්සාහ කරන්න හෝ සුරකින ලද රූප සටහනක් තෝරන්න.',
-  'showcase.publishModal.cannotPreviewHistory': 'මෙම සුරැකි රූප සටහනෙන් ආවරණයක් උත්පාදනය කළ නොහැක - නඩුව තවමත් ඉදිරිපත් කරනු ඇත. එය නැවත තෝරන්න හෝ කැන්වසයෙන් නැවත සුරකින්න.',
-  'showcase.publishModal.cannotPreviewTemplate': 'ආවරණයක් උත්පාදනය කළ නොහැකි විය - නඩුව තවමත් ඉදිරිපත් කරනු ඇත. .mg ගොනුව පරීක්ෂා කරන්න හෝ වෙනත් සුරකින ලද රූප සටහනක් තෝරන්න.',
+  'showcase.publishModal.invalidMgFile':
+    'මෙම .mg ගොනුව කියවිය නොහැක — පළමුව MindGraph වෙතින් export කරන්න',
+  'showcase.publishModal.cannotPreview':
+    'ආවරණ පෙරදසුනක් ජනනය කළ නොහැක - නඩුව තවමත් ඉදිරිපත් කරනු ඇත. PNG/JPG උත්සාහ කරන්න හෝ සුරකින ලද රූප සටහනක් තෝරන්න.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'මෙම සුරැකි රූප සටහනෙන් ආවරණයක් උත්පාදනය කළ නොහැක - නඩුව තවමත් ඉදිරිපත් කරනු ඇත. එය නැවත තෝරන්න හෝ කැන්වසයෙන් නැවත සුරකින්න.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'ආවරණයක් උත්පාදනය කළ නොහැකි විය - නඩුව තවමත් ඉදිරිපත් කරනු ඇත. .mg ගොනුව පරීක්ෂා කරන්න හෝ වෙනත් සුරකින ලද රූප සටහනක් තෝරන්න.',
   'showcase.publishModal.historyTitle': 'සුරැකි රූප සටහන තෝරන්න',
   'showcase.publishModal.historySearch': 'රූප සටහන නම සොයන්න…',
   'showcase.publishModal.historyEmpty': 'සුරැකි රූප සටහන් නැත',
@@ -184,9 +220,11 @@ export default {
   'showcase.detail.delist': 'ලැයිස්තුවෙන් ඉවත්',
   'showcase.detail.resubmit': 'සංස්කරණය කර නැවත යවන්න',
   'showcase.detail.withdrawTitle': 'නඩුව ඉවත් කරන්න',
-  'showcase.detail.withdrawConfirm': '"{title}" ඉවත් කරන්නද? එය සමාලෝචන පෝලිමෙන් ඉවත් කරනු ලබන අතර ප්‍රතිසාධනය කළ නොහැක.',
+  'showcase.detail.withdrawConfirm':
+    '"{title}" ඉවත් කරන්නද? එය සමාලෝචන පෝලිමෙන් ඉවත් කරනු ලබන අතර ප්‍රතිසාධනය කළ නොහැක.',
   'showcase.detail.delistTitle': 'නඩුව ලැයිස්තුවෙන් ඉවත් කරන්න',
-  'showcase.detail.delistConfirm': 'ගැලරියෙන් "{title}" ඉවත් කරන්නද? වෙනත් පරිශීලකයින්ට එය තවදුරටත් බැලීමට නොහැකි වනු ඇත.',
+  'showcase.detail.delistConfirm':
+    'ගැලරියෙන් "{title}" ඉවත් කරන්නද? වෙනත් පරිශීලකයින්ට එය තවදුරටත් බැලීමට නොහැකි වනු ඇත.',
   'showcase.detail.confirm': 'තහවුරු',
   'showcase.detail.cancel': 'අවලංගු',
   'showcase.withdrawn': 'ඉවත් කරන ලදි',
@@ -206,8 +244,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'preview සඳහා slides පරිවර්තනය වෙමින්…',
   'showcase.detail.officePreviewPending': 'preview සඳහා slides පරිවර්තනය වෙමින්…',
   'showcase.detail.docPreviewLoading': 'ලේඛනය පූරණය වෙමින්…',
-  'showcase.detail.docPreviewFailed': 'preview පූරණය කළ නොහැක. නව tab එකක විවෘත කිරීමට උත්සාහ කරන්න.',
-  'showcase.detail.legacyDocHint': 'Legacy .doc ගොනු පේළිගතව පෙරදසුන් කළ නොහැක. ගොනුව විවෘත කරන්න හෝ බාගන්න, නැතහොත් බ්‍රවුසරයේ පෙරදසුන සඳහා .docx උඩුගත කරන්න.',
+  'showcase.detail.docPreviewFailed':
+    'preview පූරණය කළ නොහැක. නව tab එකක විවෘත කිරීමට උත්සාහ කරන්න.',
+  'showcase.detail.legacyDocHint':
+    'Legacy .doc ගොනු පේළිගතව පෙරදසුන් කළ නොහැක. ගොනුව විවෘත කරන්න හෝ බාගන්න, නැතහොත් බ්‍රවුසරයේ පෙරදසුන සඳහා .docx උඩුගත කරන්න.',
   'showcase.detail.noDocument': 'ලේඛන preview නැත',
   'showcase.detail.noDiagramPreview': 'රූප සටහන preview නැත',
   'showcase.detail.diagramPreviewLoading': 'රූප සටහන පූරණය වෙමින්…',

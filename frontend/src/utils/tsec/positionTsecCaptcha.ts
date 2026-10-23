@@ -15,9 +15,7 @@ const TSEC_CAPTCHA_IFRAME_SELECTOR = [
 const TSEC_VIEWPORT_PAD_PX = 12
 const TSEC_DEFAULT_POPUP_PX = 360
 
-export function findTsecCaptchaPopup(
-  root: ParentNode = document
-): HTMLElement | null {
+export function findTsecCaptchaPopup(root: ParentNode = document): HTMLElement | null {
   const nodes = root.querySelectorAll<HTMLElement>(TSEC_CAPTCHA_POPUP_SELECTOR)
   if (nodes.length > 0) {
     return nodes[nodes.length - 1]
@@ -29,9 +27,7 @@ export function findTsecCaptchaPopup(
   return null
 }
 
-export function findTsecCaptchaAnchor(
-  root: ParentNode = document
-): HTMLElement | null {
+export function findTsecCaptchaAnchor(root: ParentNode = document): HTMLElement | null {
   return (
     root.querySelector<HTMLElement>('[data-tsec-anchor]') ||
     root.querySelector<HTMLElement>('.auth-page-card') ||

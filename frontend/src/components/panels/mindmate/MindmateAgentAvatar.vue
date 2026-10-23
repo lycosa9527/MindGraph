@@ -8,9 +8,9 @@ import { computed, ref, watch } from 'vue'
 import { ElAvatar } from 'element-plus'
 
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
-import { isActiveLlmPhaseRing } from '@/utils/llmLoadPhase'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { ModelLoadPhase } from '@/stores/llmResults'
+import { isActiveLlmPhaseRing } from '@/utils/llmLoadPhase'
 
 const props = withDefaults(
   defineProps<{

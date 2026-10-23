@@ -9,7 +9,8 @@ export default {
   'notification.canvasClearNodes': 'Очищено {count} вузл(ів)',
   'notification.canvasClearNodesLearning': 'Спорожнено {count} вузл(ів), додано до відповідей',
   'notification.canvasSomeoneEditingNode': 'Хтось інший редагує цей вузол',
-  'notification.collabDeleteBlocked': 'Неможливо видалити, поки інший користувач редагує обраний вузол',
+  'notification.collabDeleteBlocked':
+    'Неможливо видалити, поки інший користувач редагує обраний вузол',
   'notification.collabRedoBlocked': 'Неможливо повторити, поки інший користувач редагує',
   'notification.collabUndoBlocked': 'Неможливо скасувати, поки інший користувач редагує',
   'notification.conversationDeleted': 'Розмову видалено',
@@ -21,7 +22,8 @@ export default {
   'notification.feedbackThanks': 'Дякуємо за відгук',
   'notification.feedbackThanksDislike': 'Дякуємо за відгук — ми покращимо',
   'notification.focusQuestionTooShort': 'Спочатку введіть довше питання для фокусу',
-  'notification.geoLiteMissingIntro': 'Завантажте GeoLite2 Country від MaxMind, розпакуйте GeoLite2-Country.mmdb і скопіюйте його до папки даних сервера:',
+  'notification.geoLiteMissingIntro':
+    'Завантажте GeoLite2 Country від MaxMind, розпакуйте GeoLite2-Country.mmdb і скопіюйте його до папки даних сервера:',
   'notification.geoLiteMissingLink': 'Відкрити сторінку завантаження MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'Очікуваний шлях:',
   'notification.geoLiteMissingTitle': 'Відсутня база даних GeoLite2 Country',
@@ -33,7 +35,8 @@ export default {
   'notification.importInvalidData': 'Імпорт не вдався: некоректні дані діаграми',
   'notification.importLoadFailed': 'Імпорт не вдався: не вдалося завантажити діаграму',
   'notification.importSavePartial': 'Імпортовано, але зберегти в бібліотеку не вдалося',
-  'notification.importSlotsFull': 'Бібліотека заповнена; діаграму імпортовано, але не збережено в бібліотеку',
+  'notification.importSlotsFull':
+    'Бібліотека заповнена; діаграму імпортовано, але не збережено в бібліотеку',
   'notification.importSuccess': 'Діаграму імпортовано та збережено в бібліотеку',
   'notification.importUnsupportedType': 'Імпорт не вдався: непідтримуваний тип діаграми',
   'notification.loadMoreFailed': 'Не вдалося завантажити більше',
@@ -41,13 +44,15 @@ export default {
   'notification.nodeNotEligible': 'Цей вузол не підтримує рекомендації Tab.',
   'notification.newVersionAvailable': 'Доступна нова версія. Натисніть, щоб оновити.',
   'notification.recommendationFailed': 'Рекомендація не вдалася: {msg}',
-  'notification.relationshipGenerationFailed': 'Не вдалося згенерувати зв\'язки',
+  'notification.relationshipGenerationFailed': "Не вдалося згенерувати зв'язки",
   'notification.resetDefaultTemplate': 'Скинуто до шаблону за замовчуванням',
-  'notification.rootConceptLinkNotFound': 'Зв\'язок кореневої концепції не знайдено',
+  'notification.rootConceptLinkNotFound': "Зв'язок кореневої концепції не знайдено",
   'notification.saved': 'Зміни успішно збережено',
   'notification.selectNodeToClear': 'Оберіть вузол для очищення',
-  'notification.sessionInvalidated': 'Вас вилучено з системи через перевищення максимальної кількості пристроїв',
-  'notification.sessionKicked': 'Цей обліковий запис вийшов із цього облікового запису в автономному режимі на інших пристроях',
+  'notification.sessionInvalidated':
+    'Вас вилучено з системи через перевищення максимальної кількості пристроїв',
+  'notification.sessionKicked':
+    'Цей обліковий запис вийшов із цього облікового запису в автономному режимі на інших пристроях',
   'notification.signInToUse': 'Увійдіть, щоб користуватися цим',
   'notification.signInToValidateFocus': 'Увійдіть, щоб перевірити питання для фокусу',
 } as const

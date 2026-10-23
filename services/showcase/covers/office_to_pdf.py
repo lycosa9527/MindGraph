@@ -17,7 +17,7 @@ from services.knowledge.legacy_office_convert import resolve_soffice_path
 logger = logging.getLogger(__name__)
 
 _CONVERT_TIMEOUT_SECONDS = 120
-_OFFICE_SUFFIXES = frozenset({".doc", ".docx", ".pptx"})
+_OFFICE_SUFFIXES = frozenset({".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx"})
 
 # High-fidelity export: keep embedded images sharp (no JPEG mush / DPI downscale).
 # Text stays vector in the PDF; viewer sharpness is handled by pdf.js DPR rendering.
@@ -42,8 +42,10 @@ def build_office_pdf_convert_to(suffix: str) -> str:
     normalized = suffix.lower()
     if normalized in {".doc", ".docx"}:
         filter_name = "writer_pdf_Export"
-    elif normalized == ".pptx":
+    elif normalized in {".ppt", ".pptx"}:
         filter_name = "impress_pdf_Export"
+    elif normalized in {".xls", ".xlsx"}:
+        filter_name = "calc_pdf_Export"
     else:
         raise ValueError(f"Unsupported Office suffix for PDF export: {suffix}")
     options = json.dumps(_PDF_EXPORT_FILTER_OPTIONS, separators=(",", ":"))
@@ -51,16 +53,18 @@ def build_office_pdf_convert_to(suffix: str) -> str:
 
 
 def convert_office_to_pdf(source_path: Path, output_dir: Path) -> Path:
-    """Convert .doc/.docx/.pptx to PDF using a per-job LibreOffice user profile.
+    """Convert Office docs to PDF using a per-job LibreOffice user profile.
 
-    Returns the path to the produced PDF. Raises ``ValueError`` on failure.
+    Supports Writer (``.doc``/``.docx``), Impress (``.ppt``/``.pptx``), and
+    Calc (``.xls``/``.xlsx``). Returns the produced PDF path or raises
+    ``ValueError``.
     """
     soffice = resolve_soffice_path()
     if not soffice:
         raise ValueError(
-            "LibreOffice Writer+Impress is required for Office cover generation. "
+            "LibreOffice Writer+Impress+Calc is required for Office PDF preview. "
             "Install: sudo apt-get install -y libreoffice-writer libreoffice-impress "
-            "(or set LIBREOFFICE_PATH to soffice)."
+            "libreoffice-calc (or set LIBREOFFICE_PATH to soffice)."
         )
     if not source_path.is_file():
         raise ValueError(f"Office source not found: {source_path}")

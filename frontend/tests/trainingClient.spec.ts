@@ -3,15 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MINDGRAPH_HEADLESS_EXPORT_KEY } from '@/utils/headlessExportSession'
 import { resetOfficeEmbedForTests } from '@/utils/officeEmbed'
 import {
-  emptyTrainingSnapshot,
+  TRAINING_RAIL_VISIBLE_ROWS,
   canOpenTrainingEvents,
+  emptyTrainingSnapshot,
   isTrainingOwnerHeartbeat,
   isTrainingRailVisible,
   isTrainingRemotePath,
   shouldHideTrainingDesktopChrome,
   shouldHoldTrainingHostOnMobile,
   shouldSkipTrainingFollow,
-  TRAINING_RAIL_VISIBLE_ROWS,
   trainingEventsUrl,
   windowedRosterRows,
 } from '@/utils/trainingClient'

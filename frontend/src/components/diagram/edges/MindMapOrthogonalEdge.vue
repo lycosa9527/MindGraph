@@ -6,6 +6,7 @@ import { computed } from 'vue'
 
 import { type EdgeProps, useVueFlow } from '@vue-flow/core'
 
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useMindMapExportOutlineWireframeActive } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import {
@@ -15,21 +16,17 @@ import {
   resolveMindMapTopicBorderColor,
   resolveMindMapTopicStemWidth,
 } from '@/config/mindMapGeometry'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData, MindGraphNodeData, NodeStyle } from '@/types'
-import {
-  resolveMindMapEdgeEndpoint,
-  resolveMindMapNodeStyle,
-} from '@/utils/mindMapEdgeEndpoints'
+import { resolveMindMapEdgeEndpoint, resolveMindMapNodeStyle } from '@/utils/mindMapEdgeEndpoints'
 import { mindMapNodeSide } from '@/utils/mindMapLocation'
-import {
-  mindMapOrthogonalSiblingGroupKey,
-  mindMapOrthogonalSpineEdgeId,
-} from '@/utils/mindMapOrthogonalSiblings'
 import {
   buildMindMapBracketBusPath,
   computeMindMapSharedTrunkX,
 } from '@/utils/mindMapOrthogonalPath'
+import {
+  mindMapOrthogonalSiblingGroupKey,
+  mindMapOrthogonalSpineEdgeId,
+} from '@/utils/mindMapOrthogonalSiblings'
 import { resolveMindMapOutlineWireframeEdgeStroke } from '@/utils/mindMapOutlineWireframeStyle'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()

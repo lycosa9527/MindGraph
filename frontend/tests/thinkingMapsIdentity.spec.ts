@@ -18,6 +18,7 @@ import {
   resolveDoubleBubbleMapAliasId,
 } from '@/utils/doubleBubbleMapIdentity'
 import { isLeftoverMultiFlowMapId, resolveMultiFlowMapAliasId } from '@/utils/multiFlowMapIdentity'
+import { must } from '@/utils/must'
 import { migrateThinkingMapIdentityIds } from '@/utils/thinkingMapIdentity'
 import { isLeftoverTreeMapId, resolveTreeMapAliasId } from '@/utils/treeMapIdentity'
 
@@ -153,14 +154,14 @@ describe('circleMapIdentity', () => {
       leftover.connections
     )
     expect(migrated).not.toBeNull()
-    const contexts = migrated!.nodes.filter((n) => n.type === 'bubble')
+    const contexts = must(migrated).nodes.filter((n) => n.type === 'bubble')
     expect(contexts).toHaveLength(2)
     for (const node of contexts) {
       expect(isLeftoverCircleMapId(node.id)).toBe(false)
     }
     expect(contexts[0]?.data?.circleMapLegacyId).toBe('context-0')
-    expect(resolveCircleMapAliasId('context-0', migrated!.nodes)).toBe(contexts[0]?.id)
-    expect(resolveCircleMapAliasId('context-1', migrated!.nodes)).toBe(contexts[1]?.id)
+    expect(resolveCircleMapAliasId('context-0', must(migrated).nodes)).toBe(contexts[0]?.id)
+    expect(resolveCircleMapAliasId('context-1', must(migrated).nodes)).toBe(contexts[1]?.id)
   })
 
   it('preserves already-stable ids on LLM load then generic reload', () => {
@@ -183,10 +184,10 @@ describe('bubbleMapIdentity', () => {
       leftover.nodes,
       leftover.connections
     )
-    const bubbles = migrated!.nodes.filter((n) => n.type === 'bubble')
+    const bubbles = must(migrated).nodes.filter((n) => n.type === 'bubble')
     expect(bubbles.every((n) => !isLeftoverBubbleMapId(n.id))).toBe(true)
-    expect(resolveBubbleMapAliasId('bubble-0', migrated!.nodes)).toBe(bubbles[0]?.id)
-    expect(migrated!.connections[0]?.target).toBe(bubbles[0]?.id)
+    expect(resolveBubbleMapAliasId('bubble-0', must(migrated).nodes)).toBe(bubbles[0]?.id)
+    expect(must(migrated).connections[0]?.target).toBe(bubbles[0]?.id)
   })
 
   it('keeps UUIDs across LLM load then generic reload', () => {
@@ -208,12 +209,12 @@ describe('doubleBubbleMapIdentity', () => {
       leftover.nodes,
       leftover.connections
     )
-    const slots = migrated!.nodes.filter((n) => !['left-topic', 'right-topic'].includes(n.id))
+    const slots = must(migrated).nodes.filter((n) => !['left-topic', 'right-topic'].includes(n.id))
     expect(slots.every((n) => !isLeftoverDoubleBubbleId(n.id))).toBe(true)
-    expect(resolveDoubleBubbleMapAliasId('similarity-0', migrated!.nodes)).toBe(
+    expect(resolveDoubleBubbleMapAliasId('similarity-0', must(migrated).nodes)).toBe(
       slots.find((n) => n.data?.doubleBubbleRole === 'similarity')?.id
     )
-    expect(migrated!.connections[0]?.target).not.toBe('similarity-0')
+    expect(must(migrated).connections[0]?.target).not.toBe('similarity-0')
   })
 
   it('honors existing spec ids across reload', () => {
@@ -237,12 +238,12 @@ describe('treeMapIdentity', () => {
   it('migrates leftover category/leaf ids and rewrites connections', () => {
     const leftover = leftoverTree()
     const migrated = migrateThinkingMapIdentityIds('tree_map', leftover.nodes, leftover.connections)
-    const slots = migrated!.nodes.filter((n) => n.id !== 'tree-topic')
+    const slots = must(migrated).nodes.filter((n) => n.id !== 'tree-topic')
     expect(slots.every((n) => !isLeftoverTreeMapId(n.id))).toBe(true)
-    expect(resolveTreeMapAliasId('tree-cat-0', migrated!.nodes)).toBe(
+    expect(resolveTreeMapAliasId('tree-cat-0', must(migrated).nodes)).toBe(
       slots.find((n) => n.data?.nodeType === 'branch')?.id
     )
-    expect(migrated!.connections[0]?.target).not.toBe('tree-cat-0')
+    expect(must(migrated).connections[0]?.target).not.toBe('tree-cat-0')
   })
 
   it('honors existing spec ids across reload', () => {
@@ -266,10 +267,10 @@ describe('braceMapIdentity', () => {
       leftover.nodes,
       leftover.connections
     )
-    const parts = migrated!.nodes.filter((n) => n.id !== 'brace-whole')
+    const parts = must(migrated).nodes.filter((n) => n.id !== 'brace-whole')
     expect(parts.every((n) => !isLeftoverBraceMapId(n.id))).toBe(true)
-    expect(resolveBraceMapAliasId('brace-part-0', migrated!.nodes)).toBe(parts[0]?.id)
-    expect(migrated!.connections[0]?.target).toBe(parts[0]?.id)
+    expect(resolveBraceMapAliasId('brace-part-0', must(migrated).nodes)).toBe(parts[0]?.id)
+    expect(must(migrated).connections[0]?.target).toBe(parts[0]?.id)
   })
 
   it('mints UUIDs on LLM load', () => {
@@ -290,13 +291,13 @@ describe('braceMapIdentity', () => {
       ],
       [{ id: 'edge-brace-0-0-brace-1-0', source: 'brace-0-0', target: 'brace-1-0' }]
     )
-    expect(migrated!.nodes.some((n) => n.id === 'brace-whole')).toBe(true)
-    expect(migrated!.nodes.every((n) => n.id !== 'brace-0-0')).toBe(true)
-    expect(resolveBraceMapAliasId('brace-0-0', migrated!.nodes)).toBe('brace-whole')
-    expect(migrated!.connections[0]?.source).toBe('brace-whole')
-    const part = migrated!.nodes.find((n) => n.type === 'brace')
+    expect(must(migrated).nodes.some((n) => n.id === 'brace-whole')).toBe(true)
+    expect(must(migrated).nodes.every((n) => n.id !== 'brace-0-0')).toBe(true)
+    expect(resolveBraceMapAliasId('brace-0-0', must(migrated).nodes)).toBe('brace-whole')
+    expect(must(migrated).connections[0]?.source).toBe('brace-whole')
+    const part = must(migrated).nodes.find((n) => n.type === 'brace')
     expect(part?.id).not.toMatch(/^brace-\d+-\d+$/)
-    expect(migrated!.connections[0]?.target).toBe(part?.id)
+    expect(must(migrated).connections[0]?.target).toBe(part?.id)
   })
 })
 
@@ -308,10 +309,10 @@ describe('multiFlowMapIdentity', () => {
       leftover.nodes,
       leftover.connections
     )
-    const slots = migrated!.nodes.filter((n) => n.id !== 'event')
+    const slots = must(migrated).nodes.filter((n) => n.id !== 'event')
     expect(slots.every((n) => !isLeftoverMultiFlowMapId(n.id))).toBe(true)
-    expect(resolveMultiFlowMapAliasId('cause-0', migrated!.nodes)).toBe(slots[0]?.id)
-    expect(migrated!.connections[0]?.source).toBe(slots[0]?.id)
+    expect(resolveMultiFlowMapAliasId('cause-0', must(migrated).nodes)).toBe(slots[0]?.id)
+    expect(must(migrated).connections[0]?.source).toBe(slots[0]?.id)
   })
 
   it('keeps UUIDs across generic reload', () => {
@@ -333,9 +334,9 @@ describe('bridgeMapIdentity', () => {
       leftover.nodes,
       leftover.connections
     )
-    const pairs = migrated!.nodes.filter((n) => n.id !== 'dimension-label')
+    const pairs = must(migrated).nodes.filter((n) => n.id !== 'dimension-label')
     expect(pairs.every((n) => !isLeftoverBridgeMapId(n.id))).toBe(true)
-    expect(resolveBridgeMapAliasId('pair-0-left', migrated!.nodes)).toBe(pairs[0]?.id)
+    expect(resolveBridgeMapAliasId('pair-0-left', must(migrated).nodes)).toBe(pairs[0]?.id)
     expect(pairs[0]?.data?.pairIndex).toBe(0)
   })
 

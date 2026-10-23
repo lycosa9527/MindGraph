@@ -6,12 +6,13 @@
  */
 import { type InjectionKey, type Ref, computed, inject, ref, watch } from 'vue'
 
-import { useQueryClient } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
+
+import { useQueryClient } from '@tanstack/vue-query'
 
 import { DOC_SUMMARY_API_BASE } from '@/config/docSummaryApi'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
-import { useSavedDiagramsStore, useDiagramStore } from '@/stores'
+import { useDiagramStore, useSavedDiagramsStore } from '@/stores'
 import { apiRequestJson } from '@/utils/apiClient'
 
 import {
@@ -83,11 +84,7 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
     if (sessionPackageId.value !== null) {
       const sessionMatch = packages.find((pkg) => pkg.id === sessionPackageId.value)
       if (sessionMatch) {
-        if (
-          !diagramId ||
-          !sessionMatch.diagram_id ||
-          sessionMatch.diagram_id === diagramId
-        ) {
+        if (!diagramId || !sessionMatch.diagram_id || sessionMatch.diagram_id === diagramId) {
           return sessionMatch
         }
       }

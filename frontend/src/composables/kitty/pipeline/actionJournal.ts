@@ -1,10 +1,10 @@
 /**
  * Action journal + mutation step protocol helpers (S10–S13, S15).
  */
-import { recordPipelineEvent, failKittyTurn } from '@/composables/kitty/pipeline/trace'
+import { resolveKittyErrorCode } from '@/composables/kitty/pipeline/errorCatalog'
+import { failKittyTurn, recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
 import type { KittyTurnContext } from '@/composables/kitty/pipeline/types'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
-import { resolveKittyErrorCode } from '@/composables/kitty/pipeline/errorCatalog'
 
 export function recordKittyMutationApply(options: {
   ctx: KittyTurnContext
@@ -90,7 +90,10 @@ export function recordKittyMutationApply(options: {
   })
 }
 
-export function resolveTurnCtxFromActive(fallbackScope: string, lane: 'mobile' | 'desktop'): KittyTurnContext {
+export function resolveTurnCtxFromActive(
+  fallbackScope: string,
+  lane: 'mobile' | 'desktop'
+): KittyTurnContext {
   const store = useKittyPipelineStore()
   if (store.activeTurn) {
     return { ...store.activeTurn }

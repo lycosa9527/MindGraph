@@ -1,7 +1,6 @@
 /**
  * Data center sub-views (sidebar + AdminDataCenterTab).
  */
-
 import type { AdminCapability } from '@/utils/adminCapabilities'
 
 export type DataCenterView = 'operations' | 'usage' | 'school_dashboard'
@@ -25,10 +24,7 @@ export function isDataCenterView(value: string | null | undefined): value is Dat
   return DATA_CENTER_VIEWS.some((view) => view.name === value)
 }
 
-export function canViewDataCenterSubView(
-  view: DataCenterView,
-  caps: AdminCapability[]
-): boolean {
+export function canViewDataCenterSubView(view: DataCenterView, caps: AdminCapability[]): boolean {
   const required = VIEW_CAPABILITY[view]
   return required.every((cap) => caps.includes(cap))
 }

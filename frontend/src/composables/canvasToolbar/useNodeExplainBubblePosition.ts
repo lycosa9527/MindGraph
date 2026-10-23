@@ -1,4 +1,4 @@
-import { nextTick, onUnmounted, ref, watch, type Ref } from 'vue'
+import { type Ref, nextTick, onUnmounted, ref, watch } from 'vue'
 
 const BUBBLE_GAP_PX = 14
 const VIEW_PAD_PX = 8
@@ -107,8 +107,8 @@ export function resolveNodeExplainBubbleAnchor(options: {
   const nodeCenterX = (nodeBounds.left + nodeBounds.right) / 2
   const nodeCenterY = (nodeBounds.top + nodeBounds.bottom) / 2
 
-  let left = nodeCenterX
-  let top = nodeCenterY
+  let left: number
+  let top: number
 
   if (placement === 'right') {
     left = nodeBounds.right + gap

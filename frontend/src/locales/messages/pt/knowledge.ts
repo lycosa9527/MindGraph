@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'tela',
   'fileCenterLibrary.badgeExtension': 'Expandir',
   'fileCenterLibrary.badgeUpload': 'carregar',
-  'chunkTest.history.confirmDeleteBody': 'Tem certeza de que deseja excluir este registro de teste? Esta ação não pode ser desfeita.',
+  'chunkTest.history.confirmDeleteBody':
+    'Tem certeza de que deseja excluir este registro de teste? Esta ação não pode ser desfeita.',
   'chunkTest.history.confirmDeleteTitle': 'Excluir teste',
   'chunkTest.history.delete': 'Excluir',
   'chunkTest.history.deleteFailed': 'Falha na exclusão',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'Qualidade de resposta',
   'chunkTestResults.avgLatency': 'Latência média (ms)',
   'chunkTestResults.back': 'retornar',
-  'chunkTestResults.cancelConfirmBody': 'Tem certeza de que deseja cancelar este teste? O teste irá parar no próximo ponto de verificação.',
+  'chunkTestResults.cancelConfirmBody':
+    'Tem certeza de que deseja cancelar este teste? O teste irá parar no próximo ponto de verificação.',
   'chunkTestResults.cancelFailed': 'Falha no cancelamento',
   'chunkTestResults.cancelRequested': 'Solicitação de cancelamento de teste enviada',
   'chunkTestResults.cancelTest': 'Cancelar teste',
@@ -79,7 +81,8 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Indicador IR padrão',
   'chunkTestResults.storageEff': 'Eficiência de armazenamento',
   'chunkTestResults.testFailed': 'teste falhou',
-  'chunkTestResults.testFailedHint': 'Ocorreu um erro durante a execução do teste. Tente novamente.',
+  'chunkTestResults.testFailedHint':
+    'Ocorreu um erro durante a execução do teste. Tente novamente.',
   'chunkTestResults.testingInProgress': 'Testes em andamento...',
   'chunkTestResults.totalChunks': 'Total de {n} pedaços',
   'chunkTestResults.viewChunks': 'Ver pedaços',
@@ -89,7 +92,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Teste todos os conjuntos de dados',
   'knowledge.chunkHeader.testUpload': 'Documento de upload de teste',
   'knowledge.chunkHeader.title': 'Teste de bloco RAG',
-  'knowledge.chunkHeader.waitForProcessing': 'Aguarde até que o processamento do documento seja concluído antes do teste',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Aguarde até que o processamento do documento seja concluído antes do teste',
   'knowledge.chunkPreview.empty': 'Ainda não há dados fragmentados',
   'knowledge.chunkPreview.pageLabel': 'Página {n}',
   'knowledge.chunkPreview.title': 'Visualização do bloco do documento — {fileName}',
@@ -108,7 +112,8 @@ export default {
   'knowledge.doc.colStatus': 'estado',
   'knowledge.doc.colType': 'tipo',
   'knowledge.doc.colUploaded': 'Tempo de upload',
-  'knowledge.doc.emptyDescription': 'Ainda não há documento. Faça upload do documento para começar a construir a base de conhecimento.',
+  'knowledge.doc.emptyDescription':
+    'Ainda não há documento. Faça upload do documento para começar a construir a base de conhecimento.',
   'knowledge.doc.errorPrefix': 'erro:',
   'knowledge.doc.noData': 'Ainda não há dados',
   'knowledge.doc.statusCompleted': 'Concluído',
@@ -124,31 +129,43 @@ export default {
   'knowledge.header.title': 'base de conhecimento pessoal',
   'knowledge.header.upload': 'Carregar documentos',
   'knowledge.ragGuide.title': 'Como funcionam os pacotes, RAGs e wikis?',
-  'knowledge.ragGuide.subtitle': 'Não há necessidade de entender o jargão técnico – coloque primeiro os materiais de referência no pacote. O sistema primeiro criará um índice RAG pesquisável e depois compilará automaticamente pequenas notas do Wiki; a IA irá se referir a ambos ao mesmo tempo ao gerar o mapa.',
+  'knowledge.ragGuide.subtitle':
+    'Não há necessidade de entender o jargão técnico – coloque primeiro os materiais de referência no pacote. O sistema primeiro criará um índice RAG pesquisável e depois compilará automaticamente pequenas notas do Wiki; a IA irá se referir a ambos ao mesmo tempo ao gerar o mapa.',
   'knowledge.ragGuide.step1.title': 'Escolha um pacote',
-  'knowledge.ragGuide.step1.body': 'Os pacotes são como favoritos no Zotero. Você pode criar até 3 à esquerda, cada um geralmente correspondendo a um mapa mental. Clique no pacote de dados na barra lateral para gerenciar os documentos nele contidos.',
+  'knowledge.ragGuide.step1.body':
+    'Os pacotes são como favoritos no Zotero. Você pode criar até 3 à esquerda, cada um geralmente correspondendo a um mapa mental. Clique no pacote de dados na barra lateral para gerenciar os documentos nele contidos.',
   'knowledge.ragGuide.step2.title': 'Adicionar e indexar documentos (RAG)',
-  'knowledge.ragGuide.step2.body': 'Carregue PDF, Word, notas ou páginas da web. O sistema dividirá documentos longos em pedaços pesquisáveis ​​e os gravará em índices vetoriais - esta é a camada RAG que estará pronta primeiro.',
+  'knowledge.ragGuide.step2.body':
+    'Carregue PDF, Word, notas ou páginas da web. O sistema dividirá documentos longos em pedaços pesquisáveis ​​e os gravará em índices vetoriais - esta é a camada RAG que estará pronta primeiro.',
   'knowledge.ragGuide.step3.title': 'Compilação automática de Wikinotes',
-  'knowledge.ragGuide.step3.body': 'Após a indexação ser concluída, o LLM compila páginas wiki de visão geral e tópicos no disco. Estas são notas condensadas (não trechos do texto original) para ajudá-lo a compreender rapidamente a estrutura do pacote.',
+  'knowledge.ragGuide.step3.body':
+    'Após a indexação ser concluída, o LLM compila páginas wiki de visão geral e tópicos no disco. Estas são notas condensadas (não trechos do texto original) para ajudá-lo a compreender rapidamente a estrutura do pacote.',
   'knowledge.ragGuide.step4.title': 'Use wiki e chunking ao pesquisar',
-  'knowledge.ragGuide.step4.body': 'Ao expandir uma ramificação ou gerar um resumo, o sistema primeiro combina as páginas wiki relevantes e depois recupera os parágrafos fragmentados mais relevantes (RAG híbrido).',
+  'knowledge.ragGuide.step4.body':
+    'Ao expandir uma ramificação ou gerar um resumo, o sistema primeiro combina as páginas wiki relevantes e depois recupera os parágrafos fragmentados mais relevantes (RAG híbrido).',
   'knowledge.ragGuide.step5.title': 'Respostas de IA baseadas na fonte',
-  'knowledge.ragGuide.step5.body': 'A IA gera conteúdo consultando notas do Wiki e trechos recuperados, em vez de inventá-lo do nada – quanto mais relevante a fonte, mais completo o índice e o wiki, mais preciso o mapa.',
-  'knowledge.ragGuide.footer': 'Dica: Abrir “Resumo do Documento” na tela também criará automaticamente um pacote de dados; as páginas da web salvas pela extensão do Chrome também aparecerão na lista à esquerda.',
+  'knowledge.ragGuide.step5.body':
+    'A IA gera conteúdo consultando notas do Wiki e trechos recuperados, em vez de inventá-lo do nada – quanto mais relevante a fonte, mais completo o índice e o wiki, mais preciso o mapa.',
+  'knowledge.ragGuide.footer':
+    'Dica: Abrir “Resumo do Documento” na tela também criará automaticamente um pacote de dados; as páginas da web salvas pela extensão do Chrome também aparecerão na lista à esquerda.',
   'knowledge.pipeline.title': 'Status do pipeline',
   'knowledge.pipeline.ragIdle': 'Índice RAG',
-  'knowledge.pipeline.ragIdleDetail': 'Ainda não há pacotes indexados. Adicione fontes ao pacote e execute a indexação.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Ainda não há pacotes indexados. Adicione fontes ao pacote e execute a indexação.',
   'knowledge.pipeline.ragProcessing': 'Indexação RAG',
-  'knowledge.pipeline.ragProcessingDetail': 'Os pacotes {count} ainda estão fragmentados e vetorizados.',
+  'knowledge.pipeline.ragProcessingDetail':
+    'Os pacotes {count} ainda estão fragmentados e vetorizados.',
   'knowledge.pipeline.ragReady': 'O RAG está pronto',
-  'knowledge.pipeline.ragReadyDetail': '{count} pacotes indexados - recuperação em partes disponível.',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count} pacotes indexados - recuperação em partes disponível.',
   'knowledge.pipeline.wikiDisabled': 'A compilação do Wiki está fechada',
   'knowledge.pipeline.wikiDisabledDetail': 'A compilação Wiki não está habilitada neste servidor.',
   'knowledge.pipeline.wikiIdle': 'Compilação Wiki',
-  'knowledge.pipeline.wikiIdleDetail': 'As páginas Wiki são compiladas automaticamente após a conclusão de cada índice RAG de origem.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'As páginas Wiki são compiladas automaticamente após a conclusão de cada índice RAG de origem.',
   'knowledge.pipeline.wikiPending': 'Compilação Wiki',
-  'knowledge.pipeline.wikiPendingDetail': 'Os pacotes {count} estão aguardando a geração da página wiki após a indexação.',
+  'knowledge.pipeline.wikiPendingDetail':
+    'Os pacotes {count} estão aguardando a geração da página wiki após a indexação.',
   'knowledge.pipeline.wikiReady': 'Wiki está pronto',
   'knowledge.pipeline.wikiReadyDetail': 'Os pacotes {count} compilaram notas wiki.',
   'knowledge.pipelineBadge.rag.label': 'pano',
@@ -164,7 +181,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Desmarcar tudo',
   'knowledge.manualEval.dialogTitle': 'Avaliação manual — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Resposta padrão (opcional)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Insira respostas padrão para avaliar a relevância das respostas...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Insira respostas padrão para avaliar a relevância das respostas...',
   'knowledge.manualEval.metric.answer_coverage': 'cobertura de resposta',
   'knowledge.manualEval.metric.answer_faithfulness': 'resposta fidelidade',
   'knowledge.manualEval.metric.clarity': 'clareza',
@@ -186,7 +204,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Avaliação da qualidade do bloco',
   'knowledge.manualEval.resultsTitle': 'Resultados da avaliação',
   'knowledge.manualEval.selectAll': 'Selecionar tudo',
-  'knowledge.manualEval.selectChunksHeading': 'Selecione os pedaços a serem avaliados (deixe em branco para avaliar todos)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Selecione os pedaços a serem avaliados (deixe em branco para avaliar todos)',
   'knowledge.manualEval.showingFirst20': 'Mostrando os primeiros 20 blocos de {total}',
   'knowledge.manualEval.startEvaluation': 'Iniciar avaliação',
   'knowledge.processing.chunking': 'Pedaço',
@@ -235,7 +254,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Recuperar configurações',
   'knowledge.settings.title': 'Configurações da base de conhecimento',
   'knowledge.settings.helpTitle': 'Como essas configurações entram em vigor',
-  'knowledge.settings.helpBody': 'As opções relacionadas à recuperação estão imediatamente disponíveis para pesquisa e respostas de IA. O tamanho do bloco e a sobreposição aplicam-se apenas a documentos recentemente indexados - reindexe as fontes existentes após as modificações.',
+  'knowledge.settings.helpBody':
+    'As opções relacionadas à recuperação estão imediatamente disponíveis para pesquisa e respostas de IA. O tamanho do bloco e a sobreposição aplicam-se apenas a documentos recentemente indexados - reindexe as fontes existentes após as modificações.',
   'knowledge.settings.tokens': 'ficha',
   'knowledge.settings.serverSection': 'Servidor (somente leitura)',
   'knowledge.settings.rerankingMode': 'Reordenar',
@@ -246,7 +266,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Desativado',
   'knowledge.settings.saveSuccess': 'Configurações salvas',
   'knowledge.settings.saveFailed': 'Falha ao salvar as configurações',
-  'knowledge.settings.reindexRequired': 'Os parâmetros de fragmentação foram alterados - reindexe os documentos existentes no pacote para entrar em vigor.',
+  'knowledge.settings.reindexRequired':
+    'Os parâmetros de fragmentação foram alterados - reindexe os documentos existentes no pacote para entrar em vigor.',
   'knowledge.upload.click': 'Clique para carregar',
   'knowledge.upload.drag': 'Ou arraste e solte arquivos aqui',
   'knowledge.upload.fileTooLarge': 'O tamanho do arquivo não pode exceder 10 MB',
@@ -254,7 +275,8 @@ export default {
   'knowledge.upload.maxDocs': 'O número máximo de documentos foi atingido (5)',
   'knowledge.upload.title': 'Carregar documentos',
   'knowledge.upload.unsupportedType': 'Tipos de arquivos não suportados',
-  'knowledgeSpace.confirmDeleteBody': 'Tem certeza de que deseja excluir este documento? Não pode ser restaurado após a exclusão.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Tem certeza de que deseja excluir este documento? Não pode ser restaurado após a exclusão.',
   'knowledgeSpace.confirmDeleteTitle': 'Confirmar exclusão',
   'knowledgeSpace.deleteFailed': 'Falha na exclusão',
   'knowledgeSpace.documentDeleted': 'Documento excluído',
@@ -263,7 +285,8 @@ export default {
   'knowledgeSpace.startProcessingFailed': 'Falha ao iniciar o processamento',
   'knowledgeSpace.uploadFailed': 'Falha no upload do documento',
   'knowledgeSpace.uploadSuccess': 'Documento enviado com sucesso',
-  'knowledgeSpace.uploadSuccessProcessing': 'O documento foi carregado com sucesso e está sendo processado...',
+  'knowledgeSpace.uploadSuccessProcessing':
+    'O documento foi carregado com sucesso e está sendo processado...',
   'rag.retrievalTest.failed': 'Falha no teste de recuperação',
   'rag.retrievalTest.success': 'Teste de recuperação concluído',
 } as const

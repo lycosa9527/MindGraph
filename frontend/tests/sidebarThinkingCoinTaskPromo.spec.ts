@@ -5,7 +5,6 @@ import {
   formatThinkingCoinTaskPromoTitle,
   nextThinkingCoinPromoIndex,
   pickInitialThinkingCoinPromoIndex,
-  resolveSidebarPromoSlide,
   resolveThinkingCoinPromoTask,
   shouldPickFreshThinkingCoinPromoIndex,
   thinkingCoinPromoTaskPool,
@@ -99,10 +98,7 @@ describe('resolveThinkingCoinPromoTask', () => {
   })
 
   it('wraps negative and overflow indices', () => {
-    const rows = [
-      task({ id: 1, slug: 'a', title: 'A' }),
-      task({ id: 2, slug: 'b', title: 'B' }),
-    ]
+    const rows = [task({ id: 1, slug: 'a', title: 'A' }), task({ id: 2, slug: 'b', title: 'B' })]
     expect(resolveThinkingCoinPromoTask(rows, 3)?.slug).toBe('b')
   })
 })

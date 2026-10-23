@@ -1,13 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 
 const apiRequestMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/utils/apiClient', () => ({
   apiRequest: apiRequestMock,
 }))
-
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
 
 function flagsResponse(overrides: Record<string, unknown> = {}): Response {
   return new Response(

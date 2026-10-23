@@ -29,7 +29,7 @@ const SWISS_FILTER_POPPER = 'admin-swiss-school-filter-popper'
 type PrivatizedFilterValue = 'yes' | 'no' | ''
 type ColumnSortOrder = 'none' | 'asc' | 'desc'
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     readOnly?: boolean
   }>(),
@@ -387,7 +387,7 @@ function syncTrendOrgFromSchools() {
   }
 }
 
-async function loadSchools(options?: { silent?: boolean }): Promise<void> {
+async function loadSchools(_options?: { silent?: boolean }): Promise<void> {
   try {
     await organizationsQuery.refetch()
     syncTrendOrgFromSchools()

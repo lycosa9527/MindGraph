@@ -26,9 +26,7 @@ export function queryTrainingFocus(
 ): HTMLElement | null {
   const selector = trainingFocusSelector(focusKey)
   if (!selector || typeof document === 'undefined') return null
-  const staged = document.querySelector(
-    `.builder-stage ${selector}, .teacher-preview ${selector}`
-  )
+  const staged = document.querySelector(`.builder-stage ${selector}, .teacher-preview ${selector}`)
   if (staged instanceof HTMLElement) return staged
   if (stageOnly) return null
   const host = document.querySelector(selector)

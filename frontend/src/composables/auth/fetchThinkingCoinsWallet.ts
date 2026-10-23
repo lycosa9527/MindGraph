@@ -8,7 +8,7 @@ import { apiRequestJson } from '@/utils/apiClient'
 /** Stable scope key: refetch wallet earn-tasks only when this value changes. */
 export function thinkingCoinsWalletScopeKey(
   eligible: boolean,
-  userId: string | null | undefined,
+  userId: string | null | undefined
 ): string {
   if (!eligible) {
     return ''

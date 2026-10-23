@@ -16,7 +16,8 @@ export function useMindmateCollabOrgRoster(options: OrgContactSectionsOptions = 
     options.collabVisibility ?? (() => 'organization'),
     (messageKey) => {
       notify.warningKey(messageKey)
-    }
+    },
+    options.collabSessionId ?? (() => '')
   )
   const roster = useOrgRoster(backend)
   const { onlineUserIds } = useMindmateCollabPresenceBridge()

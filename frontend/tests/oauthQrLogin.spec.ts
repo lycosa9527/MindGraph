@@ -1,28 +1,28 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  resolveOAuthInviteCode,
-  resolveOAuthError,
-  isOAuthRedirectError,
-  notifyOAuthError,
-  oauthErrorFromRouteQuery,
-  oauthBindFromRouteQuery,
-  oauthLoginFromRouteQuery,
-  persistOAuthLoginError,
-  persistedOAuthLoginError,
-  clearPersistedOAuthLoginError,
-  hydratePersistedOAuthLoginError,
-  shouldShowAccountBindingsSection,
-  shouldShowWechatLoginLink,
-  shouldShowWechatBindRow,
-  canStartWechatBind,
-  sizeWechatLoginIframe,
-  wechatLoginStyleHref,
-  wechatQrModalMaxWidthPx,
   OAUTH_NOT_LINKED_TOAST_MS,
   WX_LOGIN_QR_SIZE_PX,
   WX_LOGIN_SELF_REDIRECT,
   WX_LOGIN_STYLE_HREF_PATH,
+  canStartWechatBind,
+  clearPersistedOAuthLoginError,
+  hydratePersistedOAuthLoginError,
+  isOAuthRedirectError,
+  notifyOAuthError,
+  oauthBindFromRouteQuery,
+  oauthErrorFromRouteQuery,
+  oauthLoginFromRouteQuery,
+  persistOAuthLoginError,
+  persistedOAuthLoginError,
+  resolveOAuthError,
+  resolveOAuthInviteCode,
+  shouldShowAccountBindingsSection,
+  shouldShowWechatBindRow,
+  shouldShowWechatLoginLink,
+  sizeWechatLoginIframe,
+  wechatLoginStyleHref,
+  wechatQrModalMaxWidthPx,
 } from '@/utils/oauthLoginUi'
 
 describe('oauthLoginUi', () => {
@@ -96,15 +96,9 @@ describe('oauthLoginUi', () => {
   })
 
   it('canStartWechatBind needs FEATURE_WECHAT_LOGIN and credentials', () => {
-    expect(
-      canStartWechatBind({ featureWechatLogin: true, wechatAvailable: true })
-    ).toBe(true)
-    expect(
-      canStartWechatBind({ featureWechatLogin: true, wechatAvailable: false })
-    ).toBe(false)
-    expect(
-      canStartWechatBind({ featureWechatLogin: false, wechatAvailable: true })
-    ).toBe(false)
+    expect(canStartWechatBind({ featureWechatLogin: true, wechatAvailable: true })).toBe(true)
+    expect(canStartWechatBind({ featureWechatLogin: true, wechatAvailable: false })).toBe(false)
+    expect(canStartWechatBind({ featureWechatLogin: false, wechatAvailable: true })).toBe(false)
   })
 
   it('shouldShowWechatLoginLink follows FEATURE_WECHAT_LOGIN', () => {

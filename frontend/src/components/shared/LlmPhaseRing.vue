@@ -6,7 +6,6 @@
 import { computed } from 'vue'
 
 import type { ModelLoadPhase } from '@/stores/llmResults'
-
 import { isActiveLlmPhaseRing } from '@/utils/llmLoadPhase'
 
 export type LlmPhaseRingStreamingVariant = 'primary' | 'qwen' | 'deepseek' | 'doubao'

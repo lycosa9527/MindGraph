@@ -5,7 +5,7 @@
  * Incoming frames also have to create the conversation row (Zulip-style) so a
  * first DM is visible without a refresh.
  */
-import type { DirectMessageItem, DMConversation, OrgMember } from '@/stores/workshopChat'
+import type { DMConversation, DirectMessageItem, OrgMember } from '@/stores/workshopChat'
 
 const PLACEHOLDER_USER_LABEL = /^User \s*\d+$/i
 
@@ -114,12 +114,7 @@ export function applyIncomingDm(params: {
     ? (msg.sender_avatar ?? params.directoryAvatar ?? null)
     : (params.directoryAvatar ?? null)
 
-  const conv = ensureDmConversation(
-    conversations,
-    partnerId,
-    incomingName,
-    incomingAvatar
-  )
+  const conv = ensureDmConversation(conversations, partnerId, incomingName, incomingAvatar)
   conv.last_message = {
     content: msg.content.slice(0, 100),
     created_at: msg.created_at,

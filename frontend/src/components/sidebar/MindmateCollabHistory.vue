@@ -21,10 +21,7 @@ import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateCollabLiveSes
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
-import {
-  leaveSavedMindmateSeminar,
-  saveFinishedSeminar,
-} from '@/utils/mindmateCollabLibrarySave'
+import { leaveSavedMindmateSeminar, saveFinishedSeminar } from '@/utils/mindmateCollabLibrarySave'
 import {
   LOCAL_MINDMATE_COLLAB_SESSIONS_KEY,
   type LocalMindmateCollabSession,
@@ -170,9 +167,19 @@ async function fetchSessions(showSpinner = true): Promise<void> {
     const hostedRes = await authFetch('/api/mindmate/collab/my/hosted')
     if (hostedRes.ok) {
       const hostedData = await hostedRes.json()
-      const hosted = hostedData.session as CollabSessionRow | null
-      if (hosted?.code && !wasMindmateCollabCodeRecentlyEnded(hosted.code)) {
-        trackLocalMindmateCollabSession(hosted)
+      const hostedRows = (
+        Array.isArray(hostedData.sessions)
+          ? hostedData.sessions
+          : hostedData.session
+            ? [hostedData.session]
+            : []
+      ) as CollabSessionRow[]
+      for (const hosted of hostedRows) {
+        if (hosted?.code && !wasMindmateCollabCodeRecentlyEnded(hosted.code)) {
+          trackLocalMindmateCollabSession(hosted)
+        }
+      }
+      if (hostedRows.length > 0) {
         loadLocalSessions()
       }
     }
@@ -365,6 +372,20 @@ onUnmounted(() => {
           class="conv-name conv-name-btn"
           @click="openSession(session)"
         >
+          <span
+            class="conv-kind"
+            :class="session.visibility === 'network' ? 'is-public' : 'is-school'"
+          >
+            <I18nText
+              :k="
+                session.visibility === 'network'
+                  ? 'mindmate.collabStartSessionPublic'
+                  : 'mindmate.collabStartSessionOrg'
+              "
+              dense
+              primary-only
+            />
+          </span>
           <span class="conv-name-text">
             <template v-if="session.title">{{ session.title }}</template
             ><I18nText
@@ -473,6 +494,29 @@ onUnmounted(() => {
   text-align: left;
   color: inherit;
   font: inherit;
+}
+
+.conv-kind {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.conv-kind.is-school {
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.conv-kind.is-public {
+  background: #ecfeff;
+  color: #0e7490;
 }
 
 .conv-name-text {

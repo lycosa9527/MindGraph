@@ -117,14 +117,44 @@ export function contentMentionsMindmate(
 
 export type CollabRecipientMode = 'mindmate' | 'all'
 
-/** MindMate segment always asks the AI. Everyone still does when the line @mentions it. */
+/** A seminar line asks MindMate only when the text @mentions it. */
 export function collabRoutesToMindmate(
-  recipientMode: CollabRecipientMode,
   content: string,
   agentAliases: readonly string[] = []
 ): boolean {
-  if (recipientMode === 'mindmate') {
-    return true
-  }
   return contentMentionsMindmate(content, agentAliases)
+}
+
+/** Insert @MindMate (or the school agent name) when the draft does not already mention it. */
+export function ensureMindmateMention(text: string, name: string): string {
+  const agent = name.trim() || 'MindMate'
+  const current = text || ''
+  if (contentMentionsMindmate(current, [agent])) {
+    return current
+  }
+  const spacer = current.length > 0 && !/\s$/.test(current) ? ' ' : ''
+  return `${current}${spacer}@${agent} `
+}
+
+function escapeMentionName(name: string): string {
+  return name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Append @name at the end of a draft. Skips a second copy when the draft already ends with it. */
+export function appendMention(text: string, name: string): string {
+  const safe = (name || '')
+    .replace(/\*/g, '')
+    .trim()
+    .replace(/^[@＠]+/u, '')
+  const current = text || ''
+  if (!safe) {
+    return current
+  }
+  const token = `@${safe}`
+  const trailing = new RegExp(`(?:^|\\s)${escapeMentionName(token)}\\s*$`, 'u')
+  if (trailing.test(current)) {
+    return /\s$/u.test(current) ? current : `${current} `
+  }
+  const spacer = current.length > 0 && !/\s$/u.test(current) ? ' ' : ''
+  return `${current}${spacer}${token} `
 }

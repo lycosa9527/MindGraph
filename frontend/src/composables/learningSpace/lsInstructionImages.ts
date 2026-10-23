@@ -1,7 +1,7 @@
 /**
  * Teacher assignment instruction images: local preview + COS upload refs.
  */
-import { onUnmounted, ref, type Ref } from 'vue'
+import { type Ref, onUnmounted, ref } from 'vue'
 
 import { uploadInstructionImage } from '@/utils/learningSpaceApi'
 

@@ -39,11 +39,7 @@ describe('uploadTrainingFile', () => {
 
   it('rejects an empty file before init', async () => {
     await expect(
-      uploadTrainingFile(
-        COURSE_ID,
-        'slide',
-        new File([], 'empty.png', { type: 'image/png' })
-      )
+      uploadTrainingFile(COURSE_ID, 'slide', new File([], 'empty.png', { type: 'image/png' }))
     ).rejects.toThrow('empty')
     expect(apiRequest).not.toHaveBeenCalled()
   })
@@ -115,10 +111,7 @@ describe('uploadTrainingFile', () => {
       '/api/training/assets/init',
       expect.objectContaining({ method: 'POST' })
     )
-    expect(apiUpload).toHaveBeenCalledWith(
-      '/api/training/assets/complete',
-      expect.any(FormData)
-    )
+    expect(apiUpload).toHaveBeenCalledWith('/api/training/assets/complete', expect.any(FormData))
     const form = apiUpload.mock.calls[0][1] as FormData
     expect(form.get('course_id')).toBe(COURSE_ID)
     expect(form.get('role')).toBe('slide')

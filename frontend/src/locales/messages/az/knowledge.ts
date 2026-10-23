@@ -5,12 +5,14 @@
 
 export default {
   'fileCenterLibrary.title': 'Paketlər',
-  'fileCenterLibrary.subtitle': 'Diaqrama görə qruplaşdırılmış mənbə kolleksiyaları (Sənəd xülasəsi).',
+  'fileCenterLibrary.subtitle':
+    'Diaqrama görə qruplaşdırılmış mənbə kolleksiyaları (Sənəd xülasəsi).',
   'fileCenterLibrary.openDiagram': 'Diaqramı aç',
   'fileCenterLibrary.badgeCanvas': 'Kətan',
   'fileCenterLibrary.badgeExtension': 'Genişlənmə',
   'fileCenterLibrary.badgeUpload': 'Yükləmə',
-  'chunkTest.history.confirmDeleteBody': 'Bu test qeydini silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
+  'chunkTest.history.confirmDeleteBody':
+    'Bu test qeydini silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
   'chunkTest.history.confirmDeleteTitle': 'Testi sil',
   'chunkTest.history.delete': 'Sil',
   'chunkTest.history.deleteFailed': 'Testi silmək alınmadı',
@@ -49,7 +51,8 @@ export default {
   'chunkTestResults.answerQuality': 'Cavab keyfiyyəti',
   'chunkTestResults.avgLatency': 'Ort. gecikmə (ms)',
   'chunkTestResults.back': 'Geri',
-  'chunkTestResults.cancelConfirmBody': 'Bu testi ləğv etmək istədiyinizə əminsiniz? Test növbəti yoxlama nöqtəsində dayanacaq.',
+  'chunkTestResults.cancelConfirmBody':
+    'Bu testi ləğv etmək istədiyinizə əminsiniz? Test növbəti yoxlama nöqtəsində dayanacaq.',
   'chunkTestResults.cancelFailed': 'Ləğv alınmadı',
   'chunkTestResults.cancelRequested': 'Testin ləğvi sorğusu göndərildi',
   'chunkTestResults.cancelTest': 'Testi ləğv et',
@@ -89,7 +92,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Bütün datadəstlərini sınayın',
   'knowledge.chunkHeader.testUpload': 'Yüklənmiş sənədləri sınaqdan keçirin',
   'knowledge.chunkHeader.title': 'RAG parça testi',
-  'knowledge.chunkHeader.waitForProcessing': 'Zəhmət olmasa, sınaqdan əvvəl sənədlərin emalı bitənə qədər gözləyin',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Zəhmət olmasa, sınaqdan əvvəl sənədlərin emalı bitənə qədər gözləyin',
   'knowledge.chunkPreview.empty': 'Parça məlumatı yoxdur',
   'knowledge.chunkPreview.pageLabel': 'Səhifə {n}',
   'knowledge.chunkPreview.title': 'Sənəd parçaları — {fileName}',
@@ -108,7 +112,8 @@ export default {
   'knowledge.doc.colStatus': 'Vəziyyət',
   'knowledge.doc.colType': 'Növ',
   'knowledge.doc.colUploaded': 'Yükləmə tarixi',
-  'knowledge.doc.emptyDescription': 'Hələ sənəd yoxdur. Bilik bazanızı yaratmaq üçün sənədləri yükləyin.',
+  'knowledge.doc.emptyDescription':
+    'Hələ sənəd yoxdur. Bilik bazanızı yaratmaq üçün sənədləri yükləyin.',
   'knowledge.doc.errorPrefix': 'Xəta:',
   'knowledge.doc.noData': 'Məlumat yoxdur',
   'knowledge.doc.statusCompleted': 'Tamamlandı',
@@ -124,31 +129,42 @@ export default {
   'knowledge.header.title': 'Bilik bazası',
   'knowledge.header.upload': 'Sənədləri Yükləyin',
   'knowledge.ragGuide.title': 'Paketlər, RAG və Wiki necə işləyir?',
-  'knowledge.ragGuide.subtitle': 'Jargon lazım deyil — bunu istinad materialları qovluğu kimi düşünün. Biz onu axtarış üçün indeksləyirik (RAG), sonra qısa Wiki qeydləri tərtib edirik və zehin xəritəsi qurarkən AI hər ikisini oxuyur.',
+  'knowledge.ragGuide.subtitle':
+    'Jargon lazım deyil — bunu istinad materialları qovluğu kimi düşünün. Biz onu axtarış üçün indeksləyirik (RAG), sonra qısa Wiki qeydləri tərtib edirik və zehin xəritəsi qurarkən AI hər ikisini oxuyur.',
   'knowledge.ragGuide.step1.title': 'Paket seçin',
-  'knowledge.ragGuide.step1.body': 'Paket Zotero kolleksiyasına bənzəyir. Solda ən çox 3 ədəd ola bilər; hər biri adətən bir zehin xəritəsinə aiddir. Sənədlərini idarə etmək üçün yan paneldə paketə klikləyin.',
+  'knowledge.ragGuide.step1.body':
+    'Paket Zotero kolleksiyasına bənzəyir. Solda ən çox 3 ədəd ola bilər; hər biri adətən bir zehin xəritəsinə aiddir. Sənədlərini idarə etmək üçün yan paneldə paketə klikləyin.',
   'knowledge.ragGuide.step2.title': 'Mənbə əlavə edin və indeksləyin (RAG)',
-  'knowledge.ragGuide.step2.body': 'PDF, Word faylları, qeydlər və ya veb səhifələr yükləyin. Uzun sənədləri axtarıla bilən parçalara bölür və vektor embedding-ləri saxlayırıq — bu RAG indeksidir və ilk növbədə hazır olur.',
+  'knowledge.ragGuide.step2.body':
+    'PDF, Word faylları, qeydlər və ya veb səhifələr yükləyin. Uzun sənədləri axtarıla bilən parçalara bölür və vektor embedding-ləri saxlayırıq — bu RAG indeksidir və ilk növbədə hazır olur.',
   'knowledge.ragGuide.step3.title': 'Wiki qeydləri avtomatik tərtib olunur',
-  'knowledge.ragGuide.step3.body': 'İndeksləmə bitəndən sonra LLM diskdə icmal və mövzu Wiki səhifələrini tərtib edir. Bunlar paketi daha tez başa düşmək üçün qısa qeydlərdir (transkript deyil).',
+  'knowledge.ragGuide.step3.body':
+    'İndeksləmə bitəndən sonra LLM diskdə icmal və mövzu Wiki səhifələrini tərtib edir. Bunlar paketi daha tez başa düşmək üçün qısa qeydlərdir (transkript deyil).',
   'knowledge.ragGuide.step4.title': 'Axtarış Wiki + parçalardan istifadə edir',
-  'knowledge.ragGuide.step4.body': 'Budağı genişləndirdikdə və ya xülasə yaratdıqda əvvəlcə uyğun Wiki səhifələrini uyğunlaşdırır, sonra ən uyğun parça hissələrini gətiririk (hibrid RAG).',
+  'knowledge.ragGuide.step4.body':
+    'Budağı genişləndirdikdə və ya xülasə yaratdıqda əvvəlcə uyğun Wiki səhifələrini uyğunlaşdırır, sonra ən uyğun parça hissələrini gətiririk (hibrid RAG).',
   'knowledge.ragGuide.step5.title': 'Cavablar mənbələrinizə əsaslanır',
-  'knowledge.ragGuide.step5.body': 'AI təxmin etmək əvəzinə Wiki qeydləri və gətirilmiş parçalardan yazır — daha yaxşı mənbələr, tamamlanmış indeksləmə və tərtib olunmuş Wiki səhifələri daha dəqiq xəritələr deməkdir.',
-  'knowledge.ragGuide.footer': 'İpucu: kətanda Sənəd xülasəsini açmaq avtomatik paket yaradır; Chrome genişlənməsi ilə saxlanmış səhifələr də yan panel siyahısında görünür.',
+  'knowledge.ragGuide.step5.body':
+    'AI təxmin etmək əvəzinə Wiki qeydləri və gətirilmiş parçalardan yazır — daha yaxşı mənbələr, tamamlanmış indeksləmə və tərtib olunmuş Wiki səhifələri daha dəqiq xəritələr deməkdir.',
+  'knowledge.ragGuide.footer':
+    'İpucu: kətanda Sənəd xülasəsini açmaq avtomatik paket yaradır; Chrome genişlənməsi ilə saxlanmış səhifələr də yan panel siyahısında görünür.',
   'knowledge.pipeline.title': 'İş axını statusu',
   'knowledge.pipeline.ragIdle': 'RAG indeksi',
-  'knowledge.pipeline.ragIdleDetail': 'Hələ indekslənmiş paket yoxdur. Paketə mənbə əlavə edib indeksləməni işə salın.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Hələ indekslənmiş paket yoxdur. Paketə mənbə əlavə edib indeksləməni işə salın.',
   'knowledge.pipeline.ragProcessing': 'RAG indekslənir',
-  'knowledge.pipeline.ragProcessingDetail': '{count} paket hələ mənbələri parçalayır və embedding edir.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} paket hələ mənbələri parçalayır və embedding edir.',
   'knowledge.pipeline.ragReady': 'RAG hazırdır',
   'knowledge.pipeline.ragReadyDetail': '{count} paket indekslənib — parça axtarışı aktivdir.',
   'knowledge.pipeline.wikiDisabled': 'Wiki tərtibi sönülü',
   'knowledge.pipeline.wikiDisabledDetail': 'Bu serverdə Wiki tərtibi deaktivdir.',
   'knowledge.pipeline.wikiIdle': 'Wiki tərtibi',
-  'knowledge.pipeline.wikiIdleDetail': 'Wiki səhifələri hər mənbə üçün RAG indeksləməsi bitəndən sonra tərtib olunur.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Wiki səhifələri hər mənbə üçün RAG indeksləməsi bitəndən sonra tərtib olunur.',
   'knowledge.pipeline.wikiPending': 'Wiki tərtib olunur',
-  'knowledge.pipeline.wikiPendingDetail': '{count} paket indeksləmədən sonra Wiki səhifələrini gözləyir.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} paket indeksləmədən sonra Wiki səhifələrini gözləyir.',
   'knowledge.pipeline.wikiReady': 'Wiki hazırdır',
   'knowledge.pipeline.wikiReadyDetail': '{count} paketdə tərtib olunmuş Wiki qeydləri var.',
   'knowledge.pipelineBadge.rag.label': 'RAG',
@@ -164,7 +180,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Seçimi ləğv et',
   'knowledge.manualEval.dialogTitle': 'Əl ilə qiymətləndirmə — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Standart cavab (istəyə bağlı)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Cavab uyğunluğu üçün standart cavabı daxil edin...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Cavab uyğunluğu üçün standart cavabı daxil edin...',
   'knowledge.manualEval.metric.answer_coverage': 'Cavab əhatəsi',
   'knowledge.manualEval.metric.answer_faithfulness': 'Cavab sədaqəti',
   'knowledge.manualEval.metric.clarity': 'Aydınlıq',
@@ -186,7 +203,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Parça keyfiyyəti qiymətləndirməsi',
   'knowledge.manualEval.resultsTitle': 'Qiymətləndirmə nəticələri',
   'knowledge.manualEval.selectAll': 'Hamısını seç',
-  'knowledge.manualEval.selectChunksHeading': 'Qiymətləndirmə üçün parçaları seçin (hamısı üçün boş buraxın)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Qiymətləndirmə üçün parçaları seçin (hamısı üçün boş buraxın)',
   'knowledge.manualEval.showingFirst20': 'İlk 20 göstərilir, ümumi {total} parça',
   'knowledge.manualEval.startEvaluation': 'Qiymətləndirməyə başla',
   'knowledge.processing.chunking': 'Parçalanma',
@@ -235,7 +253,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Axtarış parametrləri',
   'knowledge.settings.title': 'Bilik bazası parametrləri',
   'knowledge.settings.helpTitle': 'Bu parametrlər necə tətbiq olunur',
-  'knowledge.settings.helpBody': 'Axtarış üstünlükləri axtarışa və AI cavablarına dərhal tətbiq olunur. Parça ölçüsü və üst-üstə düşmə yalnız yeni indekslənən sənədlərə aiddir — dəyişdikdən sonra mövcud mənbələrdə indeksləməni yenidən işə salın.',
+  'knowledge.settings.helpBody':
+    'Axtarış üstünlükləri axtarışa və AI cavablarına dərhal tətbiq olunur. Parça ölçüsü və üst-üstə düşmə yalnız yeni indekslənən sənədlərə aiddir — dəyişdikdən sonra mövcud mənbələrdə indeksləməni yenidən işə salın.',
   'knowledge.settings.tokens': 'tokenlər',
   'knowledge.settings.serverSection': 'Server (yalnız oxuma)',
   'knowledge.settings.rerankingMode': 'Yenidən sıralama',
@@ -246,7 +265,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Deaktiv',
   'knowledge.settings.saveSuccess': 'Parametrlər saxlanıldı',
   'knowledge.settings.saveFailed': 'Parametrləri saxlamaq alınmadı',
-  'knowledge.settings.reindexRequired': 'Parçalama parametrləri dəyişdi — yeni ölçülərin təsir etməsi üçün paketlərinizdəki mövcud sənədləri yenidən indeksləyin.',
+  'knowledge.settings.reindexRequired':
+    'Parçalama parametrləri dəyişdi — yeni ölçülərin təsir etməsi üçün paketlərinizdəki mövcud sənədləri yenidən indeksləyin.',
   'knowledge.upload.click': 'Yükləmək üçün klikləyin',
   'knowledge.upload.drag': 'və ya faylı bura sürükləyin',
   'knowledge.upload.fileTooLarge': 'Faylın ölçüsü 10 MB-dan çox ola bilməz',
@@ -254,7 +274,8 @@ export default {
   'knowledge.upload.maxDocs': 'Maksimum sənəd limitinə çatıldı (5)',
   'knowledge.upload.title': 'Sənədi Yüklə',
   'knowledge.upload.unsupportedType': 'Dəstəklənməyən fayl növü',
-  'knowledgeSpace.confirmDeleteBody': 'Bu sənədi silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Bu sənədi silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.',
   'knowledgeSpace.confirmDeleteTitle': 'Silməni təsdiqlə',
   'knowledgeSpace.deleteFailed': 'Silmə uğursuz oldu',
   'knowledgeSpace.documentDeleted': 'Sənəd silindi',

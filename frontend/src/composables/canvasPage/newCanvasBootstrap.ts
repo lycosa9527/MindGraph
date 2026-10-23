@@ -45,9 +45,7 @@ function nowMs(): number {
   return Date.now()
 }
 
-export function normalizeDiagramTypeKey(
-  diagramType: string | null | undefined
-): string | null {
+export function normalizeDiagramTypeKey(diagramType: string | null | undefined): string | null {
   if (!diagramType) return null
   if (diagramType === 'mind_map') return 'mindmap'
   return diagramType
@@ -71,9 +69,7 @@ export function isNewCanvasTypeQuery(query: LocationQuery): boolean {
   return !hasDiagramId
 }
 
-export function getDiagramDataType(
-  data: { type?: unknown } | null | undefined
-): string | null {
+export function getDiagramDataType(data: { type?: unknown } | null | undefined): string | null {
   return typeof data?.type === 'string' ? data.type : null
 }
 

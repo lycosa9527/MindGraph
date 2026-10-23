@@ -9,8 +9,8 @@ import { Search } from '@element-plus/icons-vue'
 
 import {
   EMOJI_PICKER_CATEGORIES,
-  orderEmojiCategories,
   type EmojiEntry,
+  orderEmojiCategories,
 } from '@/config/emojiPickerCategories'
 
 const props = withDefaults(

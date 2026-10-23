@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'Pameran',
-  'showcase.subtitle': 'Temukan pelajaran berpikir yang didukung AI dan bagikan pekerjaan mengajar Anda',
+  'showcase.subtitle':
+    'Temukan pelajaran berpikir yang didukung AI dan bagikan pekerjaan mengajar Anda',
   'showcase.publish': 'Publikasikan kasus',
   'showcase.searchPlaceholder': 'Cari judul, deskripsi, atau tag…',
   'showcase.filter.all': 'Semua',
@@ -31,19 +32,24 @@ export default {
   'showcase.myFavoritesEmpty': 'Belum ada kasus favorit',
   'showcase.myFavoritesEmptyHint': 'Kasus yang Anda tandai akan muncul di sini',
   'showcase.myCasesModalTitle': 'Kasus yang saya terbitkan',
-  'showcase.myCasesManageHint': 'Tarik, hapus, atau edit dari daftar ini; klik kasus untuk mengetahui detailnya',
+  'showcase.myCasesManageHint':
+    'Tarik, hapus, atau edit dari daftar ini; klik kasus untuk mengetahui detailnya',
   'showcase.myCasesAction.edit': 'Sunting',
   'showcase.myCasesEmpty': 'Belum ada kasus yang dipublikasikan',
-  'showcase.myCasesEmptyHint': 'Kasus yang dipublikasikan dan status peninjauan akan muncul di sini',
+  'showcase.myCasesEmptyHint':
+    'Kasus yang dipublikasikan dan status peninjauan akan muncul di sini',
   'showcase.caseCount': '{n} kasus',
   'showcase.pendingReview': 'Peninjauan tertunda',
   'showcase.publishModal.title': 'Publikasikan kasus',
   'showcase.publishModal.titleLabel': 'Judul kasus',
-  'showcase.publishModal.titleHint': 'Jaga agar judul tetap ringkas — disarankan maksimal {max} karakter',
-  'showcase.publishModal.titlePlaceholder': 'misalnya Dua Anak Berdebat tentang Matahari — desain pelajaran',
+  'showcase.publishModal.titleHint':
+    'Jaga agar judul tetap ringkas — disarankan maksimal {max} karakter',
+  'showcase.publishModal.titlePlaceholder':
+    'misalnya Dua Anak Berdebat tentang Matahari — desain pelajaran',
   'showcase.publishModal.descriptionLabel': 'Keterangan',
   'showcase.publishModal.tagsLabel': 'Tag',
-  'showcase.publishModal.tagsHint': 'Pisahkan tag dengan koma, mis. konflik kognitif, matematika junior',
+  'showcase.publishModal.tagsHint':
+    'Pisahkan tag dengan koma, mis. konflik kognitif, matematika junior',
   'showcase.publishModal.caseTypeLabel': 'Jenis kasus',
   'showcase.publishModal.subjectLabel': 'Subjek',
   'showcase.publishModal.gradeLabel': 'Nilai',
@@ -53,19 +59,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Mengunggah file ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Mengunggah {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Menyelesaikan…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Unggahan gagal — draf telah dibuang. Silakan coba lagi.',
-  'showcase.publishModal.uploadCorsFailed': 'Tidak dapat mengunggah ke penyimpanan objek (sering karena CORS bucket atau CSP situs memblokir host COS). Draf telah dibuang — minta admin memperbaiki CORS/CSP, lalu coba lagi.',
-  'showcase.publishModal.uploadStorageRejected': 'Penyimpanan objek menolak unggahan. Draf telah dibuang — coba lagi nanti, atau hubungi admin jika terus gagal.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Unggahan gagal — draf telah dibuang. Silakan coba lagi.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Tidak dapat mengunggah ke penyimpanan objek (sering karena CORS bucket atau CSP situs memblokir host COS). Draf telah dibuang — minta admin memperbaiki CORS/CSP, lalu coba lagi.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Penyimpanan objek menolak unggahan. Draf telah dibuang — coba lagi nanti, atau hubungi admin jika terus gagal.',
   'showcase.publishModal.uploadFailed': 'Gagal mengunggah. Silakan coba lagi.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Gambar sampul melebihi batas 2MB. Kompres pratinjau atau gunakan gambar lebih kecil, lalu coba lagi.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'File melebihi batas ukuran (dokumen/gambar 20MB, video 100MB). Kompres dan coba lagi.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'File melebihi batas ukuran (dokumen/gambar 20MB, video 100MB). Draf telah dibuang — kompres dan coba lagi.',
-  'showcase.publishModal.uploadFileTooLarge': 'File terlalu besar untuk jenis unggahan ini. Periksa batas ukuran dan coba lagi.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'File terlalu besar untuk jenis unggahan ini. Draf telah dibuang — periksa batas ukuran dan coba lagi.',
-  'showcase.publishModal.coverUploadSkipped': 'Kasus dikirim, tetapi gambar sampul gagal diunggah. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
-  'showcase.publishModal.coverGenerating': 'Pratinjau sampul sedang dibuat di latar belakang — akan muncul di kartu sebentar lagi.',
-  'showcase.publishModal.coverFailed': 'Kasus dikirim, tetapi sampul tidak dapat dibuat. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
-  'showcase.publishModal.coverFailedTimeout': 'Kasus dikirim, tetapi pembuatan sampul habis waktu. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Gambar sampul melebihi batas 2MB. Kompres pratinjau atau gunakan gambar lebih kecil, lalu coba lagi.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'File melebihi batas ukuran (dokumen/gambar 20MB, video 100MB). Kompres dan coba lagi.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'File melebihi batas ukuran (dokumen/gambar 20MB, video 100MB). Draf telah dibuang — kompres dan coba lagi.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'File terlalu besar untuk jenis unggahan ini. Periksa batas ukuran dan coba lagi.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'File terlalu besar untuk jenis unggahan ini. Draf telah dibuang — periksa batas ukuran dan coba lagi.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Kasus dikirim, tetapi gambar sampul gagal diunggah. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
+  'showcase.publishModal.coverGenerating':
+    'Pratinjau sampul sedang dibuat di latar belakang — akan muncul di kartu sebentar lagi.',
+  'showcase.publishModal.coverFailed':
+    'Kasus dikirim, tetapi sampul tidak dapat dibuat. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Kasus dikirim, tetapi pembuatan sampul habis waktu. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
   'showcase.publishModal.success': 'Kasus diserahkan — menunggu peninjauan admin',
   'showcase.publishModal.fromCanvas': 'Publikasikan dari kanvas',
   'showcase.publishModal.step1Title': 'Informasi dasar',
@@ -79,26 +97,35 @@ export default {
   'showcase.publishModal.uploadLabel': 'Unggah berkas',
   'showcase.publishModal.uploadImage': 'Unggah gambar',
   'showcase.publishModal.uploadFile': 'Unggah berkas',
-  'showcase.publishModal.directUploadDisabled': 'Unggah file langsung sementara tidak tersedia. Anda tetap dapat memilih diagram tersimpan dari riwayat.',
-  'showcase.publishModal.uploadViaStorage': 'File diunggah langsung ke penyimpanan aman (URL berumur pendek).',
+  'showcase.publishModal.directUploadDisabled':
+    'Unggah file langsung sementara tidak tersedia. Anda tetap dapat memilih diagram tersimpan dari riwayat.',
+  'showcase.publishModal.uploadViaStorage':
+    'File diunggah langsung ke penyimpanan aman (URL berumur pendek).',
   'showcase.publishModal.pickHistory': 'Pilih dari sejarah',
   'showcase.publishModal.removeFile': 'Menghapus',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: pratinjau terbatas)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: pratinjau terbatas) — maks {maxMb} MB per dokumen',
-  'showcase.publishModal.teachingDocTooLarge': 'Dokumen melebihi batas {maxMb} MB. Kompres dan coba lagi.',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: pratinjau terbatas) — maks {maxMb} MB per dokumen',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Dokumen melebihi batas {maxMb} MB. Kompres dan coba lagi.',
   'showcase.publishModal.diagramImageHint': 'Mendukung .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Unggah gambar (banyak)',
-  'showcase.publishModal.galleryHint': 'Tambahkan beberapa gambar dan diagram tersimpan, hingga {max} item',
-  'showcase.publishModal.galleryHintCase': 'Beberapa gambar dan ikon sejarah dapat ditambahkan, hingga {max} item',
-  'showcase.publishModal.galleryHintTemplate': 'Anda dapat mengunggah file .mg dan memilih beberapa ikon historis, hingga {max} item',
+  'showcase.publishModal.galleryHint':
+    'Tambahkan beberapa gambar dan diagram tersimpan, hingga {max} item',
+  'showcase.publishModal.galleryHintCase':
+    'Beberapa gambar dan ikon sejarah dapat ditambahkan, hingga {max} item',
+  'showcase.publishModal.galleryHintTemplate':
+    'Anda dapat mengunggah file .mg dan memilih beberapa ikon historis, hingga {max} item',
   'showcase.publishModal.galleryCount': '{count}/{max} item ditambahkan',
   'showcase.publishModal.galleryImageItem': 'Gambar: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Ilustrasi: {name}',
   'showcase.publishModal.galleryLimit': 'Anda dapat menambahkan paling banyak {max} item',
   'showcase.publishModal.galleryDuplicateDiagram': 'Diagram tersimpan ini sudah ada dalam daftar',
   'showcase.publishModal.galleryPickerDone': 'Selesai',
-  'showcase.publishModal.galleryUploadFailed': 'Gagal mengunggah gambar galeri — coba publikasikan lagi',
-  'showcase.publishModal.galleryReuploadHint': 'Beberapa gambar galeri tidak disimpan — harap pilih kembali gambar tersebut sebelum dikirimkan',
+  'showcase.publishModal.galleryUploadFailed':
+    'Gagal mengunggah gambar galeri — coba publikasikan lagi',
+  'showcase.publishModal.galleryReuploadHint':
+    'Beberapa gambar galeri tidak disimpan — harap pilih kembali gambar tersebut sebelum dikirimkan',
   'showcase.detail.galleryImage': 'Gambar',
   'showcase.detail.galleryDiagram': 'Ilustrasi',
   'showcase.detail.galleryPrev': 'Sebelumnya',
@@ -108,39 +135,53 @@ export default {
   'showcase.publishModal.templateFileHint': '.mg saja (MindGraph ekspor)',
   'showcase.publishModal.templatePreviewLabel': 'Pratinjau diagram',
   'showcase.publishModal.templatePreviewHint': 'Perkakas tangan — hanya lihat, tidak dapat diedit',
-  'showcase.publishModal.templatePreviewEmpty': 'Unggah file .mg atau pilih diagram tersimpan untuk dipratinjau',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Unggah file .mg atau pilih diagram tersimpan untuk dipratinjau',
   'showcase.publishModal.diagramCasePreviewLabel': 'Pratinjau diagram',
-  'showcase.publishModal.diagramCasePreviewHint': 'Perkakas tangan — geser dan perbesar untuk menjelajah',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Jenis diagram cocok dengan diagram tersimpan yang dipilih',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'Perkakas tangan — geser dan perbesar untuk menjelajah',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Jenis diagram cocok dengan diagram tersimpan yang dipilih',
   'showcase.publishModal.introLabel': 'Pengenalan diagram',
   'showcase.publishModal.teachingIntroLabel': 'Pengantar desain pengajaran',
   'showcase.publishModal.highlightsLabel': 'Sorotan desain',
   'showcase.publishModal.highlightsPlaceholder': 'Satu sorotan per baris (opsional)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Perkenalkan secara singkat latar belakang pelajaran, tujuan, dan konteks',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Perkenalkan secara singkat latar belakang pelajaran, tujuan, dan konteks',
   'showcase.publishModal.aiGenerate': 'AI menghasilkan',
   'showcase.publishModal.aiGenerating': 'Menghasilkan…',
   'showcase.publishModal.aiGenerateStop': 'Berhenti',
-  'showcase.publishModal.aiGenerateCancelled': 'Pembuatan AI dibatalkan — klik lagi untuk membuat ulang',
-  'showcase.publishModal.aiGenerateSuccess': 'Pengantar dan sorotan diisi dari dokumen — tinjau dan edit; tulis refleksi pengajaran sendiri',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Pengenalan ilustrasi dan penerapan kelas telah dihasilkan berdasarkan ilustrasi. Silakan periksa dan edit.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'Pembuatan AI dibatalkan — klik lagi untuk membuat ulang',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Pengantar dan sorotan diisi dari dokumen — tinjau dan edit; tulis refleksi pengajaran sendiri',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'Pengenalan ilustrasi dan penerapan kelas telah dihasilkan berdasarkan ilustrasi. Silakan periksa dan edit.',
   'showcase.publishModal.aiGenerateFailed': 'Pembuatan AI gagal — silakan coba lagi',
-  'showcase.publishModal.aiGenerateNeedFile': 'Unggah terlebih dahulu dokumen desain pengajaran pada langkah sebelumnya',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'AI generate hanya tersedia untuk kasus desain pengajaran',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Unggah terlebih dahulu dokumen desain pengajaran pada langkah sebelumnya',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'AI generate hanya tersedia untuk kasus desain pengajaran',
   'showcase.publishModal.reflectionLabel': 'Mengajarkan refleksi',
-  'showcase.publishModal.introPlaceholder': 'Jelaskan secara singkat kasusnya dan kapan menggunakannya',
+  'showcase.publishModal.introPlaceholder':
+    'Jelaskan secara singkat kasusnya dan kapan menggunakannya',
   'showcase.publishModal.diagramCorePlaceholder': 'Jelaskan konten diagram dan sorotan visualisasi',
   'showcase.publishModal.classroomAppPlaceholder': 'Bagaimana diagram ini digunakan di kelas',
   'showcase.publishModal.tagInputPlaceholder': 'Ketik tag (maks 10 karakter), tekan Enter',
   'showcase.publishModal.tagRecommended': 'Tag yang disarankan',
   'showcase.publishModal.tagCountHint': '(maks {max})',
   'showcase.publishModal.tagMaxCount': 'Anda dapat menambahkan paling banyak tag {max}',
-  'showcase.publishModal.networkError': 'Pengiriman gagal — periksa apakah server sedang berjalan dan ukuran file berada dalam batas',
+  'showcase.publishModal.networkError':
+    'Pengiriman gagal — periksa apakah server sedang berjalan dan ukuran file berada dalam batas',
   'showcase.publishModal.fileTooLarge': '"{name}" melebihi batas ukuran {maxMb}MB',
-  'showcase.publishModal.uploadTotalTooLarge': 'Total ukuran unggahan melebihi batas — kurangi ukuran lampiran atau video',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'Total ukuran unggahan melebihi batas — kurangi ukuran lampiran atau video',
   'showcase.publishModal.tagAdd': 'Menambahkan',
   'showcase.publishModal.publishBtn': 'Menerbitkan',
-  'showcase.publishModal.reflectionPlaceholder': 'Tulis refleksi Anda tentang pelajaran ini (opsional)',
+  'showcase.publishModal.reflectionPlaceholder':
+    'Tulis refleksi Anda tentang pelajaran ini (opsional)',
   'showcase.publishModal.classroomAppLabel': 'Penggunaan di ruang kelas',
   'showcase.publishModal.selectSubject': 'Pilih subjek',
   'showcase.publishModal.selectGrade': 'Pilih kelas',
@@ -151,17 +192,24 @@ export default {
   'showcase.publishModal.validationFile': 'Unggah file atau pilih diagram yang disimpan',
   'showcase.publishModal.validationDiagramType': 'Silakan pilih jenis diagram',
   'showcase.publishModal.invalidFileType': 'Jenis file tidak didukung',
-  'showcase.publishModal.invalidMgFile': 'Tidak dapat membaca file .mg ini — ekspor dari MindGraph terlebih dahulu',
-  'showcase.publishModal.cannotPreview': 'Tidak dapat membuat pratinjau sampul — kasus tetap akan dikirim. Coba PNG/JPG atau pilih diagram tersimpan.',
-  'showcase.publishModal.cannotPreviewHistory': 'Tidak dapat membuat sampul dari diagram tersimpan ini — kasus tetap akan dikirim. Pilih ulang atau simpan ulang dari kanvas.',
-  'showcase.publishModal.cannotPreviewTemplate': 'Tidak dapat membuat sampul — kasus tetap akan dikirim. Periksa file .mg atau pilih diagram tersimpan lain.',
+  'showcase.publishModal.invalidMgFile':
+    'Tidak dapat membaca file .mg ini — ekspor dari MindGraph terlebih dahulu',
+  'showcase.publishModal.cannotPreview':
+    'Tidak dapat membuat pratinjau sampul — kasus tetap akan dikirim. Coba PNG/JPG atau pilih diagram tersimpan.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Tidak dapat membuat sampul dari diagram tersimpan ini — kasus tetap akan dikirim. Pilih ulang atau simpan ulang dari kanvas.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Tidak dapat membuat sampul — kasus tetap akan dikirim. Periksa file .mg atau pilih diagram tersimpan lain.',
   'showcase.publishModal.historyTitle': 'Pilih diagram yang disimpan',
   'showcase.publishModal.historySearch': 'Cari nama diagram…',
   'showcase.publishModal.historyEmpty': 'Tidak ada diagram yang disimpan',
   'showcase.publishModal.historyUncategorized': 'Tidak dikategorikan',
-  'showcase.publishModal.typeDesc.teachingDesign': 'Desain pembelajaran kelas keterampilan berpikir',
-  'showcase.publishModal.typeDesc.diagramCase': 'Diagram dan visualisasi yang sangat baik dalam pengajaran',
-  'showcase.publishModal.typeDesc.diagramTemplate': 'Diagram untuk digunakan kembali atau diadaptasi',
+  'showcase.publishModal.typeDesc.teachingDesign':
+    'Desain pembelajaran kelas keterampilan berpikir',
+  'showcase.publishModal.typeDesc.diagramCase':
+    'Diagram dan visualisasi yang sangat baik dalam pengajaran',
+  'showcase.publishModal.typeDesc.diagramTemplate':
+    'Diagram untuk digunakan kembali atau diadaptasi',
   'showcase.detail.import': 'Gunakan kasus ini',
   'showcase.action.goDraw': 'Gambar satu',
   'showcase.action.applyTemplate': 'Terapkan templat',
@@ -184,9 +232,11 @@ export default {
   'showcase.detail.delist': 'Hapus daftar',
   'showcase.detail.resubmit': 'Edit dan kirim ulang',
   'showcase.detail.withdrawTitle': 'Tarik kasus',
-  'showcase.detail.withdrawConfirm': 'Tarik "{title}"? Kasus akan dihapus dari antrean peninjauan dan tidak dapat dipulihkan.',
+  'showcase.detail.withdrawConfirm':
+    'Tarik "{title}"? Kasus akan dihapus dari antrean peninjauan dan tidak dapat dipulihkan.',
   'showcase.detail.delistTitle': 'Kasus penghapusan',
-  'showcase.detail.delistConfirm': 'Turunkan "{title}" dari galeri? Pengguna lain tidak lagi dapat melihatnya.',
+  'showcase.detail.delistConfirm':
+    'Turunkan "{title}" dari galeri? Pengguna lain tidak lagi dapat melihatnya.',
   'showcase.detail.confirm': 'Mengonfirmasi',
   'showcase.detail.cancel': 'Membatalkan',
   'showcase.withdrawn': 'Ditarik',
@@ -207,7 +257,8 @@ export default {
   'showcase.detail.officePreviewPending': 'Mengonversi slide untuk pratinjau…',
   'showcase.detail.docPreviewLoading': 'Memuat dokumen…',
   'showcase.detail.docPreviewFailed': 'Tidak dapat memuat pratinjau. Coba buka di tab baru.',
-  'showcase.detail.legacyDocHint': 'File .doc lama tidak dapat dipratinjau secara inline. Buka atau unduh file, atau unggah .docx untuk pratinjau di peramban.',
+  'showcase.detail.legacyDocHint':
+    'File .doc lama tidak dapat dipratinjau secara inline. Buka atau unduh file, atau unggah .docx untuk pratinjau di peramban.',
   'showcase.detail.noDocument': 'Tidak ada pratinjau dokumen',
   'showcase.detail.noDiagramPreview': 'Tidak ada pratinjau diagram',
   'showcase.detail.diagramPreviewLoading': 'Memuat diagram…',

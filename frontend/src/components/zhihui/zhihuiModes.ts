@@ -52,9 +52,7 @@ export const ZHIHUI_MODELS: Record<ZhihuiMode, ZhihuiModelOption[]> = {
     { id: 'wan2.5-t2v-preview', label: 'Wan 2.5 T2V', available: false },
     { id: 'wan2.2-i2v', label: 'Wan 2.2 I2V', available: false },
   ],
-  diagram: [
-    { id: 'wan2.7-image', label: 'Wan 2.7 Image', available: true },
-  ],
+  diagram: [{ id: 'wan2.7-image', label: 'Wan 2.7 Image', available: true }],
 }
 
 export function defaultModelId(mode: ZhihuiMode): string {

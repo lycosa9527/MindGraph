@@ -11,8 +11,8 @@ import {
   userHasOrgOnlyPanelScope,
 } from '@/composables/admin/useCurrentUserOrganizationId'
 import { useAdminOrganizations } from '@/composables/queries'
-import { fallbackCapabilitiesForRole } from '@/utils/adminCapabilities'
 import { useAdminPanelStore, useAuthStore } from '@/stores'
+import { fallbackCapabilitiesForRole } from '@/utils/adminCapabilities'
 
 export function useAdminOrgScope() {
   const authStore = useAuthStore()
@@ -44,9 +44,7 @@ export function useAdminOrgScope() {
     return getCurrentUserOrganizationId()
   })
 
-  const showPicker = computed(
-    () => canPickOrganization.value && organizations.value.length > 0
-  )
+  const showPicker = computed(() => canPickOrganization.value && organizations.value.length > 0)
 
   const effectiveOrgName = computed(() => {
     const orgId = effectiveOrgId.value

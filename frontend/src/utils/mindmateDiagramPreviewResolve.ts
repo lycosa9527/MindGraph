@@ -1,7 +1,5 @@
 /** Resolve MindMate generate_dingtalk preview PNGs (IndexedDB → temp URL → library re-render). */
-
 import { authFetch } from '@/utils/api'
-import { sameOriginTempImageFetchUrl } from '@/utils/mindmateTempImageUrl'
 import {
   extractFirstMarkdownImageUrl,
   parseMindmateDiagramLibraryId,
@@ -11,6 +9,7 @@ import {
   readMindmateDiagramPreview,
   writeMindmateDiagramPreview,
 } from '@/utils/mindmateDiagramPreviewCache'
+import { sameOriginTempImageFetchUrl } from '@/utils/mindmateTempImageUrl'
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47] as const
 
@@ -55,9 +54,7 @@ async function fetchPreviewBlob(imageUrl: string): Promise<Blob | null> {
 
 async function fetchLibraryDiagramPreviewBlob(libraryDiagramId: string): Promise<Blob | null> {
   try {
-    const response = await authFetch(
-      `/api/diagrams/${encodeURIComponent(libraryDiagramId)}/png`
-    )
+    const response = await authFetch(`/api/diagrams/${encodeURIComponent(libraryDiagramId)}/png`)
     if (!response.ok) {
       return null
     }
@@ -109,8 +106,7 @@ export async function resolveMindmateDiagramPreviewBlob(
   }
 
   const libraryId =
-    options.libraryDiagramId?.trim() ||
-    parseMindmateDiagramLibraryId(options.content)
+    options.libraryDiagramId?.trim() || parseMindmateDiagramLibraryId(options.content)
   if (libraryId) {
     const libraryBlob = await fetchLibraryDiagramPreviewBlob(libraryId)
     if (libraryBlob) {

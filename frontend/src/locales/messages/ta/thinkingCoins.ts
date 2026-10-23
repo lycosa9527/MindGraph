@@ -25,9 +25,11 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.checkedInToday': 'இன்று உள்நுழைந்துள்ளார்',
   'thinkingCoins.usageDoneToday': 'இன்று நிறைவு பெற்றது',
   'thinkingCoins.casePendingHint': 'விரைவில் திறக்கப்படும்',
-  'thinkingCoins.schoolInfo': 'பள்ளி பதிப்புத் திட்டத்தைப் பற்றி அறிய உங்கள் பள்ளி நிர்வாகியைத் தொடர்பு கொள்ளவும்',
+  'thinkingCoins.schoolInfo':
+    'பள்ளி பதிப்புத் திட்டத்தைப் பற்றி அறிய உங்கள் பள்ளி நிர்வாகியைத் தொடர்பு கொள்ளவும்',
   'thinkingCoins.school.headline': 'AI அதிகாரம் பெற்ற சிந்தனை·பள்ளி சார்ந்த தீர்வுகள்',
-  'thinkingCoins.school.description': 'தனியார்மயமாக்கப்பட்ட வரிசைப்படுத்தல், பிரத்தியேக தனிப்பயனாக்கம் மற்றும் பள்ளிகள் மற்றும் கல்வி நிறுவனங்களுக்கு பெரிய அளவிலான பிராண்ட் கட்டிடம் மற்றும் தரவு பாதுகாப்பு தேவைகளை பூர்த்தி செய்ய விரிவான செயல்பாடு மற்றும் பராமரிப்பு ஆதரவை வழங்குதல்.',
+  'thinkingCoins.school.description':
+    'தனியார்மயமாக்கப்பட்ட வரிசைப்படுத்தல், பிரத்தியேக தனிப்பயனாக்கம் மற்றும் பள்ளிகள் மற்றும் கல்வி நிறுவனங்களுக்கு பெரிய அளவிலான பிராண்ட் கட்டிடம் மற்றும் தரவு பாதுகாப்பு தேவைகளை பூர்த்தி செய்ய விரிவான செயல்பாடு மற்றும் பராமரிப்பு ஆதரவை வழங்குதல்.',
   'thinkingCoins.school.feature.accountManager': 'பிரத்யேக கணக்கு மேலாளர்',
   'thinkingCoins.school.feature.accountManagerDesc': '1 முதல் 1 வரை ஆலோசனை மற்றும் நறுக்குதல்',
   'thinkingCoins.school.feature.privateDeploy': 'தனியார் வரிசைப்படுத்தல்',
@@ -36,19 +38,23 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.feature.customizationDesc': 'தேவைக்கேற்ப நெகிழ்வான கட்டமைப்பு',
   'thinkingCoins.school.feature.opsSupport': 'விரிவான செயல்பாடு மற்றும் பராமரிப்பு ஆதரவு',
   'thinkingCoins.school.feature.opsSupportDesc': '7×24 மணிநேர உத்தரவாதம்',
-  'thinkingCoins.school.consultTitle': 'ஆலோசனைக்கு ஒரு சந்திப்பை மேற்கொள்ளுங்கள், நாங்கள் உங்களை முன்கூட்டியே தொடர்புகொள்வோம்',
+  'thinkingCoins.school.consultTitle':
+    'ஆலோசனைக்கு ஒரு சந்திப்பை மேற்கொள்ளுங்கள், நாங்கள் உங்களை முன்கூட்டியே தொடர்புகொள்வோம்',
   'thinkingCoins.school.fieldName': 'உங்கள் பெயர்',
   'thinkingCoins.school.fieldPhone': 'தொடர்பு எண்',
   'thinkingCoins.school.fieldOrg': 'பள்ளி/நிறுவனத்தின் பெயர்',
   'thinkingCoins.school.fieldNote': 'துணை வழிமுறைகள் (விரும்பினால்)',
   'thinkingCoins.school.submit': 'விசாரணையை சமர்ப்பிக்கவும்',
-  'thinkingCoins.school.submitSuccess': 'சமர்ப்பிப்பு வெற்றிகரமாக உள்ளது, கூடிய விரைவில் உங்களைத் தொடர்புகொள்வோம்',
+  'thinkingCoins.school.submitSuccess':
+    'சமர்ப்பிப்பு வெற்றிகரமாக உள்ளது, கூடிய விரைவில் உங்களைத் தொடர்புகொள்வோம்',
   'thinkingCoins.school.submitFailed': 'சமர்ப்பிப்பு தோல்வியடைந்தது, பிறகு முயற்சிக்கவும்',
   'thinkingCoins.school.submitRateLimit': 'அடிக்கடி சமர்ப்பிக்கவும், பிறகு முயற்சிக்கவும்',
-  'thinkingCoins.school.submitNotConfigured': 'ஆலோசனை சேனல் இன்னும் உள்ளமைக்கப்படவில்லை, பிறகு முயற்சிக்கவும்.',
+  'thinkingCoins.school.submitNotConfigured':
+    'ஆலோசனை சேனல் இன்னும் உள்ளமைக்கப்படவில்லை, பிறகு முயற்சிக்கவும்.',
   'thinkingCoins.school.validationRequired': 'தேவையான அனைத்து புலங்களையும் நிரப்பவும்',
   'thinkingCoins.school.validationPhone': 'சரியான தொடர்பு எண்ணை உள்ளிடவும்',
-  'thinkingCoins.school.validationTooLong': 'உள்ளடக்கத்தின் ஒரு பகுதி மிக நீளமாக உள்ளது, அதைச் சுருக்கி மீண்டும் முயற்சிக்கவும்',
+  'thinkingCoins.school.validationTooLong':
+    'உள்ளடக்கத்தின் ஒரு பகுதி மிக நீளமாக உள்ளது, அதைச் சுருக்கி மீண்டும் முயற்சிக்கவும்',
   'thinkingCoins.school.validationInvalid': 'தவறான உள்ளடக்கம், சரிபார்த்து மீண்டும் முயற்சிக்கவும்',
   'thinkingCoins.tier.trial': 'சோதனை பதிப்பு',
   'thinkingCoins.tier.monthly': 'சூப்பர் உறுப்பினர்·ஒற்றை மாதம்',
@@ -63,7 +69,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'அழைப்பிதழ் வெகுமதிகள்',
   'thinkingCoins.reason.case_reward': 'வழக்கு வெகுமதி',
   'thinkingCoins.reason.subscription_grant': 'இலவசமாக குழுசேரவும்',
-  'thinkingCoins.dailyExpiresHint': 'உள்நுழைவு வெகுமதிகள் அதே நாளில் செல்லுபடியாகும் மற்றும் 24:00 மணிக்கு மீட்டமைக்கப்படும்',
+  'thinkingCoins.dailyExpiresHint':
+    'உள்நுழைவு வெகுமதிகள் அதே நாளில் செல்லுபடியாகும் மற்றும் 24:00 மணிக்கு மீட்டமைக்கப்படும்',
   'thinkingCoins.dailyBalanceRemaining': 'இன்றைய செக்-இன் மீதமுள்ளது {n}',
   'thinkingCoins.admin.tab': 'சிந்தனை நாணயம்',
   'thinkingCoins.admin.tasksTitle': 'பணி வெகுமதி',
@@ -75,7 +82,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'சேமிக்க',
   'thinkingCoins.admin.signupGrant': 'புதிய பயனர்களுக்கு இலவசம்',
   'thinkingCoins.admin.dailyEarnCap': 'தினசரி கையகப்படுத்தல் வரம்பு',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 என்றால் வரம்பு இல்லை; இயல்புநிலை 135 அனைத்து தினசரி பணிகளின் கூட்டுத்தொகைக்கு ஒத்திருக்கிறது',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 என்றால் வரம்பு இல்லை; இயல்புநிலை 135 அனைத்து தினசரி பணிகளின் கூட்டுத்தொகைக்கு ஒத்திருக்கிறது',
   'thinkingCoins.admin.costMindmate': 'MindMate ஒற்றை நுகர்வு',
   'thinkingCoins.admin.costDiagram': 'வரைபட உருவாக்க நுகர்வு',
   'thinkingCoins.admin.costCanvas': 'கேன்வாஸ் துணை நுகர்வு',
@@ -108,7 +116,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.priceSub': '¥49/மாதம்',
   'thinkingCoins.plan.priceSubNote': 'அசல் விலை ¥59/மாதம், மாதாந்திர சந்தா ¥10 சேமிக்கிறது',
   'thinkingCoins.plan.priceAnnual': '¥398/ஆண்டு',
-  'thinkingCoins.plan.priceAnnualNote': 'சுமார் ¥33.2/மாதம், மாதாந்திர கட்டணத்துடன் ஒப்பிடும்போது 44% சேமிக்கப்படுகிறது',
+  'thinkingCoins.plan.priceAnnualNote':
+    'சுமார் ¥33.2/மாதம், மாதாந்திர கட்டணத்துடன் ஒப்பிடும்போது 44% சேமிக்கப்படுகிறது',
   'thinkingCoins.plan.currentPlan': 'தற்போதைய திட்டம்',
   'thinkingCoins.plan.subscribeNow': 'இப்போது செயல்படுத்தவும்',
   'thinkingCoins.plan.popular': 'பிரபலமானது',

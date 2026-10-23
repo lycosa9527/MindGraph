@@ -314,6 +314,32 @@ MINDMATE_COLLAB_READ_CHECK = (
 # rev_0077 alters every table in that list, and this table does not exist yet then.
 MINDMATE_COLLAB_MEMBER_EXPR = "user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only()"
 MINDMATE_COLLAB_MEMBER_CHECK = MINDMATE_COLLAB_MEMBER_EXPR
+# Shelf files are created after rev_0077. The background-file migration applies these.
+_FILE_SESSION = (
+    "EXISTS (SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
+    "s.owner_user_id = rls_current_user_id() "
+    "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
+    "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
+    "OR rls_user_bound_to_org(s.owner_user_id, rls_current_org_id()) "
+    "OR rls_platform_admin_only() "
+    "OR rls_is_system_mode()"
+    "))"
+)
+_FILE_MEMBER = (
+    "NOT EXISTS (SELECT 1 FROM mindmate_collab_members m WHERE m.session_id = session_id) "
+    "OR EXISTS (SELECT 1 FROM mindmate_collab_members m "
+    "WHERE m.session_id = session_id AND m.user_id = rls_current_user_id()) "
+    "OR EXISTS (SELECT 1 FROM mindmate_collab_sessions s "
+    "WHERE s.id = session_id AND s.owner_user_id = rls_current_user_id())"
+)
+MINDMATE_COLLAB_FILE_EXPR = (
+    "rls_is_system_mode() OR rls_platform_admin_only() OR (" + _FILE_SESSION + " AND (" + _FILE_MEMBER + "))"
+)
+MINDMATE_COLLAB_FILE_CHECK = (
+    "("
+    + MINDMATE_COLLAB_FILE_EXPR
+    + ") AND (uploader_user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only())"
+)
 MINDMATE_COLLAB_TABLES = [
     ("mindmate_collab_sessions", MINDMATE_COLLAB_SESSION_EXPR, MINDMATE_COLLAB_SESSION_CHECK),
     ("mindmate_collab_messages", MINDMATE_COLLAB_MESSAGE_EXPR, MINDMATE_COLLAB_MESSAGE_EXPR),

@@ -24,17 +24,21 @@ export default {
   'zhihui.promptPlaceholder.image': 'Nhập nguồn cảm hứng của bạn…',
   'zhihui.promptPlaceholder.video': 'Miêu tả khung cảnh, cách quay và nhịp điệu...',
   'zhihui.promptPlaceholder.diagram': 'Chọn sơ đồ tư duy và nhấn Tạo',
-  'zhihui.composerHint.image': 'Sử dụng văn bản để mô tả hình ảnh và tạo các hình minh họa giảng dạy cũng như tài liệu trực quan chỉ bằng một cú nhấp chuột',
+  'zhihui.composerHint.image':
+    'Sử dụng văn bản để mô tả hình ảnh và tạo các hình minh họa giảng dạy cũng như tài liệu trực quan chỉ bằng một cú nhấp chuột',
   'zhihui.composerHint.video': 'Khả năng của Wensheng Video và Tusheng Video sắp được truy cập',
-  'zhihui.composerHint.diagram': 'Chọn bản đồ tư duy để tạo sơ đồ chương trình học theo quan điểm của người học',
+  'zhihui.composerHint.diagram':
+    'Chọn bản đồ tư duy để tạo sơ đồ chương trình học theo quan điểm của người học',
   'zhihui.diagram.selectMindmap': 'Chọn sơ đồ tư duy',
   'zhihui.diagram.selectMindmapHint': 'Vui lòng chọn sơ đồ tư duy ở trên',
   'zhihui.diagram.selectMindmapFirst': 'Vui lòng chọn sơ đồ tư duy trước',
-  'zhihui.diagram.emptyLibrary': 'Chưa có sơ đồ tư duy, các bạn hãy lưu vào thư viện sơ đồ trước nhé.',
+  'zhihui.diagram.emptyLibrary':
+    'Chưa có sơ đồ tư duy, các bạn hãy lưu vào thư viện sơ đồ trước nhé.',
   'zhihui.diagram.loadFailed': 'Không tải được bản đồ tư duy',
   'zhihui.diagram.emptyDeck': 'Sau khi chọn sơ đồ tư duy xong nhấn Tạo',
   'zhihui.diagram.waitingSlides': 'Chương trình học đang được tạo, vui lòng đợi...',
-  'zhihui.diagram.jobStarted': 'Quá trình tạo chương trình học đã bắt đầu. Bạn có thể kiểm tra tiến trình trong lịch sử.',
+  'zhihui.diagram.jobStarted':
+    'Quá trình tạo chương trình học đã bắt đầu. Bạn có thể kiểm tra tiến trình trong lịch sử.',
   'zhihui.diagram.phaseQueued': 'Nhiệm vụ được xếp hàng đợi...',
   'zhihui.diagram.phasePlanning': 'Thiết kế giáo án...',
   'zhihui.diagram.phasePlanningBranches': 'Lập kế hoạch các chủ đề khác nhau...',
@@ -49,7 +53,8 @@ export default {
   'zhihui.diagram.toastPlanning': 'Thiết kế giáo án...',
   'zhihui.diagram.toastGenerating': 'Chương trình học đang được rút ra, có thể mất vài phút',
   'zhihui.diagram.toastComplete': 'Đồ dùng học tập đã sẵn sàng',
-  'zhihui.diagram.toastPartial': 'Chương trình học đã được hoàn thiện một phần và có thể tiếp tục được tạo.',
+  'zhihui.diagram.toastPartial':
+    'Chương trình học đã được hoàn thiện một phần và có thể tiếp tục được tạo.',
   'zhihui.diagram.toastCancelled': 'Việc tạo chương trình học đã bị hủy',
   'zhihui.diagram.batchProgress': 'Lô {current}/{total}',
   'zhihui.diagram.slideProgress': 'Đã tạo {current}/{total}',
@@ -58,7 +63,8 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'Trình chiếu không tải được',
   'zhihui.diagram.retryImage': 'Thử lại',
   'zhihui.diagram.teacherScript': 'Lời kể của giáo viên',
-  'zhihui.diagram.teacherScriptHint': 'Giải thích trong lớp phù hợp với trọng tâm của hình minh họa và bản đồ trên trang này',
+  'zhihui.diagram.teacherScriptHint':
+    'Giải thích trong lớp phù hợp với trọng tâm của hình minh họa và bản đồ trên trang này',
   'zhihui.diagram.ttsPlay': 'Bấm vào chú mèo con để đọc to lời tường thuật của trang này',
   'zhihui.diagram.ttsStop': 'ngừng đọc',
   'zhihui.diagram.ttsMute': 'tắt tiếng tường thuật',
@@ -74,7 +80,8 @@ export default {
   'zhihui.sizeButton': 'Kích thước hình ảnh',
   'zhihui.sizePanelTitle': 'Kích thước hình ảnh',
   'zhihui.sizeOptional': 'Không bắt buộc',
-  'zhihui.sizeHint': 'Định dạng là chiều rộng * chiều cao. Nếu không được chỉ định, mô hình sẽ tự động đề xuất độ phân giải dựa trên từ gợi ý.',
+  'zhihui.sizeHint':
+    'Định dạng là chiều rộng * chiều cao. Nếu không được chỉ định, mô hình sẽ tự động đề xuất độ phân giải dựa trên từ gợi ý.',
   'zhihui.sizeLimits': 'Vùng pixel 512×512–2048×2048; tỷ lệ khung hình 1:8–8:1',
   'zhihui.size.auto': 'thông minh',
   'zhihui.size.autoHint': 'tự động',
@@ -102,7 +109,8 @@ export default {
   'zhihui.empty': 'Chưa có hình ảnh nào, vui lòng thử tạo nó ở trên.',
   'zhihui.loadFailed': 'Không tải được lịch sử',
   'zhihui.delete': 'xóa bỏ',
-  'zhihui.deleteConfirm': 'Bạn có chắc chắn muốn xóa hình ảnh này? Không thể hoàn tác hành động này.',
+  'zhihui.deleteConfirm':
+    'Bạn có chắc chắn muốn xóa hình ảnh này? Không thể hoàn tác hành động này.',
   'zhihui.deleteTitle': 'Xóa ảnh',
   'zhihui.deleted': 'Đã xóa',
   'zhihui.deleteFailed': 'Xóa không thành công',

@@ -26,7 +26,8 @@ export default {
   'zhihui.promptPlaceholder.diagram': 'මනස සිතියමක් තෝරන්න, ඉන්පසු උත්පාදනය කරන්න',
   'zhihui.composerHint.image': 'දර්ශන සහ නිදර්ශන ඉගැන්වීමට ප්‍රේරකයක් හරවන්න',
   'zhihui.composerHint.video': 'පෙළ-වීඩියෝ සහ රූපය-වීඩියෝ ඊළඟට පැමිණේ',
-  'zhihui.composerHint.diagram': 'ඉගෙන ගන්නන්ට මුහුණ දෙන විනිවිදක තට්ටුවක් තැනීමට මනස සිතියමක් තෝරන්න',
+  'zhihui.composerHint.diagram':
+    'ඉගෙන ගන්නන්ට මුහුණ දෙන විනිවිදක තට්ටුවක් තැනීමට මනස සිතියමක් තෝරන්න',
   'zhihui.diagram.selectMindmap': 'මනස සිතියම තෝරන්න',
   'zhihui.diagram.selectMindmapHint': 'ආරම්භ කිරීමට ඉහත මනස සිතියමක් තෝරන්න',
   'zhihui.diagram.selectMindmapFirst': 'මුලින්ම මනස සිතියමක් තෝරන්න',

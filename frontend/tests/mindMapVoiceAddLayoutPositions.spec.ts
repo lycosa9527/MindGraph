@@ -3,16 +3,15 @@
  * Uses the real Pinia store and v2 column engine (no Vue Flow).
  * Optional PG suite reads tmp/pg_voice_add_layout/*.json (gitignored).
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
-
 import { createPinia, setActivePinia } from 'pinia'
 
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { applyVoiceDiagramAddNodes } from '@/composables/editor/diagramVoiceMutations'
-import { computeMindMapDisplayLayout } from '@/stores/diagram/mindMapDisplayLayout'
 import { useDiagramStore } from '@/stores/diagram'
+import { computeMindMapDisplayLayout } from '@/stores/diagram/mindMapDisplayLayout'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 import type { DiagramNode } from '@/types'

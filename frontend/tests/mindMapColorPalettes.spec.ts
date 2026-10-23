@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  getMindmapBranchColor,
-  MINDMAP_BRANCH_COLORS,
-  V2_MINDMAP_BRANCH_COLORS,
-} from '@/config/mindmapColors'
 import { LEGACY_MINDMAP_BRANCH_COLORS } from '@/config/mindMapLegacyColors'
 import { MIND_MAP_THEMES } from '@/config/mindMapThemes'
+import {
+  MINDMAP_BRANCH_COLORS,
+  V2_MINDMAP_BRANCH_COLORS,
+  getMindmapBranchColor,
+} from '@/config/mindmapColors'
 
 describe('mind map color palettes', () => {
   it('defines curated themes with distinct topic accent colors', () => {
@@ -20,9 +20,7 @@ describe('mind map color palettes', () => {
     for (const theme of MIND_MAP_THEMES) {
       const note = theme.sourceNote.toLowerCase()
       const hasUrl =
-        note.includes('http') ||
-        note.includes('nordtheme') ||
-        note.includes('radix-ui.com/colors')
+        note.includes('http') || note.includes('nordtheme') || note.includes('radix-ui.com/colors')
       expect(hasUrl).toBe(true)
     }
   })

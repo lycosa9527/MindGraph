@@ -1,22 +1,29 @@
 import { createPinia, setActivePinia } from 'pinia'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { handleLearningSheetPickNodeClick, learningSheetPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { tryCollabGuardedUndo } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
-import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
+import {
+  handleLearningSheetPickNodeClick,
+  learningSheetPickActive,
+} from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore } from '@/stores/diagram'
+import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
 
 describe('learning sheet undo/redo', () => {
   beforeEach(() => {
-    vi.stubGlobal('matchMedia', vi.fn(() => ({
-      matches: false,
-      media: '',
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })))
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        media: '',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+    )
     setActivePinia(createPinia())
   })
 

@@ -156,7 +156,8 @@ export default {
   'admin.teachingDesignTemplate.invalidType': 'Please upload a Word template (.docx)',
   'admin.teachingDesignTemplate.loadFail': 'Could not load the template list',
   'admin.teachingDesignTemplate.schoolLabel': 'Lesson-design template',
-  'admin.teachingDesignTemplate.schoolHint': 'Teachers at this school use the selected template when exporting Word',
+  'admin.teachingDesignTemplate.schoolHint':
+    'Teachers at this school use the selected template when exporting Word',
   'admin.customLlm.sectionTitle': 'MindGraph custom AI server',
   'admin.customLlm.hint':
     'Paste the school’s own URL, key, and model name. The model name appears on the canvas. The default stays on DashScope/Volcengine.',
@@ -189,7 +190,8 @@ export default {
   'admin.teachingDesignTemplate.replaceFile': 'Replace Word file',
   'admin.teachingDesignTemplate.replaceOk': 'Word file updated',
   'admin.teachingDesignTemplate.delete': 'Delete template',
-  'admin.teachingDesignTemplate.deleteConfirm': 'Schools pinned to this template will fall back to the system default. Delete it?',
+  'admin.teachingDesignTemplate.deleteConfirm':
+    'Schools pinned to this template will fall back to the system default. Delete it?',
   'admin.teachingDesignTemplate.deleteOk': 'Template deleted',
   'admin.teachingDesignTemplate.deleteFail': 'Could not delete the template',
   'admin.teachingDesignTemplate.saveOk': 'Template saved',
@@ -933,7 +935,8 @@ export default {
   'admin.schoolActivity.cumulativeRegistered': 'Cumulative registered users',
   'admin.schoolActivity.yearNewUsers': 'New users this year',
   'admin.schoolActivity.yearChurn': 'Deactivated / cancelled users this year',
-  'admin.schoolActivity.churnEmpty': 'No historical deactivation or cancellation data (users are hard-deleted).',
+  'admin.schoolActivity.churnEmpty':
+    'No historical deactivation or cancellation data (users are hard-deleted).',
   'admin.schoolActivity.enrolledToday': 'Enrolled users as of today',
   'admin.schoolActivity.monthlyActive': 'Monthly active users',
   'admin.schoolActivity.quarterlyActive': 'Quarterly active users',
@@ -982,7 +985,8 @@ export default {
   'admin.schoolFeatureUsage.bottleneckPassSlow':
     'Lower pass-rate processes: {lowest}. Constrained capacity: {tense}. Slower LLM handling: {slow}.',
   'admin.schoolFeatureUsage.top5Empty': 'No module had visitors this year.',
-  'admin.schoolFeatureUsage.usageRateHint': 'Coverage = annual unique visitors / current enrolled members.',
+  'admin.schoolFeatureUsage.usageRateHint':
+    'Coverage = annual unique visitors / current enrolled members.',
   'admin.schoolFeatureUsage.top5Title': '1. Core feature usage-rate ranking (TOP 5)',
   'admin.schoolFeatureUsage.highTitle': '2. High-frequency features',
   'admin.schoolFeatureUsage.lowIdleTitle': '3. Low-frequency and long-idle features',
@@ -1474,7 +1478,8 @@ export default {
   'admin.database.pgMergeComplete':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.userDropdown.tab': 'User dropdown list',
-  'admin.userDropdown.intro': 'Manage functions in the user avatar menu. Add, rename, or delete each one, link it to a course you already built, and preview the walkthrough.',
+  'admin.userDropdown.intro':
+    'Manage functions in the user avatar menu. Add, rename, or delete each one, link it to a course you already built, and preview the walkthrough.',
   'admin.userDropdown.add': 'Add function',
   'admin.userDropdown.addOk': 'Added',
   'admin.userDropdown.colName': 'Name',

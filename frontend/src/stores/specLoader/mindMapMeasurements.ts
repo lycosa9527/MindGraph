@@ -3,12 +3,12 @@
  */
 import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import {
+  MINDMAP_UNDERLINE_STROKE_WIDTH,
   MIND_MAP_GEOMETRY,
+  computeMindMapUnderlineBoxMetrics,
   mindMapBranchFontSize,
   mindMapNodeHorizontalExtra,
   mindMapUnderlineVerticalExtra,
-  MINDMAP_UNDERLINE_STROKE_WIDTH,
-  computeMindMapUnderlineBoxMetrics,
 } from '@/config/mindMapGeometry'
 import { MIND_MAP_LEGACY_GEOMETRY } from '@/config/mindMapLegacyGeometry'
 import type { MindMapCanvasMode } from '@/stores/ui'
@@ -119,10 +119,7 @@ export function estimateNodeWidthForCanvasMode(
  * Text block height inside an underline node — matches BranchNode display:
  * `.diagram-node-md` (line-height 1.35) + markdown pipeline when available.
  */
-export function measureMindMapUnderlineTextBlockHeight(
-  text: string,
-  nodeId?: string
-): number {
+export function measureMindMapUnderlineTextBlockHeight(text: string, nodeId?: string): number {
   const branchFontSize = mindMapBranchFontSize(nodeId)
   if (typeof document === 'undefined') {
     return branchFontSize * 1.35
@@ -200,10 +197,7 @@ export function measureBranchNodeHeightForCanvasMode(
       paddingX: 0,
       paddingY: 0,
     })
-    return Math.max(
-      BRANCH_NODE_HEIGHT,
-      textHeight + legacy.branchPaddingY + legacy.branchBorderY
-    )
+    return Math.max(BRANCH_NODE_HEIGHT, textHeight + legacy.branchPaddingY + legacy.branchBorderY)
   }
 
   if (!text) return BRANCH_NODE_HEIGHT

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DirectMessageItem, DMConversation } from '@/stores/workshopChat'
+import type { DMConversation, DirectMessageItem } from '@/stores/workshopChat'
 import { workshopDmRouteQuery } from '@/utils/workshopChatNavigate'
 import { isWorkshopChatPath } from '@/utils/workshopChatRoute'
 import {
@@ -12,7 +12,9 @@ import {
   resolveDmPersonName,
 } from '@/utils/workshopDmInbox'
 
-function dm(partial: Partial<DirectMessageItem> & Pick<DirectMessageItem, 'id'>): DirectMessageItem {
+function dm(
+  partial: Partial<DirectMessageItem> & Pick<DirectMessageItem, 'id'>
+): DirectMessageItem {
   return {
     sender_id: 9,
     sender_name: '林老师',

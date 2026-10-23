@@ -7,10 +7,10 @@ import { mindMapTextCenterAnchorY } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode, MindMapSummaryLineStyle, NodeStyle } from '@/types'
 import { parseCubicBezierPath, pointOnCubicBezierPath } from '@/utils/bezierSplit'
 import {
+  type MindMapSide,
   isMindMapAssociationConnection,
   isMindMapTopicId,
   mindMapNodeSide,
-  type MindMapSide,
 } from '@/utils/mindMapLocation'
 import {
   MINDMAP_SUMMARY_DEFAULT_STROKE_WIDTH,
@@ -57,7 +57,8 @@ type NodeBox = {
 
 type SideLookup = {
   nodes?: readonly { id?: string; type?: string; data?: Record<string, unknown> }[] | null
-  connections?: readonly Pick<Connection, 'source' | 'target' | 'sourceHandle' | 'edgeType'>[] | null
+  connections?:
+    readonly Pick<Connection, 'source' | 'target' | 'sourceHandle' | 'edgeType'>[] | null
 }
 
 function nodeCenterX(node: NodeBox): number {
@@ -250,8 +251,7 @@ export function mindMapAssociationCurvePath(
 
 function associationNodeStyle(node: NodeBox): NodeStyle | undefined {
   const fromData = node.data?.style
-  const dataStyle =
-    fromData && typeof fromData === 'object' ? (fromData as NodeStyle) : undefined
+  const dataStyle = fromData && typeof fromData === 'object' ? (fromData as NodeStyle) : undefined
   return { ...dataStyle, ...node.style }
 }
 
@@ -318,9 +318,7 @@ export function mindMapAssociationCurveFromEnds(
   )
 }
 
-export function associationLineStyleFromDash(
-  dash: string | undefined
-): AssociationLineStyle {
+export function associationLineStyleFromDash(dash: string | undefined): AssociationLineStyle {
   if (!dash || dash === 'none') return 'solid'
   const first = Number.parseFloat(dash)
   if (Number.isFinite(first) && first <= 2) return 'dotted'
@@ -349,10 +347,7 @@ export function clampAssociationStrokeWidth(width: number): number {
   )
 }
 
-export function associationArrowheadFromEnds(
-  start: boolean,
-  end: boolean
-): AssociationArrowhead {
+export function associationArrowheadFromEnds(start: boolean, end: boolean): AssociationArrowhead {
   if (start && end) return 'both'
   if (start) return 'source'
   if (end) return 'target'
@@ -374,8 +369,7 @@ export function applyAssociationChromePatch(
   patch: AssociationChromePatch
 ): Connection {
   const width = associationStrokeWidth(patch.strokeWidth ?? conn.style?.strokeWidth)
-  const lineStyle =
-    patch.lineStyle ?? associationLineStyleFromDash(conn.style?.strokeDasharray)
+  const lineStyle = patch.lineStyle ?? associationLineStyleFromDash(conn.style?.strokeDasharray)
   const strokeColor = associationStrokeColor(patch.strokeColor ?? conn.style?.strokeColor)
   const dash = associationStrokeDasharray(lineStyle, width)
   conn.style = {

@@ -1,16 +1,14 @@
 /**
  * SSE consumer for POST /api/generate_graph/stream (auto-complete phase colors).
  */
-import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
 import { eventBus } from '@/composables/core/useEventBus'
 
 export type GenerateGraphStreamPhase =
-  | 'accepted'
-  | 'detecting'
-  | 'requirements'
-  | 'progress'
-  | 'waiting'
-  | 'streaming'
+  'accepted' | 'detecting' | 'requirements' | 'progress' | 'waiting' | 'streaming'
 
 export interface GenerateGraphCompletePayload {
   success?: boolean
@@ -110,8 +108,7 @@ export async function consumeGenerateGraphStream(
           if (event === 'progress') {
             callbacks.onProgress?.({
               topic: typeof data.topic === 'string' ? data.topic : undefined,
-              diagram_type:
-                typeof data.diagram_type === 'string' ? data.diagram_type : undefined,
+              diagram_type: typeof data.diagram_type === 'string' ? data.diagram_type : undefined,
             })
           }
           callbacks.onPhase?.(event)
@@ -120,10 +117,8 @@ export async function consumeGenerateGraphStream(
           applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
           callbacks.onComplete?.(completePayload)
         } else if (event === 'error') {
-          const message =
-            typeof data.message === 'string' ? data.message : 'Request failed'
-          const errorType =
-            typeof data.error_type === 'string' ? data.error_type : undefined
+          const message = typeof data.message === 'string' ? data.message : 'Request failed'
+          const errorType = typeof data.error_type === 'string' ? data.error_type : undefined
           if (errorType === 'thinking_coin_insufficient') {
             eventBus.emit('thinking_coins:insufficient', {})
           }

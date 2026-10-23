@@ -89,7 +89,8 @@ export default {
   'training.builder.empty': '还没有课程，先新建一课。',
   'training.builder.info': '课程信息',
   'training.builder.menuLabel': '用户菜单',
-  'training.builder.menuLabelHint': '填写后会出现在用户头像菜单里，点击就开始这一课。留空则不显示。',
+  'training.builder.menuLabelHint':
+    '填写后会出现在用户头像菜单里，点击就开始这一课。留空则不显示。',
   'training.builder.menuLabelPlaceholder': '例如：十月更新介绍',
   'training.builder.menuLabelTooLong': '菜单名称最多 40 个字。',
   'training.builder.menuLabelLimit': '用户菜单已满，先删掉一项再添加。',
@@ -98,19 +99,26 @@ export default {
   'training.october.title': '十月更新',
   'training.october.lead': '从八月到现在，画布、账户、学习空间和校本培训的变化。',
   'training.october.canvas': '画布与思维图',
-  'training.october.canvasBody': '唯一画布|八种思维图和概念图共用同一套标签页。\n节点形状|圆角、矩形、椭圆或下划线，配色跟随彩虹主题，实色主题铺满整张图。\n双语|生成写出主语言，并加一行较小的第二语言。\n双气泡|至少保留一对相同点和不同点。\n继续添加|按 Enter，顺着当前选中的节点添加下一级。\n大纲与手势|层级大纲和手势说明在这些图上也能打开。',
+  'training.october.canvasBody':
+    '唯一画布|八种思维图和概念图共用同一套标签页。\n节点形状|圆角、矩形、椭圆或下划线，配色跟随彩虹主题，实色主题铺满整张图。\n双语|生成写出主语言，并加一行较小的第二语言。\n双气泡|至少保留一对相同点和不同点。\n继续添加|按 Enter，顺着当前选中的节点添加下一级。\n大纲与手势|层级大纲和手势说明在这些图上也能打开。',
   'training.october.explain': '讲解与挖空',
-  'training.october.explainBody': '按图讲解|一圈、一列、对比的一侧、一个因果，或一对桥。\n节点怎么讲|说出它是联想、属性、类别、步骤还是桥。\n挖空|单击留空，双击改为编辑。',
+  'training.october.explainBody':
+    '按图讲解|一圈、一列、对比的一侧、一个因果，或一对桥。\n节点怎么讲|说出它是联想、属性、类别、步骤还是桥。\n挖空|单击留空，双击改为编辑。',
   'training.october.account': '账户',
-  'training.october.accountBody': '一个设置窗口|账户、安全、语言和插件放在一起，语言马上生效。\n头像|裁成圆形，存在云端。\n保持登录|同一个浏览器在登录还有效时不用再登一次。\n被挤下线|那台设备不能靠刷新自己回来。\n学校名称|显示在侧栏名字下面。',
+  'training.october.accountBody':
+    '一个设置窗口|账户、安全、语言和插件放在一起，语言马上生效。\n头像|裁成圆形，存在云端。\n保持登录|同一个浏览器在登录还有效时不用再登一次。\n被挤下线|那台设备不能靠刷新自己回来。\n学校名称|显示在侧栏名字下面。',
   'training.october.learning': '学习空间',
-  'training.october.learningBody': '作业图片|存在云端。打开卡片后可以选择、平移和缩放。\n初始密码|只在学生还没改过时显示，而且只给班主任或超级管理员。改完就删掉明文。\n延长截止|教师可以只延长某一个学生的截止时间。\n补图|缺图的卡片可以补上一张。',
+  'training.october.learningBody':
+    '作业图片|存在云端。打开卡片后可以选择、平移和缩放。\n初始密码|只在学生还没改过时显示，而且只给班主任或超级管理员。改完就删掉明文。\n延长截止|教师可以只延长某一个学生的截止时间。\n补图|缺图的卡片可以补上一张。',
   'training.october.course': '校本培训',
-  'training.october.courseBody': '一页一页|旁白、音乐、视频、锁定的菜单或弹窗，以及吉祥物。\n挂到用户菜单|填上课程名字，点击就开始这一课。\n拉到同一页|上课时可以把老师们拉到正在看的这一页。',
+  'training.october.courseBody':
+    '一页一页|旁白、音乐、视频、锁定的菜单或弹窗，以及吉祥物。\n挂到用户菜单|填上课程名字，点击就开始这一课。\n拉到同一页|上课时可以把老师们拉到正在看的这一页。',
   'training.october.talk': 'MindMate 与研习社',
-  'training.october.talkBody': '研讨不断线|保持连接，直到主持人结束。\n整理会话|可以置顶、重命名、删除，也能看到谁读过你的发言。\n存进图库|研讨里的图可以存进图库再打开。\n私信署名|研习社的私信会写出对方的名字。',
+  'training.october.talkBody':
+    '研讨不断线|保持连接，直到主持人结束。\n整理会话|可以置顶、重命名、删除，也能看到谁读过你的发言。\n存进图库|研讨里的图可以存进图库再打开。\n私信署名|研习社的私信会写出对方的名字。',
   'training.october.school': '学校版本',
-  'training.october.schoolBody': '每个版本都有|试用、基础、标准和专业都包含在线协作、演示、浏览器插件和 API。\n版本差别|席位数量，以及能存多少张图。',
+  'training.october.schoolBody':
+    '每个版本都有|试用、基础、标准和专业都包含在线协作、演示、浏览器插件和 API。\n版本差别|席位数量，以及能存多少张图。',
   'training.builder.groupFollow': '跟随',
   'training.builder.groupCanvas': '画布',
   'training.builder.groupSteps': '步骤',
@@ -122,11 +130,14 @@ export default {
   'training.builder.pageCanvas': '画布',
   'training.builder.pullUsers': '拉全体教师到此页',
   'training.builder.mandatory': '强制',
-  'training.builder.mandatoryHint': '未完成的用户必须先走完这一课。完成后记在账号上，再次进入不再出现。每一课单独记录。',
-  'training.builder.mandatoryConfirm': '保存后立即生效。所有还没完成这一课的登录用户都会被带去走完，完成后不再出现。',
+  'training.builder.mandatoryHint':
+    '未完成的用户必须先走完这一课。完成后记在账号上，再次进入不再出现。每一课单独记录。',
+  'training.builder.mandatoryConfirm':
+    '保存后立即生效。所有还没完成这一课的登录用户都会被带去走完，完成后不再出现。',
   'training.builder.alwaysPlay': '演示',
   'training.builder.alwaysPlayHint': '每次进入都会再走一遍，完成后也不会停。刷新页面可以再试。',
-  'training.builder.alwaysPlayConfirm': '保存后立即生效。所有登录用户每次进入都会再走这一课，完成后也不会停。关掉之后，已经完成的人不再出现。',
+  'training.builder.alwaysPlayConfirm':
+    '保存后立即生效。所有登录用户每次进入都会再走这一课，完成后也不会停。关掉之后，已经完成的人不再出现。',
   'training.builder.vodLibrary': '在线视频库',
   'training.builder.vodFolder': '文件夹',
   'training.builder.vodVideo': '视频',

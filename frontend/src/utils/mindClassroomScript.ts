@@ -171,7 +171,12 @@ function isMindMapDiagram(diagramType: string | null | undefined): boolean {
 function isLectureAnchor(node: DiagramNode): boolean {
   if (node.type === 'boundary') return false
   if (node.type === 'label') return Boolean(node.text?.trim())
-  if (node.type === 'center' || node.type === 'topic' || node.type === 'whole' || node.type === 'event') {
+  if (
+    node.type === 'center' ||
+    node.type === 'topic' ||
+    node.type === 'whole' ||
+    node.type === 'event'
+  ) {
     return true
   }
   return (
@@ -187,7 +192,9 @@ function isLectureAnchor(node: DiagramNode): boolean {
 
 function contentNodeIds(nodes: readonly DiagramNode[]): string[] {
   return nodes
-    .filter((node) => node.type !== 'boundary' && (Boolean(node.text?.trim()) || isLectureAnchor(node)))
+    .filter(
+      (node) => node.type !== 'boundary' && (Boolean(node.text?.trim()) || isLectureAnchor(node))
+    )
     .map((node) => node.id)
 }
 
@@ -196,7 +203,9 @@ function bridgeMateId(node: DiagramNode, nodes: readonly DiagramNode[]): string 
   const side = node.data?.position
   if (typeof index !== 'number' || (side !== 'left' && side !== 'right')) return undefined
   const other = side === 'left' ? 'right' : 'left'
-  return nodes.find((candidate) => candidate.data?.pairIndex === index && candidate.data?.position === other)?.id
+  return nodes.find(
+    (candidate) => candidate.data?.pairIndex === index && candidate.data?.position === other
+  )?.id
 }
 
 function neighborIds(focusIds: readonly string[], connections: readonly Connection[]): string[] {
@@ -215,10 +224,20 @@ function diagramSlug(diagramType: string | null | undefined): string {
 
 function isDiagramRoot(node: DiagramNode | undefined): boolean {
   if (!node) return false
-  if (node.type === 'center' || node.type === 'topic' || node.type === 'whole' || node.type === 'event') {
+  if (
+    node.type === 'center' ||
+    node.type === 'topic' ||
+    node.type === 'whole' ||
+    node.type === 'event'
+  ) {
     return true
   }
-  return node.id === 'topic' || node.id === 'tree-topic' || node.id === 'brace-whole' || node.id === 'flow-topic'
+  return (
+    node.id === 'topic' ||
+    node.id === 'tree-topic' ||
+    node.id === 'brace-whole' ||
+    node.id === 'flow-topic'
+  )
 }
 
 function lectureSeedId(
@@ -303,10 +322,7 @@ function columnFrameIds(nodes: readonly DiagramNode[], seed: string): string[] {
   const right = role === 'rightDiff' || seed === 'right-topic'
   const topicId = right ? 'right-topic' : 'left-topic'
   const diffRole = right ? 'rightDiff' : 'leftDiff'
-  const ids = [
-    topicId,
-    ...nodes.filter((node) => roleOf(node) === diffRole).map((node) => node.id),
-  ]
+  const ids = [topicId, ...nodes.filter((node) => roleOf(node) === diffRole).map((node) => node.id)]
   return uniqueNodeIds(ids.filter((id) => nodes.some((node) => node.id === id)))
 }
 

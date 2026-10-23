@@ -8,9 +8,7 @@ export function setPresentationDiagramEditLocked(locked: boolean): void {
 }
 
 /** True when presentation / slideshow edit lock is active. */
-export const diagramPresentationReadOnlyRef = computed(
-  () => presentationDiagramEditLockedRef.value
-)
+export const diagramPresentationReadOnlyRef = computed(() => presentationDiagramEditLockedRef.value)
 
 /** Teleport target for presentation overlays/tooltips (must stay inside fullscreen root). */
 export const presentationFullscreenRootRef = ref<HTMLElement | null>(null)

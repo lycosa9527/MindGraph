@@ -7,8 +7,7 @@ const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'im
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp'])
 
 export type ConversationImageCaptureResult =
-  | { ok: true; file: File }
-  | { ok: false; reason: 'no_file' | 'invalid_type' | 'too_large' }
+  { ok: true; file: File } | { ok: false; reason: 'no_file' | 'invalid_type' | 'too_large' }
 
 function extensionOf(fileName: string): string {
   const i = fileName.lastIndexOf('.')

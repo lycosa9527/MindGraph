@@ -16,10 +16,7 @@ export function isMindMapBoxShape(shape: NodeShape): boolean {
   return shape !== 'underline'
 }
 
-function pairRegime(
-  upper: NodeShape,
-  lower: NodeShape
-): 'underline' | 'mixed' | 'box' {
+function pairRegime(upper: NodeShape, lower: NodeShape): 'underline' | 'mixed' | 'box' {
   const upperLine = !isMindMapBoxShape(upper)
   const lowerLine = !isMindMapBoxShape(lower)
   if (upperLine && lowerLine) return 'underline'
@@ -28,10 +25,7 @@ function pairRegime(
 }
 
 /** Edge-to-edge gap between consecutive siblings under the same parent. */
-export function mindMapAdaptiveSiblingGap(
-  upperShape: NodeShape,
-  lowerShape: NodeShape
-): number {
+export function mindMapAdaptiveSiblingGap(upperShape: NodeShape, lowerShape: NodeShape): number {
   switch (pairRegime(upperShape, lowerShape)) {
     case 'underline':
       return MINDMAP_UNDERLINE_SIBLING_GAP
@@ -44,10 +38,7 @@ export function mindMapAdaptiveSiblingGap(
 }
 
 /** Edge-to-edge gap between adjacent L1 fans (or top-level packs). */
-export function mindMapAdaptiveBranchGap(
-  upperShape: NodeShape,
-  lowerShape: NodeShape
-): number {
+export function mindMapAdaptiveBranchGap(upperShape: NodeShape, lowerShape: NodeShape): number {
   switch (pairRegime(upperShape, lowerShape)) {
     case 'underline':
       return MINDMAP_UNDERLINE_BRANCH_GAP

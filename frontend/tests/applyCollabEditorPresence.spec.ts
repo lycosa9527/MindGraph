@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ActiveEditor } from '@/composables/workshop/useWorkshopTypes'
 import {
   applyActiveEditorPresence,
   consumeRecentlyClosedFlash,
   purgeActiveEditorsForUser,
   shouldFlashStructuralLock,
 } from '@/composables/workshop/applyCollabEditorPresence'
+import type { ActiveEditor } from '@/composables/workshop/useWorkshopTypes'
 
 function alice(): ActiveEditor {
   return { user_id: 1, username: 'Alice', color: '#f00', emoji: '1F' }

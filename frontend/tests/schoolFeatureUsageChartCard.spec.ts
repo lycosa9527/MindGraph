@@ -1,12 +1,13 @@
 import { createApp, h } from 'vue'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import AdminSwissModuleStatCard from '@/components/admin/swiss/AdminSwissModuleStatCard.vue'
 import SchoolFeatureUsageAccessSection from '@/components/school/SchoolFeatureUsageAccessSection.vue'
 import SchoolFeatureUsageProcessSection from '@/components/school/SchoolFeatureUsageProcessSection.vue'
+import type { SchoolFeatureUsageModule } from '@/composables/queries/adminSchoolFeatureUsageApi'
 import { fallbackCapabilitiesForRole } from '@/utils/adminCapabilities'
 import { formatBeijingSnapshotTime } from '@/utils/schoolActivityAsOf'
-import type { SchoolFeatureUsageModule } from '@/composables/queries/adminSchoolFeatureUsageApi'
 
 vi.mock('@/composables', () => ({
   useLanguage: () => ({

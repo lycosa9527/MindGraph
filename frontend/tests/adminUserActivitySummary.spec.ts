@@ -1,11 +1,10 @@
 /** Vitest — admin user activity summary formatting. */
-
 import { describe, expect, it } from 'vitest'
 
 import {
+  type ActivitySummaryLabels,
   activitySourceLabel,
   formatAdminUserActivitySummary,
-  type ActivitySummaryLabels,
 } from '@/utils/adminUserActivitySummary'
 
 const labels: ActivitySummaryLabels = {

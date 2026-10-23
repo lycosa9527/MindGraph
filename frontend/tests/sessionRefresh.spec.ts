@@ -16,21 +16,16 @@ describe('sessionRefresh stampede coordinator', () => {
   }
 
   it('coalesces concurrent refreshSessionAccessToken into one HTTP call', async () => {
-    let resolves = 0
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
-        resolves += 1
         await new Promise((r) => setTimeout(r, 20))
         return new Response(null, { status: 200 })
       })
     )
     const { refreshSessionAccessToken, getSessionRefreshEpoch } = await loadSessionRefresh()
     const epochBefore = getSessionRefreshEpoch()
-    const [a, b] = await Promise.all([
-      refreshSessionAccessToken(),
-      refreshSessionAccessToken(),
-    ])
+    const [a, b] = await Promise.all([refreshSessionAccessToken(), refreshSessionAccessToken()])
     expect(a).toBe(true)
     expect(b).toBe(true)
     expect(fetch).toHaveBeenCalledTimes(1)
@@ -62,10 +57,8 @@ describe('sessionRefresh stampede coordinator', () => {
       'fetch',
       vi.fn(async () => new Response(null, { status: 200 }))
     )
-    const {
-      ensureFreshSessionAfterAuthFailure,
-      getSessionRefreshEpoch,
-    } = await loadSessionRefresh()
+    const { ensureFreshSessionAfterAuthFailure, getSessionRefreshEpoch } =
+      await loadSessionRefresh()
     const epochAtStart = getSessionRefreshEpoch()
     const ok = await ensureFreshSessionAfterAuthFailure(epochAtStart)
     expect(ok).toBe(true)
@@ -78,10 +71,8 @@ describe('sessionRefresh stampede coordinator', () => {
       'fetch',
       vi.fn(async () => new Response(null, { status: 401 }))
     )
-    const {
-      ensureFreshSessionAfterAuthFailure,
-      getSessionRefreshEpoch,
-    } = await loadSessionRefresh()
+    const { ensureFreshSessionAfterAuthFailure, getSessionRefreshEpoch } =
+      await loadSessionRefresh()
     const hintStore = new Map<string, string>([['mg_auth_session', '1']])
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => hintStore.get(key) ?? null,

@@ -88,9 +88,19 @@ export async function showTsecCaptcha(
           }
           const ticket = (result.ticket || '').trim()
           const randstr = (result.randstr || '').trim()
-          if (result.ret !== 0 || !ticket || !randstr || result.errorCode || isDisasterTicket(ticket)) {
+          if (
+            result.ret !== 0 ||
+            !ticket ||
+            !randstr ||
+            result.errorCode ||
+            isDisasterTicket(ticket)
+          ) {
             finish(() =>
-              reject(new TsecCaptchaFailedError(tsecFrontendErrorReason(result.errorCode, result.errorMessage)))
+              reject(
+                new TsecCaptchaFailedError(
+                  tsecFrontendErrorReason(result.errorCode, result.errorMessage)
+                )
+              )
             )
             return
           }

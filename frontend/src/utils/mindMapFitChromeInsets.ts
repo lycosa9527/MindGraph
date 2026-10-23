@@ -52,9 +52,7 @@ function resolveFitTopPx(input: DiagramFitChromeInsetsInput): number {
 }
 
 function resolveFitBottomPx(input: DiagramFitChromeInsetsInput): number {
-  const base = input.ribbonChrome
-    ? FIT_PADDING.STANDARD_PX
-    : FIT_PADDING.BOTTOM_UI_HEIGHT_PX
+  const base = input.ribbonChrome ? FIT_PADDING.STANDARD_PX : FIT_PADDING.BOTTOM_UI_HEIGHT_PX
   if (!input.treeMapAltDims) {
     return base
   }

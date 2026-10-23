@@ -61,18 +61,12 @@ function rainbowFamilyForLine(line: string): (typeof MIND_MAP_RAINBOW_FAMILIES)[
 
 function parseHex(hex: string): [number, number, number] {
   const h = hex.replace('#', '')
-  return [
-    parseInt(h.slice(0, 2), 16),
-    parseInt(h.slice(2, 4), 16),
-    parseInt(h.slice(4, 6), 16),
-  ]
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
 }
 
 function toHex(r: number, g: number, b: number): string {
   const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)))
-  return `#${[clamp(r), clamp(g), clamp(b)]
-    .map((n) => n.toString(16).padStart(2, '0'))
-    .join('')}`
+  return `#${[clamp(r), clamp(g), clamp(b)].map((n) => n.toString(16).padStart(2, '0')).join('')}`
 }
 
 function mixHex(a: string, b: string, weight: number): string {
@@ -110,10 +104,7 @@ export function mindMapColorsFromVibrantAccent(accent: string): StylePresetColor
  * Rainbow branch node colors by depth.
  * L1: fill / text / line tokens. L2+: white fill + 3px left bar (line token).
  */
-export function mindMapRainbowNodeColors(
-  accent: string,
-  depth: number
-): RainbowBranchNodeColors {
+export function mindMapRainbowNodeColors(accent: string, depth: number): RainbowBranchNodeColors {
   const family = rainbowFamilyForLine(accent)
   if (family) {
     if (depth <= 1) {
@@ -242,15 +233,14 @@ export function mindMapLayeredBranchColorsForNode(
   node?: { data?: Record<string, unknown> } | null
 ): RainbowBranchNodeColors | null {
   if (isMindMapTopicId(nodeId)) return null
-  return mindMapLayeredBranchColorsFromAccent(
-    accent,
-    mindMapBranchDepth(nodeId, node, connections)
-  )
+  return mindMapLayeredBranchColorsFromAccent(accent, mindMapBranchDepth(nodeId, node, connections))
 }
 
 /** Flat branch palette (legacy helper — non-rainbow themes). */
 export function mindMapBranchColorsForL1Index(index: number): StylePresetColors {
-  return mindMapColorsFromVibrantAccent(MIND_MAP_THEME_ACCENTS[index % MIND_MAP_THEME_ACCENTS.length])
+  return mindMapColorsFromVibrantAccent(
+    MIND_MAP_THEME_ACCENTS[index % MIND_MAP_THEME_ACCENTS.length]
+  )
 }
 
 export function mindMapBranchColorsForNode(
@@ -279,10 +269,7 @@ export function syncRainbowMindMapConnectionColors(
 }
 
 /** Apply per-L1 rainbow families with depth-based fills; topic stays dark navy. */
-export function applyRainbowMindMapColors(
-  nodes: DiagramNode[],
-  connections: Connection[]
-): void {
+export function applyRainbowMindMapColors(nodes: DiagramNode[], connections: Connection[]): void {
   nodes.forEach((node) => {
     if (node.type === 'boundary') return
 

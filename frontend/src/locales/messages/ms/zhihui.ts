@@ -24,17 +24,21 @@ export default {
   'zhihui.promptPlaceholder.image': 'Masukkan inspirasi anda…',
   'zhihui.promptPlaceholder.video': 'Terangkan adegan, kerja kamera dan irama...',
   'zhihui.promptPlaceholder.diagram': 'Pilih peta minda dan klik Jana',
-  'zhihui.composerHint.image': 'Gunakan teks untuk menerangkan gambar dan hasilkan ilustrasi pengajaran dan bahan visual dengan satu klik',
+  'zhihui.composerHint.image':
+    'Gunakan teks untuk menerangkan gambar dan hasilkan ilustrasi pengajaran dan bahan visual dengan satu klik',
   'zhihui.composerHint.video': 'Keupayaan Video Wensheng dan Video Tusheng akan diakses',
-  'zhihui.composerHint.diagram': 'Pilih peta minda untuk menghasilkan gambar rajah perisian kursus daripada perspektif pelajar',
+  'zhihui.composerHint.diagram':
+    'Pilih peta minda untuk menghasilkan gambar rajah perisian kursus daripada perspektif pelajar',
   'zhihui.diagram.selectMindmap': 'Pilih peta minda',
   'zhihui.diagram.selectMindmapHint': 'Sila pilih peta minda di atas',
   'zhihui.diagram.selectMindmapFirst': 'Sila pilih peta minda dahulu',
-  'zhihui.diagram.emptyLibrary': 'Belum ada peta minda, sila simpan dalam perpustakaan rajah dahulu.',
+  'zhihui.diagram.emptyLibrary':
+    'Belum ada peta minda, sila simpan dalam perpustakaan rajah dahulu.',
   'zhihui.diagram.loadFailed': 'Gagal memuatkan peta minda',
   'zhihui.diagram.emptyDeck': 'Selepas memilih peta minda, klik Jana',
   'zhihui.diagram.waitingSlides': 'Perisian kursus sedang dijana, sila tunggu...',
-  'zhihui.diagram.jobStarted': 'Penjanaan perisian kursus telah bermula. Anda boleh menyemak kemajuan dalam sejarah.',
+  'zhihui.diagram.jobStarted':
+    'Penjanaan perisian kursus telah bermula. Anda boleh menyemak kemajuan dalam sejarah.',
   'zhihui.diagram.phaseQueued': 'Tugasan beratur...',
   'zhihui.diagram.phasePlanning': 'Merancang sukatan pelajaran...',
   'zhihui.diagram.phasePlanningBranches': 'Merancang pelbagai topik...',
@@ -47,7 +51,8 @@ export default {
   'zhihui.diagram.phaseComplete': 'Perisian kursus sudah sedia',
   'zhihui.diagram.phaseCancelled': 'Dibatalkan',
   'zhihui.diagram.toastPlanning': 'Merancang sukatan pelajaran...',
-  'zhihui.diagram.toastGenerating': 'Perisian kursus sedang dilukis, ia mungkin mengambil masa beberapa minit',
+  'zhihui.diagram.toastGenerating':
+    'Perisian kursus sedang dilukis, ia mungkin mengambil masa beberapa minit',
   'zhihui.diagram.toastComplete': 'Perisian kursus sudah sedia',
   'zhihui.diagram.toastPartial': 'Perisian kursus telah siap separa dan boleh terus dijana.',
   'zhihui.diagram.toastCancelled': 'Penjanaan perisian kursus dibatalkan',
@@ -58,8 +63,10 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'Tayangan slaid gagal dimuatkan',
   'zhihui.diagram.retryImage': 'Cuba lagi',
   'zhihui.diagram.teacherScript': 'Penceritaan guru',
-  'zhihui.diagram.teacherScriptHint': 'Penjelasan bilik darjah diselaraskan dengan fokus ilustrasi dan peta pada halaman ini',
-  'zhihui.diagram.ttsPlay': 'Klik pada anak kucing untuk membaca penceritaan halaman ini dengan kuat',
+  'zhihui.diagram.teacherScriptHint':
+    'Penjelasan bilik darjah diselaraskan dengan fokus ilustrasi dan peta pada halaman ini',
+  'zhihui.diagram.ttsPlay':
+    'Klik pada anak kucing untuk membaca penceritaan halaman ini dengan kuat',
   'zhihui.diagram.ttsStop': 'berhenti membaca',
   'zhihui.diagram.ttsMute': 'penceritaan bisu',
   'zhihui.diagram.ttsUnmute': 'Hidupkan bacaan narasi',
@@ -74,7 +81,8 @@ export default {
   'zhihui.sizeButton': 'Saiz imej',
   'zhihui.sizePanelTitle': 'Saiz imej',
   'zhihui.sizeOptional': 'Pilihan',
-  'zhihui.sizeHint': 'Formatnya ialah lebar*tinggi. Jika tidak dinyatakan, model akan mengesyorkan resolusi secara automatik berdasarkan perkataan gesaan.',
+  'zhihui.sizeHint':
+    'Formatnya ialah lebar*tinggi. Jika tidak dinyatakan, model akan mengesyorkan resolusi secara automatik berdasarkan perkataan gesaan.',
   'zhihui.sizeLimits': 'Kawasan piksel 512×512–2048×2048; nisbah bidang 1:8–8:1',
   'zhihui.size.auto': 'bijak pandai',
   'zhihui.size.autoHint': 'automatik',
@@ -102,7 +110,8 @@ export default {
   'zhihui.empty': 'Gambar belum ada, sila cuba jana di atas.',
   'zhihui.loadFailed': 'Gagal memuatkan sejarah',
   'zhihui.delete': 'padam',
-  'zhihui.deleteConfirm': 'Adakah anda pasti mahu memadamkan gambar ini? Tindakan ini tidak boleh dibuat asal.',
+  'zhihui.deleteConfirm':
+    'Adakah anda pasti mahu memadamkan gambar ini? Tindakan ini tidak boleh dibuat asal.',
   'zhihui.deleteTitle': 'Padam gambar',
   'zhihui.deleted': 'Dipadamkan',
   'zhihui.deleteFailed': 'Padam gagal',

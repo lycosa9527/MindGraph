@@ -3,8 +3,9 @@
  */
 import { computed, ref } from 'vue'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKittyDesktopLiveSpecSync } from '@/composables/kitty/useKittyDesktopLiveSpecSync'
 

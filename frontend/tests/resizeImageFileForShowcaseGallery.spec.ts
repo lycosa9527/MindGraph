@@ -67,9 +67,7 @@ describe('resizeImageFileForShowcaseGallery', () => {
 
   it('downscales oversized JPEG to JPEG within the long-edge budget', async () => {
     const bitmap = installBitmapMock(3200, 1800)
-    installCanvasMock(
-      (mime) => new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: mime })
-    )
+    installCanvasMock((mime) => new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: mime }))
 
     const file = new File([new Uint8Array(40_000)], 'photo.jpeg', { type: 'image/jpeg' })
     const result = await resizeImageFileForShowcaseGallery(file)

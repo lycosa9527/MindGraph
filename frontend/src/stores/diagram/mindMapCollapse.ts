@@ -64,8 +64,7 @@ function findNodeIdByTextSegmentsOnSide(
   const wanted = side === 'l' ? 'left' : 'right'
   const rootIds = connections
     .filter(
-      (c) =>
-        c.source === 'topic' && mindMapNodeSide(c.target, { nodes, connections }) === wanted
+      (c) => c.source === 'topic' && mindMapNodeSide(c.target, { nodes, connections }) === wanted
     )
     .map((c) => c.target)
 
@@ -112,9 +111,7 @@ function findNodeIdByOwnTextIdentity(
   const ownText = oldNode.text ?? ''
   const oldChildTexts = directChildTexts(oldId, oldNodes, oldConnections)
 
-  const candidates = newNodes.filter(
-    (n) => isMindMapBranchNode(n) && (n.text ?? '') === ownText
-  )
+  const candidates = newNodes.filter((n) => isMindMapBranchNode(n) && (n.text ?? '') === ownText)
   if (candidates.length === 0) return null
   if (candidates.length === 1) return candidates[0].id
 

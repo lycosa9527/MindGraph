@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Sắp ra mắt',
   'thinkingCoins.schoolInfo': 'Liên hệ quản trị viên trường để biết gói trường học',
   'thinkingCoins.school.headline': 'Tư duy bằng AI · giải pháp cho trường học',
-  'thinkingCoins.school.description': 'Triển khai riêng, tính năng tùy chỉnh và hỗ trợ vận hành đầy đủ cho trường học và tổ chức — phù hợp quy mô lớn, thương hiệu và bảo mật dữ liệu.',
+  'thinkingCoins.school.description':
+    'Triển khai riêng, tính năng tùy chỉnh và hỗ trợ vận hành đầy đủ cho trường học và tổ chức — phù hợp quy mô lớn, thương hiệu và bảo mật dữ liệu.',
   'thinkingCoins.school.feature.accountManager': 'Quản lý tài khoản chuyên trách',
   'thinkingCoins.school.feature.accountManagerDesc': 'Tư vấn một-một',
   'thinkingCoins.school.feature.privateDeploy': 'Triển khai riêng',
@@ -63,7 +64,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'Thưởng giới thiệu',
   'thinkingCoins.reason.case_reward': 'Thưởng case',
   'thinkingCoins.reason.subscription_grant': 'Cấp từ đăng ký',
-  'thinkingCoins.dailyExpiresHint': 'Phần thưởng đăng nhập có hiệu lực trong cùng ngày và sẽ được đặt lại vào lúc 24:00',
+  'thinkingCoins.dailyExpiresHint':
+    'Phần thưởng đăng nhập có hiệu lực trong cùng ngày và sẽ được đặt lại vào lúc 24:00',
   'thinkingCoins.dailyBalanceRemaining': 'Số lần đăng ký còn lại của ngày hôm nay {n}',
   'thinkingCoins.admin.tab': 'Token tư duy',
   'thinkingCoins.admin.tasksTitle': 'Nhiệm vụ kiếm token',
@@ -75,7 +77,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'Lưu',
   'thinkingCoins.admin.signupGrant': 'Cấp khi đăng ký',
   'thinkingCoins.admin.dailyEarnCap': 'Giới hạn kiếm hàng ngày',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = không giới hạn; mặc định 135 khớp tất cả nhiệm vụ hàng ngày',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = không giới hạn; mặc định 135 khớp tất cả nhiệm vụ hàng ngày',
   'thinkingCoins.admin.costMindmate': 'Chi phí MindMate',
   'thinkingCoins.admin.costDiagram': 'Chi phí tạo sơ đồ',
   'thinkingCoins.admin.costCanvas': 'Chi phí hỗ trợ canvas',
@@ -108,7 +111,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.priceSub': '¥49/tháng',
   'thinkingCoins.plan.priceSubNote': 'Giá gốc 59 yên/tháng, đăng ký hàng tháng tiết kiệm 10 yên',
   'thinkingCoins.plan.priceAnnual': '¥398/năm',
-  'thinkingCoins.plan.priceAnnualNote': 'Khoảng 33,2 yên/tháng, tiết kiệm 44% so với thanh toán hàng tháng',
+  'thinkingCoins.plan.priceAnnualNote':
+    'Khoảng 33,2 yên/tháng, tiết kiệm 44% so với thanh toán hàng tháng',
   'thinkingCoins.plan.currentPlan': 'Gói hiện tại',
   'thinkingCoins.plan.subscribeNow': 'Đăng ký',
   'thinkingCoins.plan.popular': 'Phổ biến',

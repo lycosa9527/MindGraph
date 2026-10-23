@@ -68,10 +68,7 @@ describe('authLoginHero', () => {
   })
 
   it('ignores a leftover calendar-day payload and starts a new bag', () => {
-    durable.setItem(
-      AUTH_LOGIN_HERO_STORAGE_KEY,
-      JSON.stringify({ day: '2026-09-21', index: 2 })
-    )
+    durable.setItem(AUTH_LOGIN_HERO_STORAGE_KEY, JSON.stringify({ day: '2026-09-21', index: 2 }))
     const clip = pickAuthLoginHeroId({
       durable,
       session: memoryStorage(),
@@ -84,9 +81,7 @@ describe('authLoginHero', () => {
     expect(AUTH_LOGIN_HERO_IDS).toHaveLength(4)
     expect(authLoginHeroSrc('02-mind-leap', 'image')).toBe(AUTH_LOGIN_HERO_STILL_SRC)
     expect(AUTH_LOGIN_HERO_STILL_SRC).toBe('/auth-hero/login-hero.webp')
-    expect(authLoginHeroSrc('02-mind-leap', 'video')).toBe(
-      '/api/auth/login-hero/02-mind-leap.mp4'
-    )
+    expect(authLoginHeroSrc('02-mind-leap', 'video')).toBe('/api/auth/login-hero/02-mind-leap.mp4')
   })
 
   it('does not animate on mobile, handheld, or reduced-motion viewports', () => {

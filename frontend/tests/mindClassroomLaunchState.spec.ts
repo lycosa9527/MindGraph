@@ -149,16 +149,12 @@ describe('mindClassroomLaunchState', () => {
         branchName: '呼吸作用',
       }).labelKey
     ).toBe('canvas.mindClassroom.queue.transcriptBranch')
-    expect(
-      mindClassroomButtonChrome({ jobStatus: 'ready', hasPrepared: true })
-    ).toMatchObject({
+    expect(mindClassroomButtonChrome({ jobStatus: 'ready', hasPrepared: true })).toMatchObject({
       tone: 'ready',
       locked: false,
       labelKey: 'canvas.mindClassroom.queue.ready',
     })
-    expect(mindClassroomButtonChrome({ jobStatus: 'ready', hasPrepared: false }).tone).toBe(
-      'start'
-    )
+    expect(mindClassroomButtonChrome({ jobStatus: 'ready', hasPrepared: false }).tone).toBe('start')
     expect(mindClassroomButtonChrome({ jobStatus: 'failed' })).toMatchObject({
       tone: 'failed',
       labelKey: 'canvas.mindClassroom.queue.failed',
@@ -174,7 +170,11 @@ describe('mindClassroomLaunchState', () => {
     expect(shouldShowMindClassroomRestart({ jobStatus: 'ready', hasPrepared: true })).toBe(true)
     expect(shouldShowMindClassroomRestart({ jobStatus: 'failed' })).toBe(true)
     expect(
-      shouldShowMindClassroomRestart({ jobStatus: 'ready', hasPrepared: true, authenticated: false })
+      shouldShowMindClassroomRestart({
+        jobStatus: 'ready',
+        hasPrepared: true,
+        authenticated: false,
+      })
     ).toBe(false)
   })
 })

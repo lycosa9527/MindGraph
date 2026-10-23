@@ -1,13 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   getDropPreviewBorderRadius,
   getDropTargetShapeClass,
   getDropTargetStyle,
 } from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useDiagramStore } from '@/stores/diagram'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 import type { MindGraphNode } from '@/types/vueflow'
 

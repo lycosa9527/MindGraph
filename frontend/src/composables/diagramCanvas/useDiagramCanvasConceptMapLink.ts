@@ -4,6 +4,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Position, getBezierPath } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   CONCEPT_LINK_DATA_TYPE,
   CONCEPT_LINK_FROM_RELATIONSHIP_TYPE,
@@ -11,7 +12,6 @@ import {
 } from '@/composables/diagramCanvas/conceptMapLinkMime'
 import { BRAINSTORM_CONCEPT_DRAG_MIME } from '@/composables/aiBrainstorm/constants'
 import { useLLMResultsStore } from '@/stores'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 import { conceptMapLinkChaseActive } from './conceptMapLinkChaseState'

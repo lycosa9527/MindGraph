@@ -3,7 +3,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { applyTrainingUiTarget, queryTrainingFocus } from '@/composables/training/applyTrainingUiTarget'
+import {
+  applyTrainingUiTarget,
+  queryTrainingFocus,
+} from '@/composables/training/applyTrainingUiTarget'
 import { useTrainingStore } from '@/stores/training'
 
 describe('applyTrainingUiTarget', () => {

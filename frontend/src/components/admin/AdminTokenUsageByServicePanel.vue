@@ -169,8 +169,6 @@ async function loadTokenStats(): Promise<void> {
   }
 }
 
-const hasData = computed(() => displayStats.value != null)
-
 onAdminEvent('admin:refresh_requested', ({ domain }) => {
   if (usesExternalStats.value) {
     return

@@ -58,7 +58,8 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'Could not load this slide',
   'zhihui.diagram.retryImage': 'Retry',
   'zhihui.diagram.teacherScript': 'Teacher script',
-  'zhihui.diagram.teacherScriptHint': 'Classroom narration aligned with this slide and mind-map focus',
+  'zhihui.diagram.teacherScriptHint':
+    'Classroom narration aligned with this slide and mind-map focus',
   'zhihui.diagram.ttsPlay': 'Tap Kitty to read this slide aloud',
   'zhihui.diagram.ttsStop': 'Stop narration',
   'zhihui.diagram.ttsMute': 'Mute narration',

@@ -76,8 +76,8 @@ export function useSchoolDashboardStats(
 
   const isLoading = computed(() => query.isFetching.value)
 
-  const stats = computed(
-    (): SchoolDashboardStats => mapStats(query.data.value as Record<string, unknown> | undefined)
+  const stats = computed((): SchoolDashboardStats =>
+    mapStats(query.data.value as Record<string, unknown> | undefined)
   )
 
   const topUsers = computed((): SchoolDashboardTopUser[] => {

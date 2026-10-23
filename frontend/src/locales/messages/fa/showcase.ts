@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'ویترین',
-  'showcase.subtitle': 'آموزش تفکر مبتنی بر هوش مصنوعی با کیفیت بالا را کشف کنید و نتایج تدریس و تحقیق خود را به اشتراک بگذارید',
+  'showcase.subtitle':
+    'آموزش تفکر مبتنی بر هوش مصنوعی با کیفیت بالا را کشف کنید و نتایج تدریس و تحقیق خود را به اشتراک بگذارید',
   'showcase.publish': 'یک مورد ارسال کنید',
   'showcase.searchPlaceholder': 'جستجوی موارد…',
   'showcase.filter.all': 'همه',
@@ -29,9 +30,11 @@ export default {
   'showcase.myFavorites': 'مجموعه من',
   'showcase.myFavoritesModalTitle': 'موارد جمع آوری شده',
   'showcase.myFavoritesEmpty': 'هنوز هیچ مورد جمع آوری نشده است',
-  'showcase.myFavoritesEmptyHint': 'وقتی روی موارد دلخواه روی جزئیات یا کارت کلیک می‌کنید، در اینجا ظاهر می‌شود',
+  'showcase.myFavoritesEmptyHint':
+    'وقتی روی موارد دلخواه روی جزئیات یا کارت کلیک می‌کنید، در اینجا ظاهر می‌شود',
   'showcase.myCasesModalTitle': 'مواردی که پست کردم',
-  'showcase.myCasesManageHint': 'شما می توانید آن را مستقیماً در لیست برداشت، حذف یا تغییر دهید. برای مشاهده جزئیات روی کیس کلیک کنید',
+  'showcase.myCasesManageHint':
+    'شما می توانید آن را مستقیماً در لیست برداشت، حذف یا تغییر دهید. برای مشاهده جزئیات روی کیس کلیک کنید',
   'showcase.myCasesAction.edit': 'ویرایش',
   'showcase.myCasesEmpty': 'هنوز موردی منتشر نشده است',
   'showcase.myCasesEmptyHint': 'پس از انتشار پرونده، پیشرفت بررسی در اینجا مشاهده می شود',
@@ -39,11 +42,13 @@ export default {
   'showcase.pendingReview': 'در انتظار بررسی',
   'showcase.publishModal.title': 'یک مورد ارسال کنید',
   'showcase.publishModal.titleLabel': 'عنوان پرونده',
-  'showcase.publishModal.titleHint': 'عنوان باید مختصر و واضح باشد و توصیه می شود بیش از {max} کلمه نباشد.',
+  'showcase.publishModal.titleHint':
+    'عنوان باید مختصر و واضح باشد و توصیه می شود بیش از {max} کلمه نباشد.',
   'showcase.publishModal.titlePlaceholder': 'به عنوان مثال: طراحی آموزش "روز مناظره دو کودک"',
   'showcase.publishModal.descriptionLabel': 'توضیحات آگهی',
   'showcase.publishModal.tagsLabel': 'برچسب بزنید',
-  'showcase.publishModal.tagsHint': 'چندین برچسب را با کاما جدا کنید، مانند: تعارض شناختی، ریاضیات دبیرستان',
+  'showcase.publishModal.tagsHint':
+    'چندین برچسب را با کاما جدا کنید، مانند: تعارض شناختی، ریاضیات دبیرستان',
   'showcase.publishModal.caseTypeLabel': 'نوع مورد',
   'showcase.publishModal.subjectLabel': 'نظم و انضباط',
   'showcase.publishModal.gradeLabel': 'درجه',
@@ -53,19 +58,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'در حال آپلود فایل ها ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'در حال آپلود {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'تقریبا انجام شده…',
-  'showcase.publishModal.uploadFailedRolledBack': 'آپلود انجام نشد، پیش‌نویس برداشته شد، لطفاً دوباره امتحان کنید.',
-  'showcase.publishModal.uploadCorsFailed': 'فایل در ذخیره‌سازی شی آپلود نشد (دلایل رایج: سطل CORS به وب‌سایت فعلی اجازه نمی‌دهد، یا وب‌سایت CSP نام دامنه COS را منتشر نمی‌کند). پیش نویس برداشته شده است، لطفاً برای پیکربندی با سرپرست تماس بگیرید و دوباره امتحان کنید.',
-  'showcase.publishModal.uploadStorageRejected': 'Object Storage این آپلود را رد کرد. پیش نویس برداشته شده است، لطفاً بعداً دوباره امتحان کنید. اگر مکرراً خراب شد، لطفاً با مدیر تماس بگیرید.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'آپلود انجام نشد، پیش‌نویس برداشته شد، لطفاً دوباره امتحان کنید.',
+  'showcase.publishModal.uploadCorsFailed':
+    'فایل در ذخیره‌سازی شی آپلود نشد (دلایل رایج: سطل CORS به وب‌سایت فعلی اجازه نمی‌دهد، یا وب‌سایت CSP نام دامنه COS را منتشر نمی‌کند). پیش نویس برداشته شده است، لطفاً برای پیکربندی با سرپرست تماس بگیرید و دوباره امتحان کنید.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Object Storage این آپلود را رد کرد. پیش نویس برداشته شده است، لطفاً بعداً دوباره امتحان کنید. اگر مکرراً خراب شد، لطفاً با مدیر تماس بگیرید.',
   'showcase.publishModal.uploadFailed': 'آپلود انجام نشد، لطفا دوباره امتحان کنید.',
-  'showcase.publishModal.uploadCoverTooLarge': 'تصویر جلد بیش از حد مجاز 2 مگابایت است. لطفاً تصویر پیش‌نمایش را فشرده کنید یا از یک تصویر کوچک‌تر استفاده کنید و دوباره امتحان کنید.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'اندازه فایل بیش از حد مجاز است (20 مگابایت برای اسناد/تصاویر، 100 مگابایت برای ویدیوها). لطفا فشرده کنید و دوباره امتحان کنید.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'اندازه فایل بیش از حد مجاز است (20 مگابایت برای اسناد/تصاویر، 100 مگابایت برای ویدیوها). پیش نویس برداشته شده است، لطفاً آن را فشرده کنید و دوباره امتحان کنید.',
-  'showcase.publishModal.uploadFileTooLarge': 'فایل بیش از حد بزرگ است و از حد مجاز نوع آپلود فعلی بیشتر است. لطفاً اندازه را تأیید کنید و دوباره امتحان کنید.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'فایل بیش از حد بزرگ است و از حد مجاز نوع آپلود فعلی بیشتر است. پیش نویس برداشته شده است، لطفاً اندازه را تأیید کنید و دوباره امتحان کنید.',
-  'showcase.publishModal.coverUploadSkipped': 'پرونده ارسال شد، اما آپلود جلد ناموفق بود. مورد را می توان بعداً برای به روز رسانی صفحه جلد ویرایش کرد.',
-  'showcase.publishModal.coverGenerating': 'جلد در پس زمینه تولید می شود و بعداً روی کارت نمایش داده می شود.',
-  'showcase.publishModal.coverFailed': 'پرونده ارسال شد، اما تولید جلد ناموفق بود. می‌توانید بعداً برای بازخوانی جلد، مورد را ویرایش کنید.',
-  'showcase.publishModal.coverFailedTimeout': 'پرونده ارسال شد، اما زمان تولید جلد تمام شد. می‌توانید بعداً برای بازخوانی جلد، پرونده را ویرایش کنید.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'تصویر جلد بیش از حد مجاز 2 مگابایت است. لطفاً تصویر پیش‌نمایش را فشرده کنید یا از یک تصویر کوچک‌تر استفاده کنید و دوباره امتحان کنید.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'اندازه فایل بیش از حد مجاز است (20 مگابایت برای اسناد/تصاویر، 100 مگابایت برای ویدیوها). لطفا فشرده کنید و دوباره امتحان کنید.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'اندازه فایل بیش از حد مجاز است (20 مگابایت برای اسناد/تصاویر، 100 مگابایت برای ویدیوها). پیش نویس برداشته شده است، لطفاً آن را فشرده کنید و دوباره امتحان کنید.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'فایل بیش از حد بزرگ است و از حد مجاز نوع آپلود فعلی بیشتر است. لطفاً اندازه را تأیید کنید و دوباره امتحان کنید.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'فایل بیش از حد بزرگ است و از حد مجاز نوع آپلود فعلی بیشتر است. پیش نویس برداشته شده است، لطفاً اندازه را تأیید کنید و دوباره امتحان کنید.',
+  'showcase.publishModal.coverUploadSkipped':
+    'پرونده ارسال شد، اما آپلود جلد ناموفق بود. مورد را می توان بعداً برای به روز رسانی صفحه جلد ویرایش کرد.',
+  'showcase.publishModal.coverGenerating':
+    'جلد در پس زمینه تولید می شود و بعداً روی کارت نمایش داده می شود.',
+  'showcase.publishModal.coverFailed':
+    'پرونده ارسال شد، اما تولید جلد ناموفق بود. می‌توانید بعداً برای بازخوانی جلد، مورد را ویرایش کنید.',
+  'showcase.publishModal.coverFailedTimeout':
+    'پرونده ارسال شد، اما زمان تولید جلد تمام شد. می‌توانید بعداً برای بازخوانی جلد، پرونده را ویرایش کنید.',
   'showcase.publishModal.success': 'پرونده ارسال شده و منتظر بررسی توسط مدیر است',
   'showcase.publishModal.fromCanvas': 'انتشار از روی بوم',
   'showcase.publishModal.step1Title': 'اطلاعات اولیه',
@@ -79,68 +96,97 @@ export default {
   'showcase.publishModal.uploadLabel': 'فایل ها را آپلود کنید',
   'showcase.publishModal.uploadImage': 'تصاویر را آپلود کنید',
   'showcase.publishModal.uploadFile': 'فایل ها را آپلود کنید',
-  'showcase.publishModal.directUploadDisabled': 'انتقال مستقیم محلی موقتاً در دسترس نیست، اما همچنان می‌توانید نماد را از تاریخچه انتخاب کنید.',
-  'showcase.publishModal.uploadViaStorage': 'فایل ها از طریق پیوندهای امن کوتاه مدت در ذخیره سازی اشیا آپلود خواهند شد.',
+  'showcase.publishModal.directUploadDisabled':
+    'انتقال مستقیم محلی موقتاً در دسترس نیست، اما همچنان می‌توانید نماد را از تاریخچه انتخاب کنید.',
+  'showcase.publishModal.uploadViaStorage':
+    'فایل ها از طریق پیوندهای امن کوتاه مدت در ذخیره سازی اشیا آپلود خواهند شد.',
   'showcase.publishModal.pickHistory': 'یک نماد را از کتابخانه شخصی خود انتخاب کنید',
   'showcase.publishModal.removeFile': 'حذف کنید',
-  'showcase.publishModal.teachingDocHint': 'پشتیبانی از .docx / .pdf / .pptx / .doc (پیش نمایش کامل پس از تبدیل)',
-  'showcase.publishModal.teachingDocHintWithLimit': 'پشتیبانی از .docx / .pdf / .pptx / .doc (پیش نمایش کامل پس از تبدیل)، یک سند از {maxMb} مگابایت تجاوز نمی کند',
-  'showcase.publishModal.teachingDocTooLarge': 'اندازه سند از محدودیت {maxMb} مگابایت بیشتر است، لطفاً آن را فشرده کرده و دوباره آپلود کنید.',
+  'showcase.publishModal.teachingDocHint':
+    'پشتیبانی از .docx / .pdf / .pptx / .doc (پیش نمایش کامل پس از تبدیل)',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    'پشتیبانی از .docx / .pdf / .pptx / .doc (پیش نمایش کامل پس از تبدیل)، یک سند از {maxMb} مگابایت تجاوز نمی کند',
+  'showcase.publishModal.teachingDocTooLarge':
+    'اندازه سند از محدودیت {maxMb} مگابایت بیشتر است، لطفاً آن را فشرده کرده و دوباره آپلود کنید.',
   'showcase.publishModal.diagramImageHint': 'پشتیبانی از .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'آپلود تصاویر (چند گزینه موجود)',
-  'showcase.publishModal.galleryHint': 'Diagram cases and templates can include multiple images and saved diagrams, up to {max} items',
-  'showcase.publishModal.galleryHintCase': 'چندین تصویر و نمادهای تاریخی را می توان تا {max} مورد اضافه کرد',
-  'showcase.publishModal.galleryHintTemplate': 'می‌توانید فایل‌های .mg را آپلود کنید و چندین نماد تاریخی، حداکثر تا {max} مورد را انتخاب کنید.',
+  'showcase.publishModal.galleryHint':
+    'Diagram cases and templates can include multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintCase':
+    'چندین تصویر و نمادهای تاریخی را می توان تا {max} مورد اضافه کرد',
+  'showcase.publishModal.galleryHintTemplate':
+    'می‌توانید فایل‌های .mg را آپلود کنید و چندین نماد تاریخی، حداکثر تا {max} مورد را انتخاب کنید.',
   'showcase.publishModal.galleryCount': '{count}/{max} موارد اضافه شد',
   'showcase.publishModal.galleryImageItem': 'تصویر: {name}',
   'showcase.publishModal.galleryDiagramItem': 'تصویر: {name}',
   'showcase.publishModal.galleryLimit': 'حداکثر {max} مورد اضافه کنید',
   'showcase.publishModal.galleryDuplicateDiagram': 'نماد تاریخ از قبل در لیست موجود است',
   'showcase.publishModal.galleryPickerDone': 'انتخاب کامل',
-  'showcase.publishModal.galleryUploadFailed': 'آپلود تصویر گالری انجام نشد، لطفا دوباره ارسال کنید',
-  'showcase.publishModal.galleryReuploadHint': 'برخی از تصاویر گالری با موفقیت ذخیره نشدند، لطفاً قبل از ارسال، تصاویر را دوباره انتخاب کنید.',
+  'showcase.publishModal.galleryUploadFailed':
+    'آپلود تصویر گالری انجام نشد، لطفا دوباره ارسال کنید',
+  'showcase.publishModal.galleryReuploadHint':
+    'برخی از تصاویر گالری با موفقیت ذخیره نشدند، لطفاً قبل از ارسال، تصاویر را دوباره انتخاب کنید.',
   'showcase.detail.galleryImage': 'تصویر',
   'showcase.detail.galleryDiagram': 'تصویرسازی',
   'showcase.detail.galleryPrev': 'عکس قبلی',
   'showcase.detail.galleryNext': 'تاریخ',
   'showcase.detail.gallerySwipeHint': 'برای جابجایی به چپ یا راست بلغزانید',
   'showcase.detail.galleryImageMissing': 'تصویر بارگیری نشد، لطفاً مورد را مجدداً ارسال کنید',
-  'showcase.publishModal.templateFileHint': 'فقط از فرمت .mg پشتیبانی می کند (فایل های صادراتی MindGraph)',
+  'showcase.publishModal.templateFileHint':
+    'فقط از فرمت .mg پشتیبانی می کند (فایل های صادراتی MindGraph)',
   'showcase.publishModal.templatePreviewLabel': 'پیش نمایش آیکون',
   'showcase.publishModal.templatePreviewHint': 'در حالت گیره مرور کنید، غیر قابل ویرایش',
-  'showcase.publishModal.templatePreviewEmpty': 'یک فایل .mg را آپلود کنید یا یک نماد تاریخچه را برای پیش نمایش بوم انتخاب کنید',
+  'showcase.publishModal.templatePreviewEmpty':
+    'یک فایل .mg را آپلود کنید یا یک نماد تاریخچه را برای پیش نمایش بوم انتخاب کنید',
   'showcase.publishModal.diagramCasePreviewLabel': 'پیش نمایش آیکون',
   'showcase.publishModal.diagramCasePreviewHint': 'در حالت گیره مرور کنید، برای مشاهده زوم کنید',
-  'showcase.publishModal.diagramTypeAutoMatched': 'مطابق خودکار نوع نماد بر اساس نماد تاریخی انتخاب شده',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'مطابق خودکار نوع نماد بر اساس نماد تاریخی انتخاب شده',
   'showcase.publishModal.introLabel': 'معرفی گرافیکی',
   'showcase.publishModal.teachingIntroLabel': 'مقدمه ای بر طراحی آموزشی',
   'showcase.publishModal.highlightsLabel': 'نکات برجسته طراحی',
-  'showcase.publishModal.highlightsPlaceholder': 'نکات برجسته طراحی این دوره را یک به یک، یک خط در هر خط توضیح دهید (اختیاری)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'پیشینه، اهداف و سناریوهای کاربردی طراحی تدریس این دوره را به اختصار معرفی کنید',
+  'showcase.publishModal.highlightsPlaceholder':
+    'نکات برجسته طراحی این دوره را یک به یک، یک خط در هر خط توضیح دهید (اختیاری)',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'پیشینه، اهداف و سناریوهای کاربردی طراحی تدریس این دوره را به اختصار معرفی کنید',
   'showcase.publishModal.aiGenerate': 'هوش مصنوعی تولید شد',
   'showcase.publishModal.aiGenerating': 'هوش مصنوعی در حال تولید…',
   'showcase.publishModal.aiGenerateStop': 'توقف',
-  'showcase.publishModal.aiGenerateCancelled': 'تولید هوش مصنوعی متوقف شد - برای پاک کردن و بازسازی مجدد دوباره کلیک کنید',
-  'showcase.publishModal.aiGenerateSuccess': 'مقدمه طراحی آموزشی و نکات برجسته طراحی بر اساس سند ایجاد شده است. لطفا بررسی و ویرایش کنید؛ لطفاً بازتاب تدریس را خودتان پر کنید.',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'معرفی تصویر و برنامه کلاس درس بر اساس تصویر ایجاد شده است. لطفا بررسی و ویرایش کنید.',
-  'showcase.publishModal.aiGenerateFailed': 'تولید هوش مصنوعی ناموفق بود، لطفاً بعداً دوباره امتحان کنید',
-  'showcase.publishModal.aiGenerateNeedFile': 'لطفا ابتدا سند طراحی آموزشی را در مرحله قبل آپلود کنید',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'نسل هوش مصنوعی در حال حاضر فقط از موارد طراحی آموزشی پشتیبانی می کند',
+  'showcase.publishModal.aiGenerateCancelled':
+    'تولید هوش مصنوعی متوقف شد - برای پاک کردن و بازسازی مجدد دوباره کلیک کنید',
+  'showcase.publishModal.aiGenerateSuccess':
+    'مقدمه طراحی آموزشی و نکات برجسته طراحی بر اساس سند ایجاد شده است. لطفا بررسی و ویرایش کنید؛ لطفاً بازتاب تدریس را خودتان پر کنید.',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'معرفی تصویر و برنامه کلاس درس بر اساس تصویر ایجاد شده است. لطفا بررسی و ویرایش کنید.',
+  'showcase.publishModal.aiGenerateFailed':
+    'تولید هوش مصنوعی ناموفق بود، لطفاً بعداً دوباره امتحان کنید',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'لطفا ابتدا سند طراحی آموزشی را در مرحله قبل آپلود کنید',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'نسل هوش مصنوعی در حال حاضر فقط از موارد طراحی آموزشی پشتیبانی می کند',
   'showcase.publishModal.reflectionLabel': 'آموزش انعکاس',
-  'showcase.publishModal.introPlaceholder': 'محتوای پرونده و سناریوهای قابل اجرا را به اختصار شرح دهید',
-  'showcase.publishModal.diagramCorePlaceholder': 'محتوای اصلی و ویژگی های تجسم تفکر این نمودار را شرح دهید',
-  'showcase.publishModal.classroomAppPlaceholder': 'نحوه استفاده از این تصویر را در کلاس توضیح دهید',
-  'showcase.publishModal.tagInputPlaceholder': 'برچسب را وارد کنید (حداکثر 10 کاراکتر) و Enter را فشار دهید تا اضافه شود',
+  'showcase.publishModal.introPlaceholder':
+    'محتوای پرونده و سناریوهای قابل اجرا را به اختصار شرح دهید',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'محتوای اصلی و ویژگی های تجسم تفکر این نمودار را شرح دهید',
+  'showcase.publishModal.classroomAppPlaceholder':
+    'نحوه استفاده از این تصویر را در کلاس توضیح دهید',
+  'showcase.publishModal.tagInputPlaceholder':
+    'برچسب را وارد کنید (حداکثر 10 کاراکتر) و Enter را فشار دهید تا اضافه شود',
   'showcase.publishModal.tagRecommended': 'برچسب های توصیه شده',
   'showcase.publishModal.tagCountHint': '(حداکثر {max})',
   'showcase.publishModal.tagMaxCount': 'فقط حداکثر برچسب {max} را می توان اضافه کرد',
-  'showcase.publishModal.networkError': 'ارسال ناموفق بود: اتصال آپلود قطع شد. لطفاً Ctrl+F5 را برای بازخوانی و دوباره امتحان کنید. اگر حاوی ویدیو است، لطفاً تأیید کنید که تک فایل ≤100 مگابایت و کل آن ≤105 مگابایت است.',
+  'showcase.publishModal.networkError':
+    'ارسال ناموفق بود: اتصال آپلود قطع شد. لطفاً Ctrl+F5 را برای بازخوانی و دوباره امتحان کنید. اگر حاوی ویدیو است، لطفاً تأیید کنید که تک فایل ≤100 مگابایت و کل آن ≤105 مگابایت است.',
   'showcase.publishModal.fileTooLarge': 'اندازه "{name}" از حد مجاز {maxMb}MB بیشتر است',
-  'showcase.publishModal.uploadTotalTooLarge': 'حجم کل فایل های آپلود شده بیش از حد مجاز است. لطفا حجم فایل های پیوست یا ویدیوها را کاهش دهید.',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'حجم کل فایل های آپلود شده بیش از حد مجاز است. لطفا حجم فایل های پیوست یا ویدیوها را کاهش دهید.',
   'showcase.publishModal.tagAdd': 'افزودن',
   'showcase.publishModal.publishBtn': 'انتشار',
-  'showcase.publishModal.reflectionPlaceholder': 'تامل و خلاصه خود را در مورد تدریس این درس بنویسید (اختیاری)',
+  'showcase.publishModal.reflectionPlaceholder':
+    'تامل و خلاصه خود را در مورد تدریس این درس بنویسید (اختیاری)',
   'showcase.publishModal.classroomAppLabel': 'برنامه کلاس درس',
   'showcase.publishModal.selectSubject': 'لطفا موضوعی را انتخاب کنید',
   'showcase.publishModal.selectGrade': 'لطفا نمره را انتخاب کنید',
@@ -148,20 +194,27 @@ export default {
   'showcase.publishModal.validationTitle': 'ت',
   'showcase.publishModal.validationSubject': 'لطفا موضوعی را انتخاب کنید',
   'showcase.publishModal.validationGrade': 'لطفا نمره را انتخاب کنید',
-  'showcase.publishModal.validationFile': 'لطفاً یک فایل آپلود کنید یا یک نماد تاریخچه را انتخاب کنید',
+  'showcase.publishModal.validationFile':
+    'لطفاً یک فایل آپلود کنید یا یک نماد تاریخچه را انتخاب کنید',
   'showcase.publishModal.validationDiagramType': 'لطفا نوع نماد را انتخاب کنید',
   'showcase.publishModal.invalidFileType': 'فرمت فایل پشتیبانی نمی شود',
-  'showcase.publishModal.invalidMgFile': 'خواندن فایل .mg امکان پذیر نیست، لطفاً تأیید کنید که فایل از صادرات MindGraph است',
-  'showcase.publishModal.cannotPreview': 'ایجاد پیش‌نمایش جلد ممکن نیست، پرونده همچنان ارسال می‌شود. PNG/JPG را امتحان کنید یا از نمادهای تاریخی انتخاب کنید',
-  'showcase.publishModal.cannotPreviewHistory': 'قادر به ایجاد پوشش از این تصویر تاریخی نیست، پرونده همچنان ارسال خواهد شد. لطفاً دوباره انتخاب کنید، یا ابتدا در بوم باز کنید و دوباره ذخیره کنید',
-  'showcase.publishModal.cannotPreviewTemplate': 'ایجاد پیش‌نمایش جلد ممکن نیست، پرونده همچنان ارسال می‌شود. لطفاً تأیید کنید که فایل .mg معتبر است یا نماد تاریخچه را مجدداً انتخاب کنید',
+  'showcase.publishModal.invalidMgFile':
+    'خواندن فایل .mg امکان پذیر نیست، لطفاً تأیید کنید که فایل از صادرات MindGraph است',
+  'showcase.publishModal.cannotPreview':
+    'ایجاد پیش‌نمایش جلد ممکن نیست، پرونده همچنان ارسال می‌شود. PNG/JPG را امتحان کنید یا از نمادهای تاریخی انتخاب کنید',
+  'showcase.publishModal.cannotPreviewHistory':
+    'قادر به ایجاد پوشش از این تصویر تاریخی نیست، پرونده همچنان ارسال خواهد شد. لطفاً دوباره انتخاب کنید، یا ابتدا در بوم باز کنید و دوباره ذخیره کنید',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'ایجاد پیش‌نمایش جلد ممکن نیست، پرونده همچنان ارسال می‌شود. لطفاً تأیید کنید که فایل .mg معتبر است یا نماد تاریخچه را مجدداً انتخاب کنید',
   'showcase.publishModal.historyTitle': 'کتابخانه شخصی',
   'showcase.publishModal.historySearch': 'نام نماد جستجو…',
   'showcase.publishModal.historyEmpty': 'هنوز هیچ نمادی در کتابخانه شخصی وجود ندارد',
   'showcase.publishModal.historyUncategorized': 'دسته بندی نشده',
   'showcase.publishModal.typeDesc.teachingDesign': 'طراحی کلاس درس توسعه تفکر',
-  'showcase.publishModal.typeDesc.diagramCase': 'برنامه آموزشی به اشتراک گذاری تصویر یا تجسم تفکر عالی',
-  'showcase.publishModal.typeDesc.diagramTemplate': 'آیکون هایی که می توانند دوباره استفاده شوند یا دوباره ایجاد شوند',
+  'showcase.publishModal.typeDesc.diagramCase':
+    'برنامه آموزشی به اشتراک گذاری تصویر یا تجسم تفکر عالی',
+  'showcase.publishModal.typeDesc.diagramTemplate':
+    'آیکون هایی که می توانند دوباره استفاده شوند یا دوباره ایجاد شوند',
   'showcase.detail.import': 'از این مورد استفاده کنید',
   'showcase.action.goDraw': 'برو یه نقاشی بکش',
   'showcase.action.applyTemplate': 'این الگو را اعمال کنید',
@@ -184,9 +237,11 @@ export default {
   'showcase.detail.delist': 'از قفسه ها برداشته شده است',
   'showcase.detail.resubmit': 'بازبینی و ارسال مجدد',
   'showcase.detail.withdrawTitle': 'پرونده برداشت',
-  'showcase.detail.withdrawConfirm': 'آیا مطمئن هستید که می خواهید "{title}" را پس بگیرید؟ پس از برداشت، از صف بررسی حذف خواهد شد و قابل بازیابی نیست.',
+  'showcase.detail.withdrawConfirm':
+    'آیا مطمئن هستید که می خواهید "{title}" را پس بگیرید؟ پس از برداشت، از صف بررسی حذف خواهد شد و قابل بازیابی نیست.',
   'showcase.detail.delistTitle': 'موارد حذف',
-  'showcase.detail.delistConfirm': 'آیا مطمئن هستید که می خواهید "{title}" را از Case Square حذف کنید؟ پس از حذف، سایر کاربران قادر به مرور آن نخواهند بود.',
+  'showcase.detail.delistConfirm':
+    'آیا مطمئن هستید که می خواهید "{title}" را از Case Square حذف کنید؟ پس از حذف، سایر کاربران قادر به مرور آن نخواهند بود.',
   'showcase.detail.confirm': 'تایید',
   'showcase.detail.cancel': 'لغو کنید',
   'showcase.withdrawn': 'برداشته شد',
@@ -206,8 +261,10 @@ export default {
   'showcase.detail.pptxPreviewPending': 'در حال تبدیل سند برای پیش نمایش...',
   'showcase.detail.officePreviewPending': 'در حال تبدیل سند برای پیش نمایش...',
   'showcase.detail.docPreviewLoading': 'در حال بارگیری اسناد…',
-  'showcase.detail.docPreviewFailed': 'پیش نمایش سند بارگیری نشد، لطفاً آن را در یک برگه جدید باز کنید.',
-  'showcase.detail.legacyDocHint': 'This .doc file is still converting for preview, or conversion is unavailable. Open or download the file, or re-upload to regenerate the preview.',
+  'showcase.detail.docPreviewFailed':
+    'پیش نمایش سند بارگیری نشد، لطفاً آن را در یک برگه جدید باز کنید.',
+  'showcase.detail.legacyDocHint':
+    'This .doc file is still converting for preview, or conversion is unavailable. Open or download the file, or re-upload to regenerate the preview.',
   'showcase.detail.noDocument': 'هنوز پیش نمایش سندی وجود ندارد',
   'showcase.detail.noDiagramPreview': 'هنوز پیش نمایش آیکونی وجود ندارد',
   'showcase.detail.diagramPreviewLoading': 'در حال بارگیری نماد…',

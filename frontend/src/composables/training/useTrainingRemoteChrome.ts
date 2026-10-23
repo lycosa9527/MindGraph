@@ -1,4 +1,4 @@
-import { onUnmounted, ref, watch, type Ref } from 'vue'
+import { type Ref, onUnmounted, ref, watch } from 'vue'
 
 type OrientationLock = { unlock: () => Promise<void> }
 type WakeLockSentinel = {
@@ -100,9 +100,13 @@ export function useTrainingRemoteChrome(live: () => boolean): { isPortrait: Ref<
   media?.addEventListener('change', onOrientation)
   window.addEventListener('orientationchange', onOrientation)
   document.addEventListener('visibilitychange', onShown)
-  watch(live, () => {
-    void syncChrome()
-  }, { immediate: true })
+  watch(
+    live,
+    () => {
+      void syncChrome()
+    },
+    { immediate: true }
+  )
 
   onUnmounted(() => {
     media?.removeEventListener('change', onOrientation)

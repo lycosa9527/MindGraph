@@ -7,7 +7,8 @@ export default {
   'meta.pageTitle.zhihui': 'Chie',
   'zhihui.title': 'Chie',
   'zhihui.brand': 'Chie',
-  'zhihui.subtitle': 'Mga larawan ni Vincent · Mga video ni Vincent · Mga paglalarawan ng mga larawan',
+  'zhihui.subtitle':
+    'Mga larawan ni Vincent · Mga video ni Vincent · Mga paglalarawan ng mga larawan',
   'zhihui.modeAria': 'Mode ng pagbuo ng matalinong pagguhit',
   'zhihui.mode.image': 'Pagbuo ng imahe',
   'zhihui.mode.video': 'pagbuo ng video',
@@ -24,9 +25,12 @@ export default {
   'zhihui.promptPlaceholder.image': 'Ipasok ang iyong inspirasyon…',
   'zhihui.promptPlaceholder.video': 'Ilarawan ang eksena, camerawork at ritmo...',
   'zhihui.promptPlaceholder.diagram': 'Piliin ang mind map at i-click ang Bumuo',
-  'zhihui.composerHint.image': 'Gumamit ng teksto upang ilarawan ang larawan at bumuo ng mga ilustrasyon sa pagtuturo at mga visual na materyales sa isang click',
-  'zhihui.composerHint.video': 'Malapit nang ma-access ang mga kakayahan ng Wensheng Video at Tusheng Video',
-  'zhihui.composerHint.diagram': 'Pumili ng mind map para makabuo ng courseware diagram mula sa perspektibo ng mag-aaral',
+  'zhihui.composerHint.image':
+    'Gumamit ng teksto upang ilarawan ang larawan at bumuo ng mga ilustrasyon sa pagtuturo at mga visual na materyales sa isang click',
+  'zhihui.composerHint.video':
+    'Malapit nang ma-access ang mga kakayahan ng Wensheng Video at Tusheng Video',
+  'zhihui.composerHint.diagram':
+    'Pumili ng mind map para makabuo ng courseware diagram mula sa perspektibo ng mag-aaral',
   'zhihui.diagram.selectMindmap': 'Pumili ng mind map',
   'zhihui.diagram.selectMindmapHint': 'Mangyaring pumili ng mind map sa itaas',
   'zhihui.diagram.selectMindmapFirst': 'Mangyaring pumili muna ng mind map',
@@ -34,10 +38,11 @@ export default {
   'zhihui.diagram.loadFailed': 'Nabigong i-load ang mind map',
   'zhihui.diagram.emptyDeck': 'Pagkatapos piliin ang mind map, i-click ang Bumuo',
   'zhihui.diagram.waitingSlides': 'Ginagawa ang courseware, mangyaring maghintay...',
-  'zhihui.diagram.jobStarted': 'Nagsimula na ang pagbuo ng courseware. Maaari mong suriin ang pag-unlad sa kasaysayan.',
+  'zhihui.diagram.jobStarted':
+    'Nagsimula na ang pagbuo ng courseware. Maaari mong suriin ang pag-unlad sa kasaysayan.',
   'zhihui.diagram.phaseQueued': 'Nakapila ang mga gawain...',
   'zhihui.diagram.phasePlanning': 'Pagdidisenyo ng syllabus...',
-  'zhihui.diagram.phasePlanningBranches': 'Pagpaplano ng iba\'t ibang paksa...',
+  'zhihui.diagram.phasePlanningBranches': "Pagpaplano ng iba't ibang paksa...",
   'zhihui.diagram.phasePlanningBranch': 'Paksa sa pagpaplano {current}/{total}…',
   'zhihui.diagram.phasePlanningClose': 'Pagtatapos ng syllabus...',
   'zhihui.diagram.phaseGenerating': 'Pagguhit ng courseware...',
@@ -49,7 +54,8 @@ export default {
   'zhihui.diagram.toastPlanning': 'Pagdidisenyo ng syllabus...',
   'zhihui.diagram.toastGenerating': 'Ang courseware ay iginuhit, maaaring tumagal ng ilang minuto',
   'zhihui.diagram.toastComplete': 'Handa na ang courseware',
-  'zhihui.diagram.toastPartial': 'Ang courseware ay bahagyang nakumpleto at maaaring patuloy na mabuo.',
+  'zhihui.diagram.toastPartial':
+    'Ang courseware ay bahagyang nakumpleto at maaaring patuloy na mabuo.',
   'zhihui.diagram.toastCancelled': 'Kinansela ang pagbuo ng courseware',
   'zhihui.diagram.batchProgress': 'Batch {current}/{total}',
   'zhihui.diagram.slideProgress': 'Binuo {current}/{total}',
@@ -58,23 +64,28 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'Nabigong mag-load ang slideshow',
   'zhihui.diagram.retryImage': 'Subukan muli',
   'zhihui.diagram.teacherScript': 'Pagsasalaysay ng guro',
-  'zhihui.diagram.teacherScriptHint': 'Ang mga paliwanag sa silid-aralan ay nakahanay sa pokus ng mga guhit at mapa sa pahinang ito',
-  'zhihui.diagram.ttsPlay': 'Mag-click sa kuting upang basahin nang malakas ang pagsasalaysay ng pahinang ito',
+  'zhihui.diagram.teacherScriptHint':
+    'Ang mga paliwanag sa silid-aralan ay nakahanay sa pokus ng mga guhit at mapa sa pahinang ito',
+  'zhihui.diagram.ttsPlay':
+    'Mag-click sa kuting upang basahin nang malakas ang pagsasalaysay ng pahinang ito',
   'zhihui.diagram.ttsStop': 'huminto sa pagbabasa',
   'zhihui.diagram.ttsMute': 'piping pagsasalaysay',
   'zhihui.diagram.ttsUnmute': 'I-on ang pagbabasa ng pagsasalaysay',
-  'zhihui.diagram.ttsFailed': 'Nabigo ang pagbabasa ng tagapagsalaysay, pakisubukang muli sa ibang pagkakataon.',
+  'zhihui.diagram.ttsFailed':
+    'Nabigo ang pagbabasa ng tagapagsalaysay, pakisubukang muli sa ibang pagkakataon.',
   'zhihui.refUploadSoon': 'Malapit nang masuportahan ang pag-upload ng reference na larawan',
   'zhihui.attachReference': 'Magdagdag ng reference na larawan',
   'zhihui.attachReferenceHint': 'Hanggang 3 larawan, bilang sanggunian ni Qwen',
   'zhihui.removeReference': 'Alisin ang reference na larawan',
-  'zhihui.referenceTooLarge': 'Ang reference na larawan ay masyadong malaki (ang isang larawan ay hindi dapat lumampas sa 4MB)',
+  'zhihui.referenceTooLarge':
+    'Ang reference na larawan ay masyadong malaki (ang isang larawan ay hindi dapat lumampas sa 4MB)',
   'zhihui.referenceInvalid': 'Mangyaring piliin ang PNG / JPG / WEBP na imahe',
   'zhihui.referenceLimit': 'Magdagdag ng hanggang 3 reference na larawan',
   'zhihui.sizeButton': 'Laki ng larawan',
   'zhihui.sizePanelTitle': 'Laki ng larawan',
   'zhihui.sizeOptional': 'Opsyonal',
-  'zhihui.sizeHint': 'Ang format ay lapad*taas. Kung hindi tinukoy, awtomatikong irerekomenda ng modelo ang resolution batay sa prompt na salita.',
+  'zhihui.sizeHint':
+    'Ang format ay lapad*taas. Kung hindi tinukoy, awtomatikong irerekomenda ng modelo ang resolution batay sa prompt na salita.',
   'zhihui.sizeLimits': 'Pixel area 512×512–2048×2048; aspect ratio 1:8–8:1',
   'zhihui.size.auto': 'matalino',
   'zhihui.size.autoHint': 'awtomatiko',
@@ -102,7 +113,8 @@ export default {
   'zhihui.empty': 'Wala pang larawan, pakisubukang buuin ito sa itaas.',
   'zhihui.loadFailed': 'Nabigong i-load ang kasaysayan',
   'zhihui.delete': 'tanggalin',
-  'zhihui.deleteConfirm': 'Sigurado ka bang gusto mong tanggalin ang larawang ito? Ang pagkilos na ito ay hindi maaaring i-undo.',
+  'zhihui.deleteConfirm':
+    'Sigurado ka bang gusto mong tanggalin ang larawang ito? Ang pagkilos na ito ay hindi maaaring i-undo.',
   'zhihui.deleteTitle': 'Tanggalin ang larawan',
   'zhihui.deleted': 'Tinanggal',
   'zhihui.deleteFailed': 'Nabigo ang pagtanggal',

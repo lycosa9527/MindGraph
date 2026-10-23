@@ -2,15 +2,15 @@
  * Embed vector mind-map SVG into an A4 jsPDF page (real text via svg2pdf).
  */
 import {
-  fitImageRectInA4Region,
-  fitImageRectOnA4Page,
-  type PdfPageOrientation,
-} from '@/utils/diagramPdfExport'
-import {
   collectMindMapVectorPdfSubsetText,
   registerMindMapVectorPdfFonts,
 } from '@/utils/diagramMindMapVectorPdfFonts'
 import type { MindMapVectorSvgResult } from '@/utils/diagramMindMapVectorSvg'
+import {
+  type PdfPageOrientation,
+  fitImageRectInA4Region,
+  fitImageRectOnA4Page,
+} from '@/utils/diagramPdfExport'
 
 type JsPdfDoc = InstanceType<(typeof import('jspdf'))['jsPDF']> & {
   svg: (

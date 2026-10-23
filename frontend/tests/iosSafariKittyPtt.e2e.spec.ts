@@ -82,8 +82,8 @@ class FakeMediaStreamSource {
 
 class FakeScriptProcessor {
   onaudioprocess:
-    | ((event: { inputBuffer: { getChannelData: (ch: number) => Float32Array } }) => void)
-    | null = null
+    ((event: { inputBuffer: { getChannelData: (ch: number) => Float32Array } }) => void) | null =
+    null
 
   connect(): void {
     /* no-op */

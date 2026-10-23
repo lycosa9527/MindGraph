@@ -32,6 +32,7 @@ _RETAINED_FRAME_TYPES = frozenset(
     {
         "user_message",
         "ai_message_end",
+        "seminar_minutes",
         "joined",
         "snapshot",
         "error",

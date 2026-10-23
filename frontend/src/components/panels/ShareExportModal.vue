@@ -37,11 +37,18 @@ import { replaceMindmatePreviewImageUrl } from '@/utils/mindmateDiagramPreviewDi
 import { resolveMindmateDiagramPreviewBlob } from '@/utils/mindmateDiagramPreviewResolve'
 import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
-const props = defineProps<{
-  visible: boolean
-  messages: MindMateMessage[]
-  conversationTitle: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    visible: boolean
+    messages: MindMateMessage[]
+    conversationTitle: string
+    /** Messages were chosen before open. Show the image preview and skip the checklist. */
+    previewOnly?: boolean
+  }>(),
+  {
+    previewOnly: false,
+  }
+)
 
 // Auth store for user info
 const authStore = useAuthStore()
@@ -318,8 +325,16 @@ async function exportAsPng() {
     ribbon-key="swissGlass.hero.shareExport.ribbon"
     :title="t('swissGlass.hero.shareExport.title')"
     title-key="swissGlass.hero.shareExport.title"
-    :line1="t('swissGlass.hero.shareExport.line1')"
-    line1-key="swissGlass.hero.shareExport.line1"
+    :line1="
+      t(
+        previewOnly
+          ? 'swissGlass.hero.shareExport.line1Preview'
+          : 'swissGlass.hero.shareExport.line1'
+      )
+    "
+    :line1-key="
+      previewOnly ? 'swissGlass.hero.shareExport.line1Preview' : 'swissGlass.hero.shareExport.line1'
+    "
     :icon="Download"
     width="min(640px, 92vw)"
     :close-on-click-modal="false"
@@ -328,7 +343,10 @@ async function exportAsPng() {
   >
     <div class="modal-content">
       <!-- Header with selection info -->
-      <div class="modal-header">
+      <div
+        v-if="!previewOnly"
+        class="modal-header"
+      >
         <div class="header-info">
           <div class="header-title">
             <I18nText k="panels.share.selectMessages" />
@@ -360,7 +378,10 @@ async function exportAsPng() {
         </div>
       </div>
 
-      <div class="message-list-container">
+      <div
+        v-if="!previewOnly"
+        class="message-list-container"
+      >
         <div class="message-list">
           <div
             v-for="message in selectableMessages"
@@ -412,7 +433,10 @@ async function exportAsPng() {
       </div>
 
       <!-- Selection tip -->
-      <div class="selection-tip">
+      <div
+        v-if="!previewOnly"
+        class="selection-tip"
+      >
         <span
           v-if="selectedMessages.length === 0"
           class="tip-warning"
@@ -428,7 +452,10 @@ async function exportAsPng() {
       </div>
 
       <!-- Export Container (off-screen, used for PNG generation) -->
-      <div class="export-container-wrapper">
+      <div
+        class="export-container-wrapper"
+        :class="{ 'is-preview': previewOnly }"
+      >
         <div
           ref="previewRef"
           class="export-container"
@@ -768,6 +795,22 @@ async function exportAsPng() {
   left: -9999px;
   top: 0;
   pointer-events: none;
+}
+
+.export-container-wrapper.is-preview {
+  position: static;
+  left: auto;
+  top: auto;
+  pointer-events: auto;
+  max-height: min(52vh, 520px);
+  overflow: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.export-container-wrapper.is-preview .export-container {
+  width: 100%;
 }
 
 /* Export Container (for PNG generation) */

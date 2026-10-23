@@ -2,7 +2,10 @@
 /**
  * Renders Terms + Privacy body (shared by modal and /privacy page).
  */
-import type { SoftwareAgreementContent, SoftwareAgreementSection } from '@/content/authSoftwareAgreement'
+import type {
+  SoftwareAgreementContent,
+  SoftwareAgreementSection,
+} from '@/content/authSoftwareAgreement'
 
 defineProps<{
   agreement: SoftwareAgreementContent

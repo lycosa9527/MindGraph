@@ -12,9 +12,9 @@ import { eventBus } from '@/composables/core/useEventBus'
 import type { PinnedConversationsSnapshot } from '@/composables/queries/useDifyQueries'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 import {
-  cloneMindMateMessages,
   type ActiveThreadSnapshot,
   type MindMateMessage,
+  cloneMindMateMessages,
 } from '@/stores/mindmateActiveThread'
 import { isLlmGenerating } from '@/utils/llmLoadPhase'
 import { clearMindmateDiagramPreviewCache } from '@/utils/mindmateDiagramPreviewCache'
@@ -259,8 +259,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
   ): void {
     const pinnedIds = pinned instanceof Set ? pinned : pinned.ids
     pinnedConversationIds.value = pinnedIds
-    pinnedConversationRoutes.value =
-      pinned instanceof Set ? {} : { ...pinned.routes }
+    pinnedConversationRoutes.value = pinned instanceof Set ? {} : { ...pinned.routes }
     conversations.value = convs.map((conv) => ({
       ...conv,
       is_pinned: pinnedIds.has(conv.id),

@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': '곧 제공 예정',
   'thinkingCoins.schoolInfo': '학교 요금제는 학교 관리자에게 문의하세요',
   'thinkingCoins.school.headline': 'AI 사고력 · 학교 솔루션',
-  'thinkingCoins.school.description': '학교 및 기관을 위한 프라이빗 배포, 맞춤 기능, 전체 운영 지원 — 규모, 브랜딩, 데이터 보안에 최적화되어 있습니다.',
+  'thinkingCoins.school.description':
+    '학교 및 기관을 위한 프라이빗 배포, 맞춤 기능, 전체 운영 지원 — 규모, 브랜딩, 데이터 보안에 최적화되어 있습니다.',
   'thinkingCoins.school.feature.accountManager': '전담 계정 매니저',
   'thinkingCoins.school.feature.accountManagerDesc': '1:1 상담',
   'thinkingCoins.school.feature.privateDeploy': '프라이빗 배포',
@@ -49,7 +50,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.validationRequired': '필수 항목을 모두 입력하세요',
   'thinkingCoins.school.validationPhone': '올바른 전화번호를 입력하세요',
   'thinkingCoins.school.validationTooLong': '하나 이상의 항목이 너무 깁니다',
-  'thinkingCoins.school.validationInvalid': '일부 항목이 올바르지 않습니다 — 확인 후 다시 시도하세요',
+  'thinkingCoins.school.validationInvalid':
+    '일부 항목이 올바르지 않습니다 — 확인 후 다시 시도하세요',
   'thinkingCoins.tier.trial': '체험',
   'thinkingCoins.tier.monthly': '월간',
   'thinkingCoins.tier.sub': '월간 구독',

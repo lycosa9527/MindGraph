@@ -49,7 +49,8 @@ export default {
   'chunkTestResults.answerQuality': '답변 품질',
   'chunkTestResults.avgLatency': '평균 지연',
   'chunkTestResults.back': '뒤로',
-  'chunkTestResults.cancelConfirmBody': '이 테스트를 취소하시겠습니까? 다음 체크포인트에서 중지됩니다.',
+  'chunkTestResults.cancelConfirmBody':
+    '이 테스트를 취소하시겠습니까? 다음 체크포인트에서 중지됩니다.',
   'chunkTestResults.cancelFailed': '테스트 취소에 실패했습니다',
   'chunkTestResults.cancelRequested': '테스트 취소 요청이 전송되었습니다',
   'chunkTestResults.cancelTest': '테스트 취소',
@@ -108,7 +109,8 @@ export default {
   'knowledge.doc.colStatus': '상태',
   'knowledge.doc.colType': '유형',
   'knowledge.doc.colUploaded': '업로드 날짜',
-  'knowledge.doc.emptyDescription': '아직 문서가 없습니다. 문서를 업로드하여 지식 베이스를 구축하세요.',
+  'knowledge.doc.emptyDescription':
+    '아직 문서가 없습니다. 문서를 업로드하여 지식 베이스를 구축하세요.',
   'knowledge.doc.errorPrefix': '오류: ',
   'knowledge.doc.noData': '데이터 없음',
   'knowledge.doc.statusCompleted': '완료',
@@ -124,31 +126,42 @@ export default {
   'knowledge.header.title': '개인 지식 베이스',
   'knowledge.header.upload': '문서 업로드',
   'knowledge.ragGuide.title': '패키지, RAG, 위키는 어떻게 작동하나요?',
-  'knowledge.ragGuide.subtitle': '전문 용어 없이 이해하세요 — 참고 자료 폴더라고 생각하면 됩니다. 검색을 위해 인덱싱(RAG)한 뒤 짧은 위키 노트를 컴파일하고, 마인드맵을 만들 때 AI가 둘 다 참고합니다.',
+  'knowledge.ragGuide.subtitle':
+    '전문 용어 없이 이해하세요 — 참고 자료 폴더라고 생각하면 됩니다. 검색을 위해 인덱싱(RAG)한 뒤 짧은 위키 노트를 컴파일하고, 마인드맵을 만들 때 AI가 둘 다 참고합니다.',
   'knowledge.ragGuide.step1.title': '패키지 선택',
-  'knowledge.ragGuide.step1.body': '패키지는 Zotero 컬렉션과 같습니다. 왼쪽에 최대 3개까지 둘 수 있으며, 보통 하나의 마인드맵에 속합니다. 사이드바에서 패키지를 클릭해 문서를 관리하세요.',
+  'knowledge.ragGuide.step1.body':
+    '패키지는 Zotero 컬렉션과 같습니다. 왼쪽에 최대 3개까지 둘 수 있으며, 보통 하나의 마인드맵에 속합니다. 사이드바에서 패키지를 클릭해 문서를 관리하세요.',
   'knowledge.ragGuide.step2.title': '출처 추가 및 인덱싱(RAG)',
-  'knowledge.ragGuide.step2.body': 'PDF, Word 파일, 노트 또는 웹 페이지를 업로드하세요. 긴 문서를 검색 가능한 청크로 나누고 벡터 임베딩을 저장합니다 — 이것이 RAG 인덱스이며 먼저 준비됩니다.',
+  'knowledge.ragGuide.step2.body':
+    'PDF, Word 파일, 노트 또는 웹 페이지를 업로드하세요. 긴 문서를 검색 가능한 청크로 나누고 벡터 임베딩을 저장합니다 — 이것이 RAG 인덱스이며 먼저 준비됩니다.',
   'knowledge.ragGuide.step3.title': '위키 노트 자동 컴파일',
-  'knowledge.ragGuide.step3.body': '인덱싱이 끝나면 LLM이 개요 및 주제 위키 페이지를 디스크에 컴파일합니다. 전사가 아닌 간결한 노트로 패키지를 빠르게 파악할 수 있습니다.',
+  'knowledge.ragGuide.step3.body':
+    '인덱싱이 끝나면 LLM이 개요 및 주제 위키 페이지를 디스크에 컴파일합니다. 전사가 아닌 간결한 노트로 패키지를 빠르게 파악할 수 있습니다.',
   'knowledge.ragGuide.step4.title': '조회 시 위키 + 청크 사용',
-  'knowledge.ragGuide.step4.body': '브랜치를 확장하거나 요약을 생성할 때 관련 위키 페이지를 먼저 매칭한 뒤 가장 관련 있는 청크 구간을 검색합니다(하이브리드 RAG).',
+  'knowledge.ragGuide.step4.body':
+    '브랜치를 확장하거나 요약을 생성할 때 관련 위키 페이지를 먼저 매칭한 뒤 가장 관련 있는 청크 구간을 검색합니다(하이브리드 RAG).',
   'knowledge.ragGuide.step5.title': '출처에 기반한 답변',
-  'knowledge.ragGuide.step5.body': 'AI는 추측 대신 위키 노트와 검색된 스니펫을 바탕으로 작성합니다 — 출처가 좋고 인덱싱과 위키가 완료될수록 더 정확한 맵이 됩니다.',
-  'knowledge.ragGuide.footer': '팁: 캔버스에서 문서 요약을 열면 패키지가 자동 생성됩니다. Chrome 확장으로 저장한 페이지도 사이드바 목록에 표시됩니다.',
+  'knowledge.ragGuide.step5.body':
+    'AI는 추측 대신 위키 노트와 검색된 스니펫을 바탕으로 작성합니다 — 출처가 좋고 인덱싱과 위키가 완료될수록 더 정확한 맵이 됩니다.',
+  'knowledge.ragGuide.footer':
+    '팁: 캔버스에서 문서 요약을 열면 패키지가 자동 생성됩니다. Chrome 확장으로 저장한 페이지도 사이드바 목록에 표시됩니다.',
   'knowledge.pipeline.title': '파이프라인 상태',
   'knowledge.pipeline.ragIdle': 'RAG 인덱스',
-  'knowledge.pipeline.ragIdleDetail': '인덱싱된 패키지가 없습니다. 패키지에 출처를 추가하고 인덱싱을 실행하세요.',
+  'knowledge.pipeline.ragIdleDetail':
+    '인덱싱된 패키지가 없습니다. 패키지에 출처를 추가하고 인덱싱을 실행하세요.',
   'knowledge.pipeline.ragProcessing': 'RAG 인덱싱 중',
   'knowledge.pipeline.ragProcessingDetail': '{count}개 패키지가 아직 청킹 및 임베딩 중입니다.',
   'knowledge.pipeline.ragReady': 'RAG 준비됨',
-  'knowledge.pipeline.ragReadyDetail': '{count}개 패키지가 인덱싱됨 — 청크 검색이 활성화되었습니다.',
+  'knowledge.pipeline.ragReadyDetail':
+    '{count}개 패키지가 인덱싱됨 — 청크 검색이 활성화되었습니다.',
   'knowledge.pipeline.wikiDisabled': '위키 컴파일 꺼짐',
   'knowledge.pipeline.wikiDisabledDetail': '이 서버에서는 위키 컴파일이 비활성화되어 있습니다.',
   'knowledge.pipeline.wikiIdle': '위키 컴파일',
-  'knowledge.pipeline.wikiIdleDetail': '각 출처의 RAG 인덱싱이 완료되면 위키 페이지가 컴파일됩니다.',
+  'knowledge.pipeline.wikiIdleDetail':
+    '각 출처의 RAG 인덱싱이 완료되면 위키 페이지가 컴파일됩니다.',
   'knowledge.pipeline.wikiPending': '위키 컴파일 중',
-  'knowledge.pipeline.wikiPendingDetail': '{count}개 패키지가 인덱싱 후 위키 페이지를 기다리는 중입니다.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count}개 패키지가 인덱싱 후 위키 페이지를 기다리는 중입니다.',
   'knowledge.pipeline.wikiReady': '위키 준비됨',
   'knowledge.pipeline.wikiReadyDetail': '{count}개 패키지에 컴파일된 위키 노트가 있습니다.',
   'knowledge.pipelineBadge.rag.label': '조각',
@@ -235,7 +248,8 @@ export default {
   'knowledge.settings.retrievalSection': '검색 설정',
   'knowledge.settings.title': '지식 베이스 설정',
   'knowledge.settings.helpTitle': '설정 적용 방법',
-  'knowledge.settings.helpBody': '검색 설정은 검색과 AI 답변에 즉시 적용됩니다. 청크 크기와 겹침은 새로 인덱싱되는 문서에만 적용됩니다 — 변경 후 기존 출처를 다시 인덱싱하세요.',
+  'knowledge.settings.helpBody':
+    '검색 설정은 검색과 AI 답변에 즉시 적용됩니다. 청크 크기와 겹침은 새로 인덱싱되는 문서에만 적용됩니다 — 변경 후 기존 출처를 다시 인덱싱하세요.',
   'knowledge.settings.tokens': '토큰',
   'knowledge.settings.serverSection': '서버(읽기 전용)',
   'knowledge.settings.rerankingMode': '재순위',
@@ -246,7 +260,8 @@ export default {
   'knowledge.settings.wikiDisabled': '사용 안 함',
   'knowledge.settings.saveSuccess': '설정이 저장되었습니다',
   'knowledge.settings.saveFailed': '설정 저장에 실패했습니다',
-  'knowledge.settings.reindexRequired': '청크 설정이 변경되었습니다 — 새 크기를 적용하려면 패키지의 기존 문서를 다시 인덱싱하세요.',
+  'knowledge.settings.reindexRequired':
+    '청크 설정이 변경되었습니다 — 새 크기를 적용하려면 패키지의 기존 문서를 다시 인덱싱하세요.',
   'knowledge.upload.click': '클릭하여 업로드',
   'knowledge.upload.drag': '또는 파일을 여기에 끌어다 놓기',
   'knowledge.upload.fileTooLarge': '파일 크기는 10MB를 초과할 수 없습니다',

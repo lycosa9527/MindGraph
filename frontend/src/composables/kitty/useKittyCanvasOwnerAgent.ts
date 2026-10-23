@@ -13,13 +13,13 @@ import {
   isKittyWsIntentionalClose,
   isKittyWsPolicyDenyClose,
 } from '@/composables/kitty/kittyConnectFailure'
+import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 import {
   type KittyConnectAttemptResult,
   classifyKittyConnectError,
   createKittyWsAuthReconnectGate,
   runKittyConnectWithAuthRecovery,
 } from '@/composables/kitty/kittyWsAuthReconnect'
-import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
 import { KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS } from '@/composables/kitty/syncKittyHubContext'
 import { useKittyAgent } from '@/composables/kitty/useKittyAgent'
@@ -27,8 +27,8 @@ import { lectureSpeakGeneration } from '@/composables/mindMap/useMindClassroomLe
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
-import { useOneSentenceStore } from '@/stores/oneSentence'
 import { useKittySessionStore } from '@/stores/kittySession'
+import { useOneSentenceStore } from '@/stores/oneSentence'
 
 const RECONNECT_DEBOUNCE_MS = 400
 const RECONNECT_MAX_BACKOFF_MS = 8_000
@@ -322,16 +322,12 @@ export function useKittyCanvasOwnerAgent(options: {
       void (async () => {
         const requestedGeneration = payload.generation
         const connected = await ensureConnected()
-        if (
-          requestedGeneration !== undefined &&
-          requestedGeneration !== lectureSpeakGeneration()
-        ) {
+        if (requestedGeneration !== undefined && requestedGeneration !== lectureSpeakGeneration()) {
           return
         }
-        const prefetch =
-          payload.prefetchText?.trim()
-            ? { text: payload.prefetchText, stepId: payload.prefetchStepId }
-            : undefined
+        const prefetch = payload.prefetchText?.trim()
+          ? { text: payload.prefetchText, stepId: payload.prefetchStepId }
+          : undefined
         if (!connected || !kitty.sendNarrate(payload.text, payload.stepId, prefetch)) {
           eventBus.emit('kitty:lecture_tts_done', { fallback: true })
         }
@@ -366,12 +362,7 @@ export function useKittyCanvasOwnerAgent(options: {
 
   eventBus.onWithOwner(
     'voice:ws_closed',
-    (payload?: {
-      wasClean?: boolean
-      code?: number
-      reason?: string
-      scope?: string
-    }) => {
+    (payload?: { wasClean?: boolean; code?: number; reason?: string; scope?: string }) => {
       if (!options.enabled.value || authGate.isHardStopped() || releasingOwnership) {
         return
       }

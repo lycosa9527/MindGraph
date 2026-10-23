@@ -5,8 +5,8 @@ import {
   remapMindMapNodeIdAfterReload,
   remapMindMapNodeIdsAfterReload,
 } from '@/stores/diagram/mindMapCollapse'
-import { MINDMAP_NODE_UID_DATA_KEY } from '@/utils/mindMapNodeUid'
 import type { Connection, DiagramNode } from '@/types'
+import { MINDMAP_NODE_UID_DATA_KEY } from '@/utils/mindMapNodeUid'
 
 describe('remapMindMapNodeIdAfterReload', () => {
   it('keeps the same UUID after a sibling insert (identity invert)', () => {
@@ -22,7 +22,12 @@ describe('remapMindMapNodeIdAfterReload', () => {
     const newNodes: DiagramNode[] = [
       { id: 'topic', text: 'Root', type: 'topic' },
       { id: 'uid-a', text: 'A', type: 'branch', data: { [MINDMAP_NODE_UID_DATA_KEY]: 'uid-a' } },
-      { id: 'uid-new', text: 'New', type: 'branch', data: { [MINDMAP_NODE_UID_DATA_KEY]: 'uid-new' } },
+      {
+        id: 'uid-new',
+        text: 'New',
+        type: 'branch',
+        data: { [MINDMAP_NODE_UID_DATA_KEY]: 'uid-new' },
+      },
       { id: 'uid-b', text: 'B', type: 'branch', data: { [MINDMAP_NODE_UID_DATA_KEY]: 'uid-b' } },
     ]
     const newConnections: Connection[] = [
@@ -35,7 +40,13 @@ describe('remapMindMapNodeIdAfterReload', () => {
       remapMindMapNodeIdAfterReload('uid-b', oldNodes, oldConnections, newNodes, newConnections)
     ).toBe('uid-b')
     expect(
-      remapMindMapNodeIdsAfterReload(['uid-a', 'uid-b'], oldNodes, oldConnections, newNodes, newConnections)
+      remapMindMapNodeIdsAfterReload(
+        ['uid-a', 'uid-b'],
+        oldNodes,
+        oldConnections,
+        newNodes,
+        newConnections
+      )
     ).toEqual(['uid-a', 'uid-b'])
   })
 

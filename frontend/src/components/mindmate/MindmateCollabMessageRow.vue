@@ -3,20 +3,42 @@
  * One seminar transcript row: peer / own / MindMate.
  * MindMate teaching-instruction markers become Word / canvas actions, not raw tags.
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
+import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
+import seminarAssistantAvatar from '@/assets/seminar/seminar-assistant.svg'
 import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 import MindmateCollabAssistantToolbar from '@/components/mindmate/MindmateCollabAssistantToolbar.vue'
 import MindmateCollabMessageStamp from '@/components/mindmate/MindmateCollabMessageStamp.vue'
+import MindmateMentionMenu from '@/components/mindmate/MindmateMentionMenu.vue'
+import MindmateSeminarBubbleActions from '@/components/mindmate/MindmateSeminarBubbleActions.vue'
+import MindmateSeminarDiagramCard from '@/components/mindmate/MindmateSeminarDiagramCard.vue'
+import MindmateSeminarFileCard from '@/components/mindmate/MindmateSeminarFileCard.vue'
+import MindmateSeminarInfoCard from '@/components/mindmate/MindmateSeminarInfoCard.vue'
+import MindmateSeminarSummaryCard from '@/components/mindmate/MindmateSeminarSummaryCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
   confirmCanvasLibraryDiagramOpen,
   decideCanvasLibraryDiagramOpen,
 } from '@/composables/canvasPage/canvasLibraryDiagramOpen'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
+import {
+  addSeminarHighlight,
+  openSeminarDoc,
+  openSeminarTaskPane,
+  pushSeminarHighlightNotice,
+  removeSeminarHighlight,
+  requestSeminarMention,
+  seminarArtifactsReady,
+  seminarFileDocId,
+  seminarHighlights,
+  seminarServerArtifacts,
+  seminarSpectator,
+  upsertSeminarServerArtifact,
+} from '@/composables/mindmate/mindmateSeminarChrome'
 import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
 import { useAuthStore } from '@/stores/auth'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -26,6 +48,7 @@ import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
 import {
   collabDiagramSaveFailureKey,
   saveCollabDiagramToLibrary,
+  saveSharedCanvasDiagram,
 } from '@/utils/mindmateCollabDiagramLibrary'
 import {
   type CollabFeedbackRating,
@@ -34,10 +57,30 @@ import {
   displayMindmateCollabContent,
   shouldShowCollabWordTemplateExport,
 } from '@/utils/mindmateCollabDisplay'
-import type { CollabReadCursor } from '@/utils/mindmateCollabRead'
-import { extractMindmatePreviewUniqueId } from '@/utils/mindmateDiagramMeta'
-import { TEACHING_INSTRUCTION_KIND } from '@/utils/mindmateTeachingDesignFlag'
-import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
+import { type CollabReadCursor, formatCollabMessageStamp } from '@/utils/mindmateCollabRead'
+import {
+  extractFirstMarkdownImageUrl,
+  extractMindmatePreviewUniqueId,
+  hasGeneratedDiagramImage,
+  parseMindmateDiagramLibraryId,
+} from '@/utils/mindmateDiagramMeta'
+import {
+  type SeminarBriefEditPayload,
+  parseSeminarBriefCard,
+  parseSeminarSummaryCard,
+} from '@/utils/mindmateSeminarCards'
+import {
+  archiveSeminarReplyDocx,
+  fetchSeminarBackgroundBlob,
+  isSeminarVoiceFilename,
+  seminarBubblePlainText,
+  splitSeminarMessageFiles,
+} from '@/utils/mindmateSeminarFolder'
+import {
+  TEACHING_INSTRUCTION_KIND,
+  stripTeachingDesignFlags,
+} from '@/utils/mindmateTeachingDesignFlag'
+import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
 
 const props = defineProps<{
   message: MindmateCollabMessage
@@ -45,20 +88,31 @@ const props = defineProps<{
   userPrompt?: string
   agentName: string
   agentAvatarUrl: string
-  isLastAssistant?: boolean
   regenerateDisabled?: boolean
   feedback?: CollabFeedbackRating
   sessionId?: string
   readCursors?: readonly CollabReadCursor[]
   /** False on a closed seminar: no live read checks or room actions. */
   live?: boolean
+  selectMode?: boolean
+  selected?: boolean
+  briefEditable?: boolean
+  briefSaving?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'regenerate'): void
   (e: 'share'): void
   (e: 'feedback', rating: 'like' | 'dislike'): void
+  (e: 'reply', quote: { author: string; text: string }): void
+  (e: 'multi'): void
+  (e: 'toggleSelect'): void
+  (e: 'saveBrief', payload: SeminarBriefEditPayload, done: (ok: boolean) => void): void
 }>()
+
+function onSaveBrief(payload: SeminarBriefEditPayload, done: (ok: boolean) => void): void {
+  emit('saveBrief', payload, done)
+}
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -70,8 +124,10 @@ const route = useRoute()
 const router = useRouter()
 
 const openingCanvas = ref(false)
+const convertingDocument = ref(false)
 const showImagePreview = ref(false)
 const previewImageUrl = ref('')
+const bubbleEl = ref<HTMLElement | null>(null)
 
 const exportMessageId = computed(() => {
   if (props.message.id != null) {
@@ -85,6 +141,16 @@ const exportMessageId = computed(() => {
 
 const showWordTemplateExport = computed(() => shouldShowCollabWordTemplateExport(props.message))
 
+const showConvertToDocument = computed(() => {
+  if (props.message.role !== 'assistant' || props.message.streaming || props.message.id == null) {
+    return false
+  }
+  if (showWordTemplateExport.value) {
+    return false
+  }
+  return stripTeachingDesignFlags(props.message.content).trim().length > 0
+})
+
 const libraryDiagramId = computed(() => collabAssistantLibraryDiagramId(props.message))
 
 const showCanvasEdit = computed(() => collabAssistantOffersCanvasEdit(props.message))
@@ -93,7 +159,65 @@ const displayText = computed(() =>
   displayMindmateCollabContent(props.message.content, props.message.role)
 )
 
-const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => displayText.value, {
+const messageBody = computed(() => splitSeminarMessageFiles(displayText.value))
+
+const sharedCanvasId = computed(() => {
+  if (props.message.role !== 'user' || props.message.streaming) {
+    return null
+  }
+  return parseMindmateDiagramLibraryId(props.message.content)
+})
+
+const sharedCanvasImage = computed(() =>
+  sharedCanvasId.value ? extractFirstMarkdownImageUrl(props.message.content) : null
+)
+
+const userBubbleText = computed(() => {
+  if (!sharedCanvasId.value) {
+    return messageBody.value.text
+  }
+  return messageBody.value.text
+    .replace(/!\[[^\]]*]\([^)]+\)/g, '')
+    .replace(/<!--\s*mg-diagram-id:[a-f0-9-]+\s*-->/gi, '')
+    .trim()
+})
+const voiceSrc = ref<Record<string, string>>({})
+
+watch(
+  () => messageBody.value.files.map((file) => file.id).join(','),
+  () => {
+    void loadVoiceClips()
+  },
+  { immediate: true }
+)
+
+async function loadVoiceClips(): Promise<void> {
+  const sessionId = props.sessionId?.trim()
+  if (!sessionId) {
+    return
+  }
+  for (const file of messageBody.value.files) {
+    if (!isSeminarVoiceFilename(file.filename) || voiceSrc.value[file.id]) {
+      continue
+    }
+    try {
+      const blob = await fetchSeminarBackgroundBlob(sessionId, file.id)
+      voiceSrc.value = { ...voiceSrc.value, [file.id]: URL.createObjectURL(blob) }
+    } catch {
+      voiceSrc.value = { ...voiceSrc.value, [file.id]: '' }
+    }
+  }
+}
+
+onUnmounted(() => {
+  Object.values(voiceSrc.value).forEach((url) => {
+    if (url) {
+      URL.revokeObjectURL(url)
+    }
+  })
+})
+
+const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => messageBody.value.text, {
   stripThinkBlocks: true,
 })
 
@@ -101,13 +225,148 @@ const isAssistant = computed(() => props.message.role === 'assistant')
 
 const showPersonAvatar = computed(() => props.live !== false)
 
-const ownAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
-const ownAvatarSrc = computed(() => userAvatarImageSrc(authStore.user?.avatar))
-
-const peerInitial = computed(() => {
-  const initial = (props.message.username || '?').trim().slice(0, 1).toUpperCase()
-  return initial || '?'
+const isMindGraphReply = computed(() => {
+  if (!isAssistant.value) {
+    return false
+  }
+  const content = props.message.content
+  return hasGeneratedDiagramImage(content) || parseMindmateDiagramLibraryId(content) !== null
 })
+
+const speakerName = computed(() =>
+  isMindGraphReply.value ? t('mindmate.composer.mindgraph') : props.agentName
+)
+
+const speakerAvatar = computed(() =>
+  isMindGraphReply.value ? mindgraphLogo : props.agentAvatarUrl
+)
+
+function authorLabel(): string {
+  if (isAssistant.value) {
+    return speakerName.value
+  }
+  if (props.isOwn) {
+    return authStore.user?.username || t('mindmate.highlights.you')
+  }
+  return props.message.username || t('mindmate.collabPokeSomeone')
+}
+
+const selfUserId = computed(() => Number(authStore.user?.id) || 0)
+
+const messageHighlights = computed(() => {
+  const messageId = props.message.id
+  if (!messageId) {
+    return []
+  }
+  return seminarHighlights.value.filter((item) => item.messageId === messageId)
+})
+
+const highlightState = computed<'none' | 'mine' | 'other'>(() => {
+  const rows = messageHighlights.value
+  if (!rows.length) {
+    return 'none'
+  }
+  if (rows.some((item) => item.createdByUserId === selfUserId.value && selfUserId.value > 0)) {
+    return 'mine'
+  }
+  return 'other'
+})
+
+function pinHighlight(): void {
+  const sessionId = props.sessionId?.trim()
+  if (!sessionId || highlightState.value === 'other') {
+    return
+  }
+  if (highlightState.value === 'mine') {
+    const mine = messageHighlights.value.filter((item) => item.createdByUserId === selfUserId.value)
+    for (const item of mine) {
+      removeSeminarHighlight(sessionId, item.id)
+    }
+    pushSeminarHighlightNotice(sessionId, {
+      kind: 'cancel',
+      ownMessage: props.isOwn,
+      authorName: authorLabel(),
+    })
+    return
+  }
+  const selection = window.getSelection()?.toString().trim() || ''
+  const anchor = window.getSelection()?.anchorNode
+  const inBubble = Boolean(selection && bubbleEl.value && anchor && bubbleEl.value.contains(anchor))
+  const text = inBubble ? selection : messageBody.value.text
+  if (!text) {
+    return
+  }
+  const added = addSeminarHighlight(sessionId, {
+    text: text.slice(0, 2000),
+    authorName: authorLabel(),
+    messageId: props.message.id ?? null,
+    createdByUserId: selfUserId.value || null,
+    createdByName: authStore.user?.username || t('mindmate.highlights.you'),
+    messageAt: props.message.created_at || '',
+  })
+  if (!added) {
+    return
+  }
+  pushSeminarHighlightNotice(sessionId, {
+    kind: 'set',
+    ownMessage: props.isOwn,
+    authorName: authorLabel(),
+  })
+  openSeminarTaskPane('highlights')
+  notify.successKey('mindmate.highlights.added')
+}
+
+const ownDisplayName = computed(() => authStore.user?.username || props.message.username || '')
+
+const ownSurname = computed(() => seminarAvatarSurname(ownDisplayName.value))
+
+const peerSurname = computed(() => seminarAvatarSurname(props.message.username))
+
+const ownTone = computed(() => seminarAvatarTone(authStore.user?.id ?? ownDisplayName.value))
+
+const peerTone = computed(() =>
+  seminarAvatarTone(props.message.sender_user_id ?? props.message.username)
+)
+
+const messageStamp = computed(() => formatCollabMessageStamp(props.message.created_at))
+
+const briefCard = computed(() => parseSeminarBriefCard(props.message.content))
+
+const summaryCard = computed(() => parseSeminarSummaryCard(props.message.content))
+
+const mentionMenu = ref<{ x: number; y: number; name: string } | null>(null)
+
+const mentionName = computed(() => {
+  if (props.isOwn || summaryCard.value || isMindGraphReply.value) {
+    return ''
+  }
+  if (isAssistant.value) {
+    return speakerName.value.trim()
+  }
+  return (props.message.username || '').trim()
+})
+
+const canMentionAvatar = computed(() => Boolean(mentionName.value) && !seminarSpectator.value)
+
+function onAvatarContextMenu(event: MouseEvent): void {
+  if (!canMentionAvatar.value) {
+    return
+  }
+  event.preventDefault()
+  mentionMenu.value = {
+    x: event.clientX,
+    y: event.clientY,
+    name: mentionName.value,
+  }
+}
+
+function chooseMention(): void {
+  const name = mentionMenu.value?.name || ''
+  mentionMenu.value = null
+  if (name) {
+    requestSeminarMention(name)
+  }
+}
 
 const rowClass = computed(() => {
   if (props.isOwn) {
@@ -134,13 +393,90 @@ function handleMarkdownClick(event: MouseEvent): void {
 
 async function handleCopy(): Promise<void> {
   try {
-    await copyMindmateAssistantMessage(
-      props.message.content,
-      typeof window !== 'undefined' ? window.location.host : undefined
-    )
+    if (isAssistant.value) {
+      await copyMindmateAssistantMessage(
+        props.message.content,
+        typeof window !== 'undefined' ? window.location.host : undefined
+      )
+    } else {
+      await navigator.clipboard.writeText(seminarBubblePlainText(props.message.content))
+    }
     notify.successKey('notification.copied')
   } catch {
     notify.errorKey('notification.copyFailed')
+  }
+}
+
+function emitReply(): void {
+  const text = seminarBubblePlainText(props.message.content).replace(/\s+/g, ' ').trim()
+  if (!text) {
+    return
+  }
+  emit('reply', { author: authorLabel(), text: text.slice(0, 180) })
+}
+
+function onRowClick(event: MouseEvent): void {
+  if (!props.selectMode) {
+    return
+  }
+  const target = event.target
+  if (target instanceof Element && target.closest('button, a, audio, input, textarea')) {
+    return
+  }
+  emit('toggleSelect')
+}
+
+const teachingArchiveStarted = new Set<number>()
+
+watch(
+  () => {
+    const messageId = props.message.id
+    if (!seminarArtifactsReady.value || !showWordTemplateExport.value || messageId == null) {
+      return false
+    }
+    return !seminarServerArtifacts.value.some((file) => file.sourceMessageId === messageId)
+  },
+  (missing) => {
+    const sessionId = props.sessionId?.trim() ?? ''
+    const messageId = props.message.id
+    if (!missing || !sessionId || messageId == null || teachingArchiveStarted.has(messageId)) {
+      return
+    }
+    teachingArchiveStarted.add(messageId)
+    void archiveSeminarReplyDocx(sessionId, messageId)
+      .then((file) => {
+        upsertSeminarServerArtifact(file)
+      })
+      .catch(() => {
+        teachingArchiveStarted.delete(messageId)
+      })
+  },
+  { immediate: true }
+)
+
+async function handleConvertToDocument(): Promise<void> {
+  const sessionId = props.sessionId?.trim() ?? ''
+  const messageId = props.message.id
+  if (!sessionId || messageId == null || convertingDocument.value) {
+    return
+  }
+  convertingDocument.value = true
+  try {
+    const file = await archiveSeminarReplyDocx(sessionId, messageId)
+    upsertSeminarServerArtifact(file)
+    openSeminarDoc({
+      id: seminarFileDocId(file.id),
+      kind: 'file',
+      title: file.filename,
+      fileId: file.id,
+      filename: file.filename,
+      contentType: file.contentType,
+    })
+    notify.successKey('mindmate.convertToDocumentOk')
+  } catch {
+    notify.errorKey('mindmate.convertToDocumentFail')
+  } finally {
+    convertingDocument.value = false
   }
 }
 
@@ -159,8 +495,17 @@ function handleExportWordTemplate(): void {
 }
 
 async function resolveCanvasDiagramId(): Promise<string | null> {
-  const previewId = extractMindmatePreviewUniqueId(props.message.content)
   const sessionId = props.sessionId?.trim() ?? ''
+  const sharedId = sharedCanvasId.value
+  if (sharedId && sessionId) {
+    const saved = await saveSharedCanvasDiagram(sessionId, sharedId)
+    if (!saved.ok) {
+      notify.errorKey(collabDiagramSaveFailureKey(saved.reason))
+      return null
+    }
+    return saved.diagramId
+  }
+  const previewId = extractMindmatePreviewUniqueId(props.message.content)
   if (previewId && sessionId) {
     const saved = await saveCollabDiagramToLibrary(sessionId, previewId)
     if (!saved.ok) {
@@ -228,98 +573,223 @@ async function openInCanvas(): Promise<void> {
 
 <template>
   <div
-    class="mindmate-collab-room__msg-row"
-    :class="rowClass"
+    v-if="briefCard"
+    class="mindmate-collab-room__msg-row mindmate-collab-room__msg-row--card"
+    :data-seminar-brief-card="briefCard ? '' : undefined"
   >
+    <MindmateSeminarInfoCard
+      v-if="briefCard"
+      :model="briefCard"
+      :editable="briefEditable"
+      :saving="briefSaving"
+      @save="onSaveBrief"
+    />
+  </div>
+  <div
+    v-else
+    class="mindmate-collab-room__msg-row"
+    :class="[rowClass, { 'is-selected': selected, 'is-selecting': selectMode }]"
+    :data-collab-message-id="message.id || undefined"
+    @click="onRowClick"
+  >
+    <button
+      v-if="selectMode"
+      type="button"
+      class="mindmate-collab-room__check"
+      :class="{ 'is-on': selected }"
+      :aria-pressed="selected"
+      @click.stop="emit('toggleSelect')"
+    />
     <div
       v-if="isAssistant || showPersonAvatar"
       class="mindmate-collab-room__avatar"
+      :class="{
+        'is-assistant': isAssistant && !summaryCard,
+        'is-minutes': Boolean(summaryCard),
+        'is-graph': isMindGraphReply,
+        'is-mentionable': canMentionAvatar,
+      }"
+      @contextmenu="onAvatarContextMenu"
     >
       <img
-        v-if="isAssistant"
-        :src="agentAvatarUrl"
-        :alt="agentName"
+        v-if="summaryCard"
+        :src="seminarAssistantAvatar"
+        :alt="summaryCard.author || t('mindmate.summary.author')"
         class="mindmate-collab-room__avatar-img"
       />
       <img
-        v-else-if="isOwn && ownAvatarSrc"
-        :src="ownAvatarSrc"
-        alt=""
+        v-else-if="isAssistant"
+        :src="speakerAvatar"
+        :alt="speakerName"
         class="mindmate-collab-room__avatar-img"
       />
       <span
         v-else-if="isOwn"
-        class="mindmate-collab-room__avatar-emoji mg-user-avatar-emoji"
+        class="mindmate-collab-room__avatar-surname"
+        :style="{ background: ownTone.background, color: ownTone.color }"
+        aria-hidden="true"
       >
-        {{ ownAvatar }}
+        {{ ownSurname }}
       </span>
       <span
         v-else
-        class="mindmate-collab-room__avatar-emoji"
+        class="mindmate-collab-room__avatar-surname"
+        :style="{ background: peerTone.background, color: peerTone.color }"
         aria-hidden="true"
       >
-        {{ peerInitial }}
+        {{ peerSurname }}
       </span>
     </div>
+    <MindmateMentionMenu
+      v-if="mentionMenu"
+      :x="mentionMenu.x"
+      :y="mentionMenu.y"
+      :name="mentionMenu.name"
+      @choose="chooseMention"
+      @close="mentionMenu = null"
+    />
     <div class="mindmate-collab-room__msg-body">
       <div
         v-if="isAssistant"
-        class="text-[11px] text-stone-500 mb-1 px-1"
+        class="mindmate-collab-room__meta"
       >
-        {{ agentName }}
+        <span class="mindmate-collab-room__meta-name">{{
+          summaryCard?.author || speakerName
+        }}</span>
+        <span
+          v-if="messageStamp"
+          class="mindmate-collab-room__meta-time"
+          >{{ messageStamp }}</span
+        >
       </div>
       <div
         v-else-if="!isOwn && message.username"
-        class="text-[11px] text-stone-500 mb-1 px-1"
+        class="mindmate-collab-room__meta"
       >
-        {{ message.username }}
+        <span class="mindmate-collab-room__meta-name">{{ message.username }}</span>
+        <span
+          v-if="messageStamp"
+          class="mindmate-collab-room__meta-time"
+          >{{ messageStamp }}</span
+        >
       </div>
       <div
-        class="mindmate-collab-room__bubble text-sm rounded-2xl px-3.5 py-2.5 leading-relaxed"
+        ref="bubbleEl"
+        class="mindmate-collab-room__bubble text-sm leading-relaxed"
         :class="[
           isOwn
-            ? 'bg-stone-800 text-stone-50 text-left'
-            : 'bg-stone-100 text-stone-800 border border-stone-200/80',
+            ? 'mindmate-collab-room__bubble--own'
+            : isAssistant
+              ? 'mindmate-collab-room__bubble--assistant'
+              : 'mindmate-collab-room__bubble--peer',
           message.streaming ? 'mindmate-collab-room__bubble--streaming' : '',
-          isAssistant ? '' : 'whitespace-pre-wrap',
+          sharedCanvasId ? 'mindmate-collab-room__bubble--diagram' : '',
+          messageBody.files.length && !userBubbleText && !sharedCanvasId
+            ? 'mindmate-collab-room__bubble--files'
+            : '',
+          isAssistant || sharedCanvasId || messageBody.files.length ? '' : 'whitespace-pre-wrap',
         ]"
       >
+        <div
+          v-if="messageBody.files.length > 0"
+          class="mindmate-collab-room__msg-files"
+        >
+          <template
+            v-for="file in messageBody.files"
+            :key="file.id"
+          >
+            <audio
+              v-if="isSeminarVoiceFilename(file.filename) && voiceSrc[file.id]"
+              class="mindmate-collab-room__voice"
+              :src="voiceSrc[file.id]"
+              controls
+              preload="metadata"
+            />
+            <MindmateSeminarFileCard
+              v-else-if="sessionId"
+              :session-id="sessionId"
+              :file-id="file.id"
+              :filename="file.filename"
+              :sent-at="message.created_at"
+            />
+          </template>
+        </div>
+        <MindmateSeminarSummaryCard
+          v-if="summaryCard"
+          :model="summaryCard"
+        />
         <!-- eslint-disable vue/no-v-html -- DOMPurify in renderRichMarkdownHtml pipeline -->
         <div
-          v-if="isAssistant"
+          v-else-if="isAssistant"
           class="mindmate-collab-room__markdown"
           @click="handleMarkdownClick"
           v-html="renderedMarkdownHtml"
         />
         <!-- eslint-enable vue/no-v-html -->
-        <template v-else>
-          {{ message.content }}
+        <template v-else-if="userBubbleText || sharedCanvasId">
+          <MindmateSeminarDiagramCard
+            v-if="sharedCanvasId && sessionId"
+            :session-id="sessionId"
+            :diagram-id="sharedCanvasId"
+            :caption="userBubbleText"
+            :thumbnail-url="sharedCanvasImage"
+            :opening="openingCanvas"
+            @open="openInCanvas"
+          />
+          <template v-else>{{ userBubbleText }}</template>
         </template>
       </div>
-      <MindmateCollabMessageStamp
-        :message-id="message.id"
-        :created-at="message.created_at"
-        :sender-user-id="message.sender_user_id"
-        :is-own="isOwn"
-        :read-cursors="live === false ? [] : readCursors"
-        :show-receipt="live !== false"
+      <div
+        v-if="!message.streaming && isOwn"
+        class="mindmate-collab-room__stamp-row mindmate-collab-room__stamp-row--own"
+      >
+        <MindmateSeminarBubbleActions
+          v-if="live !== false"
+          inline
+          :highlight-state="highlightState"
+          @copy="handleCopy"
+          @reply="emitReply"
+          @highlight="pinHighlight"
+          @multi="emit('multi')"
+        />
+        <MindmateCollabMessageStamp
+          :message-id="message.id"
+          :created-at="message.created_at"
+          :sender-user-id="message.sender_user_id"
+          :is-own="isOwn"
+          :read-cursors="live === false ? [] : readCursors"
+          :show-receipt="live !== false"
+        />
+      </div>
+      <MindmateSeminarBubbleActions
+        v-else-if="!message.streaming && !isAssistant && live !== false"
+        :highlight-state="highlightState"
+        @copy="handleCopy"
+        @reply="emitReply"
+        @highlight="pinHighlight"
+        @multi="emit('multi')"
       />
       <MindmateCollabAssistantToolbar
-        v-if="isAssistant && !message.streaming"
+        v-if="isAssistant && !message.streaming && !summaryCard"
         :live-actions="live !== false"
-        :is-last-assistant="Boolean(isLastAssistant)"
         :can-regenerate="Boolean(userPrompt)"
         :regenerate-disabled="Boolean(regenerateDisabled)"
         :feedback="feedback"
         :show-word-template-export="showWordTemplateExport"
+        :show-convert-to-document="showConvertToDocument"
+        :converting-document="convertingDocument"
         :exporting-word="exportingMessageId === exportMessageId"
         :show-canvas="showCanvasEdit"
         :opening-canvas="openingCanvas"
+        :highlight-state="highlightState"
         @copy="handleCopy"
         @regenerate="emit('regenerate')"
         @feedback="emit('feedback', $event)"
-        @share="emit('share')"
+        @reply="emitReply"
+        @highlight="pinHighlight"
+        @multi="emit('multi')"
         @export-word="handleExportWordTemplate"
+        @convert-document="handleConvertToDocument"
         @open-canvas="openInCanvas"
       />
     </div>
@@ -335,25 +805,117 @@ async function openInCanvas(): Promise<void> {
 <style scoped>
 @import '../panels/mindmate/mindmate.css';
 
+.mindmate-collab-room__bubble--diagram {
+  display: block;
+  box-sizing: border-box;
+  width: min(22.5rem, 100%);
+  max-width: 100%;
+  padding: 8px;
+  white-space: normal;
+}
+
 .mindmate-collab-room__msg-row {
   display: flex;
   align-items: flex-start;
   gap: 0.625rem;
   width: 100%;
   min-width: 0;
+  position: relative;
+  padding-bottom: 36px;
+}
+
+.mindmate-collab-room__msg-row.is-selecting {
+  padding-left: 28px;
+}
+
+.mindmate-collab-room__msg-row.is-selected .mindmate-collab-room__bubble--own,
+.mindmate-collab-room__msg-row.is-selected .mindmate-collab-room__bubble--peer {
+  outline: 2px solid #c4b5fd;
+}
+
+.mindmate-collab-room__check {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #d6d3d1;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.mindmate-collab-room__check.is-on {
+  border-color: #6d5efc;
+  background: #6d5efc;
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+.mindmate-collab-room__msg-row--assistant,
+.mindmate-collab-room__msg-row--card {
+  padding-bottom: 0;
+}
+
+.mindmate-collab-room__msg-body {
+  position: relative;
+}
+
+.mindmate-collab-room__msg-row :deep(.mm-bubble-actions) {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 2;
+  height: 32px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.mindmate-collab-room__msg-row:hover :deep(.mm-bubble-actions),
+.mindmate-collab-room__msg-row:focus-within :deep(.mm-bubble-actions) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mindmate-collab-room__msg-row--card {
+  display: flex;
+  justify-content: center;
+}
+
+.mindmate-collab-room__msg-row--card > :deep(*) {
+  width: 70%;
+  max-width: 100%;
+  flex: 0 0 70%;
 }
 
 .mindmate-collab-room__avatar {
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 9999px;
   flex-shrink: 0;
   overflow: hidden;
-  background: #f5f5f4;
-  border: 1px solid #e7e5e4;
+  background: #ede9fe;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.mindmate-collab-room__avatar.is-assistant {
+  background: linear-gradient(145deg, #a78bfa 0%, #6d5efc 100%);
+}
+
+.mindmate-collab-room__avatar.is-minutes {
+  background: #14635c;
+}
+
+.mindmate-collab-room__avatar.is-graph {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #ece9f5;
+}
+
+.mindmate-collab-room__avatar.is-mentionable {
+  cursor: context-menu;
 }
 
 .mindmate-collab-room__avatar-img {
@@ -362,14 +924,16 @@ async function openInCanvas(): Promise<void> {
   object-fit: cover;
 }
 
-.mindmate-collab-room__avatar-emoji {
-  font-size: 1rem;
+.mindmate-collab-room__avatar-surname {
+  font-size: 0.85rem;
   line-height: 1;
-  font-weight: 500;
-  color: #57534e;
+  font-weight: 650;
   user-select: none;
-  font-family:
-    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', emoji, sans-serif;
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mindmate-collab-room__msg-row--own {
@@ -378,13 +942,15 @@ async function openInCanvas(): Promise<void> {
 
 .mindmate-collab-room__msg-body {
   min-width: 0;
-  max-width: min(85%, 36rem);
+  max-width: min(78%, 36rem);
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .mindmate-collab-room__msg-row--own .mindmate-collab-room__msg-body {
-  align-items: flex-end;
+  display: grid;
+  justify-items: end;
 }
 
 .mindmate-collab-room__msg-row--other .mindmate-collab-room__msg-body {
@@ -399,11 +965,59 @@ async function openInCanvas(): Promise<void> {
   align-items: flex-start;
 }
 
+.mindmate-collab-room__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.mindmate-collab-room__meta-name {
+  font-weight: 600;
+  color: #57534e;
+}
+
+.mindmate-collab-room__meta-time {
+  color: #a8a29e;
+  font-weight: 400;
+}
+
 .mindmate-collab-room__bubble {
   display: inline-block;
+  width: fit-content;
   max-width: 100%;
   overflow-wrap: break-word;
   word-break: normal;
+  border-radius: 16px;
+  padding: 10px 14px;
+  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04);
+}
+
+.mindmate-collab-room__bubble--own {
+  background: #ede9fe;
+  color: #1c1917;
+  border: none;
+  box-shadow: none;
+  border-top-right-radius: 6px;
+}
+
+.mindmate-collab-room__bubble--peer {
+  background: #f0f0f0;
+  color: #1c1917;
+  border: none;
+  box-shadow: none;
+  border-top-left-radius: 6px;
+}
+
+.mindmate-collab-room__bubble--assistant {
+  background: transparent;
+  color: #1c1917;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 4px;
 }
 
 .mindmate-collab-room__msg-row--assistant .mindmate-collab-room__bubble {
@@ -411,6 +1025,93 @@ async function openInCanvas(): Promise<void> {
   box-sizing: border-box;
   width: fit-content;
   max-width: 100%;
+}
+
+.mindmate-collab-room__msg-row--assistant:has(.mm-sum-card) .mindmate-collab-room__msg-body {
+  width: 100%;
+  max-width: none;
+}
+
+.mindmate-collab-room__msg-row--assistant:has(.mm-sum-card) .mindmate-collab-room__bubble {
+  width: 60%;
+  max-width: 60%;
+}
+
+.mindmate-collab-room__stamp-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0;
+  min-height: 0;
+}
+
+.mindmate-collab-room__stamp-row :deep(.mindmate-collab-stamp) {
+  margin-top: 0;
+}
+
+.mindmate-collab-room__stamp-row--own {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  left: 0;
+  z-index: 2;
+  width: auto;
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mindmate-collab-room__stamp-row--own :deep(.mm-bubble-actions) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+}
+
+.mindmate-collab-room__highlight-btn {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #a8a29e;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mindmate-collab-room__highlight-btn:hover {
+  background: #f5f3ff;
+  color: #6d5efc;
+}
+
+.mindmate-collab-room__bubble--files {
+  display: block;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px;
+  white-space: normal;
+  background: transparent;
+}
+
+.mindmate-collab-room__msg-files {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.mindmate-collab-room__voice {
+  display: block;
+  width: 220px;
+  max-width: 100%;
+  height: 36px;
 }
 
 .mindmate-collab-room__bubble--streaming::after {

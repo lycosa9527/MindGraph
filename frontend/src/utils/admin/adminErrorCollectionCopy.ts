@@ -1,19 +1,18 @@
 /**
  * Build a full admin error-collection dump (with stacktraces) for clipboard export.
  */
-
 import {
+  type AdminErrorEventItem,
+  type AdminErrorSummaryResponse,
   fetchAdminErrorEventDetail,
   fetchAdminErrorEvents,
   fetchAdminErrorGroups,
-  type AdminErrorEventItem,
-  type AdminErrorSummaryResponse,
 } from '@/composables/queries/adminApi'
 import {
-  formatAdminErrorEventsDump,
-  formatAdminErrorGroupsDump,
   type AdminErrorDumpFilters,
   type AdminErrorEventDetail,
+  formatAdminErrorEventsDump,
+  formatAdminErrorGroupsDump,
 } from '@/utils/admin/formatAdminErrorDump'
 
 /** API page_size upper bound — one dump fetch stops here. */

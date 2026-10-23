@@ -1,12 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
 import { describe, expect, it } from 'vitest'
 
 const vuePath = join(
   dirname(fileURLToPath(import.meta.url)),
-  '../src/components/admin/AdminDatabaseTab.vue',
+  '../src/components/admin/AdminDatabaseTab.vue'
 )
 
 describe('admin database merge actions', () => {

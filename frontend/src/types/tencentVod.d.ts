@@ -4,10 +4,6 @@ declare module 'vod-js-sdk-v6' {
     done: () => Promise<{ fileId?: string }>
   }
 
-  interface VodJsClient {
-    upload: (options: { mediaFile: File }) => VodJsUploader
-  }
-
   class TcVod {
     constructor(options: {
       getSignature: () => Promise<string>

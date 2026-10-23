@@ -122,11 +122,7 @@ export function activitySourceLabel(source: string, labels: ActivitySummaryLabel
   return labels.sourceMindgraph
 }
 
-function actionVerb(
-  action: string,
-  labels: ActivitySummaryLabels,
-  locale: string
-): string {
+function actionVerb(action: string, labels: ActivitySummaryLabels, locale: string): string {
   if (action === 'diagram_save') {
     return labels.save
   }

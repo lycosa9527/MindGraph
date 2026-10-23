@@ -4,12 +4,12 @@
  */
 import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import {
+  MINDMAP_UNDERLINE_STROKE_WIDTH,
   MIND_MAP_GEOMETRY,
+  computeMindMapUnderlineBoxMetrics,
   mindMapBranchFontSize,
   mindMapNodeHorizontalExtra,
   mindMapUnderlineVerticalExtra,
-  MINDMAP_UNDERLINE_STROKE_WIDTH,
-  computeMindMapUnderlineBoxMetrics,
 } from '@/config/mindMapGeometry'
 import type { NodeStyle } from '@/types'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
@@ -114,8 +114,7 @@ export function estimateNodeWidthWithTypography(
 
   const fullWidth = measureTextWidth(text, branchFontSize, measureOpts(typography, weight))
   const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  const effectiveTextWidth =
-    fullWidth > wrapThreshold ? BRANCH_BASE_MAX_TEXT_WIDTH : fullWidth
+  const effectiveTextWidth = fullWidth > wrapThreshold ? BRANCH_BASE_MAX_TEXT_WIDTH : fullWidth
 
   void nodeId
   return Math.max(minNodeWidth, effectiveTextWidth + nodeHorizontalExtra)
@@ -161,8 +160,7 @@ export function measureBranchNodeUnderlineHeightWithTypography(
   nodeId?: string,
   typography?: MindMapMeasureTypography
 ): number {
-  return measureMindMapUnderlineBoxMetricsWithTypography(text, nodeId, typography)
-    .totalHeight
+  return measureMindMapUnderlineBoxMetricsWithTypography(text, nodeId, typography).totalHeight
 }
 
 /** Underline box metrics with optional typography overrides. */

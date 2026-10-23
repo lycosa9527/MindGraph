@@ -9,9 +9,12 @@ export default {
   'notification.canvasClearNodes': '{count} नोड साफ़ किए गए',
   'notification.canvasClearNodesLearning': '{count} नोड खाली किए गए, उत्तरों में जोड़े गए',
   'notification.canvasSomeoneEditingNode': 'कोई अन्य उपयोगकर्ता इस नोड को संपादित कर रहा है',
-  'notification.collabDeleteBlocked': 'जब कोई अन्य उपयोगकर्ता चयनित नोड संपादित कर रहा हो तो हटाया नहीं जा सकता',
-  'notification.collabRedoBlocked': 'जब कोई अन्य उपयोगकर्ता संपादित कर रहा हो तो फिर से नहीं किया जा सकता',
-  'notification.collabUndoBlocked': 'जब कोई अन्य उपयोगकर्ता संपादित कर रहा हो तो पूर्ववत नहीं किया जा सकता',
+  'notification.collabDeleteBlocked':
+    'जब कोई अन्य उपयोगकर्ता चयनित नोड संपादित कर रहा हो तो हटाया नहीं जा सकता',
+  'notification.collabRedoBlocked':
+    'जब कोई अन्य उपयोगकर्ता संपादित कर रहा हो तो फिर से नहीं किया जा सकता',
+  'notification.collabUndoBlocked':
+    'जब कोई अन्य उपयोगकर्ता संपादित कर रहा हो तो पूर्ववत नहीं किया जा सकता',
   'notification.conversationDeleted': 'बातचीत हटाई गई',
   'notification.copied': 'क्लिपबोर्ड पर कॉपी किया गया',
   'notification.copyFailed': 'कॉपी विफल',
@@ -21,7 +24,8 @@ export default {
   'notification.feedbackThanks': 'आपकी प्रतिक्रिया के लिए धन्यवाद',
   'notification.feedbackThanksDislike': 'आपकी प्रतिक्रिया के लिए धन्यवाद — हम सुधार करेंगे',
   'notification.focusQuestionTooShort': 'पहले लंबा केंद्र प्रश्न दर्ज करें',
-  'notification.geoLiteMissingIntro': 'MaxMind से GeoLite2 Country डाउनलोड करें, GeoLite2-Country.mmdb निकालें और सर्वर डेटा फ़ोल्डर में कॉपी करें:',
+  'notification.geoLiteMissingIntro':
+    'MaxMind से GeoLite2 Country डाउनलोड करें, GeoLite2-Country.mmdb निकालें और सर्वर डेटा फ़ोल्डर में कॉपी करें:',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite डाउनलोड पृष्ठ खोलें',
   'notification.geoLiteMissingPathLabel': 'अपेक्षित पथ:',
   'notification.geoLiteMissingTitle': 'GeoLite2 Country डेटाबेस अनुपलब्ध',

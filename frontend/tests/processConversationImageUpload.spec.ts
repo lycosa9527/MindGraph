@@ -10,8 +10,7 @@ vi.mock('@/utils/apiClient', () => ({
 }))
 
 vi.mock('@/composables/media/resizeImageFileForVisionUpload', () => ({
-  resizeImageFileForVisionUpload: (...args: unknown[]) =>
-    resizeImageFileForVisionUpload(...args),
+  resizeImageFileForVisionUpload: (...args: unknown[]) => resizeImageFileForVisionUpload(...args),
 }))
 
 describe('processConversationImageUpload', () => {
@@ -47,10 +46,7 @@ describe('processConversationImageUpload', () => {
     })
 
     expect(resizeImageFileForVisionUpload).toHaveBeenCalledWith(file)
-    expect(apiUpload).toHaveBeenCalledWith(
-      '/api/kitty/conversation_image',
-      expect.any(FormData)
-    )
+    expect(apiUpload).toHaveBeenCalledWith('/api/kitty/conversation_image', expect.any(FormData))
     const form = apiUpload.mock.calls[0][1] as FormData
     expect(form.get('diagram_id')).toBe('diag-1')
     expect(form.get('diagram_title')).toBe('My Map')

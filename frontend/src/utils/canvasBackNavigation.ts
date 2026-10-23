@@ -18,11 +18,7 @@ export function isMindGraphLandingPath(path: string): boolean {
 
 /** Routes canvas "back" may return to in one step (stored entry path). */
 export function isCanvasBackTargetPath(path: string): boolean {
-  return (
-    isMindGraphLandingPath(path) ||
-    path === '/mindmate' ||
-    path === '/m/mindmate'
-  )
+  return isMindGraphLandingPath(path) || path === '/mindmate' || path === '/m/mindmate'
 }
 
 /**

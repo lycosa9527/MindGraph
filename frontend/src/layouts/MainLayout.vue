@@ -53,10 +53,12 @@ const hideAppSidebar = computed(
 const shouldBlurGuestMain = computed(() => isGuest.value)
 
 /**
- * MindGraph landing paints a full-column sheen. Overlay the ICP line so
- * that animation continues behind the filing number instead of a blank bar.
+ * Overlay ICP when it would steal chat/canvas viewport:
+ * MindGraph landing sheen, and MindMate full-page (composer already has bottom inset).
  */
-const overlayIcpOnLanding = computed(() => route.path.startsWith('/mindgraph'))
+const overlayIcpOnLanding = computed(
+  () => route.path.startsWith('/mindgraph') || route.path.startsWith('/mindmate')
+)
 </script>
 
 <template>
@@ -151,26 +153,20 @@ html:has(.main-layout) #app {
   overflow: hidden;
 }
 
-/* ICP Footer - reserved space at bottom, in document flow */
+/* ICP Footer - compact reserved strip (or overlay on mindmate/mindgraph) */
 .icp-footer {
   flex-shrink: 0;
-  padding: 12px 8px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  padding: 4px 8px;
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.2;
   color: #999;
   user-select: none;
   pointer-events: none;
 }
 
-@media (max-height: 700px) {
-  .icp-footer {
-    padding-top: 6px;
-    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
-  }
-}
-
-/* Landing: sit on the sheen (positioned against `main`, which is relative) */
+/* Landing / MindMate: sit over the page edge (main is relative) */
 .icp-footer--overlay {
   position: absolute;
   right: 0;
@@ -178,6 +174,8 @@ html:has(.main-layout) #app {
   left: 0;
   z-index: 2;
   background: transparent;
+  padding-top: 2px;
+  padding-bottom: max(2px, env(safe-area-inset-bottom, 0px));
 }
 
 .main-sidebar-expand-btn {

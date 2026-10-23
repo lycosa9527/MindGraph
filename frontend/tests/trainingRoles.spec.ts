@@ -19,15 +19,9 @@ describe('trainingRoles', () => {
     expect(isTrainingRoleId('11-clap')).toBe(true)
     expect(isTrainingRoleId('ghost')).toBe(false)
     expect(trainingRoleSrc('11-clap')).toBe('/api/training/assets/roles/11-clap.webp')
-    expect(trainingRoleThumb('11-clap')).toBe(
-      '/api/training/assets/roles/11-clap-thumb.webp'
-    )
-    expect(trainingRolePlaybackSrc('11-clap')).toBe(
-      '/api/training/assets/roles/11-clap.webp'
-    )
-    expect(trainingRolePlaybackSrc('ghost')).toBe(
-      '/api/training/assets/roles/01-look-here.webp'
-    )
+    expect(trainingRoleThumb('11-clap')).toBe('/api/training/assets/roles/11-clap-thumb.webp')
+    expect(trainingRolePlaybackSrc('11-clap')).toBe('/api/training/assets/roles/11-clap.webp')
+    expect(trainingRolePlaybackSrc('ghost')).toBe('/api/training/assets/roles/01-look-here.webp')
     expect(trainingRoleMarkSrc('11-clap', { still: true })).toBe(
       '/api/training/assets/roles/11-clap-thumb.webp'
     )

@@ -204,7 +204,9 @@ describe('useMindClassroomLecture lifecycle', () => {
     expect(emitSpy.mock.calls.some(([name]) => name === 'kitty:lecture_interrupt_requested')).toBe(
       false
     )
-    const narrates = emitSpy.mock.calls.filter(([name]) => name === 'kitty:lecture_narrate_requested')
+    const narrates = emitSpy.mock.calls.filter(
+      ([name]) => name === 'kitty:lecture_narrate_requested'
+    )
     expect(narrates[0]?.[1]).toMatchObject({
       text: 'First caption',
       stepId: 'first',
@@ -269,10 +271,7 @@ describe('useMindClassroomLecture lifecycle', () => {
     await nextTick()
 
     expect(emitSpy).not.toHaveBeenCalledWith('classroom:restore_prepared_requested', {})
-    expect(emitSpy).not.toHaveBeenCalledWith(
-      'kitty:lecture_prefetch_requested',
-      expect.anything()
-    )
+    expect(emitSpy).not.toHaveBeenCalledWith('kitty:lecture_prefetch_requested', expect.anything())
     emitSpy.mockRestore()
     app.unmount()
   })

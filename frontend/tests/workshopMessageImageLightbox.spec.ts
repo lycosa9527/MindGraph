@@ -25,17 +25,17 @@ describe('isWorkshopLightboxImage', () => {
   })
 
   it('skips Course Builder role stickers', () => {
-    expect(
-      isWorkshopLightboxImage(makeImg('/api/training/assets/roles/01-look-here.png'))
-    ).toBe(false)
+    expect(isWorkshopLightboxImage(makeImg('/api/training/assets/roles/01-look-here.png'))).toBe(
+      false
+    )
   })
 })
 
 describe('filenameFromWorkshopImage', () => {
   it('uses a human alt over mg:uuid', () => {
-    expect(filenameFromWorkshopImage(makeImg('/api/chat/attachments/9/download', '背影.png'), '图示')).toBe(
-      '背影.png'
-    )
+    expect(
+      filenameFromWorkshopImage(makeImg('/api/chat/attachments/9/download', '背影.png'), '图示')
+    ).toBe('背影.png')
   })
 
   it('falls back for library mg:uuid alt', () => {
@@ -54,7 +54,10 @@ describe('filenameFromWorkshopImage', () => {
 
 describe('workshopImageLightboxFromClick', () => {
   it('opens a library diagram image and stops the link', () => {
-    const img = makeImg('/api/chat/attachments/9/download', 'mg:d1d7a7fc-eaa1-436d-abd2-2a7b1230c537')
+    const img = makeImg(
+      '/api/chat/attachments/9/download',
+      'mg:d1d7a7fc-eaa1-436d-abd2-2a7b1230c537'
+    )
     const event = clickOn(img)
     const hit = workshopImageLightboxFromClick(event, '图示')
     expect(hit).toEqual({ src: '/api/chat/attachments/9/download', filename: '图示' })
@@ -64,6 +67,8 @@ describe('workshopImageLightboxFromClick', () => {
   it('ignores role stickers and plain text clicks', () => {
     const role = makeImg('/api/training/assets/roles/01-look-here.png', '看这里')
     expect(workshopImageLightboxFromClick(clickOn(role), '图示')).toBeNull()
-    expect(workshopImageLightboxFromClick(clickOn(document.createElement('span')), '图示')).toBeNull()
+    expect(
+      workshopImageLightboxFromClick(clickOn(document.createElement('span')), '图示')
+    ).toBeNull()
   })
 })

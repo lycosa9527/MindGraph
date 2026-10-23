@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'بوم',
   'fileCenterLibrary.badgeExtension': 'فرمت',
   'fileCenterLibrary.badgeUpload': 'آپلود کنید',
-  'chunkTest.history.confirmDeleteBody': 'آیا مطمئن هستید که می خواهید این را حذف کنید؟ این عمل قابل بازگشت نیست.',
+  'chunkTest.history.confirmDeleteBody':
+    'آیا مطمئن هستید که می خواهید این را حذف کنید؟ این عمل قابل بازگشت نیست.',
   'chunkTest.history.confirmDeleteTitle': 'حذف تست',
   'chunkTest.history.delete': 'حذف',
   'chunkTest.history.deleteFailed': 'حذف نشد',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'کیفیت پاسخ',
   'chunkTestResults.avgLatency': 'میانگین تأخیر',
   'chunkTestResults.back': 'بازگشت',
-  'chunkTestResults.cancelConfirmBody': 'آیا از لغو این آزمون مطمئن هستید؟ آزمون در نقطه بازرسی بعدی متوقف خواهد شد.',
+  'chunkTestResults.cancelConfirmBody':
+    'آیا از لغو این آزمون مطمئن هستید؟ آزمون در نقطه بازرسی بعدی متوقف خواهد شد.',
   'chunkTestResults.cancelFailed': 'لغو آزمون ناموفق بود',
   'chunkTestResults.cancelRequested': 'درخواست لغو آزمون داده شد',
   'chunkTestResults.cancelTest': 'لغو آزمون',
@@ -89,7 +91,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'آزمایش همه مجموعه داده‌ها',
   'knowledge.chunkHeader.testUpload': 'آپلود داکیومنت',
   'knowledge.chunkHeader.title': 'آزمون تکه‌ای RAG',
-  'knowledge.chunkHeader.waitForProcessing': 'لطفا قبل از آزمایش، منتظر بمانید تا پردازش اسناد به پایان برسد.',
+  'knowledge.chunkHeader.waitForProcessing':
+    'لطفا قبل از آزمایش، منتظر بمانید تا پردازش اسناد به پایان برسد.',
   'knowledge.chunkPreview.empty': 'هیچ تکه‌ای پیدا نشد',
   'knowledge.chunkPreview.pageLabel': 'صفحه {n}',
   'knowledge.chunkPreview.title': 'بخش‌های سند — {fileName}',
@@ -108,7 +111,8 @@ export default {
   'knowledge.doc.colStatus': 'وضعیت',
   'knowledge.doc.colType': 'نوع',
   'knowledge.doc.colUploaded': 'تاریخ بارگذاری',
-  'knowledge.doc.emptyDescription': 'هنوز سندی وجود ندارد. برای ایجاد پایگاه دانش خود، اسناد را بارگذاری کنید.',
+  'knowledge.doc.emptyDescription':
+    'هنوز سندی وجود ندارد. برای ایجاد پایگاه دانش خود، اسناد را بارگذاری کنید.',
   'knowledge.doc.errorPrefix': 'خطا: ',
   'knowledge.doc.noData': 'بدون داده',
   'knowledge.doc.statusCompleted': 'تکمیل',
@@ -124,31 +128,42 @@ export default {
   'knowledge.header.title': 'پایگاه دانش شخصی',
   'knowledge.header.upload': 'آپلود داکیومنت',
   'knowledge.ragGuide.title': 'بسته‌ها، RAG و ویکی چگونه کار می‌کنند؟',
-  'knowledge.ragGuide.subtitle': 'نیازی به اصطلاحات تخصصی نیست - آن را به عنوان یک پوشه از مطالب مرجع در نظر بگیرید. ما آن را برای جستجو فهرست‌بندی می‌کنیم (RAG)، سپس یادداشت‌های کوتاه ویکی را گردآوری می‌کنیم و هوش مصنوعی هر دو را هنگام ایجاد نقشه ذهنی شما می‌خواند.',
+  'knowledge.ragGuide.subtitle':
+    'نیازی به اصطلاحات تخصصی نیست - آن را به عنوان یک پوشه از مطالب مرجع در نظر بگیرید. ما آن را برای جستجو فهرست‌بندی می‌کنیم (RAG)، سپس یادداشت‌های کوتاه ویکی را گردآوری می‌کنیم و هوش مصنوعی هر دو را هنگام ایجاد نقشه ذهنی شما می‌خواند.',
   'knowledge.ragGuide.step1.title': 'یک بسته انتخاب کنید',
-  'knowledge.ragGuide.step1.body': 'یک بسته مانند یک مجموعه زوترو است. می‌توانید تا ۳ بسته در سمت چپ داشته باشید؛ هر کدام معمولاً به یک نقشه ذهنی تعلق دارند. برای مدیریت اسناد یک بسته، روی آن در نوار کناری کلیک کنید.',
+  'knowledge.ragGuide.step1.body':
+    'یک بسته مانند یک مجموعه زوترو است. می‌توانید تا ۳ بسته در سمت چپ داشته باشید؛ هر کدام معمولاً به یک نقشه ذهنی تعلق دارند. برای مدیریت اسناد یک بسته، روی آن در نوار کناری کلیک کنید.',
   'knowledge.ragGuide.step2.title': 'منابع را اضافه کنید و آنها را فهرست بندی کنید (RAG)',
-  'knowledge.ragGuide.step2.body': 'فایل‌های PDF، Word، یادداشت‌ها یا صفحات وب را آپلود کنید. ما اسناد طولانی را به قطعات قابل جستجو تقسیم می‌کنیم و جاسازی‌های برداری را ذخیره می‌کنیم - این شاخص RAG است و ابتدا آماده می‌شود.',
+  'knowledge.ragGuide.step2.body':
+    'فایل‌های PDF، Word، یادداشت‌ها یا صفحات وب را آپلود کنید. ما اسناد طولانی را به قطعات قابل جستجو تقسیم می‌کنیم و جاسازی‌های برداری را ذخیره می‌کنیم - این شاخص RAG است و ابتدا آماده می‌شود.',
   'knowledge.ragGuide.step3.title': 'یادداشت‌های ویکی به‌طور خودکار کامپایل می‌شوند',
-  'knowledge.ragGuide.step3.body': 'پس از اتمام فهرست‌بندی، یک LLM صفحات ویکی مرور کلی و موضوعی را روی دیسک گردآوری می‌کند. این‌ها یادداشت‌های مختصری (نه رونوشت) هستند که بسته را برای جهت‌گیری سریع‌تر خلاصه می‌کنند.',
+  'knowledge.ragGuide.step3.body':
+    'پس از اتمام فهرست‌بندی، یک LLM صفحات ویکی مرور کلی و موضوعی را روی دیسک گردآوری می‌کند. این‌ها یادداشت‌های مختصری (نه رونوشت) هستند که بسته را برای جهت‌گیری سریع‌تر خلاصه می‌کنند.',
   'knowledge.ragGuide.step4.title': 'جستجو از ویکی + تکه‌ها استفاده می‌کند',
-  'knowledge.ragGuide.step4.body': 'وقتی شاخه‌ای را گسترش می‌دهید یا خلاصه‌ای ایجاد می‌کنید، ابتدا صفحات ویکی مرتبط را مطابقت می‌دهیم، سپس مرتبط‌ترین بخش‌های متن را بازیابی می‌کنیم (RAG ترکیبی).',
+  'knowledge.ragGuide.step4.body':
+    'وقتی شاخه‌ای را گسترش می‌دهید یا خلاصه‌ای ایجاد می‌کنید، ابتدا صفحات ویکی مرتبط را مطابقت می‌دهیم، سپس مرتبط‌ترین بخش‌های متن را بازیابی می‌کنیم (RAG ترکیبی).',
   'knowledge.ragGuide.step5.title': 'پاسخ‌ها بر اساس منابع شما',
-  'knowledge.ragGuide.step5.body': 'هوش مصنوعی به جای حدس زدن، از یادداشت‌های ویکی و قطعه کدهای بازیابی شده می‌نویسد - منابع بهتر، فهرست‌بندی کامل‌تر و صفحات ویکی گردآوری‌شده به معنای نقشه‌های دقیق‌تر هستند.',
-  'knowledge.ragGuide.footer': 'نکته: باز کردن خلاصه سند روی بوم، به طور خودکار یک بسته ایجاد می‌کند؛ صفحات ذخیره شده از طریق افزونه کروم نیز در فهرست نوار کناری ظاهر می‌شوند.',
+  'knowledge.ragGuide.step5.body':
+    'هوش مصنوعی به جای حدس زدن، از یادداشت‌های ویکی و قطعه کدهای بازیابی شده می‌نویسد - منابع بهتر، فهرست‌بندی کامل‌تر و صفحات ویکی گردآوری‌شده به معنای نقشه‌های دقیق‌تر هستند.',
+  'knowledge.ragGuide.footer':
+    'نکته: باز کردن خلاصه سند روی بوم، به طور خودکار یک بسته ایجاد می‌کند؛ صفحات ذخیره شده از طریق افزونه کروم نیز در فهرست نوار کناری ظاهر می‌شوند.',
   'knowledge.pipeline.title': 'وضعیت خط لوله',
   'knowledge.pipeline.ragIdle': 'شاخص RAG',
-  'knowledge.pipeline.ragIdleDetail': 'هنوز هیچ بسته‌ای ایندکس نشده است. منابع را اضافه کنید و ایندکس‌گذاری را از یک بسته اجرا کنید.',
+  'knowledge.pipeline.ragIdleDetail':
+    'هنوز هیچ بسته‌ای ایندکس نشده است. منابع را اضافه کنید و ایندکس‌گذاری را از یک بسته اجرا کنید.',
   'knowledge.pipeline.ragProcessing': 'نمایه‌سازی RAG',
-  'knowledge.pipeline.ragProcessingDetail': 'بسته(های) {count} هنوز در حال قطعه‌بندی و جاسازی منابع هستند.',
+  'knowledge.pipeline.ragProcessingDetail':
+    'بسته(های) {count} هنوز در حال قطعه‌بندی و جاسازی منابع هستند.',
   'knowledge.pipeline.ragReady': 'آماده برای استفاده از RAG',
   'knowledge.pipeline.ragReadyDetail': 'بسته(های) {count} ایندکس شدند — جستجوی تکه‌ها فعال است.',
   'knowledge.pipeline.wikiDisabled': 'کامپایل کردن ویکی',
   'knowledge.pipeline.wikiDisabledDetail': 'گردآوری ویکی در این سرور غیرفعال است.',
   'knowledge.pipeline.wikiIdle': 'کامپایل ویکی',
-  'knowledge.pipeline.wikiIdleDetail': 'صفحات ویکی پس از تکمیل فهرست‌بندی RAG برای هر منبع، کامپایل می‌شوند.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'صفحات ویکی پس از تکمیل فهرست‌بندی RAG برای هر منبع، کامپایل می‌شوند.',
   'knowledge.pipeline.wikiPending': 'تدوین ویکی',
-  'knowledge.pipeline.wikiPendingDetail': 'بسته(های) {count} پس از فهرست‌بندی منتظر صفحات ویکی هستند.',
+  'knowledge.pipeline.wikiPendingDetail':
+    'بسته(های) {count} پس از فهرست‌بندی منتظر صفحات ویکی هستند.',
   'knowledge.pipeline.wikiReady': 'ویکی آماده است',
   'knowledge.pipeline.wikiReadyDetail': 'بسته(های) {count} یادداشت‌های ویکی را کامپایل کرده‌اند.',
   'knowledge.pipelineBadge.rag.label': '.',
@@ -164,7 +179,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'انتخاب نکردن همه',
   'knowledge.manualEval.dialogTitle': 'ارزیابی دستی — {method}',
   'knowledge.manualEval.groundTruthLabel': 'پاسخ مبتنی بر حقیقت (اختیاری)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'برای ارزیابی مرتبط بودن پاسخ، پاسخ مبتنی بر حقیقت را وارد کنید...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'برای ارزیابی مرتبط بودن پاسخ، پاسخ مبتنی بر حقیقت را وارد کنید...',
   'knowledge.manualEval.metric.answer_coverage': 'پوشش پاسخ',
   'knowledge.manualEval.metric.answer_faithfulness': 'پاسخ به وفاداری',
   'knowledge.manualEval.metric.clarity': 'وضوح ',
@@ -186,7 +202,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'ارزیابی کیفیت قطعات',
   'knowledge.manualEval.resultsTitle': 'نتایج ارزیابی:',
   'knowledge.manualEval.selectAll': 'انتخاب همه',
-  'knowledge.manualEval.selectChunksHeading': 'بخش‌هایی را برای ارزیابی انتخاب کنید (برای ارزیابی همه، خالی بگذارید)',
+  'knowledge.manualEval.selectChunksHeading':
+    'بخش‌هایی را برای ارزیابی انتخاب کنید (برای ارزیابی همه، خالی بگذارید)',
   'knowledge.manualEval.showingFirst20': 'نمایش ۲۰ قطعه اول از {total} تکه‌ها',
   'knowledge.manualEval.startEvaluation': 'ارزیابی را شروع کنید',
   'knowledge.processing.chunking': 'تکه تکه شدن',
@@ -235,7 +252,8 @@ export default {
   'knowledge.settings.retrievalSection': 'تنظیمات بازیابی IP',
   'knowledge.settings.title': 'تنظیمات دانشنامه',
   'knowledge.settings.helpTitle': 'نحوه اعمال این تنظیمات',
-  'knowledge.settings.helpBody': 'تنظیمات بازیابی بلافاصله برای جستجو و پاسخ‌های هوش مصنوعی اعمال می‌شوند. اندازه قطعه و همپوشانی برای اسناد تازه فهرست‌بندی شده اعمال می‌شوند - پس از تغییر آنها، فهرست‌بندی روی منابع موجود را دوباره اجرا کنید.',
+  'knowledge.settings.helpBody':
+    'تنظیمات بازیابی بلافاصله برای جستجو و پاسخ‌های هوش مصنوعی اعمال می‌شوند. اندازه قطعه و همپوشانی برای اسناد تازه فهرست‌بندی شده اعمال می‌شوند - پس از تغییر آنها، فهرست‌بندی روی منابع موجود را دوباره اجرا کنید.',
   'knowledge.settings.tokens': 'توکن ها',
   'knowledge.settings.serverSection': 'سرور (فقط خواندنی)',
   'knowledge.settings.rerankingMode': 'رتبه‌بندی مجدد',
@@ -246,7 +264,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'غیر فعال شده',
   'knowledge.settings.saveSuccess': 'تنظیمات ذخیره شد',
   'knowledge.settings.saveFailed': 'تنظیمات ذخیره نشد',
-  'knowledge.settings.reindexRequired': 'تنظیمات بخش‌ها تغییر کرد - برای اعمال اندازه‌های جدید، اسناد موجود در بسته‌های خود را دوباره فهرست‌بندی کنید.',
+  'knowledge.settings.reindexRequired':
+    'تنظیمات بخش‌ها تغییر کرد - برای اعمال اندازه‌های جدید، اسناد موجود در بسته‌های خود را دوباره فهرست‌بندی کنید.',
   'knowledge.upload.click': 'برای بارگذاری کلیک کنید',
   'knowledge.upload.drag': 'یا فایل را به اینجا بکشید',
   'knowledge.upload.fileTooLarge': 'حجم فایل نمی‌تواند از 10 مگابایت تجاوز کند',
@@ -254,7 +273,8 @@ export default {
   'knowledge.upload.maxDocs': 'حداکثر تعداد سند رسیده (5)',
   'knowledge.upload.title': 'بارگذاری تصویر کارت ملی',
   'knowledge.upload.unsupportedType': 'انواع فایل پشتیبانی نشده',
-  'knowledgeSpace.confirmDeleteBody': 'آیا مطمئن هستید که می خواهید این منطقه را حذف کنید؟ این عملکرد قابل برگشت نیست.',
+  'knowledgeSpace.confirmDeleteBody':
+    'آیا مطمئن هستید که می خواهید این منطقه را حذف کنید؟ این عملکرد قابل برگشت نیست.',
   'knowledgeSpace.confirmDeleteTitle': 'تایید حذف',
   'knowledgeSpace.deleteFailed': 'حذف نشد',
   'knowledgeSpace.documentDeleted': 'سند حذف شد!',

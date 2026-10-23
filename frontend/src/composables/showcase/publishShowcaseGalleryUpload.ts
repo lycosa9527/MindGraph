@@ -14,18 +14,14 @@ export function countGalleryImagePathsInSpec(spec: unknown): number {
   return gallery.filter((item) => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return false
     const entry = item as { kind?: unknown; path?: unknown }
-    return (
-      entry.kind === 'image' &&
-      typeof entry.path === 'string' &&
-      entry.path.trim().length > 0
-    )
+    return entry.kind === 'image' && typeof entry.path === 'string' && entry.path.trim().length > 0
   }).length
 }
 
 export async function ensureGalleryImagesPersisted(
   postId: string,
   expectedImageCount: number,
-  messages: { uploadFailed: string; reuploadHint: string },
+  messages: { uploadFailed: string; reuploadHint: string }
 ): Promise<void> {
   if (expectedImageCount <= 0) return
 
@@ -35,6 +31,6 @@ export async function ensureGalleryImagesPersisted(
   throw new Error(
     messages.reuploadHint
       ? `${messages.uploadFailed} ${messages.reuploadHint}`
-      : messages.uploadFailed,
+      : messages.uploadFailed
   )
 }

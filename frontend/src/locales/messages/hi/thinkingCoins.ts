@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'जल्द आ रहा है',
   'thinkingCoins.schoolInfo': 'स्कूल योजनाओं के लिए अपने स्कूल व्यवस्थापक से संपर्क करें',
   'thinkingCoins.school.headline': 'AI-संचालित सोच · स्कूल समाधान',
-  'thinkingCoins.school.description': 'स्कूलों और संस्थानों के लिए निजी तैनाती, कस्टम सुविधाएँ और पूर्ण परिचालन सहायता — पैमाने, ब्रांडिंग और डेटा सुरक्षा के लिए।',
+  'thinkingCoins.school.description':
+    'स्कूलों और संस्थानों के लिए निजी तैनाती, कस्टम सुविधाएँ और पूर्ण परिचालन सहायता — पैमाने, ब्रांडिंग और डेटा सुरक्षा के लिए।',
   'thinkingCoins.school.feature.accountManager': 'समर्पित खाता प्रबंधक',
   'thinkingCoins.school.feature.accountManagerDesc': 'एक-पर-एक परामर्श',
   'thinkingCoins.school.feature.privateDeploy': 'निजी तैनाती',
@@ -63,7 +64,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'रेफ़रल पुरस्कार',
   'thinkingCoins.reason.case_reward': 'केस पुरस्कार',
   'thinkingCoins.reason.subscription_grant': 'सदस्यता क्रेडिट',
-  'thinkingCoins.dailyExpiresHint': 'साइन-इन पुरस्कार उसी दिन मान्य हैं और 24:00 बजे रीसेट किए जाएंगे',
+  'thinkingCoins.dailyExpiresHint':
+    'साइन-इन पुरस्कार उसी दिन मान्य हैं और 24:00 बजे रीसेट किए जाएंगे',
   'thinkingCoins.dailyBalanceRemaining': 'आज का चेक-इन शेष है {n}',
   'thinkingCoins.admin.tab': 'सोच टोकन',
   'thinkingCoins.admin.tasksTitle': 'कमाई के कार्य',
@@ -75,7 +77,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.save': 'सहेजें',
   'thinkingCoins.admin.signupGrant': 'पंजीकरण क्रेडिट',
   'thinkingCoins.admin.dailyEarnCap': 'दैनिक कमाई सीमा',
-  'thinkingCoins.admin.dailyEarnCapHint': '0 = असीमित; डिफ़ॉल्ट 135 सभी दैनिक कार्यों से मेल खाता है',
+  'thinkingCoins.admin.dailyEarnCapHint':
+    '0 = असीमित; डिफ़ॉल्ट 135 सभी दैनिक कार्यों से मेल खाता है',
   'thinkingCoins.admin.costMindmate': 'MindMate लागत',
   'thinkingCoins.admin.costDiagram': 'आरेख जनरेशन लागत',
   'thinkingCoins.admin.costCanvas': 'कैनवास सहायता लागत',

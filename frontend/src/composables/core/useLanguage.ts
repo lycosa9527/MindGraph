@@ -3,7 +3,7 @@
  */
 import { computed } from 'vue'
 
-import { i18n } from '@/i18n'
+import { i18n, localeCatalogRevision } from '@/i18n'
 import type { MessageSchema } from '@/i18n/messageSchema'
 import { resolveBilingual } from '@/i18n/resolveBilingual'
 import type { Language, PromptLanguage } from '@/stores/ui'
@@ -66,6 +66,9 @@ export function useLanguage() {
   function t(key: string, fallback?: string): string
   function t(key: string, named: Record<string, unknown>): string
   function t(key: string, second?: string | Record<string, unknown>): string {
+    // Re-run when a lazy catalog lands or HMR refreshes messages.
+    void localeCatalogRevision.value
+    void currentLanguage.value
     return safeI18nTranslate(globalTranslate, key, second)
   }
 

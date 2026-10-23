@@ -8,7 +8,10 @@
  */
 
 function withQuery(url: string, key: string, value: string): string {
-  const parsed = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://local')
+  const parsed = new URL(
+    url,
+    typeof window !== 'undefined' ? window.location.origin : 'http://local'
+  )
   parsed.searchParams.set(key, value)
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return parsed.toString()

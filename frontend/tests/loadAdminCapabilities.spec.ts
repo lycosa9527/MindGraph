@@ -1,5 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/auth'
+import { ensureFreshSessionAfterAuthFailure } from '@/utils/sessionRefresh'
 
 vi.mock('@/utils/sessionRefresh', () => ({
   refreshSessionAccessToken: vi.fn(),
@@ -7,9 +11,6 @@ vi.mock('@/utils/sessionRefresh', () => ({
   getSessionRefreshEpoch: vi.fn(() => 0),
   ensureFreshSessionAfterAuthFailure: vi.fn(async () => true),
 }))
-
-import { ensureFreshSessionAfterAuthFailure } from '@/utils/sessionRefresh'
-import { useAuthStore } from '@/stores/auth'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

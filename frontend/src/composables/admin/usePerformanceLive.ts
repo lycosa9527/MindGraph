@@ -14,12 +14,7 @@ export function usePerformanceLive() {
   const latest = shallowRef<Record<string, unknown> | null>(null)
   const awaitingFirstComplete = ref(true)
 
-  const {
-    data,
-    error,
-    isFetching,
-    refetch,
-  } = useAdminPerformanceLive({
+  const { data, error, isFetching, refetch } = useAdminPerformanceLive({
     enabled: false,
     refetchInterval: false,
   })

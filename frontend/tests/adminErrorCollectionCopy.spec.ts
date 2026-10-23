@@ -1,5 +1,4 @@
 /** Vitest — admin error collection dump builder (batched details + truncate). */
-
 import { describe, expect, it, vi } from 'vitest'
 
 import {

@@ -1,17 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  loadMindMapSpec,
-  nodesAndConnectionsToMindMapSpec,
-} from '@/stores/specLoader/mindMap'
+import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
 import type { Connection, DiagramNode } from '@/types'
 
-function blankedBranch(
-  id: string,
-  answer: string,
-  estimatedWidth: number
-): DiagramNode {
+function blankedBranch(id: string, answer: string, estimatedWidth: number): DiagramNode {
   return {
     id,
     text: LEARNING_SHEET_BLANK_TEXT,

@@ -35,7 +35,8 @@ describe('landingGenerateGraphErrors', () => {
   })
 
   it('maps error_type to localized fallback key', () => {
-    const t = (key: string) => (key === 'landing.international.errorRateLimit' ? 'Too many requests' : key)
+    const t = (key: string) =>
+      key === 'landing.international.errorRateLimit' ? 'Too many requests' : key
     expect(resolveLandingErrorMessage('raw', 'rate_limit', t)).toBe('Too many requests')
   })
 })

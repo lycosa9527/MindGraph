@@ -1,16 +1,15 @@
 /** Parse diagram library metadata embedded in MindMate assistant markdown. */
-
-import { rewriteMindmateTempImageUrls } from '@/utils/mindmateTempImageUrl'
 import { stripTeachingDesignFlags } from '@/utils/mindmateTeachingDesignFlag'
+import { rewriteMindmateTempImageUrls } from '@/utils/mindmateTempImageUrl'
 
 export { rewriteMindmateTempImageUrls } from '@/utils/mindmateTempImageUrl'
 
 const DIAGRAM_ID_COMMENT_RE = /<!--\s*mg-diagram-id:([a-f0-9-]+)\s*-->/i
 const DIAGRAM_ID_COMMENT_STRIP_RE = /<!--\s*mg-diagram-id:[a-f0-9-]+\s*-->\s*/gi
 const DIAGRAM_ID_ALT_RE = /!\[mg:([a-f0-9-]+)\]/i
-const DIAGRAM_ID_URL_RE = /[?&]mgdid=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
-const GENERATED_DIAGRAM_IMAGE_RE =
-  /!\[[^\]]*\]\([^)]*\/temp_images\/dingtalk_[a-f0-9]+_\d+\.png/i
+const DIAGRAM_ID_URL_RE =
+  /[?&]mgdid=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
+const GENERATED_DIAGRAM_IMAGE_RE = /!\[[^\]]*\]\([^)]*\/temp_images\/dingtalk_[a-f0-9]+_\d+\.png/i
 const DINGTALK_PREVIEW_UNIQUE_ID_RE = /\/temp_images\/dingtalk_([a-f0-9]{8})_\d+\.png/i
 const LIBRARY_SAVE_SKIP_NOTICE_RE =
   /(?:Diagram preview only|导图仅预览|library save failed|图库保存失败|图库已满|library is full|绑定钉钉|bind DingTalk|X-MG-Dify-User|Link DingTalk|联系.*管理员|MindBot 配置)/i

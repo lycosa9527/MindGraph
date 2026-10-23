@@ -6,8 +6,8 @@ import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import type { Connection } from '@/types'
 import { normalizeTopicRootLabelIfNeeded } from '@/utils/conceptMapTopicRootEdge'
 import {
-  applyAssociationChromePatch,
   type AssociationChromePatch,
+  applyAssociationChromePatch,
 } from '@/utils/mindMapAssociationLine'
 import { isMindMapAssociationConnection } from '@/utils/mindMapLocation'
 
@@ -113,11 +113,9 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
     const target = conns.find((c) => c.id === connectionId)
     if (!target) return false
 
-    const isMindMap =
-      ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
+    const isMindMap = ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
     const canRemove =
-      ctx.type.value === 'concept_map' ||
-      (isMindMap && isMindMapAssociationConnection(target))
+      ctx.type.value === 'concept_map' || (isMindMap && isMindMapAssociationConnection(target))
     if (!canRemove) return false
 
     const toRemove = new Set<string>([connectionId])
@@ -193,10 +191,7 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
     return true
   }
 
-  function updateConnectionChrome(
-    connectionId: string,
-    patch: AssociationChromePatch
-  ): boolean {
+  function updateConnectionChrome(connectionId: string, patch: AssociationChromePatch): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
     if (!ctx.data.value?.connections) return false
     const conn = ctx.data.value.connections.find((item) => item.id === connectionId)

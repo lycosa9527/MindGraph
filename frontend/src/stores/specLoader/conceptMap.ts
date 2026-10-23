@@ -180,8 +180,7 @@ export function loadConceptMapSpec(spec: Record<string, unknown>): SpecLoaderRes
       : []
 
   const layoutByLabel = spec._layout_positions_by_label as
-    | Record<string, { x: number; y: number }>
-    | undefined
+    Record<string, { x: number; y: number }> | undefined
 
   function positionFromLayout(displayLabel: string): { x: number; y: number } | undefined {
     if (!layoutByLabel) return undefined

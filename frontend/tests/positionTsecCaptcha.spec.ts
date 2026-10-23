@@ -1,18 +1,18 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
+  TSEC_EMBED_HOST_CLASS,
+  TSEC_EMBED_LAYER_CLASS,
+  mountTsecCaptchaOnLoginCard,
+  placeTsecEmbedLayer,
+} from '@/utils/tsec/mountTsecCaptchaHost'
+import {
   applyTsecCaptchaToLoginCard,
   clampTsecCaptchaCenter,
   findTsecCaptchaAnchor,
   findTsecCaptchaPopup,
   positionTsecCaptchaOverAnchor,
 } from '@/utils/tsec/positionTsecCaptcha'
-import {
-  TSEC_EMBED_HOST_CLASS,
-  TSEC_EMBED_LAYER_CLASS,
-  mountTsecCaptchaOnLoginCard,
-  placeTsecEmbedLayer,
-} from '@/utils/tsec/mountTsecCaptchaHost'
 
 function placeBox(
   className: string,

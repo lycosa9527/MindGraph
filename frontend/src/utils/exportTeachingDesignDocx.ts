@@ -1,9 +1,8 @@
 /** Download a flagged MindMate teaching-design reply as a filled BNU DOCX. */
-
 import { authFetch } from '@/utils/api'
 import {
-  isTeachingInstructionReply,
   TEACHING_INSTRUCTION_KIND,
+  isTeachingInstructionReply,
 } from '@/utils/mindmateTeachingDesignFlag'
 
 const FILENAME_STAR_RE = /filename\*=UTF-8''([^;]+)/i
@@ -18,12 +17,7 @@ const DETAIL_TO_CODE: Record<string, TeachingDesignExportFailCode> = {
 }
 
 export type TeachingDesignExportFailCode =
-  | 'unauthorized'
-  | 'not_flagged'
-  | 'too_large'
-  | 'server'
-  | 'network'
-  | 'unknown'
+  'unauthorized' | 'not_flagged' | 'too_large' | 'server' | 'network' | 'unknown'
 
 export class TeachingDesignExportError extends Error {
   readonly code: TeachingDesignExportFailCode
@@ -125,9 +119,7 @@ export async function downloadTeachingDesignDocx(options: {
 }): Promise<void> {
   const replyKind =
     options.replyKind ||
-    (isTeachingInstructionReply(options.assistantMarkdown)
-      ? TEACHING_INSTRUCTION_KIND
-      : undefined)
+    (isTeachingInstructionReply(options.assistantMarkdown) ? TEACHING_INSTRUCTION_KIND : undefined)
   let response: Response
   try {
     response = await authFetch('/api/export_teaching_design_docx', {

@@ -1,5 +1,6 @@
-import type { DiagramType } from '@/types'
 import { toRaw } from 'vue'
+
+import type { DiagramType } from '@/types'
 import { decodeMgFileToJsonText } from '@/utils/mgInterchange'
 
 function unwrapDecodedDiagramSpec(parsed: Record<string, unknown>): Record<string, unknown> {
@@ -24,10 +25,7 @@ export async function decodeMgUploadSpec(file: File): Promise<Record<string, unk
   }
 }
 
-export function inferDiagramTypeFromSpec(
-  spec: Record<string, unknown>,
-  fallback: string
-): string {
+export function inferDiagramTypeFromSpec(spec: Record<string, unknown>, fallback: string): string {
   const raw = spec.type
   if (typeof raw === 'string' && raw.trim()) {
     return raw === 'mindmap' ? 'mind_map' : raw
@@ -57,9 +55,7 @@ export function resolveShowcaseDiagramType(
 }
 
 /** Clone diagram spec for preview/submit (JSON-safe; handles Vue reactive proxies). */
-export function cloneShowcaseDiagramSpec(
-  spec: Record<string, unknown>
-): Record<string, unknown> {
+export function cloneShowcaseDiagramSpec(spec: Record<string, unknown>): Record<string, unknown> {
   const raw = toRaw(spec) as Record<string, unknown>
   try {
     return JSON.parse(JSON.stringify(raw)) as Record<string, unknown>

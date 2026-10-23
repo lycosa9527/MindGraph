@@ -17,10 +17,7 @@ export function mindMapLibraryLoadOptions(
   const nodes = spec.nodes
   const connections = spec.connections
   const hasLaidOut =
-    Array.isArray(nodes) &&
-    nodes.length > 0 &&
-    Array.isArray(connections) &&
-    connections.length > 0
+    Array.isArray(nodes) && nodes.length > 0 && Array.isArray(connections) && connections.length > 0
   if (!hasLaidOut) return undefined
   return {
     preferLaidOutMindMapNodes: true,

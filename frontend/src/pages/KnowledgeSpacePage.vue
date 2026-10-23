@@ -46,13 +46,10 @@ onMounted(() => {
   resumePolling()
 })
 
-watch(
-  activePackageId,
-  () => {
-    selectedDocumentIds.value = []
-    resumePolling()
-  }
-)
+watch(activePackageId, () => {
+  selectedDocumentIds.value = []
+  resumePolling()
+})
 
 watch(
   documents,
@@ -66,12 +63,13 @@ watch(
 
 const selectedCount = computed(() => selectedDocumentIds.value.length)
 
-const selectedPendingCount = computed(() =>
-  documents.value.filter(
-    (doc: KnowledgeDocument) =>
-      selectedDocumentIds.value.includes(doc.id) &&
-      (doc.status === 'pending' || doc.status === 'failed')
-  ).length
+const selectedPendingCount = computed(
+  () =>
+    documents.value.filter(
+      (doc: KnowledgeDocument) =>
+        selectedDocumentIds.value.includes(doc.id) &&
+        (doc.status === 'pending' || doc.status === 'failed')
+    ).length
 )
 
 function handleProcessSelected(): void {

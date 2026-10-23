@@ -10,7 +10,7 @@ import {
   imageFileToPngBlob,
   isDiagramImageFile,
 } from '@/components/showcase/showcaseShared'
-import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
+import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { sameOriginTempImageFetchUrl } from '@/utils/mindmateTempImageUrl'
 import { fetchDiagramSpecPngBlob } from '@/utils/showcaseDiagramThumbnail'
 
@@ -35,7 +35,7 @@ export async function captureCanvasThumbnail(props: ThumbnailProps): Promise<Blo
 }
 
 export async function resolveHistoryDiagramThumbnail(
-  diagram: SavedDiagram | null,
+  diagram: SavedDiagram | null
 ): Promise<Blob | null> {
   if (!diagram) return null
 
@@ -77,7 +77,7 @@ export async function resolveHistoryDiagramThumbnail(
 
 export async function resolveSpecThumbnail(
   spec: Record<string, unknown>,
-  diagramTypeValue: string,
+  diagramTypeValue: string
 ): Promise<Blob | null> {
   return fetchDiagramSpecPngBlob(spec, diagramTypeValue)
 }
@@ -116,7 +116,7 @@ export async function resolvePublishThumbnail(options: {
   if (options.uploadedMgSpec) {
     const fromSpec = await resolveSpecThumbnail(
       options.uploadedMgSpec,
-      options.publishPreviewDiagramType,
+      options.publishPreviewDiagramType
     )
     if (fromSpec) return fromSpec
   }
@@ -124,7 +124,7 @@ export async function resolvePublishThumbnail(options: {
   if (options.selectedDiagramSpec) {
     const fromSpec = await resolveSpecThumbnail(
       options.selectedDiagramSpec,
-      options.publishPreviewDiagramType,
+      options.publishPreviewDiagramType
     )
     if (fromSpec) return fromSpec
   }

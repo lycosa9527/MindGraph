@@ -2,18 +2,20 @@
  * Verified diagram edit apply: canvas mutations + combined ack contract.
  */
 import { createPinia, setActivePinia } from 'pinia'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { applyVerifiedDiagramUpdate } from '@/composables/kitty/diagramEditApply'
 import * as hubPersistModule from '@/composables/kitty/diagramEditHubPersist'
+import { useDiagramStore } from '@/stores/diagram'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useUIStore } from '@/stores/ui'
+import { must } from '@/utils/must'
 
 vi.mock('@/composables/kitty/kittyDiagramEditFeedback', () => ({
   reportKittyDiagramEditFailure: vi.fn(),
 }))
-import { useDiagramStore } from '@/stores/diagram'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
-import { useUIStore } from '@/stores/ui'
 
 function stubMatchMedia(): void {
   vi.stubGlobal(
@@ -161,12 +163,16 @@ describe('diagramEditApply one-sentence canvas path', () => {
     const store = topicOnlyMindmapStore()
     const sendAck = vi.fn()
 
-    const result = await applyVerifiedDiagramUpdate('update_center', { new_text: 'Electric Cars' }, {
-      mutationId: 'mut-upd-center',
-      expectedEffect: { op: 'update_center', text: 'Electric Cars', parent_ref: 'topic' },
-      sendAck,
-      hubRevision: 3,
-    })
+    const result = await applyVerifiedDiagramUpdate(
+      'update_center',
+      { new_text: 'Electric Cars' },
+      {
+        mutationId: 'mut-upd-center',
+        expectedEffect: { op: 'update_center', text: 'Electric Cars', parent_ref: 'topic' },
+        sendAck,
+        hubRevision: 3,
+      }
+    )
 
     const topic = store.data?.nodes.find((n) => n.id === 'topic')
     expect(topic?.text).toBe('Electric Cars')
@@ -190,22 +196,18 @@ describe('diagramEditApply one-sentence canvas path', () => {
     const survivor = store.data?.nodes.find((n) => n.text === '基础与原理')
     expect(firstLeft?.id).toBeTruthy()
     expect(survivor?.id).toBeTruthy()
-    const survivorId = survivor!.id
+    const survivorId = must(survivor).id
     const sendAck = vi.fn()
 
-    const result = await applyVerifiedDiagramUpdate(
-      'remove_nodes',
-      [firstLeft!.id],
-      {
-        mutationId: 'mut-del-branch',
-        expectedEffect: {
-          op: 'delete_node',
-          node_identifier: '教学实践与应用',
-        },
-        sendAck,
-        hubRevision: 2,
-      }
-    )
+    const result = await applyVerifiedDiagramUpdate('remove_nodes', [must(firstLeft).id], {
+      mutationId: 'mut-del-branch',
+      expectedEffect: {
+        op: 'delete_node',
+        node_identifier: '教学实践与应用',
+      },
+      sendAck,
+      hubRevision: 2,
+    })
 
     expect(result.verified).toBe(true)
     expect(store.data?.nodes.some((n) => n.text === '教学实践与应用')).toBe(false)

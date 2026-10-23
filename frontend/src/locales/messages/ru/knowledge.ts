@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'Холст',
   'fileCenterLibrary.badgeExtension': 'Вынос',
   'fileCenterLibrary.badgeUpload': 'загрузить',
-  'chunkTest.history.confirmDeleteBody': 'Вы действительно хотите удалить это? Это не может быть отменено.',
+  'chunkTest.history.confirmDeleteBody':
+    'Вы действительно хотите удалить это? Это не может быть отменено.',
   'chunkTest.history.confirmDeleteTitle': 'Удалить тест',
   'chunkTest.history.delete': 'удалить',
   'chunkTest.history.deleteFailed': 'Сбой удаления',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'Качество ответа',
   'chunkTestResults.avgLatency': 'Средняя задержка',
   'chunkTestResults.back': 'возвращаться',
-  'chunkTestResults.cancelConfirmBody': 'Вы уверены, что хотите отменить этот тест? Тест остановится на следующей контрольной точке.',
+  'chunkTestResults.cancelConfirmBody':
+    'Вы уверены, что хотите отменить этот тест? Тест остановится на следующей контрольной точке.',
   'chunkTestResults.cancelFailed': 'Не удалось отменить',
   'chunkTestResults.cancelRequested': 'Запрошена отмена теста',
   'chunkTestResults.cancelTest': 'Отменить проверку',
@@ -79,7 +81,8 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Стандартный ИК-индикатор',
   'chunkTestResults.storageEff': 'Эффективность хранения',
   'chunkTestResults.testFailed': 'тест не пройден',
-  'chunkTestResults.testFailedHint': 'Во время выполнения теста произошла ошибка, попробуйте еще раз.',
+  'chunkTestResults.testFailedHint':
+    'Во время выполнения теста произошла ошибка, попробуйте еще раз.',
   'chunkTestResults.testingInProgress': 'Идет тестирование...',
   'chunkTestResults.totalChunks': 'Всего {n} кусков',
   'chunkTestResults.viewChunks': 'Просмотр фрагментов',
@@ -89,7 +92,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Протестируйте все наборы данных',
   'knowledge.chunkHeader.testUpload': 'Тестовая загрузка документа',
   'knowledge.chunkHeader.title': 'Блочное тестирование RAG',
-  'knowledge.chunkHeader.waitForProcessing': 'Перед тестированием подождите, пока обработка документа завершится.',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Перед тестированием подождите, пока обработка документа завершится.',
   'knowledge.chunkPreview.empty': 'Найдено частей:',
   'knowledge.chunkPreview.pageLabel': 'Страница {n}',
   'knowledge.chunkPreview.title': 'Предварительный просмотр фрагмента документа — {fileName}',
@@ -108,7 +112,8 @@ export default {
   'knowledge.doc.colStatus': 'состояние',
   'knowledge.doc.colType': 'тип',
   'knowledge.doc.colUploaded': 'Время загрузки',
-  'knowledge.doc.emptyDescription': 'Документа пока нет. Пожалуйста, загрузите документ, чтобы начать создание базы знаний.',
+  'knowledge.doc.emptyDescription':
+    'Документа пока нет. Пожалуйста, загрузите документ, чтобы начать создание базы знаний.',
   'knowledge.doc.errorPrefix': 'ошибка:',
   'knowledge.doc.noData': 'Данных пока нет',
   'knowledge.doc.statusCompleted': 'Завершено',
@@ -124,31 +129,43 @@ export default {
   'knowledge.header.title': 'личная база знаний',
   'knowledge.header.upload': 'Загрузить документы',
   'knowledge.ragGuide.title': 'Как работают пакеты, RAG и вики?',
-  'knowledge.ragGuide.subtitle': 'Нет необходимости разбираться в техническом жаргоне — сначала положите в пакет справочные материалы. Система сначала создаст индекс RAG с возможностью поиска, а затем автоматически скомпилирует короткие вики-заметки; ИИ будет обращаться к обоим одновременно при создании карты.',
+  'knowledge.ragGuide.subtitle':
+    'Нет необходимости разбираться в техническом жаргоне — сначала положите в пакет справочные материалы. Система сначала создаст индекс RAG с возможностью поиска, а затем автоматически скомпилирует короткие вики-заметки; ИИ будет обращаться к обоим одновременно при создании карты.',
   'knowledge.ragGuide.step1.title': 'Выберите пакет',
-  'knowledge.ragGuide.step1.body': 'Пакеты похожи на избранные в Zotero. Вы можете создать до трех слева, каждый из которых обычно соответствует интеллект-карте. Нажмите на пакет данных на боковой панели, чтобы управлять документами в нем.',
+  'knowledge.ragGuide.step1.body':
+    'Пакеты похожи на избранные в Zotero. Вы можете создать до трех слева, каждый из которых обычно соответствует интеллект-карте. Нажмите на пакет данных на боковой панели, чтобы управлять документами в нем.',
   'knowledge.ragGuide.step2.title': 'Добавляйте и индексируйте документы (RAG)',
-  'knowledge.ragGuide.step2.body': 'Загрузите PDF, Word, заметки или веб-страницы. Система будет разбивать длинные документы на доступные для поиска куски и записывать их в векторные индексы — это слой RAG, который будет готов первым.',
+  'knowledge.ragGuide.step2.body':
+    'Загрузите PDF, Word, заметки или веб-страницы. Система будет разбивать длинные документы на доступные для поиска куски и записывать их в векторные индексы — это слой RAG, который будет готов первым.',
   'knowledge.ragGuide.step3.title': 'Автоматическое составление Викизаметок',
-  'knowledge.ragGuide.step3.body': 'После завершения индексирования LLM компилирует обзорные и тематические вики-страницы на диск. Это сжатые заметки (а не выдержки из оригинального текста), которые помогут вам быстро понять структуру пакета.',
+  'knowledge.ragGuide.step3.body':
+    'После завершения индексирования LLM компилирует обзорные и тематические вики-страницы на диск. Это сжатые заметки (а не выдержки из оригинального текста), которые помогут вам быстро понять структуру пакета.',
   'knowledge.ragGuide.step4.title': 'Используйте как вики, так и фрагментацию при поиске',
-  'knowledge.ragGuide.step4.body': 'При расширении ветки или создании сводки система сначала сопоставляет соответствующие вики-страницы, а затем извлекает наиболее релевантные фрагментированные абзацы (гибридный RAG).',
+  'knowledge.ragGuide.step4.body':
+    'При расширении ветки или создании сводки система сначала сопоставляет соответствующие вики-страницы, а затем извлекает наиболее релевантные фрагментированные абзацы (гибридный RAG).',
   'knowledge.ragGuide.step5.title': 'Ответы ИИ на основе источника',
-  'knowledge.ragGuide.step5.body': 'ИИ генерирует контент, ссылаясь на заметки Wiki и извлеченные фрагменты, а не выдумывая его из воздуха: чем актуальнее источник, тем полнее индекс и вики, тем точнее карта.',
-  'knowledge.ragGuide.footer': 'Совет: Открытие «Сводки документа» на холсте также автоматически создаст пакет данных; веб-страницы, сохраненные с помощью расширения Chrome, также появятся в списке слева.',
+  'knowledge.ragGuide.step5.body':
+    'ИИ генерирует контент, ссылаясь на заметки Wiki и извлеченные фрагменты, а не выдумывая его из воздуха: чем актуальнее источник, тем полнее индекс и вики, тем точнее карта.',
+  'knowledge.ragGuide.footer':
+    'Совет: Открытие «Сводки документа» на холсте также автоматически создаст пакет данных; веб-страницы, сохраненные с помощью расширения Chrome, также появятся в списке слева.',
   'knowledge.pipeline.title': 'Статус конвейера',
   'knowledge.pipeline.ragIdle': 'Индекс РАГ',
-  'knowledge.pipeline.ragIdleDetail': 'Проиндексированных пакетов пока нет. Пожалуйста, добавьте исходники в пакет и выполните индексацию.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Проиндексированных пакетов пока нет. Пожалуйста, добавьте исходники в пакет и выполните индексацию.',
   'knowledge.pipeline.ragProcessing': 'RAG-индексация',
-  'knowledge.pipeline.ragProcessingDetail': 'Пакеты {count} по-прежнему фрагментируются и векторизуются.',
+  'knowledge.pipeline.ragProcessingDetail':
+    'Пакеты {count} по-прежнему фрагментируются и векторизуются.',
   'knowledge.pipeline.ragReady': 'ТРЯПКА готова',
-  'knowledge.pipeline.ragReadyDetail': 'Пакеты {count} проиндексированы – доступно извлечение по частям.',
+  'knowledge.pipeline.ragReadyDetail':
+    'Пакеты {count} проиндексированы – доступно извлечение по частям.',
   'knowledge.pipeline.wikiDisabled': 'Сборка Wiki закрыта',
   'knowledge.pipeline.wikiDisabledDetail': 'На этом сервере не включена компиляция Wiki.',
   'knowledge.pipeline.wikiIdle': 'Вики-компиляция',
-  'knowledge.pipeline.wikiIdleDetail': 'Страницы Wiki автоматически компилируются после завершения каждого исходного индекса RAG.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Страницы Wiki автоматически компилируются после завершения каждого исходного индекса RAG.',
   'knowledge.pipeline.wikiPending': 'Вики-компиляция',
-  'knowledge.pipeline.wikiPendingDetail': 'Пакеты {count} ожидают создания вики-страницы после индексации.',
+  'knowledge.pipeline.wikiPendingDetail':
+    'Пакеты {count} ожидают создания вики-страницы после индексации.',
   'knowledge.pipeline.wikiReady': 'Вики готова',
   'knowledge.pipeline.wikiReadyDetail': 'Пакеты {count} содержат вики-заметки.',
   'knowledge.pipelineBadge.rag.label': 'ТРЯПКА',
@@ -164,7 +181,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Отменить выбор всех',
   'knowledge.manualEval.dialogTitle': 'Ручная оценка — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Стандартный ответ (необязательно)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Введите стандартные ответы, чтобы оценить релевантность ответа...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Введите стандартные ответы, чтобы оценить релевантность ответа...',
   'knowledge.manualEval.metric.answer_coverage': 'Охват ответов',
   'knowledge.manualEval.metric.answer_faithfulness': 'верность ответа',
   'knowledge.manualEval.metric.clarity': 'ясность',
@@ -186,7 +204,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Оценка качества блока',
   'knowledge.manualEval.resultsTitle': 'Результаты оценки',
   'knowledge.manualEval.selectAll': 'Выбрать все',
-  'knowledge.manualEval.selectChunksHeading': 'Выберите фрагменты для оценки (оставьте пустым, чтобы оценить все)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Выберите фрагменты для оценки (оставьте пустым, чтобы оценить все)',
   'knowledge.manualEval.showingFirst20': 'Показаны первые 20 плиток {total}',
   'knowledge.manualEval.startEvaluation': 'Начать оценку',
   'knowledge.processing.chunking': 'Части:',
@@ -235,7 +254,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Получить настройки',
   'knowledge.settings.title': 'Настройки базы знаний',
   'knowledge.settings.helpTitle': 'Как эти настройки вступают в силу',
-  'knowledge.settings.helpBody': 'Опции, связанные с поиском, сразу же доступны для поиска и ответов ИИ. Размер фрагмента и перекрытие применяются только к вновь проиндексированным документам. Пожалуйста, повторно проиндексируйте существующие источники после изменений.',
+  'knowledge.settings.helpBody':
+    'Опции, связанные с поиском, сразу же доступны для поиска и ответов ИИ. Размер фрагмента и перекрытие применяются только к вновь проиндексированным документам. Пожалуйста, повторно проиндексируйте существующие источники после изменений.',
   'knowledge.settings.tokens': 'жетон',
   'knowledge.settings.serverSection': 'Сервер (только чтение)',
   'knowledge.settings.rerankingMode': 'Изменить порядок',
@@ -246,7 +266,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Закрыто',
   'knowledge.settings.saveSuccess': 'Настройки сохранены.',
   'knowledge.settings.saveFailed': 'Не удалось сохранить настройки.',
-  'knowledge.settings.reindexRequired': 'Параметры фрагментирования были изменены. Чтобы изменения вступили в силу, переиндексируйте существующие документы в пакете.',
+  'knowledge.settings.reindexRequired':
+    'Параметры фрагментирования были изменены. Чтобы изменения вступили в силу, переиндексируйте существующие документы в пакете.',
   'knowledge.upload.click': 'Нажмите, чтобы загрузить',
   'knowledge.upload.drag': 'Или перетащите файлы сюда',
   'knowledge.upload.fileTooLarge': 'Размер файла не может превышать 10 МБ.',
@@ -254,7 +275,8 @@ export default {
   'knowledge.upload.maxDocs': 'Достигнуто максимальное количество документов (5)',
   'knowledge.upload.title': 'Загрузить документы',
   'knowledge.upload.unsupportedType': 'Неподдерживаемые типы файлов',
-  'knowledgeSpace.confirmDeleteBody': 'Вы уверены, что хотите удалить этот документ? После удаления его невозможно восстановить.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Вы уверены, что хотите удалить этот документ? После удаления его невозможно восстановить.',
   'knowledgeSpace.confirmDeleteTitle': 'Подтвердить удаление',
   'knowledgeSpace.deleteFailed': 'Удаление не удалось',
   'knowledgeSpace.documentDeleted': 'Документ удален.',

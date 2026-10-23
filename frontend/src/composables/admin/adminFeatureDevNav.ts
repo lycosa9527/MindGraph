@@ -4,10 +4,7 @@
 import { settingsSubtabRequiresCapabilities } from '@/utils/adminCapabilities'
 
 export type FeatureDevSubtab =
-  | 'smart_response'
-  | 'kitty_llmops'
-  | 'teacher_usage'
-  | 'mindmate_export'
+  'smart_response' | 'kitty_llmops' | 'teacher_usage' | 'mindmate_export'
 
 export interface FeatureDevNavLeafItem {
   kind: 'leaf'

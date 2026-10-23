@@ -3,80 +3,78 @@
  * First message → prompt-to-diagram; follow-ups → Kitty text (tracked requests).
  */
 import { computed, inject, nextTick, onMounted, onUnmounted, watch } from 'vue'
-
-import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 
-import { diagramTypeToChineseMap } from '@/composables/canvasPage/diagramTypeMaps'
+import { storeToRefs } from 'pinia'
+
 import {
   canvasDiagramSlugsEquivalent,
   extractTopicSeedFromPrompt,
   resolveDiagramTypeFromPrompt,
 } from '@/composables/canvasPage/diagramTypeFromPrompt'
+import { diagramTypeToChineseMap } from '@/composables/canvasPage/diagramTypeMaps'
 import { isCanvasPristineForTypeSwitch } from '@/composables/canvasPage/isCanvasPristineForTypeSwitch'
 import { switchCanvasDiagramType } from '@/composables/canvasPage/switchCanvasDiagramType'
+import { shouldUseOneSentenceEditFlow } from '@/composables/canvasToolbar/mindMapOneSentencePhase'
 import {
   pickOneSentenceGenerateDone,
   pickOneSentenceGenerating,
   pickOneSentenceWelcome,
 } from '@/composables/canvasToolbar/oneSentenceChatLines'
-import { shouldUseOneSentenceEditFlow } from '@/composables/canvasToolbar/mindMapOneSentencePhase'
 import {
-  reportKittySessionIngress,
-  shouldLockDesktopIngressForMobileKitty,
-  useKittySessionManager,
-} from '@/composables/kitty/useKittySessionManager'
+  type OneSentenceReplyPayload,
+  createOneSentenceReplyState,
+} from '@/composables/canvasToolbar/oneSentenceReplyState'
 import {
+  type OneSentenceTurnInput,
   appendOneSentenceTurn,
   fetchOneSentenceTurns,
   migrateOneSentenceScope,
-  type OneSentenceTurnInput,
 } from '@/composables/canvasToolbar/useOneSentenceSessionTurns'
-import {
-  createOneSentenceReplyState,
-  type OneSentenceReplyPayload,
-} from '@/composables/canvasToolbar/oneSentenceReplyState'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { mergeKittyConversationTurn } from '@/composables/kitty/applyKittyConversationTurn'
+import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
 import {
   KITTY_CANVAS_OWNER_KEY,
   type KittyCanvasOwnerApi,
 } from '@/composables/kitty/kittyCanvasOwnerKey'
-import { KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS } from '@/composables/kitty/syncKittyHubContext'
-import { runKittyEditTurn } from '@/composables/kitty/pipeline/editTurn'
-import { adaptKittyTranslate } from '@/composables/kitty/pipeline/errorCatalog'
-import {
-  runKittyHubSync,
-} from '@/composables/kitty/pipeline/hubSyncWorker'
-import { recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
-import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 import { resolveKittyEditFailureMessage } from '@/composables/kitty/kittyDiagramEditFeedback'
+import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 import {
   buildKittyEditQueuedForLlmMessage,
   listInFlightAutocompleteDisplayNames,
 } from '@/composables/kitty/kittyEditAfterLlmQueue'
-import { setDiagramWriteLockHolder } from '@/composables/kitty/useDiagramWriteLock'
+import { runKittyEditTurn } from '@/composables/kitty/pipeline/editTurn'
+import { adaptKittyTranslate } from '@/composables/kitty/pipeline/errorCatalog'
+import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
+import { recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
 import { prepareConversationImageCapture } from '@/composables/kitty/prepareConversationImageCapture'
 import { processConversationImageUpload } from '@/composables/kitty/processConversationImageUpload'
+import { KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS } from '@/composables/kitty/syncKittyHubContext'
+import { setDiagramWriteLockHolder } from '@/composables/kitty/useDiagramWriteLock'
 import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
+import {
+  reportKittySessionIngress,
+  shouldLockDesktopIngressForMobileKitty,
+  useKittySessionManager,
+} from '@/composables/kitty/useKittySessionManager'
 import { useKittyUserMobileActive } from '@/composables/kitty/useKittyUserMobileActive'
 import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
-import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecExtras'
-import { safeRandomUUID } from '@/utils/safeRandomUUID'
 import {
+  type OneSentenceClarifyChoice,
   useAuthStore,
   useDiagramStore,
   useFeatureFlagsStore,
   useLLMResultsStore,
   useOneSentenceStore,
   useSavedDiagramsStore,
-  type OneSentenceClarifyChoice,
 } from '@/stores'
 import { useKittySessionStore } from '@/stores/kittySession'
+import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecExtras'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 export type {
   OneSentenceChatMessage,
@@ -119,9 +117,7 @@ export function useMindMapOneSentenceChat() {
 
   const kittyEnabled = computed(() => featureFlagsStore.getFeatureKittyAgent())
 
-  const mobileActivePollOn = computed(
-    () => kittyEnabled.value && authStore.isAuthenticated
-  )
+  const mobileActivePollOn = computed(() => kittyEnabled.value && authStore.isAuthenticated)
   const {
     active: userMobileKittyActive,
     scopes: userMobileKittyScopes,
@@ -404,9 +400,7 @@ export function useMindMapOneSentenceChat() {
     if (!switched) return
 
     const typeLabel =
-      diagramTypeToChineseMap[requestedType] ??
-      diagramTypeToChineseMap.mindmap ??
-      requestedType
+      diagramTypeToChineseMap[requestedType] ?? diagramTypeToChineseMap.mindmap ?? requestedType
     pushKittyMessage(t('canvas.mindMapOneSentence.switchDiagramType', { type: typeLabel }))
   }
 
@@ -552,11 +546,7 @@ export function useMindMapOneSentenceChat() {
     )
     if (useEditFlow) {
       oneSentence.setPhase('edit')
-      const req = oneSentence.registerUserRequest(
-        text,
-        'inflight',
-        options?.requestId
-      )
+      const req = oneSentence.registerUserRequest(text, 'inflight', options?.requestId)
       const sent = await runEditFlow(text, req.requestId, {
         source: options?.source ?? 'text',
         utteranceId: options?.utteranceId,
@@ -619,10 +609,7 @@ export function useMindMapOneSentenceChat() {
         )
       } else if (prepared.reason === 'too_large') {
         replyState.showFinalReply(
-          t(
-            'canvas.mindMapOneSentence.photoTooLarge',
-            'Photo is too large. Maximum size is 10MB.'
-          )
+          t('canvas.mindMapOneSentence.photoTooLarge', 'Photo is too large. Maximum size is 10MB.')
         )
       }
       return false
@@ -656,8 +643,7 @@ export function useMindMapOneSentenceChat() {
         file: prepared.file,
         diagramId,
         diagramTitle:
-          savedDiagramsStore.diagrams.find((row) => row.id === diagramId)?.title ||
-          undefined,
+          savedDiagramsStore.diagrams.find((row) => row.id === diagramId)?.title || undefined,
         language: promptLanguage.value,
         applyToLibrary: true,
       })
@@ -676,8 +662,7 @@ export function useMindMapOneSentenceChat() {
       let reply: string
       if (result.mode === 'handdrawn') {
         const topic =
-          result.topic?.trim() ||
-          t('canvas.mindMapOneSentence.photoUntitledMap', 'Mind map')
+          result.topic?.trim() || t('canvas.mindMapOneSentence.photoUntitledMap', 'Mind map')
         if (result.appliedToLibrary) {
           reply = t(
             'canvas.mindMapOneSentence.photoHanddrawnReply',
@@ -754,12 +739,7 @@ export function useMindMapOneSentenceChat() {
       oneSentence.resetChatUiForWelcome()
       replyState.resetForNewTurn()
       if (
-        shouldUseOneSentenceEditFlow(
-          diagramStore,
-          savedDiagramsStore,
-          llmResultsStore,
-          phase.value
-        )
+        shouldUseOneSentenceEditFlow(diagramStore, savedDiagramsStore, llmResultsStore, phase.value)
       ) {
         oneSentence.setPhase('edit')
         pushKittyMessage(pickOneSentenceGenerateDone(currentLanguage.value))
@@ -943,9 +923,7 @@ export function useMindMapOneSentenceChat() {
     if (handleBusyLlmEdit(payload.errorCode)) {
       return
     }
-    replyState.showFinalReply(
-      resolveKittyEditFailureMessage(payload.errorCode, t, payload.action)
-    )
+    replyState.showFinalReply(resolveKittyEditFailureMessage(payload.errorCode, t, payload.action))
     oneSentence.applyAckOutcome(activeRequestId.value, 'failed', payload.errorCode)
   }
 

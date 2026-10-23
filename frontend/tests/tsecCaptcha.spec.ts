@@ -1,13 +1,13 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TJ_CAPTCHA_SRC } from '@/types/tsecCaptcha'
 import { loadTjCaptcha, tsecUserLanguage } from '@/utils/tsec/loadTjCaptcha'
-import { tsecFrontendErrorReason } from '@/utils/tsec/tsecErrorCodes'
 import {
   TsecCaptchaClosedError,
   TsecCaptchaFailedError,
   showTsecCaptcha,
 } from '@/utils/tsec/showTsecCaptcha'
+import { tsecFrontendErrorReason } from '@/utils/tsec/tsecErrorCodes'
 
 describe('tsecUserLanguage', () => {
   it('maps zh locales to zh-cn / zh-tw', () => {
@@ -21,7 +21,9 @@ describe('tsecUserLanguage', () => {
 describe('loadTjCaptcha', () => {
   beforeEach(() => {
     delete window.TencentCaptcha
-    document.head.querySelectorAll(`script[src="${TJ_CAPTCHA_SRC}"]`).forEach((node) => node.remove())
+    document.head
+      .querySelectorAll(`script[src="${TJ_CAPTCHA_SRC}"]`)
+      .forEach((node) => node.remove())
   })
 
   afterEach(() => {

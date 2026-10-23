@@ -27,7 +27,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'سيأتي قريباً',
   'thinkingCoins.schoolInfo': 'تواصل مع مشرف مدرستك للاطلاع على خطط المدرسة',
   'thinkingCoins.school.headline': 'تفكير مدعوم بالذكاء الاصطناعي · حلول مدرسية',
-  'thinkingCoins.school.description': 'النشر الخاص، والميزات المخصصة، ودعم العمليات الكاملة للمدارس والمؤسسات — المصممة للتوسع، والعلامات التجارية، وأمن البيانات.',
+  'thinkingCoins.school.description':
+    'النشر الخاص، والميزات المخصصة، ودعم العمليات الكاملة للمدارس والمؤسسات — المصممة للتوسع، والعلامات التجارية، وأمن البيانات.',
   'thinkingCoins.school.feature.accountManager': 'مدير حساب مخصص',
   'thinkingCoins.school.feature.accountManagerDesc': '<g id="1">-</g>استشارة فردية.',
   'thinkingCoins.school.feature.privateDeploy': 'النشر الخاص',
@@ -44,7 +45,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.school.submit': 'ارسال الاستفسار',
   'thinkingCoins.school.submitSuccess': 'تم الإرسال — سنتصل بك قريبًا',
   'thinkingCoins.school.submitFailed': 'فشل، يرجى المحاولة مرة أخرى في وقت لاحق.',
-  'thinkingCoins.school.submitRateLimit': 'يوجد عدد كبير جدًا من عمليات الإرسال — يرجى المحاولة مرة أخرى لاحقًا',
+  'thinkingCoins.school.submitRateLimit':
+    'يوجد عدد كبير جدًا من عمليات الإرسال — يرجى المحاولة مرة أخرى لاحقًا',
   'thinkingCoins.school.submitNotConfigured': 'الاستشارة غير متاحة مؤقتًا',
   'thinkingCoins.school.validationRequired': 'يُرجى ملء جميع الحقول المطلوبة',
   'thinkingCoins.school.validationPhone': 'يرجى إدخال رقم هاتف صالح',
@@ -63,7 +65,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.reason.referral_reward': 'مكافأة الإحالة',
   'thinkingCoins.reason.case_reward': 'مكافأة الحالة',
   'thinkingCoins.reason.subscription_grant': 'منحة الاكتتاب',
-  'thinkingCoins.dailyExpiresHint': 'تكون مكافآت تسجيل الدخول صالحة في نفس اليوم وسيتم إعادة تعيينها في الساعة 24:00',
+  'thinkingCoins.dailyExpiresHint':
+    'تكون مكافآت تسجيل الدخول صالحة في نفس اليوم وسيتم إعادة تعيينها في الساعة 24:00',
   'thinkingCoins.dailyBalanceRemaining': 'تسجيل الوصول المتبقي لهذا اليوم هو {n}',
   'thinkingCoins.admin.tab': 'رموز التفكير',
   'thinkingCoins.admin.tasksTitle': 'اربح المهام',

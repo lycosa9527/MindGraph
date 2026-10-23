@@ -63,11 +63,7 @@ export function useKittyDesktopFocusHint(
       const lib = typeof libRaw === 'string' && libRaw.length > 0 ? libRaw : null
       const ts = raw.updated_at
       const tsNum =
-        typeof ts === 'number'
-          ? ts
-          : typeof ts === 'string' && /^\d+$/.test(ts)
-            ? Number(ts)
-            : null
+        typeof ts === 'number' ? ts : typeof ts === 'string' && /^\d+$/.test(ts) ? Number(ts) : null
       // Bind only while the desktop canvas-owner WS lease is live.
       if (raw.canvas_owner_present !== true) {
         applyFocus(null, tsNum)
@@ -89,8 +85,7 @@ export function useKittyDesktopFocusHint(
   eventBus.on('kitty:desktop_focus_update', onFocusPush)
 
   watch(
-    () =>
-      [hydrateEnabled.value, pushPreferred != null ? pushPreferred.value : false] as const,
+    () => [hydrateEnabled.value, pushPreferred != null ? pushPreferred.value : false] as const,
     ([enabled]) => {
       if (enabled) {
         void hydrate()

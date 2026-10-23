@@ -1,5 +1,8 @@
 import { nextTick, ref } from 'vue'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useShowcaseDiagramCopyAi } from '@/composables/showcase/useShowcaseDiagramCopyAi'
 
 const streamShowcaseDiagramCopy = vi.hoisted(() => vi.fn())
 const streamShowcaseDiagramCopyFromImages = vi.hoisted(() => vi.fn())
@@ -13,7 +16,7 @@ vi.mock('@/composables/showcase/generateShowcaseDiagramCopy', () => ({
       grade: string
       diagramType: string
     }) =>
-      `${input.diagramType}|${input.title}|${input.subject}|${input.grade}|${input.specs.length}`,
+      `${input.diagramType}|${input.title}|${input.subject}|${input.grade}|${input.specs.length}`
   ),
   diagramCopyImagesFingerprint: vi.fn(
     (input: {
@@ -23,13 +26,11 @@ vi.mock('@/composables/showcase/generateShowcaseDiagramCopy', () => ({
       grade: string
       diagramType: string
     }) =>
-      `images|${input.diagramType}|${input.title}|${input.subject}|${input.grade}|${input.images.length}`,
+      `images|${input.diagramType}|${input.title}|${input.subject}|${input.grade}|${input.images.length}`
   ),
   streamShowcaseDiagramCopy,
   streamShowcaseDiagramCopyFromImages,
 }))
-
-import { useShowcaseDiagramCopyAi } from '@/composables/showcase/useShowcaseDiagramCopyAi'
 
 function collectUnhandledRejections(run: () => Promise<void>): Promise<unknown[]> {
   const reasons: unknown[] = []
@@ -105,16 +106,13 @@ describe('useShowcaseDiagramCopyAi', () => {
       async (
         _input: unknown,
         handlers: {
-          onFields?: (fields: {
-            description?: string
-            classroomApplication?: string
-          }) => void
+          onFields?: (fields: { description?: string; classroomApplication?: string }) => void
           onDone?: (result: {
             description: string
             classroomApplication: string
             model: string
           }) => void
-        },
+        }
       ) => {
         handlers.onFields?.({
           description: '图示简介',
@@ -127,7 +125,7 @@ describe('useShowcaseDiagramCopyAi', () => {
         }
         handlers.onDone?.(result)
         return result
-      },
+      }
     )
 
     const notify = {
@@ -178,7 +176,7 @@ describe('useShowcaseDiagramCopyAi', () => {
             classroomApplication: string
             model: string
           }) => void
-        },
+        }
       ) => {
         const result = {
           description: '图片简介',
@@ -187,7 +185,7 @@ describe('useShowcaseDiagramCopyAi', () => {
         }
         handlers.onDone?.(result)
         return result
-      },
+      }
     )
 
     const notify = {

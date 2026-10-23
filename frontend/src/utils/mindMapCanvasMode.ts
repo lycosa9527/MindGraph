@@ -1,4 +1,4 @@
-import { parseMindMapCanvasMode, type MindMapCanvasMode, useUIStore } from '@/stores/ui'
+import { type MindMapCanvasMode, parseMindMapCanvasMode, useUIStore } from '@/stores/ui'
 
 function isMindMapDiagramType(type: string | null | undefined): boolean {
   return type === 'mindmap' || type === 'mind_map'

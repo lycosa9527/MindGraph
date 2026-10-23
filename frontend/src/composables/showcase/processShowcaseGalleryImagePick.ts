@@ -2,17 +2,13 @@
  * Event-driven async pipeline for showcase gallery image picks.
  * Sequential resize (memory-safe), abortable, yields to the event loop between files.
  */
-
 import {
   isShowcaseGalleryAbortError,
   resizeImageFileForShowcaseGallery,
 } from '@/composables/media/resizeImageFileForShowcaseGallery'
 
 export type ShowcaseGalleryPickRejectReason =
-  | 'invalid_type'
-  | 'too_large'
-  | 'total_too_large'
-  | 'gallery_limit'
+  'invalid_type' | 'too_large' | 'total_too_large' | 'gallery_limit'
 
 export type ShowcaseGalleryPickEvent =
   | { type: 'start'; total: number }

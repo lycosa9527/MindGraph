@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  PANE_TAP_MAX_MOVE_PX,
   computePinchViewport,
   nextTouchGesturePhase,
-  PANE_TAP_MAX_MOVE_PX,
 } from '@/composables/diagramCanvas/useDiagramCanvasMobileTouch'
 import { ANIMATION } from '@/config/uiConfig'
 

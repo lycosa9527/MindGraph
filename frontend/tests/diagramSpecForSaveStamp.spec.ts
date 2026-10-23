@@ -1,9 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-vi.mock('@/composables/core/notifications', () => ({
-  notify: { warning: vi.fn(), error: vi.fn(), success: vi.fn(), info: vi.fn() },
-}))
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   useDiagramSpecForPersist,
@@ -12,6 +9,10 @@ import {
 import { useDiagramStore } from '@/stores/diagram'
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useLLMResultsStore } from '@/stores/llmResults'
+
+vi.mock('@/composables/core/notifications', () => ({
+  notify: { warning: vi.fn(), error: vi.fn(), success: vi.fn(), info: vi.fn() },
+}))
 
 function memoryStorage(): Storage {
   const map = new Map<string, string>()

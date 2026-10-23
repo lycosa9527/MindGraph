@@ -10,7 +10,8 @@ export default {
   'fileCenterLibrary.badgeCanvas': 'Tuval',
   'fileCenterLibrary.badgeExtension': 'Eklenti',
   'fileCenterLibrary.badgeUpload': 'Yükle',
-  'chunkTest.history.confirmDeleteBody': 'Bu testi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+  'chunkTest.history.confirmDeleteBody':
+    'Bu testi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
   'chunkTest.history.confirmDeleteTitle': 'Testi sil',
   'chunkTest.history.delete': 'Sil',
   'chunkTest.history.deleteFailed': 'Test silinemedi',
@@ -49,7 +50,8 @@ export default {
   'chunkTestResults.answerQuality': 'Yanıt kalitesi',
   'chunkTestResults.avgLatency': 'Ort. gecikme',
   'chunkTestResults.back': 'Geri',
-  'chunkTestResults.cancelConfirmBody': 'Bu testi iptal etmek istediğinize emin misiniz? Test bir sonraki kontrol noktasında durur.',
+  'chunkTestResults.cancelConfirmBody':
+    'Bu testi iptal etmek istediğinize emin misiniz? Test bir sonraki kontrol noktasında durur.',
   'chunkTestResults.cancelFailed': 'Test iptal edilemedi',
   'chunkTestResults.cancelRequested': 'Test iptali istendi',
   'chunkTestResults.cancelTest': 'Testi iptal et',
@@ -108,7 +110,8 @@ export default {
   'knowledge.doc.colStatus': 'Durum',
   'knowledge.doc.colType': 'Tür',
   'knowledge.doc.colUploaded': 'Yükleme tarihi',
-  'knowledge.doc.emptyDescription': 'Henüz belge yok. Bilgi tabanınızı oluşturmak için belge yükleyin.',
+  'knowledge.doc.emptyDescription':
+    'Henüz belge yok. Bilgi tabanınızı oluşturmak için belge yükleyin.',
   'knowledge.doc.errorPrefix': 'Hata: ',
   'knowledge.doc.noData': 'Veri yok',
   'knowledge.doc.statusCompleted': 'Tamamlandı',
@@ -124,21 +127,29 @@ export default {
   'knowledge.header.title': 'Kişisel bilgi tabanı',
   'knowledge.header.upload': 'Belge yükle',
   'knowledge.ragGuide.title': 'Paketler, RAG ve wiki nasıl çalışır?',
-  'knowledge.ragGuide.subtitle': 'Jargon gerekmez — bunu bir referans klasörü gibi düşünün. Arama için dizinleriz (RAG), kısa wiki notları derleriz ve zihin haritası oluştururken YZ ikisini de okur.',
+  'knowledge.ragGuide.subtitle':
+    'Jargon gerekmez — bunu bir referans klasörü gibi düşünün. Arama için dizinleriz (RAG), kısa wiki notları derleriz ve zihin haritası oluştururken YZ ikisini de okur.',
   'knowledge.ragGuide.step1.title': 'Bir paket seçin',
-  'knowledge.ragGuide.step1.body': 'Paket, Zotero koleksiyonu gibidir. Solda en fazla 3 paket olabilir; her biri genellikle bir zihin haritasına aittir. Belgelerini yönetmek için kenar çubuğunda bir pakete tıklayın.',
+  'knowledge.ragGuide.step1.body':
+    'Paket, Zotero koleksiyonu gibidir. Solda en fazla 3 paket olabilir; her biri genellikle bir zihin haritasına aittir. Belgelerini yönetmek için kenar çubuğunda bir pakete tıklayın.',
   'knowledge.ragGuide.step2.title': 'Kaynak ekleyin ve dizinleyin (RAG)',
-  'knowledge.ragGuide.step2.body': 'PDF, Word, not veya web sayfası yükleyin. Uzun belgeleri aranabilir parçalara böler ve vektör gömmeleri saklarız — bu RAG dizinidir ve önce hazır olur.',
+  'knowledge.ragGuide.step2.body':
+    'PDF, Word, not veya web sayfası yükleyin. Uzun belgeleri aranabilir parçalara böler ve vektör gömmeleri saklarız — bu RAG dizinidir ve önce hazır olur.',
   'knowledge.ragGuide.step3.title': 'Wiki notları otomatik derlenir',
-  'knowledge.ragGuide.step3.body': 'Dizinleme bitince bir LLM diskte genel bakış ve konu wiki sayfaları derler. Bunlar paketi özetleyen kısa notlardır (transkript değil).',
+  'knowledge.ragGuide.step3.body':
+    'Dizinleme bitince bir LLM diskte genel bakış ve konu wiki sayfaları derler. Bunlar paketi özetleyen kısa notlardır (transkript değil).',
   'knowledge.ragGuide.step4.title': 'Arama wiki + parçaları kullanır',
-  'knowledge.ragGuide.step4.body': 'Bir dalı genişlettiğinizde veya özet oluşturduğunuzda önce ilgili wiki sayfalarını eşleştirir, sonra en ilgili parça pasajlarını getiririz (hibrit RAG).',
+  'knowledge.ragGuide.step4.body':
+    'Bir dalı genişlettiğinizde veya özet oluşturduğunuzda önce ilgili wiki sayfalarını eşleştirir, sonra en ilgili parça pasajlarını getiririz (hibrit RAG).',
   'knowledge.ragGuide.step5.title': 'Yanıtlar kaynaklarınıza dayanır',
-  'knowledge.ragGuide.step5.body': 'YZ tahmin etmek yerine wiki notlarından ve getirilen alıntılardan yazar — daha iyi kaynaklar, tamamlanmış dizinleme ve derlenmiş wiki sayfaları daha doğru haritalar demektir.',
-  'knowledge.ragGuide.footer': 'İpucu: tuvalde Belge Özeti\'ni açmak otomatik paket oluşturur; Chrome eklentisiyle kaydedilen sayfalar da kenar çubuğu listesinde görünür.',
+  'knowledge.ragGuide.step5.body':
+    'YZ tahmin etmek yerine wiki notlarından ve getirilen alıntılardan yazar — daha iyi kaynaklar, tamamlanmış dizinleme ve derlenmiş wiki sayfaları daha doğru haritalar demektir.',
+  'knowledge.ragGuide.footer':
+    "İpucu: tuvalde Belge Özeti'ni açmak otomatik paket oluşturur; Chrome eklentisiyle kaydedilen sayfalar da kenar çubuğu listesinde görünür.",
   'knowledge.pipeline.title': 'Boru hattı durumu',
   'knowledge.pipeline.ragIdle': 'RAG dizini',
-  'knowledge.pipeline.ragIdleDetail': 'Henüz dizinlenmiş paket yok. Kaynak ekleyin ve bir paketten dizinlemeyi çalıştırın.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Henüz dizinlenmiş paket yok. Kaynak ekleyin ve bir paketten dizinlemeyi çalıştırın.',
   'knowledge.pipeline.ragProcessing': 'RAG dizinleniyor',
   'knowledge.pipeline.ragProcessingDetail': '{count} paket hâlâ kaynakları parçalıyor ve gömüyor.',
   'knowledge.pipeline.ragReady': 'RAG hazır',
@@ -146,9 +157,11 @@ export default {
   'knowledge.pipeline.wikiDisabled': 'Wiki derleme kapalı',
   'knowledge.pipeline.wikiDisabledDetail': 'Bu sunucuda wiki derleme devre dışı.',
   'knowledge.pipeline.wikiIdle': 'Wiki derleme',
-  'knowledge.pipeline.wikiIdleDetail': 'Wiki sayfaları her kaynak için RAG dizinlemesi tamamlandıktan sonra derlenir.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Wiki sayfaları her kaynak için RAG dizinlemesi tamamlandıktan sonra derlenir.',
   'knowledge.pipeline.wikiPending': 'Wiki derleniyor',
-  'knowledge.pipeline.wikiPendingDetail': '{count} paket dizinlemeden sonra wiki sayfalarını bekliyor.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} paket dizinlemeden sonra wiki sayfalarını bekliyor.',
   'knowledge.pipeline.wikiReady': 'Wiki hazır',
   'knowledge.pipeline.wikiReadyDetail': '{count} paketin derlenmiş wiki notları var.',
   'knowledge.pipelineBadge.rag.label': 'paçavra',
@@ -164,7 +177,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Tüm seçimi kaldır',
   'knowledge.manualEval.dialogTitle': 'Manuel değerlendirme — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Doğru yanıt (isteğe bağlı)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Yanıt ilgisi değerlendirmesi için doğru yanıtı girin...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Yanıt ilgisi değerlendirmesi için doğru yanıtı girin...',
   'knowledge.manualEval.metric.answer_coverage': 'Yanıt kapsamı',
   'knowledge.manualEval.metric.answer_faithfulness': 'Yanıt sadakati',
   'knowledge.manualEval.metric.clarity': 'Netlik',
@@ -186,8 +200,9 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Parça kalitesi değerlendirmesi',
   'knowledge.manualEval.resultsTitle': 'Değerlendirme sonuçları',
   'knowledge.manualEval.selectAll': 'Tümünü seç',
-  'knowledge.manualEval.selectChunksHeading': 'Değerlendirilecek parçaları seçin (tümünü değerlendirmek için boş bırakın)',
-  'knowledge.manualEval.showingFirst20': '{total} parçanın ilk 20\'si gösteriliyor',
+  'knowledge.manualEval.selectChunksHeading':
+    'Değerlendirilecek parçaları seçin (tümünü değerlendirmek için boş bırakın)',
+  'knowledge.manualEval.showingFirst20': "{total} parçanın ilk 20'si gösteriliyor",
   'knowledge.manualEval.startEvaluation': 'Değerlendirmeyi başlat',
   'knowledge.processing.chunking': 'Parçalama',
   'knowledge.processing.cleaning': 'Temizleme',
@@ -235,7 +250,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Getirme ayarları',
   'knowledge.settings.title': 'Bilgi tabanı ayarları',
   'knowledge.settings.helpTitle': 'Bu ayarlar nasıl uygulanır',
-  'knowledge.settings.helpBody': 'Getirme tercihleri arama ve YZ yanıtlarına hemen uygulanır. Parça boyutu ve örtüşme yeni dizinlenen belgelere uygulanır — değiştirdikten sonra mevcut kaynaklarda dizinlemeyi yeniden çalıştırın.',
+  'knowledge.settings.helpBody':
+    'Getirme tercihleri arama ve YZ yanıtlarına hemen uygulanır. Parça boyutu ve örtüşme yeni dizinlenen belgelere uygulanır — değiştirdikten sonra mevcut kaynaklarda dizinlemeyi yeniden çalıştırın.',
   'knowledge.settings.tokens': 'jeton',
   'knowledge.settings.serverSection': 'Sunucu (salt okunur)',
   'knowledge.settings.rerankingMode': 'Yeniden sıralama',
@@ -246,15 +262,17 @@ export default {
   'knowledge.settings.wikiDisabled': 'Devre dışı',
   'knowledge.settings.saveSuccess': 'Ayarlar kaydedildi',
   'knowledge.settings.saveFailed': 'Ayarlar kaydedilemedi',
-  'knowledge.settings.reindexRequired': 'Parça ayarları değişti — yeni boyutların geçerli olması için paketlerinizdeki mevcut belgeleri yeniden dizinleyin.',
+  'knowledge.settings.reindexRequired':
+    'Parça ayarları değişti — yeni boyutların geçerli olması için paketlerinizdeki mevcut belgeleri yeniden dizinleyin.',
   'knowledge.upload.click': 'Yüklemek için tıklayın',
   'knowledge.upload.drag': 'veya dosyayı buraya sürükleyin',
-  'knowledge.upload.fileTooLarge': 'Dosya boyutu 10MB\'ı aşamaz',
+  'knowledge.upload.fileTooLarge': "Dosya boyutu 10MB'ı aşamaz",
   'knowledge.upload.hintFormats': 'PDF, DOCX, TXT, MD, Görseller desteklenir (maks. 10MB)',
   'knowledge.upload.maxDocs': 'Maksimum belge sınırına ulaşıldı (5)',
   'knowledge.upload.title': 'Belge yükle',
   'knowledge.upload.unsupportedType': 'Desteklenmeyen dosya türü',
-  'knowledgeSpace.confirmDeleteBody': 'Bu belgeyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Bu belgeyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
   'knowledgeSpace.confirmDeleteTitle': 'Silmeyi onayla',
   'knowledgeSpace.deleteFailed': 'Silme başarısız',
   'knowledgeSpace.documentDeleted': 'Belge silindi',

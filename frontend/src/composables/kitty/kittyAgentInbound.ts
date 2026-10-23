@@ -67,8 +67,7 @@ export function dispatchKittyDiagramUpdateInbound(
       : ''
   const expectedEffect = data.expected_effect as DiagramEditExpectedEffect | undefined
   const beforeRaw = data.before_fingerprint as
-    | { nodes?: unknown[]; connections?: unknown[] }
-    | undefined
+    { nodes?: unknown[]; connections?: unknown[] } | undefined
   const beforeFingerprint =
     beforeRaw && Array.isArray(beforeRaw.nodes) && Array.isArray(beforeRaw.connections)
       ? {
@@ -142,8 +141,7 @@ export function handleKittyServerMessage(
 
     case 'desktop_focus_update': {
       const libRaw = data.diagram_library_id
-      const lib =
-        typeof libRaw === 'string' && libRaw.trim() !== '' ? libRaw.trim() : null
+      const lib = typeof libRaw === 'string' && libRaw.trim() !== '' ? libRaw.trim() : null
       const tsRaw = data.updated_at
       let updatedAt: number | null = null
       if (typeof tsRaw === 'number' && Number.isFinite(tsRaw)) {
@@ -186,7 +184,8 @@ export function handleKittyServerMessage(
       const session = data.session
       if (typeof session === 'object' && session !== null) {
         eventBus.emit('kitty:session_snapshot', {
-          session: session as import('@/composables/kitty/useKittySessionManager').KittySessionSnapshotDto,
+          session:
+            session as import('@/composables/kitty/useKittySessionManager').KittySessionSnapshotDto,
         })
       }
       break

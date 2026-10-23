@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
 import { isMindMapBranchId } from '@/utils/mindMapLocation'
+import { must } from '@/utils/must'
 
 export type OutlineDropPosition = 'before' | 'after' | 'child'
 
@@ -22,7 +23,7 @@ export function useMindMapOutlineDrag() {
     }
     draggingNodeId.value = nodeId
     event.dataTransfer?.setData('text/plain', nodeId)
-    event.dataTransfer!.effectAllowed = 'move'
+    must(event.dataTransfer).effectAllowed = 'move'
   }
 
   function onDragEnd(): void {
@@ -45,7 +46,7 @@ export function useMindMapOutlineDrag() {
   function onDragOver(event: DragEvent, nodeId: string): void {
     if (!draggingNodeId.value || draggingNodeId.value === nodeId) return
     event.preventDefault()
-    event.dataTransfer!.dropEffect = 'move'
+    must(event.dataTransfer).dropEffect = 'move'
     dropTarget.value = { nodeId, position: resolveDropPosition(event, nodeId) }
   }
 

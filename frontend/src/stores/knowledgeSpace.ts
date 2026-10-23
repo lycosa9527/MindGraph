@@ -4,8 +4,9 @@
  * Server data is managed by Vue Query composables; this store holds selection
  * and legacy polling no-ops for backward compatibility.
  */
-import { defineStore } from 'pinia'
 import { ref } from 'vue'
+
+import { defineStore } from 'pinia'
 
 export interface KnowledgeDocument {
   id: number

@@ -9,10 +9,10 @@
  *   node i18n-google/cli.ts --all-enabled
  */
 import {
-  htmlLangForUiCode,
   INTERFACE_LANGUAGE_PICKER_CODES,
-  UI_LOCALE_CODES,
   type LocaleCode,
+  UI_LOCALE_CODES,
+  htmlLangForUiCode,
 } from '../src/i18n/locales.ts'
 import { fillNamespace } from './gapFill.ts'
 import { googleToForLocale } from './googleBatch.ts'

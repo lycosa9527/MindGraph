@@ -1,5 +1,5 @@
 /**
- * Align every locale × namespace (except zh) with zh slices: add missing from en; drop extras.
+ * Align every locale ï¿½ namespace (except zh) with zh slices: add missing from en; drop extras.
  * Run from frontend/: node scripts/sync-messages-keys-from-reference.ts [--dry-run]
  *
  * Interface picker only: `--tier27-only` (matches INTERFACE_LANGUAGE_PICKER_CODES minus zh reference).
@@ -106,7 +106,11 @@ function localeDirsAll(): string[] {
     .sort()
 }
 
-function formatNamespaceExport(ns: string, keysInOrder: string[], out: Record<string, string>): string {
+function formatNamespaceExport(
+  ns: string,
+  keysInOrder: string[],
+  out: Record<string, string>
+): string {
   const formatted = formatRecord(keysInOrder, out)
   if (ns === 'thinkingCoins') {
     return `export const thinkingCoinsMessages = ${formatted} as const\n`
@@ -128,7 +132,10 @@ function patchIndexThinkingCoins(locale: string, dry: boolean): boolean {
       "import workshop from './workshop.ts'",
       "import { thinkingCoinsMessages as thinkingCoins } from './thinkingCoins.ts'\nimport workshop from './workshop.ts'"
     )
-    .replace('  ...notification,\n} as const', '  ...notification,\n  ...thinkingCoins,\n} as const')
+    .replace(
+      '  ...notification,\n} as const',
+      '  ...notification,\n  ...thinkingCoins,\n} as const'
+    )
   if (next === rawPrev) {
     throw new Error(`Failed to patch index.ts for ${locale}`)
   }

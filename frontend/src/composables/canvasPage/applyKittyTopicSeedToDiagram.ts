@@ -1,7 +1,6 @@
+import type { KittyTopicSeed } from '@/composables/canvasPage/diagramTypeFromPrompt'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { DiagramType } from '@/types'
-
-import type { KittyTopicSeed } from '@/composables/canvasPage/diagramTypeFromPrompt'
 
 type DiagramPiniaStore = ReturnType<typeof useDiagramStore>
 

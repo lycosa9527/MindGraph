@@ -5,12 +5,14 @@
 
 export default {
   'fileCenterLibrary.title': 'Mga Package',
-  'fileCenterLibrary.subtitle': 'Mga koleksyon ng source na naka-grupo ayon sa diagram (Document Summary).',
+  'fileCenterLibrary.subtitle':
+    'Mga koleksyon ng source na naka-grupo ayon sa diagram (Document Summary).',
   'fileCenterLibrary.openDiagram': 'Buksan ang diagram',
   'fileCenterLibrary.badgeCanvas': 'canvas',
   'fileCenterLibrary.badgeExtension': 'Karugtong',
   'fileCenterLibrary.badgeUpload': 'I-upload',
-  'chunkTest.history.confirmDeleteBody': 'Sigurado ka bang gusto mong i-delete ang test na ito? Hindi na ito mababawi.',
+  'chunkTest.history.confirmDeleteBody':
+    'Sigurado ka bang gusto mong i-delete ang test na ito? Hindi na ito mababawi.',
   'chunkTest.history.confirmDeleteTitle': 'I-delete ang Test',
   'chunkTest.history.delete': 'I-delete',
   'chunkTest.history.deleteFailed': 'Hindi na-delete ang test',
@@ -49,7 +51,8 @@ export default {
   'chunkTestResults.answerQuality': 'Kalidad ng Sagot',
   'chunkTestResults.avgLatency': 'Karaniwang latency',
   'chunkTestResults.back': 'Bumalik',
-  'chunkTestResults.cancelConfirmBody': 'Sigurado ka bang gusto mong kanselahin ang test na ito? Titigil ito sa susunod na checkpoint.',
+  'chunkTestResults.cancelConfirmBody':
+    'Sigurado ka bang gusto mong kanselahin ang test na ito? Titigil ito sa susunod na checkpoint.',
   'chunkTestResults.cancelFailed': 'Hindi nakansela ang test',
   'chunkTestResults.cancelRequested': 'Hiniling ang pagkansela ng test',
   'chunkTestResults.cancelTest': 'Kanselahin ang Test',
@@ -89,7 +92,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'I-test ang Lahat ng Dataset',
   'knowledge.chunkHeader.testUpload': 'I-test ang Na-upload na Dokumento',
   'knowledge.chunkHeader.title': 'Pagsusuri ng RAG Chunk',
-  'knowledge.chunkHeader.waitForProcessing': 'Maghintay hanggang matapos ang pagproseso ng dokumento bago mag-test',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Maghintay hanggang matapos ang pagproseso ng dokumento bago mag-test',
   'knowledge.chunkPreview.empty': 'Walang nahanap na chunk',
   'knowledge.chunkPreview.pageLabel': 'Pahina {n}',
   'knowledge.chunkPreview.title': 'Mga Chunk ng Dokumento — {fileName}',
@@ -108,7 +112,8 @@ export default {
   'knowledge.doc.colStatus': 'Katayuan',
   'knowledge.doc.colType': 'Uri',
   'knowledge.doc.colUploaded': 'Petsa ng Upload',
-  'knowledge.doc.emptyDescription': 'Wala pang dokumento. Mag-upload ng dokumento para buuin ang knowledge base mo.',
+  'knowledge.doc.emptyDescription':
+    'Wala pang dokumento. Mag-upload ng dokumento para buuin ang knowledge base mo.',
   'knowledge.doc.errorPrefix': 'May error: ',
   'knowledge.doc.noData': 'Walang data',
   'knowledge.doc.statusCompleted': 'Tapos na',
@@ -124,31 +129,42 @@ export default {
   'knowledge.header.title': 'Personal na Knowledge Base',
   'knowledge.header.upload': 'Mag-upload ng Dokumento',
   'knowledge.ragGuide.title': 'Paano gumagana ang mga package, RAG, at wiki?',
-  'knowledge.ragGuide.subtitle': 'Walang kailangang jargon — isipin itong folder ng reference material. Ini-index namin ito para sa search (RAG), pagkatapos ay gumagawa ng maiikling wiki notes, at binabasa ng AI ang pareho kapag gumagawa ka ng mind map.',
+  'knowledge.ragGuide.subtitle':
+    'Walang kailangang jargon — isipin itong folder ng reference material. Ini-index namin ito para sa search (RAG), pagkatapos ay gumagawa ng maiikling wiki notes, at binabasa ng AI ang pareho kapag gumagawa ka ng mind map.',
   'knowledge.ragGuide.step1.title': 'Pumili ng package',
-  'knowledge.ragGuide.step1.body': 'Parang Zotero collection ang isang package. Hanggang 3 sa kaliwa; kadalasan isa bawat mind map. I-click ang package sa sidebar para pamahalaan ang mga dokumento.',
+  'knowledge.ragGuide.step1.body':
+    'Parang Zotero collection ang isang package. Hanggang 3 sa kaliwa; kadalasan isa bawat mind map. I-click ang package sa sidebar para pamahalaan ang mga dokumento.',
   'knowledge.ragGuide.step2.title': 'Magdagdag ng source at i-index (RAG)',
-  'knowledge.ragGuide.step2.body': 'Mag-upload ng PDF, Word, notes, o web pages. Hinahati namin ang mahahabang dokumento sa searchable chunks at iniimbak ang vector embeddings — ito ang RAG index at unang magiging handa.',
+  'knowledge.ragGuide.step2.body':
+    'Mag-upload ng PDF, Word, notes, o web pages. Hinahati namin ang mahahabang dokumento sa searchable chunks at iniimbak ang vector embeddings — ito ang RAG index at unang magiging handa.',
   'knowledge.ragGuide.step3.title': 'Awtomatikong na-compile ang wiki notes',
-  'knowledge.ragGuide.step3.body': 'Pagkatapos ng indexing, nag-compile ang LLM ng overview at topic wiki pages sa disk. Maiikling notes ito (hindi transcript) na nagbubuod ng package para mas mabilis mag-orient.',
+  'knowledge.ragGuide.step3.body':
+    'Pagkatapos ng indexing, nag-compile ang LLM ng overview at topic wiki pages sa disk. Maiikling notes ito (hindi transcript) na nagbubuod ng package para mas mabilis mag-orient.',
   'knowledge.ragGuide.step4.title': 'Gumagamit ang lookup ng wiki + chunks',
-  'knowledge.ragGuide.step4.body': 'Kapag nag-expand ka ng branch o gumagawa ng summary, unahin naming i-match ang relevant wiki pages, pagkatapos ay kukunin ang pinaka-relevant na chunk passages (hybrid RAG).',
+  'knowledge.ragGuide.step4.body':
+    'Kapag nag-expand ka ng branch o gumagawa ng summary, unahin naming i-match ang relevant wiki pages, pagkatapos ay kukunin ang pinaka-relevant na chunk passages (hybrid RAG).',
   'knowledge.ragGuide.step5.title': 'Mga sagot na nakabatay sa iyong sources',
-  'knowledge.ragGuide.step5.body': 'Sumusulat ang AI mula sa wiki notes at retrieved snippets imbes na manghula — mas magagandang source, tapos na indexing, at compiled wiki pages ay mas tumpak na maps.',
-  'knowledge.ragGuide.footer': 'Tip: ang pagbukas ng Document Summary sa canvas ay awtomatikong gumagawa ng package; ang mga page na na-save via Chrome extension ay lumalabas din sa sidebar list.',
+  'knowledge.ragGuide.step5.body':
+    'Sumusulat ang AI mula sa wiki notes at retrieved snippets imbes na manghula — mas magagandang source, tapos na indexing, at compiled wiki pages ay mas tumpak na maps.',
+  'knowledge.ragGuide.footer':
+    'Tip: ang pagbukas ng Document Summary sa canvas ay awtomatikong gumagawa ng package; ang mga page na na-save via Chrome extension ay lumalabas din sa sidebar list.',
   'knowledge.pipeline.title': 'Status ng pipeline',
   'knowledge.pipeline.ragIdle': 'Indeks ng RAG',
-  'knowledge.pipeline.ragIdleDetail': 'Wala pang na-index na package. Magdagdag ng source at mag-index mula sa isang package.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Wala pang na-index na package. Magdagdag ng source at mag-index mula sa isang package.',
   'knowledge.pipeline.ragProcessing': 'Pag-index ng RAG',
-  'knowledge.pipeline.ragProcessingDetail': '{count} package ang nag-chu-chunk at nag-e-embed pa ng sources.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} package ang nag-chu-chunk at nag-e-embed pa ng sources.',
   'knowledge.pipeline.ragReady': 'Handa na ang RAG',
   'knowledge.pipeline.ragReadyDetail': '{count} package ang na-index — active ang chunk search.',
   'knowledge.pipeline.wikiDisabled': 'Naka-off ang Wiki compile',
   'knowledge.pipeline.wikiDisabledDetail': 'Naka-disable ang wiki compilation sa server na ito.',
   'knowledge.pipeline.wikiIdle': 'Pag-compile ng Wiki',
-  'knowledge.pipeline.wikiIdleDetail': 'Na-compile ang wiki pages pagkatapos ng RAG indexing para sa bawat source.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Na-compile ang wiki pages pagkatapos ng RAG indexing para sa bawat source.',
   'knowledge.pipeline.wikiPending': 'Nagco-compile ng wiki',
-  'knowledge.pipeline.wikiPendingDetail': '{count} package ang naghihintay ng wiki pages pagkatapos ng indexing.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} package ang naghihintay ng wiki pages pagkatapos ng indexing.',
   'knowledge.pipeline.wikiReady': 'Handa na ang Wiki',
   'knowledge.pipeline.wikiReadyDetail': '{count} package ang may compiled wiki notes.',
   'knowledge.pipelineBadge.rag.label': 'RAG',
@@ -164,7 +180,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'I-deselect Lahat',
   'knowledge.manualEval.dialogTitle': 'Manual na Pagsusuri — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Ground Truth Answer (Opsyonal)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Ilagay ang ground truth answer para sa answer relevance evaluation...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Ilagay ang ground truth answer para sa answer relevance evaluation...',
   'knowledge.manualEval.metric.answer_coverage': 'Saklaw ng Sagot',
   'knowledge.manualEval.metric.answer_faithfulness': 'Katapatan ng Sagot',
   'knowledge.manualEval.metric.clarity': 'Kalinawan',
@@ -186,7 +203,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Pagsusuri ng Kalidad ng Chunk',
   'knowledge.manualEval.resultsTitle': 'Mga Resulta ng Pagsusuri',
   'knowledge.manualEval.selectAll': 'Piliin Lahat',
-  'knowledge.manualEval.selectChunksHeading': 'Pumili ng Chunk na Ie-evaluate (iwanang blank para sa lahat)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Pumili ng Chunk na Ie-evaluate (iwanang blank para sa lahat)',
   'knowledge.manualEval.showingFirst20': 'Ipinapakita ang unang 20 sa {total} chunk',
   'knowledge.manualEval.startEvaluation': 'Simulan ang Evaluation',
   'knowledge.processing.chunking': 'Pag-chunk',
@@ -235,7 +253,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Mga Setting ng Retrieval',
   'knowledge.settings.title': 'Mga Setting ng Knowledge Base',
   'knowledge.settings.helpTitle': 'Paano ina-apply ang mga setting na ito',
-  'knowledge.settings.helpBody': 'Agad na ina-apply ang retrieval preferences sa search at AI answers. Ang chunk size at overlap ay para sa bagong na-index na dokumento — i-re-index ang existing sources pagkatapos baguhin.',
+  'knowledge.settings.helpBody':
+    'Agad na ina-apply ang retrieval preferences sa search at AI answers. Ang chunk size at overlap ay para sa bagong na-index na dokumento — i-re-index ang existing sources pagkatapos baguhin.',
   'knowledge.settings.tokens': 'mga token',
   'knowledge.settings.serverSection': 'Server (basahin lang)',
   'knowledge.settings.rerankingMode': 'Muling ayusin',
@@ -246,7 +265,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Naka-disable',
   'knowledge.settings.saveSuccess': 'Na-save ang settings',
   'knowledge.settings.saveFailed': 'Hindi na-save ang settings',
-  'knowledge.settings.reindexRequired': 'Nagbago ang chunk settings — i-re-index ang existing documents sa packages mo.',
+  'knowledge.settings.reindexRequired':
+    'Nagbago ang chunk settings — i-re-index ang existing documents sa packages mo.',
   'knowledge.upload.click': 'I-click para mag-upload',
   'knowledge.upload.drag': 'o i-drag ang file dito',
   'knowledge.upload.fileTooLarge': 'Hindi dapat lumampas sa 10MB ang file',
@@ -254,7 +274,8 @@ export default {
   'knowledge.upload.maxDocs': 'Naabot na ang maximum na bilang ng dokumento (5)',
   'knowledge.upload.title': 'Mag-upload ng Dokumento',
   'knowledge.upload.unsupportedType': 'Hindi suportadong uri ng file',
-  'knowledgeSpace.confirmDeleteBody': 'Sigurado ka bang gusto mong i-delete ang dokumentong ito? Hindi na ito mababawi.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Sigurado ka bang gusto mong i-delete ang dokumentong ito? Hindi na ito mababawi.',
   'knowledgeSpace.confirmDeleteTitle': 'Kumpirmahin ang Pag-delete',
   'knowledgeSpace.deleteFailed': 'Hindi na-delete',
   'knowledgeSpace.documentDeleted': 'Na-delete ang dokumento',

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, afterEach } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   appendOneSentenceTurn,
@@ -19,8 +19,22 @@ describe('useOneSentenceSessionTurns', () => {
         json: async () => ({
           ok: true,
           turns: [
-            { turn_id: 'a', role: 'user', content: '主题', phase: 'create', source: 'ui_create', ts: 1 },
-            { turn_id: 'b', role: 'kitty', content: '好的', phase: 'create', source: 'ui_create', ts: 2 },
+            {
+              turn_id: 'a',
+              role: 'user',
+              content: '主题',
+              phase: 'create',
+              source: 'ui_create',
+              ts: 1,
+            },
+            {
+              turn_id: 'b',
+              role: 'kitty',
+              content: '好的',
+              phase: 'create',
+              source: 'ui_create',
+              ts: 2,
+            },
             { turn_id: 'c', role: 'meta', content: '', phase: 'edit', source: 'route', ts: 3 },
           ],
         }),

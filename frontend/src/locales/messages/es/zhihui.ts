@@ -24,17 +24,22 @@ export default {
   'zhihui.promptPlaceholder.image': 'Introduce tu inspiración...',
   'zhihui.promptPlaceholder.video': 'Describe la escena, el trabajo de cámara y el ritmo...',
   'zhihui.promptPlaceholder.diagram': 'Seleccione el mapa mental y haga clic en Generar',
-  'zhihui.composerHint.image': 'Utilice texto para describir la imagen y genere ilustraciones didácticas y materiales visuales con un solo clic.',
-  'zhihui.composerHint.video': 'Está a punto de acceder a las capacidades de Wensheng Video y Tusheng Video',
-  'zhihui.composerHint.diagram': 'Seleccione un mapa mental para generar un diagrama de material didáctico desde la perspectiva del alumno',
+  'zhihui.composerHint.image':
+    'Utilice texto para describir la imagen y genere ilustraciones didácticas y materiales visuales con un solo clic.',
+  'zhihui.composerHint.video':
+    'Está a punto de acceder a las capacidades de Wensheng Video y Tusheng Video',
+  'zhihui.composerHint.diagram':
+    'Seleccione un mapa mental para generar un diagrama de material didáctico desde la perspectiva del alumno',
   'zhihui.diagram.selectMindmap': 'Elige un mapa mental',
   'zhihui.diagram.selectMindmapHint': 'Por favor seleccione un mapa mental arriba',
   'zhihui.diagram.selectMindmapFirst': 'Por favor seleccione primero un mapa mental',
-  'zhihui.diagram.emptyLibrary': 'Aún no hay un mapa mental; primero guárdelo en la biblioteca de diagramas.',
+  'zhihui.diagram.emptyLibrary':
+    'Aún no hay un mapa mental; primero guárdelo en la biblioteca de diagramas.',
   'zhihui.diagram.loadFailed': 'No se pudo cargar el mapa mental',
   'zhihui.diagram.emptyDeck': 'Después de seleccionar el mapa mental, haga clic en Generar',
   'zhihui.diagram.waitingSlides': 'Se está generando material didáctico, espere...',
-  'zhihui.diagram.jobStarted': 'La generación de material didáctico ha comenzado. Puedes comprobar el progreso en el historial.',
+  'zhihui.diagram.jobStarted':
+    'La generación de material didáctico ha comenzado. Puedes comprobar el progreso en el historial.',
   'zhihui.diagram.phaseQueued': 'Las tareas están en cola...',
   'zhihui.diagram.phasePlanning': 'Diseñando el plan de estudios...',
   'zhihui.diagram.phasePlanningBranches': 'Planificando varios temas...',
@@ -47,9 +52,11 @@ export default {
   'zhihui.diagram.phaseComplete': 'El material didáctico está listo',
   'zhihui.diagram.phaseCancelled': 'Cancelado',
   'zhihui.diagram.toastPlanning': 'Diseñando el plan de estudios...',
-  'zhihui.diagram.toastGenerating': 'Se está extrayendo material didáctico; puede tardar unos minutos.',
+  'zhihui.diagram.toastGenerating':
+    'Se está extrayendo material didáctico; puede tardar unos minutos.',
   'zhihui.diagram.toastComplete': 'El material didáctico está listo',
-  'zhihui.diagram.toastPartial': 'El material didáctico está parcialmente completado y se puede seguir generando.',
+  'zhihui.diagram.toastPartial':
+    'El material didáctico está parcialmente completado y se puede seguir generando.',
   'zhihui.diagram.toastCancelled': 'Generación de material didáctico cancelada',
   'zhihui.diagram.batchProgress': 'Lote {current}/{total}',
   'zhihui.diagram.slideProgress': 'Generado {current}/{total}',
@@ -58,8 +65,10 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'La presentación de diapositivas no se pudo cargar',
   'zhihui.diagram.retryImage': 'Intentar otra vez',
   'zhihui.diagram.teacherScript': 'Narración del maestro',
-  'zhihui.diagram.teacherScriptHint': 'Explicaciones en el aula alineadas con el enfoque de las ilustraciones y mapas de esta página.',
-  'zhihui.diagram.ttsPlay': 'Haz clic en el gatito para leer en voz alta la narración de esta página.',
+  'zhihui.diagram.teacherScriptHint':
+    'Explicaciones en el aula alineadas con el enfoque de las ilustraciones y mapas de esta página.',
+  'zhihui.diagram.ttsPlay':
+    'Haz clic en el gatito para leer en voz alta la narración de esta página.',
   'zhihui.diagram.ttsStop': 'deja de leer',
   'zhihui.diagram.ttsMute': 'narración muda',
   'zhihui.diagram.ttsUnmute': 'Activar la lectura de narraciones',
@@ -68,13 +77,15 @@ export default {
   'zhihui.attachReference': 'Agregar imagen de referencia',
   'zhihui.attachReferenceHint': 'Hasta 3 imágenes, como referencia Qwen.',
   'zhihui.removeReference': 'Eliminar imagen de referencia',
-  'zhihui.referenceTooLarge': 'La imagen de referencia es demasiado grande (una sola imagen no debe exceder los 4 MB)',
+  'zhihui.referenceTooLarge':
+    'La imagen de referencia es demasiado grande (una sola imagen no debe exceder los 4 MB)',
   'zhihui.referenceInvalid': 'Seleccione la imagen PNG / JPG / WEBP',
   'zhihui.referenceLimit': 'Añade hasta 3 imágenes de referencia.',
   'zhihui.sizeButton': 'Tamaño de imagen',
   'zhihui.sizePanelTitle': 'Tamaño de imagen',
   'zhihui.sizeOptional': 'Opcional',
-  'zhihui.sizeHint': 'El formato es ancho*alto. Si no se especifica, el modelo recomendará automáticamente la resolución según la palabra indicada.',
+  'zhihui.sizeHint':
+    'El formato es ancho*alto. Si no se especifica, el modelo recomendará automáticamente la resolución según la palabra indicada.',
   'zhihui.sizeLimits': 'Área de píxeles 512×512–2048×2048; relación de aspecto 1:8–8:1',
   'zhihui.size.auto': 'inteligente',
   'zhihui.size.autoHint': 'automático',
@@ -102,7 +113,8 @@ export default {
   'zhihui.empty': 'Aún no hay imagen, intenta generarla arriba.',
   'zhihui.loadFailed': 'No se pudo cargar el historial',
   'zhihui.delete': 'borrar',
-  'zhihui.deleteConfirm': '¿Estás seguro de que deseas eliminar esta imagen? Esta acción no se puede deshacer.',
+  'zhihui.deleteConfirm':
+    '¿Estás seguro de que deseas eliminar esta imagen? Esta acción no se puede deshacer.',
   'zhihui.deleteTitle': 'Eliminar imagen',
   'zhihui.deleted': 'Eliminado',
   'zhihui.deleteFailed': 'Error al eliminar',

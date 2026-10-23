@@ -9,8 +9,8 @@ import {
   markKittyServerStepOk,
 } from '@/composables/kitty/pipeline/editTurn'
 import {
-  resolveKittyErrorCode,
   type KittyTranslateFn,
+  resolveKittyErrorCode,
 } from '@/composables/kitty/pipeline/errorCatalog'
 import { failKittyTurn, messageForKittyFail } from '@/composables/kitty/pipeline/trace'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
@@ -45,10 +45,7 @@ export type KittyEditReplyBusHandlers = {
   t: (key: string, fallback?: string) => string
   kittyT: KittyTranslateFn
   /** After verified apply on desktop — optional hub post-mutation hook. */
-  onVerifiedApplyOk?: (payload: {
-    userSummary?: string
-    action: string
-  }) => void
+  onVerifiedApplyOk?: (payload: { userSummary?: string; action: string }) => void
 }
 
 export function useKittyEditReplyBus(

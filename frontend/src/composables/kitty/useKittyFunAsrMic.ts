@@ -36,8 +36,7 @@ const WORKLET_URL = '/kitty-fun-asr-pcm-processor.js'
 
 export type KittyFunAsrStartFailure = 'not_connected' | 'mic_denied' | 'context_dead'
 export type KittyFunAsrStartResult =
-  | { ok: true; utteranceId: string }
-  | { ok: false; reason: KittyFunAsrStartFailure }
+  { ok: true; utteranceId: string } | { ok: false; reason: KittyFunAsrStartFailure }
 
 function downsampleTo16k(input: Float32Array, inputRate: number): Int16Array {
   if (inputRate === TARGET_SAMPLE_RATE) {

@@ -5,12 +5,14 @@
 
 export default {
   'fileCenterLibrary.title': 'Paketlar',
-  'fileCenterLibrary.subtitle': 'Diagrammaa gore qruplashdirilmish menbe kolleksiyalari (Hujjat xulasesi).',
+  'fileCenterLibrary.subtitle':
+    'Diagrammaa gore qruplashdirilmish menbe kolleksiyalari (Hujjat xulasesi).',
   'fileCenterLibrary.openDiagram': 'Diagrammani ochish',
   'fileCenterLibrary.badgeCanvas': 'Kanvas',
   'fileCenterLibrary.badgeExtension': 'Genishlenme',
   'fileCenterLibrary.badgeUpload': 'Yuklashme',
-  'chunkTest.history.confirmDeleteBody': 'Bu test qeydini o’chirmoqchi ekaningizga ishonchingiz komilmi? Bu qaytarib bo’lmaydi.',
+  'chunkTest.history.confirmDeleteBody':
+    'Bu test qeydini o’chirmoqchi ekaningizga ishonchingiz komilmi? Bu qaytarib bo’lmaydi.',
   'chunkTest.history.confirmDeleteTitle': 'Testi o’chirish',
   'chunkTest.history.delete': 'O’chirish',
   'chunkTest.history.deleteFailed': 'Testi o’chirmoqchi bo’lmadi',
@@ -49,7 +51,8 @@ export default {
   'chunkTestResults.answerQuality': 'Javob keyfiyyeti',
   'chunkTestResults.avgLatency': 'Ort. gecikme (ms)',
   'chunkTestResults.back': 'Geri',
-  'chunkTestResults.cancelConfirmBody': 'Bu testi bekor qilishmek xohlaysizmi ishonchingiz komilmi? Test keyingi tekshirishma noqtesinde dayanacaq.',
+  'chunkTestResults.cancelConfirmBody':
+    'Bu testi bekor qilishmek xohlaysizmi ishonchingiz komilmi? Test keyingi tekshirishma noqtesinde dayanacaq.',
   'chunkTestResults.cancelFailed': 'Bekor qilish bo’lmadi',
   'chunkTestResults.cancelRequested': 'Testin bekor qilishi so’rovsu yuborishildi',
   'chunkTestResults.cancelTest': 'Testi bekor qilish',
@@ -89,7 +92,8 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Barcha datadestlerini sinayin',
   'knowledge.chunkHeader.testUpload': 'Yuklashnmish hujjatleri sinovdan o’tingirin',
   'knowledge.chunkHeader.title': 'RAG parcha testi',
-  'knowledge.chunkHeader.waitForProcessing': 'Iltimos, sinovdan avval hujjatlerin emali bitene qeder kuting',
+  'knowledge.chunkHeader.waitForProcessing':
+    'Iltimos, sinovdan avval hujjatlerin emali bitene qeder kuting',
   'knowledge.chunkPreview.empty': 'Parcha ma’lumoti yo’q',
   'knowledge.chunkPreview.pageLabel': 'Sahifa {n}',
   'knowledge.chunkPreview.title': 'Hujjat parchalari — {fileName}',
@@ -108,7 +112,8 @@ export default {
   'knowledge.doc.colStatus': 'Veziyyet',
   'knowledge.doc.colType': 'Nov',
   'knowledge.doc.colUploaded': 'Yuklashme tarixi',
-  'knowledge.doc.emptyDescription': 'Hali hujjat yo’q. Bilik bazanizi yaratmaq uchun hujjatleri yuklashyin.',
+  'knowledge.doc.emptyDescription':
+    'Hali hujjat yo’q. Bilik bazanizi yaratmaq uchun hujjatleri yuklashyin.',
   'knowledge.doc.errorPrefix': 'Xato:',
   'knowledge.doc.noData': 'Ma’lumot yo’q',
   'knowledge.doc.statusCompleted': 'Tamamlandi',
@@ -124,31 +129,42 @@ export default {
   'knowledge.header.title': 'Bilim bazasi',
   'knowledge.header.upload': 'Hujjatleri Yuklashyin',
   'knowledge.ragGuide.title': 'Paketlar, RAG va Wiki nece ishleyir?',
-  'knowledge.ragGuide.subtitle': 'Jargon lazim emas — bunu istinad materiallari papkani kimi dushunun. Biz onu qidirishish uchun indeksleyirik (RAG), sonra qisa Wiki qaydlari tertib edirik va ong xaritasi qurarken AI her ikisini oxuyur.',
+  'knowledge.ragGuide.subtitle':
+    'Jargon lazim emas — bunu istinad materiallari papkani kimi dushunun. Biz onu qidirishish uchun indeksleyirik (RAG), sonra qisa Wiki qaydlari tertib edirik va ong xaritasi qurarken AI her ikisini oxuyur.',
   'knowledge.ragGuide.step1.title': 'Paket tanlang',
-  'knowledge.ragGuide.step1.body': 'Paket Zotero kolleksiyasina benzeyir. Solda eng ko’p 3 eded mumkin; her biri adeten bir ong xaritasine aiddir. Hujjatlerini idare etmek uchun yan panelde pakete bosing.',
+  'knowledge.ragGuide.step1.body':
+    'Paket Zotero kolleksiyasina benzeyir. Solda eng ko’p 3 eded mumkin; her biri adeten bir ong xaritasine aiddir. Hujjatlerini idare etmek uchun yan panelde pakete bosing.',
   'knowledge.ragGuide.step2.title': 'Menbe qo’shing va indeksleyin (RAG)',
-  'knowledge.ragGuide.step2.body': 'PDF, Word fayllari, qeydler yoki veb sahifaler yuklashyin. Uzun hujjatleri qidirishila bilen parchalara bolur va vektor embedding-leri saqlashyiriq — bu RAG indeksidir va ilk novbede tayyor olur.',
+  'knowledge.ragGuide.step2.body':
+    'PDF, Word fayllari, qeydler yoki veb sahifaler yuklashyin. Uzun hujjatleri qidirishila bilen parchalara bolur va vektor embedding-leri saqlashyiriq — bu RAG indeksidir va ilk novbede tayyor olur.',
   'knowledge.ragGuide.step3.title': 'Wiki qaydlari avtomatik tertib olunur',
-  'knowledge.ragGuide.step3.body': 'Indeksleme bitenden sonra LLM diskde jamoal va mavzu Wiki sahifalerini tertib edir. Bunlar paketi daha tez basha dushmek uchun qisa qeydlerdir (transkript emas).',
+  'knowledge.ragGuide.step3.body':
+    'Indeksleme bitenden sonra LLM diskde jamoal va mavzu Wiki sahifalerini tertib edir. Bunlar paketi daha tez basha dushmek uchun qisa qeydlerdir (transkript emas).',
   'knowledge.ragGuide.step4.title': 'Qidirishish Wiki + parchalardan foydalanish edir',
-  'knowledge.ragGuide.step4.body': 'Budagi kengaytirishdikde yoki xulase yaratdiqda avval uygun Wiki sahifalerini uygunlashdirir, sonra en uygun parcha qismlerini getiririk (hibrid RAG).',
+  'knowledge.ragGuide.step4.body':
+    'Budagi kengaytirishdikde yoki xulase yaratdiqda avval uygun Wiki sahifalerini uygunlashdirir, sonra en uygun parcha qismlerini getiririk (hibrid RAG).',
   'knowledge.ragGuide.step5.title': 'Javoblar menbelerinize esaslanir',
-  'knowledge.ragGuide.step5.body': 'AI texmin etmek evezine Wiki qaydlari va getirilmish parchalardan postr — daha yaxshi menbeler, tamamlanmish indeksleme va tertib olunmush Wiki sahifaleri daha daqiq xeriteler demekdir.',
-  'knowledge.ragGuide.footer': 'Ipucu: kanvasda Hujjat xulasesini ochishmaq avtomatik paket yaradir; Chrome genishlenmesi bilan saqlangan sahifaler de yan panel siyahisinda gorunur.',
+  'knowledge.ragGuide.step5.body':
+    'AI texmin etmek evezine Wiki qaydlari va getirilmish parchalardan postr — daha yaxshi menbeler, tamamlanmish indeksleme va tertib olunmush Wiki sahifaleri daha daqiq xeriteler demekdir.',
+  'knowledge.ragGuide.footer':
+    'Ipucu: kanvasda Hujjat xulasesini ochishmaq avtomatik paket yaradir; Chrome genishlenmesi bilan saqlangan sahifaler de yan panel siyahisinda gorunur.',
   'knowledge.pipeline.title': 'Ish axini holati',
   'knowledge.pipeline.ragIdle': 'RAG indeksi',
-  'knowledge.pipeline.ragIdleDetail': 'Hali indekslenmish paket yo’q. Pakete menbe elave edib indekslemeni ishe salin.',
+  'knowledge.pipeline.ragIdleDetail':
+    'Hali indekslenmish paket yo’q. Pakete menbe elave edib indekslemeni ishe salin.',
   'knowledge.pipeline.ragProcessing': 'RAG indekslenir',
-  'knowledge.pipeline.ragProcessingDetail': '{count} paket hali menbeleri parchalayir va embedding edir.',
+  'knowledge.pipeline.ragProcessingDetail':
+    '{count} paket hali menbeleri parchalayir va embedding edir.',
   'knowledge.pipeline.ragReady': 'RAG hazirdir',
   'knowledge.pipeline.ragReadyDetail': '{count} paket indekslenib — parcha qidirishni faol.',
   'knowledge.pipeline.wikiDisabled': 'Wiki tertibi sonulu',
   'knowledge.pipeline.wikiDisabledDetail': 'Bu serverde Wiki tertibi defaol.',
   'knowledge.pipeline.wikiIdle': 'Wiki tertibi',
-  'knowledge.pipeline.wikiIdleDetail': 'Wiki sahifaleri her menbe uchun RAG indekslemesi bitenden sonra tertib olunur.',
+  'knowledge.pipeline.wikiIdleDetail':
+    'Wiki sahifaleri her menbe uchun RAG indekslemesi bitenden sonra tertib olunur.',
   'knowledge.pipeline.wikiPending': 'Wiki tertib olunur',
-  'knowledge.pipeline.wikiPendingDetail': '{count} paket indekslemeden sonra Wiki sahifalerini kutishyir.',
+  'knowledge.pipeline.wikiPendingDetail':
+    '{count} paket indekslemeden sonra Wiki sahifalerini kutishyir.',
   'knowledge.pipeline.wikiReady': 'Wiki hazirdir',
   'knowledge.pipeline.wikiReadyDetail': '{count} paketde tertib olunmush Wiki qaydlari var.',
   'knowledge.pipelineBadge.rag.label': 'RAG',
@@ -164,7 +180,8 @@ export default {
   'knowledge.manualEval.deselectAll': 'Tanlashimi bekor qilish',
   'knowledge.manualEval.dialogTitle': 'El bilan qiymetlendirme — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Standart javob (isteye bagli)',
-  'knowledge.manualEval.groundTruthPlaceholder': 'Javob uygunlugu uchun standart javobi kiriting...',
+  'knowledge.manualEval.groundTruthPlaceholder':
+    'Javob uygunlugu uchun standart javobi kiriting...',
   'knowledge.manualEval.metric.answer_coverage': 'Javob ehatesi',
   'knowledge.manualEval.metric.answer_faithfulness': 'Javob sedaqeti',
   'knowledge.manualEval.metric.clarity': 'Aydinliq',
@@ -186,7 +203,8 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Parcha keyfiyyeti qiymetlendirmesi',
   'knowledge.manualEval.resultsTitle': 'Qiymetlendirme neticeleri',
   'knowledge.manualEval.selectAll': 'Hammasini tanlash',
-  'knowledge.manualEval.selectChunksHeading': 'Qiymetlendirme uchun parchalari tanlang (hammasi uchun bo’sh buraxin)',
+  'knowledge.manualEval.selectChunksHeading':
+    'Qiymetlendirme uchun parchalari tanlang (hammasi uchun bo’sh buraxin)',
   'knowledge.manualEval.showingFirst20': 'Ilk 20 ko’rsatilmoqda, umumi {total} parcha',
   'knowledge.manualEval.startEvaluation': 'Qiymetlendirmeye bashla',
   'knowledge.processing.chunking': 'Parchalanma',
@@ -235,7 +253,8 @@ export default {
   'knowledge.settings.retrievalSection': 'Qidirishish sozlamalar',
   'knowledge.settings.title': 'Bilim bazasi sozlamalar',
   'knowledge.settings.helpTitle': 'Bu parametrler nece tetbiq olunur',
-  'knowledge.settings.helpBody': 'Qidirishish ustunlukleri qidirishisha va AI javoblarina derhal tetbiq olunur. Parcha olchusu va ust-uste dushme faqat yangi indekslenen hujjatlere aiddir — o’zgartirishdikden sonra movcud menbelerde indekslemeni qayta ishe salin.',
+  'knowledge.settings.helpBody':
+    'Qidirishish ustunlukleri qidirishisha va AI javoblarina derhal tetbiq olunur. Parcha olchusu va ust-uste dushme faqat yangi indekslenen hujjatlere aiddir — o’zgartirishdikden sonra movcud menbelerde indekslemeni qayta ishe salin.',
   'knowledge.settings.tokens': 'tokenlar',
   'knowledge.settings.serverSection': 'Server (faqat oxuma)',
   'knowledge.settings.rerankingMode': 'Qayta siralama',
@@ -246,7 +265,8 @@ export default {
   'knowledge.settings.wikiDisabled': 'Defaol',
   'knowledge.settings.saveSuccess': 'Parametrler saqlandi',
   'knowledge.settings.saveFailed': 'Sozlamalar saqlash bo’lmadi',
-  'knowledge.settings.reindexRequired': 'Parchalama sozlamalar o’zgartirishdi — yangi olchulerin tesir etmesi uchun paketlarinizdeki movcud hujjatleri qayta indeksleyin.',
+  'knowledge.settings.reindexRequired':
+    'Parchalama sozlamalar o’zgartirishdi — yangi olchulerin tesir etmesi uchun paketlarinizdeki movcud hujjatleri qayta indeksleyin.',
   'knowledge.upload.click': 'Yuklashmek uchun bosing',
   'knowledge.upload.drag': 've yoki fayli bura surukleyin',
   'knowledge.upload.fileTooLarge': 'Faylin olchusu 10 MB-dan chox bo’lishi mumkin emas',
@@ -254,7 +274,8 @@ export default {
   'knowledge.upload.maxDocs': 'Maksimum hujjat limitine chatildi (5)',
   'knowledge.upload.title': 'Hujjati Yuklash',
   'knowledge.upload.unsupportedType': 'Desteklenmeyen fayl novu',
-  'knowledgeSpace.confirmDeleteBody': 'Bu hujjati o’chirmoqchi ekaningizga ishonchingiz komilmi? Bu amal qaytarib bo’lmaydi.',
+  'knowledgeSpace.confirmDeleteBody':
+    'Bu hujjati o’chirmoqchi ekaningizga ishonchingiz komilmi? Bu amal qaytarib bo’lmaydi.',
   'knowledgeSpace.confirmDeleteTitle': 'O’chirishmeni tasdiqlash',
   'knowledgeSpace.deleteFailed': 'O’chirishme muvaffaqiyatsiz bo’ldi',
   'knowledgeSpace.documentDeleted': 'Hujjat o’chirildi',

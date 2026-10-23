@@ -42,9 +42,7 @@ if (violations.length > 0) {
     console.error(`  line ${v.line}: ${v.reason}`)
     console.error(`    ${v.text}`)
   }
-  console.error(
-    '\nUpgrade @vueuse/core to 14.4.0 or newer. vueuse#5388 is in that release.',
-  )
+  console.error('\nUpgrade @vueuse/core to 14.4.0 or newer. vueuse#5388 is in that release.')
   process.exit(1)
 }
 

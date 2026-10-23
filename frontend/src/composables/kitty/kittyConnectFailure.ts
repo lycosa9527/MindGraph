@@ -47,10 +47,7 @@ export function classifyKittyWsCloseCode(
 }
 
 /** Preempt / cleanup / local reconnect — do not treat as transport loss. */
-export function isKittyWsIntentionalClose(
-  code: number | undefined,
-  wasClean?: boolean
-): boolean {
+export function isKittyWsIntentionalClose(code: number | undefined, wasClean?: boolean): boolean {
   return code === KITTY_WS_CLOSE_GOING_AWAY || wasClean === true
 }
 

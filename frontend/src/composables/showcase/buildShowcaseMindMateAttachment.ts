@@ -5,8 +5,8 @@
  * exists, synthesize a markdown brief from case text fields so MindMate still
  * receives case context as a pending attachment.
  */
-import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 import type { ShowcasePost } from '@/utils/apiClient'
+import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 
 type TeachingSpec = {
   body?: string
@@ -50,12 +50,18 @@ function filenameFromUrl(url: string, fallback: string): string {
   return fallback
 }
 
+function stripUnsafeFilenameChars(value: string): string {
+  let out = ''
+  for (const char of value) {
+    if (char.charCodeAt(0) <= 0x1f) continue
+    if ('<>:"/\\|?*'.includes(char)) continue
+    out += char
+  }
+  return out
+}
+
 function safeFilenameStem(title: string): string {
-  const cleaned = title
-    .trim()
-    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '')
-    .replace(/\s+/g, ' ')
-    .slice(0, 80)
+  const cleaned = stripUnsafeFilenameChars(title.trim()).replace(/\s+/g, ' ').slice(0, 80)
   return cleaned || 'showcase-case'
 }
 
@@ -123,9 +129,8 @@ export async function buildShowcaseMindMateAttachment(
     const preferredName =
       (typeof spec.attachment_filename === 'string' && spec.attachment_filename.trim()) ||
       filenameFromUrl(url, `${stem}.pdf`)
-    const type = blob.type && blob.type !== 'application/octet-stream'
-      ? blob.type
-      : mimeForName(preferredName)
+    const type =
+      blob.type && blob.type !== 'application/octet-stream' ? blob.type : mimeForName(preferredName)
     return new File([blob], preferredName, { type })
   }
 

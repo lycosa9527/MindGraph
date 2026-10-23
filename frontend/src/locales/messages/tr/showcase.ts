@@ -5,7 +5,8 @@
 
 export default {
   'showcase.title': 'Vitrin',
-  'showcase.subtitle': 'YZ destekli düşünme derslerini keşfedin ve öğretim çalışmalarınızı paylaşın',
+  'showcase.subtitle':
+    'YZ destekli düşünme derslerini keşfedin ve öğretim çalışmalarınızı paylaşın',
   'showcase.publish': 'Örnek yayınla',
   'showcase.searchPlaceholder': 'Başlık, açıklama veya etiketlerde ara…',
   'showcase.filter.all': 'Tümü',
@@ -31,7 +32,8 @@ export default {
   'showcase.myFavoritesEmpty': 'Henüz favori örnek yok',
   'showcase.myFavoritesEmptyHint': 'Yer imine eklediğiniz örnekler burada görünür',
   'showcase.myCasesModalTitle': 'Yayınladığım örnekler',
-  'showcase.myCasesManageHint': 'Bu listeden geri çekin, liste dışına alın veya düzenleyin; ayrıntılar için örneğe tıklayın',
+  'showcase.myCasesManageHint':
+    'Bu listeden geri çekin, liste dışına alın veya düzenleyin; ayrıntılar için örneğe tıklayın',
   'showcase.myCasesAction.edit': 'Düzenle',
   'showcase.myCasesEmpty': 'Henüz yayınlanmış örnek yok',
   'showcase.myCasesEmptyHint': 'Yayınlanan örnekler ve inceleme durumu burada görünür',
@@ -43,7 +45,8 @@ export default {
   'showcase.publishModal.titlePlaceholder': 'ör. İki Çocuk Güneşi Tartışıyor — ders tasarımı',
   'showcase.publishModal.descriptionLabel': 'Açıklama',
   'showcase.publishModal.tagsLabel': 'Etiketler',
-  'showcase.publishModal.tagsHint': 'Etiketleri virgülle ayırın, ör. bilişsel çatışma, ortaokul matematik',
+  'showcase.publishModal.tagsHint':
+    'Etiketleri virgülle ayırın, ör. bilişsel çatışma, ortaokul matematik',
   'showcase.publishModal.caseTypeLabel': 'Örnek türü',
   'showcase.publishModal.subjectLabel': 'Ders',
   'showcase.publishModal.gradeLabel': 'Sınıf',
@@ -53,19 +56,31 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Dosyalar yükleniyor ({current}/{total})…',
   'showcase.publishModal.uploadingFile': '{name} yükleniyor ({current}/{total})…',
   'showcase.publishModal.finishing': 'Tamamlanıyor…',
-  'showcase.publishModal.uploadFailedRolledBack': 'Yükleme başarısız — taslak silindi. Lütfen tekrar deneyin.',
-  'showcase.publishModal.uploadCorsFailed': 'Nesne depolamaya yüklenemedi (genellikle bucket CORS veya site CSP COS ana bilgisayarını engeller). Taslak silindi — yöneticiden CORS/CSP düzeltmesini isteyin, sonra yeniden deneyin.',
-  'showcase.publishModal.uploadStorageRejected': 'Nesne depolama yüklemeyi reddetti. Taslak silindi — daha sonra tekrar deneyin veya sürerse yöneticiye başvurun.',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Yükleme başarısız — taslak silindi. Lütfen tekrar deneyin.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Nesne depolamaya yüklenemedi (genellikle bucket CORS veya site CSP COS ana bilgisayarını engeller). Taslak silindi — yöneticiden CORS/CSP düzeltmesini isteyin, sonra yeniden deneyin.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Nesne depolama yüklemeyi reddetti. Taslak silindi — daha sonra tekrar deneyin veya sürerse yöneticiye başvurun.',
   'showcase.publishModal.uploadFailed': 'Yükleme başarısız. Lütfen tekrar deneyin.',
-  'showcase.publishModal.uploadCoverTooLarge': 'Kapak görseli 2MB sınırını aşıyor. Önizlemeyi sıkıştırın veya daha küçük bir görsel kullanın, sonra tekrar deneyin.',
-  'showcase.publishModal.uploadAttachmentTooLarge': 'Dosya boyut sınırını aşıyor (belgeler/görseller 20MB, videolar 100MB). Sıkıştırıp tekrar deneyin.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Dosya boyut sınırını aşıyor (belgeler/görseller 20MB, videolar 100MB). Taslak silindi — sıkıştırıp tekrar deneyin.',
-  'showcase.publishModal.uploadFileTooLarge': 'Dosya bu yükleme türü için çok büyük. Boyut sınırını kontrol edip tekrar deneyin.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Dosya bu yükleme türü için çok büyük. Taslak silindi — boyut sınırını kontrol edip tekrar deneyin.',
-  'showcase.publishModal.coverUploadSkipped': 'Örnek gönderildi, ancak kapak görseli yüklenemedi. Kapağı yenilemek için örnekü daha sonra düzenleyebilirsiniz.',
-  'showcase.publishModal.coverGenerating': 'Kapak önizlemesi arka planda oluşturuluyor — kısa süre sonra kartta görünecek.',
-  'showcase.publishModal.coverFailed': 'Örnek gönderildi, ancak kapak oluşturulamadı. Kapağı yenilemek için örnekü daha sonra düzenleyebilirsiniz.',
-  'showcase.publishModal.coverFailedTimeout': 'Örnek gönderildi, ancak kapak oluşturma zaman aşımına uğradı. Kapağı yenilemek için örnekü daha sonra düzenleyebilirsiniz.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Kapak görseli 2MB sınırını aşıyor. Önizlemeyi sıkıştırın veya daha küçük bir görsel kullanın, sonra tekrar deneyin.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'Dosya boyut sınırını aşıyor (belgeler/görseller 20MB, videolar 100MB). Sıkıştırıp tekrar deneyin.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'Dosya boyut sınırını aşıyor (belgeler/görseller 20MB, videolar 100MB). Taslak silindi — sıkıştırıp tekrar deneyin.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'Dosya bu yükleme türü için çok büyük. Boyut sınırını kontrol edip tekrar deneyin.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'Dosya bu yükleme türü için çok büyük. Taslak silindi — boyut sınırını kontrol edip tekrar deneyin.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Örnek gönderildi, ancak kapak görseli yüklenemedi. Kapağı yenilemek için örnekü daha sonra düzenleyebilirsiniz.',
+  'showcase.publishModal.coverGenerating':
+    'Kapak önizlemesi arka planda oluşturuluyor — kısa süre sonra kartta görünecek.',
+  'showcase.publishModal.coverFailed':
+    'Örnek gönderildi, ancak kapak oluşturulamadı. Kapağı yenilemek için örnekü daha sonra düzenleyebilirsiniz.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Örnek gönderildi, ancak kapak oluşturma zaman aşımına uğradı. Kapağı yenilemek için örnekü daha sonra düzenleyebilirsiniz.',
   'showcase.publishModal.success': 'Örnek gönderildi — yönetici incelemesi bekleniyor',
   'showcase.publishModal.fromCanvas': 'Tuvalden yayınla',
   'showcase.publishModal.step1Title': 'Temel bilgiler',
@@ -79,26 +94,35 @@ export default {
   'showcase.publishModal.uploadLabel': 'Dosya yükle',
   'showcase.publishModal.uploadImage': 'Görsel yükle',
   'showcase.publishModal.uploadFile': 'Dosya yükle',
-  'showcase.publishModal.directUploadDisabled': 'Doğrudan dosya yükleme geçici olarak kullanılamıyor. Geçmişten kayıtlı bir diyagram seçebilirsiniz.',
-  'showcase.publishModal.uploadViaStorage': 'Dosyalar doğrudan güvenli depolamaya yüklenir (kısa ömürlü URL).',
+  'showcase.publishModal.directUploadDisabled':
+    'Doğrudan dosya yükleme geçici olarak kullanılamıyor. Geçmişten kayıtlı bir diyagram seçebilirsiniz.',
+  'showcase.publishModal.uploadViaStorage':
+    'Dosyalar doğrudan güvenli depolamaya yüklenir (kısa ömürlü URL).',
   'showcase.publishModal.pickHistory': 'Geçmişten seç',
   'showcase.publishModal.removeFile': 'Kaldır',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: sınırlı önizleme)',
-  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: sınırlı önizleme) — belge başına maks. {maxMb} MB',
-  'showcase.publishModal.teachingDocTooLarge': 'Belge {maxMb} MB sınırını aşıyor. Sıkıştırıp tekrar deneyin.',
-  'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif\'i destekleyin',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '.docx / .pdf / .pptx (.doc: sınırlı önizleme) — belge başına maks. {maxMb} MB',
+  'showcase.publishModal.teachingDocTooLarge':
+    'Belge {maxMb} MB sınırını aşıyor. Sıkıştırıp tekrar deneyin.',
+  'showcase.publishModal.diagramImageHint': ".png / .jpg / .jpeg / .webp / .gif'i destekleyin",
   'showcase.publishModal.uploadImages': 'Görseller yükle (birden fazla)',
-  'showcase.publishModal.galleryHint': 'Birden fazla görsel ve kayıtlı diyagram ekleyin, en fazla {max} öğe',
-  'showcase.publishModal.galleryHintCase': 'En fazla {max} öğeye kadar birden fazla resim ve geçmiş simge eklenebilir',
-  'showcase.publishModal.galleryHintTemplate': '.mg dosyalarını yükleyebilir ve en fazla {max} öğeye kadar birden fazla geçmiş simgesi seçebilirsiniz',
+  'showcase.publishModal.galleryHint':
+    'Birden fazla görsel ve kayıtlı diyagram ekleyin, en fazla {max} öğe',
+  'showcase.publishModal.galleryHintCase':
+    'En fazla {max} öğeye kadar birden fazla resim ve geçmiş simge eklenebilir',
+  'showcase.publishModal.galleryHintTemplate':
+    '.mg dosyalarını yükleyebilir ve en fazla {max} öğeye kadar birden fazla geçmiş simgesi seçebilirsiniz',
   'showcase.publishModal.galleryCount': '{count}/{max} öğe eklendi',
   'showcase.publishModal.galleryImageItem': 'Görsel: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diyagram: {name}',
   'showcase.publishModal.galleryLimit': 'En fazla {max} öğe ekleyebilirsiniz',
   'showcase.publishModal.galleryDuplicateDiagram': 'Bu kayıtlı diyagram zaten listede',
   'showcase.publishModal.galleryPickerDone': 'Bitti',
-  'showcase.publishModal.galleryUploadFailed': 'Galeri görseli yükleme başarısız — lütfen yeniden yayınlamayı deneyin',
-  'showcase.publishModal.galleryReuploadHint': 'Bazı galeri görselleri kaydedilmedi — göndermeden önce lütfen yeniden seçin',
+  'showcase.publishModal.galleryUploadFailed':
+    'Galeri görseli yükleme başarısız — lütfen yeniden yayınlamayı deneyin',
+  'showcase.publishModal.galleryReuploadHint':
+    'Bazı galeri görselleri kaydedilmedi — göndermeden önce lütfen yeniden seçin',
   'showcase.detail.galleryImage': 'Görsel',
   'showcase.detail.galleryDiagram': 'Diyagram',
   'showcase.detail.galleryPrev': 'Önceki',
@@ -108,39 +132,53 @@ export default {
   'showcase.publishModal.templateFileHint': 'Yalnızca .mg (MindGraph dışa aktarma)',
   'showcase.publishModal.templatePreviewLabel': 'Diyagram önizlemesi',
   'showcase.publishModal.templatePreviewHint': 'El aracı — yalnızca görüntüleme, düzenlenemez',
-  'showcase.publishModal.templatePreviewEmpty': 'Önizlemek için .mg dosyası yükleyin veya kayıtlı diyagram seçin',
+  'showcase.publishModal.templatePreviewEmpty':
+    'Önizlemek için .mg dosyası yükleyin veya kayıtlı diyagram seçin',
   'showcase.publishModal.diagramCasePreviewLabel': 'Diyagram önizlemesi',
-  'showcase.publishModal.diagramCasePreviewHint': 'El aracı — keşfetmek için kaydırın ve yakınlaştırın',
-  'showcase.publishModal.diagramTypeAutoMatched': 'Diyagram türü seçilen kayıtlı diyagramdan eşleştirildi',
+  'showcase.publishModal.diagramCasePreviewHint':
+    'El aracı — keşfetmek için kaydırın ve yakınlaştırın',
+  'showcase.publishModal.diagramTypeAutoMatched':
+    'Diyagram türü seçilen kayıtlı diyagramdan eşleştirildi',
   'showcase.publishModal.introLabel': 'Diyagram girişi',
   'showcase.publishModal.teachingIntroLabel': 'Öğretim tasarımı girişi',
   'showcase.publishModal.highlightsLabel': 'Tasarım öne çıkanları',
   'showcase.publishModal.highlightsPlaceholder': 'Satır başına bir öne çıkan (isteğe bağlı)',
-  'showcase.publishModal.teachingIntroPlaceholder': 'Ders arka planını, hedefleri ve bağlamı kısaca tanıtın',
+  'showcase.publishModal.teachingIntroPlaceholder':
+    'Ders arka planını, hedefleri ve bağlamı kısaca tanıtın',
   'showcase.publishModal.aiGenerate': 'YZ ile oluştur',
   'showcase.publishModal.aiGenerating': 'Oluşturuluyor…',
   'showcase.publishModal.aiGenerateStop': 'Durdur',
-  'showcase.publishModal.aiGenerateCancelled': 'YZ oluşturma iptal edildi — yeniden oluşturmak için tekrar tıklayın',
-  'showcase.publishModal.aiGenerateSuccess': 'Belgeden giriş ve öne çıkanlar dolduruldu — gözden geçirip düzenleyin; öğretim yansımasını kendiniz yazın',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'İllüstrasyon tanıtımı ve sınıf uygulaması illüstrasyona dayalı olarak oluşturulmuştur. Lütfen kontrol edip düzenleyin.',
+  'showcase.publishModal.aiGenerateCancelled':
+    'YZ oluşturma iptal edildi — yeniden oluşturmak için tekrar tıklayın',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Belgeden giriş ve öne çıkanlar dolduruldu — gözden geçirip düzenleyin; öğretim yansımasını kendiniz yazın',
+  'showcase.publishModal.aiGenerateDiagramSuccess':
+    'İllüstrasyon tanıtımı ve sınıf uygulaması illüstrasyona dayalı olarak oluşturulmuştur. Lütfen kontrol edip düzenleyin.',
   'showcase.publishModal.aiGenerateFailed': 'YZ oluşturma başarısız — lütfen tekrar deneyin',
-  'showcase.publishModal.aiGenerateNeedFile': 'Önceki adımda önce bir öğretim tasarımı belgesi yükleyin',
-  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
-  'showcase.publishModal.aiGenerateTeachingOnly': 'YZ ile oluştur yalnızca öğretim tasarımı örnekleri için kullanılabilir',
+  'showcase.publishModal.aiGenerateNeedFile':
+    'Önceki adımda önce bir öğretim tasarımı belgesi yükleyin',
+  'showcase.publishModal.aiGenerateNeedDiagram':
+    'Select or upload a diagram in the previous step first',
+  'showcase.publishModal.aiGenerateTeachingOnly':
+    'YZ ile oluştur yalnızca öğretim tasarımı örnekleri için kullanılabilir',
   'showcase.publishModal.reflectionLabel': 'Öğretim yansıması',
   'showcase.publishModal.introPlaceholder': 'Örneği ve ne zaman kullanılacağını kısaca açıklayın',
-  'showcase.publishModal.diagramCorePlaceholder': 'Diyagram içeriğini ve görselleştirme öne çıkanlarını açıklayın',
+  'showcase.publishModal.diagramCorePlaceholder':
+    'Diyagram içeriğini ve görselleştirme öne çıkanlarını açıklayın',
   'showcase.publishModal.classroomAppPlaceholder': 'Bu diyagramın derste nasıl kullanıldığı',
-  'showcase.publishModal.tagInputPlaceholder': 'Etiket yazın (maks. 10 karakter), Enter\'a basın',
+  'showcase.publishModal.tagInputPlaceholder': "Etiket yazın (maks. 10 karakter), Enter'a basın",
   'showcase.publishModal.tagRecommended': 'Önerilen etiketler',
   'showcase.publishModal.tagCountHint': '(maks. {max})',
   'showcase.publishModal.tagMaxCount': 'En fazla {max} etiket ekleyebilirsiniz',
-  'showcase.publishModal.networkError': 'Gönderim başarısız — sunucunun çalıştığını ve dosya boyutlarının sınırlar içinde olduğunu kontrol edin',
+  'showcase.publishModal.networkError':
+    'Gönderim başarısız — sunucunun çalıştığını ve dosya boyutlarının sınırlar içinde olduğunu kontrol edin',
   'showcase.publishModal.fileTooLarge': '"{name}" {maxMb}MB boyut sınırını aşıyor',
-  'showcase.publishModal.uploadTotalTooLarge': 'Toplam yükleme boyutu sınırı aşıyor — ek veya video boyutunu küçültün',
+  'showcase.publishModal.uploadTotalTooLarge':
+    'Toplam yükleme boyutu sınırı aşıyor — ek veya video boyutunu küçültün',
   'showcase.publishModal.tagAdd': 'Ekle',
   'showcase.publishModal.publishBtn': 'Yayınla',
-  'showcase.publishModal.reflectionPlaceholder': 'Bu ders hakkındaki yansımanızı yazın (isteğe bağlı)',
+  'showcase.publishModal.reflectionPlaceholder':
+    'Bu ders hakkındaki yansımanızı yazın (isteğe bağlı)',
   'showcase.publishModal.classroomAppLabel': 'Sınıf kullanımı',
   'showcase.publishModal.selectSubject': 'Ders seçin',
   'showcase.publishModal.selectGrade': 'Sınıf seçin',
@@ -151,17 +189,22 @@ export default {
   'showcase.publishModal.validationFile': 'Dosya yükleyin veya kayıtlı diyagram seçin',
   'showcase.publishModal.validationDiagramType': 'Lütfen bir diyagram türü seçin',
   'showcase.publishModal.invalidFileType': 'Desteklenmeyen dosya türü',
-  'showcase.publishModal.invalidMgFile': 'Bu .mg dosyası okunamadı — önce MindGraph\'tan dışa aktarın',
-  'showcase.publishModal.cannotPreview': 'Kapak önizlemesi oluşturulamadı — örnek yine de gönderilecek. PNG/JPG deneyin veya kayıtlı diyagram seçin.',
-  'showcase.publishModal.cannotPreviewHistory': 'Bu kayıtlı diyagramdan kapak oluşturulamadı — örnek yine de gönderilecek. Yeniden seçin veya tuvalden yeniden kaydedin.',
-  'showcase.publishModal.cannotPreviewTemplate': 'Kapak oluşturulamadı — örnek yine de gönderilecek. .mg dosyasını kontrol edin veya başka bir kayıtlı diyagram seçin.',
+  'showcase.publishModal.invalidMgFile':
+    "Bu .mg dosyası okunamadı — önce MindGraph'tan dışa aktarın",
+  'showcase.publishModal.cannotPreview':
+    'Kapak önizlemesi oluşturulamadı — örnek yine de gönderilecek. PNG/JPG deneyin veya kayıtlı diyagram seçin.',
+  'showcase.publishModal.cannotPreviewHistory':
+    'Bu kayıtlı diyagramdan kapak oluşturulamadı — örnek yine de gönderilecek. Yeniden seçin veya tuvalden yeniden kaydedin.',
+  'showcase.publishModal.cannotPreviewTemplate':
+    'Kapak oluşturulamadı — örnek yine de gönderilecek. .mg dosyasını kontrol edin veya başka bir kayıtlı diyagram seçin.',
   'showcase.publishModal.historyTitle': 'Kayıtlı diyagram seç',
   'showcase.publishModal.historySearch': 'Diyagram adında ara…',
   'showcase.publishModal.historyEmpty': 'Kayıtlı diyagram yok',
   'showcase.publishModal.historyUncategorized': 'Kategorize edilmemiş',
   'showcase.publishModal.typeDesc.teachingDesign': 'Düşünme becerileri sınıf dersi tasarımı',
   'showcase.publishModal.typeDesc.diagramCase': 'Öğretimde mükemmel diyagramlar ve görselleştirme',
-  'showcase.publishModal.typeDesc.diagramTemplate': 'Yeniden kullanım veya uyarlama için diyagramlar',
+  'showcase.publishModal.typeDesc.diagramTemplate':
+    'Yeniden kullanım veya uyarlama için diyagramlar',
   'showcase.detail.import': 'Bu örneği kullan',
   'showcase.action.goDraw': 'Bir tane çiz',
   'showcase.action.applyTemplate': 'Şablonu uygula',
@@ -184,9 +227,11 @@ export default {
   'showcase.detail.delist': 'Listeden kaldır',
   'showcase.detail.resubmit': 'Düzenle ve yeniden gönder',
   'showcase.detail.withdrawTitle': 'Örneği geri çek',
-  'showcase.detail.withdrawConfirm': '"{title}" geri çekilsin mi? İnceleme kuyruğundan kaldırılır ve geri alınamaz.',
+  'showcase.detail.withdrawConfirm':
+    '"{title}" geri çekilsin mi? İnceleme kuyruğundan kaldırılır ve geri alınamaz.',
   'showcase.detail.delistTitle': 'Örneği listeden kaldır',
-  'showcase.detail.delistConfirm': '"{title}" galeriden kaldırılsın mı? Diğer kullanıcılar artık görüntüleyemez.',
+  'showcase.detail.delistConfirm':
+    '"{title}" galeriden kaldırılsın mı? Diğer kullanıcılar artık görüntüleyemez.',
   'showcase.detail.confirm': 'Onayla',
   'showcase.detail.cancel': 'İptal',
   'showcase.withdrawn': 'Geri çekildi',
@@ -198,7 +243,7 @@ export default {
   'showcase.publishModal.keepExistingFile': 'Mevcut dosyayı korumak için boş bırakın',
   'showcase.detail.views': '{n} görüntüleme',
   'showcase.detail.recommended': 'Önerilen',
-  'showcase.detail.askMindmate': 'MindMate\'e sor',
+  'showcase.detail.askMindmate': "MindMate'e sor",
   'showcase.detail.docPreview': 'Öğretim tasarımı belgesi',
   'showcase.detail.openDocument': 'Yeni sekmede aç',
   'showcase.detail.enterFullscreen': 'Tam ekran',
@@ -207,7 +252,8 @@ export default {
   'showcase.detail.officePreviewPending': 'Önizleme için slaytlar dönüştürülüyor…',
   'showcase.detail.docPreviewLoading': 'Belge yükleniyor…',
   'showcase.detail.docPreviewFailed': 'Önizleme yüklenemedi. Yeni sekmede açmayı deneyin.',
-  'showcase.detail.legacyDocHint': 'Eski .doc dosyaları satır içi önizlenemez. Dosyayı açın veya indirin ya da tarayıcı önizlemesi için .docx yükleyin.',
+  'showcase.detail.legacyDocHint':
+    'Eski .doc dosyaları satır içi önizlenemez. Dosyayı açın veya indirin ya da tarayıcı önizlemesi için .docx yükleyin.',
   'showcase.detail.noDocument': 'Belge önizlemesi yok',
   'showcase.detail.noDiagramPreview': 'Diyagram önizlemesi yok',
   'showcase.detail.diagramPreviewLoading': 'Diyagram yükleniyor…',

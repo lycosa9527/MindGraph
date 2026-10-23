@@ -2,9 +2,9 @@
  * Stable identity for mind-map branches. After the identity invert, ``node.id``
  * is this UUID (and ``data.mindMapUid`` matches it during the transition).
  */
+import type { DiagramNode } from '@/types'
 import { isLeftoverMindMapBranchId } from '@/utils/mindMapLocation'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
-import type { DiagramNode } from '@/types'
 
 export const MINDMAP_NODE_UID_DATA_KEY = 'mindMapUid'
 
@@ -95,19 +95,14 @@ function stampMindMapBranchUids(branches: MindMapBranchUidCarrier[] | undefined)
   }
 }
 
-export function hydrateMindMapBranchTree(
-  branches: MindMapBranchUidCarrier[] | undefined
-): void {
+export function hydrateMindMapBranchTree(branches: MindMapBranchUidCarrier[] | undefined): void {
   if (!branches) return
   const coerced = coerceMindMapBranchList(branches)
   branches.splice(0, branches.length, ...coerced)
   stampMindMapBranchUids(branches)
 }
 
-export function findNodeIdByMindMapUid(
-  nodes: DiagramNode[],
-  uid: string
-): string | null {
+export function findNodeIdByMindMapUid(nodes: DiagramNode[], uid: string): string | null {
   for (const node of nodes) {
     if (node.id === 'topic') continue
     if (node.id === uid || readMindMapNodeUid(node) === uid) return node.id

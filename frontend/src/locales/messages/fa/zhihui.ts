@@ -24,17 +24,21 @@ export default {
   'zhihui.promptPlaceholder.image': 'الهام خود را وارد کنید…',
   'zhihui.promptPlaceholder.video': 'صحنه، دوربین و ریتم را شرح دهید...',
   'zhihui.promptPlaceholder.diagram': 'نقشه ذهنی را انتخاب کرده و روی Generate کلیک کنید',
-  'zhihui.composerHint.image': 'از متن برای توصیف تصویر استفاده کنید و با یک کلیک تصاویر آموزشی و مطالب بصری ایجاد کنید',
+  'zhihui.composerHint.image':
+    'از متن برای توصیف تصویر استفاده کنید و با یک کلیک تصاویر آموزشی و مطالب بصری ایجاد کنید',
   'zhihui.composerHint.video': 'قابلیت‌های Wensheng Video و Tusheng Video در شرف دسترسی هستند',
-  'zhihui.composerHint.diagram': 'نقشه ذهنی را انتخاب کنید تا یک نمودار درسی از دیدگاه یادگیرنده ایجاد شود',
+  'zhihui.composerHint.diagram':
+    'نقشه ذهنی را انتخاب کنید تا یک نمودار درسی از دیدگاه یادگیرنده ایجاد شود',
   'zhihui.diagram.selectMindmap': 'نقشه ذهنی را انتخاب کنید',
   'zhihui.diagram.selectMindmapHint': 'لطفاً یک نقشه ذهنی در بالا انتخاب کنید',
   'zhihui.diagram.selectMindmapFirst': 'لطفا ابتدا یک نقشه ذهنی انتخاب کنید',
-  'zhihui.diagram.emptyLibrary': 'هنوز نقشه ذهنی وجود ندارد، لطفاً ابتدا آن را در کتابخانه نمودار ذخیره کنید.',
+  'zhihui.diagram.emptyLibrary':
+    'هنوز نقشه ذهنی وجود ندارد، لطفاً ابتدا آن را در کتابخانه نمودار ذخیره کنید.',
   'zhihui.diagram.loadFailed': 'نقشه ذهن بارگیری نشد',
   'zhihui.diagram.emptyDeck': 'پس از انتخاب نقشه ذهنی، روی Generate کلیک کنید',
   'zhihui.diagram.waitingSlides': 'برنامه آموزشی در حال تولید است، لطفا صبر کنید...',
-  'zhihui.diagram.jobStarted': 'تولید دوره های آموزشی آغاز شده است. شما می توانید پیشرفت در تاریخچه را بررسی کنید.',
+  'zhihui.diagram.jobStarted':
+    'تولید دوره های آموزشی آغاز شده است. شما می توانید پیشرفت در تاریخچه را بررسی کنید.',
   'zhihui.diagram.phaseQueued': 'کارها در صف قرار می گیرند...',
   'zhihui.diagram.phasePlanning': 'طراحی برنامه درسی ...',
   'zhihui.diagram.phasePlanningBranches': 'برنامه ریزی موضوعات مختلف ...',
@@ -58,7 +62,8 @@ export default {
   'zhihui.diagram.imageLoadFailed': 'نمایش اسلاید بارگیری نشد',
   'zhihui.diagram.retryImage': 'دوباره امتحان کنید',
   'zhihui.diagram.teacherScript': 'روایت معلم',
-  'zhihui.diagram.teacherScriptHint': 'توضیحات کلاس درس با تمرکز تصاویر و نقشه‌های این صفحه هماهنگ شده است',
+  'zhihui.diagram.teacherScriptHint':
+    'توضیحات کلاس درس با تمرکز تصاویر و نقشه‌های این صفحه هماهنگ شده است',
   'zhihui.diagram.ttsPlay': 'برای خواندن روایت این صفحه با صدای بلند روی بچه گربه کلیک کنید',
   'zhihui.diagram.ttsStop': 'خواندن را متوقف کنید',
   'zhihui.diagram.ttsMute': 'روایت بی صدا',
@@ -74,7 +79,8 @@ export default {
   'zhihui.sizeButton': 'اندازه تصویر',
   'zhihui.sizePanelTitle': 'اندازه تصویر',
   'zhihui.sizeOptional': 'اختیاری',
-  'zhihui.sizeHint': 'قالب عرض * ارتفاع است. اگر مشخص نشده باشد، مدل به طور خودکار وضوح را بر اساس کلمه اعلان توصیه می کند.',
+  'zhihui.sizeHint':
+    'قالب عرض * ارتفاع است. اگر مشخص نشده باشد، مدل به طور خودکار وضوح را بر اساس کلمه اعلان توصیه می کند.',
   'zhihui.sizeLimits': 'ناحیه پیکسل 512×512–2048×2048؛ نسبت تصویر 1:8–8:1',
   'zhihui.size.auto': 'باهوش',
   'zhihui.size.autoHint': 'خودکار',
@@ -102,7 +108,8 @@ export default {
   'zhihui.empty': 'هنوز تصویری وجود ندارد، لطفا سعی کنید آن را در بالا ایجاد کنید.',
   'zhihui.loadFailed': 'تاریخچه بارگیری نشد',
   'zhihui.delete': 'حذف کنید',
-  'zhihui.deleteConfirm': 'آیا مطمئن هستید که می خواهید این عکس را حذف کنید؟ این عمل قابل لغو نیست.',
+  'zhihui.deleteConfirm':
+    'آیا مطمئن هستید که می خواهید این عکس را حذف کنید؟ این عمل قابل لغو نیست.',
   'zhihui.deleteTitle': 'حذف تصویر',
   'zhihui.deleted': 'حذف شد',
   'zhihui.deleteFailed': 'حذف نشد',

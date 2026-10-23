@@ -7,7 +7,11 @@
       <template #header>
         <div class="page-header">
           <h2 v-if="!embedded">Smart Response 智回</h2>
-          <span v-else class="font-medium">Smart Response 智回</span>
+          <span
+            v-else
+            class="font-medium"
+            >Smart Response 智回</span
+          >
           <el-button
             type="primary"
             :disabled="!selectedDiagramId"

@@ -4,8 +4,9 @@
  */
 import { computed, ref } from 'vue'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { applyKittyDiagramUpdate } from '@/composables/kitty/kittyAgentActions'

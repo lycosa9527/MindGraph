@@ -1,5 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/auth'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const authFetchMock = vi.hoisted(() => vi.fn())
 
@@ -10,9 +14,6 @@ vi.mock('@/utils/api', () => ({
 vi.mock('@/composables/core/notifications', () => ({
   notify: { warning: vi.fn(), error: vi.fn(), success: vi.fn(), info: vi.fn() },
 }))
-
-import { useAuthStore } from '@/stores/auth'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -70,9 +71,8 @@ function mockListResponses(): void {
 }
 
 function diagramsListCallCount(): number {
-  return authFetchMock.mock.calls.filter((call) =>
-    String(call[0]).includes('/api/diagrams?')
-  ).length
+  return authFetchMock.mock.calls.filter((call) => String(call[0]).includes('/api/diagrams?'))
+    .length
 }
 
 describe('savedDiagrams fetchDiagrams dedupe', () => {

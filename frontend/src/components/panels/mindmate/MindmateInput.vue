@@ -1,15 +1,22 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { ElButton, ElIcon, ElInput } from 'element-plus'
 
 import { Close, VideoPause } from '@element-plus/icons-vue'
 
-import { Paperclip, Send } from '@lucide/vue'
+import { ArrowRight, Mic, Paperclip, Send } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import UserAvatarGlyph from '@/components/common/UserAvatarGlyph.vue'
+import MindmateSeminarBriefForm from '@/components/mindmate/MindmateSeminarBriefForm.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import {
+  seminarComposerAttachments,
+  seminarComposerCitations,
+} from '@/composables/mindmate/mindmateSeminarChrome'
 import type { MindMateFile } from '@/composables/mindmate/useMindMate'
 import { useMindmateMentionPicker } from '@/composables/mindmate/useMindmateMentionPicker'
 import { useAuthStore } from '@/stores/auth'
@@ -19,6 +26,8 @@ import {
   isMindmateComposerUploadableFile,
 } from '@/utils/mindmateComposerUpload'
 import type { MindmateMentionCandidate } from '@/utils/mindmateMention'
+import type { SeminarBrief } from '@/utils/mindmateSeminarBrief'
+import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
 
 import SuggestionBubbles from '../../common/SuggestionBubbles.vue'
 
@@ -31,6 +40,8 @@ const props = withDefaults(
     isUploading?: boolean
     pendingFiles?: MindMateFile[]
     showSuggestions?: boolean
+    /** Home screen mode. Seminar replaces starter prompts with room actions. */
+    homeMode?: 'dialogue' | 'seminar'
     /** When false, hide file upload button (e.g. canvas mini-mindmate) */
     showFileUpload?: boolean
     /** Custom placeholder (default: question prompt) */
@@ -40,6 +51,14 @@ const props = withDefaults(
     /** Seminar composer: @MindMate and org contacts. */
     enableMentions?: boolean
     mentionCandidates?: MindmateMentionCandidate[]
+    /** Group seminar: chips sit under the field, send stays on the right. */
+    seminarComposer?: boolean
+    /** @MindMate tag shown inside the seminar field. */
+    seminarMindmateTag?: boolean
+    /** @mindgraph tag shown inside the seminar field. */
+    seminarMindgraphTag?: boolean
+    seminarAgentName?: string
+    seminarVoiceRecording?: boolean
   }>(),
   {
     mode: 'panel',
@@ -49,11 +68,17 @@ const props = withDefaults(
     isUploading: false,
     pendingFiles: () => [],
     showSuggestions: false,
+    homeMode: 'dialogue',
     showFileUpload: true,
     placeholder: '',
     maxlength: undefined,
     enableMentions: false,
     mentionCandidates: () => [],
+    seminarComposer: false,
+    seminarMindmateTag: false,
+    seminarMindgraphTag: false,
+    seminarAgentName: 'MindMate',
+    seminarVoiceRecording: false,
   }
 )
 
@@ -64,12 +89,18 @@ const emit = defineEmits<{
   (e: 'upload', files: FileList): void
   (e: 'removeFile', fileId: string): void
   (e: 'suggestionSelect', suggestion: string): void
+  (e: 'seminarStart', brief: SeminarBrief): void
+  (e: 'clearSeminarTag', tag: 'mindmate' | 'mindgraph'): void
+  (e: 'seminarVoicePress'): void
+  (e: 'seminarVoiceRelease', send: boolean): void
 }>()
 
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
+const router = useRouter()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
+const showSeminarHome = computed(() => props.showSuggestions && props.homeMode === 'seminar')
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const chatInputRef = ref<InstanceType<typeof ElInput> | null>(null)
 
@@ -95,15 +126,157 @@ const {
 })
 
 /** Grow with newlines without Element Plus autosize (avoids unmount nextTick race). */
-const textareaRows = computed(() => {
-  const lines = props.inputText.split('\n').length
-  return Math.min(4, Math.max(1, lines))
+const composeExpanded = ref(false)
+
+const useWelcomeComposeHeight = computed(
+  () => isFullpageMode.value && props.showSuggestions && props.homeMode === 'dialogue'
+)
+
+const textareaRows = computed(() => (useWelcomeComposeHeight.value ? 2 : 1))
+
+function fitComposerToText(): void {
+  const ta = nativeTextarea()
+  if (!ta || isWelcomeCompose()) {
+    return
+  }
+  const style = getComputedStyle(ta)
+  const parsedLine = Number.parseFloat(style.lineHeight)
+  const line = Number.isFinite(parsedLine) ? parsedLine : 22.5
+  const pad =
+    (Number.parseFloat(style.paddingTop) || 0) + (Number.parseFloat(style.paddingBottom) || 0)
+  const maxHeight = line * 4 + pad
+  ta.style.height = 'auto'
+  const needed = ta.scrollHeight
+  const next = Math.min(Math.max(needed, line + pad), maxHeight)
+  ta.style.height = `${next}px`
+  ta.style.maxHeight = `${maxHeight}px`
+  ta.style.overflowY = needed > maxHeight + 1 ? 'auto' : 'hidden'
+}
+
+function isWelcomeCompose(): boolean {
+  if (useWelcomeComposeHeight.value) {
+    return true
+  }
+  const ta = nativeTextarea()
+  return Boolean(ta?.closest('.mindmate-stage--welcome'))
+}
+
+function clearTextareaFillHeight(): void {
+  const ta = nativeTextarea()
+  if (!ta) {
+    return
+  }
+  ta.style.height = ''
+  ta.style.maxHeight = ''
+  ta.style.minHeight = ''
+  ta.style.overflowY = ''
+}
+
+function syncTextareaFillHeight(): void {
+  const ta = nativeTextarea()
+  if (!ta || !isWelcomeCompose()) {
+    return
+  }
+  const field = ta.closest('.input-field-fullpage')
+  if (!(field instanceof HTMLElement)) {
+    return
+  }
+  const height = field.clientHeight
+  if (height <= 0) {
+    return
+  }
+  ta.style.height = `${height}px`
+  ta.style.maxHeight = `${height}px`
+  ta.style.minHeight = `${height}px`
+  ta.style.overflowY = 'auto'
+}
+
+async function syncComposeExpand(): Promise<void> {
+  await nextTick()
+  if (!isWelcomeCompose()) {
+    clearTextareaFillHeight()
+    composeExpanded.value = false
+    fitComposerToText()
+    return
+  }
+  if (!isFullpageMode.value) {
+    return
+  }
+  syncTextareaFillHeight()
+  const ta = nativeTextarea()
+  if (!ta) {
+    return
+  }
+  if (!props.inputText.trim()) {
+    if (composeExpanded.value) {
+      composeExpanded.value = false
+      await nextTick()
+      syncTextareaFillHeight()
+    }
+    return
+  }
+  if (composeExpanded.value) {
+    syncTextareaFillHeight()
+    return
+  }
+  if (ta.scrollHeight > ta.clientHeight + 2) {
+    composeExpanded.value = true
+    await nextTick()
+    requestAnimationFrame(() => {
+      syncTextareaFillHeight()
+    })
+  }
+}
+
+watch(
+  () => props.inputText,
+  () => {
+    void syncComposeExpand()
+  }
+)
+
+watch(useWelcomeComposeHeight, () => {
+  void syncComposeExpand()
+})
+
+watch(composeExpanded, async () => {
+  await nextTick()
+  syncTextareaFillHeight()
+})
+
+function onComposerResize(): void {
+  if (!isWelcomeCompose()) {
+    fitComposerToText()
+  }
+}
+
+onMounted(() => {
+  void syncComposeExpand()
+  window.addEventListener('resize', onComposerResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', onComposerResize)
 })
 
 // Computed for send button disabled state
+const seminarVoiceSlot = computed(
+  () =>
+    props.seminarComposer &&
+    !props.seminarVoiceRecording &&
+    !props.inputText.trim() &&
+    seminarComposerCitations.value.length === 0 &&
+    seminarComposerAttachments.value.length === 0
+)
+
 const isSendDisabled = computed(() => {
+  const hasCitations = props.seminarComposer && seminarComposerCitations.value.length > 0
+  const hasConversationFiles = props.seminarComposer && seminarComposerAttachments.value.length > 0
   const hasContent =
-    props.inputText.trim() || (props.showFileUpload && props.pendingFiles.length > 0)
+    props.inputText.trim() ||
+    hasCitations ||
+    hasConversationFiles ||
+    (props.showFileUpload && props.pendingFiles.length > 0)
   return !hasContent || props.isLoading || !authStore.isAuthenticated
 })
 
@@ -238,33 +411,118 @@ function handleSend() {
   emit('send')
 }
 
+const voiceHolding = ref(false)
+const voiceWillCancel = ref(false)
+let voicePointerId = -1
+
+function onVoicePointerDown(event: PointerEvent): void {
+  if (props.isLoading) {
+    return
+  }
+  if (!authStore.isAuthenticated) {
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
+  const target = event.currentTarget
+  if (!(target instanceof HTMLElement)) {
+    return
+  }
+  voiceHolding.value = true
+  voiceWillCancel.value = false
+  voicePointerId = event.pointerId
+  target.setPointerCapture(event.pointerId)
+  emit('seminarVoicePress')
+}
+
+function onVoicePointerMove(event: PointerEvent): void {
+  if (!voiceHolding.value || event.pointerId !== voicePointerId) {
+    return
+  }
+  const target = event.currentTarget
+  if (!(target instanceof HTMLElement)) {
+    return
+  }
+  const rect = target.getBoundingClientRect()
+  voiceWillCancel.value =
+    event.clientY < rect.top - 36 ||
+    event.clientX < rect.left - 28 ||
+    event.clientX > rect.right + 28
+}
+
+function finishVoicePointer(send: boolean): void {
+  if (!voiceHolding.value) {
+    return
+  }
+  voiceHolding.value = false
+  voiceWillCancel.value = false
+  voicePointerId = -1
+  emit('seminarVoiceRelease', send)
+}
+
+function onVoicePointerUp(event: PointerEvent): void {
+  if (event.pointerId !== voicePointerId) {
+    return
+  }
+  finishVoicePointer(!voiceWillCancel.value)
+}
+
+function onVoicePointerCancel(event: PointerEvent): void {
+  if (event.pointerId !== voicePointerId) {
+    return
+  }
+  finishVoicePointer(false)
+}
+
 // Handle suggestion bubble click
 function handleSuggestionSelect(suggestion: string) {
   emit('update:inputText', suggestion)
   emit('suggestionSelect', suggestion)
 }
+
+function openPluginDownload(): void {
+  void router.push('/browser-plugin')
+}
+
+function focusComposer(place?: 'end'): void {
+  const input = chatInputRef.value
+  input?.focus()
+  if (place !== 'end' || !input) {
+    return
+  }
+  const root = input.$el as HTMLElement | undefined
+  const field = root?.querySelector('textarea')
+  if (!(field instanceof HTMLTextAreaElement)) {
+    return
+  }
+  const end = field.value.length
+  field.setSelectionRange(end, end)
+}
+
+defineExpose({ focus: focusComposer })
 </script>
 
 <template>
-  <div class="shrink-0">
-    <!-- Suggestion Bubbles - Above Input (Fullpage Mode) -->
-    <div
-      v-if="showSuggestions && isFullpageMode"
-      class="suggestions-above-input"
-    >
-      <SuggestionBubbles @select="handleSuggestionSelect" />
-    </div>
-
+  <div
+    class="shrink-0"
+    :class="{ 'mm-seminar-brief-host': showSeminarHome }"
+  >
+    <MindmateSeminarBriefForm
+      v-if="showSeminarHome"
+      @start="emit('seminarStart', $event)"
+    />
     <!-- Suggestion Bubbles - Above Input (Panel Mode) -->
     <div
-      v-if="showSuggestions && !isFullpageMode"
+      v-if="showSuggestions && !isFullpageMode && !showSeminarHome"
       class="suggestions-above-input-panel"
     >
       <SuggestionBubbles @select="handleSuggestionSelect" />
     </div>
 
     <!-- Input Area - Same design for fullpage and panel (MindMate module style) -->
-    <div class="input-area-fullpage">
+    <div
+      v-if="!showSeminarHome"
+      class="input-area-fullpage"
+    >
       <!-- Hidden file input -->
       <input
         id="mindmate-file-input"
@@ -309,7 +567,13 @@ function handleSuggestionSelect(suggestion: string) {
       </div>
 
       <!-- Input Container -->
-      <div class="input-container-fullpage mindmate-input-compose">
+      <div
+        class="input-container-fullpage mindmate-input-compose"
+        :class="{
+          'mindmate-input-compose--seminar': seminarComposer,
+          'mindmate-input-compose--expanded': composeExpanded,
+        }"
+      >
         <div
           v-if="enableMentions && showMentionPicker"
           class="mindmate-mention-picker"
@@ -323,14 +587,70 @@ function handleSuggestionSelect(suggestion: string) {
             role="option"
             @mousedown.prevent="insertMention(row)"
           >
-            <span class="mindmate-mention-picker__avatar"
-              ><UserAvatarGlyph :value="row.avatar"
-            /></span>
+            <span
+              class="mindmate-mention-picker__avatar"
+              :class="{ 'is-agent': row.kind === 'agent' }"
+              :style="
+                row.kind === 'agent'
+                  ? undefined
+                  : {
+                      background: seminarAvatarTone(row.id).background,
+                      color: seminarAvatarTone(row.id).color,
+                    }
+              "
+            >
+              <UserAvatarGlyph
+                v-if="row.kind === 'agent'"
+                :value="row.avatar"
+              />
+              <template v-else>{{ seminarAvatarSurname(row.name) }}</template>
+            </span>
             <span class="mindmate-mention-picker__name">{{ row.name }}</span>
           </button>
         </div>
         <!-- Text Input -->
         <div class="input-field-fullpage">
+          <div
+            v-if="seminarComposer && (seminarMindmateTag || seminarMindgraphTag)"
+            class="mm-seminar-field-tags"
+          >
+            <button
+              v-if="seminarMindmateTag"
+              type="button"
+              class="mm-seminar-field-tag"
+              :title="t('mindmate.composer.mindmateTagHint')"
+              :aria-label="t('mindmate.composer.mindmateTagHint')"
+              @click="emit('clearSeminarTag', 'mindmate')"
+            >
+              <span>@{{ seminarAgentName }}</span>
+              <span class="mm-seminar-field-tag__x">×</span>
+            </button>
+            <button
+              v-if="seminarMindgraphTag"
+              type="button"
+              class="mm-seminar-field-tag"
+              :title="t('mindmate.composer.mindgraphHint')"
+              :aria-label="t('mindmate.composer.mindgraphHint')"
+              @click="emit('clearSeminarTag', 'mindgraph')"
+            >
+              <span>@mindgraph</span>
+              <span class="mm-seminar-field-tag__x">×</span>
+            </button>
+          </div>
+          <div
+            v-if="seminarComposer && (seminarVoiceRecording || voiceHolding)"
+            class="mm-voice-live"
+            :class="{ 'is-cancel': voiceWillCancel }"
+          >
+            <span class="mm-voice-live__dot" />
+            <span
+              ><I18nText
+                v-if="voiceWillCancel"
+                k="mindmate.composer.voiceHoldCancel" /><I18nText
+                v-else
+                k="mindmate.composer.voiceHoldSend"
+            /></span>
+          </div>
           <ElInput
             id="mindmate-chat-input"
             ref="chatInputRef"
@@ -350,50 +670,115 @@ function handleSuggestionSelect(suggestion: string) {
           />
         </div>
 
-        <!-- Action buttons (right side) -->
-        <div class="input-actions-fullpage">
-          <!-- Upload Button (Paperclip) - hidden when showFileUpload is false -->
-          <I18nTooltip
-            v-if="showFileUpload"
-            k="mindmate.input.attachFile"
+        <div
+          class="input-bottom"
+          :class="{ 'input-bottom--seminar': seminarComposer }"
+        >
+          <div
+            v-if="seminarComposer"
+            class="mm-seminar-toolslot"
           >
-            <ElButton
-              text
-              class="attach-btn-fullpage"
-              :disabled="isLoading || isUploading || !authStore.isAuthenticated"
-              @click="triggerFileUpload"
+            <slot name="seminarTools" />
+          </div>
+          <!-- Action buttons (right side) -->
+          <div class="input-actions-fullpage">
+            <!-- Upload Button (Paperclip) - hidden when showFileUpload is false -->
+            <I18nTooltip
+              v-if="showFileUpload"
+              k="mindmate.input.attachFile"
             >
-              <Paperclip
-                v-if="!isUploading"
-                :size="20"
-              />
-              <span
-                v-else
-                class="loading-dot"
-              />
-            </ElButton>
-          </I18nTooltip>
+              <ElButton
+                text
+                class="attach-btn-fullpage"
+                :disabled="isLoading || isUploading || !authStore.isAuthenticated"
+                @click="triggerFileUpload"
+              >
+                <Paperclip
+                  v-if="!isUploading"
+                  :size="20"
+                />
+                <span
+                  v-else
+                  class="loading-dot"
+                />
+              </ElButton>
+            </I18nTooltip>
 
-          <!-- Send/Stop Button -->
-          <ElButton
-            v-if="isStreaming"
-            type="danger"
-            class="send-btn-fullpage stop"
-            @click="emit('stop')"
-          >
-            <ElIcon><VideoPause /></ElIcon>
-          </ElButton>
-          <ElButton
-            v-else
-            type="primary"
-            class="send-btn-fullpage"
-            :disabled="isSendDisabled"
-            @click="handleSend"
-          >
-            <Send :size="18" />
-          </ElButton>
+            <!-- Send/Stop Button -->
+            <ElButton
+              v-if="isStreaming"
+              type="danger"
+              class="send-btn-fullpage stop"
+              @click="emit('stop')"
+            >
+              <ElIcon><VideoPause /></ElIcon>
+            </ElButton>
+            <button
+              v-else-if="seminarVoiceSlot || voiceHolding || seminarVoiceRecording"
+              type="button"
+              class="mm-voice-hold"
+              :class="{
+                'is-holding': (voiceHolding || seminarVoiceRecording) && !voiceWillCancel,
+                'is-cancel': voiceWillCancel,
+              }"
+              :disabled="isLoading"
+              :aria-label="t('mindmate.composer.voiceMessage')"
+              :title="t('mindmate.composer.voiceMessage')"
+              @pointerdown.prevent="onVoicePointerDown"
+              @pointermove="onVoicePointerMove"
+              @pointerup="onVoicePointerUp"
+              @pointercancel="onVoicePointerCancel"
+              @contextmenu.prevent
+            >
+              <Mic :size="18" />
+            </button>
+            <ElButton
+              v-else
+              type="primary"
+              class="send-btn-fullpage"
+              :disabled="isSendDisabled"
+              @click="handleSend"
+            >
+              <Send :size="18" />
+            </ElButton>
+          </div>
         </div>
       </div>
+    </div>
+
+    <div
+      v-if="showSuggestions && isFullpageMode && !showSeminarHome"
+      class="suggestions-above-input"
+    >
+      <SuggestionBubbles
+        flow
+        :flow-rows="[3, 4]"
+        @select="handleSuggestionSelect"
+      />
+      <button
+        type="button"
+        class="mm-plugin-download"
+        @click="openPluginDownload"
+      >
+        <span class="mm-plugin-download__badge">
+          <I18nText
+            k="mindmate.pluginDownloadBadge"
+            dense
+            primary-only
+          />
+        </span>
+        <span class="mm-plugin-download__label">
+          <I18nText
+            k="mindmate.pluginDownload"
+            dense
+          />
+        </span>
+        <ArrowRight
+          class="mm-plugin-download__arrow"
+          :size="16"
+          :stroke-width="2"
+        />
+      </button>
     </div>
   </div>
 </template>
@@ -401,8 +786,217 @@ function handleSuggestionSelect(suggestion: string) {
 <style scoped>
 @import './mindmate.css';
 
+.mm-seminar-brief-host {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px 16px 28px;
+}
+
+.mm-plugin-download {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  margin: 18px auto 0;
+  padding: 5px 16px 5px 5px;
+  border: 1px solid rgba(28, 25, 23, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
+  color: #1c1917;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  backdrop-filter: blur(16px) saturate(1.35);
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 8px 24px rgba(28, 25, 23, 0.06);
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.mm-plugin-download:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 12px 28px rgba(28, 25, 23, 0.08);
+}
+
+.mm-plugin-download:active {
+  transform: translateY(0);
+}
+
+.mm-plugin-download:focus-visible {
+  outline: 2px solid rgba(28, 25, 23, 0.28);
+  outline-offset: 3px;
+}
+
+.mm-plugin-download__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #7c3aed;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.06);
+}
+
+.mm-plugin-download__label {
+  min-width: 0;
+  color: #1c1917;
+}
+
+.mm-plugin-download__arrow {
+  flex: 0 0 auto;
+  color: #44403c;
+}
+
+:global(.dark) .mm-plugin-download {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f5f4;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+:global(.dark) .mm-plugin-download__badge {
+  background: rgba(255, 255, 255, 0.92);
+  color: #7c3aed;
+}
+
+:global(.dark) .mm-plugin-download__label,
+:global(.dark) .mm-plugin-download__arrow {
+  color: #f5f5f4;
+}
+
 .mindmate-input-compose {
   position: relative;
+}
+
+.mindmate-input-compose .input-field-fullpage {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.mindmate-input-compose--seminar .input-field-fullpage {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.mindmate-input-compose--seminar .fullpage-textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mm-seminar-field-tags {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 26px;
+  margin-top: 6px;
+}
+
+.mm-seminar-field-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid #ddd6fe;
+  border-radius: 999px;
+  background: #f5f3ff;
+  color: #6d28d9;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mm-seminar-field-tag__x {
+  opacity: 0;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.mm-seminar-field-tag:hover {
+  background: #ede9fe;
+}
+
+.mm-seminar-field-tag:hover .mm-seminar-field-tag__x {
+  opacity: 1;
+}
+
+.mm-voice-live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  margin-top: 6px;
+  color: #44403c;
+  font-size: 13px;
+}
+
+.mm-voice-live.is-cancel {
+  color: #b91c1c;
+}
+
+.mm-voice-live__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ef4444;
+}
+
+.mm-voice-hold {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+
+.mm-voice-hold:hover,
+.mm-voice-hold.is-holding {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.mm-voice-hold.is-cancel {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.mm-voice-hold:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mindmate-input-compose--expanded .fullpage-textarea {
+  height: 100%;
+}
+
+.mindmate-input-compose .fullpage-textarea :deep(.el-textarea__inner) {
+  overflow-y: hidden;
 }
 
 .mindmate-mention-picker {
@@ -441,8 +1035,20 @@ function handleSuggestionSelect(suggestion: string) {
 
 .mindmate-mention-picker__avatar {
   flex-shrink: 0;
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 650;
   line-height: 1;
+  overflow: hidden;
+}
+
+.mindmate-mention-picker__avatar.is-agent {
+  background: linear-gradient(145deg, #a78bfa 0%, #6d5efc 100%);
 }
 
 .mindmate-mention-picker__name {

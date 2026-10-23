@@ -46,18 +46,14 @@ defineProps<{
   letter-spacing: -0.06em;
   line-height: 1;
   padding-right: 1px;
-  background: linear-gradient(
-    120deg,
-    #2563eb 0%,
-    #6366f1 38%,
-    #a855f7 68%,
-    #ec4899 100%
-  );
+  background: linear-gradient(120deg, #2563eb 0%, #6366f1 38%, #a855f7 68%, #ec4899 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.22));
-  transition: filter 0.2s ease, opacity 0.2s ease;
+  transition:
+    filter 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .mg-subgraph-ai-mark__sparkles {
@@ -66,7 +62,10 @@ defineProps<{
   flex-shrink: 0;
   color: #8b5cf6;
   filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.42));
-  transition: color 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease,
+    filter 0.2s ease;
 }
 
 .mg-subgraph-ai-mark__sparkles--spin {

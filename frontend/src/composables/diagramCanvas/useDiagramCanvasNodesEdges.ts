@@ -1,7 +1,7 @@
 import { type MaybeRefOrGetter, computed, toValue } from 'vue'
 
-import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
 import {
   getMindMapCollapseHiddenIds,
@@ -18,7 +18,13 @@ export interface UseDiagramCanvasNodesEdgesOptions {
 }
 
 export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOptions) {
-  const { diagramStore, branchMove, collabLockedNodeIds, mindMapSlideFocusNodeId, mindMapSlideDimFocusNodeIds } = options
+  const {
+    diagramStore,
+    branchMove,
+    collabLockedNodeIds,
+    mindMapSlideFocusNodeId,
+    mindMapSlideDimFocusNodeIds,
+  } = options
   const indicatorStore = useCanvasNodeIndicatorsStore()
   const effectiveMindMapMode = computed(() =>
     resolveSessionMindMapCanvasMode(diagramStore.mindMapCanvasMode)

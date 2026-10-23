@@ -3,12 +3,29 @@
    Composer width fills the stage (capped at 48rem). */
 
 .mindmate-stage {
+  position: relative;
   flex: 1 1 0;
   min-height: 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.mm-file-drop {
+  position: absolute;
+  inset: 12px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #c4b5fd;
+  border-radius: 16px;
+  background: rgba(245, 243, 255, 0.92);
+  color: #5b21b6;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
 }
 
 .mindmate-stage--welcome {
@@ -122,4 +139,160 @@
     --mm-avatar: 64px;
     --mm-suggest-max-h: 168px;
   }
+}
+
+.mindmate-stage--seminar {
+  padding-top: clamp(12px, 2vh, 28px);
+}
+
+.mindmate-stage--welcome .mm-seminar-brief-host {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--mm-composer-max);
+  margin-inline: auto;
+  padding: 4px var(--mm-gutter) 32px;
+}
+
+.mindmate-stage--welcome .mm-seminar-compose {
+  display: flex;
+  flex-direction: column;
+  margin-top: 40px;
+}
+
+.mindmate-stage--welcome .mm-seminar-compose .input-area-fullpage {
+  order: 0;
+  padding-bottom: 8px;
+}
+
+.mindmate-stage--welcome .mm-seminar-compose .suggestions-above-input,
+.mindmate-stage--welcome .mm-seminar-compose .suggestions-above-input-panel {
+  order: 1;
+  margin-top: 0;
+}
+
+.mindmate-stage--welcome .input-bottom:not(.input-bottom--seminar) {
+  justify-content: flex-end;
+}
+
+/* 1:1 transcript uses the same shell as the seminar room. */
+.mindmate-stage--thread {
+  background: #f7f8fa;
+}
+
+.mindmate-stage--thread .messages-container,
+.mindmate-stage--thread .messages-scrollbar,
+.mindmate-stage--thread .el-scrollbar__wrap,
+.mindmate-stage--thread .el-scrollbar__view {
+  background: #f7f8fa;
+}
+
+.mindmate-stage--thread .messages-wrapper {
+  box-sizing: border-box;
+  width: 80%;
+  max-width: 80%;
+  margin-right: auto;
+  margin-left: auto;
+  padding: 1.25rem 0 1.75rem;
+  gap: 0.5rem;
+}
+
+.mindmate-stage--thread .mm-dm-body,
+.mindmate-stage--thread .mm-dm-body.is-agent {
+  max-width: 100%;
+}
+
+.mindmate-stage--thread .mindmate-input-section {
+  background: transparent;
+}
+
+.mm-dm-select-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 80%;
+  margin: 0 auto 8px;
+  color: #44403c;
+  font-size: 13px;
+}
+
+.mm-dm-select-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #e7e5e4;
+  border-radius: 999px;
+  background: #fff;
+  color: #44403c;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mm-dm-select-bar button:hover {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+.mm-dm-select-bar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mindmate-stage--thread .input-area-fullpage {
+  padding: 0.75rem 0 1.25rem;
+  width: 80% !important;
+  max-width: 80% !important;
+  margin: 0 auto !important;
+}
+
+.mindmate-stage--thread .input-container-fullpage {
+  width: 100%;
+  max-width: none;
+  border-radius: 18px;
+  border-width: 1px;
+  border-color: #e9e5ff;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(109, 94, 252, 0.08);
+}
+
+.mindmate-stage--thread .input-container-fullpage:focus-within {
+  border-color: #c4b5fd;
+  box-shadow: 0 8px 24px rgba(109, 94, 252, 0.14);
+}
+
+.mindmate-stage--thread .input-actions-fullpage .send-btn-fullpage:not(.stop) {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border-color: transparent;
+}
+
+.mindmate-stage--thread
+  .input-actions-fullpage
+  .send-btn-fullpage:not(.stop):not(:disabled):not(.is-disabled) {
+  --el-button-bg-color: #6d5efc;
+  --el-button-border-color: #6d5efc;
+  --el-button-hover-bg-color: #5b4eeb;
+  --el-button-hover-border-color: #5b4eeb;
+  --el-button-text-color: #fff;
+  color: #fff;
+  background: linear-gradient(180deg, #8b7cf7 0%, #6d5efc 100%);
+  box-shadow: 0 8px 18px rgba(109, 94, 252, 0.28);
+}
+
+.dark .mindmate-stage--thread,
+.dark .mindmate-stage--thread .messages-container,
+.dark .mindmate-stage--thread .messages-scrollbar,
+.dark .mindmate-stage--thread .el-scrollbar__wrap,
+.dark .mindmate-stage--thread .el-scrollbar__view {
+  background: #111827;
+}
+
+.dark .mindmate-stage--thread .input-container-fullpage {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: none;
 }

@@ -1,7 +1,6 @@
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { MIND_MAP_GEOMETRY, mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import type { MindGraphNodeData, NodeStyle } from '@/types'
-
 import { resolveMindMapSideFromIdOrData } from '@/utils/mindMapLocation'
 
 export function mindMapBranchSide(
