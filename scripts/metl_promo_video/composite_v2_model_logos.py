@@ -8,8 +8,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import imageio_ffmpeg
-
+from scripts.metl_promo_video.ffmpeg_bin import ffmpeg_exe as ffmpeg
 from services.infrastructure.utils.browser import BrowserContextManager
 
 V2_DIR = Path("/mnt/c/Users/roywa/Desktop/迈特宣传片/02-product/01-metl-reveal-v2")
@@ -20,11 +19,6 @@ ASSET = Path(__file__).resolve().parent / "assets" / "model_strip_patch.html"
 WORK = V2_DIR / ".logo-fix"
 HEAD_END = 10.0
 TAIL_SECONDS = 5.0
-
-
-def ffmpeg() -> str:
-    """Bundled ffmpeg."""
-    return imageio_ffmpeg.get_ffmpeg_exe()
 
 
 async def render_patch() -> None:

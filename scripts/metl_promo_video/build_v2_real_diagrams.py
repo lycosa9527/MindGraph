@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-import imageio_ffmpeg
+from scripts.metl_promo_video.ffmpeg_bin import ffmpeg_exe as ffmpeg
 
 V2 = Path("/mnt/c/Users/roywa/Desktop/迈特宣传片/02-product/01-metl-reveal-v2/motion.mp4")
 OUT = Path("/mnt/c/Users/roywa/Desktop/迈特宣传片/02-product/01-metl-reveal-v2/motion-real-diagrams.mp4")
@@ -22,11 +22,6 @@ PNG_DIR = Path("/mnt/c/Users/roywa/Desktop/迈特宣传片/02-product/01-metl-re
 INTRO_END = 6.0
 OUTRO_START = 10.0
 SLIDE_SECONDS = 1.0
-
-
-def ffmpeg() -> str:
-    """Bundled ffmpeg."""
-    return imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def cut_v2(source: Path, dest: Path, start: float, end: float) -> None:

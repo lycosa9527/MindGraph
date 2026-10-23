@@ -9,8 +9,7 @@ import json
 import subprocess
 from pathlib import Path
 
-import imageio_ffmpeg
-
+from scripts.metl_promo_video.ffmpeg_bin import ffmpeg_exe
 from scripts.metl_promo_video.specs import PROMO_DIAGRAMS
 from scripts.training_roles.env import dashscope_api_key
 from scripts.training_roles.wan_client import (
@@ -65,7 +64,7 @@ def ready_mp4(path: Path) -> bool:
 
 def trim_clip(source: Path, dest: Path, seconds: float) -> None:
     """Shorten I2V clip for montage."""
-    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+    ffmpeg = ffmpeg_exe()
     subprocess.run(
         [
             ffmpeg,

@@ -7,14 +7,9 @@ import argparse
 import subprocess
 from pathlib import Path
 
-import imageio_ffmpeg
+from scripts.metl_promo_video.ffmpeg_bin import ffmpeg_exe as ffmpeg
 
 DEFAULT_OUT = Path("/mnt/c/Users/roywa/Desktop/迈特宣传片/02-product/01-metl-reveal-hybrid/motion.mp4")
-
-
-def ffmpeg() -> str:
-    """Bundled ffmpeg."""
-    return imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def concat_parts(parts: list[Path], dest: Path) -> None:

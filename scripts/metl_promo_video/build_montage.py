@@ -8,17 +8,12 @@ import json
 import subprocess
 from pathlib import Path
 
-import imageio_ffmpeg
+from scripts.metl_promo_video.ffmpeg_bin import ffmpeg_exe as ffmpeg
 
 DEFAULT_DIAGRAMS = Path("/mnt/c/Users/roywa/Desktop/迈特宣传片/02-product/01-metl-reveal-hybrid/diagrams")
 DEFAULT_OUT = Path("/mnt/c/Users/roywa/Desktop/迈特宣传片/02-product/01-metl-reveal-hybrid/montage/motion.mp4")
 SECONDS_PER_SLIDE = 1.0
 FPS = 30
-
-
-def ffmpeg() -> str:
-    """Bundled ffmpeg."""
-    return imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def ordered_pngs(diagrams_dir: Path) -> list[Path]:
