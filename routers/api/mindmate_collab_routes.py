@@ -426,10 +426,9 @@ async def list_collab_session_members(
     limit: int = Query(default=200, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
-    """List teachers who joined a public MindMate collab room (network visibility)."""
+    """List teachers currently in a network seminar this person may enter."""
     await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
@@ -446,27 +445,18 @@ async def list_collab_session_members(
     if session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK:
         raise HTTPException(status_code=400, detail="Session roster is org-only")
 
-    participant_ids = await mgr.list_participant_user_ids(code)
-    is_member = current_user.id in participant_ids
-    if not is_member:
-        async with actor_rls_session(current_user) as rls_db:
-            may_join = await user_may_join_mindmate_collab(
-                rls_db,
-                visibility=session.visibility,
-                owner_user_id=session.owner_user_id,
-                owner_org_id=session.organization_id,
-                joiner_id=current_user.id,
-            )
-        if not may_join:
-            raise HTTPException(status_code=403, detail="Not allowed to view this room roster")
+    if not await mgr.user_may_connect(current_user.id, session):
+        raise HTTPException(status_code=403, detail="Not allowed to view this room roster")
 
-    return await fetch_session_participants_page(
-        db,
-        participant_ids,
-        q=q or "",
-        limit=limit,
-        offset=offset,
-    )
+    participant_ids = await mgr.list_participant_user_ids(code)
+    async with system_rls_session() as roster_db:
+        return await fetch_session_participants_page(
+            roster_db,
+            participant_ids,
+            q=q or "",
+            limit=limit,
+            offset=offset,
+        )
 
 
 @router.get("/org-members", response_model=OrgMembersPage)
@@ -734,15 +724,7 @@ async def collab_history(
     session = await mgr.load_session_by_id_any(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Room not found")
-    async with actor_rls_session(current_user) as db:
-        allowed = await user_may_join_mindmate_collab(
-            db,
-            visibility=session.visibility,
-            owner_user_id=session.owner_user_id,
-            owner_org_id=session.organization_id,
-            joiner_id=current_user.id,
-        )
-    if not allowed and session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK:
+    if not await mgr.user_may_connect(current_user.id, session):
         raise HTTPException(status_code=403, detail="Access denied")
     page = await mgr.fetch_message_page(
         session_id,

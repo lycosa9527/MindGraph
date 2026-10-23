@@ -325,9 +325,12 @@ _FILE_SESSION = (
     "OR rls_is_system_mode()"
     "))"
 )
+# Do not probe an empty member table from this policy. Member RLS hides every
+# row except the caller's, so NOT EXISTS is true for outsiders and would show
+# a closed seminar's files. Open rooms are authorized in the app, then read
+# in system mode.
 _FILE_MEMBER = (
-    "NOT EXISTS (SELECT 1 FROM mindmate_collab_members m WHERE m.session_id = session_id) "
-    "OR EXISTS (SELECT 1 FROM mindmate_collab_members m "
+    "EXISTS (SELECT 1 FROM mindmate_collab_members m "
     "WHERE m.session_id = session_id AND m.user_id = rls_current_user_id()) "
     "OR EXISTS (SELECT 1 FROM mindmate_collab_sessions s "
     "WHERE s.id = session_id AND s.owner_user_id = rls_current_user_id())"

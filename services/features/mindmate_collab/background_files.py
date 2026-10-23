@@ -24,9 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.mindmate_collab import MindmateCollabBackgroundFile, MindmateCollabSession
-from services.features.mindmate_collab.group_members import closed_group_allows, list_group_member_ids
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
-from services.features.mindmate_collab.visibility import user_may_join_mindmate_collab
 from services.features.workshop_chat.attachment_storage import (
     AttachmentDownload,
     LEGACY_DISK_PREFIX,
@@ -35,7 +33,7 @@ from services.features.workshop_chat.attachment_storage import (
     local_path_for_key,
     resolve_stored_payload,
 )
-from utils.db.session_open import actor_rls_session, system_rls_session
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -89,21 +87,11 @@ def background_content_type(filename: str) -> str:
 
 async def load_folder_session(user: User, session_id: str) -> MindmateCollabSession:
     """Return the live seminar when this person may use its shared folder."""
-    session = await get_mindmate_collab_manager().load_session_by_id(session_id)
+    manager = get_mindmate_collab_manager()
+    session = await manager.load_session_by_id(session_id)
     if session is None:
         raise ValueError("room_not_found")
-    async with actor_rls_session(user) as db:
-        may_join = await user_may_join_mindmate_collab(
-            db,
-            visibility=session.visibility,
-            owner_user_id=session.owner_user_id,
-            owner_org_id=session.organization_id,
-            joiner_id=user.id,
-        )
-    if not may_join:
-        raise ValueError("forbidden")
-    member_ids = await list_group_member_ids(session.id)
-    if not closed_group_allows(member_ids, user.id, session.owner_user_id):
+    if not await manager.user_may_connect(int(user.id), session):
         raise ValueError("forbidden")
     return session
 

@@ -1,21 +1,6 @@
-"""Closed seminar membership stays open until the first invited row exists."""
+"""Closed seminar membership id normalization."""
 
-from services.features.mindmate_collab.group_members import (
-    closed_group_allows,
-    normalize_group_member_ids,
-)
-
-
-def test_open_room_allows_any_joiner() -> None:
-    """An empty membership list keeps the previous school-wide join rule."""
-    assert closed_group_allows([], 4, 1) is True
-
-
-def test_closed_room_allows_invited_teacher_and_owner() -> None:
-    """Checked colleagues and the host can enter. The rest of the school cannot."""
-    assert closed_group_allows([1, 8, 9], 8, 1) is True
-    assert closed_group_allows([8, 9], 1, 1) is True
-    assert closed_group_allows([1, 8], 3, 1) is False
+from services.features.mindmate_collab.group_members import normalize_group_member_ids
 
 
 def test_normalize_group_member_ids_keeps_owner_and_caps() -> None:

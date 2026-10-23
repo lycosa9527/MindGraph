@@ -30,14 +30,6 @@ from services.utils.typing_helpers import result_rowcount
 from utils.db.session_open import system_rls_session
 
 
-def closed_group_allows(member_ids: Sequence[int], user_id: int, owner_id: int) -> bool:
-    """Open rooms (no rows) allow the existing join rules. Closed rooms allow members only."""
-    if not member_ids:
-        return True
-    allowed = {int(item) for item in member_ids}
-    return int(user_id) == int(owner_id) or int(user_id) in allowed
-
-
 def normalize_group_member_ids(owner_id: int, raw_ids: Sequence[int], limit: int) -> list[int]:
     """Owner first, then unique positive ids, capped at the room size."""
     ordered = [int(owner_id)]

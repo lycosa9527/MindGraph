@@ -72,6 +72,14 @@ def test_token_usage_allows_null_organization_for_current_user():
     assert "rls_org_visible(organization_id)" in expr
 
 
+def test_seminar_file_policy_does_not_treat_hidden_members_as_open():
+    """Member RLS hides other rows, so NOT EXISTS would be true for outsiders."""
+    builder = load_rls_policy_builder()
+    expr = builder.MINDMATE_COLLAB_FILE_EXPR
+    assert "NOT EXISTS" not in expr
+    assert "m.user_id = rls_current_user_id()" in expr
+
+
 def test_knowledge_embeddings_not_document_scoped():
     """Test knowledge embeddings not document scoped."""
     builder = load_rls_policy_builder()

@@ -14,16 +14,13 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.auth.dependencies import get_language_dependency
 from services.features.mindmate_collab.group_members import (
     actor_is_seminar_leader,
-    closed_group_allows,
     list_group_member_ids,
     list_group_member_roles,
     list_member_acceptance,
@@ -51,7 +48,7 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
 )
 from utils.auth import get_current_user
 from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
-from utils.db.session_open import actor_rls_session
+from utils.db.session_open import actor_rls_session, system_rls_session
 
 router = APIRouter()
 
@@ -94,7 +91,6 @@ async def list_seminar_group_members(
     limit: int = Query(default=200, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """List teachers invited into this seminar, including people who are offline."""
@@ -110,24 +106,21 @@ async def list_seminar_group_members(
     session = await mgr.load_session_by_id(session_id)
     if not session or session.ended_at is not None:
         raise HTTPException(status_code=404, detail="Room not found")
-    member_ids = await list_group_member_ids(session.id)
-    if not closed_group_allows(member_ids, current_user.id, session.owner_user_id):
+    if not await mgr.user_may_connect(int(current_user.id), session):
         raise HTTPException(status_code=403, detail="Not a member of this seminar")
+    member_ids = await list_group_member_ids(session.id)
     if not member_ids:
         member_ids = [int(session.owner_user_id)]
-    page = await fetch_session_participants_page(
-        db,
-        member_ids,
-        q=q or "",
-        limit=limit,
-        offset=offset,
-    )
-    if member_ids:
-        leader_id = await repair_seminar_leader_roles(session.id, int(session.owner_user_id))
-        roles = await list_group_member_roles(session.id)
-    else:
-        roles = {}
-        leader_id = int(session.owner_user_id)
+    async with system_rls_session() as roster_db:
+        page = await fetch_session_participants_page(
+            roster_db,
+            member_ids,
+            q=q or "",
+            limit=limit,
+            offset=offset,
+        )
+    leader_id = await repair_seminar_leader_roles(session.id, int(session.owner_user_id))
+    roles = await list_group_member_roles(session.id)
     online_ids = set(await mgr.list_participant_user_ids(session.code))
     payload = page.model_dump(mode="json")
     items = []
@@ -181,7 +174,8 @@ async def add_seminar_group_members(
         max_requests=20,
         window_seconds=60,
     )
-    session = await get_mindmate_collab_manager().load_session_by_id(body.session_id)
+    mgr = get_mindmate_collab_manager()
+    session = await mgr.load_session_by_id(body.session_id)
     if not session or session.ended_at is not None:
         raise HTTPException(status_code=404, detail="Room not found")
     if session.visibility not in (
@@ -189,16 +183,15 @@ async def add_seminar_group_members(
         ONLINE_COLLAB_VISIBILITY_NETWORK,
     ):
         raise HTTPException(status_code=400, detail="Unsupported seminar visibility")
-    member_ids = await list_group_member_ids(session.id)
-    if member_ids and not closed_group_allows(member_ids, current_user.id, session.owner_user_id):
+    if not await mgr.user_may_connect(int(current_user.id), session):
         raise HTTPException(status_code=403, detail="Join the seminar before inviting others")
     if await user_observes_seminar(session.id, int(current_user.id)):
         raise HTTPException(status_code=403, detail="observer_readonly")
 
-    # Any member may invite. School roster + phone lookup both land in the closed group,
-    # including cross-school teachers for organization seminars.
+    # Any accepted member may invite. Phone lookup resolves cross-school teachers;
+    # system mode is required because their user row is hidden from the inviter.
     allowed: list[int] = []
-    async with actor_rls_session(current_user) as db:
+    async with system_rls_session() as db:
         for user_id in body.user_ids:
             if user_id == current_user.id:
                 continue

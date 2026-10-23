@@ -147,11 +147,12 @@ async def save_finished_seminar_for_owner(
 
 
 async def list_saved_seminars(user_id: int) -> List[Dict[str, Any]]:
-    """Return finished seminars this person hosted or joined, newest save first.
+    """Return finished seminars this person hosted or accepted, newest save first.
 
     Uses a system session because a joiner is not the owner, and a network
     room is not visible to every joiner under the session row policy. The
-    filter is the access check: owner, or a recorded member.
+    filter is the access check: owner, or an accepted member. A pending
+    invite does not keep the transcript.
     """
     owner_pin = case(
         (
@@ -168,6 +169,7 @@ async def list_saved_seminars(user_id: int) -> List[Dict[str, Any]]:
         .where(
             MindmateCollabMember.session_id == MindmateCollabSession.id,
             MindmateCollabMember.user_id == user_id,
+            MindmateCollabMember.accepted.is_(True),
         )
         .exists()
     )
@@ -225,10 +227,12 @@ async def _load_transcript(db: AsyncSession, session_id: str) -> Tuple[List[Dict
 
 
 async def _viewer_is_member(db: AsyncSession, session_id: str, user_id: int) -> bool:
+    """True when this person accepted a seat. A pending invite is not a member."""
     found = await db.scalar(
         select(MindmateCollabMember.user_id).where(
             MindmateCollabMember.session_id == session_id,
             MindmateCollabMember.user_id == user_id,
+            MindmateCollabMember.accepted.is_(True),
         ),
     )
     return found is not None
@@ -324,8 +328,13 @@ async def update_saved_seminar(
 
 
 async def delete_saved_seminar(session_id: str, owner_user_id: int) -> Optional[str]:
-    """Remove a saved seminar and its transcript. None means it was deleted."""
-    async with user_rls_session(owner_user_id) as db:
+    """Remove a saved seminar and its transcript. None means it was deleted.
+
+    System mode is required for the cascade. User mode can see this session
+    but not other people's messages or member rows, and those hidden rows
+    still block the foreign keys. The owner check below is the access control.
+    """
+    async with system_rls_session() as db:
         session, reason = await _owned_saved_session(db, session_id, owner_user_id)
         if reason or session is None:
             return reason or "not_found"

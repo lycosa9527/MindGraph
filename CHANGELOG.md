@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.182] - 2026-10-23
+
+> **A saved seminar can be deleted, and a teacher who accepted a cross-school invite can use the shelf.**
+
+### Fixed
+
+- **Saved seminar** — Deleting a finished seminar removes the transcript, the members, and the shelf. The owner check stays. The delete no longer stops because other people's rows are hidden.
+- **Cross-school member** — A teacher who accepted an invite can open the shelf, the transcript, the member list, and the saved seminar, and can invite others. A pending invite cannot. A public seminar transcript is limited to people who may enter the room.
+- **Seminar files** — A colleague who can see the school cannot read a closed seminar's shelf through the database policy (migration `0156`). The app role can read and write the members table.
+
+### Tests
+
+- [`tests/test_rls_policy_column_refs.py`](tests/test_rls_policy_column_refs.py)
+
 ## [5.180.181] - 2026-10-23
 
 > **A seminar keeps a brief, roles, a shared shelf, and a 教研助手 minutes card. Right-click an avatar to @ that person.**
