@@ -77,7 +77,7 @@ Check these when collaboration degrades:
 
 ### Users Cannot Join
 
-1. Confirm `COLLAB_WS_ALLOWED_ORIGINS` contains the exact browser origin.
+1. Confirm `COLLAB_WS_ALLOWED_ORIGINS` contains the exact browser origin. `https://www.mindspringedu.com` and `https://mg.mindspringedu.com` are both accepted whenever that allowlist is non-empty.
 2. Confirm the JWT on the WebSocket URL is valid and not expired.
 3. Check join rate-limit settings and Redis availability.
 4. Verify the workshop code exists in Redis `sessionmeta` and in PostgreSQL

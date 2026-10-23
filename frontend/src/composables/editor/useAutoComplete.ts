@@ -34,9 +34,10 @@ import {
 import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { canvasRunModel } from '@/config/canvasLlmMenu'
-import { diagramSecondaryLanguage } from '@/diagramBilingual/generationRequest'
+import { diagramGenerationLanguages } from '@/diagramBilingual/generationRequest'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore } from '@/stores/diagram'
+import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import { type ModelLoadPhase, useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
@@ -67,7 +68,7 @@ export function useAutoComplete() {
   const diagramStore = useDiagramStore()
   const llmResultsStore = useLLMResultsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
-  const { promptLanguage, t } = useLanguage()
+  const { t } = useLanguage()
   const notify = useNotifications()
   const { guardCollabGuestAi } = useCollabGuestAiGate()
   const { customLlmEnabled } = useOrgCustomLlm()
@@ -90,6 +91,14 @@ export function useAutoComplete() {
     return (n.text ?? (n.data as { label?: string })?.label ?? '').trim()
   }
 
+  /** Real user text: not empty, not a blank insert, and not this node's locale template. */
+  function isUserLabel(nodeId: string | undefined, text: string): boolean {
+    const trimmed = text.trim()
+    if (!trimmed || isPlaceholderText(trimmed)) return false
+    if (!nodeId) return true
+    return !shouldReplaceLabelWithMathInsert(diagramStore.type, nodeId, trimmed)
+  }
+
   /**
    * Extract main topic from current diagram.
    * Data stores { nodes, connections }; spec fields (topic, whole, event, etc.) are filtered out
@@ -110,28 +119,28 @@ export function useAutoComplete() {
         (n) => n.id === 'topic' || n.id === 'tree-topic' || n.type === 'topic'
       )
       const text = getNodeText(topicNode)
-      if (text && !isPlaceholderText(text)) return text
+      if (isUserLabel(topicNode?.id, text)) return text
     }
 
     // Strategy 2: Brace map: whole node (root, type 'topic')
     if (type === 'brace_map') {
       const wholeNode = nodes.find((n) => n.type === 'topic')
       const text = getNodeText(wholeNode)
-      if (text && !isPlaceholderText(text)) return text
+      if (isUserLabel(wholeNode?.id, text)) return text
     }
 
     // Strategy 3: Multi-flow map: event node (id 'event')
     if (type === 'multi_flow_map') {
       const eventNode = nodes.find((n) => n.id === 'event' || n.type === 'topic')
       const text = getNodeText(eventNode)
-      if (text && !isPlaceholderText(text)) return text
+      if (isUserLabel(eventNode?.id, text)) return text
     }
 
     // Strategy 4: Flow map: flow-topic node (id 'flow-topic')
     if (type === 'flow_map') {
       const topicNode = nodes.find((n) => n.id === 'flow-topic')
       const text = getNodeText(topicNode)
-      if (text && !isPlaceholderText(text)) return text
+      if (isUserLabel(topicNode?.id, text)) return text
     }
 
     // Strategy 5: Double bubble map: left/right topic nodes
@@ -140,8 +149,8 @@ export function useAutoComplete() {
       const rightNode = nodes.find((n) => n.id === 'right-topic')
       const left = getNodeText(leftNode)
       const right = getNodeText(rightNode)
-      const leftValid = left && !isPlaceholderText(left)
-      const rightValid = right && !isPlaceholderText(right)
+      const leftValid = isUserLabel('left-topic', left)
+      const rightValid = isUserLabel('right-topic', right)
       if (leftValid && rightValid) {
         return t('autoComplete.doubleBubbleTopicPair', { left, right })
       }
@@ -159,15 +168,12 @@ export function useAutoComplete() {
         n.id === 'event'
     )
     const topicText = getNodeText(topicNode)
-    if (topicText && !isPlaceholderText(topicText)) return topicText
+    if (isUserLabel(topicNode?.id, topicText)) return topicText
 
     // Strategy 7: First non-placeholder node
-    const firstValid = nodes.find((n) => {
-      const t = getNodeText(n)
-      return t && !isPlaceholderText(t)
-    })
+    const firstValid = nodes.find((n) => isUserLabel(n.id, getNodeText(n)))
     const firstText = getNodeText(firstValid)
-    if (firstText && !isPlaceholderText(firstText)) return firstText
+    if (isUserLabel(firstValid?.id, firstText)) return firstText
 
     return null
   }
@@ -206,7 +212,7 @@ export function useAutoComplete() {
       )
       const left = getNodeText(leftNode)
       const right = getNodeText(rightNode)
-      if (left && right && !isPlaceholderText(left) && !isPlaceholderText(right)) {
+      if (isUserLabel(leftNode?.id, left) && isUserLabel(rightNode?.id, right)) {
         result.push({ left, right })
       }
     }
@@ -230,14 +236,17 @@ export function useAutoComplete() {
     if (nodes && Array.isArray(nodes) && supportsDimensionLabel) {
       const labelNode = nodes.find((n) => n.id === 'dimension-label')
       const labelText = getNodeText(labelNode)
-      if (labelText && !isPlaceholderText(labelText)) {
+      if (isUserLabel('dimension-label', labelText)) {
         return labelText
       }
     }
 
-    const dimension = spec.dimension as string | undefined
-    if (dimension && dimension.trim() !== '') {
-      return dimension.trim()
+    const dimension = typeof spec.dimension === 'string' ? spec.dimension.trim() : ''
+    if (
+      dimension &&
+      !shouldReplaceLabelWithMathInsert(diagramStore.type, 'dimension-label', dimension)
+    ) {
+      return dimension
     }
     if (diagramStore.type === 'bridge_map') {
       const rf = spec.relating_factor as string | undefined
@@ -272,8 +281,8 @@ export function useAutoComplete() {
       fixedDimension: extractFixedDimension(),
       generationInstructions: (options?.generationInstructions ?? '').trim(),
       mainTopic,
-      doubleBubbleLeftValid: Boolean(left && !isPlaceholderText(left)),
-      doubleBubbleRightValid: Boolean(right && !isPlaceholderText(right)),
+      doubleBubbleLeftValid: isUserLabel('left-topic', left),
+      doubleBubbleRightValid: isUserLabel('right-topic', right),
     })
 
     if (result.valid) {
@@ -525,7 +534,7 @@ export function useAutoComplete() {
 
   /** One model per run. School override stays on qwen. Otherwise the menu selection, else Express. */
   function defaultCanvasModels(): string[] {
-    return [canvasRunModel(llmResultsStore.selectedModel, customLlmEnabled.value)]
+    return [canvasRunModel(llmResultsStore.canvasModelChoice, customLlmEnabled.value)]
   }
 
   /**
@@ -569,7 +578,8 @@ export function useAutoComplete() {
     }
 
     // Build simple request - backend handles prompt construction
-    const language = promptLanguage.value
+    const outputLanguages = diagramGenerationLanguages()
+    const language = outputLanguages.language
     const override = typeof topicOverride === 'string' ? topicOverride.trim() : ''
     const baseTopic = override || extractMainTopic() || ''
     const instructions = (generationInstructions ?? '').trim()
@@ -577,7 +587,7 @@ export function useAutoComplete() {
     // Do not also splice them into prompt — that duplicated 【用户要求】.
     const topic = `${baseTopic}${promptSuffix ?? ''}`
 
-    const secondaryLanguage = diagramSecondaryLanguage()
+    const secondaryLanguage = outputLanguages.secondaryLanguage
     const requestBody: Record<string, unknown> = {
       prompt: topic,
       diagram_type: diagramStore.type,
@@ -715,7 +725,7 @@ export function useAutoComplete() {
 
       llmResultsStore.completeGeneration()
 
-      const successCount = llmResultsStore.successCount
+      const successCount = llmResultsStore.runSuccessCount(modelsToRun)
       const totalCount = modelsToRun.length
 
       eventBus.emit('llm:generation_completed', {
@@ -727,10 +737,8 @@ export function useAutoComplete() {
       onAllComplete?.(successCount, totalCount)
 
       if (successCount === 0) {
-        const failedModel = modelsToRun.find(
-          (model) => llmResultsStore.results[model]?.success === false
-        )
-        const failedResult = failedModel ? llmResultsStore.results[failedModel] : undefined
+        const failedModel = modelsToRun.find((model) => llmResultsStore.runErrorFor(model))
+        const failedResult = failedModel ? llmResultsStore.runErrorFor(failedModel) : null
         const firstModelError = failedResult?.error
         const firstModelErrorType = failedResult?.errorType
         const errorMsg =

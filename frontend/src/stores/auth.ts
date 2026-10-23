@@ -88,8 +88,12 @@ export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null)
   const mode = ref<AuthMode>('standard')
+  /** False until GET /api/auth/mode returns, so signup does not guess standard vs bayi. */
+  const modeResolved = ref(false)
   /** From GET /api/auth/mode; signup UI gated when false. Defaults true until the server responds. */
   const registrationEnabled = ref(true)
+  /** From GET /api/auth/mode. Empty keeps MindMate ids as mg_user_<pk>. */
+  const mindmateDifyUserPrefix = ref('')
   const loading = ref(false)
   const sessionMonitorInterval = ref<number | null>(null)
   const showSessionExpiredModal = ref(false)
@@ -339,6 +343,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     useUIStore().setLanguagePolicyAllowZh(normalizedUser.allowsSimplifiedChinese !== false)
     applyUserLanguageFromProfile(normalizedUser)
+    void useUIStore().hydrateCanvasInputFromDevice()
   }
 
   async function saveLanguagePreferences(
@@ -823,14 +828,21 @@ export const useAuthStore = defineStore('auth', () => {
       const data = (await response.json()) as {
         mode?: string
         registration_enabled?: boolean
+        mindmate_dify_user_prefix?: string
       }
       const detectedMode = (data.mode || 'standard') as AuthMode
       registrationEnabled.value =
         typeof data.registration_enabled === 'boolean' ? data.registration_enabled : true
+      mindmateDifyUserPrefix.value =
+        typeof data.mindmate_dify_user_prefix === 'string'
+          ? data.mindmate_dify_user_prefix.trim()
+          : ''
       setMode(detectedMode)
       return detectedMode
     } catch {
-      return 'standard'
+      return mode.value
+    } finally {
+      modeResolved.value = true
     }
   }
 
@@ -1208,7 +1220,9 @@ export const useAuthStore = defineStore('auth', () => {
     // State
     user,
     mode,
+    modeResolved,
     registrationEnabled,
+    mindmateDifyUserPrefix,
     loading,
     showSessionExpiredModal,
     pendingRedirect,

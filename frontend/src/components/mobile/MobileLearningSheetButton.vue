@@ -5,9 +5,10 @@
  */
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import { Hammer, Shuffle } from '@lucide/vue'
+import { Hammer, LayoutList, Shuffle } from '@lucide/vue'
 
 import MindMapLearningSheetIcon from '@/components/canvas/MindMapLearningSheetIcon.vue'
+import { bindCanvasCoveringOverlay } from '@/components/common/swissGlassStack'
 import { useEventBus, useLanguage, useNotifications } from '@/composables'
 import {
   resetLearningSheetCustomModeUi,
@@ -34,6 +35,7 @@ const {
   activatePick,
   dismissFloatBar,
   startRandomLearningSheet,
+  startFullBlankLearningSheet,
   exitLearningSheet,
 } = useLearningSheetCustomMode()
 
@@ -42,6 +44,8 @@ useLearningSheetPickKeyboard()
 bus.on('diagram:loaded', () => {
   restoreLearningSheetUiFromDiagram()
 })
+
+bindCanvasCoveringOverlay(() => open.value || isFloatBarOpen.value)
 
 onMounted(() => {
   restoreLearningSheetUiFromDiagram()
@@ -58,6 +62,13 @@ function openChooser(): void {
     return
   }
   open.value = true
+}
+
+function handleFullBlank(): void {
+  const keepAnswers = diagramStore.learningSheetShowAnswers
+  startFullBlankLearningSheet()
+  diagramStore.setLearningSheetShowAnswers(keepAnswers)
+  open.value = false
 }
 
 function handleRandom(): void {
@@ -180,6 +191,26 @@ function handleRestore(): void {
             <I18nText k="canvas.mindMapSideToolbar.learningSheetIntro" />
           </p>
           <div class="flex flex-col gap-2 px-3 pb-3">
+            <button
+              type="button"
+              class="mobile-ls-card"
+              @click="handleFullBlank"
+            >
+              <span class="mobile-ls-card__icon mobile-ls-card__icon--violet">
+                <LayoutList
+                  :size="16"
+                  :stroke-width="2"
+                />
+              </span>
+              <span class="min-w-0 flex-1 text-start">
+                <span class="block text-sm font-semibold text-gray-900">
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetFullBlankTitle" />
+                </span>
+                <span class="mt-0.5 block text-xs leading-snug text-gray-500">
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetFullBlankDesc" />
+                </span>
+              </span>
+            </button>
             <button
               type="button"
               class="mobile-ls-card"
@@ -346,6 +377,10 @@ function handleRestore(): void {
   justify-content: center;
   border-radius: 8px;
   color: #fff;
+}
+
+.mobile-ls-card__icon--violet {
+  background: #7c3aed;
 }
 
 .mobile-ls-card__icon--amber {

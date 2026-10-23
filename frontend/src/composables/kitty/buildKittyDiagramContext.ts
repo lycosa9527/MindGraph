@@ -9,7 +9,7 @@ import {
 import { getDiagramWriteLockHolder } from '@/composables/kitty/useDiagramWriteLock'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import { resolveMindMapAudienceInstructions } from '@/composables/mindMap/audience/aiContentLevelInstructions'
-import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
+import { buildDiagramData } from '@/composables/aiBrainstorm/diagramDataBuilder'
 import { i18n } from '@/i18n'
 import { useAiContentLevelStore } from '@/stores/aiContentLevel'
 import { useDiagramStore } from '@/stores/diagram'
@@ -102,7 +102,7 @@ export function buildKittyDiagramContext(
     diagram_data.focus_question = data.focus_question
   }
   const displayTitle = String(diagramStore.effectiveTitle ?? diagramStore.title ?? '').trim()
-  const selectedLlmModel = useLLMResultsStore().selectedModel
+  const selectedLlmModel = useLLMResultsStore().canvasModelChoice
   const audienceInstructions = isMindMapDiagramType(dt)
     ? resolveMindMapAudienceInstructions(kittyInteractionLanguageFromUi())
     : undefined
@@ -140,7 +140,7 @@ export function buildStandaloneKittyLandingContext(): KittyAgentContext {
     diagram_library_id: null,
     diagram_display_title: '',
     interaction_language: kittyInteractionLanguageFromUi(),
-    selected_llm_model: useLLMResultsStore().selectedModel,
+    selected_llm_model: useLLMResultsStore().canvasModelChoice,
   }
 }
 

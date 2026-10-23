@@ -3,8 +3,9 @@ Pure helpers for per-organization Dify server credentials.
 
 Server slots are discovered from the Organization ORM columns (see
 ``dify_server_schema``). ``dify_active_server`` selects the primary for live
-MindMate chat; export and the heartbeat poller use every configured slot on
-each org. These helpers are synchronous and side-effect free.
+MindMate chat. Export reads every configured slot. The heartbeat checks the
+shared Dify main and Dify backup URLs, not each school. These helpers are
+synchronous and side-effect free.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -24,7 +25,6 @@ from services.dify.dify_server_schema import (
 
 # Failover auto-switch applies only when a school configures exactly this many servers.
 FAILOVER_CONFIGURED_SERVER_COUNT = 2
-MIN_FAILOVER_PROBE_SERVERS = FAILOVER_CONFIGURED_SERVER_COUNT
 
 
 @dataclass(frozen=True)
@@ -66,26 +66,27 @@ def primary_server_no(org: Organization) -> int:
     return value if value in slots else default
 
 
-def failover_partner_server(org: Organization) -> Optional[int]:
+def partner_for_configured_slots(primary: int, slots: List[int]) -> Optional[int]:
     """
-    The other server in this org's configured failover pair.
+    The other server when *slots* is exactly one failover pair.
 
-    Schools pick any two slots (e.g. 1+2, 2+3, or 1+3); the partner is whichever
-    configured slot is not the primary. Requires exactly two configured servers.
+    Schools pick any two slots (e.g. 1+2, 2+3, or 1+3). Requires exactly two
+    configured servers.
     """
-    primary = primary_server_no(org)
-    slots = sorted(entry.server for entry in configured_dify_servers(org))
-    if len(slots) != FAILOVER_CONFIGURED_SERVER_COUNT:
+    ordered = sorted(set(slots))
+    if len(ordered) != FAILOVER_CONFIGURED_SERVER_COUNT:
         return None
-    if primary not in slots:
-        return slots[0]
-    others = [slot for slot in slots if slot != primary]
+    if primary not in ordered:
+        return ordered[0]
+    others = [slot for slot in ordered if slot != primary]
     return others[0] if others else None
 
 
-def standby_server_no(server: int) -> int:
-    """Legacy two-slot helper (server 1 <-> 2 only). Prefer ``failover_partner_server``."""
-    return 2 if server == 1 else 1
+def failover_partner_server(org: Organization) -> Optional[int]:
+    """The other server in this org's own configured failover pair."""
+    primary = primary_server_no(org)
+    slots = [entry.server for entry in configured_dify_servers(org)]
+    return partner_for_configured_slots(primary, slots)
 
 
 def failover_enabled(org: Organization) -> bool:
@@ -102,8 +103,3 @@ def configured_dify_servers(org: Organization) -> List[DifyServerCreds]:
             api_key, api_url = creds
             out.append(DifyServerCreds(server=server, api_key=api_key, api_url=api_url))
     return out
-
-
-def org_eligible_for_failover_probing(org: Organization) -> bool:
-    """True when background health checks should cover this school's Dify servers."""
-    return failover_enabled(org) and failover_partner_server(org) is not None

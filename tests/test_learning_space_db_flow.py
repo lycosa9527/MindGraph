@@ -30,6 +30,7 @@ from models.domain.learning_space import (
 )
 from services.learning_space.access import (
     assert_assignment_visible_to_learner,
+    get_class_for_publisher,
     get_class_for_staff,
     get_class_for_teacher,
     get_enabled_pilot,
@@ -200,6 +201,14 @@ async def _learning_space_world(monkeypatch: pytest.MonkeyPatch):
     org_a, org_b = await _two_orgs()
     cache = _FakeDiagramCache()
     monkeypatch.setattr("services.learning_space.assignments.get_diagram_cache", lambda: cache)
+
+    def _skip_submit_thumbnail(*_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    monkeypatch.setattr(
+        "services.learning_space.assignments.schedule_submit_thumbnail",
+        _skip_submit_thumbnail,
+    )
     async with rls_async_session(_sys()) as session:
         teacher = await _make_user(session, org_id=org_a, tag="teacher")
         assistant = await _make_user(session, org_id=org_a, tag="assistant")
@@ -312,8 +321,10 @@ async def _run_create_class_publish_homework_review_return(world: SimpleNamespac
             comment="写得清楚",
             liked=True,
             pinned=True,
+            reviewer_user_id=int(teacher.id),
         )
         assert reviewed.review_liked is True
+        assert reviewed.reviewed_by == int(teacher.id)
         assert reviewed.review_pinned is True
         assert reviewed.review_scores == {"理解": 4, "应用": 5}
         returned = await return_submission(session, reviewed)
@@ -321,7 +332,7 @@ async def _run_create_class_publish_homework_review_return(world: SimpleNamespac
 
 
 async def test_permissions_assistant_outsider_draft_archive(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Assistants review only; outsiders and drafts are rejected; archive blocks learners."""
+    """Assistants may publish and review; outsiders and drafts are rejected; archive blocks learners."""
     async with _learning_space_world(monkeypatch) as world:
         await _test_permissions_assistant_outsider_draft_archive(world)
 
@@ -374,6 +385,8 @@ async def _test_permissions_assistant_outsider_draft_archive(world: SimpleNamesp
         assert assistant is not None
         staff = await get_class_for_staff(session, class_id, world.assistant_id)
         assert int(staff.id) == class_id
+        publishable = await get_class_for_publisher(session, class_id, assistant)
+        assert int(publishable.id) == class_id
         with pytest.raises(HTTPException) as not_owner:
             await get_class_for_teacher(session, class_id, world.assistant_id)
         assert not_owner.value.status_code == 404

@@ -27,6 +27,23 @@ INVITE_PATTERN = re.compile(rf"^[{re.escape(_SAFE_CHARS)}]{{3}}-[{re.escape(_SAF
 INVITE_PATTERN_LEGACY = re.compile(r"^[A-Z]{4}-[A-Z0-9]{5}$")
 
 
+_DASH_TRANSLATION = str.maketrans(
+    {
+        "—": "-",
+        "–": "-",
+        "－": "-",
+        "﹣": "-",
+        "−": "-",
+    }
+)
+
+
+def normalize_invitation_code(raw: str | None) -> str:
+    """Uppercase, drop spaces, and turn lookalike dashes into a hyphen."""
+    text = (raw or "").strip().upper().translate(_DASH_TRANSLATION)
+    return "".join(text.split())
+
+
 def invitation_code_is_valid(candidate: str) -> bool:
     """True if candidate matches the current or legacy invitation code format."""
     return bool(INVITE_PATTERN.fullmatch(candidate) or INVITE_PATTERN_LEGACY.fullmatch(candidate))

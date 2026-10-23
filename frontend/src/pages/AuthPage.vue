@@ -113,6 +113,9 @@ async function hydrateAuthModeAndResolveQuickReg(): Promise<void> {
   }
 }
 
+uiStore.syncGuestLocaleFromBrowser()
+uiStore.setAuthPageBilingual(true)
+
 onMounted(() => {
   document.documentElement.classList.remove('dark')
   void hydrateAuthModeAndResolveQuickReg()
@@ -182,6 +185,7 @@ watch(showLoginModal, (visible) => {
 })
 
 onBeforeUnmount(() => {
+  uiStore.setAuthPageBilingual(false)
   if (uiStore.isDark) {
     document.documentElement.classList.add('dark')
   }
@@ -232,15 +236,21 @@ onBeforeUnmount(() => {
             v-if="useQuickRegPanel"
             class="auth-page-card__legal"
           >
-            <span>
-              <I18nText k="auth.landing.legalPrefix" />
+            <span class="auth-page-card__legal-chunk">
+              <I18nText
+                k="auth.landing.legalPrefix"
+                align="center"
+              />
               <RouterLink
                 to="/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="auth-page-card__legal-link"
               >
-                <I18nText k="auth.softwareAgreementLink" />
+                <I18nText
+                  k="auth.softwareAgreementLink"
+                  align="center"
+                />
               </RouterLink>
             </span>
           </footer>
@@ -249,7 +259,10 @@ onBeforeUnmount(() => {
     </div>
 
     <p class="auth-page-icp">
-      <I18nText k="auth.landing.copyright" />
+      <I18nText
+        k="auth.landing.copyright"
+        align="center"
+      />
     </p>
   </div>
 </template>
@@ -275,14 +288,14 @@ onBeforeUnmount(() => {
   color: rgb(100 116 139);
   text-align: center;
   pointer-events: none;
-  white-space: nowrap;
 }
 
 .auth-page-stage {
   position: relative;
-  flex: 1;
-  min-height: calc(100dvh - 3.75rem);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .auth-page-stage__brand {
@@ -293,24 +306,52 @@ onBeforeUnmount(() => {
 
 .auth-page-stage__content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: flex;
+  isolation: isolate;
   align-items: center;
   justify-content: flex-end;
   box-sizing: border-box;
   width: 100%;
   max-width: 1280px;
-  min-height: calc(100dvh - 3.75rem);
+  min-height: 100%;
   margin: 0 auto;
   padding: clamp(1.25rem, 3vw, 2rem) 1.25rem;
   pointer-events: none;
+}
+
+.auth-page-card__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.15rem 0.35rem;
+  margin: 0;
+  padding: 0.35rem 0 0.65rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: rgb(148 163 184);
+  text-align: center;
+}
+
+.auth-page-card__legal-chunk {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.15rem 0.35rem;
+}
+
+.auth-page-card__legal-link {
+  color: rgb(79 70 229);
+  text-decoration: underline;
 }
 
 @media (max-width: 899px) {
   .auth-page-stage__content {
     justify-content: center;
     align-items: flex-start;
-    padding-top: 4.75rem;
+    padding-top: 6.75rem;
   }
 }
 </style>

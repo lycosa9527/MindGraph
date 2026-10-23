@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * MobileHomePage — Landing page for mobile.
- * MindGraph first (图示), then MindMate, Kitty (when FEATURE_KITTY_AGENT),
+ * MindGraph first (图示), then MindMate, Kitty,
  * Voice notes, organization management (create-org roles), account.
  * Flex scroll uses min-h-0 so cards stay reachable.
  */
@@ -31,7 +31,6 @@ const training = useTrainingStore()
 
 const displayName = computed(() => authStore.user?.username || '')
 
-const showKittyHubCard = computed(() => featureFlagsStore.flags?.feature_kitty_agent ?? false)
 const showLearningSpaceCard = computed(
   () =>
     authStore.user?.role === 'student' ||
@@ -182,9 +181,9 @@ function goToLearningSpace() {
         />
       </button>
 
-      <!-- Kitty (only when FEATURE_KITTY_AGENT is enabled on the server) -->
+      <!-- Kitty -->
       <button
-        v-if="showKittyHubCard && !isLearningSpaceStudent"
+        v-if="!isLearningSpaceStudent"
         class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
         @click="goToKitty"
       >

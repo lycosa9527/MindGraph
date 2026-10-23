@@ -6,7 +6,7 @@ import {
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
-import type { DiagramContext } from './types'
+import { type DiagramContext, STRUCTURAL_SPEC_RELOAD } from './types'
 
 type SpecItem = string | { id?: string; text?: string }
 
@@ -105,7 +105,7 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
       appendGlossSlot(spec, 'rightDifferences')
     }
 
-    return ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
+    return ctx.loadFromSpec(spec, 'double_bubble_map', STRUCTURAL_SPEC_RELOAD)
   }
 
   function removeDoubleBubbleMapNodes(nodeIds: string[]): DoubleBubbleDeleteOutcome {
@@ -159,7 +159,7 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
     dropSizeSlots(spec, 'leftDiffRadii', leftDrop.drop)
     dropSizeSlots(spec, 'rightDiffRadii', rightDrop.drop)
 
-    ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
+    ctx.loadFromSpec(spec, 'double_bubble_map', STRUCTURAL_SPEC_RELOAD)
     return outcome
   }
 

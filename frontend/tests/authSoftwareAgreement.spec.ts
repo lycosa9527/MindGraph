@@ -7,9 +7,11 @@ import {
 } from '@/content/authSoftwareAgreement'
 
 describe('softwareAgreementForUiCode', () => {
-  it('returns Chinese agreement for zh and zh-tw UI', () => {
+  it('returns Chinese agreement for zh and Traditional text for zh-tw', () => {
     expect(softwareAgreementForUiCode('zh')).toBe(SOFTWARE_AGREEMENT_ZH)
-    expect(softwareAgreementForUiCode('zh-tw')).toBe(SOFTWARE_AGREEMENT_ZH)
+    const traditional = softwareAgreementForUiCode('zh-tw')
+    expect(traditional.title).toContain('用戶協議')
+    expect(traditional.title).not.toBe(SOFTWARE_AGREEMENT_ZH.title)
   })
 
   it('returns English agreement for all other UI locales', () => {

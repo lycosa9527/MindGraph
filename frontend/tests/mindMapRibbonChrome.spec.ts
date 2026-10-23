@@ -8,6 +8,7 @@ import {
   MIND_MAP_RIBBON_TABS,
   MIND_MAP_RIBBON_TOOLS_ID,
   isMindMapRibbonTabId,
+  mindMapRibbonTabLabelKey,
   resolveLandingMindMapRibbonTab,
 } from '@/canvas-ribbon/mindMapRibbonTypes'
 
@@ -42,6 +43,13 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(isMindMapRibbonTabId('draw')).toBe(false)
     expect(isMindMapRibbonTabId('learn')).toBe(false)
     expect(isMindMapRibbonTabId('palette')).toBe(false)
+    expect(mindMapRibbonTabLabelKey('teaching', 'student')).toBe('canvas.ribbon.tabLearn')
+    expect(mindMapRibbonTabLabelKey('teaching', 'teacher')).toBe('canvas.ribbon.tabTeaching')
+    expect(mindMapRibbonTabLabelKey('edit', 'student')).toBe('canvas.ribbon.tabEdit')
+    expect(tabs).toContain('mindMapRibbonTabLabelKey')
+    expect(readSrc('src/canvas-ribbon/MindMapClassroomRemote.vue')).toContain(
+      'mindMapRibbonTabLabelKey'
+    )
   })
 
   it('reuses the status-bar translate button for language pick and LLM loading', () => {
@@ -49,13 +57,14 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     const picker = readSrc('src/canvas-ribbon/CanvasDiagramTranslateLangPicker.vue')
     const chrome = readSrc('src/canvas-ribbon/mindMapStatusBar.css')
     expect(status).toContain('showCanvasAiFeatures')
-    expect(status).toContain('data-testid="mindmap-ribbon-llm-menu"')
-    expect(status).toContain('actions.llmMenu')
-    expect(status).toContain('mm-llm-menu__model')
-    expect(status).toContain('<CanvasLlmLogo')
-    expect(status).toContain('border-radius="9999px"')
-    expect(status).not.toContain('mm-llm-menu-btn__model')
-    expect(status).not.toContain('mm-llm-menu__tag')
+    expect(status).toContain('<CanvasLlmMenuDropdown')
+    const llmMenu = readSrc('src/canvas-ribbon/CanvasLlmMenuDropdown.vue')
+    expect(llmMenu).toContain('mindmap-ribbon-llm-menu')
+    expect(llmMenu).toContain('mm-llm-menu__model')
+    expect(llmMenu).toContain('<CanvasLlmLogo')
+    expect(llmMenu).toContain('border-radius="9999px"')
+    expect(llmMenu).not.toContain('mm-llm-menu-btn__model')
+    expect(llmMenu).not.toContain('mm-llm-menu__tag')
     expect(chrome).toContain('.mm-llm-menu-popper.el-popper')
     expect(chrome).toContain('border-radius: 9999px')
     expect(chrome).toContain('background: #e8f3ff')
@@ -67,22 +76,31 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(status).not.toContain('mm-llm-translate-btn')
     expect(picker).toContain('<LlmPhaseRing')
     expect(picker).toContain('is-translating')
+    expect(picker).toContain('placement="top-end"')
     expect(picker).toContain('mindgraph-lang-switcher-popper')
+    expect(picker).toContain('primary-only')
     expect(picker).toContain('getGalleryLanguageMenuRows')
     expect(picker).toContain('armAndStartTranslate')
     expect(picker).toContain('aiBlockedByCollab')
     const chromeActions = readSrc('src/canvas-ribbon/useMindMapRibbonChromeActions.ts')
-    expect(chromeActions).toContain('leaveTranslatePreview')
-    expect(chromeActions).toContain('switchToModel(model)')
+    expect(chromeActions).toContain('useCanvasLlmMenu')
+    const canvasLlmMenu = readSrc('src/composables/llm/useCanvasLlmMenu.ts')
+    expect(canvasLlmMenu).toContain('canvasMenuModelLabel')
+    expect(canvasLlmMenu).toContain('leaveTranslatePreview')
+    expect(canvasLlmMenu).toContain('selectCanvasLlmModel(model)')
+    const mobile = readSrc('src/pages/mobile/MobileCanvasPage.vue')
+    expect(mobile).toContain('test-id="mobile-canvas-llm-menu"')
+    expect(mobile).toContain('<CanvasLlmMenuDropdown')
+    expect(mobile).not.toContain('AIModelSelector')
+    expect(mobile).not.toContain('showModelDrawer')
     expect(chrome).toContain('.mm-status__translate-btn.is-translating')
     const toolbarApps = readSrc('src/composables/canvasToolbar/useCanvasToolbarApps.ts')
-    expect(toolbarApps).toContain('useMindMapV2.value')
-    expect(toolbarApps).toContain("appKey !== 'translate_diagram'")
-    expect(toolbarApps).toContain("appKey !== 'virtual_keyboard'")
-    expect(toolbarApps).toContain("guestBlock: 'ai'")
-    expect(toolbarApps).toContain("guestBlock: 'feature'")
-    expect(toolbarApps).toContain('showCanvasAiFeatures')
-    expect(toolbarApps).toContain("a.appKey !== 'learning_sheet'")
+    expect(toolbarApps).not.toContain('moreApps')
+    expect(toolbarApps).not.toContain('handleMoreAppItem')
+    const page = readSrc('src/pages/CanvasPage.vue')
+    expect(page).not.toContain('CanvasBottomAiCluster')
+    expect(page).not.toContain('bottom-bar-cluster')
+    expect(page).toContain('<MindMapStatusBar')
   })
 
   it('puts zoom on the status bar', () => {

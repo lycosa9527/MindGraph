@@ -9,16 +9,22 @@ import { ElDialog } from 'element-plus'
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import MindClassroomLaunchContent from '@/components/canvas/MindClassroomLaunchContent.vue'
 import '@/components/canvas/aiGenerateGlass.css'
+import {
+  MM_ABOVE_NODE_CHROME_CLASS,
+  bindCanvasCoveringOverlay,
+} from '@/components/common/swissGlassStack'
 import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useMindClassroomStore } from '@/stores'
+import '@/styles/swissGlassControls.css'
 
 const { t } = useLanguage()
 const notify = useNotifications()
 const eventBus = useEventBus('MindClassroomLaunchDialog')
 const classroomStore = useMindClassroomStore()
 const { modalOpen, jobError } = storeToRefs(classroomStore)
+bindCanvasCoveringOverlay(() => modalOpen.value)
 
 function handleModalClose(): void {
   classroomStore.closeModal()
@@ -56,7 +62,13 @@ eventBus.on('classroom:queue_result', (result) => {
     append-to-body
     destroy-on-close
     :show-close="false"
-    class="mc-classroom-dialog mm-canvas-upper-dialog ai-gen-shell ai-gen-shell--classroom"
+    :class="[
+      'mc-classroom-dialog',
+      'mm-canvas-upper-dialog',
+      'ai-gen-shell',
+      'ai-gen-shell--classroom',
+      MM_ABOVE_NODE_CHROME_CLASS,
+    ]"
     @close="handleModalClose"
   >
     <template #header>

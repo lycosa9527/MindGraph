@@ -25,12 +25,12 @@ from typing import Any, Dict, List
 
 from clients.llm import (
     DeepSeekClient,
-    HunyuanClient,
     KimiClient,
     QwenClient,
     VolcengineClient,
 )
 from clients.omni_client import OmniClient
+from config.settings import config
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ class ClientManager:
                 )
                 self._clients["qwen3.8-flash"] = QwenClient(
                     "classification",
-                    pinned_dashscope_model="qwen3.8-flash",
+                    pinned_dashscope_model=config.QWEN_FLASH_MODEL,
                 )
                 self._clients["qwen3.7-plus"] = QwenClient(
                     "generation",
@@ -87,25 +87,23 @@ class ClientManager:
                 )
                 self._clients["qwen3-max"] = QwenClient(
                     "generation",
-                    pinned_dashscope_model="qwen3-max",
+                    pinned_dashscope_model=config.QWEN_MAX_MODEL,
                 )
 
                 # Initialize other LLM clients
                 self._clients["deepseek"] = DeepSeekClient()
                 self._clients["express"] = DeepSeekClient(model_id="express")
-                # Note: KimiClient (Dashscope) is initialized but NEVER USED
-                # Load balancer always routes 'kimi' → 'ark-kimi' (Volcengine)
-                # Kimi stays on Volcengine. DashScope Moonshot-Kimi-K2-Instruct is 500 RPM.
-                self._clients["kimi"] = KimiClient()  # Dashscope client (not used, kept for backward compatibility)
-                self._clients["hunyuan"] = HunyuanClient()
+                # DashScope Kimi is used only when load balancing is off.
+                # With the balancer on, logical kimi is ark-kimi (Volcengine GLM Flash).
+                self._clients["kimi"] = KimiClient()
 
                 # Initialize Volcengine ARK clients (using endpoints for higher RPM)
                 # Note: ark-qwen is NOT registered - Qwen always routes to Dashscope
                 # Only DeepSeek is load-balanced (Route A: Dashscope, Route B: Volcengine)
-                # Kimi ALWAYS uses the Volcengine endpoint. DashScope Kimi is 500 RPM / 1,000,000 TPM.
-                # Doubao always uses Volcengine endpoint
+                # Canvas GLM Flash keeps the kimi route id so saved diagrams still resolve.
+                # Doubao 1.5 uses the Volcengine endpoint. Canvas Doubao uses DOUBAO_MODEL.
                 self._clients["ark-deepseek"] = VolcengineClient("ark-deepseek")
-                self._clients["ark-kimi"] = VolcengineClient("ark-kimi")  # PRIMARY route for Kimi
+                self._clients["ark-kimi"] = VolcengineClient("ark-kimi")
                 self._clients["ark-doubao"] = VolcengineClient("ark-doubao")
                 # Map logical 'doubao' to 'ark-doubao' for consistency
                 self._clients["doubao"] = self._clients["ark-doubao"]
@@ -117,13 +115,6 @@ class ClientManager:
                 # Initialize Qwen Omni client (for Kitty Agent)
                 self._clients["omni"] = OmniClient()
                 logger.debug("[ClientManager] Omni client initialized")
-
-                # Optional: ChatGLM (if configured)
-                # NOTE: CHATGLM_API_KEY is NOT currently in config/settings.py
-                # If you need ChatGLM support, add the property to config first
-                # For now, we skip ChatGLM initialization
-                # if hasattr(config, 'CHATGLM_API_KEY') and config.CHATGLM_API_KEY:
-                #     self._clients['chatglm'] = ChatGLMClient()
 
                 self._initialized = True
                 logger.debug("[ClientManager] Initialized %s LLM clients", len(self._clients))
@@ -137,7 +128,7 @@ class ClientManager:
         Get LLM client instance by model name.
 
         Args:
-            model: Model name ('qwen', 'deepseek', 'kimi', 'hunyuan', 'doubao', 'chatglm')
+            model: Model name ('qwen', 'deepseek', 'kimi', 'doubao')
 
         Returns:
             Appropriate client instance

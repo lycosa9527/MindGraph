@@ -953,7 +953,7 @@ def get_next_backup_time() -> datetime:
 
 
 async def _notify_scheduled_backup_failure(error_message: str) -> None:
-    """Send deduplicated SMS alert when scheduled backup fails."""
+    """Record a critical error when a scheduled backup fails."""
     try:
         await CriticalAlertService.send_runtime_error_alert(
             component="Backup",
@@ -964,7 +964,7 @@ async def _notify_scheduled_backup_failure(error_message: str) -> None:
             ),
         )
     except BACKGROUND_INFRA_ERRORS as exc:
-        logger.warning("[Backup] Failed to send backup failure alert: %s", exc)
+        logger.warning("[Backup] Failed to record backup failure: %s", exc)
 
 
 async def start_backup_scheduler():

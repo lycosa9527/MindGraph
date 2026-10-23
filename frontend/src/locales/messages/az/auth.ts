@@ -17,31 +17,23 @@ export default {
   'auth.voiceNotes.copied': 'Transkript kopyalandı',
   'auth.voiceNotes.empty': 'Yazmağa başladıqdan sonra transkript burada görünəcək.',
   'auth.voiceNotes.loginRequired': 'Səs qeydlərindən istifadə etməzdən əvvəl daxil olun.',
-  'auth.voiceNotes.bootstrapFailed':
-    'Səs qeydləri üçün zehni xəritəçəkmə sessiyasını açmaq mümkün deyil.',
+  'auth.voiceNotes.bootstrapFailed': 'Səs qeydləri üçün zehni xəritəçəkmə sessiyasını açmaq mümkün deyil.',
   'auth.voiceNotes.saveFailed': 'Səs qeydinin ağıl xəritəsini saxlamaq mümkün deyil.',
   'auth.voiceNotes.noDiagram': 'Ağıl xəritəsi hələ əlaqələndirilməyib.',
   'auth.voiceNotes.micUnavailable': 'Cari brauzer mikrofonu dəstəkləmir.',
   'auth.voiceNotes.micFailed': 'Mikrofona daxil olmaq mümkün deyil.',
-  'auth.voiceNotes.micConflict':
-    'Digər səs funksiyaları mikrofondan istifadə edir, lütfən, dayandırın və yenidən cəhd edin.',
-  'auth.voiceNotes.wsError':
-    'Səs qeydi bağlantısı uğursuz oldu, şəbəkə və giriş statusunu yoxlayın.',
+  'auth.voiceNotes.micConflict': 'Digər səs funksiyaları mikrofondan istifadə edir, lütfən, dayandırın və yenidən cəhd edin.',
+  'auth.voiceNotes.wsError': 'Səs qeydi bağlantısı uğursuz oldu, şəbəkə və giriş statusunu yoxlayın.',
   'auth.voiceNotes.genericError': 'Səs qeydi xətası',
   'auth.voiceNotes.ingestFailed': 'Transkripsiyanı sənəd xülasəsində saxlamaq mümkün deyil.',
-  'auth.voiceNotes.maxDuration':
-    'Səs qeydi 60 dəqiqəlik limitə çatdı və avtomatik olaraq dayandırıldı.',
-  'auth.voiceNotes.silenceAutoStop':
-    'Ardıcıl 2 dəqiqə səs çıxmadı və səs qeydi avtomatik olaraq dayandı.',
+  'auth.voiceNotes.maxDuration': 'Səs qeydi 60 dəqiqəlik limitə çatdı və avtomatik olaraq dayandırıldı.',
+  'auth.voiceNotes.silenceAutoStop': 'Ardıcıl 2 dəqiqə səs çıxmadı və səs qeydi avtomatik olaraq dayandı.',
   'auth.voiceNotes.startedTimeout': 'Səs xidməti vaxtında başlaya bilmədi, yenidən cəhd edin.',
   'auth.voiceNotes.micLost': 'Mikrofonun əlaqəsi kəsilib və səs qeydləri dayandırılıb.',
-  'auth.voiceNotes.authFailed':
-    'Səs qeydinin autentifikasiyası uğursuz oldu, lütfən, yenidən daxil olun.',
+  'auth.voiceNotes.authFailed': 'Səs qeydinin autentifikasiyası uğursuz oldu, lütfən, yenidən daxil olun.',
   'auth.voiceNotes.wsClosed': 'Səs qeydi bağlantısı kəsilib və sessiya dayandırılıb.',
-  'auth.voiceNotes.budgetExceeded':
-    'Səs qeydləri mövcud deyil: gündəlik AI kvotasına çatıldı və ya düşünən sikkələr kifayət deyil.',
-  'auth.voiceNotes.sessionBusy':
-    'Artıq səsli qeyd sessiyası davam edir, lütfən, onu dayandırın və yenidən cəhd edin.',
+  'auth.voiceNotes.budgetExceeded': 'Səs qeydləri mövcud deyil: gündəlik AI kvotasına çatıldı və ya düşünən sikkələr kifayət deyil.',
+  'auth.voiceNotes.sessionBusy': 'Artıq səsli qeyd sessiyası davam edir, lütfən, onu dayandırın və yenidən cəhd edin.',
   'auth.voiceNotes.recording': 'Səsyazma',
   'auth.voiceNotes.paused': 'dayandırılıb',
   'auth.voiceNotes.idle': 'hazır',
@@ -49,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'Başlanır',
   'auth.voiceNotes.stopping': 'Dayanmaq',
   'auth.voiceNotes.ingesting': 'Saxlanılır',
-  'auth.voiceNotes.emptyTranscript':
-    'Heç bir səs tanınmadı, zəhmət olmasa dayanmadan bir neçə söz deyin.',
+  'auth.voiceNotes.emptyTranscript': 'Heç bir səs tanınmadı, zəhmət olmasa dayanmadan bir neçə söz deyin.',
   'auth.voiceNotes.generating': 'Ağıl xəritəsinin yaradılması',
-  'auth.voiceNotes.sheetHint':
-    'Dayandırdıqdan sonra transkripsiyanı yadda saxlayın. Hazır olduğunuzda Zehni Xəritə Yarat klikləyin.',
+  'auth.voiceNotes.sheetHint': 'Dayandırdıqdan sonra transkripsiyanı yadda saxlayın. Hazır olduğunuzda Zehni Xəritə Yarat klikləyin.',
   'auth.voiceNotes.status.waiting': 'Başlamaq gözlənilir',
   'auth.voiceNotes.status.connectingAsr': 'Nitqin tanınmasına qoşulma',
   'auth.voiceNotes.status.recording': 'Yazma · Səsin tanınması',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'Səsyazma · Nitqin tanınması · Dinamiklərin fərqləndirilməsi',
+  'auth.voiceNotes.status.recordingAndSeparating': 'Səsyazma · Nitqin tanınması · Dinamiklərin fərqləndirilməsi',
   'auth.voiceNotes.status.paused': 'dayandırılıb',
   'auth.voiceNotes.status.stopping': 'Dayanmaq',
   'auth.voiceNotes.status.savingTranscript': 'Transkripsiya yadda saxlanılır',
@@ -71,15 +60,11 @@ export default {
   'auth.voiceNotes.savedAt': 'Transkripsiya {time} tarixində yadda saxlanıldı',
   'auth.voiceNotes.unsavedChanges': 'Transkripsiya yadda saxlanmadı',
   'auth.voiceNotes.closeWhileRecordingTitle': 'Səsyazma',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'Pəncərənin bağlanması qeydi dayandırmayacaq. Transkripsiyalar avtomatik olaraq hər 30 saniyədən bir cari xəritədə saxlanılır. Pəncərəni gizlətmək istədiyinizə əminsiniz?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'Pəncərənin bağlanması qeydi dayandırmayacaq. Transkripsiyalar avtomatik olaraq hər 30 saniyədən bir cari xəritədə saxlanılır. Pəncərəni gizlətmək istədiyinizə əminsiniz?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'Pəncərəni gizlət',
-  'auth.voiceNotes.recordingContinues':
-    'Qeydiyyat hələ də davam edir və siz istənilən vaxt qeyd xülasəsini yenidən aça bilərsiniz.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'Zəhmət olmasa əvvəlcə cari ağıl xəritəsini yadda saxlayın və sonra ümumiləşdirmək üçün qeyddən istifadə edin.',
-  'auth.voiceNotes.restoreFailed':
-    'Audio yazının yadda saxlanmış transkripsiyasını yükləmək mümkün deyil.',
+  'auth.voiceNotes.recordingContinues': 'Qeydiyyat hələ də davam edir və siz istənilən vaxt qeyd xülasəsini yenidən aça bilərsiniz.',
+  'auth.voiceNotes.noCurrentDiagram': 'Zəhmət olmasa əvvəlcə cari ağıl xəritəsini yadda saxlayın və sonra ümumiləşdirmək üçün qeyddən istifadə edin.',
+  'auth.voiceNotes.restoreFailed': 'Audio yazının yadda saxlanmış transkripsiyasını yükləmək mümkün deyil.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'Tarixi səs qeydləri',
   'auth.voiceNotes.historyEmpty': 'Hələ səs qeydləri yoxdur',
@@ -88,32 +73,22 @@ export default {
   'auth.voiceNotes.mergeTalker': 'daxil birləşin',
   'auth.voiceNotes.mergeTalkerInto': '{name} daxil edin',
   'auth.voiceNotes.resetTalker': 'Varsayılanı bərpa edin',
-  'auth.voiceNotes.tencentAuth':
-    'Səsin tanınması identifikasiyası uğursuz oldu, lütfən, Tencent Bulud düyməsini yoxlayın.',
-  'auth.voiceNotes.tencentService':
-    'Tencent Cloud nitq tanınması aktivləşdirilməyib. Zəhmət olmasa xidməti konsolda aktivləşdirin.',
-  'auth.voiceNotes.tencentQuota':
-    'Tencent Cloud nitqin tanınması resurs paketi tükənib. Aktivləşdirmədən sonra resurs paketini ödəyin və ya satın alın.',
-  'auth.voiceNotes.tencentArrears':
-    'Tencent Cloud hesabı gecikib və səsin tanınması deaktiv edilib.',
-  'auth.voiceNotes.tencentConcurrency':
-    'Nitqin tanınması paralelliyi doludur, sonra yenidən cəhd edin.',
+  'auth.voiceNotes.tencentAuth': 'Səsin tanınması identifikasiyası uğursuz oldu, lütfən, Tencent Bulud düyməsini yoxlayın.',
+  'auth.voiceNotes.tencentService': 'Tencent Cloud nitq tanınması aktivləşdirilməyib. Zəhmət olmasa xidməti konsolda aktivləşdirin.',
+  'auth.voiceNotes.tencentQuota': 'Tencent Cloud nitqin tanınması resurs paketi tükənib. Aktivləşdirmədən sonra resurs paketini ödəyin və ya satın alın.',
+  'auth.voiceNotes.tencentArrears': 'Tencent Cloud hesabı gecikib və səsin tanınması deaktiv edilib.',
+  'auth.voiceNotes.tencentConcurrency': 'Nitqin tanınması paralelliyi doludur, sonra yenidən cəhd edin.',
   'auth.voiceNotes.tencentAudio': 'Audio tanınmır, yenidən cəhd edin.',
-  'auth.voiceNotes.tencentSendRate':
-    'Audio çox sürətli göndərilir, lütfən, real vaxt rejimində yazmağa davam edin.',
+  'auth.voiceNotes.tencentSendRate': 'Audio çox sürətli göndərilir, lütfən, real vaxt rejimində yazmağa davam edin.',
   'auth.voiceNotes.tencentIdle': 'Qeydiyyat çox uzun müddətdir kəsilib və səsin tanınması kəsilib.',
   'auth.voiceNotes.tencentRetry': 'Nitqin tanınması müvəqqəti uğursuz oldu, yenidən cəhd edin.',
-  'auth.voiceNotes.tencentRegion':
-    'Cari şəbəkə Tencent Cloud-un yerli saytının xidmət dairəsinə daxil deyil.',
+  'auth.voiceNotes.tencentRegion': 'Cari şəbəkə Tencent Cloud-un yerli saytının xidmət dairəsinə daxil deyil.',
   'auth.voiceNotes.tencentParam': 'Nitqin tanınması parametrləri etibarsızdır.',
-  'auth.voiceNotes.tencentAppid':
-    'Tencent Cloud AppID yanlışdır, lütfən, TENCENT_ASR_APP_ID-ni yoxlayın.',
-  'auth.voiceNotes.rateLimited':
-    'Nitqin tanınması sorğuları çox tez-tez olur, lütfən, sonra yenidən cəhd edin.',
+  'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID yanlışdır, lütfən, TENCENT_ASR_APP_ID-ni yoxlayın.',
+  'auth.voiceNotes.rateLimited': 'Nitqin tanınması sorğuları çox tez-tez olur, lütfən, sonra yenidən cəhd edin.',
   'auth.voiceNotes.messageTooLarge': 'Audio paket çox böyükdür, yenidən cəhd edin.',
   'auth.voiceNotes.invalidMessage': 'Səsli qeyd mesajı yanlışdır, yenidən cəhd edin.',
-  'auth.voiceNotes.asrUnavailable':
-    'Nitqin tanınması müvəqqəti olaraq əlçatan deyil, daha sonra yenidən cəhd edin.',
+  'auth.voiceNotes.asrUnavailable': 'Nitqin tanınması müvəqqəti olaraq əlçatan deyil, daha sonra yenidən cəhd edin.',
   'auth.updateLog': 'Buraxılış qeydləri',
   'auth.updateLogModalTitle': 'Buraxılış qeydləri',
   'auth.updateLogMaintainerNote': 'Bəli — bu platformanı Roy aktiv şəkildə saxlayır ✨',
@@ -125,27 +100,20 @@ export default {
   'privacy.backToSignIn': 'Girişə qayıt',
   'auth.downloadDesktopShortcut': 'Masaüstünə əlavə et',
   'auth.platformQuickGuide': 'Sürətli bələdçi',
-  'auth.pwaIosInstallHint':
-    'Safari, Chrome və ya Edge-də Paylaş düyməsinə toxunun, sonra “Ana ekrana əlavə et” seçin.',
-  'auth.pwaAndroidInstallHint':
-    'Brauzer menyusunu (⋮) açın və Tətbiqi quraşdır və ya Ana ekrana əlavə et seçin.',
-  'auth.pwaSafariMacInstallHint':
-    'Safari-də Fayl → Dock-a əlavə et və ya Paylaş → Dock-a əlavə et (macOS Sonoma və ya daha yeni).',
-  'auth.pwaDesktopInstallHint':
-    'Brauzer menyusundan (⋮) və ya ünvan sətirindəki quraşdırma ikonundan istifadə edin (Chrome, Edge və ya Brave).',
+  'auth.pwaIosInstallHint': 'Safari, Chrome və ya Edge-də Paylaş düyməsinə toxunun, sonra “Ana ekrana əlavə et” seçin.',
+  'auth.pwaAndroidInstallHint': 'Brauzer menyusunu (⋮) açın və Tətbiqi quraşdır və ya Ana ekrana əlavə et seçin.',
+  'auth.pwaSafariMacInstallHint': 'Safari-də Fayl → Dock-a əlavə et və ya Paylaş → Dock-a əlavə et (macOS Sonoma və ya daha yeni).',
+  'auth.pwaDesktopInstallHint': 'Brauzer menyusundan (⋮) və ya ünvan sətirindəki quraşdırma ikonundan istifadə edin (Chrome, Edge və ya Brave).',
   'auth.pwaInstallSuccess': 'MindGraph masaüstünüzə əlavə edildi.',
-  'auth.pwaDevInstallHint':
-    'Adi dev rejimində PWA quraşdırması sönülüdür. Production build (npm run build + backend) və ya npm run dev:pwa istifadə edin, sonra Chrome/Edge ilə HTTPS və ya localhost-da açın.',
-  'auth.pwaInsecureOriginHint':
-    'Masaüstünə quraşdırmadan əvvəl MindGraph-ı brauzerdə HTTPS ünvanında açın (saxlanmış HTML faylı deyil).',
+  'auth.pwaDevInstallHint': 'Adi dev rejimində PWA quraşdırması sönülüdür. Production build (npm run build + backend) və ya npm run dev:pwa istifadə edin, sonra Chrome/Edge ilə HTTPS və ya localhost-da açın.',
+  'auth.pwaInsecureOriginHint': 'Masaüstünə quraşdırmadan əvvəl MindGraph-ı brauzerdə HTTPS ünvanında açın (saxlanmış HTML faylı deyil).',
   'auth.backToLogin': 'Girişə qayıt',
   'auth.captcha': 'Doğrulama kodu',
   'auth.captchaLength4': '4 simvollu captcha daxil edin',
   'auth.captchaLoadFailed': 'Captcha yüklənmədi',
   'auth.captchaNetworkError': 'Şəbəkə xətası, captcha yüklənmədi',
   'auth.tsecFailed': 'Doğrulama alınmadı, yenidən cəhd edin',
-  'auth.tsecUnavailable':
-    'İnsan-kompüter autentifikasiyası konfiqurasiya edilməyib, lütfən, sonra yenidən cəhd edin.',
+  'auth.tsecUnavailable': 'İnsan-kompüter autentifikasiyası konfiqurasiya edilməyib, lütfən, sonra yenidən cəhd edin.',
   'auth.changePassword': 'Şifrəni dəyiş',
   'auth.accountPlugin': 'plug-in',
   'auth.apiTokenButton': 'API işarəsi',
@@ -165,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'Kopyalandı',
   'auth.apiTokenCopyFailed': 'Kopyalama alınmadı',
   'auth.apiTokenLoading': 'yüklənir...',
-  'auth.apiTokenNone':
-    'Token hələ yaradılmayıb. Bacarıq paketini endirin və ya yaratmaq üçün API nişanına klikləyin.',
+  'auth.apiTokenNone': 'Token hələ yaradılmayıb. Bacarıq paketini endirin və ya yaratmaq üçün API nişanına klikləyin.',
   'auth.apiTokenOpaque': 'Cari işarəni əks etdirmək mümkün deyil, lütfən, onu bərpa edin.',
   'auth.apiTokenExpires': '{date} tarixinə qədər etibarlıdır',
   'auth.downloadChromeExtension': 'Chrome genişlənməsi',
   'auth.downloadWordAddin': 'Word əlavəsi',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'Bu funksiya Standart və ya Peşəkar məktəb səviyyəsi tələb edir (Əsas səviyyə istisna).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Məktəb abunəliyiniz bitib. Hesabınız indi sınaq səviyyəsindədir. Yeniləmək üçün platforma admininizlə əlaqə saxlayın.',
-  'auth.diagramLimitReached':
-    'Sınaq məktəblərində hər müəllim üçün ən çox {max} saxlanmış diaqram ola bilər. Yeni diaqram saxlamaq üçün birini silin.',
+  'auth.schoolTierFeatureUnavailable': 'Bu funksiya Standart və ya Peşəkar məktəb səviyyəsi tələb edir (Əsas səviyyə istisna).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Məktəb abunəliyiniz bitib. Hesabınız indi sınaq səviyyəsindədir. Yeniləmək üçün platforma admininizlə əlaqə saxlayın.',
+  'auth.diagramLimitReached': 'Sınaq məktəblərində hər müəllim üçün ən çox {max} saxlanmış diaqram ola bilər. Yeni diaqram saxlamaq üçün birini silin.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
-  'auth.downloadOpenclawSkillHint':
-    'Yükləməyə hesab nömrəsi və cari nişan daxildir. Tokeni bərpa etdikdən sonra köhnə bacarıq paketləri və genişləndirmələr etibarsız olacaq.',
+  'auth.downloadOpenclawSkillHint': 'Yükləməyə hesab nömrəsi və cari nişan daxildir. Tokeni bərpa etdikdən sonra köhnə bacarıq paketləri və genişləndirmələr etibarsız olacaq.',
   'auth.changePhoneButton': 'Telefonu dəyiş',
   'auth.passwordChangeSuccess': 'Şifrə uğurla dəyişdirildi',
   'auth.passwordChangeFailed': 'Şifrə dəyişdirilmədi',
@@ -231,8 +194,7 @@ export default {
   'auth.modal.passwordMismatch': 'Şifrələr uyğun gəlmir',
   'auth.modal.passwordPlaceholder': 'Şifrəni daxil edin',
   'auth.modal.phone11Digits': 'Düzgün 11 rəqəmli telefon nömrəsi daxil edin',
-  'auth.modal.enterPhoneOrEmail':
-    'Qeydiyyatlı telefon nömrənizi və ya hesab e-poçtunuzu daxil edin',
+  'auth.modal.enterPhoneOrEmail': 'Qeydiyyatlı telefon nömrənizi və ya hesab e-poçtunuzu daxil edin',
   'auth.modal.phonePlaceholder11': '11 rəqəmli mobil nömrə',
   'auth.modal.phoneRegisteredPlaceholder': 'Qeydiyyatlı telefon nömrəsi',
   'auth.modal.forgotPhoneOrEmailPlaceholder': 'Qeydiyyatlı telefon və ya hesab e-poçtu',
@@ -259,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -298,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -311,8 +272,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'Təhsil e-poçtu',
   'auth.modal.hybridRegisterEmailTabAny': 'E-poçt',
   'auth.modal.hybridRegisterPhoneTab': 'Telefon + dəvət kodu',
-  'auth.modal.mainlandSalesNotice':
-    'Çinin materik hissəsində giriş lazımdır? Mobil nömrə və dəvət kodundan istifadə edin və ya müştəri dəstəyi ilə əlaqə saxlayın.',
+  'auth.modal.mainlandSalesNotice': 'Çinin materik hissəsində giriş lazımdır? Mobil nömrə və dəvət kodundan istifadə edin və ya müştəri dəstəyi ilə əlaqə saxlayın.',
   'auth.modal.registrationEmailLabel': 'Yalnız təhsil e-poçtu',
   'auth.modal.registrationEmailLabelAny': 'E-poçt ünvanı',
   'auth.modal.registrationEmailHint': '',
@@ -325,11 +285,9 @@ export default {
   'auth.modal.sendEmailCode': 'E-poçt kodu göndər',
   'auth.modal.sendingEmailCode': 'Göndərilir...',
   'auth.modal.emailCodePlaceholder': 'E-poçtdakı 6 rəqəmli kod',
-  'auth.modal.acknowledgeOverseas':
-    'Başa düşürəm və proqramı yalnız təhsil məqsədləri üçün istifadə edəcəyəm.',
+  'auth.modal.acknowledgeOverseas': 'Başa düşürəm və proqramı yalnız təhsil məqsədləri üçün istifadə edəcəyəm.',
   'auth.modal.acknowledgeOverseasAny': 'Başa düşürəm və xarici qeydiyyat şərtləri ilə razıyam.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Başa düşürəm və xarici qeydiyyat şərtləri ilə razıyam; bu yolda Sadələşdirilmiş Çin dili əlçatan deyil.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Başa düşürəm və xarici qeydiyyat şərtləri ilə razıyam; bu yolda Sadələşdirilmiş Çin dili əlçatan deyil.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Yuxarıdakı bildirişi təsdiq edin.',
   'auth.loginPhoneOrEmail': 'Telefon və ya e-poçt',
@@ -350,17 +308,13 @@ export default {
   'auth.username': 'İstifadəçi adı',
   'auth.waitCaptchaLoad': 'Captcha-nın yüklənməsini gözləyin',
   'auth.quickRegPageTitle': 'Sürətli qeydiyyat',
-  'auth.quickRegPageHint':
-    'Bu səhifəni məktəbinizin paylaşdığı linkdən açın. Telefonunuzu və fasilitatorun sürətli qeydiyyat pəncərəsindəki 6 rəqəmli otaq kodunu daxil edin (təxminən hər 30 saniyədə yenilənir). Kod sessiyada olduğunuzu göstərir; SMS kodu kimi telefon sahibliyini təsdiq etmir.',
-  'auth.quickRegLinkInvalid':
-    'Bu qeydiyyat linki aktiv deyil (müddəti bitib və ya bağlanıb). Fasilitatordan cari linki yenidən açın.',
-  'auth.quickRegProbeRateLimited':
-    'Bu səhifədən çox yoxlama edilib. Bir az gözləyib yeniləyin və ya sonra yenidən cəhd edin.',
+  'auth.quickRegPageHint': 'Bu səhifəni məktəbinizin paylaşdığı linkdən açın. Telefonunuzu və fasilitatorun sürətli qeydiyyat pəncərəsindəki 6 rəqəmli otaq kodunu daxil edin (təxminən hər 30 saniyədə yenilənir). Kod sessiyada olduğunuzu göstərir; SMS kodu kimi telefon sahibliyini təsdiq etmir.',
+  'auth.quickRegLinkInvalid': 'Bu qeydiyyat linki aktiv deyil (müddəti bitib və ya bağlanıb). Fasilitatordan cari linki yenidən açın.',
+  'auth.quickRegProbeRateLimited': 'Bu səhifədən çox yoxlama edilib. Bir az gözləyib yeniləyin və ya sonra yenidən cəhd edin.',
   'auth.quickRegSessionSignups': 'Bu sessiyada qeydiyyat: {n}',
   'auth.quickRegRoomCodeLabel': 'Otaq kodu',
   'auth.quickRegRoomCodePlaceholder': '6 rəqəm',
-  'auth.quickRegRoomCodeHint':
-    'Fasilitatorun sürətli qeydiyyat dialoqundakı böyük rəqəmlərlə uyğunlaşdırın; kod dəyişməzdən əvvəl daxil edin.',
+  'auth.quickRegRoomCodeHint': 'Fasilitatorun sürətli qeydiyyat dialoqundakı böyük rəqəmlərlə uyğunlaşdırın; kod dəyişməzdən əvvəl daxil edin.',
   'auth.quickRegRoomCodeEnter6': '6 rəqəmli otaq kodunu daxil edin',
   'auth.quickRegMaxUses': 'Bu link üçün maks. qeydiyyat',
   'auth.quickRegHeadcount': 'Maks.',
@@ -370,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'Qeydiyyatı tamamla',
   'auth.quickRegSubmitting': 'Qeydiyyatdan keçirilir…',
   'auth.quickRegRegisterSuccess': 'Qeydiyyat uğurlu oldu',
-  'auth.quickRegSessionUnsure':
-    'Qeydiyyat uğurlu ola bilər. Daxil olmamısınızsa, geri qayıdıb doğrulama kodu ilə giriş edin və ya bu səhifəni yeniləyin.',
+  'auth.quickRegSessionUnsure': 'Qeydiyyat uğurlu ola bilər. Daxil olmamısınızsa, geri qayıdıb doğrulama kodu ilə giriş edin və ya bu səhifəni yeniləyin.',
   'auth.quickRegBackToSignIn': 'Standart giriş / qeydiyyatdan istifadə et',
   'auth.quickRegSelectOrg': 'Məktəb seçin',
   'auth.quickRegOrgLoadError': 'Məktəblər yüklənmədi. Yenidən cəhd edin.',
   'auth.quickRegMintError': 'Qeydiyyat kanalı açıla bilmədi. Yenidən cəhd edin.',
   'auth.quickRegCloseConfirmTitle': 'Tez qeydiyyat bitdi?',
-  'auth.quickRegCloseConfirm':
-    'Pəncərə bağlandıqdan sonra cari QR kodu və otaq kodu dərhal etibarsız olacaq və hələ qoşulmayan tələbələr qeydiyyata davam edə bilməyəcəklər.',
+  'auth.quickRegCloseConfirm': 'Pəncərə bağlandıqdan sonra cari QR kodu və otaq kodu dərhal etibarsız olacaq və hələ qoşulmayan tələbələr qeydiyyata davam edə bilməyəcəklər.',
   'auth.setPasswordWithSms': 'Giriş şifrəsi təyin et',
   'auth.setPasswordWithSmsTitle': 'SMS ilə şifrə təyin et',
-  'auth.setPasswordWithSmsHint':
-    'Bağlı telefonunuza kod göndəririk. Şifrə təyin etdikdən sonra şifrə və ya doğrulama kodu ilə daxil ola bilərsiniz.',
+  'auth.setPasswordWithSmsHint': 'Bağlı telefonunuza kod göndəririk. Şifrə təyin etdikdən sonra şifrə və ya doğrulama kodu ilə daxil ola bilərsiniz.',
   'auth.setPasswordWithSmsSubmit': 'Şifrəni saxla',
   'auth.setPasswordWithSmsSubmitting': 'Saxlanılır…',
   'auth.accountAvatar': 'Avatar',
@@ -397,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Görünən ad',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'Ən azı 2 simvol, rəqəm olmasın',
   'auth.accountNameSave': 'Adı saxla',
   'auth.accountNameSaveSuccess': 'Ad yeniləndi',
@@ -410,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Bağlantı açıla bilmədi. Yenidən cəhd edin.',
   'auth.dingtalkBindRebind': 'Yenidən bağla',
   'auth.dingtalkBindTitle': 'DingTalk hesabını bağla',
-  'auth.dingtalkBindInstructions':
-    'Aşağıda göstərilən 6 rəqəmli kodu (məsələn 123-456) məktəbinizin DingTalk MindBot-una mətn mesajı kimi göndərin.',
+  'auth.dingtalkBindInstructions': 'Aşağıda göstərilən 6 rəqəmli kodu (məsələn 123-456) məktəbinizin DingTalk MindBot-una mətn mesajı kimi göndərin.',
   'auth.dingtalkBindPairWaiting': 'MindBot kodunuzu qəbul edənədək gözlənilir…',
   'auth.dingtalkBindCodeHint': 'Yalnız bu kodu göndərin — əlavə mətn yazmayın.',
   'auth.dingtalkBindCountdown': 'Sessiya {s} s sonra bitir',
@@ -426,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Bağlanıb ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Hazırda bağlı: {staff}',
   'auth.dingtalkUnbindTitle': 'DingTalk hesabının bağlantısını aç',
-  'auth.dingtalkUnbindInstructions':
-    'Bağlantını təsdiqləmək üçün aşağıdakı kodu bağlı DingTalk hesabınızdan MindBot-a göndərin.',
+  'auth.dingtalkUnbindInstructions': 'Bağlantını təsdiqləmək üçün aşağıdakı kodu bağlı DingTalk hesabınızdan MindBot-a göndərin.',
   'auth.dingtalkUnbindPairWaiting': 'Bağlı DingTalk hesabınızın təsdiqi gözlənilir…',
   'auth.dingtalkUnbindCodeHint': 'Bu kodu yalnız bağlı DingTalk hesabınızdan göndərin.',
   'auth.dingtalkUnbindExpiredHint': 'Bağlantını açma sessiyası bitib. Yenidən başlayın.',
@@ -440,26 +392,20 @@ export default {
   'auth.qrLoginInviteRequired': 'QR girişindən əvvəl məktəb dəvət kodunu daxil edin',
   'auth.qrLoginProvidersFailed': 'QR giriş parametrləri yüklənmədi. Yenidən cəhd edin.',
   'auth.qrLoginProviderDisabled': 'Bu giriş üsulu məktəbiniz üçün aktiv deyil',
-  'auth.qrLoginNotLinked':
-    'Hesab bağlı deyil — əvvəlcə şifrə ilə daxil olun və Hesab bağlama bölməsində bağlayın',
+  'auth.qrLoginNotLinked': 'Hesab bağlı deyil — əvvəlcə şifrə ilə daxil olun və Hesab bağlama bölməsində bağlayın',
   'auth.qrLoginExchangeFailed': 'QR girişi uğursuz oldu. Yenidən cəhd edin.',
   'auth.qrLoginInvalidState': 'QR sessiyası bitib. Bağlayıb yenidən skan edin.',
-  'auth.qrLoginInvalidCode':
-    'WeChat avtorizasiya kodunun müddəti bitib və ya istifadə edilib. Lütfən, QR kodunu bağlayın və kodu yenidən skan edin.',
-  'auth.qrLoginRateLimited':
-    'WeChat giriş zəngləri çox tez-tez olur, lütfən, sonra yenidən cəhd edin.',
-  'auth.qrLoginMisconfigured':
-    'WeChat giriş konfiqurasiyası yanlışdır, inzibatçı ilə əlaqə saxlayın.',
+  'auth.qrLoginInvalidCode': 'WeChat avtorizasiya kodunun müddəti bitib və ya istifadə edilib. Lütfən, QR kodunu bağlayın və kodu yenidən skan edin.',
+  'auth.qrLoginRateLimited': 'WeChat giriş zəngləri çox tez-tez olur, lütfən, sonra yenidən cəhd edin.',
+  'auth.qrLoginMisconfigured': 'WeChat giriş konfiqurasiyası yanlışdır, inzibatçı ilə əlaqə saxlayın.',
   'auth.qrLoginCorpMismatch': 'DingTalk təşkilatı məktəb parametrlərinizlə uyğun gəlmir.',
   'auth.oauthExternalTaken': 'Bu hesab artıq başqa istifadəçiyə bağlıdır.',
-  'auth.oauthAlreadyBound':
-    'Bu hesab WeChat-a bağlanıb. Başqa WeChat-ı bağlamağınız lazımdırsa, lütfən, əvvəlcə onu açın',
+  'auth.oauthAlreadyBound': 'Bu hesab WeChat-a bağlanıb. Başqa WeChat-ı bağlamağınız lazımdırsa, lütfən, əvvəlcə onu açın',
   'auth.qrLoginDisabled': 'QR girişi əlçatan deyil.',
   'auth.qrLoginStartFailed': 'QR girişi başlaya bilmədi. Yenidən cəhd edin.',
   'auth.qrLoginSuccess': 'Uğurla daxil oldunuz',
   'auth.accountBindingsSection': 'Hesab bağlama',
-  'auth.accountBindingsHint':
-    'MindBot DingTalk-a saxlayır; WeChat/DingTalk QR girişi üçündür (əvvəlcə burada bağlayın)',
+  'auth.accountBindingsHint': 'MindBot DingTalk-a saxlayır; WeChat/DingTalk QR girişi üçündür (əvvəlcə burada bağlayın)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',

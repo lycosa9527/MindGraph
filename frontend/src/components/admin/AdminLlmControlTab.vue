@@ -18,9 +18,12 @@ const FIELD_LABEL: Record<string, string> = {
   EXPRESS_MODEL: 'admin.llmControl.field.express',
   QWEN_MODEL_GENERATION: 'admin.llmControl.field.qwen',
   QWEN_MODEL_CLASSIFICATION: 'admin.llmControl.field.qwenClassify',
+  QWEN_FLASH_MODEL: 'admin.llmControl.field.qwenFlash',
+  QWEN_MAX_MODEL: 'admin.llmControl.field.qwenMax',
+  GLM_FLASH_MODEL: 'admin.llmControl.field.glmFlash',
+  DOUBAO_MODEL: 'admin.llmControl.field.doubaoModel',
   ARK_DEEPSEEK_ENDPOINT: 'admin.llmControl.field.arkDeepseek',
   ARK_DOUBAO_ENDPOINT: 'admin.llmControl.field.arkDoubao',
-  ARK_KIMI_ENDPOINT: 'admin.llmControl.field.arkKimi',
 }
 
 const ROUTE_LABEL: Record<string, string> = {

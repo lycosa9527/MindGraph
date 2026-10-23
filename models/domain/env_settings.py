@@ -130,32 +130,6 @@ class QwenAPISettings(BaseModel):
         return v
 
 
-class HunyuanAPISettings(BaseModel):
-    """Tencent Hunyuan API configuration"""
-
-    __category__ = "Tencent Hunyuan API"
-
-    HUNYUAN_API_KEY: Optional[str] = Field(default="", description="Hunyuan secret key (optional)")
-    HUNYUAN_SECRET_ID: Optional[str] = Field(default="", description="Hunyuan secret ID (optional)")
-    HUNYUAN_API_URL: str = Field(default="https://hunyuan.tencentcloudapi.com", description="Hunyuan API URL")
-    HUNYUAN_MODEL: str = Field(default="hunyuan-turbo", description="Hunyuan model name")
-    HUNYUAN_TEMPERATURE: float = Field(
-        default=1.0,
-        ge=0.0,
-        le=2.0,
-        description="Temperature (MUST be ≤ 2.0 for Hunyuan API)",
-    )
-    HUNYUAN_MAX_TOKENS: int = Field(default=2000, gt=0, description="Maximum tokens per request")
-
-    @field_validator("HUNYUAN_TEMPERATURE")
-    @classmethod
-    def validate_hunyuan_temperature(cls, v):
-        """Hunyuan API requires temperature ≤ 2.0"""
-        if v > 2.0:
-            raise ValueError(f"Hunyuan temperature must be ≤ 2.0, got {v}")
-        return v
-
-
 class DashscopeRateLimitSettings(BaseModel):
     """Dashscope platform rate limiting configuration"""
 
@@ -190,17 +164,6 @@ class FeatureFlagSettings(BaseModel):
     __category__ = "Feature Flags"
 
     FEATURE_MINDMATE: bool = Field(default=False, description="Enable MindMate AI Assistant button")
-    FEATURE_KITTY_AGENT: bool = Field(
-        default=False,
-        description="Enable Kitty Agent (Qwen Omni Realtime multimodal)",
-    )
-    FEATURE_COURSE: bool = Field(default=False, description="Enable Thinking Course (思维课程) feature")
-    FEATURE_MATE_LEARNING: bool = Field(
-        default=False,
-        description="Enable Mate Learning (迈特学习法) feature",
-    )
-    FEATURE_TEMPLATE: bool = Field(default=False, description="Enable Template Resources (模板资源) feature")
-    FEATURE_COMMUNITY: bool = Field(default=False, description="Enable Community Sharing (社区分享) feature")
     FEATURE_SHOWCASE: bool = Field(
         default=True,
         description="Enable Showcase (案例广场) moderated public case gallery",
@@ -209,7 +172,10 @@ class FeatureFlagSettings(BaseModel):
         default=True,
         description="Enable ZhiHui (智绘) text-to-image history (admin UI for now)",
     )
-    FEATURE_ASKONCE: bool = Field(default=True, description="Enable AskOnce (多应) multi-LLM chat feature")
+    FEATURE_MIND_CLASSROOM_SLIDE_DECK: bool = Field(
+        default=False,
+        description="Enable 思维讲堂 幻灯片讲解. Off: option stays visible but greyed out.",
+    )
     FEATURE_MARKETS: bool = Field(default=False, description="Enable Market (市场) catalog and Alipay checkout")
     FEATURE_MINDBOT: bool = Field(
         default=True,
@@ -233,10 +199,6 @@ class FeatureFlagSettings(BaseModel):
         default=False,
         description="Enable the MindMate 记录导出 admin subtab (view/export Dify conversation history)",
     )
-    FEATURE_MIND_CLASSROOM_SLIDE_DECK: bool = Field(
-        default=False,
-        description="Enable 思维讲堂 slide-lecture (幻灯片讲解) presentation mode",
-    )
     FEATURE_TRAINING: bool = Field(
         default=False,
         description="Enable org training follow (instructor pull of school teachers)",
@@ -256,15 +218,23 @@ class DifySettings(BaseModel):
 
     __category__ = "Dify AI Assistant"
 
-    DIFY_API_KEY: Optional[str] = Field(default="", description="Dify API key (optional)")
-    DIFY_API_URL: str = Field(default="https://api.dify.ai/v1", description="Dify API URL")
-    DIFY_TIMEOUT: int = Field(default=300, ge=5, le=600, description="Request timeout in seconds")
-    AI_ASSISTANT_NAME: str = Field(
-        default="MindMate AI",
-        min_length=1,
-        max_length=50,
-        description="AI assistant display name",
+    DIFY_API_KEY: Optional[str] = Field(
+        default="",
+        description="Dify main API key (school 主服务器). Optional.",
     )
+    DIFY_API_URL: str = Field(
+        default="",
+        description="Dify main API URL (school 主服务器). Set DIFY_API_URL in .env.",
+    )
+    DIFY_BACKUP_API_KEY: Optional[str] = Field(
+        default="",
+        description="Dify backup API key (school 备用服务器). Same workflow as main.",
+    )
+    DIFY_BACKUP_API_URL: str = Field(
+        default="",
+        description="Dify backup API URL (school 备用服务器). Set DIFY_BACKUP_API_URL in .env.",
+    )
+    DIFY_TIMEOUT: int = Field(default=300, ge=5, le=600, description="Request timeout in seconds")
 
 
 class DatabaseSettings(BaseModel):
@@ -422,7 +392,6 @@ class EnvSettingsSchema(BaseModel):
 
     app: AppSettings
     qwen: QwenAPISettings
-    hunyuan: HunyuanAPISettings
     dashscope: DashscopeRateLimitSettings
     graph: GraphSettings
     logging: LoggingSettings

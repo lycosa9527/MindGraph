@@ -67,6 +67,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         const maxPages = typeof msg.maxPages === "number" ? msg.maxPages : 120;
         const maxChars = typeof msg.maxChars === "number" ? msg.maxChars : 8000;
+        if (msg.classify && typeof globalThis.__MGDocExtractPdf.classifyPdfBuffer === "function") {
+          const classified = await globalThis.__MGDocExtractPdf.classifyPdfBuffer(
+            pdfBuffer,
+            maxPages,
+            maxChars,
+          );
+          sendResponse({
+            ok: true,
+            text: classified && typeof classified.text === "string" ? classified.text : "",
+            imageBased: Boolean(classified && classified.imageBased),
+            pageCount: classified && typeof classified.pageCount === "number" ? classified.pageCount : 0,
+          });
+          return;
+        }
         const text = await globalThis.__MGDocExtractPdf.extractTextFromPdfBuffer(
           pdfBuffer,
           maxPages,

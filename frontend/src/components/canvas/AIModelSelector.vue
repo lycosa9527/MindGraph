@@ -25,6 +25,7 @@ import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
 import { useConceptMapFocusReviewStore, useDiagramStore, useLLMResultsStore } from '@/stores'
+import { selectCanvasLlmModel } from '@/stores/llmMenuChoice'
 
 const props = withDefaults(
   defineProps<{
@@ -47,7 +48,7 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 const { canvasModels, displayNameForModel } = useOrgCustomLlm()
-const { switchToModel, cancelGeneration } = useAutoComplete()
+const { cancelGeneration } = useAutoComplete()
 const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
 const diagramStore = useDiagramStore()
 const llmResultsStore = useLLMResultsStore()
@@ -147,21 +148,19 @@ const _canSwitchTo = (modelKey: string) => {
 function handleModelClick(modelKey: string) {
   const state = getModelState(modelKey)
 
-  if (state === 'ready') {
-    switchToModel(modelKey)
+  if (state === 'loading') {
     return
   }
-
   if (state === 'idle') {
     if (!guardCollabGuestAi()) {
       return
     }
     if (isSelectedModel(modelKey)) {
       llmResultsStore.setSelectedModel(null)
-    } else {
-      llmResultsStore.setSelectedModel(modelKey)
+      return
     }
   }
+  void selectCanvasLlmModel(modelKey)
 }
 
 // Tooltip content based on state
@@ -209,7 +208,7 @@ function tooltipForModel(modelKey: string): string {
   return getTooltipContent(modelKey)
 }
 
-// Model-specific colors (shared with NodePalettePanel)
+// Model-specific colors (shared with DiagramBrainstormPanel)
 const modelColors = LLM_MODEL_COLORS
 
 // Button class based on state

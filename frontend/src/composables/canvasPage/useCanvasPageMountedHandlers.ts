@@ -5,7 +5,7 @@
  * CanvasPage's ``onMounted`` lifecycle:
  *   - snapshot:requested  → snapshot capture flow (guests skipped during collab)
  *   - node_editor:tab_pressed → concept-map focus and root-concept review
- *   - nodePalette:opened  → node palette session start
+ *   - diagramBrainstorm:opened  → AI brainstorm session start
  *
  * All listeners are registered under the ``'CanvasPage'`` owner so they are
  * torn down by ``eventBus.removeAllListenersForOwner('CanvasPage')`` in
@@ -26,10 +26,10 @@ import { getDiagramPersistBaseSpec } from '@/utils/diagramPersistBaseSpec'
 
 export function useCanvasPageMountedHandlers(options: {
   snapshotHistory: ReturnType<typeof useSnapshotHistory>
-  startNodePaletteSession: (opts: { keepSessionId: boolean }) => void
+  startDiagramBrainstormSession: (opts: { keepSessionId: boolean }) => void
   isDiagramOwner?: ComputedRef<boolean>
 }) {
-  const { snapshotHistory, startNodePaletteSession, isDiagramOwner } = options
+  const { snapshotHistory, startDiagramBrainstormSession, isDiagramOwner } = options
 
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
@@ -132,14 +132,14 @@ export function useCanvasPageMountedHandlers(options: {
       'CanvasPage'
     )
 
-    // ── nodePalette:opened ───────────────────────────────────────────────
+    // ── diagramBrainstorm:opened ───────────────────────────────────────────────
     eventBus.onWithOwner(
-      'nodePalette:opened',
+      'diagramBrainstorm:opened',
       (data: { hasRestoredSession?: boolean; wasPanelAlreadyOpen?: boolean }) => {
         if (diagramStore.type === 'concept_map') return
         if (!data.hasRestoredSession && diagramStore.data?.nodes?.length) {
           nextTick().then(() =>
-            startNodePaletteSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })
+            startDiagramBrainstormSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })
           )
         }
       },

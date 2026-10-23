@@ -119,11 +119,6 @@ def enforce_production_security_guards() -> None:
         if not device_secret:
             _fail("DEVICE_REGISTRATION_SECRET is required when FEATURE_SMART_RESPONSE=True")
 
-    gewe_secret = os.getenv("GEWE_WEBHOOK_SECRET", "").strip()
-    if os.getenv("FEATURE_GEWE", "False").strip().lower() in ("true", "1", "yes"):
-        if not gewe_secret:
-            _fail("GEWE_WEBHOOK_SECRET is required when FEATURE_GEWE=True")
-
     wechat_login_on = os.getenv("FEATURE_WECHAT_LOGIN", "False").strip().lower() in (
         "true",
         "1",

@@ -54,8 +54,7 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
   } = options
 
   const isSaving = ref(false)
-  const showNodePalette = ref(false)
-  const showModelDrawer = ref(false)
+  const showDiagramBrainstorm = ref(false)
   const { activeTool, closeActiveTool, handleToolSelect } = useMindMapSideToolbarState()
 
   async function handleSave(): Promise<void> {
@@ -127,36 +126,31 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
       notifyWarning(translate('notification.signInToUse'))
       return
     }
-    if (panelsStore.nodePalettePanel.isOpen) {
-      panelsStore.closeNodePalette()
-      showNodePalette.value = false
+    if (panelsStore.diagramBrainstormPanel.isOpen) {
+      panelsStore.closeDiagramBrainstorm()
+      showDiagramBrainstorm.value = false
     }
     handleToolSelect('waterfall')
   }
 
-  function toggleNodePalette(): void {
-    if (panelsStore.nodePalettePanel.isOpen) {
-      panelsStore.closeNodePalette()
-      showNodePalette.value = false
+  function toggleDiagramBrainstorm(): void {
+    if (panelsStore.diagramBrainstormPanel.isOpen) {
+      panelsStore.closeDiagramBrainstorm()
+      showDiagramBrainstorm.value = false
       return
     }
     closeBrainstormIfOpen()
-    panelsStore.openNodePalette()
-    showNodePalette.value = true
+    panelsStore.openDiagramBrainstorm()
+    showDiagramBrainstorm.value = true
   }
 
   function handleFitToScreen(): void {
     eventBus.emit('view:fit_to_window_requested', { animate: true, userInitiated: true })
   }
 
-  function handleZoomReset(): void {
-    eventBus.emit('view:zoom_reset_requested', {})
-  }
-
   return {
     isSaving,
-    showNodePalette,
-    showModelDrawer,
+    showDiagramBrainstorm,
     handleSave,
     handleAddNode,
     handleDeleteSelected,
@@ -164,9 +158,8 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     handleToolbarAI,
     toggleConceptMapAiToolbar,
     toggleAiBrainstorm,
-    toggleNodePalette,
+    toggleDiagramBrainstorm,
     closeActiveTool,
     handleFitToScreen,
-    handleZoomReset,
   }
 }

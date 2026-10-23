@@ -79,3 +79,10 @@
 .mindgraph-lang-switcher-popper .el-dropdown-menu__item:focus .mindgraph-lang-switcher__row {
   color: #1c1917;
 }
+
+/* Cap the Element Plus scrollbar. A max-height on the inner menu does not limit this wrap. */
+.mindgraph-lang-switcher-popper .el-scrollbar,
+.mindgraph-lang-switcher-popper .el-scrollbar__wrap {
+  height: auto;
+  max-height: min(420px, calc(100dvh - 96px));
+}

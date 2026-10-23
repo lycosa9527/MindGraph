@@ -259,7 +259,7 @@ function onConfirm(): void {
               <Globe2 :size="16" />
             </span>
             <span class="mm-member-dialog__fold-title">
-              {{ t('mindmate.home.brief.foldExternal') }}
+              <I18nText k="mindmate.home.brief.foldExternal" />
             </span>
             <ChevronDown
               class="mm-member-dialog__fold-chevron"
@@ -287,32 +287,32 @@ function onConfirm(): void {
                 :disabled="phoneLooking"
                 @click="searchByPhone"
               >
-                {{ t('mindmate.home.brief.phoneSearch') }}
+                <I18nText k="mindmate.home.brief.phoneSearch" />
               </button>
             </div>
             <p
               v-if="phoneLooking"
               class="mm-member-dialog__status"
             >
-              {{ t('common.loading') }}
+              <I18nText k="common.loading" />
             </p>
             <p
               v-else-if="phoneStatus === 'invalid'"
               class="mm-member-dialog__status is-warn"
             >
-              {{ t('mindmate.home.brief.phoneInvalid') }}
+              <I18nText k="mindmate.home.brief.phoneInvalid" />
             </p>
             <p
               v-else-if="phoneStatus === 'empty'"
               class="mm-member-dialog__status"
             >
-              {{ t('mindmate.home.brief.phoneEmpty') }}
+              <I18nText k="mindmate.home.brief.phoneEmpty" />
             </p>
             <p
               v-else-if="phoneStatus === 'error'"
               class="mm-member-dialog__status is-warn"
             >
-              {{ t('mindmate.home.brief.phoneError') }}
+              <I18nText k="mindmate.home.brief.phoneError" />
             </p>
             <div
               v-if="phoneHit"
@@ -330,7 +330,11 @@ function onConfirm(): void {
               <div class="mm-member-dialog__phone-meta">
                 <span class="mm-member-dialog__name">{{ phoneHit.name }}</span>
                 <span class="mm-member-dialog__sub">
-                  {{ phoneHit.orgName || t('mindmate.home.brief.phoneNoOrg') }}
+                  <template v-if="phoneHit.orgName">{{ phoneHit.orgName }}</template
+                  ><I18nText
+                    v-else
+                    k="mindmate.home.brief.phoneNoOrg"
+                  />
                   · {{ phoneHit.phoneMasked }}
                 </span>
               </div>
@@ -340,13 +344,13 @@ function onConfirm(): void {
                 class="mm-member-dialog__phone-add"
                 @click="addPhoneHit"
               >
-                {{ t('mindmate.home.brief.phoneAdd') }}
+                <I18nText k="mindmate.home.brief.phoneAdd" />
               </button>
               <span
                 v-else
                 class="mm-member-dialog__phone-added"
-                >{{ t('mindmate.home.brief.phoneAdded') }}</span
-              >
+                ><I18nText k="mindmate.home.brief.phoneAdded"
+              /></span>
             </div>
           </div>
         </div>
@@ -368,7 +372,7 @@ function onConfirm(): void {
               <School :size="16" />
             </span>
             <span class="mm-member-dialog__fold-title">
-              {{ t('mindmate.home.brief.foldSchool') }}
+              <I18nText k="mindmate.home.brief.foldSchool" />
             </span>
             <ChevronDown
               class="mm-member-dialog__fold-chevron"
@@ -437,11 +441,14 @@ function onConfirm(): void {
 
       <div class="mm-member-dialog__selected">
         <p class="mm-member-dialog__selected-label">
-          {{
-            selected.length
-              ? t('mindmate.home.brief.memberSelected', { count: selected.length })
-              : t('mindmate.home.brief.memberSelectedEmpty')
-          }}
+          <I18nText
+            v-if="selected.length"
+            k="mindmate.home.brief.memberSelected"
+            :params="{ count: selected.length }"
+          /><I18nText
+            v-else
+            k="mindmate.home.brief.memberSelectedEmpty"
+          />
         </p>
         <div
           v-if="selectedRows.length"

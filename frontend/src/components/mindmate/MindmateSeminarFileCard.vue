@@ -231,7 +231,7 @@ async function shelveFile(destination: 'resource' | 'artifact'): Promise<void> {
         class="mm-file-shot__enlarge"
         @click.stop="enlargeImage"
       >
-        {{ t('mindmate.fileCard.viewLarge') }}
+        <I18nText k="mindmate.fileCard.viewLarge" />
       </button>
     </div>
     <ImagePreviewModal

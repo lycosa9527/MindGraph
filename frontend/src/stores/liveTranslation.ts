@@ -1,6 +1,7 @@
 /**
- * Live translation subtitles (DashScope qwen3-livetranslate-flash-realtime).
- * Translation arrives as completed sentence blocks (response.text.done) — no interim streaming.
+ * Live translation subtitles (DashScope qwen3.8-livetranslate-flash-realtime).
+ * Text-only output streams as response.text.delta fragments, then commits on
+ * response.text.done or response.done.
  * Shares the same overlay component as live subtitles.
  */
 import { ref, shallowRef } from 'vue'
@@ -10,10 +11,13 @@ import { defineStore } from 'pinia'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { i18n } from '@/i18n'
 import { useUIStore } from '@/stores/ui'
+import { notifySimplifiedChineseUnsupported } from '@/utils/simplifiedChineseNotice'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 const TARGET_SAMPLE_RATE = 16000
 const SCRIPT_PROCESS_BUFFER_SIZE = 2048
+/** Keep the socket open long enough for session.finish to return the last line. */
+const STOP_CLOSE_MS = 3000
 
 /** Maximum committed lines kept in memory — oldest are dropped automatically. */
 const MAX_COMMITTED_LINES = 100
@@ -133,10 +137,11 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
   const committedLines = ref<string[]>([])
 
   /**
-   * Currently streaming sentence from response.text.text (confirmed text + stash).
-   * Cleared when response.text.done arrives and the line is committed.
+   * In-progress translation for the current response.
+   * qwen3.8 appends response.text.delta fragments; qwen3.5 replaces via response.text.text.
    */
   const interimText = ref<string>('')
+  let streamingText = ''
 
   const wsRef = shallowRef<WebSocket | null>(null)
   const audioContextRef = shallowRef<AudioContext | null>(null)
@@ -215,38 +220,59 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
     removeVisibilityListener = () => document.removeEventListener('visibilitychange', handler)
   }
 
+  function commitTranslationLine(line: string): void {
+    const trimmed = line.trim()
+    if (trimmed.length === 0) return
+    const next = [...committedLines.value, trimmed]
+    committedLines.value =
+      next.length > MAX_COMMITTED_LINES ? next.slice(-MAX_COMMITTED_LINES) : next
+  }
+
+  function clearStreamingText(): void {
+    streamingText = ''
+    interimText.value = ''
+  }
+
   function handleServerPayload(data: Record<string, unknown>): void {
     const typ = data.type as string
 
-    // Streaming delta — show text forming live (confirmed text + speculative stash)
-    if (typ === 'response.text.text') {
-      const confirmed = String(data.text ?? '')
-      const stash = String(data.stash ?? '')
-      interimText.value = (confirmed + stash).trimStart()
+    // qwen3.8 text-only: append fragments in arrival order.
+    if (typ === 'response.text.delta') {
+      streamingText += String(data.delta ?? '')
+      interimText.value = streamingText.trimStart()
       return
     }
 
-    // Sentence complete — commit to captions, clear interim
+    // qwen3.5 text-only: confirmed text plus speculative stash (replacement, not append).
+    if (typ === 'response.text.text') {
+      const confirmed = String(data.text ?? '')
+      const stash = String(data.stash ?? '')
+      streamingText = confirmed + stash
+      interimText.value = streamingText.trimStart()
+      return
+    }
+
+    // Sentence complete — commit the full text when present, otherwise the buffer.
     if (typ === 'response.text.done') {
-      const line = String(data.text ?? '').trim()
-      if (line.length > 0) {
-        const next = [...committedLines.value, line]
-        committedLines.value =
-          next.length > MAX_COMMITTED_LINES ? next.slice(-MAX_COMMITTED_LINES) : next
+      const line = String(data.text ?? streamingText)
+      commitTranslationLine(line)
+      clearStreamingText()
+      return
+    }
+
+    // qwen3.8 marks the response finished here. Commit only if text.done did not.
+    if (typ === 'response.done') {
+      if (streamingText.trim().length > 0) {
+        commitTranslationLine(streamingText)
       }
-      interimText.value = ''
+      clearStreamingText()
       return
     }
 
     // Audio+text mode fallback: transcript done
     if (typ === 'response.audio_transcript.done') {
-      const line = String(data.transcript ?? '').trim()
-      if (line.length > 0) {
-        const next = [...committedLines.value, line]
-        committedLines.value =
-          next.length > MAX_COMMITTED_LINES ? next.slice(-MAX_COMMITTED_LINES) : next
-      }
-      interimText.value = ''
+      commitTranslationLine(String(data.transcript ?? ''))
+      clearStreamingText()
       return
     }
 
@@ -347,11 +373,10 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
 
     connecting.value = true
     committedLines.value = []
-    interimText.value = ''
+    clearStreamingText()
 
     const sessionStamp = ++currentSessionStamp
     const sourceLang = mapPromptLanguageToSource(String(uiStore.promptLanguage))
-    const targetLang = targetLanguage.value
 
     const socket = new WebSocket(buildTranslateWebSocketUrl())
     wsRef.value = socket
@@ -364,7 +389,7 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
           JSON.stringify({
             type: 'start',
             source_language: sourceLang,
-            target_language: targetLang,
+            target_language: targetLanguage.value,
           })
         )
       } catch {
@@ -403,6 +428,7 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
       if (sessionStamp !== currentSessionStamp) return
       connecting.value = false
       enabled.value = false
+      clearStreamingText()
       unregisterVisibilityListener()
       stopMicrophoneGraph()
       wsRef.value = null
@@ -412,9 +438,24 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
   function disable(): void {
     enabled.value = false
     connecting.value = false
-    interimText.value = ''
     unregisterVisibilityListener()
     stopMicrophoneGraph()
+    const sock = wsRef.value
+    if (sock && sock.readyState === WebSocket.OPEN) {
+      try {
+        sock.send(JSON.stringify({ type: 'stop' }))
+      } catch {
+        /* ignore */
+      }
+      window.setTimeout(() => {
+        if (wsRef.value === sock) {
+          clearStreamingText()
+          closeSocket()
+        }
+      }, STOP_CLOSE_MS)
+      return
+    }
+    clearStreamingText()
     closeSocket()
   }
 
@@ -427,7 +468,19 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
   }
 
   function setTargetLanguage(lang: string): void {
+    if (!lang || lang === targetLanguage.value) return
+    if (lang === 'zh' && !useUIStore().languagePolicyAllowZh) {
+      notifySimplifiedChineseUnsupported(useUIStore().language)
+      return
+    }
     targetLanguage.value = lang
+    const sock = wsRef.value
+    if (!enabled.value || !sock || sock.readyState !== WebSocket.OPEN) return
+    try {
+      sock.send(JSON.stringify({ type: 'set_target', target_language: lang }))
+    } catch {
+      /* ignore */
+    }
   }
 
   return {

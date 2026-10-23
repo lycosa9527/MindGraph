@@ -26,8 +26,6 @@ import { isTreeMapLeafNode, readTreeCategoryIndex } from '@/utils/treeMapIdentit
 
 export const THINKING_MAP_LEAF_TEXT = '#334155'
 
-const LEGACY_ROLE_FONT_SIZES = new Set([12, 13, 20])
-
 const OLD_TEXT = new Set(['#333333', '#ffffff', '#303133', '#000000', '#606266'])
 
 const OLD_ROLE_PAIRS: ReadonlyArray<readonly [string, string]> = [
@@ -266,21 +264,28 @@ function textIsDefault(text: string | undefined, chromeText: string): boolean {
   return OLD_TEXT.has(text.trim().toLowerCase())
 }
 
-/** True when stored colors are empty or still an old/default stamp. */
-export function thinkingMapColorsAreDefault(
+/** True when fill and border are empty or still an old/default stamp. */
+export function thinkingMapFillAndBorderAreDefault(
   style: NodeStyle | undefined,
   chrome: ThinkingMapChrome
 ): boolean {
   const fill = style?.backgroundColor
   const border = style?.borderColor
-  const text = style?.textColor
-  if (!textIsDefault(text, chrome.textColor)) return false
   if (!fill && !border) return true
   if (isLegacyBranchStamp(fill, border) || isRainbowBranchStamp(fill, border)) return true
   if (isOldRolePair(fill, border)) return true
   return (
     sameColor(fill, chrome.backgroundColor) && (!border || sameColor(border, chrome.borderColor))
   )
+}
+
+/** True when stored colors are empty or still an old/default stamp. */
+export function thinkingMapColorsAreDefault(
+  style: NodeStyle | undefined,
+  chrome: ThinkingMapChrome
+): boolean {
+  if (!textIsDefault(style?.textColor, chrome.textColor)) return false
+  return thinkingMapFillAndBorderAreDefault(style, chrome)
 }
 
 /**
@@ -297,11 +302,11 @@ export function thinkingMapBorderWidth(
   return fallback
 }
 
-/** Replace old role sizes 12, 13, and 20. Any other stored size is kept. */
+/** Stored size wins, including 12, 13, and 20. Missing or invalid sizes use the role default. */
 export function thinkingMapDisplayedFontSize(stored: unknown, roleSize: number): number {
-  const parsed = typeof stored === 'number' ? stored : Number(stored)
+  const parsed =
+    typeof stored === 'number' ? stored : Number.parseFloat(String(stored ?? '').trim())
   if (!Number.isFinite(parsed) || parsed <= 0) return roleSize
-  if (LEGACY_ROLE_FONT_SIZES.has(parsed)) return roleSize
   return parsed
 }
 

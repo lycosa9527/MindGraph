@@ -1,6 +1,6 @@
 .mobile-canvas {
   overflow: hidden;
-  /* Layout header + toolbar chrome for node palette overlay */
+  /* Layout header + toolbar chrome for AI brainstorm overlay */
   --mg-mobile-palette-top: 4.75rem;
 }
 
@@ -103,11 +103,9 @@
   background: #4338ca;
 }
 
+/* Ring only. The primary fill stays so the white icon and label remain visible. */
 .toolbar-btn--generating {
   position: relative;
-  background: transparent !important;
-  box-shadow: none;
-  padding: 2px 8px !important;
 }
 
 .toolbar-btn--generating::before {
@@ -139,13 +137,14 @@
   );
 }
 
-.toolbar-btn--generating .ai-icon {
-  animation: ai-sparkle-pulse 1.2s ease-in-out infinite;
-}
-
+.toolbar-btn--generating .ai-icon,
 .toolbar-btn--generating .toolbar-label {
   position: relative;
   z-index: 1;
+}
+
+.toolbar-btn--generating .ai-icon {
+  animation: ai-sparkle-pulse 1.2s ease-in-out infinite;
 }
 
 .toolbar-btn--brainstorm {
@@ -221,7 +220,7 @@
   transform: translateY(100%);
 }
 
-.mobile-node-palette-overlay {
+.mobile-diagram-brainstorm-overlay {
   pointer-events: auto;
   touch-action: manipulation;
   isolation: isolate;
@@ -280,10 +279,6 @@
   padding-bottom: max(8px, env(safe-area-inset-bottom));
   z-index: 20;
   position: relative;
-}
-
-.bottom-btn:disabled {
-  pointer-events: none;
 }
 
 .rec-scroll-area {

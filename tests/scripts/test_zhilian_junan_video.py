@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PIL import Image
 
-from scripts.training_roles.wan_client import WAN3_VIDEO_PRIME, build_video_body
+from scripts.training_roles.wan_client import WAN3_VIDEO, build_video_body
 from scripts.zhilian_junan_video.activities import (
     ACTIVITY_FILENAMES,
     ACTIVITY_NEGATIVE,
@@ -138,7 +138,7 @@ def test_intro_catalog_is_spoken_qisi_lou() -> None:
     assert environment_source(scene_by_id("i3-together")) == "09c-junan-model.mp4"
     assert INTRO_DIR.name == "AI吉祥物-自我介绍"
     body = build_video_body(
-        WAN3_VIDEO_PRIME,
+        WAN3_VIDEO,
         prompt,
         negative=INTRO_NEGATIVE,
         media=[{"type": "reference_image", "url": "data:image/jpeg;base64,xx"}],
@@ -184,7 +184,7 @@ def test_speech_catalog_is_thirteen_silent_storyboard_plates() -> None:
     assert SPEECH_SOURCE.name == "纯演讲稿_v2.mp4"
     assert SPEECH_SCENES[1]["line"].startswith("我是北京师范大学")
     body = build_video_body(
-        WAN3_VIDEO_PRIME,
+        WAN3_VIDEO,
         prompt,
         negative=SPEECH_NEGATIVE,
         resolution=RESOLUTION,
@@ -194,7 +194,7 @@ def test_speech_catalog_is_thirteen_silent_storyboard_plates() -> None:
         prompt_extend=False,
         watermark=False,
     )
-    assert body["model"] == WAN3_VIDEO_PRIME
+    assert body["model"] == WAN3_VIDEO
     assert "media" not in body["input"]
     assert body["parameters"]["duration"] == SPEECH_SECONDS
     assert body["parameters"]["audio"] is False
@@ -254,7 +254,7 @@ def test_activity_catalog_visits_real_photos_with_the_dragon() -> None:
     assert activity_filename("p15") == "09-老师在学.mp4"
     assert "第一帧" in clip_prompt(scene_by_id("p02"))
     body = build_video_body(
-        WAN3_VIDEO_PRIME,
+        WAN3_VIDEO,
         prompt,
         negative=ACTIVITY_NEGATIVE,
         media=[{"type": "reference_image", "url": "data:image/jpeg;base64,xx"}],
@@ -306,7 +306,7 @@ def test_wan3_body_is_silent_t2v() -> None:
     """Empty shots stay text-to-video; dragon shots attach two reference stills."""
     scene = scene_by_id("03")
     body = build_video_body(
-        WAN3_VIDEO_PRIME,
+        WAN3_VIDEO,
         clip_prompt(scene),
         negative=NEGATIVE,
         resolution=RESOLUTION,
@@ -316,7 +316,7 @@ def test_wan3_body_is_silent_t2v() -> None:
         prompt_extend=False,
         watermark=False,
     )
-    assert body["model"] == WAN3_VIDEO_PRIME
+    assert body["model"] == WAN3_VIDEO
     assert "media" not in body["input"]
     assert body["input"]["negative_prompt"] == NEGATIVE
     assert body["parameters"]["duration"] == DEFAULT_SECONDS
@@ -325,7 +325,7 @@ def test_wan3_body_is_silent_t2v() -> None:
     assert body["parameters"]["watermark"] is False
     assert WORK_DIR.name == ".work"
     agent = build_video_body(
-        WAN3_VIDEO_PRIME,
+        WAN3_VIDEO,
         clip_prompt(scene_by_id("a1")),
         negative=AGENT_NEGATIVE,
         media=[{"type": "reference_image", "url": "data:image/jpeg;base64,xx"}],

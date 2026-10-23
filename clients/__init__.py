@@ -1,9 +1,8 @@
 """
-External API Clients Package
+External API clients.
 
-This package contains clients for external services:
-- Dify: AI conversation and streaming
-- LLM: Qwen, DeepSeek, Kimi language model clients
+Import concrete modules (``clients.dify``, ``clients.llm``) for the classes
+you need. This package does not construct clients on import.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -11,17 +10,7 @@ Proprietary License
 """
 
 from .dify import AsyncDifyClient
-from .llm import (
-    deepseek_client,
-    kimi_client,
-    qwen_client_classification,
-    qwen_client_generation,
-)
 
 __all__ = [
     "AsyncDifyClient",
-    "qwen_client_generation",
-    "qwen_client_classification",
-    "deepseek_client",
-    "kimi_client",
 ]

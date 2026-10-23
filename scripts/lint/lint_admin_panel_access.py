@@ -22,7 +22,6 @@ SKIP_FILES = frozenset(
         "routers/features/workshop_chat/channels.py",
         "routers/features/workshop_chat/dependencies.py",
         "routers/features/library/danmaku.py",
-        "routers/features/community.py",
         "routers/api/canvas_translate.py",
     }
 )

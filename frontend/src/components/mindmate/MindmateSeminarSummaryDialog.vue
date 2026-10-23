@@ -355,14 +355,22 @@ function closeDialog(): void {
     <template #header>
       <div class="mm-sum__head">
         <h2>
-          {{
-            step === 'preview' ? t('mindmate.summary.previewTitle') : t('mindmate.summary.title')
-          }}
+          <I18nText
+            v-if="step === 'preview'"
+            k="mindmate.summary.previewTitle"
+          /><I18nText
+            v-else
+            k="mindmate.summary.title"
+          />
         </h2>
         <p>
-          {{
-            step === 'preview' ? t('mindmate.summary.previewHint') : t('mindmate.summary.pickHint')
-          }}
+          <I18nText
+            v-if="step === 'preview'"
+            k="mindmate.summary.previewHint"
+          /><I18nText
+            v-else
+            k="mindmate.summary.pickHint"
+          />
         </p>
       </div>
     </template>
@@ -405,8 +413,8 @@ function closeDialog(): void {
             />
           </span>
           <span class="mm-sum__choice-copy">
-            <span class="mm-sum__choice-title">{{ t(choice.title) }}</span>
-            <span class="mm-sum__choice-hint">{{ t(choice.hint) }}</span>
+            <span class="mm-sum__choice-title"><I18nText :k="choice.title" /></span>
+            <span class="mm-sum__choice-hint"><I18nText :k="choice.hint" /></span>
           </span>
           <span
             v-if="mode === choice.id"
@@ -439,7 +447,7 @@ function closeDialog(): void {
           v-if="sources.length === 0"
           class="mm-sum__empty"
         >
-          {{ t('mindmate.summary.empty') }}
+          <I18nText k="mindmate.summary.empty" />
         </li>
       </ul>
       <p
@@ -466,7 +474,7 @@ function closeDialog(): void {
           class="mm-sum__ghost"
           @click="closeDialog"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -474,7 +482,13 @@ function closeDialog(): void {
           :disabled="working"
           @click="generate"
         >
-          {{ working ? t('mindmate.summary.working') : t('mindmate.summary.generate') }}
+          <I18nText
+            v-if="working"
+            k="mindmate.summary.working"
+          /><I18nText
+            v-else
+            k="mindmate.summary.generate"
+          />
         </button>
       </div>
       <div
@@ -486,14 +500,14 @@ function closeDialog(): void {
           class="mm-sum__outline"
           @click="keep"
         >
-          {{ t('mindmate.summary.keep') }}
+          <I18nText k="mindmate.summary.keep" />
         </button>
         <button
           type="button"
           class="mm-sum__primary"
           @click="send"
         >
-          {{ t('mindmate.summary.send') }}
+          <I18nText k="mindmate.summary.send" />
         </button>
       </div>
     </template>

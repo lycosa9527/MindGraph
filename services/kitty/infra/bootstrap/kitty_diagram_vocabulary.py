@@ -137,7 +137,7 @@ diagram; there is no auto_complete_branch tool on this path.
 - auto_complete — AI fill the whole diagram (needs a valid center/topic first)
 - explain_node — open MindMate to explain a node concept (解释/讲解 + node reference)
 - ask_mindmate — send a free-form question to MindMate panel (message required)
-- open_panel / close_panel — mindmate or node_palette
+- open_panel / close_panel — mindmate or ai_brainstorm
 
 Node reference tips:
 - Prefer node text, outline no (1 / 1.1 / 2.1), or spoken index (第一个, second, 2) in node_identifier.

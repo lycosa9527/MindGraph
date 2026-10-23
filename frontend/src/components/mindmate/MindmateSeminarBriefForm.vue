@@ -148,7 +148,7 @@ const selfMember = computed<OrgMember | null>(() => {
   const user = authStore.user
   return {
     id,
-    name: (user?.username || user?.name || '').trim() || `User ${id}`,
+    name: (user?.username || '').trim() || `User ${id}`,
     avatar: user?.avatar ?? null,
   }
 })
@@ -549,7 +549,7 @@ onUnmounted(() => {
       </div>
       <div class="mm-brief__main">
         <h3 class="mm-brief__title">
-          <span class="mm-brief__req">*</span>{{ t('mindmate.home.brief.topic') }}
+          <span class="mm-brief__req">*</span><I18nText k="mindmate.home.brief.topic" />
         </h3>
         <div class="mm-brief__card">
           <textarea
@@ -584,7 +584,7 @@ onUnmounted(() => {
       </div>
       <div class="mm-brief__main">
         <h3 class="mm-brief__title">
-          <span class="mm-brief__req">*</span>{{ t('mindmate.home.brief.participants') }}
+          <span class="mm-brief__req">*</span><I18nText k="mindmate.home.brief.participants" />
         </h3>
         <div
           class="mm-brief__card"
@@ -603,7 +603,7 @@ onUnmounted(() => {
               :aria-selected="visibility === 'organization'"
               @click="setVisibility('organization')"
             >
-              {{ t('mindmate.home.brief.visibilityOrg') }}
+              <I18nText k="mindmate.home.brief.visibilityOrg" />
             </button>
             <button
               type="button"
@@ -613,16 +613,18 @@ onUnmounted(() => {
               :aria-selected="visibility === 'network'"
               @click="setVisibility('network')"
             >
-              {{ t('mindmate.home.brief.visibilityNetwork') }}
+              <I18nText k="mindmate.home.brief.visibilityNetwork" />
             </button>
           </div>
 
           <p class="mm-brief__hint">
-            {{
-              visibility === 'network'
-                ? t('mindmate.home.brief.networkHint')
-                : t('mindmate.home.brief.orgHint')
-            }}
+            <I18nText
+              v-if="visibility === 'network'"
+              k="mindmate.home.brief.networkHint"
+            /><I18nText
+              v-else
+              k="mindmate.home.brief.orgHint"
+            />
           </p>
 
           <div class="mm-brief__picker">
@@ -646,7 +648,7 @@ onUnmounted(() => {
                         <Globe2 :size="16" />
                       </span>
                       <span class="mm-brief__fold-title">
-                        {{ t('mindmate.home.brief.foldExternal') }}
+                        <I18nText k="mindmate.home.brief.foldExternal" />
                       </span>
                       <ChevronDown
                         class="mm-brief__fold-chevron"
@@ -675,7 +677,7 @@ onUnmounted(() => {
                           :disabled="phoneLooking"
                           @click="searchByPhone"
                         >
-                          {{ t('mindmate.home.brief.phoneSearch') }}
+                          <I18nText k="mindmate.home.brief.phoneSearch" />
                         </button>
                       </div>
 
@@ -683,25 +685,25 @@ onUnmounted(() => {
                         v-if="phoneLooking"
                         class="mm-brief__hint mm-brief__hint--pad"
                       >
-                        {{ t('common.loading') }}
+                        <I18nText k="common.loading" />
                       </p>
                       <p
                         v-else-if="phoneStatus === 'invalid'"
                         class="mm-brief__hint mm-brief__hint--pad mm-brief__hint--warn"
                       >
-                        {{ t('mindmate.home.brief.phoneInvalid') }}
+                        <I18nText k="mindmate.home.brief.phoneInvalid" />
                       </p>
                       <p
                         v-else-if="phoneStatus === 'empty'"
                         class="mm-brief__hint mm-brief__hint--pad"
                       >
-                        {{ t('mindmate.home.brief.phoneEmpty') }}
+                        <I18nText k="mindmate.home.brief.phoneEmpty" />
                       </p>
                       <p
                         v-else-if="phoneStatus === 'error'"
                         class="mm-brief__hint mm-brief__hint--pad mm-brief__hint--warn"
                       >
-                        {{ t('mindmate.home.brief.phoneError') }}
+                        <I18nText k="mindmate.home.brief.phoneError" />
                       </p>
 
                       <div
@@ -720,7 +722,11 @@ onUnmounted(() => {
                         <div class="mm-brief__phone-meta">
                           <span class="mm-brief__person-name">{{ phoneHit.name }}</span>
                           <span class="mm-brief__phone-sub">
-                            {{ phoneHit.orgName || t('mindmate.home.brief.phoneNoOrg') }}
+                            <template v-if="phoneHit.orgName">{{ phoneHit.orgName }}</template
+                            ><I18nText
+                              v-else
+                              k="mindmate.home.brief.phoneNoOrg"
+                            />
                             · {{ phoneHit.phoneMasked }}
                           </span>
                         </div>
@@ -730,13 +736,13 @@ onUnmounted(() => {
                           class="mm-brief__phone-add"
                           @click="addPhoneHit"
                         >
-                          {{ t('mindmate.home.brief.phoneAdd') }}
+                          <I18nText k="mindmate.home.brief.phoneAdd" />
                         </button>
                         <span
                           v-else
                           class="mm-brief__phone-added"
-                          >{{ t('mindmate.home.brief.phoneAdded') }}</span
-                        >
+                          ><I18nText k="mindmate.home.brief.phoneAdded"
+                        /></span>
                       </div>
                     </div>
                   </div>
@@ -758,7 +764,7 @@ onUnmounted(() => {
                         <Building2 :size="16" />
                       </span>
                       <span class="mm-brief__fold-title">
-                        {{ t('mindmate.home.brief.foldSchool') }}
+                        <I18nText k="mindmate.home.brief.foldSchool" />
                       </span>
                       <ChevronDown
                         class="mm-brief__fold-chevron"
@@ -789,19 +795,19 @@ onUnmounted(() => {
                         v-if="membersLoading && rosterMembers.length === 0"
                         class="mm-brief__hint mm-brief__hint--pad"
                       >
-                        {{ t('common.loading') }}
+                        <I18nText k="common.loading" />
                       </p>
                       <p
                         v-else-if="memberQuery.trim() && rosterMembers.length === 0"
                         class="mm-brief__hint mm-brief__hint--pad"
                       >
-                        {{ t('mindmate.home.brief.memberSearchEmpty') }}
+                        <I18nText k="mindmate.home.brief.memberSearchEmpty" />
                       </p>
                       <p
                         v-else-if="rosterMembers.length === 0"
                         class="mm-brief__hint mm-brief__hint--pad"
                       >
-                        {{ t('mindmate.home.memberDialogEmpty') }}
+                        <I18nText k="mindmate.home.memberDialogEmpty" />
                       </p>
                       <div
                         v-else
@@ -837,8 +843,8 @@ onUnmounted(() => {
                             <span
                               v-if="isSelf(Number(member.id))"
                               class="mm-brief__you"
-                              >{{ t('mindmate.home.brief.memberYou') }}</span
-                            >
+                              ><I18nText k="mindmate.home.brief.memberYou"
+                            /></span>
                           </span>
                         </button>
                       </div>
@@ -864,26 +870,26 @@ onUnmounted(() => {
                 </div>
 
                 <div class="mm-brief__contacts-label">
-                  {{ t('mindmate.home.brief.memberContacts') }}
+                  <I18nText k="mindmate.home.brief.memberContacts" />
                 </div>
 
                 <p
                   v-if="membersLoading && rosterMembers.length === 0"
                   class="mm-brief__hint mm-brief__hint--pad"
                 >
-                  {{ t('common.loading') }}
+                  <I18nText k="common.loading" />
                 </p>
                 <p
                   v-else-if="memberQuery.trim() && rosterMembers.length === 0"
                   class="mm-brief__hint mm-brief__hint--pad"
                 >
-                  {{ t('mindmate.home.brief.memberSearchEmpty') }}
+                  <I18nText k="mindmate.home.brief.memberSearchEmpty" />
                 </p>
                 <p
                   v-else-if="rosterMembers.length === 0"
                   class="mm-brief__hint mm-brief__hint--pad"
                 >
-                  {{ t('mindmate.home.memberDialogEmpty') }}
+                  <I18nText k="mindmate.home.memberDialogEmpty" />
                 </p>
                 <div
                   v-else
@@ -919,8 +925,8 @@ onUnmounted(() => {
                       <span
                         v-if="isSelf(Number(member.id))"
                         class="mm-brief__you"
-                        >{{ t('mindmate.home.brief.memberYou') }}</span
-                      >
+                        ><I18nText k="mindmate.home.brief.memberYou"
+                      /></span>
                     </span>
                   </button>
                 </div>
@@ -929,9 +935,12 @@ onUnmounted(() => {
 
             <div class="mm-brief__picker-right">
               <div class="mm-brief__selected-head">
-                <span>{{ t('mindmate.home.brief.memberPickerTitle') }}</span>
+                <span><I18nText k="mindmate.home.brief.memberPickerTitle" /></span>
                 <span class="mm-brief__selected-count">
-                  {{ t('mindmate.home.brief.memberSelected', { count: selectedMembers.length }) }}
+                  <I18nText
+                    k="mindmate.home.brief.memberSelected"
+                    :params="{ count: selectedMembers.length }"
+                  />
                 </span>
               </div>
               <ul class="mm-brief__chosen">
@@ -955,22 +964,25 @@ onUnmounted(() => {
                       <span
                         v-if="isSelf(Number(member.id))"
                         class="mm-brief__you"
-                        >{{ t('mindmate.home.brief.memberYou') }}</span
-                      >
+                        ><I18nText k="mindmate.home.brief.memberYou"
+                      /></span>
                       <span
                         v-else-if="participantSource(Number(member.id)) === 'external'"
                         class="mm-brief__pending"
-                        >{{ t('mindmate.home.brief.pendingConsent') }}</span
-                      >
+                        ><I18nText k="mindmate.home.brief.pendingConsent"
+                      /></span>
                     </span>
                     <span
                       v-if="phoneMetaByUser[Number(member.id)]"
                       class="mm-brief__phone-sub"
                     >
-                      {{
-                        phoneMetaByUser[Number(member.id)]?.orgName ||
-                        t('mindmate.home.brief.phoneNoOrg')
-                      }}
+                      <template v-if="phoneMetaByUser[Number(member.id)]?.orgName">{{
+                        phoneMetaByUser[Number(member.id)]?.orgName
+                      }}</template
+                      ><I18nText
+                        v-else
+                        k="mindmate.home.brief.phoneNoOrg"
+                      />
                       · {{ phoneMetaByUser[Number(member.id)]?.phoneMasked }}
                     </span>
                     <span class="mm-brief__role-line">
@@ -991,7 +1003,7 @@ onUnmounted(() => {
                           :key="role"
                           :value="role"
                         >
-                          {{ t(`mindmate.home.brief.role.${role}`) }}
+                          <I18nText :k="`mindmate.home.brief.role.${role}`" />
                         </option>
                       </select>
                     </span>
@@ -1029,7 +1041,7 @@ onUnmounted(() => {
         class="mm-brief__more-chevron"
         :class="{ 'is-open': moreOpen }"
       />
-      {{ t('mindmate.home.brief.more') }}
+      <I18nText k="mindmate.home.brief.more" />
     </button>
 
     <section
@@ -1051,8 +1063,8 @@ onUnmounted(() => {
       </div>
       <div class="mm-brief__main">
         <h3 class="mm-brief__title">
-          {{ t('mindmate.home.brief.goals') }}
-          <span class="mm-brief__optional">{{ t('mindmate.home.brief.optional') }}</span>
+          <I18nText k="mindmate.home.brief.goals" />
+          <span class="mm-brief__optional"><I18nText k="mindmate.home.brief.optional" /></span>
         </h3>
         <div class="mm-brief__card">
           <div
@@ -1109,15 +1121,15 @@ onUnmounted(() => {
       </div>
       <div class="mm-brief__main">
         <h3 class="mm-brief__title">
-          {{ t('mindmate.home.brief.resources') }}
-          <span class="mm-brief__optional">{{ t('mindmate.home.brief.optional') }}</span>
+          <I18nText k="mindmate.home.brief.resources" />
+          <span class="mm-brief__optional"><I18nText k="mindmate.home.brief.optional" /></span>
         </h3>
         <div
           class="mm-brief__card"
           @focusin="setActive('resources')"
         >
           <p class="mm-brief__hint">
-            {{ t('mindmate.home.brief.resourceHint') }}
+            <I18nText k="mindmate.home.brief.resourceHint" />
           </p>
           <input
             ref="fileInput"
@@ -1134,7 +1146,7 @@ onUnmounted(() => {
               @click="openFilePicker"
             >
               <Upload :size="16" />
-              {{ t('mindmate.home.brief.upload') }}
+              <I18nText k="mindmate.home.brief.upload" />
             </button>
             <button
               type="button"
@@ -1142,7 +1154,7 @@ onUnmounted(() => {
               :class="{ 'is-on': skipResources }"
               @click="markSkipResources"
             >
-              {{ t('mindmate.home.brief.skipResources') }}
+              <I18nText k="mindmate.home.brief.skipResources" />
             </button>
           </div>
           <ul
@@ -1179,7 +1191,7 @@ onUnmounted(() => {
         class="mm-brief__start"
         @click="onStart"
       >
-        {{ t('mindmate.home.brief.open') }}
+        <I18nText k="mindmate.home.brief.open" />
       </button>
     </div>
   </div>

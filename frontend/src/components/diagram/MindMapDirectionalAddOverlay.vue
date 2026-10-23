@@ -3,14 +3,17 @@
  * Canvas-level four-directional + overlay (Teleport) — avoids per-node mount/clipping issues.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useLanguage } from '@/composables'
 import { useMindMapDirectionalAddPosition } from '@/composables/canvasToolbar/useMindMapDirectionalAddPosition'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { effectiveCanvasInputMode } from '@/config/canvasInputMode'
 import { mindMapControlScale } from '@/config/mindMapEBlackboard'
 import { useUIStore } from '@/stores/ui'
 import { mindMapNodeSide } from '@/utils/mindMapLocation'
+import { isMobileRoutePath } from '@/utils/mobileRouteRedirect'
 
 const props = defineProps<{
   containerRef: HTMLElement | null
@@ -19,9 +22,14 @@ const props = defineProps<{
 
 const diagramStore = useDiagramSession()
 const uiStore = useUIStore()
+const route = useRoute()
 const { t } = useLanguage()
 
-const controlScale = computed(() => mindMapControlScale(uiStore.eBlackboardOptimize))
+const controlScale = computed(() =>
+  mindMapControlScale(
+    effectiveCanvasInputMode(uiStore.canvasInputMode, isMobileRoutePath(route.path))
+  )
+)
 const overlayStyle = computed(() => ({
   '--mm-eb-scale': String(controlScale.value),
 }))

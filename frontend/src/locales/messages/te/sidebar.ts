@@ -15,8 +15,7 @@ export default {
   'sidebar.actions.unpin': 'అన్‌పిన్ చేయండి',
   'sidebar.actions.moveToFolder': 'ఫోల్డర్‌కు తరలించండి',
   'sidebar.actions.removeFromFolder': 'ఫోల్డర్‌ను బయటకు తరలించండి',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'మీరు ఖచ్చితంగా ఈ సంభాషణను తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
+  'sidebar.askOnceHistory.deleteConfirm': 'మీరు ఖచ్చితంగా ఈ సంభాషణను తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
   'sidebar.askOnceHistory.empty': 'ఇంకా సంభాషణ రికార్డు లేదు',
   'sidebar.askOnceHistory.renamePrompt': 'దయచేసి కొత్త సంభాషణ పేరును నమోదు చేయండి',
   'sidebar.askOnceHistory.renameTitle': 'సంభాషణ పేరు మార్చండి',
@@ -30,8 +29,7 @@ export default {
   'sidebar.bookmarks.title': 'ఇటీవలి బుక్‌మార్క్‌లు',
   'sidebar.bookmarks.unknownDoc': 'తెలియని పత్రం',
   'sidebar.brandTitle': 'మాట్ టీచింగ్ అండ్ రీసెర్చ్',
-  'sidebar.chatHistory.deleteConfirm':
-    'మీరు ఖచ్చితంగా ఈ సంభాషణను తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
+  'sidebar.chatHistory.deleteConfirm': 'మీరు ఖచ్చితంగా ఈ సంభాషణను తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
   'sidebar.chatHistory.deleteTitle': 'సంభాషణను తొలగించండి',
   'sidebar.chatHistory.empty': 'ఇంకా సంభాషణ రికార్డు లేదు',
   'sidebar.chatHistory.loginPrompt': 'చారిత్రక సంభాషణలను వీక్షించడానికి లాగిన్ చేయండి',
@@ -46,8 +44,7 @@ export default {
   'sidebar.chatHistory.folderCreatePrompt': 'Enter a name for the new folder',
   'sidebar.chatHistory.folderCreateTitle': 'New folder',
   'sidebar.chatHistory.folderCreated': 'Folder created',
-  'sidebar.chatHistory.folderDeleteConfirm':
-    'Delete this folder? Conversations inside will move to Uncategorized.',
+  'sidebar.chatHistory.folderDeleteConfirm': 'Delete this folder? Conversations inside will move to Uncategorized.',
   'sidebar.chatHistory.folderDeleteFailed': 'Failed to delete folder',
   'sidebar.chatHistory.folderDeleteTitle': 'Delete folder',
   'sidebar.chatHistory.folderDeleted': 'Folder deleted',
@@ -69,19 +66,13 @@ export default {
   'sidebar.zhihui': 'చీ',
   'sidebar.zhihuiHistory.title': 'చరిత్రను నిర్మించండి',
   'sidebar.zhihuiHistory.empty': 'ఇంకా తరం రికార్డు లేదు',
-  'sidebar.zhihuiHistory.deleteConfirm':
-    'మీరు ఈ రూపొందించిన రికార్డ్‌ను ఖచ్చితంగా తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
-  'sidebar.community': 'సంఘం భాగస్వామ్యం',
-  'sidebar.courses': 'ఆలోచన పాఠాలు',
-  'sidebar.mateLearning': 'మాట్ లెర్నింగ్ పద్ధతి',
-  'sidebar.debateHistory.deleteConfirm':
-    'మీరు ఈ డిబేట్ రికార్డ్‌ను ఖచ్చితంగా తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
+  'sidebar.zhihuiHistory.deleteConfirm': 'మీరు ఈ రూపొందించిన రికార్డ్‌ను ఖచ్చితంగా తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
+  'sidebar.debateHistory.deleteConfirm': 'మీరు ఈ డిబేట్ రికార్డ్‌ను ఖచ్చితంగా తొలగించాలనుకుంటున్నారా? ఈ చర్య రద్దు చేయబడదు.',
   'sidebar.debateHistory.empty': 'ఇంకా చర్చ జరిగిన దాఖలాలు లేవు',
   'sidebar.debateHistory.loginPrompt': 'చారిత్రక చర్చలను వీక్షించడానికి సైన్ ఇన్ చేయండి',
   'sidebar.debateHistory.renamePrompt': 'దయచేసి కొత్త చర్చా అంశాన్ని నమోదు చేయండి',
   'sidebar.debateHistory.renameTitle': 'పేరు మార్చడం చర్చ',
   'sidebar.debateHistory.title': 'ఇటీవలి చర్చ',
-  'sidebar.debateverse': 'పరిస్థితిపై',
   'sidebar.diagramHistory.capacity': '{n} చిహ్నాలను సేవ్ చేయవచ్చు',
   'sidebar.diagramHistory.deleteFailed': 'తొలగించడం విఫలమైంది',
   'sidebar.diagramHistory.collabLive': 'ఆన్‌లైన్ సహకారం ప్రోగ్రెస్‌లో ఉంది',
@@ -92,15 +83,13 @@ export default {
   'sidebar.diagramHistory.renamePrompt': 'దయచేసి కొత్త చిహ్నం పేరును నమోదు చేయండి',
   'sidebar.diagramHistory.renameTitle': 'చిహ్నం పేరు మార్చండి',
   'sidebar.diagramHistory.title': 'చిహ్నం సేవ్ చేయబడింది',
-  'sidebar.diagramHistory.createFolderAndMove':
-    'కొత్త ఫోల్డర్‌ని సృష్టించండి మరియు దాన్ని తరలించండి',
+  'sidebar.diagramHistory.createFolderAndMove': 'కొత్త ఫోల్డర్‌ని సృష్టించండి మరియు దాన్ని తరలించండి',
   'sidebar.diagramHistory.folderCount': '{count} ఫోల్డర్‌లు',
   'sidebar.diagramHistory.folderCreateFailed': 'ఫోల్డర్‌ని సృష్టించడం విఫలమైంది',
   'sidebar.diagramHistory.folderCreatePrompt': 'దయచేసి ఫోల్డర్ పేరును నమోదు చేయండి',
   'sidebar.diagramHistory.folderCreateTitle': 'కొత్త ఫోల్డర్‌ని సృష్టించండి',
   'sidebar.diagramHistory.folderCreated': 'ఫోల్డర్ సృష్టించబడింది',
-  'sidebar.diagramHistory.folderDeleteConfirm':
-    'మీరు ఖచ్చితంగా ఈ ఫోల్డర్‌ని తొలగించాలనుకుంటున్నారా? అక్కడ ఉన్న చిహ్నాలు వర్గీకరించని వాటికి తరలించబడతాయి.',
+  'sidebar.diagramHistory.folderDeleteConfirm': 'మీరు ఖచ్చితంగా ఈ ఫోల్డర్‌ని తొలగించాలనుకుంటున్నారా? అక్కడ ఉన్న చిహ్నాలు వర్గీకరించని వాటికి తరలించబడతాయి.',
   'sidebar.diagramHistory.folderDeleteFailed': 'ఫోల్డర్‌ను తొలగించడంలో విఫలమైంది',
   'sidebar.diagramHistory.folderDeleteTitle': 'ఫోల్డర్‌ను తొలగించండి',
   'sidebar.diagramHistory.folderDeleted': 'ఫోల్డర్ తొలగించబడింది',
@@ -109,8 +98,7 @@ export default {
   'sidebar.diagramHistory.folderRenamePrompt': 'దయచేసి కొత్త ఫోల్డర్ పేరును నమోదు చేయండి',
   'sidebar.diagramHistory.folderRenameTitle': 'ఫోల్డర్ పేరు మార్చండి',
   'sidebar.diagramHistory.folderRenamed': 'ఫోల్డర్ పేరు మార్చబడింది',
-  'sidebar.diagramHistory.foldersLoadFailed':
-    'ఫోల్డర్‌ను లోడ్ చేయడం సాధ్యపడలేదు, గ్రాఫికల్ జాబితా మాత్రమే చూపబడింది',
+  'sidebar.diagramHistory.foldersLoadFailed': 'ఫోల్డర్‌ను లోడ్ చేయడం సాధ్యపడలేదు, గ్రాఫికల్ జాబితా మాత్రమే చూపబడింది',
   'sidebar.diagramHistory.foldersSection': 'ఫోల్డర్',
   'sidebar.diagramHistory.loadFailed': 'చిహ్నాన్ని లోడ్ చేయడంలో విఫలమైంది',
   'sidebar.diagramHistory.moveFailed': 'చిహ్నాన్ని తరలించడంలో విఫలమైంది',
@@ -149,30 +137,26 @@ export default {
   'sidebar.training': 'పాఠశాల ఆధారిత శిక్షణ',
   'sidebar.trainingCourses': 'కోర్సు',
   'sidebar.trainingBuilder': 'కోర్సు నిర్మాణ సహాయకుడు',
-  'sidebar.templateResources': 'టెంప్లేట్ వనరులు',
   'sidebar.orgEdition': '{org}ప్రత్యేకమైన ఎడిషన్',
   'sidebar.personalEdition': 'వ్యక్తిగత వెర్షన్',
   'sidebar.userSubtitleDefault': 'MindGraph మైండ్‌గ్రాఫ్ ప్రొఫెషనల్ ఎడిషన్',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',
   'sidebar.account': 'ఖాతా సెట్టింగ్‌లు',
-  'sidebar.roleSuperAdmin': 'సూపర్ అడ్మినిస్ట్రేటర్',
-  'sidebar.rolePlatformAdmin': 'టీచింగ్ అండ్ రీసెర్చ్ ఫెలో',
+  'sidebar.roleSuperAdmin': 'సూపర్ అడ్మిన్',
+  'sidebar.rolePlatformAdmin': 'పరిశోధకుడు',
   'sidebar.roleExpert': 'నిపుణుడు',
-  'sidebar.roleSchoolAdmin': 'పాఠశాల నిర్వాహకుడు',
+  'sidebar.roleSchoolAdmin': 'స్కూల్ అడ్మిన్',
   'sidebar.roleSchoolEdition': 'స్కూల్ ఎడిషన్',
   'sidebar.roleStudent': 'Student',
   'sidebar.roleTrialEdition': 'ట్రయల్ వెర్షన్',
   'sidebar.roleSuperMember': 'సూపర్ సభ్యుడు',
   'sidebar.logoSiteQrTitle': 'వెబ్‌సైట్ QR కోడ్',
-  'sidebar.logoSiteQrHint':
-    'QR కోడ్‌ని స్కాన్ చేయడానికి దయచేసి మీ ఫోన్‌లోని కెమెరా/WeChatని ఉపయోగించండి',
+  'sidebar.logoSiteQrHint': 'QR కోడ్‌ని స్కాన్ చేయడానికి దయచేసి మీ ఫోన్‌లోని కెమెరా/WeChatని ఉపయోగించండి',
   'sidebar.mindmateCollabHistory.title': 'ఆన్‌లైన్ సహకారం',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'ముగింపు సెమినార్',
-  'sidebar.mindmateCollabHistory.stopConfirm':
-    'పాల్గొనే వారందరికీ ఈ వర్క్‌షాప్ గది మూసివేయబడుతుంది మరియు అందరూ గది నుండి నిష్క్రమిస్తారు.',
+  'sidebar.mindmateCollabHistory.stopConfirm': 'పాల్గొనే వారందరికీ ఈ వర్క్‌షాప్ గది మూసివేయబడుతుంది మరియు అందరూ గది నుండి నిష్క్రమిస్తారు.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'క్యాంపస్‌లో',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'పాఠశాలల అంతటా',
   'sidebar.share.ribbon': 'Organization',
@@ -196,8 +180,7 @@ export default {
   'sidebar.demo.menu': 'Demo mode',
   'sidebar.demo.ribbon': 'Demo',
   'sidebar.demo.title': 'Choose diagrams',
-  'sidebar.demo.line1':
-    'Pick diagrams from your library, write a caption, then play them full screen',
+  'sidebar.demo.line1': 'Pick diagrams from your library, write a caption, then play them full screen',
   'sidebar.demo.search': 'Search diagrams',
   'sidebar.demo.empty': 'No diagrams in your library yet',
   'sidebar.demo.hint': 'Select a diagram to write its caption',
@@ -247,26 +230,15 @@ export default {
   'sidebar.demo.loading': 'Generating',
   'sidebar.demo.moveUp': 'Move up',
   'sidebar.demo.moveDown': 'Move down',
-  'sidebar.demo.caption.circle_map':
-    '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
-  'sidebar.demo.caption.bubble_map':
-    '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
-  'sidebar.demo.caption.double_bubble_map':
-    '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
-  'sidebar.demo.caption.tree_map':
-    '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
-  'sidebar.demo.caption.brace_map':
-    '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
-  'sidebar.demo.caption.flow_map':
-    '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
-  'sidebar.demo.caption.multi_flow_map':
-    '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
-  'sidebar.demo.caption.bridge_map':
-    '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
-  'sidebar.demo.caption.mindmap':
-    '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
-  'sidebar.demo.caption.concept_map':
-    '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
-  'sidebar.demo.caption.fallback':
-    '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
+  'sidebar.demo.caption.circle_map': '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
+  'sidebar.demo.caption.bubble_map': '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
+  'sidebar.demo.caption.double_bubble_map': '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
+  'sidebar.demo.caption.tree_map': '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
+  'sidebar.demo.caption.brace_map': '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
+  'sidebar.demo.caption.flow_map': '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
+  'sidebar.demo.caption.multi_flow_map': '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
+  'sidebar.demo.caption.bridge_map': '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
+  'sidebar.demo.caption.mindmap': '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
+  'sidebar.demo.caption.concept_map': '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
+  'sidebar.demo.caption.fallback': '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
 } as const

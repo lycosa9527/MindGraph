@@ -205,7 +205,7 @@ function handleVoiceNotes(): void {
       </div>
 
       <el-dropdown
-        v-if="!menuOnly && !s.isCollapsed"
+        v-if="!menuOnly"
         ref="dropdownRef"
         trigger="click"
         placement="top-end"
@@ -327,7 +327,7 @@ function handleVoiceNotes(): void {
         </template>
       </el-dropdown>
 
-      <!-- Collapsed mode: show avatar button with dropdown -->
+      <!-- Floating chip when the sidebar itself is not on the page. -->
       <el-dropdown
         v-else
         ref="collapsedDropdownRef"

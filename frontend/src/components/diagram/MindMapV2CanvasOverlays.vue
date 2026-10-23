@@ -6,6 +6,7 @@
 import { type Ref, computed, inject, unref } from 'vue'
 
 import { CanvasNodeFloatingToolbar } from '@/components/canvas'
+import { useCanvasNodeChromeOverlayGate } from '@/composables/canvasToolbar'
 import type {
   FloatingToolbarPosition,
   FloatingToolbarSize,
@@ -33,17 +34,28 @@ const props = defineProps<{
 
 const uiStore = useUIStore()
 const headlessExport = isMindgraphHeadlessExportSession()
+const overlayBlocksNodeChrome = useCanvasNodeChromeOverlayGate()
 
 const branchMove = inject<{ state: { value: { active: boolean } } } | null>('branchMove', null)
 const branchMoveActive = computed(() => branchMove?.state.value.active === true)
 
 const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasContainer))
+const hideNodeChrome = computed(
+  () =>
+    headlessExport ||
+    props.presentationDiagramEditLocked ||
+    props.nodeExplainOpen ||
+    overlayBlocksNodeChrome.value
+)
+const hideCollapseChrome = computed(
+  () => headlessExport || props.presentationDiagramEditLocked || overlayBlocksNodeChrome.value
+)
 </script>
 
 <template>
-  <!-- Hide toolbar / add handles so they do not cover the explain bubble. -->
+  <!-- Hide body-teleported chrome so it cannot paint over brainstorm / dialogs. -->
   <CanvasNodeFloatingToolbar
-    v-if="!headlessExport && !presentationDiagramEditLocked && !nodeExplainOpen"
+    v-if="!hideNodeChrome"
     :position="floatingToolbarPosition"
     :node-id="floatingToolbarAnchorId"
     :ai-generating="subgraphGenerating"
@@ -54,23 +66,12 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
   />
 
   <MindMapDirectionalAddOverlay
-    v-if="
-      !headlessExport &&
-      !presentationDiagramEditLocked &&
-      !uiStore.exportWireframeOutline &&
-      !nodeExplainOpen &&
-      !branchMoveActive
-    "
+    v-if="!hideNodeChrome && !uiStore.exportWireframeOutline && !branchMoveActive"
     :container-ref="resolvedContainer"
     :teleport-target="presentationTeleportTarget"
   />
   <MindMapCollapseToggleOverlay
-    v-if="
-      !headlessExport &&
-      !presentationDiagramEditLocked &&
-      !uiStore.exportWireframeOutline &&
-      !branchMoveActive
-    "
+    v-if="!hideCollapseChrome && !uiStore.exportWireframeOutline && !branchMoveActive"
     :container-ref="resolvedContainer"
     :teleport-target="presentationTeleportTarget"
   />

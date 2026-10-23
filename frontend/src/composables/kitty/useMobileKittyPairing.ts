@@ -502,7 +502,7 @@ export function useMobileKittyPairing(
       diagram_display_title: displayTitle,
       interaction_language: kittyInteractionLanguageFromUi(),
       one_sentence_phase: resolveMobileOneSentencePhase(),
-      selected_llm_model: llmResultsStore.selectedModel,
+      selected_llm_model: llmResultsStore.canvasModelChoice,
     })
   }
 
@@ -544,7 +544,7 @@ export function useMobileKittyPairing(
       diagram_display_title: displayTitle,
       interaction_language: kittyInteractionLanguageFromUi(),
       one_sentence_phase: resolveMobileOneSentencePhase(),
-      selected_llm_model: llmResultsStore.selectedModel,
+      selected_llm_model: llmResultsStore.canvasModelChoice,
     })
   }
 

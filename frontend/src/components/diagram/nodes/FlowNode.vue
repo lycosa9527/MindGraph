@@ -5,7 +5,7 @@
  * Supports inline text editing on double-click
  * Uses mindmap branch color palette for multi-flow map causes/effects
  */
-import { computed, inject, nextTick, ref } from 'vue'
+import { computed, inject, nextTick, onMounted, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -16,16 +16,21 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
+import { useThinkingMapTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
 import { MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapStepNode } from '@/utils/flowMapIdentity'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
+import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
 import {
@@ -40,6 +45,7 @@ import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const { fitBox } = useThinkingMapImageFit(() => props.id)
 
 const flowNodeRef = ref<HTMLElement | null>(null)
 const { reportDimensions } = useNodeDimensions(flowNodeRef, props.id)
@@ -115,7 +121,7 @@ const nodeStyle = computed(() => {
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
       THINKING_MAP_LEAF_TEXT,
-    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${thinkingMapDisplayedFontSize(props.data.style?.fontSize, themeNodePaint.value?.fontSize ?? defaultStyle.value.fontSize ?? MIND_MAP_GEOMETRY.branchFontSize)}px`,
     padding: thinkingMapBoxPadding(true),
     boxShadow: MIND_MAP_GEOMETRY.branchShadow,
@@ -191,25 +197,28 @@ const shapeLineColor = computed(() => {
   )
 })
 
-const BALANCE_PADDING = 5
-
 const flowMaxWidth = computed(() => {
   if (!isPillShape.value) return '200px'
 
-  const label = ((props.data.label as string) || '').trim()
-  const cap = MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH
-  if (!label) return `${cap}px`
-
+  const label = labelWithNodeIcon(
+    diagramStore.data,
+    props.id,
+    ((props.data.label as string) || '').trim(),
+    diagramStore.data?.connections
+  )
   const fontSize =
     parseFloat(nodeStyle.value.fontSize as string) || MIND_MAP_GEOMETRY.branchFontSize
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
-  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
-
-  if (textWidth <= cap) return `${cap}px`
-
-  const numLines = Math.ceil(textWidth / cap)
-  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
-  return `${Math.min(balancedWidth, cap)}px`
+  const fontFamily = String(nodeStyle.value.fontFamily || DIAGRAM_NODE_FONT_STACK)
+  return `${resolveThinkingMapDisplayMaxWidthPx(
+    label,
+    fontSize,
+    MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH,
+    {
+      fontWeight,
+      fontFamily,
+    }
+  )}px`
 })
 
 // Inline editing state
@@ -222,6 +231,10 @@ const isHovering = ref(false)
 const dynamicWidth = ref<number | null>(null)
 
 const diagramStore = useDiagramSession()
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 // Layout width for multi-flow map (from recalculateMultiFlowMapLayout)
@@ -260,6 +273,31 @@ async function flushMultiFlowCauseEffectWidthFromPinia(): Promise<void> {
     width: w,
   })
 }
+
+async function remeasureFlowNodeBox(): Promise<void> {
+  if (isMultiFlowMap.value) {
+    await flushMultiFlowCauseEffectWidthFromPinia()
+    return
+  }
+  await nextTick()
+  if (typeof document !== 'undefined' && document.fonts?.ready) {
+    await document.fonts.ready
+  }
+  await nextTick()
+  reportDimensions()
+}
+
+useThinkingMapTypographyRemeasure({
+  enabled: () => (isFlowMap.value || isMultiFlowMap.value) && !isEditing.value,
+  style: () => props.data.style,
+  remeasure: remeasureFlowNodeBox,
+})
+
+onMounted(() => {
+  if (isPillShape.value) {
+    void remeasureFlowNodeBox()
+  }
+})
 
 function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
@@ -346,7 +384,7 @@ function handleBranchMovePointerUp(): void {
     ref="flowNodeRef"
     class="flow-node flex items-center justify-center px-5 py-3 border-solid cursor-grab select-none relative"
     :class="{ 'pill-shape': isPillShape, 'multi-flow-map-node': isMultiFlowMap }"
-    :style="nodeStyle"
+    :style="[fitBox(nodeStyle), blankFrame]"
     @mouseenter="isHovering = true"
     @mouseleave="isHovering = false"
     @mousedown.capture="handleBranchMovePointerDown"

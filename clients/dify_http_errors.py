@@ -37,6 +37,34 @@ from clients.dify_exceptions import (
 
 logger = logging.getLogger(__name__)
 
+# Gateway responses while Dify (or the proxy in front of it) is restarting.
+DIFY_UPSTREAM_OUTAGE_STATUSES = frozenset({502, 503, 504})
+
+
+def dify_error_is_upstream_outage(exc: BaseException) -> bool:
+    """True when Dify is restarting or its gateway cannot reach the app."""
+    if isinstance(exc, DifyAPIError):
+        return exc.status_code in DIFY_UPSTREAM_OUTAGE_STATUSES
+    return False
+
+
+def dify_stream_chunk_is_upstream_outage(chunk: dict) -> bool:
+    """True when a streamed error event is a gateway or connection failure."""
+    status = chunk.get("status")
+    return isinstance(status, int) and status in DIFY_UPSTREAM_OUTAGE_STATUSES
+
+
+def mindmate_turn_on_backup(*, notify_backup: bool, server: Optional[int]) -> bool:
+    """True when this chat turn is already on the backup Dify server."""
+    return notify_backup or server == 2
+
+
+def mindmate_upstream_error_code(*, on_backup: bool) -> str:
+    """SSE / collab error code for a Dify gateway outage on this turn."""
+    if on_backup:
+        return "dify_backup_unavailable"
+    return "dify_main_unavailable"
+
 
 async def parse_dify_error_response(
     response: aiohttp.ClientResponse,

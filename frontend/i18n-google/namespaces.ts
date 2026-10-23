@@ -1,7 +1,6 @@
 export const NS_FILES = [
   'common',
   'mindmate',
-  'maite',
   'canvas',
   'workshop',
   'training',

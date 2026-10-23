@@ -9,6 +9,21 @@
   const MindGraphShared = global.MindGraphShared;
   const MindGraphExtensionStorage = global.MindGraphExtensionStorage;
 
+  /**
+   * @param {string} key
+   * @returns {string}
+   */
+  function extensionUiMessage(key) {
+    const locales = global.MindGraphExtensionLocales;
+    if (locales && typeof locales.message === "function") {
+      return locales.message(key);
+    }
+    if (typeof chrome !== "undefined" && chrome.i18n) {
+      return chrome.i18n.getMessage(key) || key;
+    }
+    return key;
+  }
+
   const PAGE_CONTENT_INJECT_SCRIPT = "doc-extract/text/page-content.js";
 
   MindGraphDocExtract.PAGE_CONTENT_INJECT_SCRIPT = PAGE_CONTENT_INJECT_SCRIPT;
@@ -132,10 +147,7 @@
    */
   function localizedCaptureErrorMessage(captureResult) {
     const key = localizedCaptureErrorKey(captureResult);
-    if (typeof chrome !== "undefined" && chrome.i18n) {
-      return chrome.i18n.getMessage(key) || key;
-    }
-    return key;
+    return extensionUiMessage(key);
   }
 
   MindGraphDocExtract.capturePageContentMarkdown = capturePageContentMarkdown;

@@ -5,18 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.180.147] - 2026-10-21
+## [5.180.181] - 2026-10-23
 
 > **A seminar keeps a brief, roles, a shared shelf, and a 教研助手 minutes card. Right-click an avatar to @ that person.**
 
 ### Added
 
-- **研讨** — MindMate home switches between 开启对话 and 群聊研讨. A seminar opens from a brief with a topic, goals, and roles, including 组长 and 观摩学习. A member from another school stays pending until they accept. Migrations `0146`, `0148`, and `0151`.
-- **资源与产物** — A file sent in chat stays on that message until someone shelves it. Shelving makes it a 资源. A generated file, a teaching-design Word, or a diagram put on the shelf is a 产物. Pin, rename, and remove leave a line in the transcript. Migrations `0147`, `0149`, `0150`, `0152`, and `0153`.
+- **研讨** — MindMate home switches between 开启对话 and 群聊研讨. A seminar opens from a brief with a topic, goals, and roles, including 组长 and 观摩学习. A member from another school stays pending until they accept. Migrations `0150` and `0153`.
+- **资源与产物** — A file sent in chat stays on that message until someone shelves it. Shelving makes it a 资源. A generated file, a teaching-design Word, or a diagram put on the shelf is a 产物. Pin, rename, and remove leave a line in the transcript. Migrations `0149`, `0151`, `0152`, `0154`, and `0155`.
 - **教研纪要** — 会话总结 asks for a range: 全部消息, 自上次纪要之后, 已设为精华的消息, or 自选消息. The minutes open for editing before anyone else sees them. 仅自己留存 keeps a draft. 发送至教研会 posts a 教研助手 card with its own avatar. The card shows status, host, people, progress, and todos. 查看详情 opens the minutes. 导出 downloads the text. 观摩学习 can open and export that card, and cannot generate, edit, or send it.
 - **精华** — A message can be marked 精华. Sharing those lines saves an image headed 协同教研 · 群聊精华语录.
 - **@ 对方** — Right-click another person's avatar in the transcript, the header, or the member list and choose @名字. The name is added at the end of the draft. MindMate's avatar uses the school agent name, so the line still reaches MindMate. Your own avatar, the 教研助手 avatar, and a MindGraph reply do not offer it. 观摩学习 does not see the menu.
 - **面聊与语音** — The seminar composer can hold to send a voice message, and can start 记录面聊 for an in-person meeting.
+- **分享至教研会** — The mind-map ribbon can send the saved diagram into a seminar that is already open.
 
 ### Changed
 
@@ -26,7 +27,637 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts)
+- [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py)
+
+## [5.180.180] - 2026-10-20
+
+> **Canvas input is mouse, laptop, phone, or a classroom board. Bilingual diagrams follow the interface languages. Old Word .doc files are refused.**
+
+### Changed
+
+- **Canvas input** — Language settings replace the e-blackboard switch with Mouse, Laptop, Mobile, and Classroom board. The choice stays on this browser, so a classroom board keeps its mode for every account that signs in there (migration `0148`). A phone always uses the mobile profile. The gesture card lists only the active mode. An older e-blackboard On setting becomes Classroom board.
+- **Gestures** — Mouse: wheel zoom, hold the wheel to pan, drag left or right to delete, drag up or down to add a same-level node. Laptop: drag the node; one finger selects, and two fingers pan when the screen is touch. Mobile: one finger pans, then a long-press drag moves a node. Classroom board: two fingers pan, slash left or right to delete, slash up or down to add a same-level node, and larger branch buttons. A vertical slash on a thinking map adds a node on the current level.
+- **Bilingual interface** — Turning it on locks model output to the interface language and keeps the second interface language different. A full diagram is generated in those two interface languages. The language panel shows a live toolbar and a short branch.
+- **Account** — Settings name the login as 小致 UUID, a masked mobile, or email. Changing the phone stays on a mainland mobile account. The school consult form fills name, mobile, and school from the account, and leaves the name blank when the username is the account key.
+- **Image preview** — The wheel zooms the picture. Dragging pans it once it is larger than the frame.
+
+### Fixed
+
+- **MindMate files** — A classic `.doc`, including one renamed to `.docx`, is refused with a convert-to-`.docx` notice. `.docx`, PDF, and PowerPoint still upload. DingTalk MindBot drops the same legacy Word file.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`tests/test_canvas_input_device.py`](tests/test_canvas_input_device.py), [`tests/test_dify_file_upload_types.py`](tests/test_dify_file_upload_types.py)
+- [`frontend/tests/canvasTouchGestures.spec.ts`](frontend/tests/canvasTouchGestures.spec.ts), [`frontend/tests/mindMapGestureGuide.spec.ts`](frontend/tests/mindMapGestureGuide.spec.ts), [`frontend/tests/thinkingMapNodeSlash.spec.ts`](frontend/tests/thinkingMapNodeSlash.spec.ts), [`frontend/tests/mindMapEBlackboardScale.spec.ts`](frontend/tests/mindMapEBlackboardScale.spec.ts), [`frontend/tests/settingsLanguagePanel.spec.ts`](frontend/tests/settingsLanguagePanel.spec.ts), [`frontend/tests/accountLoginIdentity.spec.ts`](frontend/tests/accountLoginIdentity.spec.ts), [`frontend/tests/consultProfileFromAccount.spec.ts`](frontend/tests/consultProfileFromAccount.spec.ts), [`frontend/tests/imagePreviewTransform.spec.ts`](frontend/tests/imagePreviewTransform.spec.ts), [`frontend/tests/mindmateComposerUpload.spec.ts`](frontend/tests/mindmateComposerUpload.spec.ts)
+
+## [5.180.179] - 2026-10-20
+
+> **Node Palette is AI brainstorm, mind maps leave room for pictures and emoji, and admin SMS is gone.**
+
+### Changed
+
+- **AI brainstorm** — The ribbon, panel, and API are AI brainstorm (`/thinking_mode/ai_brainstorm`). Node Palette names are gone. An assignment saved with `node_palette` still grants the same permission, and an older coin row still bills as canvas assist.
+- **Mind map layout** — An emoji icon counts as part of the label, so wrap and circle size follow the text. A node with a picture grows enough for the thumbnail to stay inside the node and clear of its neighbors.
+- **思维讲堂** — Slide lecture stays grey unless the feature flag is on and the open diagram is a mind map. Thinking maps and concept maps stay on the canvas tour. A toast opened while the classroom dialog is up stays above the scrim.
+- **Homework** — A student completing homework does not see 挖空支架图.
+- **Admin SMS** — Startup texts and critical-alert texts are removed. Verification SMS is unchanged.
+
+### Fixed
+
+- **One panel** — AI brainstorm and 对话式修改 no longer stay open together. Opening one closes the other.
+- **Long dialogs** — The header and footer stay on screen. The body scrolls with the mouse wheel, a trackpad, and a two-finger swipe that starts on a control.
+
+### Tests
+
+- [`tests/test_ai_brainstorm_all_diagrams.py`](tests/test_ai_brainstorm_all_diagrams.py), [`tests/test_mind_classroom_enqueue.py`](tests/test_mind_classroom_enqueue.py), [`tests/test_critical_alert_error_collection.py`](tests/test_critical_alert_error_collection.py)
+- [`frontend/tests/oneSentenceBrainstormExclusion.spec.ts`](frontend/tests/oneSentenceBrainstormExclusion.spec.ts), [`frontend/tests/mindMapImageLayout.spec.ts`](frontend/tests/mindMapImageLayout.spec.ts), [`frontend/tests/bubbleMapAttributeWrap.spec.ts`](frontend/tests/bubbleMapAttributeWrap.spec.ts), [`frontend/tests/mindClassroomStore.spec.ts`](frontend/tests/mindClassroomStore.spec.ts), [`frontend/tests/modalTwoFingerScroll.spec.ts`](frontend/tests/modalTwoFingerScroll.spec.ts)
+
+## [5.180.178] - 2026-10-19
+
+> **Assistants can publish and grade homework, cards name the publisher and the grader, and MindMate says which server failed.**
+
+### Added
+
+- **作业署名** — Homework cards show who published the assignment and who graded it. Saving a review records `reviewed_by` (migration `0147`). An older review with no grader still shows that it was reviewed.
+
+### Changed
+
+- **助教** — A class assistant can publish homework, upload instruction images, and grade. They can delete only assignments they published. The class teacher can still delete any assignment in the class. Resetting a classroom student's password stays with the pilot teacher. A superadmin can still view and grade every class; publishing does not open just because the account is a superadmin.
+- **Student canvas** — Students see 学习 on the canvas teaching tab and on the classroom remote.
+
+### Fixed
+
+- **MindMate** — A main-server outage asks for another try so the next turn uses the backup. A backup outage says the backup did not finish either. A cut-off reply, an empty stream, a network failure, and a generic service failure each have their own notice, and a partial reply stays in the chat. Seminar chat uses the same main and backup codes. The chat request releases its database transaction before the Dify stream, so a long reply does not sit on an idle transaction.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`tests/test_learning_space.py`](tests/test_learning_space.py) — an assistant can publish, can delete only their own homework, and a review stores the grader.
+- [`tests/test_learning_space_db_flow.py`](tests/test_learning_space_db_flow.py) — an assistant can open the class as a publisher, and a review stores `reviewed_by`.
+- [`tests/test_mindmate_stream_session_release.py`](tests/test_mindmate_stream_session_release.py) — the chat request commits its database session before the stream starts.
+- [`frontend/tests/lsHelpersWall.spec.ts`](frontend/tests/lsHelpersWall.spec.ts), [`frontend/tests/mindmateStreamErrorNotice.spec.ts`](frontend/tests/mindmateStreamErrorNotice.spec.ts), [`frontend/tests/mindmateCollabWsErrors.spec.ts`](frontend/tests/mindmateCollabWsErrors.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts)
+
+## [5.180.177] - 2026-10-19
+
+> **Continue session reopens the same seminar. A closed seminar hides participant faces and the collaborate button.**
+
+### Changed
+
+- **Continue session** — Only the owner sees Continue session. It opens the same seminar again: the same invite code, the same transcript, joint avatars, contacts, and End seminar. The sidebar shows the green live mark, and the seminar leaves saved history until it ends again. Joiners keep the saved transcript and can rejoin once the room is live.
+
+### Fixed
+
+- **Closed seminar** — A finished seminar no longer shows participant avatars or the collaborate button. On a live seminar, the face stack and the room buttons share one gap.
+- **Dev server** — Vite hot reload follows the port the dev server actually bound, so a busy 41732 does not leave the page talking to the other server.
+
+### Tests
+
+- [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py)
+- [`frontend/tests/mindmateContinueSession.spec.ts`](frontend/tests/mindmateContinueSession.spec.ts)
+
+## [5.180.176] - 2026-10-18
+
+> **Everyone who joined a seminar keeps it in history, a closed seminar can continue as a personal chat, and contact online status follows the shared presence fan-out.**
+
+### Added
+
+- **Seminar history** — Joining a seminar is recorded. After the room ends, every participant sees it in seminar history and can reopen the read-only transcript. Pin, rename, and delete stay with the host.
+- **Continue session** — A closed seminar shows Continue session on the MindMate header. It returns to a writable personal thread instead of reopening the ended room.
+
+### Fixed
+
+- **Contact online status** — Org presence updates use the same Redis fan-out as workshop chat and reach MindMate notify sockets. The contact list subscribes even before the school id is known, and replacing a notify tab no longer drops the live socket or leaves a stale online mark.
+
+### Tests
+
+- [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py), [`tests/test_mindmate_notify_presence.py`](tests/test_mindmate_notify_presence.py), [`tests/test_ws_fanout.py`](tests/test_ws_fanout.py)
+- [`frontend/tests/mindmateCollabLibrarySave.spec.ts`](frontend/tests/mindmateCollabLibrarySave.spec.ts), [`frontend/tests/mindmateContinueSession.spec.ts`](frontend/tests/mindmateContinueSession.spec.ts), [`frontend/tests/mindmatePresenceSubscribe.spec.ts`](frontend/tests/mindmatePresenceSubscribe.spec.ts)
+
+## [5.180.175] - 2026-10-18
+
+> **MindMate Dify ids require an install prefix, startup exits on placeholder `.env`, and Hunyuan is removed from the LLM stack.**
+
+### Added
+
+- **MINDMATE_DIFY_USER_PREFIX** — Required in `.env`. New web MindMate chats are stored as `{prefix}_mg_user_<id>`. History still lists older `mg_user_<id>` threads. Bayi SSO UUID ids are unchanged. `GET /api/auth/mode` exposes the prefix to the web app and the Chrome extension.
+- **Startup `.env` gate** — Before the server binds, a banner lists missing or sample values for LLM keys, the MindMate prefix, and enabled feature flags (MindMate, Smart Response, OAuth, Markets, VOD, Workshop). `python main.py --help` cheatsheet documents the same list.
+
+### Fixed
+
+- **MindMate** — Streaming and file upload send the conversation owner’s `dify_user` when reopening a thread, so prefixed ids and legacy aliases resolve to the right Dify history. A `dify_user` key this account does not own returns 403.
+- **浏览器扩展** — MindMate chat passes `dify_user` and `server` on the stream request like the web app instead of overloading `user_id`.
+
+### Removed
+
+- **混元 Hunyuan** — Client, env settings, error parser, and model wiring removed. Diagram LLM routing stays on Qwen, DeepSeek, Kimi, and Volcengine ARK.
+- **Mock LLM fallback** — `clients.llm` no longer constructs clients on import or returns a mock when a model is missing.
+
+### Changed
+
+- **LLM clients** — `ClientManager` owns initialization at startup; importing `clients.llm` only exports client classes.
+
+### Tests
+
+- [`tests/test_startup_env_requirements.py`](tests/test_startup_env_requirements.py)
+- [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py), [`tests/test_dify_user_key.py`](tests/test_dify_user_key.py), [`tests/utils/test_dify_mindmate_user_id.py`](tests/utils/test_dify_mindmate_user_id.py), [`tests/test_dify_export_targets.py`](tests/test_dify_export_targets.py)
+
+## [5.180.174] - 2026-10-18
+
+> **Delete removes the node and closes the gap, thinking-map type changes reflow, and the node toolbar stays off covering sheets.**
+
+### Fixed
+
+- **删除** — Delete and Backspace remove the selected node on thinking maps, mind maps, and concept maps, and a click on the canvas does not bring it back. Circle, bubble, brace, and bridge maps write the packed layout into the diagram, so the stored coordinates no longer keep the empty slot.
+- **思维图示排版** — On all eight thinking maps (including multi-flow), changing font size and then bold, italic, underline, or strikethrough clears stale node measurements and relayouts so cause/effect columns and ring maps no longer overlap. Underline and strikethrough stay inside the line box.
+- **图片** — A picture on a thinking-map node uses the same 120×80 frame as a mind map, and the node box grows with that frame.
+- **浮动工具栏** — Opening AI brainstorm, Concept parking lot, or another canvas dialog no longer leaves the selected-node pill on top of the sheet. In-page overlays hide the teleported chrome; body dialogs stay above it. The color control reads the paint already on the node.
+- **连线** — Thinking-map connectors follow the active color theme. A solid theme uses its accent. Rainbow keeps the family line.
+- **学习单导出** — A capture that hides answers hides them on the cloned sheet, including knocked-out node text. Outline export paints circle, bubble, flow, brace, tree, bridge, and concept maps in black and white.
+- **字体** — SimSun, KaiTi, Inter, and Space Grotesk load a webfont when the open diagram uses them, so a phone paints the face the menu stored.
+- **触控** — Bold, italic, and underline on the node toolbar apply once on a touch tap. A two-finger swipe scrolls a long dialog.
+- **学习空间** — Homework submit stores the diagram immediately. The thumbnail renders after the student has left and is written onto that same snapshot.
+
+### Changed
+
+- **模型菜单** — The desktop status bar and the phone canvas share one model menu. Express stays the closed-state pick.
+- **面板** — Opening AI brainstorm, Concept parking lot, or conversational edit closes the other covering panel.
+
+### Tests
+
+- [`frontend/tests/diagramNodeKeyboardDelete.spec.ts`](frontend/tests/diagramNodeKeyboardDelete.spec.ts)
+- [`frontend/tests/thinkingMapTypographyRelayout.spec.ts`](frontend/tests/thinkingMapTypographyRelayout.spec.ts), [`frontend/tests/thinkingMapTypographyLayout.spec.ts`](frontend/tests/thinkingMapTypographyLayout.spec.ts), [`frontend/tests/multiFlowMapLayout.spec.ts`](frontend/tests/multiFlowMapLayout.spec.ts)
+- [`frontend/tests/nodeImageFrame.spec.ts`](frontend/tests/nodeImageFrame.spec.ts), [`frontend/tests/diagramTextStyleMobile.spec.ts`](frontend/tests/diagramTextStyleMobile.spec.ts), [`frontend/tests/diagramCanvasFonts.spec.ts`](frontend/tests/diagramCanvasFonts.spec.ts)
+- [`frontend/tests/canvasNodeChromeOverlayGate.spec.ts`](frontend/tests/canvasNodeChromeOverlayGate.spec.ts), [`frontend/tests/swissGlassStack.spec.ts`](frontend/tests/swissGlassStack.spec.ts), [`frontend/tests/floatingToolbarColorPicker.spec.ts`](frontend/tests/floatingToolbarColorPicker.spec.ts), [`frontend/tests/floatingToolbarNodeDisplay.spec.ts`](frontend/tests/floatingToolbarNodeDisplay.spec.ts)
+- [`frontend/tests/thinkingMapConnectionStroke.spec.ts`](frontend/tests/thinkingMapConnectionStroke.spec.ts), [`frontend/tests/thinkingMapNodePaint.spec.ts`](frontend/tests/thinkingMapNodePaint.spec.ts), [`frontend/tests/colorFormat.spec.ts`](frontend/tests/colorFormat.spec.ts)
+- [`frontend/tests/diagramExportLearningSheet.spec.ts`](frontend/tests/diagramExportLearningSheet.spec.ts), [`frontend/tests/diagramCanvasExportOutline.spec.ts`](frontend/tests/diagramCanvasExportOutline.spec.ts), [`frontend/tests/diagramMindMapVectorExport.spec.ts`](frontend/tests/diagramMindMapVectorExport.spec.ts)
+- [`frontend/tests/canvasLlmMenuDropdown.spec.ts`](frontend/tests/canvasLlmMenuDropdown.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/panelsStoreExclusivity.spec.ts`](frontend/tests/panelsStoreExclusivity.spec.ts), [`frontend/tests/modalTwoFingerScroll.spec.ts`](frontend/tests/modalTwoFingerScroll.spec.ts)
+- [`tests/test_learning_space_thumbnail_backfill.py`](tests/test_learning_space_thumbnail_backfill.py), [`tests/test_learning_space_db_flow.py`](tests/test_learning_space_db_flow.py)
+
+## [5.180.173] - 2026-10-18
+
+> **格式刷 copies the paint you see on concept maps and thinking maps, learning-sheet blanks keep their frame, and 幻灯片讲解 stays greyed until the slide-deck flag is on.**
+
+### Fixed
+
+- **格式刷** — Pickup reads theme paint when a node has no stored style (concept maps, thinking maps, and a last-resort canvas read). An empty snapshot or a failed apply shows a warning. Only the first selected node is the source. The format strip and the classroom remote use the same click and double-click lock as the edit toolbar. The session writes the injected diagram, so a preview canvas does not paint the editor.
+- **学习单** — A knocked-out pill or underline keeps the painted width and height instead of collapsing to the blank label.
+- **概要** — The range box stays up while the 概要 topic is selected, styled, or dragged.
+- **删除** — On a mind map, Delete clears node adornments before it removes the node.
+
+### Changed
+
+- **思维讲堂** — 幻灯片讲解 stays visible but greyed on every thinking map and concept map. `FEATURE_MIND_CLASSROOM_SLIDE_DECK` is off by default. Start, ZhiHui, and enqueue stay on 画布语音巡讲.
+- **i18n** — Live Google gap-fill runs on the Windows host (VPN / system proxy). WSL `npm run i18n:gap-fill` only counts gaps on `--dry-run`. Canvas catalogs that still matched English were filled from zh.
+- **浏览器扩展 0.4.26** — Traditional Chinese is not an extension catalog. Saved `zh_TW` maps to 中文. The web app still has 44 interface languages.
+
+### Tests
+
+- [`frontend/tests/formatBrushSnapshot.spec.ts`](frontend/tests/formatBrushSnapshot.spec.ts), [`frontend/tests/formatBrushWiring.spec.ts`](frontend/tests/formatBrushWiring.spec.ts), [`frontend/tests/useCanvasToolbarFormatBrush.spec.ts`](frontend/tests/useCanvasToolbarFormatBrush.spec.ts)
+- [`frontend/tests/learningSheetThinkingMapHold.spec.ts`](frontend/tests/learningSheetThinkingMapHold.spec.ts), [`frontend/tests/mindMapSummaryRangeChrome.spec.ts`](frontend/tests/mindMapSummaryRangeChrome.spec.ts), [`frontend/tests/mindMapAdornments.spec.ts`](frontend/tests/mindMapAdornments.spec.ts)
+- [`frontend/tests/mindClassroomStore.spec.ts`](frontend/tests/mindClassroomStore.spec.ts), [`frontend/tests/mindClassroomConfig.spec.ts`](frontend/tests/mindClassroomConfig.spec.ts), [`tests/test_mind_classroom_enqueue.py`](tests/test_mind_classroom_enqueue.py)
+
+## [5.180.172] - 2026-10-17
+
+> **The extension merges web text with linked PDFs and server OCR, `/auth` keeps the hero video under modals on Android, and Document Summary sends SmartEdu and CNKI URLs to the extension.**
+
+### Added
+
+- **Extension PDF OCR** — `POST /api/extension/extract_pdf_text` returns embedded PDF text or vision OCR for image-only pages (rate limited, ~8 MiB cap). Mixed capture and SmartEdu use the same endpoint with `X-MG-Client: chrome-extension`.
+- **浏览器扩展混合抓取** — **Generate** merges DOM or selection markdown with up to three linked PDFs (login-aware fetch). Thin text layers merge with OCR instead of picking one side. CNKI and Wenku PDF assets join SmartEdu lesson files in the same pipeline.
+- **扩展界面语言** — Settings lists the same **44** languages as the web app. Chrome `_locales/` plus `i18n/` catalogs for codes Chrome does not ship; manifest name and description use `__MSG_` keys.
+
+### Fixed
+
+- **登录页** — Android WebViews skip the COS hero `<video>` so native video layers do not paint over teleported modals. While a body overlay is open, the clip unmounts until the overlay closes.
+
+### Changed
+
+- **浏览器扩展 0.4.25** — The Generate tab no longer saves to Document Summary separately; non-empty `page_content` rides with PNG generate so canvas **Document Summary** keeps the web extract on COS. The library shortcut opens **your library** until this page saves a diagram, then **this mind map** for the session (`chrome.storage.session`). SmartEdu OCR runs lesson plans before slide decks.
+- **文档总结** — Pasting a URL on `smartedu.cn`, `cnki.net`, or `wenku.baidu.com` shows the Chrome-extension hint in the panel and blocks server fetch (`browser_file_extract_required`).
+
+### Tests
+
+- [`tests/test_extension_pdf_text.py`](tests/test_extension_pdf_text.py) — text-layer PDFs, image-only OCR, size and auth gates.
+- [`tests/test_url_page_fetch.py`](tests/test_url_page_fetch.py) — gated hosts and API detail string.
+- [`frontend/tests/browserFileExtractUrl.spec.ts`](frontend/tests/browserFileExtractUrl.spec.ts) — canvas host suffix list matches the server.
+- [`frontend/tests/authLoginHero.spec.ts`](frontend/tests/authLoginHero.spec.ts), [`frontend/tests/authLoginHeroVideoLayer.spec.ts`](frontend/tests/authLoginHeroVideoLayer.spec.ts) — Android and overlay gates for hero video mount.
+- [`chrome-extension/test/doc-extract.spec.js`](chrome-extension/test/doc-extract.spec.js), [`chrome-extension/test/extension-locales.spec.js`](chrome-extension/test/extension-locales.spec.js), [`chrome-extension/test/page-diagram-link.spec.js`](chrome-extension/test/page-diagram-link.spec.js) — mixed capture merge, SmartEdu OCR client, PDF classify, locale catalogs, page-diagram session link.
+- [`tests/test_extension_store_packaging.py`](tests/test_extension_store_packaging.py) — store zip still passes packaging rules.
+
+## [5.180.171] - 2026-10-15
+
+> **Auto-complete accepts a filled topic such as 新加坡, and a collaborative mind map keeps one branch.**
+
+### Fixed
+
+- **自动完成** — A topic that starts with 新 or New counts as filled on every diagram, including a dual-language double bubble map. 新加坡 and New Zealand no longer raise “fill in both topics” or “enter a topic first”. An unedited insert label (新步骤, New Step) and a seeded title (Topic A, 主题A, Zentrumsthema) still block generation. The node palette and the server prompt filter use the same rule.
+- **协作思维导图** — Clients share one id for a leftover positional branch. A position-only echo updates that branch. It does not add a second copy, and a later patch still finds the live node.
+
+### Tests
+
+- [`frontend/tests/diagramDefaultLabels.spec.ts`](frontend/tests/diagramDefaultLabels.spec.ts) — 新加坡 and New Zealand are real topics; 新步骤, New Step, 主题, and Zentrumsthema stay blank.
+- [`tests/test_placeholder_text.py`](tests/test_placeholder_text.py) — the server list matches the zh, zh-tw, and en insert labels and keeps 新加坡.
+- [`frontend/tests/mindMapIdentityMigrate.spec.ts`](frontend/tests/mindMapIdentityMigrate.spec.ts) — every client mints the same id for a leftover branch, and a position echo has no branch identity.
+- [`tests/test_online_collab_live_spec_merge_extras.py`](tests/test_online_collab_live_spec_merge_extras.py) — a second mind-map id binds onto the live branch, and a layout-only unknown id does not append.
+
+## [5.180.170] - 2026-10-13
+
+> **Editing a mind-map topic keeps the painted stem, and MindMate checks the shared Dify hosts once.**
+
+### Fixed
+
+- **思维导图** — Editing the center topic updates the layout estimate and leaves the painted stem width alone. The right-hand branch stays on that painted edge. When editing ends, the measured size is published even if the box already settled.
+
+### Changed
+
+- **Dify 健康检查** — The heartbeat probes the shared main and backup URLs once per cycle and stores one snapshot per host. Every school reads that snapshot. A missing primary snapshot stays on the primary.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`frontend/tests/mindMapTopicEditStem.spec.ts`](frontend/tests/mindMapTopicEditStem.spec.ts) — a shorter topic label updates the estimate and leaves the painted width until measurement replaces it.
+- [`tests/test_dify_server_health_cache.py`](tests/test_dify_server_health_cache.py), [`tests/test_dify_failover_routing.py`](tests/test_dify_failover_routing.py), [`tests/test_dify_global_servers.py`](tests/test_dify_global_servers.py) — health is keyed by base URL, and the poller covers the shared pair.
+
+## [5.180.169] - 2026-10-13
+
+> **Search engines can read the public pages, a low thinking-coin balance opens the wallet from anywhere, and the browser extension ships a store-safe PDF worker.**
+
+### Added
+
+- **搜索收录** — `/auth` and `/privacy` are allowed in `robots.txt` and listed in `/sitemap.xml`. The sign-in page title is MindGraph · Mind Platform, with a description crawlers can read without JavaScript. The rest of the signed-in app stays disallowed.
+- **思维币** — A short balance shows one toast and opens the wallet from the app root, including the canvas, mobile, MindMate, voice notes, node explain, subgraph suggest, and diagram translate. MindBot answers with the same shortage message and does not call Dify. A group chat hides the sender's balance.
+
+### Changed
+
+- **浏览器扩展 0.4.24** — The PDF worker ships inside the package and loads before `pdf.min.js`. The store zip has no `eval`, `new Function`, or dynamic script loading.
+
+### Tests
+
+- [`tests/test_search_indexing.py`](tests/test_search_indexing.py) — robots allow only the public pages, and the sitemap uses the deployment origin.
+- [`tests/test_mindbot_thinking_coin_gate.py`](tests/test_mindbot_thinking_coin_gate.py) — a short balance blocks the MindBot turn; a group reply omits the balance.
+- [`tests/test_extension_store_packaging.py`](tests/test_extension_store_packaging.py) — the store zip includes the PDF worker and no remote-code markers.
+- [`frontend/tests/diagramTranslateStream.spec.ts`](frontend/tests/diagramTranslateStream.spec.ts), [`frontend/tests/generateGraphErrors.spec.ts`](frontend/tests/generateGraphErrors.spec.ts) — a coin shortage is a typed error, and a failed generation keeps the server detail.
+
+## [5.180.168] - 2026-10-13
+
+> **The canvas translate button uses the language you pick, including Norwegian.**
+
+### Fixed
+
+- **图示翻译** — The status-bar translate menu sends every interface language as that language. Norwegian no longer falls back to English. On a dual-language diagram, only the main line is translated. The smaller second line stays.
+
+### Tests
+
+- [`frontend/tests/translateLanguages.spec.ts`](frontend/tests/translateLanguages.spec.ts) — Norwegian, Polish, and Traditional Chinese map to translator targets. An unknown locale still falls back to English.
+- [`frontend/tests/collectDiagramTranslateItems.spec.ts`](frontend/tests/collectDiagramTranslateItems.spec.ts) — a second language line is left out of the translate request.
+- [`frontend/tests/applyDiagramTranslationsToSpec.spec.ts`](frontend/tests/applyDiagramTranslationsToSpec.spec.ts) — the gloss and summary gloss stay, and the diagram's primary language follows the target.
+- [`tests/test_canvas_translate_targets.py`](tests/test_canvas_translate_targets.py) — the API accepts Norwegian and rejects an unknown code.
+
+## [5.180.167] - 2026-10-13
+
+> **The sidebar account chip moves with the sidebar, and a low thinking-coin balance stays out of the error log.**
+
+### Fixed
+
+- **侧边栏** — Collapsing the sidebar hides the account chip with the brand and navigation. It no longer stays on the MindGraph gallery as a separate avatar. Opening the sidebar brings that whole group back.
+- **思维币** — A short thinking-coin balance is an expected limit. Node palette, node explain, the Responses stream, text-to-image, and the LLM retry wrapper log it at info. A real provider failure still logs at error.
+- **节点面板** — Load More on double-bubble and multi-flow keeps the batch counter. Later cards keep new ids instead of repeating the first batch and disappearing.
+
+### Tests
+
+- [`frontend/tests/floatingAccountMenu.spec.ts`](frontend/tests/floatingAccountMenu.spec.ts) — the floating account chip is only for pages that do not mount the sidebar.
+- [`tests/test_node_palette_stream_log.py`](tests/test_node_palette_stream_log.py) — a coin shortfall logs at info; a provider failure stays at error.
+- [`tests/test_llm_http_errors.py`](tests/test_llm_http_errors.py) — the retry wrapper does not retry or error-log a low balance.
+- [`tests/test_palette_load_more_session.py`](tests/test_palette_load_more_session.py) — a second double-bubble or multi-flow batch uses new node ids.
+
+## [5.180.166] - 2026-10-13
+
+> **Startup no longer downloads the full Chinese conversion dictionary.**
+
+### Changed
+
+- **简繁检测** — Overseas Simplified Chinese checks and traditional agreement text use OpenCC's character table instead of the full phrase dictionaries. Those dictionaries were about 1 MB and shipped inside the notifications chunk on every page load.
+
+### Tests
+
+- [`frontend/tests/simplifiedTraditional.spec.ts`](frontend/tests/simplifiedTraditional.spec.ts) — simplified glyphs convert, and shared characters such as 信息 stay unchanged.
+
+## [5.180.165] - 2026-10-13
+
+> **The canvas model menu stays quiet until a model has a diagram, and reopening a diagram restores the last choice.**
+
+### Fixed
+
+- **画布模型** — Picking a model that has not run auto-complete only moves the menu. It no longer warns that there is no result. After auto-complete, the diagram and the last menu choice are both saved, and opening the diagram again highlights that model.
+
+### Tests
+
+- [`frontend/tests/llmResultsPersist.spec.ts`](frontend/tests/llmResultsPersist.spec.ts) — an unused menu id is stored beside the model that owns the canvas.
+- [`frontend/tests/llmResultsTeardown.spec.ts`](frontend/tests/llmResultsTeardown.spec.ts) — reopening highlights that menu id and keeps the generated diagram on its model.
+
+## [5.180.164] - 2026-10-13
+
+> **Settings keeps the DingTalk MindBot bind button under WeChat, and the public privacy page lists the full agreement.**
+
+### Fixed
+
+- **钉钉绑定** — Settings → Security shows the DingTalk MindBot bind button under WeChat, so a platform account can pair with a MindBot user. Pairing still uses the rotating MindBot code.
+
+### Changed
+
+- **隐私政策** — The public privacy page includes the full agreement, numbered 1 through 18, matching the in-app text.
+
+### Removed
+
+- **未使用文案** — Dropped leftover strings for the old more-apps menu and Tab recommendations. The Kitty node-action guide that opens from the one-sentence mascot stays.
+
+### Tests
+
+- [`frontend/tests/settingsAccountBindingsOrder.spec.ts`](frontend/tests/settingsAccountBindingsOrder.spec.ts) — the DingTalk row renders under WeChat.
+- [`tests/test_privacy_policy_static.py`](tests/test_privacy_policy_static.py) — public headings run 1 through 18.
+
+## [5.180.163] - 2026-10-12
+
+> **The canvas stays on the ribbon while a diagram loads, and unused chrome is gone.**
+
+### Fixed
+
+- **画布加载** — Opening a diagram no longer flashes the old bottom toolbar. The status bar is the bottom chrome from the first paint, including while the diagram type is still loading.
+
+### Changed
+
+- **画布模型** — The GLM slot uses the Zhipu mark.
+- **快捷键与手势** — Those guides open from the status bar.
+
+### Removed
+
+- **旧工具栏** — The glass editing toolbar and the more-apps menu are gone. Concept maps still open the virtual keyboard from the ribbon.
+- **未挂载界面** — Removed the old presentation rail, the gallery module grid and share-site alias, the unmounted file-center panel, the Tab recommendation picker, the classroom mascot dock, the unused subgraph accept bar, the auth agreement modal (the privacy page stays), the unused auth pixel-battle background, and the unused MindBot admin tab that the school MindBot pane replaced.
+
+### Tests
+
+- [`frontend/tests/canvasEditorRibbon.spec.ts`](frontend/tests/canvasEditorRibbon.spec.ts) — ribbon chrome stays on while the diagram type is still loading.
+
+## [5.180.162] - 2026-10-12
+
+> **The canvas model menu shows the configured model id, and Chinese labels GLM as 智谱.**
+
+### Changed
+
+- **画布模型** — The gray name is the live model id: `deepseek-v4.1-flash`, `qwen3.8-flash`, `qwen3.8-max`, `glm-5-3-flash`, and `doubao-seed-2-1-turbo`. A trailing date such as `-260828` stays off the label. A superadmin override updates the name. Simplified Chinese calls GLM **智谱**; Traditional Chinese calls it **智譜**. Other languages stay GLM Flash.
+
+### Tests
+
+- [`tests/test_canvas_express_llm.py`](tests/test_canvas_express_llm.py), [`frontend/tests/canvasLlmMenu.spec.ts`](frontend/tests/canvasLlmMenu.spec.ts) — the menu reads the configured id and hides a trailing date.
+
+## [5.180.161] - 2026-10-12
+
+> **Canvas models use Express, Balanced, Max, GLM Flash, and Doubao, and Max calls `qwen3.8-max`.**
+
+### Changed
+
+- **画布模型** — The dropdown shows Express / DeepSeek Flash, Balanced / Qwen Flash, Max / Qwen Max, GLM Flash, and Doubao. Simplified Chinese short labels are 快速, 均衡, 极致, GLM Flash, and 豆包. Traditional Chinese Max is 極致. Saved diagrams still open on the same slots.
+- **模型配置** — Balanced is `QWEN_FLASH_MODEL` (`qwen3.8-flash`). Max is `QWEN_MAX_MODEL` (`qwen3.8-max`). GLM Flash is `GLM_FLASH_MODEL`. Doubao is `DOUBAO_MODEL` (`doubao-seed-2-1-turbo-260628`). `ARK_KIMI_ENDPOINT` and `DOUBAO21_MODEL` are gone. An empty GLM or Doubao value is rejected instead of sending a fallback id.
+- **用量** — Token rows keep a zero cost. The stored model name follows the env id for Express, Balanced, Max, GLM Flash, and Doubao.
+- **配图** — Text-to-image defaults to `qwen-image-3.0-pro` and also accepts `qwen-image-2.1-pro`.
+- **学校 Dify** — A blank school slot shows the global URL and a masked key. Editing that slot is what stores a school override.
+- **用户协议** — Traditional Chinese UI shows the agreement converted from the Simplified text.
+
+### Fixed
+
+- **节点解释** — Explanation waits until the node text is confirmed, including from the classroom remote and the outline.
+- **桥形图** — A long dimension label wraps and leaves a gap before the first pair.
+- **思维图颜色** — Changing only the text color keeps the role fill and border.
+- **海外简体** — Overseas email accounts stay on Traditional Chinese while `OVERSEAS_SIMPLIFIED_CHINESE` is off. Kitty warns when Simplified text is typed. Set the switch true to allow Simplified Chinese again without a migration.
+- **钉钉配图** — When thinking coins or the daily token cap run out, DingTalk receives a 200 text reply so the workflow can post the balance message.
+
+### Tests
+
+- [`tests/test_canvas_express_llm.py`](tests/test_canvas_express_llm.py), [`tests/test_llm_routing_store.py`](tests/test_llm_routing_store.py) — canvas model ids come from the new env flags.
+- [`tests/test_chinese_language_policy.py`](tests/test_chinese_language_policy.py), [`frontend/tests/nodeExplainEditGate.spec.ts`](frontend/tests/nodeExplainEditGate.spec.ts), [`frontend/tests/bridgeMapDimensionClearance.spec.ts`](frontend/tests/bridgeMapDimensionClearance.spec.ts), [`frontend/tests/schoolDifyServerDisplay.spec.ts`](frontend/tests/schoolDifyServerDisplay.spec.ts).
+
+## [5.180.160] - 2026-10-12
+
+> **Live translation subtitles use Qwen3.8 and list all 60 target languages.**
+
+### Changed
+
+- **实时翻译** — Canvas live translation calls `qwen3.8-livetranslate-flash-realtime` and shows text only. The Globe menu lists all 60 languages from the DashScope realtime translation table. Picking another language while translation is on updates the open session. Stopping sends `session.finish` so the last sentence is not dropped. Diagram label translation still uses its own 18-language allowlist.
+
+### Tests
+
+- [`tests/test_live_translate_session.py`](tests/test_live_translate_session.py) — the session asks for text only, and a target update accepts a short language code.
+- [`frontend/tests/translateLanguages.spec.ts`](frontend/tests/translateLanguages.spec.ts) — the menu lists each of the 60 codes once; diagram translation still falls back to English outside its allowlist.
+
+## [5.180.159] - 2026-10-12
+
+> **The two Dify server URLs come only from the environment, and the school server switch stays on one line.**
+
+### Fixed
+
+- **Dify 地址** — 主服务器 is `DIFY_API_URL` and 备用服务器 is `DIFY_BACKUP_API_URL`, used exactly as written in `.env`. An empty variable stays empty. The school form no longer fills `https://api.dify.ai/v1` or a hardcoded host.
+- **优先使用** — 主服务器 and 备用服务器 stay on one line.
+
+### Tests
+
+- [`tests/test_dify_global_servers.py`](tests/test_dify_global_servers.py) — an unset URL stays empty, and a key without a URL does not create a server.
+
+## [5.180.158] - 2026-10-12
+
+> **The backup Dify server defaults to the MindSpring host.**
+
+### Fixed
+
+- **备用服务器** — A blank backup URL is `http://dify.mindspringedu.com/v1`. The school form no longer shows `https://api.dify.ai/v1` on that slot. Leave the backup key empty to stay on one server.
+
+## [5.180.157] - 2026-10-12
+
+> **MindMate stays available when the main message server is down, and a chat opened on the backup keeps going there.**
+
+### Added
+
+- **备用服务器** — Dify main (`DIFY_API_URL` / `DIFY_API_KEY`) is 主服务器. Dify backup (`DIFY_BACKUP_API_URL` / `DIFY_BACKUP_API_KEY`) is 备用服务器. Both run the same workflow. A blank school slot uses that pair. A school that already has its own two servers keeps them. The school form shows the global key for the slot being edited.
+
+### Fixed
+
+- **主服务器中断** — After the heartbeat marks 主服务器 down, new messages go to 备用服务器. A notice says the earlier conversation can be opened again after you come back. A thread that already lives on 备用服务器 stays there, including after 主服务器 recovers, so the next message still has its context. A thread from 主服务器 is not sent to 备用服务器.
+- **暂时不可用** — A Dify restart (502, 503, 504, or a dropped connection) answers with “AI助手暂时不可用，请稍后再试” on chat and on conversation actions. The history list still shows conversations from the server that answers.
+- **手机欢迎页** — The mobile MindMate welcome uses the same avatar as the desktop panel.
+
+### Removed
+
+- **`AI_ASSISTANT_NAME`** — The assistant name is the school MindMate name. The unused environment setting is gone.
+
+### Tests
+
+- [`tests/test_dify_global_servers.py`](tests/test_dify_global_servers.py), [`tests/test_dify_failover_switch_e2e.py`](tests/test_dify_failover_switch_e2e.py) — blank slots use the env pair; a backup thread stays on 备用服务器; a 主服务器 id is not sent there during an outage; traffic returns when 主服务器 recovers.
+- [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py), [`tests/test_dify_conversations_http.py`](tests/test_dify_conversations_http.py), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py) — history survives one server being down; collab omits the 主服务器 conversation id on failover.
+
+## [5.180.156] - 2026-10-11
+
+> **The login screen follows the browser language, brainstorm returns suggestions, and a tree map keeps its layout when you edit it.**
+
+### Added
+
+- **登录页** — `/auth` shows the browser language on top and Simplified Chinese underneath: the slogan, buttons, labels, and empty fields. Simplified and Traditional Chinese stay one line. This pairing stays on the login screen and does not change the signed-in bilingual setting. The test-server notice uses the same pair. The watermark stays one line.
+
+### Fixed
+
+- **AI 头脑风暴** — Express was still thinking. DashScope `deepseek-v4.1-flash` ignores `enable_thinking` when it sits inside `extra_body`, so the 500-token cap was spent on reasoning and the parking lot stayed empty. The flag is now a top-level field on DashScope chat calls. Circle, bubble, double bubble, tree, brace, flow, multi-flow, bridge, mind map, and concept map share that call.
+- **加载更多** — The next batch is added under the suggestions already listed. Scrolling up still shows the earlier batch. Opening brainstorm again still starts from an empty list.
+- **画布模型** — Thinking-map brainstorm uses the model selected on the canvas, the same as mind-map brainstorm. Qwen, Kimi, and Doubao get the same thinking-off request, so a short batch is not spent on reasoning. A school override still uses that school's model.
+- **树状图** — A long classification label stays above the category row, and wrapped text stays inside its node. Adding or deleting a category or leaf keeps the existing ids and rebuilds the connectors.
+- **结构编辑** — Adding, deleting, moving, or pasting reloads the open diagram and keeps the theme, node styles, and learning-sheet answers.
+- **字号** — The toolbar reads the size painted on the node, including a size stored as text.
+- **学习单图片** — PNG and SVG copy the canvas as shown. When the answer row is on screen, the image includes it.
+
+### Tests
+
+- [`frontend/tests/authPageBilingual.spec.ts`](frontend/tests/authPageBilingual.spec.ts) — non-Chinese browsers get Simplified Chinese underneath; Chinese browsers stay one line; a saved presenter locale is not used on `/auth`.
+- [`tests/test_dashscope_enable_thinking_wire.py`](tests/test_dashscope_enable_thinking_wire.py) — Express sends `enable_thinking: false` at the top level.
+- [`frontend/tests/nodePaletteLoadMore.spec.ts`](frontend/tests/nodePaletteLoadMore.spec.ts) — the next batch keeps earlier suggestions; a new session still replaces the list.
+- [`frontend/tests/treeMapStructure.spec.ts`](frontend/tests/treeMapStructure.spec.ts), [`frontend/tests/treeMapDimensionClearance.spec.ts`](frontend/tests/treeMapDimensionClearance.spec.ts), [`frontend/tests/structuralSpecReload.spec.ts`](frontend/tests/structuralSpecReload.spec.ts), [`frontend/tests/displayedNodeFontSize.spec.ts`](frontend/tests/displayedNodeFontSize.spec.ts), [`frontend/tests/canvasExportMenu.spec.ts`](frontend/tests/canvasExportMenu.spec.ts) — tree-map edits, label clearance, structural reload, painted font size, and canvas-as-shown image export.
+
+## [5.180.155] - 2026-10-11
+
+> **A saved diagram keeps one copy of each model's result, and a .mg file brings those results back.**
+
+### Fixed
+
+- **模型图保存** — Manual work saves the canvas alone. One successful model saves that diagram once. Each additional model that succeeds adds its own slot, including a model that is not on the menu yet. Reopening puts the menu back on the diagram that was open. Importing a `.mg` file, including onto a canvas that is already open, restores those slots. The canvas stays within 500KB. A file that also stores model diagrams can be up to 4000KB. The `.mg` header stays 1.1 or 2.0.
+
+### Tests
+
+- [`frontend/tests/llmResultsPersist.spec.ts`](frontend/tests/llmResultsPersist.spec.ts), [`frontend/tests/llmResultsTeardown.spec.ts`](frontend/tests/llmResultsTeardown.spec.ts), [`frontend/tests/diagramImportLlmSlots.spec.ts`](frontend/tests/diagramImportLlmSlots.spec.ts) — one slot per successful model, including a future model id, and `.mg` import restores the menu.
+- [`tests/test_diagram_spec_size.py`](tests/test_diagram_spec_size.py) — canvas stays at 500KB; saved model diagrams use 4000KB.
+
+## [5.180.154] - 2026-10-11
+
+> **Each canvas model keeps the diagram it generated, so switching back shows that response.**
+
+### Fixed
+
+- **画布模型** — Generation still runs one model at a time. Express, Qwen, and the other menu choices each keep their last successful diagram. Choosing a model that already ran loads that diagram. A failed retry keeps the previous success. Opening a saved model while another is still generating is not replaced when the new one finishes. Both diagrams are saved with the file, so they are still there after you reopen it.
+
+### Tests
+
+- [`frontend/tests/llmResultsTeardown.spec.ts`](frontend/tests/llmResultsTeardown.spec.ts)
+
+## [5.180.153] - 2026-10-10
+
+> **Thinking-map labels wrap like mind-map branches, and diagram generation asks for a JSON schema.**
+
+### Fixed
+
+- **思维图换行** — Circle, bubble, tree, brace, flow, and multi-flow labels share the mind-map wrap: browser text measurement, a script-aware column, and balanced lines. Each map keeps its own column. A phrase that fits stays one line; a longer one wraps and the node hugs the longest line. Bubble auto-complete answers wrap the same way, and a stored no-wrap flag is dropped the next time the map is laid out. Double bubble, bridge pairs, and tree branches stay one line.
+- **双气泡图** — The left and right difference columns size from their own text. An empty column adds no width. Pairs that share a row stay on one horizontal center.
+- **图表生成** — Diagram generation and requirements extraction send a JSON schema on every run. DashScope `deepseek-v4.1-flash` still receives `json_object`, on chat completions and the Responses API, because that model rejects `json_schema`. Other models keep the schema.
+
+### Tests
+
+- [`frontend/tests/mindMapTextWrap.spec.ts`](frontend/tests/mindMapTextWrap.spec.ts), [`frontend/tests/bubbleMapAttributeWrap.spec.ts`](frontend/tests/bubbleMapAttributeWrap.spec.ts), [`frontend/tests/doubleBubbleMapLayout.spec.ts`](frontend/tests/doubleBubbleMapLayout.spec.ts) — script-aware wrap, bubble answer circles, independent difference columns.
+- [`tests/test_autocomplete_json_schema.py`](tests/test_autocomplete_json_schema.py), [`tests/test_mind_map_node_explain_research.py`](tests/test_mind_map_node_explain_research.py), [`tests/test_llm_http_errors.py`](tests/test_llm_http_errors.py) — schema on generation, flash rewritten to `json_object`, Responses `text.format` keyword errors.
+
+## [5.180.152] - 2026-10-10
+
+> **Thinking maps keep the font, model, zoom center, and answer row you chose.**
+
+### Fixed
+
+- **字号** — 12、13, and 20 were rewritten to the role default, so a topic stayed at 18px. The stored size is now used on every thinking map. A missing size still uses the role default.
+- **节点解释** — Citation numbers in the explain bubble are 1…n in the order they first appear. The link still opens the source the model numbered.
+- **圆圈图、气泡图** — A long topic wraps at the shared column and the circle grows to that block. A small measured radius cannot shrink the circle below the text. Bubble maps share that topic node. Tree, flow, multi-flow, brace, and bridge already sized the box from wrapped text. Double bubble still grows the circle with the full line.
+- **模型** — Generation clears the painted result, and the menu was reading that empty value as DeepSeek 快速. The choice you picked stays through generation, the next run, and Kitty sync. Switching windows no longer resets it. Turning a model off still clears it.
+- **概念停车场** — Opening the panel started the session twice and wiped the suggestions. A session that is already loading is left alone.
+- **对话式修改** — “帮我把获奖作家结点删掉” deletes that node instead of regenerating the diagram.
+- **缩放** — The slider and +/- keep the center of the canvas fixed. Wheel zoom still follows the cursor.
+- **学习单导出** — “含答案” raster export draws the answer row under the diagram and fits the page after that row is visible. Copy-as-shown does not change the row. Mind-map vector files still fill the answers into the nodes.
+
+### Tests
+
+- [`frontend/tests/circleMapTopicRadius.spec.ts`](frontend/tests/circleMapTopicRadius.spec.ts), [`frontend/tests/mindMapExplainResearch.spec.ts`](frontend/tests/mindMapExplainResearch.spec.ts), [`frontend/tests/llmResultsTeardown.spec.ts`](frontend/tests/llmResultsTeardown.spec.ts), [`frontend/tests/viewportZoomAboutCenter.spec.ts`](frontend/tests/viewportZoomAboutCenter.spec.ts), [`frontend/tests/diagramExportLearningSheet.spec.ts`](frontend/tests/diagramExportLearningSheet.spec.ts), [`tests/test_kitty_fast_structural.py`](tests/test_kitty_fast_structural.py)
+
+## [5.180.151] - 2026-10-10
+
+> **Saving a diagram no longer fails when the spec contains a null byte.**
+
+### Fixed
+
+- **图保存** — A worksheet baseline joined a node's two lines with a null character. PostgreSQL rejected that spec (`\u0000 cannot be converted to text`), so autosave of the diagram returned 500. The baseline now stores the two lines as ordinary JSON. Every JSON value written through the database engines is serialized without a null byte, including collaboration flushes, snapshots, and other JSON columns. The diagram title and thumbnail drop the same character before the write. A database error on that save is returned as a save error.
+
+### Tests
+
+- [`tests/test_postgres_text.py`](tests/test_postgres_text.py), [`frontend/tests/learningSheetPersist.spec.ts`](frontend/tests/learningSheetPersist.spec.ts)
+
+## [5.180.150] - 2026-10-10
+
+> **www and mg WebSocket upgrades stay open, and the service worker leaves the HTML shell on the network.**
+
+### Fixed
+
+- **协作 WebSocket** — When `COLLAB_WS_ALLOWED_ORIGINS` is set, `https://www.mindspringedu.com` and `https://mg.mindspringedu.com` are both first-party. The allowlist does not have to name either host. Plain `http` and every other origin stay rejected. Collab, slide remote, training remote, ASR, live translate, and chat share that check.
+- **PWA** — The service worker turns navigation fallback off. The plugin default bound `index.html`, which is not precached, and threw `non-precached-url`. Document requests stay on the network so each page keeps a fresh CSP nonce.
+
+### Tests
+
+- [`tests/test_collab_stability_helpers.py`](tests/test_collab_stability_helpers.py), [`frontend/scripts/check-pwa-workbox.ts`](frontend/scripts/check-pwa-workbox.ts)
+
+## [5.180.149] - 2026-10-10
+
+> **Retired modules are gone, and Kitty Agent and 思维讲堂 slide lecture stay on.**
+
+### Removed
+
+- **论境、多应、迈特学习法、Gewe、社区分享、模板资源、思维课程** — those modules, their pages, and their APIs are removed. 案例广场, 研习社 courses, teaching-design templates, and Alipay markets stay.
+
+### Changed
+
+- **Kitty Agent** — voice and canvas control are a regular module. There is no feature switch and no organization permission gate.
+- **思维讲堂** — 幻灯片讲解 is always available beside the canvas tour.
+- **功能开关** — the admin feature list matches the modules that remain.
+
+### Tests
+
+- [`tests/test_feature_flag_hot_reload.py`](tests/test_feature_flag_hot_reload.py), [`tests/test_mind_classroom_enqueue.py`](tests/test_mind_classroom_enqueue.py), [`frontend/tests/canvasExportMenu.spec.ts`](frontend/tests/canvasExportMenu.spec.ts), [`frontend/tests/trainingCourses.spec.ts`](frontend/tests/trainingCourses.spec.ts)
+
+## [5.180.148] - 2026-10-10
+
+> **Twelve more European interface languages, each labeled with its Chinese name.**
+
+### Added
+
+- **界面语言** — Settings, the landing language menu, and the mobile account picker add Norwegian (`no`), Swedish (`sv`), Danish (`da`), Finnish (`fi`), Czech (`cs`), Slovak (`sk`), Romanian (`ro`), Hungarian (`hu`), Greek (`el`), Bulgarian (`bg`), Croatian (`hr`), and Serbian (`sr`). Browser tags `nb` and `nn` use Norwegian. Copy is filled from `zh`. Nordic and Slavic layouts use the closest bundled keyboard; Romanian and Croatian stay on the English layout.
+
+### Changed
+
+- **语言菜单** — A language that is not Chinese shows its Chinese name beside the native name, for example `Norsk (挪威语)`. 简体中文 and 繁體中文 stay native-only. Settings, the bilingual pickers, and the mobile account list use the same label as the landing menu.
+
+### Tests
+
+- [`frontend/tests/interfaceLanguagePicker.spec.ts`](frontend/tests/interfaceLanguagePicker.spec.ts), [`frontend/tests/galleryLanguageMenuRows.spec.ts`](frontend/tests/galleryLanguageMenuRows.spec.ts), [`frontend/tests/diagramDefaultPlaceholders.spec.ts`](frontend/tests/diagramDefaultPlaceholders.spec.ts)
+
+## [5.180.147] - 2026-10-09
+
+> **Bayi sign-up is a mobile number plus a school invitation code, and a school can rotate that code.**
+
+### Added
+
+- **邀请码轮换** — The school dashboard shows 轮换 beside copy. Confirming issues a new code and retires the old one. A school manager stays on their own school. A superadmin rotates the school they are viewing.
+
+### Changed
+
+- **八一注册** — Bayi mode always shows mobile plus invitation code, and email sign-up is refused. The form waits until the server reports the mode. A successful registration signs the user in. A pasted number with spaces or a leading 86 is stored as an 11-digit mobile. Spaces and lookalike dashes in the invitation code are normalized, and the older `AAAA-XXXXX` form still matches. An expired school cannot take a new member. A new Bayi school gets a generated code.
+- **八一账号** — Admin user edit keeps a Bayi user id in the phone field. The same id matches every letter-case spelling.
+- **思维导图** — A node labeled with name, title, content, or label is treated as text before the map is validated, so document generation keeps the branch.
+
+### Fixed
+
+- **提示** — Validation toasts drop the field path and the "Value error" prefix. A toast opened over the document-to-image overlay stays above that overlay.
+
+### Tests
+
+- [`tests/auth/test_bayi_invite_registration.py`](tests/auth/test_bayi_invite_registration.py), [`tests/auth/test_school_invitation_rotate_http.py`](tests/auth/test_school_invitation_rotate_http.py), [`tests/auth/test_phone_uniqueness_rls.py`](tests/auth/test_phone_uniqueness_rls.py), [`tests/utils/test_bayi_display_name.py`](tests/utils/test_bayi_display_name.py), [`tests/test_mind_map_spec_normalize.py`](tests/test_mind_map_spec_normalize.py), [`frontend/tests/accountPhone.spec.ts`](frontend/tests/accountPhone.spec.ts), [`frontend/tests/invitationCode.spec.ts`](frontend/tests/invitationCode.spec.ts), [`frontend/tests/parseApiErrorDetail.spec.ts`](frontend/tests/parseApiErrorDetail.spec.ts)
 
 ## [5.180.146] - 2026-10-08
 

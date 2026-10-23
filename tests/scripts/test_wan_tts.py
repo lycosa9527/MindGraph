@@ -8,7 +8,7 @@ from scripts.sync_classroom_video.roles import ROLE_META
 from scripts.training_roles.role_voices import ROLE_VOICES, lip_sync_directions, voice_for_folder
 from scripts.training_roles.wan_client import (
     QWEN_AUDIO_TTS,
-    WAN3_VIDEO_PRIME,
+    WAN3_VIDEO,
     build_tts_body,
     build_video_body,
     extract_tts_audio_url,
@@ -50,7 +50,7 @@ def test_talking_shot_passes_timbre_and_asks_for_lip_sync() -> None:
     media = with_reference_audio(images, ["https://example.com/mentor.wav", "https://example.com/black.wav"])
     directions = lip_sync_directions(["schnauzer-professor", "black-cat-mascot"])
     body = build_video_body(
-        WAN3_VIDEO_PRIME,
+        WAN3_VIDEO,
         f"导师说：「看黑板。」黑猫说：「嘿嘿。」{directions}",
         media=media,
         audio=True,

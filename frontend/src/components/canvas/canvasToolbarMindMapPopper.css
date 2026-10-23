@@ -555,6 +555,7 @@
 }
 
 .node-floating-toolbar-popper.el-popper {
+  /* Keep in sync with CANVAS_NODE_CHROME_Z.FLOATING_TOOLBAR_POPPER */
   z-index: 5100 !important;
   padding: 8px !important;
   border-radius: 10px !important;

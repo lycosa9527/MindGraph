@@ -12,6 +12,7 @@ import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { resolveCanvasAudienceLevel } from '@/composables/mindMap/audience/aiContentLevelInstructions'
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
+import { useNodeExplainEditGate } from '@/composables/mindMap/nodeExplainEditGate'
 import { useSavedDiagramsStore } from '@/stores'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
@@ -63,6 +64,7 @@ export function useMindMapNodeExplain() {
   const { requireCapability } = useLearningAiGate()
   const diagramStore = useDiagramSession()
   const savedDiagramsStore = useSavedDiagramsStore()
+  const { locked: explainLockedUntilConfirm } = useNodeExplainEditGate()
 
   const visible = ref(false)
   const target = ref<MindMapNodeExplainTarget | null>(null)
@@ -133,6 +135,7 @@ export function useMindMapNodeExplain() {
     if (activeRunId.value !== runId) return
     if (errorType === 'thinking_coin_insufficient') {
       eventBus.emit('thinking_coins:insufficient', {})
+      return
     }
     notify.error(message || t('canvas.mindMapNodeExplain.requestFailed'))
   }
@@ -260,6 +263,10 @@ export function useMindMapNodeExplain() {
   }
 
   function openExplain(nodeId: string, nodeLabel?: string): void {
+    if (explainLockedUntilConfirm.value) {
+      notify.warningKey('canvas.floatingToolbar.explainNeedsConfirm')
+      return
+    }
     if (!requireCapability('node_explain')) return
     if (
       isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)

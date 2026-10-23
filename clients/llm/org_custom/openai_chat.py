@@ -12,6 +12,7 @@ from clients.llm.base import (
     extract_usage_from_openai_completion,
     extract_usage_from_stream_chunk,
 )
+from clients.llm.structured_output import apply_structured_output
 from services.infrastructure.http.error_handler import (
     LLMProviderError,
     LLMRateLimitError,
@@ -47,14 +48,17 @@ class OrgOpenAIChatClient:
         **kwargs: Any,
     ) -> Dict[str, Any]:
         """POST official chat.completions and return {content, usage}."""
+        response_format = kwargs.pop("response_format", None)
         del kwargs
+        create_kwargs: Dict[str, Any] = {
+            "model": self.model_name,
+            "messages": as_openai_chat_messages(messages),
+            "temperature": self.default_temperature if temperature is None else temperature,
+            "max_tokens": max_tokens,
+        }
+        apply_structured_output(create_kwargs, response_format, model=self.model_name)
         try:
-            completion = await self.client.chat.completions.create(
-                model=self.model_name,
-                messages=as_openai_chat_messages(messages),
-                temperature=self.default_temperature if temperature is None else temperature,
-                max_tokens=max_tokens,
-            )
+            completion = await self.client.chat.completions.create(**create_kwargs)
         except RateLimitError as exc:
             raise LLMRateLimitError(str(exc)) from exc
         except APIStatusError as exc:
@@ -100,15 +104,19 @@ class OrgOpenAIChatClient:
         **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Stream official chat.completions tokens."""
-        del enable_thinking, kwargs
+        del enable_thinking
+        response_format = kwargs.pop("response_format", None)
+        del kwargs
+        create_kwargs: Dict[str, Any] = {
+            "model": self.model_name,
+            "messages": as_openai_chat_messages(messages),
+            "temperature": self.default_temperature if temperature is None else temperature,
+            "max_tokens": max_tokens,
+            "stream": True,
+        }
+        apply_structured_output(create_kwargs, response_format, model=self.model_name)
         try:
-            stream = await self.client.chat.completions.create(
-                model=self.model_name,
-                messages=as_openai_chat_messages(messages),
-                temperature=self.default_temperature if temperature is None else temperature,
-                max_tokens=max_tokens,
-                stream=True,
-            )
+            stream = await self.client.chat.completions.create(**create_kwargs)
             last_usage: Optional[Dict[str, int]] = None
             async for chunk in stream:
                 usage = extract_usage_from_stream_chunk(chunk)

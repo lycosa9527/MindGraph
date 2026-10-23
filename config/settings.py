@@ -41,6 +41,7 @@ from config.knowledge_config import (
 )
 from config.vod_config import VodConfigMixin
 from config.llm_config import LLMConfigMixin
+from config.qwen_omni_config import QwenOmniConfigMixin
 from config.mind_classroom_config import MindClassroomConfigMixin
 from config.t2i_config import T2IConfigMixin
 from config.rate_limiting import RateLimitingConfigMixin
@@ -57,6 +58,7 @@ class Config(
     BaseConfig,
     DashScopeEndpointConfigMixin,
     LLMConfigMixin,
+    QwenOmniConfigMixin,
     T2IConfigMixin,
     MindClassroomConfigMixin,
     RateLimitingConfigMixin,

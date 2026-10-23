@@ -184,7 +184,10 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
             v-if="activeTab === 'members'"
             class="mm-task-pane__count"
           >
-            {{ t('mindmate.taskPane.memberCount', { n: members.length }) }}
+            <I18nText
+              k="mindmate.taskPane.memberCount"
+              :params="{ n: members.length }"
+            />
           </span>
         </h2>
         <button
@@ -245,8 +248,8 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
                   <span
                     v-if="member.isLeader"
                     class="mm-task-pane__tag"
-                    >{{ t('mindmate.home.brief.role.leader') }}</span
-                  >
+                    ><I18nText k="mindmate.home.brief.role.leader"
+                  /></span>
                 </span>
                 <span
                   class="mm-task-pane__member-status"
@@ -256,13 +259,16 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
                     class="mm-task-pane__status-dot"
                     aria-hidden="true"
                   />
-                  {{
-                    member.pending
-                      ? t('mindmate.home.brief.pendingConsent')
-                      : member.online
-                        ? t('mindmate.home.memberOnline')
-                        : t('mindmate.home.memberOffline')
-                  }}
+                  <I18nText
+                    v-if="member.pending"
+                    k="mindmate.home.brief.pendingConsent"
+                  /><template v-else
+                    ><I18nText
+                      v-if="member.online"
+                      k="mindmate.home.memberOnline" /><I18nText
+                      v-else
+                      k="mindmate.home.memberOffline"
+                  /></template>
                 </span>
               </div>
               <span class="mm-task-pane__role-wrap">
@@ -363,7 +369,7 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
           :size="18"
           aria-hidden="true"
         />
-        <span>{{ t(item.labelKey) }}</span>
+        <span><I18nText :k="item.labelKey" /></span>
       </button>
     </nav>
   </div>

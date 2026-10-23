@@ -6,7 +6,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { topicPreviewFromPrompt } from '@/composables/mindgraph/landingGenerateGraphErrors'
 import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
 import { LANDING_LLM_MODEL, LANDING_PROMPT_MAX_LENGTH } from '@/config/landingQuickAccess'
-import { diagramSecondaryLanguage } from '@/diagramBilingual/generationRequest'
+import { diagramGenerationLanguages } from '@/diagramBilingual/generationRequest'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useAuthStore, useSavedDiagramsStore } from '@/stores'
 import { authFetch } from '@/utils/api'
@@ -29,27 +29,27 @@ export function useSeminarMindgraphPrompt() {
       return false
     }
     if (prompt.length > LANDING_PROMPT_MAX_LENGTH) {
-      notify.error(
-        t('diagramTemplate.promptTooLong', {
-          length: prompt.length,
-          max: LANDING_PROMPT_MAX_LENGTH,
-        })
-      )
+      notify.errorKey('diagramTemplate.promptTooLong', {
+        length: prompt.length,
+        max: LANDING_PROMPT_MAX_LENGTH,
+      })
       return false
     }
 
     const run = generation.beginGeneration()
     try {
-      const secondaryLanguage = diagramSecondaryLanguage()
-      if (secondaryLanguage) {
-        await ensureFontsForLanguageCode(secondaryLanguage)
+      const outputLanguages = diagramGenerationLanguages()
+      if (outputLanguages.secondaryLanguage) {
+        await ensureFontsForLanguageCode(outputLanguages.secondaryLanguage)
       }
       const outcome = await generation.generateLandingGraph(
         {
           prompt,
-          language: promptLanguage.value,
+          language: outputLanguages.language,
           llm: LANDING_LLM_MODEL,
-          ...(secondaryLanguage ? { secondary_language: secondaryLanguage } : {}),
+          ...(outputLanguages.secondaryLanguage
+            ? { secondary_language: outputLanguages.secondaryLanguage }
+            : {}),
         },
         run.signal,
         { announceNavigation: false }
@@ -58,7 +58,7 @@ export function useSeminarMindgraphPrompt() {
         return false
       }
       if (!outcome.result.spec) {
-        notify.error(t('diagramTemplate.generationFailed'))
+        notify.errorKey('diagramTemplate.generationFailed')
         return false
       }
       generation.releaseRun(run)
@@ -78,7 +78,7 @@ export function useSeminarMindgraphPrompt() {
           t('auth.diagramLimitReached', { max: savedDiagrams.maxDiagrams }),
         ]
         if (!detail) {
-          notify.error(t('diagramTemplate.generationFailed'))
+          notify.errorKey('diagramTemplate.generationFailed')
         } else if (!limitNotices.includes(detail)) {
           notify.error(detail)
         }

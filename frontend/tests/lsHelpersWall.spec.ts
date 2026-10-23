@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
   assignmentAllowsResubmit,
   formatLsStudentLabel,
+  homeworkGraderLabel,
+  homeworkPublisherName,
+  submissionGraderNames,
   studentCanOpenAssignment,
   studentCanResubmitAssignment,
   studentCanSubmitAssignment,
@@ -101,5 +104,14 @@ describe('lsHelpers learning space wall', () => {
     }
     expect(assignmentAllowsResubmit(submitted)).toBe(false)
     expect(studentCanOpenAssignment(submitted)).toBe(false)
+  })
+
+  it('labels publishers and graders on homework cards', () => {
+    expect(homeworkPublisherName('  王老师 ')).toBe('王老师')
+    expect(homeworkPublisherName('  ')).toBe('—')
+    expect(homeworkGraderLabel([' 李助教 ', '', ' 王老师 '])).toBe('李助教、王老师')
+    expect(homeworkGraderLabel([])).toBe('')
+    expect(submissionGraderNames({ reviewer_name: ' 李助教 ' })).toEqual(['李助教'])
+    expect(submissionGraderNames(null)).toEqual([])
   })
 })

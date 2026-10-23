@@ -369,6 +369,15 @@ const headerTitle = computed(
                 k="learningSpace.reviewByDimension"
               />
             </h3>
+            <p
+              v-if="submission?.reviewer_name"
+              class="ls-muted"
+            >
+              <I18nText
+                k="learningSpace.gradedBy"
+                :params="{ name: submission.reviewer_name }"
+              />
+            </p>
 
             <template v-if="!isView || hasTeacherReview">
               <div

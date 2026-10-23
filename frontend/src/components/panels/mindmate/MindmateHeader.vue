@@ -25,6 +25,7 @@ const props = withDefaults(
     currentConversationId?: string | null
     showContactsToggle?: boolean
     membersOpen?: boolean
+    showContinueSession?: boolean
   }>(),
   {
     mode: 'panel',
@@ -36,6 +37,7 @@ const props = withDefaults(
     currentConversationId: null,
     showContactsToggle: false,
     membersOpen: false,
+    showContinueSession: false,
   }
 )
 
@@ -46,6 +48,7 @@ const emit = defineEmits<{
   (e: 'deleteHistory', conversationId: string): void
   (e: 'toggleMembers'): void
   (e: 'addMembers'): void
+  (e: 'continueSession'): void
 }>()
 
 const { t, currentLanguage } = useLanguage()
@@ -94,7 +97,18 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
     class="panel-header h-14 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0"
   >
     <div class="flex-1 min-w-0" />
-    <div class="flex items-center gap-2 shrink-0">
+    <div class="mindmate-header-actions flex items-center gap-2 shrink-0">
+      <ElButton
+        v-if="showContinueSession"
+        size="small"
+        class="shrink-0"
+        @click="emit('continueSession')"
+      >
+        <I18nText
+          k="mindmate.collabContinueSession"
+          dense
+        />
+      </ElButton>
       <MindmateSeminarRosterBar
         v-if="showContactsToggle"
         :members-open="membersOpen"
@@ -196,6 +210,10 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
 
 <style scoped>
 @import './mindmate.css';
+
+.mindmate-header-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
 
 /* History dropdown - panel mode */
 .history-dropdown-menu {

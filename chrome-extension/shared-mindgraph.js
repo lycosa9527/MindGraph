@@ -148,6 +148,14 @@
   }
 
   /**
+   * @param {string | undefined} baseUrl
+   * @returns {string}
+   */
+  function buildLibraryUrl(baseUrl) {
+    return `${resolveMindGraphBaseUrl(baseUrl)}/library`;
+  }
+
+  /**
    * @param {string | undefined} presetId
    * @returns {string}
    */
@@ -319,7 +327,7 @@
       return null;
     }
     if (s === "zh-tw" || s === "zh-hk" || s === "zh-hant" || s === "zh-mo") {
-      return allowedSet.has("zh-hant") ? "zh-hant" : "zh";
+      return allowedSet.has("zh") ? "zh" : null;
     }
     if (s === "zh-cn" || s === "zh-hans" || s === "zh-sg") {
       return "zh";
@@ -341,29 +349,42 @@
   }
 
   /**
-   * One setting for extension UI and mind map generation language.
+   * Diagram output language. An explicit picker choice wins. Match browser maps the
+   * browser UI language onto the prompt-output registry; unknown tags use English.
    * @param {string|undefined} uiMode
    * @param {string|undefined} browserUiLang
    * @param {string[]} allowedCodes
    * @returns {string}
    */
   function resolvePromptLanguageFromUiMode(uiMode, browserUiLang, allowedCodes) {
-    const mode = (uiMode || "auto").toString();
     const allowedSet = new Set(allowedCodes);
-    if (mode === "en") {
-      return allowedSet.has("en") ? "en" : "zh";
-    }
-    if (mode === "zh_CN") {
-      return "zh";
-    }
-    if (mode === "zh_TW") {
-      return allowedSet.has("zh-hant") ? "zh-hant" : "zh";
+    const locales =
+      typeof MindGraphExtensionLocales !== "undefined" ? MindGraphExtensionLocales : null;
+    const mode = locales
+      ? locales.normalizeUiLanguage(uiMode)
+      : (uiMode || "auto").toString();
+    if (mode !== "auto") {
+      if (locales) {
+        const prompt = locales.promptFor(mode);
+        if (prompt && allowedSet.has(prompt)) {
+          return prompt;
+        }
+      }
+      if (mode === "en") {
+        return allowedSet.has("en") ? "en" : "zh";
+      }
+      if (mode === "zh" || mode === "zh_CN") {
+        return "zh";
+      }
+      if (mode === "zh-tw" || mode === "zh_TW") {
+        return "zh";
+      }
     }
     const fromBrowser = matchPromptLanguageCode(browserUiLang, allowedCodes);
     if (fromBrowser) {
       return fromBrowser;
     }
-    return "zh";
+    return allowedSet.has("en") ? "en" : "zh";
   }
 
   /**
@@ -441,6 +462,7 @@
     ensureAbsoluteBaseUrl,
     parseDiagramIdFromPngResponse,
     buildCanvasDiagramUrl,
+    buildLibraryUrl,
     baseUrlFromPresetId,
     resolveBaseUrlPresetId,
     sanitizeFilename,

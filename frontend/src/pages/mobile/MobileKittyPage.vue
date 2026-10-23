@@ -56,8 +56,7 @@ const notify = useNotifications()
 const authStore = useAuthStore()
 const mobileKittyAuthGate = createKittyWsAuthReconnectGate()
 const featureFlagsStore = useFeatureFlagsStore()
-const { flags } = storeToRefs(featureFlagsStore)
-const kittyServerEnabled = computed(() => flags.value?.feature_kitty_agent ?? false)
+const kittyServerEnabled = computed(() => true)
 const kittyPipelineStore = useKittyPipelineStore()
 const { editPipelineActive } = storeToRefs(kittyPipelineStore)
 
@@ -368,10 +367,6 @@ async function connectKittyOnce(): Promise<KittyConnectAttemptResult> {
     notify.warningKey('notification.signInToUse')
     return 'aborted'
   }
-  if (!kittyServerEnabled.value) {
-    notify.warningKey('mobile.kittyEnableServerHint')
-    return 'aborted'
-  }
   try {
     micDenied.value = false
     if (!bootstrapPayload.value) {
@@ -588,9 +583,7 @@ function onMicClick(): void {
   onAutoMicTap()
 }
 
-const micButtonDisabled = computed(
-  () => !kittyServerEnabled.value || micDenied.value || micInsecure.value
-)
+const micButtonDisabled = computed(() => micDenied.value || micInsecure.value)
 
 const micHoldActive = computed(() => kittyVoiceInputActive.value || pttPointerActive.value)
 
@@ -899,14 +892,6 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
     </header>
 
     <div
-      v-if="authStore.isAuthenticated && !kittyServerEnabled"
-      class="shrink-0 mx-3 mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 leading-relaxed"
-      role="status"
-    >
-      <I18nText k="mobile.kittyServerDisabledBanner" />
-    </div>
-
-    <div
       v-if="needsDesktopOwner && !showScopeDivergenceBanner"
       class="shrink-0 mx-3 mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 leading-relaxed"
       role="status"
@@ -1023,7 +1008,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
             :on-node-tap="handleChipNodeTap"
           />
           <KittyMobileLlmModelRow
-            v-if="authStore.isAuthenticated && kittyServerEnabled"
+            v-if="authStore.isAuthenticated"
             class="kitty-stage__llm px-3"
             :on-model-change="syncMobileKittyContextNow"
           />
@@ -1062,13 +1047,11 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
             'pointer-events-none opacity-40 cursor-not-allowed':
               !kittyCameraEnabled ||
               cameraDenied ||
-              !kittyServerEnabled ||
               connecting ||
               photoUploading,
             'active:bg-gray-200 cursor-pointer':
               kittyCameraEnabled &&
               !cameraDenied &&
-              kittyServerEnabled &&
               !connecting &&
               !photoUploading,
           }"
@@ -1098,7 +1081,6 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
             class="hidden"
             :disabled="
               !kittyCameraEnabled ||
-              !kittyServerEnabled ||
               connecting ||
               cameraDenied ||
               photoUploading
@@ -1108,7 +1090,6 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
         </label>
 
         <KittyMobileDiagramPickerDropdown
-          v-if="kittyServerEnabled"
           v-model="showDiagramPicker"
           class="kitty-bottom-controls__center"
           :primary-line="kittyDiagramCardPrimary"
@@ -1120,11 +1101,6 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           :disabled="connecting || diagramSelecting"
           @select="selectKittyLibraryDiagram"
           @create-new="createKittyNewMindmap"
-        />
-        <div
-          v-else
-          class="kitty-bottom-controls__center"
-          aria-hidden="true"
         />
 
         <button

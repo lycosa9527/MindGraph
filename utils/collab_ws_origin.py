@@ -58,8 +58,13 @@ def first_party_ws_origins_from_env() -> FrozenSet[str]:
 
 
 def expand_mindgraph_https_siblings(origins: FrozenSet[str]) -> FrozenSet[str]:
-    """Allow both public HTTPS hosts when either one is already allowlisted."""
-    if not origins & _MINDGRAPH_HTTPS_ORIGINS:
+    """Both public HTTPS hosts are first-party whenever the CSWSH allowlist is on.
+
+    Production serves the same app on ``www`` and ``mg``. The allowlist does not
+    need to name either host. An empty set stays empty so the policy stays off.
+    Plain ``http`` is not added.
+    """
+    if not origins:
         return origins
     return frozenset(origins | _MINDGRAPH_HTTPS_ORIGINS)
 

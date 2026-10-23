@@ -1,9 +1,4 @@
-export {
-  useCanvasToolbarApps,
-  type MoreAppGuestBlock,
-  type MoreAppHandlerKey,
-  type MoreAppItem,
-} from './useCanvasToolbarApps'
+export { useCanvasToolbarApps } from './useCanvasToolbarApps'
 export { useCanvasDiagramTranslate } from './useCanvasDiagramTranslate'
 export {
   canvasVirtualKeyboardOpen,
@@ -23,8 +18,14 @@ export { useFollowNodeStyleToolbar, setFollowNodeStyleToolbar } from './useFollo
 export {
   useMindMapSideToolbarState,
   bindMindMapExternalPanelClose,
+  coveringMindMapSideToolOpen,
+  isCoveringMindMapSideTool,
   type MindMapSideToolId,
 } from './useMindMapSideToolbarState'
+export {
+  useCanvasNodeChromeOverlayGate,
+  canvasNodeChromeBlockedByOverlay,
+} from './canvasNodeChromeOverlayGate'
 export {
   useNodeFloatingToolbarPosition,
   resolveFloatingToolbarAnchor,

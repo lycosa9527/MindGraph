@@ -8,7 +8,7 @@ Features:
 - Periodic health monitoring (configurable interval)
 - Auto-restart for crashed subprocesses (Qdrant, Celery)
 - Circuit breaker pattern (prevents restart loops)
-- SMS alerts for critical failures
+- Critical failure records for service outages
 - Multi-worker coordination via Redis distributed lock
 
 Author: lycosa9527
@@ -114,18 +114,12 @@ PROCESS_MONITOR_CIRCUIT_BREAKER_ENABLED = os.getenv("PROCESS_MONITOR_CIRCUIT_BRE
     "1",
     "yes",
 )
-PROCESS_MONITOR_SMS_ALERTS_ENABLED = os.getenv("PROCESS_MONITOR_SMS_ALERTS_ENABLED", "true").lower() in (
-    "true",
-    "1",
-    "yes",
-)
-PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS = int(os.getenv("PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS", "600"))
+PROCESS_MONITOR_MULTI_FAILURE_COOLDOWN_SECONDS = int(os.getenv("PROCESS_MONITOR_MULTI_FAILURE_COOLDOWN_SECONDS", "600"))
 
 # Redis keys for distributed coordination
 MONITOR_LOCK_KEY = "process_monitor:lock"
 MONITOR_LOCK_TTL = 60  # 1 minute - auto-release if worker crashes
 RESTART_COUNTER_KEY_PREFIX = "process_monitor:restarts:"
-SMS_ALERT_COOLDOWN_KEY_PREFIX = "process_monitor:sms_cooldown:"
 STATUS_KEY_PREFIX = "process_monitor:status:"
 
 
@@ -227,7 +221,6 @@ class ServiceMetrics:
     uptime_seconds: Optional[float] = None
     start_time: Optional[float] = None
     last_restart_time: Optional[float] = None
-    last_sms_alert_time: Optional[float] = None
     circuit_breaker_open: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
@@ -242,7 +235,6 @@ class ServiceMetrics:
             "uptime_seconds": self.uptime_seconds,
             "start_time": self.start_time,
             "last_restart_time": self.last_restart_time,
-            "last_sms_alert_time": self.last_sms_alert_time,
             "circuit_breaker_open": self.circuit_breaker_open,
         }
 
@@ -259,7 +251,7 @@ class ProcessMonitor:
     Features:
     - Periodic health checks (Qdrant, Celery, Redis)
     - Auto-restart with circuit breaker protection
-    - SMS alerts for critical failures
+    - Critical failure records for service outages
     - Multi-worker coordination via Redis distributed lock
     """
 
@@ -527,65 +519,14 @@ class ProcessMonitor:
             logger.warning("[ProcessMonitor] Failed to increment restart count: %s", e)
             return 0
 
-    async def _check_sms_cooldown(self, service_name: str) -> bool:
+    async def _record_service_failure(self, service_name: str, reason: str) -> None:
         """
-        Check if SMS alert is in cooldown period.
-
-        Returns:
-            True if in cooldown (should not send), False if can send
-        """
-        if not _REDIS_AVAILABLE:
-            return False
-        if is_redis_available is None or not is_redis_available():
-            return False
-
-        try:
-            if get_async_redis is None:
-                return False
-            redis_client = get_async_redis()
-            if redis_client is None:
-                return False
-
-            key = f"{SMS_ALERT_COOLDOWN_KEY_PREFIX}{service_name}"
-            exists = await redis_client.exists(key)
-            return bool(exists)
-        except BACKGROUND_INFRA_ERRORS:
-            return False
-
-    async def _set_sms_cooldown(self, service_name: str) -> None:
-        """Set SMS alert cooldown period"""
-        if not _REDIS_AVAILABLE:
-            return
-        if is_redis_available is None or not is_redis_available():
-            return
-
-        try:
-            if get_async_redis is None:
-                return
-            redis_client = get_async_redis()
-            if redis_client is None:
-                return
-
-            key = f"{SMS_ALERT_COOLDOWN_KEY_PREFIX}{service_name}"
-            await redis_client.set(
-                key,
-                str(time.time()),
-                ex=PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
-            )
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.warning("[ProcessMonitor] Failed to set SMS cooldown: %s", e)
-
-    async def _send_sms_alert(self, service_name: str, reason: str) -> None:
-        """
-        Send SMS alert to admin phones via centralized critical alert service.
+        Record a service failure.
 
         Args:
             service_name: Name of the service that failed
             reason: Reason for the alert
         """
-        if not PROCESS_MONITOR_SMS_ALERTS_ENABLED:
-            return
-
         try:
             if CriticalAlertService is None:
                 logger.warning("[ProcessMonitor] CriticalAlertService not available")
@@ -596,10 +537,9 @@ class ProcessMonitor:
                 error_message=reason,
                 details=(f"Process monitor detected {service_name} failure. Check service status and logs."),
             )
-            self.metrics[service_name].last_sms_alert_time = time.time()
         except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
-                "[ProcessMonitor] Error sending SMS alert via critical alert service: %s",
+                "[ProcessMonitor] Error recording critical failure: %s",
                 e,
                 exc_info=True,
             )
@@ -723,7 +663,7 @@ class ProcessMonitor:
                             restart_count,
                             PROCESS_MONITOR_RESTART_WINDOW_SECONDS,
                         )
-                        await self._send_sms_alert(
+                        await self._record_service_failure(
                             service_name,
                             f"Circuit breaker triggered - {service_name} failed {restart_count} times",
                         )
@@ -782,8 +722,8 @@ class ProcessMonitor:
                             restart_count,
                             PROCESS_MONITOR_RESTART_WINDOW_SECONDS,
                         )
-                        # Send SMS alert for circuit breaker
-                        await self._send_sms_alert(
+                        # Record the circuit-breaker failure
+                        await self._record_service_failure(
                             service_name,
                             f"Circuit breaker triggered - {service_name} failed {restart_count} times",
                         )
@@ -805,8 +745,8 @@ class ProcessMonitor:
         # Handle critical failures (Redis down)
         if service_name == "redis" and status == ServiceStatus.UNHEALTHY:
             logger.critical("[ProcessMonitor] Redis is DOWN - application cannot function")
-            # Send SMS immediately (no cooldown for critical services)
-            await self._send_sms_alert(service_name, "Redis is down - application cannot function")
+            # Record immediately (no cooldown for critical services)
+            await self._record_service_failure(service_name, "Redis is down - application cannot function")
 
         # Handle repeated failures (3+ consecutive) - only send alert once per failure streak
         if metrics.consecutive_failures == 3:
@@ -815,8 +755,8 @@ class ProcessMonitor:
                 service_name.upper(),
                 metrics.consecutive_failures,
             )
-            # Send SMS alert if not in cooldown (only on 3rd failure, not every time)
-            await self._send_sms_alert(
+            # Record the streak once (only on the 3rd failure, not every time)
+            await self._record_service_failure(
                 service_name,
                 f"{service_name} has failed {metrics.consecutive_failures} consecutive times",
             )
@@ -930,15 +870,15 @@ class ProcessMonitor:
                         unhealthy_count,
                         total_services,
                     )
-                    # Send SMS alert for multiple failures (with cooldown to prevent spam)
+                    # Record multiple failures (with cooldown to prevent spam)
                     current_time = time.time()
                     cooldown_expired = (
                         self._last_multiple_failure_alert_time is None
                         or current_time - self._last_multiple_failure_alert_time
-                        >= PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS
+                        >= PROCESS_MONITOR_MULTI_FAILURE_COOLDOWN_SECONDS
                     )
                     if cooldown_expired:
-                        await self._send_sms_alert(
+                        await self._record_service_failure(
                             "system",
                             f"Multiple services down ({unhealthy_count}/{total_services})",
                         )

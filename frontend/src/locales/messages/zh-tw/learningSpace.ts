@@ -1,6 +1,6 @@
 /**
- * zh UI — learningSpace
- * SOURCE — author new keys here in Simplified Chinese first.
+ * zh-tw UI — learningSpace
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
  */
 
 export default {
@@ -79,6 +79,9 @@ export default {
   'learningSpace.noWorks': '暫無已提交作品',
   'learningSpace.status': '狀態',
   'learningSpace.due': '截止時間',
+  'learningSpace.publishedBy': '發布：{name}',
+  'learningSpace.gradedBy': '批改：{name}',
+  'learningSpace.notGradedYet': '尚未批改',
   'learningSpace.open': '打開',
   'learningSpace.doHomework': '去做作業',
   'learningSpace.submit': '提交作業',
@@ -101,7 +104,6 @@ export default {
   'learningSpace.mgSaveFailed': '保存 .mg 模板失敗',
   'learningSpace.mgAttached': '已附加 .mg 模板',
   'learningSpace.aiGenerate': 'AI 生成圖示',
-  'learningSpace.aiPalette': '節點推薦',
   'learningSpace.aiInline': '行內推薦',
   'learningSpace.aiTranslate': '畫布翻譯',
   'learningSpace.aiDocSummary': '文檔摘要',
@@ -123,8 +125,7 @@ export default {
   'learningSpace.diagramTypeLabel': '圖示類型',
   'learningSpace.fillDiagramType': '請選擇圖示類型',
   'learningSpace.fillScoreDims': '請至少保留一個評分維度',
-  'learningSpace.attachmentsScaffoldHint':
-    '作答图示限一份，可设为底稿或仅供对照。参考图片可多张，可与作答图示同时使用。再选的图示会作为对照材料。',
+  'learningSpace.attachmentsScaffoldHint': '作答图示限一份，可设为底稿或仅供对照。参考图片可多张，可与作答图示同时使用。再选的图示会作为对照材料。',
   'learningSpace.attachWorkingDiagram': '作答圖示',
   'learningSpace.attachReferenceMaterials': '參考材料',
   'learningSpace.attachImageQuota': '圖片 {used}/{n}',
@@ -306,8 +307,7 @@ export default {
   'learningSpace.allSubmitted': '全部學生已提交',
   'learningSpace.noSubmissionsYet': '暫無學生提交',
   'learningSpace.rosterLoginHint': '共 {n} 名學生 · 登錄信息如下',
-  'learningSpace.rosterLoginHow':
-    '学生用户通过班级码、姓名和密码进行登录，需要帮助请联系平台管理员',
+  'learningSpace.rosterLoginHow': '学生用户通过班级码、姓名和密码进行登录，需要帮助请联系平台管理员',
   'learningSpace.rosterColName': '姓名',
   'learningSpace.rosterColClassCode': '班級碼',
   'learningSpace.rosterColPassword': '密碼',
@@ -315,8 +315,7 @@ export default {
   'learningSpace.rosterEmpty': '點擊班級卡片加載花名冊',
   'learningSpace.settingsHint': '配置與 MindGraph 畫布的對接說明。',
   'learningSpace.editorBridgeTitle': '思維導圖編輯器對接',
-  'learningSpace.editorBridgeBody':
-    '学生作答会打开 MindGraph 画布，并携带 assignmentId / diagramId 参数。',
+  'learningSpace.editorBridgeBody': '学生作答会打开 MindGraph 画布，并携带 assignmentId / diagramId 参数。',
   'learningSpace.metricTodo': '待完成',
   'learningSpace.metricSubmitted': '已提交',
   'learningSpace.metricWorks': '作品數',

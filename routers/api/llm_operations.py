@@ -14,7 +14,6 @@ Proprietary License
 """
 
 import asyncio
-import json
 import logging
 import time
 from types import SimpleNamespace
@@ -31,6 +30,7 @@ from services.llm import llm_service
 from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, get_current_user_or_api_key
+from utils.chinese_language_policy import coerce_generation_language, guard_user_visible, sse_data
 
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 
@@ -247,10 +247,10 @@ async def generate_multi_parallel(
     if not prompt:
         raise HTTPException(status_code=400, detail=Messages.error("invalid_prompt", lang))
 
-    # Get models to use (default to all 4, Hunyuan disabled due to 5 concurrent limit)
+    # Get models to use (default to all 4)
     models = req.models if hasattr(req, "models") and req.models else ["qwen", "deepseek", "kimi", "doubao"]
 
-    language = req.language
+    language = coerce_generation_language(req.language, prompt)
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, "value") else None
 
     user_id = current_user.id if current_user and hasattr(current_user, "id") else None
@@ -367,13 +367,15 @@ async def generate_multi_parallel(
             total_time,
         )
 
-        return {
-            "results": results,
-            "total_time": total_time,
-            "success_count": success_count,
-            "first_successful": first_successful,
-            "models_requested": models,
-        }
+        return guard_user_visible(
+            {
+                "results": results,
+                "total_time": total_time,
+                "success_count": success_count,
+                "first_successful": first_successful,
+                "models_requested": models,
+            }
+        )
 
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[generate_multi_parallel] Error: %s", e, exc_info=True)
@@ -411,11 +413,11 @@ async def generate_multi_progressive(
     if not prompt:
         raise HTTPException(status_code=400, detail=Messages.error("invalid_prompt", lang))
 
-    # Get models to use (Hunyuan disabled due to 5 concurrent limit)
+    # Get models to use
     models = req.models if hasattr(req, "models") and req.models else ["qwen", "deepseek", "kimi", "doubao"]
 
     # Extract language and diagram_type
-    language = req.language
+    language = coerce_generation_language(req.language, prompt)
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, "value") else None
 
     user_id = current_user.id if current_user and hasattr(current_user, "id") else None
@@ -512,16 +514,16 @@ async def generate_multi_progressive(
 
                 # Send SSE event for this model
                 logger.debug("[generate_multi_progressive] Sending %s result", result["model"])
-                yield f"data: {json.dumps(result)}\n\n"
+                yield sse_data(result)
 
             # Send completion event
             total_time = time.time() - start_time
             logger.info("[generate_multi_progressive] All models completed in %.2fs", total_time)
-            yield f"data: {json.dumps({'event': 'complete', 'total_time': total_time})}\n\n"
+            yield sse_data({"event": "complete", "total_time": total_time})
 
         except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[generate_multi_progressive] Error: %s", e, exc_info=True)
-            yield f"data: {json.dumps({'event': 'error', 'message': 'Internal server error'})}\n\n"
+            yield sse_data({"event": "error", "message": "Internal server error"})
 
     # Return SSE stream
     return StreamingResponse(

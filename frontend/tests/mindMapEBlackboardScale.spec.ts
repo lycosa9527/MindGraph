@@ -5,13 +5,15 @@ import {
   mindMapControlScale,
 } from '@/config/mindMapEBlackboard'
 
-describe('mindMap e-blackboard control scale', () => {
-  it('defaults to 1x when optimization is off', () => {
-    expect(mindMapControlScale(false)).toBe(1)
+describe('mindMap classroom-board control scale', () => {
+  it('stays 1x for mouse, laptop, and mobile', () => {
+    expect(mindMapControlScale('mouse')).toBe(1)
+    expect(mindMapControlScale('laptop')).toBe(1)
+    expect(mindMapControlScale('mobile')).toBe(1)
   })
 
-  it('uses the shared constant when optimization is on', () => {
+  it('uses the shared constant on the classroom board', () => {
     expect(MIND_MAP_E_BLACKBOARD_CONTROL_SCALE).toBe(2)
-    expect(mindMapControlScale(true)).toBe(MIND_MAP_E_BLACKBOARD_CONTROL_SCALE)
+    expect(mindMapControlScale('board')).toBe(MIND_MAP_E_BLACKBOARD_CONTROL_SCALE)
   })
 })

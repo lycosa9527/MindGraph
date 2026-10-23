@@ -21,6 +21,8 @@ const props = defineProps<{
   senderUserId?: number | null
   isOwn: boolean
   readCursors?: readonly CollabReadCursor[]
+  /** Read checks belong to a live room. A closed transcript keeps the time only. */
+  showReceipt?: boolean
 }>()
 
 const { t } = useLanguage()
@@ -69,7 +71,7 @@ function hideReaders(): void {
       {{ stamp }}
     </time>
     <span
-      v-if="isOwn"
+      v-if="isOwn && showReceipt !== false"
       class="mindmate-collab-stamp__mark"
       @mouseenter="showReaders"
       @mouseleave="hideReaders"

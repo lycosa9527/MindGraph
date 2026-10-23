@@ -55,7 +55,7 @@ def test_is_spa_route_true_for_client_routes(path: str) -> None:
     "path",
     [
         "/api/auth/me",
-        "/static/community/thumb.png",
+        "/static/announcement_images/thumb.png",
         "/assets/index-abc123.js",
         "/gallery/featured/foo.png",
         "/ws/workshop",
@@ -77,7 +77,7 @@ def test_is_spa_route_false_for_non_client_routes(path: str) -> None:
     "path",
     [
         "/assets/index-abc123.js",
-        "/static/community/thumb.png",
+        "/static/announcement_images/thumb.png",
         "/gallery/featured/foo.png",
         "/favicon.svg",
         "/sw.js",

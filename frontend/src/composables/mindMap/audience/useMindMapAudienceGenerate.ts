@@ -10,7 +10,7 @@ import {
   mergeMindMapAudienceInstructions,
   resolveMindMapAudienceInstructions,
 } from '@/composables/mindMap/audience/aiContentLevelInstructions'
-import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
+import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
 import { useAiContentLevelStore, useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -34,7 +34,7 @@ export function useMindMapAudienceGenerate() {
     isLearningSheet?: boolean
   }): Promise<void> {
     if (diagramStore.type === 'concept_map') {
-      openConceptMapNodePalette()
+      openConceptMapBrainstorm()
       return
     }
     if (!authStore.isAuthenticated) {

@@ -208,6 +208,9 @@ export function diagramNodeToVueFlowNode(
     },
     draggable: isDraggable,
     selectable: isSelectable,
+    // Editor shortcuts delete from the diagram. Vue Flow Backspace would only
+    // hide the node until the next nodes update.
+    deletable: false,
   }
 }
 
@@ -227,6 +230,7 @@ export function connectionToVueFlowEdge(
     // Pass through specific handle IDs if provided
     sourceHandle: connection.sourceHandle,
     targetHandle: connection.targetHandle,
+    deletable: false,
     data: {
       label: connection.label,
       edgeType,

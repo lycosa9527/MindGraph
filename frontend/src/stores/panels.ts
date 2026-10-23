@@ -5,7 +5,7 @@
  * Enhanced with State-to-Event bridge for EventBus integration
  *
  * Lifecycle: reset() is called on canvas exit (CanvasPage onUnmounted) to clear
- * nodePalette suggestions, property nodeData, and mindmate panel state, avoiding
+ * diagramBrainstorm suggestions, property nodeData, and mindmate panel state, avoiding
  * memory leaks from canvas-specific data.
  */
 import { computed, ref } from 'vue'
@@ -20,10 +20,10 @@ import type {
   AiBrainstormPanelState,
   AiBrainstormSessionSnapshot,
   ConceptMapTab,
+  DiagramBrainstormPanelState,
+  DiagramBrainstormSessionSnapshot,
   MindmateMessage,
   MindmatePanelState,
-  NodePalettePanelState,
-  NodePaletteSessionSnapshot,
   NodeSuggestion,
   PropertyPanelState,
   UploadedFile,
@@ -40,7 +40,7 @@ export const usePanelsStore = defineStore('panels', () => {
     uploadedFiles: [],
   })
 
-  const nodePalette = ref<NodePalettePanelState>({
+  const diagramBrainstorm = ref<DiagramBrainstormPanelState>({
     open: false,
     suggestions: [],
     selected: [],
@@ -50,7 +50,9 @@ export const usePanelsStore = defineStore('panels', () => {
     useConceptListHeader: false,
   })
 
-  const nodePaletteSessionsByDiagram = ref<Map<string, NodePaletteSessionSnapshot>>(new Map())
+  const diagramBrainstormSessionsByDiagram = ref<Map<string, DiagramBrainstormSessionSnapshot>>(
+    new Map()
+  )
 
   const aiBrainstorm = ref<AiBrainstormPanelState>({
     open: false,
@@ -73,7 +75,7 @@ export const usePanelsStore = defineStore('panels', () => {
   const anyPanelOpen = computed(
     () =>
       mindmate.value.open ||
-      nodePalette.value.open ||
+      diagramBrainstorm.value.open ||
       aiBrainstorm.value.open ||
       property.value.open
   )
@@ -82,7 +84,7 @@ export const usePanelsStore = defineStore('panels', () => {
   const openPanelCount = computed(() => {
     let count = 0
     if (mindmate.value.open) count++
-    if (nodePalette.value.open) count++
+    if (diagramBrainstorm.value.open) count++
     if (aiBrainstorm.value.open) count++
     if (property.value.open) count++
     return count
@@ -94,9 +96,9 @@ export const usePanelsStore = defineStore('panels', () => {
     ...mindmate.value,
   }))
 
-  const nodePalettePanel = computed(() => ({
-    isOpen: nodePalette.value.open,
-    ...nodePalette.value,
+  const diagramBrainstormPanel = computed(() => ({
+    isOpen: diagramBrainstorm.value.open,
+    ...diagramBrainstorm.value,
   }))
 
   const aiBrainstormPanel = computed(() => ({
@@ -109,12 +111,39 @@ export const usePanelsStore = defineStore('panels', () => {
     ...property.value,
   }))
 
+  type CoveringPanel = 'mindmate' | 'aiBrainstorm' | 'diagramBrainstorm'
+
+  /**
+   * AI brainstorm (waterfall / AI brainstorm) and conversational edit both cover
+   * the canvas. Opening one must close the others so they never stack.
+   */
+  function closeCoveringPeers(keep: CoveringPanel): void {
+    if (keep !== 'mindmate') {
+      closeMindmate()
+    }
+    if (keep !== 'aiBrainstorm') {
+      closeAiBrainstorm()
+    }
+    if (keep !== 'diagramBrainstorm') {
+      closeDiagramBrainstorm()
+    }
+  }
+
+  /** Live panel state wins while this canvas session is open; snapshots are for empty restores. */
+  function shouldRestoreCoveringSession(
+    liveSuggestions: NodeSuggestion[],
+    snapshot: { suggestions: NodeSuggestion[] } | undefined
+  ): boolean {
+    return liveSuggestions.length === 0 && !!snapshot && snapshot.suggestions.length > 0
+  }
+
   // Actions
   function openMindmate(options: Partial<MindmatePanelState> = {}): void {
     const ls = useLearningAssignmentCanvasStore()
     if (!ls.can('conversational_edit')) {
       return
     }
+    closeCoveringPeers('mindmate')
     const wasOpen = mindmate.value.open
     mindmate.value = {
       ...mindmate.value,
@@ -164,8 +193,8 @@ export const usePanelsStore = defineStore('panels', () => {
     mindmate.value.uploadedFiles = mindmate.value.uploadedFiles.filter((f) => f.id !== fileId)
   }
 
-  function openNodePalette(
-    options: Partial<NodePalettePanelState> & {
+  function openDiagramBrainstorm(
+    options: Partial<DiagramBrainstormPanelState> & {
       diagramKey?: string
       conceptMapNodeId?: string
       conceptMapNodeText?: string
@@ -174,11 +203,16 @@ export const usePanelsStore = defineStore('panels', () => {
     if (!useLearningAssignmentCanvasStore().can('ai_brainstorm')) {
       return
     }
-    const wasOpen = nodePalette.value.open
+    closeCoveringPeers('diagramBrainstorm')
+    const wasOpen = diagramBrainstorm.value.open
     const { diagramKey, conceptMapNodeId, conceptMapNodeText, ...restOptions } = options
-    const snapshot = diagramKey && nodePaletteSessionsByDiagram.value.get(diagramKey)
-    const hasRestoredSession = !conceptMapNodeId && !!(snapshot && snapshot.suggestions.length > 0)
-    if (hasRestoredSession) {
+    const snapshot = diagramKey
+      ? diagramBrainstormSessionsByDiagram.value.get(diagramKey)
+      : undefined
+    const hasRestoredSession =
+      !conceptMapNodeId &&
+      shouldRestoreCoveringSession(diagramBrainstorm.value.suggestions, snapshot)
+    if (hasRestoredSession && snapshot) {
       let conceptMapTabs = snapshot.conceptMapTabs ?? undefined
       let mode = snapshot.mode
       if (conceptMapTabs?.length && diagramKey?.startsWith('concept_map')) {
@@ -190,8 +224,8 @@ export const usePanelsStore = defineStore('panels', () => {
           mode = 'topic'
         }
       }
-      nodePalette.value = {
-        ...nodePalette.value,
+      diagramBrainstorm.value = {
+        ...diagramBrainstorm.value,
         suggestions: snapshot.suggestions,
         selected: snapshot.selected,
         mode,
@@ -205,15 +239,15 @@ export const usePanelsStore = defineStore('panels', () => {
       let conceptMapTabs: ConceptMapTab[] | undefined = restOptions.conceptMapTabs
       let mode = restOptions.mode ?? null
       if (conceptMapNodeId && conceptMapNodeText) {
-        const existingTabs = nodePalette.value.conceptMapTabs ?? []
+        const existingTabs = diagramBrainstorm.value.conceptMapTabs ?? []
         const hasTab = existingTabs.some((t) => t.id === conceptMapNodeId)
         if (!hasTab) {
           conceptMapTabs = [...existingTabs, { id: conceptMapNodeId, name: conceptMapNodeText }]
         }
         mode = conceptMapNodeId
       }
-      nodePalette.value = {
-        ...nodePalette.value,
+      diagramBrainstorm.value = {
+        ...diagramBrainstorm.value,
         open: true,
         ...restOptions,
         conceptMapTabs,
@@ -222,11 +256,14 @@ export const usePanelsStore = defineStore('panels', () => {
       }
     }
     if (!wasOpen) {
-      eventBus.emit('panel:opened', { panel: 'nodePalette', isOpen: true, options })
-      eventBus.emit('state:panel_opened', { panel: 'nodePalette', state: nodePalette.value })
-      eventBus.emit('nodePalette:opened', { diagramKey, hasRestoredSession })
+      eventBus.emit('panel:opened', { panel: 'diagramBrainstorm', isOpen: true, options })
+      eventBus.emit('state:panel_opened', {
+        panel: 'diagramBrainstorm',
+        state: diagramBrainstorm.value,
+      })
+      eventBus.emit('diagramBrainstorm:opened', { diagramKey, hasRestoredSession })
     } else if (conceptMapNodeId && !hasRestoredSession) {
-      eventBus.emit('nodePalette:opened', {
+      eventBus.emit('diagramBrainstorm:opened', {
         diagramKey,
         hasRestoredSession,
         wasPanelAlreadyOpen: true,
@@ -234,9 +271,9 @@ export const usePanelsStore = defineStore('panels', () => {
     }
   }
 
-  function saveNodePaletteSession(diagramKey: string): void {
-    const { suggestions, selected, stage, stage_data, conceptMapTabs } = nodePalette.value
-    let mode = nodePalette.value.mode
+  function saveDiagramBrainstormSession(diagramKey: string): void {
+    const { suggestions, selected, stage, stage_data, conceptMapTabs } = diagramBrainstorm.value
+    let mode = diagramBrainstorm.value.mode
     if (suggestions.length > 0 && diagramKey) {
       let tabsToSave = conceptMapTabs ? [...conceptMapTabs] : undefined
       if (diagramKey.startsWith('concept_map')) {
@@ -250,7 +287,7 @@ export const usePanelsStore = defineStore('panels', () => {
           mode = 'topic'
         }
       }
-      const map = new Map(nodePaletteSessionsByDiagram.value)
+      const map = new Map(diagramBrainstormSessionsByDiagram.value)
       map.set(diagramKey, {
         suggestions: [...suggestions],
         selected: [...selected],
@@ -259,17 +296,17 @@ export const usePanelsStore = defineStore('panels', () => {
         stage_data: stage_data ?? null,
         conceptMapTabs: tabsToSave,
       })
-      nodePaletteSessionsByDiagram.value = map
+      diagramBrainstormSessionsByDiagram.value = map
     }
   }
 
-  function clearNodePaletteSession(diagramKey?: string): void {
+  function clearDiagramBrainstormSession(diagramKey?: string): void {
     if (diagramKey) {
-      const map = new Map(nodePaletteSessionsByDiagram.value)
+      const map = new Map(diagramBrainstormSessionsByDiagram.value)
       map.delete(diagramKey)
-      nodePaletteSessionsByDiagram.value = map
+      diagramBrainstormSessionsByDiagram.value = map
     } else {
-      nodePaletteSessionsByDiagram.value = new Map()
+      diagramBrainstormSessionsByDiagram.value = new Map()
     }
   }
 
@@ -279,10 +316,14 @@ export const usePanelsStore = defineStore('panels', () => {
     if (!useLearningAssignmentCanvasStore().can('ai_brainstorm')) {
       return
     }
+    closeCoveringPeers('aiBrainstorm')
     const wasOpen = aiBrainstorm.value.open
     const { diagramKey, ...restOptions } = options
-    const snapshot = diagramKey && aiBrainstormSessionsByDiagram.value.get(diagramKey)
-    const hasRestoredSession = !!(snapshot && snapshot.suggestions.length > 0)
+    const snapshot = diagramKey ? aiBrainstormSessionsByDiagram.value.get(diagramKey) : undefined
+    const hasRestoredSession = shouldRestoreCoveringSession(
+      aiBrainstorm.value.suggestions,
+      snapshot
+    )
     if (hasRestoredSession && snapshot) {
       aiBrainstorm.value = {
         ...aiBrainstorm.value,
@@ -418,34 +459,34 @@ export const usePanelsStore = defineStore('panels', () => {
   }
 
   /**
-   * Migrate node palette session from unsaved key ({type}-new) to saved key ({type}-{id}).
+   * Migrate AI brainstorm session from unsaved key ({type}-new) to saved key ({type}-{id}).
    * Call when a new diagram is saved so reopen finds the session under the correct key.
    */
-  function migrateNodePaletteSessionToSavedDiagram(
+  function migrateDiagramBrainstormSessionToSavedDiagram(
     diagramType: string,
     newDiagramId: string
   ): void {
     const dt = diagramType === 'mind_map' ? 'mindmap' : diagramType
     const oldKey = `${dt}-new`
     const newKey = `${dt}-${newDiagramId}`
-    const snapshot = nodePaletteSessionsByDiagram.value.get(oldKey)
+    const snapshot = diagramBrainstormSessionsByDiagram.value.get(oldKey)
     if (snapshot) {
-      const map = new Map(nodePaletteSessionsByDiagram.value)
+      const map = new Map(diagramBrainstormSessionsByDiagram.value)
       map.set(newKey, snapshot)
       map.delete(oldKey)
-      nodePaletteSessionsByDiagram.value = map
+      diagramBrainstormSessionsByDiagram.value = map
     }
   }
 
-  function closeNodePalette(): void {
-    const wasOpen = nodePalette.value.open
+  function closeDiagramBrainstorm(): void {
+    const wasOpen = diagramBrainstorm.value.open
     if (wasOpen) {
-      eventBus.emit('node_palette:streaming_stop_requested', {})
+      eventBus.emit('diagram_brainstorm:streaming_stop_requested', {})
     }
-    nodePalette.value.open = false
+    diagramBrainstorm.value.open = false
     if (wasOpen) {
-      eventBus.emit('panel:closed', { panel: 'nodePalette', isOpen: false })
-      eventBus.emit('state:panel_closed', { panel: 'nodePalette' })
+      eventBus.emit('panel:closed', { panel: 'diagramBrainstorm', isOpen: false })
+      eventBus.emit('state:panel_closed', { panel: 'diagramBrainstorm' })
       // Re-fit after close when canvas regains space (300ms ≈ slide). Desktop concept maps: manual view only.
       const diagramStore = useDiagramStore()
       const uiStore = useUIStore()
@@ -455,47 +496,47 @@ export const usePanelsStore = defineStore('panels', () => {
     }
   }
 
-  function updateNodePalette(updates: Partial<NodePalettePanelState>): void {
-    nodePalette.value = {
-      ...nodePalette.value,
+  function updateDiagramBrainstorm(updates: Partial<DiagramBrainstormPanelState>): void {
+    diagramBrainstorm.value = {
+      ...diagramBrainstorm.value,
       ...updates,
     }
   }
 
-  function setNodePaletteSuggestions(suggestions: NodeSuggestion[]): void {
-    nodePalette.value.suggestions = suggestions
+  function setDiagramBrainstormSuggestions(suggestions: NodeSuggestion[]): void {
+    diagramBrainstorm.value.suggestions = suggestions
   }
 
   /** Append a suggestion (for parallel streams merging into same list) */
-  function appendNodePaletteSuggestion(suggestion: NodeSuggestion): void {
-    nodePalette.value = {
-      ...nodePalette.value,
-      suggestions: [...nodePalette.value.suggestions, suggestion],
+  function appendDiagramBrainstormSuggestion(suggestion: NodeSuggestion): void {
+    diagramBrainstorm.value = {
+      ...diagramBrainstorm.value,
+      suggestions: [...diagramBrainstorm.value.suggestions, suggestion],
     }
   }
 
-  function removeNodePaletteSuggestions(suggestionIds: string[]): void {
+  function removeDiagramBrainstormSuggestions(suggestionIds: string[]): void {
     if (suggestionIds.length === 0) return
     const remove = new Set(suggestionIds)
-    nodePalette.value = {
-      ...nodePalette.value,
-      suggestions: nodePalette.value.suggestions.filter((s) => !remove.has(s.id)),
-      selected: nodePalette.value.selected.filter((id) => !remove.has(id)),
+    diagramBrainstorm.value = {
+      ...diagramBrainstorm.value,
+      suggestions: diagramBrainstorm.value.suggestions.filter((s) => !remove.has(s.id)),
+      selected: diagramBrainstorm.value.selected.filter((id) => !remove.has(id)),
     }
   }
 
   /**
-   * Clear node palette state.
+   * Clear AI brainstorm state.
    * - Always clears live panel state (suggestions, selected, mode, stage, stage_data).
    * - clearSessions: when true (default), clears diagram-keyed sessions map.
    *   Use clearSessions: false for diagram:loaded (switching diagrams) to preserve
    *   other diagrams' sessions. Use default for diagram:type_changed (type switch).
    */
-  function clearNodePaletteState(options?: { clearSessions?: boolean }): void {
+  function clearDiagramBrainstormState(options?: { clearSessions?: boolean }): void {
     const clearSessions = options?.clearSessions ?? true
-    eventBus.emit('node_palette:streaming_stop_requested', {})
-    nodePalette.value = {
-      ...nodePalette.value,
+    eventBus.emit('diagram_brainstorm:streaming_stop_requested', {})
+    diagramBrainstorm.value = {
+      ...diagramBrainstorm.value,
       suggestions: [],
       selected: [],
       mode: null,
@@ -505,18 +546,18 @@ export const usePanelsStore = defineStore('panels', () => {
       useConceptListHeader: false,
     }
     if (clearSessions) {
-      nodePaletteSessionsByDiagram.value = new Map()
+      diagramBrainstormSessionsByDiagram.value = new Map()
     }
   }
 
-  function toggleNodePaletteSelection(nodeId: string, singleSelect?: boolean): void {
-    const index = nodePalette.value.selected.indexOf(nodeId)
+  function toggleDiagramBrainstormSelection(nodeId: string, singleSelect?: boolean): void {
+    const index = diagramBrainstorm.value.selected.indexOf(nodeId)
     if (index > -1) {
-      nodePalette.value.selected.splice(index, 1)
+      diagramBrainstorm.value.selected.splice(index, 1)
     } else if (singleSelect) {
-      nodePalette.value.selected = [nodeId]
+      diagramBrainstorm.value.selected = [nodeId]
     } else {
-      nodePalette.value.selected.push(nodeId)
+      diagramBrainstorm.value.selected.push(nodeId)
     }
   }
 
@@ -550,11 +591,19 @@ export const usePanelsStore = defineStore('panels', () => {
 
   // Toggle functions for convenience
   function toggleMindmatePanel(): void {
-    mindmate.value.open = !mindmate.value.open
+    if (mindmate.value.open) {
+      closeMindmate()
+      return
+    }
+    openMindmate()
   }
 
-  function toggleNodePalettePanel(): void {
-    nodePalette.value.open = !nodePalette.value.open
+  function toggleDiagramBrainstormPanel(): void {
+    if (diagramBrainstorm.value.open) {
+      closeDiagramBrainstorm()
+      return
+    }
+    openDiagramBrainstorm()
   }
 
   function togglePropertyPanel(): void {
@@ -566,8 +615,8 @@ export const usePanelsStore = defineStore('panels', () => {
     closeMindmate()
   }
 
-  function closeNodePalettePanel(): void {
-    closeNodePalette()
+  function closeDiagramBrainstormPanel(): void {
+    closeDiagramBrainstorm()
   }
 
   function closePropertyPanel(): void {
@@ -583,7 +632,7 @@ export const usePanelsStore = defineStore('panels', () => {
 
   function closeAllPanels(): void {
     closeMindmate()
-    closeNodePalette()
+    closeDiagramBrainstorm()
     closeAiBrainstorm()
     closeProperty()
     eventBus.emit('panel:all_closed', {})
@@ -593,7 +642,7 @@ export const usePanelsStore = defineStore('panels', () => {
    * Reset all panel state. Called on canvas exit to avoid memory leaks.
    */
   function reset(): void {
-    eventBus.emit('node_palette:streaming_stop_requested', {})
+    eventBus.emit('diagram_brainstorm:streaming_stop_requested', {})
     eventBus.emit('ai_brainstorm:streaming_stop_requested', {})
     mindmate.value = {
       open: false,
@@ -602,7 +651,7 @@ export const usePanelsStore = defineStore('panels', () => {
       messages: [],
       uploadedFiles: [],
     }
-    nodePalette.value = {
+    diagramBrainstorm.value = {
       open: false,
       suggestions: [],
       selected: [],
@@ -611,7 +660,7 @@ export const usePanelsStore = defineStore('panels', () => {
       stage_data: null,
       useConceptListHeader: false,
     }
-    nodePaletteSessionsByDiagram.value = new Map()
+    diagramBrainstormSessionsByDiagram.value = new Map()
     aiBrainstorm.value = {
       open: false,
       suggestions: [],
@@ -631,7 +680,7 @@ export const usePanelsStore = defineStore('panels', () => {
   return {
     // State
     mindmate,
-    nodePalette,
+    diagramBrainstorm,
     aiBrainstorm,
     property,
 
@@ -640,7 +689,7 @@ export const usePanelsStore = defineStore('panels', () => {
     isAnyPanelOpen,
     openPanelCount,
     mindmatePanel,
-    nodePalettePanel,
+    diagramBrainstormPanel,
     aiBrainstormPanel,
     propertyPanel,
 
@@ -655,19 +704,19 @@ export const usePanelsStore = defineStore('panels', () => {
     setMindmateStreaming,
     addUploadedFile,
     removeUploadedFile,
-    openNodePalette,
-    saveNodePaletteSession,
-    clearNodePaletteSession,
-    migrateNodePaletteSessionToSavedDiagram,
-    closeNodePalette,
-    closeNodePalettePanel,
-    toggleNodePalettePanel,
-    updateNodePalette,
-    setNodePaletteSuggestions,
-    appendNodePaletteSuggestion,
-    removeNodePaletteSuggestions,
-    clearNodePaletteState,
-    toggleNodePaletteSelection,
+    openDiagramBrainstorm,
+    saveDiagramBrainstormSession,
+    clearDiagramBrainstormSession,
+    migrateDiagramBrainstormSessionToSavedDiagram,
+    closeDiagramBrainstorm,
+    closeDiagramBrainstormPanel,
+    toggleDiagramBrainstormPanel,
+    updateDiagramBrainstorm,
+    setDiagramBrainstormSuggestions,
+    appendDiagramBrainstormSuggestion,
+    removeDiagramBrainstormSuggestions,
+    clearDiagramBrainstormState,
+    toggleDiagramBrainstormSelection,
     openAiBrainstorm,
     closeAiBrainstorm,
     updateAiBrainstorm,

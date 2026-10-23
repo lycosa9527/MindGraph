@@ -37,7 +37,6 @@ export default {
   'notification.importSlotsFull': '图库已满，已导入图示但未保存到图库',
   'notification.importSuccess': '图示已导入并保存到图库',
   'notification.importUnsupportedType': '导入失败，不支持的图示类型',
-  'notification.inlineRecEmpty': '未生成推荐内容，请重试或调整主题后再试',
   'notification.loadMoreFailed': '加载更多失败',
   'notification.networkError': '网络错误',
   'notification.nodeNotEligible': '该节点不支持 Tab 推荐',

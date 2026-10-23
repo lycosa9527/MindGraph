@@ -9,9 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from config.settings import config
 from models.domain.auth import User
-from utils.auth import user_has_feature_access
 
 KITTY_MOBILE_BOOTSTRAP_DISABLED_BODY: Dict[str, Any] = {
     "recommended_scope": None,
@@ -32,7 +30,5 @@ KITTY_MOBILE_BOOTSTRAP_DISABLED_BODY: Dict[str, Any] = {
 
 
 async def kitty_http_allowed(current_user: User) -> bool:
-    """Respects ``FEATURE_KITTY_AGENT`` (.env) and optional ``feature_kitty_agent`` org grants."""
-    if not config.FEATURE_KITTY_WS_ENABLED:
-        return False
-    return await user_has_feature_access(current_user, "feature_kitty_agent")
+    """Kitty Agent is available to every signed-in user."""
+    return isinstance(current_user, User)

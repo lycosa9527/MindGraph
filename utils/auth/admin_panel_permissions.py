@@ -80,7 +80,6 @@ CAP_SETTINGS_LLM_CONTROL: Final[str] = "tab.settings.llm_control"
 CAP_SETTINGS_DATABASE: Final[str] = "tab.settings.database"
 CAP_SETTINGS_COS: Final[str] = "tab.settings.cos"
 CAP_SETTINGS_PERFORMANCE: Final[str] = "tab.settings.performance"
-CAP_SETTINGS_GEWE: Final[str] = "tab.settings.gewe"
 CAP_SETTINGS_KITTY_LLMOPS: Final[str] = "tab.settings.kitty_llmops"
 CAP_SETTINGS_MINDBOT: Final[str] = "tab.settings.mindbot"
 CAP_SETTINGS_MINDMATE_EXPORT: Final[str] = "tab.settings.mindmate_export"
@@ -108,7 +107,6 @@ _ALL_SETTINGS_CAPS: frozenset[str] = frozenset(
         CAP_SETTINGS_DATABASE,
         CAP_SETTINGS_COS,
         CAP_SETTINGS_PERFORMANCE,
-        CAP_SETTINGS_GEWE,
         CAP_SETTINGS_KITTY_LLMOPS,
         CAP_SETTINGS_MINDBOT,
         CAP_SETTINGS_MINDMATE_EXPORT,

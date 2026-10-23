@@ -1,0 +1,142 @@
+/*
+ * Black-and-white capture for every diagram except mind map v2.
+ *
+ * V2 mind maps already paint outline fills in the node components, and their
+ * vector export never reads this sheet. Circle, bubble, flow, brace, tree,
+ * bridge, and concept maps keep theme colors on inline styles. html-to-image
+ * copies computed colors, so a grayscale filter on the canvas is not enough:
+ * these rules have to win the inline paint while `.export-outline-wireframe`
+ * is on the wrapper.
+ *
+ * Ink is `OUTLINE_WIREFRAME_INK` / `OUTLINE_WIREFRAME_FILL`.
+ */
+
+/* Drop the selection glow. It is a colored filter and would rasterize. */
+.diagram-canvas:not(.mind-map-canvas) .vue-flow-wrapper.export-outline-wireframe .vue-flow__node {
+  animation: none !important;
+  filter: none !important;
+}
+
+.diagram-canvas:not(.mind-map-canvas)
+  .vue-flow-wrapper.export-outline-wireframe
+  :is(
+    .circle-node:not(.circle-node--underline),
+    .topic-node:not(:has(.node-shape-underline)):not(.mind-map-underline-node),
+    .branch-node:not(:has(.node-shape-underline)):not(.mind-map-underline-node),
+    .flow-node:not(:has(.node-shape-underline)),
+    .flow-substep-node:not(:has(.node-shape-underline)),
+    .brace-node:not(:has(.node-shape-underline)),
+    .concept-node
+  ) {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  color: #111827 !important;
+  border-color: #111827 !important;
+  border-top-color: #111827 !important;
+  border-right-color: #111827 !important;
+  border-bottom-color: #111827 !important;
+  border-left-color: #111827 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Underline shapes stay a rule, not a filled box. */
+.diagram-canvas:not(.mind-map-canvas)
+  .vue-flow-wrapper.export-outline-wireframe
+  :is(
+    .circle-node--underline,
+    .topic-node:has(.node-shape-underline),
+    .branch-node:has(.node-shape-underline),
+    .flow-node:has(.node-shape-underline),
+    .flow-substep-node:has(.node-shape-underline),
+    .brace-node:has(.node-shape-underline)
+  ) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: #111827 !important;
+  border-color: transparent !important;
+  border-top-color: transparent !important;
+  border-right-color: transparent !important;
+  border-bottom-color: transparent !important;
+  border-left-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.diagram-canvas:not(.mind-map-canvas)
+  .vue-flow-wrapper.export-outline-wireframe
+  .node-shape-underline {
+  background-color: #111827 !important;
+  background-image: none !important;
+}
+
+/* Dimension labels are bare text. Recolor them without painting a chip. */
+.diagram-canvas:not(.mind-map-canvas) .vue-flow-wrapper.export-outline-wireframe .label-node {
+  color: #111827 !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.diagram-canvas:not(.mind-map-canvas)
+  .vue-flow-wrapper.export-outline-wireframe
+  :is(
+    .diagram-node-md,
+    .diagram-node-md *,
+    .bilingual-node-secondary,
+    .edge-label,
+    .edge-label span
+  ) {
+  color: #111827 !important;
+}
+
+.diagram-canvas:not(.mind-map-canvas) .vue-flow-wrapper.export-outline-wireframe .edge-label {
+  background-color: #ffffff !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.diagram-canvas:not(.mind-map-canvas)
+  .vue-flow-wrapper.export-outline-wireframe
+  :is(
+    .vue-flow__edge-path,
+    .boundary-svg circle,
+    .boundary-svg ellipse,
+    .brace-overlay path,
+    .brace-overlay line,
+    .bridge-overlay line,
+    .tree-map-overlay line,
+    .learning-sheet-overlay line
+  ) {
+  stroke: #111827 !important;
+}
+
+.diagram-canvas:not(.mind-map-canvas)
+  .vue-flow-wrapper.export-outline-wireframe
+  :is(
+    .vue-flow__edge marker path,
+    .vue-flow__edge marker polygon,
+    .vue-flow__edge marker polyline,
+    .bridge-overlay polygon
+  ) {
+  fill: #111827 !important;
+  stroke: #111827 !important;
+}
+
+.diagram-canvas:not(.mind-map-canvas)
+  .vue-flow-wrapper.export-outline-wireframe
+  :is(
+    .brace-overlay text,
+    .bridge-overlay text,
+    .tree-map-overlay text,
+    .learning-sheet-overlay text
+  ) {
+  fill: #111827 !important;
+}
+
+.diagram-canvas:not(.mind-map-canvas)
+  .vue-flow-wrapper.export-outline-wireframe
+  .learning-sheet-overlay
+  rect {
+  fill: #ffffff !important;
+  stroke: #111827 !important;
+}

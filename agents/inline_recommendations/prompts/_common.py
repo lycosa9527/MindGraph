@@ -1,7 +1,7 @@
 """
 Shared helpers for inline recommendation prompts.
 
-Aligned with node_palette and concept_map prompt structure:
+Aligned with AI brainstorm and concept_map prompt structure:
 - Educational context (context_desc)
 - Thinking approach (思维方式)
 - Dimension type references (brace, tree, bridge)
@@ -38,7 +38,7 @@ def get_context_desc(educational_context: Optional[Dict[str, Any]]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Dimension types (from prompts/node_palette.py)
+# Dimension types (from prompts/ai_brainstorm.py)
 # ---------------------------------------------------------------------------
 
 BRACE_DIMENSION_TYPES_ZH = """常见拆解维度类型（参考）：

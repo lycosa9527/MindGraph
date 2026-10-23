@@ -39,8 +39,7 @@ def validate_kitty_production_guards() -> None:
         return
 
     message = (
-        "Kitty control shared secret is required when FEATURE_KITTY_AGENT is enabled "
-        "in production (DEBUG=False). Redis warmup should auto-generate one."
+        "Kitty control shared secret is required in production (DEBUG=False). Redis warmup should auto-generate one."
     )
     logger.critical("[Kitty] %s", message)
     if _env_truthy("KITTY_STRICT_PROD_GUARDS", "1"):

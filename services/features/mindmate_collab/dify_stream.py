@@ -12,8 +12,13 @@ import asyncio
 import logging
 from typing import Any, Optional
 
+from clients.dify_http_errors import (
+    dify_stream_chunk_is_upstream_outage,
+    mindmate_turn_on_backup,
+    mindmate_upstream_error_code,
+)
 from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
-from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
+from services.dify.org_mindmate_client import resolve_mindmate_dify_stream_short_lived
 from services.features.mindmate_collab.dify_stream_control import (
     clear_dify_stream_abort,
     clear_dify_stream_task,
@@ -103,6 +108,7 @@ async def stream_assistant_reply(
     user_message: str,
     sender_user_id: int,
     conversation_id: Optional[str],
+    conversation_server: Optional[int] = None,
 ) -> None:
     """Background task: call Dify and fan-out chunks to the room."""
     mgr = get_mindmate_collab_manager()
@@ -116,7 +122,15 @@ async def stream_assistant_reply(
             aborted = True
             return
 
-        client = await resolve_mindmate_dify_client_short_lived(org_id, detail="AI service not configured")
+        stream_target = await resolve_mindmate_dify_stream_short_lived(
+            org_id,
+            detail="AI service not configured",
+            conversation_id=conversation_id,
+            conversation_server=conversation_server,
+        )
+        client = stream_target.client
+        if stream_target.notify_backup:
+            await broadcast_to_all(code, {"type": "mindmate_failover"})
         collab_inputs: dict[str, Any] = {"mg_dify_user": dify_user}
         if conversation_id:
             collab_inputs["mg_conversation_id"] = conversation_id
@@ -124,7 +138,7 @@ async def stream_assistant_reply(
         stream = client.stream_chat(
             message=user_message,
             user_id=dify_user,
-            conversation_id=conversation_id,
+            conversation_id=stream_target.upstream_conversation_id,
             inputs=collab_inputs,
         )
         async for chunk in iter_upstream_with_keepalive(stream, interval_seconds=15.0):
@@ -135,16 +149,33 @@ async def stream_assistant_reply(
                 continue
             event = chunk.get("event") if isinstance(chunk, dict) else None
             if event == "error":
+                if dify_stream_chunk_is_upstream_outage(chunk):
+                    on_backup = mindmate_turn_on_backup(
+                        notify_backup=stream_target.notify_backup,
+                        server=stream_target.server,
+                    )
+                    outage_code = mindmate_upstream_error_code(on_backup=on_backup)
+                    await broadcast_to_all(
+                        code,
+                        {"type": "error", "code": outage_code},
+                    )
+                    return
+                message = str(chunk.get("message", ""))
                 await broadcast_to_all(
                     code,
-                    {"type": "error", "code": "dify_error", "message": str(chunk.get("message", ""))},
+                    {"type": "error", "code": "dify_error", "message": message},
                 )
                 return
             answer = chunk.get("answer") if isinstance(chunk, dict) else None
             conv_id = chunk.get("conversation_id") if isinstance(chunk, dict) else None
             if conv_id and not conversation_id:
                 conversation_id = str(conv_id)
-                await mgr.set_dify_conversation_id(session_id, conversation_id)
+                saved_server = stream_target.server if stream_target.server is not None else 1
+                await mgr.set_dify_conversation_id(
+                    session_id,
+                    conversation_id,
+                    server=saved_server,
+                )
             if isinstance(chunk, dict) and not teaching_flagged:
                 if mindmate_meta_from_workflow_chunk(chunk):
                     teaching_flagged = True
@@ -219,6 +250,7 @@ def schedule_assistant_reply(
     user_message: str,
     sender_user_id: int,
     conversation_id: Optional[str],
+    conversation_server: Optional[int] = None,
 ) -> None:
     """Start a background Dify stream task for the room."""
     norm = normalize_collab_code(code)
@@ -230,6 +262,7 @@ def schedule_assistant_reply(
             user_message=user_message,
             sender_user_id=sender_user_id,
             conversation_id=conversation_id,
+            conversation_server=conversation_server,
         ),
         name=f"mindmate-collab-dify:{norm}",
     )

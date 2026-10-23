@@ -12,6 +12,10 @@ import {
   mindMapNodeDepth,
   mindMapNodeSide,
 } from '@/utils/mindMapLocation'
+import {
+  expandMindMapLayoutSizesForImages,
+  mindMapTopicWidthWithImage,
+} from '@/utils/nodeImageFrame'
 
 // ---------------------------------------------------------------------------
 // Pure helper: recalculate X positions from measured widths (classic / main)
@@ -74,8 +78,13 @@ export function recalculateMindMapLegacyColumnPositions(
   topicWidth: number | null,
   nodeWidths: Record<string, number>,
   nodeHeights: Record<string, number> = {},
-  connections: Connection[] = []
+  connections: Connection[] = [],
+  imageNodeIds?: ReadonlySet<string>
 ): MindMapColumnResult {
+  const sized = expandMindMapLayoutSizesForImages(nodes, nodeWidths, nodeHeights, imageNodeIds)
+  nodeWidths = sized.nodeWidths
+  nodeHeights = sized.nodeHeights
+
   const topicNode = nodes.find((n) => n.id === 'topic')
   if (!topicNode?.position) return { nodes, gaps: { left: 0, right: 0 } }
 
@@ -83,8 +92,10 @@ export function recalculateMindMapLegacyColumnPositions(
     (topicNode.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
   const measuredTopicWidth = topicWidth ?? 0
 
-  const effectiveTopicWidth =
-    measuredTopicWidth > 0 ? Math.max(measuredTopicWidth, storedEstimate) : storedEstimate
+  const effectiveTopicWidth = mindMapTopicWidthWithImage(
+    measuredTopicWidth > 0 ? Math.max(measuredTopicWidth, storedEstimate) : storedEstimate,
+    Boolean(imageNodeIds?.has('topic'))
+  )
   const gap = DEFAULT_MINDMAP_RANK_SEPARATION
 
   const centerX = topicNode.position.x + effectiveTopicWidth / 2

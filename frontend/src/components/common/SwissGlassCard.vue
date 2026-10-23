@@ -9,6 +9,7 @@ import { Sparkles } from '@lucide/vue'
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
 import {
+  bindCanvasCoveringOverlay,
   bindFullScreenGlassCard,
   glassCardHoldsPopupLayer,
 } from '@/components/common/swissGlassStack'
@@ -85,15 +86,16 @@ const cardClassName = computed(() =>
   ['ai-gen-shell', 'swiss-glass-card', props.cardClass].filter(Boolean).join(' ')
 )
 
-bindFullScreenGlassCard(
-  () =>
-    visible.value &&
-    glassCardHoldsPopupLayer({
-      hostIsBody: dialogHost.value === 'body',
-      teleportDisabled: props.teleportDisabled,
-      overlayClass: props.overlayClass,
-    })
-)
+const holdsCanvasOverlay = (): boolean =>
+  visible.value &&
+  glassCardHoldsPopupLayer({
+    hostIsBody: dialogHost.value === 'body',
+    teleportDisabled: props.teleportDisabled,
+    overlayClass: props.overlayClass,
+  })
+
+bindFullScreenGlassCard(holdsCanvasOverlay)
+bindCanvasCoveringOverlay(holdsCanvasOverlay)
 
 function close(): void {
   visible.value = false

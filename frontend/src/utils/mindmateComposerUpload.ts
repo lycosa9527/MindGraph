@@ -1,5 +1,6 @@
 /**
- * MindMate composer paperclip: images plus Word, PDF, and PowerPoint.
+ * MindMate composer paperclip: images plus Word (.docx), PDF, and PowerPoint.
+ * Legacy `.doc` is rejected with a convert-to-`.docx` warning.
  * Broader Dify types stay behind programmatic `allowDocuments` (Showcase).
  *
  * Chat `files[].type` must match ``services/dify/file_upload_types.py`` /
@@ -55,23 +56,21 @@ const DIFY_CHAT_FILE_TYPES = new Set<MindMateFile['type']>([
 
 export const MINDMATE_COMPOSER_FILE_ACCEPT = [
   'image/*',
-  '.doc',
   '.docx',
   '.pdf',
   '.ppt',
   '.pptx',
-  'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/pdf',
   'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 ].join(',')
 
-const WORD_EXTENSIONS = new Set(['doc', 'docx'])
-const COMPOSER_DOCUMENT_EXTENSIONS = new Set(['doc', 'docx', 'pdf', 'ppt', 'pptx'])
+const LEGACY_DOC_MIME = 'application/msword'
+const WORD_EXTENSIONS = new Set(['docx'])
+const COMPOSER_DOCUMENT_EXTENSIONS = new Set(['docx', 'pdf', 'ppt', 'pptx'])
 
 const WORD_MIME_TYPES = new Set([
-  'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ])
 
@@ -89,6 +88,43 @@ export function fileExtensionFromName(filename: string): string {
     return ''
   }
   return trimmed.slice(dot + 1).toLowerCase()
+}
+
+/** OLE Compound header shared by classic .doc, .ppt, and .xls. */
+const OLE_COMPOUND_MAGIC = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1] as const
+
+/** Legacy Word `.doc` (or `application/msword` with no `.docx` name). */
+export function isMindmateLegacyDocFile(file: Pick<File, 'name' | 'type'>): boolean {
+  const ext = fileExtensionFromName(file.name)
+  if (ext === 'doc') {
+    return true
+  }
+  if (ext === 'docx') {
+    return false
+  }
+  return file.type.toLowerCase() === LEGACY_DOC_MIME
+}
+
+export async function isOleCompoundFile(file: Blob): Promise<boolean> {
+  if (file.size < OLE_COMPOUND_MAGIC.length) {
+    return false
+  }
+  const head = new Uint8Array(await file.slice(0, OLE_COMPOUND_MAGIC.length).arrayBuffer())
+  return OLE_COMPOUND_MAGIC.every((byte, index) => head[index] === byte)
+}
+
+/**
+ * Composer and Showcase uploads: `.doc` by name, or a `.doc` renamed to `.docx`.
+ * `.ppt` is OLE too, so the byte check runs only for a `.docx` name.
+ */
+export async function isMindmateBlockedDocUpload(file: File): Promise<boolean> {
+  if (isMindmateLegacyDocFile(file)) {
+    return true
+  }
+  if (fileExtensionFromName(file.name) !== 'docx') {
+    return false
+  }
+  return isOleCompoundFile(file)
 }
 
 export function isMindmateComposerWordFile(file: Pick<File, 'name' | 'type'>): boolean {

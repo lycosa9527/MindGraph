@@ -67,6 +67,8 @@ export function welcomeFitsViewport(width: number, height: number): boolean {
   const cluster = welcomeClusterHeight(height, stageHeight)
   const composer = welcomeComposerWidth(stageWidth)
   return (
-    stageHeight >= cluster && stageWidth >= composer + CLUSTER_GUTTER && sidebarAccountFits(height)
+    stageHeight >= cluster &&
+    stageWidth >= composer + CLUSTER_GUTTER &&
+    sidebarAccountFits(height)
   )
 }

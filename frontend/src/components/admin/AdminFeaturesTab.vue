@@ -38,16 +38,10 @@ const reloadEnvRuntimeMutation = useReloadAdminEnvRuntime()
 
 interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_rag_chunk_test: boolean
-  feature_course: boolean
-  feature_mate_learning: boolean
-  feature_template: boolean
-  feature_community: boolean
   feature_showcase: boolean
-  feature_askonce: boolean
-  feature_debateverse: boolean
   feature_knowledge_space: boolean
+  feature_mind_classroom_slide_deck: boolean
   feature_library: boolean
-  feature_gewe: boolean
   feature_smart_response: boolean
   feature_teacher_usage: boolean
   feature_workshop_chat: boolean
@@ -58,8 +52,6 @@ interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_markets: boolean
   feature_mindbot: boolean
   feature_mindmate_export: boolean
-  feature_kitty_agent: boolean
-  feature_mind_classroom_slide_deck: boolean
   feature_org_access?: Record<string, FeatureOrgAccessEntry>
 }
 
@@ -78,7 +70,6 @@ const ORG_ACCESS_SUPPORTED_KEYS = new Set<ApiKey>([
   'feature_mindmate_collab',
   'feature_mindbot',
   'feature_mindmate_export',
-  'feature_kitty_agent',
 ])
 
 const ROWS: RowDef[] = [
@@ -137,12 +128,6 @@ const ROWS: RowDef[] = [
     hintKey: 'admin.feature.mindmateExportHint',
   },
   {
-    apiKey: 'feature_community',
-    envKey: 'FEATURE_COMMUNITY',
-    labelKey: 'admin.feature.community',
-    hintKey: 'admin.feature.communityHint',
-  },
-  {
     apiKey: 'feature_showcase',
     envKey: 'FEATURE_SHOWCASE',
     labelKey: 'admin.feature.showcase',
@@ -155,46 +140,16 @@ const ROWS: RowDef[] = [
     hintKey: 'admin.feature.knowledgeSpaceHint',
   },
   {
+    apiKey: 'feature_mind_classroom_slide_deck',
+    envKey: 'FEATURE_MIND_CLASSROOM_SLIDE_DECK',
+    labelKey: 'admin.feature.mindClassroomSlideDeck',
+    hintKey: 'admin.feature.mindClassroomSlideDeckHint',
+  },
+  {
     apiKey: 'feature_rag_chunk_test',
     envKey: 'FEATURE_RAG_CHUNK_TEST',
     labelKey: 'admin.feature.ragChunkTest',
     hintKey: 'admin.feature.ragChunkTestHint',
-  },
-  {
-    apiKey: 'feature_gewe',
-    envKey: 'FEATURE_GEWE',
-    labelKey: 'admin.feature.gewe',
-    hintKey: 'admin.feature.geweHint',
-  },
-  {
-    apiKey: 'feature_debateverse',
-    envKey: 'FEATURE_DEBATEVERSE',
-    labelKey: 'admin.feature.debateverse',
-    hintKey: 'admin.feature.debateverseHint',
-  },
-  {
-    apiKey: 'feature_askonce',
-    envKey: 'FEATURE_ASKONCE',
-    labelKey: 'admin.feature.askonce',
-    hintKey: 'admin.feature.askonceHint',
-  },
-  {
-    apiKey: 'feature_course',
-    envKey: 'FEATURE_COURSE',
-    labelKey: 'admin.feature.course',
-    hintKey: 'admin.feature.courseHint',
-  },
-  {
-    apiKey: 'feature_mate_learning',
-    envKey: 'FEATURE_MATE_LEARNING',
-    labelKey: 'admin.feature.mateLearning',
-    hintKey: 'admin.feature.mateLearningHint',
-  },
-  {
-    apiKey: 'feature_template',
-    envKey: 'FEATURE_TEMPLATE',
-    labelKey: 'admin.feature.template',
-    hintKey: 'admin.feature.templateHint',
   },
   {
     apiKey: 'feature_smart_response',
@@ -207,18 +162,6 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_TEACHER_USAGE',
     labelKey: 'admin.feature.teacherUsage',
     hintKey: 'admin.feature.teacherUsageHint',
-  },
-  {
-    apiKey: 'feature_kitty_agent',
-    envKey: 'FEATURE_KITTY_AGENT',
-    labelKey: 'admin.feature.kittyAgent',
-    hintKey: 'admin.feature.kittyAgentHint',
-  },
-  {
-    apiKey: 'feature_mind_classroom_slide_deck',
-    envKey: 'FEATURE_MIND_CLASSROOM_SLIDE_DECK',
-    labelKey: 'admin.feature.mindClassroomSlideDeck',
-    hintKey: 'admin.feature.mindClassroomSlideDeckHint',
   },
 ]
 

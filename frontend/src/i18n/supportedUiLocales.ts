@@ -295,7 +295,7 @@ export const SUPPORTED_UI_LOCALES = [
     enabled: true,
     intlLocale: 'nb-NO',
     htmlLang: 'no',
-    browserPrefixes: ['no'],
+    browserPrefixes: ['no', 'nb', 'nn'],
     toolbarShort: 'NO',
     rtl: false as boolean,
   },

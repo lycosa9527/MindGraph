@@ -92,6 +92,8 @@ const props = defineProps<{
   feedback?: CollabFeedbackRating
   sessionId?: string
   readCursors?: readonly CollabReadCursor[]
+  /** False on a closed seminar: no live read checks or room actions. */
+  live?: boolean
   selectMode?: boolean
   selected?: boolean
   briefEditable?: boolean
@@ -221,6 +223,8 @@ const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => messageBody.val
 
 const isAssistant = computed(() => props.message.role === 'assistant')
 
+const showPersonAvatar = computed(() => props.live !== false)
+
 const isMindGraphReply = computed(() => {
   if (!isAssistant.value) {
     return false
@@ -242,7 +246,7 @@ function authorLabel(): string {
     return speakerName.value
   }
   if (props.isOwn) {
-    return authStore.user?.username || authStore.user?.name || t('mindmate.highlights.you')
+    return authStore.user?.username || t('mindmate.highlights.you')
   }
   return props.message.username || t('mindmate.collabPokeSomeone')
 }
@@ -297,7 +301,7 @@ function pinHighlight(): void {
     authorName: authorLabel(),
     messageId: props.message.id ?? null,
     createdByUserId: selfUserId.value || null,
-    createdByName: authStore.user?.username || authStore.user?.name || t('mindmate.highlights.you'),
+    createdByName: authStore.user?.username || t('mindmate.highlights.you'),
     messageAt: props.message.created_at || '',
   })
   if (!added) {
@@ -312,9 +316,7 @@ function pinHighlight(): void {
   notify.successKey('mindmate.highlights.added')
 }
 
-const ownDisplayName = computed(
-  () => authStore.user?.username || authStore.user?.name || props.message.username || ''
-)
+const ownDisplayName = computed(() => authStore.user?.username || props.message.username || '')
 
 const ownSurname = computed(() => seminarAvatarSurname(ownDisplayName.value))
 
@@ -599,6 +601,7 @@ async function openInCanvas(): Promise<void> {
       @click.stop="emit('toggleSelect')"
     />
     <div
+      v-if="isAssistant || showPersonAvatar"
       class="mindmate-collab-room__avatar"
       :class="{
         'is-assistant': isAssistant && !summaryCard,
@@ -741,6 +744,7 @@ async function openInCanvas(): Promise<void> {
         class="mindmate-collab-room__stamp-row mindmate-collab-room__stamp-row--own"
       >
         <MindmateSeminarBubbleActions
+          v-if="live !== false"
           inline
           :highlight-state="highlightState"
           @copy="handleCopy"
@@ -753,11 +757,12 @@ async function openInCanvas(): Promise<void> {
           :created-at="message.created_at"
           :sender-user-id="message.sender_user_id"
           :is-own="isOwn"
-          :read-cursors="readCursors"
+          :read-cursors="live === false ? [] : readCursors"
+          :show-receipt="live !== false"
         />
       </div>
       <MindmateSeminarBubbleActions
-        v-else-if="!message.streaming && !isAssistant"
+        v-else-if="!message.streaming && !isAssistant && live !== false"
         :highlight-state="highlightState"
         @copy="handleCopy"
         @reply="emitReply"
@@ -766,6 +771,7 @@ async function openInCanvas(): Promise<void> {
       />
       <MindmateCollabAssistantToolbar
         v-if="isAssistant && !message.streaming && !summaryCard"
+        :live-actions="live !== false"
         :can-regenerate="Boolean(userPrompt)"
         :regenerate-disabled="Boolean(regenerateDisabled)"
         :feedback="feedback"

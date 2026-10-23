@@ -5,17 +5,13 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Não é possível limpar nós de tópico ou central',
-  'notification.cannotResetSelectDiagramType':
-    'Não é possível repor: selecione primeiro um tipo de diagrama',
+  'notification.cannotResetSelectDiagramType': 'Não é possível repor: selecione primeiro um tipo de diagrama',
   'notification.canvasClearNodes': 'Limpos {count} nó(s)',
   'notification.canvasClearNodesLearning': 'Esvaziados {count} nó(s), adicionados às respostas',
   'notification.canvasSomeoneEditingNode': 'Outra pessoa está a editar este nó',
-  'notification.collabDeleteBlocked':
-    'Não é possível eliminar enquanto outro utilizador edita um nó selecionado',
-  'notification.collabRedoBlocked':
-    'Não é possível refazer enquanto outro utilizador está a editar',
-  'notification.collabUndoBlocked':
-    'Não é possível desfazer enquanto outro utilizador está a editar',
+  'notification.collabDeleteBlocked': 'Não é possível eliminar enquanto outro utilizador edita um nó selecionado',
+  'notification.collabRedoBlocked': 'Não é possível refazer enquanto outro utilizador está a editar',
+  'notification.collabUndoBlocked': 'Não é possível desfazer enquanto outro utilizador está a editar',
   'notification.conversationDeleted': 'Conversa eliminada',
   'notification.copied': 'Copiado para a área de transferência',
   'notification.copyFailed': 'Falha ao copiar',
@@ -25,8 +21,7 @@ export default {
   'notification.feedbackThanks': 'Obrigado pelo seu feedback',
   'notification.feedbackThanksDislike': 'Obrigado pelo seu feedback — vamos melhorar',
   'notification.focusQuestionTooShort': 'Introduza primeiro uma pergunta foco mais longa',
-  'notification.geoLiteMissingIntro':
-    'Transfira GeoLite2 Country da MaxMind, extraia GeoLite2-Country.mmdb e copie-o para a pasta de dados do servidor:',
+  'notification.geoLiteMissingIntro': 'Transfira GeoLite2 Country da MaxMind, extraia GeoLite2-Country.mmdb e copie-o para a pasta de dados do servidor:',
   'notification.geoLiteMissingLink': 'Abrir página de transferência MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'Caminho esperado:',
   'notification.geoLiteMissingTitle': 'Base de dados GeoLite2 Country em falta',
@@ -38,12 +33,9 @@ export default {
   'notification.importInvalidData': 'Importação falhou: dados de diagrama inválidos',
   'notification.importLoadFailed': 'Importação falhou: não foi possível carregar o diagrama',
   'notification.importSavePartial': 'Importado, mas falhou ao guardar na biblioteca',
-  'notification.importSlotsFull':
-    'Biblioteca cheia; diagrama importado mas não guardado na biblioteca',
+  'notification.importSlotsFull': 'Biblioteca cheia; diagrama importado mas não guardado na biblioteca',
   'notification.importSuccess': 'Diagrama importado e guardado na biblioteca',
   'notification.importUnsupportedType': 'Importação falhou: tipo de diagrama não suportado',
-  'notification.inlineRecEmpty':
-    'Não foram geradas recomendações. Tente novamente ou edite o tópico.',
   'notification.loadMoreFailed': 'Não foi possível carregar mais',
   'notification.networkError': 'Erro de rede',
   'notification.nodeNotEligible': 'Este nó não suporta recomendações com Tab.',
@@ -54,8 +46,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Ligação ao conceito raiz não encontrada',
   'notification.saved': 'Alterações guardadas com sucesso',
   'notification.selectNodeToClear': 'Selecione um nó para limpar',
-  'notification.sessionInvalidated':
-    'A sua sessão foi terminada porque excedeu o número máximo de dispositivos',
+  'notification.sessionInvalidated': 'A sua sessão foi terminada porque excedeu o número máximo de dispositivos',
   'notification.sessionKicked': 'Esta conta registrou esta conta off-line em outros dispositivos',
   'notification.signInToUse': 'Inicie sessão para utilizar isto',
   'notification.signInToValidateFocus': 'Inicie sessão para validar a pergunta foco',

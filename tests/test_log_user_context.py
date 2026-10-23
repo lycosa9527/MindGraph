@@ -58,6 +58,27 @@ def test_format_suffix_id_only_when_name_missing() -> None:
         reset_log_user(tokens)
 
 
+def test_unified_formatter_keeps_ascii_banner_spacing() -> None:
+    """Block-letter banner lines keep the gaps the glyphs need."""
+    rows = (
+        "    ███╗   ███╗██╗███╗   ██╗██████╗ ███╗   ███╗ █████╗ ████████╗███████╗",
+        "    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝",
+    )
+    formatter = UnifiedFormatter(use_colors=False)
+    for art in rows:
+        record = logging.LogRecord(
+            name="services.infrastructure.lifecycle.lifespan",
+            level=logging.INFO,
+            pathname=__file__,
+            lineno=1,
+            msg="%s",
+            args=(art,),
+            exc_info=None,
+        )
+        formatted = formatter.format(record)
+        assert art.rstrip() in formatted
+
+
 def test_unified_formatter_appends_bound_user() -> None:
     """UnifiedFormatter inserts the actor between pid and message."""
     record = logging.LogRecord(

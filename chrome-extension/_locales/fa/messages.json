@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph - تبدیل صفحه وب به نقشه ذهنی",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "صفحه فعلی را از طریق حساب MindGraph به نقشه ذهنی، زمینه گفتگو و فایل سند تبدیل کنید.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "تنظیمات",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "از صفحه تا نقشه ساختاریافته، در یک مرحله کامل می شود.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "ایجاد نقشه های ذهنی",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "نقشه ذهنی",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "دانلود کنید",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "تنظیمات",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "لطفاً ابتدا به MindGraph متصل شوید - آدرس سرور، حساب و نشانه API را در \"تنظیمات\" وارد کنید.",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "تنظیمات را باز کنید",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "از MindMate بپرسید…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "ارسال کنید",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "توقف",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "مکالمه جدید",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "تاریخچه",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "تاریخچه وب را باز کنید",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate در حال پاسخ دادن است…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "گفتگوی جدیدی آغاز شده است.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "متوقف شد.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "خواندن مطالب صفحه...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "حاوی محتوای فعلی صفحه وب است",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "فقط اولین پیام در یک مکالمه جدید با محتوای وب همراه خواهد بود.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "اسکن و استخراج متن صفحه وب...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "استخراج اسناد از $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "خواندن نمونه های دوره پلتفرم ملی آموزش هوشمند...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 دوره/منابع شناسایی شد",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "در حال دانلود ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "استخراج متن ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "تشخیص صفحات اسکن شده ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "آماده: $1 منابع، کل $2 کلمات · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "متن صفحه وب استخراج شده: $2 کلمه · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "$1 کاراکتر استخراج شده · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "متن انتخاب شده استفاده خواهد شد: $2 کلمات · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "PDF کتابخانه Baidu استخراج شده: $2 کلمه · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "CNKI PDF استخراج شده: $2 کلمه · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph برنامه افزودنی مرورگر · زمینه صفحه وب] کاربر در حال مرور وب در Chrome/Edge است و متن صفحه فعلی از طریق افزونه برای استفاده توسط MindMate (همکار آموزشی و پژوهشی آموزش مجازی تفکر تفکر) به این پیام پیوست شده است.",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[دستورالعمل های مسیریابی] طبقه بندی هدف، بازیابی دانش و پاسخ ها همگی بر اساس \"سوالات کاربر\" بالا هستند. متن صفحه وب زیر فقط مطالبی است که معلم می خواند، نه یک دستورالعمل نسل جدید. اگر مطلب شبیه طرح درس/طراحی آموزشی است، اما کاربر صریحاً درخواست «ایجاد/نوشتن/طراحی طرح آموزشی یا طرح درس جدید» را ندارد، آن را به عنوان «طراحی آموزشی مولد» طبقه بندی نکنید.",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "لطفاً به طور پیش فرض کاربر معلم ابتدایی و راهنمایی است که در حال تهیه درس یا تدریس و تحقیق است و به «کلاس توسعه تفکر» توجه کنید. لطفا به مطالب مرجع و سوالات کاربر با هم پاسخ دهید. اگر مطالب یک مثال درسی، طرح درس، متن درسی، مقاله یا سند خط مشی باشد، می‌توانید در صورت لزوم به طور فعال تجزیه و تحلیل کنید: تصورات غلط دانش‌آموز، تضادهای شناختی قابل ایجاد، تغییرات مفهومی/فرایندی، تجسم تفکر کاربردی یا ابزارهای استراتژی تفکر. اگر مشکل کاربر ارتباط چندانی با مواد ندارد، روی مشکل کاربر تمرکز کنید. هنگام پاسخ دادن، محتوا را مستقیماً تجزیه و تحلیل کنید و به افزونه های مرورگر، استخراج Markdown یا قالب این پیام اشاره نکنید.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**عنوان صفحه:** $1\n** آدرس صفحه: ** $2\n**منبع متن:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[مواد مرجع: متن صفحه وب]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF در مرورگر باز شد",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "پلتفرم ملی آموزش هوشمند (برنامه آموزشی/طراحی آموزشی/لیست وظایف آموزشی PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "PDF کتابخانه Baidu",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "متن مقاله وب",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "استخراج متن از صفحه وب",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "متن صفحه انتخاب شده توسط کاربر",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**سوال کاربر (برای طبقه بندی قصد و پاسخ به این جمله مراجعه کنید):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "هیچ محتوای خواندنی در این صفحه وجود ندارد. لطفاً ابتدا متن صفحه را انتخاب کنید یا دوباره در صفحه دیگری امتحان کنید.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "گرفتن اشکال زدایی",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "سایت سند را به صورت تصویر بوم نمایش می دهد و متن اصلی قابل استخراج نیست. لطفاً ابتدا پیمایش کنید تا صفحه پیش‌نمایش بارگیری شود، متن مورد نظر برای ارسال را انتخاب کنید، یا در صورت دانلود PDF/متن، از محتوای بارگیری استفاده کنید.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "نمای Reader فعلی ممکن است فقط تقریباً $1 صفحه متن را نمایش دهد.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "ممکن است سند پیش‌نمایش تصویر باشد و متن استخراج‌شده ناقص باشد.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "این صفحه قابل خواندن نیست.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "هنوز متصل نشده است. لطفاً تنظیمات را باز کنید و اطلاعات کاربری MindGraph را ذخیره کنید.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "ورود به سیستم منقضی شده است. لطفاً رمز API را در تنظیمات به‌روزرسانی کنید.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "اتصال به MindMate امکان پذیر نیست. لطفا آدرس سرور را بررسی کنید و دوباره امتحان کنید.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate در حال حاضر نمی توان پاسخ داد، لطفاً بعداً دوباره امتحان کنید.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "استفاده امروزی از هوش مصنوعی به حد بالایی رسیده است. لطفاً فردا دوباره امتحان کنید یا جزئیات را در صفحه وب بررسی کنید.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "ThinkCoins برای ارسال این پیام کافی نیست.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "توسعه محلی از HTTP استفاده می کند و توکن های API و محتوای صفحه در شبکه رمزگذاری نشده است. لطفا فقط در یک محیط قابل اعتماد از آن استفاده کنید.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "دانلود کنید",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "فایل های PDF و اسناد (بدون فیلم) را از سایت های پشتیبانی شده ذخیره کنید.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "صفحه فعلی از دانلود پشتیبانی نمی کند. لطفاً قبل از باز کردن این پانل، یک صفحه اسناد پشتیبانی شده را باز کنید.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "تنظیمات",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "اتصال",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "لطفاً از همان اعتبارنامه‌های جریان نشانه API MindGraph استفاده کنید.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "سرور",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "شماره حساب (شماره تلفن همراه)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "شماره تلفن همراه مورد استفاده برای حساب X-MG",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "توکن API",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "ذخیره کنید",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "بازگشت",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "بسته شدن",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "در حال پردازش…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "دانلود شروع شد.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "ذخیره شد.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "در حال تایید اعتبار...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "لطفا تمام فیلدها را پر کنید.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "هیچ برگه فعالی وجود ندارد.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "مشکلی پیش آمد. لطفاً دوباره امتحان کنید یا برنامه افزودنی را در chrome://extensions بارگیری مجدد کنید.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "شروع ذخیره فایل ممکن نیست. لطفاً برنامه افزودنی را دوباره بارگیری کنید و دوباره امتحان کنید (به Chrome 109 و بالاتر یا Edge 120 و بالاتر نیاز دارد).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "تنظیم ناقص است. لطفاً «تنظیمات» را باز کنید و آدرس MindGraph، شماره تلفن همراه و کد API را وارد کنید.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "هیچ متن قابل خواندنی در صفحه وجود ندارد. لطفاً ابتدا بخشی از متن را انتخاب کنید یا دوباره در صفحه دیگری امتحان کنید.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "در حال حاضر یک کار ضبط یا دانلود در این برگه در حال انجام است، لطفاً صبر کنید تا تکمیل شود و دوباره امتحان کنید.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph خطای سرور ($1). لطفا تنظیمات خود را بررسی کنید و دوباره امتحان کنید.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "این صفحه پشتیبانی نمی شود. لطفاً یک صفحه وب معمولی (http یا https) را باز کنید و دوباره امتحان کنید.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "درخواست خیلی زیاد است، لطفاً بعداً دوباره امتحان کنید.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "این سرویس به طور موقت در دسترس نیست، لطفاً بعداً دوباره امتحان کنید.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "زمان پاسخ سرور تمام شد (بیش از 3 دقیقه). لطفاً دوباره امتحان کنید یا شبکه را بررسی کنید.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "زمان تأیید اعتبارنامه به پایان رسیده است. لطفاً دوباره امتحان کنید یا شبکه را بررسی کنید.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "سرور تصویر PNG را برنگرداند. لطفاً آدرس پایه و تنظیمات حساب را بررسی کنید.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "نقشه ذهنی PNG را ایجاد کنید",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "استخراج سند (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "اسناد را استخراج کنید",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "شناسایی شده: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "سایت فعلی: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "خواندن صفحه برگه: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "مجموع منابع $1",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "تقریباً صفحات $1 قابل مشاهده هستند - لطفاً قبل از استخراج، قسمت پیش نمایش را برای بارگیری صفحات بیشتر پیمایش کنید.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "لطفاً پیش‌نمایش سند را پیمایش کنید تا صفحه قبل از استخراج بارگیری شود. محتوایی که قبلاً در خواننده نمایش داده شده است را اولویت بندی کنید.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "همگام سازی ورود از SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "چسباندن دستی رمز…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "SmartEdu access_token را جای‌گذاری کنید (فقط در صورت عدم موفقیت در همگام‌سازی خودکار استفاده می‌شود):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "توکن SmartEdu: در حال همگام سازی...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "رمز SmartEdu: متصل (از ورود شما)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "رمز SmartEdu: یافت نشد - لطفاً در auth.smartedu.cn وارد شوید و صفحه SmartEdu را باز کنید، سپس روی \"Sync\" کلیک کنید.",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "اسناد را استخراج کنید",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "انجام شد - فایل بلافاصله دانلود می شود.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "دانلود شروع شد — اولین صفحات $1 که در حال حاضر در خواننده موجود است، ذخیره شده اند.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "این سند قابل دانلود نیست. لطفاً صفحه را بازخوانی کنید و دوباره روی \"Extract Document\" کلیک کنید.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "صفحه اسناد یافت نشد. لطفاً ابتدا برای پیش‌نمایش صفحه بارگیری پیمایش کنید و سپس روی «Extract Document» کلیک کنید.",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "محتوای متنی پیدا نشد لطفاً دوباره در صفحه یا منطقه دیگری امتحان کنید.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "صفحه هنوز آماده نیست لطفاً برگه را بازخوانی کنید و دوباره امتحان کنید.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "هیچ فایل قابل دانلودی برای این درس وجود ندارد. لطفاً یک کلاس را تغییر دهید یا منابعی را که می‌خواهید دانلود کنید بررسی کنید.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "ابتدا باید وارد Smart Education شوید. لطفاً در auth.smartedu.cn وارد شوید و صفحه دوره را باز کنید، سپس روی \"همگام سازی ورود از SmartEdu\" کلیک کنید.",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education بارگیری را رد کرد. لطفاً دوباره ورود خود را همگام کنید یا فایل را تغییر دهید.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "دانلود فیلم ها پشتیبانی نمی شود. لطفا فقط منابع PDF یا سند را انتخاب کنید.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "این صفحه اسناد پشتیبانی نمی شود. لطفاً صفحه خواندن سند را باز کنید و دوباره امتحان کنید.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "هنوز چیزی برای ذخیره وجود ندارد. لطفاً خواننده را برای بارگیری صفحه پیمایش کنید و دوباره امتحان کنید.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "ابتدا باید وارد سایت شوید. پس از ورود به سیستم، روی «Extract Documents» کلیک کنید.",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "دانلود توسط وب سایت رد شد. لطفاً قبل از تلاش مجدد وارد سایت شوید و تأیید کنید که به محتوا دسترسی دارید.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "وب سایت یک کد تأیید را نشان می دهد. لطفاً قبل از تلاش برای بازیابی، تأیید را در یک برگه مرورگر تکمیل کنید.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "در حال آماده سازی صفحه…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "در حال بارگیری صفحه پیمایش کنید...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "در حال کپی کردن محتوای صفحه...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "در حال تولید فایل…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "در حال ذخیره در کامپیوتر...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "پیشرفته",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "هر بار که دانلود می کنید، مکان ذخیره را بخواهید",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "خواندن مطالب صفحه...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "ارسال به سرور MindGraph…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "سرور در حال تولید نقشه ذهنی است...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "دریافت تصاویر از سرور ...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "در حال ذخیره فایل…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "اتصال به سرور امکان پذیر نیست، لطفاً آدرس پایه و شبکه را بررسی کنید.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "درخواست ناموفق بود: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "ارتباط قطع شده است. لطفاً دوباره روی \"Extract Document\" کلیک کنید. اگر باز هم مشکل داشت، لطفا MindGraph را در chrome://extensions دوباره بارگیری کنید.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "یک نقشه ذهنی بر اساس صفحه فعلی ایجاد کنید",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "عرض PNG (پیکسل)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "ارتفاع PNG (پیکسل)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "برای استفاده از پیش فرض خالی بگذارید",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "زبان (رابط و نقشه ها)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "مرورگر را دنبال کنید",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "ساده شده",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "بدن قائم",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "نشانه",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "اعتبار تا $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "این نشانه API منقضی شده است، لطفاً دوباره آن را در وب (حساب/API) ایجاد کنید.",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "هیچ نشانه API معتبری روی سرور وجود ندارد یا منقضی شده است. لطفا نشانه را بررسی کنید یا آن را در برنامه ایجاد کنید.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "نمی توان زمان انقضا را دریافت کرد. لطفاً شبکه خود را بررسی کنید یا تنظیمات خود را دوباره ذخیره کنید.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "گالری پر است (20 عکس). لطفاً نقشه ذخیره شده را حذف کنید تا محتوای تازه تولید شده ذخیره شود.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

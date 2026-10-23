@@ -23,7 +23,7 @@ from pathlib import Path
 from scripts.training_roles.env import dashscope_api_key
 from scripts.training_roles.wan_client import (
     LONG_POLL_SECONDS,
-    WAN3_VIDEO_PRIME,
+    WAN3_VIDEO,
     download_mp4,
     poll_video_url,
     submit_video,
@@ -212,7 +212,7 @@ def _submit_one(
     if stem in tasks and not force:
         print(f"{stem} already submitted {tasks[stem]}", flush=True)
         return
-    print(f"submit {stem} {WAN3_VIDEO_PRIME} {scene['seconds']}s {RESOLUTION}", flush=True)
+    print(f"submit {stem} {WAN3_VIDEO} {scene['seconds']}s {RESOLUTION}", flush=True)
     scene_media = None
     if uses_activity(scene) and media is not None:
         speech_url = synthesize_tts(api_key, activity_line(scene["id"]), QISI_VOICE)
@@ -228,7 +228,7 @@ def _submit_one(
         api_key,
         clip_prompt(scene),
         stem,
-        model=WAN3_VIDEO_PRIME,
+        model=WAN3_VIDEO,
         negative=_scene_negative(scene),
         media=scene_media,
         resolution=RESOLUTION,

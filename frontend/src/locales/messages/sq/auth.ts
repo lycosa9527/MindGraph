@@ -16,33 +16,24 @@ export default {
   'auth.voiceNotes.copy': 'kopjoni tekstin',
   'auth.voiceNotes.copied': 'Transkripti u kopjua',
   'auth.voiceNotes.empty': 'Pasi të filloni regjistrimin, transkripti do të shfaqet këtu.',
-  'auth.voiceNotes.loginRequired':
-    'Ju lutemi, identifikohuni fillimisht përpara se të përdorni shënimet zanore.',
-  'auth.voiceNotes.bootstrapFailed':
-    'Nuk mund të hapet sesioni i hartës së mendjes për shënimet zanore.',
+  'auth.voiceNotes.loginRequired': 'Ju lutemi, identifikohuni fillimisht përpara se të përdorni shënimet zanore.',
+  'auth.voiceNotes.bootstrapFailed': 'Nuk mund të hapet sesioni i hartës së mendjes për shënimet zanore.',
   'auth.voiceNotes.saveFailed': 'Harta mendore e shënimeve zanore nuk mund të ruhet.',
   'auth.voiceNotes.noDiagram': 'Harta e mendjes nuk është shoqëruar ende.',
   'auth.voiceNotes.micUnavailable': 'Shfletuesi aktual nuk e mbështet mikrofonin.',
   'auth.voiceNotes.micFailed': 'Nuk mund të qaset në mikrofon.',
-  'auth.voiceNotes.micConflict':
-    'Funksionet e tjera zanore po përdorin mikrofonin, ju lutemi ndaloni dhe provoni përsëri.',
-  'auth.voiceNotes.wsError':
-    'Lidhja e shënimit zanor dështoi, ju lutemi kontrolloni rrjetin dhe statusin e hyrjes.',
+  'auth.voiceNotes.micConflict': 'Funksionet e tjera zanore po përdorin mikrofonin, ju lutemi ndaloni dhe provoni përsëri.',
+  'auth.voiceNotes.wsError': 'Lidhja e shënimit zanor dështoi, ju lutemi kontrolloni rrjetin dhe statusin e hyrjes.',
   'auth.voiceNotes.genericError': 'Gabim shënimi zanor',
   'auth.voiceNotes.ingestFailed': 'Transkriptimi nuk mund të ruhet në përmbledhjen e dokumentit.',
-  'auth.voiceNotes.maxDuration':
-    'Shënimi zanor ka arritur kufirin e 60 minutave dhe është ndalur automatikisht.',
-  'auth.voiceNotes.silenceAutoStop':
-    'Nuk ka pasur zë për 2 minuta rresht dhe nota zanore është ndalur automatikisht.',
+  'auth.voiceNotes.maxDuration': 'Shënimi zanor ka arritur kufirin e 60 minutave dhe është ndalur automatikisht.',
+  'auth.voiceNotes.silenceAutoStop': 'Nuk ka pasur zë për 2 minuta rresht dhe nota zanore është ndalur automatikisht.',
   'auth.voiceNotes.startedTimeout': 'Shërbimi zanor nuk filloi në kohë, ju lutemi provoni përsëri.',
   'auth.voiceNotes.micLost': 'Mikrofoni është shkëputur dhe shënimet zanore janë ndalur.',
-  'auth.voiceNotes.authFailed':
-    'Autentifikimi i shënimit zanor dështoi, ju lutemi identifikohuni përsëri.',
+  'auth.voiceNotes.authFailed': 'Autentifikimi i shënimit zanor dështoi, ju lutemi identifikohuni përsëri.',
   'auth.voiceNotes.wsClosed': 'Lidhja e shënimit zanor është shkëputur dhe seanca është ndalur.',
-  'auth.voiceNotes.budgetExceeded':
-    'Shënimet zanore nuk janë të disponueshme: kuota ditore e AI është arritur ose monedhat e të menduarit janë të pamjaftueshme.',
-  'auth.voiceNotes.sessionBusy':
-    'Ka tashmë një seancë shënimi zanor në vazhdim, ju lutemi ndaloni atë dhe provoni përsëri.',
+  'auth.voiceNotes.budgetExceeded': 'Shënimet zanore nuk janë të disponueshme: kuota ditore e AI është arritur ose monedhat e të menduarit janë të pamjaftueshme.',
+  'auth.voiceNotes.sessionBusy': 'Ka tashmë një seancë shënimi zanor në vazhdim, ju lutemi ndaloni atë dhe provoni përsëri.',
   'auth.voiceNotes.recording': 'Regjistrimi',
   'auth.voiceNotes.paused': 'I pezulluar',
   'auth.voiceNotes.idle': 'gati',
@@ -50,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'Duke filluar',
   'auth.voiceNotes.stopping': 'Ndalimi',
   'auth.voiceNotes.ingesting': 'Duke kursyer',
-  'auth.voiceNotes.emptyTranscript':
-    'Asnjë zë nuk u njoh, ju lutemi thoni disa fjalë përpara se të ndaloni.',
+  'auth.voiceNotes.emptyTranscript': 'Asnjë zë nuk u njoh, ju lutemi thoni disa fjalë përpara se të ndaloni.',
   'auth.voiceNotes.generating': 'Gjenerimi i hartës së mendjes',
-  'auth.voiceNotes.sheetHint':
-    'Ruaje transkriptimin pas ndalimit. Klikoni Generate Mind Map kur të jeni gati.',
+  'auth.voiceNotes.sheetHint': 'Ruaje transkriptimin pas ndalimit. Klikoni Generate Mind Map kur të jeni gati.',
   'auth.voiceNotes.status.waiting': 'Në pritje për të filluar',
   'auth.voiceNotes.status.connectingAsr': 'Lidhja me njohjen e të folurit',
   'auth.voiceNotes.status.recording': 'Regjistrimi · Njohja e zërit',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'Regjistrimi · Njohja e të folurit · Folësit dallues',
+  'auth.voiceNotes.status.recordingAndSeparating': 'Regjistrimi · Njohja e të folurit · Folësit dallues',
   'auth.voiceNotes.status.paused': 'I pezulluar',
   'auth.voiceNotes.status.stopping': 'Ndalimi',
   'auth.voiceNotes.status.savingTranscript': 'Ruajtja e transkriptimit',
@@ -72,15 +60,11 @@ export default {
   'auth.voiceNotes.savedAt': 'Transkriptimi u ruajt në {time}',
   'auth.voiceNotes.unsavedChanges': 'Transkriptimi nuk u ruajt',
   'auth.voiceNotes.closeWhileRecordingTitle': 'Regjistrimi',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'Mbyllja e dritares nuk do të ndalojë regjistrimin. Transkriptimet ruhen automatikisht në hartën aktuale çdo 30 sekonda. Je i sigurt që dëshiron ta fshehësh dritaren?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'Mbyllja e dritares nuk do të ndalojë regjistrimin. Transkriptimet ruhen automatikisht në hartën aktuale çdo 30 sekonda. Je i sigurt që dëshiron ta fshehësh dritaren?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'Fshih dritaren',
-  'auth.voiceNotes.recordingContinues':
-    'Regjistrimi është ende duke vazhduar dhe ju mund ta rihapni përmbledhjen e regjistrimit në çdo kohë.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'Ju lutemi ruani fillimisht hartën aktuale të mendjes dhe më pas përdorni regjistrimin për ta përmbledhur.',
-  'auth.voiceNotes.restoreFailed':
-    'Transkriptimi i ruajtur i regjistrimit audio nuk mund të ngarkohet.',
+  'auth.voiceNotes.recordingContinues': 'Regjistrimi është ende duke vazhduar dhe ju mund ta rihapni përmbledhjen e regjistrimit në çdo kohë.',
+  'auth.voiceNotes.noCurrentDiagram': 'Ju lutemi ruani fillimisht hartën aktuale të mendjes dhe më pas përdorni regjistrimin për ta përmbledhur.',
+  'auth.voiceNotes.restoreFailed': 'Transkriptimi i ruajtur i regjistrimit audio nuk mund të ngarkohet.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'Shënime zanore historike',
   'auth.voiceNotes.historyEmpty': 'Nuk ka ende shënime zanore',
@@ -89,35 +73,22 @@ export default {
   'auth.voiceNotes.mergeTalker': 'bashkohen në',
   'auth.voiceNotes.mergeTalkerInto': 'Bashkohuni në {name}',
   'auth.voiceNotes.resetTalker': 'Rikthe parazgjedhjen',
-  'auth.voiceNotes.tencentAuth':
-    'Autentifikimi i njohjes së zërit dështoi, ju lutemi kontrolloni tastin Tencent Cloud.',
-  'auth.voiceNotes.tencentService':
-    'Njohja e të folurit Tencent Cloud nuk është aktivizuar. Ju lutemi aktivizoni shërbimin në tastierë.',
-  'auth.voiceNotes.tencentQuota':
-    'Paketa e burimeve të njohjes së të folurit Tencent Cloud është ezauruar. Ju lutemi paguani ose blini paketën e burimeve pas aktivizimit.',
-  'auth.voiceNotes.tencentArrears':
-    'Llogaria e Tencent Cloud është në vonesë dhe njohja e zërit është çaktivizuar.',
-  'auth.voiceNotes.tencentConcurrency':
-    'Konkurrenca e njohjes së fjalës është e plotë, ju lutemi provoni përsëri më vonë.',
+  'auth.voiceNotes.tencentAuth': 'Autentifikimi i njohjes së zërit dështoi, ju lutemi kontrolloni tastin Tencent Cloud.',
+  'auth.voiceNotes.tencentService': 'Njohja e të folurit Tencent Cloud nuk është aktivizuar. Ju lutemi aktivizoni shërbimin në tastierë.',
+  'auth.voiceNotes.tencentQuota': 'Paketa e burimeve të njohjes së të folurit Tencent Cloud është ezauruar. Ju lutemi paguani ose blini paketën e burimeve pas aktivizimit.',
+  'auth.voiceNotes.tencentArrears': 'Llogaria e Tencent Cloud është në vonesë dhe njohja e zërit është çaktivizuar.',
+  'auth.voiceNotes.tencentConcurrency': 'Konkurrenca e njohjes së fjalës është e plotë, ju lutemi provoni përsëri më vonë.',
   'auth.voiceNotes.tencentAudio': 'Audioja nuk njihet, ju lutemi provoni përsëri.',
-  'auth.voiceNotes.tencentSendRate':
-    'Audioja dërgohet shumë shpejt, ju lutemi vazhdoni të regjistroni në kohë reale.',
-  'auth.voiceNotes.tencentIdle':
-    'Regjistrimi është ndërprerë për një kohë të gjatë dhe njohja e zërit është shkëputur.',
-  'auth.voiceNotes.tencentRetry':
-    'Njohja e të folurit dështoi përkohësisht, ju lutemi provoni përsëri.',
-  'auth.voiceNotes.tencentRegion':
-    'Rrjeti aktual nuk është brenda fushës së shërbimit të faqes së brendshme të Tencent Cloud.',
+  'auth.voiceNotes.tencentSendRate': 'Audioja dërgohet shumë shpejt, ju lutemi vazhdoni të regjistroni në kohë reale.',
+  'auth.voiceNotes.tencentIdle': 'Regjistrimi është ndërprerë për një kohë të gjatë dhe njohja e zërit është shkëputur.',
+  'auth.voiceNotes.tencentRetry': 'Njohja e të folurit dështoi përkohësisht, ju lutemi provoni përsëri.',
+  'auth.voiceNotes.tencentRegion': 'Rrjeti aktual nuk është brenda fushës së shërbimit të faqes së brendshme të Tencent Cloud.',
   'auth.voiceNotes.tencentParam': 'Parametrat e njohjes së të folurit janë të pavlefshëm.',
-  'auth.voiceNotes.tencentAppid':
-    'Tencent Cloud AppID është e pavlefshme, ju lutemi kontrolloni TENCENT_ASR_APP_ID.',
-  'auth.voiceNotes.rateLimited':
-    'Kërkesat për njohjen e fjalës janë shumë të shpeshta, ju lutemi provoni përsëri më vonë.',
+  'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID është e pavlefshme, ju lutemi kontrolloni TENCENT_ASR_APP_ID.',
+  'auth.voiceNotes.rateLimited': 'Kërkesat për njohjen e fjalës janë shumë të shpeshta, ju lutemi provoni përsëri më vonë.',
   'auth.voiceNotes.messageTooLarge': 'Paketa audio është shumë e madhe, ju lutemi provoni përsëri.',
-  'auth.voiceNotes.invalidMessage':
-    'Mesazhi i shënimit zanor është i pavlefshëm, ju lutemi provoni përsëri.',
-  'auth.voiceNotes.asrUnavailable':
-    'Njohja e të folurit është përkohësisht e padisponueshme, ju lutemi provoni përsëri më vonë.',
+  'auth.voiceNotes.invalidMessage': 'Mesazhi i shënimit zanor është i pavlefshëm, ju lutemi provoni përsëri.',
+  'auth.voiceNotes.asrUnavailable': 'Njohja e të folurit është përkohësisht e padisponueshme, ju lutemi provoni përsëri më vonë.',
   'auth.updateLog': 'Shënimet e publikimit',
   'auth.updateLogModalTitle': 'Shënimet e publikimit',
   'auth.updateLogMaintainerNote': 'Po — kjo platformë mirëmbahet aktivisht nga Roy ✨',
@@ -129,27 +100,20 @@ export default {
   'privacy.backToSignIn': 'Kthehu te hyrja',
   'auth.downloadDesktopShortcut': 'Shto në desktop',
   'auth.platformQuickGuide': 'Udhëzues i shpejtë',
-  'auth.pwaIosInstallHint':
-    'Prekni «Ndaj» në Safari, Chrome ose Edge, pastaj zgjidhni «Shto në ekranin kryesor».',
-  'auth.pwaAndroidInstallHint':
-    'Hapni menunë e shfletuesit (⋮) dhe prekni «Instalo aplikacionin» ose «Shto në ekranin kryesor».',
-  'auth.pwaSafariMacInstallHint':
-    'Në Safari, zgjidhni «Skedari» → «Shto në Dock» ose «Ndaj» → «Shto në Dock» (macOS Sonoma ose më i ri).',
-  'auth.pwaDesktopInstallHint':
-    'Përdorni menunë e shfletuesit (⋮) ose ikonën e instalimit në shiritin e adresës (Chrome, Edge ose Brave).',
+  'auth.pwaIosInstallHint': 'Prekni «Ndaj» në Safari, Chrome ose Edge, pastaj zgjidhni «Shto në ekranin kryesor».',
+  'auth.pwaAndroidInstallHint': 'Hapni menunë e shfletuesit (⋮) dhe prekni «Instalo aplikacionin» ose «Shto në ekranin kryesor».',
+  'auth.pwaSafariMacInstallHint': 'Në Safari, zgjidhni «Skedari» → «Shto në Dock» ose «Ndaj» → «Shto në Dock» (macOS Sonoma ose më i ri).',
+  'auth.pwaDesktopInstallHint': 'Përdorni menunë e shfletuesit (⋮) ose ikonën e instalimit në shiritin e adresës (Chrome, Edge ose Brave).',
   'auth.pwaInstallSuccess': 'MindGraph u shtua në desktopin tuaj.',
-  'auth.pwaDevInstallHint':
-    'Instalimi PWA është i çaktivizuar në modalitetin normal të zhvillimit. Përdorni build-in e prodhimit (npm run build + backend) ose npm run dev:pwa, pastaj Chrome/Edge në HTTPS ose localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Hapni MindGraph në shfletues në adresën HTTPS (jo skedar HTML i ruajtur) para instalimit në desktop.',
+  'auth.pwaDevInstallHint': 'Instalimi PWA është i çaktivizuar në modalitetin normal të zhvillimit. Përdorni build-in e prodhimit (npm run build + backend) ose npm run dev:pwa, pastaj Chrome/Edge në HTTPS ose localhost.',
+  'auth.pwaInsecureOriginHint': 'Hapni MindGraph në shfletues në adresën HTTPS (jo skedar HTML i ruajtur) para instalimit në desktop.',
   'auth.backToLogin': 'Kthehu te hyrja',
   'auth.captcha': 'Kodi i verifikimit',
   'auth.captchaLength4': 'Shkruani captcha me 4 karaktere',
   'auth.captchaLoadFailed': 'Captcha nuk u ngarkua',
   'auth.captchaNetworkError': 'Gabim rrjeti, captcha nuk u ngarkua',
   'auth.tsecFailed': 'Verifikimi dështoi, ju lutemi provoni përsëri',
-  'auth.tsecUnavailable':
-    'Autentifikimi i kompjuterit njerëzor nuk është konfiguruar, ju lutemi provoni përsëri më vonë.',
+  'auth.tsecUnavailable': 'Autentifikimi i kompjuterit njerëzor nuk është konfiguruar, ju lutemi provoni përsëri më vonë.',
   'auth.changePassword': 'Ndrysho fjalëkalimin',
   'auth.accountPlugin': 'Shtesë',
   'auth.apiTokenButton': 'Shenja API',
@@ -169,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'E kopjuar',
   'auth.apiTokenCopyFailed': 'Kopjimi dështoi',
   'auth.apiTokenLoading': 'po ngarkohet…',
-  'auth.apiTokenNone':
-    'Shenja nuk është krijuar ende. Shkarkoni paketën e aftësive ose klikoni kodin API për të krijuar një të tillë.',
+  'auth.apiTokenNone': 'Shenja nuk është krijuar ende. Shkarkoni paketën e aftësive ose klikoni kodin API për të krijuar një të tillë.',
   'auth.apiTokenOpaque': 'Shenja aktuale nuk mund të bëhet jehonë, ju lutemi rigjeneroje atë.',
   'auth.apiTokenExpires': 'E vlefshme deri në {date}',
   'auth.downloadChromeExtension': 'Shtesa Chrome',
   'auth.downloadWordAddin': 'Shtesa e fjalës',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'Ky funksion kërkon nivelin shkollor Standard ose Professional (Basic përjashtohet).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Abonimi shkollor ka përfunduar. Llogaria juaj është në nivelin provë. Kontaktoni administratorin e platformës për rinovim.',
-  'auth.diagramLimitReached':
-    'Shkollat provë lejojnë deri në {max} diagrame të ruajtura për mësues. Fshini një për të ruajtur një të re.',
+  'auth.schoolTierFeatureUnavailable': 'Ky funksion kërkon nivelin shkollor Standard ose Professional (Basic përjashtohet).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Abonimi shkollor ka përfunduar. Llogaria juaj është në nivelin provë. Kontaktoni administratorin e platformës për rinovim.',
+  'auth.diagramLimitReached': 'Shkollat provë lejojnë deri në {max} diagrame të ruajtura për mësues. Fshini një për të ruajtur një të re.',
   'auth.downloadOpenclawSkill': 'Aftësi OpenClaw',
-  'auth.downloadOpenclawSkillHint':
-    'Shkarkimi përfshin numrin e llogarisë dhe shenjën aktuale. Pas rigjenerimit të tokenit, paketat dhe shtesat e vjetra të aftësive do të bëhen të pavlefshme.',
+  'auth.downloadOpenclawSkillHint': 'Shkarkimi përfshin numrin e llogarisë dhe shenjën aktuale. Pas rigjenerimit të tokenit, paketat dhe shtesat e vjetra të aftësive do të bëhen të pavlefshme.',
   'auth.changePhoneButton': 'Ndrysho telefonin',
   'auth.passwordChangeSuccess': 'Fjalëkalimi u ndryshua me sukses',
   'auth.passwordChangeFailed': 'Ndryshimi i fjalëkalimit dështoi',
@@ -235,12 +194,10 @@ export default {
   'auth.modal.passwordMismatch': 'Fjalëkalimet nuk përputhen',
   'auth.modal.passwordPlaceholder': 'Shkruani fjalëkalimin',
   'auth.modal.phone11Digits': 'Shkruani një numër telefoni me 11 shifra të vlefshëm',
-  'auth.modal.enterPhoneOrEmail':
-    'Shkruani numrin e regjistruar të telefonit ose emailin e llogarisë',
+  'auth.modal.enterPhoneOrEmail': 'Shkruani numrin e regjistruar të telefonit ose emailin e llogarisë',
   'auth.modal.phonePlaceholder11': 'Numër celular me 11 shifra',
   'auth.modal.phoneRegisteredPlaceholder': 'Numri i regjistruar i telefonit',
-  'auth.modal.forgotPhoneOrEmailPlaceholder':
-    'Numri i regjistruar i telefonit ose emaili i llogarisë',
+  'auth.modal.forgotPhoneOrEmailPlaceholder': 'Numri i regjistruar i telefonit ose emaili i llogarisë',
   'auth.modal.productTitle': 'Matt Teaching and Research',
   'auth.modal.registerFailed': 'Regjistrimi dështoi',
   'auth.modal.registerSuccess': 'Regjistrimi u krye me sukses. Ju lutemi hyni.',
@@ -264,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -303,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -316,8 +272,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'Email arsimor',
   'auth.modal.hybridRegisterEmailTabAny': 'Postë',
   'auth.modal.hybridRegisterPhoneTab': 'Telefon + kod ftese',
-  'auth.modal.mainlandSalesNotice':
-    'Keni nevojë për akses në Kinën kontinentale? Përdorni numrin celular dhe kodin e ftesës, ose kontaktoni mbështetjen.',
+  'auth.modal.mainlandSalesNotice': 'Keni nevojë për akses në Kinën kontinentale? Përdorni numrin celular dhe kodin e ftesës, ose kontaktoni mbështetjen.',
   'auth.modal.registrationEmailLabel': 'Vetëm email arsimor',
   'auth.modal.registrationEmailLabelAny': 'Adresa email',
   'auth.modal.registrationEmailHint': '',
@@ -330,11 +285,9 @@ export default {
   'auth.modal.sendEmailCode': 'Dërgo kodin me email',
   'auth.modal.sendingEmailCode': 'Duke dërguar…',
   'auth.modal.emailCodePlaceholder': 'Kodi me 6 shifra nga emaili',
-  'auth.modal.acknowledgeOverseas':
-    'E kuptoj dhe do ta përdor softuerin vetëm për qëllime arsimore.',
+  'auth.modal.acknowledgeOverseas': 'E kuptoj dhe do ta përdor softuerin vetëm për qëllime arsimore.',
   'auth.modal.acknowledgeOverseasAny': 'E kuptoj dhe pranoj kushtet e regjistrimit jashtë vendit.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'E kuptoj dhe pranoj kushtet e regjistrimit jashtë vendit, dhe që kinezishtja e thjeshtuar nuk është e disponueshme në këtë rrugë.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'E kuptoj dhe pranoj kushtet e regjistrimit jashtë vendit, dhe që kinezishtja e thjeshtuar nuk është e disponueshme në këtë rrugë.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Ju lutemi konfirmoni njoftimin më sipër.',
   'auth.loginPhoneOrEmail': 'Telefon ose email',
@@ -355,17 +308,13 @@ export default {
   'auth.username': 'Emri i përdoruesit',
   'auth.waitCaptchaLoad': 'Ju lutemi prisni ngarkimin e captcha',
   'auth.quickRegPageTitle': 'Regjistrim i shpejtë',
-  'auth.quickRegPageHint':
-    'Hapni këtë faqe nga lidhja që ndau shkolla juaj. Shkruani telefonin dhe kodin me 6 shifra të dhomës që shfaqet në dritaren e regjistrimit të shpejtë të moderuesit (rifreskohet rreth çdo 30 sekondash). Kodi tregon se jeni në sesion; nuk verifikon pronësinë e telefonit si një kod SMS.',
-  'auth.quickRegLinkInvalid':
-    'Kjo lidhje regjistrimi nuk është aktive (skaduar ose mbyllur). Hapni përsëri lidhjen aktuale nga moderuesi.',
-  'auth.quickRegProbeRateLimited':
-    'Shumë kontrolle nga kjo faqe. Prisni pak dhe rifreskoni, ose provoni më vonë.',
+  'auth.quickRegPageHint': 'Hapni këtë faqe nga lidhja që ndau shkolla juaj. Shkruani telefonin dhe kodin me 6 shifra të dhomës që shfaqet në dritaren e regjistrimit të shpejtë të moderuesit (rifreskohet rreth çdo 30 sekondash). Kodi tregon se jeni në sesion; nuk verifikon pronësinë e telefonit si një kod SMS.',
+  'auth.quickRegLinkInvalid': 'Kjo lidhje regjistrimi nuk është aktive (skaduar ose mbyllur). Hapni përsëri lidhjen aktuale nga moderuesi.',
+  'auth.quickRegProbeRateLimited': 'Shumë kontrolle nga kjo faqe. Prisni pak dhe rifreskoni, ose provoni më vonë.',
   'auth.quickRegSessionSignups': 'U regjistruan në këtë sesion: {n}',
   'auth.quickRegRoomCodeLabel': 'Kodi i dhomës',
   'auth.quickRegRoomCodePlaceholder': '6 shifra',
-  'auth.quickRegRoomCodeHint':
-    'Përputhni shifrat e mëdha në dialogun e regjistrimit të shpejtë të moderuesit; shkruani kodin para se të ndryshojë.',
+  'auth.quickRegRoomCodeHint': 'Përputhni shifrat e mëdha në dialogun e regjistrimit të shpejtë të moderuesit; shkruani kodin para se të ndryshojë.',
   'auth.quickRegRoomCodeEnter6': 'Shkruani kodin e dhomës me 6 shifra',
   'auth.quickRegMaxUses': 'Regjistrime maksimale për këtë lidhje',
   'auth.quickRegHeadcount': 'Maks.',
@@ -375,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'Përfundo regjistrimin',
   'auth.quickRegSubmitting': 'Duke u regjistruar…',
   'auth.quickRegRegisterSuccess': 'Regjistrimi u krye me sukses',
-  'auth.quickRegSessionUnsure':
-    'Regjistrimi mund të ketë sukses. Nëse nuk jeni futur, kthehuni dhe përdorni hyrjen me kod verifikimi, ose rifreskoni këtë faqe.',
+  'auth.quickRegSessionUnsure': 'Regjistrimi mund të ketë sukses. Nëse nuk jeni futur, kthehuni dhe përdorni hyrjen me kod verifikimi, ose rifreskoni këtë faqe.',
   'auth.quickRegBackToSignIn': 'Hyrje / regjistrim standard',
   'auth.quickRegSelectOrg': 'Zgjidhni shkollën',
   'auth.quickRegOrgLoadError': 'Shkollat nuk u ngarkuan. Provoni përsëri.',
   'auth.quickRegMintError': 'Kanali i regjistrimit nuk u hap. Provoni përsëri.',
   'auth.quickRegCloseConfirmTitle': 'Fundi i regjistrimit të shpejtë?',
-  'auth.quickRegCloseConfirm':
-    'Pas mbylljes së dritares, kodi aktual QR dhe kodi i dhomës do të bëhen të pavlefshëm menjëherë dhe studentët që nuk janë anëtarësuar ende nuk do të mund të vazhdojnë të regjistrohen.',
+  'auth.quickRegCloseConfirm': 'Pas mbylljes së dritares, kodi aktual QR dhe kodi i dhomës do të bëhen të pavlefshëm menjëherë dhe studentët që nuk janë anëtarësuar ende nuk do të mund të vazhdojnë të regjistrohen.',
   'auth.setPasswordWithSms': 'Vendos fjalëkalimin e hyrjes',
   'auth.setPasswordWithSmsTitle': 'Vendos fjalëkalimin përmes SMS',
-  'auth.setPasswordWithSmsHint':
-    'Dërgojmë një kod në telefonin tuaj të lidhur. Pas vendosjes së fjalëkalimit mund të hyni me fjalëkalim ose kod verifikimi.',
+  'auth.setPasswordWithSmsHint': 'Dërgojmë një kod në telefonin tuaj të lidhur. Pas vendosjes së fjalëkalimit mund të hyni me fjalëkalim ose kod verifikimi.',
   'auth.setPasswordWithSmsSubmit': 'Ruaj fjalëkalimin',
   'auth.setPasswordWithSmsSubmitting': 'Duke ruajtur…',
   'auth.accountAvatar': 'Avatar',
@@ -402,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Emri i shfaqur',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'Të paktën 2 karaktere, pa shifra',
   'auth.accountNameSave': 'Ruaj emrin',
   'auth.accountNameSaveSuccess': 'Emri u përditësua',
@@ -415,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Shkëputja dështoi. Provoni përsëri.',
   'auth.dingtalkBindRebind': 'Lidh përsëri',
   'auth.dingtalkBindTitle': 'Lidh llogarinë DingTalk',
-  'auth.dingtalkBindInstructions':
-    'Dërgoni kodin me 6 shifra më poshtë (p.sh. 123-456) si mesazh teksti te DingTalk MindBot i shkollës suaj.',
+  'auth.dingtalkBindInstructions': 'Dërgoni kodin me 6 shifra më poshtë (p.sh. 123-456) si mesazh teksti te DingTalk MindBot i shkollës suaj.',
   'auth.dingtalkBindPairWaiting': 'Duke pritur që MindBot të marrë kodin tuaj…',
   'auth.dingtalkBindCodeHint': 'Dërgoni vetëm këtë kod — pa tekst shtesë.',
   'auth.dingtalkBindCountdown': 'Sesioni skadon pas {s}s',
@@ -431,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'I lidhur ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Aktualisht i lidhur: {staff}',
   'auth.dingtalkUnbindTitle': 'Shkëput llogarinë DingTalk',
-  'auth.dingtalkUnbindInstructions':
-    'Dërgoni kodin më poshtë nga llogaria juaj e lidhur DingTalk te MindBot për të konfirmuar shkëputjen.',
+  'auth.dingtalkUnbindInstructions': 'Dërgoni kodin më poshtë nga llogaria juaj e lidhur DingTalk te MindBot për të konfirmuar shkëputjen.',
   'auth.dingtalkUnbindPairWaiting': 'Duke pritur konfirmimin nga llogaria juaj e lidhur DingTalk…',
   'auth.dingtalkUnbindCodeHint': 'Dërgoni këtë kod vetëm nga llogaria juaj e lidhur DingTalk.',
   'auth.dingtalkUnbindExpiredHint': 'Sesioni i shkëputjes skadoi. Filloni përsëri.',
@@ -445,26 +392,20 @@ export default {
   'auth.qrLoginInviteRequired': 'Shkruani kodin e ftesës shkollore para hyrjes me QR',
   'auth.qrLoginProvidersFailed': 'Cilësimet e hyrjes me QR nuk u ngarkuan. Provoni përsëri.',
   'auth.qrLoginProviderDisabled': 'Ky metodë hyrjeje nuk është aktivizuar për shkollën tuaj',
-  'auth.qrLoginNotLinked':
-    'Llogaria nuk është e lidhur — hyni me fjalëkalim dhe lidhni te Lidhja e llogarive',
+  'auth.qrLoginNotLinked': 'Llogaria nuk është e lidhur — hyni me fjalëkalim dhe lidhni te Lidhja e llogarive',
   'auth.qrLoginExchangeFailed': 'Hyrja me QR dështoi. Provoni përsëri.',
   'auth.qrLoginInvalidState': 'Sesioni QR skadoi. Mbyllni dhe skanoni përsëri.',
-  'auth.qrLoginInvalidCode':
-    'Kodi i autorizimit të WeChat ka skaduar ose është përdorur. Ju lutemi mbyllni kodin QR dhe skanoni përsëri kodin.',
-  'auth.qrLoginRateLimited':
-    'Thirrjet e hyrjes në WeChat janë shumë të shpeshta, ju lutemi provoni përsëri më vonë.',
-  'auth.qrLoginMisconfigured':
-    'Konfigurimi i hyrjes në WeChat është i pasaktë, ju lutemi kontaktoni administratorin.',
+  'auth.qrLoginInvalidCode': 'Kodi i autorizimit të WeChat ka skaduar ose është përdorur. Ju lutemi mbyllni kodin QR dhe skanoni përsëri kodin.',
+  'auth.qrLoginRateLimited': 'Thirrjet e hyrjes në WeChat janë shumë të shpeshta, ju lutemi provoni përsëri më vonë.',
+  'auth.qrLoginMisconfigured': 'Konfigurimi i hyrjes në WeChat është i pasaktë, ju lutemi kontaktoni administratorin.',
   'auth.qrLoginCorpMismatch': 'Organizata DingTalk nuk përputhet me cilësimet e shkollës suaj.',
   'auth.oauthExternalTaken': 'Kjo llogari është tashmë e lidhur me një përdorues tjetër.',
-  'auth.oauthAlreadyBound':
-    'Kjo llogari është lidhur me WeChat. Nëse keni nevojë të lidhni WeChat-in tjetër, ju lutemi shkëputeni atë së pari',
+  'auth.oauthAlreadyBound': 'Kjo llogari është lidhur me WeChat. Nëse keni nevojë të lidhni WeChat-in tjetër, ju lutemi shkëputeni atë së pari',
   'auth.qrLoginDisabled': 'Hyrja me QR nuk është e disponueshme.',
   'auth.qrLoginStartFailed': 'Hyrja me QR nuk u fillua. Provoni përsëri.',
   'auth.qrLoginSuccess': 'U fut me sukses',
   'auth.accountBindingsSection': 'Lidhja e llogarive',
-  'auth.accountBindingsHint':
-    'MindBot ruan në DingTalk; WeChat/DingTalk janë për hyrje me QR (lidhni këtu së pari)',
+  'auth.accountBindingsHint': 'MindBot ruan në DingTalk; WeChat/DingTalk janë për hyrje me QR (lidhni këtu së pari)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',
@@ -476,10 +417,8 @@ export default {
   'auth.bindDingtalkOAuth': 'Lidh DingTalk',
   'auth.unbindDingtalkOAuth': 'Shkëput DingTalk',
   'auth.oauthBindTitle': 'Skanoni për të lidhur llogarinë',
-  'auth.wechatBindScanHint':
-    'Ju lutemi përdorni WeChat për të skanuar kodin QR për të lidhur llogarinë',
-  'auth.wechatLoginScanHint':
-    "Ju lutemi përdorni WeChat për të skanuar kodin QR për t'u identifikuar",
+  'auth.wechatBindScanHint': 'Ju lutemi përdorni WeChat për të skanuar kodin QR për të lidhur llogarinë',
+  'auth.wechatLoginScanHint': 'Ju lutemi përdorni WeChat për të skanuar kodin QR për t\'u identifikuar',
   'auth.oauthBindSuccess': 'U lidh me sukses',
   'auth.oauthUnbindError': 'Shkëputja dështoi. Provoni përsëri.',
   'auth.unbindWechatSuccess': 'WeChat u shkëput',

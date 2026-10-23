@@ -103,6 +103,21 @@ export function citedExplainIndexes(text: string): number[] {
   return indexes
 }
 
+/**
+ * Renumber cited sources to 1..n in first-appearance order.
+ * Raw model marks such as [3][6][2] stay tied to sources[raw - 1].
+ */
+export function explainCitationDisplayMap(text: string, sourceCount: number): Map<number, number> {
+  const display = new Map<number, number>()
+  let next = 1
+  for (const raw of citedExplainIndexes(text)) {
+    if (!Number.isInteger(raw) || raw < 1 || raw > sourceCount || display.has(raw)) continue
+    display.set(raw, next)
+    next += 1
+  }
+  return display
+}
+
 export function lastThinkingLines(text: string, max = THINKING_LINE_MAX): string {
   const lines = text
     .split(/\n+/)

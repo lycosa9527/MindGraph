@@ -30,6 +30,7 @@
     "typeRoots": ["./node_modules/@types", "./node_modules"],
     "types": ["vite/client"]
   },
+  /* Vitest specs are a separate project (`tests/tsconfig.json`) so `vue-tsc` here stays the app check. */
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

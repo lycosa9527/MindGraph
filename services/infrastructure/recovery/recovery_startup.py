@@ -196,7 +196,7 @@ async def check_database_on_startup() -> bool:
             details=("Cannot connect to PostgreSQL. Check DATABASE_URL, PostgreSQL service status, and pg_hba.conf."),
         )
     except BACKGROUND_INFRA_ERRORS as alert_error:
-        logger.error("[Recovery] Failed to send database alert: %s", alert_error)
+        logger.error("[Recovery] Failed to record database failure: %s", alert_error)
 
     backup_status = get_backup_status()
     backups = backup_status.get("backups", [])

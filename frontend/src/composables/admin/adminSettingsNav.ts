@@ -11,7 +11,6 @@ export type SettingsSubtab =
   | 'cos'
   | 'performance'
   | 'library'
-  | 'gewe'
   | 'errors'
   | 'thinking_coins'
   | 'public_dashboard'
@@ -39,7 +38,6 @@ export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   { kind: 'leaf', name: 'thinking_coins', labelKey: 'thinkingCoins.admin.tab' },
   { kind: 'leaf', name: 'public_dashboard', labelKey: 'admin.publicDashboard.tab' },
   { kind: 'leaf', name: 'library', labelKey: 'admin.library' },
-  { kind: 'leaf', name: 'gewe', labelKey: 'admin.geweWechat' },
 ]
 
 export function isSettingsSubtab(value: string | null | undefined): value is SettingsSubtab {
@@ -57,15 +55,11 @@ export function settingsSubtabLabelKey(name: SettingsSubtab): string | null {
 
 export interface SettingsNavVisibilityOptions {
   canViewSettingsSubtab: (subtab: string) => boolean
-  featureGewe: boolean
   featureLibrary: boolean
 }
 
 function canViewLeaf(name: SettingsSubtab, options: SettingsNavVisibilityOptions): boolean {
   if (!options.canViewSettingsSubtab(name)) {
-    return false
-  }
-  if (name === 'gewe' && !options.featureGewe) {
     return false
   }
   if (name === 'library' && !options.featureLibrary) {

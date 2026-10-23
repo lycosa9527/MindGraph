@@ -541,18 +541,18 @@ async def voice_apply_add_node_action(
 
         logger.debug("Node added: %s", target)
         return True
-    # Empty target: legacy path opens the node palette. Verified diagram_edit
+    # Empty target: legacy path opens the AI brainstorm. Verified diagram_edit
     # must not — palette never sends diagram_mutation_ack → ack_timeout.
     if verified_edit_extras_pending(voice_session_id):
         logger.warning("add_node missing target during verified edit; refusing palette open")
         return False
     count = command.get("count", 1)
-    logger.debug("Opening node palette for adding %d node(s)", count)
+    logger.debug("Opening AI brainstorm for adding %d node(s)", count)
     await safe_websocket_send(
         websocket,
         {
             "type": "action",
-            "action": "open_node_palette",
+            "action": "open_ai_brainstorm",
             "params": {"count": count},
         },
     )

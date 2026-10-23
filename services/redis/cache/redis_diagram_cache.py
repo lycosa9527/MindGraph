@@ -47,9 +47,11 @@ from services.redis.cache._redis_diagram_cache_helpers import (
     USER_META_KEY,
     _redis_json_set_paths,
     count_diagrams_from_db,
+    diagram_spec_size_error,
 )
 from services.diagram.source_channel import list_items_missing_source_channel_field
 from services.diagram_shares.access import annotate_library_shares, items_missing_share_role
+from services.diagram.postgres_text import diagram_payload_needs_nul_strip, postgres_diagram_payload
 from services.diagram.spec_coerce import coerce_diagram_spec
 from services.redis.cache.diagram_new_id import assign_id_for_new_diagram
 from services.redis.cache.diagram_save_errors import STALE_ACCOUNT_SAVE_ERROR, describe_diagram_db_error
@@ -176,14 +178,17 @@ class RedisDiagramCache:
             Tuple of (success, diagram_id, error_message)
         """
         # Validate spec size — serialize once for the byte-length check only.
+        # The same text tells us whether a null byte is present, so a clean
+        # spec is not walked or copied.
         spec_json = json.dumps(spec)
-        spec_size_kb = len(spec_json.encode("utf-8")) / 1024
-        if spec_size_kb > MAX_SPEC_SIZE_KB:
-            return (
-                False,
-                None,
-                f"Diagram spec too large ({spec_size_kb:.1f}KB > {MAX_SPEC_SIZE_KB}KB)",
-            )
+        if diagram_payload_needs_nul_strip(title, spec_json, thumbnail):
+            title, cleaned_spec, thumbnail = postgres_diagram_payload(title, spec, thumbnail)
+            if cleaned_spec is not spec:
+                spec = cleaned_spec
+                spec_json = json.dumps(spec)
+        size_error = diagram_spec_size_error(spec, spec_json)
+        if size_error:
+            return False, None, size_error
         # spec_json is not used further; SQLAlchemy handles JSONB serialization.
 
         is_new = diagram_id is None
@@ -380,11 +385,11 @@ class RedisDiagramCache:
                         return False
                     await db.commit()
                     return True
-                except REDIS_ERRORS as exc:
+                except DATABASE_ERRORS as exc:
                     await db.rollback()
                     logger.error("[DiagramCache] meta-only DB update failed: %s", exc)
                     return False
-        except REDIS_ERRORS as exc:
+        except DATABASE_ERRORS as exc:
             logger.error("[DiagramCache] meta-only DB connection failed: %s", exc)
             return False
 
@@ -404,6 +409,8 @@ class RedisDiagramCache:
         existing = await self.get_diagram(user_id, diagram_id)
         if not existing:
             return False, "Diagram not found"
+        if diagram_payload_needs_nul_strip(title, "", thumbnail):
+            title, _, thumbnail = postgres_diagram_payload(title, {}, thumbnail)
         now = datetime.now(UTC)
         ok = await self._update_meta_only_in_database(
             diagram_id,
@@ -461,11 +468,11 @@ class RedisDiagramCache:
                         return False, "Diagram not found"
                     await db.commit()
                     return True, None
-                except REDIS_ERRORS as exc:
+                except DATABASE_ERRORS as exc:
                     await db.rollback()
                     logger.error("[DiagramCache] Database update failed: %s", exc)
                     return False, describe_diagram_db_error(exc)
-        except REDIS_ERRORS as exc:
+        except DATABASE_ERRORS as exc:
             logger.error("[DiagramCache] Database connection failed: %s", exc)
             return False, describe_diagram_db_error(exc)
 

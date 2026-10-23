@@ -198,6 +198,7 @@ export function isTreeMapDefaultNodeLabel(nodeId: string, text: string): boolean
       continue
     }
     if (nodeId === 'dimension-label') {
+      if (trimmed === defaultsT('diagram.labelNode.clickToSet', loc)) return true
       continue
     }
     let m = /^tree-cat-(\d+)$/.exec(nodeId)
@@ -241,6 +242,7 @@ export function isBraceMapDefaultNodeLabel(nodeId: string, text: string): boolea
       continue
     }
     if (nodeId === 'dimension-label') {
+      if (trimmed === defaultsT('diagram.labelNode.clickToSet', loc)) return true
       continue
     }
     let m = /^brace-part-(\d+)$/.exec(nodeId)
@@ -352,6 +354,67 @@ export function isMindmapDefaultNodeLabel(nodeId: string, text: string): boolean
   return false
 }
 
+/**
+ * Labels written onto a node when the user inserts one and has not edited it.
+ * Equality against the catalog, not a "starts with 新 / New" prefix.
+ */
+const INSERTED_BLANK_LABEL_KEYS = [
+  'braceMap.defaultSubpartFirst',
+  'braceMap.defaultSubpartSecond',
+  'canvas.toolbar.newAssociation',
+  'canvas.toolbar.newAttribute',
+  'canvas.toolbar.newBranch',
+  'canvas.toolbar.newCause',
+  'canvas.toolbar.newChild',
+  'canvas.toolbar.newEffect',
+  'canvas.toolbar.newItemA',
+  'canvas.toolbar.newItemB',
+  'canvas.toolbar.newPart',
+  'canvas.toolbar.newStep',
+  'canvas.toolbar.newSubpart',
+  'canvas.toolbar.newSubstep',
+  'diagram.newAttribute',
+  'diagram.newBranch',
+  'diagram.newBridgeLeft',
+  'diagram.newBridgeRight',
+  'diagram.newCategory',
+  'diagram.newCause',
+  'diagram.newChild',
+  'diagram.newConcept',
+  'diagram.newContext',
+  'diagram.newEffect',
+  'diagram.newItem',
+  'diagram.newLeftDifference',
+  'diagram.newPart',
+  'diagram.newRightDifference',
+  'diagram.newSimilarity',
+  'diagram.newStep',
+  'diagram.newSubitem',
+  'diagram.newSubpart',
+  'diagram.newSubstep',
+] as const
+
+/** Older canvases stored this before the catalog keys existed. */
+const LEGACY_INSERTED_BLANK_LABELS = ['新节点', 'New Node']
+
+let cachedInsertedBlankLabels: ReadonlySet<string> | null = null
+
+export function isInsertedBlankNodeLabel(text: string): boolean {
+  const trimmed = text.trim()
+  if (!trimmed) return false
+  if (cachedInsertedBlankLabels === null) {
+    const labels = new Set<string>(LEGACY_INSERTED_BLANK_LABELS.map((label) => label.toLowerCase()))
+    for (const loc of UI_LOCALE_CODES) {
+      for (const key of INSERTED_BLANK_LABEL_KEYS) {
+        const value = defaultsT(key, loc).trim()
+        if (value) labels.add(value.toLowerCase())
+      }
+    }
+    cachedInsertedBlankLabels = labels
+  }
+  return cachedInsertedBlankLabels.has(trimmed.toLowerCase())
+}
+
 /** "Enter text" / "输入文本" labels for newly inserted nodes (all UI locales). */
 let cachedEditablePlaceholderLabels: readonly string[] | null = null
 
@@ -457,6 +520,7 @@ function invalidateDiagramDefaultLabelCaches(): void {
   cachedRootConceptNodeTexts = null
   cachedFocusQuestionDefaults = null
   cachedEditablePlaceholderLabels = null
+  cachedInsertedBlankLabels = null
 }
 
 registerLocaleLabelCacheInvalidator(invalidateDiagramDefaultLabelCaches)

@@ -44,6 +44,7 @@ function clearAndClose(): void {
     line1-key="canvas.hero.icon.line1"
     :icon="Smile"
     width="min(380px, 92vw)"
+    above-canvas-chrome
   >
     <EmojiPicker
       hide-search

@@ -1,4 +1,4 @@
-import { type Ref, onMounted, onUnmounted } from 'vue'
+import { type Ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 
@@ -15,6 +15,8 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
  * @param options.onResize - Optional callback invoked with (width, height) on each measurement
  * @param options.observeRoot - When false, skip ResizeObserver and initial report on the root
  *   (use when Pinia sizes come from a child, e.g. rendered KaTeX inside a fixed-size circle).
+ * @param options.deferWhile - Skip publishing while this is true. Publish once when it
+ *   clears, because the box often already settled and ResizeObserver does not fire again.
  */
 export function useNodeDimensions(
   elementRef: Ref<HTMLElement | null>,
@@ -22,6 +24,7 @@ export function useNodeDimensions(
   options?: {
     onResize?: (width: number, height: number) => void
     observeRoot?: boolean
+    deferWhile?: Ref<boolean>
   }
 ) {
   const diagramStore = useDiagramSession()
@@ -31,6 +34,7 @@ export function useNodeDimensions(
   const resolveId = (): string => (typeof nodeId === 'string' ? nodeId : nodeId.value)
 
   function reportDimensions(): void {
+    if (options?.deferWhile?.value) return
     const el = elementRef.value
     if (!el) return
     const w = el.offsetWidth
@@ -40,6 +44,15 @@ export function useNodeDimensions(
       diagramStore.setNodeDimensions(id, w, h)
       options?.onResize?.(w, h)
     }
+  }
+
+  if (options?.deferWhile) {
+    watch(options.deferWhile, (deferred) => {
+      if (deferred) return
+      void nextTick(() => {
+        reportDimensions()
+      })
+    })
   }
 
   function scheduleReportFromResize(): void {

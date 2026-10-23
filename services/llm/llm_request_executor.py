@@ -131,7 +131,7 @@ class LLMRequestExecutor:
                     max_tokens=max_tokens,
                     **kwargs,
                 )
-            # Qwen and Hunyuan use chat_completion
+            # Qwen uses chat_completion
             return await client.chat_completion(
                 messages=messages,
                 temperature=temperature,

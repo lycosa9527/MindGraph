@@ -52,17 +52,6 @@ from models.domain.knowledge_space import (
     ChunkTestDocument,
     ChunkTestDocumentChunk,
 )
-from models.domain.debateverse import (
-    DebateSession,
-    DebateParticipant,
-    DebateMessage,
-    DebateJudgment,
-)
-from models.domain.community import (
-    CommunityPost,
-    CommunityPostLike,
-    CommunityPostComment,
-)
 from models.domain.showcase import (
     ShowcaseCoverJob,
     ShowcasePost,
@@ -110,9 +99,6 @@ from models.domain.library import (
     LibraryDanmakuReply,
     LibraryBookmark,
 )
-from models.domain.gewe_message import GeweMessage
-from models.domain.gewe_contact import GeweContact
-from models.domain.gewe_group_member import GeweGroupMember
 from models.domain.workshop_chat import (
     ChatChannel,
     ChannelMember,
@@ -129,6 +115,7 @@ from models.domain.feature_access_control import (
     FeatureAccessOrgGrant,
     FeatureAccessUserGrant,
 )
+from models.domain.canvas_input_device import CanvasInputDevice
 from models.domain.device import Device
 from models.domain.markets import (
     MarketEntitlement,
@@ -152,21 +139,6 @@ from models.domain.mindmate_collab import (
     MindmateCollabSession,
 )
 from models.domain.kitty_one_sentence import KittyOneSentenceSession, KittyOneSentenceTurn
-from models.domain.maite_learning import MaiteProblem, MaiteInquirySession
-from models.domain.maite_stages import (
-    MaiteProblemAnalysis,
-    MaiteSelfAssessment,
-    MaiteDecomposeSubmission,
-    MaiteDiagnosisResult,
-    MaiteRemedyTask,
-    MaiteVariantTask,
-)
-from models.domain.maite_artifacts import (
-    MaiteSessionReport,
-    MaiteGraphNodeProgress,
-    MaitePromptRun,
-    MaiteTaskReference,
-)
 from models.domain.error_event import ErrorEvent, ErrorGroup
 
 __all__ = [
@@ -207,13 +179,6 @@ __all__ = [
     "ChunkTestResult",
     "ChunkTestDocument",
     "ChunkTestDocumentChunk",
-    "DebateSession",
-    "DebateParticipant",
-    "DebateMessage",
-    "DebateJudgment",
-    "CommunityPost",
-    "CommunityPostLike",
-    "CommunityPostComment",
     "ShowcasePost",
     "ShowcasePostLike",
     "ShowcasePostFavorite",
@@ -239,9 +204,6 @@ __all__ = [
     "LibraryDanmakuLike",
     "LibraryDanmakuReply",
     "LibraryBookmark",
-    "GeweMessage",
-    "GeweContact",
-    "GeweGroupMember",
     "ChatChannel",
     "ChannelMember",
     "ChatTopic",
@@ -254,6 +216,7 @@ __all__ = [
     "FeatureAccessRule",
     "FeatureAccessOrgGrant",
     "FeatureAccessUserGrant",
+    "CanvasInputDevice",
     "Device",
     "MarketEntitlement",
     "MarketListing",
@@ -274,18 +237,6 @@ __all__ = [
     "MindmateCollabReadCursor",
     "KittyOneSentenceSession",
     "KittyOneSentenceTurn",
-    "MaiteProblem",
-    "MaiteInquirySession",
-    "MaiteProblemAnalysis",
-    "MaiteSelfAssessment",
-    "MaiteDecomposeSubmission",
-    "MaiteDiagnosisResult",
-    "MaiteRemedyTask",
-    "MaiteVariantTask",
-    "MaiteSessionReport",
-    "MaiteGraphNodeProgress",
-    "MaitePromptRun",
-    "MaiteTaskReference",
     "ErrorEvent",
     "ErrorGroup",
     "TrainingCourse",

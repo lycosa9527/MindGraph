@@ -24,15 +24,13 @@ function bundleForKey(key: string): string {
     case 'app':
     case 'settings':
     case 'publicDashboard':
-    case 'askOnce':
-    case 'askonce':
     case 'diagramTemplate':
     case 'diagramTemplates':
       return 'common'
     case 'mindmate':
     case 'panels':
     case 'panel':
-    case 'nodePalette':
+    case 'aiBrainstorm':
     case 'focusQuestion':
     case 'rootConceptModal':
     case 'conceptMapPicker':
@@ -65,7 +63,6 @@ function bundleForKey(key: string): string {
     case 'community':
     case 'library':
     case 'libraryViewer':
-    case 'debateverse':
       return 'community'
     case 'sidebar':
       return 'sidebar'

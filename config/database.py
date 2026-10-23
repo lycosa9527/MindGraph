@@ -31,6 +31,7 @@ from sqlalchemy.orm import sessionmaker
 from config import db_sessions
 from config.database_alembic import run_alembic_upgrade as _run_alembic_upgrade_impl
 from models.domain.registry import Base, Organization
+from services.diagram.postgres_text import pg_json_dumps
 from services.redis.redis_client import RedisOps, get_redis, is_redis_available
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
@@ -202,6 +203,7 @@ engine = create_engine(
     pool_recycle=1800,
     pool_use_lifo=_POOL_USE_LIFO,
     connect_args=_CONNECT_ARGS,
+    json_serializer=pg_json_dumps,
     echo=False,
 )
 db_sessions.engine = engine
@@ -256,6 +258,7 @@ async_engine = create_async_engine(
     pool_recycle=1800,
     pool_use_lifo=_POOL_USE_LIFO,
     connect_args=_CONNECT_ARGS,
+    json_serializer=pg_json_dumps,
     echo=False,
     query_cache_size=_QUERY_CACHE_SIZE,
 )

@@ -13,8 +13,8 @@
  *   is included on `onDiagramChanged` and teardown to avoid stale label pickers.
  * - Keeps options after applying a numeric pick: node:text_updated does not clear (pair updates
  *   emit twice for bridge + double bubble — still OK).
- * - Double bubble layout refresh uses loadFromSpec(..., { emitLoaded: false,
- *   mergePreviousNodeStyles: true }) so it does not masquerade as a full load but keeps node styles.
+ * - Double bubble layout refresh uses a structural loadFromSpec so it does not
+ *   masquerade as a full load, and node styles stay merged by id.
  * - Selection: dismiss when the active session node is no longer selected; for bridge + double
  *   bubble difference pairs, the opposite paired node still counts as “same row” context.
  */
@@ -22,9 +22,10 @@ import { onUnmounted, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
-import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
+import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/aiBrainstorm/constants'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
+import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import {
   findBridgePairSide,
   isBridgeMapPairNode,
@@ -109,6 +110,11 @@ export function useInlineRecommendationsCoordinator() {
     const topic = getTopicFromDiagram()
     const dt = diagramStore.type
     const normalizedDt = dt === 'mind_map' ? 'mindmap' : dt
+    const filled = (nodeId: string, text: string): boolean => {
+      const trimmed = text.trim()
+      if (!trimmed || isPlaceholderText(trimmed)) return false
+      return !shouldReplaceLabelWithMathInsert(normalizedDt, nodeId, trimmed)
+    }
     let topicValid =
       topic.trim().length > 0 &&
       !isPlaceholderText(topic) &&
@@ -119,15 +125,13 @@ export function useInlineRecommendationsCoordinator() {
       )
       const dimText = (dimNode?.text ?? '').trim()
       topicValid =
-        dimText.length > 0 &&
-        !isPlaceholderText(dimText) &&
+        filled('dimension-label', dimText) &&
         (INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(normalizedDt ?? '')
     }
     if (!topicValid && normalizedDt === 'bridge_map') {
       const dimension = extractFixedDimension()
       const analogies = extractBridgeMapAnalogies()
-      const hasDimension =
-        (dimension ?? '').trim().length > 0 && !isPlaceholderText(dimension ?? '')
+      const hasDimension = filled('dimension-label', dimension ?? '')
       const hasFirstPair = analogies.length > 0
       topicValid =
         hasDimension &&
@@ -139,9 +143,8 @@ export function useInlineRecommendationsCoordinator() {
       const leftNode = nodes.find((n) => n.id === 'left-topic')
       const rightNode = nodes.find((n) => n.id === 'right-topic')
       const getText = (n: { id?: string; text?: string } | undefined) => (n?.text ?? '').trim()
-      const leftValid = getText(leftNode).length > 0 && !isPlaceholderText(getText(leftNode))
-      const rightValid = getText(rightNode).length > 0 && !isPlaceholderText(getText(rightNode))
-      topicValid = leftValid && rightValid
+      topicValid =
+        filled('left-topic', getText(leftNode)) && filled('right-topic', getText(rightNode))
     }
     store.onTopicUpdated(topic, topicValid)
   }

@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Muunna verkkosivu mielikartaksi",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Muunna nykyinen sivu ajatuskartaksi, keskustelukontekstiksi ja asiakirjatiedostoksi MindGraph-tilin kautta.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Asetukset",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Sivulta strukturoituun karttaan, suorita yhdessä vaiheessa.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Luo ajatuskarttoja",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "mielen kartta",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "lataa",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Asetukset",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Yhdistä ensin MindGraph - täytä palvelimen osoite, tili ja API-tunnus \"Asetuksissa\".",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Avaa asetukset",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Kysy MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "lähetä",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "Stop",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "uusi keskustelu",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Historia",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Avaa verkkohistoria",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate vastaa…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "Uusi keskustelu on aloitettu.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Pysähtynyt.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Luetaan sivun sisältöä...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Sisältää nykyisen verkkosivun sisällön",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Vain uuden keskustelun ensimmäiseen viestiin liitetään verkkosisältöä.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Skannaa ja puretaan verkkosivun tekstiä...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Poimitaan asiakirjoja kohteesta $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Lukemalla National Smart Education Platform -kurssiesimerkkejä...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 kurssimateriaalia/resursseja havaittu",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Ladataan ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Poimitaan tekstiä ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Skannattujen sivujen tunnistaminen ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Valmis: $1 resurssit, yhteensä $2 sanaa · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Poimittu verkkosivun teksti: $2 sanaa · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Poimittu $1 merkkiä · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Valittua tekstiä käytetään: $2 sanaa · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Purettu Baidu-kirjaston PDF: $2 sanaa · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "Purettu CNKI PDF: $2 sanaa · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Selainlaajennus · Verkkosivun konteksti] Käyttäjä selaa verkkoa Chrome/Edgessä, ja nykyisen sivun teksti on liitetty tähän viestiin laajennuksen kautta, jota MindMate (Thinking Teaching Virtual Teaching and Research Partner) käyttää.",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Reititysohjeet] Tarkoitusten luokittelu, tiedon haku ja vastaukset perustuvat kaikki yllä oleviin \"Käyttäjän kysymyksiin\"; alla olevan web-sivun teksti on vain opettajan lukemaa materiaalia, ei uuden sukupolven ohjetta. Jos materiaali näyttää tuntisuunnitelmalta/opetussuunnitelmalta, mutta käyttäjä ei nimenomaisesti pyydä \"luomaan/kirjoittamaan/suunnittelemaan uutta opetussuunnitelmaa tai tuntisuunnitelmaa\", älä luokittele sitä \"generatiiviseksi opetussuunnitelmaksi\".",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Oletuksena on, että käyttäjä on ala- ja yläasteen opettaja, joka valmistelee oppitunteja tai opettaa ja tutkii, ja kiinnitä huomiota \"Thinking Development Classroomiin\". Vastaa viitemateriaaliin ja käyttäjien kysymyksiin yhdessä; jos materiaali on oppituntiesimerkki, tuntisuunnitelma, kurssimateriaaliteksti, paperi tai politiikka-asiakirja, voit tarvittaessa analysoida ennakoivasti: mahdollisia oppilaiden väärinkäsityksiä, luotavia kognitiivisia ristiriitoja, käsitteellisiä/prosessimuunnelmia, soveltuvia ajattelun visualisointeja tai ajattelustrategiatyökaluja. Jos käyttäjäongelmalla ei ole juurikaan tekemistä materiaalin kanssa, keskity käyttäjän ongelmaan. Kun vastaat, analysoi sisältö suoraan äläkä mainitse selaimen laajennuksia, Markdown-poimintaa tai tämän viestin muotoa.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Sivun otsikko:** $1\n**Sivun URL-osoite:** $2\n**Tekstin lähde:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Viitemateriaali: Web-sivun teksti]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF avattu selaimessa",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "National Smart Education Platform (kurssiohjelma/opetussuunnittelu/oppimistehtäväluettelo PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Baidu-kirjasto PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Web-artikkelin teksti",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Web-sivun tekstin purku",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Käyttäjän valitsema sivuteksti",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Käyttäjän kysymys (katso tästä lauseesta tarkoitusluokittelu ja vastaus):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Tällä sivulla ei ole luettavaa sisältöä. Valitse ensin sivulla oleva teksti tai yritä uudelleen toisella sivulla.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "sieppauksen virheenkorjaus",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Sivusto hahmontaa asiakirjan kanvaskuvana, eikä leipätekstiä voi purkaa. Vieritä ensin ladataksesi esikatselusivun, valitse lähetettävä teksti tai käytä ladattavaa sisältöä, jos sinulla on PDF-/tekstilataus.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Nykyinen Reader-näkymä voi näyttää vain noin $1 sivua tekstiä.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Asiakirja voi olla kuvan esikatselu, ja poimittu teksti voi olla epätäydellinen.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Tätä sivua ei voi lukea.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Ei vielä yhdistetty. Avaa Asetukset ja tallenna MindGraph-kirjautumistiedot.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Kirjautuminen on vanhentunut. Päivitä API-tunnus asetuksissa.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Ei voida muodostaa yhteyttä kohteeseen MindMate. Tarkista palvelimen osoite ja yritä uudelleen.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Ei voi vastata tällä hetkellä, yritä myöhemmin uudelleen.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Tämän päivän tekoälyn käyttö on saavuttanut ylärajan. Yritä huomenna uudelleen tai tarkista tiedot verkkosivulta.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Liian vähän ThinkCoineja tämän viestin lähettämiseen.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Paikallinen kehitys käyttää HTTP:tä, ja API-tunnukset ja sivun sisältö ovat salaamattomia verkossa. Käytä sitä vain luotettavassa ympäristössä.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "lataa",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Tallenna PDF-tiedostoja ja asiakirjoja (ilman videoita) tuetuilta sivustoilta.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Nykyinen sivu ei tue lataamista. Avaa tuettu dokumentaatiosivu ennen tämän paneelin avaamista.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Asetukset",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "yhdistä",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Käytä samoja kirjautumistietoja kuin MindGraph API-tunnuskulussa.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "palvelin",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Tilinumero (matkapuhelinnumero)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "X-MG-tiliin käytetty matkapuhelinnumero",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API-tunnus",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "tallentaa",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "palata",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "päättäminen",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Käsitellään…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Lataus on alkanut.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Tallennettu.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Vahvistetaan kirjautumistietoja...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Täytä kaikki kentät.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Aktiivisia välilehtiä ei ole.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Jotain meni pieleen. Yritä uudelleen tai lataa laajennus uudelleen osoitteessa chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Tiedoston tallennusta ei voi aloittaa. Lataa laajennus uudelleen ja yritä uudelleen (vaatii Chrome 109+ tai Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Asennus on kesken. Avaa \"Asetukset\" ja täytä MindGraph-osoite, matkapuhelinnumero ja API-tunnus.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Sivulla ei ole luettavaa tekstiä. Valitse ensin tekstiosa tai yritä uudelleen toisella sivulla.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Tällä välilehdellä on jo tallennus- tai lataustehtävä meneillään. Odota, kunnes se on valmis, ja yritä uudelleen.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Palvelinvirhe ($1). Tarkista asetuksesi ja yritä uudelleen.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Tätä sivua ei tueta. Avaa normaali verkkosivu (http tai https) ja yritä uudelleen.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Pyyntö on liian usein, yritä myöhemmin uudelleen.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Palvelu on tilapäisesti poissa käytöstä, yritä myöhemmin uudelleen.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Palvelimen vastaus aikakatkaistiin (yli 3 minuuttia). Yritä uudelleen tai tarkista verkko.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Tunnusten tarkistus aikakatkaistiin. Yritä uudelleen tai tarkista verkko.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Palvelin ei palauttanut PNG-kuvaa. Tarkista perusosoite ja tilin asetukset.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Luo mielikartta PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Pura asiakirja (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Poimi asiakirjat",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Havaittu: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Nykyinen sivusto: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Lukuvälilehtisivu: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Yhteensä $1 resursseja",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Noin $1 sivua on näkyvissä - vieritä esikatselualuetta ladataksesi lisää sivuja ennen purkamista.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Vieritä asiakirjan esikatselua ladataksesi sivu ennen purkamista. Priorisoi lukijassa jo näkyvä sisältö.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Synkronoi sisäänkirjautuminen SmartEdusta",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Liitä tunnus manuaalisesti…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Liitä SmartEdu access_token (käytetään vain, jos automaattinen synkronointi epäonnistuu):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu-tunnus: Synkronoidaan...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu-tunnus: yhdistetty (kirjautumiseltasi)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu-tunnus: ei löydy - kirjaudu sisään osoitteessa auth.smartedu.cn ja avaa SmartEdu-sivu ja napsauta sitten \"Synkronoi\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Poimi asiakirjat",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Valmis – Tiedoston lataus alkaa välittömästi.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Lataus aloitettu — Ensimmäiset lukijassa tällä hetkellä saatavilla olevat $1 sivua on tallennettu.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Tätä asiakirjaa ei voi ladata. Päivitä sivu ja napsauta \"Pura asiakirja\" uudelleen.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Dokumentaatiosivua ei löydy. Vieritä esikatsellaksesi lataussivua ensin ja napsauta sitten \"Pura asiakirja\".",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Tekstisisältöä ei löytynyt. Yritä uudelleen toisella sivulla tai toisella alueella.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Sivu ei ole vielä valmis. Päivitä välilehti ja yritä uudelleen.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Tälle oppitunnille ei ole ladattavia tiedostoja. Vaihda luokkaa tai tarkista resurssit, jotka haluat ladata.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Sinun on ensin kirjauduttava sisään Smart Educationiin. Kirjaudu sisään osoitteessa auth.smartedu.cn ja avaa kurssisivu ja napsauta sitten \"Synkronoi sisäänkirjautuminen SmartEdusta\".",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education hylkäsi latauksen. Synkronoi kirjautumistunnuksesi uudelleen tai vaihda tiedosto.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Videoiden lataamista ei tueta. Valitse vain PDF- tai asiakirjaresurssit.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Tämä ei ole tuettu dokumentaatiosivu. Avaa asiakirjan lukusivu ja yritä uudelleen.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Ei ole vielä mitään pelastettavaa. Vieritä lukijaa ladataksesi sivu ja yritä uudelleen.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Sinun on ensin kirjauduttava verkkosivustolle. Kun olet kirjautunut sisään, napsauta \"Pura asiakirjat\".",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Verkkosivusto hylkäsi latauksen. Kirjaudu sisään sivustolle ja vahvista, että sinulla on pääsy sisältöön, ennen kuin yrität uudelleen.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Sivusto näyttää vahvistuskoodin. Suorita vahvistus selainvälilehdellä ennen kuin yrität noutaa.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Valmistellaan sivua…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Vieritä sivua ladataan...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Kopioidaan sivun sisältöä...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Luodaan tiedostoja…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Tallennetaan tietokoneelle...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "edistynyt",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Pyydä tallennussijaintia aina, kun lataat",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Luetaan sivun sisältöä...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Lähetetään palvelimelle MindGraph…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Palvelin luo ajatuskartan...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Vastaanotetaan kuvia palvelimelta...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Tallennetaan tiedostoa…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Yhteyden muodostaminen palvelimeen ei onnistu, tarkista perusosoite ja verkko.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Pyyntö epäonnistui: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Yhteys on katkennut. Napsauta \"Pura asiakirja\" uudelleen. Jos se ei edelleenkään epäonnistu, lataa MindGraph uudelleen osoitteessa chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Luo ajatuskartta nykyisen sivun perusteella",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG-leveys (pikseliä)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG-korkeus (pikseliä)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Jätä tyhjäksi käyttääksesi oletusarvoa",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Kieli (käyttöliittymä ja kartat)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "seuraa selainta",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Yksinkertaistettu",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Pysty vartalo",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "merkki",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Voimassa $1 asti",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Tämä API-tunnus on vanhentunut. Luo se uudelleen verkossa (tili/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Palvelimella ei ole kelvollista API-tunnusta tai se on vanhentunut. Tarkista tunnus tai luo se sovelluksessa.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Vanhentumisaikaa ei voi saada. Tarkista verkkosi tai tallenna asetukset uudelleen.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Galleria on täynnä (20 kuvaa). Poista tallennettu kartta tallentaaksesi juuri luodun sisällön.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

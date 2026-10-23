@@ -85,7 +85,7 @@ function downloadPlugin(): void {
     return
   }
   if (!canUseChromeExtension.value) {
-    notify.error(t('auth.schoolTierFeatureUnavailable'))
+    notify.errorKey('auth.schoolTierFeatureUnavailable')
     return
   }
   const link = document.createElement('a')

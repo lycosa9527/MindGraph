@@ -13,7 +13,7 @@ from services.showcase.covers.office_to_pdf import convert_office_to_pdf, office
 
 logger = logging.getLogger(__name__)
 
-# Keep in sync with routers.features.community.helpers.THUMBNAIL_MAX_BYTES
+# Keep in sync with routers.features.showcase.helpers.THUMBNAIL_MAX_BYTES
 THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024
 _THUMB_MAX_EDGE_PX = 960
 _PDF_RENDER_MATRIX = pymupdf.Matrix(1.5, 1.5)

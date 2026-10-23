@@ -15,8 +15,7 @@ export default {
   'sidebar.actions.unpin': 'پین را بردارید',
   'sidebar.actions.moveToFolder': 'انتقال به پوشه',
   'sidebar.actions.removeFromFolder': 'خارج کردن پوشه',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'آیا مطمئن هستید که می خواهید این مکالمه را حذف کنید؟ این عمل قابل لغو نیست.',
+  'sidebar.askOnceHistory.deleteConfirm': 'آیا مطمئن هستید که می خواهید این مکالمه را حذف کنید؟ این عمل قابل لغو نیست.',
   'sidebar.askOnceHistory.empty': 'هنوز ضبط مکالمه ای وجود ندارد',
   'sidebar.askOnceHistory.renamePrompt': 'لطفاً یک نام مکالمه جدید وارد کنید',
   'sidebar.askOnceHistory.renameTitle': 'تغییر نام مکالمه',
@@ -30,8 +29,7 @@ export default {
   'sidebar.bookmarks.title': 'نشانک های اخیر',
   'sidebar.bookmarks.unknownDoc': 'سند ناشناس',
   'sidebar.brandTitle': 'آموزش و تحقیق مت',
-  'sidebar.chatHistory.deleteConfirm':
-    'آیا مطمئن هستید که می خواهید این مکالمه را حذف کنید؟ این عمل قابل لغو نیست.',
+  'sidebar.chatHistory.deleteConfirm': 'آیا مطمئن هستید که می خواهید این مکالمه را حذف کنید؟ این عمل قابل لغو نیست.',
   'sidebar.chatHistory.deleteTitle': 'مکالمه را حذف کنید',
   'sidebar.chatHistory.empty': 'هنوز ضبط مکالمه ای وجود ندارد',
   'sidebar.chatHistory.loginPrompt': 'برای مشاهده تاریخچه وارد شوید',
@@ -46,8 +44,7 @@ export default {
   'sidebar.chatHistory.folderCreatePrompt': 'Enter a name for the new folder',
   'sidebar.chatHistory.folderCreateTitle': 'New folder',
   'sidebar.chatHistory.folderCreated': 'Folder created',
-  'sidebar.chatHistory.folderDeleteConfirm':
-    'Delete this folder? Conversations inside will move to Uncategorized.',
+  'sidebar.chatHistory.folderDeleteConfirm': 'Delete this folder? Conversations inside will move to Uncategorized.',
   'sidebar.chatHistory.folderDeleteFailed': 'Failed to delete folder',
   'sidebar.chatHistory.folderDeleteTitle': 'Delete folder',
   'sidebar.chatHistory.folderDeleted': 'Folder deleted',
@@ -69,19 +66,13 @@ export default {
   'sidebar.zhihui': 'چیه',
   'sidebar.zhihuiHistory.title': 'تاریخ بسازید',
   'sidebar.zhihuiHistory.empty': 'هنوز سابقه نسلی وجود ندارد',
-  'sidebar.zhihuiHistory.deleteConfirm':
-    'آیا مطمئن هستید که می خواهید این رکورد ایجاد شده را حذف کنید؟ این عمل قابل لغو نیست.',
-  'sidebar.community': 'انجمن',
-  'sidebar.courses': 'درس های تفکر',
-  'sidebar.mateLearning': 't0',
-  'sidebar.debateHistory.deleteConfirm':
-    'آیا مطمئنید که می خواهید این سابقه مناظره را حذف کنید؟ این عمل قابل لغو نیست.',
+  'sidebar.zhihuiHistory.deleteConfirm': 'آیا مطمئن هستید که می خواهید این رکورد ایجاد شده را حذف کنید؟ این عمل قابل لغو نیست.',
+  'sidebar.debateHistory.deleteConfirm': 'آیا مطمئنید که می خواهید این سابقه مناظره را حذف کنید؟ این عمل قابل لغو نیست.',
   'sidebar.debateHistory.empty': 'هنوز سابقه بحثی وجود ندارد',
   'sidebar.debateHistory.loginPrompt': 'برای مشاهده بحث های تاریخی وارد شوید',
   'sidebar.debateHistory.renamePrompt': 'لطفا موضوع بحث جدید را وارد کنید',
   'sidebar.debateHistory.renameTitle': 'بحث تغییر نام',
   'sidebar.debateHistory.title': 'بحث اخیر',
-  'sidebar.debateverse': 'در مورد وضعیت',
   'sidebar.diagramHistory.capacity': 'می تواند نمادهای {n} را ذخیره کند',
   'sidebar.diagramHistory.deleteFailed': 'حذف نشد',
   'sidebar.diagramHistory.collabLive': 'همکاری آنلاین در حال انجام است',
@@ -98,8 +89,7 @@ export default {
   'sidebar.diagramHistory.folderCreatePrompt': 'لطفا یک نام پوشه وارد کنید',
   'sidebar.diagramHistory.folderCreateTitle': 'پوشه جدید ایجاد کنید',
   'sidebar.diagramHistory.folderCreated': 'پوشه ایجاد شد',
-  'sidebar.diagramHistory.folderDeleteConfirm':
-    'آیا مطمئن هستید که می خواهید این پوشه را حذف کنید؟ نمادهای آنجا به دسته بندی نشده منتقل می شوند.',
+  'sidebar.diagramHistory.folderDeleteConfirm': 'آیا مطمئن هستید که می خواهید این پوشه را حذف کنید؟ نمادهای آنجا به دسته بندی نشده منتقل می شوند.',
   'sidebar.diagramHistory.folderDeleteFailed': 'پوشه حذف نشد',
   'sidebar.diagramHistory.folderDeleteTitle': 'پوشه را حذف کنید',
   'sidebar.diagramHistory.folderDeleted': 'پوشه حذف شد',
@@ -108,8 +98,7 @@ export default {
   'sidebar.diagramHistory.folderRenamePrompt': 'لطفا یک نام پوشه جدید وارد کنید',
   'sidebar.diagramHistory.folderRenameTitle': 'تغییر نام پوشه',
   'sidebar.diagramHistory.folderRenamed': 'پوشه تغییر نام داد',
-  'sidebar.diagramHistory.foldersLoadFailed':
-    'پوشه بارگیری نمی شود، فقط لیست گرافیکی نشان داده شده است',
+  'sidebar.diagramHistory.foldersLoadFailed': 'پوشه بارگیری نمی شود، فقط لیست گرافیکی نشان داده شده است',
   'sidebar.diagramHistory.foldersSection': 'پوشه',
   'sidebar.diagramHistory.loadFailed': 'نماد بارگیری نشد',
   'sidebar.diagramHistory.moveFailed': 'انتقال نماد انجام نشد',
@@ -148,17 +137,15 @@ export default {
   'sidebar.training': 'آموزش مبتنی بر مدرسه',
   'sidebar.trainingCourses': 'دوره',
   'sidebar.trainingBuilder': 'دستیار ساخت دوره',
-  'sidebar.templateResources': 'منابع قالب',
   'sidebar.orgEdition': '{org}نسخه انحصاری',
   'sidebar.personalEdition': 'نسخه شخصی',
   'sidebar.userSubtitleDefault': 'نسخه حرفه ای MindGraph',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',
   'sidebar.account': 'تنظیمات حساب',
-  'sidebar.roleSuperAdmin': 'مدیر فوق العاده',
-  'sidebar.rolePlatformAdmin': 'همکار آموزشی و پژوهشی',
+  'sidebar.roleSuperAdmin': 'سوپر ادمین',
+  'sidebar.rolePlatformAdmin': 'پژوهشگر',
   'sidebar.roleExpert': 'متخصص',
   'sidebar.roleSchoolAdmin': 'مدیر مدرسه',
   'sidebar.roleSchoolEdition': 'مدرسه',
@@ -169,8 +156,7 @@ export default {
   'sidebar.logoSiteQrHint': 'لطفاً از دوربین/WeChat روی تلفن خود برای اسکن کد QR استفاده کنید',
   'sidebar.mindmateCollabHistory.title': 'همکاری آنلاین',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'پایان سمینار',
-  'sidebar.mindmateCollabHistory.stopConfirm':
-    'این اتاق کارگاه برای همه شرکت کنندگان بسته خواهد بود و همه از اتاق خارج می شوند.',
+  'sidebar.mindmateCollabHistory.stopConfirm': 'این اتاق کارگاه برای همه شرکت کنندگان بسته خواهد بود و همه از اتاق خارج می شوند.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'در محوطه دانشگاه',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'در سراسر مدارس',
   'sidebar.share.ribbon': 'Organization',
@@ -194,8 +180,7 @@ export default {
   'sidebar.demo.menu': 'Demo mode',
   'sidebar.demo.ribbon': 'Demo',
   'sidebar.demo.title': 'Choose diagrams',
-  'sidebar.demo.line1':
-    'Pick diagrams from your library, write a caption, then play them full screen',
+  'sidebar.demo.line1': 'Pick diagrams from your library, write a caption, then play them full screen',
   'sidebar.demo.search': 'Search diagrams',
   'sidebar.demo.empty': 'No diagrams in your library yet',
   'sidebar.demo.hint': 'Select a diagram to write its caption',
@@ -245,26 +230,15 @@ export default {
   'sidebar.demo.loading': 'Generating',
   'sidebar.demo.moveUp': 'Move up',
   'sidebar.demo.moveDown': 'Move down',
-  'sidebar.demo.caption.circle_map':
-    '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
-  'sidebar.demo.caption.bubble_map':
-    '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
-  'sidebar.demo.caption.double_bubble_map':
-    '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
-  'sidebar.demo.caption.tree_map':
-    '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
-  'sidebar.demo.caption.brace_map':
-    '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
-  'sidebar.demo.caption.flow_map':
-    '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
-  'sidebar.demo.caption.multi_flow_map':
-    '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
-  'sidebar.demo.caption.bridge_map':
-    '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
-  'sidebar.demo.caption.mindmap':
-    '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
-  'sidebar.demo.caption.concept_map':
-    '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
-  'sidebar.demo.caption.fallback':
-    '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
+  'sidebar.demo.caption.circle_map': '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
+  'sidebar.demo.caption.bubble_map': '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
+  'sidebar.demo.caption.double_bubble_map': '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
+  'sidebar.demo.caption.tree_map': '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
+  'sidebar.demo.caption.brace_map': '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
+  'sidebar.demo.caption.flow_map': '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
+  'sidebar.demo.caption.multi_flow_map': '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
+  'sidebar.demo.caption.bridge_map': '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
+  'sidebar.demo.caption.mindmap': '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
+  'sidebar.demo.caption.concept_map': '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
+  'sidebar.demo.caption.fallback': '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
 } as const

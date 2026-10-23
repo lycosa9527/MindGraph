@@ -5,13 +5,11 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Nuk mund të pastrohen nyjet e temës ose qendrës',
-  'notification.cannotResetSelectDiagramType':
-    'Nuk mund të rivendoset: zgjidhni fillimisht llojin e diagramit',
+  'notification.cannotResetSelectDiagramType': 'Nuk mund të rivendoset: zgjidhni fillimisht llojin e diagramit',
   'notification.canvasClearNodes': 'U pastruan {count} nyje',
   'notification.canvasClearNodesLearning': 'U zbrazën {count} nyje, u shtuan te përgjigjet',
   'notification.canvasSomeoneEditingNode': 'Dikush tjetër po e redakton këtë nyje',
-  'notification.collabDeleteBlocked':
-    'Nuk mund të fshihet ndërsa një përdorues tjetër po redakton një nyje të zgjedhur',
+  'notification.collabDeleteBlocked': 'Nuk mund të fshihet ndërsa një përdorues tjetër po redakton një nyje të zgjedhur',
   'notification.collabRedoBlocked': 'Nuk mund të ribëhet ndërsa një përdorues tjetër po redakton',
   'notification.collabUndoBlocked': 'Nuk mund të zhbëhet ndërsa një përdorues tjetër po redakton',
   'notification.conversationDeleted': 'Biseda u fshi',
@@ -23,8 +21,7 @@ export default {
   'notification.feedbackThanks': 'Faleminderit për reagimin',
   'notification.feedbackThanksDislike': 'Faleminderit për reagimin — do ta përmirësojmë',
   'notification.focusQuestionTooShort': 'Së pari shkruani një pyetje fokusi më të gjatë',
-  'notification.geoLiteMissingIntro':
-    'Shkarkoni GeoLite2 Country nga MaxMind, nxirrni GeoLite2-Country.mmdb dhe kopjojeni në dosjen e të dhënave të serverit:',
+  'notification.geoLiteMissingIntro': 'Shkarkoni GeoLite2 Country nga MaxMind, nxirrni GeoLite2-Country.mmdb dhe kopjojeni në dosjen e të dhënave të serverit:',
   'notification.geoLiteMissingLink': 'Hap faqen e shkarkimit MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'Rruga e pritur:',
   'notification.geoLiteMissingTitle': 'Mungon baza e të dhënave GeoLite2 Country',
@@ -36,12 +33,9 @@ export default {
   'notification.importInvalidData': 'Importi dështoi: të dhëna diagrami të pavlefshme',
   'notification.importLoadFailed': 'Importi dështoi: diagrami nuk u ngarkua',
   'notification.importSavePartial': 'U importua, por ruajtja në bibliotekë dështoi',
-  'notification.importSlotsFull':
-    'Biblioteka është plot; diagrami u importua por nuk u ruajt në bibliotekë',
+  'notification.importSlotsFull': 'Biblioteka është plot; diagrami u importua por nuk u ruajt në bibliotekë',
   'notification.importSuccess': 'Diagrami u importua dhe u ruajt në bibliotekë',
   'notification.importUnsupportedType': 'Importi dështoi: lloj diagrami i pambështetur',
-  'notification.inlineRecEmpty':
-    'Nuk u gjeneruan rekomandime. Provoni përsëri ose ndryshoni temën.',
   'notification.loadMoreFailed': 'Nuk u ngarkua më shumë',
   'notification.networkError': 'Gabim rrjeti',
   'notification.nodeNotEligible': 'Kjo nyje nuk mbështet rekomandimet Tab.',
@@ -52,10 +46,8 @@ export default {
   'notification.rootConceptLinkNotFound': 'Lidhja e konceptit rrënjësor nuk u gjet',
   'notification.saved': 'Ndryshimet u ruajtën me sukses',
   'notification.selectNodeToClear': 'Zgjidhni një nyje për ta pastruar',
-  'notification.sessionInvalidated':
-    'Jeni çkyçur sepse keni tejkaluar numrin maksimal të pajisjeve',
-  'notification.sessionKicked':
-    'Kjo llogari e ka regjistruar këtë llogari jashtë linje në pajisje të tjera',
+  'notification.sessionInvalidated': 'Jeni çkyçur sepse keni tejkaluar numrin maksimal të pajisjeve',
+  'notification.sessionKicked': 'Kjo llogari e ka regjistruar këtë llogari jashtë linje në pajisje të tjera',
   'notification.signInToUse': 'Hyni për ta përdorur këtë',
   'notification.signInToValidateFocus': 'Hyni për të verifikuar pyetjen e fokusit',
 } as const

@@ -73,11 +73,23 @@ async def test_build_user_dify_targets_web_and_mindbot(monkeypatch: pytest.Monke
     )
 
     targets = await build_user_dify_targets(MagicMock(), as_user(user))
-    assert len(targets) == 3
-    assert targets[0].channel == "web"
-    assert targets[0].dify_user == "mg_user_7"
+    assert len(targets) == 4
+    web_users = [target.dify_user for target in targets if target.channel == "web"]
+    assert web_users == ["ci_mg_user_7", "mg_user_7"]
     mindbot_users = {target.dify_user for target in targets if target.channel == "mindbot"}
     assert mindbot_users == {"mindbot_5_staff42", "mindbot_5_unknown"}
+
+
+@pytest.mark.asyncio
+async def test_build_user_dify_targets_personal_keeps_legacy_alias(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Accounts with no organization list both the prefixed id and mg_user_<pk>."""
+    monkeypatch.setenv("MINDMATE_DIFY_USER_PREFIX", "prod")
+    user = SimpleNamespace(id=7, organization_id=None, name="Alice", phone="", email="")
+
+    targets = await build_user_dify_targets(MagicMock(), as_user(user))
+
+    assert [target.dify_user for target in targets] == ["prod_mg_user_7", "mg_user_7"]
+    assert [target.channel for target in targets] == ["web", "web"]
 
 
 @pytest.mark.asyncio
@@ -138,13 +150,15 @@ async def test_build_export_targets_web_and_mindbot(monkeypatch: pytest.MonkeyPa
         scope="whole",
         org_id=5,
     )
-    assert len(result.targets) == 3
+    assert len(result.targets) == 4
     assert result.targets[0].channel == "web"
-    assert result.targets[0].dify_user == "mg_user_7"
-    assert result.targets[1].channel == "mindbot"
-    assert result.targets[1].dify_user == "mindbot_5_staff42"
+    assert result.targets[0].dify_user == "ci_mg_user_7"
+    assert result.targets[1].channel == "web"
+    assert result.targets[1].dify_user == "mg_user_7"
     assert result.targets[2].channel == "mindbot"
-    assert result.targets[2].dify_user == "mindbot_5_unknown"
+    assert result.targets[2].dify_user == "mindbot_5_staff42"
+    assert result.targets[3].channel == "mindbot"
+    assert result.targets[3].dify_user == "mindbot_5_unknown"
 
 
 @pytest.mark.asyncio

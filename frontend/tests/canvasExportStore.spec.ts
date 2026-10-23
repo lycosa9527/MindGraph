@@ -104,4 +104,24 @@ describe('useCanvasExportStore', () => {
     )
     emitSpy.mockRestore()
   })
+
+  it('keeps the worksheet answer choice on the export payload', () => {
+    const store = useCanvasExportStore()
+    const emitSpy = vi.spyOn(eventBus, 'emit')
+    store.commitWorksheetAndExport(
+      { ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS },
+      'color',
+      'pdf',
+      'portrait',
+      'include'
+    )
+    expect(store.exportOptions.answerMode).toBe('include')
+    expect(emitSpy).toHaveBeenCalledWith(
+      'toolbar:export_requested',
+      expect.objectContaining({
+        options: expect.objectContaining({ answerMode: 'include', layout: 'portrait' }),
+      })
+    )
+    emitSpy.mockRestore()
+  })
 })

@@ -30,20 +30,16 @@ export default {
   'collab.noDiagramToSave': 'Немає діаграми для збереження',
   'collab.nodeLocked': 'Хтось інший редагує цей вузол',
   'collab.participants': '{n} учасників',
-  'collab.previousSessionsStopped':
-    'Завершено {n} попередніх сесій співпраці на ваших інших діаграмах.',
+  'collab.previousSessionsStopped': 'Завершено {n} попередніх сесій співпраці на ваших інших діаграмах.',
   'collab.saveFailed': 'Не вдалося зберегти діаграму',
   'collab.scanToJoin': 'Скануйте, щоб приєднатися',
-  'collab.schoolDescActive':
-    'Шкільна співпраця увімкнена. Колеги: MindGraph Співпраця → Школа на головній і оберіть цю діаграму — код не потрібен.',
-  'collab.schoolStarted':
-    'Шкільна співпраця увімкнена — колеги можуть приєднатися через Співпраця → Школа.',
+  'collab.schoolDescActive': 'Шкільна співпраця увімкнена. Колеги: MindGraph Співпраця → Школа на головній і оберіть цю діаграму — код не потрібен.',
+  'collab.schoolStarted': 'Шкільна співпраця увімкнена — колеги можуть приєднатися через Співпраця → Школа.',
   'collab.sectionNetwork': 'Спільна співпраця (код)',
   'collab.sectionSchool': 'Шкільна співпраця',
   'collab.sessionDuration': 'Тривалість сесії',
   'collab.sessionRemaining': 'Сесія завершиться через',
-  'collab.shareDescNetwork':
-    'Поділіться кодом або посиланням — інші вводять його в Співпраця → Спільне.',
+  'collab.shareDescNetwork': 'Поділіться кодом або посиланням — інші вводять його в Співпраця → Спільне.',
   'collab.start': 'Розпочати',
   'collab.startFailed': 'Не вдалося розпочати: {msg}',
   'collab.title': 'Онлайн-співпраця',
@@ -54,28 +50,20 @@ export default {
   'workshop.addReaction': 'Додати реакцію',
   'workshop.allSchools': 'Усі школи',
   'workshop.announceChannels': 'Оголошення',
-  'workshop.announceReadOnlyHint':
-    'Лише адміністратори можуть публікувати в цьому каналі оголошень.',
+  'workshop.announceReadOnlyHint': 'Лише адміністратори можуть публікувати в цьому каналі оголошень.',
   'workshop.archiveLessonStudy': 'Архівувати дослід уроку',
-  'workshop.archiveLessonStudyConfirm':
-    'Архівувати цей дослід уроку? Учасники більше не побачать його в списку.',
+  'workshop.archiveLessonStudyConfirm': 'Архівувати цей дослід уроку? Учасники більше не побачать його в списку.',
   'workshop.archiveTeachingGroup': 'Архівувати методичну групу',
-  'workshop.archiveTeachingGroupConfirm':
-    'Архівувати цю методичну групу? Вона зникне зі списку груп.',
+  'workshop.archiveTeachingGroupConfirm': 'Архівувати цю методичну групу? Вона зникне зі списку груп.',
   'workshop.archiveAnnounceChannel': 'Архів каналу оголошень',
-  'workshop.archiveAnnounceChannelConfirm':
-    'Ви впевнені, що хочете заархівувати цей канал оголошень? Бічна панель більше не відображатиметься, але повідомлення залишиться.',
+  'workshop.archiveAnnounceChannelConfirm': 'Ви впевнені, що хочете заархівувати цей канал оголошень? Бічна панель більше не відображатиметься, але повідомлення залишиться.',
   'workshop.deleteTeachingGroup': 'Видалити навчально-науковий гурток',
-  'workshop.deleteTeachingGroupConfirm':
-    'Ви впевнені, що бажаєте остаточно видалити цю навчальну та дослідницьку групу, її уроки та повідомлення? Цю дію не можна скасувати.',
+  'workshop.deleteTeachingGroupConfirm': 'Ви впевнені, що бажаєте остаточно видалити цю навчальну та дослідницьку групу, її уроки та повідомлення? Цю дію не можна скасувати.',
   'workshop.deleteAnnounceChannel': 'Видалити канал оголошень',
-  'workshop.deleteAnnounceChannelConfirm':
-    'Ви впевнені, що бажаєте остаточно видалити цей канал оголошень і його повідомлення? Цю дію не можна скасувати.',
+  'workshop.deleteAnnounceChannelConfirm': 'Ви впевнені, що бажаєте остаточно видалити цей канал оголошень і його повідомлення? Цю дію не можна скасувати.',
   'workshop.deleteLessonStudy': 'Видалити урок',
-  'workshop.deleteLessonStudyConfirm':
-    'Ви впевнені, що бажаєте остаточно видалити цей урок і його повідомлення? Цю дію не можна скасувати.',
-  'workshop.manageNeedAdmin':
-    'Лише адміністратори шкіл можуть додавати навчальні та дослідницькі групи. Видалити можуть адміністратори або творці групи.',
+  'workshop.deleteLessonStudyConfirm': 'Ви впевнені, що бажаєте остаточно видалити цей урок і його повідомлення? Цю дію не можна скасувати.',
+  'workshop.manageNeedAdmin': 'Лише адміністратори шкіл можуть додавати навчальні та дослідницькі групи. Видалити можуть адміністратори або творці групи.',
   'workshop.math': 'формула',
   'workshop.backToConversations': '← Розмови',
   'workshop.bold': 'Жирний',
@@ -86,7 +74,7 @@ export default {
   'workshop.channelArchived': 'Канал архівовано',
   'workshop.channelDeleteFailed': 'Не вдалося видалити канал',
   'workshop.channelDeleted': 'Канал видалено',
-  'workshop.channelAvatarEmoji': "Іконка (необов'язково)",
+  'workshop.channelAvatarEmoji': 'Іконка (необов\'язково)',
   'workshop.channelAvatarPlaceholder': 'Емодзі або коротка мітка',
   'workshop.channelColor': 'Колір каналу',
   'workshop.channelInviteReceived': 'Вас додано до «{name}». Відкрийте Workshop для перегляду.',
@@ -125,8 +113,7 @@ export default {
   'workshop.create': 'Створити',
   'workshop.createChannelFailed': 'Не вдалося створити канал',
   'workshop.createChannelNeedParent': 'Спочатку оберіть батьківську методичну групу.',
-  'workshop.createChannelNoGroupsYet':
-    'Спочатку створіть методичну групу, потім додайте досліди уроків.',
+  'workshop.createChannelNoGroupsYet': 'Спочатку створіть методичну групу, потім додайте досліди уроків.',
   'workshop.createChannelSuccess': 'Канал створено',
   'workshop.createStudyCaseHint': 'Почніть розмову, щоб розпочати',
   'workshop.cycleStudyStatus': 'Статус циклічного досліду',
@@ -144,8 +131,7 @@ export default {
   'workshop.diagram': 'Діаграма',
   'workshop.diagramInsertFailed': 'Не вдалося вставити значок',
   'workshop.diagramInserting': 'Вставлення значка…',
-  'workshop.diagramPickerEmpty':
-    'Бібліотека зображень порожня, спершу збережіть зображення на полотні.',
+  'workshop.diagramPickerEmpty': 'Бібліотека зображень порожня, спершу збережіть зображення на полотні.',
   'workshop.diagramPickerTitle': 'Виберіть із моєї бібліотеки значків',
   'workshop.directMessage': 'Особисте повідомлення',
   'workshop.directMessages': 'Особисті повідомлення',
@@ -169,8 +155,7 @@ export default {
   'workshop.gearMenu': 'Параметри',
   'workshop.generalChat': 'Загальний чат',
   'workshop.inbox': 'Вхідні',
-  'workshop.inboxHintPickChannel':
-    'Відкрийте канал або особисте повідомлення на бічній панелі, щоб читати та відповідати. Повернутися сюди можна через Перегляди → Вхідні.',
+  'workshop.inboxHintPickChannel': 'Відкрийте канал або особисте повідомлення на бічній панелі, щоб читати та відповідати. Повернутися сюди можна через Перегляди → Вхідні.',
   'workshop.inboxSummaryTitle': 'Ваші вхідні',
   'workshop.inboxUnreadChannels': 'Непрочитані в каналах',
   'workshop.inboxUnreadDms': 'Непрочитані особисті повідомлення',
@@ -196,15 +181,13 @@ export default {
   'workshop.loadMore': 'Завантажити більше',
   'workshop.mainChannelStream': 'Головний канал',
   'workshop.manageTeachingGroups': 'Керувати методичними групами',
-  'workshop.manageTeachingGroupsBlurb':
-    'Додавайте або видаляйте групи, налаштовуйте публічність, редагуйте назви та описи, змінюйте порядок, дублюйте групу як шаблон і запрошуйте колег. Розширені — правила публікації та сповіщення. Архівація прибирає групу для всіх.',
+  'workshop.manageTeachingGroupsBlurb': 'Додавайте або видаляйте групи, налаштовуйте публічність, редагуйте назви та описи, змінюйте порядок, дублюйте групу як шаблон і запрошуйте колег. Розширені — правила публікації та сповіщення. Архівація прибирає групу для всіх.',
   'workshop.manageUser': 'Керувати цим користувачем',
   'workshop.markAllReadChannel': 'Позначити всі повідомлення прочитаними',
   'workshop.markAsRead': 'Позначити прочитаним',
   'workshop.markStudyResolved': 'Позначити дослід вирішеним',
   'workshop.members': 'учасників',
-  'workshop.mentionAmbiguous':
-    "Неоднозначні імена — оберіть когось з унікальним відображуваним ім'ям: {0}",
+  'workshop.mentionAmbiguous': 'Неоднозначні імена — оберіть когось з унікальним відображуваним ім\'ям: {0}',
   'workshop.mentionUnknown': 'Невідомі згадки (лише користувачі та персонал організації): {0}',
   'workshop.mentionedInChannel': 'Вас згадали в #{0}',
   'workshop.mentionedInTopic': 'Вас згадали в {0}',
@@ -237,8 +220,7 @@ export default {
   'workshop.noTopicsYet': 'Поки немає розмов',
   'workshop.numberedList': 'впорядкований список',
   'workshop.notifications': 'Сповіщення',
-  'workshop.notificationsSettingsBlurb':
-    'Сповіщення браузера для згадок і нових повідомлень використовують системні налаштування. Також можна налаштувати сповіщення на робочому столі та email для кожного каналу.',
+  'workshop.notificationsSettingsBlurb': 'Сповіщення браузера для згадок і нових повідомлень використовують системні налаштування. Також можна налаштувати сповіщення на робочому столі та email для кожного каналу.',
   'workshop.offline': 'офлайн',
   'workshop.online': 'онлайн',
   'workshop.openMainChannelStream': 'Головний канал',
@@ -247,12 +229,9 @@ export default {
   'workshop.personalMenu': 'Особисте меню',
   'workshop.preview': 'Попередній перегляд',
   'workshop.previewEmpty': 'Немає вмісту для попереднього перегляду',
-  'workshop.phase2RoadmapGroupsAlerts':
-    "Незабаром: згадки {'@'}group, тривожні слова та політика історії редагування.",
-  'workshop.phase2RoadmapMovePreview':
-    'Незабаром: переміщення окремого повідомлення, попередній перегляд URL і багатша активність між каналами.',
-  'workshop.phase2RoadmapPlatform':
-    'Backlog платформи: інкрементальна синхронізація, mobile push, email-дайджести, боти/webhooks.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Незабаром: згадки {\'@\'}group, тривожні слова та політика історії редагування.',
+  'workshop.phase2RoadmapMovePreview': 'Незабаром: переміщення окремого повідомлення, попередній перегляд URL і багатша активність між каналами.',
+  'workshop.phase2RoadmapPlatform': 'Backlog платформи: інкрементальна синхронізація, mobile push, email-дайджести, боти/webhooks.',
   'workshop.pickColleagueToInvite': 'Оберіть колегу для запрошення.',
   'workshop.pinChannel': 'Закріпити зверху',
   'workshop.policyEveryone': 'Усі',
@@ -260,8 +239,7 @@ export default {
   'workshop.policyMembersOnly': 'Лише учасники',
   'workshop.postingPolicy': 'Політика публікації',
   'workshop.preferences': 'Налаштування',
-  'workshop.preferencesSettingsBlurb':
-    "Мова та параметри відображення застосовуються в усьому застосунку. Більше параметрів чату Workshop з'явиться тут з часом.",
+  'workshop.preferencesSettingsBlurb': 'Мова та параметри відображення застосовуються в усьому застосунку. Більше параметрів чату Workshop з\'явиться тут з часом.',
   'workshop.presenceActive': 'Активний',
   'workshop.presenceIdle': 'Неактивний',
   'workshop.presenceOffline': 'Офлайн',
@@ -270,8 +248,7 @@ export default {
   'workshop.publicChannels': 'Публічні канали',
   'workshop.quote': 'Цитата',
   'workshop.quoteMessage': 'Цитувати повідомлення',
-  'workshop.readOnlyProfileBlurb':
-    'Деталі профілю колег показано в спрощеному вигляді. Керування користувачем (адміни) відкриває адмін-каталог.',
+  'workshop.readOnlyProfileBlurb': 'Деталі профілю колег показано в спрощеному вигляді. Керування користувачем (адміни) відкриває адмін-каталог.',
   'workshop.recentDmActivity': 'Нещодавні особисті повідомлення',
   'workshop.recentTopics': 'Нещодавні розмови',
   'workshop.renameTopic': 'Перейменувати розмову',
@@ -282,8 +259,7 @@ export default {
   'workshop.roleOwner': 'Власник',
   'workshop.searchMembers': 'Пошук учасників…',
   'workshop.searchMessages': 'Пошук повідомлень…',
-  'workshop.selectChannelForSettings':
-    'Спочатку оберіть методичну групу або дослід уроку, потім відкрийте налаштування тут.',
+  'workshop.selectChannelForSettings': 'Спочатку оберіть методичну групу або дослід уроку, потім відкрийте налаштування тут.',
   'workshop.selectConversation': 'Оберіть розмову',
   'workshop.selectParentGroup': 'Батьківська методична група',
   'workshop.selectTopic': 'Оберіть розмову',
@@ -309,8 +285,7 @@ export default {
   'workshop.strikethrough': 'Закреслення',
   'workshop.table': 'лист',
   'workshop.switchSchool': 'Змінити школу',
-  'workshop.teachingGroupLandingHint':
-    'Досліди уроків і розмови в цій методичній групі. Оберіть рядок, щоб відкрити канал або гілку.',
+  'workshop.teachingGroupLandingHint': 'Досліди уроків і розмови в цій методичній групі. Оберіть рядок, щоб відкрити канал або гілку.',
   'workshop.teachingGroupMembers': 'Учасники',
   'workshop.teachingGroupNameRequired': 'Введіть назву методичної групи.',
   'workshop.teachingGroupNoLessons': 'У цій групі поки немає дослідів уроків.',
@@ -325,8 +300,7 @@ export default {
   'workshop.topicTitle': 'Назва',
   'workshop.topicTitlePlaceholder': 'напр. карта design thinking для розділу 3',
   'workshop.topics': 'Розмови',
-  'workshop.typeMessagePlaceholder':
-    'Введіть повідомлення… (Enter — надіслати, Shift+Enter — новий рядок)',
+  'workshop.typeMessagePlaceholder': 'Введіть повідомлення… (Enter — надіслати, Shift+Enter — новий рядок)',
   'workshop.unfollowTopic': 'Не слідкувати за розмовою',
   'workshop.unknown': 'Невідомо',
   'workshop.unmuteChannel': 'Увімкнути сповіщення каналу',
@@ -342,21 +316,18 @@ export default {
   'workshop.viewProfile': 'Переглянути профіль',
   'workshop.viewingSchool': 'Перегляд: {0}',
   'workshop.views': 'Перегляди',
-  'workshop.welcomeChannelsBody':
-    '«Канал» тут часто відповідає методичній групі (教研组) або PLC: одне спільне простір на команду (напр. Math PLC, English PLC). Визначає учасників і групування простору.',
+  'workshop.welcomeChannelsBody': '«Канал» тут часто відповідає методичній групі (教研组) або PLC: одне спільне простір на команду (напр. Math PLC, English PLC). Визначає учасників і групування простору.',
   'workshop.welcomeChannelsTitle': 'PLC / предметні групи',
-  'workshop.welcomeConversationsBody':
-    'У досліді уроку відкриваєте названі розмови — наприклад проєктування, рефлексія або подальші завдання — щоб гілки лишалися зрозумілими.',
+  'workshop.welcomeConversationsBody': 'У досліді уроку відкриваєте названі розмови — наприклад проєктування, рефлексія або подальші завдання — щоб гілки лишалися зрозумілими.',
   'workshop.welcomeConversationsTitle': 'Розмови',
-  'workshop.welcomeExampleCaption':
-    'Ілюстративний приклад (вигадана школа) — Math PLC та English PLC, кожна з дослідами уроків і зразковими розмовами.',
+  'workshop.welcomeExampleCaption': 'Ілюстративний приклад (вигадана школа) — Math PLC та English PLC, кожна з дослідами уроків і зразковими розмовами.',
   'workshop.welcomeExampleConvLabel': 'Розмови',
   'workshop.welcomeExampleGroupEnglish': 'Предметна група англійської мови',
   'workshop.welcomeExampleGroupMath': 'Науковий гурток математики',
   'workshop.welcomeExampleLSEng1': 'Дослід уроку: стратегії читання G7',
   'workshop.welcomeExampleLSEng1C1': 'Дизайн опорного аркуша та робочого зошита',
   'workshop.welcomeExampleLSEng1C2': 'Завдання після читання та перенесення',
-  'workshop.welcomeExampleLSEng1C3': "Зворотний зв'язок спостереження та рефлексія",
+  'workshop.welcomeExampleLSEng1C3': 'Зворотний зв\'язок спостереження та рефлексія',
   'workshop.welcomeExampleLSEng2': 'Дослід уроку: письмо — один урок, різні вчителі',
   'workshop.welcomeExampleLSEng2C1': 'Пілот рубрики та доопрацювання',
   'workshop.welcomeExampleLSMath1': 'Дослід уроку: тиждень полірування «Поняття функції»',
@@ -368,51 +339,38 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Повідомлення живуть у кожній розмові',
   'workshop.welcomeExampleOrg': 'Середня школа Chenxi',
   'workshop.welcomeHowTitle': 'Як це поєднується',
-  'workshop.welcomeIntro':
-    'Workshop — простір вашої школи для структурованих обговорень: оголошення, досліди уроків і організовані розмови поруч із педагогічною роботою.',
-  'workshop.welcomeLessonStudyBody':
-    "Канали дослідів уроків зазвичай під цією групою. Кожен — майданчик одного циклу уроку — планування, спостереження, рефлексія — і може бути пов'язаний з діаграмами або статусами.",
+  'workshop.welcomeIntro': 'Workshop — простір вашої школи для структурованих обговорень: оголошення, досліди уроків і організовані розмови поруч із педагогічною роботою.',
+  'workshop.welcomeLessonStudyBody': 'Канали дослідів уроків зазвичай під цією групою. Кожен — майданчик одного циклу уроку — планування, спостереження, рефлексія — і може бути пов\'язаний з діаграмами або статусами.',
   'workshop.welcomeLessonStudyTitle': 'Досліди уроків',
-  'workshop.welcomeMessagesBody':
-    'Повідомлення — окремі дописи в головному потоці каналу або в розмові. Відповіді, згадки та файли — у повідомленнях.',
+  'workshop.welcomeMessagesBody': 'Повідомлення — окремі дописи в головному потоці каналу або в розмові. Відповіді, згадки та файли — у повідомленнях.',
   'workshop.welcomeMessagesTitle': 'Повідомлення',
   'workshop.welcomeSubtitle': 'Співпрацюйте зі школою в MindGraph',
   'workshop.welcomeTitle': 'Ласкаво просимо до Workshop',
   'workshop.you': '(ви)',
   'workshop.youAnd': 'Ви та',
   'workshopCanvas.connectFailed': 'Не вдалося підключитися до співпраці',
-  'workshopCanvas.sessionExpiredReconnect':
-    'Сесія закінчилася. Оновіть сторінку, щоб знову приєднатися до співпраці.',
-  'workshopCanvas.sessionRefreshFailed':
-    'Не вдалося оновити сесію співпраці. Збережіть роботу та увійдіть знову.',
-  'workshopCanvas.outboundQueueDegraded':
-    'Співпраця відстає. Деякі не надіслані зміни не вдалося зберегти.',
-  'workshopCanvas.connectionClosed': "З'єднання закрито",
-  'workshopCanvas.connectionClosedSlow':
-    "З'єднання закрито: ваше з'єднання було занадто повільним для сесії співпраці.",
+  'workshopCanvas.sessionExpiredReconnect': 'Сесія закінчилася. Оновіть сторінку, щоб знову приєднатися до співпраці.',
+  'workshopCanvas.sessionRefreshFailed': 'Не вдалося оновити сесію співпраці. Збережіть роботу та увійдіть знову.',
+  'workshopCanvas.outboundQueueDegraded': 'Співпраця відстає. Деякі не надіслані зміни не вдалося зберегти.',
+  'workshopCanvas.connectionClosed': 'З\'єднання закрито',
+  'workshopCanvas.connectionClosedSlow': 'З\'єднання закрито: ваше з\'єднання було занадто повільним для сесії співпраці.',
   'workshopCanvas.sessionEndedByHost': 'Ведучий завершив сесію співпраці.',
   'workshopCanvas.editingNodeLabel': '{username} редагує…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'Хтось',
-  'workshopCanvas.connectionClosedReason': "З'єднання співпраці закрито: {reason}",
+  'workshopCanvas.connectionClosedReason': 'З\'єднання співпраці закрито: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} редагує цей вузол',
   'workshopCanvas.errorGeneric': 'Помилка співпраці',
-  'workshopCanvas.updatePartialFiltered':
-    'Деякі зміни пропущено ({count} вузл(ів)), бо інший учасник редагує ці вузли.',
+  'workshopCanvas.updatePartialFiltered': 'Деякі зміни пропущено ({count} вузл(ів)), бо інший учасник редагує ці вузли.',
   'workshopCanvas.reconnectFailed': 'Не вдалося перепідключитися до співпраці, оновіть сторінку',
-  'workshopCanvas.resyncWaiting':
-    'Синхронізація діаграми триває довше, ніж очікувалося. Повторна спроба; оновіть, якщо редагування «зависло».',
-  'workshopCanvas.returnedHomeIdle':
-    'Повернулися на головну — відключено після тривалої неактивності.',
+  'workshopCanvas.resyncWaiting': 'Синхронізація діаграми триває довше, ніж очікувалося. Повторна спроба; оновіть, якщо редагування «зависло».',
+  'workshopCanvas.returnedHomeIdle': 'Повернулися на головну — відключено після тривалої неактивності.',
   'workshopCanvas.userJoined': 'Користувач {username} приєднався',
   'workshopCanvas.usersJoined': '{count} користувачів приєдналося',
   'workshopCanvas.userLeft': 'Користувач {username} вийшов',
   'workshopCanvas.usersLeft': '{count} користувачів вийшло',
-  'workshopCanvas.wsError': "Помилка з'єднання співпраці, перевірте мережу",
-  'workshopCanvas.returnedHomeRoomIdle':
-    'Співпрацю завершено: давно не було змін діаграми в цій сесії.',
-  'workshopCanvas.roomIdleWarningToast':
-    'Давно не було змін діаграми — співпраця завершиться, коли таймер дійде до нуля, якщо ніхто не редагує.',
-  'workshopCanvas.otherTabCollaborationActive':
-    'Співпраця триває в іншій вкладці або вікні для цього облікового запису.',
+  'workshopCanvas.wsError': 'Помилка з\'єднання співпраці, перевірте мережу',
+  'workshopCanvas.returnedHomeRoomIdle': 'Співпрацю завершено: давно не було змін діаграми в цій сесії.',
+  'workshopCanvas.roomIdleWarningToast': 'Давно не було змін діаграми — співпраця завершиться, коли таймер дійде до нуля, якщо ніхто не редагує.',
+  'workshopCanvas.otherTabCollaborationActive': 'Співпраця триває в іншій вкладці або вікні для цього облікового запису.',
   'workshopCanvas.joinQrAlt': 'QR-код для приєднання до співпраці',
 } as const

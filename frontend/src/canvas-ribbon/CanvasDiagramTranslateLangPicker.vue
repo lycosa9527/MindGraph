@@ -56,9 +56,12 @@ const triggerCode = computed(() => pendingTargetLanguage.value ?? '')
     :aria-disabled="true"
     @click="notifyCollabGuestAiBlocked"
   >
-    <I18nText k="canvas.toolbar.moreAppTranslateLabel" />
+    <I18nText
+      k="canvas.toolbar.moreAppTranslateLabel"
+      primary-only
+    />
     <Languages
-      class="h-3.5 w-3.5"
+      class="h-3.5 w-3.5 shrink-0"
       :stroke-width="2"
     />
   </button>
@@ -82,9 +85,12 @@ const triggerCode = computed(() => pendingTargetLanguage.value ?? '')
         :title="t('canvas.toolbar.translateLabelTargetLanguage')"
         :aria-label="t('canvas.toolbar.translateLabelTargetLanguage')"
       >
-        <I18nText k="canvas.toolbar.moreAppTranslateLabel" />
+        <I18nText
+          k="canvas.toolbar.moreAppTranslateLabel"
+          primary-only
+        />
         <Languages
-          class="h-3.5 w-3.5"
+          class="h-3.5 w-3.5 shrink-0"
           :stroke-width="2"
         />
         <span
@@ -95,7 +101,7 @@ const triggerCode = computed(() => pendingTargetLanguage.value ?? '')
       </button>
     </LlmPhaseRing>
     <template #dropdown>
-      <ElDropdownMenu class="mindgraph-lang-switcher__menu max-h-[min(420px,70vh)] overflow-y-auto">
+      <ElDropdownMenu class="mindgraph-lang-switcher__menu">
         <ElDropdownItem
           v-for="row in languageRows"
           :key="row.code"

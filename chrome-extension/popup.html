@@ -64,19 +64,6 @@
       <div class="actions">
         <button type="button" id="btn-generate" class="btn btn-primary" data-i18n="btnGenerate"></button>
       </div>
-      <div id="file-center-section" class="file-center-section">
-        <p class="eyebrow field-section-label" data-i18n="fileCenterSectionLabel"></p>
-        <label class="field">
-          <span class="field-label" data-i18n="fileCenterPackageLabel"></span>
-          <select id="field-package" class="field-select"></select>
-        </label>
-        <button
-          type="button"
-          id="btn-save-file-center"
-          class="btn btn-secondary"
-          data-i18n="btnSaveToFileCenter"
-        ></button>
-      </div>
       <div class="main-status-area">
         <div id="progress-wrap" class="progress-wrap" hidden>
           <div class="progress-track" aria-hidden="true">
@@ -90,8 +77,7 @@
           class="link-view-diagram"
           href="#"
           rel="noopener noreferrer"
-          data-i18n="linkViewInLibrary"
-          hidden
+          data-i18n="linkOpenLibrary"
         ></a>
         <p id="library-full-note" class="library-full-note" aria-live="polite" hidden></p>
       </div>
@@ -176,7 +162,7 @@
       <div id="download-unsupported" class="download-empty" hidden>
         <p class="field-hint" data-i18n="downloadUnsupportedPage"></p>
       </div>
-      <div id="doc-extract-section" class="file-center-section" hidden>
+      <div id="doc-extract-section" hidden>
         <p class="eyebrow field-section-label" data-i18n="docExtractSectionLabel"></p>
         <p id="doc-extract-detected" class="field-hint"></p>
         <p id="doc-extract-active-tab" class="field-hint"></p>
@@ -281,7 +267,9 @@
         <p id="settings-status" class="status" aria-live="polite"></p>
       </div>
     </div>
+    <script src="extension-locales.js"></script>
     <script src="shared-mindgraph.js"></script>
+    <script src="page-diagram-link.js"></script>
     <script src="extension-storage.js"></script>
     <script src="mindmate-sse.js"></script>
     <script src="mindmate-api.js"></script>

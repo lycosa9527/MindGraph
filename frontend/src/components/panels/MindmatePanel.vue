@@ -56,8 +56,10 @@ import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
 import {
   notifyMindmateCollabLibraryChanged,
   saveFinishedSeminar,
+  shouldRefreshSavedSeminarLibrary,
 } from '@/utils/mindmateCollabLibrarySave'
 import {
+  clearMindmateCollabCodeEnded,
   formatMindmateCollabCode,
   loadLocalMindmateCollabSessions,
   normalizeMindmateCollabCode,
@@ -70,7 +72,10 @@ import {
   shouldRemoveCollabFromHistory,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
-import { isMindmateComposerUploadableFile } from '@/utils/mindmateComposerUpload'
+import {
+  isMindmateBlockedDocUpload,
+  isMindmateComposerUploadableFile,
+} from '@/utils/mindmateComposerUpload'
 import {
   hasGeneratedDiagramImage,
   parseMindmateDiagramLibraryId,
@@ -97,6 +102,7 @@ import {
   updateSeminarMemberRole,
 } from '@/utils/mindmateSeminarGroup'
 import { startSeminarRoom } from '@/utils/mindmateSeminarStart'
+import { canContinueSavedSeminar } from '@/utils/mindmateSeminarTranscript'
 
 import MindmateHeader from './mindmate/MindmateHeader.vue'
 import MindmateInput from './mindmate/MindmateInput.vue'
@@ -296,6 +302,10 @@ async function attachShowcasePost(postId: string): Promise<void> {
       await import('@/composables/showcase/buildShowcaseMindMateAttachment')
     const post = await getShowcasePost(id)
     const file = await buildShowcaseMindMateAttachment(post)
+    if (await isMindmateBlockedDocUpload(file)) {
+      notify.warningKey('mindmate.input.docNotSupported')
+      return
+    }
     const uploaded = await mindMate.uploadFile(file, { allowDocuments: true })
     if (!uploaded) {
       notify.errorKey('showcase.detail.actionFailed')
@@ -403,15 +413,129 @@ function handleCollabEnded(reason: 'idle' | 'host' | 'left' = 'left') {
       (row) => row.session_id === sessionId && row.owner_user_id === selfId
     )
   exitCollabChatroomMode({ removeFromHistory: shouldRemoveCollabFromHistory(reason) })
+  if (shouldRefreshSavedSeminarLibrary(reason)) {
+    notifyMindmateCollabLibraryChanged()
+  }
   if (!ownsRoom || !sessionId) {
     return
   }
   if (reason === 'host') {
     saveEndedSeminar(sessionId, true)
+  }
+}
+
+const savedSeminarOwned = ref(false)
+
+watch(
+  () => savedSeminar.sessionId.value,
+  () => {
+    savedSeminarOwned.value = false
+  }
+)
+
+const showContinueSession = computed(() =>
+  canContinueSavedSeminar(
+    savedSeminar.sessionId.value,
+    savedSeminarOwned.value,
+    isCollabChatroomMode.value
+  )
+)
+
+function onSavedSeminarOwnership(owned: boolean): void {
+  savedSeminarOwned.value = owned
+}
+
+function enterLiveSeminar(payload: {
+  code: string
+  visibility?: string
+  ownerUserId?: number
+  title?: string
+  sessionId?: string
+  expiresAt?: string | null
+}): void {
+  const code = formatMindmateCollabCode(payload.code)
+  clearMindmateCollabCodeEnded(code)
+  trackLocalMindmateCollabSession({
+    session_id: payload.sessionId || '',
+    code,
+    title: payload.title || t('mindmate.collabPill'),
+    owner_user_id: payload.ownerUserId,
+    visibility: payload.visibility,
+    expires_at: payload.expiresAt,
+    live: true,
+  })
+  if (payload.sessionId) {
+    collabSessionId.value = payload.sessionId
+  }
+  notifyMindmateCollabLibraryChanged()
+  handleCollabSessionStarted({
+    code,
+    visibility:
+      payload.visibility === 'network' || payload.visibility === 'organization'
+        ? payload.visibility
+        : 'organization',
+    ownerUserId: payload.ownerUserId,
+    title: payload.title,
+  })
+}
+
+function onSavedSeminarLive(payload: {
+  code: string
+  visibility?: string
+  title?: string
+  ownerUserId?: number
+}): void {
+  enterLiveSeminar({
+    code: payload.code,
+    visibility: payload.visibility,
+    title: payload.title,
+    ownerUserId: payload.ownerUserId,
+    sessionId: savedSeminar.sessionId.value || '',
+  })
+}
+
+async function continueSavedSeminar(): Promise<void> {
+  const sessionId = savedSeminar.sessionId.value
+  if (!canContinueSavedSeminar(sessionId, savedSeminarOwned.value, isCollabChatroomMode.value)) {
     return
   }
-  if (reason === 'idle') {
-    notifyMindmateCollabLibraryChanged()
+  try {
+    const response = await authFetch('/api/mindmate/collab/reopen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    })
+    if (!response.ok) {
+      const err = (await response.json().catch(() => ({}))) as { detail?: string }
+      if (err.detail) {
+        notify.error(err.detail)
+      } else {
+        notify.errorKey('mindmate.collabStartFailed')
+      }
+      return
+    }
+    const data = (await response.json()) as {
+      code?: string
+      visibility?: string
+      title?: string
+      owner_user_id?: number
+      session_id?: string
+      expires_at?: string | null
+    }
+    if (!data.code) {
+      notify.errorKey('mindmate.collabStartFailed')
+      return
+    }
+    enterLiveSeminar({
+      code: data.code,
+      visibility: data.visibility,
+      title: data.title,
+      ownerUserId: data.owner_user_id,
+      sessionId: data.session_id || sessionId || undefined,
+      expiresAt: data.expires_at,
+    })
+  } catch {
+    notify.errorKey('mindmate.collabStartFailed')
   }
 }
 
@@ -1137,7 +1261,7 @@ function openSelectedShare(): void {
 
 const shareLines = computed(() => {
   const chosen = new Set(selectedMessageIds.value)
-  const selfName = authStore.user?.name || authStore.user?.username || t('mindmate.highlights.you')
+  const selfName = authStore.user?.username || t('mindmate.highlights.you')
   return mindMate.messages.value
     .filter(
       (message) =>
@@ -1289,7 +1413,12 @@ function isLastAssistantMessage(messageId: string): boolean {
         class="flex-1"
       />
       <MindmateCollabPanel
-        v-if="showMindmateCollab && !isCollabChatroomMode && !showWelcome"
+        v-if="
+          showMindmateCollab &&
+          !isCollabChatroomMode &&
+          !showWelcome &&
+          !savedSeminar.sessionId.value
+        "
         ref="collabPanelRef"
         :in-conversation="inConversation"
         :conversation-title="mindMateStore.conversationTitle || displayTitle"
@@ -1323,6 +1452,17 @@ function isLastAssistantMessage(messageId: string): boolean {
           />
         </button>
         <el-button
+          v-if="showContinueSession"
+          class="continue-session-btn shrink-0"
+          size="small"
+          @click="continueSavedSeminar"
+        >
+          <I18nText
+            k="mindmate.collabContinueSession"
+            dense
+          />
+        </el-button>
+        <el-button
           class="new-chat-btn shrink-0"
           :disabled="!authStore.isAuthenticated"
           @click="startNewConversation"
@@ -1346,6 +1486,8 @@ function isLastAssistantMessage(messageId: string): boolean {
       :current-conversation-id="mindMateStore.currentConversationId"
       :show-contacts-toggle="isCollabChatroomMode"
       :members-open="seminarMembersPaneOpen"
+      :show-continue-session="showContinueSession"
+      @continue-session="continueSavedSeminar"
       @new-conversation="startNewConversation"
       @close="emit('close')"
       @load-history="loadConversationFromHistory"
@@ -1358,6 +1500,8 @@ function isLastAssistantMessage(messageId: string): boolean {
       v-if="savedSeminar.sessionId.value && !isCollabChatroomMode"
       class="flex-1 min-h-0 min-w-0"
       :session-id="savedSeminar.sessionId.value"
+      @ownership="onSavedSeminarOwnership"
+      @live="onSavedSeminarLive"
     />
 
     <!-- Collab chatroom mode (chat + right member column) -->
@@ -1437,7 +1581,11 @@ function isLastAssistantMessage(messageId: string): boolean {
             v-if="shareSelectMode"
             class="mm-dm-select-bar"
           >
-            <span>{{ t('mindmate.bubble.selected', { n: selectedMessageIds.length }) }}</span>
+            <span
+              ><I18nText
+                k="mindmate.bubble.selected"
+                :params="{ n: selectedMessageIds.length }"
+            /></span>
             <button
               type="button"
               :disabled="selectedMessageIds.length === 0"
@@ -1447,7 +1595,7 @@ function isLastAssistantMessage(messageId: string): boolean {
                 :size="14"
                 aria-hidden="true"
               />
-              {{ t('mindmate.tooltip.share') }}
+              <I18nText k="mindmate.tooltip.share" />
             </button>
             <button
               type="button"
@@ -1457,7 +1605,7 @@ function isLastAssistantMessage(messageId: string): boolean {
                 :size="14"
                 aria-hidden="true"
               />
-              {{ t('mindmate.bubble.cancelSelect') }}
+              <I18nText k="mindmate.bubble.cancelSelect" />
             </button>
           </div>
           <MindmateInput
@@ -1629,7 +1777,8 @@ function isLastAssistantMessage(messageId: string): boolean {
   z-index: 21;
 }
 
-.mindmate-panel.welcome-mode .new-chat-btn.el-button {
+.mindmate-panel.welcome-mode .new-chat-btn.el-button,
+.mindmate-panel.welcome-mode .continue-session-btn.el-button {
   --el-button-bg-color: #ede9fe;
   --el-button-border-color: #c4b5fd;
   --el-button-hover-bg-color: #ddd6fe;
@@ -1650,7 +1799,8 @@ function isLastAssistantMessage(messageId: string): boolean {
   box-shadow: 0 1px 2px rgba(91, 33, 182, 0.08);
 }
 
-.new-chat-btn.el-button {
+.new-chat-btn.el-button,
+.continue-session-btn.el-button {
   --el-button-bg-color: #ede9fe;
   --el-button-border-color: #c4b5fd;
   --el-button-hover-bg-color: #ddd6fe;
@@ -1670,7 +1820,8 @@ function isLastAssistantMessage(messageId: string): boolean {
   box-shadow: 0 1px 2px rgba(91, 33, 182, 0.08);
 }
 
-.dark .new-chat-btn.el-button {
+.dark .new-chat-btn.el-button,
+.dark .continue-session-btn.el-button {
   --el-button-bg-color: #312e81;
   --el-button-border-color: #6366f1;
   --el-button-hover-bg-color: #3730a3;
@@ -1682,7 +1833,8 @@ function isLastAssistantMessage(messageId: string): boolean {
   background: #312e81;
 }
 
-.dark .mindmate-panel.welcome-mode .new-chat-btn.el-button {
+.dark .mindmate-panel.welcome-mode .new-chat-btn.el-button,
+.dark .mindmate-panel.welcome-mode .continue-session-btn.el-button {
   --el-button-bg-color: #312e81;
   --el-button-border-color: #6366f1;
   --el-button-hover-bg-color: #3730a3;

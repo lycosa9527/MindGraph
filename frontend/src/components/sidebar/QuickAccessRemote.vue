@@ -58,7 +58,7 @@ import './quickAccessRemote.css'
 
 const route = useRoute()
 const router = useRouter()
-const { t, promptLanguage } = useLanguage()
+const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const diagramStore = useDiagramStore()
@@ -277,7 +277,6 @@ async function runPreset(key: LandingPromptExampleKey): Promise<void> {
     }
     await executeLandingPrompt({
       text,
-      language: promptLanguage.value,
       t,
       notify,
       router,

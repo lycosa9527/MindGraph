@@ -17,34 +17,23 @@ export default {
   'auth.voiceNotes.copied': 'Transcripción copiada',
   'auth.voiceNotes.empty': 'Una vez que comiences a grabar, la transcripción aparecerá aquí.',
   'auth.voiceNotes.loginRequired': 'Inicie sesión primero antes de usar notas de voz.',
-  'auth.voiceNotes.bootstrapFailed':
-    'No se puede abrir la sesión de mapas mentales para notas de voz.',
+  'auth.voiceNotes.bootstrapFailed': 'No se puede abrir la sesión de mapas mentales para notas de voz.',
   'auth.voiceNotes.saveFailed': 'No se puede guardar el mapa mental de notas de voz.',
   'auth.voiceNotes.noDiagram': 'El mapa mental aún no se ha asociado.',
   'auth.voiceNotes.micUnavailable': 'El navegador actual no admite el micrófono.',
   'auth.voiceNotes.micFailed': 'No se puede acceder al micrófono.',
-  'auth.voiceNotes.micConflict':
-    'Otras funciones de voz están usando el micrófono, deténgase e inténtelo nuevamente.',
-  'auth.voiceNotes.wsError':
-    'La conexión de la nota de voz falló; verifique la red y el estado de inicio de sesión.',
+  'auth.voiceNotes.micConflict': 'Otras funciones de voz están usando el micrófono, deténgase e inténtelo nuevamente.',
+  'auth.voiceNotes.wsError': 'La conexión de la nota de voz falló; verifique la red y el estado de inicio de sesión.',
   'auth.voiceNotes.genericError': 'Error de nota de voz',
-  'auth.voiceNotes.ingestFailed':
-    'No se puede guardar la transcripción en el resumen del documento.',
-  'auth.voiceNotes.maxDuration':
-    'La nota de voz alcanzó el límite de 60 minutos y se detuvo automáticamente.',
-  'auth.voiceNotes.silenceAutoStop':
-    'No ha habido voz durante 2 minutos consecutivos y la nota de voz se detuvo automáticamente.',
-  'auth.voiceNotes.startedTimeout':
-    'El servicio de voz no pudo iniciarse a tiempo, inténtelo nuevamente.',
+  'auth.voiceNotes.ingestFailed': 'No se puede guardar la transcripción en el resumen del documento.',
+  'auth.voiceNotes.maxDuration': 'La nota de voz alcanzó el límite de 60 minutos y se detuvo automáticamente.',
+  'auth.voiceNotes.silenceAutoStop': 'No ha habido voz durante 2 minutos consecutivos y la nota de voz se detuvo automáticamente.',
+  'auth.voiceNotes.startedTimeout': 'El servicio de voz no pudo iniciarse a tiempo, inténtelo nuevamente.',
   'auth.voiceNotes.micLost': 'El micrófono se ha desconectado y las notas de voz se han detenido.',
-  'auth.voiceNotes.authFailed':
-    'La autenticación de la nota de voz falló, inicie sesión nuevamente.',
-  'auth.voiceNotes.wsClosed':
-    'La conexión de la nota de voz se ha desconectado y la sesión se ha detenido.',
-  'auth.voiceNotes.budgetExceeded':
-    'Las notas de voz no están disponibles: se ha alcanzado la cuota diaria de IA o las monedas pensantes son insuficientes.',
-  'auth.voiceNotes.sessionBusy':
-    'Ya hay una sesión de notas de voz en progreso, deténgala e inténtelo nuevamente.',
+  'auth.voiceNotes.authFailed': 'La autenticación de la nota de voz falló, inicie sesión nuevamente.',
+  'auth.voiceNotes.wsClosed': 'La conexión de la nota de voz se ha desconectado y la sesión se ha detenido.',
+  'auth.voiceNotes.budgetExceeded': 'Las notas de voz no están disponibles: se ha alcanzado la cuota diaria de IA o las monedas pensantes son insuficientes.',
+  'auth.voiceNotes.sessionBusy': 'Ya hay una sesión de notas de voz en progreso, deténgala e inténtelo nuevamente.',
   'auth.voiceNotes.recording': 'Grabación',
   'auth.voiceNotes.paused': 'Suspendido',
   'auth.voiceNotes.idle': 'listo',
@@ -52,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'A partir de',
   'auth.voiceNotes.stopping': 'Parada',
   'auth.voiceNotes.ingesting': 'Ahorro',
-  'auth.voiceNotes.emptyTranscript':
-    'No se reconoció ninguna voz. Di algunas palabras antes de detenerte.',
+  'auth.voiceNotes.emptyTranscript': 'No se reconoció ninguna voz. Di algunas palabras antes de detenerte.',
   'auth.voiceNotes.generating': 'Generando mapa mental',
-  'auth.voiceNotes.sheetHint':
-    'Guarde la transcripción después de detenerse. Haga clic en Generar mapa mental cuando esté listo.',
+  'auth.voiceNotes.sheetHint': 'Guarde la transcripción después de detenerse. Haga clic en Generar mapa mental cuando esté listo.',
   'auth.voiceNotes.status.waiting': 'esperando para comenzar',
   'auth.voiceNotes.status.connectingAsr': 'Conexión al reconocimiento de voz',
   'auth.voiceNotes.status.recording': 'Grabación · Reconocimiento de voz',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'Grabación · Reconocimiento de voz · Distinción de locutores',
+  'auth.voiceNotes.status.recordingAndSeparating': 'Grabación · Reconocimiento de voz · Distinción de locutores',
   'auth.voiceNotes.status.paused': 'Suspendido',
   'auth.voiceNotes.status.stopping': 'Parada',
   'auth.voiceNotes.status.savingTranscript': 'Guardar transcripción',
@@ -74,15 +60,11 @@ export default {
   'auth.voiceNotes.savedAt': 'Transcripción guardada en {time}',
   'auth.voiceNotes.unsavedChanges': 'Transcripción no guardada',
   'auth.voiceNotes.closeWhileRecordingTitle': 'Grabación',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'Cerrar la ventana no detendrá la grabación. Las transcripciones se guardan automáticamente en el mapa actual cada 30 segundos. ¿Estás seguro de que quieres ocultar la ventana?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'Cerrar la ventana no detendrá la grabación. Las transcripciones se guardan automáticamente en el mapa actual cada 30 segundos. ¿Estás seguro de que quieres ocultar la ventana?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'Ocultar ventana',
-  'auth.voiceNotes.recordingContinues':
-    'La grabación continúa y puedes volver a abrir el resumen de la grabación en cualquier momento.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'Primero guarde el mapa mental actual y luego use la grabación para resumir.',
-  'auth.voiceNotes.restoreFailed':
-    'No se puede cargar la transcripción guardada de la grabación de audio.',
+  'auth.voiceNotes.recordingContinues': 'La grabación continúa y puedes volver a abrir el resumen de la grabación en cualquier momento.',
+  'auth.voiceNotes.noCurrentDiagram': 'Primero guarde el mapa mental actual y luego use la grabación para resumir.',
+  'auth.voiceNotes.restoreFailed': 'No se puede cargar la transcripción guardada de la grabación de audio.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'Notas de voz históricas',
   'auth.voiceNotes.historyEmpty': 'Aún no hay notas de voz',
@@ -91,39 +73,26 @@ export default {
   'auth.voiceNotes.mergeTalker': 'fusionarse en',
   'auth.voiceNotes.mergeTalkerInto': 'Fusionarse con {name}',
   'auth.voiceNotes.resetTalker': 'Restaurar valor predeterminado',
-  'auth.voiceNotes.tencentAuth':
-    'La autenticación de reconocimiento de voz falló, verifique la clave de Tencent Cloud.',
-  'auth.voiceNotes.tencentService':
-    'El reconocimiento de voz de Tencent Cloud no se ha activado. Por favor active el servicio en la consola.',
-  'auth.voiceNotes.tencentQuota':
-    'El paquete de recursos de reconocimiento de voz de Tencent Cloud se ha agotado. Pague o compre el paquete de recursos después de la activación.',
-  'auth.voiceNotes.tencentArrears':
-    'La cuenta de Tencent Cloud está en mora y el reconocimiento de voz se ha desactivado.',
-  'auth.voiceNotes.tencentConcurrency':
-    'La simultaneidad del reconocimiento de voz está completa. Vuelva a intentarlo más tarde.',
+  'auth.voiceNotes.tencentAuth': 'La autenticación de reconocimiento de voz falló, verifique la clave de Tencent Cloud.',
+  'auth.voiceNotes.tencentService': 'El reconocimiento de voz de Tencent Cloud no se ha activado. Por favor active el servicio en la consola.',
+  'auth.voiceNotes.tencentQuota': 'El paquete de recursos de reconocimiento de voz de Tencent Cloud se ha agotado. Pague o compre el paquete de recursos después de la activación.',
+  'auth.voiceNotes.tencentArrears': 'La cuenta de Tencent Cloud está en mora y el reconocimiento de voz se ha desactivado.',
+  'auth.voiceNotes.tencentConcurrency': 'La simultaneidad del reconocimiento de voz está completa. Vuelva a intentarlo más tarde.',
   'auth.voiceNotes.tencentAudio': 'El audio no se reconoce, inténtalo de nuevo.',
-  'auth.voiceNotes.tencentSendRate':
-    'El audio se envía demasiado rápido, sigue grabando en tiempo real.',
-  'auth.voiceNotes.tencentIdle':
-    'La grabación se ha interrumpido demasiado tiempo y el reconocimiento de voz se ha desconectado.',
-  'auth.voiceNotes.tencentRetry':
-    'El reconocimiento de voz falló temporalmente, inténtalo de nuevo.',
-  'auth.voiceNotes.tencentRegion':
-    'La red actual no está dentro del alcance del servicio del sitio nacional de Tencent Cloud.',
+  'auth.voiceNotes.tencentSendRate': 'El audio se envía demasiado rápido, sigue grabando en tiempo real.',
+  'auth.voiceNotes.tencentIdle': 'La grabación se ha interrumpido demasiado tiempo y el reconocimiento de voz se ha desconectado.',
+  'auth.voiceNotes.tencentRetry': 'El reconocimiento de voz falló temporalmente, inténtalo de nuevo.',
+  'auth.voiceNotes.tencentRegion': 'La red actual no está dentro del alcance del servicio del sitio nacional de Tencent Cloud.',
   'auth.voiceNotes.tencentParam': 'Los parámetros de reconocimiento de voz no son válidos.',
   'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID no es válido; verifique TENCENT_ASR_APP_ID.',
-  'auth.voiceNotes.rateLimited':
-    'Las solicitudes de reconocimiento de voz son demasiado frecuentes; inténtelo de nuevo más tarde.',
+  'auth.voiceNotes.rateLimited': 'Las solicitudes de reconocimiento de voz son demasiado frecuentes; inténtelo de nuevo más tarde.',
   'auth.voiceNotes.messageTooLarge': 'El paquete de audio es demasiado grande, inténtelo de nuevo.',
-  'auth.voiceNotes.invalidMessage':
-    'El mensaje de la nota de voz no es válido, inténtalo de nuevo.',
-  'auth.voiceNotes.asrUnavailable':
-    'El reconocimiento de voz no está disponible temporalmente. Vuelve a intentarlo más tarde.',
+  'auth.voiceNotes.invalidMessage': 'El mensaje de la nota de voz no es válido, inténtalo de nuevo.',
+  'auth.voiceNotes.asrUnavailable': 'El reconocimiento de voz no está disponible temporalmente. Vuelve a intentarlo más tarde.',
   'auth.updateLog': 'Notas de la versión',
   'auth.updateLogModalTitle': 'Notas de la versión',
   'auth.updateLogMaintainerNote': 'Sí — esta plataforma la mantiene activamente Roy ✨',
-  'auth.updateLogLoadError':
-    'No se pudieron cargar las notas de la versión. Inténtelo de nuevo más tarde.',
+  'auth.updateLogLoadError': 'No se pudieron cargar las notas de la versión. Inténtelo de nuevo más tarde.',
   'auth.updateLogEmpty': 'No hay notas de la versión disponibles.',
   'auth.softwareAgreementConsentPrefix': 'Al usar esta plataforma, acepta los ',
   'auth.softwareAgreementLink': 'Términos y la Política de privacidad',
@@ -131,19 +100,13 @@ export default {
   'privacy.backToSignIn': 'Volver al inicio de sesión',
   'auth.downloadDesktopShortcut': 'Agregar al escritorio',
   'auth.platformQuickGuide': 'guía rápida',
-  'auth.pwaIosInstallHint':
-    'Toque Compartir en Safari, Chrome o Edge y elija «Agregar a la pantalla de inicio».',
-  'auth.pwaAndroidInstallHint':
-    'Abra el menú del navegador (⋮) y toque Instalar aplicación o Agregar a la pantalla de inicio.',
-  'auth.pwaSafariMacInstallHint':
-    'En Safari, elija Archivo → Agregar al Dock, o Compartir → Agregar al Dock (macOS Sonoma o posterior).',
-  'auth.pwaDesktopInstallHint':
-    'Use el menú del navegador (⋮) o el icono de instalación en la barra de direcciones (Chrome, Edge o Brave).',
+  'auth.pwaIosInstallHint': 'Toque Compartir en Safari, Chrome o Edge y elija «Agregar a la pantalla de inicio».',
+  'auth.pwaAndroidInstallHint': 'Abra el menú del navegador (⋮) y toque Instalar aplicación o Agregar a la pantalla de inicio.',
+  'auth.pwaSafariMacInstallHint': 'En Safari, elija Archivo → Agregar al Dock, o Compartir → Agregar al Dock (macOS Sonoma o posterior).',
+  'auth.pwaDesktopInstallHint': 'Use el menú del navegador (⋮) o el icono de instalación en la barra de direcciones (Chrome, Edge o Brave).',
   'auth.pwaInstallSuccess': 'MindGraph se ha agregado a su escritorio.',
-  'auth.pwaDevInstallHint':
-    'La instalación PWA está desactivada en el modo de desarrollo normal. Use la compilación de producción (npm run build + backend) o ejecute npm run dev:pwa, luego use Chrome/Edge en HTTPS o localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Abra MindGraph en el navegador con su dirección HTTPS (no un archivo HTML guardado) antes de instalarlo en el escritorio.',
+  'auth.pwaDevInstallHint': 'La instalación PWA está desactivada en el modo de desarrollo normal. Use la compilación de producción (npm run build + backend) o ejecute npm run dev:pwa, luego use Chrome/Edge en HTTPS o localhost.',
+  'auth.pwaInsecureOriginHint': 'Abra MindGraph en el navegador con su dirección HTTPS (no un archivo HTML guardado) antes de instalarlo en el escritorio.',
   'auth.backToLogin': 'Volver al inicio de sesión',
   'auth.captcha': 'Código de verificación',
   'auth.captchaLength4': 'Ingrese el captcha de 4 caracteres',
@@ -170,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'Copiado',
   'auth.apiTokenCopyFailed': 'Copia fallida',
   'auth.apiTokenLoading': 'cargando…',
-  'auth.apiTokenNone':
-    'El token aún no se ha generado. Descargue el paquete de habilidades o haga clic en el token API para crear uno.',
+  'auth.apiTokenNone': 'El token aún no se ha generado. Descargue el paquete de habilidades o haga clic en el token API para crear uno.',
   'auth.apiTokenOpaque': 'El token actual no se puede repetir; regénelo.',
   'auth.apiTokenExpires': 'Válido hasta el {date}',
   'auth.downloadChromeExtension': 'Extensión de Chrome',
   'auth.downloadWordAddin': 'complemento de Word',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'Esta función requiere el plan escolar Estándar o Profesional (no incluye el plan Básico).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'La suscripción de su escuela ha finalizado. Su cuenta ahora está en el plan de prueba. Contacte al administrador de la plataforma para renovar.',
-  'auth.diagramLimitReached':
-    'Las escuelas de prueba permiten hasta {max} diagramas guardados por docente. Elimine uno para guardar un diagrama nuevo.',
+  'auth.schoolTierFeatureUnavailable': 'Esta función requiere el plan escolar Estándar o Profesional (no incluye el plan Básico).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'La suscripción de su escuela ha finalizado. Su cuenta ahora está en el plan de prueba. Contacte al administrador de la plataforma para renovar.',
+  'auth.diagramLimitReached': 'Las escuelas de prueba permiten hasta {max} diagramas guardados por docente. Elimine uno para guardar un diagrama nuevo.',
   'auth.downloadOpenclawSkill': 'Skill de OpenClaw',
-  'auth.downloadOpenclawSkillHint':
-    'La descarga incluye el número de cuenta y el token actual. Después de regenerar el token, los paquetes de habilidades y extensiones antiguos dejarán de ser válidos.',
+  'auth.downloadOpenclawSkillHint': 'La descarga incluye el número de cuenta y el token actual. Después de regenerar el token, los paquetes de habilidades y extensiones antiguos dejarán de ser válidos.',
   'auth.changePhoneButton': 'Cambiar teléfono',
   'auth.passwordChangeSuccess': 'Contraseña cambiada correctamente',
   'auth.passwordChangeFailed': 'No se pudo cambiar la contraseña',
@@ -223,8 +181,7 @@ export default {
   'auth.modal.networkRegisterError': 'Error de red. No se pudo completar el registro.',
   'auth.modal.networkResetError': 'Error de red. No se pudo restablecer la contraseña.',
   'auth.modal.networkSmsError': 'Error de red al enviar la verificación por SMS',
-  'auth.modal.networkSmsLoginError':
-    'Error de red. No se pudo iniciar sesión con el código de verificación.',
+  'auth.modal.networkSmsLoginError': 'Error de red. No se pudo iniciar sesión con el código de verificación.',
   'auth.modal.networkEmailCodeError': 'Error de red al enviar la verificación por correo',
   'auth.modal.networkEmailLoginError': 'Error de red. No se pudo iniciar sesión con correo.',
   'auth.modal.changingPassword': 'Updating...',
@@ -237,8 +194,7 @@ export default {
   'auth.modal.passwordMismatch': 'Las contraseñas no coinciden',
   'auth.modal.passwordPlaceholder': 'Ingrese la contraseña',
   'auth.modal.phone11Digits': 'Ingrese un número de teléfono válido de 11 dígitos',
-  'auth.modal.enterPhoneOrEmail':
-    'Ingrese su número de teléfono registrado o el correo de la cuenta',
+  'auth.modal.enterPhoneOrEmail': 'Ingrese su número de teléfono registrado o el correo de la cuenta',
   'auth.modal.phonePlaceholder11': 'Número móvil de 11 dígitos',
   'auth.modal.phoneRegisteredPlaceholder': 'Número de teléfono registrado',
   'auth.modal.forgotPhoneOrEmailPlaceholder': 'Número de teléfono registrado o correo de la cuenta',
@@ -265,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -304,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -317,13 +272,11 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'Correo educativo',
   'auth.modal.hybridRegisterEmailTabAny': 'Correo',
   'auth.modal.hybridRegisterPhoneTab': 'Teléfono + código de invitación',
-  'auth.modal.mainlandSalesNotice':
-    '¿Necesita acceso en China continental? Use su número móvil y código de invitación, o contacte al servicio de atención al cliente.',
+  'auth.modal.mainlandSalesNotice': '¿Necesita acceso en China continental? Use su número móvil y código de invitación, o contacte al servicio de atención al cliente.',
   'auth.modal.registrationEmailLabel': 'Solo correo educativo',
   'auth.modal.registrationEmailLabelAny': 'Dirección de correo',
   'auth.modal.registrationEmailHint': '',
-  'auth.modal.registrationEmailHintAny':
-    'Cualquier dirección de correo excepto dominios de China continental.',
+  'auth.modal.registrationEmailHintAny': 'Cualquier dirección de correo excepto dominios de China continental.',
   'auth.modal.educationEmailInvalid': 'Ingrese una dirección de correo educativo válida.',
   'auth.modal.emailInvalid': 'Ingrese una dirección de correo válida.',
   'auth.modal.emailCodeLabel': 'Código de verificación por correo',
@@ -333,10 +286,8 @@ export default {
   'auth.modal.sendingEmailCode': 'Enviando…',
   'auth.modal.emailCodePlaceholder': 'Código de 6 dígitos del correo',
   'auth.modal.acknowledgeOverseas': 'Entiendo y usaré el software solo con fines educativos.',
-  'auth.modal.acknowledgeOverseasAny':
-    'Entiendo y acepto los términos de registro en el extranjero.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Entiendo y acepto los términos de registro en el extranjero, y que el chino simplificado no está disponible en esta vía.',
+  'auth.modal.acknowledgeOverseasAny': 'Entiendo y acepto los términos de registro en el extranjero.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Entiendo y acepto los términos de registro en el extranjero, y que el chino simplificado no está disponible en esta vía.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Confirme el aviso anterior.',
   'auth.loginPhoneOrEmail': 'Teléfono o correo',
@@ -357,17 +308,13 @@ export default {
   'auth.username': 'Nombre de usuario',
   'auth.waitCaptchaLoad': 'Espere a que se cargue el captcha',
   'auth.quickRegPageTitle': 'Registro rápido',
-  'auth.quickRegPageHint':
-    'Abra esta página desde el enlace que compartió su escuela. Ingrese su teléfono y el código de sala de 6 dígitos que aparece en la ventana de registro rápido del facilitador (se actualiza aproximadamente cada 30 segundos). El código confirma que está en la sesión; no verifica la propiedad del teléfono como lo haría un código SMS.',
-  'auth.quickRegLinkInvalid':
-    'Este enlace de registro no está activo (expirado o cerrado). Abra de nuevo el enlace actual del facilitador.',
-  'auth.quickRegProbeRateLimited':
-    'Demasiadas comprobaciones desde esta página. Espere un momento y actualice, o inténtelo más tarde.',
+  'auth.quickRegPageHint': 'Abra esta página desde el enlace que compartió su escuela. Ingrese su teléfono y el código de sala de 6 dígitos que aparece en la ventana de registro rápido del facilitador (se actualiza aproximadamente cada 30 segundos). El código confirma que está en la sesión; no verifica la propiedad del teléfono como lo haría un código SMS.',
+  'auth.quickRegLinkInvalid': 'Este enlace de registro no está activo (expirado o cerrado). Abra de nuevo el enlace actual del facilitador.',
+  'auth.quickRegProbeRateLimited': 'Demasiadas comprobaciones desde esta página. Espere un momento y actualice, o inténtelo más tarde.',
   'auth.quickRegSessionSignups': 'Registrados en esta sesión: {n}',
   'auth.quickRegRoomCodeLabel': 'Código de sala',
   'auth.quickRegRoomCodePlaceholder': '6 dígitos',
-  'auth.quickRegRoomCodeHint':
-    'Coincida con los dígitos grandes del diálogo de registro rápido del facilitador; ingrese el código antes de que cambie.',
+  'auth.quickRegRoomCodeHint': 'Coincida con los dígitos grandes del diálogo de registro rápido del facilitador; ingrese el código antes de que cambie.',
   'auth.quickRegRoomCodeEnter6': 'Ingrese el código de sala de 6 dígitos',
   'auth.quickRegMaxUses': 'Máximo de registros para este enlace',
   'auth.quickRegHeadcount': 'Máx.',
@@ -377,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'Completar registro',
   'auth.quickRegSubmitting': 'Registrando…',
   'auth.quickRegRegisterSuccess': 'Registro exitoso',
-  'auth.quickRegSessionUnsure':
-    'Es posible que el registro haya sido exitoso. Si no ha iniciado sesión, regrese e use el inicio de sesión con código de verificación, o actualice esta página.',
+  'auth.quickRegSessionUnsure': 'Es posible que el registro haya sido exitoso. Si no ha iniciado sesión, regrese e use el inicio de sesión con código de verificación, o actualice esta página.',
   'auth.quickRegBackToSignIn': 'Usar inicio de sesión / registro estándar',
   'auth.quickRegSelectOrg': 'Seleccionar escuela',
   'auth.quickRegOrgLoadError': 'No se pudieron cargar las escuelas. Inténtelo de nuevo.',
   'auth.quickRegMintError': 'No se pudo abrir el canal de registro. Inténtelo de nuevo.',
   'auth.quickRegCloseConfirmTitle': '¿Fin del registro rápido?',
-  'auth.quickRegCloseConfirm':
-    'Después de cerrar la ventana, el código QR y el código de sala actuales dejarán de ser válidos inmediatamente y los estudiantes que aún no se hayan registrado no podrán continuar registrándose.',
+  'auth.quickRegCloseConfirm': 'Después de cerrar la ventana, el código QR y el código de sala actuales dejarán de ser válidos inmediatamente y los estudiantes que aún no se hayan registrado no podrán continuar registrándose.',
   'auth.setPasswordWithSms': 'Establecer contraseña de acceso',
   'auth.setPasswordWithSmsTitle': 'Establecer contraseña por SMS',
-  'auth.setPasswordWithSmsHint':
-    'Enviamos un código a su teléfono vinculado. Después de establecer una contraseña, puede iniciar sesión con contraseña o con un código de verificación.',
+  'auth.setPasswordWithSmsHint': 'Enviamos un código a su teléfono vinculado. Después de establecer una contraseña, puede iniciar sesión con contraseña o con un código de verificación.',
   'auth.setPasswordWithSmsSubmit': 'Guardar contraseña',
   'auth.setPasswordWithSmsSubmitting': 'Guardando…',
   'auth.accountAvatar': 'Avatar',
@@ -404,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Nombre para mostrar',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'Al menos 2 caracteres, sin dígitos',
   'auth.accountNameSave': 'Guardar nombre',
   'auth.accountNameSaveSuccess': 'Nombre actualizado',
@@ -417,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'No se pudo desvincular. Inténtelo de nuevo.',
   'auth.dingtalkBindRebind': 'Vincular de nuevo',
   'auth.dingtalkBindTitle': 'Vincular cuenta de DingTalk',
-  'auth.dingtalkBindInstructions':
-    'Envíe el código de 6 dígitos que aparece abajo (por ejemplo 123-456) como mensaje de texto al MindBot de DingTalk de su escuela.',
+  'auth.dingtalkBindInstructions': 'Envíe el código de 6 dígitos que aparece abajo (por ejemplo 123-456) como mensaje de texto al MindBot de DingTalk de su escuela.',
   'auth.dingtalkBindPairWaiting': 'Esperando a que MindBot reciba su código…',
   'auth.dingtalkBindCodeHint': 'Envíe solo este código — sin texto adicional.',
   'auth.dingtalkBindCountdown': 'La sesión expira en {s}s',
@@ -433,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Vinculado ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Actualmente vinculado: {staff}',
   'auth.dingtalkUnbindTitle': 'Desvincular cuenta de DingTalk',
-  'auth.dingtalkUnbindInstructions':
-    'Envíe el código de abajo desde su cuenta de DingTalk vinculada a MindBot para confirmar la desvinculación.',
+  'auth.dingtalkUnbindInstructions': 'Envíe el código de abajo desde su cuenta de DingTalk vinculada a MindBot para confirmar la desvinculación.',
   'auth.dingtalkUnbindPairWaiting': 'Esperando confirmación de su cuenta de DingTalk vinculada…',
   'auth.dingtalkUnbindCodeHint': 'Envíe solo este código desde su cuenta de DingTalk vinculada.',
   'auth.dingtalkUnbindExpiredHint': 'La sesión de desvinculación expiró. Comience de nuevo.',
@@ -444,33 +389,23 @@ export default {
   'auth.qrLoginTitle': 'Escanee para iniciar sesión',
   'auth.qrLoginWechatTab': 'WeChat',
   'auth.qrLoginDingtalkTab': 'DingTalk',
-  'auth.qrLoginInviteRequired':
-    'Ingrese el código de invitación de su escuela antes de usar el inicio de sesión con QR',
-  'auth.qrLoginProvidersFailed':
-    'No se pudieron cargar los ajustes de inicio de sesión con QR. Inténtelo de nuevo.',
-  'auth.qrLoginProviderDisabled':
-    'Este método de inicio de sesión no está habilitado para su escuela',
-  'auth.qrLoginNotLinked':
-    'Cuenta no vinculada — inicie sesión con contraseña y vincule en Vinculación de cuenta primero',
+  'auth.qrLoginInviteRequired': 'Ingrese el código de invitación de su escuela antes de usar el inicio de sesión con QR',
+  'auth.qrLoginProvidersFailed': 'No se pudieron cargar los ajustes de inicio de sesión con QR. Inténtelo de nuevo.',
+  'auth.qrLoginProviderDisabled': 'Este método de inicio de sesión no está habilitado para su escuela',
+  'auth.qrLoginNotLinked': 'Cuenta no vinculada — inicie sesión con contraseña y vincule en Vinculación de cuenta primero',
   'auth.qrLoginExchangeFailed': 'Error al iniciar sesión con QR. Inténtelo de nuevo.',
   'auth.qrLoginInvalidState': 'La sesión QR expiró. Cierre y escanee de nuevo.',
-  'auth.qrLoginInvalidCode':
-    'El código de autorización de WeChat ha caducado o se ha utilizado. Cierre el código QR y escanéelo nuevamente.',
-  'auth.qrLoginRateLimited':
-    'Las llamadas de inicio de sesión de WeChat son demasiado frecuentes. Vuelva a intentarlo más tarde.',
-  'auth.qrLoginMisconfigured':
-    'La configuración de inicio de sesión de WeChat es incorrecta, comuníquese con el administrador.',
-  'auth.qrLoginCorpMismatch':
-    'La organización de DingTalk no coincide con la configuración de su escuela.',
+  'auth.qrLoginInvalidCode': 'El código de autorización de WeChat ha caducado o se ha utilizado. Cierre el código QR y escanéelo nuevamente.',
+  'auth.qrLoginRateLimited': 'Las llamadas de inicio de sesión de WeChat son demasiado frecuentes. Vuelva a intentarlo más tarde.',
+  'auth.qrLoginMisconfigured': 'La configuración de inicio de sesión de WeChat es incorrecta, comuníquese con el administrador.',
+  'auth.qrLoginCorpMismatch': 'La organización de DingTalk no coincide con la configuración de su escuela.',
   'auth.oauthExternalTaken': 'Esta cuenta ya está vinculada a otro usuario.',
-  'auth.oauthAlreadyBound':
-    'Esta cuenta ha sido vinculada a WeChat. Si necesita vincular otro WeChat, desvincúlelo primero',
+  'auth.oauthAlreadyBound': 'Esta cuenta ha sido vinculada a WeChat. Si necesita vincular otro WeChat, desvincúlelo primero',
   'auth.qrLoginDisabled': 'El inicio de sesión con QR no está disponible.',
   'auth.qrLoginStartFailed': 'No se pudo iniciar el inicio de sesión con QR. Inténtelo de nuevo.',
   'auth.qrLoginSuccess': 'Sesión iniciada correctamente',
   'auth.accountBindingsSection': 'Vinculación de cuenta',
-  'auth.accountBindingsHint':
-    'MindBot guarda en DingTalk; WeChat/DingTalk son para inicio de sesión con QR (vincule aquí primero)',
+  'auth.accountBindingsHint': 'MindBot guarda en DingTalk; WeChat/DingTalk son para inicio de sesión con QR (vincule aquí primero)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'mentebot',

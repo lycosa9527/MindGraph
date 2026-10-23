@@ -84,12 +84,6 @@ export const TRAINING_MODALS: TrainingModalDef[] = [
     pages: CANVAS_PAGES,
     focuses: [],
   },
-  {
-    key: 'export-community',
-    labelKey: 'canvas.topBar.shareCommunity',
-    pages: CANVAS_PAGES,
-    focuses: [],
-  },
 ]
 
 const DIAGRAM_FOCUSES: TrainingFocusDef[] = VALID_DIAGRAM_TYPES.filter(

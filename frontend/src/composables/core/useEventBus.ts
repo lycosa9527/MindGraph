@@ -45,14 +45,14 @@ export type EventTypes = {
     options?: Record<string, unknown>
     previousPanel?: string
   }
-  'nodePalette:opened': {
+  'diagramBrainstorm:opened': {
     diagramKey?: string
     hasRestoredSession: boolean
     /** True when panel was already open and we switched to a new node tab (concept generation) */
     wasPanelAlreadyOpen?: boolean
   }
-  /** Stop all node-palette SSE requests (e.g. panel closed or canvas exited). */
-  'node_palette:streaming_stop_requested': Record<string, never>
+  /** Stop all diagram-brainstorm SSE requests (e.g. panel closed or canvas exited). */
+  'diagram_brainstorm:streaming_stop_requested': Record<string, never>
   'ai_brainstorm:opened': {
     diagramKey?: string
     hasRestoredSession: boolean
@@ -83,7 +83,7 @@ export type EventTypes = {
   'diagram:delete_selected_requested': Record<string, never>
   /** One-finger or left-button cut through a node. */
   'diagram:node_slash_requested': {
-    action: 'delete' | 'sibling' | 'child'
+    action: 'delete' | 'sibling'
     nodeIds: string[]
   }
   'diagram:collab_delete_blocked': Record<string, never>
@@ -811,8 +811,8 @@ export type EventTypes = {
   'learning_mode:validated': { result: unknown }
   'learning_mode:start_requested': Record<string, never>
 
-  // Node Palette Events
-  'node_palette:toggle_requested': Record<string, never>
+  // AI brainstorm Events
+  'diagram_brainstorm:toggle_requested': Record<string, never>
 
   // Node Counter Events
   'node_counter:setup_observer': Record<string, never>
@@ -830,7 +830,6 @@ export type EventTypes = {
   'mindmap:selection_restore_requested': { nodeIds: string[] }
 
   // Keyboard Events
-  'keyboard:delete_executed': { deletedNodeIds?: string[]; nodeCount?: number; edgeCount?: number }
   'keyboard:escape_pressed': Record<string, never>
   'keyboard:select_all_executed': { selectedNodeIds?: string[]; nodeCount?: number }
 
@@ -867,26 +866,6 @@ export type EventTypes = {
     conversationId: string
     status: string
   }
-
-  // Mate Learning (迈特学习法)
-  'maite:mode_changed': { mode: 'demo' | 'inquiry' | 'map' }
-  'maite:session_opened': { sessionId: number; mode: string }
-  'maite:session_closed': { sessionId?: number }
-  'maite:stage_changed': { sessionId: number; stage: string; readOnlyPhases: string[] }
-  'maite:problem_ready': { problemId: number; text: string; imageUrl?: string }
-  'maite:ocr_requested': { file: File; scene: 'demo' | 'question' }
-  'maite:ocr_completed': { text: string; imageUrl?: string; scene: string }
-  'maite:mentor_stream_status': { status: string }
-  'maite:mentor_stream_preview': { text: string }
-  'maite:mentor_stream_complete': { payload: unknown }
-  'maite:mentor_stream_error': { message: string }
-  'maite:mentor_stream_stop': Record<string, never>
-  'maite:inquiry_mutate_requested': { action: string; sessionId: number; body?: unknown }
-  'maite:inquiry_snapshot_loaded': { snapshot: unknown }
-  'maite:practice_invalidate': { reason?: string }
-  'maite:report_export_requested': { sessionId: number }
-  'maite:map_refresh_requested': Record<string, never>
-  'maite:error': { message: string; code?: string; source?: string }
 
   // Wildcard for any event (for debugging)
   '*': { event: string; data: unknown }

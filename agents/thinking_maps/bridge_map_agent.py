@@ -529,7 +529,7 @@ class BridgeMapAgent(BaseAgent):
                 right = pair.get("right", "").strip()
 
                 # Fallback: Handle malformed format where both values are in 'left' field
-                # Some LLMs (e.g., Hunyuan) may return {"left": "东京 → 日本"} instead of {"left": "东京", "right": "日本"}
+                # Some models return {"left": "东京 → 日本"} instead of {"left": "东京", "right": "日本"}
                 if left and not right and " → " in left:
                     parts = left.split(" → ", 1)
                     if len(parts) == 2:

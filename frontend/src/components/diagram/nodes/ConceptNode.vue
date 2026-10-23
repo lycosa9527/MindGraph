@@ -17,6 +17,8 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { getConceptMapFocusQuestionEditableSplit } from '@/stores/diagram/diagramDefaultLabels'
 import { useUIStore } from '@/stores/ui'
 import type { MindGraphNodeProps } from '@/types'
@@ -33,6 +35,10 @@ const conceptNodeRef = ref<HTMLElement | null>(null)
 useNodeDimensions(conceptNodeRef, props.id)
 
 const diagramStore = useDiagramSession()
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const uiStore = useUIStore()
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
@@ -92,7 +98,7 @@ const nodeStyle = computed(() => {
         painted?.textColor ||
         defaultStyle.value.textColor ||
         '#000000',
-      fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
+      fontFamily: diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK),
       fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
       fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
       fontStyle: props.data.style?.fontStyle || 'normal',
@@ -123,7 +129,7 @@ const nodeStyle = computed(() => {
       painted?.textColor ||
       defaultStyle.value.textColor ||
       '#333333',
-    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',
@@ -216,7 +222,7 @@ onUnmounted(() => {
       ref="conceptNodeRef"
       class="concept-node concept-node-pill flex items-center justify-center px-4 py-2 cursor-grab select-none border-solid"
       :class="{ 'concept-topic': isTopic }"
-      :style="nodeStyle"
+      :style="[nodeStyle, blankFrame]"
     >
       <!-- Primary handles: centered on each side -->
       <Handle

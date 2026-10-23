@@ -22,23 +22,18 @@ export default {
   'auth.voiceNotes.noDiagram': '마인드맵이 아직 연결되지 않았습니다.',
   'auth.voiceNotes.micUnavailable': '현재 브라우저는 마이크를 지원하지 않습니다.',
   'auth.voiceNotes.micFailed': '마이크에 액세스할 수 없습니다.',
-  'auth.voiceNotes.micConflict':
-    '다른 음성 기능에서 마이크를 사용하고 있습니다. 중지하고 다시 시도해 주세요.',
-  'auth.voiceNotes.wsError':
-    '음성메모 연결에 실패했습니다. 네트워크 및 로그인 상태를 확인해주세요.',
+  'auth.voiceNotes.micConflict': '다른 음성 기능에서 마이크를 사용하고 있습니다. 중지하고 다시 시도해 주세요.',
+  'auth.voiceNotes.wsError': '음성메모 연결에 실패했습니다. 네트워크 및 로그인 상태를 확인해주세요.',
   'auth.voiceNotes.genericError': '음성 메모 오류',
   'auth.voiceNotes.ingestFailed': '문서 요약에 텍스트 변환을 저장할 수 없습니다.',
   'auth.voiceNotes.maxDuration': '음성 메모가 60분 제한에 도달하여 자동으로 중지되었습니다.',
   'auth.voiceNotes.silenceAutoStop': '2분 동안 음성이 나오지 않고 음성메모가 자동으로 멈췄습니다.',
-  'auth.voiceNotes.startedTimeout':
-    '음성 서비스를 제 시간에 시작하지 못했습니다. 다시 시도해 주세요.',
+  'auth.voiceNotes.startedTimeout': '음성 서비스를 제 시간에 시작하지 못했습니다. 다시 시도해 주세요.',
   'auth.voiceNotes.micLost': '마이크 연결이 끊어지고 음성 메모가 중지되었습니다.',
   'auth.voiceNotes.authFailed': '음성메모 인증에 실패했습니다. 다시 로그인해주세요.',
   'auth.voiceNotes.wsClosed': '음성 메모 연결이 끊어지고 세션이 중지되었습니다.',
-  'auth.voiceNotes.budgetExceeded':
-    '음성 메모를 사용할 수 없습니다. 일일 AI 할당량에 도달했거나 사고 코인이 부족합니다.',
-  'auth.voiceNotes.sessionBusy':
-    '이미 진행 중인 음성 메모 세션이 있습니다. 중지하고 다시 시도하세요.',
+  'auth.voiceNotes.budgetExceeded': '음성 메모를 사용할 수 없습니다. 일일 AI 할당량에 도달했거나 사고 코인이 부족합니다.',
+  'auth.voiceNotes.sessionBusy': '이미 진행 중인 음성 메모 세션이 있습니다. 중지하고 다시 시도하세요.',
   'auth.voiceNotes.recording': '녹음',
   'auth.voiceNotes.paused': '정지된',
   'auth.voiceNotes.idle': '준비가 된',
@@ -65,13 +60,10 @@ export default {
   'auth.voiceNotes.savedAt': '전사가 {time}에 저장되었습니다',
   'auth.voiceNotes.unsavedChanges': '저장되지 않은 전사',
   'auth.voiceNotes.closeWhileRecordingTitle': '녹음',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    '창을 닫아도 녹음은 중단되지 않습니다. 30초마다 스크립트가 현재 지도에 자동으로 저장됩니다. 창을 숨기시겠습니까?',
+  'auth.voiceNotes.closeWhileRecordingBody': '창을 닫아도 녹음은 중단되지 않습니다. 30초마다 스크립트가 현재 지도에 자동으로 저장됩니다. 창을 숨기시겠습니까?',
   'auth.voiceNotes.closeWhileRecordingConfirm': '창 숨기기',
-  'auth.voiceNotes.recordingContinues':
-    '녹화는 계속 진행되며 언제든지 녹화 요약을 다시 열 수 있습니다.',
-  'auth.voiceNotes.noCurrentDiagram':
-    '현재 마인드맵을 먼저 저장하신 후 녹음을 활용하여 요약해주세요.',
+  'auth.voiceNotes.recordingContinues': '녹화는 계속 진행되며 언제든지 녹화 요약을 다시 열 수 있습니다.',
+  'auth.voiceNotes.noCurrentDiagram': '현재 마인드맵을 먼저 저장하신 후 녹음을 활용하여 요약해주세요.',
   'auth.voiceNotes.restoreFailed': '저장된 오디오 녹음 스크립트를 로드할 수 없습니다.',
   'auth.voiceNotes.retryGenerate': '마인드맵 생성',
   'auth.voiceNotes.historyTitle': '이전 음성 메모',
@@ -82,21 +74,17 @@ export default {
   'auth.voiceNotes.mergeTalkerInto': '{name}(으)로 병합',
   'auth.voiceNotes.resetTalker': '기본값으로 재설정',
   'auth.voiceNotes.tencentAuth': '음성 인식 인증에 실패했습니다. Tencent Cloud 키를 확인하세요.',
-  'auth.voiceNotes.tencentService':
-    'Tencent Cloud 음성 인식이 개통되지 않았습니다. 콘솔에서 활성화하세요.',
-  'auth.voiceNotes.tencentQuota':
-    '음성 인식 리소스 팩이 소진되었습니다. 후불 또는 팩을 구매하세요.',
+  'auth.voiceNotes.tencentService': 'Tencent Cloud 음성 인식이 개통되지 않았습니다. 콘솔에서 활성화하세요.',
+  'auth.voiceNotes.tencentQuota': '음성 인식 리소스 팩이 소진되었습니다. 후불 또는 팩을 구매하세요.',
   'auth.voiceNotes.tencentArrears': 'Tencent Cloud 계정이 연체되어 음성 인식이 중지되었습니다.',
-  'auth.voiceNotes.tencentConcurrency':
-    '음성 인식 동시 접속이 한도에 도달했습니다. 잠시 후 다시 시도하세요.',
+  'auth.voiceNotes.tencentConcurrency': '음성 인식 동시 접속이 한도에 도달했습니다. 잠시 후 다시 시도하세요.',
   'auth.voiceNotes.tencentAudio': '오디오를 인식할 수 없습니다. 다시 시도하세요.',
   'auth.voiceNotes.tencentSendRate': '오디오 전송이 너무 빠릅니다. 실시간 녹음을 유지하세요.',
   'auth.voiceNotes.tencentIdle': '무음이 너무 길어 음성 인식이 끊어졌습니다.',
   'auth.voiceNotes.tencentRetry': '음성 인식이 일시적으로 실패했습니다. 다시 시도하세요.',
   'auth.voiceNotes.tencentRegion': '현재 네트워크는 Tencent Cloud 중국 사이트 범위가 아닙니다.',
   'auth.voiceNotes.tencentParam': '음성 인식 매개변수가 올바르지 않습니다.',
-  'auth.voiceNotes.tencentAppid':
-    'Tencent Cloud AppID가 올바르지 않습니다. TENCENT_ASR_APP_ID를 확인하세요.',
+  'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID가 올바르지 않습니다. TENCENT_ASR_APP_ID를 확인하세요.',
   'auth.voiceNotes.rateLimited': '음성 인식 요청이 너무 많습니다. 잠시 후 다시 시도하세요.',
   'auth.voiceNotes.messageTooLarge': '오디오 패킷이 너무 큽니다. 다시 시도하세요.',
   'auth.voiceNotes.invalidMessage': '음성 메모 메시지가 올바르지 않습니다. 다시 시도하세요.',
@@ -112,18 +100,13 @@ export default {
   'privacy.backToSignIn': '로그인으로 돌아가기',
   'auth.downloadDesktopShortcut': '바탕화면에 추가',
   'auth.platformQuickGuide': '퀵 가이드',
-  'auth.pwaIosInstallHint':
-    'Safari, Chrome 또는 Edge에서 공유를 탭한 뒤 "홈 화면에 추가"를 선택하세요.',
+  'auth.pwaIosInstallHint': 'Safari, Chrome 또는 Edge에서 공유를 탭한 뒤 "홈 화면에 추가"를 선택하세요.',
   'auth.pwaAndroidInstallHint': '브라우저 메뉴(⋮)를 열고 앱 설치 또는 홈 화면에 추가를 탭하세요.',
-  'auth.pwaSafariMacInstallHint':
-    'Safari에서 파일 → Dock에 추가, 또는 공유 → Dock에 추가(macOS Sonoma 이상)를 선택하세요.',
-  'auth.pwaDesktopInstallHint':
-    '브라우저 메뉴(⋮) 또는 주소창의 설치 아이콘(Chrome, Edge, Brave)을 사용하세요.',
+  'auth.pwaSafariMacInstallHint': 'Safari에서 파일 → Dock에 추가, 또는 공유 → Dock에 추가(macOS Sonoma 이상)를 선택하세요.',
+  'auth.pwaDesktopInstallHint': '브라우저 메뉴(⋮) 또는 주소창의 설치 아이콘(Chrome, Edge, Brave)을 사용하세요.',
   'auth.pwaInstallSuccess': 'MindGraph가 바탕화면에 추가되었습니다.',
-  'auth.pwaDevInstallHint':
-    '일반 개발 모드에서는 PWA 설치가 꺼져 있습니다. 프로덕션 빌드(npm run build + backend) 또는 npm run dev:pwa를 실행한 뒤 HTTPS 또는 localhost에서 Chrome/Edge를 사용하세요.',
-  'auth.pwaInsecureOriginHint':
-    '바탕화면에 설치하기 전에 저장된 HTML 파일이 아닌 HTTPS 주소로 MindGraph를 브라우저에서 여세요.',
+  'auth.pwaDevInstallHint': '일반 개발 모드에서는 PWA 설치가 꺼져 있습니다. 프로덕션 빌드(npm run build + backend) 또는 npm run dev:pwa를 실행한 뒤 HTTPS 또는 localhost에서 Chrome/Edge를 사용하세요.',
+  'auth.pwaInsecureOriginHint': '바탕화면에 설치하기 전에 저장된 HTML 파일이 아닌 HTTPS 주소로 MindGraph를 브라우저에서 여세요.',
   'auth.backToLogin': '로그인으로 돌아가기',
   'auth.captcha': '캡차',
   'auth.captchaLength4': '4자리 캡차를 입력하세요',
@@ -150,23 +133,18 @@ export default {
   'auth.apiTokenCopied': '복사됨',
   'auth.apiTokenCopyFailed': '복사 실패',
   'auth.apiTokenLoading': '로드 중…',
-  'auth.apiTokenNone':
-    '토큰이 아직 생성되지 않았습니다. 스킬 팩을 다운로드하거나 API 토큰을 클릭하여 스킬 팩을 만드세요.',
+  'auth.apiTokenNone': '토큰이 아직 생성되지 않았습니다. 스킬 팩을 다운로드하거나 API 토큰을 클릭하여 스킬 팩을 만드세요.',
   'auth.apiTokenOpaque': '현재 토큰을 에코할 수 없습니다. 다시 생성하세요.',
   'auth.apiTokenExpires': '{date}까지 유효',
   'auth.downloadChromeExtension': 'Chrome 확장 프로그램',
   'auth.downloadWordAddin': '단어 추가 기능',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    '이 기능은 Standard 또는 Professional 학교 요금제가 필요합니다(Basic 제외).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    '학교 구독이 종료되었습니다. 계정이 체험 요금제로 변경되었습니다. 갱신하려면 플랫폼 관리자에게 문의하세요.',
-  'auth.diagramLimitReached':
-    '체험 학교는 교사당 저장 다이어그램을 최대 {max}개까지 허용합니다. 새로 저장하려면 하나를 삭제하세요.',
+  'auth.schoolTierFeatureUnavailable': '이 기능은 Standard 또는 Professional 학교 요금제가 필요합니다(Basic 제외).',
+  'auth.schoolSubscriptionExpiredDowngraded': '학교 구독이 종료되었습니다. 계정이 체험 요금제로 변경되었습니다. 갱신하려면 플랫폼 관리자에게 문의하세요.',
+  'auth.diagramLimitReached': '체험 학교는 교사당 저장 다이어그램을 최대 {max}개까지 허용합니다. 새로 저장하려면 하나를 삭제하세요.',
   'auth.downloadOpenclawSkill': 'OpenClaw 스킬',
-  'auth.downloadOpenclawSkillHint':
-    '다운로드에는 계좌 번호와 현재 토큰이 포함됩니다. 토큰을 재생성한 후에는 기존 스킬 팩과 확장 기능이 무효화됩니다.',
+  'auth.downloadOpenclawSkillHint': '다운로드에는 계좌 번호와 현재 토큰이 포함됩니다. 토큰을 재생성한 후에는 기존 스킬 팩과 확장 기능이 무효화됩니다.',
   'auth.changePhoneButton': '전화번호 변경',
   'auth.passwordChangeSuccess': '비밀번호가 변경되었습니다',
   'auth.passwordChangeFailed': '비밀번호 변경에 실패했습니다',
@@ -243,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -282,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -295,8 +272,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': '교육 이메일',
   'auth.modal.hybridRegisterEmailTabAny': '이메일',
   'auth.modal.hybridRegisterPhoneTab': '전화번호 + 초대 코드',
-  'auth.modal.mainlandSalesNotice':
-    '중국 본토에서 이용하려면 휴대폰 번호와 초대 코드를 사용하거나 고객 지원에 문의하세요.',
+  'auth.modal.mainlandSalesNotice': '중국 본토에서 이용하려면 휴대폰 번호와 초대 코드를 사용하거나 고객 지원에 문의하세요.',
   'auth.modal.registrationEmailLabel': '교육 이메일만',
   'auth.modal.registrationEmailLabelAny': '이메일 주소',
   'auth.modal.registrationEmailHint': '',
@@ -311,8 +287,7 @@ export default {
   'auth.modal.emailCodePlaceholder': '이메일의 6자리 코드',
   'auth.modal.acknowledgeOverseas': '이해했으며 교육 목적으로만 소프트웨어를 사용하겠습니다.',
   'auth.modal.acknowledgeOverseasAny': '해외 가입 약관을 이해하고 동의합니다.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    '해외 가입 약관을 이해하고 동의하며, 이 경로에서는 간체 중국어를 사용할 수 없음을 확인합니다.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': '해외 가입 약관을 이해하고 동의하며, 이 경로에서는 간체 중국어를 사용할 수 없음을 확인합니다.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': '위 안내를 확인해 주세요.',
   'auth.loginPhoneOrEmail': '전화번호 또는 이메일',
@@ -333,17 +308,13 @@ export default {
   'auth.username': '사용자 이름',
   'auth.waitCaptchaLoad': '캡차가 로드될 때까지 기다려 주세요',
   'auth.quickRegPageTitle': '빠른 회원가입',
-  'auth.quickRegPageHint':
-    '학교에서 공유한 링크로 이 페이지를 여세요. 전화번호와 진행자 빠른 가입 창에 표시된 6자리 방 코드(약 30초마다 갱신)를 입력하세요. 코드는 세션 참여를 확인하며 SMS처럼 전화 소유를 검증하지는 않습니다.',
-  'auth.quickRegLinkInvalid':
-    '이 가입 링크는 활성화되어 있지 않습니다(만료 또는 종료). 진행자에게서 최신 링크를 다시 여세요.',
-  'auth.quickRegProbeRateLimited':
-    '이 페이지에서 확인 횟수가 너무 많습니다. 잠시 후 새로고침하거나 나중에 다시 시도하세요.',
+  'auth.quickRegPageHint': '학교에서 공유한 링크로 이 페이지를 여세요. 전화번호와 진행자 빠른 가입 창에 표시된 6자리 방 코드(약 30초마다 갱신)를 입력하세요. 코드는 세션 참여를 확인하며 SMS처럼 전화 소유를 검증하지는 않습니다.',
+  'auth.quickRegLinkInvalid': '이 가입 링크는 활성화되어 있지 않습니다(만료 또는 종료). 진행자에게서 최신 링크를 다시 여세요.',
+  'auth.quickRegProbeRateLimited': '이 페이지에서 확인 횟수가 너무 많습니다. 잠시 후 새로고침하거나 나중에 다시 시도하세요.',
   'auth.quickRegSessionSignups': '이번 세션 가입: {n}명',
   'auth.quickRegRoomCodeLabel': '방 코드',
   'auth.quickRegRoomCodePlaceholder': '6자리',
-  'auth.quickRegRoomCodeHint':
-    '진행자 빠른 가입 대화상자의 큰 숫자와 일치해야 합니다. 코드가 바뀌기 전에 입력하세요.',
+  'auth.quickRegRoomCodeHint': '진행자 빠른 가입 대화상자의 큰 숫자와 일치해야 합니다. 코드가 바뀌기 전에 입력하세요.',
   'auth.quickRegRoomCodeEnter6': '6자리 방 코드를 입력하세요',
   'auth.quickRegMaxUses': '이 링크 최대 가입 수',
   'auth.quickRegHeadcount': '최대',
@@ -353,19 +324,16 @@ export default {
   'auth.quickRegSubmit': '가입 완료',
   'auth.quickRegSubmitting': '가입 중…',
   'auth.quickRegRegisterSuccess': '가입이 완료되었습니다',
-  'auth.quickRegSessionUnsure':
-    '가입은 완료되었을 수 있습니다. 로그인되지 않았다면 돌아가 인증 코드 로그인을 사용하거나 이 페이지를 새로고침하세요.',
+  'auth.quickRegSessionUnsure': '가입은 완료되었을 수 있습니다. 로그인되지 않았다면 돌아가 인증 코드 로그인을 사용하거나 이 페이지를 새로고침하세요.',
   'auth.quickRegBackToSignIn': '일반 로그인 / 회원가입 사용',
   'auth.quickRegSelectOrg': '학교 선택',
   'auth.quickRegOrgLoadError': '학교 목록을 불러올 수 없습니다. 다시 시도하세요.',
   'auth.quickRegMintError': '가입 채널을 열 수 없습니다. 다시 시도하세요.',
   'auth.quickRegCloseConfirmTitle': '간편등록이 종료되나요?',
-  'auth.quickRegCloseConfirm':
-    '창을 닫으면 현재 QR코드와 호실코드는 즉시 무효가 되며, 아직 가입하지 않은 학생은 계속해서 등록을 할 수 없습니다.',
+  'auth.quickRegCloseConfirm': '창을 닫으면 현재 QR코드와 호실코드는 즉시 무효가 되며, 아직 가입하지 않은 학생은 계속해서 등록을 할 수 없습니다.',
   'auth.setPasswordWithSms': '로그인 비밀번호 설정',
   'auth.setPasswordWithSmsTitle': 'SMS로 비밀번호 설정',
-  'auth.setPasswordWithSmsHint':
-    '연결된 휴대폰으로 코드를 보냅니다. 비밀번호 설정 후 비밀번호 또는 인증 코드로 로그인할 수 있습니다.',
+  'auth.setPasswordWithSmsHint': '연결된 휴대폰으로 코드를 보냅니다. 비밀번호 설정 후 비밀번호 또는 인증 코드로 로그인할 수 있습니다.',
   'auth.setPasswordWithSmsSubmit': '비밀번호 저장',
   'auth.setPasswordWithSmsSubmitting': '저장 중…',
   'auth.accountAvatar': 'Avatar',
@@ -380,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': '표시 이름',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': '2자 이상, 숫자 없음',
   'auth.accountNameSave': '이름 저장',
   'auth.accountNameSaveSuccess': '이름이 업데이트되었습니다',
@@ -393,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': '연결을 해제할 수 없습니다. 다시 시도하세요.',
   'auth.dingtalkBindRebind': '다시 연결',
   'auth.dingtalkBindTitle': 'DingTalk 계정 연결',
-  'auth.dingtalkBindInstructions':
-    '아래 6자리 코드(예: 123-456)를 학교 DingTalk MindBot에 문자로 보내세요.',
+  'auth.dingtalkBindInstructions': '아래 6자리 코드(예: 123-456)를 학교 DingTalk MindBot에 문자로 보내세요.',
   'auth.dingtalkBindPairWaiting': 'MindBot이 코드를 받을 때까지 대기 중…',
   'auth.dingtalkBindCodeHint': '이 코드만 보내세요 — 추가 텍스트 없이.',
   'auth.dingtalkBindCountdown': '세션 만료까지 {s}초',
@@ -409,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': '연결됨 ({staff})',
   'auth.dingtalkBindAlreadyLinked': '현재 연결: {staff}',
   'auth.dingtalkUnbindTitle': 'DingTalk 계정 연결 해제',
-  'auth.dingtalkUnbindInstructions':
-    '연결 해제를 확인하려면 연결된 DingTalk 계정에서 아래 코드를 MindBot에 보내세요.',
+  'auth.dingtalkUnbindInstructions': '연결 해제를 확인하려면 연결된 DingTalk 계정에서 아래 코드를 MindBot에 보내세요.',
   'auth.dingtalkUnbindPairWaiting': '연결된 DingTalk 계정의 확인을 기다리는 중…',
   'auth.dingtalkUnbindCodeHint': '연결된 DingTalk 계정에서만 이 코드를 보내세요.',
   'auth.dingtalkUnbindExpiredHint': '연결 해제 세션이 만료되었습니다. 다시 시작하세요.',
@@ -423,25 +392,20 @@ export default {
   'auth.qrLoginInviteRequired': 'QR 로그인 전에 학교 초대 코드를 입력하세요',
   'auth.qrLoginProvidersFailed': 'QR 로그인 설정을 불러올 수 없습니다. 다시 시도하세요.',
   'auth.qrLoginProviderDisabled': '학교에서 이 로그인 방식이 활성화되어 있지 않습니다',
-  'auth.qrLoginNotLinked':
-    '계정이 연결되지 않았습니다 — 비밀번호로 로그인한 뒤 계정 연결에서 먼저 연결하세요',
+  'auth.qrLoginNotLinked': '계정이 연결되지 않았습니다 — 비밀번호로 로그인한 뒤 계정 연결에서 먼저 연결하세요',
   'auth.qrLoginExchangeFailed': 'QR 로그인에 실패했습니다. 다시 시도하세요.',
   'auth.qrLoginInvalidState': 'QR 세션이 만료되었습니다. 닫고 다시 스캔하세요.',
-  'auth.qrLoginInvalidCode':
-    'WeChat 인증 코드가 만료되었거나 사용되었습니다. QR코드를 닫고 다시 스캔해주세요.',
-  'auth.qrLoginRateLimited':
-    'WeChat 로그인 호출이 너무 자주 발생합니다. 나중에 다시 시도해 주세요.',
+  'auth.qrLoginInvalidCode': 'WeChat 인증 코드가 만료되었거나 사용되었습니다. QR코드를 닫고 다시 스캔해주세요.',
+  'auth.qrLoginRateLimited': 'WeChat 로그인 호출이 너무 자주 발생합니다. 나중에 다시 시도해 주세요.',
   'auth.qrLoginMisconfigured': 'WeChat 로그인 구성이 올바르지 않습니다. 관리자에게 문의하세요.',
   'auth.qrLoginCorpMismatch': 'DingTalk 조직이 학교 설정과 일치하지 않습니다.',
   'auth.oauthExternalTaken': '이 계정은 이미 다른 사용자에게 연결되어 있습니다.',
-  'auth.oauthAlreadyBound':
-    '이 계정은 WeChat에 연결되어 있습니다. 다른 WeChat을 연결해야 하는 경우 먼저 연결을 해제하세요.',
+  'auth.oauthAlreadyBound': '이 계정은 WeChat에 연결되어 있습니다. 다른 WeChat을 연결해야 하는 경우 먼저 연결을 해제하세요.',
   'auth.qrLoginDisabled': 'QR 로그인을 사용할 수 없습니다.',
   'auth.qrLoginStartFailed': 'QR 로그인을 시작할 수 없습니다. 다시 시도하세요.',
   'auth.qrLoginSuccess': '로그인되었습니다',
   'auth.accountBindingsSection': '계정 연결',
-  'auth.accountBindingsHint':
-    'MindBot은 DingTalk에 저장됩니다. WeChat/DingTalk은 QR 로그인용입니다(여기서 먼저 연결)',
+  'auth.accountBindingsHint': 'MindBot은 DingTalk에 저장됩니다. WeChat/DingTalk은 QR 로그인용입니다(여기서 먼저 연결)',
   'auth.bindingWechat': '위챗',
   'auth.bindingDingtalk': '딩톡',
   'auth.bindingMindbot': '마인드봇',

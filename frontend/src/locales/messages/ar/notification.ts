@@ -5,17 +5,13 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'غير قادر على مسح الموضوع أو العقدة المركزية',
-  'notification.cannotResetSelectDiagramType':
-    'غير قادر على إعادة التعيين: الرجاء تحديد نوع الرمز أولاً',
+  'notification.cannotResetSelectDiagramType': 'غير قادر على إعادة التعيين: الرجاء تحديد نوع الرمز أولاً',
   'notification.canvasClearNodes': 'تم مسح {count} العقد',
   'notification.canvasClearNodesLearning': '{count} العقد تركت فارغة، تمت إضافة الإجابة',
   'notification.canvasSomeoneEditingNode': 'يقوم مستخدم آخر بتحرير هذه العقدة',
-  'notification.collabDeleteBlocked':
-    'غير قادر على الحذف: يقوم المستخدمون الآخرون بتحرير العقد ذات الصلة',
-  'notification.collabRedoBlocked':
-    'لا يمكن الإعادة: يقوم المستخدمون الآخرون بتحرير العقدة ذات الصلة',
-  'notification.collabUndoBlocked':
-    'غير قادر على التراجع: يقوم المستخدمون الآخرون بتحرير العقد ذات الصلة',
+  'notification.collabDeleteBlocked': 'غير قادر على الحذف: يقوم المستخدمون الآخرون بتحرير العقد ذات الصلة',
+  'notification.collabRedoBlocked': 'لا يمكن الإعادة: يقوم المستخدمون الآخرون بتحرير العقدة ذات الصلة',
+  'notification.collabUndoBlocked': 'غير قادر على التراجع: يقوم المستخدمون الآخرون بتحرير العقد ذات الصلة',
   'notification.conversationDeleted': 'تم حذف المحادثة',
   'notification.copied': 'تم النسخ إلى الحافظة',
   'notification.copyFailed': 'فشل النسخ',
@@ -25,15 +21,13 @@ export default {
   'notification.feedbackThanks': 'شكرا لتعليقاتك',
   'notification.feedbackThanksDislike': 'شكرا لتعليقاتك، وسوف نعمل جاهدين على تحسين',
   'notification.focusQuestionTooShort': 'الرجاء إدخال سؤال أطول للتركيز أولاً',
-  'notification.geoLiteMissingIntro':
-    'برجاء تنزيل GeoLite2 Country من MaxMind، وفك الضغط ونسخ GeoLite2-Country.mmdb إلى دليل بيانات الخادم:',
+  'notification.geoLiteMissingIntro': 'برجاء تنزيل GeoLite2 Country من MaxMind، وفك الضغط ونسخ GeoLite2-Country.mmdb إلى دليل بيانات الخادم:',
   'notification.geoLiteMissingLink': 'افتح صفحة تنزيل MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'المسار المتوقع:',
   'notification.geoLiteMissingTitle': 'قاعدة بيانات GeoLite2 القطرية مفقودة',
   'notification.fullscreenFailed': 'لا يمكن الدخول إلى وضع ملء الشاشة',
   'notification.generationCancelled': 'تم إلغاء الجيل',
-  'notification.conceptMapTabNeedsAi':
-    'يرجى تمكين "بدء الذكاء الاصطناعي" في الشريط العلوي قبل استخدام توصيات علامة التبويب',
+  'notification.conceptMapTabNeedsAi': 'يرجى تمكين "بدء الذكاء الاصطناعي" في الشريط العلوي قبل استخدام توصيات علامة التبويب',
   'notification.historyClearNodes': 'مسح نص العقدة',
   'notification.historyEmptyLearning': 'اترك العقدة فارغة وأضف الإجابة',
   'notification.importInvalidData': 'فشل الاستيراد، بيانات الرمز غير صالحة',
@@ -42,8 +36,6 @@ export default {
   'notification.importSlotsFull': 'المعرض ممتلئ. تم استيراد الرمز ولكن لم يتم حفظه في المعرض.',
   'notification.importSuccess': 'تم استيراد الرمز وحفظه في المعرض',
   'notification.importUnsupportedType': 'فشل الاستيراد، نوع الرمز غير مدعوم',
-  'notification.inlineRecEmpty':
-    'لم يتم إنشاء أي محتوى موصى به، يرجى المحاولة مرة أخرى أو تعديل المظهر والمحاولة مرة أخرى',
   'notification.loadMoreFailed': 'فشل في تحميل المزيد',
   'notification.networkError': 'خطأ في الشبكة',
   'notification.nodeNotEligible': 'هذه العقدة لا تدعم توصيات علامة التبويب',
@@ -54,10 +46,8 @@ export default {
   'notification.rootConceptLinkNotFound': 'لم يتم العثور على سلك مفهوم الجذر',
   'notification.saved': 'تم الحفظ بنجاح',
   'notification.selectNodeToClear': 'الرجاء تحديد العقدة المراد مسحها أولاً',
-  'notification.sessionInvalidated':
-    'لقد تم تسجيل خروجك لأن عدد الأجهزة التي تم تسجيل الدخول إليها يتجاوز الحد المسموح به',
-  'notification.sessionKicked':
-    'لقد قام هذا الحساب بتسجيل هذا الحساب في وضع عدم الاتصال على أجهزة أخرى',
+  'notification.sessionInvalidated': 'لقد تم تسجيل خروجك لأن عدد الأجهزة التي تم تسجيل الدخول إليها يتجاوز الحد المسموح به',
+  'notification.sessionKicked': 'لقد قام هذا الحساب بتسجيل هذا الحساب في وضع عدم الاتصال على أجهزة أخرى',
   'notification.signInToUse': 'الرجاء تسجيل الدخول للاستخدام',
   'notification.signInToValidateFocus': 'الرجاء تسجيل الدخول للتحقق من قضايا التركيز',
 } as const

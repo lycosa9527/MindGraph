@@ -8,7 +8,7 @@
   const MindGraphExtensionStorage = global.MindGraphExtensionStorage || {};
 
   /** @type {string[]} */
-  const LEGACY_SESSION_KEYS = ["mindmateConversationId"];
+  const LEGACY_SESSION_KEYS = ["mindmateConversationId", "pageDiagramLinks"];
 
   /** @type {string} */
   const SMARTEDU_TOKEN_KEY = "smarteduAccessToken";

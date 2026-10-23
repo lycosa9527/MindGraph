@@ -8,14 +8,14 @@
  * oneSentence, file-center session, snapshots, presentation, and partial UI
  * reset — avoids stale state and lingering SSE on re-entry.
  *
- * In-session reset (top-bar Reset): ``applyCanvasSessionReset`` → shared
+ * In-session reset (ribbon Reset): ``applyCanvasSessionReset`` → shared
  * ephemeral clears + ``diagram:reset_requested`` for page-local refs.
  *
  * Users access this page via:
  * 1. InternationalLanding prompt — generates, then navigates here with a pre-loaded diagram
  * 2. InternationalLanding cards — "在画布中创建" → navigates here with a diagram type
  *
- * The "AI生成图示" button in the bottom AI cluster uses useAutoComplete
+ * AI generate lives on the status bar and the ribbon. It uses useAutoComplete
  * to generate content based on the topic extracted from existing nodes.
  *
  * Auto-save functionality (event + state driven):
@@ -31,16 +31,10 @@ import { storeToRefs } from 'pinia'
 
 import MindMapClassroomRemote from '@/canvas-ribbon/MindMapClassroomRemote.vue'
 import MindMapStatusBar from '@/canvas-ribbon/MindMapStatusBar.vue'
+import { isCanvasEditorRibbonFamily } from '@/canvas-ribbon/canvasEditorRibbon'
+import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
-  diagramRibbonCapabilities,
-  isDiagramRibbonFamily,
-} from '@/canvas-ribbon/diagramRibbonCapabilities'
-import {
-  CanvasBottomAiCluster,
   CanvasChrome,
-  CanvasKittyVoiceCommandGuide,
-  CanvasMindMapGestureGuide,
-  CanvasMindMapShortcutGuide,
   CanvasTopBar,
   ConceptMapFocusReviewPicker,
   ConceptMapLabelPicker,
@@ -53,7 +47,6 @@ import {
   MindMapSlideOverlay,
   PresentationTimerHud,
   PresentationTimerOverlay,
-  ZoomControls,
 } from '@/components/canvas'
 import CanvasCachedResultNotice from '@/components/canvas/CanvasCachedResultNotice.vue'
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
@@ -64,11 +57,11 @@ import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
 import LearningAssignmentCanvasBar from '@/components/learningSpace/LearningAssignmentCanvasBar.vue'
-import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
+import { DiagramBrainstormPanel, MindmatePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
+  getDiagramBrainstorm,
   getDiagramOperations,
-  getNodePalette,
   getPanelCoordinator,
   useCanvasKittyDesktopPairing,
   useDiagramSpecForPersist,
@@ -123,6 +116,7 @@ import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolb
 import {
   bindMindMapExternalPanelClose,
   useMindMapSideToolbarState,
+  watchHomeworkLearningSheet,
 } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
@@ -166,6 +160,7 @@ import {
 } from '@/composables/presentation/presentationDiagramEdit'
 import { useTrainingCanvasGenerate } from '@/composables/training/useTrainingCanvasGenerate'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
+import { effectiveCanvasInputMode } from '@/config/canvasInputMode'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR } from '@/config/presentationHighlighter'
 import {
@@ -200,7 +195,10 @@ import {
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useKittySessionStore } from '@/stores/kittySession'
-import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
+import {
+  homeworkCanvasFlushKey,
+  useLearningAssignmentCanvasStore,
+} from '@/stores/learningAssignmentCanvas'
 import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import { useOneSentenceStore } from '@/stores/oneSentence'
 import { usePresentationPointerStore } from '@/stores/presentationPointer'
@@ -208,8 +206,8 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import type { MindMapPresentationToolId } from '@/types/diagram'
 import { MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS } from '@/types/diagram'
-import { shouldEnableDesktopTouchPanPinch } from '@/utils/canvasTouchGestures'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
+import { isMobileRoutePath } from '@/utils/mobileRouteRedirect'
 import {
   clearWorkshopSessionStorage,
   readWorkshopSession,
@@ -224,6 +222,9 @@ const oneSentenceStore = useOneSentenceStore()
 getDiagramOperations()
 const relationshipStore = useConceptMapRelationshipStore()
 const uiStore = useUIStore()
+const canvasInputMode = computed(() =>
+  effectiveCanvasInputMode(uiStore.canvasInputMode, isMobileRoutePath(route.path))
+)
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const learningAssignmentCanvas = useLearningAssignmentCanvasStore()
@@ -237,7 +238,6 @@ const { handleAIGenerate, handleConceptGeneration, isAIGenerating } = useCanvasT
 useTrainingCanvasGenerate(handleAIGenerate)
 
 const snapshotHistory = useSnapshotHistory()
-const recallingSnapshotVersion = snapshotHistory.recallingVersion
 
 const {
   canvasPageRef,
@@ -261,15 +261,10 @@ const {
   laserCursorStyle,
   spotlightStyle,
   pointerOverPresentationRail,
-  handleZoomChange,
-  handleZoomIn,
-  handleZoomOut,
-  handleFitToScreen,
   handleHandToolToggle,
   suspendHandToolForPresentation,
   resumeHandToolAfterPresentation,
   handleStartPresentation,
-  handleModelChange,
   resetPresentationStateOnLeave,
 } = useCanvasPagePresentation()
 
@@ -291,13 +286,11 @@ const {
   resetPreviousDiagramTracking,
   participantsWithNames,
   ownerUsername,
-  remoteHostDisplayedLlmModel,
   roomIdleSecondsRemaining,
   connectionStatus,
   reconnect,
   isDiagramOwner,
   isCollabGuest,
-  workshopRole,
   isViewer: workshopIsViewer,
   sessionDiagramId,
   sessionDiagramTitle,
@@ -473,27 +466,12 @@ function handleCollabSession(payload: {
 
 // Singletons must be created during setup (not in onMounted); they use useI18n / onUnmounted.
 getPanelCoordinator()
-const { startSession: startNodePaletteSession } = getNodePalette({
+const { startSession: startDiagramBrainstormSession } = getDiagramBrainstorm({
   onError: (err) => notify.error(err),
 })
 const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
 const focusReviewStore = useConceptMapFocusReviewStore()
 const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
-// Hide zoom/pan when a concept-map picker is showing
-const showZoomControls = computed(() => {
-  if (isMindMapPresentationMode.value) return false
-  const rel = diagramStore.type === 'concept_map' && relationshipActiveEntry.value
-  const rootPick =
-    diagramStore.type === 'concept_map' &&
-    rootConceptReviewStore.showPicker &&
-    !relationshipActiveEntry.value
-  const focusPick =
-    diagramStore.type === 'concept_map' &&
-    focusReviewStore.showPicker &&
-    !relationshipActiveEntry.value &&
-    !rootPick
-  return !(rel || rootPick || focusPick)
-})
 
 const useMindMapV2 = useMindMapV2Chrome()
 const { hidden: classroomRemoteHidden } = useClassroomRemoteVisibility()
@@ -519,7 +497,7 @@ const fitViewOnInit = computed(() => {
 const featureKnowledgeSpaceFlag = computed(() => featureFlagsStore.getFeatureKnowledgeSpace())
 const ribbonCaps = computed(() => diagramRibbonCapabilities(diagramStore.type, useMindMapV2.value))
 const isMindMapRibbonFamily = computed(() =>
-  isDiagramRibbonFamily(diagramStore.type, useMindMapV2.value)
+  isCanvasEditorRibbonFamily(diagramStore.type, diagramStore.mindMapCanvasMode)
 )
 const fileCenterEnabled = computed(() =>
   DOC_SUMMARY_LITE_UI ? useMindMapV2.value : featureKnowledgeSpaceFlag.value && useMindMapV2.value
@@ -665,23 +643,11 @@ const showConceptMapRibbonPickers = computed(() => {
   )
 })
 
-const showMindMapShortcutGuide = computed(
-  () =>
-    useMindMapV2.value &&
-    !presentationRailOpen.value &&
-    !mindClassroomSlideDeck.value &&
-    Boolean(diagramStore.data)
-)
-
-const enableDesktopTouchPanPinch = computed(() =>
-  shouldEnableDesktopTouchPanPinch(
-    uiStore.eBlackboardOptimize,
-    typeof navigator === 'undefined' ? 0 : navigator.maxTouchPoints
-  )
-)
+const { showCanvasAiFeatures } = useLearningAiGate()
 
 function sideToolAllowed(tool: string | null): boolean {
   if (!tool) return false
+  if (tool === 'learning_sheet' && !learningAssignmentCanvas.showLearningSheet) return false
   if (useMindMapV2.value) return true
   if (tool === 'outline') return ribbonCaps.value.outline
   if (tool === 'learning_sheet') return ribbonCaps.value.learningSheetPanel
@@ -713,6 +679,7 @@ const showMindClassroomDialog = computed(
 
 const showLearningSheetExportNudge = computed(
   () =>
+    learningAssignmentCanvas.showLearningSheet &&
     isMindMapRibbonFamily.value &&
     !isMindMapPresentationMode.value &&
     !mindClassroomSlideDeck.value &&
@@ -724,6 +691,7 @@ const showCanvasChrome = computed(
 )
 
 const { activeTool, closeActiveTool } = useMindMapSideToolbarState()
+watchHomeworkLearningSheet()
 
 watch(
   () => diagramStore.type,
@@ -749,8 +717,8 @@ watch(
   () => diagramStore.type,
   () => {
     closeActiveTool()
-    if (panelsStore.nodePalettePanel.isOpen) {
-      panelsStore.closeNodePalette()
+    if (panelsStore.diagramBrainstormPanel.isOpen) {
+      panelsStore.closeDiagramBrainstorm()
     }
   }
 )
@@ -765,7 +733,6 @@ const mindMatePanelRight = computed(() => {
 })
 
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
-const { showCanvasAiFeatures } = useLearningAiGate()
 
 const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
   currentDiagramId,
@@ -861,7 +828,7 @@ useKittyDesktopRemoteSync({
 
 useCanvasPageMountedHandlers({
   snapshotHistory,
-  startNodePaletteSession,
+  startDiagramBrainstormSession,
   isDiagramOwner,
 })
 
@@ -978,6 +945,13 @@ const diagramAutoSave = useDiagramAutoSave({
       console.error('[LearningSpace] Failed to bind homework draft', err)
     })
   },
+})
+
+provide(homeworkCanvasFlushKey, async () => {
+  const result = await diagramAutoSave.flushOnLeave()
+  if (result.reason === 'error') {
+    throw new Error('homework diagram save failed')
+  }
 })
 
 eventBus.onWithOwner(
@@ -1305,7 +1279,7 @@ useNewCanvasTypeQueryBootstrap({
   },
 })
 
-// Watch for diagram ID changes (sidebar switch) - load new diagram and clear node palette
+// Watch for diagram ID changes (sidebar switch) - load new diagram and clear AI brainstorm
 watch(
   () => {
     const q = route.query
@@ -1428,16 +1402,16 @@ onMounted(async () => {
           notify.errorKey('notification.importUnsupportedType')
         } else {
           const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
-          if (llmResults) {
-            llmResultsStore.restoreFromSaved(llmResults, diagramType)
-          } else {
-            llmResultsStore.clearCache()
-          }
           if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
             await loadDiagramMarkdownPipeline({ bumpLayout: false })
           }
           const loaded = diagramStore.loadFromSpec(specForLoad, diagramType)
           if (loaded) {
+            if (llmResults) {
+              llmResultsStore.restoreFromSaved(llmResults, diagramType, specForLoad)
+            } else {
+              llmResultsStore.clearCache()
+            }
             const chineseName = diagramTypeToChineseMap[diagramType]
             if (chineseName) {
               uiStore.setSelectedChartType(chineseName)
@@ -1716,16 +1690,10 @@ onUnmounted(() => {
         :slot-full-and-new-diagram="isSlotsFullAndNewDiagram"
         :is-dirty="diagramAutoSave.isDirty.value"
         :is-saving="diagramAutoSave.isSaving.value"
-        :snapshots="snapshotHistory.snapshots.value"
-        :active-snapshot-version="snapshotHistory.activeSnapshotVersion.value"
-        :recalling-snapshot-version="recallingSnapshotVersion"
         :workshop-code="workshopCode"
         :is-collab-guest="isCollabGuest"
         :is-viewer="isViewer"
-        :workshop-role="workshopRole"
         @save-requested="() => handleSaveKey({ recordHistory: false })"
-        @snapshot-recall="handleSnapshotRecall"
-        @snapshot-delete="handleSnapshotDelete"
       />
       <LearningAssignmentCanvasBar />
     </CanvasChrome>
@@ -1765,20 +1733,20 @@ onUnmounted(() => {
       class="flex-1 relative overflow-hidden flex flex-row min-h-0"
       :class="{ 'mc-slide-lecture-fullscreen': mindClassroomSlideDeck }"
     >
-      <!-- Node Palette panel (瀑布流) - left 50%, inset to clear floating toolbars -->
-      <Transition name="node-palette-slide">
+      <!-- AI brainstorm panel (瀑布流) - left 50%, inset to clear floating toolbars -->
+      <Transition name="diagram-brainstorm-slide">
         <div
           v-if="
-            panelsStore.nodePalettePanel.isOpen &&
+            panelsStore.diagramBrainstormPanel.isOpen &&
             !isViewer &&
             !useMindMapV2 &&
             !mindClassroomSlideDeck
           "
-          class="node-palette-panel-split shrink-0 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden ml-4 mr-2 self-stretch"
+          class="diagram-brainstorm-panel-split shrink-0 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden ml-4 mr-2 self-stretch"
           :style="{
             width: '50%',
-            minWidth: `${PANEL.NODE_PALETTE_MIN_WIDTH}px`,
-            maxWidth: `${PANEL.NODE_PALETTE_MAX_WIDTH}px`,
+            minWidth: `${PANEL.DIAGRAM_BRAINSTORM_MIN_WIDTH}px`,
+            maxWidth: `${PANEL.DIAGRAM_BRAINSTORM_MAX_WIDTH}px`,
             marginTop: `${PANEL_INSET.TOP}px`,
             marginBottom: `${PANEL_INSET.BOTTOM}px`,
             maxHeight: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
@@ -1786,11 +1754,11 @@ onUnmounted(() => {
         >
           <RootConceptModal
             v-if="diagramStore.type === 'concept_map'"
-            @close="panelsStore.closeNodePalette"
+            @close="panelsStore.closeDiagramBrainstorm"
           />
-          <NodePalettePanel
+          <DiagramBrainstormPanel
             v-else
-            @close="panelsStore.closeNodePalette"
+            @close="panelsStore.closeDiagramBrainstorm"
           />
         </div>
       </Transition>
@@ -1824,7 +1792,7 @@ onUnmounted(() => {
             :mind-map-slide-dim-focus-node-ids="mindMapTourDimFocusNodeIds"
             :presentation-rail-open="presentationRailOpen"
             :presentation-side-toolbar-visible="showMindMapPresentationSideToolbar"
-            :enable-touch-pan-pinch="enableDesktopTouchPanPinch"
+            :input-mode="canvasInputMode"
             :enable-two-finger-slide-swipe="showMindMapSlideOverlay"
             @node-double-click="handleNodeDoubleClick"
           />
@@ -1896,76 +1864,6 @@ onUnmounted(() => {
       v-if="isMindMapRibbonFamily && showBottomBar"
       :zoom="canvasZoom"
     />
-
-    <!-- Bottom controls: shortcut guide (mind map) + floating glass toolbar card -->
-    <div
-      v-if="showBottomBar && !isMindMapRibbonFamily"
-      class="canvas-bottom-controls absolute bottom-3 left-0 right-0 z-20 flex justify-center px-2 sm:px-4 pointer-events-none"
-    >
-      <div
-        class="bottom-bar-cluster pointer-events-auto flex items-end gap-2 sm:gap-3 max-w-[95vw] min-w-0"
-      >
-        <CanvasKittyVoiceCommandGuide v-if="showKittyOnCanvas" />
-        <CanvasMindMapShortcutGuide v-else-if="showMindMapShortcutGuide" />
-        <CanvasMindMapGestureGuide v-if="showMindMapShortcutGuide || showKittyDesktopIndicator" />
-        <div
-          class="bottom-controls-card flex flex-col items-center md:flex-row md:flex-nowrap md:items-center gap-1.5 md:gap-0 rounded-xl shadow-lg p-1 md:p-1.5 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit min-w-0 shrink-0"
-        >
-          <!-- shrink-0: AI block + focus picker width follows content (no flex-1 stretch) -->
-          <div
-            v-if="showCanvasAiFeatures"
-            class="ai-selector-wrap flex shrink-0 justify-center md:justify-center min-w-0 order-2 md:order-1"
-          >
-            <CanvasBottomAiCluster
-              :host-displayed-llm-model="remoteHostDisplayedLlmModel"
-              :is-collab-guest="isCollabGuest"
-              @model-change="handleModelChange"
-            />
-          </div>
-          <ConceptMapLabelPicker
-            v-if="diagramStore.type === 'concept_map' && relationshipActiveEntry"
-            class="label-picker-wrap order-3 flex-1 min-w-0"
-          />
-          <ConceptMapRootConceptPicker
-            v-else-if="
-              diagramStore.type === 'concept_map' &&
-              rootConceptReviewStore.showPicker &&
-              !relationshipActiveEntry
-            "
-            class="label-picker-wrap order-3 shrink-0 w-fit max-w-[min(95vw,640px)] min-w-0"
-          />
-          <ConceptMapFocusReviewPicker
-            v-else-if="diagramStore.type === 'concept_map' && focusReviewStore.showPicker"
-            class="label-picker-wrap order-3 shrink-0 w-fit max-w-[min(95vw,640px)] min-w-0"
-          />
-          <div
-            v-if="showZoomControls"
-            class="bottom-controls-divider hidden md:block order-1 md:order-2 w-px h-5.5 mx-2 bg-gray-200 dark:bg-gray-600 shrink-0 self-center"
-          />
-          <div
-            v-if="showZoomControls"
-            class="zoom-controls-wrap flex shrink-0 order-1 md:order-3"
-          >
-            <ZoomControls
-              :zoom="canvasZoom"
-              :hand-tool-active="handToolActive"
-              :presentation-rail-open="presentationRailOpen"
-              :workshop-code="workshopCode"
-              :is-collab-guest="isCollabGuest"
-              :allow-presentation-tools="canUsePresentationTools"
-              :allow-online-collab="canUseOnlineCollab"
-              @zoomChange="handleZoomChange"
-              @zoomIn="handleZoomIn"
-              @zoomOut="handleZoomOut"
-              @fitToScreen="handleFitToScreen"
-              @handToolToggle="handleHandToolToggle"
-              @startPresentation="handleStartPresentationWithTier"
-              @openCollab="handleOpenCollab"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 

@@ -22,23 +22,18 @@ export default {
   'auth.voiceNotes.noDiagram': 'Bản đồ tư duy vẫn chưa được liên kết.',
   'auth.voiceNotes.micUnavailable': 'Trình duyệt hiện tại không hỗ trợ micrô.',
   'auth.voiceNotes.micFailed': 'Không thể truy cập micrô.',
-  'auth.voiceNotes.micConflict':
-    'Các chức năng thoại khác đang sử dụng micrô, vui lòng dừng và thử lại.',
-  'auth.voiceNotes.wsError':
-    'Kết nối ghi chú thoại không thành công, vui lòng kiểm tra mạng và trạng thái đăng nhập.',
+  'auth.voiceNotes.micConflict': 'Các chức năng thoại khác đang sử dụng micrô, vui lòng dừng và thử lại.',
+  'auth.voiceNotes.wsError': 'Kết nối ghi chú thoại không thành công, vui lòng kiểm tra mạng và trạng thái đăng nhập.',
   'auth.voiceNotes.genericError': 'Lỗi ghi chú bằng giọng nói',
   'auth.voiceNotes.ingestFailed': 'Không thể lưu bản ghi vào bản tóm tắt tài liệu.',
   'auth.voiceNotes.maxDuration': 'Ghi chú thoại đã đạt đến giới hạn 60 phút và đã tự động dừng.',
-  'auth.voiceNotes.silenceAutoStop':
-    'Không có giọng nói trong 2 phút liên tiếp và ghi chú giọng nói đã tự động dừng.',
+  'auth.voiceNotes.silenceAutoStop': 'Không có giọng nói trong 2 phút liên tiếp và ghi chú giọng nói đã tự động dừng.',
   'auth.voiceNotes.startedTimeout': 'Dịch vụ thoại không khởi động kịp thời, vui lòng thử lại.',
   'auth.voiceNotes.micLost': 'Micrô đã bị ngắt kết nối và ghi chú thoại đã dừng.',
   'auth.voiceNotes.authFailed': 'Xác thực ghi chú thoại không thành công, vui lòng đăng nhập lại.',
   'auth.voiceNotes.wsClosed': 'Kết nối ghi chú thoại đã bị ngắt kết nối và phiên đã dừng.',
-  'auth.voiceNotes.budgetExceeded':
-    'Ghi chú bằng giọng nói không có sẵn: đã đạt đến hạn ngạch AI hàng ngày hoặc số tiền tư duy không đủ.',
-  'auth.voiceNotes.sessionBusy':
-    'Đã có phiên ghi chú thoại đang diễn ra, vui lòng dừng phiên này và thử lại.',
+  'auth.voiceNotes.budgetExceeded': 'Ghi chú bằng giọng nói không có sẵn: đã đạt đến hạn ngạch AI hàng ngày hoặc số tiền tư duy không đủ.',
+  'auth.voiceNotes.sessionBusy': 'Đã có phiên ghi chú thoại đang diễn ra, vui lòng dừng phiên này và thử lại.',
   'auth.voiceNotes.recording': 'Ghi âm',
   'auth.voiceNotes.paused': 'Cấm',
   'auth.voiceNotes.idle': 'sẵn sàng',
@@ -46,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'Bắt đầu',
   'auth.voiceNotes.stopping': 'Đang dừng',
   'auth.voiceNotes.ingesting': 'Đang lưu',
-  'auth.voiceNotes.emptyTranscript':
-    'Không nhận dạng được giọng nói, vui lòng nói vài lời trước khi dừng lại.',
+  'auth.voiceNotes.emptyTranscript': 'Không nhận dạng được giọng nói, vui lòng nói vài lời trước khi dừng lại.',
   'auth.voiceNotes.generating': 'Tạo bản đồ tư duy',
-  'auth.voiceNotes.sheetHint':
-    'Lưu bản phiên âm sau khi dừng. Nhấp vào Tạo bản đồ tư duy khi bạn đã sẵn sàng.',
+  'auth.voiceNotes.sheetHint': 'Lưu bản phiên âm sau khi dừng. Nhấp vào Tạo bản đồ tư duy khi bạn đã sẵn sàng.',
   'auth.voiceNotes.status.waiting': 'Đang chờ để bắt đầu',
   'auth.voiceNotes.status.connectingAsr': 'Kết nối với nhận dạng giọng nói',
   'auth.voiceNotes.status.recording': 'Ghi âm · Nhận dạng giọng nói',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'Ghi âm · Nhận dạng giọng nói · Phân biệt người nói',
+  'auth.voiceNotes.status.recordingAndSeparating': 'Ghi âm · Nhận dạng giọng nói · Phân biệt người nói',
   'auth.voiceNotes.status.paused': 'Cấm',
   'auth.voiceNotes.status.stopping': 'Đang dừng',
   'auth.voiceNotes.status.savingTranscript': 'Đang lưu bản chép lời',
@@ -68,13 +60,10 @@ export default {
   'auth.voiceNotes.savedAt': 'Bản ghi được lưu tại {time}',
   'auth.voiceNotes.unsavedChanges': 'Bản chép lời chưa được lưu',
   'auth.voiceNotes.closeWhileRecordingTitle': 'Ghi âm',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'Đóng cửa sổ sẽ không dừng ghi âm. Bản ghi được tự động lưu vào bản đồ hiện tại cứ sau 30 giây. Bạn có chắc chắn muốn ẩn cửa sổ không?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'Đóng cửa sổ sẽ không dừng ghi âm. Bản ghi được tự động lưu vào bản đồ hiện tại cứ sau 30 giây. Bạn có chắc chắn muốn ẩn cửa sổ không?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'Ẩn cửa sổ',
-  'auth.voiceNotes.recordingContinues':
-    'Quá trình ghi vẫn đang tiếp tục và bạn có thể mở lại bản tóm tắt bản ghi bất kỳ lúc nào.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'Hãy lưu sơ đồ tư duy hiện tại lại trước rồi dùng bản ghi để tóm tắt.',
+  'auth.voiceNotes.recordingContinues': 'Quá trình ghi vẫn đang tiếp tục và bạn có thể mở lại bản tóm tắt bản ghi bất kỳ lúc nào.',
+  'auth.voiceNotes.noCurrentDiagram': 'Hãy lưu sơ đồ tư duy hiện tại lại trước rồi dùng bản ghi để tóm tắt.',
   'auth.voiceNotes.restoreFailed': 'Không thể tải bản ghi âm đã lưu.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'Ghi chú giọng nói lịch sử',
@@ -84,35 +73,22 @@ export default {
   'auth.voiceNotes.mergeTalker': 'sáp nhập vào',
   'auth.voiceNotes.mergeTalkerInto': 'Hợp nhất vào {name}',
   'auth.voiceNotes.resetTalker': 'Khôi phục mặc định',
-  'auth.voiceNotes.tencentAuth':
-    'Xác thực nhận dạng giọng nói không thành công, vui lòng kiểm tra khóa Tencent Cloud.',
-  'auth.voiceNotes.tencentService':
-    'Tính năng nhận dạng giọng nói của Tencent Cloud chưa được kích hoạt. Vui lòng kích hoạt dịch vụ trong bảng điều khiển.',
-  'auth.voiceNotes.tencentQuota':
-    'Gói tài nguyên nhận dạng giọng nói của Tencent Cloud đã cạn kiệt. Vui lòng thanh toán hoặc mua gói tài nguyên sau khi kích hoạt.',
-  'auth.voiceNotes.tencentArrears':
-    'Tài khoản Tencent Cloud đang bị nợ và tính năng nhận dạng giọng nói đã bị vô hiệu hóa.',
-  'auth.voiceNotes.tencentConcurrency':
-    'Đồng thời nhận dạng giọng nói đã đầy, vui lòng thử lại sau.',
+  'auth.voiceNotes.tencentAuth': 'Xác thực nhận dạng giọng nói không thành công, vui lòng kiểm tra khóa Tencent Cloud.',
+  'auth.voiceNotes.tencentService': 'Tính năng nhận dạng giọng nói của Tencent Cloud chưa được kích hoạt. Vui lòng kích hoạt dịch vụ trong bảng điều khiển.',
+  'auth.voiceNotes.tencentQuota': 'Gói tài nguyên nhận dạng giọng nói của Tencent Cloud đã cạn kiệt. Vui lòng thanh toán hoặc mua gói tài nguyên sau khi kích hoạt.',
+  'auth.voiceNotes.tencentArrears': 'Tài khoản Tencent Cloud đang bị nợ và tính năng nhận dạng giọng nói đã bị vô hiệu hóa.',
+  'auth.voiceNotes.tencentConcurrency': 'Đồng thời nhận dạng giọng nói đã đầy, vui lòng thử lại sau.',
   'auth.voiceNotes.tencentAudio': 'Âm thanh không được nhận dạng, vui lòng thử lại.',
-  'auth.voiceNotes.tencentSendRate':
-    'Âm thanh được gửi quá nhanh, vui lòng tiếp tục ghi âm theo thời gian thực.',
-  'auth.voiceNotes.tencentIdle':
-    'Quá trình ghi âm đã bị gián đoạn quá lâu và tính năng nhận dạng giọng nói đã bị ngắt kết nối.',
-  'auth.voiceNotes.tencentRetry':
-    'Nhận dạng giọng nói tạm thời không thành công, vui lòng thử lại.',
-  'auth.voiceNotes.tencentRegion':
-    'Mạng hiện tại không nằm trong phạm vi dịch vụ của trang web nội địa của Tencent Cloud.',
+  'auth.voiceNotes.tencentSendRate': 'Âm thanh được gửi quá nhanh, vui lòng tiếp tục ghi âm theo thời gian thực.',
+  'auth.voiceNotes.tencentIdle': 'Quá trình ghi âm đã bị gián đoạn quá lâu và tính năng nhận dạng giọng nói đã bị ngắt kết nối.',
+  'auth.voiceNotes.tencentRetry': 'Nhận dạng giọng nói tạm thời không thành công, vui lòng thử lại.',
+  'auth.voiceNotes.tencentRegion': 'Mạng hiện tại không nằm trong phạm vi dịch vụ của trang web nội địa của Tencent Cloud.',
   'auth.voiceNotes.tencentParam': 'Các tham số nhận dạng giọng nói không hợp lệ.',
-  'auth.voiceNotes.tencentAppid':
-    'Tencent Cloud AppID không hợp lệ, vui lòng kiểm tra TENCENT_ASR_APP_ID.',
-  'auth.voiceNotes.rateLimited':
-    'Yêu cầu nhận dạng giọng nói quá thường xuyên, vui lòng thử lại sau.',
+  'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID không hợp lệ, vui lòng kiểm tra TENCENT_ASR_APP_ID.',
+  'auth.voiceNotes.rateLimited': 'Yêu cầu nhận dạng giọng nói quá thường xuyên, vui lòng thử lại sau.',
   'auth.voiceNotes.messageTooLarge': 'Gói âm thanh quá lớn, vui lòng thử lại.',
-  'auth.voiceNotes.invalidMessage':
-    'Tin nhắn ghi chú bằng giọng nói không hợp lệ, vui lòng thử lại.',
-  'auth.voiceNotes.asrUnavailable':
-    'Tính năng nhận dạng giọng nói tạm thời không khả dụng, vui lòng thử lại sau.',
+  'auth.voiceNotes.invalidMessage': 'Tin nhắn ghi chú bằng giọng nói không hợp lệ, vui lòng thử lại.',
+  'auth.voiceNotes.asrUnavailable': 'Tính năng nhận dạng giọng nói tạm thời không khả dụng, vui lòng thử lại sau.',
   'auth.updateLog': 'Nhật ký cập nhật',
   'auth.updateLogModalTitle': 'Nhật ký cập nhật',
   'auth.updateLogMaintainerNote': 'Đúng vậy — nền tảng này được Roy duy trì tích cực ✨',
@@ -124,19 +100,13 @@ export default {
   'privacy.backToSignIn': 'Quay lại đăng nhập',
   'auth.downloadDesktopShortcut': 'Thêm vào màn hình',
   'auth.platformQuickGuide': 'Hướng dẫn nhanh',
-  'auth.pwaIosInstallHint':
-    'Chạm Chia sẻ trong Safari, Chrome hoặc Edge, rồi chọn “Thêm vào Màn hình chính”.',
-  'auth.pwaAndroidInstallHint':
-    'Mở menu trình duyệt (⋮) và chạm Cài đặt ứng dụng hoặc Thêm vào Màn hình chính.',
-  'auth.pwaSafariMacInstallHint':
-    'Trong Safari, chọn File → Add to Dock, hoặc Share → Add to Dock (macOS Sonoma trở lên).',
-  'auth.pwaDesktopInstallHint':
-    'Dùng menu trình duyệt (⋮) hoặc biểu tượng cài đặt trên thanh địa chỉ (Chrome, Edge hoặc Brave).',
+  'auth.pwaIosInstallHint': 'Chạm Chia sẻ trong Safari, Chrome hoặc Edge, rồi chọn “Thêm vào Màn hình chính”.',
+  'auth.pwaAndroidInstallHint': 'Mở menu trình duyệt (⋮) và chạm Cài đặt ứng dụng hoặc Thêm vào Màn hình chính.',
+  'auth.pwaSafariMacInstallHint': 'Trong Safari, chọn File → Add to Dock, hoặc Share → Add to Dock (macOS Sonoma trở lên).',
+  'auth.pwaDesktopInstallHint': 'Dùng menu trình duyệt (⋮) hoặc biểu tượng cài đặt trên thanh địa chỉ (Chrome, Edge hoặc Brave).',
   'auth.pwaInstallSuccess': 'MindGraph đã được thêm vào màn hình của bạn.',
-  'auth.pwaDevInstallHint':
-    'Cài đặt PWA tắt trong chế độ dev thông thường. Dùng bản build production (npm run build + backend) hoặc chạy npm run dev:pwa, rồi dùng Chrome/Edge trên HTTPS hoặc localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Mở MindGraph trong trình duyệt tại địa chỉ HTTPS (không phải file HTML đã lưu) trước khi cài lên màn hình.',
+  'auth.pwaDevInstallHint': 'Cài đặt PWA tắt trong chế độ dev thông thường. Dùng bản build production (npm run build + backend) hoặc chạy npm run dev:pwa, rồi dùng Chrome/Edge trên HTTPS hoặc localhost.',
+  'auth.pwaInsecureOriginHint': 'Mở MindGraph trong trình duyệt tại địa chỉ HTTPS (không phải file HTML đã lưu) trước khi cài lên màn hình.',
   'auth.backToLogin': 'Quay lại đăng nhập',
   'auth.captcha': 'Mã xác minh',
   'auth.captchaLength4': 'Vui lòng nhập captcha 4 ký tự',
@@ -163,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'Đã sao chép',
   'auth.apiTokenCopyFailed': 'Sao chép không thành công',
   'auth.apiTokenLoading': 'đang tải…',
-  'auth.apiTokenNone':
-    'Mã thông báo chưa được tạo. Tải xuống gói kỹ năng hoặc nhấp vào mã thông báo API để tạo một gói.',
+  'auth.apiTokenNone': 'Mã thông báo chưa được tạo. Tải xuống gói kỹ năng hoặc nhấp vào mã thông báo API để tạo một gói.',
   'auth.apiTokenOpaque': 'Mã thông báo hiện tại không thể lặp lại, vui lòng tạo lại nó.',
   'auth.apiTokenExpires': 'Có hiệu lực cho đến {date}',
   'auth.downloadChromeExtension': 'Tiện ích Chrome',
   'auth.downloadWordAddin': 'Phần bổ trợ từ',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'Tính năng này yêu cầu gói trường Standard hoặc Professional (không bao gồm Basic).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Gói đăng ký trường của bạn đã hết hạn. Tài khoản hiện ở gói dùng thử. Liên hệ quản trị viên nền tảng để gia hạn.',
-  'auth.diagramLimitReached':
-    'Trường dùng thử cho phép tối đa {max} sơ đồ đã lưu mỗi giáo viên. Hãy xóa một sơ đồ để lưu sơ đồ mới.',
+  'auth.schoolTierFeatureUnavailable': 'Tính năng này yêu cầu gói trường Standard hoặc Professional (không bao gồm Basic).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Gói đăng ký trường của bạn đã hết hạn. Tài khoản hiện ở gói dùng thử. Liên hệ quản trị viên nền tảng để gia hạn.',
+  'auth.diagramLimitReached': 'Trường dùng thử cho phép tối đa {max} sơ đồ đã lưu mỗi giáo viên. Hãy xóa một sơ đồ để lưu sơ đồ mới.',
   'auth.downloadOpenclawSkill': 'Kỹ năng OpenClaw',
-  'auth.downloadOpenclawSkillHint':
-    'Việc tải xuống bao gồm số tài khoản và mã thông báo hiện tại. Sau khi tạo lại mã thông báo, các gói kỹ năng và tiện ích mở rộng cũ sẽ không còn hiệu lực.',
+  'auth.downloadOpenclawSkillHint': 'Việc tải xuống bao gồm số tài khoản và mã thông báo hiện tại. Sau khi tạo lại mã thông báo, các gói kỹ năng và tiện ích mở rộng cũ sẽ không còn hiệu lực.',
   'auth.changePhoneButton': 'Đổi số điện thoại',
   'auth.passwordChangeSuccess': 'Đổi mật khẩu thành công',
   'auth.passwordChangeFailed': 'Đổi mật khẩu thất bại',
@@ -256,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -295,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -308,8 +272,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'Email giáo dục',
   'auth.modal.hybridRegisterEmailTabAny': 'Thư',
   'auth.modal.hybridRegisterPhoneTab': 'Điện thoại + mã mời',
-  'auth.modal.mainlandSalesNotice':
-    'Cần truy cập tại Trung Quốc đại lục? Dùng số di động và mã mời, hoặc liên hệ hỗ trợ khách hàng.',
+  'auth.modal.mainlandSalesNotice': 'Cần truy cập tại Trung Quốc đại lục? Dùng số di động và mã mời, hoặc liên hệ hỗ trợ khách hàng.',
   'auth.modal.registrationEmailLabel': 'Chỉ email giáo dục',
   'auth.modal.registrationEmailLabelAny': 'Địa chỉ email',
   'auth.modal.registrationEmailHint': '',
@@ -324,8 +287,7 @@ export default {
   'auth.modal.emailCodePlaceholder': 'Mã 6 chữ số từ email',
   'auth.modal.acknowledgeOverseas': 'Tôi hiểu và sẽ chỉ dùng phần mềm cho mục đích giáo dục.',
   'auth.modal.acknowledgeOverseasAny': 'Tôi hiểu và đồng ý với điều khoản đăng ký từ nước ngoài.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Tôi hiểu và đồng ý với điều khoản đăng ký từ nước ngoài, và tiếng Trung giản thể không khả dụng trên lộ trình này.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Tôi hiểu và đồng ý với điều khoản đăng ký từ nước ngoài, và tiếng Trung giản thể không khả dụng trên lộ trình này.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Vui lòng xác nhận thông báo ở trên.',
   'auth.loginPhoneOrEmail': 'Điện thoại hoặc email',
@@ -346,17 +308,13 @@ export default {
   'auth.username': 'Tên người dùng',
   'auth.waitCaptchaLoad': 'Vui lòng đợi captcha tải xong',
   'auth.quickRegPageTitle': 'Đăng ký nhanh',
-  'auth.quickRegPageHint':
-    'Mở trang này từ liên kết trường đã chia sẻ. Nhập số điện thoại và mã phòng 6 chữ số hiển thị trong cửa sổ đăng ký nhanh của người điều phối (làm mới khoảng mỗi 30 giây). Mã cho thấy bạn đang trong phiên; nó không xác minh quyền sở hữu số điện thoại như mã SMS.',
-  'auth.quickRegLinkInvalid':
-    'Liên kết đăng ký này không còn hoạt động (hết hạn hoặc đã đóng). Mở lại liên kết hiện tại từ người điều phối.',
-  'auth.quickRegProbeRateLimited':
-    'Kiểm tra từ trang này quá nhiều. Đợi một lát rồi làm mới, hoặc thử lại sau.',
+  'auth.quickRegPageHint': 'Mở trang này từ liên kết trường đã chia sẻ. Nhập số điện thoại và mã phòng 6 chữ số hiển thị trong cửa sổ đăng ký nhanh của người điều phối (làm mới khoảng mỗi 30 giây). Mã cho thấy bạn đang trong phiên; nó không xác minh quyền sở hữu số điện thoại như mã SMS.',
+  'auth.quickRegLinkInvalid': 'Liên kết đăng ký này không còn hoạt động (hết hạn hoặc đã đóng). Mở lại liên kết hiện tại từ người điều phối.',
+  'auth.quickRegProbeRateLimited': 'Kiểm tra từ trang này quá nhiều. Đợi một lát rồi làm mới, hoặc thử lại sau.',
   'auth.quickRegSessionSignups': 'Đã đăng ký trong phiên này: {n}',
   'auth.quickRegRoomCodeLabel': 'Mã phòng',
   'auth.quickRegRoomCodePlaceholder': '6 chữ số',
-  'auth.quickRegRoomCodeHint':
-    'Khớp với các chữ số lớn trong hộp thoại đăng ký nhanh của người điều phối; nhập mã trước khi nó đổi.',
+  'auth.quickRegRoomCodeHint': 'Khớp với các chữ số lớn trong hộp thoại đăng ký nhanh của người điều phối; nhập mã trước khi nó đổi.',
   'auth.quickRegRoomCodeEnter6': 'Nhập mã phòng 6 chữ số',
   'auth.quickRegMaxUses': 'Số đăng ký tối đa cho liên kết này',
   'auth.quickRegHeadcount': 'Tối đa',
@@ -366,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'Hoàn tất đăng ký',
   'auth.quickRegSubmitting': 'Đang đăng ký…',
   'auth.quickRegRegisterSuccess': 'Đăng ký thành công',
-  'auth.quickRegSessionUnsure':
-    'Đăng ký có thể đã thành công. Nếu chưa đăng nhập, quay lại dùng đăng nhập bằng mã xác minh, hoặc làm mới trang này.',
+  'auth.quickRegSessionUnsure': 'Đăng ký có thể đã thành công. Nếu chưa đăng nhập, quay lại dùng đăng nhập bằng mã xác minh, hoặc làm mới trang này.',
   'auth.quickRegBackToSignIn': 'Dùng đăng nhập / đăng ký thông thường',
   'auth.quickRegSelectOrg': 'Chọn trường',
   'auth.quickRegOrgLoadError': 'Không tải được danh sách trường. Vui lòng thử lại.',
   'auth.quickRegMintError': 'Không mở được kênh đăng ký. Vui lòng thử lại.',
   'auth.quickRegCloseConfirmTitle': 'Kết thúc đăng ký nhanh?',
-  'auth.quickRegCloseConfirm':
-    'Sau khi đóng cửa sổ, mã QR và mã phòng hiện tại sẽ ngay lập tức không hợp lệ và những sinh viên chưa tham gia sẽ không thể tiếp tục đăng ký.',
+  'auth.quickRegCloseConfirm': 'Sau khi đóng cửa sổ, mã QR và mã phòng hiện tại sẽ ngay lập tức không hợp lệ và những sinh viên chưa tham gia sẽ không thể tiếp tục đăng ký.',
   'auth.setPasswordWithSms': 'Đặt mật khẩu đăng nhập',
   'auth.setPasswordWithSmsTitle': 'Đặt mật khẩu qua SMS',
-  'auth.setPasswordWithSmsHint':
-    'Chúng tôi gửi mã tới số điện thoại đã liên kết. Sau khi đặt mật khẩu, bạn có thể đăng nhập bằng mật khẩu hoặc mã xác minh.',
+  'auth.setPasswordWithSmsHint': 'Chúng tôi gửi mã tới số điện thoại đã liên kết. Sau khi đặt mật khẩu, bạn có thể đăng nhập bằng mật khẩu hoặc mã xác minh.',
   'auth.setPasswordWithSmsSubmit': 'Lưu mật khẩu',
   'auth.setPasswordWithSmsSubmitting': 'Đang lưu…',
   'auth.accountAvatar': 'Avatar',
@@ -393,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Tên hiển thị',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'Ít nhất 2 ký tự, không có chữ số',
   'auth.accountNameSave': 'Lưu tên',
   'auth.accountNameSaveSuccess': 'Đã cập nhật tên',
@@ -406,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Không hủy liên kết được. Vui lòng thử lại.',
   'auth.dingtalkBindRebind': 'Liên kết lại',
   'auth.dingtalkBindTitle': 'Liên kết tài khoản DingTalk',
-  'auth.dingtalkBindInstructions':
-    'Gửi mã 6 chữ số bên dưới (ví dụ 123-456) dưới dạng tin nhắn tới DingTalk MindBot của trường bạn.',
+  'auth.dingtalkBindInstructions': 'Gửi mã 6 chữ số bên dưới (ví dụ 123-456) dưới dạng tin nhắn tới DingTalk MindBot của trường bạn.',
   'auth.dingtalkBindPairWaiting': 'Đang chờ MindBot nhận mã của bạn…',
   'auth.dingtalkBindCodeHint': 'Chỉ gửi mã này — không thêm văn bản khác.',
   'auth.dingtalkBindCountdown': 'Phiên hết hạn sau {s}s',
@@ -422,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Đã liên kết ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Đang liên kết: {staff}',
   'auth.dingtalkUnbindTitle': 'Hủy liên kết tài khoản DingTalk',
-  'auth.dingtalkUnbindInstructions':
-    'Gửi mã bên dưới từ tài khoản DingTalk đã liên kết tới MindBot để xác nhận hủy liên kết.',
+  'auth.dingtalkUnbindInstructions': 'Gửi mã bên dưới từ tài khoản DingTalk đã liên kết tới MindBot để xác nhận hủy liên kết.',
   'auth.dingtalkUnbindPairWaiting': 'Đang chờ tài khoản DingTalk đã liên kết xác nhận…',
   'auth.dingtalkUnbindCodeHint': 'Chỉ gửi mã này từ tài khoản DingTalk đã liên kết.',
   'auth.dingtalkUnbindExpiredHint': 'Phiên hủy liên kết đã hết hạn. Bắt đầu lại.',
@@ -436,25 +392,20 @@ export default {
   'auth.qrLoginInviteRequired': 'Nhập mã mời trường trước khi dùng đăng nhập QR',
   'auth.qrLoginProvidersFailed': 'Không tải được cài đặt đăng nhập QR. Vui lòng thử lại.',
   'auth.qrLoginProviderDisabled': 'Phương thức đăng nhập này chưa bật cho trường của bạn',
-  'auth.qrLoginNotLinked':
-    'Tài khoản chưa liên kết — đăng nhập bằng mật khẩu và liên kết trong mục Liên kết tài khoản trước',
+  'auth.qrLoginNotLinked': 'Tài khoản chưa liên kết — đăng nhập bằng mật khẩu và liên kết trong mục Liên kết tài khoản trước',
   'auth.qrLoginExchangeFailed': 'Đăng nhập QR thất bại. Vui lòng thử lại.',
   'auth.qrLoginInvalidState': 'Phiên QR đã hết hạn. Đóng và quét lại.',
-  'auth.qrLoginInvalidCode':
-    'Mã ủy quyền WeChat đã hết hạn hoặc đã được sử dụng. Vui lòng đóng mã QR và quét lại mã.',
+  'auth.qrLoginInvalidCode': 'Mã ủy quyền WeChat đã hết hạn hoặc đã được sử dụng. Vui lòng đóng mã QR và quét lại mã.',
   'auth.qrLoginRateLimited': 'Cuộc gọi đăng nhập WeChat quá thường xuyên, vui lòng thử lại sau.',
-  'auth.qrLoginMisconfigured':
-    'Cấu hình đăng nhập WeChat không chính xác, vui lòng liên hệ với quản trị viên.',
+  'auth.qrLoginMisconfigured': 'Cấu hình đăng nhập WeChat không chính xác, vui lòng liên hệ với quản trị viên.',
   'auth.qrLoginCorpMismatch': 'Tổ chức DingTalk không khớp cài đặt trường của bạn.',
   'auth.oauthExternalTaken': 'Tài khoản này đã liên kết với người dùng khác.',
-  'auth.oauthAlreadyBound':
-    'Tài khoản này đã được liên kết với WeChat. Nếu bạn cần liên kết WeChat khác, vui lòng hủy liên kết nó trước',
+  'auth.oauthAlreadyBound': 'Tài khoản này đã được liên kết với WeChat. Nếu bạn cần liên kết WeChat khác, vui lòng hủy liên kết nó trước',
   'auth.qrLoginDisabled': 'Đăng nhập QR không khả dụng.',
   'auth.qrLoginStartFailed': 'Không bắt đầu đăng nhập QR được. Vui lòng thử lại.',
   'auth.qrLoginSuccess': 'Đăng nhập thành công',
   'auth.accountBindingsSection': 'Liên kết tài khoản',
-  'auth.accountBindingsHint':
-    'MindBot lưu vào DingTalk; WeChat/DingTalk dùng để đăng nhập QR (liên kết tại đây trước)',
+  'auth.accountBindingsHint': 'MindBot lưu vào DingTalk; WeChat/DingTalk dùng để đăng nhập QR (liên kết tại đây trước)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',

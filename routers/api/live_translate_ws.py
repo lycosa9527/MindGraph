@@ -1,5 +1,5 @@
 """
-Authenticated WebSocket bridge from the canvas to DashScope Qwen3 LiveTranslate Flash Realtime.
+Authenticated WebSocket bridge from the canvas to DashScope Qwen3.8 LiveTranslate Flash Realtime.
 
 Bootstrap frame (first frame only):
   {"type": "start", "source_language": "zh", "target_language": "en", ...}
@@ -8,8 +8,13 @@ Then continuous audio:
   {"type": "input_audio_buffer.append", "event_id": "...", "audio": "<base64>"}
   (alias "append")
 
-No session.finish — the session stays open until the client closes the socket.
-All DashScope server events forwarded verbatim; key event for text-only mode: response.text.done.
+Optional while the session is open:
+  {"type": "set_target", "target_language": "fr"}
+  {"type": "stop"}
+
+stop asks DashScope for session.finish so the last utterance is translated.
+All DashScope server events forwarded verbatim. Text-only output arrives as
+response.text.delta fragments, then response.text.done or response.done.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -141,7 +146,6 @@ async def _canvas_translate_session(websocket: WebSocket, user: object) -> None:
     ):
         await run_translate_relay(
             websocket,
-            source_lang,
             target_lang,
             rate_limiter=rate_limiter,
         )

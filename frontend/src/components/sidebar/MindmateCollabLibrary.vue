@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Owner's saved MindMate seminars, listed above personal chat history.
+ * Saved MindMate seminars for everyone who joined, above personal chat history.
  */
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -26,6 +26,7 @@ interface SavedSeminarRow {
   session_id: string
   title: string
   pinned?: boolean
+  owned?: boolean
 }
 
 const emit = defineEmits<{
@@ -232,6 +233,7 @@ onUnmounted(() => {
         </span>
       </span>
       <ElDropdown
+        v-if="seminar.owned !== false"
         trigger="click"
         placement="bottom-end"
         popper-class="user-dropdown-popper"

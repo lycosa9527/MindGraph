@@ -39,6 +39,11 @@ def _content_filter_detail(message: str) -> dict[str, str]:
     return {"error_type": CONTENT_FILTER_ERROR_TYPE, "message": text}
 
 
+def is_user_llm_limit_error(exc: BaseException) -> bool:
+    """True for coin balance and daily token cap — expected user state, not a service fault."""
+    return isinstance(exc, (ThinkingCoinInsufficientError, UserDailyTokenCapExceededError))
+
+
 def is_llm_content_filter_detail(detail: object) -> bool:
     """True when an HTTPException body is a provider content-filter refusal."""
     if isinstance(detail, dict):

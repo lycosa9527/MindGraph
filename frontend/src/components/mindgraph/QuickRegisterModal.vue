@@ -4,7 +4,14 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
+import {
+  ElButton,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElOption,
+  ElSelect,
+} from 'element-plus'
 
 import { ChevronDown, Loader2, Share2 } from '@lucide/vue'
 
@@ -112,15 +119,6 @@ const countdownRingStrokeDash = computed(
 const roomKeyRingUrgent = computed(
   () => roomNextIn.value > 0 && roomNextIn.value <= ROOM_KEY_URGENT_THRESHOLD_SEC
 )
-
-/** Label for the compact school button when an admin has more than one org. */
-const selectedOrgLabel = computed(() => {
-  if (selectedOrgId.value == null) {
-    return t('auth.quickRegSelectOrg')
-  }
-  const org = adminOrgs.value.find((o) => o.id === selectedOrgId.value)
-  return org ? String(org.display_name || org.name) : t('auth.quickRegSelectOrg')
-})
 
 function stopRoomCodeUi() {
   if (roomCodePoll) {
@@ -298,18 +296,6 @@ async function onAdminOrgChange() {
   await mintToken()
 }
 
-async function onAdminOrgDropdownCommand(cmd: string | number) {
-  if (suppressOrgChange.value || tokenLoading.value) {
-    return
-  }
-  const id = typeof cmd === 'number' ? cmd : Number(cmd)
-  if (Number.isNaN(id) || id === selectedOrgId.value) {
-    return
-  }
-  selectedOrgId.value = id
-  await onAdminOrgChange()
-}
-
 async function onMaxUsesRemint() {
   if (suppressOrgChange.value || tokenLoading.value) {
     return
@@ -345,6 +331,16 @@ watch(
   }
 )
 
+watch(selectedOrgId, (id, prev) => {
+  if (suppressOrgChange.value || tokenLoading.value || orgsLoading.value) {
+    return
+  }
+  if (id == null || id === prev) {
+    return
+  }
+  void onAdminOrgChange()
+})
+
 watch(token, (v) => {
   if (v) {
     startRoomCodeUi()
@@ -376,39 +372,25 @@ onBeforeUnmount(() => {
     <div class="intl-share-site-body">
       <div class="quick-reg-toolbar quick-reg-numeric-typography w-full">
         <div class="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2.5">
-          <ElDropdown
+          <ElSelect
             v-if="isAdmin && adminOrgs.length > 1"
-            trigger="click"
+            v-model="selectedOrgId"
+            filterable
             teleported
+            class="quick-reg-org-select"
             popper-class="quick-reg-org-dropdown-popper"
             :popper-style="quickRegPopperStyle"
+            :placeholder="t('auth.quickRegSelectOrg')"
             :disabled="orgsLoading || tokenLoading"
-            @command="onAdminOrgDropdownCommand"
+            :loading="orgsLoading && !token"
           >
-            <ElButton
-              type="default"
-              size="default"
-              :loading="orgsLoading && !token"
-              class="quick-reg-field-btn !h-9 max-w-[min(16rem,70vw)] !min-w-0 shrink"
-            >
-              <span class="truncate text-left text-sm">{{ selectedOrgLabel }}</span>
-              <ChevronDown
-                class="ml-1.5 h-3.5 w-3.5 shrink-0 text-slate-400"
-                aria-hidden="true"
-              />
-            </ElButton>
-            <template #dropdown>
-              <ElDropdownMenu>
-                <ElDropdownItem
-                  v-for="o in adminOrgs"
-                  :key="o.id"
-                  :command="o.id"
-                >
-                  {{ o.display_name || o.name }}
-                </ElDropdownItem>
-              </ElDropdownMenu>
-            </template>
-          </ElDropdown>
+            <ElOption
+              v-for="o in adminOrgs"
+              :key="o.id"
+              :label="o.display_name || o.name"
+              :value="o.id"
+            />
+          </ElSelect>
 
           <div class="flex min-w-0 items-center gap-2">
             <span class="shrink-0 text-sm font-medium text-slate-600"
@@ -572,10 +554,34 @@ onBeforeUnmount(() => {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.quick-reg-numeric-typography :deep(.el-button) {
+.quick-reg-numeric-typography :deep(.el-button),
+.quick-reg-numeric-typography :deep(.el-select__wrapper),
+.quick-reg-numeric-typography :deep(.el-select__input) {
   font-family: inherit;
   font-feature-settings: inherit;
   font-variant-numeric: inherit;
+}
+
+.quick-reg-org-select {
+  width: min(16rem, 70vw);
+  max-width: min(16rem, 70vw);
+  flex: 0 1 auto;
+}
+
+.quick-reg-org-select :deep(.el-select__wrapper) {
+  min-height: 2.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 0 0 1px rgb(226 232 240) inset;
+}
+
+.quick-reg-org-select :deep(.el-select__wrapper:hover),
+.quick-reg-org-select :deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px rgb(203 213 225) inset;
+}
+
+.quick-reg-org-select :deep(.el-select__selected-item) {
+  min-width: 0;
 }
 
 .quick-reg-toolbar {
@@ -796,11 +802,22 @@ onBeforeUnmount(() => {
 </style>
 
 <style>
-/* Org list is teleported to body — keep long lists scrollable. */
-.quick-reg-org-dropdown-popper .el-dropdown-menu {
+/* Org list is teleported to body — keep long names readable and the list scrollable. */
+.el-select__popper.quick-reg-org-dropdown-popper.el-popper {
+  min-width: min(20rem, calc(100vw - 24px)) !important;
+  max-width: min(28rem, calc(100vw - 24px)) !important;
+}
+
+.quick-reg-org-dropdown-popper .el-select-dropdown__wrap {
   max-height: min(50vh, 280px);
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+}
+
+.quick-reg-org-dropdown-popper .el-select-dropdown__item {
+  height: auto;
+  min-height: 34px;
+  line-height: 1.35;
+  white-space: normal;
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 </style>

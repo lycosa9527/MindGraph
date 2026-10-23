@@ -128,7 +128,7 @@ function close(): void {
   >
     <template #header>
       <div class="mm-share-sheet__head">
-        <h2>{{ t('mindmate.shareSheet.title') }}</h2>
+        <h2><I18nText k="mindmate.shareSheet.title" /></h2>
         <button
           type="button"
           class="mm-share-sheet__x"
@@ -149,7 +149,7 @@ function close(): void {
         class="mm-share-card"
       >
         <header class="mm-share-card__banner">
-          <h3 class="mm-share-card__heading">{{ t('mindmate.shareSheet.heading') }}</h3>
+          <h3 class="mm-share-card__heading"><I18nText k="mindmate.shareSheet.heading" /></h3>
           <p
             v-if="title"
             class="mm-share-card__sub"
@@ -159,16 +159,26 @@ function close(): void {
         </header>
         <dl class="mm-share-card__meta">
           <div>
-            <dt>{{ t('mindmate.shareSheet.exportedAt') }}</dt>
+            <dt><I18nText k="mindmate.shareSheet.exportedAt" /></dt>
             <dd>{{ exportedAt }}</dd>
           </div>
           <div>
-            <dt>{{ t('mindmate.shareSheet.members') }}</dt>
-            <dd>{{ t('mindmate.shareSheet.memberCount', { n: memberCount }) }}</dd>
+            <dt><I18nText k="mindmate.shareSheet.members" /></dt>
+            <dd>
+              <I18nText
+                k="mindmate.shareSheet.memberCount"
+                :params="{ n: memberCount }"
+              />
+            </dd>
           </div>
           <div>
-            <dt>{{ t('mindmate.shareSheet.messages') }}</dt>
-            <dd>{{ t('mindmate.shareSheet.messageCount', { n: lines.length }) }}</dd>
+            <dt><I18nText k="mindmate.shareSheet.messages" /></dt>
+            <dd>
+              <I18nText
+                k="mindmate.shareSheet.messageCount"
+                :params="{ n: lines.length }"
+              />
+            </dd>
           </div>
         </dl>
         <ul class="mm-share-card__list">
@@ -202,7 +212,7 @@ function close(): void {
                   fill="currentColor"
                   aria-hidden="true"
                 />
-                {{ t('mindmate.shareSheet.highlighted') }}
+                <I18nText k="mindmate.shareSheet.highlighted" />
               </p>
             </div>
           </li>
@@ -214,11 +224,11 @@ function close(): void {
               :src="qrSrc"
               alt=""
             />
-            <span v-else>{{ t('mindmate.shareSheet.qrLabel') }}</span>
+            <span v-else><I18nText k="mindmate.shareSheet.qrLabel" /></span>
           </div>
           <div class="mm-share-card__qr-copy">
-            <p class="mm-share-card__qr-title">{{ t('mindmate.shareSheet.qrHint') }}</p>
-            <p class="mm-share-card__qr-brand">{{ t('mindmate.shareSheet.platform') }}</p>
+            <p class="mm-share-card__qr-title"><I18nText k="mindmate.shareSheet.qrHint" /></p>
+            <p class="mm-share-card__qr-brand"><I18nText k="mindmate.shareSheet.platform" /></p>
           </div>
         </footer>
       </article>
@@ -231,7 +241,7 @@ function close(): void {
           class="mm-share-sheet__cancel"
           @click="close"
         >
-          {{ t('mindmate.shareSheet.cancel') }}
+          <I18nText k="mindmate.shareSheet.cancel" />
         </button>
         <button
           type="button"
@@ -243,7 +253,7 @@ function close(): void {
             :size="15"
             aria-hidden="true"
           />
-          {{ t('mindmate.shareSheet.download') }}
+          <I18nText k="mindmate.shareSheet.download" />
         </button>
       </div>
     </template>

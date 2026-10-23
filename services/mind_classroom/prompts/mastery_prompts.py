@@ -20,6 +20,8 @@ from services.mind_classroom.prompts.tour_scope_prompts import (
     tour_scope_brief,
     tour_scope_label,
 )
+from utils.chinese_language_policy import canonical_generation_language
+from utils.prompt_locale import output_language_instruction
 
 MASTERY_IDS = frozenset({"first_look", "review", "teach"})
 
@@ -173,6 +175,8 @@ def build_axis_contract_block(
                 "mastery_brief 管听者立场；tone_brief 管怎么说（句数、问句、提纲或叙事）。"
             )
             lines.append("冲突时：节点叫法听 diagram_brief，口吻听 tone，用词听 audience，立场听 mastery。")
+        if canonical_generation_language(language) == "zh-hant":
+            lines.append(output_language_instruction("zh-hant").strip())
         return "\n".join(lines).rstrip()
     lines = ["# This session (follow every block)", ""]
     sections = [

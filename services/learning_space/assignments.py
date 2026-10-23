@@ -11,6 +11,7 @@ import asyncio
 import logging
 from datetime import UTC, datetime
 from typing import Any
+from uuid import uuid4
 
 from fastapi import HTTPException, status
 from sqlalchemy import delete, func, or_, select
@@ -52,10 +53,13 @@ from services.learning_space.thumbnail_storage import (
     collect_thumbnail_keys,
     display_thumbnail,
     present_reference_diagrams,
-    promote_snapshot_thumbnail_sync,
+    stored_submit_thumbnail,
     submission_thumbnail_src,
-    submit_thumbnail_source,
     template_thumbnail_ref_ready,
+)
+from services.learning_space.thumbnail_submit import (
+    SubmitThumbnailJob,
+    schedule_submit_thumbnail,
 )
 from services.learning_space.students import count_class_students
 from services.diagram.spec_coerce import coerce_diagram_spec
@@ -114,6 +118,7 @@ def _clear_submission_review(submission: LearningSubmission) -> None:
     submission.review_liked = False
     submission.review_pinned = False
     submission.reviewed_at = None
+    submission.reviewed_by = None
 
 
 def assert_can_edit_submission(
@@ -602,21 +607,29 @@ async def submit_assignment(
             detail="Diagram service unavailable",
         ) from exc
     snapshot: dict[str, Any] | None = None
+    pending_thumb: SubmitThumbnailJob | None = None
     previous_snap = submission.snapshot_spec if isinstance(submission.snapshot_spec, dict) else None
     previous_keys = collect_thumbnail_keys(None, [previous_snap] if previous_snap else [])
     if diagram:
         previous_thumb = previous_snap.get("thumbnail") if previous_snap else None
+        kept = stored_submit_thumbnail(diagram.get("thumbnail"), previous_thumb)
         snapshot = {
             "title": diagram.get("title"),
             "diagram_type": diagram.get("diagram_type"),
             "spec": diagram.get("spec"),
             "language": diagram.get("language", "zh"),
-            "thumbnail": submit_thumbnail_source(diagram.get("thumbnail"), previous_thumb),
+            "thumb_token": uuid4().hex,
         }
-        await asyncio.to_thread(
-            promote_snapshot_thumbnail_sync,
-            snapshot,
+        if kept:
+            snapshot["thumbnail"] = kept
+        pending_thumb = SubmitThumbnailJob(
+            submission_id=int(submission.id),
             owner_id=int(student.id),
+            token=str(snapshot["thumb_token"]),
+            spec=snapshot.get("spec"),
+            diagram_type=snapshot.get("diagram_type"),
+            fallback_thumb=diagram.get("thumbnail"),
+            previous_ref=kept,
         )
     else:
         logger.warning(
@@ -654,6 +667,8 @@ async def submit_assignment(
     stale_keys = [key for key in previous_keys if key not in fresh_keys]
     if stale_keys:
         await asyncio.to_thread(delete_stored_images_sync, stale_keys)
+    if pending_thumb is not None:
+        schedule_submit_thumbnail(pending_thumb)
     logger.info(
         "[LearningSpace] Submitted assignment=%s class=%s student=%s submission=%s",
         assignment.id,
@@ -943,7 +958,10 @@ def submission_public_dict(
         "review_liked": bool(getattr(submission, "review_liked", False)),
         "review_pinned": bool(getattr(submission, "review_pinned", False)),
         "reviewed_at": (submission.reviewed_at.isoformat() if isinstance(submission.reviewed_at, datetime) else None),
+        "reviewed_by": int(submission.reviewed_by) if submission.reviewed_by is not None else None,
     }
+    if submission.reviewed_by is None:
+        payload["reviewer_name"] = None
     scores = getattr(submission, "review_scores", None)
     if isinstance(scores, dict):
         payload["review_scores"] = {str(k): int(v) if isinstance(v, (int, float)) else 0 for k, v in scores.items()}
@@ -966,16 +984,40 @@ def submission_public_dict(
     return payload
 
 
+async def author_names_for_user_ids(user_ids: set[int]) -> dict[int, str]:
+    """Map user id → account name.
+
+    ``users`` is school-scoped, so a review assistant in another school cannot
+    read ``User.name`` and the work wall would show ``#id``. Callers pass ids
+    taken from rows they can already read. The query selects id and name only.
+    """
+    if not user_ids:
+        return {}
+    async with system_rls_session() as sys_db:
+        result = await sys_db.execute(select(User.id, User.name).where(User.id.in_(tuple(user_ids))))
+        names: dict[int, str] = {}
+        for uid, name in result.all():
+            cleaned = (name or "").strip()
+            if cleaned:
+                names[int(uid)] = cleaned
+        return names
+
+
 async def enrich_submission_dict(
     db: AsyncSession,
     submission: LearningSubmission,
     *,
     include_preview: bool = False,
     assignment_title: str | None = None,
+    author_names: dict[int, str] | None = None,
 ) -> dict[str, Any]:
     """Submission payload with student name, org label, thumbnail, optional preview spec."""
-    student = await db.get(User, int(submission.student_user_id))
-    student_name = (student.name or "").strip() if student is not None else ""
+    student_user_id = int(submission.student_user_id)
+    student = await db.get(User, student_user_id)
+    visible_name = (student.name or "").strip() if student is not None else ""
+    if author_names is None:
+        author_names = await author_names_for_user_ids({student_user_id}) if not visible_name else {}
+    student_name = author_names.get(student_user_id, "") or visible_name
     organization_name = ""
     org_id = _resolve_submission_org_id(student, submission)
     if org_id is not None:
@@ -997,7 +1039,7 @@ async def enrich_submission_dict(
             diagram_thumbnail = shown
     return submission_public_dict(
         submission,
-        student_name=student_name or f"#{submission.student_user_id}",
+        student_name=student_name or f"#{student_user_id}",
         organization_name=organization_name or None,
         diagram_thumbnail=diagram_thumbnail,
         include_preview=include_preview,
@@ -1105,8 +1147,9 @@ async def save_submission_review(
     comment: str,
     liked: bool,
     pinned: bool,
+    reviewer_user_id: int,
 ) -> LearningSubmission:
-    """Persist teacher review on a submission."""
+    """Persist staff review on a submission, including who graded it."""
     cleaned_scores: dict[str, int] = {}
     for key, value in scores.items():
         label = str(key).strip()
@@ -1122,6 +1165,7 @@ async def save_submission_review(
     submission.review_liked = bool(liked)
     submission.review_pinned = bool(pinned)
     submission.reviewed_at = datetime.now(UTC)
+    submission.reviewed_by = int(reviewer_user_id)
     try:
         await db.commit()
         await db.refresh(submission)
@@ -1138,10 +1182,11 @@ async def save_submission_review(
             detail="Failed to save review",
         ) from exc
     logger.info(
-        "[LearningSpace] Reviewed submission=%s assignment=%s student=%s liked=%s pinned=%s",
+        "[LearningSpace] Reviewed submission=%s assignment=%s student=%s reviewer=%s liked=%s pinned=%s",
         submission.id,
         submission.assignment_id,
         submission.student_user_id,
+        reviewer_user_id,
         liked,
         pinned,
     )

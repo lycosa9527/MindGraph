@@ -108,7 +108,7 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                     "services/kitty/ack/ack_emit.py",
                     "services/kitty/audio/session_bridge.py",
                 ],
-                "role": "Final reply text → CosyVoice → audio_chunk (not DebateVerse qwen3-tts).",
+                "role": "Final reply text → CosyVoice → audio_chunk.",
                 "hub_calls": [],
             },
             {

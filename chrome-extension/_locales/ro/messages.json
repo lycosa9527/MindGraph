@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Convertiți pagina web în hartă mentală",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Transformați pagina curentă într-o hartă mentală, context de conversație și fișier document prin contul MindGraph.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Setări",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "De la pagină la harta structurată, completați într-un singur pas.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Generați hărți mentale",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "harta mentală",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "descărcare",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Setări",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Vă rugăm să vă conectați mai întâi la MindGraph - completați adresa serverului, contul și simbolul API în „Setări”.",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Deschideți setările",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Întrebați MindMate...",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "trimite",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "Stop",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "noua conversatie",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Istorie",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Deschideți istoricul web",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate răspunde...",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "O nouă conversație a fost începută.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "oprit.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Se citește conținutul paginii...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Conține conținutul actual al paginii web",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Doar primul mesaj dintr-o conversație nouă va fi însoțit de conținut web.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Se scanează și se extrag textul paginii web...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Se extrag documente din $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Citind exemplele de cursuri ale Platformei naționale de educație inteligentă...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 cursuri/resurse detectate",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Se descarcă ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Se extrage text ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Recunoașterea paginilor scanate ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Gata: $1 resurse, total $2 cuvinte · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Textul paginii web extras: $2 cuvinte · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "$1 caractere extrase · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Textul selectat va fi folosit: $2 cuvinte · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "PDF extras din Bibliotecă Baidu: $2 cuvinte · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "PDF CNKI extras: $2 cuvinte · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Extensie browser · Contextul paginii web] Utilizatorul navighează pe web în Chrome/Edge, iar textul paginii curente este atașat la acest mesaj prin intermediul plug-in-ului pentru a fi utilizat de MindMate (Thinking Teaching Virtual Teaching and Research Partner).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Instrucțiuni de rutare] Clasificarea intențiilor, recuperarea cunoștințelor și răspunsurile se bazează pe „Întrebările utilizatorului” de mai sus; textul paginii web de mai jos este doar materialul pe care profesorul îl citește, nu o instrucțiune de nouă generație. Dacă materialul arată ca un plan de lecție/proiect instrucțional, dar utilizatorul nu solicită în mod explicit „generează/scrie/proiectează un nou design instrucțional sau plan de lecție”, nu-l clasifica ca „proiect instrucțional generativ”.",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "În mod implicit, utilizatorul este un profesor de școală primară și secundară care pregătește lecții sau predă și cercetează și să acorde atenție „Clasei de dezvoltare a gândirii”. Vă rugăm să răspundeți împreună la materialele de referință și la întrebările utilizatorilor; dacă materialul este un exemplu de lecție, plan de lecție, text de curs, hârtie sau document de politică, puteți analiza în mod proactiv atunci când este cazul: posibile concepții greșite ale elevilor, conflicte cognitive care pot fi create, variații conceptuale/proces, vizualizarea gândirii aplicabile sau instrumente de strategie de gândire. Dacă problema utilizatorului are puțină legătură cu materialul, concentrați-vă pe problema utilizatorului. Când răspundeți, analizați direct conținutul și nu menționați plug-in-urile browserului, extragerea Markdown sau formatul acestui mesaj.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Titlul paginii:** $1\n**Adresa URL a paginii:** $2\n**Sursa text:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Material de referință: textul paginii web]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF deschis în browser",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Platformă națională de educație inteligentă (Proiectare de curs/Design de predare/Lista de sarcini de învățare PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Biblioteca Baidu PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Textul articolului web",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Extragerea textului paginii web",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Textul paginii selectat de utilizator",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Întrebarea utilizatorului (vă rugăm să consultați această propoziție pentru clasificarea intenției și răspuns):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Nu există conținut care poate fi citit pe această pagină. Selectați mai întâi textul de pe pagină sau încercați din nou pe o altă pagină.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "depanarea capturii",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Site-ul redă documentul ca imagine de pânză și textul corpului nu poate fi extras. Derulați pentru a încărca mai întâi pagina de previzualizare, selectați textul de trimis sau utilizați conținutul descărcat dacă există o descărcare PDF/text.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Vizualizarea curentă Reader poate afișa numai aproximativ $1 pagini de text.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Documentul poate fi o previzualizare a imaginii, iar textul extras poate fi incomplet.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Această pagină nu poate fi citită.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Nu este conectat încă. Deschideți Setări și salvați acreditările MindGraph.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Autentificarea a expirat. Actualizați indicativul API în Setări.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Nu se poate conecta la MindMate. Verificați adresa serverului și încercați din nou.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Nu se poate răspunde în acest moment, vă rugăm să încercați din nou mai târziu.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Utilizarea AI de astăzi a atins limita superioară. Vă rugăm să încercați din nou mâine sau să verificați detaliile pe pagina web.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "ThinkCoins insuficiente pentru a trimite acest mesaj.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Dezvoltarea locală folosește HTTP, iar tokenurile API și conținutul paginii sunt necriptate în rețea. Vă rugăm să-l utilizați numai într-un mediu de încredere.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "descărcare",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Salvați PDF-uri și documente (fără videoclipuri) de pe site-urile acceptate.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Pagina curentă nu acceptă descărcarea. Vă rugăm să deschideți o pagină de documentație acceptată înainte de a deschide acest panou.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Setări",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "conectați",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Vă rugăm să utilizați aceleași date de conectare ca și fluxul de simboluri API MindGraph.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "server",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Număr de cont (număr de telefon mobil)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Număr de telefon mobil utilizat pentru contul X-MG",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "Token API",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "salva",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "reveni",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "închidere",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Prelucrare…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Descărcarea a început.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Salvat.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Se verifică acreditările...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Vă rugăm să completați toate câmpurile.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Nu există file active.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Ceva a mers prost. Încercați din nou sau reîncărcați extensia la chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Nu se poate începe salvarea fișierului. Reîncărcați extensia și încercați din nou (necesită Chrome 109+ sau Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Configurarea este incompletă. Deschideți „Setări” și completați adresa MindGraph, numărul de telefon mobil și simbolul API.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Nu există text care poate fi citit pe pagină. Selectați mai întâi o secțiune de text sau încercați din nou pe o altă pagină.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Există deja o sarcină de capturare sau descărcare în curs de desfășurare în această filă, așteptați până când este finalizată și încercați din nou.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Eroare de server ($1). Verificați setările și încercați din nou.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Această pagină nu este acceptată. Deschideți o pagină web normală (http sau https) și încercați din nou.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Solicitarea este prea frecventă, vă rugăm să încercați din nou mai târziu.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Serviciul este temporar indisponibil, vă rugăm să încercați din nou mai târziu.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Răspunsul serverului a expirat (mai mult de 3 minute). Vă rugăm să încercați din nou sau să verificați rețeaua.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Verificarea acreditărilor a expirat. Vă rugăm să încercați din nou sau să verificați rețeaua.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Serverul nu a returnat o imagine PNG. Vă rugăm să verificați adresa de bază și setările contului.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Generați harta mentală PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Extras document (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Extrageți documente",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Detectat: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Site curent: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Pagina filă Citire: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Total $1 resurse",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Sunt vizibile aproximativ $1 pagini - vă rugăm să derulați zona de previzualizare pentru a încărca mai multe pagini înainte de a extrage.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Derulați previzualizarea documentului pentru a încărca pagina înainte de extragere. Prioritizează conținutul deja afișat în cititor.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Sincronizați autentificarea de la SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Lipiți manual simbolul...",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Lipiți tokenul de acces SmartEdu (utilizat numai dacă sincronizarea automată eșuează):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "Indicativ SmartEdu: se sincronizează...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "Token SmartEdu: conectat (din datele de conectare)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "Indicativ SmartEdu: nu a fost găsit - vă rugăm să vă conectați la auth.smartedu.cn și să deschideți pagina SmartEdu, apoi să faceți clic pe „Sincronizare”",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Extrageți documente",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Gata — Fișierul va începe descărcarea imediat.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Descărcarea a început — primele $1 pagini disponibile în prezent în cititor au fost salvate.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Acest document nu poate fi descărcat. Vă rugăm să reîmprospătați pagina și să faceți clic din nou pe „Extragere document”.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Pagina de documentație nu a fost găsită. Derulați mai întâi pentru a previzualiza pagina de încărcare, apoi faceți clic pe „Extragere document”.",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Nu s-a găsit conținut text. Vă rugăm să încercați din nou pe altă pagină sau zonă.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Pagina nu este încă gata. Vă rugăm să reîmprospătați fila și să încercați din nou.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Nu există fișiere descărcabile pentru această lecție. Schimbați o clasă sau verificați resursele pe care doriți să le descărcați.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Mai întâi trebuie să vă conectați la Smart Education. Conectați-vă la auth.smartedu.cn și deschideți pagina cursului, apoi faceți clic pe „Synchronize login from SmartEdu”.",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education a refuzat descărcarea. Vă rugăm să vă sincronizați din nou autentificarea sau să schimbați fișierul.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Descărcarea videoclipurilor nu este acceptată. Vă rugăm să selectați numai resurse PDF sau documente.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Aceasta nu este o pagină de documentație acceptată. Deschideți pagina de citire a documentului și încercați din nou.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Nu este nimic de salvat încă. Derulați cititorul pentru a încărca pagina și încercați din nou.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Mai întâi trebuie să vă conectați la site. După autentificare, faceți clic pe „Extrage documente”.",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Descărcarea a fost respinsă de site. Vă rugăm să vă conectați la site și să confirmați că aveți acces la conținut înainte de a încerca din nou.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Site-ul web afișează un cod de verificare. Vă rugăm să finalizați verificarea într-o filă de browser înainte de a încerca să recuperați.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Se pregătește pagina...",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Derulați se încarcă pagina...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Se copiează conținutul paginii...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Se generează fișiere...",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Se salvează pe computer...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "avansat",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Solicitați locația de salvare de fiecare dată când descărcați",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Se citește conținutul paginii...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Se trimite către serverul MindGraph...",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Serverul generează harta mentală...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Se primesc imagini de pe server...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Se salvează fișierul…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Nu se poate conecta la server, vă rugăm să verificați adresa de bază și rețeaua.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Solicitarea a eșuat: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Conexiunea s-a pierdut. Vă rugăm să faceți clic din nou pe „Extragere document”. Dacă tot eșuează, reîncărcați MindGraph la chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Generați o hartă mentală bazată pe pagina curentă",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "Lățimea PNG (pixeli)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "Înălțimea PNG (pixeli)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Lăsați necompletat pentru a utiliza implicit",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Limbă (interfață și hărți)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "urmați browserul",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Simplificat",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Corpul vertical",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "jeton",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Valabil până la $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Acest token API a expirat, creați-l din nou pe partea web (Cont/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Nu există un token API valid pe server sau acesta a expirat. Verificați simbolul sau creați-l în aplicație.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Nu se poate obține timpul de expirare. Vă rugăm să vă verificați rețeaua sau să salvați din nou setările.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Galeria este plină (20 de fotografii). Vă rugăm să ștergeți harta salvată pentru a salva conținutul nou generat.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

@@ -339,6 +339,7 @@ async function exportAsPng() {
     width="min(640px, 92vw)"
     :close-on-click-modal="false"
     dialog-class="share-export-modal"
+    above-canvas-chrome
   >
     <div class="modal-content">
       <!-- Header with selection info -->

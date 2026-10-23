@@ -2,8 +2,8 @@
  * Bubble Map Loader
  *
  * Layout: fixed canvas center (DEFAULT_CENTER_X/Y); topic at center with text-adaptive radius;
- * attribute bubbles on a ring. Single-line, no truncation; circles grow to fit text.
- * Uses mindmap branch color palette for each attribute (like double bubble map).
+ * attribute bubbles on a ring. Long labels use the mind-map branch wrap (browser metrics,
+ * script-aware column, balanced lines) and the circle grows to that block.
  */
 import {
   DEFAULT_CENTER_X,
@@ -13,7 +13,7 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { bubbleMapChildrenRadius, polarToPosition } from '@/composables/diagrams/useRadialLayout'
 import { mirrorString, mirrorStringList, readSecondaryMirror } from '@/diagramBilingual/mirror'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
   BUBBLE_MAP_UID_DATA_KEY,
   BUBBLE_TOPIC_NODE_ID,
@@ -23,6 +23,12 @@ import {
   takeBubbleMapStableId,
 } from '@/utils/bubbleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
+import {
+  MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
+  MIND_MAP_TEXT_LINE_HEIGHT,
+  measureThinkingMapLabelBlockPx,
+} from '@/utils/mindMapTextWrap'
 import {
   CIRCLE_MAP_OVAL_WIDTH_RATIO,
   type NodeShape,
@@ -30,6 +36,7 @@ import {
 } from '@/utils/nodeShapeStyle'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
+import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
 import {
   CONTEXT_FONT_SIZE,
   TOPIC_FONT_SIZE,
@@ -40,26 +47,85 @@ import {
   measureRenderedDiagramLabelHeight,
   measureRenderedDiagramLabelWidth,
 } from './textMeasurement'
+import { estimateTextWidthFallbackPx } from './textMeasurementFallback'
 import type { SpecLoaderResult } from './types'
 
-function defaultContextBubbleRadiusFromText(text: string, secondary?: string): number {
+/** Matches CircleNode `px-2` / `py-1` on attribute labels. */
+const ATTRIBUTE_LABEL_PAD_X = 16
+const ATTRIBUTE_LABEL_PAD_Y = 8
+const ATTRIBUTE_RADIUS_PADDING = 10
+
+function attributeMeasureOpts(
+  measureBold: boolean,
+  fontFamily: string | undefined
+): { fontWeight: 'bold' | 'normal'; fontFamily: string | undefined } {
+  return {
+    fontWeight: measureBold ? 'bold' : 'normal',
+    fontFamily,
+  }
+}
+
+function attributeBubbleRadius(
+  text: string,
+  fontSize: number,
+  measureBold: boolean,
+  fontFamily: string | undefined,
+  secondary?: string
+): number {
   const trimmed = (text || '').trim() || ' '
-  return growRadiusForSecondary(
-    Math.max(
-      DEFAULT_CONTEXT_RADIUS,
-      calculateBubbleMapRadius(
+  const measureOpts = attributeMeasureOpts(measureBold, fontFamily)
+  const block = measureThinkingMapLabelBlockPx(
+    trimmed,
+    fontSize,
+    MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
+    measureOpts
+  )
+  const staysOneLine = !trimmed.includes('\n') && block.lineCount <= 1
+  let radius: number
+  if (staysOneLine) {
+    if (typeof document !== 'undefined' && diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {
+      const width = measureRenderedDiagramLabelWidth(trimmed, fontSize, measureOpts)
+      const height = measureRenderedDiagramLabelHeight(trimmed, fontSize, 1_000_000, measureOpts)
+      const usedWidth =
+        width || estimateTextWidthFallbackPx(trimmed, fontSize, { isTopic: measureBold })
+      const usedHeight = height || fontSize * MIND_MAP_TEXT_LINE_HEIGHT
+      radius = Math.ceil(
+        Math.sqrt(usedWidth * usedWidth + usedHeight * usedHeight) / 2 + ATTRIBUTE_RADIUS_PADDING
+      )
+    } else {
+      radius = calculateBubbleMapRadius(
         trimmed,
-        CONTEXT_FONT_SIZE,
-        10,
+        fontSize,
+        ATTRIBUTE_RADIUS_PADDING,
         DEFAULT_CONTEXT_RADIUS,
         false,
-        false,
-        DIAGRAM_NODE_FONT_STACK
+        measureBold,
+        fontFamily
       )
-    ),
-    secondary,
-    CONTEXT_FONT_SIZE
-  )
+    }
+  } else {
+    const lineWidth = block.width
+    let boxHeight = block.height
+    if (typeof document !== 'undefined' && diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {
+      const renderedHeight = measureRenderedDiagramLabelHeight(
+        trimmed,
+        fontSize,
+        lineWidth,
+        measureOpts
+      )
+      if (renderedHeight > boxHeight) boxHeight = renderedHeight
+    }
+    const boxWidth = lineWidth + ATTRIBUTE_LABEL_PAD_X
+    boxHeight += ATTRIBUTE_LABEL_PAD_Y
+    radius = Math.ceil(
+      Math.sqrt(boxWidth * boxWidth + boxHeight * boxHeight) / 2 + ATTRIBUTE_RADIUS_PADDING
+    )
+  }
+  return growRadiusForSecondary(Math.max(DEFAULT_CONTEXT_RADIUS, radius), secondary, fontSize)
+}
+
+function defaultContextBubbleRadiusFromText(text: string, secondary?: string): number {
+  return attributeBubbleRadius(text, CONTEXT_FONT_SIZE, false, DIAGRAM_NODE_FONT_STACK, secondary)
 }
 
 /**
@@ -94,39 +160,19 @@ function bubbleOutlinePackR(
   return visualR
 }
 
-function bubbleContextRadiusFromNode(node: DiagramNode): number {
-  const trimmed = (node.text ?? '').trim() || ' '
+function bubbleContextRadiusFromNode(
+  node: DiagramNode,
+  adornments: MindMapAdornmentsByPath
+): number {
   const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : CONTEXT_FONT_SIZE
   const measureBold = node.style?.fontWeight === 'bold'
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
-  const labelOpts = {
-    fontWeight: (measureBold ? 'bold' : 'normal') as 'bold' | 'normal',
+  return attributeBubbleRadius(
+    textWithIconAdornment(learningSheetLayoutText(node), adornments[node.id]),
+    fs,
+    measureBold,
     fontFamily,
-  }
-
-  if (typeof document !== 'undefined' && diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {
-    const w = measureRenderedDiagramLabelWidth(trimmed, fs, labelOpts)
-    const h = measureRenderedDiagramLabelHeight(trimmed, fs, 1_000_000, labelOpts)
-    const diagonal = Math.sqrt(w * w + h * h)
-    const radius = Math.ceil(diagonal / 2 + 10)
-    return growRadiusForSecondary(Math.max(DEFAULT_CONTEXT_RADIUS, radius), node.textSecondary, fs)
-  }
-
-  return growRadiusForSecondary(
-    Math.max(
-      DEFAULT_CONTEXT_RADIUS,
-      calculateBubbleMapRadius(
-        trimmed,
-        fs,
-        10,
-        DEFAULT_CONTEXT_RADIUS,
-        false,
-        measureBold,
-        fontFamily
-      )
-    ),
-    node.textSecondary,
-    fs
+    learningSheetLayoutSecondary(node)
   )
 }
 
@@ -136,7 +182,8 @@ function bubbleContextRadiusFromNode(node: DiagramNode): number {
  */
 export function recalculateBubbleMapLayout(
   nodes: DiagramNode[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {},
+  adornments: MindMapAdornmentsByPath = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) return []
 
@@ -145,22 +192,36 @@ export function recalculateBubbleMapLayout(
     .filter((n) => isBubbleMapAttributeNode(n))
     .sort((a, b) => readBubbleGroupIndex(a) - readBubbleGroupIndex(b))
   const nodeCount = bubbleNodes.length
-  const topicText = topicNode?.text ?? ''
-  const topicSecondary = topicNode?.textSecondary
+  const topicText = topicNode ? learningSheetLayoutText(topicNode) : ''
+  const topicSecondary = topicNode ? learningSheetLayoutSecondary(topicNode) : undefined
   const topicStyle = topicNode?.style
-  const topicR = Math.max(
-    DEFAULT_TOPIC_RADIUS,
-    computeTopicRadiusForCircleMap(topicText || ' ', {
+  const textTopicR = computeTopicRadiusForCircleMap(
+    textWithIconAdornment(topicText || ' ', topicNode ? adornments[topicNode.id] : undefined),
+    {
       fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
       fontWeight: topicStyle?.fontWeight,
       fontFamily: topicStyle?.fontFamily,
       secondary: topicSecondary,
-    })
+    }
   )
+  const topicMeasured = topicNode ? nodeDimensions[topicNode.id] : undefined
+  let domTopicR = 0
+  if (
+    topicMeasured &&
+    topicMeasured.width > 0 &&
+    topicMeasured.height > 0 &&
+    topicStyle?.nodeShape !== 'underline'
+  ) {
+    domTopicR =
+      topicStyle?.nodeShape === 'oval'
+        ? topicMeasured.height / 2
+        : Math.max(topicMeasured.width, topicMeasured.height) / 2
+  }
+  const topicR = Math.max(DEFAULT_TOPIC_RADIUS, textTopicR, domTopicR)
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
 
-  const radii = bubbleNodes.map((n) => bubbleContextRadiusFromNode(n))
+  const radii = bubbleNodes.map((n) => bubbleContextRadiusFromNode(n, adornments))
   const uniformRadius =
     bubbleNodes.length > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
@@ -244,7 +305,7 @@ export function recalculateBubbleMapLayout(
     )
     const pos = { x: Math.round(x), y: Math.round(y) }
     const color = thinkingMapStampedBranchColor(index)
-    const { size: _bubbleSize, ...bubbleRest } = node.style ?? {}
+    const { size: _bubbleSize, noWrap: _bubbleNoWrap, ...bubbleRest } = node.style ?? {}
     result.push({
       ...node,
       position: pos,
@@ -256,7 +317,6 @@ export function recalculateBubbleMapLayout(
         ? {
             ...bubbleRest,
             fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
-            noWrap: true,
             backgroundColor: node.style?.backgroundColor || color.fill,
             borderColor: node.style?.borderColor || color.border,
           }
@@ -264,7 +324,6 @@ export function recalculateBubbleMapLayout(
             ...bubbleRest,
             size: uniformRadius * 2,
             fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
-            noWrap: true,
             backgroundColor: node.style?.backgroundColor || color.fill,
             borderColor: node.style?.borderColor || color.border,
           },
@@ -346,7 +405,6 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
         style: {
           size: uniformDiameter,
           fontSize: CONTEXT_FONT_SIZE,
-          noWrap: true,
           backgroundColor: color.fill,
           borderColor: color.border,
         },

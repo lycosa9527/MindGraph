@@ -31,8 +31,7 @@ export default {
   'canvas.exportOptions.layoutLandscape': 'Horizontal',
   'canvas.exportOptions.layoutPortrait': 'Vertical',
   'canvas.worksheetText.cancel': 'Cancel',
-  'canvas.worksheetText.defaultInstruction':
-    'Fill in the blanks with the matching content to complete the diagram structure.',
+  'canvas.worksheetText.defaultInstruction': 'Fill in the blanks with the matching content to complete the diagram structure.',
   'canvas.worksheetText.dragDiagramHint': 'Drag to move · drag corners to resize',
   'canvas.worksheetText.fieldClass': 'Class:',
   'canvas.worksheetText.fieldDate': 'Date:',
@@ -40,17 +39,14 @@ export default {
   'canvas.worksheetText.hide': 'Hide',
   'canvas.worksheetText.instructionLabel': 'Instructions',
   'canvas.worksheetText.instructionPrefix': 'Task:',
-  'canvas.worksheetText.modalHint':
-    'Export PDF for printing. Export document for editable name/class fields; the diagram stays an image.',
-  'canvas.worksheetText.headerCaptureFailed':
-    'Could not render the worksheet header; exported PDF without it.',
-  'canvas.worksheetText.modalTitle': 'Export as DOC/PDF',
+  'canvas.worksheetText.modalHint': 'Export PDF for printing. Export document for editable name/class fields; the diagram stays an image.',
+  'canvas.worksheetText.headerCaptureFailed': 'Could not render the worksheet header; exported PDF without it.',
+  'canvas.worksheetText.modalTitle': 'Export as document',
   'canvas.worksheetText.learningSheetMode': 'Learning sheet mode',
   'canvas.worksheetText.learningSheetModeOn': 'On',
   'canvas.worksheetText.learningSheetModeOff': 'Off',
   'canvas.worksheetText.learningSheetPanelTitle': 'Learning sheet header',
-  'canvas.worksheetText.learningSheetPanelHint':
-    'These options apply only in learning sheet mode and print above the diagram.',
+  'canvas.worksheetText.learningSheetPanelHint': 'These options apply only in learning sheet mode and print above the diagram.',
   'canvas.worksheetText.exportSettings': 'Export options',
   'canvas.worksheetText.previewDiagram': 'Diagram',
   'canvas.worksheetText.previewEmpty': 'Turn on fields to preview the learning sheet header.',
@@ -69,52 +65,32 @@ export default {
   'canvas.worksheetText.showName': 'Name',
   'canvas.worksheetText.showTopic': 'Topic title',
   'canvas.worksheetText.topicPreviewLabel': 'Diagram topic',
-  'canvas.import.invalidFile':
-    'Invalid diagram file. Please select an MG file exported from MindGraph or a CmapTools .cmap file.',
+  'canvas.import.invalidFile': 'Invalid diagram file. Please select an MG file exported from MindGraph or a CmapTools .cmap file.',
   'canvas.import.parseError': 'Failed to parse diagram file, please try again',
-  'canvas.import.cmapHeuristicSemantics':
-    'This CmapTools file used text-order fallback for links—verify relationships against your original map.',
-  'canvas.import.cmapConnectionFallback':
-    'Relationships were reconstructed from IHMC graphical connections rather than proposition objects.',
-  'canvas.import.cmapEmptyLayout':
-    'Imported map has no recovered node coordinates; layout was regenerated.',
-  'canvas.import.cmapLayoutLabelCollision':
-    'Duplicate concept labels overlap in layout anchors; some imported positions may be wrong.',
-  'canvas.import.cmapLayoutFailed':
-    'Layout extraction hit a parse error—positions were regenerated.',
-  'canvas.reset.confirmBody':
-    'Are you sure? All current content will be lost, including the diagram and node palette. This cannot be undone.',
+  'canvas.import.cmapHeuristicSemantics': 'This CmapTools file used text-order fallback for links—verify relationships against your original map.',
+  'canvas.import.cmapConnectionFallback': 'Relationships were reconstructed from IHMC graphical connections rather than proposition objects.',
+  'canvas.import.cmapEmptyLayout': 'Imported map has no recovered node coordinates; layout was regenerated.',
+  'canvas.import.cmapLayoutLabelCollision': 'Duplicate concept labels overlap in layout anchors; some imported positions may be wrong.',
+  'canvas.import.cmapLayoutFailed': 'Layout extraction hit a parse error—positions were regenerated.',
+  'canvas.reset.confirmBody': 'Are you sure? All current content will be lost, including the diagram and AI brainstorm. This cannot be undone.',
   'canvas.reset.confirmButton': 'Reset',
   'canvas.reset.confirmTitle': 'Reset to Default',
   'canvas.reset.warnSelectType': 'Cannot reset: select a diagram type first',
   'canvas.shortcutGuide.title': 'Shortcut guide',
   'canvas.shortcutGuide.shortLabel': 'Shortcuts',
   'canvas.shortcutGuide.collapse': 'Collapse shortcut guide',
-  'canvas.voiceCommandGuide.title': 'Voice command guide',
-  'canvas.voiceCommandGuide.collapse': 'Collapse voice command guide',
-  'canvas.voiceCommandGuide.example.add_node': '“Add a China branch”',
-  'canvas.voiceCommandGuide.example.auto_complete_branch': '“Auto-complete the China branch”',
-  'canvas.voiceCommandGuide.example.auto_complete': '“Auto-complete the whole map”',
-  'canvas.voiceCommandGuide.example.select_node': '“Select China”',
-  'canvas.voiceCommandGuide.example.update_center': '“Change the topic to vocational education”',
-  'canvas.voiceCommandGuide.example.delete_node': '“Delete the China branch”',
-  'canvas.voiceCommandGuide.example.explain_node': '“Explain China”',
-  'canvas.voiceCommandGuide.example.start_inline_recommendations': '“Suggest ideas for this node”',
   'canvas.shortcutGuide.addChild': 'Add child',
   'canvas.shortcutGuide.addChildDesc': 'Quickly add a child to the selected node.',
   'canvas.shortcutGuide.addSibling': 'Add sibling',
   'canvas.shortcutGuide.addSiblingDesc': 'Quickly insert a sibling next to the selected node.',
   'canvas.shortcutGuide.editText': 'Edit text',
-  'canvas.shortcutGuide.editTextDesc':
-    'Open inline editing in place; Enter or blur saves and recalculates size instantly.',
+  'canvas.shortcutGuide.editTextDesc': 'Open inline editing in place; Enter or blur saves and recalculates size instantly.',
   'canvas.shortcutGuide.doubleClick': 'Double-click to edit',
   'canvas.shortcutGuide.deleteNode': 'Delete node',
-  'canvas.shortcutGuide.deleteNodeDesc':
-    'Remove the selected node and its branches (root node is protected).',
+  'canvas.shortcutGuide.deleteNodeDesc': 'Remove the selected node and its branches (root node is protected).',
   'canvas.shortcutGuide.arrowNav': 'Arrow keys',
   'canvas.shortcutGuide.selectNav': 'Navigate',
-  'canvas.shortcutGuide.arrowNavDesc':
-    'Euclidean navigation: arrow keys jump to the nearest node by physical 2D position on the canvas, for seamless desktop-like movement in any layout.',
+  'canvas.shortcutGuide.arrowNavDesc': 'Euclidean navigation: arrow keys jump to the nearest node by physical 2D position on the canvas, for seamless desktop-like movement in any layout.',
   'canvas.shortcutGuide.cancel': 'Clear selection / edit',
   'canvas.shortcutGuide.cancelDesc': 'Cancel selection or editing.',
   'canvas.shortcutGuide.undo': 'Undo',
@@ -124,8 +100,8 @@ export default {
   'canvas.shortcutGuide.learningSheetAnswers': 'Show/hide learning sheet answers',
   'canvas.shortcutGuide.recalcLayout': 'Recalculate layout',
   'canvas.shortcutGuide.multiSelect': 'Multi-select',
-  'canvas.shortcutGuide.multiSelectDesc': 'Drag a box in pointer mode to select multiple nodes.',
-  'canvas.shortcutGuide.multiSelectHint': 'Drag to box select',
+  'canvas.shortcutGuide.multiSelectDesc': 'Hold Ctrl and drag a box to select multiple nodes.',
+  'canvas.shortcutGuide.multiSelectHint': 'Ctrl + drag',
   'canvas.shortcutGuide.canvasPan': 'Pan canvas',
   'canvas.shortcutGuide.canvasPanDesc': 'Move the canvas view.',
   'canvas.shortcutGuide.canvasPanHint': 'Hold mouse wheel',
@@ -134,8 +110,16 @@ export default {
   'canvas.gestureGuide.collapse': 'Collapse gesture guide',
   'canvas.gestureGuide.tap': 'Select',
   'canvas.gestureGuide.tapHint': 'One-finger tap',
-  'canvas.gestureGuide.dragNode': 'Move node',
-  'canvas.gestureGuide.dragNodeHint': 'One-finger drag',
+  'canvas.gestureGuide.dragDrop': 'Drag and drop',
+  'canvas.gestureGuide.dragDropHintLaptop': 'Drag the node. Blue dashed outline.',
+  'canvas.gestureGuide.dragDropHintTouch': 'Long-press, then drag. Blue dashed outline.',
+  'canvas.gestureGuide.panHintMobile': 'One-finger drag',
+  'canvas.gestureGuide.panHintMouse': 'Hold the mouse wheel',
+  'canvas.gestureGuide.pinchHintMouse': 'Mouse wheel',
+  'canvas.gestureGuide.slashDeleteBoardHint': 'Slash left or right',
+  'canvas.gestureGuide.slashDeleteMouseHint': 'Drag left or right',
+  'canvas.gestureGuide.slashSiblingBoardHint': 'Slash up or down',
+  'canvas.gestureGuide.slashSiblingMouseHint': 'Drag up or down',
   'canvas.gestureGuide.pinch': 'Zoom canvas',
   'canvas.gestureGuide.pinchHint': 'Two-finger pinch',
   'canvas.gestureGuide.pan': 'Pan canvas',
@@ -155,11 +139,7 @@ export default {
   'canvas.gestureGuide.tools': 'Open tools',
   'canvas.gestureGuide.toolsHint': 'Four-finger tap',
   'canvas.gestureGuide.slashDelete': 'Delete node',
-  'canvas.gestureGuide.slashDeleteHint': 'Finger or left-drag down',
   'canvas.gestureGuide.slashSibling': 'Add sibling',
-  'canvas.gestureGuide.slashSiblingHint': 'Slash left or right through it',
-  'canvas.gestureGuide.slashChild': 'Add child',
-  'canvas.gestureGuide.slashChildHint': 'Slash up through it',
   'canvas.toolbar.addAnalogyPair': 'Add Analogy Pair',
   'canvas.toolbar.addAnalogyPairHistory': 'Add Analogy Pair',
   'canvas.toolbar.addAttributeHistory': 'Add Attribute',
@@ -235,8 +215,7 @@ export default {
   'canvas.toolbar.professionalContent.tooltip': 'Choose AI content audience difficulty',
   'canvas.toolbar.professionalContent.panelTitle': 'Desired AI content expertise level',
   'canvas.toolbar.professionalContent.guideTitle': 'Choose an audience level',
-  'canvas.toolbar.professionalContent.guideBody':
-    'Pick a school stage or audience here. AI generate and chat edits will match that difficulty. After you choose, this control shrinks to a level tag.',
+  'canvas.toolbar.professionalContent.guideBody': 'Pick a school stage or audience here. AI generate and chat edits will match that difficulty. After you choose, this control shrinks to a level tag.',
   'canvas.toolbar.professionalContent.guideAction': 'Choose',
   'canvas.toolbar.professionalContent.guideDismiss': 'Got it',
   'canvas.toolbar.professionalContent.level.general.title': 'General',
@@ -253,14 +232,10 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': 'Practical',
   'canvas.toolbar.professionalContent.level.expert.title': 'Expert',
   'canvas.toolbar.professionalContent.level.expert.description': 'Deep & concise',
-  'canvas.toolbar.professionalContent.notify.preference':
-    'Later AI generation will better match the “{level}” audience',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
-    'Later AI generation will use the General style with no extra difficulty constraint',
-  'canvas.toolbar.professionalContent.notify.afterGenerated':
-    'Current content is at “{current}” level; later help will follow “{next}”',
-  'canvas.toolbar.professionalContent.audienceLine':
-    'Audience: {level} (from bottom “Audience level”)',
+  'canvas.toolbar.professionalContent.notify.preference': 'Later AI generation will better match the “{level}” audience',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral': 'Later AI generation will use the General style with no extra difficulty constraint',
+  'canvas.toolbar.professionalContent.notify.afterGenerated': 'Current content is at “{current}” level; later help will follow “{next}”',
+  'canvas.toolbar.professionalContent.audienceLine': 'Audience: {level} (from bottom “Audience level”)',
   'canvas.toolbar.educationStage': 'Audience',
   'canvas.toolbar.educationStageTooltip': 'Choose audience level for AI generation',
   'canvas.toolbar.educationStageClear': 'General',
@@ -293,10 +268,8 @@ export default {
   'canvas.toolbar.cannotGenerate': 'Cannot generate',
   'canvas.toolbar.causeAdded': 'Cause node added',
   'canvas.toolbar.childAdded': 'Child added',
-  'canvas.toolbar.collabAiBlocked':
-    'Only the diagram owner can use AI generation during collaboration',
-  'canvas.toolbar.collabGuestFeatureBlocked':
-    'This feature is not available while you join as a collaboration guest.',
+  'canvas.toolbar.collabAiBlocked': 'Only the diagram owner can use AI generation during collaboration',
+  'canvas.toolbar.collabGuestFeatureBlocked': 'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': 'Color',
   'canvas.toolbar.conceptGeneration': 'Concept Generation',
   'canvas.toolbar.conceptMapModesDev': 'Concept map modes are in development',
@@ -317,13 +290,11 @@ export default {
   'canvas.toolbar.exit': 'Exit',
   'canvas.toolbar.exitFullscreen': 'Exit Fullscreen',
   'canvas.toolbar.highlighter': 'Highlighter',
-  'canvas.toolbar.highlighterTooltip':
-    'Draw on the canvas like a highlighter; cleared when you exit presentation',
+  'canvas.toolbar.highlighterTooltip': 'Draw on the canvas like a highlighter; cleared when you exit presentation',
   'canvas.toolbar.highlighterChooseColor': 'Highlighter color',
   'canvas.toolbar.highlighterPaletteAria': 'Choose highlighter color',
   'canvas.toolbar.insertEquation': 'Insert equation',
-  'canvas.toolbar.insertEquationTooltip':
-    'Insert inline math ($...$) at the caret, or append to the selected node if not editing',
+  'canvas.toolbar.insertEquationTooltip': 'Insert inline math ($...$) at the caret, or append to the selected node if not editing',
   'canvas.toolbar.insertEquationSelectNode': 'Select a node first',
   'canvas.toolbar.insertEquationDialogTitle': 'Insert equation',
   'canvas.toolbar.insertEquationLoading': 'Loading math editor…',
@@ -357,7 +328,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'Midpoint',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
+  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=½bh',
@@ -378,7 +349,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'Law of sines',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'cos(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'sin(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
+  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'Double angle',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'Arithmetic aₙ',
@@ -462,8 +433,7 @@ export default {
   'canvas.classroomRemote.topicsReset': 'Restore defaults',
   'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
   'canvas.presentation.learningSheetConfirmTitle': 'Start presentation?',
-  'canvas.presentation.learningSheetConfirmBody':
-    'You are still editing the learning sheet. Starting presentation will end blank editing; existing blanks will be kept. Continue?',
+  'canvas.presentation.learningSheetConfirmBody': 'You are still editing the learning sheet. Starting presentation will end blank editing; existing blanks will be kept. Continue?',
   'canvas.presentation.learningSheetConfirmProceed': 'Start presentation',
   'canvas.presentationContextMenu.laserPointer': 'Laser pointer',
   'canvas.presentationContextMenu.spotlight': 'Spotlight',
@@ -485,6 +455,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'Text color',
   'canvas.floatingToolbar.typography': 'Typography',
   'canvas.floatingToolbar.explain': 'Node explanation',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'Confirm the node text first',
   'canvas.floatingToolbar.fontDefault': 'Default',
   'canvas.floatingToolbar.fontSimSun': 'SimSun',
   'canvas.floatingToolbar.fontKaiTi': 'KaiTi',
@@ -520,13 +491,12 @@ export default {
   'canvas.subgraphPreview.enterNodeTextFirst': 'Enter valid topic text for this node first',
   'canvas.subgraphPreview.topicNodeNotSupported': 'Select a branch node to generate a sub-graph',
   'canvas.subgraphPreview.historyLabel': 'AI subgraph',
-  'canvas.inlineRecPicker.prevPage': 'Previous page',
-  'canvas.inlineRecPicker.nextPage': 'Next page',
-  'canvas.toolbar.formatBrushActivated':
-    'Style copied — click a node to apply once. Double-click Format Painter to apply continuously (Esc or click empty canvas to cancel)',
+  'canvas.toolbar.formatBrushActivated': 'Style copied — click a node to apply once. Double-click Format Painter to apply continuously (Esc or click empty canvas to cancel)',
   'canvas.toolbar.formatBrushApplied': 'Format applied to {count} node(s)',
+  'canvas.toolbar.formatBrushApplyFailed': 'Could not apply format to the selected node(s)',
   'canvas.toolbar.formatBrushCancelled': 'Format painter cancelled',
   'canvas.toolbar.formatBrushSelectSource': 'Please select a source node first',
+  'canvas.toolbar.formatBrushStyleEmpty': 'Could not read style from the selected node',
   'canvas.toolbar.formatLabel': 'Format',
   'canvas.toolbar.formatPainter': 'Format Painter (double-click to keep applying)',
   'canvas.toolbar.layoutDirectionToggled': 'Layout direction toggled',
@@ -536,14 +506,11 @@ export default {
   'canvas.toolbar.moreAppLearningSheet': 'Learning sheet',
   'canvas.toolbar.moreAppLearningSheetDesc': 'Random blanks for study and review',
   'canvas.toolbar.moreAppWaterfall': 'AI Brainstorm',
-  'canvas.toolbar.moreAppWaterfallDesc':
-    'Select across batch nodes; make divergent and convergent thinking visible',
-  'canvas.toolbar.moreApps': 'More Apps',
+  'canvas.toolbar.moreAppWaterfallDesc': 'Select across batch nodes; make divergent and convergent thinking visible',
   'canvas.toolbar.moreAppSnapshot': 'Snapshot',
   'canvas.toolbar.moreAppSnapshotDesc': 'Save a version of this diagram (max 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'Translate',
-  'canvas.toolbar.moreAppTranslateLabelDesc':
-    'Translate all node and connection labels to your current interface language using AI',
+  'canvas.toolbar.moreAppTranslateLabelDesc': 'Translate all node and connection labels to your current interface language using AI',
   'canvas.toolbar.translateLabelTitle': 'Translate diagram',
   'canvas.toolbar.translateLabelSource': 'Labels to translate ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'Target language',
@@ -555,31 +522,23 @@ export default {
   'canvas.toolbar.translateLabelAndMore': '{n} more not shown…',
   'canvas.toolbar.translateLabelInProgress': 'Translating diagram…',
   'canvas.toolbar.translateLabelBannerTitle': 'Translating diagram',
-  'canvas.toolbar.translateLabelFallbackEnInfo':
-    'Your interface language is not available as a translation target yet. Labels will be translated to English.',
+  'canvas.toolbar.translateLabelFallbackEnInfo': 'Your interface language is not available as a translation target yet. Labels will be translated to English.',
   'canvas.toolbar.translateLabelFailed': 'Translation failed. Please try again.',
   'canvas.toolbar.translateLabelDone': 'Diagram translated',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Virtual Keyboard',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc':
-    'English on-screen keyboard. Use System IME for Chinese and other input methods.',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'English on-screen keyboard. Use System IME for Chinese and other input methods.',
   'canvas.toolbar.virtualKeyboardClose': 'Close keyboard',
-  'canvas.toolbar.virtualKeyboardFocusHint':
-    'Select a node and type to replace its text, or double-click a label to edit',
+  'canvas.toolbar.virtualKeyboardFocusHint': 'Select a node and type to replace its text, or double-click a label to edit',
   'canvas.toolbar.virtualKeyboardIme': 'System IME',
-  'canvas.toolbar.virtualKeyboardImeHint':
-    'Type with your physical or system keyboard. Candidate suggestions come from your IME.',
+  'canvas.toolbar.virtualKeyboardImeHint': 'Type with your physical or system keyboard. Candidate suggestions come from your IME.',
   'canvas.toolbar.snapshotSaveFirst': 'Please save the diagram first before taking a snapshot',
   'canvas.toolbar.snapshotTaken': 'Snapshot {n} saved',
   'canvas.toolbar.snapshotFailed': 'Failed to save snapshot, please try again',
-  'canvas.toolbar.snapshotTooLarge':
-    'Snapshot is too large (max {max} KB). Reduce diagram content and try again.',
+  'canvas.toolbar.snapshotTooLarge': 'Snapshot is too large (max {max} KB). Reduce diagram content and try again.',
   'canvas.toolbar.snapshotRateLimited': 'Too many snapshot actions. Wait a moment and try again.',
-  'canvas.toolbar.snapshotDiagramNotFound':
-    'Diagram not found. Reload the page or open it from your library.',
-  'canvas.library.diagramNotFound':
-    'Diagram not found. It may have been deleted. Open another diagram from your library.',
-  'canvas.library.saveBeforeSwitchFailed':
-    'Could not save the current diagram before switching. Stay here and try again.',
+  'canvas.toolbar.snapshotDiagramNotFound': 'Diagram not found. Reload the page or open it from your library.',
+  'canvas.library.diagramNotFound': 'Diagram not found. It may have been deleted. Open another diagram from your library.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Could not save snapshot (conflict). Please try again.',
   'canvas.toolbar.newAssociation': 'New association',
   'canvas.toolbar.newAttribute': 'New Attribute',
@@ -606,23 +565,17 @@ export default {
   'canvas.toolbar.delete': 'Delete',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'Please select a branch or child node',
-  'canvas.toolbar.selectCategoryOrLeafDelete':
-    'Please select category or leaf nodes (topic node cannot be deleted)',
-  'canvas.toolbar.selectCauseOrEffectForAdd':
-    'Select a cause or effect node (not the event), then press Enter to add another in that column',
-  'canvas.toolbar.selectTreeBranchForChild':
-    'Select a category or an item under a category to add a child, or select the topic to add a category',
+  'canvas.toolbar.selectCategoryOrLeafDelete': 'Please select category or leaf nodes (topic node cannot be deleted)',
+  'canvas.toolbar.selectCauseOrEffectForAdd': 'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild': 'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': 'Select a node first, then try again',
   'canvas.toolbar.nodeStyleFollow': 'Follow node',
-  'canvas.toolbar.nodeStyleFollowHint':
-    'On: the node style bar follows the selected node. Off: hide it.',
+  'canvas.toolbar.nodeStyleFollowHint': 'On: the node style bar follows the selected node. Off: hide it.',
   'canvas.toolbar.selectNodesToDelete': 'Please select node(s) to delete',
   'canvas.toolbar.selectPartForSubpart': 'Please select a part to add subpart to',
   'canvas.toolbar.selectPartThenEnter': 'Select a part node, then press Enter to add subpart',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
-    'Please select similarity or difference nodes (topic nodes cannot be deleted)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
-    'Please select a similarity or difference node first',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'Please select similarity or difference nodes (topic nodes cannot be deleted)',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'Please select a similarity or difference node first',
   'canvas.toolbar.selectStepForSubstep': 'Please select a step to add substep to',
   'canvas.toolbar.similarityWithIndex': 'Similarity {n}',
   'canvas.toolbar.stepAdded': 'Step added',
@@ -652,7 +605,7 @@ export default {
   'canvas.toolbar.wireframe': 'Wireframe',
   'canvas.topBar.autoSaveTitleSave': 'Click to save',
   'canvas.topBar.autoSaveTitleSlotFull': 'Click to manage gallery space',
-  'canvas.topBar.addWorksheetText': 'Export as DOC/PDF',
+  'canvas.topBar.addWorksheetText': 'Export as document',
   'canvas.topBar.back': 'Back',
   'canvas.topBar.collab': 'Collaborate',
   'canvas.topBar.collabTooltip': 'Collaborative drawing (school or shared code)',
@@ -663,13 +616,12 @@ export default {
   'canvas.topBar.exportPdf': 'Export as PDF',
   'canvas.topBar.exportPdfLandscape': 'Export as PDF (landscape)',
   'canvas.topBar.exportPdfPortrait': 'Export as PDF (portrait)',
-  'canvas.topBar.exportPng': 'Export as PNG',
-  'canvas.topBar.exportSvg': 'Export as SVG',
+  'canvas.topBar.exportPng': 'Export as image',
+  'canvas.topBar.exportSvg': 'Export as vector graphic',
   'canvas.topBar.reset': 'Reset',
   'canvas.topBar.resetTemplate': 'Reset to default template',
   'canvas.topBar.resetCanvas': 'Reset canvas',
   'canvas.topBar.schoolCollab': 'School collaboration',
-  'canvas.topBar.shareCommunity': 'Share to Community',
   'canvas.topBar.zhihuiUnavailable': 'ZhiHui diagram-to-image is unavailable',
   'canvas.topBar.zhihuiNeedMindmap': 'Diagram-to-image only supports mind maps',
   'canvas.topBar.zhihuiSaveFailed': 'Could not save the mind map for ZhiHui',
@@ -693,16 +645,13 @@ export default {
   'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': 'Restore snapshot {n}',
   'canvas.topBar.snapshotRecallTitle': 'Restore Snapshot',
-  'canvas.topBar.snapshotRecallConfirm':
-    'Restore snapshot {n}? Your current changes will be replaced.',
+  'canvas.topBar.snapshotRecallConfirm': 'Restore snapshot {n}? Your current changes will be replaced.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'Restore',
   'canvas.topBar.snapshotRecallCancelBtn': 'Cancel',
   'canvas.topBar.snapshotRecallHistory': 'Before snapshot {n} restore',
   'canvas.topBar.snapshotRecallFailed': 'Failed to restore snapshot, please try again',
-  'canvas.topBar.snapshotRecallNoDiagram':
-    'Save the diagram to your library first, then restore a snapshot.',
-  'canvas.topBar.snapshotRecallNoType':
-    'Diagram type is not ready yet. Wait a moment and try again.',
+  'canvas.topBar.snapshotRecallNoDiagram': 'Save the diagram to your library first, then restore a snapshot.',
+  'canvas.topBar.snapshotRecallNoType': 'Diagram type is not ready yet. Wait a moment and try again.',
   'canvas.topBar.snapshotDeleted': 'Snapshot {n} deleted',
   'canvas.topBar.snapshotDeleteFailed': 'Failed to delete snapshot, please try again',
   'canvas.topBar.snapshotBadgeTooltip': 'Click to restore snapshot {n} · Ctrl+Click to delete',
@@ -755,8 +704,7 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'Branch',
   'canvas.mindMapSlideOverlay.region': 'Slide show controls',
   'canvas.mindMapSlideOverlay.progress': 'Slide progress — click to jump',
-  'canvas.mindMapSlideOverlay.shortcuts':
-    'Click canvas or Space/→ next · ← previous · Home/End first/last · Esc exit slides',
+  'canvas.mindMapSlideOverlay.shortcuts': 'Click canvas or Space/→ next · ← previous · Home/End first/last · Esc exit slides',
   'canvas.mindMapSlideOverlay.exit': 'Exit slides',
   'canvas.mindMapSlideOverlay.collapse': 'Collapse controls',
   'canvas.mindMapSlideOverlay.expand': 'Expand controls',
@@ -766,30 +714,23 @@ export default {
   'canvas.zoomControls.collabCrossOrg': 'Collaborate with shared code',
   'canvas.zoomControls.collabTurnOff': 'Turn off online collaboration',
   'canvasPage.collaborationFooter': 'Collaboration',
-  'canvasPage.collaborationFooterOwner': "{username}'s collaboration",
-  'canvasPage.collaborationFooterOwnerDiagram':
-    "{username}'s diagram «{diagramTitle}» — collaboration",
+  'canvasPage.collaborationFooterOwner': '{username}\'s collaboration',
+  'canvasPage.collaborationFooterOwnerDiagram': '{username}\'s diagram «{diagramTitle}» — collaboration',
   'canvasPage.collaborationFooterNetworkDiagramTitle': 'Collaborative diagram «{diagramTitle}»',
-  'canvasPage.collaborationFooterSchool':
-    'School collaboration in progress — join from school list.',
-  'canvasPage.collaborationFooterSchoolDiagram':
-    'School collaboration on «{diagramTitle}» — join from the school session list.',
-  'canvasPage.collabRoomIdleEnding':
-    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collaborationFooterSchool': 'School collaboration in progress — join from school list.',
+  'canvasPage.collaborationFooterSchoolDiagram': 'School collaboration on «{diagramTitle}» — join from the school session list.',
+  'canvasPage.collabRoomIdleEnding': 'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'conceptMap.focus.noResult': 'No result',
   'conceptMap.focus.validationRequestFailed': 'Validation request failed',
   'diagram.aiGenerating': 'AI...',
-  'diagram.alternativeDimensions.braceTitle':
-    'Other possible decomposition dimensions for this topic:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
-    'Other possible analogy patterns for this topic:',
-  'diagram.alternativeDimensions.treeMapTitle':
-    'Other possible classification dimensions for this topic:',
+  'diagram.alternativeDimensions.braceTitle': 'Other possible decomposition dimensions for this topic:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'Other possible analogy patterns for this topic:',
+  'diagram.alternativeDimensions.treeMapTitle': 'Other possible classification dimensions for this topic:',
   'diagram.bridgeMap.alternativesEmpty': '[Alternatives will appear here]',
   'diagram.conceptMap.focusQuestionPrefix': 'Focus question: ',
   'diagram.conceptMap.focusQuestionSuffix': 'Enter',
   'diagram.conceptMap.rootConcept': 'Root concept',
-  'diagram.conceptMap.topicRootRelationship': "'s root concept",
+  'diagram.conceptMap.topicRootRelationship': '\'s root concept',
   'diagram.contextMenu.addAttribute': 'Add attribute',
   'diagram.contextMenu.addBranch': 'Add branch',
   'diagram.contextMenu.addCause': 'Add cause',
@@ -809,8 +750,7 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'Add node feature coming soon',
   'diagram.contextMenu.paste': 'Paste',
   'diagram.contextMenu.warningCreateDiagramFirst': 'Please create a diagram first',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff':
-    'Please select a similarity or difference node first',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'Please select a similarity or difference node first',
   'diagram.defaultNewConcept': 'New concept',
   'diagram.dimension.classificationAz': 'Classification by',
   'diagram.dimension.classificationEn': 'Classification by',
@@ -835,44 +775,31 @@ export default {
   'canvas.mindMapSideToolbar.collapse': 'Collapse toolbar',
   'canvas.mindMapSideToolbar.outline': 'Outline',
   'canvas.mindMapSideToolbar.waterfall': 'AI Brainstorm',
-  'canvas.mindMapWaterfall.panelHint':
-    'Select nodes for AI branch ideas, then drag them onto the canvas',
-  'canvas.mindMapWaterfall.emptyHint':
-    'No suggestions yet. Select nodes on the canvas or tap Refresh.',
-  'canvas.mindMapWaterfall.dragHint':
-    'Click to multi-select, then drag onto a map node to insert. Drop on empty canvas to add a top-level branch.',
+  'canvas.mindMapWaterfall.panelHint': 'Select nodes for AI branch ideas, then drag them onto the canvas',
+  'canvas.mindMapWaterfall.emptyHint': 'No suggestions yet. Select nodes on the canvas or tap Refresh.',
+  'canvas.mindMapWaterfall.dragHint': 'Click to multi-select, then drag onto a map node to insert. Drop on empty canvas to add a top-level branch.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'Add nodes from AI brainstorm',
-  'canvas.mindMapOneSentence.intro':
-    'Enter a topic, or specify branch count, categories, steps, or other structure',
-  'canvas.mindMapOneSentence.requirementsPlaceholder':
-    'e.g. 3-day Beijing trip with four branches: clothing, food, lodging, transport',
+  'canvas.mindMapOneSentence.intro': 'Enter a topic, or specify branch count, categories, steps, or other structure',
+  'canvas.mindMapOneSentence.requirementsPlaceholder': 'e.g. 3-day Beijing trip with four branches: clothing, food, lodging, transport',
   'canvas.mindMapOneSentence.examplesTitle': 'Inspiration',
   'canvas.mindMapOneSentence.generateButton': 'Generate',
-  'canvas.mindMapOneSentence.example1':
-    '3-day Beijing trip plan with four branches: clothing, food, lodging, transport',
-  'canvas.mindMapOneSentence.example2':
-    'SWOT analysis for a new product launch: strengths, weaknesses, opportunities, threats',
-  'canvas.mindMapOneSentence.example3':
-    'Elementary science: states of water — simple labels, max 6 characters per node',
+  'canvas.mindMapOneSentence.example1': '3-day Beijing trip plan with four branches: clothing, food, lodging, transport',
+  'canvas.mindMapOneSentence.example2': 'SWOT analysis for a new product launch: strengths, weaknesses, opportunities, threats',
+  'canvas.mindMapOneSentence.example3': 'Elementary science: states of water — simple labels, max 6 characters per node',
   'canvas.mindMapOneSentence.suggestion.add_node': 'Add a China branch',
   'canvas.mindMapOneSentence.suggestion.update_node': 'Rename Brewing Methods to Brew Methods',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': 'Rename 2.1 to green tea',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint':
-    'With numbering on, say “rename 2.1 to …” or “change number 2 to …”',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint': 'With numbering on, say “rename 2.1 to …” or “change number 2 to …”',
   'canvas.mindMapOneSentence.suggestion.update_center': 'Change the topic to Tea',
   'canvas.mindMapOneSentence.suggestion.delete_node': 'Delete the History branch',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': 'Complete the China branch',
   'canvas.mindMapOneSentence.suggestion.auto_complete': 'Auto-complete the diagram',
-  'canvas.mindMapOneSentence.suggestion.set_content_level':
-    'Set content to General, Primary, Middle school, High school, University, Adult, or Expert',
+  'canvas.mindMapOneSentence.suggestion.set_content_level': 'Set content to General, Primary, Middle school, High school, University, Adult, or Expert',
   'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': 'Set content to {level}',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
-    'Same seven levels as the Content level control',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
-    'Enable decimal, Chinese, circled, letter, or chapter numbering',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': 'Same seven levels as the Content level control',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': 'Enable decimal, Chinese, circled, letter, or chapter numbering',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': 'Enable {style} numbering',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
-    'Say “enable decimal numbering” or “enable Chinese numbering”',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': 'Say “enable decimal numbering” or “enable Chinese numbering”',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': 'decimal',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': 'Chinese',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': 'circled',
@@ -882,8 +809,7 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': 'Hide numbering',
   'canvas.mindMapOneSentence.suggestion.explain_node': 'Explain the China branch',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'Introduce this node',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
-    'Say “explain China” or “introduce this node”; with a selection, “introduce this” also works',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint': 'Say “explain China” or “introduce this node”; with a selection, “introduce this” also works',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'Node action guide',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'Collapse node action guide',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': 'By name',
@@ -894,82 +820,51 @@ export default {
   'canvas.mindMapOneSentence.micButton': 'Voice input',
   'canvas.mindMapOneSentence.photoButton': 'Upload photo',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 Photo',
-  'canvas.mindMapOneSentence.photoNeedsDiagram':
-    'Save this diagram to the library first, then upload a photo.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram': 'Save this diagram to the library first, then upload a photo.',
   'canvas.mindMapOneSentence.photoInvalidType': 'Please choose a JPG, PNG, or WebP photo.',
   'canvas.mindMapOneSentence.photoTooLarge': 'Photo is too large. Maximum size is 10MB.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'Mind map',
-  'canvas.mindMapOneSentence.photoHanddrawnReply':
-    'Detected a hand-drawn mind map “{topic}”. Rebuilt on canvas; outline saved to Document Summary.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
-    'Detected a hand-drawn mind map “{topic}”. Rebuilt on this canvas; outline saved to Document Summary. Library sync did not complete — save or retry if needed.',
-  'canvas.mindMapOneSentence.photoOcrReply':
-    'Extracted text from the photo:\n{excerpt}\n\nFull text is in Document Summary.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply': 'Detected a hand-drawn mind map “{topic}”. Rebuilt on canvas; outline saved to Document Summary.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'Detected a hand-drawn mind map “{topic}”. Rebuilt on this canvas; outline saved to Document Summary. Library sync did not complete — save or retry if needed.',
+  'canvas.mindMapOneSentence.photoOcrReply': 'Extracted text from the photo:\n{excerpt}\n\nFull text is in Document Summary.',
   'canvas.mindMapOneSentence.photoFailed': 'Could not process the photo.',
   'canvas.mindMapOneSentence.micDenied': 'Microphone unavailable — check browser permission',
   'canvas.mindMapOneSentence.ttsToggle': 'Toggle speech',
-  'canvas.mindMapOneSentence.kittyWelcome':
-    'Hi — tell me what diagram to create, or keep chatting to edit branches and nodes.',
+  'canvas.mindMapOneSentence.kittyWelcome': 'Hi — tell me what diagram to create, or keep chatting to edit branches and nodes.',
   'canvas.mindMapOneSentence.switchDiagramType': 'Switching to {type}…',
   'canvas.mindMapOneSentence.kittyGenerating': 'Got it — generating your diagram…',
-  'canvas.mindMapOneSentence.kittyGenerateDone':
-    'Diagram ready. Keep typing to edit branches or nodes.',
-  'canvas.mindMapOneSentence.kittyGenerateFailed':
-    'Diagram generation failed. Try again or refine your description.',
-  'canvas.mindMapOneSentence.kittyEditFailed':
-    'Could not apply that edit. Try rephrasing your request.',
-  'canvas.mindMapOneSentence.kittyEditStale':
-    'That edit did not take effect on the canvas (stale or no-op). Try again.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
-    'The canvas could not verify that edit. Your diagram was left unchanged.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed':
-    'The edit applied locally but failed to sync. Try again in a moment.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed':
-    'Could not sync the canvas. Please try again in a moment.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
-    'Could not sync the canvas ({detail}). Please try again in a moment.',
-  'canvas.mindMapOneSentence.kittyEditBusy':
-    'The diagram is still generating — please wait, then try again.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued':
-    '{models} results are still streaming — I will run your request automatically when they finish.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
-    'Other model results are still streaming — I will run your request automatically when they finish.',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming':
-    'Other models finished — continuing with your request…',
+  'canvas.mindMapOneSentence.kittyGenerateDone': 'Diagram ready. Keep typing to edit branches or nodes.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed': 'Diagram generation failed. Try again or refine your description.',
+  'canvas.mindMapOneSentence.kittyEditFailed': 'Could not apply that edit. Try rephrasing your request.',
+  'canvas.mindMapOneSentence.kittyEditStale': 'That edit did not take effect on the canvas (stale or no-op). Try again.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'The canvas could not verify that edit. Your diagram was left unchanged.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'The edit applied locally but failed to sync. Try again in a moment.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed': 'Could not sync the canvas. Please try again in a moment.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'Could not sync the canvas ({detail}). Please try again in a moment.',
+  'canvas.mindMapOneSentence.kittyEditBusy': 'The diagram is still generating — please wait, then try again.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} results are still streaming — I will run your request automatically when they finish.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'Other model results are still streaming — I will run your request automatically when they finish.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming': 'Other models finished — continuing with your request…',
   'canvas.mindMapOneSentence.requestQueued': 'Queued',
   'canvas.mindMapOneSentence.requestFailed': 'Failed',
-  'canvas.mindMapOneSentence.kittyEditAccessDenied':
-    "You don't have permission to edit this diagram.",
-  'canvas.mindMapOneSentence.kittyEditStaleRevision':
-    'The diagram was just updated, so that edit is stale. Please repeat your change.',
-  'canvas.mindMapOneSentence.kittyEditTimeout':
-    'That edit timed out — the diagram may be unchanged. Please try again.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner':
-    "I couldn't find an editable canvas. Open the canvas, then try again.",
-  'canvas.mindMapOneSentence.kittyEditAddFailed':
-    "Sorry — I couldn't add that node. Check the name and try again.",
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
-    "Sorry — I couldn't rename that node. Check the name and try again.",
-  'canvas.mindMapOneSentence.kittyEditCenterFailed':
-    "Sorry — I couldn't update the topic. Please try again.",
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
-    "Sorry — I couldn't remove that node. Check the name and try again.",
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
-    "Sorry — I couldn't auto-complete that branch. You can ask again.",
+  'canvas.mindMapOneSentence.kittyEditAccessDenied': 'You don\'t have permission to edit this diagram.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'The diagram was just updated, so that edit is stale. Please repeat your change.',
+  'canvas.mindMapOneSentence.kittyEditTimeout': 'That edit timed out — the diagram may be unchanged. Please try again.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner': 'I couldn\'t find an editable canvas. Open the canvas, then try again.',
+  'canvas.mindMapOneSentence.kittyEditAddFailed': 'Sorry — I couldn\'t add that node. Check the name and try again.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'Sorry — I couldn\'t rename that node. Check the name and try again.',
+  'canvas.mindMapOneSentence.kittyEditCenterFailed': 'Sorry — I couldn\'t update the topic. Please try again.',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'Sorry — I couldn\'t remove that node. Check the name and try again.',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'Sorry — I couldn\'t auto-complete that branch. You can ask again.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'That branch is ready.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'Those branches are ready.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
-    'Some branches are ready, but a few didn’t finish. You can ask to auto-complete again.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'Some branches are ready, but a few didn’t finish. You can ask to auto-complete again.',
   'canvas.mindMapOneSentence.kittyWorking': 'OK — working on that…',
-  'canvas.mindMapOneSentence.kittyUnavailable':
-    'Kitty is unavailable. Check that FEATURE_KITTY_AGENT is enabled on the server.',
-  'canvas.mindMapOneSentence.kittyConnectFailed':
-    'Could not connect canvas Kitty. Open this diagram on desktop, then try again.',
+  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty is unavailable. Try again in a moment.',
+  'canvas.mindMapOneSentence.kittyConnectFailed': 'Could not connect canvas Kitty. Open this diagram on desktop, then try again.',
   'canvas.mindMapOneSentence.clarifyChoices': 'Choose an option',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
-    'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint':
-    'Phone Kitty is on a different diagram. Sync from the phone, or open that diagram here.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint': 'Phone Kitty is on a different diagram. Sync from the phone, or open that diagram here.',
   'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Use Mobile Kitty on your phone…',
   'canvas.mindMapNodeExplain.titleFallback': 'Node explanation',
   'canvas.mindMapNodeExplain.requestFailed': 'Could not get an explanation. Please try again.',
@@ -987,21 +882,17 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': 'Chat history',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'File upload',
   'canvas.mindMapDocumentSummary.tabPaste': 'Paste text',
-  'canvas.mindMapDocumentSummary.pasteHintLite':
-    'Paste an article, notes, or meeting minutes — we extract structure and build a mind map.',
+  'canvas.mindMapDocumentSummary.pasteHintLite': 'Paste an article, notes, or meeting minutes — we extract structure and build a mind map.',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'Chat history',
   'canvas.mindMapDocumentSummary.intro': 'Extract key points to generate a more accurate mind map',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'Click to upload a file',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint':
-    'PDF, Word, PPT, Excel, text, images, audio — only extracted markdown is kept',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, text, images, audio — only extracted markdown is kept',
   'canvas.mindMapDocumentSummary.invalidFileType': 'Unsupported file type',
   'canvas.mindMapDocumentSummary.saveContent': 'Save content',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'Fetch and save',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'Fetching page content…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite':
-    'Paste a public page URL — we fetch as much article text as we can and save it as Markdown.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
-    'Direct link fetch is server-side and cannot use your login cookies, so pages behind auth or paywalls are often incomplete. For a full webpage snapshot as you see it, use the Chrome / Edge extension.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite': 'Paste a public page URL — we fetch as much article text as we can and save it as Markdown.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Direct link fetch is server-side and cannot use your login cookies, so pages behind auth or paywalls are often incomplete. For a full webpage snapshot as you see it, use the Chrome / Edge extension.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Download Chrome extension',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Extracting…',
   'canvas.mindMapDocumentSummary.stageStarting': 'Starting…',
@@ -1010,19 +901,15 @@ export default {
   'canvas.mindMapDocumentSummary.stageOcr': 'Reading image text…',
   'canvas.mindMapDocumentSummary.stageTranscribing': 'Transcribing audio…',
   'canvas.mindMapDocumentSummary.stageStoring': 'Saving extracted text…',
-  'canvas.mindMapDocumentSummary.replaceSourceHint':
-    'Uploading again replaces the current source for this diagram',
+  'canvas.mindMapDocumentSummary.replaceSourceHint': 'Uploading again replaces the current source for this diagram',
   'canvas.mindMapDocumentSummary.fromSource': 'From {name}',
   'canvas.mindMapDocumentSummary.deleteSource': 'Delete source',
   'canvas.mindMapDocumentSummary.sourceDeleted': 'Source deleted — you can upload again',
   'canvas.mindMapDocumentSummary.extractStarted': 'Extracting content…',
   'canvas.mindMapDocumentSummary.extractFailed': 'Could not extract text from this file',
-  'canvas.mindMapDocumentSummary.sourceBoundHint':
-    'Markdown is ready. Generate a mind map, or delete the source to upload something else.',
-  'canvas.mindMapDocumentSummary.deleteToRetry':
-    'Delete this source, then upload, paste, or fetch a page again.',
-  'canvas.mindMapDocumentSummary.chatIntroLite':
-    'Download the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
+  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown is ready. Generate a mind map, or delete the source to upload something else.',
+  'canvas.mindMapDocumentSummary.deleteToRetry': 'Delete this source, then upload, paste, or fetch a page again.',
+  'canvas.mindMapDocumentSummary.chatIntroLite': 'Download the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'Chat history received',
   'canvas.mindMapDocumentSummary.chatDoneLite': 'Chat saved — tap Generate when ready',
   'canvas.mindMapDocumentSummary.corpusStatus': '{completed} of {total} sources indexed',
@@ -1035,12 +922,9 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': 'Indexing…',
   'canvas.mindMapDocumentSummary.statusFailed': 'Failed',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'Knowledge Space is disabled',
-  'canvas.mindMapDocumentSummary.featureDisabledHint':
-    'Enable the Knowledge Space feature to use Document Summary.',
-  'canvas.mindMapDocumentSummary.saveDiagramHint':
-    'Save this diagram to link the package and enable full RAG retrieval.',
-  'canvas.mindMapDocumentSummary.chatIntro':
-    'Download the file reader, enter the pairing code below, and send WeChat or DingTalk history to this corpus.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint': 'Enable the Knowledge Space feature to use Document Summary.',
+  'canvas.mindMapDocumentSummary.saveDiagramHint': 'Save this diagram to link the package and enable full RAG retrieval.',
+  'canvas.mindMapDocumentSummary.chatIntro': 'Download the file reader, enter the pairing code below, and send WeChat or DingTalk history to this corpus.',
   'canvas.mindMapDocumentSummary.pairingCode': 'Pairing code',
   'canvas.mindMapDocumentSummary.startPairingCode': 'Get pairing code',
   'canvas.mindMapDocumentSummary.pairingExpires': 'Expires in {minutes} min',
@@ -1049,16 +933,14 @@ export default {
   'canvas.mindMapDocumentSummary.chatReceived': 'Chat history received and added to corpus',
   'canvas.mindMapDocumentSummary.chatIndexing': 'Indexing chat transcript…',
   'canvas.mindMapDocumentSummary.chatDone': 'Chat added to corpus',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed':
-    'Upload or indexing failed — refresh to try again',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'Upload or indexing failed — refresh to try again',
   'canvas.mindMapDocumentSummary.chatMintFailed': 'Could not create pairing code',
   'canvas.mindMapDocumentSummary.chatExpired': 'Pairing code expired — refresh to get a new one',
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'Refresh pairing code',
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'Could not start Document Summary session',
   'canvas.mindMapDocumentSummary.imageTooLarge': 'Image is too large. Maximum size is 10MB.',
   'canvas.mindMapDocumentSummary.generateNoCorpus': 'Add at least one source, then generate',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
-    'Upload, paste, or fetch a page first, then tap Generate',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'Upload, paste, or fetch a page first, then tap Generate',
   'canvas.mindMapDocumentSummary.collabDisabled': 'Unavailable during live collaboration',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'Source added to corpus',
   'canvas.mindMapDocumentSummary.ingestSuccessLite': 'Content saved — tap Generate when ready',
@@ -1067,22 +949,17 @@ export default {
   'canvas.mindMapDocumentSummary.uploadDocHint': 'Click to upload Word or PDF',
   'canvas.mindMapDocumentSummary.uploadDocSubhint': 'We extract document content automatically',
   'canvas.mindMapDocumentSummary.pasteLabel': 'Or paste long-form notes:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder':
-    'Paste paper excerpts, book summaries, meeting notes, requirements, and more.',
+  'canvas.mindMapDocumentSummary.pastePlaceholder': 'Paste paper excerpts, book summaries, meeting notes, requirements, and more.',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'Upload image:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'Click to upload JPG or PNG',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint':
-    'We detect hand-drawn mind maps and rebuild them; otherwise we extract text',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
-    'Hand-drawn mind map detected — rebuilt on canvas',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'We detect hand-drawn mind maps and rebuild them; otherwise we extract text',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'Hand-drawn mind map detected — rebuilt on canvas',
   'canvas.mindMapDocumentSummary.visionProgressDetecting': 'Detecting hand-drawn mind map…',
-  'canvas.mindMapDocumentSummary.imageOcrHint':
-    'Works with note screenshots, whiteboard photos, and scans.',
+  'canvas.mindMapDocumentSummary.imageOcrHint': 'Works with note screenshots, whiteboard photos, and scans.',
   'canvas.mindMapDocumentSummary.removeImage': 'Remove image',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'Web link:',
   'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'Paste an article, blog, or news URL',
-  'canvas.mindMapDocumentSummary.webLinkHint':
-    'We fetch the page and add it to your corpus for indexing.',
+  'canvas.mindMapDocumentSummary.webLinkHint': 'We fetch the page and add it to your corpus for indexing.',
   'canvas.mindMapDocumentSummary.generateButton': 'Generate mind map',
   'canvas.mindMapDocumentSummary.generateSuccess': 'Mind map generated',
   'canvas.mindMapDocumentSummary.generateFailed': 'Generation failed. Please try again.',
@@ -1092,16 +969,11 @@ export default {
   'canvas.mindMapDocumentSummary.invalidDocType': 'Only Word (.docx) and PDF files are supported',
   'canvas.mindMapDocumentSummary.invalidImageType': 'Only JPG and PNG images are supported',
   'canvas.mindMapDocumentSummary.docTooLarge': 'File is too large. Maximum size is 20MB.',
-  'canvas.mindMapDocumentSummary.pasteTooLong':
-    'Pasted text exceeds the model input limit (about 900,000 characters). Please shorten it.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel':
-    'Extracted text exceeds the model input limit (~900,000 characters / qwen3.6-flash 991K tokens). Please use a shorter document.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel':
-    'This file’s text is too long for the model. Please upload a shorter document (under ~900,000 characters of text).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared':
-    'The saved extract was missing or out of sync and has been cleared. Please upload or paste the document again.',
-  'canvas.mindMapDocumentSummary.contentFiltered':
-    'This content was blocked by the safety filter. Edit the text and try again.',
+  'canvas.mindMapDocumentSummary.pasteTooLong': 'Pasted text exceeds the model input limit (about 900,000 characters). Please shorten it.',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Extracted text exceeds the model input limit (~900,000 characters / qwen3.6-flash 991K tokens). Please use a shorter document.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'This file’s text is too long for the model. Please upload a shorter document (under ~900,000 characters of text).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared': 'The saved extract was missing or out of sync and has been cleared. Please upload or paste the document again.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheet': 'Learning sheet',
   'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
@@ -1114,13 +986,11 @@ export default {
   'canvas.mindClassroom.mascotDismiss': 'Dock to bottom',
   'canvas.mindClassroom.audienceLine': 'Audience: {level} (from bottom “Audience level”)',
   'canvas.mindClassroom.start': 'Start lecture',
-  'canvas.mindClassroom.startPreview':
-    'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Signed-in users queue a script / lesson plan; guests use the local template.',
+  'canvas.mindClassroom.startPreview': 'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Signed-in users queue a script / lesson plan; guests use the local template.',
   'canvas.mindClassroom.queue.queued': 'Queued for lecture…',
   'canvas.mindClassroom.queue.planning': 'Generating the script / lesson plan…',
   'canvas.mindClassroom.queue.transcriptBranch': 'Writing the lesson plan for {name}…',
-  'canvas.mindClassroom.queue.transcriptRemaining':
-    'Writing the remaining lesson plan ({done}/{total})…',
+  'canvas.mindClassroom.queue.transcriptRemaining': 'Writing the remaining lesson plan ({done}/{total})…',
   'canvas.mindClassroom.queue.transcript': 'Writing the script / lesson plan…',
   'canvas.mindClassroom.queue.generating': 'Generating slides…',
   'canvas.mindClassroom.queue.loadingVoice': 'Loading voice…',
@@ -1129,10 +999,8 @@ export default {
   'canvas.mindClassroom.queue.failed': 'Lecture prep failed',
   'canvas.mindClassroom.queue.cancel': 'Cancel queue',
   'canvas.mindClassroom.queue.restart': 'Rewrite lesson plan',
-  'canvas.mindClassroom.queue.restartHint':
-    'Rewrite the script / lesson plan with the current settings',
-  'canvas.mindClassroom.queue.guestHint':
-    'Guests use the local template. Sign in to queue an engine-written script / lesson plan.',
+  'canvas.mindClassroom.queue.restartHint': 'Rewrite the script / lesson plan with the current settings',
+  'canvas.mindClassroom.queue.guestHint': 'Guests use the local template. Sign in to queue an engine-written script / lesson plan.',
   'canvas.mindClassroom.queue.loginRequired': 'Sign in to start a lecture.',
   'canvas.mindClassroom.queue.preparing': 'Preparing the lecture…',
   'canvas.mindClassroom.settings.masteryTitle': 'How familiar am I with this map?',
@@ -1141,20 +1009,15 @@ export default {
   'canvas.mindClassroom.settings.mastery.teach.title': 'Prep to teach',
   'canvas.mindClassroom.settings.presentationTitle': 'How should the lecture be presented?',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'Canvas voice tour',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
-    'Voice lecture on the map canvas — main branches or node-by-node.',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'Voice lecture on the map canvas — main branches or node-by-node.',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'Slide lecture',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
-    'AI slides beside the map — dual-pane, page-by-page narration.',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
-    'In development — coming soon',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'AI slides beside the map — dual-pane, page-by-page narration.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': 'In development — coming soon',
   'canvas.mindClassroom.settings.tourScopeTitle': 'Tour detail',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'Main branches',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
-    'Walk first-level branches at a steady pace.',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'Walk first-level branches at a steady pace.',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'Node by node',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc':
-    'Visit every node — better for close reading.',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'Visit every node — better for close reading.',
   'canvas.mindClassroom.settings.slideStyleTitle': 'Slide style',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'General slides',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'Chalkboard',
@@ -1172,8 +1035,7 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': 'Close reading',
   'canvas.mindClassroom.settings.tone.examples': 'Rich examples',
   'canvas.mindClassroom.settings.tone.exam_outline': 'Exam outline',
-  'canvas.mindClassroom.lecture.needDiagram':
-    'Create a mind map on the canvas first, then start the lecture.',
+  'canvas.mindClassroom.lecture.needDiagram': 'Create a mind map on the canvas first, then start the lecture.',
   'canvas.mindClassroom.lecture.emptySteps': 'This map has no nodes to lecture on.',
   'canvas.mindClassroom.lecture.cancelled': 'Lecture queue cancelled.',
   'canvas.mindClassroom.lecture.queueFailed': 'Lecture prep failed. Please try again.',
@@ -1186,54 +1048,33 @@ export default {
   'canvas.mindClassroom.lecture.unmute': 'Unmute narration',
   'canvas.mindClassroom.lecture.script.noBranches': 'several key points',
   'canvas.mindClassroom.lecture.script.leafNode': 'no deeper nodes under this branch',
-  'canvas.mindClassroom.lecture.script.overview.classroom':
-    'Welcome. Today we study “{topic}” for a “{audience}” audience at a “{mastery}” pace. The map covers: {branches}. We start with the whole picture, then each branch.',
-  'canvas.mindClassroom.lecture.script.overview.story':
-    'Treat “{topic}” as a story title. For “{audience}”, we move from the big picture into chapters: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.dialogue':
-    'Let’s look at “{topic}” together. As a “{audience}” learner, what stands out first? The map includes: {branches}. We’ll go Q&A style.',
-  'canvas.mindClassroom.lecture.script.overview.socratic':
-    'Hold the conclusions. Why is “{topic}” worth a map? At “{mastery}” depth we’ll question these branches: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.fast':
-    'Quick tour of “{topic}” ({audience}). Trunk: {branches}. Short stops on each branch next.',
-  'canvas.mindClassroom.lecture.script.overview.close_read':
-    'Close-read open: topic “{topic}”. Hold the structure—{branches}—before reading each branch. Audience: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.examples':
-    'Start with examples. “{topic}” is like scenes in class or life; branches are scenes: {branches}. Audience: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline':
-    'Exam overview: “{topic}”. Memorize the trunk—{branches}. Level: {audience}; pace: {mastery}.',
-  'canvas.mindClassroom.lecture.script.branch.classroom':
-    'Branch {index}/{total}: “{title}”. Under it: {children}. See where this sits in the whole map.',
-  'canvas.mindClassroom.lecture.script.branch.story':
-    'Chapter {index}: “{title}”. It introduces: {children}. Notice how they move the story forward.',
-  'canvas.mindClassroom.lecture.script.branch.dialogue':
-    'Quick question: what comes to mind for “{title}”? The map shows: {children}. Compare ({index}/{total}).',
-  'canvas.mindClassroom.lecture.script.branch.socratic':
-    'Why is “{title}” its own branch? How does it relate to {children}? Answer first, then check the map ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.overview.classroom': 'Welcome. Today we study “{topic}” for a “{audience}” audience at a “{mastery}” pace. The map covers: {branches}. We start with the whole picture, then each branch.',
+  'canvas.mindClassroom.lecture.script.overview.story': 'Treat “{topic}” as a story title. For “{audience}”, we move from the big picture into chapters: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue': 'Let’s look at “{topic}” together. As a “{audience}” learner, what stands out first? The map includes: {branches}. We’ll go Q&A style.',
+  'canvas.mindClassroom.lecture.script.overview.socratic': 'Hold the conclusions. Why is “{topic}” worth a map? At “{mastery}” depth we’ll question these branches: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast': 'Quick tour of “{topic}” ({audience}). Trunk: {branches}. Short stops on each branch next.',
+  'canvas.mindClassroom.lecture.script.overview.close_read': 'Close-read open: topic “{topic}”. Hold the structure—{branches}—before reading each branch. Audience: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples': 'Start with examples. “{topic}” is like scenes in class or life; branches are scenes: {branches}. Audience: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'Exam overview: “{topic}”. Memorize the trunk—{branches}. Level: {audience}; pace: {mastery}.',
+  'canvas.mindClassroom.lecture.script.branch.classroom': 'Branch {index}/{total}: “{title}”. Under it: {children}. See where this sits in the whole map.',
+  'canvas.mindClassroom.lecture.script.branch.story': 'Chapter {index}: “{title}”. It introduces: {children}. Notice how they move the story forward.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue': 'Quick question: what comes to mind for “{title}”? The map shows: {children}. Compare ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.socratic': 'Why is “{title}” its own branch? How does it relate to {children}? Answer first, then check the map ({index}/{total}).',
   'canvas.mindClassroom.lecture.script.branch.fast': '“{title}” → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read':
-    'Close-read “{title}”. Trace: {children}. This is segment {index}/{total}—watch wording and levels.',
-  'canvas.mindClassroom.lecture.script.branch.examples':
-    'Example for “{title}”: picture a concrete scene with {children}. Branch {index}/{total}.',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline':
-    'Point {index}/{total}: “{title}”. Sub-points: {children}. Memorize the title, then details.',
-  'canvas.mindClassroom.lecture.script.closing.first_look':
-    'Wrap-up: you now have the skeleton of “{topic}”. Scan the map once more and mark two unfamiliar spots for next time.',
-  'canvas.mindClassroom.lecture.script.closing.review':
-    'Review close: can you retell the trunk of “{topic}” without looking? If a branch sticks, revisit just that branch.',
-  'canvas.mindClassroom.lecture.script.closing.teach':
-    'Prep close: for a “{audience}” class on “{topic}”, follow open–develop–close on the map. Any branch can become a classroom question.',
-  'canvas.mindMapSideToolbar.oneSentenceIntro':
-    'Describe a topic or edit request in one sentence to generate or refine the map',
+  'canvas.mindClassroom.lecture.script.branch.close_read': 'Close-read “{title}”. Trace: {children}. This is segment {index}/{total}—watch wording and levels.',
+  'canvas.mindClassroom.lecture.script.branch.examples': 'Example for “{title}”: picture a concrete scene with {children}. Branch {index}/{total}.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'Point {index}/{total}: “{title}”. Sub-points: {children}. Memorize the title, then details.',
+  'canvas.mindClassroom.lecture.script.closing.first_look': 'Wrap-up: you now have the skeleton of “{topic}”. Scan the map once more and mark two unfamiliar spots for next time.',
+  'canvas.mindClassroom.lecture.script.closing.review': 'Review close: can you retell the trunk of “{topic}” without looking? If a branch sticks, revisit just that branch.',
+  'canvas.mindClassroom.lecture.script.closing.teach': 'Prep close: for a “{audience}” class on “{topic}”, follow open–develop–close on the map. Any branch can become a classroom question.',
+  'canvas.mindMapSideToolbar.oneSentenceIntro': 'Describe a topic or edit request in one sentence to generate or refine the map',
   'canvas.mindMapSideToolbar.documentSummary': 'Document Summary',
-  'fileCenter.intro':
-    'A package is a curated set of sources for this diagram. Add files, notes, or web pages — the diagram completes its branches from these sources.',
+  'fileCenter.intro': 'A package is a curated set of sources for this diagram. Add files, notes, or web pages — the diagram completes its branches from these sources.',
   'fileCenter.defaultPackageName': 'Untitled package',
   'fileCenter.packageNameLabel': 'Package name',
   'fileCenter.createPackage': 'Create package',
   'fileCenter.deletePackage': 'Delete package',
-  'fileCenter.confirmDeletePackage':
-    'Delete this package and all of its sources? This cannot be undone.',
+  'fileCenter.confirmDeletePackage': 'Delete this package and all of its sources? This cannot be undone.',
   'fileCenter.corpusStatus': '{completed} of {total} sources indexed',
   'fileCenter.noSources': 'No sources yet. Add one below.',
   'fileCenter.addSource': 'Add source',
@@ -1263,12 +1104,9 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': 'No nodes yet',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI Generate',
   'canvas.mindMapSideToolbar.outlineEditHint': 'Double-click any row to edit inline',
-  'canvas.mindMapSideToolbar.outlineIntro':
-    'Edit structure in the outline — drag to reorder, paste lines to bulk-add',
-  'canvas.mindMapSideToolbar.outlineDragHint':
-    'Drag to reorder; drop above/below for siblings, center to nest as child',
-  'canvas.mindMapSideToolbar.outlinePasteHint':
-    'Select a node and paste multi-line text to add sibling nodes in bulk',
+  'canvas.mindMapSideToolbar.outlineIntro': 'Edit structure in the outline — drag to reorder, paste lines to bulk-add',
+  'canvas.mindMapSideToolbar.outlineDragHint': 'Drag to reorder; drop above/below for siblings, center to nest as child',
+  'canvas.mindMapSideToolbar.outlinePasteHint': 'Select a node and paste multi-line text to add sibling nodes in bulk',
   'canvas.mindMapPaste.inserted': 'Inserted {count} sibling node(s)',
   'canvas.mindMapPaste.truncated': 'Line limit reached — only the first 50 lines were inserted',
   'canvas.mindMapSideToolbar.realtimeSync': 'Live sync',
@@ -1278,54 +1116,42 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'Delete branch',
   'canvas.mindMapSideToolbar.expandBranch': 'Expand branch',
   'canvas.mindMapSideToolbar.collapseBranch': 'Collapse branch',
-  'canvas.mindMapSideToolbar.aiGenerateDesc':
-    'Expand the mind map from the current topic in one sentence.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc': 'Expand the mind map from the current topic in one sentence.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Enable learning sheet',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Exit learning sheet',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Restore full diagram',
   'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
-  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro':
-    'Choose how to create a learning sheet for practice and review.',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody': 'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
+  'canvas.mindMapSideToolbar.learningSheetIntro': 'Choose how to create a learning sheet for practice and review.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
-  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
-    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc': 'Blank every node except the center topic; reference answers appear below the diagram.',
   'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Random blanks',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
-    'Randomly blanks about 20% of nodes; answers appear below the diagram.',
-  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint':
-    '{count} node(s) blanked · Esc to dismiss',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Randomly blanks about 20% of nodes; answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} node(s) blanked · Esc to dismiss',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'Custom blanks',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
-    'Cursor becomes a hammer — click nodes to blank; click again to restore.',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'Cursor becomes a hammer — click nodes to blank; click again to restore.',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'Active · {count} node(s) blanked',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
-    'Pick mode · click nodes on the canvas',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'Pick mode · click nodes on the canvas',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'Custom blank mode',
-  'canvas.mindMapSideToolbar.learningSheetPickHint':
-    'Click to blank, click again to restore · {count} blanked · Esc to exit',
+  'canvas.mindMapSideToolbar.learningSheetPickHint': 'Click to blank, click again to restore · {count} blanked · Esc to exit',
   'canvas.mindMapSideToolbar.learningSheetPickDone': 'Done',
-  'canvas.mindMapSideToolbar.learningSheetProtectedNode':
-    'Topic and structural nodes cannot be blanked',
+  'canvas.mindMapSideToolbar.learningSheetProtectedNode': 'Topic and structural nodes cannot be blanked',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': 'Blank node',
   'canvas.mindMapSideToolbar.learningSheetRandomBlankHistory': 'Random blank nodes',
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': 'Restore node text',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': 'Hide reference answers',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': 'Keep reference answers',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
-    'When off, blanked nodes do not show answers on the canvas',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': 'When off, blanked nodes do not show answers on the canvas',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'Canvas answers',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': 'Show',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': 'Hide',
   'canvas.mindMapSideToolbar.learningSheetAnswersShortcut': 'Shortcut: Ctrl + Shift + H',
   'canvas.mindMapSideToolbar.openMindmate': 'Open MindMate',
-  'canvas.toolbar.learningSheetExportNudgeTitle':
-    'Create a worksheet in one click for more effective review',
+  'canvas.toolbar.learningSheetExportNudgeTitle': 'Create a worksheet in one click for more effective review',
   'canvas.toolbar.learningSheetExportNudgeDesc': 'Export PNG or PDF to print or share.',
   'canvas.toolbar.learningSheetExportNudgeDismiss': 'Got it',
-  'canvas.toolbar.learningSheetExportNudgeNeverRemind': "Don't remind again",
+  'canvas.toolbar.learningSheetExportNudgeNeverRemind': 'Don\'t remind again',
   'diagram.flow.newCause': 'New cause',
   'diagram.flow.newEffect': 'New effect',
   'diagram.history.addAnalogyPair': 'Add analogy pair',
@@ -1414,8 +1240,7 @@ export default {
   'editor.redo': 'Redo',
   'editor.saveDiagram': 'Save Diagram',
   'editor.selectDiagramType': 'Select Diagram Type',
-  'editor.slotsFull':
-    'Space full, auto-save not available at the moment. Please delete existing diagrams to free more space.',
+  'editor.slotsFull': 'Space full, auto-save not available at the moment. Please delete existing diagrams to free more space.',
   'editor.undo': 'Undo',
   'editor.zoomIn': 'Zoom In',
   'editor.zoomOut': 'Zoom Out',
@@ -1455,8 +1280,7 @@ export default {
   'landing.diagramGrid.tree_map.title': 'Tree Map',
   'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
   'landing.diagramGrid.voice_notes.title': 'Voice notes',
-  'landing.template.freePlaceholder':
-    'Describe your topic or structure (branches, steps, categories…) or choose a template below…',
+  'landing.template.freePlaceholder': 'Describe your topic or structure (branches, steps, categories…) or choose a template below…',
   'landing.template.slot.criterion': 'Classification',
   'landing.template.slot.event': 'Event',
   'landing.template.slot.itemA': 'Item A',
@@ -1488,14 +1312,13 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'Could not load school sessions',
   'mindgraphLanding.networkError': 'Network error',
   'mindgraphLanding.networkErrorJoin': 'Network error, failed to join',
-  'mindgraphLanding.orgSessionsEmpty':
-    'No school sessions right now. A colleague must start “School collaboration” on the canvas.',
+  'mindgraphLanding.orgSessionsEmpty': 'No school sessions right now. A colleague must start “School collaboration” on the canvas.',
   'mindgraphLanding.participantsOnline': '{n} online',
   'mindgraphLanding.schoolCollab': 'School collaboration',
   'mindgraphLanding.sharedCodeHint': 'Enter the invitation code (xxx-xxx) to join their session.',
   'mindgraphLanding.sharedCollab': 'Shared collaboration',
   'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
-  'mindgraphLanding.welcome': "Hello {username}, I'm your MindGraph AI visual thinking assistant",
+  'mindgraphLanding.welcome': 'Hello {username}, I\'m your MindGraph AI visual thinking assistant',
   'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
   'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
   'canvasPage.collabRetryConnection': 'Retry',
@@ -1517,7 +1340,7 @@ export default {
   'canvas.ribbon.auto': 'Auto',
   'canvas.ribbon.line': 'Line',
   'canvas.ribbon.learn': 'Learn',
-  'canvas.ribbon.palette': 'Node Palette',
+  'canvas.ribbon.palette': 'AI brainstorm',
   'canvas.ribbon.exportImage': 'Export image',
   'canvas.ribbon.saveMg': 'Save .mg',
   'canvas.ribbon.mindMate': 'MindMate AI',
@@ -1549,7 +1372,7 @@ export default {
   'canvas.ribbon.tip.structure': 'Switch balanced or right-growing layout',
   'canvas.ribbon.tip.save': 'Save this mind map and record a version',
   'canvas.ribbon.tip.reset': 'Clear the canvas back to a blank map',
-  'canvas.ribbon.tip.formatPainter': "Copy a node's style, then click others",
+  'canvas.ribbon.tip.formatPainter': 'Copy a node\'s style, then click others',
   'canvas.ribbon.tip.appearance': 'Change colors and diagram style',
   'canvas.ribbon.tip.numbering': 'Show or hide numbers on main branches',
   'canvas.ribbon.tip.insert': 'Add relationship lines, summaries, or equations',
@@ -1634,8 +1457,7 @@ export default {
   'canvas.ribbon.docGenerate': 'Document generate',
   'canvas.ribbon.webGenerate': 'Web link generate',
   'canvas.ribbon.voiceSummary': 'Recording summary',
-  'canvas.ribbon.sourceLocked':
-    'This diagram already uses {source} as its source. Start a new diagram to use a different generator.',
+  'canvas.ribbon.sourceLocked': 'This diagram already uses {source} as its source. Start a new diagram to use a different generator.',
   'canvas.ribbon.sourceKind.doc': 'a document',
   'canvas.ribbon.sourceKind.web': 'a web link',
   'canvas.ribbon.sourceKind.voice': 'a recording',
@@ -1648,8 +1470,7 @@ export default {
   'canvas.ribbon.insertIcon': 'Icon',
   'canvas.ribbon.insertLink': 'Link',
   'canvas.ribbon.makeLearningSheet': 'Learning worksheet',
-  'canvas.ribbon.makeLearningSheetHint':
-    'Create a worksheet in one click for more effective review',
+  'canvas.ribbon.makeLearningSheetHint': 'Create a worksheet in one click for more effective review',
   'canvas.ribbon.selectTwoNodes': 'Select two nodes first',
   'canvas.ribbon.insertComingSoon': 'This insert tool is coming soon',
   'canvas.ribbon.summaryNeedSiblings': 'Select consecutive sibling nodes',
@@ -1688,8 +1509,7 @@ export default {
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'Learning sheet',
   'canvas.ribbon.aiHero.learningSheet.title': 'Fill-in worksheet',
-  'canvas.ribbon.aiHero.learningSheet.line1':
-    'Choose random or custom blanks for class practice and review',
+  'canvas.ribbon.aiHero.learningSheet.line1': 'Choose random or custom blanks for class practice and review',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'Brainstorm',
   'canvas.ribbon.aiHero.brainstorm.title': 'AI brainstorm',
@@ -1720,16 +1540,36 @@ export default {
   'canvas.hero.collab.line1': 'Start a school or invite-code session so others can edit with you',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': 'Export',
-  'canvas.hero.worksheet.title': 'Export as DOC/PDF',
+  'canvas.hero.worksheet.title': 'Export as document',
   'canvas.hero.worksheet.line1': 'Set worksheet header and paper options, then export',
   'canvas.hero.worksheet.line2': '',
+  'canvas.hero.slotFull.ribbon': 'Library',
+  'canvas.hero.slotFull.title': 'Library is full',
+  'canvas.hero.slotFull.line1': 'Delete an existing diagram to save the current one',
+  'canvas.hero.slotFull.line2': '',
+  'canvas.voiceCommandGuide.title': 'Voice command guide',
+  'canvas.voiceCommandGuide.collapse': 'Collapse voice command guide',
+  'canvas.voiceCommandGuide.example.add_node': '“Add a China branch”',
+  'canvas.voiceCommandGuide.example.auto_complete_branch': '“Auto-complete the China branch”',
+  'canvas.voiceCommandGuide.example.auto_complete': '“Auto-complete the whole map”',
+  'canvas.voiceCommandGuide.example.select_node': '“Select China”',
+  'canvas.voiceCommandGuide.example.update_center': '“Change the topic to vocational education”',
+  'canvas.voiceCommandGuide.example.delete_node': '“Delete the China branch”',
+  'canvas.voiceCommandGuide.example.explain_node': '“Explain China”',
+  'canvas.voiceCommandGuide.example.start_inline_recommendations': '“Suggest ideas for this node”',
+  'canvas.gestureGuide.dragNode': 'Move node',
+  'canvas.gestureGuide.dragNodeHint': 'One-finger drag',
+  'canvas.gestureGuide.slashDeleteHint': 'Finger or left-drag down',
+  'canvas.gestureGuide.slashSiblingHint': 'Slash left or right through it',
+  'canvas.gestureGuide.slashChild': 'Add child',
+  'canvas.gestureGuide.slashChildHint': 'Slash up through it',
+  'canvas.inlineRecPicker.prevPage': 'Previous page',
+  'canvas.inlineRecPicker.nextPage': 'Next page',
+  'canvas.toolbar.moreApps': 'More Apps',
+  'canvas.topBar.shareCommunity': 'Share to Community',
   'canvas.hero.communityExport.ribbon': 'Share',
   'canvas.hero.communityExport.title': 'Share to community',
   'canvas.hero.communityExport.line1': 'Add a title and category, then publish with a thumbnail',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'Edit community post',
-  'canvas.hero.slotFull.ribbon': 'Library',
-  'canvas.hero.slotFull.title': 'Library is full',
-  'canvas.hero.slotFull.line1': 'Delete an existing diagram to save the current one',
-  'canvas.hero.slotFull.line2': '',
 } as const

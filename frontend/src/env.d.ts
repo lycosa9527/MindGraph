@@ -42,3 +42,9 @@ declare module 'element-plus/es/components/message/style/css'
 declare module 'element-plus/es/components/notification/style/css'
 declare module 'element-plus/es/components/button/style/css'
 declare module 'element-plus/es/components/config-provider/style/css'
+
+/** OpenCC character table only — not the full `opencc-js` converter. */
+declare module 'opencc-js/dict/STCharacters' {
+  const dictionary: string
+  export default dictionary
+}

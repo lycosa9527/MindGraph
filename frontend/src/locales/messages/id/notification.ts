@@ -40,7 +40,6 @@ export default {
   'notification.importSlotsFull': 'Perpustakaan penuh; diagram diimpor tetapi tidak disimpan',
   'notification.importSuccess': 'Diagram diimpor dan disimpan ke perpustakaan',
   'notification.importUnsupportedType': 'Impor gagal: jenis diagram tidak didukung',
-  'notification.inlineRecEmpty': 'Tidak ada rekomendasi yang dibuat. Coba lagi atau edit topik.',
   'notification.loadMoreFailed': 'Tidak dapat memuat lebih banyak',
   'notification.networkError': 'Kesalahan jaringan',
   'notification.nodeNotEligible': 'Node ini tidak mendukung rekomendasi Tab.',

@@ -69,6 +69,7 @@ export function useCanvasPageWorkshopCollab() {
     watchCode: watchWorkshopCode,
     sessionDiagramTitle,
     hasPendingOutbound,
+    serverBaselineReady,
   } = useWorkshop(
     workshopCode,
     currentDiagramId,
@@ -100,12 +101,11 @@ export function useCanvasPageWorkshopCollab() {
       }
     },
     (spec, version) => {
-      // When the host (diagram owner) is the first to connect, the server seeds the
-      // live Redis spec from the DB snapshot which may be stale or empty (if the
-      // diagram was never saved). Version 1 means no peer edits have happened yet,
-      // so the owner's in-memory diagram is authoritative — push it to the server
-      // instead of overwriting local state with the potentially stale seed.
+      // The person who starts the room owns the only spec. Version 1 is still the
+      // database seed, so the starter replaces it with the canvas they have open.
+      // Everyone else loads that document.
       if (_workshopCtx.isDiagramOwner?.value && version === 1) {
+        collabDiff?.adoptLiveBaseline()
         const currentSpec = getDiagramPersistBaseSpec()
         if (currentSpec) {
           _workshopCtx.sendUpdate?.(currentSpec as Record<string, unknown>)
@@ -117,6 +117,7 @@ export function useCanvasPageWorkshopCollab() {
       applyingRemoteCollabPatch.value = true
       try {
         diagramStore.loadFromSpec(spec, tSpec)
+        collabDiff?.adoptLiveBaseline()
         diagramStore.absorbMindMapDisplayLayout()
         eventBus.emit('diagram:workshop_snapshot_applied', {})
       } finally {
@@ -146,6 +147,7 @@ export function useCanvasPageWorkshopCollab() {
     getForeignLockedNodeIds: () => diagramStore.collabForeignLockedNodeIds,
     absorbRemoteLayout: () => diagramStore.absorbMindMapDisplayLayout(),
     hasPendingOutbound: () => hasPendingOutbound.value,
+    isServerBaselineReady: () => serverBaselineReady.value,
   })
   collabDiff = collabDiffApi
 

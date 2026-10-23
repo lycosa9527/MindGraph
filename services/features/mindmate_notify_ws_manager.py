@@ -19,6 +19,8 @@ from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
 
 from services.features import workshop_chat_presence_store
+from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
+from services.features.ws_redis_fanout_publish_core import publish_chat_fanout_async
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -43,8 +45,19 @@ class MindmateNotifyWsManager:
             except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("[MindmateNotifyWS] close superseded failed: %s", exc)
 
-    async def disconnect(self, user_id: int) -> list[int]:
-        """Remove a notify socket and return every presence org it covered."""
+    async def disconnect(
+        self,
+        user_id: int,
+        websocket: WebSocket | None = None,
+    ) -> list[int]:
+        """Drop this socket and return the presence orgs it still covered.
+
+        A newer tab replaces the socket before the old handler's cleanup runs.
+        That cleanup must not unregister the replacement or broadcast offline.
+        """
+        current = self._connections.get(user_id)
+        if websocket is not None and current is not websocket:
+            return []
         self._connections.pop(user_id, None)
         primary = self._presence_org_by_user.pop(user_id, None)
         extras = self._extra_presence_orgs.pop(user_id, set())
@@ -54,6 +67,8 @@ class MindmateNotifyWsManager:
         for org_id in sorted(extras):
             if org_id not in org_ids:
                 org_ids.append(org_id)
+        for org_id in org_ids:
+            await workshop_chat_presence_store.remove_presence_org_user(org_id, user_id)
         return org_ids
 
     async def set_presence_org(self, user_id: int, org_id: int) -> None:
@@ -130,6 +145,22 @@ class MindmateNotifyWsManager:
                 online.add(uid)
         return online
 
+    async def deliver_local_presence_org(
+        self,
+        org_id: int,
+        exclude_user: Optional[int],
+        data: str,
+    ) -> None:
+        """Deliver one presence frame to notify sockets on this process."""
+        for uid in list(self._connections):
+            if not self._covers_org(uid, org_id):
+                continue
+            if exclude_user is not None and uid == exclude_user:
+                continue
+            ws = self._connections.get(uid)
+            if ws is not None:
+                await self._safe_send(ws, data, uid)
+
     async def broadcast_org_presence(
         self,
         user_id: int,
@@ -138,7 +169,12 @@ class MindmateNotifyWsManager:
         *,
         exclude_user: Optional[int] = None,
     ) -> None:
-        """Notify org-scoped peers of a presence change."""
+        """Notify org-scoped peers of a presence change.
+
+        When Redis fan-out is on, publish the same ``po`` envelope workshop
+        chat uses. The listener delivers it to notify sockets on every worker.
+        A local send here would deliver the frame twice on this process.
+        """
         payload = json.dumps(
             {
                 "type": "presence",
@@ -146,14 +182,18 @@ class MindmateNotifyWsManager:
                 "status": status,
             },
         )
-        for uid in list(self._connections):
-            if not self._covers_org(uid, org_id):
-                continue
-            if exclude_user is not None and uid == exclude_user:
-                continue
-            ws = self._connections.get(uid)
-            if ws is not None:
-                await self._safe_send(ws, payload, uid)
+        if is_ws_fanout_enabled():
+            await publish_chat_fanout_async(
+                {
+                    "v": 1,
+                    "k": "po",
+                    "oid": org_id,
+                    "ex": exclude_user,
+                    "d": payload,
+                },
+            )
+            return
+        await self.deliver_local_presence_org(org_id, exclude_user, payload)
 
     async def send_to_user(self, user_id: int, payload: Dict[str, Any]) -> bool:
         """Deliver a JSON payload to a connected notify socket."""

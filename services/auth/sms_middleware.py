@@ -317,51 +317,6 @@ class SMSMiddleware:
         async with self.request_context(phone, purpose, user_id, organization_id):
             return await self._sms_service.send_verification_code(phone, purpose, code, lang)
 
-    async def send_alert(self, phones: list[str], lang: Language = "zh") -> Tuple[bool, str]:
-        """
-        Send SMS alert notification to multiple admin phones.
-
-        Used for critical system alerts. Bypasses rate limiting for alerts.
-
-        Args:
-            phones: List of phone numbers (11-digit Chinese mobile numbers)
-            lang: Language code ('zh', 'en', or 'az') for error messages
-
-        Returns:
-            Tuple of (success, message)
-        """
-        if not self.is_available:
-            return False, "SMS service not available"
-
-        return await self._sms_service.send_alert(phones, lang)
-
-    async def send_notification(
-        self,
-        phones: list[str],
-        template_id: str,
-        template_params: Optional[list[str]] = None,
-        lang: Language = "zh",
-    ) -> Tuple[bool, str]:
-        """
-        Send SMS notification with custom template ID.
-
-        Used for custom notifications (e.g., startup notifications, custom alerts).
-        Bypasses rate limiting for notifications.
-
-        Args:
-            phones: List of phone numbers (11-digit Chinese mobile numbers)
-            template_id: Tencent SMS template ID
-            template_params: Optional list of template parameters (empty list if template has no params)
-            lang: Language code ('zh', 'en', or 'az') for error messages
-
-        Returns:
-            Tuple of (success, message)
-        """
-        if not self.is_available:
-            return False, "SMS service not available"
-
-        return await self._sms_service.send_notification(phones, template_id, template_params, lang)
-
     def _track_performance(
         self,
         duration: float,

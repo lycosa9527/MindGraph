@@ -15,7 +15,7 @@ from fastapi.responses import PlainTextResponse
 
 from config.settings import config
 from models.domain.auth import User
-from models.requests.requests_t2i import GenerateTextToImageRequest
+from models.requests.requests_t2i import DEFAULT_IMAGE_MODEL, GenerateTextToImageRequest
 from repositories.zhihui_repo import ZhihuiConversationRepository, ZhihuiGenerationRepository
 from routers.api.helpers import build_public_zhihui_asset_url, generate_signed_url
 from services.admin.user_usage_activity import schedule_user_usage_activity
@@ -36,6 +36,7 @@ from services.infrastructure.http.error_handler import (
     LLMRateLimitError,
     LLMServiceError,
 )
+from services.infrastructure.http.llm_http_errors import is_user_llm_limit_error
 from services.t2i.image_service import generate_and_store_image
 from services.utils.error_types import (
     BACKGROUND_INFRA_ERRORS,
@@ -43,6 +44,11 @@ from services.utils.error_types import (
     HTTP_CLIENT_ERRORS,
 )
 from utils.auth import get_current_user_or_api_key
+from utils.chinese_language_policy import (
+    coerce_generation_language,
+    simplified_chinese_forbidden,
+    to_traditional_chinese,
+)
 from utils.auth.admin_panel_permissions import CAP_FEATURE_ZHIHUI, user_panel_capabilities
 from utils.db.session_open import actor_rls_session, system_rls_session
 
@@ -95,7 +101,9 @@ async def generate_text_to_image(
         if not config.FEATURE_ZHIHUI:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZhiHui disabled")
 
-    language = (req.language or "zh").strip()
+    language = coerce_generation_language((req.language or "zh").strip(), prompt)
+    if simplified_chinese_forbidden():
+        prompt = to_traditional_chinese(prompt)
     api_key_id = None
     if hasattr(request, "state"):
         api_key_id = getattr(request.state, "api_key_id", None)
@@ -187,7 +195,7 @@ async def generate_text_to_image(
                 title=title,
                 user_id=user_id,
                 organization_id=organization_id,
-                image_model=req.model or "qwen-image-3.0",
+                image_model=req.model or DEFAULT_IMAGE_MODEL,
                 status="complete",
                 language=language,
                 commit=False,
@@ -286,6 +294,9 @@ async def generate_text_to_image(
         logger.error("[T2I] Provider error: %s", exc, exc_info=True)
         return _plain_error(exc, 502)
     except LLMServiceError as exc:
+        if is_user_llm_limit_error(exc):
+            logger.info("[T2I] user limit: %s", exc)
+            return _plain_error(exc, 402)
         logger.error("[T2I] LLM service error: %s", exc, exc_info=True)
         return _plain_error(exc, 502)
     except _GENERATION_ERRORS as exc:

@@ -34,9 +34,12 @@ import {
   stripConceptMapFocusQuestionPrefix,
 } from '@/stores/diagram/diagramDefaultLabels'
 import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
+import { diagramTextDecorationStyle } from '@/utils/diagramTextDecorationStyle'
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
+import { readNodeAdornment, textWithIconAdornment } from '@/utils/mindMapAdornments'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isWhitespaceOnlyNodeText, resolveInlineNodeTextForSave } from '@/utils/nodeEditableText'
+import { isNodeExplainTriggerTarget } from '@/utils/nodeExplainTrigger'
 import {
   isVirtualKeyboardChromeElement,
   isVirtualKeyboardChromeEvent,
@@ -141,6 +144,9 @@ const collabCanvas = inject<{ isNodeLockedByOther?: (nodeId: string) => boolean 
 const notifyCollab = useNotifications()
 const { t } = useLanguage()
 const diagramStore = useDiagramSession()
+const learningSheetBlanked = computed(
+  () => diagramStore.isLearningSheet && diagramStore.isNodeBlankedForLearningSheet(props.nodeId)
+)
 const bilingualSecondary = computed(() => {
   const node = diagramStore.data?.nodes?.find((item) => item.id === props.nodeId)
   return (node?.textSecondary ?? '').trim()
@@ -164,6 +170,13 @@ const fieldAriaLabel = computed(() => resolvedPlaceholder.value)
 const localIsEditing = ref(false)
 const showThinkingMapAdornments = computed(
   () => isThinkingMapDiagramType(diagramStore.type) && !localIsEditing.value
+)
+const hasNodeImage = computed(
+  () =>
+    showThinkingMapAdornments.value &&
+    Boolean(
+      readNodeAdornment(diagramStore.data, props.nodeId, diagramStore.data?.connections)?.imageUrl
+    )
 )
 /** Wall clock when this editor last entered edit mode (blur-save grace). */
 let mindMapEditOpenedAtMs = 0
@@ -549,9 +562,7 @@ const rootAlignClass = computed(() => {
   return 'inline-editable-text--align-center'
 })
 
-const displayDecorationStyle = computed(() => ({
-  textDecoration: props.textDecoration || 'none',
-}))
+const displayDecorationStyle = computed(() => diagramTextDecorationStyle(props.textDecoration))
 
 const isDisplayPlaceholder = computed(
   () =>
@@ -574,8 +585,17 @@ const markdownDisplayEnabled = computed(
     !props.truncate
 )
 
+/** Icon is leading text, not a separate chip, so it wraps and centers with the label. */
+const displayLabel = computed(() => {
+  if (localIsEditing.value) return props.text
+  return textWithIconAdornment(
+    props.text,
+    readNodeAdornment(diagramStore.data, props.nodeId, diagramStore.data?.connections)
+  )
+})
+
 const { richHtml: displayMarkdownHtml, needsRichMarkdown } = useDiagramNodeMarkdownDisplay(
-  computed(() => props.text),
+  displayLabel,
   markdownDisplayEnabled
 )
 
@@ -584,7 +604,7 @@ const inputStyle = computed(() => ({
   maxWidth: props.maxWidth,
   width: stretchesToFillWidth.value ? '100%' : undefined,
   textAlign: props.textAlign,
-  textDecoration: props.textDecoration || 'none',
+  ...diagramTextDecorationStyle(props.textDecoration),
   ...(props.autoWrap && editLockedMinHeightPx.value != null
     ? { minHeight: `${editLockedMinHeightPx.value}px` }
     : {}),
@@ -984,6 +1004,11 @@ function handleBlur(): void {
     if (!localIsEditing.value) return
     if (inputRef.value && document.activeElement === inputRef.value) return
     if (secondaryInputRef.value && document.activeElement === secondaryInputRef.value) return
+    // Explain stays disabled until confirm. Refocus instead of saving on that click.
+    if (isNodeExplainTriggerTarget(document.activeElement)) {
+      focusHtmlControl(inputRef.value)
+      return
+    }
     if (isVirtualKeyboardChromeElement(document.activeElement)) return
     if (isVirtualKeyboardPanelOpen()) {
       focusHtmlControl(inputRef.value)
@@ -1035,6 +1060,8 @@ function commitEditOnOutsidePointer(event: Event): void {
   if (!localIsEditing.value) return
   if (isEventInsideEditor(event)) return
   if (isVirtualKeyboardChromeEvent(event)) return
+  // Same gesture must not confirm the draft and start node explain.
+  if (isNodeExplainTriggerTarget(event.target)) return
   // Keep sticky edit only for toast/overlay focus theft — not canvas clicks.
   if (isMindMapStickyEditOwner() && isEphemeralOutsideEditTarget(event)) {
     return
@@ -1356,7 +1383,9 @@ onUnmounted(() => {
       rootAlignClass,
       {
         'inline-editable-text--full-width': fullWidth,
+        'inline-editable-text--image': hasNodeImage,
         'inline-editable-text--bilingual': bilingualSecondary || (localIsEditing && bilingualEdit),
+        'learning-sheet-blanked': learningSheetBlanked,
       },
     ]"
     @dblclick="handleDoubleClick"
@@ -1367,6 +1396,7 @@ onUnmounted(() => {
     <MindMapNodeAdornments
       v-if="showThinkingMapAdornments"
       :node-id="nodeId"
+      omit-icon
     />
     <!-- Hidden span for measuring text width (autoWrap uses measureSample for live IME draft) -->
     <span
@@ -1524,7 +1554,7 @@ onUnmounted(() => {
         maxWidth: maxWidth,
         width: stretchesToFillWidth ? '100%' : undefined,
         textAlign: textAlign,
-        textDecoration: textDecoration || 'none',
+        ...displayDecorationStyle,
       }"
       :title="truncate ? text : undefined"
     >
@@ -1558,8 +1588,7 @@ onUnmounted(() => {
         <span
           class="inline-edit-plain"
           :class="{ 'inline-edit-plain--whitespace': isWhitespaceOnlyNodeText(text) }"
-          :style="displayDecorationStyle"
-          >{{ text }}</span
+          >{{ displayLabel }}</span
         >
       </template>
       <div
@@ -1606,10 +1635,20 @@ onUnmounted(() => {
   max-width: 100%;
   min-height: 1.5em;
   position: relative;
+  /* CJK webfonts often ship one weight. Ask the browser to faux-bold and oblique. */
+  font-synthesis: weight style;
 }
 
 .inline-editable-text--full-width {
   width: 100%;
+}
+
+.inline-editable-text--image {
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: max-content;
+  max-width: none;
 }
 
 .inline-editable-text--align-left {
@@ -1711,7 +1750,8 @@ onUnmounted(() => {
 }
 
 .inline-edit-plain {
-  text-decoration: inherit;
+  /* The display box paints the line. A second decoration on this span doubles it. */
+  text-decoration: none;
 }
 
 .inline-edit-plain--whitespace {

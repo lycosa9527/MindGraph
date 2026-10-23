@@ -21,6 +21,7 @@ import {
 } from '@/composables/queries'
 import { normalizeSchoolTier } from '@/constants/schoolTier'
 import type { UserRole } from '@/types'
+import { isAdminAccountPhone, isBayiSsoPhone } from '@/utils/accountPhone'
 import {
   normalizeUserRole,
   userRoleLabel,
@@ -74,6 +75,7 @@ const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
 const phoneEdit = ref('')
+const loadedPhoneIsBayiSubject = ref(false)
 const emailEdit = ref('')
 const nameEdit = ref('')
 const organizationId = ref<number | null>(null)
@@ -123,6 +125,11 @@ const organizationReadonly = computed(() => {
 })
 
 const roleSelectTiers = computed(() => userRoleSelectTiers())
+const phoneAllowsUuid = computed(
+  () => loadedPhoneIsBayiSubject.value || isBayiSsoPhone(phoneEdit.value)
+)
+const phoneFieldMaxLength = computed(() => (phoneAllowsUuid.value ? 36 : 11))
+const phoneFieldInputMode = computed(() => (phoneAllowsUuid.value ? 'text' : 'numeric'))
 
 function roleSchoolTier() {
   const rawTier = detail.value?.school_tier
@@ -167,6 +174,7 @@ function onClose(): void {
 function applyDetail(data: Record<string, unknown>): void {
   detail.value = data
   phoneEdit.value = typeof data.phone === 'string' ? data.phone : ''
+  loadedPhoneIsBayiSubject.value = isBayiSsoPhone(phoneEdit.value)
   emailEdit.value = typeof data.email === 'string' ? data.email : ''
   nameEdit.value = typeof data.name === 'string' ? data.name : ''
   const orgId = data.organization_id
@@ -187,6 +195,7 @@ async function loadDetail(): Promise<void> {
   }
   loading.value = true
   detail.value = null
+  loadedPhoneIsBayiSubject.value = false
   try {
     const result = await userQuery.refetch()
     const data = result.data as Record<string, unknown> | undefined
@@ -218,7 +227,7 @@ function validateBeforeSave(): boolean {
       notify.warningKey('admin.accountPhoneOrEmailRequired')
       return false
     }
-    if (phone && (phone.length !== 11 || !phone.startsWith('1') || !/^\d+$/.test(phone))) {
+    if (phone && !isAdminAccountPhone(phone)) {
       notify.warningKey('admin.phoneFormatHint')
       return false
     }
@@ -417,8 +426,8 @@ watch(visible, (open) => {
             <el-input
               v-model="phoneEdit"
               class="mindbot-swiss-input w-full max-w-md"
-              inputmode="numeric"
-              maxlength="11"
+              :inputmode="phoneFieldInputMode"
+              :maxlength="phoneFieldMaxLength"
               :placeholder="t('admin.phonePlaceholder')"
               :disabled="!fullEdit && mode !== 'school'"
             />

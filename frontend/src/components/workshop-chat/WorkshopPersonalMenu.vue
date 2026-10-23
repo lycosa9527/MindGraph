@@ -6,6 +6,7 @@ import { LayoutGrid, LogOut, ScrollText, User } from '@lucide/vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { toggleQuickAccessRemote } from '@/composables/sidebar/useQuickAccessRemote'
 import { useAuthStore } from '@/stores/auth'
+import { displayAccountLoginValue, resolveAccountLoginIdentity } from '@/utils/accountLoginIdentity'
 import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 
 const emit = defineEmits<{
@@ -19,6 +20,14 @@ const { t } = useLanguage()
 const visible = ref(false)
 
 const displayName = computed(() => authStore.user?.username || authStore.user?.phone || 'User')
+const accountLoginValue = computed(() =>
+  displayAccountLoginValue(
+    resolveAccountLoginIdentity({
+      phone: authStore.user?.phone,
+      email: authStore.user?.email,
+    })
+  )
+)
 const displayAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 const displayAvatarSrc = computed(() => userAvatarImageSrc(authStore.user?.avatar))
 
@@ -77,7 +86,12 @@ function handleSignOut(): void {
         </div>
         <div class="ws-popover-user-meta">
           <div class="ws-popover-user-name">{{ displayName }}</div>
-          <div class="ws-popover-user-phone">{{ authStore.user?.phone }}</div>
+          <div
+            v-if="accountLoginValue"
+            class="ws-popover-user-phone"
+          >
+            {{ accountLoginValue }}
+          </div>
         </div>
       </div>
 

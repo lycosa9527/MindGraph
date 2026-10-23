@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
+import { selectCanvasLlmModel } from '@/stores/llmMenuChoice'
 import { type LLMModel, useLLMResultsStore } from '@/stores/llmResults'
 
 const props = defineProps<{
@@ -57,19 +58,15 @@ function buttonStyle(model: LLMModel): Record<string, string> {
 
 async function onModelClick(model: LLMModel): Promise<void> {
   const state = modelState(model)
-  if (state === 'ready') {
-    await llmResultsStore.switchToModel(model)
-    props.onModelChange?.()
-    return
-  }
   if (state === 'loading') {
     return
   }
-  if (isSelected(model)) {
+  if (state !== 'ready' && isSelected(model)) {
     llmResultsStore.setSelectedModel(null)
-  } else {
-    llmResultsStore.setSelectedModel(model)
+    props.onModelChange?.()
+    return
   }
+  await selectCanvasLlmModel(model)
   props.onModelChange?.()
 }
 </script>

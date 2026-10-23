@@ -1,7 +1,9 @@
 # Showcase — case gallery media + moderation
 
-One backend package (Kitty-style domain + infra). Routers stay thin under
-`routers/features/showcase_*.py` and `routers/auth/admin/showcase.py`.
+One backend package (Kitty-style domain + infra). Public routes live in
+`routers/features/showcase/`. Admin routes live in
+`routers/features/showcase/admin.py` and are mounted from
+`routers/auth/admin/__init__.py` at `/admin/showcase/*`.
 
 ## Layout
 
@@ -16,10 +18,8 @@ One backend package (Kitty-style domain + infra). Routers stay thin under
 | `services/showcase/audit.py` | Audit log writes |
 | `services/showcase/staff_permissions.py` | Permission matrix |
 | `services/showcase/field_options.py` | Subject/grade/tag meta |
-| `routers/features/showcase_*.py` | Public `/api/showcase/*` |
-| `routers/auth/admin/showcase.py` | Admin stats, grants, fields, **storage** |
-
-Compatibility shims: `services.showcase.upload_roles` re-exports `uploads.roles`.
+| `routers/features/showcase/` | Public `/api/showcase/*` (`routes_feed`, `routes_posts`, `routes_uploads`, `routes_ai`, `routes_covers`, `routes_actions`) |
+| `routers/features/showcase/admin.py` | Admin stats, grants, fields, storage (`/admin/showcase/*`) |
 
 ## Gallery limits (diagram case / template)
 

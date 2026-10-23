@@ -8,6 +8,7 @@ import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Paintbrush } from '@l
 
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
+import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -20,6 +21,7 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const ribbon = useMindMapRibbonActions()
 const {
   formatBrushActive,
   formatBrushLocked,
@@ -37,6 +39,30 @@ const {
   handleTextColorPick,
   handleFormatBrush,
 } = useCanvasToolbarFormatting()
+
+function requireNodeSelection(action: () => void): void {
+  if (ribbon.hasSelection) {
+    action()
+    return
+  }
+  notify.warningKey('canvas.toolbar.selectNodesFirst')
+}
+
+function onFormatPainterClick(): void {
+  if (formatBrushActive.value) {
+    handleFormatBrush()
+    return
+  }
+  requireNodeSelection(handleFormatBrush)
+}
+
+function onFormatPainterDblClick(): void {
+  if (formatBrushActive.value) {
+    handleFormatBrush({ lock: true })
+    return
+  }
+  requireNodeSelection(() => handleFormatBrush({ lock: true }))
+}
 
 function onNeedsSelectionClick(ev: MouseEvent): void {
   if (!props.disabled) return
@@ -58,10 +84,15 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
       <button
         type="button"
         class="mm-btn mm-btn--icon"
-        :class="{ 'is-active': formatBrushActive, 'is-locked': formatBrushLocked }"
+        :class="{
+          'is-active': formatBrushActive,
+          'is-locked': formatBrushLocked,
+          'is-dimmed': !ribbon.hasSelection && !formatBrushActive,
+        }"
+        :aria-disabled="!ribbon.hasSelection && !formatBrushActive"
         :aria-label="t('canvas.toolbar.formatPainter')"
-        @click="() => handleFormatBrush()"
-        @dblclick.prevent="handleFormatBrush({ lock: true })"
+        @click="onFormatPainterClick"
+        @dblclick.prevent="onFormatPainterDblClick"
       >
         <Paintbrush class="w-4 h-4" />
       </button>

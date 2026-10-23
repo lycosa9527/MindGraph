@@ -17,6 +17,7 @@ import type {
 } from '@/composables/mindMap/useMindMapNodeExplain'
 import {
   citedExplainIndexes,
+  explainCitationDisplayMap,
   hostFromUrl,
   lastThinkingLines,
   splitExplainCitationParts,
@@ -131,13 +132,22 @@ const awaiting = computed(() => props.loading && !bodyText.value && !showThinkin
 
 const bodyParts = computed(() => splitExplainCitationParts(bodyText.value))
 
+const citationDisplay = computed(() =>
+  explainCitationDisplayMap(bodyText.value, props.sources.length)
+)
+
+function displayCite(raw: number): number {
+  return citationDisplay.value.get(raw) ?? raw
+}
+
 const citedChips = computed(() => {
   const chips: { index: number; title: string; url: string }[] = []
   citedExplainIndexes(bodyText.value).forEach((index) => {
     const source = props.sources[index - 1]
-    if (!source) return
+    const shown = citationDisplay.value.get(index)
+    if (!source || shown == null) return
     chips.push({
-      index,
+      index: shown,
       url: source.url,
       title: source.title.trim() || hostFromUrl(source.url),
     })
@@ -318,13 +328,15 @@ onUnmounted(() => {
               :href="sourceForCite(part.index)?.url"
               target="_blank"
               rel="noopener noreferrer"
-              :aria-label="t('canvas.mindMapNodeExplain.citation', { n: String(part.index) })"
-              >[{{ part.index }}]</a
+              :aria-label="
+                t('canvas.mindMapNodeExplain.citation', { n: String(displayCite(part.index)) })
+              "
+              >[{{ displayCite(part.index) }}]</a
             >
             <span
               v-else
               class="ne-bubble__cite ne-bubble__cite--plain"
-              >[{{ part.index }}]</span
+              >[{{ displayCite(part.index) }}]</span
             >
           </template>
         </template>

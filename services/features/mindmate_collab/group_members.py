@@ -26,6 +26,7 @@ from services.features.mindmate_collab.seminar_roles import (
     normalize_seminar_role,
     resolve_seminar_leader_id,
 )
+from services.utils.typing_helpers import result_rowcount
 from utils.db.session_open import system_rls_session
 
 
@@ -99,16 +100,10 @@ async def external_invite_ids(
     if not wanted:
         return set()
     async with system_rls_session() as db:
-        rows = await db.execute(
-            select(User.id, User.organization_id).where(User.id.in_(wanted))
-        )
+        rows = await db.execute(select(User.id, User.organization_id).where(User.id.in_(wanted)))
     pending: set[int] = set()
     for user_id, org_id in rows.all():
-        same_school = (
-            organization_id is not None
-            and org_id is not None
-            and int(org_id) == int(organization_id)
-        )
+        same_school = organization_id is not None and org_id is not None and int(org_id) == int(organization_id)
         if not same_school:
             pending.add(int(user_id))
     return pending
@@ -121,9 +116,7 @@ async def seminar_host_org_label(organization_id: int | None) -> str:
     async with system_rls_session() as db:
         row = (
             await db.execute(
-                select(Organization.display_name, Organization.name).where(
-                    Organization.id == int(organization_id)
-                )
+                select(Organization.display_name, Organization.name).where(Organization.id == int(organization_id))
             )
         ).one_or_none()
     if row is None:
@@ -184,10 +177,7 @@ async def list_group_member_roles(session_id: str) -> dict[int, str]:
                 MindmateCollabMember.session_id == session_id
             )
         )
-        return {
-            int(user_id): normalize_seminar_role(role)
-            for user_id, role in rows.all()
-        }
+        return {int(user_id): normalize_seminar_role(role) for user_id, role in rows.all()}
 
 
 async def seed_closed_group(
@@ -211,18 +201,14 @@ async def seed_closed_group(
         for user_id in wanted:
             if user_id in existing:
                 continue
-            role = (
-                SEMINAR_ROLE_LEADER
-                if user_id == int(owner_id)
-                else role_map.get(user_id, SEMINAR_ROLE_OBSERVER)
-            )
+            role = SEMINAR_ROLE_LEADER if user_id == int(owner_id) else role_map.get(user_id, SEMINAR_ROLE_OBSERVER)
             if user_id != int(owner_id) and role == SEMINAR_ROLE_LEADER:
                 role = SEMINAR_ROLE_OBSERVER
             db.add(
                 MindmateCollabMember(
                     session_id=session_id,
                     user_id=user_id,
-                    added_at=now,
+                    joined_at=now,
                     seminar_role=role,
                     accepted=user_id not in pending,
                 )
@@ -239,15 +225,13 @@ async def repair_seminar_leader_roles(session_id: str, owner_user_id: int) -> in
     """
     async with system_rls_session() as db:
         rows = (
-            await db.execute(
-                select(MindmateCollabMember).where(MindmateCollabMember.session_id == session_id)
-            )
-        ).scalars().all()
+            (await db.execute(select(MindmateCollabMember).where(MindmateCollabMember.session_id == session_id)))
+            .scalars()
+            .all()
+        )
         if not rows:
             return int(owner_user_id)
-        roles = {
-            int(row.user_id): normalize_seminar_role(row.seminar_role) for row in rows
-        }
+        roles = {int(row.user_id): normalize_seminar_role(row.seminar_role) for row in rows}
         leader_id = resolve_seminar_leader_id(roles, owner_user_id)
         changed = False
         for row in rows:
@@ -265,7 +249,7 @@ async def repair_seminar_leader_roles(session_id: str, owner_user_id: int) -> in
                 MindmateCollabMember(
                     session_id=session_id,
                     user_id=int(leader_id),
-                    added_at=datetime.now(tz=UTC),
+                    joined_at=datetime.now(tz=UTC),
                     seminar_role=SEMINAR_ROLE_LEADER,
                 )
             )
@@ -295,7 +279,7 @@ async def set_group_member_role(session_id: str, user_id: int, role: str) -> boo
                 MindmateCollabMember(
                     session_id=session_id,
                     user_id=target,
-                    added_at=datetime.now(tz=UTC),
+                    joined_at=datetime.now(tz=UTC),
                     seminar_role=normalized,
                 )
             )
@@ -314,10 +298,10 @@ async def transfer_seminar_leadership(session_id: str, new_leader_id: int) -> bo
     target = int(new_leader_id)
     async with system_rls_session() as db:
         rows = (
-            await db.execute(
-                select(MindmateCollabMember).where(MindmateCollabMember.session_id == session_id)
-            )
-        ).scalars().all()
+            (await db.execute(select(MindmateCollabMember).where(MindmateCollabMember.session_id == session_id)))
+            .scalars()
+            .all()
+        )
         if not rows:
             return False
         by_user = {int(row.user_id): row for row in rows}
@@ -326,7 +310,7 @@ async def transfer_seminar_leadership(session_id: str, new_leader_id: int) -> bo
                 MindmateCollabMember(
                     session_id=session_id,
                     user_id=target,
-                    added_at=datetime.now(tz=UTC),
+                    joined_at=datetime.now(tz=UTC),
                     seminar_role=SEMINAR_ROLE_LEADER,
                 )
             )
@@ -364,7 +348,7 @@ async def remove_group_member(session_id: str, user_id: int) -> bool:
             )
         )
         await db.commit()
-        return int(result.rowcount or 0) > 0
+        return result_rowcount(result) > 0
 
 
 async def list_pending_seminar_invites(user_id: int) -> list[dict[str, str | int]]:
@@ -438,9 +422,7 @@ async def respond_seminar_invite(
             await db.commit()
             return {"accepted": False}
         session = (
-            await db.execute(
-                select(MindmateCollabSession).where(MindmateCollabSession.id == session_id)
-            )
+            await db.execute(select(MindmateCollabSession).where(MindmateCollabSession.id == session_id))
         ).scalar_one_or_none()
         ended = session is None or session.ended_at is not None
         payload: dict[str, str | int | bool] = {"accepted": False, "ended": True}

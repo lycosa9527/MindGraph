@@ -3,6 +3,7 @@
  * Mind-map collapse (−) / expand (count pill) on the connector midpoint, with stub line when collapsed.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useLanguage } from '@/composables'
 import {
@@ -14,11 +15,13 @@ import {
 } from '@/composables/canvasToolbar/useMindMapCollapseTogglePosition'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { effectiveCanvasInputMode } from '@/config/canvasInputMode'
 import { mindMapControlScale } from '@/config/mindMapEBlackboard'
 import { MIND_MAP_GEOMETRY, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { isMindMapPathCollapsed, mindMapDescendantCount } from '@/stores/diagram/mindMapCollapse'
 import { useUIStore } from '@/stores/ui'
 import { mindMapNodeSide } from '@/utils/mindMapLocation'
+import { isMobileRoutePath } from '@/utils/mobileRouteRedirect'
 
 const props = defineProps<{
   containerRef: HTMLElement | null
@@ -29,7 +32,12 @@ const diagramStore = useDiagramSession()
 const uiStore = useUIStore()
 const { t } = useLanguage()
 
-const controlScale = computed(() => mindMapControlScale(uiStore.eBlackboardOptimize))
+const route = useRoute()
+const controlScale = computed(() =>
+  mindMapControlScale(
+    effectiveCanvasInputMode(uiStore.canvasInputMode, isMobileRoutePath(route.path))
+  )
+)
 const overlayStyle = computed(() => ({
   '--mm-eb-scale': String(controlScale.value),
 }))

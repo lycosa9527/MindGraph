@@ -8,6 +8,9 @@ export const ORGANIZATION_NAME_MAX_LENGTH = 200
 export const INVITE_CODE_PATTERN =
   /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{3}-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{3}$/
 
+/** Previous format (AAAA-XXXXX), still accepted for lookup. */
+export const INVITE_CODE_LEGACY_PATTERN = /^[A-Z]{4}-[A-Z0-9]{5}$/
+
 function randomPart(length: number, charset: string): string {
   return Array.from({ length }, () => charset[Math.floor(Math.random() * charset.length)]).join('')
 }
@@ -16,12 +19,17 @@ export function generateInvitationCode(): string {
   return `${randomPart(3, INVITE_SAFE_CHARS)}-${randomPart(3, INVITE_SAFE_CHARS)}`
 }
 
-export function isValidInvitationCode(code: string): boolean {
-  return INVITE_CODE_PATTERN.test(code.trim().toUpperCase())
+export function normalizeInvitationCodeInput(code: string): string {
+  return code
+    .trim()
+    .toUpperCase()
+    .replace(/[—–－﹣−]/g, '-')
+    .replace(/\s+/g, '')
 }
 
-export function normalizeInvitationCodeInput(code: string): string {
-  return code.trim().toUpperCase()
+export function isValidInvitationCode(code: string): boolean {
+  const normalized = normalizeInvitationCodeInput(code)
+  return INVITE_CODE_PATTERN.test(normalized) || INVITE_CODE_LEGACY_PATTERN.test(normalized)
 }
 
 export function generateRandomSchoolCode(): string {

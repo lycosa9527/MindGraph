@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * MobileAccountPage — Account settings page for mobile.
- * Shows user info, settings rows (phone, password, avatar, UI/prompt language), and logout.
+ * Shows user info, settings rows (account id, password, avatar, UI/prompt language), and logout.
  */
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -11,10 +11,12 @@ import {
   ChevronDown,
   ChevronRight,
   Globe,
+  Hash,
   Languages,
   Link2,
   Lock,
   LogOut,
+  Mail,
   Phone,
   Share2,
   Smile,
@@ -26,6 +28,7 @@ import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.v
 import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import { useLanguage } from '@/composables'
 import { usePwaInstall } from '@/composables/usePwaInstall'
+import { formatGalleryLanguageMenuLabel } from '@/i18n/galleryLanguageMenuLabel'
 import {
   PROMPT_LANGUAGE_OPTIONS,
   getLocalesForInterfaceLanguagePicker,
@@ -34,6 +37,7 @@ import {
 import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
+import { displayAccountLoginValue, resolveAccountLoginIdentity } from '@/utils/accountLoginIdentity'
 import { persistLanguagePreferencesIfAuthenticated } from '@/utils/persistLanguagePreferences'
 import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
@@ -66,12 +70,22 @@ const userRolePill = computed(() => {
   }
 })
 
-const maskedPhone = computed(() => {
-  const phone = user.value?.phone || ''
-  if (phone.length >= 7) {
-    return `${phone.slice(0, 3)}****${phone.slice(-4)}`
+const accountLogin = computed(() =>
+  resolveAccountLoginIdentity({
+    phone: user.value?.phone,
+    email: user.value?.email,
+  })
+)
+const canChangePhone = computed(() => accountLogin.value.kind === 'mobile')
+const accountLoginValue = computed(() => displayAccountLoginValue(accountLogin.value) || '—')
+const accountLoginIcon = computed(() => {
+  if (accountLogin.value.kind === 'email') {
+    return Mail
   }
-  return phone || '—'
+  if (accountLogin.value.kind === 'bayi') {
+    return Hash
+  }
+  return Phone
 })
 
 const showChangePhone = ref(false)
@@ -86,6 +100,7 @@ const canMintQuickRegister = computed(
 )
 
 const uiLangExpanded = ref(false)
+const presenterLangExpanded = ref(false)
 const promptLangExpanded = ref(false)
 const promptSearchQuery = ref('')
 
@@ -126,10 +141,21 @@ const currentPromptLabel = computed(() => {
   return match?.label ?? uiStore.promptLanguage
 })
 
+const currentPresenterLabel = computed(() => {
+  const match = enabledUiLocales.value.find((entry) => entry.code === uiStore.presenterUiLocale)
+  return match?.nativeName ?? uiStore.presenterUiLocale
+})
+
 function selectUiLanguage(code: string) {
   uiStore.setLanguage(code as Language)
   persistLanguagePreferencesIfAuthenticated()
   uiLangExpanded.value = false
+}
+
+function selectPresenterLanguage(code: string) {
+  uiStore.setPresenterUiLocale(code)
+  persistLanguagePreferencesIfAuthenticated()
+  presenterLangExpanded.value = false
 }
 
 function selectPromptLanguage(code: string) {
@@ -144,6 +170,7 @@ function toggleUiLang() {
   const opening = !uiLangExpanded.value
   uiLangExpanded.value = opening
   if (opening) {
+    presenterLangExpanded.value = false
     promptLangExpanded.value = false
     promptSearchQuery.value = ''
   }
@@ -154,6 +181,7 @@ function togglePromptLang() {
   promptLangExpanded.value = opening
   if (opening) {
     uiLangExpanded.value = false
+    presenterLangExpanded.value = false
   } else {
     promptSearchQuery.value = ''
   }
@@ -210,26 +238,30 @@ async function handleLogout() {
 
       <!-- Settings list -->
       <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <!-- Change Phone -->
-        <button
-          class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
-          @click="showChangePhone = true"
+        <component
+          :is="canChangePhone ? 'button' : 'div'"
+          class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left"
+          :class="canChangePhone ? 'active:bg-gray-50 transition-colors' : undefined"
+          :type="canChangePhone ? 'button' : undefined"
+          @click="canChangePhone ? (showChangePhone = true) : undefined"
         >
-          <Phone
+          <component
+            :is="accountLoginIcon"
             :size="20"
             class="text-gray-500 shrink-0"
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
-              <I18nText k="sidebar.changePhone" />
+              <I18nText :k="accountLogin.labelKey" />
             </div>
-            <div class="text-xs text-gray-400 mt-0.5">{{ maskedPhone }}</div>
+            <div class="text-xs text-gray-400 mt-0.5">{{ accountLoginValue }}</div>
           </div>
           <ChevronRight
+            v-if="canChangePhone"
             :size="18"
             class="text-gray-400 shrink-0"
           />
-        </button>
+        </component>
 
         <div class="border-t border-gray-100 mx-4" />
 
@@ -259,7 +291,7 @@ async function handleLogout() {
 
         <!-- Set login password (quick reg) or change password -->
         <button
-          v-if="needsSetLoginPassword && user?.phone"
+          v-if="canChangePhone && needsSetLoginPassword"
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
           @click="showSetPasswordSms = true"
         >
@@ -332,7 +364,13 @@ async function handleLogout() {
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
-              <I18nText k="mobile.uiLanguage" />
+              <I18nText
+                :k="
+                  uiStore.bilingualUiEnabled
+                    ? 'settings.language.primaryLanguage'
+                    : 'mobile.uiLanguage'
+                "
+              />
             </div>
             <div class="text-xs text-gray-400 mt-0.5">{{ currentUiLabel }}</div>
           </div>
@@ -355,7 +393,9 @@ async function handleLogout() {
             :class="uiStore.language === locale.code ? 'bg-indigo-50' : ''"
             @click="selectUiLanguage(locale.code)"
           >
-            <span class="text-sm text-gray-800">{{ locale.nativeName }}</span>
+            <span class="text-sm text-gray-800">{{
+              formatGalleryLanguageMenuLabel(locale.code, locale.nativeName)
+            }}</span>
             <span class="text-xs text-gray-400">{{ locale.englishName }}</span>
             <Check
               v-if="uiStore.language === locale.code"
@@ -367,8 +407,55 @@ async function handleLogout() {
 
         <div class="border-t border-gray-100 mx-4" />
 
+        <button
+          v-if="uiStore.bilingualUiEnabled"
+          type="button"
+          class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
+          @click="presenterLangExpanded = !presenterLangExpanded"
+        >
+          <Languages
+            :size="20"
+            class="text-gray-500 shrink-0"
+          />
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-gray-900">
+              <I18nText k="settings.language.secondaryLanguage" />
+            </div>
+            <div class="text-xs text-gray-400 mt-0.5">{{ currentPresenterLabel }}</div>
+          </div>
+          <ChevronDown
+            :size="18"
+            class="text-gray-400 shrink-0 transition-transform"
+            :class="{ 'rotate-180': presenterLangExpanded }"
+          />
+        </button>
+        <div
+          v-if="uiStore.bilingualUiEnabled && presenterLangExpanded"
+          class="bg-gray-50 px-4 py-2 border-t border-gray-100"
+        >
+          <button
+            v-for="locale in enabledUiLocales"
+            :key="`presenter-${locale.code}`"
+            type="button"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg active:bg-gray-200 transition-colors"
+            :class="uiStore.presenterUiLocale === locale.code ? 'bg-indigo-50' : ''"
+            @click="selectPresenterLanguage(locale.code)"
+          >
+            <span class="text-sm text-gray-800">{{
+              formatGalleryLanguageMenuLabel(locale.code, locale.nativeName)
+            }}</span>
+            <span class="text-xs text-gray-400">{{ locale.englishName }}</span>
+            <Check
+              v-if="uiStore.presenterUiLocale === locale.code"
+              :size="16"
+              class="ml-auto text-indigo-600 shrink-0"
+            />
+          </button>
+        </div>
+
         <!-- Prompt Language -->
         <button
+          v-else
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
           @click="togglePromptLang"
         >
@@ -391,7 +478,7 @@ async function handleLogout() {
 
         <!-- Prompt Language inline selector -->
         <div
-          v-if="promptLangExpanded"
+          v-if="!uiStore.bilingualUiEnabled && promptLangExpanded"
           class="bg-gray-50 px-4 py-2 border-t border-gray-100"
         >
           <!-- Top languages (zh, zh-hant, en) -->
@@ -402,7 +489,9 @@ async function handleLogout() {
             :class="uiStore.promptLanguage === opt.code ? 'bg-indigo-50' : ''"
             @click="selectPromptLanguage(opt.code)"
           >
-            <span class="text-sm text-gray-800">{{ opt.label }}</span>
+            <span class="text-sm text-gray-800">{{
+              formatGalleryLanguageMenuLabel(opt.code, opt.label)
+            }}</span>
             <span class="text-xs text-gray-400">{{ opt.englishName }}</span>
             <Check
               v-if="uiStore.promptLanguage === opt.code"
@@ -431,7 +520,9 @@ async function handleLogout() {
               :class="uiStore.promptLanguage === opt.code ? 'bg-indigo-50' : ''"
               @click="selectPromptLanguage(opt.code)"
             >
-              <span class="text-sm text-gray-800">{{ opt.label }}</span>
+              <span class="text-sm text-gray-800">{{
+                formatGalleryLanguageMenuLabel(opt.code, opt.label)
+              }}</span>
               <span class="text-xs text-gray-400">{{ opt.englishName }}</span>
               <Check
                 v-if="uiStore.promptLanguage === opt.code"

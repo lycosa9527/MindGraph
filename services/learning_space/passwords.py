@@ -137,6 +137,9 @@ def merge_ai_permissions(raw: dict[str, Any] | None) -> dict[str, Any]:
     for legacy, granular in LEGACY_AI_CAPABILITY_ALIASES.items():
         if granular not in raw and legacy in raw and bool(raw[legacy]):
             merged[granular] = True
+    # Assignments saved before the rename stored node_palette instead of ai_brainstorm.
+    if "ai_brainstorm" not in raw and bool(raw.get("node_palette")):
+        merged["ai_brainstorm"] = True
 
     # Older rows may grant tools without an explicit ai_assist flag.
     if "ai_assist" not in raw and any(bool(merged[k]) for k in GRANULAR_AI_CAPABILITIES):
@@ -149,7 +152,6 @@ def merge_ai_permissions(raw: dict[str, Any] | None) -> dict[str, Any]:
 
     # Keep legacy mirrors in sync for older gate call sites / clients.
     merged["generate_diagram"] = bool(merged["topic_generate"])
-    merged["node_palette"] = bool(merged["ai_brainstorm"])
     merged["inline_recommend"] = bool(merged["ai_brainstorm"])
     merged["doc_summary"] = bool(merged["file_generate"] or merged["web_generate"])
 

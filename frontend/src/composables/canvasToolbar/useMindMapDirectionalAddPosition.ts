@@ -18,7 +18,7 @@ export function useMindMapDirectionalAddPosition(options: {
   selectedNodeId: Ref<string | null>
   /** When false, handles hide immediately (no rAF delay). */
   enabled: Ref<boolean>
-  /** 1 = default; 2 = e-blackboard (see `MIND_MAP_E_BLACKBOARD_CONTROL_SCALE`). */
+  /** 1 = default; 2 = classroom board (see `MIND_MAP_E_BLACKBOARD_CONTROL_SCALE`). */
   controlScale?: Ref<number>
 }) {
   const handles = ref<DirectionalAddHandlePosition[]>([])

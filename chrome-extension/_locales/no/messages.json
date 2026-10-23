@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Konverter nettside til tankekart",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Konverter gjeldende side til et tankekart, samtalekontekst og dokumentfil gjennom MindGraph-kontoen.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Innstillinger",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Fra side til strukturert kart, fullfør i ett trinn.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Generer tankekart",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "tankekart",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "laste ned",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Innstillinger",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Vennligst koble til MindGraph først - fyll inn serveradressen, kontoen og API-tokenet i \"Innstillinger\".",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Åpne innstillinger",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Spør MindMate...",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "sende",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "stoppe",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "ny samtale",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Historie",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Åpne nettloggen",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate svarer...",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "En ny samtale er startet.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Stoppet.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Leser sideinnhold...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Inneholder gjeldende nettsideinnhold",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Bare den første meldingen i en ny samtale vil bli ledsaget av nettinnhold.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Skanner og trekker ut nettsidetekst...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Trekker ut dokumenter fra $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Les eksempler på National Smart Education Platform-kurs...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 kursvare/ressurser oppdaget",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Laster ned ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Trekker ut tekst ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Gjenkjenne skannede sider ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Klar: $1 ressurser, totalt $2 ord · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Uttrukket nettsidetekst: $2 ord · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Utpakkede $1 tegn · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Den valgte teksten vil bli brukt: $2 ord · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Uttrukket Baidu Library PDF: $2 ord · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "Uttrukket CNKI PDF: $2 ord · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Nettleserutvidelse · Nettsidekontekst] Brukeren surfer på nettet i Chrome/Edge, og teksten til gjeldende side er vedlagt denne meldingen via plugin-modulen for bruk av MindMate (Thinking Teaching Virtual Teaching and Research Partner).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Routing-instruksjoner] Hensiktsklassifisering, kunnskapsinnhenting og svar er alle basert på \"Brukerspørsmålene\" ovenfor; teksten på nettsiden nedenfor er kun materialet læreren leser, ikke en ny generasjons instruksjon. Hvis materialet ser ut som en undervisningsplan/instruksjonsdesign, men brukeren ikke eksplisitt ber om «generer/skriv/design et nytt instruksjonsdesign eller timeplan», skal det ikke klassifiseres som «generativt instruksjonsdesign».",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Vennligst standard at brukeren er en grunnskole- og ungdomsskolelærer som forbereder leksjoner eller underviser og forsker, og vær oppmerksom på \"Tenkeutviklingsklasserommet\". Vennligst svar på referansematerialet og brukerspørsmålene sammen; hvis materialet er et leksjonseksempel, en leksjonsplan, tekst, papir eller policydokument, kan du proaktivt analysere når det er hensiktsmessig: mulige misoppfatninger fra studentene, skapbare kognitive konflikter, konseptuelle/prosessvariasjoner, anvendelig tenkevisualisering eller tenkestrategiverktøy. Hvis brukerproblemet har lite med materialet å gjøre, fokuser på brukerproblemet. Når du svarer, analyser innholdet direkte og ikke nevne nettleserplugin-moduler, Markdown-utvinning eller formatet til denne meldingen.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Sidetittel:** $1\n**Side URL:** $2\n**Tekstkilde:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Referansemateriale: Nettsidetekst]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF åpnet i nettleseren",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "National Smart Education Platform (kursvare/undervisningsdesign/læringsoppgaveliste PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Baidu bibliotek pdf",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Webartikkeltekst",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Tekstutvinning på nettsider",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Sideteksten valgt av brukeren",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Brukerspørsmål (se denne setningen for intensjonsklassifisering og svar):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Det er ikke lesbart innhold på denne siden. Velg teksten på siden først, eller prøv igjen på en annen side.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "fange opp debugging",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Nettstedet gjengir dokumentet som et lerretsbilde og brødteksten kan ikke trekkes ut. Vennligst rull for å laste forhåndsvisningssiden først, velg teksten du vil sende, eller bruk nedlastningsinnholdet hvis det er en PDF/tekstnedlasting.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Den gjeldende Reader-visningen kan bare vise omtrent $1 sider med tekst.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Dokumentet kan være en forhåndsvisning av et bilde, og den utpakkede teksten kan være ufullstendig.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Denne siden kan ikke leses.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Ikke tilkoblet ennå. Åpne Innstillinger og lagre MindGraph-legitimasjonen.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Innlogging er utløpt. Oppdater API-tokenet i Innstillinger.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Kan ikke koble til MindMate. Kontroller serveradressen og prøv igjen.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Kan ikke svare for øyeblikket, prøv igjen senere.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Dagens AI-bruk har nådd den øvre grensen. Prøv igjen i morgen eller sjekk detaljene på nettsiden.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Ikke nok ThinkCoins til å sende denne meldingen.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Lokal utvikling bruker HTTP, og API-tokens og sideinnhold er ukryptert på nettverket. Bruk den kun i et pålitelig miljø.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "laste ned",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Lagre PDF-er og dokumenter (uten videoer) fra støttede nettsteder.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Den gjeldende siden støtter ikke nedlasting. Vennligst åpne en støttet dokumentasjonsside før du åpner dette panelet.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Innstillinger",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "koble til",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Bruk samme legitimasjon som MindGraph API-tokenflyten.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "server",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Kontonummer (mobilnummer)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Mobilnummer brukt for X-MG-konto",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API-token",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "spare",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "retur",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "stenging",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Behandling…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Nedlastingen har startet.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Lagret.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Bekrefter legitimasjon ...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Vennligst fyll ut alle feltene.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Det er ingen aktive faner.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Noe gikk galt. Prøv igjen eller last inn utvidelsen på nytt på chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Kan ikke begynne å lagre filen. Last inn utvidelsen på nytt og prøv igjen (krever Chrome 109+ eller Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Oppsettet er ufullstendig. Vennligst åpne \"Innstillinger\" og fyll inn MindGraph-adressen, mobiltelefonnummeret og API-tokenet.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Det er ingen lesbar tekst på siden. Velg en tekstdel først, eller prøv igjen på en annen side.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Det pågår allerede en opptaks- eller nedlastingsoppgave på denne fanen. Vent til den er fullført og prøv igjen.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Serverfeil ($1). Kontroller innstillingene og prøv igjen.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Denne siden støttes ikke. Åpne en vanlig nettside (http eller https) og prøv igjen.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Forespørselen er for hyppig, prøv igjen senere.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Tjenesten er midlertidig utilgjengelig, prøv igjen senere.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Serversvaret ble tidsavbrutt (mer enn 3 minutter). Prøv igjen eller sjekk nettverket.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Bekreftelse av legitimasjon ble tidsavbrutt. Prøv igjen eller sjekk nettverket.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Serveren returnerte ikke et PNG-bilde. Vennligst sjekk grunnadressen og kontoinnstillingene.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Generer tankekart PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Pakk ut dokument (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Trekk ut dokumenter",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Oppdaget: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Nåværende side: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Lesefaneside: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Totale $1 ressurser",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Omtrent $1 sider er synlige - rull i forhåndsvisningsområdet for å laste flere sider før du pakker ut.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Rull dokumentforhåndsvisningen for å laste siden før du trekker ut den. Prioriter innhold som allerede vises i leseren.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Synkroniser pålogging fra SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Lim inn tokenet manuelt...",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Lim inn SmartEdu access_token (brukes kun hvis automatisk synkronisering mislykkes):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu-token: Synkroniserer...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu-token: Tilkoblet (fra påloggingen din)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu-token: ikke funnet - vennligst logg inn på auth.smartedu.cn og åpne SmartEdu-siden, klikk deretter på \"Synkroniser\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Trekk ut dokumenter",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Ferdig — Filen starter nedlastingen umiddelbart.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Nedlasting startet — De første $1-sidene som for øyeblikket er tilgjengelige i leseren, er lagret.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Dette dokumentet kan ikke lastes ned. Vennligst oppdater siden og klikk \"Pakk ut dokument\" igjen.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Finner ikke dokumentasjonssiden. Vennligst rull for å forhåndsvise innlastingssiden først, og klikk deretter \"Pakk ut dokument\".",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Fant ikke tekstinnhold. Prøv igjen på en annen side eller et annet område.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Siden er ikke klar ennå. Oppdater fanen og prøv igjen.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Det er ingen nedlastbare filer for denne leksjonen. Vennligst endre en klasse, eller sjekk ressursene du vil laste ned.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Du må logge inn på Smart Education først. Vennligst logg inn på auth.smartedu.cn og åpne kurssiden, klikk deretter på \"Synkroniser pålogging fra SmartEdu\".",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education avslo nedlastingen. Synkroniser påloggingen på nytt eller endre filen.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Nedlasting av videoer støttes ikke. Velg kun PDF- eller dokumentressurser.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Dette er ikke en støttet dokumentasjonsside. Åpne dokumentlesesiden og prøv på nytt.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Det er ingenting å spare ennå. Bla gjennom leseren for å laste siden og prøv igjen.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Du må først logge inn på nettsiden. Etter pålogging klikker du på \"Pakk ut dokumenter\".",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Nedlastingen ble avvist av nettstedet. Logg inn på siden og bekreft at du har tilgang til innholdet før du prøver igjen.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Nettstedet viser en bekreftelseskode. Fullfør bekreftelsen i en nettleserfane før du prøver å gjenopprette.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Forbereder side …",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Rull laster siden...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Kopierer sideinnhold ...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Genererer filer …",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Lagrer til datamaskinen...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "avansert",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Be om lagringssted hver gang du laster ned",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Leser sideinnhold...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Sender til MindGraph server …",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Serveren genererer tankekartet...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Mottar bilder fra server...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Lagrer fil …",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Kan ikke koble til serveren, sjekk baseadressen og nettverket.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Forespørsel mislyktes: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Forbindelsen har gått tapt. Vennligst klikk \"Pakk ut dokument\" igjen. Hvis det fortsatt mislykkes, last inn MindGraph på nytt på chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Generer et tankekart basert på gjeldende side",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG-bredde (piksler)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG-høyde (piksler)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "La stå tomt for å bruke standard",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Språk (grensesnitt og kart)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "følg nettleseren",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Forenklet",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Oppreist kropp",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "token",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Gyldig til $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Dette API-tokenet har utløpt. Opprett det på nytt på nettsiden (konto/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Det er ingen gyldig API-token på serveren, eller den har utløpt. Vennligst sjekk tokenet eller opprett det i appen.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Kan ikke få utløpstid. Sjekk nettverket ditt eller lagre innstillingene på nytt.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Galleriet er fullt (20 bilder). Vennligst slett det lagrede kartet for å lagre det nylig genererte innholdet.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

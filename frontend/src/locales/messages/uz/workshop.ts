@@ -20,8 +20,7 @@ export default {
   'collab.endFailed': 'Hamkorlikni tugatish bo’lmadi',
   'collab.ended': 'Hamkorlik bitdi',
   'collab.galleryFull': 'Qalereya to’la; avval bir diagrammani o’chiring',
-  'collab.hintNetworkInactive':
-    'Kod yarating ki, boshqalar ulana olsin va birgalikda tahrir qila olsin.',
+  'collab.hintNetworkInactive': 'Kod yarating ki, boshqalar ulana olsin va birgalikda tahrir qila olsin.',
   'collab.hintSchoolInactive': 'Hemkarlar esas sahifade Hamkorlik → Maktab bolmesinden ulanmoqda.',
   'collab.invalidDiagramData': 'Diagramma ma’lumoti etibarsizdir',
   'collab.linkCopied': 'Havola nusxalashndi',
@@ -31,20 +30,16 @@ export default {
   'collab.noDiagramToSave': 'Saqlashnacaq diagramma yo’q',
   'collab.nodeLocked': 'Bashqa foydalanuvchi bu tugunu tahrir edir',
   'collab.participants': '{n} ishtirokchi',
-  'collab.previousSessionsStopped':
-    'Diger diagrammalarinizdaki {n} oldingi hamkorlik sessiyasi tugatishildi.',
+  'collab.previousSessionsStopped': 'Diger diagrammalarinizdaki {n} oldingi hamkorlik sessiyasi tugatishildi.',
   'collab.saveFailed': 'Saqlashma muvaffaqiyatsiz bo’ldi',
   'collab.scanToJoin': 'Ulanishq uchun skanerlang',
-  'collab.schoolDescActive':
-    'Maktab hamkorlikni faol. Hemkarlar: MindGraph esas sahifade Hamkorlik → Maktab o’tingidinden bu diagrammani tanlang — kod lazim emas.',
-  'collab.schoolStarted':
-    'Maktab hamkorlikni faol — hemkarlar Hamkorlik → Maktab bolmesinden ulanisha biler.',
+  'collab.schoolDescActive': 'Maktab hamkorlikni faol. Hemkarlar: MindGraph esas sahifade Hamkorlik → Maktab o’tingidinden bu diagrammani tanlang — kod lazim emas.',
+  'collab.schoolStarted': 'Maktab hamkorlikni faol — hemkarlar Hamkorlik → Maktab bolmesinden ulanisha biler.',
   'collab.sectionNetwork': 'Umumi hamkorlik (kod)',
   'collab.sectionSchool': 'Maktab daxilinde hamkorlik',
   'collab.sessionDuration': 'Sessiya muddati',
   'collab.sessionRemaining': 'Sessiyanin bitmesine qolingan',
-  'collab.shareDescNetwork':
-    'Kodni yoki havolai ulashing — boshqalar esas sahifade Hamkorlik → Umumi altinda daxil ede biler.',
+  'collab.shareDescNetwork': 'Kodni yoki havolai ulashing — boshqalar esas sahifade Hamkorlik → Umumi altinda daxil ede biler.',
   'collab.start': 'Bashlat',
   'collab.startFailed': 'Bashlatmaq bo’lmadi: {msg}',
   'collab.title': 'Onlayn hamkorlik',
@@ -57,29 +52,22 @@ export default {
   'workshop.announceChannels': 'E’lonlar',
   'workshop.announceReadOnlyHint': 'Bu e’lon kanalina faqat administratorlar post yaza biler.',
   'workshop.archiveLessonStudy': 'Dars tadqiqotini arxivle',
-  'workshop.archiveLessonStudyConfirm':
-    'Bu dars tadqiqoti arxivlensin? A’zoler artiq siyahida gormeyecekler.',
+  'workshop.archiveLessonStudyConfirm': 'Bu dars tadqiqoti arxivlensin? A’zoler artiq siyahida gormeyecekler.',
   'workshop.archiveTeachingGroup': 'O’qitish qrupunu arxivle',
-  'workshop.archiveTeachingGroupConfirm':
-    'Bu o’qitish qrupu arxivlensin? Qrup siyahisindan o’chiringecek.',
-  'workshop.archiveAnnounceChannel': "Arxiv e'lonlari kanali",
-  'workshop.archiveAnnounceChannelConfirm':
-    "Haqiqatan ham ushbu eʼlon kanalini arxivlashni xohlaysizmi? Yon panel endi ko'rinmaydi, lekin xabar qoladi.",
-  'workshop.deleteTeachingGroup': "O'quv va tadqiqot guruhini o'chirish",
-  'workshop.deleteTeachingGroupConfirm':
-    'Haqiqatan ham ushbu oʻquv va tadqiqot guruhi, uning darslari va xabarlarini butunlay oʻchirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo‘lmaydi.',
-  'workshop.deleteAnnounceChannel': "E'lon kanalini o'chirish",
-  'workshop.deleteAnnounceChannelConfirm':
-    'Haqiqatan ham bu eʼlon kanali va uning xabarlarini butunlay oʻchirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo‘lmaydi.',
-  'workshop.deleteLessonStudy': "Darsni o'chirish",
-  'workshop.deleteLessonStudyConfirm':
-    'Haqiqatan ham bu dars va uning xabarlarini butunlay oʻchirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo‘lmaydi.',
-  'workshop.manageNeedAdmin':
-    "Faqat maktab ma'murlari o'quv va tadqiqot guruhlarini qo'shishlari mumkin. Ma'murlar yoki guruh yaratuvchisi o'chirishi mumkin.",
+  'workshop.archiveTeachingGroupConfirm': 'Bu o’qitish qrupu arxivlensin? Qrup siyahisindan o’chiringecek.',
+  'workshop.archiveAnnounceChannel': 'Arxiv e\'lonlari kanali',
+  'workshop.archiveAnnounceChannelConfirm': 'Haqiqatan ham ushbu eʼlon kanalini arxivlashni xohlaysizmi? Yon panel endi ko\'rinmaydi, lekin xabar qoladi.',
+  'workshop.deleteTeachingGroup': 'O\'quv va tadqiqot guruhini o\'chirish',
+  'workshop.deleteTeachingGroupConfirm': 'Haqiqatan ham ushbu oʻquv va tadqiqot guruhi, uning darslari va xabarlarini butunlay oʻchirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo‘lmaydi.',
+  'workshop.deleteAnnounceChannel': 'E\'lon kanalini o\'chirish',
+  'workshop.deleteAnnounceChannelConfirm': 'Haqiqatan ham bu eʼlon kanali va uning xabarlarini butunlay oʻchirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo‘lmaydi.',
+  'workshop.deleteLessonStudy': 'Darsni o\'chirish',
+  'workshop.deleteLessonStudyConfirm': 'Haqiqatan ham bu dars va uning xabarlarini butunlay oʻchirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo‘lmaydi.',
+  'workshop.manageNeedAdmin': 'Faqat maktab ma\'murlari o\'quv va tadqiqot guruhlarini qo\'shishlari mumkin. Ma\'murlar yoki guruh yaratuvchisi o\'chirishi mumkin.',
   'workshop.math': 'formula',
   'workshop.backToConversations': 'Suhbatler',
   'workshop.bold': 'Qalin',
-  'workshop.bulletedList': "tartibsiz ro'yxat",
+  'workshop.bulletedList': 'tartibsiz ro\'yxat',
   'workshop.browseChannels': 'O’qitish qruplarina ko’rish',
   'workshop.by': '…',
   'workshop.channelArchiveFailed': 'Kanali arxivlemek mumkin olmadi',
@@ -89,8 +77,7 @@ export default {
   'workshop.channelAvatarEmoji': 'Ikon (isteye bagli)',
   'workshop.channelAvatarPlaceholder': 'Emoji yoki qisa etiket',
   'workshop.channelColor': 'Kanal rengi',
-  'workshop.channelInviteReceived':
-    'Siz «{name}» qrupuna elave olundunuz. Gormek uchun Emalatxanani oching.',
+  'workshop.channelInviteReceived': 'Siz «{name}» qrupuna elave olundunuz. Gormek uchun Emalatxanani oching.',
   'workshop.channelKindGroup': 'O’qitish qrupu (ust seviyye, mes. 教研',
   'workshop.channelKindLessonStudy': 'Qrup altinda dars tadqiqoti (课例)',
   'workshop.channelNameLabel': 'Ad',
@@ -126,8 +113,7 @@ export default {
   'workshop.create': 'Yarat',
   'workshop.createChannelFailed': 'Kanal yaradilmadi',
   'workshop.createChannelNeedParent': 'Avvalce ust o’qitish qrupunu tanlang.',
-  'workshop.createChannelNoGroupsYet':
-    'Avvalce o’qitish qrupu yaradin, sonra altinda dars tadqiqotlari qo’shing.',
+  'workshop.createChannelNoGroupsYet': 'Avvalce o’qitish qrupu yaradin, sonra altinda dars tadqiqotlari qo’shing.',
   'workshop.createChannelSuccess': 'Kanal yaratildi',
   'workshop.createStudyCaseHint': 'Bashlamaq uchun suhbate bashlayin',
   'workshop.cycleStudyStatus': 'Dovr tadqiqoti holati',
@@ -169,8 +155,7 @@ export default {
   'workshop.gearMenu': 'Tanlashimler',
   'workshop.generalChat': 'Umumi suhbat',
   'workshop.inbox': 'Gelen qutu',
-  'workshop.inboxHintPickChannel':
-    'Oxumaq va javob yazmaq uchun yan panelde kanal yoki birbasha xabar oching. Ko’rishlar Gelen qutudan istenilen vaxt qayida bilersiniz.',
+  'workshop.inboxHintPickChannel': 'Oxumaq va javob yazmaq uchun yan panelde kanal yoki birbasha xabar oching. Ko’rishlar Gelen qutudan istenilen vaxt qayida bilersiniz.',
   'workshop.inboxSummaryTitle': 'Gelen qutunuz',
   'workshop.inboxUnreadChannels': 'Kanallarda oxunmamish',
   'workshop.inboxUnreadDms': 'Oxunmamish birbasha xabarlar',
@@ -196,16 +181,14 @@ export default {
   'workshop.loadMore': 'Ko’proq yuklash',
   'workshop.mainChannelStream': 'esas kanal',
   'workshop.manageTeachingGroups': 'O’qitish qruplarini idare et',
-  'workshop.manageTeachingGroupsBlurb':
-    'Qrup qo’shing yoki o’chiring, ictimai yoki shexsi teyin edin, ad va tavsifi tahrirlang, siyahini qayta siralayin, shablon kimi qrupu choxaldin va hemkarlari taklif edin. Post qaydalari va bildirishler uchun Qabaqcil bolmesinden foydalaning. Arxivleme qrupu hamma uchun olib tashlashir.',
+  'workshop.manageTeachingGroupsBlurb': 'Qrup qo’shing yoki o’chiring, ictimai yoki shexsi teyin edin, ad va tavsifi tahrirlang, siyahini qayta siralayin, shablon kimi qrupu choxaldin va hemkarlari taklif edin. Post qaydalari va bildirishler uchun Qabaqcil bolmesinden foydalaning. Arxivleme qrupu hamma uchun olib tashlashir.',
   'workshop.manageUser': 'Bu foydalanuvchini idare et',
   'workshop.markAllReadChannel': 'Barcha xabarlari oxunmush isharele',
   'workshop.markAsRead': 'Oxunmush isharele',
   'workshop.markStudyResolved': 'Tadqiqoti hell olunmush isharele',
   'workshop.members': 'a’zo',
   'workshop.mentionAmbiguous': 'Noma’lum adlar unikal ko’rsatishilen nomi olan birini tanlang: {0}',
-  'workshop.mentionUnknown':
-    'Noma’lum oxshatmalar (faqat eyni tashkilot foydalanuvchilari va heyet): {0}',
+  'workshop.mentionUnknown': 'Noma’lum oxshatmalar (faqat eyni tashkilot foydalanuvchilari va heyet): {0}',
   'workshop.mentionedInChannel': 'Sizi #{0} kanalinda qeyd ettiler',
   'workshop.mentionedInTopic': 'Sizi {0} suhbatninde qeyd ettiler',
   'workshop.mentions': 'Qeydler',
@@ -235,10 +218,9 @@ export default {
   'workshop.noMessagesYet': 'Hali xabar yo’q',
   'workshop.noTeachingGroupsListed': 'Hali o’qitish qrupu yo’q.',
   'workshop.noTopicsYet': 'Hali suhbat yo’q',
-  'workshop.numberedList': "buyurtma ro'yxati",
+  'workshop.numberedList': 'buyurtma ro\'yxati',
   'workshop.notifications': 'Bildirishler',
-  'workshop.notificationsSettingsBlurb':
-    'Qeyd va yangi xabarlar uchun brauzer bildirishleri sistem sozlamalarnizden foydalanish edir. Ish masasi va e-poqt bildirishlerini kanal sozlamalarnde tenzimleye bilersiniz.',
+  'workshop.notificationsSettingsBlurb': 'Qeyd va yangi xabarlar uchun brauzer bildirishleri sistem sozlamalarnizden foydalanish edir. Ish masasi va e-poqt bildirishlerini kanal sozlamalarnde tenzimleye bilersiniz.',
   'workshop.offline': 'oflayn',
   'workshop.online': 'onlayn',
   'workshop.openMainChannelStream': 'esas kanal',
@@ -247,12 +229,9 @@ export default {
   'workshop.personalMenu': 'Shaxsiy menyu',
   'workshop.preview': 'Ko‘rib chiqish',
   'workshop.previewEmpty': 'Ko‘rish uchun kontent yo‘q',
-  'workshop.phase2RoadmapGroupsAlerts':
-    "Sonra: {'@'}qrup qaydlari, ogohlantirish sozleri va xabar tahrir tarixsi siyaseti.",
-  'workshop.phase2RoadmapMovePreview':
-    'Sonra: tek xabar ko’chirishme, URL onizlemeleri va daha zengin kanallararasi fealiyyet.',
-  'workshop.phase2RoadmapPlatform':
-    'Platforma novbesi: artan sinxronizasiya, mobil push, e-poqt xulaseleri, botlar/webhooklar.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Sonra: {\'@\'}qrup qaydlari, ogohlantirish sozleri va xabar tahrir tarixsi siyaseti.',
+  'workshop.phase2RoadmapMovePreview': 'Sonra: tek xabar ko’chirishme, URL onizlemeleri va daha zengin kanallararasi fealiyyet.',
+  'workshop.phase2RoadmapPlatform': 'Platforma novbesi: artan sinxronizasiya, mobil push, e-poqt xulaseleri, botlar/webhooklar.',
   'workshop.pickColleagueToInvite': 'Taklif etmek uchun hemkar tanlang.',
   'workshop.pinChannel': 'Yuxariya qadash',
   'workshop.policyEveryone': 'Hami',
@@ -260,8 +239,7 @@ export default {
   'workshop.policyMembersOnly': 'Yalniz a’zolere',
   'workshop.postingPolicy': 'Post siyaseti',
   'workshop.preferences': 'Ustunlukler',
-  'workshop.preferencesSettingsBlurb':
-    'Til va goruntu ustunlukleri tetbiqde o’tingerlidir. Ko’proq Emalatxana chat tanlovlari zamanla burada ko’rinadi.',
+  'workshop.preferencesSettingsBlurb': 'Til va goruntu ustunlukleri tetbiqde o’tingerlidir. Ko’proq Emalatxana chat tanlovlari zamanla burada ko’rinadi.',
   'workshop.presenceActive': 'Faol',
   'workshop.presenceIdle': 'Bo’shdayan',
   'workshop.presenceOffline': 'Oflayn',
@@ -270,8 +248,7 @@ export default {
   'workshop.publicChannels': 'Ictimai kanallar',
   'workshop.quote': 'Iqtibos',
   'workshop.quoteMessage': 'Xabari sitat getir',
-  'workshop.readOnlyProfileBlurb':
-    'Hemkarlar uchun profil ma’lumotlari soddalashtirilgan gorunushde ko’rsatilmoqda. Admin kataloqu uchun Foydalanuvchini idare et (adminlar) foydalaning.',
+  'workshop.readOnlyProfileBlurb': 'Hemkarlar uchun profil ma’lumotlari soddalashtirilgan gorunushde ko’rsatilmoqda. Admin kataloqu uchun Foydalanuvchini idare et (adminlar) foydalaning.',
   'workshop.recentDmActivity': 'Son birbasha xabarlar',
   'workshop.recentTopics': 'Son suhbatler',
   'workshop.renameTopic': 'Suhbatnin nomini o’zgartirish',
@@ -282,8 +259,7 @@ export default {
   'workshop.roleOwner': 'Sahibi',
   'workshop.searchMembers': 'A’zoleri qidirish...',
   'workshop.searchMessages': 'Xabarlari qidirish...',
-  'workshop.selectChannelForSettings':
-    'Avvalce o’qitish qrupu yoki dars tadqiqoti tanlang, sonra sozlamalar burada oching.',
+  'workshop.selectChannelForSettings': 'Avvalce o’qitish qrupu yoki dars tadqiqoti tanlang, sonra sozlamalar burada oching.',
   'workshop.selectConversation': 'Suhbat tanlang',
   'workshop.selectParentGroup': 'Ust o’qitish qrupu',
   'workshop.selectTopic': 'Suhbat tanlang',
@@ -305,12 +281,11 @@ export default {
   'workshop.statusInProgress': 'Davam edir',
   'workshop.statusOpen': 'Ochishishiq',
   'workshop.streamMenu': 'O’qitish qrupu menyusu',
-  'workshop.spoiler': "Kontentni yig'ish",
+  'workshop.spoiler': 'Kontentni yig\'ish',
   'workshop.strikethrough': 'Ustunden xett',
   'workshop.table': 'varaq',
   'workshop.switchSchool': 'Maktabi o’zgartirish',
-  'workshop.teachingGroupLandingHint':
-    'Bu o’qitish qrupundaki dars tadqiqotlari va suhbatler. Kanal yoki mavzunu ochishmaq uchun setir tanlang.',
+  'workshop.teachingGroupLandingHint': 'Bu o’qitish qrupundaki dars tadqiqotlari va suhbatler. Kanal yoki mavzunu ochishmaq uchun setir tanlang.',
   'workshop.teachingGroupMembers': 'A’zoler',
   'workshop.teachingGroupNameRequired': 'Iltimos o’qitish qrupu nomi kiriting.',
   'workshop.teachingGroupNoLessons': 'Bu qrupda hali dars tadqiqoti yo’q.',
@@ -325,8 +300,7 @@ export default {
   'workshop.topicTitle': 'Sarlavha',
   'workshop.topicTitlePlaceholder': 'mes. 3-cu feo’chirish uchun dizayn fikr xeritesi',
   'workshop.topics': 'Suhbatler',
-  'workshop.typeMessagePlaceholder':
-    'Xabar yozing(yuborishmek uchun Enter, yangi setir uchun Shift+Enter)',
+  'workshop.typeMessagePlaceholder': 'Xabar yozing(yuborishmek uchun Enter, yangi setir uchun Shift+Enter)',
   'workshop.unfollowTopic': 'Suhbatni izleme',
   'workshop.unknown': 'Noma’lum',
   'workshop.unmuteChannel': 'Kanalin sesini ochish',
@@ -342,14 +316,11 @@ export default {
   'workshop.viewProfile': 'Profile ko’rish',
   'workshop.viewingSchool': 'Ko’rib chiqilmoqda: {0}',
   'workshop.views': 'Ko’rishlar',
-  'workshop.welcomeChannelsBody':
-    'Burada «kanal» chox vaxt o’qitish-tadqiqot qrupuna (教研 yoki PLC-ye uygun gelir: komanda bashina bir umumi mekan (mes. ripostyyat PLC, ingilis PLC). Kimin ishtirak etdiyini va mekanin nece qruplashdigini mueyyen edir.',
+  'workshop.welcomeChannelsBody': 'Burada «kanal» chox vaxt o’qitish-tadqiqot qrupuna (教研 yoki PLC-ye uygun gelir: komanda bashina bir umumi mekan (mes. ripostyyat PLC, ingilis PLC). Kimin ishtirak etdiyini va mekanin nece qruplashdigini mueyyen edir.',
   'workshop.welcomeChannelsTitle': 'PLC / fan qruplari',
-  'workshop.welcomeConversationsBody':
-    'Dars tadqiqoti daxilinde sarlavhali suhbatler ochishirsiniz mes. o’qitish dizayni, eks yoki davamli tapshiriqlar ki, mavzular izlenmesi as olsun.',
+  'workshop.welcomeConversationsBody': 'Dars tadqiqoti daxilinde sarlavhali suhbatler ochishirsiniz mes. o’qitish dizayni, eks yoki davamli tapshiriqlar ki, mavzular izlenmesi as olsun.',
   'workshop.welcomeConversationsTitle': 'Suhbatler',
-  'workshop.welcomeExampleCaption':
-    'Numune (xeyali maktab) ripostyyat va ingilis PLC, her birinde dars tadqiqotlari va numunevi suhbatler.',
+  'workshop.welcomeExampleCaption': 'Numune (xeyali maktab) ripostyyat va ingilis PLC, her birinde dars tadqiqotlari va numunevi suhbatler.',
   'workshop.welcomeExampleConvLabel': 'Suhbatler',
   'workshop.welcomeExampleGroupEnglish': 'Ingilis PLC',
   'workshop.welcomeExampleGroupMath': 'Ripostyyat PLC',
@@ -368,51 +339,38 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Xabarlar her suhbatnin ichindedir',
   'workshop.welcomeExampleOrg': 'Chenci o’rta maktabi',
   'workshop.welcomeHowTitle': 'Nece birleshir',
-  'workshop.welcomeIntro':
-    'Emalatxana maktabinizin strukturlu muzakire mekanidir: e’lonlar ulashing, dars tadqiqotlari aparin va o’qitish ishinizle yanashi suhbatleri seliqeli saqlang.',
-  'workshop.welcomeLessonStudyBody':
-    'Dars tadqiqoti kanallari adeten hemin qrupun altindadir. Her biri bir dars dovru planlashdirma, mushahide va eks uchun mekandir va diagrammalara yoki statuslara o’tingid vere biler.',
+  'workshop.welcomeIntro': 'Emalatxana maktabinizin strukturlu muzakire mekanidir: e’lonlar ulashing, dars tadqiqotlari aparin va o’qitish ishinizle yanashi suhbatleri seliqeli saqlang.',
+  'workshop.welcomeLessonStudyBody': 'Dars tadqiqoti kanallari adeten hemin qrupun altindadir. Her biri bir dars dovru planlashdirma, mushahide va eks uchun mekandir va diagrammalara yoki statuslara o’tingid vere biler.',
   'workshop.welcomeLessonStudyTitle': 'Dars tadqiqotlari',
-  'workshop.welcomeMessagesBody':
-    'Xabarlar esas kanal axininda yoki suhbat daxilinde ayrica postlardir. Javoblar, qeydler va fayllar xabarlar uzerindedir.',
+  'workshop.welcomeMessagesBody': 'Xabarlar esas kanal axininda yoki suhbat daxilinde ayrica postlardir. Javoblar, qeydler va fayllar xabarlar uzerindedir.',
   'workshop.welcomeMessagesTitle': 'Xabarlar',
   'workshop.welcomeSubtitle': 'MindGraph-da maktabinizle hamkorlik edin',
   'workshop.welcomeTitle': 'Emalatxanaya xosh gelmisiniz',
   'workshop.you': '(siz)',
   'workshop.youAnd': 'Siz va',
   'workshopCanvas.connectFailed': 'Emekdashliga ulanishq bo’lmadi',
-  'workshopCanvas.sessionExpiredReconnect':
-    'Sessiyanizin muddati bitdi. Emekdashliga qayta ulanishq uchun sahifani yangilashyin.',
-  'workshopCanvas.sessionRefreshFailed':
-    'Hamkorlik sessiyasini yangilashmek bo’lmadi. Iltimos ishi saqlang va qayta kiring.',
-  'workshopCanvas.outboundQueueDegraded':
-    'Hamkorlik sinxronizasiyasi geri qolingir. Bezi yuborishilmemish tahrirler saqlashnila bilmedi.',
+  'workshopCanvas.sessionExpiredReconnect': 'Sessiyanizin muddati bitdi. Emekdashliga qayta ulanishq uchun sahifani yangilashyin.',
+  'workshopCanvas.sessionRefreshFailed': 'Hamkorlik sessiyasini yangilashmek bo’lmadi. Iltimos ishi saqlang va qayta kiring.',
+  'workshopCanvas.outboundQueueDegraded': 'Hamkorlik sinxronizasiyasi geri qolingir. Bezi yuborishilmemish tahrirler saqlashnila bilmedi.',
   'workshopCanvas.connectionClosed': 'Yopishnti keo’chirishdi',
-  'workshopCanvas.connectionClosedSlow':
-    'Yopishnti keo’chirishdi: elaqeniz hamkorlik sessiyasina uygun gelmek uchun chox yavash idi.',
+  'workshopCanvas.connectionClosedSlow': 'Yopishnti keo’chirishdi: elaqeniz hamkorlik sessiyasina uygun gelmek uchun chox yavash idi.',
   'workshopCanvas.sessionEndedByHost': 'Ev sahibi hamkorlik sessiyasini tugatishdi.',
   'workshopCanvas.editingNodeLabel': '{username} tahrir edir…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'Bashqa ishtirokchi',
   'workshopCanvas.connectionClosedReason': 'Hamkorlik yopishntisi keo’chirishdi: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bu tugunu tahrir edir',
   'workshopCanvas.errorGeneric': 'Hamkorlik xatosi',
-  'workshopCanvas.updatePartialFiltered':
-    'Bezi tahrirler atlandi ({count} tugun), chunki bashqa ishtirokchi hemin tugunleri tahrir edir.',
+  'workshopCanvas.updatePartialFiltered': 'Bezi tahrirler atlandi ({count} tugun), chunki bashqa ishtirokchi hemin tugunleri tahrir edir.',
   'workshopCanvas.reconnectFailed': 'Emekdashliga qayta ulanishq bo’lmadi, sahifani yangilashyin',
-  'workshopCanvas.resyncWaiting':
-    'Canli diagramma sinxronizasiyasi kutishnilenden uzun chekir. Qayta cehd etilir; tahrir ilishibse sahifani yangilashye bilersiniz.',
-  'workshopCanvas.returnedHomeIdle':
-    'Uzun muddat ishlemediyiniz uchun yopishnti keo’chirishdi va esas sahifaye qayidildi.',
+  'workshopCanvas.resyncWaiting': 'Canli diagramma sinxronizasiyasi kutishnilenden uzun chekir. Qayta cehd etilir; tahrir ilishibse sahifani yangilashye bilersiniz.',
+  'workshopCanvas.returnedHomeIdle': 'Uzun muddat ishlemediyiniz uchun yopishnti keo’chirishdi va esas sahifaye qayidildi.',
   'workshopCanvas.userJoined': 'Foydalanuvchi {username} ulandi',
   'workshopCanvas.usersJoined': '{count} foydalanuvchi ulandi',
   'workshopCanvas.userLeft': 'Foydalanuvchi {username} ayrildi',
   'workshopCanvas.usersLeft': '{count} foydalanuvchi ayrildi',
   'workshopCanvas.wsError': 'Hamkorlik yopishntisi xatosi, tarmoqni tekshiring',
-  'workshopCanvas.returnedHomeRoomIdle':
-    'Hamkorlik bitdi: bu sessiyada bir muddatdir diagrammada tahrir olunmayib.',
-  'workshopCanvas.roomIdleWarningToast':
-    'Son vaxtlar diagrammada tahrir yo’q — kim tahrirlashmese, geri sayim sifira chatanda hamkorlik biter.',
-  'workshopCanvas.otherTabCollaborationActive':
-    'Hamkorlik bu hisob uchun bashqa vareqede yoki pencerede davam edir.',
+  'workshopCanvas.returnedHomeRoomIdle': 'Hamkorlik bitdi: bu sessiyada bir muddatdir diagrammada tahrir olunmayib.',
+  'workshopCanvas.roomIdleWarningToast': 'Son vaxtlar diagrammada tahrir yo’q — kim tahrirlashmese, geri sayim sifira chatanda hamkorlik biter.',
+  'workshopCanvas.otherTabCollaborationActive': 'Hamkorlik bu hisob uchun bashqa vareqede yoki pencerede davam edir.',
   'workshopCanvas.joinQrAlt': 'Emekdashliga ulanishq uchun QR kodni',
 } as const

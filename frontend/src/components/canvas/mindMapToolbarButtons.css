@@ -47,6 +47,10 @@
   cursor: default;
 }
 
+.mm-btn.is-dimmed.mm-btn--explain-locked {
+  cursor: not-allowed;
+}
+
 .mm-btn.is-dimmed:hover {
   background: transparent;
 }

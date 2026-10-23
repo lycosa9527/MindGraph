@@ -71,10 +71,8 @@ class LLMUtils:
             "express": 120.0,
             "ark-deepseek": 70.0,  # Volcengine DeepSeek (Route B)
             "ark-kimi": 70.0,  # Volcengine Kimi (both routes)
-            "hunyuan": 70.0,
             "kimi": 70.0,
             "doubao": 70.0,
-            "chatglm": 70.0,
         }
         return timeouts.get(model, 120.0)
 

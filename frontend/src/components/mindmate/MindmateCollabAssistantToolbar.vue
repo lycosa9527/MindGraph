@@ -28,6 +28,8 @@ const props = withDefaults(
     showCanvas: boolean
     openingCanvas: boolean
     highlightState?: 'none' | 'mine' | 'other'
+    /** Regenerate, feedback, and share belong to a live room. */
+    liveActions?: boolean
   }>(),
   {
     highlightState: 'none',
@@ -82,7 +84,7 @@ function onHighlight(): void {
     </I18nTooltip>
 
     <I18nTooltip
-      v-if="canRegenerate"
+      v-if="liveActions !== false && canRegenerate"
       k="mindmate.tooltip.regenerate"
       placement="top"
     >
@@ -97,6 +99,7 @@ function onHighlight(): void {
     </I18nTooltip>
 
     <I18nTooltip
+      v-if="liveActions !== false"
       k="mindmate.tooltip.like"
       placement="top"
     >
@@ -111,6 +114,7 @@ function onHighlight(): void {
     </I18nTooltip>
 
     <I18nTooltip
+      v-if="liveActions !== false"
       k="mindmate.tooltip.dislike"
       placement="top"
     >
@@ -125,6 +129,7 @@ function onHighlight(): void {
     </I18nTooltip>
 
     <I18nTooltip
+      v-if="liveActions !== false"
       k="mindmate.bubble.reply"
       placement="top"
     >
@@ -141,6 +146,7 @@ function onHighlight(): void {
     </I18nTooltip>
 
     <I18nTooltip
+      v-if="liveActions !== false"
       :k="highlightKey"
       placement="top"
     >
@@ -158,6 +164,7 @@ function onHighlight(): void {
     </I18nTooltip>
 
     <I18nTooltip
+      v-if="liveActions !== false"
       k="mindmate.tooltip.share"
       placement="top"
     >
@@ -171,7 +178,7 @@ function onHighlight(): void {
     </I18nTooltip>
 
     <button
-      v-if="showConvertToDocument"
+      v-if="liveActions !== false && showConvertToDocument"
       type="button"
       class="mindmate-stone-btn action-bar-canvas-btn"
       :class="{ 'is-busy': convertingDocument }"

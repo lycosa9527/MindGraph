@@ -127,6 +127,8 @@
    * @param {{
    *   message: string,
    *   userId: string,
+   *   difyUser?: string,
+   *   server?: number,
    *   conversationId: string | null,
    *   signal: AbortSignal,
    *   onConversationId?: (id: string) => void,
@@ -143,15 +145,22 @@
     let conversationId = options.conversationId;
 
     try {
+      const payload = {
+        message: options.message,
+        user_id: options.userId,
+        conversation_id: options.conversationId,
+        auto_generate_name: true,
+      };
+      if (typeof options.difyUser === "string" && options.difyUser.trim()) {
+        payload.dify_user = options.difyUser.trim();
+      }
+      if (typeof options.server === "number" && options.server >= 1) {
+        payload.server = options.server;
+      }
       const res = await fetch(url, MindGraphShared.mgatFetchInit({
         method: "POST",
         headers: buildAuthHeaders(creds.account, creds.token, creds.requestId),
-        body: JSON.stringify({
-          message: options.message,
-          user_id: options.userId,
-          conversation_id: options.conversationId,
-          auto_generate_name: true,
-        }),
+        body: JSON.stringify(payload),
         signal: options.signal,
       }));
 

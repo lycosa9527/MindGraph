@@ -12,12 +12,19 @@ import logging
 import os
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 
 from config.settings import config
 from services.infrastructure.utils.pwa_manifest import (
     build_pwa_manifest,
     public_site_origin_from_request,
+)
+from services.infrastructure.utils.search_indexing import (
+    build_robots_txt,
+    build_sitemap_xml,
+    stamp_brand_metadata,
+    stamp_canonical_link,
+    stamp_noindex,
 )
 from services.infrastructure.utils.spa_handler import (
     CSP_NONCE_STATE_ATTR,
@@ -109,12 +116,15 @@ async def vue_auth(request: Request):
 
 
 @router.get("/privacy", response_class=HTMLResponse)
-async def privacy_policy_static():
+async def privacy_policy_static(request: Request):
     """Serve crawlable static privacy policy (Chrome Web Store, no JS required)."""
     policy_path = privacy_policy_source_path()
     if not policy_path.is_file():
         raise HTTPException(status_code=503, detail="Privacy policy page not generated")
-    response = FileResponse(path=str(policy_path), media_type="text/html")
+    origin = public_site_origin_from_request(request)
+    canonical = f"{origin.rstrip('/')}/privacy"
+    html = stamp_canonical_link(policy_path.read_text(encoding="utf-8"), canonical)
+    response = HTMLResponse(content=html)
     apply_no_cache_headers(response)
     return response
 
@@ -167,24 +177,6 @@ async def vue_export_render(request: Request):
     return await _serve_index(request)
 
 
-@router.get("/template", response_class=HTMLResponse)
-async def vue_template(request: Request):
-    """Serve Vue SPA for template route."""
-    return await _serve_index(request)
-
-
-@router.get("/course", response_class=HTMLResponse)
-async def vue_course(request: Request):
-    """Serve Vue SPA for course route."""
-    return await _serve_index(request)
-
-
-@router.get("/community", response_class=HTMLResponse)
-async def vue_community(request: Request):
-    """Serve Vue SPA for community route."""
-    return await _serve_index(request)
-
-
 @router.get("/showcase", response_class=HTMLResponse)
 async def vue_showcase(request: Request):
     """Serve Vue SPA for showcase route."""
@@ -211,16 +203,22 @@ async def vue_knowledge_space_sub(request: Request, path: str):
     return await _serve_index(request)
 
 
-@router.get("/askonce", response_class=HTMLResponse)
-async def vue_askonce(request: Request):
-    """Serve Vue SPA for askonce route."""
-    return await _serve_index(request)
+@router.get("/robots.txt")
+async def vue_robots_txt(request: Request):
+    """Serve robots.txt with a sitemap URL on this deployment's public origin."""
+    origin = public_site_origin_from_request(request)
+    response = PlainTextResponse(build_robots_txt(origin), media_type="text/plain")
+    apply_no_cache_headers(response)
+    return response
 
 
-@router.get("/debateverse", response_class=HTMLResponse)
-async def vue_debateverse(request: Request):
-    """Serve Vue SPA for debateverse route."""
-    return await _serve_index(request)
+@router.get("/sitemap.xml")
+async def vue_sitemap_xml(request: Request):
+    """Serve a sitemap of the public pages on this deployment's public origin."""
+    origin = public_site_origin_from_request(request)
+    response = Response(content=build_sitemap_xml(origin), media_type="application/xml")
+    apply_no_cache_headers(response)
+    return response
 
 
 @router.get("/manifest.webmanifest")
@@ -328,10 +326,17 @@ async def _serve_index(request: Request) -> HTMLResponse:
     setattr(request.state, CSP_NONCE_STATE_ATTR, nonce)
     # Header is the sole document CSP (nonce + COS connect-src). Strip Vite's
     # meta tag so browsers do not intersect a second, drift-prone policy.
-    html = stamp_vod_csp_marker(
-        strip_document_csp_meta(inject_csp_nonce(index_path.read_text(encoding="utf-8"), nonce)),
-        config.FEATURE_VOD is True,
+    html = stamp_brand_metadata(
+        stamp_vod_csp_marker(
+            strip_document_csp_meta(inject_csp_nonce(index_path.read_text(encoding="utf-8"), nonce)),
+            config.FEATURE_VOD is True,
+        )
     )
+    origin = public_site_origin_from_request(request)
+    if request.url.path.rstrip("/") == "/auth":
+        html = stamp_canonical_link(html, f"{origin.rstrip('/')}/auth")
+    else:
+        html = stamp_noindex(html)
 
     response = HTMLResponse(content=html)
     apply_no_cache_headers(response)

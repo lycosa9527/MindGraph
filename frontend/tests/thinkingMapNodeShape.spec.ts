@@ -92,5 +92,8 @@ describe('thinking map node shape outline', () => {
     expect(defaultDisplayedNodeShape('tree_map', 'topic')).toBe('oval')
     expect(defaultDisplayedNodeShape('tree_map', 'branch')).toBe('rounded')
     expect(defaultDisplayedNodeShape('bridge_map', 'branch')).toBeNull()
+    expect(defaultDisplayedNodeShape('circle_map', 'boundary')).toBeNull()
+    expect(defaultDisplayedNodeShape('tree_map', 'label')).toBeNull()
+    expect(defaultDisplayedNodeShape('brace_map', 'label')).toBeNull()
   })
 })

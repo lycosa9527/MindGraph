@@ -45,7 +45,9 @@
       if (typeof s === "string" && s.trim()) {
         const href = s.trim();
         const flag = itemFlag || (href.includes(".m3u8") ? "m3u8" : "");
-        candidates.push(buildCandidate(href, flag));
+        const candidate = buildCandidate(href, flag);
+        candidate.pageCount = pageCountFromTiItem(item);
+        candidates.push(candidate);
         return;
       }
       if (!s || typeof s !== "object") {
@@ -56,7 +58,9 @@
         return;
       }
       const flag = String(s.ti_file_flag || s.format || itemFlag || "").toLowerCase();
-      candidates.push(buildCandidate(String(href), flag));
+      const candidate = buildCandidate(String(href), flag);
+      candidate.pageCount = pageCountFromTiItem(item);
+      candidates.push(candidate);
     });
 
     files.forEach((f) => {
@@ -68,7 +72,9 @@
         return;
       }
       const flag = String(f.ti_file_flag || f.format || itemFlag || "").toLowerCase();
-      candidates.push(buildCandidate(String(href), flag));
+      const candidate = buildCandidate(String(href), flag);
+      candidate.pageCount = pageCountFromTiItem(item);
+      candidates.push(candidate);
     });
 
     if (!candidates.length) {
@@ -79,10 +85,19 @@
   }
 
   /**
-   * @param {string} href
-   * @param {string} flag
-   * @returns {{ url: string, format: string, localKind: string, rank: number }}
+   * @param {object} item
+   * @returns {number}
    */
+  function pageCountFromTiItem(item) {
+    const reqs = item && item.custom_properties && item.custom_properties.requirements;
+    if (!Array.isArray(reqs)) {
+      return 0;
+    }
+    const hit = reqs.find((row) => row && row.name === "pagesize");
+    const count = hit ? Number(hit.value) : 0;
+    return Number.isFinite(count) && count > 0 ? count : 0;
+  }
+
   function buildCandidate(href, flag) {
     const lowerFlag = (flag || "").toLowerCase();
     let localKind = "file";
@@ -252,6 +267,7 @@
             format: picked.format,
             downloadUrl: picked.url,
             localKind: picked.localKind,
+            pageCount: picked.pageCount || 0,
             selected: true,
           }),
         );
@@ -279,6 +295,7 @@
             format: picked.format,
             downloadUrl: picked.url,
             localKind: picked.localKind,
+            pageCount: picked.pageCount || 0,
             selected: true,
           }),
         );

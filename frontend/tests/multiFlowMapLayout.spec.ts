@@ -6,7 +6,36 @@ import {
   loadMultiFlowMapSpec,
   recalculateMultiFlowMapLayout,
 } from '@/stores/specLoader/multiFlowMap'
+import { nodeStylePatchHasTypography } from '@/stores/diagram/thinkingMapTypographyRelayout'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
+
+describe('multi-flow typography layout', () => {
+  it('widens cause pills when font size and bold follow each other', () => {
+    const loaded = loadMultiFlowMapSpec({
+      event: 'Event',
+      causes: ['认知资源不足'],
+      effects: ['Effect'],
+    })
+    const plain = recalculateMultiFlowMapLayout(loaded.nodes, null, {}, {})
+    const styled = recalculateMultiFlowMapLayout(
+      loaded.nodes.map((node) =>
+        isMultiFlowCauseNode(node)
+          ? { ...node, style: { fontSize: 22, fontWeight: 'bold' as const } }
+          : node
+      ),
+      null,
+      {},
+      {}
+    )
+    const plainCause = plain.find((node) => isMultiFlowCauseNode(node))
+    const styledCause = styled.find((node) => isMultiFlowCauseNode(node))
+    expect(styledCause?.style?.width ?? 0).toBeGreaterThan(plainCause?.style?.width ?? 0)
+  })
+
+  it('treats underline as a typography relayout signal', () => {
+    expect(nodeStylePatchHasTypography({ textDecoration: 'underline line-through' })).toBe(true)
+  })
+})
 
 describe('multi-flow topic width after autocomplete', () => {
   it('estimates a long event title wider than the 事件 slot', () => {

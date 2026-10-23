@@ -8,8 +8,13 @@ import {
   splitMixedArrowHandleGroups,
 } from '@/composables/diagrams/conceptMapHandles'
 import { resolveLegacyMindMapConnectionStrokeColor } from '@/config/mindMapGeometry'
-import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
-import type { Connection, MindGraphEdge, MindGraphEdgeType, MindGraphNode } from '@/types'
+import type {
+  Connection,
+  DiagramNode,
+  MindGraphEdge,
+  MindGraphEdgeType,
+  MindGraphNode,
+} from '@/types'
 import {
   connectionToVueFlowEdge,
   diagramNodeToVueFlowNode,
@@ -17,6 +22,7 @@ import {
 } from '@/types/vueflow'
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
 import { DOUBLE_BUBBLE_LEFT_TOPIC_ID } from '@/utils/doubleBubbleMapIdentity'
+import { readMindMapAdornments } from '@/utils/mindMapAdornments'
 import {
   mindMapAssociationShouldVoid,
   withMindMapAssociationHandles,
@@ -26,11 +32,10 @@ import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isMindMapAssociationConnection, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 import { filterTreeMindMapNodes } from '@/utils/mindMapSummary'
+import { nodeIdsWithImage, thinkingMapImageNodeIds } from '@/utils/nodeImageFrame'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
-import {
-  resolveThinkingMapConnectorStroke,
-  thinkingMapSolidThemeStroke,
-} from '@/utils/thinkingMapConnectionStroke'
+import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
+import { thinkingMapRenderedConnectorStroke } from '@/utils/thinkingMapNodePaint'
 
 import {
   recalculateBraceMapLayout,
@@ -41,6 +46,7 @@ import {
   recalculateMultiFlowMapLayout,
   recalculateTreeMapLayout,
 } from '../specLoader'
+import { recalculateDoubleBubbleMapLayout } from '../specLoader/doubleBubbleMapMeasuredLayout'
 import { getEdgeTypeForDiagram } from './events'
 import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
 import {
@@ -77,7 +83,11 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const circleMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'circle_map' || !ctx.data.value?.nodes) return []
     void ctx.layoutRecalcTrigger.value
-    return recalculateCircleMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
+    return recalculateCircleMapLayout(
+      ctx.data.value.nodes,
+      ctx.nodeDimensions.value,
+      readMindMapAdornments(ctx.data.value)
+    )
   })
 
   const braceMapLayoutNodes = computed(() => {
@@ -86,20 +96,29 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     return recalculateBraceMapLayout(
       ctx.data.value.nodes,
       ctx.data.value.connections ?? [],
-      ctx.nodeDimensions.value
+      ctx.nodeDimensions.value,
+      readMindMapAdornments(ctx.data.value)
     )
   })
 
   const bubbleMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'bubble_map' || !ctx.data.value?.nodes) return []
     void ctx.layoutRecalcTrigger.value
-    return recalculateBubbleMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
+    return recalculateBubbleMapLayout(
+      ctx.data.value.nodes,
+      ctx.nodeDimensions.value,
+      readMindMapAdornments(ctx.data.value)
+    )
   })
 
   const flowMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'flow_map' || !ctx.data.value?.nodes) return []
     void ctx.layoutRecalcTrigger.value
-    return recalculateFlowMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
+    return recalculateFlowMapLayout(
+      ctx.data.value.nodes,
+      ctx.nodeDimensions.value,
+      readMindMapAdornments(ctx.data.value)
+    )
   })
 
   const treeMapLayoutNodes = computed(() => {
@@ -110,7 +129,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     // the whole map. Read sizes only when the measure batch bumps the trigger.
     return recalculateTreeMapLayout(
       ctx.data.value.nodes,
-      snapshotNodeDimensions(ctx.nodeDimensions.value)
+      snapshotNodeDimensions(ctx.nodeDimensions.value),
+      readMindMapAdornments(ctx.data.value)
     )
   })
 
@@ -122,7 +142,20 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       ctx.data.value.nodes,
       ctx.topicNodeWidth.value,
       ctx.nodeWidths.value,
-      ctx.nodeDimensions.value
+      ctx.nodeDimensions.value,
+      thinkingMapImageNodeIds(ctx.data.value),
+      readMindMapAdornments(ctx.data.value)
+    )
+  })
+
+  const doubleBubbleLayoutNodes = computed(() => {
+    if (ctx.type.value !== 'double_bubble_map' || !ctx.data.value?.nodes) return []
+    void ctx.layoutRecalcTrigger.value
+    return recalculateDoubleBubbleMapLayout(
+      ctx.data.value.nodes,
+      ctx.nodeDimensions.value,
+      thinkingMapImageNodeIds(ctx.data.value),
+      readMindMapAdornments(ctx.data.value)
     )
   })
 
@@ -158,11 +191,13 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     void ctx.data.value._mindmap_branch_numbering
     void ctx.data.value._mindmap_branch_numbering_prefix
     void ctx.data.value._mindmap_branch_numbering_nested
+    void ctx.data.value._mindmap_adornments
     const connections = ctx.data.value.connections ?? []
     const treeNodes = filterTreeMindMapNodes(ctx.data.value.nodes)
     const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
     const collapsedNodeIds = getMindMapCollapsedNodeIds(treeNodes, connections, collapsedPaths)
     const preserveIncomingY = ctx.mindMapPreserveIncomingY.value
+    const imageNodeIds = nodeIdsWithImage(treeNodes, ctx.data.value, connections)
     const laidOut = computeMindMapDisplayLayout(
       'v2',
       treeNodes,
@@ -172,7 +207,10 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       ctx.mindMapNodeHeights.value,
       collapsedNodeIds,
       ctx.data.value._mindmap_diagram_style as string | undefined,
-      preserveIncomingY ? { preserveIncomingY: true } : undefined
+      {
+        ...(preserveIncomingY ? { preserveIncomingY: true } : {}),
+        imageNodeIds,
+      }
     )
     return {
       nodes: mergeLaidOutTreeWithSummaries(
@@ -241,11 +279,21 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const vueFlowNodes = computed<MindGraphNode[]>(() => {
     const diagramType = ctx.type.value
     if (!ctx.data.value?.nodes || !diagramType) return []
+    const resolvedType = diagramType
+    const imageIds = thinkingMapImageNodeIds(ctx.data.value)
+
+    function toFlowNode(node: DiagramNode): MindGraphNode {
+      const vueFlowNode = diagramNodeToVueFlowNode(node, resolvedType)
+      if (!imageIds.has(node.id)) return vueFlowNode
+      vueFlowNode.width = undefined
+      vueFlowNode.height = undefined
+      return vueFlowNode
+    }
 
     if (diagramType === 'circle_map') {
       const layoutNodes = circleMapLayoutNodes.value
       return layoutNodes.map((node) => {
-        const vf = diagramNodeToVueFlowNode(node, diagramType)
+        const vf = toFlowNode(node)
         vf.selected = ctx.selectedNodes.value.includes(node.id)
         vf.draggable = false
         return vf
@@ -258,7 +306,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       const effectNodes = recalculatedNodes.filter((n) => n.data?.multiFlowRole === 'effect')
 
       return recalculatedNodes.map((node) => {
-        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        const vueFlowNode = toFlowNode(node)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false
         if (node.id === 'event' && vueFlowNode.data) {
@@ -267,7 +315,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
         }
         if (
           (node.data?.multiFlowRole === 'cause' || node.data?.multiFlowRole === 'effect') &&
-          node.style
+          node.style &&
+          !imageIds.has(node.id)
         ) {
           vueFlowNode.style = {
             ...vueFlowNode.style,
@@ -288,7 +337,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       if (useV2Layout) {
         void ctx.mindMapRecalcTrigger.value
         return mindMapV2LayoutNodes.value.map((node) => {
-          const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+          const vueFlowNode = toFlowNode(node)
           vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
           vueFlowNode.draggable = false
           if (node.id === 'topic' && vueFlowNode.data) {
@@ -300,6 +349,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
 
       // Legacy: keep layout inside this computed (unchanged ownership).
       void ctx.mindMapRecalcTrigger.value
+      void ctx.data.value._mindmap_adornments
       const collapsedNodeIds = new Set<string>()
       const { nodes: correctedNodes, gaps } = computeMindMapDisplayLayout(
         'legacy',
@@ -309,12 +359,13 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
         ctx.mindMapNodeWidths.value,
         ctx.mindMapNodeHeights.value,
         collapsedNodeIds,
-        ctx.data.value._mindmap_diagram_style as string | undefined
+        ctx.data.value._mindmap_diagram_style as string | undefined,
+        { imageNodeIds: nodeIdsWithImage(ctx.data.value.nodes, ctx.data.value, connections) }
       )
       ctx.mindMapTopicBranchGaps.value = gaps
 
       return correctedNodes.map((node) => {
-        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        const vueFlowNode = toFlowNode(node)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false
         if (node.id === 'topic' && vueFlowNode.data) {
@@ -327,7 +378,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (diagramType === 'bubble_map') {
       const layoutNodes = bubbleMapLayoutNodes.value
       return layoutNodes.map((node) => {
-        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        const vueFlowNode = toFlowNode(node)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false
         return vueFlowNode
@@ -335,8 +386,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     if (diagramType === 'double_bubble_map') {
-      return ctx.data.value.nodes.map((node) => {
-        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+      return doubleBubbleLayoutNodes.value.map((node) => {
+        const vueFlowNode = toFlowNode(node)
         const topicSize = node.style?.size
         if (
           node.id === DOUBLE_BUBBLE_LEFT_TOPIC_ID &&
@@ -358,7 +409,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (diagramType === 'flow_map') {
       const layoutNodes = flowMapLayoutNodes.value
       return layoutNodes.map((node) => {
-        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        const vueFlowNode = toFlowNode(node)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false
         return vueFlowNode
@@ -368,7 +419,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (diagramType === 'brace_map') {
       const layoutNodes = braceMapLayoutNodes.value
       return layoutNodes.map((node) => {
-        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        const vueFlowNode = toFlowNode(node)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false
         return vueFlowNode
@@ -378,7 +429,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (diagramType === 'tree_map') {
       const layoutNodes = treeMapLayoutNodes.value
       return layoutNodes.map((node) => {
-        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        const vueFlowNode = toFlowNode(node)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false
         return vueFlowNode
@@ -388,7 +439,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (diagramType === 'bridge_map') {
       const layoutNodes = bridgeMapLayoutNodes.value
       return layoutNodes.map((node) => {
-        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        const vueFlowNode = toFlowNode(node)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false
         return vueFlowNode
@@ -397,7 +448,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
 
     const disableDrag = diagramType !== 'concept_map'
     return ctx.data.value.nodes.map((node) => {
-      const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+      const vueFlowNode = toFlowNode(node)
       vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
       if (disableDrag) vueFlowNode.draggable = false
       return vueFlowNode
@@ -449,14 +500,19 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
             },
           }
         } else if (thinkingMap) {
+          const sourceNode = nodes.find((node) => node.id === effectiveConn.source)
+          const targetNode = nodes.find((node) => node.id === effectiveConn.target)
           effectiveConn = {
             ...effectiveConn,
             style: {
               ...(effectiveConn.style || {}),
-              strokeColor: resolveThinkingMapConnectorStroke(
+              strokeColor: thinkingMapRenderedConnectorStroke(
+                diagramType,
                 diagramData._mindmap_theme,
                 effectiveConn.style?.strokeColor,
-                MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+                sourceNode,
+                targetNode,
+                connections
               ),
             },
           }

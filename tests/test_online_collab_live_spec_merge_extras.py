@@ -37,6 +37,184 @@ def test_prune_drops_edges_to_deleted_endpoints():
     assert not spec["connections"]
 
 
+def _two_mindmap_copies() -> dict:
+    """One topic with the same branch stored under two UUIDs."""
+    return {
+        "type": "mindmap",
+        "nodes": [
+            {"id": "topic", "type": "topic", "text": "平面直角坐标系", "position": {"x": 0, "y": 0}},
+            {
+                "id": "uuid-server",
+                "type": "branch",
+                "text": "横轴",
+                "position": {"x": 220, "y": 0},
+                "data": {
+                    "mindMapUid": "uuid-server",
+                    "mindMapLegacyId": "branch-r-1-0",
+                    "mindMapSide": "right",
+                },
+            },
+            {
+                "id": "uuid-client",
+                "type": "branch",
+                "text": "横轴",
+                "position": {"x": -40, "y": 30},
+                "data": {
+                    "mindMapUid": "uuid-client",
+                    "mindMapLegacyId": "branch-r-1-0",
+                    "mindMapSide": "right",
+                },
+            },
+        ],
+        "connections": [
+            {"id": "e-server", "source": "topic", "target": "uuid-server"},
+            {"id": "e-client", "source": "topic", "target": "uuid-client"},
+        ],
+    }
+
+
+def test_merge_binds_second_mindmap_uuid_onto_live_branch() -> None:
+    """A peer's newly minted UUID for the same leftover id must not append a second tree."""
+    spec = {
+        "type": "mindmap",
+        "nodes": [
+            {"id": "topic", "type": "topic", "text": "平面直角坐标系"},
+            {
+                "id": "uuid-server",
+                "type": "branch",
+                "text": "横轴",
+                "position": {"x": 220, "y": 0},
+                "data": {"mindMapUid": "uuid-server", "mindMapLegacyId": "branch-r-1-0"},
+            },
+        ],
+        "connections": [{"id": "e-server", "source": "topic", "target": "uuid-server"}],
+    }
+    merge_granular_into_spec(
+        spec,
+        [
+            {
+                "id": "uuid-client",
+                "type": "branch",
+                "text": "横轴",
+                "position": {"x": 40, "y": 12},
+                "data": {"mindMapUid": "uuid-client", "mindMapLegacyId": "branch-r-1-0"},
+            }
+        ],
+        [{"id": "e-client", "source": "topic", "target": "uuid-client"}],
+    )
+    assert [node["id"] for node in spec["nodes"]] == ["topic", "uuid-server"]
+    assert spec["nodes"][1]["position"] == {"x": 40, "y": 12}
+    assert spec["nodes"][1]["data"]["mindMapUid"] == "uuid-server"
+    assert [(conn["source"], conn["target"]) for conn in spec["connections"]] == [("topic", "uuid-server")]
+
+
+def test_position_only_peer_updates_the_live_branch() -> None:
+    """After the first bind, a layout patch that only knows the peer id must not append."""
+    spec = {
+        "type": "mindmap",
+        "nodes": [
+            {"id": "topic", "type": "topic", "text": "平面直角坐标系"},
+            {
+                "id": "uuid-server",
+                "type": "branch",
+                "text": "横轴",
+                "position": {"x": 220, "y": 0},
+                "data": {"mindMapUid": "uuid-server", "mindMapLegacyId": "branch-r-1-0"},
+            },
+        ],
+        "connections": [{"id": "e-server", "source": "topic", "target": "uuid-server"}],
+    }
+    merge_granular_into_spec(
+        spec,
+        [
+            {
+                "id": "uuid-client",
+                "type": "branch",
+                "text": "横轴",
+                "position": {"x": 40, "y": 12},
+                "data": {"mindMapUid": "uuid-client", "mindMapLegacyId": "branch-r-1-0"},
+            }
+        ],
+        None,
+    )
+    merge_granular_into_spec(
+        spec,
+        [{"id": "uuid-client", "position": {"x": 7, "y": 9}, "width": 80, "height": 36}],
+        None,
+    )
+    assert [node["id"] for node in spec["nodes"]] == ["topic", "uuid-server"]
+    assert spec["nodes"][1]["position"] == {"x": 7, "y": 9}
+    assert "uuid-client" in spec["nodes"][1]["data"]["mindMapAliasIds"]
+
+
+def test_collapsed_copy_keeps_the_dropped_id_for_a_later_position_patch() -> None:
+    """Healing a doubled spec remembers the dropped id for the next layout patch."""
+    spec = _two_mindmap_copies()
+    merge_granular_into_spec(spec, [{"id": "uuid-server", "position": {"x": 10, "y": 4}}], None)
+    assert "uuid-client" in spec["nodes"][1]["data"]["mindMapAliasIds"]
+    merge_granular_into_spec(spec, [{"id": "uuid-client", "position": {"x": 3, "y": 5}}], None)
+    assert [node["id"] for node in spec["nodes"]] == ["topic", "uuid-server"]
+    assert spec["nodes"][1]["position"] == {"x": 3, "y": 5}
+
+
+def test_layout_only_unknown_mindmap_id_does_not_append() -> None:
+    """A position echo for an id this room has never bound must not create a branch."""
+    spec = {
+        "type": "mindmap",
+        "nodes": [
+            {"id": "topic", "type": "topic", "text": "平面直角坐标系"},
+            {
+                "id": "uuid-server",
+                "type": "branch",
+                "text": "横轴",
+                "position": {"x": 220, "y": 0},
+                "data": {"mindMapUid": "uuid-server", "mindMapLegacyId": "branch-r-1-0"},
+            },
+        ],
+        "connections": [{"id": "e-server", "source": "topic", "target": "uuid-server"}],
+    }
+    merge_granular_into_spec(
+        spec,
+        [{"id": "uuid-stranger", "position": {"x": 1, "y": 2}, "width": 40, "height": 20}],
+        [{"id": "e-stranger", "source": "topic", "target": "uuid-stranger"}],
+    )
+    assert [node["id"] for node in spec["nodes"]] == ["topic", "uuid-server"]
+    assert [conn["target"] for conn in spec["connections"]] == ["uuid-server"]
+
+
+def test_new_mindmap_branch_still_appends() -> None:
+    """A real new branch, sent as a whole node, is added once."""
+    spec = {
+        "type": "mindmap",
+        "nodes": [{"id": "topic", "type": "topic", "text": "平面直角坐标系"}],
+        "connections": [],
+    }
+    merge_granular_into_spec(
+        spec,
+        [
+            {
+                "id": "uuid-new",
+                "type": "branch",
+                "text": "纵轴",
+                "position": {"x": 10, "y": 10},
+                "data": {"mindMapUid": "uuid-new"},
+            }
+        ],
+        [{"id": "e-new", "source": "topic", "target": "uuid-new"}],
+    )
+    assert [node["id"] for node in spec["nodes"]] == ["topic", "uuid-new"]
+    assert spec["connections"][0]["target"] == "uuid-new"
+
+
+def test_merge_collapses_mindmap_already_stored_twice() -> None:
+    """A live spec that already holds both trees drops the later copy on the next merge."""
+    spec = _two_mindmap_copies()
+    merge_granular_into_spec(spec, [{"id": "uuid-server", "position": {"x": 10, "y": 4}}], None)
+    assert [node["id"] for node in spec["nodes"]] == ["topic", "uuid-server"]
+    assert [(conn["source"], conn["target"]) for conn in spec["connections"]] == [("topic", "uuid-server")]
+    assert spec["nodes"][1]["position"]["x"] == 10
+
+
 def test_merge_remaps_leftover_patch_id_onto_live_uuid() -> None:
     """Stale positional patches hit the live UUID via leftover alias."""
     spec = {

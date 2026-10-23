@@ -16,6 +16,7 @@ from fastapi import APIRouter
 from . import (
     avatar,
     avatar_image,
+    canvas_input_device,
     captcha,
     email,
     embed,
@@ -77,6 +78,7 @@ router.include_router(login.router)
 router.include_router(login_devices.router)
 router.include_router(sms.router)
 router.include_router(email.router)
+router.include_router(canvas_input_device.router)
 router.include_router(captcha.router)
 router.include_router(tsec.router)
 router.include_router(password.router)

@@ -33,10 +33,8 @@ export default {
   'collab.previousSessionsStopped': 'เซสชันการทำงานร่วมกัน {n} ของคุณบนไอคอนอื่นๆ สิ้นสุดลงแล้ว',
   'collab.saveFailed': 'บันทึกไดอะแกรมล้มเหล…',
   'collab.scanToJoin': 'สแกนเพื่อเข้าร่ว…',
-  'collab.schoolDescActive':
-    'เปิดความร่วมมือโรงเรียนแล้ว เพื่อนร่วมงาน: MindGraph ใชความร่วมมืโรงเรียน ในหน้าแรกและเลือกไดอะแกรมนีไม่ต้องใช้รหัส',
-  'collab.schoolStarted':
-    'เปิดความร่วมมือโรงเรียนแล้ว เพื่อนร่วมงานเข้าร่วมได้จาความร่วมมืโรงเรียน',
+  'collab.schoolDescActive': 'เปิดความร่วมมือโรงเรียนแล้ว เพื่อนร่วมงาน: MindGraph ใชความร่วมมืโรงเรียน ในหน้าแรกและเลือกไดอะแกรมนีไม่ต้องใช้รหัส',
+  'collab.schoolStarted': 'เปิดความร่วมมือโรงเรียนแล้ว เพื่อนร่วมงานเข้าร่วมได้จาความร่วมมืโรงเรียน',
   'collab.sectionNetwork': 'ความร่วมมือแบบแชร์ (รหัส)',
   'collab.sectionSchool': 'ความร่วมมือโรงเรียน',
   'collab.sessionDuration': 'ระยะเวลาเซสชั…',
@@ -54,24 +52,18 @@ export default {
   'workshop.announceChannels': 'ประกาศ',
   'workshop.announceReadOnlyHint': 'เฉพาะผู้ดูแลระบบโพสต์ในช่องประกาศนี้ได้',
   'workshop.archiveLessonStudy': 'เก็บถาวรการศึกษาบทเรียน',
-  'workshop.archiveLessonStudyConfirm':
-    'เก็บถาวรการศึกษาบทเรียนนี้หรือไม่? สมาชิกจะไม่เห็นในรายการอีก',
+  'workshop.archiveLessonStudyConfirm': 'เก็บถาวรการศึกษาบทเรียนนี้หรือไม่? สมาชิกจะไม่เห็นในรายการอีก',
   'workshop.archiveTeachingGroup': 'เก็บถาวรกลุ่มการสอน',
   'workshop.archiveTeachingGroupConfirm': 'เก็บถาวรกลุ่มการสอนนี้หรือไม่? จะหายจากรายการกลุ่มการสอ',
   'workshop.archiveAnnounceChannel': 'ช่องประกาศเก็บถาวร',
-  'workshop.archiveAnnounceChannelConfirm':
-    'คุณแน่ใจหรือไม่ว่าต้องการเก็บถาวรช่องทางการประกาศนี้ แถบด้านข้างจะไม่แสดงอีกต่อไป แต่ข้อความจะยังคงอยู่',
+  'workshop.archiveAnnounceChannelConfirm': 'คุณแน่ใจหรือไม่ว่าต้องการเก็บถาวรช่องทางการประกาศนี้ แถบด้านข้างจะไม่แสดงอีกต่อไป แต่ข้อความจะยังคงอยู่',
   'workshop.deleteTeachingGroup': 'ลบกลุ่มการสอนและการวิจัย',
-  'workshop.deleteTeachingGroupConfirm':
-    'คุณแน่ใจหรือไม่ว่าต้องการลบกลุ่มการสอนและการวิจัย บทเรียน และข้อความของกลุ่มนี้อย่างถาวร การดำเนินการนี้ไม่สามารถยกเลิกได้',
+  'workshop.deleteTeachingGroupConfirm': 'คุณแน่ใจหรือไม่ว่าต้องการลบกลุ่มการสอนและการวิจัย บทเรียน และข้อความของกลุ่มนี้อย่างถาวร การดำเนินการนี้ไม่สามารถยกเลิกได้',
   'workshop.deleteAnnounceChannel': 'ลบช่องทางการประกาศ',
-  'workshop.deleteAnnounceChannelConfirm':
-    'คุณแน่ใจหรือไม่ว่าต้องการลบช่องประกาศนี้และข้อความในช่องอย่างถาวร การดำเนินการนี้ไม่สามารถยกเลิกได้',
+  'workshop.deleteAnnounceChannelConfirm': 'คุณแน่ใจหรือไม่ว่าต้องการลบช่องประกาศนี้และข้อความในช่องอย่างถาวร การดำเนินการนี้ไม่สามารถยกเลิกได้',
   'workshop.deleteLessonStudy': 'ลบบทเรียน',
-  'workshop.deleteLessonStudyConfirm':
-    'คุณแน่ใจหรือไม่ว่าต้องการลบบทเรียนนี้และข้อความในบทเรียนอย่างถาวร การดำเนินการนี้ไม่สามารถยกเลิกได้',
-  'workshop.manageNeedAdmin':
-    'มีเพียงผู้บริหารโรงเรียนเท่านั้นที่สามารถเพิ่มกลุ่มการสอนและการวิจัยได้ ผู้ดูแลระบบหรือผู้สร้างกลุ่มสามารถลบได้',
+  'workshop.deleteLessonStudyConfirm': 'คุณแน่ใจหรือไม่ว่าต้องการลบบทเรียนนี้และข้อความในบทเรียนอย่างถาวร การดำเนินการนี้ไม่สามารถยกเลิกได้',
+  'workshop.manageNeedAdmin': 'มีเพียงผู้บริหารโรงเรียนเท่านั้นที่สามารถเพิ่มกลุ่มการสอนและการวิจัยได้ ผู้ดูแลระบบหรือผู้สร้างกลุ่มสามารถลบได้',
   'workshop.math': 'สูตร',
   'workshop.backToConversations': 'บทสนทน…',
   'workshop.bold': 'ตัวหนา',
@@ -121,8 +113,7 @@ export default {
   'workshop.create': 'สร้า…',
   'workshop.createChannelFailed': 'ไม่สามารถสร้างช่องได…',
   'workshop.createChannelNeedParent': 'เลือกกลุ่มการสอนหลักก่อ…',
-  'workshop.createChannelNoGroupsYet':
-    'สร้างกลุ่มการสอนก่อน แล้วค่อยเพิ่มการศึกษาบทเรียนภายใต้นั้น',
+  'workshop.createChannelNoGroupsYet': 'สร้างกลุ่มการสอนก่อน แล้วค่อยเพิ่มการศึกษาบทเรียนภายใต้นั้น',
   'workshop.createChannelSuccess': 'สร้างช่องแล้…',
   'workshop.createStudyCaseHint': 'เริ่มบทสนทนาเพื่อเริ่มต้…',
   'workshop.cycleStudyStatus': 'สถานะการศึกษาแบบวงจร',
@@ -164,8 +155,7 @@ export default {
   'workshop.gearMenu': 'ตัวเลือก',
   'workshop.generalChat': 'แชททั่วไ…',
   'workshop.inbox': 'กล่องเข้…',
-  'workshop.inboxHintPickChannel':
-    'เปิดช่องหรือข้อความโดยตรงในแถบด้านข้างเพื่ออ่านและตอบ กลับมาที่นี่ได้จาก มุมมอง กล่องเข้',
+  'workshop.inboxHintPickChannel': 'เปิดช่องหรือข้อความโดยตรงในแถบด้านข้างเพื่ออ่านและตอบ กลับมาที่นี่ได้จาก มุมมอง กล่องเข้',
   'workshop.inboxSummaryTitle': 'กล่องเข้าของคุ…',
   'workshop.inboxUnreadChannels': 'ยังไม่อ่านในช่อง',
   'workshop.inboxUnreadDms': 'ข้อความโดยตรงที่ยังไม่อ่าน',
@@ -191,8 +181,7 @@ export default {
   'workshop.loadMore': 'โหลดเพิ่ม',
   'workshop.mainChannelStream': 'ช่องหลัก',
   'workshop.manageTeachingGroups': 'จัดการกลุ่มการสอ…',
-  'workshop.manageTeachingGroupsBlurb':
-    'เพิ่มหรือลบกลุ่ตั้งสาธารณะหรือส่วนตัว แก้ชื่อและคำอธิบาย เรียงลำดัทำสำเนาเป็นเทมเพลและเชิญเพื่อนร่วมงาน ใช้ขั้นสูงสำหรับกฎการโพสต์และการแจ้งเตือน การเก็บถาวรจะลบกลุ่มสำหรับทุกค',
+  'workshop.manageTeachingGroupsBlurb': 'เพิ่มหรือลบกลุ่ตั้งสาธารณะหรือส่วนตัว แก้ชื่อและคำอธิบาย เรียงลำดัทำสำเนาเป็นเทมเพลและเชิญเพื่อนร่วมงาน ใช้ขั้นสูงสำหรับกฎการโพสต์และการแจ้งเตือน การเก็บถาวรจะลบกลุ่มสำหรับทุกค',
   'workshop.manageUser': 'จัดการผู้ใช้นี…',
   'workshop.markAllReadChannel': 'ทำเครื่องหมายว่าอ่านทั้งหมด',
   'workshop.markAsRead': 'ทำเครื่องหมายว่าอ่านแล้…',
@@ -231,8 +220,7 @@ export default {
   'workshop.noTopicsYet': 'ยังไม่มีบทสนทน…',
   'workshop.numberedList': 'รายการสั่งซื้อ',
   'workshop.notifications': 'การแจ้งเตือน',
-  'workshop.notificationsSettingsBlurb':
-    'การแจ้งเตือนเบราว์เซอร์สำหรับการกล่าวถึงและข้อความใหม่ใช้การตั้งค่าระบบ ปรับเดสก์ท็อปและอีเมลต่อช่องในการตั้งค่าช่องได้',
+  'workshop.notificationsSettingsBlurb': 'การแจ้งเตือนเบราว์เซอร์สำหรับการกล่าวถึงและข้อความใหม่ใช้การตั้งค่าระบบ ปรับเดสก์ท็อปและอีเมลต่อช่องในการตั้งค่าช่องได้',
   'workshop.offline': 'ออฟไลน…',
   'workshop.online': 'ออนไลน…',
   'workshop.openMainChannelStream': 'ช่องหลัก',
@@ -241,12 +229,9 @@ export default {
   'workshop.personalMenu': 'เมนูส่วนตัว',
   'workshop.preview': 'ดูตัวอย่าง',
   'workshop.previewEmpty': 'ไม่มีเนื้อหาที่จะแสดงตัวอย่าง',
-  'workshop.phase2RoadmapGroupsAlerts':
-    "ภายหลั การกล่าวถึ{'@'}group คำเตือน และนโยบายประวัติการแก้ไขข้อควา",
-  'workshop.phase2RoadmapMovePreview':
-    'ภายหลั ย้ายข้อความเดี่ยแสดงตัวอย่างลิงกและกิจกรรมข้ามช่องที่หลากหลายขึ้',
-  'workshop.phase2RoadmapPlatform':
-    'คิวแพลตฟอร์ม: ซิงค์แบบเพิ่ม การแจ้งเตือนมือถือ อีเมลสรุป บอเว็บฮุก',
+  'workshop.phase2RoadmapGroupsAlerts': 'ภายหลั การกล่าวถึ{\'@\'}group คำเตือน และนโยบายประวัติการแก้ไขข้อควา',
+  'workshop.phase2RoadmapMovePreview': 'ภายหลั ย้ายข้อความเดี่ยแสดงตัวอย่างลิงกและกิจกรรมข้ามช่องที่หลากหลายขึ้',
+  'workshop.phase2RoadmapPlatform': 'คิวแพลตฟอร์ม: ซิงค์แบบเพิ่ม การแจ้งเตือนมือถือ อีเมลสรุป บอเว็บฮุก',
   'workshop.pickColleagueToInvite': 'เลือกเพื่อนร่วมงานที่จะเชิ…',
   'workshop.pinChannel': 'ปักหมุดด้านบ…',
   'workshop.policyEveryone': 'ทุกค…',
@@ -254,8 +239,7 @@ export default {
   'workshop.policyMembersOnly': 'เฉพาะสมาชิก',
   'workshop.postingPolicy': 'นโยบายการโพสต์',
   'workshop.preferences': 'การตั้งค่า',
-  'workshop.preferencesSettingsBlurb':
-    'ภาษาและการแสดงผลใช้ทั้งแอป ตัวเลือกแชWorkshop เพิ่มเติมจะมาที่นี',
+  'workshop.preferencesSettingsBlurb': 'ภาษาและการแสดงผลใช้ทั้งแอป ตัวเลือกแชWorkshop เพิ่มเติมจะมาที่นี',
   'workshop.presenceActive': 'ใช้งาน',
   'workshop.presenceIdle': 'ไม่ใช้งา…',
   'workshop.presenceOffline': 'ออฟไลน…',
@@ -264,8 +248,7 @@ export default {
   'workshop.publicChannels': 'ช่องสาธารณ…',
   'workshop.quote': 'อ้าง',
   'workshop.quoteMessage': 'อ้างอิงข้อความ',
-  'workshop.readOnlyProfileBlurb':
-    'รายละเอียดโปรไฟล์เพื่อนร่วมงานแสดงแบบย่อ ใช้จัดการผู้ใช(ผู้ดูแ เพื่อเปิดไดเรกทอรีผู้ดูแ',
+  'workshop.readOnlyProfileBlurb': 'รายละเอียดโปรไฟล์เพื่อนร่วมงานแสดงแบบย่อ ใช้จัดการผู้ใช(ผู้ดูแ เพื่อเปิดไดเรกทอรีผู้ดูแ',
   'workshop.recentDmActivity': 'ข้อความโดยตรงล่าสุ…',
   'workshop.recentTopics': 'บทสนทนาล่าสุ…',
   'workshop.renameTopic': 'เปลี่ยนชื่อบทสนทน…',
@@ -276,8 +259,7 @@ export default {
   'workshop.roleOwner': 'เจ้าของ',
   'workshop.searchMembers': 'ค้นหาสมาชิ..',
   'workshop.searchMessages': 'ค้นหาข้อความ...',
-  'workshop.selectChannelForSettings':
-    'เลือกกลุ่มการสอนหรือการศึกษาบทเรียนก่อน แล้วเปิดการตั้งค่าที่นี',
+  'workshop.selectChannelForSettings': 'เลือกกลุ่มการสอนหรือการศึกษาบทเรียนก่อน แล้วเปิดการตั้งค่าที่นี',
   'workshop.selectConversation': 'เลือกบทสนทน…',
   'workshop.selectParentGroup': 'กลุ่มการสอนหลั…',
   'workshop.selectTopic': 'เลือกบทสนทน…',
@@ -303,8 +285,7 @@ export default {
   'workshop.strikethrough': 'ขีดฆ่า',
   'workshop.table': 'แผ่น',
   'workshop.switchSchool': 'สลับโรงเรียน',
-  'workshop.teachingGroupLandingHint':
-    'การศึกษาบทเรียนและบทสนทนาในกลุ่มการสอนนี้ เลือกแถวเพื่อเปิดช่องหรือเธร',
+  'workshop.teachingGroupLandingHint': 'การศึกษาบทเรียนและบทสนทนาในกลุ่มการสอนนี้ เลือกแถวเพื่อเปิดช่องหรือเธร',
   'workshop.teachingGroupMembers': 'สมาชิก',
   'workshop.teachingGroupNameRequired': 'กรุณาใส่ชื่อกลุ่มการสอ…',
   'workshop.teachingGroupNoLessons': 'ยังไม่มีการศึกษาบทเรียนในกลุ่มนี้',
@@ -335,14 +316,11 @@ export default {
   'workshop.viewProfile': 'ดูโปรไฟล…',
   'workshop.viewingSchool': 'กำลังด {0}',
   'workshop.views': 'มุมมอง',
-  'workshop.welcomeChannelsBody':
-    '“ช่องที่นี่มักสอดคล้องกับกลุ่มวิจัยการสอนหรือ PLC: พื้นที่ร่วมต่อที(เช่คณิต PLC อังกฤษ PLC) กำหนดว่าใครเข้าร่วมและจัดกลุ่มอย่างไ',
+  'workshop.welcomeChannelsBody': '“ช่องที่นี่มักสอดคล้องกับกลุ่มวิจัยการสอนหรือ PLC: พื้นที่ร่วมต่อที(เช่คณิต PLC อังกฤษ PLC) กำหนดว่าใครเข้าร่วมและจัดกลุ่มอย่างไ',
   'workshop.welcomeChannelsTitle': 'PLC / กลุ่มวิช…',
-  'workshop.welcomeConversationsBody':
-    'ภายในการศึกษาบทเรียน คุณเปิดบทสนทนาที่มีชื่เช่ออกแบบการสอน สะท้อน หรืองานติดตาเพื่อให้เธรดติดตามได้ง่าย',
+  'workshop.welcomeConversationsBody': 'ภายในการศึกษาบทเรียน คุณเปิดบทสนทนาที่มีชื่เช่ออกแบบการสอน สะท้อน หรืองานติดตาเพื่อให้เธรดติดตามได้ง่าย',
   'workshop.welcomeConversationsTitle': 'บทสนทน…',
-  'workshop.welcomeExampleCaption':
-    'ตัวอย่างประกอบ (โรงเรียนสมมต Math PLC แลEnglish PLC พร้อมการศึกษาบทเรียนและบทสนทนาตัวอย่าง',
+  'workshop.welcomeExampleCaption': 'ตัวอย่างประกอบ (โรงเรียนสมมต Math PLC แลEnglish PLC พร้อมการศึกษาบทเรียนและบทสนทนาตัวอย่าง',
   'workshop.welcomeExampleConvLabel': 'บทสนทน…',
   'workshop.welcomeExampleGroupEnglish': 'PLC ภาษาอังกฤษ',
   'workshop.welcomeExampleGroupMath': 'PLC คณิตศาสตร์',
@@ -361,50 +339,38 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'ข้อความอยู่ในแต่ละบทสนทน…',
   'workshop.welcomeExampleOrg': 'โรงเรียนมัธยมเฉินซ…',
   'workshop.welcomeHowTitle': 'องค์ประกอบเข้าด้วยกันอย่างไ…',
-  'workshop.welcomeIntro':
-    'Workshop เป็นพื้นที่ของโรงเรียนสำหรับการอภิปรายเป็นระบ แชร์ประกาศ จัดการศึกษาบทเรียน และจัดบทสนทนาคู่กับงานสอนของคุ',
-  'workshop.welcomeLessonStudyBody':
-    'ช่องการศึกษาบทเรียนมักอยู่ภายใต้กลุ่มนั้น แต่ละอันเป็นสถานที่สำหรับวงจรบทเรียนหนึ่วางแผน สังเกต และสะท้อและอาจเชื่อมไดอะแกรมหรือสถานะ',
+  'workshop.welcomeIntro': 'Workshop เป็นพื้นที่ของโรงเรียนสำหรับการอภิปรายเป็นระบ แชร์ประกาศ จัดการศึกษาบทเรียน และจัดบทสนทนาคู่กับงานสอนของคุ',
+  'workshop.welcomeLessonStudyBody': 'ช่องการศึกษาบทเรียนมักอยู่ภายใต้กลุ่มนั้น แต่ละอันเป็นสถานที่สำหรับวงจรบทเรียนหนึ่วางแผน สังเกต และสะท้อและอาจเชื่อมไดอะแกรมหรือสถานะ',
   'workshop.welcomeLessonStudyTitle': 'การศึกษาบทเรียน',
-  'workshop.welcomeMessagesBody':
-    'ข้อความคือโพสต์แต่ละรายการในสตรีมช่องหลักหรือในบทสนทนา การตอบ การกล่าวถึและไฟล์ล้วนอยู่บนข้อความ',
+  'workshop.welcomeMessagesBody': 'ข้อความคือโพสต์แต่ละรายการในสตรีมช่องหลักหรือในบทสนทนา การตอบ การกล่าวถึและไฟล์ล้วนอยู่บนข้อความ',
   'workshop.welcomeMessagesTitle': 'ข้อควา…',
   'workshop.welcomeSubtitle': 'ร่วมมือกับโรงเรียนบน MindGraph',
   'workshop.welcomeTitle': 'ยินดีต้อนรับสูWorkshop',
   'workshop.you': '(คุ',
   'workshop.youAnd': 'คุณและ',
   'workshopCanvas.connectFailed': 'เชื่อมต่อความร่วมมือล้มเหล…',
-  'workshopCanvas.sessionExpiredReconnect':
-    'เซสชั่นของคุณหมดอายุแล้ว โปรดรีเฟรชเพจเพื่อเข้าร่วมการทำงานร่วมกันอีกครั้ง',
-  'workshopCanvas.sessionRefreshFailed':
-    'ไม่สามารถรีเฟรชเซสชันการทำงานร่วมกันแบบออนไลน์ได้ โปรดบันทึกเนื้อหาปัจจุบันและเข้าสู่ระบบอีกครั้ง',
-  'workshopCanvas.outboundQueueDegraded':
-    'การซิงค์การทำงานร่วมกันแบบออนไลน์ล้าหลังและการแก้ไขที่ยังไม่ได้ส่งบางส่วนไม่สามารถคงไว้ได้',
+  'workshopCanvas.sessionExpiredReconnect': 'เซสชั่นของคุณหมดอายุแล้ว โปรดรีเฟรชเพจเพื่อเข้าร่วมการทำงานร่วมกันอีกครั้ง',
+  'workshopCanvas.sessionRefreshFailed': 'ไม่สามารถรีเฟรชเซสชันการทำงานร่วมกันแบบออนไลน์ได้ โปรดบันทึกเนื้อหาปัจจุบันและเข้าสู่ระบบอีกครั้ง',
+  'workshopCanvas.outboundQueueDegraded': 'การซิงค์การทำงานร่วมกันแบบออนไลน์ล้าหลังและการแก้ไขที่ยังไม่ได้ส่งบางส่วนไม่สามารถคงไว้ได้',
   'workshopCanvas.connectionClosed': 'การเชื่อมต่อปิ…',
-  'workshopCanvas.connectionClosedSlow':
-    'ขาดการเชื่อมต่อ: เครือข่ายของคุณช้าเกินไปที่จะตามเซสชั่นการทำงานร่วมกัน',
+  'workshopCanvas.connectionClosedSlow': 'ขาดการเชื่อมต่อ: เครือข่ายของคุณช้าเกินไปที่จะตามเซสชั่นการทำงานร่วมกัน',
   'workshopCanvas.sessionEndedByHost': 'โฮสต์ได้ยุติการทำงานร่วมกันทางออนไลน์แล้ว',
   'workshopCanvas.editingNodeLabel': '{username} กำลังแก้ไข...',
   'workshopCanvas.collabEditorDisplayNameFallback': 'ผู้ทำงานร่วมกันอื่น ๆ',
   'workshopCanvas.connectionClosedReason': 'การเชื่อมต่อความร่วมมือปิด: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} กำลังแก้ไขโหนดนี…',
   'workshopCanvas.errorGeneric': 'ข้อผิดพลาดความร่วมมื…',
-  'workshopCanvas.updatePartialFiltered':
-    'การแก้ไขบางอย่างไม่ซิงค์กัน ({count} โหนด): โหนดเหล่านี้กำลังได้รับการแก้ไขโดยผู้ทำงานร่วมกันรายอื่น',
+  'workshopCanvas.updatePartialFiltered': 'การแก้ไขบางอย่างไม่ซิงค์กัน ({count} โหนด): โหนดเหล่านี้กำลังได้รับการแก้ไขโดยผู้ทำงานร่วมกันรายอื่น',
   'workshopCanvas.reconnectFailed': 'เชื่อมต่อความร่วมมือใหม่ล้มเหลกรุณารีเฟรชหน้…',
-  'workshopCanvas.resyncWaiting':
-    'การซิงโครไนซ์อาร์ตเวิร์กใช้เวลานานกว่าที่คาดไว้ และกำลังลองใหม่ หากการแก้ไขผิดปกติ โปรดลองรีเฟรชหน้าเว็บ',
+  'workshopCanvas.resyncWaiting': 'การซิงโครไนซ์อาร์ตเวิร์กใช้เวลานานกว่าที่คาดไว้ และกำลังลองใหม่ หากการแก้ไขผิดปกติ โปรดลองรีเฟรชหน้าเว็บ',
   'workshopCanvas.returnedHomeIdle': 'กลับหน้าแรไม่มีการแก้ไขไดอะแกร30 นาที',
   'workshopCanvas.userJoined': 'ผู้ใช้ {username} เข้าร่ว…',
   'workshopCanvas.usersJoined': 'ผู้ใช้ {count} ได้เข้าร่วมแล้ว',
   'workshopCanvas.userLeft': 'ผู้ใช้ {username} ออ,',
   'workshopCanvas.usersLeft': 'ผู้ใช้ {count} ออกไปแล้ว',
   'workshopCanvas.wsError': 'ข้อผิดพลาดการเชื่อมต่อความร่วมมืกรุณาตรวจสอบเครือข่าย',
-  'workshopCanvas.returnedHomeRoomIdle':
-    'ไอคอนเซสชันนี้ไม่ได้รับการแก้ไขร่วมกันมาเป็นเวลานาน การทำงานร่วมกันสิ้นสุดลงโดยอัตโนมัติและกลับสู่หน้าแรก',
-  'workshopCanvas.roomIdleWarningToast':
-    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
-  'workshopCanvas.otherTabCollaborationActive':
-    'บัญชียังคงทำงานร่วมกันทางออนไลน์ในแท็บหรือหน้าต่างอื่น',
+  'workshopCanvas.returnedHomeRoomIdle': 'ไอคอนเซสชันนี้ไม่ได้รับการแก้ไขร่วมกันมาเป็นเวลานาน การทำงานร่วมกันสิ้นสุดลงโดยอัตโนมัติและกลับสู่หน้าแรก',
+  'workshopCanvas.roomIdleWarningToast': 'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive': 'บัญชียังคงทำงานร่วมกันทางออนไลน์ในแท็บหรือหน้าต่างอื่น',
   'workshopCanvas.joinQrAlt': 'รหัส QR เพื่อเข้าร่วมการทำงานร่วมกันออนไลน์',
 } as const

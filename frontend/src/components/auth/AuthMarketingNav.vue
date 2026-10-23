@@ -2,7 +2,6 @@
 /**
  * Top marketing nav for `/auth` (logo + links + login). Register lives on the modal.
  */
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import LogoQrScanModal from '@/components/sidebar/LogoQrScanModal.vue'
@@ -20,9 +19,7 @@ const router = useRouter()
 /** Same KDocs doc as sidebar account menu 「快速指南」. */
 const PLATFORM_QUICK_GUIDE_URL = 'https://365.kdocs.cn/l/caSETdpB0Akg'
 
-const navLinks = computed(() => [
-  { key: 'contact', label: t('auth.landing.navContact'), labelKey: 'auth.landing.navContact' },
-])
+const navLinks = [{ key: 'contact', labelKey: 'auth.landing.navContact' }]
 
 const {
   visible: showLogoQrScan,
@@ -87,7 +84,10 @@ function onNavLink(link: { key: string }) {
             class="auth-mkt-nav__link"
             @click="onNavLink(link)"
           >
-            <I18nText :k="link.labelKey" />
+            <I18nText
+              :k="link.labelKey"
+              align="center"
+            />
           </button>
         </nav>
       </div>
@@ -98,14 +98,20 @@ function onNavLink(link: { key: string }) {
           class="auth-mkt-nav__link auth-mkt-nav__link--muted auth-mkt-nav__link--guide"
           @click="openPlatformQuickGuide"
         >
-          <I18nText k="auth.platformQuickGuide" />
+          <I18nText
+            k="auth.platformQuickGuide"
+            align="center"
+          />
         </button>
         <button
           type="button"
           class="auth-mkt-nav__link"
           @click="emit('login')"
         >
-          <I18nText k="auth.login" />
+          <I18nText
+            k="auth.login"
+            align="center"
+          />
         </button>
       </div>
     </div>
@@ -123,8 +129,9 @@ function onNavLink(link: { key: string }) {
   position: sticky;
   top: 0;
   z-index: 30;
-  height: 3.75rem;
-  overflow: hidden;
+  height: auto;
+  min-height: 3.75rem;
+  overflow: visible;
   background: #fff;
   border-bottom: 1px solid rgb(237 233 254);
 }
@@ -134,10 +141,11 @@ function onNavLink(link: { key: string }) {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  height: 100%;
+  height: auto;
+  min-height: 3.75rem;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 1.25rem;
+  padding: 0.4rem 1.25rem;
   min-width: 0;
 }
 
@@ -192,9 +200,7 @@ function onNavLink(link: { key: string }) {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: rgb(28 25 23);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.15;
 }
 
 .auth-mkt-nav__tagline {
@@ -202,10 +208,8 @@ function onNavLink(link: { key: string }) {
   font-weight: 500;
   letter-spacing: 0.02em;
   color: rgb(148 163 184);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 14rem;
+  line-height: 1.15;
+  max-width: 16rem;
 }
 
 .auth-mkt-nav__links {
@@ -217,7 +221,7 @@ function onNavLink(link: { key: string }) {
 
 .auth-mkt-nav__link {
   margin: 0;
-  padding: 0.4rem 0.7rem;
+  padding: 0.35rem 0.7rem;
   border: 0;
   border-radius: 0.5rem;
   background: transparent;
@@ -225,7 +229,8 @@ function onNavLink(link: { key: string }) {
   font-weight: 500;
   color: rgb(68 64 60);
   cursor: pointer;
-  white-space: nowrap;
+  line-height: 1.15;
+  text-align: center;
 }
 
 .auth-mkt-nav__link:hover {

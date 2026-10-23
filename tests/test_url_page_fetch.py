@@ -10,9 +10,11 @@ from fastapi import HTTPException
 
 from services.knowledge import url_page_fetch
 from services.knowledge.url_page_fetch import (
+    BROWSER_FILE_EXTRACT_DETAIL,
     MAX_FETCH_BYTES,
     fallback_title_from_url,
     fetch_url_page_text,
+    url_requires_browser_file_extract,
 )
 
 
@@ -28,6 +30,23 @@ def test_fallback_title_from_url_host_only() -> None:
     """Host-only URLs become a short slug title."""
     title = fallback_title_from_url("https://news.example.org/")
     assert title == "news.example.org"
+
+
+def test_file_hosts_require_the_browser_extension() -> None:
+    """SmartEdu, CNKI, and Wenku are file lists, not public HTML."""
+    assert url_requires_browser_file_extract("https://basic.smartedu.cn/syncClassroom/classActivity?activityId=abc")
+    assert url_requires_browser_file_extract("https://kns.cnki.net/kcms2/article/abstract?v=abc")
+    assert url_requires_browser_file_extract("https://wenku.baidu.com/view/abc.html")
+    assert url_requires_browser_file_extract("https://example.com/lesson") is False
+
+
+@pytest.mark.asyncio
+async def test_fetch_rejects_file_hosts_before_http() -> None:
+    """Pasting a lesson or paper URL must not scrape the login shell."""
+    with pytest.raises(HTTPException) as exc_info:
+        await fetch_url_page_text("https://basic.smartedu.cn/syncClassroom/classActivity")
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == BROWSER_FILE_EXTRACT_DETAIL
 
 
 @pytest.mark.asyncio

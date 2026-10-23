@@ -7,7 +7,10 @@ import {
   resolveThinkingMapNodeSlash,
 } from '@/composables/canvasPage/thinkingMapNodeSlash'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useNodeActions } from '@/composables/editor/useNodeActions'
+import {
+  registerDiagramNodeActionEventBus,
+  useNodeActions,
+} from '@/composables/editor/useNodeActions'
 import { restoreLearningSheetUiFromDiagram } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore, usePanelsStore } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
@@ -16,7 +19,7 @@ import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationRead
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 /**
- * Zoom sync, node palette clears, concept-map picker dismiss, teacher usage edit counters.
+ * Zoom sync, AI brainstorm clears, concept-map picker dismiss, teacher usage edit counters.
  * Call once during CanvasPage setup; listeners use owner `CanvasPage` and are removed on unmount.
  */
 export function registerCanvasPageDiagramEventBus(options: {
@@ -31,6 +34,17 @@ export function registerCanvasPageDiagramEventBus(options: {
     })
   const focusReviewStore = useConceptMapFocusReviewStore()
   const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
+
+  registerDiagramNodeActionEventBus(
+    {
+      handleAddNode,
+      handleDeleteNode,
+      handleAddBranch,
+      handleAddChild,
+      handleAddSibling,
+    },
+    'CanvasPage'
+  )
 
   eventBus.onWithOwner(
     'view:zoom_changed',
@@ -47,7 +61,7 @@ export function registerCanvasPageDiagramEventBus(options: {
     'diagram:loaded',
     () => {
       diagramStore.seedHistoryBaselineIfEmpty()
-      panelsStore.clearNodePaletteState({ clearSessions: false })
+      panelsStore.clearDiagramBrainstormState({ clearSessions: false })
       panelsStore.clearAiBrainstormState({ clearSessions: false })
       restoreLearningSheetUiFromDiagram()
     },
@@ -64,7 +78,7 @@ export function registerCanvasPageDiagramEventBus(options: {
   eventBus.onWithOwner(
     'diagram:type_changed',
     () => {
-      panelsStore.clearNodePaletteState()
+      panelsStore.clearDiagramBrainstormState()
       panelsStore.clearAiBrainstormState()
     },
     'CanvasPage'
@@ -188,13 +202,8 @@ export function registerCanvasPageDiagramEventBus(options: {
       }
       const node = diagramStore.data?.nodes.find((item) => item.id === nodeId)
       const topic = nodeId === 'topic' || node?.type === 'topic' || node?.type === 'center'
-      if (action === 'sibling') {
-        if (topic) void handleAddBranch()
-        else void handleAddSibling()
-        return
-      }
-      if (mindMap && topic) void handleAddBranch()
-      else void handleAddChild()
+      if (topic) void handleAddBranch()
+      else void handleAddSibling()
     },
     'CanvasPage'
   )

@@ -422,10 +422,7 @@ async def extract_prompt_requirements(
             topic_extraction_rules=topic_rules,
         )
 
-        requirements_format = None
-        if (request_type or "") == "autocomplete":
-            requirements_format = requirements_response_format(dtype)
-        with structured_output_scope(requirements_format):
+        with structured_output_scope(requirements_response_format(dtype)):
             response = await dispatch_llm_chat(
                 phase_emit=phase_emit,
                 prompt=prompt,

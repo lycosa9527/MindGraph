@@ -491,11 +491,24 @@ class DocumentProcessor:
     # Rasterization DPI for scanned-page OCR (higher = sharper but slower).
     PDF_OCR_DPI = 200
 
-    def _extract_pdf(self, file_path: str) -> str:
-        """Extract text from PDF, falling back to OCR for scanned (image-only) PDFs."""
+    def extract_pdf_text(
+        self,
+        file_path: str,
+        max_ocr_pages: Optional[int] = None,
+    ) -> Tuple[str, str]:
+        """Extract a PDF text layer, OCR image-only pages, and report the source.
+
+        ``max_ocr_pages`` caps rasterized pages for callers that must stay inside
+        a request timeout. ``None`` uses ``MAX_PDF_OCR_PAGES``. The source is
+        ``text`` when the embedded layer is enough, ``ocr`` when vision text
+        replaces it, and ``empty`` when both are blank.
+        """
+        limit = self.MAX_PDF_OCR_PAGES
+        if max_ocr_pages is not None:
+            limit = max(1, min(int(max_ocr_pages), self.MAX_PDF_OCR_PAGES))
         text, page_count = self._extract_pdf_text_layer(file_path)
         if not self._pdf_text_is_sparse(text, page_count):
-            return text
+            return text, "text"
 
         logger.info(
             "[DocumentProcessor] PDF text layer sparse (%d chars, %d pages); attempting OCR: %s",
@@ -503,8 +516,17 @@ class DocumentProcessor:
             page_count,
             file_path,
         )
-        ocr_text, _ = self._ocr_pdf_pages(file_path)
-        return ocr_text if len(ocr_text.strip()) > len(text.strip()) else text
+        ocr_text, _pages = document_ocr.ocr_pdf_pages(file_path, limit, self.PDF_OCR_DPI)
+        if len(ocr_text.strip()) > len(text.strip()):
+            return ocr_text, "ocr"
+        if text.strip():
+            return text, "text"
+        return "", "empty"
+
+    def _extract_pdf(self, file_path: str) -> str:
+        """Extract text from PDF, falling back to OCR for scanned (image-only) PDFs."""
+        text, _source = self.extract_pdf_text(file_path)
+        return text
 
     def _pdf_text_is_sparse(self, text: str, page_count: int) -> bool:
         """True when a PDF yields too little text to be anything but scanned images."""

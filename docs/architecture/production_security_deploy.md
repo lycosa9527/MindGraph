@@ -10,12 +10,12 @@ Use this when rolling hardened MindGraph to **mg.mindspringedu.com** (or any TLS
 |----------|----------------|
 | `BAYI_DECRYPTION_KEY` | `AUTH_MODE=bayi`. Must be the value issued by 小致 for `/loginByXz` (do not generate a replacement). `BAYI_PASSKEY` is removed; delete it from `.env`. |
 | `DEVICE_REGISTRATION_SECRET` | `FEATURE_SMART_RESPONSE=True` |
-| `GEWE_WEBHOOK_SECRET` | `FEATURE_GEWE=True` |
 | `FEATURE_WECHAT_LOGIN` | `True` on production only (WeChat Open Platform: one callback domain). Defaults off. |
 | `FEATURE_DINGTALK_LOGIN` | `True` on production when school DingTalk QR is needed. Defaults off. |
 | `FEATURE_OAUTH_LOGIN` | **Removed.** Delete from `.env`. A leftover value is ignored (startup warning); it does not enable QR login. |
 | `WECHAT_OAUTH_APP_ID` + `WECHAT_OAUTH_APP_SECRET` | Required when `FEATURE_WECHAT_LOGIN=True`; both empty leaves WeChat off; one-sided pair aborts startup |
 | `EXTERNAL_BASE_URL` | HTTPS public origin for OAuth callbacks and Alipay `return_url` (warns if unset while WeChat or DingTalk OAuth is on) |
+| `COLLAB_WS_ALLOWED_ORIGINS` | When non-empty, cookie-authenticated WebSocket upgrades also accept `https://www.mindspringedu.com` and `https://mg.mindspringedu.com`. The list does not have to name either host. Plain `http` stays rejected. Leave unset to keep the check off. |
 | `ALIPAY_APP_ID` + `ALIPAY_NOTIFY_BASE_URL` + certs in `data/alipay-certs/` | Required when `FEATURE_MARKETS=True`. Certificate-mode upload folder (gitignored); override with `ALIPAY_CERT_DIR`. Notify URL: `{ALIPAY_NOTIFY_BASE_URL}/api/markets/payments/alipay/notify`. Product is 电脑网站支付 (`alipay.trade.page.pay`). |
 | `ENTERPRISE_MODE_PUBLIC_ACK=I_UNDERSTAND_PUBLIC_EXPOSURE_RISK` | `AUTH_MODE=enterprise` |
 

@@ -44,6 +44,7 @@ import {
   CLASSROOM_REMOTE_TAB_LABEL_KEYS,
   type ClassroomRemoteTabId,
 } from '@/canvas-ribbon/mindMapClassroomRemoteTypes'
+import { mindMapRibbonTabLabelKey } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
 import MindMapInsertNodeIcon from '@/components/canvas/MindMapInsertNodeIcon.vue'
 import I18nText from '@/components/common/I18nText.vue'
@@ -62,7 +63,9 @@ import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
-import { useMindClassroomStore } from '@/stores'
+import { useAuthStore, useMindClassroomStore } from '@/stores'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
+import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 
 import './mindMapClassroomRemote.css'
 
@@ -97,10 +100,12 @@ const mindMapV2 = useMindMapV2Chrome()
 const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
 
 const { t } = useLanguage()
+const authStore = useAuthStore()
 const notify = useNotifications()
 const ribbon = useMindMapRibbonActions()
 const classroomStore = useMindClassroomStore()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
+const lsCanvas = useLearningAssignmentCanvasStore()
 const { formatBrushActive, formatBrushLocked, handleFormatBrush } = useCanvasToolbarFormatting()
 const { activeTool, handleToolSelect, openTool } = useMindMapSideToolbarState()
 const sourceLock = useDiagramSourceLock()
@@ -139,6 +144,14 @@ function onFormatPainter(): void {
     return
   }
   requireSelection(handleFormatBrush)
+}
+
+function onFormatPainterDblClick(): void {
+  if (formatBrushActive.value) {
+    handleFormatBrush({ lock: true })
+    return
+  }
+  requireSelection(() => handleFormatBrush({ lock: true }))
 }
 
 function openDocGenerate(): void {
@@ -276,7 +289,7 @@ const aiTools = computed<RemoteTool[]>(() => [
           dimmed: aiBlockedByCollab.value,
           active:
             caps.value.thinkingMapChrome || caps.value.conceptMap
-              ? ribbon.isNodePaletteOpen
+              ? ribbon.isDiagramBrainstormOpen
               : activeTool.value === 'waterfall',
           run: () => runGuestAi(() => handleToolSelect('waterfall')),
         },
@@ -308,17 +321,21 @@ const aiTools = computed<RemoteTool[]>(() => [
 ])
 
 const teachingTools = computed<RemoteTool[]>(() => [
-  {
-    id: 'learning-sheet',
-    labelKey: 'canvas.mindMapSideToolbar.learningSheet',
-    icon: GraduationCap,
-    dimmed: aiBlockedByCollab.value,
-    active:
-      activeTool.value === 'learning_sheet' ||
-      ribbon.learningSheet.isPickActive ||
-      ribbon.learningSheet.isLearningSheetActive,
-    run: () => ribbon.openSideTool('learning_sheet'),
-  },
+  ...(lsCanvas.showLearningSheet
+    ? [
+        {
+          id: 'learning-sheet',
+          labelKey: 'canvas.mindMapSideToolbar.learningSheet',
+          icon: GraduationCap,
+          dimmed: aiBlockedByCollab.value,
+          active:
+            activeTool.value === 'learning_sheet' ||
+            ribbon.learningSheet.isPickActive ||
+            ribbon.learningSheet.isLearningSheetActive,
+          run: () => ribbon.openSideTool('learning_sheet'),
+        },
+      ]
+    : []),
   {
     id: 'worksheet',
     labelKey: 'canvas.ribbon.makeLearningSheet',
@@ -329,7 +346,7 @@ const teachingTools = computed<RemoteTool[]>(() => [
     id: 'explain',
     labelKey: 'canvas.floatingToolbar.explain',
     icon: Lightbulb,
-    dimmed: aiBlockedByCollab.value || !ribbon.hasSelection,
+    dimmed: aiBlockedByCollab.value || !ribbon.hasSelection || ribbon.explainLockedUntilConfirm,
     run: () => runGuestAi(() => requireSelection(() => ribbon.requestExplainNode())),
   },
   {
@@ -391,14 +408,24 @@ const activeTools = computed(() => {
   }
 })
 
+function remoteTabLabelKey(tab: ClassroomRemoteTabId): string {
+  if (tab === 'teaching') {
+    return mindMapRibbonTabLabelKey('teaching', authStore.user?.role)
+  }
+  return CLASSROOM_REMOTE_TAB_LABEL_KEYS[tab]
+}
+
 function tabIcon(tab: ClassroomRemoteTabId): Component | undefined {
   return tab === 'ai' ? undefined : TAB_ICONS[tab]
 }
 
+function onRemoteToolPointerDown(tool: RemoteTool, event: PointerEvent): void {
+  if (tool.id !== 'explain') return
+  retainEditOnExplainPointer(event, ribbon.explainLockedUntilConfirm)
+}
+
 function runTool(tool: RemoteTool): void {
-  if (tool.disabled) {
-    return
-  }
+  if (tool.disabled) return
   tool.run()
 }
 
@@ -477,7 +504,7 @@ function onClose(): void {
         :class="{ 'is-active': position.activeTab.value === tab }"
         :aria-selected="position.activeTab.value === tab"
         :data-testid="`mindmap-classroom-remote-tab-${tab}`"
-        :title="t(CLASSROOM_REMOTE_TAB_LABEL_KEYS[tab])"
+        :title="t(remoteTabLabelKey(tab))"
         @click="onSelectTab(tab)"
       >
         <MindMapRibbonAiMark v-if="tab === 'ai'" />
@@ -489,7 +516,7 @@ function onClose(): void {
         />
         <span class="mm-remote__tab-label">
           <I18nText
-            :k="CLASSROOM_REMOTE_TAB_LABEL_KEYS[tab]"
+            :k="remoteTabLabelKey(tab)"
             dense
           />
         </span>
@@ -522,10 +549,22 @@ function onClose(): void {
             'is-locked': tool.id === 'painter' && formatBrushLocked,
           }"
           :disabled="tool.disabled"
+          :data-node-explain-trigger="tool.id === 'explain' ? '' : undefined"
           :data-testid="tool.testid"
-          :aria-label="t(tool.labelKey)"
+          :title="
+            tool.id === 'explain' && ribbon.explainLockedUntilConfirm
+              ? t('canvas.floatingToolbar.explainNeedsConfirm')
+              : undefined
+          "
+          :aria-label="
+            tool.id === 'explain' && ribbon.explainLockedUntilConfirm
+              ? t('canvas.floatingToolbar.explainNeedsConfirm')
+              : t(tool.labelKey)
+          "
           :aria-pressed="tool.active"
+          @pointerdown="onRemoteToolPointerDown(tool, $event)"
           @click="runTool(tool)"
+          @dblclick.prevent="tool.id === 'painter' ? onFormatPainterDblClick() : undefined"
         >
           <MindMapInsertNodeIcon
             v-if="tool.insertKind"

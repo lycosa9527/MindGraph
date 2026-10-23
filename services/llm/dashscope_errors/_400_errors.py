@@ -386,7 +386,7 @@ def _parse_400_extended_errors(
         "messages" in error_msg_lower
         and "must contain" in error_msg_lower
         and "json" in error_msg_lower
-        and "response_format" in error_msg_lower
+        and ("response_format" in error_msg_lower or "text.format" in error_msg_lower)
     ):
         if has_chinese:
             user_msg = "使用JSON模式时，提示词中需包含'json'关键词"
@@ -417,9 +417,9 @@ def _parse_400_extended_errors(
         "response_format" in error_msg_lower and "should be a dict" in error_msg_lower
     ):
         if has_chinese:
-            user_msg = "response_format格式错误，应为{'type': 'json_object'}"
+            user_msg = "response_format格式错误，应为 json_object 或 json_schema"
         else:
-            user_msg = "Invalid response_format. Should be {'type': 'json_object'}."
+            user_msg = "Invalid response_format. Use json_object or json_schema."
         return LLMInvalidParameterError(
             f"Invalid response_format: {error_message}",
             parameter="response_format",

@@ -18,7 +18,6 @@ describe('diagramRibbonCapabilities', () => {
     expect(caps.outline).toBe(true)
     expect(caps.standardExport).toBe(false)
     expect(caps.learningSheetPanel).toBe(true)
-    expect(caps.learningSheetToggle).toBe(false)
   })
 
   it('gives classic mind maps the tree tools without v2 chrome', () => {
@@ -27,7 +26,7 @@ describe('diagramRibbonCapabilities', () => {
     expect(caps.mindMapV2).toBe(false)
     expect(caps.subgraph).toBe(false)
     expect(caps.standardExport).toBe(true)
-    expect(caps.learningSheetToggle).toBe(true)
+    expect(caps.learningSheetPanel).toBe(false)
   })
 
   it('keeps thinking-map AI tools and type slots', () => {
@@ -40,7 +39,6 @@ describe('diagramRibbonCapabilities', () => {
     expect(circle.explain).toBe(true)
     expect(circle.mindClassroom).toBe(true)
     expect(circle.learningSheetPanel).toBe(true)
-    expect(circle.learningSheetToggle).toBe(false)
     expect(circle.docGenerate).toBe(false)
     expect(circle.subgraph).toBe(false)
     expect(circle.topicGenerate).toBe(true)
@@ -67,7 +65,6 @@ describe('diagramRibbonCapabilities', () => {
     expect(concept.explain).toBe(true)
     expect(concept.mindClassroom).toBe(true)
     expect(concept.learningSheetPanel).toBe(true)
-    expect(concept.learningSheetToggle).toBe(false)
     expect(concept.conceptGenerate).toBe(true)
     expect(concept.docGenerate).toBe(false)
     expect(concept.subgraph).toBe(true)

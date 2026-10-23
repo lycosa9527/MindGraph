@@ -271,7 +271,7 @@ export function useMindMapCollapseOverlayPositions(options: {
   editingNodeId: Ref<string | null>
   getDescendantCount: (nodeId: string) => number
   getDescendantIds: (rootId: string) => Set<string>
-  /** 1 = default; 2 = e-blackboard (see `MIND_MAP_E_BLACKBOARD_CONTROL_SCALE`). */
+  /** 1 = default; 2 = classroom board (see `MIND_MAP_E_BLACKBOARD_CONTROL_SCALE`). */
   controlScale?: Ref<number>
 }) {
   const handles = ref<CollapseOverlayHandle[]>([])

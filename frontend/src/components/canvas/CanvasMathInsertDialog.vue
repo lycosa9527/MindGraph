@@ -205,6 +205,7 @@ function handleCancel(): void {
     line1-key="canvas.hero.math.line1"
     :icon="Sigma"
     width="min(520px, 92vw)"
+    above-canvas-chrome
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div

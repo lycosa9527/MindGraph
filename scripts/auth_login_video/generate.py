@@ -4,7 +4,7 @@
 Examples (from repo root, conda env python313):
 
   python -m scripts.auth_login_video.generate
-  python -m scripts.auth_login_video.generate --ids 01 --models wan3.0-video-prime
+  python -m scripts.auth_login_video.generate --ids 01 --models wan3.0-video
 """
 
 from __future__ import annotations
@@ -39,15 +39,18 @@ from scripts.training_roles.env import dashscope_api_key
 from scripts.training_roles.wan_client import (
     HAPPYHORSE_T2V,
     LONG_POLL_SECONDS,
+    WAN3_VIDEO,
     WAN3_VIDEO_PRIME,
     download_mp4,
+    is_wan3_model,
     poll_video_url,
     submit_video,
 )
 
 MODEL_ALIASES = {
-    "wan": WAN3_VIDEO_PRIME,
-    "wan3": WAN3_VIDEO_PRIME,
+    "wan": WAN3_VIDEO,
+    "wan3": WAN3_VIDEO,
+    WAN3_VIDEO: WAN3_VIDEO,
     WAN3_VIDEO_PRIME: WAN3_VIDEO_PRIME,
     "horse": HAPPYHORSE_T2V,
     "happyhorse": HAPPYHORSE_T2V,
@@ -63,7 +66,7 @@ def _select_concepts(raw_ids: str | None) -> list[LoginConcept]:
 
 def _select_models(raw_models: str | None) -> list[str]:
     if not raw_models:
-        return [WAN3_VIDEO_PRIME]
+        return [WAN3_VIDEO]
     chosen: list[str] = []
     for item in raw_models.split(","):
         key = item.strip()
@@ -144,14 +147,14 @@ def _generate_one(
     prompt = clip_prompt(concept, model)
     print(f"generate {stem} {model} {duration}s 1080P", flush=True)
     if stem not in tasks:
-        audio = True if model == WAN3_VIDEO_PRIME else None
+        audio = True if is_wan3_model(model) else None
         tasks[stem] = submit_video(
             api_key,
             prompt,
             stem,
             model=model,
             negative=NEGATIVE,
-            media=media if model == WAN3_VIDEO_PRIME else None,
+            media=media if is_wan3_model(model) else None,
             resolution="1080P",
             duration=duration,
             ratio="16:9",
@@ -189,7 +192,7 @@ def main() -> None:
     """CLI entry: generate selected login heroes and copy them to Pictures/mascots."""
     parser = argparse.ArgumentParser(description="Wan 3.0 / HappyHorse /auth login heroes")
     parser.add_argument("--ids", help="Comma ids such as 01 or 01,03")
-    parser.add_argument("--models", help="wan3.0-video-prime,happyhorse-1.1-t2v")
+    parser.add_argument("--models", help="wan3.0-video,happyhorse-1.1-t2v")
     parser.add_argument("--force", action="store_true", help="Resubmit even if an MP4 exists")
     parser.add_argument(
         "--export-only",
@@ -208,7 +211,7 @@ def main() -> None:
     tasks: dict[str, str] = {}
     if state_path.exists():
         tasks = json.loads(state_path.read_text(encoding="utf-8"))
-    media = _reference_media() if WAN3_VIDEO_PRIME in models else None
+    media = _reference_media() if any(is_wan3_model(model) for model in models) else None
     api_key = dashscope_api_key()
     failed: list[str] = []
     for concept in concepts:

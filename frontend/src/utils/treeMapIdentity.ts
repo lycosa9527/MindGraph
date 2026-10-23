@@ -87,6 +87,30 @@ export function readTreeParentCategoryId(node: { data?: Record<string, unknown> 
   return readStampedString(node.data, TREE_PARENT_CATEGORY_ID_DATA_KEY)
 }
 
+export interface TreeMapColumn {
+  category: DiagramNode
+  leaves: DiagramNode[]
+}
+
+/** Categories in index order, each with its leaves. Parent id wins over a matching index. */
+export function treeMapColumnsOf(nodes: readonly DiagramNode[]): TreeMapColumn[] {
+  const categories = nodes
+    .filter((node) => isTreeMapCategoryNode(node))
+    .sort((a, b) => readTreeCategoryIndex(a) - readTreeCategoryIndex(b))
+  return categories.map((category) => {
+    const catIndex = readTreeCategoryIndex(category)
+    const leaves = nodes
+      .filter((node) => {
+        if (!isTreeMapLeafNode(node)) return false
+        const parentId = readTreeParentCategoryId(node)
+        if (parentId) return parentId === category.id
+        return readTreeCategoryIndex(node) === catIndex
+      })
+      .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
+    return { category, leaves }
+  })
+}
+
 export function takeTreeMapStableId(claimed: Set<string>, preferred?: string | null): string {
   return takeThinkingMapStableId(claimed, isLeftoverTreeMapId, preferred)
 }

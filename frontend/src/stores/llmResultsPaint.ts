@@ -18,14 +18,19 @@ export function isLlmResultForCurrentSession(
 }
 
 /**
- * First success of this round always paints (first-result-wins).
- * Later completions only refresh the model already on the canvas.
+ * First success of this round paints, unless the user already opened another
+ * saved model while this run was in flight. Later completions only refresh
+ * the model already on the canvas.
  */
 export function shouldPaintCompletedLlmModel(options: {
   paintedModel: string | null
   selectedModel: string | null
   completedModel: string
+  pinnedModel?: string | null
 }): boolean {
+  if (options.pinnedModel && options.pinnedModel !== options.completedModel) {
+    return false
+  }
   if (options.paintedModel === null) {
     return true
   }

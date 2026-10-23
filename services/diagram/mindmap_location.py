@@ -14,6 +14,7 @@ MINDMAP_SIDE_DATA_KEY = "mindMapSide"
 MINDMAP_DEPTH_DATA_KEY = "mindMapDepth"
 MINDMAP_UID_DATA_KEY = "mindMapUid"
 MINDMAP_LEGACY_ID_DATA_KEY = "mindMapLegacyId"
+MINDMAP_ALIAS_IDS_DATA_KEY = "mindMapAliasIds"
 MINDMAP_TOPIC_ID = "topic"
 POSITIONAL_MINDMAP_BRANCH_ID_RE = re.compile(r"^branch-([lr])-(\d+)-(\d+)$")
 INVENTED_MINDMAP_PREFIX_ID_RE = re.compile(r"^(?:[A-Za-z][\w]*_\d+(?:_\d+)*|branch-\d+)$")

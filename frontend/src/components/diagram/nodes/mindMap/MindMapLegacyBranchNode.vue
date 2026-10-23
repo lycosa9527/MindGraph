@@ -23,9 +23,11 @@ import {
 } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
 import {
   MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
   resolveMindMapBranchTextMaxWidthPx,
@@ -82,7 +84,7 @@ const nodeStyle = computed((): CSSProperties => {
       backgroundColor: bgColor,
     }),
     color: style.textColor || defaultStyle.value.textColor || '#333333',
-    fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(style.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${style.fontSize || defaultStyle.value.fontSize || 16}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: style.fontStyle || 'normal',
@@ -108,13 +110,18 @@ const nodeStyle = computed((): CSSProperties => {
 })
 
 const textMaxWidth = computed(() => {
-  const label = ((props.data.label as string) || '').trim()
+  const label = labelWithNodeIcon(
+    diagramStore.data,
+    props.id,
+    ((props.data.label as string) || '').trim(),
+    diagramStore.data?.connections
+  )
   if (!label) return `${MIND_MAP_BRANCH_MAX_TEXT_WIDTH}px`
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 16
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   return `${resolveMindMapBranchTextMaxWidthPx(label, fontSize, {
     fontWeight,
-    fontFamily: DIAGRAM_NODE_FONT_STACK,
+    fontFamily: String(nodeStyle.value.fontFamily || DIAGRAM_NODE_FONT_STACK),
   })}px`
 })
 

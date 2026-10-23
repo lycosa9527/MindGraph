@@ -2,12 +2,12 @@
  * Circle Map Loader
  * Circle maps have: central topic circle, context circles around it, outer boundary ring
  * NO connection lines between nodes (unlike bubble maps)
- * Fixed font size; circles grown from text (one line, no wrap, no truncate).
+ * Fixed font size; circles grown from text. Topics wrap at the shared column width.
  * Uses mindmap branch color palette for each context (like double bubble map).
  */
 import { DEFAULT_CONTEXT_RADIUS } from '@/composables/diagrams/layoutConfig'
 import { mirrorString, mirrorStringList, readSecondaryMirror } from '@/diagramBilingual/mirror'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
   CIRCLE_BOUNDARY_NODE_ID,
   CIRCLE_MAP_UID_DATA_KEY,
@@ -17,6 +17,7 @@ import {
   stampCircleContextData,
   takeCircleMapStableId,
 } from '@/utils/circleMapIdentity'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
 import {
   CIRCLE_MAP_OVAL_WIDTH_RATIO,
   type NodeShape,
@@ -24,7 +25,12 @@ import {
 } from '@/utils/nodeShapeStyle'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
-import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from './textMeasurement'
+import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
+import {
+  CONTEXT_FONT_SIZE,
+  TOPIC_FONT_SIZE,
+  computeTopicRadiusForCircleMap,
+} from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 import { calculateCircleMapLayout, estimateContextCircleDiameter } from './utils'
 
@@ -73,7 +79,8 @@ function circleNodePackR(
  */
 export function recalculateCircleMapLayout(
   nodes: DiagramNode[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {},
+  adornments: MindMapAdornmentsByPath = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return []
@@ -84,14 +91,24 @@ export function recalculateCircleMapLayout(
     .filter((n) => isCircleMapContextNode(n))
     .sort((a, b) => readCircleContextIndex(a) - readCircleContextIndex(b))
   const nodeCount = contextNodes.length
-  const contextTexts = contextNodes.map((n) => n.text)
-  const contextSecondary = contextNodes.map((n) => n.textSecondary ?? '')
-  const topicText = topicNode?.text ?? ''
+  const contextTexts = contextNodes.map((n) => learningSheetLayoutText(n))
+  const contextSecondary = contextNodes.map((n) => learningSheetLayoutSecondary(n))
+  const topicText = topicNode ? learningSheetLayoutText(topicNode) : ''
 
   let topicROverride: number | undefined
   if (topicNode && topicNode.style?.nodeShape !== 'underline') {
-    const diskR = circleDiskRadius(topicNode.style?.nodeShape, nodeDimensions[topicNode.id])
-    if (diskR != null) topicROverride = diskR
+    const topicStyle = topicNode.style
+    const textTopicR = computeTopicRadiusForCircleMap(
+      textWithIconAdornment(topicText || ' ', adornments[topicNode.id]),
+      {
+        secondary: learningSheetLayoutSecondary(topicNode),
+        fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
+        fontWeight: typeof topicStyle?.fontWeight === 'string' ? topicStyle.fontWeight : undefined,
+        fontFamily: typeof topicStyle?.fontFamily === 'string' ? topicStyle.fontFamily : undefined,
+      }
+    )
+    const diskR = circleDiskRadius(topicStyle?.nodeShape, nodeDimensions[topicNode.id])
+    topicROverride = Math.max(textTopicR, diskR ?? 0)
   }
 
   const circleContexts = contextNodes.filter((node) => node.style?.nodeShape !== 'underline')
@@ -99,15 +116,27 @@ export function recalculateCircleMapLayout(
   if (circleContexts.length > 0) {
     let maxR = DEFAULT_CONTEXT_RADIUS
     for (const node of circleContexts) {
+      const nodeStyle = node.style
+      const textR =
+        estimateContextCircleDiameter(
+          textWithIconAdornment(learningSheetLayoutText(node) || ' ', adornments[node.id]),
+          learningSheetLayoutSecondary(node),
+          {
+            fontSize: typeof nodeStyle?.fontSize === 'number' ? nodeStyle.fontSize : undefined,
+            fontWeight:
+              typeof nodeStyle?.fontWeight === 'string' ? nodeStyle.fontWeight : undefined,
+            fontFamily:
+              typeof nodeStyle?.fontFamily === 'string' ? nodeStyle.fontFamily : undefined,
+          }
+        ) / 2
       const diskR = circleDiskRadius(node.style?.nodeShape, nodeDimensions[node.id])
-      const r = diskR ?? estimateContextCircleDiameter(node.text || ' ', node.textSecondary) / 2
-      maxR = Math.max(maxR, r)
+      maxR = Math.max(maxR, textR, diskR ?? 0)
     }
     uniformContextROverride = maxR
   }
 
   const layoutBase = calculateCircleMapLayout(nodeCount, contextTexts, topicText, {
-    topicSecondary: topicNode?.textSecondary,
+    topicSecondary: topicNode ? learningSheetLayoutSecondary(topicNode) : undefined,
     contextSecondary,
     topicR: topicROverride,
     uniformContextR: uniformContextROverride,

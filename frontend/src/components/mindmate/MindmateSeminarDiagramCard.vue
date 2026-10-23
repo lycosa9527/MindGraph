@@ -157,7 +157,7 @@ async function shelveDiagram(destination: 'resource' | 'artifact'): Promise<void
           :src="thumbnailUrl"
           alt=""
         />
-        <span v-else-if="failed">{{ t('showcase.detail.diagramPreviewFailed') }}</span>
+        <span v-else-if="failed"><I18nText k="showcase.detail.diagramPreviewFailed" /></span>
       </div>
       <span
         v-if="preview"
@@ -178,7 +178,7 @@ async function shelveDiagram(destination: 'resource' | 'artifact'): Promise<void
         :disabled="opening"
         @click.stop="emit('open')"
       >
-        {{ t('mindmate.openInCanvas') }}
+        <I18nText k="mindmate.openInCanvas" />
       </button>
     </div>
   </div>

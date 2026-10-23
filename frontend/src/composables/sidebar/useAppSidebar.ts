@@ -33,7 +33,6 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
 import { isPaidSchoolTier } from '@/constants/schoolTier'
-import { useAskOnceStore } from '@/stores/askonce'
 import { useAuthStore } from '@/stores/auth'
 import { useLearningSpaceStore } from '@/stores/learningSpace'
 import { useMindMateStore } from '@/stores/mindmate'
@@ -69,24 +68,16 @@ export function useAppSidebar() {
   const uiStore = useUIStore()
   const authStore = useAuthStore()
   const mindMateStore = useMindMateStore()
-  const askOnceStore = useAskOnceStore()
   const { displayName: mindMateNavLabel, hasCustomAgentName: hasCustomMindMateName } =
     useMindMateBranding()
   const mindMateLabelKey = computed(() => (hasCustomMindMateName.value ? '' : 'sidebar.mindMate'))
   const { canUseOnlineCollab } = useSchoolTierFeatures()
   const {
     featureRagChunkTest,
-    featureCourse,
-    featureTemplate,
-    featureCommunity,
     featureShowcase,
     featureZhihui,
-    featureAskOnce,
-    featureMateLearning,
-    featureDebateverse,
     featureKnowledgeSpace,
     featureLibrary,
-    featureGewe,
     featureSmartResponse,
     featureTeacherUsage,
     featureKittyAgent,
@@ -119,17 +110,10 @@ export function useAppSidebar() {
       return 'learning-space'
     }
     if (path.startsWith('/chunk-test')) return 'chunk-test'
-    if (path.startsWith('/askonce')) return 'askonce'
-    if (path.startsWith('/maite')) return 'maite'
-    if (path.startsWith('/debateverse')) return 'debateverse'
-    if (path.startsWith('/template')) return 'template'
-    if (path.startsWith('/course')) return 'course'
     if (path.startsWith('/showcase')) return 'showcase'
     if (path.startsWith('/zhihui')) return 'zhihui'
-    if (path.startsWith('/community')) return 'community'
     if (path.startsWith('/library')) return 'library'
     if (
-      path.startsWith('/gewe') ||
       path.startsWith('/school-dashboard') ||
       path.startsWith('/smart-response') ||
       path.startsWith('/teacher-usage') ||
@@ -360,12 +344,6 @@ export function useAppSidebar() {
     'knowledge-space': '/knowledge-space',
     'learning-space': '/learning-space',
     'chunk-test': '/chunk-test',
-    askonce: '/askonce',
-    maite: '/maite',
-    debateverse: '/debateverse',
-    template: '/template',
-    course: '/course',
-    community: '/community',
     showcase: '/showcase',
     zhihui: '/zhihui',
     library: '/library',
@@ -376,7 +354,6 @@ export function useAppSidebar() {
 
   const settingsNav = useAdminSettingsNav({
     canViewSettingsSubtab,
-    featureGewe,
     featureLibrary,
     currentAdminTab,
   })
@@ -619,17 +596,6 @@ export function useAppSidebar() {
     }
   }
 
-  function startNewAskOnce() {
-    if (!isAuthenticated.value) {
-      openLoginModal()
-      return
-    }
-    askOnceStore.startNewConversation()
-    if (currentMode.value !== 'askonce') {
-      router.push('/askonce')
-    }
-  }
-
   function handleLogoClick() {
     router.push('/mindgraph')
   }
@@ -680,7 +646,7 @@ export function useAppSidebar() {
     ([mode, authenticated], previous) => {
       const justLoggedIn = Boolean(authenticated && previous && !previous[1])
       const autoOpenMindHistory = (mode === 'mindmate' || mode === 'mindgraph') && !authenticated
-      if (autoOpenMindHistory || mode === 'maite' || (mode === 'zhihui' && showZhihuiNav.value)) {
+      if (autoOpenMindHistory || (mode === 'zhihui' && showZhihuiNav.value)) {
         expandedPanel.value = mode
         return
       }
@@ -693,7 +659,6 @@ export function useAppSidebar() {
       if (
         expandedPanel.value === 'mindmate' ||
         expandedPanel.value === 'mindgraph' ||
-        expandedPanel.value === 'maite' ||
         expandedPanel.value === 'zhihui' ||
         expandedPanel.value === 'workshop-chat'
       ) {
@@ -877,19 +842,12 @@ export function useAppSidebar() {
     uiStore,
     authStore,
     featureRagChunkTest,
-    featureCourse,
-    featureTemplate,
-    featureCommunity,
     featureShowcase,
     featureZhihui,
     showZhihuiNav,
-    featureAskOnce,
-    featureMateLearning,
-    featureDebateverse,
     featureKnowledgeSpace,
     hideKnowledgeSpaceNav: HIDE_KNOWLEDGE_SPACE_NAV,
     featureLibrary,
-    featureGewe,
     featureSmartResponse,
     featureTeacherUsage,
     featureWorkshopChat,
@@ -974,7 +932,6 @@ export function useAppSidebar() {
     openLanguageSettingsModal,
     handleLogout,
     startNewChat,
-    startNewAskOnce,
     handleLogoClick,
     handleDiagramSelect,
     expandedPanel,

@@ -22,26 +22,18 @@ export default {
   'auth.voiceNotes.noDiagram': 'De mindmap is nog niet gekoppeld.',
   'auth.voiceNotes.micUnavailable': 'De huidige browser ondersteunt de microfoon niet.',
   'auth.voiceNotes.micFailed': 'Kan geen toegang krijgen tot de microfoon.',
-  'auth.voiceNotes.micConflict':
-    'Andere stemfuncties maken gebruik van de microfoon. Stop even en probeer het opnieuw.',
-  'auth.voiceNotes.wsError':
-    'De verbinding met de spraaknotitie is mislukt. Controleer het netwerk en de aanmeldingsstatus.',
+  'auth.voiceNotes.micConflict': 'Andere stemfuncties maken gebruik van de microfoon. Stop even en probeer het opnieuw.',
+  'auth.voiceNotes.wsError': 'De verbinding met de spraaknotitie is mislukt. Controleer het netwerk en de aanmeldingsstatus.',
   'auth.voiceNotes.genericError': 'Fout met spraaknotitie',
   'auth.voiceNotes.ingestFailed': 'Kan de transcriptie niet opslaan in de documentsamenvatting.',
-  'auth.voiceNotes.maxDuration':
-    'De spraaknotitie heeft de limiet van 60 minuten bereikt en is automatisch gestopt.',
-  'auth.voiceNotes.silenceAutoStop':
-    'Er is gedurende 2 opeenvolgende minuten geen stem gehoord en de spraaknotitie is automatisch gestopt.',
-  'auth.voiceNotes.startedTimeout':
-    'De spraakservice is niet op tijd gestart. Probeer het opnieuw.',
-  'auth.voiceNotes.micLost': "De microfoon is losgekoppeld en de spraakmemo's zijn gestopt.",
+  'auth.voiceNotes.maxDuration': 'De spraaknotitie heeft de limiet van 60 minuten bereikt en is automatisch gestopt.',
+  'auth.voiceNotes.silenceAutoStop': 'Er is gedurende 2 opeenvolgende minuten geen stem gehoord en de spraaknotitie is automatisch gestopt.',
+  'auth.voiceNotes.startedTimeout': 'De spraakservice is niet op tijd gestart. Probeer het opnieuw.',
+  'auth.voiceNotes.micLost': 'De microfoon is losgekoppeld en de spraakmemo\'s zijn gestopt.',
   'auth.voiceNotes.authFailed': 'Authenticatie van spraaknotities mislukt. Meld u opnieuw aan.',
-  'auth.voiceNotes.wsClosed':
-    'De verbinding met spraaknotities is verbroken en de sessie is gestopt.',
-  'auth.voiceNotes.budgetExceeded':
-    'Spraaknotities zijn niet beschikbaar: het dagelijkse AI-quotum is bereikt of de denkmunten zijn onvoldoende.',
-  'auth.voiceNotes.sessionBusy':
-    'Er is al een spraaknotitiesessie bezig. Stop deze en probeer het opnieuw.',
+  'auth.voiceNotes.wsClosed': 'De verbinding met spraaknotities is verbroken en de sessie is gestopt.',
+  'auth.voiceNotes.budgetExceeded': 'Spraaknotities zijn niet beschikbaar: het dagelijkse AI-quotum is bereikt of de denkmunten zijn onvoldoende.',
+  'auth.voiceNotes.sessionBusy': 'Er is al een spraaknotitiesessie bezig. Stop deze en probeer het opnieuw.',
   'auth.voiceNotes.recording': 'Opname',
   'auth.voiceNotes.paused': 'Opgeschort',
   'auth.voiceNotes.idle': 'klaar',
@@ -49,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'Beginnen',
   'auth.voiceNotes.stopping': 'Stoppen',
   'auth.voiceNotes.ingesting': 'Besparing',
-  'auth.voiceNotes.emptyTranscript':
-    'Er werd geen stem herkend. Zeg een paar woorden voordat u stopt.',
+  'auth.voiceNotes.emptyTranscript': 'Er werd geen stem herkend. Zeg een paar woorden voordat u stopt.',
   'auth.voiceNotes.generating': 'Mindmap genereren',
-  'auth.voiceNotes.sheetHint':
-    'Bewaar de transcriptie na het stoppen. Klik op Mindmap genereren als u klaar bent.',
+  'auth.voiceNotes.sheetHint': 'Bewaar de transcriptie na het stoppen. Klik op Mindmap genereren als u klaar bent.',
   'auth.voiceNotes.status.waiting': 'Wachten om te beginnen',
   'auth.voiceNotes.status.connectingAsr': 'Verbinding maken met spraakherkenning',
   'auth.voiceNotes.status.recording': 'Opnemen · Spraakherkenning',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'Opnemen · Spraakherkenning · Onderscheidende sprekers',
+  'auth.voiceNotes.status.recordingAndSeparating': 'Opnemen · Spraakherkenning · Onderscheidende sprekers',
   'auth.voiceNotes.status.paused': 'Opgeschort',
   'auth.voiceNotes.status.stopping': 'Stoppen',
   'auth.voiceNotes.status.savingTranscript': 'Transcriptie opslaan',
@@ -71,13 +60,10 @@ export default {
   'auth.voiceNotes.savedAt': 'Transcriptie opgeslagen op {time}',
   'auth.voiceNotes.unsavedChanges': 'Transcriptie niet opgeslagen',
   'auth.voiceNotes.closeWhileRecordingTitle': 'Opname',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'Als u het venster sluit, stopt de opname niet. Transcripties worden elke 30 seconden automatisch op de huidige kaart opgeslagen. Weet u zeker dat u het venster wilt verbergen?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'Als u het venster sluit, stopt de opname niet. Transcripties worden elke 30 seconden automatisch op de huidige kaart opgeslagen. Weet u zeker dat u het venster wilt verbergen?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'Venster verbergen',
-  'auth.voiceNotes.recordingContinues':
-    'De opname gaat nog steeds door en u kunt het opnameoverzicht op elk gewenst moment opnieuw openen.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'Sla eerst de huidige mindmap op en gebruik vervolgens de opname om samen te vatten.',
+  'auth.voiceNotes.recordingContinues': 'De opname gaat nog steeds door en u kunt het opnameoverzicht op elk gewenst moment opnieuw openen.',
+  'auth.voiceNotes.noCurrentDiagram': 'Sla eerst de huidige mindmap op en gebruik vervolgens de opname om samen te vatten.',
   'auth.voiceNotes.restoreFailed': 'Kan de opgeslagen transcriptie van de audio-opname niet laden.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'Historische spraaknotities',
@@ -87,57 +73,40 @@ export default {
   'auth.voiceNotes.mergeTalker': 'samenvoegen in',
   'auth.voiceNotes.mergeTalkerInto': 'Samenvoegen in {name}',
   'auth.voiceNotes.resetTalker': 'Standaard herstellen',
-  'auth.voiceNotes.tencentAuth':
-    'Authenticatie via stemherkenning mislukt. Controleer de Tencent Cloud-sleutel.',
-  'auth.voiceNotes.tencentService':
-    'Tencent Cloud-spraakherkenning is niet geactiveerd. Activeer de service in de console.',
-  'auth.voiceNotes.tencentQuota':
-    'Het Tencent Cloud-bronpakket voor spraakherkenning is uitgeput. Betaal of koop het bronnenpakket na activering.',
-  'auth.voiceNotes.tencentArrears':
-    'Het Tencent Cloud-account heeft een betalingsachterstand en stemherkenning is uitgeschakeld.',
-  'auth.voiceNotes.tencentConcurrency':
-    'De gelijktijdigheid van spraakherkenning is vol. Probeer het later opnieuw.',
+  'auth.voiceNotes.tencentAuth': 'Authenticatie via stemherkenning mislukt. Controleer de Tencent Cloud-sleutel.',
+  'auth.voiceNotes.tencentService': 'Tencent Cloud-spraakherkenning is niet geactiveerd. Activeer de service in de console.',
+  'auth.voiceNotes.tencentQuota': 'Het Tencent Cloud-bronpakket voor spraakherkenning is uitgeput. Betaal of koop het bronnenpakket na activering.',
+  'auth.voiceNotes.tencentArrears': 'Het Tencent Cloud-account heeft een betalingsachterstand en stemherkenning is uitgeschakeld.',
+  'auth.voiceNotes.tencentConcurrency': 'De gelijktijdigheid van spraakherkenning is vol. Probeer het later opnieuw.',
   'auth.voiceNotes.tencentAudio': 'De audio wordt niet herkend. Probeer het opnieuw.',
   'auth.voiceNotes.tencentSendRate': 'De audio wordt te snel verzonden. Blijf in realtime opnemen.',
-  'auth.voiceNotes.tencentIdle':
-    'De opname is te lang onderbroken en de spraakherkenning is uitgeschakeld.',
+  'auth.voiceNotes.tencentIdle': 'De opname is te lang onderbroken en de spraakherkenning is uitgeschakeld.',
   'auth.voiceNotes.tencentRetry': 'Spraakherkenning is tijdelijk mislukt. Probeer het opnieuw.',
-  'auth.voiceNotes.tencentRegion':
-    'Het huidige netwerk valt niet binnen het servicebereik van de thuissite van Tencent Cloud.',
+  'auth.voiceNotes.tencentRegion': 'Het huidige netwerk valt niet binnen het servicebereik van de thuissite van Tencent Cloud.',
   'auth.voiceNotes.tencentParam': 'De spraakherkenningsparameters zijn ongeldig.',
   'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID is ongeldig. Controleer TENCENT_ASR_APP_ID.',
-  'auth.voiceNotes.rateLimited':
-    'Er zijn te vaak verzoeken om spraakherkenning. Probeer het later opnieuw.',
+  'auth.voiceNotes.rateLimited': 'Er zijn te vaak verzoeken om spraakherkenning. Probeer het later opnieuw.',
   'auth.voiceNotes.messageTooLarge': 'Het audiopakket is te groot. Probeer het opnieuw.',
-  'auth.voiceNotes.invalidMessage':
-    'Het gesproken notitiebericht is ongeldig. Probeer het opnieuw.',
-  'auth.voiceNotes.asrUnavailable':
-    'Spraakherkenning is tijdelijk niet beschikbaar. Probeer het later opnieuw.',
+  'auth.voiceNotes.invalidMessage': 'Het gesproken notitiebericht is ongeldig. Probeer het opnieuw.',
+  'auth.voiceNotes.asrUnavailable': 'Spraakherkenning is tijdelijk niet beschikbaar. Probeer het later opnieuw.',
   'auth.updateLog': 'Release-opmerkingen',
   'auth.updateLogModalTitle': 'Release-opmerkingen',
   'auth.updateLogMaintainerNote': 'Ja, dit platform wordt actief onderhouden door Roy ✨',
   'auth.updateLogLoadError': 'Kan release-opmerkingen niet laden. Probeer het later opnieuw.',
   'auth.updateLogEmpty': 'Er zijn geen releaseopmerkingen beschikbaar.',
-  'auth.softwareAgreementConsentPrefix':
-    'Het gebruik van dit platform betekent dat u akkoord gaat met de',
+  'auth.softwareAgreementConsentPrefix': 'Het gebruik van dit platform betekent dat u akkoord gaat met de',
   'auth.softwareAgreementLink': 'Voorwaarden en privacybeleid',
   'auth.softwareAgreementUpdated': 'Laatst bijgewerkt: {date}',
   'privacy.backToSignIn': 'Terug naar inloggen',
   'auth.downloadDesktopShortcut': 'Toevoegen aan bureaublad',
   'auth.platformQuickGuide': 'Korte handleiding',
-  'auth.pwaIosInstallHint':
-    "Tik op Delen in Safari, Chrome of Edge en kies vervolgens 'Toevoegen aan startscherm'.",
-  'auth.pwaAndroidInstallHint':
-    'Open het browsermenu (⋮) en tik op App installeren of Toevoegen aan startscherm.',
-  'auth.pwaSafariMacInstallHint':
-    'Kies in Safari Bestand → Toevoegen aan Dock of Delen → Toevoegen aan Dock (macOS Sonoma of hoger).',
-  'auth.pwaDesktopInstallHint':
-    'Gebruik het browsermenu (⋮) of het installatiepictogram in de adresbalk (Chrome, Edge, or Brave).',
+  'auth.pwaIosInstallHint': 'Tik op Delen in Safari, Chrome of Edge en kies vervolgens \'Toevoegen aan startscherm\'.',
+  'auth.pwaAndroidInstallHint': 'Open het browsermenu (⋮) en tik op App installeren of Toevoegen aan startscherm.',
+  'auth.pwaSafariMacInstallHint': 'Kies in Safari Bestand → Toevoegen aan Dock of Delen → Toevoegen aan Dock (macOS Sonoma of hoger).',
+  'auth.pwaDesktopInstallHint': 'Gebruik het browsermenu (⋮) of het installatiepictogram in de adresbalk (Chrome, Edge, or Brave).',
   'auth.pwaInstallSuccess': 'MindGraph is toegevoegd aan uw bureaublad.',
-  'auth.pwaDevInstallHint':
-    'PWA-installatie is uitgeschakeld in de normale ontwikkelaarsmodus. Gebruik productiebuild (npm run build + backend) of voer npm run dev:pwa uit en gebruik vervolgens Chrome/Edge op HTTPS of localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Open MindGraph in de browser op het HTTPS-adres (geen opgeslagen HTML-bestand) voordat u installeert op het bureaublad.',
+  'auth.pwaDevInstallHint': 'PWA-installatie is uitgeschakeld in de normale ontwikkelaarsmodus. Gebruik productiebuild (npm run build + backend) of voer npm run dev:pwa uit en gebruik vervolgens Chrome/Edge op HTTPS of localhost.',
+  'auth.pwaInsecureOriginHint': 'Open MindGraph in de browser op het HTTPS-adres (geen opgeslagen HTML-bestand) voordat u installeert op het bureaublad.',
   'auth.backToLogin': 'Terug naar Inloggen',
   'auth.captcha': 'Verificatiecode',
   'auth.captchaLength4': 'Voer een captcha van 4 tekens in',
@@ -164,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'Gekopieerd',
   'auth.apiTokenCopyFailed': 'Kopiëren mislukt',
   'auth.apiTokenLoading': 'laden…',
-  'auth.apiTokenNone':
-    'Het token is nog niet gegenereerd. Download het vaardighedenpakket of klik op API-token om er een te maken.',
+  'auth.apiTokenNone': 'Het token is nog niet gegenereerd. Download het vaardighedenpakket of klik op API-token om er een te maken.',
   'auth.apiTokenOpaque': 'Het huidige token kan niet worden herhaald. Genereer het opnieuw.',
   'auth.apiTokenExpires': 'Geldig tot {date}',
   'auth.downloadChromeExtension': 'Chrome-extensie',
   'auth.downloadWordAddin': 'Woord-invoegtoepassing',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'Voor deze functie is het Standard- of Professional-schoolniveau vereist (Basic-niveau uitgesloten).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Je schoolabonnement is beëindigd. Uw account bevindt zich nu op het proefniveau. Neem contact op met uw platformbeheerder om te verlengen.',
-  'auth.diagramLimitReached':
-    'Proefscholen staan ​​maximaal {max} opgeslagen diagrammen per leraar toe. Verwijder er één om een ​​nieuw diagram op te slaan.',
+  'auth.schoolTierFeatureUnavailable': 'Voor deze functie is het Standard- of Professional-schoolniveau vereist (Basic-niveau uitgesloten).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Je schoolabonnement is beëindigd. Uw account bevindt zich nu op het proefniveau. Neem contact op met uw platformbeheerder om te verlengen.',
+  'auth.diagramLimitReached': 'Proefscholen staan ​​maximaal {max} opgeslagen diagrammen per leraar toe. Verwijder er één om een ​​nieuw diagram op te slaan.',
   'auth.downloadOpenclawSkill': 'OpenClaw vaardigheid',
-  'auth.downloadOpenclawSkillHint':
-    'De download bevat het accountnummer en het huidige token. Nadat het token opnieuw is gegenereerd, worden oude vaardigheidspakketten en uitbreidingen ongeldig.',
+  'auth.downloadOpenclawSkillHint': 'De download bevat het accountnummer en het huidige token. Nadat het token opnieuw is gegenereerd, worden oude vaardigheidspakketten en uitbreidingen ongeldig.',
   'auth.changePhoneButton': 'Telefoon wijzigen',
   'auth.passwordChangeSuccess': 'Wachtwoord succesvol gewijzigd',
   'auth.passwordChangeFailed': 'Wachtwoordwijziging mislukt',
@@ -233,8 +197,7 @@ export default {
   'auth.modal.enterPhoneOrEmail': 'Enter uw geregistreerde telefoonnummer of account-e-mailadres',
   'auth.modal.phonePlaceholder11': 'Mobiel nummer van 11 cijfers',
   'auth.modal.phoneRegisteredPlaceholder': 'Geregistreerd telefoonnummer',
-  'auth.modal.forgotPhoneOrEmailPlaceholder':
-    'Geregistreerd telefoonnummer of e-mailadres van account',
+  'auth.modal.forgotPhoneOrEmailPlaceholder': 'Geregistreerd telefoonnummer of e-mailadres van account',
   'auth.modal.productTitle': 'Matt onderwijs en onderzoek',
   'auth.modal.registerFailed': 'Registratie mislukt',
   'auth.modal.registerSuccess': 'Registratie succesvol. Meld u aan.',
@@ -258,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -297,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -310,13 +272,11 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'E-mail voor onderwijs',
   'auth.modal.hybridRegisterEmailTabAny': 'E-mail',
   'auth.modal.hybridRegisterPhoneTab': 'Telefoon + uitnodigingscode',
-  'auth.modal.mainlandSalesNotice':
-    'Toegang nodig op het vasteland van China? Gebruik uw mobiele nummer en uitnodigingscode, of neem contact op met de klantenservice.',
+  'auth.modal.mainlandSalesNotice': 'Toegang nodig op het vasteland van China? Gebruik uw mobiele nummer en uitnodigingscode, of neem contact op met de klantenservice.',
   'auth.modal.registrationEmailLabel': 'Alleen educatieve e-mail',
   'auth.modal.registrationEmailLabelAny': 'E-mailadres',
   'auth.modal.registrationEmailHint': '',
-  'auth.modal.registrationEmailHintAny':
-    'Elk e-mailadres behalve domeinen op het vasteland van China.',
+  'auth.modal.registrationEmailHintAny': 'Elk e-mailadres behalve domeinen op het vasteland van China.',
   'auth.modal.educationEmailInvalid': 'Enter een geldig e-mailadres voor onderwijs.',
   'auth.modal.emailInvalid': 'Enter een geldig e-mailadres.',
   'auth.modal.emailCodeLabel': 'E-mailverificatiecode',
@@ -325,12 +285,9 @@ export default {
   'auth.modal.sendEmailCode': 'E-mailcode verzenden',
   'auth.modal.sendingEmailCode': 'Verzenden...',
   'auth.modal.emailCodePlaceholder': '6-cijferige code uit e-mail',
-  'auth.modal.acknowledgeOverseas':
-    'Ik begrijp het en zal de software alleen voor educatieve doeleinden gebruiken.',
-  'auth.modal.acknowledgeOverseasAny':
-    'Ik begrijp en ga akkoord met de voorwaarden voor buitenlandse registratie.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Ik begrijp en ga akkoord met de registratievoorwaarden in het buitenland, en dat Vereenvoudigd Chinees op deze route niet beschikbaar is.',
+  'auth.modal.acknowledgeOverseas': 'Ik begrijp het en zal de software alleen voor educatieve doeleinden gebruiken.',
+  'auth.modal.acknowledgeOverseasAny': 'Ik begrijp en ga akkoord met de voorwaarden voor buitenlandse registratie.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Ik begrijp en ga akkoord met de registratievoorwaarden in het buitenland, en dat Vereenvoudigd Chinees op deze route niet beschikbaar is.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Bevestig de bovenstaande melding.',
   'auth.loginPhoneOrEmail': 'Telefoon of e-mail',
@@ -351,17 +308,13 @@ export default {
   'auth.username': 'Gebruikersnaam',
   'auth.waitCaptchaLoad': 'Wacht tot de captcha is geladen',
   'auth.quickRegPageTitle': 'Snelle registratie',
-  'auth.quickRegPageHint':
-    'Open deze pagina via de link die uw school heeft gedeeld. Enter uw telefoon en de 6-cijferige kamercode die wordt weergegeven in het snelle registratievenster van de begeleider (deze wordt ongeveer elke 30 seconden vernieuwd). De code laat zien dat u zich in de sessie bevindt; het verifieert het eigendom van de telefoon niet zoals een sms-code dat zou doen.',
-  'auth.quickRegLinkInvalid':
-    'Deze registratielink is niet actief (verlopen of gesloten). Open de huidige link van de facilitator opnieuw.',
-  'auth.quickRegProbeRateLimited':
-    'Te veel cheques van deze pagina. Wacht even en vernieuw de pagina, of probeer het later opnieuw.',
+  'auth.quickRegPageHint': 'Open deze pagina via de link die uw school heeft gedeeld. Enter uw telefoon en de 6-cijferige kamercode die wordt weergegeven in het snelle registratievenster van de begeleider (deze wordt ongeveer elke 30 seconden vernieuwd). De code laat zien dat u zich in de sessie bevindt; het verifieert het eigendom van de telefoon niet zoals een sms-code dat zou doen.',
+  'auth.quickRegLinkInvalid': 'Deze registratielink is niet actief (verlopen of gesloten). Open de huidige link van de facilitator opnieuw.',
+  'auth.quickRegProbeRateLimited': 'Te veel cheques van deze pagina. Wacht even en vernieuw de pagina, of probeer het later opnieuw.',
   'auth.quickRegSessionSignups': 'Aangemeld voor deze sessie: {n}',
   'auth.quickRegRoomCodeLabel': 'Kamercode',
   'auth.quickRegRoomCodePlaceholder': '6 cijfers',
-  'auth.quickRegRoomCodeHint':
-    'Zorg ervoor dat de grote cijfers in het snelle registratievenster van de facilitator overeenkomen; voer de code in voordat deze verandert.',
+  'auth.quickRegRoomCodeHint': 'Zorg ervoor dat de grote cijfers in het snelle registratievenster van de facilitator overeenkomen; voer de code in voordat deze verandert.',
   'auth.quickRegRoomCodeEnter6': 'Enter de 6-cijferige kamercode',
   'auth.quickRegMaxUses': 'Maximaal aantal aanmeldingen voor deze link',
   'auth.quickRegHeadcount': 'Aantal mensen',
@@ -371,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'Volledige registratie',
   'auth.quickRegSubmitting': 'Registreren…',
   'auth.quickRegRegisterSuccess': 'Registratie succesvol',
-  'auth.quickRegSessionUnsure':
-    'Het kan zijn dat de registratie is gelukt. Als u niet bent aangemeld, ga dan terug en gebruik de verificatiecode om in te loggen, of vernieuw deze pagina.',
+  'auth.quickRegSessionUnsure': 'Het kan zijn dat de registratie is gelukt. Als u niet bent aangemeld, ga dan terug en gebruik de verificatiecode om in te loggen, of vernieuw deze pagina.',
   'auth.quickRegBackToSignIn': 'Gebruik standaard login/registreren',
   'auth.quickRegSelectOrg': 'Selecteer school',
   'auth.quickRegOrgLoadError': 'Kan scholen niet laden. Probeer het opnieuw.',
   'auth.quickRegMintError': 'Kan het registratiekanaal niet openen. Probeer het opnieuw.',
   'auth.quickRegCloseConfirmTitle': 'Einde snelle inschrijving?',
-  'auth.quickRegCloseConfirm':
-    'Na het sluiten van het venster worden de huidige QR-code en kamercode direct ongeldig en kunnen studenten die nog niet zijn aangemeld zich niet verder inschrijven.',
+  'auth.quickRegCloseConfirm': 'Na het sluiten van het venster worden de huidige QR-code en kamercode direct ongeldig en kunnen studenten die nog niet zijn aangemeld zich niet verder inschrijven.',
   'auth.setPasswordWithSms': 'Stel het inlogwachtwoord in',
   'auth.setPasswordWithSmsTitle': 'Wachtwoord instellen via sms',
-  'auth.setPasswordWithSmsHint':
-    'Wij sturen een code naar uw gebonden telefoon. Nadat u een wachtwoord heeft ingesteld, kunt u inloggen met een wachtwoord of een verificatiecode.',
+  'auth.setPasswordWithSmsHint': 'Wij sturen een code naar uw gebonden telefoon. Nadat u een wachtwoord heeft ingesteld, kunt u inloggen met een wachtwoord of een verificatiecode.',
   'auth.setPasswordWithSmsSubmit': 'Wachtwoord opslaan',
   'auth.setPasswordWithSmsSubmitting': 'Besparing…',
   'auth.accountAvatar': 'Avatar',
@@ -398,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Weergavenaam',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'Minimaal 2 tekens, geen cijfers',
   'auth.accountNameSave': 'Naam opslaan',
   'auth.accountNameSaveSuccess': 'Naam bijgewerkt',
@@ -411,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Kan niet ontkoppelen. Probeer het opnieuw.',
   'auth.dingtalkBindRebind': 'Opnieuw koppelen',
   'auth.dingtalkBindTitle': 'Koppel DingTalk-account',
-  'auth.dingtalkBindInstructions':
-    'Stuur de onderstaande 6-cijferige code (bijvoorbeeld 123-456) als sms naar uw school DingTalk MindBot.',
+  'auth.dingtalkBindInstructions': 'Stuur de onderstaande 6-cijferige code (bijvoorbeeld 123-456) als sms naar uw school DingTalk MindBot.',
   'auth.dingtalkBindPairWaiting': 'Wachten tot MindBot uw code ontvangt…',
   'auth.dingtalkBindCodeHint': 'Verstuur alleen deze code - geen extra tekst.',
   'auth.dingtalkBindCountdown': 'Sessie verloopt over {s}s',
@@ -427,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Gekoppeld ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Momenteel gekoppeld: {staff}',
   'auth.dingtalkUnbindTitle': 'Ontkoppel DingTalk-account',
-  'auth.dingtalkUnbindInstructions':
-    'Stuur de onderstaande code van uw gekoppelde DingTalk-account naar MindBot om het ontkoppelen te bevestigen.',
+  'auth.dingtalkUnbindInstructions': 'Stuur de onderstaande code van uw gekoppelde DingTalk-account naar MindBot om het ontkoppelen te bevestigen.',
   'auth.dingtalkUnbindPairWaiting': 'Wachten op bevestiging van uw gekoppelde DingTalk-account…',
   'auth.dingtalkUnbindCodeHint': 'Verstuur deze code alleen vanuit uw gekoppelde DingTalk account.',
   'auth.dingtalkUnbindExpiredHint': 'Ontkoppelsessie verlopen. Begin opnieuw.',
@@ -441,26 +392,20 @@ export default {
   'auth.qrLoginInviteRequired': 'Enter uw schooluitnodigingscode voordat u QR-login gebruikt',
   'auth.qrLoginProvidersFailed': 'Kan QR-inloginstellingen niet laden. Probeer het opnieuw.',
   'auth.qrLoginProviderDisabled': 'Deze inlogmethode is niet ingeschakeld voor jouw school',
-  'auth.qrLoginNotLinked':
-    'Account niet gekoppeld: meld u aan met een wachtwoord en bind eerst onder Account koppelen',
+  'auth.qrLoginNotLinked': 'Account niet gekoppeld: meld u aan met een wachtwoord en bind eerst onder Account koppelen',
   'auth.qrLoginExchangeFailed': 'QR-aanmelding mislukt. Probeer het opnieuw.',
   'auth.qrLoginInvalidState': 'QR-sessie verlopen. Sluit en scan opnieuw.',
-  'auth.qrLoginInvalidCode':
-    'De WeChat-autorisatiecode is verlopen of gebruikt. Sluit de QR-code en scan de code opnieuw.',
+  'auth.qrLoginInvalidCode': 'De WeChat-autorisatiecode is verlopen of gebruikt. Sluit de QR-code en scan de code opnieuw.',
   'auth.qrLoginRateLimited': 'WeChat-inlogoproepen komen te vaak voor. Probeer het later opnieuw.',
-  'auth.qrLoginMisconfigured':
-    'De WeChat-inlogconfiguratie is onjuist. Neem contact op met de beheerder.',
-  'auth.qrLoginCorpMismatch':
-    'De organisatie DingTalk komt niet overeen met uw schoolinstellingen.',
+  'auth.qrLoginMisconfigured': 'De WeChat-inlogconfiguratie is onjuist. Neem contact op met de beheerder.',
+  'auth.qrLoginCorpMismatch': 'De organisatie DingTalk komt niet overeen met uw schoolinstellingen.',
   'auth.oauthExternalTaken': 'Dit account is al gekoppeld aan een andere gebruiker.',
-  'auth.oauthAlreadyBound':
-    'Dit account is gekoppeld aan WeChat. Als u andere WeChat wilt binden, dient u deze eerst te ontkoppelen',
+  'auth.oauthAlreadyBound': 'Dit account is gekoppeld aan WeChat. Als u andere WeChat wilt binden, dient u deze eerst te ontkoppelen',
   'auth.qrLoginDisabled': 'QR-aanmelding is niet beschikbaar.',
   'auth.qrLoginStartFailed': 'Kan QR-aanmelding niet starten. Probeer het opnieuw.',
   'auth.qrLoginSuccess': 'Succesvol ingelogd',
   'auth.accountBindingsSection': 'Accountkoppeling',
-  'auth.accountBindingsHint':
-    'MindBot slaat op in DingTalk; WeChat/DingTalk zijn voor QR-aanmelding (eerst hier binden)',
+  'auth.accountBindingsHint': 'MindBot slaat op in DingTalk; WeChat/DingTalk zijn voor QR-aanmelding (eerst hier binden)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',

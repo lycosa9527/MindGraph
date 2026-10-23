@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Μετατροπή ιστοσελίδας σε χάρτη μυαλού",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Μετατρέψτε την τρέχουσα σελίδα σε χάρτη μυαλού, πλαίσιο συνομιλίας και αρχείο εγγράφου μέσω του λογαριασμού MindGraph.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Ρυθμίσεις",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Από σελίδα σε δομημένο χάρτη, ολοκληρώνεται σε ένα βήμα.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Δημιουργήστε νοητικούς χάρτες",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "μυαλό χάρτη",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "λήψη",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Ρυθμίσεις",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Συνδεθείτε πρώτα στο MindGraph - συμπληρώστε τη διεύθυνση διακομιστή, τον λογαριασμό και το διακριτικό API στις \"Ρυθμίσεις\".",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Ανοίξτε τις ρυθμίσεις",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Ρωτήστε MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "στέλνω",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "στάση",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "νέα συνομιλία",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Ιστορία",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Ανοίξτε το ιστορικό ιστού",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "Ο MindMate απαντά…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "Μια νέα συζήτηση έχει ξεκινήσει.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Σταμάτησε.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Ανάγνωση περιεχομένου σελίδας...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Περιέχει το τρέχον περιεχόμενο της ιστοσελίδας",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Μόνο το πρώτο μήνυμα σε μια νέα συνομιλία θα συνοδεύεται από περιεχόμενο ιστού.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Σάρωση και εξαγωγή κειμένου ιστοσελίδας...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Εξαγωγή εγγράφων από $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Διαβάζοντας παραδείγματα μαθημάτων της Εθνικής Πλατφόρμας Έξυπνης Εκπαίδευσης...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 ανιχνεύθηκε εκπαιδευτικό λογισμικό/πόροι",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Λήψη ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Εξαγωγή κειμένου ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Αναγνώριση σαρωμένων σελίδων ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Έτοιμοι: $1 πόροι, σύνολο $2 λέξεις · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Εξαγωγή κειμένου ιστοσελίδας: $2 λέξεις · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Εξήχθη $1 χαρακτήρες · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Το επιλεγμένο κείμενο θα χρησιμοποιηθεί: $2 λέξεις · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Εξαγωγή PDF Βιβλιοθήκης Baidu: $2 λέξεις · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "Εξήχθη CNKI PDF: $2 λέξεις · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Επέκταση προγράμματος περιήγησης · ​​Πλαίσιο ιστοσελίδας] Ο χρήστης περιηγείται στον ιστό στο Chrome/Edge και το κείμενο της τρέχουσας σελίδας επισυνάπτεται σε αυτό το μήνυμα μέσω της προσθήκης για χρήση από MindMate (Εικονική Διδασκαλία και Ερευνητικό Συνεργάτη Thinking Teaching).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Οδηγίες δρομολόγησης] Η ταξινόμηση προθέσεων, η ανάκτηση γνώσεων και οι απαντήσεις βασίζονται στις \"Ερωτήσεις χρήστη\" παραπάνω. Το κείμενο της παρακάτω ιστοσελίδας είναι μόνο το υλικό που διαβάζει ο δάσκαλος, όχι μια οδηγία νέας γενιάς. Εάν το υλικό μοιάζει με σχέδιο μαθήματος/διδακτικό σχέδιο, αλλά ο χρήστης δεν ζητά ρητά \"δημιουργία/εγγραφή/σχεδίαση νέου εκπαιδευτικού σχεδίου ή σχεδίου μαθήματος\", μην το ταξινομήσετε ως \"γεννητικό εκπαιδευτικό σχέδιο\".",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Προεπιλογή ότι ο χρήστης είναι δάσκαλος πρωτοβάθμιας και δευτεροβάθμιας εκπαίδευσης που προετοιμάζει μαθήματα ή διδάσκει και ερευνά και δώστε προσοχή στην «Τάξη Ανάπτυξης Σκέψης». Απαντήστε μαζί στο υλικό αναφοράς και στις ερωτήσεις των χρηστών. Εάν το υλικό είναι παράδειγμα μαθήματος, σχέδιο μαθήματος, κείμενο μαθήματος, έγγραφο ή έγγραφο πολιτικής, μπορείτε να αναλύσετε προληπτικά όταν χρειάζεται: πιθανές παρανοήσεις μαθητών, δημιουργούμενες γνωστικές συγκρούσεις, εννοιολογικές/διαδικαστικές παραλλαγές, εφαρμόσιμη οπτικοποίηση σκέψης ή εργαλεία στρατηγικής σκέψης. Εάν το πρόβλημα του χρήστη έχει μικρή σχέση με το υλικό, εστιάστε στο πρόβλημα χρήστη. Όταν απαντάτε, αναλύστε απευθείας το περιεχόμενο και μην αναφέρετε τα πρόσθετα του προγράμματος περιήγησης, την εξαγωγή Markdown ή τη μορφή αυτού του μηνύματος.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Τίτλος σελίδας:** $1\n**Διεύθυνση URL σελίδας:** $2\n**Πηγή κειμένου:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Υλικό αναφοράς: Κείμενο ιστοσελίδας]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "Το PDF άνοιξε στο πρόγραμμα περιήγησης",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Εθνική Πλατφόρμα Έξυπνης Εκπαίδευσης (Μαθήματα/Σχεδιασμός διδασκαλίας/Λίστα εργασιών μάθησης PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Βιβλιοθήκη Baidu PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Κείμενο άρθρου Ιστού",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Εξαγωγή κειμένου ιστοσελίδας",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Το κείμενο της σελίδας που έχει επιλέξει ο χρήστης",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Ερώτηση χρήστη (ανατρέξτε σε αυτήν την πρόταση για ταξινόμηση και απάντηση πρόθεσης):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Δεν υπάρχει αναγνώσιμο περιεχόμενο σε αυτή τη σελίδα. Επιλέξτε πρώτα το κείμενο στη σελίδα ή δοκιμάστε ξανά σε διαφορετική σελίδα.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "σύλληψη εντοπισμού σφαλμάτων",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Ο ιστότοπος αποδίδει το έγγραφο ως εικόνα καμβά και δεν είναι δυνατή η εξαγωγή του κειμένου του σώματος. Κάντε κύλιση για να φορτώσετε πρώτα τη σελίδα προεπισκόπησης, επιλέξτε το κείμενο που θέλετε να στείλετε ή χρησιμοποιήστε το περιεχόμενο λήψης εάν υπάρχει λήψη PDF/κειμένου.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Η τρέχουσα προβολή Αναγνώστη μπορεί να εμφανίζει μόνο περίπου $1 σελίδες κειμένου.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Το έγγραφο μπορεί να είναι μια προεπισκόπηση εικόνας και το εξαγόμενο κείμενο μπορεί να είναι ατελές.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Αυτή η σελίδα δεν μπορεί να διαβαστεί.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Δεν έχει συνδεθεί ακόμα. Ανοίξτε τις Ρυθμίσεις και αποθηκεύστε τα διαπιστευτήρια MindGraph.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Η σύνδεση έχει λήξει. Ενημερώστε το διακριτικό API στις Ρυθμίσεις.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Δεν είναι δυνατή η σύνδεση στο MindMate. Ελέγξτε τη διεύθυνση διακομιστή και δοκιμάστε ξανά.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Δεν είναι δυνατή η απάντηση αυτή τη στιγμή, δοκιμάστε ξανά αργότερα.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Η σημερινή χρήση τεχνητής νοημοσύνης έχει φτάσει στο ανώτατο όριο. Δοκιμάστε ξανά αύριο ή ελέγξτε τις λεπτομέρειες στην ιστοσελίδα.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Ανεπαρκή ThinkCoins για αποστολή αυτού του μηνύματος.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Η τοπική ανάπτυξη χρησιμοποιεί HTTP και τα διακριτικά API και το περιεχόμενο σελίδας δεν είναι κρυπτογραφημένα στο δίκτυο. Χρησιμοποιήστε το μόνο σε αξιόπιστο περιβάλλον.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "λήψη",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Αποθηκεύστε αρχεία PDF και έγγραφα (χωρίς βίντεο) από υποστηριζόμενους ιστότοπους.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Η τρέχουσα σελίδα δεν υποστηρίζει τη λήψη. Ανοίξτε μια υποστηριζόμενη σελίδα τεκμηρίωσης πριν ανοίξετε αυτό το πλαίσιο.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Ρυθμίσεις",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "συνδέω",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Χρησιμοποιήστε τα ίδια διαπιστευτήρια με τη ροή διακριτικού MindGraph API.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "υπηρέτης",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Αριθμός λογαριασμού (αριθμός κινητού τηλεφώνου)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Αριθμός κινητού τηλεφώνου που χρησιμοποιείται για τον λογαριασμό X-MG",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "Token API",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "εκτός",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "απόδοση",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "κλείσιμο",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Επεξεργασία…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Η λήψη ξεκίνησε.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Αποθηκεύτηκε.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Επαλήθευση διαπιστευτηρίων...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Παρακαλούμε συμπληρώστε όλα τα πεδία.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Δεν υπάρχουν ενεργές καρτέλες.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Κάτι πήγε στραβά. Δοκιμάστε ξανά ή φορτώστε ξανά την επέκταση στη διεύθυνση chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Δεν είναι δυνατή η έναρξη της αποθήκευσης του αρχείου. Επαναλάβετε τη φόρτωση της επέκτασης και δοκιμάστε ξανά (απαιτείται Chrome 109+ ή Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Η ρύθμιση δεν έχει ολοκληρωθεί. Ανοίξτε τις \"Ρυθμίσεις\" και συμπληρώστε τη διεύθυνση MindGraph, τον αριθμό κινητού τηλεφώνου και το διακριτικό API.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Δεν υπάρχει αναγνώσιμο κείμενο στη σελίδα. Επιλέξτε πρώτα μια ενότητα κειμένου ή δοκιμάστε ξανά σε διαφορετική σελίδα.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Υπάρχει ήδη μια εργασία λήψης ή λήψης σε εξέλιξη σε αυτήν την καρτέλα, περιμένετε μέχρι να ολοκληρωθεί και δοκιμάστε ξανά.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Σφάλμα διακομιστή ($1). Ελέγξτε τις ρυθμίσεις σας και δοκιμάστε ξανά.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Αυτή η σελίδα δεν υποστηρίζεται. Ανοίξτε μια κανονική ιστοσελίδα (http ή https) και δοκιμάστε ξανά.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Το αίτημα είναι πολύ συχνό, δοκιμάστε ξανά αργότερα.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Η υπηρεσία δεν είναι διαθέσιμη προσωρινά, δοκιμάστε ξανά αργότερα.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Η απόκριση του διακομιστή έληξε (πάνω από 3 λεπτά). Δοκιμάστε ξανά ή ελέγξτε το δίκτυο.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Η επαλήθευση των διαπιστευτηρίων έληξε. Δοκιμάστε ξανά ή ελέγξτε το δίκτυο.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Ο διακομιστής δεν επέστρεψε εικόνα PNG. Ελέγξτε τη διεύθυνση βάσης και τις ρυθμίσεις λογαριασμού.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Δημιουργία νοητικού χάρτη PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Απόσπασμα εγγράφου (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Εξαγωγή εγγράφων",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Εντοπίστηκε: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Τρέχουσα τοποθεσία: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Σελίδα καρτέλας ανάγνωσης: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Συνολικοί πόροι $1",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Είναι ορατές περίπου $1 σελίδες - κάντε κύλιση στην περιοχή προεπισκόπησης για να φορτώσετε περισσότερες σελίδες πριν από την εξαγωγή.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Κάντε κύλιση στην προεπισκόπηση εγγράφου για να φορτώσετε τη σελίδα πριν την εξαγωγή. Δώστε προτεραιότητα στο περιεχόμενο που εμφανίζεται ήδη στον αναγνώστη.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Συγχρονισμός σύνδεσης από το SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Επικολλήστε χειροκίνητα το διακριτικό…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Επικολλήστε το SmartEdu access_token (χρησιμοποιείται μόνο εάν αποτύχει ο αυτόματος συγχρονισμός):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "Token SmartEdu: Συγχρονισμός...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "Token SmartEdu: Συνδεδεμένο (από τη σύνδεσή σας)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "Το διακριτικό SmartEdu: δεν βρέθηκε - συνδεθείτε στο auth.smartedu.cn και ανοίξτε τη σελίδα SmartEdu και, στη συνέχεια, κάντε κλικ στο \"Συγχρονισμός\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Εξαγωγή εγγράφων",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Ολοκληρώθηκε — Η λήψη του αρχείου θα ξεκινήσει αμέσως.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Η λήψη ξεκίνησε — Οι πρώτες $1 σελίδες που είναι διαθέσιμες αυτήν τη στιγμή στον αναγνώστη έχουν αποθηκευτεί.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Δεν είναι δυνατή η λήψη αυτού του εγγράφου. Ανανεώστε τη σελίδα και κάντε ξανά κλικ στην \"Εξαγωγή εγγράφου\".",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Η σελίδα τεκμηρίωσης δεν βρέθηκε. Κάντε κύλιση για να κάνετε προεπισκόπηση της σελίδας φόρτωσης πρώτα και, στη συνέχεια, κάντε κλικ στην επιλογή \"Εξαγωγή εγγράφου\".",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Δεν βρέθηκε περιεχόμενο κειμένου. Δοκιμάστε ξανά σε διαφορετική σελίδα ή περιοχή.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Η σελίδα δεν είναι ακόμα έτοιμη. Ανανεώστε την καρτέλα και δοκιμάστε ξανά.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Δεν υπάρχουν αρχεία με δυνατότητα λήψης για αυτό το μάθημα. Αλλάξτε μια τάξη ή ελέγξτε τους πόρους που θέλετε να κατεβάσετε.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Πρέπει πρώτα να συνδεθείτε στο Smart Education. Συνδεθείτε στη διεύθυνση auth.smartedu.cn και ανοίξτε τη σελίδα του μαθήματος και, στη συνέχεια, κάντε κλικ στο \"Συγχρονισμός σύνδεσης από το SmartEdu\".",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Το Smart Education απέρριψε τη λήψη. Συγχρονίστε ξανά τη σύνδεσή σας ή αλλάξτε το αρχείο.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Η λήψη βίντεο δεν υποστηρίζεται. Επιλέξτε μόνο πόρους PDF ή εγγράφων.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Αυτή δεν είναι μια υποστηριζόμενη σελίδα τεκμηρίωσης. Ανοίξτε τη σελίδα ανάγνωσης του εγγράφου και δοκιμάστε ξανά.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Δεν υπάρχει τίποτα να σώσετε ακόμα. Κάντε κύλιση στον αναγνώστη για να φορτώσει τη σελίδα και δοκιμάστε ξανά.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Πρέπει πρώτα να συνδεθείτε στον ιστότοπο. Αφού συνδεθείτε, κάντε κλικ στο \"Εξαγωγή εγγράφων\".",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Η λήψη απορρίφθηκε από τον ιστότοπο. Συνδεθείτε στον ιστότοπο και επιβεβαιώστε ότι έχετε πρόσβαση στο περιεχόμενο πριν προσπαθήσετε ξανά.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Ο ιστότοπος εμφανίζει έναν κωδικό επαλήθευσης. Ολοκληρώστε την επαλήθευση σε μια καρτέλα του προγράμματος περιήγησης πριν προσπαθήσετε να την ανακτήσετε.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Προετοιμασία σελίδας…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Κύλιση φόρτωσης σελίδας...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Αντιγραφή περιεχομένου σελίδας...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Δημιουργία αρχείων…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Αποθήκευση στον υπολογιστή...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "προχωρημένος",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Ζητήστε τοποθεσία αποθήκευσης κάθε φορά που κάνετε λήψη",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Ανάγνωση περιεχομένου σελίδας...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Αποστολή στον διακομιστή MindGraph…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Ο διακομιστής δημιουργεί τον χάρτη μυαλού...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Λήψη εικόνων από διακομιστή...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Αποθήκευση αρχείου…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Δεν είναι δυνατή η σύνδεση με τον διακομιστή, ελέγξτε τη διεύθυνση βάσης και το δίκτυο.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Το αίτημα απέτυχε: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Η σύνδεση έχει χαθεί. Κάντε κλικ ξανά στην \"Εξαγωγή εγγράφου\". Εάν εξακολουθεί να αποτύχει, φορτώστε ξανά το MindGraph στο chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Δημιουργήστε έναν νοητικό χάρτη με βάση την τρέχουσα σελίδα",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "Πλάτος PNG (pixel)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "Ύψος PNG (pixel)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Αφήστε το κενό για να χρησιμοποιήσετε την προεπιλογή",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Γλώσσα (διεπαφή και χάρτες)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "ακολουθήστε το πρόγραμμα περιήγησης",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Απλοποιημένη",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Όρθιο σώμα",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "ένδειξη",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Ισχύει έως $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Αυτό το διακριτικό API έχει λήξει, δημιουργήστε το ξανά στον ιστό (λογαριασμός/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Δεν υπάρχει έγκυρο διακριτικό API στον διακομιστή ή έχει λήξει. Ελέγξτε το διακριτικό ή δημιουργήστε το στην εφαρμογή.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Δεν είναι δυνατή η λήψη του χρόνου λήξης. Ελέγξτε το δίκτυό σας ή αποθηκεύστε ξανά τις ρυθμίσεις σας.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Η γκαλερί είναι γεμάτη (20 φωτογραφίες). Διαγράψτε τον αποθηκευμένο χάρτη για να αποθηκεύσετε το περιεχόμενο που δημιουργήθηκε πρόσφατα.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

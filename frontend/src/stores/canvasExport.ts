@@ -1,5 +1,5 @@
 /**
- * Canvas export preferences + worksheet (导出为DOC/PDF) modal lifecycle.
+ * Canvas export preferences + worksheet document export modal lifecycle.
  * Persisted in sessionStorage; toolbar open/export stay event-bus driven.
  */
 import { computed, ref, watch } from 'vue'
@@ -8,6 +8,7 @@ import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import {
+  type CanvasExportAnswerMode,
   type CanvasExportColorMode,
   type CanvasExportLayout,
   type CanvasExportOptions,
@@ -113,16 +114,24 @@ export const useCanvasExportStore = defineStore('canvasExport', () => {
     worksheetText: CanvasWorksheetTextOptions,
     colorMode: CanvasExportColorMode,
     format: 'pdf' | 'worksheet_docx' = 'pdf',
-    layout?: CanvasExportLayout
+    layout?: CanvasExportLayout,
+    answerMode?: CanvasExportAnswerMode
   ): void {
     setWorksheetTextOptions(worksheetText)
     const nextLayout = layout ?? exportOptions.value.layout
-    patchExportOptions({ colorMode, layout: nextLayout })
+    const nextAnswerMode = answerMode ?? exportOptions.value.answerMode
+    patchExportOptions({ colorMode, layout: nextLayout, answerMode: nextAnswerMode })
     closeWorksheetTextModal()
     eventBus.emit('toolbar:export_requested', {
       format,
       options: mergeCanvasExportOptions(
-        { ...exportOptions.value, colorMode, layout: nextLayout, worksheetText },
+        {
+          ...exportOptions.value,
+          colorMode,
+          layout: nextLayout,
+          answerMode: nextAnswerMode,
+          worksheetText,
+        },
         worksheetText
       ),
     })

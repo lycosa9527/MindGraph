@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { defineStore } from 'pinia'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { getDefaultDiagramName } from '@/composables/editor/useDiagramLabels'
 import {
@@ -35,10 +36,16 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useKittySessionStore } from '@/stores/kittySession'
 import { useLiveSubtitlesStore } from '@/stores/liveSubtitles'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
+import { useLLMResultsStore } from '@/stores/llmResults'
+import { attachLlmResultsWithinSizeLimit } from '@/stores/llmResultsPersist'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { getDefaultTemplate } from '@/stores/specLoader'
 import { useUIStore } from '@/stores/ui'
 import { apiRequestJson } from '@/utils/apiClient'
+import {
+  getDiagramPersistBaseSpec,
+  shouldStampLiveCanvasOntoLlmResult,
+} from '@/utils/diagramPersistBaseSpec'
 import {
   diagramSourceLockMessage,
   fetchLockedDiagramSourceKind,
@@ -341,8 +348,17 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
 
   async function persistUnsavedCanvasDiagram(): Promise<string | null> {
     const diagramStore = useDiagramStore()
-    const spec = diagramStore.getSpecForSave()
-    if (!spec) return null
+    const llmResultsStore = useLLMResultsStore()
+    const specBase = getDiagramPersistBaseSpec()
+    if (!specBase) return null
+    if (shouldStampLiveCanvasOntoLlmResult()) {
+      llmResultsStore.updateCurrentModelSpec(specBase)
+    }
+    const spec = attachLlmResultsWithinSizeLimit(
+      specBase,
+      llmResultsStore.getResultsForPersistence(),
+      SAVE.MAX_SPEC_WITH_LLM_RESULTS_KB
+    )
     const lang = String(uiStore.promptLanguage || uiStore.language || 'zh').split('-')[0] || 'zh'
     const diagramType = diagramStore.type || 'mindmap'
     const title = getDefaultDiagramName(diagramType, uiStore.language)
@@ -712,7 +728,12 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       const i18nKey = voiceNotesErrorI18nKey(code)
       const msg = i18nKey ? t(i18nKey) : String(data.message ?? t('auth.voiceNotes.genericError'))
       error.value = msg
-      if (code === 'daily_token_cap' || code === 'thinking_coin' || code === 'budget') {
+      if (code === 'thinking_coin') {
+        eventBus.emit('thinking_coins:insufficient', {})
+        void stopRecording('upstream_error')
+        return
+      }
+      if (code === 'daily_token_cap' || code === 'budget') {
         notify.warning(msg || t('auth.voiceNotes.budgetExceeded'))
         void stopRecording('upstream_error')
         return

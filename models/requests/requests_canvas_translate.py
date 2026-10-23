@@ -10,51 +10,32 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+from utils.prompt_output_languages import OUTPUT_LANGUAGE_ENGLISH_NAMES, is_prompt_output_language
+
 CANVAS_TRANSLATE_MODEL = "qwen3.8-flash"
 
-CANVAS_TRANSLATE_TARGET_CODES = frozenset(
-    {
-        "en",
-        "zh",
-        "yue",
-        "ja",
-        "ko",
-        "fr",
-        "de",
-        "es",
-        "pt",
-        "it",
-        "ru",
-        "ar",
-        "hi",
-        "id",
-        "vi",
-        "th",
-        "el",
-        "tr",
-    }
-)
+_TRADITIONAL_CHINESE_UI = frozenset({"zh-tw", "zh-hant", "zh-hk", "zh-mo", "hk", "mo"})
+_NORWEGIAN_ALIASES = frozenset({"nb", "nn"})
 
-CANVAS_TRANSLATE_LANGUAGE_NAMES_EN = {
-    "en": "English",
-    "zh": "Chinese (Mandarin)",
-    "yue": "Cantonese",
-    "ja": "Japanese",
-    "ko": "Korean",
-    "fr": "French",
-    "de": "German",
-    "es": "Spanish",
-    "pt": "Portuguese",
-    "it": "Italian",
-    "ru": "Russian",
-    "ar": "Arabic",
-    "hi": "Hindi",
-    "id": "Indonesian",
-    "vi": "Vietnamese",
-    "th": "Thai",
-    "el": "Greek",
-    "tr": "Turkish",
-}
+
+def normalize_canvas_translate_target(value: str) -> str:
+    """Map a UI locale to a prompt-registry code the diagram translator accepts."""
+    normalized = (value or "").strip().lower().replace("_", "-")
+    if normalized in _TRADITIONAL_CHINESE_UI:
+        return "zh"
+    if normalized in _NORWEGIAN_ALIASES:
+        return "no"
+    if not is_prompt_output_language(normalized):
+        raise ValueError("Unsupported target_language code")
+    return normalized
+
+
+def canvas_translate_language_name(lang_code: str, ui_locale: Optional[str] = None) -> str:
+    """English language name for the translate prompt."""
+    locale = (ui_locale or "").strip().lower().replace("_", "-")
+    if lang_code == "zh" and locale in _TRADITIONAL_CHINESE_UI:
+        return "Traditional Chinese"
+    return OUTPUT_LANGUAGE_ENGLISH_NAMES.get(lang_code, lang_code)
 
 
 class TranslateNodeLabelRequest(BaseModel):
@@ -76,10 +57,7 @@ class TranslateNodeLabelRequest(BaseModel):
     @classmethod
     def validate_target_language(cls, value: str) -> str:
         """Reject target codes that the canvas translate API does not support."""
-        normalized = (value or "").strip().lower()
-        if normalized not in CANVAS_TRANSLATE_TARGET_CODES:
-            raise ValueError("Unsupported target_language code")
-        return normalized
+        return normalize_canvas_translate_target(value)
 
     @field_validator("diagram_type")
     @classmethod
@@ -137,10 +115,7 @@ class TranslateDiagramLabelsRequest(BaseModel):
     @classmethod
     def validate_batch_target_language(cls, value: str) -> str:
         """Reject target codes that the canvas translate API does not support."""
-        normalized = (value or "").strip().lower()
-        if normalized not in CANVAS_TRANSLATE_TARGET_CODES:
-            raise ValueError("Unsupported target_language code")
-        return normalized
+        return normalize_canvas_translate_target(value)
 
     @field_validator("diagram_type")
     @classmethod

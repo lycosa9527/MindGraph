@@ -11,6 +11,7 @@ from services.diagram.mindmap_identity import (
     migrate_mindmap_diagram_payload,
     migrate_mindmap_identity_ids,
     remap_focus_payload,
+    stable_mindmap_identity_id,
 )
 from services.diagram.mindmap_location import (
     is_mindmap_l1,
@@ -22,6 +23,7 @@ from services.diagram.mindmap_location import (
 from services.diagram_edit.effects import build_expected_effect
 from services.diagram_edit.types import DiagramEditCommand
 from services.diagram_edit.verify import extract_created_node_id, verify_mindmap_effect
+from services.kitty.infra.bootstrap.kitty_native_spec import native_spec_to_pseudo_nodes
 from services.kitty.routing.diagram_agent_context import (
     build_diagram_agent_payload,
     resolve_diagram_node_ref,
@@ -94,6 +96,32 @@ def test_location_helpers_match_before_and_after_migrate() -> None:
     )
     assert after_diy == before["diy"] == ("right", 1, True, "r/0")
     assert after_paint == before["paint"] == ("right", 2, False, "r/0/0")
+
+
+def test_positional_branch_mints_the_same_id_on_every_side() -> None:
+    """A leftover id with no saved uid becomes one UUID, not a fresh random id."""
+    bare = [{"id": "topic", "type": "topic", "text": "平面直角坐标系"}, {"id": "branch-r-1-0", "text": "横轴"}]
+    first, _conns, _id_map = migrate_mindmap_identity_ids(bare, [])
+    second, _again, _ignored = migrate_mindmap_identity_ids(
+        [{"id": "topic", "type": "topic", "text": "平面直角坐标系"}, {"id": "branch-r-1-0", "text": "横轴"}],
+        [],
+    )
+    assert first[1]["id"] == second[1]["id"] == stable_mindmap_identity_id("branch-r-1-0")
+    assert first[1]["id"] == "8db35dc2-790c-5b54-94f9-7f8be0e8683c"
+    assert first[1]["id"] != "branch-r-1-0"
+
+
+def test_kitty_native_branch_uses_the_canvas_stable_id() -> None:
+    """Kitty's view of a leftover branch is the same id the canvas mints."""
+    nodes = native_spec_to_pseudo_nodes(
+        {"topic": "平面直角坐标系", "children": [{"id": "branch-r-1-0", "text": "横轴"}]},
+        "mindmap",
+    )
+    assert nodes is not None
+    branch = next(node for node in nodes if node.get("text") == "横轴")
+    assert branch["id"] == stable_mindmap_identity_id("branch-r-1-0")
+    assert branch["data"]["mindMapUid"] == branch["id"]
+    assert branch["data"]["mindMapLegacyId"] == "branch-r-1-0"
 
 
 def test_load_migrate_rewrites_edges_and_styles() -> None:

@@ -1,17 +1,17 @@
 /**
  * Apply AI Brainstorm selections to a mind map (stage-1 branches → stage-2 children).
- * Isolated from node-palette applySelection so the two modules stay independent.
+ * Isolated from diagram-brainstorm applySelection so the two modules stay independent.
  */
 import { nextTick } from 'vue'
 
-import { suggestionBelongsToParent } from '@/composables/nodePalette/constants'
-import { getPlaceholderNodes } from '@/composables/nodePalette/placeholderHelpers'
+import { suggestionBelongsToParent } from '@/composables/aiBrainstorm/constants'
+import { getPlaceholderNodes } from '@/composables/aiBrainstorm/placeholderHelpers'
 import {
   type Stage2Parent,
   buildStageDataForParent,
   getStage2ParentsForDiagram,
   stage2StageNameForType,
-} from '@/composables/nodePalette/stageHelpers'
+} from '@/composables/aiBrainstorm/stageHelpers'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'

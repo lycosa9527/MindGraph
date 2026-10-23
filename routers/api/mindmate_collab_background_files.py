@@ -33,6 +33,7 @@ from services.features.mindmate_collab.background_files import (
 from services.features.mindmate_collab.group_members import user_observes_seminar
 from services.features.mindmate_collab.seminar_shelf import shelve_seminar_item
 from services.features.mindmate_collab.ws_broadcast import broadcast_to_all
+from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
 from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, assert_user_has_school_tier_feature
 from utils.db.session_open import actor_rls_session
@@ -203,9 +204,7 @@ async def upload_seminar_background_file(
             exc,
         )
         raise _http_error(exc) from exc
-    except HTTPException:
-        raise
-    except Exception:
+    except DATABASE_ERRORS:
         logger.exception(
             "[SeminarFiles] upload failed user=%s session=%s filename=%s",
             current_user.id,
@@ -287,7 +286,7 @@ async def delete_seminar_background_file(
         await _reject_observer(session.id, int(current_user.id))
         removed = await delete_background_file(session.id, file_id)
         if removed:
-            actor_name = (getattr(current_user, "name", None) or current_user.username or "").strip()
+            actor_name = (current_user.name or "").strip()
             await broadcast_to_all(
                 session.code,
                 {
@@ -405,7 +404,7 @@ async def preview_seminar_background_file(
             detail,
         )
         raise _http_error(exc) from exc
-    except Exception:
+    except DATABASE_ERRORS:
         logger.exception(
             "[SeminarFiles] preview failed user=%s session=%s file=%s",
             current_user.id,

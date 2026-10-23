@@ -21,6 +21,11 @@ import type {
 import { KittyConnectCloseError } from '@/composables/kitty/kittyConnectFailure'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useKittySessionStore } from '@/stores/kittySession'
+import { useUIStore } from '@/stores/ui'
+import {
+  notifySimplifiedChineseUnsupported,
+  textHasSimplifiedChinese,
+} from '@/utils/simplifiedChineseNotice'
 
 export type {
   KittyAgentContext,
@@ -647,6 +652,10 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       /* ignore */
     }
     traceKittyWorkflow('mobile', 'text_send', text.trim().slice(0, 120))
+    const uiStore = useUIStore()
+    if (!uiStore.languagePolicyAllowZh && textHasSimplifiedChinese(text)) {
+      notifySimplifiedChineseUnsupported(uiStore.language)
+    }
     const payload: Record<string, string> = { type: 'text', text: text.trim() }
     if (typeof requestIdOrMeta === 'string') {
       if (requestIdOrMeta.trim()) {

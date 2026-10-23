@@ -119,6 +119,26 @@ def file_extension(filename: str) -> str:
     return Path(filename).suffix.lower().lstrip(".")
 
 
+# Classic OLE Compound Document (.doc / .ppt / .xls share this header).
+OLE_COMPOUND_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+
+LEGACY_DOC_UPLOAD_DETAIL = "Legacy .doc files are not supported. Convert the file to .docx and upload again."
+
+
+def legacy_doc_upload_detail(filename: str, content: bytes) -> str | None:
+    """Reject ``.doc`` and a ``.doc`` whose name was changed to ``.docx``.
+
+    PowerPoint ``.ppt`` is also an OLE compound file, so the byte check applies
+    only when the name claims to be Word ``.docx``.
+    """
+    ext = file_extension(filename)
+    if ext == "doc":
+        return LEGACY_DOC_UPLOAD_DETAIL
+    if ext == "docx" and content.startswith(OLE_COMPOUND_MAGIC):
+        return LEGACY_DOC_UPLOAD_DETAIL
+    return None
+
+
 def dify_upload_content_type(filename: str, declared_mime: str | None) -> str:
     """MIME type to send on ``POST /files/upload``.
 

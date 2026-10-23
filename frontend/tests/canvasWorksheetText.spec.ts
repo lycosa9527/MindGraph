@@ -15,7 +15,7 @@ import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 
 describe('canvasWorksheetText', () => {
   it('defines worksheet text menu metadata', () => {
-    expect(CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey).toBe('canvas.worksheetText.modalTitle')
+    expect(CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey).toBe('canvas.topBar.addWorksheetText')
     expect('divided' in CANVAS_WORKSHEET_TEXT_MENU_ITEM).toBe(false)
   })
 

@@ -1,6 +1,6 @@
 /**
- * zh UI — thinkingCoins
- * SOURCE — author new keys here in Simplified Chinese first.
+ * zh-tw UI — thinkingCoins
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
  */
 
 export const thinkingCoinsMessages = {
@@ -27,8 +27,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': '即將開放',
   'thinkingCoins.schoolInfo': '請聯繫學校管理員瞭解學校版方案',
   'thinkingCoins.school.headline': 'AI賦能思維·校本化解決方案',
-  'thinkingCoins.school.description':
-    '为学校和教育机构提供私有化部署、专属定制和全面运维支持，满足大规模品牌建设和数据安全需求。',
+  'thinkingCoins.school.description': '为学校和教育机构提供私有化部署、专属定制和全面运维支持，满足大规模品牌建设和数据安全需求。',
   'thinkingCoins.school.feature.accountManager': '專屬客戶經理',
   'thinkingCoins.school.feature.accountManagerDesc': '1對1諮詢對接',
   'thinkingCoins.school.feature.privateDeploy': '私有化部署',

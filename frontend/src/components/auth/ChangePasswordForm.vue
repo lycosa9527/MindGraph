@@ -3,7 +3,7 @@
  * Change-password fields shared by Settings security and the mobile password card.
  * A successful change revokes sessions and signs the user out.
  */
-import { ref, useSlots, watch } from 'vue'
+import { computed, ref, useSlots, watch } from 'vue'
 
 import { Eye, EyeOff, Loader2, RefreshCw } from '@lucide/vue'
 
@@ -13,6 +13,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { resolveAccountLoginIdentity } from '@/utils/accountLoginIdentity'
 
 const props = defineProps<{
   /** Refresh the captcha when the form becomes visible. */
@@ -25,6 +26,13 @@ const emit = defineEmits<{
 
 const slots = useSlots()
 const authStore = useAuthStore()
+const passwordManagerUsername = computed(() => {
+  const loginKey = resolveAccountLoginIdentity({
+    phone: authStore.user?.phone,
+    email: authStore.user?.email,
+  }).value
+  return loginKey || authStore.user?.username || ''
+})
 const featureFlagsStore = useFeatureFlagsStore()
 const notify = useNotifications()
 const { t } = useLanguage()
@@ -155,7 +163,7 @@ async function handleSubmit() {
       id="change-password-username"
       type="text"
       name="username"
-      :value="authStore.user?.phone || authStore.user?.username || ''"
+      :value="passwordManagerUsername"
       autocomplete="username"
       class="sr-only"
       tabindex="-1"

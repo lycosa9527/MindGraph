@@ -7,6 +7,30 @@ import type { DiagramNode } from '@/types'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
 
 describe('circle map default topic radius', () => {
+  it('sizes an emoji adornment the same as those characters in the label', () => {
+    const topic: DiagramNode = { id: 'topic', text: '主题', type: 'center' }
+    const contexts: DiagramNode[] = [
+      { id: 'context-0', text: '属性5', type: 'bubble', data: { groupIndex: 0 } },
+      { id: 'context-1', text: '124', type: 'bubble', data: { groupIndex: 1 } },
+    ]
+    const withIcon = recalculateCircleMapLayout(
+      [topic, ...contexts],
+      {},
+      {
+        'context-0': { icon: '😬' },
+      }
+    )
+    const asText = recalculateCircleMapLayout([
+      topic,
+      { ...contexts[0], text: '😬 属性5' },
+      contexts[1],
+    ])
+    const size = (nodes: DiagramNode[], id: string): number =>
+      nodes.find((node) => node.id === id)?.style?.size ?? 0
+    expect(size(withIcon, 'context-0')).toBe(size(asText, 'context-0'))
+    expect(size(withIcon, 'topic')).toBe(size(asText, 'topic'))
+  })
+
   it('uses text-based floor for short default labels without DOM overrides', () => {
     const layout = calculateCircleMapLayout(8, ['Context 1', 'Context 2'], 'Topic')
     expect(layout.topicR).toBe(60)
@@ -83,6 +107,31 @@ describe('circle map default topic radius', () => {
     expect(again.find((node) => node.id === 'topic')?.style?.size).toBe(roundTopic?.style?.size)
     expect(again.find((node) => node.id === 'context-0')?.style?.size).toBe(
       roundContext?.style?.size
+    )
+  })
+
+  it('grows a long topic to the wrapped text and ignores a smaller DOM box', () => {
+    const long = '测'.repeat(40)
+    const topic: DiagramNode = {
+      id: 'topic',
+      text: long,
+      type: 'center',
+      style: { nodeShape: 'oval' },
+    }
+    const contexts: DiagramNode[] = [
+      { id: 'context-0', text: '联想', type: 'bubble', data: { groupIndex: 0 } },
+    ]
+    const fitted = recalculateCircleMapLayout([topic, ...contexts])
+    const fittedSize = fitted.find((node) => node.id === 'topic')?.style?.size ?? 0
+    const short = recalculateCircleMapLayout([{ ...topic, text: '主题' }, ...contexts])
+    const shortSize = short.find((node) => node.id === 'topic')?.style?.size ?? 0
+    expect(fittedSize).toBeGreaterThan(shortSize)
+
+    const poisoned = recalculateCircleMapLayout([topic, ...contexts], {
+      topic: { width: 120, height: 80 },
+    })
+    expect(poisoned.find((node) => node.id === 'topic')?.style?.size ?? 0).toBeGreaterThanOrEqual(
+      fittedSize
     )
   })
 })

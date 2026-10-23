@@ -32,7 +32,7 @@ import { useAuthStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
-import { TRANSLATE_LANGUAGES } from '@/utils/translateLanguages'
+import { LIVE_TRANSLATE_LANGUAGES } from '@/utils/translateLanguages'
 
 import DiagramPreviewSvg from './DiagramPreviewSvg.vue'
 import IntlDiagramDropdown from './IntlDiagramDropdown.vue'
@@ -42,7 +42,7 @@ import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 const route = useRoute()
 const router = useRouter()
 const deckNav = useTrainingDeckNav()
-const { t, promptLanguage } = useLanguage()
+const { t } = useLanguage()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
@@ -128,7 +128,6 @@ function stopExampleRotation(): void {
 async function handlePromptSubmit() {
   await executeLandingPrompt({
     text: promptText.value,
-    language: promptLanguage.value,
     t,
     notify,
     router,
@@ -290,7 +289,7 @@ onMounted(() => {
           <Globe class="w-[17px] h-[17px]" />
         </ElButton>
         <template #dropdown>
-          <ElDropdownMenu class="max-h-[min(420px,70vh)] overflow-y-auto">
+          <ElDropdownMenu>
             <ElDropdownItem command="__toggle__">
               <span class="translate-lang-row">
                 <span class="translate-lang-label">
@@ -306,7 +305,7 @@ onMounted(() => {
             </ElDropdownItem>
             <ElDivider style="margin: 4px 0" />
             <ElDropdownItem
-              v-for="lang in TRANSLATE_LANGUAGES"
+              v-for="lang in LIVE_TRANSLATE_LANGUAGES"
               :key="lang.code"
               :command="lang.code"
             >

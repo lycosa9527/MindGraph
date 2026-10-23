@@ -39,7 +39,6 @@ export default {
     'Бібліотека заповнена; діаграму імпортовано, але не збережено в бібліотеку',
   'notification.importSuccess': 'Діаграму імпортовано та збережено в бібліотеку',
   'notification.importUnsupportedType': 'Імпорт не вдався: непідтримуваний тип діаграми',
-  'notification.inlineRecEmpty': 'Рекомендації не згенеровано. Спробуйте ще раз або змініть тему.',
   'notification.loadMoreFailed': 'Не вдалося завантажити більше',
   'notification.networkError': 'Помилка мережі',
   'notification.nodeNotEligible': 'Цей вузол не підтримує рекомендації Tab.',

@@ -239,7 +239,7 @@ onUnmounted(() => {
       class="mm-highlight-side__header"
     >
       <h2 class="mm-highlight-side__title">
-        {{ t('mindmate.highlights.title') }}
+        <I18nText k="mindmate.highlights.title" />
       </h2>
       <button
         type="button"
@@ -255,7 +255,7 @@ onUnmounted(() => {
     </header>
 
     <p class="mm-highlight-side__hint">
-      {{ t('mindmate.highlights.hint') }}
+      <I18nText k="mindmate.highlights.hint" />
     </p>
 
     <div
@@ -270,7 +270,10 @@ onUnmounted(() => {
         :aria-selected="filter === 'all'"
         @click="filter = 'all'"
       >
-        {{ t('mindmate.highlights.filterAll', { n: seminarHighlights.length }) }}
+        <I18nText
+          k="mindmate.highlights.filterAll"
+          :params="{ n: seminarHighlights.length }"
+        />
       </button>
       <button
         type="button"
@@ -280,7 +283,10 @@ onUnmounted(() => {
         :aria-selected="filter === 'mine'"
         @click="filter = 'mine'"
       >
-        {{ t('mindmate.highlights.filterMine', { n: mineCount }) }}
+        <I18nText
+          k="mindmate.highlights.filterMine"
+          :params="{ n: mineCount }"
+        />
       </button>
       <ElDropdown
         v-if="!picking"
@@ -292,15 +298,15 @@ onUnmounted(() => {
           type="button"
           class="mm-highlight-side__export-btn"
         >
-          {{ t('mindmate.highlights.export') }}
+          <I18nText k="mindmate.highlights.export" />
         </button>
         <template #dropdown>
           <ElDropdownMenu>
             <ElDropdownItem command="all">
-              {{ t('mindmate.highlights.exportAll') }}
+              <I18nText k="mindmate.highlights.exportAll" />
             </ElDropdownItem>
             <ElDropdownItem command="pick">
-              {{ t('mindmate.highlights.exportPick') }}
+              <I18nText k="mindmate.highlights.exportPick" />
             </ElDropdownItem>
           </ElDropdownMenu>
         </template>
@@ -315,14 +321,17 @@ onUnmounted(() => {
           :disabled="pickedIds.length === 0"
           @click="exportPicked"
         >
-          {{ t('mindmate.highlights.exportSelected', { n: pickedIds.length }) }}
+          <I18nText
+            k="mindmate.highlights.exportSelected"
+            :params="{ n: pickedIds.length }"
+          />
         </button>
         <button
           type="button"
           class="mm-highlight-side__export-btn"
           @click="cancelPick"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
       </div>
     </div>
@@ -331,7 +340,7 @@ onUnmounted(() => {
       v-if="visible.length === 0"
       class="mm-highlight-side__empty"
     >
-      {{ t('mindmate.highlights.empty') }}
+      <I18nText k="mindmate.highlights.empty" />
     </p>
     <ul
       v-else
@@ -390,14 +399,17 @@ onUnmounted(() => {
           class="mm-highlight-card__expand"
           @click="preview = item"
         >
-          {{ t('mindmate.highlights.expand') }}
+          <I18nText k="mindmate.highlights.expand" />
         </button>
         <footer class="mm-highlight-card__foot">
           <span
             v-if="item.createdByName"
             class="mm-highlight-card__from"
           >
-            {{ t('mindmate.highlights.createdBy', { name: item.createdByName }) }}
+            <I18nText
+              k="mindmate.highlights.createdBy"
+              :params="{ name: item.createdByName }"
+            />
           </span>
           <span class="mm-highlight-card__actions">
             <button
@@ -486,7 +498,10 @@ onUnmounted(() => {
               v-if="preview.createdByName"
               class="mm-highlight-card__from"
             >
-              {{ t('mindmate.highlights.createdBy', { name: preview.createdByName }) }}
+              <I18nText
+                k="mindmate.highlights.createdBy"
+                :params="{ name: preview.createdByName }"
+              />
             </span>
             <span class="mm-highlight-card__actions">
               <button

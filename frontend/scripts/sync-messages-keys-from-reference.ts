@@ -16,7 +16,6 @@ const ROOT = join(__dirname, '../src/locales/messages')
 const NS_ORDER = [
   'common',
   'mindmate',
-  'maite',
   'canvas',
   'workshop',
   'admin',

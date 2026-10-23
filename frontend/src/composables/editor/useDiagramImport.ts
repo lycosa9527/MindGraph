@@ -8,6 +8,8 @@ import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { IMPORT_SPEC_KEY } from '@/config'
 import { useDiagramStore } from '@/stores/diagram'
+import { useLLMResultsStore } from '@/stores/llmResults'
+import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import type { DiagramType } from '@/types'
 import { canvasPathForImportNavigation } from '@/utils/canvasBackNavigation'
 import { CMAP_PARSE_FAILED, decodeCmapToConceptMapSpec } from '@/utils/cmapImport'
@@ -64,11 +66,25 @@ function isValidImportedDiagramSpec(obj: unknown): obj is Record<string, unknown
   return isValidMindGraphEncryptedExport(obj)
 }
 
+/** Load an imported spec. Model slots stay in the model menu, not on the canvas body. */
+export function loadImportedDiagramSpec(spec: Record<string, unknown>): boolean {
+  const diagramType = spec.type as DiagramType
+  const { specForLoad, saved } = splitSavedLlmResultsFromSpec(spec)
+  const loaded = useDiagramStore().loadFromSpec(specForLoad, diagramType)
+  if (!loaded) return false
+  const llmResultsStore = useLLMResultsStore()
+  if (saved) {
+    llmResultsStore.restoreFromSaved(saved, diagramType, specForLoad)
+  } else {
+    llmResultsStore.clearCache()
+  }
+  return true
+}
+
 export function useDiagramImport() {
   const route = useRoute()
   const router = useRouter()
   const notify = useNotifications()
-  const diagramStore = useDiagramStore()
 
   async function parseImportFile(
     file: File,
@@ -141,8 +157,7 @@ export function useDiagramImport() {
       if (!file) return
       const spec = await parseImportFile(file, allowedExtensions)
       if (!spec) return
-      const diagramType = spec.type as DiagramType
-      if (diagramStore.loadFromSpec(spec, diagramType)) {
+      if (loadImportedDiagramSpec(spec)) {
         notify.successKey('canvas.toolbar.importSuccess')
       } else {
         notify.errorKey('canvas.import.parseError')

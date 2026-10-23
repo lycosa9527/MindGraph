@@ -13,7 +13,6 @@ Proprietary License
 """
 
 import logging
-import traceback
 from typing import cast
 
 from fastapi import FastAPI, HTTPException, Request
@@ -24,16 +23,16 @@ from starlette.types import ExceptionHandler
 from starlette.websockets import WebSocketDisconnect
 from uvicorn.protocols.utils import ClientDisconnected
 
+from clients.dify_exceptions import DifyAPIError
+from clients.dify_http_errors import dify_error_is_upstream_outage
 from config.settings import config
-from models import get_request_language
+from models import Messages, get_request_language
 from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
 )
 from services.infrastructure.http.llm_http_errors import should_record_http_exception
-from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.monitoring.error_reporting import record_exception, record_failure
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.user_daily_token_quota import daily_token_limit_message
 
 logger = logging.getLogger(__name__)
@@ -110,6 +109,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         # 400 Bad Request - usually client errors (invalid parameters, malformed requests)
         # Log at DEBUG level to reduce noise (these are expected client errors)
         logger.debug("HTTP %s on %s: %s", exc.status_code, path, exc.detail)
+    elif exc.status_code == 402:
+        # Thinking-coin balance is expected user state. The typed handler logs the same at info.
+        logger.info("HTTP %s: %s", exc.status_code, exc.detail)
     elif exc.status_code == 404:
         # 404 Not Found - check if it's an expected case
         if path.startswith("/api/library/documents/") and "/pages/" in path:
@@ -147,6 +149,39 @@ async def user_daily_token_cap_handler(request: Request, exc: UserDailyTokenCapE
     detail = daily_token_limit_message(lang, exc.cap)
     logger.info("Daily token cap exceeded on %s: used=%s cap=%s", path, exc.used, exc.cap)
     return JSONResponse(status_code=429, content={"detail": detail})
+
+
+async def dify_api_error_handler(request: Request, exc: DifyAPIError):
+    """
+    Map Dify Service API failures to HTTP responses.
+
+    Registered on ``DifyAPIError`` (not ``Exception``) so FastAPI handles it inside
+    ExceptionMiddleware. Upstream 502/503/504 during a Dify restart must not fall
+    through to the generic handler, which logs a full traceback and uvicorn then
+    logs it again as an ASGI crash.
+    """
+    path = getattr(request.url, "path", "") if request and request.url else ""
+    language_header = request.headers.get("x-language") if request else None
+    accept_language = request.headers.get("accept-language") if request else None
+    lang = get_request_language(language_header, accept_language)
+    status = exc.status_code if isinstance(exc.status_code, int) else 502
+
+    # 401/403 here are Dify app-key failures. Returning them would look like a
+    # MindGraph session expiry to the browser.
+    if dify_error_is_upstream_outage(exc) or status in (401, 403):
+        detail = Messages.error("ai_temporarily_unavailable", lang=lang)
+        logger.warning(
+            "Dify upstream unavailable on %s: HTTP %s %s",
+            path,
+            status,
+            exc.message,
+        )
+        return JSONResponse(status_code=503, content={"detail": detail})
+
+    if not 400 <= status < 600:
+        status = 502
+    logger.warning("Dify API error on %s: HTTP %s %s", path, status, exc.message)
+    return JSONResponse(status_code=status, content={"detail": exc.message})
 
 
 async def thinking_coin_insufficient_handler(request: Request, exc: ThinkingCoinInsufficientError):
@@ -190,16 +225,13 @@ async def general_exception_handler(request: Request, exc: Exception):
     # a streaming response is cancelled (asyncio.CancelledError / GeneratorExit) before
     # the ASGI `http.response.start` message is sent. This is a client-disconnect
     # artifact — the SSE generator was aborted by the frontend (AbortController) — not
-    # an application fault. Treat it like ClientDisconnect: log at debug, return 204,
-    # and never trigger a critical SMS alert.
+    # an application fault. Treat it like ClientDisconnect: log at debug and return 204.
     if exception_type == "RuntimeError" and "No response returned" in exception_message:
         logger.debug(
             "Client disconnected during streaming response (no response returned): %s",
             request_path,
         )
         return Response(status_code=204)
-
-    stack_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
 
     logger.error("Unhandled exception: %s: %s", exception_type, exception_message, exc_info=True)
 
@@ -219,31 +251,12 @@ async def general_exception_handler(request: Request, exc: Exception):
     if config.debug:
         error_response["debug"] = str(exc)
 
-    # Check if this is a critical exception that warrants SMS alert
-    is_critical = _is_critical_exception(exception_type, exception_message)
-
-    if is_critical:
-        try:
-            await CriticalAlertService.send_unhandled_exception_alert(
-                component="Application",
-                exception_type=exception_type,
-                error_message=exception_message,
-                stack_trace=stack_trace,
-                request_path=request_path,
-            )
-        except BACKGROUND_INFRA_ERRORS as alert_error:
-            logger.error(
-                "Failed to send unhandled exception alert: %s",
-                alert_error,
-                exc_info=True,
-            )
-
     return JSONResponse(status_code=500, content=error_response)
 
 
 def _is_critical_exception(exception_type: str, exception_message: str) -> bool:
     """
-    Determine if an exception is critical and warrants SMS alert.
+    Determine if an exception is critical enough to store at critical severity.
 
     Args:
         exception_type: Exception class name
@@ -300,4 +313,5 @@ def setup_exception_handlers(app: FastAPI):
         ThinkingCoinInsufficientError,
         cast(ExceptionHandler, thinking_coin_insufficient_handler),
     )
+    app.add_exception_handler(DifyAPIError, cast(ExceptionHandler, dify_api_error_handler))
     app.add_exception_handler(Exception, cast(ExceptionHandler, general_exception_handler))

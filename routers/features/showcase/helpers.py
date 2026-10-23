@@ -17,11 +17,6 @@ from typing import Optional, cast
 from fastapi import HTTPException, Request, UploadFile, status
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
-from routers.features.community.helpers import (
-    PNG_MAGIC,
-    THUMBNAIL_MAX_BYTES,
-    parse_spec_json,
-)
 from services.showcase.storage import (
     build_object_key,
     delete_key_sync,
@@ -34,6 +29,21 @@ from services.showcase.storage import (
 )
 
 logger = logging.getLogger(__name__)
+
+THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+
+
+def parse_spec_json(spec: str) -> dict:
+    """Parse spec JSON string, raise HTTPException on invalid JSON."""
+    try:
+        return json.loads(spec)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid spec JSON: {exc}",
+        ) from exc
+
 
 SHOWCASE_DIR = Path("static/case_square")
 SHOWCASE_DIR.mkdir(parents=True, exist_ok=True)

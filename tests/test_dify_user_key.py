@@ -1,5 +1,7 @@
 """Tests for Dify user key parsing."""
 
+import pytest
+
 from utils.dify_user_key import parse_mg_user_id, parse_mindbot_dify_key
 
 
@@ -8,6 +10,15 @@ def test_parse_mg_user_id() -> None:
     assert parse_mg_user_id("mg_user_42") == 42
     assert parse_mg_user_id("mg_user_0") is None
     assert parse_mg_user_id("other") is None
+
+
+def test_parse_mg_user_id_accepts_only_this_install_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A neighbor install's prefix must not resolve to a local user pk."""
+    monkeypatch.setenv("MINDMATE_DIFY_USER_PREFIX", "dev_roy")
+    assert parse_mg_user_id("dev_roy_mg_user_42") == 42
+    assert parse_mg_user_id("mg_user_42") == 42
+    assert parse_mg_user_id("other_mg_user_42") is None
+    assert parse_mg_user_id("bayi_mg_user_42") is None
 
 
 def test_parse_mindbot_dify_key_with_underscore_staff() -> None:

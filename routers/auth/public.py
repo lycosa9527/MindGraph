@@ -21,6 +21,7 @@ from services.auth.geo_cn_mainland_cookie import set_geo_cn_mainland_cookie
 from services.auth.geoip_country import resolve_country_iso_from_request
 from utils.auth import AUTH_MODE, is_https
 from utils.auth.config import REGISTRATION_ENABLED
+from utils.dify_mindmate_user_id import mindmate_dify_user_prefix
 from utils.db.rls_request import bind_public_org_list_rls_dependency
 
 _stamp_geo_cn_mainland_cookie = set_geo_cn_mainland_cookie
@@ -84,6 +85,7 @@ async def get_auth_mode():
     return {
         "mode": AUTH_MODE,
         "registration_enabled": signup_open,
+        "mindmate_dify_user_prefix": mindmate_dify_user_prefix(),
     }
 
 

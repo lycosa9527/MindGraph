@@ -50,14 +50,14 @@ export const PANEL = {
   MINDMATE_WIDTH: 384,
   /** Default `right` offset (px) for the floating MindMate panel from the viewport edge */
   MINDMATE_RIGHT_OFFSET_PX: 16,
-  /** Node palette panel width: 50% of viewport when open (split layout with diagram) */
-  NODE_PALETTE_WIDTH: 288,
-  /** Node palette takes half the canvas area when open */
-  NODE_PALETTE_HALF_WIDTH_PERCENT: 50,
-  /** Node palette min width (px) */
-  NODE_PALETTE_MIN_WIDTH: 320,
-  /** Node palette max width (px) */
-  NODE_PALETTE_MAX_WIDTH: 560,
+  /** Diagram brainstorm panel width: 50% of viewport when open (split layout with diagram) */
+  DIAGRAM_BRAINSTORM_WIDTH: 288,
+  /** Diagram brainstorm takes half the canvas area when open */
+  DIAGRAM_BRAINSTORM_HALF_WIDTH_PERCENT: 50,
+  /** Diagram brainstorm min width (px) */
+  DIAGRAM_BRAINSTORM_MIN_WIDTH: 320,
+  /** Diagram brainstorm max width (px) */
+  DIAGRAM_BRAINSTORM_MAX_WIDTH: 560,
 } as const
 
 // ============================================================================
@@ -121,7 +121,7 @@ export const FIT_PADDING = {
   STANDARD_PX: 40,
   /**
    * Right padding when the vertical presentation rail is visible: rail width + margin + buffer
-   * so fit-to-canvas does not place content under PresentationSideToolbar.
+   * so fit-to-canvas does not place content under the presentation rail.
    */
   PRESENTATION_SIDE_TOOLBAR_RIGHT_PX: 50,
   /**
@@ -180,7 +180,7 @@ export const CANVAS_TOP_BAR = {
 
 /**
  * Panel inset - space reserved for floating overlays (top bar, toolbar, bottom controls).
- * Used for Node Palette and MindMate panel size/position to avoid overlap.
+ * Used for AI brainstorm and MindMate panel size/position to avoid overlap.
  */
 export const PANEL_INSET = {
   /** Top inset (px) — align with FIT_PADDING.TOP_UI_HEIGHT_PX / merged header row */

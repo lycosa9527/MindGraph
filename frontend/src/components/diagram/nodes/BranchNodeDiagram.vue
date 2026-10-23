@@ -11,18 +11,21 @@ import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
+import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
-import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
+import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
 import {
   THINKING_MAP_LEAF_TEXT,
@@ -37,13 +40,19 @@ import {
   isTreeMapLeafNode,
   readTreeCategoryIndex,
 } from '@/utils/treeMapIdentity'
+import { TREE_MAP_BRANCH_TEXT_CAP_PX, TREE_MAP_LEAF_TEXT_CAP_PX } from '@/utils/treeMapNodeBox'
 
 import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const { fitBox } = useThinkingMapImageFit(() => props.id)
 
 const diagramStore = useDiagramSession()
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const isTextReadonly = computed(() => {
   if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return true
   return props.data.hidden === true && !diagramStore.isLearningSheet
@@ -167,7 +176,7 @@ const nodeStyle = computed((): CSSProperties => {
       style.textColor ||
       defaultStyle.value.textColor ||
       THINKING_MAP_LEAF_TEXT,
-    fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(style.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${thinkingMapDisplayedFontSize(style.fontSize, themeNodePaint.value?.fontSize ?? defaultStyle.value.fontSize ?? MIND_MAP_GEOMETRY.branchFontSize)}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: style.fontStyle || 'normal',
@@ -212,30 +221,32 @@ const nodeStyle = computed((): CSSProperties => {
 })
 
 const textMaxWidth = computed(() => {
-  const label = ((props.data.label as string) || '').trim()
-  if (isTreeMap.value && props.data.style?.width != null) {
-    const px = Number(props.data.style.width)
-    return `${Math.max(60, px - 32)}px`
-  }
+  const label = labelWithNodeIcon(
+    diagramStore.data,
+    props.id,
+    ((props.data.label as string) || '').trim(),
+    diagramStore.data?.connections
+  )
   if (isBridgeMap.value) {
     return 'min(420px, 88vw)'
   }
 
-  if (!label) return `${BRANCH_MAX_TEXT_WIDTH}px`
-
-  const wrapThreshold = computeScriptAwareMaxWidth(label, BRANCH_MAX_TEXT_WIDTH)
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 16
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
-  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
-
-  if (textWidth <= wrapThreshold) {
-    return `${wrapThreshold}px`
+  const fontFamily = String(nodeStyle.value.fontFamily || DIAGRAM_NODE_FONT_STACK)
+  let cap = BRANCH_MAX_TEXT_WIDTH
+  if (isTreeMap.value) {
+    cap = isTreeMapLeafNode({ id: props.id, data: props.data })
+      ? TREE_MAP_LEAF_TEXT_CAP_PX
+      : TREE_MAP_BRANCH_TEXT_CAP_PX
   }
-
-  return `${BRANCH_MAX_TEXT_WIDTH}px`
+  return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, cap, {
+    fontWeight,
+    fontFamily,
+  })}px`
 })
 
-const useAutoWrap = computed(() => !isTreeMap.value && !isBridgeMap.value)
+const useAutoWrap = computed(() => !isBridgeMap.value)
 
 const isEditing = ref(false)
 
@@ -292,7 +303,12 @@ function handleBranchMovePointerUp(): void {
   }
 }
 
-useNodeDimensions(branchNodeRef, props.id)
+useThinkingMapNodeBoxTypographyRemeasure({
+  rootRef: branchNodeRef,
+  nodeId: props.id,
+  style: () => props.data.style,
+  enabled: () => !isEditing.value,
+})
 
 function handleTextSave(newText: string, textSecondary?: string) {
   isEditing.value = false
@@ -333,7 +349,7 @@ function handleBranchNodeClick(): void {
       'border-none': isBridgeMap && !bridgeHasBody,
       'cursor-grab': true,
     }"
-    :style="nodeStyle"
+    :style="[fitBox(nodeStyle), blankFrame]"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.passive.capture="handleBranchMoveTouchStart"

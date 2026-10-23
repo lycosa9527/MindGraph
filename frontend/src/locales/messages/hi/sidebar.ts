@@ -15,8 +15,7 @@ export default {
   'sidebar.actions.unpin': 'अनपिन करें',
   'sidebar.actions.moveToFolder': 'फ़ोल्डर में ले जाएँ',
   'sidebar.actions.removeFromFolder': 'फ़ोल्डर से हटाएँ',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'क्या आप इस बातचीत को हटाना चाहते हैं? यह पूर्ववत नहीं हो सकता।',
+  'sidebar.askOnceHistory.deleteConfirm': 'क्या आप इस बातचीत को हटाना चाहते हैं? यह पूर्ववत नहीं हो सकता।',
   'sidebar.askOnceHistory.empty': 'अभी कोई बातचीत नहीं',
   'sidebar.askOnceHistory.renamePrompt': 'इस बातचीत का नया नाम दर्ज करें',
   'sidebar.askOnceHistory.renameTitle': 'बातचीत का नाम बदलें',
@@ -30,8 +29,7 @@ export default {
   'sidebar.bookmarks.title': 'हाल के बुकमार्क',
   'sidebar.bookmarks.unknownDoc': 'अज्ञात दस्तावेज़',
   'sidebar.brandTitle': 'मैट टीचिंग एंड रिसर्च',
-  'sidebar.chatHistory.deleteConfirm':
-    'क्या आप इस बातचीत को हटाना चाहते हैं? यह पूर्ववत नहीं हो सकता।',
+  'sidebar.chatHistory.deleteConfirm': 'क्या आप इस बातचीत को हटाना चाहते हैं? यह पूर्ववत नहीं हो सकता।',
   'sidebar.chatHistory.deleteTitle': 'बातचीत हटाएँ',
   'sidebar.chatHistory.empty': 'अभी कोई बातचीत नहीं',
   'sidebar.chatHistory.loginPrompt': 'इतिहास देखने के लिए लॉग इन करें',
@@ -46,8 +44,7 @@ export default {
   'sidebar.chatHistory.folderCreatePrompt': 'Enter a name for the new folder',
   'sidebar.chatHistory.folderCreateTitle': 'New folder',
   'sidebar.chatHistory.folderCreated': 'Folder created',
-  'sidebar.chatHistory.folderDeleteConfirm':
-    'Delete this folder? Conversations inside will move to Uncategorized.',
+  'sidebar.chatHistory.folderDeleteConfirm': 'Delete this folder? Conversations inside will move to Uncategorized.',
   'sidebar.chatHistory.folderDeleteFailed': 'Failed to delete folder',
   'sidebar.chatHistory.folderDeleteTitle': 'Delete folder',
   'sidebar.chatHistory.folderDeleted': 'Folder deleted',
@@ -69,19 +66,13 @@ export default {
   'sidebar.zhihui': 'ची',
   'sidebar.zhihuiHistory.title': 'इतिहास रचो',
   'sidebar.zhihuiHistory.empty': 'अभी तक कोई पीढ़ी का रिकॉर्ड नहीं है',
-  'sidebar.zhihuiHistory.deleteConfirm':
-    'क्या आप वाकई इस जेनरेट किए गए रिकॉर्ड को हटाना चाहते हैं? इस एक्शन को वापस नहीं किया जा सकता।',
-  'sidebar.community': 'समुदाय',
-  'sidebar.courses': 'चिंतन पाठ्यक्रम',
-  'sidebar.mateLearning': 'मैट सीखने की विधि',
-  'sidebar.debateHistory.deleteConfirm':
-    'क्या आप इस वाद-विवाद को हटाना चाहते हैं? यह पूर्ववत नहीं हो सकता।',
+  'sidebar.zhihuiHistory.deleteConfirm': 'क्या आप वाकई इस जेनरेट किए गए रिकॉर्ड को हटाना चाहते हैं? इस एक्शन को वापस नहीं किया जा सकता।',
+  'sidebar.debateHistory.deleteConfirm': 'क्या आप इस वाद-विवाद को हटाना चाहते हैं? यह पूर्ववत नहीं हो सकता।',
   'sidebar.debateHistory.empty': 'अभी कोई वाद-विवाद नहीं',
   'sidebar.debateHistory.loginPrompt': 'वाद-विवाद देखने के लिए लॉग इन करें',
   'sidebar.debateHistory.renamePrompt': 'इस वाद-विवाद का नया विषय दर्ज करें',
   'sidebar.debateHistory.renameTitle': 'वाद-विवाद का नाम बदलें',
   'sidebar.debateHistory.title': 'हाल के वाद-विवाद',
-  'sidebar.debateverse': 'DebateVerse',
   'sidebar.diagramHistory.capacity': 'अधिकतम {n} आरेख सहेजे जा सकते हैं',
   'sidebar.diagramHistory.deleteFailed': 'आरेख हटाना विफल',
   'sidebar.diagramHistory.collabLive': 'ऑनलाइन सहयोग सक्रिय',
@@ -98,8 +89,7 @@ export default {
   'sidebar.diagramHistory.folderCreatePrompt': 'नए फ़ोल्डर का नाम दर्ज करें',
   'sidebar.diagramHistory.folderCreateTitle': 'नया फ़ोल्डर',
   'sidebar.diagramHistory.folderCreated': 'फ़ोल्डर बनाया गया',
-  'sidebar.diagramHistory.folderDeleteConfirm':
-    'यह फ़ोल्डर हटाएँ? अंदर के आरेख बिना श्रेणी वाले में चले जाएँगे।',
+  'sidebar.diagramHistory.folderDeleteConfirm': 'यह फ़ोल्डर हटाएँ? अंदर के आरेख बिना श्रेणी वाले में चले जाएँगे।',
   'sidebar.diagramHistory.folderDeleteFailed': 'फ़ोल्डर हटाना विफल',
   'sidebar.diagramHistory.folderDeleteTitle': 'फ़ोल्डर हटाएँ',
   'sidebar.diagramHistory.folderDeleted': 'फ़ोल्डर हटाया गया',
@@ -147,17 +137,15 @@ export default {
   'sidebar.training': 'स्कूल आधारित प्रशिक्षण',
   'sidebar.trainingCourses': 'अवधि',
   'sidebar.trainingBuilder': 'पाठ्यक्रम निर्माण सहायक',
-  'sidebar.templateResources': 'टेम्पलेट',
   'sidebar.orgEdition': '{org} विशेष',
   'sidebar.personalEdition': 'व्यक्तिगत विशेष',
   'sidebar.userSubtitleDefault': 'MindGraph व्यावसायिक संस्करण',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',
   'sidebar.account': 'खाता',
   'sidebar.roleSuperAdmin': 'सुपर एडमिन',
-  'sidebar.rolePlatformAdmin': 'शिक्षण शोधकर्ता',
+  'sidebar.rolePlatformAdmin': 'शोधकर्ता',
   'sidebar.roleExpert': 'विशेषज्ञ',
   'sidebar.roleSchoolAdmin': 'स्कूल एडमिन',
   'sidebar.roleSchoolEdition': 'स्कूल',
@@ -168,8 +156,7 @@ export default {
   'sidebar.logoSiteQrHint': 'फ़ोन कैमरे या WeChat से स्कैन करें',
   'sidebar.mindmateCollabHistory.title': 'ऑनलाइन सहयोग',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'सेमिनार समाप्त करें',
-  'sidebar.mindmateCollabHistory.stopConfirm':
-    'यह सभी के लिए सत्र समाप्त कर देगा। प्रतिभागी कक्ष छोड़ देंगे।',
+  'sidebar.mindmateCollabHistory.stopConfirm': 'यह सभी के लिए सत्र समाप्त कर देगा। प्रतिभागी कक्ष छोड़ देंगे।',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'कैंपस में',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'स्कूलों में',
   'sidebar.share.ribbon': 'Organization',
@@ -193,8 +180,7 @@ export default {
   'sidebar.demo.menu': 'Demo mode',
   'sidebar.demo.ribbon': 'Demo',
   'sidebar.demo.title': 'Choose diagrams',
-  'sidebar.demo.line1':
-    'Pick diagrams from your library, write a caption, then play them full screen',
+  'sidebar.demo.line1': 'Pick diagrams from your library, write a caption, then play them full screen',
   'sidebar.demo.search': 'Search diagrams',
   'sidebar.demo.empty': 'No diagrams in your library yet',
   'sidebar.demo.hint': 'Select a diagram to write its caption',
@@ -244,26 +230,15 @@ export default {
   'sidebar.demo.loading': 'Generating',
   'sidebar.demo.moveUp': 'Move up',
   'sidebar.demo.moveDown': 'Move down',
-  'sidebar.demo.caption.circle_map':
-    '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
-  'sidebar.demo.caption.bubble_map':
-    '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
-  'sidebar.demo.caption.double_bubble_map':
-    '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
-  'sidebar.demo.caption.tree_map':
-    '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
-  'sidebar.demo.caption.brace_map':
-    '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
-  'sidebar.demo.caption.flow_map':
-    '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
-  'sidebar.demo.caption.multi_flow_map':
-    '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
-  'sidebar.demo.caption.bridge_map':
-    '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
-  'sidebar.demo.caption.mindmap':
-    '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
-  'sidebar.demo.caption.concept_map':
-    '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
-  'sidebar.demo.caption.fallback':
-    '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
+  'sidebar.demo.caption.circle_map': '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
+  'sidebar.demo.caption.bubble_map': '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
+  'sidebar.demo.caption.double_bubble_map': '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
+  'sidebar.demo.caption.tree_map': '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
+  'sidebar.demo.caption.brace_map': '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
+  'sidebar.demo.caption.flow_map': '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
+  'sidebar.demo.caption.multi_flow_map': '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
+  'sidebar.demo.caption.bridge_map': '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
+  'sidebar.demo.caption.mindmap': '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
+  'sidebar.demo.caption.concept_map': '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
+  'sidebar.demo.caption.fallback': '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
 } as const

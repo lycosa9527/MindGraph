@@ -50,6 +50,11 @@ USER_OWNED_EXPR = "rls_diagram_visible(user_id)"
 DEVICE_EXPR = (
     "(student_id IS NULL AND (rls_is_panel_mode() OR rls_is_system_mode())) OR rls_diagram_visible(student_id)"
 )
+CANVAS_INPUT_DEVICE_EXPR = (
+    "rls_is_system_mode() OR rls_is_panel_mode() OR ("
+    "rls_current_user_id() IS NOT NULL AND "
+    "device_id = rls_setting_text('app.canvas_device_id'))"
+)
 USER_OWNED_TABLES = [
     "diagrams",
     "diagram_snapshots",
@@ -61,7 +66,6 @@ USER_OWNED_TABLES = [
     "user_usage_activities",
     "kitty_one_sentence_sessions",
     "kitty_one_sentence_turns",
-    "debate_sessions",
     "library_bookmarks",
     "market_orders",
     "market_entitlements",
@@ -136,6 +140,12 @@ KNOWLEDGE_SPACE_CHILD_TABLES = [
             "WHERE ctd.id = document_id AND rls_diagram_visible(ctd.user_id))"
         ),
     ),
+]
+
+# Leftover DebateVerse table. Kept out of USER_OWNED_TABLES because there is
+# no ORM model; historical migrations still apply the same user-owned policy.
+DEBATE_SESSION_TABLES = [
+    "debate_sessions",
 ]
 
 DEBATE_CHILD_TABLES = [
@@ -300,17 +310,11 @@ MINDMATE_COLLAB_READ_EXPR = (
 MINDMATE_COLLAB_READ_CHECK = (
     MINDMATE_COLLAB_READ_EXPR + " AND (user_id = rls_current_user_id() OR rls_is_system_mode())"
 )
-MINDMATE_COLLAB_MEMBER_EXPR = (
-    "rls_is_system_mode() OR rls_platform_admin_only() OR EXISTS ("
-    "SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
-    "s.owner_user_id = rls_current_user_id() "
-    "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
-    "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
-    "OR rls_user_bound_to_org(s.owner_user_id, rls_current_org_id()) "
-    "OR rls_is_system_mode()"
-    "))"
-)
-MINDMATE_COLLAB_MEMBER_CHECK = "rls_is_system_mode() OR rls_platform_admin_only()"
+# Applied by rev_0146 only. Do not add this table to MINDMATE_COLLAB_TABLES:
+# rev_0077 alters every table in that list, and this table does not exist yet then.
+MINDMATE_COLLAB_MEMBER_EXPR = "user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only()"
+MINDMATE_COLLAB_MEMBER_CHECK = MINDMATE_COLLAB_MEMBER_EXPR
+# Shelf files are created after rev_0077. The background-file migration applies these.
 _FILE_SESSION = (
     "EXISTS (SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
     "s.owner_user_id = rls_current_user_id() "
@@ -340,8 +344,6 @@ MINDMATE_COLLAB_TABLES = [
     ("mindmate_collab_sessions", MINDMATE_COLLAB_SESSION_EXPR, MINDMATE_COLLAB_SESSION_CHECK),
     ("mindmate_collab_messages", MINDMATE_COLLAB_MESSAGE_EXPR, MINDMATE_COLLAB_MESSAGE_EXPR),
     ("mindmate_collab_read_cursors", MINDMATE_COLLAB_READ_EXPR, MINDMATE_COLLAB_READ_CHECK),
-    ("mindmate_collab_members", MINDMATE_COLLAB_MEMBER_EXPR, MINDMATE_COLLAB_MEMBER_CHECK),
-    ("mindmate_collab_background_files", MINDMATE_COLLAB_FILE_EXPR, MINDMATE_COLLAB_FILE_CHECK),
 ]
 
 # Group C — users: id is NULL on INSERT; panel school managers set organization_id on the new row.
@@ -458,7 +460,7 @@ def upgrade_group_a() -> None:
     upgraded databases and are skipped; revisions 0061, 0079, and 0081
     install their policies after CREATE TABLE.
     """
-    for table in USER_OWNED_TABLES:
+    for table in USER_OWNED_TABLES + DEBATE_SESSION_TABLES:
         _enable_force(table)
         _create_all_policy(table, f"{table}_tenant", USER_OWNED_EXPR)
     upgrade_devices_policy()
@@ -611,7 +613,9 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
     """Every (table, policy expression) pair for schema validation tests."""
     rows: list[tuple[str, str]] = []
     rows.extend((table, USER_OWNED_EXPR) for table in USER_OWNED_TABLES)
+    rows.extend((table, USER_OWNED_EXPR) for table in DEBATE_SESSION_TABLES)
     rows.append(("devices", DEVICE_EXPR))
+    rows.append(("canvas_input_devices", CANVAS_INPUT_DEVICE_EXPR))
     rows.extend((table, GEWE_EXPR) for table in GEWE_TABLES)
     rows.extend(KNOWLEDGE_SPACE_CHILD_TABLES)
     rows.extend(DEBATE_CHILD_TABLES)
@@ -671,6 +675,7 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
 def all_rls_tables() -> list[str]:
     """Return every table name that greenfield RLS policies cover."""
     tables = list(USER_OWNED_TABLES)
+    tables.extend(DEBATE_SESSION_TABLES)
     tables.extend(GEWE_TABLES)
     tables.append("devices")
     tables.extend(t for t, _ in KNOWLEDGE_SPACE_CHILD_TABLES)

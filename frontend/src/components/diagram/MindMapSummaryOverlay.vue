@@ -1,13 +1,19 @@
 <script setup lang="ts">
 /**
- * V2 canvas overlay: range rect, summary brace, handle, and style toolbar.
+ * V2 canvas overlay: range rect (while creating/selected), summary brace, handle, and style toolbar.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
+import { useCanvasNodeChromeOverlayGate } from '@/composables/canvasToolbar'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import {
+  isMindMapSummaryRangeChromeActive,
+  isMindMapSummaryStyleHandleActive,
+} from '@/composables/mindMap/mindMapSummaryRangeChrome'
 import {
   type SummaryRangeDrag,
   useMindMapSummaryRangeDrag,
@@ -41,6 +47,7 @@ const TOOLBAR_EST_W = 260
 const TOOLBAR_EST_H = 140
 
 const diagramStore = useDiagramSession()
+const overlayBlocksNodeChrome = useCanvasNodeChromeOverlayGate()
 const { t } = useLanguage()
 const { getNodes, viewport: vueFlowViewport, getViewport } = useVueFlow(diagramStore.vueFlowId)
 
@@ -51,6 +58,7 @@ const toolbarSummaryId = ref<string | null>(null)
 const hoveredSummaryId = ref<string | null>(null)
 const rangeDrag = ref<SummaryRangeDrag | null>(null)
 let hoverLeaveTimer: ReturnType<typeof setTimeout> | null = null
+let unsubPaneClick: (() => void) | null = null
 
 const viewport = computed(() => vueFlowViewport.value ?? getViewport())
 
@@ -90,7 +98,8 @@ type BraceElement = {
   rangeY: number
   rangeW: number
   rangeH: number
-  selected: boolean
+  rangeChromeActive: boolean
+  styleHandleActive: boolean
   stroke: string
   strokeWidth: number
   dasharray: string | undefined
@@ -102,11 +111,15 @@ const elements = computed<BraceElement[]>(() => {
   const widths = diagramStore.mindMapNodeWidths ?? {}
   const heights = diagramStore.mindMapNodeHeights ?? {}
   const connections = data.connections ?? []
-  const selectedId = toolbarSummaryId.value
   const out: BraceElement[] = []
   const live = liveById.value
 
   const drag = rangeDrag.value
+  const rangeChromeCtx = {
+    toolbarSummaryId: toolbarSummaryId.value,
+    draggingSummaryId: drag?.summaryId,
+    selectedNodeIds: diagramStore.selectedNodes,
+  }
   for (const summary of summaries.value) {
     const boxes = coveredBoxesForSummary(
       data.nodes,
@@ -153,6 +166,8 @@ const elements = computed<BraceElement[]>(() => {
     const brace = mindMapSummaryBracePath(layoutBoxes, side, { kind, rangeRect: rangeOverride })
     if (!brace) continue
     const rootId = mindMapSummaryRootNodeId(summary.id)
+    const rangeChromeActive = isMindMapSummaryRangeChromeActive(summary.id, rangeChromeCtx)
+    const styleHandleActive = isMindMapSummaryStyleHandleActive(summary.id, rangeChromeCtx)
     const vf = getNodes.value.find((node) => node.id === rootId)
     const summaryBox = vf
       ? {
@@ -177,7 +192,8 @@ const elements = computed<BraceElement[]>(() => {
       rangeY: brace.rangeRect.y,
       rangeW: brace.rangeRect.width,
       rangeH: brace.rangeRect.height,
-      selected: selectedId === summary.id || drag?.summaryId === summary.id,
+      rangeChromeActive,
+      styleHandleActive,
       stroke: summary.strokeColor ?? themeStroke.value,
       strokeWidth,
       dasharray: mindMapSummaryStrokeDasharray(lineStyle, strokeWidth),
@@ -187,6 +203,7 @@ const elements = computed<BraceElement[]>(() => {
 })
 
 const toolbarAnchor = computed(() => {
+  if (overlayBlocksNodeChrome.value) return null
   const summaryId = toolbarSummaryId.value
   const el = elements.value.find((item) => item.id === summaryId)
   const root = overlayRoot.value
@@ -277,6 +294,11 @@ function closeToolbar(): void {
   toolbarSummaryId.value = null
 }
 
+function dismissSummaryOverlayEditing(): void {
+  closeToolbar()
+  clearRangeDrag()
+}
+
 function isToolbarEvent(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false
   return Boolean(
@@ -293,8 +315,8 @@ function onDocumentPointerDown(event: PointerEvent): void {
 }
 
 function onDocumentKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape' && toolbarSummaryId.value) {
-    closeToolbar()
+  if (event.key === 'Escape' && (toolbarSummaryId.value || rangeDrag.value)) {
+    dismissSummaryOverlayEditing()
   }
 }
 
@@ -315,11 +337,14 @@ watch(summaries, (list) => {
 })
 
 onMounted(() => {
+  unsubPaneClick = eventBus.on('canvas:pane_clicked', dismissSummaryOverlayEditing)
   document.addEventListener('pointerdown', onDocumentPointerDown, true)
   document.addEventListener('keydown', onDocumentKeydown)
 })
 
 onUnmounted(() => {
+  unsubPaneClick?.()
+  unsubPaneClick = null
   if (hoverLeaveTimer !== null) {
     clearTimeout(hoverLeaveTimer)
     hoverLeaveTimer = null
@@ -344,75 +369,76 @@ onUnmounted(() => {
           v-for="el in elements"
           :key="el.id"
           class="mm-summary-chrome"
-          :class="{ 'is-selected': el.selected }"
         >
-          <rect
-            class="mm-summary-range"
-            :x="el.rangeX"
-            :y="el.rangeY"
-            :width="el.rangeW"
-            :height="el.rangeH"
-            pointer-events="none"
-            :fill="el.selected ? 'rgba(37, 99, 235, 0.08)' : 'transparent'"
-            :stroke="el.selected ? '#2563eb' : el.stroke"
-            :stroke-width="Math.max(1, el.strokeWidth * (el.selected ? 0.9 : 0.65))"
-            stroke-linejoin="miter"
-            stroke-linecap="square"
-          />
-          <rect
-            class="mm-summary-range-edge"
-            :x="el.rangeX"
-            :y="el.rangeY - RANGE_EDGE_HIT / 2"
-            :width="el.rangeW"
-            :height="RANGE_EDGE_HIT"
-            @pointerenter="setHoveredSummary(el.id)"
-            @pointerleave="setHoveredSummary(null)"
-            @pointerdown.stop.prevent="onRangeEdgeDown(el.id, 'top', $event)"
-            @pointermove="onRangeEdgeMove"
-            @pointerup="onRangeEdgeUp"
-            @pointercancel="onRangeEdgeUp"
-          />
-          <rect
-            class="mm-summary-range-edge"
-            :x="el.rangeX"
-            :y="el.rangeY + el.rangeH - RANGE_EDGE_HIT / 2"
-            :width="el.rangeW"
-            :height="RANGE_EDGE_HIT"
-            @pointerenter="setHoveredSummary(el.id)"
-            @pointerleave="setHoveredSummary(null)"
-            @pointerdown.stop.prevent="onRangeEdgeDown(el.id, 'bottom', $event)"
-            @pointermove="onRangeEdgeMove"
-            @pointerup="onRangeEdgeUp"
-            @pointercancel="onRangeEdgeUp"
-          />
-          <rect
-            class="mm-summary-range-grip"
-            :x="el.rangeX + el.rangeW / 2 - RANGE_HANDLE / 2"
-            :y="el.rangeY - RANGE_HANDLE / 2"
-            :width="RANGE_HANDLE"
-            :height="RANGE_HANDLE"
-            :stroke="el.selected ? '#2563eb' : el.stroke"
-            @pointerenter="setHoveredSummary(el.id)"
-            @pointerleave="setHoveredSummary(null)"
-            @pointerdown.stop.prevent="onRangeEdgeDown(el.id, 'top', $event)"
-            @pointermove="onRangeEdgeMove"
-            @pointerup="onRangeEdgeUp"
-            @pointercancel="onRangeEdgeUp"
-          />
-          <rect
-            class="mm-summary-range-grip"
-            :x="el.rangeX + el.rangeW / 2 - RANGE_HANDLE / 2"
-            :y="el.rangeY + el.rangeH - RANGE_HANDLE / 2"
-            :width="RANGE_HANDLE"
-            :height="RANGE_HANDLE"
-            :stroke="el.selected ? '#2563eb' : el.stroke"
-            @pointerenter="setHoveredSummary(el.id)"
-            @pointerleave="setHoveredSummary(null)"
-            @pointerdown.stop.prevent="onRangeEdgeDown(el.id, 'bottom', $event)"
-            @pointermove="onRangeEdgeMove"
-            @pointerup="onRangeEdgeUp"
-            @pointercancel="onRangeEdgeUp"
-          />
+          <template v-if="el.rangeChromeActive">
+            <rect
+              class="mm-summary-range"
+              :x="el.rangeX"
+              :y="el.rangeY"
+              :width="el.rangeW"
+              :height="el.rangeH"
+              pointer-events="none"
+              fill="rgba(37, 99, 235, 0.08)"
+              stroke="#2563eb"
+              :stroke-width="Math.max(1, el.strokeWidth * 0.9)"
+              stroke-linejoin="miter"
+              stroke-linecap="square"
+            />
+            <rect
+              class="mm-summary-range-edge"
+              :x="el.rangeX"
+              :y="el.rangeY - RANGE_EDGE_HIT / 2"
+              :width="el.rangeW"
+              :height="RANGE_EDGE_HIT"
+              @pointerenter="setHoveredSummary(el.id)"
+              @pointerleave="setHoveredSummary(null)"
+              @pointerdown.stop.prevent="onRangeEdgeDown(el.id, 'top', $event)"
+              @pointermove="onRangeEdgeMove"
+              @pointerup="onRangeEdgeUp"
+              @pointercancel="onRangeEdgeUp"
+            />
+            <rect
+              class="mm-summary-range-edge"
+              :x="el.rangeX"
+              :y="el.rangeY + el.rangeH - RANGE_EDGE_HIT / 2"
+              :width="el.rangeW"
+              :height="RANGE_EDGE_HIT"
+              @pointerenter="setHoveredSummary(el.id)"
+              @pointerleave="setHoveredSummary(null)"
+              @pointerdown.stop.prevent="onRangeEdgeDown(el.id, 'bottom', $event)"
+              @pointermove="onRangeEdgeMove"
+              @pointerup="onRangeEdgeUp"
+              @pointercancel="onRangeEdgeUp"
+            />
+            <rect
+              class="mm-summary-range-grip"
+              :x="el.rangeX + el.rangeW / 2 - RANGE_HANDLE / 2"
+              :y="el.rangeY - RANGE_HANDLE / 2"
+              :width="RANGE_HANDLE"
+              :height="RANGE_HANDLE"
+              stroke="#2563eb"
+              @pointerenter="setHoveredSummary(el.id)"
+              @pointerleave="setHoveredSummary(null)"
+              @pointerdown.stop.prevent="onRangeEdgeDown(el.id, 'top', $event)"
+              @pointermove="onRangeEdgeMove"
+              @pointerup="onRangeEdgeUp"
+              @pointercancel="onRangeEdgeUp"
+            />
+            <rect
+              class="mm-summary-range-grip"
+              :x="el.rangeX + el.rangeW / 2 - RANGE_HANDLE / 2"
+              :y="el.rangeY + el.rangeH - RANGE_HANDLE / 2"
+              :width="RANGE_HANDLE"
+              :height="RANGE_HANDLE"
+              stroke="#2563eb"
+              @pointerenter="setHoveredSummary(el.id)"
+              @pointerleave="setHoveredSummary(null)"
+              @pointerdown.stop.prevent="onRangeEdgeDown(el.id, 'bottom', $event)"
+              @pointermove="onRangeEdgeMove"
+              @pointerup="onRangeEdgeUp"
+              @pointercancel="onRangeEdgeUp"
+            />
+          </template>
           <path
             class="mm-summary-hit"
             :d="el.bracePath"
@@ -437,8 +463,8 @@ onUnmounted(() => {
           <path
             :d="el.bracePath"
             fill="none"
-            :stroke="el.selected ? '#2563eb' : el.stroke"
-            :stroke-width="el.selected ? el.strokeWidth + 0.75 : el.strokeWidth"
+            :stroke="el.rangeChromeActive ? '#2563eb' : el.stroke"
+            :stroke-width="el.rangeChromeActive ? el.strokeWidth + 0.75 : el.strokeWidth"
             stroke-linecap="round"
             stroke-linejoin="round"
             :stroke-dasharray="el.dasharray"
@@ -447,8 +473,8 @@ onUnmounted(() => {
             v-if="el.connectorPath"
             :d="el.connectorPath"
             fill="none"
-            :stroke="el.selected ? '#2563eb' : el.stroke"
-            :stroke-width="el.selected ? el.strokeWidth + 0.75 : el.strokeWidth"
+            :stroke="el.rangeChromeActive ? '#2563eb' : el.stroke"
+            :stroke-width="el.rangeChromeActive ? el.strokeWidth + 0.75 : el.strokeWidth"
             stroke-linecap="round"
             :stroke-dasharray="el.dasharray"
           />
@@ -461,7 +487,7 @@ onUnmounted(() => {
       :key="`handle-${el.id}`"
       type="button"
       class="mm-summary-handle-btn"
-      :class="{ 'is-selected': el.selected }"
+      :class="{ 'is-selected': el.styleHandleActive }"
       :style="handleButtonStyle(el)"
       :title="t('canvas.floatingToolbar.summaryStyle')"
       :aria-label="t('canvas.floatingToolbar.summaryStyle')"

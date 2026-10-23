@@ -40,7 +40,6 @@ export default {
   'notification.importSlotsFull': 'Perpustakaan penuh; rajah diimpor tetapi tidak disimpan',
   'notification.importSuccess': 'Rajah diimpor dan disimpan ke perpustakaan',
   'notification.importUnsupportedType': 'Impor gagal: jenis rajah tidak didukung',
-  'notification.inlineRecEmpty': 'Tidak ada rekomendasi yang dibuat. Coba lagi atau edit topik.',
   'notification.loadMoreFailed': 'Tidak boleh memuat lebih banyak',
   'notification.networkError': 'Ralat rangkaian',
   'notification.nodeNotEligible': 'Nod ini tidak mendukung rekomendasi Tab.',

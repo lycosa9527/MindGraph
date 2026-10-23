@@ -56,14 +56,14 @@ function pick(destination: 'resource' | 'artifact'): void {
         role="menuitem"
         @click.stop="pick('resource')"
       >
-        {{ t('mindmate.shelf.toResource') }}
+        <I18nText k="mindmate.shelf.toResource" />
       </button>
       <button
         type="button"
         role="menuitem"
         @click.stop="pick('artifact')"
       >
-        {{ t('mindmate.shelf.toArtifact') }}
+        <I18nText k="mindmate.shelf.toArtifact" />
       </button>
     </div>
   </ElPopover>

@@ -70,7 +70,6 @@ GRANULAR_AI_CAPABILITIES: frozenset[str] = frozenset(
 # Legacy capability names → granular keys (older assignments / older gate call sites).
 LEGACY_AI_CAPABILITY_ALIASES: dict[str, str] = {
     "generate_diagram": "topic_generate",
-    "node_palette": "ai_brainstorm",
     "inline_recommend": "ai_brainstorm",
     "doc_summary": "file_generate",
 }
@@ -88,7 +87,6 @@ DEFAULT_AI_PERMISSIONS: dict[str, bool] = {
     "mind_classroom": False,
     # Legacy keys kept for older assignments / older API consumers.
     "generate_diagram": False,
-    "node_palette": False,
     "inline_recommend": False,
     "translate": False,
     "doc_summary": False,
@@ -166,7 +164,7 @@ class LearningClass(Base):
 
 
 class LearningClassMembership(Base):
-    """Existing-account enrollment: learner (homework) or assistant (review only)."""
+    """Existing-account enrollment: learner (homework) or assistant (publish and grade)."""
 
     __tablename__ = "learning_class_memberships"
     __table_args__ = (UniqueConstraint("class_id", "user_id", name="uq_learning_class_memberships_class_user"),)
@@ -285,6 +283,12 @@ class LearningSubmission(Base):
     review_liked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     review_pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reviewed_by: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,

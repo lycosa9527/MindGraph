@@ -17,6 +17,7 @@ export interface GenerateGraphCompletePayload {
   language?: string
   error?: string
   error_type?: string
+  detail?: string
   show_guidance?: boolean
   warning?: string
   llm_model?: string

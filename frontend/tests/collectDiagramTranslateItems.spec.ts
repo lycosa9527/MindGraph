@@ -23,6 +23,30 @@ describe('collectDiagramTranslateItems', () => {
     ])
   })
 
+  it('translates only the primary line when a node has a second language', () => {
+    expect(
+      collectDiagramTranslateItems({
+        nodes: [
+          {
+            id: 'n1',
+            text: '光合作用',
+            textSecondary: 'Photosynthesis',
+          },
+          {
+            id: 'n2',
+            text: '光\nLight',
+            textSecondary: 'Light',
+          },
+        ],
+        connections: [{ id: 'c1', label: '导致' }],
+      })
+    ).toEqual([
+      { itemId: 'n1', text: '光合作用', kind: 'node' },
+      { itemId: 'n2', text: '光', kind: 'node' },
+      { itemId: 'c1', text: '导致', kind: 'connection' },
+    ])
+  })
+
   it('returns an empty list for missing or invalid source', () => {
     expect(collectDiagramTranslateItems(null)).toEqual([])
     expect(collectDiagramTranslateItems({})).toEqual([])

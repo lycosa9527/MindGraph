@@ -656,7 +656,7 @@ export function useDiagramCanvasFit(options: {
     () => [
       panelsStore.mindmatePanel.isOpen,
       panelsStore.propertyPanel.isOpen,
-      panelsStore.nodePalettePanel.isOpen,
+      panelsStore.diagramBrainstormPanel.isOpen,
     ],
     () => {
       if (!fitViewOnInit.value) return

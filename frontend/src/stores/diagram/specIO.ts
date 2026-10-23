@@ -30,7 +30,14 @@ import {
   readLlmExportAttribution,
 } from '@/utils/llmExportWatermark'
 import { isMindMapV2FamilyMode, resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
-import { migrateMindMapIdentityIds, resolveMindMapAliasId } from '@/utils/mindMapIdentityMigrate'
+import {
+  collapseDuplicateMindMapNodes,
+  migrateMindMapIdentityIds,
+  mindMapPatchCarriesBranchIdentity,
+  resolveMindMapAliasId,
+  resolveMindMapPatchTargetId,
+  stampCollabMindMapPeers,
+} from '@/utils/mindMapIdentityMigrate'
 import { beginMindMapSpecLoadSession, markMindMapLoadStage } from '@/utils/mindMapLoadDebug'
 import { resolveThinkingMapAliasId } from '@/utils/thinkingMapIdentity'
 
@@ -46,6 +53,10 @@ import {
   recalculateTreeMapLayout,
 } from '../specLoader'
 import { collectFlowMapSpecFromNodes } from '../specLoader/flowMapSubsteps'
+import {
+  learningSheetLayoutSecondary,
+  learningSheetLayoutText,
+} from '../specLoader/mindMapLearningSheet'
 import { useUIStore } from '../ui'
 import { getMindMapCurveExtents } from './events'
 import {
@@ -55,6 +66,7 @@ import {
 import { cancelMindMapPendingInlineEdit, clearMindMapEditingNodeId } from './mindMapOps'
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
 import { rematerializeMindMapSummaryNodes } from './mindMapSummaryLayout'
+import { mergeReloadedNodeFields, structuralSessionCarry } from './structuralSpecReload'
 import type { DiagramContext, LoadFromSpecOptions } from './types'
 
 function seedMindMapMeasuresFromEstimates(
@@ -88,7 +100,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       markMindMapLoadStage('spec:load:start', { diagramType: diagramTypeValue })
     }
 
-    ctx.resetSessionEditCount()
+    const structural = options?.structuralEdit === true
+    const carriedSession =
+      structural && ctx.type.value === diagramTypeValue
+        ? structuralSessionCarry(ctx.data.value as Record<string, unknown> | undefined)
+        : undefined
+    if (!structural) ctx.resetSessionEditCount()
     // Library / template load replaces the tree — drop stale post-add inline-edit retries.
     cancelMindMapPendingInlineEdit(ctx)
     clearMindMapEditingNodeId(ctx)
@@ -100,7 +117,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ctx.type.value === diagramTypeValue ? { ...ctx.nodeDimensions.value } : {}
 
     const prevNodesForStyleMerge =
-      options?.mergePreviousNodeStyles === true &&
+      (options?.mergePreviousNodeStyles === true || structural) &&
       ctx.type.value === diagramTypeValue &&
       ctx.data.value?.nodes
         ? ctx.data.value.nodes
@@ -137,9 +154,6 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (!savedCanvas && diagramTypeValue === 'flow_map') {
       nodesToStore = offsetFlowLayoutForSecondary(nodesToStore)
     }
-    if (!savedCanvas && diagramTypeValue === 'tree_map') {
-      nodesToStore = recalculateTreeMapLayout(result.nodes, {})
-    }
     if (!savedCanvas && diagramTypeValue === 'brace_map') {
       nodesToStore = recalculateBraceMapLayout(result.nodes, result.connections, {})
     }
@@ -153,17 +167,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       nodesToStore = recalculateBubbleMapLayout(result.nodes)
     }
 
-    if (prevNodesForStyleMerge && prevNodesForStyleMerge.length > 0) {
-      const styleById = new Map(prevNodesForStyleMerge.map((n) => [n.id, n.style] as const))
-      nodesToStore = nodesToStore.map((node) => {
-        const prevSt = styleById.get(node.id)
-        if (!prevSt) return node
-        return {
-          ...node,
-          style: { ...prevSt, ...node.style },
-        }
-      })
-    }
+    nodesToStore = mergeReloadedNodeFields(nodesToStore, prevNodesForStyleMerge, structural)
 
     if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
       const nextNodeIds = new Set(nodesToStore.map((n) => n.id).filter(Boolean))
@@ -281,7 +285,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       }
     }
 
-    ctx.setExpectedNodeCount(nodesToStore.length)
+    if (!structural) ctx.setExpectedNodeCount(nodesToStore.length)
 
     ctx.data.value = {
       type: diagramTypeValue,
@@ -320,10 +324,18 @@ export function useSpecIOSlice(ctx: DiagramContext) {
               '_doubleBubbleMapNodeSizes',
               '_doubleBubbleMeasureHints',
               'secondary',
+              'llm_results',
             ].includes(key)
         )
       ),
       ...(result.metadata || {}),
+    }
+
+    if (carriedSession && ctx.data.value) {
+      const record = ctx.data.value as Record<string, unknown>
+      for (const [key, value] of Object.entries(carriedSession)) {
+        if (record[key] === undefined) record[key] = value
+      }
     }
 
     if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
@@ -347,7 +359,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       normalizeAllConceptMapTopicRootLabels(ctx.data.value.connections, ctx.data.value.nodes)
     }
 
-    if (options?.emitLoaded !== false) {
+    if (!structural && options?.emitLoaded !== false) {
       const loadedPayload = {
         diagramType: diagramTypeValue,
         skipFit: options?.skipFit === true,
@@ -374,8 +386,8 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     let right = ''
     const leftNode = nodes.find((n) => n.id === DOUBLE_BUBBLE_LEFT_TOPIC_ID)
     const rightNode = nodes.find((n) => n.id === DOUBLE_BUBBLE_RIGHT_TOPIC_ID)
-    if (leftNode) left = String(leftNode.text ?? '').trim()
-    if (rightNode) right = String(rightNode.text ?? '').trim()
+    if (leftNode) left = learningSheetLayoutText(leftNode).trim()
+    if (rightNode) right = learningSheetLayoutText(rightNode).trim()
     const roleNodes = (role: 'similarity' | 'leftDiff' | 'rightDiff') =>
       nodes
         .filter((n) => isDoubleBubbleRoleNode(n, role))
@@ -383,14 +395,17 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const simNodes = roleNodes('similarity')
     const leftDiffNodes = roleNodes('leftDiff')
     const rightDiffNodes = roleNodes('rightDiff')
-    const similarities = simNodes.map((n) => ({ id: n.id, text: String(n.text ?? '').trim() }))
+    const similarities = simNodes.map((n) => ({
+      id: n.id,
+      text: learningSheetLayoutText(n).trim(),
+    }))
     const leftDifferences = leftDiffNodes.map((n) => ({
       id: n.id,
-      text: String(n.text ?? '').trim(),
+      text: learningSheetLayoutText(n).trim(),
     }))
     const rightDifferences = rightDiffNodes.map((n) => ({
       id: n.id,
-      text: String(n.text ?? '').trim(),
+      text: learningSheetLayoutText(n).trim(),
     }))
     const radiusFromDom = (nodeId: string): number | undefined => {
       const d = ctx.nodeDimensions.value[nodeId]
@@ -451,7 +466,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       _doubleBubbleMapNodeSizes['rightDiffRadii'] = rightDiffRadii
 
     const gloss = (node: (typeof nodes)[0] | undefined): string =>
-      String(node?.textSecondary ?? '').trim()
+      node ? learningSheetLayoutSecondary(node).trim() : ''
     const secondary = {
       left: gloss(leftNode),
       right: gloss(rightNode),
@@ -633,8 +648,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (!ctx.data.value) return false
 
     const liveNodes = ctx.data.value.nodes
+    const mindMap = ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
+    const divergentLive = new Map<string, string>()
     const remapPatchId = (hint: string): string => {
-      if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+      const bound = divergentLive.get(hint)
+      if (bound) return bound
+      if (mindMap) {
         return resolveMindMapAliasId(hint, liveNodes) ?? hint
       }
       return resolveThinkingMapAliasId(ctx.type.value, hint, liveNodes) ?? hint
@@ -660,25 +679,42 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       for (const updatedNode of updatedNodes) {
         const rawId = updatedNode.id as string
         if (!rawId) continue
-        const nodeId = remapPatchId(rawId)
+        const patchData =
+          updatedNode.data != null && typeof updatedNode.data === 'object'
+            ? (updatedNode.data as Record<string, unknown>)
+            : undefined
+        const nodeId = mindMap
+          ? (resolveMindMapPatchTargetId(rawId, patchData, liveNodes) ?? rawId)
+          : remapPatchId(rawId)
         if (deletedThisBatch.has(nodeId)) continue
         if (nodeId !== rawId) {
+          divergentLive.set(rawId, nodeId)
           updatedNode.id = nodeId
         }
 
         const existingIndex = ctx.data.value.nodes.findIndex((n) => n.id === nodeId)
         if (existingIndex >= 0) {
+          const previous = ctx.data.value.nodes[existingIndex]
           const merged = {
-            ...ctx.data.value.nodes[existingIndex],
+            ...previous,
             ...updatedNode,
           } as DiagramNode
+          if (mindMap && nodeId !== rawId) {
+            merged.data = stampCollabMindMapPeers(
+              previous?.data,
+              merged.data,
+              rawId,
+              patchData,
+              nodeId
+            )
+          }
           // Keep data.label in sync with text so vue-flow nodes always render
           // the latest label regardless of spread order in diagramNodeToVueFlowNode.
           if (typeof merged.text === 'string' && merged.data != null) {
             ;(merged.data as Record<string, unknown>).label = merged.text
           }
           ctx.data.value.nodes[existingIndex] = merged
-        } else {
+        } else if (!mindMap || mindMapPatchCarriesBranchIdentity(updatedNode)) {
           const newNode = { ...updatedNode } as unknown as DiagramNode
           if (typeof newNode.text === 'string' && newNode.data != null) {
             ;(newNode.data as Record<string, unknown>).label = newNode.text
@@ -729,6 +765,16 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ctx.data.value.connections = migrated.connections
       if (migrated.nodeStyles) {
         ctx.data.value._node_styles = migrated.nodeStyles
+      }
+      const collapsed = collapseDuplicateMindMapNodes(
+        ctx.data.value.nodes,
+        ctx.data.value.connections ?? [],
+        ctx.data.value._node_styles
+      )
+      ctx.data.value.nodes = collapsed.nodes
+      ctx.data.value.connections = collapsed.connections
+      if (collapsed.nodeStyles) {
+        ctx.data.value._node_styles = collapsed.nodeStyles
       }
     }
 

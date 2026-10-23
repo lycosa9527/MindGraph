@@ -50,6 +50,7 @@ import {
   mergeGeneratedBranchesIntoSpec,
 } from '@/utils/mindMapSubgraphMerge'
 import { isMindMapSummaryNodeId } from '@/utils/mindMapSummary'
+import { nodeIdsWithImage } from '@/utils/nodeImageFrame'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 import { useInlineRecommendationsStore } from '../inlineRecommendations'
@@ -741,7 +742,10 @@ function commitMindMapReload(
       ctx.mindMapNodeHeights.value,
       connections,
       collapsedNodeIds,
-      diagramStyleId
+      diagramStyleId,
+      {
+        imageNodeIds: nodeIdsWithImage(ctx.data.value.nodes, ctx.data.value, connections),
+      }
     )
     ctx.data.value.nodes = laidOut.nodes
     ctx.mindMapTopicBranchGaps.value = laidOut.gaps

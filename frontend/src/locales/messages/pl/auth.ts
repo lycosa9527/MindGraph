@@ -17,33 +17,23 @@ export default {
   'auth.voiceNotes.copied': 'Transkrypcja skopiowana',
   'auth.voiceNotes.empty': 'Po rozpoczęciu nagrywania transkrypcja pojawi się tutaj.',
   'auth.voiceNotes.loginRequired': 'Przed użyciem notatek głosowych zaloguj się.',
-  'auth.voiceNotes.bootstrapFailed':
-    'Nie można otworzyć sesji mapowania myśli dla notatek głosowych.',
+  'auth.voiceNotes.bootstrapFailed': 'Nie można otworzyć sesji mapowania myśli dla notatek głosowych.',
   'auth.voiceNotes.saveFailed': 'Nie można zapisać mapy myśli notatki głosowej.',
   'auth.voiceNotes.noDiagram': 'Mapa myśli nie została jeszcze powiązana.',
   'auth.voiceNotes.micUnavailable': 'Bieżąca przeglądarka nie obsługuje mikrofonu.',
   'auth.voiceNotes.micFailed': 'Nie można uzyskać dostępu do mikrofonu.',
-  'auth.voiceNotes.micConflict':
-    'Inne funkcje głosowe korzystają z mikrofonu. Zatrzymaj tę czynność i spróbuj ponownie.',
-  'auth.voiceNotes.wsError':
-    'Połączenie z notatkami głosowymi nie powiodło się. Sprawdź stan sieci i logowania.',
+  'auth.voiceNotes.micConflict': 'Inne funkcje głosowe korzystają z mikrofonu. Zatrzymaj tę czynność i spróbuj ponownie.',
+  'auth.voiceNotes.wsError': 'Połączenie z notatkami głosowymi nie powiodło się. Sprawdź stan sieci i logowania.',
   'auth.voiceNotes.genericError': 'Błąd notatki głosowej',
   'auth.voiceNotes.ingestFailed': 'Nie można zapisać transkrypcji w podsumowaniu dokumentu.',
-  'auth.voiceNotes.maxDuration':
-    'Notatka głosowa osiągnęła limit 60 minut i została automatycznie zatrzymana.',
-  'auth.voiceNotes.silenceAutoStop':
-    'Brak głosu przez 2 kolejne minuty, a notatka głosowa została automatycznie zatrzymana.',
-  'auth.voiceNotes.startedTimeout':
-    'Usługa głosowa nie została uruchomiona na czas. Spróbuj ponownie.',
+  'auth.voiceNotes.maxDuration': 'Notatka głosowa osiągnęła limit 60 minut i została automatycznie zatrzymana.',
+  'auth.voiceNotes.silenceAutoStop': 'Brak głosu przez 2 kolejne minuty, a notatka głosowa została automatycznie zatrzymana.',
+  'auth.voiceNotes.startedTimeout': 'Usługa głosowa nie została uruchomiona na czas. Spróbuj ponownie.',
   'auth.voiceNotes.micLost': 'Mikrofon został odłączony i notatki głosowe zostały zatrzymane.',
-  'auth.voiceNotes.authFailed':
-    'Uwierzytelnienie notatki głosowej nie powiodło się. Zaloguj się ponownie.',
-  'auth.voiceNotes.wsClosed':
-    'Połączenie z notatkami głosowymi zostało rozłączone i sesja została zatrzymana.',
-  'auth.voiceNotes.budgetExceeded':
-    'Notatki głosowe nie są dostępne: osiągnięto dzienny limit AI lub myślące monety są niewystarczające.',
-  'auth.voiceNotes.sessionBusy':
-    'Trwa już sesja notatki głosowej. Zatrzymaj ją i spróbuj ponownie.',
+  'auth.voiceNotes.authFailed': 'Uwierzytelnienie notatki głosowej nie powiodło się. Zaloguj się ponownie.',
+  'auth.voiceNotes.wsClosed': 'Połączenie z notatkami głosowymi zostało rozłączone i sesja została zatrzymana.',
+  'auth.voiceNotes.budgetExceeded': 'Notatki głosowe nie są dostępne: osiągnięto dzienny limit AI lub myślące monety są niewystarczające.',
+  'auth.voiceNotes.sessionBusy': 'Trwa już sesja notatki głosowej. Zatrzymaj ją i spróbuj ponownie.',
   'auth.voiceNotes.recording': 'Nagranie',
   'auth.voiceNotes.paused': 'Zawieszony',
   'auth.voiceNotes.idle': 'gotowy',
@@ -51,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'Startowy',
   'auth.voiceNotes.stopping': 'Zatrzymanie',
   'auth.voiceNotes.ingesting': 'Oszczędność',
-  'auth.voiceNotes.emptyTranscript':
-    'Nie rozpoznano żadnego głosu. Powiedz kilka słów, zanim się zatrzymasz.',
+  'auth.voiceNotes.emptyTranscript': 'Nie rozpoznano żadnego głosu. Powiedz kilka słów, zanim się zatrzymasz.',
   'auth.voiceNotes.generating': 'Generowanie mapy myśli',
-  'auth.voiceNotes.sheetHint':
-    'Zapisz transkrypcję po zatrzymaniu. Gdy będziesz gotowy, kliknij opcję Generuj mapę myśli.',
+  'auth.voiceNotes.sheetHint': 'Zapisz transkrypcję po zatrzymaniu. Gdy będziesz gotowy, kliknij opcję Generuj mapę myśli.',
   'auth.voiceNotes.status.waiting': 'Czekam na rozpoczęcie',
   'auth.voiceNotes.status.connectingAsr': 'Łączenie z rozpoznawaniem mowy',
   'auth.voiceNotes.status.recording': 'Nagrywanie · Rozpoznawanie głosu',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'Nagrywanie · Rozpoznawanie mowy · Rozróżnianie mówców',
+  'auth.voiceNotes.status.recordingAndSeparating': 'Nagrywanie · Rozpoznawanie mowy · Rozróżnianie mówców',
   'auth.voiceNotes.status.paused': 'Zawieszony',
   'auth.voiceNotes.status.stopping': 'Zatrzymanie',
   'auth.voiceNotes.status.savingTranscript': 'Zapisuję transkrypcję',
@@ -73,13 +60,10 @@ export default {
   'auth.voiceNotes.savedAt': 'Transkrypcja zapisana w {time}',
   'auth.voiceNotes.unsavedChanges': 'Transkrypcja nie została zapisana',
   'auth.voiceNotes.closeWhileRecordingTitle': 'Nagranie',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'Zamknięcie okna nie zatrzyma nagrywania. Transkrypcje są automatycznie zapisywane na bieżącej mapie co 30 sekund. Czy na pewno chcesz ukryć okno?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'Zamknięcie okna nie zatrzyma nagrywania. Transkrypcje są automatycznie zapisywane na bieżącej mapie co 30 sekund. Czy na pewno chcesz ukryć okno?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'Ukryj okno',
-  'auth.voiceNotes.recordingContinues':
-    'Nagrywanie nadal trwa i w każdej chwili możesz ponownie otworzyć podsumowanie nagrania.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'Najpierw zapisz bieżącą mapę myśli, a następnie użyj nagrania do podsumowania.',
+  'auth.voiceNotes.recordingContinues': 'Nagrywanie nadal trwa i w każdej chwili możesz ponownie otworzyć podsumowanie nagrania.',
+  'auth.voiceNotes.noCurrentDiagram': 'Najpierw zapisz bieżącą mapę myśli, a następnie użyj nagrania do podsumowania.',
   'auth.voiceNotes.restoreFailed': 'Nie można wczytać zapisanej transkrypcji nagrania audio.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'Historyczne notatki głosowe',
@@ -89,38 +73,26 @@ export default {
   'auth.voiceNotes.mergeTalker': 'połączyć się z',
   'auth.voiceNotes.mergeTalkerInto': 'Połącz w {name}',
   'auth.voiceNotes.resetTalker': 'Przywróć domyślne',
-  'auth.voiceNotes.tencentAuth':
-    'Uwierzytelnianie poprzez rozpoznawanie głosu nie powiodło się. Sprawdź klucz Tencent Cloud.',
-  'auth.voiceNotes.tencentService':
-    'Rozpoznawanie mowy w Tencent Cloud nie zostało aktywowane. Proszę aktywować usługę w konsoli.',
-  'auth.voiceNotes.tencentQuota':
-    'Pakiet zasobów rozpoznawania mowy Tencent Cloud został wyczerpany. Po aktywacji zapłać lub kup pakiet zasobów.',
-  'auth.voiceNotes.tencentArrears':
-    'Konto Tencent Cloud ma zaległości, a rozpoznawanie głosu zostało wyłączone.',
-  'auth.voiceNotes.tencentConcurrency':
-    'Współbieżność rozpoznawania mowy jest pełna. Spróbuj ponownie później.',
+  'auth.voiceNotes.tencentAuth': 'Uwierzytelnianie poprzez rozpoznawanie głosu nie powiodło się. Sprawdź klucz Tencent Cloud.',
+  'auth.voiceNotes.tencentService': 'Rozpoznawanie mowy w Tencent Cloud nie zostało aktywowane. Proszę aktywować usługę w konsoli.',
+  'auth.voiceNotes.tencentQuota': 'Pakiet zasobów rozpoznawania mowy Tencent Cloud został wyczerpany. Po aktywacji zapłać lub kup pakiet zasobów.',
+  'auth.voiceNotes.tencentArrears': 'Konto Tencent Cloud ma zaległości, a rozpoznawanie głosu zostało wyłączone.',
+  'auth.voiceNotes.tencentConcurrency': 'Współbieżność rozpoznawania mowy jest pełna. Spróbuj ponownie później.',
   'auth.voiceNotes.tencentAudio': 'Dźwięk nie został rozpoznany. Spróbuj ponownie.',
-  'auth.voiceNotes.tencentSendRate':
-    'Dźwięk jest wysyłany zbyt szybko. Nagrywaj w czasie rzeczywistym.',
-  'auth.voiceNotes.tencentIdle':
-    'Nagrywanie zostało przerwane na zbyt długo i wyłączono funkcję rozpoznawania głosu.',
+  'auth.voiceNotes.tencentSendRate': 'Dźwięk jest wysyłany zbyt szybko. Nagrywaj w czasie rzeczywistym.',
+  'auth.voiceNotes.tencentIdle': 'Nagrywanie zostało przerwane na zbyt długo i wyłączono funkcję rozpoznawania głosu.',
   'auth.voiceNotes.tencentRetry': 'Rozpoznawanie mowy chwilowo nie powiodło się. Spróbuj ponownie.',
-  'auth.voiceNotes.tencentRegion':
-    'Obecna sieć nie wchodzi w zakres usług krajowej witryny Tencent Cloud.',
+  'auth.voiceNotes.tencentRegion': 'Obecna sieć nie wchodzi w zakres usług krajowej witryny Tencent Cloud.',
   'auth.voiceNotes.tencentParam': 'Parametry rozpoznawania mowy są nieprawidłowe.',
-  'auth.voiceNotes.tencentAppid':
-    'Tencent Cloud AppID jest nieprawidłowy. Sprawdź TENCENT_ASR_APP_ID.',
-  'auth.voiceNotes.rateLimited':
-    'Żądania rozpoznawania mowy są zbyt częste. Spróbuj ponownie później.',
+  'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID jest nieprawidłowy. Sprawdź TENCENT_ASR_APP_ID.',
+  'auth.voiceNotes.rateLimited': 'Żądania rozpoznawania mowy są zbyt częste. Spróbuj ponownie później.',
   'auth.voiceNotes.messageTooLarge': 'Pakiet audio jest za duży. Spróbuj ponownie.',
   'auth.voiceNotes.invalidMessage': 'Wiadomość głosowa jest nieprawidłowa. Spróbuj ponownie.',
-  'auth.voiceNotes.asrUnavailable':
-    'Rozpoznawanie mowy jest tymczasowo niedostępne. Spróbuj ponownie później.',
+  'auth.voiceNotes.asrUnavailable': 'Rozpoznawanie mowy jest tymczasowo niedostępne. Spróbuj ponownie później.',
   'auth.updateLog': 'Informacje o wydaniu',
   'auth.updateLogModalTitle': 'Informacje o wydaniu',
   'auth.updateLogMaintainerNote': 'Tak — tę platformę aktywnie utrzymuje Roy ✨',
-  'auth.updateLogLoadError':
-    'Nie udało się wczytać informacji o wydaniu. Spróbuj ponownie później.',
+  'auth.updateLogLoadError': 'Nie udało się wczytać informacji o wydaniu. Spróbuj ponownie później.',
   'auth.updateLogEmpty': 'Brak informacji o wydaniu.',
   'auth.softwareAgreementConsentPrefix': 'Korzystanie z tej platformy oznacza zgodę na ',
   'auth.softwareAgreementLink': 'Regulamin i politykę prywatności',
@@ -128,19 +100,13 @@ export default {
   'privacy.backToSignIn': 'Wróć do logowania',
   'auth.downloadDesktopShortcut': 'Dodaj do pulpitu',
   'auth.platformQuickGuide': 'Szybki przewodnik',
-  'auth.pwaIosInstallHint':
-    'W Safari, Chrome lub Edge stuknij Udostępnij, a następnie wybierz „Dodaj do ekranu początkowego”.',
-  'auth.pwaAndroidInstallHint':
-    'Otwórz menu przeglądarki (⋮) i stuknij Zainstaluj aplikację lub Dodaj do ekranu głównego.',
-  'auth.pwaSafariMacInstallHint':
-    'W Safari wybierz Plik → Dodaj do Docka lub Udostępnij → Dodaj do Docka (macOS Sonoma lub nowszy).',
-  'auth.pwaDesktopInstallHint':
-    'Użyj menu przeglądarki (⋮) lub ikony instalacji na pasku adresu (Chrome, Edge lub Brave).',
+  'auth.pwaIosInstallHint': 'W Safari, Chrome lub Edge stuknij Udostępnij, a następnie wybierz „Dodaj do ekranu początkowego”.',
+  'auth.pwaAndroidInstallHint': 'Otwórz menu przeglądarki (⋮) i stuknij Zainstaluj aplikację lub Dodaj do ekranu głównego.',
+  'auth.pwaSafariMacInstallHint': 'W Safari wybierz Plik → Dodaj do Docka lub Udostępnij → Dodaj do Docka (macOS Sonoma lub nowszy).',
+  'auth.pwaDesktopInstallHint': 'Użyj menu przeglądarki (⋮) lub ikony instalacji na pasku adresu (Chrome, Edge lub Brave).',
   'auth.pwaInstallSuccess': 'MindGraph został dodany do pulpitu.',
-  'auth.pwaDevInstallHint':
-    'Instalacja PWA jest wyłączona w zwykłym trybie deweloperskim. Użyj buildu produkcyjnego (npm run build + backend) lub uruchom npm run dev:pwa, potem Chrome/Edge na HTTPS lub localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Przed instalacją na pulpicie otwórz MindGraph w przeglądarce pod adresem HTTPS (nie jako zapisany plik HTML).',
+  'auth.pwaDevInstallHint': 'Instalacja PWA jest wyłączona w zwykłym trybie deweloperskim. Użyj buildu produkcyjnego (npm run build + backend) lub uruchom npm run dev:pwa, potem Chrome/Edge na HTTPS lub localhost.',
+  'auth.pwaInsecureOriginHint': 'Przed instalacją na pulpicie otwórz MindGraph w przeglądarce pod adresem HTTPS (nie jako zapisany plik HTML).',
   'auth.backToLogin': 'Wróć do logowania',
   'auth.captcha': 'Kod weryfikacyjny',
   'auth.captchaLength4': 'Wpisz 4-znakową captchę',
@@ -167,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'Skopiowano',
   'auth.apiTokenCopyFailed': 'Kopiowanie nie powiodło się',
   'auth.apiTokenLoading': 'załadunek…',
-  'auth.apiTokenNone':
-    'Token nie został jeszcze wygenerowany. Pobierz pakiet umiejętności lub kliknij token API, aby go utworzyć.',
+  'auth.apiTokenNone': 'Token nie został jeszcze wygenerowany. Pobierz pakiet umiejętności lub kliknij token API, aby go utworzyć.',
   'auth.apiTokenOpaque': 'Nie można powtórzyć bieżącego tokena, należy go zregenerować.',
   'auth.apiTokenExpires': 'Ważne do {date}',
   'auth.downloadChromeExtension': 'Rozszerzenie Chrome',
   'auth.downloadWordAddin': 'Dodatek do Worda',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'Ta funkcja wymaga poziomu szkoły Standard lub Professional (poziom Basic wykluczony).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Subskrypcja szkoły zakończyła się. Konto jest teraz na poziomie próbnym. Skontaktuj się z administratorem platformy, aby odnowić.',
-  'auth.diagramLimitReached':
-    'Szkoły próbne pozwalają na maksymalnie {max} zapisanych diagramów na nauczyciela. Usuń jeden, aby zapisać nowy.',
+  'auth.schoolTierFeatureUnavailable': 'Ta funkcja wymaga poziomu szkoły Standard lub Professional (poziom Basic wykluczony).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Subskrypcja szkoły zakończyła się. Konto jest teraz na poziomie próbnym. Skontaktuj się z administratorem platformy, aby odnowić.',
+  'auth.diagramLimitReached': 'Szkoły próbne pozwalają na maksymalnie {max} zapisanych diagramów na nauczyciela. Usuń jeden, aby zapisać nowy.',
   'auth.downloadOpenclawSkill': 'Umiejętność OpenClaw',
-  'auth.downloadOpenclawSkillHint':
-    'Plik do pobrania zawiera numer konta i aktualny token. Po zregenerowaniu tokena stare pakiety umiejętności i rozszerzenia stracą ważność.',
+  'auth.downloadOpenclawSkillHint': 'Plik do pobrania zawiera numer konta i aktualny token. Po zregenerowaniu tokena stare pakiety umiejętności i rozszerzenia stracą ważność.',
   'auth.changePhoneButton': 'Zmień telefon',
   'auth.passwordChangeSuccess': 'Hasło zmienione pomyślnie',
   'auth.passwordChangeFailed': 'Zmiana hasła nie powiodła się',
@@ -260,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -299,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -312,13 +272,11 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'E-mail edukacyjny',
   'auth.modal.hybridRegisterEmailTabAny': 'E-mail',
   'auth.modal.hybridRegisterPhoneTab': 'Telefon + kod zaproszenia',
-  'auth.modal.mainlandSalesNotice':
-    'Potrzebujesz dostępu w Chinach kontynentalnych? Użyj numeru telefonu i kodu zaproszenia lub skontaktuj się z obsługą klienta.',
+  'auth.modal.mainlandSalesNotice': 'Potrzebujesz dostępu w Chinach kontynentalnych? Użyj numeru telefonu i kodu zaproszenia lub skontaktuj się z obsługą klienta.',
   'auth.modal.registrationEmailLabel': 'Tylko e-mail edukacyjny',
   'auth.modal.registrationEmailLabelAny': 'Adres e-mail',
   'auth.modal.registrationEmailHint': '',
-  'auth.modal.registrationEmailHintAny':
-    'Dowolny adres e-mail z wyjątkiem domen Chin kontynentalnych.',
+  'auth.modal.registrationEmailHintAny': 'Dowolny adres e-mail z wyjątkiem domen Chin kontynentalnych.',
   'auth.modal.educationEmailInvalid': 'Wpisz prawidłowy edukacyjny adres e-mail.',
   'auth.modal.emailInvalid': 'Wpisz prawidłowy adres e-mail.',
   'auth.modal.emailCodeLabel': 'Kod weryfikacyjny e-mail',
@@ -327,12 +285,9 @@ export default {
   'auth.modal.sendEmailCode': 'Wyślij kod e-mail',
   'auth.modal.sendingEmailCode': 'Wysyłanie...',
   'auth.modal.emailCodePlaceholder': '6-cyfrowy kod z e-maila',
-  'auth.modal.acknowledgeOverseas':
-    'Rozumiem i będę używać oprogramowania wyłącznie do celów edukacyjnych.',
-  'auth.modal.acknowledgeOverseasAny':
-    'Rozumiem i zgadzam się na warunki rejestracji zagranicznej.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Rozumiem i zgadzam się na warunki rejestracji zagranicznej oraz że uproszczony chiński nie jest dostępny na tej ścieżce.',
+  'auth.modal.acknowledgeOverseas': 'Rozumiem i będę używać oprogramowania wyłącznie do celów edukacyjnych.',
+  'auth.modal.acknowledgeOverseasAny': 'Rozumiem i zgadzam się na warunki rejestracji zagranicznej.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Rozumiem i zgadzam się na warunki rejestracji zagranicznej oraz że uproszczony chiński nie jest dostępny na tej ścieżce.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Potwierdź powyższe powiadomienie.',
   'auth.loginPhoneOrEmail': 'Telefon lub e-mail',
@@ -353,17 +308,13 @@ export default {
   'auth.username': 'Nazwa użytkownika',
   'auth.waitCaptchaLoad': 'Poczekaj na wczytanie captchy',
   'auth.quickRegPageTitle': 'Szybka rejestracja',
-  'auth.quickRegPageHint':
-    'Otwórz tę stronę z linku udostępnionego przez szkołę. Wpisz telefon i 6-cyfrowy kod pokoju z okna szybkiej rejestracji prowadzącego (odświeża się co ok. 30 sekund). Kod potwierdza obecność na sesji; nie weryfikuje własności telefonu jak kod SMS.',
-  'auth.quickRegLinkInvalid':
-    'Ten link rejestracyjny nie jest aktywny (wygasł lub zamknięty). Otwórz ponownie aktualny link od prowadzącego.',
-  'auth.quickRegProbeRateLimited':
-    'Zbyt wiele sprawdzeń z tej strony. Poczekaj chwilę i odśwież lub spróbuj później.',
+  'auth.quickRegPageHint': 'Otwórz tę stronę z linku udostępnionego przez szkołę. Wpisz telefon i 6-cyfrowy kod pokoju z okna szybkiej rejestracji prowadzącego (odświeża się co ok. 30 sekund). Kod potwierdza obecność na sesji; nie weryfikuje własności telefonu jak kod SMS.',
+  'auth.quickRegLinkInvalid': 'Ten link rejestracyjny nie jest aktywny (wygasł lub zamknięty). Otwórz ponownie aktualny link od prowadzącego.',
+  'auth.quickRegProbeRateLimited': 'Zbyt wiele sprawdzeń z tej strony. Poczekaj chwilę i odśwież lub spróbuj później.',
   'auth.quickRegSessionSignups': 'Zarejestrowani w tej sesji: {n}',
   'auth.quickRegRoomCodeLabel': 'Kod pokoju',
   'auth.quickRegRoomCodePlaceholder': '6 cyfr',
-  'auth.quickRegRoomCodeHint':
-    'Dopasuj duże cyfry z okna szybkiej rejestracji prowadzącego; wpisz kod zanim się zmieni.',
+  'auth.quickRegRoomCodeHint': 'Dopasuj duże cyfry z okna szybkiej rejestracji prowadzącego; wpisz kod zanim się zmieni.',
   'auth.quickRegRoomCodeEnter6': 'Wpisz 6-cyfrowy kod pokoju',
   'auth.quickRegMaxUses': 'Maks. rejestracji dla tego linku',
   'auth.quickRegHeadcount': 'Maks',
@@ -373,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'Zakończ rejestrację',
   'auth.quickRegSubmitting': 'Rejestrowanie…',
   'auth.quickRegRegisterSuccess': 'Rejestracja udana',
-  'auth.quickRegSessionUnsure':
-    'Rejestracja mogła się udać. Jeśli nie jesteś zalogowany, wróć i użyj logowania kodem weryfikacyjnym lub odśwież tę stronę.',
+  'auth.quickRegSessionUnsure': 'Rejestracja mogła się udać. Jeśli nie jesteś zalogowany, wróć i użyj logowania kodem weryfikacyjnym lub odśwież tę stronę.',
   'auth.quickRegBackToSignIn': 'Użyj standardowego logowania / rejestracji',
   'auth.quickRegSelectOrg': 'Wybierz szkołę',
   'auth.quickRegOrgLoadError': 'Nie udało się wczytać szkół. Spróbuj ponownie.',
   'auth.quickRegMintError': 'Nie udało się otworzyć kanału rejestracji. Spróbuj ponownie.',
   'auth.quickRegCloseConfirmTitle': 'Koniec szybkiej rejestracji?',
-  'auth.quickRegCloseConfirm':
-    'Po zamknięciu okna aktualny kod QR i kod pokoju natychmiast stracą ważność, a studenci, którzy jeszcze nie dołączyli, nie będą mogli kontynuować rejestracji.',
+  'auth.quickRegCloseConfirm': 'Po zamknięciu okna aktualny kod QR i kod pokoju natychmiast stracą ważność, a studenci, którzy jeszcze nie dołączyli, nie będą mogli kontynuować rejestracji.',
   'auth.setPasswordWithSms': 'Ustaw hasło logowania',
   'auth.setPasswordWithSmsTitle': 'Ustaw hasło przez SMS',
-  'auth.setPasswordWithSmsHint':
-    'Wysyłamy kod na powiązany telefon. Po ustawieniu hasła możesz logować się hasłem lub kodem weryfikacyjnym.',
+  'auth.setPasswordWithSmsHint': 'Wysyłamy kod na powiązany telefon. Po ustawieniu hasła możesz logować się hasłem lub kodem weryfikacyjnym.',
   'auth.setPasswordWithSmsSubmit': 'Zapisz hasło',
   'auth.setPasswordWithSmsSubmitting': 'Zapisywanie…',
   'auth.accountAvatar': 'Avatar',
@@ -400,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Nazwa wyświetlana',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'Co najmniej 2 znaki, bez cyfr',
   'auth.accountNameSave': 'Zapisz nazwę',
   'auth.accountNameSaveSuccess': 'Nazwa zaktualizowana',
@@ -413,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Nie udało się odłączyć. Spróbuj ponownie.',
   'auth.dingtalkBindRebind': 'Połącz ponownie',
   'auth.dingtalkBindTitle': 'Połącz konto DingTalk',
-  'auth.dingtalkBindInstructions':
-    'Wyślij 6-cyfrowy kod poniżej (np. 123-456) jako wiadomość tekstową do szkolnego DingTalk MindBot.',
+  'auth.dingtalkBindInstructions': 'Wyślij 6-cyfrowy kod poniżej (np. 123-456) jako wiadomość tekstową do szkolnego DingTalk MindBot.',
   'auth.dingtalkBindPairWaiting': 'Oczekiwanie, aż MindBot otrzyma Twój kod…',
   'auth.dingtalkBindCodeHint': 'Wyślij tylko ten kod — bez dodatkowego tekstu.',
   'auth.dingtalkBindCountdown': 'Sesja wygasa za {s}s',
@@ -429,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Połączono ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Obecnie połączono: {staff}',
   'auth.dingtalkUnbindTitle': 'Odłącz konto DingTalk',
-  'auth.dingtalkUnbindInstructions':
-    'Wyślij poniższy kod z połączonego konta DingTalk do MindBot, aby potwierdzić odłączenie.',
+  'auth.dingtalkUnbindInstructions': 'Wyślij poniższy kod z połączonego konta DingTalk do MindBot, aby potwierdzić odłączenie.',
   'auth.dingtalkUnbindPairWaiting': 'Oczekiwanie na potwierdzenie z połączonego konta DingTalk…',
   'auth.dingtalkUnbindCodeHint': 'Wyślij ten kod tylko z połączonego konta DingTalk.',
   'auth.dingtalkUnbindExpiredHint': 'Sesja odłączania wygasła. Zacznij ponownie.',
@@ -443,26 +392,20 @@ export default {
   'auth.qrLoginInviteRequired': 'Przed logowaniem QR wpisz szkolny kod zaproszenia',
   'auth.qrLoginProvidersFailed': 'Nie udało się wczytać ustawień logowania QR. Spróbuj ponownie.',
   'auth.qrLoginProviderDisabled': 'Ta metoda logowania nie jest włączona dla Twojej szkoły',
-  'auth.qrLoginNotLinked':
-    'Konto niepołączone — zaloguj się hasłem i najpierw powiąż w sekcji Powiązania kont',
+  'auth.qrLoginNotLinked': 'Konto niepołączone — zaloguj się hasłem i najpierw powiąż w sekcji Powiązania kont',
   'auth.qrLoginExchangeFailed': 'Logowanie QR nieudane. Spróbuj ponownie.',
   'auth.qrLoginInvalidState': 'Sesja QR wygasła. Zamknij i zeskanuj ponownie.',
-  'auth.qrLoginInvalidCode':
-    'Kod autoryzacyjny WeChat wygasł lub został wykorzystany. Zamknij kod QR i zeskanuj go ponownie.',
-  'auth.qrLoginRateLimited':
-    'Połączenia logowania do WeChat są zbyt częste. Spróbuj ponownie później.',
-  'auth.qrLoginMisconfigured':
-    'Konfiguracja logowania WeChat jest nieprawidłowa. Skontaktuj się z administratorem.',
+  'auth.qrLoginInvalidCode': 'Kod autoryzacyjny WeChat wygasł lub został wykorzystany. Zamknij kod QR i zeskanuj go ponownie.',
+  'auth.qrLoginRateLimited': 'Połączenia logowania do WeChat są zbyt częste. Spróbuj ponownie później.',
+  'auth.qrLoginMisconfigured': 'Konfiguracja logowania WeChat jest nieprawidłowa. Skontaktuj się z administratorem.',
   'auth.qrLoginCorpMismatch': 'Organizacja DingTalk nie pasuje do ustawień szkoły.',
   'auth.oauthExternalTaken': 'To konto jest już powiązane z innym użytkownikiem.',
-  'auth.oauthAlreadyBound':
-    'To konto zostało powiązane z WeChat. Jeśli chcesz powiązać inny WeChat, najpierw go rozłącz',
+  'auth.oauthAlreadyBound': 'To konto zostało powiązane z WeChat. Jeśli chcesz powiązać inny WeChat, najpierw go rozłącz',
   'auth.qrLoginDisabled': 'Logowanie QR jest niedostępne.',
   'auth.qrLoginStartFailed': 'Nie udało się rozpocząć logowania QR. Spróbuj ponownie.',
   'auth.qrLoginSuccess': 'Zalogowano pomyślnie',
   'auth.accountBindingsSection': 'Powiązania kont',
-  'auth.accountBindingsHint':
-    'MindBot zapisuje do DingTalk; WeChat/DingTalk służą do logowania QR (najpierw powiąż tutaj)',
+  'auth.accountBindingsHint': 'MindBot zapisuje do DingTalk; WeChat/DingTalk służą do logowania QR (najpierw powiąż tutaj)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',

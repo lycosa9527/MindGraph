@@ -26,3 +26,11 @@ def http_forbid_if_registration_disabled(lang: Language) -> None:
         return
     detail = Messages.error("registration_disabled", lang=lang)
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+
+
+def http_forbid_email_signup_in_bayi(lang: Language) -> None:
+    """Bayi sign-up is a mobile number plus a school invitation code."""
+    if auth_configuration.AUTH_MODE != "bayi":
+        return
+    detail = Messages.error("bayi_register_use_invite", lang=lang)
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)

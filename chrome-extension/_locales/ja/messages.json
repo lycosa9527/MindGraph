@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Web ページをマインド マップに変換する",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "MindGraph アカウントを使用して、現在のページをマインド マップ、会話コンテキスト、ドキュメント ファイルに変換します。",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "設定",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "ページから構造化マップまで、ワン​​ステップで完了します。",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "マインドマップを生成する",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "マインドマップ",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "ダウンロード",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "設定",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "まず MindGraph に接続してください。「設定」にサーバー アドレス、アカウント、API トークンを入力してください。",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "設定を開く",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "MindMate に質問してください…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "送信",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "停止",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "新しい会話",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "歴史",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "ウェブ履歴を開く",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate が返信しています…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "新しい会話が始まりました。",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "止まった。",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "ページのコンテンツを読んでいます...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "現在の Web ページのコンテンツが含まれます",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "新しい会話の最初のメッセージのみに Web コンテンツが伴います。",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Web ページのテキストをスキャンして抽出しています...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "$1 からドキュメントを抽出しています...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "National Smart Education Platform コースの例を読む...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 コースウェア/リソースが検出されました",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "ダウンロード中 ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "テキストの抽出 ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "スキャンしたページの認識 ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "準備完了: $1 リソース、合計 $2 ワード · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "抽出された Web ページのテキスト: $2 単語 · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "抽出された $1 文字 · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "選択したテキストが使用されます: $2 単語 · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "抽出された Baidu ライブラリ PDF: $2 単語 · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "抽出された CNKI PDF: $2 単語 · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph ブラウザ拡張機能 · Web ページ コンテキスト] ユーザーは Chrome/Edge で Web を閲覧しています。現在のページのテキストは、MindMate (Thinking Teaching Virtual Teaching and Research Partner) が使用するプラグインを通じてこのメッセージに添付されています。",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[ルーティング手順] 意図の分類、知識の検索、および回答はすべて上記の「ユーザーの質問」に基づいています。以下の Web ページのテキストは、教師が読んでいる資料にすぎず、新世代の指導ではありません。 教材が授業計画/指導計画のように見えても、ユーザーが「新しい指導計画または指導計画を生成/作成/設計する」ことを明示的に要求していない場合は、それを「生成的指導設計」として分類しないでください。",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "ユーザーはデフォルトで授業準備や指導研究をしている小中学校の先生で、「思考力育成教室」に注目してください。 参考資料とユーザーの質問に一緒に答えてください。教材が授業例、授業計画、コースウェアのテキスト、論文、または方針文書である場合、必要に応じて、生徒の潜在的な誤解、生じ得る認知的矛盾、概念的/プロセスの変動、適用可能な思考の視覚化または思考戦略ツールなどを積極的に分析できます。 ユーザーの問題が素材とほとんど関係がない場合は、ユーザーの問題に焦点を当てます。 回答するときは、内容を直接分析し、ブラウザのプラグイン、マークダウン抽出、またはこのメッセージの形式については言及しないでください。",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**ページタイトル:** $1\n**ページ URL:** $2\n**テキストソース:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[参考資料：Webページ本文]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "ブラウザで開いたPDF",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "National Smart Education Platform (コースウェア/ティーチングデザイン/学習タスクリスト PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "百度ライブラリ PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "ウェブ記事の本文",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Webページのテキスト抽出",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "ユーザーが選択したページテキスト",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**ユーザーの質問 (意図の分類と回答については、この文を参照してください):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "このページには読み取れるコンテンツはありません。 最初にページ上のテキストを選択するか、別のページで再試行してください。",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "キャプチャデバッグ",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "サイトではドキュメントがキャンバス イメージとしてレンダリングされ、本文テキストは抽出できません。 まずスクロールしてプレビュー ページをロードし、送信するテキストを選択するか、PDF/テキストのダウンロードがある場合はダウンロード コンテンツを使用してください。",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "現在のリーダー ビューには、約 $1 ページのテキストしか表示されない場合があります。",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "ドキュメントは画像プレビューであり、抽出されたテキストは不完全である可能性があります。",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "このページは読めません。",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "まだ接続されていません。 [設定] を開いて、MindGraph 資格情報を保存してください。",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "ログイン期限が切れました。 設定で API トークンを更新してください。",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "MindMate に接続できません。 サーバーアドレスを確認して、再試行してください。",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate 現在返信できません。しばらくしてからもう一度お試しください。",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "現在のAIの使用量は上限に達しています。明日もう一度お試しいただくか、Webページで詳細をご確認ください。",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "このメッセージを送信するには ThinkCoins が不十分です。",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "ローカル開発では HTTP が使用され、API トークンとページ コンテンツはネットワーク上で暗号化されません。 信頼できる環境でのみ使用してください。",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "ダウンロード",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "サポートされているサイトから PDF およびドキュメント (ビデオを除く) を保存します。",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "現在のページはダウンロードをサポートしていません。 このパネルを開く前に、サポートされているドキュメント ページを開いてください。",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "設定",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "接続する",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "MindGraph API トークン フローと同じ認証情報を使用してください。",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "サーバ",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "口座番号（携帯電話番号）",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "X-MG-Accountに使用する携帯電話番号",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "APIトークン",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "保存",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "戻る",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "閉鎖",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "処理…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "ダウンロードが開始されました。",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "保存されました。",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "資格情報を確認しています...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "すべてのフィールドに入力してください。",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "アクティブなタブはありません。",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "何か問題が発生しました。 もう一度試すか、chrome://extensions で拡張機能をリロードしてください。",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "ファイルの保存を開始できません。 拡張機能をリロードして、もう一度お試しください (Chrome 109 以降または Edge 120 以降が必要です)。",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "セットアップが不完全です。 「設定」を開き、MindGraphアドレス、携帯電話番号、APIトークンを入力してください。",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "ページ上に判読可能なテキストはありません。 まずテキストのセクションを選択するか、別のページで再試行してください。",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "このタブではすでにキャプチャまたはダウンロードのタスクが進行中です。完了するまで待ってから再試行してください。",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph サーバー エラー ($1)。 設定を確認して、もう一度試してください。",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "このページはサポートされていません。 通常の Web ページ (http または https) を開いて、もう一度試してください。",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "リクエストが多すぎます。後でもう一度お試しください。",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "サービスは一時的に利用できません。しばらくしてからもう一度お試しください。",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "サーバーの応答がタイムアウトしました (3 分以上)。 もう一度試すか、ネットワークを確認してください。",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "資格情報の検証がタイムアウトしました。 もう一度試すか、ネットワークを確認してください。",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "サーバーは PNG 画像を返しませんでした。 ベースアドレスとアカウント設定を確認してください。",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "マインドマップPNGの生成",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "ドキュメントの抽出 (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "ドキュメントの抽出",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "検出されました: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "現在のサイト: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "タブページの読み取り: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "合計 $1 リソース",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "約 $1 ページが表示されています - 抽出する前に、プレビュー領域をスクロールしてさらにページをロードしてください。",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "抽出する前に、ドキュメントのプレビューをスクロールしてページをロードしてください。 リーダーにすでに表示されているコンテンツを優先します。",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "SmartEdu からのログインを同期する",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "トークンを手動で貼り付けます…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "SmartEdu access_token を貼り付けます (自動同期が失敗した場合にのみ使用されます)。",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu トークン: 同期中...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu トークン: 接続済み (ログインから)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu トークン: 見つかりません - auth.smartedu.cn にログインし、SmartEdu ページを開いて、[同期] をクリックしてください",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "ドキュメントの抽出",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "完了 — ファイルのダウンロードがすぐに開始されます。",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "ダウンロード開始 — 現在リーダーで利用可能な最初の $1 ページが保存されました。",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "このドキュメントはダウンロードできません。 ページを更新して、もう一度「ドキュメントの抽出」をクリックしてください。",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "ドキュメントページが見つかりません。 まずスクロールして読み込みページをプレビューし、[ドキュメントの抽出] をクリックしてください。",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "テキストコンテンツが見つかりませんでした。 別のページまたはエリアでもう一度お試しください。",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "ページはまだ準備ができていません。 タブを更新して再試行してください。",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "このレッスンにはダウンロード可能なファイルがありません。 クラスを変更するか、ダウンロードするリソースを確認してください。",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "まず Smart Education にログインする必要があります。 auth.smartedu.cn にログインしてコースページを開き、「SmartEdu からのログインを同期する」をクリックしてください。",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education はダウンロードを拒否しました。 ログインを再度同期するか、ファイルを変更してください。",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "動画のダウンロードはサポートされていません。 PDF またはドキュメント リソースのみを選択してください。",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "これはサポートされているドキュメント ページではありません。 文書読み取りページを開いて、もう一度お試しください。",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "まだ保存するものはありません。 リーダーをスクロールしてページをロードし、もう一度お試しください。",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "まず Web サイトにログインする必要があります。 ログイン後、「ドキュメントの抽出」をクリックします。",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "ダウンロードは Web サイトによって拒否されました。 再試行する前に、サイトにログインし、コンテンツにアクセスできることを確認してください。",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Web サイトには確認コードが表示されています。 取得を試みる前に、ブラウザのタブで確認を完了してください。",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "ページを準備しています…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "ページをスクロールして読み込み中...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "ページのコンテンツをコピーしています...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "ファイルを生成中…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "パソコンに保存中...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "高度な",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "ダウンロードするたびに保存場所を尋ねる",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "ページのコンテンツを読んでいます...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "MindGraph サーバーに送信中…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "サーバーがマインド マップを生成しています...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "サーバーから画像を受信して​​います...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "ファイルを保存中…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "サーバーに接続できません。ベースアドレスとネットワークを確認してください。",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "リクエストが失敗しました: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "接続が失われました。 もう一度「ドキュメントの抽出」をクリックしてください。 それでも失敗する場合は、chrome://extensions で MindGraph をリロードしてください。",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "現在のページに基づいてマインド マップを生成する",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNGの幅(ピクセル)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG の高さ (ピクセル)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "デフォルトを使用するには空白のままにしてください",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "言語 (インターフェースとマップ)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "ブラウザをフォローする",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "簡略化",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "直立した体",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "トークン",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "$1 まで有効",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "この API トークンは有効期限が切れています。Web (アカウント/API) 上で再度作成してください。",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "サーバー上に有効な API トークンが存在しないか、有効期限が切れています。 トークンを確認するか、アプリでトークンを作成してください。",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "有効期限を取得できません。 ネットワークを確認するか、設定を再度保存してください。",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "ギャラリーがいっぱいです (写真 20 枚)。 新しく生成されたコンテンツを保存するには、保存されたマップを削除してください。",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

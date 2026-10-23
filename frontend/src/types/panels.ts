@@ -51,7 +51,7 @@ export interface ConceptMapTab {
   name: string
 }
 
-export interface NodePalettePanelState {
+export interface DiagramBrainstormPanelState {
   open: boolean
   suggestions: NodeSuggestion[]
   selected: string[]
@@ -68,7 +68,7 @@ export interface NodePalettePanelState {
 }
 
 /**
- * Mind map AI Brainstorm (AI头脑风暴) — new-Canvas side tool, isolated from Node Palette.
+ * Mind-map brainstorm sheet. Thinking maps and concept maps use DiagramBrainstormPanelState.
  */
 export interface AiBrainstormPanelState {
   open: boolean
@@ -93,8 +93,8 @@ export interface AiBrainstormSessionSnapshot {
   sourceTabs?: ConceptMapTab[]
 }
 
-/** Saved session state when user dismisses (X) node palette - restored on reopen */
-export interface NodePaletteSessionSnapshot {
+/** Saved session state when user dismisses (X) AI brainstorm - restored on reopen */
+export interface DiagramBrainstormSessionSnapshot {
   suggestions: NodeSuggestion[]
   selected: string[]
   mode: string | null
@@ -111,6 +111,6 @@ export interface PropertyPanelState {
 
 export interface PanelsState {
   mindmate: MindmatePanelState
-  nodePalette: NodePalettePanelState
+  diagramBrainstorm: DiagramBrainstormPanelState
   property: PropertyPanelState
 }

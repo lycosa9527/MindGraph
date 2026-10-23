@@ -15,8 +15,7 @@ export default {
   'sidebar.actions.unpin': 'ಅನ್‌ಪಿನ್ ಮಾಡಿ',
   'sidebar.actions.moveToFolder': 'ಫೋಲ್ಡರ್‌ಗೆ ಸರಿಸಿ',
   'sidebar.actions.removeFromFolder': 'ಫೋಲ್ಡರ್ ಹೊರಗೆ ಸರಿಸಿ',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'ಈ ಸಂವಾದವನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
+  'sidebar.askOnceHistory.deleteConfirm': 'ಈ ಸಂವಾದವನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
   'sidebar.askOnceHistory.empty': 'ಇನ್ನೂ ಯಾವುದೇ ಸಂಭಾಷಣೆಯ ದಾಖಲೆಗಳಿಲ್ಲ',
   'sidebar.askOnceHistory.renamePrompt': 'ದಯವಿಟ್ಟು ಹೊಸ ಸಂಭಾಷಣೆಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ',
   'sidebar.askOnceHistory.renameTitle': 'ಸಂಭಾಷಣೆಯನ್ನು ಮರುಹೆಸರಿಸಿ',
@@ -30,8 +29,7 @@ export default {
   'sidebar.bookmarks.title': 'ಇತ್ತೀಚಿನ ಬುಕ್‌ಮಾರ್ಕ್‌ಗಳು',
   'sidebar.bookmarks.unknownDoc': 'ಅಜ್ಞಾತ ಡಾಕ್ಯುಮೆಂಟ್',
   'sidebar.brandTitle': 'ಮ್ಯಾಟ್ ಬೋಧನೆ ಮತ್ತು ಸಂಶೋಧನೆ',
-  'sidebar.chatHistory.deleteConfirm':
-    'ಈ ಸಂವಾದವನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
+  'sidebar.chatHistory.deleteConfirm': 'ಈ ಸಂವಾದವನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
   'sidebar.chatHistory.deleteTitle': 'ಸಂಭಾಷಣೆಯನ್ನು ಅಳಿಸಿ',
   'sidebar.chatHistory.empty': 'ಇನ್ನೂ ಯಾವುದೇ ಸಂಭಾಷಣೆಯ ದಾಖಲೆಗಳಿಲ್ಲ',
   'sidebar.chatHistory.loginPrompt': 'ಐತಿಹಾಸಿಕ ಸಂಭಾಷಣೆಗಳನ್ನು ವೀಕ್ಷಿಸಲು ಲಾಗ್ ಇನ್ ಮಾಡಿ',
@@ -46,8 +44,7 @@ export default {
   'sidebar.chatHistory.folderCreatePrompt': 'Enter a name for the new folder',
   'sidebar.chatHistory.folderCreateTitle': 'New folder',
   'sidebar.chatHistory.folderCreated': 'Folder created',
-  'sidebar.chatHistory.folderDeleteConfirm':
-    'Delete this folder? Conversations inside will move to Uncategorized.',
+  'sidebar.chatHistory.folderDeleteConfirm': 'Delete this folder? Conversations inside will move to Uncategorized.',
   'sidebar.chatHistory.folderDeleteFailed': 'Failed to delete folder',
   'sidebar.chatHistory.folderDeleteTitle': 'Delete folder',
   'sidebar.chatHistory.folderDeleted': 'Folder deleted',
@@ -69,19 +66,13 @@ export default {
   'sidebar.zhihui': 'ಚಿ',
   'sidebar.zhihuiHistory.title': 'ಇತಿಹಾಸ ನಿರ್ಮಿಸಿ',
   'sidebar.zhihuiHistory.empty': 'ಇನ್ನೂ ಯಾವುದೇ ಪೀಳಿಗೆಯ ದಾಖಲೆಗಳಿಲ್ಲ',
-  'sidebar.zhihuiHistory.deleteConfirm':
-    'ಈ ರಚಿಸಿದ ದಾಖಲೆಯನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
-  'sidebar.community': 'ಸಮುದಾಯ ಹಂಚಿಕೆ',
-  'sidebar.courses': 'ಚಿಂತನೆಯ ಪಾಠಗಳು',
-  'sidebar.mateLearning': 'ಮ್ಯಾಟ್ ಕಲಿಕೆಯ ವಿಧಾನ',
-  'sidebar.debateHistory.deleteConfirm':
-    'ಈ ಚರ್ಚೆಯ ದಾಖಲೆಯನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
+  'sidebar.zhihuiHistory.deleteConfirm': 'ಈ ರಚಿಸಿದ ದಾಖಲೆಯನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
+  'sidebar.debateHistory.deleteConfirm': 'ಈ ಚರ್ಚೆಯ ದಾಖಲೆಯನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
   'sidebar.debateHistory.empty': 'ಚರ್ಚೆಯ ದಾಖಲೆ ಇನ್ನೂ ಇಲ್ಲ',
   'sidebar.debateHistory.loginPrompt': 'ಐತಿಹಾಸಿಕ ಚರ್ಚೆಗಳನ್ನು ವೀಕ್ಷಿಸಲು ಸೈನ್ ಇನ್ ಮಾಡಿ',
   'sidebar.debateHistory.renamePrompt': 'ದಯವಿಟ್ಟು ಹೊಸ ಚರ್ಚೆಯ ವಿಷಯವನ್ನು ನಮೂದಿಸಿ',
   'sidebar.debateHistory.renameTitle': 'ಮರುಹೆಸರಿಸುವ ಚರ್ಚೆ',
   'sidebar.debateHistory.title': 'ಇತ್ತೀಚಿನ ಚರ್ಚೆ',
-  'sidebar.debateverse': 'ಪರಿಸ್ಥಿತಿಯ ಮೇಲೆ',
   'sidebar.diagramHistory.capacity': '{n} ಐಕಾನ್‌ಗಳನ್ನು ಉಳಿಸಬಹುದು',
   'sidebar.diagramHistory.deleteFailed': 'ಅಳಿಸುವಿಕೆ ವಿಫಲವಾಗಿದೆ',
   'sidebar.diagramHistory.collabLive': 'ಆನ್‌ಲೈನ್ ಸಹಯೋಗವು ಪ್ರಗತಿಯಲ್ಲಿದೆ',
@@ -98,8 +89,7 @@ export default {
   'sidebar.diagramHistory.folderCreatePrompt': 'ದಯವಿಟ್ಟು ಫೋಲ್ಡರ್ ಹೆಸರನ್ನು ನಮೂದಿಸಿ',
   'sidebar.diagramHistory.folderCreateTitle': 'ಹೊಸ ಫೋಲ್ಡರ್ ರಚಿಸಿ',
   'sidebar.diagramHistory.folderCreated': 'ಫೋಲ್ಡರ್ ರಚಿಸಲಾಗಿದೆ',
-  'sidebar.diagramHistory.folderDeleteConfirm':
-    'ಈ ಫೋಲ್ಡರ್ ಅನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಅಲ್ಲಿರುವ ಐಕಾನ್‌ಗಳನ್ನು ವರ್ಗೀಕರಿಸದಕ್ಕೆ ಸರಿಸಲಾಗುತ್ತದೆ.',
+  'sidebar.diagramHistory.folderDeleteConfirm': 'ಈ ಫೋಲ್ಡರ್ ಅನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಅಲ್ಲಿರುವ ಐಕಾನ್‌ಗಳನ್ನು ವರ್ಗೀಕರಿಸದಕ್ಕೆ ಸರಿಸಲಾಗುತ್ತದೆ.',
   'sidebar.diagramHistory.folderDeleteFailed': 'ಫೋಲ್ಡರ್ ಅಳಿಸಲು ವಿಫಲವಾಗಿದೆ',
   'sidebar.diagramHistory.folderDeleteTitle': 'ಫೋಲ್ಡರ್ ಅಳಿಸಿ',
   'sidebar.diagramHistory.folderDeleted': 'ಫೋಲ್ಡರ್ ಅಳಿಸಲಾಗಿದೆ',
@@ -108,8 +98,7 @@ export default {
   'sidebar.diagramHistory.folderRenamePrompt': 'ದಯವಿಟ್ಟು ಹೊಸ ಫೋಲ್ಡರ್ ಹೆಸರನ್ನು ನಮೂದಿಸಿ',
   'sidebar.diagramHistory.folderRenameTitle': 'ಫೋಲ್ಡರ್ ಅನ್ನು ಮರುಹೆಸರಿಸಿ',
   'sidebar.diagramHistory.folderRenamed': 'ಫೋಲ್ಡರ್ ಅನ್ನು ಮರುಹೆಸರಿಸಲಾಗಿದೆ',
-  'sidebar.diagramHistory.foldersLoadFailed':
-    'ಫೋಲ್ಡರ್ ಅನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ, ಚಿತ್ರಾತ್ಮಕ ಪಟ್ಟಿಯನ್ನು ಮಾತ್ರ ತೋರಿಸಲಾಗಿದೆ',
+  'sidebar.diagramHistory.foldersLoadFailed': 'ಫೋಲ್ಡರ್ ಅನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ, ಚಿತ್ರಾತ್ಮಕ ಪಟ್ಟಿಯನ್ನು ಮಾತ್ರ ತೋರಿಸಲಾಗಿದೆ',
   'sidebar.diagramHistory.foldersSection': 'ಫೋಲ್ಡರ್',
   'sidebar.diagramHistory.loadFailed': 'ಐಕಾನ್ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ',
   'sidebar.diagramHistory.moveFailed': 'ಐಕಾನ್ ಸರಿಸಲು ವಿಫಲವಾಗಿದೆ',
@@ -148,30 +137,26 @@ export default {
   'sidebar.training': 'ಶಾಲಾ ಆಧಾರಿತ ತರಬೇತಿ',
   'sidebar.trainingCourses': 'ಕೋರ್ಸ್',
   'sidebar.trainingBuilder': 'ಕೋರ್ಸ್ ನಿರ್ಮಾಣ ಸಹಾಯಕ',
-  'sidebar.templateResources': 'ಟೆಂಪ್ಲೇಟ್ ಸಂಪನ್ಮೂಲಗಳು',
   'sidebar.orgEdition': '{org}ವಿಶೇಷ ಆವೃತ್ತಿ',
   'sidebar.personalEdition': 'ವೈಯಕ್ತಿಕ ಆವೃತ್ತಿ',
   'sidebar.userSubtitleDefault': 'MindGraph ಮೈಂಡ್‌ಗ್ರಾಫ್ ವೃತ್ತಿಪರ ಆವೃತ್ತಿ',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',
   'sidebar.account': 'ಖಾತೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು',
   'sidebar.roleSuperAdmin': 'ಸೂಪರ್ ನಿರ್ವಾಹಕ',
-  'sidebar.rolePlatformAdmin': 'ಟೀಚಿಂಗ್ ಮತ್ತು ರಿಸರ್ಚ್ ಫೆಲೋ',
+  'sidebar.rolePlatformAdmin': 'ಸಂಶೋಧಕ',
   'sidebar.roleExpert': 'ತಜ್ಞ',
-  'sidebar.roleSchoolAdmin': 'ಶಾಲೆಯ ಆಡಳಿತಾಧಿಕಾರಿ',
+  'sidebar.roleSchoolAdmin': 'ಶಾಲಾ ಅಡ್ಮಿನ್',
   'sidebar.roleSchoolEdition': 'ಶಾಲಾ ಆವೃತ್ತಿ',
   'sidebar.roleStudent': 'Student',
   'sidebar.roleTrialEdition': 'ಪ್ರಯೋಗ ಆವೃತ್ತಿ',
   'sidebar.roleSuperMember': 'ಸೂಪರ್ ಸದಸ್ಯ',
   'sidebar.logoSiteQrTitle': 'ವೆಬ್‌ಸೈಟ್ QR ಕೋಡ್',
-  'sidebar.logoSiteQrHint':
-    'QR ಕೋಡ್ ಅನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಫೋನ್‌ನಲ್ಲಿ ಕ್ಯಾಮರಾ/WeChat ಬಳಸಿ',
+  'sidebar.logoSiteQrHint': 'QR ಕೋಡ್ ಅನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಫೋನ್‌ನಲ್ಲಿ ಕ್ಯಾಮರಾ/WeChat ಬಳಸಿ',
   'sidebar.mindmateCollabHistory.title': 'ಆನ್‌ಲೈನ್ ಸಹಯೋಗ',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'ಸೆಮಿನಾರ್ ಅಂತ್ಯ',
-  'sidebar.mindmateCollabHistory.stopConfirm':
-    'ಈ ಕಾರ್ಯಾಗಾರದ ಕೊಠಡಿಯನ್ನು ಎಲ್ಲಾ ಭಾಗವಹಿಸುವವರಿಗೆ ಮುಚ್ಚಲಾಗುತ್ತದೆ ಮತ್ತು ಎಲ್ಲರೂ ಕೊಠಡಿಯಿಂದ ನಿರ್ಗಮಿಸುತ್ತಾರೆ.',
+  'sidebar.mindmateCollabHistory.stopConfirm': 'ಈ ಕಾರ್ಯಾಗಾರದ ಕೊಠಡಿಯನ್ನು ಎಲ್ಲಾ ಭಾಗವಹಿಸುವವರಿಗೆ ಮುಚ್ಚಲಾಗುತ್ತದೆ ಮತ್ತು ಎಲ್ಲರೂ ಕೊಠಡಿಯಿಂದ ನಿರ್ಗಮಿಸುತ್ತಾರೆ.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'ಕ್ಯಾಂಪಸ್‌ನಲ್ಲಿ',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'ಶಾಲೆಗಳಾದ್ಯಂತ',
   'sidebar.share.ribbon': 'Organization',
@@ -195,8 +180,7 @@ export default {
   'sidebar.demo.menu': 'Demo mode',
   'sidebar.demo.ribbon': 'Demo',
   'sidebar.demo.title': 'Choose diagrams',
-  'sidebar.demo.line1':
-    'Pick diagrams from your library, write a caption, then play them full screen',
+  'sidebar.demo.line1': 'Pick diagrams from your library, write a caption, then play them full screen',
   'sidebar.demo.search': 'Search diagrams',
   'sidebar.demo.empty': 'No diagrams in your library yet',
   'sidebar.demo.hint': 'Select a diagram to write its caption',
@@ -246,26 +230,15 @@ export default {
   'sidebar.demo.loading': 'Generating',
   'sidebar.demo.moveUp': 'Move up',
   'sidebar.demo.moveDown': 'Move down',
-  'sidebar.demo.caption.circle_map':
-    '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
-  'sidebar.demo.caption.bubble_map':
-    '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
-  'sidebar.demo.caption.double_bubble_map':
-    '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
-  'sidebar.demo.caption.tree_map':
-    '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
-  'sidebar.demo.caption.brace_map':
-    '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
-  'sidebar.demo.caption.flow_map':
-    '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
-  'sidebar.demo.caption.multi_flow_map':
-    '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
-  'sidebar.demo.caption.bridge_map':
-    '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
-  'sidebar.demo.caption.mindmap':
-    '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
-  'sidebar.demo.caption.concept_map':
-    '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
-  'sidebar.demo.caption.fallback':
-    '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
+  'sidebar.demo.caption.circle_map': '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
+  'sidebar.demo.caption.bubble_map': '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
+  'sidebar.demo.caption.double_bubble_map': '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
+  'sidebar.demo.caption.tree_map': '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
+  'sidebar.demo.caption.brace_map': '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
+  'sidebar.demo.caption.flow_map': '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
+  'sidebar.demo.caption.multi_flow_map': '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
+  'sidebar.demo.caption.bridge_map': '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
+  'sidebar.demo.caption.mindmap': '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
+  'sidebar.demo.caption.concept_map': '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
+  'sidebar.demo.caption.fallback': '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
 } as const

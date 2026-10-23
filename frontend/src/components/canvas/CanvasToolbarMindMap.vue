@@ -57,7 +57,7 @@ import MindMapNumberingControls from '@/components/canvas/MindMapNumberingContro
 import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
-import { useFeatureFlags } from '@/composables'
+import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
 import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
@@ -76,10 +76,8 @@ import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
 import {
   CANVAS_CLIPBOARD_EXPORT_MENU_ITEM,
-  CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
   CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
   CANVAS_STANDARD_EXPORT_MENU_ITEMS,
   CANVAS_WORKSHEET_TEXT_MENU_ITEM,
@@ -94,6 +92,8 @@ import {
   useSavedDiagramsStore,
   useVoiceNotesStore,
 } from '@/stores'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
+import { retainEditOnExplainPointer } from '@/utils/nodeExplainTrigger'
 import {
   type LabelCollapseSnapshot,
   createLabelCollapseSnapshot,
@@ -111,11 +111,11 @@ const { t, currentLanguage } = useLanguage()
 const notify = useNotifications()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const { showCanvasAiFeatures } = useLearningAiGate()
+const lsCanvas = useLearningAssignmentCanvasStore()
 const diagramStore = useDiagramStore()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const shareSeminarOpen = ref(false)
-const { featureCommunity } = useFeatureFlags()
 const { triggerImportInPlace } = useDiagramImport()
 const { resetToDefaultTemplate } = useCanvasReset()
 const ribbon = useMindMapRibbonActions()
@@ -139,8 +139,6 @@ const voiceSummaryTooltip = computed(() => {
   if (aiBlockedByCollab.value) return t('canvas.toolbar.collabAiBlocked')
   return voiceSummaryLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.voiceSummary')
 })
-
-const showCommunityExport = computed(() => featureCommunity.value && authStore.isAuthenticated)
 
 /** Hidden for now with the ZhiHui sidebar entry; flip when 图示生图 ships. */
 const showZhihuiDiagramExport = computed(() => false)
@@ -282,6 +280,18 @@ function onGuestAiToolClick(event: MouseEvent, run: () => void): void {
   }
   event.preventDefault()
   notifyCollabGuestAiBlocked()
+}
+
+function onExplainPointerDown(event: PointerEvent): void {
+  retainEditOnExplainPointer(event, ribbon.explainLockedUntilConfirm)
+}
+
+function onExplainClick(event: MouseEvent): void {
+  if (ribbon.explainLockedUntilConfirm) {
+    event.preventDefault()
+    return
+  }
+  onGuestAiToolClick(event, () => requireNodeSelection(() => ribbon.requestExplainNode()))
 }
 
 function onFormatPainterClick(): void {
@@ -834,17 +844,6 @@ watch(
                         >
                           <I18nText :k="CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM.labelKey" />
                         </button>
-                        <button
-                          v-if="showCommunityExport"
-                          type="button"
-                          class="mm-list-item"
-                          :class="{
-                            'mm-list-item--divided': CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided,
-                          }"
-                          @click="handleExportCommand(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command)"
-                        >
-                          <I18nText :k="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey" />
-                        </button>
                       </div>
                     </div>
                   </template>
@@ -858,6 +857,7 @@ watch(
       <template v-if="ribbonTab === 'teaching'">
         <div class="mm-btn-group">
           <I18nTooltip
+            v-if="lsCanvas.showLearningSheet"
             :k="
               aiBlockedByCollab
                 ? 'canvas.toolbar.collabGuestFeatureBlocked'
@@ -963,28 +963,40 @@ watch(
           </I18nTooltip>
           <I18nTooltip
             :k="
-              aiBlockedByCollab
-                ? 'canvas.toolbar.collabAiBlocked'
-                : 'canvas.floatingToolbar.explain'
+              ribbon.explainLockedUntilConfirm
+                ? 'canvas.floatingToolbar.explainNeedsConfirm'
+                : aiBlockedByCollab
+                  ? 'canvas.toolbar.collabAiBlocked'
+                  : 'canvas.floatingToolbar.explain'
             "
             placement="bottom"
-            :disabled="!aiBlockedByCollab && (shortLabels || !props.compact)"
+            :disabled="
+              !ribbon.explainLockedUntilConfirm &&
+              !aiBlockedByCollab &&
+              (shortLabels || !props.compact)
+            "
           >
             <button
               type="button"
               class="mm-btn"
-              :aria-disabled="aiBlockedByCollab || !ribbon.hasSelection"
-              :class="{ 'is-dimmed': aiBlockedByCollab || !ribbon.hasSelection }"
+              :class="{
+                'is-dimmed':
+                  aiBlockedByCollab || !ribbon.hasSelection || ribbon.explainLockedUntilConfirm,
+                'mm-btn--explain-locked': ribbon.explainLockedUntilConfirm,
+              }"
+              data-node-explain-trigger
+              :aria-disabled="
+                aiBlockedByCollab || !ribbon.hasSelection || ribbon.explainLockedUntilConfirm
+              "
               :aria-label="
-                aiBlockedByCollab
-                  ? t('canvas.toolbar.collabAiBlocked')
-                  : t('canvas.floatingToolbar.explain')
+                ribbon.explainLockedUntilConfirm
+                  ? t('canvas.floatingToolbar.explainNeedsConfirm')
+                  : aiBlockedByCollab
+                    ? t('canvas.toolbar.collabAiBlocked')
+                    : t('canvas.floatingToolbar.explain')
               "
-              @click="
-                onGuestAiToolClick($event, () =>
-                  requireNodeSelection(() => ribbon.requestExplainNode())
-                )
-              "
+              @pointerdown="onExplainPointerDown"
+              @click="onExplainClick"
             >
               <Lightbulb class="w-4 h-4" />
               <MmToolbarLabel
@@ -1008,6 +1020,24 @@ watch(
               <MmToolbarLabel
                 class="mm-btn__label"
                 k="canvas.mindMapSideToolbar.mindClassroom"
+              />
+            </button>
+          </I18nTooltip>
+          <I18nTooltip
+            k="canvas.ribbon.shareToSeminarTip"
+            placement="bottom"
+            :disabled="shortLabels"
+          >
+            <button
+              type="button"
+              class="mm-btn"
+              :aria-label="t('canvas.ribbon.shareToSeminar')"
+              @click="openShareToSeminar"
+            >
+              <Share2 class="w-4 h-4" />
+              <MmToolbarLabel
+                class="mm-btn__label"
+                k="canvas.ribbon.shareToSeminar"
               />
             </button>
           </I18nTooltip>
@@ -1045,7 +1075,7 @@ watch(
               "
               @click="
                 onGuestAiToolClick($event, () =>
-                  caps.conceptMap ? openConceptMapNodePalette() : ribbon.handleAIGenerate()
+                  caps.conceptMap ? openConceptMapBrainstorm() : ribbon.handleAIGenerate()
                 )
               "
             >
@@ -1187,7 +1217,7 @@ watch(
               :class="{
                 'is-active':
                   caps.thinkingMapChrome || caps.conceptMap
-                    ? ribbon.isNodePaletteOpen
+                    ? ribbon.isDiagramBrainstormOpen
                     : activeTool === 'waterfall',
                 'is-dimmed': aiBlockedByCollab,
               }"
@@ -1298,27 +1328,8 @@ watch(
               />
             </button>
           </I18nTooltip>
-          <I18nTooltip
-            k="canvas.ribbon.shareToSeminarTip"
-            placement="bottom"
-            :disabled="shortLabels"
-          >
-            <button
-              type="button"
-              class="mm-btn"
-              :aria-label="t('canvas.ribbon.shareToSeminar')"
-              @click="openShareToSeminar"
-            >
-              <Share2 class="w-4 h-4" />
-              <MmToolbarLabel
-                class="mm-btn__label"
-                k="canvas.ribbon.shareToSeminar"
-              />
-            </button>
-          </I18nTooltip>
         </div>
       </template>
-      <CanvasShareToSeminarDialog v-model="shareSeminarOpen" />
     </div>
     <button
       v-show="trackOverflowing"
@@ -1333,6 +1344,7 @@ watch(
         aria-hidden="true"
       />
     </button>
+    <CanvasShareToSeminarDialog v-model="shareSeminarOpen" />
   </div>
 </template>
 

@@ -4,19 +4,14 @@
  */
 
 export default {
-  'notification.cannotClearTopicOrCenter':
-    'Themen- oder Zentrumsknoten können nicht geleert werden',
-  'notification.cannotResetSelectDiagramType':
-    'Zurücksetzen nicht möglich: Wählen Sie zuerst einen Diagrammtyp',
+  'notification.cannotClearTopicOrCenter': 'Themen- oder Zentrumsknoten können nicht geleert werden',
+  'notification.cannotResetSelectDiagramType': 'Zurücksetzen nicht möglich: Wählen Sie zuerst einen Diagrammtyp',
   'notification.canvasClearNodes': '{count} Knoten geleert',
   'notification.canvasClearNodesLearning': '{count} Knoten geleert und zu Antworten hinzugefügt',
   'notification.canvasSomeoneEditingNode': 'Ein anderer Benutzer bearbeitet diesen Knoten',
-  'notification.collabDeleteBlocked':
-    'Löschen nicht möglich, während ein anderer Benutzer einen ausgewählten Knoten bearbeitet',
-  'notification.collabRedoBlocked':
-    'Wiederholen nicht möglich, während ein anderer Benutzer bearbeitet',
-  'notification.collabUndoBlocked':
-    'Rückgängig nicht möglich, während ein anderer Benutzer bearbeitet',
+  'notification.collabDeleteBlocked': 'Löschen nicht möglich, während ein anderer Benutzer einen ausgewählten Knoten bearbeitet',
+  'notification.collabRedoBlocked': 'Wiederholen nicht möglich, während ein anderer Benutzer bearbeitet',
+  'notification.collabUndoBlocked': 'Rückgängig nicht möglich, während ein anderer Benutzer bearbeitet',
   'notification.conversationDeleted': 'Unterhaltung gelöscht',
   'notification.copied': 'In die Zwischenablage kopiert',
   'notification.copyFailed': 'Kopieren fehlgeschlagen',
@@ -26,26 +21,21 @@ export default {
   'notification.feedbackThanks': 'Vielen Dank für Ihr Feedback',
   'notification.feedbackThanksDislike': 'Vielen Dank für Ihr Feedback — wir werden uns verbessern',
   'notification.focusQuestionTooShort': 'Geben Sie zuerst eine längere Fokusfrage ein',
-  'notification.geoLiteMissingIntro':
-    'Laden Sie GeoLite2 Country von MaxMind herunter, extrahieren Sie GeoLite2-Country.mmdb und kopieren Sie die Datei in den Server-Datenordner:',
+  'notification.geoLiteMissingIntro': 'Laden Sie GeoLite2 Country von MaxMind herunter, extrahieren Sie GeoLite2-Country.mmdb und kopieren Sie die Datei in den Server-Datenordner:',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite-Downloadseite öffnen',
   'notification.geoLiteMissingPathLabel': 'Erwarteter Pfad:',
   'notification.geoLiteMissingTitle': 'GeoLite2 Country-Datenbank fehlt',
   'notification.fullscreenFailed': 'Vollbildmodus konnte nicht aktiviert werden',
   'notification.generationCancelled': 'Generierung abgebrochen',
-  'notification.conceptMapTabNeedsAi':
-    'Bitte aktivieren Sie KI in der Leiste, bevor Sie Tab-Empfehlungen nutzen.',
+  'notification.conceptMapTabNeedsAi': 'Bitte aktivieren Sie KI in der Leiste, bevor Sie Tab-Empfehlungen nutzen.',
   'notification.historyClearNodes': 'Knotentext leeren',
   'notification.historyEmptyLearning': 'Knoten leeren und Antwort hinzufügen',
   'notification.importInvalidData': 'Import fehlgeschlagen: ungültige Diagrammdaten',
   'notification.importLoadFailed': 'Import fehlgeschlagen: Diagramm konnte nicht geladen werden',
   'notification.importSavePartial': 'Importiert, aber Speichern in der Bibliothek fehlgeschlagen',
-  'notification.importSlotsFull':
-    'Bibliothek voll; Diagramm importiert, aber nicht in der Bibliothek gespeichert',
+  'notification.importSlotsFull': 'Bibliothek voll; Diagramm importiert, aber nicht in der Bibliothek gespeichert',
   'notification.importSuccess': 'Diagramm importiert und in der Bibliothek gespeichert',
   'notification.importUnsupportedType': 'Import fehlgeschlagen: nicht unterstützter Diagrammtyp',
-  'notification.inlineRecEmpty':
-    'Es wurden keine Empfehlungen generiert. Versuchen Sie es erneut oder bearbeiten Sie das Thema.',
   'notification.loadMoreFailed': 'Weitere Einträge konnten nicht geladen werden',
   'notification.networkError': 'Netzwerkfehler',
   'notification.nodeNotEligible': 'Dieser Knoten unterstützt keine Tab-Empfehlungen.',
@@ -56,10 +46,8 @@ export default {
   'notification.rootConceptLinkNotFound': 'Wurzelkonzept-Verknüpfung nicht gefunden',
   'notification.saved': 'Änderungen erfolgreich gespeichert',
   'notification.selectNodeToClear': 'Bitte wählen Sie einen Knoten zum Leeren',
-  'notification.sessionInvalidated':
-    'Sie wurden abgemeldet, weil Sie die maximale Anzahl an Geräten überschritten haben',
-  'notification.sessionKicked':
-    'Dieses Konto hat dieses Konto auf anderen Geräten offline angemeldet',
+  'notification.sessionInvalidated': 'Sie wurden abgemeldet, weil Sie die maximale Anzahl an Geräten überschritten haben',
+  'notification.sessionKicked': 'Dieses Konto hat dieses Konto auf anderen Geräten offline angemeldet',
   'notification.signInToUse': 'Melden Sie sich an, um dies zu nutzen',
   'notification.signInToValidateFocus': 'Melden Sie sich an, um die Fokusfrage zu validieren',
 } as const

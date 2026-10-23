@@ -104,10 +104,12 @@ class MindmateCollabMember(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    seminar_role: Mapped[str] = mapped_column(String(32), nullable=False, default="observer")
+    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    seminar_role: Mapped[str] = mapped_column(String(32), nullable=False, default="observer", server_default="observer")
     # False until a teacher outside the host school agrees to join.
     accepted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+
+    __table_args__ = (Index("ix_mindmate_collab_members_user", "user_id"),)
 
 
 class MindmateCollabBackgroundFile(Base):

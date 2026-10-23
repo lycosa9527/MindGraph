@@ -54,16 +54,6 @@ DIAGRAMS_USER_LIST = "diagrams:user:{user_id}:list"
 TTL_DIAGRAM = int(os.getenv("DIAGRAM_CACHE_TTL", "604800"))  # 7 d default
 
 # ---------------------------------------------------------------------------
-# Community cache  (redis_community_cache.py)
-# ---------------------------------------------------------------------------
-COMMUNITY_VERSION = "community:version"
-COMMUNITY_LIST = "community:list:{hash16}:v{version}"
-COMMUNITY_POST = "community:post:{post_id}"
-TTL_COMMUNITY_LIST = 60
-TTL_COMMUNITY_POST = 300
-TTL_COMMUNITY_VERSION = 86_400
-
-# ---------------------------------------------------------------------------
 # Showcase cache  (redis_showcase_cache.py)
 # ---------------------------------------------------------------------------
 SHOWCASE_VERSION = "showcase:version"
@@ -93,10 +83,11 @@ ENV_RELOAD_CHANNEL = "mg:env:reload"
 # ---------------------------------------------------------------------------
 # Dify dual-server health  (redis_dify_server_health_cache.py)
 # ---------------------------------------------------------------------------
-DIFY_SERVER_HEALTH = "dify:health:{org_id}:{server}"
+# Shared by every school. MindMate sends the school on the request.
+DIFY_URL_HEALTH = "dify:health:url:{url_hash}"
 DIFY_HEALTH_POLLER_LOCK = "dify:health:poller:lock"
 # Must outlive DIFY_HEALTH_POLL_INTERVAL_SECONDS and default max-age (poll*4+60).
-TTL_DIFY_SERVER_HEALTH = 900  # safety net; poller refreshes every ~120 s by default
+TTL_DIFY_URL_HEALTH = 900  # safety net; poller refreshes every ~120 s by default
 TTL_DIFY_HEALTH_POLLER_LOCK = 300  # must exceed worst-case probe cycle duration
 
 # ---------------------------------------------------------------------------
@@ -147,11 +138,9 @@ TTL_USER_DAILY_TOKENS = 90_000  # 25 h — covers Beijing midnight rollover
 # Distributed locks  (redis_distributed_lock.py)
 # ---------------------------------------------------------------------------
 LOCK = "lock:{resource}"
-LOCK_STARTUP_SMS = "lock:mindgraph:lifespan:startup_sms"
 LOCK_LAUNCH_COMPLETE = "lock:mindgraph:lifespan:launch_complete"
 LOCK_PERF_SAMPLE = "lock:mindgraph:perf_sample:{host}"
 TTL_LOCK_DEFAULT = 10
-TTL_LOCK_STARTUP = 300
 TTL_LOCK_LAUNCH_COMPLETE = 120
 
 # ---------------------------------------------------------------------------
@@ -197,12 +186,6 @@ MINDBOT_STREAMING_HOUR_MAX = "admin:mindbot:streaming_max:{hour_utc}"
 TTL_MINDBOT_STREAMING_HOUR_MAX = 100_800
 MINDMATE_STREAMING_HOUR_MAX = "admin:mindmate:streaming_max:{hour_utc}"
 TTL_MINDMATE_STREAMING_HOUR_MAX = 100_800
-
-# ---------------------------------------------------------------------------
-# Maite learning practice cache  (services/maite/redis/practice_cache.py)
-# ---------------------------------------------------------------------------
-MAITE_PRACTICE = "maite:practice:{user_id}"
-TTL_MAITE_PRACTICE = 300
 
 # ---------------------------------------------------------------------------
 # Office / embed session handoff (mgat_ → browser cookies)

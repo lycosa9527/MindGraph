@@ -2,11 +2,11 @@
 Health Monitor Service for MindGraph Application
 
 Monitors overall server health by periodically calling internal health check
-functions and sends SMS alerts to admin phones when failures are detected.
+functions and records a critical failure when the server is unhealthy.
 
 Features:
 - Periodic health monitoring via direct function calls (configurable interval)
-- SMS alerts for unhealthy/degraded status
+- Critical failure records for unhealthy/degraded status
 - Cooldown mechanism (prevents alert spam)
 - Multi-worker coordination via Redis distributed lock
 - Tracks consecutive failures before alerting
@@ -83,14 +83,12 @@ HEALTH_MONITOR_ENABLED = os.getenv("HEALTH_MONITOR_ENABLED", "true").lower() in 
     "yes",
 )
 HEALTH_MONITOR_INTERVAL_SECONDS = int(os.getenv("HEALTH_MONITOR_INTERVAL_SECONDS", "900"))
-HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS = int(os.getenv("HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS", "1800"))
 HEALTH_MONITOR_FAILURE_THRESHOLD = int(os.getenv("HEALTH_MONITOR_FAILURE_THRESHOLD", "1"))
 HEALTH_MONITOR_STARTUP_DELAY_SECONDS = int(os.getenv("HEALTH_MONITOR_STARTUP_DELAY_SECONDS", "10"))
 
 # Redis keys for distributed coordination
 MONITOR_LOCK_KEY = "health_monitor:lock"
 MONITOR_LOCK_TTL = 60
-SMS_ALERT_COOLDOWN_KEY = "health_monitor:sms_cooldown"
 
 
 # ============================================================================
@@ -139,7 +137,7 @@ class HealthMonitor:
 
     Features:
     - Periodic health checks via direct function calls (no HTTP/auth overhead)
-    - SMS alerts for unhealthy/degraded status
+    - Critical failure records for unhealthy/degraded status
     - Cooldown mechanism (prevents alert spam)
     - Multi-worker coordination via Redis distributed lock
     """
@@ -212,56 +210,13 @@ class HealthMonitor:
             logger.debug("[HealthMonitor] Failed to refresh monitor lock: %s", e)
             return False
 
-    async def _check_sms_cooldown(self) -> bool:
+    async def _record_health_failure(self, reason: str, critical: bool = False) -> None:
         """
-        Check if SMS alert is in cooldown period.
-
-        Returns:
-            True if in cooldown (should not send), False if can send
-        """
-        if not _REDIS_AVAILABLE or is_redis_available is None or not is_redis_available():
-            return False
-
-        try:
-            if get_async_redis is None:
-                return False
-            redis_client = get_async_redis()
-            if redis_client is None:
-                return False
-
-            exists = await redis_client.exists(SMS_ALERT_COOLDOWN_KEY)
-            return bool(exists)
-        except BACKGROUND_INFRA_ERRORS:
-            return False
-
-    async def _set_sms_cooldown(self) -> None:
-        """Set SMS alert cooldown period"""
-        if not _REDIS_AVAILABLE or is_redis_available is None or not is_redis_available():
-            return
-
-        try:
-            if get_async_redis is None:
-                return
-            redis_client = get_async_redis()
-            if redis_client is None:
-                return
-
-            await redis_client.set(
-                SMS_ALERT_COOLDOWN_KEY,
-                str(time.time()),
-                ex=HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
-            )
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.warning("[HealthMonitor] Failed to set SMS cooldown: %s", e)
-
-    async def _send_sms_alert(self, reason: str, critical: bool = False) -> None:
-        """
-        Send SMS alert to admin phones via centralized critical alert service.
+        Record a server health failure.
 
         Args:
-            reason: Reason for the alert
-            critical: If True, indicates critical failure (currently unused,
-                     reserved for future use to bypass cooldown)
+            reason: Reason for the failure
+            critical: When True, log that the failure is critical
         """
         if not _CRITICAL_ALERT_AVAILABLE or CriticalAlertService is None:
             logger.warning("[HealthMonitor] Critical alert service not available")
@@ -276,10 +231,10 @@ class HealthMonitor:
             )
             self.status.last_alert_time = time.time()
             if critical:
-                logger.info("[HealthMonitor] Critical alert sent: %s", reason)
+                logger.info("[HealthMonitor] Critical failure recorded: %s", reason)
         except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
-                "[HealthMonitor] Error sending SMS alert via critical alert service: %s",
+                "[HealthMonitor] Error recording critical failure: %s",
                 e,
                 exc_info=True,
             )
@@ -591,7 +546,7 @@ class HealthMonitor:
 
                         if should_alert:
                             is_critical = health_status == "unhealthy"
-                            await self._send_sms_alert(alert_reason, critical=is_critical)
+                            await self._record_health_failure(alert_reason, critical=is_critical)
                         else:
                             logger.debug("[HealthMonitor] Alert suppressed - process monitor is handling the issue")
 

@@ -3,6 +3,7 @@
  * Draft for review; not legal advice.
  */
 import { isChineseUiLocale } from '@/types/sidebar-quotes'
+import { toTraditionalChinese } from '@/utils/simplifiedTraditional'
 
 const COMPANY_ZH = '北京思源智教科技有限公司'
 const COMPANY_EN = 'Beijing Siyuan Zhijiao Technology Co., Ltd.'
@@ -354,12 +355,40 @@ export const SOFTWARE_AGREEMENT_EN: SoftwareAgreementContent = {
   ],
 }
 
-/** Chinese UI (`zh`, `zh-tw`) → simplified Chinese; all other locales → English. */
+function isTraditionalChineseUi(uiCode: string): boolean {
+  const code = uiCode.trim().toLowerCase()
+  return code === 'zh-tw' || code.startsWith('zh-hant') || code === 'zh-hk' || code === 'zh-mo'
+}
+
+function traditionalAgreement(source: SoftwareAgreementContent): SoftwareAgreementContent {
+  const convert = toTraditionalChinese
+  return {
+    title: convert(source.title),
+    updated: convert(source.updated),
+    preamble: convert(source.preamble),
+    sections: source.sections.map((section) => ({
+      id: section.id,
+      title: convert(section.title),
+      paragraphs: section.paragraphs.map((paragraph) => convert(paragraph)),
+    })),
+  }
+}
+
+let traditionalAgreementCache: SoftwareAgreementContent | null = null
+let traditionalExtensionCache: SoftwareAgreementSection[] | null = null
+
+/** Simplified Chinese UI stays on the source text. Traditional UI is converted. */
 export function softwareAgreementForUiCode(uiCode: string): SoftwareAgreementContent {
-  if (isChineseUiLocale(uiCode)) {
+  if (!isChineseUiLocale(uiCode)) {
+    return SOFTWARE_AGREEMENT_EN
+  }
+  if (!isTraditionalChineseUi(uiCode)) {
     return SOFTWARE_AGREEMENT_ZH
   }
-  return SOFTWARE_AGREEMENT_EN
+  if (traditionalAgreementCache === null) {
+    traditionalAgreementCache = traditionalAgreement(SOFTWARE_AGREEMENT_ZH)
+  }
+  return traditionalAgreementCache
 }
 
 const BROWSER_EXTENSION_PRIVACY_ZH: SoftwareAgreementSection[] = [
@@ -396,8 +425,17 @@ const BROWSER_EXTENSION_PRIVACY_EN: SoftwareAgreementSection[] = [
 
 /** Browser-extension supplement for /privacy and store listings. */
 export function browserExtensionPrivacyForUiCode(uiCode: string): SoftwareAgreementSection[] {
-  if (isChineseUiLocale(uiCode)) {
+  if (!isChineseUiLocale(uiCode)) {
+    return BROWSER_EXTENSION_PRIVACY_EN
+  }
+  if (!isTraditionalChineseUi(uiCode)) {
     return BROWSER_EXTENSION_PRIVACY_ZH
   }
-  return BROWSER_EXTENSION_PRIVACY_EN
+  if (traditionalExtensionCache === null) {
+    traditionalExtensionCache = BROWSER_EXTENSION_PRIVACY_ZH.map((section) => ({
+      title: toTraditionalChinese(section.title),
+      paragraphs: section.paragraphs.map((paragraph) => toTraditionalChinese(paragraph)),
+    }))
+  }
+  return traditionalExtensionCache
 }

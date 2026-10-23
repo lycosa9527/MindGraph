@@ -197,67 +197,6 @@ class DistributedLock:
         return False  # Don't suppress exceptions
 
 
-STARTUP_SMS_NOTIFICATION_LOCK_KEY = _keys.LOCK_STARTUP_SMS
-STARTUP_SMS_NOTIFICATION_LOCK_TTL = _keys.TTL_LOCK_STARTUP
-
-
-async def acquire_startup_sms_notification_lock() -> Optional[str]:
-    """
-    Acquire exclusive right to send startup SMS for this process group.
-
-    Uvicorn does not set UVICORN_WORKER_ID; all workers default to the same id,
-    so each would otherwise send duplicate SMS. Uses Redis SET NX (see also
-    backup scheduler lock pattern). The lock is kept until TTL expires after a
-    successful send so staggered workers skip instead of re-sending.
-
-    Returns:
-        Lock token to pass to release_startup_sms_notification_lock, or None
-        if another worker holds the lock or coordination failed (prefer no SMS
-        over duplicate SMS when Redis errors).
-    """
-    if not is_redis_available():
-        return None
-
-    redis = get_async_redis()
-    lock_id = _generate_lock_id()
-    try:
-        acquired = await redis.set(
-            STARTUP_SMS_NOTIFICATION_LOCK_KEY,
-            lock_id,
-            nx=True,
-            ex=STARTUP_SMS_NOTIFICATION_LOCK_TTL,
-        )
-        if acquired:
-            return lock_id
-        holder = await redis.get(STARTUP_SMS_NOTIFICATION_LOCK_KEY)
-        logger.debug(
-            "[LIFESPAN] Startup SMS skipped — lock held by another worker (%s)",
-            holder,
-        )
-        return None
-    except REDIS_ERRORS as exc:
-        logger.warning(
-            "[LIFESPAN] Startup SMS lock acquisition failed (skipping send): %s",
-            exc,
-        )
-        return None
-
-
-async def release_startup_sms_notification_lock(lock_id: str) -> None:
-    """Release startup SMS lock after a failed send so another worker may retry."""
-    if not lock_id:
-        return
-    if not is_redis_available():
-        return
-    try:
-        await AsyncRedisOps.compare_and_delete(STARTUP_SMS_NOTIFICATION_LOCK_KEY, lock_id)
-    except REDIS_ERRORS as exc:
-        logger.debug(
-            "[LIFESPAN] Startup SMS lock release (non-critical): %s",
-            exc,
-        )
-
-
 LAUNCH_COMPLETE_LOG_LOCK_KEY = _keys.LOCK_LAUNCH_COMPLETE
 LAUNCH_COMPLETE_LOG_LOCK_TTL = _keys.TTL_LOCK_LAUNCH_COMPLETE
 

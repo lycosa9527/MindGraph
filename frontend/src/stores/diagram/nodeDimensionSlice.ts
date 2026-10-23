@@ -1,3 +1,5 @@
+import { isLearningSheetBlankedNode } from '@/stores/specLoader/mindMapLearningSheet'
+
 import type { DiagramContext } from './types'
 
 /**
@@ -91,8 +93,41 @@ export function useNodeDimensionSlice(ctx: DiagramContext) {
     armSafety(MEASURE_BATCH_ARM_SAFETY_MS)
   }
 
+  function learningSheetBlankFrozen(nodeId: string): boolean {
+    const diagram = ctx.data?.value
+    if (!diagram) return false
+    const flags = diagram as { isLearningSheet?: boolean; is_learning_sheet?: boolean }
+    if (flags.isLearningSheet !== true && flags.is_learning_sheet !== true) return false
+    return isLearningSheetBlankedNode(diagram.nodes?.find((item) => item.id === nodeId))
+  }
+
+  /** A mounted node counts toward the measure batch even when its box is held. */
+  function noteMeasureReport(nodeId: string): void {
+    if (!reportedIds || pendingExpected <= 0) return
+    const wasNew = !reportedIds.has(nodeId)
+    reportedIds.add(nodeId)
+    if (reportedIds.size >= pendingExpected) {
+      flushMeasureBatch()
+      return
+    }
+    if (!wasNew) return
+    armSafety(MEASURE_BATCH_PROGRESS_SAFETY_MS)
+    if (quietTimer != null) {
+      clearTimeout(quietTimer)
+    }
+    quietTimer = setTimeout(() => {
+      quietTimer = null
+      flushMeasureBatch()
+    }, MEASURE_BATCH_QUIET_MS)
+  }
+
   function setNodeDimensions(nodeId: string, width: number | null, height: number | null): void {
     const batch = reportedIds != null && pendingExpected > 0
+
+    if ((width !== null || height !== null) && learningSheetBlankFrozen(nodeId)) {
+      noteMeasureReport(nodeId)
+      return
+    }
 
     if (width === null && height === null) {
       if (!(nodeId in ctx.nodeDimensions.value)) return
@@ -112,23 +147,8 @@ export function useNodeDimensionSlice(ctx: DiagramContext) {
       ctx.nodeDimensions.value[nodeId] = { width: newW, height: newH }
     }
 
-    if (batch && reportedIds) {
-      const wasNew = !reportedIds.has(nodeId)
-      reportedIds.add(nodeId)
-      if (reportedIds.size >= pendingExpected) {
-        flushMeasureBatch()
-        return
-      }
-      if (wasNew) {
-        armSafety(MEASURE_BATCH_PROGRESS_SAFETY_MS)
-        if (quietTimer != null) {
-          clearTimeout(quietTimer)
-        }
-        quietTimer = setTimeout(() => {
-          quietTimer = null
-          flushMeasureBatch()
-        }, MEASURE_BATCH_QUIET_MS)
-      }
+    if (batch) {
+      noteMeasureReport(nodeId)
       return
     }
 

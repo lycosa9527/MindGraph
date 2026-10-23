@@ -2,7 +2,7 @@
 /**
  * Mind Classroom launch settings — readable modal / panel layout.
  */
-import { computed, nextTick, watch } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -19,7 +19,6 @@ import {
 import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
-import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
@@ -53,13 +52,13 @@ const props = withDefaults(
 )
 
 const { t } = useLanguage()
-const { featureMindClassroomSlideDeck } = useFeatureFlags()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const classroomStore = useMindClassroomStore()
 const {
   mastery,
   presentation,
+  slideDeckSelectable,
   tourScope,
   slideStyle,
   tone,
@@ -126,22 +125,12 @@ const presentationOptions = computed(() =>
     titleKey: `canvas.mindClassroom.settings.presentation.${id}.title`,
     descKey: `canvas.mindClassroom.settings.presentation.${id}.desc`,
     icon: presentationIcons[id],
-    gated: id === 'slide_deck' && !featureMindClassroomSlideDeck.value,
+    gated: id === 'slide_deck' && !slideDeckSelectable.value,
   }))
 )
 
 const selectablePresentationIds = computed(() =>
-  featureMindClassroomSlideDeck.value ? MIND_CLASSROOM_PRESENTATION_IDS : (['canvas_tour'] as const)
-)
-
-watch(
-  featureMindClassroomSlideDeck,
-  (enabled) => {
-    if (!enabled && presentation.value === 'slide_deck') {
-      classroomStore.setPresentation('canvas_tour')
-    }
-  },
-  { immediate: true }
+  presentationOptions.value.filter((option) => !option.gated).map((option) => option.id)
 )
 
 const tourScopeOptions = computed(() =>
@@ -173,7 +162,8 @@ function pickMastery(id: MindClassroomMasteryId): void {
 
 function pickPresentation(id: MindClassroomPresentationId): void {
   if (queueBusy.value) return
-  if (id === 'slide_deck' && !featureMindClassroomSlideDeck.value) return
+  const option = presentationOptions.value.find((item) => item.id === id)
+  if (option?.gated) return
   classroomStore.setPresentation(id)
 }
 
@@ -300,6 +290,7 @@ function handleRestart(): void {
             :key="option.id"
             k="canvas.mindClassroom.settings.presentation.slide_deck.comingSoon"
             placement="top"
+            popper-class="mc-coming-soon-popper"
             :disabled="!option.gated"
           >
             <span class="mc-mode-hit">
@@ -307,14 +298,14 @@ function handleRestart(): void {
                 type="button"
                 class="mc-mode"
                 :class="{
-                  'is-active': presentation === option.id,
+                  'is-active': presentation === option.id && !option.gated,
                   'is-gated': option.gated,
                 }"
                 role="radio"
-                :aria-checked="presentation === option.id"
+                :aria-checked="presentation === option.id && !option.gated"
                 :aria-disabled="option.gated"
-                :disabled="queueBusy"
-                :tabindex="presentation === option.id ? 0 : -1"
+                :disabled="queueBusy || option.gated"
+                :tabindex="presentation === option.id && !option.gated ? 0 : -1"
                 @click="pickPresentation(option.id)"
                 @keydown="
                   handleRadioGroupKeydown(
@@ -334,7 +325,7 @@ function handleRestart(): void {
                     />
                   </span>
                   <Check
-                    v-if="presentation === option.id"
+                    v-if="presentation === option.id && !option.gated"
                     class="mc-mode__check"
                     :stroke-width="2.5"
                   />

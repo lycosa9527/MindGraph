@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — تحويل صفحة الويب إلى خريطة ذهنية",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "قم بتحويل الصفحة الحالية إلى خريطة ذهنية وسياق محادثة وملف مستند من خلال حساب MindGraph.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "الإعدادات",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "من الصفحة إلى الخريطة المنظمة، أكمل في خطوة واحدة.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "إنشاء خرائط ذهنية",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "الخريطة الذهنية",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "تحميل",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "الإعدادات",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "يرجى الاتصال بـ MindGraph أولاً - املأ عنوان الخادم والحساب ورمز واجهة برمجة التطبيقات في \"الإعدادات\".",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "افتح الإعدادات",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "اسأل MindMate...",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "يرسل",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "قف",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "محادثة جديدة",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "تاريخ",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "افتح سجل الويب",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate يرد...",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "لقد بدأت محادثة جديدة.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "توقف.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "قراءة محتوى الصفحة...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "يحتوي على محتوى صفحة الويب الحالية",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "سيتم فقط إرفاق الرسالة الأولى في المحادثة الجديدة بمحتوى الويب.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "مسح واستخراج نص صفحة الويب...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "استخراج المستندات من $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "قراءة نماذج دورات المنصة الوطنية للتعليم الذكي...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 تم اكتشاف البرامج التعليمية/الموارد",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "التحميل ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "استخراج النص ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "التعرف على الصفحات الممسوحة ضوئيًا ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "جاهز: $1 من الموارد، إجمالي $2 من الكلمات · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "نص صفحة الويب المستخرج: $2 كلمات · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "أحرف $1 المستخرجة · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "سيتم استخدام النص المحدد: $2 كلمات · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "مكتبة بايدو المستخرجة PDF: $2 الكلمات · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "ملف CNKI PDF المستخرج: $2 كلمات · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph ملحق المتصفح · سياق صفحة الويب] يتصفح المستخدم الويب في Chrome/Edge، ويتم إرفاق نص الصفحة الحالية بهذه الرسالة من خلال المكون الإضافي ليستخدمه MindMate (شريك التدريس والبحث الافتراضي في التفكير في التدريس).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[تعليمات التوجيه] يعتمد تصنيف النوايا واسترجاع المعرفة والإجابات على \"أسئلة المستخدم\" أعلاه؛ إن نص صفحة الويب أدناه هو فقط المادة التي يقرأها المعلم، وليس تعليمات الجيل الجديد. إذا كانت المادة تبدو كخطة درس/تصميم تعليمي، لكن المستخدم لم يطلب صراحةً \"إنشاء/كتابة/تصميم تصميم تعليمي جديد أو خطة درس\"، فلا تصنفها على أنها \"تصميم تعليمي توليدي\".",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "برجاء أن يكون المستخدم مدرسًا في المرحلة الابتدائية والثانوية ويقوم بإعداد الدروس أو التدريس والبحث، والانتباه إلى \"فصل تنمية التفكير\". يرجى الإجابة على المواد المرجعية وأسئلة المستخدم معًا؛ إذا كانت المادة عبارة عن مثال درس، أو خطة درس، أو نص برنامج دراسي، أو ورقة أو وثيقة سياسة، فيمكنك التحليل بشكل استباقي عندما يكون ذلك مناسبًا: المفاهيم الخاطئة المحتملة لدى الطلاب، أو الصراعات المعرفية التي يمكن إنشاؤها، أو الاختلافات المفاهيمية/العملية، أو تصور التفكير القابل للتطبيق أو أدوات استراتيجية التفكير. إذا كانت مشكلة المستخدم لا علاقة لها بالمادة، ركز على مشكلة المستخدم. عند الإجابة، قم بتحليل المحتوى مباشرة ولا تذكر المكونات الإضافية للمتصفح أو استخراج Markdown أو تنسيق هذه الرسالة.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**عنوان الصفحة:** $1\n**عنوان URL للصفحة:** $2\n**مصدر النص:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[المادة المرجعية: نص صفحة الويب]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "تم فتح ملف PDF في المتصفح",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "المنصة الوطنية للتعليم الذكي (المقررات الدراسية/تصميم التدريس/قائمة مهام التعلم PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "كنكي بي دي اف",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "مكتبة بايدو PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "نص مقالة الويب",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "استخراج نص صفحة الويب",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "نص الصفحة المحدد من قبل المستخدم",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**سؤال المستخدم (يرجى الرجوع إلى هذه الجملة لتصنيف النية والإجابة):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "لا يوجد محتوى قابل للقراءة في هذه الصفحة. يرجى تحديد النص الموجود على الصفحة أولاً، أو حاول مرة أخرى على صفحة مختلفة.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "التقاط التصحيح",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "يعرض الموقع المستند كصورة قماشية ولا يمكن استخراج النص الأساسي. يرجى التمرير لتحميل صفحة المعاينة أولاً، أو تحديد النص المراد إرساله، أو استخدام محتوى التنزيل إذا كان هناك تنزيل بتنسيق PDF/نص.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "قد يعرض عرض القارئ الحالي فقط $1 صفحة من النص تقريبًا.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "قد يكون المستند عبارة عن معاينة صورة، وقد يكون النص المستخرج غير كامل.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "لا يمكن قراءة هذه الصفحة.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "غير متصل بعد. يرجى فتح الإعدادات وحفظ بيانات الاعتماد MindGraph.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "انتهت صلاحية تسجيل الدخول. يرجى تحديث رمز API المميز في الإعدادات.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "غير قادر على الاتصال بـ MindMate. يرجى التحقق من عنوان الخادم والمحاولة مرة أخرى.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate غير قادر على الرد في الوقت الراهن، يرجى المحاولة مرة أخرى في وقت لاحق.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "لقد وصل استخدام الذكاء الاصطناعي اليوم إلى الحد الأعلى. يرجى المحاولة مرة أخرى غدًا أو التحقق من التفاصيل على صفحة الويب.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "عدد عملات ThinkCoins غير كافية لإرسال هذه الرسالة.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "يستخدم التطوير المحلي HTTP، وتكون الرموز المميزة لواجهة برمجة التطبيقات (API) ومحتوى الصفحة غير مشفرة على الشبكة. يرجى استخدامه فقط في بيئة موثوقة.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "تحميل",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "حفظ ملفات PDF والمستندات (بدون مقاطع فيديو) من المواقع المدعومة.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "الصفحة الحالية لا تدعم التنزيل. يرجى فتح صفحة الوثائق المدعومة قبل فتح هذه اللوحة.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "الإعدادات",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "يتصل",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "الرجاء استخدام نفس بيانات الاعتماد مثل تدفق الرمز المميز MindGraph API.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "الخادم",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "رقم الحساب (رقم الهاتف المحمول)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "رقم الهاتف المحمول المستخدم لحساب X-MG",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "رمز API",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "يحفظ",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "يعود",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "إنهاء",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "يعالج…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "لقد بدأ التنزيل.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "أنقذ.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "جارٍ التحقق من بيانات الاعتماد...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "يرجى ملء جميع الحقول.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "لا توجد علامات تبويب نشطة.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "حدث خطأ ما. يرجى المحاولة مرة أخرى أو إعادة تحميل الامتداد على chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "غير قادر على بدء حفظ الملف. يرجى إعادة تحميل الامتداد والمحاولة مرة أخرى (يتطلب Chrome 109+ أو Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "الإعداد غير مكتمل. يرجى فتح \"الإعدادات\" وملء عنوان MindGraph ورقم الهاتف المحمول ورمز واجهة برمجة التطبيقات.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "لا يوجد نص قابل للقراءة على الصفحة. يرجى تحديد قسم من النص أولاً، أو حاول مرة أخرى على صفحة مختلفة.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "توجد بالفعل مهمة التقاط أو تنزيل قيد التقدم في علامة التبويب هذه، يرجى الانتظار حتى اكتمالها والمحاولة مرة أخرى.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph خطأ في الخادم ($1). يرجى التحقق من الإعدادات الخاصة بك والمحاولة مرة أخرى.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "هذه الصفحة غير مدعومة. الرجاء فتح صفحة ويب عادية (http أو https) والمحاولة مرة أخرى.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "الطلب متكرر جدًا، يرجى المحاولة مرة أخرى لاحقًا.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "الخدمة غير متاحة مؤقتاً، يرجى المحاولة مرة أخرى لاحقاً.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "انتهت مهلة استجابة الخادم (أكثر من 3 دقائق). يرجى المحاولة مرة أخرى أو التحقق من الشبكة.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "انتهت مهلة التحقق من بيانات الاعتماد. يرجى المحاولة مرة أخرى أو التحقق من الشبكة.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "لم يُرجع الخادم صورة PNG. يرجى التحقق من العنوان الأساسي وإعدادات الحساب.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "إنشاء خريطة ذهنية PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "استخراج الوثيقة (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "استخراج المستندات",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "تم الكشف: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "الموقع الحالي: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "صفحة علامة تبويب القراءة: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "إجمالي $1 الموارد",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "تظهر حوالي $1 من الصفحات - يرجى تمرير منطقة المعاينة لتحميل المزيد من الصفحات قبل الاستخراج.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "يرجى تمرير معاينة المستند لتحميل الصفحة قبل الاستخراج. إعطاء الأولوية للمحتوى المعروض بالفعل في القارئ.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "مزامنة تسجيل الدخول من SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "قم بلصق الرمز المميز يدويًا…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "الصق SmartEdu access_token (يُستخدم فقط في حالة فشل المزامنة التلقائية):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "رمز SmartEdu: جارٍ المزامنة...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "رمز SmartEdu: متصل (من تسجيل الدخول الخاص بك)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "رمز SmartEdu: لم يتم العثور عليه - يرجى تسجيل الدخول على auth.smartedu.cn وفتح صفحة SmartEdu، ثم انقر فوق \"Sync\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "استخراج المستندات",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "تم - سيبدأ تنزيل الملف على الفور.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "بدأ التنزيل — تم حفظ صفحات $1 الأولى المتوفرة حاليًا في القارئ.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "لا يمكن تنزيل هذا المستند. يرجى تحديث الصفحة والنقر على \"استخراج المستند\" مرة أخرى.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "لم يتم العثور على صفحة التوثيق. يرجى التمرير لمعاينة صفحة التحميل أولاً، ثم النقر فوق \"استخراج المستند\".",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "لم يتم العثور على محتوى النص. يرجى المحاولة مرة أخرى على صفحة أو منطقة مختلفة.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "الصفحة ليست جاهزة بعد. يرجى تحديث علامة التبويب والمحاولة مرة أخرى.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "لا توجد ملفات قابلة للتحميل لهذا الدرس. يرجى تغيير الفصل الدراسي، أو التحقق من الموارد التي تريد تنزيلها.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "يجب عليك تسجيل الدخول إلى Smart Education أولاً. يرجى تسجيل الدخول على auth.smartedu.cn وفتح صفحة الدورة التدريبية، ثم النقر على \"مزامنة تسجيل الدخول من SmartEdu\".",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "رفض برنامج Smart Education التنزيل. يرجى مزامنة معلومات تسجيل الدخول الخاصة بك مرة أخرى أو تغيير الملف.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "تنزيل مقاطع الفيديو غير مدعوم. الرجاء تحديد موارد PDF أو المستندات فقط.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "هذه ليست صفحة وثائق معتمدة. الرجاء فتح صفحة قراءة المستند والمحاولة مرة أخرى.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "لا يوجد شيء لحفظه بعد. يرجى تمرير القارئ لتحميل الصفحة والمحاولة مرة أخرى.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "تحتاج إلى تسجيل الدخول إلى الموقع أولا. بعد تسجيل الدخول، انقر فوق \"استخراج المستندات\".",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "تم رفض التنزيل من قبل الموقع. يرجى تسجيل الدخول إلى الموقع والتأكد من أنه يمكنك الوصول إلى المحتوى قبل المحاولة مرة أخرى.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "يعرض الموقع رمز التحقق. الرجاء إكمال التحقق في علامة تبويب المتصفح قبل محاولة الاسترداد.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "جارٍ تحضير الصفحة…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "انتقل إلى صفحة التحميل...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "جارٍ نسخ محتوى الصفحة...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "جارٍ إنشاء الملفات...",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "جارٍ الحفظ على الكمبيوتر...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "متقدم",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "اطلب حفظ الموقع في كل مرة تقوم فيها بالتنزيل",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "قراءة محتوى الصفحة...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "جارٍ الإرسال إلى خادم MindGraph...",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "يقوم الخادم بإنشاء الخريطة الذهنية...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "جارٍ استلام الصور من الخادم...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "جارٍ حفظ الملف…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "غير قادر على الاتصال بالخادم، يرجى التحقق من العنوان الأساسي والشبكة.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "فشل الطلب: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "لقد تم فقدان الاتصال. الرجاء النقر فوق \"استخراج المستند\" مرة أخرى. إذا استمر الفشل، فيرجى إعادة تحميل MindGraph على chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "قم بإنشاء خريطة ذهنية بناءً على الصفحة الحالية",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "عرض PNG (بكسل)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "ارتفاع PNG (بكسل)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "اتركه فارغًا لاستخدام الافتراضي",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "اللغة (الواجهة والخرائط)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "اتبع المتصفح",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "مبسط",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "الجسم منتصبا",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "رمز مميز",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "صالح حتى $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "لقد انتهت صلاحية رمز واجهة برمجة التطبيقات هذا، يرجى إنشائه مرة أخرى على الويب (الحساب/واجهة برمجة التطبيقات).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "لا يوجد رمز API صالح على الخادم، أو انتهت صلاحيته. يرجى التحقق من الرمز المميز أو إنشائه في التطبيق.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "غير قادر على الحصول على وقت انتهاء الصلاحية. يرجى التحقق من شبكتك أو حفظ إعداداتك مرة أخرى.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "المعرض ممتلئ (20 صورة). يرجى حذف الخريطة المحفوظة لحفظ المحتوى الذي تم إنشاؤه حديثًا.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

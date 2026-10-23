@@ -217,7 +217,7 @@ frontend/coverage/
 .eslintcache
 
 # Runtime static files and user content
-# - announcement images, community thumbnails (.png), community specs (.json)
+# - announcement images and other runtime uploads
 # These are user uploads, not part of the codebase
 static/
 
@@ -228,7 +228,10 @@ static/
 
 # Documentation — ship operator/setup guides; ignore local drafts and bulky assets
 docs/*
+!docs/README.md
 !docs/API_REFERENCE.md
+!docs/ARCHITECTURE.md
+!docs/MG_FILE_FORMAT.md
 !docs/DIAGRAM_TYPE_TABLE.md
 !docs/IP2REGION_PATCH_GUIDE.md
 !docs/REDIS_SETUP.md

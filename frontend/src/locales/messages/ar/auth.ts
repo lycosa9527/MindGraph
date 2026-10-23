@@ -22,24 +22,18 @@ export default {
   'auth.voiceNotes.noDiagram': 'لم يتم ربط الخريطة الذهنية بعد.',
   'auth.voiceNotes.micUnavailable': 'المتصفح الحالي لا يدعم الميكروفون.',
   'auth.voiceNotes.micFailed': 'غير قادر على الوصول إلى الميكروفون.',
-  'auth.voiceNotes.micConflict':
-    'تستخدم الوظائف الصوتية الأخرى الميكروفون، يرجى التوقف والمحاولة مرة أخرى.',
-  'auth.voiceNotes.wsError':
-    'فشل اتصال الملاحظة الصوتية، يرجى التحقق من حالة الشبكة وتسجيل الدخول.',
+  'auth.voiceNotes.micConflict': 'تستخدم الوظائف الصوتية الأخرى الميكروفون، يرجى التوقف والمحاولة مرة أخرى.',
+  'auth.voiceNotes.wsError': 'فشل اتصال الملاحظة الصوتية، يرجى التحقق من حالة الشبكة وتسجيل الدخول.',
   'auth.voiceNotes.genericError': 'خطأ في الملاحظة الصوتية',
   'auth.voiceNotes.ingestFailed': 'غير قادر على حفظ النسخ إلى ملخص المستند.',
   'auth.voiceNotes.maxDuration': 'وصلت الملاحظة الصوتية إلى حد 60 دقيقة وتم إيقافها تلقائيًا.',
-  'auth.voiceNotes.silenceAutoStop':
-    'لم يكن هناك صوت لمدة دقيقتين متتاليتين، وتوقفت الملاحظة الصوتية تلقائيًا.',
-  'auth.voiceNotes.startedTimeout':
-    'فشلت الخدمة الصوتية في البدء في الوقت المناسب، يرجى المحاولة مرة أخرى.',
+  'auth.voiceNotes.silenceAutoStop': 'لم يكن هناك صوت لمدة دقيقتين متتاليتين، وتوقفت الملاحظة الصوتية تلقائيًا.',
+  'auth.voiceNotes.startedTimeout': 'فشلت الخدمة الصوتية في البدء في الوقت المناسب، يرجى المحاولة مرة أخرى.',
   'auth.voiceNotes.micLost': 'تم فصل الميكروفون وتوقفت الملاحظات الصوتية.',
   'auth.voiceNotes.authFailed': 'فشلت مصادقة الملاحظة الصوتية، يرجى تسجيل الدخول مرة أخرى.',
   'auth.voiceNotes.wsClosed': 'تم قطع اتصال الملاحظة الصوتية وتوقفت الجلسة.',
-  'auth.voiceNotes.budgetExceeded':
-    'الملاحظات الصوتية غير متوفرة: تم الوصول إلى حصة الذكاء الاصطناعي اليومية أو أن عملات التفكير غير كافية.',
-  'auth.voiceNotes.sessionBusy':
-    'توجد بالفعل جلسة ملاحظة صوتية قيد التقدم، يرجى إيقافها والمحاولة مرة أخرى.',
+  'auth.voiceNotes.budgetExceeded': 'الملاحظات الصوتية غير متوفرة: تم الوصول إلى حصة الذكاء الاصطناعي اليومية أو أن عملات التفكير غير كافية.',
+  'auth.voiceNotes.sessionBusy': 'توجد بالفعل جلسة ملاحظة صوتية قيد التقدم، يرجى إيقافها والمحاولة مرة أخرى.',
   'auth.voiceNotes.recording': 'تسجيل',
   'auth.voiceNotes.paused': 'معلق',
   'auth.voiceNotes.idle': 'مستعد',
@@ -49,8 +43,7 @@ export default {
   'auth.voiceNotes.ingesting': 'توفير',
   'auth.voiceNotes.emptyTranscript': 'لم يتم التعرف على أي صوت، من فضلك قل بضع كلمات قبل التوقف.',
   'auth.voiceNotes.generating': 'توليد الخريطة الذهنية',
-  'auth.voiceNotes.sheetHint':
-    'حفظ النسخ بعد التوقف. انقر فوق إنشاء خريطة ذهنية عندما تكون جاهزًا.',
+  'auth.voiceNotes.sheetHint': 'حفظ النسخ بعد التوقف. انقر فوق إنشاء خريطة ذهنية عندما تكون جاهزًا.',
   'auth.voiceNotes.status.waiting': 'في انتظار البدء',
   'auth.voiceNotes.status.connectingAsr': 'الاتصال بالتعرف على الكلام',
   'auth.voiceNotes.status.recording': 'التسجيل · التعرف على الصوت',
@@ -67,13 +60,10 @@ export default {
   'auth.voiceNotes.savedAt': 'تم حفظ النسخة في {time}',
   'auth.voiceNotes.unsavedChanges': 'لم يتم حفظ النص',
   'auth.voiceNotes.closeWhileRecordingTitle': 'تسجيل',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'إغلاق النافذة لن يتوقف عن التسجيل. يتم حفظ النسخ تلقائيًا على الخريطة الحالية كل 30 ثانية. هل أنت متأكد أنك تريد إخفاء النافذة؟',
+  'auth.voiceNotes.closeWhileRecordingBody': 'إغلاق النافذة لن يتوقف عن التسجيل. يتم حفظ النسخ تلقائيًا على الخريطة الحالية كل 30 ثانية. هل أنت متأكد أنك تريد إخفاء النافذة؟',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'إخفاء النافذة',
-  'auth.voiceNotes.recordingContinues':
-    'لا يزال التسجيل مستمرًا ويمكنك إعادة فتح ملخص التسجيل في أي وقت.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'يرجى حفظ الخريطة الذهنية الحالية أولاً ثم استخدام التسجيل للتلخيص.',
+  'auth.voiceNotes.recordingContinues': 'لا يزال التسجيل مستمرًا ويمكنك إعادة فتح ملخص التسجيل في أي وقت.',
+  'auth.voiceNotes.noCurrentDiagram': 'يرجى حفظ الخريطة الذهنية الحالية أولاً ثم استخدام التسجيل للتلخيص.',
   'auth.voiceNotes.restoreFailed': 'غير قادر على تحميل النسخ المحفوظ للتسجيل الصوتي.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'الملاحظات الصوتية التاريخية',
@@ -83,37 +73,26 @@ export default {
   'auth.voiceNotes.mergeTalker': 'دمج في',
   'auth.voiceNotes.mergeTalkerInto': 'الدمج في {name}',
   'auth.voiceNotes.resetTalker': 'استعادة الافتراضي',
-  'auth.voiceNotes.tencentAuth':
-    'فشلت مصادقة التعرف على الصوت، يرجى التحقق من مفتاح Tencent Cloud.',
-  'auth.voiceNotes.tencentService':
-    'لم يتم تنشيط التعرف على الكلام في Tencent Cloud. يرجى تفعيل الخدمة في وحدة التحكم.',
-  'auth.voiceNotes.tencentQuota':
-    'تم استنفاد حزمة موارد التعرف على الكلام Tencent Cloud. يرجى الدفع أو شراء حزمة الموارد بعد التنشيط.',
+  'auth.voiceNotes.tencentAuth': 'فشلت مصادقة التعرف على الصوت، يرجى التحقق من مفتاح Tencent Cloud.',
+  'auth.voiceNotes.tencentService': 'لم يتم تنشيط التعرف على الكلام في Tencent Cloud. يرجى تفعيل الخدمة في وحدة التحكم.',
+  'auth.voiceNotes.tencentQuota': 'تم استنفاد حزمة موارد التعرف على الكلام Tencent Cloud. يرجى الدفع أو شراء حزمة الموارد بعد التنشيط.',
   'auth.voiceNotes.tencentArrears': 'حساب Tencent Cloud متأخر وتم تعطيل التعرف على الصوت.',
-  'auth.voiceNotes.tencentConcurrency':
-    'التزامن للتعرف على الكلام ممتلئ، يرجى المحاولة مرة أخرى لاحقًا.',
+  'auth.voiceNotes.tencentConcurrency': 'التزامن للتعرف على الكلام ممتلئ، يرجى المحاولة مرة أخرى لاحقًا.',
   'auth.voiceNotes.tencentAudio': 'لم يتم التعرف على الصوت، يرجى المحاولة مرة أخرى.',
-  'auth.voiceNotes.tencentSendRate':
-    'يتم إرسال الصوت بسرعة كبيرة، يرجى الاستمرار في التسجيل في الوقت الحقيقي.',
-  'auth.voiceNotes.tencentIdle':
-    'لقد تمت مقاطعة التسجيل لفترة طويلة جدًا وتم قطع اتصال التعرف على الصوت.',
+  'auth.voiceNotes.tencentSendRate': 'يتم إرسال الصوت بسرعة كبيرة، يرجى الاستمرار في التسجيل في الوقت الحقيقي.',
+  'auth.voiceNotes.tencentIdle': 'لقد تمت مقاطعة التسجيل لفترة طويلة جدًا وتم قطع اتصال التعرف على الصوت.',
   'auth.voiceNotes.tencentRetry': 'فشل التعرف على الكلام مؤقتًا، يرجى المحاولة مرة أخرى.',
-  'auth.voiceNotes.tencentRegion':
-    'الشبكة الحالية ليست ضمن نطاق الخدمة لموقع Tencent Cloud المحلي.',
+  'auth.voiceNotes.tencentRegion': 'الشبكة الحالية ليست ضمن نطاق الخدمة لموقع Tencent Cloud المحلي.',
   'auth.voiceNotes.tencentParam': 'معلمات التعرف على الكلام غير صالحة.',
-  'auth.voiceNotes.tencentAppid':
-    'معرف تطبيق Tencent Cloud غير صالح، يرجى التحقق من TENCENT_ASR_APP_ID.',
-  'auth.voiceNotes.rateLimited':
-    'طلبات التعرف على الكلام متكررة جدًا، يرجى المحاولة مرة أخرى لاحقًا.',
+  'auth.voiceNotes.tencentAppid': 'معرف تطبيق Tencent Cloud غير صالح، يرجى التحقق من TENCENT_ASR_APP_ID.',
+  'auth.voiceNotes.rateLimited': 'طلبات التعرف على الكلام متكررة جدًا، يرجى المحاولة مرة أخرى لاحقًا.',
   'auth.voiceNotes.messageTooLarge': 'حزمة الصوت كبيرة جدًا، يرجى المحاولة مرة أخرى.',
   'auth.voiceNotes.invalidMessage': 'رسالة الملاحظة الصوتية غير صالحة، يرجى المحاولة مرة أخرى.',
-  'auth.voiceNotes.asrUnavailable':
-    'التعرف على الكلام غير متاح مؤقتًا، يرجى المحاولة مرة أخرى لاحقًا.',
+  'auth.voiceNotes.asrUnavailable': 'التعرف على الكلام غير متاح مؤقتًا، يرجى المحاولة مرة أخرى لاحقًا.',
   'auth.updateLog': 'تغيير السجل',
   'auth.updateLogModalTitle': 'تغيير السجل',
   'auth.updateLogMaintainerNote': 'نعم، تتم صيانة هذه المنصة بواسطة روي على محمل الجد ✨',
-  'auth.updateLogLoadError':
-    'لا يمكن تحميل سجل التحديث في الوقت الحالي، يرجى المحاولة مرة أخرى لاحقًا.',
+  'auth.updateLogLoadError': 'لا يمكن تحميل سجل التحديث في الوقت الحالي، يرجى المحاولة مرة أخرى لاحقًا.',
   'auth.updateLogEmpty': 'لا توجد تعليمات التحديث حتى الآن.',
   'auth.softwareAgreementConsentPrefix': 'استخدام هذه المنصة يشكل موافقة',
   'auth.softwareAgreementLink': 'اتفاقية المستخدم وسياسة الخصوصية',
@@ -121,19 +100,13 @@ export default {
   'privacy.backToSignIn': 'العودة إلى تسجيل الدخول',
   'auth.downloadDesktopShortcut': 'أضف إلى سطح المكتب',
   'auth.platformQuickGuide': 'دليل سريع',
-  'auth.pwaIosInstallHint':
-    'انقر على "مشاركة" في Safari أو Chrome أو Edge وحدد "إضافة إلى الشاشة الرئيسية".',
-  'auth.pwaAndroidInstallHint':
-    'افتح قائمة المتصفح (⋮) وحدد "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".',
-  'auth.pwaSafariMacInstallHint':
-    'حدد ملف → إضافة إلى Dock في Safari، أو استخدم مشاركة → إضافة إلى Dock (نظام التشغيل MacOS Sonoma والإصدارات الأحدث).',
-  'auth.pwaDesktopInstallHint':
-    'يرجى فتح قائمة المتصفح (⋮) أو استخدام أيقونة التثبيت بجوار شريط العناوين (Chrome أو Edge أو Brave).',
+  'auth.pwaIosInstallHint': 'انقر على "مشاركة" في Safari أو Chrome أو Edge وحدد "إضافة إلى الشاشة الرئيسية".',
+  'auth.pwaAndroidInstallHint': 'افتح قائمة المتصفح (⋮) وحدد "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".',
+  'auth.pwaSafariMacInstallHint': 'حدد ملف → إضافة إلى Dock في Safari، أو استخدم مشاركة → إضافة إلى Dock (نظام التشغيل MacOS Sonoma والإصدارات الأحدث).',
+  'auth.pwaDesktopInstallHint': 'يرجى فتح قائمة المتصفح (⋮) أو استخدام أيقونة التثبيت بجوار شريط العناوين (Chrome أو Edge أو Brave).',
   'auth.pwaInstallSuccess': 'تمت إضافة MindGraph إلى سطح المكتب.',
-  'auth.pwaDevInstallHint':
-    'لم يتم تمكين PWA في وضع التطوير العادي. الرجاء استخدام إصدار الإنتاج (الذي يتم تقديمه بواسطة الواجهة الخلفية بعد إنشاء npm run)، أو تشغيل npm run dev:pwa وفتحه باستخدام Chrome/Edge ضمن HTTPS أو المضيف المحلي.',
-  'auth.pwaInsecureOriginHint':
-    'الرجاء فتح عنوان URL HTTPS الخاص بـ MindGraph في متصفحك (لا تفتح ملف HTML المحفوظ) قبل إضافته إلى سطح المكتب.',
+  'auth.pwaDevInstallHint': 'لم يتم تمكين PWA في وضع التطوير العادي. الرجاء استخدام إصدار الإنتاج (الذي يتم تقديمه بواسطة الواجهة الخلفية بعد إنشاء npm run)، أو تشغيل npm run dev:pwa وفتحه باستخدام Chrome/Edge ضمن HTTPS أو المضيف المحلي.',
+  'auth.pwaInsecureOriginHint': 'الرجاء فتح عنوان URL HTTPS الخاص بـ MindGraph في متصفحك (لا تفتح ملف HTML المحفوظ) قبل إضافته إلى سطح المكتب.',
   'auth.backToLogin': 'العودة إلى تسجيل الدخول',
   'auth.captcha': 'رمز التحقق',
   'auth.captchaLength4': 'الرجاء إدخال رمز التحقق المكون من 4 أرقام',
@@ -160,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'منقول',
   'auth.apiTokenCopyFailed': 'فشل النسخ',
   'auth.apiTokenLoading': 'تحميل…',
-  'auth.apiTokenNone':
-    'لم يتم إنشاء الرمز المميز بعد. قم بتنزيل حزمة المهارات أو انقر فوق رمز API المميز لإنشاء واحدة.',
+  'auth.apiTokenNone': 'لم يتم إنشاء الرمز المميز بعد. قم بتنزيل حزمة المهارات أو انقر فوق رمز API المميز لإنشاء واحدة.',
   'auth.apiTokenOpaque': 'لا يمكن تكرار الرمز المميز الحالي، يرجى إعادة إنشائه.',
   'auth.apiTokenExpires': 'صالح حتى {date}',
   'auth.downloadChromeExtension': 'ملحق كروم',
   'auth.downloadWordAddin': 'الوظيفة الإضافية للكلمات',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'إصدار المدرسة الحالي لا يدعم هذه الميزة، يرجى الترقية إلى إصدار التدريس والبحث القياسي أو إصدار الإنشاء المشترك القائم على المدرسة (لا يتضمن إصدار التدريس والبحث الأساسي هذه الميزة)',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Your school subscription has ended. Your account is now on the trial tier. Contact your platform administrator to renew.',
-  'auth.diagramLimitReached':
-    'يمكن لكل معلم في الإصدار التجريبي حفظ ما يصل إلى {max} من الخرائط. يرجى حذفها قبل الحفظ.',
+  'auth.schoolTierFeatureUnavailable': 'إصدار المدرسة الحالي لا يدعم هذه الميزة، يرجى الترقية إلى إصدار التدريس والبحث القياسي أو إصدار الإنشاء المشترك القائم على المدرسة (لا يتضمن إصدار التدريس والبحث الأساسي هذه الميزة)',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Your school subscription has ended. Your account is now on the trial tier. Contact your platform administrator to renew.',
+  'auth.diagramLimitReached': 'يمكن لكل معلم في الإصدار التجريبي حفظ ما يصل إلى {max} من الخرائط. يرجى حذفها قبل الحفظ.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
-  'auth.downloadOpenclawSkillHint':
-    'يتضمن التنزيل رقم الحساب والرمز المميز الحالي. بعد تجديد الرمز المميز، ستصبح حزم المهارات القديمة والإضافات غير صالحة.',
+  'auth.downloadOpenclawSkillHint': 'يتضمن التنزيل رقم الحساب والرمز المميز الحالي. بعد تجديد الرمز المميز، ستصبح حزم المهارات القديمة والإضافات غير صالحة.',
   'auth.changePhoneButton': 'تغيير الهاتف المحمول',
   'auth.passwordChangeSuccess': 'تم تغيير كلمة المرور بنجاح',
   'auth.passwordChangeFailed': 'فشل تغيير كلمة المرور',
@@ -199,10 +167,8 @@ export default {
   'auth.modal.confirmPassword': 'تأكيد كلمة المرور',
   'auth.modal.confirmPasswordPlaceholder': 'أدخل كلمة المرور الجديدة مرة أخرى',
   'auth.modal.enter4DigitCaptcha': 'الرجاء إدخال رمز التحقق المكون من 4 أرقام',
-  'auth.modal.enter6DigitSms':
-    'الرجاء إدخال رمز التحقق عبر الرسائل النصية القصيرة والمكون من 6 أرقام',
-  'auth.modal.enter6DigitEmailCode':
-    'الرجاء إدخال رمز التحقق المكون من 6 أرقام في البريد الإلكتروني',
+  'auth.modal.enter6DigitSms': 'الرجاء إدخال رمز التحقق عبر الرسائل النصية القصيرة والمكون من 6 أرقام',
+  'auth.modal.enter6DigitEmailCode': 'الرجاء إدخال رمز التحقق المكون من 6 أرقام في البريد الإلكتروني',
   'auth.modal.enterCaptchaFirst': 'الرجاء إدخال رمز التحقق أولاً',
   'auth.modal.fillAllFields': 'يرجى ملء جميع الحقول',
   'auth.modal.fillRequired': 'يرجى ملء كافة الحقول المطلوبة',
@@ -228,12 +194,10 @@ export default {
   'auth.modal.passwordMismatch': 'كلمات المرور التي تم إدخالها مرتين غير متناسقة',
   'auth.modal.passwordPlaceholder': 'الرجاء إدخال كلمة المرور',
   'auth.modal.phone11Digits': 'الرجاء إدخال رقم هاتف محمول صالح مكون من 11 رقمًا',
-  'auth.modal.enterPhoneOrEmail':
-    'الرجاء إدخال رقم هاتفك المحمول المسجل أو البريد الإلكتروني للحساب',
+  'auth.modal.enterPhoneOrEmail': 'الرجاء إدخال رقم هاتفك المحمول المسجل أو البريد الإلكتروني للحساب',
   'auth.modal.phonePlaceholder11': 'رقم الهاتف المحمول المكون من 11 رقمًا',
   'auth.modal.phoneRegisteredPlaceholder': 'رقم الجوال المسجل',
-  'auth.modal.forgotPhoneOrEmailPlaceholder':
-    'رقم الهاتف المحمول المسجل أو البريد الإلكتروني للحساب',
+  'auth.modal.forgotPhoneOrEmailPlaceholder': 'رقم الهاتف المحمول المسجل أو البريد الإلكتروني للحساب',
   'auth.modal.productTitle': 'مات التدريس والبحث',
   'auth.modal.registerFailed': 'فشل التسجيل',
   'auth.modal.registerSuccess': 'تم التسجيل بنجاح، يرجى تسجيل الدخول',
@@ -257,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -296,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -309,13 +272,11 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'البريد الإلكتروني للتعليم',
   'auth.modal.hybridRegisterEmailTabAny': 'بريد',
   'auth.modal.hybridRegisterPhoneTab': 'رقم الهاتف المحمول ورمز الدعوة',
-  'auth.modal.mainlandSalesNotice':
-    'يجب على المستخدمين في البر الرئيسي للصين استخدام رقم هاتفهم المحمول ورمز الدعوة للتسجيل؛ إذا كنت بحاجة إلى مساعدة، يرجى الاتصال بموظفي خدمة العملاء.',
+  'auth.modal.mainlandSalesNotice': 'يجب على المستخدمين في البر الرئيسي للصين استخدام رقم هاتفهم المحمول ورمز الدعوة للتسجيل؛ إذا كنت بحاجة إلى مساعدة، يرجى الاتصال بموظفي خدمة العملاء.',
   'auth.modal.registrationEmailLabel': 'البريد الالكتروني للتعليم فقط',
   'auth.modal.registrationEmailLabelAny': 'عنوان البريد الإلكتروني',
   'auth.modal.registrationEmailHint': '',
-  'auth.modal.registrationEmailHintAny':
-    'يمكنك استخدام أي عنوان بريد إلكتروني باستثناء أسماء النطاقات في الصين القارية.',
+  'auth.modal.registrationEmailHintAny': 'يمكنك استخدام أي عنوان بريد إلكتروني باستثناء أسماء النطاقات في الصين القارية.',
   'auth.modal.educationEmailInvalid': 'الرجاء إدخال عنوان بريد إلكتروني صالح للتعليم.',
   'auth.modal.emailInvalid': 'يرجى إدخال عنوان بريد إلكتروني صالح.',
   'auth.modal.emailCodeLabel': 'رمز التحقق من البريد الإلكتروني',
@@ -326,8 +287,7 @@ export default {
   'auth.modal.emailCodePlaceholder': 'رمز التحقق من البريد الإلكتروني المكون من 6 أرقام',
   'auth.modal.acknowledgeOverseas': 'أفهم البرنامج وأستخدمه للأغراض التعليمية فقط.',
   'auth.modal.acknowledgeOverseasAny': 'أنا أفهم وأوافق على الشروط المتعلقة بالتسجيل في الخارج.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'أنا أفهم وأوافق على الشروط المتعلقة بالتسجيل في الخارج، وأعلم أن مسار التسجيل هذا لا يوفر دعم اللغة الصينية المبسطة.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'أنا أفهم وأوافق على الشروط المتعلقة بالتسجيل في الخارج، وأعلم أن مسار التسجيل هذا لا يوفر دعم اللغة الصينية المبسطة.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'يرجى التحقق لتأكيد التعليمات المذكورة أعلاه.',
   'auth.loginPhoneOrEmail': 'رقم الهاتف المحمول أو البريد الإلكتروني',
@@ -348,17 +308,13 @@ export default {
   'auth.username': 'اسم المستخدم',
   'auth.waitCaptchaLoad': 'الرجاء الانتظار حتى يتم تحميل رمز التحقق',
   'auth.quickRegPageTitle': 'تسجيل سريع',
-  'auth.quickRegPageHint':
-    'الرجاء استخدام الرابط الذي شاركته المدرسة للدخول إلى هذه الصفحة. أدخل رقم هاتفك المحمول وأدخل الرمز المكون من 6 أرقام المعروض في نافذة التسجيل السريع للمعلم (يتغير كل 30 ثانية) لإكمال الانضمام. يتم استخدام رمز الغرفة لتأكيد حضورك ولا يتحقق بشكل منفصل من هوية مالك الجهاز مثل رمز التحقق عبر الرسائل القصيرة.',
-  'auth.quickRegLinkInvalid':
-    'لقد انتهت صلاحية رابط التسجيل هذا أو انتهى. من فضلك اطلب من المشرف إعادة مشاركة الرابط الحالي والمحاولة مرة أخرى.',
-  'auth.quickRegProbeRateLimited':
-    'هذه الصفحة مطلوبة بشكل متكرر، يرجى التحديث أو المحاولة مرة أخرى لاحقًا.',
+  'auth.quickRegPageHint': 'الرجاء استخدام الرابط الذي شاركته المدرسة للدخول إلى هذه الصفحة. أدخل رقم هاتفك المحمول وأدخل الرمز المكون من 6 أرقام المعروض في نافذة التسجيل السريع للمعلم (يتغير كل 30 ثانية) لإكمال الانضمام. يتم استخدام رمز الغرفة لتأكيد حضورك ولا يتحقق بشكل منفصل من هوية مالك الجهاز مثل رمز التحقق عبر الرسائل القصيرة.',
+  'auth.quickRegLinkInvalid': 'لقد انتهت صلاحية رابط التسجيل هذا أو انتهى. من فضلك اطلب من المشرف إعادة مشاركة الرابط الحالي والمحاولة مرة أخرى.',
+  'auth.quickRegProbeRateLimited': 'هذه الصفحة مطلوبة بشكل متكرر، يرجى التحديث أو المحاولة مرة أخرى لاحقًا.',
   'auth.quickRegSessionSignups': 'تم التسجيل بالفعل لهذا الحدث: {n} من الأشخاص',
   'auth.quickRegRoomCodeLabel': 'رمز الغرفة',
   'auth.quickRegRoomCodePlaceholder': '6 أرقام',
-  'auth.quickRegRoomCodeHint':
-    'يرجى الرجوع إلى العدد الكبير المعروض في نافذة "التسجيل السريع" المنبثقة على شاشة المعلم/المشرف للتأكد من اكتمال الإدخال قبل الدورة التالية.',
+  'auth.quickRegRoomCodeHint': 'يرجى الرجوع إلى العدد الكبير المعروض في نافذة "التسجيل السريع" المنبثقة على شاشة المعلم/المشرف للتأكد من اكتمال الإدخال قبل الدورة التالية.',
   'auth.quickRegRoomCodeEnter6': 'الرجاء إدخال رمز الغرفة المكون من 6 أرقام',
   'auth.quickRegMaxUses': 'الحد الأقصى لعدد المستخدمين المسجلين لهذا الرابط',
   'auth.quickRegHeadcount': 'عدد الأشخاص',
@@ -368,20 +324,16 @@ export default {
   'auth.quickRegSubmit': 'التسجيل الكامل',
   'auth.quickRegSubmitting': 'جارٍ التسجيل…',
   'auth.quickRegRegisterSuccess': 'تم التسجيل بنجاح',
-  'auth.quickRegSessionUnsure':
-    'ربما كان التسجيل ناجحا. إذا لم يتم إدخالك تلقائيًا، فيرجى العودة واستخدام رمز التحقق لتسجيل الدخول أو إعادة فتح هذه الصفحة.',
+  'auth.quickRegSessionUnsure': 'ربما كان التسجيل ناجحا. إذا لم يتم إدخالك تلقائيًا، فيرجى العودة واستخدام رمز التحقق لتسجيل الدخول أو إعادة فتح هذه الصفحة.',
   'auth.quickRegBackToSignIn': 'استخدم تسجيل الدخول/التسجيل العادي',
   'auth.quickRegSelectOrg': 'اختر المدرسة',
-  'auth.quickRegOrgLoadError':
-    'غير قادر على تحميل قائمة المدارس، يرجى المحاولة مرة أخرى في وقت لاحق.',
+  'auth.quickRegOrgLoadError': 'غير قادر على تحميل قائمة المدارس، يرجى المحاولة مرة أخرى في وقت لاحق.',
   'auth.quickRegMintError': 'غير قادر على إنشاء قناة التسجيل، يرجى المحاولة مرة أخرى في وقت لاحق.',
   'auth.quickRegCloseConfirmTitle': 'نهاية التسجيل السريع؟',
-  'auth.quickRegCloseConfirm':
-    'بعد إغلاق النافذة، سيصبح رمز الاستجابة السريعة ورمز الغرفة الحاليين غير صالحين على الفور، ولن يتمكن الطلاب الذين لم ينضموا بعد من مواصلة التسجيل.',
+  'auth.quickRegCloseConfirm': 'بعد إغلاق النافذة، سيصبح رمز الاستجابة السريعة ورمز الغرفة الحاليين غير صالحين على الفور، ولن يتمكن الطلاب الذين لم ينضموا بعد من مواصلة التسجيل.',
   'auth.setPasswordWithSms': 'تعيين كلمة مرور تسجيل الدخول',
   'auth.setPasswordWithSmsTitle': 'تعيين كلمة المرور لتسجيل الدخول عبر الرسائل القصيرة',
-  'auth.setPasswordWithSmsHint':
-    'إرسال رمز التحقق عبر الرسائل القصيرة إلى الهاتف المحمول المرتبط. بعد الإعداد، يمكنك تسجيل الدخول باستخدام كلمة المرور أو رمز التحقق.',
+  'auth.setPasswordWithSmsHint': 'إرسال رمز التحقق عبر الرسائل القصيرة إلى الهاتف المحمول المرتبط. بعد الإعداد، يمكنك تسجيل الدخول باستخدام كلمة المرور أو رمز التحقق.',
   'auth.setPasswordWithSmsSubmit': 'تعيين كلمة المرور',
   'auth.setPasswordWithSmsSubmitting': 'توفير…',
   'auth.accountAvatar': 'Avatar',
@@ -396,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'إظهار الاسم',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'حرفين على الأقل، بدون أرقام',
   'auth.accountNameSave': 'حفظ الاسم',
   'auth.accountNameSaveSuccess': 'تم تحديث الاسم',
@@ -409,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'فشل إلغاء الربط، يرجى المحاولة مرة أخرى لاحقًا.',
   'auth.dingtalkBindRebind': 'إعادة ربط',
   'auth.dingtalkBindTitle': 'ربط حساب DingTalk',
-  'auth.dingtalkBindInstructions':
-    'يرجى إرسال رمز التحقق المكون من 6 أرقام الموضح أدناه (على سبيل المثال 123-456) إلى DingTalk MindBot الخاص بمدرستك.',
+  'auth.dingtalkBindInstructions': 'يرجى إرسال رمز التحقق المكون من 6 أرقام الموضح أدناه (على سبيل المثال 123-456) إلى DingTalk MindBot الخاص بمدرستك.',
   'auth.dingtalkBindPairWaiting': 'في انتظار تلقي MindBot رمز التحقق...',
   'auth.dingtalkBindCodeHint': 'قم بإرسال رمز التحقق فقط، بدون أي نص إضافي.',
   'auth.dingtalkBindCountdown': 'ستنتهي صلاحية جلسة الربط خلال {s} ثانية',
@@ -425,11 +379,9 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'ملزمة ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'ملزمة حاليا: {staff}',
   'auth.dingtalkUnbindTitle': 'قم بإلغاء ربط حساب DingTalk',
-  'auth.dingtalkUnbindInstructions':
-    'يرجى استخدام حساب DingTalk المقيد الخاص بك وإرسال رمز التحقق أدناه إلى MindBot لتأكيد إلغاء الربط.',
+  'auth.dingtalkUnbindInstructions': 'يرجى استخدام حساب DingTalk المقيد الخاص بك وإرسال رمز التحقق أدناه إلى MindBot لتأكيد إلغاء الربط.',
   'auth.dingtalkUnbindPairWaiting': 'في انتظار تأكيد حساب DingTalk المقيد...',
-  'auth.dingtalkUnbindCodeHint':
-    'الرجاء استخدام حساب DingTalk المقيد فقط لإرسال رمز التحقق هذا وعدم إرفاق نص آخر.',
+  'auth.dingtalkUnbindCodeHint': 'الرجاء استخدام حساب DingTalk المقيد فقط لإرسال رمز التحقق هذا وعدم إرفاق نص آخر.',
   'auth.dingtalkUnbindExpiredHint': 'انتهت صلاحية جلسة إلغاء الربط، يرجى المحاولة مرة أخرى.',
   'auth.dingtalkUnbindRegenerate': 'إعادة تشغيل',
   'auth.dingtalkUnbindNotLinked': 'لا يوجد حاليا أي حساب DingTalk مرتبط.',
@@ -437,32 +389,23 @@ export default {
   'auth.qrLoginTitle': 'مسح الرمز لتسجيل الدخول',
   'auth.qrLoginWechatTab': 'وي شات',
   'auth.qrLoginDingtalkTab': 'دينغ توك',
-  'auth.qrLoginInviteRequired':
-    'يرجى ملء رمز الدعوة للمدرسة أولاً ثم مسح الرمز ضوئيًا لتسجيل الدخول',
-  'auth.qrLoginProvidersFailed':
-    'غير قادر على تحميل تكوين تسجيل الدخول لرمز المسح، يرجى المحاولة مرة أخرى لاحقًا.',
+  'auth.qrLoginInviteRequired': 'يرجى ملء رمز الدعوة للمدرسة أولاً ثم مسح الرمز ضوئيًا لتسجيل الدخول',
+  'auth.qrLoginProvidersFailed': 'غير قادر على تحميل تكوين تسجيل الدخول لرمز المسح، يرجى المحاولة مرة أخرى لاحقًا.',
   'auth.qrLoginProviderDisabled': 'This sign-in method is not enabled for your school',
-  'auth.qrLoginNotLinked':
-    'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again. If you forgot the password, use Forgot password.',
+  'auth.qrLoginNotLinked': 'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again. If you forgot the password, use Forgot password.',
   'auth.qrLoginExchangeFailed': 'فشل تسجيل الدخول لرمز المسح الضوئي، يرجى المحاولة مرة أخرى',
-  'auth.qrLoginInvalidState':
-    'انتهت صلاحية جلسة مسح رمز الاستجابة السريعة. يرجى إغلاقه ومسح رمز الاستجابة السريعة ضوئيًا مرة أخرى.',
-  'auth.qrLoginInvalidCode':
-    'انتهت صلاحية رمز ترخيص WeChat أو تم استخدامه. يرجى إغلاق رمز الاستجابة السريعة ومسح الرمز ضوئيًا مرة أخرى.',
-  'auth.qrLoginRateLimited':
-    'مكالمات تسجيل الدخول إلى WeChat متكررة جدًا، يرجى المحاولة مرة أخرى لاحقًا.',
+  'auth.qrLoginInvalidState': 'انتهت صلاحية جلسة مسح رمز الاستجابة السريعة. يرجى إغلاقه ومسح رمز الاستجابة السريعة ضوئيًا مرة أخرى.',
+  'auth.qrLoginInvalidCode': 'انتهت صلاحية رمز ترخيص WeChat أو تم استخدامه. يرجى إغلاق رمز الاستجابة السريعة ومسح الرمز ضوئيًا مرة أخرى.',
+  'auth.qrLoginRateLimited': 'مكالمات تسجيل الدخول إلى WeChat متكررة جدًا، يرجى المحاولة مرة أخرى لاحقًا.',
   'auth.qrLoginMisconfigured': 'تكوين تسجيل الدخول إلى WeChat غير صحيح، يرجى الاتصال بالمسؤول.',
   'auth.qrLoginCorpMismatch': 'مؤسسة DingTalk غير متوافقة مع تكوين المدرسة',
   'auth.oauthExternalTaken': 'This account is already linked to another user.',
-  'auth.oauthAlreadyBound':
-    'تم ربط هذا الحساب بـ WeChat. إذا كنت بحاجة إلى ربط WeChat آخر، فيرجى إلغاء ربطه أولاً',
+  'auth.oauthAlreadyBound': 'تم ربط هذا الحساب بـ WeChat. إذا كنت بحاجة إلى ربط WeChat آخر، فيرجى إلغاء ربطه أولاً',
   'auth.qrLoginDisabled': 'مسح رمز الاستجابة السريعة لتسجيل الدخول غير متاح مؤقتًا',
-  'auth.qrLoginStartFailed':
-    'غير قادر على تفعيل تسجيل الدخول برمز الاستجابة السريعة، يرجى المحاولة مرة أخرى لاحقًا.',
+  'auth.qrLoginStartFailed': 'غير قادر على تفعيل تسجيل الدخول برمز الاستجابة السريعة، يرجى المحاولة مرة أخرى لاحقًا.',
   'auth.qrLoginSuccess': 'تم تسجيل الدخول بنجاح',
   'auth.accountBindingsSection': 'ربط الحساب',
-  'auth.accountBindingsHint':
-    'يتم استخدام MindBot للحفظ في DingTalk؛ يتم استخدام WeChat/DingTalk لمسح رمز الاستجابة السريعة لتسجيل الدخول (يجب الارتباط هنا أولاً)',
+  'auth.accountBindingsHint': 'يتم استخدام MindBot للحفظ في DingTalk؛ يتم استخدام WeChat/DingTalk لمسح رمز الاستجابة السريعة لتسجيل الدخول (يجب الارتباط هنا أولاً)',
   'auth.bindingWechat': 'وي شات',
   'auth.bindingDingtalk': 'دينغ توك',
   'auth.bindingMindbot': 'MindBot',

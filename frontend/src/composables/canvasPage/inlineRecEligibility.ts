@@ -1,4 +1,4 @@
-import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
+import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/aiBrainstorm/constants'
 import type { Connection } from '@/types'
 import { isBraceMapPartNode } from '@/utils/braceMapIdentity'
 import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'

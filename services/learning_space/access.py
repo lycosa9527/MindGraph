@@ -94,7 +94,11 @@ async def get_class_for_staff(
     publish: bool = False,
     actor: User | None = None,
 ) -> LearningClass:
-    """Class owner, assistant, or superadmin. Publish stays with the owner pilot."""
+    """Owner pilot, class assistant, or a superadmin who is only looking.
+
+    ``publish=True`` withholds the superadmin observe shortcut. Publishing still
+    requires the class owner to be an enabled pilot, or the caller to be an assistant.
+    """
     learning_class = await db.get(LearningClass, class_id)
     if learning_class is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
@@ -103,7 +107,7 @@ async def get_class_for_staff(
     is_owner = int(learning_class.teacher_user_id) == int(user_id)
     if is_owner and await get_enabled_pilot(db, user_id) is not None:
         return _reject_unless_active(learning_class, allow_archived=allow_archived)
-    if not publish and await is_class_assistant(db, user_id, class_id):
+    if await is_class_assistant(db, user_id, class_id):
         return _reject_unless_active(learning_class, allow_archived=allow_archived)
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
 
@@ -136,6 +140,28 @@ async def classes_visible_to_staff(db: AsyncSession, user: User) -> list[Learnin
     return classes
 
 
+async def require_homework_publisher(db: AsyncSession, user: User) -> None:
+    """Allow an enabled pilot or a class assistant to upload homework assets."""
+    if await get_enabled_pilot(db, int(user.id)) is not None:
+        return
+    assisted = await class_ids_for_membership_role(db, int(user.id), MEMBERSHIP_ROLE_ASSISTANT)
+    if assisted:
+        return
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to publish assignments")
+
+
+def assert_assignment_deletable(learning_class: LearningClass, assignment: LearningAssignment, user_id: int) -> None:
+    """Class owner may delete any homework. An assistant may delete only what they published."""
+    if int(learning_class.teacher_user_id) == int(user_id):
+        return
+    if int(assignment.created_by) == int(user_id):
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Only the class teacher or the publisher can delete this assignment",
+    )
+
+
 async def get_class_for_publisher(
     db: AsyncSession,
     class_id: int,
@@ -143,9 +169,15 @@ async def get_class_for_publisher(
     *,
     allow_archived: bool = False,
 ) -> LearningClass:
-    """Class the user may publish or delete homework on (enabled owner pilot)."""
-    await require_pilot_teacher(db, user)
-    return await get_class_for_teacher(db, class_id, int(user.id), allow_archived=allow_archived)
+    """Class the user may publish or delete homework on (owner pilot or assistant)."""
+    return await get_class_for_staff(
+        db,
+        class_id,
+        int(user.id),
+        allow_archived=allow_archived,
+        publish=True,
+        actor=user,
+    )
 
 
 async def resolve_assignment_viewer(

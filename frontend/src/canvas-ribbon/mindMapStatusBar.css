@@ -157,6 +157,12 @@
   outline-offset: 2px;
 }
 
+.mm-llm-menu-btn--touch {
+  height: 36px;
+  padding: 0 12px 0 10px;
+  font-size: 13px;
+}
+
 .mm-llm-menu-btn__label {
   font-weight: 600;
 }
@@ -249,6 +255,19 @@
   box-sizing: border-box;
   padding: 6px 8px 6px 10px;
   white-space: nowrap;
+}
+
+.mm-llm-menu-popper--touch .mm-llm-menu__row {
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+}
+
+.mm-llm-menu-popper--touch .mm-llm-menu__label {
+  font-size: 14px;
+}
+
+.mm-llm-menu-popper--touch .mm-llm-menu__model {
+  font-size: 13px;
 }
 
 .mm-llm-menu__label {

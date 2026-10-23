@@ -9,8 +9,7 @@ export default {
   'notification.canvasClearNodes': 'නෝඩ් {count}ක් මකා ඇත',
   'notification.canvasClearNodesLearning': 'නෝඩ් {count}ක් හිස් කර, පිළිතුරු වලට එකතු කර ඇත',
   'notification.canvasSomeoneEditingNode': 'වෙනත් අයෙක් මෙම නෝඩ්ය සංස්කරණය කරමින් සිටී',
-  'notification.collabDeleteBlocked':
-    'තෝරාගත් නෝඩ්යක් වෙනත් පරිශීලකයෙක් සංස්කරණය කරන අතරතුර මකා නොහැක',
+  'notification.collabDeleteBlocked': 'තෝරාගත් නෝඩ්යක් වෙනත් පරිශීලකයෙක් සංස්කරණය කරන අතරතුර මකා නොහැක',
   'notification.collabRedoBlocked': 'වෙනත් පරිශීලකයෙක් සංස්කරණය කරන අතරතුර නැවත කළ නොහැක',
   'notification.collabUndoBlocked': 'වෙනත් පරිශීලකයෙක් සංස්කරණය කරන අතරතුර අහෝසි කළ නොහැක',
   'notification.conversationDeleted': 'සංවාදය මකා ඇත',
@@ -22,8 +21,7 @@ export default {
   'notification.feedbackThanks': 'ඔබේ ප්‍රතිචාරයට ස්තූතියි',
   'notification.feedbackThanksDislike': 'ඔබේ ප්‍රතිචාරයට ස්තූතියි — අපි වැඩිදියුණු කරමු',
   'notification.focusQuestionTooShort': 'පළමුව දිගු අවධානය ප්‍රශ්නයක් ඇතුළත් කරන්න',
-  'notification.geoLiteMissingIntro':
-    'MaxMind වෙතින් GeoLite2 Country බාගත කර, GeoLite2-Country.mmdb උපුටා ගෙන, සේවාදායක දත්ත ෆෝල්ඩරයට පිටපත් කරන්න:',
+  'notification.geoLiteMissingIntro': 'MaxMind වෙතින් GeoLite2 Country බාගත කර, GeoLite2-Country.mmdb උපුටා ගෙන, සේවාදායක දත්ත ෆෝල්ඩරයට පිටපත් කරන්න:',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite බාගත පිටුව විවෘත කරන්න',
   'notification.geoLiteMissingPathLabel': 'අපේක්ෂිත මාර්ගය:',
   'notification.geoLiteMissingTitle': 'GeoLite2 Country දත්ත සමුදාය නැත',
@@ -35,12 +33,9 @@ export default {
   'notification.importInvalidData': 'ආයාතය අසාර්ථක: රූප සටහන දත්ත වලංගු නොවේ',
   'notification.importLoadFailed': 'ආයාතය අසාර්ථක: රූප සටහන පූරණය කළ නොහැක',
   'notification.importSavePartial': 'ආයාත කරන ලදි, නමුත් පුස්‍තකාලයට සුරැකීම අසාර්ථක විය',
-  'notification.importSlotsFull':
-    'පුස්‍තකාලය පිරී ඇත; රූප සටහන ආයාත වුවත් පුස්‍තකාලයට සුරැකුණේ නැත',
+  'notification.importSlotsFull': 'පුස්‍තකාලය පිරී ඇත; රූප සටහන ආයාත වුවත් පුස්‍තකාලයට සුරැකුණේ නැත',
   'notification.importSuccess': 'රූප සටහන ආයාත කර පුස්‍තකාලයට සුරැකි',
   'notification.importUnsupportedType': 'ආයාතය අසාර්ථක: unsupported රූප සටහන වර්ගය',
-  'notification.inlineRecEmpty':
-    'නිර්දේශ කිසිවක් සෑදුණේ නැත. නැවත උත්සාහ කරන්න හෝ මාතෘකාව සංස්කරණය කරන්න.',
   'notification.loadMoreFailed': 'තවත් පූරණය කළ නොහැක',
   'notification.networkError': 'ජාල දෝෂය',
   'notification.nodeNotEligible': 'මෙම නෝඩ්ය Tab නිර්දේශ සඳහා සහය නොදක්වයි.',

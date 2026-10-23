@@ -48,6 +48,7 @@ from services.redis.cache.redis_user_cache import user_cache
 from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import hash_password
 from utils.auth.admin_scope import AdminScope, assert_panel_user_readable
+from utils.auth.bayi_mode import canonical_bayi_subject, is_admin_account_phone
 from utils.auth.role_constants import (
     ALL_USER_ROLES,
     ROLE_STUDENT,
@@ -261,11 +262,11 @@ async def update_user_admin(
     last_requested_new_phone: Optional[str] = None
 
     if "phone" in request:
-        new_phone = request["phone"].strip()
+        new_phone = canonical_bayi_subject(request["phone"].strip())
         if not new_phone:
             error_msg = Messages.error("phone_cannot_be_empty", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        if len(new_phone) != 11 or not new_phone.isdigit() or not new_phone.startswith("1"):
+        if not is_admin_account_phone(new_phone):
             error_msg = Messages.error("phone_format_invalid", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 

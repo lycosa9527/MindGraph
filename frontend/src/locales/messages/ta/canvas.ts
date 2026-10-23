@@ -6,7 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'புதிய துணை பகுதி 1',
   'braceMap.defaultSubpartSecond': 'புதிய துணை பகுதி 2',
-  'canvas.emptyState': 'Choose a diagram type to start',
+  'canvas.emptyState': 'உருவாக்கத் தொடங்க ஐகான் வகையைத் தேர்ந்தெடுக்கவும்',
   'canvas.export.canvasNotReady': 'ஏற்றுமதி செய்ய முடியவில்லை: கேன்வாஸ் தயாராக இல்லை',
   'canvas.export.jsonError': 'MG கோப்பு ஏற்றுமதி தோல்வியடைந்தது, மீண்டும் முயற்சிக்கவும்',
   'canvas.export.jsonSuccess': 'MG கோப்பு வெற்றிகரமாக ஏற்றுமதி செய்யப்பட்டது',
@@ -15,8 +15,7 @@ export default {
   'canvas.export.docxSuccess': 'ஆவணம் வெற்றிகரமாக ஏற்றுமதி செய்யப்பட்டது',
   'canvas.export.pdfError': 'PDF ஏற்றுமதி தோல்வியடைந்தது, மீண்டும் முயற்சிக்கவும்',
   'canvas.export.pdfSuccess': 'PDF ஏற்றுமதி வெற்றிகரமாக உள்ளது',
-  'canvas.export.clipboardFallback':
-    'கிளிப்போர்டுக்கு எழுத முடியவில்லை, அதற்குப் பதிலாக PNG பதிவிறக்கம் செய்யப்பட்டது',
+  'canvas.export.clipboardFallback': 'கிளிப்போர்டுக்கு எழுத முடியவில்லை, அதற்குப் பதிலாக PNG பதிவிறக்கம் செய்யப்பட்டது',
   'canvas.export.pngError': 'PNG ஏற்றுமதி தோல்வியடைந்தது, மீண்டும் முயற்சிக்கவும்',
   'canvas.export.pngSuccess': 'PNG படம் வெற்றிகரமாக ஏற்றுமதி செய்யப்பட்டது',
   'canvas.export.svgError': 'SVG ஏற்றுமதி தோல்வியடைந்தது, மீண்டும் முயற்சிக்கவும்',
@@ -32,31 +31,25 @@ export default {
   'canvas.exportOptions.layoutLandscape': 'கிடைமட்ட',
   'canvas.exportOptions.layoutPortrait': 'உருவப்படம்',
   'canvas.worksheetText.cancel': 'ரத்து செய்',
-  'canvas.worksheetText.defaultInstruction':
-    'வரைபடத்தின் ஒட்டுமொத்த அமைப்பை மேம்படுத்த, வெற்று இடத்தில் தொடர்புடைய உள்ளடக்கத்தைச் சேர்க்கவும்.',
-  'canvas.worksheetText.dragDiagramHint':
-    'நிலையை சரிசெய்ய இழுக்கவும் · பெரிதாக்க முனைகளை இழுக்கவும்',
+  'canvas.worksheetText.defaultInstruction': 'வரைபடத்தின் ஒட்டுமொத்த அமைப்பை மேம்படுத்த, வெற்று இடத்தில் தொடர்புடைய உள்ளடக்கத்தைச் சேர்க்கவும்.',
+  'canvas.worksheetText.dragDiagramHint': 'நிலையை சரிசெய்ய இழுக்கவும் · பெரிதாக்க முனைகளை இழுக்கவும்',
   'canvas.worksheetText.fieldClass': 'வகுப்பு:',
   'canvas.worksheetText.fieldDate': 'தேதி:',
   'canvas.worksheetText.fieldName': 'பெயர்:',
   'canvas.worksheetText.hide': 'மறைக்க',
   'canvas.worksheetText.instructionLabel': 'விளக்க உரை',
   'canvas.worksheetText.instructionPrefix': 'தேவை:',
-  'canvas.worksheetText.modalHint':
-    'PDF ஐ ஏற்றுமதி செய்வது அச்சிடுவதற்கு வசதியானது; ஆவணத்தை ஏற்றுமதி செய்யும் போது, ​​பெயர் போன்ற புலங்களைத் திருத்தலாம், மேலும் சின்னங்கள் படங்களாகவே இருக்கும்.',
-  'canvas.worksheetText.headerCaptureFailed':
-    'ஆய்வுத் தாள் தலைப்பு உருவாக்கம் தோல்வியடைந்தது மற்றும் தலைப்பு இல்லாத PDF ஏற்றுமதி செய்யப்பட்டது.',
+  'canvas.worksheetText.modalHint': 'PDF ஐ ஏற்றுமதி செய்வது அச்சிடுவதற்கு வசதியானது; ஆவணத்தை ஏற்றுமதி செய்யும் போது, ​​பெயர் போன்ற புலங்களைத் திருத்தலாம், மேலும் சின்னங்கள் படங்களாகவே இருக்கும்.',
+  'canvas.worksheetText.headerCaptureFailed': 'ஆய்வுத் தாள் தலைப்பு உருவாக்கம் தோல்வியடைந்தது மற்றும் தலைப்பு இல்லாத PDF ஏற்றுமதி செய்யப்பட்டது.',
   'canvas.worksheetText.modalTitle': 'DOC/PDF க்கு ஏற்றுமதி செய்யவும்',
   'canvas.worksheetText.learningSheetMode': 'ஒற்றை முறையில் படிக்கவும்',
   'canvas.worksheetText.learningSheetModeOn': 'இயக்கவும்',
   'canvas.worksheetText.learningSheetModeOff': 'மூடல்',
   'canvas.worksheetText.learningSheetPanelTitle': 'ஒற்றைத் தலைப்பைப் படிக்கவும்',
-  'canvas.worksheetText.learningSheetPanelHint':
-    'பின்வரும் விருப்பங்கள் ஆய்வு தாள் பயன்முறையில் மட்டுமே கிடைக்கும் மற்றும் ஐகானுக்கு மேலே தோன்றும்.',
+  'canvas.worksheetText.learningSheetPanelHint': 'பின்வரும் விருப்பங்கள் ஆய்வு தாள் பயன்முறையில் மட்டுமே கிடைக்கும் மற்றும் ஐகானுக்கு மேலே தோன்றும்.',
   'canvas.worksheetText.exportSettings': 'ஏற்றுமதி விருப்பங்கள்',
   'canvas.worksheetText.previewDiagram': 'விளக்கம்',
-  'canvas.worksheetText.previewEmpty':
-    'களத்தை ஆன் செய்த பிறகு, நீங்கள் ஆய்வு தாள் தலைப்பை முன்னோட்டமிடலாம்.',
+  'canvas.worksheetText.previewEmpty': 'களத்தை ஆன் செய்த பிறகு, நீங்கள் ஆய்வு தாள் தலைப்பை முன்னோட்டமிடலாம்.',
   'canvas.worksheetText.previewFailed': 'வரைகலை மாதிரிக்காட்சியை உருவாக்க முடியவில்லை.',
   'canvas.worksheetText.previewLabel': 'முன்னோட்டம்',
   'canvas.worksheetText.previewLoading': 'ஐகானைப் பிடிக்கிறது…',
@@ -72,55 +65,32 @@ export default {
   'canvas.worksheetText.showName': 'பெயர்',
   'canvas.worksheetText.showTopic': 'திட்டத்தின் பெயர்',
   'canvas.worksheetText.topicPreviewLabel': 'வரைபட தீம்',
-  'canvas.import.invalidFile':
-    'தவறான வரைபடக் கோப்பு, MindGraph மூலம் ஏற்றுமதி செய்யப்பட்ட MG கோப்பை அல்லது CmapTools இன் CMAP கோப்பைத் தேர்ந்தெடுக்கவும்',
+  'canvas.import.invalidFile': 'தவறான வரைபடக் கோப்பு, MindGraph மூலம் ஏற்றுமதி செய்யப்பட்ட MG கோப்பை அல்லது CmapTools இன் CMAP கோப்பைத் தேர்ந்தெடுக்கவும்',
   'canvas.import.parseError': 'படக் கோப்பை அலச முடியவில்லை, மீண்டும் முயற்சிக்கவும்',
-  'canvas.import.cmapHeuristicSemantics':
-    'இந்த CmapTools கோப்பு இணைப்பு உறவைக் குறைக்க உரை வரிசை பின்னடைவைப் பயன்படுத்துகிறது. கேன்வாஸில் உள்ள அசல் படத்திற்கு எதிராக அதைச் சரிபார்க்கவும்.',
-  'canvas.import.cmapConnectionFallback':
-    'சொற்பொருள் உறவுகள் முன்மொழிவு பொருள்களைக் காட்டிலும் IHMC வரைபட இணைப்புகளின் அடிப்படையில் மீட்டெடுக்கப்படுகின்றன.',
-  'canvas.import.cmapEmptyLayout':
-    'முனை ஒருங்கிணைப்புகள் மீட்டமைக்கப்படவில்லை மற்றும் தளவமைப்பு தானாகவே மீண்டும் உருவாக்கப்பட்டுள்ளது.',
-  'canvas.import.cmapLayoutLabelCollision':
-    'நகல் கருத்து குறிச்சொற்கள் தளவமைப்பு அறிவிப்பாளர்களைப் பகிர்ந்து கொள்கின்றன, மேலும் சில இறக்குமதி நிலைகள் துல்லியமாக இருக்கலாம்.',
-  'canvas.import.cmapLayoutFailed':
-    'தளவமைப்பு பாகுபடுத்தலில் விதிவிலக்கு ஏற்பட்டது, அதற்கு பதிலாக ஆயத்தொலைவுகள் தானாகவே உருவாக்கப்படும்.',
-  'canvas.reset.confirmBody':
-    'நிச்சயமாக மீட்டமைக்க விரும்புகிறீர்களா? தற்போதைய பிரதிநிதித்துவம், முனை தட்டு மற்றும் மற்ற அனைத்தும் இழக்கப்படும் மற்றும் மீட்டெடுக்க முடியாது.',
+  'canvas.import.cmapHeuristicSemantics': 'இந்த CmapTools கோப்பு இணைப்பு உறவைக் குறைக்க உரை வரிசை பின்னடைவைப் பயன்படுத்துகிறது. கேன்வாஸில் உள்ள அசல் படத்திற்கு எதிராக அதைச் சரிபார்க்கவும்.',
+  'canvas.import.cmapConnectionFallback': 'சொற்பொருள் உறவுகள் முன்மொழிவு பொருள்களைக் காட்டிலும் IHMC வரைபட இணைப்புகளின் அடிப்படையில் மீட்டெடுக்கப்படுகின்றன.',
+  'canvas.import.cmapEmptyLayout': 'முனை ஒருங்கிணைப்புகள் மீட்டமைக்கப்படவில்லை மற்றும் தளவமைப்பு தானாகவே மீண்டும் உருவாக்கப்பட்டுள்ளது.',
+  'canvas.import.cmapLayoutLabelCollision': 'நகல் கருத்து குறிச்சொற்கள் தளவமைப்பு அறிவிப்பாளர்களைப் பகிர்ந்து கொள்கின்றன, மேலும் சில இறக்குமதி நிலைகள் துல்லியமாக இருக்கலாம்.',
+  'canvas.import.cmapLayoutFailed': 'தளவமைப்பு பாகுபடுத்தலில் விதிவிலக்கு ஏற்பட்டது, அதற்கு பதிலாக ஆயத்தொலைவுகள் தானாகவே உருவாக்கப்படும்.',
+  'canvas.reset.confirmBody': 'நிச்சயமாக மீட்டமைக்க விரும்புகிறீர்களா? தற்போதைய பிரதிநிதித்துவம், முனை தட்டு மற்றும் மற்ற அனைத்தும் இழக்கப்படும் மற்றும் மீட்டெடுக்க முடியாது.',
   'canvas.reset.confirmButton': 'மீட்டமை',
   'canvas.reset.confirmTitle': 'இயல்புநிலை டெம்ப்ளேட்டிற்கு மீட்டமைக்கவும்',
   'canvas.reset.warnSelectType': 'மீட்டமைக்க முடியவில்லை: முதலில் ஐகான் வகையைத் தேர்ந்தெடுக்கவும்',
   'canvas.shortcutGuide.title': 'குறுக்குவழி வழிகாட்டி',
   'canvas.shortcutGuide.shortLabel': 'குறுக்குவழி விசை',
   'canvas.shortcutGuide.collapse': 'குறுக்குவழி வழிகாட்டியை சுருக்கவும்',
-  'canvas.voiceCommandGuide.title': 'குரல் கட்டளை வழிகாட்டி',
-  'canvas.voiceCommandGuide.collapse': 'குரல் கட்டளை வழிகாட்டியைச் சுருக்கவும்',
-  'canvas.voiceCommandGuide.example.add_node': '"சீனா கிளையைச் சேர்"',
-  'canvas.voiceCommandGuide.example.auto_complete_branch': '"இந்த சீனக் கிளையை முடிக்கவும்"',
-  'canvas.voiceCommandGuide.example.auto_complete': '"முழு படத்தையும் தானாக முடிக்கவும்"',
-  'canvas.voiceCommandGuide.example.select_node': '"சீனாவை தேர்ந்தெடு"',
-  'canvas.voiceCommandGuide.example.update_center': '"தொழில் கல்விக்கு கருப்பொருளை மாற்றவும்"',
-  'canvas.voiceCommandGuide.example.delete_node': '"சீனா கிளையை நீக்கு"',
-  'canvas.voiceCommandGuide.example.explain_node': '"சீனாவை விளக்குங்கள்"',
-  'canvas.voiceCommandGuide.example.start_inline_recommendations':
-    '"இந்த முனைக்கான சங்கப் பரிந்துரைகளைச் செய்யுங்கள்"',
   'canvas.shortcutGuide.addChild': 'குழந்தை முனையைச் சேர்க்கவும்',
-  'canvas.shortcutGuide.addChildDesc':
-    'தற்போது தேர்ந்தெடுக்கப்பட்ட முனையில் சைல்டு நோட்களை விரைவாகச் சேர்க்கவும்.',
+  'canvas.shortcutGuide.addChildDesc': 'தற்போது தேர்ந்தெடுக்கப்பட்ட முனையில் சைல்டு நோட்களை விரைவாகச் சேர்க்கவும்.',
   'canvas.shortcutGuide.addSibling': 'உடன்பிறப்பு முனையைச் சேர்க்கவும்',
-  'canvas.shortcutGuide.addSiblingDesc':
-    'தற்போது தேர்ந்தெடுக்கப்பட்ட முனைக்கு உடன்பிறப்பு முனைகளை விரைவாகச் செருகவும்.',
+  'canvas.shortcutGuide.addSiblingDesc': 'தற்போது தேர்ந்தெடுக்கப்பட்ட முனைக்கு உடன்பிறப்பு முனைகளை விரைவாகச் செருகவும்.',
   'canvas.shortcutGuide.editText': 'உரையைத் திருத்து',
-  'canvas.shortcutGuide.editTextDesc':
-    'உரையை மாற்றியமைக்க உள்ளீட்டுப் பெட்டியை நேரடியாக அழைக்கவும், Enter ஐ அழுத்தவும் அல்லது தானாகவே சேமித்து புதிய அளவை உடனடியாகக் கணக்கிட ஃபோகஸ் இழக்கவும்.',
+  'canvas.shortcutGuide.editTextDesc': 'உரையை மாற்றியமைக்க உள்ளீட்டுப் பெட்டியை நேரடியாக அழைக்கவும், Enter ஐ அழுத்தவும் அல்லது தானாகவே சேமித்து புதிய அளவை உடனடியாகக் கணக்கிட ஃபோகஸ் இழக்கவும்.',
   'canvas.shortcutGuide.doubleClick': 'உரையை மாற்ற இருமுறை கிளிக் செய்யவும்',
   'canvas.shortcutGuide.deleteNode': 'முனையை நீக்கு',
-  'canvas.shortcutGuide.deleteNodeDesc':
-    'தேர்ந்தெடுக்கப்பட்ட முனை மற்றும் அதன் துணைக் கிளைகளை விரைவாக அகற்றவும் (ரூட் கணு தற்செயலான நீக்குதலுக்கு எதிராக பாதுகாக்கப்படுகிறது).',
+  'canvas.shortcutGuide.deleteNodeDesc': 'தேர்ந்தெடுக்கப்பட்ட முனை மற்றும் அதன் துணைக் கிளைகளை விரைவாக அகற்றவும் (ரூட் கணு தற்செயலான நீக்குதலுக்கு எதிராக பாதுகாக்கப்படுகிறது).',
   'canvas.shortcutGuide.arrowNav': 'அம்புக்குறி விசை வழிசெலுத்தல்',
   'canvas.shortcutGuide.selectNav': 'வழிசெலுத்தலைத் தேர்ந்தெடுக்கவும்',
-  'canvas.shortcutGuide.arrowNavDesc':
-    'தொழிற்துறையின் முன்னணி யூக்ளிடியன் வடிவியல் கணக்கீட்டு இயந்திரம். டைப்செட்டிங் பயன்முறையைப் பொருட்படுத்தாமல், அம்புக்குறி விசைகள் தானாகவே குதித்து, கேன்வாஸில் உள்ள முனையின் உண்மையான இரு பரிமாண ஒருங்கிணைப்புகளின் அடிப்படையில் மிக நெருக்கமான சிறந்த முனையைத் தேர்ந்தெடுக்கும்.',
+  'canvas.shortcutGuide.arrowNavDesc': 'தொழிற்துறையின் முன்னணி யூக்ளிடியன் வடிவியல் கணக்கீட்டு இயந்திரம். டைப்செட்டிங் பயன்முறையைப் பொருட்படுத்தாமல், அம்புக்குறி விசைகள் தானாகவே குதித்து, கேன்வாஸில் உள்ள முனையின் உண்மையான இரு பரிமாண ஒருங்கிணைப்புகளின் அடிப்படையில் மிக நெருக்கமான சிறந்த முனையைத் தேர்ந்தெடுக்கும்.',
   'canvas.shortcutGuide.cancel': 'தேர்வுநீக்கு/திருத்து',
   'canvas.shortcutGuide.cancelDesc': 'ஒரே கிளிக்கில் தேர்வுநீக்கவும் அல்லது திருத்தவும்.',
   'canvas.shortcutGuide.undo': 'மாற்றங்களை செயல்தவிர்',
@@ -130,9 +100,8 @@ export default {
   'canvas.shortcutGuide.learningSheetAnswers': 'குறிப்பு பதில்களைக் காட்டு/மறை',
   'canvas.shortcutGuide.recalcLayout': 'அமைப்பை மீண்டும் கணக்கிடுங்கள்',
   'canvas.shortcutGuide.multiSelect': 'பல தேர்வு முனை',
-  'canvas.shortcutGuide.multiSelectDesc':
-    'சுட்டிக்காட்டி பயன்முறையில் பல முனைகளைத் தேர்ந்தெடுக்க இழுத்து விடுங்கள்.',
-  'canvas.shortcutGuide.multiSelectHint': 'தேர்வை இழுத்து விடவும்',
+  'canvas.shortcutGuide.multiSelectDesc': 'சுட்டிக்காட்டி பயன்முறையில் பல முனைகளைத் தேர்ந்தெடுக்க இழுத்து விடுங்கள்.',
+  'canvas.shortcutGuide.multiSelectHint': 'Ctrl + இழுக்க',
   'canvas.shortcutGuide.canvasPan': 'கேன்வாஸ் இழுவை',
   'canvas.shortcutGuide.canvasPanDesc': 'கேன்வாஸ் காட்சியை பான் செய்யவும்.',
   'canvas.shortcutGuide.canvasPanHint': 'சுட்டி சக்கரத்தை அழுத்திப் பிடிக்கவும்',
@@ -141,8 +110,16 @@ export default {
   'canvas.gestureGuide.collapse': 'சைகை வழிகாட்டியைச் சுருக்கவும்',
   'canvas.gestureGuide.tap': 'தேர்ந்தெடுக்க கிளிக் செய்யவும்',
   'canvas.gestureGuide.tapHint': 'ஒரு விரலால் தட்டவும்',
-  'canvas.gestureGuide.dragNode': 'மொபைல் முனை',
-  'canvas.gestureGuide.dragNodeHint': 'ஒரு விரல் இழுப்பு',
+  'canvas.gestureGuide.dragDrop': 'Drag and drop',
+  'canvas.gestureGuide.dragDropHintLaptop': 'Drag the node. Blue dashed outline.',
+  'canvas.gestureGuide.dragDropHintTouch': 'Long-press, then drag. Blue dashed outline.',
+  'canvas.gestureGuide.panHintMobile': 'One-finger drag',
+  'canvas.gestureGuide.panHintMouse': 'Hold the mouse wheel',
+  'canvas.gestureGuide.pinchHintMouse': 'Mouse wheel',
+  'canvas.gestureGuide.slashDeleteMouseHint': 'Drag left or right',
+  'canvas.gestureGuide.slashSiblingMouseHint': 'Drag up or down',
+  'canvas.gestureGuide.slashDeleteBoardHint': 'Slash left or right',
+  'canvas.gestureGuide.slashSiblingBoardHint': 'Slash up or down',
   'canvas.gestureGuide.pinch': 'கேன்வாஸை பெரிதாக்கவும்',
   'canvas.gestureGuide.pinchHint': 'இரண்டு விரல்களால் கிள்ளவும்',
   'canvas.gestureGuide.pan': 'கேன்வாஸை பான் செய்யவும்',
@@ -161,12 +138,8 @@ export default {
   'canvas.gestureGuide.undoRedoHint': 'மூன்று விரல்களால் இடது மற்றும் வலதுபுறமாக ஸ்வைப் செய்யவும்',
   'canvas.gestureGuide.tools': 'திறந்த கருவி',
   'canvas.gestureGuide.toolsHint': 'நான்கு விரல்களால் தட்டவும்',
-  'canvas.gestureGuide.slashDelete': 'Delete node',
-  'canvas.gestureGuide.slashDeleteHint': 'Finger or left-drag down',
-  'canvas.gestureGuide.slashSibling': 'Add sibling',
-  'canvas.gestureGuide.slashSiblingHint': 'Slash left or right through it',
-  'canvas.gestureGuide.slashChild': 'Add child',
-  'canvas.gestureGuide.slashChildHint': 'Slash up through it',
+  'canvas.gestureGuide.slashDelete': 'முனையை நீக்கு',
+  'canvas.gestureGuide.slashSibling': 'உடன்பிறந்தவர்களைச் சேர்க்கவும்',
   'canvas.toolbar.addAnalogyPair': 'அனலாக் ஜோடியைச் சேர்க்கவும்',
   'canvas.toolbar.addAnalogyPairHistory': 'அனலாக் ஜோடியைச் சேர்க்கவும்',
   'canvas.toolbar.addAttributeHistory': 'பண்புகளைச் சேர்க்கவும்',
@@ -206,20 +179,15 @@ export default {
   'canvas.toolbar.mindMapThemeVibrantRose': 'ஊதா',
   'canvas.toolbar.mindMapThemeRainbow': 'வானவில் கிளை',
   'canvas.toolbar.mindMapDiagramStyleClassic': 'உன்னதமான',
-  'canvas.toolbar.mindMapDiagramStyleClassicDesc':
-    'வலது கோண மையம் · வட்டமான மூலை நிலை 1 · அடிக்கோடிட்ட நிலை 2',
+  'canvas.toolbar.mindMapDiagramStyleClassicDesc': 'வலது கோண மையம் · வட்டமான மூலை நிலை 1 · அடிக்கோடிட்ட நிலை 2',
   'canvas.toolbar.mindMapDiagramStyleFormal': 'வலது கோணம்',
-  'canvas.toolbar.mindMapDiagramStyleFormalDesc':
-    'வலது கோண மையம் · வலது கோண நிலை 1 · வலது கோண நிலை 2',
+  'canvas.toolbar.mindMapDiagramStyleFormalDesc': 'வலது கோண மையம் · வலது கோண நிலை 1 · வலது கோண நிலை 2',
   'canvas.toolbar.mindMapDiagramStyleBubble': 'குமிழி',
-  'canvas.toolbar.mindMapDiagramStyleBubbleDesc':
-    'குமிழி மையம் · குமிழி நிலை 1 · அடிக்கோடிட்ட நிலை 2',
+  'canvas.toolbar.mindMapDiagramStyleBubbleDesc': 'குமிழி மையம் · குமிழி நிலை 1 · அடிக்கோடிட்ட நிலை 2',
   'canvas.toolbar.mindMapDiagramStyleUnderline': 'அடிக்கோடு',
-  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc':
-    'வலது கோண மையம் · அடிக்கோடு நிலை 1 · அடிக்கோடிடு நிலை 2',
+  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc': 'வலது கோண மையம் · அடிக்கோடு நிலை 1 · அடிக்கோடிடு நிலை 2',
   'canvas.toolbar.mindMapDiagramStyleSoft': 'மென்மையாக வட்டமான மூலைகள்',
-  'canvas.toolbar.mindMapDiagramStyleSoftDesc':
-    'ஃபில்லட் மையம் · நீள்வட்ட நிலை 1 · அடிக்கோடிட்ட நிலை 3',
+  'canvas.toolbar.mindMapDiagramStyleSoftDesc': 'ஃபில்லட் மையம் · நீள்வட்ட நிலை 1 · அடிக்கோடிட்ட நிலை 3',
   'canvas.toolbar.mindMapThemeMorandi': 'நேர்த்தியான மொராண்டி',
   'canvas.toolbar.mindMapThemeNordicBlue': 'கிளாசிக் நார்டிக் நீலம்',
   'canvas.toolbar.mindMapThemeObsidianDark': 'கீக் டார்க்',
@@ -244,14 +212,10 @@ export default {
   'canvas.toolbar.aiGenerateTooltip': 'மைய கருப்பொருளின் அடிப்படையில் உருவாக்கவும்',
   'canvas.toolbar.aiGenerating': 'உருவாக்குகிறது…',
   'canvas.toolbar.professionalContent.label': 'தொழில்முறை உள்ளடக்கம்',
-  'canvas.toolbar.professionalContent.tooltip':
-    'AI-உருவாக்கிய உள்ளடக்கத்திற்கு பார்வையாளர்களின் சிரமத்தைத் தேர்ந்தெடுக்கவும்',
-  'canvas.toolbar.professionalContent.panelTitle':
-    'AI-உருவாக்கிய உள்ளடக்கத்தின் விரும்பிய நிபுணத்துவம்',
-  'canvas.toolbar.professionalContent.guideTitle':
-    'பார்வையாளர்களின் சிரமத்தை முதலில் தேர்ந்தெடுக்கவும்',
-  'canvas.toolbar.professionalContent.guideBody':
-    'ஒரு மேடை அல்லது காட்சியைத் தேர்ந்தெடுக்க இங்கே கிளிக் செய்யவும். AI உருவாக்கம், உரையாடல் மாற்றங்கள் போன்றவை சிரமத்திற்கு ஏற்ப உள்ளடக்கத்தை ஒழுங்கமைக்கும். தேர்ந்தெடுத்த பிறகு, பட்டன் கல்வி நிலை லேபிளைப் பெறும்.',
+  'canvas.toolbar.professionalContent.tooltip': 'AI-உருவாக்கிய உள்ளடக்கத்திற்கு பார்வையாளர்களின் சிரமத்தைத் தேர்ந்தெடுக்கவும்',
+  'canvas.toolbar.professionalContent.panelTitle': 'AI-உருவாக்கிய உள்ளடக்கத்தின் விரும்பிய நிபுணத்துவம்',
+  'canvas.toolbar.professionalContent.guideTitle': 'பார்வையாளர்களின் சிரமத்தை முதலில் தேர்ந்தெடுக்கவும்',
+  'canvas.toolbar.professionalContent.guideBody': 'ஒரு மேடை அல்லது காட்சியைத் தேர்ந்தெடுக்க இங்கே கிளிக் செய்யவும். AI உருவாக்கம், உரையாடல் மாற்றங்கள் போன்றவை சிரமத்திற்கு ஏற்ப உள்ளடக்கத்தை ஒழுங்கமைக்கும். தேர்ந்தெடுத்த பிறகு, பட்டன் கல்வி நிலை லேபிளைப் பெறும்.',
   'canvas.toolbar.professionalContent.guideAction': 'தேர்வு செய்ய',
   'canvas.toolbar.professionalContent.guideDismiss': 'தெரிந்தது',
   'canvas.toolbar.professionalContent.level.general.title': 'உலகளாவிய',
@@ -268,17 +232,12 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': 'நடைமுறைக் காட்சிகள்',
   'canvas.toolbar.professionalContent.level.expert.title': 'நிபுணர்',
   'canvas.toolbar.professionalContent.level.expert.description': 'ஆழமாக சுத்திகரிக்கப்பட்டது',
-  'canvas.toolbar.professionalContent.notify.preference':
-    '"{level}" பார்வையாளர்களின் விழிப்புணர்வு நிலைக்குத் தொடர்ந்து AI-உருவாக்கப்பட்ட உள்ளடக்கம் அதிகமாக இருக்கும்',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
-    'அடுத்தடுத்த AI-உருவாக்கப்பட்ட உள்ளடக்கம் கூடுதல் சிரமக் கட்டுப்பாடுகள் இல்லாமல் "உலகளாவிய" பாணியில் இருக்கும்.',
-  'canvas.toolbar.professionalContent.notify.afterGenerated':
-    'தற்போதைய உள்ளடக்கம் "{current}" சிரமம்; எதிர்காலத்தில், அதை உருவாக்க உங்களுக்கு உதவ, "{next}" ஐ அழுத்துவேன்.',
-  'canvas.toolbar.professionalContent.audienceLine':
-    'தற்போதைய பார்வையாளர்கள்: {level} (கீழே இருந்து [தொழில்முறை உள்ளடக்கம்])',
+  'canvas.toolbar.professionalContent.notify.preference': '"{level}" பார்வையாளர்களின் விழிப்புணர்வு நிலைக்குத் தொடர்ந்து AI-உருவாக்கப்பட்ட உள்ளடக்கம் அதிகமாக இருக்கும்',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral': 'அடுத்தடுத்த AI-உருவாக்கப்பட்ட உள்ளடக்கம் கூடுதல் சிரமக் கட்டுப்பாடுகள் இல்லாமல் "உலகளாவிய" பாணியில் இருக்கும்.',
+  'canvas.toolbar.professionalContent.notify.afterGenerated': 'தற்போதைய உள்ளடக்கம் "{current}" சிரமம்; எதிர்காலத்தில், அதை உருவாக்க உங்களுக்கு உதவ, "{next}" ஐ அழுத்துவேன்.',
+  'canvas.toolbar.professionalContent.audienceLine': 'தற்போதைய பார்வையாளர்கள்: {level} (கீழே இருந்து [தொழில்முறை உள்ளடக்கம்])',
   'canvas.toolbar.educationStage': 'கல்வி காலம்',
-  'canvas.toolbar.educationStageTooltip':
-    'AI-உருவாக்கிய உள்ளடக்கத்தின் ஆழத்தைப் பாதிக்க கல்விக் கட்டத்தைத் தேர்ந்தெடுக்கவும்.',
+  'canvas.toolbar.educationStageTooltip': 'AI-உருவாக்கிய உள்ளடக்கத்தின் ஆழத்தைப் பாதிக்க கல்விக் கட்டத்தைத் தேர்ந்தெடுக்கவும்.',
   'canvas.toolbar.educationStageClear': 'உலகளாவிய',
   'canvas.toolbar.educationStagePrimary': 'ஆரம்ப பள்ளி',
   'canvas.toolbar.educationStageMiddle': 'ஜூனியர் உயர்நிலைப் பள்ளி',
@@ -302,17 +261,14 @@ export default {
   'canvas.toolbar.cannotDeleteSelected': 'தேர்ந்தெடுக்கப்பட்ட முனையை நீக்க முடியவில்லை',
   'canvas.toolbar.cannotDeleteTopic': 'தலைப்பு முனையை நீக்க முடியவில்லை',
   'canvas.toolbar.cannotDeleteTopicGeneric': 'தலைப்பு முனையை நீக்க முடியவில்லை',
-  'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
-  'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference':
-    'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneDifference': 'குறைந்தபட்சம் ஒரு வித்தியாசத்தை வைத்திருங்கள்',
+  'canvas.toolbar.keepOneSimilarity': 'குறைந்தபட்சம் ஒரு ஒற்றுமையை வைத்திருங்கள்',
+  'canvas.toolbar.keepOneSimilarityAndDifference': 'குறைந்தபட்சம் ஒரு ஒற்றுமை மற்றும் ஒரு வித்தியாசத்தை வைத்திருங்கள்',
   'canvas.toolbar.cannotGenerate': 'உருவாக்க முடியவில்லை',
   'canvas.toolbar.causeAdded': 'காரண முனை சேர்க்கப்பட்டது',
   'canvas.toolbar.childAdded': 'குழந்தை சேர்க்கப்பட்டது',
-  'canvas.toolbar.collabAiBlocked':
-    'கூட்டுப் பயன்முறையில், ஐகான் உரிமையாளர் மட்டுமே AI உருவாக்கத்தைப் பயன்படுத்த முடியும்',
-  'canvas.toolbar.collabGuestFeatureBlocked':
-    'கூட்டு விருந்தினராக சேரும்போது இந்த அம்சம் கிடைக்காது.',
+  'canvas.toolbar.collabAiBlocked': 'கூட்டுப் பயன்முறையில், ஐகான் உரிமையாளர் மட்டுமே AI உருவாக்கத்தைப் பயன்படுத்த முடியும்',
+  'canvas.toolbar.collabGuestFeatureBlocked': 'கூட்டு விருந்தினராக சேரும்போது இந்த அம்சம் கிடைக்காது.',
   'canvas.toolbar.colorLabel': 'நிறம்',
   'canvas.toolbar.conceptGeneration': 'கருத்துக்களை உருவாக்குகின்றன',
   'canvas.toolbar.conceptMapModesDev': 'கருத்து வரைபட பயன்முறை செயல்பாடு உருவாக்கத்தில் உள்ளது',
@@ -333,13 +289,11 @@ export default {
   'canvas.toolbar.exit': 'வெளியேறு',
   'canvas.toolbar.exitFullscreen': 'முழுத்திரையிலிருந்து வெளியேறவும்',
   'canvas.toolbar.highlighter': 'ஹைலைட்டர் பேனா',
-  'canvas.toolbar.highlighterTooltip':
-    'கேன்வாஸில் சிறுகுறிப்புகளைப் பயன்படுத்துங்கள் மற்றும் டெமோவிலிருந்து வெளியேறும்போது அவற்றை தானாகவே அழிக்கவும்',
+  'canvas.toolbar.highlighterTooltip': 'கேன்வாஸில் சிறுகுறிப்புகளைப் பயன்படுத்துங்கள் மற்றும் டெமோவிலிருந்து வெளியேறும்போது அவற்றை தானாகவே அழிக்கவும்',
   'canvas.toolbar.highlighterChooseColor': 'உயர்த்தி நிறம்',
   'canvas.toolbar.highlighterPaletteAria': 'ஹைலைட்டர் நிறத்தைத் தேர்ந்தெடுக்கவும்',
   'canvas.toolbar.insertEquation': 'சூத்திரத்தைச் செருகவும்',
-  'canvas.toolbar.insertEquationTooltip':
-    'கர்சரில் இன்லைன் ஃபார்முலாவை ($...$) செருகவும்; திருத்தவில்லை என்றால், தேர்ந்தெடுக்கப்பட்ட முனையில் இணைக்கவும்',
+  'canvas.toolbar.insertEquationTooltip': 'கர்சரில் இன்லைன் ஃபார்முலாவை ($...$) செருகவும்; திருத்தவில்லை என்றால், தேர்ந்தெடுக்கப்பட்ட முனையில் இணைக்கவும்',
   'canvas.toolbar.insertEquationSelectNode': 'முதலில் ஒரு முனையைத் தேர்ந்தெடுக்கவும்',
   'canvas.toolbar.insertEquationDialogTitle': 'சூத்திரத்தைச் செருகவும்',
   'canvas.toolbar.insertEquationLoading': 'சமன்பாடு எடிட்டரை ஏற்றுகிறது...',
@@ -373,7 +327,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'நடுப்புள்ளி',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
+  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=1/2bh',
@@ -394,7 +348,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'சைன் தேற்றம்',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'கொசைன்(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'சைன்(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
+  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'இரட்டை கோணம்',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'எண்கணித தேர்ச்சி கால',
@@ -460,27 +414,25 @@ export default {
   'canvas.presentationTimer.exitTimer': 'வெளியேறு',
   'canvas.presentationTimer.startPresenting': 'பேச்சை தொடங்குங்கள்',
   'canvas.presentationTimer.closeHud': 'டைமரை மூடு',
-  'canvas.cachedResult.notice':
-    'புதிய முடிவுகளைப் பெற, கேச் முடிவுகள் மற்றும் செயல்பாட்டை மீண்டும் பயன்படுத்தவும்',
-  'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
-  'canvas.classroomRemote.formatPainter': 'Format painter',
-  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-  'canvas.classroomRemote.resize': 'Drag to resize',
-  'canvas.classroomRemote.tabTopics': 'Topics',
-  'canvas.classroomRemote.tabView': 'View',
-  'canvas.classroomRemote.topicsAdd': 'Add topic',
-  'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
-  'canvas.classroomRemote.topicsApply': 'Apply as the center topic',
-  'canvas.classroomRemote.topicsApplied': 'Center topic is now “{topic}”',
-  'canvas.classroomRemote.topicsDone': 'Done',
-  'canvas.classroomRemote.topicsEdit': 'Edit topics',
-  'canvas.classroomRemote.topicsEmpty': 'No preloaded topics yet',
-  'canvas.classroomRemote.topicsRemove': 'Remove topic',
-  'canvas.classroomRemote.topicsReset': 'Restore defaults',
-  'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
+  'canvas.cachedResult.notice': 'புதிய முடிவுகளைப் பெற, கேச் முடிவுகள் மற்றும் செயல்பாட்டை மீண்டும் பயன்படுத்தவும்',
+  'canvas.classroomRemote.ariaLabel': 'வகுப்பறை மிதக்கும் கருவி',
+  'canvas.classroomRemote.formatPainter': 'வடிவ ஓவியர்',
+  'canvas.classroomRemote.resetPosition': 'நிலை மற்றும் அளவை மீட்டமைக்க தலைப்புப் பட்டியில் இருமுறை கிளிக் செய்யவும்',
+  'canvas.classroomRemote.resize': 'அளவை மாற்ற இழுக்கவும்',
+  'canvas.classroomRemote.tabTopics': 'தீம்',
+  'canvas.classroomRemote.tabView': 'பார்வை',
+  'canvas.classroomRemote.topicsAdd': 'தலைப்பைச் சேர்க்கவும்',
+  'canvas.classroomRemote.topicsAddPlaceholder': 'பாடத்தை உள்ளிடவும்',
+  'canvas.classroomRemote.topicsApply': 'மைய கருப்பொருளுக்கு விண்ணப்பிக்கவும்',
+  'canvas.classroomRemote.topicsApplied': 'மைய தீம் "{topic}" க்கு மாற்றப்பட்டது',
+  'canvas.classroomRemote.topicsDone': 'முடிக்கவும்',
+  'canvas.classroomRemote.topicsEdit': 'தீம் மாற்றவும்',
+  'canvas.classroomRemote.topicsEmpty': 'இதுவரை முன்னமைக்கப்பட்ட தீம் எதுவும் இல்லை',
+  'canvas.classroomRemote.topicsRemove': 'தலைப்பை நீக்கு',
+  'canvas.classroomRemote.topicsReset': 'இயல்புநிலையை மீட்டமை',
+  'canvas.classroomRemote.topicsTitle': 'முன்னமைக்கப்பட்ட கருப்பொருள்கள்',
   'canvas.presentation.learningSheetConfirmTitle': 'திரையிடலில் நுழைகிறீர்களா?',
-  'canvas.presentation.learningSheetConfirmBody':
-    'நீங்கள் இன்னும் நாக் அவுட் அடைப்புக்குறி வரைபடத்தைத் திருத்துகிறீர்கள். ஷோவில் நுழைவது வெற்று-வெளியே எடிட்டிங் முடிவடையும், மேலும் வெற்று-வெளியேற்ற உள்ளடக்கம் தக்கவைக்கப்படும். தொடரவா?',
+  'canvas.presentation.learningSheetConfirmBody': 'நீங்கள் இன்னும் நாக் அவுட் அடைப்புக்குறி வரைபடத்தைத் திருத்துகிறீர்கள். ஷோவில் நுழைவது வெற்று-வெளியே எடிட்டிங் முடிவடையும், மேலும் வெற்று-வெளியேற்ற உள்ளடக்கம் தக்கவைக்கப்படும். தொடரவா?',
   'canvas.presentation.learningSheetConfirmProceed': 'நிகழ்ச்சிக்குச் செல்லவும்',
   'canvas.presentationContextMenu.laserPointer': 'லேசர் சுட்டிக்காட்டி',
   'canvas.presentationContextMenu.spotlight': 'ஸ்பாட்லைட்',
@@ -502,6 +454,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'உரை நிறம்',
   'canvas.floatingToolbar.typography': 'தட்டச்சு அமைத்தல்',
   'canvas.floatingToolbar.explain': 'முனை விளக்கம்',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'முதலில் முனை உள்ளடக்கத்தை உறுதிப்படுத்தவும்',
   'canvas.floatingToolbar.fontDefault': 'இயல்பு எழுத்துரு',
   'canvas.floatingToolbar.fontSimSun': 'பாடல் வம்சம்',
   'canvas.floatingToolbar.fontKaiTi': 'வழக்கமான ஸ்கிரிப்ட்',
@@ -528,85 +481,64 @@ export default {
   'canvas.subgraphPreview.hint': 'AI சப்கிராஃப் மாதிரிக்காட்சி',
   'canvas.subgraphPreview.accept': 'தத்தெடுப்பு',
   'canvas.subgraphPreview.discard': 'நிராகரிக்கப்பட்டது',
-  'canvas.subgraphPreview.previewReady':
-    'துணைவரைவு உருவாக்கப்பட்டது, தயவுசெய்து அதை ஏற்கவும் அல்லது நிராகரிக்கவும்.',
+  'canvas.subgraphPreview.previewReady': 'துணைவரைவு உருவாக்கப்பட்டது, தயவுசெய்து அதை ஏற்கவும் அல்லது நிராகரிக்கவும்.',
   'canvas.subgraphPreview.accepted': 'AI துணை வரைபடம் ஏற்றுக்கொள்ளப்பட்டது',
   'canvas.subgraphPreview.discarded': 'நிராகரிக்கப்பட்டது AI துணை வரைபடம்',
   'canvas.subgraphPreview.generationFailed': 'துணைவரைவு உருவாக்கம் தோல்வியடைந்தது',
   'canvas.subgraphPreview.emptyResult': 'AI கிடைக்கக்கூடிய சைல்டு நோட்களை வழங்கவில்லை',
   'canvas.subgraphPreview.mergeFailed': 'தற்போதைய முனையில் துணைவரைவை இணைக்க முடியவில்லை',
   'canvas.subgraphPreview.enterNodeTextFirst': 'முதலில் முனைக்கான சரியான தலைப்பு உரையை உள்ளிடவும்',
-  'canvas.subgraphPreview.topicNodeNotSupported':
-    'துணைவரைவுகளை உருவாக்க கிளை முனைகளைத் தேர்ந்தெடுக்கவும்',
+  'canvas.subgraphPreview.topicNodeNotSupported': 'துணைவரைவுகளை உருவாக்க கிளை முனைகளைத் தேர்ந்தெடுக்கவும்',
   'canvas.subgraphPreview.historyLabel': 'சப்கிராஃப்களின் அறிவார்ந்த தலைமுறை',
-  'canvas.inlineRecPicker.prevPage': 'முந்தைய பக்கம்',
-  'canvas.inlineRecPicker.nextPage': 'அடுத்த பக்கம்',
-  'canvas.toolbar.formatBrushActivated':
-    'நடை நகலெடுக்கப்பட்டது, அதைப் பயன்படுத்த இலக்கு முனையை ஒருமுறை கிளிக் செய்யவும். வடிவமைப்பு பெயிண்டரைத் தொடர்ந்து பயன்படுத்த அதை இருமுறை கிளிக் செய்யவும் (Esc அல்லது ரத்து செய்ய வெற்று இடத்தில் கிளிக் செய்யவும்)',
+  'canvas.toolbar.formatBrushActivated': 'நடை நகலெடுக்கப்பட்டது, அதைப் பயன்படுத்த இலக்கு முனையை ஒருமுறை கிளிக் செய்யவும். வடிவமைப்பு பெயிண்டரைத் தொடர்ந்து பயன்படுத்த அதை இருமுறை கிளிக் செய்யவும் (Esc அல்லது ரத்து செய்ய வெற்று இடத்தில் கிளிக் செய்யவும்)',
   'canvas.toolbar.formatBrushApplied': '{count} முனைகளுக்கு வடிவம் பயன்படுத்தப்பட்டது',
+  'canvas.toolbar.formatBrushApplyFailed': 'தேர்ந்தெடுக்கப்பட்ட முனைகளுக்கு வடிவமைப்பைப் பயன்படுத்த முடியவில்லை',
   'canvas.toolbar.formatBrushCancelled': 'தூரிகை வடிவமைப்பு ரத்துசெய்யப்பட்டது',
   'canvas.toolbar.formatBrushSelectSource': 'முதலில் நடை மூலமாக ஒரு முனையைத் தேர்ந்தெடுக்கவும்',
+  'canvas.toolbar.formatBrushStyleEmpty': 'தேர்ந்தெடுக்கப்பட்ட முனையின் நடையைப் படிக்க முடியவில்லை',
   'canvas.toolbar.formatLabel': 'வடிவம்',
-  'canvas.toolbar.formatPainter':
-    'வடிவமைப்பு ஓவியர் (தொடர்ந்து விண்ணப்பிக்க இருமுறை கிளிக் செய்யவும்)',
+  'canvas.toolbar.formatPainter': 'வடிவமைப்பு ஓவியர் (தொடர்ந்து விண்ணப்பிக்க இருமுறை கிளிக் செய்யவும்)',
   'canvas.toolbar.layoutDirectionToggled': 'தளவமைப்பு திசை மாறியது',
   'canvas.toolbar.learningSheetRestored': 'ஆய்வுத் தாள் மீட்டெடுக்கப்பட்டது',
   'canvas.toolbar.moreAppConceptMapModes': 'கருத்து வரைபட முறை',
-  'canvas.toolbar.moreAppConceptMapModesDesc':
-    'தற்போது ஸ்டாண்டர்ட் முறையில், மேலும் பல முறைகள் விரைவில் வெளியிடப்படும்',
+  'canvas.toolbar.moreAppConceptMapModesDesc': 'தற்போது ஸ்டாண்டர்ட் முறையில், மேலும் பல முறைகள் விரைவில் வெளியிடப்படும்',
   'canvas.toolbar.moreAppLearningSheet': 'துளையிடப்பட்ட அடைப்புக்குறி வரைபடம்',
-  'canvas.toolbar.moreAppLearningSheetDesc':
-    'தற்செயலாக அதை காலியாக விடவும், ஆய்வு செய்வதற்கும் மதிப்பாய்வு செய்வதற்கும் இது ஒரு சிறந்த வழியாகும்',
+  'canvas.toolbar.moreAppLearningSheetDesc': 'தற்செயலாக அதை காலியாக விடவும், ஆய்வு செய்வதற்கும் மதிப்பாய்வு செய்வதற்கும் இது ஒரு சிறந்த வழியாகும்',
   'canvas.toolbar.moreAppWaterfall': 'AI மூளைச்சலவை',
-  'canvas.toolbar.moreAppWaterfallDesc':
-    'மாறுபட்ட மற்றும் ஒன்றிணைந்த சிந்தனையை வெளிப்படையாக்க தொகுதி முனைகளில் தேர்ந்தெடுக்கவும்',
-  'canvas.toolbar.moreApps': 'மேலும் பயன்பாடுகள்',
+  'canvas.toolbar.moreAppWaterfallDesc': 'மாறுபட்ட மற்றும் ஒன்றிணைந்த சிந்தனையை வெளிப்படையாக்க தொகுதி முனைகளில் தேர்ந்தெடுக்கவும்',
   'canvas.toolbar.moreAppSnapshot': 'ஸ்னாப்ஷாட்',
   'canvas.toolbar.moreAppSnapshotDesc': 'தற்போதைய ஐகானின் பதிப்பைச் சேமிக்கவும் (10 வரை)',
   'canvas.toolbar.moreAppTranslateLabel': 'மொழிபெயர்க்க',
-  'canvas.toolbar.moreAppTranslateLabelDesc':
-    'தற்போதைய இடைமுக மொழியின்படி வரைபடத்தில் உள்ள அனைத்து முனை மற்றும் இணைப்பு லேபிள்களையும் மொழிபெயர்க்க AI ஐப் பயன்படுத்தவும்',
+  'canvas.toolbar.moreAppTranslateLabelDesc': 'தற்போதைய இடைமுக மொழியின்படி வரைபடத்தில் உள்ள அனைத்து முனை மற்றும் இணைப்பு லேபிள்களையும் மொழிபெயர்க்க AI ஐப் பயன்படுத்தவும்',
   'canvas.toolbar.translateLabelTitle': 'மொழிபெயர்ப்பு ஐகான்',
   'canvas.toolbar.translateLabelSource': 'மொழிபெயர்க்க வேண்டிய குறிச்சொற்கள் ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'இலக்கு மொழி',
   'canvas.toolbar.translateLabelCancel': 'ரத்து செய்',
   'canvas.toolbar.translateLabelConfirm': 'மொழிபெயர்க்க',
-  'canvas.toolbar.translateLabelSelectOne':
-    'மொழிபெயர்ப்பதற்கு முன் ஒரு முனையை மட்டும் தேர்ந்தெடுக்கவும்',
-  'canvas.toolbar.translateLabelEmpty':
-    'தேர்ந்தெடுக்கப்பட்ட முனையில் மொழிபெயர்க்கக்கூடிய உரை இல்லை',
+  'canvas.toolbar.translateLabelSelectOne': 'மொழிபெயர்ப்பதற்கு முன் ஒரு முனையை மட்டும் தேர்ந்தெடுக்கவும்',
+  'canvas.toolbar.translateLabelEmpty': 'தேர்ந்தெடுக்கப்பட்ட முனையில் மொழிபெயர்க்கக்கூடிய உரை இல்லை',
   'canvas.toolbar.translateLabelDiagramEmpty': 'தற்போதைய ஐகானில் மொழிபெயர்க்கக்கூடிய உரை இல்லை',
   'canvas.toolbar.translateLabelAndMore': '{n} உருப்படிகள் காட்டப்படவில்லை...',
   'canvas.toolbar.translateLabelInProgress': 'ஐகான் மொழிபெயர்க்கிறது…',
   'canvas.toolbar.translateLabelBannerTitle': 'மொழிபெயர்ப்பு ஐகான்',
-  'canvas.toolbar.translateLabelFallbackEnInfo':
-    'தற்போதைய இடைமுக மொழி மொழிபெயர்ப்பு இலக்காக ஆதரிக்கப்படவில்லை, மேலும் ஆங்கில வெளியீடு பயன்படுத்தப்படும்.',
+  'canvas.toolbar.translateLabelFallbackEnInfo': 'தற்போதைய இடைமுக மொழி மொழிபெயர்ப்பு இலக்காக ஆதரிக்கப்படவில்லை, மேலும் ஆங்கில வெளியீடு பயன்படுத்தப்படும்.',
   'canvas.toolbar.translateLabelFailed': 'மொழிபெயர்ப்பு தோல்வியடைந்தது, பிறகு முயற்சிக்கவும்',
   'canvas.toolbar.translateLabelDone': 'மொழிபெயர்ப்பு முடிந்தது',
   'canvas.toolbar.moreAppVirtualKeyboard': 'மெய்நிகர் விசைப்பலகை',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc':
-    'ஆங்கில திரை விசைப்பலகை; சீனம் மற்றும் பிற மொழிகளுக்கு, கணினி உள்ளீட்டு முறையைப் பயன்படுத்தவும்',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'ஆங்கில திரை விசைப்பலகை; சீனம் மற்றும் பிற மொழிகளுக்கு, கணினி உள்ளீட்டு முறையைப் பயன்படுத்தவும்',
   'canvas.toolbar.virtualKeyboardClose': 'விசைப்பலகையை மூடு',
-  'canvas.toolbar.virtualKeyboardFocusHint':
-    'ஒரு முனையைத் தேர்ந்தெடுத்து அதை நேரடியாக உள்ளிடுவது அசல் உள்ளடக்கத்தை அழிக்கும்; திருத்தத்தை உள்ளிட லேபிளை இருமுறை கிளிக் செய்யலாம்.',
+  'canvas.toolbar.virtualKeyboardFocusHint': 'ஒரு முனையைத் தேர்ந்தெடுத்து அதை நேரடியாக உள்ளிடுவது அசல் உள்ளடக்கத்தை அழிக்கும்; திருத்தத்தை உள்ளிட லேபிளை இருமுறை கிளிக் செய்யலாம்.',
   'canvas.toolbar.virtualKeyboardIme': 'கணினி உள்ளீட்டு முறை',
-  'canvas.toolbar.virtualKeyboardImeHint':
-    'உள்ளீடு செய்ய இயற்பியல் விசைப்பலகை அல்லது கணினி விசைப்பலகையைப் பயன்படுத்தவும். கணினி உள்ளீட்டு முறை மூலம் வேட்பாளர் சாளரம் வழங்கப்படுகிறது.',
+  'canvas.toolbar.virtualKeyboardImeHint': 'உள்ளீடு செய்ய இயற்பியல் விசைப்பலகை அல்லது கணினி விசைப்பலகையைப் பயன்படுத்தவும். கணினி உள்ளீட்டு முறை மூலம் வேட்பாளர் சாளரம் வழங்கப்படுகிறது.',
   'canvas.toolbar.snapshotSaveFirst': 'முதலில் ஐகானைச் சேமித்து, பின்னர் ஸ்னாப்ஷாட்டை எடுக்கவும்',
   'canvas.toolbar.snapshotTaken': 'ஸ்னாப்ஷாட் {n} சேமிக்கப்பட்டது',
   'canvas.toolbar.snapshotFailed': 'ஸ்னாப்ஷாட் சேமிப்பு தோல்வியடைந்தது, மீண்டும் முயற்சிக்கவும்',
-  'canvas.toolbar.snapshotTooLarge':
-    'ஸ்னாப்ஷாட் மிகவும் பெரியது (அதிகபட்சம் {max} KB). படத்தின் உள்ளடக்கத்தை எளிமையாக்கி, மீண்டும் முயற்சிக்கவும்.',
-  'canvas.toolbar.snapshotRateLimited':
-    'ஸ்னாப்ஷாட் செயல்பாடு மிகவும் அடிக்கடி உள்ளது, பின்னர் மீண்டும் முயற்சிக்கவும்.',
-  'canvas.toolbar.snapshotDiagramNotFound':
-    'ஐகான் எதுவும் இல்லை. பக்கத்தைப் புதுப்பிக்கவும் அல்லது நூலகத்திலிருந்து திறக்கவும்.',
-  'canvas.library.diagramNotFound':
-    'ஐகான் கிடைக்கவில்லை, நீக்கப்பட்டிருக்கலாம். கேலரியில் இருந்து மற்ற வரைபடங்களைத் திறக்கவும்.',
-  'canvas.library.saveBeforeSwitchFailed':
-    'தற்போதைய வரைபடத்தை மாற்றுவதற்கு முன் சேமிக்க முடியாது, தயவுசெய்து இங்கேயே இருந்துவிட்டு மீண்டும் முயற்சிக்கவும்.',
-  'canvas.toolbar.snapshotConflict':
-    'ஸ்னாப்ஷாட்டைச் சேமிக்க முடியவில்லை (மோதல்). மீண்டும் முயற்சிக்கவும்.',
+  'canvas.toolbar.snapshotTooLarge': 'ஸ்னாப்ஷாட் மிகவும் பெரியது (அதிகபட்சம் {max} KB). படத்தின் உள்ளடக்கத்தை எளிமையாக்கி, மீண்டும் முயற்சிக்கவும்.',
+  'canvas.toolbar.snapshotRateLimited': 'ஸ்னாப்ஷாட் செயல்பாடு மிகவும் அடிக்கடி உள்ளது, பின்னர் மீண்டும் முயற்சிக்கவும்.',
+  'canvas.toolbar.snapshotDiagramNotFound': 'ஐகான் எதுவும் இல்லை. பக்கத்தைப் புதுப்பிக்கவும் அல்லது நூலகத்திலிருந்து திறக்கவும்.',
+  'canvas.library.diagramNotFound': 'ஐகான் கிடைக்கவில்லை, நீக்கப்பட்டிருக்கலாம். கேலரியில் இருந்து மற்ற வரைபடங்களைத் திறக்கவும்.',
+  'canvas.library.saveBeforeSwitchFailed': 'தற்போதைய வரைபடத்தை மாற்றுவதற்கு முன் சேமிக்க முடியாது, தயவுசெய்து இங்கேயே இருந்துவிட்டு மீண்டும் முயற்சிக்கவும்.',
+  'canvas.toolbar.snapshotConflict': 'ஸ்னாப்ஷாட்டைச் சேமிக்க முடியவில்லை (மோதல்). மீண்டும் முயற்சிக்கவும்.',
   'canvas.toolbar.newAssociation': 'புதிய தொடர்பு',
   'canvas.toolbar.newAttribute': 'புதிய பண்புகள்',
   'canvas.toolbar.newBranch': 'புதிய கிளை',
@@ -627,32 +559,23 @@ export default {
   'canvas.toolbar.historyGroup': 'செயல்தவிர் மற்றும் மீண்டும் செய்',
   'canvas.toolbar.redo': 'மீண்டும் செய்',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
-  'canvas.toolbar.save': 'Save',
-  'canvas.toolbar.add': 'Add',
-  'canvas.toolbar.delete': 'Delete',
+  'canvas.toolbar.save': 'சேமிக்க',
+  'canvas.toolbar.add': 'சேர்',
+  'canvas.toolbar.delete': 'நீக்கவும்',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'முதலில் கிளை அல்லது துணை முனையைத் தேர்ந்தெடுக்கவும்',
-  'canvas.toolbar.selectCategoryOrLeafDelete':
-    'வகை அல்லது துணை உருப்படி முனையைத் தேர்ந்தெடுக்கவும் (தலைப்பு முனைகளை நீக்க முடியாது)',
-  'canvas.toolbar.selectCauseOrEffectForAdd':
-    'முதலில் காரணம் அல்லது முடிவு முனையைத் தேர்ந்தெடுக்கவும் (இடைநிலை நிகழ்வைத் தேர்ந்தெடுக்க வேண்டாம்), பின்னர் அதே நெடுவரிசையில் சேர்க்க Enter ஐ அழுத்தவும்',
-  'canvas.toolbar.selectTreeBranchForChild':
-    'துணை உருப்படிகளைச் சேர்க்க வகை அல்லது ஒரு வகையின் கீழ் உள்ளீட்டைத் தேர்ந்தெடுக்கவும் அல்லது புதிய வகையைச் சேர்க்க தலைப்பைத் தேர்ந்தெடுக்கவும்',
+  'canvas.toolbar.selectCategoryOrLeafDelete': 'வகை அல்லது துணை உருப்படி முனையைத் தேர்ந்தெடுக்கவும் (தலைப்பு முனைகளை நீக்க முடியாது)',
+  'canvas.toolbar.selectCauseOrEffectForAdd': 'முதலில் காரணம் அல்லது முடிவு முனையைத் தேர்ந்தெடுக்கவும் (இடைநிலை நிகழ்வைத் தேர்ந்தெடுக்க வேண்டாம்), பின்னர் அதே நெடுவரிசையில் சேர்க்க Enter ஐ அழுத்தவும்',
+  'canvas.toolbar.selectTreeBranchForChild': 'துணை உருப்படிகளைச் சேர்க்க வகை அல்லது ஒரு வகையின் கீழ் உள்ளீட்டைத் தேர்ந்தெடுக்கவும் அல்லது புதிய வகையைச் சேர்க்க தலைப்பைத் தேர்ந்தெடுக்கவும்',
   'canvas.toolbar.selectNodesFirst': 'முனையைத் தேர்ந்தெடுத்து இயக்கவும்',
   'canvas.toolbar.nodeStyleFollow': 'பின்தொடர் முனை',
-  'canvas.toolbar.nodeStyleFollowHint':
-    'ஆன் செய்யும்போது, ​​முனை ஸ்டைல் ​​பார் தேர்ந்தெடுக்கப்பட்ட முனையைப் பின்தொடர்கிறது; அணைக்கப்படும் போது, ​​​​அது மறைக்கப்படுகிறது.',
+  'canvas.toolbar.nodeStyleFollowHint': 'ஆன் செய்யும்போது, ​​முனை ஸ்டைல் ​​பார் தேர்ந்தெடுக்கப்பட்ட முனையைப் பின்தொடர்கிறது; அணைக்கப்படும் போது, ​​​​அது மறைக்கப்படுகிறது.',
   'canvas.toolbar.selectNodesToDelete': 'முதலில் நீக்குவதற்கான முனையைத் தேர்ந்தெடுக்கவும்',
-  'canvas.toolbar.selectPartForSubpart':
-    'முதலில் நீங்கள் துணைப்பிரிவைச் சேர்க்க விரும்பும் முனையைத் தேர்ந்தெடுக்கவும்',
-  'canvas.toolbar.selectPartThenEnter':
-    'துணைப் பகுதிகளைச் சேர்க்க சில முனைகளைத் தேர்ந்தெடுத்து Enter ஐ அழுத்தவும்',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
-    'ஒற்றுமை அல்லது வேறுபாடு முனையைத் தேர்ந்தெடுக்கவும் (தலைப்பு முனைகளை நீக்க முடியாது)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
-    'முதலில் ஒற்றுமை அல்லது வேறுபாடு முனையைத் தேர்ந்தெடுக்கவும்',
-  'canvas.toolbar.selectStepForSubstep':
-    'முதலில் நீங்கள் துணைப் படிகளைச் சேர்க்க விரும்பும் படி முனையைத் தேர்ந்தெடுக்கவும்',
+  'canvas.toolbar.selectPartForSubpart': 'முதலில் நீங்கள் துணைப்பிரிவைச் சேர்க்க விரும்பும் முனையைத் தேர்ந்தெடுக்கவும்',
+  'canvas.toolbar.selectPartThenEnter': 'துணைப் பகுதிகளைச் சேர்க்க சில முனைகளைத் தேர்ந்தெடுத்து Enter ஐ அழுத்தவும்',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'ஒற்றுமை அல்லது வேறுபாடு முனையைத் தேர்ந்தெடுக்கவும் (தலைப்பு முனைகளை நீக்க முடியாது)',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'முதலில் ஒற்றுமை அல்லது வேறுபாடு முனையைத் தேர்ந்தெடுக்கவும்',
+  'canvas.toolbar.selectStepForSubstep': 'முதலில் நீங்கள் துணைப் படிகளைச் சேர்க்க விரும்பும் படி முனையைத் தேர்ந்தெடுக்கவும்',
   'canvas.toolbar.similarityWithIndex': 'ஒற்றுமைகள் {n}',
   'canvas.toolbar.stepAdded': 'படி சேர்க்கப்பட்டது',
   'canvas.toolbar.styleApplied': 'உடை பயன்படுத்தப்பட்டது',
@@ -698,11 +621,9 @@ export default {
   'canvas.topBar.resetTemplate': 'இயல்புநிலை டெம்ப்ளேட்டிற்கு மீட்டமைக்கவும்',
   'canvas.topBar.resetCanvas': 'கேன்வாஸை மீட்டமை',
   'canvas.topBar.schoolCollab': 'வளாகத்தில் ஒத்துழைப்பு',
-  'canvas.topBar.shareCommunity': 'சமூகத்தில் பகிரவும்',
   'canvas.topBar.zhihuiUnavailable': 'ஸ்மார்ட் வரைதல் விளக்கப்படங்கள் தற்போது கிடைக்கவில்லை',
   'canvas.topBar.zhihuiNeedMindmap': 'விளக்கப்படம் மைண்ட் மேப்பிங்கை மட்டுமே ஆதரிக்கிறது',
-  'canvas.topBar.zhihuiSaveFailed':
-    'வரைபடத்தைச் சேமிப்பதில் தோல்வியடைந்ததால் உருவாக்கப்பட்ட வரைபடத்தைத் திறக்க முடியவில்லை.',
+  'canvas.topBar.zhihuiSaveFailed': 'வரைபடத்தைச் சேமிப்பதில் தோல்வியடைந்ததால் உருவாக்கப்பட்ட வரைபடத்தைத் திறக்க முடியவில்லை.',
   'canvas.topBar.sharedCollab': 'ஒன்றாக இணைந்து செயல்படுங்கள்',
   'canvas.topBar.teachingDesign': 'MindMate AI',
   'canvas.subtitles.tooltip': 'நேரடி வசன வரிகள் (மைக்ரோஃபோன்)',
@@ -710,34 +631,29 @@ export default {
   'canvas.subtitles.listening': 'கேட்கிறது…',
   'canvas.subtitles.micFailed': 'மைக்ரோஃபோனைப் பயன்படுத்த முடியவில்லை.',
   'canvas.subtitles.micUnavailable': 'தற்போதைய உலாவி மைக்ரோஃபோனைப் பயன்படுத்த முடியாது.',
-  'canvas.subtitles.wsError':
-    'வசன இணைப்பு தோல்வியடைந்தது, நெட்வொர்க் மற்றும் உள்நுழைவு நிலையைச் சரிபார்க்கவும்.',
+  'canvas.subtitles.wsError': 'வசன இணைப்பு தோல்வியடைந்தது, நெட்வொர்க் மற்றும் உள்நுழைவு நிலையைச் சரிபார்க்கவும்.',
   'canvas.subtitles.genericError': 'வசனப் பிழை',
   'canvas.translation.tooltip': 'நேரடி மொழிபெயர்ப்பு (மைக்ரோஃபோன்)',
   'canvas.translation.aria': 'நிகழ்நேர மொழிபெயர்ப்பை மாற்றவும்',
   'canvas.translation.listening': 'மொழிபெயர்ப்பதைக் கேட்கிறது…',
   'canvas.translation.micFailed': 'மைக்ரோஃபோனைப் பயன்படுத்த முடியவில்லை.',
   'canvas.translation.micUnavailable': 'தற்போதைய உலாவி மைக்ரோஃபோனைப் பயன்படுத்த முடியாது.',
-  'canvas.translation.wsError':
-    'மொழிபெயர்ப்பு இணைப்பு தோல்வியடைந்தது, நெட்வொர்க் மற்றும் உள்நுழைவு நிலையைச் சரிபார்க்கவும்.',
+  'canvas.translation.wsError': 'மொழிபெயர்ப்பு இணைப்பு தோல்வியடைந்தது, நெட்வொர்க் மற்றும் உள்நுழைவு நிலையைச் சரிபார்க்கவும்.',
   'canvas.translation.genericError': 'மொழிபெயர்ப்பு பிழை',
   'canvas.translation.start': 'மொழிபெயர்ப்பைத் தொடங்கவும்',
   'canvas.translation.stop': 'மொழிபெயர்ப்பை நிறுத்து',
   'canvas.topBar.snapshotRecallTooltip': 'ஸ்னாப்ஷாட்டை மீட்டமை {n}',
   'canvas.topBar.snapshotRecallTitle': 'ஸ்னாப்ஷாட்டை மீட்டமை',
-  'canvas.topBar.snapshotRecallConfirm':
-    'ஸ்னாப்ஷாட்டை மீட்டெடுக்கவா {n}? தற்போதைய மாற்றங்கள் மாற்றப்படும்.',
+  'canvas.topBar.snapshotRecallConfirm': 'ஸ்னாப்ஷாட்டை மீட்டெடுக்கவா {n}? தற்போதைய மாற்றங்கள் மாற்றப்படும்.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'மீட்க',
   'canvas.topBar.snapshotRecallCancelBtn': 'ரத்து செய்',
   'canvas.topBar.snapshotRecallHistory': 'மீட்டமைப்பதற்கு முன் ஸ்னாப்ஷாட் {n}',
   'canvas.topBar.snapshotRecallFailed': 'ஸ்னாப்ஷாட் மீட்பு தோல்வியடைந்தது, மீண்டும் முயற்சிக்கவும்',
-  'canvas.topBar.snapshotRecallNoDiagram':
-    'முதலில் கேலரியில் ஐகானைச் சேமித்து, ஸ்னாப்ஷாட்டை மீட்டெடுக்கவும்.',
+  'canvas.topBar.snapshotRecallNoDiagram': 'முதலில் கேலரியில் ஐகானைச் சேமித்து, ஸ்னாப்ஷாட்டை மீட்டெடுக்கவும்.',
   'canvas.topBar.snapshotRecallNoType': 'ஐகான் வகை இன்னும் தயாராகவில்லை, பிறகு முயற்சிக்கவும்.',
   'canvas.topBar.snapshotDeleted': 'நீக்கப்பட்ட ஸ்னாப்ஷாட் {n}',
   'canvas.topBar.snapshotDeleteFailed': 'ஸ்னாப்ஷாட்டை நீக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்',
-  'canvas.topBar.snapshotBadgeTooltip':
-    'ஸ்னாப்ஷாட்டை மீட்டெடுக்க கிளிக் செய்யவும் {n} · Ctrl+click to delete',
+  'canvas.topBar.snapshotBadgeTooltip': 'ஸ்னாப்ஷாட்டை மீட்டெடுக்க கிளிக் செய்யவும் {n} · Ctrl+click to delete',
   'canvas.topBar.snapshotRecallingTooltip': 'ஸ்னாப்ஷாட்டை மீட்டெடுக்கிறது {n}...',
   'canvas.zoomControls.exitFullscreen': 'முழுத்திரையிலிருந்து வெளியேறவும்',
   'canvas.zoomControls.fitCanvas': 'கேன்வாஸுக்கு ஏற்ப',
@@ -759,7 +675,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'ஒளிரும் பச்சை',
   'canvas.mindMapPresentationToolbar.colorOrange': 'துடிப்பான ஆரஞ்சு',
   'canvas.mindMapPresentationToolbar.colorWhite': 'குறைந்தபட்ச வெள்ளை',
-  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
+  'canvas.mindMapPresentationToolbar.slides': 'முனை கொணர்வி',
   'canvas.mindMapPresentationToolbar.exit': 'வெளியேறு நிகழ்ச்சி',
   'canvas.mindMapPresentationToolbar.highlighter': 'ஹைலைட்டர் பேனா',
   'canvas.mindMapPresentationToolbar.laserSmall': 'சிறியது',
@@ -787,8 +703,7 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'கிளை',
   'canvas.mindMapSlideOverlay.region': 'ஸ்லைடு காட்சி கட்டுப்பாடு',
   'canvas.mindMapSlideOverlay.progress': 'ஸ்லைடு முன்னேற்றம், குதிக்க கிளிக் செய்யவும்',
-  'canvas.mindMapSlideOverlay.shortcuts':
-    'ஸ்லைடுஷோவிலிருந்து வெளியேற, கேன்வாஸில் கிளிக் செய்யவும் அல்லது Space/→ அடுத்த பக்கம் · ← முந்தைய பக்கம் · முகப்பு/முடிவு முகப்பு/இறுதிப் பக்கம் · Esc ஐ அழுத்தவும்',
+  'canvas.mindMapSlideOverlay.shortcuts': 'ஸ்லைடுஷோவிலிருந்து வெளியேற, கேன்வாஸில் கிளிக் செய்யவும் அல்லது Space/→ அடுத்த பக்கம் · ← முந்தைய பக்கம் · முகப்பு/முடிவு முகப்பு/இறுதிப் பக்கம் · Esc ஐ அழுத்தவும்',
   'canvas.mindMapSlideOverlay.exit': 'ஸ்லைடுஷோவிலிருந்து வெளியேறு',
   'canvas.mindMapSlideOverlay.collapse': 'கட்டுப்பாட்டுப் பட்டியைச் சுருக்கவும்',
   'canvas.mindMapSlideOverlay.expand': 'கட்டுப்பாட்டு பட்டியை விரிவாக்கு',
@@ -801,20 +716,15 @@ export default {
   'canvasPage.collaborationFooterOwner': '{username} உடன் ஆன்லைன் ஒத்துழைப்பு',
   'canvasPage.collaborationFooterOwnerDiagram': '{username}க்கான "{diagramTitle}" சினெர்ஜி ஐகான்',
   'canvasPage.collaborationFooterNetworkDiagramTitle': '「{diagramTitle}」ஆன்லைன் ஒத்துழைப்பு',
-  'canvasPage.collaborationFooterSchool':
-    'வளாகத்தில் கூட்டுப்பணி நடந்து கொண்டிருக்கிறது—சகாக்கள் உரையாடல் பட்டியலிலிருந்து சேரலாம்.',
-  'canvasPage.collaborationFooterSchoolDiagram':
-    '"{diagramTitle}" வளாகக் கூட்டுப்பணி நடந்து கொண்டிருக்கிறது - சகாக்கள் உரையாடல் பட்டியலிலிருந்து சேரலாம்.',
-  'canvasPage.collabRoomIdleEnding':
-    'சுமார் {seconds} வினாடிகள் செயலற்ற நிலையில் இருந்த பிறகு ஐகான் கூட்டுப்பணி தானாகவே முடிவடையும் - ஐகான்களைத் திருத்துவது தாமதமாகும்',
+  'canvasPage.collaborationFooterSchool': 'வளாகத்தில் கூட்டுப்பணி நடந்து கொண்டிருக்கிறது—சகாக்கள் உரையாடல் பட்டியலிலிருந்து சேரலாம்.',
+  'canvasPage.collaborationFooterSchoolDiagram': '"{diagramTitle}" வளாகக் கூட்டுப்பணி நடந்து கொண்டிருக்கிறது - சகாக்கள் உரையாடல் பட்டியலிலிருந்து சேரலாம்.',
+  'canvasPage.collabRoomIdleEnding': 'சுமார் {seconds} வினாடிகள் செயலற்ற நிலையில் இருந்த பிறகு ஐகான் கூட்டுப்பணி தானாகவே முடிவடையும் - ஐகான்களைத் திருத்துவது தாமதமாகும்',
   'conceptMap.focus.noResult': 'முடிவுகள் இல்லை',
   'conceptMap.focus.validationRequestFailed': 'சரிபார்ப்பு கோரிக்கை தோல்வியடைந்தது',
   'diagram.aiGenerating': 'AI...',
   'diagram.alternativeDimensions.braceTitle': 'இந்த தலைப்பின் பிற சாத்தியமான பரிமாணங்கள்:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
-    'இந்த தலைப்புக்கான பிற சாத்தியமான ஒப்புமைகள்:',
-  'diagram.alternativeDimensions.treeMapTitle':
-    'இந்த தலைப்புக்கான பிற சாத்தியமான வகைப்பாடு பரிமாணங்கள்:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'இந்த தலைப்புக்கான பிற சாத்தியமான ஒப்புமைகள்:',
+  'diagram.alternativeDimensions.treeMapTitle': 'இந்த தலைப்புக்கான பிற சாத்தியமான வகைப்பாடு பரிமாணங்கள்:',
   'diagram.bridgeMap.alternativesEmpty': '[மாற்று உறவுகள் இங்கே காட்டப்படும்]',
   'diagram.conceptMap.focusQuestionPrefix': 'கவனம் செலுத்தும் கேள்விகள்: ',
   'diagram.conceptMap.focusQuestionSuffix': 'தயவுசெய்து உள்ளிடவும்',
@@ -839,8 +749,7 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'முனை செயல்பாட்டைச் சேர்ப்பது வளர்ச்சியில் உள்ளது',
   'diagram.contextMenu.paste': 'ஒட்டவும்',
   'diagram.contextMenu.warningCreateDiagramFirst': 'முதலில் ஐகானை உருவாக்கவும்',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff':
-    'முதலில் ஒற்றுமை அல்லது வேறுபாடு முனையைத் தேர்ந்தெடுக்கவும்',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'முதலில் ஒற்றுமை அல்லது வேறுபாடு முனையைத் தேர்ந்தெடுக்கவும்',
   'diagram.defaultNewConcept': 'புதிய கருத்து',
   'diagram.dimension.classificationAz': 'வகைப்பாடு அடிப்படை',
   'diagram.dimension.classificationEn': 'வகைப்பாடு அடிப்படை',
@@ -865,45 +774,31 @@ export default {
   'canvas.mindMapSideToolbar.collapse': 'கருவிப்பட்டியைச் சுருக்கவும்',
   'canvas.mindMapSideToolbar.outline': 'படிநிலை அவுட்லைன்',
   'canvas.mindMapSideToolbar.waterfall': 'AI மூளைச்சலவை',
-  'canvas.mindMapWaterfall.panelHint':
-    'கிளைப் பரிந்துரைகளை உருவாக்க முனையைத் தேர்ந்தெடுத்து அவற்றைச் செருக கேன்வாஸுக்கு இழுக்கவும்.',
-  'canvas.mindMapWaterfall.emptyHint':
-    'இதுவரை பரிந்துரைகள் எதுவும் இல்லை, முதலில் கேன்வாஸில் உள்ள முனையைத் தேர்ந்தெடுக்கவும் அல்லது மீண்டும் உருவாக்க கிளிக் செய்யவும்.',
-  'canvas.mindMapWaterfall.dragHint':
-    'மல்டி-செலக்ட் என்பதைக் கிளிக் செய்து, அதைச் செருக வரைபட முனைக்கு இழுக்கவும்; அதை முதல் நிலை கிளையாக சேர்க்க அதை ஒரு வெற்று இடத்திற்கு இழுக்கவும்.',
+  'canvas.mindMapWaterfall.panelHint': 'கிளைப் பரிந்துரைகளை உருவாக்க முனையைத் தேர்ந்தெடுத்து அவற்றைச் செருக கேன்வாஸுக்கு இழுக்கவும்.',
+  'canvas.mindMapWaterfall.emptyHint': 'இதுவரை பரிந்துரைகள் எதுவும் இல்லை, முதலில் கேன்வாஸில் உள்ள முனையைத் தேர்ந்தெடுக்கவும் அல்லது மீண்டும் உருவாக்க கிளிக் செய்யவும்.',
+  'canvas.mindMapWaterfall.dragHint': 'மல்டி-செலக்ட் என்பதைக் கிளிக் செய்து, அதைச் செருக வரைபட முனைக்கு இழுக்கவும்; அதை முதல் நிலை கிளையாக சேர்க்க அதை ஒரு வெற்று இடத்திற்கு இழுக்கவும்.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'AI மூளைச்சலவையிலிருந்து முனைகளை இழுக்கவும்',
-  'canvas.mindMapOneSentence.intro':
-    'தலைப்பை உள்ளிடவும் அல்லது கிளைகளின் எண்ணிக்கை, வகைப்பாடு பரிமாணங்கள், படிகள் போன்ற கட்டமைப்புத் தேவைகளை விவரிக்கவும்.',
-  'canvas.mindMapOneSentence.requirementsPlaceholder':
-    'உதாரணமாக: பெய்ஜிங் மூன்று நாள் சுற்றுப்பயணத் திட்டம், நான்கு கிளைகள்: ஆடை, உணவு, தங்குமிடம் மற்றும் போக்குவரத்து',
+  'canvas.mindMapOneSentence.intro': 'தலைப்பை உள்ளிடவும் அல்லது கிளைகளின் எண்ணிக்கை, வகைப்பாடு பரிமாணங்கள், படிகள் போன்ற கட்டமைப்புத் தேவைகளை விவரிக்கவும்.',
+  'canvas.mindMapOneSentence.requirementsPlaceholder': 'உதாரணமாக: பெய்ஜிங் மூன்று நாள் சுற்றுப்பயணத் திட்டம், நான்கு கிளைகள்: ஆடை, உணவு, தங்குமிடம் மற்றும் போக்குவரத்து',
   'canvas.mindMapOneSentence.examplesTitle': 'பரிந்துரைக்கப்பட்ட உத்வேகம்',
   'canvas.mindMapOneSentence.generateButton': 'உருவாக்கத் தொடங்குங்கள்',
-  'canvas.mindMapOneSentence.example1':
-    'பெய்ஜிங் மூன்று நாள் பயணத் திட்டம், நான்கு கிளைகள்: உடை, உணவு, தங்குமிடம் மற்றும் போக்குவரத்து',
-  'canvas.mindMapOneSentence.example2':
-    '"புதிய தயாரிப்பு வெளியீட்டை" பகுப்பாய்வு செய்ய SWOT ஐப் பயன்படுத்தவும்: பலம், பலவீனங்கள், வாய்ப்புகள், அச்சுறுத்தல்கள்',
-  'canvas.mindMapOneSentence.example3':
-    'ஆரம்ப பள்ளி அறிவியல் வகுப்பு "நீரின் மூன்று நிலை மாற்றங்கள்", எளிய மொழி, ஒரு நிலைக்கு 6 வார்த்தைகளுக்கு மேல் இல்லை',
+  'canvas.mindMapOneSentence.example1': 'பெய்ஜிங் மூன்று நாள் பயணத் திட்டம், நான்கு கிளைகள்: உடை, உணவு, தங்குமிடம் மற்றும் போக்குவரத்து',
+  'canvas.mindMapOneSentence.example2': '"புதிய தயாரிப்பு வெளியீட்டை" பகுப்பாய்வு செய்ய SWOT ஐப் பயன்படுத்தவும்: பலம், பலவீனங்கள், வாய்ப்புகள், அச்சுறுத்தல்கள்',
+  'canvas.mindMapOneSentence.example3': 'ஆரம்ப பள்ளி அறிவியல் வகுப்பு "நீரின் மூன்று நிலை மாற்றங்கள்", எளிய மொழி, ஒரு நிலைக்கு 6 வார்த்தைகளுக்கு மேல் இல்லை',
   'canvas.mindMapOneSentence.suggestion.add_node': 'ஒரு சீன கிளையைச் சேர்க்கவும்',
   'canvas.mindMapOneSentence.suggestion.update_node': 'பான பகுப்பாய்வை பான பகுப்பாய்வாக மாற்றவும்',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': '2.1ஐ கிரீன் டீயாக மாற்றவும்',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint':
-    'எண்ணை ஆக்டிவேட் செய்த பிறகு, "2.1 ஐ மாற்று..." "2வது க்கு மாற்று..." என்று சொல்லலாம்.',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint': 'எண்ணை ஆக்டிவேட் செய்த பிறகு, "2.1 ஐ மாற்று..." "2வது க்கு மாற்று..." என்று சொல்லலாம்.',
   'canvas.mindMapOneSentence.suggestion.update_center': 'தீம் தேநீர் என மாற்றப்பட்டுள்ளது',
   'canvas.mindMapOneSentence.suggestion.delete_node': 'பான பகுப்பாய்வு கிளையை நீக்கவும்',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': 'சீனாவின் கிளையை முடிக்கவும்',
   'canvas.mindMapOneSentence.suggestion.auto_complete': 'வரைபடத்தை முடிக்க எனக்கு உதவுங்கள்',
-  'canvas.mindMapOneSentence.suggestion.set_content_level':
-    'தொழில்முறை உள்ளடக்கத்தை பொது, தொடக்கப் பள்ளி, ஜூனியர் உயர்நிலைப் பள்ளி, உயர்நிலைப் பள்ளி, கல்லூரி, வயது வந்தோர் அல்லது நிபுணர் என மாற்றவும்',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
-    'தொழில்முறை உள்ளடக்கம் {level} க்கு மாற்றப்பட்டது',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
-    'ஏழாவது நிலை கீழே உள்ள "தொழில்முறை உள்ளடக்கத்துடன்" ஒத்துப்போகிறது',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
-    'எண்கள், சீனம், வட்டங்கள், எழுத்துக்கள் அல்லது அத்தியாய எண்களை இயக்கவும்',
+  'canvas.mindMapOneSentence.suggestion.set_content_level': 'தொழில்முறை உள்ளடக்கத்தை பொது, தொடக்கப் பள்ளி, ஜூனியர் உயர்நிலைப் பள்ளி, உயர்நிலைப் பள்ளி, கல்லூரி, வயது வந்தோர் அல்லது நிபுணர் என மாற்றவும்',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': 'தொழில்முறை உள்ளடக்கம் {level} க்கு மாற்றப்பட்டது',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': 'ஏழாவது நிலை கீழே உள்ள "தொழில்முறை உள்ளடக்கத்துடன்" ஒத்துப்போகிறது',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': 'எண்கள், சீனம், வட்டங்கள், எழுத்துக்கள் அல்லது அத்தியாய எண்களை இயக்கவும்',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': '{style} எண்ணை இயக்கவும்',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
-    '"டிஜிட்டல் எண்ணை இயக்கு" "சீன எண்ணை இயக்கு" என்று சொல்லலாம்',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': '"டிஜிட்டல் எண்ணை இயக்கு" "சீன எண்ணை இயக்கு" என்று சொல்லலாம்',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': 'எண்',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': 'சீன',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': 'வட்டம்',
@@ -913,104 +808,68 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': 'மறைக்கப்பட்ட எண்',
   'canvas.mindMapOneSentence.suggestion.explain_node': 'சீனாவின் இந்த கிளையை விளக்குங்கள்',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'இந்த முனையை அறிமுகப்படுத்துங்கள்',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
-    '"சீனாவை விளக்குங்கள்" மற்றும் "இந்த முனையை அறிமுகப்படுத்து" என்று நீங்கள் கூறலாம்; ஒரு முனையைத் தேர்ந்தெடுத்த பிறகு, "இதை அறிமுகப்படுத்து" என்றும் கூறலாம்.',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint': '"சீனாவை விளக்குங்கள்" மற்றும் "இந்த முனையை அறிமுகப்படுத்து" என்று நீங்கள் கூறலாம்; ஒரு முனையைத் தேர்ந்தெடுத்த பிறகு, "இதை அறிமுகப்படுத்து" என்றும் கூறலாம்.',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'முனை செயல்பாட்டு வழிகாட்டி',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'சுருக்கு முனை செயல்பாட்டு வழிகாட்டி',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': 'பெயரால்',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.thisNode': 'இந்த முனை',
-  'canvas.mindMapOneSentence.inputPlaceholder':
-    'தலைப்பை விவரிக்கவும் அல்லது கோரிக்கையை மாற்றவும்...',
+  'canvas.mindMapOneSentence.inputPlaceholder': 'தலைப்பை விவரிக்கவும் அல்லது கோரிக்கையை மாற்றவும்...',
   'canvas.mindMapOneSentence.listeningPlaceholder': 'கேட்கிறது…',
   'canvas.mindMapOneSentence.sendButton': 'அனுப்பு',
   'canvas.mindMapOneSentence.micButton': 'குரல் உள்ளீடு',
   'canvas.mindMapOneSentence.photoButton': 'படங்களை பதிவேற்றவும்',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 புகைப்படங்கள்',
-  'canvas.mindMapOneSentence.photoNeedsDiagram':
-    'படத்தைப் பதிவேற்றும் முன், ஐகானை கேலரியில் சேமிக்கவும்.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram': 'படத்தைப் பதிவேற்றும் முன், ஐகானை கேலரியில் சேமிக்கவும்.',
   'canvas.mindMapOneSentence.photoInvalidType': 'JPG, PNG அல்லது WebP படத்தைத் தேர்ந்தெடுக்கவும்.',
   'canvas.mindMapOneSentence.photoTooLarge': 'படம் மிகப் பெரியது, அதிகபட்சம் 10எம்பி.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'மன வரைபடம்',
-  'canvas.mindMapOneSentence.photoHanddrawnReply':
-    'கையால் வரையப்பட்ட மன வரைபடம் "{topic}" கண்டறியப்பட்டது. கேன்வாஸில் மீண்டும் கட்டப்பட்டது, ஆவணச் சுருக்கத்தில் கட்டமைப்பு அவுட்லைன் சேமிக்கப்பட்டது.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
-    'கையால் வரையப்பட்ட மன வரைபடம் "{topic}" கண்டறியப்பட்டது. நேட்டிவ் கேன்வாஸில் மீண்டும் கட்டமைக்கப்பட்டது, கட்டமைப்பு அவுட்லைன் ஆவணச் சுருக்கத்தில் சேமிக்கப்பட்டது. கேலரி ஒத்திசைவு முடிக்கப்படவில்லை, சேமிக்கவும் அல்லது மீண்டும் முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.photoOcrReply':
-    'அங்கீகரிக்கப்பட்ட பட உரை:\n{excerpt}\n\nமுழு உரையும் ஆவணச் சுருக்கத்தில் சேமிக்கப்பட்டுள்ளது.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply': 'கையால் வரையப்பட்ட மன வரைபடம் "{topic}" கண்டறியப்பட்டது. கேன்வாஸில் மீண்டும் கட்டப்பட்டது, ஆவணச் சுருக்கத்தில் கட்டமைப்பு அவுட்லைன் சேமிக்கப்பட்டது.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'கையால் வரையப்பட்ட மன வரைபடம் "{topic}" கண்டறியப்பட்டது. நேட்டிவ் கேன்வாஸில் மீண்டும் கட்டமைக்கப்பட்டது, கட்டமைப்பு அவுட்லைன் ஆவணச் சுருக்கத்தில் சேமிக்கப்பட்டது. கேலரி ஒத்திசைவு முடிக்கப்படவில்லை, சேமிக்கவும் அல்லது மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.photoOcrReply': 'அங்கீகரிக்கப்பட்ட பட உரை:\n{excerpt}\n\nமுழு உரையும் ஆவணச் சுருக்கத்தில் சேமிக்கப்பட்டுள்ளது.',
   'canvas.mindMapOneSentence.photoFailed': 'படத்தை செயலாக்க முடியாது.',
-  'canvas.mindMapOneSentence.micDenied':
-    'மைக்ரோஃபோன் கிடைக்கவில்லை, உலாவி அனுமதிகளைச் சரிபார்க்கவும்',
+  'canvas.mindMapOneSentence.micDenied': 'மைக்ரோஃபோன் கிடைக்கவில்லை, உலாவி அனுமதிகளைச் சரிபார்க்கவும்',
   'canvas.mindMapOneSentence.ttsToggle': 'சத்தமாக வாசிக்கவும்',
-  'canvas.mindMapOneSentence.kittyWelcome':
-    'வணக்கம், நீங்கள் என்ன மன வரைபடத்தை வரைய விரும்புகிறீர்கள் என்று சொல்லுங்கள் அல்லது பின்னர் அதை மாற்ற உங்களுக்கு உதவுகிறேன்.',
+  'canvas.mindMapOneSentence.kittyWelcome': 'வணக்கம், நீங்கள் என்ன மன வரைபடத்தை வரைய விரும்புகிறீர்கள் என்று சொல்லுங்கள் அல்லது பின்னர் அதை மாற்ற உங்களுக்கு உதவுகிறேன்.',
   'canvas.mindMapOneSentence.switchDiagramType': 'சரி, {type}க்கு மாறுகிறது…',
   'canvas.mindMapOneSentence.kittyGenerating': 'சரி, வரைபடத்தை உருவாக்குகிறது...',
-  'canvas.mindMapOneSentence.kittyGenerateDone':
-    'வரைபடம் உருவாக்கப்பட்டது. கிளை அல்லது முனையை மாற்ற தட்டச்சு செய்வதைத் தொடரவும்.',
-  'canvas.mindMapOneSentence.kittyGenerateFailed':
-    'வரைபட உருவாக்கம் தோல்வியடைந்தது, மீண்டும் முயற்சிக்கவும் அல்லது விளக்கத்தைச் சரிசெய்யவும்.',
-  'canvas.mindMapOneSentence.kittyEditFailed':
-    'மாற்றத்தை முடிக்க முடியவில்லை, தயவுசெய்து வேறு வார்த்தையில் மீண்டும் முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditStale':
-    'இந்த மாற்றம் கேன்வாஸில் செயல்படவில்லை (அது காலாவதியாகியிருக்கலாம் அல்லது எந்த மாற்றமும் இல்லை), தயவுசெய்து மீண்டும் முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
-    'கேன்வாஸ் இந்த மாற்றத்தை உறுதிப்படுத்தத் தவறியது மற்றும் வரைபடம் அப்படியே உள்ளது.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed':
-    'உள்ளூர் கோப்பு மாற்றப்பட்டது, ஆனால் ஒத்திசைவு தோல்வியடைந்தது. பிறகு முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed':
-    'கேன்வாஸ் ஒத்திசைவு தோல்வியடைந்தது, பிறகு முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
-    'கேன்வாஸ் ஒத்திசைவு தோல்வியடைந்தது ({detail}), தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditBusy':
-    'வரைபடம் உருவாக்கப்படுகிறது, மாற்றங்களைச் செய்வதற்கு முன் அது முடியும் வரை காத்திருக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued':
-    '{models} இன் முடிவுகள் இன்னும் உருவாக்கப்படுகின்றன, மேலும் உங்கள் கோரிக்கை முடிந்ததும் தானாகவே செயல்படுத்தப்படும்.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
-    'பிற மாதிரிகளின் முடிவுகள் இன்னும் உருவாக்கப்படுகின்றன, மேலும் உங்கள் கோரிக்கை முடிந்ததும் தானாகவே செயல்படுத்தப்படும்.',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming':
-    'மற்ற மாதிரிகள் முடிக்கப்பட்டு, உங்கள் கோரிக்கையை தொடர்ந்து செயல்படுத்தி வருகின்றன...',
+  'canvas.mindMapOneSentence.kittyGenerateDone': 'வரைபடம் உருவாக்கப்பட்டது. கிளை அல்லது முனையை மாற்ற தட்டச்சு செய்வதைத் தொடரவும்.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed': 'வரைபட உருவாக்கம் தோல்வியடைந்தது, மீண்டும் முயற்சிக்கவும் அல்லது விளக்கத்தைச் சரிசெய்யவும்.',
+  'canvas.mindMapOneSentence.kittyEditFailed': 'மாற்றத்தை முடிக்க முடியவில்லை, தயவுசெய்து வேறு வார்த்தையில் மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditStale': 'இந்த மாற்றம் கேன்வாஸில் செயல்படவில்லை (அது காலாவதியாகியிருக்கலாம் அல்லது எந்த மாற்றமும் இல்லை), தயவுசெய்து மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'கேன்வாஸ் இந்த மாற்றத்தை உறுதிப்படுத்தத் தவறியது மற்றும் வரைபடம் அப்படியே உள்ளது.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'உள்ளூர் கோப்பு மாற்றப்பட்டது, ஆனால் ஒத்திசைவு தோல்வியடைந்தது. பிறகு முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed': 'கேன்வாஸ் ஒத்திசைவு தோல்வியடைந்தது, பிறகு முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'கேன்வாஸ் ஒத்திசைவு தோல்வியடைந்தது ({detail}), தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditBusy': 'வரைபடம் உருவாக்கப்படுகிறது, மாற்றங்களைச் செய்வதற்கு முன் அது முடியும் வரை காத்திருக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} இன் முடிவுகள் இன்னும் உருவாக்கப்படுகின்றன, மேலும் உங்கள் கோரிக்கை முடிந்ததும் தானாகவே செயல்படுத்தப்படும்.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'பிற மாதிரிகளின் முடிவுகள் இன்னும் உருவாக்கப்படுகின்றன, மேலும் உங்கள் கோரிக்கை முடிந்ததும் தானாகவே செயல்படுத்தப்படும்.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming': 'மற்ற மாதிரிகள் முடிக்கப்பட்டு, உங்கள் கோரிக்கையை தொடர்ந்து செயல்படுத்தி வருகின்றன...',
   'canvas.mindMapOneSentence.requestQueued': 'வரிசையில் நிற்கிறது',
   'canvas.mindMapOneSentence.requestFailed': 'முடிக்கப்படவில்லை',
-  'canvas.mindMapOneSentence.kittyEditAccessDenied':
-    'இந்த வரைபடத்தை மாற்ற உங்களுக்கு தற்போது அனுமதி இல்லை.',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision':
-    'வரைபடம் இப்போது புதுப்பிக்கப்பட்டது மற்றும் இந்த மாற்றம் காலாவதியானது. உங்கள் மாற்றத்தை மீண்டும் தெரிவிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditTimeout':
-    'இந்த மாற்றம் காலாவதியானது மற்றும் வரைபடம் புதுப்பிக்கப்படாமல் இருக்கலாம். மீண்டும் முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner':
-    'திருத்தக்கூடிய கேன்வாஸை தற்போது கண்டுபிடிக்க முடியவில்லை. கேன்வாஸ் திறந்திருப்பதை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditAddFailed':
-    'மன்னிக்கவும், முனையைச் சேர்க்க முடியவில்லை. பெயரை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
-    'மன்னிக்கவும், முனையை மாற்ற முடியாது. பெயரை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditCenterFailed':
-    'மன்னிக்கவும், தலைப்பை புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
-    'மன்னிக்கவும், முனையை நீக்க முடியவில்லை. பெயரை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
-    'மன்னிக்கவும், இந்தக் கிளைக்கு தானாக நிறைவு எதுவும் இல்லை. நீங்கள் மீண்டும் "தானியங்கி" என்று கூறலாம்.',
+  'canvas.mindMapOneSentence.kittyEditAccessDenied': 'இந்த வரைபடத்தை மாற்ற உங்களுக்கு தற்போது அனுமதி இல்லை.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'வரைபடம் இப்போது புதுப்பிக்கப்பட்டது மற்றும் இந்த மாற்றம் காலாவதியானது. உங்கள் மாற்றத்தை மீண்டும் தெரிவிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditTimeout': 'இந்த மாற்றம் காலாவதியானது மற்றும் வரைபடம் புதுப்பிக்கப்படாமல் இருக்கலாம். மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner': 'திருத்தக்கூடிய கேன்வாஸை தற்போது கண்டுபிடிக்க முடியவில்லை. கேன்வாஸ் திறந்திருப்பதை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditAddFailed': 'மன்னிக்கவும், முனையைச் சேர்க்க முடியவில்லை. பெயரை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'மன்னிக்கவும், முனையை மாற்ற முடியாது. பெயரை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditCenterFailed': 'மன்னிக்கவும், தலைப்பை புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'மன்னிக்கவும், முனையை நீக்க முடியவில்லை. பெயரை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'மன்னிக்கவும், இந்தக் கிளைக்கு தானாக நிறைவு எதுவும் இல்லை. நீங்கள் மீண்டும் "தானியங்கி" என்று கூறலாம்.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'இந்த கிளை நிறைவு பெற்றது.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'இந்த கிளைகள் முடிக்கப்பட்டுள்ளன.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
-    'சில கிளைகள் முடிக்கப்பட்டுள்ளன, மற்றவை முடிக்கப்படவில்லை. நீங்கள் மீண்டும் "தானியங்கி" என்று கூறலாம்.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'சில கிளைகள் முடிக்கப்பட்டுள்ளன, மற்றவை முடிக்கப்படவில்லை. நீங்கள் மீண்டும் "தானியங்கி" என்று கூறலாம்.',
   'canvas.mindMapOneSentence.kittyWorking': 'சரி, செயலாக்குகிறது...',
-  'canvas.mindMapOneSentence.kittyUnavailable':
-    'கிட்டி தற்போது கிடைக்கவில்லை, FEATURE_KITTY_AGENT இயக்கப்பட்டுள்ளதை உறுதிசெய்யவும்.',
-  'canvas.mindMapOneSentence.kittyConnectFailed':
-    'தற்போது கேன்வாஸ் கிட்டியுடன் இணைக்க முடியவில்லை. கணினியில் வரைபடம் திறந்திருப்பதை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapOneSentence.kittyUnavailable': 'கிட்டி தற்போது கிடைக்கவில்லை, FEATURE_KITTY_AGENT இயக்கப்பட்டுள்ளதை உறுதிசெய்யவும்.',
+  'canvas.mindMapOneSentence.kittyConnectFailed': 'தற்போது கேன்வாஸ் கிட்டியுடன் இணைக்க முடியவில்லை. கணினியில் வரைபடம் திறந்திருப்பதை உறுதிசெய்து மீண்டும் முயற்சிக்கவும்.',
   'canvas.mindMapOneSentence.clarifyChoices': 'ஒன்றைத் தேர்ந்தெடுக்கவும்',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
-    'செல்போன் கிட்டி கண்டறியப்பட்டு, இந்தப் படத்துடன் இணைக்கிறார். உங்கள் மொபைல் ஃபோனில் பேச அல்லது தட்டச்சு செய்ய அழுத்திப் பிடிக்கவும். கணினியில் தட்டச்சு செய்வது இடைநிறுத்தப்பட்டுள்ளது.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint':
-    'கிட்டி தன் கைபேசியில் இன்னொரு வரைபடத்தைத் திறந்தாள். அதை உங்கள் மொபைலில் ஒத்திசைக்கவும் அல்லது வரைபடத்தை இங்கே திறக்கவும்.',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder':
-    'உங்கள் மொபைலில் கிட்டியை உள்ளிடவும்…',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'செல்போன் கிட்டி கண்டறியப்பட்டு, இந்தப் படத்துடன் இணைக்கிறார். உங்கள் மொபைல் ஃபோனில் பேச அல்லது தட்டச்சு செய்ய அழுத்திப் பிடிக்கவும். கணினியில் தட்டச்சு செய்வது இடைநிறுத்தப்பட்டுள்ளது.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint': 'கிட்டி தன் கைபேசியில் இன்னொரு வரைபடத்தைத் திறந்தாள். அதை உங்கள் மொபைலில் ஒத்திசைக்கவும் அல்லது வரைபடத்தை இங்கே திறக்கவும்.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'உங்கள் மொபைலில் கிட்டியை உள்ளிடவும்…',
   'canvas.mindMapNodeExplain.titleFallback': 'முனை விளக்கம்',
   'canvas.mindMapNodeExplain.requestFailed': 'தற்போது விளக்க முடியவில்லை, பிறகு முயற்சிக்கவும்.',
   'canvas.mindMapNodeExplain.thinking': 'யோசிக்கிறேன்',
   'canvas.mindMapNodeExplain.thinkingDone': 'யோசித்து முடித்தார்',
-  'canvas.mindMapNodeExplain.pageStats':
-    '{found} பக்கங்கள் உள்ளன, {fetched} பக்கங்களைப் படிக்கவும்',
+  'canvas.mindMapNodeExplain.pageStats': '{found} பக்கங்கள் உள்ளன, {fetched} பக்கங்களைப் படிக்கவும்',
   'canvas.mindMapNodeExplain.citation': 'ஆதாரம் {n}',
   'canvas.mindMapNodeExplain.research.title': 'இணைய தரவு',
   'canvas.mindMapNodeExplain.research.images': 'படங்களுடன்',
@@ -1022,22 +881,17 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': 'அரட்டை வரலாறு',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'கோப்பு பதிவேற்றம்',
   'canvas.mindMapDocumentSummary.tabPaste': 'உரை ஒட்டுதல்',
-  'canvas.mindMapDocumentSummary.pasteHintLite':
-    'காகிதங்கள், குறிப்புகள் அல்லது சந்திப்பு நிமிடங்களில் ஒட்டவும், நாங்கள் கட்டமைப்பைச் செம்மைப்படுத்தி மன வரைபடத்தை உருவாக்குவோம்.',
+  'canvas.mindMapDocumentSummary.pasteHintLite': 'காகிதங்கள், குறிப்புகள் அல்லது சந்திப்பு நிமிடங்களில் ஒட்டவும், நாங்கள் கட்டமைப்பைச் செம்மைப்படுத்தி மன வரைபடத்தை உருவாக்குவோம்.',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'அரட்டை வரலாறு',
-  'canvas.mindMapDocumentSummary.intro':
-    'முக்கிய புள்ளிகளைச் செம்மைப்படுத்துதல் மற்றும் மிகவும் துல்லியமான மன வரைபடங்களை உருவாக்குதல்',
+  'canvas.mindMapDocumentSummary.intro': 'முக்கிய புள்ளிகளைச் செம்மைப்படுத்துதல் மற்றும் மிகவும் துல்லியமான மன வரைபடங்களை உருவாக்குதல்',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'கோப்பை பதிவேற்ற கிளிக் செய்யவும்',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint':
-    'PDF, Word, PPT, Excel, உரை, படங்கள், ஆடியோவை ஆதரிக்கிறது; பிரித்தெடுக்கப்பட்ட மார்க் டவுன் மட்டுமே தக்கவைக்கப்படுகிறது',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, உரை, படங்கள், ஆடியோவை ஆதரிக்கிறது; பிரித்தெடுக்கப்பட்ட மார்க் டவுன் மட்டுமே தக்கவைக்கப்படுகிறது',
   'canvas.mindMapDocumentSummary.invalidFileType': 'இந்தக் கோப்பு வகை ஆதரிக்கப்படவில்லை',
   'canvas.mindMapDocumentSummary.saveContent': 'உள்ளடக்கத்தைச் சேமிக்கவும்',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'பிடித்து சேமிக்கவும்',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'வலை உள்ளடக்கத்தை வலைவலம் செய்கிறது...',
-  'canvas.mindMapDocumentSummary.webLinkHintLite':
-    'பொது இணையப் பக்க இணைப்பை ஒட்டவும், உரையை வலைவலம் செய்து மார்க் டவுன் ஆகச் சேமிக்க எங்களால் முடிந்த அனைத்தையும் செய்வோம்.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
-    'இணைப்பை நேரடியாக ஒட்டுவது சேவையகத்தால் வலைவலம் செய்யப்படும், மேலும் உங்கள் உள்நுழைவு நிலையைப் பயன்படுத்த முடியாது. உள்நுழைவு அல்லது அனுமதிகள் தேவைப்படும் சில பக்கங்கள் முழுமையாகப் பிடிக்கப்படாமல் இருக்கலாம். முழுமையான இணையப் பக்க ஸ்னாப்ஷாட்டிற்கு, Chrome நீட்டிப்பைப் பயன்படுத்தவும்.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite': 'பொது இணையப் பக்க இணைப்பை ஒட்டவும், உரையை வலைவலம் செய்து மார்க் டவுன் ஆகச் சேமிக்க எங்களால் முடிந்த அனைத்தையும் செய்வோம்.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'இணைப்பை நேரடியாக ஒட்டுவது சேவையகத்தால் வலைவலம் செய்யப்படும், மேலும் உங்கள் உள்நுழைவு நிலையைப் பயன்படுத்த முடியாது. உள்நுழைவு அல்லது அனுமதிகள் தேவைப்படும் சில பக்கங்கள் முழுமையாகப் பிடிக்கப்படாமல் இருக்கலாம். முழுமையான இணையப் பக்க ஸ்னாப்ஷாட்டிற்கு, Chrome நீட்டிப்பைப் பயன்படுத்தவும்.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Chrome நீட்டிப்பைப் பதிவிறக்கவும்',
   'canvas.mindMapDocumentSummary.statusExtracting': 'பிரித்தெடுக்கிறது…',
   'canvas.mindMapDocumentSummary.stageStarting': 'தயாரிப்பில்…',
@@ -1046,25 +900,18 @@ export default {
   'canvas.mindMapDocumentSummary.stageOcr': 'பட உரையை அங்கீகரிக்கிறது...',
   'canvas.mindMapDocumentSummary.stageTranscribing': 'ஆடியோவை டிரான்ஸ்கிரிப்ட் செய்கிறது…',
   'canvas.mindMapDocumentSummary.stageStoring': 'பிரித்தெடுத்தல் முடிவுகளைச் சேமிக்கிறது…',
-  'canvas.mindMapDocumentSummary.replaceSourceHint':
-    'மீண்டும் பதிவேற்றுவது இந்தப் படத்தின் தற்போதைய ஒரே மூலத்தை மாற்றிவிடும்',
+  'canvas.mindMapDocumentSummary.replaceSourceHint': 'மீண்டும் பதிவேற்றுவது இந்தப் படத்தின் தற்போதைய ஒரே மூலத்தை மாற்றிவிடும்',
   'canvas.mindMapDocumentSummary.fromSource': '{name} இலிருந்து',
   'canvas.mindMapDocumentSummary.deleteSource': 'மூலத்தை அகற்று',
   'canvas.mindMapDocumentSummary.sourceDeleted': 'ஆதாரம் நீக்கப்பட்டது, மீண்டும் பதிவேற்றலாம்',
   'canvas.mindMapDocumentSummary.extractStarted': 'உள்ளடக்கத்தைப் பிரித்தெடுக்கிறது...',
-  'canvas.mindMapDocumentSummary.extractFailed':
-    'இந்தக் கோப்பிலிருந்து உரையைப் பிரித்தெடுக்க முடியவில்லை',
-  'canvas.mindMapDocumentSummary.sourceBoundHint':
-    'மார்க் டவுன் தயாராக உள்ளது. மன வரைபடங்கள் உருவாக்கப்படலாம் அல்லது மூலத்தை நீக்கி மீண்டும் பதிவேற்றலாம்.',
-  'canvas.mindMapDocumentSummary.deleteToRetry':
-    'இணைய இணைப்பை மீண்டும் பதிவேற்றம், ஒட்டுதல் அல்லது ஒட்டுவதற்கு முன் இந்த மூலத்தை நீக்கவும்.',
-  'canvas.mindMapDocumentSummary.chatIntroLite':
-    'கோப்பு வாசிப்பு கருவியைப் பதிவிறக்கி, இணைத்தல் குறியீட்டை உள்ளிட்டு, இந்த விளக்கப்படத்திற்கு WeChat அல்லது DingTalk அரட்டை வரலாற்றை அனுப்பவும்.',
+  'canvas.mindMapDocumentSummary.extractFailed': 'இந்தக் கோப்பிலிருந்து உரையைப் பிரித்தெடுக்க முடியவில்லை',
+  'canvas.mindMapDocumentSummary.sourceBoundHint': 'மார்க் டவுன் தயாராக உள்ளது. மன வரைபடங்கள் உருவாக்கப்படலாம் அல்லது மூலத்தை நீக்கி மீண்டும் பதிவேற்றலாம்.',
+  'canvas.mindMapDocumentSummary.deleteToRetry': 'இணைய இணைப்பை மீண்டும் பதிவேற்றம், ஒட்டுதல் அல்லது ஒட்டுவதற்கு முன் இந்த மூலத்தை நீக்கவும்.',
+  'canvas.mindMapDocumentSummary.chatIntroLite': 'கோப்பு வாசிப்பு கருவியைப் பதிவிறக்கி, இணைத்தல் குறியீட்டை உள்ளிட்டு, இந்த விளக்கப்படத்திற்கு WeChat அல்லது DingTalk அரட்டை வரலாற்றை அனுப்பவும்.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'அரட்டை வரலாறு பெறப்பட்டது',
-  'canvas.mindMapDocumentSummary.chatDoneLite':
-    'அரட்டை வரலாறு சேமிக்கப்பட்டது மற்றும் கிளிக் செய்வதன் மூலம் உருவாக்க முடியும்',
-  'canvas.mindMapDocumentSummary.corpusStatus':
-    'அட்டவணைப்படுத்தப்பட்ட {completed}/{total} ஆதாரங்கள்',
+  'canvas.mindMapDocumentSummary.chatDoneLite': 'அரட்டை வரலாறு சேமிக்கப்பட்டது மற்றும் கிளிக் செய்வதன் மூலம் உருவாக்க முடியும்',
+  'canvas.mindMapDocumentSummary.corpusStatus': 'அட்டவணைப்படுத்தப்பட்ட {completed}/{total} ஆதாரங்கள்',
   'canvas.mindMapDocumentSummary.noSources': 'இன்னும் ஆதாரம் இல்லை, கீழே உள்ள தாவலில் சேர்க்கவும்.',
   'canvas.mindMapDocumentSummary.noPackageYet': 'இதுவரை தரவுத்தளம் உருவாக்கப்படவில்லை',
   'canvas.mindMapDocumentSummary.addSource': 'ஆதாரத்தைச் சேர்க்கவும்',
@@ -1074,143 +921,102 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': 'அட்டவணைப்படுத்துகிறது…',
   'canvas.mindMapDocumentSummary.statusFailed': 'தோல்வி',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'அறிவு இடம் இயக்கப்படவில்லை',
-  'canvas.mindMapDocumentSummary.featureDisabledHint':
-    'நாலெட்ஜ் ஸ்பேஸ் அம்சம் இயக்கப்பட்டிருக்கும் போது ஆவணச் சுருக்கங்கள் கிடைக்கும்.',
-  'canvas.mindMapDocumentSummary.saveDiagramHint':
-    'தொகுப்பை இணைத்து, RAG மீட்டெடுப்பை இயக்க முதலில் விளக்கப்படத்தைச் சேமிக்கவும்.',
-  'canvas.mindMapDocumentSummary.chatIntro':
-    'கோப்பு வாசிப்பு கருவியைப் பதிவிறக்கி, கீழே இணைத்தல் குறியீட்டை உள்ளிட்டு, இந்த தரவுத்தளத்திற்கு WeChat அல்லது DingTalk அரட்டை பதிவுகளை அனுப்பவும்.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint': 'நாலெட்ஜ் ஸ்பேஸ் அம்சம் இயக்கப்பட்டிருக்கும் போது ஆவணச் சுருக்கங்கள் கிடைக்கும்.',
+  'canvas.mindMapDocumentSummary.saveDiagramHint': 'தொகுப்பை இணைத்து, RAG மீட்டெடுப்பை இயக்க முதலில் விளக்கப்படத்தைச் சேமிக்கவும்.',
+  'canvas.mindMapDocumentSummary.chatIntro': 'கோப்பு வாசிப்பு கருவியைப் பதிவிறக்கி, கீழே இணைத்தல் குறியீட்டை உள்ளிட்டு, இந்த தரவுத்தளத்திற்கு WeChat அல்லது DingTalk அரட்டை பதிவுகளை அனுப்பவும்.',
   'canvas.mindMapDocumentSummary.pairingCode': 'இணைத்தல் குறியீடு',
   'canvas.mindMapDocumentSummary.startPairingCode': 'இணைத்தல் குறியீட்டைப் பெறவும்',
   'canvas.mindMapDocumentSummary.pairingExpires': '{minutes} நிமிடங்களுக்குள் செல்லுபடியாகும்',
-  'canvas.mindMapDocumentSummary.downloadReader':
-    'கோப்பு வாசிப்பு கருவியைப் பதிவிறக்கவும் (விண்டோஸ்)',
+  'canvas.mindMapDocumentSummary.downloadReader': 'கோப்பு வாசிப்பு கருவியைப் பதிவிறக்கவும் (விண்டோஸ்)',
   'canvas.mindMapDocumentSummary.chatWaiting': 'பதிவேற்றத்திற்காக காத்திருக்கிறது…',
-  'canvas.mindMapDocumentSummary.chatReceived':
-    'அரட்டை வரலாறு பெறப்பட்டு தரவுத்தளத்தில் சேர்க்கப்பட்டது',
+  'canvas.mindMapDocumentSummary.chatReceived': 'அரட்டை வரலாறு பெறப்பட்டு தரவுத்தளத்தில் சேர்க்கப்பட்டது',
   'canvas.mindMapDocumentSummary.chatIndexing': 'அரட்டை வரலாற்றை அட்டவணைப்படுத்துகிறது...',
   'canvas.mindMapDocumentSummary.chatDone': 'அரட்டை வரலாறு தரவுத்தளத்தில் சேர்க்கப்பட்டுள்ளது',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed':
-    'பதிவேற்றுவது அல்லது அட்டவணைப்படுத்துவது தோல்வியடைந்தது, இணைத்தல் குறியீட்டைப் புதுப்பித்து மீண்டும் முயற்சிக்கவும்',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'பதிவேற்றுவது அல்லது அட்டவணைப்படுத்துவது தோல்வியடைந்தது, இணைத்தல் குறியீட்டைப் புதுப்பித்து மீண்டும் முயற்சிக்கவும்',
   'canvas.mindMapDocumentSummary.chatMintFailed': 'இணைத்தல் குறியீட்டை உருவாக்க முடியவில்லை',
-  'canvas.mindMapDocumentSummary.chatExpired':
-    'இணைத்தல் குறியீடு காலாவதியானது, புதிய குறியீட்டைப் பெற புதுப்பிக்கவும்',
+  'canvas.mindMapDocumentSummary.chatExpired': 'இணைத்தல் குறியீடு காலாவதியானது, புதிய குறியீட்டைப் பெற புதுப்பிக்கவும்',
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'இணைத்தல் குறியீட்டைப் புதுப்பிக்கவும்',
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'ஆவணச் சுருக்க அமர்வைத் தொடங்க முடியவில்லை',
-  'canvas.mindMapDocumentSummary.imageTooLarge':
-    'படம் மிகவும் பெரிதாக உள்ளது, 10MB உள்ள கோப்பை பதிவேற்றவும்',
-  'canvas.mindMapDocumentSummary.generateNoCorpus':
-    'முதலில் குறைந்தது ஒரு மூலத்தைச் சேர்க்கவும், பின்னர் உருவாக்கு என்பதைக் கிளிக் செய்யவும்',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
-    'இணைய உள்ளடக்கத்தை முதலில் பதிவேற்றவும், ஒட்டவும் அல்லது வலைவலம் செய்யவும், பின்னர் உருவாக்கு என்பதைக் கிளிக் செய்யவும்',
+  'canvas.mindMapDocumentSummary.imageTooLarge': 'படம் மிகவும் பெரிதாக உள்ளது, 10MB உள்ள கோப்பை பதிவேற்றவும்',
+  'canvas.mindMapDocumentSummary.generateNoCorpus': 'முதலில் குறைந்தது ஒரு மூலத்தைச் சேர்க்கவும், பின்னர் உருவாக்கு என்பதைக் கிளிக் செய்யவும்',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'இணைய உள்ளடக்கத்தை முதலில் பதிவேற்றவும், ஒட்டவும் அல்லது வலைவலம் செய்யவும், பின்னர் உருவாக்கு என்பதைக் கிளிக் செய்யவும்',
   'canvas.mindMapDocumentSummary.collabDisabled': 'நேரடி ஒத்துழைப்பின் போது கிடைக்காது',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'ஆதாரம் தரவுத்தளத்தில் சேர்க்கப்பட்டுள்ளது',
-  'canvas.mindMapDocumentSummary.ingestSuccessLite':
-    'உள்ளடக்கம் சேமிக்கப்பட்டது, மன வரைபடத்தை உருவாக்க நீங்கள் கிளிக் செய்யலாம்',
+  'canvas.mindMapDocumentSummary.ingestSuccessLite': 'உள்ளடக்கம் சேமிக்கப்பட்டது, மன வரைபடத்தை உருவாக்க நீங்கள் கிளிக் செய்யலாம்',
   'canvas.mindMapDocumentSummary.ingestFailed': 'மூலத்தைச் சேர்க்க முடியவில்லை',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'உள்ளூர் ஆவணங்கள்:',
-  'canvas.mindMapDocumentSummary.uploadDocHint':
-    'Word அல்லது PDF ஆவணங்களைப் பதிவேற்ற கிளிக் செய்யவும்',
-  'canvas.mindMapDocumentSummary.uploadDocSubhint':
-    'ஆவணத்தின் உள்ளடக்கத்தை தானாகவே அலசுவோம் மற்றும் கட்டமைப்பைச் செம்மைப்படுத்துவோம்',
+  'canvas.mindMapDocumentSummary.uploadDocHint': 'Word அல்லது PDF ஆவணங்களைப் பதிவேற்ற கிளிக் செய்யவும்',
+  'canvas.mindMapDocumentSummary.uploadDocSubhint': 'ஆவணத்தின் உள்ளடக்கத்தை தானாகவே அலசுவோம் மற்றும் கட்டமைப்பைச் செம்மைப்படுத்துவோம்',
   'canvas.mindMapDocumentSummary.pasteLabel': 'அல்லது நீண்ட உரைக் குறிப்பை நேரடியாக ஒட்டவும்:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder':
-    'கட்டுரைத் துண்டுகள், வாசிப்புச் சுருக்கங்கள், பணி விவாத நிமிடங்கள், தேவைகள் ஆவணங்கள் போன்றவற்றை நீங்கள் தாராளமாக இங்கே ஒட்டலாம். நாங்கள் உங்களுக்காக அடுக்கடுக்காக வரிசைப்படுத்துவோம்!',
+  'canvas.mindMapDocumentSummary.pastePlaceholder': 'கட்டுரைத் துண்டுகள், வாசிப்புச் சுருக்கங்கள், பணி விவாத நிமிடங்கள், தேவைகள் ஆவணங்கள் போன்றவற்றை நீங்கள் தாராளமாக இங்கே ஒட்டலாம். நாங்கள் உங்களுக்காக அடுக்கடுக்காக வரிசைப்படுத்துவோம்!',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'படங்களை பதிவேற்றவும்:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'JPG, PNG படங்களைப் பதிவேற்ற கிளிக் செய்யவும்',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint':
-    'கையால் வரையப்பட்ட மன வரைபடங்கள் கேன்வாஸில் தானாகவே புனரமைக்கப்படும்; சாதாரண படங்கள் உரையை பிரித்தெடுக்கும்.',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
-    'கையால் வரையப்பட்ட மன வரைபடங்கள் அடையாளம் காணப்பட்டு கேன்வாஸில் புனரமைக்கப்பட்டது',
-  'canvas.mindMapDocumentSummary.visionProgressDetecting':
-    'கையால் வரையப்பட்ட மன வரைபடங்களை அங்கீகரிப்பது...',
-  'canvas.mindMapDocumentSummary.imageOcrHint':
-    'குறிப்பு திரைக்காட்சிகள், ஒயிட்போர்டு புகைப்படங்கள் மற்றும் ஸ்கேன் செய்யப்பட்ட ஆவணங்கள் போன்ற உரை கொண்ட படங்களை ஆதரிக்கிறது.',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'கையால் வரையப்பட்ட மன வரைபடங்கள் கேன்வாஸில் தானாகவே புனரமைக்கப்படும்; சாதாரண படங்கள் உரையை பிரித்தெடுக்கும்.',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'கையால் வரையப்பட்ட மன வரைபடங்கள் அடையாளம் காணப்பட்டு கேன்வாஸில் புனரமைக்கப்பட்டது',
+  'canvas.mindMapDocumentSummary.visionProgressDetecting': 'கையால் வரையப்பட்ட மன வரைபடங்களை அங்கீகரிப்பது...',
+  'canvas.mindMapDocumentSummary.imageOcrHint': 'குறிப்பு திரைக்காட்சிகள், ஒயிட்போர்டு புகைப்படங்கள் மற்றும் ஸ்கேன் செய்யப்பட்ட ஆவணங்கள் போன்ற உரை கொண்ட படங்களை ஆதரிக்கிறது.',
   'canvas.mindMapDocumentSummary.removeImage': 'படத்தை அகற்று',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'இணைய இணைப்பு:',
-  'canvas.mindMapDocumentSummary.webUrlPlaceholder':
-    'கட்டுரை, வலைப்பதிவு அல்லது செய்திப் பக்கத்திற்கான இணைப்பை ஒட்டவும்',
-  'canvas.mindMapDocumentSummary.webLinkHint':
-    'வலைப்பக்கத்தின் உரையை வலைவலம் செய்து, அட்டவணைப்படுத்துவதற்காக தரவுத்தளத்தில் சேர்ப்போம்.',
+  'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'கட்டுரை, வலைப்பதிவு அல்லது செய்திப் பக்கத்திற்கான இணைப்பை ஒட்டவும்',
+  'canvas.mindMapDocumentSummary.webLinkHint': 'வலைப்பக்கத்தின் உரையை வலைவலம் செய்து, அட்டவணைப்படுத்துவதற்காக தரவுத்தளத்தில் சேர்ப்போம்.',
   'canvas.mindMapDocumentSummary.generateButton': 'மன வரைபடங்களை உருவாக்கவும்',
   'canvas.mindMapDocumentSummary.generateSuccess': 'மன வரைபடம் உருவாக்கப்பட்டுள்ளது',
   'canvas.mindMapDocumentSummary.generateFailed': 'உருவாக்கம் தோல்வியடைந்தது, பிறகு முயற்சிக்கவும்',
   'canvas.mindMapDocumentSummary.loadFailed': 'உருவாக்கப்பட்ட வரைபடத்தை ஏற்ற முடியவில்லை',
   'canvas.mindMapDocumentSummary.emptyDocument': 'ஆவணத்தைப் பதிவேற்றவும் அல்லது உரையை ஒட்டவும்',
   'canvas.mindMapDocumentSummary.emptyUrl': 'இணைய இணைப்பை உள்ளிடவும்',
-  'canvas.mindMapDocumentSummary.invalidDocType':
-    'Word (.docx) மற்றும் PDF கோப்புகளை மட்டுமே ஆதரிக்கிறது',
+  'canvas.mindMapDocumentSummary.invalidDocType': 'Word (.docx) மற்றும் PDF கோப்புகளை மட்டுமே ஆதரிக்கிறது',
   'canvas.mindMapDocumentSummary.invalidImageType': 'JPG மற்றும் PNG படங்களை மட்டுமே ஆதரிக்கிறது',
-  'canvas.mindMapDocumentSummary.docTooLarge':
-    'ஆவணம் மிகப் பெரியது, 20MB உள்ள கோப்பைப் பதிவேற்றவும்',
-  'canvas.mindMapDocumentSummary.pasteTooLong':
-    'ஒட்டப்பட்ட உரை மாதிரி உள்ளீட்டு வரம்பை மீறுகிறது (தோராயமாக 900,000 எழுத்துகள்), தயவுசெய்து அதைச் சுருக்கி மீண்டும் முயற்சிக்கவும்',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel':
-    'பிரித்தெடுக்கப்பட்ட உரை மாதிரி உள்ளீட்டு வரம்பை மீறுகிறது (சுமார் 900,000 எழுத்துகள் / qwen3.6-flash 991K டோக்கன்கள்), தயவுசெய்து சிறிய ஆவணத்தைப் பயன்படுத்தவும்.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel':
-    'இந்தக் கோப்பிலிருந்து பிரித்தெடுக்கப்பட்ட உரை மிக நீளமாக உள்ளது மற்றும் மாதிரிக்கு அனுப்ப முடியாது. தயவுசெய்து ஒரு சிறிய ஆவணத்தைப் பதிவேற்றவும் (தோராயமாக 900,000 எழுத்துகளுக்குள் பிரித்தெடுக்கப்பட்ட உரை)',
-  'canvas.mindMapDocumentSummary.storageConflictCleared':
-    'சேமித்த சாறு காணவில்லை அல்லது சேமிப்பகத்துடன் ஒத்திசைக்கவில்லை மற்றும் தானாகவே சுத்தப்படுத்தப்பட்டது. ஆவணத்தை மீண்டும் பதிவேற்றவும் அல்லது ஒட்டவும்.',
-  'canvas.mindMapDocumentSummary.contentFiltered':
-    'உள்ளடக்கம் பாதுகாப்பு மதிப்பாய்வில் தேர்ச்சி பெறவில்லை. உரையை மாற்றி மீண்டும் முயற்சிக்கவும்.',
+  'canvas.mindMapDocumentSummary.docTooLarge': 'ஆவணம் மிகப் பெரியது, 20MB உள்ள கோப்பைப் பதிவேற்றவும்',
+  'canvas.mindMapDocumentSummary.pasteTooLong': 'ஒட்டப்பட்ட உரை மாதிரி உள்ளீட்டு வரம்பை மீறுகிறது (தோராயமாக 900,000 எழுத்துகள்), தயவுசெய்து அதைச் சுருக்கி மீண்டும் முயற்சிக்கவும்',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'பிரித்தெடுக்கப்பட்ட உரை மாதிரி உள்ளீட்டு வரம்பை மீறுகிறது (சுமார் 900,000 எழுத்துகள் / qwen3.6-flash 991K டோக்கன்கள்), தயவுசெய்து சிறிய ஆவணத்தைப் பயன்படுத்தவும்.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'இந்தக் கோப்பிலிருந்து பிரித்தெடுக்கப்பட்ட உரை மிக நீளமாக உள்ளது மற்றும் மாதிரிக்கு அனுப்ப முடியாது. தயவுசெய்து ஒரு சிறிய ஆவணத்தைப் பதிவேற்றவும் (தோராயமாக 900,000 எழுத்துகளுக்குள் பிரித்தெடுக்கப்பட்ட உரை)',
+  'canvas.mindMapDocumentSummary.storageConflictCleared': 'சேமித்த சாறு காணவில்லை அல்லது சேமிப்பகத்துடன் ஒத்திசைக்கவில்லை மற்றும் தானாகவே சுத்தப்படுத்தப்பட்டது. ஆவணத்தை மீண்டும் பதிவேற்றவும் அல்லது ஒட்டவும்.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'உள்ளடக்கம் பாதுகாப்பு மதிப்பாய்வில் தேர்ச்சி பெறவில்லை. உரையை மாற்றி மீண்டும் முயற்சிக்கவும்.',
   'canvas.mindMapSideToolbar.learningSheet': 'துளையிடப்பட்ட அடைப்புக்குறி வரைபடம்',
-  'canvas.mobile.learningSheet': 'Learning sheet',
-  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
+  'canvas.mobile.learningSheet': 'ஆய்வு தாள்',
+  'canvas.mobile.learningSheetCustomDesc': 'முனையைக் காலி செய்ய அதைக் கிளிக் செய்து, அதை மீட்டெடுக்க மீண்டும் கிளிக் செய்யவும்.',
   'canvas.mindMapSideToolbar.oneSentence': 'உரையாடல் மாற்றம்',
   'canvas.mindMapSideToolbar.mindClassroom': 'சிந்தனை விரிவுரை மண்டபம்',
   'canvas.mindClassroom.title': 'சிந்தனை விரிவுரை மண்டபம்',
-  'canvas.mindClassroom.intro':
-    'வரைபடத்தைச் சுற்றி விளக்கவும்: கேன்வாஸ் குரல் சுற்றுப்பயணம் அல்லது இரட்டை நெடுவரிசை ஸ்லைடு விளக்கத்தை நீங்கள் தேர்வு செய்யலாம்.',
+  'canvas.mindClassroom.intro': 'வரைபடத்தைச் சுற்றி விளக்கவும்: கேன்வாஸ் குரல் சுற்றுப்பயணம் அல்லது இரட்டை நெடுவரிசை ஸ்லைடு விளக்கத்தை நீங்கள் தேர்வு செய்யலாம்.',
   'canvas.mindClassroom.lead': 'இந்த மன வரைபடத்தைச் சுற்றி AI ஆசிரியர் உங்களுடன் பேசட்டும்',
   'canvas.mindClassroom.mascotBubble': 'சிந்தனை விரிவுரை மண்டபம் இங்கே!',
   'canvas.mindClassroom.mascotDismiss': 'கீழே தள்ளுங்கள்',
-  'canvas.mindClassroom.audienceLine':
-    'தற்போதைய பார்வையாளர்கள்: {level} (கீழே இருந்து [தொழில்முறை உள்ளடக்கம்])',
+  'canvas.mindClassroom.audienceLine': 'தற்போதைய பார்வையாளர்கள்: {level} (கீழே இருந்து [தொழில்முறை உள்ளடக்கம்])',
   'canvas.mindClassroom.start': 'விளக்கத் தொடங்குங்கள்',
-  'canvas.mindClassroom.startPreview':
-    'தேர்ந்தெடுக்கப்பட்டது "{mastery}" · "{presentation}" · "{tone}" · பார்வையாளர்கள் "{audience}". உள்நுழைந்த பிறகு, விரிவுரை குறிப்புகள்/கற்பித்தல் திட்டங்களை உருவாக்க வரிசையில் நிற்கவும்; பார்வையாளர்கள் உள்ளூர் டெம்ப்ளேட்களைப் பயன்படுத்துகின்றனர்.',
+  'canvas.mindClassroom.startPreview': 'தேர்ந்தெடுக்கப்பட்டது "{mastery}" · "{presentation}" · "{tone}" · பார்வையாளர்கள் "{audience}". உள்நுழைந்த பிறகு, விரிவுரை குறிப்புகள்/கற்பித்தல் திட்டங்களை உருவாக்க வரிசையில் நிற்கவும்; பார்வையாளர்கள் உள்ளூர் டெம்ப்ளேட்களைப் பயன்படுத்துகின்றனர்.',
   'canvas.mindClassroom.queue.queued': 'டுடோரியல் வரிசையில் ஏற்கனவே சேர்ந்துள்ளது...',
-  'canvas.mindClassroom.queue.planning':
-    'விரிவுரை குறிப்புகள்/கற்பித்தல் திட்டங்களை உருவாக்குதல்...',
+  'canvas.mindClassroom.queue.planning': 'விரிவுரை குறிப்புகள்/கற்பித்தல் திட்டங்களை உருவாக்குதல்...',
   'canvas.mindClassroom.queue.transcriptBranch': '{name} கிளைக்கான பாடத் திட்டங்களை எழுதுதல்',
-  'canvas.mindClassroom.queue.transcriptRemaining':
-    'மற்ற பாடத் திட்டங்களை எழுதுதல் ({done}/{total})',
+  'canvas.mindClassroom.queue.transcriptRemaining': 'மற்ற பாடத் திட்டங்களை எழுதுதல் ({done}/{total})',
   'canvas.mindClassroom.queue.transcript': 'விரிவுரை குறிப்புகள்/பாடத்திட்டங்களை எழுதுதல்...',
   'canvas.mindClassroom.queue.generating': 'ஸ்லைடுஷோவை உருவாக்குகிறது...',
   'canvas.mindClassroom.queue.loadingVoice': 'குரல்களை ஏற்றுகிறது…',
   'canvas.mindClassroom.queue.ready': 'விரிவுரையைத் தொடங்கலாம்',
-  'canvas.mindClassroom.queue.readyHint':
-    'விரிவுரை குறிப்புகள்/பாடத்திட்டங்கள் தயாராக உள்ளன மற்றும் விரிவுரை தொடங்கலாம்.',
+  'canvas.mindClassroom.queue.readyHint': 'விரிவுரை குறிப்புகள்/பாடத்திட்டங்கள் தயாராக உள்ளன மற்றும் விரிவுரை தொடங்கலாம்.',
   'canvas.mindClassroom.queue.failed': 'தயாரிப்பு தோல்வியை விளக்குங்கள்',
   'canvas.mindClassroom.queue.cancel': 'வரிசையை ரத்துசெய்',
   'canvas.mindClassroom.queue.restart': 'பாடத் திட்டங்களை மீண்டும் எழுதவும்',
-  'canvas.mindClassroom.queue.restartHint':
-    'தற்போதைய தேர்வுகளுடன் விரிவுரை குறிப்புகள்/பாடம் திட்டங்களை மீண்டும் உருவாக்கவும்',
-  'canvas.mindClassroom.queue.guestHint':
-    'பார்வையாளர்கள் விளக்கங்களுக்கு உள்ளூர் டெம்ப்ளேட்களைப் பயன்படுத்துகின்றனர்; உள்நுழைந்த பிறகு, இயந்திரம் விரிவுரை குறிப்புகள்/கற்பித்தல் திட்டங்களை உருவாக்குகிறது.',
+  'canvas.mindClassroom.queue.restartHint': 'தற்போதைய தேர்வுகளுடன் விரிவுரை குறிப்புகள்/பாடம் திட்டங்களை மீண்டும் உருவாக்கவும்',
+  'canvas.mindClassroom.queue.guestHint': 'பார்வையாளர்கள் விளக்கங்களுக்கு உள்ளூர் டெம்ப்ளேட்களைப் பயன்படுத்துகின்றனர்; உள்நுழைந்த பிறகு, இயந்திரம் விரிவுரை குறிப்புகள்/கற்பித்தல் திட்டங்களை உருவாக்குகிறது.',
   'canvas.mindClassroom.queue.loginRequired': 'விளக்கத்தைத் தொடங்கும் முன் முதலில் உள்நுழையவும்.',
   'canvas.mindClassroom.queue.preparing': 'விளக்க தயாராகிறது...',
   'canvas.mindClassroom.settings.masteryTitle': 'இந்தப் படம் எனக்கு எவ்வளவு பரிச்சயம்',
   'canvas.mindClassroom.settings.mastery.first_look.title': 'முதல் அறிமுகம்',
   'canvas.mindClassroom.settings.mastery.review.title': 'மதிப்பாய்வு செய்து ஒருங்கிணைக்கவும்',
   'canvas.mindClassroom.settings.mastery.teach.title': 'பாடம் தயாரித்தல் மற்றும் கற்பித்தல்',
-  'canvas.mindClassroom.settings.presentationTitle':
-    'விளக்கத்தை எவ்வாறு வழங்க வேண்டும் என்று நான் விரும்புகிறேன்',
+  'canvas.mindClassroom.settings.presentationTitle': 'விளக்கத்தை எவ்வாறு வழங்க வேண்டும் என்று நான் விரும்புகிறேன்',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'கேன்வாஸ் குரல் பயணம்',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
-    'வரைபட கேன்வாஸில் ஆடியோ விளக்கத்தில் கவனம் செலுத்துங்கள், முக்கிய கிளை அல்லது முனை மூலம் முனையைத் தேர்ந்தெடுக்கவும்.',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'வரைபட கேன்வாஸில் ஆடியோ விளக்கத்தில் கவனம் செலுத்துங்கள், முக்கிய கிளை அல்லது முனை மூலம் முனையைத் தேர்ந்தெடுக்கவும்.',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'ஸ்லைடு விளக்கம்',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
-    'AI ஸ்லைடுகளை உருவாக்குகிறது, ஒப்பிடுவதற்கு இடதுபுறத்தில் ஒரு வரைபடம் மற்றும் வலதுபுறத்தில் ஒரு பக்கத்தைத் திருப்பும் விளக்கத்துடன்.',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
-    'வளர்ச்சியில் உள்ளது, விரைவில் ஆன்லைனில் இருக்கும்',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'AI ஸ்லைடுகளை உருவாக்குகிறது, ஒப்பிடுவதற்கு இடதுபுறத்தில் ஒரு வரைபடம் மற்றும் வலதுபுறத்தில் ஒரு பக்கத்தைத் திருப்பும் விளக்கத்துடன்.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': 'வளர்ச்சியில் உள்ளது, விரைவில் ஆன்லைனில் இருக்கும்',
   'canvas.mindClassroom.settings.tourScopeTitle': 'டூர் கிரானுலாரிட்டி',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'மாஸ்டர் கிளை மூலம்',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
-    'முதல் நிலை கிளைகள் படிப்படியாக கற்பிக்கப்படுகின்றன மற்றும் தாளம் மிகவும் நிலையானது.',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'முதல் நிலை கிளைகள் படிப்படியாக கற்பிக்கப்படுகின்றன மற்றும் தாளம் மிகவும் நிலையானது.',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'முனை முனை',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc':
-    'ஒவ்வொரு முனையிலும் ஆழமாகச் செல்லவும், தீவிர வாசிப்புக்கு ஏற்றது.',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'ஒவ்வொரு முனையிலும் ஆழமாகச் செல்லவும், தீவிர வாசிப்புக்கு ஏற்றது.',
   'canvas.mindClassroom.settings.slideStyleTitle': 'ஸ்லைடுஷோ பாணி',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'யுனிவர்சல் ஸ்லைடுகள்',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'கரும்பலகை அறிக்கை',
@@ -1228,12 +1034,10 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': 'தீவிர வாசிப்பு',
   'canvas.mindClassroom.settings.tone.examples': 'வளமான உதாரணங்கள்',
   'canvas.mindClassroom.settings.tone.exam_outline': 'பரீட்சை அவுட்லைன்',
-  'canvas.mindClassroom.lecture.needDiagram':
-    'விளக்கத்தைத் தொடங்கும் முன் கேன்வாஸில் மன வரைபடத்தை உருவாக்கவும்.',
+  'canvas.mindClassroom.lecture.needDiagram': 'விளக்கத்தைத் தொடங்கும் முன் கேன்வாஸில் மன வரைபடத்தை உருவாக்கவும்.',
   'canvas.mindClassroom.lecture.emptySteps': 'தற்போதைய வரைபடத்தில் விளக்க எந்த முனைகளும் இல்லை.',
   'canvas.mindClassroom.lecture.cancelled': 'பயிற்சி வரிசை ரத்து செய்யப்பட்டது.',
-  'canvas.mindClassroom.lecture.queueFailed':
-    'டுடோரியல் தயாரிப்பது தோல்வியடைந்தது, பிறகு முயற்சிக்கவும்.',
+  'canvas.mindClassroom.lecture.queueFailed': 'டுடோரியல் தயாரிப்பது தோல்வியடைந்தது, பிறகு முயற்சிக்கவும்.',
   'canvas.mindClassroom.lecture.pause': 'இடைநிறுத்தம்',
   'canvas.mindClassroom.lecture.resume': 'தொடரவும்',
   'canvas.mindClassroom.lecture.prev': 'முந்தைய பகுதி',
@@ -1242,56 +1046,34 @@ export default {
   'canvas.mindClassroom.lecture.mute': 'சத்தமாக வாசிப்பதை அணைக்கவும்',
   'canvas.mindClassroom.lecture.unmute': 'சத்தமாக படிக்க ஆரம்பியுங்கள்',
   'canvas.mindClassroom.lecture.script.noBranches': 'சில புள்ளிகள்',
-  'canvas.mindClassroom.lecture.script.leafNode':
-    'இந்த கிளை பற்றிய கூடுதல் விவரங்கள் எதுவும் இதுவரை இல்லை.',
-  'canvas.mindClassroom.lecture.script.overview.classroom':
-    'வணக்கம், வகுப்பு தோழர்களே. இன்று நாம் "{topic}" பற்றி கற்றுக்கொள்கிறோம், "{audience}" பார்வையாளர்களை எதிர்கொள்கிறோம், மேலும் "{mastery}" வேகத்தில் விரிவடைகிறோம். முழுப் படமும் முக்கியமாக உள்ளடக்கியது: {branches}. முதலில் ஒட்டுமொத்த படத்தைப் பாருங்கள், பின்னர் அதை துண்டு துண்டாக வரிசைப்படுத்துங்கள்.',
-  'canvas.mindClassroom.lecture.script.overview.story':
-    'முதலில் ஒரு கதையின் தலைப்பாக "{topic}" என்று நினைக்கவும். "{audience}" ஐ எதிர்கொண்டு, முழுப் படத்திலிருந்து விவரங்களுக்குச் செல்வோம்: கதையில் இந்த அத்தியாயங்கள் உள்ளன-{branches}.',
-  'canvas.mindClassroom.lecture.script.overview.dialogue':
-    'முதலில் "{topic}" ஐ ஒன்றாகப் பார்ப்போம். நீங்கள் "{audience}" ஆக இருந்தால், எந்தப் பகுதிகளை முதலில் கவனிப்பீர்கள்? முழுப் படமும் தோராயமாக உள்ளடக்கியது: {branches}. கேள்விகள் கேட்டு பதில் சொல்லிக்கொண்டே இறங்கினோம்.',
-  'canvas.mindClassroom.lecture.script.overview.socratic':
-    'முடிவை இன்னும் மனப்பாடம் செய்ய அவசரப்பட வேண்டாம். "{topic}" எதிர்கொள்ளும் போது, ​​ஒரு படத்தை உருவாக்குவது மதிப்புக்குரியது என்று ஏன் நினைக்கிறீர்கள்? "{mastery}" இன் ஆழத்தைப் பின்பற்றி, இந்தக் கிளைகளில் இருந்து கேட்கிறோம்: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.fast':
-    '"{topic}" ({audience}) ஐ விரைவாகப் பாருங்கள். தண்டு: {branches}. அடுத்து, புள்ளியை ஒவ்வொன்றாக அடையுங்கள்.',
-  'canvas.mindClassroom.lecture.script.overview.close_read':
-    'தீவிர வாசிப்பு திறப்பு: தீம் "{topic}". முதலில் ஒட்டுமொத்த அமைப்பைப் புரிந்து கொள்ளுங்கள் - {branches} - பின்னர் ஒவ்வொரு கிளையிலும் கவனமாகப் படிக்கவும். பார்வையாளர்கள் அமைப்பு: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.examples':
-    'ஒரு உதாரணத்துடன் தொடங்குங்கள். தீம் "{topic}" வாழ்க்கை அல்லது வகுப்பறையில் ஒரு காட்சியாக கருதப்படலாம்; முழுப் படத்தின் கிளைகளும் வெவ்வேறு காட்சிகளைப் போல உள்ளன: {branches}. பார்வையாளர்கள்: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline':
-    'சோதனை புள்ளிகளின் மேலோட்டம்: "{topic}". அவுட்லைன்——{branches} படி முக்கிய புள்ளிகளை பதிவு செய்யவும். சிரமம் "{audience}" க்கு சீரமைக்கப்பட்டது மற்றும் ரிதம் "{mastery}".',
-  'canvas.mindClassroom.lecture.script.branch.classroom':
-    'கிளை {index}/{total}: "{title}" ஐப் பாருங்கள். அதன் அடியிலும்: {children}. மொத்தத்தில் இந்தப் பிரிவின் பங்கைப் புரிந்துகொள்ள வரைபடத்தின் நிலையைப் பார்க்கவும்.',
-  'canvas.mindClassroom.lecture.script.branch.story':
-    'கதை {index} "{title}" அத்தியாயத்தை அடைகிறது. இந்த அத்தியாயத்தில் தோன்றியது: {children}. படத்தின் ஒட்டுமொத்த கதைக்களத்தை அவர்கள் எவ்வாறு முன்னேற்றுகிறார்கள் என்பதைப் பற்றி சிந்தியுங்கள்.',
-  'canvas.mindClassroom.lecture.script.branch.dialogue':
-    'நான் உங்களிடம் இதைக் கேட்கிறேன்: "{title}" என்று நீங்கள் குறிப்பிடும்போது, ​​நீங்கள் என்ன நினைக்கிறீர்கள்? வரைபடம் கொடுக்கிறது: {children}. ஒப்பிடுவோம் ({index}/{total}).',
-  'canvas.mindClassroom.lecture.script.branch.socratic':
-    'பின்தொடர்தல் கேள்வி: "{title}" ஏன் தனி கிளையாக இருக்க வேண்டும்? துணைப்புள்ளி "{children}" உடன் அதன் தொடர்பு என்ன? முதலில் அதற்கு நீங்களே பதிலளிக்கவும், பின்னர் வரைபடத்தைப் பார்க்கவும் ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.leafNode': 'இந்த கிளை பற்றிய கூடுதல் விவரங்கள் எதுவும் இதுவரை இல்லை.',
+  'canvas.mindClassroom.lecture.script.overview.classroom': 'வணக்கம், வகுப்பு தோழர்களே. இன்று நாம் "{topic}" பற்றி கற்றுக்கொள்கிறோம், "{audience}" பார்வையாளர்களை எதிர்கொள்கிறோம், மேலும் "{mastery}" வேகத்தில் விரிவடைகிறோம். முழுப் படமும் முக்கியமாக உள்ளடக்கியது: {branches}. முதலில் ஒட்டுமொத்த படத்தைப் பாருங்கள், பின்னர் அதை துண்டு துண்டாக வரிசைப்படுத்துங்கள்.',
+  'canvas.mindClassroom.lecture.script.overview.story': 'முதலில் ஒரு கதையின் தலைப்பாக "{topic}" என்று நினைக்கவும். "{audience}" ஐ எதிர்கொண்டு, முழுப் படத்திலிருந்து விவரங்களுக்குச் செல்வோம்: கதையில் இந்த அத்தியாயங்கள் உள்ளன-{branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue': 'முதலில் "{topic}" ஐ ஒன்றாகப் பார்ப்போம். நீங்கள் "{audience}" ஆக இருந்தால், எந்தப் பகுதிகளை முதலில் கவனிப்பீர்கள்? முழுப் படமும் தோராயமாக உள்ளடக்கியது: {branches}. கேள்விகள் கேட்டு பதில் சொல்லிக்கொண்டே இறங்கினோம்.',
+  'canvas.mindClassroom.lecture.script.overview.socratic': 'முடிவை இன்னும் மனப்பாடம் செய்ய அவசரப்பட வேண்டாம். "{topic}" எதிர்கொள்ளும் போது, ​​ஒரு படத்தை உருவாக்குவது மதிப்புக்குரியது என்று ஏன் நினைக்கிறீர்கள்? "{mastery}" இன் ஆழத்தைப் பின்பற்றி, இந்தக் கிளைகளில் இருந்து கேட்கிறோம்: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast': '"{topic}" ({audience}) ஐ விரைவாகப் பாருங்கள். தண்டு: {branches}. அடுத்து, புள்ளியை ஒவ்வொன்றாக அடையுங்கள்.',
+  'canvas.mindClassroom.lecture.script.overview.close_read': 'தீவிர வாசிப்பு திறப்பு: தீம் "{topic}". முதலில் ஒட்டுமொத்த அமைப்பைப் புரிந்து கொள்ளுங்கள் - {branches} - பின்னர் ஒவ்வொரு கிளையிலும் கவனமாகப் படிக்கவும். பார்வையாளர்கள் அமைப்பு: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples': 'ஒரு உதாரணத்துடன் தொடங்குங்கள். தீம் "{topic}" வாழ்க்கை அல்லது வகுப்பறையில் ஒரு காட்சியாக கருதப்படலாம்; முழுப் படத்தின் கிளைகளும் வெவ்வேறு காட்சிகளைப் போல உள்ளன: {branches}. பார்வையாளர்கள்: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'சோதனை புள்ளிகளின் மேலோட்டம்: "{topic}". அவுட்லைன்——{branches} படி முக்கிய புள்ளிகளை பதிவு செய்யவும். சிரமம் "{audience}" க்கு சீரமைக்கப்பட்டது மற்றும் ரிதம் "{mastery}".',
+  'canvas.mindClassroom.lecture.script.branch.classroom': 'கிளை {index}/{total}: "{title}" ஐப் பாருங்கள். அதன் அடியிலும்: {children}. மொத்தத்தில் இந்தப் பிரிவின் பங்கைப் புரிந்துகொள்ள வரைபடத்தின் நிலையைப் பார்க்கவும்.',
+  'canvas.mindClassroom.lecture.script.branch.story': 'கதை {index} "{title}" அத்தியாயத்தை அடைகிறது. இந்த அத்தியாயத்தில் தோன்றியது: {children}. படத்தின் ஒட்டுமொத்த கதைக்களத்தை அவர்கள் எவ்வாறு முன்னேற்றுகிறார்கள் என்பதைப் பற்றி சிந்தியுங்கள்.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue': 'நான் உங்களிடம் இதைக் கேட்கிறேன்: "{title}" என்று நீங்கள் குறிப்பிடும்போது, ​​நீங்கள் என்ன நினைக்கிறீர்கள்? வரைபடம் கொடுக்கிறது: {children}. ஒப்பிடுவோம் ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.socratic': 'பின்தொடர்தல் கேள்வி: "{title}" ஏன் தனி கிளையாக இருக்க வேண்டும்? துணைப்புள்ளி "{children}" உடன் அதன் தொடர்பு என்ன? முதலில் அதற்கு நீங்களே பதிலளிக்கவும், பின்னர் வரைபடத்தைப் பார்க்கவும் ({index}/{total}).',
   'canvas.mindClassroom.lecture.script.branch.fast': '“{title}” → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read':
-    '"{title}" ஐத் தீவிரமாகப் படியுங்கள். துணைத் தகவலை ஒவ்வொன்றாகப் படிக்கவும்: {children}. இந்த கிளை பத்தி {index}/{total} இல் உள்ளது. சொற்கள் மற்றும் நிலைக்கு கவனம் செலுத்துங்கள்.',
-  'canvas.mindClassroom.lecture.script.branch.examples':
-    '"{title}" ஐப் புரிந்துகொள்ள உதவும் ஒரு உதாரணத்தைக் கொடுங்கள்: அதில் {children} உள்ள ஒரு குறிப்பிட்ட காட்சியாக நீங்கள் நினைக்கலாம். நாங்கள் {index}/{total} கிளையில் இருக்கிறோம்.',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline':
-    'சோதனைப் புள்ளி {index}/{total}: "{title}". துணைப் புள்ளிகள்: {children}. மதிப்பாய்வு செய்யும் போது, ​​முதலில் தலைப்பை மனப்பாடம் செய்து பின்னர் விவரங்களை நிரப்பவும்.',
-  'canvas.mindClassroom.lecture.script.closing.first_look':
-    'ஒட்டுமொத்த மதிப்பாய்வு: "{topic}" இன் எலும்புக்கூட்டை இப்போது தெரிந்துகொண்டோம். முழுப் படத்தையும் மீண்டும் ஸ்கேன் செய்து, உங்களுக்கு இன்னும் அறிமுகமில்லாத இரண்டு அல்லது மூன்று புள்ளிகளைக் குறிக்கவும், அடுத்த முறை அங்கு தொடங்கவும் பரிந்துரைக்கப்படுகிறது.',
-  'canvas.mindClassroom.lecture.script.closing.review':
-    'மறுஆய்வு முடிவு: "{topic}" புத்தகத்தை மூடுவதன் மூலம் முக்கிய விஷயங்களை மீண்டும் சொல்ல முடியுமா? ஒரு பகுதி சிக்கியிருந்தால், வரைபடத்தில் உள்ள பகுதிக்குச் சென்று மீண்டும் அதன் வழியாகச் செல்லவும்.',
-  'canvas.mindClassroom.lecture.script.closing.teach':
-    'பாடம் தயாரித்தல் மற்றும் நிறைவு செய்தல்: "{topic}" முதல் "{audience}" வரை கற்பிக்கும்போது, ​​வரைபடத்தின் வரிசையைப் பின்பற்றலாம்: திறப்பு - விரிவாக்கம் - மூடுதல். நீங்கள் ஒரு குறிப்பிட்ட கிளையை வகுப்பு கேள்விகளாக பிரிக்கலாம்.',
-  'canvas.mindMapSideToolbar.oneSentenceIntro':
-    'ஒரு வாக்கியத்தைப் பயன்படுத்தி தலைப்பு அல்லது மாற்றத் தேவைகளை விவரிக்கவும், மேலும் புத்திசாலித்தனமாக வரைபடத்தை உருவாக்கி சரிசெய்யவும்',
+  'canvas.mindClassroom.lecture.script.branch.close_read': '"{title}" ஐத் தீவிரமாகப் படியுங்கள். துணைத் தகவலை ஒவ்வொன்றாகப் படிக்கவும்: {children}. இந்த கிளை பத்தி {index}/{total} இல் உள்ளது. சொற்கள் மற்றும் நிலைக்கு கவனம் செலுத்துங்கள்.',
+  'canvas.mindClassroom.lecture.script.branch.examples': '"{title}" ஐப் புரிந்துகொள்ள உதவும் ஒரு உதாரணத்தைக் கொடுங்கள்: அதில் {children} உள்ள ஒரு குறிப்பிட்ட காட்சியாக நீங்கள் நினைக்கலாம். நாங்கள் {index}/{total} கிளையில் இருக்கிறோம்.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'சோதனைப் புள்ளி {index}/{total}: "{title}". துணைப் புள்ளிகள்: {children}. மதிப்பாய்வு செய்யும் போது, ​​முதலில் தலைப்பை மனப்பாடம் செய்து பின்னர் விவரங்களை நிரப்பவும்.',
+  'canvas.mindClassroom.lecture.script.closing.first_look': 'ஒட்டுமொத்த மதிப்பாய்வு: "{topic}" இன் எலும்புக்கூட்டை இப்போது தெரிந்துகொண்டோம். முழுப் படத்தையும் மீண்டும் ஸ்கேன் செய்து, உங்களுக்கு இன்னும் அறிமுகமில்லாத இரண்டு அல்லது மூன்று புள்ளிகளைக் குறிக்கவும், அடுத்த முறை அங்கு தொடங்கவும் பரிந்துரைக்கப்படுகிறது.',
+  'canvas.mindClassroom.lecture.script.closing.review': 'மறுஆய்வு முடிவு: "{topic}" புத்தகத்தை மூடுவதன் மூலம் முக்கிய விஷயங்களை மீண்டும் சொல்ல முடியுமா? ஒரு பகுதி சிக்கியிருந்தால், வரைபடத்தில் உள்ள பகுதிக்குச் சென்று மீண்டும் அதன் வழியாகச் செல்லவும்.',
+  'canvas.mindClassroom.lecture.script.closing.teach': 'பாடம் தயாரித்தல் மற்றும் நிறைவு செய்தல்: "{topic}" முதல் "{audience}" வரை கற்பிக்கும்போது, ​​வரைபடத்தின் வரிசையைப் பின்பற்றலாம்: திறப்பு - விரிவாக்கம் - மூடுதல். நீங்கள் ஒரு குறிப்பிட்ட கிளையை வகுப்பு கேள்விகளாக பிரிக்கலாம்.',
+  'canvas.mindMapSideToolbar.oneSentenceIntro': 'ஒரு வாக்கியத்தைப் பயன்படுத்தி தலைப்பு அல்லது மாற்றத் தேவைகளை விவரிக்கவும், மேலும் புத்திசாலித்தனமாக வரைபடத்தை உருவாக்கி சரிசெய்யவும்',
   'canvas.mindMapSideToolbar.documentSummary': 'ஆவணச் சுருக்கம்',
-  'fileCenter.intro':
-    'தொகுப்பு என்பது தற்போதைய விளக்கப்படத்திற்காக ஒழுங்கமைக்கப்பட்ட ஆதாரங்களின் தொகுப்பாகும். நீங்கள் கோப்புகள், குறிப்புகள் அல்லது இணையப் பக்கங்களைச் சேர்க்கும்போது, ​​அந்த ஆதாரங்களின் அடிப்படையில் வரைபடம் தானாகவே கிளைகளை நிறைவு செய்கிறது.',
+  'fileCenter.intro': 'தொகுப்பு என்பது தற்போதைய விளக்கப்படத்திற்காக ஒழுங்கமைக்கப்பட்ட ஆதாரங்களின் தொகுப்பாகும். நீங்கள் கோப்புகள், குறிப்புகள் அல்லது இணையப் பக்கங்களைச் சேர்க்கும்போது, ​​அந்த ஆதாரங்களின் அடிப்படையில் வரைபடம் தானாகவே கிளைகளை நிறைவு செய்கிறது.',
   'fileCenter.defaultPackageName': 'பெயரிடப்படாத தரவு தொகுப்பு',
   'fileCenter.packageNameLabel': 'தொகுப்பு பெயர்',
   'fileCenter.createPackage': 'ஒரு தொகுப்பை உருவாக்கவும்',
   'fileCenter.deletePackage': 'தொகுப்பை நீக்கு',
-  'fileCenter.confirmDeletePackage':
-    'இந்தத் தொகுப்பையும் அதன் அனைத்து ஆதாரங்களையும் நீக்கவா? இந்தச் செயலைச் செயல்தவிர்க்க முடியாது.',
+  'fileCenter.confirmDeletePackage': 'இந்தத் தொகுப்பையும் அதன் அனைத்து ஆதாரங்களையும் நீக்கவா? இந்தச் செயலைச் செயல்தவிர்க்க முடியாது.',
   'fileCenter.corpusStatus': 'அட்டவணைப்படுத்தப்பட்ட {completed}/{total} ஆதாரங்கள்',
   'fileCenter.noSources': 'இன்னும் ஆதாரம் இல்லை, தயவுசெய்து கீழே சேர்க்கவும்.',
   'fileCenter.addSource': 'ஆதாரத்தைச் சேர்க்கவும்',
@@ -1303,8 +1085,7 @@ export default {
   'fileCenter.pastePlaceholder': 'குறிப்புகள் அல்லது உரையை ஆதாரமாக ஒட்டவும்...',
   'fileCenter.webUrlPlaceholder': 'https://example.com/article',
   'fileCenter.webContentPlaceholder': 'இணையப் பக்கத்தின் உரையை ஒட்டவும் அல்லது ஆதாரமாக உள்ளிடவும்…',
-  'fileCenter.saveDiagramForRag':
-    'தொகுப்பை இணைத்து, RAG மீட்டெடுப்பை இயக்க முதலில் விளக்கப்படத்தைச் சேமிக்கவும்.',
+  'fileCenter.saveDiagramForRag': 'தொகுப்பை இணைத்து, RAG மீட்டெடுப்பை இயக்க முதலில் விளக்கப்படத்தைச் சேமிக்கவும்.',
   'fileCenter.statusReady': 'தயார் · RAG இயக்கப்பட்டது',
   'fileCenter.statusPending': 'சேர்க்கப்பட்டது',
   'fileCenter.statusIndexing': 'அட்டவணைப்படுத்துகிறது…',
@@ -1312,8 +1093,7 @@ export default {
   'fileCenter.statusFailed': 'தோல்வி',
   'fileCenter.chunkingTooltip': 'துண்டிக்கும் இயந்திரங்கள் மற்றும் முறைகள் (H = படிநிலை)',
   'fileCenter.featureDisabledTitle': 'அறிவு இடம் இயக்கப்படவில்லை',
-  'fileCenter.featureDisabledHint':
-    'நாலெட்ஜ் ஸ்பேஸ் அம்சம் இயக்கப்பட்டிருக்கும் போது ஆவணச் சுருக்கங்கள் கிடைக்கும்.',
+  'fileCenter.featureDisabledHint': 'நாலெட்ஜ் ஸ்பேஸ் அம்சம் இயக்கப்பட்டிருக்கும் போது ஆவணச் சுருக்கங்கள் கிடைக்கும்.',
   'fileCenter.createFailed': 'தொகுப்பை உருவாக்க முடியவில்லை',
   'fileCenter.updateFailed': 'தொகுப்பைப் புதுப்பிக்க முடியவில்லை',
   'fileCenter.deleteFailed': 'நீக்குவது தோல்வியடைந்தது',
@@ -1322,14 +1102,10 @@ export default {
   'canvas.mindMapSideToolbar.closeOutline': 'அவுட்லைனை மூடு',
   'canvas.mindMapSideToolbar.outlineEmpty': 'இன்னும் முனை உள்ளடக்கம் இல்லை',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI அறிவார்ந்த தலைமுறை',
-  'canvas.mindMapSideToolbar.outlineEditHint':
-    'நிகழ்நேரத்தில் நேரடியாக மாற்றியமைக்க முனை உரையை இருமுறை கிளிக் செய்யவும்.',
-  'canvas.mindMapSideToolbar.outlineIntro':
-    'வரைபடக் கட்டமைப்பைத் திருத்த, வரிசையைச் சரிசெய்ய இழுத்து விடவும், மேலும் அவற்றைத் தொகுப்பாகச் சேர்க்க பல வரிகளை ஒட்டவும் அவுட்லைனைப் பயன்படுத்தவும்.',
-  'canvas.mindMapSideToolbar.outlineDragHint':
-    'வரிசையை சரிசெய்ய இழுத்து விடுங்கள்; உடன்பிறப்பு இடமாற்றத்திற்கான முனைக்கு மேலே/கீழே வைத்து, குழந்தை முனைக்கு நடுவில் வைக்கவும்',
-  'canvas.mindMapSideToolbar.outlinePasteHint':
-    'முனையைத் தேர்ந்தெடுத்து, உரையின் பல வரிகளை ஒட்டிய பிறகு, அதே அளவிலான முனைகளை தொகுதிகளாகச் சேர்க்கலாம்.',
+  'canvas.mindMapSideToolbar.outlineEditHint': 'நிகழ்நேரத்தில் நேரடியாக மாற்றியமைக்க முனை உரையை இருமுறை கிளிக் செய்யவும்.',
+  'canvas.mindMapSideToolbar.outlineIntro': 'வரைபடக் கட்டமைப்பைத் திருத்த, வரிசையைச் சரிசெய்ய இழுத்து விடவும், மேலும் அவற்றைத் தொகுப்பாகச் சேர்க்க பல வரிகளை ஒட்டவும் அவுட்லைனைப் பயன்படுத்தவும்.',
+  'canvas.mindMapSideToolbar.outlineDragHint': 'வரிசையை சரிசெய்ய இழுத்து விடுங்கள்; உடன்பிறப்பு இடமாற்றத்திற்கான முனைக்கு மேலே/கீழே வைத்து, குழந்தை முனைக்கு நடுவில் வைக்கவும்',
+  'canvas.mindMapSideToolbar.outlinePasteHint': 'முனையைத் தேர்ந்தெடுத்து, உரையின் பல வரிகளை ஒட்டிய பிறகு, அதே அளவிலான முனைகளை தொகுதிகளாகச் சேர்க்கலாம்.',
   'canvas.mindMapPaste.inserted': '{count} உடன்பிறப்பு முனைகள் செருகப்பட்டன',
   'canvas.mindMapPaste.truncated': 'வரம்பை மீறியது, முதல் 50 வரிசைகள் மட்டுமே செருகப்பட்டன',
   'canvas.mindMapSideToolbar.realtimeSync': 'நிகழ்நேர ஒத்திசைவு',
@@ -1339,55 +1115,40 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'கிளையை நீக்கு',
   'canvas.mindMapSideToolbar.expandBranch': 'கிளையை விரிவாக்குங்கள்',
   'canvas.mindMapSideToolbar.collapseBranch': 'நெருங்கிய கிளை',
-  'canvas.mindMapSideToolbar.aiGenerateDesc':
-    'தற்போதைய தலைப்பின் அடிப்படையில், ஒரு வாக்கியத்தில் புத்திசாலித்தனமாக மன வரைபட அமைப்பை விரிவுபடுத்துங்கள்.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc': 'தற்போதைய தலைப்பின் அடிப்படையில், ஒரு வாக்கியத்தில் புத்திசாலித்தனமாக மன வரைபட அமைப்பை விரிவுபடுத்துங்கள்.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'வெற்று அடைப்புக்குறி வரைபடத்தைத் திறக்கவும்',
-  'canvas.mindMapSideToolbar.exitLearningSheet':
-    'துளையிடப்பட்ட அடைப்புக்குறி வரைபடத்திலிருந்து வெளியேறவும்',
+  'canvas.mindMapSideToolbar.exitLearningSheet': 'துளையிடப்பட்ட அடைப்புக்குறி வரைபடத்திலிருந்து வெளியேறவும்',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'முழு படத்திற்கு மீட்டமைக்கவும்',
-  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
-  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro':
-    'வகுப்பறை பயிற்சி மற்றும் மதிப்பாய்வுக்கு ஏற்ற, குழிவான சாரக்கட்டு வரைபடத்தை உருவாக்குவதற்கான முறையைத் தேர்வு செய்யவும்.',
-  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
-  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
-    'Blank every node except the center topic; reference answers appear below the diagram.',
-  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'மீட்டமை ஐகான்',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody': 'Restore ஆனது ஹாலோவிங்கை உள்ளிடுவதற்கு முன் தற்போதைய படத்தை படத்துடன் மேலெழுதும். துளையிடப்பட்ட முனைகள் நிரப்பப்படும், மேலும் நீங்கள் மாற்றிய உரை மறைக்கப்படும். தொடரவா?',
+  'canvas.mindMapSideToolbar.learningSheetIntro': 'வகுப்பறை பயிற்சி மற்றும் மதிப்பாய்வுக்கு ஏற்ற, குழிவான சாரக்கட்டு வரைபடத்தை உருவாக்குவதற்கான முறையைத் தேர்வு செய்யவும்.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'அனைத்தையும் காலியாக விடவும்',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc': 'மைய கருப்பொருளைத் தவிர, மற்ற அனைத்து முனைகளும் வெற்றுத்தனமாக உள்ளன, மேலும் குறிப்பு பதில்கள் வரைபடத்தின் கீழே காட்டப்படும்.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'அனைத்து முனைகளையும் துளையிடவும்',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'தோராயமாக காலியாக விடப்பட்டது',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
-    'கணினி தானாகவே சுமார் 20% முனைகளை தோராயமாக வெளியேற்றுகிறது, மேலும் குறிப்பு பதில் வரைபடத்தின் கீழே காட்டப்படும்.',
-  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint':
-    '{count} முனைகள் காலியாகிவிட்டன · மூட Esc',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'கணினி தானாகவே சுமார் 20% முனைகளை தோராயமாக வெளியேற்றுகிறது, மேலும் குறிப்பு பதில் வரைபடத்தின் கீழே காட்டப்படும்.',
+  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} முனைகள் காலியாகிவிட்டன · மூட Esc',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'தனிப்பயன் குழிவுறுதல்',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
-    'சுட்டி ஒரு சுத்தியலாக மாறும், அதை வெளியேற்ற முனையில் கிளிக் செய்யவும்; மீட்டமைக்க மீண்டும் கிளிக் செய்யவும்.',
-  'canvas.mindMapSideToolbar.learningSheetActiveStatus':
-    'திறக்கப்பட்டது · துளையிடப்பட்ட {count} முனைகள்',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
-    'வெற்றுப் பயன்முறையில் · கேன்வாஸில் உள்ள முனையைக் கிளிக் செய்யவும்',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'சுட்டி ஒரு சுத்தியலாக மாறும், அதை வெளியேற்ற முனையில் கிளிக் செய்யவும்; மீட்டமைக்க மீண்டும் கிளிக் செய்யவும்.',
+  'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'திறக்கப்பட்டது · துளையிடப்பட்ட {count} முனைகள்',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'வெற்றுப் பயன்முறையில் · கேன்வாஸில் உள்ள முனையைக் கிளிக் செய்யவும்',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'தனிப்பயன் நாக் அவுட் முறை',
-  'canvas.mindMapSideToolbar.learningSheetPickHint':
-    'வெளியேற முனையைக் கிளிக் செய்யவும், மீட்டமைக்க மீண்டும் கிளிக் செய்யவும் · {count} காலியாகிவிட்டது · வெளியேற Esc',
+  'canvas.mindMapSideToolbar.learningSheetPickHint': 'வெளியேற முனையைக் கிளிக் செய்யவும், மீட்டமைக்க மீண்டும் கிளிக் செய்யவும் · {count} காலியாகிவிட்டது · வெளியேற Esc',
   'canvas.mindMapSideToolbar.learningSheetPickDone': 'முடிக்கவும்',
-  'canvas.mindMapSideToolbar.learningSheetProtectedNode':
-    'மைய முனை மற்றும் கட்டமைப்பு முனையை துளையிட முடியாது',
+  'canvas.mindMapSideToolbar.learningSheetProtectedNode': 'மைய முனை மற்றும் கட்டமைப்பு முனையை துளையிட முடியாது',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': 'வெற்று முனைகள்',
   'canvas.mindMapSideToolbar.learningSheetRandomBlankHistory': 'தோராயமாக வெற்று முனைகள்',
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': 'முனை உரையை மீட்டமை',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': 'குறிப்பு பதில்களை மறை',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': 'குறிப்பு பதில்களை வைத்திருங்கள்',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
-    'மூடப்படும் போது, ​​பதில் நாக் அவுட் பகுதியில் உள்ள கேன்வாஸில் காட்டப்படாது',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': 'மூடப்படும் போது, ​​பதில் நாக் அவுட் பகுதியில் உள்ள கேன்வாஸில் காட்டப்படாது',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'கேன்வாஸ் குறிப்பு பதில்கள்',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': 'நிகழ்ச்சி',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': 'மறைக்க',
   'canvas.mindMapSideToolbar.learningSheetAnswersShortcut': 'குறுக்குவழி விசை: Ctrl + Shift + H',
   'canvas.mindMapSideToolbar.openMindmate': 'MindMate மைண்ட்மேட்டைத் திறக்கவும்',
-  'canvas.toolbar.learningSheetExportNudgeTitle':
-    'மதிப்பாய்வை மிகவும் திறம்படச் செய்ய ஒரே கிளிக்கில் ஆய்வுத் தாள்களை உருவாக்கவும்',
-  'canvas.toolbar.learningSheetExportNudgeDesc':
-    'PNG அல்லது PDF க்கு ஏற்றுமதி செய்யவும், அச்சிட்டு பயிற்சிக்காக மாணவர்களுடன் பகிரவும்.',
+  'canvas.toolbar.learningSheetExportNudgeTitle': 'மதிப்பாய்வை மிகவும் திறம்படச் செய்ய ஒரே கிளிக்கில் ஆய்வுத் தாள்களை உருவாக்கவும்',
+  'canvas.toolbar.learningSheetExportNudgeDesc': 'PNG அல்லது PDF க்கு ஏற்றுமதி செய்யவும், அச்சிட்டு பயிற்சிக்காக மாணவர்களுடன் பகிரவும்.',
   'canvas.toolbar.learningSheetExportNudgeDismiss': 'தெரிந்தது',
   'canvas.toolbar.learningSheetExportNudgeNeverRemind': 'மீண்டும் நினைவுபடுத்த வேண்டாம்',
   'diagram.flow.newCause': 'புதிய காரணங்கள்',
@@ -1467,10 +1228,8 @@ export default {
   'editor.savedSuccess': 'காப்பாற்றப்பட்டது',
   'editor.saveNeedsLogin': 'உள்நுழைந்து சேமிக்கவும்',
   'editor.saveWaitForGeneration': 'சேமிக்கும் முன் AI தலைமுறை முடியும் வரை காத்திருக்கவும்.',
-  'editor.saveBlockedSubgraphPreview':
-    'சேமிப்பதற்கு முன் AI துணைப் பட மாதிரிக்காட்சியை ஏற்கவும் அல்லது நிராகரிக்கவும்.',
-  'editor.saveBlockedCollabActive':
-    'நேரடி கூட்டுப்பணியின் போது, ​​கூட்டு அமர்வின் மூலம் மாற்றங்களைச் சேமிக்கவும்',
+  'editor.saveBlockedSubgraphPreview': 'சேமிப்பதற்கு முன் AI துணைப் பட மாதிரிக்காட்சியை ஏற்கவும் அல்லது நிராகரிக்கவும்.',
+  'editor.saveBlockedCollabActive': 'நேரடி கூட்டுப்பணியின் போது, ​​கூட்டு அமர்வின் மூலம் மாற்றங்களைச் சேமிக்கவும்',
   'editor.saveBlockedCollabGuest': 'கூட்டுப்பணியின் போது ஹோஸ்ட் மட்டுமே சேமிக்க முடியும்',
   'editor.saveNothingToSave': 'இன்னும் சேமிக்க எந்த உள்ளடக்கமும் இல்லை',
   'editor.saveFailed': 'சேமிக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்',
@@ -1480,8 +1239,7 @@ export default {
   'editor.redo': 'மீண்டும் செய்',
   'editor.saveDiagram': 'விளக்கப்படத்தை சேமிக்கவும்',
   'editor.selectDiagramType': 'விளக்கப்பட வகையைத் தேர்ந்தெடுக்கவும்',
-  'editor.slotsFull':
-    'இடம் நிரம்பியுள்ளது மற்றும் தானியங்கி சேமிப்பு சாத்தியமில்லை. இடத்தைக் காலியாக்க, ஏற்கனவே உள்ள ஐகான்களை நீக்கவும்.',
+  'editor.slotsFull': 'இடம் நிரம்பியுள்ளது மற்றும் தானியங்கி சேமிப்பு சாத்தியமில்லை. இடத்தைக் காலியாக்க, ஏற்கனவே உள்ள ஐகான்களை நீக்கவும்.',
   'editor.undo': 'ரத்து செய்',
   'editor.zoomIn': 'பெரிதாக்க',
   'editor.zoomOut': 'பெரிதாக்கு',
@@ -1521,8 +1279,7 @@ export default {
   'landing.diagramGrid.tree_map.title': 'மரம் வரைபடம்',
   'landing.diagramGrid.voice_notes.desc': 'உருவாக்கப்பட்ட வரைபடத்தைப் பதிவுசெய்தல்',
   'landing.diagramGrid.voice_notes.title': 'குரல் குறிப்புகள்',
-  'landing.template.freePlaceholder':
-    'தலைப்பு அல்லது கிளைகள், படிகள், வகைகள் போன்ற கட்டமைப்புத் தேவைகளை விவரிக்கவும்... அல்லது கீழே இருந்து ஒரு விளக்கப்பட டெம்ப்ளேட்டைத் தேர்வு செய்யவும்',
+  'landing.template.freePlaceholder': 'தலைப்பு அல்லது கிளைகள், படிகள், வகைகள் போன்ற கட்டமைப்புத் தேவைகளை விவரிக்கவும்... அல்லது கீழே இருந்து ஒரு விளக்கப்பட டெம்ப்ளேட்டைத் தேர்வு செய்யவும்',
   'landing.template.slot.criterion': 'வகைப்பாடு அளவுகோல்கள்',
   'landing.template.slot.event': 'நிகழ்வு',
   'landing.template.slot.itemA': 'விஷயம் ஏ',
@@ -1545,8 +1302,7 @@ export default {
   'mindgraphLanding.dialogSharedTitle': 'ஒன்றாக இணைந்து செயல்படுங்கள்',
   'mindgraphLanding.import': 'இறக்குமதி',
   'mindgraphLanding.languageMenuTitle': 'மொழி (இடைமுகம் AI வெளியீட்டுடன் ஒத்திசைக்கப்பட்டது)',
-  'mindgraphLanding.inputPlaceholder':
-    'உங்கள் ஐகானை விவரிக்கவும் அல்லது கீழே குறிப்பிட்ட ஐகான் டெம்ப்ளேட்டைத் தேர்வு செய்யவும்...',
+  'mindgraphLanding.inputPlaceholder': 'உங்கள் ஐகானை விவரிக்கவும் அல்லது கீழே குறிப்பிட்ட ஐகான் டெம்ப்ளேட்டைத் தேர்வு செய்யவும்...',
   'mindgraphLanding.join': 'சேர',
   'mindgraphLanding.joinFailed': 'சேர முடியவில்லை',
   'mindgraphLanding.joinPresentationFailed': 'டெமோவில் சேர முடியவில்லை',
@@ -1555,12 +1311,10 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'வளாகத்தில் அமர்வை ஏற்ற முடியவில்லை',
   'mindgraphLanding.networkError': 'பிணைய பிழை',
   'mindgraphLanding.networkErrorJoin': 'நெட்வொர்க் பிழை, இணைப்பதில் தோல்வி',
-  'mindgraphLanding.orgSessionsEmpty':
-    'சேருவதற்கு தற்போது வளாகத்தில் ஒத்துழைப்பு அமர்வுகள் எதுவும் இல்லை (சகாக்கள் "வளாகத்தில் ஒத்துழைப்பு" இயக்கப்பட்டிருக்க வேண்டும்).',
+  'mindgraphLanding.orgSessionsEmpty': 'சேருவதற்கு தற்போது வளாகத்தில் ஒத்துழைப்பு அமர்வுகள் எதுவும் இல்லை (சகாக்கள் "வளாகத்தில் ஒத்துழைப்பு" இயக்கப்பட்டிருக்க வேண்டும்).',
   'mindgraphLanding.participantsOnline': '{n} மக்கள் ஆன்லைனில்',
   'mindgraphLanding.schoolCollab': 'வளாகத்தில் ஒத்துழைப்பு',
-  'mindgraphLanding.sharedCodeHint':
-    'மற்ற தரப்பினரின் கூட்டு அமர்வில் சேர அழைப்புக் குறியீட்டை (xxx-xxx) உள்ளிடவும்.',
+  'mindgraphLanding.sharedCodeHint': 'மற்ற தரப்பினரின் கூட்டு அமர்வில் சேர அழைப்புக் குறியீட்டை (xxx-xxx) உள்ளிடவும்.',
   'mindgraphLanding.sharedCollab': 'ஒன்றாக இணைந்து செயல்படுங்கள்',
   'mindgraphLanding.joinDiagramEdit': 'ஐகான் எடிட்டரைச் சேர்க்கவும்',
   'mindgraphLanding.welcome': '{username}வணக்கம், நான் MindGraph AI சிந்தனை வரைபட உதவியாளர்',
@@ -1570,7 +1324,7 @@ export default {
   'canvasPage.collabParticipantsAria': 'கூட்டு பங்கேற்பாளர்கள்',
   'canvasPage.collabConnected': 'இணைக்கப்பட்டது',
   'canvas.topBar.viewOnly': 'பார்க்க மட்டும்',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
+  'canvas.share.readOnlyBar': '{name} திருத்தப்படுகிறது, தற்போது படிக்க மட்டுமே உள்ளது.',
   'canvasPage.collabParticipantsMore': 'மேலும்',
   'canvas.ribbon.file': 'ஆவணம்',
   'canvas.ribbon.nodes': 'முனை',
@@ -1625,8 +1379,7 @@ export default {
   'canvas.ribbon.tip.docGenerate': 'வரைபடத்தை உருவாக்க கோப்பைப் பதிவேற்றவும் அல்லது உரையை ஒட்டவும்',
   'canvas.ribbon.tip.webGenerate': 'வலைப்பக்கங்களை வலைவலம் செய்து வரைபடங்களை உருவாக்கவும்',
   'canvas.ribbon.tip.voiceSummary': 'பதிவுசெய்த பிறகு வரைபடத்தை உருவாக்கவும்',
-  'canvas.ribbon.tip.waterfall':
-    'தேர்ந்தெடுக்கப்பட்ட முனைக்கான கிளைகளை பரிந்துரைக்கவும் - கேன்வாஸுக்கு இழுக்க முடியும்',
+  'canvas.ribbon.tip.waterfall': 'தேர்ந்தெடுக்கப்பட்ட முனைக்கான கிளைகளை பரிந்துரைக்கவும் - கேன்வாஸுக்கு இழுக்க முடியும்',
   'canvas.ribbon.tip.oneSentence': 'ஒரு வாக்கியத்தில் தலைப்பை அல்லது மாற்றத்தை விவரிக்கவும்',
   'canvas.ribbon.tip.aiSubgraph': 'தேர்ந்தெடுக்கப்பட்ட முனையிலிருந்து துணைக் கிளையை விரிவாக்கவும்',
   'canvas.ribbon.tip.addChild': 'தேர்ந்தெடுக்கப்பட்ட முனையின் கீழ் துணைத் தலைப்பைச் சேர்க்கவும்',
@@ -1634,26 +1387,13 @@ export default {
   'canvas.ribbon.tip.deleteNode': 'தேர்ந்தெடுக்கப்பட்ட முனை மற்றும் அதன் சைல்டு நோட்களை நீக்கவும்',
   'canvas.ribbon.tip.import': 'கோப்புகளிலிருந்து மன வரைபடங்களை இறக்குமதி செய்யவும்',
   'canvas.ribbon.tip.export': 'படம், ஆவணம் அல்லது பகிர்வாக ஏற்றுமதி செய்யவும்',
-  'canvas.ribbon.tip.learningSheet':
-    'ஆய்வுத் தாளை உருவாக்க வரைபடத்தில் இருந்து முனைகளைத் தேர்ந்தெடுக்கவும்',
+  'canvas.ribbon.tip.learningSheet': 'ஆய்வுத் தாளை உருவாக்க வரைபடத்தில் இருந்து முனைகளைத் தேர்ந்தெடுக்கவும்',
   'canvas.ribbon.tip.presentation': 'இந்த வரைபடத்தை முழுத் திரையில் காட்டவும்',
   'canvas.ribbon.tip.explain': 'தேர்ந்தெடுக்கப்பட்ட முனைகளை AI விளக்குகிறது',
   'canvas.ribbon.tip.classroom': 'இந்த வரைபடத்தின் மூலம் AI ஆசிரியர் உங்களுக்கு வழிகாட்டட்டும்',
-  'canvas.ribbon.tip.collabOrg':
-    'எங்கள் பள்ளியைச் சேர்ந்த சக ஊழியர்களை ஒன்றாகத் திருத்த அழைக்கவும்',
+  'canvas.ribbon.tip.collabOrg': 'எங்கள் பள்ளியைச் சேர்ந்த சக ஊழியர்களை ஒன்றாகத் திருத்த அழைக்கவும்',
   'canvas.ribbon.tip.collabCross': 'இந்த வரைபடத்தைத் திருத்த பள்ளிகள் முழுவதும் ஒத்துழைக்கவும்',
   'canvas.ribbon.tip.collabOff': 'தற்போதைய கூட்டு அமர்வை முடிக்கவும்',
-  'canvas.ribbon.shareToSeminar': 'Share to seminar',
-  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
-  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
-  'canvas.ribbon.shareToSeminarHint':
-    'Start or join a seminar in MindMate, then come back to share this diagram.',
-  'canvas.ribbon.shareToSeminarConfirm': 'Share',
-  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
-  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
-  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
-  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
-  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': 'தேர்ந்தெடுக்கப்பட்ட முனை உரையை தடிமனாக மாற்றவும்',
   'canvas.ribbon.tip.italic': 'தேர்ந்தெடுக்கப்பட்ட முனை உரையை சாய்வாக அமைக்கவும்',
   'canvas.ribbon.tip.alignLeft': 'முனை உரை இடப்புறம் சீரமைக்கப்பட்டது',
@@ -1705,28 +1445,23 @@ export default {
   'canvas.ribbon.docGenerate': 'ஆவண உருவாக்கம்',
   'canvas.ribbon.webGenerate': 'இணைய இணைப்பு உருவாக்கம்',
   'canvas.ribbon.voiceSummary': 'பதிவு சுருக்கம்',
-  'canvas.ribbon.sourceLocked':
-    'தற்போதைய வரைபடம் {source} ஐ ஆதாரமாகப் பயன்படுத்தியுள்ளது. மற்றொரு தலைமுறை முறைக்கு மாற்றும் முன் புதிய வரைபடத்தை உருவாக்கவும்.',
+  'canvas.ribbon.sourceLocked': 'தற்போதைய வரைபடம் {source} ஐ ஆதாரமாகப் பயன்படுத்தியுள்ளது. மற்றொரு தலைமுறை முறைக்கு மாற்றும் முன் புதிய வரைபடத்தை உருவாக்கவும்.',
   'canvas.ribbon.sourceKind.doc': 'ஆவணம்',
   'canvas.ribbon.sourceKind.web': 'இணைய இணைப்பு',
   'canvas.ribbon.sourceKind.voice': 'பதிவு',
   'canvas.ribbon.assocLine': 'தொடர்புடைய வரி',
-  'canvas.ribbon.assocLineHint':
-    'இணைக்க மற்றொரு முனை மீது கிளிக் செய்யவும். ரத்து செய்ய Esc அல்லது வெற்று கேன்வாஸ்.',
-  'canvas.ribbon.assocLineSameSide':
-    'அசோசியேஷன் கோடுகள் ஒரே பக்கத்தில் உள்ள முனைகளை மட்டுமே இணைக்க முடியும்',
+  'canvas.ribbon.assocLineHint': 'இணைக்க மற்றொரு முனை மீது கிளிக் செய்யவும். ரத்து செய்ய Esc அல்லது வெற்று கேன்வாஸ்.',
+  'canvas.ribbon.assocLineSameSide': 'அசோசியேஷன் கோடுகள் ஒரே பக்கத்தில் உள்ள முனைகளை மட்டுமே இணைக்க முடியும்',
   'canvas.ribbon.assocLineDelete': 'தொடர்புடைய வரிகளை நீக்கவும்',
   'canvas.ribbon.summary': 'சுருக்கம்',
   'canvas.ribbon.insertImage': 'படம்',
   'canvas.ribbon.insertIcon': 'சின்னம்',
   'canvas.ribbon.insertLink': 'இணைப்பு',
   'canvas.ribbon.makeLearningSheet': 'ஒரு ஆய்வு தாளை உருவாக்கவும்',
-  'canvas.ribbon.makeLearningSheetHint':
-    'மதிப்பாய்வை மிகவும் திறம்படச் செய்ய ஒரே கிளிக்கில் ஆய்வுத் தாள்களை உருவாக்கவும்',
+  'canvas.ribbon.makeLearningSheetHint': 'மதிப்பாய்வை மிகவும் திறம்படச் செய்ய ஒரே கிளிக்கில் ஆய்வுத் தாள்களை உருவாக்கவும்',
   'canvas.ribbon.selectTwoNodes': 'முதலில் இரண்டு முனைகளைத் தேர்ந்தெடுக்கவும்',
   'canvas.ribbon.insertComingSoon': 'செருகும் திறன் விரைவில் கிடைக்கும்',
-  'canvas.ribbon.summaryNeedSiblings':
-    'அதே பெற்றோர் முனையின் கீழ் தொடர்ச்சியான முனைகளைத் தேர்ந்தெடுக்கவும்',
+  'canvas.ribbon.summaryNeedSiblings': 'அதே பெற்றோர் முனையின் கீழ் தொடர்ச்சியான முனைகளைத் தேர்ந்தெடுக்கவும்',
   'canvas.ribbon.summaryDelete': 'சுருக்கத்தை நீக்கு',
   'canvas.ribbon.linkName': 'பெயர்',
   'canvas.ribbon.linkUrl': 'இணைப்பு முகவரி',
@@ -1735,61 +1470,50 @@ export default {
   'canvas.ribbon.imageUrl': 'பட முகவரி',
   'canvas.ribbon.imagePick': 'படத்தைத் தேர்ந்தெடுக்கவும்',
   'canvas.ribbon.imageInvalid': 'சரியான பட முகவரியை உள்ளிடவும் அல்லது கோப்பைத் தேர்ந்தெடுக்கவும்',
-  'canvas.ribbon.imageTooLarge':
-    'படம் மிகவும் பெரியதாக உள்ளது, தயவுசெய்து சிறிய கோப்பாக மாற்றவும் அல்லது URL ஐப் பயன்படுத்தவும்',
+  'canvas.ribbon.imageTooLarge': 'படம் மிகவும் பெரியதாக உள்ளது, தயவுசெய்து சிறிய கோப்பாக மாற்றவும் அல்லது URL ஐப் பயன்படுத்தவும்',
   'canvas.ribbon.imageConfirm': 'படம் சேர்க்க',
   'canvas.ribbon.clearIcon': 'ஐகானை அகற்று',
   'canvas.ribbon.openLink': 'இணைப்பைத் திறக்கவும்',
   'canvas.ribbon.enlargeImage': 'படத்தை பெரிதாக்க கிளிக் செய்யவும்',
   'canvas.ribbon.aiHero.doc.ribbon': 'ஆவணச் சுத்திகரிப்பு',
   'canvas.ribbon.aiHero.doc.title': 'ஆவணங்களைப் பதிவேற்றவும்',
-  'canvas.ribbon.aiHero.doc.line1':
-    'முக்கிய புள்ளிகளை புத்திசாலித்தனமாக செம்மைப்படுத்த ஆவணங்களை மன வரைபடங்களாக மாற்றவும்',
+  'canvas.ribbon.aiHero.doc.line1': 'முக்கிய புள்ளிகளை புத்திசாலித்தனமாக செம்மைப்படுத்த ஆவணங்களை மன வரைபடங்களாக மாற்றவும்',
   'canvas.ribbon.aiHero.doc.line2': '',
   'canvas.ribbon.aiHero.web.ribbon': 'வரைபட வாசிப்பு வலைப்பக்கம்',
   'canvas.ribbon.aiHero.web.title': 'இணைய இணைப்பு ஒலிபெயர்ப்பு',
-  'canvas.ribbon.aiHero.web.line1':
-    'பிணைய இணைப்பை உள்ளிட்டு, சுருக்கத்தை புத்திசாலித்தனமாக செம்மைப்படுத்தவும்',
+  'canvas.ribbon.aiHero.web.line1': 'பிணைய இணைப்பை உள்ளிட்டு, சுருக்கத்தை புத்திசாலித்தனமாக செம்மைப்படுத்தவும்',
   'canvas.ribbon.aiHero.web.line2': '',
   'canvas.ribbon.aiHero.voice.ribbon': 'சந்திப்பு கலைப்பொருள்',
   'canvas.ribbon.aiHero.voice.title': 'நிகழ்நேர பதிவை இயக்கவும்',
   'canvas.ribbon.aiHero.voice.line1': 'உரைக்கு நிகழ்நேர பேச்சு',
-  'canvas.ribbon.aiHero.voice.line2':
-    'ஒரே நேரத்தில் மொழிபெயர்ப்பு மற்றும் முக்கிய புள்ளிகளின் புத்திசாலித்தனமான சுருக்கம்',
+  'canvas.ribbon.aiHero.voice.line2': 'ஒரே நேரத்தில் மொழிபெயர்ப்பு மற்றும் முக்கிய புள்ளிகளின் புத்திசாலித்தனமான சுருக்கம்',
   'canvas.ribbon.aiHero.chat.ribbon': 'அரட்டை இறக்குமதி',
   'canvas.ribbon.aiHero.chat.title': 'அரட்டை வரலாற்றை இறக்குமதி செய்யவும்',
   'canvas.ribbon.aiHero.chat.line1': 'இணைத்தல் குறியீட்டைப் பயன்படுத்தி ரீடரை இணைக்கவும்',
-  'canvas.ribbon.aiHero.chat.line2':
-    'ஒரே கிளிக்கில் உரையாடல்களை இறக்குமதி செய்து வரைபடங்களை உருவாக்கவும்',
+  'canvas.ribbon.aiHero.chat.line2': 'ஒரே கிளிக்கில் உரையாடல்களை இறக்குமதி செய்து வரைபடங்களை உருவாக்கவும்',
   'canvas.ribbon.aiHero.classroom.ribbon': 'கற்றல் கலைப்பொருள்',
   'canvas.ribbon.aiHero.classroom.title': 'சிந்தனை விரிவுரை மண்டபத்தைத் திறக்கவும்',
-  'canvas.ribbon.aiHero.classroom.line1':
-    'இந்த மன வரைபடத்தைச் சுற்றி AI ஆசிரியர் உங்களுடன் பேசட்டும்',
+  'canvas.ribbon.aiHero.classroom.line1': 'இந்த மன வரைபடத்தைச் சுற்றி AI ஆசிரியர் உங்களுடன் பேசட்டும்',
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'அடைப்புக்குறியை துளையிடவும்',
   'canvas.ribbon.aiHero.learningSheet.title': 'துளையிடப்பட்ட அடைப்புக்குறி வரைபடம்',
-  'canvas.ribbon.aiHero.learningSheet.line1':
-    'வகுப்பறை பயிற்சி மற்றும் மதிப்பாய்வுக்கு ஏற்ற சீரற்ற அல்லது தனிப்பயனாக்கப்பட்ட ஹாலோ அவுட்டைத் தேர்வு செய்யவும்',
+  'canvas.ribbon.aiHero.learningSheet.line1': 'வகுப்பறை பயிற்சி மற்றும் மதிப்பாய்வுக்கு ஏற்ற சீரற்ற அல்லது தனிப்பயனாக்கப்பட்ட ஹாலோ அவுட்டைத் தேர்வு செய்யவும்',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'மூளைச்சலவை',
   'canvas.ribbon.aiHero.brainstorm.title': 'AI மூளைச்சலவை',
   'canvas.ribbon.aiHero.brainstorm.line1': 'கிளை பரிந்துரைகளை உருவாக்க முனையைத் தேர்ந்தெடுக்கவும்',
-  'canvas.ribbon.aiHero.brainstorm.line2':
-    'அதைச் சரிபார்த்து வரைபடத்தில் பயன்படுத்தவும் அல்லது கேன்வாஸுக்கு இழுக்கவும்.',
+  'canvas.ribbon.aiHero.brainstorm.line2': 'அதைச் சரிபார்த்து வரைபடத்தில் பயன்படுத்தவும் அல்லது கேன்வாஸுக்கு இழுக்கவும்.',
   'canvas.ribbon.aiHero.oneSentence.ribbon': 'உரையாடலை மாற்றவும்',
   'canvas.ribbon.aiHero.oneSentence.title': 'உரையாடல் மாற்றம்',
-  'canvas.ribbon.aiHero.oneSentence.line1':
-    'ஒரு வாக்கியத்தில் தலைப்பு அல்லது மாற்ற கோரிக்கையை விவரிக்கவும்',
+  'canvas.ribbon.aiHero.oneSentence.line1': 'ஒரு வாக்கியத்தில் தலைப்பு அல்லது மாற்ற கோரிக்கையை விவரிக்கவும்',
   'canvas.ribbon.aiHero.oneSentence.line2': 'புத்திசாலித்தனமாக வரைபடங்களை உருவாக்கி சரிசெய்யவும்',
   'canvas.ribbon.aiHero.link.ribbon': 'செருகு',
   'canvas.ribbon.aiHero.link.title': 'இணைப்பைச் சேர்க்கவும்',
-  'canvas.ribbon.aiHero.link.line1':
-    'முனை காட்சி பெயர், முழு முகவரி இணைப்பு ஐகானில் மறைக்கப்பட்டுள்ளது',
+  'canvas.ribbon.aiHero.link.line1': 'முனை காட்சி பெயர், முழு முகவரி இணைப்பு ஐகானில் மறைக்கப்பட்டுள்ளது',
   'canvas.ribbon.aiHero.link.line2': '',
   'canvas.hero.image.ribbon': 'செருகு',
   'canvas.hero.image.title': 'படம் சேர்க்க',
-  'canvas.hero.image.line1':
-    'படத்தின் முகவரியை ஒட்டவும் அல்லது உங்கள் உள்ளூர் கணினியிலிருந்து கோப்பைத் தேர்ந்தெடுக்கவும்',
+  'canvas.hero.image.line1': 'படத்தின் முகவரியை ஒட்டவும் அல்லது உங்கள் உள்ளூர் கணினியிலிருந்து கோப்பைத் தேர்ந்தெடுக்கவும்',
   'canvas.hero.image.line2': '',
   'canvas.hero.icon.ribbon': 'செருகு',
   'canvas.hero.icon.title': 'ஐகானைச் சேர்க்கவும்',
@@ -1797,27 +1521,56 @@ export default {
   'canvas.hero.icon.line2': '',
   'canvas.hero.math.ribbon': 'செருகு',
   'canvas.hero.math.title': 'சூத்திரத்தைச் செருகவும்',
-  'canvas.hero.math.line1':
-    'LaTeX ஐ உள்ளிட ஃபார்முலா விசைப்பலகையைப் பயன்படுத்தவும், பின்னர் உறுதிப்படுத்திய பிறகு முனையை எழுதவும்.',
+  'canvas.hero.math.line1': 'LaTeX ஐ உள்ளிட ஃபார்முலா விசைப்பலகையைப் பயன்படுத்தவும், பின்னர் உறுதிப்படுத்திய பிறகு முனையை எழுதவும்.',
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': 'ஒத்துழைப்பு',
   'canvas.hero.collab.title': 'ஆன்லைன் ஒத்துழைப்பு',
-  'canvas.hero.collab.line1':
-    'படங்களை ஒன்றாக மாற்ற சக ஊழியர்களை அழைக்க பள்ளிக்குள் அல்லது அழைப்பிதழ் குறியீட்டு ஒத்துழைப்பை இயக்கவும்',
+  'canvas.hero.collab.line1': 'படங்களை ஒன்றாக மாற்ற சக ஊழியர்களை அழைக்க பள்ளிக்குள் அல்லது அழைப்பிதழ் குறியீட்டு ஒத்துழைப்பை இயக்கவும்',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': 'ஏற்றுமதி',
   'canvas.hero.worksheet.title': 'DOC/PDF க்கு ஏற்றுமதி செய்யவும்',
-  'canvas.hero.worksheet.line1':
-    'ஆய்வு தாள் தலைப்பு மற்றும் காகித விருப்பங்களை அமைக்கவும், முன்னோட்டம் மற்றும் ஏற்றுமதி',
+  'canvas.hero.worksheet.line1': 'ஆய்வு தாள் தலைப்பு மற்றும் காகித விருப்பங்களை அமைக்கவும், முன்னோட்டம் மற்றும் ஏற்றுமதி',
   'canvas.hero.worksheet.line2': '',
+  'canvas.hero.slotFull.ribbon': 'தொகுப்பு',
+  'canvas.hero.slotFull.title': 'கேலரி நிரம்பியுள்ளது',
+  'canvas.hero.slotFull.line1': 'ஏற்கனவே உள்ள ஐகானை நீக்கிவிட்டு, தற்போதைய ஐகானைச் சேமிக்கவும்',
+  'canvas.hero.slotFull.line2': '',
+  'canvas.voiceCommandGuide.title': 'குரல் கட்டளை வழிகாட்டி',
+  'canvas.voiceCommandGuide.collapse': 'குரல் கட்டளை வழிகாட்டியைச் சுருக்கவும்',
+  'canvas.voiceCommandGuide.example.add_node': '"சீனா கிளையைச் சேர்"',
+  'canvas.voiceCommandGuide.example.auto_complete_branch': '"இந்த சீனக் கிளையை முடிக்கவும்"',
+  'canvas.voiceCommandGuide.example.auto_complete': '"முழு படத்தையும் தானாக முடிக்கவும்"',
+  'canvas.voiceCommandGuide.example.select_node': '"சீனாவை தேர்ந்தெடு"',
+  'canvas.voiceCommandGuide.example.update_center': '"தொழில் கல்விக்கு கருப்பொருளை மாற்றவும்"',
+  'canvas.voiceCommandGuide.example.delete_node': '"சீனா கிளையை நீக்கு"',
+  'canvas.voiceCommandGuide.example.explain_node': '"சீனாவை விளக்குங்கள்"',
+  'canvas.voiceCommandGuide.example.start_inline_recommendations':
+    '"இந்த முனைக்கான சங்கப் பரிந்துரைகளைச் செய்யுங்கள்"',
+  'canvas.gestureGuide.dragNode': 'மொபைல் முனை',
+  'canvas.gestureGuide.dragNodeHint': 'ஒரு விரல் இழுப்பு',
+  'canvas.gestureGuide.slashDeleteHint': 'Finger or left-drag down',
+  'canvas.gestureGuide.slashSiblingHint': 'Slash left or right through it',
+  'canvas.gestureGuide.slashChild': 'Add child',
+  'canvas.gestureGuide.slashChildHint': 'Slash up through it',
+  'canvas.inlineRecPicker.prevPage': 'முந்தைய பக்கம்',
+  'canvas.inlineRecPicker.nextPage': 'அடுத்த பக்கம்',
+  'canvas.toolbar.moreApps': 'மேலும் பயன்பாடுகள்',
+  'canvas.topBar.shareCommunity': 'சமூகத்தில் பகிரவும்',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.hero.communityExport.ribbon': 'பங்கு',
   'canvas.hero.communityExport.title': 'சமூகத்தில் பகிரவும்',
   'canvas.hero.communityExport.line1':
     'தலைப்பு மற்றும் வகையை நிரப்பவும், சிறுபடத்தை உருவாக்கி அதை வெளியிடவும்',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'சமூக இடுகையைத் திருத்தவும்',
-  'canvas.hero.slotFull.ribbon': 'தொகுப்பு',
-  'canvas.hero.slotFull.title': 'கேலரி நிரம்பியுள்ளது',
-  'canvas.hero.slotFull.line1': 'ஏற்கனவே உள்ள ஐகானை நீக்கிவிட்டு, தற்போதைய ஐகானைச் சேமிக்கவும்',
-  'canvas.hero.slotFull.line2': '',
 } as const

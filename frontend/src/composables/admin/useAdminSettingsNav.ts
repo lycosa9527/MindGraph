@@ -14,7 +14,6 @@ import {
 
 export function useAdminSettingsNav(options: {
   canViewSettingsSubtab: (subtab: string) => boolean
-  featureGewe: Ref<boolean>
   featureLibrary: Ref<boolean>
   currentAdminTab: ComputedRef<string | null>
 }) {
@@ -36,7 +35,6 @@ export function useAdminSettingsNav(options: {
   const settingsNavItems = computed(() =>
     visibleSettingsNavItems({
       canViewSettingsSubtab: options.canViewSettingsSubtab,
-      featureGewe: options.featureGewe.value,
       featureLibrary: options.featureLibrary.value,
     })
   )

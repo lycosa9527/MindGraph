@@ -103,10 +103,7 @@ onUnmounted(() => {
       :diagram-type="normalizedType"
     >
       <CanvasChrome>
-        <CanvasTopBar
-          :preview-lock="!deckNav"
-          lock-reset
-        />
+        <CanvasTopBar :preview-lock="!deckNav" />
       </CanvasChrome>
       <div class="canvas-preview__body">
         <DiagramCanvasHost

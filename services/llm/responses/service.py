@@ -7,6 +7,7 @@ import time
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from clients.llm.org_custom.factory import build_org_custom_llm_client
+from clients.llm.structured_output import bind_llm_call
 from clients.llm.responses.base import BaseResponsesClient
 from clients.llm.responses.types import ResponsesInput, ResponsesRequest
 from config.settings import config
@@ -17,6 +18,7 @@ from services.auth.thinking_coin.usage_wire import (
     thinking_coins_apply_to_user,
 )
 from services.infrastructure.http.error_handler import LLMServiceError
+from services.infrastructure.http.llm_http_errors import is_user_llm_limit_error
 from services.infrastructure.utils.llm_routing_overrides import refresh_routing_overrides
 from services.llm import llm_service
 from services.llm.llm_utils import LLMUtils
@@ -28,6 +30,16 @@ from services.utils.error_types import LLM_PIPELINE_ERRORS
 _STREAM_FAILURES = (*LLM_PIPELINE_ERRORS, LLMServiceError)
 
 logger = logging.getLogger(__name__)
+
+
+def _log_stream_failure(exc: BaseException, duration: float) -> None:
+    """Provider failures are errors. A coin or daily-cap limit is expected."""
+    detail = LLMUtils.format_request_failure(exc)
+    if is_user_llm_limit_error(exc):
+        logger.info("[ResponsesService] user limit after %.2fs: %s", duration, detail)
+        return
+    logger.error("[ResponsesService] stream failed after %.2fs: %s", duration, detail)
+
 
 DEFAULT_PROVIDER = "qwen"
 DEFAULT_MAX_OUTPUT_TOKENS = 4096
@@ -158,15 +170,16 @@ class LLMResponsesService:
                 "session_id": session_id,
             }
             try:
-                async for event in stream_chat_as_responses_events(
-                    chat_client,
-                    _responses_input_to_messages(request_input),
-                    temperature=temperature,
-                    max_output_tokens=max_output_tokens,
-                ):
-                    if event.get("type") == "usage" and isinstance(event.get("usage"), dict):
-                        usage_data = event["usage"]
-                    yield event
+                with bind_llm_call(request_type, diagram_type, physical_model):
+                    async for event in stream_chat_as_responses_events(
+                        chat_client,
+                        _responses_input_to_messages(request_input),
+                        temperature=temperature,
+                        max_output_tokens=max_output_tokens,
+                    ):
+                        if event.get("type") == "usage" and isinstance(event.get("usage"), dict):
+                            usage_data = event["usage"]
+                        yield event
                 duration = time.time() - start_time
                 await self._record_success(
                     physical_model,
@@ -178,7 +191,8 @@ class LLMResponsesService:
                 )
             except _STREAM_FAILURES as exc:
                 duration = time.time() - start_time
-                detail = LLMUtils.format_request_failure(exc)
+                _log_stream_failure(exc, duration)
+                detail = str(exc) if is_user_llm_limit_error(exc) else LLMUtils.format_request_failure(exc)
                 await llm_service.metrics_tracker.track_all(
                     model=physical_model,
                     usage_data=None,
@@ -220,18 +234,19 @@ class LLMResponsesService:
             "session_id": session_id,
         }
         try:
-            async for event in self._iter_events(client, request, rate_limiter):
-                if event.get("type") == "usage":
-                    raw_usage = event.get("usage")
-                    if isinstance(raw_usage, dict):
-                        usage_data = raw_usage
+            with bind_llm_call(request_type, diagram_type, physical_model):
+                async for event in self._iter_events(client, request, rate_limiter):
+                    if event.get("type") == "usage":
+                        raw_usage = event.get("usage")
+                        if isinstance(raw_usage, dict):
+                            usage_data = raw_usage
+                        yield event
+                        continue
+                    if event.get("type") == "error":
+                        message = event.get("content")
+                        if isinstance(message, str) and message.strip():
+                            stream_error = message.strip()
                     yield event
-                    continue
-                if event.get("type") == "error":
-                    message = event.get("content")
-                    if isinstance(message, str) and message.strip():
-                        stream_error = message.strip()
-                yield event
             duration = time.time() - start_time
             if stream_error:
                 await llm_service.metrics_tracker.track_all(
@@ -255,12 +270,8 @@ class LLMResponsesService:
             )
         except _STREAM_FAILURES as exc:
             duration = time.time() - start_time
-            detail = LLMUtils.format_request_failure(exc)
-            logger.error(
-                "[ResponsesService] stream failed after %.2fs: %s",
-                duration,
-                detail,
-            )
+            _log_stream_failure(exc, duration)
+            detail = str(exc) if is_user_llm_limit_error(exc) else LLMUtils.format_request_failure(exc)
             await llm_service.metrics_tracker.track_all(
                 model=physical_model,
                 usage_data=None,

@@ -75,7 +75,7 @@ class RedisActivityTracker:
     ACTIVITY_TYPES = {
         "diagram_generation": "Generating Diagram",
         "diagram_save": "Saving Diagram",
-        "node_palette": "Using Node Palette",
+        "ai_brainstorm": "Using AI brainstorm",
         "mindmap_node_explain": "Node Explanation",
         "autocomplete": "Auto-complete",
         "voice_conversation": "Voice Conversation",
@@ -88,8 +88,6 @@ class RedisActivityTracker:
         "doc_summary": "Document Summary",
         "workshop_collab": "Workshop Collab",
         "workshop_chat": "Workshop Chat",
-        "askonce": "AskOnce",
-        "debateverse": "DebateVerse",
         "markets": "Markets",
         "library": "Library",
         "showcase": "Showcase",
@@ -105,6 +103,11 @@ class RedisActivityTracker:
         self._memory_sessions: Dict[str, Dict] = {}
         self._memory_user_sessions: Dict[int, Set[str]] = {}
         self._memory_history: List[Dict] = []
+
+    def _activity_label(self, activity_type: str, fallback: str) -> str:
+        """Label for a live or stored activity. Older rows say node_palette."""
+        key = "ai_brainstorm" if activity_type == "node_palette" else activity_type
+        return self.ACTIVITY_TYPES.get(key, fallback)
 
     def _use_redis(self) -> bool:
         """Check if Redis should be used."""
@@ -596,7 +599,7 @@ class RedisActivityTracker:
         """Log activity to history."""
         phone_text = redis_decode_required(user_phone)
         session_text = redis_decode(session_id)
-        activity_label = self.ACTIVITY_TYPES.get(activity_type, activity_type)
+        activity_label = self._activity_label(activity_type, activity_type)
         detail_map = details or {}
         resolved_client = client_source or detail_map.get("client_source")
         if not isinstance(resolved_client, str) or not resolved_client.strip():
@@ -704,7 +707,7 @@ class RedisActivityTracker:
                             "user_name": session_data.get("user_name", ""),
                             "ip_address": session_data.get("ip_address", ""),
                             "current_activity": session_data.get("current_activity", ""),
-                            "current_activity_label": self.ACTIVITY_TYPES.get(
+                            "current_activity_label": self._activity_label(
                                 session_data.get("current_activity", ""),
                                 session_data.get("current_activity", "Unknown"),
                             ),
@@ -757,7 +760,7 @@ class RedisActivityTracker:
                 "user_name": session.get("user_name"),
                 "ip_address": session.get("ip_address"),
                 "current_activity": session.get("current_activity"),
-                "current_activity_label": self.ACTIVITY_TYPES.get(
+                "current_activity_label": self._activity_label(
                     session.get("current_activity", ""),
                     session.get("current_activity", "Unknown"),
                 ),

@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import AsyncDifyClient
 from clients.dify_exceptions import DifyAPIError, DifyConversationNotFoundError
+from clients.dify_http_errors import dify_error_is_upstream_outage
 from models.domain.auth import Organization, User
 from services.dify.export.endpoints import (
     ExportDifyEndpoint,
@@ -32,6 +33,11 @@ from utils.db.session_open import system_rls_session
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
 logger = logging.getLogger(__name__)
+
+
+class MindmateStreamDifyUserRejected(Exception):
+    """Client named a Dify user key this account does not own."""
+
 
 DEFAULT_LIST_TIMEOUT = int(os.getenv("DIFY_TIMEOUT", "300"))
 
@@ -173,6 +179,8 @@ async def _fetch_target_summaries_page(
         return []
 
     merged: dict[str, ExportConversationSummary] = {}
+    failures = 0
+    last_error: Optional[BaseException] = None
     for endpoint in endpoints:
         try:
             client = _client_for_endpoint(endpoint)
@@ -182,6 +190,8 @@ async def _fetch_target_summaries_page(
                 sort_by="-updated_at",
             )
         except dify_client_errors as exc:
+            failures += 1
+            last_error = exc
             logger.warning(
                 "[UnifiedConversations] list failed user=%s channel=%s server=%s: %s",
                 target.dify_user,
@@ -202,6 +212,8 @@ async def _fetch_target_summaries_page(
             if existing is None or summary.updated_at >= existing.updated_at:
                 merged[key] = summary
 
+    if failures == len(endpoints) and last_error is not None:
+        raise last_error
     return list(merged.values())
 
 
@@ -258,14 +270,28 @@ async def list_unified_conversations(
             org_by_id[org_id] = org
 
     flat: List[ExportConversationSummary] = []
+    outages = 0
+    last_outage: Optional[BaseException] = None
     for target in targets:
-        endpoint_summaries = await _fetch_target_summaries_page(
-            db,
-            target,
-            org_by_id,
-            limit=page_size,
-        )
+        try:
+            endpoint_summaries = await _fetch_target_summaries_page(
+                db,
+                target,
+                org_by_id,
+                limit=page_size,
+            )
+        except dify_client_errors as exc:
+            if isinstance(exc, DifyAPIError) and not dify_error_is_upstream_outage(exc):
+                raise
+            outages += 1
+            last_outage = exc
+            continue
         flat.extend(endpoint_summaries)
+
+    if outages == len(targets) and last_outage is not None:
+        if isinstance(last_outage, DifyAPIError):
+            raise last_outage
+        raise DifyAPIError("HTTP 502", status_code=502) from last_outage
 
     ordered = sorted(flat, key=lambda row: row.updated_at, reverse=True)
     page = ordered[:page_size]
@@ -375,6 +401,42 @@ async def resolve_dify_user_for_conversation(
             return target.dify_user
 
     raise DifyConversationNotFoundError(f"Conversation {conversation_id} not found for any bound Dify identity")
+
+
+async def resolve_mindmate_stream_dify_user(
+    db: AsyncSession,
+    user: User,
+    *,
+    conversation_id: Optional[str],
+    dify_user_hint: Optional[str] = None,
+) -> str:
+    """Dify ``user`` for a MindMate stream.
+
+    New chats use the canonical id. Continuing a thread uses the hint when this
+    account owns that key, then probes the account's other identities if the
+    hint does not own the conversation. A key the account does not own is rejected.
+
+    The history row's server is not passed in. With a server hint, endpoint
+    resolution returns before ``get_messages`` runs, so a stale alias such as
+    ``mg_user_<pk>`` would be sent for a thread that lives under the prefix.
+    """
+    canonical = mindmate_dify_user_id(user)
+    conv = (conversation_id or "").strip()
+    if not conv:
+        return canonical
+
+    targets = await build_user_dify_targets(db, user)
+    allowed = {target.dify_user for target in targets}
+    hint = (dify_user_hint or "").strip()
+    if hint and hint not in allowed:
+        raise MindmateStreamDifyUserRejected()
+
+    return await resolve_dify_user_for_conversation(
+        db,
+        user,
+        conv,
+        dify_user_hint=hint or None,
+    )
 
 
 async def resolve_client_and_dify_user(

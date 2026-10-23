@@ -1,7 +1,7 @@
 /**
  * Report frontend errors to the backend error collection pipeline.
  */
-import { isAbortError } from '@/composables/nodePalette/errors'
+import { isAbortError } from '@/composables/aiBrainstorm/errors'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { isStaleChunkLoadError } from '@/utils/staleChunkReload'
 

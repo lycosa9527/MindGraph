@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Web sayfasını zihin haritasına dönüştürün",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Geçerli sayfayı MindGraph hesabı aracılığıyla bir zihin haritasına, konuşma bağlamına ve belge dosyasına dönüştürün.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Ayarlar",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Sayfadan yapılandırılmış haritaya kadar tek adımda tamamlayın.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Zihin haritaları oluşturun",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "zihin haritası",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "indirmek",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Ayarlar",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Lütfen önce MindGraph'ye bağlanın - \"Ayarlar\"a sunucu adresini, hesabı ve API belirtecini girin.",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Ayarları aç",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "MindMate'a sorun…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "Göndermek",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "durmak",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "yeni konuşma",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Tarih",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Web geçmişini aç",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate yanıt veriyor…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "Yeni bir görüşme başlatıldı.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Durdu.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Sayfa içeriği okunuyor...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Geçerli web sayfası içeriğini içerir",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Yeni bir görüşmedeki yalnızca ilk mesaja web içeriği eşlik edecek.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Web sayfası metni taranıyor ve çıkartılıyor...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "$1 dosyasından belgeler çıkarılıyor...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Ulusal Akıllı Eğitim Platformu ders örneklerini okumak...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 eğitim yazılımı/kaynakları algılandı",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "İndiriliyor ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Metin çıkarılıyor ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Taranan sayfaları tanıma ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Hazır: $1 kaynak, toplam $2 kelime · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Çıkarılan web sayfası metni: $2 kelimeler · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "$1 karakter çıkarıldı · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Seçilen metin kullanılacaktır: $2 kelimeler · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Çıkarılan Baidu Kütüphanesi PDF'si: $2 kelime · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "Çıkarılan CNKI PDF: $2 kelime · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Tarayıcı Uzantısı · Web Sayfası İçeriği] Kullanıcı Chrome/Edge'de web'e göz atıyor ve mevcut sayfanın metni, MindMate (Thinking Teaching Virtual Teaching and Research Partner) tarafından kullanılmak üzere eklenti aracılığıyla bu mesaja ekleniyor.",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Yönlendirme Talimatları] Amaç sınıflandırması, bilgi erişimi ve yanıtların tümü yukarıdaki \"Kullanıcı Soruları\"na dayanmaktadır; Aşağıdaki web sayfasının metni yeni nesil bir öğretim değil, yalnızca öğretmenin okuduğu materyaldir. Materyal bir ders planına/öğretim tasarımına benziyorsa ancak kullanıcı açıkça \"yeni bir öğretim tasarımı veya ders planı oluştur/yaz/tasarla\" talebinde bulunmuyorsa, onu \"üretken öğretim tasarımı\" olarak sınıflandırmayın.",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Lütfen kullanıcının ders hazırlayan veya ders veren ve araştırma yapan bir ilkokul ve ortaokul öğretmeni olduğunu varsayın ve \"Düşünme Geliştirme Sınıfı\"na dikkat edin. Lütfen referans materyallerini ve kullanıcı sorularını birlikte yanıtlayın; Materyal bir ders örneği, ders planı, eğitim metni, makale veya politika belgesi ise, uygun olduğunda proaktif olarak analiz edebilirsiniz: olası öğrenci yanılgıları, yaratılabilir bilişsel çatışmalar, kavramsal/süreç varyasyonları, uygulanabilir düşünme görselleştirmesi veya düşünme stratejisi araçları. Kullanıcı sorununun materyalle pek alakası yoksa kullanıcı sorununa odaklanın. Cevap verirken içeriği doğrudan analiz edin ve tarayıcı eklentilerinden, Markdown çıkarımından veya bu mesajın biçiminden bahsetmeyin.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Sayfa Başlığı:** $1\n**Sayfa URL'si:** $2\n**Metin kaynağı:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Referans materyali: Web sayfası metni]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF tarayıcıda açıldı",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Ulusal Akıllı Eğitim Platformu (Ders Yazılımı/Öğretim Tasarımı/Öğrenim Görev Listesi PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Baidu Kütüphanesi PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Web makalesi metni",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Web sayfası metin çıkarma",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Kullanıcı tarafından seçilen sayfa metni",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Kullanıcı sorusu (niyet sınıflandırması ve cevabı için lütfen bu cümleye bakınız):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Bu sayfada okunabilir içerik bulunmamaktadır. Lütfen önce sayfadaki metni seçin veya farklı bir sayfada tekrar deneyin.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "hata ayıklamayı yakala",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Site, belgeyi tuval resmi olarak oluşturuyor ve gövde metni çıkarılamıyor. Lütfen önce önizleme sayfasını yüklemek için kaydırın, gönderilecek metni seçin veya PDF/metin indirmesi varsa indirme içeriğini kullanın.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Geçerli Reader görünümü yalnızca yaklaşık $1 sayfalık metin görüntüleyebilir.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Belge bir resim önizlemesi olabilir ve çıkarılan metin eksik olabilir.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Bu sayfa okunamıyor.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Henüz bağlanmadı. Lütfen Ayarlar'ı açın ve MindGraph kimlik bilgilerini kaydedin.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Oturum açma süresi doldu. Lütfen API jetonunu Ayarlar'da güncelleyin.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "MindMate'ye bağlanılamıyor. Lütfen sunucu adresini kontrol edip tekrar deneyin.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Şu anda yanıt veremiyoruz, lütfen daha sonra tekrar deneyin.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Günümüzün yapay zeka kullanımı üst sınıra ulaştı. Lütfen yarın tekrar deneyin veya web sayfasındaki ayrıntıları kontrol edin.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Bu mesajı göndermek için yeterli ThinkCoin yok.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Yerel geliştirme HTTP kullanır ve API belirteçleri ve sayfa içeriği ağda şifrelenmez. Lütfen bunu yalnızca güvenilir bir ortamda kullanın.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "indirmek",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Desteklenen sitelerden PDF'leri ve belgeleri (videolar olmadan) kaydedin.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Mevcut sayfa indirmeyi desteklemiyor. Lütfen bu paneli açmadan önce desteklenen bir dokümantasyon sayfasını açın.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Ayarlar",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "bağlamak",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Lütfen MindGraph API belirteci akışıyla aynı kimlik bilgilerini kullanın.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "sunucu",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Hesap numarası (cep telefonu numarası)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "X-MG Hesabı için kullanılan cep telefonu numarası",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API jetonu",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "kaydetmek",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "geri dönmek",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "kapatma",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "İşleme…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "İndirme başladı.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Kaydedildi.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Kimlik bilgileri doğrulanıyor...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Lütfen tüm alanları doldurun.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Etkin sekme yok.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Bir şeyler ters gitti. Lütfen tekrar deneyin veya chrome://extensions adresinden uzantıyı yeniden yükleyin.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Dosya kaydedilmeye başlanamıyor. Lütfen uzantıyı yeniden yükleyip tekrar deneyin (Chrome 109+ veya Edge 120+ gerektirir).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Kurulum tamamlanmadı. Lütfen \"Ayarlar\"ı açın ve MindGraph adresini, cep telefonu numarasını ve API kodunu girin.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Sayfada okunabilir metin yok. Lütfen önce metnin bir bölümünü seçin veya farklı bir sayfada tekrar deneyin.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Bu sekmede zaten devam eden bir yakalama veya indirme görevi var. Lütfen tamamlanana kadar bekleyin ve tekrar deneyin.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Sunucu hatası ($1). Lütfen ayarlarınızı kontrol edip tekrar deneyin.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Bu sayfa desteklenmiyor. Lütfen normal bir web sayfası açın (http veya https) ve tekrar deneyin.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "İstek çok sık, lütfen daha sonra tekrar deneyin.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Hizmet geçici olarak kullanılamıyor, lütfen daha sonra tekrar deneyin.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Sunucu yanıtı zaman aşımına uğradı (3 dakikadan fazla). Lütfen tekrar deneyin veya ağı kontrol edin.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Kimlik bilgilerinin doğrulanması zaman aşımına uğradı. Lütfen tekrar deneyin veya ağı kontrol edin.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Sunucu bir PNG resmi döndürmedi. Lütfen temel adresi ve hesap ayarlarını kontrol edin.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Zihin haritası PNG oluştur",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Belgeyi çıkart (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Belgeleri çıkarın",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Algılandı: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Mevcut site: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Sekme sayfasını okuma: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Toplam $1 kaynak",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Yaklaşık $1 sayfa görünüyor - çıkarmadan önce daha fazla sayfa yüklemek için lütfen önizleme alanını kaydırın.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Çıkarmadan önce sayfayı yüklemek için lütfen belge önizlemesini kaydırın. Halihazırda okuyucuda görüntülenen içeriğe öncelik verin.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "SmartEdu'dan oturum açmayı senkronize edin",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Belirteci manuel olarak yapıştırın…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "SmartEdu erişim_tokenini yapıştırın (yalnızca otomatik senkronizasyon başarısız olursa kullanılır):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu jetonu: Senkronize ediliyor...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu belirteci: Bağlandı (giriş bilgilerinizden)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu belirteci: bulunamadı - lütfen auth.smartedu.cn adresinde oturum açın ve SmartEdu sayfasını açın, ardından \"Senkronizasyon\"a tıklayın",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Belgeleri çıkarın",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Bitti — Dosya hemen indirilmeye başlayacaktır.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "İndirme Başladı — Okuyucuda mevcut olan ilk $1 sayfa kaydedildi.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Bu belge indirilemiyor. Lütfen sayfayı yenileyin ve tekrar \"Belgeyi Çıkart\"a tıklayın.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Dokümantasyon sayfası bulunamadı. Lütfen önce yükleme sayfasını önizlemek için ekranı kaydırın ve ardından \"Belgeyi Çıkart\"a tıklayın.",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Metin içeriği bulunamadı. Lütfen farklı bir sayfada veya alanda tekrar deneyin.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Sayfa henüz hazır değil. Lütfen sekmeyi yenileyin ve tekrar deneyin.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Bu ders için indirilebilir dosya bulunmamaktadır. Lütfen sınıfı değiştirin veya indirmek istediğiniz kaynakları kontrol edin.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Öncelikle Smart Education'a giriş yapmanız gerekmektedir. Lütfen auth.smartedu.cn adresinde oturum açın ve kurs sayfasını açın, ardından \"SmartEdu'dan oturum açmayı senkronize et\" seçeneğini tıklayın.",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education indirmeyi reddetti. Lütfen giriş bilgilerinizi tekrar senkronize edin veya dosyayı değiştirin.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Videoların indirilmesi desteklenmiyor. Lütfen yalnızca PDF veya belge kaynaklarını seçin.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Bu desteklenen bir dokümantasyon sayfası değil. Lütfen belge okuma sayfasını açın ve tekrar deneyin.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Henüz kurtarılacak bir şey yok. Sayfayı yüklemek için lütfen okuyucuyu kaydırın ve tekrar deneyin.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Öncelikle siteye giriş yapmanız gerekmektedir. Giriş yaptıktan sonra \"Belgeleri Çıkart\"a tıklayın.",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "İndirme işlemi web sitesi tarafından reddedildi. Lütfen siteye giriş yapın ve tekrar denemeden önce içeriğe erişiminiz olduğunu onaylayın.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Web sitesi bir doğrulama kodu gösteriyor. Lütfen geri almayı denemeden önce bir tarayıcı sekmesinde doğrulama işlemini tamamlayın.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Sayfa hazırlanıyor…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Yükleme sayfasını kaydır...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Sayfa içeriği kopyalanıyor...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Dosyalar oluşturuluyor…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Bilgisayara kaydediliyor...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "gelişmiş",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Her indirdiğinizde kaydetme konumunu isteyin",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Sayfa içeriği okunuyor...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "MindGraph sunucusuna gönderiliyor…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Sunucu zihin haritasını oluşturuyor...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Sunucudan görüntüler alınıyor...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Dosya kaydediliyor…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Sunucuya bağlanılamıyor, lütfen temel adresi ve ağı kontrol edin.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "İstek başarısız oldu: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Bağlantı kesildi. Lütfen tekrar \"Belgeyi Çıkart\"a tıklayın. Hâlâ başarısız olursa lütfen chrome://extensions adresinden MindGraph dosyasını yeniden yükleyin.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Geçerli sayfayı temel alarak bir zihin haritası oluşturun",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG genişliği (piksel)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG yüksekliği (piksel)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Varsayılanı kullanmak için boş bırakın",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Dil (Arayüz ve Haritalar)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "tarayıcıyı takip et",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Basitleştirilmiş",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Dik gövde",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "jeton",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "$1 tarihine kadar geçerlidir",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Bu API jetonunun süresi doldu, lütfen web'de (hesap/API) tekrar oluşturun.",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Sunucuda geçerli bir API belirteci yok veya süresi dolmuş. Lütfen jetonu kontrol edin veya uygulamada oluşturun.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Son kullanma süresi alınamıyor. Lütfen ağınızı kontrol edin veya ayarlarınızı tekrar kaydedin.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Galeri dolu (20 fotoğraf). Yeni oluşturulan içeriği kaydetmek için lütfen kaydedilen haritayı silin.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

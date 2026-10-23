@@ -2,7 +2,7 @@
 /**
  * SidebarOutline — flat hierarchy tree with default / hover / selected states.
  */
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onUnmounted, ref } from 'vue'
 
 import { ChevronDown, GitCommit, GripVertical, Plus, Trash2 } from '@lucide/vue'
 
@@ -11,6 +11,7 @@ import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.v
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
+import { setNodeExplainOutlineEditing } from '@/composables/mindMap/nodeExplainEditGate'
 import { useMindMapBranchNumbering } from '@/composables/mindMap/useMindMapBranchNumbering'
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
 import { useMindMapOutlineDrag } from '@/composables/mindMap/useMindMapOutlineDrag'
@@ -23,6 +24,7 @@ import {
   stripMatchingBranchNumberPrefix,
 } from '@/utils/mindMapBranchNumbering'
 import type { MindMapOutlineNode } from '@/utils/mindMapOutlineTree'
+import { isNodeExplainTriggerTarget } from '@/utils/nodeExplainTrigger'
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -122,10 +124,21 @@ async function startEdit(nodeId: string, text: string): Promise<void> {
   editingNodeId.value = nodeId
   editDraft.value = text
   diagramStore.selectNodes(nodeId)
+  setNodeExplainOutlineEditing(nodeId)
   await nextTick()
   if (focusHtmlControl(editInputRef.value)) {
     selectHtmlControl(editInputRef.value)
   }
+}
+
+function onOutlineBlur(event: FocusEvent): void {
+  if (isNodeExplainTriggerTarget(event.relatedTarget)) {
+    void nextTick(() => {
+      if (editingNodeId.value) focusHtmlControl(editInputRef.value)
+    })
+    return
+  }
+  commitEdit()
 }
 
 function commitEdit(): void {
@@ -137,12 +150,20 @@ function commitEdit(): void {
   }
   editingNodeId.value = null
   editDraft.value = ''
+  setNodeExplainOutlineEditing(null)
 }
 
 function cancelEdit(): void {
   editingNodeId.value = null
   editDraft.value = ''
+  setNodeExplainOutlineEditing(null)
 }
+
+onUnmounted(() => {
+  if (!editingNodeId.value) return
+  editingNodeId.value = null
+  setNodeExplainOutlineEditing(null)
+})
 
 function handleAddChild(nodeId: string): void {
   diagramStore.selectNodes(nodeId)
@@ -323,7 +344,7 @@ function showActions(nodeId: string): boolean {
                 class="sidebar-outline__text sidebar-outline__text--pill sidebar-outline__input w-full"
                 @keydown.enter="commitEdit"
                 @keydown.esc="cancelEdit"
-                @blur="commitEdit"
+                @blur="onOutlineBlur"
               />
             </div>
 

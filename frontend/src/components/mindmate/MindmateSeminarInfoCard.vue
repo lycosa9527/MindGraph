@@ -136,7 +136,7 @@ function saveEdit(): void {
           :size="15"
           :stroke-width="2"
         />
-        <span>{{ t('mindmate.briefCard.kicker') }}</span>
+        <span><I18nText k="mindmate.briefCard.kicker" /></span>
       </p>
       <button
         v-if="editable && !editing"
@@ -148,7 +148,7 @@ function saveEdit(): void {
           :size="14"
           :stroke-width="2"
         />
-        {{ t('common.edit') }}
+        <I18nText k="common.edit" />
       </button>
     </div>
     <input
@@ -176,12 +176,12 @@ function saveEdit(): void {
       class="mm-info-card__block"
     >
       <h4>
-        {{ t('mindmate.home.brief.goals') }}
+        <I18nText k="mindmate.home.brief.goals" />
         <span
           v-if="editing"
           class="mm-info-card__optional"
         >
-          {{ t('mindmate.home.brief.optional') }}
+          <I18nText k="mindmate.home.brief.optional" />
         </span>
       </h4>
       <div
@@ -219,7 +219,7 @@ function saveEdit(): void {
           @click="addGoal"
         >
           <Plus :size="15" />
-          {{ t('mindmate.home.brief.add') }}
+          <I18nText k="mindmate.home.brief.add" />
         </button>
       </div>
       <ol v-else-if="model.goals.length">
@@ -240,7 +240,7 @@ function saveEdit(): void {
           :size="16"
           :stroke-width="2"
         />
-        {{ t('mindmate.briefCard.emptyGoals') }}
+        <I18nText k="mindmate.briefCard.emptyGoals" />
       </button>
     </section>
 
@@ -254,7 +254,7 @@ function saveEdit(): void {
         :aria-expanded="peopleOpen"
         @click="peopleOpen = !peopleOpen"
       >
-        <span>{{ t('mindmate.home.brief.participants') }}</span>
+        <span><I18nText k="mindmate.home.brief.participants" /></span>
         <span
           v-if="model.visibility"
           class="mm-info-card__tag"
@@ -305,7 +305,7 @@ function saveEdit(): void {
         :disabled="saving"
         @click="cancelEdit"
       >
-        {{ t('common.cancel') }}
+        <I18nText k="common.cancel" />
       </button>
       <button
         type="button"
@@ -313,7 +313,7 @@ function saveEdit(): void {
         :disabled="saving || !topicReady"
         @click="saveEdit"
       >
-        {{ t('common.save') }}
+        <I18nText k="common.save" />
       </button>
     </div>
   </article>

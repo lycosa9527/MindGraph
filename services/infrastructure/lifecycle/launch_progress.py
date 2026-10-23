@@ -83,8 +83,7 @@ STAGE_BACKUP_SCHEDULER = 18
 STAGE_PROCESS_MONITOR = 19
 STAGE_HEALTH_MONITOR = 20
 STAGE_DIAGRAM_CACHE = 21
-STAGE_SMS_NOTIFICATION = 22
-STAGE_COMPLETE = 23
+STAGE_COMPLETE = 22
 
 STAGE_NAMES = {
     STAGE_SIGNAL_HANDLERS: "Registering Signal Handlers",
@@ -109,14 +108,13 @@ STAGE_NAMES = {
     STAGE_PROCESS_MONITOR: "Starting Process Monitor",
     STAGE_HEALTH_MONITOR: "Starting Health Monitor",
     STAGE_DIAGRAM_CACHE: "Initializing Diagram Cache",
-    STAGE_SMS_NOTIFICATION: "Sending Startup Notification",
     STAGE_COMPLETE: "Complete",
 }
 
 # Total number of initialization stages (excluding COMPLETE marker)
-# Stages 0-22 are actual initialization stages (23 stages total)
-# Stage 23 (COMPLETE) is just a completion marker
-TOTAL_STAGES = len(STAGE_NAMES) - 1  # Exclude COMPLETE stage (23 stages: 0-22)
+# Stages 0-21 are actual initialization stages (22 stages total)
+# Stage 22 (COMPLETE) is just a completion marker
+TOTAL_STAGES = len(STAGE_NAMES) - 1  # Exclude COMPLETE stage (22 stages: 0-21)
 
 # Delay in seconds to show completion before summary appears
 SUMMARY_DISPLAY_DELAY = 0.15
@@ -325,7 +323,7 @@ class ApplicationLaunchProgressTracker:
         Update current launch stage.
 
         Args:
-            stage: Stage number (use STAGE_* constants, must be 0-23)
+            stage: Stage number (use STAGE_* constants, must be 0-22)
             description: Optional custom description
             module: Optional module name (e.g., "LLM Service", "Database")
             sub_process: Optional sub-process name within the module
@@ -366,15 +364,15 @@ class ApplicationLaunchProgressTracker:
             # Check that the task still exists in the progress
             try:
                 # Calculate completed stages for percentage
-                # Stages 0-22 are actual initialization stages (23 stages total)
-                # Stage 23 (COMPLETE) is just a completion marker
+                # Stages 0-21 are actual initialization stages (22 stages total)
+                # Stage 22 (COMPLETE) is just a completion marker
                 # When at stage N, we've completed N+1 stages (stages 0-N inclusive)
                 # But for COMPLETE stage, we've completed all TOTAL_STAGES
                 if stage == STAGE_COMPLETE:
                     completed = TOTAL_STAGES
                 else:
-                    # For stages 0-22, completed = stage + 1
-                    # Stage 0 means 1 stage completed, stage 22 means 23 stages completed
+                    # For stages 0-21, completed = stage + 1
+                    # Stage 0 means 1 stage completed, stage 21 means 22 stages completed
                     completed = stage + 1
 
                 # Update the single progress bar in place (Rich automatically refreshes)

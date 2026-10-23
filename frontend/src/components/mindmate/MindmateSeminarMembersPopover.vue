@@ -151,7 +151,7 @@ defineExpose({ keepOpen, scheduleClose })
     @mouseleave="scheduleClose"
   >
     <header class="mm-members-pop__head">
-      <span>{{ t('mindmate.collabSessionMembersTitle') }}</span>
+      <span><I18nText k="mindmate.collabSessionMembersTitle" /></span>
       <span class="mm-members-pop__count">{{ members.length }}</span>
     </header>
 
@@ -186,17 +186,20 @@ defineExpose({ keepOpen, scheduleClose })
             <span
               v-if="member.isLeader"
               class="mm-members-pop__tag"
-              >{{ t('mindmate.home.brief.role.leader') }}</span
-            >
+              ><I18nText k="mindmate.home.brief.role.leader"
+            /></span>
           </span>
           <span class="mm-members-pop__status">
-            {{
-              member.pending
-                ? t('mindmate.home.brief.pendingConsent')
-                : member.online
-                  ? t('mindmate.home.memberOnline')
-                  : t('mindmate.home.memberOffline')
-            }}
+            <I18nText
+              v-if="member.pending"
+              k="mindmate.home.brief.pendingConsent"
+            /><template v-else
+              ><I18nText
+                v-if="member.online"
+                k="mindmate.home.memberOnline" /><I18nText
+                v-else
+                k="mindmate.home.memberOffline"
+            /></template>
           </span>
         </div>
         <span class="mm-members-pop__role-wrap">

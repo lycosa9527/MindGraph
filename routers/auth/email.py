@@ -41,7 +41,10 @@ from services.redis.redis_email_storage import (
 )
 from utils.auth import AUTH_MODE, EMAIL_LOGIN_CN_BLOCK_ENABLED, get_client_ip
 from utils.auth.overseas_registration_messages import overseas_registration_error
-from utils.auth.registration_gate import http_forbid_if_registration_disabled
+from utils.auth.registration_gate import (
+    http_forbid_email_signup_in_bayi,
+    http_forbid_if_registration_disabled,
+)
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from utils.email_mainland_china import (
     raise_if_mainland_china_email_for_email_login,
@@ -73,6 +76,7 @@ async def send_email_code(
     """
     if request.purpose == "register":
         http_forbid_if_registration_disabled(lang)
+        http_forbid_email_signup_in_bayi(lang)
 
     captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
@@ -254,6 +258,7 @@ async def verify_email_code(
     """Verify email code without consuming (peek). Rate-limited per email+purpose and per IP."""
     if request.purpose == "register":
         http_forbid_if_registration_disabled(lang)
+        http_forbid_email_signup_in_bayi(lang)
 
     email_validated = validate_email_for_api(request.email, lang)
     if request.purpose == "register":

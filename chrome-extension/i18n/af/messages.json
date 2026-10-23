@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph — Skakel webblad om na breinkaart",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Omskep die huidige bladsy in 'n breinkaart, gesprekkonteks en dokumentlêer deur die MindGraph-rekening.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Instellings",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Van bladsy tot gestruktureerde kaart, voltooi in een stap.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Genereer breinkaarte",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "breinkaart",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "aflaai",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Instellings",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Koppel asseblief eers aan MindGraph - vul die bedieneradres, rekening en API-token in \"Instellings\" in.",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Maak instellings oop",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Vra MindMate...",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "stuur",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "stop",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "nuwe gesprek",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Geskiedenis",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Maak webgeskiedenis oop",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate antwoord …",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "'n Nuwe gesprek is begin.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Gestop.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Lees tans bladsy-inhoud...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Bevat die huidige webbladinhoud",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Slegs die eerste boodskap in 'n nuwe gesprek sal met webinhoud vergesel word.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Skandeer en onttrek tans webbladsyteks...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Onttrek tans dokumente uit $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Lees die Nasionale Smart Education Platform kursus voorbeelde...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 kursusware/hulpbronne bespeur",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Laai tans af ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Onttrek teks ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Herken geskandeerde bladsye ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Gereed: $1 hulpbronne, totaal $2 woorde · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Onttrek webbladsy teks: $2 woorde · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Onttrek $1 karakters · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Die geselekteerde teks sal gebruik word: $2 woorde · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Onttrek Baidu Biblioteek PDF: $2 woorde · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "Onttrek CNKI PDF: $2 woorde · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Blaaieruitbreiding · Webbladkonteks] Die gebruiker blaai deur die web in Chrome/Edge, en die teks van die huidige bladsy is aan hierdie boodskap aangeheg deur die inprop vir gebruik deur MindMate (Thinking Teaching Virtual Teaching and Research Partner).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Routing-instruksies] Voornemeklassifikasie, kennisherwinning en antwoorde is alles gebaseer op die \"Gebruikersvrae\" hierbo; die teks van die webblad hieronder is slegs die materiaal wat die onderwyser lees, nie 'n nuwe generasie instruksie nie. As die materiaal soos 'n lesplan/instruksionele ontwerp lyk, maar die gebruiker nie uitdruklik versoek \"genereer/skryf/ontwerp 'n nuwe instruksionele ontwerp of lesplan nie\", moet dit nie as \"generatiewe onderrigontwerp\" klassifiseer nie.",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Verstek asseblief dat die gebruiker 'n laer- en sekondêre skoolonderwyser is wat lesse voorberei of onderrig en navorsing doen, en let op \"Denkontwikkelingklaskamer\". Beantwoord asseblief die verwysingsmateriaal en gebruikersvrae saam; as die materiaal 'n lesvoorbeeld, lesplan, kursusware-teks, papier of beleidsdokument is, kan jy proaktief ontleed wanneer toepaslik: moontlike studente se wanopvattings, skepbare kognitiewe konflikte, konseptuele/prosesvariasies, toepaslike denkvisualisering of denkstrategie-instrumente. As die gebruikerprobleem min met die materiaal te doen het, fokus op die gebruikerprobleem. Wanneer jy antwoord, ontleed die inhoud direk en moenie blaaier-inproppe, Markdown-onttrekking of die formaat van hierdie boodskap noem nie.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Bladsytitel:** $1\n**Bladsy-URL:** $2\n**Teksbron:** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Verwysingsmateriaal: Webbladteks]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF oopgemaak in blaaier",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Nasionale Smart Education Platform (Kursusware/Onderrigontwerp/Leertaaklys PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Baidu Biblioteek PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Web artikel teks",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Webblad teks onttrekking",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Die bladsyteks wat deur die gebruiker gekies is",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**Gebruikersvraag (verwys asseblief na hierdie sin vir bedoelingklassifikasie en antwoord):** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Daar is geen leesbare inhoud op hierdie bladsy nie. Kies asseblief eers die teks op die bladsy, of probeer weer op 'n ander bladsy.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "ontfouting vas te lê",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Die webwerf gee die dokument as 'n doekbeeld weer en die liggaamsteks kan nie onttrek word nie. Blaai asseblief om eers die voorskoubladsy te laai, kies die teks om te stuur, of gebruik die aflaai-inhoud as daar 'n PDF/teks-aflaai is.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Die huidige leser-aansig mag slegs ongeveer $1 bladsye teks vertoon.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Die dokument kan 'n prentvoorskou wees, en die onttrekte teks kan onvolledig wees.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Hierdie bladsy kan nie gelees word nie.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Nog nie gekoppel nie. Maak asseblief Instellings oop en stoor die MindGraph-eiebewyse.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Aanmelding het verval. Dateer asseblief die API-token in Instellings op.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Kan nie aan MindMate koppel nie. Gaan asseblief die bedieneradres na en probeer weer.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Kan nie op die oomblik antwoord nie, probeer asseblief later weer.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Vandag se KI-gebruik het die boonste limiet bereik. Probeer asseblief môre weer of gaan die besonderhede op die webblad na.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Onvoldoende ThinkCoins om hierdie boodskap te stuur.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Plaaslike ontwikkeling gebruik HTTP, en API-tokens en bladsyinhoud is ongeënkripteer op die netwerk. Gebruik dit asseblief net in 'n vertroude omgewing.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "aflaai",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Stoor PDF's en dokumente (sonder video's) vanaf ondersteunde werwe.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Die huidige bladsy ondersteun nie aflaai nie. Maak asseblief 'n ondersteunde dokumentasiebladsy oop voordat hierdie paneel oopgemaak word.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Instellings",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "verbind",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Gebruik asseblief dieselfde eiebewyse as die MindGraph API-tokenvloei.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "bediener",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Rekeningnommer (selfoonnommer)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Selfoonnommer wat vir X-MG-rekening gebruik word",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API-token",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "red",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "terugkeer",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "sluiting",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Verwerk tans …",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Aflaai het begin.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Gestoor.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Verifieer tans eiebewyse …",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Vul asseblief alle velde in.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Daar is geen aktiewe oortjies nie.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Iets het verkeerd geloop. Probeer asseblief weer of herlaai die uitbreiding by chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Kan nie begin om lêer te stoor nie. Herlaai asseblief die uitbreiding en probeer weer (vereis Chrome 109+ of Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Die opstelling is onvolledig. Maak asseblief \"Instellings\" oop en vul die MindGraph-adres, selfoonnommer en API-token in.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Daar is geen leesbare teks op die bladsy nie. Kies asseblief eers 'n teksgedeelte, of probeer weer op 'n ander bladsy.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Daar is reeds 'n vasvang- of aflaaitaak aan die gang op hierdie oortjie, wag asseblief totdat dit voltooi is en probeer weer.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Bedienerfout ($1). Gaan asseblief jou instellings na en probeer weer.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Hierdie bladsy word nie ondersteun nie. Maak asseblief 'n normale webblad (http of https) oop en probeer weer.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Die versoek is te gereeld, probeer asseblief later weer.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Die diens is tydelik onbeskikbaar, probeer asseblief later weer.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Bedienerantwoord het uitgetel (meer as 3 minute). Probeer asseblief weer of gaan die netwerk na.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Verifikasie van eiebewyse het uitgetel. Probeer asseblief weer of gaan die netwerk na.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Die bediener het nie 'n PNG-prent teruggestuur nie. Gaan asseblief die basisadres en rekeninginstellings na.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Genereer breinkaart PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Onttrek dokument (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Onttrek dokumente",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Bespeur: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Huidige webwerf: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Leesoortjiebladsy: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Totale $1 hulpbronne",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Ongeveer $1 bladsye is sigbaar - blaai asseblief deur die voorskou-area om meer bladsye te laai voordat dit onttrek word.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Blaai asseblief deur die dokumentvoorskou om die bladsy te laai voordat dit onttrek word. Prioritiseer inhoud wat reeds in die leser vertoon word.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Sinkroniseer aanmelding vanaf SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Plak die teken handmatig...",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Plak die SmartEdu access_token (slegs gebruik as outomatiese sinchronisasie misluk):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu-token: Sinkroniseer tans...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu-token: Gekoppel (vanaf jou aanmelding)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu-token: nie gevind nie - meld asseblief aan by auth.smartedu.cn en maak die SmartEdu-bladsy oop, klik dan \"Sync\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Onttrek dokumente",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Klaar - Die lêer sal onmiddellik begin aflaai.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Aflaai het begin — Die eerste $1-bladsye wat tans in die leser beskikbaar is, is gestoor.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Hierdie dokument kan nie afgelaai word nie. Herlaai asseblief die bladsy en klik weer op \"Uittreksel dokument\".",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Dokumentasiebladsy nie gevind nie. Blaai asseblief om eers die laaibladsy voor te bekyk, en klik dan \"Uittrek dokument\".",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Geen teksinhoud gevind nie. Probeer asseblief weer op 'n ander bladsy of area.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Die blad is nog nie gereed nie. Herlaai asseblief die oortjie en probeer weer.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Daar is geen aflaaibare lêers vir hierdie les nie. Verander asseblief 'n klas, of kontroleer die hulpbronne wat jy wil aflaai.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Jy moet eers by Smart Education aanmeld. Meld asseblief aan by auth.smartedu.cn en maak die kursusbladsy oop, klik dan \"Sinchroniseer aanmelding vanaf SmartEdu\".",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education het die aflaai van die hand gewys. Sinkroniseer asseblief weer jou aanmelding of verander die lêer.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Die aflaai van video's word nie ondersteun nie. Kies asseblief slegs PDF- of dokumenthulpbronne.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Hierdie is nie 'n ondersteunde dokumentasiebladsy nie. Maak asseblief die dokumentleesbladsy oop en probeer weer.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Daar is nog niks om te red nie. Blaai asseblief deur die leser om die bladsy te laai en probeer weer.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Jy moet eers by die webwerf aanmeld. Nadat u aangemeld het, klik \"Uittrek dokumente\".",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Die aflaai is deur die webwerf afgekeur. Meld asseblief by die webwerf aan en bevestig dat jy toegang tot die inhoud het voordat jy weer probeer.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Die webwerf wys 'n verifikasiekode. Voltooi asseblief verifikasie in 'n blaaieroortjie voordat jy probeer herwin.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Berei tans bladsy voor …",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Rollees laai bladsy...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Kopieer tans bladsy-inhoud...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Genereer tans lêers …",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Stoor tans op rekenaar …",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "gevorderd",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Vra vir stoorplek elke keer as jy aflaai",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Lees tans bladsy-inhoud...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Stuur tans na MindGraph-bediener …",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Die bediener genereer die breinkaart...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Ontvang tans beelde vanaf bediener …",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Stoor tans lêer …",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Kan nie aan die bediener koppel nie, gaan asseblief die basisadres en netwerk na.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Versoek misluk: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Die verbinding is verloor. Klik asseblief weer op \"Uittrek dokument\". As dit steeds misluk, herlaai asseblief MindGraph by chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Genereer 'n breinkaart gebaseer op die huidige bladsy",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG-breedte (pixels)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG hoogte (pixels)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Laat leeg om verstek te gebruik",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Taal (koppelvlak en kaarte)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "volg blaaier",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "Vereenvoudig",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Regop lyf",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "teken",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Geldig tot $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Hierdie API-token het verval, skep dit asseblief weer op die webkant (Rekening/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Daar is geen geldige API-token op die bediener nie, of dit het verval. Gaan asseblief die teken na of skep dit in die toepassing.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Kan nie vervaltyd kry nie. Gaan asseblief jou netwerk na of stoor jou instellings weer.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Die galery is vol (20 foto's). Vee asseblief die gestoorde kaart uit om die nuutgegenereerde inhoud te stoor.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

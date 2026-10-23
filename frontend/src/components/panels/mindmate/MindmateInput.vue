@@ -22,6 +22,7 @@ import { useMindmateMentionPicker } from '@/composables/mindmate/useMindmateMent
 import { useAuthStore } from '@/stores/auth'
 import {
   MINDMATE_COMPOSER_FILE_ACCEPT,
+  isMindmateBlockedDocUpload,
   isMindmateComposerUploadableFile,
 } from '@/utils/mindmateComposerUpload'
 import type { MindmateMentionCandidate } from '@/utils/mindmateMention'
@@ -304,8 +305,8 @@ function triggerFileUpload() {
   fileInputRef.value?.click()
 }
 
-// Handle file selection — images, Word, PDF, and PowerPoint
-function handleFileSelect(event: Event) {
+// Handle file selection — images, Word (.docx), PDF, and PowerPoint
+async function handleFileSelect(event: Event) {
   // Check authentication before allowing file upload
   if (!authStore.isAuthenticated) {
     const input = event.target as HTMLInputElement
@@ -319,9 +320,22 @@ function handleFileSelect(event: Event) {
   if (!files || files.length === 0) return
 
   const selected = Array.from(files)
-  const allowedFiles = selected.filter((file) => isMindmateComposerUploadableFile(file))
+  const legacyDocs: File[] = []
+  const candidates: File[] = []
+  for (const file of selected) {
+    if (await isMindmateBlockedDocUpload(file)) {
+      legacyDocs.push(file)
+    } else {
+      candidates.push(file)
+    }
+  }
+  const allowedFiles = candidates.filter((file) => isMindmateComposerUploadableFile(file))
 
-  if (allowedFiles.length < selected.length) {
+  if (legacyDocs.length > 0) {
+    notify.warningKey('mindmate.input.docNotSupported')
+  }
+
+  if (allowedFiles.length < candidates.length) {
     notify.errorKey('mindmate.input.unsupportedFile')
   }
 
@@ -629,11 +643,13 @@ defineExpose({ focus: focusComposer })
             :class="{ 'is-cancel': voiceWillCancel }"
           >
             <span class="mm-voice-live__dot" />
-            <span>{{
-              voiceWillCancel
-                ? t('mindmate.composer.voiceHoldCancel')
-                : t('mindmate.composer.voiceHoldSend')
-            }}</span>
+            <span
+              ><I18nText
+                v-if="voiceWillCancel"
+                k="mindmate.composer.voiceHoldCancel" /><I18nText
+                v-else
+                k="mindmate.composer.voiceHoldSend"
+            /></span>
           </div>
           <ElInput
             id="mindmate-chat-input"

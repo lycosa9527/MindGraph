@@ -1,4 +1,4 @@
-import { type Ref, ref } from 'vue'
+import { type Ref } from 'vue'
 
 import { useDiagramExport, useDiagramSpecForSave, useLanguage } from '@/composables'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -6,7 +6,10 @@ import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import { ANIMATION } from '@/config/uiConfig'
 import { useUIStore } from '@/stores'
 import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
-import { runLearningSheetRasterCapture } from '@/utils/diagramExportLearningSheet'
+import {
+  prepareLearningSheetAnswersForFit,
+  runLearningSheetRasterCapture,
+} from '@/utils/diagramExportLearningSheet'
 import { prepareDiagramCanvasForRasterCapture } from '@/utils/diagramExportPrep'
 import { captureDiagramPngData } from '@/utils/diagramExportRasterCapture'
 import { getDiagramCanvasPdfHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
@@ -28,9 +31,6 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
   const { currentLanguage } = useLanguage()
   const uiStore = useUIStore()
 
-  const showExportToCommunityModal = ref(false)
-  const communityViewportSnapshot = ref<CanvasViewport | null>(null)
-
   function getExportContainer(): HTMLElement | null {
     return vueFlowWrapper.value
   }
@@ -51,27 +51,6 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
     getTitle: getExportTitle,
   })
 
-  function snapshotViewportForCommunityIfNeeded(): void {
-    if (getViewport && !communityViewportSnapshot.value) {
-      communityViewportSnapshot.value = getViewport()
-    }
-  }
-
-  async function prepareForCommunityExport(): Promise<void> {
-    snapshotViewportForCommunityIfNeeded()
-    await prepareDiagramCanvasForRasterCapture(fitForExport, {
-      promptLanguage: uiStore.promptLanguage,
-    })
-  }
-
-  function restoreViewportAfterCommunityExport(): void {
-    const saved = communityViewportSnapshot.value
-    if (saved && setViewport) {
-      setViewport(saved, { duration: ANIMATION.DURATION_FAST })
-    }
-    communityViewportSnapshot.value = null
-  }
-
   /** Fit → rasterize diagram for worksheet modal preview → restore viewport. */
   async function captureWorksheetPreviewPng(
     exportOptions?: CanvasExportOptions
@@ -80,19 +59,29 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
     if (!container) return null
 
     const saved = getViewport?.() ?? null
+    const restoreAnswers = await prepareLearningSheetAnswersForFit(diagramStore, exportOptions)
     try {
       await prepareDiagramCanvasForRasterCapture(fitForExport, {
         promptLanguage: uiStore.promptLanguage,
       })
       let dataUrl: string | null = null
       await runWithExportVisualMode(uiStore, container, exportOptions, async () => {
-        const capture = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
-          captureDiagramPngData(container, getDiagramCanvasPdfHtmlToImageOptions({ pixelRatio: 1 }))
+        const capture = await runLearningSheetRasterCapture(
+          diagramStore,
+          exportOptions,
+          () =>
+            captureDiagramPngData(
+              container,
+              getDiagramCanvasPdfHtmlToImageOptions({ pixelRatio: 1 })
+            ),
+          'below',
+          container
         )
         dataUrl = capture.dataUrl
       })
       return dataUrl
     } finally {
+      restoreAnswers()
       if (saved && setViewport) {
         setViewport(saved, { duration: ANIMATION.DURATION_FAST })
       }
@@ -100,15 +89,12 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
   }
 
   return {
-    showExportToCommunityModal,
     getExportContainer,
     getExportTitle,
     getExportSpec,
     exportByFormat,
     capturePngBlob,
     copyPngToClipboard,
-    prepareForCommunityExport,
-    restoreViewportAfterCommunityExport,
     captureWorksheetPreviewPng,
   }
 }

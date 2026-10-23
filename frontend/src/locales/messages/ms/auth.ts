@@ -22,23 +22,17 @@ export default {
   'auth.voiceNotes.noDiagram': 'Peta minda belum dikaitkan lagi.',
   'auth.voiceNotes.micUnavailable': 'Penyemak imbas semasa tidak menyokong mikrofon.',
   'auth.voiceNotes.micFailed': 'Tidak dapat mengakses mikrofon.',
-  'auth.voiceNotes.micConflict':
-    'Fungsi suara lain menggunakan mikrofon, sila berhenti dan cuba lagi.',
-  'auth.voiceNotes.wsError':
-    'Sambungan nota suara gagal, sila semak rangkaian dan status log masuk.',
+  'auth.voiceNotes.micConflict': 'Fungsi suara lain menggunakan mikrofon, sila berhenti dan cuba lagi.',
+  'auth.voiceNotes.wsError': 'Sambungan nota suara gagal, sila semak rangkaian dan status log masuk.',
   'auth.voiceNotes.genericError': 'Ralat nota suara',
   'auth.voiceNotes.ingestFailed': 'Tidak dapat menyimpan transkripsi ke ringkasan dokumen.',
-  'auth.voiceNotes.maxDuration':
-    'Nota suara telah mencapai had 60 minit dan telah dihentikan secara automatik.',
-  'auth.voiceNotes.silenceAutoStop':
-    'Tiada suara selama 2 minit berturut-turut, dan nota suara telah berhenti secara automatik.',
-  'auth.voiceNotes.startedTimeout':
-    'Perkhidmatan suara gagal dimulakan dalam masa, sila cuba lagi.',
+  'auth.voiceNotes.maxDuration': 'Nota suara telah mencapai had 60 minit dan telah dihentikan secara automatik.',
+  'auth.voiceNotes.silenceAutoStop': 'Tiada suara selama 2 minit berturut-turut, dan nota suara telah berhenti secara automatik.',
+  'auth.voiceNotes.startedTimeout': 'Perkhidmatan suara gagal dimulakan dalam masa, sila cuba lagi.',
   'auth.voiceNotes.micLost': 'Mikrofon telah diputuskan sambungan dan nota suara telah berhenti.',
   'auth.voiceNotes.authFailed': 'Pengesahan nota suara gagal, sila log masuk semula.',
   'auth.voiceNotes.wsClosed': 'Sambungan nota suara telah diputuskan dan sesi telah dihentikan.',
-  'auth.voiceNotes.budgetExceeded':
-    'Nota suara tidak tersedia: kuota AI harian telah dicapai atau syiling pemikiran tidak mencukupi.',
+  'auth.voiceNotes.budgetExceeded': 'Nota suara tidak tersedia: kuota AI harian telah dicapai atau syiling pemikiran tidak mencukupi.',
   'auth.voiceNotes.sessionBusy': 'Sesi nota suara sedang dijalankan, sila hentikan dan cuba lagi.',
   'auth.voiceNotes.recording': 'Rakaman',
   'auth.voiceNotes.paused': 'Digantung',
@@ -47,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'Bermula',
   'auth.voiceNotes.stopping': 'Berhenti',
   'auth.voiceNotes.ingesting': 'Menyimpan',
-  'auth.voiceNotes.emptyTranscript':
-    'Tiada suara yang dikenali, sila sebut beberapa perkataan sebelum berhenti.',
+  'auth.voiceNotes.emptyTranscript': 'Tiada suara yang dikenali, sila sebut beberapa perkataan sebelum berhenti.',
   'auth.voiceNotes.generating': 'Menjana peta minda',
-  'auth.voiceNotes.sheetHint':
-    'Simpan transkripsi selepas berhenti. Klik Jana Peta Minda apabila anda sudah bersedia.',
+  'auth.voiceNotes.sheetHint': 'Simpan transkripsi selepas berhenti. Klik Jana Peta Minda apabila anda sudah bersedia.',
   'auth.voiceNotes.status.waiting': 'Menunggu untuk bermula',
   'auth.voiceNotes.status.connectingAsr': 'Menyambung kepada pengecaman pertuturan',
   'auth.voiceNotes.status.recording': 'Rakaman · Pengecaman suara',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'Rakaman · Pengecaman pertuturan · Pembesar suara yang membezakan',
+  'auth.voiceNotes.status.recordingAndSeparating': 'Rakaman · Pengecaman pertuturan · Pembesar suara yang membezakan',
   'auth.voiceNotes.status.paused': 'Digantung',
   'auth.voiceNotes.status.stopping': 'Berhenti',
   'auth.voiceNotes.status.savingTranscript': 'Menyimpan transkripsi',
@@ -69,13 +60,10 @@ export default {
   'auth.voiceNotes.savedAt': 'Transkripsi disimpan di {time}',
   'auth.voiceNotes.unsavedChanges': 'Transkripsi tidak disimpan',
   'auth.voiceNotes.closeWhileRecordingTitle': 'Rakaman',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'Menutup tetingkap tidak akan berhenti merakam. Transkripsi disimpan secara automatik ke peta semasa setiap 30 saat. Adakah anda pasti mahu menyembunyikan tingkap?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'Menutup tetingkap tidak akan berhenti merakam. Transkripsi disimpan secara automatik ke peta semasa setiap 30 saat. Adakah anda pasti mahu menyembunyikan tingkap?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'Sembunyikan tetingkap',
-  'auth.voiceNotes.recordingContinues':
-    'Rakaman masih diteruskan dan anda boleh membuka semula ringkasan rakaman pada bila-bila masa.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'Sila simpan peta minda semasa dahulu dan kemudian gunakan rakaman untuk meringkaskan.',
+  'auth.voiceNotes.recordingContinues': 'Rakaman masih diteruskan dan anda boleh membuka semula ringkasan rakaman pada bila-bila masa.',
+  'auth.voiceNotes.noCurrentDiagram': 'Sila simpan peta minda semasa dahulu dan kemudian gunakan rakaman untuk meringkaskan.',
   'auth.voiceNotes.restoreFailed': 'Tidak dapat memuatkan transkripsi rakaman audio yang disimpan.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'Nota suara sejarah',
@@ -85,33 +73,22 @@ export default {
   'auth.voiceNotes.mergeTalker': 'bergabung ke dalam',
   'auth.voiceNotes.mergeTalkerInto': 'Bercantum ke dalam {name}',
   'auth.voiceNotes.resetTalker': 'Pulihkan lalai',
-  'auth.voiceNotes.tencentAuth':
-    'Pengesahan pengecaman suara gagal, sila semak kekunci Tencent Cloud.',
-  'auth.voiceNotes.tencentService':
-    'Pengecaman pertuturan Tencent Cloud belum diaktifkan. Sila aktifkan perkhidmatan dalam konsol.',
-  'auth.voiceNotes.tencentQuota':
-    'Pakej sumber pengecaman pertuturan Tencent Cloud telah habis. Sila bayar atau beli pakej sumber selepas pengaktifan.',
-  'auth.voiceNotes.tencentArrears':
-    'Akaun Tencent Cloud tertunggak dan pengecaman suara telah dilumpuhkan.',
-  'auth.voiceNotes.tencentConcurrency':
-    'Keselarasan pengecaman pertuturan penuh, sila cuba sebentar lagi.',
+  'auth.voiceNotes.tencentAuth': 'Pengesahan pengecaman suara gagal, sila semak kekunci Tencent Cloud.',
+  'auth.voiceNotes.tencentService': 'Pengecaman pertuturan Tencent Cloud belum diaktifkan. Sila aktifkan perkhidmatan dalam konsol.',
+  'auth.voiceNotes.tencentQuota': 'Pakej sumber pengecaman pertuturan Tencent Cloud telah habis. Sila bayar atau beli pakej sumber selepas pengaktifan.',
+  'auth.voiceNotes.tencentArrears': 'Akaun Tencent Cloud tertunggak dan pengecaman suara telah dilumpuhkan.',
+  'auth.voiceNotes.tencentConcurrency': 'Keselarasan pengecaman pertuturan penuh, sila cuba sebentar lagi.',
   'auth.voiceNotes.tencentAudio': 'Audio tidak dikenali, sila cuba lagi.',
-  'auth.voiceNotes.tencentSendRate':
-    'Audio dihantar terlalu cepat, sila teruskan merakam dalam masa nyata.',
-  'auth.voiceNotes.tencentIdle':
-    'Rakaman telah terganggu terlalu lama dan pengecaman suara telah diputuskan.',
-  'auth.voiceNotes.tencentRetry':
-    'Pengecaman pertuturan gagal buat sementara waktu, sila cuba lagi.',
-  'auth.voiceNotes.tencentRegion':
-    'Rangkaian semasa tidak berada dalam skop perkhidmatan tapak domestik Tencent Cloud.',
+  'auth.voiceNotes.tencentSendRate': 'Audio dihantar terlalu cepat, sila teruskan merakam dalam masa nyata.',
+  'auth.voiceNotes.tencentIdle': 'Rakaman telah terganggu terlalu lama dan pengecaman suara telah diputuskan.',
+  'auth.voiceNotes.tencentRetry': 'Pengecaman pertuturan gagal buat sementara waktu, sila cuba lagi.',
+  'auth.voiceNotes.tencentRegion': 'Rangkaian semasa tidak berada dalam skop perkhidmatan tapak domestik Tencent Cloud.',
   'auth.voiceNotes.tencentParam': 'Parameter pengecaman pertuturan tidak sah.',
   'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID tidak sah, sila semak TENCENT_ASR_APP_ID.',
-  'auth.voiceNotes.rateLimited':
-    'Permintaan pengecaman pertuturan terlalu kerap, sila cuba sebentar lagi.',
+  'auth.voiceNotes.rateLimited': 'Permintaan pengecaman pertuturan terlalu kerap, sila cuba sebentar lagi.',
   'auth.voiceNotes.messageTooLarge': 'Paket audio terlalu besar, sila cuba lagi.',
   'auth.voiceNotes.invalidMessage': 'Mesej nota suara tidak sah, sila cuba lagi.',
-  'auth.voiceNotes.asrUnavailable':
-    'Pengecaman pertuturan tidak tersedia buat sementara waktu, sila cuba sebentar lagi.',
+  'auth.voiceNotes.asrUnavailable': 'Pengecaman pertuturan tidak tersedia buat sementara waktu, sila cuba sebentar lagi.',
   'auth.updateLog': 'Catatan rilis',
   'auth.updateLogModalTitle': 'Catatan rilis',
   'auth.updateLogMaintainerNote': 'Ya — platform ini aktif dirawat oleh Roy ✨',
@@ -123,27 +100,20 @@ export default {
   'privacy.backToSignIn': 'Kembali ke masuk',
   'auth.downloadDesktopShortcut': 'Tambahkan ke desktop',
   'auth.platformQuickGuide': 'Panduan pantas',
-  'auth.pwaIosInstallHint':
-    'Ketuk Bagikan di Safari, Chrome, atau Edge, lalu pilih “Tambahkan ke Layar Utama”.',
-  'auth.pwaAndroidInstallHint':
-    'Buka menu browser (⋮) dan ketuk Instal aplikasi atau Tambahkan ke layar utama.',
-  'auth.pwaSafariMacInstallHint':
-    'Di Safari, pilih File → Add to Dock, atau Share → Add to Dock (macOS Sonoma atau lebih baru).',
-  'auth.pwaDesktopInstallHint':
-    'Gunakan menu browser (⋮) atau ikon instal di bilah alamat (Chrome, Edge, atau Brave).',
+  'auth.pwaIosInstallHint': 'Ketuk Bagikan di Safari, Chrome, atau Edge, lalu pilih “Tambahkan ke Layar Utama”.',
+  'auth.pwaAndroidInstallHint': 'Buka menu browser (⋮) dan ketuk Instal aplikasi atau Tambahkan ke layar utama.',
+  'auth.pwaSafariMacInstallHint': 'Di Safari, pilih File → Add to Dock, atau Share → Add to Dock (macOS Sonoma atau lebih baru).',
+  'auth.pwaDesktopInstallHint': 'Gunakan menu browser (⋮) atau ikon instal di bilah alamat (Chrome, Edge, atau Brave).',
   'auth.pwaInstallSuccess': 'MindGraph telah ditambahkan ke desktop Anda.',
-  'auth.pwaDevInstallHint':
-    'Instal PWA dimatikan dalam mode dev normal. Gunakan build production (npm run build + backend) atau jalankan npm run dev:pwa, lalu gunakan Chrome/Edge di HTTPS atau localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Buka MindGraph di browser pada alamat HTTPS (bukan file HTML tersimpan) sebelum menginstal ke desktop.',
+  'auth.pwaDevInstallHint': 'Instal PWA dimatikan dalam mode dev normal. Gunakan build production (npm run build + backend) atau jalankan npm run dev:pwa, lalu gunakan Chrome/Edge di HTTPS atau localhost.',
+  'auth.pwaInsecureOriginHint': 'Buka MindGraph di browser pada alamat HTTPS (bukan file HTML tersimpan) sebelum menginstal ke desktop.',
   'auth.backToLogin': 'Kembali ke masuk',
   'auth.captcha': 'Kod pengesahan',
   'auth.captchaLength4': 'Masukkan captcha 4 karakter',
   'auth.captchaLoadFailed': 'Gagal memuat captcha',
   'auth.captchaNetworkError': 'Ralat rangkaian, gagal memuat captcha',
   'auth.tsecFailed': 'Pengesahan gagal, sila cuba lagi',
-  'auth.tsecUnavailable':
-    'Pengesahan manusia-komputer tidak dikonfigurasikan, sila cuba sebentar lagi.',
+  'auth.tsecUnavailable': 'Pengesahan manusia-komputer tidak dikonfigurasikan, sila cuba sebentar lagi.',
   'auth.changePassword': 'Ubah kata sandi',
   'auth.accountPlugin': 'Pemalam',
   'auth.apiTokenButton': 'Token API',
@@ -163,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'disalin',
   'auth.apiTokenCopyFailed': 'Salinan gagal',
   'auth.apiTokenLoading': 'memuatkan…',
-  'auth.apiTokenNone':
-    'Token belum dijana lagi. Muat turun pek kemahiran atau klik token API untuk menciptanya.',
+  'auth.apiTokenNone': 'Token belum dijana lagi. Muat turun pek kemahiran atau klik token API untuk menciptanya.',
   'auth.apiTokenOpaque': 'Token semasa tidak boleh bergema, sila jana semula.',
   'auth.apiTokenExpires': 'Sah sehingga {date}',
   'auth.downloadChromeExtension': 'Ekstensi Chrome',
   'auth.downloadWordAddin': 'Tambah perkataan',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'Fitur ini memerlukan tingkat sekolah Standard atau Professional (Basic tidak termasuk).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Langganan sekolah Anda telah berakhir. Akaun Anda sekarang pada tingkat percubaan. Hubungi administrator platform untuk memperpanjang.',
-  'auth.diagramLimitReached':
-    'Sekolah percubaan mengizinkan hingga {max} rajah tersimpan per guru. Padam satu untuk menyimpan rajah baru.',
+  'auth.schoolTierFeatureUnavailable': 'Fitur ini memerlukan tingkat sekolah Standard atau Professional (Basic tidak termasuk).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Langganan sekolah Anda telah berakhir. Akaun Anda sekarang pada tingkat percubaan. Hubungi administrator platform untuk memperpanjang.',
+  'auth.diagramLimitReached': 'Sekolah percubaan mengizinkan hingga {max} rajah tersimpan per guru. Padam satu untuk menyimpan rajah baru.',
   'auth.downloadOpenclawSkill': 'Skill OpenClaw',
-  'auth.downloadOpenclawSkillHint':
-    'Muat turun termasuk nombor akaun dan token semasa. Selepas menjana semula token, pek kemahiran dan sambungan lama akan menjadi tidak sah.',
+  'auth.downloadOpenclawSkillHint': 'Muat turun termasuk nombor akaun dan token semasa. Selepas menjana semula token, pek kemahiran dan sambungan lama akan menjadi tidak sah.',
   'auth.changePhoneButton': 'Ubah nomor telepon',
   'auth.passwordChangeSuccess': 'Kata sandi berjaya diubah',
   'auth.passwordChangeFailed': 'Gagal mengubah kata sandi',
@@ -256,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -295,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -308,8 +272,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'Email pendidikan',
   'auth.modal.hybridRegisterEmailTabAny': 'Mel',
   'auth.modal.hybridRegisterPhoneTab': 'Telepon + kode undangan',
-  'auth.modal.mainlandSalesNotice':
-    'Butuh akses di Tiongkok daratan? Gunakan nomor ponsel dan kode undangan, atau hubungi dukungan pelanggan.',
+  'auth.modal.mainlandSalesNotice': 'Butuh akses di Tiongkok daratan? Gunakan nomor ponsel dan kode undangan, atau hubungi dukungan pelanggan.',
   'auth.modal.registrationEmailLabel': 'Hanya email pendidikan',
   'auth.modal.registrationEmailLabelAny': 'Alamat email',
   'auth.modal.registrationEmailHint': '',
@@ -322,12 +285,9 @@ export default {
   'auth.modal.sendEmailCode': 'Kirim kode email',
   'auth.modal.sendingEmailCode': 'Mengirim...',
   'auth.modal.emailCodePlaceholder': 'Kode 6 digit dari email',
-  'auth.modal.acknowledgeOverseas':
-    'Saya memahami dan akan menggunakan perangkat lunak hanya untuk tujuan pendidikan.',
-  'auth.modal.acknowledgeOverseasAny':
-    'Saya memahami dan setuju dengan ketentuan pendaftaran luar negeri.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Saya memahami dan setuju dengan ketentuan pendaftaran luar negeri, dan Bahasa Tionghoa Sederhana tidak tersedia di jalur ini.',
+  'auth.modal.acknowledgeOverseas': 'Saya memahami dan akan menggunakan perangkat lunak hanya untuk tujuan pendidikan.',
+  'auth.modal.acknowledgeOverseasAny': 'Saya memahami dan setuju dengan ketentuan pendaftaran luar negeri.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Saya memahami dan setuju dengan ketentuan pendaftaran luar negeri, dan Bahasa Tionghoa Sederhana tidak tersedia di jalur ini.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Harap konfirmasi pemberitahuan di atas.',
   'auth.loginPhoneOrEmail': 'Telepon atau email',
@@ -348,17 +308,13 @@ export default {
   'auth.username': 'Nama pengguna',
   'auth.waitCaptchaLoad': 'Harap tunggu captcha dimuat',
   'auth.quickRegPageTitle': 'Pendaftaran cepat',
-  'auth.quickRegPageHint':
-    'Buka halaman ini dari tautan yang dibagikan sekolah. Masukkan telepon dan kode ruang 6 digit yang ditampilkan di jendela pendaftaran cepat fasilitator (diperbarui sekitar setiap 30 detik). Kode menunjukkan Anda ada di sesi; ini tidak memverifikasi kepemilikan telepon seperti kode SMS.',
-  'auth.quickRegLinkInvalid':
-    'Tautan pendaftaran ini tidak aktif (kedaluwarsa atau ditutup). Buka tautan terbaru dari fasilitator lagi.',
-  'auth.quickRegProbeRateLimited':
-    'Terlalu banyak pemeriksaan dari halaman ini. Tunggu sebentar dan segarkan, atau coba lagi nanti.',
+  'auth.quickRegPageHint': 'Buka halaman ini dari tautan yang dibagikan sekolah. Masukkan telepon dan kode ruang 6 digit yang ditampilkan di jendela pendaftaran cepat fasilitator (diperbarui sekitar setiap 30 detik). Kode menunjukkan Anda ada di sesi; ini tidak memverifikasi kepemilikan telepon seperti kode SMS.',
+  'auth.quickRegLinkInvalid': 'Tautan pendaftaran ini tidak aktif (kedaluwarsa atau ditutup). Buka tautan terbaru dari fasilitator lagi.',
+  'auth.quickRegProbeRateLimited': 'Terlalu banyak pemeriksaan dari halaman ini. Tunggu sebentar dan segarkan, atau coba lagi nanti.',
   'auth.quickRegSessionSignups': 'Terdaftar di sesi ini: {n}',
   'auth.quickRegRoomCodeLabel': 'Kode ruang',
   'auth.quickRegRoomCodePlaceholder': '6 digit',
-  'auth.quickRegRoomCodeHint':
-    'Sesuaikan dengan angka besar di dialog pendaftaran cepat fasilitator; masukkan kode sebelum berubah.',
+  'auth.quickRegRoomCodeHint': 'Sesuaikan dengan angka besar di dialog pendaftaran cepat fasilitator; masukkan kode sebelum berubah.',
   'auth.quickRegRoomCodeEnter6': 'Masukkan kode ruang 6 digit',
   'auth.quickRegMaxUses': 'Maks pendaftaran untuk tautan ini',
   'auth.quickRegHeadcount': 'Maks',
@@ -368,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'Selesaikan pendaftaran',
   'auth.quickRegSubmitting': 'Mendaftar…',
   'auth.quickRegRegisterSuccess': 'Pendaftaran berjaya',
-  'auth.quickRegSessionUnsure':
-    'Pendaftaran mungkin berjaya. Jika belum masuk, kembali dan gunakan masuk dengan kode verifikasi, atau segarkan halaman ini.',
+  'auth.quickRegSessionUnsure': 'Pendaftaran mungkin berjaya. Jika belum masuk, kembali dan gunakan masuk dengan kode verifikasi, atau segarkan halaman ini.',
   'auth.quickRegBackToSignIn': 'Gunakan masuk / daftar standar',
   'auth.quickRegSelectOrg': 'Pilih sekolah',
   'auth.quickRegOrgLoadError': 'Tidak boleh memuat sekolah. Sila coba lagi.',
   'auth.quickRegMintError': 'Tidak boleh membuka saluran pendaftaran. Sila coba lagi.',
   'auth.quickRegCloseConfirmTitle': 'Tamat pendaftaran cepat?',
-  'auth.quickRegCloseConfirm':
-    'Selepas menutup tetingkap, kod QR dan kod bilik semasa akan menjadi tidak sah serta-merta, dan pelajar yang belum menyertainya tidak akan dapat terus mendaftar.',
+  'auth.quickRegCloseConfirm': 'Selepas menutup tetingkap, kod QR dan kod bilik semasa akan menjadi tidak sah serta-merta, dan pelajar yang belum menyertainya tidak akan dapat terus mendaftar.',
   'auth.setPasswordWithSms': 'Atur kata sandi masuk',
   'auth.setPasswordWithSmsTitle': 'Atur kata sandi via SMS',
-  'auth.setPasswordWithSmsHint':
-    'Kami mengirim kode ke telepon terikat Anda. Setelah mengatur kata sandi, Anda dapat masuk dengan kata sandi atau kode verifikasi.',
+  'auth.setPasswordWithSmsHint': 'Kami mengirim kode ke telepon terikat Anda. Setelah mengatur kata sandi, Anda dapat masuk dengan kata sandi atau kode verifikasi.',
   'auth.setPasswordWithSmsSubmit': 'Simpan kata sandi',
   'auth.setPasswordWithSmsSubmitting': 'Menyimpan…',
   'auth.accountAvatar': 'Avatar',
@@ -395,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Nama tampilan',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'Minimal 2 karakter, tanpa angka',
   'auth.accountNameSave': 'Simpan nama',
   'auth.accountNameSaveSuccess': 'Nama diperbarui',
@@ -408,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Tidak boleh melepas tautan. Sila coba lagi.',
   'auth.dingtalkBindRebind': 'Tautkan lagi',
   'auth.dingtalkBindTitle': 'Tautkan akaun DingTalk',
-  'auth.dingtalkBindInstructions':
-    'Kirim kode 6 digit di bawah (misalnya 123-456) sebagai pesan teks ke DingTalk MindBot sekolah Anda.',
+  'auth.dingtalkBindInstructions': 'Kirim kode 6 digit di bawah (misalnya 123-456) sebagai pesan teks ke DingTalk MindBot sekolah Anda.',
   'auth.dingtalkBindPairWaiting': 'Menunggu MindBot menerima kode Anda…',
   'auth.dingtalkBindCodeHint': 'Kirim hanya kode ini — tanpa teks tambahan.',
   'auth.dingtalkBindCountdown': 'Sesi berakhir dalam {s} d',
@@ -424,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Tertaut ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Saat ini tertaut: {staff}',
   'auth.dingtalkUnbindTitle': 'Lepas tautan akaun DingTalk',
-  'auth.dingtalkUnbindInstructions':
-    'Kirim kode di bawah dari akaun DingTalk tertaut Anda ke MindBot untuk konfirmasi pelepasan.',
+  'auth.dingtalkUnbindInstructions': 'Kirim kode di bawah dari akaun DingTalk tertaut Anda ke MindBot untuk konfirmasi pelepasan.',
   'auth.dingtalkUnbindPairWaiting': 'Menunggu akaun DingTalk tertaut Anda mengonfirmasi…',
   'auth.dingtalkUnbindCodeHint': 'Kirim hanya kode ini dari akaun DingTalk tertaut Anda.',
   'auth.dingtalkUnbindExpiredHint': 'Sesi lepas tautan berakhir. Mulai lagi.',
@@ -438,24 +392,20 @@ export default {
   'auth.qrLoginInviteRequired': 'Masukkan kode undangan sekolah sebelum menggunakan masuk QR',
   'auth.qrLoginProvidersFailed': 'Tidak boleh memuat tetapan masuk QR. Sila coba lagi.',
   'auth.qrLoginProviderDisabled': 'Metode masuk ini belum diaktifkan untuk sekolah Anda',
-  'auth.qrLoginNotLinked':
-    'Akaun belum tertaut — masuk dengan kata sandi dan tautkan di Tautan akaun terlebih dahulu',
+  'auth.qrLoginNotLinked': 'Akaun belum tertaut — masuk dengan kata sandi dan tautkan di Tautan akaun terlebih dahulu',
   'auth.qrLoginExchangeFailed': 'Log masuk QR gagal. Sila coba lagi.',
   'auth.qrLoginInvalidState': 'Sesi QR berakhir. Tutup dan pindai lagi.',
-  'auth.qrLoginInvalidCode':
-    'Kod kebenaran WeChat telah tamat tempoh atau telah digunakan. Sila tutup kod QR dan imbas kod semula.',
+  'auth.qrLoginInvalidCode': 'Kod kebenaran WeChat telah tamat tempoh atau telah digunakan. Sila tutup kod QR dan imbas kod semula.',
   'auth.qrLoginRateLimited': 'Panggilan log masuk WeChat terlalu kerap, sila cuba sebentar lagi.',
   'auth.qrLoginMisconfigured': 'Konfigurasi log masuk WeChat tidak betul, sila hubungi pentadbir.',
   'auth.qrLoginCorpMismatch': 'Organisasi DingTalk tidak cocok dengan tetapan sekolah Anda.',
   'auth.oauthExternalTaken': 'Akaun ini sudah tertaut ke pengguna lain.',
-  'auth.oauthAlreadyBound':
-    'Akaun ini telah terikat dengan WeChat. Jika anda perlu mengikat WeChat lain, sila buka ikatannya terlebih dahulu',
+  'auth.oauthAlreadyBound': 'Akaun ini telah terikat dengan WeChat. Jika anda perlu mengikat WeChat lain, sila buka ikatannya terlebih dahulu',
   'auth.qrLoginDisabled': 'Log masuk QR tidak tersedia.',
   'auth.qrLoginStartFailed': 'Tidak boleh memulai masuk QR. Sila coba lagi.',
   'auth.qrLoginSuccess': 'Berjaya masuk',
   'auth.accountBindingsSection': 'Tautan akaun',
-  'auth.accountBindingsHint':
-    'MindBot menyimpan ke DingTalk; WeChat/DingTalk untuk masuk QR (tautkan di sini terlebih dahulu)',
+  'auth.accountBindingsHint': 'MindBot menyimpan ke DingTalk; WeChat/DingTalk untuk masuk QR (tautkan di sini terlebih dahulu)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',

@@ -414,7 +414,7 @@ defineExpose({
       class="join-workshop-btn join-workshop-btn--label"
       @click="briefDialogOpen = true"
     >
-      {{ t('mindmate.collabLaunchTooltip') }}
+      <I18nText k="mindmate.collabLaunchTooltip" />
     </ElButton>
     <ElDialog
       v-model="briefDialogOpen"
@@ -424,7 +424,7 @@ defineExpose({
       class="mm-launch-brief"
       :close-on-click-modal="false"
     >
-      <p class="mm-launch-brief__hint">{{ t('mindmate.collabLaunchHistoryHint') }}</p>
+      <p class="mm-launch-brief__hint"><I18nText k="mindmate.collabLaunchHistoryHint" /></p>
       <MindmateSeminarBriefForm
         v-if="briefDialogOpen"
         @start="onLaunchBrief"

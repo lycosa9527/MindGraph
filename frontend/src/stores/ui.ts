@@ -7,7 +7,9 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { E_BLACKBOARD_OPTIMIZE_KEY } from '@/config/canvasInputMode'
 import { htmlLangForLocale, loadLocaleMessages, setI18nLocale } from '@/i18n'
+import { authPageSecondaryLocale } from '@/i18n/authPageBilingual'
 import type { LocaleCode, PromptOutputLanguageCode } from '@/i18n/locales'
 import {
   UI_LOCALE_CODES,
@@ -20,16 +22,19 @@ import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import {
   BILINGUAL_UI_KEY,
   PRESENTER_UI_LOCALE_KEY,
+  complementaryUiLocale,
   defaultPresenterUiLocale,
 } from '@/stores/bilingualUiPrefs'
+import { createCanvasInputMode } from '@/stores/canvasInputModeState'
 import { computeIsMobileClient } from '@/utils/isMobileClient'
 import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
+import { notifySimplifiedChineseUnsupported } from '@/utils/simplifiedChineseNotice'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type Language = LocaleCode
 export type PromptLanguage = PromptOutputLanguageCode
 
-export type AppMode = 'mindmate' | 'mindgraph' | 'template' | 'course' | 'community'
+export type AppMode = 'mindmate' | 'mindgraph'
 export type UiVersion = 'chinese' | 'international'
 export type MindMapCanvasMode = 'legacy' | 'v2'
 
@@ -60,7 +65,6 @@ export const MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY =
  * including one that opted into Classic after the first v2-default migration.
  */
 export const MINDMAP_CANVAS_LEGACY_ARCHIVED_KEY = 'mindgraph_mindmap_canvas_legacy_archived'
-export const E_BLACKBOARD_OPTIMIZE_KEY = 'mindgraph_e_blackboard_optimize'
 
 type CanvasModeStorage = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -128,15 +132,21 @@ export const useUIStore = defineStore('ui', () => {
   const uiVersion = ref<UiVersion>(detectDefaultUiVersion())
   /** Mind map canvas chrome: legacy (Option 1) or v2 side-toolbar layout (Option 2). Default: v2. */
   const mindMapCanvasMode = ref<MindMapCanvasMode>('v2')
-  /**
-   * Classroom e-blackboard: enlarge V2 +/- and collapse chrome; desktop touch uses
-   * tap=select, double-tap=edit, two-finger pan/zoom. Default off; scale in
-   * `mindMapEBlackboard.ts`.
-   */
-  const eBlackboardOptimize = ref(false)
+  const {
+    canvasInputMode,
+    readCanvasInputFromStorage,
+    setCanvasInputMode,
+    hydrateCanvasInputFromDevice,
+    markCanvasInputDeviceStale,
+  } = createCanvasInputMode()
   /** Dual-language UI chrome: audience locale + presenter locale. */
   const bilingualUiEnabled = ref(false)
   const presenterUiLocale = ref<Language>(defaultPresenterUiLocale(true))
+  /**
+   * `/auth` only. Not written to localStorage. Primary stays the browser locale.
+   * A second line is Simplified Chinese, except Chinese browsers stay one line.
+   */
+  const authPageBilingual = ref(false)
   const isMobile = ref(false)
   // Word task panes are narrow — start collapsed; user can expand.
   const sidebarCollapsed = ref(isOfficeEmbedDesktop())
@@ -297,7 +307,7 @@ export const useUIStore = defineStore('ui', () => {
       localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, 'v2')
     }
 
-    eBlackboardOptimize.value = localStorage.getItem(E_BLACKBOARD_OPTIMIZE_KEY) === '1'
+    readCanvasInputFromStorage()
     bilingualUiEnabled.value = localStorage.getItem(BILINGUAL_UI_KEY) === '1'
     const storedPresenter = localStorage.getItem(PRESENTER_UI_LOCALE_KEY)
     if (isValidLanguage(storedPresenter)) {
@@ -331,6 +341,11 @@ export const useUIStore = defineStore('ui', () => {
         promptLanguage.value = matched
         localStorage.setItem(PROMPT_LANGUAGE_KEY, matched)
       }
+    }
+
+    if (bilingualUiEnabled.value) {
+      lockOutputLanguageToInterface()
+      keepPresenterDistinct()
     }
 
     if (typeof document !== 'undefined') {
@@ -375,6 +390,10 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   function setLanguage(newLanguage: Language): void {
+    if (!languagePolicyAllowZh.value && newLanguage === 'zh') {
+      notifySimplifiedChineseUnsupported(language.value)
+      return
+    }
     if (matchPromptToUi.value) {
       const matched = matchedPromptLanguageForUiLocale(newLanguage)
       if (matched !== null && promptLanguage.value !== matched) {
@@ -389,8 +408,17 @@ export const useUIStore = defineStore('ui', () => {
       languageSwitchSeq += 1
     }
     document.documentElement.lang = htmlLangForLocale(newLanguage)
+    if (authPageBilingual.value) {
+      const secondary = authPageSecondaryLocale(newLanguage)
+      if (secondary !== null) {
+        void loadLocaleMessages(secondary).catch(() => undefined)
+      }
+    }
     // Always (re)sync vue-i18n — even when Pinia already has this code — so HMR /
     // failed lazy loads cannot leave the switcher on "zh" while copy stays English.
+    if (bilingualUiEnabled.value) {
+      keepPresenterDistinct()
+    }
     const seq = languageSwitchSeq
     void loadLocaleMessages(newLanguage)
       .then(() => {
@@ -404,20 +432,51 @@ export const useUIStore = defineStore('ui', () => {
       })
   }
 
-  function setPromptLanguage(lang: PromptLanguage): void {
-    if (promptLanguage.value === lang) {
+  function keepPresenterDistinct(): void {
+    if (!bilingualUiEnabled.value || presenterUiLocale.value !== language.value) {
       return
     }
-    promptLanguage.value = lang
-    localStorage.setItem(PROMPT_LANGUAGE_KEY, lang)
+    const next = complementaryUiLocale(language.value, languagePolicyAllowZh.value)
+    if (next === language.value) {
+      return
+    }
+    setPresenterUiLocale(next)
+  }
+
+  function lockOutputLanguageToInterface(): void {
+    if (!matchPromptToUi.value) {
+      matchPromptToUi.value = true
+      localStorage.setItem(MATCH_PROMPT_TO_UI_KEY, '1')
+    }
+    const matched = matchedPromptLanguageForUiLocale(language.value)
+    if (matched !== null && promptLanguage.value !== matched) {
+      promptLanguage.value = matched
+      localStorage.setItem(PROMPT_LANGUAGE_KEY, matched)
+    }
+  }
+
+  function setPromptLanguage(lang: PromptLanguage): void {
+    if (!languagePolicyAllowZh.value && lang === 'zh') {
+      notifySimplifiedChineseUnsupported(language.value)
+      return
+    }
+    const next = bilingualUiEnabled.value
+      ? (matchedPromptLanguageForUiLocale(language.value) ?? lang)
+      : lang
+    if (promptLanguage.value === next) {
+      return
+    }
+    promptLanguage.value = next
+    localStorage.setItem(PROMPT_LANGUAGE_KEY, next)
   }
 
   function setMatchPromptToUi(value: boolean): void {
-    if (matchPromptToUi.value === value) {
+    const next = bilingualUiEnabled.value ? true : value
+    if (matchPromptToUi.value === next) {
       return
     }
-    matchPromptToUi.value = value
-    localStorage.setItem(MATCH_PROMPT_TO_UI_KEY, value ? '1' : '0')
+    matchPromptToUi.value = next
+    localStorage.setItem(MATCH_PROMPT_TO_UI_KEY, next ? '1' : '0')
   }
 
   function setUiLanguageExplicit(value: boolean): void {
@@ -432,16 +491,40 @@ export const useUIStore = defineStore('ui', () => {
 
   function setLanguagePolicyAllowZh(allow: boolean): void {
     languagePolicyAllowZh.value = allow
-    if (!allow && presenterUiLocale.value === 'zh') {
+    if (allow) {
+      return
+    }
+    if (presenterUiLocale.value === 'zh') {
       setPresenterUiLocale('en')
+    }
+    if (language.value === 'zh') {
+      setLanguage('en')
+    }
+    if (promptLanguage.value === 'zh') {
+      promptLanguage.value = 'en'
+      localStorage.setItem(PROMPT_LANGUAGE_KEY, 'en')
     }
   }
 
   function setBilingualUiEnabled(value: boolean): void {
     bilingualUiEnabled.value = value
     localStorage.setItem(BILINGUAL_UI_KEY, value ? '1' : '0')
-    if (value) {
-      void loadLocaleMessages(presenterUiLocale.value).catch(() => undefined)
+    if (!value) {
+      return
+    }
+    void loadLocaleMessages(presenterUiLocale.value).catch(() => undefined)
+    lockOutputLanguageToInterface()
+    keepPresenterDistinct()
+  }
+
+  function setAuthPageBilingual(active: boolean): void {
+    authPageBilingual.value = active
+    if (!active) {
+      return
+    }
+    const secondary = authPageSecondaryLocale(language.value)
+    if (secondary !== null) {
+      void loadLocaleMessages(secondary).catch(() => undefined)
     }
   }
 
@@ -449,7 +532,13 @@ export const useUIStore = defineStore('ui', () => {
     const next: Language = isValidLanguage(value)
       ? value
       : defaultPresenterUiLocale(languagePolicyAllowZh.value)
-    const coerced = !languagePolicyAllowZh.value && next === 'zh' ? 'en' : next
+    let coerced: Language = !languagePolicyAllowZh.value && next === 'zh' ? 'en' : next
+    if (bilingualUiEnabled.value && coerced === language.value) {
+      const alt = complementaryUiLocale(language.value, languagePolicyAllowZh.value)
+      if (alt !== coerced) {
+        coerced = alt
+      }
+    }
     presenterUiLocale.value = coerced
     localStorage.setItem(PRESENTER_UI_LOCALE_KEY, coerced)
     if (bilingualUiEnabled.value) {
@@ -504,11 +593,6 @@ export const useUIStore = defineStore('ui', () => {
       localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, nextMode)
     }
     eventBus.emit('mindmap:canvas_mode_changed', { previousMode, newMode: nextMode })
-  }
-
-  function setEBlackboardOptimize(value: boolean): void {
-    eBlackboardOptimize.value = value
-    localStorage.setItem(E_BLACKBOARD_OPTIMIZE_KEY, value ? '1' : '0')
   }
 
   function applyUiVersionFromServerProfile(_version: string | null | undefined): void {
@@ -654,6 +738,7 @@ export const useUIStore = defineStore('ui', () => {
     languagePolicyAllowZh.value = true
     bilingualUiEnabled.value = false
     presenterUiLocale.value = defaultPresenterUiLocale(true)
+    authPageBilingual.value = false
     uiVersion.value = detectDefaultUiVersion()
     localStorage.removeItem(THEME_KEY)
     localStorage.removeItem(LANGUAGE_KEY)
@@ -665,6 +750,7 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.removeItem(MINDMAP_CANVAS_MODE_KEY)
     localStorage.removeItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY)
     localStorage.removeItem(MINDMAP_CANVAS_LEGACY_ARCHIVED_KEY)
+    markCanvasInputDeviceStale()
     localStorage.removeItem(E_BLACKBOARD_OPTIMIZE_KEY)
     localStorage.removeItem('mindgraph_sidebar_poem_enabled')
     localStorage.removeItem('mindgraph_sidebar_subtitle_mode')
@@ -688,9 +774,10 @@ export const useUIStore = defineStore('ui', () => {
     browserLocaleHintDismissed,
     uiVersion,
     mindMapCanvasMode,
-    eBlackboardOptimize,
+    canvasInputMode,
     bilingualUiEnabled,
     presenterUiLocale,
+    authPageBilingual,
     isMobile,
     sidebarCollapsed,
     wireframeMode,
@@ -719,9 +806,11 @@ export const useUIStore = defineStore('ui', () => {
     setLanguagePolicyAllowZh,
     setUiVersion,
     setMindMapCanvasMode,
-    setEBlackboardOptimize,
+    setCanvasInputMode,
+    hydrateCanvasInputFromDevice,
     setBilingualUiEnabled,
     setPresenterUiLocale,
+    setAuthPageBilingual,
     applyUiVersionFromServerProfile,
     applyLanguageFromServerProfile,
     applyGuestLocaleFromBrowser,

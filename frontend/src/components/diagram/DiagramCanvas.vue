@@ -27,13 +27,16 @@ import {
   isThinkingMapDiagramType,
 } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { showsNodeFloatingAiSubgraph } from '@/canvas-ribbon/nodeFloatingAiSubgraph'
-import { CanvasNodeFloatingToolbar, ExportToCommunityModal } from '@/components/canvas'
+import { CanvasNodeFloatingToolbar } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
 import MindMapNodeExplainResearchPanel from '@/components/canvas/MindMapNodeExplainResearchPanel.vue'
+import { openConceptMapBrainstorm } from '@/composables/aiBrainstorm/openConceptMapBrainstorm'
+import { openThinkingMapAiExpand } from '@/composables/aiBrainstorm/openThinkingMapAiExpand'
 import {
   type FloatingToolbarSize,
   formatBrushActive,
+  useCanvasNodeChromeOverlayGate,
   useFollowNodeStyleToolbar,
   useNodeFloatingToolbarPosition,
 } from '@/composables/canvasToolbar'
@@ -42,6 +45,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramCanvasFontFaces } from '@/composables/diagram/useDiagramCanvasFontFaces'
 import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   diagramCanvasGridConfig,
@@ -59,7 +63,7 @@ import {
   useDiagramCanvasVueFlowUi,
   useDiagramFollowNodeDismiss,
 } from '@/composables/diagramCanvas'
-import { useDiagramCanvasMindMapPaletteDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
+import { useDiagramCanvasMindMapBrainstormDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapBrainstormDrop'
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import {
   CONCEPT_MAP_GENERATING_KEY,
@@ -79,13 +83,20 @@ import {
 import { useMindMapCanvasVisuals } from '@/composables/mindMap/useMindMapCanvasVisuals'
 import { useMindMapConnectorDebugLog } from '@/composables/mindMap/useMindMapConnectorDebugLog'
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
-import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
-import { openThinkingMapAiExpand } from '@/composables/nodePalette/openThinkingMapAiExpand'
 import {
   diagramPresentationReadOnlyRef,
   resolvePresentationTeleportTarget,
 } from '@/composables/presentation/presentationDiagramEdit'
-import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasExportOptions'
+import type {
+  CanvasExportAnswerMode,
+  CanvasExportColorMode,
+  CanvasExportLayout,
+} from '@/config/canvasExportOptions'
+import {
+  type CanvasInputMode,
+  canvasInputUsesSlash,
+  shouldAttachCanvasTouchLayer,
+} from '@/config/canvasInputMode'
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
@@ -111,6 +122,7 @@ import TreeMapOverlay from './TreeMapOverlay.vue'
 import './diagramCanvas.css'
 import { diagramCanvasEdgeTypesLegacy } from './diagramCanvasEdgeTypesLegacy'
 import { diagramCanvasEdgeTypesMindMapV2 } from './diagramCanvasEdgeTypesMindMapV2'
+import './diagramCanvasExportOutline.css'
 import { diagramCanvasEdgeTypes, diagramCanvasNodeTypes } from './diagramCanvasVueFlowTypes'
 
 interface Props {
@@ -133,10 +145,10 @@ interface Props {
   mindMapSlideDimFocusNodeIds?: Set<string> | null
   panOnDragButtons?: number[] | null
   /**
-   * Desktop classroom e-blackboard: two-finger pan/zoom (1-finger stays tap/select);
-   * mouse middle-button pan stays. Phone mobile uses panOnDragButtons instead.
+   * Laptop: one finger selects, two fingers pan when the screen is touch.
+   * Mobile: one finger pans. Classroom board: two fingers pan, slash, larger targets.
    */
-  enableTouchPanPinch?: boolean
+  inputMode?: CanvasInputMode
   /** Two-finger horizontal swipe flips mind-map slides (when the slide HUD is up). */
   enableTwoFingerSlideSwipe?: boolean
   presentationRailOpen?: boolean
@@ -160,7 +172,7 @@ const props = withDefaults(defineProps<Props>(), {
   mindMapSlideFocusNodeId: null,
   mindMapSlideDimFocusNodeIds: null,
   panOnDragButtons: null,
-  enableTouchPanPinch: false,
+  inputMode: 'laptop',
   enableTwoFingerSlideSwipe: false,
   presentationRailOpen: false,
   presentationSideToolbarVisible: true,
@@ -198,6 +210,7 @@ const emit = defineEmits<{
 }>()
 
 const diagramStore = useDiagramSession()
+useDiagramCanvasFontFaces()
 const mindMapBulkLoading = diagramSessionRef(diagramStore, 'mindMapBulkLoading')
 const layoutMeasureSettling = diagramSessionRef(diagramStore, 'layoutMeasureSettling')
 const savedDiagramsStore = useSavedDiagramsStore()
@@ -226,9 +239,8 @@ const {
   setViewport,
   getViewport,
   setMinZoom,
-  zoomIn,
-  zoomOut,
   screenToFlowCoordinate,
+  selectionKeyCode: vueFlowSelectionKeyCode,
 } = useVueFlow(diagramStore.vueFlowId)
 
 function getVueFlowNodesForOverlays(): GraphNode[] {
@@ -260,6 +272,13 @@ const presentationStrokePointerScale = computed(() => {
   return 1
 })
 
+const enableTouchPanPinch = computed(() =>
+  shouldAttachCanvasTouchLayer(
+    props.inputMode,
+    typeof navigator === 'undefined' ? 0 : navigator.maxTouchPoints
+  )
+)
+
 const {
   presentationStrokeToolActive,
   presentationStrokeColor,
@@ -278,16 +297,25 @@ const {
   presentationHandPanMode: toRef(props, 'presentationHandPanMode'),
   browseMode: toRef(props, 'browseMode'),
   panOnDragButtons: toRef(props, 'panOnDragButtons'),
-  enableTouchPanPinch: toRef(props, 'enableTouchPanPinch'),
+  enableTouchPanPinch,
   presentationTool,
   presentationHighlighterColor,
   presentationPenColor,
 })
 
-/** Mobile page or desktop e-blackboard — CSS touch-action + marquee hide. */
+// Vue Flow 1.48's prop only accepts boolean | null, and null would clear this.
+watch(
+  selectionKeyCode,
+  (key) => {
+    vueFlowSelectionKeyCode.value = key
+  },
+  { immediate: true }
+)
+
+/** Mobile page, classroom board, or a laptop with a touch screen. */
 const canvasTouchGesturesActive = computed(
   () =>
-    props.enableTouchPanPinch ||
+    enableTouchPanPinch.value ||
     (Array.isArray(props.panOnDragButtons) && props.panOnDragButtons.length > 0)
 )
 
@@ -395,6 +423,8 @@ const floatingToolbarNodeIds = computed(() => {
   return diagramStore.selectedNodes.filter((id) => !isMindMapSummaryNodeId(id))
 })
 
+const overlayBlocksNodeChrome = useCanvasNodeChromeOverlayGate()
+
 const floatingToolbarEnabled = computed(
   () => followNodeStyleToolbar.value && floatingToolbarNodeIds.value.length > 0
 )
@@ -462,7 +492,7 @@ const { isGenerating: subgraphGenerating, generateSubgraph } = useMindMapSubgrap
 function runAiSubgraph(nodeId: string | null): void {
   if (!diagramRibbonCapabilities(diagramStore.type, useMindMapV2.value).subgraph) return
   if (diagramStore.type === 'concept_map') {
-    if (nodeId) openConceptMapNodePalette()
+    if (nodeId) openConceptMapBrainstorm()
     return
   }
   if (isThinkingMapDiagramType(diagramStore.type)) {
@@ -507,15 +537,11 @@ const {
 })
 
 const {
-  showExportToCommunityModal,
   getExportContainer,
   getExportTitle,
-  getExportSpec,
   exportByFormat,
   capturePngBlob,
   copyPngToClipboard,
-  prepareForCommunityExport,
-  restoreViewportAfterCommunityExport,
   captureWorksheetPreviewPng,
 } = useDiagramCanvasExport({
   vueFlowWrapper,
@@ -537,13 +563,15 @@ function handleWorksheetTextSave(payload: {
   worksheetText: CanvasWorksheetTextOptions
   colorMode: CanvasExportColorMode
   layout: CanvasExportLayout
+  answerMode: CanvasExportAnswerMode
   format: 'pdf' | 'worksheet_docx'
 }) {
   canvasExportStore.commitWorksheetAndExport(
     payload.worksheetText,
     payload.colorMode,
     payload.format,
-    payload.layout
+    payload.layout,
+    payload.answerMode
   )
 }
 
@@ -551,12 +579,13 @@ const worksheetDefaultTopic = computed(() => getExportTitle())
 
 async function captureWorksheetPreview(preview?: {
   colorMode?: CanvasExportColorMode
+  answerMode?: CanvasExportAnswerMode
 }): Promise<string | null> {
   return canvasExportStore.runExportSession(async () =>
     captureWorksheetPreviewPng({
       ...exportOptions.value,
       colorMode: preview?.colorMode ?? exportOptions.value.colorMode,
-      answerMode: exportOptions.value.answerMode,
+      answerMode: preview?.answerMode ?? exportOptions.value.answerMode,
     })
   )
 }
@@ -585,21 +614,21 @@ const {
   handleConceptMapDrop,
 } = conceptMapLink
 
-const mindMapPaletteDrop = useDiagramCanvasMindMapPaletteDrop({ diagramStore })
+const mindMapPaletteDrop = useDiagramCanvasMindMapBrainstormDrop({ diagramStore })
 const paletteDragPreview = computed(() => mindMapPaletteDrop.paletteDragPreview.value)
 
 function handleCanvasDragOver(event: DragEvent): void {
   handleConceptMapDragOver(event)
-  mindMapPaletteDrop.handleMindMapPaletteDragOver(event)
+  mindMapPaletteDrop.handleMindMapBrainstormDragOver(event)
 }
 
 function handleCanvasDragLeave(event: DragEvent): void {
-  mindMapPaletteDrop.handleMindMapPaletteDragLeave(event)
+  mindMapPaletteDrop.handleMindMapBrainstormDragLeave(event)
 }
 
 function handleCanvasDrop(event: DragEvent): void {
   handleConceptMapDrop(event)
-  mindMapPaletteDrop.handleMindMapPaletteDrop(event)
+  mindMapPaletteDrop.handleMindMapBrainstormDrop(event)
 }
 
 const suppressPaneClearUntil = ref(0)
@@ -655,11 +684,13 @@ const { setupMobileTouchZoom, mobileTouchCleanup, setupMouseSlash } = useDiagram
   getViewport,
   setViewport,
   branchMove,
-  // Phone mobile keeps 1-finger pan; e-blackboard uses 2-finger pan so 1-finger can select.
-  allowSingleFingerPan: () => !props.enableTouchPanPinch,
-  canPageSwipe: () => props.enableTwoFingerSlideSwipe,
+  allowSingleFingerPan: () => props.inputMode === 'mobile',
+  canPageSwipe: () => props.enableTwoFingerSlideSwipe && props.inputMode === 'board',
+  boardGestures: () => props.inputMode === 'board',
+  slashGestures: () => canvasInputUsesSlash(props.inputMode),
   canFitOnDoubleTap: () => diagramStore.type !== 'concept_map' && !props.enableTwoFingerSlideSwipe,
   allowMouseSlash: () =>
+    canvasInputUsesSlash(props.inputMode) &&
     !props.browseMode &&
     !props.handToolActive &&
     !props.presentationHandPanMode &&
@@ -671,7 +702,7 @@ let cleanupMouseSlash: (() => void) | null = null
 function syncTouchPanPinchLayer(): void {
   mobileTouchCleanup.value?.()
   mobileTouchCleanup.value = null
-  if (props.enableTouchPanPinch || props.panOnDragButtons) {
+  if (enableTouchPanPinch.value || props.panOnDragButtons) {
     setupMobileTouchZoom()
   }
 }
@@ -738,8 +769,6 @@ onMounted(() => {
     getViewport,
     setViewport,
     setMinZoom,
-    zoomIn,
-    zoomOut,
     fitApi: {
       fitToFullCanvas,
       fitWithPanel,
@@ -753,9 +782,6 @@ onMounted(() => {
     capturePngBlob,
     copyPngToClipboard,
     getExportContainer,
-    showExportToCommunityModal,
-    prepareForCommunityExport,
-    restoreViewportAfterCommunityExport,
     regenerateForNodeIfNeeded,
   })
   syncTouchPanPinchLayer()
@@ -763,7 +789,7 @@ onMounted(() => {
 })
 
 watch(
-  () => [props.panOnDragButtons, props.enableTouchPanPinch] as const,
+  () => [props.panOnDragButtons, props.inputMode, enableTouchPanPinch.value] as const,
   () => {
     syncTouchPanPinchLayer()
   }
@@ -838,13 +864,12 @@ defineExpose({
         :nodes-connectable="false"
         :elements-selectable="elementsSelectable"
         :select-nodes-on-drag="selectNodesOnDrag"
-        :selection-key-code="selectionKeyCode"
         :selection-mode="SelectionMode.Partial"
         :pan-on-scroll="false"
         :zoom-on-scroll="true"
         :zoom-on-pinch="true"
         :zoom-on-double-click="false"
-        :delete-key-code="props.browseMode ? null : undefined"
+        :delete-key-code="null"
         :pan-on-drag="effectivePanOnDrag"
         :class="vueFlowBackgroundClasses"
         :style="{ backgroundColor: uiStore.exportRasterCapture ? 'transparent' : backgroundColor }"
@@ -919,7 +944,8 @@ defineExpose({
         floatingToolbarEnabled &&
         !headlessExport &&
         !presentationDiagramEditLocked &&
-        !nodeExplainVisible
+        !nodeExplainVisible &&
+        !overlayBlocksNodeChrome
       "
       :position="floatingToolbarPosition"
       :node-id="floatingToolbarAnchorId"
@@ -968,20 +994,10 @@ defineExpose({
       @close="closeNodeExplain"
     />
 
-    <ExportToCommunityModal
-      v-model:visible="showExportToCommunityModal"
-      mode="create"
-      :get-container="getExportContainer"
-      :get-diagram-spec="getExportSpec"
-      :get-title="getExportTitle"
-      :prepare-for-thumbnail="prepareForCommunityExport"
-      :restore-after-thumbnail="restoreViewportAfterCommunityExport"
-      :diagram-type="diagramStore.type || 'mind_map'"
-    />
-
     <CanvasWorksheetTextModal
       v-model:visible="worksheetTextModalOpen"
       :color-mode="exportOptions.colorMode"
+      :answer-mode="exportOptions.answerMode"
       :options="worksheetTextOptions"
       :layout="exportOptions.layout"
       :default-topic="worksheetDefaultTopic"

@@ -54,7 +54,6 @@ export function requestTrainingTopicApply(option: TrainingTopicOption): void {
 
 export function requestTrainingModalOpen(key: string): void {
   if (key === 'export-community') {
-    eventBus.emit('toolbar:export_requested', { format: 'community' })
     return
   }
   eventBus.emit('training:modal_open_requested', { key })

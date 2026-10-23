@@ -5,8 +5,7 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Nie można wyczyścić węzłów tematu ani centrum',
-  'notification.cannotResetSelectDiagramType':
-    'Nie można zresetować: najpierw wybierz typ diagramu',
+  'notification.cannotResetSelectDiagramType': 'Nie można zresetować: najpierw wybierz typ diagramu',
   'notification.canvasClearNodes': 'Wyczyszczono {count} węzeł/węzły',
   'notification.canvasClearNodesLearning': 'Opróżniono {count} węzeł/węzły, dodano do odpowiedzi',
   'notification.canvasSomeoneEditingNode': 'Ktoś inny edytuje ten węzeł',
@@ -22,8 +21,7 @@ export default {
   'notification.feedbackThanks': 'Dziękujemy za opinię',
   'notification.feedbackThanksDislike': 'Dziękujemy za opinię — będziemy się poprawiać',
   'notification.focusQuestionTooShort': 'Najpierw wpisz dłuższe pytanie fokusowe',
-  'notification.geoLiteMissingIntro':
-    'Pobierz GeoLite2 Country z MaxMind, wypakuj GeoLite2-Country.mmdb i skopiuj do folderu data serwera:',
+  'notification.geoLiteMissingIntro': 'Pobierz GeoLite2 Country z MaxMind, wypakuj GeoLite2-Country.mmdb i skopiuj do folderu data serwera:',
   'notification.geoLiteMissingLink': 'Otwórz stronę pobierania MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'Oczekiwana ścieżka:',
   'notification.geoLiteMissingTitle': 'Brak bazy GeoLite2 Country',
@@ -35,12 +33,9 @@ export default {
   'notification.importInvalidData': 'Import nieudany: nieprawidłowe dane diagramu',
   'notification.importLoadFailed': 'Import nieudany: nie udało się wczytać diagramu',
   'notification.importSavePartial': 'Zaimportowano, ale zapis do biblioteki nie powiódł się',
-  'notification.importSlotsFull':
-    'Biblioteka pełna; diagram zaimportowano, ale nie zapisano w bibliotece',
+  'notification.importSlotsFull': 'Biblioteka pełna; diagram zaimportowano, ale nie zapisano w bibliotece',
   'notification.importSuccess': 'Diagram zaimportowano i zapisano w bibliotece',
   'notification.importUnsupportedType': 'Import nieudany: nieobsługiwany typ diagramu',
-  'notification.inlineRecEmpty':
-    'Nie wygenerowano rekomendacji. Spróbuj ponownie lub edytuj temat.',
   'notification.loadMoreFailed': 'Nie udało się wczytać więcej',
   'notification.networkError': 'Błąd sieci',
   'notification.nodeNotEligible': 'Ten węzeł nie obsługuje rekomendacji Tab.',
@@ -51,10 +46,8 @@ export default {
   'notification.rootConceptLinkNotFound': 'Nie znaleziono łącza pojęcia głównego',
   'notification.saved': 'Zmiany zostały zapisane',
   'notification.selectNodeToClear': 'Wybierz węzeł do wyczyszczenia',
-  'notification.sessionInvalidated':
-    'Wylogowano Cię, ponieważ przekroczono maksymalną liczbę urządzeń',
-  'notification.sessionKicked':
-    'To konto zalogowało to konto w trybie offline na innych urządzeniach',
+  'notification.sessionInvalidated': 'Wylogowano Cię, ponieważ przekroczono maksymalną liczbę urządzeń',
+  'notification.sessionKicked': 'To konto zalogowało to konto w trybie offline na innych urządzeniach',
   'notification.signInToUse': 'Zaloguj się, aby z tego korzystać',
   'notification.signInToValidateFocus': 'Zaloguj się, aby zweryfikować pytanie fokusowe',
 } as const

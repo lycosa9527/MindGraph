@@ -6,7 +6,7 @@
 export default {
   'braceMap.defaultSubpartFirst': 'ಹೊಸ ಉಪ ಭಾಗ 1',
   'braceMap.defaultSubpartSecond': 'ಹೊಸ ಉಪ ಭಾಗ 2',
-  'canvas.emptyState': 'Choose a diagram type to start',
+  'canvas.emptyState': 'ರಚಿಸಲು ಪ್ರಾರಂಭಿಸಲು ಐಕಾನ್ ಪ್ರಕಾರವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'canvas.export.canvasNotReady': 'ರಫ್ತು ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ: ಕ್ಯಾನ್ವಾಸ್ ಸಿದ್ಧವಾಗಿಲ್ಲ',
   'canvas.export.jsonError': 'MG ಫೈಲ್ ರಫ್ತು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'canvas.export.jsonSuccess': 'MG ಫೈಲ್ ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ರಫ್ತು ಮಾಡಲಾಗಿದೆ',
@@ -15,8 +15,7 @@ export default {
   'canvas.export.docxSuccess': 'ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ರಫ್ತು ಮಾಡಲಾಗಿದೆ',
   'canvas.export.pdfError': 'PDF ರಫ್ತು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'canvas.export.pdfSuccess': 'PDF ರಫ್ತು ಯಶಸ್ವಿಯಾಗಿದೆ',
-  'canvas.export.clipboardFallback':
-    'ಕ್ಲಿಪ್‌ಬೋರ್ಡ್‌ಗೆ ಬರೆಯಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ಬದಲಿಗೆ PNG ಅನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಲಾಗಿದೆ',
+  'canvas.export.clipboardFallback': 'ಕ್ಲಿಪ್‌ಬೋರ್ಡ್‌ಗೆ ಬರೆಯಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ಬದಲಿಗೆ PNG ಅನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಲಾಗಿದೆ',
   'canvas.export.pngError': 'PNG ರಫ್ತು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'canvas.export.pngSuccess': 'PNG ಚಿತ್ರವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ರಫ್ತು ಮಾಡಲಾಗಿದೆ',
   'canvas.export.svgError': 'SVG ರಫ್ತು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
@@ -32,31 +31,25 @@ export default {
   'canvas.exportOptions.layoutLandscape': 'ಸಮತಲ',
   'canvas.exportOptions.layoutPortrait': 'ಭಾವಚಿತ್ರ',
   'canvas.worksheetText.cancel': 'ರದ್ದುಮಾಡಿ',
-  'canvas.worksheetText.defaultInstruction':
-    'ರೇಖಾಚಿತ್ರದ ಒಟ್ಟಾರೆ ರಚನೆಯನ್ನು ಸುಧಾರಿಸಲು ಖಾಲಿ ಜಾಗದಲ್ಲಿ ಅನುಗುಣವಾದ ವಿಷಯವನ್ನು ಸೇರಿಸಿ.',
-  'canvas.worksheetText.dragDiagramHint':
-    'ಸ್ಥಾನವನ್ನು ಸರಿಹೊಂದಿಸಲು ಎಳೆಯಿರಿ · ಜೂಮ್ ಮಾಡಲು ಮೂಲೆಗಳನ್ನು ಎಳೆಯಿರಿ',
+  'canvas.worksheetText.defaultInstruction': 'ರೇಖಾಚಿತ್ರದ ಒಟ್ಟಾರೆ ರಚನೆಯನ್ನು ಸುಧಾರಿಸಲು ಖಾಲಿ ಜಾಗದಲ್ಲಿ ಅನುಗುಣವಾದ ವಿಷಯವನ್ನು ಸೇರಿಸಿ.',
+  'canvas.worksheetText.dragDiagramHint': 'ಸ್ಥಾನವನ್ನು ಸರಿಹೊಂದಿಸಲು ಎಳೆಯಿರಿ · ಜೂಮ್ ಮಾಡಲು ಮೂಲೆಗಳನ್ನು ಎಳೆಯಿರಿ',
   'canvas.worksheetText.fieldClass': 'ವರ್ಗ:',
   'canvas.worksheetText.fieldDate': 'ದಿನಾಂಕ:',
   'canvas.worksheetText.fieldName': 'ಹೆಸರು:',
   'canvas.worksheetText.hide': 'ಮರೆಮಾಡಿ',
   'canvas.worksheetText.instructionLabel': 'ವಿವರಣೆ ಪಠ್ಯ',
   'canvas.worksheetText.instructionPrefix': 'ಅಗತ್ಯವಿದೆ:',
-  'canvas.worksheetText.modalHint':
-    'PDF ಅನ್ನು ರಫ್ತು ಮಾಡುವುದು ಮುದ್ರಣಕ್ಕೆ ಅನುಕೂಲಕರವಾಗಿದೆ; ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ರಫ್ತು ಮಾಡುವಾಗ, ಹೆಸರಿನಂತಹ ಕ್ಷೇತ್ರಗಳನ್ನು ಸಂಪಾದಿಸಬಹುದು ಮತ್ತು ಐಕಾನ್‌ಗಳು ಚಿತ್ರಗಳಾಗಿ ಉಳಿಯುತ್ತವೆ.',
-  'canvas.worksheetText.headerCaptureFailed':
-    'ಸ್ಟಡಿ ಶೀಟ್ ಹೆಡರ್ ಉತ್ಪಾದನೆಯು ವಿಫಲವಾಗಿದೆ ಮತ್ತು ಹೆಡರ್ ಇಲ್ಲದ PDF ಅನ್ನು ರಫ್ತು ಮಾಡಲಾಗಿದೆ.',
+  'canvas.worksheetText.modalHint': 'PDF ಅನ್ನು ರಫ್ತು ಮಾಡುವುದು ಮುದ್ರಣಕ್ಕೆ ಅನುಕೂಲಕರವಾಗಿದೆ; ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ರಫ್ತು ಮಾಡುವಾಗ, ಹೆಸರಿನಂತಹ ಕ್ಷೇತ್ರಗಳನ್ನು ಸಂಪಾದಿಸಬಹುದು ಮತ್ತು ಐಕಾನ್‌ಗಳು ಚಿತ್ರಗಳಾಗಿ ಉಳಿಯುತ್ತವೆ.',
+  'canvas.worksheetText.headerCaptureFailed': 'ಸ್ಟಡಿ ಶೀಟ್ ಹೆಡರ್ ಉತ್ಪಾದನೆಯು ವಿಫಲವಾಗಿದೆ ಮತ್ತು ಹೆಡರ್ ಇಲ್ಲದ PDF ಅನ್ನು ರಫ್ತು ಮಾಡಲಾಗಿದೆ.',
   'canvas.worksheetText.modalTitle': 'DOC/PDF ಗೆ ರಫ್ತು ಮಾಡಿ',
   'canvas.worksheetText.learningSheetMode': 'ಸಿಂಗಲ್ ಮೋಡ್ ಅನ್ನು ಅಧ್ಯಯನ ಮಾಡಿ',
   'canvas.worksheetText.learningSheetModeOn': 'ಆನ್ ಮಾಡಿ',
   'canvas.worksheetText.learningSheetModeOff': 'ಮುಚ್ಚುವಿಕೆ',
   'canvas.worksheetText.learningSheetPanelTitle': 'ಸಿಂಗಲ್ ಹೆಡರ್ ಅನ್ನು ಅಧ್ಯಯನ ಮಾಡಿ',
-  'canvas.worksheetText.learningSheetPanelHint':
-    'ಕೆಳಗಿನ ಆಯ್ಕೆಗಳು ಸ್ಟಡಿ ಶೀಟ್ ಮೋಡ್‌ನಲ್ಲಿ ಮಾತ್ರ ಲಭ್ಯವಿರುತ್ತವೆ ಮತ್ತು ಐಕಾನ್ ಮೇಲೆ ಗೋಚರಿಸುತ್ತವೆ.',
+  'canvas.worksheetText.learningSheetPanelHint': 'ಕೆಳಗಿನ ಆಯ್ಕೆಗಳು ಸ್ಟಡಿ ಶೀಟ್ ಮೋಡ್‌ನಲ್ಲಿ ಮಾತ್ರ ಲಭ್ಯವಿರುತ್ತವೆ ಮತ್ತು ಐಕಾನ್ ಮೇಲೆ ಗೋಚರಿಸುತ್ತವೆ.',
   'canvas.worksheetText.exportSettings': 'ರಫ್ತು ಆಯ್ಕೆಗಳು',
   'canvas.worksheetText.previewDiagram': 'ವಿವರಣೆ',
-  'canvas.worksheetText.previewEmpty':
-    'ಫೀಲ್ಡ್ ಅನ್ನು ಆನ್ ಮಾಡಿದ ನಂತರ, ನೀವು ಸ್ಟಡಿ ಶೀಟ್ ಹೆಡರ್ ಅನ್ನು ಪೂರ್ವವೀಕ್ಷಿಸಬಹುದು.',
+  'canvas.worksheetText.previewEmpty': 'ಫೀಲ್ಡ್ ಅನ್ನು ಆನ್ ಮಾಡಿದ ನಂತರ, ನೀವು ಸ್ಟಡಿ ಶೀಟ್ ಹೆಡರ್ ಅನ್ನು ಪೂರ್ವವೀಕ್ಷಿಸಬಹುದು.',
   'canvas.worksheetText.previewFailed': 'ಚಿತ್ರಾತ್ಮಕ ಪೂರ್ವವೀಕ್ಷಣೆ ರಚಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ.',
   'canvas.worksheetText.previewLabel': 'ಪೂರ್ವವೀಕ್ಷಣೆ',
   'canvas.worksheetText.previewLoading': 'ಐಕಾನ್ ಅನ್ನು ಸೆರೆಹಿಡಿಯಲಾಗುತ್ತಿದೆ...',
@@ -72,58 +65,32 @@ export default {
   'canvas.worksheetText.showName': 'ಹೆಸರು',
   'canvas.worksheetText.showTopic': 'ಯೋಜನೆಯ ಹೆಸರು',
   'canvas.worksheetText.topicPreviewLabel': 'ನಕ್ಷೆ ಥೀಮ್',
-  'canvas.import.invalidFile':
-    'MindGraph ಅಮಾನ್ಯವಾದ ಗ್ರಾಫ್ ಫೈಲ್, ದಯವಿಟ್ಟು ಮೈಂಡ್‌ಗ್ರಾಫ್‌ನಿಂದ ರಫ್ತು ಮಾಡಲಾದ MG ಫೈಲ್ ಅಥವಾ CmapTools ನ CMAP ಫೈಲ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.import.parseError':
-    'ಇಮೇಜ್ ಫೈಲ್ ಅನ್ನು ಪಾರ್ಸ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'canvas.import.cmapHeuristicSemantics':
-    'ಈ CmapTools ಫೈಲ್ ಸಂಪರ್ಕ ಸಂಬಂಧವನ್ನು ಕಳೆಯಲು ಪಠ್ಯ ಅನುಕ್ರಮ ರಿಗ್ರೆಶನ್ ಅನ್ನು ಬಳಸುತ್ತದೆ. ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿರುವ ಮೂಲ ಚಿತ್ರದ ವಿರುದ್ಧ ದಯವಿಟ್ಟು ಅದನ್ನು ಪರಿಶೀಲಿಸಿ.',
-  'canvas.import.cmapConnectionFallback':
-    'ಪ್ರತಿಪಾದಿತ ವಸ್ತುಗಳ ಬದಲಿಗೆ IHMC ಗ್ರಾಫ್ ಸಂಪರ್ಕಗಳನ್ನು ಆಧರಿಸಿ ಲಾಕ್ಷಣಿಕ ಸಂಬಂಧಗಳನ್ನು ಮರುಪಡೆಯಲಾಗುತ್ತದೆ.',
-  'canvas.import.cmapEmptyLayout':
-    'ನೋಡ್ ನಿರ್ದೇಶಾಂಕಗಳನ್ನು ಮರುಸ್ಥಾಪಿಸಲಾಗಿಲ್ಲ ಮತ್ತು ಲೇಔಟ್ ಅನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಮತ್ತೆ ರಚಿಸಲಾಗಿದೆ.',
-  'canvas.import.cmapLayoutLabelCollision':
-    'ನಕಲಿ ಪರಿಕಲ್ಪನೆಯ ಟ್ಯಾಗ್‌ಗಳು ಲೇಔಟ್ ಆಂಕರ್‌ಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳುತ್ತವೆ ಮತ್ತು ಕೆಲವು ಆಮದು ಸ್ಥಾನಗಳು ತಪ್ಪಾಗಿರಬಹುದು.',
-  'canvas.import.cmapLayoutFailed':
-    'ಲೇಔಟ್ ಪಾರ್ಸಿಂಗ್‌ನಲ್ಲಿ ಒಂದು ವಿನಾಯಿತಿ ಸಂಭವಿಸಿದೆ ಮತ್ತು ಬದಲಿಗೆ ನಿರ್ದೇಶಾಂಕಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ರಚಿಸಲಾಗಿದೆ.',
-  'canvas.reset.confirmBody':
-    'ನೀವು ಮರುಹೊಂದಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಪ್ರಸ್ತುತ ಪ್ರಾತಿನಿಧ್ಯ, ನೋಡ್ ಪ್ಯಾಲೆಟ್ ಮತ್ತು ಉಳಿದೆಲ್ಲವೂ ಕಳೆದುಹೋಗುತ್ತದೆ ಮತ್ತು ಮರುಸ್ಥಾಪಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.',
+  'canvas.import.invalidFile': 'MindGraph ಅಮಾನ್ಯವಾದ ಗ್ರಾಫ್ ಫೈಲ್, ದಯವಿಟ್ಟು ಮೈಂಡ್‌ಗ್ರಾಫ್‌ನಿಂದ ರಫ್ತು ಮಾಡಲಾದ MG ಫೈಲ್ ಅಥವಾ CmapTools ನ CMAP ಫೈಲ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.import.parseError': 'ಇಮೇಜ್ ಫೈಲ್ ಅನ್ನು ಪಾರ್ಸ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'canvas.import.cmapHeuristicSemantics': 'ಈ CmapTools ಫೈಲ್ ಸಂಪರ್ಕ ಸಂಬಂಧವನ್ನು ಕಳೆಯಲು ಪಠ್ಯ ಅನುಕ್ರಮ ರಿಗ್ರೆಶನ್ ಅನ್ನು ಬಳಸುತ್ತದೆ. ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿರುವ ಮೂಲ ಚಿತ್ರದ ವಿರುದ್ಧ ದಯವಿಟ್ಟು ಅದನ್ನು ಪರಿಶೀಲಿಸಿ.',
+  'canvas.import.cmapConnectionFallback': 'ಪ್ರತಿಪಾದಿತ ವಸ್ತುಗಳ ಬದಲಿಗೆ IHMC ಗ್ರಾಫ್ ಸಂಪರ್ಕಗಳನ್ನು ಆಧರಿಸಿ ಲಾಕ್ಷಣಿಕ ಸಂಬಂಧಗಳನ್ನು ಮರುಪಡೆಯಲಾಗುತ್ತದೆ.',
+  'canvas.import.cmapEmptyLayout': 'ನೋಡ್ ನಿರ್ದೇಶಾಂಕಗಳನ್ನು ಮರುಸ್ಥಾಪಿಸಲಾಗಿಲ್ಲ ಮತ್ತು ಲೇಔಟ್ ಅನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಮತ್ತೆ ರಚಿಸಲಾಗಿದೆ.',
+  'canvas.import.cmapLayoutLabelCollision': 'ನಕಲಿ ಪರಿಕಲ್ಪನೆಯ ಟ್ಯಾಗ್‌ಗಳು ಲೇಔಟ್ ಆಂಕರ್‌ಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳುತ್ತವೆ ಮತ್ತು ಕೆಲವು ಆಮದು ಸ್ಥಾನಗಳು ತಪ್ಪಾಗಿರಬಹುದು.',
+  'canvas.import.cmapLayoutFailed': 'ಲೇಔಟ್ ಪಾರ್ಸಿಂಗ್‌ನಲ್ಲಿ ಒಂದು ವಿನಾಯಿತಿ ಸಂಭವಿಸಿದೆ ಮತ್ತು ಬದಲಿಗೆ ನಿರ್ದೇಶಾಂಕಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ರಚಿಸಲಾಗಿದೆ.',
+  'canvas.reset.confirmBody': 'ನೀವು ಮರುಹೊಂದಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಪ್ರಸ್ತುತ ಪ್ರಾತಿನಿಧ್ಯ, ನೋಡ್ ಪ್ಯಾಲೆಟ್ ಮತ್ತು ಉಳಿದೆಲ್ಲವೂ ಕಳೆದುಹೋಗುತ್ತದೆ ಮತ್ತು ಮರುಸ್ಥಾಪಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.',
   'canvas.reset.confirmButton': 'ಮರುಹೊಂದಿಸಿ',
   'canvas.reset.confirmTitle': 'ಡೀಫಾಲ್ಟ್ ಟೆಂಪ್ಲೇಟ್‌ಗೆ ಮರುಹೊಂದಿಸಿ',
-  'canvas.reset.warnSelectType':
-    'ಮರುಹೊಂದಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ: ದಯವಿಟ್ಟು ಮೊದಲು ಐಕಾನ್ ಪ್ರಕಾರವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.reset.warnSelectType': 'ಮರುಹೊಂದಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ: ದಯವಿಟ್ಟು ಮೊದಲು ಐಕಾನ್ ಪ್ರಕಾರವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'canvas.shortcutGuide.title': 'ಶಾರ್ಟ್‌ಕಟ್ ಮಾರ್ಗದರ್ಶಿ',
   'canvas.shortcutGuide.shortLabel': 'ಶಾರ್ಟ್ಕಟ್ ಕೀ',
   'canvas.shortcutGuide.collapse': 'ಶಾರ್ಟ್‌ಕಟ್ ಮಾರ್ಗದರ್ಶಿ ಸಂಕುಚಿಸಿ',
-  'canvas.voiceCommandGuide.title': 'ಧ್ವನಿ ಆದೇಶ ಮಾರ್ಗದರ್ಶಿ',
-  'canvas.voiceCommandGuide.collapse': 'ವಾಯ್ಸ್ ಕಮಾಂಡ್ ಗೈಡ್ ಅನ್ನು ಸಂಕುಚಿಸಿ',
-  'canvas.voiceCommandGuide.example.add_node': '"ಚೀನಾ ಶಾಖೆಯನ್ನು ಸೇರಿಸಿ"',
-  'canvas.voiceCommandGuide.example.auto_complete_branch': '"ಈ ಚೀನೀ ಶಾಖೆಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ"',
-  'canvas.voiceCommandGuide.example.auto_complete':
-    '"ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಸಂಪೂರ್ಣ ಚಿತ್ರವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ"',
-  'canvas.voiceCommandGuide.example.select_node': '"ಚೀನಾವನ್ನು ಆರಿಸಿ"',
-  'canvas.voiceCommandGuide.example.update_center': '"ವೃತ್ತಿ ಶಿಕ್ಷಣಕ್ಕೆ ಥೀಮ್ ಅನ್ನು ಬದಲಾಯಿಸಿ"',
-  'canvas.voiceCommandGuide.example.delete_node': '"ಚೀನಾ ಶಾಖೆಯನ್ನು ಅಳಿಸಿ"',
-  'canvas.voiceCommandGuide.example.explain_node': '"ಚೀನಾವನ್ನು ವಿವರಿಸಿ"',
-  'canvas.voiceCommandGuide.example.start_inline_recommendations':
-    '"ಈ ನೋಡ್‌ಗಾಗಿ ಸಂಘದ ಶಿಫಾರಸುಗಳನ್ನು ಮಾಡಿ"',
   'canvas.shortcutGuide.addChild': 'ಚೈಲ್ಡ್ ನೋಡ್ ಸೇರಿಸಿ',
-  'canvas.shortcutGuide.addChildDesc':
-    'ಪ್ರಸ್ತುತ ಆಯ್ಕೆಮಾಡಿದ ನೋಡ್‌ಗೆ ಚೈಲ್ಡ್ ನೋಡ್‌ಗಳನ್ನು ತ್ವರಿತವಾಗಿ ಸೇರಿಸಿ.',
+  'canvas.shortcutGuide.addChildDesc': 'ಪ್ರಸ್ತುತ ಆಯ್ಕೆಮಾಡಿದ ನೋಡ್‌ಗೆ ಚೈಲ್ಡ್ ನೋಡ್‌ಗಳನ್ನು ತ್ವರಿತವಾಗಿ ಸೇರಿಸಿ.',
   'canvas.shortcutGuide.addSibling': 'ಒಡಹುಟ್ಟಿದವರ ನೋಡ್ ಸೇರಿಸಿ',
-  'canvas.shortcutGuide.addSiblingDesc':
-    'ಪ್ರಸ್ತುತ ಆಯ್ಕೆ ಮಾಡಲಾದ ನೋಡ್‌ಗಾಗಿ ಸಹೋದರ ನೋಡ್‌ಗಳನ್ನು ತ್ವರಿತವಾಗಿ ಸೇರಿಸಿ.',
+  'canvas.shortcutGuide.addSiblingDesc': 'ಪ್ರಸ್ತುತ ಆಯ್ಕೆ ಮಾಡಲಾದ ನೋಡ್‌ಗಾಗಿ ಸಹೋದರ ನೋಡ್‌ಗಳನ್ನು ತ್ವರಿತವಾಗಿ ಸೇರಿಸಿ.',
   'canvas.shortcutGuide.editText': 'ಪಠ್ಯವನ್ನು ಸಂಪಾದಿಸಿ',
-  'canvas.shortcutGuide.editTextDesc':
-    'ಪಠ್ಯವನ್ನು ಮಾರ್ಪಡಿಸಲು ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್‌ಗೆ ನೇರವಾಗಿ ಕರೆ ಮಾಡಿ, Enter ಒತ್ತಿರಿ ಅಥವಾ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಉಳಿಸಲು ಮತ್ತು ಹೊಸ ಗಾತ್ರವನ್ನು ತ್ವರಿತವಾಗಿ ಲೆಕ್ಕಾಚಾರ ಮಾಡಲು ಫೋಕಸ್ ಅನ್ನು ಕಳೆದುಕೊಳ್ಳಿ.',
+  'canvas.shortcutGuide.editTextDesc': 'ಪಠ್ಯವನ್ನು ಮಾರ್ಪಡಿಸಲು ಇನ್‌ಪುಟ್ ಬಾಕ್ಸ್‌ಗೆ ನೇರವಾಗಿ ಕರೆ ಮಾಡಿ, Enter ಒತ್ತಿರಿ ಅಥವಾ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಉಳಿಸಲು ಮತ್ತು ಹೊಸ ಗಾತ್ರವನ್ನು ತ್ವರಿತವಾಗಿ ಲೆಕ್ಕಾಚಾರ ಮಾಡಲು ಫೋಕಸ್ ಅನ್ನು ಕಳೆದುಕೊಳ್ಳಿ.',
   'canvas.shortcutGuide.doubleClick': 'ಪಠ್ಯವನ್ನು ಮಾರ್ಪಡಿಸಲು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಿ',
   'canvas.shortcutGuide.deleteNode': 'ನೋಡ್ ಅಳಿಸಿ',
-  'canvas.shortcutGuide.deleteNodeDesc':
-    'ಆಯ್ಕೆಮಾಡಿದ ನೋಡ್ ಮತ್ತು ಅದರ ಉಪ-ಶಾಖೆಗಳನ್ನು ತ್ವರಿತವಾಗಿ ತೆಗೆದುಹಾಕಿ (ರೂಟ್ ನೋಡ್ ಅನ್ನು ಆಕಸ್ಮಿಕ ಅಳಿಸುವಿಕೆಯಿಂದ ರಕ್ಷಿಸಲಾಗಿದೆ).',
+  'canvas.shortcutGuide.deleteNodeDesc': 'ಆಯ್ಕೆಮಾಡಿದ ನೋಡ್ ಮತ್ತು ಅದರ ಉಪ-ಶಾಖೆಗಳನ್ನು ತ್ವರಿತವಾಗಿ ತೆಗೆದುಹಾಕಿ (ರೂಟ್ ನೋಡ್ ಅನ್ನು ಆಕಸ್ಮಿಕ ಅಳಿಸುವಿಕೆಯಿಂದ ರಕ್ಷಿಸಲಾಗಿದೆ).',
   'canvas.shortcutGuide.arrowNav': 'ಬಾಣದ ಕೀ ನ್ಯಾವಿಗೇಷನ್',
   'canvas.shortcutGuide.selectNav': 'ನ್ಯಾವಿಗೇಷನ್ ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.shortcutGuide.arrowNavDesc':
-    'ಉದ್ಯಮದ ಪ್ರಮುಖ ಯೂಕ್ಲಿಡಿಯನ್ ಜ್ಯಾಮಿತಿ ಲೆಕ್ಕಾಚಾರದ ಎಂಜಿನ್. ಟೈಪ್‌ಸೆಟ್ಟಿಂಗ್ ಮೋಡ್‌ನ ಹೊರತಾಗಿ, ಬಾಣದ ಕೀಗಳು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಜಿಗಿಯುತ್ತವೆ ಮತ್ತು ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿನ ನೋಡ್‌ನ ನಿಜವಾದ ಭೌತಿಕ ಎರಡು ಆಯಾಮದ ನಿರ್ದೇಶಾಂಕಗಳ ಆಧಾರದ ಮೇಲೆ ಹತ್ತಿರದ ಉತ್ತಮ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡುತ್ತದೆ, ಡೆಸ್ಕ್‌ಟಾಪ್‌ನಲ್ಲಿ ಸ್ಥಳೀಯ ಸಾಫ್ಟ್‌ವೇರ್ ಅನ್ನು ನಿರ್ವಹಿಸುವಂತಹ ತಡೆರಹಿತ ಶಟಲ್ ಭಾವನೆಯನ್ನು ತರುತ್ತದೆ.',
+  'canvas.shortcutGuide.arrowNavDesc': 'ಉದ್ಯಮದ ಪ್ರಮುಖ ಯೂಕ್ಲಿಡಿಯನ್ ಜ್ಯಾಮಿತಿ ಲೆಕ್ಕಾಚಾರದ ಎಂಜಿನ್. ಟೈಪ್‌ಸೆಟ್ಟಿಂಗ್ ಮೋಡ್‌ನ ಹೊರತಾಗಿ, ಬಾಣದ ಕೀಗಳು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಜಿಗಿಯುತ್ತವೆ ಮತ್ತು ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿನ ನೋಡ್‌ನ ನಿಜವಾದ ಭೌತಿಕ ಎರಡು ಆಯಾಮದ ನಿರ್ದೇಶಾಂಕಗಳ ಆಧಾರದ ಮೇಲೆ ಹತ್ತಿರದ ಉತ್ತಮ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡುತ್ತದೆ, ಡೆಸ್ಕ್‌ಟಾಪ್‌ನಲ್ಲಿ ಸ್ಥಳೀಯ ಸಾಫ್ಟ್‌ವೇರ್ ಅನ್ನು ನಿರ್ವಹಿಸುವಂತಹ ತಡೆರಹಿತ ಶಟಲ್ ಭಾವನೆಯನ್ನು ತರುತ್ತದೆ.',
   'canvas.shortcutGuide.cancel': 'ಅನ್ಚೆಕ್/ಎಡಿಟ್',
   'canvas.shortcutGuide.cancelDesc': 'ಒಂದು ಕ್ಲಿಕ್‌ನಲ್ಲಿ ಅನ್‌ಚೆಕ್ ಮಾಡಿ ಅಥವಾ ಎಡಿಟ್ ಮಾಡಿ.',
   'canvas.shortcutGuide.undo': 'ಬದಲಾವಣೆಗಳನ್ನು ರದ್ದುಗೊಳಿಸಿ',
@@ -133,9 +100,8 @@ export default {
   'canvas.shortcutGuide.learningSheetAnswers': 'ಉಲ್ಲೇಖ ಉತ್ತರಗಳನ್ನು ತೋರಿಸಿ/ಮರೆಮಾಡಿ',
   'canvas.shortcutGuide.recalcLayout': 'ಲೇಔಟ್ ಅನ್ನು ಮರು ಲೆಕ್ಕಾಚಾರ ಮಾಡಿ',
   'canvas.shortcutGuide.multiSelect': 'ಬಹು ಆಯ್ಕೆ ನೋಡ್',
-  'canvas.shortcutGuide.multiSelectDesc':
-    'ಪಾಯಿಂಟರ್ ಮೋಡ್‌ನಲ್ಲಿ ಬಹು ನೋಡ್‌ಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ಎಳೆಯಿರಿ ಮತ್ತು ಬಿಡಿ.',
-  'canvas.shortcutGuide.multiSelectHint': 'ಆಯ್ಕೆಯನ್ನು ಎಳೆಯಿರಿ ಮತ್ತು ಬಿಡಿ',
+  'canvas.shortcutGuide.multiSelectDesc': 'ಪಾಯಿಂಟರ್ ಮೋಡ್‌ನಲ್ಲಿ ಬಹು ನೋಡ್‌ಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ಎಳೆಯಿರಿ ಮತ್ತು ಬಿಡಿ.',
+  'canvas.shortcutGuide.multiSelectHint': 'Ctrl + ಎಳೆಯಿರಿ',
   'canvas.shortcutGuide.canvasPan': 'ಕ್ಯಾನ್ವಾಸ್ ಡ್ರ್ಯಾಗ್',
   'canvas.shortcutGuide.canvasPanDesc': 'ಕ್ಯಾನ್ವಾಸ್ ವೀಕ್ಷಣೆಯನ್ನು ಪ್ಯಾನ್ ಮಾಡಿ.',
   'canvas.shortcutGuide.canvasPanHint': 'ಮೌಸ್ ಚಕ್ರವನ್ನು ಒತ್ತಿ ಮತ್ತು ಹಿಡಿದುಕೊಳ್ಳಿ',
@@ -144,8 +110,16 @@ export default {
   'canvas.gestureGuide.collapse': 'ಗೆಸ್ಚರ್ ಗೈಡ್ ಅನ್ನು ಸಂಕುಚಿಸಿ',
   'canvas.gestureGuide.tap': 'ಆಯ್ಕೆ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
   'canvas.gestureGuide.tapHint': 'ಒಂದು ಬೆರಳಿನಿಂದ ಟ್ಯಾಪ್ ಮಾಡಿ',
-  'canvas.gestureGuide.dragNode': 'ಮೊಬೈಲ್ ನೋಡ್',
-  'canvas.gestureGuide.dragNodeHint': 'ಒಂದು ಬೆರಳು ಎಳೆಯಿರಿ',
+  'canvas.gestureGuide.dragDrop': 'Drag and drop',
+  'canvas.gestureGuide.dragDropHintLaptop': 'Drag the node. Blue dashed outline.',
+  'canvas.gestureGuide.dragDropHintTouch': 'Long-press, then drag. Blue dashed outline.',
+  'canvas.gestureGuide.panHintMobile': 'One-finger drag',
+  'canvas.gestureGuide.panHintMouse': 'Hold the mouse wheel',
+  'canvas.gestureGuide.pinchHintMouse': 'Mouse wheel',
+  'canvas.gestureGuide.slashDeleteMouseHint': 'Drag left or right',
+  'canvas.gestureGuide.slashSiblingMouseHint': 'Drag up or down',
+  'canvas.gestureGuide.slashDeleteBoardHint': 'Slash left or right',
+  'canvas.gestureGuide.slashSiblingBoardHint': 'Slash up or down',
   'canvas.gestureGuide.pinch': 'ಜೂಮ್ ಕ್ಯಾನ್ವಾಸ್',
   'canvas.gestureGuide.pinchHint': 'ಎರಡು ಬೆರಳುಗಳಿಂದ ಪಿಂಚ್ ಮಾಡಿ',
   'canvas.gestureGuide.pan': 'ಕ್ಯಾನ್ವಾಸ್ ಅನ್ನು ಪ್ಯಾನ್ ಮಾಡಿ',
@@ -164,12 +138,8 @@ export default {
   'canvas.gestureGuide.undoRedoHint': 'ಮೂರು ಬೆರಳುಗಳಿಂದ ಎಡ ಮತ್ತು ಬಲಕ್ಕೆ ಸ್ವೈಪ್ ಮಾಡಿ',
   'canvas.gestureGuide.tools': 'ಉಪಕರಣವನ್ನು ತೆರೆಯಿರಿ',
   'canvas.gestureGuide.toolsHint': 'ನಾಲ್ಕು ಬೆರಳುಗಳಿಂದ ಟ್ಯಾಪ್ ಮಾಡಿ',
-  'canvas.gestureGuide.slashDelete': 'Delete node',
-  'canvas.gestureGuide.slashDeleteHint': 'Finger or left-drag down',
-  'canvas.gestureGuide.slashSibling': 'Add sibling',
-  'canvas.gestureGuide.slashSiblingHint': 'Slash left or right through it',
-  'canvas.gestureGuide.slashChild': 'Add child',
-  'canvas.gestureGuide.slashChildHint': 'Slash up through it',
+  'canvas.gestureGuide.slashDelete': 'ನೋಡ್ ಅಳಿಸಿ',
+  'canvas.gestureGuide.slashSibling': 'ಒಡಹುಟ್ಟಿದವರನ್ನು ಸೇರಿಸಿ',
   'canvas.toolbar.addAnalogyPair': 'ಅನಲಾಗ್ ಜೋಡಿಯನ್ನು ಸೇರಿಸಿ',
   'canvas.toolbar.addAnalogyPairHistory': 'ಅನಲಾಗ್ ಜೋಡಿಯನ್ನು ಸೇರಿಸಿ',
   'canvas.toolbar.addAttributeHistory': 'ಗುಣಲಕ್ಷಣಗಳನ್ನು ಸೇರಿಸಿ',
@@ -209,15 +179,13 @@ export default {
   'canvas.toolbar.mindMapThemeVibrantRose': 'ನೇರಳೆ',
   'canvas.toolbar.mindMapThemeRainbow': 'ಮಳೆಬಿಲ್ಲಿನ ಶಾಖೆ',
   'canvas.toolbar.mindMapDiagramStyleClassic': 'ಶ್ರೇಷ್ಠ',
-  'canvas.toolbar.mindMapDiagramStyleClassicDesc':
-    'ಬಲ ಕೋನ ಕೇಂದ್ರ · ದುಂಡಾದ ಮೂಲೆ ಹಂತ 1 · ಅಂಡರ್‌ಲೈನ್ ಹಂತ 2',
+  'canvas.toolbar.mindMapDiagramStyleClassicDesc': 'ಬಲ ಕೋನ ಕೇಂದ್ರ · ದುಂಡಾದ ಮೂಲೆ ಹಂತ 1 · ಅಂಡರ್‌ಲೈನ್ ಹಂತ 2',
   'canvas.toolbar.mindMapDiagramStyleFormal': 'ಲಂಬ ಕೋನ',
   'canvas.toolbar.mindMapDiagramStyleFormalDesc': 'ಬಲ ಕೋನ ಕೇಂದ್ರ · ಬಲ ಕೋನ ಹಂತ 1 · ಬಲ ಕೋನ ಮಟ್ಟ 2',
   'canvas.toolbar.mindMapDiagramStyleBubble': 'ಗುಳ್ಳೆ',
   'canvas.toolbar.mindMapDiagramStyleBubbleDesc': 'ಬಬಲ್ ಕೇಂದ್ರ · ಬಬಲ್ ಮಟ್ಟ 1 · ಅಂಡರ್‌ಲೈನ್ ಹಂತ 2',
   'canvas.toolbar.mindMapDiagramStyleUnderline': 'ಅಂಡರ್ಲೈನ್',
-  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc':
-    'ಬಲ ಕೋನ ಕೇಂದ್ರ · ಅಂಡರ್‌ಲೈನ್ ಹಂತ 1 · ಅಂಡರ್‌ಲೈನ್ ಹಂತ 2',
+  'canvas.toolbar.mindMapDiagramStyleUnderlineDesc': 'ಬಲ ಕೋನ ಕೇಂದ್ರ · ಅಂಡರ್‌ಲೈನ್ ಹಂತ 1 · ಅಂಡರ್‌ಲೈನ್ ಹಂತ 2',
   'canvas.toolbar.mindMapDiagramStyleSoft': 'ಮೃದುವಾಗಿ ದುಂಡಾದ ಮೂಲೆಗಳು',
   'canvas.toolbar.mindMapDiagramStyleSoftDesc': 'ಫಿಲೆಟ್ ಸೆಂಟರ್ · ಎಲಿಪ್ಸ್ ಹಂತ 1 · ಅಂಡರ್‌ಲೈನ್ ಹಂತ 3',
   'canvas.toolbar.mindMapThemeMorandi': 'ಸೊಗಸಾದ ಮೊರಾಂಡಿ',
@@ -244,12 +212,10 @@ export default {
   'canvas.toolbar.aiGenerateTooltip': 'ಕೇಂದ್ರ ಥೀಮ್ ಆಧರಿಸಿ ರಚಿಸಿ',
   'canvas.toolbar.aiGenerating': 'ಉತ್ಪಾದಿಸಲಾಗುತ್ತಿದೆ...',
   'canvas.toolbar.professionalContent.label': 'ವೃತ್ತಿಪರ ವಿಷಯ',
-  'canvas.toolbar.professionalContent.tooltip':
-    'AI- ರಚಿತವಾದ ವಿಷಯಕ್ಕಾಗಿ ಪ್ರೇಕ್ಷಕರ ತೊಂದರೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.toolbar.professionalContent.tooltip': 'AI- ರಚಿತವಾದ ವಿಷಯಕ್ಕಾಗಿ ಪ್ರೇಕ್ಷಕರ ತೊಂದರೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'canvas.toolbar.professionalContent.panelTitle': 'AI-ರಚಿಸಿದ ವಿಷಯದ ಅಪೇಕ್ಷಿತ ವೃತ್ತಿಪರತೆ',
   'canvas.toolbar.professionalContent.guideTitle': 'ಪ್ರೇಕ್ಷಕರ ಕಷ್ಟವನ್ನು ಮೊದಲು ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.toolbar.professionalContent.guideBody':
-    'ವೇದಿಕೆ ಅಥವಾ ದೃಶ್ಯವನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ. AI ಉತ್ಪಾದನೆ, ಸಂಭಾಷಣೆ ಬದಲಾವಣೆಗಳು ಇತ್ಯಾದಿಗಳು ತೊಂದರೆಗೆ ಅನುಗುಣವಾಗಿ ವಿಷಯವನ್ನು ಸಂಘಟಿಸುತ್ತದೆ. ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ, ಬಟನ್ ಶೈಕ್ಷಣಿಕ ಹಂತದ ಲೇಬಲ್ ಅನ್ನು ಸ್ವೀಕರಿಸುತ್ತದೆ.',
+  'canvas.toolbar.professionalContent.guideBody': 'ವೇದಿಕೆ ಅಥವಾ ದೃಶ್ಯವನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ. AI ಉತ್ಪಾದನೆ, ಸಂಭಾಷಣೆ ಬದಲಾವಣೆಗಳು ಇತ್ಯಾದಿಗಳು ತೊಂದರೆಗೆ ಅನುಗುಣವಾಗಿ ವಿಷಯವನ್ನು ಸಂಘಟಿಸುತ್ತದೆ. ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ, ಬಟನ್ ಶೈಕ್ಷಣಿಕ ಹಂತದ ಲೇಬಲ್ ಅನ್ನು ಸ್ವೀಕರಿಸುತ್ತದೆ.',
   'canvas.toolbar.professionalContent.guideAction': 'ಆಯ್ಕೆ ಮಾಡಲು',
   'canvas.toolbar.professionalContent.guideDismiss': 'ಗೊತ್ತಿತ್ತು',
   'canvas.toolbar.professionalContent.level.general.title': 'ಯುನಿವರ್ಸಲ್',
@@ -266,17 +232,12 @@ export default {
   'canvas.toolbar.professionalContent.level.adult.description': 'ಪ್ರಾಯೋಗಿಕ ಸನ್ನಿವೇಶಗಳು',
   'canvas.toolbar.professionalContent.level.expert.title': 'ತಜ್ಞ',
   'canvas.toolbar.professionalContent.level.expert.description': 'ಆಳವಾಗಿ ಸಂಸ್ಕರಿಸಿದ',
-  'canvas.toolbar.professionalContent.notify.preference':
-    'ನಂತರದ AI- ರಚಿತವಾದ ವಿಷಯವು "{level}" ಪ್ರೇಕ್ಷಕರ ಜಾಗೃತಿ ಮಟ್ಟಕ್ಕೆ ಅನುಗುಣವಾಗಿರುತ್ತದೆ',
-  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
-    'ನಂತರದ AI-ರಚಿಸಿದ ವಿಷಯವು "ಸಾರ್ವತ್ರಿಕ" ಶೈಲಿಯಲ್ಲಿರುತ್ತದೆ, ಯಾವುದೇ ಹೆಚ್ಚುವರಿ ತೊಂದರೆ ನಿರ್ಬಂಧಗಳಿಲ್ಲ.',
-  'canvas.toolbar.professionalContent.notify.afterGenerated':
-    'ಪ್ರಸ್ತುತ ವಿಷಯವು "{current}" ತೊಂದರೆಯಾಗಿದೆ; ಭವಿಷ್ಯದಲ್ಲಿ, ಅದನ್ನು ರಚಿಸಲು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಲು ನಾನು "{next}" ಅನ್ನು ಒತ್ತುತ್ತೇನೆ.',
-  'canvas.toolbar.professionalContent.audienceLine':
-    'ಪ್ರಸ್ತುತ ಪ್ರೇಕ್ಷಕರು: {level} (ಕೆಳಗಿನಿಂದ [ವೃತ್ತಿಪರ ವಿಷಯ])',
+  'canvas.toolbar.professionalContent.notify.preference': 'ನಂತರದ AI- ರಚಿತವಾದ ವಿಷಯವು "{level}" ಪ್ರೇಕ್ಷಕರ ಜಾಗೃತಿ ಮಟ್ಟಕ್ಕೆ ಅನುಗುಣವಾಗಿರುತ್ತದೆ',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral': 'ನಂತರದ AI-ರಚಿಸಿದ ವಿಷಯವು "ಸಾರ್ವತ್ರಿಕ" ಶೈಲಿಯಲ್ಲಿರುತ್ತದೆ, ಯಾವುದೇ ಹೆಚ್ಚುವರಿ ತೊಂದರೆ ನಿರ್ಬಂಧಗಳಿಲ್ಲ.',
+  'canvas.toolbar.professionalContent.notify.afterGenerated': 'ಪ್ರಸ್ತುತ ವಿಷಯವು "{current}" ತೊಂದರೆಯಾಗಿದೆ; ಭವಿಷ್ಯದಲ್ಲಿ, ಅದನ್ನು ರಚಿಸಲು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಲು ನಾನು "{next}" ಅನ್ನು ಒತ್ತುತ್ತೇನೆ.',
+  'canvas.toolbar.professionalContent.audienceLine': 'ಪ್ರಸ್ತುತ ಪ್ರೇಕ್ಷಕರು: {level} (ಕೆಳಗಿನಿಂದ [ವೃತ್ತಿಪರ ವಿಷಯ])',
   'canvas.toolbar.educationStage': 'ಶೈಕ್ಷಣಿಕ ಅವಧಿ',
-  'canvas.toolbar.educationStageTooltip':
-    'AI-ರಚಿಸಿದ ವಿಷಯದ ಆಳದ ಮೇಲೆ ಪರಿಣಾಮ ಬೀರಲು ಶೈಕ್ಷಣಿಕ ಹಂತವನ್ನು ಆಯ್ಕೆಮಾಡಿ.',
+  'canvas.toolbar.educationStageTooltip': 'AI-ರಚಿಸಿದ ವಿಷಯದ ಆಳದ ಮೇಲೆ ಪರಿಣಾಮ ಬೀರಲು ಶೈಕ್ಷಣಿಕ ಹಂತವನ್ನು ಆಯ್ಕೆಮಾಡಿ.',
   'canvas.toolbar.educationStageClear': 'ಯುನಿವರ್ಸಲ್',
   'canvas.toolbar.educationStagePrimary': 'ಪ್ರಾಥಮಿಕ ಶಾಲೆ',
   'canvas.toolbar.educationStageMiddle': 'ಕಿರಿಯ ಪ್ರೌಢಶಾಲೆ',
@@ -300,17 +261,14 @@ export default {
   'canvas.toolbar.cannotDeleteSelected': 'ಆಯ್ಕೆಮಾಡಿದ ನೋಡ್ ಅನ್ನು ಅಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ',
   'canvas.toolbar.cannotDeleteTopic': 'ವಿಷಯ ನೋಡ್ ಅನ್ನು ಅಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ',
   'canvas.toolbar.cannotDeleteTopicGeneric': 'ವಿಷಯ ನೋಡ್ ಅನ್ನು ಅಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ',
-  'canvas.toolbar.keepOneDifference': 'Keep at least one difference',
-  'canvas.toolbar.keepOneSimilarity': 'Keep at least one similarity',
-  'canvas.toolbar.keepOneSimilarityAndDifference':
-    'Keep at least one similarity and one difference',
+  'canvas.toolbar.keepOneDifference': 'ಕನಿಷ್ಠ ಒಂದು ವ್ಯತ್ಯಾಸವನ್ನು ಇರಿಸಿ',
+  'canvas.toolbar.keepOneSimilarity': 'ಕನಿಷ್ಠ ಒಂದು ಹೋಲಿಕೆಯನ್ನು ಇರಿಸಿ',
+  'canvas.toolbar.keepOneSimilarityAndDifference': 'ಕನಿಷ್ಠ ಒಂದು ಹೋಲಿಕೆ ಮತ್ತು ಒಂದು ವ್ಯತ್ಯಾಸವನ್ನು ಇರಿಸಿ',
   'canvas.toolbar.cannotGenerate': 'ರಚಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ',
   'canvas.toolbar.causeAdded': 'ಕಾರಣ ನೋಡ್ ಸೇರಿಸಲಾಗಿದೆ',
   'canvas.toolbar.childAdded': 'ಮಗುವನ್ನು ಸೇರಿಸಲಾಗಿದೆ',
-  'canvas.toolbar.collabAiBlocked':
-    'ಸಹಯೋಗದ ಮೋಡ್‌ನಲ್ಲಿ, ಐಕಾನ್ ಮಾಲೀಕರು ಮಾತ್ರ AI ಉತ್ಪಾದನೆಯನ್ನು ಬಳಸಬಹುದು',
-  'canvas.toolbar.collabGuestFeatureBlocked':
-    'ಸಹಯೋಗಿ ಅತಿಥಿಯಾಗಿ ಸೇರುವಾಗ ಈ ವೈಶಿಷ್ಟ್ಯವು ಲಭ್ಯವಿರುವುದಿಲ್ಲ.',
+  'canvas.toolbar.collabAiBlocked': 'ಸಹಯೋಗದ ಮೋಡ್‌ನಲ್ಲಿ, ಐಕಾನ್ ಮಾಲೀಕರು ಮಾತ್ರ AI ಉತ್ಪಾದನೆಯನ್ನು ಬಳಸಬಹುದು',
+  'canvas.toolbar.collabGuestFeatureBlocked': 'ಸಹಯೋಗಿ ಅತಿಥಿಯಾಗಿ ಸೇರುವಾಗ ಈ ವೈಶಿಷ್ಟ್ಯವು ಲಭ್ಯವಿರುವುದಿಲ್ಲ.',
   'canvas.toolbar.colorLabel': 'ಬಣ್ಣ',
   'canvas.toolbar.conceptGeneration': 'ಪರಿಕಲ್ಪನೆಗಳನ್ನು ರಚಿಸಿ',
   'canvas.toolbar.conceptMapModesDev': 'ಕಾನ್ಸೆಪ್ಟ್ ಮ್ಯಾಪ್ ಮೋಡ್ ಕಾರ್ಯವು ಅಭಿವೃದ್ಧಿ ಹಂತದಲ್ಲಿದೆ',
@@ -331,13 +289,11 @@ export default {
   'canvas.toolbar.exit': 'ಬಿಟ್ಟುಬಿಡಿ',
   'canvas.toolbar.exitFullscreen': 'ಪೂರ್ಣ ಪರದೆಯಿಂದ ನಿರ್ಗಮಿಸಿ',
   'canvas.toolbar.highlighter': 'ಹೈಲೈಟರ್ ಪೆನ್',
-  'canvas.toolbar.highlighterTooltip':
-    'ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಟಿಪ್ಪಣಿಗಳನ್ನು ಅನ್ವಯಿಸಿ ಮತ್ತು ಡೆಮೊದಿಂದ ನಿರ್ಗಮಿಸುವಾಗ ಅವುಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ತೆರವುಗೊಳಿಸಿ',
+  'canvas.toolbar.highlighterTooltip': 'ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಟಿಪ್ಪಣಿಗಳನ್ನು ಅನ್ವಯಿಸಿ ಮತ್ತು ಡೆಮೊದಿಂದ ನಿರ್ಗಮಿಸುವಾಗ ಅವುಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ತೆರವುಗೊಳಿಸಿ',
   'canvas.toolbar.highlighterChooseColor': 'ಹೈಲೈಟರ್ ಬಣ್ಣ',
   'canvas.toolbar.highlighterPaletteAria': 'ಹೈಲೈಟರ್ ಬಣ್ಣವನ್ನು ಆರಿಸಿ',
   'canvas.toolbar.insertEquation': 'ಸೂತ್ರವನ್ನು ಸೇರಿಸಿ',
-  'canvas.toolbar.insertEquationTooltip':
-    'ಕರ್ಸರ್‌ನಲ್ಲಿ ಇನ್‌ಲೈನ್ ಸೂತ್ರವನ್ನು ($...$) ಸೇರಿಸಿ; ಸಂಪಾದಿಸದಿದ್ದರೆ, ಆಯ್ಕೆಮಾಡಿದ ನೋಡ್‌ಗೆ ಸೇರಿಸಿ',
+  'canvas.toolbar.insertEquationTooltip': 'ಕರ್ಸರ್‌ನಲ್ಲಿ ಇನ್‌ಲೈನ್ ಸೂತ್ರವನ್ನು ($...$) ಸೇರಿಸಿ; ಸಂಪಾದಿಸದಿದ್ದರೆ, ಆಯ್ಕೆಮಾಡಿದ ನೋಡ್‌ಗೆ ಸೇರಿಸಿ',
   'canvas.toolbar.insertEquationSelectNode': 'ದಯವಿಟ್ಟು ಮೊದಲು ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'canvas.toolbar.insertEquationDialogTitle': 'ಸೂತ್ರವನ್ನು ಸೇರಿಸಿ',
   'canvas.toolbar.insertEquationLoading': 'ಸಮೀಕರಣ ಸಂಪಾದಕವನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...',
@@ -371,7 +327,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'ಮಧ್ಯಬಿಂದು',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
+  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=1/2bh',
@@ -392,7 +348,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'ಸೈನ್ ಪ್ರಮೇಯ',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'ಕೊಸೈನ್(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'ಸೈನ್(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
+  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'ಡಬಲ್ ಕೋನ',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'ಅಂಕಗಣಿತದ ಪಾಸ್ ಟರ್ಮ್',
@@ -458,27 +414,25 @@ export default {
   'canvas.presentationTimer.exitTimer': 'ಬಿಟ್ಟುಬಿಡಿ',
   'canvas.presentationTimer.startPresenting': 'ಭಾಷಣವನ್ನು ಪ್ರಾರಂಭಿಸಿ',
   'canvas.presentationTimer.closeHud': 'ಟೈಮರ್ ಅನ್ನು ಮುಚ್ಚಿ',
-  'canvas.cachedResult.notice':
-    'ಸಂಗ್ರಹ ಫಲಿತಾಂಶಗಳು ಮತ್ತು ಹೊಸ ಫಲಿತಾಂಶಗಳನ್ನು ಪಡೆಯಲು ಮತ್ತೊಮ್ಮೆ ಕಾರ್ಯವನ್ನು ಬಳಸಿ',
-  'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
-  'canvas.classroomRemote.formatPainter': 'Format painter',
-  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
-  'canvas.classroomRemote.resize': 'Drag to resize',
-  'canvas.classroomRemote.tabTopics': 'Topics',
-  'canvas.classroomRemote.tabView': 'View',
-  'canvas.classroomRemote.topicsAdd': 'Add topic',
-  'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
-  'canvas.classroomRemote.topicsApply': 'Apply as the center topic',
-  'canvas.classroomRemote.topicsApplied': 'Center topic is now “{topic}”',
-  'canvas.classroomRemote.topicsDone': 'Done',
-  'canvas.classroomRemote.topicsEdit': 'Edit topics',
-  'canvas.classroomRemote.topicsEmpty': 'No preloaded topics yet',
-  'canvas.classroomRemote.topicsRemove': 'Remove topic',
-  'canvas.classroomRemote.topicsReset': 'Restore defaults',
-  'canvas.classroomRemote.topicsTitle': 'Preloaded topics',
+  'canvas.cachedResult.notice': 'ಸಂಗ್ರಹ ಫಲಿತಾಂಶಗಳು ಮತ್ತು ಹೊಸ ಫಲಿತಾಂಶಗಳನ್ನು ಪಡೆಯಲು ಮತ್ತೊಮ್ಮೆ ಕಾರ್ಯವನ್ನು ಬಳಸಿ',
+  'canvas.classroomRemote.ariaLabel': 'ತರಗತಿಯ ತೇಲುವ ಸಾಧನ',
+  'canvas.classroomRemote.formatPainter': 'ಫಾರ್ಮ್ಯಾಟ್ ಪೇಂಟರ್',
+  'canvas.classroomRemote.resetPosition': 'ಸ್ಥಾನ ಮತ್ತು ಗಾತ್ರವನ್ನು ಮರುಹೊಂದಿಸಲು ಶೀರ್ಷಿಕೆ ಪಟ್ಟಿಯನ್ನು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಿ',
+  'canvas.classroomRemote.resize': 'ಮರುಗಾತ್ರಗೊಳಿಸಲು ಎಳೆಯಿರಿ',
+  'canvas.classroomRemote.tabTopics': 'ಥೀಮ್',
+  'canvas.classroomRemote.tabView': 'ವೀಕ್ಷಿಸಿ',
+  'canvas.classroomRemote.topicsAdd': 'ವಿಷಯವನ್ನು ಸೇರಿಸಿ',
+  'canvas.classroomRemote.topicsAddPlaceholder': 'ವಿಷಯವನ್ನು ನಮೂದಿಸಿ',
+  'canvas.classroomRemote.topicsApply': 'ಕೇಂದ್ರ ಥೀಮ್‌ಗೆ ಅನ್ವಯಿಸಿ',
+  'canvas.classroomRemote.topicsApplied': 'ಕೇಂದ್ರ ಥೀಮ್ "{topic}" ಗೆ ಬದಲಾಗಿದೆ',
+  'canvas.classroomRemote.topicsDone': 'ಮುಗಿಸು',
+  'canvas.classroomRemote.topicsEdit': 'ಥೀಮ್ ಬದಲಾಯಿಸಿ',
+  'canvas.classroomRemote.topicsEmpty': 'ಇನ್ನೂ ಯಾವುದೇ ಪೂರ್ವನಿಗದಿ ಥೀಮ್ ಇಲ್ಲ',
+  'canvas.classroomRemote.topicsRemove': 'ವಿಷಯವನ್ನು ಅಳಿಸಿ',
+  'canvas.classroomRemote.topicsReset': 'ಡೀಫಾಲ್ಟ್ ಅನ್ನು ಮರುಸ್ಥಾಪಿಸಿ',
+  'canvas.classroomRemote.topicsTitle': 'ಮೊದಲೇ ಹೊಂದಿಸಲಾದ ಥೀಮ್‌ಗಳು',
   'canvas.presentation.learningSheetConfirmTitle': 'ಸ್ಕ್ರೀನಿಂಗ್‌ಗೆ ಪ್ರವೇಶಿಸುತ್ತಿರುವಿರಾ?',
-  'canvas.presentation.learningSheetConfirmBody':
-    'ನೀವು ಇನ್ನೂ ನಾಕ್‌ಔಟ್ ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರವನ್ನು ಸಂಪಾದಿಸುತ್ತಿರುವಿರಿ. ಪ್ರದರ್ಶನವನ್ನು ಪ್ರವೇಶಿಸುವುದರಿಂದ ಟೊಳ್ಳು-ಹೊರಗಿನ ಸಂಪಾದನೆ ಕೊನೆಗೊಳ್ಳುತ್ತದೆ ಮತ್ತು ಟೊಳ್ಳಾದ ವಿಷಯವನ್ನು ಉಳಿಸಿಕೊಳ್ಳಲಾಗುತ್ತದೆ. ಮುಂದುವರಿಸುವುದೇ?',
+  'canvas.presentation.learningSheetConfirmBody': 'ನೀವು ಇನ್ನೂ ನಾಕ್‌ಔಟ್ ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರವನ್ನು ಸಂಪಾದಿಸುತ್ತಿರುವಿರಿ. ಪ್ರದರ್ಶನವನ್ನು ಪ್ರವೇಶಿಸುವುದರಿಂದ ಟೊಳ್ಳು-ಹೊರಗಿನ ಸಂಪಾದನೆ ಕೊನೆಗೊಳ್ಳುತ್ತದೆ ಮತ್ತು ಟೊಳ್ಳಾದ ವಿಷಯವನ್ನು ಉಳಿಸಿಕೊಳ್ಳಲಾಗುತ್ತದೆ. ಮುಂದುವರಿಸುವುದೇ?',
   'canvas.presentation.learningSheetConfirmProceed': 'ತೋರಿಸಲು ಹೋಗಿ',
   'canvas.presentationContextMenu.laserPointer': 'ಲೇಸರ್ ಪಾಯಿಂಟರ್',
   'canvas.presentationContextMenu.spotlight': 'ಸ್ಪಾಟ್ಲೈಟ್',
@@ -500,6 +454,7 @@ export default {
   'canvas.floatingToolbar.textColor': 'ಪಠ್ಯ ಬಣ್ಣ',
   'canvas.floatingToolbar.typography': 'ಟೈಪ್ಸೆಟ್ಟಿಂಗ್',
   'canvas.floatingToolbar.explain': 'ನೋಡ್ ವಿವರಣೆ',
+  'canvas.floatingToolbar.explainNeedsConfirm': 'ದಯವಿಟ್ಟು ಮೊದಲು ನೋಡ್ ವಿಷಯವನ್ನು ದೃಢೀಕರಿಸಿ',
   'canvas.floatingToolbar.fontDefault': 'ಡೀಫಾಲ್ಟ್ ಫಾಂಟ್',
   'canvas.floatingToolbar.fontSimSun': 'ಸಾಂಗ್ ರಾಜವಂಶ',
   'canvas.floatingToolbar.fontKaiTi': 'ನಿಯಮಿತ ಸ್ಕ್ರಿಪ್ಟ್',
@@ -526,85 +481,64 @@ export default {
   'canvas.subgraphPreview.hint': 'AI ಸಬ್‌ಗ್ರಾಫ್ ಪೂರ್ವವೀಕ್ಷಣೆ',
   'canvas.subgraphPreview.accept': 'ದತ್ತು',
   'canvas.subgraphPreview.discard': 'ಅಸಮ್ಮತಿಸಲಾಗಿದೆ',
-  'canvas.subgraphPreview.previewReady':
-    'ಸಬ್‌ಗ್ರಾಫ್ ಅನ್ನು ರಚಿಸಲಾಗಿದೆ, ದಯವಿಟ್ಟು ಅದನ್ನು ಅಳವಡಿಸಿಕೊಳ್ಳಿ ಅಥವಾ ತ್ಯಜಿಸಿ',
+  'canvas.subgraphPreview.previewReady': 'ಸಬ್‌ಗ್ರಾಫ್ ಅನ್ನು ರಚಿಸಲಾಗಿದೆ, ದಯವಿಟ್ಟು ಅದನ್ನು ಅಳವಡಿಸಿಕೊಳ್ಳಿ ಅಥವಾ ತ್ಯಜಿಸಿ',
   'canvas.subgraphPreview.accepted': 'AI ಉಪಗ್ರಾಫ್ ಅನ್ನು ಅಳವಡಿಸಲಾಗಿದೆ',
   'canvas.subgraphPreview.discarded': 'ಅಸಮ್ಮತಿಸಿದ AI ಸಬ್‌ಗ್ರಾಫ್',
   'canvas.subgraphPreview.generationFailed': 'ಉಪಗ್ರಾಫ್ ಉತ್ಪಾದನೆ ವಿಫಲವಾಗಿದೆ',
   'canvas.subgraphPreview.emptyResult': 'AI ಲಭ್ಯವಿರುವ ಚೈಲ್ಡ್ ನೋಡ್‌ಗಳನ್ನು ಹಿಂತಿರುಗಿಸಲಿಲ್ಲ',
   'canvas.subgraphPreview.mergeFailed': 'ಪ್ರಸ್ತುತ ನೋಡ್‌ಗೆ ಸಬ್‌ಗ್ರಾಫ್ ಅನ್ನು ವಿಲೀನಗೊಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ',
-  'canvas.subgraphPreview.enterNodeTextFirst':
-    'ದಯವಿಟ್ಟು ಮೊದಲು ನೋಡ್‌ಗಾಗಿ ಮಾನ್ಯವಾದ ವಿಷಯದ ಪಠ್ಯವನ್ನು ನಮೂದಿಸಿ',
-  'canvas.subgraphPreview.topicNodeNotSupported':
-    'ಸಬ್‌ಗ್ರಾಫ್‌ಗಳನ್ನು ರಚಿಸಲು ದಯವಿಟ್ಟು ಶಾಖೆಯ ನೋಡ್‌ಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.subgraphPreview.enterNodeTextFirst': 'ದಯವಿಟ್ಟು ಮೊದಲು ನೋಡ್‌ಗಾಗಿ ಮಾನ್ಯವಾದ ವಿಷಯದ ಪಠ್ಯವನ್ನು ನಮೂದಿಸಿ',
+  'canvas.subgraphPreview.topicNodeNotSupported': 'ಸಬ್‌ಗ್ರಾಫ್‌ಗಳನ್ನು ರಚಿಸಲು ದಯವಿಟ್ಟು ಶಾಖೆಯ ನೋಡ್‌ಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'canvas.subgraphPreview.historyLabel': 'ಉಪಗ್ರಾಫ್‌ಗಳ ಬುದ್ಧಿವಂತ ಪೀಳಿಗೆ',
-  'canvas.inlineRecPicker.prevPage': 'ಹಿಂದಿನ ಪುಟ',
-  'canvas.inlineRecPicker.nextPage': 'ಮುಂದಿನ ಪುಟ',
-  'canvas.toolbar.formatBrushActivated':
-    'ಶೈಲಿಯನ್ನು ನಕಲಿಸಲಾಗಿದೆ, ಅದನ್ನು ಅನ್ವಯಿಸಲು ಗುರಿ ನೋಡ್ ಅನ್ನು ಒಮ್ಮೆ ಕ್ಲಿಕ್ ಮಾಡಿ. ಅದನ್ನು ನಿರಂತರವಾಗಿ ಅನ್ವಯಿಸಲು ಫಾರ್ಮ್ಯಾಟ್ ಪೇಂಟರ್ ಅನ್ನು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಿ (Esc ಅಥವಾ ರದ್ದುಗೊಳಿಸಲು ಖಾಲಿ ಜಾಗದ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ)',
+  'canvas.toolbar.formatBrushActivated': 'ಶೈಲಿಯನ್ನು ನಕಲಿಸಲಾಗಿದೆ, ಅದನ್ನು ಅನ್ವಯಿಸಲು ಗುರಿ ನೋಡ್ ಅನ್ನು ಒಮ್ಮೆ ಕ್ಲಿಕ್ ಮಾಡಿ. ಅದನ್ನು ನಿರಂತರವಾಗಿ ಅನ್ವಯಿಸಲು ಫಾರ್ಮ್ಯಾಟ್ ಪೇಂಟರ್ ಅನ್ನು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಿ (Esc ಅಥವಾ ರದ್ದುಗೊಳಿಸಲು ಖಾಲಿ ಜಾಗದ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ)',
   'canvas.toolbar.formatBrushApplied': '{count} ನೋಡ್‌ಗಳಿಗೆ ಫಾರ್ಮ್ಯಾಟ್ ಅನ್ವಯಿಸಲಾಗಿದೆ',
+  'canvas.toolbar.formatBrushApplyFailed': 'ಆಯ್ದ ನೋಡ್‌ಗಳಿಗೆ ಫಾರ್ಮ್ಯಾಟಿಂಗ್ ಅನ್ನು ಅನ್ವಯಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ',
   'canvas.toolbar.formatBrushCancelled': 'ಬ್ರಷ್ ಸ್ವರೂಪವನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ',
   'canvas.toolbar.formatBrushSelectSource': 'ದಯವಿಟ್ಟು ಮೊದಲು ಶೈಲಿಯ ಮೂಲವಾಗಿ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.toolbar.formatBrushStyleEmpty': 'ಆಯ್ಕೆಮಾಡಿದ ನೋಡ್‌ನ ಶೈಲಿಯನ್ನು ಓದಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ',
   'canvas.toolbar.formatLabel': 'ಫಾರ್ಮ್ಯಾಟ್',
   'canvas.toolbar.formatPainter': 'ಫಾರ್ಮ್ಯಾಟ್ ಪೇಂಟರ್ (ನಿರಂತರವಾಗಿ ಅನ್ವಯಿಸಲು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಿ)',
   'canvas.toolbar.layoutDirectionToggled': 'ಲೇಔಟ್ ದಿಕ್ಕನ್ನು ಬದಲಾಯಿಸಲಾಗಿದೆ',
   'canvas.toolbar.learningSheetRestored': 'ಸ್ಟಡಿ ಶೀಟ್ ಅನ್ನು ಮರುಸ್ಥಾಪಿಸಲಾಗಿದೆ',
   'canvas.toolbar.moreAppConceptMapModes': 'ಪರಿಕಲ್ಪನೆ ನಕ್ಷೆ ಮಾದರಿ',
-  'canvas.toolbar.moreAppConceptMapModesDesc':
-    'ಪ್ರಸ್ತುತ ಸ್ಟ್ಯಾಂಡರ್ಡ್ ಮೋಡ್, ಹೆಚ್ಚಿನ ಮೋಡ್‌ಗಳನ್ನು ಶೀಘ್ರದಲ್ಲೇ ಬಿಡುಗಡೆ ಮಾಡಲಾಗುವುದು',
+  'canvas.toolbar.moreAppConceptMapModesDesc': 'ಪ್ರಸ್ತುತ ಸ್ಟ್ಯಾಂಡರ್ಡ್ ಮೋಡ್, ಹೆಚ್ಚಿನ ಮೋಡ್‌ಗಳನ್ನು ಶೀಘ್ರದಲ್ಲೇ ಬಿಡುಗಡೆ ಮಾಡಲಾಗುವುದು',
   'canvas.toolbar.moreAppLearningSheet': 'ಟೊಳ್ಳಾದ ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರ',
-  'canvas.toolbar.moreAppLearningSheetDesc':
-    'ಯಾದೃಚ್ಛಿಕವಾಗಿ ಅದನ್ನು ಖಾಲಿ ಬಿಡಿ, ಅಧ್ಯಯನ ಮಾಡಲು ಮತ್ತು ಪರಿಶೀಲಿಸಲು ಇದು ಉತ್ತಮ ಮಾರ್ಗವಾಗಿದೆ',
+  'canvas.toolbar.moreAppLearningSheetDesc': 'ಯಾದೃಚ್ಛಿಕವಾಗಿ ಅದನ್ನು ಖಾಲಿ ಬಿಡಿ, ಅಧ್ಯಯನ ಮಾಡಲು ಮತ್ತು ಪರಿಶೀಲಿಸಲು ಇದು ಉತ್ತಮ ಮಾರ್ಗವಾಗಿದೆ',
   'canvas.toolbar.moreAppWaterfall': 'AI ಬುದ್ದಿಮತ್ತೆ',
-  'canvas.toolbar.moreAppWaterfallDesc':
-    'ವಿಭಿನ್ನ ಮತ್ತು ಒಮ್ಮುಖ ಚಿಂತನೆಯನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಮಾಡಲು ಬ್ಯಾಚ್ ನೋಡ್‌ಗಳಲ್ಲಿ ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.toolbar.moreApps': 'ಹೆಚ್ಚಿನ ಅಪ್ಲಿಕೇಶನ್‌ಗಳು',
+  'canvas.toolbar.moreAppWaterfallDesc': 'ವಿಭಿನ್ನ ಮತ್ತು ಒಮ್ಮುಖ ಚಿಂತನೆಯನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಮಾಡಲು ಬ್ಯಾಚ್ ನೋಡ್‌ಗಳಲ್ಲಿ ಆಯ್ಕೆಮಾಡಿ',
   'canvas.toolbar.moreAppSnapshot': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್',
   'canvas.toolbar.moreAppSnapshotDesc': 'ಪ್ರಸ್ತುತ ಐಕಾನ್‌ನ ಆವೃತ್ತಿಯನ್ನು ಉಳಿಸಿ (10 ವರೆಗೆ)',
   'canvas.toolbar.moreAppTranslateLabel': 'ಅನುವಾದಿಸಿ',
-  'canvas.toolbar.moreAppTranslateLabelDesc':
-    'ಪ್ರಸ್ತುತ ಇಂಟರ್ಫೇಸ್ ಭಾಷೆಯ ಪ್ರಕಾರ ರೇಖಾಚಿತ್ರದಲ್ಲಿನ ಎಲ್ಲಾ ನೋಡ್ ಮತ್ತು ಸಂಪರ್ಕ ಲೇಬಲ್‌ಗಳನ್ನು ಭಾಷಾಂತರಿಸಲು AI ಬಳಸಿ',
+  'canvas.toolbar.moreAppTranslateLabelDesc': 'ಪ್ರಸ್ತುತ ಇಂಟರ್ಫೇಸ್ ಭಾಷೆಯ ಪ್ರಕಾರ ರೇಖಾಚಿತ್ರದಲ್ಲಿನ ಎಲ್ಲಾ ನೋಡ್ ಮತ್ತು ಸಂಪರ್ಕ ಲೇಬಲ್‌ಗಳನ್ನು ಭಾಷಾಂತರಿಸಲು AI ಬಳಸಿ',
   'canvas.toolbar.translateLabelTitle': 'ಅನುವಾದ ಐಕಾನ್',
   'canvas.toolbar.translateLabelSource': 'ಅನುವಾದಿಸಬೇಕಾದ ಟ್ಯಾಗ್‌ಗಳು ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'ಗುರಿ ಭಾಷೆ',
   'canvas.toolbar.translateLabelCancel': 'ರದ್ದುಮಾಡಿ',
   'canvas.toolbar.translateLabelConfirm': 'ಅನುವಾದಿಸಿ',
-  'canvas.toolbar.translateLabelSelectOne':
-    'ಅನುವಾದಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಒಂದು ನೋಡ್ ಅನ್ನು ಮಾತ್ರ ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.toolbar.translateLabelSelectOne': 'ಅನುವಾದಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಒಂದು ನೋಡ್ ಅನ್ನು ಮಾತ್ರ ಆಯ್ಕೆಮಾಡಿ',
   'canvas.toolbar.translateLabelEmpty': 'ಆಯ್ಕೆಮಾಡಿದ ನೋಡ್ ಯಾವುದೇ ಅನುವಾದಿಸಬಹುದಾದ ಪಠ್ಯವನ್ನು ಹೊಂದಿಲ್ಲ',
   'canvas.toolbar.translateLabelDiagramEmpty': 'ಪ್ರಸ್ತುತ ಐಕಾನ್ ಅನುವಾದಿಸಬಹುದಾದ ಪಠ್ಯವನ್ನು ಹೊಂದಿಲ್ಲ',
   'canvas.toolbar.translateLabelAndMore': '{n} ಐಟಂಗಳನ್ನು ತೋರಿಸಲಾಗಿಲ್ಲ...',
   'canvas.toolbar.translateLabelInProgress': 'ಐಕಾನ್ ಅನುವಾದಿಸಲಾಗುತ್ತಿದೆ...',
   'canvas.toolbar.translateLabelBannerTitle': 'ಅನುವಾದ ಐಕಾನ್',
-  'canvas.toolbar.translateLabelFallbackEnInfo':
-    'ಪ್ರಸ್ತುತ ಇಂಟರ್ಫೇಸ್ ಭಾಷೆಯನ್ನು ಅನುವಾದ ಗುರಿಯಾಗಿ ಬೆಂಬಲಿಸುವುದಿಲ್ಲ ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಔಟ್‌ಪುಟ್ ಅನ್ನು ಬಳಸಲಾಗುತ್ತದೆ.',
+  'canvas.toolbar.translateLabelFallbackEnInfo': 'ಪ್ರಸ್ತುತ ಇಂಟರ್ಫೇಸ್ ಭಾಷೆಯನ್ನು ಅನುವಾದ ಗುರಿಯಾಗಿ ಬೆಂಬಲಿಸುವುದಿಲ್ಲ ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಔಟ್‌ಪುಟ್ ಅನ್ನು ಬಳಸಲಾಗುತ್ತದೆ.',
   'canvas.toolbar.translateLabelFailed': 'ಅನುವಾದ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'canvas.toolbar.translateLabelDone': 'ಅನುವಾದ ಪೂರ್ಣಗೊಂಡಿದೆ',
   'canvas.toolbar.moreAppVirtualKeyboard': 'ವರ್ಚುವಲ್ ಕೀಬೋರ್ಡ್',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc':
-    'ಇಂಗ್ಲೀಷ್ ಆನ್-ಸ್ಕ್ರೀನ್ ಕೀಬೋರ್ಡ್; ಚೈನೀಸ್ ಮತ್ತು ಇತರ ಭಾಷೆಗಳಿಗೆ, ದಯವಿಟ್ಟು ಸಿಸ್ಟಮ್ ಇನ್‌ಪುಟ್ ವಿಧಾನವನ್ನು ಬಳಸಿ',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'ಇಂಗ್ಲೀಷ್ ಆನ್-ಸ್ಕ್ರೀನ್ ಕೀಬೋರ್ಡ್; ಚೈನೀಸ್ ಮತ್ತು ಇತರ ಭಾಷೆಗಳಿಗೆ, ದಯವಿಟ್ಟು ಸಿಸ್ಟಮ್ ಇನ್‌ಪುಟ್ ವಿಧಾನವನ್ನು ಬಳಸಿ',
   'canvas.toolbar.virtualKeyboardClose': 'ಕೀಬೋರ್ಡ್ ಮುಚ್ಚಿ',
-  'canvas.toolbar.virtualKeyboardFocusHint':
-    'ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಅದನ್ನು ನೇರವಾಗಿ ಇನ್‌ಪುಟ್ ಮಾಡುವುದರಿಂದ ಮೂಲ ವಿಷಯವನ್ನು ತೆರವುಗೊಳಿಸುತ್ತದೆ; ಸಂಪಾದನೆಯನ್ನು ನಮೂದಿಸಲು ನೀವು ಲೇಬಲ್ ಅನ್ನು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಬಹುದು.',
+  'canvas.toolbar.virtualKeyboardFocusHint': 'ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಅದನ್ನು ನೇರವಾಗಿ ಇನ್‌ಪುಟ್ ಮಾಡುವುದರಿಂದ ಮೂಲ ವಿಷಯವನ್ನು ತೆರವುಗೊಳಿಸುತ್ತದೆ; ಸಂಪಾದನೆಯನ್ನು ನಮೂದಿಸಲು ನೀವು ಲೇಬಲ್ ಅನ್ನು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಬಹುದು.',
   'canvas.toolbar.virtualKeyboardIme': 'ಸಿಸ್ಟಮ್ ಇನ್ಪುಟ್ ವಿಧಾನ',
-  'canvas.toolbar.virtualKeyboardImeHint':
-    'ಇನ್‌ಪುಟ್ ಮಾಡಲು ದಯವಿಟ್ಟು ಭೌತಿಕ ಕೀಬೋರ್ಡ್ ಅಥವಾ ಸಿಸ್ಟಮ್ ಕೀಬೋರ್ಡ್ ಬಳಸಿ. ಸಿಸ್ಟಮ್ ಇನ್‌ಪುಟ್ ವಿಧಾನದಿಂದ ಅಭ್ಯರ್ಥಿ ವಿಂಡೋವನ್ನು ಒದಗಿಸಲಾಗಿದೆ.',
-  'canvas.toolbar.snapshotSaveFirst':
-    'ದಯವಿಟ್ಟು ಮೊದಲು ಐಕಾನ್ ಅನ್ನು ಉಳಿಸಿ ಮತ್ತು ನಂತರ ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ತೆಗೆದುಕೊಳ್ಳಿ',
+  'canvas.toolbar.virtualKeyboardImeHint': 'ಇನ್‌ಪುಟ್ ಮಾಡಲು ದಯವಿಟ್ಟು ಭೌತಿಕ ಕೀಬೋರ್ಡ್ ಅಥವಾ ಸಿಸ್ಟಮ್ ಕೀಬೋರ್ಡ್ ಬಳಸಿ. ಸಿಸ್ಟಮ್ ಇನ್‌ಪುಟ್ ವಿಧಾನದಿಂದ ಅಭ್ಯರ್ಥಿ ವಿಂಡೋವನ್ನು ಒದಗಿಸಲಾಗಿದೆ.',
+  'canvas.toolbar.snapshotSaveFirst': 'ದಯವಿಟ್ಟು ಮೊದಲು ಐಕಾನ್ ಅನ್ನು ಉಳಿಸಿ ಮತ್ತು ನಂತರ ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ತೆಗೆದುಕೊಳ್ಳಿ',
   'canvas.toolbar.snapshotTaken': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ {n} ಉಳಿಸಲಾಗಿದೆ',
   'canvas.toolbar.snapshotFailed': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಉಳಿಸುವಿಕೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'canvas.toolbar.snapshotTooLarge':
-    'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ (ಗರಿಷ್ಠ {max} KB). ದಯವಿಟ್ಟು ಚಿತ್ರದ ವಿಷಯವನ್ನು ಸರಳಗೊಳಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.toolbar.snapshotRateLimited':
-    'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಕಾರ್ಯಾಚರಣೆಯು ತುಂಬಾ ಆಗಾಗ್ಗೆ ಆಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.toolbar.snapshotDiagramNotFound':
-    'ಯಾವುದೇ ಐಕಾನ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ಪುಟವನ್ನು ರಿಫ್ರೆಶ್ ಮಾಡಿ ಅಥವಾ ಲೈಬ್ರರಿಯಿಂದ ತೆರೆಯಿರಿ.',
-  'canvas.library.diagramNotFound':
-    'ಐಕಾನ್ ಕಂಡುಬಂದಿಲ್ಲ, ಅಳಿಸಿರಬಹುದು. ದಯವಿಟ್ಟು ಗ್ಯಾಲರಿಯಿಂದ ಇತರ ನಕ್ಷೆಗಳನ್ನು ತೆರೆಯಿರಿ.',
-  'canvas.library.saveBeforeSwitchFailed':
-    'ಬದಲಾಯಿಸುವ ಮೊದಲು ಪ್ರಸ್ತುತ ನಕ್ಷೆಯನ್ನು ಉಳಿಸಲಾಗುವುದಿಲ್ಲ, ದಯವಿಟ್ಟು ಇಲ್ಲಿಯೇ ಇರಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.toolbar.snapshotConflict':
-    'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಅನ್ನು ಉಳಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ (ಸಂಘರ್ಷ). ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.toolbar.snapshotTooLarge': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ (ಗರಿಷ್ಠ {max} KB). ದಯವಿಟ್ಟು ಚಿತ್ರದ ವಿಷಯವನ್ನು ಸರಳಗೊಳಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.toolbar.snapshotRateLimited': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಕಾರ್ಯಾಚರಣೆಯು ತುಂಬಾ ಆಗಾಗ್ಗೆ ಆಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.toolbar.snapshotDiagramNotFound': 'ಯಾವುದೇ ಐಕಾನ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ಪುಟವನ್ನು ರಿಫ್ರೆಶ್ ಮಾಡಿ ಅಥವಾ ಲೈಬ್ರರಿಯಿಂದ ತೆರೆಯಿರಿ.',
+  'canvas.library.diagramNotFound': 'ಐಕಾನ್ ಕಂಡುಬಂದಿಲ್ಲ, ಅಳಿಸಿರಬಹುದು. ದಯವಿಟ್ಟು ಗ್ಯಾಲರಿಯಿಂದ ಇತರ ನಕ್ಷೆಗಳನ್ನು ತೆರೆಯಿರಿ.',
+  'canvas.library.saveBeforeSwitchFailed': 'ಬದಲಾಯಿಸುವ ಮೊದಲು ಪ್ರಸ್ತುತ ನಕ್ಷೆಯನ್ನು ಉಳಿಸಲಾಗುವುದಿಲ್ಲ, ದಯವಿಟ್ಟು ಇಲ್ಲಿಯೇ ಇರಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.toolbar.snapshotConflict': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಅನ್ನು ಉಳಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ (ಸಂಘರ್ಷ). ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
   'canvas.toolbar.newAssociation': 'ಹೊಸ ಸಂಬಂಧ',
   'canvas.toolbar.newAttribute': 'ಹೊಸ ಗುಣಲಕ್ಷಣಗಳು',
   'canvas.toolbar.newBranch': 'ಹೊಸ ಶಾಖೆ',
@@ -625,32 +559,23 @@ export default {
   'canvas.toolbar.historyGroup': 'ರದ್ದುಮಾಡಿ ಮತ್ತು ಮತ್ತೆಮಾಡು',
   'canvas.toolbar.redo': 'ಮತ್ತೆ ಮಾಡಿ',
   'canvas.toolbar.redoShortcut': 'Ctrl+Y',
-  'canvas.toolbar.save': 'Save',
-  'canvas.toolbar.add': 'Add',
-  'canvas.toolbar.delete': 'Delete',
+  'canvas.toolbar.save': 'ಉಳಿಸಿ',
+  'canvas.toolbar.add': 'ಗೆ ಸೇರಿಸಿ',
+  'canvas.toolbar.delete': 'ಅಳಿಸಿ',
   'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': 'ದಯವಿಟ್ಟು ಮೊದಲು ಶಾಖೆ ಅಥವಾ ಉಪನೋಡ್ ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.toolbar.selectCategoryOrLeafDelete':
-    'ದಯವಿಟ್ಟು ವರ್ಗ ಅಥವಾ ಉಪ-ಐಟಂ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ (ವಿಷಯ ನೋಡ್‌ಗಳನ್ನು ಅಳಿಸಲಾಗುವುದಿಲ್ಲ)',
-  'canvas.toolbar.selectCauseOrEffectForAdd':
-    'ದಯವಿಟ್ಟು ಕಾರಣ ಅಥವಾ ಫಲಿತಾಂಶದ ನೋಡ್ ಅನ್ನು ಮೊದಲು ಆಯ್ಕೆಮಾಡಿ (ಮಧ್ಯಂತರ ಈವೆಂಟ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡಬೇಡಿ), ನಂತರ ಅದೇ ಕಾಲಮ್‌ನಲ್ಲಿ ಸೇರಿಸಲು Enter ಅನ್ನು ಒತ್ತಿರಿ',
-  'canvas.toolbar.selectTreeBranchForChild':
-    'ದಯವಿಟ್ಟು ಉಪ-ಐಟಂಗಳನ್ನು ಸೇರಿಸಲು ವರ್ಗದ ಅಡಿಯಲ್ಲಿ ಒಂದು ವರ್ಗ ಅಥವಾ ನಮೂದನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಹೊಸ ವರ್ಗವನ್ನು ಸೇರಿಸಲು ವಿಷಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.toolbar.selectCategoryOrLeafDelete': 'ದಯವಿಟ್ಟು ವರ್ಗ ಅಥವಾ ಉಪ-ಐಟಂ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ (ವಿಷಯ ನೋಡ್‌ಗಳನ್ನು ಅಳಿಸಲಾಗುವುದಿಲ್ಲ)',
+  'canvas.toolbar.selectCauseOrEffectForAdd': 'ದಯವಿಟ್ಟು ಕಾರಣ ಅಥವಾ ಫಲಿತಾಂಶದ ನೋಡ್ ಅನ್ನು ಮೊದಲು ಆಯ್ಕೆಮಾಡಿ (ಮಧ್ಯಂತರ ಈವೆಂಟ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡಬೇಡಿ), ನಂತರ ಅದೇ ಕಾಲಮ್‌ನಲ್ಲಿ ಸೇರಿಸಲು Enter ಅನ್ನು ಒತ್ತಿರಿ',
+  'canvas.toolbar.selectTreeBranchForChild': 'ದಯವಿಟ್ಟು ಉಪ-ಐಟಂಗಳನ್ನು ಸೇರಿಸಲು ವರ್ಗದ ಅಡಿಯಲ್ಲಿ ಒಂದು ವರ್ಗ ಅಥವಾ ನಮೂದನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಹೊಸ ವರ್ಗವನ್ನು ಸೇರಿಸಲು ವಿಷಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'canvas.toolbar.selectNodesFirst': 'ದಯವಿಟ್ಟು ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಕಾರ್ಯನಿರ್ವಹಿಸಿ',
   'canvas.toolbar.nodeStyleFollow': 'ನೋಡ್ ಅನ್ನು ಅನುಸರಿಸಿ',
-  'canvas.toolbar.nodeStyleFollowHint':
-    'ಆನ್ ಮಾಡಿದಾಗ, ನೋಡ್ ಸ್ಟೈಲ್ ಬಾರ್ ಆಯ್ದ ನೋಡ್ ಅನ್ನು ಅನುಸರಿಸುತ್ತದೆ; ಆಫ್ ಮಾಡಿದಾಗ, ಅದನ್ನು ಮರೆಮಾಡಲಾಗಿದೆ.',
+  'canvas.toolbar.nodeStyleFollowHint': 'ಆನ್ ಮಾಡಿದಾಗ, ನೋಡ್ ಸ್ಟೈಲ್ ಬಾರ್ ಆಯ್ದ ನೋಡ್ ಅನ್ನು ಅನುಸರಿಸುತ್ತದೆ; ಆಫ್ ಮಾಡಿದಾಗ, ಅದನ್ನು ಮರೆಮಾಡಲಾಗಿದೆ.',
   'canvas.toolbar.selectNodesToDelete': 'ದಯವಿಟ್ಟು ಮೊದಲು ಅಳಿಸಲು ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.toolbar.selectPartForSubpart':
-    'ದಯವಿಟ್ಟು ಮೊದಲು ನೀವು ಉಪವಿಭಾಗವನ್ನು ಸೇರಿಸಲು ಬಯಸುವ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.toolbar.selectPartThenEnter':
-    'ದಯವಿಟ್ಟು ಕೆಲವು ನೋಡ್‌ಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಉಪಭಾಗಗಳನ್ನು ಸೇರಿಸಲು Enter ಅನ್ನು ಒತ್ತಿರಿ',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
-    'ದಯವಿಟ್ಟು ಹೋಲಿಕೆ ಅಥವಾ ವ್ಯತ್ಯಾಸದ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ (ವಿಷಯ ನೋಡ್‌ಗಳನ್ನು ಅಳಿಸಲಾಗುವುದಿಲ್ಲ)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
-    'ದಯವಿಟ್ಟು ಮೊದಲು ಹೋಲಿಕೆ ಅಥವಾ ವ್ಯತ್ಯಾಸದ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.toolbar.selectStepForSubstep':
-    'ದಯವಿಟ್ಟು ಮೊದಲು ನೀವು ಉಪಹಂತಗಳನ್ನು ಸೇರಿಸಲು ಬಯಸುವ ಹಂತದ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.toolbar.selectPartForSubpart': 'ದಯವಿಟ್ಟು ಮೊದಲು ನೀವು ಉಪವಿಭಾಗವನ್ನು ಸೇರಿಸಲು ಬಯಸುವ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.toolbar.selectPartThenEnter': 'ದಯವಿಟ್ಟು ಕೆಲವು ನೋಡ್‌ಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಉಪಭಾಗಗಳನ್ನು ಸೇರಿಸಲು Enter ಅನ್ನು ಒತ್ತಿರಿ',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'ದಯವಿಟ್ಟು ಹೋಲಿಕೆ ಅಥವಾ ವ್ಯತ್ಯಾಸದ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ (ವಿಷಯ ನೋಡ್‌ಗಳನ್ನು ಅಳಿಸಲಾಗುವುದಿಲ್ಲ)',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'ದಯವಿಟ್ಟು ಮೊದಲು ಹೋಲಿಕೆ ಅಥವಾ ವ್ಯತ್ಯಾಸದ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.toolbar.selectStepForSubstep': 'ದಯವಿಟ್ಟು ಮೊದಲು ನೀವು ಉಪಹಂತಗಳನ್ನು ಸೇರಿಸಲು ಬಯಸುವ ಹಂತದ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'canvas.toolbar.similarityWithIndex': 'ಹೋಲಿಕೆಗಳು {n}',
   'canvas.toolbar.stepAdded': 'ಹಂತ ಸೇರಿಸಲಾಗಿದೆ',
   'canvas.toolbar.styleApplied': 'ಶೈಲಿಯನ್ನು ಅನ್ವಯಿಸಲಾಗಿದೆ',
@@ -696,11 +621,9 @@ export default {
   'canvas.topBar.resetTemplate': 'ಡೀಫಾಲ್ಟ್ ಟೆಂಪ್ಲೇಟ್‌ಗೆ ಮರುಹೊಂದಿಸಿ',
   'canvas.topBar.resetCanvas': 'ಕ್ಯಾನ್ವಾಸ್ ಅನ್ನು ಮರುಹೊಂದಿಸಿ',
   'canvas.topBar.schoolCollab': 'ಆನ್-ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗ',
-  'canvas.topBar.shareCommunity': 'ಸಮುದಾಯಕ್ಕೆ ಹಂಚಿಕೊಳ್ಳಿ',
   'canvas.topBar.zhihuiUnavailable': 'ಸ್ಮಾರ್ಟ್ ಡ್ರಾಯಿಂಗ್ ಚಾರ್ಟ್‌ಗಳು ಪ್ರಸ್ತುತ ಲಭ್ಯವಿಲ್ಲ',
   'canvas.topBar.zhihuiNeedMindmap': 'ವಿವರಣೆಯು ಮೈಂಡ್ ಮ್ಯಾಪಿಂಗ್ ಅನ್ನು ಮಾತ್ರ ಬೆಂಬಲಿಸುತ್ತದೆ',
-  'canvas.topBar.zhihuiSaveFailed':
-    'ನಕ್ಷೆಯನ್ನು ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ ಮತ್ತು ರಚಿಸಿದ ನಕ್ಷೆಯನ್ನು ತೆರೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ.',
+  'canvas.topBar.zhihuiSaveFailed': 'ನಕ್ಷೆಯನ್ನು ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ ಮತ್ತು ರಚಿಸಿದ ನಕ್ಷೆಯನ್ನು ತೆರೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ.',
   'canvas.topBar.sharedCollab': 'ಒಟ್ಟಿಗೆ ಸಹಕರಿಸಿ',
   'canvas.topBar.teachingDesign': 'MindMate AI',
   'canvas.subtitles.tooltip': 'ಲೈವ್ ಉಪಶೀರ್ಷಿಕೆಗಳು (ಮೈಕ್ರೊಫೋನ್)',
@@ -708,37 +631,29 @@ export default {
   'canvas.subtitles.listening': 'ಕೇಳುತ್ತಿದೆ...',
   'canvas.subtitles.micFailed': 'ಮೈಕ್ರೊಫೋನ್ ಬಳಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ.',
   'canvas.subtitles.micUnavailable': 'ಪ್ರಸ್ತುತ ಬ್ರೌಸರ್ ಮೈಕ್ರೊಫೋನ್ ಅನ್ನು ಬಳಸಲಾಗುವುದಿಲ್ಲ.',
-  'canvas.subtitles.wsError':
-    'ಉಪಶೀರ್ಷಿಕೆ ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನೆಟ್‌ವರ್ಕ್ ಮತ್ತು ಲಾಗಿನ್ ಸ್ಥಿತಿಯನ್ನು ಪರಿಶೀಲಿಸಿ.',
+  'canvas.subtitles.wsError': 'ಉಪಶೀರ್ಷಿಕೆ ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನೆಟ್‌ವರ್ಕ್ ಮತ್ತು ಲಾಗಿನ್ ಸ್ಥಿತಿಯನ್ನು ಪರಿಶೀಲಿಸಿ.',
   'canvas.subtitles.genericError': 'ಉಪಶೀರ್ಷಿಕೆ ದೋಷ',
   'canvas.translation.tooltip': 'ನೇರ ಅನುವಾದ (ಮೈಕ್ರೊಫೋನ್)',
   'canvas.translation.aria': 'ನೈಜ-ಸಮಯದ ಅನುವಾದವನ್ನು ಬದಲಾಯಿಸಿ',
   'canvas.translation.listening': 'ಅನುವಾದಿಸಲು ಆಲಿಸಲಾಗುತ್ತಿದೆ...',
   'canvas.translation.micFailed': 'ಮೈಕ್ರೊಫೋನ್ ಬಳಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ.',
   'canvas.translation.micUnavailable': 'ಪ್ರಸ್ತುತ ಬ್ರೌಸರ್ ಮೈಕ್ರೊಫೋನ್ ಅನ್ನು ಬಳಸಲಾಗುವುದಿಲ್ಲ.',
-  'canvas.translation.wsError':
-    'ಅನುವಾದ ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನೆಟ್‌ವರ್ಕ್ ಮತ್ತು ಲಾಗಿನ್ ಸ್ಥಿತಿಯನ್ನು ಪರಿಶೀಲಿಸಿ.',
+  'canvas.translation.wsError': 'ಅನುವಾದ ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನೆಟ್‌ವರ್ಕ್ ಮತ್ತು ಲಾಗಿನ್ ಸ್ಥಿತಿಯನ್ನು ಪರಿಶೀಲಿಸಿ.',
   'canvas.translation.genericError': 'ಅನುವಾದ ದೋಷ',
   'canvas.translation.start': 'ಅನುವಾದವನ್ನು ಪ್ರಾರಂಭಿಸಿ',
   'canvas.translation.stop': 'ಅನುವಾದವನ್ನು ನಿಲ್ಲಿಸಿ',
   'canvas.topBar.snapshotRecallTooltip': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ {n} ಮರುಸ್ಥಾಪಿಸಿ',
   'canvas.topBar.snapshotRecallTitle': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಅನ್ನು ಮರುಸ್ಥಾಪಿಸಿ',
-  'canvas.topBar.snapshotRecallConfirm':
-    'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ {n} ಮರುಸ್ಥಾಪಿಸುವುದೇ? ಪ್ರಸ್ತುತ ಬದಲಾವಣೆಗಳನ್ನು ಬದಲಾಯಿಸಲಾಗುತ್ತದೆ.',
+  'canvas.topBar.snapshotRecallConfirm': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ {n} ಮರುಸ್ಥಾಪಿಸುವುದೇ? ಪ್ರಸ್ತುತ ಬದಲಾವಣೆಗಳನ್ನು ಬದಲಾಯಿಸಲಾಗುತ್ತದೆ.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'ಚೇತರಿಸಿಕೊಳ್ಳಿ',
   'canvas.topBar.snapshotRecallCancelBtn': 'ರದ್ದುಮಾಡಿ',
   'canvas.topBar.snapshotRecallHistory': 'ಮರುಸ್ಥಾಪಿಸುವ ಮೊದಲು ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ {n}',
-  'canvas.topBar.snapshotRecallFailed':
-    'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಮರುಪಡೆಯುವಿಕೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'canvas.topBar.snapshotRecallNoDiagram':
-    'ದಯವಿಟ್ಟು ಮೊದಲು ಗ್ಯಾಲರಿಗೆ ಐಕಾನ್ ಅನ್ನು ಉಳಿಸಿ ಮತ್ತು ನಂತರ ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಅನ್ನು ಮರುಸ್ಥಾಪಿಸಿ.',
-  'canvas.topBar.snapshotRecallNoType':
-    'ಐಕಾನ್ ಪ್ರಕಾರವು ಇನ್ನೂ ಸಿದ್ಧವಾಗಿಲ್ಲ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.topBar.snapshotRecallFailed': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಮರುಪಡೆಯುವಿಕೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'canvas.topBar.snapshotRecallNoDiagram': 'ದಯವಿಟ್ಟು ಮೊದಲು ಗ್ಯಾಲರಿಗೆ ಐಕಾನ್ ಅನ್ನು ಉಳಿಸಿ ಮತ್ತು ನಂತರ ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಅನ್ನು ಮರುಸ್ಥಾಪಿಸಿ.',
+  'canvas.topBar.snapshotRecallNoType': 'ಐಕಾನ್ ಪ್ರಕಾರವು ಇನ್ನೂ ಸಿದ್ಧವಾಗಿಲ್ಲ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
   'canvas.topBar.snapshotDeleted': 'ಅಳಿಸಲಾದ ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ {n}',
-  'canvas.topBar.snapshotDeleteFailed':
-    'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಅಳಿಸಲು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'canvas.topBar.snapshotBadgeTooltip':
-    'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಮರುಸ್ಥಾಪಿಸಲು ಕ್ಲಿಕ್ ಮಾಡಿ {n} · ಅಳಿಸಲು Ctrl+ಕ್ಲಿಕ್ ಮಾಡಿ',
+  'canvas.topBar.snapshotDeleteFailed': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಅಳಿಸಲು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'canvas.topBar.snapshotBadgeTooltip': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಮರುಸ್ಥಾಪಿಸಲು ಕ್ಲಿಕ್ ಮಾಡಿ {n} · ಅಳಿಸಲು Ctrl+ಕ್ಲಿಕ್ ಮಾಡಿ',
   'canvas.topBar.snapshotRecallingTooltip': 'ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಅನ್ನು ಮರುಸ್ಥಾಪಿಸಲಾಗುತ್ತಿದೆ {n}...',
   'canvas.zoomControls.exitFullscreen': 'ಪೂರ್ಣ ಪರದೆಯಿಂದ ನಿರ್ಗಮಿಸಿ',
   'canvas.zoomControls.fitCanvas': 'ಕ್ಯಾನ್ವಾಸ್ಗೆ ಹೊಂದಿಕೊಳ್ಳಿ',
@@ -760,7 +675,7 @@ export default {
   'canvas.mindMapPresentationToolbar.colorGreen': 'ಪ್ರತಿದೀಪಕ ಹಸಿರು',
   'canvas.mindMapPresentationToolbar.colorOrange': 'ರೋಮಾಂಚಕ ಕಿತ್ತಳೆ',
   'canvas.mindMapPresentationToolbar.colorWhite': 'ಕನಿಷ್ಠ ಬಿಳಿ',
-  'canvas.mindMapPresentationToolbar.slides': 'Node carousel',
+  'canvas.mindMapPresentationToolbar.slides': 'ನೋಡ್ ಏರಿಳಿಕೆ',
   'canvas.mindMapPresentationToolbar.exit': 'ನಿರ್ಗಮನ ಪ್ರದರ್ಶನ',
   'canvas.mindMapPresentationToolbar.highlighter': 'ಹೈಲೈಟರ್ ಪೆನ್',
   'canvas.mindMapPresentationToolbar.laserSmall': 'ಚಿಕ್ಕದು',
@@ -788,8 +703,7 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'ಶಾಖೆ',
   'canvas.mindMapSlideOverlay.region': 'ಸ್ಲೈಡ್ ಶೋ ನಿಯಂತ್ರಣ',
   'canvas.mindMapSlideOverlay.progress': 'ಪ್ರಗತಿಯನ್ನು ಸ್ಲೈಡ್ ಮಾಡಿ, ನೆಗೆಯಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
-  'canvas.mindMapSlideOverlay.shortcuts':
-    'ಕ್ಯಾನ್ವಾಸ್ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ ಅಥವಾ ಸ್ಪೇಸ್/→ ಮುಂದಿನ ಪುಟವನ್ನು ಒತ್ತಿ',
+  'canvas.mindMapSlideOverlay.shortcuts': 'ಕ್ಯಾನ್ವಾಸ್ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ ಅಥವಾ ಸ್ಪೇಸ್/→ ಮುಂದಿನ ಪುಟವನ್ನು ಒತ್ತಿ',
   'canvas.mindMapSlideOverlay.exit': 'ಸ್ಲೈಡ್‌ಶೋ ನಿರ್ಗಮಿಸಿ',
   'canvas.mindMapSlideOverlay.collapse': 'ನಿಯಂತ್ರಣ ಪಟ್ಟಿಯನ್ನು ಸಂಕುಚಿಸಿ',
   'canvas.mindMapSlideOverlay.expand': 'ನಿಯಂತ್ರಣ ಪಟ್ಟಿಯನ್ನು ವಿಸ್ತರಿಸಿ',
@@ -802,12 +716,9 @@ export default {
   'canvasPage.collaborationFooterOwner': '{username} ನೊಂದಿಗೆ ಆನ್‌ಲೈನ್ ಸಹಯೋಗ',
   'canvasPage.collaborationFooterOwnerDiagram': '{username} ಗಾಗಿ "{diagramTitle}" ಸಿನರ್ಜಿ ಐಕಾನ್',
   'canvasPage.collaborationFooterNetworkDiagramTitle': '「{diagramTitle}」ಆನ್‌ಲೈನ್ ಸಹಯೋಗ',
-  'canvasPage.collaborationFooterSchool':
-    'ಆನ್-ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗವು ಪ್ರಗತಿಯಲ್ಲಿದೆ-ಸಹೋದ್ಯೋಗಿಗಳು ಸಂವಾದ ಪಟ್ಟಿಯಿಂದ ಸೇರಿಕೊಳ್ಳಬಹುದು.',
-  'canvasPage.collaborationFooterSchoolDiagram':
-    '"{diagramTitle}" ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗವು ಪ್ರಗತಿಯಲ್ಲಿದೆ - ಸಹೋದ್ಯೋಗಿಗಳು ಸಂವಾದ ಪಟ್ಟಿಯಿಂದ ಸೇರಿಕೊಳ್ಳಬಹುದು.',
-  'canvasPage.collabRoomIdleEnding':
-    'ಸುಮಾರು {seconds} ಸೆಕೆಂಡುಗಳ ಕಾಲ ನಿಷ್ಕ್ರಿಯವಾಗಿರುವ ನಂತರ ಐಕಾನ್ ಸಹಯೋಗವು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕೊನೆಗೊಳ್ಳುತ್ತದೆ - ಐಕಾನ್‌ಗಳನ್ನು ಸಂಪಾದಿಸುವುದು ವಿಳಂಬವಾಗಬಹುದು',
+  'canvasPage.collaborationFooterSchool': 'ಆನ್-ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗವು ಪ್ರಗತಿಯಲ್ಲಿದೆ-ಸಹೋದ್ಯೋಗಿಗಳು ಸಂವಾದ ಪಟ್ಟಿಯಿಂದ ಸೇರಿಕೊಳ್ಳಬಹುದು.',
+  'canvasPage.collaborationFooterSchoolDiagram': '"{diagramTitle}" ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗವು ಪ್ರಗತಿಯಲ್ಲಿದೆ - ಸಹೋದ್ಯೋಗಿಗಳು ಸಂವಾದ ಪಟ್ಟಿಯಿಂದ ಸೇರಿಕೊಳ್ಳಬಹುದು.',
+  'canvasPage.collabRoomIdleEnding': 'ಸುಮಾರು {seconds} ಸೆಕೆಂಡುಗಳ ಕಾಲ ನಿಷ್ಕ್ರಿಯವಾಗಿರುವ ನಂತರ ಐಕಾನ್ ಸಹಯೋಗವು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕೊನೆಗೊಳ್ಳುತ್ತದೆ - ಐಕಾನ್‌ಗಳನ್ನು ಸಂಪಾದಿಸುವುದು ವಿಳಂಬವಾಗಬಹುದು',
   'conceptMap.focus.noResult': 'ಯಾವುದೇ ಫಲಿತಾಂಶಗಳಿಲ್ಲ',
   'conceptMap.focus.validationRequestFailed': 'ಪರಿಶೀಲನೆ ವಿನಂತಿ ವಿಫಲವಾಗಿದೆ',
   'diagram.aiGenerating': 'AI...',
@@ -838,8 +749,7 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'ನೋಡ್ ಕಾರ್ಯವನ್ನು ಸೇರಿಸುವುದು ಅಭಿವೃದ್ಧಿ ಹಂತದಲ್ಲಿದೆ',
   'diagram.contextMenu.paste': 'ಅಂಟಿಸಿ',
   'diagram.contextMenu.warningCreateDiagramFirst': 'ದಯವಿಟ್ಟು ಮೊದಲು ಐಕಾನ್ ರಚಿಸಿ',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff':
-    'ದಯವಿಟ್ಟು ಮೊದಲು ಹೋಲಿಕೆ ಅಥವಾ ವ್ಯತ್ಯಾಸದ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'ದಯವಿಟ್ಟು ಮೊದಲು ಹೋಲಿಕೆ ಅಥವಾ ವ್ಯತ್ಯಾಸದ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'diagram.defaultNewConcept': 'ಹೊಸ ಪರಿಕಲ್ಪನೆ',
   'diagram.dimension.classificationAz': 'ವರ್ಗೀಕರಣ ಆಧಾರ',
   'diagram.dimension.classificationEn': 'ವರ್ಗೀಕರಣ ಆಧಾರ',
@@ -864,47 +774,31 @@ export default {
   'canvas.mindMapSideToolbar.collapse': 'ಟೂಲ್‌ಬಾರ್ ಅನ್ನು ಸಂಕುಚಿಸಿ',
   'canvas.mindMapSideToolbar.outline': 'ಕ್ರಮಾನುಗತ ರೂಪರೇಖೆ',
   'canvas.mindMapSideToolbar.waterfall': 'AI ಬುದ್ದಿಮತ್ತೆ',
-  'canvas.mindMapWaterfall.panelHint':
-    'ಶಾಖೆಯ ಸಲಹೆಗಳನ್ನು ರಚಿಸಲು ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಅವುಗಳನ್ನು ಸೇರಿಸಲು ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಎಳೆಯಿರಿ.',
-  'canvas.mindMapWaterfall.emptyHint':
-    'ಇನ್ನೂ ಯಾವುದೇ ಸಲಹೆಗಳಿಲ್ಲ, ದಯವಿಟ್ಟು ಮೊದಲು ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಮರುಸೃಷ್ಟಿಸಲು ಕ್ಲಿಕ್ ಮಾಡಿ.',
-  'canvas.mindMapWaterfall.dragHint':
-    'ಬಹು-ಆಯ್ಕೆ ಕ್ಲಿಕ್ ಮಾಡಿ ಮತ್ತು ಸೇರಿಸಲು ಅದನ್ನು ಮ್ಯಾಪ್ ನೋಡ್‌ಗೆ ಎಳೆಯಿರಿ; ಅದನ್ನು ಮೊದಲ ಹಂತದ ಶಾಖೆಯಾಗಿ ಸೇರಿಸಲು ಅದನ್ನು ಖಾಲಿ ಜಾಗಕ್ಕೆ ಎಳೆಯಿರಿ.',
+  'canvas.mindMapWaterfall.panelHint': 'ಶಾಖೆಯ ಸಲಹೆಗಳನ್ನು ರಚಿಸಲು ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಅವುಗಳನ್ನು ಸೇರಿಸಲು ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಎಳೆಯಿರಿ.',
+  'canvas.mindMapWaterfall.emptyHint': 'ಇನ್ನೂ ಯಾವುದೇ ಸಲಹೆಗಳಿಲ್ಲ, ದಯವಿಟ್ಟು ಮೊದಲು ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಮರುಸೃಷ್ಟಿಸಲು ಕ್ಲಿಕ್ ಮಾಡಿ.',
+  'canvas.mindMapWaterfall.dragHint': 'ಬಹು-ಆಯ್ಕೆ ಕ್ಲಿಕ್ ಮಾಡಿ ಮತ್ತು ಸೇರಿಸಲು ಅದನ್ನು ಮ್ಯಾಪ್ ನೋಡ್‌ಗೆ ಎಳೆಯಿರಿ; ಅದನ್ನು ಮೊದಲ ಹಂತದ ಶಾಖೆಯಾಗಿ ಸೇರಿಸಲು ಅದನ್ನು ಖಾಲಿ ಜಾಗಕ್ಕೆ ಎಳೆಯಿರಿ.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'AI ಬ್ರೈನ್‌ಸ್ಟಾರ್ಮ್‌ನಿಂದ ನೋಡ್‌ಗಳನ್ನು ಎಳೆಯಿರಿ',
-  'canvas.mindMapOneSentence.intro':
-    'ವಿಷಯವನ್ನು ನಮೂದಿಸಿ ಅಥವಾ ಶಾಖೆಗಳ ಸಂಖ್ಯೆ, ವರ್ಗೀಕರಣ ಆಯಾಮಗಳು, ಹಂತಗಳು ಇತ್ಯಾದಿಗಳಂತಹ ರಚನಾತ್ಮಕ ಅವಶ್ಯಕತೆಗಳನ್ನು ವಿವರಿಸಿ.',
-  'canvas.mindMapOneSentence.requirementsPlaceholder':
-    'ಉದಾಹರಣೆಗೆ: ಬೀಜಿಂಗ್ ಮೂರು ದಿನಗಳ ಪ್ರವಾಸ ಯೋಜನೆ, ನಾಲ್ಕು ಶಾಖೆಗಳು: ಬಟ್ಟೆ, ಆಹಾರ, ವಸತಿ ಮತ್ತು ಸಾರಿಗೆ',
+  'canvas.mindMapOneSentence.intro': 'ವಿಷಯವನ್ನು ನಮೂದಿಸಿ ಅಥವಾ ಶಾಖೆಗಳ ಸಂಖ್ಯೆ, ವರ್ಗೀಕರಣ ಆಯಾಮಗಳು, ಹಂತಗಳು ಇತ್ಯಾದಿಗಳಂತಹ ರಚನಾತ್ಮಕ ಅವಶ್ಯಕತೆಗಳನ್ನು ವಿವರಿಸಿ.',
+  'canvas.mindMapOneSentence.requirementsPlaceholder': 'ಉದಾಹರಣೆಗೆ: ಬೀಜಿಂಗ್ ಮೂರು ದಿನಗಳ ಪ್ರವಾಸ ಯೋಜನೆ, ನಾಲ್ಕು ಶಾಖೆಗಳು: ಬಟ್ಟೆ, ಆಹಾರ, ವಸತಿ ಮತ್ತು ಸಾರಿಗೆ',
   'canvas.mindMapOneSentence.examplesTitle': 'ಶಿಫಾರಸು ಮಾಡಿದ ಸ್ಫೂರ್ತಿ',
   'canvas.mindMapOneSentence.generateButton': 'ಉತ್ಪಾದಿಸಲು ಪ್ರಾರಂಭಿಸಿ',
-  'canvas.mindMapOneSentence.example1':
-    'ಬೀಜಿಂಗ್ ಮೂರು ದಿನಗಳ ಪ್ರಯಾಣ ಯೋಜನೆ, ನಾಲ್ಕು ಶಾಖೆಗಳು: ಬಟ್ಟೆ, ಆಹಾರ, ವಸತಿ ಮತ್ತು ಸಾರಿಗೆ',
-  'canvas.mindMapOneSentence.example2':
-    '"ಹೊಸ ಉತ್ಪನ್ನ ಬಿಡುಗಡೆ" ಅನ್ನು ವಿಶ್ಲೇಷಿಸಲು SWOT ಬಳಸಿ: ಸಾಮರ್ಥ್ಯಗಳು, ದೌರ್ಬಲ್ಯಗಳು, ಅವಕಾಶಗಳು, ಬೆದರಿಕೆಗಳು',
-  'canvas.mindMapOneSentence.example3':
-    'ಪ್ರಾಥಮಿಕ ಶಾಲಾ ವಿಜ್ಞಾನ ವರ್ಗ "ನೀರಿನ ಮೂರು ರಾಜ್ಯ ಬದಲಾವಣೆಗಳು", ಸರಳ ಭಾಷೆ, ಪ್ರತಿ ಹಂತಕ್ಕೆ 6 ಪದಗಳಿಗಿಂತ ಹೆಚ್ಚಿಲ್ಲ',
+  'canvas.mindMapOneSentence.example1': 'ಬೀಜಿಂಗ್ ಮೂರು ದಿನಗಳ ಪ್ರಯಾಣ ಯೋಜನೆ, ನಾಲ್ಕು ಶಾಖೆಗಳು: ಬಟ್ಟೆ, ಆಹಾರ, ವಸತಿ ಮತ್ತು ಸಾರಿಗೆ',
+  'canvas.mindMapOneSentence.example2': '"ಹೊಸ ಉತ್ಪನ್ನ ಬಿಡುಗಡೆ" ಅನ್ನು ವಿಶ್ಲೇಷಿಸಲು SWOT ಬಳಸಿ: ಸಾಮರ್ಥ್ಯಗಳು, ದೌರ್ಬಲ್ಯಗಳು, ಅವಕಾಶಗಳು, ಬೆದರಿಕೆಗಳು',
+  'canvas.mindMapOneSentence.example3': 'ಪ್ರಾಥಮಿಕ ಶಾಲಾ ವಿಜ್ಞಾನ ವರ್ಗ "ನೀರಿನ ಮೂರು ರಾಜ್ಯ ಬದಲಾವಣೆಗಳು", ಸರಳ ಭಾಷೆ, ಪ್ರತಿ ಹಂತಕ್ಕೆ 6 ಪದಗಳಿಗಿಂತ ಹೆಚ್ಚಿಲ್ಲ',
   'canvas.mindMapOneSentence.suggestion.add_node': 'ಚೀನೀ ಶಾಖೆಯನ್ನು ಸೇರಿಸಿ',
-  'canvas.mindMapOneSentence.suggestion.update_node':
-    'ಪಾನೀಯ ವಿಶ್ಲೇಷಣೆಯನ್ನು ಪಾನೀಯ ವಿಶ್ಲೇಷಣೆಗೆ ಬದಲಾಯಿಸಿ',
+  'canvas.mindMapOneSentence.suggestion.update_node': 'ಪಾನೀಯ ವಿಶ್ಲೇಷಣೆಯನ್ನು ಪಾನೀಯ ವಿಶ್ಲೇಷಣೆಗೆ ಬದಲಾಯಿಸಿ',
   'canvas.mindMapOneSentence.suggestion.update_node.by_number': '2.1 ಅನ್ನು ಹಸಿರು ಚಹಾಕ್ಕೆ ಬದಲಾಯಿಸಿ',
-  'canvas.mindMapOneSentence.suggestion.update_node.hint':
-    'ಸಂಖ್ಯೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿದ ನಂತರ, ನೀವು "2.1 ಅನ್ನು ಬದಲಾಯಿಸಿ..." "2 ನೇ ಬದಲಾಯಿಸಿ..." ಎಂದು ಹೇಳಬಹುದು.',
+  'canvas.mindMapOneSentence.suggestion.update_node.hint': 'ಸಂಖ್ಯೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿದ ನಂತರ, ನೀವು "2.1 ಅನ್ನು ಬದಲಾಯಿಸಿ..." "2 ನೇ ಬದಲಾಯಿಸಿ..." ಎಂದು ಹೇಳಬಹುದು.',
   'canvas.mindMapOneSentence.suggestion.update_center': 'ಥೀಮ್ ಅನ್ನು ಚಹಾಕ್ಕೆ ಬದಲಾಯಿಸಲಾಗಿದೆ',
   'canvas.mindMapOneSentence.suggestion.delete_node': 'ಪಾನೀಯ ವಿಶ್ಲೇಷಣೆ ಶಾಖೆಯನ್ನು ಅಳಿಸಿ',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch': 'ಚೀನಾದ ಶಾಖೆಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ',
   'canvas.mindMapOneSentence.suggestion.auto_complete': 'ನಕ್ಷೆಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಲು ನನಗೆ ಸಹಾಯ ಮಾಡಿ',
-  'canvas.mindMapOneSentence.suggestion.set_content_level':
-    'ವೃತ್ತಿಪರ ವಿಷಯವನ್ನು ಸಾಮಾನ್ಯ, ಪ್ರಾಥಮಿಕ ಶಾಲೆ, ಜೂನಿಯರ್ ಹೈಸ್ಕೂಲ್, ಹೈಸ್ಕೂಲ್, ಕಾಲೇಜು, ವಯಸ್ಕ ಅಥವಾ ತಜ್ಞರಿಗೆ ಬದಲಾಯಿಸಿ',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase':
-    'ವೃತ್ತಿಪರ ವಿಷಯವನ್ನು {level} ಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ',
-  'canvas.mindMapOneSentence.suggestion.set_content_level.hint':
-    'ಏಳನೇ ಹಂತವು ಕೆಳಭಾಗದಲ್ಲಿರುವ "ವೃತ್ತಿಪರ ವಿಷಯ" ದೊಂದಿಗೆ ಸ್ಥಿರವಾಗಿದೆ',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering':
-    'ಸಂಖ್ಯೆಗಳು, ಚೈನೀಸ್, ವಲಯಗಳು, ಅಕ್ಷರಗಳು ಅಥವಾ ಅಧ್ಯಾಯ ಸಂಖ್ಯೆಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase':
-    '{style} ಸಂಖ್ಯೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ',
-  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint':
-    'ನೀವು "ಡಿಜಿಟಲ್ ಸಂಖ್ಯೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ" "ಚೀನೀ ಸಂಖ್ಯೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ" ಎಂದು ಹೇಳಬಹುದು',
+  'canvas.mindMapOneSentence.suggestion.set_content_level': 'ವೃತ್ತಿಪರ ವಿಷಯವನ್ನು ಸಾಮಾನ್ಯ, ಪ್ರಾಥಮಿಕ ಶಾಲೆ, ಜೂನಿಯರ್ ಹೈಸ್ಕೂಲ್, ಹೈಸ್ಕೂಲ್, ಕಾಲೇಜು, ವಯಸ್ಕ ಅಥವಾ ತಜ್ಞರಿಗೆ ಬದಲಾಯಿಸಿ',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.phrase': 'ವೃತ್ತಿಪರ ವಿಷಯವನ್ನು {level} ಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ',
+  'canvas.mindMapOneSentence.suggestion.set_content_level.hint': 'ಏಳನೇ ಹಂತವು ಕೆಳಭಾಗದಲ್ಲಿರುವ "ವೃತ್ತಿಪರ ವಿಷಯ" ದೊಂದಿಗೆ ಸ್ಥಿರವಾಗಿದೆ',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering': 'ಸಂಖ್ಯೆಗಳು, ಚೈನೀಸ್, ವಲಯಗಳು, ಅಕ್ಷರಗಳು ಅಥವಾ ಅಧ್ಯಾಯ ಸಂಖ್ಯೆಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase': '{style} ಸಂಖ್ಯೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint': 'ನೀವು "ಡಿಜಿಟಲ್ ಸಂಖ್ಯೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ" "ಚೀನೀ ಸಂಖ್ಯೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ" ಎಂದು ಹೇಳಬಹುದು',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.decimal': 'ಸಂಖ್ಯೆ',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.chinese': 'ಚೈನೀಸ್',
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.circled': 'ವೃತ್ತ',
@@ -914,8 +808,7 @@ export default {
   'canvas.mindMapOneSentence.suggestion.set_branch_numbering_off': 'ಗುಪ್ತ ಸಂಖ್ಯೆ',
   'canvas.mindMapOneSentence.suggestion.explain_node': 'ಚೀನಾದ ಈ ಶಾಖೆಯನ್ನು ವಿವರಿಸಿ',
   'canvas.mindMapOneSentence.suggestion.explain_node.this': 'ಈ ನೋಡ್ ಅನ್ನು ಪರಿಚಯಿಸಿ',
-  'canvas.mindMapOneSentence.suggestion.explain_node.hint':
-    'ನೀವು "ಚೀನಾವನ್ನು ವಿವರಿಸಿ" ಮತ್ತು "ಈ ನೋಡ್ ಅನ್ನು ಪರಿಚಯಿಸಿ" ಎಂದು ಹೇಳಬಹುದು; ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ, ನೀವು "ಇದನ್ನು ಪರಿಚಯಿಸು" ಎಂದು ಸಹ ಹೇಳಬಹುದು.',
+  'canvas.mindMapOneSentence.suggestion.explain_node.hint': 'ನೀವು "ಚೀನಾವನ್ನು ವಿವರಿಸಿ" ಮತ್ತು "ಈ ನೋಡ್ ಅನ್ನು ಪರಿಚಯಿಸಿ" ಎಂದು ಹೇಳಬಹುದು; ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ, ನೀವು "ಇದನ್ನು ಪರಿಚಯಿಸು" ಎಂದು ಸಹ ಹೇಳಬಹುದು.',
   'canvas.mindMapOneSentence.nodeActionGuide.title': 'ನೋಡ್ ಆಪರೇಷನ್ ಗೈಡ್',
   'canvas.mindMapOneSentence.nodeActionGuide.collapse': 'ಸಂಕುಚಿಸಿ ನೋಡ್ ಕಾರ್ಯಾಚರಣೆ ಮಾರ್ಗದರ್ಶಿ',
   'canvas.mindMapOneSentence.nodeActionGuide.chip.byName': 'ಹೆಸರಿನಿಂದ',
@@ -926,88 +819,54 @@ export default {
   'canvas.mindMapOneSentence.micButton': 'ಧ್ವನಿ ಇನ್ಪುಟ್',
   'canvas.mindMapOneSentence.photoButton': 'ಚಿತ್ರಗಳನ್ನು ಅಪ್ಲೋಡ್ ಮಾಡಿ',
   'canvas.mindMapOneSentence.photoUserBubble': '📷 ಫೋಟೋಗಳು',
-  'canvas.mindMapOneSentence.photoNeedsDiagram':
-    'ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡುವ ಮೊದಲು ದಯವಿಟ್ಟು ಐಕಾನ್ ಅನ್ನು ಗ್ಯಾಲರಿಗೆ ಉಳಿಸಿ.',
+  'canvas.mindMapOneSentence.photoNeedsDiagram': 'ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡುವ ಮೊದಲು ದಯವಿಟ್ಟು ಐಕಾನ್ ಅನ್ನು ಗ್ಯಾಲರಿಗೆ ಉಳಿಸಿ.',
   'canvas.mindMapOneSentence.photoInvalidType': 'ದಯವಿಟ್ಟು JPG, PNG ಅಥವಾ WebP ಚಿತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ.',
   'canvas.mindMapOneSentence.photoTooLarge': 'ಚಿತ್ರ ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ, ಗರಿಷ್ಠ 10MB.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'ಮನಸ್ಸಿನ ನಕ್ಷೆ',
-  'canvas.mindMapOneSentence.photoHanddrawnReply':
-    'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್ "{topic}" ಪತ್ತೆಯಾಗಿದೆ. ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಮರುನಿರ್ಮಿಸಲಾಗಿದೆ, ರಚನೆಯ ಔಟ್‌ಲೈನ್ ಅನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಕ್ಕೆ ಉಳಿಸಲಾಗಿದೆ.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
-    'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್ "{topic}" ಪತ್ತೆಯಾಗಿದೆ. ಸ್ಥಳೀಯ ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಮರುನಿರ್ಮಾಣ ಮಾಡಲಾಗಿದೆ, ರಚನೆಯ ಔಟ್‌ಲೈನ್ ಅನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಕ್ಕೆ ಉಳಿಸಲಾಗಿದೆ. ಗ್ಯಾಲರಿ ಸಿಂಕ್ರೊನೈಸೇಶನ್ ಪೂರ್ಣಗೊಂಡಿಲ್ಲ, ದಯವಿಟ್ಟು ಉಳಿಸಿ ಅಥವಾ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.photoOcrReply':
-    'ಗುರುತಿಸಲಾದ ಚಿತ್ರ ಪಠ್ಯ:\n{excerpt}\n\nಪೂರ್ಣ ಪಠ್ಯವನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶದಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply': 'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್ "{topic}" ಪತ್ತೆಯಾಗಿದೆ. ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಮರುನಿರ್ಮಿಸಲಾಗಿದೆ, ರಚನೆಯ ಔಟ್‌ಲೈನ್ ಅನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಕ್ಕೆ ಉಳಿಸಲಾಗಿದೆ.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್ "{topic}" ಪತ್ತೆಯಾಗಿದೆ. ಸ್ಥಳೀಯ ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಮರುನಿರ್ಮಾಣ ಮಾಡಲಾಗಿದೆ, ರಚನೆಯ ಔಟ್‌ಲೈನ್ ಅನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಕ್ಕೆ ಉಳಿಸಲಾಗಿದೆ. ಗ್ಯಾಲರಿ ಸಿಂಕ್ರೊನೈಸೇಶನ್ ಪೂರ್ಣಗೊಂಡಿಲ್ಲ, ದಯವಿಟ್ಟು ಉಳಿಸಿ ಅಥವಾ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.photoOcrReply': 'ಗುರುತಿಸಲಾದ ಚಿತ್ರ ಪಠ್ಯ:\n{excerpt}\n\nಪೂರ್ಣ ಪಠ್ಯವನ್ನು ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶದಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ.',
   'canvas.mindMapOneSentence.photoFailed': 'ಚಿತ್ರವನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
-  'canvas.mindMapOneSentence.micDenied':
-    'ಮೈಕ್ರೊಫೋನ್ ಲಭ್ಯವಿಲ್ಲ, ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಅನುಮತಿಗಳನ್ನು ಪರಿಶೀಲಿಸಿ',
+  'canvas.mindMapOneSentence.micDenied': 'ಮೈಕ್ರೊಫೋನ್ ಲಭ್ಯವಿಲ್ಲ, ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಅನುಮತಿಗಳನ್ನು ಪರಿಶೀಲಿಸಿ',
   'canvas.mindMapOneSentence.ttsToggle': 'ಗಟ್ಟಿಯಾಗಿ ಓದಿ ಸ್ವಿಚ್',
-  'canvas.mindMapOneSentence.kittyWelcome':
-    'ಹಲೋ, ನೀವು ಯಾವ ಮನಸ್ಸಿನ ರೇಖಾಚಿತ್ರವನ್ನು ಸೆಳೆಯಲು ಬಯಸುತ್ತೀರಿ ಎಂದು ಹೇಳಿ ಅಥವಾ ಅದನ್ನು ನಂತರ ಮಾರ್ಪಡಿಸಲು ನನಗೆ ಸಹಾಯ ಮಾಡೋಣ.',
+  'canvas.mindMapOneSentence.kittyWelcome': 'ಹಲೋ, ನೀವು ಯಾವ ಮನಸ್ಸಿನ ರೇಖಾಚಿತ್ರವನ್ನು ಸೆಳೆಯಲು ಬಯಸುತ್ತೀರಿ ಎಂದು ಹೇಳಿ ಅಥವಾ ಅದನ್ನು ನಂತರ ಮಾರ್ಪಡಿಸಲು ನನಗೆ ಸಹಾಯ ಮಾಡೋಣ.',
   'canvas.mindMapOneSentence.switchDiagramType': 'ಸರಿ, {type} ಗೆ ಬದಲಾಯಿಸಲಾಗುತ್ತಿದೆ...',
   'canvas.mindMapOneSentence.kittyGenerating': 'ಸರಿ, ನಕ್ಷೆಯನ್ನು ರಚಿಸಲಾಗುತ್ತಿದೆ...',
-  'canvas.mindMapOneSentence.kittyGenerateDone':
-    'ನಕ್ಷೆಯನ್ನು ರಚಿಸಲಾಗಿದೆ. ಶಾಖೆ ಅಥವಾ ನೋಡ್ ಅನ್ನು ಮಾರ್ಪಡಿಸಲು ಟೈಪ್ ಮಾಡುವುದನ್ನು ಮುಂದುವರಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyGenerateFailed':
-    'ನಕ್ಷೆ ರಚನೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ವಿವರಣೆಯನ್ನು ಹೊಂದಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditFailed':
-    'ಮಾರ್ಪಾಡು ಪೂರ್ಣಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ಇನ್ನೊಂದು ಪದದೊಂದಿಗೆ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditStale':
-    'ಈ ಮಾರ್ಪಾಡು ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಪರಿಣಾಮ ಬೀರಲಿಲ್ಲ (ಅದರ ಅವಧಿ ಮುಗಿದಿರಬಹುದು ಅಥವಾ ಯಾವುದೇ ಬದಲಾವಣೆಯಿಲ್ಲ), ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
-    'ಈ ಬದಲಾವಣೆಯನ್ನು ಖಚಿತಪಡಿಸಲು ಕ್ಯಾನ್ವಾಸ್ ವಿಫಲವಾಗಿದೆ ಮತ್ತು ನಕ್ಷೆಯು ಹಾಗೆಯೇ ಉಳಿದಿದೆ.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed':
-    'ಸ್ಥಳೀಯ ಫೈಲ್ ಅನ್ನು ಮಾರ್ಪಡಿಸಲಾಗಿದೆ, ಆದರೆ ಸಿಂಕ್ರೊನೈಸೇಶನ್ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailed':
-    'ಕ್ಯಾನ್ವಾಸ್ ಸಿಂಕ್ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
-    'ಕ್ಯಾನ್ವಾಸ್ ಸಿಂಕ್ರೊನೈಸೇಶನ್ ವಿಫಲವಾಗಿದೆ ({detail}), ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditBusy':
-    'ನಕ್ಷೆಯನ್ನು ರಚಿಸಲಾಗುತ್ತಿದೆ, ದಯವಿಟ್ಟು ಬದಲಾವಣೆಗಳನ್ನು ಮಾಡುವ ಮೊದಲು ಅದು ಪೂರ್ಣಗೊಳ್ಳುವವರೆಗೆ ಕಾಯಿರಿ.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued':
-    '{models} ಫಲಿತಾಂಶಗಳನ್ನು ಇನ್ನೂ ರಚಿಸಲಾಗುತ್ತಿದೆ ಮತ್ತು ಪೂರ್ಣಗೊಂಡ ನಂತರ ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕಾರ್ಯಗತಗೊಳಿಸಲಾಗುತ್ತದೆ.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
-    'ಇತರ ಮಾದರಿಗಳ ಫಲಿತಾಂಶಗಳನ್ನು ಇನ್ನೂ ರಚಿಸಲಾಗುತ್ತಿದೆ ಮತ್ತು ಪೂರ್ಣಗೊಂಡ ನಂತರ ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕಾರ್ಯಗತಗೊಳಿಸಲಾಗುತ್ತದೆ.',
-  'canvas.mindMapOneSentence.kittyEditBusyResuming':
-    'ಇತರ ಮಾದರಿಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ ಮತ್ತು ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ಕಾರ್ಯಗತಗೊಳಿಸಲು ಮುಂದುವರಿಯುತ್ತಿವೆ...',
+  'canvas.mindMapOneSentence.kittyGenerateDone': 'ನಕ್ಷೆಯನ್ನು ರಚಿಸಲಾಗಿದೆ. ಶಾಖೆ ಅಥವಾ ನೋಡ್ ಅನ್ನು ಮಾರ್ಪಡಿಸಲು ಟೈಪ್ ಮಾಡುವುದನ್ನು ಮುಂದುವರಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed': 'ನಕ್ಷೆ ರಚನೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ವಿವರಣೆಯನ್ನು ಹೊಂದಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditFailed': 'ಮಾರ್ಪಾಡು ಪೂರ್ಣಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ಇನ್ನೊಂದು ಪದದೊಂದಿಗೆ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditStale': 'ಈ ಮಾರ್ಪಾಡು ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಪರಿಣಾಮ ಬೀರಲಿಲ್ಲ (ಅದರ ಅವಧಿ ಮುಗಿದಿರಬಹುದು ಅಥವಾ ಯಾವುದೇ ಬದಲಾವಣೆಯಿಲ್ಲ), ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'ಈ ಬದಲಾವಣೆಯನ್ನು ಖಚಿತಪಡಿಸಲು ಕ್ಯಾನ್ವಾಸ್ ವಿಫಲವಾಗಿದೆ ಮತ್ತು ನಕ್ಷೆಯು ಹಾಗೆಯೇ ಉಳಿದಿದೆ.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'ಸ್ಥಳೀಯ ಫೈಲ್ ಅನ್ನು ಮಾರ್ಪಡಿಸಲಾಗಿದೆ, ಆದರೆ ಸಿಂಕ್ರೊನೈಸೇಶನ್ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed': 'ಕ್ಯಾನ್ವಾಸ್ ಸಿಂಕ್ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'ಕ್ಯಾನ್ವಾಸ್ ಸಿಂಕ್ರೊನೈಸೇಶನ್ ವಿಫಲವಾಗಿದೆ ({detail}), ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditBusy': 'ನಕ್ಷೆಯನ್ನು ರಚಿಸಲಾಗುತ್ತಿದೆ, ದಯವಿಟ್ಟು ಬದಲಾವಣೆಗಳನ್ನು ಮಾಡುವ ಮೊದಲು ಅದು ಪೂರ್ಣಗೊಳ್ಳುವವರೆಗೆ ಕಾಯಿರಿ.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} ಫಲಿತಾಂಶಗಳನ್ನು ಇನ್ನೂ ರಚಿಸಲಾಗುತ್ತಿದೆ ಮತ್ತು ಪೂರ್ಣಗೊಂಡ ನಂತರ ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕಾರ್ಯಗತಗೊಳಿಸಲಾಗುತ್ತದೆ.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'ಇತರ ಮಾದರಿಗಳ ಫಲಿತಾಂಶಗಳನ್ನು ಇನ್ನೂ ರಚಿಸಲಾಗುತ್ತಿದೆ ಮತ್ತು ಪೂರ್ಣಗೊಂಡ ನಂತರ ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕಾರ್ಯಗತಗೊಳಿಸಲಾಗುತ್ತದೆ.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming': 'ಇತರ ಮಾದರಿಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ ಮತ್ತು ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ಕಾರ್ಯಗತಗೊಳಿಸಲು ಮುಂದುವರಿಯುತ್ತಿವೆ...',
   'canvas.mindMapOneSentence.requestQueued': 'ಸರತಿ ಸಾಲಿನಲ್ಲಿ ನಿಂತಿದೆ',
   'canvas.mindMapOneSentence.requestFailed': 'ಪೂರ್ಣಗೊಂಡಿಲ್ಲ',
-  'canvas.mindMapOneSentence.kittyEditAccessDenied':
-    'ಈ ನಕ್ಷೆಯನ್ನು ಮಾರ್ಪಡಿಸಲು ನೀವು ಪ್ರಸ್ತುತ ಅನುಮತಿಯನ್ನು ಹೊಂದಿಲ್ಲ.',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision':
-    'ನಕ್ಷೆಯನ್ನು ಇದೀಗ ನವೀಕರಿಸಲಾಗಿದೆ ಮತ್ತು ಈ ಮಾರ್ಪಾಡು ಅವಧಿ ಮೀರಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಮಾರ್ಪಾಡುಗಳನ್ನು ಮತ್ತೊಮ್ಮೆ ತಿಳಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditTimeout':
-    'ಈ ಮಾರ್ಪಾಡು ಅವಧಿ ಮೀರಿದೆ ಮತ್ತು ನಕ್ಷೆಯನ್ನು ನವೀಕರಿಸದೇ ಇರಬಹುದು. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner':
-    'ಎಡಿಟ್ ಮಾಡಬಹುದಾದ ಕ್ಯಾನ್ವಾಸ್ ಅನ್ನು ಈ ಸಮಯದಲ್ಲಿ ಕಂಡುಹಿಡಿಯಲಾಗುವುದಿಲ್ಲ. ದಯವಿಟ್ಟು ಕ್ಯಾನ್ವಾಸ್ ತೆರೆದಿರುವುದನ್ನು ಖಚಿತಪಡಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditAddFailed':
-    'ಕ್ಷಮಿಸಿ, ನೋಡ್ ಅನ್ನು ಸೇರಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಹೆಸರನ್ನು ದೃಢೀಕರಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
-    'ಕ್ಷಮಿಸಿ, ನೋಡ್ ಅನ್ನು ಮಾರ್ಪಡಿಸಲಾಗುವುದಿಲ್ಲ. ದಯವಿಟ್ಟು ಹೆಸರನ್ನು ದೃಢೀಕರಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditCenterFailed':
-    'ಕ್ಷಮಿಸಿ, ವಿಷಯವನ್ನು ನವೀಕರಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
-    'ಕ್ಷಮಿಸಿ, ನೋಡ್ ಅನ್ನು ಅಳಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಹೆಸರನ್ನು ದೃಢೀಕರಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
-    'ಕ್ಷಮಿಸಿ, ಈ ಶಾಖೆಗೆ ಯಾವುದೇ ಸ್ವಯಂ ಪೂರ್ಣಗೊಳಿಸುವಿಕೆ ಇಲ್ಲ. ನೀವು ಮತ್ತೊಮ್ಮೆ "ಸ್ವಯಂಪೂರ್ಣಗೊಳಿಸು" ಎಂದು ಹೇಳಬಹುದು.',
+  'canvas.mindMapOneSentence.kittyEditAccessDenied': 'ಈ ನಕ್ಷೆಯನ್ನು ಮಾರ್ಪಡಿಸಲು ನೀವು ಪ್ರಸ್ತುತ ಅನುಮತಿಯನ್ನು ಹೊಂದಿಲ್ಲ.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'ನಕ್ಷೆಯನ್ನು ಇದೀಗ ನವೀಕರಿಸಲಾಗಿದೆ ಮತ್ತು ಈ ಮಾರ್ಪಾಡು ಅವಧಿ ಮೀರಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಮಾರ್ಪಾಡುಗಳನ್ನು ಮತ್ತೊಮ್ಮೆ ತಿಳಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditTimeout': 'ಈ ಮಾರ್ಪಾಡು ಅವಧಿ ಮೀರಿದೆ ಮತ್ತು ನಕ್ಷೆಯನ್ನು ನವೀಕರಿಸದೇ ಇರಬಹುದು. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner': 'ಎಡಿಟ್ ಮಾಡಬಹುದಾದ ಕ್ಯಾನ್ವಾಸ್ ಅನ್ನು ಈ ಸಮಯದಲ್ಲಿ ಕಂಡುಹಿಡಿಯಲಾಗುವುದಿಲ್ಲ. ದಯವಿಟ್ಟು ಕ್ಯಾನ್ವಾಸ್ ತೆರೆದಿರುವುದನ್ನು ಖಚಿತಪಡಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditAddFailed': 'ಕ್ಷಮಿಸಿ, ನೋಡ್ ಅನ್ನು ಸೇರಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಹೆಸರನ್ನು ದೃಢೀಕರಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'ಕ್ಷಮಿಸಿ, ನೋಡ್ ಅನ್ನು ಮಾರ್ಪಡಿಸಲಾಗುವುದಿಲ್ಲ. ದಯವಿಟ್ಟು ಹೆಸರನ್ನು ದೃಢೀಕರಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditCenterFailed': 'ಕ್ಷಮಿಸಿ, ವಿಷಯವನ್ನು ನವೀಕರಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'ಕ್ಷಮಿಸಿ, ನೋಡ್ ಅನ್ನು ಅಳಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಹೆಸರನ್ನು ದೃಢೀಕರಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'ಕ್ಷಮಿಸಿ, ಈ ಶಾಖೆಗೆ ಯಾವುದೇ ಸ್ವಯಂ ಪೂರ್ಣಗೊಳಿಸುವಿಕೆ ಇಲ್ಲ. ನೀವು ಮತ್ತೊಮ್ಮೆ "ಸ್ವಯಂಪೂರ್ಣಗೊಳಿಸು" ಎಂದು ಹೇಳಬಹುದು.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'ಈ ಶಾಖೆ ಪೂರ್ಣಗೊಂಡಿದೆ.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'ಈ ಶಾಖೆಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
-    'ಕೆಲವು ಶಾಖೆಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ, ಇತರವುಗಳು ಪೂರ್ಣಗೊಂಡಿಲ್ಲ. ನೀವು ಮತ್ತೊಮ್ಮೆ "ಸ್ವಯಂಪೂರ್ಣಗೊಳಿಸು" ಎಂದು ಹೇಳಬಹುದು.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'ಕೆಲವು ಶಾಖೆಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ, ಇತರವುಗಳು ಪೂರ್ಣಗೊಂಡಿಲ್ಲ. ನೀವು ಮತ್ತೊಮ್ಮೆ "ಸ್ವಯಂಪೂರ್ಣಗೊಳಿಸು" ಎಂದು ಹೇಳಬಹುದು.',
   'canvas.mindMapOneSentence.kittyWorking': 'ಸರಿ, ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗುತ್ತಿದೆ...',
-  'canvas.mindMapOneSentence.kittyUnavailable':
-    'ಕಿಟ್ಟಿ ಪ್ರಸ್ತುತ ಲಭ್ಯವಿಲ್ಲ, ದಯವಿಟ್ಟು FEATURE_KITTY_AGENT ಆನ್ ಆಗಿದೆಯೇ ಎಂಬುದನ್ನು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.',
-  'canvas.mindMapOneSentence.kittyConnectFailed':
-    'ಈ ಸಮಯದಲ್ಲಿ ಕಿಟ್ಟಿ ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಸಂಪರ್ಕಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ನಕ್ಷೆಯು ತೆರೆದಿರುವುದನ್ನು ಖಚಿತಪಡಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapOneSentence.kittyUnavailable': 'ಕಿಟ್ಟಿ ಪ್ರಸ್ತುತ ಲಭ್ಯವಿಲ್ಲ, ದಯವಿಟ್ಟು FEATURE_KITTY_AGENT ಆನ್ ಆಗಿದೆಯೇ ಎಂಬುದನ್ನು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.',
+  'canvas.mindMapOneSentence.kittyConnectFailed': 'ಈ ಸಮಯದಲ್ಲಿ ಕಿಟ್ಟಿ ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಸಂಪರ್ಕಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ನಕ್ಷೆಯು ತೆರೆದಿರುವುದನ್ನು ಖಚಿತಪಡಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
   'canvas.mindMapOneSentence.clarifyChoices': 'ದಯವಿಟ್ಟು ಒಂದನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
-    'ಸೆಲ್ ಫೋನ್ ಕಿಟ್ಟಿಯನ್ನು ಪತ್ತೆಹಚ್ಚಲಾಗಿದೆ ಮತ್ತು ಈ ಚಿತ್ರಕ್ಕೆ ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಮಾತನಾಡಲು ಅಥವಾ ಟೈಪ್ ಮಾಡಲು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ. ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಟೈಪ್ ಮಾಡುವುದನ್ನು ವಿರಾಮಗೊಳಿಸಲಾಗಿದೆ.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint':
-    'ಕಿಟ್ಟಿ ತನ್ನ ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಮತ್ತೊಂದು ನಕ್ಷೆಯನ್ನು ತೆರೆದನು. ದಯವಿಟ್ಟು ಅದನ್ನು ನಿಮ್ಮ ಫೋನ್‌ನಲ್ಲಿ ಸಿಂಕ್ ಮಾಡಿ ಅಥವಾ ನಕ್ಷೆಯನ್ನು ಇಲ್ಲಿ ತೆರೆಯಿರಿ.',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder':
-    'ದಯವಿಟ್ಟು ನಿಮ್ಮ ಫೋನ್‌ನಲ್ಲಿ ಕಿಟ್ಟಿ ನಮೂದಿಸಿ...',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'ಸೆಲ್ ಫೋನ್ ಕಿಟ್ಟಿಯನ್ನು ಪತ್ತೆಹಚ್ಚಲಾಗಿದೆ ಮತ್ತು ಈ ಚಿತ್ರಕ್ಕೆ ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಮಾತನಾಡಲು ಅಥವಾ ಟೈಪ್ ಮಾಡಲು ಒತ್ತಿ ಹಿಡಿದುಕೊಳ್ಳಿ. ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲಿ ಟೈಪ್ ಮಾಡುವುದನ್ನು ವಿರಾಮಗೊಳಿಸಲಾಗಿದೆ.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint': 'ಕಿಟ್ಟಿ ತನ್ನ ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಮತ್ತೊಂದು ನಕ್ಷೆಯನ್ನು ತೆರೆದನು. ದಯವಿಟ್ಟು ಅದನ್ನು ನಿಮ್ಮ ಫೋನ್‌ನಲ್ಲಿ ಸಿಂಕ್ ಮಾಡಿ ಅಥವಾ ನಕ್ಷೆಯನ್ನು ಇಲ್ಲಿ ತೆರೆಯಿರಿ.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'ದಯವಿಟ್ಟು ನಿಮ್ಮ ಫೋನ್‌ನಲ್ಲಿ ಕಿಟ್ಟಿ ನಮೂದಿಸಿ...',
   'canvas.mindMapNodeExplain.titleFallback': 'ನೋಡ್ ವಿವರಣೆ',
-  'canvas.mindMapNodeExplain.requestFailed':
-    'ಈ ಸಮಯದಲ್ಲಿ ವಿವರಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapNodeExplain.requestFailed': 'ಈ ಸಮಯದಲ್ಲಿ ವಿವರಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
   'canvas.mindMapNodeExplain.thinking': 'ಯೋಚಿಸುತ್ತಿದೆ',
   'canvas.mindMapNodeExplain.thinkingDone': 'ಯೋಚಿಸಿ ಮುಗಿಸಿದೆ',
   'canvas.mindMapNodeExplain.pageStats': '{found} ಪುಟಗಳು ಕಂಡುಬಂದಿವೆ, {fetched} ಪುಟಗಳನ್ನು ಓದಿ',
@@ -1022,22 +881,17 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': 'ಚಾಟ್ ಇತಿಹಾಸ',
   'canvas.mindMapDocumentSummary.tabFileUpload': 'ಫೈಲ್ ಅಪ್ಲೋಡ್',
   'canvas.mindMapDocumentSummary.tabPaste': 'ಪಠ್ಯ ಅಂಟಿಸುವುದು',
-  'canvas.mindMapDocumentSummary.pasteHintLite':
-    'ಪೇಪರ್‌ಗಳು, ಟಿಪ್ಪಣಿಗಳು ಅಥವಾ ಸಭೆಯ ನಿಮಿಷಗಳಲ್ಲಿ ಅಂಟಿಸಿ ಮತ್ತು ನಾವು ರಚನೆಯನ್ನು ಸಂಸ್ಕರಿಸುತ್ತೇವೆ ಮತ್ತು ಮೈಂಡ್ ಮ್ಯಾಪ್ ಅನ್ನು ರಚಿಸುತ್ತೇವೆ.',
+  'canvas.mindMapDocumentSummary.pasteHintLite': 'ಪೇಪರ್‌ಗಳು, ಟಿಪ್ಪಣಿಗಳು ಅಥವಾ ಸಭೆಯ ನಿಮಿಷಗಳಲ್ಲಿ ಅಂಟಿಸಿ ಮತ್ತು ನಾವು ರಚನೆಯನ್ನು ಸಂಸ್ಕರಿಸುತ್ತೇವೆ ಮತ್ತು ಮೈಂಡ್ ಮ್ಯಾಪ್ ಅನ್ನು ರಚಿಸುತ್ತೇವೆ.',
   'canvas.mindMapDocumentSummary.tabChatHistory': 'ಚಾಟ್ ಇತಿಹಾಸ',
-  'canvas.mindMapDocumentSummary.intro':
-    'ಕೋರ್ ಪಾಯಿಂಟ್‌ಗಳನ್ನು ಪರಿಷ್ಕರಿಸುವುದು ಮತ್ತು ಹೆಚ್ಚು ನಿಖರವಾದ ಮನಸ್ಸಿನ ನಕ್ಷೆಗಳನ್ನು ರಚಿಸುವುದು',
+  'canvas.mindMapDocumentSummary.intro': 'ಕೋರ್ ಪಾಯಿಂಟ್‌ಗಳನ್ನು ಪರಿಷ್ಕರಿಸುವುದು ಮತ್ತು ಹೆಚ್ಚು ನಿಖರವಾದ ಮನಸ್ಸಿನ ನಕ್ಷೆಗಳನ್ನು ರಚಿಸುವುದು',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'ಫೈಲ್ ಅಪ್ಲೋಡ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint':
-    'ಪಿಡಿಎಫ್, ವರ್ಡ್, ಪಿಪಿಟಿ, ಎಕ್ಸೆಲ್, ಪಠ್ಯ, ಚಿತ್ರಗಳು, ಆಡಿಯೊವನ್ನು ಬೆಂಬಲಿಸುತ್ತದೆ; ಹೊರತೆಗೆಯಲಾದ ಮಾರ್ಕ್‌ಡೌನ್ ಅನ್ನು ಮಾತ್ರ ಉಳಿಸಿಕೊಳ್ಳಲಾಗುತ್ತದೆ',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'ಪಿಡಿಎಫ್, ವರ್ಡ್, ಪಿಪಿಟಿ, ಎಕ್ಸೆಲ್, ಪಠ್ಯ, ಚಿತ್ರಗಳು, ಆಡಿಯೊವನ್ನು ಬೆಂಬಲಿಸುತ್ತದೆ; ಹೊರತೆಗೆಯಲಾದ ಮಾರ್ಕ್‌ಡೌನ್ ಅನ್ನು ಮಾತ್ರ ಉಳಿಸಿಕೊಳ್ಳಲಾಗುತ್ತದೆ',
   'canvas.mindMapDocumentSummary.invalidFileType': 'ಈ ಫೈಲ್ ಪ್ರಕಾರವು ಬೆಂಬಲಿತವಾಗಿಲ್ಲ',
   'canvas.mindMapDocumentSummary.saveContent': 'ವಿಷಯವನ್ನು ಉಳಿಸಿ',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'ಹಿಡಿದು ಉಳಿಸಿ',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'ವೆಬ್ ವಿಷಯವನ್ನು ಕ್ರಾಲ್ ಮಾಡಲಾಗುತ್ತಿದೆ...',
-  'canvas.mindMapDocumentSummary.webLinkHintLite':
-    'ಸಾರ್ವಜನಿಕ ವೆಬ್ ಪುಟದ ಲಿಂಕ್ ಅನ್ನು ಅಂಟಿಸಿ ಮತ್ತು ಪಠ್ಯವನ್ನು ಕ್ರಾಲ್ ಮಾಡಲು ಮತ್ತು ಅದನ್ನು ಮಾರ್ಕ್‌ಡೌನ್ ಆಗಿ ಉಳಿಸಲು ನಾವು ನಮ್ಮ ಕೈಲಾದಷ್ಟು ಪ್ರಯತ್ನಿಸುತ್ತೇವೆ.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
-    'ಲಿಂಕ್ ಅನ್ನು ನೇರವಾಗಿ ಅಂಟಿಸುವುದು ಸರ್ವರ್‌ನಿಂದ ಕ್ರಾಲ್ ಆಗುತ್ತದೆ ಮತ್ತು ನಿಮ್ಮ ಲಾಗಿನ್ ಸ್ಥಿತಿಯನ್ನು ಬಳಸಲಾಗುವುದಿಲ್ಲ. ಲಾಗಿನ್ ಅಥವಾ ಅನುಮತಿಗಳ ಅಗತ್ಯವಿರುವ ಕೆಲವು ಪುಟಗಳನ್ನು ಸಂಪೂರ್ಣವಾಗಿ ಸೆರೆಹಿಡಿಯಲಾಗುವುದಿಲ್ಲ. ಸಂಪೂರ್ಣ ವೆಬ್ ಪುಟ ಸ್ನ್ಯಾಪ್‌ಶಾಟ್‌ಗಾಗಿ, ದಯವಿಟ್ಟು Chrome ವಿಸ್ತರಣೆಯನ್ನು ಬಳಸಿ.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite': 'ಸಾರ್ವಜನಿಕ ವೆಬ್ ಪುಟದ ಲಿಂಕ್ ಅನ್ನು ಅಂಟಿಸಿ ಮತ್ತು ಪಠ್ಯವನ್ನು ಕ್ರಾಲ್ ಮಾಡಲು ಮತ್ತು ಅದನ್ನು ಮಾರ್ಕ್‌ಡೌನ್ ಆಗಿ ಉಳಿಸಲು ನಾವು ನಮ್ಮ ಕೈಲಾದಷ್ಟು ಪ್ರಯತ್ನಿಸುತ್ತೇವೆ.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'ಲಿಂಕ್ ಅನ್ನು ನೇರವಾಗಿ ಅಂಟಿಸುವುದು ಸರ್ವರ್‌ನಿಂದ ಕ್ರಾಲ್ ಆಗುತ್ತದೆ ಮತ್ತು ನಿಮ್ಮ ಲಾಗಿನ್ ಸ್ಥಿತಿಯನ್ನು ಬಳಸಲಾಗುವುದಿಲ್ಲ. ಲಾಗಿನ್ ಅಥವಾ ಅನುಮತಿಗಳ ಅಗತ್ಯವಿರುವ ಕೆಲವು ಪುಟಗಳನ್ನು ಸಂಪೂರ್ಣವಾಗಿ ಸೆರೆಹಿಡಿಯಲಾಗುವುದಿಲ್ಲ. ಸಂಪೂರ್ಣ ವೆಬ್ ಪುಟ ಸ್ನ್ಯಾಪ್‌ಶಾಟ್‌ಗಾಗಿ, ದಯವಿಟ್ಟು Chrome ವಿಸ್ತರಣೆಯನ್ನು ಬಳಸಿ.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Chrome ವಿಸ್ತರಣೆಯನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ',
   'canvas.mindMapDocumentSummary.statusExtracting': 'ಹೊರತೆಗೆಯಲಾಗುತ್ತಿದೆ...',
   'canvas.mindMapDocumentSummary.stageStarting': 'ತಯಾರಿಯಲ್ಲಿ…',
@@ -1046,26 +900,19 @@ export default {
   'canvas.mindMapDocumentSummary.stageOcr': 'ಚಿತ್ರದ ಪಠ್ಯವನ್ನು ಗುರುತಿಸಲಾಗುತ್ತಿದೆ...',
   'canvas.mindMapDocumentSummary.stageTranscribing': 'ಆಡಿಯೋ ಲಿಪ್ಯಂತರ ಮಾಡಲಾಗುತ್ತಿದೆ...',
   'canvas.mindMapDocumentSummary.stageStoring': 'ಹೊರತೆಗೆಯುವಿಕೆ ಫಲಿತಾಂಶಗಳನ್ನು ಉಳಿಸಲಾಗುತ್ತಿದೆ...',
-  'canvas.mindMapDocumentSummary.replaceSourceHint':
-    'ಮತ್ತೊಮ್ಮೆ ಅಪ್‌ಲೋಡ್ ಮಾಡುವುದರಿಂದ ಈ ಚಿತ್ರದ ಪ್ರಸ್ತುತ ಏಕೈಕ ಮೂಲವನ್ನು ಬದಲಾಯಿಸಲಾಗುತ್ತದೆ',
+  'canvas.mindMapDocumentSummary.replaceSourceHint': 'ಮತ್ತೊಮ್ಮೆ ಅಪ್‌ಲೋಡ್ ಮಾಡುವುದರಿಂದ ಈ ಚಿತ್ರದ ಪ್ರಸ್ತುತ ಏಕೈಕ ಮೂಲವನ್ನು ಬದಲಾಯಿಸಲಾಗುತ್ತದೆ',
   'canvas.mindMapDocumentSummary.fromSource': '{name} ನಿಂದ',
   'canvas.mindMapDocumentSummary.deleteSource': 'ಮೂಲವನ್ನು ತೆಗೆದುಹಾಕಿ',
-  'canvas.mindMapDocumentSummary.sourceDeleted':
-    'ಮೂಲವನ್ನು ಅಳಿಸಲಾಗಿದೆ ಮತ್ತು ಅದನ್ನು ಮತ್ತೆ ಅಪ್‌ಲೋಡ್ ಮಾಡಬಹುದು',
+  'canvas.mindMapDocumentSummary.sourceDeleted': 'ಮೂಲವನ್ನು ಅಳಿಸಲಾಗಿದೆ ಮತ್ತು ಅದನ್ನು ಮತ್ತೆ ಅಪ್‌ಲೋಡ್ ಮಾಡಬಹುದು',
   'canvas.mindMapDocumentSummary.extractStarted': 'ವಿಷಯವನ್ನು ಹೊರತೆಗೆಯಲಾಗುತ್ತಿದೆ...',
   'canvas.mindMapDocumentSummary.extractFailed': 'ಈ ಫೈಲ್‌ನಿಂದ ಪಠ್ಯವನ್ನು ಹೊರತೆಗೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ',
-  'canvas.mindMapDocumentSummary.sourceBoundHint':
-    'ಮಾರ್ಕ್‌ಡೌನ್ ಸಿದ್ಧವಾಗಿದೆ. ಮೈಂಡ್ ಮ್ಯಾಪ್‌ಗಳನ್ನು ರಚಿಸಬಹುದು ಅಥವಾ ಮೂಲವನ್ನು ಅಳಿಸಬಹುದು ಮತ್ತು ಮರು-ಅಪ್‌ಲೋಡ್ ಮಾಡಬಹುದು.',
-  'canvas.mindMapDocumentSummary.deleteToRetry':
-    'ವೆಬ್ ಲಿಂಕ್ ಅನ್ನು ಮತ್ತೆ ಅಪ್‌ಲೋಡ್ ಮಾಡುವ, ಅಂಟಿಸುವ ಅಥವಾ ಅಂಟಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಈ ಮೂಲವನ್ನು ಅಳಿಸಿ.',
-  'canvas.mindMapDocumentSummary.chatIntroLite':
-    'ಫೈಲ್ ಓದುವ ಪರಿಕರವನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ, ಜೋಡಿಸುವ ಕೋಡ್ ಅನ್ನು ನಮೂದಿಸಿ ಮತ್ತು ಈ ಚಾರ್ಟ್‌ಗೆ WeChat ಅಥವಾ DingTalk ಚಾಟ್ ಇತಿಹಾಸವನ್ನು ಕಳುಹಿಸಿ.',
+  'canvas.mindMapDocumentSummary.sourceBoundHint': 'ಮಾರ್ಕ್‌ಡೌನ್ ಸಿದ್ಧವಾಗಿದೆ. ಮೈಂಡ್ ಮ್ಯಾಪ್‌ಗಳನ್ನು ರಚಿಸಬಹುದು ಅಥವಾ ಮೂಲವನ್ನು ಅಳಿಸಬಹುದು ಮತ್ತು ಮರು-ಅಪ್‌ಲೋಡ್ ಮಾಡಬಹುದು.',
+  'canvas.mindMapDocumentSummary.deleteToRetry': 'ವೆಬ್ ಲಿಂಕ್ ಅನ್ನು ಮತ್ತೆ ಅಪ್‌ಲೋಡ್ ಮಾಡುವ, ಅಂಟಿಸುವ ಅಥವಾ ಅಂಟಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಈ ಮೂಲವನ್ನು ಅಳಿಸಿ.',
+  'canvas.mindMapDocumentSummary.chatIntroLite': 'ಫೈಲ್ ಓದುವ ಪರಿಕರವನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ, ಜೋಡಿಸುವ ಕೋಡ್ ಅನ್ನು ನಮೂದಿಸಿ ಮತ್ತು ಈ ಚಾರ್ಟ್‌ಗೆ WeChat ಅಥವಾ DingTalk ಚಾಟ್ ಇತಿಹಾಸವನ್ನು ಕಳುಹಿಸಿ.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'ಚಾಟ್ ಇತಿಹಾಸವನ್ನು ಸ್ವೀಕರಿಸಲಾಗಿದೆ',
-  'canvas.mindMapDocumentSummary.chatDoneLite':
-    'ಚಾಟ್ ಇತಿಹಾಸವನ್ನು ಉಳಿಸಲಾಗಿದೆ ಮತ್ತು ಕ್ಲಿಕ್ ಮಾಡುವ ಮೂಲಕ ರಚಿಸಬಹುದು',
+  'canvas.mindMapDocumentSummary.chatDoneLite': 'ಚಾಟ್ ಇತಿಹಾಸವನ್ನು ಉಳಿಸಲಾಗಿದೆ ಮತ್ತು ಕ್ಲಿಕ್ ಮಾಡುವ ಮೂಲಕ ರಚಿಸಬಹುದು',
   'canvas.mindMapDocumentSummary.corpusStatus': 'ಸೂಚ್ಯಂಕಿತ {completed}/{total} ಮೂಲಗಳು',
-  'canvas.mindMapDocumentSummary.noSources':
-    'ಇನ್ನೂ ಯಾವುದೇ ಮೂಲವಿಲ್ಲ, ದಯವಿಟ್ಟು ಕೆಳಗಿನ ಟ್ಯಾಬ್‌ನಲ್ಲಿ ಸೇರಿಸಿ.',
+  'canvas.mindMapDocumentSummary.noSources': 'ಇನ್ನೂ ಯಾವುದೇ ಮೂಲವಿಲ್ಲ, ದಯವಿಟ್ಟು ಕೆಳಗಿನ ಟ್ಯಾಬ್‌ನಲ್ಲಿ ಸೇರಿಸಿ.',
   'canvas.mindMapDocumentSummary.noPackageYet': 'ಯಾವುದೇ ಡೇಟಾಬೇಸ್ ಅನ್ನು ಇನ್ನೂ ರಚಿಸಲಾಗಿಲ್ಲ',
   'canvas.mindMapDocumentSummary.addSource': 'ಮೂಲವನ್ನು ಸೇರಿಸಿ',
   'canvas.mindMapDocumentSummary.addToCorpus': 'ಡೇಟಾಬೇಸ್‌ಗೆ ಸೇರಿಸಿ',
@@ -1074,146 +921,102 @@ export default {
   'canvas.mindMapDocumentSummary.statusIndexing': 'ಇಂಡೆಕ್ಸಿಂಗ್...',
   'canvas.mindMapDocumentSummary.statusFailed': 'ವಿಫಲರಾಗುತ್ತಾರೆ',
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'ಜ್ಞಾನದ ಸ್ಥಳವನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿಲ್ಲ',
-  'canvas.mindMapDocumentSummary.featureDisabledHint':
-    'ನಾಲೆಡ್ಜ್ ಸ್ಪೇಸ್ ವೈಶಿಷ್ಟ್ಯವನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿದಾಗ ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಗಳು ಲಭ್ಯವಿವೆ.',
-  'canvas.mindMapDocumentSummary.saveDiagramHint':
-    'ಪ್ಯಾಕೇಜ್ ಅನ್ನು ಸಂಯೋಜಿಸಲು ಮತ್ತು RAG ಮರುಪಡೆಯುವಿಕೆ ಸಕ್ರಿಯಗೊಳಿಸಲು ದಯವಿಟ್ಟು ಮೊದಲು ಚಾರ್ಟ್ ಅನ್ನು ಉಳಿಸಿ.',
-  'canvas.mindMapDocumentSummary.chatIntro':
-    'ಫೈಲ್ ಓದುವ ಪರಿಕರವನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ, ಕೆಳಗೆ ಜೋಡಿಸುವ ಕೋಡ್ ಅನ್ನು ನಮೂದಿಸಿ ಮತ್ತು ಈ ಡೇಟಾಬೇಸ್‌ಗೆ WeChat ಅಥವಾ DingTalk ಚಾಟ್ ದಾಖಲೆಗಳನ್ನು ಕಳುಹಿಸಿ.',
+  'canvas.mindMapDocumentSummary.featureDisabledHint': 'ನಾಲೆಡ್ಜ್ ಸ್ಪೇಸ್ ವೈಶಿಷ್ಟ್ಯವನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿದಾಗ ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಗಳು ಲಭ್ಯವಿವೆ.',
+  'canvas.mindMapDocumentSummary.saveDiagramHint': 'ಪ್ಯಾಕೇಜ್ ಅನ್ನು ಸಂಯೋಜಿಸಲು ಮತ್ತು RAG ಮರುಪಡೆಯುವಿಕೆ ಸಕ್ರಿಯಗೊಳಿಸಲು ದಯವಿಟ್ಟು ಮೊದಲು ಚಾರ್ಟ್ ಅನ್ನು ಉಳಿಸಿ.',
+  'canvas.mindMapDocumentSummary.chatIntro': 'ಫೈಲ್ ಓದುವ ಪರಿಕರವನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ, ಕೆಳಗೆ ಜೋಡಿಸುವ ಕೋಡ್ ಅನ್ನು ನಮೂದಿಸಿ ಮತ್ತು ಈ ಡೇಟಾಬೇಸ್‌ಗೆ WeChat ಅಥವಾ DingTalk ಚಾಟ್ ದಾಖಲೆಗಳನ್ನು ಕಳುಹಿಸಿ.',
   'canvas.mindMapDocumentSummary.pairingCode': 'ಜೋಡಣೆ ಕೋಡ್',
   'canvas.mindMapDocumentSummary.startPairingCode': 'ಜೋಡಣೆ ಕೋಡ್ ಪಡೆಯಿರಿ',
   'canvas.mindMapDocumentSummary.pairingExpires': '{minutes} ನಿಮಿಷಗಳಲ್ಲಿ ಮಾನ್ಯವಾಗಿದೆ',
-  'canvas.mindMapDocumentSummary.downloadReader':
-    'ಫೈಲ್ ರೀಡಿಂಗ್ ಟೂಲ್ ಅನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ (ವಿಂಡೋಸ್)',
+  'canvas.mindMapDocumentSummary.downloadReader': 'ಫೈಲ್ ರೀಡಿಂಗ್ ಟೂಲ್ ಅನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ (ವಿಂಡೋಸ್)',
   'canvas.mindMapDocumentSummary.chatWaiting': 'ಅಪ್‌ಲೋಡ್‌ಗಾಗಿ ನಿರೀಕ್ಷಿಸಲಾಗುತ್ತಿದೆ...',
-  'canvas.mindMapDocumentSummary.chatReceived':
-    'ಚಾಟ್ ಇತಿಹಾಸವನ್ನು ಸ್ವೀಕರಿಸಲಾಗಿದೆ ಮತ್ತು ಡೇಟಾಬೇಸ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ',
+  'canvas.mindMapDocumentSummary.chatReceived': 'ಚಾಟ್ ಇತಿಹಾಸವನ್ನು ಸ್ವೀಕರಿಸಲಾಗಿದೆ ಮತ್ತು ಡೇಟಾಬೇಸ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ',
   'canvas.mindMapDocumentSummary.chatIndexing': 'ಇಂಡೆಕ್ಸಿಂಗ್ ಚಾಟ್ ಇತಿಹಾಸ...',
   'canvas.mindMapDocumentSummary.chatDone': 'ಡೇಟಾಬೇಸ್‌ಗೆ ಚಾಟ್ ಇತಿಹಾಸವನ್ನು ಸೇರಿಸಲಾಗಿದೆ',
-  'canvas.mindMapDocumentSummary.chatHandoffFailed':
-    'ಅಪ್‌ಲೋಡ್ ಮಾಡುವುದು ಅಥವಾ ಸೂಚಿಕೆ ಮಾಡುವುದು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಜೋಡಿಸುವ ಕೋಡ್ ಅನ್ನು ರಿಫ್ರೆಶ್ ಮಾಡಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'canvas.mindMapDocumentSummary.chatHandoffFailed': 'ಅಪ್‌ಲೋಡ್ ಮಾಡುವುದು ಅಥವಾ ಸೂಚಿಕೆ ಮಾಡುವುದು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಜೋಡಿಸುವ ಕೋಡ್ ಅನ್ನು ರಿಫ್ರೆಶ್ ಮಾಡಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'canvas.mindMapDocumentSummary.chatMintFailed': 'ಜೋಡಣೆ ಕೋಡ್ ರಚಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ',
-  'canvas.mindMapDocumentSummary.chatExpired':
-    'ಜೋಡಿಸುವ ಕೋಡ್ ಅವಧಿ ಮೀರಿದೆ, ಹೊಸ ಕೋಡ್ ಪಡೆಯಲು ದಯವಿಟ್ಟು ರಿಫ್ರೆಶ್ ಮಾಡಿ',
+  'canvas.mindMapDocumentSummary.chatExpired': 'ಜೋಡಿಸುವ ಕೋಡ್ ಅವಧಿ ಮೀರಿದೆ, ಹೊಸ ಕೋಡ್ ಪಡೆಯಲು ದಯವಿಟ್ಟು ರಿಫ್ರೆಶ್ ಮಾಡಿ',
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'ಜೋಡಿಸುವ ಕೋಡ್ ಅನ್ನು ರಿಫ್ರೆಶ್ ಮಾಡಿ',
-  'canvas.mindMapDocumentSummary.sessionStartFailed':
-    'ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶ ಅಧಿವೇಶನವನ್ನು ಪ್ರಾರಂಭಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ',
-  'canvas.mindMapDocumentSummary.imageTooLarge':
-    'ಚಿತ್ರವು ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ, ದಯವಿಟ್ಟು 10MB ಒಳಗೆ ಫೈಲ್ ಅನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
-  'canvas.mindMapDocumentSummary.generateNoCorpus':
-    'ದಯವಿಟ್ಟು ಮೊದಲು ಕನಿಷ್ಠ ಒಂದು ಮೂಲವನ್ನು ಸೇರಿಸಿ, ನಂತರ ರಚಿಸಿ ಕ್ಲಿಕ್ ಮಾಡಿ',
-  'canvas.mindMapDocumentSummary.generateNoCorpusLite':
-    'ದಯವಿಟ್ಟು ಮೊದಲು ವೆಬ್ ವಿಷಯವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ, ಅಂಟಿಸಿ ಅಥವಾ ಕ್ರಾಲ್ ಮಾಡಿ, ನಂತರ ರಚಿಸಿ ಕ್ಲಿಕ್ ಮಾಡಿ',
+  'canvas.mindMapDocumentSummary.sessionStartFailed': 'ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶ ಅಧಿವೇಶನವನ್ನು ಪ್ರಾರಂಭಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ',
+  'canvas.mindMapDocumentSummary.imageTooLarge': 'ಚಿತ್ರವು ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ, ದಯವಿಟ್ಟು 10MB ಒಳಗೆ ಫೈಲ್ ಅನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
+  'canvas.mindMapDocumentSummary.generateNoCorpus': 'ದಯವಿಟ್ಟು ಮೊದಲು ಕನಿಷ್ಠ ಒಂದು ಮೂಲವನ್ನು ಸೇರಿಸಿ, ನಂತರ ರಚಿಸಿ ಕ್ಲಿಕ್ ಮಾಡಿ',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'ದಯವಿಟ್ಟು ಮೊದಲು ವೆಬ್ ವಿಷಯವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ, ಅಂಟಿಸಿ ಅಥವಾ ಕ್ರಾಲ್ ಮಾಡಿ, ನಂತರ ರಚಿಸಿ ಕ್ಲಿಕ್ ಮಾಡಿ',
   'canvas.mindMapDocumentSummary.collabDisabled': 'ಲೈವ್ ಸಹಯೋಗದ ಸಮಯದಲ್ಲಿ ಲಭ್ಯವಿಲ್ಲ',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'ಮೂಲವನ್ನು ಡೇಟಾಬೇಸ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ',
-  'canvas.mindMapDocumentSummary.ingestSuccessLite':
-    'ವಿಷಯವನ್ನು ಉಳಿಸಲಾಗಿದೆ, ಮೈಂಡ್ ಮ್ಯಾಪ್ ಅನ್ನು ರಚಿಸಲು ನೀವು ಕ್ಲಿಕ್ ಮಾಡಬಹುದು',
+  'canvas.mindMapDocumentSummary.ingestSuccessLite': 'ವಿಷಯವನ್ನು ಉಳಿಸಲಾಗಿದೆ, ಮೈಂಡ್ ಮ್ಯಾಪ್ ಅನ್ನು ರಚಿಸಲು ನೀವು ಕ್ಲಿಕ್ ಮಾಡಬಹುದು',
   'canvas.mindMapDocumentSummary.ingestFailed': 'ಮೂಲವನ್ನು ಸೇರಿಸಲು ವಿಫಲವಾಗಿದೆ',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'ಸ್ಥಳೀಯ ದಾಖಲಾತಿ:',
-  'canvas.mindMapDocumentSummary.uploadDocHint':
-    'Word ಅಥವಾ PDF ಡಾಕ್ಯುಮೆಂಟ್‌ಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
-  'canvas.mindMapDocumentSummary.uploadDocSubhint':
-    'ನಾವು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಡಾಕ್ಯುಮೆಂಟ್ ವಿಷಯವನ್ನು ಪಾರ್ಸ್ ಮಾಡುತ್ತೇವೆ ಮತ್ತು ರಚನೆಯನ್ನು ಸಂಸ್ಕರಿಸುತ್ತೇವೆ',
+  'canvas.mindMapDocumentSummary.uploadDocHint': 'Word ಅಥವಾ PDF ಡಾಕ್ಯುಮೆಂಟ್‌ಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
+  'canvas.mindMapDocumentSummary.uploadDocSubhint': 'ನಾವು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಡಾಕ್ಯುಮೆಂಟ್ ವಿಷಯವನ್ನು ಪಾರ್ಸ್ ಮಾಡುತ್ತೇವೆ ಮತ್ತು ರಚನೆಯನ್ನು ಸಂಸ್ಕರಿಸುತ್ತೇವೆ',
   'canvas.mindMapDocumentSummary.pasteLabel': 'ಅಥವಾ ಯಾವುದೇ ದೀರ್ಘ ಪಠ್ಯ ಟಿಪ್ಪಣಿಯನ್ನು ನೇರವಾಗಿ ಅಂಟಿಸಿ:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder':
-    'ನೀವು ಪ್ರಬಂಧದ ತುಣುಕುಗಳು, ಓದುವ ಸಾರಾಂಶಗಳು, ಕೆಲಸದ ಚರ್ಚೆಯ ನಿಮಿಷಗಳು, ಅಗತ್ಯ ದಾಖಲೆಗಳು ಇತ್ಯಾದಿಗಳನ್ನು ಇಲ್ಲಿ ಮುಕ್ತವಾಗಿ ಅಂಟಿಸಬಹುದು. ನಾವು ನಿಮಗಾಗಿ ಅದನ್ನು ಲೇಯರ್ ಮೂಲಕ ವಿಂಗಡಿಸುತ್ತೇವೆ!',
+  'canvas.mindMapDocumentSummary.pastePlaceholder': 'ನೀವು ಪ್ರಬಂಧದ ತುಣುಕುಗಳು, ಓದುವ ಸಾರಾಂಶಗಳು, ಕೆಲಸದ ಚರ್ಚೆಯ ನಿಮಿಷಗಳು, ಅಗತ್ಯ ದಾಖಲೆಗಳು ಇತ್ಯಾದಿಗಳನ್ನು ಇಲ್ಲಿ ಮುಕ್ತವಾಗಿ ಅಂಟಿಸಬಹುದು. ನಾವು ನಿಮಗಾಗಿ ಅದನ್ನು ಲೇಯರ್ ಮೂಲಕ ವಿಂಗಡಿಸುತ್ತೇವೆ!',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'ಚಿತ್ರಗಳನ್ನು ಅಪ್ಲೋಡ್ ಮಾಡಿ:',
-  'canvas.mindMapDocumentSummary.uploadImageHint':
-    'JPG, PNG ಚಿತ್ರಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint':
-    'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್‌ಗಳನ್ನು ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಮರುನಿರ್ಮಾಣ ಮಾಡಲಾಗುತ್ತದೆ; ಸಾಮಾನ್ಯ ಚಿತ್ರಗಳು ಪಠ್ಯವನ್ನು ಹೊರತೆಗೆಯುತ್ತವೆ.',
-  'canvas.mindMapDocumentSummary.visionRebuildSuccess':
-    'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್‌ಗಳನ್ನು ಗುರುತಿಸಲಾಗಿದೆ ಮತ್ತು ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಮರುನಿರ್ಮಾಣ ಮಾಡಲಾಗಿದೆ',
-  'canvas.mindMapDocumentSummary.visionProgressDetecting':
-    'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್‌ಗಳನ್ನು ಗುರುತಿಸಲಾಗುತ್ತಿದೆ...',
-  'canvas.mindMapDocumentSummary.imageOcrHint':
-    'ಟಿಪ್ಪಣಿ ಸ್ಕ್ರೀನ್‌ಶಾಟ್‌ಗಳು, ವೈಟ್‌ಬೋರ್ಡ್ ಫೋಟೋಗಳು ಮತ್ತು ಸ್ಕ್ಯಾನ್ ಮಾಡಿದ ಡಾಕ್ಯುಮೆಂಟ್‌ಗಳಂತಹ ಪಠ್ಯ-ಹೊಂದಿರುವ ಚಿತ್ರಗಳನ್ನು ಬೆಂಬಲಿಸುತ್ತದೆ.',
+  'canvas.mindMapDocumentSummary.uploadImageHint': 'JPG, PNG ಚಿತ್ರಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್‌ಗಳನ್ನು ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಮರುನಿರ್ಮಾಣ ಮಾಡಲಾಗುತ್ತದೆ; ಸಾಮಾನ್ಯ ಚಿತ್ರಗಳು ಪಠ್ಯವನ್ನು ಹೊರತೆಗೆಯುತ್ತವೆ.',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್‌ಗಳನ್ನು ಗುರುತಿಸಲಾಗಿದೆ ಮತ್ತು ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಮರುನಿರ್ಮಾಣ ಮಾಡಲಾಗಿದೆ',
+  'canvas.mindMapDocumentSummary.visionProgressDetecting': 'ಕೈಯಿಂದ ಚಿತ್ರಿಸಿದ ಮೈಂಡ್ ಮ್ಯಾಪ್‌ಗಳನ್ನು ಗುರುತಿಸಲಾಗುತ್ತಿದೆ...',
+  'canvas.mindMapDocumentSummary.imageOcrHint': 'ಟಿಪ್ಪಣಿ ಸ್ಕ್ರೀನ್‌ಶಾಟ್‌ಗಳು, ವೈಟ್‌ಬೋರ್ಡ್ ಫೋಟೋಗಳು ಮತ್ತು ಸ್ಕ್ಯಾನ್ ಮಾಡಿದ ಡಾಕ್ಯುಮೆಂಟ್‌ಗಳಂತಹ ಪಠ್ಯ-ಹೊಂದಿರುವ ಚಿತ್ರಗಳನ್ನು ಬೆಂಬಲಿಸುತ್ತದೆ.',
   'canvas.mindMapDocumentSummary.removeImage': 'ಚಿತ್ರವನ್ನು ತೆಗೆದುಹಾಕಿ',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'ವೆಬ್ ಲಿಂಕ್:',
-  'canvas.mindMapDocumentSummary.webUrlPlaceholder':
-    'ಲೇಖನ, ಬ್ಲಾಗ್ ಅಥವಾ ಸುದ್ದಿ ಪುಟಕ್ಕೆ ಲಿಂಕ್ ಅನ್ನು ಅಂಟಿಸಿ',
-  'canvas.mindMapDocumentSummary.webLinkHint':
-    'ನಾವು ವೆಬ್ ಪುಟದ ಪಠ್ಯವನ್ನು ಕ್ರಾಲ್ ಮಾಡುತ್ತೇವೆ ಮತ್ತು ಇಂಡೆಕ್ಸಿಂಗ್ಗಾಗಿ ಡೇಟಾಬೇಸ್ಗೆ ಸೇರಿಸುತ್ತೇವೆ.',
+  'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'ಲೇಖನ, ಬ್ಲಾಗ್ ಅಥವಾ ಸುದ್ದಿ ಪುಟಕ್ಕೆ ಲಿಂಕ್ ಅನ್ನು ಅಂಟಿಸಿ',
+  'canvas.mindMapDocumentSummary.webLinkHint': 'ನಾವು ವೆಬ್ ಪುಟದ ಪಠ್ಯವನ್ನು ಕ್ರಾಲ್ ಮಾಡುತ್ತೇವೆ ಮತ್ತು ಇಂಡೆಕ್ಸಿಂಗ್ಗಾಗಿ ಡೇಟಾಬೇಸ್ಗೆ ಸೇರಿಸುತ್ತೇವೆ.',
   'canvas.mindMapDocumentSummary.generateButton': 'ಮನಸ್ಸಿನ ನಕ್ಷೆಗಳನ್ನು ರಚಿಸಿ',
   'canvas.mindMapDocumentSummary.generateSuccess': 'ಮೈಂಡ್ ಮ್ಯಾಪ್ ರಚಿಸಲಾಗಿದೆ',
-  'canvas.mindMapDocumentSummary.generateFailed':
-    'ಉತ್ಪಾದನೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'canvas.mindMapDocumentSummary.generateFailed': 'ಉತ್ಪಾದನೆ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'canvas.mindMapDocumentSummary.loadFailed': 'ರಚಿಸಿದ ನಕ್ಷೆಯನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ',
-  'canvas.mindMapDocumentSummary.emptyDocument':
-    'ದಯವಿಟ್ಟು ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಪಠ್ಯವನ್ನು ಅಂಟಿಸಿ',
+  'canvas.mindMapDocumentSummary.emptyDocument': 'ದಯವಿಟ್ಟು ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಪಠ್ಯವನ್ನು ಅಂಟಿಸಿ',
   'canvas.mindMapDocumentSummary.emptyUrl': 'ದಯವಿಟ್ಟು ವೆಬ್ ಲಿಂಕ್ ಅನ್ನು ನಮೂದಿಸಿ',
-  'canvas.mindMapDocumentSummary.invalidDocType':
-    'Word (.docx) ಮತ್ತು PDF ಫೈಲ್‌ಗಳನ್ನು ಮಾತ್ರ ಬೆಂಬಲಿಸುತ್ತದೆ',
+  'canvas.mindMapDocumentSummary.invalidDocType': 'Word (.docx) ಮತ್ತು PDF ಫೈಲ್‌ಗಳನ್ನು ಮಾತ್ರ ಬೆಂಬಲಿಸುತ್ತದೆ',
   'canvas.mindMapDocumentSummary.invalidImageType': 'JPG ಮತ್ತು PNG ಚಿತ್ರಗಳನ್ನು ಮಾತ್ರ ಬೆಂಬಲಿಸುತ್ತದೆ',
-  'canvas.mindMapDocumentSummary.docTooLarge':
-    'ಡಾಕ್ಯುಮೆಂಟ್ ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ, ದಯವಿಟ್ಟು 20MB ಒಳಗೆ ಫೈಲ್ ಅನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
-  'canvas.mindMapDocumentSummary.pasteTooLong':
-    'ಅಂಟಿಸಲಾದ ಪಠ್ಯವು ಮಾದರಿ ಇನ್‌ಪುಟ್ ಮಿತಿಯನ್ನು ಮೀರಿದೆ (ಅಂದಾಜು 900,000 ಅಕ್ಷರಗಳು), ದಯವಿಟ್ಟು ಅದನ್ನು ಚಿಕ್ಕದಾಗಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel':
-    'ಹೊರತೆಗೆಯಲಾದ ಪಠ್ಯವು ಮಾದರಿ ಇನ್‌ಪುಟ್ ಮಿತಿಯನ್ನು ಮೀರಿದೆ (ಸುಮಾರು 900,000 ಅಕ್ಷರಗಳು / qwen3.6-flash 991K ಟೋಕನ್‌ಗಳು), ದಯವಿಟ್ಟು ಚಿಕ್ಕದಾದ ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಬಳಸಿ.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel':
-    'ಈ ಫೈಲ್‌ನಿಂದ ಹೊರತೆಗೆಯಲಾದ ಪಠ್ಯವು ತುಂಬಾ ಉದ್ದವಾಗಿದೆ ಮತ್ತು ಮಾದರಿಗೆ ಕಳುಹಿಸಲಾಗುವುದಿಲ್ಲ. ದಯವಿಟ್ಟು ಚಿಕ್ಕದಾದ ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ (ಅಂದಾಜು 900,000 ಅಕ್ಷರಗಳ ಒಳಗೆ ಪಠ್ಯವನ್ನು ಹೊರತೆಗೆಯಲಾಗಿದೆ)',
-  'canvas.mindMapDocumentSummary.storageConflictCleared':
-    'ಉಳಿಸಿದ ಸಾರವು ಕಾಣೆಯಾಗಿದೆ ಅಥವಾ ಸಂಗ್ರಹಣೆಯೊಂದಿಗೆ ಸಿಂಕ್ ಆಗಿಲ್ಲ ಮತ್ತು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಶುದ್ಧೀಕರಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಮರು-ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಅಂಟಿಸಿ.',
-  'canvas.mindMapDocumentSummary.contentFiltered':
-    'ವಿಷಯವು ಭದ್ರತಾ ವಿಮರ್ಶೆಯನ್ನು ರವಾನಿಸಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಪಠ್ಯವನ್ನು ಮಾರ್ಪಡಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindMapDocumentSummary.docTooLarge': 'ಡಾಕ್ಯುಮೆಂಟ್ ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ, ದಯವಿಟ್ಟು 20MB ಒಳಗೆ ಫೈಲ್ ಅನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
+  'canvas.mindMapDocumentSummary.pasteTooLong': 'ಅಂಟಿಸಲಾದ ಪಠ್ಯವು ಮಾದರಿ ಇನ್‌ಪುಟ್ ಮಿತಿಯನ್ನು ಮೀರಿದೆ (ಅಂದಾಜು 900,000 ಅಕ್ಷರಗಳು), ದಯವಿಟ್ಟು ಅದನ್ನು ಚಿಕ್ಕದಾಗಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'ಹೊರತೆಗೆಯಲಾದ ಪಠ್ಯವು ಮಾದರಿ ಇನ್‌ಪುಟ್ ಮಿತಿಯನ್ನು ಮೀರಿದೆ (ಸುಮಾರು 900,000 ಅಕ್ಷರಗಳು / qwen3.6-flash 991K ಟೋಕನ್‌ಗಳು), ದಯವಿಟ್ಟು ಚಿಕ್ಕದಾದ ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಬಳಸಿ.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'ಈ ಫೈಲ್‌ನಿಂದ ಹೊರತೆಗೆಯಲಾದ ಪಠ್ಯವು ತುಂಬಾ ಉದ್ದವಾಗಿದೆ ಮತ್ತು ಮಾದರಿಗೆ ಕಳುಹಿಸಲಾಗುವುದಿಲ್ಲ. ದಯವಿಟ್ಟು ಚಿಕ್ಕದಾದ ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ (ಅಂದಾಜು 900,000 ಅಕ್ಷರಗಳ ಒಳಗೆ ಪಠ್ಯವನ್ನು ಹೊರತೆಗೆಯಲಾಗಿದೆ)',
+  'canvas.mindMapDocumentSummary.storageConflictCleared': 'ಉಳಿಸಿದ ಸಾರವು ಕಾಣೆಯಾಗಿದೆ ಅಥವಾ ಸಂಗ್ರಹಣೆಯೊಂದಿಗೆ ಸಿಂಕ್ ಆಗಿಲ್ಲ ಮತ್ತು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಶುದ್ಧೀಕರಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಮರು-ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಅಂಟಿಸಿ.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'ವಿಷಯವು ಭದ್ರತಾ ವಿಮರ್ಶೆಯನ್ನು ರವಾನಿಸಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಪಠ್ಯವನ್ನು ಮಾರ್ಪಡಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
   'canvas.mindMapSideToolbar.learningSheet': 'ಟೊಳ್ಳಾದ ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರ',
-  'canvas.mobile.learningSheet': 'Learning sheet',
-  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
+  'canvas.mobile.learningSheet': 'ಅಧ್ಯಯನ ಹಾಳೆ',
+  'canvas.mobile.learningSheetCustomDesc': 'ನೋಡ್ ಅನ್ನು ಟೊಳ್ಳು ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ ಮತ್ತು ಅದನ್ನು ಮರುಸ್ಥಾಪಿಸಲು ಮತ್ತೆ ಕ್ಲಿಕ್ ಮಾಡಿ.',
   'canvas.mindMapSideToolbar.oneSentence': 'ಸಂವಾದಾತ್ಮಕ ಮಾರ್ಪಾಡು',
   'canvas.mindMapSideToolbar.mindClassroom': 'ಥಿಂಕಿಂಗ್ ಲೆಕ್ಚರ್ ಹಾಲ್',
   'canvas.mindClassroom.title': 'ಥಿಂಕಿಂಗ್ ಲೆಕ್ಚರ್ ಹಾಲ್',
-  'canvas.mindClassroom.intro':
-    'ನಕ್ಷೆಯ ಸುತ್ತಲೂ ವಿವರಿಸಿ: ನೀವು ಕ್ಯಾನ್ವಾಸ್ ಧ್ವನಿ ಪ್ರವಾಸ ಅಥವಾ ಡಬಲ್-ಕಾಲಮ್ ಸ್ಲೈಡ್ ವಿವರಣೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಬಹುದು.',
+  'canvas.mindClassroom.intro': 'ನಕ್ಷೆಯ ಸುತ್ತಲೂ ವಿವರಿಸಿ: ನೀವು ಕ್ಯಾನ್ವಾಸ್ ಧ್ವನಿ ಪ್ರವಾಸ ಅಥವಾ ಡಬಲ್-ಕಾಲಮ್ ಸ್ಲೈಡ್ ವಿವರಣೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಬಹುದು.',
   'canvas.mindClassroom.lead': 'ಈ ಮೈಂಡ್ ಮ್ಯಾಪ್‌ನಲ್ಲಿ AI ಶಿಕ್ಷಕರು ನಿಮ್ಮೊಂದಿಗೆ ಮಾತನಾಡಲಿ',
   'canvas.mindClassroom.mascotBubble': 'ಚಿಂತನೆಯ ಉಪನ್ಯಾಸ ಸಭಾಂಗಣ ಇಲ್ಲಿದೆ!',
   'canvas.mindClassroom.mascotDismiss': 'ಕೆಳಕ್ಕೆ ಟಕ್ ಮಾಡಿ',
   'canvas.mindClassroom.audienceLine': 'ಪ್ರಸ್ತುತ ಪ್ರೇಕ್ಷಕರು: {level} (ಕೆಳಗಿನಿಂದ [ವೃತ್ತಿಪರ ವಿಷಯ])',
   'canvas.mindClassroom.start': 'ವಿವರಿಸಲು ಪ್ರಾರಂಭಿಸಿ',
-  'canvas.mindClassroom.startPreview':
-    '"{mastery}" · "{presentation}" · "{tone}" · ಪ್ರೇಕ್ಷಕರು "{audience}" ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ. ಲಾಗಿನ್ ಆದ ನಂತರ, ಉಪನ್ಯಾಸ ಟಿಪ್ಪಣಿಗಳು/ಬೋಧನಾ ಯೋಜನೆಗಳನ್ನು ರಚಿಸಲು ಕ್ಯೂ ಅಪ್ ಮಾಡಿ; ಸಂದರ್ಶಕರು ಸ್ಥಳೀಯ ಟೆಂಪ್ಲೇಟ್‌ಗಳನ್ನು ಬಳಸುತ್ತಾರೆ.',
+  'canvas.mindClassroom.startPreview': '"{mastery}" · "{presentation}" · "{tone}" · ಪ್ರೇಕ್ಷಕರು "{audience}" ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ. ಲಾಗಿನ್ ಆದ ನಂತರ, ಉಪನ್ಯಾಸ ಟಿಪ್ಪಣಿಗಳು/ಬೋಧನಾ ಯೋಜನೆಗಳನ್ನು ರಚಿಸಲು ಕ್ಯೂ ಅಪ್ ಮಾಡಿ; ಸಂದರ್ಶಕರು ಸ್ಥಳೀಯ ಟೆಂಪ್ಲೇಟ್‌ಗಳನ್ನು ಬಳಸುತ್ತಾರೆ.',
   'canvas.mindClassroom.queue.queued': 'ಈಗಾಗಲೇ ಟ್ಯುಟೋರಿಯಲ್ ಸರತಿ ಸಾಲಿಗೆ ಸೇರಿದ್ದಾರೆ...',
   'canvas.mindClassroom.queue.planning': 'ಉಪನ್ಯಾಸ ಟಿಪ್ಪಣಿಗಳು/ಬೋಧನಾ ಯೋಜನೆಗಳನ್ನು ರಚಿಸಲಾಗುತ್ತಿದೆ...',
   'canvas.mindClassroom.queue.transcriptBranch': 'ಶಾಖೆಗೆ ಪಾಠ ಯೋಜನೆಗಳನ್ನು ಬರೆಯುವುದು {name}',
-  'canvas.mindClassroom.queue.transcriptRemaining':
-    'ಇತರ ಪಾಠ ಯೋಜನೆಗಳನ್ನು ಬರೆಯುವುದು ({done}/{total})',
+  'canvas.mindClassroom.queue.transcriptRemaining': 'ಇತರ ಪಾಠ ಯೋಜನೆಗಳನ್ನು ಬರೆಯುವುದು ({done}/{total})',
   'canvas.mindClassroom.queue.transcript': 'ಉಪನ್ಯಾಸ ಟಿಪ್ಪಣಿಗಳು/ಪಾಠ ಯೋಜನೆಗಳನ್ನು ಬರೆಯುವುದು...',
   'canvas.mindClassroom.queue.generating': 'ಸ್ಲೈಡ್‌ಶೋ ರಚಿಸಲಾಗುತ್ತಿದೆ...',
   'canvas.mindClassroom.queue.loadingVoice': 'ಧ್ವನಿಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...',
   'canvas.mindClassroom.queue.ready': 'ಉಪನ್ಯಾಸವನ್ನು ಪ್ರಾರಂಭಿಸಬಹುದು',
-  'canvas.mindClassroom.queue.readyHint':
-    'ಉಪನ್ಯಾಸ ಟಿಪ್ಪಣಿಗಳು/ಪಾಠದ ಯೋಜನೆಗಳು ಸಿದ್ಧವಾಗಿವೆ ಮತ್ತು ಉಪನ್ಯಾಸವನ್ನು ಪ್ರಾರಂಭಿಸಬಹುದು.',
+  'canvas.mindClassroom.queue.readyHint': 'ಉಪನ್ಯಾಸ ಟಿಪ್ಪಣಿಗಳು/ಪಾಠದ ಯೋಜನೆಗಳು ಸಿದ್ಧವಾಗಿವೆ ಮತ್ತು ಉಪನ್ಯಾಸವನ್ನು ಪ್ರಾರಂಭಿಸಬಹುದು.',
   'canvas.mindClassroom.queue.failed': 'ತಯಾರಿ ವೈಫಲ್ಯವನ್ನು ವಿವರಿಸಿ',
   'canvas.mindClassroom.queue.cancel': 'ಸರದಿಯನ್ನು ರದ್ದುಮಾಡಿ',
   'canvas.mindClassroom.queue.restart': 'ಪಾಠ ಯೋಜನೆಗಳನ್ನು ಪುನಃ ಬರೆಯಿರಿ',
-  'canvas.mindClassroom.queue.restartHint':
-    'ಪ್ರಸ್ತುತ ಆಯ್ಕೆಗಳೊಂದಿಗೆ ಉಪನ್ಯಾಸ ಟಿಪ್ಪಣಿಗಳು/ಪಾಠ ಯೋಜನೆಗಳನ್ನು ಪುನರುತ್ಪಾದಿಸಿ',
-  'canvas.mindClassroom.queue.guestHint':
-    'ಸಂದರ್ಶಕರು ವಿವರಣೆಗಳಿಗಾಗಿ ಸ್ಥಳೀಯ ಟೆಂಪ್ಲೇಟ್‌ಗಳನ್ನು ಬಳಸುತ್ತಾರೆ; ಲಾಗಿನ್ ಆದ ನಂತರ, ಎಂಜಿನ್ ಉಪನ್ಯಾಸ ಟಿಪ್ಪಣಿಗಳು/ಬೋಧನಾ ಯೋಜನೆಗಳನ್ನು ಉತ್ಪಾದಿಸುತ್ತದೆ.',
-  'canvas.mindClassroom.queue.loginRequired':
-    'ವಿವರಣೆಯನ್ನು ಪ್ರಾರಂಭಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಮೊದಲು ಲಾಗ್ ಇನ್ ಮಾಡಿ.',
+  'canvas.mindClassroom.queue.restartHint': 'ಪ್ರಸ್ತುತ ಆಯ್ಕೆಗಳೊಂದಿಗೆ ಉಪನ್ಯಾಸ ಟಿಪ್ಪಣಿಗಳು/ಪಾಠ ಯೋಜನೆಗಳನ್ನು ಪುನರುತ್ಪಾದಿಸಿ',
+  'canvas.mindClassroom.queue.guestHint': 'ಸಂದರ್ಶಕರು ವಿವರಣೆಗಳಿಗಾಗಿ ಸ್ಥಳೀಯ ಟೆಂಪ್ಲೇಟ್‌ಗಳನ್ನು ಬಳಸುತ್ತಾರೆ; ಲಾಗಿನ್ ಆದ ನಂತರ, ಎಂಜಿನ್ ಉಪನ್ಯಾಸ ಟಿಪ್ಪಣಿಗಳು/ಬೋಧನಾ ಯೋಜನೆಗಳನ್ನು ಉತ್ಪಾದಿಸುತ್ತದೆ.',
+  'canvas.mindClassroom.queue.loginRequired': 'ವಿವರಣೆಯನ್ನು ಪ್ರಾರಂಭಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಮೊದಲು ಲಾಗ್ ಇನ್ ಮಾಡಿ.',
   'canvas.mindClassroom.queue.preparing': 'ವಿವರಿಸಲು ಸಿದ್ಧವಾಗುತ್ತಿದೆ...',
   'canvas.mindClassroom.settings.masteryTitle': 'ಈ ಚಿತ್ರ ನನಗೆ ಎಷ್ಟು ಪರಿಚಿತ',
   'canvas.mindClassroom.settings.mastery.first_look.title': 'ಮೊದಲ ಪರಿಚಯ',
   'canvas.mindClassroom.settings.mastery.review.title': 'ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಕ್ರೋಢೀಕರಿಸಿ',
   'canvas.mindClassroom.settings.mastery.teach.title': 'ಪಾಠ ತಯಾರಿ ಮತ್ತು ಬೋಧನೆ',
-  'canvas.mindClassroom.settings.presentationTitle':
-    'ವಿವರಣೆಯನ್ನು ಹೇಗೆ ಪ್ರಸ್ತುತಪಡಿಸಬೇಕೆಂದು ನಾನು ಬಯಸುತ್ತೇನೆ',
+  'canvas.mindClassroom.settings.presentationTitle': 'ವಿವರಣೆಯನ್ನು ಹೇಗೆ ಪ್ರಸ್ತುತಪಡಿಸಬೇಕೆಂದು ನಾನು ಬಯಸುತ್ತೇನೆ',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'ಕ್ಯಾನ್ವಾಸ್ ಧ್ವನಿ ಪ್ರವಾಸ',
-  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
-    'ಮ್ಯಾಪ್ ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಆಡಿಯೋ ವಿವರಣೆಯನ್ನು ಕೇಂದ್ರೀಕರಿಸಿ, ಮುಖ್ಯ ಶಾಖೆ ಅಥವಾ ನೋಡ್ ಮೂಲಕ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ.',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc': 'ಮ್ಯಾಪ್ ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಆಡಿಯೋ ವಿವರಣೆಯನ್ನು ಕೇಂದ್ರೀಕರಿಸಿ, ಮುಖ್ಯ ಶಾಖೆ ಅಥವಾ ನೋಡ್ ಮೂಲಕ ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ.',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'ಸ್ಲೈಡ್ ವಿವರಣೆ',
-  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
-    'AI ಸ್ಲೈಡ್‌ಗಳನ್ನು ಉತ್ಪಾದಿಸುತ್ತದೆ, ಹೋಲಿಕೆಗಾಗಿ ಎಡಭಾಗದಲ್ಲಿ ನಕ್ಷೆ ಮತ್ತು ಬಲಭಾಗದಲ್ಲಿ ಪುಟ-ತಿರುವು ವಿವರಣೆಯೊಂದಿಗೆ.',
-  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
-    'ಅಭಿವೃದ್ಧಿ ಹಂತದಲ್ಲಿದೆ, ಶೀಘ್ರದಲ್ಲೇ ಆನ್‌ಲೈನ್ ಆಗಲಿದೆ',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc': 'AI ಸ್ಲೈಡ್‌ಗಳನ್ನು ಉತ್ಪಾದಿಸುತ್ತದೆ, ಹೋಲಿಕೆಗಾಗಿ ಎಡಭಾಗದಲ್ಲಿ ನಕ್ಷೆ ಮತ್ತು ಬಲಭಾಗದಲ್ಲಿ ಪುಟ-ತಿರುವು ವಿವರಣೆಯೊಂದಿಗೆ.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': 'ಅಭಿವೃದ್ಧಿ ಹಂತದಲ್ಲಿದೆ, ಶೀಘ್ರದಲ್ಲೇ ಆನ್‌ಲೈನ್ ಆಗಲಿದೆ',
   'canvas.mindClassroom.settings.tourScopeTitle': 'ಪ್ರವಾಸ ಗ್ರ್ಯಾನ್ಯುಲಾರಿಟಿ',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'ಮಾಸ್ಟರ್ ಶಾಖೆಯ ಮೂಲಕ',
-  'canvas.mindClassroom.settings.tourScope.main_branch.desc':
-    'ಮೊದಲ ಹಂತದ ಶಾಖೆಗಳನ್ನು ಹಂತ ಹಂತವಾಗಿ ಕಲಿಸಲಾಗುತ್ತದೆ ಮತ್ತು ಲಯವು ಹೆಚ್ಚು ಸ್ಥಿರವಾಗಿರುತ್ತದೆ.',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'ಮೊದಲ ಹಂತದ ಶಾಖೆಗಳನ್ನು ಹಂತ ಹಂತವಾಗಿ ಕಲಿಸಲಾಗುತ್ತದೆ ಮತ್ತು ಲಯವು ಹೆಚ್ಚು ಸ್ಥಿರವಾಗಿರುತ್ತದೆ.',
   'canvas.mindClassroom.settings.tourScope.each_node.title': 'ನೋಡ್ ಮೂಲಕ ನೋಡ್',
-  'canvas.mindClassroom.settings.tourScope.each_node.desc':
-    'ಪ್ರತಿ ನೋಡ್‌ಗೆ ಆಳವಾಗಿ ಹೋಗಿ, ತೀವ್ರವಾದ ಓದುವಿಕೆಗೆ ಸೂಕ್ತವಾಗಿದೆ.',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'ಪ್ರತಿ ನೋಡ್‌ಗೆ ಆಳವಾಗಿ ಹೋಗಿ, ತೀವ್ರವಾದ ಓದುವಿಕೆಗೆ ಸೂಕ್ತವಾಗಿದೆ.',
   'canvas.mindClassroom.settings.slideStyleTitle': 'ಸ್ಲೈಡ್ ಶೋ ಶೈಲಿ',
   'canvas.mindClassroom.settings.slideStyle.general.title': 'ಯುನಿವರ್ಸಲ್ ಸ್ಲೈಡ್‌ಗಳು',
   'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'ಕಪ್ಪು ಹಲಗೆಯ ವರದಿ',
@@ -1231,12 +1034,10 @@ export default {
   'canvas.mindClassroom.settings.tone.close_read': 'ತೀವ್ರವಾದ ಓದುವಿಕೆ',
   'canvas.mindClassroom.settings.tone.examples': 'ಶ್ರೀಮಂತ ಉದಾಹರಣೆಗಳು',
   'canvas.mindClassroom.settings.tone.exam_outline': 'ಪರೀಕ್ಷೆಯ ರೂಪರೇಖೆ',
-  'canvas.mindClassroom.lecture.needDiagram':
-    'ವಿವರಣೆಯನ್ನು ಪ್ರಾರಂಭಿಸುವ ಮೊದಲು ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಮೈಂಡ್ ಮ್ಯಾಪ್ ಅನ್ನು ರಚಿಸಿ.',
+  'canvas.mindClassroom.lecture.needDiagram': 'ವಿವರಣೆಯನ್ನು ಪ್ರಾರಂಭಿಸುವ ಮೊದಲು ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಮೈಂಡ್ ಮ್ಯಾಪ್ ಅನ್ನು ರಚಿಸಿ.',
   'canvas.mindClassroom.lecture.emptySteps': 'ಪ್ರಸ್ತುತ ನಕ್ಷೆಯಲ್ಲಿ ವಿವರಿಸಲು ಯಾವುದೇ ನೋಡ್‌ಗಳಿಲ್ಲ.',
   'canvas.mindClassroom.lecture.cancelled': 'ಟ್ಯುಟೋರಿಯಲ್ ಸರದಿಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ.',
-  'canvas.mindClassroom.lecture.queueFailed':
-    'ಟ್ಯುಟೋರಿಯಲ್ ತಯಾರಿ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  'canvas.mindClassroom.lecture.queueFailed': 'ಟ್ಯುಟೋರಿಯಲ್ ತಯಾರಿ ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
   'canvas.mindClassroom.lecture.pause': 'ವಿರಾಮ',
   'canvas.mindClassroom.lecture.resume': 'ಮುಂದುವರಿಸಿ',
   'canvas.mindClassroom.lecture.prev': 'ಹಿಂದಿನ ವಿಭಾಗ',
@@ -1246,54 +1047,33 @@ export default {
   'canvas.mindClassroom.lecture.unmute': 'ಗಟ್ಟಿಯಾಗಿ ಓದಲು ಪ್ರಾರಂಭಿಸಿ',
   'canvas.mindClassroom.lecture.script.noBranches': 'ಕೆಲವು ಅಂಕಗಳು',
   'canvas.mindClassroom.lecture.script.leafNode': 'ಈ ಶಾಖೆಯ ಕುರಿತು ಇನ್ನೂ ಹೆಚ್ಚಿನ ವಿವರಗಳಿಲ್ಲ.',
-  'canvas.mindClassroom.lecture.script.overview.classroom':
-    'ಹಲೋ, ಸಹಪಾಠಿಗಳು. ಇಂದು ನಾವು "{topic}" ಸುತ್ತಲೂ ಕಲಿಯುತ್ತಿದ್ದೇವೆ, "{audience}" ಪ್ರೇಕ್ಷಕರನ್ನು ಎದುರಿಸುತ್ತಿದ್ದೇವೆ ಮತ್ತು "{mastery}" ವೇಗದಲ್ಲಿ ತೆರೆದುಕೊಳ್ಳುತ್ತಿದ್ದೇವೆ. ಇಡೀ ಚಿತ್ರವು ಮುಖ್ಯವಾಗಿ ಒಳಗೊಂಡಿದೆ: {branches}. ಮೊದಲು ಒಟ್ಟಾರೆ ಚಿತ್ರವನ್ನು ನೋಡಿ, ತದನಂತರ ಅದನ್ನು ತುಂಡು ತುಂಡಾಗಿ ವಿಂಗಡಿಸಿ.',
-  'canvas.mindClassroom.lecture.script.overview.story':
-    'ಮೊದಲು "{topic}" ಅನ್ನು ಕಥೆಯ ಶೀರ್ಷಿಕೆಯಾಗಿ ಯೋಚಿಸಿ. "{audience}" ಅನ್ನು ಎದುರಿಸುತ್ತಾ, ನಾವು ಸಂಪೂರ್ಣ ಚಿತ್ರದಿಂದ ವಿವರಗಳಿಗೆ ಹೋಗುತ್ತೇವೆ: ಕಥೆಯಲ್ಲಿ ಈ ಅಧ್ಯಾಯಗಳಿವೆ-{branches}.',
-  'canvas.mindClassroom.lecture.script.overview.dialogue':
-    'ಮೊದಲಿಗೆ "{topic}" ಅನ್ನು ಒಟ್ಟಿಗೆ ನೋಡೋಣ. ನೀವು "{audience}" ಆಗಿದ್ದರೆ, ನೀವು ಮೊದಲು ಯಾವ ಭಾಗಗಳನ್ನು ಗಮನಿಸುತ್ತೀರಿ? ಇಡೀ ಚಿತ್ರವು ಸರಿಸುಮಾರು ಒಳಗೊಂಡಿದೆ: {branches}. ನಾವು ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುತ್ತಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸುತ್ತಾ ಹೋದೆವು.',
-  'canvas.mindClassroom.lecture.script.overview.socratic':
-    'ಇನ್ನೂ ತೀರ್ಮಾನವನ್ನು ನೆನಪಿಟ್ಟುಕೊಳ್ಳಲು ಹೊರದಬ್ಬಬೇಡಿ. "{topic}" ಅನ್ನು ಎದುರಿಸುತ್ತಿರುವಿರಿ, ಚಿತ್ರವನ್ನು ಮಾಡುವುದು ಯೋಗ್ಯವಾಗಿದೆ ಎಂದು ನೀವು ಏಕೆ ಭಾವಿಸುತ್ತೀರಿ? ನಾವು "{mastery}" ನ ಆಳವನ್ನು ಅನುಸರಿಸುತ್ತೇವೆ ಮತ್ತು ಈ ಶಾಖೆಗಳಿಂದ ಕೇಳುತ್ತೇವೆ: {branches}.',
-  'canvas.mindClassroom.lecture.script.overview.fast':
-    '"{topic}" ({audience}) ನಲ್ಲಿ ತ್ವರಿತ ನೋಟವನ್ನು ತೆಗೆದುಕೊಳ್ಳಿ. ಕಾಂಡ: {branches}. ಮುಂದೆ, ಬಿಂದುವನ್ನು ಒಂದೊಂದಾಗಿ ತಲುಪಿ.',
-  'canvas.mindClassroom.lecture.script.overview.close_read':
-    'ತೀವ್ರವಾದ ಓದುವಿಕೆ ತೆರೆಯುವಿಕೆ: ಥೀಮ್ "{topic}" ಆಗಿದೆ. ದಯವಿಟ್ಟು ಒಟ್ಟಾರೆ ರಚನೆಯನ್ನು ಮೊದಲು ಗ್ರಹಿಸಿ - {branches} - ತದನಂತರ ಅದನ್ನು ಪ್ರತಿ ಶಾಖೆಯಲ್ಲಿ ಎಚ್ಚರಿಕೆಯಿಂದ ಓದಿ. ಪ್ರೇಕ್ಷಕರ ಸೆಟ್ಟಿಂಗ್: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.examples':
-    'ಒಂದು ಉದಾಹರಣೆಯೊಂದಿಗೆ ಪ್ರಾರಂಭಿಸಿ. "{topic}" ಥೀಮ್ ಅನ್ನು ಜೀವನ ಅಥವಾ ತರಗತಿಯಲ್ಲಿನ ದೃಶ್ಯವೆಂದು ಪರಿಗಣಿಸಬಹುದು; ಇಡೀ ಚಿತ್ರದ ಶಾಖೆಗಳು ವಿಭಿನ್ನ ದೃಶ್ಯಗಳಂತೆ: {branches}. ಪ್ರೇಕ್ಷಕರು: {audience}.',
-  'canvas.mindClassroom.lecture.script.overview.exam_outline':
-    'ಪರೀಕ್ಷಾ ಬಿಂದುಗಳ ಅವಲೋಕನ: "{topic}". ಬಾಹ್ಯರೇಖೆಯ ಪ್ರಕಾರ ಮುಖ್ಯ ಅಂಶಗಳನ್ನು ರೆಕಾರ್ಡ್ ಮಾಡಿ——{branches}. ತೊಂದರೆಯನ್ನು "{audience}" ಗೆ ಜೋಡಿಸಲಾಗಿದೆ ಮತ್ತು ಲಯವು "{mastery}" ಆಗಿದೆ.',
-  'canvas.mindClassroom.lecture.script.branch.classroom':
-    'ಶಾಖೆ {index}/{total}: "{title}" ನೋಡಿ. ಅದರ ಕೆಳಗೆ: {children}. ಒಟ್ಟಾರೆಯಾಗಿ ಈ ವಿಭಾಗದ ಪಾತ್ರವನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಲು ದಯವಿಟ್ಟು ನಕ್ಷೆಯ ಸ್ಥಾನವನ್ನು ನೋಡಿ.',
-  'canvas.mindClassroom.lecture.script.branch.story':
-    'ಕಥೆಯು {index} "{title}" ಅಧ್ಯಾಯವನ್ನು ತಲುಪುತ್ತದೆ. ಈ ಅಧ್ಯಾಯದಲ್ಲಿ ಕಾಣಿಸಿಕೊಂಡಿದೆ: {children}. ಅವರು ಚಿತ್ರದ ಒಟ್ಟಾರೆ ಕಥಾವಸ್ತುವನ್ನು ಹೇಗೆ ಮುನ್ನಡೆಸುತ್ತಾರೆ ಎಂಬುದರ ಕುರಿತು ಯೋಚಿಸಿ.',
-  'canvas.mindClassroom.lecture.script.branch.dialogue':
-    'ನಾನು ನಿಮಗೆ ಇದನ್ನು ಕೇಳುತ್ತೇನೆ: ನೀವು "{title}" ಅನ್ನು ಉಲ್ಲೇಖಿಸಿದಾಗ, ನೀವು ಏನು ಯೋಚಿಸುತ್ತೀರಿ? ರೇಖಾಚಿತ್ರವು ನೀಡುತ್ತದೆ: {children}. ಹೋಲಿಕೆ ಮಾಡೋಣ ({index}/{total}).',
-  'canvas.mindClassroom.lecture.script.branch.socratic':
-    'ಅನುಸರಣಾ ಪ್ರಶ್ನೆ: "{title}" ಏಕೆ ಪ್ರತ್ಯೇಕ ಶಾಖೆಯಾಗಿರಬೇಕು? ಉಪಬಿಂದು "{children}" ನೊಂದಿಗೆ ಅದರ ಸಂಬಂಧವೇನು? ದಯವಿಟ್ಟು ಮೊದಲು ನೀವೇ ಉತ್ತರಿಸಿ, ತದನಂತರ ನಕ್ಷೆಯನ್ನು ಉಲ್ಲೇಖಿಸಿ ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.overview.classroom': 'ಹಲೋ, ಸಹಪಾಠಿಗಳು. ಇಂದು ನಾವು "{topic}" ಸುತ್ತಲೂ ಕಲಿಯುತ್ತಿದ್ದೇವೆ, "{audience}" ಪ್ರೇಕ್ಷಕರನ್ನು ಎದುರಿಸುತ್ತಿದ್ದೇವೆ ಮತ್ತು "{mastery}" ವೇಗದಲ್ಲಿ ತೆರೆದುಕೊಳ್ಳುತ್ತಿದ್ದೇವೆ. ಇಡೀ ಚಿತ್ರವು ಮುಖ್ಯವಾಗಿ ಒಳಗೊಂಡಿದೆ: {branches}. ಮೊದಲು ಒಟ್ಟಾರೆ ಚಿತ್ರವನ್ನು ನೋಡಿ, ತದನಂತರ ಅದನ್ನು ತುಂಡು ತುಂಡಾಗಿ ವಿಂಗಡಿಸಿ.',
+  'canvas.mindClassroom.lecture.script.overview.story': 'ಮೊದಲು "{topic}" ಅನ್ನು ಕಥೆಯ ಶೀರ್ಷಿಕೆಯಾಗಿ ಯೋಚಿಸಿ. "{audience}" ಅನ್ನು ಎದುರಿಸುತ್ತಾ, ನಾವು ಸಂಪೂರ್ಣ ಚಿತ್ರದಿಂದ ವಿವರಗಳಿಗೆ ಹೋಗುತ್ತೇವೆ: ಕಥೆಯಲ್ಲಿ ಈ ಅಧ್ಯಾಯಗಳಿವೆ-{branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue': 'ಮೊದಲಿಗೆ "{topic}" ಅನ್ನು ಒಟ್ಟಿಗೆ ನೋಡೋಣ. ನೀವು "{audience}" ಆಗಿದ್ದರೆ, ನೀವು ಮೊದಲು ಯಾವ ಭಾಗಗಳನ್ನು ಗಮನಿಸುತ್ತೀರಿ? ಇಡೀ ಚಿತ್ರವು ಸರಿಸುಮಾರು ಒಳಗೊಂಡಿದೆ: {branches}. ನಾವು ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುತ್ತಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸುತ್ತಾ ಹೋದೆವು.',
+  'canvas.mindClassroom.lecture.script.overview.socratic': 'ಇನ್ನೂ ತೀರ್ಮಾನವನ್ನು ನೆನಪಿಟ್ಟುಕೊಳ್ಳಲು ಹೊರದಬ್ಬಬೇಡಿ. "{topic}" ಅನ್ನು ಎದುರಿಸುತ್ತಿರುವಿರಿ, ಚಿತ್ರವನ್ನು ಮಾಡುವುದು ಯೋಗ್ಯವಾಗಿದೆ ಎಂದು ನೀವು ಏಕೆ ಭಾವಿಸುತ್ತೀರಿ? ನಾವು "{mastery}" ನ ಆಳವನ್ನು ಅನುಸರಿಸುತ್ತೇವೆ ಮತ್ತು ಈ ಶಾಖೆಗಳಿಂದ ಕೇಳುತ್ತೇವೆ: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast': '"{topic}" ({audience}) ನಲ್ಲಿ ತ್ವರಿತ ನೋಟವನ್ನು ತೆಗೆದುಕೊಳ್ಳಿ. ಕಾಂಡ: {branches}. ಮುಂದೆ, ಬಿಂದುವನ್ನು ಒಂದೊಂದಾಗಿ ತಲುಪಿ.',
+  'canvas.mindClassroom.lecture.script.overview.close_read': 'ತೀವ್ರವಾದ ಓದುವಿಕೆ ತೆರೆಯುವಿಕೆ: ಥೀಮ್ "{topic}" ಆಗಿದೆ. ದಯವಿಟ್ಟು ಒಟ್ಟಾರೆ ರಚನೆಯನ್ನು ಮೊದಲು ಗ್ರಹಿಸಿ - {branches} - ತದನಂತರ ಅದನ್ನು ಪ್ರತಿ ಶಾಖೆಯಲ್ಲಿ ಎಚ್ಚರಿಕೆಯಿಂದ ಓದಿ. ಪ್ರೇಕ್ಷಕರ ಸೆಟ್ಟಿಂಗ್: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples': 'ಒಂದು ಉದಾಹರಣೆಯೊಂದಿಗೆ ಪ್ರಾರಂಭಿಸಿ. "{topic}" ಥೀಮ್ ಅನ್ನು ಜೀವನ ಅಥವಾ ತರಗತಿಯಲ್ಲಿನ ದೃಶ್ಯವೆಂದು ಪರಿಗಣಿಸಬಹುದು; ಇಡೀ ಚಿತ್ರದ ಶಾಖೆಗಳು ವಿಭಿನ್ನ ದೃಶ್ಯಗಳಂತೆ: {branches}. ಪ್ರೇಕ್ಷಕರು: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline': 'ಪರೀಕ್ಷಾ ಬಿಂದುಗಳ ಅವಲೋಕನ: "{topic}". ಬಾಹ್ಯರೇಖೆಯ ಪ್ರಕಾರ ಮುಖ್ಯ ಅಂಶಗಳನ್ನು ರೆಕಾರ್ಡ್ ಮಾಡಿ——{branches}. ತೊಂದರೆಯನ್ನು "{audience}" ಗೆ ಜೋಡಿಸಲಾಗಿದೆ ಮತ್ತು ಲಯವು "{mastery}" ಆಗಿದೆ.',
+  'canvas.mindClassroom.lecture.script.branch.classroom': 'ಶಾಖೆ {index}/{total}: "{title}" ನೋಡಿ. ಅದರ ಕೆಳಗೆ: {children}. ಒಟ್ಟಾರೆಯಾಗಿ ಈ ವಿಭಾಗದ ಪಾತ್ರವನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಲು ದಯವಿಟ್ಟು ನಕ್ಷೆಯ ಸ್ಥಾನವನ್ನು ನೋಡಿ.',
+  'canvas.mindClassroom.lecture.script.branch.story': 'ಕಥೆಯು {index} "{title}" ಅಧ್ಯಾಯವನ್ನು ತಲುಪುತ್ತದೆ. ಈ ಅಧ್ಯಾಯದಲ್ಲಿ ಕಾಣಿಸಿಕೊಂಡಿದೆ: {children}. ಅವರು ಚಿತ್ರದ ಒಟ್ಟಾರೆ ಕಥಾವಸ್ತುವನ್ನು ಹೇಗೆ ಮುನ್ನಡೆಸುತ್ತಾರೆ ಎಂಬುದರ ಕುರಿತು ಯೋಚಿಸಿ.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue': 'ನಾನು ನಿಮಗೆ ಇದನ್ನು ಕೇಳುತ್ತೇನೆ: ನೀವು "{title}" ಅನ್ನು ಉಲ್ಲೇಖಿಸಿದಾಗ, ನೀವು ಏನು ಯೋಚಿಸುತ್ತೀರಿ? ರೇಖಾಚಿತ್ರವು ನೀಡುತ್ತದೆ: {children}. ಹೋಲಿಕೆ ಮಾಡೋಣ ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.socratic': 'ಅನುಸರಣಾ ಪ್ರಶ್ನೆ: "{title}" ಏಕೆ ಪ್ರತ್ಯೇಕ ಶಾಖೆಯಾಗಿರಬೇಕು? ಉಪಬಿಂದು "{children}" ನೊಂದಿಗೆ ಅದರ ಸಂಬಂಧವೇನು? ದಯವಿಟ್ಟು ಮೊದಲು ನೀವೇ ಉತ್ತರಿಸಿ, ತದನಂತರ ನಕ್ಷೆಯನ್ನು ಉಲ್ಲೇಖಿಸಿ ({index}/{total}).',
   'canvas.mindClassroom.lecture.script.branch.fast': '“{title}” → {children}. ({index}/{total})',
-  'canvas.mindClassroom.lecture.script.branch.close_read':
-    '"{title}" ಅನ್ನು ತೀವ್ರವಾಗಿ ಓದಿ. ದಯವಿಟ್ಟು ಅಧೀನ ಮಾಹಿತಿಯನ್ನು ಒಂದೊಂದಾಗಿ ಓದಿ: {children}. ಈ ಶಾಖೆಯು ಪ್ಯಾರಾಗ್ರಾಫ್ {index}/{total} ನಲ್ಲಿದೆ. ಪದಗಳು ಮತ್ತು ಮಟ್ಟಕ್ಕೆ ಗಮನ ಕೊಡಿ.',
-  'canvas.mindClassroom.lecture.script.branch.examples':
-    '"{title}" ಅನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಲು ಸಹಾಯ ಮಾಡಲು ಒಂದು ಉದಾಹರಣೆ ನೀಡಿ: ನೀವು ಅದರಲ್ಲಿ {children} ನೊಂದಿಗೆ ನಿರ್ದಿಷ್ಟ ದೃಶ್ಯವೆಂದು ಭಾವಿಸಬಹುದು. ನಾವು {index}/{total} ಶಾಖೆಯಲ್ಲಿದ್ದೇವೆ.',
-  'canvas.mindClassroom.lecture.script.branch.exam_outline':
-    'ಪರೀಕ್ಷಾ ಬಿಂದು {index}/{total}: "{title}". ಅಧೀನ ಅಂಕಗಳು: {children}. ಪರಿಶೀಲಿಸುವಾಗ, ಮೊದಲು ಶೀರ್ಷಿಕೆಯನ್ನು ನೆನಪಿಟ್ಟುಕೊಳ್ಳಿ ಮತ್ತು ನಂತರ ವಿವರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.',
-  'canvas.mindClassroom.lecture.script.closing.first_look':
-    'ಒಟ್ಟಾರೆ ವಿಮರ್ಶೆ: "{topic}" ನ ಅಸ್ಥಿಪಂಜರವನ್ನು ನಾವು ಈಗಷ್ಟೇ ತಿಳಿದುಕೊಂಡಿದ್ದೇವೆ. ನೀವು ಸಂಪೂರ್ಣ ಚಿತ್ರವನ್ನು ಮತ್ತೊಮ್ಮೆ ಸ್ಕ್ಯಾನ್ ಮಾಡಲು ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ, ನಿಮಗೆ ಇನ್ನೂ ಪರಿಚಯವಿಲ್ಲದ ಎರಡು ಅಥವಾ ಮೂರು ಅಂಕಗಳನ್ನು ಗುರುತಿಸಿ ಮತ್ತು ಮುಂದಿನ ಬಾರಿ ಅದನ್ನು ಪ್ರಾರಂಭಿಸಿ.',
-  'canvas.mindClassroom.lecture.script.closing.review':
-    'ವಿಮರ್ಶೆಯ ತೀರ್ಮಾನ: "{topic}" ಪುಸ್ತಕವನ್ನು ಮುಚ್ಚುವ ಮೂಲಕ ನೀವು ಮುಖ್ಯ ಅಂಶಗಳನ್ನು ಪುನಃ ಹೇಳಬಹುದೇ? ಒಂದು ವಿಭಾಗವು ಸಿಲುಕಿಕೊಂಡರೆ, ನಕ್ಷೆಯಲ್ಲಿನ ವಿಭಾಗಕ್ಕೆ ಹಿಂತಿರುಗಿ ಮತ್ತು ಅದರ ಮೂಲಕ ಮತ್ತೊಮ್ಮೆ ಹೋಗಿ.',
-  'canvas.mindClassroom.lecture.script.closing.teach':
-    'ಪಾಠದ ತಯಾರಿ ಮತ್ತು ಮುಚ್ಚುವಿಕೆ: "{topic}" ಗೆ "{audience}" ಕಲಿಸುವಾಗ, ನೀವು ನಕ್ಷೆಯ ಅನುಕ್ರಮವನ್ನು ಅನುಸರಿಸಬಹುದು: ತೆರೆಯುವಿಕೆ - ವಿಸ್ತರಣೆ - ಮುಚ್ಚುವಿಕೆ. ನೀವು ನಿರ್ದಿಷ್ಟ ಶಾಖೆಯನ್ನು ವರ್ಗ ಪ್ರಶ್ನೆಗಳಾಗಿ ವಿಭಜಿಸಬಹುದು.',
-  'canvas.mindMapSideToolbar.oneSentenceIntro':
-    'ವಿಷಯ ಅಥವಾ ಮಾರ್ಪಾಡು ಅವಶ್ಯಕತೆಗಳನ್ನು ವಿವರಿಸಲು ಒಂದು ವಾಕ್ಯವನ್ನು ಬಳಸಿ ಮತ್ತು ಬುದ್ಧಿವಂತಿಕೆಯಿಂದ ನಕ್ಷೆಯನ್ನು ರಚಿಸಿ ಮತ್ತು ಹೊಂದಿಸಿ',
+  'canvas.mindClassroom.lecture.script.branch.close_read': '"{title}" ಅನ್ನು ತೀವ್ರವಾಗಿ ಓದಿ. ದಯವಿಟ್ಟು ಅಧೀನ ಮಾಹಿತಿಯನ್ನು ಒಂದೊಂದಾಗಿ ಓದಿ: {children}. ಈ ಶಾಖೆಯು ಪ್ಯಾರಾಗ್ರಾಫ್ {index}/{total} ನಲ್ಲಿದೆ. ಪದಗಳು ಮತ್ತು ಮಟ್ಟಕ್ಕೆ ಗಮನ ಕೊಡಿ.',
+  'canvas.mindClassroom.lecture.script.branch.examples': '"{title}" ಅನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಲು ಸಹಾಯ ಮಾಡಲು ಒಂದು ಉದಾಹರಣೆ ನೀಡಿ: ನೀವು ಅದರಲ್ಲಿ {children} ನೊಂದಿಗೆ ನಿರ್ದಿಷ್ಟ ದೃಶ್ಯವೆಂದು ಭಾವಿಸಬಹುದು. ನಾವು {index}/{total} ಶಾಖೆಯಲ್ಲಿದ್ದೇವೆ.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline': 'ಪರೀಕ್ಷಾ ಬಿಂದು {index}/{total}: "{title}". ಅಧೀನ ಅಂಕಗಳು: {children}. ಪರಿಶೀಲಿಸುವಾಗ, ಮೊದಲು ಶೀರ್ಷಿಕೆಯನ್ನು ನೆನಪಿಟ್ಟುಕೊಳ್ಳಿ ಮತ್ತು ನಂತರ ವಿವರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.',
+  'canvas.mindClassroom.lecture.script.closing.first_look': 'ಒಟ್ಟಾರೆ ವಿಮರ್ಶೆ: "{topic}" ನ ಅಸ್ಥಿಪಂಜರವನ್ನು ನಾವು ಈಗಷ್ಟೇ ತಿಳಿದುಕೊಂಡಿದ್ದೇವೆ. ನೀವು ಸಂಪೂರ್ಣ ಚಿತ್ರವನ್ನು ಮತ್ತೊಮ್ಮೆ ಸ್ಕ್ಯಾನ್ ಮಾಡಲು ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ, ನಿಮಗೆ ಇನ್ನೂ ಪರಿಚಯವಿಲ್ಲದ ಎರಡು ಅಥವಾ ಮೂರು ಅಂಕಗಳನ್ನು ಗುರುತಿಸಿ ಮತ್ತು ಮುಂದಿನ ಬಾರಿ ಅದನ್ನು ಪ್ರಾರಂಭಿಸಿ.',
+  'canvas.mindClassroom.lecture.script.closing.review': 'ವಿಮರ್ಶೆಯ ತೀರ್ಮಾನ: "{topic}" ಪುಸ್ತಕವನ್ನು ಮುಚ್ಚುವ ಮೂಲಕ ನೀವು ಮುಖ್ಯ ಅಂಶಗಳನ್ನು ಪುನಃ ಹೇಳಬಹುದೇ? ಒಂದು ವಿಭಾಗವು ಸಿಲುಕಿಕೊಂಡರೆ, ನಕ್ಷೆಯಲ್ಲಿನ ವಿಭಾಗಕ್ಕೆ ಹಿಂತಿರುಗಿ ಮತ್ತು ಅದರ ಮೂಲಕ ಮತ್ತೊಮ್ಮೆ ಹೋಗಿ.',
+  'canvas.mindClassroom.lecture.script.closing.teach': 'ಪಾಠದ ತಯಾರಿ ಮತ್ತು ಮುಚ್ಚುವಿಕೆ: "{topic}" ಗೆ "{audience}" ಕಲಿಸುವಾಗ, ನೀವು ನಕ್ಷೆಯ ಅನುಕ್ರಮವನ್ನು ಅನುಸರಿಸಬಹುದು: ತೆರೆಯುವಿಕೆ - ವಿಸ್ತರಣೆ - ಮುಚ್ಚುವಿಕೆ. ನೀವು ನಿರ್ದಿಷ್ಟ ಶಾಖೆಯನ್ನು ವರ್ಗ ಪ್ರಶ್ನೆಗಳಾಗಿ ವಿಭಜಿಸಬಹುದು.',
+  'canvas.mindMapSideToolbar.oneSentenceIntro': 'ವಿಷಯ ಅಥವಾ ಮಾರ್ಪಾಡು ಅವಶ್ಯಕತೆಗಳನ್ನು ವಿವರಿಸಲು ಒಂದು ವಾಕ್ಯವನ್ನು ಬಳಸಿ ಮತ್ತು ಬುದ್ಧಿವಂತಿಕೆಯಿಂದ ನಕ್ಷೆಯನ್ನು ರಚಿಸಿ ಮತ್ತು ಹೊಂದಿಸಿ',
   'canvas.mindMapSideToolbar.documentSummary': 'ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶ',
-  'fileCenter.intro':
-    'ಪ್ಯಾಕೇಜ್ ಎನ್ನುವುದು ಪ್ರಸ್ತುತ ಚಾರ್ಟ್‌ಗಾಗಿ ಆಯೋಜಿಸಲಾದ ಮೂಲಗಳ ಸಂಗ್ರಹವಾಗಿದೆ. ನೀವು ಫೈಲ್‌ಗಳು, ಟಿಪ್ಪಣಿಗಳು ಅಥವಾ ವೆಬ್ ಪುಟಗಳನ್ನು ಸೇರಿಸಿದಾಗ, ಆ ಮೂಲಗಳ ಆಧಾರದ ಮೇಲೆ ರೇಖಾಚಿತ್ರವು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಶಾಖೆಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸುತ್ತದೆ.',
+  'fileCenter.intro': 'ಪ್ಯಾಕೇಜ್ ಎನ್ನುವುದು ಪ್ರಸ್ತುತ ಚಾರ್ಟ್‌ಗಾಗಿ ಆಯೋಜಿಸಲಾದ ಮೂಲಗಳ ಸಂಗ್ರಹವಾಗಿದೆ. ನೀವು ಫೈಲ್‌ಗಳು, ಟಿಪ್ಪಣಿಗಳು ಅಥವಾ ವೆಬ್ ಪುಟಗಳನ್ನು ಸೇರಿಸಿದಾಗ, ಆ ಮೂಲಗಳ ಆಧಾರದ ಮೇಲೆ ರೇಖಾಚಿತ್ರವು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಶಾಖೆಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸುತ್ತದೆ.',
   'fileCenter.defaultPackageName': 'ಹೆಸರಿಸದ ಡೇಟಾ ಪ್ಯಾಕೇಜ್',
   'fileCenter.packageNameLabel': 'ಪ್ಯಾಕೇಜ್ ಹೆಸರು',
   'fileCenter.createPackage': 'ಪ್ಯಾಕೇಜ್ ರಚಿಸಿ',
   'fileCenter.deletePackage': 'ಪ್ಯಾಕೇಜ್ ಅಳಿಸಿ',
-  'fileCenter.confirmDeletePackage':
-    'ಈ ಪ್ಯಾಕೇಜ್ ಮತ್ತು ಅದರ ಎಲ್ಲಾ ಮೂಲಗಳನ್ನು ಅಳಿಸುವುದೇ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
+  'fileCenter.confirmDeletePackage': 'ಈ ಪ್ಯಾಕೇಜ್ ಮತ್ತು ಅದರ ಎಲ್ಲಾ ಮೂಲಗಳನ್ನು ಅಳಿಸುವುದೇ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.',
   'fileCenter.corpusStatus': 'ಸೂಚ್ಯಂಕಿತ {completed}/{total} ಮೂಲಗಳು',
   'fileCenter.noSources': 'ಇನ್ನೂ ಯಾವುದೇ ಮೂಲವಿಲ್ಲ, ದಯವಿಟ್ಟು ಕೆಳಗೆ ಸೇರಿಸಿ.',
   'fileCenter.addSource': 'ಮೂಲವನ್ನು ಸೇರಿಸಿ',
@@ -1305,8 +1085,7 @@ export default {
   'fileCenter.pastePlaceholder': 'ಟಿಪ್ಪಣಿಗಳು ಅಥವಾ ಪಠ್ಯವನ್ನು ಮೂಲವಾಗಿ ಅಂಟಿಸಿ...',
   'fileCenter.webUrlPlaceholder': 'https://example.com/article',
   'fileCenter.webContentPlaceholder': 'ವೆಬ್ ಪುಟದ ಪಠ್ಯವನ್ನು ಅಂಟಿಸಿ ಅಥವಾ ಮೂಲವಾಗಿ ನಮೂದಿಸಿ...',
-  'fileCenter.saveDiagramForRag':
-    'ಪ್ಯಾಕೇಜ್ ಅನ್ನು ಸಂಯೋಜಿಸಲು ಮತ್ತು RAG ಮರುಪಡೆಯುವಿಕೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಲು ದಯವಿಟ್ಟು ಮೊದಲು ಚಾರ್ಟ್ ಅನ್ನು ಉಳಿಸಿ.',
+  'fileCenter.saveDiagramForRag': 'ಪ್ಯಾಕೇಜ್ ಅನ್ನು ಸಂಯೋಜಿಸಲು ಮತ್ತು RAG ಮರುಪಡೆಯುವಿಕೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಲು ದಯವಿಟ್ಟು ಮೊದಲು ಚಾರ್ಟ್ ಅನ್ನು ಉಳಿಸಿ.',
   'fileCenter.statusReady': 'ಸಿದ್ಧವಾಗಿದೆ · RAG ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ',
   'fileCenter.statusPending': 'ಸೇರಿಸಲಾಗಿದೆ',
   'fileCenter.statusIndexing': 'ಇಂಡೆಕ್ಸಿಂಗ್...',
@@ -1314,8 +1093,7 @@ export default {
   'fileCenter.statusFailed': 'ವಿಫಲರಾಗುತ್ತಾರೆ',
   'fileCenter.chunkingTooltip': 'ಚುಂಕಿಂಗ್ ಎಂಜಿನ್‌ಗಳು ಮತ್ತು ವಿಧಾನಗಳು (H = ಕ್ರಮಾನುಗತ)',
   'fileCenter.featureDisabledTitle': 'ಜ್ಞಾನದ ಸ್ಥಳವನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿಲ್ಲ',
-  'fileCenter.featureDisabledHint':
-    'ನಾಲೆಡ್ಜ್ ಸ್ಪೇಸ್ ವೈಶಿಷ್ಟ್ಯವನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿದಾಗ ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಗಳು ಲಭ್ಯವಿವೆ.',
+  'fileCenter.featureDisabledHint': 'ನಾಲೆಡ್ಜ್ ಸ್ಪೇಸ್ ವೈಶಿಷ್ಟ್ಯವನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿದಾಗ ಡಾಕ್ಯುಮೆಂಟ್ ಸಾರಾಂಶಗಳು ಲಭ್ಯವಿವೆ.',
   'fileCenter.createFailed': 'ಪ್ಯಾಕೇಜ್ ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ',
   'fileCenter.updateFailed': 'ಪ್ಯಾಕೇಜ್ ಅನ್ನು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ',
   'fileCenter.deleteFailed': 'ಅಳಿಸುವಿಕೆ ವಿಫಲವಾಗಿದೆ',
@@ -1324,14 +1102,10 @@ export default {
   'canvas.mindMapSideToolbar.closeOutline': 'ಬಾಹ್ಯರೇಖೆಯನ್ನು ಮುಚ್ಚಿ',
   'canvas.mindMapSideToolbar.outlineEmpty': 'ಇನ್ನೂ ನೋಡ್ ವಿಷಯವಿಲ್ಲ',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI ಬುದ್ಧಿವಂತ ಪೀಳಿಗೆ',
-  'canvas.mindMapSideToolbar.outlineEditHint':
-    'ನೋಡ್ ಪಠ್ಯವನ್ನು ನೈಜ ಸಮಯದಲ್ಲಿ ನೇರವಾಗಿ ಮಾರ್ಪಡಿಸಲು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಿ.',
-  'canvas.mindMapSideToolbar.outlineIntro':
-    'ನಕ್ಷೆಯ ರಚನೆಯನ್ನು ಎಡಿಟ್ ಮಾಡಲು ಔಟ್‌ಲೈನ್ ಅನ್ನು ಬಳಸಿ, ಆದೇಶವನ್ನು ಹೊಂದಿಸಲು ಡ್ರ್ಯಾಗ್ ಮತ್ತು ಡ್ರಾಪ್ ಮಾಡಿ ಮತ್ತು ಅವುಗಳನ್ನು ಬ್ಯಾಚ್‌ಗಳಲ್ಲಿ ಸೇರಿಸಲು ಬಹು ಸಾಲುಗಳನ್ನು ಅಂಟಿಸಿ.',
-  'canvas.mindMapSideToolbar.outlineDragHint':
-    'ಆದೇಶವನ್ನು ಸರಿಹೊಂದಿಸಲು ಎಳೆಯಿರಿ ಮತ್ತು ಬಿಡಿ; ಒಡಹುಟ್ಟಿದವರ ವರ್ಗಾವಣೆಗಾಗಿ ನೋಡ್‌ನ ಮೇಲೆ/ಕೆಳಗೆ ಇರಿಸಿ ಮತ್ತು ಚೈಲ್ಡ್ ನೋಡ್‌ಗಾಗಿ ಮಧ್ಯದಲ್ಲಿ ಇರಿಸಿ',
-  'canvas.mindMapSideToolbar.outlinePasteHint':
-    'ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ ಮತ್ತು ಪಠ್ಯದ ಬಹು ಸಾಲುಗಳನ್ನು ಅಂಟಿಸಿದ ನಂತರ, ಅದೇ ಮಟ್ಟದ ನೋಡ್‌ಗಳನ್ನು ಬ್ಯಾಚ್‌ಗಳಲ್ಲಿ ಸೇರಿಸಬಹುದು',
+  'canvas.mindMapSideToolbar.outlineEditHint': 'ನೋಡ್ ಪಠ್ಯವನ್ನು ನೈಜ ಸಮಯದಲ್ಲಿ ನೇರವಾಗಿ ಮಾರ್ಪಡಿಸಲು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಿ.',
+  'canvas.mindMapSideToolbar.outlineIntro': 'ನಕ್ಷೆಯ ರಚನೆಯನ್ನು ಎಡಿಟ್ ಮಾಡಲು ಔಟ್‌ಲೈನ್ ಅನ್ನು ಬಳಸಿ, ಆದೇಶವನ್ನು ಹೊಂದಿಸಲು ಡ್ರ್ಯಾಗ್ ಮತ್ತು ಡ್ರಾಪ್ ಮಾಡಿ ಮತ್ತು ಅವುಗಳನ್ನು ಬ್ಯಾಚ್‌ಗಳಲ್ಲಿ ಸೇರಿಸಲು ಬಹು ಸಾಲುಗಳನ್ನು ಅಂಟಿಸಿ.',
+  'canvas.mindMapSideToolbar.outlineDragHint': 'ಆದೇಶವನ್ನು ಸರಿಹೊಂದಿಸಲು ಎಳೆಯಿರಿ ಮತ್ತು ಬಿಡಿ; ಒಡಹುಟ್ಟಿದವರ ವರ್ಗಾವಣೆಗಾಗಿ ನೋಡ್‌ನ ಮೇಲೆ/ಕೆಳಗೆ ಇರಿಸಿ ಮತ್ತು ಚೈಲ್ಡ್ ನೋಡ್‌ಗಾಗಿ ಮಧ್ಯದಲ್ಲಿ ಇರಿಸಿ',
+  'canvas.mindMapSideToolbar.outlinePasteHint': 'ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ ಮತ್ತು ಪಠ್ಯದ ಬಹು ಸಾಲುಗಳನ್ನು ಅಂಟಿಸಿದ ನಂತರ, ಅದೇ ಮಟ್ಟದ ನೋಡ್‌ಗಳನ್ನು ಬ್ಯಾಚ್‌ಗಳಲ್ಲಿ ಸೇರಿಸಬಹುದು',
   'canvas.mindMapPaste.inserted': '{count} ಒಡಹುಟ್ಟಿದ ನೋಡ್‌ಗಳನ್ನು ಸೇರಿಸಲಾಗಿದೆ',
   'canvas.mindMapPaste.truncated': 'ಮಿತಿ ಮೀರಿದೆ, ಮೊದಲ 50 ಸಾಲುಗಳನ್ನು ಮಾತ್ರ ಸೇರಿಸಲಾಗಿದೆ',
   'canvas.mindMapSideToolbar.realtimeSync': 'ನೈಜ-ಸಮಯದ ಸಿಂಕ್ರೊನೈಸೇಶನ್',
@@ -1341,54 +1115,40 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'ಶಾಖೆಯನ್ನು ಅಳಿಸಿ',
   'canvas.mindMapSideToolbar.expandBranch': 'ಶಾಖೆಯನ್ನು ವಿಸ್ತರಿಸಿ',
   'canvas.mindMapSideToolbar.collapseBranch': 'ನಿಕಟ ಶಾಖೆ',
-  'canvas.mindMapSideToolbar.aiGenerateDesc':
-    'ಪ್ರಸ್ತುತ ವಿಷಯದ ಆಧಾರದ ಮೇಲೆ, ಒಂದು ವಾಕ್ಯದಲ್ಲಿ ಮನಸ್ಸಿನ ನಕ್ಷೆಯ ರಚನೆಯನ್ನು ಬುದ್ಧಿವಂತಿಕೆಯಿಂದ ವಿಸ್ತರಿಸಿ.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc': 'ಪ್ರಸ್ತುತ ವಿಷಯದ ಆಧಾರದ ಮೇಲೆ, ಒಂದು ವಾಕ್ಯದಲ್ಲಿ ಮನಸ್ಸಿನ ನಕ್ಷೆಯ ರಚನೆಯನ್ನು ಬುದ್ಧಿವಂತಿಕೆಯಿಂದ ವಿಸ್ತರಿಸಿ.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'ಟೊಳ್ಳಾದ ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರವನ್ನು ತೆರೆಯಿರಿ',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'ಟೊಳ್ಳಾದ ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರದಿಂದ ನಿರ್ಗಮಿಸಿ',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'ಪೂರ್ಣ ಚಿತ್ರಕ್ಕೆ ಮರುಸ್ಥಾಪಿಸಿ',
-  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
-  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
-    'Restoring replaces the current diagram with the one from before blanks were applied. Blanked nodes are filled back in, and any wording you changed is overwritten. Continue?',
-  'canvas.mindMapSideToolbar.learningSheetIntro':
-    'ಟೊಳ್ಳಾದ ಸ್ಕ್ಯಾಫೋಲ್ಡಿಂಗ್ ರೇಖಾಚಿತ್ರವನ್ನು ರಚಿಸಲು ವಿಧಾನವನ್ನು ಆರಿಸಿ, ತರಗತಿಯ ಅಭ್ಯಾಸ ಮತ್ತು ವಿಮರ್ಶೆಗೆ ಸೂಕ್ತವಾಗಿದೆ.',
-  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
-  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
-    'Blank every node except the center topic; reference answers appear below the diagram.',
-  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'ಪುನಃಸ್ಥಾಪನೆ ಐಕಾನ್',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody': 'ಮರುಸ್ಥಾಪನೆಯು ಟೊಳ್ಳಾಗಿ ನಮೂದಿಸುವ ಮೊದಲು ಚಿತ್ರದೊಂದಿಗೆ ಪ್ರಸ್ತುತ ಚಿತ್ರವನ್ನು ಓವರ್‌ರೈಟ್ ಮಾಡುತ್ತದೆ. ಟೊಳ್ಳಾದ ನೋಡ್‌ಗಳನ್ನು ತುಂಬಿಸಲಾಗುತ್ತದೆ ಮತ್ತು ನೀವು ಬದಲಾಯಿಸಿದ ಪಠ್ಯವನ್ನು ಮುಚ್ಚಲಾಗುತ್ತದೆ. ಮುಂದುವರಿಸುವುದೇ?',
+  'canvas.mindMapSideToolbar.learningSheetIntro': 'ಟೊಳ್ಳಾದ ಸ್ಕ್ಯಾಫೋಲ್ಡಿಂಗ್ ರೇಖಾಚಿತ್ರವನ್ನು ರಚಿಸಲು ವಿಧಾನವನ್ನು ಆರಿಸಿ, ತರಗತಿಯ ಅಭ್ಯಾಸ ಮತ್ತು ವಿಮರ್ಶೆಗೆ ಸೂಕ್ತವಾಗಿದೆ.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'ಎಲ್ಲಾ ಖಾಲಿ ಬಿಡಿ',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc': 'ಕೇಂದ್ರ ಥೀಮ್ ಹೊರತುಪಡಿಸಿ, ಎಲ್ಲಾ ಇತರ ನೋಡ್‌ಗಳು ಟೊಳ್ಳಾಗಿವೆ ಮತ್ತು ಉಲ್ಲೇಖ ಉತ್ತರಗಳನ್ನು ರೇಖಾಚಿತ್ರದ ಕೆಳಗೆ ಪ್ರದರ್ಶಿಸಲಾಗುತ್ತದೆ.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'ಎಲ್ಲಾ ನೋಡ್‌ಗಳನ್ನು ಹಾಲೊ ಮಾಡಿ',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'ಯಾದೃಚ್ಛಿಕವಾಗಿ ಖಾಲಿ ಬಿಡಲಾಗಿದೆ',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
-    'ಸಿಸ್ಟಮ್ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಸುಮಾರು 20% ನೋಡ್‌ಗಳನ್ನು ಯಾದೃಚ್ಛಿಕವಾಗಿ ಟೊಳ್ಳಾಗುತ್ತದೆ, ಮತ್ತು ಉಲ್ಲೇಖ ಉತ್ತರವನ್ನು ರೇಖಾಚಿತ್ರದ ಕೆಳಗೆ ಪ್ರದರ್ಶಿಸಲಾಗುತ್ತದೆ.',
-  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint':
-    '{count} ನೋಡ್‌ಗಳನ್ನು ಟೊಳ್ಳು ಮಾಡಲಾಗಿದೆ · ಮುಚ್ಚಲು Esc',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'ಸಿಸ್ಟಮ್ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಸುಮಾರು 20% ನೋಡ್‌ಗಳನ್ನು ಯಾದೃಚ್ಛಿಕವಾಗಿ ಟೊಳ್ಳಾಗುತ್ತದೆ, ಮತ್ತು ಉಲ್ಲೇಖ ಉತ್ತರವನ್ನು ರೇಖಾಚಿತ್ರದ ಕೆಳಗೆ ಪ್ರದರ್ಶಿಸಲಾಗುತ್ತದೆ.',
+  'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} ನೋಡ್‌ಗಳನ್ನು ಟೊಳ್ಳು ಮಾಡಲಾಗಿದೆ · ಮುಚ್ಚಲು Esc',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'ಕಸ್ಟಮ್ ಟೊಳ್ಳಾಗುವಿಕೆ',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
-    'ಮೌಸ್ ಸುತ್ತಿಗೆಯಾಗಿ ಬದಲಾಗುತ್ತದೆ, ಅದನ್ನು ಟೊಳ್ಳು ಮಾಡಲು ನೋಡ್ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ; ಪುನಃಸ್ಥಾಪಿಸಲು ಮತ್ತೆ ಕ್ಲಿಕ್ ಮಾಡಿ.',
-  'canvas.mindMapSideToolbar.learningSheetActiveStatus':
-    'ತೆರೆಯಲಾಗಿದೆ · ಹೋಲ್ಡ್ ಔಟ್ {count} ನೋಡ್‌ಗಳು',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
-    'ಹಾಲೋವಿಂಗ್ ಮೋಡ್‌ನಲ್ಲಿ · ದಯವಿಟ್ಟು ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿರುವ ನೋಡ್ ಅನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'ಮೌಸ್ ಸುತ್ತಿಗೆಯಾಗಿ ಬದಲಾಗುತ್ತದೆ, ಅದನ್ನು ಟೊಳ್ಳು ಮಾಡಲು ನೋಡ್ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ; ಪುನಃಸ್ಥಾಪಿಸಲು ಮತ್ತೆ ಕ್ಲಿಕ್ ಮಾಡಿ.',
+  'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'ತೆರೆಯಲಾಗಿದೆ · ಹೋಲ್ಡ್ ಔಟ್ {count} ನೋಡ್‌ಗಳು',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'ಹಾಲೋವಿಂಗ್ ಮೋಡ್‌ನಲ್ಲಿ · ದಯವಿಟ್ಟು ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿರುವ ನೋಡ್ ಅನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'ಕಸ್ಟಮ್ ನಾಕ್ಔಟ್ ಮೋಡ್',
-  'canvas.mindMapSideToolbar.learningSheetPickHint':
-    'ಹಾಲೋ ಔಟ್ ಮಾಡಲು ನೋಡ್ ಅನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ, ಮರುಸ್ಥಾಪಿಸಲು ಮತ್ತೊಮ್ಮೆ ಕ್ಲಿಕ್ ಮಾಡಿ · {count} ಅನ್ನು ಹಾಲೋ ಔಟ್ ಮಾಡಲಾಗಿದೆ · ನಿರ್ಗಮಿಸಲು Esc',
+  'canvas.mindMapSideToolbar.learningSheetPickHint': 'ಹಾಲೋ ಔಟ್ ಮಾಡಲು ನೋಡ್ ಅನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ, ಮರುಸ್ಥಾಪಿಸಲು ಮತ್ತೊಮ್ಮೆ ಕ್ಲಿಕ್ ಮಾಡಿ · {count} ಅನ್ನು ಹಾಲೋ ಔಟ್ ಮಾಡಲಾಗಿದೆ · ನಿರ್ಗಮಿಸಲು Esc',
   'canvas.mindMapSideToolbar.learningSheetPickDone': 'ಮುಗಿಸು',
-  'canvas.mindMapSideToolbar.learningSheetProtectedNode':
-    'ಕೇಂದ್ರೀಯ ನೋಡ್ ಮತ್ತು ರಚನೆ ನೋಡ್ ಅನ್ನು ಟೊಳ್ಳಾಗಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ',
+  'canvas.mindMapSideToolbar.learningSheetProtectedNode': 'ಕೇಂದ್ರೀಯ ನೋಡ್ ಮತ್ತು ರಚನೆ ನೋಡ್ ಅನ್ನು ಟೊಳ್ಳಾಗಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ',
   'canvas.mindMapSideToolbar.learningSheetBlankHistory': 'ಟೊಳ್ಳಾದ ನೋಡ್‌ಗಳು',
   'canvas.mindMapSideToolbar.learningSheetRandomBlankHistory': 'ಯಾದೃಚ್ಛಿಕವಾಗಿ ಟೊಳ್ಳಾದ ನೋಡ್‌ಗಳು',
   'canvas.mindMapSideToolbar.learningSheetRestoreHistory': 'ನೋಡ್ ಪಠ್ಯವನ್ನು ಮರುಸ್ಥಾಪಿಸಿ',
   'canvas.mindMapSideToolbar.learningSheetHideAnswers': 'ಉಲ್ಲೇಖ ಉತ್ತರಗಳನ್ನು ಮರೆಮಾಡಿ',
   'canvas.mindMapSideToolbar.learningSheetKeepAnswers': 'ಉಲ್ಲೇಖ ಉತ್ತರಗಳನ್ನು ಇರಿಸಿಕೊಳ್ಳಿ',
-  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint':
-    'ಮುಚ್ಚಿದಾಗ, ಉತ್ತರವನ್ನು ನಾಕ್‌ಔಟ್ ಪ್ರದೇಶದಲ್ಲಿ ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಪ್ರದರ್ಶಿಸಲಾಗುವುದಿಲ್ಲ',
+  'canvas.mindMapSideToolbar.learningSheetKeepAnswersHint': 'ಮುಚ್ಚಿದಾಗ, ಉತ್ತರವನ್ನು ನಾಕ್‌ಔಟ್ ಪ್ರದೇಶದಲ್ಲಿ ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಪ್ರದರ್ಶಿಸಲಾಗುವುದಿಲ್ಲ',
   'canvas.mindMapSideToolbar.learningSheetAnswersLabel': 'ಕ್ಯಾನ್ವಾಸ್ ಉಲ್ಲೇಖ ಉತ್ತರಗಳು',
   'canvas.mindMapSideToolbar.learningSheetAnswersShow': 'ತೋರಿಸು',
   'canvas.mindMapSideToolbar.learningSheetAnswersHide': 'ಮರೆಮಾಡಿ',
   'canvas.mindMapSideToolbar.learningSheetAnswersShortcut': 'ಶಾರ್ಟ್‌ಕಟ್ ಕೀ: Ctrl + Shift + H',
   'canvas.mindMapSideToolbar.openMindmate': 'MindMate ಮೈಂಡ್‌ಮೇಟ್ ತೆರೆಯಿರಿ',
-  'canvas.toolbar.learningSheetExportNudgeTitle':
-    'ವಿಮರ್ಶೆಯನ್ನು ಹೆಚ್ಚು ಪರಿಣಾಮಕಾರಿಯಾಗಿ ಮಾಡಲು ಒಂದು ಕ್ಲಿಕ್‌ನಲ್ಲಿ ಅಧ್ಯಯನ ಹಾಳೆಗಳನ್ನು ರಚಿಸಿ',
-  'canvas.toolbar.learningSheetExportNudgeDesc':
-    'PNG ಅಥವಾ PDF ಗೆ ರಫ್ತು ಮಾಡಿ, ಅಭ್ಯಾಸಕ್ಕಾಗಿ ವಿದ್ಯಾರ್ಥಿಗಳೊಂದಿಗೆ ಮುದ್ರಿಸಿ ಮತ್ತು ಹಂಚಿಕೊಳ್ಳಿ.',
+  'canvas.toolbar.learningSheetExportNudgeTitle': 'ವಿಮರ್ಶೆಯನ್ನು ಹೆಚ್ಚು ಪರಿಣಾಮಕಾರಿಯಾಗಿ ಮಾಡಲು ಒಂದು ಕ್ಲಿಕ್‌ನಲ್ಲಿ ಅಧ್ಯಯನ ಹಾಳೆಗಳನ್ನು ರಚಿಸಿ',
+  'canvas.toolbar.learningSheetExportNudgeDesc': 'PNG ಅಥವಾ PDF ಗೆ ರಫ್ತು ಮಾಡಿ, ಅಭ್ಯಾಸಕ್ಕಾಗಿ ವಿದ್ಯಾರ್ಥಿಗಳೊಂದಿಗೆ ಮುದ್ರಿಸಿ ಮತ್ತು ಹಂಚಿಕೊಳ್ಳಿ.',
   'canvas.toolbar.learningSheetExportNudgeDismiss': 'ಗೊತ್ತಿತ್ತು',
   'canvas.toolbar.learningSheetExportNudgeNeverRemind': 'ಮತ್ತೆ ನೆನಪಿಸಬೇಡ',
   'diagram.flow.newCause': 'ಹೊಸ ಕಾರಣಗಳು',
@@ -1467,10 +1227,8 @@ export default {
   'editor.unsavedChanges': 'ಉಳಿಸದ ಬದಲಾವಣೆಗಳಿವೆ',
   'editor.savedSuccess': 'ಉಳಿಸಲಾಗಿದೆ',
   'editor.saveNeedsLogin': 'ದಯವಿಟ್ಟು ಲಾಗ್ ಇನ್ ಮಾಡಿ ಮತ್ತು ಉಳಿಸಿ',
-  'editor.saveWaitForGeneration':
-    'ಉಳಿಸುವ ಮೊದಲು AI ಉತ್ಪಾದನೆಯು ಪೂರ್ಣಗೊಳ್ಳುವವರೆಗೆ ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ.',
-  'editor.saveBlockedSubgraphPreview':
-    'ದಯವಿಟ್ಟು ಉಳಿಸುವ ಮೊದಲು AI ಉಪ-ಚಿತ್ರದ ಪೂರ್ವವೀಕ್ಷಣೆಯನ್ನು ಅಳವಡಿಸಿಕೊಳ್ಳಿ ಅಥವಾ ತಿರಸ್ಕರಿಸಿ.',
+  'editor.saveWaitForGeneration': 'ಉಳಿಸುವ ಮೊದಲು AI ಉತ್ಪಾದನೆಯು ಪೂರ್ಣಗೊಳ್ಳುವವರೆಗೆ ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ.',
+  'editor.saveBlockedSubgraphPreview': 'ದಯವಿಟ್ಟು ಉಳಿಸುವ ಮೊದಲು AI ಉಪ-ಚಿತ್ರದ ಪೂರ್ವವೀಕ್ಷಣೆಯನ್ನು ಅಳವಡಿಸಿಕೊಳ್ಳಿ ಅಥವಾ ತಿರಸ್ಕರಿಸಿ.',
   'editor.saveBlockedCollabActive': 'ಲೈವ್ ಸಹಯೋಗದ ಸಮಯದಲ್ಲಿ ಸಹಯೋಗದ ಅಧಿವೇಶನದ ಮೂಲಕ ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ',
   'editor.saveBlockedCollabGuest': 'ಸಹಯೋಗದ ಸಮಯದಲ್ಲಿ ಹೋಸ್ಟ್ ಮಾತ್ರ ಉಳಿಸಬಹುದು',
   'editor.saveNothingToSave': 'ಇನ್ನೂ ಉಳಿಸಲು ಯಾವುದೇ ವಿಷಯವಿಲ್ಲ',
@@ -1481,8 +1239,7 @@ export default {
   'editor.redo': 'ಮತ್ತೆಮಾಡು',
   'editor.saveDiagram': 'ಚಾರ್ಟ್ ಉಳಿಸಿ',
   'editor.selectDiagramType': 'ಚಾರ್ಟ್ ಪ್ರಕಾರವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-  'editor.slotsFull':
-    'ಸ್ಥಳವು ತುಂಬಿದೆ ಮತ್ತು ಸ್ವಯಂಚಾಲಿತ ಉಳಿತಾಯ ಸಾಧ್ಯವಿಲ್ಲ. ಜಾಗವನ್ನು ಮುಕ್ತಗೊಳಿಸಲು ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಐಕಾನ್‌ಗಳನ್ನು ಅಳಿಸಿ.',
+  'editor.slotsFull': 'ಸ್ಥಳವು ತುಂಬಿದೆ ಮತ್ತು ಸ್ವಯಂಚಾಲಿತ ಉಳಿತಾಯ ಸಾಧ್ಯವಿಲ್ಲ. ಜಾಗವನ್ನು ಮುಕ್ತಗೊಳಿಸಲು ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಐಕಾನ್‌ಗಳನ್ನು ಅಳಿಸಿ.',
   'editor.undo': 'ರದ್ದುಮಾಡಿ',
   'editor.zoomIn': 'ಹಿಗ್ಗಿಸಿ',
   'editor.zoomOut': 'ಜೂಮ್ ಔಟ್',
@@ -1522,8 +1279,7 @@ export default {
   'landing.diagramGrid.tree_map.title': 'ಮರದ ರೇಖಾಚಿತ್ರ',
   'landing.diagramGrid.voice_notes.desc': 'ರಚಿಸಿದ ನಕ್ಷೆಯನ್ನು ರೆಕಾರ್ಡಿಂಗ್ ಮಾಡಲಾಗುತ್ತಿದೆ',
   'landing.diagramGrid.voice_notes.title': 'ಧ್ವನಿ ಟಿಪ್ಪಣಿಗಳು',
-  'landing.template.freePlaceholder':
-    'ಶಾಖೆಗಳು, ಹಂತಗಳು, ವರ್ಗಗಳಂತಹ ವಿಷಯ ಅಥವಾ ರಚನಾತ್ಮಕ ಅವಶ್ಯಕತೆಗಳನ್ನು ವಿವರಿಸಿ...ಅಥವಾ ಕೆಳಗಿನಿಂದ ವಿವರಣೆ ಟೆಂಪ್ಲೇಟ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'landing.template.freePlaceholder': 'ಶಾಖೆಗಳು, ಹಂತಗಳು, ವರ್ಗಗಳಂತಹ ವಿಷಯ ಅಥವಾ ರಚನಾತ್ಮಕ ಅವಶ್ಯಕತೆಗಳನ್ನು ವಿವರಿಸಿ...ಅಥವಾ ಕೆಳಗಿನಿಂದ ವಿವರಣೆ ಟೆಂಪ್ಲೇಟ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'landing.template.slot.criterion': 'ವರ್ಗೀಕರಣ ಮಾನದಂಡಗಳು',
   'landing.template.slot.event': 'ಘಟನೆ',
   'landing.template.slot.itemA': 'ವಿಷಯ ಎ',
@@ -1545,10 +1301,8 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'ಆನ್-ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗ',
   'mindgraphLanding.dialogSharedTitle': 'ಒಟ್ಟಿಗೆ ಸಹಕರಿಸಿ',
   'mindgraphLanding.import': 'ಆಮದು',
-  'mindgraphLanding.languageMenuTitle':
-    'ಭಾಷೆ (ಇಂಟರ್‌ಫೇಸ್ ಅನ್ನು AI ಔಟ್‌ಪುಟ್‌ನೊಂದಿಗೆ ಸಿಂಕ್ರೊನೈಸ್ ಮಾಡಲಾಗಿದೆ)',
-  'mindgraphLanding.inputPlaceholder':
-    'ನಿಮ್ಮ ಐಕಾನ್ ಅನ್ನು ವಿವರಿಸಿ ಅಥವಾ ಕೆಳಗಿನ ನಿರ್ದಿಷ್ಟ ಐಕಾನ್ ಟೆಂಪ್ಲೇಟ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡಿ...',
+  'mindgraphLanding.languageMenuTitle': 'ಭಾಷೆ (ಇಂಟರ್‌ಫೇಸ್ ಅನ್ನು AI ಔಟ್‌ಪುಟ್‌ನೊಂದಿಗೆ ಸಿಂಕ್ರೊನೈಸ್ ಮಾಡಲಾಗಿದೆ)',
+  'mindgraphLanding.inputPlaceholder': 'ನಿಮ್ಮ ಐಕಾನ್ ಅನ್ನು ವಿವರಿಸಿ ಅಥವಾ ಕೆಳಗಿನ ನಿರ್ದಿಷ್ಟ ಐಕಾನ್ ಟೆಂಪ್ಲೇಟ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡಿ...',
   'mindgraphLanding.join': 'ಸೇರಿಕೊಳ್ಳಿ',
   'mindgraphLanding.joinFailed': 'ಸೇರಲು ವಿಫಲವಾಗಿದೆ',
   'mindgraphLanding.joinPresentationFailed': 'ಡೆಮೊಗೆ ಸೇರಲು ವಿಫಲವಾಗಿದೆ',
@@ -1557,23 +1311,20 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'ಆನ್-ಕ್ಯಾಂಪಸ್ ಸೆಶನ್ ಅನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ',
   'mindgraphLanding.networkError': 'ನೆಟ್ವರ್ಕ್ ದೋಷ',
   'mindgraphLanding.networkErrorJoin': 'ನೆಟ್‌ವರ್ಕ್ ದೋಷ, ಸೇರುವಿಕೆ ವಿಫಲವಾಗಿದೆ',
-  'mindgraphLanding.orgSessionsEmpty':
-    'ಸೇರಲು ಪ್ರಸ್ತುತ ಯಾವುದೇ ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗದ ಸೆಷನ್‌ಗಳಿಲ್ಲ (ಸಹೋದ್ಯೋಗಿಗಳು "ಆನ್-ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗ" ಆನ್ ಮಾಡಿರಬೇಕು).',
+  'mindgraphLanding.orgSessionsEmpty': 'ಸೇರಲು ಪ್ರಸ್ತುತ ಯಾವುದೇ ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗದ ಸೆಷನ್‌ಗಳಿಲ್ಲ (ಸಹೋದ್ಯೋಗಿಗಳು "ಆನ್-ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗ" ಆನ್ ಮಾಡಿರಬೇಕು).',
   'mindgraphLanding.participantsOnline': '{n} ಜನರು ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ',
   'mindgraphLanding.schoolCollab': 'ಆನ್-ಕ್ಯಾಂಪಸ್ ಸಹಯೋಗ',
-  'mindgraphLanding.sharedCodeHint':
-    'ಇತರ ಪಕ್ಷದ ಸಹಯೋಗದ ಸೆಷನ್‌ಗೆ ಸೇರಲು ಆಹ್ವಾನ ಕೋಡ್ (xxx-xxx) ನಮೂದಿಸಿ.',
+  'mindgraphLanding.sharedCodeHint': 'ಇತರ ಪಕ್ಷದ ಸಹಯೋಗದ ಸೆಷನ್‌ಗೆ ಸೇರಲು ಆಹ್ವಾನ ಕೋಡ್ (xxx-xxx) ನಮೂದಿಸಿ.',
   'mindgraphLanding.sharedCollab': 'ಒಟ್ಟಿಗೆ ಸಹಕರಿಸಿ',
   'mindgraphLanding.joinDiagramEdit': 'ಐಕಾನ್ ಸಂಪಾದಕವನ್ನು ಸೇರಿಸಿ',
-  'mindgraphLanding.welcome':
-    '{username}ಹಲೋ, ನಾನು ಮೈಂಡ್‌ಗ್ರಾಫ್ MindGraph AI ಚಿಂತನೆಯ ರೇಖಾಚಿತ್ರ ಸಹಾಯಕ',
+  'mindgraphLanding.welcome': '{username}ಹಲೋ, ನಾನು ಮೈಂಡ್‌ಗ್ರಾಫ್ MindGraph AI ಚಿಂತನೆಯ ರೇಖಾಚಿತ್ರ ಸಹಾಯಕ',
   'canvasPage.collabReconnecting': 'ಸಹಯೋಗವನ್ನು ಮರುಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ...',
   'canvasPage.collabConnectionFailed': 'ಸಹಯೋಗದ ಸಂಪರ್ಕವನ್ನು ಕಡಿತಗೊಳಿಸಲಾಗಿದೆ.',
   'canvasPage.collabRetryConnection': 'ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
   'canvasPage.collabParticipantsAria': 'ಸಹಕಾರಿ ಭಾಗವಹಿಸುವವರು',
   'canvasPage.collabConnected': 'ಸಂಪರ್ಕಗೊಂಡಿದೆ',
   'canvas.topBar.viewOnly': 'ವೀಕ್ಷಿಸಿ ಮಾತ್ರ',
-  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
+  'canvas.share.readOnlyBar': '{name} ಅನ್ನು ಸಂಪಾದಿಸಲಾಗುತ್ತಿದೆ ಮತ್ತು ಪ್ರಸ್ತುತ ಓದಲು-ಮಾತ್ರವಾಗಿದೆ.',
   'canvasPage.collabParticipantsMore': 'ಇನ್ನಷ್ಟು',
   'canvas.ribbon.file': 'ದಾಖಲೆ',
   'canvas.ribbon.nodes': 'ನೋಡ್',
@@ -1625,8 +1376,7 @@ export default {
   'canvas.ribbon.tip.numbering': 'ಮಾಸ್ಟರ್ ಶಾಖೆಯ ಸಂಖ್ಯೆಯನ್ನು ತೋರಿಸಿ ಅಥವಾ ಮರೆಮಾಡಿ',
   'canvas.ribbon.tip.insert': 'ಸಂಬಂಧದ ಸಾಲುಗಳು, ಸಾರಾಂಶಗಳು ಅಥವಾ ಸೂತ್ರಗಳನ್ನು ಸೇರಿಸಿ',
   'canvas.ribbon.tip.topicGenerate': 'ಕೇಂದ್ರ ಥೀಮ್‌ನಿಂದ ಸಂಪೂರ್ಣ ನಕ್ಷೆಯನ್ನು ರಚಿಸಿ',
-  'canvas.ribbon.tip.docGenerate':
-    'ನಕ್ಷೆಯನ್ನು ರಚಿಸಲು ಫೈಲ್ ಅನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಪಠ್ಯವನ್ನು ಅಂಟಿಸಿ',
+  'canvas.ribbon.tip.docGenerate': 'ನಕ್ಷೆಯನ್ನು ರಚಿಸಲು ಫೈಲ್ ಅನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಪಠ್ಯವನ್ನು ಅಂಟಿಸಿ',
   'canvas.ribbon.tip.webGenerate': 'ವೆಬ್ ಪುಟಗಳನ್ನು ಕ್ರಾಲ್ ಮಾಡಿ ಮತ್ತು ನಕ್ಷೆಗಳನ್ನು ರಚಿಸಿ',
   'canvas.ribbon.tip.voiceSummary': 'ರೆಕಾರ್ಡಿಂಗ್ ನಂತರ ನಕ್ಷೆ ರಚಿಸಿ',
   'canvas.ribbon.tip.waterfall': 'ಆಯ್ದ ನೋಡ್ಗಾಗಿ ಶಾಖೆಗಳನ್ನು ಶಿಫಾರಸು ಮಾಡಿ - ಕ್ಯಾನ್ವಾಸ್ಗೆ ಎಳೆಯಬಹುದು',
@@ -1644,17 +1394,6 @@ export default {
   'canvas.ribbon.tip.collabOrg': 'ಒಟ್ಟಿಗೆ ಸಂಪಾದಿಸಲು ನಮ್ಮ ಶಾಲೆಯ ಸಹೋದ್ಯೋಗಿಗಳನ್ನು ಆಹ್ವಾನಿಸಿ',
   'canvas.ribbon.tip.collabCross': 'ಈ ನಕ್ಷೆಯನ್ನು ಸಂಪಾದಿಸಲು ಶಾಲೆಗಳಾದ್ಯಂತ ಸಹಕರಿಸಿ',
   'canvas.ribbon.tip.collabOff': 'ಪ್ರಸ್ತುತ ಸಹಯೋಗದ ಅವಧಿಯನ್ನು ಅಂತ್ಯಗೊಳಿಸಿ',
-  'canvas.ribbon.shareToSeminar': 'Share to seminar',
-  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
-  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
-  'canvas.ribbon.shareToSeminarHint':
-    'Start or join a seminar in MindMate, then come back to share this diagram.',
-  'canvas.ribbon.shareToSeminarConfirm': 'Share',
-  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
-  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
-  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
-  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
-  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.ribbon.tip.bold': 'ಆಯ್ದ ನೋಡ್ ಪಠ್ಯವನ್ನು ಬೋಲ್ಡ್ ಮಾಡಿ',
   'canvas.ribbon.tip.italic': 'ಆಯ್ದ ನೋಡ್ ಪಠ್ಯವನ್ನು ಇಟಾಲಿಕ್ಸ್‌ಗೆ ಹೊಂದಿಸಿ',
   'canvas.ribbon.tip.alignLeft': 'ನೋಡ್ ಪಠ್ಯವನ್ನು ಎಡಕ್ಕೆ ಒಟ್ಟುಗೂಡಿಸಲಾಗಿದೆ',
@@ -1706,24 +1445,20 @@ export default {
   'canvas.ribbon.docGenerate': 'ಡಾಕ್ಯುಮೆಂಟ್ ಉತ್ಪಾದನೆ',
   'canvas.ribbon.webGenerate': 'ವೆಬ್ ಲಿಂಕ್ ಉತ್ಪಾದನೆ',
   'canvas.ribbon.voiceSummary': 'ರೆಕಾರ್ಡಿಂಗ್ ಸಾರಾಂಶ',
-  'canvas.ribbon.sourceLocked':
-    'ಪ್ರಸ್ತುತ ನಕ್ಷೆಯು {source} ಅನ್ನು ಮೂಲವಾಗಿ ಬಳಸಿದೆ. ಮತ್ತೊಂದು ಪೀಳಿಗೆಯ ವಿಧಾನಕ್ಕೆ ಬದಲಾಯಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಹೊಸ ನಕ್ಷೆಯನ್ನು ರಚಿಸಿ.',
+  'canvas.ribbon.sourceLocked': 'ಪ್ರಸ್ತುತ ನಕ್ಷೆಯು {source} ಅನ್ನು ಮೂಲವಾಗಿ ಬಳಸಿದೆ. ಮತ್ತೊಂದು ಪೀಳಿಗೆಯ ವಿಧಾನಕ್ಕೆ ಬದಲಾಯಿಸುವ ಮೊದಲು ದಯವಿಟ್ಟು ಹೊಸ ನಕ್ಷೆಯನ್ನು ರಚಿಸಿ.',
   'canvas.ribbon.sourceKind.doc': 'ದಾಖಲೆ',
   'canvas.ribbon.sourceKind.web': 'ವೆಬ್ ಲಿಂಕ್',
   'canvas.ribbon.sourceKind.voice': 'ರೆಕಾರ್ಡಿಂಗ್',
   'canvas.ribbon.assocLine': 'ಸಂಬಂಧಿತ ಸಾಲು',
-  'canvas.ribbon.assocLineHint':
-    'ಸಂಪರ್ಕಿಸಲು ಮತ್ತೊಂದು ನೋಡ್ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ. ರದ್ದುಗೊಳಿಸಲು Esc ಅಥವಾ ಖಾಲಿ ಕ್ಯಾನ್ವಾಸ್.',
-  'canvas.ribbon.assocLineSameSide':
-    'ಅಸೋಸಿಯೇಷನ್ ​​ಲೈನ್‌ಗಳು ಒಂದೇ ಬದಿಯಲ್ಲಿರುವ ನೋಡ್‌ಗಳನ್ನು ಮಾತ್ರ ಸಂಪರ್ಕಿಸಬಹುದು',
+  'canvas.ribbon.assocLineHint': 'ಸಂಪರ್ಕಿಸಲು ಮತ್ತೊಂದು ನೋಡ್ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ. ರದ್ದುಗೊಳಿಸಲು Esc ಅಥವಾ ಖಾಲಿ ಕ್ಯಾನ್ವಾಸ್.',
+  'canvas.ribbon.assocLineSameSide': 'ಅಸೋಸಿಯೇಷನ್ ​​ಲೈನ್‌ಗಳು ಒಂದೇ ಬದಿಯಲ್ಲಿರುವ ನೋಡ್‌ಗಳನ್ನು ಮಾತ್ರ ಸಂಪರ್ಕಿಸಬಹುದು',
   'canvas.ribbon.assocLineDelete': 'ಸಂಬಂಧಿತ ಸಾಲುಗಳನ್ನು ಅಳಿಸಿ',
   'canvas.ribbon.summary': 'ಸಾರಾಂಶ',
   'canvas.ribbon.insertImage': 'ಚಿತ್ರ',
   'canvas.ribbon.insertIcon': 'ಐಕಾನ್',
   'canvas.ribbon.insertLink': 'ಲಿಂಕ್',
   'canvas.ribbon.makeLearningSheet': 'ಅಧ್ಯಯನದ ಹಾಳೆಯನ್ನು ಮಾಡಿ',
-  'canvas.ribbon.makeLearningSheetHint':
-    'ವಿಮರ್ಶೆಯನ್ನು ಹೆಚ್ಚು ಪರಿಣಾಮಕಾರಿಯಾಗಿ ಮಾಡಲು ಒಂದು ಕ್ಲಿಕ್‌ನಲ್ಲಿ ಅಧ್ಯಯನ ಹಾಳೆಗಳನ್ನು ರಚಿಸಿ',
+  'canvas.ribbon.makeLearningSheetHint': 'ವಿಮರ್ಶೆಯನ್ನು ಹೆಚ್ಚು ಪರಿಣಾಮಕಾರಿಯಾಗಿ ಮಾಡಲು ಒಂದು ಕ್ಲಿಕ್‌ನಲ್ಲಿ ಅಧ್ಯಯನ ಹಾಳೆಗಳನ್ನು ರಚಿಸಿ',
   'canvas.ribbon.selectTwoNodes': 'ದಯವಿಟ್ಟು ಮೊದಲು ಎರಡು ನೋಡ್‌ಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'canvas.ribbon.insertComingSoon': 'ಅಳವಡಿಕೆ ಸಾಮರ್ಥ್ಯವು ಶೀಘ್ರದಲ್ಲೇ ಲಭ್ಯವಿರುತ್ತದೆ',
   'canvas.ribbon.summaryNeedSiblings': 'ದಯವಿಟ್ಟು ಅದೇ ಪೋಷಕ ನೋಡ್ ಅಡಿಯಲ್ಲಿ ಸತತ ನೋಡ್‌ಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ',
@@ -1734,23 +1469,19 @@ export default {
   'canvas.ribbon.linkConfirm': 'ಲಿಂಕ್ ಸೇರಿಸಿ',
   'canvas.ribbon.imageUrl': 'ಚಿತ್ರದ ವಿಳಾಸ',
   'canvas.ribbon.imagePick': 'ಚಿತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.ribbon.imageInvalid':
-    'ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಚಿತ್ರದ ವಿಳಾಸವನ್ನು ನಮೂದಿಸಿ ಅಥವಾ ಫೈಲ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.ribbon.imageTooLarge':
-    'ಚಿತ್ರವು ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ, ದಯವಿಟ್ಟು ಚಿಕ್ಕ ಫೈಲ್‌ಗೆ ಬದಲಾಯಿಸಿ ಅಥವಾ URL ಬಳಸಿ',
+  'canvas.ribbon.imageInvalid': 'ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಚಿತ್ರದ ವಿಳಾಸವನ್ನು ನಮೂದಿಸಿ ಅಥವಾ ಫೈಲ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.ribbon.imageTooLarge': 'ಚಿತ್ರವು ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ, ದಯವಿಟ್ಟು ಚಿಕ್ಕ ಫೈಲ್‌ಗೆ ಬದಲಾಯಿಸಿ ಅಥವಾ URL ಬಳಸಿ',
   'canvas.ribbon.imageConfirm': 'ಚಿತ್ರವನ್ನು ಸೇರಿಸಿ',
   'canvas.ribbon.clearIcon': 'ಐಕಾನ್ ತೆಗೆದುಹಾಕಿ',
   'canvas.ribbon.openLink': 'ಲಿಂಕ್ ತೆರೆಯಿರಿ',
   'canvas.ribbon.enlargeImage': 'ಚಿತ್ರವನ್ನು ದೊಡ್ಡದಾಗಿಸಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
   'canvas.ribbon.aiHero.doc.ribbon': 'ಡಾಕ್ಯುಮೆಂಟ್ ಪರಿಷ್ಕರಣೆ',
   'canvas.ribbon.aiHero.doc.title': 'ದಾಖಲೆಗಳನ್ನು ಅಪ್ಲೋಡ್ ಮಾಡಿ',
-  'canvas.ribbon.aiHero.doc.line1':
-    'ಪ್ರಮುಖ ಅಂಶಗಳನ್ನು ಬುದ್ಧಿವಂತಿಕೆಯಿಂದ ಸಂಸ್ಕರಿಸಲು ಡಾಕ್ಯುಮೆಂಟ್‌ಗಳನ್ನು ಮೈಂಡ್ ಮ್ಯಾಪ್‌ಗಳಾಗಿ ಪರಿವರ್ತಿಸಿ',
+  'canvas.ribbon.aiHero.doc.line1': 'ಪ್ರಮುಖ ಅಂಶಗಳನ್ನು ಬುದ್ಧಿವಂತಿಕೆಯಿಂದ ಸಂಸ್ಕರಿಸಲು ಡಾಕ್ಯುಮೆಂಟ್‌ಗಳನ್ನು ಮೈಂಡ್ ಮ್ಯಾಪ್‌ಗಳಾಗಿ ಪರಿವರ್ತಿಸಿ',
   'canvas.ribbon.aiHero.doc.line2': '',
   'canvas.ribbon.aiHero.web.ribbon': 'ನಕ್ಷೆ ಓದುವ ವೆಬ್ ಪುಟ',
   'canvas.ribbon.aiHero.web.title': 'ವೆಬ್ ಲಿಂಕ್ ಲಿಪ್ಯಂತರಣ',
-  'canvas.ribbon.aiHero.web.line1':
-    'ನೆಟ್‌ವರ್ಕ್ ಸಂಪರ್ಕವನ್ನು ನಮೂದಿಸಿ ಮತ್ತು ಸಾರಾಂಶವನ್ನು ಬುದ್ಧಿವಂತಿಕೆಯಿಂದ ಸಂಸ್ಕರಿಸಿ',
+  'canvas.ribbon.aiHero.web.line1': 'ನೆಟ್‌ವರ್ಕ್ ಸಂಪರ್ಕವನ್ನು ನಮೂದಿಸಿ ಮತ್ತು ಸಾರಾಂಶವನ್ನು ಬುದ್ಧಿವಂತಿಕೆಯಿಂದ ಸಂಸ್ಕರಿಸಿ',
   'canvas.ribbon.aiHero.web.line2': '',
   'canvas.ribbon.aiHero.voice.ribbon': 'ಸಭೆಯ ಕಲಾಕೃತಿ',
   'canvas.ribbon.aiHero.voice.title': 'ನೈಜ-ಸಮಯದ ರೆಕಾರ್ಡಿಂಗ್ ಅನ್ನು ಆನ್ ಮಾಡಿ',
@@ -1759,36 +1490,30 @@ export default {
   'canvas.ribbon.aiHero.chat.ribbon': 'ಚಾಟ್ ಆಮದು',
   'canvas.ribbon.aiHero.chat.title': 'ಚಾಟ್ ಇತಿಹಾಸವನ್ನು ಆಮದು ಮಾಡಿ',
   'canvas.ribbon.aiHero.chat.line1': 'ಜೋಡಿಸುವ ಕೋಡ್ ಅನ್ನು ಬಳಸಿಕೊಂಡು ರೀಡರ್ ಅನ್ನು ಸಂಪರ್ಕಿಸಿ',
-  'canvas.ribbon.aiHero.chat.line2':
-    'ಸಂಭಾಷಣೆಗಳನ್ನು ಆಮದು ಮಾಡಿ ಮತ್ತು ಒಂದೇ ಕ್ಲಿಕ್‌ನಲ್ಲಿ ನಕ್ಷೆಗಳನ್ನು ರಚಿಸಿ',
+  'canvas.ribbon.aiHero.chat.line2': 'ಸಂಭಾಷಣೆಗಳನ್ನು ಆಮದು ಮಾಡಿ ಮತ್ತು ಒಂದೇ ಕ್ಲಿಕ್‌ನಲ್ಲಿ ನಕ್ಷೆಗಳನ್ನು ರಚಿಸಿ',
   'canvas.ribbon.aiHero.classroom.ribbon': 'ಕಲಿಕೆಯ ಕಲಾಕೃತಿ',
   'canvas.ribbon.aiHero.classroom.title': 'ಥಿಂಕಿಂಗ್ ಲೆಕ್ಚರ್ ಹಾಲ್ ತೆರೆಯಿರಿ',
   'canvas.ribbon.aiHero.classroom.line1': 'ಈ ಮೈಂಡ್ ಮ್ಯಾಪ್‌ನಲ್ಲಿ AI ಶಿಕ್ಷಕರು ನಿಮ್ಮೊಂದಿಗೆ ಮಾತನಾಡಲಿ',
   'canvas.ribbon.aiHero.classroom.line2': '',
   'canvas.ribbon.aiHero.learningSheet.ribbon': 'ಬ್ರಾಕೆಟ್ ಅನ್ನು ಹಾಲೊ ಮಾಡಿ',
   'canvas.ribbon.aiHero.learningSheet.title': 'ಟೊಳ್ಳಾದ ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರ',
-  'canvas.ribbon.aiHero.learningSheet.line1':
-    'ತರಗತಿಯ ಅಭ್ಯಾಸ ಮತ್ತು ವಿಮರ್ಶೆಗೆ ಸೂಕ್ತವಾದ ಯಾದೃಚ್ಛಿಕ ಅಥವಾ ಕಸ್ಟಮೈಸ್ ಮಾಡಿದ ಹಾಲೋವಿಂಗ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.ribbon.aiHero.learningSheet.line1': 'ತರಗತಿಯ ಅಭ್ಯಾಸ ಮತ್ತು ವಿಮರ್ಶೆಗೆ ಸೂಕ್ತವಾದ ಯಾದೃಚ್ಛಿಕ ಅಥವಾ ಕಸ್ಟಮೈಸ್ ಮಾಡಿದ ಹಾಲೋವಿಂಗ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'canvas.ribbon.aiHero.learningSheet.line2': '',
   'canvas.ribbon.aiHero.brainstorm.ribbon': 'ಬುದ್ದಿಮತ್ತೆ',
   'canvas.ribbon.aiHero.brainstorm.title': 'AI ಬುದ್ದಿಮತ್ತೆ',
   'canvas.ribbon.aiHero.brainstorm.line1': 'ಶಾಖೆಯ ಸಲಹೆಗಳನ್ನು ರಚಿಸಲು ನೋಡ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-  'canvas.ribbon.aiHero.brainstorm.line2':
-    'ಅದನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಅದನ್ನು ಮ್ಯಾಪ್‌ಗೆ ಅನ್ವಯಿಸಿ ಅಥವಾ ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಎಳೆಯಿರಿ.',
+  'canvas.ribbon.aiHero.brainstorm.line2': 'ಅದನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಅದನ್ನು ಮ್ಯಾಪ್‌ಗೆ ಅನ್ವಯಿಸಿ ಅಥವಾ ಕ್ಯಾನ್ವಾಸ್‌ಗೆ ಎಳೆಯಿರಿ.',
   'canvas.ribbon.aiHero.oneSentence.ribbon': 'ಸಂವಾದವನ್ನು ಬದಲಾಯಿಸಿ',
   'canvas.ribbon.aiHero.oneSentence.title': 'ಸಂವಾದಾತ್ಮಕ ಮಾರ್ಪಾಡು',
-  'canvas.ribbon.aiHero.oneSentence.line1':
-    'ಒಂದು ವಾಕ್ಯದಲ್ಲಿ ವಿಷಯ ಅಥವಾ ಮಾರ್ಪಾಡು ವಿನಂತಿಯನ್ನು ವಿವರಿಸಿ',
+  'canvas.ribbon.aiHero.oneSentence.line1': 'ಒಂದು ವಾಕ್ಯದಲ್ಲಿ ವಿಷಯ ಅಥವಾ ಮಾರ್ಪಾಡು ವಿನಂತಿಯನ್ನು ವಿವರಿಸಿ',
   'canvas.ribbon.aiHero.oneSentence.line2': 'ನಕ್ಷೆಗಳನ್ನು ಬುದ್ಧಿವಂತಿಕೆಯಿಂದ ರಚಿಸಿ ಮತ್ತು ಹೊಂದಿಸಿ',
   'canvas.ribbon.aiHero.link.ribbon': 'ಸೇರಿಸು',
   'canvas.ribbon.aiHero.link.title': 'ಲಿಂಕ್ ಸೇರಿಸಿ',
-  'canvas.ribbon.aiHero.link.line1':
-    'ನೋಡ್ ಡಿಸ್ಪ್ಲೇ ಹೆಸರು, ಪೂರ್ಣ ವಿಳಾಸವನ್ನು ಲಿಂಕ್ ಐಕಾನ್‌ನಲ್ಲಿ ಮರೆಮಾಡಲಾಗಿದೆ',
+  'canvas.ribbon.aiHero.link.line1': 'ನೋಡ್ ಡಿಸ್ಪ್ಲೇ ಹೆಸರು, ಪೂರ್ಣ ವಿಳಾಸವನ್ನು ಲಿಂಕ್ ಐಕಾನ್‌ನಲ್ಲಿ ಮರೆಮಾಡಲಾಗಿದೆ',
   'canvas.ribbon.aiHero.link.line2': '',
   'canvas.hero.image.ribbon': 'ಸೇರಿಸು',
   'canvas.hero.image.title': 'ಚಿತ್ರವನ್ನು ಸೇರಿಸಿ',
-  'canvas.hero.image.line1':
-    'ಚಿತ್ರದ ವಿಳಾಸವನ್ನು ಅಂಟಿಸಿ ಅಥವಾ ನಿಮ್ಮ ಸ್ಥಳೀಯ ಕಂಪ್ಯೂಟರ್‌ನಿಂದ ಫೈಲ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  'canvas.hero.image.line1': 'ಚಿತ್ರದ ವಿಳಾಸವನ್ನು ಅಂಟಿಸಿ ಅಥವಾ ನಿಮ್ಮ ಸ್ಥಳೀಯ ಕಂಪ್ಯೂಟರ್‌ನಿಂದ ಫೈಲ್ ಅನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   'canvas.hero.image.line2': '',
   'canvas.hero.icon.ribbon': 'ಸೇರಿಸು',
   'canvas.hero.icon.title': 'ಐಕಾನ್ ಸೇರಿಸಿ',
@@ -1796,28 +1521,57 @@ export default {
   'canvas.hero.icon.line2': '',
   'canvas.hero.math.ribbon': 'ಸೇರಿಸು',
   'canvas.hero.math.title': 'ಸೂತ್ರವನ್ನು ಸೇರಿಸಿ',
-  'canvas.hero.math.line1':
-    'LaTeX ಅನ್ನು ನಮೂದಿಸಲು ಫಾರ್ಮುಲಾ ಕೀಬೋರ್ಡ್ ಬಳಸಿ, ಮತ್ತು ನಂತರ ದೃಢೀಕರಣದ ನಂತರ ನೋಡ್ ಅನ್ನು ಬರೆಯಿರಿ.',
+  'canvas.hero.math.line1': 'LaTeX ಅನ್ನು ನಮೂದಿಸಲು ಫಾರ್ಮುಲಾ ಕೀಬೋರ್ಡ್ ಬಳಸಿ, ಮತ್ತು ನಂತರ ದೃಢೀಕರಣದ ನಂತರ ನೋಡ್ ಅನ್ನು ಬರೆಯಿರಿ.',
   'canvas.hero.math.line2': '',
   'canvas.hero.collab.ribbon': 'ಸಹಕಾರ',
   'canvas.hero.collab.title': 'ಆನ್‌ಲೈನ್ ಸಹಯೋಗ',
-  'canvas.hero.collab.line1':
-    'ಚಿತ್ರಗಳನ್ನು ಒಟ್ಟಿಗೆ ಮಾರ್ಪಡಿಸಲು ಸಹೋದ್ಯೋಗಿಗಳನ್ನು ಆಹ್ವಾನಿಸಲು ಶಾಲೆಯೊಳಗಿನ ಅಥವಾ ಆಮಂತ್ರಣ ಕೋಡ್ ಸಹಯೋಗವನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ',
+  'canvas.hero.collab.line1': 'ಚಿತ್ರಗಳನ್ನು ಒಟ್ಟಿಗೆ ಮಾರ್ಪಡಿಸಲು ಸಹೋದ್ಯೋಗಿಗಳನ್ನು ಆಹ್ವಾನಿಸಲು ಶಾಲೆಯೊಳಗಿನ ಅಥವಾ ಆಮಂತ್ರಣ ಕೋಡ್ ಸಹಯೋಗವನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ',
   'canvas.hero.collab.line2': '',
   'canvas.hero.worksheet.ribbon': 'ರಫ್ತು ಮಾಡಿ',
   'canvas.hero.worksheet.title': 'DOC/PDF ಗೆ ರಫ್ತು ಮಾಡಿ',
-  'canvas.hero.worksheet.line1':
-    'ಸ್ಟಡಿ ಶೀಟ್ ಹೆಡರ್ ಮತ್ತು ಪೇಪರ್ ಆಯ್ಕೆಗಳನ್ನು ಹೊಂದಿಸಿ, ಪೂರ್ವವೀಕ್ಷಣೆ ಮತ್ತು ರಫ್ತು ಮಾಡಿ',
+  'canvas.hero.worksheet.line1': 'ಸ್ಟಡಿ ಶೀಟ್ ಹೆಡರ್ ಮತ್ತು ಪೇಪರ್ ಆಯ್ಕೆಗಳನ್ನು ಹೊಂದಿಸಿ, ಪೂರ್ವವೀಕ್ಷಣೆ ಮತ್ತು ರಫ್ತು ಮಾಡಿ',
   'canvas.hero.worksheet.line2': '',
+  'canvas.hero.slotFull.ribbon': 'ಗ್ಯಾಲರಿ',
+  'canvas.hero.slotFull.title': 'ಗ್ಯಾಲರಿ ತುಂಬಿದೆ',
+  'canvas.hero.slotFull.line1': 'ದಯವಿಟ್ಟು ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಐಕಾನ್ ಅನ್ನು ಅಳಿಸಿ ಮತ್ತು ಪ್ರಸ್ತುತ ಐಕಾನ್ ಅನ್ನು ಉಳಿಸಿ',
+  'canvas.hero.slotFull.line2': '',
+  'canvas.voiceCommandGuide.title': 'ಧ್ವನಿ ಆದೇಶ ಮಾರ್ಗದರ್ಶಿ',
+  'canvas.voiceCommandGuide.collapse': 'ವಾಯ್ಸ್ ಕಮಾಂಡ್ ಗೈಡ್ ಅನ್ನು ಸಂಕುಚಿಸಿ',
+  'canvas.voiceCommandGuide.example.add_node': '"ಚೀನಾ ಶಾಖೆಯನ್ನು ಸೇರಿಸಿ"',
+  'canvas.voiceCommandGuide.example.auto_complete_branch': '"ಈ ಚೀನೀ ಶಾಖೆಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ"',
+  'canvas.voiceCommandGuide.example.auto_complete':
+    '"ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಸಂಪೂರ್ಣ ಚಿತ್ರವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ"',
+  'canvas.voiceCommandGuide.example.select_node': '"ಚೀನಾವನ್ನು ಆರಿಸಿ"',
+  'canvas.voiceCommandGuide.example.update_center': '"ವೃತ್ತಿ ಶಿಕ್ಷಣಕ್ಕೆ ಥೀಮ್ ಅನ್ನು ಬದಲಾಯಿಸಿ"',
+  'canvas.voiceCommandGuide.example.delete_node': '"ಚೀನಾ ಶಾಖೆಯನ್ನು ಅಳಿಸಿ"',
+  'canvas.voiceCommandGuide.example.explain_node': '"ಚೀನಾವನ್ನು ವಿವರಿಸಿ"',
+  'canvas.voiceCommandGuide.example.start_inline_recommendations':
+    '"ಈ ನೋಡ್‌ಗಾಗಿ ಸಂಘದ ಶಿಫಾರಸುಗಳನ್ನು ಮಾಡಿ"',
+  'canvas.gestureGuide.dragNode': 'ಮೊಬೈಲ್ ನೋಡ್',
+  'canvas.gestureGuide.dragNodeHint': 'ಒಂದು ಬೆರಳು ಎಳೆಯಿರಿ',
+  'canvas.gestureGuide.slashDeleteHint': 'Finger or left-drag down',
+  'canvas.gestureGuide.slashSiblingHint': 'Slash left or right through it',
+  'canvas.gestureGuide.slashChild': 'Add child',
+  'canvas.gestureGuide.slashChildHint': 'Slash up through it',
+  'canvas.inlineRecPicker.prevPage': 'ಹಿಂದಿನ ಪುಟ',
+  'canvas.inlineRecPicker.nextPage': 'ಮುಂದಿನ ಪುಟ',
+  'canvas.toolbar.moreApps': 'ಹೆಚ್ಚಿನ ಅಪ್ಲಿಕೇಶನ್‌ಗಳು',
+  'canvas.topBar.shareCommunity': 'ಸಮುದಾಯಕ್ಕೆ ಹಂಚಿಕೊಳ್ಳಿ',
+  'canvas.ribbon.shareToSeminar': 'Share to seminar',
+  'canvas.ribbon.shareToSeminarTip': 'Send this saved diagram to a live seminar',
+  'canvas.ribbon.shareToSeminarEmpty': 'No live seminar',
+  'canvas.ribbon.shareToSeminarHint':
+    'Start or join a seminar in MindMate, then come back to share this diagram.',
+  'canvas.ribbon.shareToSeminarConfirm': 'Share',
+  'canvas.ribbon.shareToSeminarNote': 'Add a note (optional)',
+  'canvas.ribbon.shareToSeminarDone': 'Shared to "{title}"',
+  'canvas.ribbon.shareToSeminarFailed': 'Could not share. Try again.',
+  'canvas.ribbon.shareToSeminarNeedSave': 'Save this diagram first',
+  'canvas.ribbon.shareToSeminarLogin': 'Sign in to share to a seminar',
   'canvas.hero.communityExport.ribbon': 'ಪಾಲು',
   'canvas.hero.communityExport.title': 'ಸಮುದಾಯಕ್ಕೆ ಹಂಚಿಕೊಳ್ಳಿ',
   'canvas.hero.communityExport.line1':
     'ಶೀರ್ಷಿಕೆ ಮತ್ತು ವರ್ಗವನ್ನು ಭರ್ತಿ ಮಾಡಿ, ಥಂಬ್‌ನೇಲ್ ರಚಿಸಿ ಮತ್ತು ಅದನ್ನು ಪ್ರಕಟಿಸಿ',
   'canvas.hero.communityExport.line2': '',
   'canvas.hero.communityExport.editTitle': 'ಸಮುದಾಯ ಪೋಸ್ಟ್ ಅನ್ನು ಸಂಪಾದಿಸಿ',
-  'canvas.hero.slotFull.ribbon': 'ಗ್ಯಾಲರಿ',
-  'canvas.hero.slotFull.title': 'ಗ್ಯಾಲರಿ ತುಂಬಿದೆ',
-  'canvas.hero.slotFull.line1':
-    'ದಯವಿಟ್ಟು ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಐಕಾನ್ ಅನ್ನು ಅಳಿಸಿ ಮತ್ತು ಪ್ರಸ್ತುತ ಐಕಾನ್ ಅನ್ನು ಉಳಿಸಿ',
-  'canvas.hero.slotFull.line2': '',
 } as const

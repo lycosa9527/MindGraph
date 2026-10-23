@@ -83,11 +83,7 @@ async def shelve_seminar_item(
 
 
 async def _shelf_count(session_id: str, *, artifact: bool) -> int:
-    column = (
-        MindmateCollabBackgroundFile.artifact
-        if artifact
-        else MindmateCollabBackgroundFile.listed
-    )
+    column = MindmateCollabBackgroundFile.artifact if artifact else MindmateCollabBackgroundFile.listed
     async with system_rls_session() as db:
         count = await db.scalar(
             select(func.count())

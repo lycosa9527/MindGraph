@@ -786,20 +786,20 @@ def _ui_ws_action(action: str, command: Dict[str, Any]) -> Optional[Dict[str, An
         panel = str(command.get("target") or "").strip().lower()
         if panel in {"mindmate", "thinkguide"}:
             return {"type": "action", "action": "open_mindmate", "params": {}}
-        if panel == "node_palette":
-            return {"type": "action", "action": "open_node_palette", "params": {}}
+        if panel == "ai_brainstorm":
+            return {"type": "action", "action": "open_ai_brainstorm", "params": {}}
         return None
     if action == "close_panel":
         panel = str(command.get("target") or "").strip().lower()
         if panel in {"mindmate", "thinkguide"}:
             return {"type": "action", "action": "close_mindmate", "params": {}}
-        if panel == "node_palette":
-            return {"type": "action", "action": "close_node_palette", "params": {}}
+        if panel == "ai_brainstorm":
+            return {"type": "action", "action": "close_ai_brainstorm", "params": {}}
         return {"type": "action", "action": "close_all_panels", "params": {}}
-    if action == "open_node_palette":
-        return {"type": "action", "action": "open_node_palette", "params": {}}
-    if action == "close_node_palette":
-        return {"type": "action", "action": "close_node_palette", "params": {}}
+    if action == "open_ai_brainstorm":
+        return {"type": "action", "action": "open_ai_brainstorm", "params": {}}
+    if action == "close_ai_brainstorm":
+        return {"type": "action", "action": "close_ai_brainstorm", "params": {}}
     if action == "close_all_panels":
         return {"type": "action", "action": "close_all_panels", "params": {}}
     if action in {"ask_mindmate", "ask_thinkguide"}:

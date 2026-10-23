@@ -1,10 +1,16 @@
-import type { Ref } from 'vue'
+import { type Ref, onMounted, onUnmounted } from 'vue'
+
+import { useVueFlow } from '@vue-flow/core'
 
 import {
   resolveEnterKeyEvent,
   resolveInsertKeyEvent,
   resolveTabKeyEvent,
 } from '@/composables/canvasPage/canvasPageEditorShortcutRouting'
+import {
+  isDiagramDeleteKey,
+  resolveDiagramDeleteNodeIds,
+} from '@/composables/canvasPage/diagramDeleteKey'
 import {
   bindCanvasCollabHistoryContext,
   tryCollabGuardedRedo,
@@ -69,6 +75,7 @@ export function useCanvasPageEditorShortcuts(options: {
   const useMindMapV2 = useMindMapV2Chrome()
   const useMindMapV2Family = useMindMapV2FamilyVisual()
   const { activeTool, closeActiveTool } = useMindMapSideToolbarState()
+  const { getSelectedNodes } = useVueFlow(diagramStore.vueFlowId)
 
   function isTypingInInput(): boolean {
     const active = document.activeElement as HTMLElement
@@ -82,9 +89,27 @@ export function useCanvasPageEditorShortcuts(options: {
     return !!active?.closest?.('.inline-edit-input, .inline-edit-wrapper')
   }
 
-  function handleDeleteKey() {
-    if (isTypingInInput()) return
+  function handleDeleteKey(): void {
+    const ids = resolveDiagramDeleteNodeIds(
+      getSelectedNodes.value.map((node) => node.id),
+      diagramStore.selectedNodes
+    )
+    if (ids.length > 0) {
+      const current = diagramStore.selectedNodes
+      const sameSelection =
+        current.length === ids.length && ids.every((id, index) => current[index] === id)
+      if (!sameSelection) diagramStore.selectNodes(ids)
+    }
     eventBus.emit('diagram:delete_selected_requested', {})
+  }
+
+  function onDeleteKeyCapture(event: KeyboardEvent): void {
+    if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+    if (!isDiagramDeleteKey(event)) return
+    if (isTypingInInput()) return
+    event.preventDefault()
+    event.stopPropagation()
+    handleDeleteKey()
   }
 
   function handleAddNodeKey() {
@@ -209,8 +234,8 @@ export function useCanvasPageEditorShortcuts(options: {
       panelsStore.closeMindmate()
       return
     }
-    if (panelsStore.nodePalettePanel.isOpen) {
-      panelsStore.closeNodePalette()
+    if (panelsStore.diagramBrainstormPanel.isOpen) {
+      panelsStore.closeDiagramBrainstorm()
       return
     }
     if (panelsStore.propertyPanel.isOpen) {
@@ -329,13 +354,20 @@ export function useCanvasPageEditorShortcuts(options: {
     undo: handleUndoKey,
     redo: handleRedoKey,
     save: handleSaveKey,
-    delete: handleDeleteKey,
     escape: handleEscapeKey,
     addNode: handleAddNodeKey,
     clearNodeText: handleClearNodeTextKey,
     copy: handleCopyKey,
     cut: handleCutKey,
     paste: handlePasteKey,
+  })
+
+  onMounted(() => {
+    window.addEventListener('keydown', onDeleteKeyCapture, true)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('keydown', onDeleteKeyCapture, true)
   })
 
   useKeyboard([

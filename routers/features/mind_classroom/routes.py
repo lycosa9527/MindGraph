@@ -22,7 +22,11 @@ from routers.features.zhihui.routes import _conversation_list_item, _generation_
 from services.learning_space.ai_gate import assert_student_ai_capability
 from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.diagram_spec import load_owned_diagram_spec
-from services.mind_classroom.enqueue import ClassroomJobsBusy, create_and_enqueue_job
+from services.mind_classroom.enqueue import (
+    ClassroomJobsBusy,
+    create_and_enqueue_job,
+    resolve_classroom_mode,
+)
 from services.mind_classroom.job_events import publish_classroom_job_snapshot
 from services.mind_classroom.job_payload import job_payload
 from services.mind_classroom.job_stream import classroom_job_stream_response
@@ -34,6 +38,7 @@ from services.mind_classroom.transcript_persist import (
     transcript_key_from_result,
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.chinese_language_policy import coerce_generation_language, guard_user_visible
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -81,8 +86,13 @@ def _normalize_settings(body: ClassroomJobRequest) -> dict[str, Any]:
     mode = body.mode.strip()
     if mode not in _MODES:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid mode")
-    if mode == "slide_deck" and not config.FEATURE_MIND_CLASSROOM_SLIDE_DECK:
-        mode = "canvas_tour"
+    spec = body.spec_snapshot if isinstance(body.spec_snapshot, dict) else {}
+    diagram_type = str(spec.get("type") or spec.get("diagramType") or "")
+    mode = resolve_classroom_mode(
+        mode,
+        config.FEATURE_MIND_CLASSROOM_SLIDE_DECK,
+        diagram_type,
+    )
     mastery = body.mastery.strip() if body.mastery in _MASTERY else "first_look"
     tone = body.tone.strip() if body.tone in _TONES else "classroom"
     scope = body.tour_scope.strip() if body.tour_scope in _SCOPES else "main_branch"
@@ -96,7 +106,7 @@ def _normalize_settings(body: ClassroomJobRequest) -> dict[str, Any]:
         "slide_style": style,
         "audience_level": audience,
         "audience_title": (body.audience_title or "").strip()[:128],
-        "language": (body.language or "zh").strip() or "zh",
+        "language": coerce_generation_language((body.language or "zh").strip() or "zh"),
         "llm_model": (body.llm_model or "").strip()[:64],
     }
 
@@ -201,7 +211,7 @@ async def get_job_by_diagram(
         row = await _refresh_queued_job(row, db)
         await ensure_transcript_on_server(row.result_json)
         slides = list(await MindClassroomSlideRepository(db).list_by_job(row.id))
-        return job_payload(row, request, slides=slides)
+        return guard_user_visible(job_payload(row, request, slides=slides))
 
     conv_repo = ZhihuiConversationRepository(db)
     legacy = await conv_repo.get_latest_diagram_conversation(user_id=user_id, diagram_id=cleaned)
@@ -250,7 +260,7 @@ async def get_classroom_job(
         progress=progress,
         elapsed_s=job_elapsed_seconds(row),
     )
-    return job_payload(row, request, slides=slides)
+    return guard_user_visible(job_payload(row, request, slides=slides))
 
 
 @router.post("/jobs/{job_id}/cancel")

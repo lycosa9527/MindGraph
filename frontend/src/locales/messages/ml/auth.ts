@@ -16,33 +16,24 @@ export default {
   'auth.voiceNotes.copy': 'വാചകം പകർത്തുക',
   'auth.voiceNotes.copied': 'ട്രാൻസ്ക്രിപ്റ്റ് പകർത്തി',
   'auth.voiceNotes.empty': 'നിങ്ങൾ റെക്കോർഡിംഗ് ആരംഭിച്ചാൽ, ട്രാൻസ്ക്രിപ്റ്റ് ഇവിടെ ദൃശ്യമാകും.',
-  'auth.voiceNotes.loginRequired':
-    'വോയിസ് നോട്ടുകൾ ഉപയോഗിക്കുന്നതിന് മുമ്പ് ദയവായി ആദ്യം ലോഗിൻ ചെയ്യുക.',
+  'auth.voiceNotes.loginRequired': 'വോയിസ് നോട്ടുകൾ ഉപയോഗിക്കുന്നതിന് മുമ്പ് ദയവായി ആദ്യം ലോഗിൻ ചെയ്യുക.',
   'auth.voiceNotes.bootstrapFailed': 'വോയ്‌സ് നോട്ടുകൾക്കായി മൈൻഡ് മാപ്പിംഗ് സെഷൻ തുറക്കാനായില്ല.',
   'auth.voiceNotes.saveFailed': 'വോയിസ് നോട്ട് മൈൻഡ് മാപ്പ് സംരക്ഷിക്കാനായില്ല.',
   'auth.voiceNotes.noDiagram': 'മൈൻഡ് മാപ്പ് ഇതുവരെ ബന്ധപ്പെടുത്തിയിട്ടില്ല.',
   'auth.voiceNotes.micUnavailable': 'നിലവിലെ ബ്രൗസർ മൈക്രോഫോണിനെ പിന്തുണയ്ക്കുന്നില്ല.',
   'auth.voiceNotes.micFailed': 'മൈക്രോഫോൺ ആക്‌സസ് ചെയ്യാനാവുന്നില്ല.',
-  'auth.voiceNotes.micConflict':
-    'മറ്റ് വോയ്‌സ് ഫംഗ്‌ഷനുകൾ മൈക്രോഫോൺ ഉപയോഗിക്കുന്നു, ദയവായി നിർത്തി വീണ്ടും ശ്രമിക്കുക.',
-  'auth.voiceNotes.wsError':
-    'വോയ്‌സ് നോട്ട് കണക്ഷൻ പരാജയപ്പെട്ടു, നെറ്റ്‌വർക്ക് പരിശോധിച്ച് ലോഗിൻ നില.',
+  'auth.voiceNotes.micConflict': 'മറ്റ് വോയ്‌സ് ഫംഗ്‌ഷനുകൾ മൈക്രോഫോൺ ഉപയോഗിക്കുന്നു, ദയവായി നിർത്തി വീണ്ടും ശ്രമിക്കുക.',
+  'auth.voiceNotes.wsError': 'വോയ്‌സ് നോട്ട് കണക്ഷൻ പരാജയപ്പെട്ടു, നെറ്റ്‌വർക്ക് പരിശോധിച്ച് ലോഗിൻ നില.',
   'auth.voiceNotes.genericError': 'വോയ്സ് നോട്ട് പിശക്',
   'auth.voiceNotes.ingestFailed': 'പ്രമാണ സംഗ്രഹത്തിലേക്ക് ട്രാൻസ്ക്രിപ്ഷൻ സംരക്ഷിക്കാനായില്ല.',
-  'auth.voiceNotes.maxDuration':
-    'വോയ്‌സ് നോട്ട് 60 മിനിറ്റ് പരിധിയിൽ എത്തിയതിനാൽ സ്വയമേവ നിർത്തലാക്കി.',
-  'auth.voiceNotes.silenceAutoStop':
-    'തുടർച്ചയായി 2 മിനിറ്റ് ശബ്‌ദം ഉണ്ടായില്ല, വോയ്‌സ് നോട്ട് സ്വയമേവ നിലച്ചു.',
-  'auth.voiceNotes.startedTimeout':
-    'വോയ്‌സ് സേവനം കൃത്യസമയത്ത് ആരംഭിക്കുന്നതിൽ പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക.',
+  'auth.voiceNotes.maxDuration': 'വോയ്‌സ് നോട്ട് 60 മിനിറ്റ് പരിധിയിൽ എത്തിയതിനാൽ സ്വയമേവ നിർത്തലാക്കി.',
+  'auth.voiceNotes.silenceAutoStop': 'തുടർച്ചയായി 2 മിനിറ്റ് ശബ്‌ദം ഉണ്ടായില്ല, വോയ്‌സ് നോട്ട് സ്വയമേവ നിലച്ചു.',
+  'auth.voiceNotes.startedTimeout': 'വോയ്‌സ് സേവനം കൃത്യസമയത്ത് ആരംഭിക്കുന്നതിൽ പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക.',
   'auth.voiceNotes.micLost': 'മൈക്രോഫോൺ വിച്ഛേദിക്കുകയും വോയ്‌സ് നോട്ടുകൾ നിർത്തുകയും ചെയ്‌തു.',
-  'auth.voiceNotes.authFailed':
-    'വോയ്‌സ് നോട്ട് പ്രാമാണീകരണം പരാജയപ്പെട്ടു, ദയവായി വീണ്ടും ലോഗിൻ ചെയ്യുക.',
+  'auth.voiceNotes.authFailed': 'വോയ്‌സ് നോട്ട് പ്രാമാണീകരണം പരാജയപ്പെട്ടു, ദയവായി വീണ്ടും ലോഗിൻ ചെയ്യുക.',
   'auth.voiceNotes.wsClosed': 'വോയിസ് നോട്ട് കണക്ഷൻ വിച്ഛേദിക്കപ്പെട്ടു, സെഷൻ നിർത്തി.',
-  'auth.voiceNotes.budgetExceeded':
-    'വോയ്‌സ് നോട്ടുകൾ ലഭ്യമല്ല: പ്രതിദിന AI ക്വാട്ട എത്തിയിരിക്കുന്നു അല്ലെങ്കിൽ ചിന്തിക്കാനുള്ള നാണയങ്ങൾ അപര്യാപ്തമാണ്.',
-  'auth.voiceNotes.sessionBusy':
-    'ഇതിനകം ഒരു വോയ്‌സ് നോട്ട് സെഷൻ പുരോഗതിയിലാണ്, അത് നിർത്തി വീണ്ടും ശ്രമിക്കുക.',
+  'auth.voiceNotes.budgetExceeded': 'വോയ്‌സ് നോട്ടുകൾ ലഭ്യമല്ല: പ്രതിദിന AI ക്വാട്ട എത്തിയിരിക്കുന്നു അല്ലെങ്കിൽ ചിന്തിക്കാനുള്ള നാണയങ്ങൾ അപര്യാപ്തമാണ്.',
+  'auth.voiceNotes.sessionBusy': 'ഇതിനകം ഒരു വോയ്‌സ് നോട്ട് സെഷൻ പുരോഗതിയിലാണ്, അത് നിർത്തി വീണ്ടും ശ്രമിക്കുക.',
   'auth.voiceNotes.recording': 'റെക്കോർഡിംഗ്',
   'auth.voiceNotes.paused': 'സസ്പെൻഡ് ചെയ്തു',
   'auth.voiceNotes.idle': 'തയ്യാറാണ്',
@@ -50,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'ആരംഭിക്കുന്നു',
   'auth.voiceNotes.stopping': 'നിർത്തുന്നു',
   'auth.voiceNotes.ingesting': 'സംരക്ഷിക്കുന്നു',
-  'auth.voiceNotes.emptyTranscript':
-    'ശബ്ദമൊന്നും തിരിച്ചറിഞ്ഞില്ല, നിർത്തുന്നതിന് മുമ്പ് ദയവായി കുറച്ച് വാക്കുകൾ പറയുക.',
+  'auth.voiceNotes.emptyTranscript': 'ശബ്ദമൊന്നും തിരിച്ചറിഞ്ഞില്ല, നിർത്തുന്നതിന് മുമ്പ് ദയവായി കുറച്ച് വാക്കുകൾ പറയുക.',
   'auth.voiceNotes.generating': 'മൈൻഡ് മാപ്പ് സൃഷ്ടിക്കുന്നു',
-  'auth.voiceNotes.sheetHint':
-    'നിർത്തിയ ശേഷം ട്രാൻസ്ക്രിപ്ഷൻ സംരക്ഷിക്കുക. നിങ്ങൾ തയ്യാറാകുമ്പോൾ മൈൻഡ് മാപ്പ് സൃഷ്ടിക്കുക ക്ലിക്കുചെയ്യുക.',
+  'auth.voiceNotes.sheetHint': 'നിർത്തിയ ശേഷം ട്രാൻസ്ക്രിപ്ഷൻ സംരക്ഷിക്കുക. നിങ്ങൾ തയ്യാറാകുമ്പോൾ മൈൻഡ് മാപ്പ് സൃഷ്ടിക്കുക ക്ലിക്കുചെയ്യുക.',
   'auth.voiceNotes.status.waiting': 'ആരംഭിക്കാൻ കാത്തിരിക്കുന്നു',
   'auth.voiceNotes.status.connectingAsr': 'സംഭാഷണം തിരിച്ചറിയലുമായി ബന്ധിപ്പിക്കുന്നു',
   'auth.voiceNotes.status.recording': 'റെക്കോർഡിംഗ് · ശബ്ദം തിരിച്ചറിയൽ',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'റെക്കോർഡിംഗ് · സംഭാഷണം തിരിച്ചറിയൽ · വ്യതിരിക്ത സ്പീക്കറുകൾ',
+  'auth.voiceNotes.status.recordingAndSeparating': 'റെക്കോർഡിംഗ് · സംഭാഷണം തിരിച്ചറിയൽ · വ്യതിരിക്ത സ്പീക്കറുകൾ',
   'auth.voiceNotes.status.paused': 'സസ്പെൻഡ് ചെയ്തു',
   'auth.voiceNotes.status.stopping': 'നിർത്തുന്നു',
   'auth.voiceNotes.status.savingTranscript': 'ട്രാൻസ്ക്രിപ്ഷൻ സംരക്ഷിക്കുന്നു',
@@ -72,15 +60,11 @@ export default {
   'auth.voiceNotes.savedAt': '{time}-ൽ ട്രാൻസ്ക്രിപ്ഷൻ സംരക്ഷിച്ചു',
   'auth.voiceNotes.unsavedChanges': 'ട്രാൻസ്ക്രിപ്ഷൻ സംരക്ഷിച്ചിട്ടില്ല',
   'auth.voiceNotes.closeWhileRecordingTitle': 'റെക്കോർഡിംഗ്',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'വിൻഡോ അടയ്ക്കുന്നത് റെക്കോർഡിംഗ് നിർത്തില്ല. ഓരോ 30 സെക്കൻഡിലും നിലവിലെ മാപ്പിലേക്ക് ട്രാൻസ്ക്രിപ്ഷനുകൾ സ്വയമേവ സംരക്ഷിക്കപ്പെടും. വിൻഡോ മറയ്ക്കണമെന്ന് തീർച്ചയാണോ?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'വിൻഡോ അടയ്ക്കുന്നത് റെക്കോർഡിംഗ് നിർത്തില്ല. ഓരോ 30 സെക്കൻഡിലും നിലവിലെ മാപ്പിലേക്ക് ട്രാൻസ്ക്രിപ്ഷനുകൾ സ്വയമേവ സംരക്ഷിക്കപ്പെടും. വിൻഡോ മറയ്ക്കണമെന്ന് തീർച്ചയാണോ?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'വിൻഡോ മറയ്ക്കുക',
-  'auth.voiceNotes.recordingContinues':
-    'റെക്കോർഡിംഗ് ഇപ്പോഴും തുടരുകയാണ്, നിങ്ങൾക്ക് എപ്പോൾ വേണമെങ്കിലും റെക്കോർഡിംഗ് സംഗ്രഹം വീണ്ടും തുറക്കാനാകും.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'ദയവായി നിലവിലെ മൈൻഡ് മാപ്പ് ആദ്യം സംരക്ഷിക്കുക, തുടർന്ന് സംഗ്രഹിക്കാൻ റെക്കോർഡിംഗ് ഉപയോഗിക്കുക.',
-  'auth.voiceNotes.restoreFailed':
-    'ഓഡിയോ റെക്കോർഡിംഗിൻ്റെ സംരക്ഷിച്ച ട്രാൻസ്ക്രിപ്ഷൻ ലോഡുചെയ്യാനായില്ല.',
+  'auth.voiceNotes.recordingContinues': 'റെക്കോർഡിംഗ് ഇപ്പോഴും തുടരുകയാണ്, നിങ്ങൾക്ക് എപ്പോൾ വേണമെങ്കിലും റെക്കോർഡിംഗ് സംഗ്രഹം വീണ്ടും തുറക്കാനാകും.',
+  'auth.voiceNotes.noCurrentDiagram': 'ദയവായി നിലവിലെ മൈൻഡ് മാപ്പ് ആദ്യം സംരക്ഷിക്കുക, തുടർന്ന് സംഗ്രഹിക്കാൻ റെക്കോർഡിംഗ് ഉപയോഗിക്കുക.',
+  'auth.voiceNotes.restoreFailed': 'ഓഡിയോ റെക്കോർഡിംഗിൻ്റെ സംരക്ഷിച്ച ട്രാൻസ്ക്രിപ്ഷൻ ലോഡുചെയ്യാനായില്ല.',
   'auth.voiceNotes.retryGenerate': 'വിദ്യാർത്ഥി ഗൈഡ്',
   'auth.voiceNotes.historyTitle': 'ചരിത്രപരമായ ശബ്ദ കുറിപ്പുകൾ',
   'auth.voiceNotes.historyEmpty': 'ഇതുവരെ ശബ്ദ കുറിപ്പുകളൊന്നുമില്ല',
@@ -89,38 +73,26 @@ export default {
   'auth.voiceNotes.mergeTalker': 'ലയിപ്പിക്കുക',
   'auth.voiceNotes.mergeTalkerInto': '{name}-ലേക്ക് ലയിക്കുക',
   'auth.voiceNotes.resetTalker': 'സ്ഥിരസ്ഥിതി പുനഃസ്ഥാപിക്കുക',
-  'auth.voiceNotes.tencentAuth':
-    'വോയ്സ് റെക്കഗ്നിഷൻ പ്രാമാണീകരണം പരാജയപ്പെട്ടു, ടെൻസെൻ്റ് ക്ലൗഡ് കീ പരിശോധിക്കുക.',
-  'auth.voiceNotes.tencentService':
-    'ടെൻസെൻ്റ് ക്ലൗഡ് സംഭാഷണ തിരിച്ചറിയൽ സജീവമാക്കിയിട്ടില്ല. കൺസോളിൽ സേവനം സജീവമാക്കുക.',
-  'auth.voiceNotes.tencentQuota':
-    'ടെൻസെൻ്റ് ക്ലൗഡ് സ്പീച്ച് റെക്കഗ്നിഷൻ റിസോഴ്സ് പാക്കേജ് തീർന്നു. സജീവമാക്കിയതിന് ശേഷം ദയവായി പണമടയ്ക്കുകയോ റിസോഴ്സ് പാക്കേജ് വാങ്ങുകയോ ചെയ്യുക.',
-  'auth.voiceNotes.tencentArrears':
-    'ടെൻസെൻ്റ് ക്ലൗഡ് അക്കൗണ്ട് കുടിശ്ശികയായതിനാൽ വോയ്‌സ് തിരിച്ചറിയൽ പ്രവർത്തനരഹിതമാക്കി.',
-  'auth.voiceNotes.tencentConcurrency':
-    'സംഭാഷണം തിരിച്ചറിയൽ കൺകറൻസി നിറഞ്ഞു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.voiceNotes.tencentAuth': 'വോയ്സ് റെക്കഗ്നിഷൻ പ്രാമാണീകരണം പരാജയപ്പെട്ടു, ടെൻസെൻ്റ് ക്ലൗഡ് കീ പരിശോധിക്കുക.',
+  'auth.voiceNotes.tencentService': 'ടെൻസെൻ്റ് ക്ലൗഡ് സംഭാഷണ തിരിച്ചറിയൽ സജീവമാക്കിയിട്ടില്ല. കൺസോളിൽ സേവനം സജീവമാക്കുക.',
+  'auth.voiceNotes.tencentQuota': 'ടെൻസെൻ്റ് ക്ലൗഡ് സ്പീച്ച് റെക്കഗ്നിഷൻ റിസോഴ്സ് പാക്കേജ് തീർന്നു. സജീവമാക്കിയതിന് ശേഷം ദയവായി പണമടയ്ക്കുകയോ റിസോഴ്സ് പാക്കേജ് വാങ്ങുകയോ ചെയ്യുക.',
+  'auth.voiceNotes.tencentArrears': 'ടെൻസെൻ്റ് ക്ലൗഡ് അക്കൗണ്ട് കുടിശ്ശികയായതിനാൽ വോയ്‌സ് തിരിച്ചറിയൽ പ്രവർത്തനരഹിതമാക്കി.',
+  'auth.voiceNotes.tencentConcurrency': 'സംഭാഷണം തിരിച്ചറിയൽ കൺകറൻസി നിറഞ്ഞു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.voiceNotes.tencentAudio': 'ഓഡിയോ തിരിച്ചറിഞ്ഞില്ല, വീണ്ടും ശ്രമിക്കുക.',
   'auth.voiceNotes.tencentSendRate': 'ഓഡിയോ വളരെ വേഗത്തിൽ അയച്ചു, തത്സമയം റെക്കോർഡിംഗ് തുടരുക.',
-  'auth.voiceNotes.tencentIdle':
-    'വളരെ നേരം റെക്കോർഡിംഗ് തടസ്സപ്പെട്ടു, ശബ്‌ദ തിരിച്ചറിയൽ വിച്ഛേദിക്കപ്പെട്ടു.',
-  'auth.voiceNotes.tencentRetry':
-    'സംഭാഷണം തിരിച്ചറിയൽ താൽക്കാലികമായി പരാജയപ്പെട്ടു, ദയവായി വീണ്ടും ശ്രമിക്കുക.',
-  'auth.voiceNotes.tencentRegion':
-    'നിലവിലെ നെറ്റ്‌വർക്ക് ടെൻസെൻ്റ് ക്ലൗഡിൻ്റെ ആഭ്യന്തര സൈറ്റിൻ്റെ സേവന പരിധിയിൽ ഇല്ല.',
+  'auth.voiceNotes.tencentIdle': 'വളരെ നേരം റെക്കോർഡിംഗ് തടസ്സപ്പെട്ടു, ശബ്‌ദ തിരിച്ചറിയൽ വിച്ഛേദിക്കപ്പെട്ടു.',
+  'auth.voiceNotes.tencentRetry': 'സംഭാഷണം തിരിച്ചറിയൽ താൽക്കാലികമായി പരാജയപ്പെട്ടു, ദയവായി വീണ്ടും ശ്രമിക്കുക.',
+  'auth.voiceNotes.tencentRegion': 'നിലവിലെ നെറ്റ്‌വർക്ക് ടെൻസെൻ്റ് ക്ലൗഡിൻ്റെ ആഭ്യന്തര സൈറ്റിൻ്റെ സേവന പരിധിയിൽ ഇല്ല.',
   'auth.voiceNotes.tencentParam': 'സംഭാഷണം തിരിച്ചറിയൽ പാരാമീറ്ററുകൾ അസാധുവാണ്.',
-  'auth.voiceNotes.tencentAppid':
-    'Tencent Cloud AppID അസാധുവാണ്, ദയവായി TENCENT_ASR_APP_ID പരിശോധിക്കുക.',
-  'auth.voiceNotes.rateLimited':
-    'സംഭാഷണം തിരിച്ചറിയൽ അഭ്യർത്ഥനകൾ വളരെ കൂടുതലാണ്, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID അസാധുവാണ്, ദയവായി TENCENT_ASR_APP_ID പരിശോധിക്കുക.',
+  'auth.voiceNotes.rateLimited': 'സംഭാഷണം തിരിച്ചറിയൽ അഭ്യർത്ഥനകൾ വളരെ കൂടുതലാണ്, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.voiceNotes.messageTooLarge': 'ഓഡിയോ പാക്കറ്റ് വളരെ വലുതാണ്, വീണ്ടും ശ്രമിക്കുക.',
   'auth.voiceNotes.invalidMessage': 'വോയിസ് നോട്ട് സന്ദേശം അസാധുവാണ്, ദയവായി വീണ്ടും ശ്രമിക്കുക.',
-  'auth.voiceNotes.asrUnavailable':
-    'സംഭാഷണം തിരിച്ചറിയൽ താൽക്കാലികമായി ലഭ്യമല്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.voiceNotes.asrUnavailable': 'സംഭാഷണം തിരിച്ചറിയൽ താൽക്കാലികമായി ലഭ്യമല്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.updateLog': 'ലോഗ് മാറ്റുക',
   'auth.updateLogModalTitle': 'ലോഗ് മാറ്റുക',
   'auth.updateLogMaintainerNote': 'അതെ, ഈ പ്ലാറ്റ്ഫോം റോയ് ✨ ഗൗരവമായി പരിപാലിക്കുന്നു',
-  'auth.updateLogLoadError':
-    'അപ്‌ഡേറ്റ് ലോഗ് ഇപ്പോൾ ലോഡുചെയ്യാൻ കഴിയില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.updateLogLoadError': 'അപ്‌ഡേറ്റ് ലോഗ് ഇപ്പോൾ ലോഡുചെയ്യാൻ കഴിയില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.updateLogEmpty': 'ഇതുവരെ അപ്‌ഡേറ്റ് നിർദ്ദേശങ്ങളൊന്നുമില്ല.',
   'auth.softwareAgreementConsentPrefix': 'ഈ പ്ലാറ്റ്ഫോം ഉപയോഗിക്കുന്നത് സമ്മതമാണ്',
   'auth.softwareAgreementLink': 'ഉപയോക്തൃ ഉടമ്പടിയും സ്വകാര്യതാ നയവും',
@@ -128,27 +100,20 @@ export default {
   'privacy.backToSignIn': 'ലോഗിൻ ചെയ്യാൻ മടങ്ങുക',
   'auth.downloadDesktopShortcut': 'ഡെസ്ക്ടോപ്പിലേക്ക് ചേർക്കുക',
   'auth.platformQuickGuide': 'ദ്രുത ഗൈഡ്',
-  'auth.pwaIosInstallHint':
-    'Safari, Chrome, അല്ലെങ്കിൽ Edge എന്നിവയിൽ പങ്കിടുക ക്ലിക്ക് ചെയ്ത് "ഹോം സ്‌ക്രീനിലേക്ക് ചേർക്കുക" തിരഞ്ഞെടുക്കുക.',
-  'auth.pwaAndroidInstallHint':
-    'ബ്രൗസർ മെനു തുറന്ന് (⋮) "ആപ്പ് ഇൻസ്റ്റാൾ ചെയ്യുക" അല്ലെങ്കിൽ "ഹോം സ്ക്രീനിലേക്ക് ചേർക്കുക" തിരഞ്ഞെടുക്കുക.',
-  'auth.pwaSafariMacInstallHint':
-    'ഫയൽ തിരഞ്ഞെടുക്കുക → സഫാരിയിലെ ഡോക്കിലേക്ക് ചേർക്കുക, അല്ലെങ്കിൽ ഷെയർ → ആഡ് ടു ഡോക്ക് ഉപയോഗിക്കുക (macOS Sonoma ഉം അതിനുമുകളിലും).',
-  'auth.pwaDesktopInstallHint':
-    'ദയവായി നിങ്ങളുടെ ബ്രൗസർ മെനു തുറക്കുക (⋮) അല്ലെങ്കിൽ വിലാസ ബാറിന് അടുത്തുള്ള ഇൻസ്റ്റാളേഷൻ ഐക്കൺ ഉപയോഗിക്കുക (Chrome, Edge അല്ലെങ്കിൽ Brave).',
+  'auth.pwaIosInstallHint': 'Safari, Chrome, അല്ലെങ്കിൽ Edge എന്നിവയിൽ പങ്കിടുക ക്ലിക്ക് ചെയ്ത് "ഹോം സ്‌ക്രീനിലേക്ക് ചേർക്കുക" തിരഞ്ഞെടുക്കുക.',
+  'auth.pwaAndroidInstallHint': 'ബ്രൗസർ മെനു തുറന്ന് (⋮) "ആപ്പ് ഇൻസ്റ്റാൾ ചെയ്യുക" അല്ലെങ്കിൽ "ഹോം സ്ക്രീനിലേക്ക് ചേർക്കുക" തിരഞ്ഞെടുക്കുക.',
+  'auth.pwaSafariMacInstallHint': 'ഫയൽ തിരഞ്ഞെടുക്കുക → സഫാരിയിലെ ഡോക്കിലേക്ക് ചേർക്കുക, അല്ലെങ്കിൽ ഷെയർ → ആഡ് ടു ഡോക്ക് ഉപയോഗിക്കുക (macOS Sonoma ഉം അതിനുമുകളിലും).',
+  'auth.pwaDesktopInstallHint': 'ദയവായി നിങ്ങളുടെ ബ്രൗസർ മെനു തുറക്കുക (⋮) അല്ലെങ്കിൽ വിലാസ ബാറിന് അടുത്തുള്ള ഇൻസ്റ്റാളേഷൻ ഐക്കൺ ഉപയോഗിക്കുക (Chrome, Edge അല്ലെങ്കിൽ Brave).',
   'auth.pwaInstallSuccess': 'MindGraph മൈൻഡ് ഗ്രാഫ് ഡെസ്‌ക്‌ടോപ്പിൽ ചേർത്തു.',
-  'auth.pwaDevInstallHint':
-    'സാധാരണ വികസന മോഡിൽ PWA പ്രവർത്തനക്ഷമമാക്കിയിട്ടില്ല. ദയവായി ഒരു പ്രൊഡക്ഷൻ ബിൽഡ് ഉപയോഗിക്കുക (npm റൺ ബിൽഡിന് ശേഷമുള്ള ബാക്കെൻഡ് സേവനം നൽകുന്നു), അല്ലെങ്കിൽ npm റൺ dev:pwa പ്രവർത്തിപ്പിച്ച് HTTPS അല്ലെങ്കിൽ ലോക്കൽ ഹോസ്റ്റിന് കീഴിൽ Chrome/Edge ഉപയോഗിച്ച് തുറക്കുക.',
-  'auth.pwaInsecureOriginHint':
-    'MindGraph നിങ്ങളുടെ ഡെസ്ക്ടോപ്പിലേക്ക് ചേർക്കുന്നതിന് മുമ്പ് ദയവായി മൈൻഡ്ഗ്രാഫിൻ്റെ HTTPS URL നിങ്ങളുടെ ബ്രൗസറിൽ തുറക്കുക (സംരക്ഷിച്ച HTML ഫയൽ തുറക്കരുത്).',
+  'auth.pwaDevInstallHint': 'സാധാരണ വികസന മോഡിൽ PWA പ്രവർത്തനക്ഷമമാക്കിയിട്ടില്ല. ദയവായി ഒരു പ്രൊഡക്ഷൻ ബിൽഡ് ഉപയോഗിക്കുക (npm റൺ ബിൽഡിന് ശേഷമുള്ള ബാക്കെൻഡ് സേവനം നൽകുന്നു), അല്ലെങ്കിൽ npm റൺ dev:pwa പ്രവർത്തിപ്പിച്ച് HTTPS അല്ലെങ്കിൽ ലോക്കൽ ഹോസ്റ്റിന് കീഴിൽ Chrome/Edge ഉപയോഗിച്ച് തുറക്കുക.',
+  'auth.pwaInsecureOriginHint': 'MindGraph നിങ്ങളുടെ ഡെസ്ക്ടോപ്പിലേക്ക് ചേർക്കുന്നതിന് മുമ്പ് ദയവായി മൈൻഡ്ഗ്രാഫിൻ്റെ HTTPS URL നിങ്ങളുടെ ബ്രൗസറിൽ തുറക്കുക (സംരക്ഷിച്ച HTML ഫയൽ തുറക്കരുത്).',
   'auth.backToLogin': 'ലോഗിൻ ചെയ്യാൻ മടങ്ങുക',
   'auth.captcha': 'പരിശോധിച്ചുറപ്പിക്കൽ കോഡ്',
   'auth.captchaLength4': 'ദയവായി 4-അക്ക സ്ഥിരീകരണ കോഡ് നൽകുക',
   'auth.captchaLoadFailed': 'സ്ഥിരീകരണ കോഡ് ലോഡുചെയ്യുന്നത് പരാജയപ്പെട്ടു',
   'auth.captchaNetworkError': 'നെറ്റ്‌വർക്ക് പിശക്, സ്ഥിരീകരണ കോഡ് ലോഡുചെയ്യുന്നത് പരാജയപ്പെട്ടു',
   'auth.tsecFailed': 'പരിശോധിച്ചുറപ്പിക്കൽ പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക',
-  'auth.tsecUnavailable':
-    'മനുഷ്യ-കമ്പ്യൂട്ടർ പ്രാമാണീകരണം കോൺഫിഗർ ചെയ്‌തിട്ടില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.tsecUnavailable': 'മനുഷ്യ-കമ്പ്യൂട്ടർ പ്രാമാണീകരണം കോൺഫിഗർ ചെയ്‌തിട്ടില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.changePassword': 'പാസ്വേഡ് മാറ്റുക',
   'auth.accountPlugin': 'പ്ലഗ്-ഇൻ',
   'auth.apiTokenButton': 'API ടോക്കൺ',
@@ -168,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'പകർത്തി',
   'auth.apiTokenCopyFailed': 'പകർത്താനായില്ല',
   'auth.apiTokenLoading': 'ലോഡ് ചെയ്യുന്നു...',
-  'auth.apiTokenNone':
-    'ടോക്കൺ ഇതുവരെ ജനറേറ്റ് ചെയ്തിട്ടില്ല. സ്‌കിൽ പായ്ക്ക് ഡൗൺലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ഒന്ന് സൃഷ്‌ടിക്കാൻ API ടോക്കൺ ക്ലിക്ക് ചെയ്യുക.',
+  'auth.apiTokenNone': 'ടോക്കൺ ഇതുവരെ ജനറേറ്റ് ചെയ്തിട്ടില്ല. സ്‌കിൽ പായ്ക്ക് ഡൗൺലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ഒന്ന് സൃഷ്‌ടിക്കാൻ API ടോക്കൺ ക്ലിക്ക് ചെയ്യുക.',
   'auth.apiTokenOpaque': 'നിലവിലെ ടോക്കൺ പ്രതിധ്വനിക്കാൻ കഴിയില്ല, ദയവായി അത് പുനഃസൃഷ്ടിക്കുക.',
   'auth.apiTokenExpires': '{date} വരെ സാധുതയുണ്ട്',
   'auth.downloadChromeExtension': 'Chrome വിപുലീകരണം',
   'auth.downloadWordAddin': 'വേഡ് ആഡ്-ഇൻ',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'നിലവിലെ സ്കൂൾ പതിപ്പ് ഈ സവിശേഷതയെ പിന്തുണയ്ക്കുന്നില്ല, ദയവായി സ്റ്റാൻഡേർഡ് ടീച്ചിംഗ്, റിസർച്ച് പതിപ്പിലേക്കോ സ്കൂൾ അധിഷ്ഠിത കോ-കൺസ്ട്രക്ഷൻ പതിപ്പിലേക്കോ അപ്ഗ്രേഡ് ചെയ്യുക (അടിസ്ഥാന അധ്യാപനത്തിലും ഗവേഷണ പതിപ്പിലും ഈ സവിശേഷത ഉൾപ്പെടുന്നില്ല)',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'സ്‌കൂൾ സബ്‌സ്‌ക്രിപ്‌ഷൻ കാലഹരണപ്പെട്ടു, അധ്യാപകരെയും സ്‌കൂൾ അഡ്മിനിസ്‌ട്രേറ്റർമാരെയും ലോക്കൗട്ട് ചെയ്‌തു. നിങ്ങൾക്ക് പുതുക്കണമെങ്കിൽ, പ്ലാറ്റ്‌ഫോം അഡ്‌മിനിസ്‌ട്രേറ്ററെ ബന്ധപ്പെടുക.',
-  'auth.diagramLimitReached':
-    'ട്രയൽ പതിപ്പിലെ ഓരോ അധ്യാപകനും {max} മാപ്പുകൾ വരെ സംരക്ഷിക്കാൻ കഴിയും. സംരക്ഷിക്കുന്നതിന് മുമ്പ് ദയവായി അവ ഇല്ലാതാക്കുക.',
+  'auth.schoolTierFeatureUnavailable': 'നിലവിലെ സ്കൂൾ പതിപ്പ് ഈ സവിശേഷതയെ പിന്തുണയ്ക്കുന്നില്ല, ദയവായി സ്റ്റാൻഡേർഡ് ടീച്ചിംഗ്, റിസർച്ച് പതിപ്പിലേക്കോ സ്കൂൾ അധിഷ്ഠിത കോ-കൺസ്ട്രക്ഷൻ പതിപ്പിലേക്കോ അപ്ഗ്രേഡ് ചെയ്യുക (അടിസ്ഥാന അധ്യാപനത്തിലും ഗവേഷണ പതിപ്പിലും ഈ സവിശേഷത ഉൾപ്പെടുന്നില്ല)',
+  'auth.schoolSubscriptionExpiredDowngraded': 'സ്‌കൂൾ സബ്‌സ്‌ക്രിപ്‌ഷൻ കാലഹരണപ്പെട്ടു, അധ്യാപകരെയും സ്‌കൂൾ അഡ്മിനിസ്‌ട്രേറ്റർമാരെയും ലോക്കൗട്ട് ചെയ്‌തു. നിങ്ങൾക്ക് പുതുക്കണമെങ്കിൽ, പ്ലാറ്റ്‌ഫോം അഡ്‌മിനിസ്‌ട്രേറ്ററെ ബന്ധപ്പെടുക.',
+  'auth.diagramLimitReached': 'ട്രയൽ പതിപ്പിലെ ഓരോ അധ്യാപകനും {max} മാപ്പുകൾ വരെ സംരക്ഷിക്കാൻ കഴിയും. സംരക്ഷിക്കുന്നതിന് മുമ്പ് ദയവായി അവ ഇല്ലാതാക്കുക.',
   'auth.downloadOpenclawSkill': 'വർക്ക്ബഡ്ഡി സ്കിൽസ് പായ്ക്ക്',
-  'auth.downloadOpenclawSkillHint':
-    'ഡൗൺലോഡിൽ അക്കൗണ്ട് നമ്പറും നിലവിലെ ടോക്കണും ഉൾപ്പെടുന്നു. ടോക്കൺ പുനഃസൃഷ്ടിച്ച ശേഷം, പഴയ നൈപുണ്യ പാക്കുകളും വിപുലീകരണങ്ങളും അസാധുവാകും.',
+  'auth.downloadOpenclawSkillHint': 'ഡൗൺലോഡിൽ അക്കൗണ്ട് നമ്പറും നിലവിലെ ടോക്കണും ഉൾപ്പെടുന്നു. ടോക്കൺ പുനഃസൃഷ്ടിച്ച ശേഷം, പഴയ നൈപുണ്യ പാക്കുകളും വിപുലീകരണങ്ങളും അസാധുവാകും.',
   'auth.changePhoneButton': 'മൊബൈൽ ഫോൺ മാറ്റുക',
   'auth.passwordChangeSuccess': 'പാസ്‌വേഡ് വിജയകരമായി മാറ്റി',
   'auth.passwordChangeFailed': 'പാസ്‌വേഡ് മാറ്റുന്നതിൽ പരാജയപ്പെട്ടു',
@@ -201,8 +161,7 @@ export default {
   'auth.loginSuccessNamed': '{username}, ലോഗിൻ വിജയിച്ചു',
   'auth.logout': 'പുറത്തുകടക്കുക',
   'auth.modal.captchaLoadFailed': 'സ്ഥിരീകരണ കോഡ് ലോഡുചെയ്യുന്നത് പരാജയപ്പെട്ടു',
-  'auth.modal.captchaNetworkError':
-    'നെറ്റ്‌വർക്ക് പിശക്, സ്ഥിരീകരണ കോഡ് ലോഡുചെയ്യുന്നത് പരാജയപ്പെട്ടു',
+  'auth.modal.captchaNetworkError': 'നെറ്റ്‌വർക്ക് പിശക്, സ്ഥിരീകരണ കോഡ് ലോഡുചെയ്യുന്നത് പരാജയപ്പെട്ടു',
   'auth.modal.captchaPlaceholderShort': 'സ്ഥിരീകരണ കോഡ് നൽകുക',
   'auth.modal.codeSentTo': 'സ്ഥിരീകരണ കോഡ് അയച്ചു',
   'auth.modal.confirmPassword': 'പാസ്വേഡ് സ്ഥിരീകരിക്കുക',
@@ -221,11 +180,9 @@ export default {
   'auth.modal.networkLoginError': 'നെറ്റ്‌വർക്ക് പിശക്, ലോഗിൻ പരാജയപ്പെട്ടു',
   'auth.modal.networkRegisterError': 'നെറ്റ്‌വർക്ക് പിശക്, രജിസ്ട്രേഷൻ പരാജയപ്പെട്ടു',
   'auth.modal.networkResetError': 'നെറ്റ്‌വർക്ക് പിശക്, പാസ്‌വേഡ് പുനഃസജ്ജമാക്കൽ പരാജയപ്പെട്ടു',
-  'auth.modal.networkSmsError':
-    'നെറ്റ്‌വർക്ക് പിശക്, SMS സ്ഥിരീകരണ കോഡ് അയയ്‌ക്കുന്നതിൽ പരാജയപ്പെട്ടു',
+  'auth.modal.networkSmsError': 'നെറ്റ്‌വർക്ക് പിശക്, SMS സ്ഥിരീകരണ കോഡ് അയയ്‌ക്കുന്നതിൽ പരാജയപ്പെട്ടു',
   'auth.modal.networkSmsLoginError': 'നെറ്റ്‌വർക്ക് പിശക്, സ്ഥിരീകരണ കോഡ് ലോഗിൻ പരാജയപ്പെട്ടു',
-  'auth.modal.networkEmailCodeError':
-    'നെറ്റ്‌വർക്ക് പിശക്, ഇമെയിൽ സ്ഥിരീകരണ കോഡ് അയയ്‌ക്കുന്നതിൽ പരാജയപ്പെട്ടു',
+  'auth.modal.networkEmailCodeError': 'നെറ്റ്‌വർക്ക് പിശക്, ഇമെയിൽ സ്ഥിരീകരണ കോഡ് അയയ്‌ക്കുന്നതിൽ പരാജയപ്പെട്ടു',
   'auth.modal.networkEmailLoginError': 'നെറ്റ്‌വർക്ക് പിശക്, ഇമെയിൽ ലോഗിൻ പരാജയപ്പെട്ടു',
   'auth.modal.changingPassword': 'Updating...',
   'auth.modal.confirmChange': 'Confirm change',
@@ -237,12 +194,10 @@ export default {
   'auth.modal.passwordMismatch': 'രണ്ടുതവണ നൽകിയ പാസ്‌വേഡുകൾ പൊരുത്തമില്ലാത്തതാണ്',
   'auth.modal.passwordPlaceholder': 'ദയവായി പാസ്‌വേഡ് നൽകുക',
   'auth.modal.phone11Digits': 'സാധുവായ 11 അക്ക മൊബൈൽ ഫോൺ നമ്പർ നൽകുക',
-  'auth.modal.enterPhoneOrEmail':
-    'നിങ്ങളുടെ രജിസ്റ്റർ ചെയ്ത മൊബൈൽ ഫോൺ നമ്പറോ അക്കൗണ്ട് ഇമെയിലോ നൽകുക',
+  'auth.modal.enterPhoneOrEmail': 'നിങ്ങളുടെ രജിസ്റ്റർ ചെയ്ത മൊബൈൽ ഫോൺ നമ്പറോ അക്കൗണ്ട് ഇമെയിലോ നൽകുക',
   'auth.modal.phonePlaceholder11': '11 അക്ക മൊബൈൽ ഫോൺ നമ്പർ',
   'auth.modal.phoneRegisteredPlaceholder': 'രജിസ്റ്റർ ചെയ്ത മൊബൈൽ നമ്പർ',
-  'auth.modal.forgotPhoneOrEmailPlaceholder':
-    'രജിസ്റ്റർ ചെയ്ത മൊബൈൽ ഫോൺ നമ്പർ അല്ലെങ്കിൽ അക്കൗണ്ട് ഇമെയിൽ',
+  'auth.modal.forgotPhoneOrEmailPlaceholder': 'രജിസ്റ്റർ ചെയ്ത മൊബൈൽ ഫോൺ നമ്പർ അല്ലെങ്കിൽ അക്കൗണ്ട് ഇമെയിൽ',
   'auth.modal.productTitle': 'മാറ്റ് അധ്യാപനവും ഗവേഷണവും',
   'auth.modal.registerFailed': 'രജിസ്ട്രേഷൻ പരാജയപ്പെട്ടു',
   'auth.modal.registerSuccess': 'രജിസ്ട്രേഷൻ വിജയിച്ചു, ദയവായി ലോഗിൻ ചെയ്യുക',
@@ -266,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -305,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -313,19 +267,16 @@ export default {
   'auth.landing.legalJoin': 'and',
   'auth.modal.waitCaptchaLoad': 'സ്ഥിരീകരണ കോഡ് ലോഡുചെയ്യാൻ കാത്തിരിക്കുക',
   'auth.modal.detectingRegion': 'നിങ്ങളുടെ സന്ദർശന പ്രദേശം തിരിച്ചറിയുന്നു...',
-  'auth.modal.waitRegionDetection':
-    'നിങ്ങൾ സന്ദർശിക്കുന്ന പ്രദേശം തിരിച്ചറിയുന്നത് വരെ കാത്തിരിക്കുക.',
+  'auth.modal.waitRegionDetection': 'നിങ്ങൾ സന്ദർശിക്കുന്ന പ്രദേശം തിരിച്ചറിയുന്നത് വരെ കാത്തിരിക്കുക.',
   'auth.modal.hybridRegisterGroupLabel': 'രജിസ്ട്രേഷൻ രീതി',
   'auth.modal.hybridRegisterEmailTab': 'വിദ്യാഭ്യാസ ഇമെയിൽ',
   'auth.modal.hybridRegisterEmailTabAny': 'മെയിൽ',
   'auth.modal.hybridRegisterPhoneTab': 'മൊബൈൽ ഫോൺ നമ്പറും ക്ഷണ കോഡും',
-  'auth.modal.mainlandSalesNotice':
-    'ചൈനയിലെ മെയിൻലാൻഡ് ഉപയോക്താക്കൾ രജിസ്റ്റർ ചെയ്യുന്നതിന് അവരുടെ മൊബൈൽ ഫോൺ നമ്പറും ക്ഷണ കോഡും ഉപയോഗിക്കണം; നിങ്ങൾക്ക് സഹായം ആവശ്യമുണ്ടെങ്കിൽ, കസ്റ്റമർ സർവീസ് സ്റ്റാഫുമായി ബന്ധപ്പെടുക.',
+  'auth.modal.mainlandSalesNotice': 'ചൈനയിലെ മെയിൻലാൻഡ് ഉപയോക്താക്കൾ രജിസ്റ്റർ ചെയ്യുന്നതിന് അവരുടെ മൊബൈൽ ഫോൺ നമ്പറും ക്ഷണ കോഡും ഉപയോഗിക്കണം; നിങ്ങൾക്ക് സഹായം ആവശ്യമുണ്ടെങ്കിൽ, കസ്റ്റമർ സർവീസ് സ്റ്റാഫുമായി ബന്ധപ്പെടുക.',
   'auth.modal.registrationEmailLabel': 'വിദ്യാഭ്യാസ ഇമെയിൽ മാത്രം',
   'auth.modal.registrationEmailLabelAny': 'ഇമെയിൽ വിലാസം',
   'auth.modal.registrationEmailHint': '',
-  'auth.modal.registrationEmailHintAny':
-    'ചൈനയിലെ മെയിൻലാൻഡ് ഡൊമെയ്ൻ നാമങ്ങൾ ഒഴികെയുള്ള ഏത് ഇമെയിൽ വിലാസവും നിങ്ങൾക്ക് ഉപയോഗിക്കാം.',
+  'auth.modal.registrationEmailHintAny': 'ചൈനയിലെ മെയിൻലാൻഡ് ഡൊമെയ്ൻ നാമങ്ങൾ ഒഴികെയുള്ള ഏത് ഇമെയിൽ വിലാസവും നിങ്ങൾക്ക് ഉപയോഗിക്കാം.',
   'auth.modal.educationEmailInvalid': 'സാധുവായ ഒരു വിദ്യാഭ്യാസ ഇമെയിൽ വിലാസം നൽകുക.',
   'auth.modal.emailInvalid': 'സാധുവായ ഒരു ഇമെയിൽ വിലാസം നൽകുക.',
   'auth.modal.emailCodeLabel': 'ഇമെയിൽ സ്ഥിരീകരണ കോഡ്',
@@ -334,12 +285,9 @@ export default {
   'auth.modal.sendEmailCode': 'ഇമെയിൽ സ്ഥിരീകരണ കോഡ് അയയ്ക്കുക',
   'auth.modal.sendingEmailCode': 'അയയ്ക്കുന്നു...',
   'auth.modal.emailCodePlaceholder': '6 അക്ക ഇമെയിൽ സ്ഥിരീകരണ കോഡ്',
-  'auth.modal.acknowledgeOverseas':
-    'വിദ്യാഭ്യാസ ആവശ്യങ്ങൾക്കായി മാത്രമാണ് ഞാൻ സോഫ്റ്റ്‌വെയർ മനസ്സിലാക്കുകയും ഉപയോഗിക്കുകയും ചെയ്യുന്നത്.',
-  'auth.modal.acknowledgeOverseasAny':
-    'വിദേശ രജിസ്ട്രേഷനുമായി ബന്ധപ്പെട്ട നിബന്ധനകൾ ഞാൻ മനസ്സിലാക്കുകയും അംഗീകരിക്കുകയും ചെയ്യുന്നു.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'വിദേശ രജിസ്ട്രേഷനുമായി ബന്ധപ്പെട്ട നിബന്ധനകൾ ഞാൻ മനസ്സിലാക്കുകയും അംഗീകരിക്കുകയും ചെയ്യുന്നു, കൂടാതെ ഈ രജിസ്ട്രേഷൻ പാത ലളിതമാക്കിയ ചൈനീസ് പിന്തുണ നൽകുന്നില്ലെന്ന് എനിക്കറിയാം.',
+  'auth.modal.acknowledgeOverseas': 'വിദ്യാഭ്യാസ ആവശ്യങ്ങൾക്കായി മാത്രമാണ് ഞാൻ സോഫ്റ്റ്‌വെയർ മനസ്സിലാക്കുകയും ഉപയോഗിക്കുകയും ചെയ്യുന്നത്.',
+  'auth.modal.acknowledgeOverseasAny': 'വിദേശ രജിസ്ട്രേഷനുമായി ബന്ധപ്പെട്ട നിബന്ധനകൾ ഞാൻ മനസ്സിലാക്കുകയും അംഗീകരിക്കുകയും ചെയ്യുന്നു.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'വിദേശ രജിസ്ട്രേഷനുമായി ബന്ധപ്പെട്ട നിബന്ധനകൾ ഞാൻ മനസ്സിലാക്കുകയും അംഗീകരിക്കുകയും ചെയ്യുന്നു, കൂടാതെ ഈ രജിസ്ട്രേഷൻ പാത ലളിതമാക്കിയ ചൈനീസ് പിന്തുണ നൽകുന്നില്ലെന്ന് എനിക്കറിയാം.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'മുകളിലുള്ള നിർദ്ദേശങ്ങൾ സ്ഥിരീകരിക്കാൻ പരിശോധിക്കുക.',
   'auth.loginPhoneOrEmail': 'മൊബൈൽ ഫോൺ നമ്പർ അല്ലെങ്കിൽ ഇമെയിൽ',
@@ -360,17 +308,13 @@ export default {
   'auth.username': 'ഉപയോക്തൃനാമം',
   'auth.waitCaptchaLoad': 'സ്ഥിരീകരണ കോഡ് ലോഡുചെയ്യാൻ കാത്തിരിക്കുക',
   'auth.quickRegPageTitle': 'ദ്രുത രജിസ്ട്രേഷൻ',
-  'auth.quickRegPageHint':
-    'ഈ പേജിൽ പ്രവേശിക്കാൻ സ്കൂൾ പങ്കിട്ട ലിങ്ക് ഉപയോഗിക്കുക. ചേരുന്നത് പൂർത്തിയാക്കാൻ നിങ്ങളുടെ മൊബൈൽ ഫോൺ നമ്പർ നൽകി ടീച്ചറുടെ ക്വിക്ക് രജിസ്ട്രേഷൻ വിൻഡോയിൽ (ഓരോ 30 സെക്കൻഡിലും മാറും) പ്രദർശിപ്പിച്ചിരിക്കുന്ന 6 അക്ക കോഡ് നൽകുക. നിങ്ങളുടെ സാന്നിദ്ധ്യം സ്ഥിരീകരിക്കാൻ റൂം കോഡ് ഉപയോഗിക്കുന്നു, കൂടാതെ SMS പരിശോധനാ കോഡ് പോലെ മെഷീൻ ഉടമയുടെ ഐഡൻ്റിറ്റി വെവ്വേറെ പരിശോധിച്ചുറപ്പിക്കുന്നില്ല.',
-  'auth.quickRegLinkInvalid':
-    'ഈ രജിസ്ട്രേഷൻ ലിങ്ക് കാലഹരണപ്പെട്ടു അല്ലെങ്കിൽ അവസാനിച്ചു. നിലവിലെ ലിങ്ക് വീണ്ടും പങ്കിടാൻ മോഡറേറ്ററോട് ആവശ്യപ്പെട്ട് വീണ്ടും ശ്രമിക്കുക.',
-  'auth.quickRegProbeRateLimited':
-    'ഈ പേജ് ഇടയ്ക്കിടെ അഭ്യർത്ഥിക്കുന്നു, ദയവായി പുതുക്കുക അല്ലെങ്കിൽ പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.quickRegPageHint': 'ഈ പേജിൽ പ്രവേശിക്കാൻ സ്കൂൾ പങ്കിട്ട ലിങ്ക് ഉപയോഗിക്കുക. ചേരുന്നത് പൂർത്തിയാക്കാൻ നിങ്ങളുടെ മൊബൈൽ ഫോൺ നമ്പർ നൽകി ടീച്ചറുടെ ക്വിക്ക് രജിസ്ട്രേഷൻ വിൻഡോയിൽ (ഓരോ 30 സെക്കൻഡിലും മാറും) പ്രദർശിപ്പിച്ചിരിക്കുന്ന 6 അക്ക കോഡ് നൽകുക. നിങ്ങളുടെ സാന്നിദ്ധ്യം സ്ഥിരീകരിക്കാൻ റൂം കോഡ് ഉപയോഗിക്കുന്നു, കൂടാതെ SMS പരിശോധനാ കോഡ് പോലെ മെഷീൻ ഉടമയുടെ ഐഡൻ്റിറ്റി വെവ്വേറെ പരിശോധിച്ചുറപ്പിക്കുന്നില്ല.',
+  'auth.quickRegLinkInvalid': 'ഈ രജിസ്ട്രേഷൻ ലിങ്ക് കാലഹരണപ്പെട്ടു അല്ലെങ്കിൽ അവസാനിച്ചു. നിലവിലെ ലിങ്ക് വീണ്ടും പങ്കിടാൻ മോഡറേറ്ററോട് ആവശ്യപ്പെട്ട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.quickRegProbeRateLimited': 'ഈ പേജ് ഇടയ്ക്കിടെ അഭ്യർത്ഥിക്കുന്നു, ദയവായി പുതുക്കുക അല്ലെങ്കിൽ പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.quickRegSessionSignups': 'ഈ ഇവൻ്റിനായി ഇതിനകം രജിസ്റ്റർ ചെയ്തിട്ടുണ്ട്: {n} ആളുകൾ',
   'auth.quickRegRoomCodeLabel': 'റൂം കോഡ്',
   'auth.quickRegRoomCodePlaceholder': '6 അക്കങ്ങൾ',
-  'auth.quickRegRoomCodeHint':
-    'അടുത്ത റൊട്ടേഷനുമുമ്പ് ഇൻപുട്ട് പൂർത്തിയായി എന്ന് ഉറപ്പാക്കാൻ ടീച്ചറുടെ/മോഡറേറ്ററുടെ സ്ക്രീനിലെ "ക്വിക്ക് രജിസ്ട്രേഷൻ" പോപ്പ്-അപ്പ് വിൻഡോയിൽ പ്രദർശിപ്പിച്ചിരിക്കുന്ന വലിയ സംഖ്യ പരിശോധിക്കുക.',
+  'auth.quickRegRoomCodeHint': 'അടുത്ത റൊട്ടേഷനുമുമ്പ് ഇൻപുട്ട് പൂർത്തിയായി എന്ന് ഉറപ്പാക്കാൻ ടീച്ചറുടെ/മോഡറേറ്ററുടെ സ്ക്രീനിലെ "ക്വിക്ക് രജിസ്ട്രേഷൻ" പോപ്പ്-അപ്പ് വിൻഡോയിൽ പ്രദർശിപ്പിച്ചിരിക്കുന്ന വലിയ സംഖ്യ പരിശോധിക്കുക.',
   'auth.quickRegRoomCodeEnter6': 'ദയവായി 6 അക്ക റൂം കോഡ് നൽകുക',
   'auth.quickRegMaxUses': 'ഈ ലിങ്കിനായി രജിസ്റ്റർ ചെയ്ത ഉപയോക്താക്കളുടെ പരമാവധി എണ്ണം',
   'auth.quickRegHeadcount': 'ആളുകളുടെ എണ്ണം',
@@ -380,21 +324,16 @@ export default {
   'auth.quickRegSubmit': 'രജിസ്ട്രേഷൻ പൂർത്തിയാക്കുക',
   'auth.quickRegSubmitting': 'രജിസ്റ്റർ ചെയ്യുന്നു...',
   'auth.quickRegRegisterSuccess': 'രജിസ്ട്രേഷൻ വിജയിച്ചു',
-  'auth.quickRegSessionUnsure':
-    'രജിസ്ട്രേഷൻ വിജയിച്ചിരിക്കാം. നിങ്ങൾ സ്വയമേവ നൽകിയിട്ടില്ലെങ്കിൽ, തിരികെ വന്ന് ലോഗിൻ ചെയ്യുന്നതിനായി സ്ഥിരീകരണ കോഡ് ഉപയോഗിക്കുക അല്ലെങ്കിൽ ഈ പേജ് വീണ്ടും തുറക്കുക.',
+  'auth.quickRegSessionUnsure': 'രജിസ്ട്രേഷൻ വിജയിച്ചിരിക്കാം. നിങ്ങൾ സ്വയമേവ നൽകിയിട്ടില്ലെങ്കിൽ, തിരികെ വന്ന് ലോഗിൻ ചെയ്യുന്നതിനായി സ്ഥിരീകരണ കോഡ് ഉപയോഗിക്കുക അല്ലെങ്കിൽ ഈ പേജ് വീണ്ടും തുറക്കുക.',
   'auth.quickRegBackToSignIn': 'സാധാരണ ലോഗിൻ/രജിസ്റ്റർ ഉപയോഗിക്കുക',
   'auth.quickRegSelectOrg': 'സ്കൂൾ തിരഞ്ഞെടുക്കുക',
-  'auth.quickRegOrgLoadError':
-    'സ്‌കൂൾ ലിസ്റ്റ് ലോഡ് ചെയ്യാൻ കഴിയുന്നില്ല, പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
-  'auth.quickRegMintError':
-    'രജിസ്ട്രേഷൻ ചാനൽ സൃഷ്ടിക്കാൻ കഴിയുന്നില്ല, പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.quickRegOrgLoadError': 'സ്‌കൂൾ ലിസ്റ്റ് ലോഡ് ചെയ്യാൻ കഴിയുന്നില്ല, പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.quickRegMintError': 'രജിസ്ട്രേഷൻ ചാനൽ സൃഷ്ടിക്കാൻ കഴിയുന്നില്ല, പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.quickRegCloseConfirmTitle': 'ദ്രുത രജിസ്ട്രേഷൻ അവസാനിച്ചോ?',
-  'auth.quickRegCloseConfirm':
-    'വിൻഡോ അടച്ച ശേഷം, നിലവിലെ ക്യുആർ കോഡും റൂം കോഡും ഉടനടി അസാധുവാകും, ഇതുവരെ ചേരാത്ത വിദ്യാർത്ഥികൾക്ക് രജിസ്റ്റർ ചെയ്യുന്നത് തുടരാനാവില്ല.',
+  'auth.quickRegCloseConfirm': 'വിൻഡോ അടച്ച ശേഷം, നിലവിലെ ക്യുആർ കോഡും റൂം കോഡും ഉടനടി അസാധുവാകും, ഇതുവരെ ചേരാത്ത വിദ്യാർത്ഥികൾക്ക് രജിസ്റ്റർ ചെയ്യുന്നത് തുടരാനാവില്ല.',
   'auth.setPasswordWithSms': 'ലോഗിൻ പാസ്‌വേഡ് സജ്ജമാക്കുക',
   'auth.setPasswordWithSmsTitle': 'SMS വഴി ലോഗിൻ പാസ്‌വേഡ് സജ്ജമാക്കുക',
-  'auth.setPasswordWithSmsHint':
-    'ബന്ധിപ്പിച്ച മൊബൈൽ ഫോണിലേക്ക് ഒരു SMS സ്ഥിരീകരണ കോഡ് അയയ്ക്കുക. സജ്ജീകരിച്ചതിന് ശേഷം, പാസ്‌വേഡ് അല്ലെങ്കിൽ സ്ഥിരീകരണ കോഡ് ഉപയോഗിച്ച് നിങ്ങൾക്ക് ലോഗിൻ ചെയ്യാൻ കഴിയും.',
+  'auth.setPasswordWithSmsHint': 'ബന്ധിപ്പിച്ച മൊബൈൽ ഫോണിലേക്ക് ഒരു SMS സ്ഥിരീകരണ കോഡ് അയയ്ക്കുക. സജ്ജീകരിച്ചതിന് ശേഷം, പാസ്‌വേഡ് അല്ലെങ്കിൽ സ്ഥിരീകരണ കോഡ് ഉപയോഗിച്ച് നിങ്ങൾക്ക് ലോഗിൻ ചെയ്യാൻ കഴിയും.',
   'auth.setPasswordWithSmsSubmit': 'പാസ്‌വേഡ് സജ്ജമാക്കുക',
   'auth.setPasswordWithSmsSubmitting': 'സംരക്ഷിക്കുന്നു...',
   'auth.accountAvatar': 'Avatar',
@@ -409,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'പേര് കാണിക്കുക',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'കുറഞ്ഞത് 2 പ്രതീകങ്ങൾ, അക്കങ്ങൾ ഇല്ല',
   'auth.accountNameSave': 'പേര് സംരക്ഷിക്കുക',
   'auth.accountNameSaveSuccess': 'പേര് അപ്ഡേറ്റ് ചെയ്തു',
@@ -422,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'അൺബൈൻഡിംഗ് പരാജയപ്പെട്ടു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.dingtalkBindRebind': 'വീണ്ടും ബന്ധിക്കുക',
   'auth.dingtalkBindTitle': 'DingTalk അക്കൗണ്ട് ബൈൻഡ് ചെയ്യുക',
-  'auth.dingtalkBindInstructions':
-    'ചുവടെ കാണിച്ചിരിക്കുന്ന 6 അക്ക പരിശോധനാ കോഡ് (ഉദാ. 123-456) നിങ്ങളുടെ സ്‌കൂളിൻ്റെ DingTalk MindBot-ലേക്ക് സന്ദേശമയയ്‌ക്കുക.',
+  'auth.dingtalkBindInstructions': 'ചുവടെ കാണിച്ചിരിക്കുന്ന 6 അക്ക പരിശോധനാ കോഡ് (ഉദാ. 123-456) നിങ്ങളുടെ സ്‌കൂളിൻ്റെ DingTalk MindBot-ലേക്ക് സന്ദേശമയയ്‌ക്കുക.',
   'auth.dingtalkBindPairWaiting': 'MindBot-ന് സ്ഥിരീകരണ കോഡ് ലഭിക്കുന്നതിനായി കാത്തിരിക്കുന്നു...',
   'auth.dingtalkBindCodeHint': 'സ്ഥിരീകരണ കോഡ് മാത്രം അയയ്‌ക്കുക, അധിക ടെക്‌സ്‌റ്റ് ഇല്ല.',
   'auth.dingtalkBindCountdown': 'ബൈൻഡ് സെഷൻ {s} സെക്കൻഡിനുള്ളിൽ കാലഹരണപ്പെടും',
@@ -432,19 +373,15 @@ export default {
   'auth.dingtalkBindRegenerate': 'സ്ഥിരീകരണ കോഡ് പുനഃസൃഷ്ടിക്കുക',
   'auth.dingtalkBindSuccess': 'DingTalk ബൈൻഡിംഗ് വിജയിച്ചു',
   'auth.dingtalkBindMintError': 'ബൈൻഡിംഗ് ആരംഭിക്കാൻ കഴിയുന്നില്ല, പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
-  'auth.dingtalkBindPollRateLimited':
-    'പ്രവർത്തനം വളരെ പതിവായിരുന്നു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.dingtalkBindPollRateLimited': 'പ്രവർത്തനം വളരെ പതിവായിരുന്നു, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.dingtalkBindNoOrg': 'നിങ്ങൾ സ്കൂളിൽ ചേർന്നിട്ടില്ല, DingTalk-ന് ബന്ധിതനാകാൻ കഴിയില്ല.',
   'auth.dingtalkBindNoMindbot': 'നിങ്ങളുടെ സ്കൂൾ ഇതുവരെ MindBot പ്രവർത്തനക്ഷമമാക്കിയിട്ടില്ല.',
   'auth.dingtalkBindLinkedLabel': 'ബൗണ്ട് ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'നിലവിൽ ബന്ധിപ്പിച്ചിരിക്കുന്നു: {staff}',
   'auth.dingtalkUnbindTitle': 'DingTalk അക്കൗണ്ട് അൺബൈൻഡ് ചെയ്യുക',
-  'auth.dingtalkUnbindInstructions':
-    'അൺബൈൻഡിംഗ് സ്ഥിരീകരിക്കുന്നതിന് ദയവായി നിങ്ങളുടെ ബൗണ്ട് DingTalk അക്കൗണ്ട് ഉപയോഗിക്കുകയും താഴെയുള്ള പരിശോധനാ കോഡ് MindBot-ലേക്ക് അയയ്ക്കുകയും ചെയ്യുക.',
-  'auth.dingtalkUnbindPairWaiting':
-    'ബന്ധിപ്പിച്ച DingTalk അക്കൗണ്ടിൻ്റെ സ്ഥിരീകരണത്തിനായി കാത്തിരിക്കുന്നു...',
-  'auth.dingtalkUnbindCodeHint':
-    'ഈ സ്ഥിരീകരണ കോഡ് അയയ്‌ക്കുന്നതിന് ദയവായി ബൗണ്ട് ചെയ്‌ത DingTalk അക്കൗണ്ട് മാത്രം ഉപയോഗിക്കുക, മറ്റ് ടെക്‌സ്‌റ്റ് അറ്റാച്ചുചെയ്യരുത്.',
+  'auth.dingtalkUnbindInstructions': 'അൺബൈൻഡിംഗ് സ്ഥിരീകരിക്കുന്നതിന് ദയവായി നിങ്ങളുടെ ബൗണ്ട് DingTalk അക്കൗണ്ട് ഉപയോഗിക്കുകയും താഴെയുള്ള പരിശോധനാ കോഡ് MindBot-ലേക്ക് അയയ്ക്കുകയും ചെയ്യുക.',
+  'auth.dingtalkUnbindPairWaiting': 'ബന്ധിപ്പിച്ച DingTalk അക്കൗണ്ടിൻ്റെ സ്ഥിരീകരണത്തിനായി കാത്തിരിക്കുന്നു...',
+  'auth.dingtalkUnbindCodeHint': 'ഈ സ്ഥിരീകരണ കോഡ് അയയ്‌ക്കുന്നതിന് ദയവായി ബൗണ്ട് ചെയ്‌ത DingTalk അക്കൗണ്ട് മാത്രം ഉപയോഗിക്കുക, മറ്റ് ടെക്‌സ്‌റ്റ് അറ്റാച്ചുചെയ്യരുത്.',
   'auth.dingtalkUnbindExpiredHint': 'അൺബൈൻഡിംഗ് സെഷൻ കാലഹരണപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക.',
   'auth.dingtalkUnbindRegenerate': 'പുനരാരംഭിക്കുക',
   'auth.dingtalkUnbindNotLinked': 'നിലവിൽ DingTalk അക്കൗണ്ട് ബൗണ്ട് ഇല്ല.',
@@ -452,31 +389,23 @@ export default {
   'auth.qrLoginTitle': 'ലോഗിൻ ചെയ്യാൻ കോഡ് സ്കാൻ ചെയ്യുക',
   'auth.qrLoginWechatTab': 'WeChat',
   'auth.qrLoginDingtalkTab': 'DingTalk',
-  'auth.qrLoginInviteRequired':
-    'ലോഗിൻ ചെയ്യാൻ ആദ്യം സ്കൂൾ ക്ഷണ കോഡ് പൂരിപ്പിക്കുക, തുടർന്ന് കോഡ് സ്കാൻ ചെയ്യുക',
-  'auth.qrLoginProvidersFailed':
-    'സ്കാൻ കോഡ് ലോഗിൻ കോൺഫിഗറേഷൻ ലോഡ് ചെയ്യാൻ കഴിയുന്നില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.qrLoginInviteRequired': 'ലോഗിൻ ചെയ്യാൻ ആദ്യം സ്കൂൾ ക്ഷണ കോഡ് പൂരിപ്പിക്കുക, തുടർന്ന് കോഡ് സ്കാൻ ചെയ്യുക',
+  'auth.qrLoginProvidersFailed': 'സ്കാൻ കോഡ് ലോഗിൻ കോൺഫിഗറേഷൻ ലോഡ് ചെയ്യാൻ കഴിയുന്നില്ല, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.qrLoginProviderDisabled': 'ഈ സ്കാൻ കോഡ് ലോഗിൻ രീതി നിലവിൽ ലഭ്യമല്ല',
-  'auth.qrLoginNotLinked':
-    'ആദ്യം നിങ്ങളുടെ അക്കൗണ്ട് ബന്ധിപ്പിക്കുക. നിങ്ങളുടെ പാസ്‌വേഡ് ഉപയോഗിച്ച് ലോഗിൻ ചെയ്യുക, "അക്കൗണ്ട് ബൈൻഡിംഗ്" എന്നതിൽ WeChat ബൈൻഡ് ചെയ്യുക, തുടർന്ന് ലോഗിൻ ചെയ്യാൻ QR കോഡ് സ്കാൻ ചെയ്യുക.',
+  'auth.qrLoginNotLinked': 'ആദ്യം നിങ്ങളുടെ അക്കൗണ്ട് ബന്ധിപ്പിക്കുക. നിങ്ങളുടെ പാസ്‌വേഡ് ഉപയോഗിച്ച് ലോഗിൻ ചെയ്യുക, "അക്കൗണ്ട് ബൈൻഡിംഗ്" എന്നതിൽ WeChat ബൈൻഡ് ചെയ്യുക, തുടർന്ന് ലോഗിൻ ചെയ്യാൻ QR കോഡ് സ്കാൻ ചെയ്യുക.',
   'auth.qrLoginExchangeFailed': 'സ്കാൻ കോഡ് ലോഗിൻ പരാജയപ്പെട്ടു, വീണ്ടും ശ്രമിക്കുക',
-  'auth.qrLoginInvalidState':
-    'QR കോഡ് സ്കാനിംഗ് സെഷൻ കാലഹരണപ്പെട്ടു. ദയവായി അത് അടച്ച് QR കോഡ് വീണ്ടും സ്കാൻ ചെയ്യുക.',
-  'auth.qrLoginInvalidCode':
-    'WeChat അംഗീകാര കോഡ് കാലഹരണപ്പെട്ടു അല്ലെങ്കിൽ ഉപയോഗിച്ചു. QR കോഡ് അടച്ച് കോഡ് വീണ്ടും സ്കാൻ ചെയ്യുക.',
-  'auth.qrLoginRateLimited':
-    'WeChat ലോഗിൻ കോളുകൾ വളരെ പതിവാണ്, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  'auth.qrLoginInvalidState': 'QR കോഡ് സ്കാനിംഗ് സെഷൻ കാലഹരണപ്പെട്ടു. ദയവായി അത് അടച്ച് QR കോഡ് വീണ്ടും സ്കാൻ ചെയ്യുക.',
+  'auth.qrLoginInvalidCode': 'WeChat അംഗീകാര കോഡ് കാലഹരണപ്പെട്ടു അല്ലെങ്കിൽ ഉപയോഗിച്ചു. QR കോഡ് അടച്ച് കോഡ് വീണ്ടും സ്കാൻ ചെയ്യുക.',
+  'auth.qrLoginRateLimited': 'WeChat ലോഗിൻ കോളുകൾ വളരെ പതിവാണ്, ദയവായി പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.qrLoginMisconfigured': 'WeChat ലോഗിൻ കോൺഫിഗറേഷൻ തെറ്റാണ്, അഡ്മിനിസ്ട്രേറ്ററെ ബന്ധപ്പെടുക.',
   'auth.qrLoginCorpMismatch': 'DingTalk ഓർഗനൈസേഷൻ സ്കൂൾ കോൺഫിഗറേഷനുമായി പൊരുത്തപ്പെടുന്നില്ല',
   'auth.oauthExternalTaken': 'ഈ WeChat അക്കൗണ്ട് മറ്റ് ഉപയോക്താക്കളുമായി ബന്ധിപ്പിച്ചിരിക്കുന്നു',
-  'auth.oauthAlreadyBound':
-    'ഈ അക്കൗണ്ട് WeChat-ലേക്ക് ബന്ധിപ്പിച്ചിരിക്കുന്നു. നിങ്ങൾക്ക് മറ്റ് WeChat ബൈൻഡ് ചെയ്യണമെങ്കിൽ, ആദ്യം അത് അൺബൈൻഡ് ചെയ്യുക',
+  'auth.oauthAlreadyBound': 'ഈ അക്കൗണ്ട് WeChat-ലേക്ക് ബന്ധിപ്പിച്ചിരിക്കുന്നു. നിങ്ങൾക്ക് മറ്റ് WeChat ബൈൻഡ് ചെയ്യണമെങ്കിൽ, ആദ്യം അത് അൺബൈൻഡ് ചെയ്യുക',
   'auth.qrLoginDisabled': 'ലോഗിൻ ചെയ്യാൻ QR കോഡ് സ്കാൻ ചെയ്യുന്നത് താൽക്കാലികമായി ലഭ്യമല്ല',
   'auth.qrLoginStartFailed': 'QR കോഡ് ലോഗിൻ സജീവമാക്കാൻ കഴിയുന്നില്ല, പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
   'auth.qrLoginSuccess': 'ലോഗിൻ വിജയിച്ചു',
   'auth.accountBindingsSection': 'അക്കൗണ്ട് ബൈൻഡിംഗ്',
-  'auth.accountBindingsHint':
-    'DingTalk-ൽ സേവ് ചെയ്യാൻ MindBot ഉപയോഗിക്കുന്നു; ലോഗിൻ ചെയ്യാൻ QR കോഡ് സ്കാൻ ചെയ്യാൻ WeChat/DingTalk ഉപയോഗിക്കുന്നു (ആദ്യം ഇവിടെ ബന്ധിപ്പിച്ചിരിക്കണം)',
+  'auth.accountBindingsHint': 'DingTalk-ൽ സേവ് ചെയ്യാൻ MindBot ഉപയോഗിക്കുന്നു; ലോഗിൻ ചെയ്യാൻ QR കോഡ് സ്കാൻ ചെയ്യാൻ WeChat/DingTalk ഉപയോഗിക്കുന്നു (ആദ്യം ഇവിടെ ബന്ധിപ്പിച്ചിരിക്കണം)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',

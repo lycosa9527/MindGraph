@@ -1,6 +1,8 @@
 import type { Connection, DiagramNode } from '@/types'
 import { voidMindMapAssociationsAcrossSides } from '@/utils/mindMapAssociationLine'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { collapseDuplicateMindMapNodes } from '@/utils/mindMapIdentityMigrate'
+import { nodeIdsWithImage } from '@/utils/nodeImageFrame'
 
 import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
 import { type MindMapV2LayoutOptions, recalculateMindMapV2ColumnPositions } from './mindMapLayout'
@@ -44,10 +46,27 @@ export function mergeMindMapLayoutPositions(
  * v2: write-back only from {@link DiagramContext.writeBackMindMapV2LayoutFromComputed}
  * (sole layout owner). Legacy: compute here as before.
  */
+function collapseStoredMindMapDuplicates(ctx: DiagramContext): void {
+  const data = ctx.data.value
+  if (!data?.nodes?.length) return
+  const collapsed = collapseDuplicateMindMapNodes(
+    data.nodes,
+    data.connections ?? [],
+    data._node_styles
+  )
+  if (collapsed.nodes === data.nodes && collapsed.connections === data.connections) return
+  data.nodes = collapsed.nodes
+  data.connections = collapsed.connections
+  if (collapsed.nodeStyles) {
+    data._node_styles = collapsed.nodeStyles
+  }
+}
+
 export function syncMindMapStoreLayoutPositions(ctx: DiagramContext): void {
   const diagramType = ctx.type.value
   if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
   if (!ctx.data.value?.nodes) return
+  collapseStoredMindMapDuplicates(ctx)
 
   const connections = ctx.data.value.connections ?? []
   const canvasMode = resolveSessionMindMapCanvasMode(ctx.mindMapCanvasMode.value)
@@ -66,9 +85,10 @@ export function syncMindMapStoreLayoutPositions(ctx: DiagramContext): void {
     ? getMindMapCollapsedNodeIds(ctx.data.value.nodes, connections, collapsedPaths)
     : new Set<string>()
   const preserveIncomingY = v2Family && ctx.mindMapPreserveIncomingY.value
-  const options: MindMapV2LayoutOptions | undefined = preserveIncomingY
-    ? { preserveIncomingY: true }
-    : undefined
+  const options: MindMapV2LayoutOptions = {
+    ...(preserveIncomingY ? { preserveIncomingY: true } : {}),
+    imageNodeIds: nodeIdsWithImage(ctx.data.value.nodes, ctx.data.value, connections),
+  }
 
   // Legacy (always) or v2 fallback before the Vue Flow slice wires write-back.
   const { nodes: laidOut, gaps } = computeMindMapDisplayLayout(
@@ -130,7 +150,8 @@ export function computeMindMapDisplayLayout(
     topicWidth,
     nodeWidths,
     nodeHeights,
-    connections
+    connections,
+    options?.imageNodeIds
   )
 }
 

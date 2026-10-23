@@ -50,7 +50,6 @@ export {
 } from './llmResults'
 export { useLiveSubtitlesStore } from './liveSubtitles'
 export { useVoiceNotesStore } from './voiceNotes'
-export { useAskOnceStore, type AskOnceMessage, type ModelResponse, type ModelId } from './askonce'
 export { useKnowledgeSpaceStore, type KnowledgeDocument } from './knowledgeSpace'
 export { useLearningSpaceStore } from './learningSpace'
 export { useFeatureFlagsStore } from './featureFlags'

@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
 import { getMindMapThemeById } from '@/config/mindMapThemes'
-import { MIND_MAP_RAINBOW_FAMILIES } from '@/config/mindMapVibrantThemes'
+import {
+  MIND_MAP_RAINBOW_FAMILIES,
+  MIND_MAP_RAINBOW_TOPIC_COLORS,
+} from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { DiagramNode } from '@/types'
 import { thinkingMapBorderWidth } from '@/utils/thinkingMapChrome'
 import {
   restoreThinkingMapDefaultNodeColors,
   thinkingMapDisplayedNodeColors,
+  thinkingMapRenderedConnectorStroke,
 } from '@/utils/thinkingMapNodePaint'
 
 function node(partial: DiagramNode): DiagramNode {
@@ -127,6 +131,112 @@ describe('thinking map node paint', () => {
     const diffFamily = MIND_MAP_RAINBOW_FAMILIES[2]
     expect(nodes[3].style?.backgroundColor).toBe(diffFamily.fill)
     expect(nodes[3].style?.borderColor).toBe(diffFamily.line)
+  })
+
+  it('keeps a white role fill when only the text color changes', () => {
+    const customText = '#dc2626'
+    const similarity = node({
+      id: 'sim-1',
+      type: 'bubble',
+      data: { doubleBubbleRole: 'similarity' },
+      style: { textColor: customText },
+    })
+    const similarityPaint = thinkingMapDisplayedNodeColors(
+      'double_bubble_map',
+      'rainbow',
+      similarity
+    )
+    expect(similarityPaint?.backgroundColor).toBe('#FFFFFF')
+    expect(similarityPaint?.borderColor).toBe('#3B5BDB')
+    expect(similarityPaint?.textColor).toBeUndefined()
+
+    const leaf = node({
+      id: 'leaf-1',
+      type: 'branch',
+      data: { nodeType: 'leaf', categoryIndex: 1 },
+      style: { textColor: customText },
+    })
+    const leafPaint = thinkingMapDisplayedNodeColors('tree_map', 'rainbow', leaf)
+    const green = MIND_MAP_RAINBOW_FAMILIES[1]
+    expect(leafPaint?.backgroundColor).toBe('#FFFFFF')
+    expect(leafPaint?.accentBarColor).toBe(green.line)
+    expect(leafPaint?.textColor).toBeUndefined()
+
+    const palette = getMindmapBranchColor(1)
+    const grouped = node({
+      id: 'bubble-1',
+      type: 'bubble',
+      data: { groupIndex: 1 },
+      style: {
+        backgroundColor: palette.fill,
+        borderColor: palette.border,
+        textColor: customText,
+      },
+    })
+    const groupedPaint = thinkingMapDisplayedNodeColors('bubble_map', 'rainbow', grouped)
+    expect(groupedPaint?.backgroundColor).toBe(green.fill)
+    expect(groupedPaint?.textColor).toBeUndefined()
+
+    const theme = getMindMapThemeById('vibrantYellow')
+    const themedSimilarity = thinkingMapDisplayedNodeColors(
+      'double_bubble_map',
+      'vibrantYellow',
+      similarity
+    )
+    expect(themedSimilarity?.backgroundColor).toBe(theme.backgroundColor)
+    expect(themedSimilarity?.textColor).toBeUndefined()
+  })
+
+  it('keeps the topic stroke until a hand-painted fill would hide it', () => {
+    const similarity = node({
+      id: 'sim-1',
+      type: 'bubble',
+      text: 'Red when ripe',
+      data: { doubleBubbleRole: 'similarity' },
+    })
+    const topic = node({
+      id: 'left-topic',
+      type: 'topic',
+      text: 'Tomato',
+    })
+    expect(
+      thinkingMapRenderedConnectorStroke(
+        'double_bubble_map',
+        'rainbow',
+        undefined,
+        topic,
+        similarity
+      )
+    ).toBe(MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor)
+
+    const blue = node({
+      ...similarity,
+      style: { backgroundColor: 'rgba(11,181,236,1)' },
+    })
+    expect(
+      thinkingMapRenderedConnectorStroke('double_bubble_map', 'rainbow', undefined, topic, blue)
+    ).toBe('#1e293b')
+
+    const red = node({
+      ...similarity,
+      style: { backgroundColor: '#F04438' },
+    })
+    expect(
+      thinkingMapRenderedConnectorStroke('double_bubble_map', 'rainbow', '#2E90FA', topic, red)
+    ).toBe('#2E90FA')
+    const sameLine = node({
+      ...similarity,
+      style: { backgroundColor: '#2E90FA' },
+    })
+    expect(
+      thinkingMapRenderedConnectorStroke(
+        'double_bubble_map',
+        'rainbow',
+        '#2E90FA',
+        topic,
+        sameLine
+      )
+    ).toBe('#1e293b')
   })
 
   it('keeps a painted zero border and ignores a leftover stored zero', () => {

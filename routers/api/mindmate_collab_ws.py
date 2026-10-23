@@ -22,6 +22,7 @@ from services.features.mindmate_collab.dify_stream_control import acquire_dify_s
 from services.features.mindmate_collab.dify_stream import schedule_assistant_reply
 from services.features.mindmate_collab.group_members import user_observes_seminar
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
+from services.features.mindmate_collab.member_record import record_collab_member
 from services.features.mindmate_collab.mention import (
     collab_message_targets_mindmate,
     extract_mindmate_query,
@@ -403,6 +404,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                 return
 
             participant_added = True
+            await record_collab_member(session.id, int(user.id))
 
             history_page = await mgr.fetch_message_page(session.id)
             history = history_page.messages
@@ -595,6 +597,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                     )
                     if conv_id:
                         session.dify_conversation_id = conv_id
+                    conversation_server = await mgr.resolve_dify_conversation_server(norm_code)
                     schedule_assistant_reply(
                         code=norm_code,
                         session_id=session.id,
@@ -602,6 +605,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                         user_message=dify_query,
                         sender_user_id=int(user.id),
                         conversation_id=conv_id,
+                        conversation_server=conversation_server,
                     )
             except WebSocketDisconnect:
                 pass

@@ -18,19 +18,21 @@ import {
   NODE_MIN_DIMENSIONS,
 } from '@/composables/diagrams/layoutConfig'
 import { heightWithSecondaryLine } from '@/diagramBilingual/measure'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindMapAdornmentsByPath } from '@/types'
 import {
   BRACE_MAP_UID_DATA_KEY,
   BRACE_WHOLE_NODE_ID,
   isLeftoverBraceMapId,
   takeBraceMapStableId,
 } from '@/utils/braceMapIdentity'
+import { textWithIconAdornment } from '@/utils/mindMapAdornments'
+import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
+import { learningSheetLayoutSecondary, learningSheetLayoutText } from './mindMapLearningSheet'
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
   measureRenderedDiagramLabelHeight,
-  measureTextWidth,
 } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
@@ -83,18 +85,11 @@ function estimateBraceNodeWidth(text: string, depth: number, typo?: BraceTypogra
   const paddingX = depth === 0 ? BRACE_TOPIC_PADDING_X : BRACE_PILL_PADDING_X
   const maxTextW = depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
 
-  let textWidth = 0
-  if (typeof document !== 'undefined') {
-    textWidth = measureTextWidth(trimmed || ' ', fontSize, { fontWeight, fontFamily })
-  }
-
-  // Match BraceNode: when text wraps, the pill uses ceil(width / lines) + 5,
-  // clamped to the cap. text-wrap: balance breaks inside that width.
-  let effectiveTextWidth = textWidth
-  if (textWidth > maxTextW) {
-    const numLines = Math.ceil(textWidth / maxTextW)
-    effectiveTextWidth = Math.min(Math.ceil(textWidth / numLines) + 5, maxTextW)
-  }
+  const block = measureThinkingMapLabelBlockPx(trimmed || ' ', fontSize, maxTextW, {
+    fontWeight,
+    fontFamily,
+  })
+  const effectiveTextWidth = block.width
 
   const width = Math.ceil(effectiveTextWidth + paddingX)
   return Math.max(
@@ -105,8 +100,8 @@ function estimateBraceNodeWidth(text: string, depth: number, typo?: BraceTypogra
 
 /**
  * Estimate node height accounting for text wrapping and KaTeX formulas.
- * Uses fixed max text width per depth level. CSS text-wrap: balance
- * handles actual line breaking; this is a layout-pass approximation.
+ * Uses the shared thinking-map wrap at the depth column. CSS text-wrap: balance
+ * handles the painted lines; this is the matching layout-pass size.
  * For KaTeX labels the rendered DOM height is measured directly so the
  * layout doesn't rely on inaccurate plain-text heuristics.
  */
@@ -129,14 +124,12 @@ function estimateBraceNodeHeight(text: string, depth: number, typo?: BraceTypogr
     return Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(contentH + paddingY))
   }
 
-  const textWidth = measureTextWidth(trimmed, fontSize, { fontWeight, fontFamily })
-  if (textWidth <= maxTextWidth) {
-    return DEFAULT_NODE_HEIGHT
-  }
-
-  const lineHeight = fontSize * 1.5
-  const numLines = Math.ceil(textWidth / maxTextWidth)
-  return Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(numLines * lineHeight + paddingY))
+  const block = measureThinkingMapLabelBlockPx(trimmed, fontSize, maxTextWidth, {
+    fontWeight,
+    fontFamily,
+  })
+  if (block.lineCount <= 1) return DEFAULT_NODE_HEIGHT
+  return Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(block.height + paddingY))
 }
 
 // ---------------------------------------------------------------------------
@@ -153,14 +146,19 @@ interface FlatNode {
 
 function refreshBraceFlatNodesFromDiagram(
   flatNodes: FlatNode[],
-  diagramById: Map<string, DiagramNode>
+  diagramById: Map<string, DiagramNode>,
+  adornments: MindMapAdornmentsByPath = {}
 ): void {
   for (const fn of flatNodes) {
-    const typo = braceTypographyFromNode(diagramById.get(fn.id), fn.depth)
+    const diagramNode = diagramById.get(fn.id)
+    const typo = braceTypographyFromNode(diagramNode, fn.depth)
+    fn.text = diagramNode
+      ? textWithIconAdornment(learningSheetLayoutText(diagramNode), adornments[diagramNode.id])
+      : fn.text
     fn.width = estimateBraceNodeWidth(fn.text, fn.depth, typo)
     fn.height = heightWithSecondaryLine(
       estimateBraceNodeHeight(fn.text, fn.depth, typo),
-      diagramById.get(fn.id)?.textSecondary,
+      diagramNode ? learningSheetLayoutSecondary(diagramNode) : undefined,
       typo.fontSize
     )
   }
@@ -518,7 +516,8 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
 export function recalculateBraceMapLayout(
   nodes: DiagramNode[],
   connections: Connection[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {},
+  adornments: MindMapAdornmentsByPath = {}
 ): DiagramNode[] {
   const labelNode = nodes.find((n) => n.type === 'label' || n.id === 'dimension-label')
   const treeNodes = nodes.filter((n) => n.type !== 'label' && n.id !== 'dimension-label')
@@ -544,8 +543,8 @@ export function recalculateBraceMapLayout(
     const parts = childIds.map((id) => buildTree(id))
     return {
       id: nodeId,
-      text: node?.text ?? '',
-      textSecondary: node?.textSecondary,
+      text: node ? learningSheetLayoutText(node) : '',
+      textSecondary: node ? learningSheetLayoutSecondary(node) : undefined,
       parts: parts.length > 0 ? parts : undefined,
     }
   }
@@ -570,7 +569,7 @@ export function recalculateBraceMapLayout(
   for (const n of treeNodes) {
     if (n.id) diagramById.set(n.id, n)
   }
-  refreshBraceFlatNodesFromDiagram(flatNodes, diagramById)
+  refreshBraceFlatNodesFromDiagram(flatNodes, diagramById, adornments)
 
   const layout = computeColumnLayout(flatNodes, edges, nodeDimensions)
   const groupIndexMap = computeGroupIndices(flatNodes, edges)

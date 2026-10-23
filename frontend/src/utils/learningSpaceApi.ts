@@ -40,7 +40,6 @@ export interface LearningAiPermissions {
   node_explain?: boolean
   mind_classroom?: boolean
   generate_diagram?: boolean
-  node_palette?: boolean
   inline_recommend?: boolean
   translate?: boolean
   doc_summary?: boolean
@@ -67,6 +66,9 @@ export interface LearningAssignment {
   ai_permissions: LearningAiPermissions
   status: string
   created_by: number
+  created_by_name?: string
+  reviewer_names?: string[]
+  has_unnamed_review?: boolean
   created_at: string | null
   submission_count?: number
   submitted_count?: number
@@ -91,6 +93,8 @@ export interface LearningSubmission {
   review_liked?: boolean
   review_pinned?: boolean
   reviewed_at?: string | null
+  reviewed_by?: number | null
+  reviewer_name?: string | null
   preview_spec?: Record<string, unknown> | null
   preview_diagram_type?: string
   preview_title?: string
@@ -141,6 +145,7 @@ export interface LearningClassRow {
   status: string
   max_students?: number
   student_count: number
+  is_owner?: boolean
   assignment_count?: number
   submission_count?: number
   can_publish?: boolean

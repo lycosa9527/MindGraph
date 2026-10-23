@@ -38,7 +38,7 @@ class AgentState(TypedDict):
     diagram: DiagramState
     active_panel: str
     mindmate_open: bool
-    node_palette_open: bool
+    ai_brainstorm_open: bool
     action: Optional[Dict[str, Any]]
     session_id: str
     last_updated: str
@@ -65,7 +65,7 @@ class KittyAgent:
             },
             "active_panel": "none",
             "mindmate_open": False,
-            "node_palette_open": False,
+            "ai_brainstorm_open": False,
             "action": None,
             "session_id": self.session_id,
             "last_updated": datetime.now().isoformat(),
@@ -109,7 +109,7 @@ class KittyAgent:
         self._state["active_panel"] = active_panel
         if panels:
             self._state["mindmate_open"] = panels.get("mindmate", False)
-            self._state["node_palette_open"] = panels.get("node_palette", False)
+            self._state["ai_brainstorm_open"] = bool(panels.get("ai_brainstorm", False))
 
     def get_state(self) -> AgentState:
         """Get state."""

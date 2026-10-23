@@ -43,7 +43,7 @@ export function useKittyDesktopLlmModelPublish(options: {
     if (!scope) {
       return
     }
-    const model = llmResultsStore.selectedModel
+    const model = llmResultsStore.canvasModelChoice
     const run = async (): Promise<void> => {
       await postModel(scope, model)
     }
@@ -57,7 +57,8 @@ export function useKittyDesktopLlmModelPublish(options: {
   }
 
   watch(
-    () => [options.enabled.value, options.scopeId.value, llmResultsStore.selectedModel] as const,
+    () =>
+      [options.enabled.value, options.scopeId.value, llmResultsStore.canvasModelChoice] as const,
     () => {
       schedule()
     },

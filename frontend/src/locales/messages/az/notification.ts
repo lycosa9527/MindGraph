@@ -9,8 +9,7 @@ export default {
   'notification.canvasClearNodes': '{count} düyün təmizləndi',
   'notification.canvasClearNodesLearning': '{count} düyün boşaldıldı, cavablara əlavə edildi',
   'notification.canvasSomeoneEditingNode': 'Bu düyünü başqa biri redaktə edir',
-  'notification.collabDeleteBlocked':
-    'Başqa istifadəçi seçilmiş düyünü redaktə edərkən silmək olmaz',
+  'notification.collabDeleteBlocked': 'Başqa istifadəçi seçilmiş düyünü redaktə edərkən silmək olmaz',
   'notification.collabRedoBlocked': 'Başqa istifadəçi redaktə edərkən təkrarlamaq olmaz',
   'notification.collabUndoBlocked': 'Başqa istifadəçi redaktə edərkən geri almaq olmaz',
   'notification.conversationDeleted': 'Söhbət silindi',
@@ -22,15 +21,13 @@ export default {
   'notification.feedbackThanks': 'Rəyiniz üçün təşəkkür',
   'notification.feedbackThanksDislike': 'Rəyiniz üçün təşəkkür — təkmilləşdirəcəyik',
   'notification.focusQuestionTooShort': 'Əvvəlcə daha uzun fokus sualı daxil edin',
-  'notification.geoLiteMissingIntro':
-    'MaxMind-dən GeoLite2 Country-ni endirin, GeoLite2-Country.mmdb-ni çıxarın və onu server məlumat qovluğuna köçürün:',
+  'notification.geoLiteMissingIntro': 'MaxMind-dən GeoLite2 Country-ni endirin, GeoLite2-Country.mmdb-ni çıxarın və onu server məlumat qovluğuna köçürün:',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite yükləmə səhifəsini açın',
   'notification.geoLiteMissingPathLabel': 'Gözlənilən yol:',
   'notification.geoLiteMissingTitle': 'GeoLite2 Ölkə məlumat bazası yoxdur',
   'notification.fullscreenFailed': 'Tam ekrana keçmək mümkün olmadı',
   'notification.generationCancelled': 'Generasiya ləğv edildi',
-  'notification.conceptMapTabNeedsAi':
-    'Lütfən, Tab tövsiyələrini istifadə etməzdən əvvəl yuxarı paneldə "Start AI" funksiyasını aktivləşdirin',
+  'notification.conceptMapTabNeedsAi': 'Lütfən, Tab tövsiyələrini istifadə etməzdən əvvəl yuxarı paneldə "Start AI" funksiyasını aktivləşdirin',
   'notification.historyClearNodes': 'Düyün mətnini təmizlə',
   'notification.historyEmptyLearning': 'Düyünü boşalt və cavab əlavə et',
   'notification.importInvalidData': 'İdxal uğursuz: etibarsız diaqram məlumatı',
@@ -39,8 +36,6 @@ export default {
   'notification.importSlotsFull': 'Kitabxana doludur; diaqram idxal edildi amma saxlanılmadı',
   'notification.importSuccess': 'Diaqram idxal edildi və kitabxanaya saxlanıldı',
   'notification.importUnsupportedType': 'İdxal uğursuz: dəstəklənməyən diaqram növü',
-  'notification.inlineRecEmpty':
-    'Tövsiyə olunan məzmun yaradılmayıb, lütfən, yenidən cəhd edin və ya temanı tənzimləyib yenidən cəhd edin',
   'notification.loadMoreFailed': 'Daha çox yükləmək mümkün olmadı',
   'notification.networkError': 'Şəbəkə xətası',
   'notification.nodeNotEligible': 'Bu qovşaq Tab tövsiyələrini dəstəkləmir',
@@ -51,8 +46,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Kök konsepsiya əlaqəsi tapılmadı',
   'notification.saved': 'Dəyişikliklər uğurla yadda saxlanıldı',
   'notification.selectNodeToClear': 'Təmizləmək üçün düyün seçin',
-  'notification.sessionInvalidated':
-    'Cihazların maksimum sayını keçdiyiniz üçün sistemdən çıxdınız',
+  'notification.sessionInvalidated': 'Cihazların maksimum sayını keçdiyiniz üçün sistemdən çıxdınız',
   'notification.sessionKicked': 'Bu hesab digər cihazlarda bu hesaba oflayn daxil olub',
   'notification.signInToUse': 'İstifadə üçün daxil olun',
   'notification.signInToValidateFocus': 'Fokus sualını yoxlamaq üçün daxil olun',

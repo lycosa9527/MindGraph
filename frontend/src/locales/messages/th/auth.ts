@@ -23,19 +23,16 @@ export default {
   'auth.voiceNotes.micUnavailable': 'เบราว์เซอร์ปัจจุบันไม่รองรับไมโครโฟน',
   'auth.voiceNotes.micFailed': 'ไม่สามารถเข้าถึงไมโครโฟนได้',
   'auth.voiceNotes.micConflict': 'ฟังก์ชันเสียงอื่นๆ กำลังใช้ไมโครโฟนอยู่ โปรดหยุดและลองอีกครั้ง',
-  'auth.voiceNotes.wsError':
-    'การเชื่อมต่อบันทึกเสียงล้มเหลว โปรดตรวจสอบเครือข่ายและสถานะการเข้าสู่ระบบ',
+  'auth.voiceNotes.wsError': 'การเชื่อมต่อบันทึกเสียงล้มเหลว โปรดตรวจสอบเครือข่ายและสถานะการเข้าสู่ระบบ',
   'auth.voiceNotes.genericError': 'ข้อผิดพลาดบันทึกเสียง',
   'auth.voiceNotes.ingestFailed': 'ไม่สามารถบันทึกการถอดเสียงเป็นคำสรุปของเอกสารได้',
   'auth.voiceNotes.maxDuration': 'บันทึกเสียงถึงขีดจำกัด 60 นาทีแล้วและหยุดโดยอัตโนมัติ',
-  'auth.voiceNotes.silenceAutoStop':
-    'ไม่มีเสียงใดๆ เป็นเวลา 2 นาทีติดต่อกัน และบันทึกเสียงจะหยุดโดยอัตโนมัติ',
+  'auth.voiceNotes.silenceAutoStop': 'ไม่มีเสียงใดๆ เป็นเวลา 2 นาทีติดต่อกัน และบันทึกเสียงจะหยุดโดยอัตโนมัติ',
   'auth.voiceNotes.startedTimeout': 'บริการเสียงไม่สามารถเริ่มได้ทันเวลา โปรดลองอีกครั้ง',
   'auth.voiceNotes.micLost': 'ไมโครโฟนถูกตัดการเชื่อมต่อและบันทึกเสียงหยุดทำงาน',
   'auth.voiceNotes.authFailed': 'การตรวจสอบบันทึกเสียงล้มเหลว โปรดเข้าสู่ระบบอีกครั้ง',
   'auth.voiceNotes.wsClosed': 'การเชื่อมต่อบันทึกเสียงถูกตัดการเชื่อมต่อ และเซสชันหยุดแล้ว',
-  'auth.voiceNotes.budgetExceeded':
-    'บันทึกเสียงไม่พร้อมใช้งาน: ถึงโควต้า AI รายวันแล้วหรือเหรียญคิดไม่เพียงพอ',
+  'auth.voiceNotes.budgetExceeded': 'บันทึกเสียงไม่พร้อมใช้งาน: ถึงโควต้า AI รายวันแล้วหรือเหรียญคิดไม่เพียงพอ',
   'auth.voiceNotes.sessionBusy': 'มีเซสชันบันทึกเสียงอยู่แล้ว โปรดหยุดและลองอีกครั้ง',
   'auth.voiceNotes.recording': 'การบันทึก',
   'auth.voiceNotes.paused': 'ถูกระงับ',
@@ -46,8 +43,7 @@ export default {
   'auth.voiceNotes.ingesting': 'ประหยัด',
   'auth.voiceNotes.emptyTranscript': 'ไม่รู้จักเสียงใด ๆ โปรดพูดสองสามคำก่อนที่จะหยุด',
   'auth.voiceNotes.generating': 'การสร้างแผนที่ความคิด',
-  'auth.voiceNotes.sheetHint':
-    'บันทึกการถอดเสียงเป็นคำหลังจากหยุด คลิกสร้างแผนที่ความคิดเมื่อคุณพร้อม',
+  'auth.voiceNotes.sheetHint': 'บันทึกการถอดเสียงเป็นคำหลังจากหยุด คลิกสร้างแผนที่ความคิดเมื่อคุณพร้อม',
   'auth.voiceNotes.status.waiting': 'กำลังรอที่จะเริ่มต้น',
   'auth.voiceNotes.status.connectingAsr': 'การเชื่อมต่อกับการรู้จำเสียง',
   'auth.voiceNotes.status.recording': 'การบันทึก · การจดจำเสียง',
@@ -64,13 +60,10 @@ export default {
   'auth.voiceNotes.savedAt': 'บันทึกการถอดเสียงเป็นคำที่ {time}',
   'auth.voiceNotes.unsavedChanges': 'ไม่ได้บันทึกการถอดเสียงเป็นคำ',
   'auth.voiceNotes.closeWhileRecordingTitle': 'การบันทึก',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'การปิดหน้าต่างจะไม่หยุดการบันทึก การถอดเสียงจะถูกบันทึกลงในแผนที่ปัจจุบันโดยอัตโนมัติทุกๆ 30 วินาที คุณแน่ใจหรือไม่ว่าต้องการซ่อนหน้าต่าง',
+  'auth.voiceNotes.closeWhileRecordingBody': 'การปิดหน้าต่างจะไม่หยุดการบันทึก การถอดเสียงจะถูกบันทึกลงในแผนที่ปัจจุบันโดยอัตโนมัติทุกๆ 30 วินาที คุณแน่ใจหรือไม่ว่าต้องการซ่อนหน้าต่าง',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'ซ่อนหน้าต่าง',
-  'auth.voiceNotes.recordingContinues':
-    'การบันทึกยังคงดำเนินต่อไป และคุณสามารถเปิดสรุปการบันทึกอีกครั้งได้ตลอดเวลา',
-  'auth.voiceNotes.noCurrentDiagram':
-    'โปรดบันทึกแผนที่ความคิดปัจจุบันก่อน จากนั้นจึงใช้การบันทึกเพื่อสรุป',
+  'auth.voiceNotes.recordingContinues': 'การบันทึกยังคงดำเนินต่อไป และคุณสามารถเปิดสรุปการบันทึกอีกครั้งได้ตลอดเวลา',
+  'auth.voiceNotes.noCurrentDiagram': 'โปรดบันทึกแผนที่ความคิดปัจจุบันก่อน จากนั้นจึงใช้การบันทึกเพื่อสรุป',
   'auth.voiceNotes.restoreFailed': 'ไม่สามารถโหลดการถอดเสียงที่บันทึกไว้ของการบันทึกเสียงได้',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'บันทึกเสียงประวัติศาสตร์',
@@ -80,29 +73,22 @@ export default {
   'auth.voiceNotes.mergeTalker': 'ผสานเข้ากับ',
   'auth.voiceNotes.mergeTalkerInto': 'รวมเป็น {name}',
   'auth.voiceNotes.resetTalker': 'คืนค่าเริ่มต้น',
-  'auth.voiceNotes.tencentAuth':
-    'การตรวจสอบสิทธิ์การจดจำเสียงล้มเหลว โปรดตรวจสอบคีย์ Tencent Cloud',
-  'auth.voiceNotes.tencentService':
-    'การรู้จำคำพูดของ Tencent Cloud ไม่ได้เปิดใช้งาน กรุณาเปิดใช้งานบริการในคอนโซล',
-  'auth.voiceNotes.tencentQuota':
-    'แพ็คเกจทรัพยากรการรู้จำเสียงของ Tencent Cloud หมดลงแล้ว กรุณาชำระเงินหรือซื้อแพ็คเกจทรัพยากรหลังการเปิดใช้งาน',
+  'auth.voiceNotes.tencentAuth': 'การตรวจสอบสิทธิ์การจดจำเสียงล้มเหลว โปรดตรวจสอบคีย์ Tencent Cloud',
+  'auth.voiceNotes.tencentService': 'การรู้จำคำพูดของ Tencent Cloud ไม่ได้เปิดใช้งาน กรุณาเปิดใช้งานบริการในคอนโซล',
+  'auth.voiceNotes.tencentQuota': 'แพ็คเกจทรัพยากรการรู้จำเสียงของ Tencent Cloud หมดลงแล้ว กรุณาชำระเงินหรือซื้อแพ็คเกจทรัพยากรหลังการเปิดใช้งาน',
   'auth.voiceNotes.tencentArrears': 'บัญชี Tencent Cloud ค้างชำระและการจดจำเสียงถูกปิดใช้งาน',
-  'auth.voiceNotes.tencentConcurrency':
-    'การทำงานพร้อมกันของการรู้จำเสียงเต็มแล้ว โปรดลองอีกครั้งในภายหลัง',
+  'auth.voiceNotes.tencentConcurrency': 'การทำงานพร้อมกันของการรู้จำเสียงเต็มแล้ว โปรดลองอีกครั้งในภายหลัง',
   'auth.voiceNotes.tencentAudio': 'ไม่รู้จักเสียง โปรดลองอีกครั้ง',
   'auth.voiceNotes.tencentSendRate': 'เสียงถูกส่งเร็วเกินไป โปรดบันทึกเสียงแบบเรียลไทม์ต่อไป',
-  'auth.voiceNotes.tencentIdle':
-    'การบันทึกถูกขัดจังหวะเป็นเวลานานเกินไป และการจดจำเสียงถูกตัดการเชื่อมต่อ',
+  'auth.voiceNotes.tencentIdle': 'การบันทึกถูกขัดจังหวะเป็นเวลานานเกินไป และการจดจำเสียงถูกตัดการเชื่อมต่อ',
   'auth.voiceNotes.tencentRetry': 'การรู้จำเสียงล้มเหลวชั่วคราว โปรดลองอีกครั้ง',
-  'auth.voiceNotes.tencentRegion':
-    'เครือข่ายปัจจุบันไม่อยู่ในขอบเขตบริการของเว็บไซต์ภายในประเทศของ Tencent Cloud',
+  'auth.voiceNotes.tencentRegion': 'เครือข่ายปัจจุบันไม่อยู่ในขอบเขตบริการของเว็บไซต์ภายในประเทศของ Tencent Cloud',
   'auth.voiceNotes.tencentParam': 'พารามิเตอร์การรู้จำเสียงไม่ถูกต้อง',
   'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID ไม่ถูกต้อง โปรดตรวจสอบ TENCENT_ASR_APP_ID',
   'auth.voiceNotes.rateLimited': 'คำขอการรู้จำเสียงบ่อยเกินไป โปรดลองอีกครั้งในภายหลัง',
   'auth.voiceNotes.messageTooLarge': 'แพ็กเก็ตเสียงมีขนาดใหญ่เกินไป โปรดลองอีกครั้ง',
   'auth.voiceNotes.invalidMessage': 'ข้อความบันทึกเสียงไม่ถูกต้อง โปรดลองอีกครั้ง',
-  'auth.voiceNotes.asrUnavailable':
-    'การรู้จำเสียงไม่สามารถใช้งานได้ชั่วคราว โปรดลองอีกครั้งในภายหลัง',
+  'auth.voiceNotes.asrUnavailable': 'การรู้จำเสียงไม่สามารถใช้งานได้ชั่วคราว โปรดลองอีกครั้งในภายหลัง',
   'auth.updateLog': 'บันทึกเวอร์ชัน',
   'auth.updateLogModalTitle': 'บันทึกเวอร์ชัน',
   'auth.updateLogMaintainerNote': 'ใช่ — แพลตฟอร์มนี้ดูแลอย่างต่อเนื่องโดย Roy ✨',
@@ -116,15 +102,11 @@ export default {
   'auth.platformQuickGuide': 'คำแนะนำฉบับย่อ',
   'auth.pwaIosInstallHint': 'แตะแชร์ใน Safari, Chrome หรือ Edge แล้วเลือก “เพิ่มไปหน้าจอโฮม”',
   'auth.pwaAndroidInstallHint': 'เปิดเมนูเบราว์เซอร์ (⋮) แล้วแตะติดตั้งแอปหรือเพิ่มไปหน้าจอโฮม',
-  'auth.pwaSafariMacInstallHint':
-    'ใน Safari เลือก File → Add to Dock หรือ Share → Add to Dock (macOS Sonoma ขึ้นไป)',
-  'auth.pwaDesktopInstallHint':
-    'ใช้เมนูเบราว์เซอร์ (⋮) หรือไอคอนติดตั้งในแถบที่อยู่ (Chrome, Edge หรือ Brave)',
+  'auth.pwaSafariMacInstallHint': 'ใน Safari เลือก File → Add to Dock หรือ Share → Add to Dock (macOS Sonoma ขึ้นไป)',
+  'auth.pwaDesktopInstallHint': 'ใช้เมนูเบราว์เซอร์ (⋮) หรือไอคอนติดตั้งในแถบที่อยู่ (Chrome, Edge หรือ Brave)',
   'auth.pwaInstallSuccess': 'เพิ่ม MindGraph ไปเดสก์ท็อปของคุณแล้ว',
-  'auth.pwaDevInstallHint':
-    'การติดตั้ง PWA ปิดในโหมดพัฒนาปกติ ใช้บิลด์โปรดักชัน (npm run build + แบ็กเอนด์) หรือรัน npm run dev:pwa แล้วใช้ Chrome/Edge บน HTTPS หรือ localhost',
-  'auth.pwaInsecureOriginHint':
-    'เปิด MindGraph ในเบราว์เซอร์ที่ที่อยู่ HTTPS (ไม่ใช่ไฟล์ HTML ที่บันทึกไว้) ก่อนติดตั้งไปเดสก์ท็อป',
+  'auth.pwaDevInstallHint': 'การติดตั้ง PWA ปิดในโหมดพัฒนาปกติ ใช้บิลด์โปรดักชัน (npm run build + แบ็กเอนด์) หรือรัน npm run dev:pwa แล้วใช้ Chrome/Edge บน HTTPS หรือ localhost',
+  'auth.pwaInsecureOriginHint': 'เปิด MindGraph ในเบราว์เซอร์ที่ที่อยู่ HTTPS (ไม่ใช่ไฟล์ HTML ที่บันทึกไว้) ก่อนติดตั้งไปเดสก์ท็อป',
   'auth.backToLogin': 'กลับไปเข้าสู่ระบบ',
   'auth.captcha': 'แคปชา',
   'auth.captchaLength4': 'กรุณาใส่แคปชา 4 ตัวอักษร',
@@ -158,15 +140,11 @@ export default {
   'auth.downloadWordAddin': 'การเพิ่มคำ',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'ฟีเจอร์นี้ต้องใช้ระดับโรงเรียน Standard หรือ Professional (ไม่รวม Basic)',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'การสมัครโรงเรียนของคุณสิ้นสุดแล้ว บัญชีอยู่ระดับทดลอง ติดต่อผู้ดูแลแพลตฟอร์มเพื่อต่ออายุ',
-  'auth.diagramLimitReached':
-    'โรงเรียนทดลองบันทึกไดอะแกรมได้ครูละสูงสุด {max} รายการ ลบบางรายการเพื่อบันทึกใหม่',
+  'auth.schoolTierFeatureUnavailable': 'ฟีเจอร์นี้ต้องใช้ระดับโรงเรียน Standard หรือ Professional (ไม่รวม Basic)',
+  'auth.schoolSubscriptionExpiredDowngraded': 'การสมัครโรงเรียนของคุณสิ้นสุดแล้ว บัญชีอยู่ระดับทดลอง ติดต่อผู้ดูแลแพลตฟอร์มเพื่อต่ออายุ',
+  'auth.diagramLimitReached': 'โรงเรียนทดลองบันทึกไดอะแกรมได้ครูละสูงสุด {max} รายการ ลบบางรายการเพื่อบันทึกใหม่',
   'auth.downloadOpenclawSkill': 'สกิล OpenClaw',
-  'auth.downloadOpenclawSkillHint':
-    'การดาวน์โหลดประกอบด้วยหมายเลขบัญชีและโทเค็นปัจจุบัน หลังจากสร้างโทเค็นใหม่แล้ว ชุดทักษะและส่วนขยายเก่าจะใช้งานไม่ได้',
+  'auth.downloadOpenclawSkillHint': 'การดาวน์โหลดประกอบด้วยหมายเลขบัญชีและโทเค็นปัจจุบัน หลังจากสร้างโทเค็นใหม่แล้ว ชุดทักษะและส่วนขยายเก่าจะใช้งานไม่ได้',
   'auth.changePhoneButton': 'เปลี่ยนโทรศัพท์',
   'auth.passwordChangeSuccess': 'เปลี่ยนรหัสผ่านสำเร็จ',
   'auth.passwordChangeFailed': 'เปลี่ยนรหัสผ่านล้มเหลว',
@@ -243,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -282,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -295,8 +272,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'อีเมลการศึกษา',
   'auth.modal.hybridRegisterEmailTabAny': 'อีเมล',
   'auth.modal.hybridRegisterPhoneTab': 'โทรศัพท์ + รหัสเชิญ',
-  'auth.modal.mainlandSalesNotice':
-    'ต้องการเข้าใช้ในจีนแผ่นดินใหญ่? ใช้เบอร์มือถือและรหัสเชิญ หรือติดต่อฝ่ายสนับสนุน',
+  'auth.modal.mainlandSalesNotice': 'ต้องการเข้าใช้ในจีนแผ่นดินใหญ่? ใช้เบอร์มือถือและรหัสเชิญ หรือติดต่อฝ่ายสนับสนุน',
   'auth.modal.registrationEmailLabel': 'อีเมลการศึกษาเท่านั้น',
   'auth.modal.registrationEmailLabelAny': 'ที่อยู่อีเมล',
   'auth.modal.registrationEmailHint': '',
@@ -311,8 +287,7 @@ export default {
   'auth.modal.emailCodePlaceholder': 'รหัส 6 หลักจากอีเมล',
   'auth.modal.acknowledgeOverseas': 'ฉันเข้าใจและจะใช้ซอฟต์แวร์เพื่อการศึกษาเท่านั้น',
   'auth.modal.acknowledgeOverseasAny': 'ฉันเข้าใจและยอมรับเงื่อนไขการสมัครจากต่างประเทศ',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'ฉันเข้าใจและยอมรับเงื่อนไขการสมัครจากต่างประเทศ และภาษาจีนตัวย่อไม่พร้อมในเส้นทางนี้',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'ฉันเข้าใจและยอมรับเงื่อนไขการสมัครจากต่างประเทศ และภาษาจีนตัวย่อไม่พร้อมในเส้นทางนี้',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'กรุณายืนยันประกาศด้านบน',
   'auth.loginPhoneOrEmail': 'โทรศัพท์หรืออีเมล',
@@ -333,17 +308,13 @@ export default {
   'auth.username': 'ชื่อผู้ใช้',
   'auth.waitCaptchaLoad': 'กรุณารอให้แคปชาโหลด',
   'auth.quickRegPageTitle': 'สมัครด่วน',
-  'auth.quickRegPageHint':
-    'เปิดหน้านี้จากลิงก์ที่โรงเรียนแชร์ ใส่เบอร์โทรและรหัสห้อง 6 หลักที่แสดงในหน้าต่างสมัครด่วนของผู้ดำเนินรายการ (รีเฟรชประมาณทุก 30 วินาที) รหัสแสดงว่าคุณอยู่ในเซสชัน ไม่ได้ยืนยันความเป็นเจ้าของเบอร์แบบรหัส SMS',
-  'auth.quickRegLinkInvalid':
-    'ลิงก์สมัครนี้ไม่ใช้งาน (หมดอายุหรือปิดแล้ว) เปิดลิงก์ปัจจุบันจากผู้ดำเนินรายการอีกครั้ง',
-  'auth.quickRegProbeRateLimited':
-    'ตรวจสอบจากหน้านี้บ่อยเกินไป รอสักครู่แล้วรีเฟรช หรือลองใหม่ภายหลัง',
+  'auth.quickRegPageHint': 'เปิดหน้านี้จากลิงก์ที่โรงเรียนแชร์ ใส่เบอร์โทรและรหัสห้อง 6 หลักที่แสดงในหน้าต่างสมัครด่วนของผู้ดำเนินรายการ (รีเฟรชประมาณทุก 30 วินาที) รหัสแสดงว่าคุณอยู่ในเซสชัน ไม่ได้ยืนยันความเป็นเจ้าของเบอร์แบบรหัส SMS',
+  'auth.quickRegLinkInvalid': 'ลิงก์สมัครนี้ไม่ใช้งาน (หมดอายุหรือปิดแล้ว) เปิดลิงก์ปัจจุบันจากผู้ดำเนินรายการอีกครั้ง',
+  'auth.quickRegProbeRateLimited': 'ตรวจสอบจากหน้านี้บ่อยเกินไป รอสักครู่แล้วรีเฟรช หรือลองใหม่ภายหลัง',
   'auth.quickRegSessionSignups': 'สมัครในเซสชันนี้: {n}',
   'auth.quickRegRoomCodeLabel': 'รหัสห้อง',
   'auth.quickRegRoomCodePlaceholder': '6 หลัก',
-  'auth.quickRegRoomCodeHint':
-    'ให้ตรงกับตัวเลขใหญ่ในกล่องสมัครด่วนของผู้ดำเนินรายการ ใส่รหัสก่อนที่มันจะเปลี่ยน',
+  'auth.quickRegRoomCodeHint': 'ให้ตรงกับตัวเลขใหญ่ในกล่องสมัครด่วนของผู้ดำเนินรายการ ใส่รหัสก่อนที่มันจะเปลี่ยน',
   'auth.quickRegRoomCodeEnter6': 'ใส่รหัสห้อง 6 หลัก',
   'auth.quickRegMaxUses': 'จำนวนสมัครสูงสุดของลิงก์นี้',
   'auth.quickRegHeadcount': 'สูงสุด',
@@ -353,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'สมัครให้เสร็จ',
   'auth.quickRegSubmitting': 'กำลังสมัคร…',
   'auth.quickRegRegisterSuccess': 'สมัครสำเร็จ',
-  'auth.quickRegSessionUnsure':
-    'การสมัครอาจสำเร็จ หากยังไม่ได้เข้าสู่ระบบ ให้กลับไปใช้รหัสยืนยัน หรือรีเฟรชหน้านี้',
+  'auth.quickRegSessionUnsure': 'การสมัครอาจสำเร็จ หากยังไม่ได้เข้าสู่ระบบ ให้กลับไปใช้รหัสยืนยัน หรือรีเฟรชหน้านี้',
   'auth.quickRegBackToSignIn': 'ใช้เข้าสู่ระบบ / สมัครแบบมาตรฐาน',
   'auth.quickRegSelectOrg': 'เลือกโรงเรียน',
   'auth.quickRegOrgLoadError': 'โหลดโรงเรียนไม่ได้ กรุณาลองอีกครั้ง',
   'auth.quickRegMintError': 'เปิดช่องทางสมัครไม่ได้ กรุณาลองอีกครั้ง',
   'auth.quickRegCloseConfirmTitle': 'สิ้นสุดการลงทะเบียนด่วน?',
-  'auth.quickRegCloseConfirm':
-    'หลังจากปิดหน้าต่าง รหัส QR ปัจจุบันและรหัสห้องจะใช้ไม่ได้ทันที และนักเรียนที่ยังไม่ได้เข้าร่วมจะไม่สามารถลงทะเบียนต่อได้',
+  'auth.quickRegCloseConfirm': 'หลังจากปิดหน้าต่าง รหัส QR ปัจจุบันและรหัสห้องจะใช้ไม่ได้ทันที และนักเรียนที่ยังไม่ได้เข้าร่วมจะไม่สามารถลงทะเบียนต่อได้',
   'auth.setPasswordWithSms': 'ตั้งรหัสผ่านเข้าสู่ระบบ',
   'auth.setPasswordWithSmsTitle': 'ตั้งรหัสผ่านผ่าน SMS',
-  'auth.setPasswordWithSmsHint':
-    'เราส่งรหัสไปเบอร์ที่ผูกไว้ หลังตั้งรหัสผ่าน คุณเข้าสู่ระบบด้วยรหัสผ่านหรือรหัสยืนยันได้',
+  'auth.setPasswordWithSmsHint': 'เราส่งรหัสไปเบอร์ที่ผูกไว้ หลังตั้งรหัสผ่าน คุณเข้าสู่ระบบด้วยรหัสผ่านหรือรหัสยืนยันได้',
   'auth.setPasswordWithSmsSubmit': 'บันทึกรหัสผ่าน',
   'auth.setPasswordWithSmsSubmitting': 'กำลังบันทึก…',
   'auth.accountAvatar': 'Avatar',
@@ -380,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'ชื่อที่แสดง',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'อย่างน้อย 2 ตัวอักษร ไม่มีตัวเลข',
   'auth.accountNameSave': 'บันทึกชื่อ',
   'auth.accountNameSaveSuccess': 'อัปเดตชื่อแล้ว',
@@ -393,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'ยกเลิกเชื่อมไม่ได้ กรุณาลองอีกครั้ง',
   'auth.dingtalkBindRebind': 'เชื่อมอีกครั้ง',
   'auth.dingtalkBindTitle': 'เชื่อมบัญชี DingTalk',
-  'auth.dingtalkBindInstructions':
-    'ส่งรหัส 6 หลักด้านล่าง (เช่น 123-456) เป็นข้อความไปยัง DingTalk MindBot ของโรงเรียนคุณ',
+  'auth.dingtalkBindInstructions': 'ส่งรหัส 6 หลักด้านล่าง (เช่น 123-456) เป็นข้อความไปยัง DingTalk MindBot ของโรงเรียนคุณ',
   'auth.dingtalkBindPairWaiting': 'รอให้ MindBot รับรหัสของคุณ…',
   'auth.dingtalkBindCodeHint': 'ส่งเฉพาะรหัสนี้ — ไม่ต้องมีข้อความอื่น',
   'auth.dingtalkBindCountdown': 'เซสชันหมดอายุใน {s} วินาที',
@@ -409,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'เชื่อมแล้ว ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'เชื่อมอยู่ตอนนี้: {staff}',
   'auth.dingtalkUnbindTitle': 'ยกเลิกเชื่อมบัญชี DingTalk',
-  'auth.dingtalkUnbindInstructions':
-    'ส่งรหัสด้านล่างจากบัญชี DingTalk ที่เชื่อมอยู่ไปยัง MindBot เพื่อยืนยันการยกเลิก',
+  'auth.dingtalkUnbindInstructions': 'ส่งรหัสด้านล่างจากบัญชี DingTalk ที่เชื่อมอยู่ไปยัง MindBot เพื่อยืนยันการยกเลิก',
   'auth.dingtalkUnbindPairWaiting': 'รอให้บัญชี DingTalk ที่เชื่อมอยู่ยืนยัน…',
   'auth.dingtalkUnbindCodeHint': 'ส่งเฉพาะรหัสนี้จากบัญชี DingTalk ที่เชื่อมอยู่',
   'auth.dingtalkUnbindExpiredHint': 'เซสชันยกเลิกเชื่อมหมดอายุ เริ่มใหม่',
@@ -423,24 +392,20 @@ export default {
   'auth.qrLoginInviteRequired': 'ใส่รหัสเชิญโรงเรียนก่อนใช้เข้าสู่ระบบด้วยคิวอาร์',
   'auth.qrLoginProvidersFailed': 'โหลดตั้งค่าเข้าสู่ระบบคิวอาร์ไม่ได้ กรุณาลองอีกครั้ง',
   'auth.qrLoginProviderDisabled': 'วิธีเข้าสู่ระบบนี้ยังไม่เปิดสำหรับโรงเรียนของคุณ',
-  'auth.qrLoginNotLinked':
-    'บัญชียังไม่เชื่อม — เข้าสู่ระบบด้วยรหัสผ่านแล้วเชื่อมภายใต้การเชื่อมบัญชีก่อน',
+  'auth.qrLoginNotLinked': 'บัญชียังไม่เชื่อม — เข้าสู่ระบบด้วยรหัสผ่านแล้วเชื่อมภายใต้การเชื่อมบัญชีก่อน',
   'auth.qrLoginExchangeFailed': 'เข้าสู่ระบบด้วยคิวอาร์ล้มเหลว กรุณาลองอีกครั้ง',
   'auth.qrLoginInvalidState': 'เซสชันคิวอาร์หมดอายุ ปิดแล้วสแกนใหม่',
-  'auth.qrLoginInvalidCode':
-    'รหัสอนุญาต WeChat หมดอายุหรือถูกใช้แล้ว กรุณาปิดรหัส QR และสแกนรหัสอีกครั้ง',
+  'auth.qrLoginInvalidCode': 'รหัสอนุญาต WeChat หมดอายุหรือถูกใช้แล้ว กรุณาปิดรหัส QR และสแกนรหัสอีกครั้ง',
   'auth.qrLoginRateLimited': 'การโทรเข้าสู่ระบบ WeChat บ่อยเกินไป โปรดลองอีกครั้งในภายหลัง',
   'auth.qrLoginMisconfigured': 'การกำหนดค่าการเข้าสู่ระบบ WeChat ไม่ถูกต้อง โปรดติดต่อผู้ดูแลระบบ',
   'auth.qrLoginCorpMismatch': 'องค์กร DingTalk ไม่ตรงกับการตั้งค่าโรงเรียนของคุณ',
   'auth.oauthExternalTaken': 'บัญชีนี้เชื่อมกับผู้ใช้อื่นแล้ว',
-  'auth.oauthAlreadyBound':
-    'บัญชีนี้ผูกไว้กับ WeChat หากคุณต้องการผูก WeChat อื่น โปรดยกเลิกการผูกก่อน',
+  'auth.oauthAlreadyBound': 'บัญชีนี้ผูกไว้กับ WeChat หากคุณต้องการผูก WeChat อื่น โปรดยกเลิกการผูกก่อน',
   'auth.qrLoginDisabled': 'เข้าสู่ระบบด้วยคิวอาร์ไม่พร้อมใช้งาน',
   'auth.qrLoginStartFailed': 'เริ่มเข้าสู่ระบบด้วยคิวอาร์ไม่ได้ กรุณาลองอีกครั้ง',
   'auth.qrLoginSuccess': 'เข้าสู่ระบบสำเร็จ',
   'auth.accountBindingsSection': 'การเชื่อมบัญชี',
-  'auth.accountBindingsHint':
-    'MindBot บันทึกไป DingTalk WeChat/DingTalk ใช้สำหรับเข้าสู่ระบบคิวอาร์ (เชื่อมที่นี่ก่อน)',
+  'auth.accountBindingsHint': 'MindBot บันทึกไป DingTalk WeChat/DingTalk ใช้สำหรับเข้าสู่ระบบคิวอาร์ (เชื่อมที่นี่ก่อน)',
   'auth.bindingWechat': 'วีแชท',
   'auth.bindingDingtalk': 'ติงทอล์ค',
   'auth.bindingMindbot': 'มายด์บอท',

@@ -53,6 +53,11 @@ watch(
 const accountSection = computed(() =>
   tab.value === 'security' || tab.value === 'plugins' ? tab.value : 'account'
 )
+
+/** A little wider than the other tabs so the small preview can sit beside the controls. */
+const dialogWidth = computed(() =>
+  tab.value === 'language' ? 'min(38rem, 96vw)' : 'min(480px, 92vw)'
+)
 </script>
 
 <template>
@@ -65,7 +70,7 @@ const accountSection = computed(() =>
     :line1="t('swissGlass.hero.userSettings.line1')"
     line1-key="swissGlass.hero.userSettings.line1"
     :icon="Settings"
-    width="min(480px, 92vw)"
+    :width="dialogWidth"
     dialog-class="language-settings-swiss user-settings-dialog"
   >
     <AdminSwissSegmented

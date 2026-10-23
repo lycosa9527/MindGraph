@@ -1,12 +1,25 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  extractFailureFromPayload,
   resolveGenerateGraphErrorMessage,
   shouldNotifyGenerateGraphError,
   shouldSilenceGenerateGraphError,
 } from '@/utils/generateGraphErrors'
 
 describe('generateGraphErrors', () => {
+  it('reads a 402 thinking-coin body from detail and error_type', () => {
+    const failure = extractFailureFromPayload({
+      detail: 'Insufficient thinking coins (balance 1, need 5).',
+      error_type: 'thinking_coin_insufficient',
+      balance: 1,
+      cost: 5,
+    })
+    expect(failure?.errorType).toBe('thinking_coin_insufficient')
+    expect(failure?.error).toContain('balance 1')
+    expect(shouldNotifyGenerateGraphError(failure?.error ?? '', failure?.errorType)).toBe(false)
+  })
+
   it('silences thinking_coin_insufficient by error type', () => {
     expect(
       shouldSilenceGenerateGraphError('Insufficient balance', 'thinking_coin_insufficient')

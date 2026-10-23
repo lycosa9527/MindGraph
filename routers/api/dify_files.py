@@ -23,12 +23,13 @@ from services.dify.file_upload_types import (
     dify_chat_file_type,
     dify_upload_content_type,
     dify_upload_max_bytes,
+    legacy_doc_upload_detail,
 )
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from services.utils.safe_upload import UnsafeUploadPathError, safe_upload_basename
 from utils.auth import get_current_user_or_api_key
-from utils.dify_mindmate_user_id import mindmate_dify_user_id
+from utils.dify_mindmate_user_id import mindmate_dify_user_aliases, mindmate_dify_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +45,20 @@ _IMAGE_MAGIC_PREFIXES = {
 
 
 def _validate_dify_upload(filename: str, content: bytes) -> None:
-    """Validate extension allowlist and image magic bytes (anti content spoofing).
+    """Validate extension allowlist, legacy .doc, and image magic bytes.
 
-    Raises HTTPException(400) when the filename is unsafe, the extension is not
-    allowed, or image bytes do not match the declared image extension.
+    Raises HTTPException(400) when the filename is unsafe, the file is a legacy
+    .doc (including a .doc renamed to .docx), the extension is not allowed, or
+    image bytes do not match the declared image extension.
     """
     try:
         base = safe_upload_basename(filename)
     except UnsafeUploadPathError as exc:
         raise HTTPException(status_code=400, detail="Invalid filename") from exc
+
+    legacy_doc = legacy_doc_upload_detail(base, content)
+    if legacy_doc is not None:
+        raise HTTPException(status_code=400, detail=legacy_doc)
 
     ext = Path(base).suffix.lower().lstrip(".")
     if ext not in DIFY_GATEWAY_UPLOAD_EXTENSIONS:
@@ -86,7 +92,7 @@ async def upload_file_to_dify(
 
     Supports:
     - Images: JPG, JPEG, PNG, GIF, WEBP, SVG
-    - Documents: TXT, MD, PDF, HTML, XLSX, DOC, DOCX, CSV, PPT, PPTX, XML, EPUB
+    - Documents: TXT, MD, PDF, HTML, XLSX, DOCX, CSV, PPT, PPTX, XML, EPUB
     - Audio: MP3, M4A, WAV, WEBM, MPGA
     - Video: MP4, MOV, MPEG, WEBM
 
@@ -104,9 +110,11 @@ async def upload_file_to_dify(
             detail="Session login required for MindMate file upload",
         )
 
-    effective_user_id = mindmate_dify_user_id(current_user)
-    if user_id is not None and user_id.strip() and user_id.strip() != effective_user_id:
+    aliases = mindmate_dify_user_aliases(current_user)
+    supplied = (user_id or "").strip()
+    if supplied and supplied not in aliases:
         raise HTTPException(status_code=403, detail="user_id does not match authenticated user")
+    effective_user_id = supplied or mindmate_dify_user_id(current_user)
 
     lang = get_request_language(x_language)
     client = await resolve_mindmate_dify_client_short_lived(

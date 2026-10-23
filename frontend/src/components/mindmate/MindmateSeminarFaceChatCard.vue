@@ -5,7 +5,6 @@
 import { ElDialog } from 'element-plus'
 
 import heroUrl from '@/assets/seminar/face-chat-hero.jpg'
-import { useLanguage } from '@/composables'
 
 defineProps<{
   open: boolean
@@ -15,8 +14,6 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'start'): void
 }>()
-
-const { t } = useLanguage()
 </script>
 
 <template>
@@ -30,13 +27,13 @@ const { t } = useLanguage()
   >
     <div class="mm-face-chat">
       <h2 class="mm-face-chat__title">
-        {{ t('mindmate.faceChat.title') }}
+        <I18nText k="mindmate.faceChat.title" />
       </h2>
       <p class="mm-face-chat__line">
-        {{ t('mindmate.faceChat.subtitle') }}
+        <I18nText k="mindmate.faceChat.subtitle" />
       </p>
       <p class="mm-face-chat__line">
-        {{ t('mindmate.faceChat.scenes') }}
+        <I18nText k="mindmate.faceChat.scenes" />
       </p>
       <img
         class="mm-face-chat__hero"
@@ -48,7 +45,7 @@ const { t } = useLanguage()
         class="mm-face-chat__start"
         @click="emit('start')"
       >
-        {{ t('mindmate.faceChat.start') }}
+        <I18nText k="mindmate.faceChat.start" />
       </button>
     </div>
   </ElDialog>

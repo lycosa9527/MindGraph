@@ -4,9 +4,7 @@
  */
 import { computed } from 'vue'
 
-import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
-
-import { AppWindow, Check, ChevronUp, ListTree, Maximize2, MonitorPlay } from '@lucide/vue'
+import { AppWindow, ListTree, Maximize2, MonitorPlay } from '@lucide/vue'
 
 import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import CanvasMindMapGestureGuide from '@/components/canvas/CanvasMindMapGestureGuide.vue'
@@ -14,19 +12,15 @@ import CanvasMindMapShortcutGuide from '@/components/canvas/CanvasMindMapShortcu
 import CanvasToolbarMindMapAiGenerate from '@/components/canvas/CanvasToolbarMindMapAiGenerate.vue'
 import CanvasToolbarMindMapAudiencePicker from '@/components/canvas/CanvasToolbarMindMapAudiencePicker.vue'
 import I18nText from '@/components/common/I18nText.vue'
-import LlmPhaseRing, {
-  type LlmPhaseRingStreamingVariant,
-} from '@/components/shared/LlmPhaseRing.vue'
 import { useClassroomRemoteVisibility } from '@/composables/canvas/useClassroomRemotePosition'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import { useLLMResultsStore } from '@/stores/llmResults'
 
 import CanvasDiagramTranslateLangPicker from './CanvasDiagramTranslateLangPicker.vue'
-import CanvasLlmLogo from './CanvasLlmLogo.vue'
+import CanvasLlmMenuDropdown from './CanvasLlmMenuDropdown.vue'
 import './mindMapRibbon.css'
 import './mindMapStatusBar.css'
 import { useMindMapRibbonActions } from './useMindMapRibbonActions'
@@ -49,28 +43,8 @@ const actions = useMindMapRibbonActions()
 const { hidden: classroomRemoteHidden, toggleHidden: toggleClassroomRemote } =
   useClassroomRemoteVisibility()
 const { activeTool, handleToolSelect } = useMindMapSideToolbarState()
-const llmResultsStore = useLLMResultsStore()
 
 const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom * 100) : 100))
-
-function onLlmCommand(command: string | number | object): void {
-  if (typeof command === 'string') {
-    actions.selectLlm(command)
-  }
-}
-
-function ringVariant(modelId: string): LlmPhaseRingStreamingVariant {
-  if (modelId === 'doubao' || modelId === 'doubao21') {
-    return 'doubao'
-  }
-  if (modelId.startsWith('qwen')) {
-    return 'qwen'
-  }
-  if (modelId === 'deepseek') {
-    return 'deepseek'
-  }
-  return 'primary'
-}
 </script>
 
 <template>
@@ -104,11 +78,8 @@ function ringVariant(modelId: string): LlmPhaseRingStreamingVariant {
         />
       </span>
       <span class="mm-status__sep" />
-      <CanvasMindMapShortcutGuide variant="status" />
-      <CanvasMindMapGestureGuide
-        v-if="caps.gestureGuide"
-        variant="status"
-      />
+      <CanvasMindMapShortcutGuide />
+      <CanvasMindMapGestureGuide v-if="caps.gestureGuide" />
     </div>
     <div
       v-if="showCanvasAiFeatures"
@@ -121,61 +92,7 @@ function ringVariant(modelId: string): LlmPhaseRingStreamingVariant {
       <span class="mm-status__label">
         <I18nText k="canvas.ribbon.aiModel" />
       </span>
-      <ElDropdown
-        trigger="click"
-        placement="top-start"
-        popper-class="mm-llm-menu-popper"
-        data-testid="mindmap-ribbon-llm-menu"
-        @command="onLlmCommand"
-      >
-        <LlmPhaseRing
-          :phase="llmResultsStore.modelPhases[actions.selectedLlm]"
-          :streaming-variant="ringVariant(actions.selectedLlm)"
-          border-radius="9999px"
-        >
-          <button
-            type="button"
-            class="mm-llm-menu-btn"
-            :data-llm="actions.selectedLlm"
-            :aria-label="t('canvas.ribbon.aiModel')"
-          >
-            <CanvasLlmLogo
-              v-if="actions.selectedLlmRow"
-              :name="actions.selectedLlmRow.logo"
-            />
-            <span class="mm-llm-menu-btn__label">{{ actions.selectedLlmRow?.label }}</span>
-            <ChevronUp
-              class="mm-llm-menu-btn__chevron h-3.5 w-3.5"
-              :stroke-width="2"
-            />
-          </button>
-        </LlmPhaseRing>
-        <template #dropdown>
-          <ElDropdownMenu class="mm-llm-menu">
-            <ElDropdownItem
-              v-for="model in actions.llmMenu"
-              :key="model.id"
-              :command="model.id"
-              :class="{ 'is-active': actions.selectedLlm === model.id }"
-            >
-              <span class="mm-llm-menu__row">
-                <CanvasLlmLogo :name="model.logo" />
-                <span class="mm-llm-menu__label">{{ model.label }}</span>
-                <span
-                  v-if="model.model"
-                  class="mm-llm-menu__model"
-                  >{{ model.model }}</span
-                >
-                <Check
-                  v-if="actions.selectedLlm === model.id"
-                  class="mm-llm-menu__check h-3.5 w-3.5"
-                  :stroke-width="2"
-                />
-              </span>
-            </ElDropdownItem>
-          </ElDropdownMenu>
-        </template>
-      </ElDropdown>
+      <CanvasLlmMenuDropdown />
       <CanvasToolbarMindMapAiGenerate tooltip-placement="top" />
     </div>
     <div class="mm-status__right mm-status__zoom">

@@ -48,24 +48,6 @@ def _record_sms_provider_failure(message: str, *, exception_type: str = "SMSServ
     )
 
 
-def _is_sms_provider_rate_limit(error_code: str, error_message: str) -> bool:
-    """True when Tencent rejected send due to duplicate/rate-limit policy."""
-    code_lower = (error_code or "").lower()
-    message_lower = (error_message or "").lower()
-    if code_lower.startswith("limitexceeded"):
-        return True
-    rate_limit_phrases = (
-        "exceeds the upper limit",
-        "frequency limit",
-        "rate limit",
-        "same content",
-        "duplicate",
-    )
-    return any(phrase in message_lower for phrase in rate_limit_phrases)
-
-
-SMS_NOTIFICATION_RATE_LIMIT_MESSAGE = "SMS notification blocked by provider rate limit"
-
 # ============================================================================
 # Configuration
 # ============================================================================
@@ -84,7 +66,6 @@ SMS_TEMPLATE_REGISTER = os.getenv("TENCENT_SMS_TEMPLATE_REGISTER", "").strip()
 SMS_TEMPLATE_LOGIN = os.getenv("TENCENT_SMS_TEMPLATE_LOGIN", "").strip()
 SMS_TEMPLATE_RESET_PASSWORD = os.getenv("TENCENT_SMS_TEMPLATE_RESET_PASSWORD", "").strip()
 SMS_TEMPLATE_CHANGE_PHONE = os.getenv("TENCENT_SMS_TEMPLATE_CHANGE_PHONE", "").strip()
-SMS_TEMPLATE_ALERT = os.getenv("TENCENT_SMS_TEMPLATE_ALERT", "").strip()
 
 # Rate limiting configuration (database-level)
 SMS_CODE_EXPIRY_MINUTES = int(os.getenv("SMS_CODE_EXPIRY_MINUTES", "5"))
@@ -160,7 +141,7 @@ class SMSService:
         Get template ID based on verification purpose
 
         Args:
-            purpose: 'register', 'login', 'reset_password', 'change_phone', or 'alert'
+            purpose: 'register', 'login', 'reset_password', or 'change_phone'
 
         Returns:
             Template ID string
@@ -173,7 +154,6 @@ class SMSService:
             "login": SMS_TEMPLATE_LOGIN,
             "reset_password": SMS_TEMPLATE_RESET_PASSWORD,
             "change_phone": SMS_TEMPLATE_CHANGE_PHONE or SMS_TEMPLATE_REGISTER,
-            "alert": SMS_TEMPLATE_ALERT,
         }
 
         template_id = templates.get(purpose)
@@ -434,300 +414,6 @@ class SMSService:
         except HTTP_CLIENT_ERRORS as e:
             logger.error("Unexpected SMS error: %s", e)
             return False, "SMS service error. Please try again later.", None
-
-    async def send_alert(self, phones: list[str], lang: Language = "zh") -> Tuple[bool, str]:
-        """
-        Send SMS alert notification (non-verification code).
-
-        Used for critical system alerts (e.g., service failures, circuit breaker triggered).
-        Sends to multiple phone numbers (admin phones).
-
-        Args:
-            phones: List of phone numbers (11-digit Chinese mobile numbers)
-            lang: Language code ('zh', 'en', or 'az') for error messages
-
-        Returns:
-            Tuple of (success, message)
-        """
-        if not self.is_available:
-            return False, "SMS service not available"
-
-        if not phones:
-            return False, "No phone numbers provided"
-
-        logger.debug("Sending SMS alert to %d phone(s) (lang: %s)", len(phones), lang)
-        try:
-            # Get alert template ID
-            template_id = self._get_template_id("alert")
-
-            # Format phone numbers
-            formatted_phones = [self._format_phone_number(phone) for phone in phones]
-
-            # Alert template typically has no parameters (just the message)
-            # Template message: "MindGraph服务器已下线，请尽快核查"
-            payload = json.dumps(
-                {
-                    "PhoneNumberSet": formatted_phones,
-                    "SmsSdkAppId": SMS_SDK_APP_ID,
-                    "SignName": SMS_SIGN_NAME,
-                    "TemplateId": template_id,
-                    "TemplateParamSet": [],  # Alert template has no parameters
-                }
-            )
-
-            # Build headers with signature
-            timestamp = int(time.time())
-            action = "SendSms"
-
-            headers = {
-                "Authorization": self._build_authorization(timestamp, payload, action),
-                "Content-Type": "application/json",
-                "Host": TENCENT_SMS_HOST,
-                "X-TC-Action": action,
-                "X-TC-Timestamp": str(timestamp),
-                "X-TC-Version": TENCENT_SMS_VERSION,
-                "X-TC-Region": SMS_REGION,
-            }
-
-            # Send async HTTP request
-            client = await self._get_client()
-            response = await client.post(TENCENT_SMS_ENDPOINT, content=payload, headers=headers)
-
-            # Check HTTP status code
-            if response.status_code != 200:
-                response_preview = response.text[:200]
-                logger.error(
-                    "SMS alert API returned non-200 status: %s - %s",
-                    response.status_code,
-                    response_preview,
-                )
-                return False, "SMS alert service error"
-
-            # Parse response
-            try:
-                result = response.json()
-            except (ValueError, json.JSONDecodeError) as e:
-                response_preview = response.text[:200]
-                logger.error(
-                    "Failed to parse SMS alert response as JSON: %s - Response: %s",
-                    e,
-                    response_preview,
-                )
-                return False, "SMS alert service error"
-
-            if "Response" not in result:
-                logger.error("Invalid SMS alert response structure: %s", result)
-                return False, "Invalid SMS alert response"
-
-            resp_data = result["Response"]
-
-            # Check for API error in Response.Error
-            if "Error" in resp_data:
-                error_code = resp_data["Error"].get("Code", "Unknown")
-                error_msg = resp_data["Error"].get("Message", "Unknown error")
-                logger.error("SMS alert API error: %s - %s", error_code, error_msg)
-                return False, self._translate_error_code(error_code, lang)
-
-            # Check send status in SendStatusSet
-            send_status = resp_data.get("SendStatusSet", [])
-            success_count = 0
-            failed_count = 0
-
-            for status in send_status:
-                if status.get("Code") == "Ok":
-                    success_count += 1
-                else:
-                    failed_count += 1
-                    error_code = status.get("Code", "Unknown")
-                    error_msg = status.get("Message", "Unknown error")
-                    phone_number = status.get("PhoneNumber", "unknown")
-                    logger.error(
-                        "SMS alert send failed for phone: %s - %s",
-                        phone_number,
-                        error_msg,
-                    )
-
-            if success_count > 0:
-                logger.info(
-                    "SMS alert sent successfully to %d/%d admin phone(s)",
-                    success_count,
-                    len(phones),
-                )
-                return True, f"Alert sent to {success_count} admin phone(s)"
-
-            logger.error("SMS alert failed for all %d phone(s)", len(phones))
-            return False, "SMS alert failed for all recipients"
-
-        except httpx.TimeoutException:
-            logger.error("SMS alert request timeout")
-            return False, "SMS alert timeout"
-        except httpx.HTTPError as e:
-            logger.error("SMS alert HTTP error: %s", e)
-            return False, "SMS alert HTTP error"
-        except SMSServiceError as e:
-            logger.error("SMS alert service error: %s", e)
-            return False, str(e)
-        except HTTP_CLIENT_ERRORS as e:
-            logger.error("Unexpected SMS alert error: %s", e, exc_info=True)
-            return False, "SMS alert service error"
-
-    async def send_notification(
-        self,
-        phones: list[str],
-        template_id: str,
-        template_params: Optional[list[str]] = None,
-        lang: Language = "zh",
-    ) -> Tuple[bool, str]:
-        """
-        Send SMS notification with custom template ID.
-
-        Used for custom notifications (e.g., startup notifications, custom alerts).
-        Sends to multiple phone numbers.
-
-        Args:
-            phones: List of phone numbers (11-digit Chinese mobile numbers)
-            template_id: Tencent SMS template ID
-            template_params: Optional list of template parameters (empty list if template has no params)
-            lang: Language code ('zh', 'en', or 'az') for error messages
-
-        Returns:
-            Tuple of (success, message)
-        """
-        if not self.is_available:
-            return False, "SMS service not available"
-
-        if not phones:
-            return False, "No phone numbers provided"
-
-        if not template_id:
-            return False, "Template ID not provided"
-
-        logger.debug(
-            "Sending SMS notification to %d phone(s) using template %s (lang: %s)",
-            len(phones),
-            template_id,
-            lang,
-        )
-        try:
-            # Format phone numbers
-            formatted_phones = [self._format_phone_number(phone) for phone in phones]
-
-            # Use empty list if template_params is None
-            if template_params is None:
-                template_params = []
-
-            payload = json.dumps(
-                {
-                    "PhoneNumberSet": formatted_phones,
-                    "SmsSdkAppId": SMS_SDK_APP_ID,
-                    "SignName": SMS_SIGN_NAME,
-                    "TemplateId": template_id,
-                    "TemplateParamSet": template_params,
-                }
-            )
-
-            # Build headers with signature
-            timestamp = int(time.time())
-            action = "SendSms"
-
-            headers = {
-                "Authorization": self._build_authorization(timestamp, payload, action),
-                "Content-Type": "application/json",
-                "Host": TENCENT_SMS_HOST,
-                "X-TC-Action": action,
-                "X-TC-Timestamp": str(timestamp),
-                "X-TC-Version": TENCENT_SMS_VERSION,
-                "X-TC-Region": SMS_REGION,
-            }
-
-            # Send async HTTP request
-            client = await self._get_client()
-            response = await client.post(TENCENT_SMS_ENDPOINT, content=payload, headers=headers)
-
-            # Check HTTP status code
-            if response.status_code != 200:
-                response_preview = response.text[:200]
-                logger.error(
-                    "SMS notification API returned non-200 status: %s - %s",
-                    response.status_code,
-                    response_preview,
-                )
-                return False, "SMS notification service error"
-
-            # Parse response
-            try:
-                result = response.json()
-            except (ValueError, json.JSONDecodeError) as e:
-                response_preview = response.text[:200]
-                logger.error(
-                    "Failed to parse SMS notification response as JSON: %s - Response: %s",
-                    e,
-                    response_preview,
-                )
-                return False, "SMS notification service error"
-
-            if "Response" not in result:
-                logger.error("Invalid SMS notification response structure: %s", result)
-                return False, "Invalid SMS notification response"
-
-            resp_data = result["Response"]
-
-            # Check for API error in Response.Error
-            if "Error" in resp_data:
-                error_code = resp_data["Error"].get("Code", "Unknown")
-                error_msg = resp_data["Error"].get("Message", "Unknown error")
-                logger.error("SMS notification API error: %s - %s", error_code, error_msg)
-                return False, self._translate_error_code(error_code, lang)
-
-            # Check send status in SendStatusSet
-            send_status = resp_data.get("SendStatusSet", [])
-            success_count = 0
-            failed_count = 0
-            only_rate_limit_failures = True
-
-            for status in send_status:
-                if status.get("Code") == "Ok":
-                    success_count += 1
-                else:
-                    failed_count += 1
-                    error_code = status.get("Code", "Unknown")
-                    error_msg = status.get("Message", "Unknown error")
-                    phone_number = status.get("PhoneNumber", "unknown")
-                    if not _is_sms_provider_rate_limit(error_code, error_msg):
-                        only_rate_limit_failures = False
-                    log_fn = logger.warning if _is_sms_provider_rate_limit(error_code, error_msg) else logger.error
-                    log_fn(
-                        "SMS notification send failed for phone: %s - %s",
-                        phone_number,
-                        error_msg,
-                    )
-
-            if success_count > 0:
-                logger.info(
-                    "SMS notification sent successfully to %d/%d phone(s)",
-                    success_count,
-                    len(phones),
-                )
-                return True, f"Notification sent to {success_count} phone(s)"
-
-            if failed_count > 0 and only_rate_limit_failures:
-                logger.warning("SMS notification failed for all %d phone(s)", len(phones))
-                return False, SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
-            logger.error("SMS notification failed for all %d phone(s)", len(phones))
-            return False, "SMS notification failed for all recipients"
-
-        except httpx.TimeoutException:
-            logger.error("SMS notification request timeout")
-            return False, "SMS notification timeout"
-        except httpx.HTTPError as e:
-            logger.error("SMS notification HTTP error: %s", e)
-            return False, "SMS notification HTTP error"
-        except SMSServiceError as e:
-            logger.error("SMS notification service error: %s", e)
-            return False, str(e)
-        except HTTP_CLIENT_ERRORS as e:
-            logger.error("Unexpected SMS notification error: %s", e, exc_info=True)
-            return False, "SMS notification service error"
 
     def _translate_error_code(self, code: str, lang: Language = "en") -> str:
         """

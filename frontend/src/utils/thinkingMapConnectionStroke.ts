@@ -5,6 +5,7 @@
  */
 import { getMindMapThemeById, resolveMindMapThemeId } from '@/config/mindMapThemes'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS, isRainbowMindMapTheme } from '@/config/mindMapVibrantThemes'
+import { colorToHex } from '@/utils/colorFormat'
 import { isLegacyConnectorFallback, rainbowLineForLegacyStroke } from '@/utils/thinkingMapChrome'
 
 /** Accent for a solid theme. Rainbow and an unset theme keep the palette. */
@@ -109,4 +110,53 @@ export function thinkingMapAdaptiveTopicTextColor(
   const dark = canvasInk(theme.textColor, theme.topicBorderColor)
   const fill = theme.topicBorderColor
   return contrast('#ffffff', fill) > contrast(dark, fill) ? '#ffffff' : dark
+}
+
+/** Gray and pastel fills are not the same color as a saturated connector. */
+const MIN_HUE_CHROMA = 48
+/** Sky blue and topic blue are one hue even though their hex codes differ. */
+const SAME_HUE_DEGREES = 45
+
+function saturatedHue(color: string): number | null {
+  const hex = colorToHex(color).trim().replace('#', '')
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) return null
+  const packed = Number.parseInt(hex, 16)
+  const red = (packed >> 16) & 255
+  const green = (packed >> 8) & 255
+  const blue = packed & 255
+  const max = Math.max(red, green, blue)
+  const min = Math.min(red, green, blue)
+  const chroma = max - min
+  if (chroma < MIN_HUE_CHROMA) return null
+  let sector: number
+  if (max === red) sector = (green - blue) / chroma
+  else if (max === green) sector = (blue - red) / chroma + 2
+  else sector = (red - green) / chroma + 4
+  const hue = sector * 60
+  return hue < 0 ? hue + 360 : hue
+}
+
+function sameSaturatedHue(left: string, right: string): boolean {
+  const leftHue = saturatedHue(left)
+  const rightHue = saturatedHue(right)
+  if (leftHue == null || rightHue == null) return false
+  const delta = Math.abs(leftHue - rightHue)
+  return Math.min(delta, 360 - delta) <= SAME_HUE_DEGREES
+}
+
+/**
+ * A hand-painted fill of the connector's own hue hides the curve.
+ * Red, green, white, and gray fills keep the theme stroke.
+ */
+export function connectorStrokeReadableOnFills(
+  stroke: string,
+  fills: ReadonlyArray<string | null | undefined>
+): string {
+  const hidden = fills.some((fill) => {
+    if (!fill) return false
+    const trimmed = fill.trim()
+    if (!trimmed || trimmed === 'transparent') return false
+    return sameSaturatedHue(stroke, trimmed)
+  })
+  return hidden ? CANVAS_INK : stroke
 }

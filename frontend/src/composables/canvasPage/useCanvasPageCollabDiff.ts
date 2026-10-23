@@ -50,6 +50,8 @@ interface UseCanvasPageCollabDiffOptions {
   absorbRemoteLayout?: () => void
   /** True while an outbound ``update`` is queued or in flight (FIFO backpressure). */
   hasPendingOutbound?: () => boolean
+  /** False until this socket has applied the room snapshot. Diffs before that describe the private canvas. */
+  isServerBaselineReady?: () => boolean
 }
 
 /** Must match ``routers/api/workshop_ws_handlers_update_validate.py`` granular limits. */
@@ -166,6 +168,9 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       previousNodes = JSON.parse(JSON.stringify(currentData.nodes))
       previousConnections = JSON.parse(JSON.stringify(currentData.connections || []))
       previousMindMapExtrasFp = extrasFingerprintFromData(currentData)
+      return
+    }
+    if (options.isServerBaselineReady && !options.isServerBaselineReady()) {
       return
     }
     if (options.applyingRemoteCollabPatch.value) {
@@ -385,6 +390,12 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
     clearPendingDiff()
   }
 
+  /** The canvas now on screen is the room spec. Later diffs are edits to that spec. */
+  function adoptLiveBaseline(): void {
+    syncPreviousFromCurrent()
+    clearPendingDiff()
+  }
+
   eventBus.onWithOwner(
     'workshop:partial-filtered',
     (data) => {
@@ -412,5 +423,6 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
   return {
     onGranularUpdate,
     resetDiffTracking,
+    adoptLiveBaseline,
   }
 }

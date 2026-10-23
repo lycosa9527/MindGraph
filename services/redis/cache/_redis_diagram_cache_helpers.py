@@ -9,6 +9,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import json
 import logging
 import os
 from typing import Any, List, Optional, Tuple
@@ -29,6 +30,28 @@ SYNC_BATCH_SIZE = int(os.getenv("DIAGRAM_SYNC_BATCH_SIZE", "100"))
 # Legacy env default; per-user save caps are tier-based (see utils.auth.school_tier).
 MAX_PER_USER = int(os.getenv("DIAGRAM_MAX_PER_USER", "20"))
 MAX_SPEC_SIZE_KB = int(os.getenv("DIAGRAM_MAX_SPEC_SIZE_KB", "500"))
+# Canvas body stays at MAX_SPEC_SIZE_KB. Extra model diagrams share this
+# ceiling. The slot count follows however many models succeeded. Must match
+# the frontend.
+MAX_SPEC_WITH_LLM_RESULTS_KB = int(os.getenv("DIAGRAM_MAX_SPEC_WITH_LLM_RESULTS_KB", "4000"))
+
+
+def diagram_spec_size_error(spec: dict[str, Any], spec_json: str) -> Optional[str]:
+    """Reject a canvas over 500KB. Specs that store model diagrams use 4000KB."""
+    size_kb = len(spec_json.encode("utf-8")) / 1024
+    llm_results = spec.get("llm_results")
+    if isinstance(llm_results, dict):
+        canvas = {key: value for key, value in spec.items() if key != "llm_results"}
+        canvas_kb = len(json.dumps(canvas).encode("utf-8")) / 1024
+        if canvas_kb > MAX_SPEC_SIZE_KB:
+            return f"Diagram spec too large ({canvas_kb:.1f}KB > {MAX_SPEC_SIZE_KB}KB)"
+        if size_kb > MAX_SPEC_WITH_LLM_RESULTS_KB:
+            return f"Diagram spec too large ({size_kb:.1f}KB > {MAX_SPEC_WITH_LLM_RESULTS_KB}KB)"
+        return None
+    if size_kb > MAX_SPEC_SIZE_KB:
+        return f"Diagram spec too large ({size_kb:.1f}KB > {MAX_SPEC_SIZE_KB}KB)"
+    return None
+
 
 DIAGRAM_KEY = _keys.DIAGRAM
 USER_META_KEY = _keys.DIAGRAMS_USER_META

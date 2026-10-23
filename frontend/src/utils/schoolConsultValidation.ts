@@ -1,3 +1,5 @@
+import { isCnMainlandMobile } from '@/utils/accountPhone'
+
 /** Limits mirror backend SchoolConsultationBody / school_consult_validation.py */
 
 export const SCHOOL_CONSULT_LIMITS = {
@@ -18,6 +20,20 @@ export interface SchoolConsultFormValues {
 
 const PHONE_ALLOWED_CHARS = /^[\d\s+\-()]+$/
 
+function isDisallowedControl(code: number): boolean {
+  return code <= 8 || code === 11 || code === 12 || (code >= 14 && code <= 31) || code === 127
+}
+
+function stripDisallowedControls(value: string): string {
+  let out = ''
+  for (const char of value) {
+    if (!isDisallowedControl(char.charCodeAt(0))) {
+      out += char
+    }
+  }
+  return out
+}
+
 function collapseWhitespace(value: string, keepNewlines: boolean): string {
   if (keepNewlines) {
     return value
@@ -27,17 +43,6 @@ function collapseWhitespace(value: string, keepNewlines: boolean): string {
       .join('\n')
   }
   return value.replace(/\s+/g, ' ').trim()
-}
-
-function stripDisallowedControls(value: string): string {
-  let out = ''
-  for (const char of value) {
-    const code = char.charCodeAt(0)
-    const whitespace = code === 9 || code === 10 || code === 13
-    if (!whitespace && (code <= 0x1f || code === 0x7f)) continue
-    out += char
-  }
-  return out
 }
 
 function sanitizeField(
@@ -119,6 +124,25 @@ export function validateSchoolConsultForm(
       organization: orgResult.value,
       note: noteValue,
     },
+  }
+}
+
+export function consultProfileFromAccount(input: {
+  username?: string | null
+  phone?: string | null
+  schoolName?: string | null
+}): { name: string; phone: string; organization: string } {
+  const username = (input.username || '').trim()
+  const storedPhone = (input.phone || '').trim()
+  const phone = isCnMainlandMobile(storedPhone) ? storedPhone : ''
+  const organization = (input.schoolName || '').trim()
+  const looksLikeAccountKey =
+    /^\d{7,15}$/.test(username) || (storedPhone !== '' && username === storedPhone)
+  const name = looksLikeAccountKey ? '' : username
+  return {
+    name: name.slice(0, SCHOOL_CONSULT_LIMITS.name),
+    phone: phone.slice(0, SCHOOL_CONSULT_LIMITS.phone),
+    organization: organization.slice(0, SCHOOL_CONSULT_LIMITS.organization),
   }
 }
 

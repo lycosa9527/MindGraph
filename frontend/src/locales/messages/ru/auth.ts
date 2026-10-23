@@ -16,35 +16,24 @@ export default {
   'auth.voiceNotes.copy': 'копировать текст',
   'auth.voiceNotes.copied': 'Стенограмма скопирована.',
   'auth.voiceNotes.empty': 'Как только вы начнете запись, здесь появится расшифровка.',
-  'auth.voiceNotes.loginRequired':
-    'Пожалуйста, войдите в систему, прежде чем использовать голосовые заметки.',
-  'auth.voiceNotes.bootstrapFailed':
-    'Невозможно открыть сеанс майндмэппинга для голосовых заметок.',
+  'auth.voiceNotes.loginRequired': 'Пожалуйста, войдите в систему, прежде чем использовать голосовые заметки.',
+  'auth.voiceNotes.bootstrapFailed': 'Невозможно открыть сеанс майндмэппинга для голосовых заметок.',
   'auth.voiceNotes.saveFailed': 'Не удалось сохранить карту разума голосовой заметки.',
   'auth.voiceNotes.noDiagram': 'Интеллект-карта еще не связана.',
   'auth.voiceNotes.micUnavailable': 'Текущий браузер не поддерживает микрофон.',
   'auth.voiceNotes.micFailed': 'Невозможно получить доступ к микрофону.',
-  'auth.voiceNotes.micConflict':
-    'Другие голосовые функции используют микрофон. Остановитесь и повторите попытку.',
-  'auth.voiceNotes.wsError':
-    'Не удалось подключиться к голосовой заметке. Проверьте сеть и статус входа.',
+  'auth.voiceNotes.micConflict': 'Другие голосовые функции используют микрофон. Остановитесь и повторите попытку.',
+  'auth.voiceNotes.wsError': 'Не удалось подключиться к голосовой заметке. Проверьте сеть и статус входа.',
   'auth.voiceNotes.genericError': 'Ошибка голосовой заметки',
   'auth.voiceNotes.ingestFailed': 'Невозможно сохранить расшифровку в сводке документа.',
-  'auth.voiceNotes.maxDuration':
-    'Голосовая заметка достигла 60-минутного лимита и была автоматически остановлена.',
-  'auth.voiceNotes.silenceAutoStop':
-    'Голоса не было в течение 2 минут подряд, а голосовая заметка автоматически прекратилась.',
-  'auth.voiceNotes.startedTimeout':
-    'Голосовую службу не удалось запустить вовремя. Повторите попытку.',
+  'auth.voiceNotes.maxDuration': 'Голосовая заметка достигла 60-минутного лимита и была автоматически остановлена.',
+  'auth.voiceNotes.silenceAutoStop': 'Голоса не было в течение 2 минут подряд, а голосовая заметка автоматически прекратилась.',
+  'auth.voiceNotes.startedTimeout': 'Голосовую службу не удалось запустить вовремя. Повторите попытку.',
   'auth.voiceNotes.micLost': 'Микрофон был отключен, а голосовые заметки прекратились.',
-  'auth.voiceNotes.authFailed':
-    'Аутентификация голосовой заметки не удалась, пожалуйста, войдите снова.',
-  'auth.voiceNotes.wsClosed':
-    'Соединение с голосовыми заметками было разорвано, и сеанс остановлен.',
-  'auth.voiceNotes.budgetExceeded':
-    'Голосовые заметки недоступны: достигнута дневная квота ИИ или мыслящих монет недостаточно.',
-  'auth.voiceNotes.sessionBusy':
-    'Сеанс голосовых заметок уже выполняется. Остановите его и повторите попытку.',
+  'auth.voiceNotes.authFailed': 'Аутентификация голосовой заметки не удалась, пожалуйста, войдите снова.',
+  'auth.voiceNotes.wsClosed': 'Соединение с голосовыми заметками было разорвано, и сеанс остановлен.',
+  'auth.voiceNotes.budgetExceeded': 'Голосовые заметки недоступны: достигнута дневная квота ИИ или мыслящих монет недостаточно.',
+  'auth.voiceNotes.sessionBusy': 'Сеанс голосовых заметок уже выполняется. Остановите его и повторите попытку.',
   'auth.voiceNotes.recording': 'Запись',
   'auth.voiceNotes.paused': 'Приостановленный',
   'auth.voiceNotes.idle': 'готовый',
@@ -52,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'Начало',
   'auth.voiceNotes.stopping': 'Остановка',
   'auth.voiceNotes.ingesting': 'Сохранение',
-  'auth.voiceNotes.emptyTranscript':
-    'Ни один голос не был распознан, пожалуйста, скажите несколько слов, прежде чем остановиться.',
+  'auth.voiceNotes.emptyTranscript': 'Ни один голос не был распознан, пожалуйста, скажите несколько слов, прежде чем остановиться.',
   'auth.voiceNotes.generating': 'Создание интеллект-карты',
-  'auth.voiceNotes.sheetHint':
-    'Сохраните транскрипцию после остановки. Нажмите «Создать интеллект-карту», ​​когда будете готовы.',
+  'auth.voiceNotes.sheetHint': 'Сохраните транскрипцию после остановки. Нажмите «Создать интеллект-карту», ​​когда будете готовы.',
   'auth.voiceNotes.status.waiting': 'Ожидание начала',
   'auth.voiceNotes.status.connectingAsr': 'Подключение к распознаванию речи',
   'auth.voiceNotes.status.recording': 'Запись · Распознавание голоса',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'Запись · Распознавание речи · Различение говорящих',
+  'auth.voiceNotes.status.recordingAndSeparating': 'Запись · Распознавание речи · Различение говорящих',
   'auth.voiceNotes.status.paused': 'Приостановленный',
   'auth.voiceNotes.status.stopping': 'Остановка',
   'auth.voiceNotes.status.savingTranscript': 'Сохранение транскрипции',
@@ -74,13 +60,10 @@ export default {
   'auth.voiceNotes.savedAt': 'Транскрипция сохранена в {time}.',
   'auth.voiceNotes.unsavedChanges': 'Транскрипция не сохранена',
   'auth.voiceNotes.closeWhileRecordingTitle': 'Запись',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'Закрытие окна не остановит запись. Транскрипции автоматически сохраняются на текущей карте каждые 30 секунд. Вы уверены, что хотите скрыть окно?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'Закрытие окна не остановит запись. Транскрипции автоматически сохраняются на текущей карте каждые 30 секунд. Вы уверены, что хотите скрыть окно?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'Скрыть окно',
-  'auth.voiceNotes.recordingContinues':
-    'Запись все еще продолжается, и вы можете в любой момент снова открыть сводку записи.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'Пожалуйста, сначала сохраните текущую интеллект-карту, а затем используйте запись для подведения итогов.',
+  'auth.voiceNotes.recordingContinues': 'Запись все еще продолжается, и вы можете в любой момент снова открыть сводку записи.',
+  'auth.voiceNotes.noCurrentDiagram': 'Пожалуйста, сначала сохраните текущую интеллект-карту, а затем используйте запись для подведения итогов.',
   'auth.voiceNotes.restoreFailed': 'Невозможно загрузить сохраненную расшифровку аудиозаписи.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'Исторические голосовые заметки',
@@ -90,39 +73,26 @@ export default {
   'auth.voiceNotes.mergeTalker': 'сливаться в',
   'auth.voiceNotes.mergeTalkerInto': 'Слияние с {name}',
   'auth.voiceNotes.resetTalker': 'Восстановить настройки по умолчанию',
-  'auth.voiceNotes.tencentAuth':
-    'Не удалось выполнить аутентификацию с помощью распознавания голоса. Проверьте ключ Tencent Cloud.',
-  'auth.voiceNotes.tencentService':
-    'Распознавание речи Tencent Cloud не активировано. Пожалуйста, активируйте услугу в консоли.',
-  'auth.voiceNotes.tencentQuota':
-    'Пакет ресурсов по распознаванию речи Tencent Cloud исчерпан. Пожалуйста, оплатите или приобретите пакет ресурсов после активации.',
-  'auth.voiceNotes.tencentArrears':
-    'Учетная запись Tencent Cloud имеет задолженность, а распознавание голоса отключено.',
-  'auth.voiceNotes.tencentConcurrency':
-    'Параллельное распознавание речи заполнено. Повторите попытку позже.',
+  'auth.voiceNotes.tencentAuth': 'Не удалось выполнить аутентификацию с помощью распознавания голоса. Проверьте ключ Tencent Cloud.',
+  'auth.voiceNotes.tencentService': 'Распознавание речи Tencent Cloud не активировано. Пожалуйста, активируйте услугу в консоли.',
+  'auth.voiceNotes.tencentQuota': 'Пакет ресурсов по распознаванию речи Tencent Cloud исчерпан. Пожалуйста, оплатите или приобретите пакет ресурсов после активации.',
+  'auth.voiceNotes.tencentArrears': 'Учетная запись Tencent Cloud имеет задолженность, а распознавание голоса отключено.',
+  'auth.voiceNotes.tencentConcurrency': 'Параллельное распознавание речи заполнено. Повторите попытку позже.',
   'auth.voiceNotes.tencentAudio': 'Звук не распознается, попробуйте еще раз.',
-  'auth.voiceNotes.tencentSendRate':
-    'Звук передается слишком быстро, продолжайте запись в реальном времени.',
-  'auth.voiceNotes.tencentIdle':
-    'Запись была прервана слишком надолго, и распознавание голоса было отключено.',
+  'auth.voiceNotes.tencentSendRate': 'Звук передается слишком быстро, продолжайте запись в реальном времени.',
+  'auth.voiceNotes.tencentIdle': 'Запись была прервана слишком надолго, и распознавание голоса было отключено.',
   'auth.voiceNotes.tencentRetry': 'Распознавание речи временно не удалось. Повторите попытку.',
-  'auth.voiceNotes.tencentRegion':
-    'Текущая сеть не входит в сферу обслуживания внутреннего сайта Tencent Cloud.',
+  'auth.voiceNotes.tencentRegion': 'Текущая сеть не входит в сферу обслуживания внутреннего сайта Tencent Cloud.',
   'auth.voiceNotes.tencentParam': 'Параметры распознавания речи недействительны.',
-  'auth.voiceNotes.tencentAppid':
-    'Tencent Cloud AppID недействителен, проверьте TENCENT_ASR_APP_ID.',
-  'auth.voiceNotes.rateLimited':
-    'Запросы на распознавание речи выполняются слишком часто. Повторите попытку позже.',
+  'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID недействителен, проверьте TENCENT_ASR_APP_ID.',
+  'auth.voiceNotes.rateLimited': 'Запросы на распознавание речи выполняются слишком часто. Повторите попытку позже.',
   'auth.voiceNotes.messageTooLarge': 'Аудиопакет слишком велик, попробуйте еще раз.',
-  'auth.voiceNotes.invalidMessage':
-    'Сообщение голосовой заметки недействительно. Повторите попытку.',
-  'auth.voiceNotes.asrUnavailable':
-    'Распознавание речи временно недоступно. Повторите попытку позже.',
+  'auth.voiceNotes.invalidMessage': 'Сообщение голосовой заметки недействительно. Повторите попытку.',
+  'auth.voiceNotes.asrUnavailable': 'Распознавание речи временно недоступно. Повторите попытку позже.',
   'auth.updateLog': 'Журнал изменений',
   'auth.updateLogModalTitle': 'Журнал изменений',
   'auth.updateLogMaintainerNote': 'Да, Рой серьёзно поддерживает эту платформу ✨',
-  'auth.updateLogLoadError':
-    'В данный момент журнал обновлений не может быть загружен. Повторите попытку позже.',
+  'auth.updateLogLoadError': 'В данный момент журнал обновлений не может быть загружен. Повторите попытку позже.',
   'auth.updateLogEmpty': 'Инструкций по обновлению пока нет.',
   'auth.softwareAgreementConsentPrefix': 'Использование этой платформы означает согласие',
   'auth.softwareAgreementLink': 'Пользовательское соглашение и Политика конфиденциальности',
@@ -130,19 +100,13 @@ export default {
   'privacy.backToSignIn': 'Вернуться к входу',
   'auth.downloadDesktopShortcut': 'добавить на рабочий стол',
   'auth.platformQuickGuide': 'Краткое руководство',
-  'auth.pwaIosInstallHint':
-    'Нажмите «Поделиться» в Safari, Chrome или Edge и выберите «Добавить на главный экран».',
-  'auth.pwaAndroidInstallHint':
-    'Откройте меню браузера (⋮) и выберите «Установить приложение» или «Добавить на главный экран».',
-  'auth.pwaSafariMacInstallHint':
-    'Выберите «Файл» → «Добавить в док» в Safari или используйте «Поделиться» → «Добавить в док» (macOS Sonoma и более поздние версии).',
-  'auth.pwaDesktopInstallHint':
-    'Откройте меню браузера (⋮) или воспользуйтесь значком установки рядом с адресной строкой (Chrome, Edge или Brave).',
+  'auth.pwaIosInstallHint': 'Нажмите «Поделиться» в Safari, Chrome или Edge и выберите «Добавить на главный экран».',
+  'auth.pwaAndroidInstallHint': 'Откройте меню браузера (⋮) и выберите «Установить приложение» или «Добавить на главный экран».',
+  'auth.pwaSafariMacInstallHint': 'Выберите «Файл» → «Добавить в док» в Safari или используйте «Поделиться» → «Добавить в док» (macOS Sonoma и более поздние версии).',
+  'auth.pwaDesktopInstallHint': 'Откройте меню браузера (⋮) или воспользуйтесь значком установки рядом с адресной строкой (Chrome, Edge или Brave).',
   'auth.pwaInstallSuccess': 'MindGraph был добавлен на рабочий стол.',
-  'auth.pwaDevInstallHint':
-    'PWA не включен в обычном режиме разработки. Используйте производственную сборку (обслуживаемую серверной частью после запуска сборки npm) или запустите npm run dev:pwa и откройте ее с помощью Chrome/Edge под HTTPS или локальным хостом.',
-  'auth.pwaInsecureOriginHint':
-    'Пожалуйста, откройте URL-адрес HTTPS MindGraph в своем браузере (не открывайте сохраненный HTML-файл) перед добавлением на рабочий стол.',
+  'auth.pwaDevInstallHint': 'PWA не включен в обычном режиме разработки. Используйте производственную сборку (обслуживаемую серверной частью после запуска сборки npm) или запустите npm run dev:pwa и откройте ее с помощью Chrome/Edge под HTTPS или локальным хостом.',
+  'auth.pwaInsecureOriginHint': 'Пожалуйста, откройте URL-адрес HTTPS MindGraph в своем браузере (не открывайте сохраненный HTML-файл) перед добавлением на рабочий стол.',
   'auth.backToLogin': 'Вернуться к входу',
   'auth.captcha': 'Проверочный код',
   'auth.captchaLength4': 'Пожалуйста, введите 4-значный код подтверждения',
@@ -169,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'Скопировано',
   'auth.apiTokenCopyFailed': 'Не удалось скопировать',
   'auth.apiTokenLoading': 'загрузка…',
-  'auth.apiTokenNone':
-    'Токен еще не создан. Загрузите пакет навыков или щелкните токен API, чтобы создать его.',
+  'auth.apiTokenNone': 'Токен еще не создан. Загрузите пакет навыков или щелкните токен API, чтобы создать его.',
   'auth.apiTokenOpaque': 'Текущий токен не может быть отображен, пожалуйста, создайте его заново.',
   'auth.apiTokenExpires': 'Действительно до {date}',
   'auth.downloadChromeExtension': 'Расширение Chrome',
   'auth.downloadWordAddin': 'Надстройка Word',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'Текущая школьная версия не поддерживает эту функцию. Обновите ее до стандартной версии для обучения и исследований или версии для совместного строительства на базе школы (базовая версия для обучения и исследований не включает эту функцию).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Your school subscription has ended. Your account is now on the trial tier. Contact your platform administrator to renew.',
-  'auth.diagramLimitReached':
-    'Каждый учитель в пробной версии может сохранить до {max} карт. Пожалуйста, удалите их перед сохранением.',
+  'auth.schoolTierFeatureUnavailable': 'Текущая школьная версия не поддерживает эту функцию. Обновите ее до стандартной версии для обучения и исследований или версии для совместного строительства на базе школы (базовая версия для обучения и исследований не включает эту функцию).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Your school subscription has ended. Your account is now on the trial tier. Contact your platform administrator to renew.',
+  'auth.diagramLimitReached': 'Каждый учитель в пробной версии может сохранить до {max} карт. Пожалуйста, удалите их перед сохранением.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
-  'auth.downloadOpenclawSkillHint':
-    'Загрузка включает номер счета и текущий токен. После регенерации токена старые пакеты навыков и расширения станут недействительными.',
+  'auth.downloadOpenclawSkillHint': 'Загрузка включает номер счета и текущий токен. После регенерации токена старые пакеты навыков и расширения станут недействительными.',
   'auth.changePhoneButton': 'Сменить мобильный телефон',
   'auth.passwordChangeSuccess': 'Пароль успешно изменен',
   'auth.passwordChangeFailed': 'Сменить пароль не удалось',
@@ -209,8 +168,7 @@ export default {
   'auth.modal.confirmPasswordPlaceholder': 'Введите новый пароль еще раз',
   'auth.modal.enter4DigitCaptcha': 'Пожалуйста, введите 4-значный код подтверждения',
   'auth.modal.enter6DigitSms': 'Пожалуйста, введите 6-значный код подтверждения по SMS.',
-  'auth.modal.enter6DigitEmailCode':
-    'Пожалуйста, введите 6-значный код подтверждения в электронном письме.',
+  'auth.modal.enter6DigitEmailCode': 'Пожалуйста, введите 6-значный код подтверждения в электронном письме.',
   'auth.modal.enterCaptchaFirst': 'Пожалуйста, сначала введите код подтверждения',
   'auth.modal.fillAllFields': 'Пожалуйста, заполните все поля',
   'auth.modal.fillRequired': 'Пожалуйста, заполните все обязательные поля',
@@ -223,12 +181,9 @@ export default {
   'auth.modal.networkRegisterError': 'Ошибка сети, регистрация не удалась',
   'auth.modal.networkResetError': 'Ошибка сети, не удалось сбросить пароль',
   'auth.modal.networkSmsError': 'Ошибка сети, не удалось отправить код подтверждения по SMS.',
-  'auth.modal.networkSmsLoginError':
-    'Ошибка сети, не удалось войти в систему с кодом подтверждения.',
-  'auth.modal.networkEmailCodeError':
-    'Ошибка сети, не удалось отправить код подтверждения электронной почты.',
-  'auth.modal.networkEmailLoginError':
-    'Ошибка сети, не удалось войти в систему по электронной почте',
+  'auth.modal.networkSmsLoginError': 'Ошибка сети, не удалось войти в систему с кодом подтверждения.',
+  'auth.modal.networkEmailCodeError': 'Ошибка сети, не удалось отправить код подтверждения электронной почты.',
+  'auth.modal.networkEmailLoginError': 'Ошибка сети, не удалось войти в систему по электронной почте',
   'auth.modal.changingPassword': 'Updating...',
   'auth.modal.confirmChange': 'Confirm change',
   'auth.modal.currentPassword': 'Current password',
@@ -238,14 +193,11 @@ export default {
   'auth.modal.passwordMinPlaceholder': 'Минимум 8 символов',
   'auth.modal.passwordMismatch': 'Пароли, введенные дважды, несовместимы',
   'auth.modal.passwordPlaceholder': 'Пожалуйста, введите пароль',
-  'auth.modal.phone11Digits':
-    'Пожалуйста, введите действительный 11-значный номер мобильного телефона.',
-  'auth.modal.enterPhoneOrEmail':
-    'Пожалуйста, введите зарегистрированный номер мобильного телефона или адрес электронной почты учетной записи.',
+  'auth.modal.phone11Digits': 'Пожалуйста, введите действительный 11-значный номер мобильного телефона.',
+  'auth.modal.enterPhoneOrEmail': 'Пожалуйста, введите зарегистрированный номер мобильного телефона или адрес электронной почты учетной записи.',
   'auth.modal.phonePlaceholder11': '11-значный номер мобильного телефона',
   'auth.modal.phoneRegisteredPlaceholder': 'Зарегистрированный номер мобильного телефона',
-  'auth.modal.forgotPhoneOrEmailPlaceholder':
-    'Зарегистрированный номер мобильного телефона или адрес электронной почты учетной записи',
+  'auth.modal.forgotPhoneOrEmailPlaceholder': 'Зарегистрированный номер мобильного телефона или адрес электронной почты учетной записи',
   'auth.modal.productTitle': 'Мэтт Преподавание и исследования',
   'auth.modal.registerFailed': 'Регистрация не удалась',
   'auth.modal.registerSuccess': 'Регистрация прошла успешно, пожалуйста, войдите',
@@ -269,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -308,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -316,21 +267,17 @@ export default {
   'auth.landing.legalJoin': 'and',
   'auth.modal.waitCaptchaLoad': 'Пожалуйста, подождите, пока загрузится код подтверждения.',
   'auth.modal.detectingRegion': 'Распознавание места вашего посещения...',
-  'auth.modal.waitRegionDetection':
-    'Пожалуйста, подождите, пока будет определен район, который вы посещаете.',
+  'auth.modal.waitRegionDetection': 'Пожалуйста, подождите, пока будет определен район, который вы посещаете.',
   'auth.modal.hybridRegisterGroupLabel': 'Метод регистрации',
   'auth.modal.hybridRegisterEmailTab': 'Электронная почта для образовательных учреждений',
   'auth.modal.hybridRegisterEmailTabAny': 'Почта',
   'auth.modal.hybridRegisterPhoneTab': 'Номер мобильного телефона и код приглашения',
-  'auth.modal.mainlandSalesNotice':
-    'Пользователи из материкового Китая должны использовать для регистрации номер своего мобильного телефона и код приглашения; Если вам нужна помощь, пожалуйста, свяжитесь со службой поддержки клиентов.',
+  'auth.modal.mainlandSalesNotice': 'Пользователи из материкового Китая должны использовать для регистрации номер своего мобильного телефона и код приглашения; Если вам нужна помощь, пожалуйста, свяжитесь со службой поддержки клиентов.',
   'auth.modal.registrationEmailLabel': 'Только электронная почта для образовательных учреждений',
   'auth.modal.registrationEmailLabelAny': 'Адрес электронной почты',
   'auth.modal.registrationEmailHint': '',
-  'auth.modal.registrationEmailHintAny':
-    'Вы можете использовать любой адрес электронной почты, кроме доменных имен в материковом Китае.',
-  'auth.modal.educationEmailInvalid':
-    'Пожалуйста, введите действительный адрес электронной почты для образовательных учреждений.',
+  'auth.modal.registrationEmailHintAny': 'Вы можете использовать любой адрес электронной почты, кроме доменных имен в материковом Китае.',
+  'auth.modal.educationEmailInvalid': 'Пожалуйста, введите действительный адрес электронной почты для образовательных учреждений.',
   'auth.modal.emailInvalid': 'Пожалуйста, введите действительный адрес электронной почты.',
   'auth.modal.emailCodeLabel': 'Код подтверждения электронной почты',
   'auth.modal.emailCodeSent': 'Код подтверждения был отправлен на вашу электронную почту.',
@@ -338,15 +285,11 @@ export default {
   'auth.modal.sendEmailCode': 'Отправить код подтверждения по электронной почте',
   'auth.modal.sendingEmailCode': 'Отправка…',
   'auth.modal.emailCodePlaceholder': '6-значный код подтверждения электронной почты',
-  'auth.modal.acknowledgeOverseas':
-    'Я понимаю и использую программное обеспечение только в образовательных целях.',
-  'auth.modal.acknowledgeOverseasAny':
-    'Я понимаю и согласен с условиями, связанными с регистрацией за рубежом.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Я понимаю и соглашаюсь с условиями, связанными с регистрацией за рубежом, и знаю, что этот путь регистрации не обеспечивает поддержку упрощенного китайского языка.',
+  'auth.modal.acknowledgeOverseas': 'Я понимаю и использую программное обеспечение только в образовательных целях.',
+  'auth.modal.acknowledgeOverseasAny': 'Я понимаю и согласен с условиями, связанными с регистрацией за рубежом.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Я понимаю и соглашаюсь с условиями, связанными с регистрацией за рубежом, и знаю, что этот путь регистрации не обеспечивает поддержку упрощенного китайского языка.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
-  'auth.modal.acknowledgeOverseasRequired':
-    'Пожалуйста, проверьте, чтобы подтвердить приведенные выше инструкции.',
+  'auth.modal.acknowledgeOverseasRequired': 'Пожалуйста, проверьте, чтобы подтвердить приведенные выше инструкции.',
   'auth.loginPhoneOrEmail': 'Номер мобильного телефона или адрес электронной почты',
   'auth.loginAudience': 'Account type',
   'auth.loginAudienceTeacher': 'Teacher',
@@ -365,17 +308,13 @@ export default {
   'auth.username': 'имя пользователя',
   'auth.waitCaptchaLoad': 'Пожалуйста, подождите, пока загрузится код подтверждения.',
   'auth.quickRegPageTitle': 'Быстрая регистрация',
-  'auth.quickRegPageHint':
-    'Пожалуйста, используйте ссылку, предоставленную школой, чтобы войти на эту страницу. Введите номер своего мобильного телефона и введите 6-значный код, отображаемый в окне быстрой регистрации преподавателя (меняется каждые 30 секунд), чтобы завершить присоединение. Код комнаты используется для подтверждения вашего присутствия и не проверяет отдельно личность владельца аппарата, как код подтверждения по SMS.',
-  'auth.quickRegLinkInvalid':
-    'Срок действия этой регистрационной ссылки истек или завершился. Попросите модератора повторно поделиться текущей ссылкой и повторите попытку.',
-  'auth.quickRegProbeRateLimited':
-    'Эту страницу запрашивают слишком часто. Обновите страницу или повторите попытку позже.',
+  'auth.quickRegPageHint': 'Пожалуйста, используйте ссылку, предоставленную школой, чтобы войти на эту страницу. Введите номер своего мобильного телефона и введите 6-значный код, отображаемый в окне быстрой регистрации преподавателя (меняется каждые 30 секунд), чтобы завершить присоединение. Код комнаты используется для подтверждения вашего присутствия и не проверяет отдельно личность владельца аппарата, как код подтверждения по SMS.',
+  'auth.quickRegLinkInvalid': 'Срок действия этой регистрационной ссылки истек или завершился. Попросите модератора повторно поделиться текущей ссылкой и повторите попытку.',
+  'auth.quickRegProbeRateLimited': 'Эту страницу запрашивают слишком часто. Обновите страницу или повторите попытку позже.',
   'auth.quickRegSessionSignups': 'На это мероприятие уже зарегистрировано: {n} человек',
   'auth.quickRegRoomCodeLabel': 'Код номера',
   'auth.quickRegRoomCodePlaceholder': '6 цифр',
-  'auth.quickRegRoomCodeHint':
-    'Пожалуйста, обратитесь к большому числу, отображаемому во всплывающем окне «Быстрая регистрация» на экране учителя/модератора, чтобы убедиться, что ввод завершен до следующей ротации.',
+  'auth.quickRegRoomCodeHint': 'Пожалуйста, обратитесь к большому числу, отображаемому во всплывающем окне «Быстрая регистрация» на экране учителя/модератора, чтобы убедиться, что ввод завершен до следующей ротации.',
   'auth.quickRegRoomCodeEnter6': 'Пожалуйста, введите 6-значный код комнаты',
   'auth.quickRegMaxUses': 'Максимальное количество зарегистрированных пользователей по этой ссылке',
   'auth.quickRegHeadcount': 'Количество человек',
@@ -385,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'Завершить регистрацию',
   'auth.quickRegSubmitting': 'Регистрация…',
   'auth.quickRegRegisterSuccess': 'Регистрация прошла успешно',
-  'auth.quickRegSessionUnsure':
-    'Возможно, регистрация прошла успешно. Если вы не вошли автоматически, вернитесь и используйте код подтверждения для входа в систему или снова откройте эту страницу.',
+  'auth.quickRegSessionUnsure': 'Возможно, регистрация прошла успешно. Если вы не вошли автоматически, вернитесь и используйте код подтверждения для входа в систему или снова откройте эту страницу.',
   'auth.quickRegBackToSignIn': 'Используйте обычный вход/регистрацию',
   'auth.quickRegSelectOrg': 'Выбрать школу',
   'auth.quickRegOrgLoadError': 'Не удалось загрузить список школ. Повторите попытку позже.',
   'auth.quickRegMintError': 'Не удалось создать канал регистрации. Повторите попытку позже.',
   'auth.quickRegCloseConfirmTitle': 'Закончилась быстрая регистрация?',
-  'auth.quickRegCloseConfirm':
-    'После закрытия окна текущий QR-код и код комнаты сразу станут недействительными, и студенты, которые еще не присоединились, не смогут продолжить регистрацию.',
+  'auth.quickRegCloseConfirm': 'После закрытия окна текущий QR-код и код комнаты сразу станут недействительными, и студенты, которые еще не присоединились, не смогут продолжить регистрацию.',
   'auth.setPasswordWithSms': 'Установить пароль для входа',
   'auth.setPasswordWithSmsTitle': 'Установить пароль для входа через SMS',
-  'auth.setPasswordWithSmsHint':
-    'Отправьте SMS-код подтверждения на привязанный мобильный телефон. После настройки вы можете войти в систему, используя пароль или код подтверждения.',
+  'auth.setPasswordWithSmsHint': 'Отправьте SMS-код подтверждения на привязанный мобильный телефон. После настройки вы можете войти в систему, используя пароль или код подтверждения.',
   'auth.setPasswordWithSmsSubmit': 'Установить пароль',
   'auth.setPasswordWithSmsSubmitting': 'Сохранение…',
   'auth.accountAvatar': 'Avatar',
@@ -412,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Показать имя',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'Минимум 2 символа, без цифр',
   'auth.accountNameSave': 'сохранить имя',
   'auth.accountNameSaveSuccess': 'Имя обновлено',
@@ -425,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Не удалось отменить привязку. Повторите попытку позже.',
   'auth.dingtalkBindRebind': 'перевязать',
   'auth.dingtalkBindTitle': 'Привязать учетную запись DingTalk',
-  'auth.dingtalkBindInstructions':
-    'Отправьте текстовое сообщение с 6-значным кодом подтверждения, показанным ниже (например, 123-456), на DingTalk MindBot вашей школы.',
+  'auth.dingtalkBindInstructions': 'Отправьте текстовое сообщение с 6-значным кодом подтверждения, показанным ниже (например, 123-456), на DingTalk MindBot вашей школы.',
   'auth.dingtalkBindPairWaiting': 'Ожидание получения MindBot кода подтверждения…',
   'auth.dingtalkBindCodeHint': 'Отправьте только код подтверждения, без дополнительного текста.',
   'auth.dingtalkBindCountdown': 'Сеанс привязки истечет через {s} секунд.',
@@ -435,52 +373,39 @@ export default {
   'auth.dingtalkBindRegenerate': 'Восстановить код подтверждения',
   'auth.dingtalkBindSuccess': 'Привязка DingTalk прошла успешно',
   'auth.dingtalkBindMintError': 'Не удалось начать привязку. Повторите попытку позже.',
-  'auth.dingtalkBindPollRateLimited':
-    'Операция выполнялась слишком часто. Повторите попытку позже.',
+  'auth.dingtalkBindPollRateLimited': 'Операция выполнялась слишком часто. Повторите попытку позже.',
   'auth.dingtalkBindNoOrg': 'Вы не присоединились к школе и не можете быть привязаны к DingTalk.',
   'auth.dingtalkBindNoMindbot': 'Ваша школа еще не включила MindBot.',
   'auth.dingtalkBindLinkedLabel': 'Связанный ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'В настоящее время привязан: {staff}',
   'auth.dingtalkUnbindTitle': 'Отвязать учетную запись DingTalk',
-  'auth.dingtalkUnbindInstructions':
-    'Пожалуйста, используйте свою привязанную учетную запись DingTalk и отправьте приведенный ниже код подтверждения в MindBot, чтобы подтвердить отмену привязки.',
+  'auth.dingtalkUnbindInstructions': 'Пожалуйста, используйте свою привязанную учетную запись DingTalk и отправьте приведенный ниже код подтверждения в MindBot, чтобы подтвердить отмену привязки.',
   'auth.dingtalkUnbindPairWaiting': 'Ожидание подтверждения привязанной учетной записи DingTalk...',
-  'auth.dingtalkUnbindCodeHint':
-    'Пожалуйста, используйте только привязанную учетную запись DingTalk для отправки этого кода подтверждения и не прикрепляйте другой текст.',
-  'auth.dingtalkUnbindExpiredHint':
-    'Срок действия сеанса отмены привязки истек. Повторите попытку.',
+  'auth.dingtalkUnbindCodeHint': 'Пожалуйста, используйте только привязанную учетную запись DingTalk для отправки этого кода подтверждения и не прикрепляйте другой текст.',
+  'auth.dingtalkUnbindExpiredHint': 'Срок действия сеанса отмены привязки истек. Повторите попытку.',
   'auth.dingtalkUnbindRegenerate': 'перезапуск',
   'auth.dingtalkUnbindNotLinked': 'В настоящее время нет привязанной учетной записи DingTalk.',
   'auth.qrLogin': 'вход по QR-коду',
   'auth.qrLoginTitle': 'Сканируйте код, чтобы войти',
   'auth.qrLoginWechatTab': 'Вичат',
   'auth.qrLoginDingtalkTab': 'DingTalk',
-  'auth.qrLoginInviteRequired':
-    'Пожалуйста, сначала заполните код приглашения в школу, а затем отсканируйте его, чтобы войти в систему.',
-  'auth.qrLoginProvidersFailed':
-    'Не удалось загрузить конфигурацию входа в систему с помощью скан-кода. Повторите попытку позже.',
+  'auth.qrLoginInviteRequired': 'Пожалуйста, сначала заполните код приглашения в школу, а затем отсканируйте его, чтобы войти в систему.',
+  'auth.qrLoginProvidersFailed': 'Не удалось загрузить конфигурацию входа в систему с помощью скан-кода. Повторите попытку позже.',
   'auth.qrLoginProviderDisabled': 'This sign-in method is not enabled for your school',
-  'auth.qrLoginNotLinked':
-    'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again. If you forgot the password, use Forgot password.',
-  'auth.qrLoginExchangeFailed':
-    'Не удалось войти в систему с помощью скан-кода. Повторите попытку.',
-  'auth.qrLoginInvalidState':
-    'Срок действия сеанса сканирования QR-кода истек. Пожалуйста, закройте его и снова отсканируйте QR-код.',
-  'auth.qrLoginInvalidCode':
-    'Срок действия кода авторизации WeChat истек или он уже использовался. Пожалуйста, закройте QR-код и отсканируйте его еще раз.',
-  'auth.qrLoginRateLimited':
-    'Вызовы для входа в WeChat происходят слишком часто. Повторите попытку позже.',
+  'auth.qrLoginNotLinked': 'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again. If you forgot the password, use Forgot password.',
+  'auth.qrLoginExchangeFailed': 'Не удалось войти в систему с помощью скан-кода. Повторите попытку.',
+  'auth.qrLoginInvalidState': 'Срок действия сеанса сканирования QR-кода истек. Пожалуйста, закройте его и снова отсканируйте QR-код.',
+  'auth.qrLoginInvalidCode': 'Срок действия кода авторизации WeChat истек или он уже использовался. Пожалуйста, закройте QR-код и отсканируйте его еще раз.',
+  'auth.qrLoginRateLimited': 'Вызовы для входа в WeChat происходят слишком часто. Повторите попытку позже.',
   'auth.qrLoginMisconfigured': 'Конфигурация входа в WeChat неверна, обратитесь к администратору.',
   'auth.qrLoginCorpMismatch': 'Организация DingTalk не соответствует конфигурации школы.',
   'auth.oauthExternalTaken': 'This account is already linked to another user.',
-  'auth.oauthAlreadyBound':
-    'Эта учетная запись привязана к WeChat. Если вам нужно привязать другой WeChat, сначала отмените его.',
+  'auth.oauthAlreadyBound': 'Эта учетная запись привязана к WeChat. Если вам нужно привязать другой WeChat, сначала отмените его.',
   'auth.qrLoginDisabled': 'Сканируйте QR-код для входа в систему временно недоступно.',
   'auth.qrLoginStartFailed': 'Не удалось активировать вход по QR-коду. Повторите попытку позже.',
   'auth.qrLoginSuccess': 'Вход успешен',
   'auth.accountBindingsSection': 'Привязка аккаунта',
-  'auth.accountBindingsHint':
-    'MindBot используется для сохранения в DingTalk; WeChat/DingTalk используется для сканирования QR-кода для входа в систему (сначала необходимо привязаться сюда)',
+  'auth.accountBindingsHint': 'MindBot используется для сохранения в DingTalk; WeChat/DingTalk используется для сканирования QR-кода для входа в систему (сначала необходимо привязаться сюда)',
   'auth.bindingWechat': 'Вичат',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',
@@ -492,10 +417,8 @@ export default {
   'auth.bindDingtalkOAuth': 'Привязка DingTalk',
   'auth.unbindDingtalkOAuth': 'Отвязать DingTalk',
   'auth.oauthBindTitle': 'Отсканируйте QR-код, чтобы привязать учетную запись',
-  'auth.wechatBindScanHint':
-    'Пожалуйста, используйте WeChat для сканирования QR-кода, чтобы привязать учетную запись.',
-  'auth.wechatLoginScanHint':
-    'Пожалуйста, используйте WeChat для сканирования QR-кода для входа в систему.',
+  'auth.wechatBindScanHint': 'Пожалуйста, используйте WeChat для сканирования QR-кода, чтобы привязать учетную запись.',
+  'auth.wechatLoginScanHint': 'Пожалуйста, используйте WeChat для сканирования QR-кода для входа в систему.',
   'auth.oauthBindSuccess': 'Привязка прошла успешно',
   'auth.oauthUnbindError': 'Не удалось отменить привязку. Повторите попытку позже.',
   'auth.unbindWechatSuccess': 'WeChat был отключен',

@@ -21,7 +21,6 @@ const FILES = [
   'knowledge.ts',
   'learningSpace.ts',
   'mindmate.ts',
-  'maite.ts',
   'notification.ts',
   'sidebar.ts',
   'workshop.ts',

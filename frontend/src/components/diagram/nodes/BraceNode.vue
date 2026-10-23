@@ -13,14 +13,18 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
+import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
+import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
 import {
   thinkingMapBorderWidth,
@@ -33,11 +37,20 @@ import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const { fitBox } = useThinkingMapImageFit(() => props.id)
 const diagramStore = useDiagramSession()
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const braceNodeRef = ref<HTMLElement | null>(null)
-useNodeDimensions(braceNodeRef, props.id)
+useThinkingMapNodeBoxTypographyRemeasure({
+  rootRef: braceNodeRef,
+  nodeId: props.id,
+  style: () => props.data.style,
+})
 
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
@@ -45,7 +58,6 @@ const { getNodeStyle } = useTheme({
 })
 
 const BRACE_NODE_MAX_TEXT_WIDTH = 350
-const BALANCE_PADDING = 5
 
 const isWholeNode = computed(() => props.data.originalNode?.type === 'topic')
 const _isPart = computed(() => !isWholeNode.value && !props.data.parentId)
@@ -106,7 +118,7 @@ const nodeStyle = computed(() => {
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
       (isWholeNode.value ? '#ffffff' : '#333333'),
-    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${thinkingMapDisplayedFontSize(props.data.style?.fontSize, themeNodePaint.value?.fontSize ?? defaultStyle.value.fontSize ?? (isWholeNode.value ? MIND_MAP_GEOMETRY.topicFontSize : isSubpart.value ? MIND_MAP_GEOMETRY.fontSize : MIND_MAP_GEOMETRY.branchFontSize))}px`,
     padding: thinkingMapBoxPadding(true),
     boxShadow: isWholeNode.value ? MIND_MAP_GEOMETRY.topicShadow : MIND_MAP_GEOMETRY.branchShadow,
@@ -132,23 +144,20 @@ const nodeStyle = computed(() => {
   return painted
 })
 
-// Pill width only. Line breaks are text-wrap: balance on the label
-// (.inline-edit-display--wrap), which keeps a short last CJK line from happening.
 const braceNodeMaxWidth = computed(() => {
-  const label = ((props.data.label as string) || '').trim()
-  if (!label) return `${BRACE_NODE_MAX_TEXT_WIDTH}px`
-
+  const label = labelWithNodeIcon(
+    diagramStore.data,
+    props.id,
+    ((props.data.label as string) || '').trim(),
+    diagramStore.data?.connections
+  )
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 14
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
-  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
-
-  if (textWidth <= BRACE_NODE_MAX_TEXT_WIDTH) {
-    return `${BRACE_NODE_MAX_TEXT_WIDTH}px`
-  }
-
-  const numLines = Math.ceil(textWidth / BRACE_NODE_MAX_TEXT_WIDTH)
-  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
-  return `${Math.min(balancedWidth, BRACE_NODE_MAX_TEXT_WIDTH)}px`
+  const fontFamily = String(nodeStyle.value.fontFamily || DIAGRAM_NODE_FONT_STACK)
+  return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, BRACE_NODE_MAX_TEXT_WIDTH, {
+    fontWeight,
+    fontFamily,
+  })}px`
 })
 
 // Inline editing state
@@ -213,7 +222,7 @@ function handleBranchMovePointerUp(): void {
     ref="braceNodeRef"
     class="brace-node relative flex items-center justify-center px-4 py-2 border-solid cursor-grab select-none"
     :class="{ 'pill-shape': usePillShape }"
-    :style="nodeStyle"
+    :style="[fitBox(nodeStyle), blankFrame]"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.passive.capture="handleBranchMoveTouchStart"

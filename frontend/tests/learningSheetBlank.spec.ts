@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isNodePlaceholder } from '@/composables/nodePalette/placeholderHelpers'
+import { isNodePlaceholder } from '@/composables/aiBrainstorm/placeholderHelpers'
 import {
   LEARNING_SHEET_BLANK_TEXT,
   LEARNING_SHEET_LEGACY_PLACEHOLDER,

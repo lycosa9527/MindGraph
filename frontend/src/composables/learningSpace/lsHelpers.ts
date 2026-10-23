@@ -241,6 +241,25 @@ export function assignmentEvalDimensions(a: LearningAssignment | null | undefine
   return dims.map((d) => String(d).trim()).filter(Boolean)
 }
 
+export function homeworkPublisherName(name: string | null | undefined): string {
+  const trimmed = (name || '').trim()
+  return trimmed || '—'
+}
+
+export function homeworkGraderLabel(names: Array<string | null | undefined> | null | undefined): string {
+  return (names ?? [])
+    .map((item) => (item || '').trim())
+    .filter(Boolean)
+    .join('、')
+}
+
+export function submissionGraderNames(
+  submission: { reviewer_name?: string | null } | null | undefined
+): string[] {
+  const name = (submission?.reviewer_name || '').trim()
+  return name ? [name] : []
+}
+
 export function submissionIsReviewed(
   sub:
     Pick<LearningSubmission, 'reviewed_at' | 'review_comment' | 'review_scores'> | null | undefined

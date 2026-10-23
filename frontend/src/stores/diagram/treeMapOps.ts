@@ -1,15 +1,22 @@
+import type { Connection, DiagramNode } from '@/types'
 import {
   TREE_TOPIC_NODE_ID,
   isTreeMapCategoryNode,
   isTreeMapLeafNode,
-  readTreeCategoryIndex,
-  readTreeLeafIndex,
-  readTreeParentCategoryId,
+  treeMapColumnsOf,
 } from '@/utils/treeMapIdentity'
 
+import { recalculateTreeMapLayout } from '../specLoader/treeMap'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitCtxEvent } from './events'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
+import {
+  appendTreeMapCategory,
+  appendTreeMapChild,
+  arrangeTreeMapNodes,
+  materializeTreeMapGraph,
+  removeTreeMapGraphNodes,
+} from './treeMapStructure'
 import type { DiagramContext } from './types'
 
 function carriedGloss(node: { textSecondary?: string }): { textSecondary?: string } {
@@ -26,30 +33,17 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     const rootNode = nodes.find((n) => n.id === TREE_TOPIC_NODE_ID)
     if (!rootNode) return null
     const rootId = rootNode.id ?? TREE_TOPIC_NODE_ID
-    const categoryNodes = nodes
-      .filter((n) => isTreeMapCategoryNode(n))
-      .sort((a, b) => readTreeCategoryIndex(a) - readTreeCategoryIndex(b))
-    const categories = categoryNodes.map((cat) => {
-      const leaves = nodes
-        .filter((n) => {
-          if (!isTreeMapLeafNode(n)) return false
-          const parentId = readTreeParentCategoryId(n)
-          if (parentId) return parentId === cat.id
-          return readTreeCategoryIndex(n) === readTreeCategoryIndex(cat)
-        })
-        .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
-      return {
-        id: cat.id,
-        text: cat.text,
-        ...carriedGloss(cat),
-        children: leaves.map((leaf) => ({
-          id: leaf.id,
-          text: leaf.text,
-          ...carriedGloss(leaf),
-          children: [],
-        })),
-      }
-    })
+    const categories = treeMapColumnsOf(nodes).map((column) => ({
+      id: column.category.id,
+      text: column.category.text,
+      ...carriedGloss(column.category),
+      children: column.leaves.map((leaf) => ({
+        id: leaf.id,
+        text: leaf.text,
+        ...carriedGloss(leaf),
+        children: [],
+      })),
+    }))
     const record = data.value as Record<string, unknown>
     const dimension = record.dimension as string | undefined
     const altDims = record.alternative_dimensions as string[] | undefined
@@ -70,92 +64,42 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     }
   }
 
+  function commitTreeMapGraph(
+    nodes: DiagramNode[],
+    connections: Connection[],
+    historyLabel: string,
+    event: 'add' | 'delete',
+    deletedIds: string[] = []
+  ): void {
+    if (!data.value) return
+    data.value.nodes = recalculateTreeMapLayout(nodes, ctx.nodeDimensions.value)
+    data.value.connections = connections
+    if (event === 'delete') {
+      for (const id of deletedIds) {
+        delete ctx.nodeDimensions.value[id]
+        ctx.clearCustomPosition(id)
+        ctx.clearNodeStyle(id)
+        ctx.removeFromSelection(id)
+      }
+      ctx.pushHistory(historyLabel)
+      emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: deletedIds })
+      return
+    }
+    ctx.pushHistory(historyLabel)
+    emitCtxEvent(ctx, 'diagram:node_added', { node: null })
+  }
+
   function removeTreeMapNodes(nodeIds: string[]): number {
     if (isDiagramPresentationReadOnly(ctx)) return 0
     if (type.value !== 'tree_map' || !data.value?.nodes) return 0
-    const spec = buildTreeMapSpecFromNodes()
-    if (!spec) return 0
-
-    const idsToRemove = new Set(nodeIds)
-    if (idsToRemove.has(TREE_TOPIC_NODE_ID) || idsToRemove.has('dimension-label')) return 0
-
-    const categoryIdsToRemove = new Set(
-      nodeIds.filter((id) => {
-        const node = data.value?.nodes.find((n) => n.id === id)
-        return Boolean(node && isTreeMapCategoryNode(node))
-      })
-    )
-
-    const root = spec.root as {
-      id?: string
-      text: string
-      children?: Array<{
-        id?: string
-        text: string
-        textSecondary?: string
-        children?: Array<{ id?: string; text: string; textSecondary?: string }>
-      }>
-    }
-    const categories = root.children ?? []
-
-    const affectedPreview = new Set<string>(nodeIds)
-    for (const cat of categories) {
-      if (categoryIdsToRemove.has(cat.id ?? '')) {
-        for (const leaf of cat.children ?? []) {
-          if (leaf.id) affectedPreview.add(leaf.id)
-        }
-      }
-    }
-    if (collabForeignLockBlocksAnyId(ctx, affectedPreview)) {
+    const next = removeTreeMapGraphNodes(data.value.nodes, nodeIds)
+    if (!next) return 0
+    if (collabForeignLockBlocksAnyId(ctx, new Set(next.deletedIds))) {
       emitCollabDeleteBlocked()
       return 0
     }
-
-    let deletedCount = 0
-    const newCategories = categories
-      .filter((cat) => {
-        if (categoryIdsToRemove.has(cat.id ?? '')) {
-          deletedCount += 1 + (cat.children?.length ?? 0)
-          return false
-        }
-        return true
-      })
-      .map((cat) => ({
-        text: cat.text,
-        ...carriedGloss(cat),
-        children: (cat.children ?? [])
-          .filter((leaf) => {
-            if (idsToRemove.has(leaf.id ?? '')) {
-              deletedCount++
-              return false
-            }
-            return true
-          })
-          .map((leaf) => ({ id: leaf.id, text: leaf.text, ...carriedGloss(leaf) })),
-      }))
-
-    if (deletedCount === 0) return 0
-
-    const newSpec = {
-      ...spec,
-      root: { ...root, id: TREE_TOPIC_NODE_ID, children: newCategories },
-    }
-    ctx.loadFromSpec(newSpec, 'tree_map', { mergePreviousNodeStyles: true })
-
-    const deletedIds = [
-      ...nodeIds,
-      ...categories
-        .filter((c) => categoryIdsToRemove.has(c.id ?? ''))
-        .flatMap((c) => (c.children ?? []).map((l) => l.id).filter(Boolean) as string[]),
-    ]
-    deletedIds.forEach((id) => {
-      ctx.clearCustomPosition(id)
-      ctx.clearNodeStyle(id)
-      ctx.removeFromSelection(id)
-    })
-    ctx.pushHistory('Delete nodes')
-    emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: deletedIds })
-    return deletedCount
+    commitTreeMapGraph(next.nodes, next.connections, 'Delete nodes', 'delete', next.deletedIds)
+    return next.deletedIds.length
   }
 
   function getTreeMapDescendantIds(nodeId: string): Set<string> {
@@ -310,13 +254,11 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
         ...carriedGloss(leaf),
       })),
     }))
-    const newSpec = {
-      ...spec,
-      root: { ...root, id: TREE_TOPIC_NODE_ID, children: cleanCategories },
-    }
-    ctx.loadFromSpec(newSpec, 'tree_map', { mergePreviousNodeStyles: true })
-    if (data.value?._customPositions) data.value._customPositions = {}
-    if (data.value?._node_styles) data.value._node_styles = {}
+    if (!data.value?.nodes) return false
+    const graph = materializeTreeMapGraph(arrangeTreeMapNodes(data.value.nodes, cleanCategories))
+    data.value.nodes = recalculateTreeMapLayout(graph.nodes, ctx.nodeDimensions.value)
+    data.value.connections = graph.connections
+    if (data.value._customPositions) data.value._customPositions = {}
     selectedNodes.value = []
     ctx.selectedConnectionId.value = null
     ctx.pushHistory('Move branch')
@@ -326,38 +268,20 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
   }
 
   function addTreeMapCategory(text: string): boolean {
-    const spec = buildTreeMapSpecFromNodes()
-    if (!spec) return false
-    const root = spec.root as {
-      text: string
-      children?: Array<{ text: string; children?: unknown[] }>
-    }
-    if (!root.children) {
-      root.children = []
-    }
-    root.children.push({ text, children: [] })
-    ctx.loadFromSpec(spec, 'tree_map', { mergePreviousNodeStyles: true })
-    ctx.pushHistory('Add tree category')
-    emitCtxEvent(ctx, 'diagram:node_added', { node: null })
+    if (isDiagramPresentationReadOnly(ctx)) return false
+    if (type.value !== 'tree_map' || !data.value?.nodes) return false
+    const next = appendTreeMapCategory(data.value.nodes, text)
+    if (!next) return false
+    commitTreeMapGraph(next.nodes, next.connections, 'Add tree category', 'add')
     return true
   }
 
   function addTreeMapChild(categoryId: string, text: string): boolean {
-    const spec = buildTreeMapSpecFromNodes()
-    if (!spec) return false
-    const root = spec.root as {
-      children?: Array<{ id?: string; text: string; children?: Array<{ text: string }> }>
-    }
-    const categories = root.children ?? []
-    const category = categories.find((c) => c.id === categoryId)
-    if (!category) return false
-    if (!category.children) {
-      category.children = []
-    }
-    category.children.push({ text })
-    ctx.loadFromSpec(spec, 'tree_map', { mergePreviousNodeStyles: true })
-    ctx.pushHistory('Add tree child')
-    emitCtxEvent(ctx, 'diagram:node_added', { node: null })
+    if (isDiagramPresentationReadOnly(ctx)) return false
+    if (type.value !== 'tree_map' || !data.value?.nodes) return false
+    const next = appendTreeMapChild(data.value.nodes, categoryId, text)
+    if (!next) return false
+    commitTreeMapGraph(next.nodes, next.connections, 'Add tree child', 'add')
     return true
   }
 

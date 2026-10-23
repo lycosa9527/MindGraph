@@ -24,10 +24,11 @@ export type ZhihuiImageSizeOption = {
 /** Segmented control order — video hidden until Wan T2V lands. */
 export const ZHIHUI_MODE_ORDER: ZhihuiMode[] = ['image', 'diagram']
 
-/** DashScope Qwen Image 3.0 (T2I / I2I multimodal-generation). */
+/** DashScope Qwen Image (T2I / I2I multimodal-generation). First row is the default. */
 export const ZHIHUI_IMAGE_MODELS: ZhihuiModelOption[] = [
-  { id: 'qwen-image-3.0', label: 'Qwen-Image-3.0', available: true },
   { id: 'qwen-image-3.0-pro', label: 'Qwen-Image-3.0-Pro', available: true },
+  { id: 'qwen-image-3.0', label: 'Qwen-Image-3.0', available: true },
+  { id: 'qwen-image-2.1-pro', label: 'Qwen-Image-2.1-Pro', available: true },
 ]
 
 /**

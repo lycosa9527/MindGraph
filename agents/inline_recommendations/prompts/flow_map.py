@@ -1,6 +1,6 @@
 """Flow map inline recommendation prompts.
 
-Aligned with prompts/node_palette.get_flow_steps_prompt,
+Aligned with prompts/ai_brainstorm.get_flow_steps_prompt,
 get_flow_substeps_prompt.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)

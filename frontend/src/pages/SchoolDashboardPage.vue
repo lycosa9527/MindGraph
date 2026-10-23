@@ -12,6 +12,7 @@ import {
   Key,
   Loading,
   Plus,
+  RefreshRight,
   Stamp,
   User,
 } from '@element-plus/icons-vue'
@@ -26,12 +27,13 @@ import SchoolDashboardFeatureUsageTab from '@/components/school/SchoolDashboardF
 import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
 import SchoolDashboardQuotaCard from '@/components/school/SchoolDashboardQuotaCard.vue'
 import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
-import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
+import { swissGlassConfirm, useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
 import type { TokenTrendPeriod, TokenTrendService } from '@/composables/admin/useOrgTokenTrendModal'
 import { useSchoolDashboardStats } from '@/composables/admin/useSchoolDashboardStats'
+import { useRotateSchoolInvitationCode } from '@/composables/queries'
 import { useSchoolDashboardQuotas } from '@/composables/school/useSchoolDashboardQuotas'
 import { isManagerAssignmentUnavailable, isUnlimitedMemberLimit } from '@/constants/schoolTier'
 import { useAuthStore } from '@/stores'
@@ -134,6 +136,39 @@ function formatNumber(num: number): string {
 const invitationCodeDisplay = computed(
   () => (stats.value.organization?.invitation_code || '').trim() || '—'
 )
+
+const canRotateInvitationCode = computed(
+  () => effectiveOrgId.value != null && !isReadOnly.value && can('tab.users.edit')
+)
+const rotateInvitation = useRotateSchoolInvitationCode()
+const rotatingInvitationCode = computed(() => rotateInvitation.isPending.value)
+
+async function rotateInvitationCode(event: MouseEvent): Promise<void> {
+  event.stopPropagation()
+  const orgId = effectiveOrgId.value
+  if (orgId == null || rotateInvitation.isPending.value) {
+    return
+  }
+  try {
+    await swissGlassConfirm(
+      t('admin.refreshInvitationCodeConfirm'),
+      t('admin.rotateInvitationCode'),
+      {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+  try {
+    await rotateInvitation.mutateAsync(orgId)
+    notify.successKey('admin.rotateInvitationCodeSuccess')
+  } catch {
+    notify.errorKey('admin.trendChartErrors.refreshInvitationCodeFailed')
+  }
+}
 
 async function copyInvitationCode(event: MouseEvent) {
   event.stopPropagation()
@@ -364,19 +399,34 @@ onMounted(async () => {
               theme="managers"
             >
               <template #footer>
-                <el-button
-                  type="primary"
-                  size="small"
-                  round
-                  class="self-start !rounded-full"
-                  :disabled="!(stats.organization?.invitation_code || '').trim()"
-                  @click="copyInvitationCode"
-                >
-                  <el-icon class="el-icon--left">
-                    <DocumentCopy />
-                  </el-icon>
-                  <I18nText k="admin.copyShareMessage" />
-                </el-button>
+                <div class="flex flex-wrap items-center gap-2">
+                  <el-button
+                    type="primary"
+                    size="small"
+                    round
+                    class="!rounded-full"
+                    :disabled="!(stats.organization?.invitation_code || '').trim()"
+                    @click="copyInvitationCode"
+                  >
+                    <el-icon class="el-icon--left">
+                      <DocumentCopy />
+                    </el-icon>
+                    <I18nText k="admin.copyShareMessage" />
+                  </el-button>
+                  <el-button
+                    v-if="canRotateInvitationCode"
+                    size="small"
+                    round
+                    class="!rounded-full"
+                    :loading="rotatingInvitationCode"
+                    @click="rotateInvitationCode"
+                  >
+                    <el-icon class="el-icon--left">
+                      <RefreshRight />
+                    </el-icon>
+                    <I18nText k="admin.rotateInvitationCode" />
+                  </el-button>
+                </div>
               </template>
             </AdminSwissKpiCard>
           </div>

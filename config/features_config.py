@@ -32,14 +32,9 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MINDMATE", "False").lower() == "true"
 
     @property
-    def FEATURE_KITTY_AGENT(self):
-        """Enable Kitty Agent — text-first canvas control (Fun-ASR + CosyVoice)."""
-        return self._get_cached_value("FEATURE_KITTY_AGENT", "False").lower() == "true"
-
-    @property
     def FEATURE_KITTY_WS_ENABLED(self):
-        """True when Kitty WebSocket (/ws/kitty) should be served."""
-        return bool(self.FEATURE_KITTY_AGENT)
+        """Kitty Agent is a core module; its WebSocket is always served."""
+        return True
 
     @property
     def FEATURE_RAG_CHUNK_TEST(self):
@@ -54,54 +49,6 @@ class FeaturesConfigMixin:
         Requires Qdrant and Celery to be running.
         """
         return self._get_cached_value("FEATURE_KNOWLEDGE_SPACE", "False").lower() == "true"
-
-    @property
-    def FEATURE_MIND_CLASSROOM_SLIDE_DECK(self):
-        """Enable 思维讲堂「幻灯片讲解」presentation mode.
-
-        Disabled by default. The option stays visible but greyed out until this is True.
-        """
-        return self._get_cached_value("FEATURE_MIND_CLASSROOM_SLIDE_DECK", "False").lower() == "true"
-
-    @property
-    def FEATURE_DEBATEVERSE(self):
-        """Enable DebateVerse (论境) debate system feature.
-
-        Disabled by default. Set FEATURE_DEBATEVERSE=True in .env to enable.
-        """
-        return self._get_cached_value("FEATURE_DEBATEVERSE", "False").lower() == "true"
-
-    @property
-    def FEATURE_COURSE(self):
-        """Enable Thinking Course (思维课程) feature.
-
-        Disabled by default. Set FEATURE_COURSE=True in .env to enable.
-        """
-        return self._get_cached_value("FEATURE_COURSE", "False").lower() == "true"
-
-    @property
-    def FEATURE_MATE_LEARNING(self):
-        """Enable Mate Learning (迈特学习法) feature.
-
-        Disabled by default. Set FEATURE_MATE_LEARNING=True in .env to enable.
-        """
-        return self._get_cached_value("FEATURE_MATE_LEARNING", "False").lower() == "true"
-
-    @property
-    def FEATURE_TEMPLATE(self):
-        """Enable Template Resources (模板资源) feature.
-
-        Disabled by default. Set FEATURE_TEMPLATE=True in .env to enable.
-        """
-        return self._get_cached_value("FEATURE_TEMPLATE", "False").lower() == "true"
-
-    @property
-    def FEATURE_COMMUNITY(self):
-        """Enable Community Sharing (社区分享) feature.
-
-        Disabled by default. Set FEATURE_COMMUNITY=True in .env to enable.
-        """
-        return self._get_cached_value("FEATURE_COMMUNITY", "False").lower() == "true"
 
     @property
     def FEATURE_SHOWCASE(self):
@@ -120,12 +67,13 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_ZHIHUI", "True").lower() == "true"
 
     @property
-    def FEATURE_ASKONCE(self):
-        """Enable AskOnce (多应) multi-LLM chat feature.
+    def FEATURE_MIND_CLASSROOM_SLIDE_DECK(self):
+        """Enable 思维讲堂 幻灯片讲解 (AI slide lecture).
 
-        Enabled by default. Set FEATURE_ASKONCE=False in .env to disable.
+        Disabled by default until the feature ships. The option stays visible
+        but greyed out. Set FEATURE_MIND_CLASSROOM_SLIDE_DECK=True to enable.
         """
-        return self._get_cached_value("FEATURE_ASKONCE", "True").lower() == "true"
+        return self._get_cached_value("FEATURE_MIND_CLASSROOM_SLIDE_DECK", "False").lower() == "true"
 
     @property
     def FEATURE_LIBRARY(self):
@@ -154,6 +102,17 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_DINGTALK_LOGIN", "False").lower() == "true"
 
     @property
+    def OVERSEAS_SIMPLIFIED_CHINESE(self) -> bool:
+        """Let overseas email accounts use Simplified Chinese.
+
+        Off by default. Those accounts stay marked in the database, and every
+        picker, prompt, and AI path follows that mark. Set
+        OVERSEAS_SIMPLIFIED_CHINESE=true to turn Simplified Chinese back on
+        for all of them without a migration.
+        """
+        return self._get_cached_value("OVERSEAS_SIMPLIFIED_CHINESE", "False").lower() == "true"
+
+    @property
     def FEATURE_WORD_ADDIN(self):
         """Show the Word add-in download in Account and serve the deploy zip.
 
@@ -170,14 +129,6 @@ class FeaturesConfigMixin:
     def WECHAT_OAUTH_APP_SECRET(self) -> str:
         """WeChat Open Platform 网站应用 AppSecret for OAuth QR login."""
         return (self._get_cached_value("WECHAT_OAUTH_APP_SECRET", "") or "").strip()
-
-    @property
-    def FEATURE_GEWE(self):
-        """Enable Gewe WeChat integration (admin only).
-
-        Disabled by default. Set FEATURE_GEWE=True in .env to enable.
-        """
-        return self._get_cached_value("FEATURE_GEWE", "False").lower() == "true"
 
     @property
     def FEATURE_SMART_RESPONSE(self):
@@ -341,11 +292,6 @@ class FeaturesConfigMixin:
     def MINDBOT_DIFY_HEALTH_API_KEY(self) -> str:
         """App API key for MindBot admin Dify online probe (Bearer). Keep server-side only."""
         return (self._get_cached_value("MINDBOT_DIFY_HEALTH_API_KEY", "") or "").strip()
-
-    @property
-    def AI_ASSISTANT_NAME(self):
-        """AI Assistant display name (appears in toolbar button and panel header)."""
-        return self._get_cached_value("AI_ASSISTANT_NAME", "MindMate AI")
 
     @property
     def DEFAULT_LANGUAGE(self):

@@ -98,6 +98,11 @@ export interface WorkshopMessageDispatchDeps {
   flushOutboundQueue: () => void
   /** Marks the initial server baseline as applied for this socket generation. */
   markServerBaselineReady: () => void
+  /**
+   * Drop diagram updates queued after this socket opened and before its first
+   * snapshot. Later resyncs keep edits made against the live spec.
+   */
+  dropOutboundSinceSocketOpen: () => void
   /** Outbound-queue ack hook for ``update_ack`` (may be legacy without id). */
   acknowledgeOutboundUpdate: (clientOpId?: string | null) => void
   /** Clears the half-open ``pong`` watchdog (call on ``pong`` message). */
@@ -244,6 +249,7 @@ export function dispatchWorkshopMessage(
       if (!deps.version.pendingResync.value) {
         deps.clearPendingResyncWatchdog()
       }
+      deps.dropOutboundSinceSocketOpen()
       if (message.spec && deps.onServerSnapshot) {
         deps.onServerSnapshot(message.spec, message.version ?? 1)
         deps.markServerBaselineReady()

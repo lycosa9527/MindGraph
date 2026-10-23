@@ -33,9 +33,7 @@ The repository cannot see your production signals. Inspect how the process is su
 | **Operators / scripts** | Manual `kill -HUP <pid>`, deploy scripts, or cron jobs that signal the server to “refresh” workers. |
 | **Hosting** | Platform-specific reload that maps to SIGHUP. |
 
-**In-repo reference:** [`scripts/setup/mindgraph.service.template`](../../scripts/setup/mindgraph.service.template) ships **without** `ExecReload`, uses **`KillSignal=SIGTERM`** for stop/restart, and **`ExecStart=… main.py`** — so a stock install from that template does **not** encourage `systemctl reload` unless you add `ExecReload` yourself.
-
-**In-repo scripts:** [`scripts/utils/clear_pycache.sh`](../../scripts/utils/clear_pycache.sh) uses **`systemctl restart mindgraph`** (or equivalent), not `reload`.
+**In-repo reference:** [`scripts/setup/mindgraph.service.template`](../../scripts/setup/mindgraph.service.template) ships **without** `ExecReload`, uses **`KillSignal=SIGTERM`** for stop/restart, and **`ExecStart=… main.py`** — so a stock install from that template does **not** encourage `systemctl reload`. Use `systemctl restart mindgraph`.
 
 ## Recommended policy
 

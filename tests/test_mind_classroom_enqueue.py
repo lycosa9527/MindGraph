@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from services.mind_classroom.enqueue import ClassroomJobsBusy
+from services.mind_classroom.enqueue import ClassroomJobsBusy, resolve_classroom_mode
 from services.mind_classroom.queue_dispatch import (
     KICK_AFTER_SECONDS,
     QUEUED_GIVE_UP_SECONDS,
@@ -24,8 +24,7 @@ def test_find_reusable_includes_in_flight_jobs() -> None:
     assert "async def list_active_jobs" in text
     routes = Path("routers/features/mind_classroom/routes.py").read_text(encoding="utf-8")
     assert "_STALE_MINUTES = 15" in routes
-    assert 'if mode == "slide_deck" and not config.FEATURE_MIND_CLASSROOM_SLIDE_DECK:' in routes
-    assert 'mode = "canvas_tour"' in routes
+    assert "FEATURE_MIND_CLASSROOM_SLIDE_DECK" in routes
     assert (
         "publish_classroom_job_snapshot(job_id)"
         in routes.split("async def _sweep_stale")[1].split("async def _refresh_queued_job")[0]
@@ -65,6 +64,16 @@ def test_queued_watch_action_waits_then_kicks_then_fails() -> None:
         )
         == "fail"
     )
+
+
+def test_resolve_classroom_mode_gates_slide_deck() -> None:
+    """Slide lecture falls back to the canvas tour while the feature is off or the diagram is not a mind map."""
+    assert resolve_classroom_mode("slide_deck", False) == "canvas_tour"
+    assert resolve_classroom_mode("slide_deck", True) == "slide_deck"
+    assert resolve_classroom_mode("slide_deck", True, "mindmap") == "slide_deck"
+    assert resolve_classroom_mode("slide_deck", True, "circle_map") == "canvas_tour"
+    assert resolve_classroom_mode("slide_deck", True, "concept_map") == "canvas_tour"
+    assert resolve_classroom_mode("canvas_tour", False) == "canvas_tour"
 
 
 def test_task_name_for_settings_splits_script_and_slides() -> None:

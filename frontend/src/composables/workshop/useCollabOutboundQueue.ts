@@ -127,6 +127,11 @@ export interface CollabOutboundQueue {
   resetInFlight(): void
   /** Inspect current contents (for tests / debug). */
   snapshot(): readonly CollabQueuedOp[]
+  /**
+   * Drop ops queued at or after ``sinceMs``. Used when a snapshot arrives so a
+   * canvas from before this socket's baseline is not merged into the live spec.
+   */
+  dropEnqueuedSince(sinceMs: number): number
 }
 
 // ---------------------------------------------------------------------------
@@ -311,6 +316,23 @@ export function useCollabOutboundQueue(options: CollabOutboundQueueOptions): Col
     inFlight.clear()
   }
 
+  function dropEnqueuedSince(sinceMs: number): number {
+    const kept: CollabQueuedOp[] = []
+    let dropped = 0
+    for (const op of queue.value) {
+      if (op.enqueuedAt >= sinceMs) {
+        inFlight.delete(op.id)
+        dropped += 1
+        continue
+      }
+      kept.push(op)
+    }
+    if (dropped > 0) {
+      queue.value = kept
+    }
+    return dropped
+  }
+
   return {
     size,
     hasPending,
@@ -320,5 +342,6 @@ export function useCollabOutboundQueue(options: CollabOutboundQueueOptions): Col
     clear,
     resetInFlight,
     snapshot,
+    dropEnqueuedSince,
   }
 }

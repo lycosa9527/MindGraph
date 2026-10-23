@@ -38,7 +38,6 @@ export default {
     'Kitaplık dolu; diyagram içe aktarıldı ancak kitaplığa kaydedilmedi',
   'notification.importSuccess': 'Diyagram içe aktarıldı ve kitaplığa kaydedildi',
   'notification.importUnsupportedType': 'İçe aktarma başarısız: desteklenmeyen diyagram türü',
-  'notification.inlineRecEmpty': 'Öneri oluşturulamadı. Yeniden deneyin veya konuyu düzenleyin.',
   'notification.loadMoreFailed': 'Daha fazlası yüklenemedi',
   'notification.networkError': 'Ağ hatası',
   'notification.nodeNotEligible': 'Bu düğüm Tab önerilerini desteklemiyor.',

@@ -48,22 +48,12 @@ VALID_ACTIVITY_ACTIONS = frozenset(
         "doc_summary_session",
         "workshop_collab",
         "workshop_chat",
-        "askonce_turn",
-        "debate_turn",
         "market_order",
         "library_engage",
         "showcase_engage",
         "canvas_translate",
         "mindmap_node_explain",
         "relationship_labels",
-        "maite_problem",
-        "maite_ocr",
-        "maite_inquiry",
-        "maite_diagnosis",
-        "maite_remedy",
-        "maite_variant",
-        "maite_mentor",
-        "maite_report",
     }
 )
 _VALID_SOURCES = VALID_ACTIVITY_SOURCES

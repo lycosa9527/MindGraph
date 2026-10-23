@@ -406,6 +406,22 @@ body {
 }
 
 /*
+ * Canvas dialogs (`.mm-above-node-chrome`) paint at 5200. Element Plus assigns
+ * message and notification z-index from about 2000, so a toast opened while
+ * 思维讲堂 is up sits under the scrim. Stay above that overlay and under the
+ * context menu (10000).
+ */
+.el-message,
+.el-notification {
+  z-index: 5300 !important;
+}
+
+/* Same dialog: the 幻灯片讲解 coming-soon tip must paint above the 5200 overlay. */
+.mc-coming-soon-popper.el-popper {
+  z-index: 5400 !important;
+}
+
+/*
  * Element Plus dialog / message-box: header close uses physical `right: 0`.
  * Use inline-end so the × sits on the trailing edge in RTL (physical left), matching notifications.
  * `show-close` padding uses `padding-right` in EP — switch to `padding-inline-end` so the title
@@ -512,6 +528,58 @@ a:has(.i18n-label) {
   line-height: 1.35;
 }
 
+/*
+ * The overlay is a fixed viewport, so the dialog can be a flex child with a
+ * definite max-height. max-height on the dialog alone does not shrink a flex
+ * column: the body stays content-sized, overflow:hidden clips it, and the
+ * wheel has nothing to scroll. The body is the scrollbar.
+ */
+.el-overlay-dialog:not(:has(.is-fullscreen)) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  padding: max(1.25rem, 8vh) 1rem max(1.25rem, 2rem);
+}
+
+.el-overlay-dialog:not(:has(.is-fullscreen)):has(> .el-dialog.is-align-center) {
+  justify-content: center;
+  padding-block: max(1.25rem, 3vh);
+}
+
+.el-overlay-dialog > .el-dialog:not(.is-fullscreen) {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  min-height: 0;
+  margin: 0 !important;
+  flex-shrink: 1;
+  overflow: hidden;
+}
+
+.el-dialog:not(.is-fullscreen) > .el-dialog__header,
+.el-dialog:not(.is-fullscreen) > .el-dialog__footer {
+  flex-shrink: 0;
+}
+
+.el-dialog:not(.is-fullscreen) > .el-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-width: thin;
+}
+
+.el-drawer__body,
+.el-dialog .el-scrollbar__wrap,
+.el-drawer .el-scrollbar__wrap {
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+}
+
 .el-dialog__body {
   overflow-x: hidden;
   word-break: break-word;
@@ -603,6 +671,9 @@ a:has(.i18n-label) {
 /* Diagram node labels: compact markdown + KaTeX inside Vue Flow nodes */
 .diagram-node-md {
   font-size: inherit;
+  font-weight: inherit;
+  font-style: inherit;
+  font-synthesis: weight style;
   line-height: 1.35;
   word-break: normal;
   overflow-wrap: break-word;
@@ -652,7 +723,8 @@ a:has(.i18n-label) {
 /* Zero vertical margins so flex `items-center` on the node isn’t fighting CommonMark `<p>` bands */
 .diagram-node-md p {
   margin: 0;
-  text-decoration: inherit;
+  /* The markdown box paints underline and strikethrough. The paragraph must not add a second line. */
+  text-decoration: none;
 }
 
 /*
@@ -683,6 +755,7 @@ a:has(.i18n-label) {
   margin: 0.15em 0;
   font-size: inherit;
   font-weight: 600;
+  font-style: inherit;
 }
 
 .diagram-node-md pre {

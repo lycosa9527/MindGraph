@@ -1,7 +1,6 @@
 /**
  * Which add or delete a node slash should run on the eight thinking maps.
- * Down deletes. Up adds the child (or the map's only node kind).
- * Left or right adds a sibling of the cut node.
+ * A horizontal slash deletes. A vertical slash adds one node on the current level.
  */
 import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
@@ -71,19 +70,15 @@ export function resolveThinkingMapNodeSlash(
   if (FLAT_ADD_TYPES.has(diagramType)) return 'add_node'
 
   if (diagramType === 'tree_map') {
-    if (action === 'sibling' && role !== 'nested') return 'add_tree_category'
+    if (role !== 'nested') return 'add_tree_category'
     return 'add_node'
   }
 
-  if (diagramType === 'flow_map') {
-    if (action === 'child' && role !== 'topic') return 'add_child'
-    return 'add_node'
-  }
+  if (diagramType === 'flow_map') return 'add_node'
 
   if (diagramType === 'brace_map') {
-    if (action === 'sibling' && role === 'nested') return 'add_child'
-    if (action === 'sibling') return 'add_branch'
-    return 'add_node'
+    if (role === 'nested') return 'add_child'
+    return 'add_branch'
   }
 
   return 'add_node'

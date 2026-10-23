@@ -44,8 +44,7 @@ export default {
   'sidebar.chatHistory.folderCreatePrompt': 'Enter a name for the new folder',
   'sidebar.chatHistory.folderCreateTitle': 'New folder',
   'sidebar.chatHistory.folderCreated': 'Folder created',
-  'sidebar.chatHistory.folderDeleteConfirm':
-    'Delete this folder? Conversations inside will move to Uncategorized.',
+  'sidebar.chatHistory.folderDeleteConfirm': 'Delete this folder? Conversations inside will move to Uncategorized.',
   'sidebar.chatHistory.folderDeleteFailed': 'Failed to delete folder',
   'sidebar.chatHistory.folderDeleteTitle': 'Delete folder',
   'sidebar.chatHistory.folderDeleted': 'Folder deleted',
@@ -67,18 +66,13 @@ export default {
   'sidebar.zhihui': 'Чі',
   'sidebar.zhihuiHistory.title': 'Історія побудови',
   'sidebar.zhihuiHistory.empty': 'Рекорду покоління ще немає',
-  'sidebar.zhihuiHistory.deleteConfirm':
-    'Ви впевнені, що хочете видалити цей створений запис? Цю дію не можна скасувати.',
-  'sidebar.community': 'Спільнота',
-  'sidebar.courses': 'Курси мислення',
-  'sidebar.mateLearning': 'Метод навчання Метта',
+  'sidebar.zhihuiHistory.deleteConfirm': 'Ви впевнені, що хочете видалити цей створений запис? Цю дію не можна скасувати.',
   'sidebar.debateHistory.deleteConfirm': 'Видалити цю дискусію? Цю дію не можна скасувати.',
   'sidebar.debateHistory.empty': 'Дискусій ще немає',
   'sidebar.debateHistory.loginPrompt': 'Увійдіть, щоб переглянути дискусії',
   'sidebar.debateHistory.renamePrompt': 'Введіть нову тему для цієї дискусії',
   'sidebar.debateHistory.renameTitle': 'Перейменувати дискусію',
   'sidebar.debateHistory.title': 'Останні дискусії',
-  'sidebar.debateverse': 'По ситуації',
   'sidebar.diagramHistory.capacity': 'Можна зберегти до {n} діаграм',
   'sidebar.diagramHistory.deleteFailed': 'Не вдалося видалити діаграму',
   'sidebar.diagramHistory.collabLive': 'Онлайн-співпраця активна',
@@ -95,8 +89,7 @@ export default {
   'sidebar.diagramHistory.folderCreatePrompt': 'Введіть назву нової папки',
   'sidebar.diagramHistory.folderCreateTitle': 'Нова папка',
   'sidebar.diagramHistory.folderCreated': 'Папку створено',
-  'sidebar.diagramHistory.folderDeleteConfirm':
-    'Видалити цю папку? Діаграми всередині перемістяться до «Без категорії».',
+  'sidebar.diagramHistory.folderDeleteConfirm': 'Видалити цю папку? Діаграми всередині перемістяться до «Без категорії».',
   'sidebar.diagramHistory.folderDeleteFailed': 'Не вдалося видалити папку',
   'sidebar.diagramHistory.folderDeleteTitle': 'Видалити папку',
   'sidebar.diagramHistory.folderDeleted': 'Папку видалено',
@@ -105,8 +98,7 @@ export default {
   'sidebar.diagramHistory.folderRenamePrompt': 'Введіть нову назву для цієї папки',
   'sidebar.diagramHistory.folderRenameTitle': 'Перейменувати папку',
   'sidebar.diagramHistory.folderRenamed': 'Папку перейменовано',
-  'sidebar.diagramHistory.foldersLoadFailed':
-    'Не вдалося завантажити папки; показуються лише діаграми',
+  'sidebar.diagramHistory.foldersLoadFailed': 'Не вдалося завантажити папки; показуються лише діаграми',
   'sidebar.diagramHistory.foldersSection': 'Папки',
   'sidebar.diagramHistory.loadFailed': 'Не вдалося завантажити діаграми',
   'sidebar.diagramHistory.moveFailed': 'Не вдалося перемістити діаграму',
@@ -145,17 +137,15 @@ export default {
   'sidebar.training': 'шкільне навчання',
   'sidebar.trainingCourses': 'курс',
   'sidebar.trainingBuilder': 'Асистент курсу будівництва',
-  'sidebar.templateResources': 'Шаблони',
   'sidebar.orgEdition': 'Ексклюзив {org}',
   'sidebar.personalEdition': 'Особистий ексклюзив',
   'sidebar.userSubtitleDefault': 'MindGraph Professional Edition',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',
   'sidebar.account': 'Обліковий запис',
   'sidebar.roleSuperAdmin': 'Суперадмін',
-  'sidebar.rolePlatformAdmin': 'Дослідник викладання',
+  'sidebar.rolePlatformAdmin': 'Дослідник',
   'sidebar.roleExpert': 'Експерт',
   'sidebar.roleSchoolAdmin': 'Адмін школи',
   'sidebar.roleSchoolEdition': 'Школа',
@@ -166,8 +156,7 @@ export default {
   'sidebar.logoSiteQrHint': 'Скануйте камерою телефону або WeChat',
   'sidebar.mindmateCollabHistory.title': 'Онлайн-співпраця',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Завершити семінар',
-  'sidebar.mindmateCollabHistory.stopConfirm':
-    'Це завершить сесію для всіх. Учасники покинуть кімнату.',
+  'sidebar.mindmateCollabHistory.stopConfirm': 'Це завершить сесію для всіх. Учасники покинуть кімнату.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Орг.',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Мережа',
   'sidebar.share.ribbon': 'Organization',
@@ -191,8 +180,7 @@ export default {
   'sidebar.demo.menu': 'Demo mode',
   'sidebar.demo.ribbon': 'Demo',
   'sidebar.demo.title': 'Choose diagrams',
-  'sidebar.demo.line1':
-    'Pick diagrams from your library, write a caption, then play them full screen',
+  'sidebar.demo.line1': 'Pick diagrams from your library, write a caption, then play them full screen',
   'sidebar.demo.search': 'Search diagrams',
   'sidebar.demo.empty': 'No diagrams in your library yet',
   'sidebar.demo.hint': 'Select a diagram to write its caption',
@@ -242,26 +230,15 @@ export default {
   'sidebar.demo.loading': 'Generating',
   'sidebar.demo.moveUp': 'Move up',
   'sidebar.demo.moveDown': 'Move down',
-  'sidebar.demo.caption.circle_map':
-    '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
-  'sidebar.demo.caption.bubble_map':
-    '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
-  'sidebar.demo.caption.double_bubble_map':
-    '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
-  'sidebar.demo.caption.tree_map':
-    '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
-  'sidebar.demo.caption.brace_map':
-    '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
-  'sidebar.demo.caption.flow_map':
-    '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
-  'sidebar.demo.caption.multi_flow_map':
-    '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
-  'sidebar.demo.caption.bridge_map':
-    '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
-  'sidebar.demo.caption.mindmap':
-    '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
-  'sidebar.demo.caption.concept_map':
-    '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
-  'sidebar.demo.caption.fallback':
-    '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
+  'sidebar.demo.caption.circle_map': '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
+  'sidebar.demo.caption.bubble_map': '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
+  'sidebar.demo.caption.double_bubble_map': '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
+  'sidebar.demo.caption.tree_map': '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
+  'sidebar.demo.caption.brace_map': '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
+  'sidebar.demo.caption.flow_map': '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
+  'sidebar.demo.caption.multi_flow_map': '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
+  'sidebar.demo.caption.bridge_map': '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
+  'sidebar.demo.caption.mindmap': '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
+  'sidebar.demo.caption.concept_map': '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
+  'sidebar.demo.caption.fallback': '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
 } as const

@@ -2,7 +2,7 @@
 /**
  * Lightweight homework chrome on the MindGraph canvas.
  */
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ArrowLeft, FileText, Send } from '@lucide/vue'
@@ -13,7 +13,10 @@ import {
   assignmentAllowsResubmit,
   studentCanSubmitAssignment,
 } from '@/composables/learningSpace/lsHelpers'
-import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
+import {
+  homeworkCanvasFlushKey,
+  useLearningAssignmentCanvasStore,
+} from '@/stores/learningAssignmentCanvas'
 import '@/styles/learning-space.css'
 import { submitStudentAssignment } from '@/utils/learningSpaceApi'
 
@@ -21,6 +24,7 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const router = useRouter()
 const lsCanvas = useLearningAssignmentCanvasStore()
+const flushCanvas = inject(homeworkCanvasFlushKey, null)
 
 const showRequirements = ref(false)
 const submitting = ref(false)
@@ -58,14 +62,11 @@ async function onSubmit(): Promise<void> {
   }
   submitting.value = true
   try {
+    if (flushCanvas) await flushCanvas()
     await submitStudentAssignment(id)
     notify.successKey(
       resubmitting ? 'learningSpace.resubmitSuccess' : 'learningSpace.submitSuccess'
     )
-    if (resubmitting) {
-      await lsCanvas.activate(id)
-      return
-    }
     await leaveHomework()
   } catch {
     notify.errorKey('learningSpace.submitFailed')

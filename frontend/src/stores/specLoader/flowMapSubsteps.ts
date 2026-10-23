@@ -10,6 +10,8 @@ import {
   readFlowSubstepIndex,
 } from '@/utils/flowMapIdentity'
 
+import { learningSheetLayoutText } from './mindMapLearningSheet'
+
 export interface FlowMapStepSpec {
   id?: string
   text: string
@@ -59,7 +61,7 @@ export function collectFlowMapSpecFromNodes(nodes: FlowMapSpecNode[]): {
   const stepNodes = orderFlowStepNodes(nodes)
   const steps = stepNodes.map((node) => ({
     id: node.id,
-    text: node.text ?? '',
+    text: learningSheetLayoutText(node),
   }))
   const substepNodes = nodes.filter((node) => node.type === 'flowSubstep')
   const substeps = stepNodes.map((stepNode, sequentialIndex) => {
@@ -67,12 +69,12 @@ export function collectFlowMapSpecFromNodes(nodes: FlowMapSpecNode[]): {
     const index = stepIndex >= 0 ? stepIndex : sequentialIndex
     const children = substepsForFlowStep(substepNodes, stepNode)
     return {
-      step: stepNode.text ?? '',
+      step: learningSheetLayoutText(stepNode),
       stepId: stepNode.id,
       stepIndex: index,
       substeps: children.map((child) => ({
         id: child.id,
-        text: child.text ?? '',
+        text: learningSheetLayoutText(child),
       })),
     }
   })

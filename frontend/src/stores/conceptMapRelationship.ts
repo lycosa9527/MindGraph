@@ -13,7 +13,7 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { RELATIONSHIP_LABELS_CLEANUP } from '@/composables/nodePalette/constants'
+import { RELATIONSHIP_LABELS_CLEANUP } from '@/composables/aiBrainstorm/constants'
 import { authFetch } from '@/utils/api'
 
 const LABELS_PER_PAGE = 5

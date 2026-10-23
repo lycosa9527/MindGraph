@@ -1,5 +1,4 @@
 import { createPinia, setActivePinia } from 'pinia'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -7,27 +6,27 @@ import {
   learningSheetFloatBarOpen,
   learningSheetPickActive,
   restoreLearningSheetUiFromDiagram,
+  resumeLearningSheetAfterPresentation,
+  suspendLearningSheetForPresentation,
   toggleLearningSheetAnswersVisibility,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
-import { must } from '@/utils/must'
 
 describe('learning sheet persistence', () => {
   beforeEach(() => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn(() => ({
-        matches: false,
-        media: '',
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      }))
-    )
+    vi.stubGlobal('matchMedia', vi.fn(() => ({
+      matches: false,
+      media: '',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })))
     setActivePinia(createPinia())
     learningSheetPickActive.value = false
     learningSheetFloatBarOpen.value = false
@@ -53,6 +52,23 @@ describe('learning sheet persistence', () => {
     return connections.filter((connection) => connection.source === 'topic').map((c) => c.target)
   }
 
+  it('stores a bilingual worksheet baseline without a PostgreSQL-rejected null', () => {
+    const diagramStore = useDiagramStore()
+    diagramStore.loadDefaultTemplate('mindmap')
+    const topic = diagramStore.data?.nodes.find((node) => node.id === 'topic')
+    if (!topic) {
+      throw new Error('expected a topic node')
+    }
+    const primary = String(topic.text ?? '')
+    expect(diagramStore.updateNode('topic', { textSecondary: 'buoyancy' })).toBe(true)
+    diagramStore.setLearningSheetMode(true)
+
+    const spec = diagramStore.getSpecForSave()
+    const baseline = spec?.learning_sheet_baseline as { textsById?: Record<string, string> } | undefined
+    expect(baseline?.textsById?.topic).toBe(JSON.stringify([primary, 'buoyancy']))
+    expect(JSON.stringify(spec)).not.toContain('\u0000')
+  })
+
   it('round-trips learning sheet blanks and show-answers preference via spec save/load', () => {
     const diagramStore = useDiagramStore()
     const { branchId, branchText } = loadMindMapWithBranch()
@@ -64,16 +80,16 @@ describe('learning sheet persistence', () => {
 
     const spec = diagramStore.getSpecForSave()
     expect(spec).toBeTruthy()
-    expect(must(spec).is_learning_sheet).toBe(true)
-    expect(must(spec).learning_sheet_show_answers).toBe(false)
+    expect(spec!.is_learning_sheet).toBe(true)
+    expect(spec!.learning_sheet_show_answers).toBe(false)
 
-    const blankedNode = (
-      must(spec).nodes as { id: string; text?: string; data?: Record<string, unknown> }[]
-    ).find((node) => node.id === branchId)
+    const blankedNode = (spec!.nodes as { id: string; text?: string; data?: Record<string, unknown> }[]).find(
+      (node) => node.id === branchId
+    )
     expect(blankedNode?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
     expect(blankedNode?.data?.hiddenAnswer).toBe(branchText)
 
-    diagramStore.loadFromSpec(must(spec), must(diagramStore.type))
+    diagramStore.loadFromSpec(spec!, diagramStore.type!)
 
     expect(diagramStore.isLearningSheet).toBe(true)
     expect(diagramStore.learningSheetShowAnswers).toBe(false)
@@ -94,6 +110,41 @@ describe('learning sheet persistence', () => {
 
     expect(learningSheetFloatBarOpen.value).toBe(true)
     expect(learningSheetPickActive.value).toBe(false)
+    expect(useLearningAssignmentCanvasStore().showLearningSheet).toBe(true)
+  })
+
+  it('does not restore the float bar while a student is completing homework', () => {
+    const authStore = useAuthStore()
+    authStore.user = { id: '9', username: 'stu', role: 'student' }
+    useLearningAssignmentCanvasStore().assignmentId = 3
+
+    const diagramStore = useDiagramStore()
+    loadMindMapWithBranch()
+    diagramStore.setLearningSheetMode(true)
+
+    learningSheetFloatBarOpen.value = true
+    learningSheetPickActive.value = true
+    restoreLearningSheetUiFromDiagram()
+
+    expect(useLearningAssignmentCanvasStore().showLearningSheet).toBe(false)
+    expect(learningSheetFloatBarOpen.value).toBe(false)
+    expect(learningSheetPickActive.value).toBe(false)
+    expect(toggleLearningSheetAnswersVisibility()).toBe(false)
+  })
+
+  it('does not reopen the session bar after presentation once homework starts', () => {
+    const diagramStore = useDiagramStore()
+    loadMindMapWithBranch()
+    diagramStore.setLearningSheetMode(true)
+    restoreLearningSheetUiFromDiagram()
+    suspendLearningSheetForPresentation()
+
+    const authStore = useAuthStore()
+    authStore.user = { id: '10', username: 'stu', role: 'student' }
+    useLearningAssignmentCanvasStore().assignmentId = 4
+    resumeLearningSheetAfterPresentation()
+
+    expect(learningSheetFloatBarOpen.value).toBe(false)
   })
 
   it('toggles show-answers preference', () => {

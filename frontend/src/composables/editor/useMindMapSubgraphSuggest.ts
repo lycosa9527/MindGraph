@@ -86,6 +86,12 @@ function formatSubgraphErrorMessage(
   return `${t('canvas.subgraphPreview.generationFailed')}：${message}`
 }
 
+function noteThinkingCoinShortage(errorType: string | undefined): void {
+  if (errorType === 'thinking_coin_insufficient') {
+    eventBus.emit('thinking_coins:insufficient', {})
+  }
+}
+
 function notifySubgraphError(
   rawError: string,
   errorType: string | undefined,
@@ -486,6 +492,9 @@ async function runMindMapSubgraphGeneration(
         errorData,
         failure,
       })
+      if (failure) {
+        noteThinkingCoinShortage(failure.errorType)
+      }
       if (!quietSuccess) {
         if (failure) {
           notifySubgraphError(failure.error, failure.errorType, t, subgraphNotify)
@@ -524,6 +533,7 @@ async function runMindMapSubgraphGeneration(
         response: responseDebug,
         failure: payloadFailure,
       })
+      noteThinkingCoinShortage(payloadFailure.errorType)
       if (!quietSuccess) {
         notifySubgraphError(payloadFailure.error, payloadFailure.errorType, t, subgraphNotify)
       }

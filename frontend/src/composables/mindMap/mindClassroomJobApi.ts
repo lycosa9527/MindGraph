@@ -4,7 +4,13 @@
 import { apiGet, apiPost } from '@/utils/apiClient'
 
 export type MindClassroomJobStatus =
-  'queued' | 'planning' | 'generating' | 'ready' | 'partial' | 'failed' | 'cancelled'
+  | 'queued'
+  | 'planning'
+  | 'generating'
+  | 'ready'
+  | 'partial'
+  | 'failed'
+  | 'cancelled'
 
 export interface MindClassroomRemoteStep {
   id?: string
@@ -252,7 +258,7 @@ export async function watchMindClassroomJob(
     onUpdate?: (detail: MindClassroomJobDetail) => void
   } = {}
 ): Promise<MindClassroomJobDetail> {
-  let lastError: Error
+  let lastError: Error = new Error('stream_unavailable')
   let snapshotMisses = 0
   while (!options.shouldStop?.()) {
     try {
@@ -262,7 +268,7 @@ export async function watchMindClassroomJob(
       if (lastError.message === 'cancelled') {
         throw lastError
       }
-      let snapshot: MindClassroomJobDetail | null
+      let snapshot: MindClassroomJobDetail | null = null
       try {
         snapshot = await fetchMindClassroomJob(jobId)
       } catch {
@@ -279,7 +285,7 @@ export async function watchMindClassroomJob(
           await waitClassroomWatchRetry()
           continue
         }
-        throw new Error(snapshot.error_message || snapshot.status, { cause: err })
+        throw new Error(snapshot.error_message || snapshot.status)
       }
       snapshotMisses += 1
       if (snapshotMisses >= CLASSROOM_WATCH_SNAPSHOT_MISSES) {

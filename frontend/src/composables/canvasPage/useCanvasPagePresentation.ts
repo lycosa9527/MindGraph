@@ -260,23 +260,6 @@ export function useCanvasPagePresentation() {
     eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
   }
 
-  function handleZoomChange(level: number) {
-    const zoom = Math.max(0.1, Math.min(4, level / 100))
-    eventBus.emit('view:zoom_set_requested', { zoom })
-  }
-
-  function handleZoomIn() {
-    eventBus.emit('view:zoom_in_requested', {})
-  }
-
-  function handleZoomOut() {
-    eventBus.emit('view:zoom_out_requested', {})
-  }
-
-  function handleFitToScreen() {
-    eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
-  }
-
   function handleHandToolToggle(active: boolean) {
     handToolActive.value = active
   }
@@ -303,8 +286,6 @@ export function useCanvasPagePresentation() {
       })
     }
   }
-
-  function handleModelChange(_model: string) {}
 
   onUnmounted(() => {
     window.removeEventListener('pointerdown', handleLaserPointerMove)
@@ -347,15 +328,10 @@ export function useCanvasPagePresentation() {
     laserCursorStyle,
     spotlightStyle,
     pointerOverPresentationRail,
-    handleZoomChange,
-    handleZoomIn,
-    handleZoomOut,
-    handleFitToScreen,
     handleHandToolToggle,
     suspendHandToolForPresentation,
     resumeHandToolAfterPresentation,
     handleStartPresentation,
-    handleModelChange,
     clearPresentationTimerTick,
     resetPresentationStateOnLeave,
   }

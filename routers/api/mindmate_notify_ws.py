@@ -105,7 +105,7 @@ async def mindmate_notify_websocket(websocket: WebSocket) -> None:
         except WebSocketDisconnect:
             logger.debug("[MindmateNotifyWS] user %s disconnected", user_id)
         finally:
-            org_ids = await mindmate_notify_ws_manager.disconnect(user_id)
+            org_ids = await mindmate_notify_ws_manager.disconnect(user_id, websocket)
             for org_id in org_ids:
                 await mindmate_notify_ws_manager.broadcast_org_presence(
                     user_id,

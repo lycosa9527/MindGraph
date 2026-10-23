@@ -203,7 +203,6 @@ def test_production_guard_requires_tsec_secrets() -> None:
                             "TENCENT_SMS_SECRET_ID": "",
                             "TENCENT_SMS_SECRET_KEY": "",
                             "FEATURE_DINGTALK_LOGIN": "False",
-                            "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
                         },
                         clear=False,

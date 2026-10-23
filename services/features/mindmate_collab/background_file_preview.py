@@ -19,7 +19,6 @@ from typing import Optional
 from models.domain.mindmate_collab import MindmateCollabBackgroundFile
 from services.features.mindmate_collab.background_files import seminar_disk_path
 from services.showcase.covers.office_to_pdf import convert_office_to_pdf, office_suffix_needs_pdf
-from services.utils.error_types import FILE_IO_ERRORS
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -63,9 +62,7 @@ def _ensure_preview_pdf_sync(source: Path, filename: str) -> Path:
         tmp = cached.with_suffix(".pdf.tmp")
         tmp.write_bytes(produced.read_bytes())
         tmp.replace(cached)
-    except ValueError:
-        raise
-    except FILE_IO_ERRORS as exc:
+    except (OSError, RuntimeError) as exc:
         raise ValueError("preview_failed") from exc
     finally:
         shutil.rmtree(work, ignore_errors=True)

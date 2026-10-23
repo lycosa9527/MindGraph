@@ -1,6 +1,6 @@
 """Mindmap inline recommendation prompts.
 
-Aligned with prompts/node_palette.get_mindmap_branches_prompt,
+Aligned with prompts/ai_brainstorm.get_mindmap_branches_prompt,
 get_mindmap_children_prompt.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)

@@ -22,25 +22,18 @@ export default {
   'auth.voiceNotes.noDiagram': 'Die breinkaart is nog nie geassosieer nie.',
   'auth.voiceNotes.micUnavailable': 'Die huidige blaaier ondersteun nie die mikrofoon nie.',
   'auth.voiceNotes.micFailed': 'Kan nie toegang tot mikrofoon kry nie.',
-  'auth.voiceNotes.micConflict':
-    'Ander stemfunksies gebruik die mikrofoon, stop asseblief en probeer weer.',
-  'auth.voiceNotes.wsError':
-    'Die stemnotaverbinding het misluk, gaan asseblief die netwerk en aanmeldstatus na.',
+  'auth.voiceNotes.micConflict': 'Ander stemfunksies gebruik die mikrofoon, stop asseblief en probeer weer.',
+  'auth.voiceNotes.wsError': 'Die stemnotaverbinding het misluk, gaan asseblief die netwerk en aanmeldstatus na.',
   'auth.voiceNotes.genericError': 'Stemnootfout',
   'auth.voiceNotes.ingestFailed': 'Kan nie transkripsie na dokumentopsomming stoor nie.',
-  'auth.voiceNotes.maxDuration':
-    'Die stemnoot het die limiet van 60 minute bereik en is outomaties gestop.',
-  'auth.voiceNotes.silenceAutoStop':
-    'Daar was vir 2 opeenvolgende minute geen stem nie, en die stemnoot het outomaties gestop.',
-  'auth.voiceNotes.startedTimeout':
-    'Die stemdiens kon nie betyds begin nie, probeer asseblief weer.',
+  'auth.voiceNotes.maxDuration': 'Die stemnoot het die limiet van 60 minute bereik en is outomaties gestop.',
+  'auth.voiceNotes.silenceAutoStop': 'Daar was vir 2 opeenvolgende minute geen stem nie, en die stemnoot het outomaties gestop.',
+  'auth.voiceNotes.startedTimeout': 'Die stemdiens kon nie betyds begin nie, probeer asseblief weer.',
   'auth.voiceNotes.micLost': 'Die mikrofoon is ontkoppel en stemnotas het gestop.',
   'auth.voiceNotes.authFailed': 'Stemnota-stawing het misluk, meld asseblief weer aan.',
   'auth.voiceNotes.wsClosed': 'Die stemnootverbinding is ontkoppel en die sessie het gestop.',
-  'auth.voiceNotes.budgetExceeded':
-    'Stemnotas is nie beskikbaar nie: die daaglikse KI-kwota is bereik of die dinkmunte is onvoldoende.',
-  'auth.voiceNotes.sessionBusy':
-    "Daar is reeds 'n stemnotasessie aan die gang, stop dit asseblief en probeer weer.",
+  'auth.voiceNotes.budgetExceeded': 'Stemnotas is nie beskikbaar nie: die daaglikse KI-kwota is bereik of die dinkmunte is onvoldoende.',
+  'auth.voiceNotes.sessionBusy': 'Daar is reeds \'n stemnotasessie aan die gang, stop dit asseblief en probeer weer.',
   'auth.voiceNotes.recording': 'Opname',
   'auth.voiceNotes.paused': 'Geskors',
   'auth.voiceNotes.idle': 'gereed',
@@ -48,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'Begin',
   'auth.voiceNotes.stopping': 'Stop',
   'auth.voiceNotes.ingesting': 'Stoor',
-  'auth.voiceNotes.emptyTranscript':
-    "Geen stem is herken nie, sê asseblief 'n paar woorde voor jy stop.",
+  'auth.voiceNotes.emptyTranscript': 'Geen stem is herken nie, sê asseblief \'n paar woorde voor jy stop.',
   'auth.voiceNotes.generating': 'Genereer breinkaart',
-  'auth.voiceNotes.sheetHint':
-    'Stoor die transkripsie nadat jy gestop het. Klik Genereer breinkaart wanneer jy gereed is.',
+  'auth.voiceNotes.sheetHint': 'Stoor die transkripsie nadat jy gestop het. Klik Genereer breinkaart wanneer jy gereed is.',
   'auth.voiceNotes.status.waiting': 'Wag om te begin',
   'auth.voiceNotes.status.connectingAsr': 'Koppel aan spraakherkenning',
   'auth.voiceNotes.status.recording': 'Opname · Stemherkenning',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'Opname · Spraakherkenning · Onderskeidende sprekers',
+  'auth.voiceNotes.status.recordingAndSeparating': 'Opname · Spraakherkenning · Onderskeidende sprekers',
   'auth.voiceNotes.status.paused': 'Geskors',
   'auth.voiceNotes.status.stopping': 'Stop',
   'auth.voiceNotes.status.savingTranscript': 'Stoor tans transkripsie',
@@ -70,13 +60,10 @@ export default {
   'auth.voiceNotes.savedAt': 'Transkripsie gestoor by {time}',
   'auth.voiceNotes.unsavedChanges': 'Transkripsie nie gestoor nie',
   'auth.voiceNotes.closeWhileRecordingTitle': 'Opname',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'As u die venster toemaak, sal die opname nie ophou nie. Transkripsies word outomaties elke 30 sekondes op die huidige kaart gestoor. Is jy seker jy wil die venster versteek?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'As u die venster toemaak, sal die opname nie ophou nie. Transkripsies word outomaties elke 30 sekondes op die huidige kaart gestoor. Is jy seker jy wil die venster versteek?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'Versteek venster',
-  'auth.voiceNotes.recordingContinues':
-    'Die opname gaan steeds voort en jy kan die opname-opsomming enige tyd heropen.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'Stoor asseblief eers die huidige breinkaart en gebruik dan die opname om op te som.',
+  'auth.voiceNotes.recordingContinues': 'Die opname gaan steeds voort en jy kan die opname-opsomming enige tyd heropen.',
+  'auth.voiceNotes.noCurrentDiagram': 'Stoor asseblief eers die huidige breinkaart en gebruik dan die opname om op te som.',
   'auth.voiceNotes.restoreFailed': 'Kan nie gestoorde transkripsie van oudio-opname laai nie.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'Historiese stemnotas',
@@ -86,33 +73,22 @@ export default {
   'auth.voiceNotes.mergeTalker': 'saamsmelt in',
   'auth.voiceNotes.mergeTalkerInto': 'Voeg saam in {name}',
   'auth.voiceNotes.resetTalker': 'Herstel verstek',
-  'auth.voiceNotes.tencentAuth':
-    'Stemherkenningstawing het misluk. Gaan asseblief die Tencent Cloud-sleutel na.',
-  'auth.voiceNotes.tencentService':
-    'Tencent Cloud-spraakherkenning is nie geaktiveer nie. Aktiveer asseblief die diens in die konsole.',
-  'auth.voiceNotes.tencentQuota':
-    'Die Tencent Cloud-spraakherkenningshulpbronpakket is uitgeput. Betaal of koop asseblief die hulpbronpakket na aktivering.',
-  'auth.voiceNotes.tencentArrears':
-    'Die Tencent Cloud-rekening is agterstallig en stemherkenning is gedeaktiveer.',
-  'auth.voiceNotes.tencentConcurrency':
-    'Spraakherkenning gelyktydig is vol, probeer asseblief later weer.',
+  'auth.voiceNotes.tencentAuth': 'Stemherkenningstawing het misluk. Gaan asseblief die Tencent Cloud-sleutel na.',
+  'auth.voiceNotes.tencentService': 'Tencent Cloud-spraakherkenning is nie geaktiveer nie. Aktiveer asseblief die diens in die konsole.',
+  'auth.voiceNotes.tencentQuota': 'Die Tencent Cloud-spraakherkenningshulpbronpakket is uitgeput. Betaal of koop asseblief die hulpbronpakket na aktivering.',
+  'auth.voiceNotes.tencentArrears': 'Die Tencent Cloud-rekening is agterstallig en stemherkenning is gedeaktiveer.',
+  'auth.voiceNotes.tencentConcurrency': 'Spraakherkenning gelyktydig is vol, probeer asseblief later weer.',
   'auth.voiceNotes.tencentAudio': 'Die oudio word nie herken nie, probeer asseblief weer.',
-  'auth.voiceNotes.tencentSendRate':
-    'Die oudio word te vinnig gestuur, hou asseblief aan om intyds op te neem.',
-  'auth.voiceNotes.tencentIdle':
-    'Die opname is te lank onderbreek en die stemherkenning is ontkoppel.',
+  'auth.voiceNotes.tencentSendRate': 'Die oudio word te vinnig gestuur, hou asseblief aan om intyds op te neem.',
+  'auth.voiceNotes.tencentIdle': 'Die opname is te lank onderbreek en die stemherkenning is ontkoppel.',
   'auth.voiceNotes.tencentRetry': 'Spraakherkenning het tydelik misluk, probeer asseblief weer.',
-  'auth.voiceNotes.tencentRegion':
-    'Die huidige netwerk is nie binne die diensbestek van Tencent Cloud se binnelandse webwerf nie.',
+  'auth.voiceNotes.tencentRegion': 'Die huidige netwerk is nie binne die diensbestek van Tencent Cloud se binnelandse webwerf nie.',
   'auth.voiceNotes.tencentParam': 'Die spraakherkenningsparameters is ongeldig.',
-  'auth.voiceNotes.tencentAppid':
-    'Tencent Cloud AppID is ongeldig, kyk asseblief na TENCENT_ASR_APP_ID.',
-  'auth.voiceNotes.rateLimited':
-    'Spraakherkenningversoeke is te gereeld, probeer asseblief later weer.',
+  'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID is ongeldig, kyk asseblief na TENCENT_ASR_APP_ID.',
+  'auth.voiceNotes.rateLimited': 'Spraakherkenningversoeke is te gereeld, probeer asseblief later weer.',
   'auth.voiceNotes.messageTooLarge': 'Die oudiopakkie is te groot, probeer asseblief weer.',
   'auth.voiceNotes.invalidMessage': 'Die stemnotaboodskap is ongeldig, probeer asseblief weer.',
-  'auth.voiceNotes.asrUnavailable':
-    'Spraakherkenning is tydelik onbeskikbaar, probeer asseblief later weer.',
+  'auth.voiceNotes.asrUnavailable': 'Spraakherkenning is tydelik onbeskikbaar, probeer asseblief later weer.',
   'auth.updateLog': 'Vrystellingsnotas',
   'auth.updateLogModalTitle': 'Vrystellingsnotas',
   'auth.updateLogMaintainerNote': 'Ja — hierdie platform word aktief deur Roy onderhou ✨',
@@ -125,25 +101,19 @@ export default {
   'auth.downloadDesktopShortcut': 'Voeg by lessenaar',
   'auth.platformQuickGuide': 'Vinnige gids',
   'auth.pwaIosInstallHint': 'Tik Deel in Safari, Chrome of Edge, kies dan “Voeg by tuisskerm”.',
-  'auth.pwaAndroidInstallHint':
-    'Maak die blaaierkieslys (⋮) oop en tik Installeer app of Voeg by tuisskerm.',
-  'auth.pwaSafariMacInstallHint':
-    'Kies in Safari Lêer → Voeg by Dock, of Deel → Voeg by Dock (macOS Sonoma of later).',
-  'auth.pwaDesktopInstallHint':
-    'Gebruik die blaaierkieslys (⋮) of die installeer-ikoon in die adresbalk (Chrome, Edge of Brave).',
+  'auth.pwaAndroidInstallHint': 'Maak die blaaierkieslys (⋮) oop en tik Installeer app of Voeg by tuisskerm.',
+  'auth.pwaSafariMacInstallHint': 'Kies in Safari Lêer → Voeg by Dock, of Deel → Voeg by Dock (macOS Sonoma of later).',
+  'auth.pwaDesktopInstallHint': 'Gebruik die blaaierkieslys (⋮) of die installeer-ikoon in die adresbalk (Chrome, Edge of Brave).',
   'auth.pwaInstallSuccess': 'MindGraph is by jou lessenaar gevoeg.',
-  'auth.pwaDevInstallHint':
-    'PWA-installasie is af in normale dev-modus. Gebruik produksie-bou (npm run build + backend) of hardloop npm run dev:pwa, gebruik dan Chrome/Edge op HTTPS of localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Maak MindGraph in die blaaier op sy HTTPS-adres oop (nie ’n gestoorde HTML-lêer nie) voordat jy na lessenaar installeer.',
+  'auth.pwaDevInstallHint': 'PWA-installasie is af in normale dev-modus. Gebruik produksie-bou (npm run build + backend) of hardloop npm run dev:pwa, gebruik dan Chrome/Edge op HTTPS of localhost.',
+  'auth.pwaInsecureOriginHint': 'Maak MindGraph in die blaaier op sy HTTPS-adres oop (nie ’n gestoorde HTML-lêer nie) voordat jy na lessenaar installeer.',
   'auth.backToLogin': 'Terug na aanmelding',
   'auth.captcha': 'Verifikasiekode',
   'auth.captchaLength4': 'Voer asseblief die 4-karakter-captcha in',
   'auth.captchaLoadFailed': 'Kon nie captcha laai nie',
   'auth.captchaNetworkError': 'Netwerkfout, kon nie captcha laai nie',
   'auth.tsecFailed': 'Verifikasie het misluk, probeer asseblief weer',
-  'auth.tsecUnavailable':
-    'Mens-rekenaar-stawing is nie opgestel nie, probeer asseblief later weer.',
+  'auth.tsecUnavailable': 'Mens-rekenaar-stawing is nie opgestel nie, probeer asseblief later weer.',
   'auth.changePassword': 'Verander wagwoord',
   'auth.accountPlugin': 'Inprop',
   'auth.apiTokenButton': 'API-token',
@@ -163,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'Gekopieer',
   'auth.apiTokenCopyFailed': 'Kopieer het misluk',
   'auth.apiTokenLoading': 'laai …',
-  'auth.apiTokenNone':
-    'Die teken is nog nie gegenereer nie. Laai die vaardigheidspakket af of klik API-token om een ​​te skep.',
+  'auth.apiTokenNone': 'Die teken is nog nie gegenereer nie. Laai die vaardigheidspakket af of klik API-token om een ​​te skep.',
   'auth.apiTokenOpaque': 'Die huidige token kan nie weerklink word nie, hergenereer dit asseblief.',
   'auth.apiTokenExpires': 'Geldig tot {date}',
   'auth.downloadChromeExtension': 'Chrome-uitbreiding',
   'auth.downloadWordAddin': 'Woordbyvoeging',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'Hierdie funksie vereis die Standard- of Professional-skoolvlak (Basies-vlak uitgesluit).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Jou skoolintekening het geëindig. Jou rekening is nou op die proefvlak. Kontak jou platformadministrateur om te hernu.',
-  'auth.diagramLimitReached':
-    'Proefskole laat tot {max} gestoorde diagramme per onderwyser toe. Verwyder een om ’n nuwe diagram te stoor.',
+  'auth.schoolTierFeatureUnavailable': 'Hierdie funksie vereis die Standard- of Professional-skoolvlak (Basies-vlak uitgesluit).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Jou skoolintekening het geëindig. Jou rekening is nou op die proefvlak. Kontak jou platformadministrateur om te hernu.',
+  'auth.diagramLimitReached': 'Proefskole laat tot {max} gestoorde diagramme per onderwyser toe. Verwyder een om ’n nuwe diagram te stoor.',
   'auth.downloadOpenclawSkill': 'OpenClaw-vaardigheid',
-  'auth.downloadOpenclawSkillHint':
-    'Die aflaai sluit die rekeningnommer en huidige token in. Nadat die teken hergenereer is, sal ou vaardigheidspakkette en uitbreidings ongeldig word.',
+  'auth.downloadOpenclawSkillHint': 'Die aflaai sluit die rekeningnommer en huidige token in. Nadat die teken hergenereer is, sal ou vaardigheidspakkette en uitbreidings ongeldig word.',
   'auth.changePhoneButton': 'Verander foon',
   'auth.passwordChangeSuccess': 'Wagwoord suksesvol verander',
   'auth.passwordChangeFailed': 'Wagwoordverandering het misluk',
@@ -256,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -295,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -308,8 +272,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'Onderwys-e-pos',
   'auth.modal.hybridRegisterEmailTabAny': 'E-pos',
   'auth.modal.hybridRegisterPhoneTab': 'Foon + uitnodigingskode',
-  'auth.modal.mainlandSalesNotice':
-    'Benodig toegang in vasteland-China? Gebruik jou selfoonnommer en uitnodigingskode, of kontak kliëntediens.',
+  'auth.modal.mainlandSalesNotice': 'Benodig toegang in vasteland-China? Gebruik jou selfoonnommer en uitnodigingskode, of kontak kliëntediens.',
   'auth.modal.registrationEmailLabel': 'Slegs onderwys-e-pos',
   'auth.modal.registrationEmailLabelAny': 'E-posadres',
   'auth.modal.registrationEmailHint': '',
@@ -322,12 +285,9 @@ export default {
   'auth.modal.sendEmailCode': 'Stuur e-poskode',
   'auth.modal.sendingEmailCode': 'Stuur…',
   'auth.modal.emailCodePlaceholder': '6-syfer-kode van e-pos',
-  'auth.modal.acknowledgeOverseas':
-    'Ek verstaan en sal die sagteware slegs vir onderwysdoeleindes gebruik.',
-  'auth.modal.acknowledgeOverseasAny':
-    'Ek verstaan en stem in tot die buitelandse registrasieterms.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Ek verstaan en stem in tot die buitelandse registrasieterms, en dat Vereenvoudigde Chinees nie op hierdie pad beskikbaar is nie.',
+  'auth.modal.acknowledgeOverseas': 'Ek verstaan en sal die sagteware slegs vir onderwysdoeleindes gebruik.',
+  'auth.modal.acknowledgeOverseasAny': 'Ek verstaan en stem in tot die buitelandse registrasieterms.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Ek verstaan en stem in tot die buitelandse registrasieterms, en dat Vereenvoudigde Chinees nie op hierdie pad beskikbaar is nie.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Bevestig asseblief die kennisgewing hierbo.',
   'auth.loginPhoneOrEmail': 'Foon of e-pos',
@@ -348,17 +308,13 @@ export default {
   'auth.username': 'Gebruikersnaam',
   'auth.waitCaptchaLoad': 'Wag asseblief vir captcha om te laai',
   'auth.quickRegPageTitle': 'Vinnige registrasie',
-  'auth.quickRegPageHint':
-    'Maak hierdie bladsy oop vanaf die skakel wat jou skool gedeel het. Voer jou foon en die 6-syfer-kamerkode in wat in die fasiliteerder se vinnige registrasie-venster gewys word (dit verfris ongeveer elke 30 sekondes). Die kode wys dat jy in die sessie is; dit verifieer nie foonbesit soos ’n SMS-kode nie.',
-  'auth.quickRegLinkInvalid':
-    'Hierdie registrasieskakel is nie aktief nie (verval of gesluit). Maak die huidige skakel van die fasiliteerder weer oop.',
-  'auth.quickRegProbeRateLimited':
-    'Te veel kontroles vanaf hierdie bladsy. Wag ’n oomblik en verfris, of probeer later weer.',
+  'auth.quickRegPageHint': 'Maak hierdie bladsy oop vanaf die skakel wat jou skool gedeel het. Voer jou foon en die 6-syfer-kamerkode in wat in die fasiliteerder se vinnige registrasie-venster gewys word (dit verfris ongeveer elke 30 sekondes). Die kode wys dat jy in die sessie is; dit verifieer nie foonbesit soos ’n SMS-kode nie.',
+  'auth.quickRegLinkInvalid': 'Hierdie registrasieskakel is nie aktief nie (verval of gesluit). Maak die huidige skakel van die fasiliteerder weer oop.',
+  'auth.quickRegProbeRateLimited': 'Te veel kontroles vanaf hierdie bladsy. Wag ’n oomblik en verfris, of probeer later weer.',
   'auth.quickRegSessionSignups': 'Hierdie sessie geregistreer: {n}',
   'auth.quickRegRoomCodeLabel': 'Kamerkode',
   'auth.quickRegRoomCodePlaceholder': '6 syfers',
-  'auth.quickRegRoomCodeHint':
-    'Pas by die groot syfers op die fasiliteerder se vinnige registrasie-dialoog; voer die kode in voordat dit verander.',
+  'auth.quickRegRoomCodeHint': 'Pas by die groot syfers op die fasiliteerder se vinnige registrasie-dialoog; voer die kode in voordat dit verander.',
   'auth.quickRegRoomCodeEnter6': 'Voer die 6-syfer-kamerkode in',
   'auth.quickRegMaxUses': 'Maks. registrasies vir hierdie skakel',
   'auth.quickRegHeadcount': 'Maks.',
@@ -368,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'Voltooi registrasie',
   'auth.quickRegSubmitting': 'Registreer…',
   'auth.quickRegRegisterSuccess': 'Registrasie suksesvol',
-  'auth.quickRegSessionUnsure':
-    'Registrasie het dalk suksesvol verloop. As jy nie aangemeld is nie, gaan terug en gebruik verifikasiekode-aanmelding, of verfris hierdie bladsy.',
+  'auth.quickRegSessionUnsure': 'Registrasie het dalk suksesvol verloop. As jy nie aangemeld is nie, gaan terug en gebruik verifikasiekode-aanmelding, of verfris hierdie bladsy.',
   'auth.quickRegBackToSignIn': 'Gebruik standaard aanmelding / registrasie',
   'auth.quickRegSelectOrg': 'Kies skool',
   'auth.quickRegOrgLoadError': 'Kon nie skole laai nie. Probeer asseblief weer.',
   'auth.quickRegMintError': 'Kon nie die registrasiekanaal oopmaak nie. Probeer asseblief weer.',
   'auth.quickRegCloseConfirmTitle': 'Einde van vinnige registrasie?',
-  'auth.quickRegCloseConfirm':
-    'Nadat die venster toegemaak is, sal die huidige QR-kode en kamerkode onmiddellik ongeldig word, en studente wat nog nie aangesluit het nie, sal nie kan voortgaan om te registreer nie.',
+  'auth.quickRegCloseConfirm': 'Nadat die venster toegemaak is, sal die huidige QR-kode en kamerkode onmiddellik ongeldig word, en studente wat nog nie aangesluit het nie, sal nie kan voortgaan om te registreer nie.',
   'auth.setPasswordWithSms': 'Stel aanmeldwagwoord',
   'auth.setPasswordWithSmsTitle': 'Stel wagwoord via SMS',
-  'auth.setPasswordWithSmsHint':
-    'Ons stuur ’n kode na jou gekoppelde foon. Nadat jy ’n wagwoord gestel het, kan jy met wagwoord of ’n verifikasiekode aanmeld.',
+  'auth.setPasswordWithSmsHint': 'Ons stuur ’n kode na jou gekoppelde foon. Nadat jy ’n wagwoord gestel het, kan jy met wagwoord of ’n verifikasiekode aanmeld.',
   'auth.setPasswordWithSmsSubmit': 'Stoor wagwoord',
   'auth.setPasswordWithSmsSubmitting': 'Stoor…',
   'auth.accountAvatar': 'Avatar',
@@ -395,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Vertoonnaam',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'Minstens 2 karakters, geen syfers nie',
   'auth.accountNameSave': 'Stoor naam',
   'auth.accountNameSaveSuccess': 'Naam opgedateer',
@@ -408,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Kon nie ontkoppel nie. Probeer asseblief weer.',
   'auth.dingtalkBindRebind': 'Koppel weer',
   'auth.dingtalkBindTitle': 'Koppel DingTalk-rekening',
-  'auth.dingtalkBindInstructions':
-    'Stuur die 6-syfer-kode hieronder (byvoorbeeld 123-456) as teksboodskap na jou skool se DingTalk MindBot.',
+  'auth.dingtalkBindInstructions': 'Stuur die 6-syfer-kode hieronder (byvoorbeeld 123-456) as teksboodskap na jou skool se DingTalk MindBot.',
   'auth.dingtalkBindPairWaiting': 'Wag vir MindBot om jou kode te ontvang…',
   'auth.dingtalkBindCodeHint': 'Stuur slegs hierdie kode — geen ekstra teks nie.',
   'auth.dingtalkBindCountdown': 'Sessie verval oor {s}s',
@@ -424,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Gekoppel ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Tans gekoppel: {staff}',
   'auth.dingtalkUnbindTitle': 'Ontkoppel DingTalk-rekening',
-  'auth.dingtalkUnbindInstructions':
-    'Stuur die kode hieronder vanaf jou gekoppelde DingTalk-rekening na MindBot om ontkoppeling te bevestig.',
+  'auth.dingtalkUnbindInstructions': 'Stuur die kode hieronder vanaf jou gekoppelde DingTalk-rekening na MindBot om ontkoppeling te bevestig.',
   'auth.dingtalkUnbindPairWaiting': 'Wag vir jou gekoppelde DingTalk-rekening om te bevestig…',
   'auth.dingtalkUnbindCodeHint': 'Stuur slegs hierdie kode vanaf jou gekoppelde DingTalk-rekening.',
   'auth.dingtalkUnbindExpiredHint': 'Ontkoppelsessie het verval. Begin weer.',
@@ -435,30 +389,23 @@ export default {
   'auth.qrLoginTitle': 'Skandeer om aan te meld',
   'auth.qrLoginWechatTab': 'WeChat',
   'auth.qrLoginDingtalkTab': 'DingTalk',
-  'auth.qrLoginInviteRequired':
-    'Voer jou skool-uitnodigingskode in voordat jy QR-aanmelding gebruik',
-  'auth.qrLoginProvidersFailed':
-    'Kon nie QR-aanmeldinginstellings laai nie. Probeer asseblief weer.',
+  'auth.qrLoginInviteRequired': 'Voer jou skool-uitnodigingskode in voordat jy QR-aanmelding gebruik',
+  'auth.qrLoginProvidersFailed': 'Kon nie QR-aanmeldinginstellings laai nie. Probeer asseblief weer.',
   'auth.qrLoginProviderDisabled': 'Hierdie aanmeldmetode is nie vir jou skool geaktiveer nie',
-  'auth.qrLoginNotLinked':
-    'Rekening nie gekoppel nie — meld aan met wagwoord en koppel onder Rekeningkoppeling eers',
+  'auth.qrLoginNotLinked': 'Rekening nie gekoppel nie — meld aan met wagwoord en koppel onder Rekeningkoppeling eers',
   'auth.qrLoginExchangeFailed': 'QR-aanmelding het misluk. Probeer asseblief weer.',
   'auth.qrLoginInvalidState': 'QR-sessie het verval. Sluit en skandeer weer.',
-  'auth.qrLoginInvalidCode':
-    'Die WeChat-magtigingskode het verval of is gebruik. Maak asseblief die QR-kode toe en skandeer die kode weer.',
+  'auth.qrLoginInvalidCode': 'Die WeChat-magtigingskode het verval of is gebruik. Maak asseblief die QR-kode toe en skandeer die kode weer.',
   'auth.qrLoginRateLimited': 'WeChat-aanmeldoproepe is te gereeld, probeer asseblief later weer.',
-  'auth.qrLoginMisconfigured':
-    'Die WeChat-aanmeldkonfigurasie is verkeerd, kontak asseblief die administrateur.',
+  'auth.qrLoginMisconfigured': 'Die WeChat-aanmeldkonfigurasie is verkeerd, kontak asseblief die administrateur.',
   'auth.qrLoginCorpMismatch': 'DingTalk-organisasie stem nie ooreen met jou skoolinstellings nie.',
   'auth.oauthExternalTaken': 'Hierdie rekening is reeds aan ’n ander gebruiker gekoppel.',
-  'auth.oauthAlreadyBound':
-    'Hierdie rekening is aan WeChat gebind. As jy ander WeChat moet bind, ontbind dit asseblief eers',
+  'auth.oauthAlreadyBound': 'Hierdie rekening is aan WeChat gebind. As jy ander WeChat moet bind, ontbind dit asseblief eers',
   'auth.qrLoginDisabled': 'QR-aanmelding is nie beskikbaar nie.',
   'auth.qrLoginStartFailed': 'Kon nie QR-aanmelding begin nie. Probeer asseblief weer.',
   'auth.qrLoginSuccess': 'Suksesvol aangemeld',
   'auth.accountBindingsSection': 'Rekeningkoppeling',
-  'auth.accountBindingsHint':
-    'MindBot stoor na DingTalk; WeChat/DingTalk is vir QR-aanmelding (koppel eers hier)',
+  'auth.accountBindingsHint': 'MindBot stoor na DingTalk; WeChat/DingTalk is vir QR-aanmelding (koppel eers hier)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',
@@ -470,8 +417,7 @@ export default {
   'auth.bindDingtalkOAuth': 'Koppel DingTalk',
   'auth.unbindDingtalkOAuth': 'Ontkoppel DingTalk',
   'auth.oauthBindTitle': 'Skandeer om rekening te koppel',
-  'auth.wechatBindScanHint':
-    'Gebruik asseblief WeChat om die QR-kode te skandeer om die rekening te bind',
+  'auth.wechatBindScanHint': 'Gebruik asseblief WeChat om die QR-kode te skandeer om die rekening te bind',
   'auth.wechatLoginScanHint': 'Gebruik asseblief WeChat om die QR-kode te skandeer om aan te meld',
   'auth.oauthBindSuccess': 'Suksesvol gekoppel',
   'auth.oauthUnbindError': 'Kon nie ontkoppel nie. Probeer asseblief weer.',

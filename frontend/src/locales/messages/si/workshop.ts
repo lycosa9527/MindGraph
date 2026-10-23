@@ -20,8 +20,7 @@ export default {
   'collab.endFailed': 'සහයෝගීතාව අවසන් කිරීමට අසමත් විය',
   'collab.ended': 'සහයෝගීතාව අවසන් විය',
   'collab.galleryFull': 'ගැලරිය පිරී ඇත. කරුණාකර පළමුව රූප සටහනක් මකන්න',
-  'collab.hintNetworkInactive':
-    'අන් අයට ඔබ සමඟ එකතු වීමට සහ සංස්කරණය කිරීමට හැකි වන පරිදි කේතයක් ජනනය කරන්න.',
+  'collab.hintNetworkInactive': 'අන් අයට ඔබ සමඟ එකතු වීමට සහ සංස්කරණය කිරීමට හැකි වන පරිදි කේතයක් ජනනය කරන්න.',
   'collab.hintSchoolInactive': 'සගයන් මුල් පිටුවේ Collaborate → School වෙතින් එක් වේ.',
   'collab.invalidDiagramData': 'වලංගු නොවන රූප සටහන් දත්ත',
   'collab.linkCopied': 'සබැඳිය පිටපත් කර ඇත',
@@ -31,20 +30,16 @@ export default {
   'collab.noDiagramToSave': 'සුරැකීමට රූප සටහනක් නැත',
   'collab.nodeLocked': 'වෙනත් අයෙක් මෙම නෝඩය සංස්කරණය කරයි',
   'collab.participants': '{n} සහභාගිවන්නන්',
-  'collab.previousSessionsStopped':
-    'ඔබගේ අනෙකුත් රූප සටහන් වල {n} පෙර සහයෝගිතා සැසිය(ය) අවසන් විය.',
+  'collab.previousSessionsStopped': 'ඔබගේ අනෙකුත් රූප සටහන් වල {n} පෙර සහයෝගිතා සැසිය(ය) අවසන් විය.',
   'collab.saveFailed': 'රූප සටහන සුරැකීමට අසමත් විය',
   'collab.scanToJoin': 'සම්බන්ධ වීමට ස්කෑන් කරන්න',
-  'collab.schoolDescActive':
-    'පාසල් සහයෝගීතාවය ක්‍රියාත්මකයි. සගයන්: MindGraph මුල් පිටුවේ Collaborate → School භාවිතා කර මෙම රූප සටහන තෝරන්න - කේතයක් අවශ්‍ය නොවේ.',
-  'collab.schoolStarted':
-    'පාසල් සහයෝගීතාවය ක්‍රියාත්මකයි - සහයෝගිතා → පාසලෙන් සගයන්ට සම්බන්ධ විය හැක.',
+  'collab.schoolDescActive': 'පාසල් සහයෝගීතාවය ක්‍රියාත්මකයි. සගයන්: MindGraph මුල් පිටුවේ Collaborate → School භාවිතා කර මෙම රූප සටහන තෝරන්න - කේතයක් අවශ්‍ය නොවේ.',
+  'collab.schoolStarted': 'පාසල් සහයෝගීතාවය ක්‍රියාත්මකයි - සහයෝගිතා → පාසලෙන් සගයන්ට සම්බන්ධ විය හැක.',
   'collab.sectionNetwork': 'හවුල් සහයෝගීතාව (කේතය)',
   'collab.sectionSchool': 'පාසල් සහයෝගීතාව',
   'collab.sessionDuration': 'සැසි කාලය',
   'collab.sessionRemaining': 'සැසිය අවසන් වේ',
-  'collab.shareDescNetwork':
-    'කේතය හෝ සබැඳිය බෙදා ගන්න - අන් අය එය සහයෝගීතාවය → බෙදාගත් යටතේ ඇතුළු කරන්න.',
+  'collab.shareDescNetwork': 'කේතය හෝ සබැඳිය බෙදා ගන්න - අන් අය එය සහයෝගීතාවය → බෙදාගත් යටතේ ඇතුළු කරන්න.',
   'collab.start': 'ආරම්භ කරන්න',
   'collab.startFailed': 'ආරම්භ කිරීමට අසමත් විය: {msg}',
   'collab.title': 'මාර්ගගත සහයෝගීතාව',
@@ -57,25 +52,18 @@ export default {
   'workshop.announceChannels': 'නිවේදන',
   'workshop.announceReadOnlyHint': 'මෙම නිවේදන නාලිකාවේ පළ කළ හැක්කේ පරිපාලකයන්ට පමණි.',
   'workshop.archiveLessonStudy': 'පාඩම් පාඩම් සංරක්ෂණය කරන්න',
-  'workshop.archiveLessonStudyConfirm':
-    'මෙම පාඩම් අධ්‍යයනය සංරක්ෂණය කරන්නද? සාමාජිකයින් තවදුරටත් එය ලැයිස්තුවේ නොදකිනු ඇත.',
+  'workshop.archiveLessonStudyConfirm': 'මෙම පාඩම් අධ්‍යයනය සංරක්ෂණය කරන්නද? සාමාජිකයින් තවදුරටත් එය ලැයිස්තුවේ නොදකිනු ඇත.',
   'workshop.archiveTeachingGroup': 'ලේඛනාගාර ඉගැන්වීමේ කණ්ඩායම',
-  'workshop.archiveTeachingGroupConfirm':
-    'මෙම ඉගැන්වීමේ කණ්ඩායම සංරක්ෂණය කරන්නද? එය ගුරු කණ්ඩායම් ලැයිස්තුවෙන් අතුරුදහන් වනු ඇත.',
+  'workshop.archiveTeachingGroupConfirm': 'මෙම ඉගැන්වීමේ කණ්ඩායම සංරක්ෂණය කරන්නද? එය ගුරු කණ්ඩායම් ලැයිස්තුවෙන් අතුරුදහන් වනු ඇත.',
   'workshop.archiveAnnounceChannel': 'සංරක්ෂිත නිවේදන නාලිකාව',
-  'workshop.archiveAnnounceChannelConfirm':
-    'ඔබට මෙම නිවේදන නාලිකාව සංරක්ෂණය කිරීමට අවශ්‍ය බව විශ්වාසද? පැති තීරුව තවදුරටත් දර්ශනය නොවනු ඇත, නමුත් පණිවිඩය පවතිනු ඇත.',
+  'workshop.archiveAnnounceChannelConfirm': 'ඔබට මෙම නිවේදන නාලිකාව සංරක්ෂණය කිරීමට අවශ්‍ය බව විශ්වාසද? පැති තීරුව තවදුරටත් දර්ශනය නොවනු ඇත, නමුත් පණිවිඩය පවතිනු ඇත.',
   'workshop.deleteTeachingGroup': 'ඉගැන්වීම් සහ පර්යේෂණ කණ්ඩායම මකන්න',
-  'workshop.deleteTeachingGroupConfirm':
-    'ඔබට මෙම ඉගැන්වීම් සහ පර්යේෂණ කණ්ඩායම, එහි පාඩම් සහ පණිවිඩ ස්ථිරවම මැකීමට අවශ්‍ය බව විශ්වාසද? මෙම ක්‍රියාව පසුගමනය කළ නොහැක.',
+  'workshop.deleteTeachingGroupConfirm': 'ඔබට මෙම ඉගැන්වීම් සහ පර්යේෂණ කණ්ඩායම, එහි පාඩම් සහ පණිවිඩ ස්ථිරවම මැකීමට අවශ්‍ය බව විශ්වාසද? මෙම ක්‍රියාව පසුගමනය කළ නොහැක.',
   'workshop.deleteAnnounceChannel': 'නිවේදන නාලිකාව මකන්න',
-  'workshop.deleteAnnounceChannelConfirm':
-    'ඔබට මෙම නිවේදන නාලිකාව සහ එහි පණිවිඩ ස්ථිරවම මැකීමට අවශ්‍ය බව විශ්වාසද? මෙම ක්‍රියාව පසුගමනය කළ නොහැක.',
+  'workshop.deleteAnnounceChannelConfirm': 'ඔබට මෙම නිවේදන නාලිකාව සහ එහි පණිවිඩ ස්ථිරවම මැකීමට අවශ්‍ය බව විශ්වාසද? මෙම ක්‍රියාව පසුගමනය කළ නොහැක.',
   'workshop.deleteLessonStudy': 'පාඩම මකන්න',
-  'workshop.deleteLessonStudyConfirm':
-    'ඔබට මෙම පාඩම සහ එහි පණිවිඩ ස්ථිරවම මැකීමට අවශ්‍ය බව විශ්වාසද? මෙම ක්‍රියාව පසුගමනය කළ නොහැක.',
-  'workshop.manageNeedAdmin':
-    'ඉගැන්වීම් සහ පර්යේෂණ කණ්ඩායම් එකතු කළ හැක්කේ පාසල් පරිපාලකයන්ට පමණි. පරිපාලකයින්ට හෝ සමූහයේ නිර්මාතෘට මකා දැමිය හැක.',
+  'workshop.deleteLessonStudyConfirm': 'ඔබට මෙම පාඩම සහ එහි පණිවිඩ ස්ථිරවම මැකීමට අවශ්‍ය බව විශ්වාසද? මෙම ක්‍රියාව පසුගමනය කළ නොහැක.',
+  'workshop.manageNeedAdmin': 'ඉගැන්වීම් සහ පර්යේෂණ කණ්ඩායම් එකතු කළ හැක්කේ පාසල් පරිපාලකයන්ට පමණි. පරිපාලකයින්ට හෝ සමූහයේ නිර්මාතෘට මකා දැමිය හැක.',
   'workshop.math': 'සූත්රය',
   'workshop.backToConversations': '← සංවාද',
   'workshop.bold': 'නිර්භීත',
@@ -125,8 +113,7 @@ export default {
   'workshop.create': 'නිර්මාණය කරන්න',
   'workshop.createChannelFailed': 'නාලිකාව සෑදීමට නොහැකි විය',
   'workshop.createChannelNeedParent': 'මුලින්ම මාපිය ගුරු කණ්ඩායමක් තෝරන්න.',
-  'workshop.createChannelNoGroupsYet':
-    'පළමුව ඉගැන්වීමේ කණ්ඩායමක් සාදන්න, ඉන්පසු එය යටතේ පාඩම් අධ්‍යයන එකතු කරන්න.',
+  'workshop.createChannelNoGroupsYet': 'පළමුව ඉගැන්වීමේ කණ්ඩායමක් සාදන්න, ඉන්පසු එය යටතේ පාඩම් අධ්‍යයන එකතු කරන්න.',
   'workshop.createChannelSuccess': 'නාලිකාව නිර්මාණය කරන ලදී',
   'workshop.createStudyCaseHint': 'ආරම්භ කිරීමට සංවාදයක් ආරම්භ කරන්න',
   'workshop.cycleStudyStatus': 'පාපැදි අධ්‍යයන තත්ත්වය',
@@ -144,8 +131,7 @@ export default {
   'workshop.diagram': 'රූප සටහන',
   'workshop.diagramInsertFailed': 'නිරූපකය ඇතුළු කිරීමට අසමත් විය',
   'workshop.diagramInserting': 'නිරූපකය ඇතුළු කරමින්...',
-  'workshop.diagramPickerEmpty':
-    'පින්තූර පුස්තකාලය හිස්ය, කරුණාකර පළමුව කැන්වසයේ පින්තූරයක් සුරකින්න.',
+  'workshop.diagramPickerEmpty': 'පින්තූර පුස්තකාලය හිස්ය, කරුණාකර පළමුව කැන්වසයේ පින්තූරයක් සුරකින්න.',
   'workshop.diagramPickerTitle': 'මගේ අයිකන පුස්තකාලයෙන් තෝරන්න',
   'workshop.directMessage': 'සෘජු පණිවිඩය',
   'workshop.directMessages': 'සෘජු පණිවිඩ',
@@ -169,8 +155,7 @@ export default {
   'workshop.gearMenu': 'විකල්ප',
   'workshop.generalChat': 'සාමාන්ය කතාබස්',
   'workshop.inbox': 'එන ලිපි',
-  'workshop.inboxHintPickChannel':
-    'කියවීමට සහ පිළිතුරු දීමට පැති තීරුවේ නාලිකාවක් හෝ සෘජු පණිවිඩයක් විවෘත කරන්න. ඔබට නැරඹීම් → එන ලිපි වෙතින් ඕනෑම වේලාවක මෙහි ආපසු යා හැක.',
+  'workshop.inboxHintPickChannel': 'කියවීමට සහ පිළිතුරු දීමට පැති තීරුවේ නාලිකාවක් හෝ සෘජු පණිවිඩයක් විවෘත කරන්න. ඔබට නැරඹීම් → එන ලිපි වෙතින් ඕනෑම වේලාවක මෙහි ආපසු යා හැක.',
   'workshop.inboxSummaryTitle': 'ඔබගේ එන ලිපි',
   'workshop.inboxUnreadChannels': 'නාලිකාවල කියවා නැත',
   'workshop.inboxUnreadDms': 'නොකියවූ සෘජු පණිවිඩ',
@@ -196,16 +181,14 @@ export default {
   'workshop.loadMore': 'වැඩිපුර පටවන්න',
   'workshop.mainChannelStream': 'ප්රධාන නාලිකාව',
   'workshop.manageTeachingGroups': 'ඉගැන්වීමේ කණ්ඩායම් කළමනාකරණය කරන්න',
-  'workshop.manageTeachingGroupsBlurb':
-    'කණ්ඩායම් එකතු කරන්න හෝ ඉවත් කරන්න, පොදු හෝ පුද්ගලිකව සකසන්න, නම් සහ විස්තර සංස්කරණය කරන්න, ලැයිස්තුව නැවත අනුපිළිවෙළට සකස් කරන්න, කණ්ඩායමක් අච්චුවක් ලෙස අනුපිටපත් කරන්න, සහ සගයන්ට ආරාධනා කරන්න. නීති රීති සහ දැනුම්දීම් පෙරනිමි පළ කිරීම සඳහා උසස් භාවිත කරන්න. සංරක්ෂිත කිරීම සියලු දෙනා සඳහා සමූහයක් ඉවත් කරයි.',
+  'workshop.manageTeachingGroupsBlurb': 'කණ්ඩායම් එකතු කරන්න හෝ ඉවත් කරන්න, පොදු හෝ පුද්ගලිකව සකසන්න, නම් සහ විස්තර සංස්කරණය කරන්න, ලැයිස්තුව නැවත අනුපිළිවෙළට සකස් කරන්න, කණ්ඩායමක් අච්චුවක් ලෙස අනුපිටපත් කරන්න, සහ සගයන්ට ආරාධනා කරන්න. නීති රීති සහ දැනුම්දීම් පෙරනිමි පළ කිරීම සඳහා උසස් භාවිත කරන්න. සංරක්ෂිත කිරීම සියලු දෙනා සඳහා සමූහයක් ඉවත් කරයි.',
   'workshop.manageUser': 'මෙම පරිශීලක කළමනාකරණය කරන්න',
   'workshop.markAllReadChannel': 'කියවූ සියලුම පණිවිඩ සලකුණු කරන්න',
   'workshop.markAsRead': 'කියවූ ලෙස ලකුණු කරන්න',
   'workshop.markStudyResolved': 'ලකුණු අධ්‍යයනය විසඳා ඇත',
   'workshop.members': 'සාමාජිකයන්',
   'workshop.mentionAmbiguous': 'නොපැහැදිලි නම් - අනන්‍ය සංදර්ශක නාමයක් ඇති අයෙකු තෝරන්න: {0}',
-  'workshop.mentionUnknown':
-    'නොදන්නා සඳහන් කිරීම් (එකම-සංවිධානය භාවිතා කරන්නන් සහ කාර්ය මණ්ඩලය පමණි): {0}',
+  'workshop.mentionUnknown': 'නොදන්නා සඳහන් කිරීම් (එකම-සංවිධානය භාවිතා කරන්නන් සහ කාර්ය මණ්ඩලය පමණි): {0}',
   'workshop.mentionedInChannel': 'ඔබව #{0} හි සඳහන් කර ඇත',
   'workshop.mentionedInTopic': 'ඔබව {0} හි සඳහන් කර ඇත',
   'workshop.mentions': 'සඳහන් කරයි',
@@ -237,8 +220,7 @@ export default {
   'workshop.noTopicsYet': 'තවම සංවාද නැත',
   'workshop.numberedList': 'ඇණවුම් ලැයිස්තුව',
   'workshop.notifications': 'දැනුම්දීම්',
-  'workshop.notificationsSettingsBlurb':
-    'සඳහන් කිරීම් සහ නව පණිවිඩ සඳහා බ්‍රවුසර දැනුම්දීම් ඔබේ පද්ධති සැකසීම් භාවිත කරයි. ඔබට නාලිකා සැකසීම් තුළ එක් නාලිකාවකට ඩෙස්ක්ටොප් සහ ඊමේල් ඇඟවීම් සුසර කළ හැකිය.',
+  'workshop.notificationsSettingsBlurb': 'සඳහන් කිරීම් සහ නව පණිවිඩ සඳහා බ්‍රවුසර දැනුම්දීම් ඔබේ පද්ධති සැකසීම් භාවිත කරයි. ඔබට නාලිකා සැකසීම් තුළ එක් නාලිකාවකට ඩෙස්ක්ටොප් සහ ඊමේල් ඇඟවීම් සුසර කළ හැකිය.',
   'workshop.offline': 'නොබැඳි',
   'workshop.online': 'සමඟ අමුත්තන්',
   'workshop.openMainChannelStream': 'ප්රධාන නාලිකාව',
@@ -247,12 +229,9 @@ export default {
   'workshop.personalMenu': 'පුද්ගලික මෙනුව',
   'workshop.preview': 'පෙරදසුන',
   'workshop.previewEmpty': 'පෙරදසුන් කිරීමට අන්තර්ගතයක් නැත',
-  'workshop.phase2RoadmapGroupsAlerts':
-    "පසුව එන: {'@'}group සඳහන් කරයි, අනතුරු ඇඟවීමේ වචන, සහ පණිවිඩ සංස්කරණ ඉතිහාස ප්‍රතිපත්තිය.",
-  'workshop.phase2RoadmapMovePreview':
-    'පසුව එන: තනි පණිවිඩය, URL සබැඳි පෙරදසුන්, සහ පොහොසත් හරස් නාලිකා ක්‍රියාකාරකම් ගෙන යන්න.',
-  'workshop.phase2RoadmapPlatform':
-    'වේදිකා පසුබෑම: වර්ධක සමමුහුර්තකරණය, ජංගම තල්ලුව, විද්‍යුත් තැපෑල දිරවීම්, bots/webhooks.',
+  'workshop.phase2RoadmapGroupsAlerts': 'පසුව එන: {\'@\'}group සඳහන් කරයි, අනතුරු ඇඟවීමේ වචන, සහ පණිවිඩ සංස්කරණ ඉතිහාස ප්‍රතිපත්තිය.',
+  'workshop.phase2RoadmapMovePreview': 'පසුව එන: තනි පණිවිඩය, URL සබැඳි පෙරදසුන්, සහ පොහොසත් හරස් නාලිකා ක්‍රියාකාරකම් ගෙන යන්න.',
+  'workshop.phase2RoadmapPlatform': 'වේදිකා පසුබෑම: වර්ධක සමමුහුර්තකරණය, ජංගම තල්ලුව, විද්‍යුත් තැපෑල දිරවීම්, bots/webhooks.',
   'workshop.pickColleagueToInvite': 'ආරාධනා කිරීමට සගයකු තෝරන්න.',
   'workshop.pinChannel': 'ඉහළට අමුණන්න',
   'workshop.policyEveryone': 'හැමෝම',
@@ -260,8 +239,7 @@ export default {
   'workshop.policyMembersOnly': 'සාමාජිකයින් පමණි',
   'workshop.postingPolicy': 'පළකිරීමේ ප්‍රතිපත්තිය',
   'workshop.preferences': 'මනාප',
-  'workshop.preferencesSettingsBlurb':
-    'භාෂාව සහ සංදර්ශක මනාප යෙදුම හරහා අදාළ වේ. කාලයත් සමඟ තවත් වැඩමුළු කතාබස් විකල්ප මෙහි දිස්වනු ඇත.',
+  'workshop.preferencesSettingsBlurb': 'භාෂාව සහ සංදර්ශක මනාප යෙදුම හරහා අදාළ වේ. කාලයත් සමඟ තවත් වැඩමුළු කතාබස් විකල්ප මෙහි දිස්වනු ඇත.',
   'workshop.presenceActive': 'ක්රියාකාරී',
   'workshop.presenceIdle': 'නිෂ්ක්‍රීයයි',
   'workshop.presenceOffline': 'නොබැඳි',
@@ -270,8 +248,7 @@ export default {
   'workshop.publicChannels': 'පොදු නාලිකා',
   'workshop.quote': 'උපුටා ගැනීම',
   'workshop.quoteMessage': 'උපුටා දැක්වීමේ පණිවිඩය',
-  'workshop.readOnlyProfileBlurb':
-    'සගයන් සඳහා පැතිකඩ විස්තර සරල දසුනකින් පෙන්වා ඇත. පරිපාලක නාමාවලිය විවෘත කිරීමට පරිශීලක (පරිපාලක) කළමනාකරණය කරන්න.',
+  'workshop.readOnlyProfileBlurb': 'සගයන් සඳහා පැතිකඩ විස්තර සරල දසුනකින් පෙන්වා ඇත. පරිපාලක නාමාවලිය විවෘත කිරීමට පරිශීලක (පරිපාලක) කළමනාකරණය කරන්න.',
   'workshop.recentDmActivity': 'මෑත සෘජු පණිවිඩ',
   'workshop.recentTopics': 'මෑත සංවාද',
   'workshop.renameTopic': 'සංවාදය නැවත නම් කරන්න',
@@ -282,8 +259,7 @@ export default {
   'workshop.roleOwner': 'හිමිකරු',
   'workshop.searchMembers': 'සාමාජිකයින් සොයන්න...',
   'workshop.searchMessages': 'පණිවිඩ සොයන්න...',
-  'workshop.selectChannelForSettings':
-    'පළමුව ඉගැන්වීමේ කණ්ඩායමක් හෝ පාඩම් අධ්‍යයනයක් තෝරන්න, පසුව මෙහි සිටුවම් විවෘත කරන්න.',
+  'workshop.selectChannelForSettings': 'පළමුව ඉගැන්වීමේ කණ්ඩායමක් හෝ පාඩම් අධ්‍යයනයක් තෝරන්න, පසුව මෙහි සිටුවම් විවෘත කරන්න.',
   'workshop.selectConversation': 'සංවාදයක් තෝරන්න',
   'workshop.selectParentGroup': 'මාපිය ගුරු කණ්ඩායම',
   'workshop.selectTopic': 'සංවාදය තෝරන්න',
@@ -309,8 +285,7 @@ export default {
   'workshop.strikethrough': 'පහර හරහා',
   'workshop.table': 'පත්රය',
   'workshop.switchSchool': 'පාසල මාරු කරන්න',
-  'workshop.teachingGroupLandingHint':
-    'මෙම ඉගැන්වීමේ කණ්ඩායමේ පාඩම් අධ්යයන සහ සංවාද. නාලිකාව හෝ නූල් විවෘත කිරීමට පේළියක් තෝරන්න.',
+  'workshop.teachingGroupLandingHint': 'මෙම ඉගැන්වීමේ කණ්ඩායමේ පාඩම් අධ්යයන සහ සංවාද. නාලිකාව හෝ නූල් විවෘත කිරීමට පේළියක් තෝරන්න.',
   'workshop.teachingGroupMembers': 'සාමාජිකයන්',
   'workshop.teachingGroupNameRequired': 'කරුණාකර ඉගැන්වීමේ කණ්ඩායම් නමක් ඇතුළත් කරන්න.',
   'workshop.teachingGroupNoLessons': 'මෙම සමූහයේ තවමත් පාඩම් අධ්‍යයනයක් නොමැත.',
@@ -325,8 +300,7 @@ export default {
   'workshop.topicTitle': 'මාතෘකාව',
   'workshop.topicTitlePlaceholder': 'උදා. 3 වන පරිච්ඡේදය සඳහා චින්තන සිතියම සැලසුම් කරන්න',
   'workshop.topics': 'සංවාද',
-  'workshop.typeMessagePlaceholder':
-    'පණිවිඩයක් ටයිප් කරන්න... (යැවීමට ඇතුල් කරන්න, නව පේළිය සඳහා Shift+Enter)',
+  'workshop.typeMessagePlaceholder': 'පණිවිඩයක් ටයිප් කරන්න... (යැවීමට ඇතුල් කරන්න, නව පේළිය සඳහා Shift+Enter)',
   'workshop.unfollowTopic': 'සංවාදය අනුගමනය නොකරන්න',
   'workshop.unknown': 'නොදන්නා',
   'workshop.unmuteChannel': 'නාලිකාව නිහඬ නොකරන්න',
@@ -342,14 +316,11 @@ export default {
   'workshop.viewProfile': 'පැතිකඩ බලන්න',
   'workshop.viewingSchool': 'බැලීම: {0}',
   'workshop.views': 'දසුන්',
-  'workshop.welcomeChannelsBody':
-    'මෙහි "නාලිකාවක්" බොහෝ විට අනුරූප වන්නේ ඉගැන්වීම් පර්යේෂණ කණ්ඩායමකට (教研组) හෝ PLC: කණ්ඩායමකට එක් හවුල් ඉඩක් (උදා: Math PLC, English PLC). එය සහභාගී වන්නේ කවුරුන්ද සහ අවකාශය කාණ්ඩගත කරන්නේ කෙසේද යන්න නිර්වචනය කරයි.',
+  'workshop.welcomeChannelsBody': 'මෙහි "නාලිකාවක්" බොහෝ විට අනුරූප වන්නේ ඉගැන්වීම් පර්යේෂණ කණ්ඩායමකට (教研组) හෝ PLC: කණ්ඩායමකට එක් හවුල් ඉඩක් (උදා: Math PLC, English PLC). එය සහභාගී වන්නේ කවුරුන්ද සහ අවකාශය කාණ්ඩගත කරන්නේ කෙසේද යන්න නිර්වචනය කරයි.',
   'workshop.welcomeChannelsTitle': 'PLC / විෂය කණ්ඩායම්',
-  'workshop.welcomeConversationsBody':
-    'පාඩම් අධ්‍යයනයක් ඇතුළත ඔබ මාතෘකා සහිත සංවාද විවෘත කරයි—උදාහරණයක් ලෙස උපදේශන සැලසුම්, පරාවර්තනය, හෝ පසු විපරම් කාර්යයන්—එබැවින් නූල් අනුගමනය කිරීමට පහසු වේ.',
+  'workshop.welcomeConversationsBody': 'පාඩම් අධ්‍යයනයක් ඇතුළත ඔබ මාතෘකා සහිත සංවාද විවෘත කරයි—උදාහරණයක් ලෙස උපදේශන සැලසුම්, පරාවර්තනය, හෝ පසු විපරම් කාර්යයන්—එබැවින් නූල් අනුගමනය කිරීමට පහසු වේ.',
   'workshop.welcomeConversationsTitle': 'සංවාද',
-  'workshop.welcomeExampleCaption':
-    'නිදර්ශන උදාහරණය (ප්‍රබන්ධ පාසල) — Math PLC සහ English PLC, එක් එක් පාඩම් අධ්‍යයන සහ නියැදි සංවාද සහිතයි.',
+  'workshop.welcomeExampleCaption': 'නිදර්ශන උදාහරණය (ප්‍රබන්ධ පාසල) — Math PLC සහ English PLC, එක් එක් පාඩම් අධ්‍යයන සහ නියැදි සංවාද සහිතයි.',
   'workshop.welcomeExampleConvLabel': 'සංවාද',
   'workshop.welcomeExampleGroupEnglish': 'ඉංග්රීසි පීඑල්සී',
   'workshop.welcomeExampleGroupMath': 'ගණිත පීඑල්සී',
@@ -368,51 +339,38 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'සෑම සංවාදයකම පණිවිඩ සජීවී වේ',
   'workshop.welcomeExampleOrg': 'චෙන්සි මධ්‍ය විද්‍යාලය',
   'workshop.welcomeHowTitle': 'එය එකට ගැලපෙන ආකාරය',
-  'workshop.welcomeIntro':
-    'වැඩමුළුව යනු ව්‍යුහගත සාකච්ඡාව සඳහා ඔබේ පාසලේ අවකාශයයි: නිවේදන බෙදාගැනීම, පාඩම් අධ්‍යයන ක්‍රියාත්මක කිරීම සහ ඔබේ ඉගැන්වීමේ කාර්යය සමඟ සංවාද සංවිධානය කර තබා ගැනීම.',
-  'workshop.welcomeLessonStudyBody':
-    'පාඩම්-අධ්‍යයන නාලිකා සාමාන්‍යයෙන් එම කණ්ඩායම යටතේ වාඩි වේ. සෑම එකක්ම එක් පාඩම් චක්‍රයක් සඳහා ස්ථානයක් වන අතර—සැලසුම් කිරීම, නිරීක්ෂණය කිරීම සහ පරාවර්තනය—එසේම රූප සටහන් හෝ තත්ත්‍වයන් වෙත සම්බන්ධ විය හැක.',
+  'workshop.welcomeIntro': 'වැඩමුළුව යනු ව්‍යුහගත සාකච්ඡාව සඳහා ඔබේ පාසලේ අවකාශයයි: නිවේදන බෙදාගැනීම, පාඩම් අධ්‍යයන ක්‍රියාත්මක කිරීම සහ ඔබේ ඉගැන්වීමේ කාර්යය සමඟ සංවාද සංවිධානය කර තබා ගැනීම.',
+  'workshop.welcomeLessonStudyBody': 'පාඩම්-අධ්‍යයන නාලිකා සාමාන්‍යයෙන් එම කණ්ඩායම යටතේ වාඩි වේ. සෑම එකක්ම එක් පාඩම් චක්‍රයක් සඳහා ස්ථානයක් වන අතර—සැලසුම් කිරීම, නිරීක්ෂණය කිරීම සහ පරාවර්තනය—එසේම රූප සටහන් හෝ තත්ත්‍වයන් වෙත සම්බන්ධ විය හැක.',
   'workshop.welcomeLessonStudyTitle': 'පාඩම් අධ්යයන',
-  'workshop.welcomeMessagesBody':
-    'පණිවිඩ යනු ප්‍රධාන නාලිකා ප්‍රවාහයේ හෝ සංවාදයක් තුළ ඇති තනි පළ කිරීම් වේ. පිළිතුරු, සඳහන් කිරීම්, සහ ගොනු සියල්ල පණිවිඩ මත ගමන් කරයි.',
+  'workshop.welcomeMessagesBody': 'පණිවිඩ යනු ප්‍රධාන නාලිකා ප්‍රවාහයේ හෝ සංවාදයක් තුළ ඇති තනි පළ කිරීම් වේ. පිළිතුරු, සඳහන් කිරීම්, සහ ගොනු සියල්ල පණිවිඩ මත ගමන් කරයි.',
   'workshop.welcomeMessagesTitle': 'පණිවිඩ',
   'workshop.welcomeSubtitle': 'MindGraph හි ඔබේ පාසල සමඟ සහයෝගයෙන් කටයුතු කරන්න',
   'workshop.welcomeTitle': 'වැඩමුළුවට සාදරයෙන් පිළිගනිමු',
   'workshop.you': '(ඔබ)',
   'workshop.youAnd': 'ඔබ සහ',
   'workshopCanvas.connectFailed': 'සහයෝගීතාවයට සම්බන්ධ වීමට අසමත් විය',
-  'workshopCanvas.sessionExpiredReconnect':
-    'ඔබගේ සැසිය කල් ඉකුත් වී ඇත. සහයෝගීතාවයට නැවත එක් වීමට පිටුව නැවුම් කරන්න.',
-  'workshopCanvas.sessionRefreshFailed':
-    'ඔබගේ සහයෝගිතා සැසිය නැවුම් කිරීමට නොහැකි විය. කරුණාකර ඔබේ කාර්යය සුරකින්න සහ නැවත පුරන්න.',
-  'workshopCanvas.outboundQueueDegraded':
-    'සහයෝගීතාවය පසුබෑමකට ලක්වේ. සමහර නොයවන ලද සංස්කරණ තබා ගත නොහැකි විය.',
+  'workshopCanvas.sessionExpiredReconnect': 'ඔබගේ සැසිය කල් ඉකුත් වී ඇත. සහයෝගීතාවයට නැවත එක් වීමට පිටුව නැවුම් කරන්න.',
+  'workshopCanvas.sessionRefreshFailed': 'ඔබගේ සහයෝගිතා සැසිය නැවුම් කිරීමට නොහැකි විය. කරුණාකර ඔබේ කාර්යය සුරකින්න සහ නැවත පුරන්න.',
+  'workshopCanvas.outboundQueueDegraded': 'සහයෝගීතාවය පසුබෑමකට ලක්වේ. සමහර නොයවන ලද සංස්කරණ තබා ගත නොහැකි විය.',
   'workshopCanvas.connectionClosed': 'සම්බන්ධතාවය වසා ඇත',
-  'workshopCanvas.connectionClosedSlow':
-    'සබැඳුම වසා ඇත: සහයෝගිතා සැසිය සමඟින් පවත්වා ගැනීමට ඔබගේ සම්බන්ධතාවය මන්දගාමී විය.',
+  'workshopCanvas.connectionClosedSlow': 'සබැඳුම වසා ඇත: සහයෝගිතා සැසිය සමඟින් පවත්වා ගැනීමට ඔබගේ සම්බන්ධතාවය මන්දගාමී විය.',
   'workshopCanvas.sessionEndedByHost': 'සත්කාරක සමාගම සහයෝගිතා සැසිය අවසන් කර ඇත.',
   'workshopCanvas.editingNodeLabel': '{username} සංස්කරණය කරමින්...',
   'workshopCanvas.collabEditorDisplayNameFallback': 'කෙනෙක්',
   'workshopCanvas.connectionClosedReason': 'සහයෝගිතා සම්බන්ධතාවය වසා ඇත: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} මෙම නෝඩය සංස්කරණය කරයි',
   'workshopCanvas.errorGeneric': 'සහයෝගිතා දෝෂයකි',
-  'workshopCanvas.updatePartialFiltered':
-    'වෙනත් සහකාරකයෙකු එම නෝඩ් සංස්කරණය කරන නිසා සමහර සංස්කරණ මඟ හරින ලදී ({count} node(s)).',
-  'workshopCanvas.reconnectFailed':
-    'සහයෝගීතාවයට නැවත සම්බන්ධ වීමට අසමත් විය, කරුණාකර පිටුව නැවුම් කරන්න',
-  'workshopCanvas.resyncWaiting':
-    'සජීවී රූප සටහන් සමමුහුර්ත කිරීමට බලාපොරොත්තු වූවාට වඩා වැඩි කාලයක් ගතවේ. නැවත උත්සාහ කිරීම; සංස්කරණය හිරවී ඇත්නම් ඔබට නැවුම් කළ හැක.',
+  'workshopCanvas.updatePartialFiltered': 'වෙනත් සහකාරකයෙකු එම නෝඩ් සංස්කරණය කරන නිසා සමහර සංස්කරණ මඟ හරින ලදී ({count} node(s)).',
+  'workshopCanvas.reconnectFailed': 'සහයෝගීතාවයට නැවත සම්බන්ධ වීමට අසමත් විය, කරුණාකර පිටුව නැවුම් කරන්න',
+  'workshopCanvas.resyncWaiting': 'සජීවී රූප සටහන් සමමුහුර්ත කිරීමට බලාපොරොත්තු වූවාට වඩා වැඩි කාලයක් ගතවේ. නැවත උත්සාහ කිරීම; සංස්කරණය හිරවී ඇත්නම් ඔබට නැවුම් කළ හැක.',
   'workshopCanvas.returnedHomeIdle': 'ආපසු නිවසට - දිගු නිෂ්ක්‍රීය කාලයකට පසු ඔබ විසන්ධි විය.',
   'workshopCanvas.userJoined': 'පරිශීලක {username} එක් විය',
   'workshopCanvas.usersJoined': '{count} පරිශීලකයන් එක් විය',
   'workshopCanvas.userLeft': 'පරිශීලක {username} හැර ගියේය',
   'workshopCanvas.usersLeft': '{count} පරිශීලකයින් ඉවත්ව ගොස් ඇත',
   'workshopCanvas.wsError': 'සහයෝගිතා සම්බන්ධතා දෝෂය, කරුණාකර ඔබගේ ජාලය පරීක්ෂා කරන්න',
-  'workshopCanvas.returnedHomeRoomIdle':
-    'සහයෝගීතාවය අවසන් විය: මෙම සැසියේ ටික වේලාවක් රූප සටහන් සංස්කරණයන් නොමැත.',
-  'workshopCanvas.roomIdleWarningToast':
-    'මෑතකදී රූපසටහන් සංස්කරණය කිරීම් නැත - යමෙක් සංස්කරණය කරන්නේ නම් මිස ගණන් කිරීම බිංදුවට වැටෙන විට සහයෝගිතාව අවසන් වේ.',
-  'workshopCanvas.otherTabCollaborationActive':
-    'මෙම ගිණුම සඳහා වෙනත් ටැබයක හෝ කවුළුවක සහයෝගිතාව දිගටම පවතී.',
+  'workshopCanvas.returnedHomeRoomIdle': 'සහයෝගීතාවය අවසන් විය: මෙම සැසියේ ටික වේලාවක් රූප සටහන් සංස්කරණයන් නොමැත.',
+  'workshopCanvas.roomIdleWarningToast': 'මෑතකදී රූපසටහන් සංස්කරණය කිරීම් නැත - යමෙක් සංස්කරණය කරන්නේ නම් මිස ගණන් කිරීම බිංදුවට වැටෙන විට සහයෝගිතාව අවසන් වේ.',
+  'workshopCanvas.otherTabCollaborationActive': 'මෙම ගිණුම සඳහා වෙනත් ටැබයක හෝ කවුළුවක සහයෝගිතාව දිගටම පවතී.',
   'workshopCanvas.joinQrAlt': 'සහයෝගිතා QR කේතයට සම්බන්ධ වන්න',
 } as const

@@ -5,18 +5,13 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'தலைப்பையோ மைய முனையையோ அழிக்க முடியவில்லை',
-  'notification.cannotResetSelectDiagramType':
-    'மீட்டமைக்க முடியவில்லை: முதலில் ஐகான் வகையைத் தேர்ந்தெடுக்கவும்',
+  'notification.cannotResetSelectDiagramType': 'மீட்டமைக்க முடியவில்லை: முதலில் ஐகான் வகையைத் தேர்ந்தெடுக்கவும்',
   'notification.canvasClearNodes': '{count} முனைகள் அழிக்கப்பட்டன',
-  'notification.canvasClearNodesLearning':
-    '{count} முனைகள் காலியாக விடப்பட்டுள்ளன, பதில் சேர்க்கப்பட்டது',
+  'notification.canvasClearNodesLearning': '{count} முனைகள் காலியாக விடப்பட்டுள்ளன, பதில் சேர்க்கப்பட்டது',
   'notification.canvasSomeoneEditingNode': 'மற்றொரு பயனர் இந்த முனையைத் திருத்துகிறார்',
-  'notification.collabDeleteBlocked':
-    'நீக்க முடியவில்லை: பிற பயனர்கள் தொடர்புடைய முனைகளைத் திருத்துகின்றனர்',
-  'notification.collabRedoBlocked':
-    'மீண்டும் செய்ய முடியாது: பிற பயனர்கள் தொடர்புடைய முனையைத் திருத்துகிறார்கள்',
-  'notification.collabUndoBlocked':
-    'செயல்தவிர்க்க முடியவில்லை: பிற பயனர்கள் தொடர்புடைய முனைகளைத் திருத்துகின்றனர்',
+  'notification.collabDeleteBlocked': 'நீக்க முடியவில்லை: பிற பயனர்கள் தொடர்புடைய முனைகளைத் திருத்துகின்றனர்',
+  'notification.collabRedoBlocked': 'மீண்டும் செய்ய முடியாது: பிற பயனர்கள் தொடர்புடைய முனையைத் திருத்துகிறார்கள்',
+  'notification.collabUndoBlocked': 'செயல்தவிர்க்க முடியவில்லை: பிற பயனர்கள் தொடர்புடைய முனைகளைத் திருத்துகின்றனர்',
   'notification.conversationDeleted': 'உரையாடல் நீக்கப்பட்டது',
   'notification.copied': 'கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டது',
   'notification.copyFailed': 'நகலெடுக்க முடியவில்லை',
@@ -26,42 +21,33 @@ export default {
   'notification.feedbackThanks': 'உங்கள் கருத்துக்கு நன்றி',
   'notification.feedbackThanksDislike': 'உங்கள் கருத்துக்கு நன்றி, மேம்படுத்த கடினமாக உழைப்போம்',
   'notification.focusQuestionTooShort': 'முதலில் நீண்ட கவனம் செலுத்தும் கேள்வியை உள்ளிடவும்',
-  'notification.geoLiteMissingIntro':
-    'MaxMind இலிருந்து GeoLite2 நாட்டைப் பதிவிறக்கவும், GeoLite2-Country.mmdb ஐ அன்சிப் செய்து சர்வர் தரவுக் கோப்பகத்திற்கு நகலெடுக்கவும்:',
+  'notification.geoLiteMissingIntro': 'MaxMind இலிருந்து GeoLite2 நாட்டைப் பதிவிறக்கவும், GeoLite2-Country.mmdb ஐ அன்சிப் செய்து சர்வர் தரவுக் கோப்பகத்திற்கு நகலெடுக்கவும்:',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite பதிவிறக்கப் பக்கத்தைத் திறக்கவும்',
   'notification.geoLiteMissingPathLabel': 'எதிர்பார்க்கப்படும் பாதை:',
   'notification.geoLiteMissingTitle': 'GeoLite2 நாட்டின் தரவுத்தளத்தைக் காணவில்லை',
   'notification.fullscreenFailed': 'முழுத்திரை பயன்முறையில் நுழைய முடியாது',
   'notification.generationCancelled': 'தலைமுறை ரத்து செய்யப்பட்டது',
-  'notification.conceptMapTabNeedsAi':
-    'தாவல் பரிந்துரைகளைப் பயன்படுத்துவதற்கு முன், மேல் பட்டியில் "தொடங்கு AI" ஐ இயக்கவும்',
+  'notification.conceptMapTabNeedsAi': 'தாவல் பரிந்துரைகளைப் பயன்படுத்துவதற்கு முன், மேல் பட்டியில் "தொடங்கு AI" ஐ இயக்கவும்',
   'notification.historyClearNodes': 'முனை உரையை அழிக்கவும்',
   'notification.historyEmptyLearning': 'முனையை காலியாக விட்டுவிட்டு பதிலைச் சேர்க்கவும்',
   'notification.importInvalidData': 'இறக்குமதி தோல்வியடைந்தது, ஐகான் தரவு தவறானது',
   'notification.importLoadFailed': 'இறக்குமதி தோல்வியடைந்ததால் ஐகான் தரவை ஏற்ற முடியவில்லை.',
-  'notification.importSavePartial':
-    'இறக்குமதி வெற்றிகரமாக இருந்தது, ஆனால் கேலரியில் சேமிக்க முடியவில்லை.',
-  'notification.importSlotsFull':
-    'கேலரி நிரம்பியுள்ளது. ஐகான் இறக்குமதி செய்யப்பட்டது ஆனால் கேலரியில் சேமிக்கப்படவில்லை.',
+  'notification.importSavePartial': 'இறக்குமதி வெற்றிகரமாக இருந்தது, ஆனால் கேலரியில் சேமிக்க முடியவில்லை.',
+  'notification.importSlotsFull': 'கேலரி நிரம்பியுள்ளது. ஐகான் இறக்குமதி செய்யப்பட்டது ஆனால் கேலரியில் சேமிக்கப்படவில்லை.',
   'notification.importSuccess': 'ஐகான் இறக்குமதி செய்யப்பட்டு கேலரியில் சேமிக்கப்பட்டது',
   'notification.importUnsupportedType': 'இறக்குமதி தோல்வி, ஆதரிக்கப்படாத ஐகான் வகை',
-  'notification.inlineRecEmpty':
-    'பரிந்துரைக்கப்பட்ட உள்ளடக்கம் எதுவும் உருவாக்கப்படவில்லை, தயவுசெய்து மீண்டும் முயற்சிக்கவும் அல்லது தீம் சரிசெய்து மீண்டும் முயற்சிக்கவும்',
   'notification.loadMoreFailed': 'மேலும் ஏற்ற முடியவில்லை',
   'notification.networkError': 'பிணைய பிழை',
   'notification.nodeNotEligible': 'இந்த முனை தாவல் பரிந்துரைகளை ஆதரிக்காது',
-  'notification.newVersionAvailable':
-    'புதிய பதிப்பு வெளியிடப்பட்டது, புதுப்பி என்பதைக் கிளிக் செய்யவும்.',
+  'notification.newVersionAvailable': 'புதிய பதிப்பு வெளியிடப்பட்டது, புதுப்பி என்பதைக் கிளிக் செய்யவும்.',
   'notification.recommendationFailed': 'பரிந்துரை உருவாக்கம் தோல்வியடைந்தது: {msg}',
   'notification.relationshipGenerationFailed': 'உறவு உருவாக்கம் தோல்வியடைந்தது',
   'notification.resetDefaultTemplate': 'இயல்புநிலை டெம்ப்ளேட்டிற்கு மீட்டமைக்கவும்',
   'notification.rootConceptLinkNotFound': 'ரூட் கான்செப்ட் கம்பி காணப்படவில்லை',
   'notification.saved': 'வெற்றிகரமாக சேமிக்கப்பட்டது',
   'notification.selectNodeToClear': 'முதலில் அழிக்கப்பட வேண்டிய முனையைத் தேர்ந்தெடுக்கவும்',
-  'notification.sessionInvalidated':
-    'உள்நுழைந்த சாதனங்களின் எண்ணிக்கை வரம்பை மீறுவதால் நீங்கள் வெளியேறிவிட்டீர்கள்',
-  'notification.sessionKicked':
-    'இந்தக் கணக்கு மற்ற சாதனங்களில் இந்தக் கணக்கை ஆஃப்லைனில் பதிவு செய்துள்ளது',
+  'notification.sessionInvalidated': 'உள்நுழைந்த சாதனங்களின் எண்ணிக்கை வரம்பை மீறுவதால் நீங்கள் வெளியேறிவிட்டீர்கள்',
+  'notification.sessionKicked': 'இந்தக் கணக்கு மற்ற சாதனங்களில் இந்தக் கணக்கை ஆஃப்லைனில் பதிவு செய்துள்ளது',
   'notification.signInToUse': 'பயன்படுத்த உள்நுழையவும்',
   'notification.signInToValidateFocus': 'ஃபோகஸ் சிக்கல்களைச் சரிபார்க்க உள்நுழையவும்',
 } as const

@@ -19,6 +19,7 @@ from routers.api import workshop_ws_handlers_update as update_handler
 from services.features import workshop_ws_role_change as roles
 from services.features.workshop_ws_connection_state import ConnectionHandle
 from services.online_collab.core import online_collab_stop as stop_ops
+from services.online_collab.spec.online_collab_live_spec_ops import flush_live_spec_to_db_in_session
 from services.online_collab.participant import workshop_join_resume_tokens as tokens
 from tests.typing_helpers import mock_call_args
 
@@ -352,6 +353,40 @@ async def test_role_change_publishes_cross_worker_control() -> None:
     _kind, body = requester.send_queue.get_nowait()
     assert '"type": "role_change_ack"' in body
     assert '"user_id": 99' in body
+
+
+class _BindingRedis:
+    """Redis stand-in that only answers the code-to-diagram read."""
+
+    def __init__(self, value: object) -> None:
+        """Store the binding value returned by GET."""
+        self.value = value
+        self.keys: list[str] = []
+
+    async def get(self, key: str) -> object:
+        """Return the bound diagram id."""
+        self.keys.append(key)
+        return self.value
+
+
+@pytest.mark.asyncio
+async def test_flush_refuses_to_write_when_code_belongs_to_another_diagram() -> None:
+    """A room save must not land on a diagram that code no longer owns."""
+    redis = _BindingRedis(b"diagram-b")
+    db = AsyncMock()
+    wrote = await flush_live_spec_to_db_in_session(db, redis, "ABC-123", "diagram-a")
+    assert wrote is False
+    db.execute.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_flush_skips_when_the_room_binding_is_gone() -> None:
+    """A destroyed room has nothing to write, and stop may finish."""
+    redis = _BindingRedis(None)
+    db = AsyncMock()
+    wrote = await flush_live_spec_to_db_in_session(db, redis, "ABC-123", "diagram-a")
+    assert wrote is True
+    db.execute.assert_not_awaited()
 
 
 def test_diagram_model_enforces_unique_active_workshop_code() -> None:

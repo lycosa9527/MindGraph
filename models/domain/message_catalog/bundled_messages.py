@@ -16,6 +16,11 @@ ERRORS = {
         "en": "AI assistant not configured",
         "az": "AI köməkçisi konfiqurasiya edilməyib",
     },
+    "ai_temporarily_unavailable": {
+        "zh": "AI助手暂时不可用，请稍后再试",
+        "en": "AI assistant is temporarily unavailable. Please try again shortly.",
+        "az": "AI köməkçisi müvəqqəti əlçatan deyil. Bir az sonra yenidən cəhd edin.",
+    },
     "invalid_prompt": {"zh": "提示词无效或为空", "en": "Invalid or empty prompt", "az": "Etibarsız və ya boş prompt"},
     "diagram_data_required": {
         "zh": "需要图示数据",
@@ -289,6 +294,11 @@ ERRORS = {
         "en": "Registration is not available in {} mode. Sign in with an existing account.",
         "az": "{} rejimində qeydiyyat mövcud deyil. Mövcud hesabla daxil olun.",
     },
+    "bayi_register_use_invite": {
+        "zh": "请使用手机号和学校邀请码注册。",
+        "en": "Register with your mobile number and school invitation code.",
+        "az": "Mobil nömrə və məktəb dəvət kodu ilə qeydiyyatdan keçin.",
+    },
     "registration_disabled": {
         "zh": ("注册功能已由管理员关闭。请使用已有账号登录，或联系学校管理员。"),
         "en": (
@@ -441,21 +451,16 @@ ERRORS = {
         "az": "Giriş uğursuz oldu. Bu telefon nömrəsi və ya e-poçt üzrə hesab tapılmadı. {} cəhd qalıb.",
     },
     "ui_language_zh_not_allowed": {
-        "zh": "您的账户不支持简体中文界面。请选择其他界面语言。",
-        "en": "Simplified Chinese UI is not available for your account. Please choose another language.",
-        "az": "Hesabınız üçün sadə çin dilində interfeysə icazə verilmir. Başqa dil seçin.",
+        "zh": "海外用户暂不支持简体中文。",
+        "zh-tw": "海外用戶暫不支援簡體中文。",
+        "en": "We do not support Simplified Chinese for overseas users at this point.",
+        "az": "Xarici istifadəçilər üçün sadələşdirilmiş Çin dilini hazırda dəstəkləmirik.",
     },
     "prompt_language_zh_not_allowed": {
-        "zh": ("您的账户不支持简体中文作为生成语言。请选择其他语言（例如繁体中文或英语）。"),
-        "en": (
-            "Simplified Chinese is not available as the generation language "
-            "for your account. Please choose another language (e.g. "
-            "Traditional Chinese or English)."
-        ),
-        "az": (
-            "Hesabınız üçün sadə çin dili nəsrlər üçün mövcud deyil. Başqa "
-            "dil seçin (məsələn, ənənəvi çin və ya ingilis)."
-        ),
+        "zh": "海外用户暂不支持简体中文。",
+        "zh-tw": "海外用戶暫不支援簡體中文。",
+        "en": "We do not support Simplified Chinese for overseas users at this point.",
+        "az": "Xarici istifadəçilər üçün sadələşdirilmiş Çin dilini hazırda dəstəkləmirik.",
     },
     "register_overseas_acknowledgment_required": {
         "zh": "请确认您了解海外教育邮箱注册的相关条款。",
@@ -1081,6 +1086,11 @@ ERRORS = {
         "zh": "思维币不足（当前 {}，本次需要 {}），请完成任务或明天再来",
         "en": "Insufficient thinking coins (balance {}, need {}). Complete tasks or try again later.",
         "zh-tw": "思維幣不足（當前 {}，本次需要 {}），請完成任務或明天再來",
+    },
+    "thinking_coin_insufficient_shared": {
+        "zh": "思维币不足，请完成任务或明天再来",
+        "en": "Insufficient thinking coins. Complete tasks or try again later.",
+        "zh-tw": "思維幣不足，請完成任務或明天再來",
     },
     "failed_generate_invitation_code": {
         "zh": "生成唯一邀请码失败",

@@ -20,6 +20,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 import httpx
 
 from clients.llm.http_client_manager import get_httpx_manager
+from clients.llm.openai_extra_body import hoist_openai_extra_body
 from clients.llm.structured_output import apply_structured_output
 from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
@@ -123,7 +124,7 @@ class QwenClient:
             logprobs: Whether to return token log probabilities
             top_logprobs: Number of top logprobs to return (0-5, requires logprobs=True)
             **kwargs: Additional parameters:
-                - dashscope_model: Override model id sent to DashScope (popped; e.g. AskOnce-only)
+                - dashscope_model: Override model id sent to DashScope (popped before the request)
                 - tools: Function calling tools array
                 - tool_choice: Tool selection strategy
                 - parallel_tool_calls: Enable parallel tool calls
@@ -202,7 +203,11 @@ class QwenClient:
             if "parallel_tool_calls" in kwargs:
                 payload["parallel_tool_calls"] = kwargs.pop("parallel_tool_calls")
 
-            apply_structured_output(payload, kwargs.pop("response_format", None))
+            apply_structured_output(
+                payload,
+                kwargs.pop("response_format", None),
+                model=model_name,
+            )
 
             # Pass through any remaining kwargs (for future extensibility)
             if kwargs:
@@ -213,6 +218,7 @@ class QwenClient:
                 payload.update(kwargs)
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             client = await get_httpx_manager().get_client("qwen", self.api_url, self.timeout, self.stream_timeout)
             response = await client.post(self.api_url, json=payload, headers=headers)
@@ -317,7 +323,7 @@ class QwenClient:
             logprobs: Whether to return token log probabilities
             top_logprobs: Number of top logprobs to return (0-5, requires logprobs=True)
             **kwargs: Additional parameters:
-                - dashscope_model: Override model id sent to DashScope (popped; e.g. AskOnce-only)
+                - dashscope_model: Override model id sent to DashScope (popped before the request)
                 - tools: Function calling tools array
                 - tool_choice: Tool selection strategy
                 - parallel_tool_calls: Enable parallel tool calls
@@ -398,8 +404,11 @@ class QwenClient:
             if "parallel_tool_calls" in kwargs:
                 payload["parallel_tool_calls"] = kwargs.pop("parallel_tool_calls")
 
-            # Add response format if provided
-            apply_structured_output(payload, kwargs.pop("response_format", None))
+            apply_structured_output(
+                payload,
+                kwargs.pop("response_format", None),
+                model=model_name,
+            )
 
             # Pass through any remaining kwargs
             if kwargs:
@@ -407,6 +416,7 @@ class QwenClient:
                 payload.update(kwargs)
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             client = await get_httpx_manager().get_client("qwen", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
@@ -551,11 +561,17 @@ class DeepSeekClient:
             payload["messages"] = messages
             payload["temperature"] = temperature
             payload["max_tokens"] = max_tokens
-            apply_structured_output(payload, kwargs.pop("response_format", None))
+            wire_model = payload.get("model")
+            apply_structured_output(
+                payload,
+                kwargs.pop("response_format", None),
+                model=wire_model if isinstance(wire_model, str) else None,
+            )
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
-            logger.debug("DeepSeek async API request: %s", self.model_name)
+            logger.debug("DeepSeek async API request: %s", payload.get("model"))
 
             client = await get_httpx_manager().get_client("deepseek", self.api_url, self.timeout, self.stream_timeout)
             response = await client.post(self.api_url, json=payload, headers=headers)
@@ -648,7 +664,12 @@ class DeepSeekClient:
             payload["max_tokens"] = max_tokens
             payload["stream"] = True
             payload["stream_options"] = {"include_usage": True}
-            apply_structured_output(payload, kwargs.pop("response_format", None))
+            wire_model = payload.get("model")
+            apply_structured_output(
+                payload,
+                kwargs.pop("response_format", None),
+                model=wire_model if isinstance(wire_model, str) else None,
+            )
 
             # Enable thinking mode if requested
             if "extra_body" not in payload:
@@ -656,6 +677,7 @@ class DeepSeekClient:
             payload["extra_body"]["enable_thinking"] = enable_thinking
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             client = await get_httpx_manager().get_client("deepseek", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
@@ -773,6 +795,7 @@ class KimiClient:
             payload["max_tokens"] = max_tokens
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             logger.debug("Kimi async API request: %s", self.model_name)
 
@@ -866,6 +889,7 @@ class KimiClient:
             payload["extra_body"]["enable_thinking"] = enable_thinking
 
             headers = _dashscope_headers(self.api_key)
+            hoist_openai_extra_body(payload)
 
             client = await get_httpx_manager().get_client("kimi", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:

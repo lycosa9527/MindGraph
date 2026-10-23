@@ -19,6 +19,21 @@ describe('floating account menu', () => {
     expect(menu).toContain('Not used on canvas')
   })
 
+  it('keeps the account chip inside the collapsing sidebar', () => {
+    const app = readSrc('src/App.vue')
+    expect(app).toContain('sidebarGroupMounted')
+    expect(app).toContain('!sidebarGroupMounted.value')
+    expect(app).not.toContain('isMindGraphLandingPath')
+    expect(app).not.toContain('sidebarCollapsed')
+
+    const footer = readSrc('src/components/sidebar/AppSidebarAccountFooter.vue')
+    expect(footer).toContain('v-if="!menuOnly"')
+    expect(footer).not.toContain('!menuOnly && !s.isCollapsed')
+
+    const menu = readSrc('src/components/sidebar/FloatingAccountMenu.vue')
+    expect(menu).toContain('collapsed sidebar takes its chip')
+  })
+
   it('opens one Settings dialog from the user chip', () => {
     const footer = readSrc('src/components/sidebar/AppSidebarAccountFooter.vue')
     expect(footer).toContain('k="sidebar.settings"')

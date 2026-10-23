@@ -95,7 +95,6 @@ from utils.auth.admin_panel_permissions import (
     CAP_SETTINGS_COS,
     CAP_SETTINGS_ERRORS,
     CAP_SETTINGS_FEATURES,
-    CAP_SETTINGS_GEWE,
     CAP_SETTINGS_KITTY_LLMOPS,
     CAP_SETTINGS_LIBRARY,
     CAP_SETTINGS_LLM_CONTROL,
@@ -628,7 +627,6 @@ require_settings_public_dashboard = require_panel_capability(CAP_SETTINGS_PUBLIC
 require_settings_teaching_design = require_panel_capability(CAP_SETTINGS_TEACHING_DESIGN)
 require_settings_user_dropdown = require_panel_capability(CAP_SETTINGS_USER_DROPDOWN)
 require_settings_public_dashboard_short_lived = require_panel_capability_short_lived(CAP_SETTINGS_PUBLIC_DASHBOARD)
-require_settings_gewe = require_panel_capability(CAP_SETTINGS_GEWE)
 require_settings_kitty_llmops = require_panel_capability(CAP_SETTINGS_KITTY_LLMOPS)
 require_settings_teacher_usage = require_panel_capability(CAP_SETTINGS_TEACHER_USAGE)
 require_settings_smart_response = require_panel_capability(CAP_SETTINGS_SMART_RESPONSE)

@@ -38,6 +38,7 @@ from services.features.mindmate_collab.group_members import (
     list_group_member_ids,
     seed_closed_group,
 )
+from services.features.mindmate_collab.member_record import record_collab_member
 from services.features.mindmate_collab.message_cursor import remember_latest_collab_message_id
 from services.features.mindmate_collab.message_history import (
     CollabHistoryPage,
@@ -181,19 +182,14 @@ class MindmateCollabManager:
                     if not candidate:
                         candidate = generate_online_collab_code()
                     topic = (brief_topic or title or "").strip()[:200] or None
-                    goals_raw = [
-                        str(item).strip()
-                        for item in (brief_goals or [])
-                        if str(item).strip()
-                    ][:20]
+                    goals_raw = [str(item).strip() for item in (brief_goals or []) if str(item).strip()][:20]
                     goals_json = json.dumps(goals_raw, ensure_ascii=False) if goals_raw else None
                     row = MindmateCollabSession(
                         id=session_id,
                         code=candidate,
                         organization_id=org_id,
                         owner_user_id=user_id,
-                        title=(title or topic or "MindMate Collab").strip()[:200]
-                        or "MindMate Collab",
+                        title=(title or topic or "MindMate Collab").strip()[:200] or "MindMate Collab",
                         brief_topic=topic,
                         brief_goals=goals_json,
                         visibility=visibility,
@@ -221,11 +217,7 @@ class MindmateCollabManager:
 
             # Public rooms are always a closed group. School colleagues are
             # accepted immediately; teachers outside the host school stay pending.
-            if code and (
-                close_group
-                or member_user_ids
-                or visibility == ONLINE_COLLAB_VISIBILITY_NETWORK
-            ):
+            if code and (close_group or member_user_ids or visibility == ONLINE_COLLAB_VISIBILITY_NETWORK):
                 await seed_closed_group(
                     session_id,
                     user_id,
@@ -254,6 +246,7 @@ class MindmateCollabManager:
                     )
                     await db.commit()
                 return None, "Collaboration service unavailable"
+            await record_collab_member(session_id, user_id)
             return {
                 "session_id": session_id,
                 "code": code,
@@ -314,6 +307,43 @@ class MindmateCollabManager:
             logger.warning("[MindmateCollab] Redis session write failed code=%s: %s", norm, exc)
             return False
         return True
+
+    async def count_live_org_sessions(self, org_id: int) -> int:
+        """Count non-expired organization-visible rooms for one org."""
+        return await self._count_live_org_sessions(org_id)
+
+    async def publish_live_room(
+        self,
+        *,
+        code: str,
+        session_id: str,
+        owner_id: int,
+        owner_name: str,
+        org_id: Optional[int],
+        title: str,
+        visibility: str,
+        expires_at: datetime,
+        bound_org_ids: Optional[List[int]] = None,
+    ) -> bool:
+        """Write Redis keys so an existing seminar row is joinable again."""
+        redis = get_async_redis()
+        if not redis:
+            return False
+        try:
+            await redis.delete(closing_key(normalize_collab_code(code)))
+        except REDIS_ERRORS:
+            return False
+        return await self._write_redis_session(
+            code=code,
+            session_id=session_id,
+            owner_id=owner_id,
+            owner_name=owner_name,
+            org_id=org_id,
+            bound_org_ids=bound_org_ids,
+            title=title,
+            visibility=visibility,
+            expires_at=expires_at,
+        )
 
     async def load_session_by_code(self, code: str) -> Optional[MindmateCollabSession]:
         """Load an active session row by invite code."""
@@ -627,32 +657,40 @@ class MindmateCollabManager:
         """Live rooms this user hosts, plus rooms they have already agreed to join."""
         async with user_rls_session(user_id) as db:
             owned = (
-                await db.execute(
-                    select(MindmateCollabSession)
-                    .where(
-                        MindmateCollabSession.owner_user_id == user_id,
-                        MindmateCollabSession.ended_at.is_(None),
+                (
+                    await db.execute(
+                        select(MindmateCollabSession)
+                        .where(
+                            MindmateCollabSession.owner_user_id == user_id,
+                            MindmateCollabSession.ended_at.is_(None),
+                        )
+                        .order_by(MindmateCollabSession.started_at.desc()),
                     )
-                    .order_by(MindmateCollabSession.started_at.desc()),
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
         async with system_rls_session() as db:
             joined = (
-                await db.execute(
-                    select(MindmateCollabSession)
-                    .join(
-                        MindmateCollabMember,
-                        MindmateCollabMember.session_id == MindmateCollabSession.id,
+                (
+                    await db.execute(
+                        select(MindmateCollabSession)
+                        .join(
+                            MindmateCollabMember,
+                            MindmateCollabMember.session_id == MindmateCollabSession.id,
+                        )
+                        .where(
+                            MindmateCollabMember.user_id == user_id,
+                            MindmateCollabMember.accepted.is_(True),
+                            MindmateCollabSession.ended_at.is_(None),
+                            MindmateCollabSession.owner_user_id != user_id,
+                        )
+                        .order_by(MindmateCollabSession.started_at.desc()),
                     )
-                    .where(
-                        MindmateCollabMember.user_id == user_id,
-                        MindmateCollabMember.accepted.is_(True),
-                        MindmateCollabSession.ended_at.is_(None),
-                        MindmateCollabSession.owner_user_id != user_id,
-                    )
-                    .order_by(MindmateCollabSession.started_at.desc()),
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
         payloads: List[Dict[str, Any]] = []
         for session in list(owned) + list(joined):
             payloads.append(await self._session_payload(session))
@@ -872,7 +910,25 @@ class MindmateCollabManager:
             await remember_latest_collab_message_id(room_code, saved.id)
         return saved
 
-    async def set_dify_conversation_id(self, session_id: str, conversation_id: str) -> None:
+    async def resolve_dify_conversation_server(self, code: str) -> Optional[int]:
+        """Return the Dify server that owns the room conversation, when Redis has it."""
+        meta = await self.get_session_meta(code)
+        raw = (meta.get("dify_conversation_server") or "").strip()
+        if not raw:
+            return None
+        try:
+            value = int(raw)
+        except ValueError:
+            return None
+        return value if value >= 1 else None
+
+    async def set_dify_conversation_id(
+        self,
+        session_id: str,
+        conversation_id: str,
+        *,
+        server: Optional[int] = None,
+    ) -> None:
         """Persist Dify conversation id in PostgreSQL and Redis session meta."""
         async with system_rls_session() as db:
             await db.execute(
@@ -887,12 +943,11 @@ class MindmateCollabManager:
         redis = get_async_redis()
         if not redis:
             return
+        mapping = {"dify_conversation_id": conversation_id}
+        if isinstance(server, int) and server >= 1:
+            mapping["dify_conversation_server"] = str(server)
         try:
-            await redis.hset(
-                session_meta_key(session.code),
-                "dify_conversation_id",
-                conversation_id,
-            )
+            await redis.hset(session_meta_key(session.code), mapping=redis_hset_mapping(mapping))
         except REDIS_ERRORS:
             pass
 

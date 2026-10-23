@@ -27,7 +27,7 @@ from scripts.auth_login_video.stills import OPTIONS, option_prompt
 from scripts.training_roles.wan_client import (
     HAPPYHORSE_T2V,
     MODEL,
-    WAN3_VIDEO_PRIME,
+    WAN3_VIDEO,
     build_video_body,
 )
 from services.auth.login_hero_clips import LOGIN_HERO_CLIPS, parse_hero_clip_id
@@ -46,8 +46,8 @@ def test_clip_duration_caps_happyhorse() -> None:
     """HappyHorse stays at 15s; Wan 3.0 keeps the longer storyboard."""
     cosmos = concept_by_id("01")
     assert clip_duration(cosmos, HAPPYHORSE_T2V) == 15
-    assert clip_duration(cosmos, WAN3_VIDEO_PRIME) == 18
-    assert clip_stem(cosmos, WAN3_VIDEO_PRIME) == "01-awaken-cosmos-wan3"
+    assert clip_duration(cosmos, WAN3_VIDEO) == 18
+    assert clip_stem(cosmos, WAN3_VIDEO) == "01-awaken-cosmos-wan3"
     assert desktop_original_name(cosmos) == "01-awaken-cosmos-original.mp4"
     assert desktop_reencode_name(cosmos) == "01-awaken-cosmos-reencode.mp4"
     assert clip_public_id(cosmos) == "01-awaken-cosmos"
@@ -58,7 +58,7 @@ def test_clip_duration_caps_happyhorse() -> None:
 
 def test_wan3_prompt_locks_reference_stills() -> None:
     """Wan 3.0 prompt must lock Image 1/2 without opening on the still."""
-    prompt = clip_prompt(concept_by_id("01"), WAN3_VIDEO_PRIME)
+    prompt = clip_prompt(concept_by_id("01"), WAN3_VIDEO)
     assert "图1和图2" in prompt
     assert "不是成片第一帧" in prompt
     assert "16:9" in prompt

@@ -7,33 +7,50 @@ import { RouterLink } from 'vue-router'
 
 <template>
   <p class="auth-legal-footer">
-    <I18nText k="auth.landing.legalPrefix" />
+    <I18nText
+      k="auth.landing.legalPrefix"
+      align="center"
+    />
     <RouterLink
       to="/privacy#user-agreement"
       target="_blank"
       rel="noopener noreferrer"
       class="auth-legal-footer__link"
     >
-      <I18nText k="auth.landing.userAgreementLink" />
+      <I18nText
+        k="auth.landing.userAgreementLink"
+        align="center"
+      />
     </RouterLink>
-    <I18nText k="auth.landing.legalJoin" />
+    <I18nText
+      k="auth.landing.legalJoin"
+      align="center"
+    />
     <RouterLink
       to="/privacy#privacy-policy"
       target="_blank"
       rel="noopener noreferrer"
       class="auth-legal-footer__link"
     >
-      <I18nText k="auth.landing.privacyPolicyLink" />
+      <I18nText
+        k="auth.landing.privacyPolicyLink"
+        align="center"
+      />
     </RouterLink>
   </p>
 </template>
 
 <style scoped>
 .auth-legal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.15rem 0.35rem;
   margin: 0;
   padding: 0.65rem 0 0.35rem;
   font-size: 0.75rem;
-  line-height: 1.55;
+  line-height: 1.35;
   color: rgb(148 163 184);
   text-align: center;
 }

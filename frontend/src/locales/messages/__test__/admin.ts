@@ -88,26 +88,6 @@ export default {
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.envAdminsNote':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.askonce':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.askonceHint':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.community':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.communityHint':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.course':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.courseHint':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.debateverse':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.debateverseHint':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.gewe':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.geweHint':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.feature.knowledgeSpace':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.feature.knowledgeSpaceHint':
@@ -139,10 +119,6 @@ export default {
   'admin.feature.teacherUsage':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.feature.teacherUsageHint':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.template':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.feature.templateHint':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.feature.workshopChat': 'Workshop (研习社)',
   'admin.feature.workshopChatHint':
@@ -263,8 +239,6 @@ export default {
   'admin.filterByUserType':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.allUserTypes':
-    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
-  'admin.geweWechat':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.grantAdmin':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
@@ -917,6 +891,9 @@ export default {
   'admin.previous': 'Previous',
   'admin.refresh': 'Refresh',
   'admin.refreshInvitationCode': 'Refresh Invitation Code',
+  'admin.rotateInvitationCode': 'Rotate',
+  'admin.rotateInvitationCodeSuccess': 'Invitation code rotated',
+  'admin.refreshInvitationCodeConfirm': 'The current invitation code will stop working. Generate a new one?',
   'admin.regenerateSchoolCode': 'Regenerate school code',
   'admin.registrationTime': 'Registration Time',
   'admin.removeManager': 'Remove Manager',
@@ -1028,14 +1005,11 @@ export default {
   'admin.schoolFeatureUsage.module.knowledge': 'Knowledge Space',
   'admin.schoolFeatureUsage.module.doc_summary': 'Document summary',
   'admin.schoolFeatureUsage.module.workshop': 'Workshop',
-  'admin.schoolFeatureUsage.module.askonce': 'AskOnce',
-  'admin.schoolFeatureUsage.module.debateverse': 'DebateVerse',
   'admin.schoolFeatureUsage.module.markets': 'Markets',
   'admin.schoolFeatureUsage.module.library': 'Library',
   'admin.schoolFeatureUsage.module.showcase': 'Showcase',
   'admin.schoolFeatureUsage.module.dingtalk': 'DingTalk MindBot',
   'admin.schoolFeatureUsage.module.zhihui': 'ZhiHui',
-  'admin.schoolFeatureUsage.module.maite': 'Maite learning',
   'admin.schoolFeatureUsage.remark.canvas': 'Diagram generate, save, export, and canvas translate.',
   'admin.schoolFeatureUsage.remark.mindmate': 'Web MindMate chat turns.',
   'admin.schoolFeatureUsage.remark.kitty': 'One-sentence generate/edit and voice-agent sessions.',
@@ -1043,14 +1017,11 @@ export default {
   'admin.schoolFeatureUsage.remark.knowledge': 'Knowledge search and document ingest.',
   'admin.schoolFeatureUsage.remark.doc_summary': 'Document-summary sessions.',
   'admin.schoolFeatureUsage.remark.workshop': 'Workshop collab and school chat.',
-  'admin.schoolFeatureUsage.remark.askonce': 'Multi-model AskOnce turns.',
-  'admin.schoolFeatureUsage.remark.debateverse': 'DebateVerse debate turns.',
   'admin.schoolFeatureUsage.remark.markets': 'Catalog orders and checkout.',
   'admin.schoolFeatureUsage.remark.library': 'Online library reading and engagement.',
   'admin.schoolFeatureUsage.remark.showcase': 'Showcase browsing and post engagement.',
   'admin.schoolFeatureUsage.remark.dingtalk': 'DingTalk MindBot diagram generation.',
   'admin.schoolFeatureUsage.remark.zhihui': 'ZhiHui text-to-image.',
-  'admin.schoolFeatureUsage.remark.maite': 'Maite decompose, diagnosis, and variants.',
   'admin.schoolUsersUnlockError': 'Failed to unlock account',
   'admin.schoolUsersUpdateError': 'Failed to update user',
   'admin.schoolUserUnlock': 'Unlock',
@@ -1064,8 +1035,8 @@ export default {
   'admin.schoolName': 'School Name',
   'admin.schoolNameRequired': 'School name is required',
   'admin.schools': 'Schools',
-  'admin.schoolDifyServer1': 'Server 1',
-  'admin.schoolDifyServer2': 'Server 2',
+  'admin.schoolDifyServer1': 'Main server',
+  'admin.schoolDifyServer2': 'Backup server',
   'admin.schoolDifyActiveServer': 'Active server',
   'admin.schoolDifyFailover': 'Auto failover',
   'admin.schoolDifyDualServerHint': 'Configure two Dify servers per school.',

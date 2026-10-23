@@ -7,12 +7,7 @@ import { computed } from 'vue'
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
-import type {
-  CanvasExportAnswerMode,
-  CanvasExportColorMode,
-  CanvasExportOptions,
-} from '@/config/canvasExportOptions'
-import { useDiagramStore } from '@/stores'
+import type { CanvasExportColorMode, CanvasExportOptions } from '@/config/canvasExportOptions'
 
 const options = defineModel<CanvasExportOptions>({ required: true })
 
@@ -21,23 +16,11 @@ defineProps<{
 }>()
 
 const { t } = useLanguage()
-const diagramStore = useDiagramStore()
-
-const showAnswerOption = computed(
-  () => diagramStore.isLearningSheet && diagramStore.hasBlankedLearningSheetNodes()
-)
 
 const colorMode = computed({
   get: () => options.value.colorMode,
   set: (value: CanvasExportColorMode) => {
     options.value = { ...options.value, colorMode: value }
-  },
-})
-
-const answerMode = computed({
-  get: () => options.value.answerMode,
-  set: (value: CanvasExportAnswerMode) => {
-    options.value = { ...options.value, answerMode: value }
   },
 })
 
@@ -51,19 +34,6 @@ const colorOptions = computed(() => [
     label: t('canvas.exportOptions.colorWireframe'),
     labelKey: 'canvas.exportOptions.colorWireframe',
     value: 'wireframe' as const,
-  },
-])
-
-const answerOptions = computed(() => [
-  {
-    label: t('canvas.exportOptions.answerInclude'),
-    labelKey: 'canvas.exportOptions.answerInclude',
-    value: 'include' as const,
-  },
-  {
-    label: t('canvas.exportOptions.answerExclude'),
-    labelKey: 'canvas.exportOptions.answerExclude',
-    value: 'exclude' as const,
   },
 ])
 </script>
@@ -82,21 +52,6 @@ const answerOptions = computed(() => [
         fit
         :options="colorOptions"
         :aria-label="t('canvas.exportOptions.colorLabel')"
-      />
-    </div>
-
-    <div
-      v-if="showAnswerOption"
-      class="mm-export-options__row"
-    >
-      <span class="mm-export-options__label">
-        <I18nText k="canvas.exportOptions.answerLabel" />
-      </span>
-      <AdminSwissSegmented
-        v-model="answerMode"
-        fit
-        :options="answerOptions"
-        :aria-label="t('canvas.exportOptions.answerLabel')"
       />
     </div>
   </div>

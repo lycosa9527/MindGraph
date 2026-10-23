@@ -146,6 +146,8 @@ run_backend() {
     tests/test_collab_palette_sync.py \
     tests/test_workshop_editor_redis_merge.py \
     tests/test_ws_fanout.py \
+    tests/test_mindmate_collab_library_archive.py \
+    tests/test_mindmate_notify_presence.py \
     tests/test_collab_synthetic_probe.py \
     tests/test_workshop_join_resume_tokens.py \
     tests/test_organization_mindmate_avatar.py \
@@ -182,7 +184,6 @@ run_backend() {
     tests/test_ip_geolocation_national_map.py \
     tests/test_llm_daily_token_cap.py \
     tests/test_get_client_ip.py \
-    tests/test_gewe_webhook_auth.py \
     tests/test_refresh_token_reuse.py \
     tests/test_device_limit_kickoff.py \
     tests/test_device_hash_refresh.py \
@@ -212,6 +213,7 @@ run_backend() {
     tests/test_pg_merge_log_coverage.py \
     tests/test_pg_merge_usage_activities.py \
     tests/test_diagram_folders_api.py \
+    tests/test_diagram_spec_size.py \
     tests/test_mind_classroom_tone_prompts.py \
     tests/test_mind_classroom_audience_prompts.py \
     tests/test_mind_classroom_mastery_prompts.py \
@@ -288,7 +290,10 @@ run_backend() {
     tests/scripts/test_zhilian_junan_video.py \
     tests/scripts/test_dify_db_merge.py \
     tests/scripts/test_wan_tts.py \
-    tests/scripts/test_october_update_promo.py
+    tests/scripts/test_october_update_promo.py \
+    tests/test_autocomplete_json_schema.py \
+    tests/test_llm_http_errors.py \
+    tests/test_mind_map_node_explain_research.py
 }
 
 run_frontend() {
@@ -320,7 +325,8 @@ run_frontend() {
     tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts \
     tests/unloadCanvasForLibrarySwitch.spec.ts \
     tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts \
-    tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts \
+    tests/llmResultsTeardown.spec.ts tests/diagramImportLlmSlots.spec.ts \
+    tests/shouldFlushBeforeLibrarySwitch.spec.ts \
     tests/mindMapIdentityMigrate.spec.ts \
     tests/thinkingMapsIdentity.spec.ts \
     tests/doubleBubbleMapDelete.spec.ts \
@@ -329,6 +335,9 @@ run_frontend() {
     tests/useDiagramCanvasVueFlowUi.spec.ts \
     tests/mindMapFitChromeInsets.spec.ts \
     tests/thinkingMapsAutocompleteLayout.spec.ts \
+    tests/mindMapTextWrap.spec.ts \
+    tests/bubbleMapAttributeWrap.spec.ts \
+    tests/doubleBubbleMapLayout.spec.ts \
     tests/flowMapIdentity.spec.ts \
     tests/flowMapSubsteps.spec.ts \
     tests/orgGenerationCache.spec.ts \
@@ -357,6 +366,9 @@ run_frontend() {
     tests/trainingPlayControls.spec.ts tests/requiredTrainingGate.spec.ts tests/trainingFriendLine.spec.ts \
     tests/trainingRemoteView.spec.ts tests/mobileRouterRedirects.spec.ts \
     tests/mindmateWelcomeLayout.spec.ts \
+    tests/mindmateCollabLibrarySave.spec.ts \
+    tests/mindmateContinueSession.spec.ts \
+    tests/mindmatePresenceSubscribe.spec.ts \
     tests/workshopTopicChevron.spec.ts \
     tests/workshopChannelTree.spec.ts \
     tests/workshopInitializeOnce.spec.ts \

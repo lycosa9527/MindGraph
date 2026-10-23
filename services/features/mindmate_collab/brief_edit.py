@@ -40,11 +40,7 @@ _LABELS_EN = {
     "people": "Participants",
     "files": "Materials",
 }
-_HEADER_TO_SECTION = {
-    label: key
-    for labels in (_LABELS_ZH, _LABELS_EN)
-    for key, label in labels.items()
-}
+_HEADER_TO_SECTION = {label: key for labels in (_LABELS_ZH, _LABELS_EN) for key, label in labels.items()}
 
 
 def normalize_brief_lines(raw: List[str], *, limit: int, max_len: int) -> Optional[List[str]]:

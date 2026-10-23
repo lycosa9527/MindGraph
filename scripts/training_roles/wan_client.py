@@ -13,6 +13,7 @@ from scripts.training_roles.env import dashscope_workspace
 from scripts.training_roles.role_voices import MAX_REFERENCE_AUDIO
 
 MODEL = "wan2.7-i2v-2026-04-25"
+WAN3_VIDEO = "wan3.0-video"
 WAN3_VIDEO_PRIME = "wan3.0-video-prime"
 HAPPYHORSE_T2V = "happyhorse-1.1-t2v"
 QWEN_AUDIO_TTS = "qwen-audio-3.1-tts-flash"
@@ -20,6 +21,11 @@ REFERENCE_AUDIO = "reference_audio"
 FALLBACK = "https://dashscope.aliyuncs.com/api/v1"
 DEFAULT_POLL_SECONDS = 600
 LONG_POLL_SECONDS = 1800
+
+
+def is_wan3_model(model: str) -> bool:
+    """True for Wan 3.0 text/reference video, including the prime snapshot."""
+    return model in {WAN3_VIDEO, WAN3_VIDEO_PRIME}
 
 
 def _bases() -> tuple[str, str]:

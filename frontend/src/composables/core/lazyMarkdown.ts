@@ -67,13 +67,10 @@ const MARKDOWN_ROUTE_PREFIXES = [
   '/mindmate',
   '/m/mindmate',
   '/workshop-chat',
-  '/debateverse',
-  '/askonce',
   '/canvas',
   '/m/canvas',
   '/mindgraph',
   '/m/mindgraph',
-  '/community',
   '/export-render',
 ] as const
 

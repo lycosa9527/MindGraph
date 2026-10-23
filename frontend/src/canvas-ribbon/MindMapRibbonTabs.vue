@@ -12,9 +12,9 @@ import MindMapRibbonAiMark from './MindMapRibbonAiMark.vue'
 import './mindMapRibbonTabs.css'
 import {
   MIND_MAP_RIBBON_TABS,
-  MIND_MAP_RIBBON_TAB_LABEL_KEYS,
   MIND_MAP_RIBBON_TOOLS_ID,
   type MindMapRibbonTabId,
+  mindMapRibbonTabLabelKey,
 } from './mindMapRibbonTypes'
 
 const props = withDefaults(
@@ -50,8 +50,12 @@ const TAB_ICONS: Record<Exclude<MindMapRibbonTabId, 'ai'>, Component> = {
   research: Users,
 }
 
+function tabLabelKey(tab: MindMapRibbonTabId): string {
+  return mindMapRibbonTabLabelKey(tab, authStore.user?.role)
+}
+
 function tabLabel(tab: MindMapRibbonTabId): string {
-  return t(MIND_MAP_RIBBON_TAB_LABEL_KEYS[tab])
+  return t(tabLabelKey(tab))
 }
 
 function lucideTabIcon(tab: MindMapRibbonTabId): Component | undefined {
@@ -110,7 +114,7 @@ function tabTitle(tab: MindMapRibbonTabId): string | undefined {
         </span>
         <MmToolbarLabel
           class="mm-ribbon-tabs__label"
-          :k="MIND_MAP_RIBBON_TAB_LABEL_KEYS[tab]"
+          :k="tabLabelKey(tab)"
         />
       </span>
     </button>

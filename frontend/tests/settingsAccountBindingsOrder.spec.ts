@@ -42,6 +42,17 @@ vi.mock('@/components/settings/useAccountSettings', () => ({
       canBindWechat: false,
       unbindWechat: vi.fn(),
       openWechatBindModal: vi.fn(),
+      showDingtalkBindSection: true,
+      dingtalkBindingStatus: 'Not linked',
+      dingtalkLinked: false,
+      dingtalkBindLoading: false,
+      canMintDingtalkBind: true,
+      dingtalkStaffMasked: '',
+      showBindDingTalkModal: false,
+      showUnbindDingTalkModal: false,
+      openBindDingTalkModal: vi.fn(),
+      openUnbindDingTalkModal: vi.fn(),
+      handleDingtalkBindCompleted: vi.fn(),
       showLoginDevicesModal: false,
       showAvatarModal: false,
       showChangePhoneModal: false,
@@ -52,7 +63,9 @@ vi.mock('@/components/settings/useAccountSettings', () => ({
       currentAvatar: '🐱',
       nameEdit: '',
       nameSaving: false,
-      userPhone: '138****0000',
+      accountLoginLabelKey: 'auth.accountIdMobile',
+      accountLoginValue: '138****0000',
+      canChangePhone: true,
       canUseApiToken: false,
       canUseChromeExtension: false,
       featureWordAddin: false,
@@ -122,6 +135,11 @@ describe('settings security account bindings', () => {
     }
     expect(follows(binding, devices)).toBe(true)
     expect(host.querySelectorAll('#account-binding-wechat')).toHaveLength(1)
+    const dingtalk = host.querySelector('#account-binding-dingtalk')
+    if (!dingtalk) {
+      throw new Error('DingTalk bind row did not render under WeChat')
+    }
+    expect(follows(binding, dingtalk)).toBe(true)
 
     app.unmount()
     host.remove()

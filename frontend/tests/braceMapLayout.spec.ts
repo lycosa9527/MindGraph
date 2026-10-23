@@ -1,5 +1,5 @@
 /**
- * Brace map layout after a part is added (AI brainstorm / node palette).
+ * Brace map layout after a part is added (AI brainstorm / AI brainstorm).
  * Positions must land on the live node ids, and the whole stays in the parts column.
  */
 import { describe, expect, it } from 'vitest'

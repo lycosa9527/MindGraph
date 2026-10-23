@@ -205,6 +205,11 @@ class ErrorHandler:
                 logger.warning("[ErrorHandler] Content filter triggered, not retrying: %s", e)
                 raise  # Re-raise immediately, no retry
 
+            except (ThinkingCoinInsufficientError, UserDailyTokenCapExceededError) as e:
+                # Expected user limit. Do not retry or record it as a service fault.
+                logger.info("[ErrorHandler] User limit, not retrying: %s", e)
+                raise
+
             except (
                 LLMInvalidParameterError,
                 LLMQuotaExhaustedError,

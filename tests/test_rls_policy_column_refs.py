@@ -11,12 +11,30 @@ _RLS_FUNC_ARG = re.compile(r"rls_\w+\((\w+)\)")
 _EXISTS_FK = re.compile(r"\.\w+\s*=\s*([a-z_][a-z0-9_]*)(?!\.)\b")
 _COMPARE_COL = re.compile(r"(?<![.\w])(\w+)\s*=\s*rls_")
 
+# Leftover tables still have RLS policies after their ORM models were removed.
+# Values are the columns those policies reference.
+_LEFTOVER_TABLE_COLUMNS: dict[str, set[str]] = {
+    "debate_sessions": {"user_id"},
+    "debate_participants": {"session_id"},
+    "debate_messages": {"session_id"},
+    "debate_judgments": {"session_id"},
+    "gewe_messages": set(),
+    "gewe_contacts": set(),
+    "gewe_group_members": set(),
+    "community_posts": {"author_id"},
+    "community_post_likes": {"user_id"},
+    "community_post_comments": {"user_id"},
+}
+
 
 def _table_columns(table_name: str) -> set[str]:
     """Table columns."""
     table = Base.metadata.tables.get(table_name)
-    assert table is not None, f"unknown RLS table: {table_name}"
-    return {column.name for column in table.columns}
+    if table is not None:
+        return {column.name for column in table.columns}
+    leftover = _LEFTOVER_TABLE_COLUMNS.get(table_name)
+    assert leftover is not None, f"unknown RLS table: {table_name}"
+    return leftover
 
 
 def _collect_policy_errors(table_name: str, expr: str, columns: set[str]) -> list[str]:

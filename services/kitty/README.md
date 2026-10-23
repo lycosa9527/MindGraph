@@ -138,9 +138,8 @@ Treat Mobile Kitty, desktop canvas, and the one-sentence panel as **one session*
 
 The desktop SPA (`useKittyDesktopActionPoll` in `App.vue`) **does not** consume the action queue unless:
 
-1. `feature_kitty_agent` is enabled (no Kitty REST traffic when the feature is off).
-2. The user is authenticated on a **desktop** surface (not `/m/*`).
-3. `GET /api/kitty/mobile_active` reports `active: true` (phone Kitty WebSocket started with `client_lane: mobile`).
+1. The user is authenticated on a **desktop** surface (not `/m/*`).
+2. `GET /api/kitty/mobile_active` reports `active: true` (phone Kitty WebSocket started with `client_lane: mobile`).
 
 Both `GET /api/kitty/desktop_pairing` and legacy `GET /api/kitty/desktop_action/pop` gate **long-poll** BLPOP on ``mobile_active`` (live mobile Kitty WS) for API compatibility. The **desktop SPA** no longer chains ``wait_sec=25``: Redis queue stays shared across workers; enqueue publishes SSE ``desktop_action_pending`` on ``kitty:desktop_wake:{user_id}``, and the leader tab drains with instant ``desktop_pairing?wait_sec=0`` (LPOP). Stale queue items are discarded on pop. Instant pop while mobile is inactive still requires the one-shot explicit-drain flag (library diagram pick).
 

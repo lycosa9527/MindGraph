@@ -7,11 +7,9 @@ export default {
   'notification.cannotClearTopicOrCenter': 'Kan onderwerp- of centrumknooppunten niet wissen',
   'notification.cannotResetSelectDiagramType': 'Kan niet resetten: selecteer eerst een diagramtype',
   'notification.canvasClearNodes': '{count} knooppunt(en) gewist',
-  'notification.canvasClearNodesLearning':
-    '{count} knooppunt(en) geleegd, toegevoegd aan antwoorden',
+  'notification.canvasClearNodesLearning': '{count} knooppunt(en) geleegd, toegevoegd aan antwoorden',
   'notification.canvasSomeoneEditingNode': 'Iemand anders bewerkt dit knooppunt',
-  'notification.collabDeleteBlocked':
-    'Kan niet verwijderen terwijl een andere gebruiker een geselecteerd knooppunt bewerkt',
+  'notification.collabDeleteBlocked': 'Kan niet verwijderen terwijl een andere gebruiker een geselecteerd knooppunt bewerkt',
   'notification.collabRedoBlocked': 'Kan niet opnieuw doen terwijl een andere gebruiker bewerkt',
   'notification.collabUndoBlocked': 'Kan niet ongedaan maken terwijl een andere gebruiker bewerkt',
   'notification.conversationDeleted': 'Gesprek verwijderd',
@@ -23,26 +21,21 @@ export default {
   'notification.feedbackThanks': 'Bedankt voor je feedback',
   'notification.feedbackThanksDislike': 'Bedankt voor je feedback — we gaan verbeteren',
   'notification.focusQuestionTooShort': 'Voer eerst een langere focusvraag in',
-  'notification.geoLiteMissingIntro':
-    'Download GeoLite2 Country van MaxMind, pak GeoLite2-Country.mmdb uit en kopieer het naar de serverdata-map:',
+  'notification.geoLiteMissingIntro': 'Download GeoLite2 Country van MaxMind, pak GeoLite2-Country.mmdb uit en kopieer het naar de serverdata-map:',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite-downloadpagina openen',
   'notification.geoLiteMissingPathLabel': 'Verwacht pad:',
   'notification.geoLiteMissingTitle': 'GeoLite2 Country-database ontbreekt',
   'notification.fullscreenFailed': 'Kon niet naar volledig scherm gaan',
   'notification.generationCancelled': 'Generatie geannuleerd',
-  'notification.conceptMapTabNeedsAi':
-    'Schakel AI in de balk in voordat je Tab-aanbevelingen gebruikt.',
+  'notification.conceptMapTabNeedsAi': 'Schakel AI in de balk in voordat je Tab-aanbevelingen gebruikt.',
   'notification.historyClearNodes': 'Knooppuntttekst wissen',
   'notification.historyEmptyLearning': 'Knooppunt legen en antwoord toevoegen',
   'notification.importInvalidData': 'Importeren mislukt: ongeldige diagramgegevens',
   'notification.importLoadFailed': 'Importeren mislukt: diagram kon niet worden geladen',
   'notification.importSavePartial': 'Geïmporteerd, maar opslaan in bibliotheek mislukt',
-  'notification.importSlotsFull':
-    'Bibliotheek vol; diagram geïmporteerd maar niet opgeslagen in bibliotheek',
+  'notification.importSlotsFull': 'Bibliotheek vol; diagram geïmporteerd maar niet opgeslagen in bibliotheek',
   'notification.importSuccess': 'Diagram geïmporteerd en opgeslagen in bibliotheek',
   'notification.importUnsupportedType': 'Importeren mislukt: niet-ondersteund diagramtype',
-  'notification.inlineRecEmpty':
-    'Er zijn geen aanbevelingen gegenereerd. Probeer opnieuw of bewerk het onderwerp.',
   'notification.loadMoreFailed': 'Kon niet meer laden',
   'notification.networkError': 'Netwerkfout',
   'notification.nodeNotEligible': 'Dit knooppunt ondersteunt geen Tab-aanbevelingen.',
@@ -53,10 +46,8 @@ export default {
   'notification.rootConceptLinkNotFound': 'Link naar hoofdconcept niet gevonden',
   'notification.saved': 'Wijzigingen succesvol opgeslagen',
   'notification.selectNodeToClear': 'Selecteer een knooppunt om te wissen',
-  'notification.sessionInvalidated':
-    'Je bent uitgelogd omdat je het maximum aantal apparaten hebt overschreden',
-  'notification.sessionKicked':
-    'Dit account heeft dit account offline aangemeld op andere apparaten',
+  'notification.sessionInvalidated': 'Je bent uitgelogd omdat je het maximum aantal apparaten hebt overschreden',
+  'notification.sessionKicked': 'Dit account heeft dit account offline aangemeld op andere apparaten',
   'notification.signInToUse': 'Log in om dit te gebruiken',
   'notification.signInToValidateFocus': 'Log in om de focusvraag te valideren',
 } as const

@@ -7,6 +7,7 @@ import {
 } from '@/utils/bubbleMapIdentity'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
+import { commitDeleteLayout } from './commitDeleteLayout'
 import { emitCtxEvent } from './events'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
@@ -57,6 +58,7 @@ export function useBubbleMapOpsSlice(ctx: DiagramContext) {
       style: { strokeColor: getMindmapBranchColor(i).border },
     }))
 
+    commitDeleteLayout(ctx, deletedIds)
     emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: deletedIds })
     return deletedIds.length
   }

@@ -60,15 +60,21 @@ export function extractFailureFromPayload(
   if (specFailure) {
     return specFailure
   }
+  const errorType = typeof result.error_type === 'string' ? result.error_type : undefined
+  const detail = typeof result.detail === 'string' ? result.detail.trim() : ''
   if (result.success === false) {
     return {
-      error: 'Generation failed',
-      errorType: typeof result.error_type === 'string' ? result.error_type : undefined,
+      error: detail || 'Generation failed',
+      errorType,
       showGuidance: result.show_guidance === true,
     }
   }
   if (!result.spec) {
-    return { error: 'Generation failed' }
+    return {
+      error: detail || 'Generation failed',
+      errorType,
+      showGuidance: result.show_guidance === true,
+    }
   }
   return null
 }

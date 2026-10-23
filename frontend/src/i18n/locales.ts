@@ -58,6 +58,18 @@ export const INTERFACE_LANGUAGE_PICKER_CODES = [
   'uk',
   'ms',
   'af',
+  'no',
+  'sv',
+  'da',
+  'fi',
+  'cs',
+  'sk',
+  'ro',
+  'hu',
+  'el',
+  'bg',
+  'hr',
+  'sr',
 ] as const
 
 /** Union of Settings → Interface language codes (length {@link INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT}). */

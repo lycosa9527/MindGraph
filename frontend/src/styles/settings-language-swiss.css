@@ -63,10 +63,6 @@
   line-height: 1.35;
 }
 
-.language-settings-swiss__kicker--spaced {
-  margin-top: 1rem;
-}
-
 .language-settings-swiss__kicker::before {
   content: '';
   display: inline-block;
@@ -416,4 +412,3 @@
   background: rgb(255 255 255 / 0.1);
   color: #f8fafc;
 }
-

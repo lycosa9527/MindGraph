@@ -36,7 +36,8 @@
 .mm-canvas-center-modal {
   position: fixed;
   inset: 0;
-  z-index: 4000;
+  /* Keep in sync with SWISS_GLASS_CANVAS_DIALOG_Z — above floating toolbar 5000. */
+  z-index: 5200;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -52,7 +53,9 @@
   left: auto !important;
   z-index: 1;
   width: min(520px, 92vw) !important;
-  max-height: min(72vh, 680px);
+  max-height: min(72vh, 680px, 100%);
+  min-height: 0;
+  flex-shrink: 1;
 }
 
 .mind-map-side-rail-btn {

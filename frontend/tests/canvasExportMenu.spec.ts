@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CANVAS_CLIPBOARD_EXPORT_MENU_ITEM,
-  CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
   CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
   CANVAS_RASTER_EXPORT_COMMANDS,
   CANVAS_STANDARD_EXPORT_MENU_ITEMS,
-  type CanvasExportCommand,
+  CANVAS_WORKSHEET_TEXT_MENU_ITEM,
+  isCanvasShownImageExport,
 } from '@/config/canvasExportMenu'
 import {
   computePdfRasterTargetSize,
@@ -44,10 +44,8 @@ describe('canvasExportMenu', () => {
     }
   })
 
-  it('defines community export menu metadata', () => {
-    expect(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command).toBe('community')
-    expect(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey).toBe('canvas.topBar.shareCommunity')
-    expect(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided).toBe(true)
+  it('uses a top bar label key for the worksheet document export menu item', () => {
+    expect(CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey).toBe('canvas.topBar.addWorksheetText')
   })
 
   it('defines mind map export menu without standalone pdf (DOCX/PDF via worksheet modal)', () => {
@@ -67,9 +65,11 @@ describe('canvasExportMenu', () => {
     expect(mgItem?.divided).toBe(true)
   })
 
-  it('includes community as an optional export command in the event bus contract', () => {
-    const community: CanvasExportCommand = 'community'
-    expect(community).toBe('community')
+  it('treats png and svg as canvas-as-shown image exports', () => {
+    expect(isCanvasShownImageExport('png')).toBe(true)
+    expect(isCanvasShownImageExport('svg')).toBe(true)
+    expect(isCanvasShownImageExport('pdf')).toBe(false)
+    expect(isCanvasShownImageExport('clipboard')).toBe(false)
   })
 })
 

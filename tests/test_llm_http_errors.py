@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 
 from services.infrastructure.http.error_handler import (
     LLMAccessDeniedError,
     LLMContentFilterError,
+    LLMInvalidParameterError,
     LLMProviderError,
     LLMRateLimitError,
     LLMServiceError,
     LLMTimeoutError,
+    ThinkingCoinInsufficientError,
+    UserDailyTokenCapExceededError,
     attach_llm_user_message,
     error_handler,
 )
@@ -18,6 +23,7 @@ from services.infrastructure.http.llm_http_errors import (
     CONTENT_FILTER_ERROR_TYPE,
     http_exception_for_llm_error,
     is_llm_content_filter_detail,
+    is_user_llm_limit_error,
     should_record_http_exception,
 )
 from services.llm.error_parsers.dashscope_error_parser import parse_and_raise_dashscope_error
@@ -87,6 +93,15 @@ def test_attach_still_sets_provider_user_message() -> None:
     assert attached.user_message == "请稍后重试"
 
 
+def test_user_limit_errors_are_not_service_faults() -> None:
+    """Coin and daily-token refusals stay client limits so routes can log them below error."""
+    assert is_user_llm_limit_error(ThinkingCoinInsufficientError(balance=8, cost=15)) is True
+    assert is_user_llm_limit_error(UserDailyTokenCapExceededError(cap=100, used=100)) is True
+    assert is_user_llm_limit_error(LLMServiceError("provider down")) is False
+    coin = http_exception_for_llm_error(ThinkingCoinInsufficientError(balance=8, cost=15))
+    assert coin.status_code == 402
+
+
 def test_content_filter_http_is_not_recorded() -> None:
     """Safety refusals must not enter admin error collection."""
     assert should_record_http_exception(400, {"error_type": CONTENT_FILTER_ERROR_TYPE}) is False
@@ -100,6 +115,22 @@ def test_content_filter_http_is_not_recorded() -> None:
     assert should_record_http_exception(502, "Qwen API timeout") is True
     assert should_record_http_exception(502, "输入可能包含不当内容，请修改输入内容") is False
     assert is_llm_content_filter_detail("Generation failed: Content filter: blocked") is True
+
+
+@pytest.mark.asyncio
+async def test_with_retry_does_not_log_thinking_coin_shortfall_as_error(caplog: pytest.LogCaptureFixture) -> None:
+    """A low balance must not be retried or written at error."""
+    calls = {"n": 0}
+
+    async def boom() -> None:
+        calls["n"] += 1
+        raise ThinkingCoinInsufficientError(balance=3, cost=4)
+
+    with caplog.at_level(logging.DEBUG):
+        with pytest.raises(ThinkingCoinInsufficientError):
+            await error_handler.with_retry(boom)
+    assert calls["n"] == 1
+    assert not any(record.levelno >= logging.ERROR for record in caplog.records)
 
 
 @pytest.mark.asyncio
@@ -132,3 +163,17 @@ def test_dashscope_parse_raises_content_filter_type() -> None:
     mapped = http_exception_for_llm_error(caught.value)
     assert mapped.status_code == 400
     assert _detail_map(mapped.detail)["error_type"] == CONTENT_FILTER_ERROR_TYPE
+
+
+def test_responses_json_object_requires_json_in_the_prompt() -> None:
+    """Responses text.format json_object uses the same prompt-keyword error as chat."""
+    message = "'messages' must contain the word 'json' in some form, to use 'text.format' of type 'json_object'."
+    with pytest.raises(LLMInvalidParameterError) as caught:
+        parse_and_raise_dashscope_error(
+            400,
+            message,
+            {"code": "InvalidParameter", "message": message},
+        )
+    user_message = caught.value.user_message
+    assert user_message is not None
+    assert "json" in user_message.lower()

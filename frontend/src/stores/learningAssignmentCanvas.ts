@@ -1,7 +1,7 @@
 /**
  * Learning-assignment canvas context (student homework mode on /canvas).
  */
-import { computed, ref } from 'vue'
+import { computed, ref, type InjectionKey } from 'vue'
 
 import { defineStore } from 'pinia'
 
@@ -15,6 +15,9 @@ import {
 } from '@/utils/learningSpaceApi'
 
 export const MG_LEARNING_ASSIGNMENT_STORAGE_KEY = 'mg_learning_assignment_id'
+
+/** Persist the open homework diagram before the submission snapshot is taken. */
+export const homeworkCanvasFlushKey: InjectionKey<() => Promise<void>> = Symbol('homeworkCanvasFlush')
 
 const GRANULAR_KEYS = [
   'topic_generate',
@@ -40,6 +43,7 @@ function writeAssignmentId(id: number | null): void {
 }
 
 export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentCanvas', () => {
+  const authStore = useAuthStore()
   const assignmentId = ref<number | null>(null)
   const assignment = ref<LearningAssignment | null>(null)
   const permissions = ref<LearningAiPermissions | null>(null)
@@ -62,8 +66,10 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
 
   const aiAssistOn = computed(() => Boolean(permissions.value?.ai_assist))
 
+  /** 挖空支架图 authoring. Off while a student is completing homework. */
+  const showLearningSheet = computed(() => !(authStore.user?.role === 'student' && isActive.value))
+
   function can(capability: LearningAiCapability): boolean {
-    const authStore = useAuthStore()
     if (authStore.user?.role === 'student' && !isActive.value) {
       return false
     }
@@ -147,6 +153,7 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
     returnPath,
     setReturnPath,
     aiAssistOn,
+    showLearningSheet,
     can,
     activate,
     markDraftHydrated,

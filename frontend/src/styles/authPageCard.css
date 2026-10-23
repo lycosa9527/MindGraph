@@ -1,9 +1,13 @@
 .auth-page-card {
+  position: relative;
+  z-index: 1;
   pointer-events: auto;
   display: flex;
   flex-direction: column;
   width: min(100%, 26.5rem);
-  max-height: min(calc(100dvh - 5.5rem), 52rem);
+  max-height: min(calc(100dvh - 8.5rem), 52rem, 100%);
+  min-height: 0;
+  flex-shrink: 1;
   background: #fff;
   border: 1px solid rgb(237 233 254);
   border-radius: 1.35rem;

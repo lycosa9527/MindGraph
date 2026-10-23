@@ -10,9 +10,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 import main as _main_app
-from clients.dify_exceptions import DifyConversationNotFoundError
+from clients.dify_exceptions import DifyAPIError, DifyConversationNotFoundError
 from config.database import get_async_db
-from utils.auth import get_current_user
+from utils.auth import get_current_user, get_current_user_or_api_key
 
 assert _main_app.app.title
 
@@ -67,3 +67,53 @@ async def test_get_conversation_messages_maps_not_found_to_404(
 
     assert response.status_code == 404
     assert "Conversation Not Exists" in response.json()["detail"]
+
+
+def test_app_parameters_returns_503_when_dify_is_restarting(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Dify HTTP 502 is a temporary outage, not an unhandled server error."""
+    app.dependency_overrides[get_current_user_or_api_key] = _make_user
+
+    mock_client = MagicMock()
+    mock_client.get_app_parameters = AsyncMock(side_effect=DifyAPIError("HTTP 502", status_code=502))
+
+    async def _fake_resolve(*_args, **_kwargs):
+        return mock_client
+
+    monkeypatch.setattr(
+        "routers.api.dify_files.resolve_mindmate_dify_client_short_lived",
+        _fake_resolve,
+    )
+
+    response = client.get("/api/dify/app/parameters", headers={"X-Language": "zh"})
+
+    assert response.status_code == 503
+    assert "暂时不可用" in response.json()["detail"]
+
+
+def test_conversation_list_returns_503_when_dify_is_restarting(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Listing history during a Dify restart fails closed instead of returning no rows."""
+    app.dependency_overrides[get_current_user] = _make_user
+
+    async def _fake_db():
+        yield MagicMock()
+
+    app.dependency_overrides[get_async_db] = _fake_db
+
+    async def _raise_outage(*_args, **_kwargs):
+        raise DifyAPIError("HTTP 502", status_code=502)
+
+    monkeypatch.setattr(
+        "routers.api.dify_conversations.list_unified_conversations",
+        _raise_outage,
+    )
+
+    response = client.get("/api/dify/conversations?limit=20", headers={"X-Language": "zh"})
+
+    assert response.status_code == 503
+    assert "暂时不可用" in response.json()["detail"]

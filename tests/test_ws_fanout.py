@@ -230,3 +230,40 @@ async def test_deliver_local_drop_second_identical_msg_id(monkeypatch):
     await wfd.deliver_local_workshop_broadcast("Z", "all", None, frame)
 
     assert len(pushes) == 1
+
+
+@pytest.mark.asyncio
+async def test_presence_fanout_reaches_mindmate_notify(monkeypatch):
+    """Org presence frames reach workshop chat and MindMate notify sockets."""
+    chat_calls: List[tuple[int, int | None, str]] = []
+    notify_calls: List[tuple[int, int | None, str]] = []
+
+    async def fake_chat(org_id: int, exclude: int | None, data: str) -> None:
+        chat_calls.append((org_id, exclude, data))
+
+    async def fake_notify(org_id: int, exclude: int | None, data: str) -> None:
+        notify_calls.append((org_id, exclude, data))
+
+    monkeypatch.setattr(lst.chat_ws_manager, "deliver_local_presence_org", fake_chat)
+    monkeypatch.setattr(
+        lst.mindmate_notify_ws_manager,
+        "deliver_local_presence_org",
+        fake_notify,
+    )
+    monkeypatch.setattr(lst, "record_ws_fanout_chat_received", lambda: None)
+    monkeypatch.setenv("COLLAB_FANOUT_ORIGIN_SECRET", "test-origin-secret")
+    monkeypatch.setattr(lst, "_FANOUT_ORIGIN_SECRET", "test-origin-secret")
+
+    payload = json.dumps({"type": "presence", "user_id": 4, "status": "active"})
+    envelope = {
+        "v": 1,
+        "k": "po",
+        "oid": 9,
+        "ex": 4,
+        "origin": "test-origin-secret",
+        "d": payload,
+    }
+    handle_chat_raw = getattr(lst, "_handle_chat_raw")
+    await handle_chat_raw(json.dumps(envelope))
+    assert chat_calls == [(9, 4, payload)]
+    assert notify_calls == [(9, 4, payload)]

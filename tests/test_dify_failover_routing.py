@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import time
 
+import pytest
+
 from services.dify.dify_failover_routing import (
     choose_failover_route,
+    health_max_age_seconds,
     is_health_fresh,
     server_is_routable,
 )
@@ -56,3 +59,20 @@ def test_choose_failover_route_keeps_primary_during_anti_flap() -> None:
 def test_choose_failover_route_cold_start_stays_on_primary() -> None:
     """No cache data yet keeps traffic on the configured primary."""
     assert choose_failover_route(1, 2, None, None) == 1
+
+
+def test_health_max_age_ignores_blank_and_invalid_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A blank or non-numeric health setting keeps the default window."""
+    monkeypatch.setenv("DIFY_HEALTH_POLL_INTERVAL_SECONDS", "")
+    monkeypatch.delenv("DIFY_HEALTH_MAX_AGE_SECONDS", raising=False)
+    assert health_max_age_seconds() == 540.0
+    monkeypatch.setenv("DIFY_HEALTH_POLL_INTERVAL_SECONDS", "nope")
+    assert health_max_age_seconds() == 540.0
+    monkeypatch.setenv("DIFY_HEALTH_POLL_INTERVAL_SECONDS", "30")
+    monkeypatch.setenv("DIFY_HEALTH_MAX_AGE_SECONDS", "bad")
+    assert health_max_age_seconds() == 180.0
+
+
+def test_choose_failover_route_missing_primary_ignores_healthy_partner() -> None:
+    """An unchecked primary stays put even when the partner snapshot is healthy."""
+    assert choose_failover_route(1, 2, None, _snap(True, 0)) == 1

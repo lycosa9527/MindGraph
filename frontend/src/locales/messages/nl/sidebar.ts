@@ -15,8 +15,7 @@ export default {
   'sidebar.actions.unpin': 'Losmaken',
   'sidebar.actions.moveToFolder': 'Naar map verplaatsen',
   'sidebar.actions.removeFromFolder': 'Uit map verwijderen',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'Weet je zeker dat je dit gesprek wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  'sidebar.askOnceHistory.deleteConfirm': 'Weet je zeker dat je dit gesprek wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
   'sidebar.askOnceHistory.empty': 'Nog geen gesprekken',
   'sidebar.askOnceHistory.renamePrompt': 'Voer een nieuwe naam in voor dit gesprek',
   'sidebar.askOnceHistory.renameTitle': 'Gesprek hernoemen',
@@ -30,8 +29,7 @@ export default {
   'sidebar.bookmarks.title': 'Recente bladwijzers',
   'sidebar.bookmarks.unknownDoc': 'Onbekend document',
   'sidebar.brandTitle': 'Matt onderwijs en onderzoek',
-  'sidebar.chatHistory.deleteConfirm':
-    'Weet je zeker dat je dit gesprek wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  'sidebar.chatHistory.deleteConfirm': 'Weet je zeker dat je dit gesprek wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
   'sidebar.chatHistory.deleteTitle': 'Gesprek verwijderen',
   'sidebar.chatHistory.empty': 'Nog geen gesprekken',
   'sidebar.chatHistory.loginPrompt': 'Log in om geschiedenis te bekijken',
@@ -46,8 +44,7 @@ export default {
   'sidebar.chatHistory.folderCreatePrompt': 'Enter a name for the new folder',
   'sidebar.chatHistory.folderCreateTitle': 'New folder',
   'sidebar.chatHistory.folderCreated': 'Folder created',
-  'sidebar.chatHistory.folderDeleteConfirm':
-    'Delete this folder? Conversations inside will move to Uncategorized.',
+  'sidebar.chatHistory.folderDeleteConfirm': 'Delete this folder? Conversations inside will move to Uncategorized.',
   'sidebar.chatHistory.folderDeleteFailed': 'Failed to delete folder',
   'sidebar.chatHistory.folderDeleteTitle': 'Delete folder',
   'sidebar.chatHistory.folderDeleted': 'Folder deleted',
@@ -69,19 +66,13 @@ export default {
   'sidebar.zhihui': 'Chie',
   'sidebar.zhihuiHistory.title': 'Bouw geschiedenis',
   'sidebar.zhihuiHistory.empty': 'Nog geen generatierecord',
-  'sidebar.zhihuiHistory.deleteConfirm':
-    'Weet u zeker dat u dit gegenereerde record wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
-  'sidebar.community': 'Gemeenschap delen',
-  'sidebar.courses': 'Denkcursussen',
-  'sidebar.mateLearning': 'Matte leermethode',
-  'sidebar.debateHistory.deleteConfirm':
-    'Weet je zeker dat je dit debat wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  'sidebar.zhihuiHistory.deleteConfirm': 'Weet u zeker dat u dit gegenereerde record wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
+  'sidebar.debateHistory.deleteConfirm': 'Weet je zeker dat je dit debat wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
   'sidebar.debateHistory.empty': 'Nog geen debatten',
   'sidebar.debateHistory.loginPrompt': 'Log in om debatten te bekijken',
   'sidebar.debateHistory.renamePrompt': 'Voer een nieuw onderwerp in voor dit debat',
   'sidebar.debateHistory.renameTitle': 'Debat hernoemen',
   'sidebar.debateHistory.title': 'Recente debatten',
-  'sidebar.debateverse': 'Over de situatie',
   'sidebar.diagramHistory.capacity': 'Tot {n} diagrammen opslaan',
   'sidebar.diagramHistory.deleteFailed': 'Diagram verwijderen mislukt',
   'sidebar.diagramHistory.collabLive': 'Online samenwerking actief',
@@ -98,8 +89,7 @@ export default {
   'sidebar.diagramHistory.folderCreatePrompt': 'Voer een naam in voor de nieuwe map',
   'sidebar.diagramHistory.folderCreateTitle': 'Nieuwe map',
   'sidebar.diagramHistory.folderCreated': 'Map gemaakt',
-  'sidebar.diagramHistory.folderDeleteConfirm':
-    'Deze map verwijderen? Diagrammen erin gaan naar Niet gecategoriseerd.',
+  'sidebar.diagramHistory.folderDeleteConfirm': 'Deze map verwijderen? Diagrammen erin gaan naar Niet gecategoriseerd.',
   'sidebar.diagramHistory.folderDeleteFailed': 'Map verwijderen mislukt',
   'sidebar.diagramHistory.folderDeleteTitle': 'Map verwijderen',
   'sidebar.diagramHistory.folderDeleted': 'Map verwijderd',
@@ -108,8 +98,7 @@ export default {
   'sidebar.diagramHistory.folderRenamePrompt': 'Voer een nieuwe naam in voor deze map',
   'sidebar.diagramHistory.folderRenameTitle': 'Map hernoemen',
   'sidebar.diagramHistory.folderRenamed': 'Map hernoemd',
-  'sidebar.diagramHistory.foldersLoadFailed':
-    'Kon mappen niet laden; alleen diagrammen worden getoond',
+  'sidebar.diagramHistory.foldersLoadFailed': 'Kon mappen niet laden; alleen diagrammen worden getoond',
   'sidebar.diagramHistory.foldersSection': 'Mappen',
   'sidebar.diagramHistory.loadFailed': 'Diagrammen laden mislukt',
   'sidebar.diagramHistory.moveFailed': 'Diagram verplaatsen mislukt',
@@ -148,19 +137,17 @@ export default {
   'sidebar.training': 'schoolgebonden opleiding',
   'sidebar.trainingCourses': 'cursus',
   'sidebar.trainingBuilder': 'Cursus bouwassistent',
-  'sidebar.templateResources': 'Sjablonen',
   'sidebar.orgEdition': '{org} exclusief',
   'sidebar.personalEdition': 'Persoonlijk exclusief',
   'sidebar.userSubtitleDefault': 'MindGraph Professionele editie',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',
   'sidebar.account': 'Accountinstellingen',
   'sidebar.roleSuperAdmin': 'Superbeheerder',
-  'sidebar.rolePlatformAdmin': 'Onderwijsonderzoeker',
+  'sidebar.rolePlatformAdmin': 'Onderzoeker',
   'sidebar.roleExpert': 'deskundige',
-  'sidebar.roleSchoolAdmin': 'Schoolbeheerder',
+  'sidebar.roleSchoolAdmin': 'Schooladmin',
   'sidebar.roleSchoolEdition': 'Schooleditie',
   'sidebar.roleStudent': 'Student',
   'sidebar.roleTrialEdition': 'Proef',
@@ -169,8 +156,7 @@ export default {
   'sidebar.logoSiteQrHint': 'Scan met je telefooncamera of WeChat',
   'sidebar.mindmateCollabHistory.title': 'Online samenwerking',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Seminar beëindigen',
-  'sidebar.mindmateCollabHistory.stopConfirm':
-    'Dit beëindigt de sessie voor iedereen. Deelnemers verlaten de ruimte.',
+  'sidebar.mindmateCollabHistory.stopConfirm': 'Dit beëindigt de sessie voor iedereen. Deelnemers verlaten de ruimte.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Op de campus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Netwerk',
   'sidebar.share.ribbon': 'Organization',
@@ -194,8 +180,7 @@ export default {
   'sidebar.demo.menu': 'Demo mode',
   'sidebar.demo.ribbon': 'Demo',
   'sidebar.demo.title': 'Choose diagrams',
-  'sidebar.demo.line1':
-    'Pick diagrams from your library, write a caption, then play them full screen',
+  'sidebar.demo.line1': 'Pick diagrams from your library, write a caption, then play them full screen',
   'sidebar.demo.search': 'Search diagrams',
   'sidebar.demo.empty': 'No diagrams in your library yet',
   'sidebar.demo.hint': 'Select a diagram to write its caption',
@@ -245,26 +230,15 @@ export default {
   'sidebar.demo.loading': 'Generating',
   'sidebar.demo.moveUp': 'Move up',
   'sidebar.demo.moveDown': 'Move down',
-  'sidebar.demo.caption.circle_map':
-    '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
-  'sidebar.demo.caption.bubble_map':
-    '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
-  'sidebar.demo.caption.double_bubble_map':
-    '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
-  'sidebar.demo.caption.tree_map':
-    '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
-  'sidebar.demo.caption.brace_map':
-    '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
-  'sidebar.demo.caption.flow_map':
-    '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
-  'sidebar.demo.caption.multi_flow_map':
-    '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
-  'sidebar.demo.caption.bridge_map':
-    '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
-  'sidebar.demo.caption.mindmap':
-    '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
-  'sidebar.demo.caption.concept_map':
-    '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
-  'sidebar.demo.caption.fallback':
-    '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
+  'sidebar.demo.caption.circle_map': '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
+  'sidebar.demo.caption.bubble_map': '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
+  'sidebar.demo.caption.double_bubble_map': '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
+  'sidebar.demo.caption.tree_map': '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
+  'sidebar.demo.caption.brace_map': '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
+  'sidebar.demo.caption.flow_map': '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
+  'sidebar.demo.caption.multi_flow_map': '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
+  'sidebar.demo.caption.bridge_map': '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
+  'sidebar.demo.caption.mindmap': '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
+  'sidebar.demo.caption.concept_map': '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
+  'sidebar.demo.caption.fallback': '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
 } as const

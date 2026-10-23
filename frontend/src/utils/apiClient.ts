@@ -14,8 +14,9 @@
  */
 import type { LocaleCode } from '@/i18n/locales'
 import { AUTH_USER_STORAGE_KEY, useAuthStore } from '@/stores/auth'
-import { useUIStore } from '@/stores/ui'
 import { hasAuthSessionHint } from '@/utils/authSessionHint'
+import { useUIStore } from '@/stores/ui'
+import { notifyIfAiRequestUsesSimplifiedChinese } from '@/utils/simplifiedChineseNotice'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { emitSchoolExpiredFromPayload } from '@/utils/schoolExpiredLockout'
 import {
@@ -26,17 +27,17 @@ import {
 
 const API_BASE = '/api'
 
-const SHOWCASE_DEV_DIRECT_UPLOAD_PREFIXES = ['/api/showcase/', '/api/auth/admin/showcase/'] as const
+const SHOWCASE_DEV_DIRECT_UPLOAD_PREFIXES = [
+  '/api/showcase/',
+  '/api/auth/admin/showcase/',
+] as const
 
 /** Dev: bypass Vite proxy only for large showcase multipart publishes. */
 function shouldBypassViteProxyInDev(path: string): boolean {
   return SHOWCASE_DEV_DIRECT_UPLOAD_PREFIXES.some((prefix) => path.startsWith(prefix))
 }
 
-function resolveUploadFetchTarget(endpoint: string): {
-  url: string
-  credentials: RequestCredentials
-} {
+function resolveUploadFetchTarget(endpoint: string): { url: string; credentials: RequestCredentials } {
   const path = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
   const devOrigin = typeof __DEV_API_ORIGIN__ === 'string' ? __DEV_API_ORIGIN__.trim() : ''
   if (import.meta.env.PROD || !devOrigin || !shouldBypassViteProxyInDev(path)) {
@@ -158,6 +159,11 @@ function requestHeaders(options: RequestInit): Record<string, string> {
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
+  const uiStore = useUIStore()
+  notifyIfAiRequestUsesSimplifiedChinese(url, options, {
+    allowSimplifiedChinese: uiStore.languagePolicyAllowZh,
+    uiLanguage: uiStore.language,
+  })
 
   const headers = requestHeaders(options)
 
@@ -201,23 +207,33 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
   return response
 }
 
+function readableValidationLine(raw: string): string {
+  let text = raw.trim()
+  const prefixed = text.match(/^(?:body|query|path)\.[^:]+:\s*(.+)$/)
+  if (prefixed?.[1]) {
+    text = prefixed[1].trim()
+  }
+  return text.replace(/^Value error,\s*/i, '').trim()
+}
+
 /** Extract a human-readable message from FastAPI `{ detail }` error payloads. */
 export function parseApiErrorDetail(payload: unknown, fallback: string): string {
   if (payload && typeof payload === 'object' && 'detail' in payload) {
     const detail = (payload as { detail?: unknown }).detail
     if (typeof detail === 'string' && detail.trim()) {
-      return detail
+      return readableValidationLine(detail)
     }
     if (Array.isArray(detail) && detail.length > 0) {
       const lines = detail
         .map((item) => {
+          if (typeof item === 'string') {
+            const line = readableValidationLine(item)
+            return line || null
+          }
           if (!item || typeof item !== 'object') return null
-          const loc = Array.isArray((item as { loc?: unknown }).loc)
-            ? (item as { loc: unknown[] }).loc.filter((part) => part !== 'body').join('.')
-            : ''
           const msg = (item as { msg?: unknown }).msg
           if (typeof msg !== 'string' || !msg.trim()) return null
-          return loc ? `${loc}: ${msg}` : msg
+          return readableValidationLine(msg)
         })
         .filter((line): line is string => Boolean(line))
       if (lines.length > 0) return lines.join('\n')
@@ -239,7 +255,10 @@ export function parseApiErrorDetail(payload: unknown, fallback: string): string 
 /**
  * JSON API request — parses the body and throws on non-OK responses.
  */
-export async function apiRequestJson<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+export async function apiRequestJson<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
   const response = await apiRequest(endpoint, options)
   if (!response.ok) {
     const payload = await response.json().catch(() => null)
@@ -351,7 +370,7 @@ export async function apiUpload(
     response = await uploadOnce()
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to fetch'
-    throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message, { cause: err })
+    throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
   }
 
   // If unauthorized, attempt token refresh and retry
@@ -369,7 +388,7 @@ export async function apiUpload(
         response = await uploadOnce()
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to fetch'
-        throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message, { cause: err })
+        throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
       }
       if (response.status === 401) {
         handleUploadUnauthorizedAfterRetry()
@@ -412,7 +431,7 @@ export async function apiPutFormData(
     response = await uploadOnce()
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to fetch'
-    throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message, { cause: err })
+    throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
   }
 
   if (response.status === 401) {
@@ -429,7 +448,7 @@ export async function apiPutFormData(
         response = await uploadOnce()
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to fetch'
-        throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message, { cause: err })
+        throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
       }
       if (response.status === 401) {
         handleUploadUnauthorizedAfterRetry()
@@ -547,237 +566,15 @@ export interface CreateReplyData {
 }
 
 // =============================================================================
-// Community API Methods
+// Showcase API Methods
 // =============================================================================
 
-export interface CommunityPostAuthor {
+export interface ShowcasePostAuthor {
   id: number
   name: string | null
   avatar: string | null
   organization?: string | null
 }
-
-export interface CommunityPost {
-  id: string
-  title: string
-  description: string | null
-  category: string | null
-  diagram_type: string
-  thumbnail_url: string | null
-  spec_json_url?: string
-  author: CommunityPostAuthor
-  likes_count: number
-  comments_count: number
-  created_at: string
-  is_liked: boolean
-  can_edit?: boolean
-}
-
-export interface CommunityPostList {
-  posts: CommunityPost[]
-  total: number
-  page: number
-  page_size: number
-  total_pages: number
-}
-
-export interface CreateCommunityPostParams {
-  title: string
-  description: string
-  category: string | null
-  diagram_type: string
-  spec: Record<string, unknown>
-  thumbnail: Blob
-}
-
-export async function getCommunityPosts(
-  params: {
-    page?: number
-    pageSize?: number
-    mine?: boolean
-    type?: string
-    category?: string
-    sort?: string
-  } = {}
-): Promise<CommunityPostList> {
-  const searchParams = new URLSearchParams()
-  searchParams.set('page', String(params.page ?? 1))
-  searchParams.set('page_size', String(params.pageSize ?? 20))
-  if (params.mine) searchParams.set('mine', '1')
-  if (params.type) searchParams.set('type', params.type)
-  if (params.category) searchParams.set('category', params.category)
-  if (params.sort) searchParams.set('sort', params.sort)
-
-  const response = await apiGet(`/api/community/posts?${searchParams.toString()}`)
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: 'Failed to fetch posts' }))
-    throw new Error(err.detail || 'Failed to fetch community posts')
-  }
-  return response.json()
-}
-
-export async function getCommunityPost(
-  postId: string
-): Promise<CommunityPost & { spec?: unknown }> {
-  const response = await apiGet(`/api/community/posts/${postId}`)
-  if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error('Post not found')
-    }
-    const err = await response.json().catch(() => ({ detail: 'Failed to fetch post' }))
-    throw new Error(err.detail || 'Failed to fetch post')
-  }
-  return response.json()
-}
-
-export async function createCommunityPost(
-  data: CreateCommunityPostParams
-): Promise<{ message: string; post: CommunityPost }> {
-  const formData = new FormData()
-  formData.append('title', data.title)
-  formData.append('description', data.description)
-  formData.append('category', data.category || '')
-  formData.append('diagram_type', data.diagram_type)
-  formData.append('spec', JSON.stringify(data.spec))
-  formData.append('thumbnail', data.thumbnail, 'thumbnail.png')
-
-  const response = await apiUpload('/api/community/posts', formData)
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: 'Failed to create post' }))
-    throw new Error(err.detail || 'Failed to create post')
-  }
-  return response.json()
-}
-
-export async function updateCommunityPost(
-  postId: string,
-  data: {
-    title: string
-    description: string
-    category: string | null
-    diagram_type: string
-    spec: Record<string, unknown>
-    thumbnail?: Blob
-  }
-): Promise<{ message: string; post: CommunityPost }> {
-  const formData = new FormData()
-  formData.append('title', data.title)
-  formData.append('description', data.description)
-  formData.append('category', data.category || '')
-  formData.append('diagram_type', data.diagram_type)
-  formData.append('spec', JSON.stringify(data.spec))
-  if (data.thumbnail) {
-    formData.append('thumbnail', data.thumbnail, 'thumbnail.png')
-  }
-
-  const response = await apiPutFormData(`/api/community/posts/${postId}`, formData)
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: 'Failed to update post' }))
-    throw new Error(err.detail || 'Failed to update post')
-  }
-  return response.json()
-}
-
-export async function deleteCommunityPost(postId: string): Promise<{ message: string }> {
-  const response = await apiDelete(`/api/community/posts/${postId}`)
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: 'Failed to delete post' }))
-    throw new Error(err.detail || 'Failed to delete post')
-  }
-  return response.json()
-}
-
-export async function toggleCommunityPostLike(
-  postId: string
-): Promise<{ is_liked: boolean; likes_count: number }> {
-  const response = await apiPost(`/api/community/posts/${postId}/like`)
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: 'Failed to toggle like' }))
-    throw new Error(err.detail || 'Failed to toggle like')
-  }
-  return response.json()
-}
-
-export interface CommunityPostComment {
-  id: number
-  content: string
-  author: CommunityPostAuthor
-  created_at: string
-  can_delete?: boolean
-}
-
-export interface CommunityPostCommentsResponse {
-  comments: CommunityPostComment[]
-  total: number
-  page: number
-  page_size: number
-}
-
-export interface CommunityPostLikesResponse {
-  names: string[]
-  total: number
-}
-
-export async function getCommunityPostLikes(
-  postId: string,
-  limit = 5
-): Promise<CommunityPostLikesResponse> {
-  const params = new URLSearchParams({ limit: String(limit) })
-  const response = await apiGet(`/api/community/posts/${postId}/likes?${params}`)
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: 'Failed to fetch likes' }))
-    throw new Error(err.detail || 'Failed to fetch likes')
-  }
-  return response.json()
-}
-
-export async function getCommunityPostComments(
-  postId: string,
-  page = 1,
-  pageSize = 50
-): Promise<CommunityPostCommentsResponse> {
-  const params = new URLSearchParams({
-    page: String(page),
-    page_size: String(pageSize),
-  })
-  const response = await apiGet(`/api/community/posts/${postId}/comments?${params}`)
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: 'Failed to fetch comments' }))
-    throw new Error(err.detail || 'Failed to fetch comments')
-  }
-  return response.json()
-}
-
-export async function createCommunityPostComment(
-  postId: string,
-  content: string
-): Promise<{ message: string; comment: CommunityPostComment }> {
-  const formData = new FormData()
-  formData.append('content', content)
-  const response = await apiUpload(`/api/community/posts/${postId}/comments`, formData)
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: 'Failed to add comment' }))
-    throw new Error(err.detail || 'Failed to add comment')
-  }
-  return response.json()
-}
-
-export async function deleteCommunityPostComment(
-  postId: string,
-  commentId: number
-): Promise<{ message: string }> {
-  const response = await apiDelete(`/api/community/posts/${postId}/comments/${commentId}`)
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: 'Failed to delete comment' }))
-    throw new Error(err.detail || 'Failed to delete comment')
-  }
-  return response.json()
-}
-
-// =============================================================================
-// Showcase API Methods
-// =============================================================================
 
 export interface ShowcasePost {
   id: string
@@ -827,13 +624,9 @@ export interface ShowcasePost {
   } | null
   is_expert_recommended: boolean
   publish_source?: 'self' | 'proxy'
-  attribution?: {
-    display_name?: string
-    organization?: string | null
-    is_external?: boolean
-  } | null
+  attribution?: { display_name?: string; organization?: string | null; is_external?: boolean } | null
   rejection_reason?: string | null
-  author: CommunityPostAuthor & { is_proxy?: boolean }
+  author: ShowcasePostAuthor & { is_proxy?: boolean }
   likes_count: number
   views_count: number
   created_at: string
@@ -920,7 +713,9 @@ export async function getShowcasePosts(
   }
 }
 
-export async function getShowcasePost(postId: string): Promise<ShowcasePost & { spec?: unknown }> {
+export async function getShowcasePost(
+  postId: string
+): Promise<ShowcasePost & { spec?: unknown }> {
   const response = await apiGet(`/api/showcase/posts/${postId}`)
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to fetch case' }))
@@ -930,15 +725,13 @@ export async function getShowcasePost(postId: string): Promise<ShowcasePost & { 
   return normalizeShowcasePost(data)
 }
 
-export async function createShowcasePost(
-  formData: FormData
-): Promise<{ message: string; post: ShowcasePost }> {
+export async function createShowcasePost(formData: FormData): Promise<{ message: string; post: ShowcasePost }> {
   let response: Response
   try {
     response = await apiUpload('/api/showcase/posts', formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
-      throw new Error('NETWORK_ERROR', { cause: e })
+      throw new Error('NETWORK_ERROR')
     }
     throw e
   }
@@ -977,7 +770,7 @@ export async function initShowcaseUpload(
     filename: string
     content_type: string
     size_bytes: number
-  }
+  },
 ): Promise<ShowcaseUploadInitResponse> {
   const id = postId.trim()
   if (!id) throw new Error('Missing case id')
@@ -996,7 +789,7 @@ export async function completeShowcaseUpload(
     key: string
     filename?: string
     file?: File
-  }
+  },
 ): Promise<{ key: string; url: string; post: ShowcasePost }> {
   const id = postId.trim()
   if (!id) throw new Error('Missing case id')
@@ -1049,7 +842,7 @@ export async function updateShowcasePost(
     response = await apiPutFormData(`/api/showcase/posts/${id}`, formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
-      throw new Error('NETWORK_ERROR', { cause: e })
+      throw new Error('NETWORK_ERROR')
     }
     throw e
   }
@@ -1075,7 +868,7 @@ export async function uploadShowcaseGalleryImages(
     response = await apiUpload(`/api/showcase/posts/${id}/gallery-images`, formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
-      throw new Error('NETWORK_ERROR', { cause: e })
+      throw new Error('NETWORK_ERROR')
     }
     throw e
   }
@@ -1102,7 +895,7 @@ export async function uploadShowcaseGalleryImages(
 
 export async function withdrawShowcasePost(
   postId: string,
-  options?: { reason?: string }
+  options?: { reason?: string },
 ): Promise<{ message: string }> {
   const id = postId.trim()
   if (!id) {
@@ -1111,7 +904,7 @@ export async function withdrawShowcasePost(
   const reason = options?.reason?.trim()
   const response = await apiPost(
     `/api/showcase/posts/${id}/withdraw`,
-    reason ? { reason: reason.slice(0, 200) } : {}
+    reason ? { reason: reason.slice(0, 200) } : {},
   )
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to withdraw case' }))
@@ -1207,7 +1000,9 @@ export async function getShowcaseFavoritePosts(
   }
 }
 
-export async function toggleShowcasePostFavorite(postId: string): Promise<{ favorited: boolean }> {
+export async function toggleShowcasePostFavorite(
+  postId: string
+): Promise<{ favorited: boolean }> {
   const response = await apiPost(`/api/showcase/posts/${postId}/favorite`, {})
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to toggle favorite' }))
@@ -1426,7 +1221,7 @@ export async function proxyCreateShowcasePost(formData: FormData): Promise<{ pos
     response = await apiUpload('/api/auth/admin/showcase/posts/proxy', formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
-      throw new Error('NETWORK_ERROR', { cause: e })
+      throw new Error('NETWORK_ERROR')
     }
     throw e
   }

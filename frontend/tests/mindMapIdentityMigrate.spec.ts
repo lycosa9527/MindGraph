@@ -3,10 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 import type { Connection, DiagramNode } from '@/types'
 import {
+  collapseDuplicateMindMapNodes,
   migrateMindMapIdentityIds,
   mindMapIdentityAliases,
+  mindMapPatchCarriesBranchIdentity,
   resolveMindMapAliasId,
   resolveMindMapIdentityId,
+  resolveMindMapPatchTargetId,
 } from '@/utils/mindMapIdentityMigrate'
 import {
   isMindMapL1,
@@ -14,6 +17,7 @@ import {
   mindMapNodeDepth,
   mindMapNodeSide,
 } from '@/utils/mindMapLocation'
+import { stableMindMapIdentityId } from '@/utils/mindMapStableId'
 
 function positionalTree(): { nodes: DiagramNode[]; connections: Connection[] } {
   return {
@@ -128,6 +132,88 @@ describe('mind-map identity invert', () => {
     expect(resolveMindMapIdentityId('DIY', nodes)).toBe('uid-diy')
     expect(resolveMindMapAliasId('DIY', nodes)).toBeNull()
     expect(resolveMindMapAliasId('uid-diy', nodes)).toBe('uid-diy')
+  })
+
+  it('mints the same id for a leftover branch on every client', () => {
+    const once = migrateMindMapIdentityIds(
+      [
+        { id: 'topic', type: 'topic', text: '平面直角坐标系' },
+        { id: 'branch-r-1-0', type: 'branch', text: '横轴' },
+      ],
+      [{ id: 'e', source: 'topic', target: 'branch-r-1-0' }]
+    )
+    const twice = migrateMindMapIdentityIds(
+      [
+        { id: 'topic', type: 'topic', text: '平面直角坐标系' },
+        { id: 'branch-r-1-0', type: 'branch', text: '横轴' },
+      ],
+      [{ id: 'e', source: 'topic', target: 'branch-r-1-0' }]
+    )
+    const branch = once.nodes.find((node) => node.text === '横轴')
+    expect(branch?.id).toBe('8db35dc2-790c-5b54-94f9-7f8be0e8683c')
+    expect(branch?.id).toBe(stableMindMapIdentityId('branch-r-1-0'))
+    expect(twice.nodes.find((node) => node.text === '横轴')?.id).toBe(branch?.id)
+    expect(branch?.id).not.toBe('branch-r-1-0')
+  })
+
+  it('treats a position echo as having no branch identity', () => {
+    expect(
+      mindMapPatchCarriesBranchIdentity({ id: 'uuid-stranger', position: { x: 1, y: 2 } })
+    ).toBe(false)
+    expect(
+      mindMapPatchCarriesBranchIdentity({
+        id: 'uuid-new',
+        type: 'branch',
+        text: '纵轴',
+      })
+    ).toBe(true)
+  })
+
+  it('resolves a remembered peer id with no patch data', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'topic', type: 'topic', text: '平面直角坐标系' },
+      {
+        id: 'uuid-server',
+        type: 'branch',
+        text: '横轴',
+        data: {
+          mindMapUid: 'uuid-server',
+          mindMapLegacyId: 'branch-r-1-0',
+          mindMapAliasIds: ['uuid-client'],
+        },
+      },
+    ]
+    expect(mindMapIdentityAliases(nodes)['uuid-client']).toBe('uuid-server')
+    expect(resolveMindMapPatchTargetId('uuid-client', undefined, nodes)).toBe('uuid-server')
+  })
+
+  it('collapses a second collab identity of the same branch', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'topic', type: 'topic', text: '平面直角坐标系', position: { x: 0, y: 0 } },
+      {
+        id: 'uuid-server',
+        type: 'branch',
+        text: '横轴',
+        position: { x: 220, y: 0 },
+        data: { mindMapUid: 'uuid-server', mindMapLegacyId: 'branch-r-1-0', mindMapSide: 'right' },
+      },
+      {
+        id: 'uuid-client',
+        type: 'branch',
+        text: '横轴',
+        position: { x: -40, y: 30 },
+        data: { mindMapUid: 'uuid-client', mindMapLegacyId: 'branch-r-1-0', mindMapSide: 'right' },
+      },
+    ]
+    const connections: Connection[] = [
+      { id: 'e-server', source: 'topic', target: 'uuid-server' },
+      { id: 'e-client', source: 'topic', target: 'uuid-client' },
+    ]
+    const collapsed = collapseDuplicateMindMapNodes(nodes, connections)
+    expect(collapsed.nodes.map((node) => node.id)).toEqual(['topic', 'uuid-server'])
+    expect(collapsed.connections.map((conn) => conn.target)).toEqual(['uuid-server'])
+    const live = nodes.filter((node) => node.id !== 'uuid-client')
+    expect(resolveMindMapPatchTargetId('uuid-client', nodes[2]?.data, live)).toBe('uuid-server')
   })
 
   it('extract keeps uid and leftover positional id for a later layout reload', () => {

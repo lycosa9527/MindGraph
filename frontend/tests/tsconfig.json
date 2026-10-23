@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    /* Parent lists only `vite/client`, which hides `@types/node` (`node:fs`, `__dirname`). */
+    "types": ["vite/client", "node"],
+    "noEmit": true
+  },
+  "include": ["./**/*.ts", "./**/*.tsx", "../src/env.d.ts"]
+}

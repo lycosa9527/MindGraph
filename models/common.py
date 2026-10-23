@@ -37,7 +37,6 @@ class LLMModel(str, Enum):
     DEEPSEEK = "deepseek"
     EXPRESS = "express"
     KIMI = "kimi"
-    HUNYUAN = "hunyuan"
     DOUBAO = "doubao"
     QWEN36_FLASH = "qwen3.6-flash"
     QWEN37_PLUS = "qwen3.7-plus"

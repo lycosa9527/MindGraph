@@ -123,7 +123,7 @@ async def test_assert_llm_budget_raises_when_balance_low(
     monkeypatch.setattr(usage_wire_mod, "_assert_balance_with_lock", locked_assert_fail)
 
     with pytest.raises(ThinkingCoinInsufficientError) as exc_info:
-        await usage_wire_mod.assert_thinking_coin_llm_budget(9, 1, "node_palette", lang="en")
+        await usage_wire_mod.assert_thinking_coin_llm_budget(9, 1, "ai_brainstorm", lang="en")
 
     assert exc_info.value.balance == 2
     assert exc_info.value.cost == 6

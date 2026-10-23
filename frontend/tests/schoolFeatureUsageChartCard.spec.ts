@@ -15,6 +15,10 @@ vi.mock('@/composables', () => ({
   }),
 }))
 
+vi.mock('@/stores/ui', () => ({
+  useUIStore: () => ({ language: 'zh' }),
+}))
+
 vi.mock('@/composables/school/useSchoolActivityChart', () => ({
   useSchoolActivityChart: () => undefined,
 }))
@@ -79,7 +83,7 @@ describe('school feature usage cards', () => {
     const app = createApp({
       render() {
         return h(SchoolFeatureUsageAccessSection, {
-          modules: [moduleRow('canvas', 4), moduleRow('askonce', 0)],
+          modules: [moduleRow('canvas', 4), moduleRow('library', 0)],
           timestamp: stamp,
         })
       },
@@ -87,9 +91,9 @@ describe('school feature usage cards', () => {
     app.mount(host)
     const cards = host.querySelectorAll('[data-testid="school-feature-usage-card"]')
     expect(cards.length).toBe(2)
-    expect(cards[0]?.textContent).toContain('admin.schoolFeatureUsage.module.canvas')
-    expect(cards[0]?.textContent).toContain('admin.schoolFeatureUsage.visits')
-    expect(cards[1]?.textContent).toContain('admin.schoolFeatureUsage.module.askonce')
+    expect(cards[0]?.textContent).toContain('Diagram canvas')
+    expect(cards[0]?.textContent).toContain('Annual visitors')
+    expect(cards[1]?.textContent).toContain('Library')
     expect(
       [...host.querySelectorAll('[data-testid="school-activity-card-timestamp"]')].every((node) =>
         node.textContent?.includes('2026-09-01 08:15')
@@ -104,7 +108,7 @@ describe('school feature usage cards', () => {
     const app = createApp({
       render() {
         return h(SchoolFeatureUsageProcessSection, {
-          modules: [moduleRow('canvas', 4), moduleRow('askonce', 0)],
+          modules: [moduleRow('canvas', 4), moduleRow('library', 0)],
           bottleneck: {
             lowest_pass_keys: [],
             tense_keys: [],
@@ -118,11 +122,11 @@ describe('school feature usage cards', () => {
     })
     app.mount(host)
     const cards = host.querySelectorAll('[data-testid="school-feature-usage-card"]')
-    expect(cards[0]?.textContent).toContain('admin.schoolFeatureUsage.completed')
-    expect(cards[0]?.textContent).toContain('admin.schoolFeatureUsage.llmFailRate')
-    expect(cards[0]?.textContent).toContain('admin.schoolFeatureUsage.llmDuration')
-    expect(cards[0]?.textContent).not.toContain('admin.schoolFeatureUsage.durationEmpty')
-    expect(cards[1]?.textContent).toContain('admin.schoolFeatureUsage.durationEmpty')
+    expect(cards[0]?.textContent).toContain('Annual completed uses')
+    expect(cards[0]?.textContent).toContain('LLM fail rate')
+    expect(cards[0]?.textContent).toContain('LLM average response time')
+    expect(cards[0]?.textContent).not.toContain('No LLM response-time records')
+    expect(cards[1]?.textContent).toContain('No LLM response-time records')
     expect(host.textContent).toContain('admin.schoolFeatureUsage.bottleneckSlow')
     app.unmount()
   })

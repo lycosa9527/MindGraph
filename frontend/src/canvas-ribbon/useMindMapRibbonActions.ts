@@ -10,6 +10,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
+import { useNodeExplainEditGate } from '@/composables/mindMap/nodeExplainEditGate'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { CANVAS_MINDMAP_EXPORT_MENU_ITEMS } from '@/config/canvasExportMenu'
 import { useCanvasExportStore } from '@/stores'
@@ -35,6 +36,7 @@ export function useMindMapRibbonActions() {
   })
   const { handleAIGenerate } = useCanvasToolbarApps()
   const sideToolbar = useMindMapSideToolbarState()
+  const { locked: explainLockedUntilConfirm } = useNodeExplainEditGate()
   const learningSheet = useLearningSheetCustomMode()
   const canvasExportStore = useCanvasExportStore()
 
@@ -197,6 +199,7 @@ export function useMindMapRibbonActions() {
   }
 
   function requestExplainNode(): void {
+    if (explainLockedUntilConfirm.value) return
     const nodeId = diagramStore.selectedNodes[0]
     if (!nodeId) {
       notify.warningKey('canvas.toolbar.selectNodesFirst')
@@ -248,6 +251,7 @@ export function useMindMapRibbonActions() {
     openSideTool,
     requestAiSubgraph,
     requestExplainNode,
+    explainLockedUntilConfirm,
     resetNodeStyles,
     learningSheet,
   })

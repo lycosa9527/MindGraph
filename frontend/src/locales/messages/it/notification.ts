@@ -5,13 +5,11 @@
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Impossibile cancellare i nodi di argomento o centrale',
-  'notification.cannotResetSelectDiagramType':
-    'Impossibile reimpostare: seleziona prima un tipo di diagramma',
+  'notification.cannotResetSelectDiagramType': 'Impossibile reimpostare: seleziona prima un tipo di diagramma',
   'notification.canvasClearNodes': 'Cancellati {count} nodo/i',
   'notification.canvasClearNodesLearning': 'Svuotati {count} nodo/i, aggiunti alle risposte',
   'notification.canvasSomeoneEditingNode': 'Qualcun altro sta modificando questo nodo',
-  'notification.collabDeleteBlocked':
-    'Impossibile eliminare mentre un altro utente modifica un nodo selezionato',
+  'notification.collabDeleteBlocked': 'Impossibile eliminare mentre un altro utente modifica un nodo selezionato',
   'notification.collabRedoBlocked': 'Impossibile ripetere mentre un altro utente modifica',
   'notification.collabUndoBlocked': 'Impossibile annullare mentre un altro utente modifica',
   'notification.conversationDeleted': 'Conversazione eliminata',
@@ -23,14 +21,13 @@ export default {
   'notification.feedbackThanks': 'Grazie per il tuo feedback',
   'notification.feedbackThanksDislike': 'Grazie per il tuo feedback — miglioreremo',
   'notification.focusQuestionTooShort': 'Inserisci prima una domanda centrale più lunga',
-  'notification.geoLiteMissingIntro':
-    'Scarica GeoLite2 Country da MaxMind, estrai GeoLite2-Country.mmdb e copialo nella cartella dati del server:',
+  'notification.geoLiteMissingIntro': 'Scarica GeoLite2 Country da MaxMind, estrai GeoLite2-Country.mmdb e copialo nella cartella dati del server:',
   'notification.geoLiteMissingLink': 'Apri la pagina di download MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'Percorso previsto:',
   'notification.geoLiteMissingTitle': 'Database GeoLite2 Country mancante',
   'notification.fullscreenFailed': 'Impossibile entrare in schermo intero',
   'notification.generationCancelled': 'Generazione annullata',
-  'notification.conceptMapTabNeedsAi': "Attiva l'AI nella barra prima delle raccomandazioni Tab.",
+  'notification.conceptMapTabNeedsAi': 'Attiva l\'AI nella barra prima delle raccomandazioni Tab.',
   'notification.historyClearNodes': 'Cancella testo del nodo',
   'notification.historyEmptyLearning': 'Svuota nodo e aggiungi risposta',
   'notification.importInvalidData': 'Importazione non riuscita: dati del diagramma non validi',
@@ -38,10 +35,7 @@ export default {
   'notification.importSavePartial': 'Importato, ma salvataggio in libreria non riuscito',
   'notification.importSlotsFull': 'Libreria piena; diagramma importato ma non salvato in libreria',
   'notification.importSuccess': 'Diagramma importato e salvato in libreria',
-  'notification.importUnsupportedType':
-    'Importazione non riuscita: tipo di diagramma non supportato',
-  'notification.inlineRecEmpty':
-    "Nessuna raccomandazione generata. Riprova o modifica l'argomento.",
+  'notification.importUnsupportedType': 'Importazione non riuscita: tipo di diagramma non supportato',
   'notification.loadMoreFailed': 'Impossibile caricare altro',
   'notification.networkError': 'Errore di rete',
   'notification.nodeNotEligible': 'Questo nodo non supporta le raccomandazioni Tab.',
@@ -52,10 +46,8 @@ export default {
   'notification.rootConceptLinkNotFound': 'Collegamento concetto radice non trovato',
   'notification.saved': 'Modifiche salvate con successo',
   'notification.selectNodeToClear': 'Seleziona un nodo da cancellare',
-  'notification.sessionInvalidated':
-    'Sei stato disconnesso perché hai superato il numero massimo di dispositivi',
-  'notification.sessionKicked':
-    "Questo account ha registrato l'account offline su altri dispositivi",
+  'notification.sessionInvalidated': 'Sei stato disconnesso perché hai superato il numero massimo di dispositivi',
+  'notification.sessionKicked': 'Questo account ha registrato l\'account offline su altri dispositivi',
   'notification.signInToUse': 'Accedi per utilizzare questa funzione',
   'notification.signInToValidateFocus': 'Accedi per convalidare la domanda centrale',
 } as const

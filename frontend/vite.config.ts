@@ -76,7 +76,7 @@ const devHost = process.env.VITE_HOST || '0.0.0.0'
  * unless `server.hmr.host` is set — browsers cannot connect and updates never apply.
  * Same-machine dev: defaults to localhost. LAN/phone testing: set `VITE_HMR_HOST`.
  */
-function resolveHmrConfig(port: number, host: string | boolean) {
+function resolveHmrConfig(host: string | boolean) {
   const explicitHost = process.env.VITE_HMR_HOST?.trim()
   const explicitPort = process.env.VITE_HMR_PORT?.trim()
   const explicitClientPort = process.env.VITE_HMR_CLIENT_PORT?.trim()
@@ -92,10 +92,10 @@ function resolveHmrConfig(port: number, host: string | boolean) {
   if (!bindAll) {
     return undefined
   }
+  // Do not pin the port. strictPort is off, so a busy 41732 moves to the
+  // next port; a hardcoded HMR port would keep the browser on the old server.
   return {
     host: 'localhost',
-    port,
-    clientPort: port,
   }
 }
 
@@ -115,7 +115,7 @@ function resolveWatchConfig(projectRoot: string) {
   }
 }
 
-const devHmr = resolveHmrConfig(devPort, devHost)
+const devHmr = resolveHmrConfig(devHost)
 const devWatch = resolveWatchConfig(__dirname)
 const isPwaDev = process.env.VITE_PWA_DEV === '1'
 
@@ -363,7 +363,10 @@ export default defineConfig({
         globPatterns: isPwaDev ? [] : PWA_PRECACHE_GLOB_PATTERNS,
         // Sidebar quote pools are fetched on demand after login (locale-specific).
         globIgnores: ['**/sidebar-quotes-*', '**/training/roles/**', '**/stats.html'],
-        // No navigateFallback. Client routes are served by FastAPI with a fresh CSP.
+        // Plugin default is index.html, which calls createHandlerBoundToURL and
+        // throws non-precached-url because the shell is not precached. Client
+        // routes stay on the network so FastAPI can stamp a fresh CSP nonce.
+        navigateFallback: null,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: isPwaDev ? undefined : PWA_RUNTIME_CACHING,
       },

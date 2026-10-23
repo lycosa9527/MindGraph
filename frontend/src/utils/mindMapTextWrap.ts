@@ -1,10 +1,9 @@
 /**
- * Shared mind-map label wrap contract (canvas hosts + vector PDF/DOCX export).
+ * Shared thinking-map label wrap contract (canvas hosts + vector PDF/DOCX export).
  *
- * Canvas SoT: InlineEditableText ``max-width`` + CSS
- * ``pre-wrap / word-break:normal / overflow-wrap:break-word / line-height:1.4``
- * and ``text-wrap: balance``. Export uses the same column and the same
- * balance: the narrowest width that keeps the greedy line count.
+ * Width comes from the browser when that measurement sits near the fallback
+ * estimate. A label that fits the script-aware column stays one line. A longer
+ * label wraps at the map's own cap with word boundaries and ``text-wrap: balance``.
  */
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
@@ -62,6 +61,118 @@ export function measureMindMapLabelWidthPx(
 }
 
 /**
+ * Wrap column for any thinking-map label.
+ * Fits the script-aware threshold → that threshold (one line).
+ * Longer text → ``baseCapPx``.
+ */
+export function resolveThinkingMapTextColumnPx(
+  text: string,
+  fontSize: number,
+  baseCapPx: number,
+  options: MindMapTextMeasureOptions = {}
+): number {
+  const label = (text || '').trim()
+  if (!label) return baseCapPx
+  const wrapThreshold = computeScriptAwareMaxWidth(label, baseCapPx)
+  const textWidth = measureMindMapLabelWidthPx(label, fontSize, options)
+  if (textWidth <= wrapThreshold) return wrapThreshold
+  return baseCapPx
+}
+
+export type ThinkingMapLabelBlock = {
+  width: number
+  height: number
+  lineCount: number
+}
+
+/** Content box after the shared wrap. One line reports the measured width, not the threshold. */
+export function measureThinkingMapLabelBlockPx(
+  text: string,
+  fontSize: number,
+  baseCapPx: number,
+  options: MindMapTextMeasureOptions = {}
+): ThinkingMapLabelBlock {
+  const label = (text || '').trim() || ' '
+  const column = resolveThinkingMapTextColumnPx(
+    label === ' ' ? '' : label,
+    fontSize,
+    baseCapPx,
+    options
+  )
+  const single = measureMindMapLabelWidthPx(label, fontSize, options)
+  if (!label.includes('\n') && (label === ' ' || single <= column)) {
+    return {
+      width: single,
+      height: fontSize * MIND_MAP_TEXT_LINE_HEIGHT,
+      lineCount: 1,
+    }
+  }
+  const lines = wrapMindMapTextLines(label, column, { fontSize, ...options })
+  let width = 0
+  for (const line of lines) {
+    width = Math.max(width, measureMindMapLabelWidthPx(line, fontSize, options))
+  }
+  return {
+    width: width > 0 ? width : Math.min(single, baseCapPx),
+    height: Math.max(lines.length, 1) * fontSize * MIND_MAP_TEXT_LINE_HEIGHT,
+    lineCount: Math.max(lines.length, 1),
+  }
+}
+
+const displayMaxWidthCache = new Map<string, number>()
+const DISPLAY_MAX_WIDTH_CACHE_MAX = 500
+
+function displayFontsSettled(): boolean {
+  return typeof document === 'undefined' || document.fonts?.status === 'loaded'
+}
+
+function displayMaxWidthCacheKey(
+  label: string,
+  fontSize: number,
+  baseCapPx: number,
+  options: MindMapTextMeasureOptions
+): string {
+  return `${fontSize}\u0001${options.fontWeight ?? ''}\u0001${options.fontFamily ?? ''}\u0001${baseCapPx}\u0001${label}`
+}
+
+function rememberDisplayMaxWidth(key: string, width: number): void {
+  if (displayMaxWidthCache.size >= DISPLAY_MAX_WIDTH_CACHE_MAX) {
+    const oldest = displayMaxWidthCache.keys().next().value
+    if (oldest !== undefined) displayMaxWidthCache.delete(oldest)
+  }
+  displayMaxWidthCache.set(key, width)
+}
+
+/**
+ * CSS max-width. A one-line label gets the script-aware column.
+ * A wrapped label gets the balanced line width, never wider than the cap.
+ * Repeated calls with the same text and font reuse the width after fonts have loaded,
+ * so a column shift does not measure every label again.
+ */
+export function resolveThinkingMapDisplayMaxWidthPx(
+  text: string,
+  fontSize: number,
+  baseCapPx: number,
+  options: MindMapTextMeasureOptions = {}
+): number {
+  const label = (text || '').trim()
+  if (!label) return baseCapPx
+  const cacheKey = displayMaxWidthCacheKey(label, fontSize, baseCapPx, options)
+  if (displayFontsSettled()) {
+    const cached = displayMaxWidthCache.get(cacheKey)
+    if (cached !== undefined) return cached
+  }
+  const column = resolveThinkingMapTextColumnPx(label, fontSize, baseCapPx, options)
+  const block = measureThinkingMapLabelBlockPx(label, fontSize, baseCapPx, options)
+  const width =
+    block.lineCount <= 1 && !label.includes('\n')
+      ? column
+      : Math.max(8, Math.min(column, Math.ceil(block.width)))
+  if (displayFontsSettled()) rememberDisplayMaxWidth(cacheKey, width)
+  return width
+}
+
+/**
  * Canvas branch ``:max-width`` in px (same logic as MindMapV2/LegacyBranchNode).
  */
 export function resolveMindMapBranchTextMaxWidthPx(
@@ -69,14 +180,7 @@ export function resolveMindMapBranchTextMaxWidthPx(
   fontSize: number,
   options: MindMapTextMeasureOptions = {}
 ): number {
-  const text = (label || '').trim()
-  if (!text) return MIND_MAP_BRANCH_MAX_TEXT_WIDTH
-  const wrapThreshold = computeScriptAwareMaxWidth(text, MIND_MAP_BRANCH_MAX_TEXT_WIDTH)
-  const textWidth = measureMindMapLabelWidthPx(text, fontSize, options)
-  if (textWidth <= wrapThreshold) {
-    return wrapThreshold
-  }
-  return MIND_MAP_BRANCH_MAX_TEXT_WIDTH
+  return resolveThinkingMapTextColumnPx(label, fontSize, MIND_MAP_BRANCH_MAX_TEXT_WIDTH, options)
 }
 
 export const MIND_MAP_NUMBER_PREFIX_GAP_PX = 6

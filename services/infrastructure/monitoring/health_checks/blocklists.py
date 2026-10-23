@@ -4,7 +4,7 @@ The public ``/health`` route reads the date already stored in Redis and never
 waits on COS. The published snapshot is refreshed in the background (and on
 ``/health/all``) so a slow object store cannot fail a load-balancer probe.
 A stale database is reported with ``newest: false`` and does not change the
-HTTP status: the in-process health monitor sends SMS for degraded checks.
+HTTP status: the in-process health monitor records a critical failure for degraded checks.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved

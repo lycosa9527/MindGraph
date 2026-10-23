@@ -37,6 +37,17 @@ export const MIND_MAP_RIBBON_TAB_LABEL_KEYS: Record<MindMapRibbonTabId, string> 
   research: 'canvas.ribbon.tabResearch',
 }
 
+/** Students see the teaching tab as learning (学习). */
+export function mindMapRibbonTabLabelKey(
+  tab: MindMapRibbonTabId,
+  role: string | null | undefined
+): string {
+  if (tab === 'teaching' && role === 'student') {
+    return 'canvas.ribbon.tabLearn'
+  }
+  return MIND_MAP_RIBBON_TAB_LABEL_KEYS[tab]
+}
+
 export const DEFAULT_MIND_MAP_RIBBON_TAB: MindMapRibbonTabId = 'edit'
 
 /** Tools row under the title-row tabs — toggled by clicking the active tab. */

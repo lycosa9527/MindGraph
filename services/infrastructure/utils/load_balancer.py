@@ -60,7 +60,7 @@ class LLMLoadBalancer:
         # Kimi stays on Volcengine. DashScope Moonshot-Kimi-K2-Instruct is 500 RPM / 1,000,000 TPM.
         "kimi": "ark-kimi",
         "doubao": "ark-doubao",  # Volcengine doubao_1.5pro_32k endpoint, not Doubao-Seed-2.0-mini
-        # Canvas Doubao 2.1: model id doubao-seed-2.1-turbo, not the 1.5 pro endpoint.
+        # Canvas Doubao: model id from DOUBAO_MODEL, not the 1.5 pro endpoint.
         "doubao21": "ark-doubao21",
         # DeepSeek load balancing (both legs are DeepSeek-V4.1-Flash):
         # - DashScope: DEEPSEEK_MODEL (default deepseek-v4.1-flash)
@@ -74,8 +74,6 @@ class LLMLoadBalancer:
         "qwen3.8-flash": "qwen3.8-flash",
         "qwen3.7-plus": "qwen3.7-plus",
         "qwen3-max": "qwen3-max",
-        # Unaffected
-        "hunyuan": "hunyuan",  # → Tencent hunyuan
         "omni": "omni",  # → Voice agent
     }
 

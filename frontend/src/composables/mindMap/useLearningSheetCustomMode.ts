@@ -5,6 +5,7 @@ import { notify } from '@/composables/core/notifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
 
 /** Hammer pick mode — survives panel close so user can focus on canvas. */
@@ -47,6 +48,10 @@ function t(key: string): string {
   return String(i18n.global.t(key))
 }
 
+function learningSheetAuthoringAllowed(): boolean {
+  return useLearningAssignmentCanvasStore().showLearningSheet
+}
+
 export function isLearningSheetCustomPickActive(): boolean {
   return customPickActive.value
 }
@@ -77,7 +82,7 @@ export function scheduleLearningSheetPickNodeClick(nodeId: string): boolean {
 
 /** Safe to call from node click handlers (outside component setup). */
 export function handleLearningSheetPickNodeClick(nodeId: string): boolean {
-  if (!customPickActive.value) return false
+  if (!customPickActive.value || !learningSheetAuthoringAllowed()) return false
 
   // Showcase / export sessions are readonly — never mutate the editor store from a preview click.
   const activeSession = useDiagramSession()
@@ -123,6 +128,7 @@ export function resetLearningSheetCustomModeUi(): void {
 }
 
 export function toggleLearningSheetAnswersVisibility(): boolean {
+  if (!learningSheetAuthoringAllowed()) return false
   const diagramStore = useDiagramStore()
   if (!diagramStore.isLearningSheet) {
     return false
@@ -133,6 +139,10 @@ export function toggleLearningSheetAnswersVisibility(): boolean {
 
 /** Re-open float bar after reload when diagram spec still has learning-sheet mode. */
 export function restoreLearningSheetUiFromDiagram(): void {
+  if (!learningSheetAuthoringAllowed()) {
+    resetLearningSheetCustomModeUi()
+    return
+  }
   const diagramStore = useDiagramStore()
   if (!diagramStore.isLearningSheet) {
     resetLearningSheetCustomModeUi()
@@ -159,6 +169,10 @@ export function suspendLearningSheetForPresentation(): void {
 
 /** Leaving presentation: restore float bar if still in learning-sheet mode. */
 export function resumeLearningSheetAfterPresentation(): void {
+  if (!learningSheetAuthoringAllowed()) {
+    learningSheetFloatBarBeforePresentation.value = false
+    return
+  }
   const diagramStore = useDiagramStore()
   if (
     learningSheetFloatBarBeforePresentation.value &&
@@ -186,6 +200,7 @@ export function useLearningSheetCustomMode() {
   }
 
   function activatePick(): void {
+    if (!learningSheetAuthoringAllowed()) return
     if (!diagramStore.data?.nodes?.length) {
       notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
@@ -197,6 +212,7 @@ export function useLearningSheetCustomMode() {
   }
 
   function startRandomLearningSheet(): void {
+    if (!learningSheetAuthoringAllowed()) return
     if (!diagramStore.data?.nodes?.length) {
       notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
@@ -210,6 +226,7 @@ export function useLearningSheetCustomMode() {
   }
 
   function startFullBlankLearningSheet(): void {
+    if (!learningSheetAuthoringAllowed()) return
     if (!diagramStore.data?.nodes?.length) {
       notify.warningKey('canvas.toolbar.createDiagramFirst')
       return

@@ -163,7 +163,7 @@ async function exportMinutes(): Promise<void> {
 <template>
   <article class="mm-sum-card">
     <div class="mm-sum-card__pills">
-      <span class="mm-sum-card__kind">{{ t('mindmate.summary.kind') }}</span>
+      <span class="mm-sum-card__kind"><I18nText k="mindmate.summary.kind" /></span>
       <span
         class="mm-sum-card__state"
         :class="`is-${overall}`"
@@ -187,7 +187,7 @@ async function exportMinutes(): Promise<void> {
           :size="14"
           aria-hidden="true"
         />
-        {{ t('mindmate.summary.host') }} {{ host.name }}
+        <I18nText k="mindmate.summary.host" /> {{ host.name }}
       </span>
     </p>
     <div
@@ -202,20 +202,24 @@ async function exportMinutes(): Promise<void> {
           >{{ seminarAvatarSurname(person.name) }}</i
         >
       </span>
-      <span>{{ t('mindmate.summary.peopleCount', { n: people.length }) }}</span>
+      <span
+        ><I18nText
+          k="mindmate.summary.peopleCount"
+          :params="{ n: people.length }"
+      /></span>
     </div>
 
     <section
       v-if="progress.length"
       class="mm-sum-card__block"
     >
-      <h4>{{ t('mindmate.summary.progress') }}</h4>
+      <h4><I18nText k="mindmate.summary.progress" /></h4>
       <ul>
         <li
           v-for="(row, index) in progress"
           :key="`${row.goal}-${index}`"
         >
-          <em :class="`is-${row.status}`">{{ t(statusKey(row.status)) }}</em>
+          <em :class="`is-${row.status}`"><I18nText :k="statusKey(row.status)" /></em>
           <span>{{ row.goal }}</span>
         </li>
       </ul>
@@ -224,7 +228,7 @@ async function exportMinutes(): Promise<void> {
       v-else-if="fallbackLines.length"
       class="mm-sum-card__block"
     >
-      <h4>{{ t('mindmate.summary.progress') }}</h4>
+      <h4><I18nText k="mindmate.summary.progress" /></h4>
       <ul>
         <li
           v-for="(line, index) in fallbackLines"
@@ -239,7 +243,7 @@ async function exportMinutes(): Promise<void> {
       v-if="tasks.length"
       class="mm-sum-card__block"
     >
-      <h4>{{ t('mindmate.summary.section.tasks') }}</h4>
+      <h4><I18nText k="mindmate.summary.section.tasks" /></h4>
       <ul class="is-tasks">
         <li
           v-for="(line, index) in tasks"
@@ -257,7 +261,7 @@ async function exportMinutes(): Promise<void> {
         class="mm-sum-card__primary"
         @click="detailOpen = true"
       >
-        {{ t('mindmate.summary.viewDetail') }}
+        <I18nText k="mindmate.summary.viewDetail" />
         <ArrowRight
           :size="14"
           aria-hidden="true"
@@ -275,7 +279,7 @@ async function exportMinutes(): Promise<void> {
       <template #header>
         <div class="mm-sum-card__dialog-head">
           <h2 class="mm-sum-card__dialog-title">
-            {{ t('mindmate.summary.previewTitle') }}
+            <I18nText k="mindmate.summary.previewTitle" />
           </h2>
           <button
             type="button"
@@ -286,7 +290,7 @@ async function exportMinutes(): Promise<void> {
               :size="14"
               aria-hidden="true"
             />
-            {{ t('mindmate.summary.export') }}
+            <I18nText k="mindmate.summary.export" />
           </button>
         </div>
       </template>

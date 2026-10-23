@@ -5,7 +5,6 @@ Mind map node explain API — 专业程度-aware gloss stream for a selected nod
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import uuid
 from typing import Type
@@ -38,6 +37,7 @@ from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
 )
+from services.infrastructure.http.llm_http_errors import is_user_llm_limit_error
 from services.learning_space.ai_gate import assert_student_ai_capability
 from services.llm.org_result_cache import (
     fingerprint_org_payload,
@@ -50,7 +50,11 @@ from services.llm.org_result_cache import (
 from services.monitoring.module_activity import track_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
-from utils.chinese_language_policy import effective_language_for_thinking_user, is_chinese_ui_error_language
+from utils.chinese_language_policy import (
+    effective_language_for_thinking_user,
+    is_chinese_ui_error_language,
+    sse_data,
+)
 
 router = APIRouter(tags=["thinking"])
 logger = logging.getLogger(__name__)
@@ -135,17 +139,13 @@ def _error_sse(
     user_message: str | None = None,
 ) -> str:
     msg = _localized_error(error_type, language, user_message)
-    return (
-        "data: "
-        + json.dumps(
-            {
-                "event": "error",
-                "error_type": error_type,
-                "message": msg,
-                "facet": facet,
-            }
-        )
-        + "\n\n"
+    return sse_data(
+        {
+            "event": "error",
+            "error_type": error_type,
+            "message": msg,
+            "facet": facet,
+        }
     )
 
 
@@ -260,7 +260,7 @@ async def _stream_explain(
                     terminal_sent = True
                 if event == "error":
                     saw_error = True
-                yield f"data: {json.dumps(chunk)}\n\n"
+                yield sse_data(chunk)
             log_explain_complete(
                 session_short=session_short,
                 facet=facet,
@@ -304,7 +304,7 @@ async def _stream_explain(
             if event == "error":
                 saw_error = True
             public_events.append(chunk)
-            yield f"data: {json.dumps(chunk)}\n\n"
+            yield sse_data(chunk)
 
         if chunk_count == 0 and not terminal_sent:
             terminal_sent = True
@@ -373,7 +373,12 @@ async def _stream_explain(
         LLMServiceError,
     ) as exc:
         error_type = _resolve_error_type(exc)
-        log_fn = logger.error if error_type in {"service_error", "unknown"} else logger.warning
+        if is_user_llm_limit_error(exc):
+            log_fn = logger.info
+        elif error_type in {"service_error", "unknown"}:
+            log_fn = logger.error
+        else:
+            log_fn = logger.warning
         log_fn(
             "%s %s | session=%s facet=%s error=%s",
             _LOG_PREFIX,

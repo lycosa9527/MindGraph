@@ -204,9 +204,7 @@ async def add_seminar_group_members(
                 continue
             if user_id <= 0:
                 continue
-            exists = (
-                await db.execute(select(User.id).where(User.id == int(user_id)))
-            ).scalar_one_or_none()
+            exists = (await db.execute(select(User.id).where(User.id == int(user_id)))).scalar_one_or_none()
             if exists is None:
                 continue
             may_join = await user_may_join_mindmate_collab(
@@ -219,11 +217,7 @@ async def add_seminar_group_members(
             # Org rooms still accept explicit phone invites from outside the school.
             if may_join or session.visibility == ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
                 allowed.append(user_id)
-    role_map = {
-        int(raw_id): str(raw_role)
-        for raw_id, raw_role in body.roles.items()
-        if str(raw_id).isdigit()
-    }
+    role_map = {int(raw_id): str(raw_role) for raw_id, raw_role in body.roles.items() if str(raw_id).isdigit()}
     inserted = await seed_closed_group(
         session.id,
         session.owner_user_id,

@@ -20,10 +20,8 @@ export default {
   'collab.endFailed': 'فشل في إنهاء التعاون',
   'collab.ended': 'انتهى التعاون',
   'collab.galleryFull': 'المعرض ممتلئ، يرجى حذف الرمز والمحاولة مرة أخرى',
-  'collab.hintNetworkInactive':
-    'بعد إنشاء رمز الدعوة، يمكن للآخرين استخدام الرمز للانضمام والتحرير معًا.',
-  'collab.hintSchoolInactive':
-    'بعد تشغيله، يمكن للزملاء إضافته إلى القائمة من الصفحة الرئيسية "التعاون → تعاون الحرم الجامعي".',
+  'collab.hintNetworkInactive': 'بعد إنشاء رمز الدعوة، يمكن للآخرين استخدام الرمز للانضمام والتحرير معًا.',
+  'collab.hintSchoolInactive': 'بعد تشغيله، يمكن للزملاء إضافته إلى القائمة من الصفحة الرئيسية "التعاون → تعاون الحرم الجامعي".',
   'collab.invalidDiagramData': 'بيانات الرمز غير صالحة',
   'collab.linkCopied': 'تم نسخ الرابط',
   'collab.networkError': 'خطأ في الشبكة',
@@ -35,16 +33,13 @@ export default {
   'collab.previousSessionsStopped': 'لقد انتهت جلسات التعاون الخاصة بك في {n} على الرموز الأخرى.',
   'collab.saveFailed': 'فشل الحفظ',
   'collab.scanToJoin': 'امسح الرمز ضوئيًا للانضمام',
-  'collab.schoolDescActive':
-    'لقد بدأ التعاون داخل المدرسة. أيها الزملاء، يرجى فتح "التعاون → Campus Collaboration" على الصفحة الرئيسية لـ MindGraph وتحديد هذا الرمز في القائمة للانضمام (لا يلزم وجود رمز دعوة).',
-  'collab.schoolStarted':
-    'تم تمكين التعاون في الحرم الجامعي. يمكن للزملاء الانضمام إلى "التعاون → التعاون في الحرم الجامعي"',
+  'collab.schoolDescActive': 'لقد بدأ التعاون داخل المدرسة. أيها الزملاء، يرجى فتح "التعاون → Campus Collaboration" على الصفحة الرئيسية لـ MindGraph وتحديد هذا الرمز في القائمة للانضمام (لا يلزم وجود رمز دعوة).',
+  'collab.schoolStarted': 'تم تمكين التعاون في الحرم الجامعي. يمكن للزملاء الانضمام إلى "التعاون → التعاون في الحرم الجامعي"',
   'collab.sectionNetwork': 'التعاون معًا (رمز الدعوة)',
   'collab.sectionSchool': 'التعاون داخل الحرم الجامعي',
   'collab.sessionDuration': 'طول الجلسة',
   'collab.sessionRemaining': 'الجلسة المتبقية',
-  'collab.shareDescNetwork':
-    'قم بمشاركة رمز الدعوة أو الرابط، ويمكن للطرف الآخر الانضمام عن طريق إدخال رقمه في "تعاون → تعاون".',
+  'collab.shareDescNetwork': 'قم بمشاركة رمز الدعوة أو الرابط، ويمكن للطرف الآخر الانضمام عن طريق إدخال رقمه في "تعاون → تعاون".',
   'collab.start': 'تمكين التعاون',
   'collab.startFailed': 'فشل بدء التعاون: {msg}',
   'collab.title': 'التعاون عبر الإنترنت',
@@ -57,25 +52,18 @@ export default {
   'workshop.announceChannels': 'قناة اعلان',
   'workshop.announceReadOnlyHint': 'يمكن للمسؤولين فقط التحدث في قناة الإعلان هذه.',
   'workshop.archiveLessonStudy': 'أرشفة أمثلة الدروس',
-  'workshop.archiveLessonStudyConfirm':
-    'هل أنت متأكد أنك تريد أرشفة هذا الدرس؟ لن يرى الأعضاء الدرس في القائمة بعد الآن.',
+  'workshop.archiveLessonStudyConfirm': 'هل أنت متأكد أنك تريد أرشفة هذا الدرس؟ لن يرى الأعضاء الدرس في القائمة بعد الآن.',
   'workshop.archiveTeachingGroup': 'أرشيف مجموعة التدريس والبحث',
-  'workshop.archiveTeachingGroupConfirm':
-    'هل أنت متأكد أنك تريد أرشفة هذه المجموعة التعليمية والبحثية؟ وبعد الأرشفة، لن يظهر بعد ذلك في قائمة مجموعات التدريس والبحث.',
+  'workshop.archiveTeachingGroupConfirm': 'هل أنت متأكد أنك تريد أرشفة هذه المجموعة التعليمية والبحثية؟ وبعد الأرشفة، لن يظهر بعد ذلك في قائمة مجموعات التدريس والبحث.',
   'workshop.archiveAnnounceChannel': 'أرشيف قناة الإعلان',
-  'workshop.archiveAnnounceChannelConfirm':
-    'هل أنت متأكد أنك تريد أرشفة قناة الإعلان هذه؟ لن يتم عرض الشريط الجانبي بعد الآن، لكن الرسالة ستبقى.',
+  'workshop.archiveAnnounceChannelConfirm': 'هل أنت متأكد أنك تريد أرشفة قناة الإعلان هذه؟ لن يتم عرض الشريط الجانبي بعد الآن، لكن الرسالة ستبقى.',
   'workshop.deleteTeachingGroup': 'حذف مجموعة التدريس والبحث',
-  'workshop.deleteTeachingGroupConfirm':
-    'هل أنت متأكد أنك تريد حذف هذه المجموعة التعليمية والبحثية ودروسها ورسائلها بشكل دائم؟ لا يمكن التراجع عن هذا الإجراء.',
+  'workshop.deleteTeachingGroupConfirm': 'هل أنت متأكد أنك تريد حذف هذه المجموعة التعليمية والبحثية ودروسها ورسائلها بشكل دائم؟ لا يمكن التراجع عن هذا الإجراء.',
   'workshop.deleteAnnounceChannel': 'حذف قناة الإعلان',
-  'workshop.deleteAnnounceChannelConfirm':
-    'هل أنت متأكد أنك تريد حذف قناة الإعلان هذه ورسائلها نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.',
+  'workshop.deleteAnnounceChannelConfirm': 'هل أنت متأكد أنك تريد حذف قناة الإعلان هذه ورسائلها نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.',
   'workshop.deleteLessonStudy': 'حذف الدرس',
-  'workshop.deleteLessonStudyConfirm':
-    'هل أنت متأكد أنك تريد حذف هذا الدرس ورسائله بشكل دائم؟ لا يمكن التراجع عن هذا الإجراء.',
-  'workshop.manageNeedAdmin':
-    'يمكن لمديري المدارس فقط إضافة مجموعات التدريس والبحث. يمكن للمسؤولين أو منشئ المجموعة حذفها.',
+  'workshop.deleteLessonStudyConfirm': 'هل أنت متأكد أنك تريد حذف هذا الدرس ورسائله بشكل دائم؟ لا يمكن التراجع عن هذا الإجراء.',
+  'workshop.manageNeedAdmin': 'يمكن لمديري المدارس فقط إضافة مجموعات التدريس والبحث. يمكن للمسؤولين أو منشئ المجموعة حذفها.',
   'workshop.math': 'صيغة',
   'workshop.backToConversations': '← قائمة المحادثات',
   'workshop.bold': 'عريض',
@@ -89,13 +77,11 @@ export default {
   'workshop.channelAvatarEmoji': 'أيقونة (اختياري)',
   'workshop.channelAvatarPlaceholder': 'الرموز التعبيرية أو العلامات القصيرة',
   'workshop.channelColor': 'لون القناة',
-  'workshop.channelInviteReceived':
-    'لقد تمت إضافتك إلى مجموعة التدريس والبحث "{name}". افتح نادي الدراسة للعرض.',
+  'workshop.channelInviteReceived': 'لقد تمت إضافتك إلى مجموعة التدريس والبحث "{name}". افتح نادي الدراسة للعرض.',
   'workshop.channelKindGroup': 'مجموعة التدريس والبحث (المجموعة العليا)',
   'workshop.channelKindLessonStudy': 'أمثلة للدروس (معلقة تحت مجموعة تعليمية وبحثية معينة)',
   'workshop.channelNameLabel': 'اسم',
-  'workshop.channelNamePlaceholder':
-    'على سبيل المثال: مجموعة التدريس والبحث في مجال العلوم والتكنولوجيا والهندسة والرياضيات (STEM).',
+  'workshop.channelNamePlaceholder': 'على سبيل المثال: مجموعة التدريس والبحث في مجال العلوم والتكنولوجيا والهندسة والرياضيات (STEM).',
   'workshop.channelSearchNoMatches': 'لا توجد رسائل مطابقة.',
   'workshop.channelSearchResultsTitle': 'المباراة داخل هذه القناة',
   'workshop.channelSettings': 'مجموعة التدريس والبحث/إعدادات الدورة',
@@ -120,16 +106,14 @@ export default {
   'workshop.contactsOnlineNow': 'متصل',
   'workshop.contactsRecentlyOnline': 'مؤخرا على الانترنت',
   'workshop.conversationTitle': 'عنوان الموضوع',
-  'workshop.conversationTitlePlaceholder':
-    'على سبيل المثال: مناقشة إعداد الدرس الجماعي، والتفكير التدريسي',
+  'workshop.conversationTitlePlaceholder': 'على سبيل المثال: مناقشة إعداد الدرس الجماعي، والتفكير التدريسي',
   'workshop.conversations': 'حوار',
   'workshop.copyLink': 'نسخ الوصلة',
   'workshop.copyMentionSyntax': 'نسخ بناء جملة الإشارة',
   'workshop.create': 'يخلق',
   'workshop.createChannelFailed': 'فشل الخلق',
   'workshop.createChannelNeedParent': 'يرجى تحديد مجموعتك التعليمية والبحثية أولاً.',
-  'workshop.createChannelNoGroupsYet':
-    'يرجى إنشاء مجموعة تعليمية وبحثية أولاً، ثم إضافة أمثلة الدروس.',
+  'workshop.createChannelNoGroupsYet': 'يرجى إنشاء مجموعة تعليمية وبحثية أولاً، ثم إضافة أمثلة الدروس.',
   'workshop.createChannelSuccess': 'تم إنشاء القناة',
   'workshop.createStudyCaseHint': 'قم بإنشاء موضوع للبدء',
   'workshop.cycleStudyStatus': 'تبديل حالة التدريب',
@@ -171,8 +155,7 @@ export default {
   'workshop.gearMenu': 'خيارات',
   'workshop.generalChat': 'مناقشة شاملة',
   'workshop.inbox': 'البريد الوارد',
-  'workshop.inboxHintPickChannel':
-    'افتح مجموعة المواضيع أو مثال الدرس أو الرسالة الخاصة في الشريط الجانبي للقراءة والرد. يمكنك العودة إلى هذه الصفحة في أي وقت عبر عرض → Inbox.',
+  'workshop.inboxHintPickChannel': 'افتح مجموعة المواضيع أو مثال الدرس أو الرسالة الخاصة في الشريط الجانبي للقراءة والرد. يمكنك العودة إلى هذه الصفحة في أي وقت عبر عرض → Inbox.',
   'workshop.inboxSummaryTitle': 'البريد الوارد الخاص بك',
   'workshop.inboxUnreadChannels': 'القناة غير مقروءة',
   'workshop.inboxUnreadDms': 'الرسالة الخاصة غير مقروءة',
@@ -198,15 +181,13 @@ export default {
   'workshop.loadMore': 'تحميل المزيد',
   'workshop.mainChannelStream': 'القناة الرئيسية',
   'workshop.manageTeachingGroups': 'مجموعة إدارة التدريس والبحث',
-  'workshop.manageTeachingGroupsBlurb':
-    'يمكنك إضافة أو أرشفة مجموعات التدريس والبحث، وتعيينها عامة أو خاصة، وتعديل الاسم والمقدمة، وضبط ترتيب القائمة، ونسخ مجموعة التدريس والبحث كقالب، ودعوة الزملاء للانضمام. الرجاء استخدام "الإعدادات المتقدمة" لنشر الأذونات والإشعارات. بعد الأرشفة، لن تكون المجموعة مرئية للمدرسة بأكملها.',
+  'workshop.manageTeachingGroupsBlurb': 'يمكنك إضافة أو أرشفة مجموعات التدريس والبحث، وتعيينها عامة أو خاصة، وتعديل الاسم والمقدمة، وضبط ترتيب القائمة، ونسخ مجموعة التدريس والبحث كقالب، ودعوة الزملاء للانضمام. الرجاء استخدام "الإعدادات المتقدمة" لنشر الأذونات والإشعارات. بعد الأرشفة، لن تكون المجموعة مرئية للمدرسة بأكملها.',
   'workshop.manageUser': 'إدارة هذا المستخدم',
   'workshop.markAllReadChannel': 'وضع علامة على جميع الرسائل كمقروءة',
   'workshop.markAsRead': 'وضع علامة كمقروءة',
   'workshop.markStudyResolved': 'تم الانتهاء من تدريب مارك',
   'workshop.members': 'عضو',
-  'workshop.mentionAmbiguous':
-    'بالنسبة للمستخدمين الذين لديهم نفس الاسم، يرجى استخدام اسم عرض فريد: {0}',
+  'workshop.mentionAmbiguous': 'بالنسبة للمستخدمين الذين لديهم نفس الاسم، يرجى استخدام اسم عرض فريد: {0}',
   'workshop.mentionUnknown': 'الإشارات غير المعروفة (فقط لأعضاء المدرسة والحسابات الرسمية): {0}',
   'workshop.mentionedInChannel': 'تمت الإشارة إليك في #{0}',
   'workshop.mentionedInTopic': 'تمت الإشارة إليك في {0}',
@@ -239,8 +220,7 @@ export default {
   'workshop.noTopicsYet': 'لا يوجد موضوع بعد',
   'workshop.numberedList': 'قائمة مرتبة',
   'workshop.notifications': 'يخطر',
-  'workshop.notificationsSettingsBlurb':
-    'تعتمد إشعارات المتصفح للإشارات والرسائل الجديدة على إعدادات النظام. يمكنك أيضًا تشغيل تذكيرات سطح المكتب والبريد الإلكتروني بشكل منفصل في إعدادات كل قناة.',
+  'workshop.notificationsSettingsBlurb': 'تعتمد إشعارات المتصفح للإشارات والرسائل الجديدة على إعدادات النظام. يمكنك أيضًا تشغيل تذكيرات سطح المكتب والبريد الإلكتروني بشكل منفصل في إعدادات كل قناة.',
   'workshop.offline': 'غير متصل',
   'workshop.online': 'متصل',
   'workshop.openMainChannelStream': 'القناة الرئيسية',
@@ -249,12 +229,9 @@ export default {
   'workshop.personalMenu': 'القائمة الشخصية',
   'workshop.preview': 'معاينة',
   'workshop.previewEmpty': 'لا يوجد محتوى للمعاينة',
-  'workshop.phase2RoadmapGroupsAlerts':
-    "خطط المتابعة: {'@'}group، تذكير بالكلمات الرئيسية، استراتيجية سجل تحرير الرسائل.",
-  'workshop.phase2RoadmapMovePreview':
-    'خطط المتابعة: حركة رسالة واحدة، ومعاينة الارتباط، وديناميكيات أكثر ثراءً عبر القنوات.',
-  'workshop.phase2RoadmapPlatform':
-    'مهام النظام الأساسي: المزامنة المتزايدة، والدفع عبر الهاتف المحمول، وملخصات البريد الإلكتروني، والروبوتات، وخطافات الويب.',
+  'workshop.phase2RoadmapGroupsAlerts': 'خطط المتابعة: {\'@\'}group، تذكير بالكلمات الرئيسية، استراتيجية سجل تحرير الرسائل.',
+  'workshop.phase2RoadmapMovePreview': 'خطط المتابعة: حركة رسالة واحدة، ومعاينة الارتباط، وديناميكيات أكثر ثراءً عبر القنوات.',
+  'workshop.phase2RoadmapPlatform': 'مهام النظام الأساسي: المزامنة المتزايدة، والدفع عبر الهاتف المحمول، وملخصات البريد الإلكتروني، والروبوتات، وخطافات الويب.',
   'workshop.pickColleagueToInvite': 'الرجاء تحديد الزملاء لدعوتهم.',
   'workshop.pinChannel': 'القناة المثبتة',
   'workshop.policyEveryone': 'الجميع',
@@ -262,8 +239,7 @@ export default {
   'workshop.policyMembersOnly': 'الأعضاء فقط',
   'workshop.postingPolicy': 'أذونات النشر',
   'workshop.preferences': 'التفضيلات',
-  'workshop.preferencesSettingsBlurb':
-    'تنطبق تفضيلات اللغة والواجهة على التطبيق بأكمله. سيتم توفير المزيد من الخيارات المتعلقة بالتعاون مع نادي الدراسة هنا.',
+  'workshop.preferencesSettingsBlurb': 'تنطبق تفضيلات اللغة والواجهة على التطبيق بأكمله. سيتم توفير المزيد من الخيارات المتعلقة بالتعاون مع نادي الدراسة هنا.',
   'workshop.presenceActive': 'متصل',
   'workshop.presenceIdle': 'يترك',
   'workshop.presenceOffline': 'غير متصل',
@@ -272,8 +248,7 @@ export default {
   'workshop.publicChannels': 'قناة عامة',
   'workshop.quote': 'يقتبس',
   'workshop.quoteMessage': 'رسالة الاقتباس',
-  'workshop.readOnlyProfileBlurb':
-    'يتم عرض الملفات الشخصية للزملاء بطريقة عرض مبسطة. يمكن للمسؤولين استخدام "إدارة المستخدمين" لفتح قائمة مستخدمي الواجهة الخلفية.',
+  'workshop.readOnlyProfileBlurb': 'يتم عرض الملفات الشخصية للزملاء بطريقة عرض مبسطة. يمكن للمسؤولين استخدام "إدارة المستخدمين" لفتح قائمة مستخدمي الواجهة الخلفية.',
   'workshop.recentDmActivity': 'الرسائل الخاصة الأخيرة',
   'workshop.recentTopics': 'المواضيع الأخيرة',
   'workshop.renameTopic': 'إعادة تسمية الموضوع',
@@ -284,8 +259,7 @@ export default {
   'workshop.roleOwner': 'مالك',
   'workshop.searchMembers': 'البحث عن الأعضاء...',
   'workshop.searchMessages': 'بحث في الرسائل...',
-  'workshop.selectChannelForSettings':
-    'الرجاء تحديد مجموعة التدريس والبحث أو الدرس الموجود على اليسار أولاً، ثم فتح الإعدادات.',
+  'workshop.selectChannelForSettings': 'الرجاء تحديد مجموعة التدريس والبحث أو الدرس الموجود على اليسار أولاً، ثم فتح الإعدادات.',
   'workshop.selectConversation': 'حدد محادثة',
   'workshop.selectParentGroup': 'المجموعة التعليمية والبحثية التابعة',
   'workshop.selectTopic': 'حدد الموضوع',
@@ -311,8 +285,7 @@ export default {
   'workshop.strikethrough': 'يتوسطه خط',
   'workshop.table': 'ملزمة',
   'workshop.switchSchool': 'تبديل المدارس',
-  'workshop.teachingGroupLandingHint':
-    'أمثلة الدروس والمحادثات ضمن هذه المجموعة التعليمية والبحثية. اضغط على الدرس للدخول إلى القناة، أو اضغط على المحادثة للدخول إلى الموضوع المقابل.',
+  'workshop.teachingGroupLandingHint': 'أمثلة الدروس والمحادثات ضمن هذه المجموعة التعليمية والبحثية. اضغط على الدرس للدخول إلى القناة، أو اضغط على المحادثة للدخول إلى الموضوع المقابل.',
   'workshop.teachingGroupMembers': 'عضو',
   'workshop.teachingGroupNameRequired': 'يرجى ملء اسم المجموعة التعليمية والبحثية.',
   'workshop.teachingGroupNoLessons': 'لا توجد أمثلة للدروس ضمن مجموعة التدريس والبحث هذه.',
@@ -327,8 +300,7 @@ export default {
   'workshop.topicTitle': 'عنوان',
   'workshop.topicTitlePlaceholder': 'على سبيل المثال: مناقشة جماعية لإعداد الدرس، والملاحظة الصفية',
   'workshop.topics': 'عنوان',
-  'workshop.typeMessagePlaceholder':
-    'أدخل الرسالة... (اضغط على Enter للإرسال وShift+Enter وتغذية السطر)',
+  'workshop.typeMessagePlaceholder': 'أدخل الرسالة... (اضغط على Enter للإرسال وShift+Enter وتغذية السطر)',
   'workshop.unfollowTopic': 'إلغاء متابعة الموضوع',
   'workshop.unknown': 'مجهول',
   'workshop.unmuteChannel': 'إلغاء كتم الصوت',
@@ -344,14 +316,11 @@ export default {
   'workshop.viewProfile': 'عرض الملف الشخصي',
   'workshop.viewingSchool': 'يشاهد حاليا: {0}',
   'workshop.views': 'منظر',
-  'workshop.welcomeChannelsBody':
-    'تتوافق "القنوات" في النظام في الغالب مع مجموعات البحث الواقعية أو مجموعات التدريس والبحث: يتم تقسيم مساحة التعاون وفقًا للمواضيع أو المشاريع (مثل مجموعة بحث الرياضيات ومجموعة بحث اللغة الإنجليزية في المثال أدناه)، ويتم تحديد الأعضاء ونطاق المناقشة.',
+  'workshop.welcomeChannelsBody': 'تتوافق "القنوات" في النظام في الغالب مع مجموعات البحث الواقعية أو مجموعات التدريس والبحث: يتم تقسيم مساحة التعاون وفقًا للمواضيع أو المشاريع (مثل مجموعة بحث الرياضيات ومجموعة بحث اللغة الإنجليزية في المثال أدناه)، ويتم تحديد الأعضاء ونطاق المناقشة.',
   'workshop.welcomeChannelsTitle': 'مجموعة البحث / مجموعة التدريس والبحث',
-  'workshop.welcomeConversationsBody':
-    'يمكن إنشاء جلسات متعددة العناوين في مثال الدرس، مثل التصميم التعليمي، وتنفيذ الفصل الدراسي، والتفكير والتحسين، وما إلى ذلك، لفصل المواضيع المختلفة وتجنب خلطها في جدول زمني واحد.',
+  'workshop.welcomeConversationsBody': 'يمكن إنشاء جلسات متعددة العناوين في مثال الدرس، مثل التصميم التعليمي، وتنفيذ الفصل الدراسي، والتفكير والتحسين، وما إلى ذلك، لفصل المواضيع المختلفة وتجنب خلطها في جدول زمني واحد.',
   'workshop.welcomeConversationsTitle': 'المحادثة (الموضوع)',
-  'workshop.welcomeExampleCaption':
-    'فيما يلي أمثلة وهمية لسهولة الفهم: تحتوي كل من مجموعة مواد الرياضيات ومجموعة مواد اللغة الإنجليزية على أمثلة للدروس وموضوعات محادثة.',
+  'workshop.welcomeExampleCaption': 'فيما يلي أمثلة وهمية لسهولة الفهم: تحتوي كل من مجموعة مواد الرياضيات ومجموعة مواد اللغة الإنجليزية على أمثلة للدروس وموضوعات محادثة.',
   'workshop.welcomeExampleConvLabel': 'حصة',
   'workshop.welcomeExampleGroupEnglish': 'مجموعة موضوعات اللغة الإنجليزية',
   'workshop.welcomeExampleGroupMath': 'مجموعة أبحاث الرياضيات',
@@ -359,66 +328,49 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'ورقة القراءة وتصميم ورقة الدراسة',
   'workshop.welcomeExampleLSEng1C2': 'أنشطة ما بعد القراءة ونقل اللغة',
   'workshop.welcomeExampleLSEng1C3': 'ردود الفعل الملاحظة الصفية والتفكير في التدريس',
-  'workshop.welcomeExampleLSEng2':
-    'مثال الدرس: فصول الكتابة موجودة في نفس الفصل ولكنها غير متجانسة',
+  'workshop.welcomeExampleLSEng2': 'مثال الدرس: فصول الكتابة موجودة في نفس الفصل ولكنها غير متجانسة',
   'workshop.welcomeExampleLSEng2C1': 'مقياس التقييم التجريبي والمراجعة',
   'workshop.welcomeExampleLSMath1': 'مثال الدرس: أسبوع الدرس "مفهوم الوظيفة".',
   'workshop.welcomeExampleLSMath1C1': 'مناقشة حول أهداف التدريس وتصميم النشاط',
   'workshop.welcomeExampleLSMath1C2': 'الأسئلة الصفية والكتابة على السبورة',
   'workshop.welcomeExampleLSMath1C3': 'أفكار للتفكير والتحسين بعد الفصل',
-  'workshop.welcomeExampleLSMath2':
-    'مثال للدرس: مراجعة المدرسة الثانوية العليا · التطبيق الشامل للمشتقات',
+  'workshop.welcomeExampleLSMath2': 'مثال للدرس: مراجعة المدرسة الثانوية العليا · التطبيق الشامل للمشتقات',
   'workshop.welcomeExampleLSMath2C1': 'تصميم الطبقات والتقييم',
-  'workshop.welcomeExampleMsgLabel':
-    'تحتوي كل محادثة على رسائل مرسلة واحدة تلو الأخرى من قبل الزملاء.',
+  'workshop.welcomeExampleMsgLabel': 'تحتوي كل محادثة على رسائل مرسلة واحدة تلو الأخرى من قبل الزملاء.',
   'workshop.welcomeExampleOrg': 'مدرسة تشينشي المتوسطة',
   'workshop.welcomeHowTitle': 'المفاهيم والعلاقات الهرمية',
-  'workshop.welcomeIntro':
-    'نادي الدراسة هو مساحة تعاونية للمدارس: فهو ينشر الإعلانات، ويجري دراسات الحالة، وينظم المناقشات بطريقة منظمة بجانب مشاهد التدريس.',
-  'workshop.welcomeLessonStudyBody':
-    'يتم تعليق أمثلة الدروس بشكل عام ضمن مجموعة موضوعات معينة، ويمكن استخدامها للتدرب على درس معين ومراقبته والتفكير فيه؛ يمكن أن تكون مصحوبة بحالة التقدم أو مرتبطة بمخططات التفكير.',
+  'workshop.welcomeIntro': 'نادي الدراسة هو مساحة تعاونية للمدارس: فهو ينشر الإعلانات، ويجري دراسات الحالة، وينظم المناقشات بطريقة منظمة بجانب مشاهد التدريس.',
+  'workshop.welcomeLessonStudyBody': 'يتم تعليق أمثلة الدروس بشكل عام ضمن مجموعة موضوعات معينة، ويمكن استخدامها للتدرب على درس معين ومراقبته والتفكير فيه؛ يمكن أن تكون مصحوبة بحالة التقدم أو مرتبطة بمخططات التفكير.',
   'workshop.welcomeLessonStudyTitle': 'دراسة الدرس',
-  'workshop.welcomeMessagesBody':
-    'الرسالة عبارة عن عبارة واحدة في محادثة أو مخطط زمني للقناة؛ تنعكس الردود والزملاء والمرفقات وما إلى ذلك في الرسالة.',
+  'workshop.welcomeMessagesBody': 'الرسالة عبارة عن عبارة واحدة في محادثة أو مخطط زمني للقناة؛ تنعكس الردود والزملاء والمرفقات وما إلى ذلك في الرسالة.',
   'workshop.welcomeMessagesTitle': 'معلومة',
   'workshop.welcomeSubtitle': 'تعاون مع زملائك في جميع أنحاء الحرم الجامعي على MindGraph',
   'workshop.welcomeTitle': 'مرحبا بكم في نادي الدراسة',
   'workshop.you': '(أنت)',
   'workshop.youAnd': 'أنت و',
   'workshopCanvas.connectFailed': 'فشل الاتصال بالتعاون عبر الإنترنت',
-  'workshopCanvas.sessionExpiredReconnect':
-    'لقد انتهت جلستك، يرجى تحديث الصفحة للانضمام مرة أخرى إلى التعاون.',
-  'workshopCanvas.sessionRefreshFailed':
-    'غير قادر على تحديث جلسة التعاون عبر الإنترنت، يرجى حفظ المحتوى الحالي وتسجيل الدخول مرة أخرى.',
-  'workshopCanvas.outboundQueueDegraded':
-    'لقد تأخرت مزامنة التعاون عبر الإنترنت ولا يمكن الاحتفاظ ببعض التعديلات غير المرسلة.',
+  'workshopCanvas.sessionExpiredReconnect': 'لقد انتهت جلستك، يرجى تحديث الصفحة للانضمام مرة أخرى إلى التعاون.',
+  'workshopCanvas.sessionRefreshFailed': 'غير قادر على تحديث جلسة التعاون عبر الإنترنت، يرجى حفظ المحتوى الحالي وتسجيل الدخول مرة أخرى.',
+  'workshopCanvas.outboundQueueDegraded': 'لقد تأخرت مزامنة التعاون عبر الإنترنت ولا يمكن الاحتفاظ ببعض التعديلات غير المرسلة.',
   'workshopCanvas.connectionClosed': 'لقد تم فقدان الاتصال',
-  'workshopCanvas.connectionClosedSlow':
-    'تم فقدان الاتصال: شبكتك بطيئة جدًا بحيث لا تتمكن من متابعة جلسة التعاون.',
+  'workshopCanvas.connectionClosedSlow': 'تم فقدان الاتصال: شبكتك بطيئة جدًا بحيث لا تتمكن من متابعة جلسة التعاون.',
   'workshopCanvas.sessionEndedByHost': 'أنهى المضيف التعاون عبر الإنترنت.',
   'workshopCanvas.editingNodeLabel': '{username} التحرير…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'المتعاونين الآخرين',
   'workshopCanvas.connectionClosedReason': 'تم قطع اتصال التعاون عبر الإنترنت: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} يقوم بتحرير هذه العقدة',
   'workshopCanvas.errorGeneric': 'خطأ في التعاون عبر الإنترنت',
-  'workshopCanvas.updatePartialFiltered':
-    'بعض التعديلات غير متزامنة ({count} العقد): يتم تحرير هذه العقد بواسطة متعاونين آخرين.',
-  'workshopCanvas.reconnectFailed':
-    'فشل التعاون عبر الإنترنت في إعادة الاتصال، يرجى تحديث الصفحة والمحاولة مرة أخرى',
-  'workshopCanvas.resyncWaiting':
-    'تستغرق مزامنة العمل الفني وقتًا أطول من المتوقع وتتم إعادة المحاولة؛ إذا كان التحرير غير طبيعي، يرجى محاولة تحديث الصفحة.',
-  'workshopCanvas.returnedHomeIdle':
-    'تم قطع التعاون بسبب وقت الخمول الطويل جدًا وتمت إرجاع الصفحة الرئيسية.',
+  'workshopCanvas.updatePartialFiltered': 'بعض التعديلات غير متزامنة ({count} العقد): يتم تحرير هذه العقد بواسطة متعاونين آخرين.',
+  'workshopCanvas.reconnectFailed': 'فشل التعاون عبر الإنترنت في إعادة الاتصال، يرجى تحديث الصفحة والمحاولة مرة أخرى',
+  'workshopCanvas.resyncWaiting': 'تستغرق مزامنة العمل الفني وقتًا أطول من المتوقع وتتم إعادة المحاولة؛ إذا كان التحرير غير طبيعي، يرجى محاولة تحديث الصفحة.',
+  'workshopCanvas.returnedHomeIdle': 'تم قطع التعاون بسبب وقت الخمول الطويل جدًا وتمت إرجاع الصفحة الرئيسية.',
   'workshopCanvas.userJoined': 'لقد انضم المستخدم {username}',
   'workshopCanvas.usersJoined': 'لقد انضم مستخدمو {count}',
   'workshopCanvas.userLeft': 'لقد غادر المستخدم {username}',
   'workshopCanvas.usersLeft': '{count} غادر المستخدمون',
   'workshopCanvas.wsError': 'خطأ في اتصال التعاون عبر الإنترنت، يرجى التحقق من اتصال الشبكة',
-  'workshopCanvas.returnedHomeRoomIdle':
-    'لم يتم تحرير رمز الجلسة هذا بشكل تعاوني لفترة طويلة. انتهى التعاون تلقائيًا وعاد إلى الصفحة الرئيسية.',
-  'workshopCanvas.roomIdleWarningToast':
-    'لم يتم تحرير الأيقونة بشكل تعاوني لفترة طويلة - إذا لم يقم أحد بتحرير الأيقونة قبل انتهاء العد التنازلي، فسينتهي التعاون تلقائيًا.',
-  'workshopCanvas.otherTabCollaborationActive':
-    'يستمر الحساب في التعاون عبر الإنترنت في علامة تبويب أو نافذة أخرى.',
+  'workshopCanvas.returnedHomeRoomIdle': 'لم يتم تحرير رمز الجلسة هذا بشكل تعاوني لفترة طويلة. انتهى التعاون تلقائيًا وعاد إلى الصفحة الرئيسية.',
+  'workshopCanvas.roomIdleWarningToast': 'لم يتم تحرير الأيقونة بشكل تعاوني لفترة طويلة - إذا لم يقم أحد بتحرير الأيقونة قبل انتهاء العد التنازلي، فسينتهي التعاون تلقائيًا.',
+  'workshopCanvas.otherTabCollaborationActive': 'يستمر الحساب في التعاون عبر الإنترنت في علامة تبويب أو نافذة أخرى.',
   'workshopCanvas.joinQrAlt': 'رمز الاستجابة السريعة للانضمام إلى التعاون عبر الإنترنت',
 } as const

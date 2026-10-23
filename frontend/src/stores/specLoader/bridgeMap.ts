@@ -18,7 +18,13 @@ import {
   stampBridgePairData,
   takeBridgeMapStableId,
 } from '@/utils/bridgeMapIdentity'
+import {
+  BRIDGE_LABEL_TO_PAIR_GAP,
+  measureBridgeDimensionLabelBox,
+  resolveBridgePairOrigin,
+} from '@/utils/bridgeMapLabelLayout'
 
+import { learningSheetLayoutSecondary } from './mindMapLearningSheet'
 import type { SpecLoaderResult } from './types'
 
 const BRIDGE_VERTICAL_GAP = 5
@@ -48,7 +54,11 @@ export function recalculateBridgeMapLayout(
     const pinia = nodeDimensions[id]?.height
     if (pinia != null && pinia > 0) return pinia
     const node = nodes.find((item) => item.id === id)
-    return heightWithSecondaryLine(BRANCH_NODE_HEIGHT, node?.textSecondary, 14)
+    return heightWithSecondaryLine(
+      BRANCH_NODE_HEIGHT,
+      node ? learningSheetLayoutSecondary(node) : undefined,
+      14
+    )
   }
 
   const getW = (id: string): number => nodeDimensions[id]?.width ?? DEFAULT_NODE_WIDTH
@@ -63,10 +73,15 @@ export function recalculateBridgeMapLayout(
     return idx > max ? idx : max
   }, -1)
 
-  const result = otherNodes.map((n) => ({ ...n }))
+  const origin = resolveBridgePairOrigin(nodes, nodeDimensions, centerY)
+  const result = otherNodes.map((n) => {
+    if (n.id === BRIDGE_DIMENSION_LABEL_ID && origin.label) {
+      return { ...n, position: { x: origin.label.x, y: origin.label.y } }
+    }
+    return { ...n }
+  })
 
-  const firstLeft = findBridgePairSide(pairNodes, 0, 'left')
-  let currentX = firstLeft?.position?.x ?? DEFAULT_PADDING + 110
+  let currentX = origin.pairStartX
   const verticalGap = bridgePairVerticalGap(pairNodes)
 
   for (let i = 0; i <= maxPairIndex; i++) {
@@ -133,15 +148,15 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   // Use BRANCH_NODE_HEIGHT (36px) which matches BranchNode's min-height
   const nodeHeight = BRANCH_NODE_HEIGHT
 
-  // Layout constants from layoutConfig
-  // Position label first, then position nodes relative to label
-  // Gap is measured from label's RIGHT edge to horizontal bridge line start (node's LEFT edge)
-  // The horizontal bridge line starts at the leftmost node position
-  const gapFromLabelRight = 10 // Gap from label's right edge to horizontal line start (leftmost node's left edge)
-  const estimatedLabelWidth = 100 // Estimated label width (actual width will be measured by LabelNode)
-  // Start X for nodes: padding + estimated label width + gap from label right
-  // This positions nodes so there's a 10px gap between label's right edge and horizontal line start
-  const startX = DEFAULT_PADDING + estimatedLabelWidth + gapFromLabelRight
+  // Use dimension if available, otherwise fall back to relating_factor.
+  // Always create the label — LabelNode shows placeholder text when empty.
+  const dimension =
+    (spec.dimension as string | undefined)?.trim() ||
+    (spec.relating_factor as string | undefined)?.trim() ||
+    ''
+  // Pairs start after the wrapped dimension label so a long value cannot cover the first pair.
+  const labelBox = measureBridgeDimensionLabelBox(dimension)
+  const startX = DEFAULT_PADDING + labelBox.width + BRIDGE_LABEL_TO_PAIR_GAP
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
@@ -190,15 +205,7 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   })
 
   // Add dimension label node on the left side
-  // Use dimension if available, otherwise fall back to relating_factor
-  // Always create the label — LabelNode shows placeholder text when empty
-  const dimension =
-    (spec.dimension as string | undefined)?.trim() ||
-    (spec.relating_factor as string | undefined)?.trim() ||
-    ''
-
-  const labelHeight = 40
-  const labelY = centerY - labelHeight / 2
+  const labelY = centerY - labelBox.height / 2
   const labelX = DEFAULT_PADDING
 
   nodes.push({

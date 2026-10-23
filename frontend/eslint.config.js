@@ -108,11 +108,9 @@ export default tseslint.config(
   {
     files: [
       'src/components/panels/mindmate/MessageBubble.vue',
-      'src/components/debateverse/DebateMessage.vue',
       'src/components/workshop-chat/ChatMessageItem.vue',
       'src/components/workshop-chat/ChatComposeBox.vue',
       'src/components/workshop-chat/MessageEditForm.vue',
-      'src/components/askonce/AskOncePanel.vue',
       'src/components/panels/ShareExportModal.vue',
       'src/components/auth/UpdateLogModal.vue',
       'src/components/diagram/nodes/InlineEditableText.vue',

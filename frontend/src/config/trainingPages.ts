@@ -5,16 +5,10 @@ export type TrainingPageKey =
   | 'mindgraph'
   | 'canvas'
   | 'mindmate'
-  | 'askonce'
-  | 'maite'
-  | 'debateverse'
   | 'zhihui'
   | 'library'
-  | 'template'
-  | 'course'
   | 'knowledge'
   | 'showcase'
-  | 'community'
   | 'voice-notes'
   | 'thinking-coins'
 
@@ -56,27 +50,6 @@ export const TRAINING_PAGES: TrainingPageDef[] = [
     accent: '#2563eb',
   },
   {
-    key: 'askonce',
-    path: '/askonce',
-    mobilePath: '/askonce',
-    labelKey: 'askonce.title',
-    accent: '#0284c7',
-  },
-  {
-    key: 'maite',
-    path: '/maite',
-    mobilePath: '/maite',
-    labelKey: 'sidebar.mateLearning',
-    accent: '#0369a1',
-  },
-  {
-    key: 'debateverse',
-    path: '/debateverse',
-    mobilePath: '/debateverse',
-    labelKey: 'sidebar.debateverse',
-    accent: '#7c3aed',
-  },
-  {
     key: 'zhihui',
     path: '/zhihui',
     mobilePath: '/zhihui',
@@ -91,20 +64,6 @@ export const TRAINING_PAGES: TrainingPageDef[] = [
     accent: '#b45309',
   },
   {
-    key: 'template',
-    path: '/template',
-    mobilePath: '/template',
-    labelKey: 'sidebar.templateResources',
-    accent: '#0f766e',
-  },
-  {
-    key: 'course',
-    path: '/course',
-    mobilePath: '/course',
-    labelKey: 'sidebar.courses',
-    accent: '#be123c',
-  },
-  {
     key: 'knowledge',
     path: '/knowledge-space',
     mobilePath: '/knowledge-space',
@@ -117,13 +76,6 @@ export const TRAINING_PAGES: TrainingPageDef[] = [
     mobilePath: '/showcase',
     labelKey: 'sidebar.showcase',
     accent: '#c2410c',
-  },
-  {
-    key: 'community',
-    path: '/community',
-    mobilePath: '/community',
-    labelKey: 'sidebar.community',
-    accent: '#db2777',
   },
   {
     key: 'voice-notes',

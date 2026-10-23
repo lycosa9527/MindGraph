@@ -15,18 +15,11 @@ function flagsResponse(overrides: Record<string, unknown> = {}): Response {
     JSON.stringify({
       external_base_url: '',
       feature_rag_chunk_test: false,
-      feature_course: false,
-      feature_mate_learning: false,
-      feature_template: false,
-      feature_community: false,
       feature_showcase: true,
       feature_zhihui: false,
-      feature_askonce: false,
-      feature_debateverse: false,
       feature_knowledge_space: false,
       feature_mind_classroom_slide_deck: false,
       feature_library: true,
-      feature_gewe: false,
       feature_smart_response: false,
       feature_teacher_usage: false,
       feature_workshop_chat: false,
@@ -82,6 +75,9 @@ describe('featureFlags fetchFlags dedupe', () => {
     expect(a.feature_showcase).toBe(true)
     expect(b.feature_showcase).toBe(true)
     expect(c.feature_showcase).toBe(true)
+    expect(store.getFeatureMindClassroomSlideDeck()).toBe(false)
+    expect(store.getFeatureMindClassroomSlideDeck()).toBe(false)
+    expect(store.getFeatureMindClassroomSlideDeck()).toBe(false)
     expect(b).toEqual(a)
     expect(c).toEqual(a)
   })

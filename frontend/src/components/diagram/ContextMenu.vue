@@ -128,7 +128,13 @@ const menuItems = computed<MenuItem[]>(() => {
           deleted = diagramStore.removeNode(node.id)
         }
         if (deleted) {
-          diagramStore.pushHistory(t('diagram.history.deleteNode'))
+          if (
+            diagramType !== 'tree_map' &&
+            diagramType !== 'mindmap' &&
+            diagramType !== 'mind_map'
+          ) {
+            diagramStore.pushHistory(t('diagram.history.deleteNode'))
+          }
           emit('close')
         }
       },

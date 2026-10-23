@@ -21,15 +21,13 @@ export default {
   'notification.feedbackThanks': 'ขอบคุณสำหรับข้อเสนอแนะ',
   'notification.feedbackThanksDislike': 'ขอบคุณสำหรับข้อเสนอแนะ — เราจะปรับปรุง',
   'notification.focusQuestionTooShort': 'กรุณาใส่คำถามโฟกัสที่ยาวขึ้น',
-  'notification.geoLiteMissingIntro':
-    'ดาวน์โหลด GeoLite2 Country จาก MaxMind แยก GeoLite2-Country.mmdb และคัดลอกลงในโฟลเดอร์ข้อมูลเซิร์ฟเวอร์:',
+  'notification.geoLiteMissingIntro': 'ดาวน์โหลด GeoLite2 Country จาก MaxMind แยก GeoLite2-Country.mmdb และคัดลอกลงในโฟลเดอร์ข้อมูลเซิร์ฟเวอร์:',
   'notification.geoLiteMissingLink': 'เปิดหน้าดาวน์โหลด MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'เส้นทางที่คาดหวัง:',
   'notification.geoLiteMissingTitle': 'ฐานข้อมูลประเทศ GeoLite2 หายไป',
   'notification.fullscreenFailed': 'ไม่สามารถเข้าสู่โหมดเต็มจอ',
   'notification.generationCancelled': 'ยกเลิกการสร้างแล้ว',
-  'notification.conceptMapTabNeedsAi':
-    'โปรดเปิดใช้งาน "เริ่ม AI" ในแถบด้านบนก่อนที่จะใช้คำแนะนำแท็บ',
+  'notification.conceptMapTabNeedsAi': 'โปรดเปิดใช้งาน "เริ่ม AI" ในแถบด้านบนก่อนที่จะใช้คำแนะนำแท็บ',
   'notification.historyClearNodes': 'ล้างข้อความโหนด',
   'notification.historyEmptyLearning': 'ล้างโหนดและเพิ่มคำตอบ',
   'notification.importInvalidData': 'นำเข้าล้มเหลว: ข้อมูลไดอะแกรมไม่ถูกต้อง',
@@ -38,8 +36,6 @@ export default {
   'notification.importSlotsFull': 'ห้องสมุดเต็ม นำเข้าไดอะแกรมแล้วแต่ไม่ได้บันทึกไปยังห้องสมุด',
   'notification.importSuccess': 'นำเข้าไดอะแกรมและบันทึกไปยังห้องสมุดแล้ว',
   'notification.importUnsupportedType': 'นำเข้าล้มเหลว: ประเภทไดอะแกรมไม่รองรับ',
-  'notification.inlineRecEmpty':
-    'ไม่มีการสร้างเนื้อหาที่แนะนำ โปรดลองอีกครั้งหรือปรับธีมแล้วลองอีกครั้ง',
   'notification.loadMoreFailed': 'ไม่สามารถโหลดเพิ่มเติม',
   'notification.networkError': 'ข้อผิดพลาดของเครือข่าย',
   'notification.nodeNotEligible': 'โหนดนี้ไม่รองรับคำแนะนำแท็บ',

@@ -1,7 +1,7 @@
 /**
  * LLM Model Colors - Shared color palette for Qwen, DeepSeek, Doubao
  *
- * Used by AIModelSelector and NodePalettePanel for consistent visual identity.
+ * Used by AIModelSelector and DiagramBrainstormPanel for consistent visual identity.
  */
 export interface LLMModelColor {
   bg: string
@@ -32,7 +32,7 @@ export const LLM_MODEL_COLORS: Record<string, LLMModelColor> = {
   },
 }
 
-/** Dark mode variants for NodePalettePanel */
+/** Dark mode variants for DiagramBrainstormPanel */
 export const LLM_MODEL_COLORS_DARK: Record<string, LLMModelColor> = {
   express: {
     bg: 'rgba(16, 185, 129, 0.2)',

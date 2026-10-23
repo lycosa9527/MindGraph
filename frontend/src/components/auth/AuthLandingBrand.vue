@@ -4,6 +4,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
+import { useAuthLoginHeroVideoMountAllowed } from '@/composables/auth/useAuthLoginHeroVideoMount'
 import {
   AUTH_LOGIN_HERO_NARROW_QUERY,
   AUTH_LOGIN_HERO_STILL_SRC,
@@ -16,6 +17,7 @@ import {
   authLoginHeroViewportNarrow,
   pickAuthLoginHeroId,
 } from '@/utils/authLoginHero'
+import { authLoginHeroNativeVideoLayerRisk } from '@/utils/authLoginHeroVideoLayer'
 
 const clipId = ref('')
 const heroSrc = ref(AUTH_LOGIN_HERO_STILL_SRC)
@@ -25,17 +27,20 @@ const videoReady = ref(false)
 const reduceMotion = ref(false)
 const narrowViewport = ref(false)
 const handheld = ref(false)
-const showVideo = computed(
+const nativeVideoLayerRisk = ref(false)
+const baseMayPlayVideo = computed(
   () =>
     heroKind.value === 'video' &&
     authLoginHeroShouldAnimate({
       reduceMotion: reduceMotion.value,
       narrowViewport: narrowViewport.value,
       handheld: handheld.value,
+      nativeVideoLayerRisk: nativeVideoLayerRisk.value,
     }) &&
     !videoFailed.value &&
     Boolean(heroSrc.value)
 )
+const mountHeroVideo = useAuthLoginHeroVideoMountAllowed(baseMayPlayVideo)
 
 let motionMq: MediaQueryList | null = null
 let narrowMq: MediaQueryList | null = null
@@ -58,10 +63,12 @@ function applyHeroKind(): void {
   narrowViewport.value =
     authLoginHeroViewportNarrow(window.innerWidth) || Boolean(narrowMq?.matches)
   handheld.value = readHandheld()
+  nativeVideoLayerRisk.value = authLoginHeroNativeVideoLayerRisk()
   const animate = authLoginHeroShouldAnimate({
     reduceMotion: reduceMotion.value,
     narrowViewport: narrowViewport.value,
     handheld: handheld.value,
+    nativeVideoLayerRisk: nativeVideoLayerRisk.value,
   })
   const kind: AuthLoginHeroKind = animate ? authLoginHeroKind() : 'image'
   heroKind.value = kind
@@ -105,34 +112,39 @@ function onVideoError(): void {
     class="auth-landing-brand"
     aria-labelledby="auth-landing-brand-title"
   >
-    <img
-      :src="AUTH_LOGIN_HERO_STILL_SRC"
-      alt=""
-      class="auth-landing-brand__bg"
-      width="1920"
-      height="1080"
-      decoding="async"
-      fetchpriority="high"
-    />
-    <video
-      v-if="showVideo"
-      :key="heroSrc"
-      class="auth-landing-brand__bg auth-landing-brand__video"
-      :class="{ 'auth-landing-brand__video--ready': videoReady }"
-      autoplay
-      muted
-      loop
-      playsinline
-      preload="auto"
-      @canplay="onVideoReady"
-      @error="onVideoError"
+    <div
+      class="auth-landing-brand__media"
+      aria-hidden="true"
     >
-      <source
-        :src="heroSrc"
-        type="video/mp4"
-        :media="AUTH_LOGIN_HERO_WIDE_MEDIA"
+      <img
+        :src="AUTH_LOGIN_HERO_STILL_SRC"
+        alt=""
+        class="auth-landing-brand__bg"
+        width="1920"
+        height="1080"
+        decoding="async"
+        fetchpriority="high"
       />
-    </video>
+      <video
+        v-if="mountHeroVideo"
+        :key="heroSrc"
+        class="auth-landing-brand__bg auth-landing-brand__video"
+        :class="{ 'auth-landing-brand__video--ready': videoReady }"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        @canplay="onVideoReady"
+        @error="onVideoError"
+      >
+        <source
+          :src="heroSrc"
+          type="video/mp4"
+          :media="AUTH_LOGIN_HERO_WIDE_MEDIA"
+        />
+      </video>
+    </div>
 
     <div
       class="auth-landing-brand__veil"
@@ -145,8 +157,7 @@ function onVideoError(): void {
           id="auth-landing-brand-title"
           class="auth-landing-brand__headline"
         >
-          <span><I18nText k="auth.landing.headlinePrefix" /></span>
-          <span><I18nText k="auth.landing.headlineAccent" /></span>
+          <I18nText k="auth.landing.headline" />
         </h1>
         <p class="auth-landing-brand__subcopy">
           <I18nText k="auth.landing.subcopy" />
@@ -159,11 +170,22 @@ function onVideoError(): void {
 <style scoped>
 .auth-landing-brand {
   position: relative;
+  z-index: 0;
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  isolation: isolate;
   color: #2e1065;
   background: #f3eefc;
+}
+
+.auth-landing-brand__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateZ(0);
 }
 
 .auth-landing-brand__bg {
@@ -243,13 +265,18 @@ function onVideoError(): void {
 
 .auth-landing-brand__headline {
   margin: 0 0 0.9rem;
-  max-width: 14em;
+  max-width: 16em;
   font-size: clamp(1.85rem, 3.6vw, 2.75rem);
   font-weight: 800;
   letter-spacing: -0.035em;
-  line-height: 1.2;
+  line-height: 1.15;
   color: #2e1065;
   text-shadow: none;
+}
+
+.auth-landing-brand__headline :deep(.i18n-label__secondary) {
+  margin-top: 0.12em;
+  font-weight: 600;
 }
 
 .auth-landing-brand__subcopy {
@@ -291,6 +318,10 @@ function onVideoError(): void {
     max-width: none;
     margin-bottom: 0;
     font-size: 1.2rem;
+  }
+
+  .auth-landing-brand__headline :deep(.i18n-label__secondary) {
+    margin-top: 0.08em;
   }
 
   .auth-landing-brand__subcopy {

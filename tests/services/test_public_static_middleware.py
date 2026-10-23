@@ -27,10 +27,11 @@ from services.infrastructure.utils.spa_handler import is_public_static_path
     [
         "/assets/vendor-keyboard-BHem4BCl.js",
         "/assets/noto-sans-sc-chinese-simplified-400-normal-Ba7eOkfT.woff2",
-        "/static/community/thumb.png",
+        "/static/announcement_images/thumb.png",
         "/gallery/featured/foo.png",
         "/favicon.svg",
         "/robots.txt",
+        "/sitemap.xml",
         "/pwa-512x512.png",
         "/manifest.webmanifest",
         "/sw.js",

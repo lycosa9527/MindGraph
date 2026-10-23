@@ -57,6 +57,19 @@
   gap: 0.7rem;
 }
 
+/*
+ * Canvas ElDialogs marked `.mm-above-node-chrome`, plus the document /
+ * learning-sheet center shell. Toolbar poppers are 5100 `!important`, so
+ * this overlay must also be `!important` and higher.
+ * Keep in sync with SWISS_GLASS_CANVAS_DIALOG_Z in swissGlassStack.ts.
+ * Do not add `.model-sheet-overlay` here — its tooltips teleport to body
+ * and must stay in the Element Plus ~2000 band.
+ */
+.el-overlay:has(.mm-above-node-chrome),
+.mm-canvas-center-modal {
+  z-index: 5200 !important;
+}
+
 .swiss-glass-card-overlay {
   position: fixed;
   inset: 0;
@@ -160,7 +173,9 @@
 .swiss-glass-card {
   position: relative;
   width: min(480px, 92vw);
-  max-height: min(78vh, 740px);
+  max-height: min(78vh, 740px, 100%);
+  min-height: 0;
+  flex-shrink: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -172,7 +187,13 @@
 
 .swiss-glass-card--xl {
   width: min(960px, 96vw);
-  max-height: min(88vh, 900px);
+  max-height: min(88vh, 900px, 100%);
+}
+
+.swiss-glass-card__body,
+.swiss-glass-card.overflow-y-auto {
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
 }
 
 .swiss-glass-card__body {

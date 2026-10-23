@@ -3,10 +3,12 @@ Async helpers that offload large JSON serialisation / deserialisation and
 deep-copy to a thread pool when the payload exceeds a configurable byte
 threshold.
 
-For small payloads (the common case) the functions call json.dumps / json.loads
-/ copy.deepcopy synchronously on the event loop — the overhead of scheduling
-a thread pool task would outweigh any benefit.  Only payloads above
+For small payloads (the common case) the functions call ``pg_json_dumps`` /
+json.loads / copy.deepcopy synchronously on the event loop — the overhead of
+scheduling a thread pool task would outweigh any benefit.  Only payloads above
 ``COLLAB_JSON_THREAD_OFFLOAD_BYTES`` (default 64 KiB) are offloaded.
+``pg_json_dumps`` drops U+0000 before encoding, because these strings are
+bound with ``CAST(... AS jsonb)`` and never pass through the engine serializer.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -20,6 +22,8 @@ import copy
 import json
 import os
 from typing import Any, Dict, Optional
+
+from services.diagram.postgres_text import pg_json_dumps
 
 _OFFLOAD_THRESHOLD = int(os.getenv("COLLAB_JSON_THREAD_OFFLOAD_BYTES", str(64 * 1024)))
 
@@ -44,10 +48,10 @@ async def dumps_maybe_offload(
     """
     if isinstance(obj, (dict, list)) and _should_offload_dict(obj):
         try:
-            return await asyncio.to_thread(json.dumps, obj, ensure_ascii=ensure_ascii)
+            return await asyncio.to_thread(pg_json_dumps, obj, ensure_ascii=ensure_ascii)
         except (TypeError, ValueError, OSError, RuntimeError):
             pass
-    return json.dumps(obj, ensure_ascii=ensure_ascii)
+    return pg_json_dumps(obj, ensure_ascii=ensure_ascii)
 
 
 async def loads_maybe_offload(raw: str) -> Any:

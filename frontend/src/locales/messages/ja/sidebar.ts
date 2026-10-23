@@ -44,8 +44,7 @@ export default {
   'sidebar.chatHistory.folderCreatePrompt': 'Enter a name for the new folder',
   'sidebar.chatHistory.folderCreateTitle': 'New folder',
   'sidebar.chatHistory.folderCreated': 'Folder created',
-  'sidebar.chatHistory.folderDeleteConfirm':
-    'Delete this folder? Conversations inside will move to Uncategorized.',
+  'sidebar.chatHistory.folderDeleteConfirm': 'Delete this folder? Conversations inside will move to Uncategorized.',
   'sidebar.chatHistory.folderDeleteFailed': 'Failed to delete folder',
   'sidebar.chatHistory.folderDeleteTitle': 'Delete folder',
   'sidebar.chatHistory.folderDeleted': 'Folder deleted',
@@ -67,18 +66,13 @@ export default {
   'sidebar.zhihui': 'ちえ',
   'sidebar.zhihuiHistory.title': 'ビルド履歴',
   'sidebar.zhihuiHistory.empty': 'まだ世代記録がありません',
-  'sidebar.zhihuiHistory.deleteConfirm':
-    'この生成されたレコードを削除してもよろしいですか?この操作は元に戻すことができません。',
-  'sidebar.community': 'コミュニティ',
-  'sidebar.courses': '思考コース',
-  'sidebar.mateLearning': 'マット学習法',
+  'sidebar.zhihuiHistory.deleteConfirm': 'この生成されたレコードを削除してもよろしいですか?この操作は元に戻すことができません。',
   'sidebar.debateHistory.deleteConfirm': 'このディベートを削除しますか？元に戻せません。',
   'sidebar.debateHistory.empty': 'ディベートはまだありません',
   'sidebar.debateHistory.loginPrompt': 'ディベートを見るにはログインしてください',
   'sidebar.debateHistory.renamePrompt': 'このディベートの新しいトピックを入力してください',
   'sidebar.debateHistory.renameTitle': 'ディベートの名前を変更',
   'sidebar.debateHistory.title': '最近のディベート',
-  'sidebar.debateverse': 'DebateVerse',
   'sidebar.diagramHistory.capacity': '最大 {n} 件の図を保存できます',
   'sidebar.diagramHistory.deleteFailed': '図の削除に失敗しました',
   'sidebar.diagramHistory.collabLive': 'オンライン共同編集が有効です',
@@ -95,8 +89,7 @@ export default {
   'sidebar.diagramHistory.folderCreatePrompt': '新しいフォルダ名を入力してください',
   'sidebar.diagramHistory.folderCreateTitle': '新規フォルダ',
   'sidebar.diagramHistory.folderCreated': 'フォルダを作成しました',
-  'sidebar.diagramHistory.folderDeleteConfirm':
-    'このフォルダを削除しますか？中の図は未分類に移動します。',
+  'sidebar.diagramHistory.folderDeleteConfirm': 'このフォルダを削除しますか？中の図は未分類に移動します。',
   'sidebar.diagramHistory.folderDeleteFailed': 'フォルダの削除に失敗しました',
   'sidebar.diagramHistory.folderDeleteTitle': 'フォルダを削除',
   'sidebar.diagramHistory.folderDeleted': 'フォルダを削除しました',
@@ -144,11 +137,9 @@ export default {
   'sidebar.training': '学校ベースのトレーニング',
   'sidebar.trainingCourses': 'コース',
   'sidebar.trainingBuilder': 'コース構築アシスタント',
-  'sidebar.templateResources': 'テンプレート',
   'sidebar.orgEdition': '{org} 専用',
   'sidebar.personalEdition': '個人専用',
   'sidebar.userSubtitleDefault': 'MindGraph プロフェッショナル版',
-  'sidebar.changePhone': 'Change phone number',
   'sidebar.changePassword': 'Change password',
   'sidebar.changeAvatar': 'Change avatar',
   'sidebar.logout': 'Log out',
@@ -165,8 +156,7 @@ export default {
   'sidebar.logoSiteQrHint': 'スマートフォンのカメラまたは WeChat でスキャン',
   'sidebar.mindmateCollabHistory.title': 'オンライン共同編集',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'セミナーを終了',
-  'sidebar.mindmateCollabHistory.stopConfirm':
-    '全員のセッションが終了します。参加者はルームから退出します。',
+  'sidebar.mindmateCollabHistory.stopConfirm': '全員のセッションが終了します。参加者はルームから退出します。',
   'sidebar.mindmateCollabHistory.visibilityOrg': '組織',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'ネットワーク',
   'sidebar.share.ribbon': 'Organization',
@@ -190,8 +180,7 @@ export default {
   'sidebar.demo.menu': 'Demo mode',
   'sidebar.demo.ribbon': 'Demo',
   'sidebar.demo.title': 'Choose diagrams',
-  'sidebar.demo.line1':
-    'Pick diagrams from your library, write a caption, then play them full screen',
+  'sidebar.demo.line1': 'Pick diagrams from your library, write a caption, then play them full screen',
   'sidebar.demo.search': 'Search diagrams',
   'sidebar.demo.empty': 'No diagrams in your library yet',
   'sidebar.demo.hint': 'Select a diagram to write its caption',
@@ -241,26 +230,15 @@ export default {
   'sidebar.demo.loading': 'Generating',
   'sidebar.demo.moveUp': 'Move up',
   'sidebar.demo.moveDown': 'Move down',
-  'sidebar.demo.caption.circle_map':
-    '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
-  'sidebar.demo.caption.bubble_map':
-    '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
-  'sidebar.demo.caption.double_bubble_map':
-    '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
-  'sidebar.demo.caption.tree_map':
-    '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
-  'sidebar.demo.caption.brace_map':
-    '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
-  'sidebar.demo.caption.flow_map':
-    '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
-  'sidebar.demo.caption.multi_flow_map':
-    '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
-  'sidebar.demo.caption.bridge_map':
-    '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
-  'sidebar.demo.caption.mindmap':
-    '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
-  'sidebar.demo.caption.concept_map':
-    '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
-  'sidebar.demo.caption.fallback':
-    '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
+  'sidebar.demo.caption.circle_map': '{title} is a circle map for association. The topic sits in the center and related ideas surround it, so students can see what the topic brings to mind.',
+  'sidebar.demo.caption.bubble_map': '{title} is a bubble map for description. Features surround the central thing, so students turn a vague impression into statements they can check.',
+  'sidebar.demo.caption.double_bubble_map': '{title} is a double bubble map for comparison. Shared traits sit in the middle and differences sit on each side, so students see what matches and what does not.',
+  'sidebar.demo.caption.tree_map': '{title} is a tree map for classification. The topic splits into categories and then into examples, so students see how ideas contain one another.',
+  'sidebar.demo.caption.brace_map': '{title} is a brace map for parts of a whole. The whole is on the left and the parts open to the right, so students can say what it is made of.',
+  'sidebar.demo.caption.flow_map': '{title} is a flow map for sequence. Steps run in order, so students can say what comes first, what comes next, and why the order matters.',
+  'sidebar.demo.caption.multi_flow_map': '{title} is a multi-flow map for cause and effect. Causes sit on the left and effects on the right, so students separate why it happened from what it led to.',
+  'sidebar.demo.caption.bridge_map': '{title} is a bridge map for analogy. One relationship suggests another, so students must explain why the link on one side also works on the other.',
+  'sidebar.demo.caption.mindmap': '{title} is a mind map for opening ideas and then organizing them. Branches grow from the center, so students can explore first and then shape a structure they can explain.',
+  'sidebar.demo.caption.concept_map': '{title} is a concept map for how ideas relate. Concepts are joined by labeled links, so students can say why those ideas belong together.',
+  'sidebar.demo.caption.fallback': '{title} turns this content into a picture. Students can see how the pieces connect instead of holding the whole idea in one paragraph.',
 } as const

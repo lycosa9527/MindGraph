@@ -20,7 +20,7 @@ from scripts.october_update_promo.catalog import (
 from scripts.october_update_promo.music import FUN_MUSIC, build_music_body
 from scripts.october_update_promo.paths import DESKTOP_DIR, screenshot_for
 from scripts.sync_classroom_video.roles import RoleStill
-from scripts.training_roles.wan_client import WAN3_VIDEO_PRIME, build_video_body
+from scripts.training_roles.wan_client import WAN3_VIDEO, build_video_body
 
 
 def _role(slug: str, label: str, tmp_path: Path) -> RoleStill:
@@ -97,7 +97,7 @@ def test_prompt_asks_for_foley_not_speech(tmp_path: Path) -> None:
     assert "No vocals" in BGM_PROMPT
     assert len(BGM_PROMPT) <= 2000
     video = build_video_body(
-        WAN3_VIDEO_PRIME,
+        WAN3_VIDEO,
         prompt,
         negative=NEGATIVE,
         media=[{"type": "reference_image", "url": "data:image/jpeg;base64,xx"}],

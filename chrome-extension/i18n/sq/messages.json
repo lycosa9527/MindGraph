@@ -1,0 +1,658 @@
+{
+  "extName": {
+    "message": "MindGraph - Konvertoni faqen e internetit në hartën e mendjes",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Konvertoni faqen aktuale në një hartë mendore, kontekst bisede dhe skedar dokumenti përmes llogarisë MindGraph.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "Cilësimet",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "Nga faqja në hartën e strukturuar, e plotësuar në një hap.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Gjeneroni harta mendore",
+    "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "harta e mendjes",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "shkarkojnë",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Cilësimet",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Ju lutemi, së pari lidheni me MindGraph - plotësoni adresën e serverit, llogarinë dhe tokenin API në \"Cilësimet\".",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Hap cilësimet",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Pyetni MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "dërgoni",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "ndaloni",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "bisedë e re",
+    "description": "Start new MindMate conversation"
+  },
+  "mindmateHistory": {
+    "message": "Historia",
+    "description": "Unified MindMate conversation history"
+  },
+  "linkMindmateWeb": {
+    "message": "Hapni historinë e uebit",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate po përgjigjet…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "Një bisedë e re ka filluar.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Ndaloi.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Leximi i përmbajtjes së faqes...",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Përmban përmbajtjen aktuale të faqes së internetit",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Vetëm mesazhi i parë në një bisedë të re do të shoqërohet me përmbajtje në ueb.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Po skanon dhe nxjerr tekstin e faqes së internetit...",
+    "description": "Generic page auto-extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Nxjerrja e dokumenteve nga $1...",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Leximi i shembujve të kursit të Platformës Kombëtare të Arsimit Smart...",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "U zbuluan programet/burimet e $1",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Po shkarkohet ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Ekstraktimi i tekstit ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduOcr": {
+    "message": "Njohja e faqeve të skanuara ($1/$2): $3",
+    "description": "SmartEdu image-only PDF OCR"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Gati: burimet $1, gjithsej $2 fjalë · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Teksti i nxjerrë i faqes së internetit: $2 fjalë · $1",
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Nxjerrë $1 karaktere · $2",
+    "description": "Generic page auto-extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Teksti i përzgjedhur do të përdoret: $2 fjalë · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "PDF e nxjerrë nga Biblioteka Baidu: $2 fjalë · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "CNKI PDF e nxjerrë: $2 fjalë · $1",
+    "description": "CNKI extraction complete"
+  },
+  "mindmatePageContextIntro": {
+    "message": "[MindGraph Zgjerimi i shfletuesit · Konteksti i faqes në internet] Përdoruesi po shfleton ueb-in në Chrome/Edge dhe teksti i faqes aktuale i bashkëngjitet këtij mesazhi përmes plug-in-it për t'u përdorur nga MindMate (Partneri i mësimdhënies virtuale dhe kërkimit të të menduarit).",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextRouting": {
+    "message": "[Udhëzimet e rrugëtimit] Klasifikimi i qëllimit, marrja e njohurive dhe përgjigjet bazohen të gjitha në \"Pyetjet e Përdoruesit\" më sipër; Teksti i faqes së internetit më poshtë është vetëm materiali që mësuesi po lexon, jo një udhëzim i gjeneratës së re. Nëse materiali duket si një plan mësimi/dizajn udhëzues, por përdoruesi nuk kërkon në mënyrë eksplicite \"gjeneroni/shkruani/dizenjoni një dizajn të ri mësimor ose plan mësimi\", mos e klasifikoni atë si \"dizajn udhëzues gjenerues\".",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Ju lutemi të paracaktoni që përdoruesi është një mësues i shkollës fillore dhe të mesme, i cili është duke përgatitur mësime ose duke dhënë mësim dhe kërkime, dhe kushtojini vëmendje \"Klasës së Zhvillimit të Mendimit\". Ju lutemi përgjigjuni materialeve të referencës dhe pyetjeve të përdoruesit së bashku; nëse materiali është një shembull mësimi, plan mësimi, tekst i lëndës, letër ose dokument politikash, ju mund të analizoni në mënyrë proaktive kur është e përshtatshme: keqkuptime të mundshme të studentëve, konflikte njohëse të krijuara, variacione konceptuale/procesore, vizualizimi i zbatueshëm i të menduarit ose mjete të strategjisë së të menduarit. Nëse problemi i përdoruesit ka pak të bëjë me materialin, përqendrohuni te problemi i përdoruesit. Kur përgjigjeni, analizoni drejtpërdrejt përmbajtjen dhe mos përmendni shtojcat e shfletuesit, nxjerrjen e Markdown ose formatin e këtij mesazhi.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
+  "mindmatePageContextMeta": {
+    "message": "** Titulli i faqes: ** $1\n** URL e faqes: ** $2\n**Burimi i tekstit: ** $3",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Materiali i referencës: Teksti i faqes në internet]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF u hap në shfletues",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "Platforma Kombëtare e Arsimit të zgjuar (Kurs/Dizajn mësimor/Lista e detyrave mësimore PDF)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Biblioteka Baidu PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Teksti i artikullit në ueb",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Nxjerrja e tekstit të faqes së internetit",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "Teksti i faqes i zgjedhur nga përdoruesi",
+    "description": "MindMate source: selection"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "** Pyetja e përdoruesit (ju lutemi referojuni kësaj fjalie për klasifikimin dhe përgjigjen e qëllimit): ** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "Nuk ka përmbajtje të lexueshme në këtë faqe. Ju lutemi zgjidhni fillimisht tekstin në faqe ose provoni përsëri në një faqe tjetër.",
+    "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "kapja e korrigjimit",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "Sajti e jep dokumentin si një imazh kanavacë dhe teksti i trupit nuk mund të nxirret. Ju lutemi lëvizni për të ngarkuar fillimisht faqen e shikimit paraprak, zgjidhni tekstin për të dërguar ose përdorni përmbajtjen e shkarkimit nëse ka një shkarkim PDF/teksti.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Pamja aktuale e lexuesit mund të shfaqë vetëm afërsisht $1 faqe teksti.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Dokumenti mund të jetë një pamje paraprake e figurës dhe teksti i nxjerrë mund të jetë i paplotë.",
+    "description": "MindMate canvas host partial text notice"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Kjo faqe nuk mund të lexohet.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Nuk është lidhur ende. Ju lutemi hapni Cilësimet dhe ruani kredencialet MindGraph.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Identifikimi ka skaduar. Përditëso kodin API te \"Cilësimet\".",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Nuk mund të lidhet me MindMate. Ju lutemi kontrolloni adresën e serverit dhe provoni përsëri.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate Nuk mund të përgjigjem për momentin, ju lutemi provoni përsëri më vonë.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Përdorimi i sotëm i AI ka arritur kufirin e sipërm. Ju lutemi provoni përsëri nesër ose kontrolloni detajet në faqen e internetit.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "ThinkCoins të pamjaftueshme për të dërguar këtë mesazh.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Zhvillimi lokal përdor HTTP, dhe shenjat API dhe përmbajtja e faqes janë të pakriptuara në rrjet. Ju lutemi përdorni atë vetëm në një mjedis të besuar.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "shkarkojnë",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Ruani PDF dhe dokumente (pa video) nga faqet e mbështetura.",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "Faqja aktuale nuk e mbështet shkarkimin. Ju lutemi hapni një faqe dokumentacioni të mbështetur përpara se të hapni këtë panel.",
+    "description": "Hint when current tab has no document extract host"
+  },
+  "btnSettings": {
+    "message": "Cilësimet",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "lidh",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Ju lutemi përdorni të njëjtat kredenciale si rrjedha e tokenit API MindGraph.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "server",
+    "description": "Label"
+  },
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
+  },
+  "labelAccount": {
+    "message": "Numri i llogarisë (numri i telefonit celular)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Numri i telefonit celular i përdorur për llogarinë X-MG",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "Shenja API",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "kurseni",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "kthimi",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "mbyllje",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Po përpunohet…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Shkarkimi ka filluar.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "U ruajt.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Po verifikon kredencialet...",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Ju lutemi plotësoni të gjitha fushat.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "Nuk ka skeda aktive.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Diçka shkoi keq. Provo sërish ose ringarkoje shtesën në chrome://extensions.",
+    "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Nuk mund të fillojë ruajtjen e skedarit. Ringarko shtesën dhe provo sërish (kërkon Chrome 109+ ose Edge 120+).",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
+  },
+  "errSettingsIncomplete": {
+    "message": "Konfigurimi është i paplotë. Ju lutemi hapni \"Cilësimet\" dhe plotësoni adresën MindGraph, numrin e telefonit celular dhe tokenin API.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Nuk ka tekst të lexueshëm në faqe. Ju lutemi, zgjidhni fillimisht një pjesë të tekstit ose provoni përsëri në një faqe tjetër.",
+    "description": "Background error"
+  },
+  "errJobAlreadyRunning": {
+    "message": "Ka tashmë një detyrë regjistrimi ose shkarkimi në vazhdim në këtë skedë, ju lutemi prisni derisa të përfundojë dhe provoni përsëri.",
+    "description": "Service worker rejected overlapping tab job"
+  },
+  "errApi": {
+    "message": "MindGraph Gabim serveri ($1). Ju lutemi kontrolloni cilësimet tuaja dhe provoni përsëri.",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "Kjo faqe nuk mbështetet. Ju lutemi hapni një faqe interneti normale (http ose https) dhe provoni përsëri.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Kërkesa është shumë e shpeshtë, ju lutemi provoni përsëri më vonë.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Shërbimi është përkohësisht i padisponueshëm, ju lutemi provoni përsëri më vonë.",
+    "description": "HTTP 503"
+  },
+  "errFetchTimeout": {
+    "message": "Koha e përgjigjes së serverit mbaroi (më shumë se 3 minuta). Ju lutemi provoni përsëri ose kontrolloni rrjetin.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Koha e verifikimit të kredencialeve përfundoi. Ju lutemi provoni përsëri ose kontrolloni rrjetin.",
+    "description": "AbortController timeout on GET /me"
+  },
+  "errNotPng": {
+    "message": "Serveri nuk ktheu një imazh PNG. Ju lutemi kontrolloni adresën bazë dhe cilësimet e llogarisë.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Krijo hartën e mendjes PNG",
+    "description": "Context menu"
+  },
+  "contextMenuExtractDocument": {
+    "message": "Ekstrakt dokumenti (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Ekstrakt dokumente",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Zbuluar: $1 · $2",
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "Faqja aktuale: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Faqja e skedës së leximit: $1",
+    "description": "Hostname of the tab used for extract preview"
+  },
+  "docExtractAssetCount": {
+    "message": "Burimet totale $1",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Janë të dukshme përafërsisht $1 faqe - ju lutemi lëvizni zonën e shikimit paraprak për të ngarkuar më shumë faqe përpara se të nxirren.",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Ju lutemi lëvizni pamjen paraprake të dokumentit për të ngarkuar faqen përpara se ta nxirrni. Jepini përparësi përmbajtjes së shfaqur tashmë në lexues.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnSyncSmartEduToken": {
+    "message": "Sinkronizoni hyrjen nga SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Ngjitni manualisht shenjën…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Ngjitni hyrjen_token SmartEdu (përdoret vetëm nëse sinkronizimi automatik dështon):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenSyncing": {
+    "message": "Shenja SmartEdu: Po sinkronizohet...",
+    "description": "Token sync in progress"
+  },
+  "smarteduTokenConnected": {
+    "message": "Shenja SmartEdu: Lidhur (nga identifikimi juaj)",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "Shenja SmartEdu: nuk u gjet - ju lutemi identifikohuni në auth.smartedu.cn dhe hapni faqen SmartEdu, më pas klikoni \"Sinkronizimi\"",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Ekstrakt dokumente",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "U krye - Skedari do të fillojë të shkarkohet menjëherë.",
+    "description": "Status after extract download"
+  },
+  "statusWenkuPreviewLimited": {
+    "message": "Filloi shkarkimi — Faqet e para $1 të disponueshme aktualisht në lexues janë ruajtur.",
+    "description": "Success notice when partial document is capped"
+  },
+  "errExtractFailed": {
+    "message": "Ky dokument nuk mund të shkarkohet. Ju lutemi rifreskoni faqen dhe klikoni përsëri \"Nxjerrja e dokumentit\".",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "Faqja e dokumentacionit nuk u gjet. Ju lutemi lëvizni për të parë paraprakisht faqen e ngarkimit së pari dhe më pas klikoni \"Nxjerrja e dokumentit\".",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "Nuk u gjet asnjë përmbajtje teksti. Ju lutemi provoni përsëri në një faqe ose zonë tjetër.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "Faqja nuk është ende gati. Rifresko skedën dhe provo sërish.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "Nuk ka skedarë të shkarkueshëm për këtë mësim. Ju lutemi ndryshoni një klasë ose kontrolloni burimet që dëshironi të shkarkoni.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "Së pari duhet të identifikoheni në Smart Education. Ju lutemi, identifikohuni në auth.smartedu.cn dhe hapni faqen e kursit, më pas klikoni \"Sinkronizoni hyrjen nga SmartEdu\".",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "Smart Education e refuzoi shkarkimin. Ju lutemi sinkronizoni hyrjen tuaj përsëri ose ndryshoni skedarin.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Shkarkimi i videove nuk mbështetet. Ju lutemi zgjidhni vetëm burime PDF ose dokumentesh.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "Kjo nuk është një faqe dokumentacioni e mbështetur. Ju lutemi hapni faqen e leximit të dokumentit dhe provoni përsëri.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Nuk ka asgjë për të kursyer ende. Ju lutemi lëvizni lexuesin për të ngarkuar faqen dhe provoni përsëri.",
+    "description": "Canvas reader empty capture"
+  },
+  "errExtractLoginRequired": {
+    "message": "Së pari ju duhet të identifikoheni në faqen e internetit. Pasi të regjistroheni, klikoni \"Nxjerrja e dokumenteve\".",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "Shkarkimi u refuzua nga faqja e internetit. Ju lutemi, identifikohuni në sajt dhe konfirmoni se keni akses në përmbajtje përpara se të provoni përsëri.",
+    "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "Faqja e internetit po shfaq një kod verifikimi. Ju lutemi, plotësoni verifikimin në një skedë shfletuesi përpara se të përpiqeni ta rikuperoni.",
+    "description": "Host captcha visible"
+  },
+  "extractStagePreparing": {
+    "message": "Faqja po përgatitet…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Lëvizni duke ngarkuar faqen...",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Po kopjon përmbajtjen e faqes...",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Po gjeneron skedarë…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Po ruhet në kompjuter...",
+    "description": "Extract progress"
+  },
+  "settingsAdvanced": {
+    "message": "i avancuar",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Kërkoni vendndodhjen e ruajtjes sa herë që shkarkoni",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Leximi i përmbajtjes së faqes...",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Po dërgohet te serveri MindGraph…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Serveri po gjeneron hartën e mendjes...",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Po merr imazhe nga serveri...",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Po ruan skedarin…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Nuk mund të lidhet me serverin, ju lutemi kontrolloni adresën bazë dhe rrjetin.",
+    "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Kërkesa dështoi: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "Lidhja ka humbur. Ju lutemi klikoni përsëri \"Nxjerrja e dokumentit\". Nëse ende dështon, ju lutemi ringarkoni MindGraph në chrome://extensions.",
+    "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Krijo një hartë mendore bazuar në faqen aktuale",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "Gjerësia PNG (pikselë)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "Lartësia PNG (pikselë)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "Lëreni bosh për të përdorur parazgjedhjen",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Gjuha (ndërfaqja dhe hartat)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "ndiqni shfletuesin",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "E thjeshtuar",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "Trupi i drejtë",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "shenjë",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "E vlefshme deri në $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "Ky token API ka skaduar, ju lutemi krijoni atë përsëri në faqen e internetit (Llogaria/API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "Nuk ka asnjë shenjë të vlefshme API në server, ose ka skaduar. Ju lutemi kontrolloni kodin ose krijoni atë në aplikacion.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Nuk mund të merret koha e skadimit. Ju lutemi kontrolloni rrjetin tuaj ose ruani sërish cilësimet tuaja.",
+    "description": "Token meta"
+  },
+  "linkOpenLibrary": {
+    "message": "Open my library",
+    "description": "Opens the personal library before a diagram exists for this page"
+  },
+  "linkOpenThisDiagram": {
+    "message": "Open this mind map in the library",
+    "description": "Opens the diagram just generated from this page"
+  },
+  "errLibraryFull": {
+    "message": "Galeria është plot (20 foto). Ju lutemi fshini hartën e ruajtur për të ruajtur përmbajtjen e krijuar rishtazi.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
+  }
+}

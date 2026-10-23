@@ -16,6 +16,7 @@
    * @property {string} downloadUrl
    * @property {boolean} selected
    * @property {string} [localKind] pdf | mp4 | m3u8 | office
+   * @property {number} [pageCount]
    */
 
   /**
@@ -31,6 +32,7 @@
       downloadUrl: String(raw.downloadUrl || ""),
       selected: raw.selected !== false,
       localKind: raw.localKind ? String(raw.localKind) : undefined,
+      pageCount: Number(raw.pageCount) > 0 ? Number(raw.pageCount) : 0,
     };
   }
 

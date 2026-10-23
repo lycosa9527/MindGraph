@@ -74,11 +74,12 @@ def dashscope_vision_ocr(
     image_bytes: bytes,
     mime_type: str = "image/png",
     prompt: str | None = None,
+    model: str | None = None,
 ) -> str:
     """Run OCR on raw image bytes via the DashScope multimodal endpoint.
 
-    Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.6-flash``).
-    Returns the extracted text (possibly empty); raises on transport errors.
+    ``model`` overrides ``DASHSCOPE_VISION_MODEL`` for one call. Returns the
+    extracted text (possibly empty); raises on transport errors.
     """
     if not _httpx_available or _httpx_mod is None:
         raise ValueError("httpx and config required for DashScope OCR")
@@ -94,7 +95,7 @@ def dashscope_vision_ocr(
         workspace_id=getattr(_settings_config, "DASHSCOPE_WORKSPACE_ID", None),
     )
     payload = {
-        "model": _settings_config.DASHSCOPE_VISION_MODEL,
+        "model": (model or "").strip() or _settings_config.DASHSCOPE_VISION_MODEL,
         "input": {
             "messages": [
                 {
@@ -148,10 +149,10 @@ def _parse_vision_ocr_text(result: Dict[str, Any]) -> str:
     return parse_dashscope_multimodal_text(result)
 
 
-def ocr_image_bytes(png_bytes: bytes) -> str:
+def ocr_image_bytes(png_bytes: bytes, model: str | None = None) -> str:
     """OCR raw PNG bytes via DashScope, falling back to Tesseract; never raises."""
     try:
-        return dashscope_vision_ocr(png_bytes, "image/png")
+        return dashscope_vision_ocr(png_bytes, "image/png", model=model)
     except OCR_CALL_ERRORS as exc:
         logger.warning("[DocumentOCR] DashScope page OCR failed, trying Tesseract: %s", exc)
     if _tesseract_available and _pil_image_cls is not None and _pytesseract_mod is not None:
@@ -190,11 +191,18 @@ def ocr_image_file(file_path: str, mime_type: str = "image/jpeg") -> str:
     raise ValueError("No text extracted from OCR response")
 
 
-def ocr_pdf_pages(file_path: str, max_pages: int, dpi: int) -> Tuple[str, List[Dict[str, Any]]]:
+def ocr_pdf_pages(
+    file_path: str,
+    max_pages: int,
+    dpi: int,
+    *,
+    model: str | None = None,
+) -> Tuple[str, List[Dict[str, Any]]]:
     """OCR a scanned PDF by rasterizing pages and reading each with the vision model.
 
     Renders pages with PyMuPDF, then OCRs each page image via the
-    DashScope vision model, falling back to Tesseract per page. Returns
+    DashScope vision model, falling back to Tesseract per page. ``model``
+    overrides ``DASHSCOPE_VISION_MODEL`` for this file. Returns
     ``(text, page_info)`` where ``page_info`` carries per-page char offsets
     (empty when OCR is unavailable or yields nothing).
     """
@@ -214,7 +222,7 @@ def ocr_pdf_pages(file_path: str, max_pages: int, dpi: int) -> Tuple[str, List[D
                 page = doc.load_page(page_index)
                 pixmap = page.get_pixmap(matrix=matrix)
                 png_bytes = pixmap.tobytes("png")
-                page_text = ocr_image_bytes(png_bytes).strip()
+                page_text = ocr_image_bytes(png_bytes, model=model).strip()
                 if page_text:
                     start_pos = current_pos
                     text_parts.append(page_text)
@@ -224,3 +232,30 @@ def ocr_pdf_pages(file_path: str, max_pages: int, dpi: int) -> Tuple[str, List[D
         logger.error("[DocumentOCR] PDF OCR rasterization failed: %s", exc)
 
     return "\n\n".join(text_parts), page_info
+
+
+def ocr_pdf_page_index(
+    file_path: str,
+    page_index: int,
+    dpi: int,
+    *,
+    model: str | None = None,
+) -> str:
+    """OCR a single PDF page by index (0-based). Returns empty when unavailable."""
+    if not _pymupdf_available or _pymupdf_mod is None:
+        return ""
+    if page_index < 0:
+        return ""
+    try:
+        with _pymupdf_mod.open(file_path) as doc:
+            if page_index >= doc.page_count:
+                return ""
+            page = doc.load_page(page_index)
+            zoom = dpi / 72.0
+            matrix = _pymupdf_mod.Matrix(zoom, zoom)
+            pixmap = page.get_pixmap(matrix=matrix)
+            png_bytes = pixmap.tobytes("png")
+            return ocr_image_bytes(png_bytes, model=model).strip()
+    except FILE_IO_ERRORS as exc:
+        logger.error("[DocumentOCR] single-page PDF OCR failed: %s", exc)
+        return ""

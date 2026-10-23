@@ -45,6 +45,7 @@ from services.admin.user_usage_activity import (
 )
 from services.auth.expert_live_membership import refresh_expert_live_membership
 from services.auth.expert_school_binding import bind_creating_expert, creator_should_auto_bind
+from services.auth.rotate_invitation_code import rotate_organization_invitation_code
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.llm.org_custom_config import invalidate_org_custom_llm_cache
 from services.mindmate.teaching_design_template_store import (
@@ -79,7 +80,7 @@ from utils.auth.school_tier import (
     school_tier_list_fields,
 )
 from utils.db.rls_context import RlsContext, apply_rls_context_async, set_rls_context
-from utils.invitations import generate_invitation_code, normalize_or_generate
+from utils.invitations import normalize_or_generate
 from utils.sensitive_mask import mask_invitation_code
 
 from ..dependencies import (
@@ -710,55 +711,11 @@ async def refresh_organization_invitation_code(
         resource_invited_by_user_id=getattr(org, "invited_by_user_id", None),
     )
 
-    old_invite = cast(Optional[str], org.invitation_code)
-    org_name_val = cast(Optional[str], org.name)
-    org_code_val = cast(Optional[str], org.code)
-    new_code = generate_invitation_code(org_name_val, org_code_val)
-
-    async def _has_conflict(code: str) -> bool:
-        cached = await org_cache.get_by_invitation_code(code)
-        if cached is not None and cast(int, cached.id) != cast(int, org.id):
-            return True
-        if cached is None:
-            other = (
-                await db.execute(
-                    select(Organization).where(
-                        Organization.invitation_code == code,
-                        Organization.id != org.id,
-                    )
-                )
-            ).scalar_one_or_none()
-            return other is not None
-        return False
-
-    attempts = 0
-    while await _has_conflict(new_code) and attempts < 5:
-        new_code = generate_invitation_code(org_name_val, org_code_val)
-        attempts += 1
-    if await _has_conflict(new_code):
-        error_msg = Messages.error("failed_generate_invitation_code", lang)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
-
-    setattr(org, "invitation_code", new_code)
-    try:
-        await db.commit()
-        await db.refresh(org)
-    except DATABASE_ERRORS as e:
-        await db.rollback()
-        logger.error("[Auth] Failed to refresh invitation code for org %s: %s", org_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=Messages.error("failed_refresh_invitation_code", lang),
-        ) from e
-
-    if not await org_cache.write_through(org, org_code_val, old_invite):
-        logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)
-        await org_cache.recover_after_failed_write_through(org, org_code_val, old_invite)
-
+    new_code = await rotate_organization_invitation_code(db, org, lang)
     logger.info("Admin %s refreshed invitation code for org %s", current_user.phone, org.code)
     return {
         "id": org.id,
-        "invitation_code": org.invitation_code,
+        "invitation_code": new_code,
     }
 
 

@@ -132,8 +132,51 @@
     return hostEntry.id === "smartedu" || hostEntry.id === "wenku" || hostEntry.id === "cnki";
   }
 
+  /**
+   * @param {object | null | undefined} resolved
+   * @returns {object | null}
+   */
+  function cnkiPreviewAsset(resolved) {
+    if (!resolved || resolved.error) {
+      return null;
+    }
+    const guesses = Array.isArray(resolved.guessUrls) ? resolved.guessUrls : [];
+    if (!resolved.pdfUrl && !guesses.length) {
+      return null;
+    }
+    const title = String(resolved.title || "PDF").trim() || "PDF";
+    return { id: "cnki-pdf", title, alias: "pdf", localKind: "pdf", selected: true };
+  }
+
+  /**
+   * @param {string} pdfUrl
+   * @param {string} [title]
+   * @returns {object | null}
+   */
+  function wenkuPreviewAsset(pdfUrl, title) {
+    if (!pdfUrl) {
+      return null;
+    }
+    const label = String(title || "PDF").trim() || "PDF";
+    return { id: "wenku-pdf", title: label, alias: "pdf", localKind: "pdf", selected: true };
+  }
+
+  /**
+   * @param {Array<object> | null | undefined} assets
+   * @returns {Array<object>}
+   */
+  function listedDocumentAssets(assets) {
+    if (!Array.isArray(assets)) {
+      return [];
+    }
+    return assets.filter((asset) => asset && asset.localKind !== "m3u8" && asset.alias !== "micro_lesson_video");
+  }
+
   MindGraphDocExtract.HOST_MARKDOWN_LIMITS = HOST_MARKDOWN_LIMITS;
   MindGraphDocExtract.hostRequiresFileExtract = hostRequiresFileExtract;
+  MindGraphDocExtract.cnkiPreviewAsset = cnkiPreviewAsset;
+  MindGraphDocExtract.wenkuPreviewAsset = wenkuPreviewAsset;
+  MindGraphDocExtract.listedDocumentAssets = listedDocumentAssets;
   MindGraphDocExtract.markdownLimitsForHost = markdownLimitsForHost;
   MindGraphDocExtract.prependCaptureNotice = prependCaptureNotice;
   MindGraphDocExtract.countCanvasPagesInTab = countCanvasPagesInTab;

@@ -1,6 +1,6 @@
 /**
  * fi UI — learningSpace
- * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -14,8 +14,7 @@ export default {
   'learningSpace.instructionUploadFailed': 'Could not upload instruction image',
   'learningSpace.resubmitPolicy': 'Resubmit policy',
   'learningSpace.allowResubmitSwitch': 'Allow resubmit before deadline',
-  'learningSpace.allowResubmitHint':
-    'When on, students can edit and resubmit before the due date. Resubmitting clears existing teacher feedback.',
+  'learningSpace.allowResubmitHint': 'When on, students can edit and resubmit before the due date. Resubmitting clears existing teacher feedback.',
   'learningSpace.allowResubmitYes': 'Resubmit allowed before deadline',
   'learningSpace.allowResubmitNo': 'Locked after first submit',
   'learningSpace.studentReqResubmit': 'Resubmit',
@@ -23,12 +22,10 @@ export default {
   'learningSpace.studentReqResubmitNo': 'Locked after first submit',
   'learningSpace.classWallSubmitFirst': 'Submit your work to view the class work wall',
   'learningSpace.resubmit': 'Resubmit',
-  'learningSpace.resubmitConfirm':
-    'This replaces your submitted version with the current canvas. Teacher feedback will be cleared. Continue?',
+  'learningSpace.resubmitConfirm': 'This replaces your submitted version with the current canvas. Teacher feedback will be cleared. Continue?',
   'learningSpace.resubmitSuccess': 'Resubmitted',
   'learningSpace.editAndResubmit': 'Edit and resubmit',
-  'learningSpace.submitConfirm':
-    'After submitting, your teacher will review and score it. Submit now?',
+  'learningSpace.submitConfirm': 'After submitting, your teacher will review and score it. Submit now?',
   'learningSpace.fillAssignment': 'Enter a title and template diagram id',
   'learningSpace.fillTitle': 'Enter an assignment title',
   'learningSpace.fillClasses': 'Select at least one class',
@@ -44,8 +41,7 @@ export default {
   'learningSpace.statusActive': 'In progress',
   'learningSpace.statusClosed': 'Closed',
   'learningSpace.changePasswordTitle': 'Set a new password',
-  'learningSpace.changePasswordHint':
-    'You must change the initial password before opening assignments.',
+  'learningSpace.changePasswordHint': 'You must change the initial password before opening assignments.',
   'learningSpace.savePassword': 'Save password',
   'learningSpace.passwordMin6': 'Password must be at least 6 characters',
   'learningSpace.myAssignments': 'My assignments',
@@ -54,8 +50,7 @@ export default {
   'learningSpace.noSubmissions': 'No student has opened or submitted yet',
   'learningSpace.noInstructions': 'No instructions',
   'learningSpace.deleteAssignment': 'Delete assignment',
-  'learningSpace.deleteAssignmentConfirm':
-    'Delete “{title}”? Student submissions will also be removed and cannot be recovered.',
+  'learningSpace.deleteAssignmentConfirm': 'Delete “{title}”? Student submissions will also be removed and cannot be recovered.',
   'learningSpace.assignmentDeleted': 'Assignment deleted',
   'learningSpace.deleteFailed': 'Could not delete assignment',
   'learningSpace.noPublishableClass': 'No class you can publish to (you must own an active class)',
@@ -82,13 +77,15 @@ export default {
   'learningSpace.noWorks': 'No submitted work yet',
   'learningSpace.status': 'Status',
   'learningSpace.due': 'Due',
+  'learningSpace.publishedBy': 'Published by {name}',
+  'learningSpace.gradedBy': 'Graded by {name}',
+  'learningSpace.notGradedYet': 'Not graded yet',
   'learningSpace.open': 'Open',
   'learningSpace.doHomework': 'Do homework',
   'learningSpace.submit': 'Submit',
   'learningSpace.class': 'Class',
   'learningSpace.createAssignment': 'Create assignment',
-  'learningSpace.createAssignmentHint':
-    'Complete the content first, then choose classes and publish rules',
+  'learningSpace.createAssignmentHint': 'Complete the content first, then choose classes and publish rules',
   'learningSpace.publishAssignment': 'Publish',
   'learningSpace.saveDraft': 'Save draft',
   'learningSpace.assignmentTitle': 'Title',
@@ -105,13 +102,11 @@ export default {
   'learningSpace.mgSaveFailed': 'Could not save .mg template',
   'learningSpace.mgAttached': '.mg template attached',
   'learningSpace.aiGenerate': 'AI diagram generate',
-  'learningSpace.aiPalette': 'Node palette',
   'learningSpace.aiInline': 'Inline recommend',
   'learningSpace.aiTranslate': 'Canvas translate',
   'learningSpace.aiDocSummary': 'Document summary',
   'learningSpace.aiLimits': 'AI feature limits',
-  'learningSpace.aiLimitsHint':
-    'Check AI features students may use; unchecked features are blocked on the canvas',
+  'learningSpace.aiLimitsHint': 'Check AI features students may use; unchecked features are blocked on the canvas',
   'learningSpace.publishTime': 'Publish time',
   'learningSpace.publishNow': 'Publish now',
   'learningSpace.publishSchedule': 'Schedule publish',
@@ -128,8 +123,7 @@ export default {
   'learningSpace.diagramTypeLabel': 'Diagram type',
   'learningSpace.fillDiagramType': 'Please choose a diagram type',
   'learningSpace.fillScoreDims': 'Keep at least one scoring dimension',
-  'learningSpace.attachmentsScaffoldHint':
-    'One working diagram (reference or starting canvas). You can also attach several photos. Extra diagrams from history or .mg become look-only materials.',
+  'learningSpace.attachmentsScaffoldHint': 'One working diagram (reference or starting canvas). You can also attach several photos. Extra diagrams from history or .mg become look-only materials.',
   'learningSpace.attachWorkingDiagram': 'Working diagram',
   'learningSpace.attachReferenceMaterials': 'Reference materials',
   'learningSpace.attachImageQuota': 'Images {used}/{n}',
@@ -144,8 +138,7 @@ export default {
   'learningSpace.diagramUseScaffold': 'Starting canvas',
   'learningSpace.diagramUseScaffoldRecommend': 'Recommended for worksheets',
   'learningSpace.diagramUseScaffoldHint': 'Students open a copy of this diagram and edit it.',
-  'learningSpace.eval.diagramPresetHint':
-    'Loaded official scoring dimensions for “{type}”. You can add or remove items.',
+  'learningSpace.eval.diagramPresetHint': 'Loaded official scoring dimensions for “{type}”. You can add or remove items.',
   'learningSpace.eval.resetRecommended': 'Reset to official recommendations',
   'learningSpace.diagramType.circle_map': 'Circle map',
   'learningSpace.diagramType.bubble_map': 'Bubble map',
@@ -158,8 +151,7 @@ export default {
   'learningSpace.diagramType.mind_map': 'Mind map',
   'learningSpace.assign.next': 'Next',
   'learningSpace.assign.prev': 'Back',
-  'learningSpace.assign.titlePlaceholder':
-    'e.g. Compare plant and animal cells with a double bubble map',
+  'learningSpace.assign.titlePlaceholder': 'e.g. Compare plant and animal cells with a double bubble map',
   'learningSpace.assign.reqPlaceholder': 'Requirements, focus areas, or reference materials…',
   'learningSpace.assign.selectedSummary': '{classes} classes selected, {students} students total.',
   'learningSpace.optional': 'Optional',
@@ -213,25 +205,21 @@ export default {
   'learningSpace.noAccess': 'Learning Space is not available for this account.',
   'learningSpace.modeLearn': 'Do homework',
   'learningSpace.modeReview': 'Review',
-  'learningSpace.useAdminPanel':
-    'Use the management panel Learning Space tab to configure pilots and classes.',
+  'learningSpace.useAdminPanel': 'Use the management panel Learning Space tab to configure pilots and classes.',
   'learningSpace.tabDashboard': 'Dashboard',
   'learningSpace.tabAssignments': 'Assignments',
   'learningSpace.tabClasses': 'Classes',
   'learningSpace.createClass': 'Create class',
-  'learningSpace.noClassesYet':
-    'No classes yet. Create a class and import students, then you can assign homework.',
+  'learningSpace.noClassesYet': 'No classes yet. Create a class and import students, then you can assign homework.',
   'learningSpace.tabSettings': 'Settings',
   'learningSpace.tabHome': 'Home',
   'learningSpace.tabMyAssignments': 'My assignments',
   'learningSpace.tabClassAssignments': 'Class assignments',
-  'learningSpace.classAssignmentsHint':
-    'Browse assignments for your class. Open one to see requirements, the class wall, and start your work.',
+  'learningSpace.classAssignmentsHint': 'Browse assignments for your class. Open one to see requirements, the class wall, and start your work.',
   'learningSpace.tabMyWorks': 'My work',
   'learningSpace.tabClassWall': 'Class work wall',
   'learningSpace.tabMyPortfolio': 'My portfolio',
-  'learningSpace.classWallHint':
-    'Browse classmates’ submitted work and teacher feedback. Tap a cover to preview; use Save to library to open in the canvas.',
+  'learningSpace.classWallHint': 'Browse classmates’ submitted work and teacher feedback. Tap a cover to preview; use Save to library to open in the canvas.',
   'learningSpace.myPortfolioHint': 'All of your submitted assignment work. Tap a cover to preview.',
   'learningSpace.assignmentWall': 'Class work wall',
   'learningSpace.mySubmission': 'My work',
@@ -252,12 +240,10 @@ export default {
   'learningSpace.studentReqMaterials': 'Reference materials',
   'learningSpace.studentReqScaffold': 'Starting diagram',
   'learningSpace.studentReqMaterialsHint': 'Preview the teacher’s reference diagram and images.',
-  'learningSpace.studentReqScaffoldHint':
-    'When you start the assignment, you will work on a copy of this diagram.',
+  'learningSpace.studentReqScaffoldHint': 'When you start the assignment, you will work on a copy of this diagram.',
   'learningSpace.studentReqOpenTemplate': 'Open reference on canvas',
   'learningSpace.studentReqBrief': 'What your teacher asks you to do',
-  'learningSpace.studentReqNoBrief':
-    'No written instructions yet — check the reference materials above.',
+  'learningSpace.studentReqNoBrief': 'No written instructions yet — check the reference materials above.',
   'learningSpace.studentReqAi': 'AI tools you can use',
   'learningSpace.studentReqAiOn': 'Your teacher enabled these AI helpers for this assignment:',
   'learningSpace.studentReqAiOff': 'AI helpers are off for this assignment — complete it yourself.',
@@ -268,8 +254,7 @@ export default {
   'learningSpace.teacherReview': 'Teacher feedback',
   'learningSpace.waitingTeacherReview': 'Your teacher has not reviewed this work yet.',
   'learningSpace.noTeacherComment': 'No comment yet',
-  'learningSpace.templateMgHint':
-    'The working diagram can be previewed and opened on the canvas. Extra diagrams and photos are listed below.',
+  'learningSpace.templateMgHint': 'The working diagram can be previewed and opened on the canvas. Extra diagrams and photos are listed below.',
   'learningSpace.noTemplatePreview': 'No template preview available',
   'learningSpace.openTemplateInCanvas': 'Open in canvas',
   'learningSpace.pendingBadge': '{n} to review',
@@ -280,8 +265,7 @@ export default {
   'learningSpace.greetMorning': 'Good morning, {name}',
   'learningSpace.greetAfternoon': 'Good afternoon, {name}',
   'learningSpace.greetEvening': 'Good evening, {name}',
-  'learningSpace.dashboardHint':
-    '{pending} submissions to review, {unsubmitted} not yet submitted.',
+  'learningSpace.dashboardHint': '{pending} submissions to review, {unsubmitted} not yet submitted.',
   'learningSpace.metricPending': 'To review',
   'learningSpace.metricPendingHint': 'Open maps to return or confirm',
   'learningSpace.metricUnsubmitted': 'Not submitted',
@@ -319,8 +303,7 @@ export default {
   'learningSpace.allSubmitted': 'Everyone has submitted',
   'learningSpace.noSubmissionsYet': 'No submissions yet',
   'learningSpace.rosterLoginHint': '{n} students · login credentials below',
-  'learningSpace.rosterLoginHow':
-    'Students log in with class code, name, and password. Contact a platform admin for help.',
+  'learningSpace.rosterLoginHow': 'Students log in with class code, name, and password. Contact a platform admin for help.',
   'learningSpace.rosterColName': 'Name',
   'learningSpace.rosterColClassCode': 'Class code',
   'learningSpace.rosterColPassword': 'Password',
@@ -328,8 +311,7 @@ export default {
   'learningSpace.rosterEmpty': 'Select a class to load the roster',
   'learningSpace.settingsHint': 'How Learning Space connects to the MindGraph canvas.',
   'learningSpace.editorBridgeTitle': 'Mind map editor bridge',
-  'learningSpace.editorBridgeBody':
-    'Student work opens the MindGraph canvas with assignmentId / diagramId.',
+  'learningSpace.editorBridgeBody': 'Student work opens the MindGraph canvas with assignmentId / diagramId.',
   'learningSpace.metricTodo': 'To do',
   'learningSpace.metricSubmitted': 'Submitted',
   'learningSpace.metricWorks': 'Works',

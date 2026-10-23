@@ -8,9 +8,12 @@ from services.dify.file_upload_types import (
     DIFY_DOCUMENT_MAX_BYTES,
     DIFY_GATEWAY_UPLOAD_EXTENSIONS,
     DIFY_IMAGE_MAX_BYTES,
+    LEGACY_DOC_UPLOAD_DETAIL,
+    OLE_COMPOUND_MAGIC,
     dify_chat_file_type,
     dify_upload_content_type,
     dify_upload_max_bytes,
+    legacy_doc_upload_detail,
 )
 from services.mindbot.platforms.dingtalk.inbound.parser import media_filename_and_types
 
@@ -59,8 +62,18 @@ def test_size_caps_match_dify_defaults() -> None:
 
 
 def test_gateway_allowlist_covers_office_and_pdf() -> None:
-    """Composer formats are accepted by the Dify upload gateway."""
+    """Known Office extensions stay classifiable; .doc is still refused at upload."""
     assert {"doc", "docx", "pdf", "ppt", "pptx", "png"} <= DIFY_GATEWAY_UPLOAD_EXTENSIONS
+
+
+def test_legacy_doc_upload_is_refused() -> None:
+    """MindMate upload rejects .doc and a .doc renamed to .docx."""
+    assert legacy_doc_upload_detail("plan.doc", b"") == LEGACY_DOC_UPLOAD_DETAIL
+    assert legacy_doc_upload_detail("plan.DOC", OLE_COMPOUND_MAGIC) == LEGACY_DOC_UPLOAD_DETAIL
+    renamed = OLE_COMPOUND_MAGIC + b"rest"
+    assert legacy_doc_upload_detail("plan.docx", renamed) == LEGACY_DOC_UPLOAD_DETAIL
+    assert legacy_doc_upload_detail("plan.docx", b"PK\x03\x04") is None
+    assert legacy_doc_upload_detail("deck.ppt", OLE_COMPOUND_MAGIC) is None
 
 
 def test_chat_file_model_normalizes_dify_type() -> None:

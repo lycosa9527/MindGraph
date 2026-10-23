@@ -16,11 +16,14 @@ MODEL_FIELDS: tuple[str, ...] = (
     "EXPRESS_MODEL",
     "QWEN_MODEL_GENERATION",
     "QWEN_MODEL_CLASSIFICATION",
+    "QWEN_FLASH_MODEL",
+    "QWEN_MAX_MODEL",
+    "GLM_FLASH_MODEL",
+    "DOUBAO_MODEL",
 )
 ENDPOINT_FIELDS: tuple[str, ...] = (
     "ARK_DEEPSEEK_ENDPOINT",
     "ARK_DOUBAO_ENDPOINT",
-    "ARK_KIMI_ENDPOINT",
 )
 ALLOWED_FIELDS: frozenset[str] = frozenset(MODEL_FIELDS + ENDPOINT_FIELDS)
 
@@ -30,9 +33,12 @@ ENV_DEFAULTS: Dict[str, str] = {
     "QWEN_MODEL_GENERATION": "qwen3.6-flash",
     "QWEN_MODEL_CLASSIFICATION": "qwen3.6-flash",
     "QWEN_MODEL_NODE_EXPLAIN": "qwen3.8-flash",
+    "QWEN_FLASH_MODEL": "qwen3.8-flash",
+    "QWEN_MAX_MODEL": "qwen3.8-max",
+    "GLM_FLASH_MODEL": "",
+    "DOUBAO_MODEL": "",
     "ARK_DEEPSEEK_ENDPOINT": "ep-20250101000000-dummy",
     "ARK_DOUBAO_ENDPOINT": "ep-20250101000000-dummy",
-    "ARK_KIMI_ENDPOINT": "ep-20250101000000-dummy",
 }
 
 DUMMY_ENDPOINT = "ep-20250101000000-dummy"
@@ -334,9 +340,9 @@ def build_llm_control_view(
                 _leg(
                     "qwen38",
                     "dashscope",
-                    "qwen3.8-flash",
+                    effective_value("QWEN_FLASH_MODEL"),
                     "model",
-                    "",
+                    "QWEN_FLASH_MODEL",
                     tokens,
                     None,
                     app_rpm,
@@ -350,9 +356,9 @@ def build_llm_control_view(
                 _leg(
                     "doubao",
                     "volcengine",
-                    effective_value("ARK_DOUBAO_ENDPOINT"),
-                    "endpoint",
-                    "ARK_DOUBAO_ENDPOINT",
+                    effective_value("DOUBAO_MODEL"),
+                    "model",
+                    "DOUBAO_MODEL",
                     tokens,
                     None,
                     app_rpm,
@@ -366,9 +372,9 @@ def build_llm_control_view(
                 _leg(
                     "kimi",
                     "volcengine",
-                    effective_value("ARK_KIMI_ENDPOINT"),
-                    "endpoint",
-                    "ARK_KIMI_ENDPOINT",
+                    effective_value("GLM_FLASH_MODEL"),
+                    "model",
+                    "GLM_FLASH_MODEL",
                     tokens,
                     None,
                     app_rpm,

@@ -25,6 +25,13 @@ import {
   getDropTargetShapeClass,
 } from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
+import {
+  getSwapGroup,
+  getTopicId,
+  isHierarchicalDropCandidate,
+  isTopLevelTreeMapNode,
+  usesHierarchicalMove,
+} from '@/composables/editor/branchMoveGroups'
 import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
@@ -33,25 +40,9 @@ import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { ANIMATION } from '@/config/uiConfig'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNode } from '@/types'
-import { isBraceMapPartNode, isBraceMapReservedId } from '@/utils/braceMapIdentity'
-import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
-import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
-import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
-import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
-import {
-  isFlowMapStepNode,
-  isFlowMapSubstepNode,
-  isLeftoverFlowMapId,
-} from '@/utils/flowMapIdentity'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
-import { isMindMapBranchId, isPositionalMindMapBranchId } from '@/utils/mindMapLocation'
-import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
+import { isPositionalMindMapBranchId } from '@/utils/mindMapLocation'
 import { nodeShapeBorderRadius } from '@/utils/nodeShapeStyle'
-import {
-  isLeftoverTreeMapId,
-  isTreeMapCategoryNode,
-  isTreeMapLeafNode,
-} from '@/utils/treeMapIdentity'
 
 const DEFAULT_NODE_WIDTH = 120
 const DEFAULT_NODE_HEIGHT = 50
@@ -59,100 +50,6 @@ const DEFAULT_NODE_HEIGHT = 50
 const TOUCH_LONG_PRESS_MOVE_THRESHOLD_SQ = 28 * 28
 /** Start branch drag after this movement (px) — mouse only; no need to wait for long-press. */
 const DRAG_START_THRESHOLD_SQ = 8 * 8
-
-/** Tree map: categories are top-level drop targets. */
-function isTopLevelTreeMapNode(
-  nodeId: string,
-  nodes?: readonly { id?: string; type?: string; data?: Record<string, unknown> }[] | null
-): boolean {
-  const node = nodes?.find((n) => n.id === nodeId)
-  return Boolean(node && isTreeMapCategoryNode(node))
-}
-
-/**
- * Hierarchical drop targets after identity migrate: live mind-map branches
- * are UUIDs (or leftover ``branch-*``). Do not key off the leftover prefix.
- */
-export function isHierarchicalDropCandidate(
-  diagramType: string,
-  nodeId: string,
-  topicId: string,
-  nodes?: readonly { id?: string; type?: string; data?: Record<string, unknown> }[] | null
-): boolean {
-  if (!nodeId || nodeId === topicId) return false
-  if (diagramType === 'tree_map') {
-    const node = nodes?.find((n) => n.id === nodeId)
-    if (node) return isTreeMapCategoryNode(node) || isTreeMapLeafNode(node)
-    return isLeftoverTreeMapId(nodeId)
-  }
-  if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-    return isMindMapBranchId(nodeId, nodes)
-  }
-  return false
-}
-
-/**
- * Classify a node into a swap group. Nodes in the same group can be swapped.
- * Returns null if the node is not draggable (e.g. topic nodes).
- */
-function getSwapGroup(
-  diagramType: string,
-  nodeId: string,
-  nodes?: { id?: string; type?: string; data?: Record<string, unknown> }[]
-): string | null {
-  const node = nodes?.find((n) => n.id === nodeId)
-  switch (diagramType) {
-    case 'mindmap':
-    case 'mind_map':
-      return isMindMapBranchId(nodeId, nodes) ? 'branch' : null
-    case 'tree_map':
-      if (node && (isTreeMapCategoryNode(node) || isTreeMapLeafNode(node))) return 'tree-node'
-      return null
-    case 'bubble_map':
-      return node && isBubbleMapAttributeNode(node) ? 'bubble' : null
-    case 'circle_map':
-      return node && isCircleMapContextNode(node) ? 'context' : null
-    case 'double_bubble_map': {
-      const role = node ? readDoubleBubbleRole(node) : null
-      if (role === 'similarity') return 'similarity'
-      if (role === 'leftDiff' || role === 'rightDiff') return 'diff'
-      return null
-    }
-    case 'flow_map': {
-      if (node && (isFlowMapStepNode(node) || isFlowMapSubstepNode(node))) return 'flow-node'
-      return isLeftoverFlowMapId(nodeId) ? 'flow-node' : null
-    }
-    case 'multi_flow_map':
-      if (node && isMultiFlowCauseNode(node)) return 'cause'
-      if (node && isMultiFlowEffectNode(node)) return 'effect'
-      return null
-    case 'brace_map':
-      if (
-        isBraceMapReservedId(nodeId) ||
-        nodeId.startsWith('label-') ||
-        nodeId.startsWith('dimension-')
-      ) {
-        return null
-      }
-      if (node && isBraceMapPartNode(node)) return 'brace'
-      return node ? 'brace' : null
-    case 'bridge_map':
-      return node && isBridgeMapPairNode(node) ? 'pair' : null
-    default:
-      return null
-  }
-}
-
-/** Whether the diagram type uses hierarchical move (vs simple swap). */
-function usesHierarchicalMove(diagramType: string): boolean {
-  return diagramType === 'mindmap' || diagramType === 'mind_map' || diagramType === 'tree_map'
-}
-
-/** Get the topic node ID for hierarchical-move diagram types. */
-function getTopicId(diagramType: string): string {
-  if (diagramType === 'tree_map') return 'tree-topic'
-  return 'topic'
-}
 
 export interface DropTarget {
   type: 'topic' | 'child' | 'before' | 'after'
@@ -374,14 +271,27 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     return ghost
   }
 
+  /** Screen pixels of slack so a finger still hits the node it is aiming at. */
+  function flowHitPad(): number {
+    const zoom = getViewport().zoom
+    const safe = zoom > 0.05 ? zoom : 1
+    return 72 / safe
+  }
+
   function classifyBranchDrop(
     node: MindGraphNode,
     flowX: number,
-    flowY: number
+    flowY: number,
+    pad: number
   ): DropTarget | null {
     const pos = node.position ?? { x: 0, y: 0 }
     const { w: nodeW, h: nodeH } = getNodeDimensions(node)
-    if (flowX < pos.x || flowX > pos.x + nodeW || flowY < pos.y || flowY > pos.y + nodeH) {
+    if (
+      flowX < pos.x - pad ||
+      flowX > pos.x + nodeW + pad ||
+      flowY < pos.y - pad ||
+      flowY > pos.y + nodeH + pad
+    ) {
       return null
     }
     const relY = flowY - pos.y
@@ -426,7 +336,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
         continue
       }
       if (h.has(nid) || nid === draggedId) continue
-      const hit = classifyBranchDrop(node, flowX, flowY)
+      const hit = classifyBranchDrop(node, flowX, flowY, flowHitPad())
       if (!hit) continue
       const { w: nodeW, h: nodeH } = getNodeDimensions(node)
       const area = nodeW * nodeH
@@ -453,7 +363,13 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
       if (dt === 'brace_map' && node.data?.originalNode?.type === 'topic') continue
       const pos = node.position ?? { x: 0, y: 0 }
       const { w, h: nodeH } = getNodeDimensions(node)
-      if (flowX >= pos.x && flowX <= pos.x + w && flowY >= pos.y && flowY <= pos.y + nodeH) {
+      const pad = flowHitPad()
+      if (
+        flowX >= pos.x - pad &&
+        flowX <= pos.x + w + pad &&
+        flowY >= pos.y - pad &&
+        flowY <= pos.y + nodeH + pad
+      ) {
         return { type: 'child', nodeId: nid }
       }
     }
@@ -548,6 +464,12 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
 
   // ---- Desktop: mouse handlers ----
 
+  /** Keep the last slot so the blue dashed outline stays up between nodes. */
+  function assignDropTarget(flowX: number, flowY: number): void {
+    const next = hitTest(flowX, flowY)
+    if (next) dropTarget.value = next
+  }
+
   function attachActiveDragListeners(): void {
     document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
     document.removeEventListener('touchend', handleCancelTimer, captureOpt)
@@ -555,14 +477,15 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
     document.removeEventListener('mousemove', handlePreDragMouseMove, captureOpt)
 
-    document.addEventListener('mouseup', handleDocumentMouseUp, captureOpt)
-    document.addEventListener('mousemove', handleDocumentMouseMove, captureOpt)
     if (touchOrigin) {
       document.addEventListener('touchmove', handleDocumentTouchMove, captureOpt)
       document.addEventListener('touchend', handleDocumentTouchEnd, captureOpt)
       document.addEventListener('touchcancel', handleDocumentTouchCancel, captureOpt)
+    } else {
+      document.addEventListener('mouseup', handleDocumentMouseUp, captureOpt)
+      document.addEventListener('mousemove', handleDocumentMouseMove, captureOpt)
+      document.documentElement.addEventListener('mouseleave', handleMouseLeave)
     }
-    document.documentElement.addEventListener('mouseleave', handleMouseLeave)
     document.addEventListener('keydown', handleEscape)
   }
 
@@ -600,7 +523,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
   function handleDocumentMouseMove(e: MouseEvent): void {
     const flow = screenToFlowCoordinate({ x: e.clientX, y: e.clientY })
     cursorPos.value = { x: flow.x, y: flow.y }
-    dropTarget.value = hitTest(flow.x, flow.y)
+    assignDropTarget(flow.x, flow.y)
   }
 
   function handleMouseLeave(): void {
@@ -618,7 +541,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const touch = e.touches[0]
     const flow = screenToFlowCoordinate({ x: touch.clientX, y: touch.clientY })
     cursorPos.value = { x: flow.x, y: flow.y }
-    dropTarget.value = hitTest(flow.x, flow.y)
+    assignDropTarget(flow.x, flow.y)
   }
 
   function handleDocumentTouchEnd(): void {
@@ -689,6 +612,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
         ? screenToFlowCoordinate({ x: lastPos.clientX, y: lastPos.clientY })
         : { x: pos.x + w / 2, y: pos.y + h / 2 }
     cursorPos.value = { x: flowPos.x, y: flowPos.y }
+    assignDropTarget(flowPos.x, flowPos.y)
     if (!draggedGhost.value) {
       setTimeout(() => {
         animationPhase.value = 'following'

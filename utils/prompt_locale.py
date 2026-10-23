@@ -10,6 +10,10 @@ from __future__ import annotations
 
 from typing import Optional
 
+from utils.chinese_language_policy import (
+    canonical_generation_language,
+    simplified_chinese_forbidden,
+)
 from utils.prompt_output_languages import (
     OUTPUT_LANGUAGE_ENGLISH_NAMES,
     is_prompt_output_language,
@@ -42,6 +46,13 @@ def template_lang_for_registry(lang: str) -> str:
     return "en"
 
 
+def append_traditional_output_rule(prompt: str) -> str:
+    """Ask for Traditional Chinese when this account cannot use Simplified."""
+    if not simplified_chinese_forbidden():
+        return prompt
+    return f"{prompt.rstrip()}{output_language_instruction('zh-hant')}"
+
+
 def output_language_instruction(lang: str) -> str:
     """
     Meta-instruction appended to LLM prompts so generation matches the API language.
@@ -53,7 +64,9 @@ def output_language_instruction(lang: str) -> str:
     like zh-tw / zh-hk / zh-mo always produce the correct Traditional Chinese footer
     even if they are not individually listed in the prompt output registry.
     """
-    normalized = (lang or "en").lower().strip()
+    normalized = canonical_generation_language(lang or "en")
+    if simplified_chinese_forbidden() and normalized == "zh":
+        normalized = "zh-hant"
     separator = "\n\n---\n"
     if normalized == "zh":
         return (
@@ -125,7 +138,9 @@ def build_extracted_content_user_block(
     """
     title_raw = (page_title or "").strip()
     url_raw = (page_url or "").strip()
-    lang = (language or "en").lower().strip().replace("_", "-")
+    lang = canonical_generation_language(language or "en")
+    if simplified_chinese_forbidden() and lang == "zh":
+        lang = "zh-hant"
     is_markdown = content_format == "text/markdown"
     fmt_latin = "markdown" if is_markdown else "plain text"
     fmt_zh_s = "Markdown" if is_markdown else "纯文本"

@@ -12,15 +12,19 @@ import { Handle, Position } from '@vue-flow/core'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
+import { useThinkingMapNodeBoxTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapSubstepNode } from '@/utils/flowMapIdentity'
+import { labelWithNodeIcon } from '@/utils/mindMapAdornments'
+import { resolveThinkingMapDisplayMaxWidthPx } from '@/utils/mindMapTextWrap'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
 import {
   THINKING_MAP_LEAF_TEXT,
@@ -34,11 +38,20 @@ import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const { fitBox } = useThinkingMapImageFit(() => props.id)
 const diagramStore = useDiagramSession()
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const flowSubstepNodeRef = ref<HTMLElement | null>(null)
-useNodeDimensions(flowSubstepNodeRef, props.id)
+useThinkingMapNodeBoxTypographyRemeasure({
+  rootRef: flowSubstepNodeRef,
+  nodeId: props.id,
+  style: () => props.data.style,
+})
 
 const isFlowMap = computed(() => props.data.diagramType === 'flow_map')
 const groupColor = computed(() => {
@@ -79,7 +92,7 @@ const nodeStyle = computed(() => {
   const baseStyle = {
     backgroundColor,
     color: themeNodePaint.value?.textColor || props.data.style?.textColor || THINKING_MAP_LEAF_TEXT,
-    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: `${thinkingMapDisplayedFontSize(props.data.style?.fontSize, themeNodePaint.value?.fontSize ?? MIND_MAP_GEOMETRY.fontSize)}px`,
     padding: thinkingMapBoxPadding(true),
     boxShadow: MIND_MAP_GEOMETRY.branchShadow,
@@ -115,23 +128,23 @@ const nodeStyle = computed(() => {
 })
 
 const SUBSTEP_MAX_TEXT_WIDTH = 180
-const BALANCE_PADDING = 5
 
 const substepMaxWidth = computed(() => {
   if (!isFlowMap.value) return '140px'
 
-  const label = ((props.data.label as string) || '').trim()
-  if (!label) return `${SUBSTEP_MAX_TEXT_WIDTH}px`
-
+  const label = labelWithNodeIcon(
+    diagramStore.data,
+    props.id,
+    ((props.data.label as string) || '').trim(),
+    diagramStore.data?.connections
+  )
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || MIND_MAP_GEOMETRY.fontSize
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
-  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
-
-  if (textWidth <= SUBSTEP_MAX_TEXT_WIDTH) return `${SUBSTEP_MAX_TEXT_WIDTH}px`
-
-  const numLines = Math.ceil(textWidth / SUBSTEP_MAX_TEXT_WIDTH)
-  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
-  return `${Math.min(balancedWidth, SUBSTEP_MAX_TEXT_WIDTH)}px`
+  const fontFamily = String(nodeStyle.value.fontFamily || '')
+  return `${resolveThinkingMapDisplayMaxWidthPx(label, fontSize, SUBSTEP_MAX_TEXT_WIDTH, {
+    fontWeight,
+    fontFamily: fontFamily || undefined,
+  })}px`
 })
 
 // Inline editing state
@@ -199,7 +212,7 @@ function handleBranchMovePointerUp(): void {
     ref="flowSubstepNodeRef"
     class="flow-substep-node relative flex items-center justify-center px-3 py-2 border-solid cursor-grab select-none"
     :class="{ 'pill-shape': isFlowMap }"
-    :style="nodeStyle"
+    :style="[fitBox(nodeStyle), blankFrame]"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.passive.capture="handleBranchMoveTouchStart"

@@ -15,7 +15,6 @@ export const I18N_TRANSLATED_MARKER =
 export const I18N_NS_FILES = [
   'common',
   'mindmate',
-  'maite',
   'canvas',
   'workshop',
   'training',

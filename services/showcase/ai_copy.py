@@ -19,6 +19,8 @@ from typing import Any, Dict, Optional
 from services.knowledge.document_processor import get_document_processor
 from services.llm import llm_service
 from services.utils.error_types import JSON_PARSE_ERRORS, LLM_PIPELINE_ERRORS
+from utils.chinese_language_policy import guard_user_visible
+from utils.prompt_locale import append_traditional_output_rule
 
 # Canonical output keys → accepted aliases in model JSON.
 # teaching_reflection is intentionally omitted: teachers fill it manually.
@@ -289,7 +291,7 @@ async def generate_teaching_design_copy(
     try:
         raw = await llm_service.chat(
             prompt=user_prompt,
-            system_message=_SYSTEM_PROMPT_ZH,
+            system_message=append_traditional_output_rule(_SYSTEM_PROMPT_ZH),
             model="qwen",
             temperature=0.45,
             max_tokens=1600,
@@ -313,7 +315,7 @@ async def generate_teaching_design_copy(
     if not text:
         raise ValueError("empty_llm_response")
     parsed = parse_json_object(text)
-    return normalize_ai_copy_fields(parsed)
+    return guard_user_visible(normalize_ai_copy_fields(parsed))
 
 
 async def stream_teaching_design_copy(
@@ -343,7 +345,7 @@ async def stream_teaching_design_copy(
     try:
         async for chunk in llm_service.chat_stream(
             prompt=user_prompt,
-            system_message=_SYSTEM_PROMPT_ZH,
+            system_message=append_traditional_output_rule(_SYSTEM_PROMPT_ZH),
             model="qwen",
             temperature=0.45,
             max_tokens=1600,
@@ -369,7 +371,7 @@ async def stream_teaching_design_copy(
             snapshot = extract_partial_ai_copy_fields(buffer)
             if snapshot and snapshot != last_snapshot:
                 last_snapshot = dict(snapshot)
-                yield {"event": "fields", **snapshot}
+                yield guard_user_visible({"event": "fields", **snapshot})
     except LLM_PIPELINE_ERRORS:
         logger.exception("[ShowcaseAI] llm stream failed model=%s", SHOWCASE_AI_COPY_MODEL)
         raise
@@ -379,10 +381,12 @@ async def stream_teaching_design_copy(
         raise ValueError("empty_llm_response")
     parsed = parse_json_object(text)
     fields = normalize_ai_copy_fields(parsed)
-    yield {
-        "event": "done",
-        "description": fields["description"],
-        "design_highlights": fields["design_highlights"],
-        "teaching_reflection": fields["teaching_reflection"],
-        "model": SHOWCASE_AI_COPY_MODEL,
-    }
+    yield guard_user_visible(
+        {
+            "event": "done",
+            "description": fields["description"],
+            "design_highlights": fields["design_highlights"],
+            "teaching_reflection": fields["teaching_reflection"],
+            "model": SHOWCASE_AI_COPY_MODEL,
+        }
+    )

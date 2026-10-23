@@ -79,6 +79,7 @@ async function onFile(event: Event): Promise<void> {
     line1-key="canvas.hero.image.line1"
     :icon="Image"
     width="min(420px, 92vw)"
+    above-canvas-chrome
   >
     <div class="swiss-glass-stack">
       <label class="swiss-glass-field">

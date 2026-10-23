@@ -568,6 +568,9 @@ function pinSelected(): void {
     return
   }
   for (const row of selectedRows()) {
+    if (row.kind !== 'message') {
+      continue
+    }
     const text = seminarBubblePlainText(row.msg.content).slice(0, 2000)
     if (!text) {
       continue
@@ -581,8 +584,7 @@ function pinSelected(): void {
       authorName,
       messageId: row.msg.id ?? null,
       createdByUserId: Number(authStore.user?.id) || null,
-      createdByName:
-        authStore.user?.username || authStore.user?.name || t('mindmate.highlights.you'),
+      createdByName: authStore.user?.username || t('mindmate.highlights.you'),
       messageAt: row.msg.created_at || '',
     })
     if (added) {
@@ -957,7 +959,7 @@ function shareAuthorName(msg: MindmateCollabMessage): string {
     return mindmateAgentName.value.trim() || 'MindMate'
   }
   if (isOwnMessage(msg)) {
-    return authStore.user?.name || authStore.user?.username || t('mindmate.highlights.you')
+    return authStore.user?.username || t('mindmate.highlights.you')
   }
   return msg.username?.trim() || t('mindmate.highlights.you')
 }
@@ -1317,7 +1319,11 @@ watch(seminarHighlightNotices, () => {
             v-if="selectMode"
             class="mindmate-collab-room__select-bar"
           >
-            <span>{{ t('mindmate.bubble.selected', { n: selectedKeys.length }) }}</span>
+            <span
+              ><I18nText
+                k="mindmate.bubble.selected"
+                :params="{ n: selectedKeys.length }"
+            /></span>
             <button
               v-if="!isSpectator"
               type="button"
@@ -1327,7 +1333,7 @@ watch(seminarHighlightNotices, () => {
                 name="highlights"
                 :size="14"
               />
-              {{ t('mindmate.bubble.pinSelected') }}
+              <I18nText k="mindmate.bubble.pinSelected" />
             </button>
             <button
               v-if="!isSpectator"
@@ -1338,7 +1344,7 @@ watch(seminarHighlightNotices, () => {
                 :size="14"
                 aria-hidden="true"
               />
-              {{ t('mindmate.bubble.summarizeSelected') }}
+              <I18nText k="mindmate.bubble.summarizeSelected" />
             </button>
             <button
               type="button"
@@ -1348,7 +1354,7 @@ watch(seminarHighlightNotices, () => {
                 :size="14"
                 aria-hidden="true"
               />
-              {{ t('mindmate.tooltip.share') }}
+              <I18nText k="mindmate.tooltip.share" />
             </button>
             <button
               type="button"
@@ -1358,7 +1364,7 @@ watch(seminarHighlightNotices, () => {
                 :size="14"
                 aria-hidden="true"
               />
-              {{ t('mindmate.bubble.cancelSelect') }}
+              <I18nText k="mindmate.bubble.cancelSelect" />
             </button>
           </div>
           <button
@@ -1368,7 +1374,10 @@ watch(seminarHighlightNotices, () => {
             @click="replyQuote = null"
           >
             <span class="mindmate-collab-room__reply-label">
-              {{ t('mindmate.bubble.replying', { name: replyQuote.author }) }}
+              <I18nText
+                k="mindmate.bubble.replying"
+                :params="{ name: replyQuote.author }"
+              />
             </span>
             <span class="mindmate-collab-room__reply-text">{{ replyQuote.text }}</span>
             <span class="mindmate-collab-room__citation-x">×</span>
@@ -1407,7 +1416,7 @@ watch(seminarHighlightNotices, () => {
             v-if="isSpectator"
             class="text-center text-xs text-stone-400 py-3"
           >
-            {{ t('mindmate.seminar.spectatorHint') }}
+            <I18nText k="mindmate.seminar.spectatorHint" />
           </p>
           <MindmateInput
             v-if="!isSpectator"

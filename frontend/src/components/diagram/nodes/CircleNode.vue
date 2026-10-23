@@ -21,12 +21,20 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useThinkingMapImageFit } from '@/composables/diagram/useThinkingMapImageFit'
+import { useThinkingMapTypographyRemeasure } from '@/composables/diagram/useThinkingMapTypographyRemeasure'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useLearningSheetBlankFrame } from '@/composables/mindMap/useLearningSheetBlankFrame'
 import { cancelScheduledLearningSheetPick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
+import {
+  CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH,
+  CONTEXT_FONT_SIZE,
+  TOPIC_FONT_SIZE,
+} from '@/stores/specLoader/textMeasurement'
 import {
   CONTEXT_MAX_TEXT_WIDTH,
   calculateAdaptiveCircleSize,
@@ -38,6 +46,11 @@ import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
 import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
+import { readNodeAdornment, textWithIconAdornment } from '@/utils/mindMapAdornments'
+import {
+  MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
+  resolveThinkingMapDisplayMaxWidthPx,
+} from '@/utils/mindMapTextWrap'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO, applyNodeShapeToStyle } from '@/utils/nodeShapeStyle'
 import {
   THINKING_MAP_LEAF_TEXT,
@@ -52,23 +65,21 @@ import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 const diagramStore = useDiagramSession()
+const { hasImage, fitBox } = useThinkingMapImageFit(() => props.id)
+const blankFrame = useLearningSheetBlankFrame(
+  () => props.id,
+  () => props.data
+)
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const topicBorderPx = MIND_MAP_GEOMETRY.borderWidth
 const contextBorderPx = MIND_MAP_GEOMETRY.borderWidth
 
 /**
- * Fixed wrap threshold for circle_map topic text. Using `circleSize - borders` would
- * create a circular dependency: large initial estimate → no wrap → stays large.
- * A fixed cap forces text to wrap, and measureRenderedMarkdownAndReport then grows
- * the circle to fit the wrapped content.
- */
-const CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH = 200
-
-/**
  * Context labels use `px-2` on a border-box display, so that padding sits inside max-width.
- * Layout treats CONTEXT_MAX_TEXT_WIDTH as the text column; add the padding back here or a
- * string that still fits the column wraps and leaves one CJK glyph on the next line.
+ * Circle-map layout treats CONTEXT_MAX_TEXT_WIDTH as the text column. Bubble-map attributes
+ * use the mind-map branch column. Add the padding back here or a string that still fits
+ * the column wraps and leaves one CJK glyph on the next line.
  */
 const CONTEXT_LABEL_PADDING_X = 16
 
@@ -114,6 +125,13 @@ function measureUnderlineTextStack(): void {
 }
 
 function measureRenderedMarkdownAndReport(): void {
+  if (hasImage.value) {
+    const root = circleNodeRef.value
+    if (root && root.offsetWidth > 0 && root.offsetHeight > 0) {
+      diagramStore.setNodeDimensions(props.id, root.offsetWidth, root.offsetHeight)
+      return
+    }
+  }
   if (props.data.style?.nodeShape === 'underline') {
     if (props.data.diagramType === 'double_bubble_map') {
       reportDimensions()
@@ -169,6 +187,9 @@ function setupMarkdownObserver(): void {
     measureRenderedMarkdownAndReport()
   })
   markdownResizeObserver.observe(el)
+  if (hasImage.value && circleNodeRef.value) {
+    markdownResizeObserver.observe(circleNodeRef.value)
+  }
 }
 
 watch(
@@ -188,6 +209,22 @@ watch(
     void flushRenderedMarkdownDimensions()
   }
 )
+
+useThinkingMapTypographyRemeasure({
+  enabled: () => useIntrinsicMdMeasure,
+  style: () => props.data.style,
+  remeasure: flushRenderedMarkdownDimensions,
+  afterRemeasure: () => {
+    nextTick(() => setupMarkdownObserver())
+  },
+})
+
+watch(hasImage, () => {
+  void nextTick(() => {
+    measureRenderedMarkdownAndReport()
+    setupMarkdownObserver()
+  })
+})
 
 onMounted(() => {
   if (!useIntrinsicMdMeasure) return
@@ -239,11 +276,19 @@ const groupColor = computed(() => {
 })
 
 // Prefer style.size from layout (driven by Pinia nodeDimensions on circle/bubble maps); fallback text estimate
+/** Icon adornment is part of the label for wrap width and the fallback disk. */
+const labelForMeasure = computed(() =>
+  textWithIconAdornment(
+    props.data.label || '',
+    readNodeAdornment(diagramStore.data, props.id, diagramStore.data?.connections)
+  )
+)
+
 const circleSize = computed(() => {
   if (props.data.style?.size) {
     return props.data.style.size
   }
-  const text = props.data.label || ''
+  const text = labelForMeasure.value
   const isRadialTopic =
     (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') && isTopicNode.value
   if (isRadialTopic) {
@@ -253,16 +298,32 @@ const circleSize = computed(() => {
 })
 
 const textMaxWidth = computed(() => {
+  const label = labelForMeasure.value.trim()
+  const fontFamily = diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK)
   if (isTopicNode.value) {
     if (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') {
-      return CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH
+      const fontSize =
+        typeof props.data.style?.fontSize === 'number' ? props.data.style.fontSize : TOPIC_FONT_SIZE
+      const fontWeight = String(props.data.style?.fontWeight || 'bold')
+      return resolveThinkingMapDisplayMaxWidthPx(label, fontSize, CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH, {
+        fontWeight,
+        fontFamily,
+      })
     }
     return circleSize.value - 2 * topicBorderPx
   }
   if (isCapsuleNode.value) {
     return capsuleWidth.value - 2 * contextBorderPx
   }
-  return CONTEXT_MAX_TEXT_WIDTH + CONTEXT_LABEL_PADDING_X
+  const fontSize =
+    typeof props.data.style?.fontSize === 'number' ? props.data.style.fontSize : CONTEXT_FONT_SIZE
+  const fontWeight = String(props.data.style?.fontWeight || 'normal')
+  const cap =
+    diagramStore.type === 'bubble_map' ? MIND_MAP_BRANCH_MAX_TEXT_WIDTH : CONTEXT_MAX_TEXT_WIDTH
+  return (
+    resolveThinkingMapDisplayMaxWidthPx(label, fontSize, cap, { fontWeight, fontFamily }) +
+    CONTEXT_LABEL_PADDING_X
+  )
 })
 
 const themeNodePaint = computed(() => {
@@ -350,7 +411,7 @@ const nodeStyle = computed(() => {
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
       (isTopicNode.value ? '#ffffff' : THINKING_MAP_LEAF_TEXT),
-    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
+    fontFamily: diagramPaintFontFamily(props.data.style?.fontFamily, DIAGRAM_NODE_FONT_STACK),
     fontSize: cssFontSize(
       thinkingMapDisplayedFontSize(
         props.data.style?.fontSize,
@@ -379,6 +440,8 @@ const nodeStyle = computed(() => {
   if (isCapsuleNode.value) return { ...box, borderRadius: '9999px' }
   return box
 })
+
+const circleNodeStyle = computed(() => [fitBox(nodeStyle.value), blankFrame.value])
 
 // Inline editing state
 const isEditing = ref(false)
@@ -486,13 +549,14 @@ function handleBranchMovePointerUp(): void {
     :class="[
       isTopicNode ? 'cursor-default' : 'cursor-grab',
       isTopicNode ? 'topic-circle' : 'context-circle',
+      hasImage ? 'circle-node--image' : '',
       isCapsuleNode ? 'circle-node--capsule' : '',
       isDiskOval ? 'circle-node--oval' : '',
       isDoubleBubbleMap ? 'circle-node--with-handles' : '',
       !data.style?.nodeShape || data.style.nodeShape === 'oval' ? 'rounded-full' : '',
       data.style?.nodeShape === 'underline' ? 'circle-node--underline' : '',
     ]"
-    :style="nodeStyle"
+    :style="circleNodeStyle"
     @dblclick="handleCircleDoubleClick"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
@@ -522,7 +586,9 @@ function handleBranchMovePointerUp(): void {
     </template>
     <div
       class="circle-node__text-wrapper"
-      :class="{ 'circle-node__text-wrapper--underline': data.style?.nodeShape === 'underline' }"
+      :class="{
+        'circle-node__text-wrapper--underline': data.style?.nodeShape === 'underline',
+      }"
     >
       <template v-if="isDoubleBubbleMap && data.style?.nodeShape === 'underline'">
         <DoubleBubbleTopicHandles v-if="isTopicNode" />
@@ -586,12 +652,43 @@ function handleBranchMovePointerUp(): void {
   aspect-ratio: 1;
 }
 
+.circle-node.circle-node--image.rounded-full:not(.circle-node--capsule):not(.circle-node--oval):not(
+    .circle-node--underline
+  ) {
+  aspect-ratio: 1 !important;
+  border-radius: 50% !important;
+  min-width: 184px;
+  min-height: 184px;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.circle-node--capsule.circle-node--image {
+  aspect-ratio: auto !important;
+  border-radius: 9999px !important;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+}
+
 .circle-node__text-wrapper {
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   min-width: 0;
+}
+
+.circle-node--image .circle-node__text-wrapper {
+  width: max-content;
+  max-width: none;
+  min-width: max-content;
+  height: max-content;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
 }
 
 .circle-node__text-wrapper--underline {

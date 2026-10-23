@@ -30,20 +30,16 @@ export default {
   'collab.noDiagramToSave': 'Nuk ka diagram për ruajtje',
   'collab.nodeLocked': 'Dikush tjetër po e redakton këtë nyje',
   'collab.participants': '{n} pjesëmarrës',
-  'collab.previousSessionsStopped':
-    'U përfunduan {n} seanca bashkëpunimi të mëparshme në diagramet tuaja të tjera.',
+  'collab.previousSessionsStopped': 'U përfunduan {n} seanca bashkëpunimi të mëparshme në diagramet tuaja të tjera.',
   'collab.saveFailed': 'Nuk u ruajt diagrami',
-  'collab.scanToJoin': "Skanoni për t'u bashkuar",
-  'collab.schoolDescActive':
-    'Bashkëpunimi shkollor është aktiv. Kolegët: MindGraph përdorni Bashkëpunimi → Shkolla në faqen kryesore dhe zgjidhni këtë diagram — nuk kërkohet kod.',
-  'collab.schoolStarted':
-    'Bashkëpunimi shkollor është aktiv — kolegët mund të bashkohen nga Bashkëpunimi → Shkolla.',
+  'collab.scanToJoin': 'Skanoni për t\'u bashkuar',
+  'collab.schoolDescActive': 'Bashkëpunimi shkollor është aktiv. Kolegët: MindGraph përdorni Bashkëpunimi → Shkolla në faqen kryesore dhe zgjidhni këtë diagram — nuk kërkohet kod.',
+  'collab.schoolStarted': 'Bashkëpunimi shkollor është aktiv — kolegët mund të bashkohen nga Bashkëpunimi → Shkolla.',
   'collab.sectionNetwork': 'Bashkëpunim i përbashkët (kod)',
   'collab.sectionSchool': 'Bashkëpunim shkollor',
   'collab.sessionDuration': 'Kohëzgjatja e seancës',
   'collab.sessionRemaining': 'Seanca përfundon për',
-  'collab.shareDescNetwork':
-    'Ndani kodin ose lidhjen — të tjerët e fusin te Bashkëpunimi → I përbashkët.',
+  'collab.shareDescNetwork': 'Ndani kodin ose lidhjen — të tjerët e fusin te Bashkëpunimi → I përbashkët.',
   'collab.start': 'Nis',
   'collab.startFailed': 'Nisja dështoi: {msg}',
   'collab.title': 'Bashkëpunim online',
@@ -54,28 +50,20 @@ export default {
   'workshop.addReaction': 'Shto reagim',
   'workshop.allSchools': 'Të gjitha shkollat',
   'workshop.announceChannels': 'Njoftimet',
-  'workshop.announceReadOnlyHint':
-    'Vetëm administratorët mund të postojnë në këtë kanal njoftimesh.',
+  'workshop.announceReadOnlyHint': 'Vetëm administratorët mund të postojnë në këtë kanal njoftimesh.',
   'workshop.archiveLessonStudy': 'Arkivo studimin e mësimit',
-  'workshop.archiveLessonStudyConfirm':
-    'Arkivoni këtë studim mësimi? Anëtarët nuk do ta shohin më në listë.',
+  'workshop.archiveLessonStudyConfirm': 'Arkivoni këtë studim mësimi? Anëtarët nuk do ta shohin më në listë.',
   'workshop.archiveTeachingGroup': 'Arkivo grupin mësimdhënës',
-  'workshop.archiveTeachingGroupConfirm':
-    'Arkivoni këtë grup mësimdhënës? Do të zhduket nga lista e grupeve.',
+  'workshop.archiveTeachingGroupConfirm': 'Arkivoni këtë grup mësimdhënës? Do të zhduket nga lista e grupeve.',
   'workshop.archiveAnnounceChannel': 'Kanali i Njoftimit të Arkivit',
-  'workshop.archiveAnnounceChannelConfirm':
-    'Jeni i sigurt që dëshironi ta arkivoni këtë kanal njoftimi? Shiriti anësor nuk do të shfaqet më, por mesazhi do të mbetet.',
+  'workshop.archiveAnnounceChannelConfirm': 'Jeni i sigurt që dëshironi ta arkivoni këtë kanal njoftimi? Shiriti anësor nuk do të shfaqet më, por mesazhi do të mbetet.',
   'workshop.deleteTeachingGroup': 'Fshi grupin mësimor dhe kërkimor',
-  'workshop.deleteTeachingGroupConfirm':
-    'Je i sigurt që dëshiron ta fshish përgjithmonë këtë grup mësimor dhe kërkimor, mësimet dhe mesazhet e tij? Ky veprim nuk mund të zhbëhet.',
+  'workshop.deleteTeachingGroupConfirm': 'Je i sigurt që dëshiron ta fshish përgjithmonë këtë grup mësimor dhe kërkimor, mësimet dhe mesazhet e tij? Ky veprim nuk mund të zhbëhet.',
   'workshop.deleteAnnounceChannel': 'Fshi kanalin e njoftimit',
-  'workshop.deleteAnnounceChannelConfirm':
-    'Je i sigurt që dëshiron ta fshish përgjithmonë këtë kanal njoftimi dhe mesazhet e tij? Ky veprim nuk mund të zhbëhet.',
+  'workshop.deleteAnnounceChannelConfirm': 'Je i sigurt që dëshiron ta fshish përgjithmonë këtë kanal njoftimi dhe mesazhet e tij? Ky veprim nuk mund të zhbëhet.',
   'workshop.deleteLessonStudy': 'Fshije mësimin',
-  'workshop.deleteLessonStudyConfirm':
-    'Je i sigurt që dëshiron ta fshish përgjithmonë këtë mësim dhe mesazhet e tij? Ky veprim nuk mund të zhbëhet.',
-  'workshop.manageNeedAdmin':
-    'Vetëm administratorët e shkollave mund të shtojnë grupe mësimore dhe kërkimore. Administratorët ose krijuesi i grupit mund të fshijnë.',
+  'workshop.deleteLessonStudyConfirm': 'Je i sigurt që dëshiron ta fshish përgjithmonë këtë mësim dhe mesazhet e tij? Ky veprim nuk mund të zhbëhet.',
+  'workshop.manageNeedAdmin': 'Vetëm administratorët e shkollave mund të shtojnë grupe mësimore dhe kërkimore. Administratorët ose krijuesi i grupit mund të fshijnë.',
   'workshop.math': 'formulë',
   'workshop.backToConversations': '← Bisedat',
   'workshop.bold': 'Të trasha',
@@ -125,8 +113,7 @@ export default {
   'workshop.create': 'Krijo',
   'workshop.createChannelFailed': 'Nuk u krijua kanali',
   'workshop.createChannelNeedParent': 'Zgjidhni fillimisht grupin prind mësimdhënës.',
-  'workshop.createChannelNoGroupsYet':
-    'Krijoni fillimisht një grup mësimdhënës, pastaj shtoni studime mësimi nën të.',
+  'workshop.createChannelNoGroupsYet': 'Krijoni fillimisht një grup mësimdhënës, pastaj shtoni studime mësimi nën të.',
   'workshop.createChannelSuccess': 'Kanali u krijua',
   'workshop.createStudyCaseHint': 'Filloni një bisedë për të nisur',
   'workshop.cycleStudyStatus': 'Statusi i studimit ciklik',
@@ -144,8 +131,7 @@ export default {
   'workshop.diagram': 'Ilustrim',
   'workshop.diagramInsertFailed': 'Futja e ikonës dështoi',
   'workshop.diagramInserting': 'Po fut ikonën…',
-  'workshop.diagramPickerEmpty':
-    'Biblioteka e imazheve është bosh, ju lutemi ruani fillimisht një foto në kanavacë.',
+  'workshop.diagramPickerEmpty': 'Biblioteka e imazheve është bosh, ju lutemi ruani fillimisht një foto në kanavacë.',
   'workshop.diagramPickerTitle': 'Zgjidhni nga biblioteka ime e ikonave',
   'workshop.directMessage': 'Mesazh direkt',
   'workshop.directMessages': 'Mesazhe direkte',
@@ -169,8 +155,7 @@ export default {
   'workshop.gearMenu': 'Opsionet',
   'workshop.generalChat': 'Bisedë e përgjithshme',
   'workshop.inbox': 'Inbox',
-  'workshop.inboxHintPickChannel':
-    'Hapni një kanal ose mesazh direkt në shiritin anësor për të lexuar dhe përgjigjur. Mund të ktheheni këtu nga Pamjet → Inbox.',
+  'workshop.inboxHintPickChannel': 'Hapni një kanal ose mesazh direkt në shiritin anësor për të lexuar dhe përgjigjur. Mund të ktheheni këtu nga Pamjet → Inbox.',
   'workshop.inboxSummaryTitle': 'Inbox-i juaj',
   'workshop.inboxUnreadChannels': 'Të palexuara në kanale',
   'workshop.inboxUnreadDms': 'Mesazhe direkte të palexuara',
@@ -196,8 +181,7 @@ export default {
   'workshop.loadMore': 'Ngarko më shumë',
   'workshop.mainChannelStream': 'Kanali kryesor',
   'workshop.manageTeachingGroups': 'Menaxho grupet mësimdhënëse',
-  'workshop.manageTeachingGroupsBlurb':
-    'Shtoni ose hiqni grupe, vendosni publike ose private, redaktoni emra dhe përshkrime, rirenditni listën, duplikoni një grup si shablon dhe ftoni kolegë. Për rregullat e postimit dhe njoftimet parazgjedhur, përdorni Të avancuara. Arkivimi e heq grupin për të gjithë.',
+  'workshop.manageTeachingGroupsBlurb': 'Shtoni ose hiqni grupe, vendosni publike ose private, redaktoni emra dhe përshkrime, rirenditni listën, duplikoni një grup si shablon dhe ftoni kolegë. Për rregullat e postimit dhe njoftimet parazgjedhur, përdorni Të avancuara. Arkivimi e heq grupin për të gjithë.',
   'workshop.manageUser': 'Menaxho këtë përdorues',
   'workshop.markAllReadChannel': 'Shëno të gjitha mesazhet si të lexuara',
   'workshop.markAsRead': 'Shëno si të lexuar',
@@ -236,8 +220,7 @@ export default {
   'workshop.noTopicsYet': 'Ende nuk ka biseda',
   'workshop.numberedList': 'lista e porositur',
   'workshop.notifications': 'Njoftimet',
-  'workshop.notificationsSettingsBlurb':
-    'Njoftimet e shfletuesit për përmendje dhe mesazhe të reja përdorin cilësimet e sistemit. Mund të rregulloni gjithashtu njoftimet e desktopit dhe email për kanal.',
+  'workshop.notificationsSettingsBlurb': 'Njoftimet e shfletuesit për përmendje dhe mesazhe të reja përdorin cilësimet e sistemit. Mund të rregulloni gjithashtu njoftimet e desktopit dhe email për kanal.',
   'workshop.offline': 'Jashtë linje',
   'workshop.online': 'online',
   'workshop.openMainChannelStream': 'Kanali kryesor',
@@ -246,12 +229,9 @@ export default {
   'workshop.personalMenu': 'Menyja personale',
   'workshop.preview': 'Parapamje',
   'workshop.previewEmpty': 'Nuk ka përmbajtje për të parë paraprakisht',
-  'workshop.phase2RoadmapGroupsAlerts':
-    "Së shpejti: përmendje {'@'}group, fjalë alarmi dhe politika e historikut të redaktimit.",
-  'workshop.phase2RoadmapMovePreview':
-    'Së shpejti: lëvizje mesazhi të vetëm, pamje paraprake URL dhe aktivitet më i pasur ndër-kanale.',
-  'workshop.phase2RoadmapPlatform':
-    'Backlog i platformës: sinkronizim inkremental, push mobile, përmbledhje email, botë/webhooks.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Së shpejti: përmendje {\'@\'}group, fjalë alarmi dhe politika e historikut të redaktimit.',
+  'workshop.phase2RoadmapMovePreview': 'Së shpejti: lëvizje mesazhi të vetëm, pamje paraprake URL dhe aktivitet më i pasur ndër-kanale.',
+  'workshop.phase2RoadmapPlatform': 'Backlog i platformës: sinkronizim inkremental, push mobile, përmbledhje email, botë/webhooks.',
   'workshop.pickColleagueToInvite': 'Zgjidhni një koleg për ftesë.',
   'workshop.pinChannel': 'Fikso në krye',
   'workshop.policyEveryone': 'Të gjithë',
@@ -259,8 +239,7 @@ export default {
   'workshop.policyMembersOnly': 'Vetëm anëtarët',
   'workshop.postingPolicy': 'Politika e postimit',
   'workshop.preferences': 'Preferencat',
-  'workshop.preferencesSettingsBlurb':
-    'Gjuha dhe preferencat e shfaqjes zbatohen në të gjithë aplikacionin. Më shumë opsione bisede Workshop do të shfaqen këtu me kalimin e kohës.',
+  'workshop.preferencesSettingsBlurb': 'Gjuha dhe preferencat e shfaqjes zbatohen në të gjithë aplikacionin. Më shumë opsione bisede Workshop do të shfaqen këtu me kalimin e kohës.',
   'workshop.presenceActive': 'Aktiv',
   'workshop.presenceIdle': 'Joaktiv',
   'workshop.presenceOffline': 'Jashtë linje',
@@ -269,8 +248,7 @@ export default {
   'workshop.publicChannels': 'Kanale publike',
   'workshop.quote': 'Citim',
   'workshop.quoteMessage': 'Citoj mesazhin',
-  'workshop.readOnlyProfileBlurb':
-    'Detajet e profilit për kolegët shfaqen në pamje të thjeshtuar. Përdorni Menaxho përdoruesin (administratorët) për të hapur drejtorinë admin.',
+  'workshop.readOnlyProfileBlurb': 'Detajet e profilit për kolegët shfaqen në pamje të thjeshtuar. Përdorni Menaxho përdoruesin (administratorët) për të hapur drejtorinë admin.',
   'workshop.recentDmActivity': 'Mesazhe direkte së fundmi',
   'workshop.recentTopics': 'Bisedat e fundit',
   'workshop.renameTopic': 'Riemëro bisedën',
@@ -281,8 +259,7 @@ export default {
   'workshop.roleOwner': 'Pronar',
   'workshop.searchMembers': 'Kërko anëtarë…',
   'workshop.searchMessages': 'Kërko mesazhe…',
-  'workshop.selectChannelForSettings':
-    'Zgjidhni fillimisht një grup mësimdhënës ose studim mësimi, pastaj hapni cilësimet këtu.',
+  'workshop.selectChannelForSettings': 'Zgjidhni fillimisht një grup mësimdhënës ose studim mësimi, pastaj hapni cilësimet këtu.',
   'workshop.selectConversation': 'Zgjidh një bisedë',
   'workshop.selectParentGroup': 'Grupi prind mësimdhënës',
   'workshop.selectTopic': 'Zgjidh bisedën',
@@ -308,8 +285,7 @@ export default {
   'workshop.strikethrough': 'Vijëzim',
   'workshop.table': 'fletë',
   'workshop.switchSchool': 'Ndrysho shkollën',
-  'workshop.teachingGroupLandingHint':
-    'Studimet e mësimit dhe bisedat në këtë grup mësimdhënës. Zgjidhni një rresht për të hapur kanalin ose një fije.',
+  'workshop.teachingGroupLandingHint': 'Studimet e mësimit dhe bisedat në këtë grup mësimdhënës. Zgjidhni një rresht për të hapur kanalin ose një fije.',
   'workshop.teachingGroupMembers': 'Anëtarët',
   'workshop.teachingGroupNameRequired': 'Ju lutemi shkruani emrin e grupit mësimdhënës.',
   'workshop.teachingGroupNoLessons': 'Ende nuk ka studime mësimi në këtë grup.',
@@ -324,8 +300,7 @@ export default {
   'workshop.topicTitle': 'Titulli',
   'workshop.topicTitlePlaceholder': 'p.sh. harta design thinking për kapitullin 3',
   'workshop.topics': 'Bisedat',
-  'workshop.typeMessagePlaceholder':
-    'Shkruani një mesazh… (Enter për dërguar, Shift+Enter për rresht të ri)',
+  'workshop.typeMessagePlaceholder': 'Shkruani një mesazh… (Enter për dërguar, Shift+Enter për rresht të ri)',
   'workshop.unfollowTopic': 'Mos ndiq bisedën',
   'workshop.unknown': 'E panjohur',
   'workshop.unmuteChannel': 'Aktivizo njoftimet e kanalit',
@@ -341,14 +316,11 @@ export default {
   'workshop.viewProfile': 'Shiko profilin',
   'workshop.viewingSchool': 'Duke parë: {0}',
   'workshop.views': 'Pamjet',
-  'workshop.welcomeChannelsBody':
-    'Një «kanal» këtu shpesh korrespondon me një grup kërkimor mësimor (教研组) ose PLC: një hapësirë e përbashkët për ekip (p.sh. Math PLC, English PLC). Përcakton kush merr pjesë dhe si grupohet hapësira.',
+  'workshop.welcomeChannelsBody': 'Një «kanal» këtu shpesh korrespondon me një grup kërkimor mësimor (教研组) ose PLC: një hapësirë e përbashkët për ekip (p.sh. Math PLC, English PLC). Përcakton kush merr pjesë dhe si grupohet hapësira.',
   'workshop.welcomeChannelsTitle': 'PLC / grupe lëndësh',
-  'workshop.welcomeConversationsBody':
-    'Brenda një studimi mësimi hapni biseda me titull — p.sh. dizajn instruksional, reflektim ose detyra pasuese — që fijet të mbeten të lehta për ndjekje.',
+  'workshop.welcomeConversationsBody': 'Brenda një studimi mësimi hapni biseda me titull — p.sh. dizajn instruksional, reflektim ose detyra pasuese — që fijet të mbeten të lehta për ndjekje.',
   'workshop.welcomeConversationsTitle': 'Bisedat',
-  'workshop.welcomeExampleCaption':
-    'Shembull ilustrues (shkollë fiktive) — Math PLC dhe English PLC, secila me studime mësimi dhe biseda shembull.',
+  'workshop.welcomeExampleCaption': 'Shembull ilustrues (shkollë fiktive) — Math PLC dhe English PLC, secila me studime mësimi dhe biseda shembull.',
   'workshop.welcomeExampleConvLabel': 'Bisedat',
   'workshop.welcomeExampleGroupEnglish': 'Grup lëndor në anglisht',
   'workshop.welcomeExampleGroupMath': 'Grupi kërkimor i matematikës',
@@ -367,51 +339,38 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Mesazhet jetojnë brenda çdo bisede',
   'workshop.welcomeExampleOrg': 'Shkolla e Mesme Chenxi',
   'workshop.welcomeHowTitle': 'Si lidhen së bashku',
-  'workshop.welcomeIntro':
-    'Workshop është hapësira e shkollës suaj për diskutime të strukturuara: ndani njoftime, zhvilloni studime mësimi dhe mbani bisedat të organizuara krahas punës mësimore.',
-  'workshop.welcomeLessonStudyBody':
-    'Kanalet e studimit të mësimit zakonisht janë nën atë grup. Secili është një vend për një cikël mësimi — planifikim, vëzhgim dhe reflektim — dhe mund të lidhet me diagrame ose statuse.',
+  'workshop.welcomeIntro': 'Workshop është hapësira e shkollës suaj për diskutime të strukturuara: ndani njoftime, zhvilloni studime mësimi dhe mbani bisedat të organizuara krahas punës mësimore.',
+  'workshop.welcomeLessonStudyBody': 'Kanalet e studimit të mësimit zakonisht janë nën atë grup. Secili është një vend për një cikël mësimi — planifikim, vëzhgim dhe reflektim — dhe mund të lidhet me diagrame ose statuse.',
   'workshop.welcomeLessonStudyTitle': 'Studimet e mësimit',
-  'workshop.welcomeMessagesBody':
-    'Mesazhet janë postimet individuale në rrjedhën kryesore të kanalit ose brenda një bisede. Përgjigjet, përmendjet dhe skedarët janë në mesazhe.',
+  'workshop.welcomeMessagesBody': 'Mesazhet janë postimet individuale në rrjedhën kryesore të kanalit ose brenda një bisede. Përgjigjet, përmendjet dhe skedarët janë në mesazhe.',
   'workshop.welcomeMessagesTitle': 'Mesazhet',
   'workshop.welcomeSubtitle': 'Bashkëpunoni me shkollën tuaj në MindGraph',
   'workshop.welcomeTitle': 'Mirë se vini në Workshop',
   'workshop.you': '(ju)',
   'workshop.youAnd': 'Ju dhe',
   'workshopCanvas.connectFailed': 'Nuk u lidh me bashkëpunimin',
-  'workshopCanvas.sessionExpiredReconnect':
-    "Sesioni juaj skadoi. Ju lutemi rifreskoni faqen për t'u bashkuar përsëri me bashkëpunimin.",
-  'workshopCanvas.sessionRefreshFailed':
-    'Nuk u rifreskua sesioni i bashkëpunimit. Ruani punën dhe hyni përsëri.',
-  'workshopCanvas.outboundQueueDegraded':
-    'Bashkëpunimi po mbetet prapa. Disa redaktime të padërguara nuk mund të mbaheshin.',
+  'workshopCanvas.sessionExpiredReconnect': 'Sesioni juaj skadoi. Ju lutemi rifreskoni faqen për t\'u bashkuar përsëri me bashkëpunimin.',
+  'workshopCanvas.sessionRefreshFailed': 'Nuk u rifreskua sesioni i bashkëpunimit. Ruani punën dhe hyni përsëri.',
+  'workshopCanvas.outboundQueueDegraded': 'Bashkëpunimi po mbetet prapa. Disa redaktime të padërguara nuk mund të mbaheshin.',
   'workshopCanvas.connectionClosed': 'Lidhja u mbyll',
-  'workshopCanvas.connectionClosedSlow':
-    'Lidhja u mbyll: lidhja juaj ishte shumë e ngadaltë për seancën e bashkëpunimit.',
+  'workshopCanvas.connectionClosedSlow': 'Lidhja u mbyll: lidhja juaj ishte shumë e ngadaltë për seancën e bashkëpunimit.',
   'workshopCanvas.sessionEndedByHost': 'Pritësi përfundoi seancën e bashkëpunimit.',
   'workshopCanvas.editingNodeLabel': '{username} po redakton…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'Dikush',
   'workshopCanvas.connectionClosedReason': 'Lidhja e bashkëpunimit u mbyll: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} po e redakton këtë nyje',
   'workshopCanvas.errorGeneric': 'Gabim bashkëpunimi',
-  'workshopCanvas.updatePartialFiltered':
-    'Disa redaktime u anashkaluan ({count} nyje) sepse një bashkëpunëtor tjetër po i redakton ato nyje.',
+  'workshopCanvas.updatePartialFiltered': 'Disa redaktime u anashkaluan ({count} nyje) sepse një bashkëpunëtor tjetër po i redakton ato nyje.',
   'workshopCanvas.reconnectFailed': 'Nuk u rilidh me bashkëpunimin, ju lutemi rifreskoni faqen',
-  'workshopCanvas.resyncWaiting':
-    'Sinkronizimi live i diagramit po zgjat më shumë se sa pritej. Po provohet përsëri; rifreskoni nëse redaktimi ndihet i bllokuar.',
-  'workshopCanvas.returnedHomeIdle':
-    'U kthye në faqen kryesore — u shkëput pas një periudhe të gjatë pasiviteti.',
+  'workshopCanvas.resyncWaiting': 'Sinkronizimi live i diagramit po zgjat më shumë se sa pritej. Po provohet përsëri; rifreskoni nëse redaktimi ndihet i bllokuar.',
+  'workshopCanvas.returnedHomeIdle': 'U kthye në faqen kryesore — u shkëput pas një periudhe të gjatë pasiviteti.',
   'workshopCanvas.userJoined': 'Përdoruesi {username} u bashkua',
   'workshopCanvas.usersJoined': '{count} përdorues u bashkuan',
   'workshopCanvas.userLeft': 'Përdoruesi {username} doli',
   'workshopCanvas.usersLeft': '{count} përdorues dolën',
   'workshopCanvas.wsError': 'Gabim lidhjeje bashkëpunimi, ju lutemi kontrolloni rrjetin',
-  'workshopCanvas.returnedHomeRoomIdle':
-    'Bashkëpunimi përfundoi: nuk ka pasur redaktime diagrami në këtë seancë për një kohë.',
-  'workshopCanvas.roomIdleWarningToast':
-    'Nuk ka pasur redaktime diagrami së fundmi — bashkëpunimi përfundon kur numëruesi arrin zero, përveç nëse dikush redakton.',
-  'workshopCanvas.otherTabCollaborationActive':
-    'Bashkëpunimi vazhdon në një skedë ose dritare tjetër për këtë llogari.',
-  'workshopCanvas.joinQrAlt': "Kodi QR për t'u bashkuar me bashkëpunimin",
+  'workshopCanvas.returnedHomeRoomIdle': 'Bashkëpunimi përfundoi: nuk ka pasur redaktime diagrami në këtë seancë për një kohë.',
+  'workshopCanvas.roomIdleWarningToast': 'Nuk ka pasur redaktime diagrami së fundmi — bashkëpunimi përfundon kur numëruesi arrin zero, përveç nëse dikush redakton.',
+  'workshopCanvas.otherTabCollaborationActive': 'Bashkëpunimi vazhdon në një skedë ose dritare tjetër për këtë llogari.',
+  'workshopCanvas.joinQrAlt': 'Kodi QR për t\'u bashkuar me bashkëpunimin',
 } as const

@@ -22,25 +22,18 @@ export default {
   'auth.voiceNotes.noDiagram': 'මනස සිතියම තවම සම්බන්ධ කර නැත.',
   'auth.voiceNotes.micUnavailable': 'වත්මන් බ්‍රවුසරය මයික්‍රෆෝනයට සහය නොදක්වයි.',
   'auth.voiceNotes.micFailed': 'මයික්‍රෆෝනයට ප්‍රවේශ විය නොහැක.',
-  'auth.voiceNotes.micConflict':
-    'අනෙකුත් කටහඬ කාර්යයන් මයික්‍රෆෝනය භාවිතා කරයි, කරුණාකර නතර කර නැවත උත්සාහ කරන්න.',
-  'auth.voiceNotes.wsError':
-    'හඬ සටහන් සම්බන්ධතාව අසාර්ථක විය, කරුණාකර ජාලය සහ පුරනය වීමේ තත්ත්වය පරීක්ෂා කරන්න.',
+  'auth.voiceNotes.micConflict': 'අනෙකුත් කටහඬ කාර්යයන් මයික්‍රෆෝනය භාවිතා කරයි, කරුණාකර නතර කර නැවත උත්සාහ කරන්න.',
+  'auth.voiceNotes.wsError': 'හඬ සටහන් සම්බන්ධතාව අසාර්ථක විය, කරුණාකර ජාලය සහ පුරනය වීමේ තත්ත්වය පරීක්ෂා කරන්න.',
   'auth.voiceNotes.genericError': 'හඬ සටහන් දෝෂයකි',
   'auth.voiceNotes.ingestFailed': 'ලේඛන සාරාංශයට පිටපත් කිරීම සුරැකිය නොහැක.',
-  'auth.voiceNotes.maxDuration':
-    'හඬ සටහන මිනිත්තු 60 සීමාවට ළඟා වී ඇති අතර ස්වයංක්‍රීයව නතර කර ඇත.',
-  'auth.voiceNotes.silenceAutoStop':
-    'අඛණ්ඩව මිනිත්තු 2 කට හඬක් නොතිබූ අතර, හඬ සටහන ස්වයංක්‍රීයව නතර වී ඇත.',
-  'auth.voiceNotes.startedTimeout':
-    'හඬ සේවාව නියමිත වේලාවට ආරම්භ කිරීමට අසමත් විය, කරුණාකර නැවත උත්සාහ කරන්න.',
+  'auth.voiceNotes.maxDuration': 'හඬ සටහන මිනිත්තු 60 සීමාවට ළඟා වී ඇති අතර ස්වයංක්‍රීයව නතර කර ඇත.',
+  'auth.voiceNotes.silenceAutoStop': 'අඛණ්ඩව මිනිත්තු 2 කට හඬක් නොතිබූ අතර, හඬ සටහන ස්වයංක්‍රීයව නතර වී ඇත.',
+  'auth.voiceNotes.startedTimeout': 'හඬ සේවාව නියමිත වේලාවට ආරම්භ කිරීමට අසමත් විය, කරුණාකර නැවත උත්සාහ කරන්න.',
   'auth.voiceNotes.micLost': 'මයික්‍රෆෝනය විසන්ධි කර ඇති අතර හඬ සටහන් නතර වී ඇත.',
   'auth.voiceNotes.authFailed': 'හඬ සටහන් සත්‍යාපනය අසාර්ථක විය, කරුණාකර නැවත පුරනය වන්න.',
   'auth.voiceNotes.wsClosed': 'හඬ සටහන් සම්බන්ධතාව විසන්ධි කර ඇති අතර සැසිය නතර වී ඇත.',
-  'auth.voiceNotes.budgetExceeded':
-    'හඬ සටහන් නොමැත: දෛනික AI කෝටාව ළඟා වී ඇත හෝ සිතීමේ කාසි ප්‍රමාණවත් නැත.',
-  'auth.voiceNotes.sessionBusy':
-    'දැනටමත් හඬ සටහන් සැසියක් ක්‍රියාත්මක වෙමින් පවතී, කරුණාකර එය නවතා නැවත උත්සාහ කරන්න.',
+  'auth.voiceNotes.budgetExceeded': 'හඬ සටහන් නොමැත: දෛනික AI කෝටාව ළඟා වී ඇත හෝ සිතීමේ කාසි ප්‍රමාණවත් නැත.',
+  'auth.voiceNotes.sessionBusy': 'දැනටමත් හඬ සටහන් සැසියක් ක්‍රියාත්මක වෙමින් පවතී, කරුණාකර එය නවතා නැවත උත්සාහ කරන්න.',
   'auth.voiceNotes.recording': 'පටිගත කිරීම',
   'auth.voiceNotes.paused': 'අත්හිටුවා ඇත',
   'auth.voiceNotes.idle': 'සූදානම්',
@@ -48,16 +41,13 @@ export default {
   'auth.voiceNotes.starting': 'පටන් ගන්නවා',
   'auth.voiceNotes.stopping': 'නවතිනවා',
   'auth.voiceNotes.ingesting': 'ඉතිරි කිරීම',
-  'auth.voiceNotes.emptyTranscript':
-    'කිසිදු හඬක් හඳුනාගෙන නැත, කරුණාකර නතර කිරීමට පෙර වචන කිහිපයක් කියන්න.',
+  'auth.voiceNotes.emptyTranscript': 'කිසිදු හඬක් හඳුනාගෙන නැත, කරුණාකර නතර කිරීමට පෙර වචන කිහිපයක් කියන්න.',
   'auth.voiceNotes.generating': 'මනස සිතියම ජනනය කිරීම',
-  'auth.voiceNotes.sheetHint':
-    'නැවැත්වීමෙන් පසු පිටපත සුරකින්න. ඔබ සුදානම් වූ විට Generate Mind Map ක්ලික් කරන්න.',
+  'auth.voiceNotes.sheetHint': 'නැවැත්වීමෙන් පසු පිටපත සුරකින්න. ඔබ සුදානම් වූ විට Generate Mind Map ක්ලික් කරන්න.',
   'auth.voiceNotes.status.waiting': 'ආරම්භ කිරීමට බලා සිටීම',
   'auth.voiceNotes.status.connectingAsr': 'කථන හඳුනාගැනීම සඳහා සම්බන්ධ කිරීම',
   'auth.voiceNotes.status.recording': 'පටිගත කිරීම · හඬ හඳුනාගැනීම',
-  'auth.voiceNotes.status.recordingAndSeparating':
-    'පටිගත කිරීම · කථන හඳුනාගැනීම · කැපී පෙනෙන කථිකයන්',
+  'auth.voiceNotes.status.recordingAndSeparating': 'පටිගත කිරීම · කථන හඳුනාගැනීම · කැපී පෙනෙන කථිකයන්',
   'auth.voiceNotes.status.paused': 'අත්හිටුවා ඇත',
   'auth.voiceNotes.status.stopping': 'නවතිනවා',
   'auth.voiceNotes.status.savingTranscript': 'පිටපත් කිරීම සුරකිමින්',
@@ -70,13 +60,10 @@ export default {
   'auth.voiceNotes.savedAt': 'පිටපත් කිරීම {time} හිදී සුරකින ලදී',
   'auth.voiceNotes.unsavedChanges': 'පිටපත සුරැකී නැත',
   'auth.voiceNotes.closeWhileRecordingTitle': 'පටිගත කිරීම',
-  'auth.voiceNotes.closeWhileRecordingBody':
-    'කවුළුව වැසීම පටිගත කිරීම නතර නොවේ. පිටපත් කිරීම් සෑම තත්පර 30කට වරක්ම වත්මන් සිතියමට ස්වයංක්‍රීයව සුරැකේ. ඔබට කවුළුව සැඟවීමට අවශ්‍ය බව විශ්වාසද?',
+  'auth.voiceNotes.closeWhileRecordingBody': 'කවුළුව වැසීම පටිගත කිරීම නතර නොවේ. පිටපත් කිරීම් සෑම තත්පර 30කට වරක්ම වත්මන් සිතියමට ස්වයංක්‍රීයව සුරැකේ. ඔබට කවුළුව සැඟවීමට අවශ්‍ය බව විශ්වාසද?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'කවුළුව සඟවන්න',
-  'auth.voiceNotes.recordingContinues':
-    'පටිගත කිරීම තවමත් සිදුවෙමින් පවතින අතර ඔබට ඕනෑම වේලාවක පටිගත කිරීමේ සාරාංශය නැවත විවෘත කළ හැක.',
-  'auth.voiceNotes.noCurrentDiagram':
-    'කරුණාකර වත්මන් මනස සිතියම සුරකින්න, පසුව සාරාංශ කිරීමට පටිගත කිරීම භාවිතා කරන්න.',
+  'auth.voiceNotes.recordingContinues': 'පටිගත කිරීම තවමත් සිදුවෙමින් පවතින අතර ඔබට ඕනෑම වේලාවක පටිගත කිරීමේ සාරාංශය නැවත විවෘත කළ හැක.',
+  'auth.voiceNotes.noCurrentDiagram': 'කරුණාකර වත්මන් මනස සිතියම සුරකින්න, පසුව සාරාංශ කිරීමට පටිගත කිරීම භාවිතා කරන්න.',
   'auth.voiceNotes.restoreFailed': 'ශ්‍රව්‍ය පටිගත කිරීමේ සුරකින ලද පිටපත පූරණය කළ නොහැක.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'ඓතිහාසික හඬ සටහන්',
@@ -86,33 +73,22 @@ export default {
   'auth.voiceNotes.mergeTalker': 'බවට ඒකාබද්ධ',
   'auth.voiceNotes.mergeTalkerInto': '{name} වෙත ඒකාබද්ධ වන්න',
   'auth.voiceNotes.resetTalker': 'පෙරනිමිය ප්‍රතිසාධනය කරන්න',
-  'auth.voiceNotes.tencentAuth':
-    'හඬ හඳුනාගැනීමේ සත්‍යාපනය අසාර්ථක විය, කරුණාකර Tencent Cloud යතුර පරීක්ෂා කරන්න.',
-  'auth.voiceNotes.tencentService':
-    'Tencent Cloud කථන හඳුනාගැනීම සක්‍රිය කර නැත. කරුණාකර කොන්සෝලය තුළ සේවාව සක්‍රිය කරන්න.',
-  'auth.voiceNotes.tencentQuota':
-    'Tencent Cloud කථන හඳුනාගැනීමේ සම්පත් පැකේජය අවසන් වී ඇත. කරුණාකර සක්‍රිය කිරීමෙන් පසු සම්පත් පැකේජය ගෙවන්න හෝ මිලදී ගන්න.',
+  'auth.voiceNotes.tencentAuth': 'හඬ හඳුනාගැනීමේ සත්‍යාපනය අසාර්ථක විය, කරුණාකර Tencent Cloud යතුර පරීක්ෂා කරන්න.',
+  'auth.voiceNotes.tencentService': 'Tencent Cloud කථන හඳුනාගැනීම සක්‍රිය කර නැත. කරුණාකර කොන්සෝලය තුළ සේවාව සක්‍රිය කරන්න.',
+  'auth.voiceNotes.tencentQuota': 'Tencent Cloud කථන හඳුනාගැනීමේ සම්පත් පැකේජය අවසන් වී ඇත. කරුණාකර සක්‍රිය කිරීමෙන් පසු සම්පත් පැකේජය ගෙවන්න හෝ මිලදී ගන්න.',
   'auth.voiceNotes.tencentArrears': 'Tencent Cloud ගිණුම හිඟ වී ඇති අතර හඬ හඳුනාගැනීම අබල කර ඇත.',
-  'auth.voiceNotes.tencentConcurrency':
-    'කථන හඳුනාගැනීමේ සමගාමීත්වය පිරී ඇත, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
+  'auth.voiceNotes.tencentConcurrency': 'කථන හඳුනාගැනීමේ සමගාමීත්වය පිරී ඇත, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
   'auth.voiceNotes.tencentAudio': 'ශ්‍රව්‍යය හඳුනාගෙන නැත, කරුණාකර නැවත උත්සාහ කරන්න.',
-  'auth.voiceNotes.tencentSendRate':
-    'ශ්‍රව්‍ය ඉතා වේගයෙන් යවා ඇත, කරුණාකර තථ්‍ය කාලීන පටිගත කිරීම තබා ගන්න.',
-  'auth.voiceNotes.tencentIdle':
-    'පටිගත කිරීම බොහෝ වේලාවක් බාධා කර ඇති අතර හඬ හඳුනාගැනීම විසන්ධි කර ඇත.',
-  'auth.voiceNotes.tencentRetry':
-    'කථන හඳුනාගැනීම තාවකාලිකව අසාර්ථක විය, කරුණාකර නැවත උත්සාහ කරන්න.',
-  'auth.voiceNotes.tencentRegion':
-    'වත්මන් ජාලය Tencent Cloud හි දේශීය වෙබ් අඩවියේ සේවා විෂය පථය තුළ නොවේ.',
+  'auth.voiceNotes.tencentSendRate': 'ශ්‍රව්‍ය ඉතා වේගයෙන් යවා ඇත, කරුණාකර තථ්‍ය කාලීන පටිගත කිරීම තබා ගන්න.',
+  'auth.voiceNotes.tencentIdle': 'පටිගත කිරීම බොහෝ වේලාවක් බාධා කර ඇති අතර හඬ හඳුනාගැනීම විසන්ධි කර ඇත.',
+  'auth.voiceNotes.tencentRetry': 'කථන හඳුනාගැනීම තාවකාලිකව අසාර්ථක විය, කරුණාකර නැවත උත්සාහ කරන්න.',
+  'auth.voiceNotes.tencentRegion': 'වත්මන් ජාලය Tencent Cloud හි දේශීය වෙබ් අඩවියේ සේවා විෂය පථය තුළ නොවේ.',
   'auth.voiceNotes.tencentParam': 'කථන හඳුනාගැනීමේ පරාමිතීන් වලංගු නොවේ.',
-  'auth.voiceNotes.tencentAppid':
-    'Tencent Cloud AppID වලංගු නැත, කරුණාකර TENCENT_ASR_APP_ID පරීක්ෂා කරන්න.',
-  'auth.voiceNotes.rateLimited':
-    'කථන හඳුනාගැනීමේ ඉල්ලීම් නිතර වැඩියි, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
+  'auth.voiceNotes.tencentAppid': 'Tencent Cloud AppID වලංගු නැත, කරුණාකර TENCENT_ASR_APP_ID පරීක්ෂා කරන්න.',
+  'auth.voiceNotes.rateLimited': 'කථන හඳුනාගැනීමේ ඉල්ලීම් නිතර වැඩියි, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
   'auth.voiceNotes.messageTooLarge': 'ශ්‍රව්‍ය පැකට්ටුව විශාල වැඩියි, කරුණාකර නැවත උත්සාහ කරන්න.',
   'auth.voiceNotes.invalidMessage': 'හඬ සටහන් පණිවිඩය වලංගු නැත, කරුණාකර නැවත උත්සාහ කරන්න.',
-  'auth.voiceNotes.asrUnavailable':
-    'කථන හඳුනාගැනීම තාවකාලිකව නොමැත, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
+  'auth.voiceNotes.asrUnavailable': 'කථන හඳුනාගැනීම තාවකාලිකව නොමැත, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
   'auth.updateLog': 'නිකුටු සටහන්',
   'auth.updateLogModalTitle': 'නිකුටු සටහන්',
   'auth.updateLogMaintainerNote': 'ඔව් — මෙම වේදිකාව Roy විසින් සක්‍රියව නඩත්තු කරයි ✨',
@@ -124,19 +100,13 @@ export default {
   'privacy.backToSignIn': 'පිවිසීමට ආපසු',
   'auth.downloadDesktopShortcut': 'ඩෙස්‍ක්‍ටොප්‍ට එක් කරන්න',
   'auth.platformQuickGuide': 'ඉක්මන් මාර්ගෝපදේශය',
-  'auth.pwaIosInstallHint':
-    'Safari, Chrome හෝ Edge හි Share තට්‍ටු කර “Add to Home Screen” තෝරන්න.',
-  'auth.pwaAndroidInstallHint':
-    'බ්‍රවුසර් මෙනුව (⋮) විවෘත කර Install app හෝ Add to Home screen තට්‍ටු කරන්න.',
-  'auth.pwaSafariMacInstallHint':
-    'Safari හි File → Add to Dock, හෝ Share → Add to Dock (macOS Sonoma හෝ නවත) තෝරන්න.',
-  'auth.pwaDesktopInstallHint':
-    'බ්‍රවුසර් මෙනුව (⋮) හෝ ලිපිනයේ ස්‍ථාපන අයිකනය (Chrome, Edge හෝ Brave) භාවිතා කරන්න.',
+  'auth.pwaIosInstallHint': 'Safari, Chrome හෝ Edge හි Share තට්‍ටු කර “Add to Home Screen” තෝරන්න.',
+  'auth.pwaAndroidInstallHint': 'බ්‍රවුසර් මෙනුව (⋮) විවෘත කර Install app හෝ Add to Home screen තට්‍ටු කරන්න.',
+  'auth.pwaSafariMacInstallHint': 'Safari හි File → Add to Dock, හෝ Share → Add to Dock (macOS Sonoma හෝ නවත) තෝරන්න.',
+  'auth.pwaDesktopInstallHint': 'බ්‍රවුසර් මෙනුව (⋮) හෝ ලිපිනයේ ස්‍ථාපන අයිකනය (Chrome, Edge හෝ Brave) භාවිතා කරන්න.',
   'auth.pwaInstallSuccess': 'MindGraph ඔබේ ඩෙස්‍ක්‍ටොප්‍ට එක් කර ඇත.',
-  'auth.pwaDevInstallHint':
-    'සාමාන්‍ය dev mode හි PWA ස්‍ථාපනය අක්‍රියයි. production build (npm run build + backend) හෝ npm run dev:pwa භාවිතා කර HTTPS/localhost හි Chrome/Edge භාවිතා කරන්න.',
-  'auth.pwaInsecureOriginHint':
-    'ඩෙස්‍ක්‍ටොප්‍ට ස්‍ථාපනය කිරීමට පෙර MindGraph HTTPS ලිපිනයේ බ්‍රවුසරයේ විවෘත කරන්න (සුරැකි HTML ගොනුවක් නොවේ).',
+  'auth.pwaDevInstallHint': 'සාමාන්‍ය dev mode හි PWA ස්‍ථාපනය අක්‍රියයි. production build (npm run build + backend) හෝ npm run dev:pwa භාවිතා කර HTTPS/localhost හි Chrome/Edge භාවිතා කරන්න.',
+  'auth.pwaInsecureOriginHint': 'ඩෙස්‍ක්‍ටොප්‍ට ස්‍ථාපනය කිරීමට පෙර MindGraph HTTPS ලිපිනයේ බ්‍රවුසරයේ විවෘත කරන්න (සුරැකි HTML ගොනුවක් නොවේ).',
   'auth.backToLogin': 'පිවිසීමට ආපසු',
   'auth.captcha': 'තහවුරු කිරීමේ කේතය',
   'auth.captchaLength4': 'අකුරු 4ක captcha ඇතුළත් කරන්න',
@@ -163,23 +133,18 @@ export default {
   'auth.apiTokenCopied': 'පිටපත් කර ඇත',
   'auth.apiTokenCopyFailed': 'පිටපත් කිරීම අසාර්ථක විය',
   'auth.apiTokenLoading': 'පූරණය වෙමින්…',
-  'auth.apiTokenNone':
-    'තවමත් ටෝකනය ජනනය කර නැත. කුසලතා ඇසුරුම බාගන්න හෝ එකක් සෑදීමට API ටෝකනය ක්ලික් කරන්න.',
+  'auth.apiTokenNone': 'තවමත් ටෝකනය ජනනය කර නැත. කුසලතා ඇසුරුම බාගන්න හෝ එකක් සෑදීමට API ටෝකනය ක්ලික් කරන්න.',
   'auth.apiTokenOpaque': 'වත්මන් ටෝකනය ප්‍රතිරාවය කළ නොහැක, කරුණාකර එය නැවත උත්පාදනය කරන්න.',
   'auth.apiTokenExpires': '{date} දක්වා වලංගු වේ',
   'auth.downloadChromeExtension': 'Chrome දිගුව',
   'auth.downloadWordAddin': 'වචන එකතු කිරීම',
   'auth.downloadFileReader': 'WeChat history reader',
   'auth.downloadFileReaderHint': 'Windows tool for reading WeChat or DingTalk chat history.',
-  'auth.schoolTierFeatureUnavailable':
-    'මෙම විශේෂාංගයට Standard හෝ Professional පාසල් මට්‍ටම අවශ්‍ය (Basic ඇතුළත් නොවේ).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'ඔබේ පාසල් දායකත්‍වය අවසන්. ගිණුම දැන් trial tier හි. අලුත් කිරීමට වේදිකා පරිපාලක අමතන්න.',
-  'auth.diagramLimitReached':
-    'Trial පාසල් ගුරුවරයෙකුට {max} දක්වා සුරැකි රූප සටහන්. අලුත් එකක් සුරැකීමට එකක් මකන්න.',
+  'auth.schoolTierFeatureUnavailable': 'මෙම විශේෂාංගයට Standard හෝ Professional පාසල් මට්‍ටම අවශ්‍ය (Basic ඇතුළත් නොවේ).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'ඔබේ පාසල් දායකත්‍වය අවසන්. ගිණුම දැන් trial tier හි. අලුත් කිරීමට වේදිකා පරිපාලක අමතන්න.',
+  'auth.diagramLimitReached': 'Trial පාසල් ගුරුවරයෙකුට {max} දක්වා සුරැකි රූප සටහන්. අලුත් එකක් සුරැකීමට එකක් මකන්න.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
-  'auth.downloadOpenclawSkillHint':
-    'බාගත කිරීමෙහි ගිණුම් අංකය සහ වත්මන් ටෝකනය ඇතුළත් වේ. ටෝකනය නැවත උත්පාදනය කිරීමෙන් පසු, පැරණි කුසලතා ඇසුරුම් සහ දිගු අවලංගු වනු ඇත.',
+  'auth.downloadOpenclawSkillHint': 'බාගත කිරීමෙහි ගිණුම් අංකය සහ වත්මන් ටෝකනය ඇතුළත් වේ. ටෝකනය නැවත උත්පාදනය කිරීමෙන් පසු, පැරණි කුසලතා ඇසුරුම් සහ දිගු අවලංගු වනු ඇත.',
   'auth.changePhoneButton': 'දුරකථන අංකය වෙනස් කරන්න',
   'auth.passwordChangeSuccess': 'මුරපදය සාර්ථකව වෙනස් විය',
   'auth.passwordChangeFailed': 'මුරපදය වෙනස් කිරීම අසාර්ථක විය',
@@ -256,8 +221,7 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy':
-    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -295,7 +259,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': "Don't have an account?",
+  'auth.landing.noAccount': 'Don\'t have an account?',
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -308,8 +272,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'අධ්‍යාපන email',
   'auth.modal.hybridRegisterEmailTabAny': 'තැපෑල',
   'auth.modal.hybridRegisterPhoneTab': 'දුරකථන + ආරාධනා කේතය',
-  'auth.modal.mainlandSalesNotice':
-    'China mainland හි ප්‍රවේශය අවශ්‍යද? ජංගම අංකය සහ ආරාධනා කේතය භාවිතා කරන්න, හෝ customer support අමතන්න.',
+  'auth.modal.mainlandSalesNotice': 'China mainland හි ප්‍රවේශය අවශ්‍යද? ජංගම අංකය සහ ආරාධනා කේතය භාවිතා කරන්න, හෝ customer support අමතන්න.',
   'auth.modal.registrationEmailLabel': 'අධ්‍යාපන email පමණි',
   'auth.modal.registrationEmailLabelAny': 'Email ලිපිනය',
   'auth.modal.registrationEmailHint': '',
@@ -322,11 +285,9 @@ export default {
   'auth.modal.sendEmailCode': 'Email කේතය යවන්න',
   'auth.modal.sendingEmailCode': 'යවමින්...',
   'auth.modal.emailCodePlaceholder': 'Email වෙතින් 6-ඉලක්‍කම් කේතය',
-  'auth.modal.acknowledgeOverseas':
-    'මම තේ‍රු‍ම් කරමි සහ මෙම මෘද‍කය අධ්‍යාපන අරමුණු සඳහා පමණක් භාවිතා කරමි.',
+  'auth.modal.acknowledgeOverseas': 'මම තේ‍රු‍ම් කරමි සහ මෙම මෘද‍කය අධ්‍යාපන අරමුණු සඳහා පමණක් භාවිතා කරමි.',
   'auth.modal.acknowledgeOverseasAny': 'මම overseas ලියාපදිංචි නියම වලට එකඟ වන බව තේ‍රු‍ම් කරමි.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'මම overseas ලියාපදිංචි නියම වලට එකඟ වන අතර Simplified Chinese මෙම path හි නොමැත.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'මම overseas ලියාපදිංචි නියම වලට එකඟ වන අතර Simplified Chinese මෙම path හි නොමැත.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'ඉහත දැනුම්දීම තහවුරු කරන්න.',
   'auth.loginPhoneOrEmail': 'දුරකථන හෝ email',
@@ -347,16 +308,13 @@ export default {
   'auth.username': 'පරිශීලක නාමය',
   'auth.waitCaptchaLoad': 'Captcha පූරණය වන තෙක් රැ‍ඳී සිටින්න',
   'auth.quickRegPageTitle': 'ඉක්‍මන් ලියාපදිංචිය',
-  'auth.quickRegPageHint':
-    'පාසල් බෙදා හැරු link එකෙන් මෙම පිටුව විවෘත කරන්න. facilitator quick registration window හි 6-ඉලක්‍කම් room code (≈30s කින් refresh) සහ දුරකථන අංකය ඇතුළත් කරන්න. කේතය session හි ඔබ සිටින බව පෙන්වයි; SMS කේතය මෙන් phone ownership සත්‍යාපනය නොකරයි.',
-  'auth.quickRegLinkInvalid':
-    'මෙම ලියාපදිංචි link සක්‍රිය නොවේ (කල‍ල‍ක‍ව‍ය/වසා). facilitator වෙතින් වත්‍මන් link නැවත විවෘත කරන්න.',
+  'auth.quickRegPageHint': 'පාසල් බෙදා හැරු link එකෙන් මෙම පිටුව විවෘත කරන්න. facilitator quick registration window හි 6-ඉලක්‍කම් room code (≈30s කින් refresh) සහ දුරකථන අංකය ඇතුළත් කරන්න. කේතය session හි ඔබ සිටින බව පෙන්වයි; SMS කේතය මෙන් phone ownership සත්‍යාපනය නොකරයි.',
+  'auth.quickRegLinkInvalid': 'මෙම ලියාපදිංචි link සක්‍රිය නොවේ (කල‍ල‍ක‍ව‍ය/වසා). facilitator වෙතින් වත්‍මන් link නැවත විවෘත කරන්න.',
   'auth.quickRegProbeRateLimited': 'මෙම පිටුවෙන් පරීක්‍ෂණ ඕනෑවට වඩිය. මොහොතක් රැ‍ඳී refresh කරන්න.',
   'auth.quickRegSessionSignups': 'මෙම session හි ලියාපදිංචි: {n}',
   'auth.quickRegRoomCodeLabel': 'Room කේතය',
   'auth.quickRegRoomCodePlaceholder': '6 ඉලක්‍කම්',
-  'auth.quickRegRoomCodeHint':
-    'facilitator quick registration dialog හි විශාල අංක සමග ගැල‍ප‍ප‍ව; වෙනස් වීමට පෙර කේතය ඇතුළත් කරන්න.',
+  'auth.quickRegRoomCodeHint': 'facilitator quick registration dialog හි විශාල අංක සමග ගැල‍ප‍ප‍ව; වෙනස් වීමට පෙර කේතය ඇතුළත් කරන්න.',
   'auth.quickRegRoomCodeEnter6': '6-ඉලක්‍කම් room කේතය ඇතුළත් කරන්න',
   'auth.quickRegMaxUses': 'මෙම link සඳහා max ලියාපදිංචි',
   'auth.quickRegHeadcount': 'පුද්ගලයන් සංඛ්යාව',
@@ -366,19 +324,16 @@ export default {
   'auth.quickRegSubmit': 'ලියාපදිංචිය සම්පූර්‍ණ කරන්න',
   'auth.quickRegSubmitting': 'ලියාපදිංචි වෙමින්…',
   'auth.quickRegRegisterSuccess': 'ලියාපදිංචිය සාර්ථකයි',
-  'auth.quickRegSessionUnsure':
-    'ලියාපදිංචිය සාර්ථක විය හැක. පිවිසී නොමැති නම් verification code login භාවිතා කරන්න.',
+  'auth.quickRegSessionUnsure': 'ලියාපදිංචිය සාර්ථක විය හැක. පිවිසී නොමැති නම් verification code login භාවිතා කරන්න.',
   'auth.quickRegBackToSignIn': 'සාමාන්‍ය login / register භාවිතා කරන්න',
   'auth.quickRegSelectOrg': 'පාසල තෝරන්න',
   'auth.quickRegOrgLoadError': 'පාසල් පූරණය කළ නොහැක. නැවත උත්සාහ කරන්න.',
   'auth.quickRegMintError': 'ලියාපදිංචි channel විවෘත කළ නොහැක. නැවත උත්සාහ කරන්න.',
   'auth.quickRegCloseConfirmTitle': 'ඉක්මන් ලියාපදිංචිය අවසන්ද?',
-  'auth.quickRegCloseConfirm':
-    'කවුළුව වැසීමෙන් පසු, වත්මන් QR කේතය සහ කාමර කේතය වහාම අවලංගු වන අතර, තවමත් සම්බන්ධ වී නොමැති සිසුන්ට දිගටම ලියාපදිංචි වීමට නොහැකි වනු ඇත.',
+  'auth.quickRegCloseConfirm': 'කවුළුව වැසීමෙන් පසු, වත්මන් QR කේතය සහ කාමර කේතය වහාම අවලංගු වන අතර, තවමත් සම්බන්ධ වී නොමැති සිසුන්ට දිගටම ලියාපදිංචි වීමට නොහැකි වනු ඇත.',
   'auth.setPasswordWithSms': 'Login මුරපදය සකසන්න',
   'auth.setPasswordWithSmsTitle': 'SMS හරහා මුරපදය සකසන්න',
-  'auth.setPasswordWithSmsHint':
-    'bind කළ දුරකථනයට කේතය යවමු. මුරපදය සකසා password හෝ verification code login කළ හැක.',
+  'auth.setPasswordWithSmsHint': 'bind කළ දුරකථනයට කේතය යවමු. මුරපදය සකසා password හෝ verification code login කළ හැක.',
   'auth.setPasswordWithSmsSubmit': 'මුරපදය සුරකින්න',
   'auth.setPasswordWithSmsSubmitting': 'සුරකමින්…',
   'auth.accountAvatar': 'Avatar',
@@ -393,6 +348,9 @@ export default {
   'auth.avatarUploadSuccess': 'Avatar updated',
   'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'පෙන්‍ව‍න‍න‍ම',
+  'auth.accountIdBayi': 'Xiaozhi UUID',
+  'auth.accountIdMobile': 'Mobile account',
+  'auth.accountIdEmail': 'Email account',
   'auth.accountNamePlaceholder': 'අවම අකුරු 2, අංක නැත',
   'auth.accountNameSave': 'නම සුරකින්න',
   'auth.accountNameSaveSuccess': 'නම යාවත්කාලීන විය',
@@ -406,8 +364,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'වි‍ස‍ධ‍ම‍ක‍ර‍ණ කළ නොහැක. නැවත උත්සාහ කරන්න.',
   'auth.dingtalkBindRebind': 'නැවත සම‍බ‍න්‍ධ කරන්න',
   'auth.dingtalkBindTitle': 'DingTalk ගිණුම සම‍බ‍න්‍ධ කරන්න',
-  'auth.dingtalkBindInstructions':
-    'පහත 6-ඉලක්‍කම් කේතය (123-456) text message ලෙස පාසල් DingTalk MindBot වෙත යවන්න.',
+  'auth.dingtalkBindInstructions': 'පහත 6-ඉලක්‍කම් කේතය (123-456) text message ලෙස පාසල් DingTalk MindBot වෙත යවන්න.',
   'auth.dingtalkBindPairWaiting': 'MindBot ඔබේ කේතය ලබා ගන්නා තෙක් රැ‍ඳී සිටින්න…',
   'auth.dingtalkBindCodeHint': 'මෙම කේතය පමණක් යවන්න — අමතර පෙළ නැත.',
   'auth.dingtalkBindCountdown': 'Session {s}s කින් කල‍ල‍ක‍ව‍ය',
@@ -422,8 +379,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'සම‍බ‍න්‍ධ ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'වත්‍මන් සම‍බ‍න්‍ධ: {staff}',
   'auth.dingtalkUnbindTitle': 'DingTalk ගිණුම වි‍ස‍ධ‍ම‍ක‍ර‍ණ',
-  'auth.dingtalkUnbindInstructions':
-    'වි‍ස‍ධ‍ම‍ක‍ර‍ණ තහවුරු කිරීමට සම‍බ‍න්‍ධ DingTalk ගිණුමෙන් පහත කේතය MindBot වෙත යවන්න.',
+  'auth.dingtalkUnbindInstructions': 'වි‍ස‍ධ‍ම‍ක‍ර‍ණ තහවුරු කිරීමට සම‍බ‍න්‍ධ DingTalk ගිණුමෙන් පහත කේතය MindBot වෙත යවන්න.',
   'auth.dingtalkUnbindPairWaiting': 'සම‍බ‍න්‍ධ DingTalk ගිණුම තහවුරු කරන තෙක් රැ‍ඳී සිටින්න…',
   'auth.dingtalkUnbindCodeHint': 'සම‍බ‍න්‍ධ DingTalk ගිණුමෙන් මෙම කේතය පමණක් යවන්න.',
   'auth.dingtalkUnbindExpiredHint': 'Unlink session කල‍ල‍ක‍ව‍ය. නැවත ආරම‍භ‍ක‍ර‍ණ.',
@@ -436,24 +392,20 @@ export default {
   'auth.qrLoginInviteRequired': 'QR login පෙර පාසල් ආරාධනා කේතය ඇතුළත් කරන්න',
   'auth.qrLoginProvidersFailed': 'QR login settings පූරණය කළ නොහැක. නැවත උත්සාහ කරන්න.',
   'auth.qrLoginProviderDisabled': 'මෙම sign-in method ඔබේ පාසල සඳහා සක්‍රිය නොවේ',
-  'auth.qrLoginNotLinked':
-    'ගිණුම සම‍බ‍න්‍ධ නොවේ — password login කර Account linking හි සම‍බ‍න්‍ධ කරන්න',
+  'auth.qrLoginNotLinked': 'ගිණුම සම‍බ‍න්‍ධ නොවේ — password login කර Account linking හි සම‍බ‍න්‍ධ කරන්න',
   'auth.qrLoginExchangeFailed': 'QR sign-in අසාර්ථක විය. නැවත උත්සාහ කරන්න.',
   'auth.qrLoginInvalidState': 'QR session කල‍ල‍ක‍ව‍ය. වසා නැවත scan කරන්න.',
-  'auth.qrLoginInvalidCode':
-    'WeChat අවසර කේතය කල් ඉකුත් වී හෝ භාවිතා කර ඇත. කරුණාකර QR කේතය වසා කේතය නැවත ස්කෑන් කරන්න.',
+  'auth.qrLoginInvalidCode': 'WeChat අවසර කේතය කල් ඉකුත් වී හෝ භාවිතා කර ඇත. කරුණාකර QR කේතය වසා කේතය නැවත ස්කෑන් කරන්න.',
   'auth.qrLoginRateLimited': 'WeChat පිවිසුම් ඇමතුම් නිතර වැඩියි, කරුණාකර පසුව නැවත උත්සාහ කරන්න.',
   'auth.qrLoginMisconfigured': 'WeChat පිවිසුම් වින්‍යාසය වැරදියි, කරුණාකර පරිපාලක අමතන්න.',
   'auth.qrLoginCorpMismatch': 'DingTalk organization පාසල් settings සමග නොගැල‍පේ.',
   'auth.oauthExternalTaken': 'මෙම ගිණුම වෙනත් user කෙනෙකුට සම‍බ‍න්‍ධ.',
-  'auth.oauthAlreadyBound':
-    'මෙම ගිණුම WeChat වෙත බැඳී ඇත. ඔබට වෙනත් WeChat බැඳීමට අවශ්‍ය නම්, කරුණාකර එය පළමුව ඉවත් කරන්න',
+  'auth.oauthAlreadyBound': 'මෙම ගිණුම WeChat වෙත බැඳී ඇත. ඔබට වෙනත් WeChat බැඳීමට අවශ්‍ය නම්, කරුණාකර එය පළමුව ඉවත් කරන්න',
   'auth.qrLoginDisabled': 'QR sign-in නොමැත.',
   'auth.qrLoginStartFailed': 'QR sign-in ආරම‍භ‍ක‍ර‍ණ කළ නොහැක. නැවත උත්සාහ කරන්න.',
   'auth.qrLoginSuccess': 'සාර්ථකව පිවිස ඇත',
   'auth.accountBindingsSection': 'ගිණුම් සම‍බ‍න්‍ධ',
-  'auth.accountBindingsHint':
-    'MindBot DingTalk වෙත save; WeChat/DingTalk QR sign-in (මෙහි පළමුව bind)',
+  'auth.accountBindingsHint': 'MindBot DingTalk වෙත save; WeChat/DingTalk QR sign-in (මෙහි පළමුව bind)',
   'auth.bindingWechat': 'WeChat',
   'auth.bindingDingtalk': 'DingTalk',
   'auth.bindingMindbot': 'MindBot',

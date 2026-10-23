@@ -94,7 +94,9 @@ describe('auto-complete llm_results persist audit', () => {
     const kb = specSizeKb(packed)
 
     expect(kb).toBeLessThan(80)
-    expect(llmModelKeys(packed)).toEqual(['deepseek', 'doubao', 'qwen'])
+    const llm = packed.llm_results as { selectedModel: string }
+    expect(llm.selectedModel).toBe('qwen')
+    expect(llmModelKeys(packed)).toEqual(['deepseek', 'doubao'])
   })
 
   it('old all-or-nothing 3rd PUT wipes a good 2-model save; packing keeps two', () => {
@@ -146,7 +148,24 @@ describe('auto-complete llm_results persist audit', () => {
       found.persisted,
       SAVE.MAX_SPEC_SIZE_KB
     )
-    expect(llmModelKeys(packed)).toEqual(['deepseek', 'qwen'])
+    const llm = packed.llm_results as { selectedModel: string }
+    expect(llm.selectedModel).toBe('qwen')
+    expect(llmModelKeys(packed)).toEqual(['deepseek', 'doubao'])
+    expect(specSizeKb(packed)).toBeLessThanOrEqual(SAVE.MAX_SPEC_SIZE_KB)
+    const deepseekOnlyKb = specSizeKb({
+      ...found.spec,
+      llm_results: {
+        selectedModel: 'qwen',
+        results: { deepseek: found.persisted.results.deepseek },
+      },
+    })
+    const tightened = attachLlmResultsWithinSizeLimit(
+      found.spec,
+      found.persisted,
+      (deepseekOnlyKb + specSizeKb(packed)) / 2
+    )
+    expect((tightened.llm_results as { selectedModel: string }).selectedModel).toBe('qwen')
+    expect(llmModelKeys(tightened)).toEqual(['deepseek'])
     expect(found.threeKb).toBeGreaterThan(SAVE.MAX_SPEC_SIZE_KB)
     expect(found.twoKb).toBeLessThanOrEqual(SAVE.MAX_SPEC_SIZE_KB)
   })

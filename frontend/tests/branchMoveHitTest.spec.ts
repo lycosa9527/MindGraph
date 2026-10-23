@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isHierarchicalDropCandidate } from '@/composables/editor/useBranchMoveDrag'
+import { isHierarchicalDropCandidate } from '@/composables/editor/branchMoveGroups'
 
 describe('isHierarchicalDropCandidate', () => {
   const uuid = '0292ae97-f986-4945-9b45-a175bd5a92b5'

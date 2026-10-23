@@ -109,7 +109,7 @@ def test_superadmin_response_shape(client: TestClient) -> None:
             "top5": [{"key": "canvas", "visits": 1, "uses": 3, "usage_rate": 50.0}],
             "high": [],
             "low": [],
-            "idle": ["askonce"],
+            "idle": ["library"],
             "bottleneck_slots": {
                 "lowest_pass_keys": [],
                 "tense_keys": [],
@@ -119,7 +119,7 @@ def test_superadmin_response_shape(client: TestClient) -> None:
             },
             "conclusion_slots": {
                 "top_keys": ["canvas"],
-                "idle_keys": ["askonce"],
+                "idle_keys": ["library"],
                 "concentrated": True,
             },
         },

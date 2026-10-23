@@ -143,19 +143,19 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
         class="mm-doc__grid"
       >
         <div v-if="model.timeRange">
-          <span>{{ t('mindmate.summary.covered') }}</span>
+          <span><I18nText k="mindmate.summary.covered" /></span>
           <strong>{{ model.timeRange }}</strong>
         </div>
         <div v-if="hostLine">
-          <span>{{ t('mindmate.summary.host') }}</span>
+          <span><I18nText k="mindmate.summary.host" /></span>
           <strong>{{ hostLine }}</strong>
         </div>
         <div v-if="speakerLine">
-          <span>{{ t('mindmate.summary.speakers') }}</span>
+          <span><I18nText k="mindmate.summary.speakers" /></span>
           <strong>{{ speakerLine }}</strong>
         </div>
         <div v-if="model.observers.length">
-          <span>{{ t('mindmate.summary.observers') }}</span>
+          <span><I18nText k="mindmate.summary.observers" /></span>
           <strong>{{ observerText }}</strong>
         </div>
       </div>
@@ -165,7 +165,7 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
         class="mm-doc__section"
       >
         <header>
-          <h3>{{ t('mindmate.summary.section.goals') }}</h3>
+          <h3><I18nText k="mindmate.summary.section.goals" /></h3>
           <button
             v-if="!readonly"
             type="button"
@@ -176,7 +176,13 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
               v-if="editing !== 'goals'"
               :size="13"
             />
-            {{ editing === 'goals' ? t('mindmate.summary.done') : t('mindmate.summary.edit') }}
+            <I18nText
+              v-if="editing === 'goals'"
+              k="mindmate.summary.done"
+            /><I18nText
+              v-else
+              k="mindmate.summary.edit"
+            />
           </button>
         </header>
         <ul v-if="editing === 'goals'">
@@ -199,9 +205,9 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
                 )
               "
             >
-              <option value="met">{{ t('mindmate.summary.status.met') }}</option>
-              <option value="partial">{{ t('mindmate.summary.status.partial') }}</option>
-              <option value="open">{{ t('mindmate.summary.status.open') }}</option>
+              <option value="met"><I18nText k="mindmate.summary.status.met" /></option>
+              <option value="partial"><I18nText k="mindmate.summary.status.partial" /></option>
+              <option value="open"><I18nText k="mindmate.summary.status.open" /></option>
             </select>
           </li>
         </ul>
@@ -228,7 +234,7 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
         class="mm-doc__section"
       >
         <header>
-          <h3>{{ t('mindmate.summary.section.consensus') }}</h3>
+          <h3><I18nText k="mindmate.summary.section.consensus" /></h3>
           <button
             v-if="!readonly"
             type="button"
@@ -239,7 +245,13 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
               v-if="editing !== 'consensus'"
               :size="13"
             />
-            {{ editing === 'consensus' ? t('mindmate.summary.done') : t('mindmate.summary.edit') }}
+            <I18nText
+              v-if="editing === 'consensus'"
+              k="mindmate.summary.done"
+            /><I18nText
+              v-else
+              k="mindmate.summary.edit"
+            />
           </button>
         </header>
         <textarea
@@ -268,7 +280,7 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
         class="mm-doc__section"
       >
         <header>
-          <h3>{{ t('mindmate.summary.section.open') }}</h3>
+          <h3><I18nText k="mindmate.summary.section.open" /></h3>
           <button
             v-if="!readonly"
             type="button"
@@ -279,7 +291,13 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
               v-if="editing !== 'open'"
               :size="13"
             />
-            {{ editing === 'open' ? t('mindmate.summary.done') : t('mindmate.summary.edit') }}
+            <I18nText
+              v-if="editing === 'open'"
+              k="mindmate.summary.done"
+            /><I18nText
+              v-else
+              k="mindmate.summary.edit"
+            />
           </button>
         </header>
         <textarea
@@ -307,7 +325,7 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
         class="mm-doc__section"
       >
         <header>
-          <h3>{{ t('mindmate.summary.section.materials') }}</h3>
+          <h3><I18nText k="mindmate.summary.section.materials" /></h3>
           <button
             v-if="!readonly"
             type="button"
@@ -318,7 +336,13 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
               v-if="editing !== 'materials'"
               :size="13"
             />
-            {{ editing === 'materials' ? t('mindmate.summary.done') : t('mindmate.summary.edit') }}
+            <I18nText
+              v-if="editing === 'materials'"
+              k="mindmate.summary.done"
+            /><I18nText
+              v-else
+              k="mindmate.summary.edit"
+            />
           </button>
         </header>
         <textarea
@@ -351,7 +375,7 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
         class="mm-doc__section"
       >
         <header>
-          <h3>{{ t('mindmate.summary.section.tasks') }}</h3>
+          <h3><I18nText k="mindmate.summary.section.tasks" /></h3>
           <button
             v-if="!readonly"
             type="button"
@@ -362,7 +386,13 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
               v-if="editing !== 'tasks'"
               :size="13"
             />
-            {{ editing === 'tasks' ? t('mindmate.summary.done') : t('mindmate.summary.edit') }}
+            <I18nText
+              v-if="editing === 'tasks'"
+              k="mindmate.summary.done"
+            /><I18nText
+              v-else
+              k="mindmate.summary.edit"
+            />
           </button>
         </header>
         <textarea
@@ -395,8 +425,12 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
       >
         <header>
           <h3>
-            {{ t('mindmate.summary.section.quotes') }}
-            <small>{{ t('mindmate.summary.quoteCount', { n: model.quotes.length }) }}</small>
+            <I18nText k="mindmate.summary.section.quotes" />
+            <small
+              ><I18nText
+                k="mindmate.summary.quoteCount"
+                :params="{ n: model.quotes.length }"
+            /></small>
           </h3>
           <button
             v-if="!readonly"
@@ -408,7 +442,13 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
               v-if="editing !== 'quotes'"
               :size="13"
             />
-            {{ editing === 'quotes' ? t('mindmate.summary.done') : t('mindmate.summary.edit') }}
+            <I18nText
+              v-if="editing === 'quotes'"
+              k="mindmate.summary.done"
+            /><I18nText
+              v-else
+              k="mindmate.summary.edit"
+            />
           </button>
         </header>
         <textarea

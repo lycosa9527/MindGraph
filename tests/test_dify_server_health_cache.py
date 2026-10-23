@@ -15,6 +15,7 @@ from services.redis.cache.redis_dify_server_health_cache import (
     HEALTH_FAILURE_THRESHOLD,
     DifyServerHealth,
     _deserialize,
+    dify_health_cache_key,
 )
 
 
@@ -44,6 +45,14 @@ def test_deserialize_round_trip_and_bad_input() -> None:
     assert _deserialize("[]") is None
 
 
+def test_url_health_key_ignores_trailing_slash() -> None:
+    """Main and backup stay distinct; a trailing slash does not create a second entry."""
+    main = dify_health_cache_key("https://main.example/v1")
+    assert main == dify_health_cache_key("https://main.example/v1/")
+    assert main != dify_health_cache_key("https://backup.example/v1")
+    assert main.startswith("dify:health:url:")
+
+
 def _org() -> Organization:
     return cast(
         Organization,
@@ -63,23 +72,41 @@ def _org() -> Organization:
 async def test_resolver_prefers_healthy_primary(monkeypatch: pytest.MonkeyPatch) -> None:
     """With no recorded health, the primary server is used."""
 
-    async def fake_health(_org_id: int, _server: int) -> Optional[DifyServerHealth]:
+    async def fake_health(_api_url: str) -> Optional[DifyServerHealth]:
         return None
 
-    monkeypatch.setattr(resolver, "get_server_health", fake_health)
+    monkeypatch.setattr(resolver, "get_url_health", fake_health)
     assert await resolver.select_active_dify_server(_org()) == 1
+
+
+def test_backup_notice_only_after_main_outage(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Toast when slot 1 failed over to slot 2, not when backup is the chosen primary."""
+    monkeypatch.delenv("DIFY_BACKUP_API_KEY", raising=False)
+    monkeypatch.delenv("DIFY_BACKUP_API_URL", raising=False)
+    org = _org()
+    assert resolver.using_backup_after_main_outage(org, 2) is True
+    assert resolver.using_backup_after_main_outage(org, 1) is False
+    org.dify_active_server = 2
+    assert resolver.using_backup_after_main_outage(org, 2) is False
+    org.dify_active_server = 1
+    org.dify_failover_enabled = False
+    assert resolver.using_backup_after_main_outage(org, 2) is False
+    org.dify_failover_enabled = True
+    org.dify_api_base_url = None
+    org.dify_api_key = None
+    assert resolver.using_backup_after_main_outage(org, 2) is False
 
 
 @pytest.mark.asyncio
 async def test_resolver_fails_over_when_primary_down(monkeypatch: pytest.MonkeyPatch) -> None:
     """Primary down + standby up routes to the standby."""
 
-    async def fake_health(_org_id: int, server: int) -> Optional[DifyServerHealth]:
-        if server == 1:
+    async def fake_health(api_url: str) -> Optional[DifyServerHealth]:
+        if api_url.rstrip("/") == "https://s1/v1":
             return _health(False, HEALTH_FAILURE_THRESHOLD)
         return _health(True, 0)
 
-    monkeypatch.setattr(resolver, "get_server_health", fake_health)
+    monkeypatch.setattr(resolver, "get_url_health", fake_health)
     assert await resolver.select_active_dify_server(_org()) == 2
 
 
@@ -87,12 +114,12 @@ async def test_resolver_fails_over_when_primary_down(monkeypatch: pytest.MonkeyP
 async def test_resolver_switches_back_on_recovery(monkeypatch: pytest.MonkeyPatch) -> None:
     """Once the primary recovers (not considered down), it is preferred again."""
 
-    async def fake_health(_org_id: int, server: int) -> Optional[DifyServerHealth]:
-        if server == 1:
-            return _health(False, HEALTH_FAILURE_THRESHOLD - 1)  # below threshold
+    async def fake_health(api_url: str) -> Optional[DifyServerHealth]:
+        if api_url.rstrip("/") == "https://s1/v1":
+            return _health(False, HEALTH_FAILURE_THRESHOLD - 1)
         return _health(True, 0)
 
-    monkeypatch.setattr(resolver, "get_server_health", fake_health)
+    monkeypatch.setattr(resolver, "get_url_health", fake_health)
     assert await resolver.select_active_dify_server(_org()) == 1
 
 
@@ -100,12 +127,12 @@ async def test_resolver_switches_back_on_recovery(monkeypatch: pytest.MonkeyPatc
 async def test_resolver_no_failover_when_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     """With failover disabled the primary is kept even when unhealthy."""
 
-    async def fake_health(_org_id: int, _server: int) -> Optional[DifyServerHealth]:
+    async def fake_health(_api_url: str) -> Optional[DifyServerHealth]:
         return _health(False, HEALTH_FAILURE_THRESHOLD)
 
     org = _org()
     org.dify_failover_enabled = False
-    monkeypatch.setattr(resolver, "get_server_health", fake_health)
+    monkeypatch.setattr(resolver, "get_url_health", fake_health)
     assert await resolver.select_active_dify_server(org) == 1
 
 
@@ -115,13 +142,15 @@ async def test_resolver_uses_standby_when_primary_unconfigured(
 ) -> None:
     """If the primary has no credentials, the standby is used regardless."""
 
-    async def fake_health(_org_id: int, _server: int) -> Optional[DifyServerHealth]:
+    async def fake_health(_api_url: str) -> Optional[DifyServerHealth]:
         return None
 
     org = _org()
     org.dify_api_base_url = None
     org.dify_api_key = None
-    monkeypatch.setattr(resolver, "get_server_health", fake_health)
+    monkeypatch.delenv("DIFY_BACKUP_API_KEY", raising=False)
+    monkeypatch.delenv("DIFY_BACKUP_API_URL", raising=False)
+    monkeypatch.setattr(resolver, "get_url_health", fake_health)
     assert await resolver.select_active_dify_server(org) == 2
 
 
@@ -146,10 +175,10 @@ async def test_resolver_fails_over_for_one_and_three_pair(
     )
     organization_dify_server_slots.cache_clear()
 
-    async def fake_health(_org_id: int, server: int) -> Optional[DifyServerHealth]:
-        if server == 1:
+    async def fake_health(api_url: str) -> Optional[DifyServerHealth]:
+        if api_url.rstrip("/") == "https://s1/v1":
             return _health(False, HEALTH_FAILURE_THRESHOLD)
-        if server == 3:
+        if api_url.rstrip("/") == "https://s3/v1":
             return _health(True, 0)
         return None
 
@@ -167,7 +196,7 @@ async def test_resolver_fails_over_for_one_and_three_pair(
             dify_failover_enabled=True,
         ),
     )
-    monkeypatch.setattr(resolver, "get_server_health", fake_health)
+    monkeypatch.setattr(resolver, "get_url_health", fake_health)
     assert await resolver.select_active_dify_server(org) == 3
     clear_dify_server_schema_cache()
 
@@ -178,8 +207,8 @@ async def test_resolver_keeps_primary_when_standby_also_down(
 ) -> None:
     """When both servers are down, the resolver stays on the primary."""
 
-    async def fake_health(_org_id: int, _server: int) -> Optional[DifyServerHealth]:
+    async def fake_health(_api_url: str) -> Optional[DifyServerHealth]:
         return _health(False, HEALTH_FAILURE_THRESHOLD)
 
-    monkeypatch.setattr(resolver, "get_server_health", fake_health)
+    monkeypatch.setattr(resolver, "get_url_health", fake_health)
     assert await resolver.select_active_dify_server(_org()) == 1

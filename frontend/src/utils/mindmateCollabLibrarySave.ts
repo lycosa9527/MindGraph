@@ -1,5 +1,5 @@
 /**
- * Ending a seminar stores the full transcript in the owner's MindMate library.
+ * Ending a seminar keeps the transcript for everyone who joined.
  */
 import router from '@/router'
 import { authFetch } from '@/utils/api'
@@ -32,6 +32,11 @@ export function shouldAutoSaveSeminarOnOwnerEnd(
   isOwner: boolean
 ): boolean {
   return isOwner && reason === 'host'
+}
+
+/** True when a finished room should show up in the sidebar library. */
+export function shouldRefreshSavedSeminarLibrary(reason: 'idle' | 'host' | 'left'): boolean {
+  return reason === 'host' || reason === 'idle'
 }
 
 export function isStandaloneMindmateCollabPath(path: string): boolean {

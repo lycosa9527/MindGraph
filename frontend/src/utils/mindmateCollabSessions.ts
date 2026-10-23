@@ -63,6 +63,15 @@ export function markMindmateCollabCodeEnded(code: string): void {
   persistEndedCodes()
 }
 
+/** Drop the just-ended mark so the owner can open the same room again. */
+export function clearMindmateCollabCodeEnded(code: string): void {
+  hydrateEndedCodesFromStorage()
+  if (!recentlyEndedCodes.delete(normalizeMindmateCollabCode(code))) {
+    return
+  }
+  persistEndedCodes()
+}
+
 /** True when this invite code was just ended (this tab or another tab on the same origin). */
 export function wasMindmateCollabCodeRecentlyEnded(code: string): boolean {
   hydrateEndedCodesFromStorage()
@@ -88,6 +97,7 @@ export interface LocalMindmateCollabSession {
   participant_count?: number
   visibility?: string
   expires_at?: string | null
+  live?: boolean
 }
 
 function notifySessionsChanged(): void {
@@ -187,6 +197,22 @@ export function trackLocalMindmateCollabSession(row: LocalMindmateCollabSession)
   const existing = loadLocalMindmateCollabSessions()
   const current = existing.find((item) => normalizeMindmateCollabCode(item.code) === key)
   if (current && isSameTrackedSession(current, row)) {
+    const liveChanged = row.live !== undefined && row.live !== current.live
+    const expiryChanged = row.expires_at !== undefined && row.expires_at !== current.expires_at
+    if (!liveChanged && !expiryChanged) {
+      return
+    }
+    const next = existing.map((item) => {
+      if (normalizeMindmateCollabCode(item.code) !== key) {
+        return item
+      }
+      return {
+        ...item,
+        ...(liveChanged ? { live: row.live } : {}),
+        ...(expiryChanged ? { expires_at: row.expires_at } : {}),
+      }
+    })
+    persistLocalMindmateCollabSessions(next)
     return
   }
   const next = [row, ...existing.filter((item) => normalizeMindmateCollabCode(item.code) !== key)]

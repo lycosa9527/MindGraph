@@ -13,7 +13,9 @@ import {
   renderMarkdownForDiagramLabelMeasureSync,
 } from '@/composables/core/diagramMarkdownPipeline'
 import { secondaryFontSize, stackedTextBlock } from '@/diagramBilingual/measure'
+import { diagramPaintFontFamily } from '@/fonts/diagramCanvasFonts'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { measureThinkingMapLabelBlockPx } from '@/utils/mindMapTextWrap'
 
 import {
   cachedPlainTextBox,
@@ -41,6 +43,8 @@ const BORDER_CONTEXT = 1.5
 export const CONTEXT_FONT_SIZE = 16
 /** Fixed font size for circle map topic node (never change; grow circle instead). */
 export const TOPIC_FONT_SIZE = 18
+/** Topic labels wrap at this width. CircleNode uses the same cap. */
+export const CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH = 200
 
 /** Minimum radius for circle map topic (avoid too small when text is very short). */
 const MIN_TOPIC_RADIUS_CIRCLE_MAP = 60
@@ -52,7 +56,7 @@ let measureEl: HTMLDivElement | null = null
 let diagramLabelHtmlMeasureEl: HTMLDivElement | null = null
 
 function applyMeasureFontFamily(el: HTMLDivElement, fontFamily?: string): void {
-  el.style.fontFamily = fontFamily ?? MEASURE_FONT_FAMILY
+  el.style.fontFamily = diagramPaintFontFamily(fontFamily, MEASURE_FONT_FAMILY)
 }
 
 function getMeasureEl(fontFamily?: string): HTMLDivElement {
@@ -761,20 +765,12 @@ export function computeTopicRadiusForCircleMap(
   const measureBold =
     measure?.fontWeight === 'normal' ? false : measure?.fontWeight === 'bold' ? true : true
   const fontFamily = measure?.fontFamily
-  if (typeof document === 'undefined') {
-    const approxW = estimateTextWidthFallbackPx(t, fs, { isTopic: measureBold })
-    const approxH = fs * 1.4
-    const diagonal = Math.sqrt(approxW * approxW + approxH * approxH)
-    const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
-    return growRadiusForSecondary(
-      Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, contentR + BORDER_TOPIC),
-      measure?.secondary,
-      fs
-    )
-  }
-  const { width, height } = measureTextWithSVG(t, fs, measureBold, fontFamily)
-  const w = width || estimateTextWidthFallbackPx(t, fs, { isTopic: measureBold })
-  const h = height || fs * 1.4
+  const block = measureThinkingMapLabelBlockPx(t, fs, CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH, {
+    fontWeight: measureBold ? 'bold' : 'normal',
+    fontFamily,
+  })
+  const w = block.width
+  const h = block.height
   const diagonal = Math.sqrt(w * w + h * h)
   const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
   const radius = contentR + BORDER_TOPIC

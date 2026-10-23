@@ -54,15 +54,6 @@ def _sanitize_feature_org_access_map(
     return out
 
 
-async def _effective_feature_kitty_agent(current_user: Optional[User]) -> bool:
-    """Match ``FEATURE_KITTY_AGENT`` in .env plus org/user grants when the caller is signed in."""
-    if not config.FEATURE_KITTY_AGENT:
-        return False
-    if current_user is None:
-        return True
-    return await user_has_feature_access(current_user, "feature_kitty_agent")
-
-
 async def _effective_feature_mindmate_collab(current_user: Optional[User]) -> bool:
     """Match ``FEATURE_MINDMATE_COLLAB`` plus org/user grants when the caller is signed in."""
     if not config.FEATURE_MINDMATE_COLLAB:
@@ -81,23 +72,22 @@ async def _effective_feature_workshop_chat(current_user: Optional[User]) -> bool
     return await user_has_feature_access(current_user, "feature_workshop_chat")
 
 
+class CanvasLlmModelsResponse(BaseModel):
+    """Physical model ids shown beside each canvas LLM choice."""
+
+    models: dict[str, str]
+
+
 class FeatureFlagsResponse(BaseModel):
     """Feature flags response model."""
 
     external_base_url: str
     feature_rag_chunk_test: bool
-    feature_course: bool
-    feature_mate_learning: bool
-    feature_template: bool
-    feature_community: bool
     feature_showcase: bool
     feature_zhihui: bool
-    feature_askonce: bool
-    feature_debateverse: bool
     feature_knowledge_space: bool
     feature_mind_classroom_slide_deck: bool = False
     feature_library: bool
-    feature_gewe: bool
     feature_smart_response: bool
     feature_teacher_usage: bool
     feature_workshop_chat: bool
@@ -121,6 +111,12 @@ class FeatureFlagsResponse(BaseModel):
     feature_org_access: dict[str, FeatureOrgAccessEntry] = Field(default_factory=dict)
 
 
+@router.get("/canvas-llm-models", response_model=CanvasLlmModelsResponse)
+async def get_canvas_llm_models() -> CanvasLlmModelsResponse:
+    """Model ids for the canvas dropdown. Contains no secrets."""
+    return CanvasLlmModelsResponse(models=config.canvas_menu_model_ids())
+
+
 @router.get("/features", response_model=FeatureFlagsResponse)
 async def get_feature_flags(
     current_user: Optional[User] = Depends(get_current_user_optional),
@@ -136,11 +132,6 @@ async def get_feature_flags(
     external_base = normalize_external_base_url(env_base)
     raw_access = await load_feature_org_access_map() if current_user is not None else {}
     access_map = _sanitize_feature_org_access_map(current_user, raw_access) if current_user is not None else {}
-    kitty_agent_flag = (
-        config.FEATURE_KITTY_AGENT
-        if current_user is not None and is_admin(current_user)
-        else await _effective_feature_kitty_agent(current_user)
-    )
     mindmate_collab_flag = (
         config.FEATURE_MINDMATE_COLLAB
         if current_user is not None and is_admin(current_user)
@@ -154,18 +145,11 @@ async def get_feature_flags(
     return FeatureFlagsResponse(
         external_base_url=external_base,
         feature_rag_chunk_test=config.FEATURE_RAG_CHUNK_TEST,
-        feature_course=config.FEATURE_COURSE,
-        feature_mate_learning=config.FEATURE_MATE_LEARNING,
-        feature_template=config.FEATURE_TEMPLATE,
-        feature_community=config.FEATURE_COMMUNITY,
         feature_showcase=config.FEATURE_SHOWCASE,
         feature_zhihui=config.FEATURE_ZHIHUI,
-        feature_askonce=config.FEATURE_ASKONCE,
-        feature_debateverse=config.FEATURE_DEBATEVERSE,
         feature_knowledge_space=config.FEATURE_KNOWLEDGE_SPACE,
         feature_mind_classroom_slide_deck=config.FEATURE_MIND_CLASSROOM_SLIDE_DECK,
         feature_library=config.FEATURE_LIBRARY,
-        feature_gewe=config.FEATURE_GEWE,
         feature_smart_response=config.FEATURE_SMART_RESPONSE,
         feature_teacher_usage=config.FEATURE_TEACHER_USAGE,
         feature_workshop_chat=workshop_chat_flag,
@@ -180,7 +164,7 @@ async def get_feature_flags(
         feature_word_addin=config.FEATURE_WORD_ADDIN,
         feature_mindmate_export=config.FEATURE_MINDMATE_EXPORT,
         feature_thinking_coins=config.FEATURE_THINKING_COINS,
-        feature_kitty_agent=kitty_agent_flag,
+        feature_kitty_agent=True,
         feature_auth_pixel_battle=config.FEATURE_AUTH_PIXEL_BATTLE,
         feature_test_server_banner=config.FEATURE_TEST_SERVER_BANNER,
         captcha_provider=effective_captcha_provider(),

@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia'
 
 import { AlertTriangle, ArrowLeft, Clock3, FileText, Users } from '@lucide/vue'
 
+import LearningSpaceCreditLine from '@/components/learningSpace/LearningSpaceCreditLine.vue'
 import LearningSpaceThumbCover from '@/components/learningSpace/LearningSpaceThumbCover.vue'
 import { swissGlassConfirm, useLanguage } from '@/composables'
 import {
@@ -81,7 +82,10 @@ function progressFor(assignment: LearningAssignment) {
 }
 
 function canDeleteAssignment(assignment: LearningAssignment): boolean {
-  return canPublish.value && publishableClasses.value.some((row) => row.id === assignment.class_id)
+  const learningClass = classes.value.find((row) => row.id === assignment.class_id)
+  if (!learningClass || learningClass.can_publish !== true) return false
+  if (learningClass.is_owner === true) return true
+  return Number(assignment.created_by) === Number(authStore.user?.id)
 }
 
 async function onDelete(assignment: LearningAssignment): Promise<void> {
@@ -303,6 +307,13 @@ async function onDelete(assignment: LearningAssignment): Promise<void> {
                   formatLsDateTime(a.due_at)
                 }}
               </p>
+              <p class="ls-asg-card__meta">
+                <LearningSpaceCreditLine
+                  :publisher-name="a.created_by_name"
+                  :grader-names="a.reviewer_names"
+                  :unnamed-review="a.has_unnamed_review === true"
+                />
+              </p>
             </div>
             <span
               class="ls-status"
@@ -402,6 +413,12 @@ async function onDelete(assignment: LearningAssignment): Promise<void> {
           <p>
             {{ classNameForAssignment(selectedAssignment) }} ·
             <I18nText k="learningSpace.due" />：{{ formatLsDateTime(selectedAssignment.due_at) }}
+            ·
+            <LearningSpaceCreditLine
+              :publisher-name="selectedAssignment.created_by_name"
+              :grader-names="selectedAssignment.reviewer_names"
+              :unnamed-review="selectedAssignment.has_unnamed_review === true"
+            />
           </p>
         </div>
         <div class="ls-page-head__actions">
@@ -462,6 +479,13 @@ async function onDelete(assignment: LearningAssignment): Promise<void> {
           <div class="ls-thumb-card__meta">
             {{ statusLabel(s.status) }} ·
             {{ formatLsDateTime(s.submitted_at) }}
+            <template v-if="s.reviewer_name">
+              ·
+              <I18nText
+                k="learningSpace.gradedBy"
+                :params="{ name: s.reviewer_name }"
+              />
+            </template>
           </div>
           <button
             type="button"

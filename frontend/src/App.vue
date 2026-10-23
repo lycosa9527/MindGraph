@@ -12,6 +12,7 @@ import { ElConfigProvider } from 'element-plus/es/components/config-provider/ind
 import 'element-plus/es/components/config-provider/style/css'
 import type { Language } from 'element-plus/es/locale'
 
+import ThinkingCoinInsufficientHost from '@/components/auth/ThinkingCoinInsufficientHost.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useOAuthRouteFeedback } from '@/composables/auth/useOAuthRouteFeedback'
@@ -303,15 +304,14 @@ const showQuickAccessRemote = computed(
     !isMindgraphHeadlessExportSession()
 )
 
-/** Sidebar footer is on screen and can open the account menu. */
-const sidebarAccountMenuVisible = computed(
+/** Main sidebar is mounted. Collapse hides that whole group, including the account chip. */
+const sidebarGroupMounted = computed(
   () =>
     route.meta.layout === 'main' &&
-    !uiStore.sidebarCollapsed &&
     !(isAdminPublicDashboardRoute(route) && canViewSettingsSubtab('public_dashboard'))
 )
 
-/** Account dropdown on pages that do not show the sidebar footer. Canvas has none. */
+/** Account chip only where the sidebar is not mounted. Canvas has none. */
 const showFloatingAccountMenu = computed(
   () =>
     authStore.isAuthenticated &&
@@ -323,7 +323,7 @@ const showFloatingAccountMenu = computed(
     route.meta.layout !== 'auth' &&
     route.meta.layout !== 'default' &&
     !isMobileAppPath(route.path) &&
-    !sidebarAccountMenuVisible.value
+    !sidebarGroupMounted.value
 )
 
 watch(
@@ -357,7 +357,11 @@ watch(
     const key = typeof raw === 'string' && raw.length > 0 ? raw : 'meta.pageTitle.default'
     const page = t(key)
     const brand = t('app.brandName')
-    document.title = page === key ? brand : `${page} · ${brand}`
+    if (route.name === 'Auth') {
+      document.title = `MindGraph · ${brand}`
+    } else {
+      document.title = page === key ? brand : `${page} · ${brand}`
+    }
     document.documentElement.dir = isRtlUiLocale(uiStore.language) ? 'rtl' : 'ltr'
   },
   { immediate: true }
@@ -404,7 +408,10 @@ onMounted(async () => {
   }
 
   if (!isGuestAuthPath(route.path)) {
-    await authStore.checkAuth().catch(() => false)
+    await Promise.all([
+      authStore.checkAuth().catch(() => false),
+      authStore.detectMode().catch(() => undefined),
+    ])
   }
   installMindmateCollabLiveSession()
 
@@ -484,6 +491,7 @@ onUnmounted(() => {
     <GeoLiteNotification />
 
     <ChatMessageToast />
+    <ThinkingCoinInsufficientHost />
     <WorkshopChatWsHost />
 
     <SessionExpiredAuthCard

@@ -9,8 +9,6 @@ export type CanvasSpecExportCommand = 'mg'
 
 export type CanvasClipboardExportCommand = 'clipboard'
 
-export type CanvasCommunityExportCommand = 'community'
-
 export type CanvasZhihuiDiagramCommand = 'zhihui_diagram'
 
 /** Legacy alias — resolves to landscape/portrait from diagram aspect ratio at export time. */
@@ -21,7 +19,6 @@ export type CanvasExportCommand =
   | CanvasLegacyPdfExportCommand
   | CanvasSpecExportCommand
   | CanvasClipboardExportCommand
-  | CanvasCommunityExportCommand
   | CanvasZhihuiDiagramCommand
 
 export type CanvasExportMenuItem = {
@@ -49,10 +46,9 @@ export const CANVAS_RASTER_EXPORT_COMMANDS: readonly CanvasRasterExportCommand[]
   'pdf_portrait',
 ]
 
-export const CANVAS_COMMUNITY_EXPORT_MENU_ITEM = {
-  command: 'community' as CanvasCommunityExportCommand,
-  labelKey: 'canvas.topBar.shareCommunity',
-  divided: true,
+/** PNG and SVG copy the canvas as shown, including the learning-sheet answer row. */
+export function isCanvasShownImageExport(format: string): boolean {
+  return format === 'png' || format === 'svg'
 }
 
 /** Open 智绘 图示生图 — hidden from the mind-map export menu for now. */
@@ -75,5 +71,5 @@ export const CANVAS_CLIPBOARD_EXPORT_MENU_ITEM = {
 } as const
 
 export const CANVAS_WORKSHEET_TEXT_MENU_ITEM = {
-  labelKey: 'canvas.worksheetText.modalTitle',
+  labelKey: 'canvas.topBar.addWorksheetText',
 } as const

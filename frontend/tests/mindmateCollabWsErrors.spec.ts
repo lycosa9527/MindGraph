@@ -10,6 +10,12 @@ describe('mindmateCollabWsErrorLocaleKey', () => {
   it('maps known server error codes', () => {
     expect(mindmateCollabWsErrorLocaleKey('room_closed')).toBe('mindmate.collabErrorRoomClosed')
     expect(mindmateCollabWsErrorLocaleKey('dify_error')).toBe('mindmate.collabErrorDify')
+    expect(mindmateCollabWsErrorLocaleKey('dify_main_unavailable')).toBe(
+      'mindmate.mainServerDownRetry'
+    )
+    expect(mindmateCollabWsErrorLocaleKey('dify_backup_unavailable')).toBe(
+      'mindmate.backupServerFailed'
+    )
   })
 
   it('returns null for unknown codes', () => {

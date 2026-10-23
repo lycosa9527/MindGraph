@@ -10,13 +10,19 @@ import { ElDialog } from 'element-plus'
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
 import I18nText from '@/components/common/I18nText.vue'
+import {
+  MM_ABOVE_NODE_CHROME_CLASS,
+  bindCanvasCoveringOverlay,
+} from '@/components/common/swissGlassStack'
 import { useLanguage } from '@/composables/core/useLanguage'
+import '@/styles/swissGlassControls.css'
 import { sanitizeMindMapHref } from '@/utils/mindMapAdornments'
 
 const props = defineProps<{
   modelValue: boolean
   initialHref?: string
   initialName?: string
+  namePlaceholder?: string
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +31,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+bindCanvasCoveringOverlay(() => props.modelValue)
 const name = ref('')
 const href = ref('')
 const error = ref('')
@@ -63,7 +70,13 @@ function confirm(): void {
     append-to-body
     destroy-on-close
     :show-close="false"
-    class="mm-link-insert mm-canvas-upper-dialog ai-gen-shell ai-gen-shell--link"
+    :class="[
+      'mm-link-insert',
+      'mm-canvas-upper-dialog',
+      'ai-gen-shell',
+      'ai-gen-shell--link',
+      MM_ABOVE_NODE_CHROME_CLASS,
+    ]"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <template #header>
@@ -80,7 +93,7 @@ function confirm(): void {
           v-model="name"
           type="text"
           class="mm-link-field__input"
-          :placeholder="t('canvas.ribbon.linkName')"
+          :placeholder="props.namePlaceholder?.trim() || t('canvas.ribbon.linkName')"
           autocomplete="off"
           @keydown.enter.prevent="confirm"
         />

@@ -5,19 +5,17 @@
  */
 import { ref } from 'vue'
 
-import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   FORMAT_BRUSH_DOUBLE_CLICK_MS,
-  collectFormatBrushStyle,
   formatBrushTargetsFromSelection,
   resolveFormatPainterClick,
 } from '@/composables/canvasToolbar/formatBrushStyle'
+import { snapshotFormatBrushStyleForNode } from '@/composables/canvasToolbar/formatBrushSnapshot'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
-import { getMindMapThemeForDiagram, mindMapStyleFromTheme } from '@/config/mindMapThemes'
 import { i18n } from '@/i18n'
-import { useDiagramStore } from '@/stores/diagram'
+import type { DiagramSession } from '@/stores/diagram'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { DiagramNode, NodeStyle } from '@/types'
 import { safeI18nTranslate } from '@/utils/safeI18nTranslate'
@@ -32,6 +30,7 @@ let lastFormatBrushClickAt = 0
 let suppressPaneCancel = false
 let formatBrushActivateToastTimer: ReturnType<typeof setTimeout> | null = null
 let formatBrushListenersBound = false
+let boundDiagramSession: DiagramSession | null = null
 
 function toast() {
   return useNotifications()
@@ -45,8 +44,17 @@ function t(key: string, named?: Record<string, unknown>): string {
   )
 }
 
+export function bindFormatBrushDiagramSession(session: DiagramSession): void {
+  boundDiagramSession = session
+}
+
+function getDiagramSession(): DiagramSession {
+  if (boundDiagramSession) return boundDiagramSession
+  return useDiagramSession()
+}
+
 function storeBlocksPaint(): boolean {
-  const store = useDiagramStore()
+  const store = getDiagramSession()
   return isDiagramPresentationReadOnly({ isReadonly: store.isReadonly })
 }
 
@@ -76,92 +84,16 @@ export function resetFormatBrushState(): void {
   syncFormatBrushCursor(false)
 }
 
-function opaqueCssColor(value: string): string | undefined {
-  const trimmed = value.trim()
-  if (!trimmed || trimmed.toLowerCase() === 'transparent') return undefined
-  const match = trimmed.match(
-    /^rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*(?:,\s*([\d.]+)\s*)?\)$/i
-  )
-  if (match?.[1] !== undefined && Number(match[1]) === 0) return undefined
-  return trimmed
-}
-
-/** Visible fill, border, and text only. Skips a transparent background and inherited fonts. */
-function renderedColorFallback(nodeId: string): Partial<NodeStyle> | undefined {
-  if (typeof document === 'undefined') return undefined
-  const escaped =
-    typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
-      ? CSS.escape(nodeId)
-      : nodeId.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-  const host = document.querySelector(`.vue-flow__node[data-id="${escaped}"]`)
-  if (!(host instanceof HTMLElement)) return undefined
-  const painted = host.querySelector(
-    '.circle-node, .bubble-node, .branch-node, .flow-node, .flow-substep-node, .brace-node, .topic-node, .concept-node, .label-node'
-  )
-  const el = painted instanceof HTMLElement ? painted : host
-  const cs = getComputedStyle(el)
-  const backgroundColor = opaqueCssColor(cs.backgroundColor)
-  const borderColor = opaqueCssColor(cs.borderTopColor)
-  const textColor = opaqueCssColor(cs.color)
-  const fontSize = Number.parseFloat(cs.fontSize)
-  const weight = Number.parseInt(cs.fontWeight, 10)
-  const align =
-    cs.textAlign === 'right' || cs.textAlign === 'end'
-      ? 'right'
-      : cs.textAlign === 'center'
-        ? 'center'
-        : 'left'
-  const line = cs.textDecorationLine || ''
-  const textDecoration =
-    line.includes('underline') && line.includes('line-through')
-      ? 'underline line-through'
-      : line.includes('line-through')
-        ? 'line-through'
-        : line.includes('underline')
-          ? 'underline'
-          : 'none'
-  const fallback: Partial<NodeStyle> = {
-    fontFamily: cs.fontFamily,
-    fontSize: Number.isFinite(fontSize) ? fontSize : undefined,
-    fontWeight: weight >= 600 || cs.fontWeight === 'bold' ? 'bold' : 'normal',
-    fontStyle: cs.fontStyle === 'italic' ? 'italic' : 'normal',
-    textDecoration,
-    textAlign: align,
-  }
-  if (backgroundColor) fallback.backgroundColor = backgroundColor
-  if (borderColor) fallback.borderColor = borderColor
-  if (textColor) fallback.textColor = textColor
-  return fallback
-}
-
 function snapshotFormatBrushStyle(nodeId: string): NodeStyle | null {
-  const store = useDiagramStore()
+  const store = getDiagramSession()
   const sourceNode = store.data?.nodes?.find((node) => node.id === nodeId)
   if (!sourceNode) return null
-  const persisted = store.getNodeStyle(nodeId)
-  const isMindMap = store.type === 'mindmap' || store.type === 'mind_map'
-  const themeFallback = isMindMap
-    ? mindMapStyleFromTheme(
-        sourceNode,
-        getMindMapThemeForDiagram(store.data),
-        store.data?._mindmap_diagram_style,
-        store.data?.connections
-      )
-    : isThinkingMapDiagramType(store.type)
-      ? renderedColorFallback(nodeId)
-      : undefined
-  const copied = collectFormatBrushStyle(sourceNode.style, persisted, themeFallback)
-  if (!copied.nodeShape && isMindMap) {
-    copied.nodeShape = resolveMindMapNodeShape(
-      {
-        id: sourceNode.id,
-        type: sourceNode.type,
-        style: { ...themeFallback, ...persisted, ...sourceNode.style },
-      },
-      store.data?._mindmap_diagram_style
-    )
-  }
-  return copied
+  return snapshotFormatBrushStyleForNode({
+    diagramType: store.type,
+    data: store.data,
+    sourceNode,
+    persistedStyle: store.getNodeStyle(nodeId),
+  })
 }
 
 function applyCopiedFormatBrush(ids: string[]): void {
@@ -171,7 +103,7 @@ function applyCopiedFormatBrush(ids: string[]): void {
     resetFormatBrushState()
     return
   }
-  const store = useDiagramStore()
+  const store = getDiagramSession()
   const nodes = ids
     .map((nodeId) => store.data?.nodes?.find((item) => item.id === nodeId))
     .filter((node): node is DiagramNode => Boolean(node))
@@ -183,7 +115,10 @@ function applyCopiedFormatBrush(ids: string[]): void {
       paintedIds.push(node.id)
     }
   })
-  if (paintedIds.length === 0) return
+  if (paintedIds.length === 0) {
+    toast().warning(t('canvas.toolbar.formatBrushApplyFailed'))
+    return
+  }
   suppressPaneCancel = true
   queueMicrotask(() => {
     suppressPaneCancel = false
@@ -256,17 +191,19 @@ export function applyFormatBrushToNode(nodeId: string): boolean {
 
 function pickupFormatBrush(lock: boolean): boolean {
   if (storeBlocksPaint()) return false
-  const store = useDiagramStore()
-  const sourceIds = store.selectedNodes
-  const sourceId = sourceIds[0]
+  const store = getDiagramSession()
+  const sourceId = store.selectedNodes[0]
   if (!sourceId) {
     toast().warning(t('canvas.toolbar.formatBrushSelectSource'))
     return false
   }
   const copiedStyle = snapshotFormatBrushStyle(sourceId)
-  if (!copiedStyle || Object.keys(copiedStyle).length === 0) return false
+  if (!copiedStyle || Object.keys(copiedStyle).length === 0) {
+    toast().warning(t('canvas.toolbar.formatBrushStyleEmpty'))
+    return false
+  }
   formatBrushStyle.value = copiedStyle
-  formatBrushSourceIds.value = [...sourceIds]
+  formatBrushSourceIds.value = [sourceId]
   formatBrushActive.value = true
   formatBrushLocked.value = lock
   syncFormatBrushCursor(true)
@@ -321,8 +258,9 @@ export function handleFormatBrush(options?: { lock?: boolean }): void {
   announceFormatBrushMode(true)
 }
 
-export function useCanvasFormatBrush() {
+export function useCanvasFormatBrush(session?: DiagramSession) {
   ensureFormatBrushListeners()
+  bindFormatBrushDiagramSession(session ?? useDiagramSession())
   return {
     formatBrushActive,
     formatBrushLocked,

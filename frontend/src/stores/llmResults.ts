@@ -7,8 +7,8 @@
  * - llm-progress-renderer.js
  *
  * Features:
- * - Caches the canvas run (one model at a time; older keys still load)
- * - TTL-based cache validation (10 minutes)
+ * - One model runs at a time; each model's last success stays selectable
+ * - Older keys still load from saved diagrams
  * - First-result-wins rendering
  * - Click to switch between cached results
  * - Per-model loading/ready/error states
@@ -30,7 +30,12 @@ import {
   shouldPaintCompletedLlmModel,
   shouldStampCanvasOntoLlmResult,
 } from './llmResultsPaint'
-import { clonePersistedLlmResults, resolvePersistedSelectedModel } from './llmResultsPersist'
+import {
+  type SavedLlmResultsPayload,
+  clonePersistedLlmResults,
+  resolvePersistedSelectedModel,
+  restoredLlmView,
+} from './llmResultsPersist'
 import { useSavedDiagramsStore } from './savedDiagrams'
 
 // Types
@@ -70,8 +75,6 @@ const MODELS = ['express'] as const
 /** Live canvas menu plus older keys still stored on diagrams. */
 export type { CanvasLlmModel as LLMModel } from '@/config/canvasLlmMenu'
 
-const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
-
 export {
   isLlmResultForCurrentSession,
   shouldPaintCompletedLlmModel,
@@ -91,6 +94,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   })
   const modelPhases = ref<Record<string, ModelLoadPhase>>({ ...IDLE_PHASES })
   const selectedModel = ref<string | null>(null)
+  /** Menu choice kept across generation cache clears. selectedModel is the painted result. */
+  const preferredModel = ref<string | null>(null)
   const isGenerating = ref(false)
   const sessionId = ref<string | null>(null)
   const expectedDiagramType = ref<string | null>(null)
@@ -109,8 +114,16 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   /** Canvas topic captured at auto-complete start; applied on every model switch/load. */
   const lockedTopic = ref<string | null>(null)
 
+  /** Model whose diagram is on the canvas. Menu highlight can differ. */
+  const canvasSlotModel = ref<string | null>(null)
   /** Model painted by first-result-wins in the current generate round. */
   const paintedThisSession = ref<string | null>(null)
+  /** Saved model the user opened while this run was still in flight. */
+  const pinnedDuringRun = ref<string | null>(null)
+  /** Models whose HTTP result was stored for the current generate round. */
+  const acceptedThisRun = ref<Record<string, true>>({})
+  /** Failure from the current round, kept even when a prior success stays. */
+  const runErrors = ref<Record<string, { error: string; errorType?: string }>>({})
 
   // Getters
   const models = computed(() => MODELS)
@@ -129,24 +142,14 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     return Object.values(results.value).filter((r) => r.success).length
   })
 
-  // Check if a result is still valid (within TTL)
+  /** A successful spec stays until that model is replaced or the diagram session clears. */
   function isResultValid(model: string): boolean {
     const result = results.value[model]
-    if (!result || !result.success) return false
-
-    const age = Date.now() - result.timestamp
-    return age < CACHE_TTL_MS
+    return Boolean(result?.success && result.spec)
   }
 
-  // Get valid (non-expired) result for a model
   function getValidResult(model: string): LLMResult | null {
     if (!isResultValid(model)) {
-      // Clean up expired result
-      if (results.value[model]) {
-        delete results.value[model]
-        modelStates.value[model] = 'idle'
-        modelPhases.value[model] = 'idle'
-      }
       return null
     }
     return results.value[model]
@@ -190,7 +193,6 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   async function switchToModel(model: string): Promise<boolean> {
     const result = getValidResult(model)
     if (!result || !result.success || !result.spec) {
-      console.warn(`[LLMResults] Cannot switch to ${model}: no valid result`)
       return false
     }
 
@@ -208,10 +210,10 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     const savedDiagramsStore = useSavedDiagramsStore()
 
     // During auto-complete: per-model autosave runs on llm:model_completed; skip
-    // save-before-replace on programmatic first-result render. User-initiated switch
-    // (after generation): save current so user can revert — do not block first paint.
+    // save-before-replace on programmatic first-result render. A user switch
+    // waits so that save cannot land after the new menu choice is written.
     if (!isGenerating.value) {
-      void savedDiagramsStore.saveCurrentDiagramBeforeReplace()
+      await savedDiagramsStore.saveCurrentDiagramBeforeReplace()
     }
 
     // Flow map: preserve current orientation (LLM spec typically omits it, defaulting to horizontal)
@@ -252,6 +254,11 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     )
     if (loaded) {
       selectedModel.value = model
+      canvasSlotModel.value = model
+      rememberPreferredModel(model)
+      if (isGenerating.value) {
+        pinnedDuringRun.value = model
+      }
       // Defer stamp so getSpecForSave does not block first paint after soft load.
       void nextTick(() => {
         const stamped = diagramStore.getSpecForSave()
@@ -275,9 +282,17 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   function clearCachedResultsOnly(): void {
     results.value = {}
     selectedModel.value = null
+    canvasSlotModel.value = null
     totalModels.value = null
     lockedTopic.value = null
     paintedThisSession.value = null
+    pinnedDuringRun.value = null
+    acceptedThisRun.value = {}
+    runErrors.value = {}
+  }
+
+  function rememberPreferredModel(model: string | null): void {
+    if (model) preferredModel.value = model
   }
 
   function applyLockedTopicToSpec(
@@ -312,34 +327,67 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     clearCachedResultsOnly()
   }
 
-  // Set selected model (for pre-selection, e.g. concept map relationship)
+  // Menu choice. Stamp the painted model first so a later switch still has its edits.
   function setSelectedModel(model: string | null): void {
+    if (model !== selectedModel.value && !isGenerating.value) {
+      const spec = diagramStore.getSpecForSave()
+      if (spec) {
+        updateCurrentModelSpec(spec)
+      }
+    }
     selectedModel.value = model
+    preferredModel.value = model
   }
 
-  // Cancel all active requests
-  function cancelAllRequests(): void {
+  function abortInFlightRequests(): void {
     abortControllers.value.forEach((controller) => {
       controller.abort()
     })
     abortControllers.value = []
-    setAllModelsState('idle')
-    resetModelPhases()
+  }
+
+  // Cancel all active requests
+  function settleModelAfterStop(model: string): void {
+    if (isResultValid(model)) {
+      modelStates.value[model] = 'ready'
+      modelPhases.value[model] = 'ready'
+      return
+    }
+    modelStates.value[model] = 'idle'
+    modelPhases.value[model] = 'idle'
+  }
+
+  function cancelAllRequests(): void {
+    abortInFlightRequests()
+    const modelsToSettle = new Set([
+      ...Object.keys(modelStates.value),
+      ...Object.keys(results.value),
+      ...MODELS,
+    ])
+    modelsToSettle.forEach((model) => {
+      settleModelAfterStop(model)
+    })
     isGenerating.value = false
   }
 
-  // Start generation (called before parallel API calls)
+  /**
+   * Start one model's run. Other models' saved responses stay so the user can
+   * switch back. This model's previous spec stays until a new success replaces it.
+   */
   function startGeneration(
     newSessionId: string,
     diagramType: string,
     modelsToRun?: string[],
     topicToLock?: string | null
   ): void {
-    cancelAllRequests()
-    clearCachedResultsOnly()
+    abortInFlightRequests()
 
     isGenerating.value = true
     sessionId.value = newSessionId
+    acceptedThisRun.value = {}
+    runErrors.value = {}
+    paintedThisSession.value = null
+    pinnedDuringRun.value = null
     const trimmedLock = typeof topicToLock === 'string' ? topicToLock.trim() : ''
     lockedTopic.value = trimmedLock || null
 
@@ -350,9 +398,11 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     }
     expectedDiagramType.value = normalizedType
 
-    // Set loading state for models that will run
     const targetModels = modelsToRun || [...MODELS]
     totalModels.value = targetModels.length
+    if (selectedModel.value && targetModels.includes(selectedModel.value)) {
+      selectedModel.value = null
+    }
     setAllModelsState('loading', targetModels)
     targetModels.forEach((model) => {
       modelPhases.value[model] = 'sending'
@@ -395,6 +445,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       diagramType,
       elapsed,
     })
+    acceptedThisRun.value = { ...acceptedThisRun.value, [model]: true }
 
     const isFirstPaint = paintedThisSession.value === null
     if (
@@ -402,12 +453,14 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
         paintedModel: paintedThisSession.value,
         selectedModel: selectedModel.value,
         completedModel: model,
+        pinnedModel: pinnedDuringRun.value,
       })
     ) {
       return true
     }
     if (isFirstPaint) {
       selectedModel.value = model
+      rememberPreferredModel(model)
     }
     const loaded = await switchToModel(model)
     if (!isLlmResultForCurrentSession(sessionId.value, forSessionId)) {
@@ -431,6 +484,16 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     if (!isLlmResultForCurrentSession(sessionId.value, forSessionId)) {
       return
     }
+    runErrors.value = {
+      ...runErrors.value,
+      [model]: { error, errorType },
+    }
+    const previous = results.value[model]
+    if (previous?.success && previous.spec) {
+      modelStates.value[model] = 'ready'
+      modelPhases.value[model] = 'ready'
+      return
+    }
     storeResult(model, {
       success: false,
       error,
@@ -439,21 +502,21 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     })
   }
 
+  function runSuccessCount(models: string[]): number {
+    return models.filter((model) => acceptedThisRun.value[model]).length
+  }
+
+  function runErrorFor(model: string): { error: string; errorType?: string } | null {
+    return runErrors.value[model] ?? null
+  }
+
   // Complete generation (called when all models finish)
   function completeGeneration(): void {
     isGenerating.value = false
 
-    // Clear loading states for any models still loading
     Object.entries(modelStates.value).forEach(([model, state]) => {
       if (state === 'loading') {
-        modelStates.value[model] = 'idle'
-        if (
-          modelPhases.value[model] === 'sending' ||
-          modelPhases.value[model] === 'waiting' ||
-          modelPhases.value[model] === 'streaming'
-        ) {
-          modelPhases.value[model] = 'idle'
-        }
+        settleModelAfterStop(model)
       }
     })
   }
@@ -475,14 +538,15 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   function reset(): void {
     cancelAllRequests()
     clearCache()
+    preferredModel.value = null
     sessionId.value = null
     expectedDiagramType.value = null
     totalModels.value = null
   }
 
   /**
-   * Get results for persistence (save with diagram spec).
-   * Returns { results, selectedModel } when we have 2+ successful results.
+   * Manual work saves the canvas alone. One or more model diagrams record
+   * which model owns that canvas. Extra models are separate slots.
    */
   function getResultsForPersistence(): {
     results: Record<string, LLMResult>
@@ -494,12 +558,18 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
         successResults[model] = r
       }
     })
-    const count = Object.keys(successResults).length
-    const selected = resolvePersistedSelectedModel(successResults, selectedModel.value)
-    if (count < 2 || !selected) return null
+    if (Object.keys(successResults).length < 1) return null
+    const menuChoice = selectedModel.value || preferredModel.value
+    const resolved = resolvePersistedSelectedModel(
+      successResults,
+      menuChoice,
+      canvasSlotModel.value
+    )
     return clonePersistedLlmResults({
       results: successResults,
-      selectedModel: selected,
+      selectedModel: resolved.selectedModel ?? '',
+      canvasModel: resolved.canvasModel || undefined,
+      canvasOwnsSelected: resolved.canvasOwnsSelected,
     })
   }
 
@@ -510,7 +580,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
    * instead of the original AI output.
    */
   function updateCurrentModelSpec(spec: Record<string, unknown>): void {
-    const model = selectedModel.value
+    const model = canvasSlotModel.value
     if (!model || !results.value[model]?.success) return
     if (
       !shouldStampCanvasOntoLlmResult({
@@ -533,8 +603,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
    * @param saved - { results: Record<model, LLMResult>, selectedModel: string }
    */
   function restoreFromSaved(
-    saved: { results?: Record<string, LLMResult>; selectedModel?: string },
-    diagramType: string
+    saved: SavedLlmResultsPayload,
+    diagramType: string,
+    canvasSpec?: Record<string, unknown> | null
   ): void {
     if (isGenerating.value) {
       return
@@ -551,9 +622,37 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
         modelPhases.value[model] = 'ready'
       }
     })
-    const sel = saved.selectedModel
-    selectedModel.value = sel && Object.keys(results.value).includes(sel) ? sel : null
+    const view = restoredLlmView(saved)
+    selectedModel.value = view.menuModel
+    preferredModel.value = view.menuModel
+    canvasSlotModel.value = null
+    const canvasOwner = view.canvasOwner
+    if (!canvasOwner || !canvasSpec) return
+
+    const canvas = { ...canvasSpec }
+    delete canvas.llm_results
+    const existing = results.value[canvasOwner]
+    if (!existing?.spec) {
+      results.value[canvasOwner] = {
+        success: true,
+        spec: canvas,
+        diagramType: normalizedType,
+        timestamp: Date.now(),
+      }
+      modelStates.value[canvasOwner] = 'ready'
+      modelPhases.value[canvasOwner] = 'ready'
+    }
+    canvasSlotModel.value = canvasOwner
   }
+
+  /** Snapshot recall keeps each model's spec, but the canvas is no longer that slot. */
+  function releaseCanvasOwnership(): void {
+    canvasSlotModel.value = null
+    selectedModel.value = null
+    preferredModel.value = null
+  }
+
+  const canvasModelChoice = computed(() => selectedModel.value || preferredModel.value)
 
   return {
     // State
@@ -561,6 +660,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     modelStates,
     modelPhases,
     selectedModel,
+    canvasModelChoice,
     isGenerating,
     contentChangeIsFromModelSwitch,
     sessionId,
@@ -589,12 +689,15 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     startGeneration,
     handleModelSuccess,
     handleModelError,
+    runSuccessCount,
+    runErrorFor,
     completeGeneration,
     addAbortController,
     removeAbortController,
     reset,
     getResultsForPersistence,
     restoreFromSaved,
+    releaseCanvasOwnership,
     updateCurrentModelSpec,
   }
 })
