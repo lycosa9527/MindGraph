@@ -2,6 +2,7 @@
  * Diagram snapshot list order, persist-before-switch, and display helpers.
  */
 import type { SnapshotMetadata } from '@/composables/editor/useSnapshotHistory'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 /** Sentinel used while restoring the live (non-snapshot) canvas. */
 export const CURRENT_DIAGRAM_VERSION = 0
@@ -51,20 +52,15 @@ export function canProceedAfterVersionJumpPersist(
   return result.reason === 'skipped_guards' && collabOwnsPersist
 }
 
-/** Backend stores UTC datetimes without a timezone suffix. */
+/** Backend stores UTC datetimes without a timezone suffix. Shown in Beijing. */
 export function formatSnapshotCreatedAt(iso: string, locale: string): string {
   const trimmed = iso.trim()
   if (!trimmed) {
     return ''
   }
-  const hasZone = /Z$|[+-]\d{2}:?\d{2}$/.test(trimmed)
-  const parsed = new Date(hasZone ? trimmed : `${trimmed}Z`)
-  if (Number.isNaN(parsed.getTime())) {
-    return ''
-  }
   try {
-    return parsed.toLocaleString(locale)
+    return formatInBeijing(trimmed, locale)
   } catch {
-    return parsed.toLocaleString()
+    return formatInBeijing(trimmed)
   }
 }

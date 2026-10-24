@@ -17,6 +17,7 @@ import {
   activitySourceLabel,
   formatAdminUserActivitySummary,
 } from '@/utils/adminUserActivitySummary'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const props = defineProps<{
   orgId: number | null | undefined
@@ -81,11 +82,7 @@ const summaryLabels = computed<ActivitySummaryLabels>(() => ({
 }))
 
 function formatTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString()
-  } catch {
-    return iso
-  }
+  return formatInBeijing(iso) || iso
 }
 
 function rowSummary(row: AdminOrgActivityItem): string {

@@ -19,6 +19,7 @@ import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { adminKeys } from '@/composables/queries/adminKeys'
 import { useAdminPanelStore } from '@/stores'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -76,11 +77,7 @@ function formatTime(value: string | null | undefined): string {
   if (!value) {
     return '—'
   }
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) {
-    return value
-  }
-  return parsed.toLocaleString()
+  return formatInBeijing(value) || value
 }
 
 function syncToolbar(): void {

@@ -6,10 +6,15 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import { ArrowLeft, ArrowRight, Paperclip, Plus, X } from '@lucide/vue'
 
+import LsDeadlineField from '@/components/learningSpace/LsDeadlineField.vue'
 import ShowcaseHistoryDiagramPicker from '@/components/showcase/ShowcaseHistoryDiagramPicker.vue'
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { type LsReferenceDiagram, diagramTypeLabelKey } from '@/composables/learningSpace/lsHelpers'
+import {
+  type LsReferenceDiagram,
+  beijingWallClockToIso,
+  diagramTypeLabelKey,
+} from '@/composables/learningSpace/lsHelpers'
 import {
   LS_MAX_INSTRUCTION_IMAGES,
   useLsInstructionImages,
@@ -536,7 +541,7 @@ async function submit(): Promise<void> {
   saving.value = true
   try {
     const templateDiagramId = await ensureTemplateDiagramId()
-    const due = form.value.due_at ? new Date(form.value.due_at).toISOString() : null
+    const due = form.value.due_at ? beijingWallClockToIso(form.value.due_at) : null
     const ai_permissions = buildAiPermissions()
     const instructionRefs = await instructionImagesCtl.uploadAll(form.value.class_ids[0])
     const payloadBase = {
@@ -1025,10 +1030,7 @@ function aiToolLabelKey(key: AiToolKey): string {
 
             <label class="ls-field">
               <I18nText k="learningSpace.due" />
-              <input
-                v-model="form.due_at"
-                type="datetime-local"
-              />
+              <LsDeadlineField v-model="form.due_at" />
             </label>
 
             <div class="ls-modal__block">

@@ -27,6 +27,10 @@ withDefaults(
       | 'right-end'
     disabled?: boolean
     popperClass?: string
+    /** False so a fast pass across the trigger cannot hold the label open. */
+    enterable?: boolean
+    showAfter?: number
+    hideAfter?: number
   }>(),
   {
     suffix: '',
@@ -34,6 +38,9 @@ withDefaults(
     placement: 'top',
     disabled: false,
     popperClass: '',
+    enterable: true,
+    showAfter: 0,
+    hideAfter: 200,
   }
 )
 </script>
@@ -43,6 +50,9 @@ withDefaults(
     :placement="placement"
     :disabled="disabled"
     :popper-class="popperClass"
+    :enterable="enterable"
+    :show-after="showAfter"
+    :hide-after="hideAfter"
   >
     <template #content>
       <span class="i18n-tooltip-content">

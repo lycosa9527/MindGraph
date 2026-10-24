@@ -67,7 +67,9 @@ from services.diagram.generation_skip_registry import (
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.diagram.library_save_user_notices import library_save_user_notice
 from services.diagram.temp_image_storage import (
+    hydrate_diagram_preview_png,
     hydrate_dingtalk_temp_png,
+    is_safe_diagram_preview_filename,
     is_safe_dingtalk_temp_filename,
     persist_dingtalk_temp_png,
     temp_images_dir,
@@ -818,6 +820,8 @@ async def serve_temp_image(filepath: str, sig: Optional[str] = None, exp: Option
 
     if sig and exp and is_safe_dingtalk_temp_filename(filename):
         temp_path = await hydrate_dingtalk_temp_png(filename)
+    elif sig and exp and is_safe_diagram_preview_filename(filename):
+        temp_path = await hydrate_diagram_preview_png(filename)
     else:
         temp_path = TEMP_IMAGES_DIR / filename
         if not temp_path.exists():

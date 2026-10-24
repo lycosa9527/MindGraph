@@ -15,6 +15,7 @@ import { useLanguage } from '@/composables'
 import { PRESENTATION_Z } from '@/config/uiConfig'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 defineProps<{
   remainingSeconds: number
@@ -41,9 +42,10 @@ const wallClockText = ref('')
 let wallClockIntervalId: ReturnType<typeof setInterval> | null = null
 
 function updateWallClock(): void {
-  wallClockText.value = new Date().toLocaleTimeString(
+  wallClockText.value = formatInBeijing(
+    new Date(),
     intlLocaleForUiCode(currentLanguage.value as LocaleCode),
-    { hour: '2-digit', minute: '2-digit', second: '2-digit' }
+    { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }
   )
 }
 

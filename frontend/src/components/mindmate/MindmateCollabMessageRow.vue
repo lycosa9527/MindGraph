@@ -82,23 +82,37 @@ import {
 } from '@/utils/mindmateTeachingDesignFlag'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
 
-const props = defineProps<{
-  message: MindmateCollabMessage
-  isOwn: boolean
-  userPrompt?: string
-  agentName: string
-  agentAvatarUrl: string
-  regenerateDisabled?: boolean
-  feedback?: CollabFeedbackRating
-  sessionId?: string
-  readCursors?: readonly CollabReadCursor[]
-  /** False on a closed seminar: no live read checks or room actions. */
-  live?: boolean
-  selectMode?: boolean
-  selected?: boolean
-  briefEditable?: boolean
-  briefSaving?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    message: MindmateCollabMessage
+    isOwn: boolean
+    userPrompt?: string
+    agentName: string
+    agentAvatarUrl: string
+    regenerateDisabled?: boolean
+    feedback?: CollabFeedbackRating
+    sessionId?: string
+    readCursors?: readonly CollabReadCursor[]
+    /**
+     * False on a closed seminar. Default true: an omitted Boolean prop is cast
+     * to false, and the live room does not pass this prop.
+     */
+    live?: boolean
+    selectMode?: boolean
+    selected?: boolean
+    briefEditable?: boolean
+    briefSaving?: boolean
+    /**
+     * False when an earlier message in this clock minute already shows the time.
+     * Default true: an omitted Boolean prop is cast to false.
+     */
+    showTime?: boolean
+  }>(),
+  {
+    live: true,
+    showTime: true,
+  }
+)
 
 const emit = defineEmits<{
   (e: 'regenerate'): void
@@ -128,6 +142,7 @@ const convertingDocument = ref(false)
 const showImagePreview = ref(false)
 const previewImageUrl = ref('')
 const bubbleEl = ref<HTMLElement | null>(null)
+const rowHot = ref(false)
 
 const exportMessageId = computed(() => {
   if (props.message.id != null) {
@@ -588,9 +603,18 @@ async function openInCanvas(): Promise<void> {
   <div
     v-else
     class="mindmate-collab-room__msg-row"
-    :class="[rowClass, { 'is-selected': selected, 'is-selecting': selectMode }]"
+    :class="[
+      rowClass,
+      {
+        'is-selected': selected,
+        'is-selecting': selectMode,
+        'is-continued': !showTime,
+      },
+    ]"
     :data-collab-message-id="message.id || undefined"
     @click="onRowClick"
+    @mouseenter="rowHot = true"
+    @mouseleave="rowHot = false"
   >
     <button
       v-if="selectMode"
@@ -657,7 +681,7 @@ async function openInCanvas(): Promise<void> {
           summaryCard?.author || speakerName
         }}</span>
         <span
-          v-if="messageStamp"
+          v-if="showTime && messageStamp"
           class="mindmate-collab-room__meta-time"
           >{{ messageStamp }}</span
         >
@@ -668,7 +692,7 @@ async function openInCanvas(): Promise<void> {
       >
         <span class="mindmate-collab-room__meta-name">{{ message.username }}</span>
         <span
-          v-if="messageStamp"
+          v-if="showTime && messageStamp"
           class="mindmate-collab-room__meta-time"
           >{{ messageStamp }}</span
         >
@@ -742,10 +766,15 @@ async function openInCanvas(): Promise<void> {
       <div
         v-if="!message.streaming && isOwn"
         class="mindmate-collab-room__stamp-row mindmate-collab-room__stamp-row--own"
+        :class="{
+          'is-action-slot': live !== false,
+          'is-hot': rowHot && live !== false,
+        }"
       >
         <MindmateSeminarBubbleActions
           v-if="live !== false"
           inline
+          :open="rowHot"
           :highlight-state="highlightState"
           @copy="handleCopy"
           @reply="emitReply"
@@ -759,16 +788,22 @@ async function openInCanvas(): Promise<void> {
           :is-own="isOwn"
           :read-cursors="live === false ? [] : readCursors"
           :show-receipt="live !== false"
+          :show-time="showTime"
         />
       </div>
-      <MindmateSeminarBubbleActions
+      <div
         v-else-if="!message.streaming && !isAssistant && live !== false"
-        :highlight-state="highlightState"
-        @copy="handleCopy"
-        @reply="emitReply"
-        @highlight="pinHighlight"
-        @multi="emit('multi')"
-      />
+        class="mindmate-collab-room__action-slot"
+      >
+        <MindmateSeminarBubbleActions
+          :open="rowHot"
+          :highlight-state="highlightState"
+          @copy="handleCopy"
+          @reply="emitReply"
+          @highlight="pinHighlight"
+          @multi="emit('multi')"
+        />
+      </div>
       <MindmateCollabAssistantToolbar
         v-if="isAssistant && !message.streaming && !summaryCard"
         :live-actions="live !== false"
@@ -821,7 +856,10 @@ async function openInCanvas(): Promise<void> {
   width: 100%;
   min-width: 0;
   position: relative;
-  padding-bottom: 36px;
+}
+
+.mindmate-collab-room__msg-row.is-continued {
+  margin-top: -0.35rem;
 }
 
 .mindmate-collab-room__msg-row.is-selecting {
@@ -851,29 +889,8 @@ async function openInCanvas(): Promise<void> {
   box-shadow: inset 0 0 0 3px #fff;
 }
 
-.mindmate-collab-room__msg-row--assistant,
-.mindmate-collab-room__msg-row--card {
-  padding-bottom: 0;
-}
-
 .mindmate-collab-room__msg-body {
   position: relative;
-}
-
-.mindmate-collab-room__msg-row :deep(.mm-bubble-actions) {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  z-index: 2;
-  height: 32px;
-  margin: 0;
-  box-sizing: border-box;
-}
-
-.mindmate-collab-room__msg-row:hover :deep(.mm-bubble-actions),
-.mindmate-collab-room__msg-row:focus-within :deep(.mm-bubble-actions) {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .mindmate-collab-room__msg-row--card {
@@ -1050,43 +1067,36 @@ async function openInCanvas(): Promise<void> {
 }
 
 .mindmate-collab-room__stamp-row--own {
-  position: absolute;
-  top: calc(100% + 2px);
-  right: 0;
-  left: 0;
-  z-index: 2;
-  width: auto;
-  height: 32px;
-  min-height: 32px;
-  margin: 0;
   justify-content: flex-end;
-  gap: 8px;
+  width: 100%;
 }
 
-.mindmate-collab-room__stamp-row--own :deep(.mm-bubble-actions) {
+.mindmate-collab-room__stamp-row--own.is-action-slot,
+.mindmate-collab-room__action-slot {
+  position: relative;
+  min-height: 0;
+}
+
+.mindmate-collab-room__action-slot {
+  height: 0;
+}
+
+.mindmate-collab-room__stamp-row--own.is-hot :deep(.mindmate-collab-stamp) {
+  visibility: hidden;
+}
+
+.mindmate-collab-room__stamp-row--own.is-action-slot :deep(.mm-bubble-actions),
+.mindmate-collab-room__action-slot :deep(.mm-bubble-actions) {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
+  z-index: 3;
   margin: 0;
 }
 
-.mindmate-collab-room__highlight-btn {
-  width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: #a8a29e;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.mindmate-collab-room__highlight-btn:hover {
-  background: #f5f3ff;
-  color: #6d5efc;
+.mindmate-collab-room__stamp-row--own.is-action-slot :deep(.mm-bubble-actions) {
+  right: 0;
+  left: auto;
 }
 
 .mindmate-collab-room__bubble--files {
@@ -1168,9 +1178,5 @@ async function openInCanvas(): Promise<void> {
 .mindmate-collab-room__markdown :deep(ol) {
   margin: 0 0 0.5em;
   padding-left: 1.25em;
-}
-
-.mindmate-collab-room__msg-row--assistant:hover :deep(.action-bar.action-bar-hover) {
-  opacity: 1;
 }
 </style>

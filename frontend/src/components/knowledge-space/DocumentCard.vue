@@ -9,6 +9,7 @@ import { ElBadge, ElButton, ElCard, ElIcon } from 'element-plus'
 import { Check, Close, Delete, Document, Loading } from '@element-plus/icons-vue'
 
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const props = defineProps<{
   document: KnowledgeDocument
@@ -58,12 +59,13 @@ const fileSize = computed(() => {
 })
 
 const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
+  return (
+    formatInBeijing(dateString, 'zh-CN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }) || dateString
+  )
 }
 </script>
 

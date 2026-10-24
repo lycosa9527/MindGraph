@@ -15,15 +15,22 @@ import {
   readersForCollabMessage,
 } from '@/utils/mindmateCollabRead'
 
-const props = defineProps<{
-  messageId?: number
-  createdAt?: string
-  senderUserId?: number | null
-  isOwn: boolean
-  readCursors?: readonly CollabReadCursor[]
-  /** Read checks belong to a live room. A closed transcript keeps the time only. */
-  showReceipt?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    messageId?: number
+    createdAt?: string
+    senderUserId?: number | null
+    isOwn: boolean
+    readCursors?: readonly CollabReadCursor[]
+    /** Read checks belong to a live room. A closed transcript keeps the time only. */
+    showReceipt?: boolean
+    /** False when an earlier message in this minute already shows the clock. */
+    showTime?: boolean
+  }>(),
+  {
+    showTime: true,
+  }
+)
 
 const { t } = useLanguage()
 const open = ref(false)
@@ -59,12 +66,12 @@ function hideReaders(): void {
 
 <template>
   <div
-    v-if="stamp || isOwn"
+    v-if="(showTime && stamp) || (isOwn && showReceipt !== false)"
     class="mindmate-collab-stamp"
     :class="{ 'mindmate-collab-stamp--own': isOwn }"
   >
     <time
-      v-if="stamp"
+      v-if="showTime && stamp"
       class="mindmate-collab-stamp__time"
       :datetime="createdAt"
     >

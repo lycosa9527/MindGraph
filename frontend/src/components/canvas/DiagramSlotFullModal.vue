@@ -20,6 +20,7 @@ import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
 import { useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { beijingCalendarDaysBetween, formatInBeijing, parseApiInstant } from '@/utils/beijingClock'
 
 const notify = useNotifications()
 
@@ -79,10 +80,9 @@ function getDiagramTypeName(type: string): string {
 
 // Format date
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const date = parseApiInstant(dateStr)
+  if (!date) return dateStr
+  const diffDays = beijingCalendarDaysBetween(date, new Date())
 
   if (diffDays === 0) {
     return t('common.date.today')
@@ -93,7 +93,7 @@ function formatDate(dateStr: string): string {
   if (diffDays < 7) {
     return t('common.date.daysAgo', { n: diffDays })
   }
-  return date.toLocaleDateString(intlLocaleForUiCode(uiStore.language as LocaleCode), {
+  return formatInBeijing(date, intlLocaleForUiCode(uiStore.language as LocaleCode), {
     month: 'short',
     day: 'numeric',
   })

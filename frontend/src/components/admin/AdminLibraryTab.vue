@@ -24,6 +24,7 @@ import {
   useUpdateAdminLibraryDocumentVisibility,
 } from '@/composables/queries'
 import { bilingualNotifyWithSuffix } from '@/i18n/bilingualNotifyMessage'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 interface BookEntry {
   folder_name: string
@@ -340,7 +341,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           class="text-[11px] text-stone-400"
         >
           <I18nText k="admin.library.lastScanned" />:
-          {{ new Date(scanData.scanned_at + 'Z').toLocaleTimeString() }}
+          {{ formatInBeijing(scanData.scanned_at, undefined, { timeStyle: 'medium' }) }}
         </span>
         <el-button
           :loading="isScanning"

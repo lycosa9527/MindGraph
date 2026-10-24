@@ -28,6 +28,7 @@ import {
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const props = defineProps<{
   documents: KnowledgeDocument[]
@@ -62,12 +63,13 @@ const formatFileSize = (size: number) => {
 }
 
 const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString(dateLocaleTag.value, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
+  return (
+    formatInBeijing(dateString, dateLocaleTag.value, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }) || dateString
+  )
 }
 
 /**

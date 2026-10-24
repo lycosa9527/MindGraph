@@ -12,6 +12,7 @@ import {
 } from '@/components/showcase/showcaseShared'
 import { useLanguage } from '@/composables'
 import { type ShowcasePost, getShowcaseFavoritePosts } from '@/utils/apiClient'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const props = defineProps<{
   visible: boolean
@@ -40,7 +41,9 @@ function caseTypeLabelKey(caseType: ShowcaseCaseType): string {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString('zh-CN')
+    return (
+      formatInBeijing(iso, 'zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) || iso
+    )
   } catch {
     return iso
   }

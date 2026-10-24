@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.184] - 2026-10-24
+
+> **Learning Space uses the Beijing clock. A seminar file lives in its own COS folder, and a shared diagram can be opened again.**
+
+### Added
+
+- **Seminar files** — Chat attachments, voice clips, Word files, and the shared folder go to a private COS prefix. Local dev writes `dev/mindmate`, the test host writes `test/mindmate`, and production writes `mindmate/mindgraph`. Leave `COS_SEMINAR_PREFIX` unset so the two servers do not share a folder. The room still reads the bytes through the app.
+- **Canvas share** — A diagram sent into a seminar is stored as `diagram_{uuid}.png` under the temp-images prefix. Reopening the message loads the picture after the local file has aged out.
+
+### Changed
+
+- **Learning Space clocks** — A deadline is set on the Beijing clock. Due dates, reviews, last login, greetings, and admin tables show Asia/Shanghai, whatever timezone the browser is in. The database stores a UTC wall clock, and the API includes the UTC offset.
+- **Homework** — The assignment tab counts published work. Students can filter all, to do, submitted, and urgent. The teacher home lists each assignment that still has unsubmitted work, and opens that assignment. A graded card names who graded it. Saving a class-wall diagram stays in MindGraph 「已保存图示」.
+- **Seminar transcript** — Message times use Beijing. A second line in the same minute keeps the read marks and hides the clock. Copy, reply, and share appear while the pointer is on the message.
+
+### Fixed
+
+- **Multi-flow map** — A width measured as zero before the event pill has laid out is ignored, so the arrows do not meet at one point. Measuring the same width again does not start another layout pass.
+- **Returned homework** — A returned submission stays out of the submitted count and the graded count.
+- **Frontend audit** — The `undici` dev dependency is 8.12.3, past the high-severity advisory.
+
+### Tests
+
+- [`frontend/tests/beijingClock.spec.ts`](frontend/tests/beijingClock.spec.ts), [`frontend/tests/deadlineDateTime.spec.ts`](frontend/tests/deadlineDateTime.spec.ts), [`frontend/tests/lsHelpersWall.spec.ts`](frontend/tests/lsHelpersWall.spec.ts), [`frontend/tests/mindmateCollabRead.spec.ts`](frontend/tests/mindmateCollabRead.spec.ts), [`frontend/tests/multiFlowLayoutLoop.spec.ts`](frontend/tests/multiFlowLayoutLoop.spec.ts)
+- [`tests/test_learning_space.py`](tests/test_learning_space.py), [`tests/test_cos_env_prefix.py`](tests/test_cos_env_prefix.py), [`tests/test_temp_image_storage.py`](tests/test_temp_image_storage.py), [`tests/test_mindmate_collab_background_files.py`](tests/test_mindmate_collab_background_files.py), [`tests/test_mindmate_collab_background_preview.py`](tests/test_mindmate_collab_background_preview.py)
+
 ## [5.180.183] - 2026-10-23
 
 > **The MindMate home uses the seminar welcome card again.**

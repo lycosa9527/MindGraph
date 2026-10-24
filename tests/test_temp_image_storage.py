@@ -18,6 +18,14 @@ def test_is_safe_dingtalk_temp_filename() -> None:
     assert not storage.is_safe_dingtalk_temp_filename("")
 
 
+def test_is_safe_diagram_preview_filename() -> None:
+    """Seminar canvas shares use a 32-hex diagram PNG name."""
+    name = "diagram_" + ("ab" * 16) + ".png"
+    assert storage.is_safe_diagram_preview_filename(name)
+    assert not storage.is_safe_diagram_preview_filename("diagram_abc.png")
+    assert not storage.is_safe_diagram_preview_filename("dingtalk_deadbeef_1.png")
+
+
 def test_temp_images_signed_ttl_local_when_cos_off() -> None:
     """Local-only deployments keep the 24h signed URL window."""
     with patch.object(storage, "cos_temp_images_enabled", return_value=False):
@@ -104,3 +112,32 @@ async def test_hydrate_rejects_unsafe_filename(tmp_path: Path) -> None:
     """Path-like names must not hydrate."""
     with patch.object(storage, "temp_images_dir", return_value=tmp_path):
         assert await storage.hydrate_dingtalk_temp_png("../secret.png") is None
+
+
+@pytest.mark.asyncio
+async def test_persist_diagram_preview_uploads_to_cos(tmp_path: Path) -> None:
+    """Seminar canvas preview PNGs are mirrored under the temp-images COS prefix."""
+    filename = "diagram_" + ("ab" * 16) + ".png"
+    with (
+        patch.object(storage, "temp_images_dir", return_value=tmp_path),
+        patch.object(storage, "cos_temp_images_enabled", return_value=True),
+        patch.object(storage, "diagram_preview_cos_key", return_value="dev/temp_images/diagram/x.png"),
+        patch.object(storage, "upload_bytes", return_value=True) as upload,
+    ):
+        path = await storage.persist_diagram_preview_png(filename, b"\x89PNG")
+    assert path.read_bytes() == b"\x89PNG"
+    assert upload.call_args.args[1] == "dev/temp_images/diagram/x.png"
+
+
+@pytest.mark.asyncio
+async def test_persist_diagram_preview_raises_when_cos_upload_fails(tmp_path: Path) -> None:
+    """A failed COS upload must not publish a preview URL other hosts cannot load."""
+    filename = "diagram_" + ("ab" * 16) + ".png"
+    with (
+        patch.object(storage, "temp_images_dir", return_value=tmp_path),
+        patch.object(storage, "cos_temp_images_enabled", return_value=True),
+        patch.object(storage, "diagram_preview_cos_key", return_value="dev/temp_images/diagram/x.png"),
+        patch.object(storage, "upload_bytes", return_value=False),
+        pytest.raises(ValueError, match="upload_failed"),
+    ):
+        await storage.persist_diagram_preview_png(filename, b"png")

@@ -72,6 +72,7 @@ export interface LearningAssignment {
   created_at: string | null
   submission_count?: number
   submitted_count?: number
+  reviewed_count?: number
   student_count?: number
   submission?: LearningSubmission | null
 }

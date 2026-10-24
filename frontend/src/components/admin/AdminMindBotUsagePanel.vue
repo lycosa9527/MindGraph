@@ -15,6 +15,7 @@ import {
   fetchAdminMindbotUsageEvents,
   fetchAdminMindbotUsageThreadEvents,
 } from '@/composables/queries'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const props = defineProps<{
   organizationId: number | null
@@ -154,11 +155,7 @@ async function loadPage(append: boolean): Promise<void> {
 }
 
 function formatTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString()
-  } catch {
-    return iso
-  }
+  return formatInBeijing(iso) || iso
 }
 
 function formatDur(s: number | null): string {

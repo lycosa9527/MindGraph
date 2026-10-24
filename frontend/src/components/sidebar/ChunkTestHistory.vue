@@ -27,6 +27,7 @@ import {
   useChunkTestHistory,
   useDeleteChunkTest,
 } from '@/composables/queries/useChunkTestQueries'
+import { beijingRecentDayStarts, parseApiInstant } from '@/utils/beijingClock'
 
 defineProps<{
   isBlurred?: boolean
@@ -67,16 +68,13 @@ const groupedTests = computed((): GroupedTests => {
     month: [],
   }
 
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
-  const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
+  const { todayStart, yesterdayStart, weekStart } = beijingRecentDayStarts()
 
   // Limit to 10 unless showAll
   const items = showAll.value ? tests.value : tests.value.slice(0, INITIAL_LIMIT)
 
   items.forEach((test) => {
-    const testTime = new Date(test.created_at).getTime()
+    const testTime = parseApiInstant(test.created_at)?.getTime() ?? Number.NaN
 
     if (testTime >= todayStart) {
       groups.today.push(test)

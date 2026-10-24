@@ -290,6 +290,7 @@ async function flushMultiFlowTopicWidthFromPinia(): Promise<void> {
   const fromStore = diagramStore.getNodeDimension(props.id)?.width
   const fallback = topicNodeRef.value?.offsetWidth ?? null
   const w = fromStore ?? fallback
+  if (w == null || !(w > 0)) return
   eventBus.emit('multi_flow_map:topic_width_changed', {
     nodeId: props.id,
     width: w,
@@ -370,7 +371,7 @@ function handleWidthChange(width: number) {
       reportDimensions()
       const fromStore = diagramStore.getNodeDimension(props.id)?.width
       const actualWidth = fromStore ?? topicNodeRef.value?.offsetWidth ?? null
-      if (topicNodeRef.value && actualWidth != null) {
+      if (topicNodeRef.value && actualWidth != null && actualWidth > 0) {
         eventBus.emit('multi_flow_map:topic_width_changed', {
           nodeId: props.id,
           width: actualWidth,

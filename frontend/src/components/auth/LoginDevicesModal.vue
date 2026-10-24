@@ -11,6 +11,7 @@ import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { apiDelete, apiGet } from '@/utils/apiClient'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const props = defineProps<{
   visible: boolean
@@ -44,11 +45,7 @@ function formatLastActive(iso: string): string {
   if (!iso) {
     return ''
   }
-  const parsed = new Date(iso)
-  if (Number.isNaN(parsed.getTime())) {
-    return iso
-  }
-  return parsed.toLocaleString()
+  return formatInBeijing(iso) || iso
 }
 
 async function loadDevices() {

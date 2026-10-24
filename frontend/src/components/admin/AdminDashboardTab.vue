@@ -22,6 +22,7 @@ import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { buildAdminTrendChartLabels } from '@/composables/admin/useAdminTrendChart'
 import {
   queryErrorMessage,
   useQueryErrorNotification,
@@ -572,24 +573,7 @@ async function renderTrendChart(
   trendChartInstance = null
 
   const intlLocale = intlLocaleForUiCode(uiStore.language)
-  const labels = rawData.map((item) => {
-    const dateStr = item.date.includes(' ') ? item.date.replace(' ', 'T') : item.date + 'T00:00:00'
-    const date = new Date(dateStr)
-    if (item.date.includes(':') && item.date.includes(' ')) {
-      return date.toLocaleString(intlLocale, {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        hour12: false,
-        timeZone: 'Asia/Shanghai',
-      })
-    }
-    return date.toLocaleDateString(intlLocale, {
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'Asia/Shanghai',
-    })
-  })
+  const labels = buildAdminTrendChartLabels(rawData, intlLocale)
 
   const values = rawData.map((item) => item.value)
   const maxVal = Math.max(...values, 0)

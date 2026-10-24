@@ -11,10 +11,12 @@ import { AlertTriangle, ArrowLeft, Clock3, FileText, Users } from '@lucide/vue'
 
 import LearningSpaceCreditLine from '@/components/learningSpace/LearningSpaceCreditLine.vue'
 import LearningSpaceThumbCover from '@/components/learningSpace/LearningSpaceThumbCover.vue'
+import LearningSpaceWorkGrader from '@/components/learningSpace/LearningSpaceWorkGrader.vue'
 import { swissGlassConfirm, useLanguage } from '@/composables'
 import {
   assignmentIsClosed,
   assignmentProgress,
+  beijingHour,
   formatLsDateTime,
   formatLsStudentLabel,
   greetHourLabel,
@@ -50,7 +52,7 @@ const userName = computed(
   () => authStore.user?.username || authStore.user?.phone || t('learningSpace.userFallback')
 )
 const greetKey = computed(() => {
-  const label = greetHourLabel(new Date().getHours())
+  const label = greetHourLabel(beijingHour())
   if (label === 'morning') return 'learningSpace.greetMorning'
   if (label === 'afternoon') return 'learningSpace.greetAfternoon'
   return 'learningSpace.greetEvening'
@@ -79,6 +81,10 @@ function classNameForAssignment(assignment: LearningAssignment): string {
 function progressFor(assignment: LearningAssignment) {
   const roster = classes.value.find((row) => row.id === assignment.class_id)?.student_count
   return assignmentProgress(assignment, roster)
+}
+
+function unsubmittedTopicLabel(title: string, className: string): string {
+  return className ? `${title} · ${className}` : title
 }
 
 function canDeleteAssignment(assignment: LearningAssignment): boolean {
@@ -160,6 +166,7 @@ async function onDelete(assignment: LearningAssignment): Promise<void> {
         <div class="ls-metric__hint"><I18nText k="learningSpace.metricPendingHint" /></div>
       </button>
       <button
+        v-if="!teacherMetrics.unsubmittedTopics.length"
         type="button"
         class="ls-metric ls-metric--alert"
         @click="ls.goTeacherAssignments('all')"
@@ -172,11 +179,50 @@ async function onDelete(assignment: LearningAssignment): Promise<void> {
           <I18nText k="learningSpace.metricUnsubmitted" />
           <span class="ls-tag-focus"><I18nText k="learningSpace.focusTag" /></span>
         </div>
-        <div class="ls-metric__value">{{ teacherMetrics.unsubmitted }}</div>
+        <div class="ls-metric__value">0</div>
         <div class="ls-metric__hint">
           <I18nText k="learningSpace.metricUnsubmittedHint" />
         </div>
       </button>
+      <div
+        v-else
+        class="ls-metric ls-metric--alert ls-metric--topics"
+      >
+        <AlertTriangle
+          class="ls-metric__icon"
+          :size="20"
+        />
+        <div class="ls-metric__label">
+          <I18nText k="learningSpace.metricUnsubmitted" />
+          <span class="ls-tag-focus"><I18nText k="learningSpace.focusTag" /></span>
+        </div>
+        <ul class="ls-unsub-list">
+          <li
+            v-for="row in teacherMetrics.unsubmittedTopics"
+            :key="row.id"
+          >
+            <button
+              type="button"
+              class="ls-unsub-row"
+              :title="unsubmittedTopicLabel(row.title, row.className)"
+              @click="ls.openAssignmentDetail(row.id)"
+            >
+              <span class="ls-unsub-row__title">{{
+                unsubmittedTopicLabel(row.title, row.className)
+              }}</span>
+              <span class="ls-unsub-row__count">
+                <I18nText
+                  k="learningSpace.unsubmittedCount"
+                  :params="{ n: row.unsubmitted }"
+                />
+              </span>
+            </button>
+          </li>
+        </ul>
+        <div class="ls-metric__hint">
+          <I18nText k="learningSpace.metricUnsubmittedHint" />
+        </div>
+      </div>
       <button
         type="button"
         class="ls-metric"
@@ -355,7 +401,7 @@ async function onDelete(assignment: LearningAssignment): Promise<void> {
               <I18nText
                 k="learningSpace.pendingReviewCount"
                 :params="{
-                  n: a.submitted_count ?? 0,
+                  n: progressFor(a).pendingReview,
                 }"
               />
             </span>
@@ -479,13 +525,7 @@ async function onDelete(assignment: LearningAssignment): Promise<void> {
           <div class="ls-thumb-card__meta">
             {{ statusLabel(s.status) }} ·
             {{ formatLsDateTime(s.submitted_at) }}
-            <template v-if="s.reviewer_name">
-              ·
-              <I18nText
-                k="learningSpace.gradedBy"
-                :params="{ name: s.reviewer_name }"
-              />
-            </template>
+            <LearningSpaceWorkGrader :submission="s" />
           </div>
           <button
             type="button"

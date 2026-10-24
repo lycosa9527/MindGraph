@@ -4,6 +4,12 @@
  * One cursor per person is the newest line they have seen. A line is read
  * when someone else's cursor is at or past that line.
  */
+import {
+  beijingCalendarDaysBetween,
+  beijingWallClock,
+  formatInBeijing,
+  parseApiInstant,
+} from '@/utils/beijingClock'
 
 export interface CollabReadCursor {
   userId: number
@@ -26,22 +32,46 @@ export function formatCollabMessageStamp(iso: string | undefined, now = new Date
   if (!iso) {
     return ''
   }
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) {
+  const date = parseApiInstant(iso)
+  if (!date) {
     return ''
   }
-  const time = new Intl.DateTimeFormat(undefined, {
+  const time = formatInBeijing(date, undefined, {
     hour: '2-digit',
     minute: '2-digit',
-  }).format(date)
-  if (date.toDateString() === now.toDateString()) {
+  })
+  if (beijingCalendarDaysBetween(date, now) === 0) {
     return time
   }
-  const day = new Intl.DateTimeFormat(undefined, {
+  const day = formatInBeijing(date, undefined, {
     month: 'short',
     day: 'numeric',
-  }).format(date)
+  })
   return `${day} ${time}`
+}
+
+/** True when both instants fall in the same local clock minute. */
+export function sameCollabMessageMinute(
+  createdAt: string | undefined,
+  previousCreatedAt: string | undefined
+): boolean {
+  if (!createdAt || !previousCreatedAt) {
+    return false
+  }
+  const current = parseApiInstant(createdAt)
+  const previous = parseApiInstant(previousCreatedAt)
+  if (!current || !previous) {
+    return false
+  }
+  const left = beijingWallClock(current)
+  const right = beijingWallClock(previous)
+  return (
+    left.year === right.year &&
+    left.month === right.month &&
+    left.day === right.day &&
+    left.hour === right.hour &&
+    left.minute === right.minute
+  )
 }
 
 export function collabReadCursorFromFrame(

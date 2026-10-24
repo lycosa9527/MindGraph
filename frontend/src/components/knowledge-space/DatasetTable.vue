@@ -13,6 +13,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import type { Benchmark } from '@/composables/queries/useChunkTestQueries'
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const props = defineProps<{
   datasets: Benchmark[]
@@ -29,12 +30,13 @@ const dateLocaleTag = computed(() => intlLocaleForUiCode(currentLanguage.value a
 
 const formatDate = (dateString?: string) => {
   if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString(dateLocaleTag.value, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
+  return (
+    formatInBeijing(dateString, dateLocaleTag.value, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }) || dateString
+  )
 }
 
 const getVersionInfo = (dataset: Benchmark) => {

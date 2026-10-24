@@ -36,6 +36,7 @@ from services.learning_space.blank_spec import (
     normalize_ls_diagram_type,
     resolve_template_role,
 )
+from services.learning_space.clock import utc_isoformat, utc_naive
 from services.learning_space.image_storage import (
     delete_stored_images_sync,
     public_instruction_images,
@@ -43,6 +44,7 @@ from services.learning_space.image_storage import (
     stored_image_keys,
 )
 from services.learning_space.passwords import merge_ai_permissions
+from services.learning_space.review_mark import current_submission, submission_tally_columns
 from services.learning_space.thumbnail_promote import (
     ensure_assignment_thumbnail_refs,
     ensure_submission_thumbnail_ref,
@@ -87,7 +89,7 @@ def apply_learner_due(
 ) -> dict[str, Any]:
     """Show this student their own deadline, including a per-person extension."""
     due = effective_due_at(assignment, submission)
-    payload["due_at"] = due.isoformat() if due is not None else None
+    payload["due_at"] = utc_isoformat(due)
     return payload
 
 
@@ -643,7 +645,7 @@ async def submit_assignment(
         _clear_submission_review(submission)
     submission.snapshot_spec = snapshot
     submission.status = SUBMISSION_STATUS_SUBMITTED
-    submission.submitted_at = datetime.now(UTC)
+    submission.submitted_at = utc_naive(datetime.now(UTC))
     try:
         await db.commit()
         await db.refresh(submission)
@@ -727,7 +729,7 @@ async def extend_submission_due(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Due date must be in the future",
         )
-    submission.due_at_override = due
+    submission.due_at_override = utc_naive(due)
     try:
         await db.commit()
         await db.refresh(submission)
@@ -770,6 +772,7 @@ def assignment_public_dict(
     template_thumbnail: str | None = None,
     submission_count: int | None = None,
     submitted_count: int | None = None,
+    reviewed_count: int | None = None,
     student_count: int | None = None,
 ) -> dict[str, Any]:
     """Serialize assignment for API responses."""
@@ -783,11 +786,11 @@ def assignment_public_dict(
             assignment_id=int(assignment.id) if assignment.id is not None else None,
         ),
         "template_diagram_id": assignment.template_diagram_id,
-        "due_at": assignment.due_at.isoformat() if assignment.due_at else None,
+        "due_at": utc_isoformat(assignment.due_at),
         "ai_permissions": _public_ai_permissions(assignment),
         "status": assignment.status,
         "created_by": assignment.created_by,
-        "created_at": assignment.created_at.isoformat() if assignment.created_at else None,
+        "created_at": utc_isoformat(assignment.created_at),
     }
     if template_thumbnail is not None:
         payload["template_thumbnail"] = template_thumbnail
@@ -801,6 +804,8 @@ def assignment_public_dict(
         payload["submission_count"] = submission_count
     if submitted_count is not None:
         payload["submitted_count"] = submitted_count
+    if reviewed_count is not None:
+        payload["reviewed_count"] = reviewed_count
     if student_count is not None:
         payload["student_count"] = student_count
     return payload
@@ -953,11 +958,11 @@ def submission_public_dict(
         "student_user_id": submission.student_user_id,
         "diagram_id": submission.diagram_id,
         "status": submission.status,
-        "submitted_at": submission.submitted_at.isoformat() if submission.submitted_at else None,
-        "due_at_override": submission.due_at_override.isoformat() if submission.due_at_override else None,
+        "submitted_at": utc_isoformat(submission.submitted_at),
+        "due_at_override": utc_isoformat(submission.due_at_override),
         "review_liked": bool(getattr(submission, "review_liked", False)),
         "review_pinned": bool(getattr(submission, "review_pinned", False)),
-        "reviewed_at": (submission.reviewed_at.isoformat() if isinstance(submission.reviewed_at, datetime) else None),
+        "reviewed_at": utc_isoformat(submission.reviewed_at if isinstance(submission.reviewed_at, datetime) else None),
         "reviewed_by": int(submission.reviewed_by) if submission.reviewed_by is not None else None,
     }
     if submission.reviewed_by is None:
@@ -1079,20 +1084,20 @@ async def enrich_assignment_dict(
     total = await db.execute(
         select(func.count()).select_from(LearningSubmission).where(LearningSubmission.assignment_id == assignment.id)
     )
-    submitted = await db.execute(
-        select(func.count())
+    submitted_col, reviewed_col = submission_tally_columns()
+    tallies = await db.execute(
+        select(submitted_col, reviewed_col)
         .select_from(LearningSubmission)
-        .where(
-            LearningSubmission.assignment_id == assignment.id,
-            LearningSubmission.status == SUBMISSION_STATUS_SUBMITTED,
-        )
+        .where(LearningSubmission.assignment_id == assignment.id, current_submission())
     )
+    submitted_total, reviewed_total = tallies.one()
     roster = await count_class_students(db, int(assignment.class_id))
     return assignment_public_dict(
         assignment,
         template_thumbnail=template_thumbnail,
         submission_count=int(total.scalar_one() or 0),
-        submitted_count=int(submitted.scalar_one() or 0),
+        submitted_count=int(submitted_total or 0),
+        reviewed_count=int(reviewed_total or 0),
         student_count=roster,
     )
 
@@ -1164,7 +1169,7 @@ async def save_submission_review(
     submission.review_comment = (comment or "").strip()[:4000] or None
     submission.review_liked = bool(liked)
     submission.review_pinned = bool(pinned)
-    submission.reviewed_at = datetime.now(UTC)
+    submission.reviewed_at = utc_naive(datetime.now(UTC))
     submission.reviewed_by = int(reviewer_user_id)
     try:
         await db.commit()

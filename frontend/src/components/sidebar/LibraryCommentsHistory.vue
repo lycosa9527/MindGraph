@@ -16,6 +16,7 @@ import { useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
 import { type LibraryBookmark } from '@/utils/apiClient'
+import { beijingRecentDayStarts, parseApiInstant } from '@/utils/beijingClock'
 
 defineProps<{
   isBlurred?: boolean
@@ -64,16 +65,13 @@ const groupedBookmarks = computed((): GroupedBookmarks => {
     month: [],
   }
 
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
-  const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
+  const { todayStart, yesterdayStart, weekStart } = beijingRecentDayStarts()
 
   // Limit to 10 unless showAll
   const items = showAll.value ? bookmarks.value : bookmarks.value.slice(0, INITIAL_LIMIT)
 
   items.forEach((bookmark) => {
-    const bookmarkTime = new Date(bookmark.created_at).getTime()
+    const bookmarkTime = parseApiInstant(bookmark.created_at)?.getTime() ?? Number.NaN
 
     if (bookmarkTime >= todayStart) {
       groups.today.push(bookmark)

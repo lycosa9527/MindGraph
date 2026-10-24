@@ -48,6 +48,7 @@ import { useMobileKittyPageLifecycle } from '@/composables/mobile/useMobileKitty
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 import type { OneSentenceClarifyChoice } from '@/stores/oneSentence'
+import { beijingWallClock } from '@/utils/beijingClock'
 import { mobileDebugLog } from '@/utils/loadMobileDebugConsole'
 
 const router = useRouter()
@@ -73,9 +74,9 @@ const KITTY_DEBUG_MAX = 42
 const kittyDebugLines = ref<string[]>([])
 
 function pushKittyDebugLine(prefix: string, detail: string): void {
-  const d = new Date()
-  const pad = (n: number, w: number) => String(n).padStart(w, '0')
-  const stamp = `${pad(d.getHours(), 2)}:${pad(d.getMinutes(), 2)}:${pad(d.getSeconds(), 2)}.${pad(d.getMilliseconds(), 3)}`
+  const wall = beijingWallClock()
+  const ms = String(new Date().getMilliseconds()).padStart(3, '0')
+  const stamp = `${wall.hour}:${wall.minute}:${wall.second}.${ms}`
   const row = `${stamp} ${prefix} ${detail}`.trim()
   // Always mirror to console when Eruda / test debug host is on (iOS Safari).
   mobileDebugLog(prefix, detail)

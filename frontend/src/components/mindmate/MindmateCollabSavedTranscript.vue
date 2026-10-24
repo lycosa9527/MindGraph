@@ -16,6 +16,7 @@ import {
   MINDMATE_COLLAB_LIBRARY_CHANGED_EVENT,
   type MindmateCollabLibraryChangeDetail,
 } from '@/utils/mindmateCollabLibrarySave'
+import { sameCollabMessageMinute } from '@/utils/mindmateCollabRead'
 
 const props = defineProps<{
   sessionId: string
@@ -42,6 +43,19 @@ const messages = ref<MindmateCollabMessage[]>([])
 function isOwnMessage(message: MindmateCollabMessage): boolean {
   const userId = Number(authStore.user?.id)
   return message.role === 'user' && userId > 0 && message.sender_user_id === userId
+}
+
+function showMessageTime(index: number): boolean {
+  const createdAt = messages.value[index]?.created_at
+  let previousCreatedAt: string | undefined
+  for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
+    const earlier = messages.value[cursor]?.created_at
+    if (earlier && !Number.isNaN(Date.parse(earlier))) {
+      previousCreatedAt = earlier
+      break
+    }
+  }
+  return !sameCollabMessageMinute(createdAt, previousCreatedAt)
 }
 
 async function loadTranscript(sessionId: string): Promise<void> {
@@ -147,6 +161,7 @@ watch(
             :agent-avatar-url="agentAvatarUrl"
             :session-id="sessionId"
             :live="false"
+            :show-time="showMessageTime(index)"
           />
         </template>
       </div>

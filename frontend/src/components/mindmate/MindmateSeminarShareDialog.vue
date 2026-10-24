@@ -9,6 +9,7 @@ import { ElDialog } from 'element-plus'
 import { Download, Star, X } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { beijingWallClock, parseApiInstant } from '@/utils/beijingClock'
 import { dataUrlToBlob, deliverExportFile } from '@/utils/deliverExportFile'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
 
@@ -39,24 +40,19 @@ const exporting = ref(false)
 const qrSrc = ref('')
 
 const exportedAt = computed(() => {
-  const date = new Date()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${date.getFullYear()}-${month}-${day} ${hours}:${minutes}`
+  const wall = beijingWallClock()
+  return `${wall.year}-${wall.month}-${wall.day} ${wall.hour}:${wall.minute}`
 })
 
 const siteUrl = computed(() => (typeof window === 'undefined' ? '' : window.location.origin))
 
 function formatWhen(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) {
+  const date = parseApiInstant(iso)
+  if (!date) {
     return ''
   }
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${date.getMonth() + 1}/${date.getDate()} ${hours}:${minutes}`
+  const wall = beijingWallClock(date)
+  return `${Number(wall.month)}/${Number(wall.day)} ${wall.hour}:${wall.minute}`
 }
 
 async function loadQr(): Promise<void> {

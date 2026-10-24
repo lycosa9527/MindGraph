@@ -64,6 +64,7 @@ import {
   nextCollabFeedback,
   previousCollabUserPrompt,
 } from '@/utils/mindmateCollabDisplay'
+import { sameCollabMessageMinute } from '@/utils/mindmateCollabRead'
 import {
   formatMindmateCollabCode,
   markMindmateCollabCodeEnded,
@@ -1006,15 +1007,23 @@ function highlightInstant(iso: string | undefined): number | null {
 }
 
 const transcript = computed(() => {
-  const messageRows = messages.value.map((msg, idx) => ({
-    kind: 'message' as const,
-    key: collabMessageRowKey(msg, idx),
-    msg,
-    isOwn: isOwnMessage(msg),
-    isLastAssistant: idx === lastAssistantIdx.value,
-    userPrompt:
-      msg.role === 'assistant' ? previousCollabUserPrompt(messages.value, idx) : undefined,
-  }))
+  let previousCreatedAt: string | undefined
+  const messageRows = messages.value.map((msg, idx) => {
+    const showTime = !sameCollabMessageMinute(msg.created_at, previousCreatedAt)
+    if (msg.created_at && !Number.isNaN(Date.parse(msg.created_at))) {
+      previousCreatedAt = msg.created_at
+    }
+    return {
+      kind: 'message' as const,
+      key: collabMessageRowKey(msg, idx),
+      msg,
+      isOwn: isOwnMessage(msg),
+      isLastAssistant: idx === lastAssistantIdx.value,
+      showTime,
+      userPrompt:
+        msg.role === 'assistant' ? previousCollabUserPrompt(messages.value, idx) : undefined,
+    }
+  })
   const notices = [...seminarHighlightNotices.value].sort(
     (left, right) =>
       (highlightInstant(left.createdAt) ?? 0) - (highlightInstant(right.createdAt) ?? 0)
@@ -1297,6 +1306,7 @@ watch(seminarHighlightNotices, () => {
                 :selected="selectedKeys.includes(row.key)"
                 :brief-editable="isHost"
                 :brief-saving="savingBrief"
+                :show-time="row.showTime"
                 @save-brief="saveBriefCard"
                 @regenerate="handleRegenerate(row.userPrompt)"
                 @share="shareTranscript"

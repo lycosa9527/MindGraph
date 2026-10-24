@@ -46,6 +46,7 @@ def test_all_modules_share_env_root(monkeypatch: pytest.MonkeyPatch) -> None:
     assert cos_feature_prefix("training") == "dev/training"
     assert cos_feature_prefix("temp_images") == "dev/temp_images"
     assert cos_feature_prefix("auth-login") == "dev/auth-login"
+    assert cos_feature_prefix("mindmate") == "dev/mindmate"
 
 
 def test_legacy_app_identity_still_maps() -> None:
@@ -68,6 +69,7 @@ def test_config_prefixes_follow_environment(
         "COS_TRAINING_PREFIX",
         "COS_WORKSHOP_PREFIX",
         "COS_AUTH_LOGIN_PREFIX",
+        "COS_SEMINAR_PREFIX",
     ):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("ENVIRONMENT", "development")
@@ -80,10 +82,12 @@ def test_config_prefixes_follow_environment(
         assert config.COS_TRAINING_PREFIX == "dev/training"
         assert config.COS_WORKSHOP_PREFIX == "dev/workshop"
         assert config.COS_AUTH_LOGIN_PREFIX == "dev/auth-login"
+        assert config.COS_SEMINAR_PREFIX == "dev/mindmate"
         monkeypatch.setenv("ENVIRONMENT", "test")
         config.refresh_env_cache()
         assert config.COS_DOCUMENTS_PREFIX == "test/documents"
         assert config.COS_SHOWCASE_PREFIX == "test/showcase"
+        assert config.COS_SEMINAR_PREFIX == "test/mindmate"
     finally:
         config.refresh_env_cache()
 
@@ -105,6 +109,7 @@ def test_production_keeps_live_prefixes_until_opt_in(
         assert cos_feature_prefix("training") == "training/mindgraph"
         assert cos_feature_prefix("workshop") == "workshop/mindgraph"
         assert cos_feature_prefix("auth-login") == "auth-login/mindgraph"
+        assert cos_feature_prefix("mindmate") == "mindmate/mindgraph"
         assert cos_feature_prefix("backups") == "backups/mindgraph"
         assert not cos_feature_prefix("documents").startswith("production/")
     finally:

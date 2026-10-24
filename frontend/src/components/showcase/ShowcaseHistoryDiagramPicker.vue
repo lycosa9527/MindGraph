@@ -8,6 +8,7 @@ import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import '@/styles/learning-space.css'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const props = withDefaults(
   defineProps<{
@@ -100,13 +101,16 @@ function formatModifiedAt(iso: string): string {
           ? 'zh-TW'
           : 'zh-CN'
         : currentLanguage.value || undefined
-    return new Date(iso).toLocaleString(locale, {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+    return (
+      formatInBeijing(iso, locale, {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }) || iso
+    )
   } catch {
     return iso
   }

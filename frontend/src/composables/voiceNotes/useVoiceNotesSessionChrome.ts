@@ -19,6 +19,7 @@ import {
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 export function useVoiceNotesSessionChrome(extra?: {
   generating?: Ref<boolean>
@@ -64,7 +65,8 @@ export function useVoiceNotesSessionChrome(extra?: {
       return t(voiceNotesStatusMessageKey('ready'))
     }
     const age = voiceNotesSavedAge(savedAt, nowMs.value)
-    const clockLabel = new Date(savedAt).toLocaleTimeString(
+    const clockLabel = formatInBeijing(
+      savedAt,
       intlLocaleForUiCode(currentLanguage.value as LocaleCode),
       { hour: '2-digit', minute: '2-digit', hour12: false }
     )

@@ -3,6 +3,7 @@
  */
 import type { SeminarHighlight } from '@/composables/mindmate/mindmateSeminarChrome'
 import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
+import { formatInBeijing } from '@/utils/beijingClock'
 import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import {
   type SeminarMinutesGoal,
@@ -57,11 +58,12 @@ export function minutesTimeRange(stamps: string[], zh: boolean): string {
     return ''
   }
   const format = (date: Date) =>
-    date.toLocaleString(zh ? 'zh-CN' : 'en-US', {
+    formatInBeijing(date, zh ? 'zh-CN' : 'en-US', {
       month: 'numeric',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      hour12: false,
     })
   const start = format(dates[0])
   const end = format(dates[dates.length - 1])

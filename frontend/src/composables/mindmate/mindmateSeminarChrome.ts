@@ -88,7 +88,7 @@ export const seminarComposerAttachments = ref<SeminarComposerAttachment[]>([])
 const DOC_PANE_MIN = 320
 const DOC_PANE_MAX = 1400
 /** Remember which drawer to restore after leaving reading mode. */
-const seminarTaskPaneBeforeDoc = ref<SeminarTaskPaneTab | null>('files')
+const seminarTaskPaneBeforeDoc = ref<SeminarTaskPaneTab | null>(null)
 
 export const seminarMembersPaneOpen = computed(() => seminarTaskPaneTab.value === 'members')
 export const seminarFolderOpen = computed(() => seminarTaskPaneTab.value === 'files')
@@ -307,7 +307,7 @@ function leaveReadingMode(): void {
   if (seminarDocTabs.value.length > 0) {
     return
   }
-  seminarTaskPaneTab.value = seminarTaskPaneBeforeDoc.value ?? 'files'
+  seminarTaskPaneTab.value = seminarTaskPaneBeforeDoc.value
 }
 
 export function openSeminarDoc(tab: SeminarDocTab): void {

@@ -12,6 +12,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useUIStore } from '@/stores/ui'
+import { formatInBeijing } from '@/utils/beijingClock'
 import {
   type DashboardStats,
   EMPTY_DASHBOARD_STATS,
@@ -117,7 +118,14 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
 
   function formatActivityTime(timestamp: string): string {
     try {
-      return new Date(timestamp).toLocaleTimeString()
+      return (
+        formatInBeijing(timestamp, undefined, {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }) || timestamp
+      )
     } catch {
       return timestamp
     }

@@ -11,17 +11,19 @@ import { ArrowLeft, ClipboardList, Clock3, FileText, Users } from '@lucide/vue'
 
 import LearningSpaceCreditLine from '@/components/learningSpace/LearningSpaceCreditLine.vue'
 import LearningSpaceThumbCover from '@/components/learningSpace/LearningSpaceThumbCover.vue'
+import LearningSpaceWorkGrader from '@/components/learningSpace/LearningSpaceWorkGrader.vue'
 import { useLanguage } from '@/composables'
 import {
   assignmentDiagramType,
+  beijingHour,
   formatLsDateTime,
   formatLsStudentLabel,
   greetHourLabel,
-  submissionGraderNames,
-  submissionIsReviewed,
   studentAssignmentDone,
   studentCanOpenAssignment,
   studentCanResubmitAssignment,
+  submissionGraderNames,
+  submissionHasUnnamedReview,
 } from '@/composables/learningSpace/lsHelpers'
 import { useAuthStore } from '@/stores'
 import { useLearningSpaceStore } from '@/stores/learningSpace'
@@ -37,17 +39,25 @@ const {
   studentSubmittedCount,
   myPortfolio,
   studentUrgentCount,
-  studentAssignments,
+  studentAssignmentFilter,
+  filteredStudentAssignments,
   studentCanViewDetailWall,
   detailClassWall,
   myDetailSubmission,
 } = storeToRefs(ls)
 
+const studentAssignmentFilters = [
+  { id: 'all', labelKey: 'learningSpace.filterAll' },
+  { id: 'todo', labelKey: 'learningSpace.metricTodo' },
+  { id: 'submitted', labelKey: 'learningSpace.metricSubmitted' },
+  { id: 'urgent', labelKey: 'learningSpace.metricUrgent' },
+] as const
+
 const userName = computed(
   () => authStore.user?.username || authStore.user?.phone || t('learningSpace.userFallback')
 )
 const greetKey = computed(() => {
-  const label = greetHourLabel(new Date().getHours())
+  const label = greetHourLabel(beijingHour())
   if (label === 'morning') return 'learningSpace.greetMorning'
   if (label === 'afternoon') return 'learningSpace.greetAfternoon'
   return 'learningSpace.greetEvening'
@@ -78,7 +88,7 @@ function statusLabel(status: string | undefined): string {
       <button
         type="button"
         class="ls-metric"
-        @click="ls.setStudentTab('assignments')"
+        @click="ls.goStudentAssignments('todo')"
       >
         <ClipboardList
           class="ls-metric__icon"
@@ -90,7 +100,7 @@ function statusLabel(status: string | undefined): string {
       <button
         type="button"
         class="ls-metric"
-        @click="ls.setStudentTab('assignments')"
+        @click="ls.goStudentAssignments('submitted')"
       >
         <FileText
           class="ls-metric__icon"
@@ -114,7 +124,7 @@ function statusLabel(status: string | undefined): string {
       <button
         type="button"
         class="ls-metric ls-metric--alert"
-        @click="ls.setStudentTab('assignments')"
+        @click="ls.goStudentAssignments('urgent')"
       >
         <Clock3
           class="ls-metric__icon"
@@ -134,8 +144,22 @@ function statusLabel(status: string | undefined): string {
           <p><I18nText k="learningSpace.classAssignmentsHint" /></p>
         </div>
       </div>
+      <div class="ls-filters">
+        <div class="ls-pills">
+          <button
+            v-for="f in studentAssignmentFilters"
+            :key="f.id"
+            type="button"
+            class="ls-pill"
+            :class="{ 'ls-pill--active': studentAssignmentFilter === f.id }"
+            @click="ls.goStudentAssignments(f.id)"
+          >
+            <I18nText :k="f.labelKey" />
+          </button>
+        </div>
+      </div>
       <p
-        v-if="!studentAssignments.length"
+        v-if="!filteredStudentAssignments.length"
         class="ls-empty"
       >
         <I18nText k="learningSpace.noAssignments" />
@@ -145,7 +169,7 @@ function statusLabel(status: string | undefined): string {
         class="ls-card-grid"
       >
         <article
-          v-for="a in studentAssignments"
+          v-for="a in filteredStudentAssignments"
           :key="a.id"
           class="ls-asg-card"
           role="button"
@@ -175,7 +199,7 @@ function statusLabel(status: string | undefined): string {
             <LearningSpaceCreditLine
               :publisher-name="a.created_by_name"
               :grader-names="submissionGraderNames(a.submission)"
-              :unnamed-review="submissionIsReviewed(a.submission)"
+              :unnamed-review="submissionHasUnnamedReview(a.submission)"
             />
           </p>
           <div class="ls-asg-card__actions">
@@ -213,7 +237,7 @@ function statusLabel(status: string | undefined): string {
             <LearningSpaceCreditLine
               :publisher-name="studentDetail.created_by_name"
               :grader-names="submissionGraderNames(studentDetail.submission)"
-              :unnamed-review="submissionIsReviewed(studentDetail.submission)"
+              :unnamed-review="submissionHasUnnamedReview(studentDetail.submission)"
             />
           </p>
         </div>
@@ -304,16 +328,7 @@ function statusLabel(status: string | undefined): string {
             </div>
             <div class="ls-thumb-card__meta">
               {{ formatLsDateTime(s.submitted_at) }}
-              <template v-if="s.reviewer_name">
-                ·
-                <I18nText
-                  k="learningSpace.gradedBy"
-                  :params="{ name: s.reviewer_name }"
-                />
-              </template>
-              <template v-else-if="s.reviewed_at || s.review_comment || s.review_scores">
-                · <I18nText k="learningSpace.reviewed" />
-              </template>
+              <LearningSpaceWorkGrader :submission="s" />
             </div>
           </article>
         </div>
@@ -365,16 +380,7 @@ function statusLabel(status: string | undefined): string {
         </div>
         <div class="ls-thumb-card__meta">
           {{ statusLabel(s.status) }}
-          <template v-if="s.reviewer_name">
-            ·
-            <I18nText
-              k="learningSpace.gradedBy"
-              :params="{ name: s.reviewer_name }"
-            />
-          </template>
-          <template v-else-if="s.reviewed_at || s.review_comment || s.review_scores">
-            · <I18nText k="learningSpace.reviewed" />
-          </template>
+          <LearningSpaceWorkGrader :submission="s" />
         </div>
       </article>
     </div>

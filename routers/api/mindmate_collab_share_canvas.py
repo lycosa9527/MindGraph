@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import uuid
 
-import aiofiles
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -17,9 +16,9 @@ from routers.api.helpers import (
     generate_signed_url,
     get_rate_limit_identifier,
 )
-from routers.api.png_export import TEMP_IMAGES_DIR
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
 from routers.auth.dependencies import get_language_dependency
+from services.diagram.temp_image_storage import persist_diagram_preview_png
 from services.features.mindmate_collab.diagram_library import (
     COPY_FAILED,
     COPY_FORBIDDEN,
@@ -98,10 +97,8 @@ async def _preview_url(request: Request, user_id: int, diagram_id: str) -> str:
         return ""
     filename = f"diagram_{uuid.uuid4().hex}.png"
     try:
-        TEMP_IMAGES_DIR.mkdir(exist_ok=True)
-        async with aiofiles.open(TEMP_IMAGES_DIR / filename, "wb") as handle:
-            await handle.write(png_bytes)
-    except OSError as exc:
+        await persist_diagram_preview_png(filename, png_bytes)
+    except (OSError, ValueError) as exc:
         logger.warning("[CanvasShare] preview write failed: %s", exc)
         return ""
     signed_path = generate_signed_url(filename, expiration_seconds=86400)

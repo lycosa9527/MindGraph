@@ -12,6 +12,7 @@ import { useLanguage } from '@/composables'
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import type { MindMateConversation } from '@/stores'
+import { beijingCalendarDaysBetween, formatInBeijing } from '@/utils/beijingClock'
 
 const props = withDefaults(
   defineProps<{
@@ -56,8 +57,7 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
 
 function formatConversationDate(timestamp: number): string {
   const date = new Date(timestamp * 1000)
-  const now = new Date()
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+  const diffDays = beijingCalendarDaysBetween(date, new Date())
 
   if (diffDays === 0) {
     return t('common.date.today')
@@ -69,7 +69,7 @@ function formatConversationDate(timestamp: number): string {
     return t('common.date.daysAgo', { n: diffDays })
   }
   const localeTag = intlLocaleForUiCode(currentLanguage.value as LocaleCode)
-  return date.toLocaleDateString(localeTag, {
+  return formatInBeijing(date, localeTag, {
     month: 'short',
     day: 'numeric',
   })

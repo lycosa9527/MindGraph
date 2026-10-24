@@ -20,6 +20,7 @@ import {
   removeSeminarHighlight,
   seminarHighlights,
 } from '@/composables/mindmate/mindmateSeminarChrome'
+import { beijingWallClock, parseApiInstant } from '@/utils/beijingClock'
 import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
@@ -93,13 +94,12 @@ function locate(messageId: number | null): void {
 }
 
 function formatWhen(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) {
+  const date = parseApiInstant(iso)
+  if (!date) {
     return ''
   }
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${date.getMonth() + 1}/${date.getDate()} ${hours}:${minutes}`
+  const wall = beijingWallClock(date)
+  return `${Number(wall.month)}/${Number(wall.day)} ${wall.hour}:${wall.minute}`
 }
 
 function roleForAuthor(name: string): SeminarBriefRole | null {

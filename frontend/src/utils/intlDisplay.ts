@@ -3,6 +3,7 @@
  */
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 export function formatUserNumber(value: number, locale: LocaleCode): string {
   return new Intl.NumberFormat(intlLocaleForUiCode(locale)).format(value)
@@ -19,8 +20,10 @@ export function formatUserDate(
   locale: LocaleCode,
   dateStyle: 'short' | 'medium' | 'long' = 'short'
 ): string {
-  const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate
-  return new Intl.DateTimeFormat(intlLocaleForUiCode(locale), { dateStyle }).format(d)
+  return (
+    formatInBeijing(isoOrDate, intlLocaleForUiCode(locale), { dateStyle }) ||
+    (typeof isoOrDate === 'string' ? isoOrDate : '')
+  )
 }
 
 export function formatUserDateTime(
@@ -29,9 +32,8 @@ export function formatUserDateTime(
   dateStyle: 'short' | 'medium' = 'short',
   timeStyle: 'short' | 'medium' = 'short'
 ): string {
-  const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate
-  return new Intl.DateTimeFormat(intlLocaleForUiCode(locale), {
-    dateStyle,
-    timeStyle,
-  }).format(d)
+  return (
+    formatInBeijing(isoOrDate, intlLocaleForUiCode(locale), { dateStyle, timeStyle }) ||
+    (typeof isoOrDate === 'string' ? isoOrDate : '')
+  )
 }

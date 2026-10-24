@@ -7,6 +7,7 @@ import {
   collabReceiptState,
   formatCollabMessageStamp,
   readersForCollabMessage,
+  sameCollabMessageMinute,
 } from '@/utils/mindmateCollabRead'
 
 describe('mindmateCollabRead', () => {
@@ -59,9 +60,23 @@ describe('mindmateCollabRead', () => {
   })
 
   it('stamps today with the clock and an older day with the date', () => {
-    const now = new Date(2026, 8, 30, 16, 0, 0)
+    const now = new Date('2026-09-30T08:00:00.000Z')
     expect(formatCollabMessageStamp('2026-09-30T08:05:00.000Z', now)).not.toContain('Sep')
     expect(formatCollabMessageStamp('2026-09-29T08:05:00.000Z', now).length).toBeGreaterThan(4)
     expect(formatCollabMessageStamp('')).toBe('')
+  })
+
+  it('treats two sends in one clock minute as the same stamp', () => {
+    expect(sameCollabMessageMinute('2026-10-24T07:13:10.000Z', '2026-10-24T07:13:50.000Z')).toBe(
+      true
+    )
+    expect(sameCollabMessageMinute('2026-10-24T07:13:50.000Z', '2026-10-24T07:14:01.000Z')).toBe(
+      false
+    )
+    expect(sameCollabMessageMinute('2026-10-24T07:13:10.000Z', '2026-10-23T07:13:10.000Z')).toBe(
+      false
+    )
+    expect(sameCollabMessageMinute('2026-10-24T07:13:10.000Z', undefined)).toBe(false)
+    expect(sameCollabMessageMinute('not-a-time', '2026-10-24T07:13:10.000Z')).toBe(false)
   })
 })

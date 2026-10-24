@@ -8,9 +8,10 @@ Proprietary License
 from __future__ import annotations
 
 import logging
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from models.domain.auth import User
@@ -47,6 +48,7 @@ _STATUS = {
     "file_type": status.HTTP_400_BAD_REQUEST,
     "file_too_large": status.HTTP_400_BAD_REQUEST,
     "file_limit": status.HTTP_400_BAD_REQUEST,
+    "upload_failed": status.HTTP_503_SERVICE_UNAVAILABLE,
     "preview_unsupported": status.HTTP_400_BAD_REQUEST,
     "preview_missing": status.HTTP_404_NOT_FOUND,
     "preview_failed": status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -85,6 +87,13 @@ class SeminarShelfBody(BaseModel):
     file_id: str = ""
     diagram_id: str = ""
     title: str = ""
+
+
+def _content_disposition(kind: str, filename: str) -> str:
+    """Attachment header that keeps non-ASCII seminar filenames."""
+    fallback = filename.encode("ascii", "ignore").decode().replace('"', "") or "download"
+    encoded = quote(filename)
+    return f"{kind}; filename=\"{fallback}\"; filename*=UTF-8''{encoded}"
 
 
 def _form_listed(raw: str) -> bool:
@@ -352,16 +361,21 @@ async def download_seminar_background_file(
     resolved = await resolve_background_download(session.id, file_id)
     if resolved is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room_not_found")
-    if resolved.redirect_url:
-        return RedirectResponse(url=resolved.redirect_url, status_code=302)
-    if resolved.disk_path is None:
+    inline = resolved.content_type.startswith(("image/", "audio/"))
+    disposition = "inline" if inline else "attachment"
+    if resolved.disk_path is not None:
+        return FileResponse(
+            path=str(resolved.disk_path),
+            media_type=resolved.content_type,
+            filename=resolved.filename,
+            content_disposition_type=disposition,
+        )
+    if resolved.body is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room_not_found")
-    disposition = "inline" if resolved.content_type.startswith("image/") else "attachment"
-    return FileResponse(
-        path=str(resolved.disk_path),
+    return Response(
+        content=resolved.body,
         media_type=resolved.content_type,
-        filename=resolved.filename,
-        content_disposition_type=disposition,
+        headers={"Content-Disposition": _content_disposition(disposition, resolved.filename)},
     )
 
 

@@ -1,16 +1,11 @@
 /**
  * Format school-activity snapshot timestamps in Beijing wall clock.
  */
+import { beijingWallClock, parseApiInstant } from '@/utils/beijingClock'
 
 export function beijingCalendarParts(now: Date = new Date()): { year: number; month: number } {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: 'numeric',
-  }).formatToParts(now)
-  const year = Number(parts.find((part) => part.type === 'year')?.value ?? now.getFullYear())
-  const month = Number(parts.find((part) => part.type === 'month')?.value ?? now.getMonth() + 1)
-  return { year, month }
+  const wall = beijingWallClock(now)
+  return { year: Number(wall.year), month: Number(wall.month) }
 }
 
 export function beijingCalendarYear(now: Date = new Date()): number {
@@ -18,18 +13,10 @@ export function beijingCalendarYear(now: Date = new Date()): number {
 }
 
 export function formatBeijingSnapshotTime(isoUtc: string): string {
-  const parsed = new Date(isoUtc)
-  if (Number.isNaN(parsed.getTime())) {
+  const parsed = parseApiInstant(isoUtc)
+  if (!parsed) {
     return isoUtc
   }
-  const formatted = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(parsed)
-  return formatted.replace('T', ' ')
+  const wall = beijingWallClock(parsed)
+  return `${wall.year}-${wall.month}-${wall.day} ${wall.hour}:${wall.minute}`
 }

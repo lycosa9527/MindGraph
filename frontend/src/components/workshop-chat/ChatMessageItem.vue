@@ -10,6 +10,7 @@ import {
   type ReactionGroup,
   useWorkshopChatStore,
 } from '@/stores/workshopChat'
+import { formatInBeijing } from '@/utils/beijingClock'
 import { stripMindmateDiagramIdComments } from '@/utils/mindmateDiagramMeta'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
 import { inlineWorkshopRoleMarkdown } from '@/utils/workshopRoleEmbed'
@@ -80,8 +81,11 @@ const isCondensed = ref(false)
 const canCondense = ref(false)
 
 const formattedTime = computed(() => {
-  const d = new Date(props.message.created_at)
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return formatInBeijing(props.message.created_at, undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
 })
 
 const isEdited = computed(() => !!props.message.edited_at)

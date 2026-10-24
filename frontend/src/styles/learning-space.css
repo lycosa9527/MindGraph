@@ -369,6 +369,64 @@
   color: var(--ls-rose);
 }
 
+.ls-metric--topics {
+  cursor: default;
+}
+
+.ls-unsub-list {
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 7.5rem;
+  overflow: auto;
+}
+
+.ls-unsub-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.2rem 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ls-unsub-row__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ls-ink);
+}
+
+.ls-unsub-row:hover .ls-unsub-row__title,
+.ls-unsub-row:focus-visible .ls-unsub-row__title {
+  color: var(--ls-rose);
+}
+
+.ls-unsub-row:focus-visible {
+  outline: 2px solid var(--ls-indigo-ring);
+  outline-offset: 2px;
+}
+
+.ls-unsub-row__count {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ls-rose);
+}
+
 .ls-tag-focus {
   display: inline-flex;
   margin-left: 0.35rem;
@@ -749,7 +807,7 @@
   color: #4b5563;
 }
 
-.ls-field input,
+.ls-field input:not(.el-input__inner),
 .ls-field textarea,
 .ls-field select {
   padding: 0.6rem 0.8rem;
@@ -765,13 +823,33 @@
     box-shadow 0.15s ease;
 }
 
-.ls-field input:focus,
+.ls-field input:not(.el-input__inner):focus,
 .ls-field textarea:focus,
 .ls-field select:focus {
   outline: none;
   background: #fff;
   border-color: var(--ls-indigo-ring);
   box-shadow: 0 0 0 3px rgb(91 92 226 / 0.12);
+}
+
+.ls-field .ls-deadline .el-input__wrapper {
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.7rem;
+  background: #fafbfc;
+  box-shadow: 0 0 0 1px var(--ls-border) inset;
+}
+
+.ls-field .ls-deadline .el-input__wrapper.is-focus {
+  background: #fff;
+  box-shadow:
+    0 0 0 1px var(--ls-indigo-ring) inset,
+    0 0 0 3px rgb(91 92 226 / 0.12);
+}
+
+.ls-field .ls-deadline .el-input__inner {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ls-ink);
 }
 
 .ls-field select.ls-field__placeholder {
@@ -1911,7 +1989,7 @@
   flex: 1;
 }
 
-.ls-review__extend input {
+.ls-review__extend .ls-deadline {
   margin-top: 0.25rem;
 }
 

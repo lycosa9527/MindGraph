@@ -4,6 +4,8 @@
  */
 import { type ComputedRef, type MaybeRefOrGetter, type Ref, computed, ref, toValue } from 'vue'
 
+import { beijingRecentDayStarts } from '@/utils/beijingClock'
+
 const COLLAPSED_STORAGE_KEY = 'mindgraph:mindmate-archive:collapsed'
 
 export interface MindmateArchiveConversation {
@@ -71,10 +73,7 @@ export function groupUncategorizedConversations<T extends MindmateArchiveConvers
     month: [],
   }
 
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
-  const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
+  const { todayStart, yesterdayStart, weekStart } = beijingRecentDayStarts()
 
   const uncategorized = conversations.filter((conversation) => !conversation.folder_id)
   const limit = options.showAll ? uncategorized.length : (options.limit ?? uncategorized.length)

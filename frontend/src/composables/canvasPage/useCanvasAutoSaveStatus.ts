@@ -5,6 +5,7 @@ import { type ComputedRef, type Ref, computed, onMounted, onUnmounted, ref } fro
 
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 import { useLanguage } from '../core/useLanguage'
 import type { useDiagramAutoSave } from '../editor/useDiagramAutoSave'
@@ -34,7 +35,8 @@ export function useCanvasAutoSaveStatus(options: UseCanvasAutoSaveStatusOptions)
     if (diffSec < 60) return t('editor.savedSecondsAgo', { n: diffSec })
     const diffMin = Math.floor(diffSec / 60)
     if (diffMin < 60) return t('editor.savedMinutesAgo', { n: diffMin })
-    const timeStr = date.toLocaleTimeString(
+    const timeStr = formatInBeijing(
+      date,
       intlLocaleForUiCode(currentLanguage.value as LocaleCode),
       {
         hour: '2-digit',

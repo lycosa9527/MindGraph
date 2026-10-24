@@ -3,13 +3,18 @@
  * Teacher review / student view modal for a class-wall submission.
  */
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 
 import { Loader2, Maximize2, Minimize2, Pin, Star, ThumbsUp, X } from '@lucide/vue'
 
+import LearningSpaceWorkGrader from '@/components/learningSpace/LearningSpaceWorkGrader.vue'
+import LsDeadlineField from '@/components/learningSpace/LsDeadlineField.vue'
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { formatLsStudentLabel } from '@/composables/learningSpace/lsHelpers'
+import {
+  beijingWallClockToIso,
+  formatLsStudentLabel,
+  submissionIsReviewed,
+} from '@/composables/learningSpace/lsHelpers'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { type LearningSubmission, fetchSubmissionPreview } from '@/utils/learningSpaceApi'
 
@@ -39,7 +44,6 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const router = useRouter()
 const savedDiagramsStore = useSavedDiagramsStore()
 
 const draft = reactive<ReviewDraft>({
@@ -52,6 +56,7 @@ const draft = reactive<ReviewDraft>({
 const previewSpec = ref<Record<string, unknown> | null>(null)
 const previewLoading = ref(false)
 const savingLibrary = ref(false)
+const librarySavedIds = ref<ReadonlySet<number>>(new Set())
 const previewFullscreen = ref(false)
 const extendLocal = ref('')
 const previewMeta = ref<{ title: string; diagramType: string }>({
@@ -60,6 +65,9 @@ const previewMeta = ref<{ title: string; diagramType: string }>({
 })
 
 const isView = computed(() => props.mode === 'view')
+const librarySaved = computed(
+  () => props.submission != null && librarySavedIds.value.has(props.submission.id)
+)
 
 const dims = computed(() =>
   props.dimensions.length
@@ -95,12 +103,7 @@ function applyDraft(source: ReviewDraft | null | undefined): void {
   draft.pinned = source?.pinned ?? false
 }
 
-const hasTeacherReview = computed(
-  () =>
-    Boolean(props.submission?.reviewed_at) ||
-    Boolean(props.submission?.review_comment) ||
-    Boolean(props.submission?.review_scores && Object.keys(props.submission.review_scores).length)
-)
+const hasTeacherReview = computed(() => submissionIsReviewed(props.submission))
 
 async function loadPreview(submissionId: number): Promise<void> {
   previewLoading.value = true
@@ -175,12 +178,12 @@ onBeforeUnmount(() => {
 
 function onExtend(): void {
   if (!props.submission || isView.value || !extendLocal.value) return
-  const due = new Date(extendLocal.value)
-  if (Number.isNaN(due.getTime()) || due.getTime() <= Date.now()) {
+  const dueIso = beijingWallClockToIso(extendLocal.value)
+  if (!dueIso || Date.parse(dueIso) <= Date.now()) {
     notify.warningKey('learningSpace.extendDueFuture')
     return
   }
-  emit('extend', { submissionId: props.submission.id, dueAt: due.toISOString() })
+  emit('extend', { submissionId: props.submission.id, dueAt: dueIso })
 }
 
 function onReturn(): void {
@@ -202,7 +205,9 @@ function onSave(): void {
 }
 
 async function onSaveToLibrary(): Promise<void> {
-  if (!props.submission) return
+  const submission = props.submission
+  if (!submission || librarySaved.value || savingLibrary.value) return
+  const submissionId = submission.id
   const spec = previewSpec.value
   if (!spec) {
     notify.errorKey('learningSpace.noPreview')
@@ -212,7 +217,7 @@ async function onSaveToLibrary(): Promise<void> {
   try {
     const title =
       previewMeta.value.title ||
-      props.submission.assignment_title ||
+      submission.assignment_title ||
       props.assignmentTitle ||
       t('learningSpace.tabClassWall')
     const saved = await savedDiagramsStore.saveDiagram(
@@ -220,16 +225,16 @@ async function onSaveToLibrary(): Promise<void> {
       previewMeta.value.diagramType || 'mind_map',
       spec,
       'zh',
-      props.submission.diagram_thumbnail ?? null
+      submission.diagram_thumbnail ?? null
     )
     if (!saved) {
       notify.error(savedDiagramsStore.error || t('community.post.importFail'))
       return
     }
-    savedDiagramsStore.clearActiveDiagram()
-    notify.successKey('learningSpace.saveToLibraryOk')
-    visible.value = false
-    await router.push({ path: '/canvas', query: { diagramId: saved.id } })
+    const savedIds = new Set(librarySavedIds.value)
+    savedIds.add(submissionId)
+    librarySavedIds.value = savedIds
+    notify.successKey('learningSpace.saveToLibraryOk', 6000)
   } catch (error) {
     notify.error(error instanceof Error ? error.message : t('community.post.importFail'))
   } finally {
@@ -343,7 +348,7 @@ const headerTitle = computed(
               <button
                 type="button"
                 class="ls-btn ls-btn--primary ls-btn--sm"
-                :disabled="savingLibrary || previewLoading || !previewSpec"
+                :disabled="savingLibrary || librarySaved || previewLoading || !previewSpec"
                 @click="onSaveToLibrary"
               >
                 <Loader2
@@ -351,7 +356,11 @@ const headerTitle = computed(
                   class="animate-spin"
                   :size="16"
                 />
-                <I18nText k="learningSpace.saveToLibrary" />
+                <I18nText
+                  :k="
+                    librarySaved ? 'learningSpace.saveToLibraryDone' : 'learningSpace.saveToLibrary'
+                  "
+                />
               </button>
             </div>
           </div>
@@ -370,12 +379,12 @@ const headerTitle = computed(
               />
             </h3>
             <p
-              v-if="submission?.reviewer_name"
+              v-if="hasTeacherReview"
               class="ls-muted"
             >
-              <I18nText
-                k="learningSpace.gradedBy"
-                :params="{ name: submission.reviewer_name }"
+              <LearningSpaceWorkGrader
+                :submission="submission"
+                :lead="false"
               />
             </p>
 
@@ -485,10 +494,7 @@ const headerTitle = computed(
         >
           <label class="ls-field ls-review__extend">
             <I18nText k="learningSpace.extendDue" />
-            <input
-              v-model="extendLocal"
-              type="datetime-local"
-            />
+            <LsDeadlineField v-model="extendLocal" />
           </label>
           <div class="ls-modal__foot-right">
             <button

@@ -7,7 +7,7 @@ Proprietary License
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
+from sqlalchemy import select
 
 from models.domain.auth import User
 from models.domain.learning_space import (
@@ -41,7 +42,13 @@ from services.learning_space.access import (
     require_homework_publisher,
     require_pilot_teacher,
 )
-from services.learning_space.attribution import assignment_grader_labels, submission_label_user_ids
+from services.learning_space.attribution import (
+    assignment_grader_labels,
+    submission_has_review,
+    submission_label_user_ids,
+)
+from services.learning_space.clock import utc_isoformat, utc_naive
+from services.learning_space.review_mark import current_submission, submission_tally_columns
 from services.learning_space.staff_overview import assignment_metric_rows
 from services.learning_space.assignments import (
     apply_learner_due,
@@ -181,8 +188,25 @@ def test_apply_learner_due_uses_personal_override() -> None:
     assignment = cast(LearningAssignment, SimpleNamespace(due_at=datetime(2020, 1, 1, tzinfo=UTC)))
     submission = cast(LearningSubmission, SimpleNamespace(due_at_override=datetime(2030, 6, 1, tzinfo=UTC)))
     payload = apply_learner_due({}, assignment, submission)
-    assert payload["due_at"] is not None
-    assert payload["due_at"].startswith("2030-06-01")
+    assert payload["due_at"] == "2030-06-01T00:00:00+00:00"
+
+
+def test_utc_isoformat_treats_naive_learning_space_clocks_as_utc() -> None:
+    """Naive columns store UTC. The API must keep the offset so clients can show Beijing."""
+    assert utc_isoformat(None) is None
+    assert utc_isoformat(datetime(2026, 10, 22, 6, 0, 49)) == "2026-10-22T06:00:49+00:00"
+    assert utc_isoformat(datetime(2026, 10, 22, 6, 0, 49, tzinfo=UTC)) == "2026-10-22T06:00:49+00:00"
+
+
+def test_utc_naive_keeps_beijing_deadline_digits_in_utc() -> None:
+    """11:12 Beijing is stored as 03:12 UTC, with no session-timezone conversion."""
+    beijing = datetime(2026, 10, 24, 11, 12, tzinfo=timezone(timedelta(hours=8)))
+    stored = utc_naive(beijing)
+    assert stored == datetime(2026, 10, 24, 3, 12)
+    assert stored is not None and stored.tzinfo is None
+    assert utc_isoformat(stored) == "2026-10-24T03:12:00+00:00"
+    assert utc_naive(None) is None
+    assert utc_naive(datetime(2026, 10, 24, 3, 12)) == datetime(2026, 10, 24, 3, 12)
 
 
 def test_synthetic_student_email_is_not_a_real_login() -> None:
@@ -607,7 +631,7 @@ async def test_assignment_metric_rows_do_not_load_diagrams() -> None:
     db.execute = AsyncMock(
         side_effect=[
             SimpleNamespace(all=lambda: [(7, 3, "作业", "active", due)]),
-            SimpleNamespace(all=lambda: [(7, 2)]),
+            SimpleNamespace(all=lambda: [(7, 2, 1)]),
             SimpleNamespace(all=lambda: [(3, 4)]),
             SimpleNamespace(all=lambda: []),
         ]
@@ -621,6 +645,7 @@ async def test_assignment_metric_rows_do_not_load_diagrams() -> None:
             "status": "active",
             "due_at": due.isoformat(),
             "submitted_count": 2,
+            "reviewed_count": 1,
             "student_count": 4,
         }
     ]
@@ -957,6 +982,32 @@ def test_submission_label_user_ids_include_grader() -> None:
         status=SUBMISSION_STATUS_SUBMITTED,
     )
     assert submission_label_user_ids([graded, ungraded]) == {161, 7, 8}
+
+
+def test_submission_has_review_covers_saved_columns() -> None:
+    """The card query uses every review column save writes and resubmit clears."""
+    statement = select(LearningSubmission.id).where(submission_has_review())
+    sql = str(statement.compile(compile_kwargs={"literal_binds": True})).lower()
+    for column in (
+        "reviewed_by",
+        "reviewed_at",
+        "review_comment",
+        "review_scores",
+        "review_liked",
+        "review_pinned",
+    ):
+        assert column in sql
+
+
+def test_submission_tally_counts_only_current_submissions() -> None:
+    """Returned homework keeps its review, so the graded tally stays inside submitted rows."""
+    submitted_col, reviewed_col = submission_tally_columns()
+    statement = select(submitted_col, reviewed_col).where(current_submission())
+    sql = str(statement.compile(compile_kwargs={"literal_binds": True})).lower()
+    assert "status" in sql
+    assert "submitted" in sql
+    assert "filter" in sql
+    assert "reviewed_by" in sql
 
 
 def test_assignment_grader_labels_keep_unnamed_when_name_missing() -> None:

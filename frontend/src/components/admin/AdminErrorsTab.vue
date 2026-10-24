@@ -30,6 +30,7 @@ import {
   buildAdminErrorCollectionDump,
   isAbortError,
 } from '@/utils/admin/adminErrorCollectionCopy'
+import { formatInBeijing } from '@/utils/beijingClock'
 import { copyTextToClipboard } from '@/utils/copyTextToClipboard'
 
 const { t } = useLanguage()
@@ -150,11 +151,7 @@ const pageInfo = computed(() =>
 )
 
 function formatTime(value: string): string {
-  try {
-    return new Date(value).toLocaleString()
-  } catch {
-    return value
-  }
+  return formatInBeijing(value) || value
 }
 
 function shortFingerprint(fp: string): string {

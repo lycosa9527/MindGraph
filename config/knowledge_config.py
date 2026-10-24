@@ -370,6 +370,29 @@ class WorkshopCosConfigMixin:
         return int(self._get_cached_value("COS_WORKSHOP_PRESIGN_GET_TTL", "300"))
 
 
+class SeminarCosConfigMixin:
+    """COS knobs for MindMate seminar files (bytes only; chat text stays in PG)."""
+
+    if TYPE_CHECKING:
+
+        def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
+            """Type stub: method provided by BaseConfig."""
+            raise NotImplementedError
+
+    @property
+    def COS_SEMINAR_ENABLED(self) -> bool:
+        """Private-bucket seminar files. Default on; local if COS auth missing."""
+        return self._get_cached_value("COS_SEMINAR_ENABLED", "true").lower() == "true"
+
+    @property
+    def COS_SEMINAR_PREFIX(self) -> str:
+        """COS key prefix for seminar files. Default ``{env}/mindmate``."""
+        return cos_feature_prefix(
+            "mindmate",
+            self._get_cached_value("COS_SEMINAR_PREFIX", ""),
+        )
+
+
 class LearningSpaceCosConfigMixin:
     """COS knobs for Learning Space instruction images (bytes only; refs stay in PG)."""
 

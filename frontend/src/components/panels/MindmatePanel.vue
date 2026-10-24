@@ -35,7 +35,6 @@ import {
   applySeminarGroup,
   bumpSeminarFolderReload,
   closeSeminarChrome,
-  openSeminarTaskPane,
   seminarMembersPaneOpen,
   toggleSeminarMembersPane,
 } from '@/composables/mindmate/mindmateSeminarChrome'
@@ -892,7 +891,6 @@ async function openSeminarFromBrief(
     if (uploaded && brief.resourceFiles.length > 0) {
       bumpSeminarFolderReload()
     }
-    openSeminarTaskPane('files')
     pendingSeminarBrief.value = null
     inputText.value = ''
     await Promise.all(userIds.map((userId) => pokeSeminarMember(room.sessionId, userId)))
@@ -1081,7 +1079,6 @@ async function formSeminarGroup(userIds: number[]): Promise<void> {
     if (uploaded && brief.resourceFiles.length > 0) {
       bumpSeminarFolderReload()
     }
-    openSeminarTaskPane('files')
     pendingSeminarBrief.value = null
     inputText.value = ''
     memberDialogOpen.value = false

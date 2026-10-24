@@ -36,6 +36,7 @@ from config.features_config import FeaturesConfigMixin
 from config.knowledge_config import (
     KnowledgeConfigMixin,
     LearningSpaceCosConfigMixin,
+    SeminarCosConfigMixin,
     TrainingCosConfigMixin,
     WorkshopCosConfigMixin,
 )
@@ -65,6 +66,7 @@ class Config(
     KnowledgeConfigMixin,
     TrainingCosConfigMixin,
     WorkshopCosConfigMixin,
+    SeminarCosConfigMixin,
     LearningSpaceCosConfigMixin,
     AuthLoginCosConfigMixin,
     VodConfigMixin,

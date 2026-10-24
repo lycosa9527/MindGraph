@@ -42,6 +42,7 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { getDefaultTemplate } from '@/stores/specLoader'
 import { useUIStore } from '@/stores/ui'
 import { apiRequestJson } from '@/utils/apiClient'
+import { beijingWallClock } from '@/utils/beijingClock'
 import {
   getDiagramPersistBaseSpec,
   shouldStampLiveCanvasOntoLlmResult,
@@ -114,11 +115,8 @@ function buildVoiceNotesWebSocketUrl(): string {
 }
 
 function formatVoiceNoteTitle(date = new Date()): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return (
-    `voice recording_${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}` +
-    `${pad(date.getHours())}${pad(date.getMinutes())}`
-  )
+  const wall = beijingWallClock(date)
+  return `voice recording_${wall.year}${wall.month}${wall.day}${wall.hour}${wall.minute}`
 }
 
 function sleep(ms: number): Promise<void> {

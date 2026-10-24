@@ -34,6 +34,7 @@ The shared `{env}/{module}` tree is **dev/** and **test/** only. Production stil
 | `COS_ZHIHUI_PREFIX` | `zhihui/mindgraph` |
 | `COS_SHOWCASE_PREFIX` | current live prefix (`showcase/mindgraph-mg` if that is what the host already uses) |
 | `COS_TRAINING_PREFIX` / `COS_WORKSHOP_PREFIX` | leave unset or keep live values; do not invent `production/…` |
+| `COS_SEMINAR_PREFIX` | leave unset. Production then writes `mindmate/mindgraph`. The test host (`ENVIRONMENT=test`) writes `test/mindmate`. Do not point both servers at the same folder. |
 | `COS_AUTH_LOGIN_PREFIX` | `auth-login/mindgraph` (test host uses `test/auth-login` when `ENVIRONMENT=test` and this is unset) |
 | `COS_AUTH_LOGIN_ENABLED` | `true` (or omit). `/auth` 302s four silent MP4s. `DEBUG=true` on test is fine. Do **not** set `VITE_DEV_PORT` on test/prod (that skip is only for local Vite). |
 | `COURSE_BUILDER_LOAD_FROM_COS` | `true` (or omit) |

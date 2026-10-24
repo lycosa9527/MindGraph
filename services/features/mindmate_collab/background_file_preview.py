@@ -14,10 +14,19 @@ import asyncio
 import logging
 import shutil
 from pathlib import Path
-from typing import Optional
 
 from models.domain.mindmate_collab import MindmateCollabBackgroundFile
-from services.features.mindmate_collab.background_files import seminar_disk_path
+from services.features.mindmate_collab.background_files import (
+    MAX_BACKGROUND_BYTES,
+    seminar_disk_path,
+)
+from services.features.mindmate_collab.seminar_file_storage import (
+    mirror_cached_preview_pdf_sync,
+    mirror_local_seminar_file_sync,
+    pull_preview_pdf_sync,
+    put_preview_pdf_sync,
+    read_seminar_bytes_sync,
+)
 from services.showcase.covers.office_to_pdf import convert_office_to_pdf, office_suffix_needs_pdf
 from utils.db.session_open import system_rls_session
 
@@ -31,12 +40,23 @@ def preview_cache_path(source: Path) -> Path:
     return source.with_name(f"{source.name}{_PREVIEW_SUFFIX}")
 
 
-def _source_disk_path(storage_key: str) -> Optional[Path]:
-    """Resolve the on-disk source for a seminar storage key."""
-    return seminar_disk_path(storage_key)
+def _materialize_source(storage_key: str) -> Path:
+    """Return a local source file, downloading it from COS when this host has no copy."""
+    source = seminar_disk_path(storage_key)
+    if source is None:
+        raise ValueError("preview_missing")
+    if source.is_file():
+        mirror_local_seminar_file_sync(storage_key, source)
+        return source
+    data = read_seminar_bytes_sync(storage_key, max_bytes=MAX_BACKGROUND_BYTES)
+    if not data:
+        raise ValueError("preview_missing")
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_bytes(data)
+    return source
 
 
-def _ensure_preview_pdf_sync(source: Path, filename: str) -> Path:
+def _ensure_preview_pdf_sync(source: Path, filename: str, storage_key: str) -> Path:
     """Return a readable PDF for ``source``, converting Office when needed."""
     suffix = Path(filename).suffix.lower() or source.suffix.lower()
     if suffix == ".pdf":
@@ -49,6 +69,9 @@ def _ensure_preview_pdf_sync(source: Path, filename: str) -> Path:
         raise ValueError("preview_missing")
     cached = preview_cache_path(source)
     if cached.is_file() and cached.stat().st_mtime >= source.stat().st_mtime:
+        mirror_cached_preview_pdf_sync(storage_key, cached)
+        return cached
+    if pull_preview_pdf_sync(storage_key, cached) and cached.is_file():
         return cached
     work = source.parent / f".preview-work-{source.stem}"
     if work.exists():
@@ -67,6 +90,7 @@ def _ensure_preview_pdf_sync(source: Path, filename: str) -> Path:
     finally:
         shutil.rmtree(work, ignore_errors=True)
     logger.info("[SeminarFiles] preview_ready file=%s pdf=%s", filename, cached.name)
+    put_preview_pdf_sync(storage_key, cached.read_bytes())
     return cached
 
 
@@ -78,8 +102,6 @@ async def resolve_background_preview_pdf(session_id: str, file_id: str) -> tuple
             raise ValueError("room_not_found")
         storage_key = row.storage_key
         filename = row.filename
-    source = _source_disk_path(storage_key)
-    if source is None:
-        raise ValueError("preview_missing")
-    pdf_path = await asyncio.to_thread(_ensure_preview_pdf_sync, source, filename)
+    source = await asyncio.to_thread(_materialize_source, storage_key)
+    pdf_path = await asyncio.to_thread(_ensure_preview_pdf_sync, source, filename, storage_key)
     return pdf_path, f"{Path(filename).stem}.pdf"

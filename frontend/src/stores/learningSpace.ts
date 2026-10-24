@@ -13,15 +13,20 @@ import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
   type AssignmentFilter,
+  type StudentAssignmentFilter,
   type StudentTab,
   type TeacherTab,
   assignmentIsClosed,
   assignmentProgress,
+  assignmentWithGrader,
+  assignmentWithReviewCounted,
+  filterStudentAssignments,
   filterTeacherAssignments,
-  studentAssignmentDone,
-  studentAssignmentPending,
+  publishedAssignmentCount,
   studentCanOpenAssignment,
   studentCanViewAssignmentWall,
+  submissionIsReviewed,
+  unsubmittedTopicRows,
 } from '@/composables/learningSpace/lsHelpers'
 import { useAuthStore } from '@/stores/auth'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
@@ -112,6 +117,7 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
 
   const teacherTab = ref<TeacherTab>('dashboard')
   const studentTab = ref<StudentTab>('home')
+  const studentAssignmentFilter = ref<StudentAssignmentFilter>('all')
   const assignmentFilter = ref<AssignmentFilter>('all')
   const assignmentQuery = ref('')
   const preferTeacherShell = ref(true)
@@ -165,24 +171,35 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
       assignmentQuery.value
     )
   )
-  const pendingGradeCount = computed(() =>
-    allClassAssignments.value.reduce((sum, row) => sum + (row.submitted_count ?? 0), 0)
-  )
-  const studentTodoCount = computed(
-    () => studentAssignments.value.filter((row) => studentAssignmentPending(row)).length
-  )
+  const teacherAssignmentCount = computed(() => publishedAssignmentCount(allClassAssignments.value))
+
+  function studentRows(filter: StudentAssignmentFilter): LearningAssignment[] {
+    return filterStudentAssignments(studentAssignments.value, filter)
+  }
+
+  const filteredStudentAssignments = computed(() => studentRows(studentAssignmentFilter.value))
+  const studentTodoCount = computed(() => studentRows('todo').length)
+  const studentSubmittedCount = computed(() => studentRows('submitted').length)
+  const studentUrgentCount = computed(() => studentRows('urgent').length)
   const teacherMetrics = computed(() => {
     let pending = 0
-    let unsubmitted = 0
     let active = 0
     for (const row of allClassAssignments.value) {
-      const roster = classes.value.find((item) => item.id === row.class_id)?.student_count
-      const progress = assignmentProgress(row, roster)
-      pending += row.submitted_count ?? 0
-      unsubmitted += progress.unsubmitted
+      pending += assignmentProgress(row).pendingReview
       if (!assignmentIsClosed(row) && row.status !== 'draft') active += 1
     }
-    return { pending, unsubmitted, active, classCount: classes.value.length }
+    const classById = new Map(
+      classes.value.map((item) => [item.id, { name: item.name, student_count: item.student_count }])
+    )
+    const unsubmittedTopics = unsubmittedTopicRows(allClassAssignments.value, classById)
+    const unsubmitted = unsubmittedTopics.reduce((sum, row) => sum + row.unsubmitted, 0)
+    return {
+      pending,
+      unsubmitted,
+      unsubmittedTopics,
+      active,
+      classCount: classes.value.length,
+    }
   })
   const selectedAssignment = computed(
     () =>
@@ -200,15 +217,6 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
     }
     return ids
   })
-  const studentSubmittedCount = computed(
-    () => studentAssignments.value.filter((row) => studentAssignmentDone(row)).length
-  )
-  const studentUrgentCount = computed(
-    () =>
-      studentAssignments.value.filter(
-        (row) => studentAssignmentPending(row) && row.due_at && !assignmentIsClosed(row)
-      ).length
-  )
   const wallSubmissions = computed(() =>
     submissions.value.filter((row) => Boolean(String(row.diagram_id || '').trim()))
   )
@@ -261,6 +269,25 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
       role: 'student',
       must_change_password: authStore.user.mustChangePassword === true,
     }
+  }
+
+  function rememberAssignmentGrader(
+    assignmentId: number,
+    reviewerName: string | null | undefined
+  ): void {
+    const apply = (rows: LearningAssignment[]) =>
+      rows.map((row) => (row.id === assignmentId ? assignmentWithGrader(row, reviewerName) : row))
+    teacherAssignments.value = apply(teacherAssignments.value)
+    allClassAssignments.value = apply(allClassAssignments.value)
+  }
+
+  function rememberAssignmentReview(assignmentId: number, wasReviewed: boolean): void {
+    const apply = (rows: LearningAssignment[]) =>
+      rows.map((row) =>
+        row.id === assignmentId ? assignmentWithReviewCounted(row, wasReviewed) : row
+      )
+    teacherAssignments.value = apply(teacherAssignments.value)
+    allClassAssignments.value = apply(allClassAssignments.value)
   }
 
   function replaceSubmission(updated: LearningSubmission): void {
@@ -439,6 +466,7 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
     selectedClassId.value = null
     selectedAssignmentId.value = null
     studentDetailId.value = null
+    studentAssignmentFilter.value = 'all'
     showReview.value = false
     reviewSubmission.value = null
   }
@@ -464,6 +492,13 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
   function setStudentTab(tab: StudentTab): void {
     studentTab.value = tab
     studentDetailId.value = null
+    studentAssignmentFilter.value = 'all'
+  }
+
+  function goStudentAssignments(filter: StudentAssignmentFilter): void {
+    studentDetailId.value = null
+    studentAssignmentFilter.value = filter
+    studentTab.value = 'assignments'
   }
 
   function setShellMode(mode: 'teacher' | 'student'): void {
@@ -495,7 +530,19 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
   }
 
   async function openAssignmentDetail(assignmentId: number): Promise<void> {
+    const assignment =
+      allClassAssignments.value.find((row) => row.id === assignmentId) ??
+      teacherAssignments.value.find((row) => row.id === assignmentId) ??
+      null
+    let classLoad: Promise<void> | null = null
+    if (assignment && selectedClassId.value !== assignment.class_id) {
+      selectedClassId.value = assignment.class_id
+      submissions.value = []
+      classLoad = loadTeacherAssignments()
+    }
+    teacherTab.value = 'assignments'
     selectedAssignmentId.value = assignmentId
+    if (classLoad) await classLoad
     await loadSubmissionsAndRoster()
   }
 
@@ -615,9 +662,15 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
     submissionId: number
     draft: LearningReviewPayload
   }): Promise<void> {
+    const previous = submissions.value.find((row) => row.id === payload.submissionId)
+    const wasReviewed = submissionIsReviewed(previous)
     try {
       const updated = await saveTeacherReview(payload.submissionId, payload.draft)
       replaceSubmission(updated)
+      rememberAssignmentGrader(updated.assignment_id, updated.reviewer_name)
+      if (updated.status === 'submitted') {
+        rememberAssignmentReview(updated.assignment_id, wasReviewed)
+      }
       notify.successKey('learningSpace.reviewSaved')
       showReview.value = false
     } catch {
@@ -674,6 +727,7 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
     classWall,
     teacherTab,
     studentTab,
+    studentAssignmentFilter,
     assignmentFilter,
     assignmentQuery,
     preferTeacherShell,
@@ -700,7 +754,8 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
     selectedClass,
     publishableClasses,
     filteredAssignments,
-    pendingGradeCount,
+    filteredStudentAssignments,
+    teacherAssignmentCount,
     studentTodoCount,
     teacherMetrics,
     selectedAssignment,
@@ -718,6 +773,7 @@ export const useLearningSpaceStore = defineStore('learningSpace', () => {
     detach,
     setTeacherTab,
     setStudentTab,
+    goStudentAssignments,
     setShellMode,
     goTeacherAssignments,
     goTeacherClasses,

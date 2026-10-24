@@ -3,6 +3,7 @@
  */
 import type { Chart as ChartInstance } from 'chart.js'
 
+import { formatInBeijing, parseBeijingWall } from '@/utils/beijingClock'
 import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
 export const ADMIN_TREND_DAYS_MAP = {
@@ -91,21 +92,19 @@ export function buildAdminTrendChartLabels(
   intlLocale: string
 ): string[] {
   return rawData.map((item) => {
-    const dateStr = item.date.includes(' ') ? item.date.replace(' ', 'T') : `${item.date}T00:00:00`
-    const date = new Date(dateStr)
+    const date = parseBeijingWall(item.date)
+    if (!date) return item.date
     if (item.date.includes(':') && item.date.includes(' ')) {
-      return date.toLocaleString(intlLocale, {
+      return formatInBeijing(date, intlLocale, {
         month: 'short',
         day: 'numeric',
         hour: 'numeric',
         hour12: false,
-        timeZone: 'Asia/Shanghai',
       })
     }
-    return date.toLocaleDateString(intlLocale, {
+    return formatInBeijing(date, intlLocale, {
       month: 'short',
       day: 'numeric',
-      timeZone: 'Asia/Shanghai',
     })
   })
 }

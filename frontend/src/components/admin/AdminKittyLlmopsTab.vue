@@ -11,6 +11,7 @@ import {
   useAdminKittyLlmopsArchitecture,
   useAdminKittySessions,
 } from '@/composables/queries'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 interface LlmopsModule {
   id: string
@@ -59,7 +60,7 @@ function formatSeen(epoch: number): string {
   if (!epoch) {
     return '—'
   }
-  return new Date(epoch * 1000).toLocaleString()
+  return formatInBeijing(epoch * 1000)
 }
 
 async function saveDefaults(): Promise<void> {

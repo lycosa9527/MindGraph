@@ -15,6 +15,7 @@ import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
+import { beijingCalendarDaysBetween, formatInBeijing, parseApiInstant } from '@/utils/beijingClock'
 
 const props = defineProps<{
   visible: boolean
@@ -66,15 +67,14 @@ watch(
 )
 
 function formatUpdatedAt(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return ''
-  const now = new Date()
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+  const date = parseApiInstant(iso)
+  if (!date) return ''
+  const diffDays = beijingCalendarDaysBetween(date, new Date())
   if (diffDays === 0) return t('common.date.today')
   if (diffDays === 1) return t('common.date.yesterday')
   if (diffDays < 7) return t('common.date.daysAgo', { n: diffDays })
   const localeTag = intlLocaleForUiCode(currentLanguage.value as LocaleCode)
-  return date.toLocaleDateString(localeTag, { month: 'short', day: 'numeric' })
+  return formatInBeijing(date, localeTag, { month: 'short', day: 'numeric' })
 }
 
 function handleSelect(diagram: SavedDiagram): void {

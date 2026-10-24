@@ -1,38 +1,35 @@
 /**
  * Format API timestamps as Asia/Shanghai (Beijing) local time for admin tables.
  */
-const BEIJING_TIME_ZONE = 'Asia/Shanghai'
+import { formatInBeijing, parseApiInstant, parseBeijingWall } from '@/utils/beijingClock'
 
-function parseTimestamp(value: string): Date | null {
-  const trimmed = value.trim()
-  if (!trimmed) {
-    return null
-  }
-  const normalized = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T')
-  const parsed = new Date(normalized)
-  if (Number.isNaN(parsed.getTime())) {
-    return null
-  }
-  return parsed
+const DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
 }
 
 /**
- * Date-only calendar day from an ISO timestamp or `YYYY-MM-DD` string (Beijing).
- * Prefer the leading date part when present so end-of-day expiry stays on that day.
+ * Calendar day for an expiry `YYYY-MM-DD` (or a timestamp whose leading date is that day).
+ * Noon in Beijing keeps the day stable in every browser timezone.
  */
-function beijingCalendarDate(value: string): Date | null {
-  const trimmed = value.trim()
-  const datePartMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (datePartMatch) {
-    const year = Number(datePartMatch[1])
-    const month = Number(datePartMatch[2])
-    const day = Number(datePartMatch[3])
-    const local = new Date(year, month - 1, day)
-    if (local.getFullYear() === year && local.getMonth() === month - 1 && local.getDate() === day) {
-      return local
-    }
+function expiryCalendarInstant(value: string): Date | null {
+  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!match) {
+    return parseApiInstant(value)
   }
-  return parseTimestamp(trimmed)
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const probe = new Date(Date.UTC(year, month - 1, day))
+  const realDay =
+    probe.getUTCFullYear() === year &&
+    probe.getUTCMonth() === month - 1 &&
+    probe.getUTCDate() === day
+  if (!realDay) {
+    return null
+  }
+  return parseBeijingWall(`${match[1]}-${match[2]}-${match[3]}T12:00:00`)
 }
 
 /**
@@ -45,15 +42,11 @@ export function formatBeijingDate(
   if (value == null || !String(value).trim()) {
     return '—'
   }
-  const parsed = beijingCalendarDate(String(value))
-  if (!parsed) {
+  const instant = expiryCalendarInstant(String(value))
+  if (!instant) {
     return String(value)
   }
-  return parsed.toLocaleDateString(locale, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
+  return formatInBeijing(instant, locale, DATE_OPTIONS) || String(value)
 }
 
 /**
@@ -66,18 +59,5 @@ export function formatBeijingDateTime(
   if (value == null || !String(value).trim()) {
     return '—'
   }
-  const parsed = parseTimestamp(String(value))
-  if (!parsed) {
-    return String(value)
-  }
-  return parsed.toLocaleString(locale, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-    timeZone: BEIJING_TIME_ZONE,
-  })
+  return formatInBeijing(String(value), locale) || String(value)
 }

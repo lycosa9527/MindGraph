@@ -25,6 +25,7 @@ from models.domain.learning_space import (
     LearningSubmission,
 )
 from services.learning_space.admin_teachers import organization_display_map, user_display_map
+from services.learning_space.clock import utc_isoformat
 from services.learning_space.passwords import staff_visible_learning_space_password
 from utils.auth.role_constants import ROLE_STUDENT
 from utils.auth.roles import is_student
@@ -553,7 +554,7 @@ async def _list_admin_students_global_body(
                 "member_kind": row.member_kind,
                 "membership_role": row.membership_role,
                 "must_change_password": bool(row.must_change_password),
-                "last_login": row.last_login.isoformat() if row.last_login else None,
+                "last_login": utc_isoformat(row.last_login),
                 "class_id": int(row.class_id),
                 "class_name": row.class_name or "",
                 "class_code": row.class_code or "",
@@ -644,7 +645,7 @@ async def class_roster_items(
                     include=include_initial_password,
                 ),
                 "must_change_password": bool(student.must_change_password),
-                "last_login": student.last_login.isoformat() if student.last_login else None,
+                "last_login": utc_isoformat(student.last_login),
             }
         )
     for membership, user in member_rows:
@@ -662,7 +663,7 @@ async def class_roster_items(
                 "membership_role": membership.role,
                 "initial_password": "",
                 "must_change_password": False,
-                "last_login": user.last_login.isoformat() if user.last_login else None,
+                "last_login": utc_isoformat(user.last_login),
             }
         )
     return items

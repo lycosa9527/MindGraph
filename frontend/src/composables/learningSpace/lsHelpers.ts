@@ -1,25 +1,84 @@
 /**
  * Shared helpers for Learning Space teacher/student UI.
  */
+import { beijingWallClock, parseApiInstant, parseBeijingWall } from '@/utils/beijingClock'
 import type { LearningAssignment, LearningSubmission } from '@/utils/learningSpaceApi'
 
 export type TeacherTab = 'dashboard' | 'assignments' | 'classes'
 export type StudentTab = 'home' | 'assignments' | 'works'
 
 export type AssignmentFilter = 'all' | 'active' | 'pending' | 'closed' | 'draft'
+export type StudentAssignmentFilter = 'all' | 'todo' | 'submitted' | 'urgent'
 
-export function formatLsDateTime(value: string | null | undefined): string {
-  if (!value) return '—'
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return value
-  return d.toLocaleString()
+/**
+ * Parse an API timestamp. Columns are timezone-naive UTC, so a value with no
+ * offset is UTC, not the browser's local clock.
+ */
+export function parseLsInstant(value: string | null | undefined): Date | null {
+  return parseApiInstant(value)
 }
+
+/** `YYYY/MM/DD HH:mm:ss` in Asia/Shanghai, independent of the browser timezone. */
+export function formatLsDateTime(value: string | null | undefined): string {
+  if (!value?.trim()) return '—'
+  const parsed = parseLsInstant(value)
+  if (!parsed) return value
+  const wall = beijingWallClock(parsed)
+  return `${wall.year}/${wall.month}/${wall.day} ${wall.hour}:${wall.minute}:${wall.second}`
+}
+
+/**
+ * Form value is `YYYY-MM-DDTHH:mm` with no timezone.
+ * Teachers set deadlines on the Beijing clock.
+ */
+export function beijingWallClockToIso(value: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value.trim())) return null
+  const parsed = parseBeijingWall(value)
+  return parsed ? parsed.toISOString() : null
+}
+
+export { beijingHour } from '@/utils/beijingClock'
 
 export function assignmentIsClosed(a: LearningAssignment): boolean {
   if (a.status === 'closed' || a.status === 'archived') return true
   if (!a.due_at) return false
-  const due = new Date(a.due_at).getTime()
-  return Number.isFinite(due) && due < Date.now()
+  const due = parseLsInstant(a.due_at)
+  return due != null && due.getTime() < Date.now()
+}
+
+export type UnsubmittedTopicRow = {
+  id: number
+  title: string
+  className: string
+  unsubmitted: number
+}
+
+/** One row per assignment, with that assignment's own unsubmitted count. */
+export function unsubmittedTopicRows(
+  assignments: readonly LearningAssignment[],
+  classById: ReadonlyMap<number, { name: string; student_count?: number }>
+): UnsubmittedTopicRow[] {
+  const rows: UnsubmittedTopicRow[] = []
+  for (const row of assignments) {
+    const learningClass = classById.get(row.class_id)
+    const progress = assignmentProgress(row, learningClass?.student_count)
+    if (progress.unsubmitted <= 0) continue
+    rows.push({
+      id: row.id,
+      title: row.title.trim() || '—',
+      className: (learningClass?.name ?? '').trim(),
+      unsubmitted: progress.unsubmitted,
+    })
+  }
+  rows.sort((a, b) => b.unsubmitted - a.unsubmitted || a.title.localeCompare(b.title, 'zh'))
+  const titleCounts = new Map<string, number>()
+  for (const row of rows) {
+    titleCounts.set(row.title, (titleCounts.get(row.title) ?? 0) + 1)
+  }
+  return rows.map((row) => ({
+    ...row,
+    className: (titleCounts.get(row.title) ?? 0) > 1 ? row.className : '',
+  }))
 }
 
 export function assignmentProgress(
@@ -33,6 +92,7 @@ export function assignmentProgress(
   pendingReview: number
 } {
   const submitted = a.submitted_count ?? 0
+  const reviewed = Math.min(submitted, Math.max(0, a.reviewed_count ?? 0))
   const roster = a.student_count ?? rosterSize ?? 0
   const total = Math.max(roster, submitted)
   const percent = total > 0 ? Math.round((submitted / total) * 100) : 0
@@ -41,7 +101,7 @@ export function assignmentProgress(
     total,
     percent,
     unsubmitted: Math.max(0, total - submitted),
-    pendingReview: submitted,
+    pendingReview: submitted - reviewed,
   }
 }
 
@@ -49,6 +109,13 @@ export function submissionStatusTone(status: string | undefined): string {
   if (status === 'submitted') return 'active'
   if (status === 'returned') return 'closed'
   return 'draft'
+}
+
+/** Assigned homework on the teacher tab. Drafts stay off the badge; closed work still counts. */
+export function publishedAssignmentCount(
+  rows: ReadonlyArray<Pick<LearningAssignment, 'status'>>
+): number {
+  return rows.filter((row) => row.status !== 'draft').length
 }
 
 export function filterTeacherAssignments(
@@ -64,7 +131,7 @@ export function filterTeacherAssignments(
     if (filter === 'closed') return assignmentIsClosed(a)
     if (filter === 'active') return !assignmentIsClosed(a) && a.status !== 'draft'
     if (filter === 'pending') {
-      return (a.submitted_count ?? 0) > 0 && !assignmentIsClosed(a)
+      return assignmentProgress(a).pendingReview > 0 && !assignmentIsClosed(a)
     }
     return true
   })
@@ -77,6 +144,23 @@ export function studentAssignmentPending(a: LearningAssignment): boolean {
 
 export function studentAssignmentDone(a: LearningAssignment): boolean {
   return a.submission?.status === 'submitted'
+}
+
+/** Pending homework with a deadline that has not passed. */
+export function studentAssignmentUrgent(a: LearningAssignment): boolean {
+  return studentAssignmentPending(a) && Boolean(a.due_at) && !assignmentIsClosed(a)
+}
+
+export function filterStudentAssignments(
+  items: readonly LearningAssignment[],
+  filter: StudentAssignmentFilter
+): LearningAssignment[] {
+  return items.filter((row) => {
+    if (filter === 'todo') return studentAssignmentPending(row)
+    if (filter === 'submitted') return studentAssignmentDone(row)
+    if (filter === 'urgent') return studentAssignmentUrgent(row)
+    return true
+  })
 }
 
 export function assignmentAllowsLate(a: LearningAssignment | null | undefined): boolean {
@@ -246,7 +330,9 @@ export function homeworkPublisherName(name: string | null | undefined): string {
   return trimmed || '—'
 }
 
-export function homeworkGraderLabel(names: Array<string | null | undefined> | null | undefined): string {
+export function homeworkGraderLabel(
+  names: Array<string | null | undefined> | null | undefined
+): string {
   return (names ?? [])
     .map((item) => (item || '').trim())
     .filter(Boolean)
@@ -262,10 +348,60 @@ export function submissionGraderNames(
 
 export function submissionIsReviewed(
   sub:
-    Pick<LearningSubmission, 'reviewed_at' | 'review_comment' | 'review_scores'> | null | undefined
+    | Pick<
+        LearningSubmission,
+        | 'reviewed_at'
+        | 'reviewed_by'
+        | 'review_comment'
+        | 'review_scores'
+        | 'review_liked'
+        | 'review_pinned'
+      >
+    | null
+    | undefined
 ): boolean {
   if (!sub) return false
-  if (sub.reviewed_at || sub.review_comment) return true
+  if (sub.reviewed_by || sub.reviewed_at || sub.review_comment) return true
+  if (sub.review_liked || sub.review_pinned) return true
   const scores = sub.review_scores
   return Boolean(scores && Object.keys(scores).length > 0)
+}
+
+/** A saved review whose grader account has no display name. */
+export function submissionHasUnnamedReview(
+  sub:
+    | (Pick<LearningSubmission, 'reviewed_at' | 'review_comment' | 'review_scores'> & {
+        reviewer_name?: string | null
+      })
+    | null
+    | undefined
+): boolean {
+  return submissionIsReviewed(sub) && submissionGraderNames(sub).length === 0
+}
+
+/** Keep the homework card's grader line in step with a review just saved. */
+export function assignmentWithGrader(
+  assignment: LearningAssignment,
+  reviewerName: string | null | undefined
+): LearningAssignment {
+  const label = (reviewerName || '').trim()
+  if (!label) {
+    if (assignment.has_unnamed_review) return assignment
+    return { ...assignment, has_unnamed_review: true }
+  }
+  const names = assignment.reviewer_names ?? []
+  if (names.includes(label)) return assignment
+  return { ...assignment, reviewer_names: [...names, label] }
+}
+
+/** Keep pending-review counts in step with a grade just saved. */
+export function assignmentWithReviewCounted(
+  assignment: LearningAssignment,
+  wasReviewed: boolean
+): LearningAssignment {
+  if (wasReviewed) return assignment
+  const submitted = assignment.submitted_count ?? 0
+  const reviewed = Math.min(submitted, (assignment.reviewed_count ?? 0) + 1)
+  if (reviewed === assignment.reviewed_count) return assignment
+  return { ...assignment, reviewed_count: reviewed }
 }

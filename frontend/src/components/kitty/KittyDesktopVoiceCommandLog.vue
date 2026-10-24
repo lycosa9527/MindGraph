@@ -6,6 +6,7 @@ import { computed } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { KittyDesktopVoiceCommandEntry } from '@/composables/kitty/useKittyDesktopVoiceCommandLog'
+import { beijingWallClock } from '@/utils/beijingClock'
 
 const props = defineProps<{
   visible: boolean
@@ -17,9 +18,8 @@ const { t } = useLanguage()
 const hasEntries = computed(() => props.entries.length > 0)
 
 function formatTime(at: number): string {
-  const d = new Date(at)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  const wall = beijingWallClock(new Date(at))
+  return `${wall.hour}:${wall.minute}:${wall.second}`
 }
 </script>
 

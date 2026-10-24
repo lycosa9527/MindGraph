@@ -5,6 +5,7 @@ import type { MindbotUsageEventRow } from '@/components/admin/mindbotUsageTypes'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const visible = defineModel<boolean>({ required: true })
 
@@ -15,11 +16,7 @@ defineProps<{
 const { t } = useLanguage()
 
 function formatTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString()
-  } catch {
-    return iso
-  }
+  return formatInBeijing(iso) || iso
 }
 
 function formatDur(s: number | null): string {

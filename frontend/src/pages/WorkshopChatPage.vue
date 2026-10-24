@@ -46,6 +46,7 @@ import {
   useWorkshopChatStore,
 } from '@/stores/workshopChat'
 import { apiRequest } from '@/utils/apiClient'
+import { formatInBeijing } from '@/utils/beijingClock'
 import { formatDeadlineRelative, lessonStudyDeadlineBadge } from '@/utils/lessonStudyDeadline'
 import {
   normalizeWorkshopNarrowQuery,
@@ -941,15 +942,12 @@ function topicTitleForChannelSearchHit(msg: ChatMessage): string {
 }
 
 function formatSearchHitTime(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) {
-    return ''
-  }
-  return d.toLocaleString(undefined, {
+  return formatInBeijing(iso, undefined, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   })
 }
 

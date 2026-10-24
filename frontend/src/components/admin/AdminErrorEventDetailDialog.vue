@@ -5,6 +5,7 @@ import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables'
 import type { AdminErrorEventItem } from '@/composables/queries/adminApi'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const visible = defineModel<boolean>({ required: true })
 
@@ -15,11 +16,7 @@ const props = defineProps<{
 const { t } = useLanguage()
 
 function formatTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString()
-  } catch {
-    return iso
-  }
+  return formatInBeijing(iso) || iso
 }
 
 function formatTags(tags: Record<string, unknown> | null | undefined): string {

@@ -29,6 +29,7 @@ import {
   useMindMateExportConversations,
   useMindMateExportUsers,
 } from '@/composables/queries'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -385,7 +386,7 @@ function formatTime(epoch: number): string {
   if (!epoch) {
     return ''
   }
-  return new Date(epoch * 1000).toLocaleString()
+  return formatInBeijing(epoch * 1000)
 }
 
 function bubbleRoleLabel(role: string): string {

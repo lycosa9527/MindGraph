@@ -16,11 +16,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from models.domain.learning_space import (
     MEMBERSHIP_ROLE_LEARNER,
-    SUBMISSION_STATUS_SUBMITTED,
     LearningAssignment,
     LearningClassMembership,
     LearningSubmission,
 )
+from services.learning_space.clock import utc_isoformat
+from services.learning_space.review_mark import current_submission, submission_tally_columns
 from utils.auth.role_constants import ROLE_STUDENT
 
 
@@ -52,7 +53,7 @@ async def roster_counts_by_class(db: AsyncSession, class_ids: list[int]) -> dict
 
 
 async def assignment_metric_rows(db: AsyncSession, class_ids: list[int]) -> list[dict]:
-    """Status, due date, and submitted count for dashboard metrics."""
+    """Status, due date, submitted count, and graded count for dashboard metrics."""
     if not class_ids:
         return []
     ids = tuple(int(class_id) for class_id in class_ids)
@@ -67,16 +68,18 @@ async def assignment_metric_rows(db: AsyncSession, class_ids: list[int]) -> list
         .where(LearningAssignment.class_id.in_(ids))
         .order_by(LearningAssignment.id.desc())
     )
-    submitted = await db.execute(
-        select(LearningSubmission.assignment_id, func.count())
+    submitted_col, reviewed_col = submission_tally_columns()
+    tallies = await db.execute(
+        select(LearningSubmission.assignment_id, submitted_col, reviewed_col)
         .join(LearningAssignment, LearningAssignment.id == LearningSubmission.assignment_id)
-        .where(
-            LearningAssignment.class_id.in_(ids),
-            LearningSubmission.status == SUBMISSION_STATUS_SUBMITTED,
-        )
+        .where(LearningAssignment.class_id.in_(ids), current_submission())
         .group_by(LearningSubmission.assignment_id)
     )
-    submitted_by_id = {int(assignment_id): int(total or 0) for assignment_id, total in submitted.all()}
+    submitted_by_id: dict[int, int] = {}
+    reviewed_by_id: dict[int, int] = {}
+    for assignment_id, submitted_total, reviewed_total in tallies.all():
+        submitted_by_id[int(assignment_id)] = int(submitted_total or 0)
+        reviewed_by_id[int(assignment_id)] = int(reviewed_total or 0)
     rosters = await roster_counts_by_class(db, list(ids))
     rows: list[dict] = []
     for assignment_id, class_id, title, assignment_status, due_at in assignments.all():
@@ -86,8 +89,9 @@ async def assignment_metric_rows(db: AsyncSession, class_ids: list[int]) -> list
                 "class_id": int(class_id),
                 "title": title,
                 "status": assignment_status,
-                "due_at": due_at.isoformat() if due_at else None,
+                "due_at": utc_isoformat(due_at),
                 "submitted_count": submitted_by_id.get(int(assignment_id), 0),
+                "reviewed_count": reviewed_by_id.get(int(assignment_id), 0),
                 "student_count": rosters.get(int(class_id), 0),
             }
         )

@@ -28,6 +28,7 @@ import {
   refreshAdminShowcaseCover,
   toggleShowcaseExpertRecommend,
 } from '@/utils/apiClient'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 const ADMIN_SORT_OPTIONS = [
   { value: 'newest', labelKey: 'admin.showcase.sort.newest' },
@@ -151,7 +152,7 @@ async function refreshCover(post: ShowcasePost): Promise<void> {
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—'
   try {
-    return new Date(iso).toLocaleString('zh-CN')
+    return formatInBeijing(iso, 'zh-CN') || iso
   } catch {
     return iso
   }

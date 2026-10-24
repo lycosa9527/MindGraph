@@ -21,6 +21,7 @@ import {
   Trash2,
 } from '@lucide/vue'
 
+import DeadlineDateTimePicker from '@/components/common/DeadlineDateTimePicker.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
@@ -474,10 +475,8 @@ export default { name: 'ChannelActionsPopover' }
     :icon="CalendarClock"
     width="min(400px, 92vw)"
   >
-    <el-date-picker
+    <DeadlineDateTimePicker
       v-model="deadlineDraft"
-      type="datetime"
-      style="width: 100%"
       :teleported="true"
     />
     <template #footer>

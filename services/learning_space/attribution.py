@@ -9,11 +9,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.learning_space import LearningSubmission
-from services.learning_space.assignments import author_names_for_user_ids
+from services.learning_space.assignments import author_names_for_user_ids, submission_public_dict
+from services.learning_space.review_mark import submission_has_review
 
 
 async def review_marks_by_assignment(
@@ -26,11 +27,7 @@ async def review_marks_by_assignment(
     result = await db.execute(
         select(LearningSubmission.assignment_id, LearningSubmission.reviewed_by).where(
             LearningSubmission.assignment_id.in_(tuple(assignment_ids)),
-            or_(
-                LearningSubmission.reviewed_at.is_not(None),
-                LearningSubmission.review_comment.is_not(None),
-                LearningSubmission.review_scores.is_not(None),
-            ),
+            submission_has_review(),
         )
     )
     grouped: dict[int, set[int]] = {}
@@ -111,6 +108,13 @@ async def attach_assignment_people(db: AsyncSession, items: list[dict[str, Any]]
         submission = row.get("submission")
         if isinstance(submission, dict):
             _attach_reviewer_name(submission, names)
+
+
+async def named_submission_dict(submission: LearningSubmission, **kwargs: Any) -> dict[str, Any]:
+    """One submission response, with reviewer_name taken from reviewed_by."""
+    payload = submission_public_dict(submission, **kwargs)
+    await attach_submission_reviewers([payload])
+    return payload
 
 
 async def attach_submission_reviewers(

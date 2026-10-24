@@ -206,6 +206,7 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import type { MindMapPresentationToolId } from '@/types/diagram'
 import { MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS } from '@/types/diagram'
+import { formatInBeijing } from '@/utils/beijingClock'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { isMobileRoutePath } from '@/utils/mobileRouteRedirect'
 import {
@@ -988,14 +989,11 @@ function formatRelativeTime(date: Date): string {
   if (diffSec < 60) return t('editor.savedSecondsAgo', { n: diffSec })
   const diffMin = Math.floor(diffSec / 60)
   if (diffMin < 60) return t('editor.savedMinutesAgo', { n: diffMin })
-  const timeStr = date.toLocaleTimeString(
-    intlLocaleForUiCode(currentLanguage.value as LocaleCode),
-    {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }
-  )
+  const timeStr = formatInBeijing(date, intlLocaleForUiCode(currentLanguage.value as LocaleCode), {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
   return t('editor.autoSavedAt').replace('{time}', timeStr)
 }
 

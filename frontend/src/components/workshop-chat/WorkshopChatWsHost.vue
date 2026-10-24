@@ -46,3 +46,7 @@ watch(
   { immediate: true }
 )
 </script>
+
+<template>
+  <!-- Renderless: the setup above keeps the workshop chat socket connected. -->
+</template>

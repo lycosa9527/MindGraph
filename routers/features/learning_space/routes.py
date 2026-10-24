@@ -64,6 +64,7 @@ from services.learning_space.admin_teachers import (
     search_teachers_for_pilot,
     user_display_map,
 )
+from services.learning_space.clock import utc_isoformat, utc_naive
 from services.learning_space.memberships import (
     MEMBERSHIP_ROLE_ASSISTANT,
     MEMBERSHIP_ROLE_LEARNER,
@@ -97,6 +98,7 @@ from services.learning_space.assignments import (
 from services.learning_space.attribution import (
     attach_assignment_people,
     attach_submission_reviewers,
+    named_submission_dict,
     submission_label_user_ids,
 )
 from services.learning_space.class_codes import (
@@ -209,7 +211,7 @@ async def list_pilots(
                 "organization_name": org_names.get(int(p.organization_id), ""),
                 "enabled": p.enabled,
                 "class_count": class_counts.get(int(p.teacher_user_id), 0),
-                "created_at": p.created_at.isoformat() if p.created_at else None,
+                "created_at": utc_isoformat(p.created_at),
             }
             for p in rows
         ]
@@ -734,7 +736,7 @@ async def teacher_create_assignment(
         title=body.title.strip(),
         instructions=body.instructions or "",
         template_diagram_id=body.template_diagram_id,
-        due_at=body.due_at,
+        due_at=utc_naive(body.due_at),
         ai_permissions=merge_ai_permissions(prepared_permissions),
         instruction_images=stored_images,
         organization_id=int(learning_class.organization_id),
@@ -848,7 +850,7 @@ async def teacher_return_submission(
     assignment = await get_assignment(db, submission.assignment_id)
     await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True, actor=current_user)
     updated = await return_submission(db, submission)
-    return submission_public_dict(updated)
+    return await named_submission_dict(updated)
 
 
 @router.post("/teacher/submissions/{submission_id}/extend")
@@ -865,7 +867,7 @@ async def teacher_extend_due(
     assignment = await get_assignment(db, submission.assignment_id)
     await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True, actor=current_user)
     updated = await extend_submission_due(db, submission, body.due_at)
-    return submission_public_dict(updated)
+    return await named_submission_dict(updated)
 
 
 @router.post("/teacher/submissions/{submission_id}/review")
@@ -1073,7 +1075,7 @@ async def student_open_assignment(
     apply_learner_due(assignment_payload, assignment, submission)
     return {
         "assignment": assignment_payload,
-        "submission": submission_public_dict(submission),
+        "submission": await named_submission_dict(submission),
     }
 
 
@@ -1093,7 +1095,7 @@ async def student_bind_draft_diagram(
         current_user,
         body.diagram_id,
     )
-    return submission_public_dict(submission)
+    return await named_submission_dict(submission)
 
 
 @router.post("/student/assignments/{assignment_id}/submit")
@@ -1106,7 +1108,7 @@ async def student_submit_assignment(
     assignment = await get_assignment(db, assignment_id)
     await require_class_learner(db, current_user, int(assignment.class_id))
     submission = await submit_assignment(db, assignment, current_user)
-    return submission_public_dict(submission)
+    return await named_submission_dict(submission)
 
 
 @router.post("/student/change-password")

@@ -4,6 +4,7 @@
 import { type ComputedRef, type Ref, computed, ref } from 'vue'
 
 import type { DiagramFolder, SavedDiagram } from '@/stores/savedDiagrams'
+import { beijingRecentDayStarts, parseApiInstant } from '@/utils/beijingClock'
 
 const COLLAPSED_STORAGE_KEY = 'mindgraph:diagram-archive:collapsed'
 
@@ -58,10 +59,7 @@ export function groupUncategorizedDiagrams(
     month: [],
   }
 
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
-  const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
+  const { todayStart, yesterdayStart, weekStart } = beijingRecentDayStarts()
 
   const uncategorized = diagrams.filter((diagram) => !diagram.folder_id)
   const limit = options.showAll ? uncategorized.length : (options.limit ?? uncategorized.length)
@@ -73,7 +71,7 @@ export function groupUncategorizedDiagrams(
       return
     }
 
-    const diagramTime = new Date(diagram.updated_at).getTime()
+    const diagramTime = parseApiInstant(diagram.updated_at)?.getTime() ?? Number.NaN
     if (diagramTime >= todayStart) {
       groups.today.push(diagram)
     } else if (diagramTime >= yesterdayStart) {

@@ -93,6 +93,11 @@ DEFAULT_AI_PERMISSIONS: dict[str, bool] = {
 }
 
 
+def _utc_now() -> datetime:
+    """Naive UTC for TIMESTAMP WITHOUT TIME ZONE columns."""
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
 class LearningPilotTeacher(Base):
     """Superadmin grant allowing a teacher to use Learning Space classes."""
 
@@ -118,7 +123,7 @@ class LearningPilotTeacher(Base):
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
 
     teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_user_id], lazy="selectin")
     organization: Mapped["Organization"] = relationship("Organization", lazy="selectin")
@@ -146,11 +151,11 @@ class LearningClass(Base):
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=CLASS_STATUS_ACTIVE)
     max_students: Mapped[int] = mapped_column(Integer, nullable=False, default=60)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=_utc_now,
+        onupdate=_utc_now,
     )
 
     teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_user_id], lazy="selectin")
@@ -189,7 +194,7 @@ class LearningClassMembership(Base):
         index=True,
     )
     role: Mapped[str] = mapped_column(String(20), nullable=False, default=MEMBERSHIP_ROLE_LEARNER)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
 
     learning_class: Mapped["LearningClass"] = relationship("LearningClass", lazy="selectin")
     user: Mapped["User"] = relationship("User", foreign_keys=[user_id], lazy="selectin")
@@ -226,11 +231,11 @@ class LearningAssignment(Base):
         index=True,
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=ASSIGNMENT_STATUS_ACTIVE)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=_utc_now,
+        onupdate=_utc_now,
     )
 
     learning_class: Mapped["LearningClass"] = relationship(
@@ -289,11 +294,11 @@ class LearningSubmission(Base):
         nullable=True,
         index=True,
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=_utc_now,
+        onupdate=_utc_now,
     )
 
     assignment: Mapped["LearningAssignment"] = relationship(

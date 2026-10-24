@@ -26,8 +26,10 @@ export function useThinkingMapTypographyRemeasure(options: {
   remeasure: () => void | Promise<void>
   afterRemeasure?: () => void
 }): void {
+  // Compare the font fields, not the style object. Layout rebuilds a new style
+  // object on every pass; a fresh array would remeasure and rebuild forever.
   watch(
-    () => typographyStyleWatchDeps(options.style()),
+    () => JSON.stringify(typographyStyleWatchDeps(options.style())),
     () => {
       if (!options.enabled()) return
       void Promise.resolve(options.remeasure()).then(() => {

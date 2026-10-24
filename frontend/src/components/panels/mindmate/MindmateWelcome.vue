@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import I18nText from '@/components/common/I18nText.vue'
 import MindmateHomeModeSwitch from '@/components/mindmate/MindmateHomeModeSwitch.vue'
 import { useLanguage } from '@/composables'
-import { greetHourLabel } from '@/composables/learningSpace/lsHelpers'
+import { beijingHour, greetHourLabel } from '@/composables/learningSpace/lsHelpers'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { resolveBilingual } from '@/i18n/resolveBilingual'
 import { useAuthStore } from '@/stores/auth'
@@ -38,7 +38,7 @@ const welcomeParams = computed(() => ({
   agentName: displayName.value,
 }))
 const greetKey = computed(() => {
-  const label = greetHourLabel(new Date().getHours())
+  const label = greetHourLabel(beijingHour())
   if (label === 'morning') return 'mindmate.greetMorning'
   if (label === 'afternoon') return 'mindmate.greetAfternoon'
   return 'mindmate.greetEvening'

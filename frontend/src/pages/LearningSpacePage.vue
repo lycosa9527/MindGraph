@@ -29,7 +29,7 @@ const {
   showLsHeader,
   teacherTab,
   studentTab,
-  pendingGradeCount,
+  teacherAssignmentCount,
   studentTodoCount,
   showShellSwitch,
   mustChangePassword,
@@ -104,7 +104,7 @@ onUnmounted(() => {
       :mode="isStudent ? 'student' : 'teacher'"
       :teacher-tab="teacherTab"
       :student-tab="studentTab"
-      :pending-badge="isStudent ? studentTodoCount : pendingGradeCount"
+      :tab-badge="isStudent ? studentTodoCount : teacherAssignmentCount"
       :show-shell-switch="showShellSwitch"
       @update:teacher-tab="ls.setTeacherTab"
       @update:student-tab="ls.setStudentTab"

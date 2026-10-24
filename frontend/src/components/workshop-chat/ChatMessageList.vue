@@ -4,6 +4,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import type { ChatMessage } from '@/stores/workshopChat'
+import { beijingWallClock, formatInBeijing, parseApiInstant } from '@/utils/beijingClock'
 
 import ChatMessageItem from './ChatMessageItem.vue'
 import RecipientBar from './RecipientBar.vue'
@@ -69,12 +70,13 @@ const groupedMessages = computed<MessageGroup[]>(() => {
   }
 
   for (const msg of props.messages) {
-    const msgDate = new Date(msg.created_at)
-    const dateStr = msgDate.toLocaleDateString(undefined, {
+    const msgDate = parseApiInstant(msg.created_at)
+    const showYear = msgDate != null && beijingWallClock(msgDate).year !== beijingWallClock().year
+    const dateStr = formatInBeijing(msg.created_at, undefined, {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
-      year: msgDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
+      ...(showYear ? { year: 'numeric' as const } : {}),
     })
 
     if (dateStr !== currentDateStr) {

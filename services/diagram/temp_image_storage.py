@@ -1,8 +1,8 @@
-"""Local cache + COS durable store for generate_dingtalk preview PNGs.
+"""Local cache + COS durable store for preview PNGs.
 
 MindMate / DingTalk conversation history keeps ``/api/temp_images/dingtalk_*.png``
-URLs. Local files still age out after 24h; COS is the copy that hydrate uses
-when a user reopens the thread later.
+URLs. Seminar canvas shares use ``diagram_{uuid}.png``. Local files still age
+out after 24h; COS is the copy that hydrate uses when a user reopens later.
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ from services.utils.tencent_cos_client import (
 logger = logging.getLogger(__name__)
 
 DINGTALK_TEMP_PNG_RE = re.compile(r"^dingtalk_[a-f0-9]{8}_\d+\.png$", re.IGNORECASE)
+DIAGRAM_PREVIEW_PNG_RE = re.compile(r"^diagram_[a-f0-9]{32}\.png$", re.IGNORECASE)
 LOCAL_SIGNED_TTL_SECONDS = 86400
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _TEMP_IMAGES_DIR = _PROJECT_ROOT / "temp_images"
@@ -37,12 +38,19 @@ def temp_images_dir() -> Path:
     return _TEMP_IMAGES_DIR
 
 
+def _is_bare_filename(filename: str) -> bool:
+    name = (filename or "").strip()
+    return bool(name) and "/" not in name and "\\" not in name and ".." not in name
+
+
 def is_safe_dingtalk_temp_filename(filename: str) -> bool:
     """True when filename is a generate_dingtalk preview PNG (no path)."""
-    name = (filename or "").strip()
-    if not name or "/" in name or "\\" in name or ".." in name:
-        return False
-    return bool(DINGTALK_TEMP_PNG_RE.match(name))
+    return _is_bare_filename(filename) and bool(DINGTALK_TEMP_PNG_RE.match(filename.strip()))
+
+
+def is_safe_diagram_preview_filename(filename: str) -> bool:
+    """True when filename is a seminar canvas-share preview PNG (no path)."""
+    return _is_bare_filename(filename) and bool(DIAGRAM_PREVIEW_PNG_RE.match(filename.strip()))
 
 
 def cos_temp_images_enabled() -> bool:
@@ -65,10 +73,22 @@ def dingtalk_temp_cos_key(filename: str) -> str:
     )
 
 
-async def persist_dingtalk_temp_png(filename: str, data: bytes) -> Path:
+def diagram_preview_cos_key(filename: str) -> str:
+    """Full COS object key for a seminar canvas-share preview PNG."""
+    return cos_object_key(
+        f"diagram/{filename}",
+        prefix=config.COS_TEMP_IMAGES_PREFIX,
+    )
+
+
+async def _persist_preview_png(
+    filename: str,
+    data: bytes,
+    object_key: str,
+    *,
+    require_cos: bool = False,
+) -> Path:
     """Write the local working copy, then mirror to COS when enabled."""
-    if not is_safe_dingtalk_temp_filename(filename):
-        raise ValueError(f"Invalid dingtalk temp filename: {filename}")
     dest = temp_images_dir()
     dest.mkdir(exist_ok=True)
     path = dest / filename
@@ -79,24 +99,24 @@ async def persist_dingtalk_temp_png(filename: str, data: bytes) -> Path:
     uploaded = await asyncio.to_thread(
         upload_bytes,
         data,
-        dingtalk_temp_cos_key(filename),
+        object_key,
         log_prefix="[TempImages/COS]",
         content_type="image/png",
     )
     if uploaded:
         logger.info("[TempImages] COS put filename=%s bytes=%s", filename, len(data))
-    else:
-        logger.warning(
-            "[TempImages] COS upload failed filename=%s (local copy kept)",
-            filename,
-        )
+        return path
+    if require_cos:
+        raise ValueError("upload_failed")
+    logger.warning(
+        "[TempImages] COS upload failed filename=%s (local copy kept)",
+        filename,
+    )
     return path
 
 
-async def hydrate_dingtalk_temp_png(filename: str) -> Optional[Path]:
+async def _hydrate_preview_png(filename: str, object_key: str) -> Optional[Path]:
     """Return the local path, pulling from COS when the cache file is gone."""
-    if not is_safe_dingtalk_temp_filename(filename):
-        return None
     dest = temp_images_dir()
     path = dest / filename
     try:
@@ -109,7 +129,7 @@ async def hydrate_dingtalk_temp_png(filename: str) -> Optional[Path]:
     dest.mkdir(exist_ok=True)
     downloaded = await asyncio.to_thread(
         download_file,
-        dingtalk_temp_cos_key(filename),
+        object_key,
         path,
         log_prefix="[TempImages/COS]",
     )
@@ -117,3 +137,36 @@ async def hydrate_dingtalk_temp_png(filename: str) -> Optional[Path]:
         logger.info("[TempImages] COS hydrate filename=%s", filename)
         return path
     return None
+
+
+async def persist_dingtalk_temp_png(filename: str, data: bytes) -> Path:
+    """Write the local working copy, then mirror to COS when enabled."""
+    if not is_safe_dingtalk_temp_filename(filename):
+        raise ValueError(f"Invalid dingtalk temp filename: {filename}")
+    return await _persist_preview_png(filename, data, dingtalk_temp_cos_key(filename))
+
+
+async def hydrate_dingtalk_temp_png(filename: str) -> Optional[Path]:
+    """Return the local path, pulling from COS when the cache file is gone."""
+    if not is_safe_dingtalk_temp_filename(filename):
+        return None
+    return await _hydrate_preview_png(filename, dingtalk_temp_cos_key(filename))
+
+
+async def persist_diagram_preview_png(filename: str, data: bytes) -> Path:
+    """Write a seminar canvas preview PNG locally and mirror it to COS."""
+    if not is_safe_diagram_preview_filename(filename):
+        raise ValueError(f"Invalid diagram preview filename: {filename}")
+    return await _persist_preview_png(
+        filename,
+        data,
+        diagram_preview_cos_key(filename),
+        require_cos=True,
+    )
+
+
+async def hydrate_diagram_preview_png(filename: str) -> Optional[Path]:
+    """Return a seminar canvas preview PNG, pulling from COS when the cache is gone."""
+    if not is_safe_diagram_preview_filename(filename):
+        return None
+    return await _hydrate_preview_png(filename, diagram_preview_cos_key(filename))

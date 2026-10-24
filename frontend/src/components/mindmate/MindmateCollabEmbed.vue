@@ -11,7 +11,6 @@ import MindmateSeminarDocViewer from '@/components/mindmate/MindmateSeminarDocVi
 import MindmateSeminarTaskPane from '@/components/mindmate/MindmateSeminarTaskPane.vue'
 import {
   closeSeminarChrome,
-  openSeminarTaskPane,
   seminarDocFullscreen,
   seminarDocPaneWidthPreferred,
   seminarDocPaneWidthPx,
@@ -115,7 +114,7 @@ function onRoomMeta(payload: {
   const firstEnter = !sessionId.value && Boolean(payload.sessionId)
   sessionId.value = payload.sessionId
   if (firstEnter) {
-    openSeminarTaskPane('files')
+    closeSeminarChrome()
   }
   emit('roomMeta', {
     title: payload.title,

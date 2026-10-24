@@ -15,6 +15,7 @@ import {
   useScanAdminDatabase,
 } from '@/composables/queries'
 import { bilingualNotifyWithSuffix } from '@/i18n/bilingualNotifyMessage'
+import { formatInBeijing } from '@/utils/beijingClock'
 
 interface BackupFile {
   name: string
@@ -134,7 +135,7 @@ function formatBytes(bytes: number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString()
+  return formatInBeijing(iso) || iso
 }
 
 async function loadStats() {

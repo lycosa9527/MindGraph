@@ -4,7 +4,11 @@
  */
 import { computed } from 'vue'
 
-import { Copy, CornerUpLeft, Share2 } from '@lucide/vue'
+import { ElButton, ElIcon } from 'element-plus'
+
+import { CopyDocument, Share } from '@element-plus/icons-vue'
+
+import { CornerUpLeft } from '@lucide/vue'
 
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import MindmateSoftIcon from '@/components/mindmate/MindmateSoftIcon.vue'
@@ -12,12 +16,15 @@ import { useLanguage } from '@/composables'
 
 const props = withDefaults(
   defineProps<{
-    /** Keep the cluster on the left of a persistent stamp row. */
+    /** True while the pointer is on the message row. */
+    open?: boolean
+    /** Right-align under the sender's own bubble. */
     inline?: boolean
     /** none = can pin; mine = I can cancel; other = already pinned by someone else. */
     highlightState?: 'none' | 'mine' | 'other'
   }>(),
   {
+    open: false,
     inline: false,
     highlightState: 'none',
   }
@@ -52,70 +59,83 @@ function onHighlight(): void {
 
 <template>
   <div
-    class="mm-bubble-actions"
-    :class="{ 'is-inline': inline }"
+    class="mm-bubble-actions message-actions"
+    :class="{ 'justify-end': inline, 'is-open': open }"
   >
     <I18nTooltip
       k="mindmate.tooltip.copy"
       placement="top"
+      :disabled="!open"
+      :enterable="false"
+      :show-after="400"
+      :hide-after="0"
     >
-      <button
-        type="button"
+      <ElButton
+        text
+        circle
         :aria-label="t('mindmate.tooltip.copy')"
         @click.stop="emit('copy')"
       >
-        <Copy
-          :size="15"
-          :stroke-width="2"
-        />
-      </button>
+        <ElIcon :size="16"><CopyDocument /></ElIcon>
+      </ElButton>
     </I18nTooltip>
     <I18nTooltip
       k="mindmate.bubble.reply"
       placement="top"
+      :disabled="!open"
+      :enterable="false"
+      :show-after="400"
+      :hide-after="0"
     >
-      <button
-        type="button"
+      <ElButton
+        text
+        circle
         :aria-label="t('mindmate.bubble.reply')"
         @click.stop="emit('reply')"
       >
         <CornerUpLeft
-          :size="15"
+          :size="16"
           :stroke-width="2"
         />
-      </button>
+      </ElButton>
     </I18nTooltip>
     <I18nTooltip
       :k="highlightKey"
       placement="top"
+      :disabled="!open"
+      :enterable="false"
+      :show-after="400"
+      :hide-after="0"
     >
-      <button
-        type="button"
-        class="mm-bubble-actions__pin"
+      <ElButton
+        text
+        circle
         :class="{ 'is-set': highlightState !== 'none' }"
         :aria-label="t(highlightKey)"
         @click.stop="onHighlight"
       >
         <MindmateSoftIcon
           name="highlights"
-          :size="15"
+          :size="16"
         />
-      </button>
+      </ElButton>
     </I18nTooltip>
     <I18nTooltip
       k="mindmate.tooltip.share"
       placement="top"
+      :disabled="!open"
+      :enterable="false"
+      :show-after="400"
+      :hide-after="0"
     >
-      <button
-        type="button"
+      <ElButton
+        text
+        circle
         :aria-label="t('mindmate.tooltip.share')"
         @click.stop="emit('multi')"
       >
-        <Share2
-          :size="15"
-          :stroke-width="2"
-        />
-      </button>
+        <ElIcon :size="16"><Share /></ElIcon>
+      </ElButton>
     </I18nTooltip>
   </div>
 </template>
@@ -123,49 +143,39 @@ function onHighlight(): void {
 <style scoped>
 .mm-bubble-actions {
   display: flex;
-  align-items: center;
-  gap: 2px;
-  width: fit-content;
-  margin-top: 4px;
-  padding: 2px;
-  border: 1px solid #ece9f8;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 6px 16px rgba(28, 25, 23, 0.06);
-  opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-}
-
-.mm-bubble-actions.is-inline {
-  margin-top: 0;
-  margin-left: 0;
-}
-
-.mm-bubble-actions button {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #57534e;
-  cursor: pointer;
+  gap: 0;
+  width: fit-content;
+  height: 26px;
+  padding: 0;
 }
 
-.mm-bubble-actions button:hover {
-  background: #f5f3ff;
+.mm-bubble-actions.is-open {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.mm-bubble-actions :deep(.el-tooltip__trigger) {
+  display: inline-flex;
+  margin: 0;
+  line-height: 0;
+}
+
+.mm-bubble-actions :deep(.el-button) {
+  margin: 0;
+}
+
+.mm-bubble-actions :deep(.el-button.is-circle) {
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0;
+}
+
+.mm-bubble-actions :deep(.el-button.is-set) {
+  --el-button-text-color: #6d5efc;
   color: #6d5efc;
-}
-
-.mm-bubble-actions button.is-set {
-  background: #ececf1;
-  color: #9c9aa8;
-}
-
-.mm-bubble-actions button.is-set:hover {
-  background: #e4e4ea;
-  color: #6b6b76;
 }
 </style>

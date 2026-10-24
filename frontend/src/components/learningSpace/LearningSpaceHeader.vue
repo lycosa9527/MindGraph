@@ -23,7 +23,7 @@ defineProps<{
   mode: 'teacher' | 'student'
   teacherTab: TeacherTab
   studentTab: StudentTab
-  pendingBadge: number
+  tabBadge: number
   showShellSwitch?: boolean
 }>()
 
@@ -112,11 +112,11 @@ const studentTabs: { id: StudentTab; icon: typeof Home; labelKey: string }[] = [
           />
           <span class="ls-app__tab-text"><I18nText :k="tab.labelKey" /></span>
           <span
-            v-if="tab.id === 'assignments' && pendingBadge > 0"
+            v-if="tab.id === 'assignments' && tabBadge > 0"
             class="ls-app__badge"
-            :title="t('learningSpace.pendingBadge', { n: pendingBadge })"
+            :title="t('learningSpace.assignmentBadge', { n: tabBadge })"
           >
-            {{ pendingBadge > 99 ? '99+' : pendingBadge }}
+            {{ tabBadge > 99 ? '99+' : tabBadge }}
           </span>
         </button>
       </nav>
@@ -143,11 +143,11 @@ const studentTabs: { id: StudentTab; icon: typeof Home; labelKey: string }[] = [
           />
           <span class="ls-app__tab-text"><I18nText :k="tab.labelKey" /></span>
           <span
-            v-if="tab.id === 'assignments' && pendingBadge > 0"
+            v-if="tab.id === 'assignments' && tabBadge > 0"
             class="ls-app__badge"
-            :title="t('learningSpace.todoBadge', { n: pendingBadge })"
+            :title="t('learningSpace.todoBadge', { n: tabBadge })"
           >
-            {{ pendingBadge > 99 ? '99+' : pendingBadge }}
+            {{ tabBadge > 99 ? '99+' : tabBadge }}
           </span>
         </button>
       </nav>

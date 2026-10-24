@@ -1,7 +1,8 @@
 """Shared background files for one seminar room.
 
-Bytes follow the workshop attachment store (COS when it is on, local disk otherwise).
-The database row is what every participant lists and downloads.
+Bytes go to seminar COS when it is on, and to local disk only when COS is off.
+The database row is what every participant lists and downloads. The download
+route proxies COS bytes so the room can preview them with fetch().
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -11,7 +12,7 @@ Proprietary License
 from __future__ import annotations
 
 import asyncio
-import logging
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Optional
@@ -25,19 +26,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from models.domain.mindmate_collab import MindmateCollabBackgroundFile, MindmateCollabSession
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
+from services.features.mindmate_collab.seminar_file_storage import (
+    delete_seminar_bytes_sync,
+    mirror_local_seminar_file_sync,
+    put_seminar_bytes_sync,
+    read_seminar_bytes_sync,
+)
 from services.features.workshop_chat.attachment_storage import (
     AttachmentDownload,
     LEGACY_DISK_PREFIX,
     build_logical_key,
     is_legacy_disk_path,
     local_path_for_key,
-    resolve_stored_payload,
 )
 from utils.db.session_open import system_rls_session
 
-logger = logging.getLogger(__name__)
-
 STATIC_ROOT = Path(__file__).parent.parent.parent.parent / "static" / "mindmate_seminar"
+
+
+@dataclass(frozen=True)
+class SeminarDownload:
+    """Resolved seminar file: local path or COS bytes proxied by the API."""
+
+    content_type: str
+    filename: str
+    disk_path: Optional[Path] = None
+    body: Optional[bytes] = None
+
+
 MAX_BACKGROUND_BYTES = 20 * 1024 * 1024
 MAX_BACKGROUND_FILES = 40
 DIAGRAM_REF_TYPE = "application/vnd.mindgraph.diagram-ref"
@@ -140,7 +156,10 @@ async def list_background_files(session_id: str) -> list[dict[str, object]]:
         )
         rows = list(result.scalars().all())
         names = await _uploader_names(db, [row.uploader_user_id for row in rows])
-        return [_file_payload(row, names.get(row.uploader_user_id, "")) for row in rows]
+        payloads = [_file_payload(row, names.get(row.uploader_user_id, "")) for row in rows]
+        copies = [(row.storage_key, row.content_type) for row in rows]
+    await _mirror_local_copies(copies)
+    return payloads
 
 
 async def _uploader_names(db: AsyncSession, user_ids: list[int]) -> dict[int, str]:
@@ -149,14 +168,6 @@ async def _uploader_names(db: AsyncSession, user_ids: list[int]) -> dict[int, st
         return {}
     result = await db.execute(select(User.id, User.name).where(User.id.in_(unique)))
     return {int(row.id): (row.name or "") for row in result.all()}
-
-
-def _write_local_background_bytes(logical_key: str, data: bytes) -> str:
-    """Persist seminar bytes under STATIC_ROOT when COS is unavailable."""
-    path = local_path_for_key(logical_key, STATIC_ROOT)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-    return logical_key
 
 
 async def find_reply_artifact(session_id: str, message_id: int) -> Optional[dict[str, object]]:
@@ -189,7 +200,24 @@ async def list_reply_artifacts(session_id: str) -> list[dict[str, object]]:
         )
         rows = list(result.scalars().all())
         names = await _uploader_names(db, [row.uploader_user_id for row in rows])
-        return [_file_payload(row, names.get(row.uploader_user_id, "")) for row in rows]
+        payloads = [_file_payload(row, names.get(row.uploader_user_id, "")) for row in rows]
+        copies = [(row.storage_key, row.content_type) for row in rows]
+    await _mirror_local_copies(copies)
+    return payloads
+
+
+async def _mirror_local_copies(copies: list[tuple[str, str]]) -> None:
+    """Copy seminar files that still exist only on this host up to COS."""
+    for storage_key, content_type in copies:
+        disk = seminar_disk_path(storage_key)
+        if disk is None or not disk.is_file():
+            continue
+        await asyncio.to_thread(
+            mirror_local_seminar_file_sync,
+            storage_key,
+            disk,
+            content_type=content_type,
+        )
 
 
 async def save_generated_background_file(
@@ -245,16 +273,15 @@ async def save_generated_background_file(
 
 
 async def store_background_bytes(filename: str, data: bytes, content_type: str) -> str:
-    """Store seminar resources on local disk.
-
-    Workshop COS is enabled in some envs but the bucket is missing here
-    (NoSuchBucket + multi-retry). Waiting on COS makes the browser toast
-    ``无法上传文件`` before any fallback can finish, so seminar files skip COS.
-    """
-    del content_type  # content type is persisted on the DB row, not the path
+    """Store seminar bytes on COS, or on local disk when COS is off."""
     logical_key = build_logical_key(filename)
-    logger.info("[SeminarFiles] writing locally under %s key=%s", STATIC_ROOT, logical_key)
-    return await asyncio.to_thread(_write_local_background_bytes, logical_key, data)
+    return await asyncio.to_thread(
+        put_seminar_bytes_sync,
+        logical_key,
+        data,
+        content_type,
+        STATIC_ROOT,
+    )
 
 
 async def save_background_file(
@@ -322,11 +349,7 @@ def local_seminar_attachment(
     content_type: str,
     filename: str,
 ) -> Optional[AttachmentDownload]:
-    """Return the on-disk seminar file when it exists.
-
-    Seminar uploads skip COS. The shared resolver still presigns a COS URL
-    whenever workshop COS is on, and that URL does not contain these bytes.
-    """
+    """Return the on-disk seminar file when a local copy exists."""
     disk = seminar_disk_path(storage_key)
     if disk is None or not disk.is_file():
         return None
@@ -337,7 +360,7 @@ def local_seminar_attachment(
     )
 
 
-async def resolve_background_download(session_id: str, file_id: str) -> Optional[AttachmentDownload]:
+async def resolve_background_download(session_id: str, file_id: str) -> Optional[SeminarDownload]:
     """Resolve one shared file after the caller has already passed the room check."""
     async with system_rls_session() as db:
         row = await db.get(MindmateCollabBackgroundFile, file_id)
@@ -347,21 +370,30 @@ async def resolve_background_download(session_id: str, file_id: str) -> Optional
         content_type = row.content_type
         filename = row.filename
     local = local_seminar_attachment(stored, content_type, filename)
-    if local is not None:
-        return local
-    return await resolve_stored_payload(stored, content_type, filename, STATIC_ROOT)
-
-
-def _delete_disk_for_key(storage_key: str) -> None:
-    try:
-        path = local_path_for_key(storage_key, STATIC_ROOT)
-    except ValueError:
-        return
-    if path.is_file():
-        path.unlink(missing_ok=True)
-    preview = path.with_name(f"{path.name}.preview.pdf")
-    if preview.is_file():
-        preview.unlink(missing_ok=True)
+    if local is not None and local.disk_path is not None:
+        await asyncio.to_thread(
+            mirror_local_seminar_file_sync,
+            stored,
+            local.disk_path,
+            content_type=content_type,
+        )
+        return SeminarDownload(
+            content_type=content_type,
+            filename=filename,
+            disk_path=local.disk_path,
+        )
+    body = await asyncio.to_thread(
+        read_seminar_bytes_sync,
+        stored,
+        max_bytes=MAX_BACKGROUND_BYTES,
+    )
+    if body is None:
+        return None
+    return SeminarDownload(
+        content_type=content_type,
+        filename=filename,
+        body=body,
+    )
 
 
 async def rename_background_file(
@@ -407,7 +439,7 @@ async def set_background_file_pinned(
 
 
 async def delete_background_file(session_id: str, file_id: str) -> dict[str, Any] | None:
-    """Remove the DB row and best-effort local bytes.
+    """Remove the DB row and the COS or local bytes.
 
     Returns a small payload when the row was on the resource or artifact shelf,
     so the room can announce the removal. Chat-only attachments stay quiet.
@@ -434,5 +466,5 @@ async def delete_background_file(session_id: str, file_id: str) -> dict[str, Any
             }
         await db.delete(row)
         await db.commit()
-    await asyncio.to_thread(_delete_disk_for_key, storage_key)
+    await asyncio.to_thread(delete_seminar_bytes_sync, storage_key, STATIC_ROOT)
     return notice
