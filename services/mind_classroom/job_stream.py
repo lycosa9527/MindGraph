@@ -10,7 +10,6 @@ from typing import Any, AsyncIterator, Optional
 from fastapi import HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from redis.exceptions import RedisError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from repositories.mind_classroom_repo import MindClassroomJobRepository
@@ -30,7 +29,7 @@ from services.mind_classroom.job_payload import job_event_dict
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.chinese_language_policy import guard_json_text
-from utils.db.session_open import release_open_transaction
+from utils.db.session_open import request_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -141,23 +140,21 @@ async def _iter_job_events(job_id: str, initial_payload: str) -> AsyncIterator[s
 
 async def classroom_job_stream_response(
     request: Request,
-    db: AsyncSession,
     job_id: str,
     current_user: User,
 ) -> StreamingResponse:
     """Return an SSE stream of progress events for one classroom job."""
-    del request
     user_id = int(current_user.id)
     if sse_connection_count(user_id) >= MAX_SSE_CONNECTIONS_PER_USER:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Maximum {MAX_SSE_CONNECTIONS_PER_USER} concurrent classroom streams allowed",
         )
-    row = await MindClassroomJobRepository(db).get_by_uuid(job_id)
-    if row is None or row.user_id != user_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    initial_payload = build_progress_payload(job_event_dict(row))
-    await release_open_transaction(db)
+    async with request_rls_session(current_user, request) as db:
+        row = await MindClassroomJobRepository(db).get_by_uuid(job_id)
+        if row is None or row.user_id != user_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+        initial_payload = build_progress_payload(job_event_dict(row))
 
     increment_sse_connection(user_id)
     logger.debug(

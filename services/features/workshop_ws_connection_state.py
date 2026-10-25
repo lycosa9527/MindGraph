@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import Callable, Dict, Literal, Optional, Tuple, Union, cast
 
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketDisconnect
 
 from models.domain.auth import User
 from services.features.workshop_ws_collab_disconnect_api import finalize_canvas_collab_disconnect
@@ -168,6 +168,7 @@ async def _writer_loop(handle: AnyHandle) -> None:
             RuntimeError,
             AssertionError,
             TypeError,
+            WebSocketDisconnect,
         ) as send_exc:
             logger.debug(
                 "[WSFanout] writer_loop send error — closing code=%s user=%s kind=%s: %s",

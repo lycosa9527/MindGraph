@@ -11,6 +11,7 @@ import { useLanguage } from '@/composables'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
+import { DIAGRAM_FOOTER_SEPARATOR_OFFSET_Y } from '@/utils/diagramFooterBand'
 import { nodesInLearningSheetReadingOrder } from '@/utils/learningSheetAnswerOrder'
 import {
   thinkingMapAdaptiveTextColor,
@@ -65,7 +66,6 @@ const chipTextColor = computed(() =>
   thinkingMapAdaptiveTopicTextColor(diagramStore.data?._mindmap_theme, '#ffffff')
 )
 const SEPARATOR_OPACITY = 0.4
-const SEPARATOR_OFFSET_Y = 15
 const SEPARATOR_DASHARRAY = '4,4'
 const LINE_WIDTH = 2
 const LABEL_OFFSET_Y = 15
@@ -99,7 +99,7 @@ const separatorLine = computed(() => {
   })
 
   const lowestBottom = Math.max(...allBottomEdges)
-  const separatorY = lowestBottom + SEPARATOR_OFFSET_Y
+  const separatorY = lowestBottom + DIAGRAM_FOOTER_SEPARATOR_OFFSET_Y
   const minX = Math.min(...allXPositions)
   const maxX = Math.max(...allXPositions)
 

@@ -354,6 +354,9 @@ describe("mindmate compose page context", () => {
     expect(globalThis.MindGraphMindMate.formatPageContextSourceLabel(t, "smartedu-pdf")).toBe(
       "SmartEdu PDF",
     );
+    expect(
+      globalThis.MindGraphMindMate.formatPageContextSourceLabel(t, "page-markdown+smartedu-pdf"),
+    ).toBe("SmartEdu PDF");
     expect(globalThis.MindGraphMindMate.formatPageContextSourceLabel(t, "page-pdfjs")).toBe(
       "Web extract",
     );

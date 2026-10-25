@@ -28,6 +28,7 @@ import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.v
 import '@/components/canvas/aiGenerateGlass.css'
 import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import { useBrowserPluginInstalled } from '@/composables/browserPluginPresence'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
@@ -60,6 +61,7 @@ const notify = useNotifications()
 const diagramStore = useDiagramStore()
 const { featureKnowledgeSpace } = useFeatureFlags()
 const { canUseChromeExtension } = useSchoolTierFeatures()
+const browserPluginInstalled = useBrowserPluginInstalled()
 const useMindMapV2 = useMindMapV2Chrome()
 
 // Lite Document Summary is split from Knowledge Space; only need mind-map v2.
@@ -1252,7 +1254,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
           >
             <I18nText k="canvas.mindMapDocumentSummary.webChromeExtensionHint" />
             <router-link
-              v-if="canUseChromeExtension"
+              v-if="canUseChromeExtension && !browserPluginInstalled"
               to="/browser-plugin"
               class="ml-1 font-medium text-(--swiss-ink,#1c1917) underline decoration-(--swiss-border-strong,#d6d3d1) underline-offset-2 hover:decoration-(--swiss-ink,#1c1917)"
             >

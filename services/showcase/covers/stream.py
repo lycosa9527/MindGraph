@@ -8,7 +8,7 @@ import logging
 import time
 from typing import AsyncIterator, Optional
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from redis.exceptions import RedisError
 from sqlalchemy import select
@@ -35,7 +35,7 @@ from services.showcase.staff_permissions import can_view_non_approved_post
 from services.showcase.storage import showcase_public_asset_url
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.db.rls_context import RlsContext, rls_async_session
-from utils.db.session_open import release_open_transaction
+from utils.db.session_open import request_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -288,34 +288,33 @@ async def _iter_cover_events(
 
 
 async def showcase_cover_stream_response(
-    db: AsyncSession,
+    request: Request,
     post_id: str,
     current_user: User,
 ) -> StreamingResponse:
     """Return an SSE stream of cover_ready / cover_fail for one post."""
-    post = await _load_visible_post(db, post_id, current_user)
-    initial_payload: Optional[str] = None
-    # Legacy Office posts may have a thumbnail but no LO preview.pdf — re-enqueue
-    # and wait instead of emitting cover_ready with preview_url=null (PPTX spinner).
-    needs_office_preview = (
-        post.case_type == "teaching_design" and office_attachment_needs_preview(post.spec) is not None
-    )
-    if needs_office_preview:
-        enqueue_missing_office_preview(
-            post_id=post_id,
-            case_type=post.case_type,
-            spec=post.spec,
-            author_id=int(post.author_id),
-            organization_id=current_user.organization_id,
-            actor_user_id=int(current_user.id),
+    async with request_rls_session(current_user, request) as db:
+        post = await _load_visible_post(db, post_id, current_user)
+        # Legacy Office posts may have a thumbnail but no LO preview.pdf — re-enqueue
+        # and wait instead of emitting cover_ready with preview_url=null (PPTX spinner).
+        needs_office_preview = (
+            post.case_type == "teaching_design" and office_attachment_needs_preview(post.spec) is not None
         )
-    # DB-ready wins; last-event cover_fail only when still not ready (after
-    # enqueue clears stale terminals from prior attempts).
-    initial_payload = select_terminal_cover_payload(
-        post=post,
-        last_event_payload=await get_cover_last_event(post_id),
-    )
-    await release_open_transaction(db)
+        if needs_office_preview:
+            enqueue_missing_office_preview(
+                post_id=post_id,
+                case_type=post.case_type,
+                spec=post.spec,
+                author_id=int(post.author_id),
+                organization_id=current_user.organization_id,
+                actor_user_id=int(current_user.id),
+            )
+        # DB-ready wins; last-event cover_fail only when still not ready (after
+        # enqueue clears stale terminals from prior attempts).
+        initial_payload = select_terminal_cover_payload(
+            post=post,
+            last_event_payload=await get_cover_last_event(post_id),
+        )
 
     user_id = int(current_user.id)
     organization_id = current_user.organization_id

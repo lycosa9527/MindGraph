@@ -16,6 +16,11 @@ import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { findBridgePairSide } from '@/utils/bridgeMapIdentity'
+import {
+  DIAGRAM_FOOTER_SEPARATOR_OFFSET_Y,
+  diagramFooterChipY,
+  diagramFooterFonts,
+} from '@/utils/diagramFooterBand'
 import { THINKING_MAP_LEAF_TEXT } from '@/utils/thinkingMapChrome'
 import {
   resolveThinkingMapConnectorStroke,
@@ -75,11 +80,8 @@ const TRIANGLE_BASE_WIDTH = 12 // Width of triangle base (bottom edge)
 const AS_LABEL_FONT_SIZE = 14
 const AS_LABEL_OFFSET_Y = 15 // Distance below triangle
 const SEPARATOR_OPACITY = 0.4
-const SEPARATOR_OFFSET_Y = 15 // Distance below lowest node
 const SEPARATOR_DASHARRAY = '4,4' // Dashed line pattern
-const ALTERNATIVE_DIMENSIONS_OFFSET_Y = 15 // Distance below separator line
-const ALTERNATIVE_LABEL_FONT_SIZE = 14
-const ALTERNATIVE_CHIP_FONT_SIZE = 12
+const bridgeFooterFonts = diagramFooterFonts('bridge')
 const ALTERNATIVE_CHIP_OPACITY = 0.8
 const DELETE_BUTTON_SIZE = 24 // Size of delete button
 const DELETE_BUTTON_OFFSET_X = 6 // Horizontal offset from right edge
@@ -283,14 +285,16 @@ const alternativeDimensionsLabel = computed(() =>
   t('diagram.alternativeDimensions.bridgeAnalogiesTitle')
 )
 
+/** Practice mode keeps the bridge and hides the suggested analogies. */
+const showAlternativeDimensions = computed(() => isBridgeMap.value && !diagramStore.isLearningSheet)
+
 /**
  * Calculate alternative dimensions section position
  */
 const alternativeDimensionsPosition = computed(() => {
   if (!separatorLine.value) return null
 
-  const labelY = separatorLine.value.y1 + ALTERNATIVE_DIMENSIONS_OFFSET_Y
-  const chipsY = labelY + ALTERNATIVE_LABEL_FONT_SIZE + 8 // 8px gap between label and chips
+  const { labelY, chipsY } = diagramFooterChipY(separatorLine.value.y1, 'bridge')
 
   // Calculate center X based on content width
   const centerX = (separatorLine.value.x1 + separatorLine.value.x2) / 2
@@ -322,7 +326,7 @@ const separatorLine = computed(() => {
   })
 
   const lowestBottom = Math.max(...allBottomEdges)
-  const separatorY = lowestBottom + SEPARATOR_OFFSET_Y
+  const separatorY = lowestBottom + DIAGRAM_FOOTER_SEPARATOR_OFFSET_Y
 
   // Find the leftmost and rightmost content edges
   const allXPositions: number[] = []
@@ -548,28 +552,25 @@ onUnmounted(() => {
         {{ asLabelText }}
       </text>
 
-      <!-- Dashed separator line below bridge map -->
-      <line
-        v-if="separatorLine"
-        :x1="separatorLine.x1"
-        :y1="separatorLine.y1"
-        :x2="separatorLine.x2"
-        :y2="separatorLine.y2"
-        :stroke="structureColor"
-        :stroke-width="BRIDGE_LINE_WIDTH"
-        :stroke-dasharray="SEPARATOR_DASHARRAY"
-        :opacity="SEPARATOR_OPACITY"
-        stroke-linecap="round"
-      />
-
-      <!-- Alternative dimensions section (always visible) -->
-      <g v-if="separatorLine && alternativeDimensionsPosition">
+      <!-- Suggested analogies, including their dashed line. Hidden while a learning sheet is open. -->
+      <g v-if="showAlternativeDimensions && separatorLine && alternativeDimensionsPosition">
+        <line
+          :x1="separatorLine.x1"
+          :y1="separatorLine.y1"
+          :x2="separatorLine.x2"
+          :y2="separatorLine.y2"
+          :stroke="structureColor"
+          :stroke-width="BRIDGE_LINE_WIDTH"
+          :stroke-dasharray="SEPARATOR_DASHARRAY"
+          :opacity="SEPARATOR_OPACITY"
+          stroke-linecap="round"
+        />
         <!-- Label text -->
         <text
           :x="alternativeDimensionsPosition.centerX"
           :y="alternativeDimensionsPosition.labelY"
           :fill="structureTextColor"
-          :font-size="ALTERNATIVE_LABEL_FONT_SIZE"
+          :font-size="bridgeFooterFonts.label"
           :opacity="ALTERNATIVE_CHIP_OPACITY"
           text-anchor="middle"
           dominant-baseline="middle"
@@ -584,7 +585,7 @@ onUnmounted(() => {
           :x="alternativeDimensionsPosition.centerX"
           :y="alternativeDimensionsPosition.chipsY"
           :fill="structureTextColor"
-          :font-size="ALTERNATIVE_CHIP_FONT_SIZE"
+          :font-size="bridgeFooterFonts.chip"
           font-weight="600"
           :opacity="0.8"
           text-anchor="middle"
@@ -597,7 +598,7 @@ onUnmounted(() => {
           :x="alternativeDimensionsPosition.centerX"
           :y="alternativeDimensionsPosition.chipsY"
           :fill="structureTextColor"
-          :font-size="ALTERNATIVE_CHIP_FONT_SIZE"
+          :font-size="bridgeFooterFonts.chip"
           :opacity="0.4"
           font-style="italic"
           text-anchor="middle"

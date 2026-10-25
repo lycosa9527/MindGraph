@@ -4,6 +4,19 @@
  */
 import type { CSSProperties } from 'vue'
 
+/**
+ * Pills and underlines collapse when their label is cleared, so they keep the
+ * box measured before the blank. A circle or bubble disk already has a shared
+ * layout diameter; locking it to the content measurement shrinks the disk
+ * inside that ring.
+ */
+export function learningSheetLocksMeasuredFrame(
+  nodeShape: string | undefined,
+  capsule: boolean
+): boolean {
+  return capsule || nodeShape === 'underline'
+}
+
 type HoldSize = {
   learningSheetHoldWidth?: unknown
   learningSheetHoldHeight?: unknown

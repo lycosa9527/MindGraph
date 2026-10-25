@@ -183,6 +183,87 @@ describe("smartedu metadata fixture", () => {
     expect(assets.length).toBe(3);
     expect(new Set(assets.map((asset) => asset.id)).size).toBe(3);
   });
+
+  it("keeps a single class hour labeled by file type", () => {
+    loadModule("doc-extract/smartedu/models.js");
+    loadModule("doc-extract/smartedu/metadata.js");
+    const fixturePath = path.join(
+      repoRoot,
+      "tests/fixtures/doc-extract/smartedu/class_activity_b45c766e.json",
+    );
+    const detailJson = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
+    const assets = globalThis.MindGraphDocExtract.extractAssetsFromDetailJson(detailJson);
+    expect(assets.map((asset) => asset.title).sort()).toEqual(["学习任务单", "课件", "教学设计"].sort());
+  });
+
+  it("prefixes the class hour when two periods reuse the same file names", () => {
+    loadModule("doc-extract/smartedu/models.js");
+    loadModule("doc-extract/smartedu/metadata.js");
+    const fixturePath = path.join(
+      repoRoot,
+      "tests/fixtures/doc-extract/smartedu/class_activity_b45c766e.json",
+    );
+    const detailJson = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
+    const first = detailJson.relations.national_course_resource;
+    const second = first.map((block) => {
+      const copy = JSON.parse(JSON.stringify(block));
+      const nextId = `${block.id}-p2`;
+      copy.id = nextId;
+      copy.version_id = nextId;
+      copy.global_title = { "zh-CN": "11.拆装玩具（第2课时）" };
+      copy.custom_properties.global_resource_id = nextId;
+      const rewrite = (value) => (typeof value === "string" ? value.replaceAll(block.id, nextId) : value);
+      copy.ti_items = (copy.ti_items || []).map((item) => ({
+        ...item,
+        ti_storage: rewrite(item.ti_storage),
+        ti_storages: (item.ti_storages || []).map(rewrite),
+      }));
+      return copy;
+    });
+    detailJson.relations.national_course_resource = first.concat(second);
+    detailJson.resource_structure = {
+      relations: [
+        {
+          id: "lesson_1",
+          title: "第一课时",
+          res_ref: ["$.relations.national_course_resource[0,1,2,3]"],
+        },
+        {
+          id: "lesson_2",
+          title: "第二课时",
+          res_ref: ["$.relations.national_course_resource[4,5,6,7]"],
+        },
+      ],
+    };
+    const assets = globalThis.MindGraphDocExtract.extractAssetsFromDetailJson(detailJson);
+    expect(assets.map((asset) => asset.title)).toEqual([
+      "第一课时 · 课件",
+      "第一课时 · 教学设计",
+      "第一课时 · 学习任务单",
+      "第二课时 · 课件",
+      "第二课时 · 教学设计",
+      "第二课时 · 学习任务单",
+    ]);
+  });
+
+  it("drops a second block that points at the same download path", () => {
+    loadModule("doc-extract/smartedu/models.js");
+    loadModule("doc-extract/smartedu/metadata.js");
+    const fixturePath = path.join(
+      repoRoot,
+      "tests/fixtures/doc-extract/smartedu/class_activity_b45c766e.json",
+    );
+    const detailJson = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
+    const blocks = detailJson.relations.national_course_resource;
+    const courseware = blocks.find((block) => block.resource_type_code === "coursewares");
+    const copy = JSON.parse(JSON.stringify(courseware));
+    copy.id = "copy-id";
+    copy.version_id = "copy-id";
+    copy.custom_properties.global_resource_id = "copy-gid";
+    detailJson.relations.national_course_resource = blocks.concat([copy]);
+    const assets = globalThis.MindGraphDocExtract.extractAssetsFromDetailJson(detailJson);
+    expect(assets.filter((asset) => asset.alias === "coursewares")).toHaveLength(1);
+  });
 });
 
 describe("extension tab job lock", () => {

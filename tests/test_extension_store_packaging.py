@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import json
 import zipfile
 
 from utils.extension_store_packaging import build_store_zip_bytes
@@ -40,6 +41,19 @@ _REMOTE_CODE_MARKERS = (
     "importScripts('${",
     "importScripts(`",
 )
+
+
+def test_build_store_zip_includes_presence_marker() -> None:
+    """Installed-plugin detection ships inside the store package."""
+    data = build_store_zip_bytes()
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        names = archive.namelist()
+        assert "presence-mark.js" in names
+        manifest = json.loads(archive.read("manifest.json"))
+    entry = next(item for item in manifest["content_scripts"] if "presence-mark.js" in item["js"])
+    assert entry["run_at"] == "document_start"
+    assert "https://www.mindspringedu.com/*" in entry["matches"]
+    assert "https://mg.mindspringedu.com/*" in entry["matches"]
 
 
 def test_build_store_zip_has_no_remote_code_patterns() -> None:

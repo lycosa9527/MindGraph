@@ -13,6 +13,7 @@ import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import UserAvatarGlyph from '@/components/common/UserAvatarGlyph.vue'
 import MindmateSeminarBriefForm from '@/components/mindmate/MindmateSeminarBriefForm.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { useBrowserPluginInstalled } from '@/composables/browserPluginPresence'
 import {
   seminarComposerAttachments,
   seminarComposerCitations,
@@ -96,6 +97,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const browserPluginInstalled = useBrowserPluginInstalled()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const router = useRouter()
@@ -756,6 +758,7 @@ defineExpose({ focus: focusComposer })
         @select="handleSuggestionSelect"
       />
       <button
+        v-if="!browserPluginInstalled"
         type="button"
         class="mm-plugin-download"
         @click="openPluginDownload"

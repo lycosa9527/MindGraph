@@ -59,6 +59,15 @@
    */
   function normalizeSourceCode(source) {
     const code = (source || "page-markdown").trim();
+    if (code.includes("smartedu-pdf")) {
+      return "smartedu-pdf";
+    }
+    if (code.includes("cnki-pdf")) {
+      return "cnki-pdf";
+    }
+    if (code.includes("wenku-pdf")) {
+      return "wenku-pdf";
+    }
     return SOURCE_ALIASES[code] || code;
   }
 

@@ -11,6 +11,7 @@ import type { DiagramNode } from '@/types'
 import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
 import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
 import { isDoubleBubbleRoleNode } from '@/utils/doubleBubbleMapIdentity'
+import { learningSheetLocksMeasuredFrame } from '@/utils/learningSheetBlankFrame'
 
 const LONG_LABEL = 'photosynthesis inside the leaf chloroplast during daylight'
 
@@ -64,6 +65,42 @@ describe('thinking map learning sheet hold', () => {
       expect(next?.position?.x).toBe(node.position?.x)
       expect(next?.position?.y).toBe(node.position?.y)
     }
+  })
+
+  it('keeps every circle and bubble disk when all nodes are blanked', () => {
+    const diagramStore = useDiagramStore()
+    for (const diagramType of ['circle_map', 'bubble_map'] as const) {
+      diagramStore.loadDefaultTemplate(diagramType)
+      const nodes = diagramStore.data?.nodes ?? []
+      const dims: Record<string, { width: number; height: number }> = {}
+      for (const node of nodes) {
+        dims[node.id] = { width: 40, height: 40 }
+      }
+      const layout =
+        diagramType === 'circle_map'
+          ? recalculateCircleMapLayout(nodes, dims)
+          : recalculateBubbleMapLayout(nodes, dims)
+      diagramStore.setLearningSheetMode(true)
+      expect(diagramStore.applyRandomLearningSheetBlanks(1)).toBeGreaterThan(0)
+      const after =
+        diagramType === 'circle_map'
+          ? recalculateCircleMapLayout(diagramStore.data?.nodes ?? [], dims)
+          : recalculateBubbleMapLayout(diagramStore.data?.nodes ?? [], dims)
+      for (const node of layout) {
+        const next = after.find((item) => item.id === node.id)
+        expect(next?.style?.size ?? next?.style?.width).toBe(node.style?.size ?? node.style?.width)
+        expect(next?.position).toEqual(node.position)
+      }
+    }
+  })
+
+  it('locks a measured frame only for pills and underlines', () => {
+    expect(learningSheetLocksMeasuredFrame(undefined, false)).toBe(false)
+    expect(learningSheetLocksMeasuredFrame('oval', false)).toBe(false)
+    expect(learningSheetLocksMeasuredFrame('rectangle', false)).toBe(false)
+    expect(learningSheetLocksMeasuredFrame('rounded', false)).toBe(false)
+    expect(learningSheetLocksMeasuredFrame('underline', false)).toBe(true)
+    expect(learningSheetLocksMeasuredFrame(undefined, true)).toBe(true)
   })
 
   it('keeps bubble-map attribute radius when a node is blanked', () => {

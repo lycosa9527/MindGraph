@@ -46,6 +46,7 @@ import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
 import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
+import { learningSheetLocksMeasuredFrame } from '@/utils/learningSheetBlankFrame'
 import { readNodeAdornment, textWithIconAdornment } from '@/utils/mindMapAdornments'
 import {
   MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
@@ -441,7 +442,12 @@ const nodeStyle = computed(() => {
   return box
 })
 
-const circleNodeStyle = computed(() => [fitBox(nodeStyle.value), blankFrame.value])
+const circleNodeStyle = computed(() => [
+  fitBox(nodeStyle.value),
+  learningSheetLocksMeasuredFrame(props.data.style?.nodeShape, isCapsuleNode.value)
+    ? blankFrame.value
+    : {},
+])
 
 // Inline editing state
 const isEditing = ref(false)

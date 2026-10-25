@@ -3,7 +3,7 @@
   "minimum_chrome_version": "109",
   "minimum_edge_version": "120",
   "name": "__MSG_extName__",
-  "version": "0.4.26",
+  "version": "0.4.28",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
   "permissions": ["activeTab", "scripting", "storage", "downloads", "tabs", "contextMenus", "notifications", "offscreen"],
@@ -47,6 +47,17 @@
     "128": "icons/icon128.png"
   },
   "content_scripts": [
+    {
+      "matches": [
+        "https://mg.mindspringedu.com/*",
+        "https://www.mindspringedu.com/*",
+        "https://test.mindspringedu.com/*",
+        "http://localhost:9527/*",
+        "http://127.0.0.1:9527/*"
+      ],
+      "js": ["presence-mark.js"],
+      "run_at": "document_start"
+    },
     {
       "matches": ["*://*.smartedu.cn/*", "*://smartedu.cn/*"],
       "js": ["doc-extract/smartedu/token-read-page.js"],

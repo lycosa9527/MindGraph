@@ -12,7 +12,7 @@ from typing import Any, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from utils.db.rls_context import RlsContext, rls_async_session
+from utils.db.rls_context import RlsContext, get_rls_context, rls_async_session
 
 
 def user_rls_session(user_id: int, organization_id: Optional[int] = None):
@@ -33,6 +33,23 @@ def system_rls_session():
 def panel_superadmin_rls_session(user: Any):
     """Panel superadmin rls session."""
     return rls_async_session(RlsContext.panel_superadmin(user))
+
+
+def request_rls_session(user: Any, request: Any = None):
+    """Short-lived session for reads that finish before a long response body.
+
+    Prefer ``request.state.rls_context``. BaseHTTPMiddleware can drop the
+    ContextVar, and ``get_async_db`` reads the request for that reason. The
+    session closes when the block exits, so an SSE body does not sit in an
+    idle transaction.
+    """
+    state = getattr(request, "state", None) if request is not None else None
+    ctx = getattr(state, "rls_context", None) if state is not None else None
+    if ctx is None:
+        ctx = get_rls_context()
+    if ctx is None:
+        return actor_rls_session(user)
+    return rls_async_session(ctx)
 
 
 async def release_open_transaction(db: AsyncSession) -> None:

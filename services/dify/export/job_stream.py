@@ -13,7 +13,7 @@ import json
 import logging
 from typing import AsyncIterator, Optional
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from redis.exceptions import RedisError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,7 +35,7 @@ from services.dify.export.job_events import (
 from services.dify.export.job_storage import get_job
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.db.session_open import release_open_transaction
+from utils.db.session_open import request_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +123,7 @@ async def _iter_job_events(job_id: int, initial_payload: str) -> AsyncIterator[s
 
 
 async def mindmate_export_job_stream_response(
-    db: AsyncSession,
+    request: Request,
     job_id: int,
     current_user: User,
     lang: Language,
@@ -136,12 +136,12 @@ async def mindmate_export_job_stream_response(
             detail=f"Maximum {MAX_SSE_CONNECTIONS_PER_USER} concurrent export streams allowed",
         )
 
-    job = await _load_owned_job(db, job_id, user_id, lang)
-    initial_payload = json.dumps(
-        {"type": "progress", "job": export_job_to_dict(job)},
-        ensure_ascii=False,
-    )
-    await release_open_transaction(db)
+    async with request_rls_session(current_user, request) as db:
+        job = await _load_owned_job(db, job_id, user_id, lang)
+        initial_payload = json.dumps(
+            {"type": "progress", "job": export_job_to_dict(job)},
+            ensure_ascii=False,
+        )
 
     increment_sse_connection(user_id)
     logger.debug(

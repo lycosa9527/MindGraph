@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.186] - 2026-10-26
+
+> **A MindMate reply no longer holds a database transaction open. A learning sheet keeps its disks and answer rows, and the browser extension hides the install button when it is already installed.**
+
+### Fixed
+
+- **MindMate stream** — The student check and the Dify user lookup use a session that closes before the reply starts. The session keeps the request's row security, including a superadmin export. A long answer no longer dies when Postgres drops an idle transaction.
+- **Classroom, cover, and export streams** — The same short session is used for the opening read. The live event stream does not keep that connection.
+- **Workshop writer** — A socket that closes while a frame is sending ends the writer quietly.
+- **Learning sheet** — Brace, bridge, and tree maps hide the suggested-analogy line while a sheet is open, so the answer rows do not share that line. A circle or bubble disk keeps the shared layout diameter when its label is cleared. A pill or underline still holds the size measured before the blank.
+
+### Changed
+
+- **浏览器扩展 0.4.28** — On MindGraph pages the extension marks the document at load. The landing page and MindMate hide the install button when that mark is present. The document panel keeps the snapshot hint and hides the plugin-page link. Settings still opens the plugin page.
+- **SmartEdu extract** — Two class hours that reuse the same file-type name are labeled with the hour (第一课时 · 课件). A second block that points at the same download is dropped. One hour still shows the file type only. A combined page source that includes a SmartEdu, CNKI, or Wenku PDF keeps that PDF label.
+
+### Tests
+
+- [`tests/test_mindmate_stream_session_release.py`](tests/test_mindmate_stream_session_release.py), [`tests/test_session_open_release.py`](tests/test_session_open_release.py), [`tests/test_workshop_edit_delete_ws.py`](tests/test_workshop_edit_delete_ws.py)
+- [`frontend/tests/diagramFooterBand.spec.ts`](frontend/tests/diagramFooterBand.spec.ts), [`frontend/tests/learningSheetFooterClearance.spec.ts`](frontend/tests/learningSheetFooterClearance.spec.ts), [`frontend/tests/circleNodeBlankDisk.spec.ts`](frontend/tests/circleNodeBlankDisk.spec.ts), [`frontend/tests/learningSheetThinkingMapHold.spec.ts`](frontend/tests/learningSheetThinkingMapHold.spec.ts)
+- [`chrome-extension/test/presence-mark.spec.js`](chrome-extension/test/presence-mark.spec.js), [`chrome-extension/test/doc-extract.spec.js`](chrome-extension/test/doc-extract.spec.js), [`chrome-extension/test/mindmate.spec.js`](chrome-extension/test/mindmate.spec.js), [`frontend/tests/browserPluginPresence.spec.ts`](frontend/tests/browserPluginPresence.spec.ts), [`tests/test_extension_store_packaging.py`](tests/test_extension_store_packaging.py)
+
 ## [5.180.185] - 2026-10-26
 
 > **A classroom job that cannot be taught fails quietly, a duplicate student name does not stop the import, and a slow diagram picture does not page on-call.**

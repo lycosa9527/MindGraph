@@ -16,7 +16,6 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import DifyFile
 from clients.dify_exceptions import DifyConversationNotFoundError
@@ -25,7 +24,6 @@ from clients.dify_http_errors import (
     mindmate_turn_on_backup,
     mindmate_upstream_error_code,
 )
-from config.database import get_async_db
 from models import AIAssistantRequest, Messages, get_request_language
 from models.domain.messages import Language
 from models.domain.auth import User
@@ -64,7 +62,7 @@ from services.mindmate.teaching_design_flag import (
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user_or_api_key
 from utils.auth.user_daily_token_quota import daily_token_limit_message
-from utils.db.session_open import release_open_transaction
+from utils.db.session_open import request_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +71,34 @@ router = APIRouter(tags=["api"])
 # Keep proxy read timers alive during long Dify vision / workflow gaps (see deploy docs).
 _SSE_KEEPALIVE_INTERVAL_S = 25.0
 _SSE_KEEPALIVE_COMMENT = ": keepalive\n\n"
+
+
+async def _prestream_dify_user(
+    current_user: Optional[User],
+    request: Request,
+    req: AIAssistantRequest,
+) -> str:
+    """Resolve the Dify user, then close the session before the stream starts."""
+    if current_user is None:
+        return req.user_id
+    async with request_rls_session(current_user, request) as db:
+        await assert_student_ai_capability(db, current_user, request, "conversational_edit")
+        if not hasattr(current_user, "id"):
+            return req.user_id
+        try:
+            return await resolve_mindmate_stream_dify_user(
+                db,
+                current_user,
+                conversation_id=req.conversation_id,
+                dify_user_hint=req.dify_user,
+            )
+        except MindmateStreamDifyUserRejected as rejected:
+            raise HTTPException(
+                status_code=403,
+                detail="dify_user does not match authenticated user",
+            ) from rejected
+        except DifyConversationNotFoundError as missing:
+            raise HTTPException(status_code=404, detail="Conversation not found") from missing
 
 
 def _internal_error_sse(lang: Language) -> str:
@@ -94,7 +120,6 @@ async def ai_assistant_stream(
     request: Request,
     x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
-    db: AsyncSession = Depends(get_async_db),
 ) -> StreamingResponse:
     """
     Stream AI assistant responses using Dify API with SSE (async version).
@@ -107,8 +132,9 @@ async def ai_assistant_stream(
     accept_language = request.headers.get("Accept-Language", "")
     lang = get_request_language(x_language, accept_language)
 
-    if current_user is not None:
-        await assert_student_ai_capability(db, current_user, request, "conversational_edit")
+    # Reads finish and the session closes here. The Dify body must not keep a
+    # transaction open past idle_in_transaction_session_timeout.
+    dify_user_id = await _prestream_dify_user(current_user, request, req)
 
     # Get message
     message = req.message.strip()
@@ -139,10 +165,6 @@ async def ai_assistant_stream(
         org_raw = getattr(current_user, "organization_id", None)
         organization_id_for_dify = int(org_raw) if org_raw is not None else None
 
-    # Resolve Dify credentials in a short-lived session. The request session below is
-    # only for the pre-stream reads, then released before StreamingResponse: FastAPI
-    # keeps Depends(get_async_db) open until the SSE body finishes, and an open read
-    # transaction sits idle past idle_in_transaction_session_timeout (30s default).
     stream_target = await resolve_mindmate_dify_stream_short_lived(
         organization_id_for_dify,
         detail=Messages.error("ai_not_configured", lang),
@@ -171,24 +193,6 @@ async def ai_assistant_stream(
         user_id_for_tracking = current_user.id
         organization_id_for_tracking = getattr(current_user, "organization_id", None)
 
-    if current_user and hasattr(current_user, "id"):
-        try:
-            dify_user_id = await resolve_mindmate_stream_dify_user(
-                db,
-                current_user,
-                conversation_id=req.conversation_id,
-                dify_user_hint=req.dify_user,
-            )
-        except MindmateStreamDifyUserRejected as rejected:
-            raise HTTPException(
-                status_code=403,
-                detail="dify_user does not match authenticated user",
-            ) from rejected
-        except DifyConversationNotFoundError as missing:
-            raise HTTPException(status_code=404, detail="Conversation not found") from missing
-    else:
-        dify_user_id = req.user_id
-
     stream_inputs: Dict[str, Any] = dict(req.inputs or {})
     stream_inputs["mg_dify_user"] = dify_user_id
     if req.conversation_id:
@@ -203,11 +207,6 @@ async def ai_assistant_stream(
             organization_id=organization_id_for_tracking,
             conversation_id=req.conversation_id,
         )
-
-    # Continuing a thread reads the Dify user inside this request session, which
-    # autobegins a transaction. Commit it before the Dify stream so session close
-    # does not ROLLBACK a connection Postgres already killed.
-    await release_open_transaction(db)
 
     async def generate():
         """Async generator function for SSE streaming."""

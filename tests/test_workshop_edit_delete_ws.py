@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi import WebSocketDisconnect
 
 from routers.features.workshop_chat import messages as messages_mod
 from routers.features.workshop_chat.schemas import EditMessageRequest
+from services.features.workshop_ws_connection_state import ConnectionHandle, _writer_loop
 from tests.typing_helpers import as_type, as_user, mock_await_args
 
 
@@ -83,3 +86,20 @@ async def test_delete_message_broadcasts_ws_event() -> None:
     assert channel_id == 4
     assert payload["type"] == "message_deleted"
     assert payload["message_id"] == 12
+
+
+@pytest.mark.asyncio
+async def test_writer_loop_closes_on_disconnect() -> None:
+    """A client drop during send is a normal close, not an unexpected task error."""
+    ws = MagicMock()
+    ws.send_text = AsyncMock(side_effect=WebSocketDisconnect())
+    queue: asyncio.Queue = asyncio.Queue()
+    await queue.put(("text", "hi"))
+    handle = ConnectionHandle(
+        websocket=ws,
+        code="G8U-XSX",
+        user_id=3751,
+        send_queue=queue,
+    )
+
+    await _writer_loop(handle)

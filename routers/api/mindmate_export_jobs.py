@@ -214,12 +214,12 @@ async def get_export_job(
 @router.get("/jobs/{job_id}/stream")
 async def stream_export_job(
     job_id: int,
+    request: Request,
     current_user: User = Depends(require_mindmate_export_access),
-    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """Stream export job progress via Server-Sent Events."""
-    return await mindmate_export_job_stream_response(db, job_id, current_user, lang)
+    return await mindmate_export_job_stream_response(request, job_id, current_user, lang)
 
 
 @router.get("/jobs/{job_id}/verification")

@@ -18,6 +18,7 @@ import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import { useBrowserPluginInstalled } from '@/composables/browserPluginPresence'
 import { executeLandingPrompt } from '@/composables/mindgraph/runLandingPromptGeneration'
 import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
 import { useTrainingDeckNav } from '@/composables/training/trainingDeckNav'
@@ -44,6 +45,7 @@ const router = useRouter()
 const deckNav = useTrainingDeckNav()
 const { t } = useLanguage()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
+const browserPluginInstalled = useBrowserPluginInstalled()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const notify = useNotifications()
@@ -248,6 +250,7 @@ onMounted(() => {
     </el-button>
     <div class="intl-landing-chrome">
       <button
+        v-if="!browserPluginInstalled"
         type="button"
         class="intl-plugin-entry"
         @click="openBrowserPlugin"

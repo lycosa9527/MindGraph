@@ -232,10 +232,9 @@ async def stream_classroom_job(
     job_id: str,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> Any:
     """SSE progress for one classroom job. Redis pub/sub; no poll loop."""
-    return await classroom_job_stream_response(request, db, job_id, current_user)
+    return await classroom_job_stream_response(request, job_id, current_user)
 
 
 @router.get("/jobs/{job_id}")

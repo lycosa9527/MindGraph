@@ -21,6 +21,11 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import {
+  DIAGRAM_FOOTER_SEPARATOR_OFFSET_Y,
+  diagramFooterChipY,
+  diagramFooterFonts,
+} from '@/utils/diagramFooterBand'
 import { thinkingMapFamilyLine } from '@/utils/thinkingMapChrome'
 import {
   resolveThinkingMapConnectorStroke,
@@ -247,9 +252,7 @@ const braceElements = computed(() => {
 
 // Alternative dimensions section (like archive brace-renderer.js lines 974-1027)
 const { t } = useLanguage()
-const SEPARATOR_OFFSET_Y = 15
-const ALTERNATIVE_DIMENSIONS_OFFSET_Y = 15
-const ALTERNATIVE_LABEL_FONT_SIZE = 14
+const braceFooterFonts = diagramFooterFonts('brace')
 const alternativeChipColor = computed(() =>
   thinkingMapStructureColor(diagramStore.data?._mindmap_theme)
 )
@@ -299,14 +302,13 @@ const braceMapSeparatorLine = computed(() => {
   })
   if (minX === Infinity || maxX === -Infinity) return null
 
-  const separatorY = lowestBottom + SEPARATOR_OFFSET_Y
+  const separatorY = lowestBottom + DIAGRAM_FOOTER_SEPARATOR_OFFSET_Y
   return { x1: minX, y1: separatorY, x2: maxX, y2: separatorY }
 })
 
 const braceMapAlternativePosition = computed(() => {
   if (!braceMapSeparatorLine.value) return null
-  const labelY = braceMapSeparatorLine.value.y1 + ALTERNATIVE_DIMENSIONS_OFFSET_Y
-  const chipsY = labelY + ALTERNATIVE_LABEL_FONT_SIZE + 8
+  const { labelY, chipsY } = diagramFooterChipY(braceMapSeparatorLine.value.y1, 'brace')
   const centerX = (braceMapSeparatorLine.value.x1 + braceMapSeparatorLine.value.x2) / 2
   return { labelY, chipsY, centerX }
 })
@@ -339,7 +341,10 @@ const braceMapAlternativePosition = computed(() => {
       <!-- Alternative dimensions section (like archive brace-renderer.js - only when alternatives exist) -->
       <g
         v-if="
-          alternativeDimensions.length > 0 && braceMapSeparatorLine && braceMapAlternativePosition
+          !diagramStore.isLearningSheet &&
+          alternativeDimensions.length > 0 &&
+          braceMapSeparatorLine &&
+          braceMapAlternativePosition
         "
       >
         <line
@@ -357,7 +362,7 @@ const braceMapAlternativePosition = computed(() => {
           :x="braceMapAlternativePosition.centerX"
           :y="braceMapAlternativePosition.labelY"
           :fill="alternativeTextColor"
-          :font-size="ALTERNATIVE_LABEL_FONT_SIZE"
+          :font-size="braceFooterFonts.label"
           text-anchor="middle"
           dominant-baseline="middle"
           :opacity="0.7"
@@ -368,7 +373,7 @@ const braceMapAlternativePosition = computed(() => {
           :x="braceMapAlternativePosition.centerX"
           :y="braceMapAlternativePosition.chipsY"
           :fill="alternativeTextColor"
-          :font-size="ALTERNATIVE_LABEL_FONT_SIZE - 1"
+          :font-size="braceFooterFonts.chip"
           text-anchor="middle"
           dominant-baseline="middle"
           font-weight="600"
