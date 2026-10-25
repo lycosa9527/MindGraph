@@ -110,6 +110,12 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
         """Load one job by UUID."""
         return await self.session.get(MindClassroomJob, job_id)
 
+    async def lock_by_uuid(self, job_id: str) -> Optional[MindClassroomJob]:
+        """Load one job and hold a row lock until this session commits."""
+        stmt = select(MindClassroomJob).where(MindClassroomJob.id == job_id).with_for_update()
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def list_active_jobs(self, user_id: int) -> list[MindClassroomJob]:
         """In-flight jobs for this user, newest first."""
         stmt = (

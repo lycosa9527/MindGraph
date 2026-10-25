@@ -542,11 +542,6 @@ export default {
   'browserPlugin.docTitle': 'Take the document from the site',
   'browserPlugin.docBody':
     'It recognizes CNKI reader pages, SmartEdu lessons, and library pages, then saves a PDF or the article text locally.',
-  'browserPlugin.downloadTitle': 'Download the browser plugin',
-  'browserPlugin.downloadLead': 'One package for Chrome and Edge.',
-  'browserPlugin.installHint':
-    'Unzip it, open the extensions page, turn on developer mode, and load the unpacked folder.',
-  'browserPlugin.downloadAction': 'Download',
   'meta.pageTitle.template': 'ಟೆಂಪ್ಲೇಟ್',
   'settings.language.eBlackboardOptimize': 'ಎಲೆಕ್ಟ್ರಾನಿಕ್ ವೈಟ್‌ಬೋರ್ಡ್ ಆಪ್ಟಿಮೈಸೇಶನ್',
   'settings.language.eBlackboardOff': 'ಮುಚ್ಚುವಿಕೆ',

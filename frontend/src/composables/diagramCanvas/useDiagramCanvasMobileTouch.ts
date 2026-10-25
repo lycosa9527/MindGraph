@@ -102,8 +102,9 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 function collectNodeScreenRects(root: HTMLElement): NodeScreenRect[] {
   const rects: NodeScreenRect[] = []
-  for (const node of root.querySelectorAll('.vue-flow__node:not(:has(input, textarea))')) {
+  for (const node of root.querySelectorAll('.vue-flow__node')) {
     if (!(node instanceof HTMLElement)) continue
+    if (node.querySelector('input, textarea, select')) continue
     const id = node.dataset.id
     if (!id) continue
     const rect = node.getBoundingClientRect()

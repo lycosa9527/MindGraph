@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Public intro for the Chrome / Edge extension.
- * Same zip serves both browsers.
+ * Store buttons open the published listings.
  */
 import { useRouter } from 'vue-router'
 
@@ -12,17 +12,20 @@ import mapShot from '@/assets/browser-plugin/mind-map.png'
 import mindmateShot from '@/assets/browser-plugin/mindmate.png'
 import BrowserPluginMark from '@/components/common/BrowserPluginMark.vue'
 import I18nText from '@/components/common/I18nText.vue'
-import { useLanguage, useNotifications } from '@/composables'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
-import { useAuthStore } from '@/stores/auth'
+import { useLanguage } from '@/composables'
 
-const ZIP_URL = '/api/downloads/mindgraph-chrome-extension'
+const CHROME_STORE_URL =
+  'https://chromewebstore.google.com/detail/mindgraph-%E2%80%94-web-to-mind-m/hkpoihagambfjdpjjpnebekobifldocf'
+const EDGE_STORE_URL =
+  'https://microsoftedge.microsoft.com/addons/detail/mindgraph-%E2%80%94-web-to-mind-m/pfekihgcgdigfeiehielngeafhljcfpk'
+
+const stores = [
+  { browser: 'chrome', href: CHROME_STORE_URL, label: 'browserPlugin.downloadChrome' },
+  { browser: 'edge', href: EDGE_STORE_URL, label: 'browserPlugin.downloadEdge' },
+] as const
 
 const router = useRouter()
-const authStore = useAuthStore()
-const notify = useNotifications()
 const { t } = useLanguage()
-const { canUseChromeExtension } = useSchoolTierFeatures()
 
 const cards = [
   {
@@ -76,24 +79,12 @@ const bands = [
 ] as const
 
 function goBack(): void {
+  const previous = router.options.history.state.back
+  if (typeof previous === 'string' && previous !== '') {
+    router.back()
+    return
+  }
   void router.push('/mindmate')
-}
-
-function downloadPlugin(): void {
-  if (!authStore.isAuthenticated) {
-    authStore.handleTokenExpired(undefined, undefined)
-    return
-  }
-  if (!canUseChromeExtension.value) {
-    notify.errorKey('auth.schoolTierFeatureUnavailable')
-    return
-  }
-  const link = document.createElement('a')
-  link.href = ZIP_URL
-  link.rel = 'noopener'
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
 }
 </script>
 
@@ -144,40 +135,26 @@ function downloadPlugin(): void {
           <I18nText k="browserPlugin.heroBody" />
         </p>
         <div class="plugin-pills">
-          <button
-            type="button"
+          <a
+            v-for="store in stores"
+            :key="store.browser"
             class="plugin-pill"
-            @click="downloadPlugin"
+            :href="store.href"
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <span
               class="plugin-pill__mark"
               aria-hidden="true"
             >
-              <BrowserPluginMark browser="chrome" />
+              <BrowserPluginMark :browser="store.browser" />
             </span>
             <I18nText
-              k="browserPlugin.downloadChrome"
+              :k="store.label"
               dense
               primary-only
             />
-          </button>
-          <button
-            type="button"
-            class="plugin-pill"
-            @click="downloadPlugin"
-          >
-            <span
-              class="plugin-pill__mark"
-              aria-hidden="true"
-            >
-              <BrowserPluginMark browser="edge" />
-            </span>
-            <I18nText
-              k="browserPlugin.downloadEdge"
-              dense
-              primary-only
-            />
-          </button>
+          </a>
         </div>
       </div>
       <div class="plugin-hero__stage">
@@ -526,81 +503,6 @@ function downloadPlugin(): void {
         </p>
       </div>
     </section>
-
-    <section class="plugin-download">
-      <h2>
-        <I18nText
-          k="browserPlugin.downloadTitle"
-          align="center"
-        />
-      </h2>
-      <p>
-        <I18nText
-          k="browserPlugin.downloadLead"
-          align="center"
-        />
-      </p>
-      <div class="plugin-download__cards">
-        <button
-          type="button"
-          class="plugin-dl"
-          @click="downloadPlugin"
-        >
-          <span
-            class="plugin-dl__mark"
-            aria-hidden="true"
-          >
-            <BrowserPluginMark browser="chrome" />
-          </span>
-          <span class="plugin-dl__name">
-            <I18nText
-              k="browserPlugin.downloadChrome"
-              dense
-              primary-only
-            />
-          </span>
-          <span class="plugin-dl__action">
-            <I18nText
-              k="browserPlugin.downloadAction"
-              dense
-              primary-only
-            />
-          </span>
-        </button>
-        <button
-          type="button"
-          class="plugin-dl"
-          @click="downloadPlugin"
-        >
-          <span
-            class="plugin-dl__mark"
-            aria-hidden="true"
-          >
-            <BrowserPluginMark browser="edge" />
-          </span>
-          <span class="plugin-dl__name">
-            <I18nText
-              k="browserPlugin.downloadEdge"
-              dense
-              primary-only
-            />
-          </span>
-          <span class="plugin-dl__action">
-            <I18nText
-              k="browserPlugin.downloadAction"
-              dense
-              primary-only
-            />
-          </span>
-        </button>
-      </div>
-      <p class="plugin-download__hint">
-        <I18nText
-          k="browserPlugin.installHint"
-          align="center"
-        />
-      </p>
-    </section>
   </div>
 </template>
 
@@ -609,6 +511,7 @@ function downloadPlugin(): void {
   height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  padding-bottom: 80px;
   background:
     radial-gradient(ellipse 70% 42% at 78% 8%, rgba(186, 220, 255, 0.55), transparent 68%),
     radial-gradient(ellipse 46% 32% at 12% 18%, rgba(224, 236, 255, 0.9), transparent 70%),
@@ -619,8 +522,7 @@ function downloadPlugin(): void {
 .plugin-top,
 .plugin-hero,
 .plugin-entry,
-.plugin-band,
-.plugin-download {
+.plugin-band {
   box-sizing: border-box;
   width: min(1080px, calc(100% - 48px));
   margin-inline: auto;
@@ -682,8 +584,7 @@ function downloadPlugin(): void {
 }
 
 .plugin-hero__copy > p,
-.plugin-entry > p,
-.plugin-download > p {
+.plugin-entry > p {
   margin: 14px 0 0;
   color: #64748b;
   font-size: 16px;
@@ -707,7 +608,9 @@ function downloadPlugin(): void {
   border-radius: 12px;
   background: #1f2937;
   color: #fff;
+  font: inherit;
   font-size: 14px;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -715,8 +618,7 @@ function downloadPlugin(): void {
   background: #111827;
 }
 
-.plugin-pill__mark,
-.plugin-dl__mark {
+.plugin-pill__mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -725,8 +627,7 @@ function downloadPlugin(): void {
   flex-shrink: 0;
 }
 
-.plugin-pill__mark :deep(svg),
-.plugin-dl__mark :deep(svg) {
+.plugin-pill__mark :deep(svg) {
   display: block;
   width: 100%;
   height: 100%;
@@ -758,7 +659,6 @@ function downloadPlugin(): void {
 }
 
 .plugin-entry h2,
-.plugin-download h2,
 .plugin-band__copy h2 {
   margin: 0;
   color: #111827;
@@ -842,58 +742,6 @@ function downloadPlugin(): void {
 
 .plugin-shot--band {
   width: 100%;
-}
-
-.plugin-download {
-  padding: 48px 0 80px;
-  text-align: center;
-}
-
-.plugin-download__cards {
-  display: flex;
-  justify-content: center;
-  gap: 18px;
-  margin-top: 28px;
-}
-
-.plugin-dl {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  width: 180px;
-  padding: 28px 16px 22px;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 16px 40px rgba(47, 107, 255, 0.08);
-  cursor: pointer;
-}
-
-.plugin-dl:hover {
-  transform: translateY(-2px);
-}
-
-.plugin-dl__mark {
-  width: 52px;
-  height: 52px;
-}
-
-.plugin-dl__name {
-  color: #111827;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.plugin-dl__action {
-  color: #2f6bff;
-  font-size: 14px;
-}
-
-.plugin-download__hint {
-  max-width: 520px;
-  margin: 22px auto 0;
-  font-size: 13px;
 }
 
 @media (max-width: 860px) {

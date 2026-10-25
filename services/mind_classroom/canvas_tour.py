@@ -10,6 +10,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Optional
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from config.settings import config
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.mind_classroom.canvas_tour_chunks import (
@@ -20,6 +22,7 @@ from services.mind_classroom.canvas_tour_chunks import (
 from services.mind_classroom.deep_outline import build_tour_nodes
 from services.mind_classroom.job_manifest import mark_job_ready, mark_job_stage
 from services.mind_classroom.lease import LeaseLost, mark_terminal_from_error, require_run_lease
+from services.mind_classroom.outline import ClassroomJobRejected
 from services.mind_classroom.lesson_planner import planner_max_tokens
 from services.mind_classroom.metrics_log import log_job_completed, log_script_llm_done
 from services.mind_classroom.canvas_tour_llm import stream_tour_script_text
@@ -34,7 +37,7 @@ from services.mind_classroom.prompts.diagram_prompts import with_diagram_type
 from services.mind_classroom.steps import MAX_STEPS_DEFAULT, normalize_steps
 from services.mind_classroom.transcript_persist import attach_transcript_md
 from services.mind_classroom.token_usage import track_classroom_usage
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from repositories.mind_classroom_repo import MindClassroomJobRepository
 from utils.db.session_open import system_rls_session
 
@@ -464,7 +467,7 @@ async def _seed_parallel_tour_progress(
             phase="script_parallel",
             seed_labels=labels,
         )
-    except DATABASE_ERRORS as exc:
+    except SQLAlchemyError as exc:
         if job_id:
             logger.debug("[MindClassroom] seed progress skipped job=%s: %s", job_id, exc)
 
@@ -526,7 +529,7 @@ async def run_canvas_tour_job(
             phase="reading_spec",
         )
         if node_count > _max_steps():
-            raise ValueError(f"Tour has {node_count} nodes; max is {_max_steps()}")
+            raise ClassroomJobRejected(f"Tour has {node_count} nodes; max is {_max_steps()}")
         await require_run_lease(job_id, celery_task_id=celery_task_id)
         await mark_job_stage(
             job_id,
@@ -590,6 +593,10 @@ async def run_canvas_tour_job(
         return True
     except LeaseLost as exc:
         logger.debug("[MindClassroom] Canvas tour lease lost job=%s reason=%s", job_id, exc)
+        return False
+    except ClassroomJobRejected as exc:
+        logger.warning("[MindClassroom] Canvas tour rejected job=%s err=%s", job_id, exc)
+        await mark_terminal_from_error(job_id, exc, celery_task_id=celery_task_id)
         return False
     except _TOUR_ERRORS as exc:
         logger.exception("[MindClassroom] Canvas tour failed job=%s err=%s", job_id, exc)

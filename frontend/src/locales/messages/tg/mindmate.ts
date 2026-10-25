@@ -299,7 +299,7 @@ export default {
   'mindmate.input.dropHint': 'Drop to upload',
   'mindmate.goHome': 'Back to MindMate home',
   'mindmate.pluginDownloadBadge': 'NEW',
-  'mindmate.pluginDownload': 'Download the browser plugin',
+  'mindmate.pluginDownload': 'Install the browser plugin',
   'mindmate.convertToDocument': 'Convert to document',
   'mindmate.tooltip.convertToDocument': 'Save this reply as a Word file in seminar artifacts',
   'mindmate.convertToDocumentOk': 'Saved to artifacts',

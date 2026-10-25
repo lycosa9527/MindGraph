@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Chrome and Edge marks for the browser-plugin download page.
+ * Chrome and Edge marks for the browser plugin page.
  */
 import { useId } from 'vue'
 

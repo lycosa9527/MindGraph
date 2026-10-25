@@ -30,7 +30,6 @@ import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
 import {
   isLearningSheetRasterCapture,
   learningSheetAnswerRowVisible,
-  learningSheetIncludeAnswers,
   runAsShownRasterCapture,
   runLearningSheetRasterCapture,
   waitForExportCanvasPaint,
@@ -409,21 +408,18 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     format: string,
     exportOptions?: CanvasExportOptions
   ): Promise<void> {
-    const includeAnswers = learningSheetIncludeAnswers(exportOptions)
+    // One page, matching the 挖空支架图. Vector markup has no answer row, so a
+    // visible row is captured from the canvas instead of a second filled-node page.
+    const includeAnswers = diagramStore.learningSheetShowAnswers
+    const answerMode: CanvasExportOptions['answerMode'] = includeAnswers ? 'include' : 'exclude'
+    const useVector = canUseMindMapVectorExport(diagramStore) && !includeAnswers
 
-    if (canUseMindMapVectorExport(diagramStore)) {
-      const vectors: MindMapVectorSvgResult[] = [await captureMindMapVectorSvg()]
-      if (includeAnswers) {
-        const answerVector = await diagramStore.runWithLearningSheetAnswersRevealed(async () => {
-          await waitForExportCanvasPaint()
-          return captureMindMapVectorSvg()
-        })
-        vectors.push(answerVector)
-      }
+    if (useVector) {
+      const vector = await captureMindMapVectorSvg()
       const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
       const pdf = await exportMindMapVectorPdfDocument({
         orientation,
-        vectors,
+        vectors: [vector],
         headerCapture,
         exportOptions,
       })
@@ -434,18 +430,15 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       return
     }
 
-    const capturePage = (answerMode: CanvasExportOptions['answerMode']) =>
-      runLearningSheetRasterCapture(
+    const captures: PdfRasterCapture[] = [
+      await runLearningSheetRasterCapture(
         diagramStore,
         worksheetAnswerOptions(exportOptions, answerMode),
         () => captureContainerForPdfRaw(container),
         'below',
         container
-      )
-    const captures: PdfRasterCapture[] = [await capturePage('exclude')]
-    if (includeAnswers) {
-      captures.push(await capturePage('include'))
-    }
+      ),
+    ]
 
     const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
     const pdf = await buildA4PdfFromImages(captures, orientation, headerCapture, exportOptions)
@@ -553,11 +546,17 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
+      const includeAnswers =
+        isLearningSheetRasterCapture(diagramStore) && diagramStore.learningSheetShowAnswers
+      const sheetOptions = worksheetAnswerOptions(
+        mergedOptions,
+        includeAnswers ? 'include' : 'exclude'
+      )
       let diagramBlob: Blob
-      if (canUseMindMapVectorExport(diagramStore)) {
+      if (canUseMindMapVectorExport(diagramStore) && !includeAnswers) {
         const raster = await runLearningSheetRasterCapture(
           diagramStore,
-          mergedOptions,
+          sheetOptions,
           () => exportMindMapVectorDocxPng(diagramStore, uiStore),
           'in-node'
         )
@@ -566,7 +565,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         }
         diagramBlob = raster.blob
       } else {
-        const capture = await captureContainerForPdf(container, mergedOptions)
+        const capture = await captureContainerForPdf(container, sheetOptions)
         diagramBlob = dataUrlToBlob(capture.dataUrl)
       }
       const title = getTitle()

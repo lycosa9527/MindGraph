@@ -29,7 +29,7 @@ from models import (
 )
 from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.api.vueflow_screenshot import capture_diagram_screenshot
+from routers.api.vueflow_screenshot import DiagramScreenshotError, capture_diagram_screenshot
 from services.infrastructure.http.error_handler import LLMContentFilterError, LLMServiceError
 from services.infrastructure.http.llm_http_errors import (
     is_llm_content_filter_detail,
@@ -913,6 +913,8 @@ async def web_content_mindmap_png(
         return_exceptions=True,
     )
 
+    if isinstance(screenshot_result, DiagramScreenshotError):
+        raise screenshot_result
     if isinstance(screenshot_result, BaseException):
         exc = screenshot_result
         logger.error(

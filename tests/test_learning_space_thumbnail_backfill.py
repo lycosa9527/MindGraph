@@ -11,6 +11,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import SQLAlchemyError
 
 from models.domain.learning_space import LearningAssignment, LearningSubmission
+from routers.api.vueflow_screenshot import DiagramScreenshotError
 from services.learning_space.image_storage import IMAGE_REF_PREFIX
 from services.learning_space.thumbnail_backfill import (
     fill_missing_card_thumbnails,
@@ -226,6 +227,18 @@ async def test_failed_render_is_skippable(monkeypatch: pytest.MonkeyPatch) -> No
     )
     assert failed["failed_keys"] == ["template:23"]
     assert "template_thumbnail_ref" not in (assignment.ai_permissions or {})
+
+    async def _timeout(_spec: dict, _diagram_type: str) -> bytes:
+        raise DiagramScreenshotError("timed out")
+
+    timed_out = await fill_missing_card_thumbnails(
+        _Db(),
+        [_assignment(24, {})],
+        [],
+        render_png=_timeout,
+        load_diagram=_load,
+    )
+    assert timed_out["failed_keys"] == ["template:24"]
 
     async def _no_render(_spec: dict, _diagram_type: str) -> bytes:
         raise AssertionError("render")

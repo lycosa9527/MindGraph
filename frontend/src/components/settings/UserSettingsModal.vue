@@ -91,6 +91,7 @@ const dialogWidth = computed(() =>
       :open="visible"
       :section="accountSection"
       @success="emit('success')"
+      @close="visible = false"
     />
   </SwissGlassDialog>
 </template>

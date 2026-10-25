@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
-import asyncio
+from datetime import UTC, datetime
 from typing import Any, Optional
 
 from repositories.mind_classroom_repo import MindClassroomJobRepository
-from services.mind_classroom.job_manifest import mark_job_stage
+from services.mind_classroom.celery_log import classroom_status_changed, log_classroom_celery
+from services.mind_classroom.job_events import publish_classroom_job_snapshot
+from services.mind_classroom.job_manifest import (
+    JOB_GENERATING,
+    JOB_PLANNING,
+    JOB_QUEUED,
+    should_apply_job_stage,
+)
 from utils.db.session_open import system_rls_session
+
+_ACTIVE_STATUS = frozenset({JOB_QUEUED, JOB_PLANNING, JOB_GENERATING})
 
 _STATE_RANK = {"pending": 0, "streaming": 1, "done": 2}
 _PROTECTED = frozenset(
@@ -22,16 +31,6 @@ _PROTECTED = frozenset(
         "tts_ready",
     }
 )
-
-
-class _TourProgressLockHolder:
-    """One lock so parallel streams merge instead of last-write-wins."""
-
-    def __init__(self) -> None:
-        self.lock = asyncio.Lock()
-
-
-_TOUR_PROGRESS = _TourProgressLockHolder()
 
 
 def seed_branch_slots(labels: list[str]) -> list[dict[str, Any]]:
@@ -165,6 +164,14 @@ def _display_slot(slots: list[dict[str, Any]]) -> Optional[dict[str, Any]]:
     return slots[0] if slots else None
 
 
+def _attempt_entry(status: str, stage: str) -> dict[str, Any]:
+    return {
+        "status": status,
+        "stage": stage,
+        "at": datetime.now(UTC).isoformat(),
+    }
+
+
 async def patch_tour_progress(
     job_id: Optional[str],
     *,
@@ -183,11 +190,25 @@ async def patch_tour_progress(
     result_json: Optional[dict[str, Any]] = None,
     record_attempt: bool = False,
 ) -> dict[str, Any]:
-    """Read-merge-write job progress under one lock."""
+    """Read-merge-write job progress under one row lock in one session."""
     if not job_id:
         return {}
-    async with _TOUR_PROGRESS.lock:
-        current = await _read_progress(job_id)
+    previous_status: Optional[str] = None
+    previous_stage: Optional[str] = None
+    owned: Optional[str] = None
+    merged: dict[str, Any] = {}
+    wrote = False
+    async with system_rls_session() as db:
+        repo = MindClassroomJobRepository(db)
+        row = await repo.lock_by_uuid(job_id)
+        if row is None:
+            return {}
+        previous_status = row.status
+        previous_stage = row.current_stage
+        owned = row.celery_task_id if isinstance(row.celery_task_id, str) else None
+        current = dict(row.progress) if isinstance(row.progress, dict) else {}
+        if not should_apply_job_stage(previous_status, status):
+            return current
         merged = merge_tour_progress(
             current,
             phase=phase,
@@ -200,21 +221,28 @@ async def patch_tour_progress(
             seed_labels=seed_labels,
             extra=extra,
         )
-        await mark_job_stage(
+        await repo.update_job(
             job_id,
             status=status,
-            stage=stage,
+            current_stage=stage,
             progress=merged,
             result_json=result_json,
             celery_task_id=celery_task_id,
-            record_attempt=record_attempt,
+            increment_attempt=record_attempt and status in _ACTIVE_STATUS,
+            attempt_entry=_attempt_entry(status, stage) if record_attempt else None,
+            commit=True,
         )
-        return merged
-
-
-async def _read_progress(job_id: str) -> dict[str, Any]:
-    async with system_rls_session() as db:
-        row = await MindClassroomJobRepository(db).get_by_uuid(job_id)
-    if row is None or not isinstance(row.progress, dict):
-        return {}
-    return dict(row.progress)
+        wrote = True
+    if wrote and classroom_status_changed(previous_status, previous_stage, status, stage):
+        detail = f"phase={phase}" if phase and phase not in {status, stage} else None
+        log_classroom_celery(
+            "status",
+            job_id=job_id,
+            celery_task_id=celery_task_id or owned,
+            status=status,
+            stage=stage,
+            detail=detail,
+        )
+    if wrote:
+        await publish_classroom_job_snapshot(job_id)
+    return merged

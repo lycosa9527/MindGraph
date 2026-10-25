@@ -38,6 +38,10 @@ from utils.auth.user_daily_token_quota import daily_token_limit_message
 logger = logging.getLogger(__name__)
 
 
+class DiagramScreenshotError(Exception):
+    """Headless diagram render did not finish in time."""
+
+
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """
     Handle request validation errors (422 Unprocessable Entity).
@@ -204,6 +208,25 @@ async def thinking_coin_insufficient_handler(request: Request, exc: ThinkingCoin
     )
 
 
+async def diagram_screenshot_handler(request: Request, exc: DiagramScreenshotError):
+    """A timed-out diagram PNG is unavailable, not a critical outage."""
+    path = getattr(request.url, "path", "") if request and request.url else ""
+    logger.warning("Diagram screenshot unavailable on %s: %s", path, exc)
+    record_exception(
+        source="application",
+        component="diagram_screenshot",
+        exc=exc,
+        severity="error",
+        http_path=path,
+        http_status=503,
+        request_id=getattr(getattr(request, "state", None), "request_id", None),
+    )
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Diagram image is not ready. Try again."},
+    )
+
+
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle all unhandled exceptions"""
     exception_type = type(exc).__name__
@@ -314,4 +337,5 @@ def setup_exception_handlers(app: FastAPI):
         cast(ExceptionHandler, thinking_coin_insufficient_handler),
     )
     app.add_exception_handler(DifyAPIError, cast(ExceptionHandler, dify_api_error_handler))
+    app.add_exception_handler(DiagramScreenshotError, cast(ExceptionHandler, diagram_screenshot_handler))
     app.add_exception_handler(Exception, cast(ExceptionHandler, general_exception_handler))

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, AsyncIterator
 from unittest.mock import patch
 
@@ -87,10 +88,57 @@ async def test_stream_tour_script_text_joins_tokens() -> None:
             temperature=0.4,
             user_id=3,
             organization_id=1,
-            job_id="job-stream",
-            branch=1,
-            branch_total=3,
-            branch_label="开场",
         )
     assert text == '{"steps": []}'
     assert usage == {"prompt_tokens": 3, "completion_tokens": 5}
+
+
+class _SlowStream:
+    """Yields one token after the heartbeat window, and records close."""
+
+    def __init__(self) -> None:
+        self.sent = False
+        self.closed = 0
+
+    def __aiter__(self) -> "_SlowStream":
+        return self
+
+    async def __anext__(self) -> dict[str, str]:
+        if self.sent:
+            raise StopAsyncIteration
+        await asyncio.sleep(0.12)
+        if self.closed:
+            raise RuntimeError("generator closed during heartbeat")
+        self.sent = True
+        return {"type": "token", "content": "late"}
+
+    async def aclose(self) -> None:
+        """Count closes. A heartbeat must not close the live generator."""
+        self.closed += 1
+
+
+@pytest.mark.asyncio
+async def test_stream_heartbeat_does_not_cancel_the_generator() -> None:
+    """A quiet model keeps the stream open and still delivers the next token."""
+    slow = _SlowStream()
+
+    def _chat(**_kwargs: Any) -> _SlowStream:
+        return slow
+
+    with (
+        patch("services.mind_classroom.canvas_tour_llm.llm_service") as llm,
+        patch("services.mind_classroom.canvas_tour_llm.STREAM_HEARTBEAT_SEC", 0.05),
+    ):
+        llm.chat_stream = _chat
+        text, usage = await stream_tour_script_text(
+            prompt="p",
+            model="qwen",
+            system_message="s",
+            max_tokens=100,
+            temperature=0.4,
+            user_id=None,
+            organization_id=None,
+        )
+    assert text == "late"
+    assert usage is None
+    assert slow.closed == 1

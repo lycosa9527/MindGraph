@@ -60,7 +60,6 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
 
   /** Same-origin API paths; cookies sent for GET (session). */
   const openclawSkillZipUrl = '/api/downloads/mindgraph-openclaw-skill'
-  const chromeExtensionZipUrl = '/api/downloads/mindgraph-chrome-extension'
   const wordAddinZipUrl = '/api/downloads/mindgraph-word-addin'
   const fileReaderZipUrl = '/api/downloads/mindgraph-file-reader'
 
@@ -355,7 +354,6 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     nameEdit,
     nameSaving,
     openclawSkillZipUrl,
-    chromeExtensionZipUrl,
     wordAddinZipUrl,
     fileReaderZipUrl,
     accountLoginLabelKey,

@@ -893,7 +893,7 @@ export default {
   'canvas.mindMapDocumentSummary.webFetchStarted': 'Fetching page content…',
   'canvas.mindMapDocumentSummary.webLinkHintLite': 'Paste a public page URL — we fetch as much article text as we can and save it as Markdown.',
   'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Direct link fetch is server-side and cannot use your login cookies, so pages behind auth or paywalls are often incomplete. For a full webpage snapshot as you see it, use the Chrome / Edge extension.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Download Chrome extension',
+  'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Open the plugin page',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Extracting…',
   'canvas.mindMapDocumentSummary.stageStarting': 'Starting…',
   'canvas.mindMapDocumentSummary.stageConverting': 'Converting legacy Office file…',

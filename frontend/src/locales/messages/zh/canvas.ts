@@ -933,8 +933,8 @@ export default {
   'canvas.mindMapDocumentSummary.webLinkHintLite':
     '粘贴公开网页链接，我们将尽量抓取正文并保存为 Markdown。',
   'canvas.mindMapDocumentSummary.webChromeExtensionHint':
-    '直接粘贴链接由服务器抓取，无法使用您的登录态，部分需登录或权限的页面可能抓不全；完整网页快照请用 Chrome 扩展。',
-  'canvas.mindMapDocumentSummary.webChromeExtensionLink': '下载 Chrome 扩展',
+    '直接粘贴链接由服务器抓取，无法使用您的登录态，部分需登录或权限的页面可能抓不全；完整网页快照请用浏览器插件。',
+  'canvas.mindMapDocumentSummary.webChromeExtensionLink': '打开插件页面',
   'canvas.mindMapDocumentSummary.statusExtracting': '提取中…',
   'canvas.mindMapDocumentSummary.stageStarting': '准备中…',
   'canvas.mindMapDocumentSummary.stageConverting': '正在转换旧版 Office 文件…',

@@ -27,8 +27,14 @@ import logging
 import os
 from typing import Any, Dict, List
 
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+
+from services.infrastructure.http.exception_handlers import DiagramScreenshotError
 from services.infrastructure.utils.browser import BrowserContextManager
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
+_SCREENSHOT_TIMEOUTS = (TimeoutError, PlaywrightTimeoutError)
+_STILL_STYLE = "*, *::before, *::after { animation: none !important; transition: none !important; }"
 
 logger = logging.getLogger(__name__)
 
@@ -204,6 +210,9 @@ async def _screenshot_canvas(
     try:
         await page.wait_for_selector(".vue-flow__node", timeout=5000)
         logger.debug("[VueFlowScreenshot] Vue Flow nodes found in DOM")
+    except _SCREENSHOT_TIMEOUTS as exc:
+        _log_debug_info(console_messages, page_errors)
+        raise DiagramScreenshotError("Diagram screenshot timed out") from exc
     except BACKGROUND_INFRA_ERRORS as exc:
         _log_debug_info(console_messages, page_errors)
         raise RuntimeError(
@@ -224,7 +233,7 @@ async def _screenshot_canvas(
             "Could not find .vue-flow-wrapper or .vue-flow element",
         )
 
-    await wrapper.scroll_into_view_if_needed()
+    await page.add_style_tag(content=_STILL_STYLE)
     return await wrapper.screenshot(omit_background=False, timeout=30000)
 
 
@@ -247,7 +256,8 @@ async def capture_diagram_screenshot(
         Raw PNG bytes of the rendered diagram
 
     Raises:
-        RuntimeError: If rendering fails or times out
+        DiagramScreenshotError: If the headless render times out
+        RuntimeError: If rendering fails
     """
     base_url = _get_base_url()
     spec_json = _build_export_spec(diagram_data, diagram_type)
@@ -299,6 +309,10 @@ async def capture_diagram_screenshot(
 
         except RuntimeError as runtime_error:
             raise runtime_error
+        except _SCREENSHOT_TIMEOUTS as exc:
+            _log_debug_info(console_messages, page_errors)
+            logger.warning("[VueFlowScreenshot] Timed out: %s", exc)
+            raise DiagramScreenshotError("Diagram screenshot timed out") from exc
         except BACKGROUND_INFRA_ERRORS as exc:
             _log_debug_info(console_messages, page_errors)
             logger.error(

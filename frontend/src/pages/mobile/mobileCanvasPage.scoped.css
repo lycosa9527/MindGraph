@@ -205,6 +205,11 @@
   background: #f3f4f6;
 }
 
+.mobile-zoom-btn:disabled {
+  opacity: 0.45;
+  color: #9ca3af;
+}
+
 .toolbar-label {
   font-size: 10px;
   line-height: 1.2;

@@ -16,6 +16,8 @@ import pytest
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.learning_space import (
@@ -81,7 +83,7 @@ from services.learning_space.synthetic_email import (
     is_learning_space_synthetic_email,
     student_synthetic_email,
 )
-from services.learning_space.students import preview_student_names
+from services.learning_space.students import import_students, preview_student_names
 from tests.typing_helpers import as_type, as_user
 from utils.auth.admin_panel_permissions import can_manage_learning_space_classes
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
@@ -227,6 +229,66 @@ def test_normalize_and_preview_rejects_duplicate_names() -> None:
     assert rows[1].error == "duplicate_name_in_file"
     assert rows[2].ok is True
     assert rows[2].initial_password == initial_password_from_name("李四")
+
+
+class _ImportNames:
+    def all(self) -> list[tuple[str]]:
+        """No students in the class yet."""
+        return []
+
+
+class _ImportSession:
+    """Session that accepts the first insert and rejects the second name."""
+
+    def __init__(self) -> None:
+        self.pending: list[User] = []
+        self._next_id = 10
+
+    def in_transaction(self) -> bool:
+        """The read transaction is already closed before hashing."""
+        return False
+
+    async def execute(self, _stmt: object) -> _ImportNames:
+        """Return an empty name list."""
+        return _ImportNames()
+
+    def add(self, user: User) -> None:
+        """Remember the pending student."""
+        self.pending.append(user)
+
+    async def flush(self) -> None:
+        """Assign an id, or raise when the class name is already taken."""
+        user = self.pending[-1]
+        if user.name == "李四":
+            raise IntegrityError("INSERT", {}, Exception("unique"))
+        self._next_id += 1
+        user.id = self._next_id
+
+    async def commit(self) -> None:
+        """Commit one student."""
+
+    async def rollback(self) -> None:
+        """Drop the conflicting insert."""
+        self.pending.clear()
+
+
+@pytest.mark.asyncio
+async def test_import_students_skips_unique_name_conflict(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A duplicate class name fails that row and the rest of the file continues."""
+
+    async def _count(_db: object, _class_id: int) -> int:
+        return 0
+
+    monkeypatch.setattr("services.learning_space.students.count_class_students", _count)
+    monkeypatch.setattr("services.learning_space.students.hash_password", lambda _plain: "hashed")
+    classroom = SimpleNamespace(id=7, organization_id=3, max_students=30)
+    result = await import_students(
+        cast(AsyncSession, _ImportSession()),
+        cast(LearningClass, classroom),
+        ["张三", "李四"],
+    )
+    assert [row["name"] for row in result.created] == ["张三"]
+    assert result.failed == [{"name": "李四", "error": "duplicate_name_in_class"}]
 
 
 def test_class_code_alphabet_excludes_ambiguous() -> None:

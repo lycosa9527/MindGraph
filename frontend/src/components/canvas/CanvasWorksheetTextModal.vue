@@ -68,14 +68,18 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const diagramStore = useDiagramSession()
-const showAnswerChoice = computed(
-  () => diagramStore.isLearningSheet && diagramStore.hasBlankedLearningSheetNodes()
-)
+
+/** Reference answers follow the 挖空支架图 toggle, not a choice in this dialog. */
+function sheetAnswerMode(): CanvasExportAnswerMode {
+  if (diagramStore.isLearningSheet && diagramStore.hasBlankedLearningSheetNodes()) {
+    return diagramStore.learningSheetShowAnswers ? 'include' : 'exclude'
+  }
+  return props.answerMode
+}
 
 const draft = ref<CanvasWorksheetTextOptions>({ ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS })
 const draftColorMode = ref<CanvasExportColorMode>('color')
 const draftLayout = ref<CanvasExportLayout>('landscape')
-const draftAnswerMode = ref<CanvasExportAnswerMode>('exclude')
 const diagramPreviewUrl = ref<string | null>(null)
 const previewLoading = ref(false)
 const previewFailed = ref(false)
@@ -145,19 +149,6 @@ const colorOptions = computed(() => [
     label: t('canvas.exportOptions.colorColored'),
     labelKey: 'canvas.exportOptions.colorColored',
     value: 'color' as const,
-  },
-])
-
-const answerOptions = computed(() => [
-  {
-    label: t('canvas.exportOptions.answerInclude'),
-    labelKey: 'canvas.exportOptions.answerInclude',
-    value: 'include' as const,
-  },
-  {
-    label: t('canvas.exportOptions.answerExclude'),
-    labelKey: 'canvas.exportOptions.answerExclude',
-    value: 'exclude' as const,
   },
 ])
 
@@ -257,7 +248,6 @@ function seedDraftFromProps() {
   draft.value = next
   draftColorMode.value = props.colorMode
   draftLayout.value = props.layout
-  draftAnswerMode.value = props.answerMode
 }
 
 function clearPreviewState() {
@@ -280,7 +270,7 @@ async function refreshDiagramPreview() {
   try {
     const dataUrl = await props.captureDiagramPreview({
       colorMode: draftColorMode.value,
-      answerMode: draftAnswerMode.value,
+      answerMode: sheetAnswerMode(),
     })
     if (requestId !== previewRequestId) return
     if (dataUrl) {
@@ -333,12 +323,6 @@ watch(draftColorMode, () => {
   }
 })
 
-watch(draftAnswerMode, () => {
-  if (visible.value) {
-    void refreshDiagramPreview()
-  }
-})
-
 watch(draftLayout, async () => {
   if (!visible.value) return
   await nextTick()
@@ -360,7 +344,7 @@ function commitExport(format: 'pdf' | 'worksheet_docx') {
     worksheetText,
     colorMode: draftColorMode.value,
     layout: draftLayout.value,
-    answerMode: draftAnswerMode.value,
+    answerMode: sheetAnswerMode(),
     format,
   })
   visible.value = false
@@ -382,7 +366,6 @@ async function handleReset() {
   }
   draftColorMode.value = 'color'
   draftLayout.value = 'landscape'
-  draftAnswerMode.value = 'exclude'
   await nextTick()
   syncFreeSpace()
 }
@@ -692,21 +675,6 @@ async function handleReset() {
               fit
               :options="colorOptions"
               :aria-label="t('canvas.exportOptions.colorLabel')"
-            />
-          </div>
-
-          <div
-            v-if="showAnswerChoice"
-            class="worksheet-text-modal__row"
-          >
-            <span class="worksheet-text-modal__label">
-              <I18nText k="canvas.exportOptions.answerLabel" />
-            </span>
-            <AdminSwissSegmented
-              v-model="draftAnswerMode"
-              fit
-              :options="answerOptions"
-              :aria-label="t('canvas.exportOptions.answerLabel')"
             />
           </div>
 

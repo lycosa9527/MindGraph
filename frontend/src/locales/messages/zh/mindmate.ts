@@ -116,7 +116,7 @@ export default {
   'mindmate.noHistoryPanel': '暂无历史会话',
   'mindmate.suggestionLabel': '可以试着问我：',
   'mindmate.pluginDownloadBadge': 'NEW',
-  'mindmate.pluginDownload': '下载浏览器插件',
+  'mindmate.pluginDownload': '安装浏览器插件',
   'mindmate.openInCanvas': '在画布中编辑',
   'mindmate.openCanvasFailed': '无法在画布中打开导图。',
   'mindmate.openCanvasLoginRequired': '请先登录后再在画布中打开导图。',

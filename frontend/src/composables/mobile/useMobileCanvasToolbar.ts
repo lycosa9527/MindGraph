@@ -3,6 +3,7 @@
  */
 import { ref } from 'vue'
 
+import { tryCollabGuardedUndo } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
@@ -148,6 +149,10 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     eventBus.emit('view:fit_to_window_requested', { animate: true, userInitiated: true })
   }
 
+  function handleUndo(): void {
+    tryCollabGuardedUndo()
+  }
+
   return {
     isSaving,
     showDiagramBrainstorm,
@@ -161,5 +166,6 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     toggleDiagramBrainstorm,
     closeActiveTool,
     handleFitToScreen,
+    handleUndo,
   }
 }

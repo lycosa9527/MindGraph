@@ -292,7 +292,6 @@ watch(
 const pairingMinutes = computed(() => Math.max(1, Math.round(expiresInSeconds.value / 60)))
 
 const fileReaderDownloadUrl = '/api/downloads/mindgraph-file-reader'
-const chromeExtensionZipUrl = '/api/downloads/mindgraph-chrome-extension'
 
 async function bootstrapSession(): Promise<void> {
   await resolveSession()
@@ -1252,14 +1251,13 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
             class="text-[11px] leading-relaxed text-(--swiss-muted,#78716c)"
           >
             <I18nText k="canvas.mindMapDocumentSummary.webChromeExtensionHint" />
-            <a
+            <router-link
               v-if="canUseChromeExtension"
-              :href="chromeExtensionZipUrl"
+              to="/browser-plugin"
               class="ml-1 font-medium text-(--swiss-ink,#1c1917) underline decoration-(--swiss-border-strong,#d6d3d1) underline-offset-2 hover:decoration-(--swiss-ink,#1c1917)"
-              download
             >
               <I18nText k="canvas.mindMapDocumentSummary.webChromeExtensionLink" />
-            </a>
+            </router-link>
           </p>
         </div>
 

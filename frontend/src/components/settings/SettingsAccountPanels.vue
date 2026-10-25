@@ -3,6 +3,7 @@
  * Account, security, and plugin tabs. Nested dialogs stay mounted while Settings is open.
  */
 import { computed, toRef } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { Loader2 } from '@lucide/vue'
 
@@ -26,11 +27,18 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   success: []
+  close: []
 }>()
 
+const router = useRouter()
 const form = useAccountSettings(toRef(props, 'open'), () => emit('success'))
 
 const showChangePasswordForm = computed(() => !form.isBayiSsoSubject && !form.needsSetLoginPassword)
+
+function openBrowserPluginPage(): void {
+  emit('close')
+  void router.push('/browser-plugin')
+}
 </script>
 
 <template>
@@ -194,14 +202,14 @@ const showChangePasswordForm = computed(() => !form.isBayiSsoSubject && !form.ne
         >
           <I18nText k="auth.downloadOpenclawSkill" />
         </a>
-        <a
+        <button
           v-if="form.canUseChromeExtension"
+          type="button"
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary w-full"
-          :href="form.chromeExtensionZipUrl"
-          download
+          @click="openBrowserPluginPage"
         >
           <I18nText k="auth.downloadChromeExtension" />
-        </a>
+        </button>
         <a
           v-if="form.featureWordAddin && form.canUseChromeExtension"
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary w-full"

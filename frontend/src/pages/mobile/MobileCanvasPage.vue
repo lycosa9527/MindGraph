@@ -10,7 +10,7 @@ import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
-import { Bot, LayoutGrid, Maximize2, Plus, Save, Sparkles, Trash2 } from '@lucide/vue'
+import { Bot, LayoutGrid, Maximize2, Plus, Save, Sparkles, Trash2, Undo2 } from '@lucide/vue'
 
 import CanvasLlmMenuDropdown from '@/canvas-ribbon/CanvasLlmMenuDropdown.vue'
 import {
@@ -135,6 +135,7 @@ const {
   toggleDiagramBrainstorm,
   closeActiveTool,
   handleFitToScreen,
+  handleUndo,
 } = useMobileCanvasToolbar({
   diagramStore,
   authStore,
@@ -428,14 +429,27 @@ onUnmounted(() => {
         <I18nText k="canvas.emptyState" />
       </div>
 
-      <button
-        type="button"
-        class="mobile-zoom-btn absolute inset-e-3 bottom-3 z-40"
-        :aria-label="t('canvas.zoomControls.fitCanvas')"
-        @click="handleFitToScreen"
-      >
-        <Maximize2 :size="18" />
-      </button>
+      <div class="mobile-zoom-controls absolute inset-e-3 bottom-3 z-40 flex flex-col gap-1.5">
+        <button
+          type="button"
+          class="mobile-zoom-btn"
+          data-testid="mobile-canvas-fit"
+          :aria-label="t('canvas.zoomControls.fitCanvas')"
+          @click="handleFitToScreen"
+        >
+          <Maximize2 :size="18" />
+        </button>
+        <button
+          type="button"
+          class="mobile-zoom-btn"
+          data-testid="mobile-canvas-undo"
+          :disabled="!diagramStore.canUndo || diagramShareRole === 'viewer'"
+          :aria-label="t('canvas.toolbar.undo')"
+          @click="handleUndo"
+        >
+          <Undo2 :size="18" />
+        </button>
+      </div>
     </div>
 
     <!-- Concept map: relationship / root / focus pickers (same as desktop bar, mobile strip) -->

@@ -16,7 +16,7 @@ from routers.api.helpers import (
     generate_signed_url,
     get_rate_limit_identifier,
 )
-from routers.api.vueflow_screenshot import capture_diagram_screenshot
+from routers.api.vueflow_screenshot import DiagramScreenshotError, capture_diagram_screenshot
 from routers.auth.dependencies import get_language_dependency
 from services.diagram.temp_image_storage import persist_diagram_preview_png
 from services.features.mindmate_collab.diagram_library import (
@@ -92,7 +92,7 @@ async def _preview_url(request: Request, user_id: int, diagram_id: str) -> str:
     diagram_type = str(record.get("diagram_type") or "mind_map")
     try:
         png_bytes = await capture_diagram_screenshot(spec, diagram_type)
-    except RuntimeError as exc:
+    except (RuntimeError, DiagramScreenshotError) as exc:
         logger.warning("[CanvasShare] preview capture failed: %s", exc)
         return ""
     filename = f"diagram_{uuid.uuid4().hex}.png"

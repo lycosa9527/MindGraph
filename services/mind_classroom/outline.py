@@ -21,6 +21,10 @@ from services.diagram.mindmap_outline_order import (
 )
 
 
+class ClassroomJobRejected(ValueError):
+    """The diagram cannot be taught. Fail the job without a traceback."""
+
+
 @dataclass
 class MindMapBranchOutline:
     """One first-level branch and its immediate children texts."""
@@ -329,7 +333,7 @@ def extract_mindmap_outline(
                 if text:
                     branches.append(MindMapBranchOutline(id=node_id, text=text))
     if not branches:
-        raise ValueError("Mind map has no first-level branches to teach from")
+        raise ClassroomJobRejected("Mind map has no first-level branches to teach from")
 
     return MindMapOutline(
         topic=topic,

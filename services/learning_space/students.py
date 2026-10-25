@@ -11,7 +11,6 @@ import logging
 import uuid
 from dataclasses import dataclass
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +38,7 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.password import hash_password
 from utils.auth.role_constants import ROLE_STUDENT
 from utils.auth.roles import is_student
-from utils.db.session_open import system_rls_session
+from utils.db.session_open import release_open_transaction, system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -111,15 +110,19 @@ async def import_students(
     names: list[str],
 ) -> ImportResult:
     """Create student users for unique names; skip conflicts."""
+    class_id = int(learning_class.id)
+    organization_id = learning_class.organization_id
+    max_students = int(learning_class.max_students)
     preview = preview_student_names(names)
     existing_result = await db.execute(
         select(User.name).where(
-            User.learning_class_id == learning_class.id,
+            User.learning_class_id == class_id,
             User.role == ROLE_STUDENT,
         )
     )
     existing_names = {normalize_student_name(n) for (n,) in existing_result.all() if n}
-    current_count = await count_class_students(db, learning_class.id)
+    current_count = await count_class_students(db, class_id)
+    await release_open_transaction(db)
     created: list[dict] = []
     failed: list[dict] = []
 
@@ -130,25 +133,32 @@ async def import_students(
         if row.name in existing_names:
             failed.append({"name": row.name, "error": "duplicate_name_in_class"})
             continue
-        if current_count + len(created) >= int(learning_class.max_students):
+        if current_count + len(created) >= max_students:
             failed.append({"name": row.name, "error": "class_full"})
             continue
+        password_hash = hash_password(row.initial_password)
         temp_email = f"pending.{uuid.uuid4().hex}@student.learning.local"
         user = User(
             email=temp_email,
             phone=None,
             name=row.name,
-            password_hash=hash_password(row.initial_password),
+            password_hash=password_hash,
             role=ROLE_STUDENT,
-            organization_id=learning_class.organization_id,
-            learning_class_id=learning_class.id,
+            organization_id=organization_id,
+            learning_class_id=class_id,
             must_change_password=True,
             login_password_set=True,
         )
         assign_learning_space_login_password(user, row.initial_password)
-        db.add(user)
-        await db.flush()
-        user.email = student_synthetic_email(learning_class.id, int(user.id))
+        try:
+            db.add(user)
+            await db.flush()
+            user.email = student_synthetic_email(class_id, int(user.id))
+            await db.commit()
+        except IntegrityError:
+            await db.rollback()
+            failed.append({"name": row.name, "error": "duplicate_name_in_class"})
+            continue
         existing_names.add(row.name)
         created.append(
             {
@@ -158,18 +168,9 @@ async def import_students(
             }
         )
 
-    try:
-        await db.commit()
-    except IntegrityError as exc:
-        await db.rollback()
-        logger.error("[LearningSpace] Student import conflict class=%s: %s", learning_class.id, exc)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Import conflict; retry",
-        ) from exc
     logger.info(
         "[LearningSpace] Imported students class=%s created=%s failed=%s",
-        learning_class.id,
+        class_id,
         len(created),
         len(failed),
     )

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.185] - 2026-10-26
+
+> **A classroom job that cannot be taught fails quietly, a duplicate student name does not stop the import, and a slow diagram picture does not page on-call.**
+
+### Fixed
+
+- **Canvas tour** — Progress for one job is merged under a database row lock. A second Celery task no longer dies because a process lock belongs to another event loop. A quiet model keeps the script stream open until the next token arrives.
+- **Student import** — Each new student is saved on their own. A name already in the class is reported and the rest of the file continues.
+- **Canvas touch** — Node hit-testing no longer uses a selector Safari rejects.
+- **Diagram picture** — A render that does not finish returns HTTP 503 and does not send an SMS. A seminar preview and a Learning Space thumbnail skip that picture and continue.
+- **Classroom input** — A mind map with no branches, a slide deck on another diagram type, an oversized tour, and 图示生图 on a non-mind-map mark the job failed with a warning. A lesson planner that fails still logs a traceback.
+
+### Changed
+
+- **挖空支架图 export** — PDF and Word follow the answer toggle on the diagram. The export dialog no longer asks whether to include answers, and the file is one page.
+- **Browser plugin** — The plugin page opens the Chrome and Edge store listings. Settings and the document panel open that page instead of downloading a zip.
+- **Phone canvas** — Fit and undo sit together at the corner. Undo uses the same history guard as the desktop canvas.
+
+### Tests
+
+- [`tests/test_mind_classroom_tour_progress.py`](tests/test_mind_classroom_tour_progress.py), [`tests/test_mind_classroom_tour_stream.py`](tests/test_mind_classroom_tour_stream.py), [`tests/test_learning_space.py`](tests/test_learning_space.py), [`tests/test_learning_space_thumbnail_backfill.py`](tests/test_learning_space_thumbnail_backfill.py), [`tests/test_vueflow_screenshot_click.py`](tests/test_vueflow_screenshot_click.py)
+- [`frontend/tests/mobileCanvasFloatControls.spec.ts`](frontend/tests/mobileCanvasFloatControls.spec.ts), [`frontend/tests/settingsAccountBindingsOrder.spec.ts`](frontend/tests/settingsAccountBindingsOrder.spec.ts)
+
 ## [5.180.184] - 2026-10-24
 
 > **Learning Space uses the Beijing clock. A seminar file lives in its own COS folder, and a shared diagram can be opened again.**

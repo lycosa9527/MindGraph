@@ -16,6 +16,7 @@ from services.mind_classroom.progress_log import (
 from services.mind_classroom.tour_progress import patch_tour_progress
 
 _REQUEST_TYPE = "mind_classroom_canvas_tour"
+_STREAM_END = object()
 
 
 def stream_chunk_text(chunk: Any) -> tuple[str, Optional[dict[str, Any]]]:
@@ -36,6 +37,14 @@ def stream_chunk_text(chunk: Any) -> tuple[str, Optional[dict[str, Any]]]:
     if isinstance(content, str) and content:
         return content, None
     return "", None
+
+
+async def _anext_or_end(iterator: Any) -> Any:
+    """Next chunk, or a sentinel when the generator is finished."""
+    try:
+        return await anext(iterator)
+    except StopAsyncIteration:
+        return _STREAM_END
 
 
 async def stream_tour_script_text(
@@ -74,61 +83,83 @@ async def stream_tour_script_text(
             yield_structured=True,
         )
     )
-    while True:
-        try:
-            chunk = await asyncio.wait_for(anext(iterator), timeout=STREAM_HEARTBEAT_SEC)
-        except StopAsyncIteration:
-            break
-        except TimeoutError:
-            elapsed = time.monotonic() - started
-            _log_stream(
-                job_id,
-                branch=branch,
-                branch_total=branch_total,
-                branch_label=branch_label,
-                chars=sum(len(part) for part in parts),
-                elapsed_s=elapsed,
-                idle=True,
-            )
-            last_at = time.monotonic()
-            continue
-        text, usage_chunk = stream_chunk_text(chunk)
-        if usage_chunk is not None:
-            usage = usage_chunk
-        if text:
-            parts.append(text)
-        chars = sum(len(part) for part in parts)
-        now = time.monotonic()
-        first_token = bool(text) and not saw_token
-        if text:
-            saw_token = True
-        if first_token:
-            await _publish_streaming_branch(
-                job_id,
-                celery_task_id=celery_task_id,
-                branch=branch,
-                branch_label=branch_label,
+    pending: Optional[asyncio.Task[Any]] = None
+    try:
+        while True:
+            if pending is None:
+                pending = asyncio.create_task(_anext_or_end(iterator))
+            done, _waiting = await asyncio.wait({pending}, timeout=STREAM_HEARTBEAT_SEC)
+            if not done:
+                elapsed = time.monotonic() - started
+                _log_stream(
+                    job_id,
+                    branch=branch,
+                    branch_total=branch_total,
+                    branch_label=branch_label,
+                    chars=sum(len(part) for part in parts),
+                    elapsed_s=elapsed,
+                    idle=True,
+                )
+                last_at = time.monotonic()
+                continue
+            finished = pending
+            pending = None
+            chunk = finished.result()
+            if chunk is _STREAM_END:
+                break
+            text, usage_chunk = stream_chunk_text(chunk)
+            if usage_chunk is not None:
+                usage = usage_chunk
+            if text:
+                parts.append(text)
+            chars = sum(len(part) for part in parts)
+            now = time.monotonic()
+            first_token = bool(text) and not saw_token
+            if text:
+                saw_token = True
+            if first_token:
+                await _publish_streaming_branch(
+                    job_id,
+                    celery_task_id=celery_task_id,
+                    branch=branch,
+                    branch_label=branch_label,
+                    chars=chars,
+                )
+            if job_id and should_log_llm_stream(
                 chars=chars,
-            )
-        if job_id and should_log_llm_stream(
-            chars=chars,
-            last_chars=last_chars,
-            last_at=last_at,
-            now=now,
-            first_token=first_token,
-        ):
-            _log_stream(
-                job_id,
-                branch=branch,
-                branch_total=branch_total,
-                branch_label=branch_label,
-                chars=chars,
-                elapsed_s=now - started,
+                last_chars=last_chars,
+                last_at=last_at,
+                now=now,
                 first_token=first_token,
-            )
-            last_chars = chars
-            last_at = now
+            ):
+                _log_stream(
+                    job_id,
+                    branch=branch,
+                    branch_total=branch_total,
+                    branch_label=branch_label,
+                    chars=chars,
+                    elapsed_s=now - started,
+                    first_token=first_token,
+                )
+                last_chars = chars
+                last_at = now
+    finally:
+        await _close_stream(iterator, pending)
     return "".join(parts), usage
+
+
+async def _close_stream(iterator: Any, pending: Optional[asyncio.Task[Any]]) -> None:
+    """Stop a leftover next-chunk task, then close the generator once."""
+    if pending is not None and not pending.done():
+        pending.cancel()
+        try:
+            await pending
+        except asyncio.CancelledError:
+            pass
+    aclose = getattr(iterator, "aclose", None)
+    if aclose is None:
+        return
+    await aclose()
 
 
 async def _publish_streaming_branch(

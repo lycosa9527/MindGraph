@@ -18,7 +18,7 @@ from PIL import Image
 from playwright.async_api import Error as PlaywrightError
 
 from models.domain.learning_space import LearningAssignment, LearningSubmission
-from routers.api.vueflow_screenshot import capture_diagram_screenshot
+from routers.api.vueflow_screenshot import DiagramScreenshotError, capture_diagram_screenshot
 from services.diagram.semantic_spec_validation import validate_semantic_spec
 from services.learning_space.image_storage import (
     MAX_IMAGE_BYTES,
@@ -42,7 +42,16 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 logger = logging.getLogger(__name__)
 
 _SPEC_KEYS = ("type", "topic", "data", "nodes", "children", "context", "attributes", "whole", "event")
-_FILL_ERRORS = (HTTPException, PlaywrightError, RuntimeError, OSError, TimeoutError, ValueError, TypeError)
+_FILL_ERRORS = (
+    HTTPException,
+    PlaywrightError,
+    DiagramScreenshotError,
+    RuntimeError,
+    OSError,
+    TimeoutError,
+    ValueError,
+    TypeError,
+)
 THUMBNAIL_BATCH_LIMIT = 8
 _MAX_RENDERS = 1
 

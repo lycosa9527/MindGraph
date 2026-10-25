@@ -299,7 +299,7 @@ export default {
   'mindmate.input.dropHint': '放開以上傳檔案',
   'mindmate.goHome': '返回 MindMate 首頁',
   'mindmate.pluginDownloadBadge': 'NEW',
-  'mindmate.pluginDownload': '下載瀏覽器插件',
+  'mindmate.pluginDownload': '安裝瀏覽器插件',
   'mindmate.convertToDocument': '轉為文檔',
   'mindmate.tooltip.convertToDocument': '把這則回覆存成 Word，收入研討產物',
   'mindmate.convertToDocumentOk': '已收入產物',

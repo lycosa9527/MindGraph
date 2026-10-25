@@ -14,6 +14,7 @@ from models.domain.diagrams import Diagram
 from models.domain.zhihui import ZhihuiConversation
 from repositories.zhihui_repo import ZhihuiConversationRepository, ZhihuiGenerationRepository
 from services.infrastructure.http.error_handler import LLMServiceError
+from services.mind_classroom.outline import ClassroomJobRejected
 from services.redis.redis_token_buffer import get_token_tracker
 from services.t2i.wan_image_client import (
     DEFAULT_WAN_IMAGE_MODEL,
@@ -360,7 +361,7 @@ async def run_diagram_lesson_deck(
     try:
         diagram = await _load_diagram(diagram_id)
         if not is_mindmap_type(diagram.diagram_type):
-            raise ValueError("Only mind maps are supported for 图示生图")
+            raise ClassroomJobRejected("Only mind maps are supported for 图示生图")
         outline = extract_mindmap_outline(
             diagram.spec,
             diagram_type=diagram.diagram_type,
@@ -731,6 +732,20 @@ async def run_diagram_lesson_deck(
             saved,
             slide_index,
             exc,
+        )
+        return False
+    except ClassroomJobRejected as exc:
+        logger.warning(
+            "[ZhiHui] Lesson deck rejected conversation=%s saved=%s slide_index=%s err=%s",
+            conversation_id,
+            saved,
+            slide_index,
+            exc,
+        )
+        await mark_terminal_from_error(
+            conversation_id,
+            exc,
+            celery_task_id=celery_task_id,
         )
         return False
     except _PIPELINE_ERRORS as exc:

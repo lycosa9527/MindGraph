@@ -22,7 +22,7 @@ from services.mind_classroom.lesson_planner import (
     plan_lesson_from_outline,
 )
 from services.mind_classroom.metrics_log import log_job_completed, log_phase_completed
-from services.mind_classroom.outline import extract_mindmap_outline, is_mindmap_type
+from services.mind_classroom.outline import ClassroomJobRejected, extract_mindmap_outline, is_mindmap_type
 from services.mind_classroom.slide_adapter import frames_to_steps
 from services.mind_classroom.slide_persist import persist_slide, wipe_slides
 from services.mind_classroom.steps import MAX_STEPS_DEFAULT
@@ -90,7 +90,7 @@ async def run_slide_deck_job(
     try:
         diagram_type = str(spec.get("type") or spec.get("diagramType") or "mind_map")
         if diagram_type and not is_mindmap_type(diagram_type):
-            raise ValueError("Only mind maps are supported for 幻灯片讲解")
+            raise ClassroomJobRejected("Only mind maps are supported for 幻灯片讲解")
         outline = extract_mindmap_outline(spec, diagram_type=diagram_type, fallback_title="")
         if plan is None:
             if slides:
@@ -373,6 +373,10 @@ async def run_slide_deck_job(
         return True
     except LeaseLost as exc:
         logger.debug("[MindClassroom] Slide deck lease lost job=%s reason=%s", job_id, exc)
+        return False
+    except ClassroomJobRejected as exc:
+        logger.warning("[MindClassroom] Slide deck rejected job=%s err=%s", job_id, exc)
+        await mark_terminal_from_error(job_id, exc, celery_task_id=celery_task_id)
         return False
     except _PIPELINE_ERRORS as exc:
         logger.exception("[MindClassroom] Slide deck failed job=%s err=%s", job_id, exc)
