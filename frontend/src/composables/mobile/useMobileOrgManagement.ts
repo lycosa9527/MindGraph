@@ -13,14 +13,14 @@ import {
   sanitizeOrganizationName,
   uniqueSchoolCodeFromName,
 } from '@/utils/invitationCode'
-import { type MobileOrganizationRow, mergeCreatedMobileOrg } from '@/utils/mobileOrganizations'
+import {
+  type MobileOrgListEntry,
+  type MobileOrganizationRow,
+  mergeCreatedMobileOrg,
+} from '@/utils/mobileOrganizations'
 
-export interface MobileOrgRow {
-  id: number
-  name: string
-  invitationCode: string
+export interface MobileOrgRow extends MobileOrgListEntry {
   inviteLink: string
-  userCount: number
 }
 
 interface CreatedOrganizationPayload {
@@ -34,18 +34,20 @@ interface CreatedOrgDraft {
   invitationCode: string
 }
 
-function toOrgRow(row: MobileOrganizationRow, siteUrl: string): MobileOrgRow {
-  const invitationCode = String(row.invitation_code ?? '').trim()
+function toListEntry(row: MobileOrganizationRow): MobileOrgListEntry {
   return {
     id: Number(row.id),
     name: String(row.name ?? ''),
-    invitationCode,
-    inviteLink: buildOrganizationInviteLink(siteUrl, invitationCode),
+    invitationCode: String(row.invitation_code ?? '').trim(),
     userCount: Number(row.user_count ?? 0),
+    displayName: String(row.display_name ?? '').trim(),
+    agentName: String(row.mindmate_agent_name ?? '').trim(),
+    agentAlias: String(row.mindmate_agent_alias ?? '').trim(),
+    avatarUrl: String(row.mindmate_agent_avatar_url ?? '').trim(),
   }
 }
 
-function withInviteLink(row: Omit<MobileOrgRow, 'inviteLink'>, siteUrl: string): MobileOrgRow {
+function withInviteLink(row: MobileOrgListEntry, siteUrl: string): MobileOrgRow {
   return {
     ...row,
     inviteLink: buildOrganizationInviteLink(siteUrl, row.invitationCode),
@@ -74,7 +76,7 @@ export function useMobileOrgManagement() {
 
   const organizations = computed((): MobileOrgRow[] => {
     const rows = orgsQuery.data.value
-    const listed = Array.isArray(rows) ? rows.map((row) => toOrgRow(row, publicSiteUrl.value)) : []
+    const listed = Array.isArray(rows) ? rows.map((row) => toListEntry(row)) : []
     const siteUrl = publicSiteUrl.value
     return mergeCreatedMobileOrg(listed, createdDraft.value).map((row) =>
       withInviteLink(row, siteUrl)

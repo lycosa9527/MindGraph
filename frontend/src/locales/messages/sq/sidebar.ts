@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Bashkëpunim online',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Përfundo seminarin',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Kjo do ta përfundojë sesionin për të gjithë. Pjesëmarrësit do të largohen nga dhoma.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Lini seminarin',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Ju do të largoheni nga kjo punëtori dhe të tjerët mund të vazhdojnë.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Org.',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Rrjet',
   'sidebar.share.ribbon': 'Organization',

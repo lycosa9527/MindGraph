@@ -16,6 +16,8 @@ export interface SeminarGroupMember {
   isLeader: boolean
   /** Cross-school invite that has not been accepted yet. */
   pending: boolean
+  /** Server stamp from the last time their workshop socket closed. */
+  lastSeenAt: string | null
 }
 
 export interface SeminarGroupPayload {
@@ -36,6 +38,7 @@ interface GroupMemberRow {
   is_owner?: boolean
   is_leader?: boolean
   pending?: boolean
+  last_seen_at?: string | null
 }
 
 function asRole(raw: unknown): SeminarBriefRole {
@@ -102,6 +105,10 @@ export async function fetchSeminarGroup(sessionId: string): Promise<SeminarGroup
         isOwner: Boolean(item.is_owner),
         isLeader,
         pending: Boolean(item.pending),
+        lastSeenAt:
+          typeof item.last_seen_at === 'string' && item.last_seen_at.trim()
+            ? item.last_seen_at
+            : null,
       } satisfies SeminarGroupMember
     })
     .filter((row): row is SeminarGroupMember => row != null)

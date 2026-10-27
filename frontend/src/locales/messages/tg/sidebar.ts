@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Online collab',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'End seminar',
   'sidebar.mindmateCollabHistory.stopConfirm': 'This will end the session for everyone. Participants will leave the room.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Семинарро тарк кунед',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Шумо ин семинарро тарк мекунед ва дигарон метавонанд идома диҳанд.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Org',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Network',
   'sidebar.share.ribbon': 'Organization',

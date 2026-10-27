@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Online samenwerking',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Seminar beëindigen',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Dit beëindigt de sessie voor iedereen. Deelnemers verlaten de ruimte.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Verlaat het seminarie',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Je verlaat deze workshop en anderen kunnen doorgaan.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Op de campus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Netwerk',
   'sidebar.share.ribbon': 'Organization',

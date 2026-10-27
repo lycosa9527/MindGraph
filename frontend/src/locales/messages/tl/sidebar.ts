@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Online na kolaborasyon',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Tapusin ang seminar',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Matatapos nito ang session para sa lahat. Aalis ang mga kalahok sa room.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Umalis sa seminar',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Aalis ka sa workshop na ito at ang iba ay maaaring magpatuloy.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Sa campus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'sa buong paaralan',
   'sidebar.share.ribbon': 'Organization',

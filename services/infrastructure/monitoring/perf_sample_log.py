@@ -158,7 +158,8 @@ def _host_fields() -> tuple[
     Optional[float],
 ]:
     try:
-        cpu = float(psutil.cpu_percent(interval=0.1, percpu=False))
+        cpu_raw = psutil.cpu_percent(interval=0.1, percpu=False)
+        cpu = float(cpu_raw[0] if isinstance(cpu_raw, list) else cpu_raw)
         vm = psutil.virtual_memory()
         disk = psutil.disk_usage(_primary_disk_mount())
         return (
@@ -179,11 +180,12 @@ def _celery_rss_gb() -> Optional[float]:
     try:
         for proc in psutil.process_iter(["cmdline", "memory_info"]):
             try:
-                cmd = proc.info.get("cmdline") or []
+                info = proc.as_dict(attrs=["cmdline", "memory_info"])
+                cmd = info.get("cmdline") or []
                 joined = " ".join(str(part) for part in cmd)
                 if "celery" not in joined or "config.celery" not in joined:
                     continue
-                mem = proc.info.get("memory_info")
+                mem = info.get("memory_info")
                 if mem is None:
                     continue
                 total += int(mem.rss)

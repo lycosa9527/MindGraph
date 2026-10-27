@@ -10,11 +10,11 @@ import { storeToRefs } from 'pinia'
 
 import { bindSlideRemoteWakeDrain } from '@/composables/mindMap/bindSlideRemoteWakeDrain'
 import { useAuthStore } from '@/stores/auth'
+import { isFetchTransportError } from '@/utils/fetchTransportError'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { drainSlideRemoteCommands } from '@/utils/slideRemoteApi'
 import { slideRemoteCanvasIsDraining } from '@/utils/slideRemoteCanvasDrainLock'
 import { setSlideRemotePendingStart } from '@/utils/slideRemotePendingStart'
-import { isSlideRemoteTransportError } from '@/utils/slideRemoteTransportError'
 
 export function useSlideRemoteDesktopPoll(): void {
   const authStore = useAuthStore()
@@ -53,7 +53,7 @@ export function useSlideRemoteDesktopPoll(): void {
         await handleStart(diagramId)
       }
     } catch (err) {
-      if (!isSlideRemoteTransportError(err)) throw err
+      if (!isFetchTransportError(err)) throw err
     } finally {
       inFlight = false
     }

@@ -12,7 +12,7 @@ import json
 import logging
 import time
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 from uuid import uuid4
 
 from redis.exceptions import RedisError
@@ -382,15 +382,27 @@ class MindmateCollabManager:
             return False
         return await self.load_session_by_code(code) is not None
 
-    async def join_by_code(self, user_id: int, code: str) -> Optional[Dict[str, Any]]:
-        """Validate join permissions and return session payload for an invite code."""
+    async def join_by_code(
+        self,
+        user_id: int,
+        code: str,
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        """Validate join permissions and return (payload, error).
+
+        ``not_found`` means the invite code is not a live room. ``still_live``
+        means the row is still open but a stop is in progress, so the caller
+        must not archive it. ``forbidden`` means the room is live and this
+        person may not enter.
+        """
         session = await self.load_session_by_code(code)
         if not session:
-            return None
+            return None, "not_found"
         # Duration presets are advisory; seminars end only when the host clicks End.
+        if await self.session_is_closing(session.code):
+            return None, "still_live"
         if not await self._validate_join_permissions(session, user_id):
-            return None
-        return await self._session_payload(session)
+            return None, "forbidden"
+        return await self._session_payload(session), None
 
     async def _closed_group_allows(self, session: MindmateCollabSession, user_id: int) -> bool:
         """Membership gate. Public rooms are never open to a code holder."""
@@ -682,6 +694,7 @@ class MindmateCollabManager:
                         .where(
                             MindmateCollabMember.user_id == user_id,
                             MindmateCollabMember.accepted.is_(True),
+                            MindmateCollabMember.left_at.is_(None),
                             MindmateCollabSession.ended_at.is_(None),
                             MindmateCollabSession.owner_user_id != user_id,
                         )

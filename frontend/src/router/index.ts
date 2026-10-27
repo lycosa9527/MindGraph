@@ -12,10 +12,14 @@ import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 import { canSeeMobileOrgManagement } from '@/utils/adminCapabilities'
 import { CANVAS_ENTRY_PATH_KEY } from '@/utils/canvasBackNavigation'
+import { clientShellLock } from '@/utils/clientShellLock'
 import {
+  isMobileRoutePath,
+  pathForLockedClientShell,
   resolveMobileRouteRedirect,
   shouldSkipMobileRouteRedirect,
 } from '@/utils/mobileRouteRedirect'
+import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
 import { requiredTrainingRedirect } from '@/utils/requiredTrainingGate'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 import {
@@ -421,6 +425,17 @@ router.beforeEach(async (to, from) => {
     return {
       path: '/admin',
       query: { ...to.query, tab: 'data_center', view: 'operations' },
+    }
+  }
+
+  // A desktop lock stays off /m. Word add-in stays on the desktop shell too.
+  if (
+    isMobileRoutePath(to.path) &&
+    (clientShellLock.value === 'desktop' || isOfficeEmbedDesktop())
+  ) {
+    const desktopPath = pathForLockedClientShell(to.path, 'desktop')
+    if (desktopPath && desktopPath !== to.path) {
+      return { path: desktopPath, query: to.query, hash: to.hash }
     }
   }
 

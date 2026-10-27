@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Cộng tác trực tuyến',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Kết thúc hội thảo',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Thao tác này sẽ kết thúc phiên cho mọi người. Người tham gia sẽ rời phòng.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Rời khỏi hội thảo',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Bạn sẽ rời khỏi hội thảo này và những người khác có thể tiếp tục.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Trong khuôn viên trường',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Mạng',
   'sidebar.share.ribbon': 'Organization',

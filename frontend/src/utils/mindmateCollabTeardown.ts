@@ -54,6 +54,26 @@ export function resolveMindmateCollabSessionId(
   return row?.session_id ?? null
 }
 
+/**
+ * Session to archive when a room ends.
+ * Ignores an id that belongs to a different invite code, so leaving a bad
+ * sidebar row does not try to save the seminar that is still open.
+ */
+export function resolveEndedMindmateCollabSessionId(
+  sessionId: string | null | undefined,
+  code: string | null | undefined
+): string | null {
+  const key = code ? normalizeMindmateCollabCode(code) : ''
+  const hinted = (sessionId || '').trim()
+  if (hinted && key) {
+    const hintedRow = loadLocalMindmateCollabSessions().find((item) => item.session_id === hinted)
+    if (hintedRow && normalizeMindmateCollabCode(hintedRow.code) !== key) {
+      return resolveMindmateCollabSessionId('', code)
+    }
+  }
+  return resolveMindmateCollabSessionId(sessionId, code)
+}
+
 /** Release the embedded room pointer without dropping sidebar rejoin history. */
 export function releaseMindmateCollabClientState(code?: string | null): void {
   const current = embeddedCollabRoomCode.value
@@ -81,6 +101,19 @@ export function teardownMindmateCollabClient(
 
 export function mindmateCollabStopSucceeded(status: number): boolean {
   return (status >= 200 && status < 300) || status === 404
+}
+
+export async function requestMindmateCollabLeave(sessionId: string): Promise<boolean> {
+  try {
+    const response = await authFetch('/api/mindmate/collab/leave', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    })
+    return response.ok
+  } catch {
+    return false
+  }
 }
 
 export async function requestMindmateCollabStop(sessionId: string): Promise<boolean> {

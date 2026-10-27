@@ -22,6 +22,7 @@ from . import (
     invites,
     kitty_llmops,
     llm_control,
+    organization_mobile_branding,
     organization_oauth,
     organizations,
     performance,
@@ -46,6 +47,7 @@ admin_router = APIRouter()
 
 # Include all admin sub-routers
 admin_router.include_router(organizations.router)
+admin_router.include_router(organization_mobile_branding.router)
 admin_router.include_router(organization_oauth.router)
 admin_router.include_router(expert_school_binding.router)
 admin_router.include_router(invites.router)

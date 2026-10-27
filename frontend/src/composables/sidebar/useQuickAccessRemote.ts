@@ -30,6 +30,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
+import { isFetchTransportError } from '@/utils/fetchTransportError'
 
 const QUICK_ACCESS_PREFS_PATH = '/api/auth/diagram-preferences'
 const QUICK_ACCESS_PREFS_DEBOUNCE_MS = 400
@@ -185,6 +186,8 @@ async function persistPromptsNow(): Promise<void> {
     promptOverrides.value = saved
     persistPromptOverrides()
     patchPromptUser(saved)
+  } catch (err) {
+    if (!isFetchTransportError(err)) throw err
   } finally {
     promptPersistInFlight = false
   }
@@ -276,6 +279,8 @@ async function persistVisibleNow(): Promise<void> {
     hidden.value = !saved
     persist()
     patchAuthUser(saved)
+  } catch (err) {
+    if (!isFetchTransportError(err)) throw err
   } finally {
     visiblePersistInFlight = false
   }

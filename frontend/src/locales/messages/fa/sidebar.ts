@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'همکاری آنلاین',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'پایان سمینار',
   'sidebar.mindmateCollabHistory.stopConfirm': 'این اتاق کارگاه برای همه شرکت کنندگان بسته خواهد بود و همه از اتاق خارج می شوند.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'سمینار را ترک کنید',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'شما این کارگاه را ترک خواهید کرد و سایرین می توانند ادامه دهند.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'در محوطه دانشگاه',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'در سراسر مدارس',
   'sidebar.share.ribbon': 'Organization',

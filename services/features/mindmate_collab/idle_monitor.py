@@ -1,9 +1,9 @@
 """
 Idle / zombie monitor for MindMate collab rooms.
 
-Seminars end only when the host clicks End. This loop only drops orphan idle
-scores for rooms whose live Redis meta is already gone — it never auto-stops
-a live session for silence, empty roster, or duration expiry.
+Silence, an empty roster, and the 1h/10h duration presets do not end a room.
+This loop drops orphan idle scores, and it auto-closes a live seminar whose
+started_at is older than 24 hours when the owner forgot to end it.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -25,6 +25,7 @@ from services.features.mindmate_collab.config import (
     MINDMATE_COLLAB_ZOMBIE_GRACE_SECONDS,
 )
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
+from services.features.mindmate_collab.seminar_ttl import expire_overdue_live_seminars
 from services.features.mindmate_collab.redis_keys import (
     idle_scores_key,
     normalize_collab_code,
@@ -64,7 +65,7 @@ async def drop_orphan_mindmate_collab_idle_score(code: str) -> None:
 
 
 async def _evaluate_code(code: str) -> None:
-    """Keep orphan scores tidy; never auto-end a live seminar."""
+    """Drop an idle score whose live Redis room is already gone."""
     mgr = get_mindmate_collab_manager()
     redis = get_async_redis()
     if not redis:
@@ -116,6 +117,10 @@ async def _monitor_loop(stop_event: asyncio.Event) -> None:
                             )
             except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("[MindmateCollabIdle] scan error: %s", exc)
+        try:
+            await expire_overdue_live_seminars()
+        except BACKGROUND_INFRA_ERRORS as exc:
+            logger.warning("[MindmateCollabTTL] sweep failed: %s", exc)
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=MINDMATE_COLLAB_MONITOR_INTERVAL_SECONDS)
         except asyncio.TimeoutError:

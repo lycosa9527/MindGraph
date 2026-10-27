@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * MobileAccountPage — Account settings page for mobile.
- * Shows user info, settings rows (account id, password, avatar, UI/prompt language), and logout.
+ * Shows user info, settings rows (account id, password, avatar, UI version, language), and logout.
  */
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -13,21 +13,19 @@ import {
   Globe,
   Hash,
   Languages,
-  Link2,
   Lock,
   LogOut,
   Mail,
+  MonitorSmartphone,
   Phone,
-  Share2,
   Smile,
 } from '@lucide/vue'
 
 import { ChangePasswordModal, ChangePhoneModal } from '@/components/auth'
 import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'
 import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.vue'
-import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import { useLanguage } from '@/composables'
-import { usePwaInstall } from '@/composables/usePwaInstall'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { formatGalleryLanguageMenuLabel } from '@/i18n/galleryLanguageMenuLabel'
 import {
   PROMPT_LANGUAGE_OPTIONS,
@@ -35,9 +33,12 @@ import {
   getPromptLanguageOptionsForPicker,
 } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
+import { commitClientShell } from '@/stores/clientShellState'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { displayAccountLoginValue, resolveAccountLoginIdentity } from '@/utils/accountLoginIdentity'
+import { clientShellLock } from '@/utils/clientShellLock'
+import type { ClientShell } from '@/utils/clientShellLock'
 import { persistLanguagePreferencesIfAuthenticated } from '@/utils/persistLanguagePreferences'
 import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
@@ -46,7 +47,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const { t } = useLanguage()
-const { showPwaInstall, handlePwaInstall } = usePwaInstall(t)
+const notify = useNotifications()
 
 const user = computed(() => authStore.user)
 const userAvatar = computed(() => resolveUserAvatarEmoji(user.value?.avatar))
@@ -92,11 +93,17 @@ const showChangePhone = ref(false)
 const showChangePassword = ref(false)
 const showSetPasswordSms = ref(false)
 const showAvatarSelect = ref(false)
-const showQuickRegister = ref(false)
 
 const needsSetLoginPassword = computed(() => user.value?.loginPasswordSet === false)
-const canMintQuickRegister = computed(
-  () => authStore.isAdminOrManager && authStore.registrationEnabled
+
+const shellExpanded = ref(false)
+const shellSaving = ref(false)
+const shellSelection = computed<ClientShell>(() => {
+  if (clientShellLock.value) return clientShellLock.value
+  return uiStore.isMobile ? 'mobile' : 'desktop'
+})
+const shellLabelKey = computed(() =>
+  shellSelection.value === 'mobile' ? 'auth.clientShellMobile' : 'auth.clientShellDesktop'
 )
 
 const uiLangExpanded = ref(false)
@@ -166,13 +173,51 @@ function selectPromptLanguage(code: string) {
   promptSearchQuery.value = ''
 }
 
+function toggleShell() {
+  const opening = !shellExpanded.value
+  shellExpanded.value = opening
+  if (opening) {
+    uiLangExpanded.value = false
+    presenterLangExpanded.value = false
+    promptLangExpanded.value = false
+    promptSearchQuery.value = ''
+  }
+}
+
+async function selectClientShell(shell: ClientShell): Promise<void> {
+  if (shellSaving.value || clientShellLock.value === shell) {
+    shellExpanded.value = false
+    return
+  }
+  shellSaving.value = true
+  const saved = await commitClientShell(shell)
+  shellSaving.value = false
+  if (!saved) {
+    notify.errorKey('auth.clientShellSaveError')
+    return
+  }
+  shellExpanded.value = false
+  notify.successKey('auth.clientShellSaved')
+}
+
 function toggleUiLang() {
   const opening = !uiLangExpanded.value
   uiLangExpanded.value = opening
   if (opening) {
+    shellExpanded.value = false
     presenterLangExpanded.value = false
     promptLangExpanded.value = false
     promptSearchQuery.value = ''
+  }
+}
+
+function togglePresenterLang() {
+  const opening = !presenterLangExpanded.value
+  presenterLangExpanded.value = opening
+  if (opening) {
+    shellExpanded.value = false
+    uiLangExpanded.value = false
+    promptLangExpanded.value = false
   }
 }
 
@@ -180,6 +225,7 @@ function togglePromptLang() {
   const opening = !promptLangExpanded.value
   promptLangExpanded.value = opening
   if (opening) {
+    shellExpanded.value = false
     uiLangExpanded.value = false
     presenterLangExpanded.value = false
   } else {
@@ -265,31 +311,7 @@ async function handleLogout() {
 
         <div class="border-t border-gray-100 mx-4" />
 
-        <button
-          v-if="canMintQuickRegister"
-          class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
-          @click="showQuickRegister = true"
-        >
-          <Share2
-            :size="20"
-            class="text-gray-500 shrink-0"
-          />
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium text-gray-900">
-              <I18nText k="landing.international.shareSite" />
-            </div>
-          </div>
-          <ChevronRight
-            :size="18"
-            class="text-gray-400 shrink-0"
-          />
-        </button>
-        <div
-          v-if="canMintQuickRegister"
-          class="border-t border-gray-100 mx-4"
-        />
-
-        <!-- Set login password (quick reg) or change password -->
+        <!-- Set login password or change password -->
         <button
           v-if="canChangePhone && needsSetLoginPassword"
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
@@ -353,6 +375,72 @@ async function handleLogout() {
 
         <div class="border-t border-gray-100 mx-4" />
 
+        <button
+          type="button"
+          class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
+          @click="toggleShell"
+        >
+          <MonitorSmartphone
+            :size="20"
+            class="text-gray-500 shrink-0"
+          />
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-gray-900">
+              <I18nText k="auth.clientShell" />
+            </div>
+            <div class="text-xs text-gray-400 mt-0.5">
+              <I18nText :k="shellLabelKey" />
+            </div>
+          </div>
+          <ChevronDown
+            :size="18"
+            class="text-gray-400 shrink-0 transition-transform"
+            :class="{ 'rotate-180': shellExpanded }"
+          />
+        </button>
+        <div
+          v-if="shellExpanded"
+          class="bg-gray-50 px-4 py-2 border-t border-gray-100"
+        >
+          <button
+            type="button"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg active:bg-gray-200 transition-colors"
+            :class="shellSelection === 'mobile' ? 'bg-indigo-50' : ''"
+            :disabled="shellSaving"
+            @click="selectClientShell('mobile')"
+          >
+            <span class="text-sm text-gray-800">
+              <I18nText k="auth.clientShellMobile" />
+            </span>
+            <Check
+              v-if="shellSelection === 'mobile'"
+              :size="16"
+              class="ml-auto text-indigo-600 shrink-0"
+            />
+          </button>
+          <button
+            type="button"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg active:bg-gray-200 transition-colors"
+            :class="shellSelection === 'desktop' ? 'bg-indigo-50' : ''"
+            :disabled="shellSaving"
+            @click="selectClientShell('desktop')"
+          >
+            <span class="text-sm text-gray-800">
+              <I18nText k="auth.clientShellDesktop" />
+            </span>
+            <Check
+              v-if="shellSelection === 'desktop'"
+              :size="16"
+              class="ml-auto text-indigo-600 shrink-0"
+            />
+          </button>
+          <p class="px-3 pb-2 text-xs text-gray-400">
+            <I18nText k="auth.clientShellHint" />
+          </p>
+        </div>
+
+        <div class="border-t border-gray-100 mx-4" />
+
         <!-- UI Language -->
         <button
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
@@ -411,7 +499,7 @@ async function handleLogout() {
           v-if="uiStore.bilingualUiEnabled"
           type="button"
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
-          @click="presenterLangExpanded = !presenterLangExpanded"
+          @click="togglePresenterLang"
         >
           <Languages
             :size="20"
@@ -534,32 +622,6 @@ async function handleLogout() {
         </div>
       </div>
 
-      <!-- Install app (PWA) -->
-      <button
-        v-if="showPwaInstall"
-        type="button"
-        class="desktop-shortcut-card feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
-        @click="handlePwaInstall"
-      >
-        <div
-          class="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-50 text-amber-700 shrink-0"
-        >
-          <Link2 :size="24" />
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="text-base font-semibold text-gray-900">
-            <I18nText k="auth.downloadDesktopShortcut" />
-          </div>
-          <div class="text-sm text-gray-500 mt-0.5">
-            <I18nText k="mobile.desktopShortcutDesc" />
-          </div>
-        </div>
-        <ChevronRight
-          :size="20"
-          class="text-gray-400 shrink-0"
-        />
-      </button>
-
       <!-- Logout -->
       <button
         class="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-red-200 bg-white text-red-500 font-medium text-sm active:bg-red-50 transition-colors"
@@ -584,7 +646,6 @@ async function handleLogout() {
       :visible="showAvatarSelect"
       @update:visible="showAvatarSelect = $event"
     />
-    <QuickRegisterModal v-model="showQuickRegister" />
   </div>
 </template>
 
@@ -595,13 +656,5 @@ async function handleLogout() {
 
 .mobile-account-scroll {
   padding-bottom: max(2rem, env(safe-area-inset-bottom));
-}
-
-.feature-card {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.feature-card:active {
-  transform: scale(0.99);
 }
 </style>

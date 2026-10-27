@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'ಆನ್‌ಲೈನ್ ಸಹಯೋಗ',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'ಸೆಮಿನಾರ್ ಅಂತ್ಯ',
   'sidebar.mindmateCollabHistory.stopConfirm': 'ಈ ಕಾರ್ಯಾಗಾರದ ಕೊಠಡಿಯನ್ನು ಎಲ್ಲಾ ಭಾಗವಹಿಸುವವರಿಗೆ ಮುಚ್ಚಲಾಗುತ್ತದೆ ಮತ್ತು ಎಲ್ಲರೂ ಕೊಠಡಿಯಿಂದ ನಿರ್ಗಮಿಸುತ್ತಾರೆ.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'ಸೆಮಿನಾರ್ ಬಿಡಿ',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'ನೀವು ಈ ಕಾರ್ಯಾಗಾರವನ್ನು ತೊರೆಯುತ್ತೀರಿ ಮತ್ತು ಇತರರು ಮುಂದುವರಿಸಬಹುದು.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'ಕ್ಯಾಂಪಸ್‌ನಲ್ಲಿ',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'ಶಾಲೆಗಳಾದ್ಯಂತ',
   'sidebar.share.ribbon': 'Organization',

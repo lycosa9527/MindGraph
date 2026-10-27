@@ -18,6 +18,7 @@ import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useOAuthRouteFeedback } from '@/composables/auth/useOAuthRouteFeedback'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useLockedClientShellRoute } from '@/composables/core/useLockedClientShellRoute'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useKittyDesktopActionPoll } from '@/composables/kitty/useKittyDesktopActionPoll'
 import { useSlideRemoteDesktopPoll } from '@/composables/mindMap/useSlideRemoteDesktopPoll'
@@ -47,6 +48,7 @@ import { shouldShowTestServerBannerOnVisit } from '@/utils/testServerBanner'
 
 const notify = useNotifications()
 
+useLockedClientShellRoute()
 useKittyDesktopActionPoll()
 useSlideRemoteDesktopPoll()
 useQuickAccessRemoteAccount()

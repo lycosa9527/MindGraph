@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'ഓൺലൈൻ സഹകരണം',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'സെമിനാർ അവസാനിപ്പിക്കുക',
   'sidebar.mindmateCollabHistory.stopConfirm': 'ഈ വർക്ക്ഷോപ്പ് റൂം എല്ലാ പങ്കാളികൾക്കും അടച്ചിരിക്കും, എല്ലാവരും മുറിയിൽ നിന്ന് പുറത്തുകടക്കും.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'സെമിനാർ വിടുക',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'നിങ്ങൾ ഈ വർക്ക്ഷോപ്പ് ഉപേക്ഷിക്കും, മറ്റുള്ളവർക്ക് തുടരാം.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'കാമ്പസിൽ',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'സ്കൂളുകളിലുടനീളം',
   'sidebar.share.ribbon': 'Organization',

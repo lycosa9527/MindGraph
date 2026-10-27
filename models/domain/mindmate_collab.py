@@ -108,6 +108,7 @@ class MindmateCollabMember(Base):
     seminar_role: Mapped[str] = mapped_column(String(32), nullable=False, default="observer", server_default="observer")
     # False until a teacher outside the host school agrees to join.
     accepted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+    left_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (Index("ix_mindmate_collab_members_user", "user_id"),)
 

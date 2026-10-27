@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.187] - 2026-10-27
+
+> **A joiner can leave a live seminar, this device can stay on one interface, and a phone admin can edit the school's MindMate name.**
+
+### Added
+
+- **Leave a seminar** — A joiner leaves a live seminar without ending it. The owner still ends the room. The seminar drops off the leaver's sidebar and stays open for everyone else.
+- **Interface lock** — Account settings on the phone and the desktop let this device stay on the mobile or desktop interface. Rotating the screen no longer switches it. The Word add-in stays on the desktop shell.
+- **Phone school identity** — An admin who can create a school can edit the public MindMate name, alias, school display name, and avatar from the phone. The invite code and link stay beside that editor. Dify keys and the internal organization name stay on the desktop.
+- **Seminar presence** — The member list shows when someone was last online. A snapshot that arrives late does not mark a person who just came online as offline.
+
+### Changed
+
+- **Seminar lifetime** — A live seminar the owner left open closes after 24 hours. Silence and the 1-hour and 10-hour presets still do not end the room.
+- **Seminar sidebar** — A room that already ended, or that you already left, no longer stays in the live list because Redis still has a row. A join code for a room that is shutting down is refused.
+- **Seminar disk cache** — Local seminar copies older than a day are removed once COS holds the original. Preview scratch and LibreOffice work folders are cleaned. Uploaded bytes stay when COS is off or the object is not in the bucket yet.
+- **Phone account** — Someone without a login password sets one from the account page.
+
+### Fixed
+
+- **Contact presence** — Closing one MindMate tab no longer marks you offline while another tab or the workshop socket still has you online.
+- **Quick access** — A dropped network while loading or saving a canvas shortcut is ignored.
+- **Host metrics** — The performance sample reads CPU and Celery memory when psutil returns a list or a process that has already exited.
+
+### Tests
+
+- [`tests/test_mindmate_collab_ttl_leave.py`](tests/test_mindmate_collab_ttl_leave.py), [`tests/test_mindmate_collab_org_listing.py`](tests/test_mindmate_collab_org_listing.py), [`tests/test_mindmate_collab_backend.py`](tests/test_mindmate_collab_backend.py), [`tests/test_mindmate_notify_presence.py`](tests/test_mindmate_notify_presence.py)
+- [`tests/test_client_shell_device.py`](tests/test_client_shell_device.py), [`tests/auth/test_mobile_org_branding.py`](tests/auth/test_mobile_org_branding.py), [`tests/auth/test_admin_panel_org_scope_http.py`](tests/auth/test_admin_panel_org_scope_http.py), [`tests/auth/test_expert_invite_scope.py`](tests/auth/test_expert_invite_scope.py)
+- [`tests/test_seminar_disk_cache_cleanup.py`](tests/test_seminar_disk_cache_cleanup.py), [`tests/test_temp_image_cleaner.py`](tests/test_temp_image_cleaner.py)
+- [`frontend/tests/clientShellHydrate.spec.ts`](frontend/tests/clientShellHydrate.spec.ts), [`frontend/tests/quickAccessSpecSync.spec.ts`](frontend/tests/quickAccessSpecSync.spec.ts), [`frontend/tests/useMindmateCollab.spec.ts`](frontend/tests/useMindmateCollab.spec.ts), [`frontend/tests/mobileOrganizations.spec.ts`](frontend/tests/mobileOrganizations.spec.ts), [`frontend/tests/mobileRouterRedirects.spec.ts`](frontend/tests/mobileRouterRedirects.spec.ts), [`frontend/tests/useMobileDetect.spec.ts`](frontend/tests/useMobileDetect.spec.ts)
+
 ## [5.180.186] - 2026-10-26
 
 > **A MindMate reply no longer holds a database transaction open. A learning sheet keeps its disks and answer rows, and the browser extension hides the install button when it is already installed.**

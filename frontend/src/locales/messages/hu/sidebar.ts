@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Online együttműködés',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'végi szeminárium',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Ez a műhelyterem minden résztvevő számára zárva lesz, és mindenki kimegy a teremből.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Hagyja el a szemináriumot',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Ön elhagyja ezt a műhelyt, és mások folytathatják.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Az egyetemen',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'iskolák között',
   'sidebar.share.ribbon': 'szervez',

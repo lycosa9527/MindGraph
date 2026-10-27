@@ -18,6 +18,7 @@ import {
 } from '@/config/landingQuickAccess'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
+import { isFetchTransportError } from '@/utils/fetchTransportError'
 
 const SPECS_PATH = '/api/auth/quick-access-specs'
 
@@ -51,7 +52,13 @@ export async function loadQuickAccessSpecs(): Promise<void> {
     savedSpecs.value = {}
   }
   const seen = specRevision
-  const response = await authFetch(SPECS_PATH)
+  let response: Response
+  try {
+    response = await authFetch(SPECS_PATH)
+  } catch (err) {
+    if (!isFetchTransportError(err)) throw err
+    return
+  }
   if (seen !== specRevision || !response.ok) {
     return
   }
@@ -80,16 +87,22 @@ export async function rememberQuickAccessSpec(
   if (!authStore.isAuthenticated) {
     return
   }
-  const response = await authFetch(SPECS_PATH, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      key,
-      text: saved.text,
-      diagramType: saved.diagramType,
-      spec: saved.spec,
-    }),
-  })
+  let response: Response
+  try {
+    response = await authFetch(SPECS_PATH, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        key,
+        text: saved.text,
+        diagramType: saved.diagramType,
+        spec: saved.spec,
+      }),
+    })
+  } catch (err) {
+    if (!isFetchTransportError(err)) throw err
+    return
+  }
   if (seen !== specRevision || !response.ok) {
     return
   }

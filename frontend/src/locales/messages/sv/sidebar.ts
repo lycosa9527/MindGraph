@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Samarbete online',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'avsluta seminariet',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Detta workshoprum kommer att vara stängt för alla deltagare och alla kommer att lämna rummet.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Lämna seminariet',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Du kommer att lämna denna workshop och andra kan fortsätta.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'På campus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'över skolor',
   'sidebar.share.ribbon': 'organisera',

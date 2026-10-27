@@ -67,6 +67,7 @@ import {
 } from '@/utils/mindmateCollabSessions'
 import {
   requestMindmateCollabStop,
+  resolveEndedMindmateCollabSessionId,
   resolveMindmateCollabSessionId,
   shouldRemoveCollabFromHistory,
   teardownMindmateCollabClient,
@@ -404,7 +405,10 @@ function exitCollabChatroomMode(options: { removeFromHistory?: boolean } = {}) {
 }
 
 function handleCollabEnded(reason: 'idle' | 'host' | 'left' = 'left') {
-  const sessionId = resolveMindmateCollabSessionId(collabSessionId.value, collabRoomCode.value)
+  const sessionId = resolveEndedMindmateCollabSessionId(
+    collabSessionId.value,
+    collabRoomCode.value
+  )
   const selfId = Number(authStore.user?.id)
   const ownsRoom =
     (collabOwnerId.value != null && collabOwnerId.value === selfId) ||

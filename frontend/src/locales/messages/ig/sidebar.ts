@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Online collab',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'End seminar',
   'sidebar.mindmateCollabHistory.stopConfirm': 'This will end the session for everyone. Participants will leave the room.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Hapụ seminarị',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Ị ga-ahapụ ụlọ ọrụ a na ndị ọzọ nwere ike ịga n\'ihu.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Org',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Network',
   'sidebar.share.ribbon': 'Organization',

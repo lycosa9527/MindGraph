@@ -23,6 +23,7 @@ import {
   seminarTaskPaneTab,
   toggleSeminarTaskPane,
 } from '@/composables/mindmate/mindmateSeminarChrome'
+import { useSeminarMemberPresence } from '@/composables/mindmate/useSeminarMemberPresence'
 import { SEMINAR_BRIEF_ROLE_OPTIONS, type SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
@@ -42,6 +43,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const { isOnline, presenceRank, statusText } = useSeminarMemberPresence()
 const memberQuery = ref('')
 const mentionMenu = ref<{ x: number; y: number; name: string } | null>(null)
 
@@ -116,8 +118,11 @@ const sortedMembers = computed(() =>
     if (left.isLeader !== right.isLeader) {
       return left.isLeader ? -1 : 1
     }
-    if (left.online !== right.online) {
-      return left.online ? -1 : 1
+    const presenceDiff =
+      presenceRank(left.userId, left.online, left.lastSeenAt) -
+      presenceRank(right.userId, right.online, right.lastSeenAt)
+    if (presenceDiff !== 0) {
+      return presenceDiff
     }
     return left.name.localeCompare(right.name, 'zh-Hans-CN')
   })
@@ -238,7 +243,7 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
                 {{ seminarAvatarSurname(member.name) }}
                 <span
                   class="mm-task-pane__dot"
-                  :class="{ 'is-on': member.online && !member.pending }"
+                  :class="{ 'is-on': isOnline(member.userId, member.online) }"
                   aria-hidden="true"
                 />
               </span>
@@ -253,7 +258,7 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
                 </span>
                 <span
                   class="mm-task-pane__member-status"
-                  :class="{ 'is-on': member.online && !member.pending }"
+                  :class="{ 'is-on': isOnline(member.userId, member.online) && !member.pending }"
                 >
                   <span
                     class="mm-task-pane__status-dot"
@@ -262,13 +267,9 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
                   <I18nText
                     v-if="member.pending"
                     k="mindmate.home.brief.pendingConsent"
-                  /><template v-else
-                    ><I18nText
-                      v-if="member.online"
-                      k="mindmate.home.memberOnline" /><I18nText
-                      v-else
-                      k="mindmate.home.memberOffline"
-                  /></template>
+                  /><template v-else>{{
+                    statusText(member.userId, member.online, member.lastSeenAt)
+                  }}</template>
                 </span>
               </div>
               <span class="mm-task-pane__role-wrap">

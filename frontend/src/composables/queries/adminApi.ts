@@ -366,6 +366,31 @@ export async function removeAdminOrganizationManager(orgId: number, userId: numb
   })
 }
 
+export async function updateMobileOrganizationBranding(
+  orgId: number,
+  body: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  return adminFetchJson(`/api/auth/admin/mobile/organizations/${orgId}/branding`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function uploadMobileOrganizationMindmateAvatar(
+  orgId: number,
+  formData: FormData
+): Promise<Record<string, unknown>> {
+  const res = await apiUpload(
+    `/api/auth/admin/mobile/organizations/${orgId}/mindmate-avatar`,
+    formData
+  )
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(httpErrorDetail(data) || 'Avatar upload failed')
+  }
+  return res.json()
+}
+
 export async function uploadAdminOrganizationMindmateAvatar(
   orgId: number,
   formData: FormData

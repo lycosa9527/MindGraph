@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Online collab',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'End seminar',
   'sidebar.mindmateCollabHistory.stopConfirm': 'This will end the session for everyone. Participants will leave the room.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'सेमिनार छोड्नुहोस्',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'तपाईंले यो कार्यशाला छोड्नुहुनेछ र अरूले जारी राख्न सक्नुहुन्छ।',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Org',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Network',
   'sidebar.share.ribbon': 'Organization',

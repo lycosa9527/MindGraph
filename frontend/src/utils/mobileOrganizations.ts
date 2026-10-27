@@ -7,6 +7,18 @@ export interface MobileOrganizationRow {
   name: string
   invitation_code: string
   user_count: number
+  display_name: string | null
+  mindmate_agent_name: string | null
+  mindmate_agent_alias: string | null
+  mindmate_agent_avatar_url: string | null
+}
+
+function optionalText(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null
+  }
+  const text = value.trim()
+  return text || null
 }
 
 function asRecord(item: unknown): Record<string, unknown> | null {
@@ -47,6 +59,19 @@ export interface MobileOrgListEntry {
   name: string
   invitationCode: string
   userCount: number
+  displayName: string
+  agentName: string
+  agentAlias: string
+  avatarUrl: string
+}
+
+/** Name shown on the phone card: display name when set, otherwise the organization name. */
+export function mobileOrgCardLabel(org: { name: string; displayName: string }): string {
+  const display = org.displayName.trim()
+  if (display) {
+    return display
+  }
+  return org.name.trim()
 }
 
 /**
@@ -63,7 +88,19 @@ export function mergeCreatedMobileOrg(
   const name = created.name.trim()
   const index = rows.findIndex((row) => row.id === created.id)
   if (index < 0) {
-    const next = [{ id: created.id, name, invitationCode: code, userCount: 0 }, ...rows]
+    const next = [
+      {
+        id: created.id,
+        name,
+        invitationCode: code,
+        userCount: 0,
+        displayName: '',
+        agentName: '',
+        agentAlias: '',
+        avatarUrl: '',
+      },
+      ...rows,
+    ]
     next.sort((left, right) => left.id - right.id)
     return next
   }
@@ -100,6 +137,10 @@ export function parseMobileOrganizations(data: unknown): MobileOrganizationRow[]
       name: String(raw.name ?? ''),
       invitation_code: String(raw.invitation_code ?? '').trim(),
       user_count: Number.isFinite(userCount) && userCount > 0 ? Math.floor(userCount) : 0,
+      display_name: optionalText(raw.display_name),
+      mindmate_agent_name: optionalText(raw.mindmate_agent_name),
+      mindmate_agent_alias: optionalText(raw.mindmate_agent_alias),
+      mindmate_agent_avatar_url: optionalText(raw.mindmate_agent_avatar_url),
     })
   }
   return rows

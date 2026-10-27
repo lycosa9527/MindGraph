@@ -17,6 +17,7 @@ import {
   normalizeMindmateCollabCode,
 } from '@/utils/mindmateCollabSessions'
 import {
+  resolveEndedMindmateCollabSessionId,
   shouldRemoveCollabFromHistory,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
@@ -44,7 +45,7 @@ function handleEnded(reason: 'idle' | 'host' | 'left' = 'left') {
   const localRow = loadLocalMindmateCollabSessions().find(
     (row) => normalizeMindmateCollabCode(row.code) === roomKey
   )
-  const sessionId = localRow?.session_id || ''
+  const sessionId = resolveEndedMindmateCollabSessionId(localRow?.session_id, roomCode.value) || ''
   const isOwner = localRow?.owner_user_id === Number(authStore.user?.id)
   teardownMindmateCollabClient(roomCode.value, {
     removeFromHistory: shouldRemoveCollabFromHistory(reason),

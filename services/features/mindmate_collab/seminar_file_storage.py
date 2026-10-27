@@ -12,6 +12,8 @@ Proprietary License
 from __future__ import annotations
 
 import logging
+import shutil
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +23,7 @@ from services.features.workshop_chat.attachment_storage import (
     is_legacy_disk_path,
     local_path_for_key,
 )
+from services.utils.error_types import FILE_IO_ERRORS
 from services.utils.tencent_cos_client import (
     cos_credentials_configured,
     cos_object_key,
@@ -33,7 +36,10 @@ from services.utils.tencent_cos_client import (
 logger = logging.getLogger(__name__)
 
 _PREVIEW_SUFFIX = ".preview.pdf"
+_SCRATCH_TMP_SUFFIX = ".pdf.tmp"
+_WORK_DIR_PREFIX = ".preview-work-"
 _LOG = "[Seminar/COS]"
+_CACHE_MAX_AGE_SECONDS = 86400
 
 
 def cos_seminar_enabled() -> bool:
@@ -186,6 +192,86 @@ def pull_preview_pdf_sync(storage_key: str, dest: Path) -> bool:
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(data)
     return True
+
+
+def _relative_cache_key(static_root: Path, path: Path) -> Optional[str]:
+    """Logical key for a file under the seminar static tree."""
+    try:
+        key = path.resolve().relative_to(static_root.resolve()).as_posix()
+    except FILE_IO_ERRORS:
+        return None
+    if not key or ".." in key.split("/"):
+        return None
+    return key
+
+
+def _cos_has_logical_key(logical_key: str) -> bool:
+    if not cos_seminar_enabled():
+        return False
+    return object_exists(full_seminar_cos_key(logical_key))
+
+
+def _expired(path: Path, now: float, max_age_seconds: int) -> bool:
+    try:
+        return now - path.stat().st_mtime > max_age_seconds
+    except FILE_IO_ERRORS:
+        return False
+
+
+def cleanup_seminar_disk_cache(
+    static_root: Path,
+    max_age_seconds: int = _CACHE_MAX_AGE_SECONDS,
+) -> int:
+    """Remove seminar working copies that COS already holds, plus old preview scratch.
+
+    Preview PDFs and LibreOffice work dirs are regenerable. The uploaded bytes
+    stay on disk when COS is off or the object is not in the bucket yet.
+    """
+    if not static_root.is_dir():
+        return 0
+    now = time.time()
+    removed = 0
+    work_dirs: list[Path] = []
+    files: list[Path] = []
+    try:
+        for path in static_root.rglob("*"):
+            if path.is_dir() and path.name.startswith(_WORK_DIR_PREFIX):
+                work_dirs.append(path)
+            elif path.is_file():
+                files.append(path)
+    except FILE_IO_ERRORS as exc:
+        logger.warning("[SeminarFiles] cache scan failed: %s", exc)
+        return 0
+
+    for path in work_dirs:
+        if not _expired(path, now, max_age_seconds):
+            continue
+        shutil.rmtree(path, ignore_errors=True)
+        removed += 1
+
+    for path in files:
+        if not path.is_file() or not _expired(path, now, max_age_seconds):
+            continue
+        if path.name.endswith(_SCRATCH_TMP_SUFFIX):
+            path.unlink(missing_ok=True)
+            removed += 1
+            continue
+        if path.name.endswith(_PREVIEW_SUFFIX):
+            source = path.with_name(path.name[: -len(_PREVIEW_SUFFIX)])
+            logical = _relative_cache_key(static_root, source)
+            source_ready = source.is_file() or (logical is not None and _cos_has_logical_key(logical))
+            if source_ready:
+                path.unlink(missing_ok=True)
+                removed += 1
+            continue
+        logical = _relative_cache_key(static_root, path)
+        if logical is not None and _cos_has_logical_key(logical):
+            path.unlink(missing_ok=True)
+            removed += 1
+
+    if removed:
+        logger.info("[SeminarFiles] cache cleanup removed %s local file(s)", removed)
+    return removed
 
 
 def delete_seminar_bytes_sync(storage_key: str, static_root: Path) -> None:

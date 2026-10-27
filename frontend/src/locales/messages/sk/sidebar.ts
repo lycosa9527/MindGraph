@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Online spolupráca',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'záverečný seminár',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Táto workshopová miestnosť bude pre všetkých účastníkov zatvorená a všetci z nej odídu.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Odíďte zo seminára',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Opustíte tento workshop a ostatní môžu pokračovať.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'V kampuse',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'naprieč školami',
   'sidebar.share.ribbon': 'organizovať',

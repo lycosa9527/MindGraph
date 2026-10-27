@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': '온라인 협업',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': '세미나 종료',
   'sidebar.mindmateCollabHistory.stopConfirm': '모든 참가자의 세션이 종료됩니다. 참가자는 방에서 나가게 됩니다.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': '세미나에서 나가기',
+  'sidebar.mindmateCollabHistory.leaveConfirm': '귀하는 이 워크숍을 떠나고 다른 사람들은 계속할 수 있습니다.',
   'sidebar.mindmateCollabHistory.visibilityOrg': '기관',
   'sidebar.mindmateCollabHistory.visibilityNetwork': '네트워크',
   'sidebar.share.ribbon': 'Organization',

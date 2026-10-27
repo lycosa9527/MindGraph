@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Onlayn hamkorlik',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Seminarni tugatish',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Bu sessiyani hamma uchun tugatadi. Ishtirokchilar xonadan chiqadi.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Seminarni tark eting',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Siz ushbu seminarni tark etasiz va boshqalar davom etishi mumkin.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Tashkilot',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Tarmoq',
   'sidebar.share.ribbon': 'Organization',

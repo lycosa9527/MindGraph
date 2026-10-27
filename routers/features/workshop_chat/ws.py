@@ -641,9 +641,10 @@ async def _handle_presence(
         await chat_ws_manager.broadcast_presence(user.id, presence_status)
 
 
-async def _handle_ping(websocket: WebSocket, _user, _data: dict):
-    """Respond to ping."""
+async def _handle_ping(websocket: WebSocket, user, _data: dict):
+    """Respond to ping and keep this socket inside the org presence window."""
     await websocket.send_text(json.dumps({"type": "pong"}))
+    await chat_ws_manager.touch_presence_heartbeat(user.id)
 
 
 _MESSAGE_HANDLERS = {

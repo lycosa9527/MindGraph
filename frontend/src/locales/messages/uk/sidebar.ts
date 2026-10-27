@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Онлайн-співпраця',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Завершити семінар',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Це завершить сесію для всіх. Учасники покинуть кімнату.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Залиште семінар',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Ви залишите цю майстерню, а інші зможуть продовжити.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Орг.',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Мережа',
   'sidebar.share.ribbon': 'Organization',

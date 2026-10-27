@@ -20,6 +20,7 @@ import { isEducationStage } from '@/constants/educationStage'
 import { i18n } from '@/i18n'
 import { isPromptOutputLanguageCode, isUiLocale } from '@/i18n/locales'
 import { useAiContentLevelStore } from '@/stores/aiContentLevel'
+import { hydrateClientShellFromDevice } from '@/stores/clientShellState'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useMindMateStore } from '@/stores/mindmate'
 import { useShowcaseStore } from '@/stores/showcase'
@@ -344,6 +345,7 @@ export const useAuthStore = defineStore('auth', () => {
     useUIStore().setLanguagePolicyAllowZh(normalizedUser.allowsSimplifiedChinese !== false)
     applyUserLanguageFromProfile(normalizedUser)
     void useUIStore().hydrateCanvasInputFromDevice()
+    void hydrateClientShellFromDevice()
   }
 
   async function saveLanguagePreferences(

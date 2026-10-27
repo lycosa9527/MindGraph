@@ -191,9 +191,10 @@ async def test_join_by_code_rejected_when_room_closing() -> None:
         patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
         patch.object(mgr, "session_is_closing", AsyncMock(return_value=True)),
     ):
-        payload = await mgr.join_by_code(2, "ABC-DEF")
+        payload, error = await mgr.join_by_code(2, "ABC-DEF")
 
     assert payload is None
+    assert error == "still_live"
 
 
 @pytest.mark.asyncio
@@ -212,12 +213,14 @@ async def test_join_by_code_returns_payload_after_permission_check() -> None:
 
     with (
         patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
+        patch.object(mgr, "session_is_closing", AsyncMock(return_value=False)),
         patch.object(mgr, "_validate_join_permissions", validate_mock),
         patch.object(mgr, "_session_payload", payload_mock),
     ):
-        payload = await mgr.join_by_code(2, "ABC-DEF")
+        payload, error = await mgr.join_by_code(2, "ABC-DEF")
 
     validate_mock.assert_awaited_once_with(session, 2)
+    assert error is None
     assert payload == {"code": "ABC-DEF", "participant_count": 2}
 
 
@@ -234,11 +237,13 @@ async def test_join_by_code_rejected_when_not_allowed() -> None:
 
     with (
         patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
+        patch.object(mgr, "session_is_closing", AsyncMock(return_value=False)),
         patch.object(mgr, "_validate_join_permissions", AsyncMock(return_value=False)),
     ):
-        payload = await mgr.join_by_code(2, "ABC-DEF")
+        payload, error = await mgr.join_by_code(2, "ABC-DEF")
 
     assert payload is None
+    assert error == "forbidden"
 
 
 @pytest.mark.asyncio

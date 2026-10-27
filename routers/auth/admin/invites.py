@@ -139,18 +139,38 @@ async def _list_invite_organizations(
     return result
 
 
+def _public_optional(value: Optional[str]) -> Optional[str]:
+    """Blank branding text is stored as null."""
+    if value is None:
+        return None
+    stripped = str(value).strip()
+    return stripped or None
+
+
 def mobile_organization_public_fields(
     org_id: int,
     name: str,
     invitation_code: Optional[str],
     user_count: int,
+    *,
+    display_name: Optional[str] = None,
+    mindmate_agent_name: Optional[str] = None,
+    mindmate_agent_alias: Optional[str] = None,
+    mindmate_agent_avatar_url: Optional[str] = None,
 ) -> dict:
-    """Fields the phone needs — no token stats, Dify, branding, or manager PII."""
+    """Phone list fields: invite identity plus the branding the phone editor writes.
+
+    Token stats, Dify secrets, and manager contacts stay off this payload.
+    """
     return {
         "id": org_id,
         "name": name,
         "invitation_code": invitation_code or "",
         "user_count": user_count,
+        "display_name": _public_optional(display_name),
+        "mindmate_agent_name": _public_optional(mindmate_agent_name),
+        "mindmate_agent_alias": _public_optional(mindmate_agent_alias),
+        "mindmate_agent_avatar_url": _public_optional(mindmate_agent_avatar_url),
     }
 
 
@@ -158,9 +178,17 @@ async def _list_mobile_organizations(
     db: AsyncSession,
     org_clause: ColumnElement,
 ) -> list[dict]:
-    """Serialize created-org rows for mobile (invite code + member count only)."""
+    """Serialize created-org rows for mobile (invite, member count, and branding)."""
     org_rows = await db.execute(
-        select(Organization.id, Organization.name, Organization.invitation_code)
+        select(
+            Organization.id,
+            Organization.name,
+            Organization.invitation_code,
+            Organization.display_name,
+            Organization.mindmate_agent_name,
+            Organization.mindmate_agent_alias,
+            Organization.mindmate_agent_avatar_url,
+        )
         .where(org_clause)
         .order_by(Organization.id)
     )
@@ -185,6 +213,10 @@ async def _list_mobile_organizations(
                 str(row.name or ""),
                 cast(Optional[str], row.invitation_code),
                 user_counts_by_org.get(org_id, 0),
+                display_name=cast(Optional[str], row.display_name),
+                mindmate_agent_name=cast(Optional[str], row.mindmate_agent_name),
+                mindmate_agent_alias=cast(Optional[str], row.mindmate_agent_alias),
+                mindmate_agent_avatar_url=cast(Optional[str], row.mindmate_agent_avatar_url),
             )
         )
     return result

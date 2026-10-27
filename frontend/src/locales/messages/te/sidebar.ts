@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'ఆన్‌లైన్ సహకారం',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'ముగింపు సెమినార్',
   'sidebar.mindmateCollabHistory.stopConfirm': 'పాల్గొనే వారందరికీ ఈ వర్క్‌షాప్ గది మూసివేయబడుతుంది మరియు అందరూ గది నుండి నిష్క్రమిస్తారు.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'సెమినార్ నుండి నిష్క్రమించండి',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'మీరు ఈ వర్క్‌షాప్ నుండి నిష్క్రమిస్తారు మరియు ఇతరులు కొనసాగించవచ్చు.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'క్యాంపస్‌లో',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'పాఠశాలల అంతటా',
   'sidebar.share.ribbon': 'Organization',

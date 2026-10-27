@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Çevrimiçi işbirliği',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Semineri bitir',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Bu, oturumu herkes için sonlandırır. Katılımcılar odadan ayrılır.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Seminerden ayrıl',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Siz bu atölyeden ayrılacaksınız ve diğerleri devam edebilecek.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Kurum',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Ağ',
   'sidebar.share.ribbon': 'Organization',

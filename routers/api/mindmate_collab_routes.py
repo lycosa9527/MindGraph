@@ -49,6 +49,7 @@ from services.features.mindmate_collab.library_archive import (
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
 from services.features.mindmate_collab.poke_notify import send_seminar_member_poke
 from services.features.mindmate_collab.reopen_session import reopen_saved_seminar
+from services.features.mindmate_collab.seminar_leave import leave_live_seminar
 from services.features.mindmate_collab.visibility import user_may_join_mindmate_collab
 from services.features.org_member_roster import (
     fetch_org_members_page,
@@ -286,6 +287,25 @@ async def stop_collab_room(
     return {"success": True}
 
 
+@router.post("/leave")
+async def leave_collab_room(
+    request: Request,
+    body: StopCollabRequest,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Leave a live seminar. The room stays open for everyone else."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit("mindmate_collab_leave", identifier, max_requests=20, window_seconds=60)
+    result = await leave_live_seminar(current_user.id, body.session_id)
+    if result == "still_owner":
+        raise HTTPException(status_code=409, detail="Owners end the seminar instead of leaving")
+    if result == "not_found":
+        raise HTTPException(status_code=404, detail="Seminar not found")
+    return {"success": True}
+
+
 @router.post("/reopen")
 async def reopen_collab_room(
     request: Request,
@@ -320,7 +340,11 @@ async def join_collab_by_code(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_collab_join", identifier, max_requests=20, window_seconds=60)
 
-    payload = await get_mindmate_collab_manager().join_by_code(current_user.id, code)
+    payload, error = await get_mindmate_collab_manager().join_by_code(current_user.id, code)
+    if error == "still_live":
+        raise HTTPException(status_code=409, detail="Seminar is still live")
+    if error == "forbidden":
+        raise HTTPException(status_code=403, detail="Invalid or inaccessible room code")
     if not payload:
         raise HTTPException(status_code=404, detail="Invalid or inaccessible room code")
 

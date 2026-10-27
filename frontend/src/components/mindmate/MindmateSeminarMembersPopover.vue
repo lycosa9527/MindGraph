@@ -14,6 +14,7 @@ import {
   requestSeminarMention,
   seminarSpectator,
 } from '@/composables/mindmate/mindmateSeminarChrome'
+import { useSeminarMemberPresence } from '@/composables/mindmate/useSeminarMemberPresence'
 import { SEMINAR_BRIEF_ROLE_OPTIONS, type SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import type { SeminarGroupMember } from '@/utils/mindmateSeminarGroup'
 import { seminarAvatarSurname, seminarAvatarTone } from '@/utils/seminarAvatarSurname'
@@ -35,6 +36,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const { isOnline, presenceRank, statusText } = useSeminarMemberPresence()
 const root = ref<HTMLElement | null>(null)
 const mentionMenu = ref<{ x: number; y: number; name: string } | null>(null)
 let hideTimer: ReturnType<typeof setTimeout> | null = null
@@ -74,8 +76,11 @@ const sorted = computed(() =>
     if (left.isLeader !== right.isLeader) {
       return left.isLeader ? -1 : 1
     }
-    if (left.online !== right.online) {
-      return left.online ? -1 : 1
+    const presenceDiff =
+      presenceRank(left.userId, left.online, left.lastSeenAt) -
+      presenceRank(right.userId, right.online, right.lastSeenAt)
+    if (presenceDiff !== 0) {
+      return presenceDiff
     }
     return left.name.localeCompare(right.name, 'zh-Hans-CN')
   })
@@ -164,7 +169,7 @@ defineExpose({ keepOpen, scheduleClose })
         <span
           class="mm-members-pop__avatar"
           :class="{
-            'is-offline': !member.online,
+            'is-offline': !isOnline(member.userId, member.online),
             'is-mentionable': canMentionMember(member),
           }"
           :style="{
@@ -176,7 +181,7 @@ defineExpose({ keepOpen, scheduleClose })
           {{ seminarAvatarSurname(member.name) }}
           <span
             class="mm-members-pop__dot"
-            :class="{ 'is-on': member.online }"
+            :class="{ 'is-on': isOnline(member.userId, member.online) }"
             aria-hidden="true"
           />
         </span>
@@ -193,13 +198,9 @@ defineExpose({ keepOpen, scheduleClose })
             <I18nText
               v-if="member.pending"
               k="mindmate.home.brief.pendingConsent"
-            /><template v-else
-              ><I18nText
-                v-if="member.online"
-                k="mindmate.home.memberOnline" /><I18nText
-                v-else
-                k="mindmate.home.memberOffline"
-            /></template>
+            /><template v-else>{{
+              statusText(member.userId, member.online, member.lastSeenAt)
+            }}</template>
           </span>
         </div>
         <span class="mm-members-pop__role-wrap">

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   isMobileRoutePath,
+  pathForLockedClientShell,
   resolveMobileRouteRedirect,
   shouldSkipMobileRouteRedirect,
 } from '@/utils/mobileRouteRedirect'
@@ -39,5 +40,31 @@ describe('mobileRouteRedirect', () => {
     expect(shouldSkipMobileRouteRedirect('/admin')).toBe(true)
     expect(shouldSkipMobileRouteRedirect('/dashboard/login')).toBe(true)
     expect(shouldSkipMobileRouteRedirect('/mindmate')).toBe(false)
+  })
+
+  it('moves a locked shell onto the matching route', () => {
+    expect(pathForLockedClientShell('/mindmate', 'mobile')).toBe('/m/mindmate')
+    expect(pathForLockedClientShell('/m/mindmate', 'mobile')).toBeNull()
+    expect(pathForLockedClientShell('/m/canvas', 'desktop')).toBe('/canvas')
+    expect(pathForLockedClientShell('/canvas', 'desktop')).toBeNull()
+    expect(pathForLockedClientShell('/admin', 'mobile')).toBeNull()
+    expect(pathForLockedClientShell('/m/account', 'desktop')).toBe('/mindmate')
+    expect(pathForLockedClientShell('/training', 'mobile')).toBe('/m')
+    expect(pathForLockedClientShell('/training', 'mobile', { isTrainingLead: true })).toBe(
+      '/m/training'
+    )
+    expect(pathForLockedClientShell('/admin', 'desktop')).toBeNull()
+  })
+
+  it('settles after one redirect for the same shell', () => {
+    const paths = ['/m', '/m/canvas', '/m/account', '/mindmate', '/canvas', '/training', '/admin']
+    const shells = ['mobile', 'desktop'] as const
+    for (const path of paths) {
+      for (const shell of shells) {
+        const next = pathForLockedClientShell(path, shell)
+        if (!next) continue
+        expect(pathForLockedClientShell(next, shell)).toBeNull()
+      }
+    }
   })
 })

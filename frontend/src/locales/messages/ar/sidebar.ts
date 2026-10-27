@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'التعاون عبر الإنترنت',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'نهاية الندوة',
   'sidebar.mindmateCollabHistory.stopConfirm': 'ستكون غرفة الورشة مغلقة أمام جميع المشاركين وسيخرج الجميع من الغرفة.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'ترك الندوة',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'ستغادر ورشة العمل هذه ويمكن للآخرين الاستمرار.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'في الحرم الجامعي',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'عبر المدارس',
   'sidebar.share.ribbon': 'Organization',

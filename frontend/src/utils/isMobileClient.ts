@@ -1,8 +1,10 @@
 /**
  * Single source of truth for mobile client detection.
- * Matches router redirects: viewport below mobile breakpoint OR touch-class UA.
+ * A shell locked on this device wins over viewport and user agent.
+ * Otherwise matches router redirects: viewport below mobile breakpoint OR touch-class UA.
  */
 import { BREAKPOINTS } from '@/config/uiConfig'
+import { resolveLockedMobile } from '@/utils/clientShellLock'
 import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
 
 const TOUCH_DEVICE_UA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
@@ -28,5 +30,6 @@ export function computeIsMobileClient(width?: number, userAgent?: string): boole
   }
   const resolvedWidth =
     width ?? (typeof window !== 'undefined' ? window.innerWidth : BREAKPOINTS.MOBILE)
-  return isSmallViewportWidth(resolvedWidth) || isTouchDeviceUserAgent(userAgent)
+  const autoDetected = isSmallViewportWidth(resolvedWidth) || isTouchDeviceUserAgent(userAgent)
+  return resolveLockedMobile(autoDetected)
 }

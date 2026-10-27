@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': '在线协同',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': '结束研讨会',
   'sidebar.mindmateCollabHistory.stopConfirm': '将为所有参与者结束此研讨房间，所有人将退出房间。',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': '离开研讨会',
+  'sidebar.mindmateCollabHistory.leaveConfirm': '你将离开这个研讨会，其他人可以继续。',
   'sidebar.mindmateCollabHistory.visibilityOrg': '校内',
   'sidebar.mindmateCollabHistory.visibilityNetwork': '跨校',
   'sidebar.share.ribbon': '组织',

@@ -9,7 +9,7 @@ import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElIcon } from 'element-plus
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { MoreHorizontal, Power } from '@lucide/vue'
+import { LogOut, MoreHorizontal, Power } from '@lucide/vue'
 
 import CollabLiveBadge from '@/components/social/CollabLiveBadge.vue'
 import { useLanguage, useNotifications } from '@/composables'
@@ -20,7 +20,7 @@ import {
 import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateCollabLiveSession'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
-import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
+import { confirmMindmateCollabLeave, confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
 import { leaveSavedMindmateSeminar, saveFinishedSeminar } from '@/utils/mindmateCollabLibrarySave'
 import {
   LOCAL_MINDMATE_COLLAB_SESSIONS_KEY,
@@ -38,6 +38,7 @@ import {
 } from '@/utils/mindmateCollabSessions'
 import {
   removeLocalMindmateCollabSessionByCode,
+  requestMindmateCollabLeave,
   requestMindmateCollabStop,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
@@ -311,6 +312,36 @@ async function stopSession(row: CollabSessionRow): Promise<void> {
   })
 }
 
+async function leaveSession(row: CollabSessionRow): Promise<void> {
+  const confirmed = await confirmMindmateCollabLeave(t)
+  if (!confirmed) {
+    return
+  }
+  const rowKey = normalizeCode(row.code)
+  const wasActive =
+    rowKey === activeCode.value || rowKey === normalizeCode(embeddedCollabRoomCode.value || '')
+  evictSessionByCode(row.code)
+  dropLiveCollabRoom(row.code)
+  if (wasActive) {
+    teardownMindmateCollabClient(row.code, { removeFromHistory: true })
+    if (normalizeCode(embeddedCollabRoomCode.value || '') === rowKey) {
+      setEmbeddedCollabRoomCode('')
+    }
+    if (inMindmateCollabRoute.value) {
+      void router.push('/mindmate')
+    }
+  } else {
+    removeLocalMindmateCollabSessionByCode(row.code)
+  }
+  const ok = await requestMindmateCollabLeave(row.session_id)
+  if (!ok) {
+    notify.errorKey('mindmate.collabLeaveFailed')
+    void fetchSessions(false)
+    return
+  }
+  notify.successKey('mindmate.collabLeft')
+}
+
 function onHistoryVisibility(): void {
   if (document.visibilityState !== 'visible') return
   void fetchSessions(false)
@@ -399,7 +430,6 @@ onUnmounted(() => {
           />
         </button>
         <ElDropdown
-          v-if="isHost(session)"
           trigger="click"
           placement="bottom-end"
           popper-class="user-dropdown-popper"
@@ -416,11 +446,20 @@ onUnmounted(() => {
           <template #dropdown>
             <ElDropdownMenu class="user-dropdown-menu">
               <ElDropdownItem
+                v-if="isHost(session)"
                 class="user-dropdown-item--logout"
                 @click="stopSession(session)"
               >
                 <Power class="w-4 h-4 mr-2" />
                 <I18nText k="mindmate.collabEndSeminar" />
+              </ElDropdownItem>
+              <ElDropdownItem
+                v-else
+                class="user-dropdown-item--logout"
+                @click="leaveSession(session)"
+              >
+                <LogOut class="w-4 h-4 mr-2" />
+                <I18nText k="mindmate.collabLeaveSeminar" />
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { resetClientShellLockForTests, writeClientShellLock } from '@/utils/clientShellLock'
 import {
   computeIsMobileClient,
   isSmallViewportWidth,
@@ -14,6 +15,7 @@ import {
 describe('isMobileClient', () => {
   afterEach(() => {
     resetOfficeEmbedForTests()
+    resetClientShellLockForTests()
   })
 
   it('detects touch user agents regardless of width', () => {
@@ -38,9 +40,25 @@ describe('isMobileClient', () => {
     expect(computeIsMobileClient(1280, desktopUa)).toBe(false)
   })
 
+  it('keeps a locked desktop shell when the tablet rotates to a narrow width', () => {
+    const ipadUa =
+      'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+    writeClientShellLock('desktop')
+    expect(computeIsMobileClient(480, ipadUa)).toBe(false)
+    expect(computeIsMobileClient(1280, ipadUa)).toBe(false)
+  })
+
+  it('keeps a locked mobile shell on a wide viewport', () => {
+    const desktopUa =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    writeClientShellLock('mobile')
+    expect(computeIsMobileClient(1280, desktopUa)).toBe(true)
+  })
+
   it('treats word-addin embed query as desktop even when narrow', () => {
     syncOfficeEmbedFromSearch('?embed=word-addin')
     expect(isOfficeEmbedDesktop()).toBe(true)
+    writeClientShellLock('mobile')
     const ipadUa =
       'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
     expect(computeIsMobileClient(480, ipadUa)).toBe(false)

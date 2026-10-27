@@ -44,3 +44,35 @@ export function shouldSkipMobileRouteRedirect(path: string): boolean {
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
   )
 }
+
+/** Desktop page for a mobile route when this device is locked to the desktop shell. */
+const DESKTOP_SHELL_PATHS: Record<string, string> = {
+  '/m': '/mindmate',
+  '/m/mindmate': '/mindmate',
+  '/m/mindgraph': '/mindgraph',
+  '/m/canvas': '/canvas',
+  '/m/voice-notes': '/voice-notes',
+  '/m/learning-space': '/learning-space',
+  '/m/training': '/training',
+  '/m/kitty': '/mindmate',
+  '/m/account': '/mindmate',
+  '/m/orgs': '/mindmate',
+}
+
+/**
+ * Route to open when a locked shell disagrees with the current path.
+ * Returns null when the path already matches, or when the page stays put (admin, auth).
+ */
+export function pathForLockedClientShell(
+  path: string,
+  shell: 'mobile' | 'desktop',
+  opts?: { isTrainingLead?: boolean }
+): string | null {
+  if (shell === 'desktop') {
+    if (!isMobileRoutePath(path)) return null
+    return DESKTOP_SHELL_PATHS[path] ?? '/mindmate'
+  }
+  if (isMobileRoutePath(path) || shouldSkipMobileRouteRedirect(path)) return null
+  const target = resolveMobileRouteRedirect(path, opts)
+  return target === path ? null : target
+}

@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': '在線協同',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': '結束研討會',
   'sidebar.mindmateCollabHistory.stopConfirm': '將為所有參與者結束此研討房間，所有人將退出房間。',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': '離開研討會',
+  'sidebar.mindmateCollabHistory.leaveConfirm': '你將離開這個研討會，其他人可以繼續。',
   'sidebar.mindmateCollabHistory.visibilityOrg': '校內',
   'sidebar.mindmateCollabHistory.visibilityNetwork': '跨校',
   'sidebar.share.ribbon': '組織',

@@ -92,12 +92,14 @@ async def _set_ended_at(
     session_id: str,
     ended_at: Optional[datetime],
     expires_at: Optional[datetime],
+    started_at: Optional[datetime] = None,
 ) -> None:
+    values: Dict[str, Any] = {"ended_at": ended_at, "expires_at": expires_at}
+    if started_at is not None:
+        values["started_at"] = started_at
     async with system_rls_session() as db:
         await db.execute(
-            update(MindmateCollabSession)
-            .where(MindmateCollabSession.id == session_id)
-            .values(ended_at=ended_at, expires_at=expires_at),
+            update(MindmateCollabSession).where(MindmateCollabSession.id == session_id).values(**values),
         )
         await db.commit()
 
@@ -164,7 +166,7 @@ async def _reopen_locked(
             datetime.now(tz=UTC),
             reopen_duration(session.visibility, session.duration_preset),
         )
-        await _set_ended_at(session.id, None, expires_at)
+        await _set_ended_at(session.id, None, expires_at, started_at=datetime.now(tz=UTC))
     else:
         expires_at = session.expires_at
         if expires_at is None or is_online_collab_expired(expires_at):

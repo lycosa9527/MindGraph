@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Online-Kollaboration',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Seminar beenden',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Dies beendet die Sitzung für alle. Teilnehmer verlassen den Raum.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Verlassen Sie das Seminar',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Sie verlassen diesen Workshop und andere können weitermachen.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Organisation',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Netzwerk',
   'sidebar.share.ribbon': 'Organization',

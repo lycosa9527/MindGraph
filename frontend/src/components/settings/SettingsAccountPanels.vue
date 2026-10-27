@@ -18,6 +18,7 @@ import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.v
 import I18nText from '@/components/common/I18nText.vue'
 
 import SettingsAccountBindings from './SettingsAccountBindings.vue'
+import SettingsClientShellSection from './SettingsClientShellSection.vue'
 import { type AccountSettingsSection, useAccountSettings } from './useAccountSettings'
 
 const props = defineProps<{
@@ -73,6 +74,8 @@ function openBrowserPluginPage(): void {
           </button>
         </div>
       </div>
+
+      <SettingsClientShellSection />
 
       <div class="space-y-4">
         <div>

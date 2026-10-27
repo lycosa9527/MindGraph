@@ -95,9 +95,13 @@ async def mindmate_notify_websocket(websocket: WebSocket) -> None:
                 msg_type = str(data.get("type", ""))
                 if msg_type == "ping":
                     await websocket.send_text(json.dumps({"type": "pong"}))
+                    await mindmate_notify_ws_manager.touch_presence(user_id)
                     continue
                 if msg_type == "subscribe_presence":
                     await _handle_subscribe_presence(websocket, user, data)
+                    continue
+                if msg_type == "presence_sync":
+                    await _handle_presence_sync(websocket, user, data)
                     continue
                 if msg_type == "presence":
                     await _handle_presence(user_id, data)
@@ -126,7 +130,19 @@ async def _handle_subscribe_presence(websocket: WebSocket, user: User, data: dic
     user_id = int(user.id)
     effective = org_ids[0]
     await mindmate_notify_ws_manager.set_presence_orgs(user_id, org_ids)
-    online_here = await mindmate_notify_ws_manager.presence_org_online_ids(effective)
+    await _send_presence_snapshot(websocket, user_id, effective)
+    for org_id in org_ids:
+        await mindmate_notify_ws_manager.broadcast_org_presence(
+            user_id,
+            "active",
+            org_id,
+            exclude_user=user_id,
+        )
+
+
+async def _send_presence_snapshot(websocket: WebSocket, user_id: int, org_id: int) -> None:
+    """Send the current online set. Does not announce this user again."""
+    online_here = await mindmate_notify_ws_manager.presence_org_online_ids(org_id)
     others = [uid for uid in online_here if uid != user_id]
     await websocket.send_text(
         json.dumps(
@@ -136,13 +152,15 @@ async def _handle_subscribe_presence(websocket: WebSocket, user: User, data: dic
             },
         ),
     )
-    for org_id in org_ids:
-        await mindmate_notify_ws_manager.broadcast_org_presence(
-            user_id,
-            "active",
-            org_id,
-            exclude_user=user_id,
-        )
+
+
+async def _handle_presence_sync(websocket: WebSocket, user: User, data: dict) -> None:
+    """Refresh this socket's online set without telling the school we joined again."""
+    org_id = mindmate_notify_ws_manager.get_presence_org_id(int(user.id))
+    if org_id is None:
+        await _handle_subscribe_presence(websocket, user, data)
+        return
+    await _send_presence_snapshot(websocket, int(user.id), org_id)
 
 
 async def _handle_presence(user_id: int, data: dict) -> None:

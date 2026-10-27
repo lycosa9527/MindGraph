@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Онлине сарадња',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'крај семинара',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Ова радионица ће бити затворена за све учеснике и сви ће изаћи из собе.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Напустите семинар',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Напустићете ову радионицу и други могу да наставе.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'У кампусу',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'преко школа',
   'sidebar.share.ribbon': 'организовати',

@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'オンライン共同編集',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'セミナーを終了',
   'sidebar.mindmateCollabHistory.stopConfirm': '全員のセッションが終了します。参加者はルームから退出します。',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'セミナーを退席する',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'あなたはこのワークショップを終了しますが、他の人は続行できます。',
   'sidebar.mindmateCollabHistory.visibilityOrg': '組織',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'ネットワーク',
   'sidebar.share.ribbon': 'Organization',

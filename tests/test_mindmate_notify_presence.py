@@ -10,6 +10,7 @@ from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
 
 from services.features.mindmate_notify_ws_manager import mindmate_notify_ws_manager
+from services.features.workshop_chat_presence_store import user_ids_from_presence_members
 
 
 class _QuietSocket:
@@ -58,12 +59,13 @@ async def test_a_replaced_notify_socket_keeps_presence(monkeypatch) -> None:
     """Closing the old tab must not unregister the socket that replaced it."""
     removed: List[int] = []
 
-    async def fake_remove(org_id: int, user_id: int) -> None:
-        del user_id
+    async def fake_remove(org_id: int, user_id: int, *, source: str) -> bool:
+        del user_id, source
         removed.append(org_id)
+        return False
 
-    async def fake_touch(org_id: int, user_id: int) -> None:
-        del org_id, user_id
+    async def fake_touch(org_id: int, user_id: int, *, source: str) -> None:
+        del org_id, user_id, source
 
     store = "services.features.mindmate_notify_ws_manager.workshop_chat_presence_store"
     monkeypatch.setattr(f"{store}.remove_presence_org_user", fake_remove)
@@ -85,3 +87,47 @@ async def test_a_replaced_notify_socket_keeps_presence(monkeypatch) -> None:
     assert gone == [9]
     assert removed == [9]
     assert mindmate_notify_ws_manager.get_presence_org_id(user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_notify_disconnect_keeps_a_workshop_presence(monkeypatch) -> None:
+    """Closing MindMate must not mark someone offline while workshop chat is up."""
+    broadcasts: List[str] = []
+
+    async def fake_remove(org_id: int, user_id: int, *, source: str) -> bool:
+        del org_id, user_id, source
+        return True
+
+    async def fake_touch(org_id: int, user_id: int, *, source: str) -> None:
+        del org_id, user_id, source
+
+    async def fake_broadcast(
+        user_id: int,
+        status: str,
+        org_id: int,
+        *,
+        exclude_user: int | None = None,
+    ) -> None:
+        del user_id, org_id, exclude_user
+        broadcasts.append(status)
+
+    store = "services.features.mindmate_notify_ws_manager.workshop_chat_presence_store"
+    monkeypatch.setattr(f"{store}.remove_presence_org_user", fake_remove)
+    monkeypatch.setattr(f"{store}.touch_presence_org_user", fake_touch)
+    monkeypatch.setattr(mindmate_notify_ws_manager, "broadcast_org_presence", fake_broadcast)
+
+    socket = cast(WebSocket, _QuietSocket())
+    user_id = 910042
+    await mindmate_notify_ws_manager.connect(user_id, socket)
+    await mindmate_notify_ws_manager.set_presence_orgs(user_id, [9])
+    gone = await mindmate_notify_ws_manager.disconnect(user_id, socket)
+    assert gone == []
+    assert not broadcasts
+
+
+def test_presence_members_collapse_sources_to_user_ids() -> None:
+    """Workshop and MindMate sockets for one person are a single online id."""
+    online = user_ids_from_presence_members(
+        ["4", b"4:workshop", "9:notify", "bad", "0:notify", b"12:notify"],
+    )
+    assert online == {4, 9, 12}

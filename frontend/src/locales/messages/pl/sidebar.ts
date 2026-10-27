@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Współpraca online',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Zakończ seminarium',
   'sidebar.mindmateCollabHistory.stopConfirm': 'To zakończy sesję dla wszystkich. Uczestnicy opuszczą pokój.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Opuść seminarium',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Opuścisz ten warsztat, a inni będą mogli kontynuować.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Na kampusie',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Sieć',
   'sidebar.share.ribbon': 'Organization',

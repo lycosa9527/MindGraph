@@ -2,13 +2,19 @@
 /**
  * Mobile organization management — create a school and share invite code / link.
  */
+import { shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { Building2, Home, Loader2, Plus } from '@lucide/vue'
 
+import MobileOrgBrandingSheet from '@/components/mobile/MobileOrgBrandingSheet.vue'
 import MobileOrgInviteShare from '@/components/mobile/MobileOrgInviteShare.vue'
 import { useLanguage } from '@/composables'
-import { useMobileOrgManagement } from '@/composables/mobile/useMobileOrgManagement'
+import {
+  type MobileOrgRow,
+  useMobileOrgManagement,
+} from '@/composables/mobile/useMobileOrgManagement'
+import { mobileOrgCardLabel } from '@/utils/mobileOrganizations'
 
 const router = useRouter()
 const { t } = useLanguage()
@@ -23,8 +29,18 @@ const {
   copyText,
 } = useMobileOrgManagement()
 
+const brandingOrg = shallowRef<MobileOrgRow | null>(null)
+
 function goHome() {
   router.push('/m')
+}
+
+function openBranding(org: MobileOrgRow): void {
+  brandingOrg.value = org
+}
+
+function closeBranding(): void {
+  brandingOrg.value = null
 }
 </script>
 
@@ -71,7 +87,7 @@ function goHome() {
           />
           <button
             type="submit"
-            class="w-full h-11 rounded-xl bg-indigo-600 text-white text-sm font-medium flex items-center justify-center gap-2 active:bg-indigo-700 disabled:opacity-50"
+            class="org-pill org-pill--primary"
             :disabled="isSubmitting || !orgName.trim()"
           >
             <Loader2
@@ -113,7 +129,7 @@ function goHome() {
         >
           <button
             type="button"
-            class="w-full text-left flex items-start gap-3 active:opacity-80"
+            class="org-name"
             :aria-expanded="expandedId === org.id"
             @click="toggleExpanded(org.id)"
           >
@@ -122,9 +138,9 @@ function goHome() {
             >
               <Building2 :size="20" />
             </div>
-            <div class="flex-1 min-w-0">
+            <div class="min-w-0">
               <div class="text-sm font-semibold text-gray-900 truncate">
-                {{ org.name }}
+                {{ mobileOrgCardLabel(org) }}
               </div>
               <div class="text-xs text-gray-500 mt-0.5">
                 <I18nText
@@ -136,19 +152,25 @@ function goHome() {
           </button>
 
           <div
-            v-if="expandedId === org.id && org.invitationCode"
+            v-if="expandedId === org.id"
             class="mt-3 pt-3 border-t border-gray-100"
           >
             <MobileOrgInviteShare
-              :organization-name="org.name"
+              :organization-name="mobileOrgCardLabel(org)"
               :invitation-code="org.invitationCode"
               :invite-link="org.inviteLink"
               @copy="copyText"
+              @edit="openBranding(org)"
             />
           </div>
         </article>
       </div>
     </div>
+
+    <MobileOrgBrandingSheet
+      :org="brandingOrg"
+      @close="closeBranding"
+    />
   </div>
 </template>
 
@@ -164,5 +186,53 @@ function goHome() {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   scroll-margin-top: 4.5rem;
   scroll-margin-bottom: 1.5rem;
+}
+
+.org-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #f3f4f6;
+  text-align: left;
+}
+
+.org-name:active {
+  background: #e5e7eb;
+}
+
+.org-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  flex: 0 0 auto;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.org-pill:disabled {
+  opacity: 0.5;
+}
+
+.org-pill--primary {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.org-pill--primary:active:not(:disabled) {
+  background: #4338ca;
 }
 </style>

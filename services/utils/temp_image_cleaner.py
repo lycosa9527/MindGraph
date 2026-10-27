@@ -3,8 +3,9 @@ Temporary Image Cleanup Service
 ================================
 
 Background task to clean up old PNG files from temp_images/ directory.
-Automatically removes local files older than 24 hours. COS copies of
-dingtalk_*.png stay so MindMate conversation history can hydrate them.
+Automatically removes local dingtalk_*.png and diagram_*.png files older
+than 24 hours. COS copies stay so a later open can hydrate them.
+Also drops seminar preview scratch once COS holds the original.
 
 100% async implementation - all file operations use asyncio.
 Compatible with Windows and Ubuntu when running under Uvicorn.
@@ -39,8 +40,13 @@ except ImportError:
     is_redis_available = None
     _REDIS_AVAILABLE = False
 
+from services.diagram.temp_image_storage import temp_images_dir
+from services.features.mindmate_collab.background_files import STATIC_ROOT
+from services.features.mindmate_collab.seminar_file_storage import cleanup_seminar_disk_cache
 from services.mind_classroom.temp_cleanup import cleanup_classroom_temp_files
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS, REDIS_ERRORS
+
+_TEMP_PNG_GLOBS = ("dingtalk_*.png", "diagram_*.png")
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +197,7 @@ async def acquire_cleanup_lock() -> bool:
 
 async def cleanup_temp_images(max_age_seconds: int = 86400):
     """
-    Remove PNG files older than max_age_seconds from temp_images/ directory.
+    Remove dingtalk and diagram PNGs older than max_age_seconds from temp_images/.
 
     100% async implementation - uses aiofiles.os for non-blocking file operations.
 
@@ -201,7 +207,7 @@ async def cleanup_temp_images(max_age_seconds: int = 86400):
     Returns:
         Number of files deleted
     """
-    temp_dir = Path(__file__).resolve().parent.parent.parent / "temp_images"
+    temp_dir = temp_images_dir()
 
     if not temp_dir.exists():
         # Silently skip if directory doesn't exist - nothing to clean
@@ -212,7 +218,9 @@ async def cleanup_temp_images(max_age_seconds: int = 86400):
 
     try:
         # Use asyncio to run blocking glob operation in thread pool
-        files = await asyncio.to_thread(list, temp_dir.glob("dingtalk_*.png"))
+        files: list[Path] = []
+        for pattern in _TEMP_PNG_GLOBS:
+            files.extend(await asyncio.to_thread(list, temp_dir.glob(pattern)))
 
         for file_path in files:
             # Get file stats asynchronously
@@ -282,20 +290,20 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
 
     while True:
         try:
-            await asyncio.sleep(interval_seconds)
-
             # Refresh lock before cleanup to prevent expiration
             if not await refresh_cleanup_lock():
                 logger.debug("[Cleanup] Lost cleanup lock, stopping scheduler on this worker")
-                # Try to reacquire lock
                 if not await acquire_cleanup_lock():
-                    continue  # Another worker has it, keep waiting
-                    # Lock reacquired, continue with cleanup
+                    await asyncio.sleep(300)
+                    continue
 
             await cleanup_temp_images()
             await cleanup_classroom_temp_files()
+            await asyncio.to_thread(cleanup_seminar_disk_cache, STATIC_ROOT)
+            await asyncio.sleep(interval_seconds)
         except asyncio.CancelledError:
             logger.info("[Cleanup] Cleanup scheduler stopped")
             break
         except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Cleanup scheduler error: %s", e, exc_info=True)
+            await asyncio.sleep(interval_seconds)

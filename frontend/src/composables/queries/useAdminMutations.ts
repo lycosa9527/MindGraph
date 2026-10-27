@@ -5,6 +5,8 @@
  */
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
+import type { MobileOrganizationRow } from '@/utils/mobileOrganizations'
+
 import {
   addAdminOrganizationManager,
   analyzeAdminDatabaseDump,
@@ -47,11 +49,13 @@ import {
   updateAdminLibraryDocumentVisibility,
   updateAdminMindbotConfig,
   updateAdminOrganization,
+  updateMobileOrganizationBranding,
   updateAdminSchoolUser,
   updateAdminTeacherUsageConfig,
   updateAdminUser,
   updateAdminUserRole,
   uploadAdminOrganizationMindmateAvatar,
+  uploadMobileOrganizationMindmateAvatar,
   type AdminSchoolStatsResponse,
   type AdminTeacherUsageConfig,
 } from './adminApi'
@@ -153,6 +157,43 @@ export function useRemoveAdminOrganizationManager() {
   })
 }
 
+function optionalBrandingText(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null
+  }
+  const text = value.trim()
+  return text || null
+}
+
+function refreshMobileOrgBranding(
+  queryClient: ReturnType<typeof useQueryClient>,
+  orgId: number,
+  data: Record<string, unknown>
+): void {
+  const fields: Partial<MobileOrganizationRow> = {}
+  if ('display_name' in data) {
+    fields.display_name = optionalBrandingText(data.display_name)
+  }
+  if ('mindmate_agent_name' in data) {
+    fields.mindmate_agent_name = optionalBrandingText(data.mindmate_agent_name)
+  }
+  if ('mindmate_agent_alias' in data) {
+    fields.mindmate_agent_alias = optionalBrandingText(data.mindmate_agent_alias)
+  }
+  if ('mindmate_agent_avatar_url' in data) {
+    fields.mindmate_agent_avatar_url = optionalBrandingText(data.mindmate_agent_avatar_url)
+  }
+  queryClient.setQueryData<MobileOrganizationRow[]>(adminKeys.invites.mobile(), (current) => {
+    if (!Array.isArray(current)) {
+      return current
+    }
+    return current.map((row) => (row.id === orgId ? { ...row, ...fields } : row))
+  })
+  void queryClient.invalidateQueries({ queryKey: adminKeys.invites.mobile() })
+  void queryClient.invalidateQueries({ queryKey: adminKeys.organizations() })
+  void queryClient.invalidateQueries({ queryKey: adminKeys.organization(orgId) })
+}
+
 export function useUploadAdminOrganizationMindmateAvatar() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -163,6 +204,28 @@ export function useUploadAdminOrganizationMindmateAvatar() {
       queryClient.invalidateQueries({
         queryKey: adminKeys.organizationMindmateDifyHealth(orgId),
       })
+    },
+  })
+}
+
+export function useUpdateMobileOrganizationBranding() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ orgId, body }: { orgId: number; body: Record<string, unknown> }) =>
+      updateMobileOrganizationBranding(orgId, body),
+    onSuccess: (data, { orgId }) => {
+      refreshMobileOrgBranding(queryClient, orgId, data)
+    },
+  })
+}
+
+export function useUploadMobileOrganizationMindmateAvatar() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ orgId, formData }: { orgId: number; formData: FormData }) =>
+      uploadMobileOrganizationMindmateAvatar(orgId, formData),
+    onSuccess: (data, { orgId }) => {
+      refreshMobileOrgBranding(queryClient, orgId, data)
     },
   })
 }

@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Aanlyn-samewerking',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Beëindig seminaar',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Dit beëindig die sessie vir almal. Deelnemers sal die kamer verlaat.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Verlaat die seminaar',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Jy sal hierdie werkswinkel verlaat en ander kan voortgaan.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Op kampus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Netwerk',
   'sidebar.share.ribbon': 'Organization',

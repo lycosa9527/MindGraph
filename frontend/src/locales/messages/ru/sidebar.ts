@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Онлайн сотрудничество',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'окончание семинара',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Помещение семинара будет закрыто для всех участников, и все выйдут из помещения.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Покинуть семинар',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Вы покинете этот семинар, и другие смогут продолжить.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'На территории кампуса',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'в школах',
   'sidebar.share.ribbon': 'Organization',

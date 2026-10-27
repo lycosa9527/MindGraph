@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Colaborare online',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'încheie seminar',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Această sală de atelier va fi închisă pentru toți participanții și toată lumea va ieși din sală.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Părăsiți seminarul',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Vei părăsi acest atelier și alții pot continua.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'În campus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'peste scoli',
   'sidebar.share.ribbon': 'organiza',

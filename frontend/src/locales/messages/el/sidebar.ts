@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Διαδικτυακή συνεργασία',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'τέλος σεμιναρίου',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Αυτή η αίθουσα εργαστηρίου θα είναι κλειστή για όλους τους συμμετέχοντες και όλοι θα βγουν από την αίθουσα.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Αφήστε το σεμινάριο',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Θα αποχωρήσετε από αυτό το εργαστήριο και άλλοι μπορούν να συνεχίσουν.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Στην πανεπιστημιούπολη',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'σε όλα τα σχολεία',
   'sidebar.share.ribbon': 'οργανώνω',

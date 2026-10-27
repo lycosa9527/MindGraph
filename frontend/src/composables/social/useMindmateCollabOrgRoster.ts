@@ -20,10 +20,11 @@ export function useMindmateCollabOrgRoster(options: OrgContactSectionsOptions = 
     options.collabSessionId ?? (() => '')
   )
   const roster = useOrgRoster(backend)
-  const { onlineUserIds } = useMindmateCollabPresenceBridge()
+  const { onlineUserIds, lastSeenOnlineAtByUserId } = useMindmateCollabPresenceBridge()
   const presence = useOrgPresenceCore({
     members: roster.members,
     onlineUserIds,
+    lastSeenOnlineAtByUserId,
   })
   const sectionOptions: OrgContactSectionsOptions = {
     ...options,

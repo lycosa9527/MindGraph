@@ -12,10 +12,10 @@ import logging
 import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
-from sqlalchemy import or_, select
+from sqlalchemy import exists, or_, select
 
 from models.domain.auth import OrganizationExpertBinding, User
-from models.domain.mindmate_collab import MindmateCollabSession
+from models.domain.mindmate_collab import MindmateCollabMember, MindmateCollabSession
 from services.auth.expert_school_binding import list_bound_org_ids
 from services.features.mindmate_collab.redis_keys import (
     normalize_collab_code,
@@ -23,13 +23,14 @@ from services.features.mindmate_collab.redis_keys import (
     registry_org_key,
     session_meta_key,
 )
+from services.features.mindmate_collab.seminar_leave import session_ids_viewer_left
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
 )
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import REDIS_ERRORS
 from utils.auth.roles import is_expert
-from utils.db.session_open import user_rls_session
+from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,39 @@ def merge_org_session_rows(
             ordered.append(row)
             seen.add(key)
     return ordered
+
+
+def without_ended_redis_fillers(
+    sql_rows: List[Dict[str, Any]],
+    merged: List[Dict[str, Any]],
+    live_filler_ids: set[str],
+) -> List[Dict[str, Any]]:
+    """Drop a Redis-only sidebar row whose seminar is missing or already ended.
+
+    SQL rows stay. A Redis filler stays only when Postgres still has that
+    session live, which is how a colleague room hidden by RLS remains listed.
+    """
+    sql_ids = {str(row.get("session_id") or "") for row in sql_rows if row.get("session_id")}
+    kept: List[Dict[str, Any]] = []
+    for row in merged:
+        session_id = str(row.get("session_id") or "")
+        if session_id in sql_ids or session_id in live_filler_ids:
+            kept.append(row)
+    return kept
+
+
+async def _live_filler_ids(session_ids: List[str]) -> set[str]:
+    """Return the subset of ids that are still a live seminar."""
+    if not session_ids:
+        return set()
+    async with system_rls_session() as db:
+        result = await db.execute(
+            select(MindmateCollabSession.id).where(
+                MindmateCollabSession.id.in_(session_ids),
+                MindmateCollabSession.ended_at.is_(None),
+            ),
+        )
+        return {str(row) for row in result.scalars().all()}
 
 
 async def resolve_viewer_org_id(
@@ -133,6 +167,13 @@ async def list_org_sessions_sql(user_id: int, org_id: int) -> List[Dict[str, Any
                 ),
                 MindmateCollabSession.visibility == ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
                 MindmateCollabSession.ended_at.is_(None),
+                ~exists(
+                    select(MindmateCollabMember.session_id).where(
+                        MindmateCollabMember.session_id == MindmateCollabSession.id,
+                        MindmateCollabMember.user_id == user_id,
+                        MindmateCollabMember.left_at.is_not(None),
+                    ),
+                ),
             )
             .order_by(MindmateCollabSession.started_at.desc()),
         )
@@ -266,8 +307,10 @@ async def list_visible_org_sessions(
         return []
     merged: List[Dict[str, Any]] = []
     seen: set[str] = set()
+    sql_rows_all: List[Dict[str, Any]] = []
     for org_id in org_ids:
         sql_rows = await list_org_sessions_sql(user_id, org_id)
+        sql_rows_all.extend(sql_rows)
         redis_rows = await list_org_sessions_redis(org_id)
         for row in merge_org_session_rows(sql_rows, redis_rows):
             code = str(row.get("code") or "")
@@ -275,4 +318,18 @@ async def list_visible_org_sessions(
                 continue
             seen.add(code)
             merged.append(row)
+    sql_ids = {str(row.get("session_id") or "") for row in sql_rows_all}
+    filler_ids = []
+    for row in merged:
+        session_id = str(row.get("session_id") or "")
+        if session_id and session_id not in sql_ids:
+            filler_ids.append(session_id)
+    merged = without_ended_redis_fillers(
+        sql_rows_all,
+        merged,
+        await _live_filler_ids(filler_ids),
+    )
+    left_ids = await session_ids_viewer_left(user_id)
+    if left_ids:
+        merged = [row for row in merged if str(row.get("session_id") or "") not in left_ids]
     return await attach_participant_counts(merged, participant_counts_fn)

@@ -1,5 +1,5 @@
-/** Dropped-network failures from the slide-remote command drain. */
-export function isSlideRemoteTransportError(err: unknown): boolean {
+/** Browser fetch failures: the request never completed, or it was aborted. */
+export function isFetchTransportError(err: unknown): boolean {
   if (
     typeof err === 'object' &&
     err !== null &&

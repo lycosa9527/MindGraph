@@ -10,6 +10,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { bindSlideRemoteWakeDrain } from '@/composables/mindMap/bindSlideRemoteWakeDrain'
 import type { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
 import { applySlideRemoteCommand } from '@/utils/applySlideRemoteCommand'
+import { isFetchTransportError } from '@/utils/fetchTransportError'
 import {
   drainSlideRemoteCommands,
   endSlideRemoteSession,
@@ -25,7 +26,6 @@ import {
   setSlideRemotePendingStart,
   shouldJumpForSlideRemoteStart,
 } from '@/utils/slideRemotePendingStart'
-import { isSlideRemoteTransportError } from '@/utils/slideRemoteTransportError'
 
 type SlidePresentation = ReturnType<typeof useMindMapSlidePresentation>
 
@@ -100,7 +100,7 @@ export function useSlideRemote(options: {
         applySlideRemoteCommand(row, handlers())
       }
     } catch (err) {
-      if (!isSlideRemoteTransportError(err)) throw err
+      if (!isFetchTransportError(err)) throw err
     } finally {
       inFlight = false
     }

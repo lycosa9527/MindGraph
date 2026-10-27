@@ -12,6 +12,7 @@ from services.features.mindmate_collab.org_listing import (
     list_visible_org_sessions,
     merge_org_session_rows,
     resolve_viewer_org_id,
+    without_ended_redis_fillers,
 )
 
 
@@ -45,6 +46,18 @@ def test_merge_sql_wins_on_same_code() -> None:
     )
     assert len(merged) == 1
     assert merged[0]["owner_name"] == "王寸尺"
+
+
+def test_ended_redis_filler_drops_when_postgres_says_not_live() -> None:
+    """A Redis-only code stays listed only while Postgres still has that seminar live."""
+    sql_rows = [{"session_id": "sess-5", "code": "GJR-42J"}]
+    merged = [
+        {"session_id": "sess-5", "code": "GJR-42J"},
+        {"session_id": "sess-dead", "code": "OLD-ONE"},
+        {"session_id": "sess-live", "code": "NEW-ONE"},
+    ]
+    kept = without_ended_redis_fillers(sql_rows, merged, {"sess-live"})
+    assert [row["session_id"] for row in kept] == ["sess-5", "sess-live"]
 
 
 @pytest.mark.asyncio
@@ -182,6 +195,14 @@ async def test_visible_listing_merges_sql_own_and_redis_peer() -> None:
         patch(
             "services.features.mindmate_collab.org_listing.list_org_sessions_redis",
             AsyncMock(return_value=redis_peer),
+        ),
+        patch(
+            "services.features.mindmate_collab.org_listing._live_filler_ids",
+            AsyncMock(return_value={"sess-3"}),
+        ),
+        patch(
+            "services.features.mindmate_collab.org_listing.session_ids_viewer_left",
+            AsyncMock(return_value=set()),
         ),
     ):
         rows = await list_visible_org_sessions(

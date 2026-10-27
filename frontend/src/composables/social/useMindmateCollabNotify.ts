@@ -16,7 +16,9 @@ import { handleMindmateCollabPokeFrame } from '@/utils/mindmateCollabPokeNotify'
 import { loadPendingSeminarInvites } from '@/utils/mindmateSeminarConsent'
 
 const CONNECT_DEBOUNCE_MS = 200
+const PRESENCE_SYNC_MS = 60_000
 const PING_MESSAGE = JSON.stringify({ type: 'ping' })
+const PRESENCE_SYNC_MESSAGE = JSON.stringify({ type: 'presence_sync' })
 
 /** Subscribe frame. Org id is optional; the server resolves the school when it is omitted. */
 export function mindmatePresenceSubscribeMessage(orgId: number | null): string {
@@ -37,12 +39,15 @@ export function useMindmateCollabNotify(): void {
   const { canUseOnlineCollab } = useSchoolTierFeatures()
   const notify = useNotifications()
   const { t } = useLanguage()
-  const { applyPresenceSnapshot, updatePresence } = useMindmateCollabPresenceBridge()
+  const { applyPresenceSnapshot, updatePresence, hydrateLastSeen } =
+    useMindmateCollabPresenceBridge()
+  hydrateLastSeen()
   const wsUrl = ref('')
   const connected = ref(false)
   /** Bumped on every intentional disconnect; stale handshakes must not stay open. */
   let connectGeneration = 0
   let connectTimer: ReturnType<typeof setTimeout> | null = null
+  let presenceSyncTimer: ReturnType<typeof setInterval> | null = null
   /** True when we wanted to drop a socket that was still handshaking. */
   let cancelConnecting = false
 
@@ -122,6 +127,7 @@ export function useMindmateCollabNotify(): void {
       }
       connected.value = true
       sendSubscribePresence(send)
+      startPresenceSync(send)
       void loadPendingSeminarInvites(t)
       const userId = Number(authStore.user?.id)
       if (userId) {
@@ -130,6 +136,7 @@ export function useMindmateCollabNotify(): void {
     },
     onDisconnected() {
       connected.value = false
+      stopPresenceSync()
       // close() sets VueUse explicitlyClosed so autoReconnect does not revive a cancelled session.
       if (cancelConnecting || !shouldConnect.value) {
         close()
@@ -161,12 +168,29 @@ export function useMindmateCollabNotify(): void {
     }
   }
 
+  function stopPresenceSync(): void {
+    if (presenceSyncTimer != null) {
+      clearInterval(presenceSyncTimer)
+      presenceSyncTimer = null
+    }
+  }
+
+  function startPresenceSync(sendFn: (payload: string) => void): void {
+    stopPresenceSync()
+    presenceSyncTimer = setInterval(() => {
+      if (status.value === 'OPEN') {
+        sendFn(PRESENCE_SYNC_MESSAGE)
+      }
+    }, PRESENCE_SYNC_MS)
+  }
+
   /**
    * Avoid Chrome "WebSocket is closed before the connection is established"
    * by never calling close() while status is CONNECTING.
    */
   function disconnectNotify(): void {
     clearConnectTimer()
+    stopPresenceSync()
     connectGeneration += 1
     cancelConnecting = true
     if (status.value === 'CLOSED') {

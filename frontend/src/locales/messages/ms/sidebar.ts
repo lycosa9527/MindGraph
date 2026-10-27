@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Kolaborasi daring',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Akhiri seminar',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Ini akan mengakhiri sesi untuk semua orang. Peserta akan keluar dari ruangan.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Tinggalkan seminar',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Anda akan meninggalkan bengkel ini dan orang lain boleh meneruskan.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Di kampus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Jaringan',
   'sidebar.share.ribbon': 'Organization',

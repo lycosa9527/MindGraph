@@ -19,6 +19,7 @@ from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
 
 from services.features import workshop_chat_presence_store
+from services.features.workshop_chat_presence_store import PRESENCE_SOURCE_NOTIFY
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
 from services.features.ws_redis_fanout_publish_core import publish_chat_fanout_async
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -50,10 +51,11 @@ class MindmateNotifyWsManager:
         user_id: int,
         websocket: WebSocket | None = None,
     ) -> list[int]:
-        """Drop this socket and return the presence orgs it still covered.
+        """Drop this socket and return schools where nobody else keeps them online.
 
         A newer tab replaces the socket before the old handler's cleanup runs.
         That cleanup must not unregister the replacement or broadcast offline.
+        The caller broadcasts offline only for the returned schools.
         """
         current = self._connections.get(user_id)
         if websocket is not None and current is not websocket:
@@ -67,9 +69,16 @@ class MindmateNotifyWsManager:
         for org_id in sorted(extras):
             if org_id not in org_ids:
                 org_ids.append(org_id)
+        fully_offline: list[int] = []
         for org_id in org_ids:
-            await workshop_chat_presence_store.remove_presence_org_user(org_id, user_id)
-        return org_ids
+            still_online = await workshop_chat_presence_store.remove_presence_org_user(
+                org_id,
+                user_id,
+                source=PRESENCE_SOURCE_NOTIFY,
+            )
+            if not still_online:
+                fully_offline.append(org_id)
+        return fully_offline
 
     async def set_presence_org(self, user_id: int, org_id: int) -> None:
         """Scope org-wide presence for this notify connection."""
@@ -99,9 +108,19 @@ class MindmateNotifyWsManager:
         self._extra_presence_orgs[user_id] = extras
         desired = {primary, *extras}
         for org_id in org_ids:
-            await workshop_chat_presence_store.touch_presence_org_user(int(org_id), user_id)
+            await workshop_chat_presence_store.touch_presence_org_user(
+                int(org_id),
+                user_id,
+                source=PRESENCE_SOURCE_NOTIFY,
+            )
         for org_id in previous - desired:
-            await workshop_chat_presence_store.remove_presence_org_user(org_id, user_id)
+            still_online = await workshop_chat_presence_store.remove_presence_org_user(
+                org_id,
+                user_id,
+                source=PRESENCE_SOURCE_NOTIFY,
+            )
+            if still_online:
+                continue
             await self.broadcast_org_presence(user_id, "offline", org_id, exclude_user=user_id)
 
     async def replace_presence_orgs(self, user_id: int, org_ids: list[int]) -> None:
@@ -114,7 +133,13 @@ class MindmateNotifyWsManager:
             self._presence_org_by_user.pop(user_id, None)
             self._extra_presence_orgs.pop(user_id, None)
             for org_id in previous:
-                await workshop_chat_presence_store.remove_presence_org_user(org_id, user_id)
+                still_online = await workshop_chat_presence_store.remove_presence_org_user(
+                    org_id,
+                    user_id,
+                    source=PRESENCE_SOURCE_NOTIFY,
+                )
+                if still_online:
+                    continue
                 await self.broadcast_org_presence(user_id, "offline", org_id, exclude_user=user_id)
             return
         await self.set_presence_orgs(user_id, desired)
@@ -132,7 +157,11 @@ class MindmateNotifyWsManager:
         if primary is not None:
             org_ids.add(primary)
         for org_id in org_ids:
-            await workshop_chat_presence_store.touch_presence_org_user(org_id, user_id)
+            await workshop_chat_presence_store.touch_presence_org_user(
+                org_id,
+                user_id,
+                source=PRESENCE_SOURCE_NOTIFY,
+            )
 
     async def presence_org_online_ids(self, org_id: int) -> Set[int]:
         """Online user ids in org (Redis + local notify sockets)."""

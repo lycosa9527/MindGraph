@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Yhteistyö verkossa',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'loppuseminaari',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Tämä työpajahuone on suljettu kaikilta osallistujilta ja kaikki poistuvat huoneesta.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'Poistu seminaarista',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Poistut tästä työpajasta ja muut voivat jatkaa.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Kampuksella',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'koulujen yli',
   'sidebar.share.ribbon': 'järjestää',

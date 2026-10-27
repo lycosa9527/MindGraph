@@ -2,7 +2,7 @@
  * Gap-fill UI locales from Simplified Chinese.
  * Keys still equal to English are translated zh-CN → target.
  */
-import { existsSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -46,6 +46,23 @@ export function collectGaps(
 
 function escapeSq(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r\n/g, '\n').replace(/\n/g, '\\n')
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Replace one message line. Leaves the rest of the file untouched. */
+export function replaceMessageLine(raw: string, key: string, value: string): string {
+  const re = new RegExp(
+    `^(\\s*'${escapeRegExp(key)}'\\s*:\\s*)'(?:\\\\'|[^'])*'(\\s*,?)\\s*$`,
+    'm'
+  )
+  const quoted = `'${escapeSq(value)}'`
+  if (!re.test(raw)) {
+    return raw
+  }
+  return raw.replace(re, (_match, prefix: string, suffix: string) => `${prefix}${quoted}${suffix}`)
 }
 
 function formatRecord(keysInOrder: string[], out: Record<string, string>): string {
@@ -95,7 +112,8 @@ export async function fillNamespace(
   locale: string,
   ns: Namespace,
   to: string,
-  dryRun: boolean
+  dryRun: boolean,
+  onlyKeys: ReadonlySet<string> | null = null
 ): Promise<{ gap: number; kept: number; failed: number; sample: string | null }> {
   const loc = await loadMod(locale, ns)
   const en = await loadMod('en', ns)
@@ -104,10 +122,44 @@ export async function fillNamespace(
   if (keys.length === 0) {
     return { gap: 0, kept: 0, failed: 0, sample: null }
   }
-  const { out, gaps } = collectGaps(loc, en, zh)
+  const collected = collectGaps(loc, en, zh)
+  const gaps =
+    onlyKeys === null ? collected.gaps : collected.gaps.filter((row) => onlyKeys.has(row.key))
+  const { out } = collected
   const sample = gaps[0]?.zhText ?? null
   if (dryRun) {
     return { gap: gaps.length, kept: 0, failed: 0, sample }
+  }
+  if (onlyKeys !== null) {
+    if (gaps.length === 0) {
+      return { gap: 0, kept: 0, failed: 0, sample: null }
+    }
+    const translated = await translateBatch(
+      gaps.map((g) => g.zhText),
+      to
+    )
+    const abs = join(MESSAGES_ROOT, locale, `${ns}.ts`)
+    let raw = readFileSync(abs, 'utf8')
+    let failed = 0
+    let kept = 0
+    for (let i = 0; i < gaps.length; i++) {
+      const next = translated[i]
+      if (typeof next !== 'string' || next.trim().length === 0) {
+        failed += 1
+        continue
+      }
+      const updated = replaceMessageLine(raw, gaps[i].key, next)
+      if (updated === raw) {
+        failed += 1
+        continue
+      }
+      raw = updated
+      kept += 1
+    }
+    if (kept > 0) {
+      writeFileSync(abs, raw, 'utf8')
+    }
+    return { gap: gaps.length, kept, failed, sample }
   }
   if (gaps.length === 0) {
     writeNamespace(locale, ns, keys, out)

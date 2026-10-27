@@ -28,6 +28,7 @@ import {
 import {
   mindmateCollabStopSucceeded,
   removeLocalMindmateCollabSessionByCode,
+  resolveEndedMindmateCollabSessionId,
   resolveMindmateCollabSessionId,
   shouldRemoveCollabFromHistory,
   teardownMindmateCollabClient,
@@ -124,6 +125,23 @@ describe('mindmate collab teardown helpers', () => {
     expect(resolveMindmateCollabSessionId(null, 'abcdef')).toBe('sess-1')
     sessionStorage.removeItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY)
     localStorage.removeItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY)
+  })
+
+  it('does not archive a different live seminar when a sidebar code ends', () => {
+    persistLocalMindmateCollabSessions([
+      {
+        session_id: 'sess-live',
+        code: 'XTB-CDR',
+        title: 'Open seminar',
+      },
+      {
+        session_id: 'sess-clicked',
+        code: 'ABC-DEF',
+        title: 'Clicked seminar',
+      },
+    ])
+    expect(resolveEndedMindmateCollabSessionId('sess-live', 'ABC-DEF')).toBe('sess-clicked')
+    expect(resolveEndedMindmateCollabSessionId('sess-clicked', 'ABC-DEF')).toBe('sess-clicked')
   })
 
   it('removes local session row by code', () => {
@@ -321,5 +339,33 @@ describe('recently ended collab codes', () => {
     updatePresence(5, 'active')
     teardownMindmateCollabClient('QWE-RT1', { removeFromHistory: true })
     expect(onlineUserIds.value.has(5)).toBe(true)
+  })
+
+  it('replaces the online set from a snapshot and keeps a just-arrived active', () => {
+    const {
+      applyPresenceSnapshot,
+      updatePresence,
+      onlineUserIds,
+      lastSeenOnlineAtByUserId,
+      presenceReady,
+    } = useMindmateCollabPresenceBridge()
+    expect(presenceReady.value).toBe(false)
+    updatePresence(71, 'active', 1_000)
+    updatePresence(72, 'active', 1_000)
+    expect(presenceReady.value).toBe(false)
+    applyPresenceSnapshot([71], undefined, 11_000)
+    expect(presenceReady.value).toBe(true)
+    expect(onlineUserIds.value.has(71)).toBe(true)
+    expect(onlineUserIds.value.has(72)).toBe(false)
+    expect(lastSeenOnlineAtByUserId.value[72]).toBe(11_000)
+    updatePresence(73, 'active', 20_000)
+    applyPresenceSnapshot([71], undefined, 20_100)
+    expect(onlineUserIds.value.has(73)).toBe(true)
+    expect(onlineUserIds.value.has(71)).toBe(true)
+    updatePresence(73, 'offline', 21_000)
+    expect(onlineUserIds.value.has(73)).toBe(false)
+    expect(lastSeenOnlineAtByUserId.value[73]).toBe(21_000)
+    updatePresence(73, 'active', 22_000)
+    expect(lastSeenOnlineAtByUserId.value[73]).toBeUndefined()
   })
 })

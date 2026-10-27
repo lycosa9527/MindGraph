@@ -91,6 +91,39 @@ def test_school_admin_denied_mobile_organizations(client: TestClient) -> None:
     assert response.status_code == 403
 
 
+def test_teacher_denied_mobile_org_branding(client: TestClient) -> None:
+    """Teachers cannot edit school branding from the phone."""
+    app.dependency_overrides[get_current_user] = lambda: _make_user("teacher", user_id=11)
+    app.dependency_overrides[get_language_dependency] = lambda: "en"
+    response = client.patch(
+        "/api/auth/admin/mobile/organizations/1/branding",
+        json={"display_name": "Nope"},
+    )
+    assert response.status_code == 403
+
+
+def test_school_admin_denied_mobile_org_branding(client: TestClient) -> None:
+    """School managers cannot edit branding from the phone org page."""
+    app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42, user_id=3)
+    app.dependency_overrides[get_language_dependency] = lambda: "en"
+    response = client.patch(
+        "/api/auth/admin/mobile/organizations/1/branding",
+        json={"mindmate_agent_name": "Nope"},
+    )
+    assert response.status_code == 403
+
+
+def test_expert_mobile_branding_rejects_non_branding_fields(client: TestClient) -> None:
+    """Experts reach the phone editor, and that editor refuses Dify keys and renames."""
+    app.dependency_overrides[get_current_user] = lambda: _make_user("expert", user_id=5)
+    app.dependency_overrides[get_language_dependency] = lambda: "en"
+    response = client.patch(
+        "/api/auth/admin/mobile/organizations/1/branding",
+        json={"display_name": "Phone School", "dify_api_key": "sk-secret"},
+    )
+    assert response.status_code == 400
+
+
 def test_expert_can_list_mobile_organizations(client: TestClient) -> None:
     """Experts may hit the mobile org list (created-org scope)."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("expert", user_id=5)

@@ -25,6 +25,7 @@ from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
 
 from services.features import workshop_chat_presence_store
+from services.features.workshop_chat_presence_store import PRESENCE_SOURCE_WORKSHOP
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
 from services.features.ws_redis_fanout_publish_core import publish_chat_fanout_async
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -173,20 +174,22 @@ class ChatConnectionManager:
                 presence_orgs.add(conn.presence_org_id)
             presence_orgs.update(conn.extra_presence_org_ids)
         presence_org = next((conn.presence_org_id for conn in removed if conn.presence_org_id), None)
-        if presence_orgs and is_ws_fanout_enabled():
-            for org_id in presence_orgs:
-                try:
-                    await workshop_chat_presence_store.remove_presence_org_user(
-                        org_id,
-                        user_id,
-                    )
-                except BACKGROUND_INFRA_ERRORS as exc:
-                    logger.debug("Presence org user removal failed: %s", exc)
+        still_online: Set[int] = set()
+        for org_id in presence_orgs:
+            try:
+                if await workshop_chat_presence_store.remove_presence_org_user(
+                    org_id,
+                    user_id,
+                    source=PRESENCE_SOURCE_WORKSHOP,
+                ):
+                    still_online.add(org_id)
+            except BACKGROUND_INFRA_ERRORS as exc:
+                logger.debug("Presence org user removal failed: %s", exc)
         self._connections.pop(user_id, None)
         self._rebuild_channel_subscribers(user_id)
         logger.info("[ChatWS] User %d disconnected", user_id)
         for org_id in presence_orgs:
-            if org_id == presence_org:
+            if org_id == presence_org or org_id in still_online:
                 continue
             await self.broadcast_org_presence(
                 user_id,
@@ -194,6 +197,8 @@ class ChatConnectionManager:
                 org_id,
                 exclude_user=user_id,
             )
+        if presence_org in still_online:
+            presence_org = None
         return subscribed, presence_org
 
     async def set_presence_org(self, user_id: int, org_id: int) -> None:
@@ -219,26 +224,27 @@ class ChatConnectionManager:
         for conn in self._conns(user_id):
             conn.presence_org_id = primary
             conn.extra_presence_org_ids = set(extras)
-        desired = {primary, *extras}
-        dropped = previous - desired
-        if is_ws_fanout_enabled():
-            for org_id in org_ids:
-                try:
-                    await workshop_chat_presence_store.touch_presence_org_user(
-                        int(org_id),
-                        user_id,
-                    )
-                except BACKGROUND_INFRA_ERRORS as exc:
-                    logger.debug("Presence org user touch failed: %s", exc)
-            for org_id in dropped:
-                try:
-                    await workshop_chat_presence_store.remove_presence_org_user(
-                        org_id,
-                        user_id,
-                    )
-                except BACKGROUND_INFRA_ERRORS as exc:
-                    logger.debug("Presence org user removal failed: %s", exc)
-        for org_id in dropped:
+        for org_id in org_ids:
+            try:
+                await workshop_chat_presence_store.touch_presence_org_user(
+                    int(org_id),
+                    user_id,
+                    source=PRESENCE_SOURCE_WORKSHOP,
+                )
+            except BACKGROUND_INFRA_ERRORS as exc:
+                logger.debug("Presence org user touch failed: %s", exc)
+        for org_id in previous - {primary, *extras}:
+            try:
+                still_online = await workshop_chat_presence_store.remove_presence_org_user(
+                    org_id,
+                    user_id,
+                    source=PRESENCE_SOURCE_WORKSHOP,
+                )
+            except BACKGROUND_INFRA_ERRORS as exc:
+                logger.debug("Presence org user removal failed: %s", exc)
+                still_online = False
+            if still_online:
+                continue
             await self.broadcast_org_presence(
                 user_id,
                 "offline",
@@ -256,16 +262,18 @@ class ChatConnectionManager:
             for conn in self._conns(user_id):
                 conn.presence_org_id = None
                 conn.extra_presence_org_ids = set()
-            if is_ws_fanout_enabled():
-                for org_id in previous:
-                    try:
-                        await workshop_chat_presence_store.remove_presence_org_user(
-                            org_id,
-                            user_id,
-                        )
-                    except BACKGROUND_INFRA_ERRORS as exc:
-                        logger.debug("Presence org user removal failed: %s", exc)
             for org_id in previous:
+                try:
+                    still_online = await workshop_chat_presence_store.remove_presence_org_user(
+                        org_id,
+                        user_id,
+                        source=PRESENCE_SOURCE_WORKSHOP,
+                    )
+                except BACKGROUND_INFRA_ERRORS as exc:
+                    logger.debug("Presence org user removal failed: %s", exc)
+                    still_online = False
+                if still_online:
+                    continue
                 await self.broadcast_org_presence(
                     user_id,
                     "offline",
@@ -290,9 +298,7 @@ class ChatConnectionManager:
         return None
 
     async def touch_presence_heartbeat(self, user_id: int) -> None:
-        """Refresh Redis org presence TTL for active/idle heartbeats."""
-        if not is_ws_fanout_enabled():
-            return
+        """Refresh Redis org presence TTL so a quiet socket stays online."""
         org_ids: Set[int] = set()
         for conn in self._conns(user_id):
             if conn.presence_org_id is not None:
@@ -305,6 +311,7 @@ class ChatConnectionManager:
                 await workshop_chat_presence_store.touch_presence_org_user(
                     org_id,
                     user_id,
+                    source=PRESENCE_SOURCE_WORKSHOP,
                 )
         except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Presence heartbeat refresh failed: %s", exc)

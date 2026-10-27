@@ -7,6 +7,7 @@
  *   node i18n-google/cli.ts --locale=ta
  *   node i18n-google/cli.ts --locale=ar,pt,ru,fa
  *   node i18n-google/cli.ts --all-enabled
+ *   node i18n-google/cli.ts --all-enabled --only-ns=auth --only-keys=auth.clientShell
  */
 import {
   INTERFACE_LANGUAGE_PICKER_CODES,
@@ -39,11 +40,13 @@ export function parseArgs(argv: readonly string[] = process.argv): {
   locales: LocaleCode[]
   dryRun: boolean
   onlyNs: Set<Namespace> | null
+  onlyKeys: Set<string> | null
 } {
   const dryRun = argv.includes('--dry-run')
   const allEnabled = argv.includes('--all-enabled')
   const locArg = argv.find((a) => a.startsWith('--locale='))
   const onlyArg = argv.find((a) => a.startsWith('--only-ns='))
+  const keysArg = argv.find((a) => a.startsWith('--only-keys='))
   let locales = allEnabled ? allEnabledLocaleOrder() : pickerLocaleOrder()
   if (locArg !== undefined) {
     locales = locArg
@@ -62,11 +65,21 @@ export function parseArgs(argv: readonly string[] = process.argv): {
         .filter(Boolean) as Namespace[]
     )
   }
-  return { locales, dryRun, onlyNs }
+  let onlyKeys: Set<string> | null = null
+  if (keysArg !== undefined) {
+    onlyKeys = new Set(
+      keysArg
+        .slice('--only-keys='.length)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+  }
+  return { locales, dryRun, onlyNs, onlyKeys }
 }
 
 export async function runGapFill(argv: readonly string[] = process.argv): Promise<void> {
-  const { locales, dryRun, onlyNs } = parseArgs(argv)
+  const { locales, dryRun, onlyNs, onlyKeys } = parseArgs(argv)
   const nsList = NS_FILES.filter((ns) => onlyNs === null || onlyNs.has(ns))
   if (locales.length === 0 || nsList.length === 0) {
     console.error('No locales or namespaces to process.')
@@ -92,7 +105,7 @@ export async function runGapFill(argv: readonly string[] = process.argv): Promis
     let locFailed = 0
     let sample: string | null = null
     for (const ns of nsList) {
-      const row = await fillNamespace(locale, ns, to, dryRun)
+      const row = await fillNamespace(locale, ns, to, dryRun, onlyKeys)
       locGap += row.gap
       locFailed += row.failed
       if (sample === null && row.sample !== null) {

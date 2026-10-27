@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'අන්තර්ජාල සහයෝගීතාව',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'සැමියාය අවෂන් කරන්න',
   'sidebar.mindmateCollabHistory.stopConfirm': 'මෙය සියලු දෙයා සටසාහා සකසිය අවෂන් කරන්නදා. සහරාදිවන්නන් කාමරයේන් පිටවයේ ඇතත.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'සම්මන්ත්‍රණයෙන් ඉවත් වන්න',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'ඔබ මෙම වැඩමුළුව හැර යන අතර අනෙක් අයට ඉදිරියට යා හැක.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'කැම්පස් එකේ',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'පාසල් හරහා',
   'sidebar.share.ribbon': 'Organization',

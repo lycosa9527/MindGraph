@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'ஆன்லைன் ஒத்துழைப்பு',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'இறுதியில் கருத்தரங்கு',
   'sidebar.mindmateCollabHistory.stopConfirm': 'இந்த பட்டறை அறை அனைத்து பங்கேற்பாளர்களுக்கும் மூடப்பட்டிருக்கும், மேலும் அனைவரும் அறையை விட்டு வெளியேறுவார்கள்.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'கருத்தரங்கை விடுங்கள்',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'நீங்கள் இந்த பட்டறையை விட்டு வெளியேறுவீர்கள், மற்றவர்கள் தொடரலாம்.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'வளாகத்தில்',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'பள்ளிகள் முழுவதும்',
   'sidebar.share.ribbon': 'Organization',

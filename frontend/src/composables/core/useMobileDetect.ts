@@ -1,12 +1,14 @@
 /**
  * Mobile detection composable using @vueuse/core breakpoints.
  * Returns a reactive `isMobile` flag (true when viewport < 768px or touch UA).
+ * A shell locked on this device overrides that detection.
  * Office / word-addin embeds always count as desktop.
  */
 import { computed, ref } from 'vue'
 
 import { useBreakpoints } from '@vueuse/core'
 
+import { resolveLockedMobile } from '@/utils/clientShellLock'
 import { isTouchDeviceUserAgent } from '@/utils/isMobileClient'
 import { isOfficeEmbedDesktop, syncOfficeEmbedFromSearch } from '@/utils/officeEmbed'
 
@@ -30,7 +32,7 @@ export function useMobileDetect() {
     if (isOfficeEmbedDesktop()) {
       return false
     }
-    return isSmallViewport.value || isTouchDevice.value
+    return resolveLockedMobile(isSmallViewport.value || isTouchDevice.value)
   })
 
   return { isMobile, isSmallViewport, isTouchDevice }

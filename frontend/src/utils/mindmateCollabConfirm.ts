@@ -20,3 +20,22 @@ export async function confirmMindmateCollabStop(t: TranslateFn): Promise<boolean
     return false
   }
 }
+
+/** Confirm before one person leaves a seminar that stays open for everyone else. */
+export async function confirmMindmateCollabLeave(t: TranslateFn): Promise<boolean> {
+  try {
+    await swissGlassConfirm(
+      t('sidebar.mindmateCollabHistory.leaveConfirm'),
+      t('sidebar.mindmateCollabHistory.leaveConfirmTitle'),
+      {
+        confirmButtonText: t('mindmate.collabLeaveSeminar'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+        distinguishCancelAndClose: true,
+      }
+    )
+    return true
+  } catch {
+    return false
+  }
+}

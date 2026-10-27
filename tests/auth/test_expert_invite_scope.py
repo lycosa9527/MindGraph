@@ -187,9 +187,35 @@ def test_require_invite_org_create_blocks_teacher_like_scope():
 
 
 def test_mobile_organization_payload_is_minimal():
-    """Phone list must not include billing, Dify, branding, or manager fields."""
+    """Phone list includes branding the editor writes, and nothing secret."""
     row = mobile_organization_public_fields(7, "Demo School", "ABC-234", 4)
-    assert set(row) == {"id", "name", "invitation_code", "user_count"}
+    assert set(row) == {
+        "id",
+        "name",
+        "invitation_code",
+        "user_count",
+        "display_name",
+        "mindmate_agent_name",
+        "mindmate_agent_alias",
+        "mindmate_agent_avatar_url",
+    }
     assert row["invitation_code"] == "ABC-234"
+    assert row["display_name"] is None
+    assert row["mindmate_agent_name"] is None
+    assert "dify_api_key_masked" not in row
     empty_invite = mobile_organization_public_fields(8, "Empty", None, 0)
     assert empty_invite["invitation_code"] == ""
+    branded = mobile_organization_public_fields(
+        7,
+        "Demo School",
+        "ABC-234",
+        4,
+        display_name=" 附中 ",
+        mindmate_agent_name=" 小思 ",
+        mindmate_agent_alias="思",
+        mindmate_agent_avatar_url=" /static/org_mindmate_avatars/7/avatar.png ",
+    )
+    assert branded["display_name"] == "附中"
+    assert branded["mindmate_agent_name"] == "小思"
+    assert branded["mindmate_agent_alias"] == "思"
+    assert branded["mindmate_agent_avatar_url"] == "/static/org_mindmate_avatars/7/avatar.png"

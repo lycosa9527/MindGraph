@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'ความร่วมมือออนไลน์',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'จบสัมมนา',
   'sidebar.mindmateCollabHistory.stopConfirm': 'จะจบเซสชันสำหรับทุกคน ผู้เข้าร่วมจะออกจากห้อง',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'ออกจากสัมมนา',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'คุณจะออกจากเวิร์กช็อปนี้และคนอื่นๆ ก็สามารถดำเนินการต่อได้',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'องค์กร',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'เครือข่าย',
   'sidebar.share.ribbon': 'Organization',

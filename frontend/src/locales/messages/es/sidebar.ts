@@ -157,6 +157,8 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Colaboración en línea',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Finalizar seminario',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Esto finalizará la sesión para todos. Los participantes abandonarán la sala.',
+  'sidebar.mindmateCollabHistory.leaveConfirmTitle': 'dejar el seminario',
+  'sidebar.mindmateCollabHistory.leaveConfirm': 'Dejarás este taller y otros podrán continuar.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'en el campus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Red',
   'sidebar.share.ribbon': 'Organization',

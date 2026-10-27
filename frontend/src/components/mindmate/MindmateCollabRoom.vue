@@ -355,6 +355,14 @@ async function joinRoomAndConnect(): Promise<void> {
     }
     if (!response.ok) {
       const hostJustEnded = wasMindmateCollabCodeRecentlyEnded(code)
+      if (response.status === 409) {
+        dropLiveCollabRoom(code)
+        if (viewActive) {
+          notify.error(await parseJoinErrorDetail(response))
+          emit('ended', 'left')
+        }
+        return
+      }
       if (response.status === 404 || hostJustEnded) {
         markMindmateCollabCodeEnded(code)
         dropLiveCollabRoom(code)
