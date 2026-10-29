@@ -169,7 +169,7 @@ async def test_handle_workshop_raw_rejects_mmc_without_origin(monkeypatch):
     missing_origin = {
         "v": 1,
         "k": "ws",
-        "code": "mmc:ABCDEF",
+        "code": "mms:ABCDEF",
         "mode": "all",
         "d": json.dumps({"type": "ai_message_chunk", "content": "hi"}, ensure_ascii=False),
     }
@@ -180,7 +180,7 @@ async def test_handle_workshop_raw_rejects_mmc_without_origin(monkeypatch):
     valid_origin["origin"] = "test-origin-secret"
     await _handle_workshop_raw(json.dumps(valid_origin))
     assert len(calls) == 1
-    assert calls[0]["code"] == "mmc:ABCDEF"
+    assert calls[0]["code"] == "mms:ABCDEF"
 
 
 @pytest.mark.asyncio

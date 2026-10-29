@@ -146,8 +146,8 @@ run_backend() {
     tests/test_collab_palette_sync.py \
     tests/test_workshop_editor_redis_merge.py \
     tests/test_ws_fanout.py \
-    tests/test_mindmate_collab_library_archive.py \
-    tests/test_mindmate_collab_group_members.py \
+    tests/test_mindmate_seminar_library_archive.py \
+    tests/test_mindmate_seminar_group_members.py \
     tests/test_mindmate_notify_presence.py \
     tests/test_collab_synthetic_probe.py \
     tests/test_workshop_join_resume_tokens.py \
@@ -367,7 +367,7 @@ run_frontend() {
     tests/trainingPlayControls.spec.ts tests/requiredTrainingGate.spec.ts tests/trainingFriendLine.spec.ts \
     tests/trainingRemoteView.spec.ts tests/mobileRouterRedirects.spec.ts \
     tests/mindmateWelcomeLayout.spec.ts \
-    tests/mindmateCollabLibrarySave.spec.ts \
+    tests/mindmateSeminarLibrarySave.spec.ts \
     tests/mindmateContinueSession.spec.ts \
     tests/mindmatePresenceSubscribe.spec.ts \
     tests/workshopTopicChevron.spec.ts \

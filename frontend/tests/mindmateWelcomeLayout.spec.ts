@@ -70,8 +70,8 @@ describe('mindmate welcome layout', () => {
 
   it('locks the main shell and pins the sidebar account row to the visible viewport', () => {
     expect(mainLayoutVue).toContain('html:has(.main-layout)')
-    expect(mainLayoutVue).toContain('height: 100dvh')
-    expect(mainLayoutVue).toContain('max-height: 100dvh')
+    expect(mainLayoutVue).toContain('height: var(--mg-vvh, 100dvh)')
+    expect(mainLayoutVue).toContain('max-height: var(--mg-vvh, 100dvh)')
     expect(mainLayoutVue).toContain('safe-area-inset-bottom')
     expect(sidebarVue).toContain('min-h-0')
     expect(footerVue).toContain('sidebar-account-footer')

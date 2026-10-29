@@ -5,7 +5,7 @@ Volcengine Doubao Error Parser
 Comprehensive error parsing for Volcengine Doubao (ARK) API errors.
 Maps error codes and messages to proper exception types with user-friendly messages.
 
-Reference: https://www.volcengine.com/docs/82379/1299023?lang=zh
+Reference: https://ark.volcengine.com/region:cn-beijing/docs/error-codes
 
 @author lycosa9527
 @made_by MindSpring Team
@@ -28,10 +28,147 @@ from services.infrastructure.http.error_handler import (
     LLMQuotaExhaustedError,
     LLMRateLimitError,
     LLMServiceError,
+    LLMTimeoutError,
     attach_llm_user_message,
 )
 
 logger = logging.getLogger(__name__)
+
+# Official inference codes whose HTTP status would otherwise pick the wrong type.
+# Source: https://ark.volcengine.com/region:cn-beijing/docs/error-codes
+_QUOTA_CODES = frozenset(
+    {
+        "ModelAccountTpdRateLimitExceeded",
+        "AccountOverdueError",
+        "OperationDenied.ServiceOverdue",
+        "OperationDenied.FileQuotaExceeded",
+        "QuotaExceeded.DoubaoSearchFreeQuotaExceeded",
+    }
+)
+_BAD_ROUTE_CODES = frozenset({"InvalidAction", "PathNotFound"})
+_MODEL_CODES = frozenset({"ModelNotOpen", "UnsupportedModel"})
+_SERVICE_CODES = frozenset(
+    {
+        "ContentSecurityDetectionError",
+        "ServiceConnectionRefused",
+        "NoAvailableService",
+        "ModelLoading",
+    }
+)
+
+
+def _model_unavailable(
+    error_code: str,
+    error_message: str,
+    has_chinese: bool,
+) -> Tuple[Exception, str]:
+    """Model is missing, not activated, or does not support the call."""
+    if error_code == "UnsupportedModel":
+        user_msg = "当前模型不支持该功能" if has_chinese else "This model does not support the requested feature."
+    else:
+        user_msg = (
+            "模型服务未开通，请前往火山方舟控制台开通"
+            if has_chinese
+            else "Model service is not activated. Activate it in the Ark console."
+        )
+    return LLMModelNotFoundError(
+        f"Model unavailable ({error_code}): {error_message}",
+        provider="doubao",
+        error_code=error_code,
+    ), user_msg
+
+
+def _access_denied(
+    error_code: str,
+    error_message: str,
+    user_msg: str,
+) -> Tuple[Exception, str]:
+    """Account or plan cannot call the API."""
+    return LLMAccessDeniedError(
+        f"Access denied ({error_code}): {error_message}",
+        provider="doubao",
+        error_code=error_code,
+    ), user_msg
+
+
+def _grouped_code_override(
+    error_code: str,
+    error_message: str,
+    has_chinese: bool,
+) -> Optional[Tuple[Exception, str]]:
+    """Map official codes that share one exception type."""
+    if error_code in _SERVICE_CODES:
+        user_msg = (
+            "服务暂时不可用，请稍后重试" if has_chinese else "Service is temporarily unavailable. Please try again."
+        )
+        return LLMServiceError(f"Doubao service error ({error_code}): {error_message}"), user_msg
+
+    if error_code in _MODEL_CODES or error_code == "OperationDenied.ServiceNotOpen":
+        return _model_unavailable(error_code, error_message, has_chinese)
+
+    if error_code in _QUOTA_CODES or error_code.startswith("QuotaExceeded."):
+        user_msg = "账户额度或套餐已用尽，请检查火山费用中心" if has_chinese else "Account quota or plan is exhausted."
+        return LLMQuotaExhaustedError(
+            f"Quota exhausted ({error_code}): {error_message}",
+            provider="doubao",
+            error_code=error_code,
+        ), user_msg
+
+    if error_code in _BAD_ROUTE_CODES:
+        user_msg = "请求路径或方法无效" if has_chinese else "The request path or method is invalid."
+        return LLMInvalidParameterError(
+            f"Invalid route ({error_code}): {error_message}",
+            parameter=None,
+            error_code=error_code,
+            provider="doubao",
+        ), user_msg
+
+    return None
+
+
+def _exact_code_override(
+    error_code: str,
+    error_message: str,
+    has_chinese: bool,
+) -> Optional[Tuple[Exception, str]]:
+    """Map official codes that each need their own message."""
+    if error_code == "RequestTimeout":
+        user_msg = "请求超时，请稍后重试" if has_chinese else "Request timed out. Please try again later."
+        return LLMTimeoutError(f"Doubao request timeout: {error_message}"), user_msg
+
+    if error_code == "RequestBurstTooFast":
+        user_msg = (
+            "请求量增长过快，请放慢流量后再试"
+            if has_chinese
+            else "Request burst is too fast. Slow traffic growth and retry."
+        )
+        return LLMRateLimitError(f"Request burst too fast: {error_message}"), user_msg
+
+    if error_code == "InvalidSubscription":
+        user_msg = "套餐未订阅或已过期" if has_chinese else "Subscription is missing or has expired."
+        return _access_denied(error_code, error_message, user_msg)
+
+    if error_code == "InvalidAccountStatus":
+        user_msg = (
+            "账号状态异常，请联系平台管理员"
+            if has_chinese
+            else "Account status is invalid. Contact the platform administrator."
+        )
+        return _access_denied(error_code, error_message, user_msg)
+
+    return None
+
+
+def _official_code_override(
+    error_code: str,
+    error_message: str,
+    has_chinese: bool,
+) -> Optional[Tuple[Exception, str]]:
+    """Map official codes that the status-code branches classify incorrectly."""
+    grouped = _grouped_code_override(error_code, error_message, has_chinese)
+    if grouped is not None:
+        return grouped
+    return _exact_code_override(error_code, error_message, has_chinese)
 
 
 def _has_chinese_characters(text: str) -> bool:
@@ -64,6 +201,10 @@ def parse_doubao_error(error_code: str, error_message: str, status_code: Optiona
     error_code_lower = error_code.lower()
     error_msg_lower = error_message.lower()
     has_chinese = _has_chinese_characters(error_message)
+
+    override = _official_code_override(error_code, error_message, has_chinese)
+    if override is not None:
+        return override
 
     # ===== 400 BadRequest - Parameter Errors =====
     if status_code == 400 or error_code == "BadRequest":
@@ -342,6 +483,15 @@ def parse_doubao_error(error_code: str, error_message: str, status_code: Optiona
             else:
                 user_msg = "Endpoint RPM limit exceeded. Please try again later."
             return LLMRateLimitError(f"Endpoint RPM limit exceeded: {error_message}"), user_msg
+
+        # Flex TPM contains the plain EndpointTPMExceeded substring; match it first.
+        if "FlexTPM" in error_code or "FlexTpm" in error_code:
+            user_msg = (
+                "已超过 Flex TPM 上限，请稍后重试或调整配额"
+                if has_chinese
+                else "Flex TPM limit exceeded. Retry later or raise the Flex quota."
+            )
+            return LLMRateLimitError(f"Flex TPM limit exceeded: {error_message}"), user_msg
 
         # RateLimitExceeded.EndpointTPMExceeded
         if "EndpointTPMExceeded" in error_code or ("tpm" in error_msg_lower and "endpoint" in error_msg_lower):

@@ -10,9 +10,12 @@ Proprietary License
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional, cast
+from typing import Any, AsyncGenerator, Dict, Iterable, List, NoReturn, Optional, cast
 
+from openai import APIConnectionError, APITimeoutError
 from openai.types.chat import ChatCompletionMessageParam
+
+from services.infrastructure.http.error_handler import LLMProviderError, LLMTimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +23,17 @@ logger = logging.getLogger(__name__)
 def as_openai_chat_messages(messages: List[Dict]) -> Iterable[ChatCompletionMessageParam]:
     """Cast generic message dicts for OpenAI SDK typing."""
     return cast(Iterable[ChatCompletionMessageParam], messages)
+
+
+def raise_openai_transport_error(exc: APIConnectionError, *, provider: str) -> NoReturn:
+    """Map an OpenAI SDK transport failure onto the shared LLM error types."""
+    if isinstance(exc, APITimeoutError):
+        raise LLMTimeoutError(f"{provider} timeout") from exc
+    raise LLMProviderError(
+        f"{provider} connection error: {exc}",
+        provider=provider,
+        error_code="connection",
+    ) from exc
 
 
 class BaseLLMClient(ABC):

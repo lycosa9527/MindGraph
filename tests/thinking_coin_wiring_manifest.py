@@ -161,7 +161,7 @@ TASK_WIRING: Final[tuple[TaskWiring, ...]] = (
             "EVENT_WORKSHOP_JOIN",
             "load_user_org(current_user)",
         ),
-        frontend_markers=("MindGraphCollabPanel.vue", "MindmateCollabPanel.vue"),
+        frontend_markers=("MindGraphCollabPanel.vue", "MindmateSeminarPanel.vue"),
     ),
     TaskWiring(
         slug=SLUG_DAILY_LEARNING_SHEET_AI,

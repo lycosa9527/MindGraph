@@ -11,10 +11,10 @@ import { Check, Clock, List, SquareCheck, Star } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import type { SeminarHighlight } from '@/composables/mindmate/mindmateSeminarChrome'
-import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
+import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { useAuthStore } from '@/stores/auth'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
-import { collabMessageRowKey } from '@/utils/mindmateCollabDisplay'
+import { collabMessageRowKey } from '@/utils/mindmateSeminarDisplay'
 import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
 import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import {
@@ -48,7 +48,7 @@ import MindmateSeminarSummaryPreview from './MindmateSeminarSummaryPreview.vue'
 const props = withDefaults(
   defineProps<{
     open: boolean
-    messages: MindmateCollabMessage[]
+    messages: MindmateSeminarMessage[]
     preselectKeys?: string[]
     topic?: string
     goals?: string[]

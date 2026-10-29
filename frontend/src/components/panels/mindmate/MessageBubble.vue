@@ -25,7 +25,7 @@ import type { ModelLoadPhase } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
-import { formatCollabMessageStamp } from '@/utils/mindmateCollabRead'
+import { formatCollabMessageStamp } from '@/utils/mindmateSeminarRead'
 import {
   extractMindmatePreviewUniqueId,
   hasGeneratedDiagramImage,

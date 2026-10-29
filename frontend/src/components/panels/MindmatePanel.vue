@@ -15,7 +15,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { PanelLeftOpen, Share2, X } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
-import MindmateCollabStartPicker from '@/components/mindmate/MindmateCollabStartPicker.vue'
+import MindmateSeminarStartPicker from '@/components/mindmate/MindmateSeminarStartPicker.vue'
 import MindmateSeminarMemberDialog from '@/components/mindmate/MindmateSeminarMemberDialog.vue'
 import MindmateSeminarRosterBar from '@/components/mindmate/MindmateSeminarRosterBar.vue'
 import MindmateSeminarShareDialog from '@/components/mindmate/MindmateSeminarShareDialog.vue'
@@ -29,8 +29,8 @@ import {
   embeddedCollabRoomCode,
   hydrateEmbeddedCollabRoomCode,
   setEmbeddedCollabRoomCode,
-} from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
-import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateCollabLiveSession'
+} from '@/composables/mindmate/mindmateSeminarEmbeddedBridge'
+import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateSeminarLiveSession'
 import {
   applySeminarGroup,
   bumpSeminarFolderReload,
@@ -41,7 +41,7 @@ import {
 import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
-import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
+import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { useMindmateSavedSeminar } from '@/composables/mindmate/useMindmateSavedSeminar'
 import { useMindmateSeminarFaces } from '@/composables/mindmate/useMindmateSeminarFaces'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
@@ -51,27 +51,27 @@ import type { MindMateMessage } from '@/stores/mindmateActiveThread'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
-import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
+import { confirmMindmateSeminarStop } from '@/utils/mindmateSeminarConfirm'
 import {
-  notifyMindmateCollabLibraryChanged,
+  notifyMindmateSeminarLibraryChanged,
   saveFinishedSeminar,
   shouldRefreshSavedSeminarLibrary,
-} from '@/utils/mindmateCollabLibrarySave'
+} from '@/utils/mindmateSeminarLibrarySave'
 import {
-  clearMindmateCollabCodeEnded,
-  formatMindmateCollabCode,
-  loadLocalMindmateCollabSessions,
-  normalizeMindmateCollabCode,
-  trackLocalMindmateCollabSession,
-  wasMindmateCollabCodeRecentlyEnded,
-} from '@/utils/mindmateCollabSessions'
+  clearMindmateSeminarCodeEnded,
+  formatMindmateSeminarCode,
+  loadLocalMindmateSeminarSessions,
+  normalizeMindmateSeminarCode,
+  trackLocalMindmateSeminarSession,
+  wasMindmateSeminarCodeRecentlyEnded,
+} from '@/utils/mindmateSeminarSessions'
 import {
-  requestMindmateCollabStop,
-  resolveEndedMindmateCollabSessionId,
-  resolveMindmateCollabSessionId,
+  requestMindmateSeminarStop,
+  resolveEndedMindmateSeminarSessionId,
+  resolveMindmateSeminarSessionId,
   shouldRemoveCollabFromHistory,
-  teardownMindmateCollabClient,
-} from '@/utils/mindmateCollabTeardown'
+  teardownMindmateSeminarClient,
+} from '@/utils/mindmateSeminarTeardown'
 import {
   isMindmateBlockedDocUpload,
   isMindmateComposerUploadableFile,
@@ -108,17 +108,17 @@ import MindmateHeader from './mindmate/MindmateHeader.vue'
 import MindmateInput from './mindmate/MindmateInput.vue'
 import MindmateMessages from './mindmate/MindmateMessages.vue'
 
-const MindmateCollabPanel = defineAsyncComponent(
-  () => import('@/components/mindmate/MindmateCollabPanel.vue')
+const MindmateSeminarPanel = defineAsyncComponent(
+  () => import('@/components/mindmate/MindmateSeminarPanel.vue')
 )
-const MindmateCollabEmbed = defineAsyncComponent(
-  () => import('@/components/mindmate/MindmateCollabEmbed.vue')
+const MindmateSeminarEmbed = defineAsyncComponent(
+  () => import('@/components/mindmate/MindmateSeminarEmbed.vue')
 )
-const MindmateCollabBreadcrumb = defineAsyncComponent(
-  () => import('@/components/mindmate/MindmateCollabBreadcrumb.vue')
+const MindmateSeminarBreadcrumb = defineAsyncComponent(
+  () => import('@/components/mindmate/MindmateSeminarBreadcrumb.vue')
 )
-const MindmateCollabSavedTranscript = defineAsyncComponent(
-  () => import('@/components/mindmate/MindmateCollabSavedTranscript.vue')
+const MindmateSeminarSavedTranscript = defineAsyncComponent(
+  () => import('@/components/mindmate/MindmateSeminarSavedTranscript.vue')
 )
 
 interface StartedSeminarRoom {
@@ -126,7 +126,7 @@ interface StartedSeminarRoom {
   sessionId: string
 }
 
-interface MindmateCollabPanelHandle {
+interface MindmateSeminarPanelHandle {
   prefillAndAutoJoin: (rawCode: string) => void
   startFromTopic: (
     topic: string,
@@ -172,7 +172,7 @@ const { loadPhase: mindMateLoadPhase } = storeToRefs(mindMateStore)
 const teachingDesignExport = useTeachingDesignExportStore()
 const { exportingMessageId: exportingWordTemplateId } = storeToRefs(teachingDesignExport)
 
-const showMindmateCollab = computed(() => featureFlagsStore.getFeatureMindmateCollab())
+const showMindmateSeminar = computed(() => featureFlagsStore.getFeatureMindmateSeminar())
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 const homeMode = ref<'dialogue' | 'seminar'>('dialogue')
 const mindmateInputRef = ref<MindmateInputHandle | null>(null)
@@ -209,13 +209,13 @@ const shareDialogOpen = ref(false)
 const fileDragActive = ref(false)
 const shareSelectMode = ref(false)
 const selectedMessageIds = ref<string[]>([])
-const collabPanelRef = ref<MindmateCollabPanelHandle | null>(null)
+const collabPanelRef = ref<MindmateSeminarPanelHandle | null>(null)
 const collabRoomCode = ref<string | null>(null)
 const collabRoomTitle = ref<string | null>(null)
 const collabVisibility = ref<'organization' | 'network'>('organization')
 const collabSessionId = ref('')
 const collabOwnerId = ref<number | null>(null)
-const collabSeedMessages = ref<MindmateCollabMessage[]>([])
+const collabSeedMessages = ref<MindmateSeminarMessage[]>([])
 const seminarGroupMembers = ref<SeminarGroupMember[]>([])
 const seminarBriefTopic = ref('')
 const seminarBriefGoals = ref<string[]>([])
@@ -260,7 +260,7 @@ function saveEndedSeminar(sessionId: string, openAfterSave: boolean): void {
   })
 }
 
-function mapLibrarySeed(msgs: Array<{ role: string; content: string }>): MindmateCollabMessage[] {
+function mapLibrarySeed(msgs: Array<{ role: string; content: string }>): MindmateSeminarMessage[] {
   return msgs
     .filter((message) => message.role === 'user' || message.role === 'assistant')
     .filter((message) => message.content.trim())
@@ -272,7 +272,7 @@ function mapLibrarySeed(msgs: Array<{ role: string; content: string }>): Mindmat
     }))
 }
 
-function mapThreadToCollabSeed(msgs: MindMateMessage[]): MindmateCollabMessage[] {
+function mapThreadToCollabSeed(msgs: MindMateMessage[]): MindmateSeminarMessage[] {
   return msgs
     .filter((m) => (m.role === 'user' || m.role === 'assistant') && m.content.trim())
     .map((m) => ({
@@ -364,7 +364,7 @@ function handleCollabSessionStarted(payload: {
   title?: string
   seedMessages?: Array<{ role: string; content: string }>
 }) {
-  if (wasMindmateCollabCodeRecentlyEnded(payload.code)) {
+  if (wasMindmateSeminarCodeRecentlyEnded(payload.code)) {
     notify.infoKey('mindmate.collabRoomEndedHost')
     return
   }
@@ -401,23 +401,23 @@ function exitCollabChatroomMode(options: { removeFromHistory?: boolean } = {}) {
   seminarBriefTopic.value = ''
   seminarBriefGoals.value = []
   closeSeminarChrome()
-  teardownMindmateCollabClient(code, options)
+  teardownMindmateSeminarClient(code, options)
 }
 
-function handleCollabEnded(reason: 'idle' | 'host' | 'left' = 'left') {
-  const sessionId = resolveEndedMindmateCollabSessionId(
+function handleCollabEnded(reason: 'expired' | 'host' | 'left' = 'left') {
+  const sessionId = resolveEndedMindmateSeminarSessionId(
     collabSessionId.value,
     collabRoomCode.value
   )
   const selfId = Number(authStore.user?.id)
   const ownsRoom =
     (collabOwnerId.value != null && collabOwnerId.value === selfId) ||
-    loadLocalMindmateCollabSessions().some(
+    loadLocalMindmateSeminarSessions().some(
       (row) => row.session_id === sessionId && row.owner_user_id === selfId
     )
   exitCollabChatroomMode({ removeFromHistory: shouldRemoveCollabFromHistory(reason) })
   if (shouldRefreshSavedSeminarLibrary(reason)) {
-    notifyMindmateCollabLibraryChanged()
+    notifyMindmateSeminarLibraryChanged()
   }
   if (!ownsRoom || !sessionId) {
     return
@@ -456,9 +456,9 @@ function enterLiveSeminar(payload: {
   sessionId?: string
   expiresAt?: string | null
 }): void {
-  const code = formatMindmateCollabCode(payload.code)
-  clearMindmateCollabCodeEnded(code)
-  trackLocalMindmateCollabSession({
+  const code = formatMindmateSeminarCode(payload.code)
+  clearMindmateSeminarCodeEnded(code)
+  trackLocalMindmateSeminarSession({
     session_id: payload.sessionId || '',
     code,
     title: payload.title || t('mindmate.collabPill'),
@@ -470,7 +470,7 @@ function enterLiveSeminar(payload: {
   if (payload.sessionId) {
     collabSessionId.value = payload.sessionId
   }
-  notifyMindmateCollabLibraryChanged()
+  notifyMindmateSeminarLibraryChanged()
   handleCollabSessionStarted({
     code,
     visibility:
@@ -503,7 +503,7 @@ async function continueSavedSeminar(): Promise<void> {
     return
   }
   try {
-    const response = await authFetch('/api/mindmate/collab/reopen', {
+    const response = await authFetch('/api/mindmate/seminar/reopen', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId }),
@@ -564,18 +564,18 @@ async function endCollabSession(): Promise<void> {
   if (!isCollabChatroomMode.value) {
     return
   }
-  const confirmed = await confirmMindmateCollabStop(t)
+  const confirmed = await confirmMindmateSeminarStop(t)
   if (!confirmed) {
     return
   }
-  const sessionId = resolveMindmateCollabSessionId(collabSessionId.value, collabRoomCode.value)
+  const sessionId = resolveMindmateSeminarSessionId(collabSessionId.value, collabRoomCode.value)
   dropLiveCollabRoom(collabRoomCode.value || '')
   exitCollabChatroomMode({ removeFromHistory: true })
   if (!sessionId) {
     notify.successKey('mindmate.collabStopped')
     return
   }
-  void requestMindmateCollabStop(sessionId)
+  void requestMindmateSeminarStop(sessionId)
     .then((ok) => {
       if (ok) {
         notify.successKey('mindmate.collabStopped')
@@ -624,12 +624,12 @@ watch(
     if (!isFullpageMode.value || code === collabRoomCode.value) {
       return
     }
-    if (wasMindmateCollabCodeRecentlyEnded(code)) {
+    if (wasMindmateSeminarCodeRecentlyEnded(code)) {
       return
     }
     collabRoomCode.value = code
-    const localRow = loadLocalMindmateCollabSessions().find(
-      (row) => normalizeMindmateCollabCode(row.code) === normalizeMindmateCollabCode(code)
+    const localRow = loadLocalMindmateSeminarSessions().find(
+      (row) => normalizeMindmateSeminarCode(row.code) === normalizeMindmateSeminarCode(code)
     )
     if (localRow?.visibility === 'network' || localRow?.visibility === 'organization') {
       collabVisibility.value = localRow.visibility
@@ -911,7 +911,7 @@ function openAddSeminarMembers(): void {
 
 async function pokeSeminarMember(sessionId: string, userId: number): Promise<void> {
   try {
-    await authFetch('/api/mindmate/collab/poke', {
+    await authFetch('/api/mindmate/seminar/poke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId, target_user_id: userId }),
@@ -951,11 +951,11 @@ async function openStartedSeminar(
     }
     return null
   }
-  const formatted = formatMindmateCollabCode(result.room.code)
+  const formatted = formatMindmateSeminarCode(result.room.code)
   applyThinkingCoinMutation(extractThinkingCoinsFooter(result.room.body))
   notify.successKey('mindmate.collabStarted')
-  notifyMindmateCollabLibraryChanged()
-  trackLocalMindmateCollabSession({
+  notifyMindmateSeminarLibraryChanged()
+  trackLocalMindmateSeminarSession({
     session_id: result.room.sessionId,
     code: formatted,
     title: result.room.title || source.title || t('mindmate.collabPill'),
@@ -1392,7 +1392,7 @@ function isLastAssistantMessage(messageId: string): boolean {
           aria-hidden="true"
         />
       </button>
-      <MindmateCollabBreadcrumb
+      <MindmateSeminarBreadcrumb
         v-if="isCollabChatroomMode"
         class="flex-1 min-w-0 text-left"
         tone="toolbar"
@@ -1413,9 +1413,9 @@ function isLastAssistantMessage(messageId: string): boolean {
         v-else
         class="flex-1"
       />
-      <MindmateCollabPanel
+      <MindmateSeminarPanel
         v-if="
-          showMindmateCollab &&
+          showMindmateSeminar &&
           !isCollabChatroomMode &&
           !showWelcome &&
           !savedSeminar.sessionId.value
@@ -1497,7 +1497,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       @add-members="openAddSeminarMembers"
     />
 
-    <MindmateCollabSavedTranscript
+    <MindmateSeminarSavedTranscript
       v-if="savedSeminar.sessionId.value && !isCollabChatroomMode"
       class="flex-1 min-h-0 min-w-0"
       :session-id="savedSeminar.sessionId.value"
@@ -1506,7 +1506,7 @@ function isLastAssistantMessage(messageId: string): boolean {
     />
 
     <!-- Collab chatroom mode (chat + right member column) -->
-    <MindmateCollabEmbed
+    <MindmateSeminarEmbed
       v-else-if="isCollabChatroomMode && collabRoomCode"
       class="flex-1 min-h-0 min-w-0"
       :room-code="collabRoomCode"
@@ -1670,7 +1670,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       append-to-body
       :title="t('mindmate.home.seminarSuggestHistory')"
     >
-      <MindmateCollabStartPicker
+      <MindmateSeminarStartPicker
         :show-header="false"
         :starting="historyStarting"
         @start="startSeminarFromHistory"

@@ -194,6 +194,36 @@ describe('modalTwoFingerScroll', () => {
     expect(move.defaultPrevented).toBe(false)
   })
 
+  it('does not cancel a click when a second contact only jitters', () => {
+    document.body.innerHTML = `
+      <div class="el-dialog">
+        <div class="el-dialog__body" style="overflow-y: auto">
+          <button type="button">保存姓名</button>
+        </div>
+      </div>
+    `
+    const body = document.querySelector<HTMLElement>('.el-dialog__body')
+    const button = document.querySelector('button')
+    if (!body || !button) throw new Error('fixture missing')
+    setScrollMetrics(body, 900, 320, 0)
+
+    dispatchTouch('touchstart', button, [
+      { x: 40, y: 200, target: button },
+      { x: 48, y: 206, target: button },
+    ])
+    const jitter = dispatchTouch('touchmove', button, [
+      { x: 41, y: 202, target: button },
+      { x: 49, y: 208, target: button },
+    ])
+    dispatchTouch('touchend', button, [])
+
+    expect(jitter.defaultPrevented).toBe(false)
+    expect(body.scrollTop).toBe(0)
+    const tap = new MouseEvent('click', { bubbles: true, cancelable: true })
+    button.dispatchEvent(tap)
+    expect(tap.defaultPrevented).toBe(false)
+  })
+
   it('leaves a sideways two-finger drag alone and swallows the click after a scroll', () => {
     document.body.innerHTML = `
       <div class="swiss-glass-card">

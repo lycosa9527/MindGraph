@@ -270,7 +270,10 @@ class ErrorHandler:
                 logger.debug("[ErrorHandler] Retrying in %.1fs...", delay)
                 await asyncio.sleep(delay)
 
-        # All retries failed
+        # All retries failed. Keep a timeout typed so callers can return error_type=timeout.
+        if isinstance(last_exception, LLMTimeoutError):
+            logger.error("[ErrorHandler] %s", last_exception)
+            raise last_exception
         error_msg = f"All {max_retries} attempts failed. Last error: {last_exception}"
         logger.error("[ErrorHandler] %s", error_msg)
         raise LLMServiceError(error_msg) from last_exception

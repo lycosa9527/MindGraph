@@ -1,0 +1,178 @@
+"""
+MindMate online collab (shared AI chatroom) domain models.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Optional
+from uuid import uuid4
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, false, true
+from sqlalchemy.orm import Mapped, mapped_column
+
+from models.domain.auth import Base
+
+
+class MindmateSeminarSession(Base):
+    """Active or ended shared MindMate chatroom session."""
+
+    __tablename__ = "mindmate_seminar_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    code: Mapped[str] = mapped_column(String(20), nullable=False)
+    organization_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("organizations.id"),
+        nullable=True,
+        index=True,
+    )
+    owner_user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(String(200), nullable=False, default="MindMate Collab")
+    brief_topic: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    brief_goals: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    dify_conversation_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    visibility: Mapped[str] = mapped_column(String(32), nullable=False, default="organization")
+    duration_preset: Mapped[str] = mapped_column(String(16), nullable=False, default="today")
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    library_saved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    library_pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_mindmate_seminar_sessions_code"),
+        Index(
+            "ix_mindmate_seminar_sessions_active_org",
+            "organization_id",
+            "visibility",
+            postgresql_where=(ended_at.is_(None)),
+        ),
+        Index(
+            "ix_mindmate_seminar_sessions_owner_library",
+            "owner_user_id",
+            "library_saved_at",
+        ),
+    )
+
+
+class MindmateSeminarMessage(Base):
+    """Persisted chat message in a MindMate collab room."""
+
+    __tablename__ = "mindmate_seminar_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("mindmate_seminar_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sender_user_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (Index("ix_mindmate_seminar_messages_session_created", "session_id", "created_at"),)
+
+
+class MindmateSeminarMember(Base):
+    """Teachers invited into a school seminar. The row is membership, not presence."""
+
+    __tablename__ = "mindmate_seminar_members"
+
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("mindmate_seminar_sessions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    seminar_role: Mapped[str] = mapped_column(String(32), nullable=False, default="observer", server_default="observer")
+    # False until a teacher outside the host school agrees to join.
+    accepted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+    # True when this seat is on the closed invite list. A false row is attendance
+    # in an open school seminar and does not lock the room.
+    invited: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+    left_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (Index("ix_mindmate_seminar_members_user", "user_id"),)
+
+
+class MindmateSeminarBackgroundFile(Base):
+    """A background document shared with everyone in one seminar."""
+
+    __tablename__ = "mindmate_seminar_background_files"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("mindmate_seminar_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    uploader_user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+    filename: Mapped[str] = mapped_column(String(180), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+    pinned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    listed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+    # True when this file is a seminar artifact (产物), not a folder resource or chat chip.
+    artifact: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+    source_message_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # Set when this row shelves a shared canvas diagram into 资源 or 产物.
+    diagram_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_mindmate_seminar_background_files_session_created", "session_id", "created_at"),
+        Index("ix_mindmate_seminar_background_files_session_pinned", "session_id", "pinned", "pinned_at"),
+        Index(
+            "uq_mm_seminar_bg_artifact_message",
+            "session_id",
+            "source_message_id",
+            unique=True,
+        ),
+    )
+
+
+class MindmateSeminarReadCursor(Base):
+    """How far one person has read in a seminar. The id is a high-water mark."""
+
+    __tablename__ = "mindmate_seminar_read_cursors"
+
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("mindmate_seminar_sessions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    last_read_message_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    read_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

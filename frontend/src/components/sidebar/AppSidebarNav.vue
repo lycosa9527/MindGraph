@@ -155,7 +155,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <ChatHistory
               compact
               :initial-visible-limit="mindmatePageChatHistoryLimit"
-              :show-collab-sessions="s.showMindmateCollabSessions"
+              :show-collab-sessions="s.showMindmateSeminarSessions"
             />
           </div>
         </transition>

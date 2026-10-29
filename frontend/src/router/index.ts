@@ -122,9 +122,9 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main', ...pageTitle('mindmate') },
   },
   {
-    path: '/mindmate/collab',
-    name: 'MindmateCollab',
-    component: () => import('@/pages/MindmateCollabPage.vue'),
+    path: '/mindmate/seminar',
+    name: 'MindmateSeminar',
+    component: () => import('@/pages/MindmateSeminarPage.vue'),
     meta: { requiresAuth: true, layout: 'main', ...pageTitle('mindmate') },
   },
   {
@@ -538,12 +538,12 @@ router.beforeEach(async (to, from) => {
     return { name: 'MindMate' }
   }
 
-  if (to.name === 'MindmateCollab') {
+  if (to.name === 'MindmateSeminar') {
     const collabCode = to.query.code
     if (typeof collabCode !== 'string' || !collabCode.trim()) {
       return { name: 'MindMate' }
     }
-    if (!featureFlagsStore.getFeatureMindmateCollab()) {
+    if (!featureFlagsStore.getFeatureMindmateSeminar()) {
       return { name: 'MindMate' }
     }
     const user = authStore.user

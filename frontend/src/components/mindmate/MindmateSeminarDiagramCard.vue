@@ -14,7 +14,7 @@ import { seminarSpectator } from '@/composables/mindmate/mindmateSeminarChrome'
 import {
   type SharedCanvasDiagramPreview,
   fetchSharedCanvasDiagramPreview,
-} from '@/utils/mindmateCollabDiagramLibrary'
+} from '@/utils/mindmateSeminarDiagramLibrary'
 import { shelveSeminarItem } from '@/utils/mindmateSeminarFolder'
 
 const props = defineProps<{

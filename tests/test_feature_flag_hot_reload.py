@@ -43,11 +43,11 @@ def _request(path: str, method: str = "GET") -> Request:
 
 @pytest.mark.asyncio
 async def test_feature_flag_gate_allows_mindmate_org_roster_when_collab_off():
-    """Seminar colleague list is not behind FEATURE_MINDMATE_COLLAB."""
+    """Seminar colleague list is not behind FEATURE_MINDMATE_SEMINAR."""
     call_next = AsyncMock(return_value=MagicMock(status_code=200))
     with patch(
         "services.infrastructure.http.feature_gate.config",
-        SimpleNamespace(FEATURE_MINDMATE_COLLAB=False, FEATURE_WORKSHOP_CHAT=False),
+        SimpleNamespace(FEATURE_MINDMATE_SEMINAR=False, FEATURE_WORKSHOP_CHAT=False),
     ):
         response = await feature_flag_gate(_request("/api/mindmate/org-members"), call_next)
     call_next.assert_awaited_once()
@@ -245,10 +245,10 @@ async def test_feature_flag_gate_allows_mcp_when_enabled():
     call_next.assert_awaited_once()
 
 
-def test_mindmate_collab_feature_key_mapped_and_permissions_supported():
-    """Permissions for MindMate collab must resolve FEATURE_MINDMATE_COLLAB."""
-    assert FEATURE_KEY_TO_CONFIG_ATTR["feature_mindmate_collab"] == "FEATURE_MINDMATE_COLLAB"
-    assert "feature_mindmate_collab" in FEATURE_KEYS_WITH_ORG_ACCESS
+def test_mindmate_seminar_feature_key_mapped_and_permissions_supported():
+    """Permissions for MindMate collab must resolve FEATURE_MINDMATE_SEMINAR."""
+    assert FEATURE_KEY_TO_CONFIG_ATTR["feature_mindmate_seminar"] == "FEATURE_MINDMATE_SEMINAR"
+    assert "feature_mindmate_seminar" in FEATURE_KEYS_WITH_ORG_ACCESS
 
 
 def test_workshop_chat_is_grant_gated_to_preview_orgs():

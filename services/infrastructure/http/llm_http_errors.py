@@ -44,6 +44,11 @@ def is_user_llm_limit_error(exc: BaseException) -> bool:
     return isinstance(exc, (ThinkingCoinInsufficientError, UserDailyTokenCapExceededError))
 
 
+def is_passthrough_llm_error(exc: BaseException) -> bool:
+    """User limits and safety refusals propagate; they are not provider outages."""
+    return is_user_llm_limit_error(exc) or isinstance(exc, LLMContentFilterError)
+
+
 def is_llm_content_filter_detail(detail: object) -> bool:
     """True when an HTTPException body is a provider content-filter refusal."""
     if isinstance(detail, dict):

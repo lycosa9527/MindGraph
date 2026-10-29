@@ -26,7 +26,7 @@ const joinLink = computed(() => {
     return ''
   }
   const url = new URL('/mindmate', window.location.origin)
-  url.searchParams.set('join_mindmate_collab', code)
+  url.searchParams.set('join_mindmate_seminar', code)
   return url.toString()
 })
 

@@ -3,7 +3,7 @@
  * These rows are not sent to the server.
  */
 import heroUrl from '@/assets/seminar/face-chat-hero.jpg'
-import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
+import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { seminarSummaryMessage } from '@/utils/mindmateSeminarCards'
 import { seminarMessageFileToken } from '@/utils/mindmateSeminarFolder'
 
@@ -20,7 +20,7 @@ function at(minute: number): string {
 export function seminarPreviewMessages(self: {
   selfId: number
   selfName: string
-}): MindmateCollabMessage[] {
+}): MindmateSeminarMessage[] {
   const selfId = self.selfId > 0 ? self.selfId : 91000
   return [
     {

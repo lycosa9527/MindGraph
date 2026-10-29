@@ -377,7 +377,7 @@ export default {
   'auth.clientShellHint': '点选后记在这台设备上，旋转屏幕不再自动切换。',
   'auth.clientShellSaveError': '无法保存界面版本，请重试',
   'auth.clientShellSaved': '已记在这台设备上',
-  'auth.bayiNamePrompt.toast': '请在账户信息中保存您的真实姓名。',
+  'auth.bayiNamePrompt.toast': '首次从小致平台跳转，建议填写姓名并保存。保存后，此窗口不再出现。',
   'auth.dingtalkBindSection': '钉钉 MindBot',
   'auth.dingtalkBindButton': '绑定钉钉',
   'auth.dingtalkBindLinkedButton': '钉钉已绑定',

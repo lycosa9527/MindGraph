@@ -1,6 +1,6 @@
 # MindGraph documentation
 
-App version **5.180.187**. This index lists the living docs. Historical behavior stays in [CHANGELOG.md](../CHANGELOG.md).
+App version **5.180.190**. This index lists the living docs. Historical behavior stays in [CHANGELOG.md](../CHANGELOG.md).
 
 ## Start here
 
@@ -39,7 +39,7 @@ Canvas workshop fan-out (Redis pub/sub, live spec, writer tasks): [ARCHITECTURE.
 | [DingTalk account binding](architecture/dingtalk_account_binding.md) | MindBot pair codes |
 | [MindBot tool ingress](architecture/mindbot_tool_ingress.md) | Pre-Dify tools |
 | [Identity unification](architecture/identity_unification.md) | MindGraph, Dify, DingTalk |
-| [MindMate collab](architecture/mindmate_collab.md) | Shared AI chatroom |
+| [MindMate seminar](architecture/mindmate_seminar.md) | Shared AI chatroom |
 | [MindMate Dify persona inputs](architecture/mindmate_dify_persona_inputs.md) | Persona fields sent to Dify |
 | [Thinking coins](architecture/thinking_coins.md) | Trial wallet |
 | [Learning space](architecture/learning_space.md) | Classroom homework |

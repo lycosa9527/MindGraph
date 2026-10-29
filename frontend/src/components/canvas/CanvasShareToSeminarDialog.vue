@@ -60,8 +60,8 @@ async function loadSessions(): Promise<void> {
   note.value = ''
   try {
     const [hostedRes, orgRes] = await Promise.all([
-      authFetch('/api/mindmate/collab/my/hosted'),
-      authFetch('/api/mindmate/collab/organization/sessions'),
+      authFetch('/api/mindmate/seminar/my/hosted'),
+      authFetch('/api/mindmate/seminar/organization/sessions'),
     ])
     const hosted = hostedRes.ok ? mapSessions(await hostedRes.json()) : []
     const org = orgRes.ok ? mapSessions(await orgRes.json()) : []
@@ -95,7 +95,7 @@ async function confirmShare(): Promise<void> {
   sharing.value = true
   try {
     const response = await authFetch(
-      `/api/mindmate/collab/${encodeURIComponent(sessionId)}/share-diagram`,
+      `/api/mindmate/seminar/${encodeURIComponent(sessionId)}/share-diagram`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

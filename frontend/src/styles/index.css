@@ -48,6 +48,10 @@
 
 /* Custom CSS Variables */
 :root {
+  --mg-vvh: 100dvh;
+  --mg-vvw: 100%;
+  --mg-vv-top: 0px;
+  --mg-vv-left: 0px;
   --mg-header-height: 56px;
   --mg-sidebar-width: 240px;
   --mg-panel-width: 320px;
@@ -100,6 +104,19 @@
   --mg-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
   --mg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
   --mg-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/*
+ * Shell height is the visible window. JS writes --mg-vvh from visualViewport
+ * (the page-side window size). Until then the fallback is 100dvh. A vh-only
+ * shell can stay at the other fold posture, or come out at 0.
+ */
+.mg-visual-viewport-shell {
+  width: 100%;
+  max-width: 100%;
+  height: var(--mg-vvh, 100dvh);
+  max-height: var(--mg-vvh, 100dvh);
+  overflow: hidden;
 }
 
 /* Base styles */
@@ -529,32 +546,37 @@ a:has(.i18n-label) {
 }
 
 /*
- * The overlay is a fixed viewport, so the dialog can be a flex child with a
- * definite max-height. max-height on the dialog alone does not shrink a flex
- * column: the body stays content-sized, overflow:hidden clips it, and the
- * wheel has nothing to scroll. The body is the scrollbar.
+ * The mask is a fixed viewport. The dialog stays inside it and its body is
+ * the scrollbar. The wrapper needs a definite height, or a percentage
+ * max-height does not resolve and the dialog spills into a scrolling mask.
  */
+.el-overlay {
+  overflow: hidden;
+}
+
 .el-overlay-dialog:not(:has(.is-fullscreen)) {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   box-sizing: border-box;
-  padding: max(1.25rem, 8vh) 1rem max(1.25rem, 2rem);
+  height: 100%;
+  min-height: 0;
+  padding: 1.25rem 1rem;
+  overflow: hidden;
 }
 
 .el-overlay-dialog:not(:has(.is-fullscreen)):has(> .el-dialog.is-align-center) {
   justify-content: center;
-  padding-block: max(1.25rem, 3vh);
 }
 
 .el-overlay-dialog > .el-dialog:not(.is-fullscreen) {
   display: flex;
   flex-direction: column;
-  max-height: 100%;
   min-height: 0;
+  max-height: 100%;
   margin: 0 !important;
-  flex-shrink: 1;
+  flex: 0 1 auto;
   overflow: hidden;
 }
 

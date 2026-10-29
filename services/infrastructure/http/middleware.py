@@ -87,7 +87,7 @@ DIFY_FILES_UPLOAD_MAX_BODY_SIZE = 105 * 1024 * 1024
 DIFY_FILES_UPLOAD_PATH = "/api/dify/files/upload"
 # Seminar shared folder: 20MB file + multipart overhead (see MAX_BACKGROUND_BYTES)
 SEMINAR_BACKGROUND_UPLOAD_MAX_BODY_SIZE = 22 * 1024 * 1024
-SEMINAR_BACKGROUND_UPLOAD_PATH = "/api/mindmate/collab/background-files"
+SEMINAR_BACKGROUND_UPLOAD_PATH = "/api/mindmate/seminar/background-files"
 
 
 def _is_document_upload_path(path: str) -> bool:

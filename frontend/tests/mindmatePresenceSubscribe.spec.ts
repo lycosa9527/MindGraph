@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { mindmatePresenceSubscribeMessage } from '@/composables/social/useMindmateCollabNotify'
+import { mindmatePresenceSubscribeMessage } from '@/composables/social/useMindmateSeminarNotify'
 
 describe('mindmatePresenceSubscribeMessage', () => {
   it('omits org_id when the school is not known yet', () => {

@@ -18,7 +18,15 @@ import logging
 import re
 from typing import Dict, NoReturn, Optional, Tuple
 
-from services.infrastructure.http.error_handler import LLMProviderError, attach_llm_user_message
+from services.infrastructure.http.error_handler import (
+    LLMAccessDeniedError,
+    LLMInvalidParameterError,
+    LLMProviderError,
+    LLMQuotaExhaustedError,
+    LLMServiceError,
+    LLMTimeoutError,
+    attach_llm_user_message,
+)
 from services.llm.dashscope_errors import (
     has_chinese_characters,
     parse_400_errors,
@@ -33,6 +41,76 @@ from services.llm.dashscope_errors import (
 )
 
 logger = logging.getLogger(__name__)
+
+_INVALID_INPUT_CODES = frozenset(
+    {
+        "invalid_request_error",
+        "invalid_value",
+        "InvalidPerson",
+        "InvalidGarment",
+        "FlowNotPublished",
+        "InvalidInputLength",
+    }
+)
+_INVALID_INPUT_PREFIXES = (
+    "InvalidFile.",
+    "InvalidImage.",
+    "InvalidURL.",
+    "InvalidParameter",
+    "BadRequest.",
+    "Audio.",
+)
+_ACCESS_CODES = frozenset({"invalid_parameter_error", "access_denied"})
+
+
+def _classify_unmatched_dashscope_code(
+    status_code: int,
+    error_code: str,
+    error_message: str,
+    has_chinese: bool,
+) -> Optional[Tuple[Exception, str]]:
+    """Map official codes the status-code parsers leave as a generic provider error."""
+    lowered = error_code.lower()
+    if status_code in (408, 504) or error_code.startswith("GatewayTimeout") or "timeout" in lowered:
+        user_msg = "请求超时，请稍后重试" if has_chinese else "Request timed out. Please try again later."
+        return LLMTimeoutError(f"DashScope timeout ({error_code or status_code}): {error_message}"), user_msg
+
+    if error_code.startswith("BailianGateway") or error_code in _ACCESS_CODES:
+        user_msg = "无权访问该资源，请检查账号权限" if has_chinese else "Access denied. Check account permissions."
+        return LLMAccessDeniedError(
+            f"Access denied ({error_code}): {error_message}",
+            provider="dashscope",
+            error_code=error_code or None,
+        ), user_msg
+
+    if error_code in _INVALID_INPUT_CODES or error_code.startswith(_INVALID_INPUT_PREFIXES):
+        user_msg = f"请求参数错误: {error_message}" if has_chinese else f"Invalid request: {error_message}"
+        return LLMInvalidParameterError(
+            f"Invalid request ({error_code}): {error_message}",
+            parameter=None,
+            error_code=error_code or None,
+            provider="dashscope",
+        ), user_msg
+
+    if "quota" in lowered:
+        user_msg = (
+            "账户额度已用尽，请检查套餐和账单"
+            if has_chinese
+            else "Account quota is exhausted. Check your plan and billing."
+        )
+        return LLMQuotaExhaustedError(
+            f"Quota exhausted ({error_code}): {error_message}",
+            provider="dashscope",
+            error_code=error_code or "insufficient_quota",
+        ), user_msg
+
+    if status_code in (500, 502, 503):
+        user_msg = (
+            "服务暂时不可用，请稍后重试" if has_chinese else "Service is temporarily unavailable. Please try again."
+        )
+        return LLMServiceError(f"DashScope service error ({status_code}): {error_message}"), user_msg
+
+    return None
 
 
 def parse_dashscope_error(
@@ -155,6 +233,15 @@ def parse_dashscope_error(
     result = parse_specialized_errors(error_message, error_msg_lower, error_code, has_chinese, status_code)
     if result is not None:
         return result
+
+    unmatched = _classify_unmatched_dashscope_code(
+        status_code,
+        error_code,
+        error_message,
+        has_chinese,
+    )
+    if unmatched is not None:
+        return unmatched
 
     # Default: Generic Provider Error
     user_msg = f"API错误: {error_message}" if has_chinese else f"API error: {error_message}"

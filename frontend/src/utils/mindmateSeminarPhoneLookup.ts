@@ -30,7 +30,7 @@ export async function lookupSeminarUserByPhone(
   let response: Response
   try {
     response = await authFetch(
-      `/api/mindmate/collab/lookup-phone?phone=${encodeURIComponent(normalized)}`
+      `/api/mindmate/seminar/lookup-phone?phone=${encodeURIComponent(normalized)}`
     )
   } catch {
     return null

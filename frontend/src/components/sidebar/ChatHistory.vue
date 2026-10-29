@@ -44,11 +44,11 @@ import {
   useMindmateArchiveHistory,
 } from '@/composables/sidebar/useMindmateArchiveHistory'
 import { type MindMateConversation, useMindMateStore } from '@/stores'
-import { focusPersonalMindmateThread } from '@/utils/mindmateCollabLibrarySave'
+import { focusPersonalMindmateThread } from '@/utils/mindmateSeminarLibrarySave'
 
 import ChatHistoryConversationRow from './ChatHistoryConversationRow.vue'
 
-const MindmateCollabHistory = defineAsyncComponent(() => import('./MindmateCollabHistory.vue'))
+const MindmateSeminarHistory = defineAsyncComponent(() => import('./MindmateSeminarHistory.vue'))
 
 type HistoryConversation = MindMateConversation & { folder_id: string | null }
 
@@ -322,12 +322,12 @@ function handlePinConversation(convId: string): void {
       :class="['flex-1 min-h-0', props.compact ? 'chat-history-scroll--compact' : 'px-4 pb-4']"
     >
       <div :class="isBlurred ? 'blur-sm pointer-events-none select-none' : ''">
-        <MindmateCollabHistory
+        <MindmateSeminarHistory
           v-if="props.showCollabSessions"
           inline
           @visible-change="collabHistoryVisible = $event"
         />
-        <MindmateCollabLibrary
+        <MindmateSeminarLibrary
           v-if="props.showCollabSessions"
           @visible-change="savedSeminarVisible = $event"
         />

@@ -22,7 +22,8 @@ def parse_content_filter_errors(
 ) -> Optional[Tuple[Exception, str]]:
     """Parse content filter errors."""
     # 400 Arrearage (Account in arrears)
-    if error_code == "Arrearage" or ("arrearage" in error_msg_lower and "access denied" in error_msg_lower):
+    arrears = "arrearage" in error_msg_lower or "good standing" in error_msg_lower
+    if error_code == "Arrearage" or (arrears and "access denied" in error_msg_lower):
         if has_chinese:
             user_msg = "账户欠费，访问被拒绝。请前往费用与成本查看并充值"
         else:

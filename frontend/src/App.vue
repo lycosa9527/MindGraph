@@ -22,7 +22,7 @@ import { useLockedClientShellRoute } from '@/composables/core/useLockedClientShe
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useKittyDesktopActionPoll } from '@/composables/kitty/useKittyDesktopActionPoll'
 import { useSlideRemoteDesktopPoll } from '@/composables/mindMap/useSlideRemoteDesktopPoll'
-import { installMindmateCollabLiveSession } from '@/composables/mindmate/mindmateCollabLiveSession'
+import { installMindmateSeminarLiveSession } from '@/composables/mindmate/mindmateSeminarLiveSession'
 import {
   quickAccessRemoteHidden,
   useQuickAccessRemoteAccount,
@@ -164,8 +164,13 @@ const elLocale = shallowRef<Language | undefined>(undefined)
 const showBrowserLocaleHint = ref(false)
 const showAccountInfo = ref(false)
 const bayiNameToastSent = ref(false)
+// Open only after /me. A cached profile must not show this once a name exists.
+// Closing does not clear the flag, so the next 小致 jump opens it again.
 watch(
-  () => authStore.user?.needsDisplayName === true && !isMindgraphHeadlessExportSession(),
+  () =>
+    authStore.isAuthSessionVerified &&
+    authStore.user?.needsDisplayName === true &&
+    !isMindgraphHeadlessExportSession(),
   (needsName) => {
     if (!needsName) {
       showAccountInfo.value = false
@@ -174,7 +179,7 @@ watch(
     showAccountInfo.value = true
     if (!bayiNameToastSent.value) {
       bayiNameToastSent.value = true
-      notify.warningKey('auth.bayiNamePrompt.toast')
+      notify.infoKey('auth.bayiNamePrompt.toast', 8000)
     }
   },
   { immediate: true }
@@ -415,7 +420,7 @@ onMounted(async () => {
       authStore.detectMode().catch(() => undefined),
     ])
   }
-  installMindmateCollabLiveSession()
+  installMindmateSeminarLiveSession()
 
   // Re-align vue-i18n with Pinia after auth (profile may no-op setLanguage when
   // the code is unchanged, leaving a prior HMR desync unrepaired).

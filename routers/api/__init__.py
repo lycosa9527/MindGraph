@@ -86,16 +86,16 @@ except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
     MINDBOT_MODULE = None
     logger.debug("[API] Failed to import mindbot router: %s", e, exc_info=True)
 
-mindmate_collab_routes_module = None
-mindmate_collab_ws_module = None
+mindmate_seminar_routes_module = None
+mindmate_seminar_ws_module = None
 mindmate_notify_ws_module = None
 try:
-    from . import mindmate_collab_routes as mindmate_collab_routes_module
-    from . import mindmate_collab_ws as mindmate_collab_ws_module
+    from . import mindmate_seminar_routes as mindmate_seminar_routes_module
+    from . import mindmate_seminar_ws as mindmate_seminar_ws_module
     from . import mindmate_notify_ws as mindmate_notify_ws_module
 except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-    mindmate_collab_routes_module = None
-    mindmate_collab_ws_module = None
+    mindmate_seminar_routes_module = None
+    mindmate_seminar_ws_module = None
     mindmate_notify_ws_module = None
     logger.debug("[API] Failed to import mindmate collab routers: %s", e, exc_info=True)
 
@@ -137,10 +137,10 @@ router.include_router(training_routes.router)
 router.include_router(training_remote_ws.router)
 router.include_router(slides_remote_routes.router)
 router.include_router(slides_remote_ws.router)
-if mindmate_collab_routes_module is not None:
-    router.include_router(mindmate_collab_routes_module.router)
-if mindmate_collab_ws_module is not None:
-    router.include_router(mindmate_collab_ws_module.router)
+if mindmate_seminar_routes_module is not None:
+    router.include_router(mindmate_seminar_routes_module.router)
+if mindmate_seminar_ws_module is not None:
+    router.include_router(mindmate_seminar_ws_module.router)
 if mindmate_notify_ws_module is not None:
     router.include_router(mindmate_notify_ws_module.router)
 router.include_router(asr_realtime_ws.router)
@@ -171,7 +171,7 @@ if MINDBOT_MODULE is not None:
 else:
     logger.warning("[API] MindBot router NOT registered - import failed or router is None.")
 
-if mindmate_collab_routes_module is None:
+if mindmate_seminar_routes_module is None:
     logger.warning("[API] MindMate collab routers NOT registered - import failed or router is None.")
 
 __all__ = ["router"]

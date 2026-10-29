@@ -76,7 +76,7 @@ function goHome() {
 </script>
 
 <template>
-  <div class="mobile-layout flex flex-col h-[100dvh] w-screen overflow-hidden bg-gray-50">
+  <div class="mobile-layout mg-visual-viewport-shell flex flex-col bg-gray-50">
     <!-- Top header (hidden on landing page and MindMate — those pages own their headers) -->
     <header
       v-if="!hideHeader"

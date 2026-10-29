@@ -85,7 +85,7 @@ export function useSeminarMindgraphPrompt() {
         return false
       }
       const response = await authFetch(
-        `/api/mindmate/collab/${encodeURIComponent(session)}/share-diagram`,
+        `/api/mindmate/seminar/${encodeURIComponent(session)}/share-diagram`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

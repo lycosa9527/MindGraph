@@ -2,7 +2,7 @@
 
 import pytest
 
-from services.features.mindmate_collab.seminar_shelf import shelf_flags, shelf_title
+from services.features.mindmate_seminar.seminar_shelf import shelf_flags, shelf_title
 
 
 def test_resource_shelf_is_listed_and_not_an_artifact() -> None:

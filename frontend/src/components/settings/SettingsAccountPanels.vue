@@ -86,14 +86,19 @@ function openBrowserPluginPage(): void {
             <I18nText k="auth.accountDisplayName" />
           </label>
           <div class="flex flex-wrap items-center gap-2">
-            <input
-              id="account-info-name"
-              v-model="form.nameEdit"
-              type="text"
-              name="account-info-name"
-              :placeholder="form.t('auth.accountNamePlaceholder')"
-              class="swiss-glass-field__input min-w-0 flex-1"
-            />
+            <div
+              class="account-name-field min-w-0 flex-1"
+              :class="{ 'account-name-field--prompt': form.promptDisplayName }"
+            >
+              <input
+                id="account-info-name"
+                v-model="form.nameEdit"
+                type="text"
+                name="account-info-name"
+                :placeholder="form.t('auth.accountNamePlaceholder')"
+                class="swiss-glass-field__input w-full"
+              />
+            </div>
             <button
               type="button"
               class="mind-map-side-rail-btn mind-map-side-rail-btn--primary shrink-0"
@@ -281,3 +286,41 @@ function openBrowserPluginPage(): void {
     />
   </div>
 </template>
+
+<style scoped>
+@property --account-name-border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.account-name-field--prompt {
+  border-radius: 12px;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--account-name-border-angle) at 50% 50%,
+    #bfdbfe 0deg,
+    #2563eb 140deg,
+    #38bdf8 220deg,
+    #bfdbfe 360deg
+  );
+  animation: account-name-border-travel 2.2s linear infinite;
+}
+
+.account-name-field--prompt .swiss-glass-field__input {
+  display: block;
+}
+
+@keyframes account-name-border-travel {
+  to {
+    --account-name-border-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-name-field--prompt {
+    animation: none;
+    background: #2563eb;
+  }
+}
+</style>

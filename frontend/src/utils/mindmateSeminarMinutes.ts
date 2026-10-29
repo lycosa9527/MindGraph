@@ -2,7 +2,7 @@
  * Build and parse a structured seminar minutes card from a chosen transcript.
  */
 import type { SeminarHighlight } from '@/composables/mindmate/mindmateSeminarChrome'
-import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
+import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { formatInBeijing } from '@/utils/beijingClock'
 import type { SeminarBriefRole } from '@/utils/mindmateSeminarBrief'
 import {
@@ -70,7 +70,7 @@ export function minutesTimeRange(stamps: string[], zh: boolean): string {
   return start === end ? start : `${start} – ${end}`
 }
 
-export function latestSummaryStamp(messages: MindmateCollabMessage[]): string {
+export function latestSummaryStamp(messages: MindmateSeminarMessage[]): string {
   let cutoff = ''
   for (const message of messages) {
     if (!parseSeminarSummaryCard(message.content)) {

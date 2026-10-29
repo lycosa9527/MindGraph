@@ -161,7 +161,7 @@ export async function fetchSeminarBackgroundFile(
   }
   try {
     const raw = await apiRequestJson<SeminarBackgroundFileRaw>(
-      `/api/mindmate/collab/background-files/${encodeURIComponent(id)}?session_id=${encodeURIComponent(session)}`
+      `/api/mindmate/seminar/background-files/${encodeURIComponent(id)}?session_id=${encodeURIComponent(session)}`
     )
     const file = mapFile(raw)
     seminarFileMetaCache.set(cacheKey, file)
@@ -191,7 +191,7 @@ export async function listSeminarReplyArtifacts(
   sessionId: string
 ): Promise<SeminarBackgroundFile[]> {
   const payload = await apiRequestJson<{ items: SeminarBackgroundFileRaw[] }>(
-    `/api/mindmate/collab/${encodeURIComponent(sessionId)}/reply-artifacts`
+    `/api/mindmate/seminar/${encodeURIComponent(sessionId)}/reply-artifacts`
   )
   return (payload.items || []).map(mapFile)
 }
@@ -207,7 +207,7 @@ export async function shelveSeminarItem(
   }
 ): Promise<SeminarBackgroundFile> {
   const raw = await apiRequestJson<SeminarBackgroundFileRaw>(
-    `/api/mindmate/collab/${encodeURIComponent(sessionId)}/shelf`,
+    `/api/mindmate/seminar/${encodeURIComponent(sessionId)}/shelf`,
     {
       method: 'POST',
       body: JSON.stringify({
@@ -229,7 +229,7 @@ export async function archiveSeminarReplyDocx(
   messageId: number
 ): Promise<SeminarBackgroundFile> {
   const raw = await apiRequestJson<SeminarBackgroundFileRaw>(
-    `/api/mindmate/collab/${encodeURIComponent(sessionId)}/reply-artifacts`,
+    `/api/mindmate/seminar/${encodeURIComponent(sessionId)}/reply-artifacts`,
     {
       method: 'POST',
       body: JSON.stringify({ message_id: messageId }),
@@ -242,7 +242,7 @@ export async function listSeminarBackgroundFiles(
   sessionId: string
 ): Promise<SeminarBackgroundFile[]> {
   const payload = await apiRequestJson<{ items: SeminarBackgroundFileRaw[] }>(
-    `/api/mindmate/collab/background-files?session_id=${encodeURIComponent(sessionId)}`
+    `/api/mindmate/seminar/background-files?session_id=${encodeURIComponent(sessionId)}`
   )
   return (payload.items || []).map(mapFile)
 }
@@ -258,7 +258,7 @@ export async function uploadSeminarBackgroundFile(
   if (options.listed === false) {
     body.append('listed', 'false')
   }
-  const response = await apiUpload('/api/mindmate/collab/background-files', body)
+  const response = await apiUpload('/api/mindmate/seminar/background-files', body)
   if (!response.ok) {
     const payload = await response.json().catch(() => null)
     throw new Error(parseApiErrorDetail(payload, response.statusText || 'upload_failed'))
@@ -273,7 +273,7 @@ export async function renameSeminarBackgroundFile(
   filename: string
 ): Promise<SeminarBackgroundFile> {
   const payload = await apiRequestJson<SeminarBackgroundFileRaw>(
-    `/api/mindmate/collab/background-files/${encodeURIComponent(fileId)}`,
+    `/api/mindmate/seminar/background-files/${encodeURIComponent(fileId)}`,
     {
       method: 'PATCH',
       body: JSON.stringify({ session_id: sessionId, filename }),
@@ -288,7 +288,7 @@ export async function pinSeminarBackgroundFile(
   pinned: boolean
 ): Promise<SeminarBackgroundFile> {
   const response = await apiPost(
-    `/api/mindmate/collab/background-files/${encodeURIComponent(fileId)}/pin`,
+    `/api/mindmate/seminar/background-files/${encodeURIComponent(fileId)}/pin`,
     {
       session_id: sessionId,
       pinned,
@@ -307,7 +307,7 @@ export async function deleteSeminarBackgroundFile(
   fileId: string
 ): Promise<void> {
   const response = await apiDelete(
-    `/api/mindmate/collab/background-files/${encodeURIComponent(fileId)}?session_id=${encodeURIComponent(sessionId)}`
+    `/api/mindmate/seminar/background-files/${encodeURIComponent(fileId)}?session_id=${encodeURIComponent(sessionId)}`
   )
   if (!response.ok) {
     const payload = await response.json().catch(() => null)
@@ -317,7 +317,7 @@ export async function deleteSeminarBackgroundFile(
 
 export async function fetchSeminarBackgroundBlob(sessionId: string, fileId: string): Promise<Blob> {
   const response = await apiGet(
-    `/api/mindmate/collab/background-files/${encodeURIComponent(fileId)}/download?session_id=${encodeURIComponent(sessionId)}`
+    `/api/mindmate/seminar/background-files/${encodeURIComponent(fileId)}/download?session_id=${encodeURIComponent(sessionId)}`
   )
   if (!response.ok) {
     throw new Error('download')
@@ -380,7 +380,7 @@ export async function fetchSeminarBackgroundPreviewPdf(
   fileId: string
 ): Promise<Uint8Array> {
   const response = await apiGet(
-    `/api/mindmate/collab/background-files/${encodeURIComponent(fileId)}/preview?session_id=${encodeURIComponent(sessionId)}`
+    `/api/mindmate/seminar/background-files/${encodeURIComponent(fileId)}/preview?session_id=${encodeURIComponent(sessionId)}`
   )
   if (!response.ok) {
     const payload = await response.json().catch(() => null)

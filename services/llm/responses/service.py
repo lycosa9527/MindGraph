@@ -17,7 +17,6 @@ from services.auth.thinking_coin.usage_wire import (
     thinking_coin_post_llm_success,
     thinking_coins_apply_to_user,
 )
-from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.http.llm_http_errors import is_user_llm_limit_error
 from services.infrastructure.utils.llm_routing_overrides import refresh_routing_overrides
 from services.llm import llm_service
@@ -25,9 +24,7 @@ from services.llm.llm_utils import LLMUtils
 from services.llm.org_custom_client import stream_chat_as_responses_events, uses_official_responses
 from services.llm.org_custom_config import load_org_custom_llm_config
 from services.llm.responses.registry import get_responses_registry
-from services.utils.error_types import LLM_PIPELINE_ERRORS
-
-_STREAM_FAILURES = (*LLM_PIPELINE_ERRORS, LLMServiceError)
+from services.utils.error_types import LLM_CALL_FAILURES
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +186,7 @@ class LLMResponsesService:
                     bill_usage=bill_usage,
                     provider=metrics_provider,
                 )
-            except _STREAM_FAILURES as exc:
+            except LLM_CALL_FAILURES as exc:
                 duration = time.time() - start_time
                 _log_stream_failure(exc, duration)
                 detail = str(exc) if is_user_llm_limit_error(exc) else LLMUtils.format_request_failure(exc)
@@ -268,7 +265,7 @@ class LLMResponsesService:
                 bill_usage=bill_usage,
                 provider=metrics_provider,
             )
-        except _STREAM_FAILURES as exc:
+        except LLM_CALL_FAILURES as exc:
             duration = time.time() - start_time
             _log_stream_failure(exc, duration)
             detail = str(exc) if is_user_llm_limit_error(exc) else LLMUtils.format_request_failure(exc)

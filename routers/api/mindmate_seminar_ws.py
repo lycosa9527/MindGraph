@@ -1,0 +1,472 @@
+"""
+MindMate collab WebSocket endpoint.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+from models.domain.auth import User
+from services.features.mindmate_seminar.manager_access import get_mindmate_seminar_manager
+from services.features.mindmate_seminar.member_record import record_collab_member
+from services.features.mindmate_seminar.message_cursor import read_latest_collab_message_id
+from services.features.mindmate_seminar.message_history import catchup_frames, history_row_ids
+from services.features.mindmate_seminar.seminar_message import (
+    ensure_live_seminar_room,
+    seminar_room_past_live_cap,
+)
+from services.features.mindmate_seminar.participant_faces import (
+    load_participant_faces,
+    participant_face_payload,
+)
+from services.features.mindmate_seminar.read_cursors import advance_read_cursor, list_read_cursors
+from services.features.mindmate_seminar.redis_keys import normalize_collab_code
+from services.features.mindmate_seminar.resume_tokens import (
+    join_resume_claims_match_user_room,
+    mint_join_resume_token_async,
+    peek_join_resume_claims_async,
+    try_consume_join_resume_token_async,
+)
+from services.features.mindmate_seminar.ws_broadcast import broadcast_to_others
+from services.features.mindmate_seminar.ws_disconnect_cleanup import (
+    finalize_mindmate_seminar_disconnect,
+)
+from services.features.mindmate_seminar.ws_registry import (
+    DELIVERY_FAILURE_CLOSE_CODE,
+    MindmateSeminarWsHandle,
+    close_superseded_connection,
+    enqueue_json,
+    register_connection,
+    schedule_close_slow_consumer,
+    shutdown_connection_handle,
+    teardown_superseded_connection,
+    unregister_connection,
+)
+from services.redis.redis_async_client import get_async_redis
+from services.online_collab.participant.online_collab_ws_rate_limit import (
+    check_canvas_collab_join_rate_limits,
+)
+from services.utils.error_types import DATABASE_ERRORS
+from utils.auth import user_has_feature_access
+from utils.auth_ws import authenticate_websocket_user
+from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
+from utils.collab_ws_origin import close_ws_if_origin_disallowed
+from utils.db.session_open import actor_rls_session, system_rls_session
+from utils.ws_context import ws_managed_session
+from utils.ws_limits import (
+    DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
+    DEFAULT_MAX_WS_TEXT_BYTES,
+    MAX_COLLAB_INBOUND_JSON_DEPTH,
+    WebsocketMessageRateLimiter,
+    collab_json_exceeds_depth,
+    inbound_text_exceeds_limit,
+)
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+# Saved lines are written by REST. These frames only keep the open socket alive.
+SEMINAR_SOCKET_INGRESS = frozenset({"ping", "socket_ping", "read"})
+
+_WRITER_SEND_TIMEOUT_SEC = 5.0
+_WRITER_SEND_ERRORS = (
+    TimeoutError,
+    ConnectionError,
+    OSError,
+    RuntimeError,
+    AssertionError,
+    TypeError,
+    WebSocketDisconnect,
+)
+
+
+def _parse_positive_int_env(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        parsed = int(raw)
+    except ValueError:
+        return default
+    return parsed if parsed > 0 else default
+
+
+_COLLAB_WS_MAX_PER_USER_ENDPOINT = _parse_positive_int_env("COLLAB_WS_MAX_PER_USER_ENDPOINT", 5)
+_COLLAB_WS_MAX_PER_USER_GLOBAL = _parse_positive_int_env("COLLAB_WS_MAX_PER_USER_GLOBAL", 20)
+
+
+async def _close_after_send_failure(handle: MindmateSeminarWsHandle) -> None:
+    try:
+        await handle.websocket.close(code=DELIVERY_FAILURE_CLOSE_CODE, reason="send failed")
+    except (RuntimeError, OSError, WebSocketDisconnect):
+        return
+
+
+async def _writer_loop(handle: MindmateSeminarWsHandle) -> None:
+    """Sole owner of websocket.send_* for this connection."""
+    while True:
+        kind, payload = await handle.send_queue.get()
+        if kind == "stop":
+            return
+        if kind != "text":
+            continue
+        try:
+            async with asyncio.timeout(_WRITER_SEND_TIMEOUT_SEC):
+                await handle.websocket.send_text(payload)
+        except _WRITER_SEND_ERRORS as exc:
+            logger.warning("[MindmateSeminarWS] writer send failed: %s", exc)
+            await _close_after_send_failure(handle)
+            return
+
+
+def _send_client(handle: MindmateSeminarWsHandle, payload: Dict[str, Any]) -> None:
+    """Queue one frame. A full queue closes the socket so the client reloads history."""
+    if enqueue_json(handle, payload):
+        return
+    schedule_close_slow_consumer(handle)
+
+
+async def _enqueue_history_catchup(
+    handle: MindmateSeminarWsHandle,
+    session_id: str,
+    baseline: List[Dict[str, Any]],
+) -> None:
+    """Queue rows saved after the join snapshot was captured."""
+    mgr = get_mindmate_seminar_manager()
+    try:
+        fresh = await mgr.fetch_message_history(session_id)
+    except DATABASE_ERRORS as exc:
+        logger.warning(
+            "[MindmateSeminarWS] join catch-up failed session=%s: %s",
+            session_id,
+            exc,
+        )
+        return
+    for frame in catchup_frames(history_row_ids(baseline), fresh):
+        if not enqueue_json(handle, frame):
+            schedule_close_slow_consumer(handle)
+            return
+
+
+def _resume_token_from_websocket(websocket: WebSocket) -> str:
+    for proto in websocket.scope.get("subprotocols") or []:
+        if isinstance(proto, str) and proto.startswith("mg-resume."):
+            token = proto[len("mg-resume.") :].strip()
+            if token:
+                return token
+    return (websocket.query_params.get("resume") or websocket.query_params.get("resume_token") or "").strip()
+
+
+async def _tier_allowed(user: User) -> bool:
+    async with actor_rls_session(user) as db:
+        return await user_has_school_tier_feature(db, user, TIER_FEATURE_ONLINE_COLLAB)
+
+
+def _reader_label(user: User) -> Optional[str]:
+    """Name shown when someone hovers a read mark."""
+    username = getattr(user, "username", None) or getattr(user, "name", None)
+    if isinstance(username, str) and username.strip():
+        return username.strip()
+    return None
+
+
+async def _handle_read(code: str, session_id: str, user: User, message_id: Any) -> None:
+    """Advance this person's cursor and tell the rest of the room."""
+    if isinstance(message_id, bool) or not isinstance(message_id, int):
+        return
+    async with system_rls_session() as db:
+        payload = await advance_read_cursor(
+            db,
+            session_id,
+            int(user.id),
+            message_id,
+            _reader_label(user),
+        )
+    if payload is None:
+        return
+    await broadcast_to_others(code, int(user.id), {"type": "read_cursor", **payload})
+
+
+async def _handle_ping(handle: MindmateSeminarWsHandle, code: str, user_id: int) -> None:
+    """Refresh presence. The reply does not carry chat state."""
+    mgr = get_mindmate_seminar_manager()
+    await mgr.refresh_participant_ttl(code, user_id)
+    await mgr.touch_activity(code)
+    _send_client(handle, {"type": "pong"})
+
+
+async def _handle_socket_ping(handle: MindmateSeminarWsHandle, code: str, user_id: int) -> None:
+    """
+    Prove the socket is alive and report the newest saved line.
+
+    A missed pong is ignored here; the client reopens and loads history.
+    """
+    mgr = get_mindmate_seminar_manager()
+    await mgr.refresh_participant_ttl(code, user_id)
+    latest = await read_latest_collab_message_id(code)
+    payload: Dict[str, Any] = {"type": "socket_pong"}
+    if latest is not None:
+        payload["latest_id"] = latest
+    enqueue_json(handle, payload)
+
+
+@router.websocket("/ws/mindmate-seminar/{code}")
+async def mindmate_seminar_websocket(websocket: WebSocket, code: str) -> None:
+    """MindMate seminar socket — presence, AI tokens, and the finished reply."""
+    if await close_ws_if_origin_disallowed(websocket, "MindmateSeminar"):
+        return
+
+    user, auth_err = await authenticate_websocket_user(websocket)
+    if auth_err or not user:
+        try:
+            await websocket.close(code=1008, reason=auth_err or "Unauthorized")
+        except (RuntimeError, OSError):
+            pass
+        return
+
+    if not await user_has_feature_access(user, "feature_mindmate_seminar"):
+        try:
+            await websocket.close(code=1008, reason="Feature disabled")
+        except (RuntimeError, OSError):
+            pass
+        return
+
+    if not await _tier_allowed(user):
+        try:
+            await websocket.close(code=1008, reason="Feature unavailable")
+        except (RuntimeError, OSError):
+            pass
+        return
+
+    norm_code = normalize_collab_code(code)
+    mgr = get_mindmate_seminar_manager()
+    session = await mgr.load_session_by_code(norm_code)
+    if not session:
+        try:
+            await websocket.close(code=1008, reason="Invalid room")
+        except (RuntimeError, OSError):
+            pass
+        return
+
+    if await mgr.session_is_closing(norm_code):
+        try:
+            await websocket.close(code=1008, reason="Room closing")
+        except (RuntimeError, OSError):
+            pass
+        return
+
+    if not await mgr.user_may_connect(int(user.id), session):
+        try:
+            await websocket.close(code=1008, reason="Access denied")
+        except (RuntimeError, OSError):
+            pass
+        return
+
+    if seminar_room_past_live_cap(session):
+        try:
+            await websocket.close(code=1008, reason="Room expired")
+        except (RuntimeError, OSError):
+            pass
+        return
+
+    if not await ensure_live_seminar_room(session):
+        try:
+            await websocket.close(code=1008, reason="Collaboration service unavailable")
+        except (RuntimeError, OSError):
+            pass
+        return
+
+    resume_raw = _resume_token_from_websocket(websocket)
+    has_resume = False
+    if resume_raw:
+        claims = await peek_join_resume_claims_async(resume_raw)
+        has_resume = bool(
+            claims
+            and join_resume_claims_match_user_room(
+                int(user.id),
+                norm_code,
+                claims,
+                session.id,
+            ),
+        )
+
+    if not has_resume:
+        rate_msg = await check_canvas_collab_join_rate_limits(int(user.id), websocket)
+        if rate_msg:
+            try:
+                await websocket.close(code=1008, reason="Rate limited")
+            except (RuntimeError, OSError):
+                pass
+            return
+
+    subprotocol = f"mg-resume.{resume_raw}" if resume_raw and has_resume else None
+    if subprotocol:
+        await websocket.accept(subprotocol=subprotocol)
+    else:
+        await websocket.accept()
+
+    if resume_raw and has_resume:
+        await try_consume_join_resume_token_async(resume_raw)
+
+    handle = MindmateSeminarWsHandle(websocket)
+    handle.writer_task = asyncio.create_task(_writer_loop(handle), name="mindmate-seminar-writer")
+
+    join_committed = False
+    participant_added = False
+    rate_limiter = WebsocketMessageRateLimiter(DEFAULT_MAX_WS_MESSAGES_PER_SECOND)
+
+    try:
+        async with ws_managed_session(
+            websocket,
+            user_id=int(user.id),
+            endpoint="mindmate_seminar",
+            max_per_user_endpoint=_COLLAB_WS_MAX_PER_USER_ENDPOINT,
+            max_per_user_global=_COLLAB_WS_MAX_PER_USER_GLOBAL,
+            redis_collab_cap=True,
+        ):
+            handle.accepts_fanout = False
+            previous = register_connection(norm_code, int(user.id), handle)
+            if previous is not None:
+                await close_superseded_connection(previous)
+                teardown_superseded_connection(norm_code, int(user.id), previous)
+
+            if not await mgr.add_participant(norm_code, int(user.id)):
+                unregister_connection(norm_code, int(user.id), handle=handle)
+                await shutdown_connection_handle(handle)
+                close_reason = "Room full"
+                if not get_async_redis():
+                    close_reason = "Collaboration service unavailable"
+                try:
+                    await websocket.close(code=1008, reason=close_reason)
+                except (RuntimeError, OSError):
+                    pass
+                return
+
+            participant_added = True
+            await record_collab_member(session.id, int(user.id))
+
+            history_page = await mgr.fetch_message_page(session.id)
+            history = history_page.messages
+            participants = await mgr.participant_count(norm_code)
+            resume_token = await mint_join_resume_token_async(int(user.id), norm_code, session.id)
+            try:
+                faces = await load_participant_faces(await mgr.list_participant_user_ids(norm_code))
+            except DATABASE_ERRORS:
+                logger.warning("[MindmateSeminarWS] Could not load seminar faces code=%s", norm_code)
+                faces = []
+
+            joined_payload: Dict[str, Any] = {
+                "type": "joined",
+                "user_id": int(user.id),
+                "owner_id": session.owner_user_id,
+                "session_id": session.id,
+                "code": session.code,
+                "title": session.title,
+                "visibility": session.visibility,
+                "participants": participants,
+                "faces": faces,
+            }
+            if resume_token:
+                joined_payload["resume_token"] = resume_token
+            # Queue the baseline before fan-out is accepted, so a live
+            # user_message cannot land ahead of an older snapshot.
+            _send_client(handle, joined_payload)
+            _send_client(
+                handle,
+                {
+                    "type": "snapshot",
+                    "messages": history,
+                    "has_older": history_page.has_more,
+                },
+            )
+            handle.accepts_fanout = True
+            async with system_rls_session() as db:
+                cursors = await list_read_cursors(db, session.id)
+            _send_client(handle, {"type": "read_cursors", "cursors": cursors})
+            await _enqueue_history_catchup(handle, session.id, history)
+
+            face = participant_face_payload(
+                int(user.id),
+                getattr(user, "name", None),
+                getattr(user, "avatar", None),
+            )
+            await broadcast_to_others(
+                norm_code,
+                int(user.id),
+                {
+                    "type": "user_joined",
+                    "user_id": face["user_id"],
+                    "username": face["name"],
+                    "name": face["name"],
+                    "avatar": face["avatar"],
+                },
+            )
+            join_committed = True
+
+            try:
+                while True:
+                    raw = await websocket.receive_text()
+                    if inbound_text_exceeds_limit(raw, DEFAULT_MAX_WS_TEXT_BYTES):
+                        _send_client(
+                            handle,
+                            {"type": "error", "code": "message_too_large", "message": "Message too large"},
+                        )
+                        continue
+                    if not rate_limiter.allow():
+                        _send_client(
+                            handle,
+                            {"type": "error", "code": "rate_limit", "message": "Too many messages"},
+                        )
+                        continue
+                    try:
+                        msg = json.loads(raw)
+                    except json.JSONDecodeError:
+                        continue
+                    if not isinstance(msg, dict):
+                        continue
+                    if collab_json_exceeds_depth(msg, MAX_COLLAB_INBOUND_JSON_DEPTH):
+                        _send_client(
+                            handle,
+                            {"type": "error", "code": "invalid_payload", "message": "Invalid payload"},
+                        )
+                        continue
+                    msg_type = msg.get("type")
+                    if msg_type not in SEMINAR_SOCKET_INGRESS:
+                        continue
+                    if msg_type == "ping":
+                        await _handle_ping(handle, norm_code, int(user.id))
+                        continue
+                    if msg_type == "socket_ping":
+                        await _handle_socket_ping(handle, norm_code, int(user.id))
+                        continue
+                    if msg_type == "read":
+                        await _handle_read(norm_code, session.id, user, msg.get("message_id"))
+            except WebSocketDisconnect:
+                pass
+            finally:
+                if join_committed:
+                    await finalize_mindmate_seminar_disconnect(
+                        code=norm_code,
+                        user_id=int(user.id),
+                        handle=handle,
+                    )
+    except BaseException:
+        if participant_added and not join_committed:
+            unregister_connection(norm_code, int(user.id), handle=handle)
+            await mgr.remove_participant(norm_code, int(user.id))
+            await shutdown_connection_handle(handle)
+        raise
+    finally:
+        if not join_committed:
+            await shutdown_connection_handle(handle)

@@ -520,9 +520,9 @@ def test_seminar_background_upload_body_size_limit_path() -> None:
     """Seminar shared-folder uploads may be up to 20MB plus multipart overhead."""
     resolver = middleware_module.max_request_body_size_for_path
     limit = middleware_module.SEMINAR_BACKGROUND_UPLOAD_MAX_BODY_SIZE
-    assert resolver("/api/mindmate/collab/background-files") == limit
+    assert resolver("/api/mindmate/seminar/background-files") == limit
     assert limit > middleware_module.MAX_REQUEST_BODY_SIZE
-    assert resolver("/api/mindmate/collab/background-files/x/download") == (middleware_module.MAX_REQUEST_BODY_SIZE)
+    assert resolver("/api/mindmate/seminar/background-files/x/download") == (middleware_module.MAX_REQUEST_BODY_SIZE)
 
 
 @pytest.mark.asyncio

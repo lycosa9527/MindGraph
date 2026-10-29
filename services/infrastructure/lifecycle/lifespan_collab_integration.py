@@ -27,13 +27,13 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 logger = logging.getLogger(__name__)
 
 MMC_IDLE_MONITOR_START = None
-if config.FEATURE_MINDMATE_COLLAB:
-    from services.features.mindmate_collab.idle_monitor import (
-        start_mindmate_collab_idle_monitor as MMC_IDLE_MONITOR_START,
+if config.FEATURE_MINDMATE_SEMINAR:
+    from services.features.mindmate_seminar.idle_monitor import (
+        start_mindmate_seminar_idle_monitor as MMC_IDLE_MONITOR_START,
     )
 
 
-def _start_mindmate_collab_idle_monitor_if_enabled(is_main_worker: bool) -> None:
+def _start_mindmate_seminar_idle_monitor_if_enabled(is_main_worker: bool) -> None:
     if MMC_IDLE_MONITOR_START is None:
         return
     try:
@@ -87,7 +87,7 @@ async def start_online_collab_subsystem_async(
         if is_main_worker:
             logger.warning("Failed to start workshop session manager: %s", exc)
 
-    _start_mindmate_collab_idle_monitor_if_enabled(is_main_worker)
+    _start_mindmate_seminar_idle_monitor_if_enabled(is_main_worker)
 
     try:
         start_pg_notify_listener()

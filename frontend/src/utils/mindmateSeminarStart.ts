@@ -49,7 +49,7 @@ export async function startSeminarRoom(input: {
   }
   let response: Response
   try {
-    response = await authFetch('/api/mindmate/collab/start', {
+    response = await authFetch('/api/mindmate/seminar/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

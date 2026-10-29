@@ -242,6 +242,11 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
   /** Bayi jump-in stores a UUID in phone. That id must stay put. */
   const isBayiSsoSubject = computed(() => isBayiSsoPhone(authStore.user?.phone))
 
+  /** Verified profile still has no real name. A cached flag alone does not count. */
+  const promptDisplayName = computed(
+    () => authStore.isAuthSessionVerified && authStore.user?.needsDisplayName === true
+  )
+
   /** Quick registration: server-only password until user sets one via SMS. */
   const needsSetLoginPassword = computed(() => authStore.user?.loginPasswordSet === false)
 
@@ -280,6 +285,10 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
       const data = (await res.json().catch(() => ({}))) as { detail?: string }
       if (res.ok) {
         notify.successKey('auth.accountNameSaveSuccess')
+        const current = authStore.user
+        if (current) {
+          authStore.setUser({ ...current, username: trimmed, needsDisplayName: false })
+        }
         await authStore.refreshUserProfile({ bypassThrottle: true })
         onSuccess()
       } else {
@@ -381,6 +390,7 @@ export function useAccountSettings(isOpen: Ref<boolean>, onSuccess: () => void) 
     currentAvatar,
     currentAvatarSrc,
     isBayiSsoSubject,
+    promptDisplayName,
     needsSetLoginPassword,
     openAvatarModal,
     handleAvatarSuccess,

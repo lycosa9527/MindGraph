@@ -220,8 +220,10 @@
   background: #f8fafc;
 }
 
+/* Narrow slide lecture shows the deck only. The diagram pane keeps this
+   class on a normal canvas, so the rule must not hide it there. */
 @media (max-width: 768px) {
-  .mc-dual-lecture__canvas {
+  .mc-dual-lecture .mc-dual-lecture__canvas {
     display: none;
   }
 }

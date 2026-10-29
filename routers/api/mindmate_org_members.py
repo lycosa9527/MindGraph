@@ -1,7 +1,7 @@
 """
 School roster for MindMate seminar member pickers.
 
-This path is intentionally outside ``/api/mindmate/collab`` and ``/api/chat``.
+This path is intentionally outside ``/api/mindmate/seminar`` and ``/api/chat``.
 Those prefixes are feature-gated, so a signed-in teacher with colleagues could
 not open the seminar member dialog while collab or workshop chat was off.
 

@@ -59,7 +59,7 @@ def stamp_chat_fanout_origin(envelope: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def stamp_workshop_fanout_origin(envelope: Dict[str, Any]) -> Dict[str, Any]:
-    """Stamp workshop/mindmate-collab fan-out envelopes with the origin secret."""
+    """Stamp workshop/mindmate-seminar fan-out envelopes with the origin secret."""
     if not _FANOUT_ORIGIN_SECRET:
         return dict(envelope)
     out = dict(envelope)

@@ -107,7 +107,7 @@ async def test_production_www_origin_is_not_closed(monkeypatch: pytest.MonkeyPat
     logged = _OriginSocket("https://www.mindspringedu.com")
     folded = _OriginSocket("HTTPS://WWW.MindSpringEdu.com/")
     evil = _OriginSocket("https://evil.example")
-    assert await close_ws_if_origin_disallowed(logged, "MindmateCollab") is False
+    assert await close_ws_if_origin_disallowed(logged, "MindmateSeminar") is False
     assert await close_ws_if_origin_disallowed(folded, "SlideRemote") is False
     assert await close_ws_if_origin_disallowed(evil, "MindmateNotify") is True
     assert not logged.closed

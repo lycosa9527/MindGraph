@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from alembic import op
 
 from utils.db_rls.policy_builder import (
-    MINDMATE_COLLAB_TABLES,
+    MINDMATE_COLLAB_LEGACY_TABLES as MINDMATE_COLLAB_TABLES,
     _create_all_policy,
     downgrade_policies_for_tables,
 )

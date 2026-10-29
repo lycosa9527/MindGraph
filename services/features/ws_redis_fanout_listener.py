@@ -31,7 +31,7 @@ from typing import Any, Final, Optional, Tuple
 
 from redis.exceptions import RedisError
 
-from services.features.mindmate_collab_fanout_hooks import (
+from services.features.mindmate_seminar_fanout_hooks import (
     deliver_registered_collab_fanout,
     notify_collab_fanout_subscribed,
 )
@@ -320,7 +320,7 @@ async def _handle_workshop_raw(payload: str) -> None:
         return
     exclude = ex if isinstance(ex, int) else None
 
-    if isinstance(code, str) and code.startswith("mmc:"):
+    if isinstance(code, str) and code.startswith("mms:"):
         handed_off = await deliver_registered_collab_fanout(env)
         if not handed_off:
             return

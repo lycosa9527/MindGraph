@@ -12,6 +12,8 @@ import binascii
 import json
 from typing import Tuple, Type
 
+from services.infrastructure.http.error_handler import LLMServiceError
+
 
 class _FallbackRedisError(ConnectionError):
     """Stand-in when redis is not installed."""
@@ -132,6 +134,14 @@ LLM_PIPELINE_ERRORS: Tuple[Type[Exception], ...] = (
     KeyError,
     IndexError,
     UnicodeDecodeError,
+)
+
+# LLM calls: builtin transport failures plus translated provider errors
+# (LLMTimeoutError, LLMProviderError, …). Callers re-raise user limits and
+# content-filter refusals via is_passthrough_llm_error.
+LLM_CALL_FAILURES: Tuple[Type[Exception], ...] = (
+    *LLM_PIPELINE_ERRORS,
+    LLMServiceError,
 )
 
 # Qdrant vector store operations

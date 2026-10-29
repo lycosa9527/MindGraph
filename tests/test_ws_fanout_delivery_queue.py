@@ -8,9 +8,9 @@ from typing import Any
 from unittest.mock import MagicMock
 
 from services.features import ws_redis_fanout_listener as lst
-from services.features.mindmate_collab.ws_registry import (
+from services.features.mindmate_seminar.ws_registry import (
     ACTIVE_CONNECTIONS,
-    MindmateCollabWsHandle,
+    MindmateSeminarWsHandle,
     enqueue_transcript_resync,
 )
 
@@ -85,10 +85,10 @@ def test_saved_line_bypasses_queue_when_no_chunk_can_be_dropped(monkeypatch: Any
 
 def test_transcript_resync_skips_sockets_still_joining() -> None:
     """A resync must not land ahead of the join snapshot."""
-    joining = MindmateCollabWsHandle(MagicMock())
+    joining = MindmateSeminarWsHandle(MagicMock())
     joining.accepts_fanout = False
-    live = MindmateCollabWsHandle(MagicMock())
-    ACTIVE_CONNECTIONS["mmc:ABC"] = {1: joining, 2: live}
+    live = MindmateSeminarWsHandle(MagicMock())
+    ACTIVE_CONNECTIONS["mms:ABC"] = {1: joining, 2: live}
     try:
         enqueue_transcript_resync()
         assert joining.send_queue.empty()

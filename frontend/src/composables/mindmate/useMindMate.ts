@@ -314,7 +314,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     const openId = conversationId.value
     if (openId) {
       const owner = mindMateStore.getConversationRoute(openId).difyUser?.trim()
-      if (owner && !owner.startsWith('mindbot_') && !owner.startsWith('mindmate_collab_')) {
+      if (owner && !owner.startsWith('mindbot_') && !owner.includes('mindmate_seminar_')) {
         return owner
       }
     }

@@ -65,7 +65,7 @@ export async function fetchSeminarGroup(sessionId: string): Promise<SeminarGroup
   })
   let response: Response
   try {
-    response = await authFetch(`/api/mindmate/collab/group-members?${params}`)
+    response = await authFetch(`/api/mindmate/seminar/group-members?${params}`)
   } catch {
     return null
   }
@@ -150,7 +150,7 @@ export async function addSeminarGroupMembers(
   }
   let response: Response
   try {
-    response = await authFetch('/api/mindmate/collab/members', {
+    response = await authFetch('/api/mindmate/seminar/members', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -172,7 +172,7 @@ export async function updateSeminarMemberRole(
 ): Promise<boolean> {
   let response: Response
   try {
-    response = await authFetch('/api/mindmate/collab/members/role', {
+    response = await authFetch('/api/mindmate/seminar/members/role', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -193,7 +193,7 @@ export async function removeSeminarGroupMember(
 ): Promise<boolean> {
   let response: Response
   try {
-    response = await authFetch('/api/mindmate/collab/members', {
+    response = await authFetch('/api/mindmate/seminar/members', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId, user_id: userId }),
@@ -210,7 +210,7 @@ export async function renameSeminarSession(
 ): Promise<string | null> {
   let response: Response
   try {
-    response = await authFetch('/api/mindmate/collab/title', {
+    response = await authFetch('/api/mindmate/seminar/title', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId, title }),

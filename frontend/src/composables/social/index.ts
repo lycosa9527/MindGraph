@@ -3,7 +3,7 @@
  * Future IM circle widget should call this with source + layout props.
  */
 import type { OrgContactSectionsOptions, OrgRosterSource } from '@/composables/social/types'
-import { useMindmateCollabOrgRoster } from '@/composables/social/useMindmateCollabOrgRoster'
+import { useMindmateSeminarOrgRoster } from '@/composables/social/useMindmateSeminarOrgRoster'
 import { useWorkshopOrgRoster } from '@/composables/social/useWorkshopOrgRoster'
 
 export interface UseOrgRosterPanelOptions extends OrgContactSectionsOptions {
@@ -12,15 +12,15 @@ export interface UseOrgRosterPanelOptions extends OrgContactSectionsOptions {
 
 export function useOrgRosterPanel(options: UseOrgRosterPanelOptions = {}) {
   const source = options.source ?? 'workshop'
-  if (source === 'mindmate-collab') {
-    return useMindmateCollabOrgRoster(options)
+  if (source === 'mindmate-seminar') {
+    return useMindmateSeminarOrgRoster(options)
   }
   return useWorkshopOrgRoster(options)
 }
 
-export { createMindmateCollabOrgBackend } from '@/composables/social/createMindmateCollabOrgBackend'
+export { createMindmateSeminarOrgBackend } from '@/composables/social/createMindmateSeminarOrgBackend'
 export { createWorkshopChatOrgBackend } from '@/composables/social/createWorkshopChatOrgBackend'
-export { useMindmateCollabOrgRoster } from '@/composables/social/useMindmateCollabOrgRoster'
+export { useMindmateSeminarOrgRoster } from '@/composables/social/useMindmateSeminarOrgRoster'
 export { useOrgContactSections } from '@/composables/social/useOrgContactSections'
 export { useOrgPresenceCore } from '@/composables/social/useOrgPresenceCore'
 export type {

@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.190] - 2026-10-30
+
+> **A school seminar stays open to that school until the host invites a closed group. A closed room is hidden from everyone who was not invited, including on a direct database connection.**
+
+### Fixed
+
+- **Seminar visibility** — The host's attendance row does not lock a school seminar. A colleague in the same school can enter and post. Inviting colleagues locks the room and keeps people already inside. Apply Alembic `0160` and `0161`. `0161` adds `rls_seminar_session_visible`, so a closed or public seminar is not readable by the rest of the school. The school list drops those rooms as well.
+
+## [5.180.189] - 2026-10-29
+
+> **A seminar line is saved by a request, and the socket carries the reply. A room the host leaves open stays live for 30 days. The seminar no longer uses the collab name.**
+
+### Changed
+
+- **Seminar messages** — `POST /api/mindmate/seminar/{session_id}/messages` saves a chat line or the minutes. `GET` on that path reads a page, including lines missed while the socket was down. The socket accepts `ping`, `socket_ping`, and `read`, and it pushes the saved line, AI tokens, the finished reply, who is online, and read cursors.
+- **Seminar lifetime** — A live seminar closes 30 days after `started_at`. Silence and the 1-hour and 10-hour presets do not end the room and do not set the Redis lifetime. When the Redis room hash is missing and the database row is still open, the next send or reconnect republishes it.
+- **Seminar names** — The page is `/mindmate/seminar`. The API is `/api/mindmate/seminar`. The socket is `/api/ws/mindmate-seminar/{code}`. The flag is `FEATURE_MINDMATE_SEMINAR`. Tables are `mindmate_seminar_*`. Redis keys are `mindmate_seminar:*` with fan-out `mms:`. Apply Alembic `0159`. Old collab URLs, the old flag, and the old table names are not kept.
+- **Seminar Dify thread** — The Dify user is `{MINDMATE_DIFY_USER_PREFIX}_mindmate_seminar_{org}_{session}`. The stored conversation id is `s{server}:{difyId}`, so the main server and the backup server stay distinct after Redis is rebuilt. The Dify API still receives the raw conversation id.
+- **Shared diagram** — A canvas diagram posted into a seminar uses the same save as a chat line, including the 30-day check. An observer seat cannot post one.
+
+### Fixed
+
+- **Seminar host** — Starting a school seminar records the host as the leader. The host can post a line. An invited observer seat stays read-only.
+- **Open school seminar** — The host's history row does not lock the room. A colleague in the same school can enter and post. The room becomes invite-only when the host names members, and colleagues already inside stay. Apply Alembic `0160`.
+
+### Tests
+
+- [`tests/test_seminar_message.py`](tests/test_seminar_message.py), [`tests/test_mindmate_seminar_dify_stream.py`](tests/test_mindmate_seminar_dify_stream.py), [`tests/test_mindmate_seminar_share_canvas.py`](tests/test_mindmate_seminar_share_canvas.py), [`tests/test_mindmate_seminar_session_lifecycle.py`](tests/test_mindmate_seminar_session_lifecycle.py), [`tests/test_mindmate_seminar_ws_broadcast.py`](tests/test_mindmate_seminar_ws_broadcast.py)
+- [`frontend/tests/seminarMessagesUrl.spec.ts`](frontend/tests/seminarMessagesUrl.spec.ts), [`frontend/tests/useMindmateSeminar.spec.ts`](frontend/tests/useMindmateSeminar.spec.ts)
+
+## [5.180.188] - 2026-10-29
+
+> **A HarmonyOS phone and a folding screen keep the page and the diagram on the visible window. A first visit from Xiaozhi asks for a name once. A model timeout stays a timeout, and official DashScope and Volcengine errors keep their meaning.**
+
+### Added
+
+- **HarmonyOS phone** — An OpenHarmony phone uses the touch shell. A Harmony tablet or PC stays on the desktop layout.
+- **Folding window** — Page height follows the visible window, including after a fold. On ArkWeb, a dialog mask is pinned to that window so it does not stay on the previous screen.
+- **Canvas fold** — Folding a phone refits the diagram when the canvas width changes. A keyboard that only shortens the page does not refit. A zero-size box during the fold is ignored.
+
+### Changed
+
+- **Xiaozhi name** — The name window opens after the profile is confirmed, and only when no real name is saved. Saving the name clears the prompt. The name field shows a moving border until then. The notice says this is the first jump from Xiaozhi and that the window will not return.
+
+### Fixed
+
+- **Dialog scroll** — The dialog body is the scrollbar. The mask no longer scrolls, and the dialog stays inside the window.
+- **Two-finger scroll** — A small finger jitter no longer cancels the click that follows. Scrolling starts once the gesture is clearly vertical.
+- **Slide lecture** — On a narrow screen, the diagram pane is hidden only inside a dual lecture. A normal canvas keeps the diagram.
+- **Model timeout** — A Volcengine or school OpenAI timeout, and a timeout that survives retries, stays a timeout. A parallel stream reports that model as failed and still finishes the others. Closing the stream cancels models that are still running.
+- **Provider errors** — DashScope and Volcengine codes for quota, access, a bad request, a missing model, a content refusal, and a timeout keep those types. A safety refusal and a daily token limit still reach the user as those messages.
+
+### Tests
+
+- [`tests/test_provider_error_codes.py`](tests/test_provider_error_codes.py), [`tests/test_stream_progressive_timeout.py`](tests/test_stream_progressive_timeout.py), [`tests/test_llm_timeout_raise.py`](tests/test_llm_timeout_raise.py)
+- [`frontend/tests/arkWebClient.spec.ts`](frontend/tests/arkWebClient.spec.ts), [`frontend/tests/useMobileDetect.spec.ts`](frontend/tests/useMobileDetect.spec.ts), [`frontend/tests/modalTwoFingerScroll.spec.ts`](frontend/tests/modalTwoFingerScroll.spec.ts), [`frontend/tests/normalizeAuthUser.spec.ts`](frontend/tests/normalizeAuthUser.spec.ts)
+
 ## [5.180.187] - 2026-10-27
 
 > **A joiner can leave a live seminar, this device can stay on one interface, and a phone admin can edit the school's MindMate name.**
@@ -31,10 +88,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`tests/test_mindmate_collab_ttl_leave.py`](tests/test_mindmate_collab_ttl_leave.py), [`tests/test_mindmate_collab_org_listing.py`](tests/test_mindmate_collab_org_listing.py), [`tests/test_mindmate_collab_backend.py`](tests/test_mindmate_collab_backend.py), [`tests/test_mindmate_notify_presence.py`](tests/test_mindmate_notify_presence.py)
+- [`tests/test_mindmate_seminar_ttl_leave.py`](tests/test_mindmate_seminar_ttl_leave.py), [`tests/test_mindmate_seminar_org_listing.py`](tests/test_mindmate_seminar_org_listing.py), [`tests/test_mindmate_seminar_backend.py`](tests/test_mindmate_seminar_backend.py), [`tests/test_mindmate_notify_presence.py`](tests/test_mindmate_notify_presence.py)
 - [`tests/test_client_shell_device.py`](tests/test_client_shell_device.py), [`tests/auth/test_mobile_org_branding.py`](tests/auth/test_mobile_org_branding.py), [`tests/auth/test_admin_panel_org_scope_http.py`](tests/auth/test_admin_panel_org_scope_http.py), [`tests/auth/test_expert_invite_scope.py`](tests/auth/test_expert_invite_scope.py)
 - [`tests/test_seminar_disk_cache_cleanup.py`](tests/test_seminar_disk_cache_cleanup.py), [`tests/test_temp_image_cleaner.py`](tests/test_temp_image_cleaner.py)
-- [`frontend/tests/clientShellHydrate.spec.ts`](frontend/tests/clientShellHydrate.spec.ts), [`frontend/tests/quickAccessSpecSync.spec.ts`](frontend/tests/quickAccessSpecSync.spec.ts), [`frontend/tests/useMindmateCollab.spec.ts`](frontend/tests/useMindmateCollab.spec.ts), [`frontend/tests/mobileOrganizations.spec.ts`](frontend/tests/mobileOrganizations.spec.ts), [`frontend/tests/mobileRouterRedirects.spec.ts`](frontend/tests/mobileRouterRedirects.spec.ts), [`frontend/tests/useMobileDetect.spec.ts`](frontend/tests/useMobileDetect.spec.ts)
+- [`frontend/tests/clientShellHydrate.spec.ts`](frontend/tests/clientShellHydrate.spec.ts), [`frontend/tests/quickAccessSpecSync.spec.ts`](frontend/tests/quickAccessSpecSync.spec.ts), [`frontend/tests/useMindmateSeminar.spec.ts`](frontend/tests/useMindmateSeminar.spec.ts), [`frontend/tests/mobileOrganizations.spec.ts`](frontend/tests/mobileOrganizations.spec.ts), [`frontend/tests/mobileRouterRedirects.spec.ts`](frontend/tests/mobileRouterRedirects.spec.ts), [`frontend/tests/useMobileDetect.spec.ts`](frontend/tests/useMobileDetect.spec.ts)
 
 ## [5.180.186] - 2026-10-26
 
@@ -104,8 +161,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`frontend/tests/beijingClock.spec.ts`](frontend/tests/beijingClock.spec.ts), [`frontend/tests/deadlineDateTime.spec.ts`](frontend/tests/deadlineDateTime.spec.ts), [`frontend/tests/lsHelpersWall.spec.ts`](frontend/tests/lsHelpersWall.spec.ts), [`frontend/tests/mindmateCollabRead.spec.ts`](frontend/tests/mindmateCollabRead.spec.ts), [`frontend/tests/multiFlowLayoutLoop.spec.ts`](frontend/tests/multiFlowLayoutLoop.spec.ts)
-- [`tests/test_learning_space.py`](tests/test_learning_space.py), [`tests/test_cos_env_prefix.py`](tests/test_cos_env_prefix.py), [`tests/test_temp_image_storage.py`](tests/test_temp_image_storage.py), [`tests/test_mindmate_collab_background_files.py`](tests/test_mindmate_collab_background_files.py), [`tests/test_mindmate_collab_background_preview.py`](tests/test_mindmate_collab_background_preview.py)
+- [`frontend/tests/beijingClock.spec.ts`](frontend/tests/beijingClock.spec.ts), [`frontend/tests/deadlineDateTime.spec.ts`](frontend/tests/deadlineDateTime.spec.ts), [`frontend/tests/lsHelpersWall.spec.ts`](frontend/tests/lsHelpersWall.spec.ts), [`frontend/tests/mindmateSeminarRead.spec.ts`](frontend/tests/mindmateSeminarRead.spec.ts), [`frontend/tests/multiFlowLayoutLoop.spec.ts`](frontend/tests/multiFlowLayoutLoop.spec.ts)
+- [`tests/test_learning_space.py`](tests/test_learning_space.py), [`tests/test_cos_env_prefix.py`](tests/test_cos_env_prefix.py), [`tests/test_temp_image_storage.py`](tests/test_temp_image_storage.py), [`tests/test_mindmate_seminar_background_files.py`](tests/test_mindmate_seminar_background_files.py), [`tests/test_mindmate_seminar_background_preview.py`](tests/test_mindmate_seminar_background_preview.py)
 
 ## [5.180.183] - 2026-10-23
 
@@ -119,7 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 
 - [`frontend/tests/mindmateWelcomeLayout.spec.ts`](frontend/tests/mindmateWelcomeLayout.spec.ts)
-- [`tests/test_mindmate_collab_group_members.py`](tests/test_mindmate_collab_group_members.py)
+- [`tests/test_mindmate_seminar_group_members.py`](tests/test_mindmate_seminar_group_members.py)
 
 ## [5.180.182] - 2026-10-23
 
@@ -157,7 +214,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py)
+- [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts), [`tests/test_mindmate_seminar_dify_stream.py`](tests/test_mindmate_seminar_dify_stream.py)
 
 ## [5.180.180] - 2026-10-20
 
@@ -226,7 +283,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [`tests/test_learning_space.py`](tests/test_learning_space.py) — an assistant can publish, can delete only their own homework, and a review stores the grader.
 - [`tests/test_learning_space_db_flow.py`](tests/test_learning_space_db_flow.py) — an assistant can open the class as a publisher, and a review stores `reviewed_by`.
 - [`tests/test_mindmate_stream_session_release.py`](tests/test_mindmate_stream_session_release.py) — the chat request commits its database session before the stream starts.
-- [`frontend/tests/lsHelpersWall.spec.ts`](frontend/tests/lsHelpersWall.spec.ts), [`frontend/tests/mindmateStreamErrorNotice.spec.ts`](frontend/tests/mindmateStreamErrorNotice.spec.ts), [`frontend/tests/mindmateCollabWsErrors.spec.ts`](frontend/tests/mindmateCollabWsErrors.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts)
+- [`frontend/tests/lsHelpersWall.spec.ts`](frontend/tests/lsHelpersWall.spec.ts), [`frontend/tests/mindmateStreamErrorNotice.spec.ts`](frontend/tests/mindmateStreamErrorNotice.spec.ts), [`frontend/tests/mindmateSeminarWsErrors.spec.ts`](frontend/tests/mindmateSeminarWsErrors.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts)
 
 ## [5.180.177] - 2026-10-19
 
@@ -243,7 +300,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py)
+- [`tests/test_mindmate_seminar_library_archive.py`](tests/test_mindmate_seminar_library_archive.py)
 - [`frontend/tests/mindmateContinueSession.spec.ts`](frontend/tests/mindmateContinueSession.spec.ts)
 
 ## [5.180.176] - 2026-10-18
@@ -261,8 +318,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py), [`tests/test_mindmate_notify_presence.py`](tests/test_mindmate_notify_presence.py), [`tests/test_ws_fanout.py`](tests/test_ws_fanout.py)
-- [`frontend/tests/mindmateCollabLibrarySave.spec.ts`](frontend/tests/mindmateCollabLibrarySave.spec.ts), [`frontend/tests/mindmateContinueSession.spec.ts`](frontend/tests/mindmateContinueSession.spec.ts), [`frontend/tests/mindmatePresenceSubscribe.spec.ts`](frontend/tests/mindmatePresenceSubscribe.spec.ts)
+- [`tests/test_mindmate_seminar_library_archive.py`](tests/test_mindmate_seminar_library_archive.py), [`tests/test_mindmate_notify_presence.py`](tests/test_mindmate_notify_presence.py), [`tests/test_ws_fanout.py`](tests/test_ws_fanout.py)
+- [`frontend/tests/mindmateSeminarLibrarySave.spec.ts`](frontend/tests/mindmateSeminarLibrarySave.spec.ts), [`frontend/tests/mindmateContinueSession.spec.ts`](frontend/tests/mindmateContinueSession.spec.ts), [`frontend/tests/mindmatePresenceSubscribe.spec.ts`](frontend/tests/mindmatePresenceSubscribe.spec.ts)
 
 ## [5.180.175] - 2026-10-18
 
@@ -622,7 +679,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 
 - [`tests/test_dify_global_servers.py`](tests/test_dify_global_servers.py), [`tests/test_dify_failover_switch_e2e.py`](tests/test_dify_failover_switch_e2e.py) — blank slots use the env pair; a backup thread stays on 备用服务器; a 主服务器 id is not sent there during an outage; traffic returns when 主服务器 recovers.
-- [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py), [`tests/test_dify_conversations_http.py`](tests/test_dify_conversations_http.py), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py) — history survives one server being down; collab omits the 主服务器 conversation id on failover.
+- [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py), [`tests/test_dify_conversations_http.py`](tests/test_dify_conversations_http.py), [`tests/test_mindmate_seminar_dify_stream.py`](tests/test_mindmate_seminar_dify_stream.py) — history survives one server being down; collab omits the 主服务器 conversation id on failover.
 
 ## [5.180.156] - 2026-10-11
 
@@ -839,7 +896,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`tests/test_thinking_coin_wallet_concurrency.py`](tests/test_thinking_coin_wallet_concurrency.py), [`tests/test_collab_stability_helpers.py`](tests/test_collab_stability_helpers.py), [`tests/test_rls_policy_column_refs.py`](tests/test_rls_policy_column_refs.py), [`tests/test_rls_functions_sql.py`](tests/test_rls_functions_sql.py), [`tests/auth/test_expert_school_binding.py`](tests/auth/test_expert_school_binding.py), [`tests/auth/test_expert_live_scope.py`](tests/auth/test_expert_live_scope.py), [`tests/test_canvas_express_llm.py`](tests/test_canvas_express_llm.py), [`tests/test_llm_routing_store.py`](tests/test_llm_routing_store.py), [`tests/test_llm_provider_rate_caps.py`](tests/test_llm_provider_rate_caps.py), [`frontend/tests/useSlideRemote.spec.ts`](frontend/tests/useSlideRemote.spec.ts), [`frontend/tests/useSlideRemoteDesktopPoll.spec.ts`](frontend/tests/useSlideRemoteDesktopPoll.spec.ts), [`frontend/tests/frontendLog.spec.ts`](frontend/tests/frontendLog.spec.ts), [`frontend/tests/installFrontendErrorReporting.spec.ts`](frontend/tests/installFrontendErrorReporting.spec.ts), [`frontend/tests/MindmateCollabStartPicker.spec.ts`](frontend/tests/MindmateCollabStartPicker.spec.ts), [`frontend/tests/mindmateCollabSeed.spec.ts`](frontend/tests/mindmateCollabSeed.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/resolveDiagramLlmModel.spec.ts`](frontend/tests/resolveDiagramLlmModel.spec.ts)
+- [`tests/test_thinking_coin_wallet_concurrency.py`](tests/test_thinking_coin_wallet_concurrency.py), [`tests/test_collab_stability_helpers.py`](tests/test_collab_stability_helpers.py), [`tests/test_rls_policy_column_refs.py`](tests/test_rls_policy_column_refs.py), [`tests/test_rls_functions_sql.py`](tests/test_rls_functions_sql.py), [`tests/auth/test_expert_school_binding.py`](tests/auth/test_expert_school_binding.py), [`tests/auth/test_expert_live_scope.py`](tests/auth/test_expert_live_scope.py), [`tests/test_canvas_express_llm.py`](tests/test_canvas_express_llm.py), [`tests/test_llm_routing_store.py`](tests/test_llm_routing_store.py), [`tests/test_llm_provider_rate_caps.py`](tests/test_llm_provider_rate_caps.py), [`frontend/tests/useSlideRemote.spec.ts`](frontend/tests/useSlideRemote.spec.ts), [`frontend/tests/useSlideRemoteDesktopPoll.spec.ts`](frontend/tests/useSlideRemoteDesktopPoll.spec.ts), [`frontend/tests/frontendLog.spec.ts`](frontend/tests/frontendLog.spec.ts), [`frontend/tests/installFrontendErrorReporting.spec.ts`](frontend/tests/installFrontendErrorReporting.spec.ts), [`frontend/tests/MindmateSeminarStartPicker.spec.ts`](frontend/tests/MindmateSeminarStartPicker.spec.ts), [`frontend/tests/mindmateSeminarSeed.spec.ts`](frontend/tests/mindmateSeminarSeed.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/resolveDiagramLlmModel.spec.ts`](frontend/tests/resolveDiagramLlmModel.spec.ts)
 
 ## [5.180.144] - 2026-10-05
 
@@ -941,7 +998,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`frontend/tests/diagramBilingualMeasure.spec.ts`](frontend/tests/diagramBilingualMeasure.spec.ts), [`frontend/tests/diagramOperationGloss.spec.ts`](frontend/tests/diagramOperationGloss.spec.ts), [`frontend/tests/learningSheetPersist.spec.ts`](frontend/tests/learningSheetPersist.spec.ts), [`frontend/tests/hierarchicalClipboard.spec.ts`](frontend/tests/hierarchicalClipboard.spec.ts), [`frontend/tests/mindMapSummary.spec.ts`](frontend/tests/mindMapSummary.spec.ts), [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts), [`frontend/tests/schoolTier.spec.ts`](frontend/tests/schoolTier.spec.ts), [`frontend/tests/proLevelTagFit.spec.ts`](frontend/tests/proLevelTagFit.spec.ts), [`frontend/tests/thinkingMapConnectionStroke.spec.ts`](frontend/tests/thinkingMapConnectionStroke.spec.ts), [`frontend/tests/thinkingMapNodePaint.spec.ts`](frontend/tests/thinkingMapNodePaint.spec.ts), [`tests/test_diagram_bilingual_split.py`](tests/test_diagram_bilingual_split.py), [`tests/test_generate_pipeline_secondary_language.py`](tests/test_generate_pipeline_secondary_language.py), [`tests/test_autocomplete_json_schema.py`](tests/test_autocomplete_json_schema.py), [`tests/test_autocomplete_topic_lock.py`](tests/test_autocomplete_topic_lock.py), [`tests/test_mindmate_collab_mention.py`](tests/test_mindmate_collab_mention.py), [`tests/test_school_tier.py`](tests/test_school_tier.py), [`tests/test_school_tier_http.py`](tests/test_school_tier_http.py)
+- [`frontend/tests/diagramBilingualMeasure.spec.ts`](frontend/tests/diagramBilingualMeasure.spec.ts), [`frontend/tests/diagramOperationGloss.spec.ts`](frontend/tests/diagramOperationGloss.spec.ts), [`frontend/tests/learningSheetPersist.spec.ts`](frontend/tests/learningSheetPersist.spec.ts), [`frontend/tests/hierarchicalClipboard.spec.ts`](frontend/tests/hierarchicalClipboard.spec.ts), [`frontend/tests/mindMapSummary.spec.ts`](frontend/tests/mindMapSummary.spec.ts), [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts), [`frontend/tests/schoolTier.spec.ts`](frontend/tests/schoolTier.spec.ts), [`frontend/tests/proLevelTagFit.spec.ts`](frontend/tests/proLevelTagFit.spec.ts), [`frontend/tests/thinkingMapConnectionStroke.spec.ts`](frontend/tests/thinkingMapConnectionStroke.spec.ts), [`frontend/tests/thinkingMapNodePaint.spec.ts`](frontend/tests/thinkingMapNodePaint.spec.ts), [`tests/test_diagram_bilingual_split.py`](tests/test_diagram_bilingual_split.py), [`tests/test_generate_pipeline_secondary_language.py`](tests/test_generate_pipeline_secondary_language.py), [`tests/test_autocomplete_json_schema.py`](tests/test_autocomplete_json_schema.py), [`tests/test_autocomplete_topic_lock.py`](tests/test_autocomplete_topic_lock.py), [`tests/test_mindmate_seminar_mention.py`](tests/test_mindmate_seminar_mention.py), [`tests/test_school_tier.py`](tests/test_school_tier.py), [`tests/test_school_tier_http.py`](tests/test_school_tier_http.py)
 
 ## [5.180.137] - 2026-10-03
 
@@ -1098,7 +1155,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`frontend/tests/mindmateCollabLibrarySave.spec.ts`](frontend/tests/mindmateCollabLibrarySave.spec.ts)
+- [`frontend/tests/mindmateSeminarLibrarySave.spec.ts`](frontend/tests/mindmateSeminarLibrarySave.spec.ts)
 
 ## [5.180.128] - 2026-10-01
 
@@ -1110,7 +1167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`frontend/tests/useMindmateCollab.spec.ts`](frontend/tests/useMindmateCollab.spec.ts), [`frontend/tests/mindmateCollabGap.spec.ts`](frontend/tests/mindmateCollabGap.spec.ts), [`frontend/tests/mindmateCollabHeartbeat.spec.ts`](frontend/tests/mindmateCollabHeartbeat.spec.ts), [`tests/test_mindmate_collab_message_history.py`](tests/test_mindmate_collab_message_history.py), [`tests/test_mindmate_collab_message_delivery.py`](tests/test_mindmate_collab_message_delivery.py)
+- [`frontend/tests/useMindmateSeminar.spec.ts`](frontend/tests/useMindmateSeminar.spec.ts), [`frontend/tests/mindmateSeminarGap.spec.ts`](frontend/tests/mindmateSeminarGap.spec.ts), [`frontend/tests/mindmateSeminarHeartbeat.spec.ts`](frontend/tests/mindmateSeminarHeartbeat.spec.ts), [`tests/test_mindmate_seminar_message_history.py`](tests/test_mindmate_seminar_message_history.py), [`tests/test_mindmate_seminar_message_delivery.py`](tests/test_mindmate_seminar_message_delivery.py)
 
 ## [5.180.127] - 2026-10-01
 
@@ -1151,8 +1208,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py), [`tests/test_mindmate_collab_read_cursors.py`](tests/test_mindmate_collab_read_cursors.py), [`tests/test_mindmate_collab_participant_faces.py`](tests/test_mindmate_collab_participant_faces.py), [`tests/test_ws_fanout_delivery_queue.py`](tests/test_ws_fanout_delivery_queue.py)
-- [`frontend/tests/mindmateCollabRead.spec.ts`](frontend/tests/mindmateCollabRead.spec.ts), [`frontend/tests/mindmateSeminarFaces.spec.ts`](frontend/tests/mindmateSeminarFaces.spec.ts), [`frontend/tests/mindmateCollabGap.spec.ts`](frontend/tests/mindmateCollabGap.spec.ts), [`frontend/tests/mindmateCollabDisplay.spec.ts`](frontend/tests/mindmateCollabDisplay.spec.ts)
+- [`tests/test_mindmate_seminar_library_archive.py`](tests/test_mindmate_seminar_library_archive.py), [`tests/test_mindmate_seminar_read_cursors.py`](tests/test_mindmate_seminar_read_cursors.py), [`tests/test_mindmate_seminar_participant_faces.py`](tests/test_mindmate_seminar_participant_faces.py), [`tests/test_ws_fanout_delivery_queue.py`](tests/test_ws_fanout_delivery_queue.py)
+- [`frontend/tests/mindmateSeminarRead.spec.ts`](frontend/tests/mindmateSeminarRead.spec.ts), [`frontend/tests/mindmateSeminarFaces.spec.ts`](frontend/tests/mindmateSeminarFaces.spec.ts), [`frontend/tests/mindmateSeminarGap.spec.ts`](frontend/tests/mindmateSeminarGap.spec.ts), [`frontend/tests/mindmateSeminarDisplay.spec.ts`](frontend/tests/mindmateSeminarDisplay.spec.ts)
 
 ## [5.180.124] - 2026-09-30
 
@@ -1165,8 +1222,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`tests/test_mindmate_collab_message_delivery.py`](tests/test_mindmate_collab_message_delivery.py), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py), [`tests/test_teaching_design_docx.py`](tests/test_teaching_design_docx.py), [`tests/test_teaching_design_llm.py`](tests/test_teaching_design_llm.py)
-- [`frontend/tests/mindmateCollabGap.spec.ts`](frontend/tests/mindmateCollabGap.spec.ts), [`frontend/tests/mindmateCollabDisplay.spec.ts`](frontend/tests/mindmateCollabDisplay.spec.ts)
+- [`tests/test_mindmate_seminar_message_delivery.py`](tests/test_mindmate_seminar_message_delivery.py), [`tests/test_mindmate_seminar_dify_stream.py`](tests/test_mindmate_seminar_dify_stream.py), [`tests/test_teaching_design_docx.py`](tests/test_teaching_design_docx.py), [`tests/test_teaching_design_llm.py`](tests/test_teaching_design_llm.py)
+- [`frontend/tests/mindmateSeminarGap.spec.ts`](frontend/tests/mindmateSeminarGap.spec.ts), [`frontend/tests/mindmateSeminarDisplay.spec.ts`](frontend/tests/mindmateSeminarDisplay.spec.ts)
 
 ## [5.180.123] - 2026-09-30
 
@@ -1371,7 +1428,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`tests/test_org_dify_inputs.py`](tests/test_org_dify_inputs.py), [`tests/test_mindmate_collab_mention.py`](tests/test_mindmate_collab_mention.py), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py), [`tests/test_school_tier.py`](tests/test_school_tier.py)
+- [`tests/test_org_dify_inputs.py`](tests/test_org_dify_inputs.py), [`tests/test_mindmate_seminar_mention.py`](tests/test_mindmate_seminar_mention.py), [`tests/test_mindmate_seminar_dify_stream.py`](tests/test_mindmate_seminar_dify_stream.py), [`tests/test_school_tier.py`](tests/test_school_tier.py)
 
 ## [5.180.108] - 2026-09-28
 
@@ -1398,7 +1455,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`tests/test_mindmate_collab_diagram_library.py`](tests/test_mindmate_collab_diagram_library.py), [`frontend/tests/mindmateCollabDisplay.spec.ts`](frontend/tests/mindmateCollabDisplay.spec.ts), [`frontend/tests/mindmateCollabDiagramLibrary.spec.ts`](frontend/tests/mindmateCollabDiagramLibrary.spec.ts)
+- [`tests/test_mindmate_seminar_diagram_library.py`](tests/test_mindmate_seminar_diagram_library.py), [`frontend/tests/mindmateSeminarDisplay.spec.ts`](frontend/tests/mindmateSeminarDisplay.spec.ts), [`frontend/tests/mindmateSeminarDiagramLibrary.spec.ts`](frontend/tests/mindmateSeminarDiagramLibrary.spec.ts)
 
 ## [5.180.106] - 2026-09-28
 
@@ -1433,7 +1490,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`frontend/tests/quickAccessRemote.spec.ts`](frontend/tests/quickAccessRemote.spec.ts), [`frontend/tests/useClassroomRemotePosition.spec.ts`](frontend/tests/useClassroomRemotePosition.spec.ts), [`tests/test_quick_access_specs.py`](tests/test_quick_access_specs.py), [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py), [`tests/services/test_blocklist_health.py`](tests/services/test_blocklist_health.py)
+- [`frontend/tests/quickAccessRemote.spec.ts`](frontend/tests/quickAccessRemote.spec.ts), [`frontend/tests/useClassroomRemotePosition.spec.ts`](frontend/tests/useClassroomRemotePosition.spec.ts), [`tests/test_quick_access_specs.py`](tests/test_quick_access_specs.py), [`tests/test_mindmate_seminar_library_archive.py`](tests/test_mindmate_seminar_library_archive.py), [`tests/services/test_blocklist_health.py`](tests/services/test_blocklist_health.py)
 
 ## [5.180.104] - 2026-09-27
 
@@ -1779,7 +1836,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [`tests/test_org_custom_llm.py`](tests/test_org_custom_llm.py) — URL allowlist, official error mapping, admin apply, cache stamp, Redis omit key, usage model id
 - [`frontend/tests/useOrgCustomLlm.spec.ts`](frontend/tests/useOrgCustomLlm.spec.ts)
-- [`tests/test_mindmate_collab_mention.py`](tests/test_mindmate_collab_mention.py), [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts)
+- [`tests/test_mindmate_seminar_mention.py`](tests/test_mindmate_seminar_mention.py), [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts)
 - `npm run i18n:check-keys` — 5847 keys × 77 locales
 - `npm run i18n:check-picker-stubs -- --strict` — 28 picker locales
 - [`frontend/tests/loadLocaleMessages.spec.ts`](frontend/tests/loadLocaleMessages.spec.ts)
@@ -2706,7 +2763,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Live spec leftover ids** — Granular Redis FCALL is skipped when the live spec or patch still uses invented branch ids; Python merge migrates them. Seeding from the DB migrates mind-map identity first.
 - **Lock-filtered add** — If a new node's only edge is dropped by another editor's lock, the orphan node patch is dropped too.
 - **Collab update schema** — Accepts `insert_after_target`, handle positions, `edgeType`, arrowhead fields, and `linkedFromConnectionId`. Full-spec nest depth is 6 so V2 `node_styles_by_path` is not rejected.
-- **MindMate seminar chrome** — Standalone `/mindmate/collab` reuses `MindmateCollabEmbed`. The current thread is seeded only when starting a seminar, not when joining. DM Send is localized.
+- **MindMate seminar chrome** — Standalone `/mindmate/collab` reuses `MindmateSeminarEmbed`. The current thread is seeded only when starting a seminar, not when joining. DM Send is localized.
 - **Granular-over-cap** — A diff that exceeds the server cap no longer falls through to a second send path.
 
 ### Tests
@@ -2824,10 +2881,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `tests/test_llm_http_errors.py` — attach keeps filter type; no retry; 400 body; not collected
 - `tests/test_error_reporting.py` — collector skips typed and Chinese filter text
 - `frontend/tests/useMindMapDocumentSummaryAccept.spec.ts` — `isContentFilterDetail`
-- `tests/test_mindmate_collab_org_listing.py` — org-bound SQL RLS; Redis fill-in when SQL only has the viewer's room
-- `frontend/tests/MindmateCollabHistory.spec.ts` — sidebar group list keeps a colleague's room
-- `tests/test_mindmate_collab_backend.py` — host stop is idempotent when the room is already ended
-- `frontend/tests/useMindmateCollab.spec.ts` — ended invite codes are not rejoined or re-tracked; org presence survives teardown
+- `tests/test_mindmate_seminar_org_listing.py` — org-bound SQL RLS; Redis fill-in when SQL only has the viewer's room
+- `frontend/tests/MindmateSeminarHistory.spec.ts` — sidebar group list keeps a colleague's room
+- `tests/test_mindmate_seminar_backend.py` — host stop is idempotent when the room is already ended
+- `frontend/tests/useMindmateSeminar.spec.ts` — ended invite codes are not rejoined or re-tracked; org presence survives teardown
 
 ## [5.180.32] - 2026-08-27
 
@@ -4968,32 +5025,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **School consultation API** — `POST /api/thinking-coins/school-consultation` validates the form, rate-limits, and forwards leads via WeCom ([`thinking_coins.py`](routers/auth/thinking_coins.py), [`school_consult_notify.py`](services/auth/thinking_coin/school_consult_notify.py), [`school_consult_validation.py`](services/auth/thinking_coin/school_consult_validation.py)).
 - **Thinking-coins school subscription UI** — School consult form in upgrade modal ([`ThinkingCoinsSchoolSubscriptionPanel.vue`](frontend/src/components/auth/ThinkingCoinsSchoolSubscriptionPanel.vue), [`ThinkingCoinsSubscriptionSection.vue`](frontend/src/components/auth/ThinkingCoinsSubscriptionSection.vue)); deep-link `?tab=school` on `/thinking-coins/upgrade`.
 - **Ledger enrichment** — Wallet ledger rows include `task_title` / `task_title_en` from earn-task refs ([`ledger_enrichment.py`](services/auth/thinking_coin/ledger_enrichment.py), [`thinkingCoinsLedgerLabel.ts`](frontend/src/composables/auth/thinkingCoinsLedgerLabel.ts)).
-- **Collab reconnect helpers** — Permanent close-code denylist, exponential backoff, and resume-token refresh ([`mindmateCollabReconnect.ts`](frontend/src/utils/mindmateCollabReconnect.ts)).
+- **Collab reconnect helpers** — Permanent close-code denylist, exponential backoff, and resume-token refresh ([`mindmateSeminarReconnect.ts`](frontend/src/utils/mindmateSeminarReconnect.ts)).
 - **Extension page-context display** — Strip embedded page markdown for MindMate bubbles, collab seed, and history ([`mindmateExtensionPageContext.ts`](frontend/src/utils/mindmateExtensionPageContext.ts)).
-- **WS disconnect cleanup module** — Superseded-socket teardown without evicting the active Redis/registry connection ([`ws_disconnect_cleanup.py`](services/features/mindmate_collab/ws_disconnect_cleanup.py)).
+- **WS disconnect cleanup module** — Superseded-socket teardown without evicting the active Redis/registry connection ([`ws_disconnect_cleanup.py`](services/features/mindmate_seminar/ws_disconnect_cleanup.py)).
 
 ### Changed
 
-- **MindMate collab WebSocket join flow** — `add_participant` runs only after `ws_managed_session` accepts; REST join validates permissions without incrementing counts until WS connect ([`mindmate_collab_ws.py`](routers/api/mindmate_collab_ws.py), [`manager.py`](services/features/mindmate_collab/manager.py)).
-- **Collab room UX** — Connection status banner, retry control, mobile members drawer, and embed layout polish ([`MindmateCollabRoom.vue`](frontend/src/components/mindmate/MindmateCollabRoom.vue), [`MindmateCollabEmbed.vue`](frontend/src/components/mindmate/MindmateCollabEmbed.vue), [`MindmateCollabPage.vue`](frontend/src/pages/MindmateCollabPage.vue)).
+- **MindMate collab WebSocket join flow** — `add_participant` runs only after `ws_managed_session` accepts; REST join validates permissions without incrementing counts until WS connect ([`mindmate_seminar_ws.py`](routers/api/mindmate_seminar_ws.py), [`manager.py`](services/features/mindmate_seminar/manager.py)).
+- **Collab room UX** — Connection status banner, retry control, mobile members drawer, and embed layout polish ([`MindmateSeminarRoom.vue`](frontend/src/components/mindmate/MindmateSeminarRoom.vue), [`MindmateSeminarEmbed.vue`](frontend/src/components/mindmate/MindmateSeminarEmbed.vue), [`MindmateSeminarPage.vue`](frontend/src/pages/MindmateSeminarPage.vue)).
 - **Thinking-coins upgrade panel** — Ledger preview row, expandable earn-task cards, and school subscription section ([`ThinkingCoinsUpgradePanel.vue`](frontend/src/components/auth/ThinkingCoinsUpgradePanel.vue)).
 - **Mind map underline connectors** — Underline-bar anchor Y aligned with branch node geometry; orthogonal edge path uses shared endpoint resolver ([`BranchNode.vue`](frontend/src/components/diagram/nodes/BranchNode.vue), [`MindMapOrthogonalEdge.vue`](frontend/src/components/diagram/edges/MindMapOrthogonalEdge.vue), [`mindMapEdgeEndpoints.ts`](frontend/src/utils/mindMapEdgeEndpoints.ts)).
 - **Chrome extension compose** — Panel bubbles and history show the teacher question only when page context is embedded ([`mindmate-compose.js`](chrome-extension/mindmate-compose.js), [`mindmate-api.js`](chrome-extension/mindmate-api.js)).
-- **MindMate collab architecture doc** — WebSocket frame and participant-registration notes ([`mindmate_collab.md`](docs/architecture/mindmate_collab.md)).
+- **MindMate collab architecture doc** — WebSocket frame and participant-registration notes ([`mindmate_seminar.md`](docs/architecture/mindmate_seminar.md)).
 
 ### Fixed
 
-- **Duplicate-tab WebSocket cleanup** — Second connection for the same user no longer evicts the active socket from Redis/registry ([`ws_disconnect_cleanup.py`](services/features/mindmate_collab/ws_disconnect_cleanup.py)).
+- **Duplicate-tab WebSocket cleanup** — Second connection for the same user no longer evicts the active socket from Redis/registry ([`ws_disconnect_cleanup.py`](services/features/mindmate_seminar/ws_disconnect_cleanup.py)).
 - **Connection-cap ghost participants** — Failed WS joins roll back; counts update only on successful connect.
 - **REST join ghost participants** — Participant counts no longer increment on permission-only REST join.
-- **Collab reconnect policy** — Denylist permanent close codes (1008, 4029); `session_closing` and auth-failure UX ([`useMindmateCollab.ts`](frontend/src/composables/mindmate/useMindmateCollab.ts)).
+- **Collab reconnect policy** — Denylist permanent close codes (1008, 4029); `session_closing` and auth-failure UX ([`useMindmateSeminar.ts`](frontend/src/composables/mindmate/useMindmateSeminar.ts)).
 - **Extension page context in collab seed** — Seed messages display the extracted question, not raw page markdown ([`MindmatePanel.vue`](frontend/src/components/panels/MindmatePanel.vue)).
 - **Mobile collab members panel** — Drawer toggle on narrow viewports.
 
 ### Tests
 
-- **Backend** — `test_mindmate_collab_ws_disconnect.py`, `test_school_consult_route.py`, `test_school_consult_validation.py`, `test_thinking_coin_ledger_enrichment.py`, `test_wecom_*.py`; extended `test_mindmate_collab_backend.py`, `test_mindmate_collab_hardening.py`, `test_mindmate_collab_resume_tokens.py`.
-- **Frontend** — `mindmateCollabReconnect.spec.ts`, `mindmateExtensionPageContext.spec.ts`, `thinkingCoinsLedgerLabel.spec.ts`; extended `mindMapUnderlineAnchorY.spec.ts`, `useMindmateCollab.spec.ts`.
+- **Backend** — `test_mindmate_seminar_ws_disconnect.py`, `test_school_consult_route.py`, `test_school_consult_validation.py`, `test_thinking_coin_ledger_enrichment.py`, `test_wecom_*.py`; extended `test_mindmate_seminar_backend.py`, `test_mindmate_seminar_hardening.py`, `test_mindmate_seminar_resume_tokens.py`.
+- **Frontend** — `mindmateSeminarReconnect.spec.ts`, `mindmateExtensionPageContext.spec.ts`, `thinkingCoinsLedgerLabel.spec.ts`; extended `mindMapUnderlineAnchorY.spec.ts`, `useMindmateSeminar.spec.ts`.
 - **Chrome extension** — Extended [`test/mindmate.spec.js`](chrome-extension/test/mindmate.spec.js) for page-context display helpers.
 
 ## [5.137.0] - 2026-07-05
@@ -5002,35 +5059,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **MindMate collab seed messages** — Starting a room copies the host's MindMate thread into the shared room (`seed_messages` on `POST /start`; [`message_history.py`](services/features/mindmate_collab/message_history.py), [`MindmatePanel.vue`](frontend/src/components/panels/MindmatePanel.vue)).
-- **Org concurrent session cap** — `MINDMATE_COLLAB_MAX_ORG_CONCURRENT_SESSIONS` (default 10) limits live organization-visible rooms per org ([`manager.py`](services/features/mindmate_collab/manager.py), [`config.py`](services/features/mindmate_collab/config.py)).
-- **Network room session members** — `GET /session-members` lists teachers who joined a public collab room ([`mindmate_collab_routes.py`](routers/api/mindmate_collab_routes.py), [`org_member_roster.py`](services/features/org_member_roster.py)).
+- **MindMate collab seed messages** — Starting a room copies the host's MindMate thread into the shared room (`seed_messages` on `POST /start`; [`message_history.py`](services/features/mindmate_seminar/message_history.py), [`MindmatePanel.vue`](frontend/src/components/panels/MindmatePanel.vue)).
+- **Org concurrent session cap** — `MINDMATE_COLLAB_MAX_ORG_CONCURRENT_SESSIONS` (default 10) limits live organization-visible rooms per org ([`manager.py`](services/features/mindmate_seminar/manager.py), [`config.py`](services/features/mindmate_seminar/config.py)).
+- **Network room session members** — `GET /session-members` lists teachers who joined a public collab room ([`mindmate_seminar_routes.py`](routers/api/mindmate_seminar_routes.py), [`org_member_roster.py`](services/features/org_member_roster.py)).
 - **Unified org roster composables** — Shared `useOrgRosterPanel`, `useOrgPresenceCore`, and backend adapters for Workshop Chat and MindMate collab ([`frontend/src/composables/social/`](frontend/src/composables/social/)).
-- **MindMate collab breadcrumb** — In-room navigation back to personal MindMate thread ([`MindmateCollabBreadcrumb.vue`](frontend/src/components/mindmate/MindmateCollabBreadcrumb.vue)).
-- **Collab teardown helpers** — Shared stop/confirm/WS error utilities ([`mindmateCollabTeardown.ts`](frontend/src/utils/mindmateCollabTeardown.ts), [`mindmateCollabConfirm.ts`](frontend/src/utils/mindmateCollabConfirm.ts), [`mindmateCollabWsErrors.ts`](frontend/src/utils/mindmateCollabWsErrors.ts)).
+- **MindMate collab breadcrumb** — In-room navigation back to personal MindMate thread ([`MindmateSeminarBreadcrumb.vue`](frontend/src/components/mindmate/MindmateSeminarBreadcrumb.vue)).
+- **Collab teardown helpers** — Shared stop/confirm/WS error utilities ([`mindmateSeminarTeardown.ts`](frontend/src/utils/mindmateSeminarTeardown.ts), [`mindmateSeminarConfirm.ts`](frontend/src/utils/mindmateSeminarConfirm.ts), [`mindmateSeminarWsErrors.ts`](frontend/src/utils/mindmateSeminarWsErrors.ts)).
 - **MindGrowth sidebar quotes** — Chinese vendor bucket via `normalize-mindgrowth.ts`; shipped in `sidebar-quotes-zh.json` ([`frontend/scripts/vendor/sidebar-quotes/mindgraph/`](frontend/scripts/vendor/sidebar-quotes/mindgraph/)).
 - **Local CI script** — [`scripts/ci-local.sh`](scripts/ci-local.sh) mirrors GitHub Actions workflow.
 
 ### Changed
 
-- **MindMate collab defaults** — Default room duration 10h (was end-of-day); idle warning after 43m silence + 2m grace ([`config.py`](services/features/mindmate_collab/config.py)).
+- **MindMate collab defaults** — Default room duration 10h (was end-of-day); idle warning after 43m silence + 2m grace ([`config.py`](services/features/mindmate_seminar/config.py)).
 - **Collab room UX** — Embed panel, members panel, and history refactored; Swiss-style confirm dialogs ([`mindmate-swiss-messagebox.css`](frontend/src/styles/mindmate-swiss-messagebox.css)); host stop from toolbar.
 - **Org contacts panel** — Sectioned roster via `useOrgContactSections`; `UserCardPopover` shared across Workshop and collab ([`OrgContactsPanel.vue`](frontend/src/components/social/OrgContactsPanel.vue)).
-- **Dify stream control** — Cooperative abort signal, chat guard while closing, system-stop path ([`dify_stream_control.py`](services/features/mindmate_collab/dify_stream_control.py), [`dify_stream.py`](services/features/mindmate_collab/dify_stream.py)).
-- **Idle monitor** — Configurable concurrency; fan-out publish core alignment ([`idle_monitor.py`](services/features/mindmate_collab/idle_monitor.py), [`ws_redis_fanout_publish_core.py`](services/features/ws_redis_fanout_publish_core.py)).
-- **Resume tokens** — Tighter binding and one-time consume ([`resume_tokens.py`](services/features/mindmate_collab/resume_tokens.py)).
+- **Dify stream control** — Cooperative abort signal, chat guard while closing, system-stop path ([`dify_stream_control.py`](services/features/mindmate_seminar/dify_stream_control.py), [`dify_stream.py`](services/features/mindmate_seminar/dify_stream.py)).
+- **Idle monitor** — Configurable concurrency; fan-out publish core alignment ([`idle_monitor.py`](services/features/mindmate_seminar/idle_monitor.py), [`ws_redis_fanout_publish_core.py`](services/features/ws_redis_fanout_publish_core.py)).
+- **Resume tokens** — Tighter binding and one-time consume ([`resume_tokens.py`](services/features/mindmate_seminar/resume_tokens.py)).
 - **AGENTS.md** — Canonical pointers to Cursor rules and `ci-local.sh`; lint policy consolidated.
 
 ### Fixed
 
-- **Collab join while closing** — Reject joins and chat when session is shutting down ([`manager.py`](services/features/mindmate_collab/manager.py)).
-- **Participant registration** — Enforce max participants on join ([`manager.py`](services/features/mindmate_collab/manager.py)).
-- **Visibility validation** — Reject invalid `visibility` on room start ([`mindmate_collab_routes.py`](routers/api/mindmate_collab_routes.py)).
+- **Collab join while closing** — Reject joins and chat when session is shutting down ([`manager.py`](services/features/mindmate_seminar/manager.py)).
+- **Participant registration** — Enforce max participants on join ([`manager.py`](services/features/mindmate_seminar/manager.py)).
+- **Visibility validation** — Reject invalid `visibility` on room start ([`mindmate_seminar_routes.py`](routers/api/mindmate_seminar_routes.py)).
 
 ### Tests
 
-- **Backend** — `test_mindmate_collab_dify_stream.py`, `test_mindmate_collab_message_history.py`, `test_mindmate_collab_org_limits.py`, `test_mindmate_collab_resume_tokens.py`, `test_mindmate_collab_session_chat_guard.py`, `test_mindmate_collab_system_stop.py`; extended `test_mindmate_collab_backend.py`, `test_mindmate_collab_hardening.py`, `test_ws_fanout.py`.
-- **Frontend** — `mindmateCollabWsErrors.spec.ts`, `orgContactSections.spec.ts`; extended `useMindmateCollab.spec.ts`, `import-sidebar-quotes.spec.ts`.
+- **Backend** — `test_mindmate_seminar_dify_stream.py`, `test_mindmate_seminar_message_history.py`, `test_mindmate_seminar_org_limits.py`, `test_mindmate_seminar_resume_tokens.py`, `test_mindmate_seminar_session_chat_guard.py`, `test_mindmate_seminar_system_stop.py`; extended `test_mindmate_seminar_backend.py`, `test_mindmate_seminar_hardening.py`, `test_ws_fanout.py`.
+- **Frontend** — `mindmateSeminarWsErrors.spec.ts`, `orgContactSections.spec.ts`; extended `useMindmateSeminar.spec.ts`, `import-sidebar-quotes.spec.ts`.
 
 ## [5.136.0] - 2026-07-05
 
@@ -5057,7 +5114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Thinking-coins wallet refetch loop** — Sidebar auth sync no longer hammers `/api/thinking-coins/wallet` on every navigation ([`useAppSidebar.ts`](frontend/src/composables/sidebar/useAppSidebar.ts), [`fetchThinkingCoinsWallet.ts`](frontend/src/composables/auth/fetchThinkingCoinsWallet.ts)).
-- **MindMate collab notify WS** — Real-time poke/mention socket connects only when `FEATURE_MINDMATE_COLLAB` is enabled ([`useMindmateCollabNotify.ts`](frontend/src/composables/social/useMindmateCollabNotify.ts)).
+- **MindMate collab notify WS** — Real-time poke/mention socket connects only when `FEATURE_MINDMATE_COLLAB` is enabled ([`useMindmateSeminarNotify.ts`](frontend/src/composables/social/useMindmateSeminarNotify.ts)).
 - **Learning sheet layout** — Preserve pre-blank node dimensions so restored text does not shrink branches ([`learningSheet.ts`](frontend/src/stores/diagram/learningSheet.ts)).
 
 ### Tests
@@ -5071,8 +5128,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **MindMate online collab** — Shared AI chatroom for teachers: one room, one Dify conversation, streaming assistant replies fan-out to all participants. REST at `/api/mindmate/collab/*`, WebSocket at `/api/ws/mindmate-collab/{code}`, feature flag `FEATURE_MINDMATE_COLLAB` (default off). See [`docs/architecture/mindmate_collab.md`](docs/architecture/mindmate_collab.md).
-- **MindMate collab UI** — `MindmateCollabPage.vue`, toolbar panel on `/mindmate`, sidebar history (`MindmateCollabHistory.vue`), org contacts + DM drawer (shared social layer with Workshop Chat).
+- **MindMate online collab** — Shared AI chatroom for teachers: one room, one Dify conversation, streaming assistant replies fan-out to all participants. REST at `/api/mindmate/collab/*`, WebSocket at `/api/ws/mindmate-collab/{code}`, feature flag `FEATURE_MINDMATE_COLLAB` (default off). See [`docs/architecture/mindmate_seminar.md`](docs/architecture/mindmate_seminar.md).
+- **MindMate collab UI** — `MindmateSeminarPage.vue`, toolbar panel on `/mindmate`, sidebar history (`MindmateSeminarHistory.vue`), org contacts + DM drawer (shared social layer with Workshop Chat).
 - **MindMate collab backend** — Session manager, idle monitor, Dify stream lock, resume tokens, Redis fan-out (`mmc:` prefix), Alembic `rev_0076` + RLS `rev_0077`.
 - **Diagram provenance** — Optional `source_channel`, `conversation_id`, `dify_user_key` columns on `diagrams` (Alembic `rev_0074`); populated on library save from MindMate/MindBot flows.
 - **Pinned conversation routing** — `dify_user`, `server`, `mindbot_config_id` on pinned rows (Alembic `rev_0075`) for unified inbox message/delete/rename routing.
@@ -5098,8 +5155,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- **Backend** — `tests/test_mindmate_collab_*.py` (backend, hardening, lifecycle, visibility, WS broadcast); extended `test_unified_conversations.py`, `test_dingtalk_bind_service.py`, `test_generation_session_registry.py`.
-- **Frontend** — `useMindmateCollab.spec.ts`, `MindmateCollabPanel.spec.ts`, `MindmateCollabHistory.spec.ts`, `learningSheetBlank.spec.ts`, `mindmateCollabMention.spec.ts`, `mindmateCollabPokeNotify.spec.ts`, extended `canvasExportMenu.spec.ts`.
+- **Backend** — `tests/test_mindmate_seminar_*.py` (backend, hardening, lifecycle, visibility, WS broadcast); extended `test_unified_conversations.py`, `test_dingtalk_bind_service.py`, `test_generation_session_registry.py`.
+- **Frontend** — `useMindmateSeminar.spec.ts`, `MindmateSeminarPanel.spec.ts`, `MindmateSeminarHistory.spec.ts`, `learningSheetBlank.spec.ts`, `mindmateSeminarMention.spec.ts`, `mindmateSeminarPokeNotify.spec.ts`, extended `canvasExportMenu.spec.ts`.
 - **Chrome extension** — Extended [`test/mindmate.spec.js`](chrome-extension/test/mindmate.spec.js) for conversation routing helpers.
 
 ## [5.134.1] - 2026-07-01

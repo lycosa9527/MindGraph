@@ -6,9 +6,9 @@ import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
 import router from '@/router'
 import { authFetch } from '@/utils/api'
 import {
-  formatMindmateCollabCode,
-  trackLocalMindmateCollabSession,
-} from '@/utils/mindmateCollabSessions'
+  formatMindmateSeminarCode,
+  trackLocalMindmateSeminarSession,
+} from '@/utils/mindmateSeminarSessions'
 
 interface SeminarInvite {
   sessionId: string
@@ -41,7 +41,7 @@ export function enqueueSeminarConsent(invite: SeminarInvite, t: UseLanguageTrans
 export async function loadPendingSeminarInvites(t: UseLanguageTranslate): Promise<void> {
   rememberTranslator(t)
   try {
-    const response = await authFetch('/api/mindmate/collab/members/invites')
+    const response = await authFetch('/api/mindmate/seminar/members/invites')
     if (!response.ok) {
       return
     }
@@ -113,7 +113,7 @@ async function pump(): Promise<void> {
     // Closing the dialog declines the invite.
   }
   try {
-    const response = await authFetch('/api/mindmate/collab/members/respond', {
+    const response = await authFetch('/api/mindmate/seminar/members/respond', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: invite.sessionId, accept: agreed }),
@@ -129,15 +129,15 @@ async function pump(): Promise<void> {
       }
       const code = String(data.code || '')
       if (data.accepted && code) {
-        const formatted = formatMindmateCollabCode(code)
-        trackLocalMindmateCollabSession({
+        const formatted = formatMindmateSeminarCode(code)
+        trackLocalMindmateSeminarSession({
           session_id: String(data.session_id || invite.sessionId),
           code: formatted,
           title: String(data.title || invite.seminar),
           owner_user_id: Number(data.owner_user_id || 0) || undefined,
           visibility: String(data.visibility || invite.visibility),
         })
-        await router.push({ path: '/mindmate/collab', query: { code: formatted } })
+        await router.push({ path: '/mindmate/seminar', query: { code: formatted } })
       }
     }
   } catch {

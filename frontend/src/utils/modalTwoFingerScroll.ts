@@ -191,10 +191,11 @@ function onTouchMove(event: Event): void {
     point.y - session.originY,
     session.lock
   )
-  if (session.lock === 'horizontal') return
+  // preventDefault on touchmove cancels the click that follows. Wait until
+  // the gesture is clearly vertical so a small jitter does not swallow it.
+  if (session.lock !== 'vertical') return
   event.preventDefault()
   event.stopPropagation()
-  if (session.lock !== 'vertical') return
   const chain = mergeScrollChains(
     scrollableChain(fingers[0].target, session.root),
     scrollableChain(fingers[1].target, session.root)

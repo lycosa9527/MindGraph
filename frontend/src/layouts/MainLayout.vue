@@ -126,8 +126,8 @@ html:has(.main-layout),
 html:has(.main-layout) body,
 html:has(.main-layout) #app {
   height: 100%;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: var(--mg-vvh, 100dvh);
+  max-height: var(--mg-vvh, 100dvh);
   overflow: hidden;
 }
 </style>
@@ -137,7 +137,7 @@ html:has(.main-layout) #app {
   display: flex;
   width: 100%;
   height: 100%;
-  max-height: 100dvh;
+  max-height: var(--mg-vvh, 100dvh);
   overflow: hidden;
 }
 

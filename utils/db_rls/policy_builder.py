@@ -281,7 +281,9 @@ WORKSHOP_CHILD = [
     ("user_topic_preferences", WORKSHOP_TOPIC_PREF_EXPR),
 ]
 
-MINDMATE_COLLAB_SESSION_EXPR = (
+# Installed by rev_0159, before rls_seminar_session_visible. Fresh upgrades still
+# run 0159 against these strings. rev_0161 replaces them.
+_SESSION_EXPR_0159 = (
     "owner_user_id = rls_current_user_id() "
     "OR (visibility = 'network' AND rls_community_read_allowed()) "
     "OR (organization_id IS NOT NULL AND rls_org_visible(organization_id)) "
@@ -289,11 +291,9 @@ MINDMATE_COLLAB_SESSION_EXPR = (
     "OR rls_platform_admin_only() "
     "OR rls_is_system_mode()"
 )
-MINDMATE_COLLAB_SESSION_CHECK = (
-    "owner_user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only()"
-)
-MINDMATE_COLLAB_MESSAGE_EXPR = (
-    "EXISTS (SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
+_SESSION_CHECK_0159 = "owner_user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only()"
+_MESSAGE_EXPR_0159 = (
+    "EXISTS (SELECT 1 FROM mindmate_seminar_sessions s WHERE s.id = session_id AND ("
     "s.owner_user_id = rls_current_user_id() "
     "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
     "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
@@ -302,8 +302,8 @@ MINDMATE_COLLAB_MESSAGE_EXPR = (
     "OR rls_is_system_mode()"
     ")) AND (sender_user_id = rls_current_user_id() OR role = 'assistant' OR rls_is_system_mode())"
 )
-MINDMATE_COLLAB_READ_EXPR = (
-    "EXISTS (SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
+_READ_EXPR_0159 = (
+    "EXISTS (SELECT 1 FROM mindmate_seminar_sessions s WHERE s.id = session_id AND ("
     "s.owner_user_id = rls_current_user_id() "
     "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
     "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
@@ -312,6 +312,15 @@ MINDMATE_COLLAB_READ_EXPR = (
     "OR rls_is_system_mode()"
     "))"
 )
+_READ_CHECK_0159 = _READ_EXPR_0159 + " AND (user_id = rls_current_user_id() OR rls_is_system_mode())"
+MINDMATE_COLLAB_SESSION_EXPR = "rls_seminar_session_visible(id)"
+MINDMATE_COLLAB_SESSION_CHECK = _SESSION_CHECK_0159
+MINDMATE_COLLAB_MESSAGE_EXPR = "rls_is_system_mode() OR rls_seminar_session_visible(session_id)"
+MINDMATE_COLLAB_MESSAGE_CHECK = (
+    "rls_is_system_mode() OR rls_platform_admin_only() "
+    "OR (sender_user_id = rls_current_user_id() AND rls_seminar_session_visible(session_id))"
+)
+MINDMATE_COLLAB_READ_EXPR = "rls_is_system_mode() OR rls_seminar_session_visible(session_id)"
 MINDMATE_COLLAB_READ_CHECK = (
     MINDMATE_COLLAB_READ_EXPR + " AND (user_id = rls_current_user_id() OR rls_is_system_mode())"
 )
@@ -319,29 +328,32 @@ MINDMATE_COLLAB_READ_CHECK = (
 # rev_0077 alters every table in that list, and this table does not exist yet then.
 MINDMATE_COLLAB_MEMBER_EXPR = "user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only()"
 MINDMATE_COLLAB_MEMBER_CHECK = MINDMATE_COLLAB_MEMBER_EXPR
-# Shelf files are created after rev_0077. The background-file migration applies these.
-_FILE_SESSION = (
-    "EXISTS (SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
+# Shelf files are created after rev_0077. rev_0156 installs the frozen copy.
+# rev_0161 replaces it with rls_seminar_session_visible, which can see every
+# invited seat. A member-table NOT EXISTS cannot: member RLS hides other rows.
+_FILE_EXPR_0159 = (
+    "rls_is_system_mode() OR rls_platform_admin_only() OR ("
+    "EXISTS (SELECT 1 FROM mindmate_seminar_sessions s WHERE s.id = session_id AND ("
     "s.owner_user_id = rls_current_user_id() "
     "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
     "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
     "OR rls_user_bound_to_org(s.owner_user_id, rls_current_org_id()) "
     "OR rls_platform_admin_only() "
     "OR rls_is_system_mode()"
+    ")) AND ("
+    "EXISTS (SELECT 1 FROM mindmate_seminar_members m "
+    "WHERE m.session_id = session_id AND m.user_id = rls_current_user_id()) "
+    "OR EXISTS (SELECT 1 FROM mindmate_seminar_sessions s "
+    "WHERE s.id = session_id AND s.owner_user_id = rls_current_user_id())"
     "))"
 )
-# Do not probe an empty member table from this policy. Member RLS hides every
-# row except the caller's, so NOT EXISTS is true for outsiders and would show
-# a closed seminar's files. Open rooms are authorized in the app, then read
-# in system mode.
-_FILE_MEMBER = (
-    "EXISTS (SELECT 1 FROM mindmate_collab_members m "
-    "WHERE m.session_id = session_id AND m.user_id = rls_current_user_id()) "
-    "OR EXISTS (SELECT 1 FROM mindmate_collab_sessions s "
-    "WHERE s.id = session_id AND s.owner_user_id = rls_current_user_id())"
+_FILE_CHECK_0159 = (
+    "("
+    + _FILE_EXPR_0159
+    + ") AND (uploader_user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only())"
 )
 MINDMATE_COLLAB_FILE_EXPR = (
-    "rls_is_system_mode() OR rls_platform_admin_only() OR (" + _FILE_SESSION + " AND (" + _FILE_MEMBER + "))"
+    "rls_is_system_mode() OR rls_platform_admin_only() OR rls_seminar_session_visible(session_id)"
 )
 MINDMATE_COLLAB_FILE_CHECK = (
     "("
@@ -349,9 +361,35 @@ MINDMATE_COLLAB_FILE_CHECK = (
     + ") AND (uploader_user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only())"
 )
 MINDMATE_COLLAB_TABLES = [
-    ("mindmate_collab_sessions", MINDMATE_COLLAB_SESSION_EXPR, MINDMATE_COLLAB_SESSION_CHECK),
-    ("mindmate_collab_messages", MINDMATE_COLLAB_MESSAGE_EXPR, MINDMATE_COLLAB_MESSAGE_EXPR),
-    ("mindmate_collab_read_cursors", MINDMATE_COLLAB_READ_EXPR, MINDMATE_COLLAB_READ_CHECK),
+    ("mindmate_seminar_sessions", MINDMATE_COLLAB_SESSION_EXPR, MINDMATE_COLLAB_SESSION_CHECK),
+    ("mindmate_seminar_messages", MINDMATE_COLLAB_MESSAGE_EXPR, MINDMATE_COLLAB_MESSAGE_CHECK),
+    ("mindmate_seminar_read_cursors", MINDMATE_COLLAB_READ_EXPR, MINDMATE_COLLAB_READ_CHECK),
+]
+MINDMATE_SEMINAR_TABLES_BEFORE_VISIBILITY = [
+    ("mindmate_seminar_sessions", _SESSION_EXPR_0159, _SESSION_CHECK_0159),
+    ("mindmate_seminar_messages", _MESSAGE_EXPR_0159, _MESSAGE_EXPR_0159),
+    ("mindmate_seminar_read_cursors", _READ_EXPR_0159, _READ_CHECK_0159),
+]
+MINDMATE_SEMINAR_FILE_EXPR_BEFORE_VISIBILITY = _FILE_EXPR_0159
+MINDMATE_SEMINAR_FILE_CHECK_BEFORE_VISIBILITY = _FILE_CHECK_0159
+
+
+def _legacy_collab_name(value: str) -> str:
+    """Table names revisions 0077–0158 created. rev_0159 renames them."""
+    return value.replace("mindmate_seminar_", "mindmate_collab_")
+
+
+MINDMATE_COLLAB_LEGACY_SESSION_EXPR = _legacy_collab_name(_SESSION_EXPR_0159)
+MINDMATE_COLLAB_LEGACY_SESSION_CHECK = _legacy_collab_name(_SESSION_CHECK_0159)
+MINDMATE_COLLAB_LEGACY_MESSAGE_EXPR = _legacy_collab_name(_MESSAGE_EXPR_0159)
+MINDMATE_COLLAB_LEGACY_READ_EXPR = _legacy_collab_name(_READ_EXPR_0159)
+MINDMATE_COLLAB_LEGACY_READ_CHECK = _legacy_collab_name(_READ_CHECK_0159)
+MINDMATE_COLLAB_LEGACY_FILE_EXPR = _legacy_collab_name(_FILE_EXPR_0159)
+MINDMATE_COLLAB_LEGACY_FILE_CHECK = _legacy_collab_name(_FILE_CHECK_0159)
+MINDMATE_COLLAB_LEGACY_TABLES = [
+    ("mindmate_collab_sessions", MINDMATE_COLLAB_LEGACY_SESSION_EXPR, MINDMATE_COLLAB_LEGACY_SESSION_CHECK),
+    ("mindmate_collab_messages", MINDMATE_COLLAB_LEGACY_MESSAGE_EXPR, MINDMATE_COLLAB_LEGACY_MESSAGE_EXPR),
+    ("mindmate_collab_read_cursors", MINDMATE_COLLAB_LEGACY_READ_EXPR, MINDMATE_COLLAB_LEGACY_READ_CHECK),
 ]
 
 # Group C — users: id is NULL on INSERT; panel school managers set organization_id on the new row.
@@ -484,8 +522,8 @@ def upgrade_group_a() -> None:
         _create_all_policy(table, f"{table}_tenant", expr)
 
 
-def upgrade_mindmate_collab_policies() -> None:
-    """MindMate collab sessions and messages (org / network visibility)."""
+def upgrade_mindmate_seminar_policies() -> None:
+    """MindMate seminar sessions, messages, and read cursors."""
     for table, using_expr, check_expr in MINDMATE_COLLAB_TABLES:
         _enable_force(table)
         _create_all_policy(table, f"{table}_tenant", using_expr, check_expr)

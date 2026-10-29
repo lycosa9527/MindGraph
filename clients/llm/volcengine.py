@@ -15,12 +15,13 @@ import logging
 import re
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from openai import APIStatusError, AsyncOpenAI, RateLimitError
+from openai import APIConnectionError, APIStatusError, AsyncOpenAI, RateLimitError
 
 from clients.llm.base import (
     as_openai_chat_messages,
     extract_usage_from_openai_completion,
     extract_usage_from_stream_chunk,
+    raise_openai_transport_error,
 )
 from clients.llm.structured_output import apply_structured_output
 from config.settings import config
@@ -225,6 +226,10 @@ class VolcengineClient:
 
             return {"content": content, "usage": usage}
 
+        except APIConnectionError as e:
+            logger.error("Volcengine %s transport error: %s", self.model_alias, e)
+            raise_openai_transport_error(e, provider="volcengine")
+
         except RateLimitError as e:
             logger.error("Volcengine %s rate limit: %s", self.model_alias, e)
             raise LLMRateLimitError(f"Volcengine rate limit: {e}") from e
@@ -378,6 +383,10 @@ class VolcengineClient:
             # Yield usage data as final chunk
             if last_usage:
                 yield {"type": "usage", "usage": last_usage}
+
+        except APIConnectionError as e:
+            logger.error("Volcengine %s stream transport error: %s", self.model_alias, e)
+            raise_openai_transport_error(e, provider="volcengine")
 
         except RateLimitError as e:
             logger.error("Volcengine %s stream rate limit: %s", self.model_alias, e)

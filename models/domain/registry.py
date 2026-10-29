@@ -132,12 +132,12 @@ from models.domain.organization_oauth_config import OrganizationOauthConfig
 from models.domain.oauth_user_link import OauthUserLink
 from models.domain.generation_preview_link import GenerationPreviewLink
 from models.domain.mindmate_export_job import MindmateExportJob
-from models.domain.mindmate_collab import (
-    MindmateCollabBackgroundFile,
-    MindmateCollabMember,
-    MindmateCollabMessage,
-    MindmateCollabReadCursor,
-    MindmateCollabSession,
+from models.domain.mindmate_seminar import (
+    MindmateSeminarBackgroundFile,
+    MindmateSeminarMember,
+    MindmateSeminarMessage,
+    MindmateSeminarReadCursor,
+    MindmateSeminarSession,
 )
 from models.domain.kitty_one_sentence import KittyOneSentenceSession, KittyOneSentenceTurn
 from models.domain.error_event import ErrorEvent, ErrorGroup
@@ -232,11 +232,11 @@ __all__ = [
     "OauthUserLink",
     "GenerationPreviewLink",
     "MindmateExportJob",
-    "MindmateCollabSession",
-    "MindmateCollabMessage",
-    "MindmateCollabMember",
-    "MindmateCollabBackgroundFile",
-    "MindmateCollabReadCursor",
+    "MindmateSeminarSession",
+    "MindmateSeminarMessage",
+    "MindmateSeminarMember",
+    "MindmateSeminarBackgroundFile",
+    "MindmateSeminarReadCursor",
     "KittyOneSentenceSession",
     "KittyOneSentenceTurn",
     "ErrorEvent",

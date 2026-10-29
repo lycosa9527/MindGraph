@@ -21,6 +21,18 @@ def parse_429_errors(
     error_message: str, error_msg_lower: str, error_code: str, has_chinese: bool
 ) -> Optional[Tuple[Exception, str]]:
     """Parse 429 Rate Limit errors."""
+    if error_code in {"insufficient_quota", "InsufficientQuota"} or "exceeded your current quota" in error_msg_lower:
+        user_msg = (
+            "账户额度已用尽，请检查套餐和账单"
+            if has_chinese
+            else "Account quota is exhausted. Check your plan and billing."
+        )
+        return LLMQuotaExhaustedError(
+            f"Quota exhausted: {error_message}",
+            provider="dashscope",
+            error_code=error_code or "insufficient_quota",
+        ), user_msg
+
     # General throttling
     if error_code == "Throttling" or "throttling" in error_msg_lower or "rate limit" in error_msg_lower:
         if has_chinese:

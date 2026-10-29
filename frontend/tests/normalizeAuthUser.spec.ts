@@ -175,13 +175,24 @@ describe('normalizeAuthUser', () => {
   })
 
   it('maps the Bayi first-login name prompt flag', () => {
-    const user = normalizeAuthUser({
+    const unnamed = normalizeAuthUser({
       ...loginPayload,
       name: '八一用户',
       needs_display_name: true,
     })
-    expect(user.needsDisplayName).toBe(true)
-    expect(user.username).toBe('八一用户')
+    expect(unnamed.needsDisplayName).toBe(true)
+    expect(unnamed.username).toBe('八一用户')
+
+    const named = normalizeAuthUser({
+      ...loginPayload,
+      name: '王老师',
+      needs_display_name: false,
+    })
+    expect(named.needsDisplayName).toBe(false)
+    expect(named.username).toBe('王老师')
+
+    const omitted = normalizeAuthUser({ ...loginPayload, name: '王老师' })
+    expect(omitted.needsDisplayName).toBe(false)
   })
 
   it('prefers the organization display name for the sidebar chip', () => {

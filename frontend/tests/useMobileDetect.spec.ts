@@ -34,6 +34,28 @@ describe('isMobileClient', () => {
     expect(computeIsMobileClient(768, desktopUa)).toBe(false)
   })
 
+  it('keeps a HarmonyOS phone on the touch shell when the inner screen is wide', () => {
+    const puraUnfolded =
+      'Mozilla/5.0 (Phone; OpenHarmony 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 ArkWeb/4.1.6.1 Mobile'
+    expect(isTouchDeviceUserAgent(puraUnfolded)).toBe(true)
+    expect(computeIsMobileClient(1220, puraUnfolded)).toBe(true)
+  })
+
+  it('leaves a HarmonyOS tablet on the desktop shell when the window is wide', () => {
+    const tablet =
+      'Mozilla/5.0 (Tablet; OpenHarmony 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 ArkWeb/4.1.6.1'
+    expect(isTouchDeviceUserAgent(tablet)).toBe(false)
+    expect(computeIsMobileClient(1220, tablet)).toBe(false)
+    expect(computeIsMobileClient(360, tablet)).toBe(true)
+  })
+
+  it('leaves a HarmonyOS PC on the desktop shell when the window is wide', () => {
+    const pc =
+      'Mozilla/5.0 (PC; OpenHarmony 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 ArkWeb/4.1.6.1'
+    expect(isTouchDeviceUserAgent(pc)).toBe(false)
+    expect(computeIsMobileClient(1220, pc)).toBe(false)
+  })
+
   it('treats wide desktop viewport as non-mobile', () => {
     const desktopUa =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'

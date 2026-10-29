@@ -455,7 +455,7 @@ async function loadMembers(query = ''): Promise<void> {
     const page =
       fromChat ??
       (await readRoster(
-        `/api/mindmate/collab/org-members?limit=200&offset=0${
+        `/api/mindmate/seminar/org-members?limit=200&offset=0${
           trimmed ? `&q=${encodeURIComponent(trimmed)}` : ''
         }`
       ))

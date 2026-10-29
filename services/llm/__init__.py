@@ -24,6 +24,7 @@ from services.infrastructure.http.error_handler import (
     LLMTimeoutError,
     is_llm_content_filter_text,
 )
+from services.infrastructure.http.llm_http_errors import is_passthrough_llm_error
 from services.monitoring.error_reporting import record_failure
 from services.infrastructure.utils.client_manager import client_manager
 from services.llm.llm_health import LLMHealthChecker
@@ -36,7 +37,7 @@ from services.llm.llm_service_init import LLMServiceInitializer
 from services.llm.llm_utils import LLMUtils
 from services.llm.org_custom_client import resolve_chat_routing, usage_model_name
 from services.monitoring.performance_tracker import performance_tracker
-from services.utils.error_types import LLM_PIPELINE_ERRORS
+from services.utils.error_types import LLM_CALL_FAILURES
 from services.utils.prompt_manager import prompt_manager
 from services.auth.thinking_coin.usage_wire import (
     assert_llm_usage_budget,
@@ -150,6 +151,8 @@ class LLMService:
             raise LLMTimeoutError(message) from exc
         if isinstance(exc, TimeoutError):
             raise LLMTimeoutError(message) from exc
+        if isinstance(exc, LLMServiceError):
+            raise exc
         raise LLMServiceError(message) from exc
 
     def initialize(self) -> None:
@@ -433,7 +436,9 @@ class LLMService:
 
         except ValueError as value_error:
             raise value_error
-        except LLM_PIPELINE_ERRORS as e:
+        except LLM_CALL_FAILURES as e:
+            if is_passthrough_llm_error(e):
+                raise
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
             logger.error(
@@ -640,7 +645,9 @@ class LLMService:
 
         except ValueError as value_error:
             raise value_error
-        except LLM_PIPELINE_ERRORS as e:
+        except LLM_CALL_FAILURES as e:
+            if is_passthrough_llm_error(e):
+                raise
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
             logger.error(
@@ -853,7 +860,9 @@ class LLMService:
 
         except ValueError as value_error:
             raise value_error
-        except LLM_PIPELINE_ERRORS as e:
+        except LLM_CALL_FAILURES as e:
+            if is_passthrough_llm_error(e):
+                raise
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
             logger.error(
@@ -1109,7 +1118,9 @@ class LLMService:
 
         except ValueError as value_error:
             raise value_error
-        except LLM_PIPELINE_ERRORS as e:
+        except LLM_CALL_FAILURES as e:
+            if is_passthrough_llm_error(e):
+                raise
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
             logger.error(

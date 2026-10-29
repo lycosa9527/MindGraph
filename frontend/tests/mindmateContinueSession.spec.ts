@@ -5,9 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MindmateHeader from '@/components/panels/mindmate/MindmateHeader.vue'
 import {
   LOCAL_MINDMATE_COLLAB_SESSIONS_KEY,
-  loadLocalMindmateCollabSessions,
-  trackLocalMindmateCollabSession,
-} from '@/utils/mindmateCollabSessions'
+  loadLocalMindmateSeminarSessions,
+  trackLocalMindmateSeminarSession,
+} from '@/utils/mindmateSeminarSessions'
 import { canContinueSavedSeminar } from '@/utils/mindmateSeminarTranscript'
 
 vi.mock('@/composables', () => ({
@@ -85,19 +85,19 @@ describe('reopened seminar sidebar row', () => {
   })
 
   it('marks an existing row live without rewriting the title', () => {
-    trackLocalMindmateCollabSession({
+    trackLocalMindmateSeminarSession({
       session_id: 'sess-hosted',
       code: '8K2-EUR',
       title: 'Seminar',
     })
-    trackLocalMindmateCollabSession({
+    trackLocalMindmateSeminarSession({
       session_id: 'sess-hosted',
       code: '8K2-EUR',
       title: 'Seminar (join)',
       live: true,
       expires_at: '2026-10-19T12:00:00Z',
     })
-    const rows = loadLocalMindmateCollabSessions()
+    const rows = loadLocalMindmateSeminarSessions()
     expect(rows).toHaveLength(1)
     expect(rows[0]?.live).toBe(true)
     expect(rows[0]?.expires_at).toBe('2026-10-19T12:00:00Z')

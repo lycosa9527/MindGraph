@@ -20,8 +20,9 @@ from services.infrastructure.http.error_handler import (
     LLMQuotaExhaustedError,
     LLMRateLimitError,
     LLMServiceError,
+    LLMTimeoutError,
 )
-from services.utils.error_types import LLM_PIPELINE_ERRORS
+from services.utils.error_types import LLM_CALL_FAILURES
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,12 @@ class LLMHealthChecker:
                 "error_type": "timeout",
             }
         if isinstance(e, LLMServiceError):
-            # Use error handler's categorization
+            if isinstance(e, LLMTimeoutError):
+                return {
+                    "status": "unhealthy",
+                    "error": "Request timeout",
+                    "error_type": "timeout",
+                }
             if isinstance(e, LLMRateLimitError):
                 return {
                     "status": "unhealthy",
@@ -144,12 +150,12 @@ class LLMHealthChecker:
                     # Connection successful, close it
                     await native_client.close()
                     return True
-                except LLM_PIPELINE_ERRORS as e:
+                except LLM_CALL_FAILURES as e:
                     logger.debug("Omni WebSocket health check failed: %s", e)
                     if native_client:
                         try:
                             await native_client.close()
-                        except LLM_PIPELINE_ERRORS as exc:
+                        except LLM_CALL_FAILURES as exc:
                             logger.debug("Omni WebSocket client close failed: %s", exc)
                     raise
 
@@ -160,7 +166,7 @@ class LLMHealthChecker:
                 "latency": round(latency, 2),
                 "note": "WebSocket-based real-time voice service",
             }
-        except LLM_PIPELINE_ERRORS as e:
+        except LLM_CALL_FAILURES as e:
             logger.warning("Health check failed for %s: %s", model, e)
             result = self._categorize_error(e)
             result["note"] = "WebSocket-based real-time voice service"
@@ -181,7 +187,7 @@ class LLMHealthChecker:
             await self.llm_service.chat(prompt="Test", model=model, max_tokens=10, timeout=5.0)
             latency = time.time() - start
             return {"status": "healthy", "latency": round(latency, 2)}
-        except LLM_PIPELINE_ERRORS as e:
+        except LLM_CALL_FAILURES as e:
             logger.warning("Health check failed for %s: %s", model, e)
             return self._categorize_error(e)
 

@@ -48,7 +48,8 @@ export default {
   'auth.voiceNotes.status.waiting': 'Waiting to record',
   'auth.voiceNotes.status.connectingAsr': 'Connecting speech recognition',
   'auth.voiceNotes.status.recording': 'Recording · recognizing speech',
-  'auth.voiceNotes.status.recordingAndSeparating': 'Recording · recognizing speech · separating talkers',
+  'auth.voiceNotes.status.recordingAndSeparating':
+    'Recording · recognizing speech · separating talkers',
   'auth.voiceNotes.status.paused': 'Paused',
   'auth.voiceNotes.status.stopping': 'Stopping',
   'auth.voiceNotes.status.savingTranscript': 'Saving transcript',
@@ -61,7 +62,8 @@ export default {
   'auth.voiceNotes.savedAt': 'Transcript saved at {time}',
   'auth.voiceNotes.unsavedChanges': 'Unsaved transcript',
   'auth.voiceNotes.closeWhileRecordingTitle': 'Recording in progress',
-  'auth.voiceNotes.closeWhileRecordingBody': 'Closing hides this window but does not stop recording. The transcript auto-saves to this mindmap every 30 seconds. Hide the window anyway?',
+  'auth.voiceNotes.closeWhileRecordingBody':
+    'Closing hides this window but does not stop recording. The transcript auto-saves to this mindmap every 30 seconds. Hide the window anyway?',
   'auth.voiceNotes.closeWhileRecordingConfirm': 'Hide window',
   'auth.voiceNotes.recordingContinues': 'Recording continues. Reopen Recording summary anytime.',
   'auth.voiceNotes.noCurrentDiagram': 'Save this mindmap first, then use Recording summary.',
@@ -234,7 +236,8 @@ export default {
   'auth.landing.headline': 'Make every thought clearly visible',
   'auth.landing.headlinePrefix': 'Make every ',
   'auth.landing.headlineAccent': 'thought clearly visible',
-  'auth.landing.subcopy': 'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
+  'auth.landing.subcopy':
+    'Multimodal AI for mind diagrams, MindMate for heuristic research support—an immersive visual thinking space for teachers and students.',
   'auth.landing.badge': 'AI thinking education platform',
   'auth.landing.hubLabel': 'Mind',
   'auth.landing.nodeInspiration': 'Spark',
@@ -272,7 +275,7 @@ export default {
   'auth.landing.agreeTermsRequired': 'Please accept the terms to continue',
   'auth.landing.loginCta': 'Sign in',
   'auth.landing.orSocial': 'Or continue with',
-  'auth.landing.noAccount': 'Don\'t have an account?',
+  'auth.landing.noAccount': "Don't have an account?",
   'auth.landing.registerNow': 'Sign up',
   'auth.landing.legalPrefix': 'By signing in you agree to the ',
   'auth.landing.userAgreementLink': 'Terms of Use',
@@ -351,7 +354,8 @@ export default {
   'auth.quickRegOrgLoadError': 'Could not load schools. Please try again.',
   'auth.quickRegMintError': 'Could not open the registration channel. Please try again.',
   'auth.quickRegCloseConfirmTitle': 'End quick registration?',
-  'auth.quickRegCloseConfirm': 'Closing this window stops new students from joining with the current QR and room code.',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Set login password',
   'auth.setPasswordWithSmsTitle': 'Set password via SMS',
   'auth.setPasswordWithSmsHint':
@@ -380,10 +384,12 @@ export default {
   'auth.clientShell': 'Interface',
   'auth.clientShellMobile': 'Mobile',
   'auth.clientShellDesktop': 'Desktop',
-  'auth.clientShellHint': 'After you choose, this device keeps that version when the screen rotates.',
+  'auth.clientShellHint':
+    'After you choose, this device keeps that version when the screen rotates.',
   'auth.clientShellSaveError': 'Could not save the interface. Please try again.',
   'auth.clientShellSaved': 'Saved for this device',
-  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
+  'auth.bayiNamePrompt.toast':
+    'This is your first visit from Xiaozhi. Enter your name and save it. This window will not appear again after the name is saved.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'Link DingTalk',
   'auth.dingtalkBindLinkedButton': 'DingTalk linked',

@@ -21,7 +21,7 @@ import { usePresenceActivity } from '@/composables/workshop/usePresenceActivity'
 import { bilingualNotifyMessage, joinNotifyMessages } from '@/i18n/bilingualNotifyMessage'
 import { useAuthStore } from '@/stores/auth'
 import { type ChatMessage, useWorkshopChatStore } from '@/stores/workshopChat'
-import { handleMindmateCollabPokeFrame } from '@/utils/mindmateCollabPokeNotify'
+import { handleMindmateSeminarPokeFrame } from '@/utils/mindmateSeminarPokeNotify'
 import { registerWorkshopChatWsDisconnect } from '@/utils/workshopChatWsRegistry'
 
 type WorkshopChatSession = ReturnType<typeof createWorkshopChatSession>
@@ -153,7 +153,7 @@ function createWorkshopChatSession() {
 
     const msgType = data.type as string
 
-    if (handleMindmateCollabPokeFrame(data, t, notify)) {
+    if (handleMindmateSeminarPokeFrame(data, t, notify)) {
       return
     }
 

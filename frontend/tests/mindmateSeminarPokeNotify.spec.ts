@@ -1,0 +1,38 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import { handleMindmateSeminarPokeFrame } from '@/utils/mindmateSeminarPokeNotify'
+
+describe('handleMindmateSeminarPokeFrame', () => {
+  it('shows toast for mindmate_seminar_poke frames', () => {
+    const notify = { infoKey: vi.fn(), info: vi.fn() }
+    const t = (key: string, params?: Record<string, string | number>) => {
+      if (key === 'mindmate.collabPokeToast' && params) {
+        return `${params.name} -> ${params.seminar}`
+      }
+      return key
+    }
+    const handled = handleMindmateSeminarPokeFrame(
+      {
+        type: 'mindmate_seminar_poke',
+        from_name: '张老师',
+        room_title: '教学设计讨论',
+      },
+      t,
+      notify as never
+    )
+    expect(handled).toBe(true)
+    expect(document.documentElement.classList.contains('mindmate-poke-wobble')).toBe(true)
+    expect(notify.infoKey).toHaveBeenCalledWith(
+      'mindmate.collabPokeToast',
+      { name: '张老师', seminar: '教学设计讨论' },
+      7000
+    )
+  })
+
+  it('ignores other frame types', () => {
+    const notify = { infoKey: vi.fn(), info: vi.fn() }
+    const handled = handleMindmateSeminarPokeFrame({ type: 'presence' }, (k) => k, notify as never)
+    expect(handled).toBe(false)
+    expect(notify.infoKey).not.toHaveBeenCalled()
+  })
+})

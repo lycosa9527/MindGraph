@@ -45,7 +45,7 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_smart_response": "FEATURE_SMART_RESPONSE",
     "feature_teacher_usage": "FEATURE_TEACHER_USAGE",
     "feature_workshop_chat": "FEATURE_WORKSHOP_CHAT",
-    "feature_mindmate_collab": "FEATURE_MINDMATE_COLLAB",
+    "feature_mindmate_seminar": "FEATURE_MINDMATE_SEMINAR",
     "feature_markets": "FEATURE_MARKETS",
     "feature_mindbot": "FEATURE_MINDBOT",
     "feature_mindmate_export": "FEATURE_MINDMATE_EXPORT",
@@ -58,7 +58,7 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
 FEATURE_KEYS_WITH_ORG_ACCESS = frozenset(
     {
         "feature_workshop_chat",
-        "feature_mindmate_collab",
+        "feature_mindmate_seminar",
         "feature_mindbot",
         "feature_mindmate_export",
     }

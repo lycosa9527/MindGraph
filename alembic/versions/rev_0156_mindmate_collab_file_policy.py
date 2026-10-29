@@ -15,8 +15,8 @@ import sqlalchemy as sa
 from alembic import op
 
 from utils.db_rls.policy_builder import (
-    MINDMATE_COLLAB_FILE_CHECK,
-    MINDMATE_COLLAB_FILE_EXPR,
+    MINDMATE_COLLAB_LEGACY_FILE_CHECK as MINDMATE_COLLAB_FILE_CHECK,
+    MINDMATE_COLLAB_LEGACY_FILE_EXPR as MINDMATE_COLLAB_FILE_EXPR,
     _create_all_policy,
 )
 

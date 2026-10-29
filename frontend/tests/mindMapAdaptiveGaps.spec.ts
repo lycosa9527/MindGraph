@@ -34,7 +34,7 @@ function enableMindMapV2Canvas(): void {
     feature_smart_response: false,
     feature_teacher_usage: false,
     feature_workshop_chat: false,
-    feature_mindmate_collab: false,
+    feature_mindmate_seminar: false,
     feature_markets: false,
     feature_mindbot: false,
     feature_mindmate_export: false,

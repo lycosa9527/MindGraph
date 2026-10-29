@@ -62,6 +62,7 @@ import {
   useDiagramCanvasVueFlowHandlers,
   useDiagramCanvasVueFlowUi,
   useDiagramFollowNodeDismiss,
+  useFoldableCanvasRefit,
 } from '@/composables/diagramCanvas'
 import { useDiagramCanvasMindMapBrainstormDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapBrainstormDrop'
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
@@ -534,6 +535,10 @@ const {
   presentationToolIsNotTimer,
   nodesLength,
   tightFit: toRef(props, 'tightFit'),
+})
+
+useFoldableCanvasRefit(canvasContainer, () => {
+  fitDiagram(false)
 })
 
 const {

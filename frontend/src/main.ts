@@ -19,8 +19,10 @@ import { isUiLocale } from './i18n/locales'
 import router from './router'
 import { useUIStore } from './stores/ui'
 // Styles
+import './styles/arkweb.css'
 import './styles/index.css'
 import { setAppQueryClient } from './utils/appQueryClient'
+import { installArkWebDocumentClass, installVisualViewportCssVars } from './utils/arkWebClient'
 import { isGuestAuthPath } from './utils/authRedirect'
 import { installCsrfFetchInterceptor } from './utils/installCsrfFetchInterceptor'
 import { installFrontendErrorReporting } from './utils/installFrontendErrorReporting'
@@ -34,6 +36,9 @@ import { reloadForStaleChunk } from './utils/staleChunkReload'
 // pdfjs-dist reads Iterator.prototype.join; classic pwa-install-early.js also
 // installs this before any module.
 installIteratorGlobalStub()
+
+installArkWebDocumentClass()
+installVisualViewportCssVars()
 
 // Office Word task-pane / ?embed=word-addin → desktop layout before first paint.
 syncOfficeEmbedFromSearch()

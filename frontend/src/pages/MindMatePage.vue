@@ -10,7 +10,7 @@ import { MindmatePanel } from '@/components/panels'
 import { useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
-import { useMindmateCollabNotify } from '@/composables/social/useMindmateCollabNotify'
+import { useMindmateSeminarNotify } from '@/composables/social/useMindmateSeminarNotify'
 import { useVoiceStore } from '@/stores'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
@@ -30,17 +30,17 @@ interface MindmatePanelHandle {
 
 const mindmatePanelRef = ref<MindmatePanelHandle | null>(null)
 
-useMindmateCollabNotify()
+useMindmateSeminarNotify()
 
 async function consumeJoinCollabQuery(): Promise<void> {
-  const joinCode = route.query.join_mindmate_collab
+  const joinCode = route.query.join_mindmate_seminar
   if (typeof joinCode !== 'string' || !joinCode.trim()) return
 
   const nextQuery = { ...route.query }
-  delete nextQuery.join_mindmate_collab
+  delete nextQuery.join_mindmate_seminar
   void router.replace({ query: nextQuery })
 
-  if (!featureFlagsStore.getFeatureMindmateCollab()) {
+  if (!featureFlagsStore.getFeatureMindmateSeminar()) {
     return
   }
   if (!canUseOnlineCollab.value) {

@@ -5,7 +5,7 @@ from services.auth.expert_live_scope import (
     parse_bound_org_label,
     session_registry_org_ids,
 )
-from services.features.mindmate_collab.redis_keys import registry_keys_for_visibility
+from services.features.mindmate_seminar.redis_keys import registry_keys_for_visibility
 
 
 def test_registry_keeps_host_and_adds_bound_schools() -> None:

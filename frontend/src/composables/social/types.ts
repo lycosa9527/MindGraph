@@ -31,7 +31,7 @@ export interface ContactSection {
 }
 
 /** Where roster data and presence are resolved (workshop store vs collab API). */
-export type OrgRosterSource = 'workshop' | 'mindmate-collab'
+export type OrgRosterSource = 'workshop' | 'mindmate-seminar'
 
 export interface OrgContactSectionsOptions {
   zulipPresence?: boolean

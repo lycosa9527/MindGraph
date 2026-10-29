@@ -53,7 +53,7 @@ async def mindmate_notify_websocket(websocket: WebSocket) -> None:
             pass
         return
 
-    if not await user_has_feature_access(user, "feature_mindmate_collab"):
+    if not await user_has_feature_access(user, "feature_mindmate_seminar"):
         try:
             await websocket.close(code=1008, reason="Feature disabled")
         except (RuntimeError, OSError):

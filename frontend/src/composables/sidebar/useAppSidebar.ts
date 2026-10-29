@@ -42,7 +42,7 @@ import { useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 import { getShowcasePendingCount } from '@/utils/apiClient'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
-import { focusPersonalMindmateThread } from '@/utils/mindmateCollabLibrarySave'
+import { focusPersonalMindmateThread } from '@/utils/mindmateSeminarLibrarySave'
 import { shouldExpandWorkshopOnNavClick } from '@/utils/sidebarWorkshopPanel'
 import { resolveUserAvatarEmoji, userAvatarImageSrc } from '@/utils/userAvatarEmoji'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
@@ -83,7 +83,7 @@ export function useAppSidebar() {
     featureKittyAgent,
     featureMindmateExport,
     featureWorkshopChat,
-    featureMindmateCollab,
+    featureMindmateSeminar,
     featureTraining,
     featureMindbot,
     featureStudentLearningSpace,
@@ -765,8 +765,8 @@ export function useAppSidebar() {
     }
   )
 
-  const showMindmateCollabSessions = computed(
-    () => featureMindmateCollab.value && canUseOnlineCollab.value
+  const showMindmateSeminarSessions = computed(
+    () => featureMindmateSeminar.value && canUseOnlineCollab.value
   )
   const showTrainingNav = computed(
     () => featureTraining.value && authStore.isPlatformLevel && isAuthenticated.value
@@ -851,8 +851,8 @@ export function useAppSidebar() {
     featureSmartResponse,
     featureTeacherUsage,
     featureWorkshopChat,
-    featureMindmateCollab,
-    showMindmateCollabSessions,
+    featureMindmateSeminar,
+    showMindmateSeminarSessions,
     featureTraining,
     showTrainingNav,
     featureStudentLearningSpace,

@@ -1,0 +1,14 @@
+/*
+ * ArkWeb keeps position:fixed on the layout viewport. After a fold that
+ * viewport can still be the previous window, so a dialog mask misses the
+ * visible screen. Pin it to the visual viewport instead.
+ */
+
+html.mg-arkweb .el-overlay {
+  top: var(--mg-vv-top, 0px);
+  left: var(--mg-vv-left, 0px);
+  right: auto;
+  bottom: auto;
+  width: var(--mg-vvw, 100%);
+  height: var(--mg-vvh, 100dvh);
+}

@@ -26,7 +26,7 @@ import {
 import {
   type SharedCanvasDiagramPreview,
   fetchSharedCanvasDiagramPreview,
-} from '@/utils/mindmateCollabDiagramLibrary'
+} from '@/utils/mindmateSeminarDiagramLibrary'
 import {
   type SeminarBackgroundFile,
   type SeminarFilePreviewMode,

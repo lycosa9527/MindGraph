@@ -4,7 +4,7 @@
  */
 import { type Ref, computed, ref } from 'vue'
 
-import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
+import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import { pinSeminarRoster } from '@/composables/mindmate/useMindmateSeminarFaces'
 import type { SeminarFace } from '@/utils/mindmateSeminarFaces'
 import type { SeminarBackgroundFile } from '@/utils/mindmateSeminarFolder'
@@ -33,7 +33,7 @@ export const seminarRosterVersion = ref(0)
 /** Bump after brief resource upload so the folder pane refetches. */
 export const seminarFolderReloadToken = ref(0)
 /** Live collab transcript for artifact panels mounted outside CollabRoom. */
-export const seminarLiveMessages: Ref<MindmateCollabMessage[]> = ref([])
+export const seminarLiveMessages: Ref<MindmateSeminarMessage[]> = ref([])
 /** Word files archived from MindMate replies. Shared by the artifacts pane. */
 export const seminarServerArtifacts: Ref<SeminarBackgroundFile[]> = ref([])
 /** True after the current room's artifact list has loaded. */
@@ -451,7 +451,7 @@ export function closeSeminarChrome(): void {
   seminarMentionRequest.value = null
 }
 
-export function setSeminarLiveMessages(messages: MindmateCollabMessage[]): void {
+export function setSeminarLiveMessages(messages: MindmateSeminarMessage[]): void {
   seminarLiveMessages.value = messages
 }
 

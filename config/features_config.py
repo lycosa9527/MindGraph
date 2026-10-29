@@ -157,13 +157,13 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_WORKSHOP_CHAT", "False").lower() == "true"
 
     @property
-    def FEATURE_MINDMATE_COLLAB(self):
+    def FEATURE_MINDMATE_SEMINAR(self):
         """Enable MindMate shared AI chatroom (online collab for MindMate).
 
-        Disabled by default. Set FEATURE_MINDMATE_COLLAB=True in .env to enable.
+        Disabled by default. Set FEATURE_MINDMATE_SEMINAR=True in .env to enable.
         Available on every school version when enabled.
         """
-        return self._get_cached_value("FEATURE_MINDMATE_COLLAB", "False").lower() == "true"
+        return self._get_cached_value("FEATURE_MINDMATE_SEMINAR", "False").lower() == "true"
 
     @property
     def FEATURE_TRAINING(self):

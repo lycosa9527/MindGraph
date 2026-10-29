@@ -4,7 +4,12 @@ from utils.db_rls.functions_sql import (
     build_grant_rls_functions_to_app_sql,
     rls_functions_upgrade_statements,
 )
-from utils.db_rls.policy_builder import DIRECT_MESSAGE_EXPR, USERS_EXPR
+from utils.db_rls.policy_builder import (
+    DIRECT_MESSAGE_EXPR,
+    MINDMATE_COLLAB_LEGACY_MESSAGE_EXPR,
+    MINDMATE_COLLAB_MESSAGE_EXPR,
+    USERS_EXPR,
+)
 
 
 def test_rls_functions_upgrade_includes_helpers():
@@ -27,6 +32,13 @@ def test_same_org_users_stays_on_membership():
     )
     assert "organization_expert_bindings" not in same_org
     assert "rls_user_bound_to_org" not in same_org
+
+
+def test_seminar_policies_use_the_visibility_function() -> None:
+    """Shared seminar rows follow the invite list, not a member-table probe."""
+    assert MINDMATE_COLLAB_MESSAGE_EXPR == ("rls_is_system_mode() OR rls_seminar_session_visible(session_id)")
+    assert "mindmate_collab_sessions" in MINDMATE_COLLAB_LEGACY_MESSAGE_EXPR
+    assert "rls_seminar_session_visible" not in MINDMATE_COLLAB_LEGACY_MESSAGE_EXPR
 
 
 def test_users_policy_shows_bound_experts_without_opening_dms():

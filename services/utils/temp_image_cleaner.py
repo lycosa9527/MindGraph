@@ -41,8 +41,8 @@ except ImportError:
     _REDIS_AVAILABLE = False
 
 from services.diagram.temp_image_storage import temp_images_dir
-from services.features.mindmate_collab.background_files import STATIC_ROOT
-from services.features.mindmate_collab.seminar_file_storage import cleanup_seminar_disk_cache
+from services.features.mindmate_seminar.background_files import STATIC_ROOT
+from services.features.mindmate_seminar.seminar_file_storage import cleanup_seminar_disk_cache
 from services.mind_classroom.temp_cleanup import cleanup_classroom_temp_files
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS, REDIS_ERRORS
 

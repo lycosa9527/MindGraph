@@ -50,7 +50,7 @@ const { t } = useLanguage()
 const notify = useNotifications()
 
 const effectiveZulipPresence = computed(
-  () => props.zulipPresence || props.source === 'mindmate-collab'
+  () => props.zulipPresence || props.source === 'mindmate-seminar'
 )
 
 const rosterPanel = useOrgRosterPanel({
@@ -78,7 +78,7 @@ const contactPopoverUserId = ref<number | null>(null)
 const pokingUserId = ref<number | null>(null)
 
 const isCompact = computed(() => props.variant === 'compact')
-const collabContext = computed(() => props.source === 'mindmate-collab')
+const collabContext = computed(() => props.source === 'mindmate-seminar')
 const isPublicCollabSeminar = computed(
   () => collabContext.value && props.collabVisibility === 'network'
 )
@@ -137,7 +137,7 @@ async function handlePoke(targetUserId: number): Promise<void> {
   }
   pokingUserId.value = targetUserId
   try {
-    const response = await authFetch('/api/mindmate/collab/poke', {
+    const response = await authFetch('/api/mindmate/seminar/poke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

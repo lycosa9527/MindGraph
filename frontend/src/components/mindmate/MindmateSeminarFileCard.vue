@@ -15,7 +15,7 @@ import {
   seminarFileDocId,
   seminarSpectator,
 } from '@/composables/mindmate/mindmateSeminarChrome'
-import { formatCollabMessageStamp } from '@/utils/mindmateCollabRead'
+import { formatCollabMessageStamp } from '@/utils/mindmateSeminarRead'
 import {
   type SeminarBackgroundFile,
   downloadSeminarBackgroundFile,

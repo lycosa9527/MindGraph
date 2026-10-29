@@ -26,7 +26,7 @@ interface FeatureFlagsResponse {
   feature_smart_response: boolean
   feature_teacher_usage: boolean
   feature_workshop_chat: boolean
-  feature_mindmate_collab: boolean
+  feature_mindmate_seminar: boolean
   feature_training?: boolean
   feature_vod?: boolean
   feature_student_learning_space?: boolean
@@ -68,7 +68,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_smart_response: false,
       feature_teacher_usage: false,
       feature_workshop_chat: false,
-      feature_mindmate_collab: false,
+      feature_mindmate_seminar: false,
       feature_training: false,
       feature_vod: false,
       feature_student_learning_space: true,
@@ -136,7 +136,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         const data: FeatureFlagsResponse = {
           ...raw,
           feature_org_access: raw.feature_org_access ?? {},
-          feature_mindmate_collab: raw.feature_mindmate_collab ?? false,
+          feature_mindmate_seminar: raw.feature_mindmate_seminar ?? false,
           feature_training: raw.feature_training ?? false,
           feature_vod: raw.feature_vod ?? false,
           feature_student_learning_space: raw.feature_student_learning_space ?? true,
@@ -224,8 +224,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_workshop_chat ?? false
   }
 
-  function getFeatureMindmateCollab(): boolean {
-    return flags.value?.feature_mindmate_collab ?? false
+  function getFeatureMindmateSeminar(): boolean {
+    return flags.value?.feature_mindmate_seminar ?? false
   }
 
   function getFeatureTraining(): boolean {
@@ -296,7 +296,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureSmartResponse,
     getFeatureTeacherUsage,
     getFeatureWorkshopChat,
-    getFeatureMindmateCollab,
+    getFeatureMindmateSeminar,
     getFeatureTraining,
     getFeatureVod,
     getFeatureStudentLearningSpace,

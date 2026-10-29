@@ -5,7 +5,7 @@
 import { useTimestamp } from '@vueuse/core'
 
 import { useLanguage } from '@/composables'
-import { useMindmateCollabPresenceBridge } from '@/composables/mindmate/mindmateCollabPresenceBridge'
+import { useMindmateSeminarPresenceBridge } from '@/composables/mindmate/mindmateSeminarPresenceBridge'
 import { useAuthStore } from '@/stores/auth'
 import { formatContactLastOnlineLabel } from '@/utils/formatContactLastOnline'
 import { LAST_SEEN_ONLINE_MAX_AGE_MS } from '@/utils/workshopContactLastSeenStorage'
@@ -14,7 +14,7 @@ export function useSeminarMemberPresence() {
   const { t } = useLanguage()
   const auth = useAuthStore()
   const { onlineUserIds, lastSeenOnlineAtByUserId, presenceReady } =
-    useMindmateCollabPresenceBridge()
+    useMindmateSeminarPresenceBridge()
   const nowMs = useTimestamp({ interval: 60_000 })
 
   function freshMs(ts: number | undefined): number | undefined {

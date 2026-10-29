@@ -142,7 +142,7 @@ async function loadMembers(): Promise<void> {
     const fromSeminar = await readRoster(`/api/mindmate/org-members?${params}`)
     const fromChat = fromSeminar ?? (await readRoster(`/api/chat/org-members?${params}`))
     const page =
-      fromChat ?? (await readRoster('/api/mindmate/collab/org-members?limit=200&offset=0'))
+      fromChat ?? (await readRoster('/api/mindmate/seminar/org-members?limit=200&offset=0'))
     if (!page) {
       if (members.value.length === 0) {
         loadFailed.value = true

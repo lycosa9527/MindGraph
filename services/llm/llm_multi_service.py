@@ -22,12 +22,45 @@ from services.auth.thinking_coin.usage_wire import (
     thinking_coins_apply_to_user,
 )
 from services.infrastructure.http.error_handler import LLMServiceError
+from services.infrastructure.http.llm_http_errors import is_passthrough_llm_error
 from services.llm.org_custom_client import collapse_org_custom_models
 from services.monitoring.error_reporting import record_failure
-from services.utils.error_types import LLM_PIPELINE_ERRORS
+from services.utils.error_types import LLM_CALL_FAILURES, LLM_PIPELINE_ERRORS
 from utils.auth.thinking_coin_config import THINKING_COIN_MODE_BATCH_INNER
 
 logger = logging.getLogger(__name__)
+
+
+async def _finish_llm_tasks(tasks: List[asyncio.Task[Any]]) -> None:
+    """Cancel leftover model calls and retrieve every task result.
+
+    Closing a fan-out (client disconnect) used to drop these tasks. A later
+    provider timeout then logged "Task exception was never retrieved".
+    """
+    for task in tasks:
+        if not task.done():
+            task.cancel()
+    if not tasks:
+        return
+    drained = asyncio.gather(*tasks, return_exceptions=True)
+    outcomes = await asyncio.shield(drained)
+    for outcome in outcomes:
+        if isinstance(outcome, (asyncio.CancelledError, *LLM_CALL_FAILURES)):
+            continue
+        if isinstance(outcome, BaseException):
+            logger.error("[LLMMultiService] stream task ended with %s", outcome)
+
+
+def _claim_finished_model(
+    task_model_pairs: List[Any],
+    seen_tasks: set[asyncio.Task[Any]],
+) -> Optional[str]:
+    """Record one newly finished fan-out task and return its model name."""
+    for task, model in task_model_pairs:
+        if task.done() and task not in seen_tasks:
+            seen_tasks.add(task)
+            return str(model)
+    return None
 
 
 class LLMMultiService:
@@ -99,30 +132,34 @@ class LLMMultiService:
             tasks[model] = task
 
         # Wait for all tasks
-        results = {}
-        for model, task in tasks.items():
-            try:
-                result = await task
-                results[model] = result
-            except LLM_PIPELINE_ERRORS as e:
-                results[model] = {
-                    "response": None,
-                    "success": False,
-                    "error": str(e),
-                    "duration": 0.0,
-                }
-                logger.error("[LLMMultiService] %s failed: %s", model, e)
+        try:
+            results = {}
+            for model, task in tasks.items():
+                try:
+                    result = await task
+                    results[model] = result
+                except LLM_CALL_FAILURES as e:
+                    if is_passthrough_llm_error(e):
+                        raise
+                    results[model] = {
+                        "response": None,
+                        "success": False,
+                        "error": str(e),
+                        "duration": 0.0,
+                    }
+                    logger.error("[LLMMultiService] %s failed: %s", model, e)
 
-        duration = time.time() - start_time
-        successful = sum(1 for r in results.values() if r["success"])
-        logger.info(
-            "[LLMMultiService] generate_multi() complete: %s/%s succeeded in %.2fs",
-            successful,
-            len(models),
-            duration,
-        )
-
-        return results
+            duration = time.time() - start_time
+            successful = sum(1 for r in results.values() if r["success"])
+            logger.info(
+                "[LLMMultiService] generate_multi() complete: %s/%s succeeded in %.2fs",
+                successful,
+                len(models),
+                duration,
+            )
+            return results
+        finally:
+            await _finish_llm_tasks(list(tasks.values()))
 
     async def generate_progressive(
         self,
@@ -175,51 +212,56 @@ class LLMMultiService:
         tasks = [task for task, _ in task_model_pairs]
         yielded_tasks = set()
 
-        for coro in asyncio.as_completed(tasks):
-            try:
-                result = await coro
-                # Find which model this result belongs to
-                completed_model = None
-                for task, model in task_model_pairs:
-                    if task.done() and task not in yielded_tasks:
-                        yielded_tasks.add(task)
-                        completed_model = model
-                        break
+        try:
+            for coro in asyncio.as_completed(tasks):
+                try:
+                    result = await coro
+                    # Find which model this result belongs to
+                    completed_model = None
+                    for task, model in task_model_pairs:
+                        if task.done() and task not in yielded_tasks:
+                            yielded_tasks.add(task)
+                            completed_model = model
+                            break
 
-                if completed_model:
-                    yield {
-                        "llm": completed_model,
-                        "response": result["response"],
-                        "duration": result["duration"],
-                        "success": True,
-                        "error": None,
-                        "timestamp": time.time(),
-                    }
-                    logger.debug(
-                        "[LLMMultiService] %s completed in %.2fs",
-                        completed_model,
-                        result["duration"],
-                    )
+                    if completed_model:
+                        yield {
+                            "llm": completed_model,
+                            "response": result["response"],
+                            "duration": result["duration"],
+                            "success": result.get("success", True),
+                            "error": result.get("error"),
+                            "timestamp": time.time(),
+                        }
+                        logger.debug(
+                            "[LLMMultiService] %s completed in %.2fs",
+                            completed_model,
+                            result["duration"],
+                        )
 
-            except LLM_PIPELINE_ERRORS as e:
-                # Find which model failed
-                failed_model = None
-                for task, model in task_model_pairs:
-                    if task.done() and task.exception() and task not in yielded_tasks:
-                        yielded_tasks.add(task)
-                        failed_model = model
-                        break
+                except LLM_CALL_FAILURES as e:
+                    if is_passthrough_llm_error(e):
+                        raise
+                    # Find which model failed
+                    failed_model = None
+                    for task, model in task_model_pairs:
+                        if task.done() and task.exception() and task not in yielded_tasks:
+                            yielded_tasks.add(task)
+                            failed_model = model
+                            break
 
-                if failed_model:
-                    logger.error("[LLMMultiService] %s failed: %s", failed_model, e)
-                    yield {
-                        "llm": failed_model,
-                        "response": None,
-                        "duration": 0.0,
-                        "success": False,
-                        "error": str(e),
-                        "timestamp": time.time(),
-                    }
+                    if failed_model:
+                        logger.error("[LLMMultiService] %s failed: %s", failed_model, e)
+                        yield {
+                            "llm": failed_model,
+                            "response": None,
+                            "duration": 0.0,
+                            "success": False,
+                            "error": str(e),
+                            "timestamp": time.time(),
+                        }
+        finally:
+            await _finish_llm_tasks(tasks)
 
     async def stream_progressive(
         self,
@@ -372,7 +414,7 @@ class LLMMultiService:
                     tokens_per_sec,
                 )
 
-            except LLM_PIPELINE_ERRORS as e:
+            except LLM_CALL_FAILURES as e:
                 duration = time.time() - start_time
                 logical_model = physical_to_logical.get(physical_model, physical_model)
                 logger.error("[LLMMultiService] %s stream error: %s", logical_model, str(e))
@@ -393,20 +435,20 @@ class LLMMultiService:
         success_count = 0
         total_start = time.time()
 
-        # Yield tokens as they arrive from queue
-        while completed < len(physical_models):
-            chunk = await queue.get()
+        try:
+            # Yield tokens as they arrive from queue
+            while completed < len(physical_models):
+                chunk = await queue.get()
 
-            if chunk["event"] == "complete":
-                completed += 1
-                success_count += 1
-            elif chunk["event"] == "error":
-                completed += 1
+                if chunk["event"] == "complete":
+                    completed += 1
+                    success_count += 1
+                elif chunk["event"] == "error":
+                    completed += 1
 
-            yield chunk
-
-        # Wait for all tasks to finish (cleanup)
-        await asyncio.gather(*tasks, return_exceptions=True)
+                yield chunk
+        finally:
+            await _finish_llm_tasks(tasks)
 
         total_duration = time.time() - total_start
         logger.info(
@@ -493,57 +535,56 @@ class LLMMultiService:
             task_model_pairs.append((task, model))
 
         tasks = [task for task, _ in task_model_pairs]
+        seen_tasks: set[asyncio.Task[Any]] = set()
 
         # Wait for first successful result
-        for coro in asyncio.as_completed(tasks):
-            try:
-                result = await coro
+        try:
+            for coro in asyncio.as_completed(tasks):
+                try:
+                    result = await coro
+                    completed_model = _claim_finished_model(task_model_pairs, seen_tasks)
+                    if not result.get("success", True):
+                        logger.debug(
+                            "[LLMMultiService] %s failed in race: %s",
+                            completed_model,
+                            result.get("error"),
+                        )
+                        continue
 
-                # Find which model completed
-                completed_model = None
-                for task, model in task_model_pairs:
-                    if task.done() and not task.exception():
-                        completed_model = model
-                        break
+                    if completed_model:
+                        logger.debug(
+                            "[LLMMultiService] %s won the race in %.2fs",
+                            completed_model,
+                            result["duration"],
+                        )
 
-                if completed_model:
-                    # Cancel remaining tasks
-                    for task in tasks:
-                        if not task.done():
-                            task.cancel()
+                        return {
+                            "llm": completed_model,
+                            "response": result["response"],
+                            "duration": result["duration"],
+                            "success": True,
+                            "error": None,
+                        }
 
-                    logger.debug(
-                        "[LLMMultiService] %s won the race in %.2fs",
-                        completed_model,
-                        result["duration"],
-                    )
+                except LLM_CALL_FAILURES as e:
+                    if is_passthrough_llm_error(e):
+                        raise
+                    failed_model = _claim_finished_model(task_model_pairs, seen_tasks)
+                    logger.debug("[LLMMultiService] %s failed in race: %s", failed_model, e)
+                    continue
 
-                    return {
-                        "llm": completed_model,
-                        "response": result["response"],
-                        "duration": result["duration"],
-                        "success": True,
-                        "error": None,
-                    }
-
-            except LLM_PIPELINE_ERRORS as e:
-                # Find which model failed
-                for task, model in task_model_pairs:
-                    if task.done() and task.exception():
-                        logger.debug("[LLMMultiService] %s failed in race: %s", model, e)
-                        break
-                continue
-
-        # All failed
-        logger.error("[LLMMultiService] All models failed in race")
-        record_failure(
-            source="llm",
-            component="LLMMultiService",
-            message="All LLM models failed - complete LLM service outage",
-            severity="critical",
-            exception_type="LLMServiceError",
-        )
-        raise LLMServiceError("All models failed to generate response")
+            # All failed
+            logger.error("[LLMMultiService] All models failed in race")
+            record_failure(
+                source="llm",
+                component="LLMMultiService",
+                message="All LLM models failed - complete LLM service outage",
+                severity="critical",
+                exception_type="LLMServiceError",
+            )
+            raise LLMServiceError("All models failed to generate response")
+        finally:
+            await _finish_llm_tasks(tasks)
 
     async def compare_responses(
         self,

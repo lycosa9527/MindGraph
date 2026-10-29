@@ -8,7 +8,17 @@ void ensureMarkdownRenderer()
 </script>
 
 <template>
-  <div class="canvas-layout h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
+  <div class="canvas-layout mg-visual-viewport-shell flex flex-col bg-gray-50">
     <slot />
   </div>
 </template>
+
+<style>
+html:has(.canvas-layout),
+html:has(.canvas-layout) body,
+html:has(.canvas-layout) #app {
+  height: var(--mg-vvh, 100dvh);
+  max-height: var(--mg-vvh, 100dvh);
+  overflow: hidden;
+}
+</style>

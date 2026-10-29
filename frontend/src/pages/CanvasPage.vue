@@ -1544,7 +1544,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="canvasPageRef"
-    class="canvas-page flex flex-col h-screen bg-gray-50 relative"
+    class="canvas-page flex h-full min-h-0 w-full flex-1 flex-col bg-gray-50 relative"
     :class="{
       'canvas-page--mm-ribbon': isMindMapRibbonFamily,
       'presentation-active': canUsePresentationTools && presentationRailOpen,
@@ -1747,7 +1747,7 @@ onUnmounted(() => {
             maxWidth: `${PANEL.DIAGRAM_BRAINSTORM_MAX_WIDTH}px`,
             marginTop: `${PANEL_INSET.TOP}px`,
             marginBottom: `${PANEL_INSET.BOTTOM}px`,
-            maxHeight: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
+            maxHeight: `calc(var(--mg-vvh, 100dvh) - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
           }"
         >
           <RootConceptModal
@@ -1815,9 +1815,9 @@ onUnmounted(() => {
             width: `${PANEL.MINDMATE_WIDTH}px`,
             top: `${PANEL_INSET.TOP}px`,
             right: mindMatePanelRight,
-            height: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
+            height: `calc(var(--mg-vvh, 100dvh) - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
             minHeight: '400px',
-            maxHeight: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
+            maxHeight: `calc(var(--mg-vvh, 100dvh) - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
           }"
         >
           <MindmatePanel

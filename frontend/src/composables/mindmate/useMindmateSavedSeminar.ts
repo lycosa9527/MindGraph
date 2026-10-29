@@ -4,7 +4,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { leaveSavedMindmateSeminar } from '@/utils/mindmateCollabLibrarySave'
+import { leaveSavedMindmateSeminar } from '@/utils/mindmateSeminarLibrarySave'
 
 export function useMindmateSavedSeminar() {
   const route = useRoute()

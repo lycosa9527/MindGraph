@@ -4,6 +4,7 @@
  * Otherwise matches router redirects: viewport below mobile breakpoint OR touch-class UA.
  */
 import { BREAKPOINTS } from '@/config/uiConfig'
+import { isHarmonyOsPhoneUserAgent } from '@/utils/arkWebClient'
 import { resolveLockedMobile } from '@/utils/clientShellLock'
 import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
 
@@ -12,7 +13,7 @@ const TOUCH_DEVICE_UA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Oper
 /** True when user agent looks like a phone/tablet touch device. */
 export function isTouchDeviceUserAgent(userAgent?: string): boolean {
   const ua = userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '')
-  return TOUCH_DEVICE_UA.test(ua)
+  return TOUCH_DEVICE_UA.test(ua) || isHarmonyOsPhoneUserAgent(ua)
 }
 
 /** True when viewport width is below the mobile breakpoint. */

@@ -23,11 +23,11 @@ import {
   seminarSpectator,
   upsertSeminarServerArtifact,
 } from '@/composables/mindmate/mindmateSeminarChrome'
-import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
+import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import {
   collabDiagramSaveFailureKey,
   saveCollabDiagramToLibrary,
-} from '@/utils/mindmateCollabDiagramLibrary'
+} from '@/utils/mindmateSeminarDiagramLibrary'
 import {
   type SeminarDocumentArtifact,
   collectSeminarDiagramArtifacts,
@@ -44,7 +44,7 @@ import {
 const props = withDefaults(
   defineProps<{
     sessionId: string
-    messages: MindmateCollabMessage[]
+    messages: MindmateSeminarMessage[]
     /** Hide chrome when mounted inside the seminar task pane. */
     embedded?: boolean
   }>(),

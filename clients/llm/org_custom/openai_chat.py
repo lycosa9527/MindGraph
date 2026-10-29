@@ -5,12 +5,13 @@ from __future__ import annotations
 import logging
 from typing import Any, AsyncGenerator, Dict, List, NoReturn, Optional
 
-from openai import APIStatusError, AsyncOpenAI, RateLimitError
+from openai import APIConnectionError, APIStatusError, AsyncOpenAI, RateLimitError
 
 from clients.llm.base import (
     as_openai_chat_messages,
     extract_usage_from_openai_completion,
     extract_usage_from_stream_chunk,
+    raise_openai_transport_error,
 )
 from clients.llm.structured_output import apply_structured_output
 from services.infrastructure.http.error_handler import (
@@ -59,6 +60,8 @@ class OrgOpenAIChatClient:
         apply_structured_output(create_kwargs, response_format, model=self.model_name)
         try:
             completion = await self.client.chat.completions.create(**create_kwargs)
+        except APIConnectionError as exc:
+            raise_openai_transport_error(exc, provider=_PROVIDER)
         except RateLimitError as exc:
             raise LLMRateLimitError(str(exc)) from exc
         except APIStatusError as exc:
@@ -88,6 +91,8 @@ class OrgOpenAIChatClient:
                 temperature=0,
                 max_tokens=1,
             )
+        except APIConnectionError as exc:
+            raise_openai_transport_error(exc, provider=_PROVIDER)
         except RateLimitError as exc:
             raise LLMRateLimitError(str(exc)) from exc
         except APIStatusError as exc:
@@ -129,6 +134,8 @@ class OrgOpenAIChatClient:
                     yield {"type": "token", "content": delta.content}
             if last_usage:
                 yield {"type": "usage", "usage": last_usage}
+        except APIConnectionError as exc:
+            raise_openai_transport_error(exc, provider=_PROVIDER)
         except RateLimitError as exc:
             raise LLMRateLimitError(str(exc)) from exc
         except APIStatusError as exc:

@@ -100,9 +100,9 @@ def test_credit_expectation_matches_handler(task: TaskWiring) -> None:
         assert task.slug in {"publish_case", "referral_register"}
 
 
-def test_mindmate_collab_join_loads_org_before_track() -> None:
+def test_mindmate_seminar_join_loads_org_before_track() -> None:
     """Workshop join earn must load org — passing None skips trial credits."""
-    source = _read("routers/api/mindmate_collab_routes.py")
+    source = _read("routers/api/mindmate_seminar_routes.py")
     assert "load_user_org(current_user)" in source
     assert "track_client_event(db, current_user, None" not in source
 
@@ -113,7 +113,7 @@ def test_client_event_handler_routes_load_org() -> None:
         "routers/api/activity.py",
         "routers/api/diagrams.py",
         "routers/api/diagrams_workshop_routes.py",
-        "routers/api/mindmate_collab_routes.py",
+        "routers/api/mindmate_seminar_routes.py",
         "routers/api/canvas_translate.py",
     ):
         source = _read(rel_path)

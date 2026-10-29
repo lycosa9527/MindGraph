@@ -147,10 +147,11 @@ def parse_specialized_errors(
                 user_msg = "流程未发布，请发布流程后再重试"
             else:
                 user_msg = "Flow not published. Please publish flow and retry."
-            return LLMProviderError(
+            return LLMInvalidParameterError(
                 f"Flow not published: {error_message}",
-                provider="dashscope",
+                parameter="flow",
                 error_code=error_code or "FlowNotPublished",
+                provider="dashscope",
             ), user_msg
 
     # Schema errors

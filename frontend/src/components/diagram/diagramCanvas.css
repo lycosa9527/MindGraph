@@ -5,6 +5,13 @@
 
 .diagram-canvas {
   position: relative;
+  min-height: 0;
+}
+
+.diagram-canvas > .vue-flow-wrapper,
+.diagram-canvas .vue-flow,
+.diagram-canvas .vue-flow__container {
+  min-height: 0;
 }
 
 /* Pointer mode: default arrow on empty canvas (Vue Flow sets grab when pan-on-drag is enabled). */

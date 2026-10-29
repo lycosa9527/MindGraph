@@ -1,0 +1,400 @@
+"""
+Org-visible MindMate collab room listing (SQL + Redis merge).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+from typing import Any, Awaitable, Callable, Dict, List, Optional
+
+from sqlalchemy import exists, or_, select
+
+from models.domain.auth import OrganizationExpertBinding, User
+from models.domain.mindmate_seminar import MindmateSeminarMember, MindmateSeminarSession
+from services.auth.expert_school_binding import list_bound_org_ids
+from services.features.mindmate_seminar.redis_keys import (
+    normalize_collab_code,
+    registry_global_org_key,
+    registry_org_key,
+    session_meta_key,
+)
+from services.features.mindmate_seminar.seminar_leave import session_ids_viewer_left
+from services.online_collab.lifecycle.online_collab_visibility_helpers import (
+    ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
+)
+from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import REDIS_ERRORS
+from utils.auth.roles import is_expert
+from utils.db.session_open import system_rls_session, user_rls_session
+
+logger = logging.getLogger(__name__)
+
+ParticipantCountsFn = Callable[[List[str]], Awaitable[Dict[str, int]]]
+
+
+def _decode_text(value: Any) -> str:
+    """Decode Redis bytes / memoryview to str."""
+    if isinstance(value, (bytes, bytearray)):
+        return value.decode("utf-8", errors="replace")
+    if isinstance(value, memoryview):
+        return bytes(value).decode("utf-8", errors="replace")
+    return str(value) if value is not None else ""
+
+
+def _decode_code_set(raw: Any) -> set[str]:
+    """Normalize a Redis SET of room codes."""
+    if not raw:
+        return set()
+    return {normalize_collab_code(_decode_text(item)) for item in raw if item}
+
+
+def merge_org_session_rows(
+    sql_rows: List[Dict[str, Any]],
+    redis_rows: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """SQL rows win on conflict; Redis fills colleagues hidden by incomplete RLS."""
+    by_code: Dict[str, Dict[str, Any]] = {}
+    for row in redis_rows:
+        by_code[normalize_collab_code(str(row.get("code") or ""))] = row
+    ordered: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    for row in sql_rows:
+        key = normalize_collab_code(str(row.get("code") or ""))
+        if not key or key in seen:
+            continue
+        by_code[key] = row
+        ordered.append(row)
+        seen.add(key)
+    for key, row in by_code.items():
+        if key and key not in seen:
+            ordered.append(row)
+            seen.add(key)
+    return ordered
+
+
+def without_ended_redis_fillers(
+    sql_rows: List[Dict[str, Any]],
+    merged: List[Dict[str, Any]],
+    live_filler_ids: set[str],
+) -> List[Dict[str, Any]]:
+    """Drop a Redis-only sidebar row whose seminar is missing or already ended.
+
+    SQL rows stay. A Redis filler stays only when Postgres still has that
+    session live, which is how a colleague room hidden by RLS remains listed.
+    """
+    sql_ids = {str(row.get("session_id") or "") for row in sql_rows if row.get("session_id")}
+    kept: List[Dict[str, Any]] = []
+    for row in merged:
+        session_id = str(row.get("session_id") or "")
+        if session_id in sql_ids or session_id in live_filler_ids:
+            kept.append(row)
+    return kept
+
+
+async def _live_filler_ids(session_ids: List[str]) -> set[str]:
+    """Return the subset of ids that are still a live seminar."""
+    if not session_ids:
+        return set()
+    async with system_rls_session() as db:
+        result = await db.execute(
+            select(MindmateSeminarSession.id).where(
+                MindmateSeminarSession.id.in_(session_ids),
+                MindmateSeminarSession.ended_at.is_(None),
+            ),
+        )
+        return {str(row) for row in result.scalars().all()}
+
+
+async def resolve_viewer_org_id(
+    user_id: int,
+    organization_id: Optional[int],
+) -> Optional[int]:
+    """Return the viewer's org id from the caller, else a user-scoped probe."""
+    if organization_id is not None:
+        return int(organization_id)
+    async with user_rls_session(user_id) as probe:
+        viewer = (await probe.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+        if not viewer or viewer.organization_id is None:
+            if viewer is not None and is_expert(viewer):
+                bound = await list_bound_org_ids(probe, int(viewer.id))
+                if bound:
+                    return bound[0]
+            return None
+        return int(viewer.organization_id)
+
+
+def _session_dict(
+    *,
+    session_id: str,
+    code: str,
+    title: str,
+    owner_name: str,
+    owner_user_id: int,
+    participant_count: int,
+    visibility: str,
+) -> Dict[str, Any]:
+    """Build the REST payload for one org seminar row."""
+    return {
+        "session_id": session_id,
+        "code": code,
+        "title": title,
+        "owner_name": owner_name,
+        "owner_user_id": owner_user_id,
+        "participant_count": participant_count,
+        "visibility": visibility,
+    }
+
+
+async def list_org_sessions_sql(user_id: int, org_id: int) -> List[Dict[str, Any]]:
+    """List live org rooms under user RLS with app.organization_id bound."""
+    async with user_rls_session(user_id, organization_id=org_id) as db:
+        result = await db.execute(
+            select(MindmateSeminarSession, User.name, User.phone, User.email)
+            .outerjoin(User, User.id == MindmateSeminarSession.owner_user_id)
+            .where(
+                or_(
+                    MindmateSeminarSession.organization_id == org_id,
+                    MindmateSeminarSession.owner_user_id.in_(
+                        select(OrganizationExpertBinding.user_id).where(
+                            OrganizationExpertBinding.organization_id == org_id
+                        )
+                    ),
+                ),
+                MindmateSeminarSession.visibility == ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
+                MindmateSeminarSession.ended_at.is_(None),
+                ~exists(
+                    select(MindmateSeminarMember.session_id).where(
+                        MindmateSeminarMember.session_id == MindmateSeminarSession.id,
+                        MindmateSeminarMember.user_id == user_id,
+                        MindmateSeminarMember.left_at.is_not(None),
+                    ),
+                ),
+            )
+            .order_by(MindmateSeminarSession.started_at.desc()),
+        )
+        rows = result.all()
+
+    sessions: List[Dict[str, Any]] = []
+    for session, owner_name, owner_phone, owner_email in rows:
+        # Duration presets are advisory; live rooms stay listed until host End.
+        display = owner_name or owner_phone or owner_email or str(session.owner_user_id)
+        sessions.append(
+            _session_dict(
+                session_id=session.id,
+                code=session.code,
+                title=session.title,
+                owner_name=display,
+                owner_user_id=session.owner_user_id,
+                participant_count=0,
+                visibility=session.visibility,
+            ),
+        )
+    return sessions
+
+
+def _redis_row_from_meta(
+    code: str,
+    meta: Dict[str, str],
+    _now: int,
+) -> Optional[Dict[str, Any]]:
+    """Map Redis session HASH to a list row, or None when not joinable."""
+    visibility = meta.get("visibility") or ONLINE_COLLAB_VISIBILITY_ORGANIZATION
+    if visibility != ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
+        return None
+    owner_raw = meta.get("owner_id") or "0"
+    try:
+        owner_user_id = int(owner_raw)
+    except (TypeError, ValueError):
+        owner_user_id = 0
+    session_id = meta.get("session_id") or ""
+    if not session_id:
+        return None
+    return _session_dict(
+        session_id=session_id,
+        code=code,
+        title=meta.get("title") or "MindMate Collab",
+        owner_name=meta.get("owner_name") or str(owner_user_id),
+        owner_user_id=owner_user_id,
+        participant_count=0,
+        visibility=visibility,
+    )
+
+
+async def list_org_sessions_redis(org_id: int) -> List[Dict[str, Any]]:
+    """List live org rooms from Redis registries (includes empty host-only rooms)."""
+    redis = get_async_redis()
+    if not redis:
+        return []
+    try:
+        pipe = redis.pipeline(transaction=False)
+        pipe.smembers(registry_org_key(org_id))
+        pipe.smembers(registry_global_org_key())
+        org_raw, global_raw = await pipe.execute()
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminar] org registry SMEMBERS failed org_id=%s: %s", org_id, exc)
+        return []
+
+    codes = sorted(_decode_code_set(org_raw) | _decode_code_set(global_raw))
+    if not codes:
+        return []
+
+    try:
+        pipe = redis.pipeline(transaction=False)
+        for code in codes:
+            pipe.hgetall(session_meta_key(code))
+        metas = await pipe.execute()
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateSeminar] org session meta pipeline failed org_id=%s: %s", org_id, exc)
+        return []
+
+    now = int(time.time())
+    sessions: List[Dict[str, Any]] = []
+    for code, meta_raw in zip(codes, metas):
+        if not isinstance(meta_raw, dict) or not meta_raw:
+            continue
+        meta = {_decode_text(key): _decode_text(val) for key, val in meta_raw.items()}
+        row = _redis_row_from_meta(code, meta, now)
+        if row:
+            sessions.append(row)
+    return sessions
+
+
+async def attach_participant_counts(
+    rows: List[Dict[str, Any]],
+    participant_counts_fn: ParticipantCountsFn,
+) -> List[Dict[str, Any]]:
+    """Fill participant_count from Redis HLEN for each room code."""
+    codes = [str(row.get("code") or "") for row in rows if row.get("code")]
+    counts = await participant_counts_fn(codes)
+    for row in rows:
+        code = normalize_collab_code(str(row.get("code") or ""))
+        row["participant_count"] = counts.get(code, 0)
+    return rows
+
+
+async def viewer_seminar_org_ids(user_id: int, organization_id: Optional[int]) -> List[int]:
+    """Schools whose seminar lists this viewer should see."""
+    if organization_id is not None:
+        return [int(organization_id)]
+    async with user_rls_session(user_id) as probe:
+        viewer = (await probe.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+        if viewer is None:
+            return []
+        org_ids: List[int] = []
+        if viewer.organization_id is not None:
+            org_ids.append(int(viewer.organization_id))
+        if is_expert(viewer):
+            for bound_org_id in await list_bound_org_ids(probe, int(viewer.id)):
+                if bound_org_id not in org_ids:
+                    org_ids.append(bound_org_id)
+        return org_ids
+
+
+def hidden_closed_session_ids(
+    user_id: int,
+    owners: Dict[str, int],
+    invited_seats: Dict[str, List[tuple[int, bool]]],
+) -> set[str]:
+    """Invite-only rooms this viewer must not see.
+
+    ``invited_seats`` maps a session id to ``(user_id, accepted)`` for seats
+    on the closed roster. A session with no invited seats is still open.
+    """
+    hidden: set[str] = set()
+    viewer = int(user_id)
+    for session_id, seats in invited_seats.items():
+        if not seats:
+            continue
+        if owners.get(session_id) == viewer:
+            continue
+        if any(seat_user == viewer and accepted for seat_user, accepted in seats):
+            continue
+        hidden.add(session_id)
+    return hidden
+
+
+async def closed_session_ids_hidden_from(user_id: int, session_ids: List[str]) -> set[str]:
+    """Closed seminars this viewer must not browse.
+
+    Uses a system session. Member RLS would hide every invited seat except
+    the caller's, and an uninvited teacher would then see the room as open.
+    """
+    unique = [session_id for session_id in dict.fromkeys(session_ids) if session_id]
+    if not unique:
+        return set()
+    async with system_rls_session() as db:
+        owner_rows = (
+            await db.execute(
+                select(MindmateSeminarSession.id, MindmateSeminarSession.owner_user_id).where(
+                    MindmateSeminarSession.id.in_(unique)
+                )
+            )
+        ).all()
+        invited_rows = (
+            await db.execute(
+                select(
+                    MindmateSeminarMember.session_id,
+                    MindmateSeminarMember.user_id,
+                    MindmateSeminarMember.accepted,
+                ).where(
+                    MindmateSeminarMember.session_id.in_(unique),
+                    MindmateSeminarMember.invited.is_(True),
+                )
+            )
+        ).all()
+    owners = {str(session_id): int(owner_id) for session_id, owner_id in owner_rows}
+    invited: Dict[str, List[tuple[int, bool]]] = {}
+    for session_id, seat_user, accepted in invited_rows:
+        invited.setdefault(str(session_id), []).append((int(seat_user), bool(accepted)))
+    return hidden_closed_session_ids(user_id, owners, invited)
+
+
+async def list_visible_org_sessions(
+    user_id: int,
+    *,
+    organization_id: Optional[int],
+    participant_counts_fn: ParticipantCountsFn,
+) -> List[Dict[str, Any]]:
+    """Return live org seminars the viewer should see in the school group list."""
+    org_ids = await viewer_seminar_org_ids(user_id, organization_id)
+    if not org_ids:
+        return []
+    merged: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    sql_rows_all: List[Dict[str, Any]] = []
+    for org_id in org_ids:
+        sql_rows = await list_org_sessions_sql(user_id, org_id)
+        sql_rows_all.extend(sql_rows)
+        redis_rows = await list_org_sessions_redis(org_id)
+        for row in merge_org_session_rows(sql_rows, redis_rows):
+            code = str(row.get("code") or "")
+            if code in seen:
+                continue
+            seen.add(code)
+            merged.append(row)
+    sql_ids = {str(row.get("session_id") or "") for row in sql_rows_all}
+    filler_ids = []
+    for row in merged:
+        session_id = str(row.get("session_id") or "")
+        if session_id and session_id not in sql_ids:
+            filler_ids.append(session_id)
+    merged = without_ended_redis_fillers(
+        sql_rows_all,
+        merged,
+        await _live_filler_ids(filler_ids),
+    )
+    left_ids = await session_ids_viewer_left(user_id)
+    if left_ids:
+        merged = [row for row in merged if str(row.get("session_id") or "") not in left_ids]
+    hidden = await closed_session_ids_hidden_from(
+        user_id,
+        [str(row.get("session_id") or "") for row in merged],
+    )
+    if hidden:
+        merged = [row for row in merged if str(row.get("session_id") or "") not in hidden]
+    return await attach_participant_counts(merged, participant_counts_fn)

@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
-from models.domain.mindmate_collab import MindmateCollabSession
+from models.domain.mindmate_seminar import MindmateSeminarSession
 from routers.features.workshop_chat.dependencies import (
     access_channel,
     presence_org_ids_for_user,
@@ -32,13 +32,13 @@ from services.auth.expert_live_scope import (
     session_registry_org_ids,
 )
 from services.auth.expert_school_binding import list_bound_org_ids
-from services.features.mindmate_collab.redis_keys import (
+from services.features.mindmate_seminar.redis_keys import (
     registry_global_org_key as mindmate_global_key,
 )
-from services.features.mindmate_collab.redis_keys import (
+from services.features.mindmate_seminar.redis_keys import (
     registry_org_key as mindmate_org_key,
 )
-from services.features.mindmate_collab.redis_keys import (
+from services.features.mindmate_seminar.redis_keys import (
     session_meta_key as mindmate_meta_key,
 )
 from services.features.mindmate_notify_ws_manager import mindmate_notify_ws_manager
@@ -135,10 +135,10 @@ async def _refresh_one(user_id: int) -> None:
             str(code)
             for code in (
                 await db.execute(
-                    select(MindmateCollabSession.code).where(
-                        MindmateCollabSession.owner_user_id == user_id,
-                        MindmateCollabSession.ended_at.is_(None),
-                        MindmateCollabSession.visibility == ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
+                    select(MindmateSeminarSession.code).where(
+                        MindmateSeminarSession.owner_user_id == user_id,
+                        MindmateSeminarSession.ended_at.is_(None),
+                        MindmateSeminarSession.visibility == ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
                     )
                 )
             ).scalars()

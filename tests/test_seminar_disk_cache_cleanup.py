@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from services.features.mindmate_collab.seminar_file_storage import cleanup_seminar_disk_cache
+from services.features.mindmate_seminar.seminar_file_storage import cleanup_seminar_disk_cache
 
 
 def _touch(path: Path, *, age_seconds: float, body: bytes = b"x") -> None:
@@ -40,7 +40,7 @@ def test_cleanup_drops_cos_copies_and_scratch_keeps_the_only_local_file(
     os.utime(work, (stamped, stamped))
 
     monkeypatch.setattr(
-        "services.features.mindmate_collab.seminar_file_storage.cos_seminar_enabled",
+        "services.features.mindmate_seminar.seminar_file_storage.cos_seminar_enabled",
         lambda: True,
     )
 
@@ -48,7 +48,7 @@ def test_cleanup_drops_cos_copies_and_scratch_keeps_the_only_local_file(
         return logical_key.endswith("on-cos.docx")
 
     monkeypatch.setattr(
-        "services.features.mindmate_collab.seminar_file_storage._cos_has_logical_key",
+        "services.features.mindmate_seminar.seminar_file_storage._cos_has_logical_key",
         _has,
     )
 
@@ -70,7 +70,7 @@ def test_cleanup_keeps_uploads_when_cos_is_off(monkeypatch: pytest.MonkeyPatch, 
     _touch(upload, age_seconds=200_000)
     _touch(preview, age_seconds=200_000)
     monkeypatch.setattr(
-        "services.features.mindmate_collab.seminar_file_storage.cos_seminar_enabled",
+        "services.features.mindmate_seminar.seminar_file_storage.cos_seminar_enabled",
         lambda: False,
     )
 
