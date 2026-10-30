@@ -18,6 +18,9 @@ exclude = [
     "tmp/**",
     "storage",
     "storage/**",
+    # Desktop pet is a separate PySide6 app. The server CI image does not install it.
+    "clients/desktop-pet",
+    "clients/desktop-pet/**",
 ]
 stubPath = "typings"
 # Miniconda env (conda activate python313 or mindgraph); .venv excluded from analysis
