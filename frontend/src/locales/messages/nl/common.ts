@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Voorbeeld',
   'swissGlass.hero.imagePreview.title': 'Bekijk foto\'s',
   'swissGlass.hero.imagePreview.line1': 'Schakel naar links en rechts om door de huidige foto te bladeren',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'kennisbasis',
   'swissGlass.hero.chunkPreview.title': 'Gefragmenteerd voorbeeld',
   'swissGlass.hero.chunkPreview.line1': 'Bekijk de originele tekst en metadata van de opgehaalde chunks',

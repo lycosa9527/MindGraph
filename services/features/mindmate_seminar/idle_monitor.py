@@ -1,9 +1,8 @@
 """
 Idle-score monitor for MindMate seminar rooms.
 
-Silence, an empty roster, and the 1h/10h duration presets do not end a room.
-This loop drops orphan idle scores, and it auto-closes a live seminar whose
-started_at is older than 30 days when the owner forgot to end it.
+Silence, an empty roster, duration presets, and room age do not end a room.
+The leader ends the seminar. This loop only drops orphan idle scores.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -25,7 +24,6 @@ from services.features.mindmate_seminar.config import (
     MINDMATE_COLLAB_ZOMBIE_GRACE_SECONDS,
 )
 from services.features.mindmate_seminar.manager_access import get_mindmate_seminar_manager
-from services.features.mindmate_seminar.seminar_ttl import expire_overdue_live_seminars
 from services.features.mindmate_seminar.redis_keys import (
     idle_scores_key,
     normalize_collab_code,
@@ -117,10 +115,6 @@ async def _monitor_loop(stop_event: asyncio.Event) -> None:
                             )
             except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("[MindmateSeminarIdle] scan error: %s", exc)
-        try:
-            await expire_overdue_live_seminars()
-        except BACKGROUND_INFRA_ERRORS as exc:
-            logger.warning("[MindmateSeminarTTL] sweep failed: %s", exc)
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=MINDMATE_COLLAB_MONITOR_INTERVAL_SECONDS)
         except asyncio.TimeoutError:

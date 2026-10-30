@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Förhandsvisning',
   'swissGlass.hero.imagePreview.title': 'Se bilder',
   'swissGlass.hero.imagePreview.line1': 'Växla vänster och höger för att bläddra i den aktuella bilden',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'kunskapsbas',
   'swissGlass.hero.chunkPreview.title': 'Klumpad förhandsvisning',
   'swissGlass.hero.chunkPreview.line1': 'Visa originaltexten och metadata för de hämtade bitarna',

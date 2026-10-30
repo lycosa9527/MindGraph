@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'پیش نمایش',
   'swissGlass.hero.imagePreview.title': 'مشاهده تصاویر',
   'swissGlass.hero.imagePreview.line1': 'برای مرور تصویر فعلی، چپ و راست را تغییر دهید',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'پایگاه دانش',
   'swissGlass.hero.chunkPreview.title': 'پیش نمایش تکه تکه شده',
   'swissGlass.hero.chunkPreview.line1': 'متن اصلی و ابرداده تکه های بازیابی شده را مشاهده کنید',

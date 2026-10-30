@@ -27,6 +27,8 @@ from . import (
     canvas_translate,
     client_bundles,
     config,
+    desktop_pet_update,
+    mindmate_seminar_unread,
     diagram_generation,
     diagram_node_ops,
     diagrams,
@@ -106,6 +108,8 @@ router = APIRouter(prefix="/api", tags=["api"])
 router.include_router(config.router)
 router.include_router(activity.router)
 router.include_router(client_bundles.router)
+router.include_router(desktop_pet_update.router)
+router.include_router(mindmate_seminar_unread.router)
 router.include_router(diagram_generation.router)
 router.include_router(canvas_translate.router)
 router.include_router(web_content_generation.router)

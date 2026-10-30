@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Silipin',
   'swissGlass.hero.imagePreview.title': 'Tingnan ang mga larawan',
   'swissGlass.hero.imagePreview.line1': 'Lumipat pakaliwa at pakanan upang i-browse ang kasalukuyang larawan',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'base ng kaalaman',
   'swissGlass.hero.chunkPreview.title': 'Pinutol na preview',
   'swissGlass.hero.chunkPreview.line1': 'Tingnan ang orihinal na text at metadata ng mga nakuhang chunks',

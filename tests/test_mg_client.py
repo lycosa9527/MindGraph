@@ -24,6 +24,7 @@ def test_sanitize_known_clients() -> None:
     assert sanitize_mg_client_label(" openclaw ") == "openclaw"
     assert sanitize_mg_client_label("workbuddy") == "workbuddy"
     assert sanitize_mg_client_label("file-reader") == "file-reader"
+    assert sanitize_mg_client_label("desktop-pet") == "desktop-pet"
     assert sanitize_mg_client_label("ESP32-Watch") == "esp32-watch"
     assert "chrome-extension" in KNOWN_MG_CLIENTS
     assert "esp32-watch" in KNOWN_MG_CLIENTS

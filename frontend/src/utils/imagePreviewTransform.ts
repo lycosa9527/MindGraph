@@ -1,7 +1,10 @@
 /**
  * Zoom and pan for the enlarged image preview.
- * Scale 1 is the fitted picture. The wheel changes scale about a point in
- * stage coordinates whose origin is the center of the frame.
+ * Scale 1 is fit-width: the picture is as wide as the frame and keeps its
+ * aspect ratio. A picture taller than the frame opens pinned to the top.
+ * The wheel zooms about a point in stage coordinates whose origin is the
+ * center of the frame. On a tall picture at fit width, the wheel pans
+ * vertically instead; Ctrl or Cmd with the wheel still zooms.
  */
 
 export const IMAGE_PREVIEW_MIN_SCALE = 1
@@ -46,6 +49,22 @@ export function zoomAboutPoint(
     x: cursorX - (cursorX - transform.x) * ratio,
     y: cursorY - (cursorY - transform.y) * ratio,
   }
+}
+
+/**
+ * Opening pan for a width-fitted picture.
+ * `imageHeight` and `viewHeight` are layout pixels after the picture has
+ * been sized to the frame width. A taller picture is pinned to the top of
+ * the centered frame; a shorter one stays centered. Returns null until both
+ * sizes are known.
+ */
+export function fitWidthTopPan(
+  imageHeight: number,
+  viewHeight: number
+): ImagePreviewTransform | null {
+  if (imageHeight <= 0 || viewHeight <= 0) return null
+  const overflowY = Math.max(0, (imageHeight - viewHeight) / 2)
+  return { scale: 1, x: 0, y: overflowY }
 }
 
 function clampAxis(value: number, limit: number): number {

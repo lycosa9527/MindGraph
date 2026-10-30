@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'പ്രിവ്യൂ',
   'swissGlass.hero.imagePreview.title': 'ചിത്രങ്ങൾ കാണുക',
   'swissGlass.hero.imagePreview.line1': 'നിലവിലെ ചിത്രം ബ്രൗസ് ചെയ്യാൻ ഇടത്തോട്ടും വലത്തോട്ടും മാറുക',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'വിജ്ഞാന അടിത്തറ',
   'swissGlass.hero.chunkPreview.title': 'ചങ്ക് ചെയ്ത പ്രിവ്യൂ',
   'swissGlass.hero.chunkPreview.line1': 'വീണ്ടെടുത്ത ചങ്കുകളുടെ യഥാർത്ഥ വാചകവും മെറ്റാഡാറ്റയും കാണുക',

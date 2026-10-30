@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Xem trước',
   'swissGlass.hero.imagePreview.title': 'Xem hình ảnh',
   'swissGlass.hero.imagePreview.line1': 'Chuyển sang trái và phải để duyệt ảnh hiện tại',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'cơ sở tri thức',
   'swissGlass.hero.chunkPreview.title': 'Xem trước từng đoạn',
   'swissGlass.hero.chunkPreview.line1': 'Xem văn bản gốc và siêu dữ liệu của các đoạn được truy xuất',

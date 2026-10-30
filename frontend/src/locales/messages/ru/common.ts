@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Предварительный просмотр',
   'swissGlass.hero.imagePreview.title': 'Посмотреть фотографии',
   'swissGlass.hero.imagePreview.line1': 'Переключайтесь влево и вправо, чтобы просмотреть текущее изображение.',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'база знаний',
   'swissGlass.hero.chunkPreview.title': 'Частичный предварительный просмотр',
   'swissGlass.hero.chunkPreview.line1': 'Просмотр исходного текста и метаданных извлеченных фрагментов',

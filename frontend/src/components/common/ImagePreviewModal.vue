@@ -1,21 +1,26 @@
 <script setup lang="ts">
 /**
  * ImagePreviewModal - Simple modal for previewing images.
- * The wheel zooms the picture. Dragging pans it once it is larger than the frame.
+ * The picture opens at fit width, pinned to the top when it is taller than
+ * the frame. The wheel then moves through that picture; Ctrl/Cmd+wheel, or
+ * the wheel once the picture already fits, zooms. Dragging pans.
  * Supports optional navigation when images array is provided.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 
 import { Image } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import {
   type ImagePreviewTransform,
   clampPreviewPan,
+  fitWidthTopPan,
   nextPreviewScale,
+  wheelPixels,
   zoomAboutPoint,
 } from '@/utils/imagePreviewTransform'
 
@@ -46,9 +51,13 @@ const stageRef = ref<HTMLElement | null>(null)
 const imageRef = ref<HTMLImageElement | null>(null)
 const transform = ref<ImagePreviewTransform>({ scale: 1, x: 0, y: 0 })
 const panning = ref(false)
+const fitted = ref(false)
+const userAdjusted = ref(false)
 
 let drag: { pointerId: number; x: number; y: number; originX: number; originY: number } | null =
   null
+let resizeObserver: ResizeObserver | null = null
+let fitFrame = 0
 
 const hasNavigation = computed(() => props.images && props.images.length > 1)
 
@@ -70,9 +79,56 @@ const imageStyle = computed(() => ({
 }))
 
 function resetTransform(): void {
+  userAdjusted.value = false
+  fitted.value = false
   transform.value = { scale: 1, x: 0, y: 0 }
   drag = null
   panning.value = false
+}
+
+/** Size is fit-width in CSS. Pan pins a taller picture to the top of the frame. */
+function applyFitWidth(): void {
+  if (fitted.value && userAdjusted.value) return
+  const stage = stageRef.value
+  const image = imageRef.value
+  if (!stage || !image) return
+  const next = fitWidthTopPan(image.offsetHeight, stage.clientHeight)
+  if (!next) return
+  transform.value = next
+  fitted.value = true
+}
+
+function syncToStage(): void {
+  if (!fitted.value || !userAdjusted.value) {
+    applyFitWidth()
+    return
+  }
+  transform.value = clampToStage(transform.value)
+}
+
+function observeStage(): void {
+  resizeObserver?.disconnect()
+  const stage = stageRef.value
+  if (!stage || typeof ResizeObserver === 'undefined') return
+  resizeObserver = new ResizeObserver(() => {
+    syncToStage()
+  })
+  resizeObserver.observe(stage)
+}
+
+function scheduleFitWidth(): void {
+  applyFitWidth()
+  if (fitted.value) return
+  cancelAnimationFrame(fitFrame)
+  fitFrame = requestAnimationFrame(() => applyFitWidth())
+}
+
+function onImageLoad(): void {
+  scheduleFitWidth()
+}
+
+function onImageError(): void {
+  fitted.value = true
 }
 
 function clampToStage(next: ImagePreviewTransform): ImagePreviewTransform {
@@ -88,9 +144,29 @@ function clampToStage(next: ImagePreviewTransform): ImagePreviewTransform {
   )
 }
 
+function imageTallerThanFrame(): boolean {
+  const stage = stageRef.value
+  const image = imageRef.value
+  if (!stage || !image) return false
+  return image.offsetHeight * transform.value.scale > stage.clientHeight + 1
+}
+
 function onWheel(event: WheelEvent): void {
+  if (!fitted.value) return
   const stage = stageRef.value
   if (!stage) return
+  const zoomGesture = event.ctrlKey || event.metaKey
+  if (!zoomGesture && transform.value.scale === 1 && imageTallerThanFrame()) {
+    userAdjusted.value = true
+    const pixels = wheelPixels(event.deltaY, event.deltaMode)
+    transform.value = clampToStage({
+      scale: transform.value.scale,
+      x: transform.value.x,
+      y: transform.value.y - pixels,
+    })
+    return
+  }
+  userAdjusted.value = true
   const rect = stage.getBoundingClientRect()
   const cursorX = event.clientX - rect.left - rect.width / 2
   const cursorY = event.clientY - rect.top - rect.height / 2
@@ -99,7 +175,7 @@ function onWheel(event: WheelEvent): void {
 }
 
 function onPointerDown(event: PointerEvent): void {
-  if (event.button !== 0) return
+  if (!fitted.value || event.button !== 0) return
   const stage = stageRef.value
   if (!stage) return
   stage.setPointerCapture(event.pointerId)
@@ -115,6 +191,9 @@ function onPointerDown(event: PointerEvent): void {
 
 function onPointerMove(event: PointerEvent): void {
   if (!drag || drag.pointerId !== event.pointerId) return
+  if (event.clientX !== drag.x || event.clientY !== drag.y) {
+    userAdjusted.value = true
+  }
   transform.value = clampToStage({
     scale: transform.value.scale,
     x: drag.originX + (event.clientX - drag.x),
@@ -142,10 +221,30 @@ watch(
 
 watch(
   () => [props.visible, currentIndex.value, currentImage.value.imageUrl] as const,
-  () => {
+  ([visible]) => {
     resetTransform()
+    if (!visible) {
+      cancelAnimationFrame(fitFrame)
+      resizeObserver?.disconnect()
+      resizeObserver = null
+      return
+    }
+    void nextTick(() => scheduleFitWidth())
   }
 )
+
+watch([stageRef, imageRef], () => {
+  if (!props.visible) return
+  observeStage()
+  const image = imageRef.value
+  if (image?.complete && image.naturalWidth > 0) scheduleFitWidth()
+})
+
+onBeforeUnmount(() => {
+  cancelAnimationFrame(fitFrame)
+  resizeObserver?.disconnect()
+  resizeObserver = null
+})
 
 function handleClose(done?: () => void) {
   emit('close')
@@ -222,10 +321,14 @@ function goNext() {
       >
         <img
           ref="imageRef"
+          class="image-preview-photo"
+          :class="{ 'is-fitted': fitted }"
           :src="currentImage.imageUrl"
           :alt="currentImage.title"
           draggable="false"
           :style="imageStyle"
+          @load="onImageLoad"
+          @error="onImageError"
           @dragstart.prevent
         />
       </div>
@@ -255,19 +358,23 @@ function goNext() {
     >
       {{ currentIndex + 1 }} / {{ props.images.length }}
     </div>
+    <p class="image-preview-hint">
+      <I18nText k="swissGlass.hero.imagePreview.hint" />
+    </p>
   </SwissGlassDialog>
 </template>
 
 <style scoped>
 .image-preview-stage {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 400px;
   max-height: 70vh;
-  margin: 0 16px 16px;
+  margin: 0 16px 8px;
   background: #f9fafb;
   cursor: grab;
   touch-action: none;
@@ -278,12 +385,29 @@ function goNext() {
   cursor: grabbing;
 }
 
-.image-preview-stage img {
+.image-preview-photo {
+  width: 100%;
+  height: auto;
   max-width: 100%;
-  max-height: 70vh;
+  max-height: none;
+  min-width: 0;
+  flex-shrink: 0;
   object-fit: contain;
   transform-origin: center center;
   pointer-events: none;
+  visibility: hidden;
+}
+
+.image-preview-photo.is-fitted {
+  visibility: visible;
+}
+
+.image-preview-hint {
+  margin: 0 16px 14px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #9ca3af;
 }
 
 .nav-btn {

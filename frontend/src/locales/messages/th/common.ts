@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'ดูตัวอย่าง',
   'swissGlass.hero.imagePreview.title': 'ดูภาพ',
   'swissGlass.hero.imagePreview.line1': 'สลับไปทางซ้ายและขวาเพื่อเรียกดูภาพปัจจุบัน',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'ฐานความรู้',
   'swissGlass.hero.chunkPreview.title': 'ดูตัวอย่างเป็นชิ้นๆ',
   'swissGlass.hero.chunkPreview.line1': 'ดูข้อความต้นฉบับและข้อมูลเมตาของส่วนที่ดึงข้อมูล',

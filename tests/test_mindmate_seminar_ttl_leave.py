@@ -1,4 +1,4 @@
-"""30-day live cap and a joiner leaving without ending the seminar."""
+"""Redis age window and a joiner leaving without ending the seminar."""
 
 from __future__ import annotations
 
@@ -35,27 +35,10 @@ def _system_db(db: AsyncMock) -> AsyncMock:
 
 
 @pytest.mark.asyncio
-async def test_expire_overdue_live_seminars_stops_with_expired_reason() -> None:
-    """The sweep asks stop_session to close each overdue live row."""
-    fake_db = AsyncMock()
-    fake_result = MagicMock()
-    fake_result.scalars.return_value.all.return_value = ["old-sess"]
-    fake_db.execute = AsyncMock(return_value=fake_result)
-    manager = MagicMock()
-    manager.stop_session = AsyncMock(return_value=True)
-    with (
-        patch(
-            "services.features.mindmate_seminar.seminar_ttl.system_rls_session",
-            return_value=_system_db(fake_db),
-        ),
-        patch(
-            "services.features.mindmate_seminar.seminar_ttl.get_mindmate_seminar_manager",
-            return_value=manager,
-        ),
-    ):
-        stopped = await expire_overdue_live_seminars()
-    manager.stop_session.assert_awaited_once_with("old-sess", 0, reason="expired")
-    assert stopped == 1
+async def test_expire_overdue_live_seminars_does_not_stop_rooms() -> None:
+    """Room age does not end a seminar. The leader stops it."""
+    stopped = await expire_overdue_live_seminars()
+    assert stopped == 0
 
 
 @pytest.mark.asyncio
@@ -66,9 +49,15 @@ async def test_leave_live_seminar_rejects_owner() -> None:
     session.owner_user_id = 3
     fake_db = AsyncMock()
     fake_db.get = AsyncMock(return_value=session)
-    with patch(
-        "services.features.mindmate_seminar.seminar_leave.system_rls_session",
-        return_value=_system_db(fake_db),
+    with (
+        patch(
+            "services.features.mindmate_seminar.seminar_leave.system_rls_session",
+            return_value=_system_db(fake_db),
+        ),
+        patch(
+            "services.features.mindmate_seminar.seminar_leave.actor_is_seminar_leader",
+            AsyncMock(return_value=True),
+        ),
     ):
         result = await leave_live_seminar(3, "sess-1")
     assert result == "still_owner"
@@ -100,6 +89,10 @@ async def test_leave_live_seminar_sets_left_at_for_joiner() -> None:
         patch(
             "services.features.mindmate_seminar.seminar_leave.system_rls_session",
             return_value=_system_db(fake_db),
+        ),
+        patch(
+            "services.features.mindmate_seminar.seminar_leave.actor_is_seminar_leader",
+            AsyncMock(return_value=False),
         ),
         patch(
             "services.features.mindmate_seminar.seminar_leave.get_mindmate_seminar_manager",

@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Aperçu',
   'swissGlass.hero.imagePreview.title': 'Voir les photos',
   'swissGlass.hero.imagePreview.line1': 'Basculez vers la gauche et la droite pour parcourir l\'image actuelle',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'base de connaissances',
   'swissGlass.hero.chunkPreview.title': 'Aperçu fragmenté',
   'swissGlass.hero.chunkPreview.line1': 'Afficher le texte original et les métadonnées des morceaux récupérés',

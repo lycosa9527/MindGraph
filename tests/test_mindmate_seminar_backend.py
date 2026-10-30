@@ -231,6 +231,79 @@ async def test_join_by_code_returns_payload_after_permission_check() -> None:
 
 
 @pytest.mark.asyncio
+async def test_join_by_code_allows_accepted_member_from_another_school() -> None:
+    """A phone invite that was accepted is enough. Same-school is not checked again."""
+    mgr = MindmateSeminarManager()
+    session = MagicMock()
+    session.id = "sess-org"
+    session.code = "ABC-DEF"
+    session.visibility = "organization"
+    session.owner_user_id = 1
+    session.organization_id = 4
+
+    may_join = AsyncMock(return_value=False)
+    with (
+        patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
+        patch.object(mgr, "session_is_closing", AsyncMock(return_value=False)),
+        patch(
+            "services.features.mindmate_seminar.manager.seminar_room_is_closed",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.list_invited_member_ids",
+            AsyncMock(return_value=[99]),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.accepted_member_ids",
+            AsyncMock(return_value=[99]),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.user_may_join_mindmate_seminar",
+            may_join,
+        ),
+        patch.object(mgr, "_session_payload", AsyncMock(return_value={"code": "ABC-DEF"})),
+    ):
+        payload, error = await mgr.join_by_code(99, "ABC-DEF")
+
+    assert error is None
+    assert payload == {"code": "ABC-DEF"}
+    may_join.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_join_by_code_rejects_pending_invite_from_another_school() -> None:
+    """A cross-school invite stays closed until that teacher agrees."""
+    mgr = MindmateSeminarManager()
+    session = MagicMock()
+    session.id = "sess-org"
+    session.code = "ABC-DEF"
+    session.visibility = "organization"
+    session.owner_user_id = 1
+    session.organization_id = 4
+
+    with (
+        patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
+        patch.object(mgr, "session_is_closing", AsyncMock(return_value=False)),
+        patch(
+            "services.features.mindmate_seminar.manager.seminar_room_is_closed",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.list_invited_member_ids",
+            AsyncMock(return_value=[99]),
+        ),
+        patch(
+            "services.features.mindmate_seminar.manager.accepted_member_ids",
+            AsyncMock(return_value=[]),
+        ),
+    ):
+        payload, error = await mgr.join_by_code(99, "ABC-DEF")
+
+    assert payload is None
+    assert error == "forbidden"
+
+
+@pytest.mark.asyncio
 async def test_join_by_code_rejected_when_not_allowed() -> None:
     """REST join fails when the user may not join the room."""
     mgr = MindmateSeminarManager()

@@ -386,6 +386,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': '预览',
   'swissGlass.hero.imagePreview.title': '查看图片',
   'swissGlass.hero.imagePreview.line1': '左右切换浏览当前图片',
+  'swissGlass.hero.imagePreview.hint': '拖动平移。滚轮缩放。长图用滚轮浏览，Ctrl+滚轮缩放。',
   'swissGlass.hero.chunkPreview.ribbon': '知识库',
   'swissGlass.hero.chunkPreview.title': '分块预览',
   'swissGlass.hero.chunkPreview.line1': '查看检索分块的原文与元数据',

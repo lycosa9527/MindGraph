@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.191] - 2026-10-30
+
+> **A seminar answer still types on screen. A live seminar stays open until its leader ends it. A desktop pet can sit on the desktop and show unread seminar lines.**
+
+### Added
+
+- **Desktop pet** — A small always-on-top pet (black cat, white cat, raven, or schnauzer) stays on the Windows desktop. Right-click opens MindMate, MindGraph, settings, or quit. Settings take the server, phone, and token, the mascot, and whether the pet starts at login. It asks this server how many seminar lines are still unread and shows that count. A newer build downloads from `GET /api/desktop-pet/update`. The unread count is `GET /api/mindmate/seminar/unread-summary`. The client header is `desktop-pet`. Clip files are generated locally and are not in the repository.
+
+### Changed
+
+- **Seminar streaming** — A MindMate seminar reply is combined on the server about every 80 ms, or sooner at 400 characters, and a pause in the model still releases the text already received. The room types that reply one character at a time, and the first character appears immediately. Once more than 40 characters are waiting, typing speeds up so a long answer does not stay on screen for a minute. `MINDMATE_COLLAB_STREAM_FLUSH_MS` defaults to 80 (`0` sends every piece). `MINDMATE_COLLAB_STREAM_FLUSH_CHARS` defaults to 400.
+- **Seminar lifetime** — A live seminar no longer closes after 30 days. Silence, an empty roster, and the 1-hour and 10-hour presets still do not end it. The current leader ends the room. Anyone else can leave, including someone who joined an open school room. The leave wording in Chinese is 退出教研会.
+- **Closed seminar** — A teacher who accepted an invite can enter that closed room from another school. An open school room still requires the same school.
+- **Image preview** — The picture fits the width of the frame. A tall picture opens at the top. The scroll wheel moves a tall picture; Ctrl or Cmd with the wheel zooms. Dragging still pans.
+- **Seminar shelf** — Renaming a shared file keeps the original extension when the new name leaves it off. A diagram card includes a canvas shared into the room, and a missing local preview is loaded again from storage. Turning a reply into a document stays busy until that file is on the shelf.
+- **MindMate Word** — A saved reply keeps headings, lists, bold, tables, and math. Dollar signs and hash marks are not left in the document.
+- **Share to seminar** — On the mind-map ribbon, Share to seminar sits with the other share actions.
+
+### Fixed
+
+- **Seminar preview** — An Office preview is stored before the local working copy is removed. A failed upload is reported instead of leaving the room with no file. DingTalk preview images require the same durable copy when storage is on.
+- **Video player dependency** — The nested `decode-uri-component` copy is pinned to 0.5.1.
+
+### Tests
+
+- [`tests/test_mindmate_seminar_stream_coalesce.py`](tests/test_mindmate_seminar_stream_coalesce.py), [`tests/test_mindmate_seminar_dify_stream.py`](tests/test_mindmate_seminar_dify_stream.py), [`tests/test_mindmate_seminar_unread.py`](tests/test_mindmate_seminar_unread.py), [`tests/test_desktop_pet_update.py`](tests/test_desktop_pet_update.py)
+- [`tests/test_mindmate_seminar_ttl_leave.py`](tests/test_mindmate_seminar_ttl_leave.py), [`tests/test_reply_markdown_docx.py`](tests/test_reply_markdown_docx.py), [`tests/test_seminar_disk_cache_cleanup.py`](tests/test_seminar_disk_cache_cleanup.py), [`tests/test_temp_image_storage.py`](tests/test_temp_image_storage.py)
+- [`frontend/tests/mindmateSeminarTypewriter.spec.ts`](frontend/tests/mindmateSeminarTypewriter.spec.ts), [`frontend/tests/seminarRenameFilename.spec.ts`](frontend/tests/seminarRenameFilename.spec.ts), [`frontend/tests/imagePreviewTransform.spec.ts`](frontend/tests/imagePreviewTransform.spec.ts)
+
 ## [5.180.190] - 2026-10-30
 
 > **A school seminar stays open to that school until the host invites a closed group. A closed room is hidden from everyone who was not invited, including on a direct database connection.**

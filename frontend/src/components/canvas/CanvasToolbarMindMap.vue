@@ -1023,24 +1023,6 @@ watch(
               />
             </button>
           </I18nTooltip>
-          <I18nTooltip
-            k="canvas.ribbon.shareToSeminarTip"
-            placement="bottom"
-            :disabled="shortLabels"
-          >
-            <button
-              type="button"
-              class="mm-btn"
-              :aria-label="t('canvas.ribbon.shareToSeminar')"
-              @click="openShareToSeminar"
-            >
-              <Share2 class="w-4 h-4" />
-              <MmToolbarLabel
-                class="mm-btn__label"
-                k="canvas.ribbon.shareToSeminar"
-              />
-            </button>
-          </I18nTooltip>
         </div>
       </template>
 
@@ -1325,6 +1307,24 @@ watch(
               <MmToolbarLabel
                 class="mm-btn__label"
                 k="canvas.ribbon.mindMate"
+              />
+            </button>
+          </I18nTooltip>
+          <I18nTooltip
+            k="canvas.ribbon.shareToSeminarTip"
+            placement="bottom"
+            :disabled="shortLabels"
+          >
+            <button
+              type="button"
+              class="mm-btn"
+              :aria-label="t('canvas.ribbon.shareToSeminar')"
+              @click="openShareToSeminar"
+            >
+              <Share2 class="w-4 h-4" />
+              <MmToolbarLabel
+                class="mm-btn__label"
+                k="canvas.ribbon.shareToSeminar"
               />
             </button>
           </I18nTooltip>

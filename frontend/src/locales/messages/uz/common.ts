@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Ko‘rib chiqish',
   'swissGlass.hero.imagePreview.title': 'Rasmlarni ko\'rish',
   'swissGlass.hero.imagePreview.line1': 'Joriy rasmni ko\'rib chiqish uchun chapga va o\'ngga o\'ting',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'bilimlar bazasi',
   'swissGlass.hero.chunkPreview.title': 'Oldindan ko\'rish',
   'swissGlass.hero.chunkPreview.line1': 'Qabul qilingan bo\'laklarning asl matni va metama\'lumotlarini ko\'ring',

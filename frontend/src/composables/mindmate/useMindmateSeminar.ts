@@ -6,26 +6,35 @@ import { computed, ref, shallowRef } from 'vue'
 import { useWebSocket } from '@vueuse/core'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { createCollabSocketHeartbeat } from '@/composables/mindmate/mindmateSeminarHeartbeat'
 import {
+  applySeminarFileRename,
   bumpSeminarFolderReload,
   dropSeminarServerArtifact,
   pushSeminarHighlightNotice,
   upsertSeminarServerArtifact,
 } from '@/composables/mindmate/mindmateSeminarChrome'
+import { createCollabSocketHeartbeat } from '@/composables/mindmate/mindmateSeminarHeartbeat'
 import {
   loadOlderSeminarPage,
   pullMindmateSeminarHistory,
   seminarMessagesUrl,
 } from '@/composables/mindmate/pullMindmateSeminarHistory'
-import { useMindmateSeminarRead } from '@/composables/mindmate/useMindmateSeminarRead'
 import { showSeminarFaces } from '@/composables/mindmate/useMindmateSeminarFaces'
+import { useMindmateSeminarRead } from '@/composables/mindmate/useMindmateSeminarRead'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
+import { mergeMindmateSeminarSnapshot } from '@/utils/mindmateSeminarDisplay'
 import {
-  mergeMindmateSeminarSnapshot,
-  resolveCollabAssistantEndContent,
-} from '@/utils/mindmateSeminarDisplay'
+  type SeminarFace,
+  removeSeminarFace,
+  seminarFaceFromPayload,
+  seminarFacesFromJoined,
+  upsertSeminarFace,
+} from '@/utils/mindmateSeminarFaces'
+import {
+  rememberSeminarBackgroundFile,
+  seminarArtifactFromPayload,
+} from '@/utils/mindmateSeminarFolder'
 import {
   collabChainNeedsFill,
   collabGapAfterId,
@@ -44,20 +53,13 @@ import {
   shouldScheduleMindmateSeminarReconnect,
 } from '@/utils/mindmateSeminarReconnect'
 import { shouldReconnectMindmateSeminar } from '@/utils/mindmateSeminarSessions'
+import { createSeminarTypewriter } from '@/utils/mindmateSeminarTypewriter'
 import {
   type MindmateSeminarConnectionStatus,
   mindmateSeminarDisconnectShouldNotify,
   mindmateSeminarWsErrorLocaleKey,
   mindmateSeminarWsErrorRollsBackSend,
 } from '@/utils/mindmateSeminarWsErrors'
-import {
-  type SeminarFace,
-  removeSeminarFace,
-  seminarFaceFromPayload,
-  seminarFacesFromJoined,
-  upsertSeminarFace,
-} from '@/utils/mindmateSeminarFaces'
-import { seminarArtifactFromPayload } from '@/utils/mindmateSeminarFolder'
 
 export interface MindmateSeminarMessage {
   id?: number
@@ -132,6 +134,50 @@ export function useMindmateSeminar(
   }
 
   let streamingAssistant: MindmateSeminarMessage | null = null
+  let pendingFinish: { aborted?: boolean; messageId?: number; createdAt?: string } | null = null
+
+  function finishTypedAssistant(): void {
+    const finish = pendingFinish
+    pendingFinish = null
+    if (!streamingAssistant) {
+      isStreaming.value = false
+      return
+    }
+    streamingAssistant.streaming = false
+    if (finish?.messageId != null) {
+      streamingAssistant.id = finish.messageId
+    }
+    if (finish?.createdAt) {
+      streamingAssistant.created_at = finish.createdAt
+    }
+    if (finish?.aborted) {
+      streamingAssistant.content += `\n\n_${t('mindmate.collabStreamAborted')}_`
+    }
+    streamingAssistant = null
+    messages.value = [...messages.value]
+    isStreaming.value = false
+  }
+
+  const typewriter = createSeminarTypewriter({
+    onPaint: (visible) => {
+      if (!streamingAssistant) {
+        streamingAssistant = { role: 'assistant', content: visible, streaming: true }
+        messages.value = [...messages.value, streamingAssistant]
+      } else {
+        streamingAssistant.content = visible
+        messages.value = [...messages.value]
+      }
+      isStreaming.value = true
+    },
+    onDone: finishTypedAssistant,
+  })
+
+  function clearStreamingAssistant(): void {
+    typewriter.reset()
+    pendingFinish = null
+    streamingAssistant = null
+    isStreaming.value = false
+  }
   let pendingReconnectFailedNotify = false
   let lastOptimisticSendContent: string | null = null
   let lastCloseCode = 1006
@@ -175,8 +221,7 @@ export function useMindmateSeminar(
         messages.value = insertMissingCollabMessages(messages.value, rows)
         if (streamingAssistant && streamingCoveredBySaved(streamingAssistant.content, rows)) {
           messages.value = messages.value.filter((row) => row !== streamingAssistant)
-          streamingAssistant = null
-          isStreaming.value = false
+          clearStreamingAssistant()
         }
       },
     })
@@ -419,14 +464,7 @@ export function useMindmateSeminar(
   }
 
   function appendAssistantChunk(chunk: string) {
-    if (!streamingAssistant) {
-      streamingAssistant = { role: 'assistant', content: chunk, streaming: true }
-      messages.value = [...messages.value, streamingAssistant]
-    } else {
-      streamingAssistant.content += chunk
-      messages.value = [...messages.value]
-    }
-    isStreaming.value = true
+    typewriter.push(chunk)
   }
 
   function replaceMessageContent(messageId: number, content: string): void {
@@ -475,28 +513,16 @@ export function useMindmateSeminar(
     createdAt?: string
   ) {
     noteMessageChain(prevId ?? null)
-    if (streamingAssistant) {
-      streamingAssistant.content = resolveCollabAssistantEndContent(
-        streamingAssistant.content,
-        endContent || ''
-      )
-      streamingAssistant.streaming = false
-      if (messageId != null) {
-        streamingAssistant.id = messageId
+    if (streamingAssistant || typewriter.isActive()) {
+      pendingFinish = {
+        aborted,
+        messageId,
+        createdAt,
       }
-      if (createdAt) {
-        streamingAssistant.created_at = createdAt
-      }
-      if (aborted) {
-        streamingAssistant.content += `\n\n_${t('mindmate.collabStreamAborted')}_`
-      }
-      streamingAssistant = null
-      messages.value = [...messages.value]
-    } else if (
-      messageId != null &&
-      endContent &&
-      !messages.value.some((item) => item.id === messageId)
-    ) {
+      typewriter.seal(endContent || '')
+      return
+    }
+    if (messageId != null && endContent && !messages.value.some((item) => item.id === messageId)) {
       messages.value = insertMissingCollabMessages(messages.value, [
         {
           id: messageId,
@@ -522,8 +548,7 @@ export function useMindmateSeminar(
       const priorMax = collabMaxSavedId(messages.value)
       messages.value = mergeMindmateSeminarSnapshot(messages.value, rows)
       hasOlder.value = parsed.has_older === true
-      streamingAssistant = null
-      isStreaming.value = false
+      clearStreamingAssistant()
       const backfillAfter = collabSnapshotBackfillAfterId(priorMax, rows)
       if (backfillAfter != null) {
         void pullMessagesAfter(backfillAfter)
@@ -601,6 +626,21 @@ export function useMindmateSeminar(
       if (file) {
         upsertSeminarServerArtifact(file)
       }
+      return
+    }
+    if (type === 'seminar_file_renamed') {
+      const file = seminarArtifactFromPayload(parsed.file)
+      const sessionId = room.value?.sessionId ?? ''
+      if (file) {
+        if (file.artifact) {
+          upsertSeminarServerArtifact(file)
+        }
+        applySeminarFileRename(file.id, file.filename)
+        if (sessionId) {
+          rememberSeminarBackgroundFile(sessionId, file)
+        }
+      }
+      bumpSeminarFolderReload()
       return
     }
     if (type === 'seminar_minutes') {
@@ -694,8 +734,7 @@ export function useMindmateSeminar(
     messages.value = []
     hasOlder.value = false
     room.value = null
-    streamingAssistant = null
-    isStreaming.value = false
+    clearStreamingAssistant()
     lastOptimisticSendContent = null
     pendingReconnectFailedNotify = false
     shutdownPending.value = false
@@ -771,6 +810,7 @@ export function useMindmateSeminar(
 
   function disconnect() {
     heartbeat.stop()
+    clearStreamingAssistant()
     suppressReconnect.value = true
     close()
     connected.value = false

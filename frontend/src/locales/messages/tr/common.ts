@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Önizleme',
   'swissGlass.hero.imagePreview.title': 'Resimleri görüntüle',
   'swissGlass.hero.imagePreview.line1': 'Geçerli resme göz atmak için sola ve sağa geçiş yapın',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'bilgi tabanı',
   'swissGlass.hero.chunkPreview.title': 'Parçalı önizleme',
   'swissGlass.hero.chunkPreview.line1': 'Alınan parçaların orijinal metnini ve meta verilerini görüntüleyin',

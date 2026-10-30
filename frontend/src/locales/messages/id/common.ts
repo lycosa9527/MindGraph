@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Pratinjau',
   'swissGlass.hero.imagePreview.title': 'Lihat gambar',
   'swissGlass.hero.imagePreview.line1': 'Beralih ke kiri dan kanan untuk menelusuri gambar saat ini',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'basis pengetahuan',
   'swissGlass.hero.chunkPreview.title': 'Pratinjau terpotong',
   'swissGlass.hero.chunkPreview.line1': 'Lihat teks asli dan metadata dari potongan yang diambil',

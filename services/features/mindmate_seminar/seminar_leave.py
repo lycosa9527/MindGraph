@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 
 from models.domain.mindmate_seminar import MindmateSeminarMember, MindmateSeminarSession
+from services.features.mindmate_seminar.group_members import actor_is_seminar_leader
 from services.features.mindmate_seminar.manager_access import get_mindmate_seminar_manager
 from utils.db.session_open import system_rls_session
 
@@ -37,17 +38,22 @@ async def session_ids_viewer_left(user_id: int) -> set[str]:
 async def leave_live_seminar(user_id: int, session_id: str) -> str:
     """Record that user_id quit a live seminar.
 
-    Returns ``ok``, ``not_found``, or ``still_owner``. The owner must end the
-    room. A person with no membership row still gets a left marker so an
-    org-visible room drops off their sidebar.
+    Returns ``ok``, ``not_found``, or ``still_owner``. The current leader must
+    end the room. A person with no membership row still gets a left marker so
+    an org-visible room drops off their sidebar.
     """
     now = datetime.now(tz=UTC)
     async with system_rls_session() as db:
         session = await db.get(MindmateSeminarSession, session_id)
         if session is None or session.ended_at is not None:
             return "not_found"
-        if session.owner_user_id == user_id:
-            return "still_owner"
+        owner_user_id = int(session.owner_user_id)
+    if await actor_is_seminar_leader(session_id, owner_user_id, user_id):
+        return "still_owner"
+    async with system_rls_session() as db:
+        session = await db.get(MindmateSeminarSession, session_id)
+        if session is None or session.ended_at is not None:
+            return "not_found"
         member = await db.get(MindmateSeminarMember, (session_id, user_id))
         if member is None:
             db.add(

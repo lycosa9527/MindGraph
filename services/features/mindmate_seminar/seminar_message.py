@@ -31,7 +31,6 @@ from services.features.mindmate_seminar.mention import (
 from services.features.mindmate_seminar.message_files import strip_seminar_message_file_tokens
 from services.features.mindmate_seminar.message_history import PersistedCollabMessage
 from services.features.mindmate_seminar.redis_keys import normalize_collab_code, session_meta_key
-from services.features.mindmate_seminar.seminar_ttl import seminar_past_max_live_age
 from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.redis_async_client import get_async_redis
@@ -53,12 +52,6 @@ class SeminarMessageOutcome(NamedTuple):
     warning: Optional[str]
 
 
-def seminar_room_past_live_cap(session: MindmateSeminarSession, now: Optional[datetime] = None) -> bool:
-    """True when this open row is already past the 30-day live window."""
-    current = now if now is not None else datetime.now(tz=UTC)
-    return seminar_past_max_live_age(session.started_at, current)
-
-
 def _failed(error: str) -> SeminarMessageOutcome:
     return SeminarMessageOutcome(error, None, "", None)
 
@@ -75,7 +68,7 @@ def _live_expires_at(session: MindmateSeminarSession) -> datetime:
 
 async def ensure_live_seminar_room(session: MindmateSeminarSession) -> bool:
     """Republish Redis when the Postgres row is still live and the room hash is gone."""
-    if session.ended_at is not None or seminar_room_past_live_cap(session):
+    if session.ended_at is not None:
         return False
     redis = get_async_redis()
     if not redis:
@@ -175,7 +168,7 @@ async def send_seminar_message(
         return _failed("forbidden")
     if await user_observes_seminar(session.id, user_id):
         return _failed("observer_readonly")
-    if seminar_room_past_live_cap(session) or await manager.session_is_closing(session.code):
+    if await manager.session_is_closing(session.code):
         return _failed("room_closed")
     if not await manager.session_accepts_chat(session.code):
         return _failed("room_closed")

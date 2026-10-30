@@ -56,7 +56,10 @@ import { createMindmateSeminarOrgBackend } from '@/composables/social/createMind
 import { useAuthStore } from '@/stores/auth'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
 import { authFetch } from '@/utils/api'
-import { confirmMindmateSeminarStop } from '@/utils/mindmateSeminarConfirm'
+import {
+  confirmMindmateSeminarLeave,
+  confirmMindmateSeminarStop,
+} from '@/utils/mindmateSeminarConfirm'
 import {
   type CollabFeedbackRating,
   collabMessageRowKey,
@@ -72,6 +75,7 @@ import {
   wasMindmateSeminarCodeRecentlyEnded,
 } from '@/utils/mindmateSeminarSessions'
 import {
+  requestMindmateSeminarLeave,
   requestMindmateSeminarStop,
   teardownMindmateSeminarClient,
 } from '@/utils/mindmateSeminarTeardown'
@@ -253,6 +257,7 @@ const mentionCandidates = computed((): MindmateMentionCandidate[] => {
 let joinGeneration = 0
 let roomEndNotified = false
 const stoppingRoom = ref(false)
+const leavingRoom = ref(false)
 const savingBrief = ref(false)
 const fileDragDepth = ref(0)
 const dragOverInput = ref(false)
@@ -486,6 +491,34 @@ watch(
       })
   }
 )
+
+async function leaveRoom() {
+  const sessionId = room.value?.sessionId
+  if (!sessionId || leavingRoom.value || isHost.value) {
+    return
+  }
+  const confirmed = await confirmMindmateSeminarLeave(t)
+  if (!confirmed) {
+    return
+  }
+  leavingRoom.value = true
+  const code = normalizedCode.value
+  try {
+    const ok = await requestMindmateSeminarLeave(sessionId)
+    if (!ok) {
+      notify.errorKey('mindmate.collabLeaveFailed')
+      return
+    }
+    dropLiveCollabRoom(code)
+    teardownMindmateSeminarClient(code, { removeFromHistory: true })
+    emit('ended', 'left')
+    notify.successKey('mindmate.collabLeft')
+  } catch {
+    notify.errorKey('mindmate.collabLeaveFailed')
+  } finally {
+    leavingRoom.value = false
+  }
+}
 
 async function stopRoom() {
   const sessionId = room.value?.sessionId
@@ -1222,6 +1255,18 @@ watch(seminarHighlightNotices, () => {
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <MindmateSeminarFaces />
+          <ElButton
+            v-if="!isHost"
+            class="mindmate-seminar-room__end-btn shrink-0"
+            size="small"
+            :disabled="leavingRoom"
+            @click="leaveRoom"
+          >
+            <I18nText
+              k="mindmate.collabLeaveSeminar"
+              dense
+            />
+          </ElButton>
           <ElButton
             v-if="isHost"
             class="mindmate-seminar-room__end-btn shrink-0"

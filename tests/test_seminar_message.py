@@ -90,8 +90,8 @@ async def test_send_seminar_message_saves_and_broadcasts_without_a_socket() -> N
 
 
 @pytest.mark.asyncio
-async def test_send_seminar_message_rejects_observer_and_expired_room() -> None:
-    """Observers and a row past 30 days do not insert a line."""
+async def test_send_seminar_message_rejects_observer() -> None:
+    """Observers do not insert a line. Room age does not close the seminar."""
     session = _session()
     manager = _manager(session)
     with (
@@ -115,28 +115,36 @@ async def test_send_seminar_message_rejects_observer_and_expired_room() -> None:
     assert observed.error == "observer_readonly"
     manager.persist_message.assert_not_awaited()
 
-    expired = _session(started_at=datetime.now(tz=UTC) - timedelta(seconds=MINDMATE_COLLAB_MAX_LIVE_SECONDS))
-    expired_manager = _manager(expired)
+    aged = _session(started_at=datetime.now(tz=UTC) - timedelta(seconds=MINDMATE_COLLAB_MAX_LIVE_SECONDS))
+    aged_manager = _manager(aged)
     with (
         patch(
             "services.features.mindmate_seminar.seminar_message.get_mindmate_seminar_manager",
-            return_value=expired_manager,
+            return_value=aged_manager,
         ),
         patch(
             "services.features.mindmate_seminar.seminar_message.user_observes_seminar",
             AsyncMock(return_value=False),
         ),
+        patch(
+            "services.features.mindmate_seminar.seminar_message.ensure_live_seminar_room",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.features.mindmate_seminar.seminar_message.broadcast_to_all",
+            AsyncMock(),
+        ),
     ):
-        closed = await send_seminar_message(
+        kept = await send_seminar_message(
             session_id="sess-1",
             user_id=4,
             username="Ada",
-            content="hello",
+            content="still open",
             to_mindmate=False,
             kind="chat",
         )
-    assert closed.error == "room_closed"
-    expired_manager.persist_message.assert_not_awaited()
+    assert kept.error is None
+    aged_manager.persist_message.assert_awaited_once()
 
 
 def test_socket_ingress_does_not_save_chat_or_minutes() -> None:

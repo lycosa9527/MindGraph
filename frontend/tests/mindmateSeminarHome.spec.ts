@@ -165,12 +165,36 @@ describe('collectSeminarDiagramArtifacts', () => {
         label: '认知冲突',
         messageId: 3,
         imagePath: '/api/temp_images/dingtalk_ab12cd34_171000.png',
+        diagramId: null,
       },
       {
         previewId: '00112233',
         label: '另一张',
         messageId: 4,
         imagePath: '/api/temp_images/dingtalk_00112233_2.png',
+        diagramId: null,
+      },
+    ])
+  })
+
+  it('keeps the signed canvas preview attached to the library diagram', () => {
+    const messages = [
+      {
+        id: 9,
+        content: [
+          '大家看看这幅图怎么样',
+          '![认知外包](https://mg.example/api/temp_images/diagram_0123456789abcdef0123456789abcdef.png?sig=abc&exp=99)',
+          '<!-- mg-diagram-id:11111111-1111-4111-8111-111111111111 -->',
+        ].join('\n'),
+      },
+    ]
+    expect(collectSeminarDiagramArtifacts(messages)).toEqual([
+      {
+        previewId: '11111111-1111-4111-8111-111111111111',
+        label: '认知外包',
+        messageId: 9,
+        imagePath: '/api/temp_images/diagram_0123456789abcdef0123456789abcdef.png?sig=abc&exp=99',
+        diagramId: '11111111-1111-4111-8111-111111111111',
       },
     ])
   })

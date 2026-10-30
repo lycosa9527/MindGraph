@@ -409,7 +409,7 @@ class MindmateSeminarManager:
         session = await self.load_session_by_code(code)
         if not session:
             return None, "not_found"
-        # Duration presets are advisory. A live row ends when the host stops it or it passes 30 days.
+        # Duration and age are advisory. A live row ends when its leader stops it.
         if await self.session_is_closing(session.code):
             return None, "still_live"
         if not await self._validate_join_permissions(session, user_id):
@@ -431,22 +431,26 @@ class MindmateSeminarManager:
         session: MindmateSeminarSession,
         user_id: int,
     ) -> bool:
-        """Return True when the user may join; participant registration happens on WS connect."""
+        """Return True when the user may join; participant registration happens on WS connect.
+
+        A closed invite list is the access check. A teacher who accepted a phone
+        invite may enter even when they belong to another school. Open school
+        rooms still require the same school.
+        """
         if await self.session_is_closing(session.code):
             return False
         if not await self._closed_group_allows(session, user_id):
             return False
+        if await seminar_room_is_closed(session.id, session.visibility):
+            return True
         async with user_rls_session(user_id, organization_id=session.organization_id) as db:
-            allowed = await user_may_join_mindmate_seminar(
+            return await user_may_join_mindmate_seminar(
                 db,
                 visibility=session.visibility,
                 owner_user_id=session.owner_user_id,
                 owner_org_id=session.organization_id,
                 joiner_id=user_id,
             )
-        if not allowed and session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK:
-            return False
-        return True
 
     async def join_by_session_id(self, user_id: int, session_id: str) -> Optional[Dict[str, Any]]:
         """Validate org-room join permissions and return session payload."""

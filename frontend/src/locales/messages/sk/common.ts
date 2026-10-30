@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Ukážka',
   'swissGlass.hero.imagePreview.title': 'Zobraziť obrázky',
   'swissGlass.hero.imagePreview.line1': 'Ak chcete prehľadávať aktuálny obrázok, prejdite doľava a doprava',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'vedomostnej základne',
   'swissGlass.hero.chunkPreview.title': 'Skrátený náhľad',
   'swissGlass.hero.chunkPreview.line1': 'Zobrazte pôvodný text a metadáta získaných blokov',

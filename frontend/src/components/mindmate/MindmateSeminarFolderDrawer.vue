@@ -11,6 +11,7 @@ import { FileText, MoreHorizontal, Pin, Quote, Upload, X } from '@lucide/vue'
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
+  applySeminarFileRename,
   bumpSeminarFolderReload,
   citeSeminarFile,
   closeSeminarDoc,
@@ -26,6 +27,8 @@ import {
   formatSeminarFileSize,
   listSeminarBackgroundFiles,
   pinSeminarBackgroundFile,
+  promptSeminarBackgroundRename,
+  rememberSeminarBackgroundFile,
   renameSeminarBackgroundFile,
   seminarFolderErrorKey,
   uploadSeminarBackgroundFile,
@@ -124,31 +127,26 @@ function citeFile(file: SeminarBackgroundFile): void {
   notify.successKey('mindmate.docViewer.cited')
 }
 
+function showRenamedFile(file: SeminarBackgroundFile, filename: string): void {
+  const next = { ...file, filename }
+  files.value = files.value.map((item) => (item.id === file.id ? next : item))
+  applySeminarFileRename(file.id, filename)
+  rememberSeminarBackgroundFile(props.sessionId, next)
+}
+
 async function renameFile(file: SeminarBackgroundFile): Promise<void> {
+  const next = await promptSeminarBackgroundRename(t, file.filename)
+  if (!next) {
+    return
+  }
+  const previous = file.filename
+  showRenamedFile(file, next)
   try {
-    const { value } = await ElMessageBox.prompt(
-      t('mindmate.folder.renameHint'),
-      t('mindmate.folder.rename'),
-      {
-        inputValue: file.filename,
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        inputValidator: (raw) => {
-          const next = (raw || '').trim()
-          if (!next) {
-            return t('mindmate.folder.renameRequired')
-          }
-          return true
-        },
-      }
-    )
-    const saved = await renameSeminarBackgroundFile(props.sessionId, file.id, value.trim())
-    files.value = files.value.map((item) => (item.id === saved.id ? saved : item))
+    const saved = await renameSeminarBackgroundFile(props.sessionId, file.id, next)
+    showRenamedFile(saved, saved.filename)
     bumpSeminarFolderReload()
   } catch (error) {
-    if (error === 'cancel' || error === 'close') {
-      return
-    }
+    showRenamedFile(file, previous)
     notify.errorKey(seminarFolderErrorKey(error))
   }
 }

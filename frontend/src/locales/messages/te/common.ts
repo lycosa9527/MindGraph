@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'ప్రివ్యూ',
   'swissGlass.hero.imagePreview.title': 'చిత్రాలను వీక్షించండి',
   'swissGlass.hero.imagePreview.line1': 'ప్రస్తుత చిత్రాన్ని బ్రౌజ్ చేయడానికి ఎడమ మరియు కుడికి మారండి',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'నాలెడ్జ్ బేస్',
   'swissGlass.hero.chunkPreview.title': 'చంక్డ్ ప్రివ్యూ',
   'swissGlass.hero.chunkPreview.line1': 'తిరిగి పొందిన భాగాల యొక్క అసలు వచనం మరియు మెటాడేటాను వీక్షించండి',

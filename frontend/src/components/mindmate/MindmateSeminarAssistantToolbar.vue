@@ -183,6 +183,7 @@ function onHighlight(): void {
       class="mindmate-stone-btn action-bar-canvas-btn"
       :class="{ 'is-busy': convertingDocument }"
       :disabled="convertingDocument"
+      :aria-busy="convertingDocument"
       :title="t('mindmate.tooltip.convertToDocument')"
       @click="emit('convertDocument')"
     >
@@ -200,6 +201,7 @@ function onHighlight(): void {
       class="mindmate-stone-btn action-bar-canvas-btn"
       :class="{ 'is-busy': exportingWord }"
       :disabled="exportingWord"
+      :aria-busy="exportingWord"
       :title="t('mindmate.tooltip.exportWordTemplate')"
       @click="emit('exportWord')"
     >

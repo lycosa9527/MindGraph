@@ -51,7 +51,10 @@ import type { MindMateMessage } from '@/stores/mindmateActiveThread'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
-import { confirmMindmateSeminarStop } from '@/utils/mindmateSeminarConfirm'
+import {
+  confirmMindmateSeminarLeave,
+  confirmMindmateSeminarStop,
+} from '@/utils/mindmateSeminarConfirm'
 import {
   notifyMindmateSeminarLibraryChanged,
   saveFinishedSeminar,
@@ -66,6 +69,7 @@ import {
   wasMindmateSeminarCodeRecentlyEnded,
 } from '@/utils/mindmateSeminarSessions'
 import {
+  requestMindmateSeminarLeave,
   requestMindmateSeminarStop,
   resolveEndedMindmateSeminarSessionId,
   resolveMindmateSeminarSessionId,
@@ -356,6 +360,10 @@ const collabSessionTitle = computed(
 
 const canStopCollabSession = computed(() => isSeminarLeader.value)
 
+const canLeaveCollabSession = computed(
+  () => isCollabChatroomMode.value && !isSeminarLeader.value
+)
+
 function handleCollabSessionStarted(payload: {
   code: string
   visibility?: 'organization' | 'network'
@@ -558,6 +566,29 @@ function handleCollabRoomMeta(payload: {
   if (payload.ownerId != null) {
     collabOwnerId.value = payload.ownerId
   }
+}
+
+async function leaveCollabSession(): Promise<void> {
+  if (!canLeaveCollabSession.value) {
+    return
+  }
+  const confirmed = await confirmMindmateSeminarLeave(t)
+  if (!confirmed) {
+    return
+  }
+  const sessionId = resolveMindmateSeminarSessionId(collabSessionId.value, collabRoomCode.value)
+  if (!sessionId) {
+    notify.errorKey('mindmate.collabLeaveFailed')
+    return
+  }
+  const ok = await requestMindmateSeminarLeave(sessionId)
+  if (!ok) {
+    notify.errorKey('mindmate.collabLeaveFailed')
+    return
+  }
+  dropLiveCollabRoom(collabRoomCode.value || '')
+  exitCollabChatroomMode({ removeFromHistory: true })
+  notify.successKey('mindmate.collabLeft')
 }
 
 async function endCollabSession(): Promise<void> {
@@ -1463,6 +1494,17 @@ function isLastAssistantMessage(messageId: string): boolean {
             dense
           />
         </el-button>
+        <button
+          v-if="canLeaveCollabSession"
+          type="button"
+          class="mindmate-toolbar-text mindmate-toolbar-end shrink-0"
+          @click="leaveCollabSession"
+        >
+          <I18nText
+            k="mindmate.collabLeaveSeminar"
+            dense
+          />
+        </button>
         <el-button
           class="new-chat-btn shrink-0"
           :disabled="!authStore.isAuthenticated"

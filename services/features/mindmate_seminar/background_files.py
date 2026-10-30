@@ -93,6 +93,17 @@ def safe_background_filename(raw: str) -> str:
     return base
 
 
+def filename_for_rename(current: str, requested: str) -> str:
+    """Keep the stored extension, and add it back when the new name omits it."""
+    clean = safe_background_filename(requested)
+    old_ext = Path(current).suffix
+    if old_ext and not Path(clean).suffix:
+        clean = safe_background_filename(f"{Path(clean).stem}{old_ext}")
+    if Path(clean).suffix.lower() != old_ext.lower():
+        raise ValueError("file_type")
+    return clean
+
+
 def background_content_type(filename: str) -> str:
     """Map an allowed extension to a stored content type."""
     content_type = _CONTENT_TYPES.get(Path(filename).suffix.lower())
@@ -401,19 +412,15 @@ async def rename_background_file(
     file_id: str,
     filename: str,
 ) -> dict[str, object]:
-    """Rename a shared file; extension must stay the same family."""
-    clean = safe_background_filename(filename)
-    new_type = background_content_type(clean)
+    """Rename a shared file. The extension stays, even when the new name omits it."""
     async with system_rls_session() as db:
         row = await db.get(MindmateSeminarBackgroundFile, file_id)
         if row is None or row.session_id != session_id:
             raise ValueError("room_not_found")
-        old_ext = Path(row.filename).suffix.lower()
-        new_ext = Path(clean).suffix.lower()
-        if old_ext != new_ext:
-            raise ValueError("file_type")
+        clean = filename_for_rename(row.filename, filename)
         row.filename = clean
-        row.content_type = new_type
+        if Path(clean).suffix:
+            row.content_type = background_content_type(clean)
         await db.commit()
         await db.refresh(row)
         names = await _uploader_names(db, [row.uploader_user_id])

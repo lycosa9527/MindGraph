@@ -15,7 +15,6 @@ import {
   seminarFileDocId,
   seminarSpectator,
 } from '@/composables/mindmate/mindmateSeminarChrome'
-import { formatCollabMessageStamp } from '@/utils/mindmateSeminarRead'
 import {
   type SeminarBackgroundFile,
   downloadSeminarBackgroundFile,
@@ -23,8 +22,10 @@ import {
   fetchSeminarBackgroundFile,
   formatSeminarFileSize,
   seminarFilePreviewMode,
+  seminarLiveFilename,
   shelveSeminarItem,
 } from '@/utils/mindmateSeminarFolder'
+import { formatCollabMessageStamp } from '@/utils/mindmateSeminarRead'
 
 const props = defineProps<{
   sessionId: string
@@ -42,12 +43,16 @@ const enlarged = ref(false)
 const downloading = ref(false)
 const shelving = ref(false)
 
+const displayName = computed(() =>
+  seminarLiveFilename(props.sessionId, props.fileId, props.filename)
+)
+
 const previewKind = computed(() =>
-  seminarFilePreviewMode(meta.value?.contentType || '', props.filename)
+  seminarFilePreviewMode(meta.value?.contentType || '', displayName.value)
 )
 const isImage = computed(() => previewKind.value === 'image')
 
-const badge = computed(() => fileBadge(props.filename))
+const badge = computed(() => fileBadge(displayName.value))
 
 const metaLine = computed(() => {
   const parts: string[] = []
@@ -62,7 +67,7 @@ const metaLine = computed(() => {
 })
 
 const imageCaption = computed(() => {
-  const name = props.filename.trim()
+  const name = displayName.value.trim()
   const size =
     meta.value && meta.value.sizeBytes > 0 ? formatSeminarFileSize(meta.value.sizeBytes) : ''
   return [name, size].filter(Boolean).join(' · ')
@@ -134,10 +139,10 @@ function openDocument(): void {
   openSeminarDoc({
     id: seminarFileDocId(props.fileId),
     kind: 'file',
-    title: props.filename,
+    title: displayName.value,
     fileId: props.fileId,
     contentType: meta.value?.contentType || '',
-    filename: props.filename,
+    filename: displayName.value,
   })
 }
 
@@ -161,7 +166,7 @@ async function downloadFile(): Promise<void> {
   try {
     await downloadSeminarBackgroundFile(props.sessionId, {
       id: props.fileId,
-      filename: props.filename,
+      filename: displayName.value,
       contentType: meta.value?.contentType || 'application/octet-stream',
       sizeBytes: meta.value?.sizeBytes || 0,
       uploaderName: meta.value?.uploaderName || '',
@@ -221,7 +226,7 @@ async function shelveFile(destination: 'resource' | 'artifact'): Promise<void> {
         v-else
         class="mm-file-shot__placeholder"
       >
-        {{ filename }}
+        {{ displayName }}
       </span>
     </button>
     <div class="mm-file-shot__foot">
@@ -236,7 +241,7 @@ async function shelveFile(destination: 'resource' | 'artifact'): Promise<void> {
     </div>
     <ImagePreviewModal
       v-model:visible="enlarged"
-      :title="filename"
+      :title="displayName"
       :image-url="thumbUrl"
     />
   </div>
@@ -256,7 +261,7 @@ async function shelveFile(destination: 'resource' | 'artifact'): Promise<void> {
         {{ badge.label }}
       </span>
       <span class="mm-file-card__text">
-        <span class="mm-file-card__name">{{ filename }}</span>
+        <span class="mm-file-card__name">{{ displayName }}</span>
         <span
           v-if="metaLine"
           class="mm-file-card__meta"

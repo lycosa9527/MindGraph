@@ -160,6 +160,18 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(overlay).toContain('canvas.mindMapPresentationToolbar.exit')
   })
 
+  it('puts share-to-seminar on the research tab', () => {
+    const mmToolbar = readSrc('src/components/canvas/CanvasToolbarMindMap.vue')
+    const teachingTab = mmToolbar.slice(
+      mmToolbar.indexOf("ribbonTab === 'teaching'"),
+      mmToolbar.indexOf("ribbonTab === 'ai'")
+    )
+    const researchTab = mmToolbar.slice(mmToolbar.indexOf("ribbonTab === 'research'"))
+    expect(teachingTab).not.toContain('canvas.ribbon.shareToSeminar')
+    expect(researchTab).toContain('canvas.ribbon.shareToSeminar')
+    expect(researchTab).toContain('openShareToSeminar')
+  })
+
   it('puts collaborative drawing on the title row as a global control', () => {
     const topBar = readSrc('src/components/canvas/CanvasTopBar.vue')
     const mmToolbar = readSrc('src/components/canvas/CanvasToolbarMindMap.vue')

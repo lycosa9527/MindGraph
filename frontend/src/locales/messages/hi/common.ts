@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'पूर्व दर्शन',
   'swissGlass.hero.imagePreview.title': 'तस्वीरें देखें',
   'swissGlass.hero.imagePreview.line1': 'वर्तमान चित्र ब्राउज़ करने के लिए बाएँ और दाएँ स्विच करें',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'ज्ञानधार',
   'swissGlass.hero.chunkPreview.title': 'खंडित पूर्वावलोकन',
   'swissGlass.hero.chunkPreview.line1': 'पुनर्प्राप्त खंडों का मूल पाठ और मेटाडेटा देखें',

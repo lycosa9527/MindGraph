@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Πρεμιέρα',
   'swissGlass.hero.imagePreview.title': 'Προβολή εικόνων',
   'swissGlass.hero.imagePreview.line1': 'Κάντε εναλλαγή αριστερά και δεξιά για να περιηγηθείτε στην τρέχουσα εικόνα',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'βάση γνώσεων',
   'swissGlass.hero.chunkPreview.title': 'Τεμαχισμένη προεπισκόπηση',
   'swissGlass.hero.chunkPreview.line1': 'Δείτε το αρχικό κείμενο και τα μεταδεδομένα των ανακτημένων τμημάτων',

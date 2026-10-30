@@ -1,6 +1,9 @@
 /**
  * Shared seminar background files.
  */
+import { ref } from 'vue'
+
+import { swissGlassPrompt } from '@/composables/common/useSwissGlassPrompt'
 import {
   apiDelete,
   apiGet,
@@ -144,6 +147,90 @@ export function seminarFolderErrorKey(error: unknown): string {
 }
 
 const seminarFileMetaCache = new Map<string, SeminarBackgroundFile>()
+const seminarFileMetaRevision = ref(0)
+
+const RENAMED_EXT_RE = /\.[A-Za-z0-9]{1,8}$/
+
+let seminarRenamePromptOpen = false
+
+/** Keep the original extension when a rename is typed as a title only. */
+export function seminarRenameFilename(current: string, requested: string): string {
+  const next = requested.trim()
+  const currentExt = RENAMED_EXT_RE.exec(current.trim())?.[0] || ''
+  if (!currentExt || next.toLowerCase().endsWith(currentExt.toLowerCase())) {
+    return next
+  }
+  const stem = next.replace(RENAMED_EXT_RE, '').trim()
+  return `${stem || next}${currentExt}`
+}
+
+export function rememberSeminarBackgroundFile(
+  sessionId: string,
+  file: SeminarBackgroundFile
+): void {
+  const session = sessionId.trim()
+  if (!session || !file.id) {
+    return
+  }
+  seminarFileMetaCache.set(`${session}:${file.id}`, file)
+  seminarFileMetaRevision.value += 1
+}
+
+/** Shelf name when a rename has replaced the name stored in a chat message. */
+export function seminarLiveFilename(sessionId: string, fileId: string, fallback: string): string {
+  void seminarFileMetaRevision.value
+  const session = sessionId.trim()
+  const id = fileId.trim()
+  if (!session || !id) {
+    return fallback
+  }
+  return seminarFileMetaCache.get(`${session}:${id}`)?.filename || fallback
+}
+
+/**
+ * Ask for a new shelf name after the dropdown click has finished.
+ * Opening the prompt in that same click dismisses it immediately.
+ */
+export async function promptSeminarBackgroundRename(
+  t: (key: string) => string,
+  currentFilename: string
+): Promise<string | null> {
+  if (seminarRenamePromptOpen) {
+    return null
+  }
+  seminarRenamePromptOpen = true
+  try {
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 0)
+    })
+    const typed = await swissGlassPrompt(
+      t('mindmate.folder.renameHint'),
+      t('mindmate.folder.rename'),
+      {
+        ribbonKey: 'mindmate.folder.rename',
+        titleKey: 'mindmate.folder.rename',
+        line1Key: 'mindmate.folder.renameHint',
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        confirmLabelKey: 'common.confirm',
+        cancelLabelKey: 'common.cancel',
+        inputValue: currentFilename,
+        inputPattern: /\S+/,
+        inputErrorMessage: t('mindmate.folder.renameRequired'),
+        inputMaxLength: 180,
+      }
+    )
+    const next = seminarRenameFilename(currentFilename, typed)
+    if (!next || next === currentFilename) {
+      return null
+    }
+    return next
+  } catch {
+    return null
+  } finally {
+    seminarRenamePromptOpen = false
+  }
+}
 
 export async function fetchSeminarBackgroundFile(
   sessionId: string,
@@ -164,7 +251,7 @@ export async function fetchSeminarBackgroundFile(
       `/api/mindmate/seminar/background-files/${encodeURIComponent(id)}?session_id=${encodeURIComponent(session)}`
     )
     const file = mapFile(raw)
-    seminarFileMetaCache.set(cacheKey, file)
+    rememberSeminarBackgroundFile(session, file)
     return file
   } catch {
     return null
@@ -220,7 +307,7 @@ export async function shelveSeminarItem(
     }
   )
   const file = mapFile(raw)
-  seminarFileMetaCache.set(`${sessionId.trim()}:${file.id}`, file)
+  rememberSeminarBackgroundFile(sessionId, file)
   return file
 }
 
@@ -279,7 +366,9 @@ export async function renameSeminarBackgroundFile(
       body: JSON.stringify({ session_id: sessionId, filename }),
     }
   )
-  return mapFile(payload)
+  const file = mapFile(payload)
+  rememberSeminarBackgroundFile(sessionId, file)
+  return file
 }
 
 export async function pinSeminarBackgroundFile(

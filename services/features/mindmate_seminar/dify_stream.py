@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any, Optional
 
 from clients.dify_http_errors import (
@@ -19,6 +20,10 @@ from clients.dify_http_errors import (
 )
 from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
 from services.dify.org_mindmate_client import resolve_mindmate_dify_stream_short_lived
+from services.features.mindmate_seminar.config import (
+    MINDMATE_COLLAB_STREAM_FLUSH_CHARS,
+    MINDMATE_COLLAB_STREAM_FLUSH_MS,
+)
 from services.features.mindmate_seminar.dify_identity import mindmate_seminar_dify_user_id
 from services.features.mindmate_seminar.dify_stream_control import (
     clear_dify_stream_abort,
@@ -31,6 +36,7 @@ from services.features.mindmate_seminar.dify_stream_control import (
 from services.features.mindmate_seminar.manager_access import get_mindmate_seminar_manager
 from services.features.mindmate_seminar.redis_keys import normalize_collab_code
 from services.features.mindmate_seminar.reply_artifacts import schedule_teaching_reply_artifact
+from services.features.mindmate_seminar.stream_coalesce import SeminarStreamCoalescer
 from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from services.infrastructure.http.sse_upstream_keepalive import iter_upstream_with_keepalive
 from services.mindmate.teaching_design_flag import (
@@ -41,6 +47,9 @@ from services.mindmate.teaching_design_flag import (
 from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
+
+# How often to wake while Dify is silent when paints are not batched.
+_QUIET_UPSTREAM_WAIT_SECONDS = 15.0
 
 
 def _answer_with_teaching_flag(parts: list[str], teaching_flagged: bool) -> str:
@@ -95,6 +104,29 @@ async def _broadcast_aborted_end(
     await broadcast_to_all(code, frame)
 
 
+def _upstream_wait_seconds() -> float:
+    """Wake often enough to release text held while Dify is quiet."""
+    flush_ms = MINDMATE_COLLAB_STREAM_FLUSH_MS
+    if flush_ms <= 0:
+        return _QUIET_UPSTREAM_WAIT_SECONDS
+    return flush_ms / 1000
+
+
+async def _broadcast_answer_delta(code: str, sender_user_id: int, delta: Optional[str]) -> None:
+    """Paint one combined slice of the in-progress answer and keep the stream lock."""
+    if not delta:
+        return
+    await refresh_dify_stream_lock(code)
+    await broadcast_to_all(
+        code,
+        {
+            "type": "ai_message_chunk",
+            "content": delta,
+            "sender_user_id": sender_user_id,
+        },
+    )
+
+
 async def stream_assistant_reply(
     *,
     code: str,
@@ -111,10 +143,16 @@ async def stream_assistant_reply(
     full_answer: list[str] = []
     teaching_flagged = False
     aborted = False
+    coalescer = SeminarStreamCoalescer(
+        interval_seconds=MINDMATE_COLLAB_STREAM_FLUSH_MS / 1000,
+        max_held_chars=MINDMATE_COLLAB_STREAM_FLUSH_CHARS,
+    )
+
+    async def _flush_held() -> None:
+        await _broadcast_answer_delta(code, sender_user_id, coalescer.flush())
 
     try:
         if await is_dify_stream_aborted(code):
-            aborted = True
             return
 
         stream_target = await resolve_mindmate_dify_stream_short_lived(
@@ -136,7 +174,17 @@ async def stream_assistant_reply(
             conversation_id=stream_target.upstream_conversation_id,
             inputs=collab_inputs,
         )
-        async for chunk in iter_upstream_with_keepalive(stream, interval_seconds=15.0):
+        quiet_abort_at = time.monotonic() + _QUIET_UPSTREAM_WAIT_SECONDS
+        async for chunk in iter_upstream_with_keepalive(
+            stream,
+            interval_seconds=_upstream_wait_seconds(),
+        ):
+            if not chunk:
+                await _flush_held()
+                now = time.monotonic()
+                if now < quiet_abort_at:
+                    continue
+                quiet_abort_at = now + _QUIET_UPSTREAM_WAIT_SECONDS
             if await is_dify_stream_aborted(code):
                 aborted = True
                 break
@@ -144,6 +192,7 @@ async def stream_assistant_reply(
                 continue
             event = chunk.get("event") if isinstance(chunk, dict) else None
             if event == "error":
+                await _flush_held()
                 if dify_stream_chunk_is_upstream_outage(chunk):
                     on_backup = mindmate_turn_on_backup(
                         notify_backup=stream_target.notify_backup,
@@ -175,21 +224,16 @@ async def stream_assistant_reply(
                 if mindmate_meta_from_workflow_chunk(chunk):
                     teaching_flagged = True
             if answer:
-                await refresh_dify_stream_lock(code)
-                full_answer.append(str(answer))
-                await broadcast_to_all(
-                    code,
-                    {
-                        "type": "ai_message_chunk",
-                        "content": str(answer),
-                        "sender_user_id": sender_user_id,
-                    },
-                )
+                piece = str(answer)
+                full_answer.append(piece)
+                await _broadcast_answer_delta(code, sender_user_id, coalescer.push(piece))
         if aborted:
+            await _flush_held()
             partial = _answer_with_teaching_flag(full_answer, teaching_flagged)
             message_id, prev_id = await _store_partial_assistant(session_id, partial, code)
             await _broadcast_aborted_end(code, partial, message_id, prev_id)
             return
+        await _flush_held()
         final_text = _answer_with_teaching_flag(full_answer, teaching_flagged)
         assistant_id: Optional[int] = None
         assistant_prev_id: Optional[int] = None
@@ -224,12 +268,14 @@ async def stream_assistant_reply(
                 uploader_user_id=sender_user_id,
             )
     except asyncio.CancelledError:
+        await _flush_held()
         partial = _answer_with_teaching_flag(full_answer, teaching_flagged)
         message_id, prev_id = await _store_partial_assistant(session_id, partial, code)
         await _broadcast_aborted_end(code, partial, message_id, prev_id)
         raise
     except (OSError, RuntimeError, ValueError, TypeError, KeyError) as exc:
         logger.warning("[MindmateSeminarDify] stream failed code=%s: %s", code, exc)
+        await _flush_held()
         await broadcast_to_all(code, {"type": "error", "code": "dify_error", "message": "AI response failed"})
     finally:
         await release_dify_stream_lock(code)

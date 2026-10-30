@@ -245,7 +245,12 @@ async def rename_seminar_background_file(
     try:
         session = await load_folder_session(current_user, body.session_id)
         await _reject_observer(session.id, int(current_user.id))
-        return await rename_background_file(session.id, file_id, body.filename)
+        saved = await rename_background_file(session.id, file_id, body.filename)
+        await broadcast_to_all(
+            session.code,
+            {"type": "seminar_file_renamed", "file": saved},
+        )
+        return saved
     except ValueError as exc:
         raise _http_error(exc) from exc
 
@@ -397,7 +402,7 @@ async def preview_seminar_background_file(
     )
     try:
         session = await load_folder_session(current_user, session_id)
-        pdf_path, download_name = await resolve_background_preview_pdf(session.id, file_id)
+        pdf_bytes, download_name = await resolve_background_preview_pdf(session.id, file_id)
     except ValueError as exc:
         detail = str(exc)
         if detail.startswith("LibreOffice") or "LibreOffice" in detail:
@@ -429,9 +434,8 @@ async def preview_seminar_background_file(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="preview_failed",
         ) from None
-    return FileResponse(
-        path=str(pdf_path),
+    return Response(
+        content=pdf_bytes,
         media_type="application/pdf",
-        filename=download_name,
-        content_disposition_type="inline",
+        headers={"Content-Disposition": _content_disposition("inline", download_name)},
     )

@@ -40,7 +40,8 @@ ROLE_META: dict[str, tuple[str, str, str]] = {
     "siamese-cat-mascot": (
         "siamese",
         "暹罗猫",
-        "楔形头，斜杏仁蓝眼，黑色圆框眼镜，奶油色身体，巧克力四肢和尾巴，浅薄荷细项圈。",
+        "楔形头，中等立耳，斜杏仁蓝眼，黑色圆框眼镜，奶油色身体，巧克力四肢和尾巴，"
+        "深海军蓝细项圈。眉毛放松，嘴角上扬。",
     ),
     "raven-teacher-mascot": (
         "raven",

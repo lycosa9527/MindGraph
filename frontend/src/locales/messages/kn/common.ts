@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'ಪೂರ್ವವೀಕ್ಷಣೆ',
   'swissGlass.hero.imagePreview.title': 'ಚಿತ್ರಗಳನ್ನು ವೀಕ್ಷಿಸಿ',
   'swissGlass.hero.imagePreview.line1': 'ಪ್ರಸ್ತುತ ಚಿತ್ರವನ್ನು ಬ್ರೌಸ್ ಮಾಡಲು ಎಡ ಮತ್ತು ಬಲಕ್ಕೆ ಬದಲಿಸಿ',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'ಜ್ಞಾನದ ಆಧಾರ',
   'swissGlass.hero.chunkPreview.title': 'ಚಂಕ್ಡ್ ಪೂರ್ವವೀಕ್ಷಣೆ',
   'swissGlass.hero.chunkPreview.line1': 'ಹಿಂಪಡೆದ ಭಾಗಗಳ ಮೂಲ ಪಠ್ಯ ಮತ್ತು ಮೆಟಾಡೇಟಾವನ್ನು ವೀಕ್ಷಿಸಿ',

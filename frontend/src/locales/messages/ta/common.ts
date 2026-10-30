@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'முன்னோட்டம்',
   'swissGlass.hero.imagePreview.title': 'படங்களை பார்க்கவும்',
   'swissGlass.hero.imagePreview.line1': 'தற்போதைய படத்தை உலவ இடது மற்றும் வலதுபுறமாக மாறவும்',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'அறிவு அடிப்படை',
   'swissGlass.hero.chunkPreview.title': 'துண்டிக்கப்பட்ட முன்னோட்டம்',
   'swissGlass.hero.chunkPreview.line1': 'மீட்டெடுக்கப்பட்ட துண்டுகளின் அசல் உரை மற்றும் மெட்டாடேட்டாவைப் பார்க்கவும்',

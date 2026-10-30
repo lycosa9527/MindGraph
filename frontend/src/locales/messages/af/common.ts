@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Voorskou',
   'swissGlass.hero.imagePreview.title': 'Bekyk prente',
   'swissGlass.hero.imagePreview.line1': 'Skakel links en regs om deur die huidige prent te blaai',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'kennisbasis',
   'swissGlass.hero.chunkPreview.title': 'Gebroke voorskou',
   'swissGlass.hero.chunkPreview.line1': 'Bekyk die oorspronklike teks en metadata van die opgespoorde stukke',

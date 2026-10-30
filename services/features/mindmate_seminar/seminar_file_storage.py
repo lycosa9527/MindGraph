@@ -139,7 +139,7 @@ def mirror_local_seminar_file_sync(
 
 
 def mirror_cached_preview_pdf_sync(storage_key: str, path: Path) -> None:
-    """Upload a local Office preview PDF that was converted before COS was in use."""
+    """Upload a local Office preview PDF. Raise when COS is on and the put fails."""
     logical = preview_object_key(storage_key)
     if logical is None or not cos_seminar_enabled() or not path.is_file():
         return
@@ -153,14 +153,14 @@ def mirror_cached_preview_pdf_sync(storage_key: str, path: Path) -> None:
         log_prefix=_LOG,
         content_type="application/pdf",
     )
-    if uploaded:
-        logger.info("[SeminarFiles] COS preview mirror key=%s", logical)
-    else:
+    if not uploaded:
         logger.warning("[SeminarFiles] COS preview mirror failed key=%s", logical)
+        raise ValueError("upload_failed")
+    logger.info("[SeminarFiles] COS preview mirror key=%s", logical)
 
 
 def put_preview_pdf_sync(storage_key: str, data: bytes) -> None:
-    """Mirror a converted preview PDF to COS. Local cache remains if the upload fails."""
+    """Store a converted preview PDF in COS. Raise when that put fails."""
     logical = preview_object_key(storage_key)
     if logical is None or not data or not cos_seminar_enabled():
         return
@@ -171,10 +171,10 @@ def put_preview_pdf_sync(storage_key: str, data: bytes) -> None:
         log_prefix=_LOG,
         content_type="application/pdf",
     )
-    if uploaded:
-        logger.info("[SeminarFiles] COS preview put bytes=%s key=%s", len(data), logical)
-    else:
+    if not uploaded:
         logger.warning("[SeminarFiles] COS preview upload failed key=%s", logical)
+        raise ValueError("upload_failed")
+    logger.info("[SeminarFiles] COS preview put bytes=%s key=%s", len(data), logical)
 
 
 def pull_preview_pdf_sync(storage_key: str, dest: Path) -> bool:
@@ -218,6 +218,34 @@ def _expired(path: Path, now: float, max_age_seconds: int) -> bool:
         return False
 
 
+def seminar_preview_work_dir(source: Path) -> Path:
+    """LibreOffice scratch directory beside a seminar source file."""
+    return source.parent / f"{_WORK_DIR_PREFIX}{source.stem}"
+
+
+def seminar_preview_scratch_path(pdf_path: Path) -> Path:
+    """Atomic-replace temp written next to a preview PDF."""
+    return pdf_path.with_suffix(_SCRATCH_TMP_SUFFIX)
+
+
+def release_seminar_preview_cache_sync(storage_key: str, source: Path, pdf_path: Path) -> None:
+    """Drop LibreOffice scratch, and local copies once COS holds the bytes."""
+    scratch = seminar_preview_scratch_path(pdf_path)
+    if scratch.is_file() and scratch != source:
+        scratch.unlink(missing_ok=True)
+    work = seminar_preview_work_dir(source)
+    if work.is_dir():
+        shutil.rmtree(work, ignore_errors=True)
+    if not cos_seminar_enabled():
+        return
+    logical = _cos_logical_key(storage_key)
+    preview_key = preview_object_key(storage_key)
+    if preview_key and pdf_path != source and pdf_path.is_file() and _cos_has_logical_key(preview_key):
+        pdf_path.unlink(missing_ok=True)
+    if logical and source.is_file() and _cos_has_logical_key(logical):
+        source.unlink(missing_ok=True)
+
+
 def cleanup_seminar_disk_cache(
     static_root: Path,
     max_age_seconds: int = _CACHE_MAX_AGE_SECONDS,
@@ -257,10 +285,14 @@ def cleanup_seminar_disk_cache(
             removed += 1
             continue
         if path.name.endswith(_PREVIEW_SUFFIX):
+            if cos_seminar_enabled():
+                logical = _relative_cache_key(static_root, path)
+                if logical is not None and _cos_has_logical_key(logical):
+                    path.unlink(missing_ok=True)
+                    removed += 1
+                continue
             source = path.with_name(path.name[: -len(_PREVIEW_SUFFIX)])
-            logical = _relative_cache_key(static_root, source)
-            source_ready = source.is_file() or (logical is not None and _cos_has_logical_key(logical))
-            if source_ready:
+            if source.is_file():
                 path.unlink(missing_ok=True)
                 removed += 1
             continue

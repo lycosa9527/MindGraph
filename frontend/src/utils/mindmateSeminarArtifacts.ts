@@ -1,7 +1,11 @@
 /** Room-level seminar artifacts collected from persisted chat text. */
+import { sameOriginTempImageFetchUrl } from '@/utils/mindmateTempImageUrl'
 
-const DIAGRAM_PREVIEW_RE =
-  /!\[([^\]]*)]\([^)]*(\/temp_images\/(dingtalk_([a-f0-9]{8})_\d+\.png))[^)]*\)/gi
+const DIAGRAM_ID_RE = /<!--\s*mg-diagram-id:([0-9a-f-]{36})\s*-->/i
+const MARKDOWN_IMAGE_RE = /!\[([^\]]*)]\(([^)\s]+)\)/gi
+/** DingTalk generate previews and seminar canvas-share PNGs, query string kept. */
+const TEMP_PREVIEW_RE =
+  /\/temp_images\/((?:dingtalk_([a-f0-9]{8})_\d+|diagram_[a-f0-9]{32})\.png)(?:\?|#|$)/i
 
 /** Markdown links / bare URLs for docs produced during the seminar chat. */
 const DOC_LINK_RE =
@@ -13,8 +17,13 @@ export interface SeminarDiagramArtifact {
   previewId: string
   label: string
   messageId: number | null
-  /** Absolute or root-relative path segment for `/api/temp_images/...`. */
+  /**
+   * Same-origin `/api/temp_images/...` path.
+   * Signed canvas previews keep `sig` and `exp` so a cleaned local file can hydrate from COS.
+   */
   imagePath: string
+  /** Library id embedded in the same message, when the line is a shared canvas diagram. */
+  diagramId: string | null
 }
 
 export interface SeminarDocumentArtifact {
@@ -33,21 +42,27 @@ export function collectSeminarDiagramArtifacts(
   const found: SeminarDiagramArtifact[] = []
   for (const message of messages) {
     const source = message.content || ''
-    DIAGRAM_PREVIEW_RE.lastIndex = 0
+    const diagramId = source.match(DIAGRAM_ID_RE)?.[1]?.toLowerCase() ?? null
+    MARKDOWN_IMAGE_RE.lastIndex = 0
     let match: RegExpExecArray | null
-    while ((match = DIAGRAM_PREVIEW_RE.exec(source)) !== null) {
-      const previewId = match[4].toLowerCase()
+    while ((match = MARKDOWN_IMAGE_RE.exec(source)) !== null) {
+      const url = match[2] || ''
+      const named = TEMP_PREVIEW_RE.exec(url)
+      if (!named) {
+        continue
+      }
+      const hash = named[2]?.toLowerCase() || ''
+      const previewId = hash || diagramId || named[1].replace(/\.png$/i, '').toLowerCase()
       if (seen.has(previewId)) {
         continue
       }
       seen.add(previewId)
-      const label = (match[1] || '').trim()
-      const filename = match[3]
       found.push({
         previewId,
-        label,
+        label: (match[1] || '').trim(),
         messageId: message.id ?? null,
-        imagePath: `/api/temp_images/${filename}`,
+        imagePath: sameOriginTempImageFetchUrl(url),
+        diagramId,
       })
     }
   }

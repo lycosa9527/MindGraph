@@ -86,6 +86,19 @@ MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS = _parse_int_env(
     256,
     65536,
 )
+# 0 paints every piece at once. Any other value is how often a quiet reply still paints.
+MINDMATE_COLLAB_STREAM_FLUSH_MS = _parse_int_env(
+    "MINDMATE_COLLAB_STREAM_FLUSH_MS",
+    80,
+    0,
+    500,
+)
+MINDMATE_COLLAB_STREAM_FLUSH_CHARS = _parse_int_env(
+    "MINDMATE_COLLAB_STREAM_FLUSH_CHARS",
+    400,
+    1,
+    4000,
+)
 
 __all__ = [
     "DURATION_10H",
@@ -107,5 +120,7 @@ __all__ = [
     "MINDMATE_COLLAB_PARTICIPANTS_TTL",
     "MINDMATE_COLLAB_REDIS_PREFIX",
     "MINDMATE_COLLAB_SNAPSHOT_MESSAGE_LIMIT",
+    "MINDMATE_COLLAB_STREAM_FLUSH_CHARS",
+    "MINDMATE_COLLAB_STREAM_FLUSH_MS",
     "MINDMATE_COLLAB_ZOMBIE_GRACE_SECONDS",
 ]

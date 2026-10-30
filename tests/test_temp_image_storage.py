@@ -59,17 +59,18 @@ async def test_persist_writes_local_and_uploads_when_cos_on(tmp_path: Path) -> N
 
 
 @pytest.mark.asyncio
-async def test_persist_keeps_local_when_cos_upload_fails(tmp_path: Path) -> None:
-    """COS upload failure must not delete the local PNG."""
+async def test_persist_dingtalk_raises_when_cos_upload_fails(tmp_path: Path) -> None:
+    """A failed COS upload must not publish a preview URL other hosts cannot load."""
     filename = "dingtalk_deadbeef_1710000000.png"
     with (
         patch.object(storage, "temp_images_dir", return_value=tmp_path),
         patch.object(storage, "cos_temp_images_enabled", return_value=True),
         patch.object(storage, "dingtalk_temp_cos_key", return_value="pref/dingtalk/x.png"),
         patch.object(storage, "upload_bytes", return_value=False),
+        pytest.raises(ValueError, match="upload_failed"),
     ):
-        path = await storage.persist_dingtalk_temp_png(filename, b"png")
-    assert path.is_file()
+        await storage.persist_dingtalk_temp_png(filename, b"png")
+    assert (tmp_path / filename).is_file()
 
 
 @pytest.mark.asyncio

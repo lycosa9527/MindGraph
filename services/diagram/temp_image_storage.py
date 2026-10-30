@@ -140,10 +140,15 @@ async def _hydrate_preview_png(filename: str, object_key: str) -> Optional[Path]
 
 
 async def persist_dingtalk_temp_png(filename: str, data: bytes) -> Path:
-    """Write the local working copy, then mirror to COS when enabled."""
+    """Write the local working copy, then require the COS mirror when COS is on."""
     if not is_safe_dingtalk_temp_filename(filename):
         raise ValueError(f"Invalid dingtalk temp filename: {filename}")
-    return await _persist_preview_png(filename, data, dingtalk_temp_cos_key(filename))
+    return await _persist_preview_png(
+        filename,
+        data,
+        dingtalk_temp_cos_key(filename),
+        require_cos=True,
+    )
 
 
 async def hydrate_dingtalk_temp_png(filename: str) -> Optional[Path]:

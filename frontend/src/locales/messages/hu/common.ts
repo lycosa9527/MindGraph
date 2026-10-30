@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Előnézet',
   'swissGlass.hero.imagePreview.title': 'Képek megtekintése',
   'swissGlass.hero.imagePreview.line1': 'Váltson balra és jobbra az aktuális kép böngészéséhez',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'tudásbázis',
   'swissGlass.hero.chunkPreview.title': 'Csonkolt előnézet',
   'swissGlass.hero.chunkPreview.line1': 'Tekintse meg a letöltött darabok eredeti szövegét és metaadatait',

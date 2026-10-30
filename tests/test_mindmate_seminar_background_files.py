@@ -7,6 +7,7 @@ import pytest
 
 from services.features.mindmate_seminar.background_files import (
     background_content_type,
+    filename_for_rename,
     local_seminar_attachment,
     safe_background_filename,
     store_background_bytes,
@@ -15,6 +16,7 @@ from services.features.mindmate_seminar.message_files import strip_seminar_messa
 from services.features.mindmate_seminar.seminar_file_storage import (
     delete_seminar_bytes_sync,
     mirror_local_seminar_file_sync,
+    put_preview_pdf_sync,
     put_seminar_bytes_sync,
     read_seminar_bytes_sync,
 )
@@ -29,6 +31,17 @@ def test_strip_seminar_message_file_tokens_keeps_typed_text() -> None:
 def test_safe_background_filename_drops_directories() -> None:
     """Only the basename is stored, even when the client sends a path."""
     assert safe_background_filename("../lesson/背景.pdf") == "背景.pdf"
+
+
+def test_filename_for_rename_restores_a_missing_extension() -> None:
+    """A new title without .docx still saves as the same Word file."""
+    assert filename_for_rename("一-核心迷思概念识别.docx", "核心概念") == "核心概念.docx"
+
+
+def test_filename_for_rename_rejects_a_different_extension() -> None:
+    """The shelf name cannot switch a Word file into another type."""
+    with pytest.raises(ValueError, match="file_type"):
+        filename_for_rename("notes.docx", "notes.pdf")
 
 
 def test_background_content_type_accepts_documents_and_images() -> None:
@@ -93,6 +106,26 @@ def test_cos_put_skips_local_disk(tmp_path: Path) -> None:
     assert upload.call_args.args[0] == b"hello"
     assert upload.call_args.args[1] == "dev/mindmate/2026/10/ab_notes.txt"
     assert not list(tmp_path.rglob("*"))
+
+
+def test_preview_pdf_put_raises_when_cos_upload_fails() -> None:
+    """A converted Office preview is not done until COS accepts it."""
+    with (
+        patch(
+            "services.features.mindmate_seminar.seminar_file_storage.cos_seminar_enabled",
+            return_value=True,
+        ),
+        patch(
+            "services.features.mindmate_seminar.seminar_file_storage.upload_bytes",
+            return_value=False,
+        ),
+        patch(
+            "services.features.mindmate_seminar.seminar_file_storage.full_seminar_cos_key",
+            return_value="dev/mindmate/2026/10/plan.docx.preview.pdf",
+        ),
+        pytest.raises(ValueError, match="upload_failed"),
+    ):
+        put_preview_pdf_sync("2026/10/plan.docx", b"%PDF")
 
 
 def test_cos_put_raises_when_upload_fails(tmp_path: Path) -> None:

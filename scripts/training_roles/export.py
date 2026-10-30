@@ -27,18 +27,205 @@ def ffmpeg_bin() -> str:
     raise RuntimeError("ffmpeg not on PATH")
 
 
+_RIM = 8
+_FRINGE_STEPS = 2
+
+
+def _screen_pixels(red: np.ndarray, green: np.ndarray, blue: np.ndarray) -> np.ndarray:
+    """Bright screen plus the darker green floor that still touches it."""
+    greenness = green - np.maximum(red, blue)
+    bright = (green > 90) & (greenness > 28) & (green > red + 20) & (green > blue + 20)
+    floor = (green > 40) & (greenness > 32) & (green > red + 16) & (green > blue + 16)
+    return bright | floor
+
+
+def _fringe_pixels(red: np.ndarray, green: np.ndarray, blue: np.ndarray) -> np.ndarray:
+    """Softer green halo that only counts when it touches the screen."""
+    greenness = green - np.maximum(red, blue)
+    return (green > 70) & (greenness > 14) & (green > red + 10) & (green > blue + 10)
+
+
+def _row_runs(row: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    padded = np.zeros(row.size + 2, dtype=np.int8)
+    padded[1:-1] = row.astype(np.int8)
+    changes = np.diff(padded)
+    return np.flatnonzero(changes == 1), np.flatnonzero(changes == -1)
+
+
+def _find_run(parent: list[int], run_id: int) -> int:
+    while parent[run_id] != run_id:
+        parent[run_id] = parent[parent[run_id]]
+        run_id = parent[run_id]
+    return run_id
+
+
+def _join_runs(parent: list[int], left: int, right: int) -> None:
+    left_root = _find_run(parent, left)
+    right_root = _find_run(parent, right)
+    if left_root != right_root:
+        parent[right_root] = left_root
+
+
+def _link_vertical(
+    parent: list[int],
+    previous: list[tuple[int, int, int]],
+    current: list[tuple[int, int, int]],
+) -> None:
+    """Join runs that share a column with the row above."""
+    prev_index = 0
+    curr_index = 0
+    while prev_index < len(previous) and curr_index < len(current):
+        prev_start, prev_end, prev_id = previous[prev_index]
+        start, end, run_id = current[curr_index]
+        if prev_end <= start:
+            prev_index += 1
+        elif end <= prev_start:
+            curr_index += 1
+        else:
+            _join_runs(parent, prev_id, run_id)
+            if prev_end < end:
+                prev_index += 1
+            else:
+                curr_index += 1
+
+
+def _rim_seed(chroma: np.ndarray) -> np.ndarray:
+    seed = np.zeros(chroma.shape, dtype=bool)
+    seed[:_RIM, :] = True
+    seed[-_RIM:, :] = True
+    seed[:, :_RIM] = True
+    seed[:, -_RIM:] = True
+    return seed
+
+
+def _connected(chroma: np.ndarray, seed: np.ndarray) -> np.ndarray:
+    """Chroma runs that touch seed, following the screen around the subjects."""
+    parent: list[int] = []
+    seeds: list[int] = []
+    rows: list[list[tuple[int, int, int]]] = []
+    for row_index in range(chroma.shape[0]):
+        starts, ends = _row_runs(chroma[row_index])
+        current: list[tuple[int, int, int]] = []
+        seed_row = seed[row_index]
+        for start, end in zip(starts.tolist(), ends.tolist(), strict=True):
+            run_id = len(parent)
+            parent.append(run_id)
+            if bool(seed_row[start:end].any()):
+                seeds.append(run_id)
+            current.append((start, end, run_id))
+        if rows:
+            _link_vertical(parent, rows[-1], current)
+        rows.append(current)
+    background_roots = {_find_run(parent, run_id) for run_id in seeds}
+    mask = np.zeros(chroma.shape, dtype=bool)
+    for row_index, current in enumerate(rows):
+        for start, end, run_id in current:
+            if _find_run(parent, run_id) in background_roots:
+                mask[row_index, start:end] = True
+    return mask
+
+
+def _edge_screen(chroma: np.ndarray) -> np.ndarray:
+    """Screen green that reaches the frame rim. Green shut inside a prop stays."""
+    return _connected(chroma, _rim_seed(chroma))
+
+
+def _component_rows(
+    mask: np.ndarray,
+) -> tuple[list[int], list[list[tuple[int, int, int]]]]:
+    parent: list[int] = []
+    rows: list[list[tuple[int, int, int]]] = []
+    for row_index in range(mask.shape[0]):
+        starts, ends = _row_runs(mask[row_index])
+        current: list[tuple[int, int, int]] = []
+        for start, end in zip(starts.tolist(), ends.tolist(), strict=True):
+            run_id = len(parent)
+            parent.append(run_id)
+            current.append((start, end, run_id))
+        if rows:
+            _link_vertical(parent, rows[-1], current)
+        rows.append(current)
+    return parent, rows
+
+
+def _island_limit(width: int) -> int:
+    """A backdrop shut behind a prop. Smaller than this can still be a button."""
+    return max(500, int(4000 * (width / 1080) ** 2))
+
+
+def _hue_limit(width: int) -> int:
+    """Screen-colored gaps. A shaded button sits below this and keeps its green."""
+    return max(200, int(1400 * (width / 1080) ** 2))
+
+
+def _enclosed_screen(
+    chroma: np.ndarray,
+    red: np.ndarray,
+    green: np.ndarray,
+    blue: np.ndarray,
+    width: int,
+) -> np.ndarray:
+    """Drop big enclosed backdrops, and smaller patches that still match the screen."""
+    parent, rows = _component_rows(chroma)
+    sizes: dict[int, int] = {}
+    sums: dict[int, np.ndarray] = {}
+    for row_index, current in enumerate(rows):
+        for start, end, run_id in current:
+            root = _find_run(parent, run_id)
+            sizes[root] = sizes.get(root, 0) + (end - start)
+            block = np.stack(
+                (red[row_index, start:end], green[row_index, start:end], blue[row_index, start:end]),
+                axis=1,
+            )
+            sums[root] = block.sum(axis=0) if root not in sums else sums[root] + block.sum(axis=0)
+    big = _island_limit(width)
+    hue_n = _hue_limit(width)
+    drop: set[int] = set()
+    for root, size in sizes.items():
+        if size >= big:
+            drop.add(root)
+            continue
+        if size < hue_n:
+            continue
+        mean = sums[root] / size
+        screen_hued = mean[1] >= 158 and mean[0] < 95 and mean[2] < 95
+        if screen_hued:
+            drop.add(root)
+    islands = np.zeros(chroma.shape, dtype=bool)
+    for row_index, current in enumerate(rows):
+        for start, end, run_id in current:
+            if _find_run(parent, run_id) in drop:
+                islands[row_index, start:end] = True
+    return islands
+
+
+def _dilate(mask: np.ndarray) -> np.ndarray:
+    padded = np.pad(mask, 1, constant_values=False)
+    center = padded[1:-1, 1:-1]
+    return center | padded[:-2, 1:-1] | padded[2:, 1:-1] | padded[1:-1, :-2] | padded[1:-1, 2:]
+
+
+def _grow_fringe(background: np.ndarray, fringe: np.ndarray) -> np.ndarray:
+    grown = background
+    allowed = fringe | background
+    for _ in range(_FRINGE_STEPS):
+        grown = _dilate(grown) & allowed
+    return grown
+
+
 def key_green(image: Image.Image) -> Image.Image:
-    """Knock out the #00FF00 screen and pull remaining green spill."""
+    """Trace the green screen from the frame edge and leave interior green in place."""
     rgba = np.asarray(image.convert("RGBA")).astype(np.float32)
     red, green, blue = rgba[:, :, 0], rgba[:, :, 1], rgba[:, :, 2]
+    chroma = _screen_pixels(red, green, blue)
+    screen = _edge_screen(chroma)
+    enclosed = _enclosed_screen(chroma & ~screen, red, green, blue, rgba.shape[1])
+    background = _grow_fringe(screen | enclosed, _fringe_pixels(red, green, blue))
     greenness = green - np.maximum(red, blue)
-    mask = (green > 90) & (greenness > 28) & (green > red + 20) & (green > blue + 20)
-    rgba[:, :, 1] = np.where(
-        (~mask) & (greenness > 10),
-        green * (1.0 - 0.65 * np.clip(greenness / 80.0, 0.0, 1.0)),
-        green,
-    )
-    rgba[:, :, 3] = np.where(mask, 0.0, 255.0)
+    # Modest green on cloth is spill. A saturated logo stays green.
+    spill = (~background) & (greenness > 6) & (greenness < 48)
+    rgba[:, :, 1] = np.where(spill, np.minimum(green, np.maximum(red, blue)), green)
+    rgba[:, :, 3] = np.where(background, 0.0, 255.0)
     return Image.fromarray(np.clip(rgba, 0, 255).astype(np.uint8), "RGBA")
 
 

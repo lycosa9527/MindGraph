@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'معاينة',
   'swissGlass.hero.imagePreview.title': 'عرض الصور',
   'swissGlass.hero.imagePreview.line1': 'قم بالتبديل بين اليسار واليمين لتصفح الصورة الحالية',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'قاعدة المعرفة',
   'swissGlass.hero.chunkPreview.title': 'معاينة مقسمة',
   'swissGlass.hero.chunkPreview.line1': 'عرض النص الأصلي والبيانات الوصفية للقطع المستردة',

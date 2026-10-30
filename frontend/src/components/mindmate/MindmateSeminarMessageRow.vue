@@ -34,6 +34,7 @@ import {
   requestSeminarMention,
   seminarArtifactsReady,
   seminarFileDocId,
+  seminarOfficePreviewFileId,
   seminarHighlights,
   seminarServerArtifacts,
   seminarSpectator,
@@ -139,6 +140,19 @@ const router = useRouter()
 
 const openingCanvas = ref(false)
 const convertingDocument = ref(false)
+const convertBusy = computed(() => {
+  if (convertingDocument.value) {
+    return true
+  }
+  const fileId = seminarOfficePreviewFileId.value
+  const messageId = props.message.id
+  if (!fileId || messageId == null) {
+    return false
+  }
+  return seminarServerArtifacts.value.some(
+    (file) => file.id === fileId && file.sourceMessageId === messageId
+  )
+})
 const showImagePreview = ref(false)
 const previewImageUrl = ref('')
 const bubbleEl = ref<HTMLElement | null>(null)
@@ -472,7 +486,7 @@ watch(
 async function handleConvertToDocument(): Promise<void> {
   const sessionId = props.sessionId?.trim() ?? ''
   const messageId = props.message.id
-  if (!sessionId || messageId == null || convertingDocument.value) {
+  if (!sessionId || messageId == null || convertBusy.value) {
     return
   }
   convertingDocument.value = true
@@ -812,7 +826,7 @@ async function openInCanvas(): Promise<void> {
         :feedback="feedback"
         :show-word-template-export="showWordTemplateExport"
         :show-convert-to-document="showConvertToDocument"
-        :converting-document="convertingDocument"
+        :converting-document="convertBusy"
         :exporting-word="exportingMessageId === exportMessageId"
         :show-canvas="showCanvasEdit"
         :opening-canvas="openingCanvas"

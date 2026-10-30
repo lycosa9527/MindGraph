@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Esikatselu',
   'swissGlass.hero.imagePreview.title': 'Katso kuvat',
   'swissGlass.hero.imagePreview.line1': 'Siirry vasemmalle ja oikealle selataksesi nykyistä kuvaa',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'tietopohja',
   'swissGlass.hero.chunkPreview.title': 'Ostettu esikatselu',
   'swissGlass.hero.chunkPreview.line1': 'Tarkastele haettujen osien alkuperäistä tekstiä ja metatietoja',

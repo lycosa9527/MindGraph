@@ -20,6 +20,7 @@ import {
   seminarDocActiveTab,
   seminarDocFullscreen,
   seminarDocTabs,
+  seminarOfficePreviewFileId,
   seminarSpectator,
   toggleSeminarDocFullscreen,
 } from '@/composables/mindmate/mindmateSeminarChrome'
@@ -88,6 +89,9 @@ async function renderPdfBytes(data: Uint8Array, signal: AbortSignal): Promise<vo
 
 async function loadActiveTab(tab: SeminarDocTab | null): Promise<void> {
   loadAbort?.abort()
+  if (seminarOfficePreviewFileId.value && seminarOfficePreviewFileId.value !== tab?.fileId) {
+    seminarOfficePreviewFileId.value = null
+  }
   const abort = new AbortController()
   loadAbort = abort
   revokeObjectUrl()
@@ -141,6 +145,9 @@ async function loadActiveTab(tab: SeminarDocTab | null): Promise<void> {
     }
     if (mode === 'pdf' || mode === 'office') {
       converting.value = mode === 'office'
+      if (mode === 'office' && tab.fileId) {
+        seminarOfficePreviewFileId.value = tab.fileId
+      }
       const data = await fetchSeminarBackgroundPreviewPdf(props.sessionId, tab.fileId)
       if (abort.signal.aborted) {
         return
@@ -163,6 +170,9 @@ async function loadActiveTab(tab: SeminarDocTab | null): Promise<void> {
       notify.errorKey('mindmate.docViewer.loadFailed')
     }
   } finally {
+    if (tab?.fileId && seminarOfficePreviewFileId.value === tab.fileId && !abort.signal.aborted) {
+      seminarOfficePreviewFileId.value = null
+    }
     if (!abort.signal.aborted) {
       loading.value = false
       converting.value = false
@@ -224,7 +234,11 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  const fileId = activeTab.value?.fileId ?? null
   loadAbort?.abort()
+  if (fileId && seminarOfficePreviewFileId.value === fileId) {
+    seminarOfficePreviewFileId.value = null
+  }
   revokeObjectUrl()
   clearPdf()
 })

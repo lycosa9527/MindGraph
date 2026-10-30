@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Pratonton',
   'swissGlass.hero.imagePreview.title': 'Lihat gambar',
   'swissGlass.hero.imagePreview.line1': 'Tukar kiri dan kanan untuk menyemak imbas gambar semasa',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'asas pengetahuan',
   'swissGlass.hero.chunkPreview.title': 'Pratonton terpotong',
   'swissGlass.hero.chunkPreview.line1': 'Lihat teks asal dan metadata bagi ketulan yang diambil',

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from scripts.cat_emoji.paths import MASCOTS_DIR, SIAMESE_DESKTOP_DIR
 from scripts.siamese_cat_emoji.catalog import NEGATIVE, SHELL, STILL_SHOTS, shot_by_id
+from scripts.sync_classroom_video.roles import ROLE_META
 from scripts.siamese_cat_emoji.paths import (
     EXPORT_DIR,
     STILL_SIZE,
@@ -32,6 +33,18 @@ def test_identity_is_small_siamese_tester() -> None:
     assert "再小一圈" in SHELL
     assert "#00FF00" in SHELL
     assert "测试员" in SHELL
+    assert "深海军蓝" in SHELL
+    assert "浅薄荷" not in SHELL
+    classroom = ROLE_META["siamese-cat-mascot"][2]
+    assert "深海军蓝" in classroom
+    assert "浅薄荷" not in classroom
+    assert "眉毛放松" in SHELL
+    assert "看起来高兴" in SHELL
+    assert "跟着头一起缩小" in SHELL
+    assert "耳朵更大" not in SHELL
+    assert "巨大耳朵" in NEGATIVE
+    assert "眉心轻轻皱" not in SHELL
+    assert "绿色项圈" in NEGATIVE
     assert "雌性" not in SHELL
     assert "白猫脸" in NEGATIVE
     assert "圆苹果脸" in NEGATIVE

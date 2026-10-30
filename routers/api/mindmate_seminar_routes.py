@@ -302,7 +302,7 @@ async def leave_collab_room(
     await check_endpoint_rate_limit("mindmate_seminar_leave", identifier, max_requests=20, window_seconds=60)
     result = await leave_live_seminar(current_user.id, body.session_id)
     if result == "still_owner":
-        raise HTTPException(status_code=409, detail="Owners end the seminar instead of leaving")
+        raise HTTPException(status_code=409, detail="The seminar leader ends the seminar instead of leaving")
     if result == "not_found":
         raise HTTPException(status_code=404, detail="Seminar not found")
     return {"success": True}

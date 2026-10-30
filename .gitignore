@@ -310,4 +310,7 @@ scripts/auth_login_video/.work/
 scripts/zhilian_junan_video/.work/
 scripts/sync_classroom_video/.work/
 scripts/october_update_promo/.work/
+scripts/desktop_pet/.work/
+clients/desktop-pet/dist/
+clients/desktop-pet/assets/**/*.webp
 frontend/public/auth-hero/*.mp4

@@ -4,6 +4,7 @@ import {
   IMAGE_PREVIEW_MAX_SCALE,
   IMAGE_PREVIEW_MIN_SCALE,
   clampPreviewPan,
+  fitWidthTopPan,
   nextPreviewScale,
   zoomAboutPoint,
 } from '@/utils/imagePreviewTransform'
@@ -44,6 +45,22 @@ describe('imagePreviewTransform', () => {
   it('clears pan when the image fits the frame', () => {
     const clamped = clampPreviewPan({ scale: 1, x: 30, y: -12 }, 400, 300, 200, 100)
     expect(clamped).toEqual({ scale: 1, x: 0, y: 0 })
+  })
+
+  it('opens a tall picture pinned to the top at fit width', () => {
+    const pan = fitWidthTopPan(800, 400)
+    expect(pan).toEqual({ scale: 1, x: 0, y: 200 })
+    if (!pan) return
+    expect(clampPreviewPan(pan, 300, 400, 300, 800)).toEqual(pan)
+  })
+
+  it('leaves a picture that fits the frame centered', () => {
+    expect(fitWidthTopPan(200, 400)).toEqual({ scale: 1, x: 0, y: 0 })
+  })
+
+  it('waits until the frame and picture have been measured', () => {
+    expect(fitWidthTopPan(0, 400)).toBeNull()
+    expect(fitWidthTopPan(200, 0)).toBeNull()
   })
 
   it('treats a line-mode wheel tick as pixels', () => {

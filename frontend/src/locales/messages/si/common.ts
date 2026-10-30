@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'පෙරදසුන',
   'swissGlass.hero.imagePreview.title': 'පින්තූර බලන්න',
   'swissGlass.hero.imagePreview.line1': 'වත්මන් පින්තූරය බ්‍රවුස් කිරීමට වමට සහ දකුණට මාරු වන්න',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'දැනුම පදනම',
   'swissGlass.hero.chunkPreview.title': 'කුට්ටි පෙරදසුන',
   'swissGlass.hero.chunkPreview.line1': 'ලබා ගත් කොටස්වල මුල් පෙළ සහ පාර-දත්ත බලන්න',

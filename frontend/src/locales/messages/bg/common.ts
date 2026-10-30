@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Преглед',
   'swissGlass.hero.imagePreview.title': 'Вижте снимки',
   'swissGlass.hero.imagePreview.line1': 'Превключете наляво и надясно, за да прегледате текущата снимка',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'база от знания',
   'swissGlass.hero.chunkPreview.title': 'Преглед на части',
   'swissGlass.hero.chunkPreview.line1': 'Вижте оригиналния текст и метаданни на извлечените парчета',

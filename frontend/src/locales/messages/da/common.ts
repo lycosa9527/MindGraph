@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Forhåndsvisning',
   'swissGlass.hero.imagePreview.title': 'Se billeder',
   'swissGlass.hero.imagePreview.line1': 'Skift til venstre og højre for at gennemse det aktuelle billede',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'vidensbase',
   'swissGlass.hero.chunkPreview.title': 'Chunked preview',
   'swissGlass.hero.chunkPreview.line1': 'Se den originale tekst og metadata for de hentede bidder',

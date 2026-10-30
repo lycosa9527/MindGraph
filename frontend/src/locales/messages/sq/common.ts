@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Parapamje',
   'swissGlass.hero.imagePreview.title': 'Shikoni fotot',
   'swissGlass.hero.imagePreview.line1': 'Kaloni majtas dhe djathtas për të shfletuar foton aktuale',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'bazën e njohurive',
   'swissGlass.hero.chunkPreview.title': 'Pamja paraprake e copëtuar',
   'swissGlass.hero.chunkPreview.line1': 'Shikoni tekstin origjinal dhe meta të dhënat e pjesëve të marra',

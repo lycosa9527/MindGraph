@@ -3,7 +3,7 @@
  * Seminar artifact sidebar: documents, diagrams, and files produced in the seminar.
  * Shared-folder uploads that were never sent in the chat stay under Resources.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElMessageBox } from 'element-plus'
 
@@ -12,6 +12,7 @@ import { ChevronDown, ExternalLink, FileText, MoreHorizontal, Quote, X } from '@
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
+  applySeminarFileRename,
   bumpSeminarFolderReload,
   citeSeminarFile,
   closeSeminarDoc,
@@ -25,18 +26,20 @@ import {
 } from '@/composables/mindmate/mindmateSeminarChrome'
 import type { MindmateSeminarMessage } from '@/composables/mindmate/useMindmateSeminar'
 import {
-  collabDiagramSaveFailureKey,
-  saveCollabDiagramToLibrary,
-} from '@/utils/mindmateSeminarDiagramLibrary'
-import {
   type SeminarDocumentArtifact,
   collectSeminarDiagramArtifacts,
   collectSeminarDocumentArtifacts,
 } from '@/utils/mindmateSeminarArtifacts'
 import {
+  collabDiagramSaveFailureKey,
+  saveCollabDiagramToLibrary,
+} from '@/utils/mindmateSeminarDiagramLibrary'
+import {
   type SeminarBackgroundFile,
   deleteSeminarBackgroundFile,
   pinSeminarBackgroundFile,
+  promptSeminarBackgroundRename,
+  rememberSeminarBackgroundFile,
   renameSeminarBackgroundFile,
   seminarFolderErrorKey,
 } from '@/utils/mindmateSeminarFolder'
@@ -63,19 +66,41 @@ const savingId = ref('')
 const savedIds = ref<string[]>([])
 const openSections = ref({ files: true, diagrams: true, transcripts: true })
 
+const brokenThumbs = ref<string[]>([])
+
+watch(
+  () => props.sessionId,
+  () => {
+    brokenThumbs.value = []
+  }
+)
+
 const diagrams = computed(() => {
+  const fromMessages = collectSeminarDiagramArtifacts(props.messages)
+  const imageByDiagram = new Map<string, string>()
+  for (const item of fromMessages) {
+    if (item.diagramId && item.imagePath) {
+      imageByDiagram.set(item.diagramId, item.imagePath)
+    }
+  }
   const shelved = seminarServerArtifacts.value
     .filter((file) => file.diagramId)
-    .map((file) => ({
-      previewId: file.diagramId || file.id,
-      label: file.filename,
-      messageId: file.sourceMessageId,
-      imagePath: '',
-    }))
+    .map((file) => {
+      const diagramId = (file.diagramId || '').toLowerCase()
+      return {
+        previewId: diagramId || file.id,
+        label: file.filename,
+        messageId: file.sourceMessageId,
+        imagePath: imageByDiagram.get(diagramId) || '',
+      }
+    })
   const seen = new Set(shelved.map((item) => item.previewId))
-  const fromChat = collectSeminarDiagramArtifacts(props.messages).filter(
-    (item) => !seen.has(item.previewId)
-  )
+  const fromChat = fromMessages.filter((item) => {
+    if (seen.has(item.previewId)) {
+      return false
+    }
+    return !item.diagramId || !seen.has(item.diagramId)
+  })
   return [...shelved, ...fromChat]
 })
 const documents = computed(() => {
@@ -97,6 +122,17 @@ const documents = computed(() => {
 
 function diagramLabel(label: string): string {
   return label || t('mindmate.artifacts.diagramFallback')
+}
+
+function thumbBroken(previewId: string): boolean {
+  return brokenThumbs.value.includes(previewId)
+}
+
+function onThumbError(previewId: string): void {
+  if (thumbBroken(previewId)) {
+    return
+  }
+  brokenThumbs.value = [...brokenThumbs.value, previewId]
 }
 
 function isSaved(previewId: string): boolean {
@@ -131,31 +167,26 @@ function artifactFile(doc: SeminarDocumentArtifact): SeminarBackgroundFile | nul
   return seminarServerArtifacts.value.find((file) => file.id === doc.backgroundFileId) || null
 }
 
+function showRenamedArtifact(file: SeminarBackgroundFile, filename: string): void {
+  const next = { ...file, filename }
+  upsertSeminarServerArtifact(next)
+  applySeminarFileRename(file.id, filename)
+  rememberSeminarBackgroundFile(props.sessionId, next)
+}
+
 async function renameArtifact(file: SeminarBackgroundFile): Promise<void> {
+  const next = await promptSeminarBackgroundRename(t, file.filename)
+  if (!next) {
+    return
+  }
+  const previous = file.filename
+  showRenamedArtifact(file, next)
   try {
-    const { value } = await ElMessageBox.prompt(
-      t('mindmate.folder.renameHint'),
-      t('mindmate.folder.rename'),
-      {
-        inputValue: file.filename,
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        inputValidator: (raw) => {
-          const next = (raw || '').trim()
-          if (!next) {
-            return t('mindmate.folder.renameRequired')
-          }
-          return true
-        },
-      }
-    )
-    const saved = await renameSeminarBackgroundFile(props.sessionId, file.id, value.trim())
-    upsertSeminarServerArtifact(saved)
+    const saved = await renameSeminarBackgroundFile(props.sessionId, file.id, next)
+    showRenamedArtifact(saved, saved.filename)
     bumpSeminarFolderReload()
   } catch (error) {
-    if (error === 'cancel' || error === 'close') {
-      return
-    }
+    showRenamedArtifact(file, previous)
     notify.errorKey(seminarFolderErrorKey(error))
   }
 }
@@ -437,10 +468,11 @@ async function saveDiagram(previewId: string): Promise<void> {
             @click="openDiagram(item.previewId, item.label, item.imagePath)"
           >
             <img
-              v-if="item.imagePath"
+              v-if="item.imagePath && !thumbBroken(item.previewId)"
               class="mm-artifact-side__thumb"
               :src="item.imagePath"
-              :alt="diagramLabel(item.label)"
+              alt=""
+              @error="onThumbError(item.previewId)"
             />
             <span class="mm-artifact-side__name">{{ diagramLabel(item.label) }}</span>
           </button>
@@ -668,8 +700,8 @@ async function saveDiagram(previewId: string): Promise<void> {
   flex-shrink: 0;
   width: 56px;
   height: 40px;
-  object-fit: cover;
-  object-position: left center;
+  object-fit: contain;
+  object-position: center;
   border-radius: 7px;
   background: #fff;
   border: 1px solid #e7e5e4;

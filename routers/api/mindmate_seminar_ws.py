@@ -21,10 +21,7 @@ from services.features.mindmate_seminar.manager_access import get_mindmate_semin
 from services.features.mindmate_seminar.member_record import record_collab_member
 from services.features.mindmate_seminar.message_cursor import read_latest_collab_message_id
 from services.features.mindmate_seminar.message_history import catchup_frames, history_row_ids
-from services.features.mindmate_seminar.seminar_message import (
-    ensure_live_seminar_room,
-    seminar_room_past_live_cap,
-)
+from services.features.mindmate_seminar.seminar_message import ensure_live_seminar_room
 from services.features.mindmate_seminar.participant_faces import (
     load_participant_faces,
     participant_face_payload,
@@ -269,13 +266,6 @@ async def mindmate_seminar_websocket(websocket: WebSocket, code: str) -> None:
     if not await mgr.user_may_connect(int(user.id), session):
         try:
             await websocket.close(code=1008, reason="Access denied")
-        except (RuntimeError, OSError):
-            pass
-        return
-
-    if seminar_room_past_live_cap(session):
-        try:
-            await websocket.close(code=1008, reason="Room expired")
         except (RuntimeError, OSError):
             pass
         return

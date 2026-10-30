@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Forhåndsvisning',
   'swissGlass.hero.imagePreview.title': 'Se bilder',
   'swissGlass.hero.imagePreview.line1': 'Bytt til venstre og høyre for å bla gjennom det gjeldende bildet',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'kunnskapsbase',
   'swissGlass.hero.chunkPreview.title': 'Klumpet forhåndsvisning',
   'swissGlass.hero.chunkPreview.line1': 'Se originalteksten og metadataene til de hentede delene',

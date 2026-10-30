@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': '시사',
   'swissGlass.hero.imagePreview.title': '사진 보기',
   'swissGlass.hero.imagePreview.line1': '현재 사진을 탐색하려면 왼쪽과 오른쪽으로 전환하세요.',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': '지식 기반',
   'swissGlass.hero.chunkPreview.title': '청크 미리보기',
   'swissGlass.hero.chunkPreview.line1': '검색된 청크의 원본 텍스트 및 메타데이터 보기',

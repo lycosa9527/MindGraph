@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'Previzualizare',
   'swissGlass.hero.imagePreview.title': 'Vizualizați imagini',
   'swissGlass.hero.imagePreview.line1': 'Comutați la stânga și la dreapta pentru a răsfoi imaginea curentă',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': 'baza de cunostinte',
   'swissGlass.hero.chunkPreview.title': 'Previzualizare fragmentată',
   'swissGlass.hero.chunkPreview.line1': 'Vizualizați textul și metadatele originale ale fragmentelor preluate',

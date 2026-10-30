@@ -348,6 +348,7 @@ export default {
   'swissGlass.hero.imagePreview.ribbon': 'プレビュー',
   'swissGlass.hero.imagePreview.title': '写真を見る',
   'swissGlass.hero.imagePreview.line1': '左右に切り替えて現在の画像を参照します',
+  'swissGlass.hero.imagePreview.hint': 'Drag to pan. Scroll to zoom. On a tall image, scroll to move and Ctrl+scroll to zoom.',
   'swissGlass.hero.chunkPreview.ribbon': '知識ベース',
   'swissGlass.hero.chunkPreview.title': 'チャンクプレビュー',
   'swissGlass.hero.chunkPreview.line1': '取得したチャンクの元のテキストとメタデータを表示する',

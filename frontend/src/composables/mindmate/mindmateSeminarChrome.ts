@@ -36,6 +36,8 @@ export const seminarFolderReloadToken = ref(0)
 export const seminarLiveMessages: Ref<MindmateSeminarMessage[]> = ref([])
 /** Word files archived from MindMate replies. Shared by the artifacts pane. */
 export const seminarServerArtifacts: Ref<SeminarBackgroundFile[]> = ref([])
+/** Office file whose LibreOffice preview is in flight. Drives the convert-button ring. */
+export const seminarOfficePreviewFileId = ref<string | null>(null)
 /** True after the current room's artifact list has loaded. */
 export const seminarArtifactsReady = ref(false)
 
@@ -443,6 +445,7 @@ export function clearSeminarServerArtifacts(): void {
 }
 
 export function closeSeminarChrome(): void {
+  seminarOfficePreviewFileId.value = null
   closeAllSeminarDocs(false)
   seminarTaskPaneTab.value = null
   clearSeminarCitations()
@@ -465,6 +468,27 @@ export function applySeminarGroup(next: SeminarFace[]): void {
 
 export function seminarFileDocId(fileId: string): string {
   return `file:${fileId}`
+}
+
+/** Point an open preview and any composer citation at the renamed shelf file. */
+export function applySeminarFileRename(fileId: string, filename: string): void {
+  const clean = filename.trim()
+  if (!fileId || !clean) {
+    return
+  }
+  const docId = seminarFileDocId(fileId)
+  seminarDocTabs.value = seminarDocTabs.value.map((tab) => {
+    if (tab.fileId !== fileId && tab.id !== docId) {
+      return tab
+    }
+    if (tab.title === clean && tab.filename === clean) {
+      return tab
+    }
+    return { ...tab, title: clean, filename: clean }
+  })
+  seminarComposerCitations.value = seminarComposerCitations.value.map((item) =>
+    item.fileId === fileId && item.filename !== clean ? { ...item, filename: clean } : item
+  )
 }
 
 export function seminarDiagramDocId(previewId: string): string {
