@@ -66,6 +66,7 @@ from services.features.mindmate_seminar.redis_keys import (
     session_meta_key,
     start_lock_key,
 )
+from services.features.mindmate_seminar.redis_mirror import mirror_live_session_fields
 from services.features.mindmate_seminar.visibility import user_may_join_mindmate_seminar
 from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from services.online_collab.core.online_collab_code import (
@@ -523,8 +524,10 @@ class MindmateSeminarManager:
             if int(session.owner_user_id) != int(actor_user_id):
                 return None
             session.title = cleaned
+            code = session.code
             await db.commit()
             await db.refresh(session)
+        await mirror_live_session_fields(code, {"title": cleaned})
         return await self._session_payload(session)
 
     async def _host_stop_already_settled(
@@ -603,9 +606,6 @@ class MindmateSeminarManager:
                 visibility = session.visibility
 
         await abort_dify_stream(code)
-        redis = get_async_redis()
-        if redis:
-            await redis.set(closing_key(code), "1", ex=MINDMATE_COLLAB_CLOSING_TTL_SEC)
 
         ended_at = datetime.now(tz=UTC)
         async with system_rls_session() as db:
@@ -621,6 +621,13 @@ class MindmateSeminarManager:
                 ),
             )
             await db.commit()
+
+        redis = get_async_redis()
+        if redis:
+            try:
+                await redis.set(closing_key(code), "1", ex=MINDMATE_COLLAB_CLOSING_TTL_SEC)
+            except REDIS_ERRORS:
+                logger.warning("[MindmateSeminar] closing mark failed code=%s", code)
 
         await broadcast_to_all(code, {"type": "session_closing"})
 
@@ -769,9 +776,11 @@ class MindmateSeminarManager:
         code: str,
         fallback: Optional[str] = None,
     ) -> Optional[str]:
-        """Return the Dify conversation id, without the server prefix."""
-        meta = await self.get_session_meta(code)
-        stored = (meta.get("dify_conversation_id") or "").strip() or (fallback or "")
+        """Return the Dify conversation id. The Postgres row wins over the Redis copy."""
+        stored = (fallback or "").strip()
+        if not stored:
+            meta = await self.get_session_meta(code)
+            stored = (meta.get("dify_conversation_id") or "").strip()
         raw, _server = read_seminar_dify_conversation(stored)
         return raw or None
 
@@ -940,7 +949,12 @@ class MindmateSeminarManager:
         code: str,
         fallback: Optional[str] = None,
     ) -> Optional[int]:
-        """Return the Dify server stored on the conversation id, then the Redis field."""
+        """Return the Dify server on the Postgres row, then the Redis copy."""
+        stored = (fallback or "").strip()
+        if stored:
+            _raw, server = read_seminar_dify_conversation(stored)
+            if server is not None:
+                return server
         meta = await self.get_session_meta(code)
         _raw, server = read_seminar_dify_conversation(meta.get("dify_conversation_id"))
         if server is not None:
@@ -972,17 +986,11 @@ class MindmateSeminarManager:
         session = await self.load_session_by_id(session_id)
         if not session:
             return
-        redis = get_async_redis()
-        if not redis:
-            return
         mapping = {"dify_conversation_id": stored}
         _raw, packed_server = read_seminar_dify_conversation(stored)
         if packed_server is not None:
             mapping["dify_conversation_server"] = str(packed_server)
-        try:
-            await redis.hset(session_meta_key(session.code), mapping=redis_hset_mapping(mapping))
-        except REDIS_ERRORS:
-            pass
+        await mirror_live_session_fields(session.code, mapping)
 
     async def get_session_meta(self, code: str) -> Dict[str, str]:
         """Return Redis HASH session metadata for a room code."""

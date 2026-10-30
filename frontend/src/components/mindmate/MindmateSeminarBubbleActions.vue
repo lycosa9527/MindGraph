@@ -175,7 +175,7 @@ function onHighlight(): void {
 }
 
 .mm-bubble-actions :deep(.el-button.is-set) {
-  --el-button-text-color: #6d5efc;
-  color: #6d5efc;
+  --el-button-text-color: #1c1917;
+  color: #1c1917;
 }
 </style>

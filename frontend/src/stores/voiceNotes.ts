@@ -173,6 +173,8 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
   let lastSpeechAt = 0
   let intentionalClose = false
   let bootstrapPromise: Promise<boolean> | null = null
+  /** When set, live markdown goes here instead of a mindmap document package. */
+  let transcriptSink: ((markdown: string) => Promise<void>) | null = null
   let smoothedInputLevel = 0
   let lastInputLevelUiAt = 0
 
@@ -915,7 +917,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       notify.warningKey('auth.voiceNotes.micConflict')
       return
     }
-    if (await rejectIfForeignDiagramSource()) {
+    if (!transcriptSink && (await rejectIfForeignDiagramSource())) {
       return
     }
 
@@ -1015,15 +1017,13 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     }
   }
 
+  function setTranscriptSink(sink: ((markdown: string) => Promise<void>) | null): void {
+    transcriptSink = sink
+  }
+
   async function ingestTranscript(): Promise<void> {
     const text = transcriptText.value.trim()
     if (!text) return
-
-    const ok = await ensureMindmapSession()
-    if (!ok) return
-
-    const pkgId = packageId.value
-    if (!pkgId) return
 
     const savedAt = Date.now()
     const content = serializeVoiceNotesMarkdown({
@@ -1037,6 +1037,30 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       labelForSpeakerId,
       maxChars: DOC_SUMMARY_MAX_INPUT_CHARS,
     })
+    const sink = transcriptSink
+    if (sink) {
+      ingesting.value = true
+      try {
+        await sink(content)
+        transcriptDirty.value = false
+        lastSavedAt.value = savedAt
+      } catch (exc) {
+        const msg = exc instanceof Error ? exc.message : t('auth.voiceNotes.ingestFailed')
+        error.value = msg
+        notify.warning(msg)
+      } finally {
+        ingesting.value = false
+        if (transcriptDirty.value) scheduleTranscriptSave()
+      }
+      return
+    }
+
+    const ok = await ensureMindmapSession()
+    if (!ok) return
+
+    const pkgId = packageId.value
+    if (!pkgId) return
+
     ingesting.value = true
     try {
       const lang = String(uiStore.promptLanguage || 'zh').split('-')[0] || 'zh'
@@ -1139,6 +1163,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     sessionTitle.value = ''
     captureTurnOffset = 0
     resetInputLevel()
+    transcriptSink = null
     currentSessionStamp += 1
   }
 
@@ -1240,6 +1265,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     resetSpeaker,
     enableAndOpen,
     enableAndShowModal,
+    setTranscriptSink,
     openModal,
     closeModal,
     jumpToMindmap,

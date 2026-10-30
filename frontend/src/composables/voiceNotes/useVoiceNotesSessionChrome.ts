@@ -3,7 +3,7 @@
  * After ingest, the header uses a canvas-style "transcript saved … ago" label
  * bound to this session's markdown document.
  */
-import { type Ref, computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import {
@@ -22,8 +22,8 @@ import { useVoiceNotesStore } from '@/stores/voiceNotes'
 import { formatInBeijing } from '@/utils/beijingClock'
 
 export function useVoiceNotesSessionChrome(extra?: {
-  generating?: Ref<boolean>
-  persisting?: Ref<boolean>
+  generating?: { readonly value: boolean }
+  persisting?: { readonly value: boolean }
 }) {
   const { t, currentLanguage } = useLanguage()
   const voiceNotes = useVoiceNotesStore()

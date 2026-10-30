@@ -669,12 +669,12 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
   justify-content: center;
   gap: 6px;
   width: 100%;
-  height: 40px;
+  min-height: 36px;
   margin-top: 2px;
-  border: 1px dashed #c4b5fd;
-  border-radius: 12px;
+  border: 1px dashed #d6d3d1;
+  border-radius: 9999px;
   background: #fff;
-  color: #6d5efc;
+  color: #44403c;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -682,7 +682,8 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
 }
 
 .mm-task-pane__add:hover:not(:disabled) {
-  background: #f5f3ff;
+  background: #f5f5f4;
+  color: #1c1917;
 }
 
 .mm-task-pane__rail {
@@ -723,13 +724,13 @@ async function onRoleSelect(member: SeminarGroupMember, event: Event): Promise<v
 }
 
 .mm-task-pane__nav:hover {
-  background: #f5f3ff;
-  color: #6d5efc;
+  background: #f5f5f4;
+  color: #1c1917;
 }
 
 .mm-task-pane__nav.is-active {
-  background: #ede9fe;
-  color: #6d5efc;
+  background: #1c1917;
+  color: #fafaf9;
 }
 
 @media (max-width: 768px) {

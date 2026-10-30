@@ -133,6 +133,7 @@ def _file_payload(row: MindmateSeminarBackgroundFile, uploader_name: str) -> dic
         "pinned": bool(row.pinned),
         "pinned_at": row.pinned_at.isoformat() if row.pinned_at else None,
         "artifact": bool(row.artifact),
+        "kind": row.kind or "",
         "listed": bool(row.listed),
         "source_message_id": row.source_message_id,
         "diagram_id": row.diagram_id,

@@ -20,6 +20,7 @@ function shelfFile(id: string, filename: string): SeminarBackgroundFile {
     sourceMessageId: null,
     listed: false,
     artifact: true,
+    kind: '',
     diagramId: null,
   }
 }

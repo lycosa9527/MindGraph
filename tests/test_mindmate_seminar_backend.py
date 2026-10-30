@@ -326,15 +326,29 @@ async def test_join_by_code_rejected_when_not_allowed() -> None:
 
 
 @pytest.mark.asyncio
-async def test_resolve_dify_conversation_id_prefers_redis_meta() -> None:
-    """WS chat uses the latest Dify conversation id from Redis session meta."""
+async def test_resolve_dify_conversation_id_prefers_postgres_row() -> None:
+    """A newer Postgres conversation id wins over a stale Redis copy."""
     mgr = MindmateSeminarManager()
     with patch.object(
         mgr,
         "get_session_meta",
         AsyncMock(return_value={"dify_conversation_id": "conv-redis"}),
     ):
-        conv_id = await mgr.resolve_dify_conversation_id("ABC-DEF", fallback="conv-stale")
+        conv_id = await mgr.resolve_dify_conversation_id("ABC-DEF", fallback="s1:conv-pg")
+
+    assert conv_id == "conv-pg"
+
+
+@pytest.mark.asyncio
+async def test_resolve_dify_conversation_id_uses_redis_when_the_row_has_none() -> None:
+    """Before the first Postgres write, the live hash still carries the id."""
+    mgr = MindmateSeminarManager()
+    with patch.object(
+        mgr,
+        "get_session_meta",
+        AsyncMock(return_value={"dify_conversation_id": "s1:conv-redis"}),
+    ):
+        conv_id = await mgr.resolve_dify_conversation_id("ABC-DEF", fallback=None)
 
     assert conv_id == "conv-redis"
 

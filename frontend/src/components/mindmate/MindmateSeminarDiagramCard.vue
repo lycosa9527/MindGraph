@@ -310,14 +310,14 @@ async function shelveDiagram(destination: 'resource' | 'artifact'): Promise<void
 
 .mm-shared-diagram button {
   align-self: flex-start;
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid #c4b5fd;
-  border-radius: 8px;
-  background: #fff;
-  color: #5b21b6;
+  min-height: 28px;
+  padding: 4px 12px;
+  border: 1px solid #e7e5e4;
+  border-radius: 9999px;
+  background: #f5f5f4;
+  color: #44403c;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 

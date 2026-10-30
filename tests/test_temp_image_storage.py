@@ -142,3 +142,32 @@ async def test_persist_diagram_preview_raises_when_cos_upload_fails(tmp_path: Pa
         pytest.raises(ValueError, match="upload_failed"),
     ):
         await storage.persist_diagram_preview_png(filename, b"png")
+
+
+def test_preview_png_stays_when_cos_mirror_fails(tmp_path: Path) -> None:
+    """Cleanup must not drop the only copy of a seminar canvas image."""
+    filename = "diagram_" + ("ab" * 16) + ".png"
+    path = tmp_path / filename
+    path.write_bytes(b"png")
+    with (
+        patch.object(storage, "cos_temp_images_enabled", return_value=True),
+        patch.object(storage, "diagram_preview_cos_key", return_value="dev/temp_images/diagram/x.png"),
+        patch.object(storage, "object_exists", return_value=False),
+        patch.object(storage, "upload_bytes", return_value=False),
+    ):
+        assert storage.preview_png_safe_to_drop(filename, path) is False
+
+
+def test_preview_png_drops_once_cos_has_it(tmp_path: Path) -> None:
+    """A local canvas PNG can age out after the bucket holds the same bytes."""
+    filename = "diagram_" + ("ab" * 16) + ".png"
+    path = tmp_path / filename
+    path.write_bytes(b"png")
+    with (
+        patch.object(storage, "cos_temp_images_enabled", return_value=True),
+        patch.object(storage, "diagram_preview_cos_key", return_value="dev/temp_images/diagram/x.png"),
+        patch.object(storage, "object_exists", return_value=True),
+        patch.object(storage, "upload_bytes") as upload,
+    ):
+        assert storage.preview_png_safe_to_drop(filename, path) is True
+    upload.assert_not_called()

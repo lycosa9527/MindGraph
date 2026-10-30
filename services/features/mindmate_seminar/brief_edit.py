@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.mindmate_seminar import MindmateSeminarMessage, MindmateSeminarSession
 from services.features.mindmate_seminar.config import MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS
+from services.features.mindmate_seminar.redis_mirror import mirror_live_session_fields
 from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from utils.db.session_open import system_rls_session
 
@@ -213,6 +214,7 @@ async def update_seminar_brief(
         saved_topic = (session.brief_topic or "").strip()
         saved_title = session.title
         await db.commit()
+    await mirror_live_session_fields(code, {"title": saved_title})
     await broadcast_to_all(
         code,
         {

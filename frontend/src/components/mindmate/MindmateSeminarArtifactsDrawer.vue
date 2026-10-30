@@ -43,6 +43,7 @@ import {
   renameSeminarBackgroundFile,
   seminarFolderErrorKey,
 } from '@/utils/mindmateSeminarFolder'
+import { isSeminarFaceChatFile } from '@/utils/seminarFaceChatDocument'
 
 const props = withDefaults(
   defineProps<{
@@ -105,7 +106,7 @@ const diagrams = computed(() => {
 })
 const documents = computed(() => {
   const archived = seminarServerArtifacts.value
-    .filter((file) => !file.diagramId)
+    .filter((file) => !file.diagramId && !isSeminarFaceChatFile(file))
     .map((file) => ({
       id: `artifact:${file.id}`,
       title: file.filename,
@@ -119,6 +120,18 @@ const documents = computed(() => {
   })
   return [...archived, ...fromChat]
 })
+
+const transcripts = computed(() =>
+  seminarServerArtifacts.value
+    .filter((file) => isSeminarFaceChatFile(file))
+    .map((file) => ({
+      id: `face:${file.id}`,
+      title: file.filename,
+      url: '',
+      messageId: file.sourceMessageId,
+      backgroundFileId: file.id,
+    }))
+)
 
 function diagramLabel(label: string): string {
   return label || t('mindmate.artifacts.diagramFallback')
@@ -528,11 +541,49 @@ async function saveDiagram(previewId: string): Promise<void> {
         />
       </button>
       <p
-        v-show="openSections.transcripts"
+        v-if="openSections.transcripts && transcripts.length === 0"
         class="mm-artifact-side__empty"
       >
         <I18nText k="mindmate.artifacts.emptyTranscripts" />
       </p>
+      <ul
+        v-else-if="openSections.transcripts"
+        class="mm-artifact-side__list"
+      >
+        <li
+          v-for="doc in transcripts"
+          :key="doc.id"
+          class="mm-artifact-side__file-row"
+        >
+          <button
+            type="button"
+            class="mm-artifact-side__file"
+            @click="openDocument(doc)"
+          >
+            <FileText
+              :size="15"
+              class="mm-artifact-side__file-icon"
+              aria-hidden="true"
+            />
+            <span class="mm-artifact-side__file-meta">
+              <span class="mm-artifact-side__name">{{ doc.title }}</span>
+            </span>
+          </button>
+          <button
+            v-if="!seminarSpectator"
+            type="button"
+            class="mm-artifact-side__cite"
+            :aria-label="t('mindmate.docViewer.cite')"
+            :title="t('mindmate.docViewer.cite')"
+            @click="citeDocument(doc)"
+          >
+            <Quote
+              :size="15"
+              aria-hidden="true"
+            />
+          </button>
+        </li>
+      </ul>
     </section>
   </aside>
 </template>
@@ -546,10 +597,10 @@ async function saveDiagram(previewId: string): Promise<void> {
   min-width: 0;
   min-height: 0;
   height: 100%;
-  border-left: 1px solid #e9e5ff;
+  border-left: 1px solid #e7e5e4;
   background: #fff;
   overflow: auto;
-  box-shadow: -8px 0 24px rgba(109, 94, 252, 0.05);
+  box-shadow: -8px 0 24px rgba(28, 25, 23, 0.05);
 }
 
 .mm-artifact-side.is-embedded {
@@ -590,13 +641,13 @@ async function saveDiagram(previewId: string): Promise<void> {
 }
 
 .mm-artifact-side__close:hover {
-  background: #f5f3ff;
-  color: #6d5efc;
+  background: #f5f5f4;
+  color: #1c1917;
 }
 
 .mm-artifact-side__section {
   padding: 10px 16px 14px;
-  border-top: 1px solid #f5f3ff;
+  border-top: 1px solid #e7e5e4;
 }
 
 .mm-artifact-side__heading {
@@ -667,12 +718,12 @@ async function saveDiagram(previewId: string): Promise<void> {
 
 .mm-artifact-side__file:hover,
 .mm-artifact-side__open:hover {
-  background: #f5f3ff;
+  background: #f5f5f4;
 }
 
 .mm-artifact-side__file-icon {
   flex-shrink: 0;
-  color: #6d5efc;
+  color: #57534e;
 }
 
 .mm-artifact-side__file-meta {
@@ -722,8 +773,8 @@ async function saveDiagram(previewId: string): Promise<void> {
 }
 
 .mm-artifact-side__cite:hover {
-  background: #f5f3ff;
-  color: #6d5efc;
+  background: #f5f5f4;
+  color: #1c1917;
 }
 
 .mm-artifact-side__more {
@@ -733,12 +784,13 @@ async function saveDiagram(previewId: string): Promise<void> {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #6d5efc;
+  color: #44403c;
   font-size: 12px;
   cursor: pointer;
 }
 
 .mm-artifact-side__more:hover {
-  background: #f5f3ff;
+  background: #f5f5f4;
+  color: #1c1917;
 }
 </style>

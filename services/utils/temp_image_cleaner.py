@@ -40,8 +40,9 @@ except ImportError:
     is_redis_available = None
     _REDIS_AVAILABLE = False
 
-from services.diagram.temp_image_storage import temp_images_dir
+from services.diagram.temp_image_storage import preview_png_safe_to_drop, temp_images_dir
 from services.features.mindmate_seminar.background_files import STATIC_ROOT
+from services.features.mindmate_seminar.seminar_cos_sync import sync_seminar_files_to_cos
 from services.features.mindmate_seminar.seminar_file_storage import cleanup_seminar_disk_cache
 from services.mind_classroom.temp_cleanup import cleanup_classroom_temp_files
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS, REDIS_ERRORS
@@ -230,6 +231,8 @@ async def cleanup_temp_images(max_age_seconds: int = 86400):
 
                 if file_age > max_age_seconds:
                     try:
+                        if not await asyncio.to_thread(preview_png_safe_to_drop, file_path.name, file_path):
+                            continue
                         # Delete file asynchronously (non-blocking)
                         await aiofiles.os.remove(file_path)
                         deleted_count += 1
@@ -299,6 +302,7 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
 
             await cleanup_temp_images()
             await cleanup_classroom_temp_files()
+            await sync_seminar_files_to_cos()
             await asyncio.to_thread(cleanup_seminar_disk_cache, STATIC_ROOT)
             await asyncio.sleep(interval_seconds)
         except asyncio.CancelledError:

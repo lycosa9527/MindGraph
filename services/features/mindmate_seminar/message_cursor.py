@@ -12,6 +12,7 @@ import logging
 from typing import Any, Optional
 
 from services.features.mindmate_seminar.redis_keys import normalize_collab_code, session_meta_key
+from services.features.mindmate_seminar.redis_mirror import mirror_live_session_fields
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import REDIS_ERRORS
 
@@ -47,21 +48,10 @@ async def remember_latest_collab_message_id(code: str, message_id: int) -> None:
     """Record the newest saved line for this room. Fan-out remains the live path."""
     if message_id <= 0 or not code.strip():
         return
-    redis = get_async_redis()
-    if not redis:
-        return
-    try:
-        await redis.hset(
-            session_meta_key(normalize_collab_code(code)),
-            LATEST_MESSAGE_ID_FIELD,
-            str(message_id),
-        )
-    except REDIS_ERRORS as exc:
-        logger.debug(
-            "[MindmateSeminar] latest message id was not stored code=%s: %s",
-            normalize_collab_code(code),
-            exc,
-        )
+    await mirror_live_session_fields(
+        code,
+        {LATEST_MESSAGE_ID_FIELD: str(message_id)},
+    )
 
 
 async def read_latest_collab_message_id(code: str) -> Optional[int]:

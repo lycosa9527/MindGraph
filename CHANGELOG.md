@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.192] - 2026-10-30
+
+> **A seminar records a face-to-face meeting onto the shelf, and shared files stay available after a restart.**
+
+### Added
+
+- **Face-to-face notes** — In a live seminar, one teacher records the in-person conversation. The transcript is saved into the room as it is spoken and listed under 面聊文档. Generating a summary drafts a minutes card from that transcript and writes the summary above the notes. A second recorder is told someone is already recording. Apply Alembic `0162`. `PUT /api/mindmate/seminar/{session_id}/face-chat` saves the markdown. Claim and release hold the one live recorder.
+
+### Changed
+
+- **Seminar chrome** — Invite, members, share, brief, minutes, and the face-to-face recorder use the light stone dialog shell.
+
+### Fixed
+
+- **Seminar files after a restart** — Shared files, chat attachments, and reply documents are uploaded to COS when a live room is rebuilt and on the hourly cleanup, including a seminar that has already ended. A canvas preview image stays on disk until COS has it, and its link uses the long-lived image address.
+- **Seminar Redis mirror** — A rename, a brief that changes the title, a new Dify conversation id, and the latest message id are saved in PostgreSQL first, then copied onto the live Redis room. Ending a room saves that end before Redis is marked closed. A missing Redis room is not rebuilt from a single field. The stored Dify conversation id is read from PostgreSQL before the Redis copy.
+
+### Tests
+
+- [`tests/test_seminar_face_chat_file.py`](tests/test_seminar_face_chat_file.py), [`tests/test_seminar_cos_sync.py`](tests/test_seminar_cos_sync.py), [`tests/test_seminar_redis_mirror.py`](tests/test_seminar_redis_mirror.py), [`tests/test_mindmate_seminar_live_persistence.py`](tests/test_mindmate_seminar_live_persistence.py)
+- [`tests/test_temp_image_storage.py`](tests/test_temp_image_storage.py), [`tests/test_temp_image_cleaner.py`](tests/test_temp_image_cleaner.py), [`frontend/tests/seminarFaceChatDocument.spec.ts`](frontend/tests/seminarFaceChatDocument.spec.ts)
+
 ## [5.180.191] - 2026-10-30
 
 > **A seminar answer still types on screen. A live seminar stays open until its leader ends it. A desktop pet can sit on the desktop and show unread seminar lines.**

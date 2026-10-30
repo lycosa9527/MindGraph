@@ -395,8 +395,8 @@ onBeforeUnmount(() => {
 }
 
 .mm-seminar-tools__nudge:hover {
-  background: #f5f3ff;
-  color: #6d5efc;
+  background: #e7e5e4;
+  color: #1c1917;
 }
 
 .mm-seminar-tools__plus,
@@ -432,15 +432,15 @@ onBeforeUnmount(() => {
 }
 
 .mm-seminar-tools__chip--mindmate {
-  border-color: #ddd6fe;
-  background: #f5f3ff;
-  color: #6d28d9;
+  border-color: #1c1917;
+  background: #1c1917;
+  color: #fafaf9;
 }
 
 .mm-seminar-tools__chip--mindmate:hover {
-  border-color: #c4b5fd;
-  background: #ede9fe;
-  color: #5b21b6;
+  border-color: #292524;
+  background: #292524;
+  color: #fafaf9;
 }
 </style>
 

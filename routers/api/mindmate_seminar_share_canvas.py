@@ -18,7 +18,7 @@ from routers.api.helpers import (
 )
 from routers.api.vueflow_screenshot import DiagramScreenshotError, capture_diagram_screenshot
 from routers.auth.dependencies import get_language_dependency
-from services.diagram.temp_image_storage import persist_diagram_preview_png
+from services.diagram.temp_image_storage import persist_diagram_preview_png, temp_images_signed_ttl
 from services.features.mindmate_seminar.diagram_library import (
     COPY_FAILED,
     COPY_FORBIDDEN,
@@ -101,7 +101,7 @@ async def _preview_url(request: Request, user_id: int, diagram_id: str) -> str:
     except (OSError, ValueError) as exc:
         logger.warning("[CanvasShare] preview write failed: %s", exc)
         return ""
-    signed_path = generate_signed_url(filename, expiration_seconds=86400)
+    signed_path = generate_signed_url(filename, expiration_seconds=temp_images_signed_ttl())
     return build_public_temp_image_url(request, signed_path)
 
 

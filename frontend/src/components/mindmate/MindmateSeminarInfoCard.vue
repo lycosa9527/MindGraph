@@ -406,7 +406,7 @@ function saveEdit(): void {
   align-items: center;
   gap: 6px;
   margin: 0;
-  color: #5046e5;
+  color: #57534e;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -419,8 +419,8 @@ function saveEdit(): void {
   border: none;
   border-radius: 999px;
   padding: 5px 12px;
-  background: rgba(80, 70, 229, 0.08);
-  color: #5046e5;
+  background: #f5f5f4;
+  color: #44403c;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -429,22 +429,23 @@ function saveEdit(): void {
 }
 
 .mm-info-card__edit:hover {
-  background: rgba(80, 70, 229, 0.14);
+  background: #e7e5e4;
+  color: #1c1917;
 }
 
 .mm-info-card__add,
 .mm-info-card__cancel {
   border: none;
   background: transparent;
-  color: #5046e5;
+  color: #44403c;
   font: inherit;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 
 .mm-info-card__add:hover,
 .mm-info-card__cancel:hover {
-  color: #3f36c4;
+  color: #1c1917;
 }
 
 .mm-info-card__topic,
@@ -461,7 +462,7 @@ function saveEdit(): void {
   width: 100%;
   box-sizing: border-box;
   border: none;
-  border-bottom: 1px solid rgba(80, 70, 229, 0.28);
+  border-bottom: 1px solid #e7e5e4;
   padding: 0 0 6px;
   background: transparent;
   font-family: inherit;
@@ -469,7 +470,7 @@ function saveEdit(): void {
 
 .mm-info-card__topic-input:focus {
   outline: none;
-  border-bottom-color: #5046e5;
+  border-bottom-color: #1c1917;
 }
 
 .mm-info-card__rule {
@@ -499,7 +500,7 @@ function saveEdit(): void {
   height: 14px;
   flex: 0 0 auto;
   border-radius: 2px;
-  background: #5046e5;
+  background: #1c1917;
 }
 
 .mm-info-card__fold {
@@ -521,7 +522,7 @@ function saveEdit(): void {
 
 .mm-info-card__chevron {
   margin-left: auto;
-  color: #8b85d9;
+  color: #a8a29e;
   transition: transform 0.15s ease;
   transform: rotate(-90deg);
 }
@@ -531,7 +532,7 @@ function saveEdit(): void {
 }
 
 .mm-info-card__optional {
-  color: #8b85d9;
+  color: #a8a29e;
   font-size: 12px;
   font-weight: 500;
 }
@@ -539,8 +540,8 @@ function saveEdit(): void {
 .mm-info-card__tag {
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(80, 70, 229, 0.1);
-  color: #5046e5;
+  background: #f5f5f4;
+  color: #44403c;
   font-style: normal;
   font-weight: 600;
   font-size: 12px;
@@ -570,7 +571,7 @@ function saveEdit(): void {
 
 .mm-info-card ol li::before {
   content: counter(goal) '. ';
-  color: #5046e5;
+  color: #57534e;
   font-weight: 650;
 }
 
@@ -618,7 +619,7 @@ function saveEdit(): void {
 }
 
 .mm-info-card__people em.is-leader {
-  color: #5046e5;
+  color: #1c1917;
 }
 
 .mm-info-card__files {
@@ -652,7 +653,7 @@ function saveEdit(): void {
   border: 1px solid rgba(192, 132, 252, 0.55);
   border-radius: 12px;
   background: rgba(80, 70, 229, 0.05);
-  color: #8b85d9;
+  color: #a8a29e;
   font: inherit;
   font-size: 14px;
   font-weight: 500;
@@ -689,8 +690,8 @@ function saveEdit(): void {
 }
 
 .mm-info-card__input:focus {
-  outline: 2px solid rgba(80, 70, 229, 0.2);
-  border-color: #c084fc;
+  outline: 2px solid rgba(28, 25, 23, 0.12);
+  border-color: #a8a29e;
 }
 
 .mm-info-card__icon {
@@ -707,8 +708,8 @@ function saveEdit(): void {
 }
 
 .mm-info-card__icon:hover {
-  color: #5046e5;
-  background: rgba(80, 70, 229, 0.08);
+  color: #1c1917;
+  background: #f5f5f4;
 }
 
 .mm-info-card__add {
@@ -739,16 +740,16 @@ function saveEdit(): void {
   border: none;
   border-radius: 999px;
   padding: 6px 16px;
-  background: #5046e5;
-  color: #fff;
+  background: #1c1917;
+  color: #fafaf9;
   font: inherit;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 500;
   cursor: pointer;
 }
 
 .mm-info-card__save:hover {
-  filter: brightness(1.06);
+  background: #292524;
 }
 
 .mm-info-card__save:disabled,

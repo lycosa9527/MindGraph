@@ -476,14 +476,14 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
   overflow: hidden;
   border-radius: 18px;
   background: #fff;
-  box-shadow: 0 10px 28px rgba(76, 63, 196, 0.12);
+  box-shadow: 0 10px 28px rgba(28, 25, 23, 0.08);
 }
 
 .mm-doc__banner {
   position: relative;
   overflow: hidden;
   padding: 28px 22px 22px;
-  background: linear-gradient(160deg, #7c6cf6 0%, #6d5efc 55%, #5b4fe0 100%);
+  background: #1c1917;
   color: #fff;
 }
 
@@ -575,12 +575,13 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 26px;
-  padding: 0 10px;
-  border: none;
-  border-radius: 8px;
-  background: #f4f4f5;
-  color: #71717a;
+  min-height: 26px;
+  height: auto;
+  padding: 2px 10px;
+  border: 1px solid #e7e5e4;
+  border-radius: 9999px;
+  background: #f5f5f4;
+  color: #57534e;
   font-size: 12px;
   cursor: pointer;
 }
@@ -602,7 +603,7 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
 
 .mm-preview__pill {
   margin-right: 6px;
-  color: #6d5efc;
+  color: #57534e;
   font-style: normal;
   font-size: 12px;
 }
@@ -624,8 +625,8 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
   height: 22px;
   place-items: center;
   border-radius: 999px;
-  background: #ece9ff;
-  color: #5b4fe0;
+  background: #e7e5e4;
+  color: #44403c;
   font-size: 12px;
   font-weight: 700;
 }
@@ -633,7 +634,7 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
 .mm-doc__note {
   padding: 12px 14px;
   border-radius: 12px;
-  background: #f5f3ff;
+  background: #f5f5f4;
 }
 
 .mm-doc__note p,
@@ -657,7 +658,7 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
 
 .mm-preview__file svg {
   flex: 0 0 auto;
-  color: #6d5efc;
+  color: #57534e;
 }
 
 .mm-doc__tasks li {
@@ -675,7 +676,7 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
   width: 16px;
   height: 16px;
   margin-top: 2px;
-  border: 1.5px solid #c4b5fd;
+  border: 1.5px solid #d6d3d1;
   border-radius: 4px;
 }
 
@@ -686,7 +687,7 @@ function statusLabel(status: SeminarMinutesGoalStatus): string {
 .mm-doc blockquote {
   margin: 8px 0 0;
   padding: 10px 12px;
-  border-left: 3px solid #6d5efc;
+  border-left: 3px solid #d6d3d1;
   border-radius: 8px;
   background: #fafafa;
 }

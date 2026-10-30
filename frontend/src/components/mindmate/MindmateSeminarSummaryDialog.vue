@@ -348,7 +348,7 @@ function closeDialog(): void {
     :width="step === 'preview' ? 'min(560px, 94vw)' : 'min(440px, 94vw)'"
     align-center
     append-to-body
-    class="mm-sum-dialog"
+    class="mm-sum-dialog mm-seminar-swiss"
     :class="{ 'is-preview': step === 'preview' }"
     @close="closeDialog"
   >
@@ -516,7 +516,7 @@ function closeDialog(): void {
 
 <style>
 .mm-sum-dialog.el-dialog {
-  border-radius: 20px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -533,11 +533,12 @@ function closeDialog(): void {
   max-height: min(72vh, 760px);
   padding: 4px 16px 8px;
   overflow: auto;
-  background: #f7f6fb;
+  background: #fafaf9;
 }
 
 .mm-sum-dialog .el-dialog__footer {
   padding: 12px 20px 16px;
+  border-top: 1px solid #f5f5f4;
 }
 </style>
 
@@ -567,16 +568,16 @@ function closeDialog(): void {
   gap: 12px;
   width: 100%;
   padding: 12px;
-  border: 1px solid #eceaf1;
-  border-radius: 14px;
+  border: 1px solid #e7e5e4;
+  border-radius: 12px;
   background: #fff;
   text-align: left;
   cursor: pointer;
 }
 
 .mm-sum__choice.is-on {
-  border-color: #7c6cf0;
-  background: #f7f5ff;
+  border-color: #1c1917;
+  background: #f5f5f4;
 }
 
 .mm-sum__glyph {
@@ -586,18 +587,8 @@ function closeDialog(): void {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: #f3f1fb;
-  color: #6d5efc;
-}
-
-.mm-sum__glyph.is-amber {
-  background: #fff4e5;
-  color: #f59e0b;
-}
-
-.mm-sum__glyph.is-blue {
-  background: #eef2ff;
-  color: #6366f1;
+  background: #f5f5f4;
+  color: #57534e;
 }
 
 .mm-sum__choice-copy {
@@ -626,8 +617,8 @@ function closeDialog(): void {
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: #6d5efc;
-  color: #fff;
+  background: #1c1917;
+  color: #fafaf9;
 }
 
 .mm-sum__list {
@@ -636,7 +627,7 @@ function closeDialog(): void {
   padding: 4px;
   overflow: auto;
   list-style: none;
-  border: 1px solid #f0eeec;
+  border: 1px solid #e7e5e4;
   border-radius: 12px;
   background: #fff;
 }
@@ -652,7 +643,7 @@ function closeDialog(): void {
 
 .mm-sum__who {
   flex: 0 0 auto;
-  color: #6d5efc;
+  color: #57534e;
   font-size: 12px;
   font-weight: 650;
 }
@@ -686,29 +677,47 @@ function closeDialog(): void {
 .mm-sum__ghost,
 .mm-sum__outline,
 .mm-sum__primary {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 10px;
-  font-size: 14px;
+  /* button:has(.i18n-label) sets height:auto and outranks a plain height. */
+  min-height: 36px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
 }
 
 .mm-sum__outline {
-  border: 1px solid #e4e4e7;
+  border: 1px solid #e7e5e4;
   background: #fff;
-  color: #3f3f46;
+  color: #44403c;
+}
+
+.mm-sum__outline:hover {
+  background: #f5f5f4;
+  color: #1c1917;
 }
 
 .mm-sum__ghost {
-  border: none;
-  background: #f4f4f5;
-  color: #3f3f46;
+  border: 1px solid #e7e5e4;
+  background: #f5f5f4;
+  color: #44403c;
+}
+
+.mm-sum__ghost:hover {
+  background: #e7e5e4;
+  color: #1c1917;
 }
 
 .mm-sum__primary {
-  border: none;
-  background: #6d5efc;
-  color: #fff;
+  border: 1px solid #1c1917;
+  background: #1c1917;
+  color: #fafaf9;
+}
+
+.mm-sum__primary:hover:not(:disabled) {
+  background: #292524;
+  border-color: #292524;
 }
 
 .mm-sum__primary:disabled {

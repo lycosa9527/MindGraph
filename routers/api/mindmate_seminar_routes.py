@@ -22,6 +22,7 @@ from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.mindmate_seminar_library_mutations import router as saved_seminar_mutation_router
 from routers.api.mindmate_seminar_background_files import router as seminar_files_router
+from routers.api.mindmate_seminar_face_chat import router as seminar_face_chat_router
 from routers.api.mindmate_seminar_reply_artifacts import router as seminar_reply_artifacts_router
 from routers.api.mindmate_seminar_share_canvas import router as seminar_share_router
 from routers.api.mindmate_seminar_members import router as seminar_members_router
@@ -89,6 +90,7 @@ router.include_router(seminar_members_router)
 router.include_router(seminar_messages_router)
 router.include_router(seminar_files_router)
 router.include_router(seminar_reply_artifacts_router)
+router.include_router(seminar_face_chat_router)
 router.include_router(seminar_share_router)
 
 

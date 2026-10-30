@@ -10,6 +10,7 @@
 @import './mind-map-side-rail-panel.css';
 @import './auth-captcha.css';
 @import './mindmate-poke.css';
+@import './mindmate-seminar-swiss-dialog.css';
 @import './role-pill.css';
 
 @import 'tailwindcss/theme' layer(theme);

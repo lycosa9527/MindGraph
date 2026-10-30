@@ -160,7 +160,7 @@ function commitEdit(): void {
 }
 
 .mindmate-seminar-breadcrumb__title:hover {
-  background: rgba(109, 94, 252, 0.08);
+  background: #f5f5f4;
 }
 
 .mindmate-seminar-breadcrumb__input {
@@ -169,7 +169,7 @@ function commitEdit(): void {
   max-width: 100%;
   height: 30px;
   padding: 0 8px;
-  border: 1px solid #c4b5fd;
+  border: 1px solid #d6d3d1;
   border-radius: 8px;
   background: #fff;
   color: #1c1917;

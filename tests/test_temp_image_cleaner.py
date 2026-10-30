@@ -33,6 +33,7 @@ async def test_cleanup_removes_old_dingtalk_and_diagram_pngs(
     _touch(fresh_diagram, age_seconds=60)
     other.write_text("keep", encoding="utf-8")
     monkeypatch.setattr("services.utils.temp_image_cleaner.temp_images_dir", lambda: tmp_path)
+    monkeypatch.setattr("services.utils.temp_image_cleaner.preview_png_safe_to_drop", lambda _name, _path: True)
 
     deleted = await cleanup_temp_images(max_age_seconds=86_400)
 
@@ -41,3 +42,20 @@ async def test_cleanup_removes_old_dingtalk_and_diagram_pngs(
     assert not old_diagram.exists()
     assert fresh_diagram.is_file()
     assert other.is_file()
+
+
+@pytest.mark.asyncio
+async def test_cleanup_keeps_a_preview_until_cos_has_it(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A seminar canvas PNG stays on disk when the COS copy is not there yet."""
+    old_diagram = tmp_path / ("diagram_" + ("ab" * 16) + ".png")
+    _touch(old_diagram, age_seconds=200_000)
+    monkeypatch.setattr("services.utils.temp_image_cleaner.temp_images_dir", lambda: tmp_path)
+    monkeypatch.setattr("services.utils.temp_image_cleaner.preview_png_safe_to_drop", lambda _name, _path: False)
+
+    deleted = await cleanup_temp_images(max_age_seconds=86_400)
+
+    assert deleted == 0
+    assert old_diagram.is_file()

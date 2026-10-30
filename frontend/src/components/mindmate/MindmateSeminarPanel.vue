@@ -421,7 +421,7 @@ defineExpose({
       append-to-body
       :title="t('mindmate.collabLaunchTooltip')"
       width="min(760px, 94vw)"
-      class="mm-launch-brief"
+      class="mm-launch-brief mm-seminar-swiss"
       :close-on-click-modal="false"
     >
       <p class="mm-launch-brief__hint"><I18nText k="mindmate.collabLaunchHistoryHint" /></p>
@@ -701,19 +701,20 @@ defineExpose({
 
 <style scoped>
 .join-workshop-btn.join-workshop-btn--label {
-  --el-button-bg-color: #ede9fe;
-  --el-button-border-color: #c4b5fd;
-  --el-button-hover-bg-color: #ddd6fe;
-  --el-button-hover-border-color: #a78bfa;
-  --el-button-hover-text-color: #4c1d95;
-  --el-button-active-bg-color: #c4b5fd;
-  --el-button-text-color: #5b21b6;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 10px;
+  --el-button-bg-color: #f5f5f4;
+  --el-button-border-color: #e7e5e4;
+  --el-button-hover-bg-color: #e7e5e4;
+  --el-button-hover-border-color: #d6d3d1;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-active-bg-color: #d6d3d1;
+  --el-button-text-color: #1c1917;
+  height: auto;
+  min-height: 32px;
+  padding: 4px 12px;
+  border-radius: 9999px;
   font-size: 13px;
-  font-weight: 600;
-  background: #ede9fe;
+  font-weight: 500;
+  background: #f5f5f4;
 }
 
 .join-workshop-btn.join-workshop-btn--pill {
@@ -938,7 +939,7 @@ defineExpose({
   font-size: 12px;
   font-weight: 500;
   border: none;
-  border-radius: 6px;
+  border-radius: 9999px;
   cursor: pointer;
   transition: background 0.15s;
   line-height: 1.4;
@@ -975,7 +976,7 @@ defineExpose({
   font-size: 13px;
   font-weight: 500;
   border: none;
-  border-radius: 8px;
+  border-radius: 9999px;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -1023,10 +1024,10 @@ defineExpose({
   font-weight: 600;
   line-height: 1;
   font-size: clamp(13px, 4vmin, 18px);
-  border: 2px solid #d1d5db;
+  border: 2px solid #d6d3d1;
   border-radius: 8px;
   background: #fff;
-  color: #1f2937;
+  color: #1c1917;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -1035,9 +1036,9 @@ defineExpose({
 }
 
 .code-input-box:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: #f9fafb;
+  border-color: #1c1917;
+  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.08);
+  background: #fff;
 }
 
 .code-dash {
@@ -1134,7 +1135,7 @@ defineExpose({
 }
 
 .mm-launch-brief.el-dialog {
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .mm-launch-brief .el-dialog__body {
@@ -1147,8 +1148,8 @@ defineExpose({
   margin: 0 0 12px;
   padding: 8px 12px;
   border-radius: 8px;
-  background: #e7edfb;
-  color: #5c6eb5;
+  background: #f5f5f4;
+  color: #57534e;
   font-size: 13px;
   line-height: 1.45;
 }

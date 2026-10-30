@@ -271,10 +271,10 @@ defineExpose({ keepOpen, scheduleClose })
   z-index: 40;
   width: min(360px, 82vw);
   padding: 10px;
-  border: 1px solid #e9e5ff;
-  border-radius: 14px;
+  border: 1px solid #e7e5e4;
+  border-radius: 12px;
   background: #fff;
-  box-shadow: 0 14px 36px rgba(76, 61, 180, 0.14);
+  box-shadow: 0 14px 36px rgba(28, 25, 23, 0.08);
 }
 
 .mm-members-pop__head {
@@ -293,8 +293,8 @@ defineExpose({ keepOpen, scheduleClose })
   height: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #f5f3ff;
-  color: #6d5efc;
+  background: #f5f5f4;
+  color: #44403c;
   font-size: 11px;
   font-weight: 650;
   display: inline-flex;
@@ -320,7 +320,7 @@ defineExpose({ keepOpen, scheduleClose })
 }
 
 .mm-members-pop__row:hover {
-  background: #faf8ff;
+  background: #f5f5f4;
 }
 
 .mm-members-pop__avatar {
@@ -383,8 +383,8 @@ defineExpose({ keepOpen, scheduleClose })
   flex-shrink: 0;
   padding: 1px 6px;
   border-radius: 999px;
-  background: #ede9fe;
-  color: #6d28d9;
+  background: #f5f5f4;
+  color: #44403c;
   font-size: 10px;
   font-weight: 650;
 }
@@ -412,7 +412,7 @@ defineExpose({ keepOpen, scheduleClose })
 .mm-members-pop__role {
   height: 28px;
   padding: 0 6px;
-  border: 1px solid #e9e5ff;
+  border: 1px solid #e7e5e4;
   border-radius: 8px;
   background: #fff;
 }
@@ -446,18 +446,20 @@ defineExpose({ keepOpen, scheduleClose })
   gap: 6px;
   width: 100%;
   margin-top: 8px;
-  height: 34px;
-  border: 1px dashed #c4b5fd;
-  border-radius: 10px;
-  background: #faf8ff;
-  color: #6d5efc;
+  min-height: 36px;
+  height: auto;
+  border: 1px dashed #d6d3d1;
+  border-radius: 9999px;
+  background: #fafaf9;
+  color: #44403c;
   font: inherit;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 
 .mm-members-pop__add:hover:not(:disabled) {
-  background: #f5f3ff;
+  background: #f5f5f4;
+  color: #1c1917;
 }
 </style>

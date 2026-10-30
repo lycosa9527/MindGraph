@@ -375,9 +375,9 @@ watch(
   min-width: 0;
   min-height: 0;
   height: 100%;
-  border-left: 1px solid #e9e5ff;
+  border-left: 1px solid #e7e5e4;
   background: #fff;
-  box-shadow: -8px 0 24px rgba(109, 94, 252, 0.05);
+  box-shadow: -8px 0 24px rgba(28, 25, 23, 0.05);
   overflow: auto;
 }
 
@@ -452,9 +452,9 @@ watch(
 }
 
 .mm-folder-side__upload-btn:hover:not(:disabled) {
-  border-color: #c4b5fd;
-  color: #6d28d9;
-  background: #f5f3ff;
+  border-color: #a8a29e;
+  color: #1c1917;
+  background: #f5f5f4;
 }
 
 .mm-folder-side__upload-btn:disabled {
@@ -509,7 +509,7 @@ watch(
 }
 
 .mm-folder-side__pin {
-  color: #7c3aed;
+  color: #1c1917;
 }
 
 .mm-folder-side__meta {
@@ -549,15 +549,15 @@ watch(
 
 .mm-folder-side__cite:hover,
 .mm-folder-side__more:hover {
-  background: #f5f3ff;
-  color: #6d5efc;
+  background: #f5f5f4;
+  color: #1c1917;
 }
 </style>
 
 <style>
 .mm-folder-side__menu.el-dropdown__popper,
 .mm-folder-side__menu.el-popper {
-  border: 1px solid #e9e5ff !important;
+  border: 1px solid #e7e5e4 !important;
   border-radius: 12px !important;
   box-shadow: 0 10px 28px rgba(28, 25, 23, 0.1) !important;
   overflow: hidden;
@@ -578,16 +578,16 @@ watch(
 }
 
 .mm-folder-side__menu .el-dropdown-menu__item:not(.is-disabled):hover {
-  background: #f5f3ff;
-  color: #5b21b6;
+  background: #f5f5f4;
+  color: #1c1917;
 }
 
 .mm-folder-side__menu .el-dropdown-menu__item--divided {
   margin-top: 6px;
-  border-top-color: #f3f0ff;
+  border-top-color: #e7e5e4;
 }
 
 .mm-folder-side__menu .el-dropdown-menu__item--divided::before {
-  background: #f3f0ff;
+  background: #e7e5e4;
 }
 </style>

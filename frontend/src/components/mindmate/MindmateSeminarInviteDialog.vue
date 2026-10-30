@@ -56,6 +56,7 @@ async function copyLink(): Promise<void> {
     width="420px"
     :title="t('mindmate.home.inviteDialogTitle')"
     append-to-body
+    class="mm-seminar-swiss"
   >
     <p
       v-if="creating"
@@ -115,6 +116,7 @@ async function copyLink(): Promise<void> {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-align: center;
+  color: #1c1917;
 }
 
 .mm-invite-dialog__qr {

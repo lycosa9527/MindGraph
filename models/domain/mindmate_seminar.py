@@ -142,6 +142,8 @@ class MindmateSeminarBackgroundFile(Base):
     listed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
     # True when this file is a seminar artifact (产物), not a folder resource or chat chip.
     artifact: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+    # ``face_chat`` rows are 面聊文档. Empty means a normal shelf file or reply artifact.
+    kind: Mapped[str] = mapped_column(String(32), nullable=False, default="", server_default="")
     source_message_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     # Set when this row shelves a shared canvas diagram into 资源 or 产物.
     diagram_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)

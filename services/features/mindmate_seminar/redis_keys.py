@@ -66,6 +66,11 @@ def closing_key(code: str) -> str:
     return f"{MINDMATE_COLLAB_REDIS_PREFIX}:closing:{normalize_collab_code(code)}"
 
 
+def face_chat_lock_key(code: str) -> str:
+    """Redis lock so one seminar has one live face-to-face recorder."""
+    return f"{MINDMATE_COLLAB_REDIS_PREFIX}:face_chat:{normalize_collab_code(code)}"
+
+
 def dify_stream_lock_key(code: str) -> str:
     """Redis lock key for single-writer Dify streaming."""
     return f"{MINDMATE_COLLAB_REDIS_PREFIX}:dify_stream:{normalize_collab_code(code)}"

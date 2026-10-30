@@ -78,8 +78,8 @@ function pick(destination: 'resource' | 'artifact'): void {
   height: 32px;
   border: none;
   border-radius: 999px;
-  background: #f5f3ff;
-  color: #7c3aed;
+  background: #f5f5f4;
+  color: #57534e;
   cursor: pointer;
 }
 
@@ -103,7 +103,8 @@ function pick(destination: 'resource' | 'artifact'): void {
 }
 
 .mm-shelf-popper .mm-shelf__menu button {
-  height: 32px;
+  min-height: 32px;
+  height: auto;
   padding: 0 10px;
   border: none;
   border-radius: 8px;
@@ -116,7 +117,7 @@ function pick(destination: 'resource' | 'artifact'): void {
 }
 
 .mm-shelf-popper .mm-shelf__menu button:hover {
-  background: #f5f3ff;
-  color: #5b21b6;
+  background: #f5f5f4;
+  color: #1c1917;
 }
 </style>

@@ -31,6 +31,7 @@ from services.features.mindmate_seminar.mention import (
 from services.features.mindmate_seminar.message_files import strip_seminar_message_file_tokens
 from services.features.mindmate_seminar.message_history import PersistedCollabMessage
 from services.features.mindmate_seminar.redis_keys import normalize_collab_code, session_meta_key
+from services.features.mindmate_seminar.seminar_cos_sync import schedule_seminar_cos_sync
 from services.features.mindmate_seminar.ws_broadcast import broadcast_to_all
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.redis_async_client import get_async_redis
@@ -86,7 +87,7 @@ async def ensure_live_seminar_room(session: MindmateSeminarSession) -> bool:
         owner_name = owner.name or owner.phone or owner.email or str(session.owner_user_id)
         bound_org_ids = await bound_org_ids_for_user(db, owner)
     manager = get_mindmate_seminar_manager()
-    return await manager.publish_live_room(
+    published = await manager.publish_live_room(
         code=session.code,
         session_id=session.id,
         owner_id=session.owner_user_id,
@@ -99,6 +100,9 @@ async def ensure_live_seminar_room(session: MindmateSeminarSession) -> bool:
         dify_conversation_id=session.dify_conversation_id,
         started_at=session.started_at,
     )
+    if published:
+        schedule_seminar_cos_sync(session.id)
+    return published
 
 
 async def _mention_aliases(session: MindmateSeminarSession) -> tuple[str, ...]:

@@ -189,10 +189,14 @@ async def test_ensure_live_seminar_room_republishes_when_redis_hash_is_missing()
             "services.features.mindmate_seminar.seminar_message.get_mindmate_seminar_manager",
             return_value=manager,
         ),
+        patch(
+            "services.features.mindmate_seminar.seminar_message.schedule_seminar_cos_sync",
+        ) as schedule,
     ):
         ok = await ensure_live_seminar_room(session)
     assert ok is True
     manager.publish_live_room.assert_awaited_once()
+    schedule.assert_called_once_with("sess-1")
     kwargs = manager.publish_live_room.await_args.kwargs
     assert kwargs["session_id"] == "sess-1"
     assert kwargs["expires_at"] == session.expires_at

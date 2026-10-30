@@ -28,6 +28,8 @@ export interface SeminarBackgroundFile {
   sourceMessageId: number | null
   listed: boolean
   artifact: boolean
+  /** ``face_chat`` files belong in 面聊文档. */
+  kind: string
   diagramId: string | null
 }
 
@@ -43,6 +45,7 @@ interface SeminarBackgroundFileRaw {
   source_message_id?: number | null
   listed?: boolean
   artifact?: boolean
+  kind?: string
   diagram_id?: string | null
 }
 
@@ -59,6 +62,7 @@ function mapFile(raw: SeminarBackgroundFileRaw): SeminarBackgroundFile {
     sourceMessageId: typeof raw.source_message_id === 'number' ? raw.source_message_id : null,
     listed: Boolean(raw.listed),
     artifact: Boolean(raw.artifact),
+    kind: typeof raw.kind === 'string' ? raw.kind : '',
     diagramId: typeof raw.diagram_id === 'string' && raw.diagram_id ? raw.diagram_id : null,
   }
 }
@@ -303,6 +307,45 @@ export async function shelveSeminarItem(
         file_id: body.fileId || '',
         diagram_id: body.diagramId || '',
         title: body.title || '',
+      }),
+    }
+  )
+  const file = mapFile(raw)
+  rememberSeminarBackgroundFile(sessionId, file)
+  return file
+}
+
+export async function claimSeminarFaceChat(
+  sessionId: string,
+  token: string,
+  refresh = false
+): Promise<void> {
+  await apiRequestJson(`/api/mindmate/seminar/${encodeURIComponent(sessionId)}/face-chat/claim`, {
+    method: 'POST',
+    body: JSON.stringify({ token, refresh }),
+  })
+}
+
+export async function releaseSeminarFaceChat(sessionId: string, token: string): Promise<void> {
+  await apiRequestJson(`/api/mindmate/seminar/${encodeURIComponent(sessionId)}/face-chat/release`, {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  })
+}
+
+export async function saveSeminarFaceChat(
+  sessionId: string,
+  body: { content: string; filename: string; fileId: string; token: string }
+): Promise<SeminarBackgroundFile> {
+  const raw = await apiRequestJson<SeminarBackgroundFileRaw>(
+    `/api/mindmate/seminar/${encodeURIComponent(sessionId)}/face-chat`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        content: body.content,
+        filename: body.filename,
+        file_id: body.fileId,
+        token: body.token,
       }),
     }
   )

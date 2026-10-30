@@ -22,7 +22,7 @@ const emit = defineEmits<{
     width="min(420px, 92vw)"
     align-center
     append-to-body
-    class="mm-face-chat-dialog"
+    class="mm-face-chat-dialog mm-seminar-swiss"
     @close="emit('close')"
   >
     <div class="mm-face-chat">
@@ -53,8 +53,8 @@ const emit = defineEmits<{
 
 <style>
 .mm-face-chat-dialog.el-dialog {
-  border-radius: 20px;
-  padding: 8px 8px 28px;
+  border-radius: 12px;
+  padding: 0 0 8px;
 }
 
 .mm-face-chat-dialog .el-dialog__header {
@@ -76,13 +76,13 @@ const emit = defineEmits<{
   margin: 8px 0 14px;
   font-size: 22px;
   line-height: 1.35;
-  font-weight: 700;
-  color: #111827;
+  font-weight: 600;
+  color: #1c1917;
 }
 
 .mm-face-chat__line {
   margin: 0;
-  color: #9aa0a8;
+  color: #78716c;
   font-size: 14px;
   line-height: 1.7;
 }
@@ -96,18 +96,20 @@ const emit = defineEmits<{
 
 .mm-face-chat__start {
   min-width: 168px;
-  height: 44px;
-  padding: 0 28px;
-  border: none;
-  border-radius: 10px;
-  background: #6d5efc;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
+  min-height: 36px;
+  padding: 8px 20px;
+  border: 1px solid #1c1917;
+  border-radius: 9999px;
+  background: #1c1917;
+  color: #fafaf9;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
 }
 
 .mm-face-chat__start:hover {
-  background: #5b4fe0;
+  background: #292524;
+  border-color: #292524;
 }
 </style>

@@ -274,7 +274,7 @@ async function exportMinutes(): Promise<void> {
       width="min(560px, 94vw)"
       align-center
       append-to-body
-      class="mm-sum-detail"
+      class="mm-sum-detail mm-seminar-swiss"
     >
       <template #header>
         <div class="mm-sum-card__dialog-head">
@@ -304,7 +304,7 @@ async function exportMinutes(): Promise<void> {
 
 <style>
 .mm-sum-detail.el-dialog {
-  border-radius: 20px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -312,7 +312,7 @@ async function exportMinutes(): Promise<void> {
   max-height: min(72vh, 760px);
   padding: 0 16px 16px;
   overflow: auto;
-  background: #f7f6fb;
+  background: #fafaf9;
 }
 </style>
 
@@ -346,8 +346,8 @@ async function exportMinutes(): Promise<void> {
 }
 
 .mm-sum-card__kind {
-  background: #ede9fe;
-  color: #6d28d9;
+  background: #f5f5f4;
+  color: #44403c;
 }
 
 .mm-sum-card__state.is-done,
@@ -480,17 +480,20 @@ async function exportMinutes(): Promise<void> {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 10px;
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 1px solid #1c1917;
+  border-radius: 9999px;
+  background: #1c1917;
+  color: #fafaf9;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
 }
 
-.mm-sum-card__primary {
-  border: none;
-  background: #6d5efc;
-  color: #fff;
+.mm-sum-card__primary:hover {
+  background: #292524;
+  border-color: #292524;
 }
 
 .mm-sum-card__dialog-head {
@@ -514,13 +517,19 @@ async function exportMinutes(): Promise<void> {
   flex: 0 0 auto;
   align-items: center;
   gap: 4px;
-  height: 32px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 8px;
-  background: #6d5efc;
-  color: #fff;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid #1c1917;
+  border-radius: 9999px;
+  background: #1c1917;
+  color: #fafaf9;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+}
+
+.mm-sum-card__export:hover {
+  background: #292524;
+  border-color: #292524;
 }
 </style>

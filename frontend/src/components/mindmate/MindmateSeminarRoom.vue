@@ -15,6 +15,7 @@ import MindmateSeminarMessageRow from '@/components/mindmate/MindmateSeminarMess
 import MindmateSeminarBriefStrip from '@/components/mindmate/MindmateSeminarBriefStrip.vue'
 import MindmateSeminarComposerTools from '@/components/mindmate/MindmateSeminarComposerTools.vue'
 import MindmateSeminarFaceChatCard from '@/components/mindmate/MindmateSeminarFaceChatCard.vue'
+import MindmateSeminarFaceChatSession from '@/components/mindmate/MindmateSeminarFaceChatSession.vue'
 import MindmateSeminarFaces from '@/components/mindmate/MindmateSeminarFaces.vue'
 import MindmateSeminarShareDialog from '@/components/mindmate/MindmateSeminarShareDialog.vue'
 import MindmateSeminarSummaryDialog from '@/components/mindmate/MindmateSeminarSummaryDialog.vue'
@@ -54,7 +55,6 @@ import { useSeminarMindgraphPrompt } from '@/composables/mindmate/useSeminarMind
 import { useSeminarVoiceMessage } from '@/composables/mindmate/useSeminarVoiceMessage'
 import { createMindmateSeminarOrgBackend } from '@/composables/social/createMindmateSeminarOrgBackend'
 import { useAuthStore } from '@/stores/auth'
-import { useVoiceNotesStore } from '@/stores/voiceNotes'
 import { authFetch } from '@/utils/api'
 import {
   confirmMindmateSeminarLeave,
@@ -216,7 +216,6 @@ watch(
   { immediate: true }
 )
 
-const voiceNotes = useVoiceNotesStore()
 const {
   recording: voiceRecording,
   start: startVoiceMessage,
@@ -225,6 +224,7 @@ const {
   noteRelease: noteVoiceRelease,
 } = useSeminarVoiceMessage()
 const faceChatOpen = ref(false)
+const faceChatLive = ref(false)
 const summaryOpen = ref(false)
 const summaryPreselect = ref<string[]>([])
 const replyQuote = ref<{ author: string; text: string } | null>(null)
@@ -663,7 +663,7 @@ function onSeminarVoice(): void {
 
 function startFaceChat(): void {
   faceChatOpen.value = false
-  void voiceNotes.enableAndShowModal()
+  faceChatLive.value = true
 }
 
 async function onVoicePress(): Promise<void> {
@@ -1529,6 +1529,15 @@ watch(seminarHighlightNotices, () => {
       @start="startFaceChat"
     />
 
+    <MindmateSeminarFaceChatSession
+      :open="faceChatLive && !isSpectator"
+      :session-id="room?.sessionId || ''"
+      :topic="briefTopic"
+      :goals="briefGoals"
+      @close="faceChatLive = false"
+      @send="postSummary"
+    />
+
     <MindmateSeminarShareDialog
       :open="showShareModal"
       :title="roomTitle"
@@ -1557,10 +1566,10 @@ watch(seminarHighlightNotices, () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed #c4b5fd;
+  border: 2px dashed #d6d3d1;
   border-radius: 16px;
-  background: rgba(245, 243, 255, 0.92);
-  color: #5b21b6;
+  background: rgba(245, 245, 244, 0.92);
+  color: #44403c;
   font-size: 14px;
   font-weight: 600;
   pointer-events: none;
@@ -1621,16 +1630,16 @@ watch(seminarHighlightNotices, () => {
 }
 
 .mindmate-seminar-room__end-btn {
-  --el-button-bg-color: #f5f3ff;
-  --el-button-border-color: #ddd6fe;
-  --el-button-hover-bg-color: #ede9fe;
-  --el-button-hover-border-color: #c4b5fd;
-  --el-button-hover-text-color: #5b21b6;
-  --el-button-active-bg-color: #ddd6fe;
-  --el-button-active-border-color: #a78bfa;
-  --el-button-text-color: #6d28d9;
+  --el-button-bg-color: #f5f5f4;
+  --el-button-border-color: #e7e5e4;
+  --el-button-hover-bg-color: #e7e5e4;
+  --el-button-hover-border-color: #d6d3d1;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-active-bg-color: #d6d3d1;
+  --el-button-active-border-color: #a8a29e;
+  --el-button-text-color: #44403c;
   font-weight: 500;
-  border-radius: 10px;
+  border-radius: 9999px;
   height: auto;
   min-height: 32px;
   padding-top: 4px;
@@ -1643,7 +1652,7 @@ watch(seminarHighlightNotices, () => {
 }
 
 .mindmate-seminar-room__input--file {
-  outline: 2px dashed #c4b5fd;
+  outline: 2px dashed #d6d3d1;
   outline-offset: -8px;
 }
 
@@ -1676,9 +1685,9 @@ watch(seminarHighlightNotices, () => {
   width: 100%;
   max-width: none;
   border-radius: 18px;
-  border-color: #e9e5ff;
+  border-color: #e7e5e4;
   background: #fff;
-  box-shadow: 0 8px 24px rgba(109, 94, 252, 0.08);
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.06);
 }
 
 .mindmate-seminar-room__citations {
@@ -1697,10 +1706,10 @@ watch(seminarHighlightNotices, () => {
   max-width: 100%;
   height: 28px;
   padding: 0 10px;
-  border: 1px solid #ddd6fe;
+  border: 1px solid #e7e5e4;
   border-radius: 999px;
-  background: #f5f3ff;
-  color: #5b21b6;
+  background: #f5f5f4;
+  color: #44403c;
   font-size: 12px;
   cursor: pointer;
 }
@@ -1752,9 +1761,9 @@ watch(seminarHighlightNotices, () => {
 
 .mindmate-seminar-room__select-bar button:hover,
 .mindmate-seminar-room__reply:hover {
-  border-color: #ddd6fe;
-  background: #f5f3ff;
-  color: #5b21b6;
+  border-color: #d6d3d1;
+  background: #f5f5f4;
+  color: #1c1917;
 }
 
 .mindmate-seminar-room__reply {
@@ -1768,7 +1777,7 @@ watch(seminarHighlightNotices, () => {
 
 .mindmate-seminar-room__reply-label {
   flex: 0 0 auto;
-  color: #6d5efc;
+  color: #57534e;
   font-weight: 650;
 }
 

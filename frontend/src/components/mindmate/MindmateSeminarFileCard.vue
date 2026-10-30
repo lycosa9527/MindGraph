@@ -176,6 +176,7 @@ async function downloadFile(): Promise<void> {
       sourceMessageId: meta.value?.sourceMessageId ?? null,
       listed: meta.value?.listed ?? false,
       artifact: meta.value?.artifact ?? false,
+      kind: meta.value?.kind ?? '',
       diagramId: meta.value?.diagramId ?? null,
     })
   } catch {
@@ -364,8 +365,8 @@ async function shelveFile(destination: 'resource' | 'artifact'): Promise<void> {
   height: 32px;
   border: none;
   border-radius: 999px;
-  background: #f5f3ff;
-  color: #7c3aed;
+  background: #f5f5f4;
+  color: #57534e;
   cursor: pointer;
 }
 
@@ -428,7 +429,7 @@ async function shelveFile(destination: 'resource' | 'artifact'): Promise<void> {
   padding: 0;
   border: none;
   background: transparent;
-  color: #7c3aed;
+  color: #57534e;
   font-size: 12px;
   cursor: pointer;
 }

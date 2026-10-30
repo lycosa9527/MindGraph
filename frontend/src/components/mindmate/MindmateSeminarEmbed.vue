@@ -283,7 +283,7 @@ onBeforeUnmount(() => {
 .mm-split-handle:hover::before,
 .mm-split-handle:focus-visible::before,
 .mindmate-seminar-embed.is-resizing .mm-split-handle::before {
-  background: #c4b5fd;
+  background: #a8a29e;
 }
 
 .mm-split-handle__pill {

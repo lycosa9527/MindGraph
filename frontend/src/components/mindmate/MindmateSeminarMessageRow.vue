@@ -882,7 +882,7 @@ async function openInCanvas(): Promise<void> {
 
 .mindmate-seminar-room__msg-row.is-selected .mindmate-seminar-room__bubble--own,
 .mindmate-seminar-room__msg-row.is-selected .mindmate-seminar-room__bubble--peer {
-  outline: 2px solid #c4b5fd;
+  outline: 2px solid #1c1917;
 }
 
 .mindmate-seminar-room__check {
@@ -898,8 +898,8 @@ async function openInCanvas(): Promise<void> {
 }
 
 .mindmate-seminar-room__check.is-on {
-  border-color: #6d5efc;
-  background: #6d5efc;
+  border-color: #1c1917;
+  background: #1c1917;
   box-shadow: inset 0 0 0 3px #fff;
 }
 

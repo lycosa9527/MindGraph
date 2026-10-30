@@ -593,8 +593,8 @@ onUnmounted(() => {
   justify-content: center;
   border: none;
   border-radius: 999px;
-  background: #f4f4f5;
-  color: #6b6b76;
+  background: #f5f5f4;
+  color: #78716c;
   cursor: pointer;
 }
 
@@ -623,11 +623,11 @@ onUnmounted(() => {
 }
 
 .mm-highlight-side__export-btn {
-  border: 1px solid #e6e6ec;
+  border: 1px solid #e7e5e4;
   border-radius: 999px;
   padding: 2px 9px;
   background: #fff;
-  color: #5046e5;
+  color: #44403c;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -651,17 +651,17 @@ onUnmounted(() => {
 }
 
 .mm-highlight-card__check.is-on {
-  border-color: #5046e5;
-  background: #5046e5;
+  border-color: #1c1917;
+  background: #1c1917;
   box-shadow: inset 0 0 0 3px #fff;
 }
 
 .mm-highlight-side__filter {
-  border: 1px solid #e6e6ec;
+  border: 1px solid #e7e5e4;
   border-radius: 999px;
   padding: 2px 9px;
   background: #fff;
-  color: #6b6b76;
+  color: #57534e;
   font: inherit;
   font-size: 12px;
   font-weight: 500;
@@ -670,9 +670,9 @@ onUnmounted(() => {
 }
 
 .mm-highlight-side__filter.is-on {
-  border-color: #5046e5;
-  background: #5046e5;
-  color: #fff;
+  border-color: #1c1917;
+  background: #1c1917;
+  color: #fafaf9;
 }
 
 .mm-highlight-side__empty {
@@ -776,10 +776,10 @@ onUnmounted(() => {
   padding: 0;
   border: none;
   background: none;
-  color: #5046e5;
+  color: #44403c;
   font: inherit;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -832,8 +832,8 @@ onUnmounted(() => {
   margin-left: 4px;
   border: none;
   border-radius: 999px;
-  background: #f4f4f6;
-  color: #6b6b76;
+  background: #f5f5f4;
+  color: #78716c;
   cursor: pointer;
 }
 
@@ -886,8 +886,8 @@ onUnmounted(() => {
 }
 
 .mm-highlight-card__locate {
-  background: #f4f4f6;
-  color: #6b6b76;
+  background: #f5f5f4;
+  color: #78716c;
 }
 
 .mm-highlight-card__locate:hover {

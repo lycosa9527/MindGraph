@@ -21,6 +21,7 @@ import {
   seminarDocFullscreen,
   seminarDocTabs,
   seminarOfficePreviewFileId,
+  seminarServerArtifacts,
   seminarSpectator,
   toggleSeminarDocFullscreen,
 } from '@/composables/mindmate/mindmateSeminarChrome'
@@ -197,6 +198,7 @@ async function downloadActive(): Promise<void> {
     sourceMessageId: null,
     listed: false,
     artifact: false,
+    kind: '',
     diagramId: null,
   }
   try {
@@ -232,6 +234,18 @@ watch(
   },
   { immediate: true }
 )
+
+const openFileStamp = computed(() => {
+  const fileId = activeTab.value?.fileId
+  if (!fileId) return ''
+  const row = seminarServerArtifacts.value.find((file) => file.id === fileId)
+  return row ? `${row.id}:${row.sizeBytes}` : ''
+})
+
+watch(openFileStamp, (next, prev) => {
+  if (!prev || !next || prev === next || previewMode.value !== 'text') return
+  void loadActiveTab(activeTab.value)
+})
 
 onBeforeUnmount(() => {
   const fileId = activeTab.value?.fileId ?? null
@@ -529,7 +543,8 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 28px;
+  min-height: 28px;
+  height: auto;
   padding: 0 10px;
   border: none;
   border-radius: 8px;
@@ -540,8 +555,8 @@ onBeforeUnmount(() => {
 }
 
 .mm-doc-viewer__action:hover {
-  color: #5b21b6;
-  background: #f5f3ff;
+  color: #1c1917;
+  background: #e7e5e4;
 }
 
 .mm-doc-viewer__action--icon {

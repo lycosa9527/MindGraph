@@ -10,12 +10,25 @@ import { Loader2, Mic, Pause, Play, Square } from '@lucide/vue'
 import VoiceNotesSpeakerEditor from '@/components/voiceNotes/VoiceNotesSpeakerEditor.vue'
 import VoiceNotesTranscriptPane from '@/components/voiceNotes/VoiceNotesTranscriptPane.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
-import type { useMobileVoiceNotesSession } from '@/composables/voiceNotes/useMobileVoiceNotesSession'
 import { useVoiceNotesSessionChrome } from '@/composables/voiceNotes/useVoiceNotesSessionChrome'
+import type { useVoiceNotesStore } from '@/stores/voiceNotes'
 
-const props = defineProps<{
-  session: ReturnType<typeof useMobileVoiceNotesSession>
-}>()
+export interface VoiceNotesSheetSession {
+  busy: { readonly value: boolean }
+  generating: { readonly value: boolean }
+  persisting: { readonly value: boolean }
+  voiceNotes: ReturnType<typeof useVoiceNotesStore>
+  stopRecordingOnly: () => Promise<void>
+  generateMindmap: () => Promise<void>
+}
+
+const props = withDefaults(
+  defineProps<{
+    session: VoiceNotesSheetSession
+    generateLabelKey?: string
+  }>(),
+  { generateLabelKey: 'auth.voiceNotes.retryGenerate' }
+)
 
 const { t } = useLanguage()
 const voiceNotes = props.session.voiceNotes
@@ -188,7 +201,7 @@ function onGenerate(): void {
             :disabled="!actions.canGenerate"
             @click="onGenerate"
           >
-            <I18nText k="auth.voiceNotes.retryGenerate" />
+            <I18nText :k="generateLabelKey" />
           </button>
         </div>
       </div>

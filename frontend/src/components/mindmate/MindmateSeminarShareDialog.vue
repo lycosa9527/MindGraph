@@ -119,7 +119,7 @@ function close(): void {
     append-to-body
     :show-close="false"
     :close-on-click-modal="false"
-    class="mm-share-sheet"
+    class="mm-share-sheet mm-seminar-swiss"
     @update:model-value="(value: boolean) => !value && close()"
   >
     <template #header>
@@ -258,7 +258,7 @@ function close(): void {
 
 <style>
 .mm-share-sheet.el-dialog {
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   padding: 0;
 }
@@ -270,11 +270,12 @@ function close(): void {
 
 .mm-share-sheet .el-dialog__body {
   padding: 0;
-  background: #f3f4f6;
+  background: #f5f5f4;
 }
 
 .mm-share-sheet .el-dialog__footer {
   padding: 12px 16px 16px;
+  border-top: 1px solid #f5f5f4;
   background: #fff;
 }
 
@@ -288,9 +289,9 @@ function close(): void {
 
 .mm-share-sheet__head h2 {
   margin: 0;
-  color: #18191c;
+  color: #1c1917;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .mm-share-sheet__x {
@@ -301,18 +302,23 @@ function close(): void {
   height: 28px;
   border: none;
   border-radius: 999px;
-  background: #f4f4f6;
-  color: #6b6b76;
+  background: #f5f5f4;
+  color: #78716c;
   cursor: pointer;
+}
+
+.mm-share-sheet__x:hover {
+  background: #e7e5e4;
+  color: #1c1917;
 }
 
 .mm-share-sheet__scroll {
   max-height: min(64vh, 680px);
   overflow-y: scroll;
   padding: 16px;
-  background: #f3f4f6;
+  background: #f5f5f4;
   scrollbar-width: thin;
-  scrollbar-color: #c8c8d0 transparent;
+  scrollbar-color: #d6d3d1 transparent;
 }
 
 .mm-share-sheet__scroll::-webkit-scrollbar {
@@ -321,7 +327,7 @@ function close(): void {
 
 .mm-share-sheet__scroll::-webkit-scrollbar-thumb {
   border-radius: 8px;
-  background: #c8c8d0;
+  background: #d6d3d1;
 }
 
 .mm-share-card {
@@ -510,24 +516,38 @@ function close(): void {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  border: none;
-  border-radius: 8px;
+  /* button:has(.i18n-label) sets height:auto and outranks a plain height. */
+  min-height: 36px;
+  padding: 6px 16px;
+  border: 1px solid transparent;
+  border-radius: 9999px;
   font: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
 }
 
 .mm-share-sheet__cancel {
-  background: #f3f4f6;
-  color: #18191c;
+  background: #f5f5f4;
+  border-color: #e7e5e4;
+  color: #44403c;
+}
+
+.mm-share-sheet__cancel:hover {
+  background: #e7e5e4;
+  color: #1c1917;
 }
 
 .mm-share-sheet__download {
-  background: #3b6cff;
-  color: #fff;
+  background: #1c1917;
+  border-color: #1c1917;
+  color: #fafaf9;
+}
+
+.mm-share-sheet__download:hover:not(:disabled) {
+  background: #292524;
+  border-color: #292524;
 }
 
 .mm-share-sheet__download:disabled {

@@ -166,8 +166,10 @@ async def _reopen_locked(
             datetime.now(tz=UTC),
             reopen_duration(session.visibility, session.duration_preset),
         )
-        await _set_ended_at(session.id, None, expires_at, started_at=datetime.now(tz=UTC))
+        live_started = datetime.now(tz=UTC)
+        await _set_ended_at(session.id, None, expires_at, started_at=live_started)
     else:
+        live_started = session.started_at
         expires_at = session.expires_at
         if expires_at is None or is_online_collab_expired(expires_at):
             expires_at = compute_online_collab_expires_at(
@@ -187,11 +189,16 @@ async def _reopen_locked(
         expires_at=expires_at,
         bound_org_ids=bound_org_ids,
         dify_conversation_id=session.dify_conversation_id,
-        started_at=session.started_at if already_live else None,
+        started_at=live_started,
     )
     if not published:
         if not already_live and previous_ended is not None:
-            await _set_ended_at(session.id, previous_ended, previous_expires)
+            await _set_ended_at(
+                session.id,
+                previous_ended,
+                previous_expires,
+                started_at=session.started_at,
+            )
         elif already_live and (previous_expires is None or is_online_collab_expired(previous_expires)):
             await _set_ended_at(session.id, None, previous_expires)
         return None, "Collaboration service unavailable"

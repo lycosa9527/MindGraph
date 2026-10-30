@@ -117,14 +117,14 @@ def mirror_local_seminar_file_sync(
     path: Path,
     *,
     content_type: str = "",
-) -> None:
-    """Upload a disk-only seminar file to COS. Skip when COS is off or the object is already there."""
+) -> bool:
+    """Upload a disk-only seminar file to COS. True only when this call stored a new object."""
     logical = _cos_logical_key(storage_key)
     if logical is None or not cos_seminar_enabled() or not path.is_file():
-        return
+        return False
     full_key = full_seminar_cos_key(logical)
     if object_exists(full_key):
-        return
+        return False
     uploaded = upload_bytes(
         path.read_bytes(),
         full_key,
@@ -134,18 +134,19 @@ def mirror_local_seminar_file_sync(
     )
     if uploaded:
         logger.info("[SeminarFiles] COS mirror key=%s", logical)
-    else:
-        logger.warning("[SeminarFiles] COS mirror failed key=%s", logical)
+        return True
+    logger.warning("[SeminarFiles] COS mirror failed key=%s", logical)
+    return False
 
 
-def mirror_cached_preview_pdf_sync(storage_key: str, path: Path) -> None:
+def mirror_cached_preview_pdf_sync(storage_key: str, path: Path) -> bool:
     """Upload a local Office preview PDF. Raise when COS is on and the put fails."""
     logical = preview_object_key(storage_key)
     if logical is None or not cos_seminar_enabled() or not path.is_file():
-        return
+        return False
     full_key = full_seminar_cos_key(logical)
     if object_exists(full_key):
-        return
+        return False
     uploaded = upload_bytes(
         path.read_bytes(),
         full_key,
@@ -157,6 +158,7 @@ def mirror_cached_preview_pdf_sync(storage_key: str, path: Path) -> None:
         logger.warning("[SeminarFiles] COS preview mirror failed key=%s", logical)
         raise ValueError("upload_failed")
     logger.info("[SeminarFiles] COS preview mirror key=%s", logical)
+    return True
 
 
 def put_preview_pdf_sync(storage_key: str, data: bytes) -> None:

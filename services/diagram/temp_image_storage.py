@@ -21,6 +21,7 @@ from services.utils.tencent_cos_client import (
     cos_credentials_configured,
     cos_object_key,
     download_file,
+    object_exists,
     upload_bytes,
 )
 
@@ -168,6 +169,40 @@ async def persist_diagram_preview_png(filename: str, data: bytes) -> Path:
         diagram_preview_cos_key(filename),
         require_cos=True,
     )
+
+
+def preview_png_safe_to_drop(filename: str, path: Path) -> bool:
+    """True when a local preview PNG may be deleted.
+
+    With COS off, the local file is the only copy and still ages out. With COS
+    on, the file stays until the bucket holds it, so a seminar bubble can
+    hydrate the image after this disk is gone.
+    """
+    if not cos_temp_images_enabled():
+        return True
+    if is_safe_dingtalk_temp_filename(filename):
+        object_key = dingtalk_temp_cos_key(filename)
+    elif is_safe_diagram_preview_filename(filename):
+        object_key = diagram_preview_cos_key(filename)
+    else:
+        return True
+    if object_exists(object_key):
+        return True
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return False
+    uploaded = upload_bytes(
+        data,
+        object_key,
+        log_prefix="[TempImages/COS]",
+        content_type="image/png",
+    )
+    if uploaded:
+        logger.info("[TempImages] COS mirror before cleanup filename=%s", filename)
+        return True
+    logger.warning("[TempImages] keeping %s; COS mirror failed", filename)
+    return False
 
 
 async def hydrate_diagram_preview_png(filename: str) -> Optional[Path]:

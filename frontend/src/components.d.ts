@@ -375,6 +375,7 @@ declare module 'vue' {
     MindmateSeminarDocViewer: typeof import('./components/mindmate/MindmateSeminarDocViewer.vue')['default']
     MindmateSeminarEmbed: typeof import('./components/mindmate/MindmateSeminarEmbed.vue')['default']
     MindmateSeminarFaceChatCard: typeof import('./components/mindmate/MindmateSeminarFaceChatCard.vue')['default']
+    MindmateSeminarFaceChatSession: typeof import('./components/mindmate/MindmateSeminarFaceChatSession.vue')['default']
     MindmateSeminarFaces: typeof import('./components/mindmate/MindmateSeminarFaces.vue')['default']
     MindmateSeminarFileCard: typeof import('./components/mindmate/MindmateSeminarFileCard.vue')['default']
     MindmateSeminarFolderDrawer: typeof import('./components/mindmate/MindmateSeminarFolderDrawer.vue')['default']
